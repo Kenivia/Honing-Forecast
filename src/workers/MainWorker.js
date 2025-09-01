@@ -117,7 +117,7 @@ async function ChanceToCostWrapper(payload) {
         adv_hone_strategy,
         true
     )
-    const this_labels = LABELS.concat(["Red juice", "Blue juice", "Special Leaps", "Est. Probability"])
+    const this_labels = LABELS.concat(["Red juice", "Blue juice", "Est. Probability"])
 
 
     return Object.fromEntries(this_labels.map((l,ind) => [l, out[ind]]))

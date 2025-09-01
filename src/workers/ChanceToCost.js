@@ -10,7 +10,7 @@ export function ChanceToCost(
   // the idea is to generate a bunch of random budgets via MC_data and also generate
   // a bunch of random costs, see which budgets pass with about the same prob as p, - then take 
   // the closest num_average 'th ones and take the average
-  const cost_size = 50000;
+  const cost_size = 100000;
   const budget_size = 1000;
   const chunkSize = 1000;
   let [ind_chances, hone_costs, adv_hone_chances, adv_hone_costs] = parser(hone_counts, chances, weap_costs, armor_costs, adv_counts, adv_costs,adv_data_10_20_juice, adv_data_30_40_juice,adv_data_10_20, adv_data_30_40, adv_hone_strategy)

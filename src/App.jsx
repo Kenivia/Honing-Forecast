@@ -89,7 +89,7 @@ export default function UpgradeCalculatorUI() {
     const fillMy = () => {
         setTopGrid(
             Array.from({ length: TOP_ROWS }, () =>
-                Array.from({ length: TOP_COLS }, (_, ind) => ind == 19)
+                Array.from({ length: TOP_COLS }, (_, ind) => ind == 19 || ind == 20)
             )
         );
         setBottomGrid(
@@ -97,7 +97,7 @@ export default function UpgradeCalculatorUI() {
                 Array.from({ length: BOTTOM_COLS }, (_, ind) => ind == 2)
             )
         );
-        set_budget_inputs({ "Red": 431777, "Blue": 1064398, "Leaps": 23748, "Shards": 9010948, "Oreha": 15125, "Gold": 803792, "Silver(WIP)": 99999999999999, "Red juice": 0, "Blue juice": 0, "Special leaps": 0 })
+        set_budget_inputs({ "Red": 431777, "Blue": 1064398, "Leaps": 23748, "Shards": 9010948, "Oreha": 15125, "Gold": 1803792, "Silver(WIP)": 99999999999999, "Red juice": 0, "Blue juice": 0, "Special leaps": 0 })
     };
 
     const [chance_result, set_chance_result] = useState(null);
@@ -174,13 +174,13 @@ export default function UpgradeCalculatorUI() {
 
     return (
         <div style={styles.container}>
-            <h2 style={styles.heading}>Upgrade calculator - input UI</h2>
+            <h2 style={styles.heading}>Honing forecast</h2>
 
             <div style={styles.gridOuter}>
                 {/* Left: grids */}
                 <div style={{ flex: 1 }}>
                     <div style={styles.topGridWrapper}>
-                        <div style={{ marginBottom: 8 }}>Top grid (6 × 25)</div>
+                        <div style={{ marginBottom: 8 }}>Normal honing</div>
                         <div style={styles.grid(TOP_COLS)}>
                             {topGrid.flatMap((row, r) =>
                                 row.map((checked, c) => {
@@ -201,7 +201,7 @@ export default function UpgradeCalculatorUI() {
                     </div>
 
                     <div style={styles.bottomGridWrapper}>
-                        <div style={{ marginBottom: 8 }}>Bottom grid (6 × 4)</div>
+                        <div style={{ marginBottom: 8 }}>Advanced honing</div>
                         <div style={styles.grid(BOTTOM_COLS)}>
                             {bottomGrid.flatMap((row, r) =>
                                 row.map((checked, c) => (
@@ -231,7 +231,27 @@ export default function UpgradeCalculatorUI() {
 
 
                 </div>
+                <div style={styles.inputsWrapper}>
+                    <div style={{ fontWeight: 600, marginBottom: 8 }}>Chance to Cost</div>
+                    <div key={"69"} style={styles.inputRow}>
+                        <div style={styles.labelCol}>{"Desired chance of success"}</div>
 
+                        <input
+                            type="text"
+                            value={desired_chance}
+                            onChange={(e) => onDesiredChange(e.target.value)}
+                            placeholder="0"
+                            style={{ flex: 1, padding: "6px 8px", borderRadius: 6, border: "1px solid #ccc" }}
+                        />
+                        <div style={styles.controls}>
+                            <button onClick={() => HandleCallWorker("ChanceToCost")} disabled={ChanceToCostBusy}>{ChanceToCostBusy ? 'Running…' : 'Find chance of success'}</button>
+                            
+
+                        </div>
+                    </div>
+                    <pre>{cost_result ? JSON.stringify(cost_result, null, 2)  : 'No result yet'}</pre>
+
+                </div>
                 <div style={styles.inputsWrapper}>
                     <div style={{ fontWeight: 600, marginBottom: 8 }}>Cost to Chance</div>
                     {INPUT_LABELS.map((label) => (
@@ -254,27 +274,7 @@ export default function UpgradeCalculatorUI() {
                     </div>
 
                 </div>
-                <div style={styles.inputsWrapper}>
-                    <div style={{ fontWeight: 600, marginBottom: 8 }}>Chance to Cost</div>
-                    <div key={"69"} style={styles.inputRow}>
-                        <div style={styles.labelCol}>{"Desired chance of success"}</div>
-
-                        <input
-                            type="text"
-                            value={desired_chance}
-                            onChange={(e) => onDesiredChange(e.target.value)}
-                            placeholder="0"
-                            style={{ flex: 1, padding: "6px 8px", borderRadius: 6, border: "1px solid #ccc" }}
-                        />
-                        <div style={styles.controls}>
-                            <button onClick={() => HandleCallWorker("ChanceToCost")} disabled={ChanceToCostBusy}>{ChanceToCostBusy ? 'Running…' : 'Find chance of success'}</button>
-                            
-
-                        </div>
-                    </div>
-                    <pre>{cost_result ? JSON.stringify(cost_result, null, 2)  : 'No result yet'}</pre>
-
-                </div>
+                
 
             </div>
 
