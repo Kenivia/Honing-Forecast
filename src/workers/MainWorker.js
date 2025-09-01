@@ -29,9 +29,10 @@ async function CostToChanceWrapper(payload) {
     // do some pretend heavy work (sync here for demo)
     // For large numeric arrays prefer to get an ArrayBuffer and use typed arrays
 
-
-    const resp = await fetch("/data.json")
+    console.log()
+    const resp = await fetch("/Honing-forecast/data.json")
     const text = await resp.text();
+    console.log(text)
     const { normal_hone_chances,
         normal_hone_weapon_cost,
         normal_hone_armor_cost,
@@ -82,7 +83,7 @@ async function ChanceToCostWrapper(payload) {
     // For large numeric arrays prefer to get an ArrayBuffer and use typed arrays
 
 
-    const resp = await fetch("/data.json")
+    const resp = await  fetch("/Honing-forecast/data.json")
     const text = await resp.text();
     const { normal_hone_chances,
         normal_hone_weapon_cost,
