@@ -30,7 +30,7 @@ async function CostToChanceWrapper(payload) {
     // For large numeric arrays prefer to get an ArrayBuffer and use typed arrays
 
 
-    const resp = await fetch("/public/data.json")
+    const resp = await fetch("/data.json")
     const text = await resp.text();
     const { normal_hone_chances,
         normal_hone_weapon_cost,
@@ -82,7 +82,7 @@ async function ChanceToCostWrapper(payload) {
     // For large numeric arrays prefer to get an ArrayBuffer and use typed arrays
 
 
-    const resp = await fetch("/public/data.json")
+    const resp = await fetch("/data.json")
     const text = await resp.text();
     const { normal_hone_chances,
         normal_hone_weapon_cost,

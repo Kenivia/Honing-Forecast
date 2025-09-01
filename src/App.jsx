@@ -97,7 +97,8 @@ export default function UpgradeCalculatorUI() {
                 Array.from({ length: BOTTOM_COLS }, (_, ind) => ind == 2)
             )
         );
-        set_budget_inputs({ "Red": 431777, "Blue": 1064398, "Leaps": 23748, "Shards": 9010948, "Oreha": 15125, "Gold": 1803792, "Silver(WIP)": 99999999999999, "Red juice": 0, "Blue juice": 0, "Special leaps": 0 })
+        set_budget_inputs({ "Red": 431777, "Blue": 1064398, "Leaps": 23748, "Shards": 9010948, "Oreha": 15125, "Gold": 1803792, "Silver(WIP)": 99999999999999, "Red juice": 0, "Blue juice": 0, "Special leaps": 0 }),
+        set_desired_chance("69")
     };
 
     const [chance_result, set_chance_result] = useState(null);
@@ -243,12 +244,11 @@ export default function UpgradeCalculatorUI() {
                             placeholder="0"
                             style={{ flex: 1, padding: "6px 8px", borderRadius: 6, border: "1px solid #ccc" }}
                         />
-                        <div style={styles.controls}>
-                            <button onClick={() => HandleCallWorker("ChanceToCost")} disabled={ChanceToCostBusy}>{ChanceToCostBusy ? 'Running…' : 'Find chance of success'}</button>
-                            
-
-                        </div>
+                        
                     </div>
+                    <div style={styles.controls}>
+                            <button onClick={() => HandleCallWorker("ChanceToCost")} disabled={ChanceToCostBusy}>{ChanceToCostBusy ? 'Running…' : 'Find estimated cost'}</button>
+                        </div>
                     <pre>{cost_result ? JSON.stringify(cost_result, null, 2)  : 'No result yet'}</pre>
 
                 </div>

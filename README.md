@@ -22,12 +22,13 @@ This is a functionality that Maxroll does now currently have. How to use:
 
 ## How it works
 
-We pull a Dr.Strange and simulate 100000(can prolly do more when i fix the code) tries at passing everything, record how much everything costed and draw some conclusions. For Chance to Cost, we generate some artifical "budgets", which balances the luck on every piece(so we don't get a case of where you pity your weapon but one tap every armor, which would yield a super high red rocks cost and low blue rocks cost) and see which one matches your Desired chance the best.
+We pull a Dr.Strange and simulate ~100000 tries at passing everything, record how much everything costed and draw some conclusions. For Chance to Cost, we generate some artifical "budgets", which balances the luck on every piece(so we don't get a case of where you pity your weapon but one tap every armor, which would yield a super high red rocks cost and low blue rocks cost) and see which one matches your Desired chance the best.
 
 ## WIP
 
 - Cache, rework the monte carlos to do individual pieces so they can be cached for other combinations of ticks(and add them when needed)
 - Actually implement special honing and juice considerations(Currently the inputs don't do anything)
+- get silver unlock cost somewhere(currently silever unlock cost is 0 so its labeled as WIP)
 - Incorporate rosted income tracking & pretty graphs(long term)
 - UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI
 - Draggable tick boxes, same as maxroll
