@@ -94,10 +94,7 @@ export function parser(counts, chances, weap_costs, armor_costs, adv_counts, adv
     // won't check the costs because they shouldn't be touched
     
     let ind_chances = []
-    let hone_costs = []
-    for (let i = 0; i < weap_costs.length; i++) {
-        hone_costs[i] = []
-    }
+    let hone_costs = Array.from({length:weap_costs.length}, () => new Array())
 
     for (let piece_type = 0; piece_type < counts.length; piece_type++) {
         let cur_cost = piece_type == 0 ? armor_costs : weap_costs

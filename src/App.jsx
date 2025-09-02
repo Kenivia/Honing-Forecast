@@ -97,7 +97,7 @@ export default function UpgradeCalculatorUI() {
                 Array.from({ length: BOTTOM_COLS }, (_, ind) => ind == 2)
             )
         );
-        set_budget_inputs({ "Red": 431777, "Blue": 1064398, "Leaps": 23748, "Shards": 9010948, "Oreha": 15125, "Gold": 1803792, "Silver(WIP)": 99999999999999, "Red juice": 0, "Blue juice": 0, "Special leaps": 0 }),
+        set_budget_inputs({ "Red": 431777, "Blue": 1064398, "Leaps": 23748, "Shards": 9010948, "Oreha": 15125, "Gold": 1803792, "Silver(WIP)": 4294967295, "Red juice": 0, "Blue juice": 0, "Special leaps": 0 }),
         set_desired_chance("69")
     };
 

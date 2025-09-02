@@ -10,7 +10,21 @@ export function ticks_to_counts(ticks){
 
 
 
+export function shuffle(array) {
+  let currentIndex = array.length;
 
+  // While there remain elements to shuffle...
+  while (currentIndex != 0) {
+
+    // Pick a remaining element...
+    let randomIndex = Math.floor(Math.random() * currentIndex);
+    currentIndex--;
+
+    // And swap it with the current element.
+    [array[currentIndex], array[randomIndex]] = [
+      array[randomIndex], array[currentIndex]];
+  }
+}
 
 export function assert(condition) {
     if (!condition) {
@@ -18,7 +32,6 @@ export function assert(condition) {
     }
 }
 export function add_cost(a, b, index, multiplier=1) {
-  if (!Array.isArray(a) || !Array.isArray(b)) throw new Error('Both inputs must be arrays');
   var n = Math.min(a.length,b.length);
   var i = n;
   while (i--) {
@@ -27,22 +40,22 @@ export function add_cost(a, b, index, multiplier=1) {
   return a; // returns the modified a
 }
 
-export function weighted_random(items, weights) {
-    var i
-    let newArr = weights.map(
-        (
-            (sum) => (value) =>
-                (sum += value)
-        )(0)
-    )
-    // for (i = 1; i < weights.length; i++) newArr[i] += newArr[i - 1]
+// export function weighted_random(items, weights) {
+//     var i
+//     let newArr = weights.map(
+//         (
+//             (sum) => (value) =>
+//                 (sum += value)
+//         )(0)
+//     )
+//     // for (i = 1; i < weights.length; i++) newArr[i] += newArr[i - 1]
 
-    var random = Math.random() //* newArr[newArr.length - 1]
+//     var random = Math.random() //* newArr[newArr.length - 1]
 
-    // for (i = 0; i < newArr.length; i++) if (newArr[i] > random) break
-    i = newArr.findIndex((el) => random <= el)
-    return items[i]
-}
+//     // for (i = 0; i < newArr.length; i++) if (newArr[i] > random) break
+//     i = newArr.findIndex((el) => random <= el)
+//     return items[i]
+// }
 export function myformat(f) {
     f *= 100
     let place = 0
@@ -94,27 +107,12 @@ export function pity(ind_chances, costs, unlock, adv_hone_chances, adv_hone_cost
     pity[6] += unlock[1]
     return pity
 }
+
 // vibe coded
 export function countFailuresGAS(cost_data, budget_data) {
   var N = cost_data.length;
   var M = budget_data.length;
-  var n = (N>0 ? cost_data[0].length : 0);
-  if (N === 0 || M === 0 || n === 0) return new Array(M).fill(0);
-
-  // choose strategy: if many more budgets than cost rows, transpose budgets
-  // Threshold is heuristic: if M >= 3 * N, transpose; tweak for your data.
-  if (M >= 3 * N) {
-    return _countFailuresTranspose(cost_data, budget_data);
-  } else {
-    return _countFailuresSimple(cost_data, budget_data);
-  }
-}
-export function _countFailuresSimple(cost_data, budget_data) {
-  var N = cost_data.length;
-  var M = budget_data.length;
-  var count = new Array(M);
-  for (var i = 0; i < M; i++) count[i] = 0;
-
+  var count = new Array(M).fill(0);
   for (var m = 0; m < N; m++) {
     var c = cost_data[m];
     // cache cost values into locals
@@ -128,51 +126,6 @@ export function _countFailuresSimple(cost_data, budget_data) {
       // short-circuit comparisons (left-to-right)
       if (c0 > b0 || c1 > b1 || c2 > b2 || c3 > b3 || c4 > b4 || c5 > b5 || c6 > b6) {
         count[j]++;
-      }
-    }
-  }
-  return count;
-}
-export function _countFailuresTranspose(cost_data, budget_data) {
-  var N = cost_data.length;
-  var M = budget_data.length;
-
-  // build column arrays budgetsCols[j][i] = budget_data[i][j]
-  var budgetsCols = [
-    new Array(M), new Array(M), new Array(M),
-    new Array(M), new Array(M), new Array(M), new Array(M)
-  ];
-  for (var i = 0; i < M; i++) {
-    var b = budget_data[i];
-    budgetsCols[0][i] = b[0];
-    budgetsCols[1][i] = b[1];
-    budgetsCols[2][i] = b[2];
-    budgetsCols[3][i] = b[3];
-    budgetsCols[4][i] = b[4];
-    budgetsCols[5][i] = b[5];
-    budgetsCols[6][i] = b[6];
-  }
-
-  var count = new Array(M);
-  for (let i = 0; i < M; i++) count[i] = 0;
-
-  for (var m = 0; m < N; m++) {
-    var c = cost_data[m];
-    var c0 = c[0], c1 = c[1], c2 = c[2], c3 = c[3], c4 = c[4], c5 = c[5], c6 = c[6];
-
-    // iterate budgets by index but read from contiguous column arrays
-    for (let i = 0; i < M; i++) {
-      // read each column's element for index i
-      if (
-        c0 > budgetsCols[0][i] ||
-        c1 > budgetsCols[1][i] ||
-        c2 > budgetsCols[2][i] ||
-        c3 > budgetsCols[3][i] ||
-        c4 > budgetsCols[4][i] ||
-        c5 > budgetsCols[5][i] ||
-        c6 > budgetsCols[6][i]
-      ) {
-        count[i]++;
       }
     }
   }

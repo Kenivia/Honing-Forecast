@@ -67,7 +67,7 @@ export function ChanceToCost(
   }
 
   // }
-  y[n] = 1 - new_failures[new_sorted[0]] / cost_data.length
+  y[n] = ((1 - new_failures[new_sorted[0]] / cost_data.length)*100).toFixed(4)
   // y[n+1] = sorted_indices[0]/budget_data.length
   return y
 }
