@@ -7,17 +7,17 @@ const LABELS = ["Red", "Blue", "Leaps", "Shards", "Oreha", "Gold", "Silver(WIP)"
 
 
 export function MaxrollAverage(hone_counts, chances, weap_costs, armor_costs, weap_unlock, armor_unlock, adv_counts, adv_costs, adv_unlock, adv_data_10_20_juice, adv_data_30_40_juice, adv_data_10_20, adv_data_30_40, adv_hone_strategy) {
-    let [ind_chances, hone_costs, adv_hone_chances, adv_hone_costs] = parser(hone_counts, chances, weap_costs, armor_costs, adv_counts, adv_costs, adv_data_10_20_juice, adv_data_30_40_juice, adv_data_10_20, adv_data_30_40, adv_hone_strategy)
+    let [prob_dist_arr, hone_costs, adv_hone_chances, adv_hone_costs] = parser(hone_counts, chances, weap_costs, armor_costs, adv_counts, adv_costs, adv_data_10_20_juice, adv_data_30_40_juice, adv_data_10_20, adv_data_30_40, adv_hone_strategy)
 
     let unlock = Unlock(hone_counts, weap_unlock, armor_unlock, adv_counts, adv_unlock);
-    return average(ind_chances, hone_costs, unlock, adv_hone_chances, adv_hone_costs)
+    return average(prob_dist_arr, hone_costs, unlock, adv_hone_chances, adv_hone_costs)
 }
 
 export function MaxrollPity(hone_counts, chances, weap_costs, armor_costs, weap_unlock, armor_unlock, adv_counts, adv_costs, adv_unlock, adv_data_10_20_juice, adv_data_30_40_juice, adv_data_10_20, adv_data_30_40, adv_hone_strategy) {
-    let [ind_chances, hone_costs, adv_hone_chances, adv_hone_costs] = parser(hone_counts, chances, weap_costs, armor_costs, adv_counts, adv_costs, adv_data_10_20_juice, adv_data_30_40_juice, adv_data_10_20, adv_data_30_40, adv_hone_strategy)
+    let [prob_dist_arr, hone_costs, adv_hone_chances, adv_hone_costs] = parser(hone_counts, chances, weap_costs, armor_costs, adv_counts, adv_costs, adv_data_10_20_juice, adv_data_30_40_juice, adv_data_10_20, adv_data_30_40, adv_hone_strategy)
 
     let unlock = Unlock(hone_counts, weap_unlock, armor_unlock, adv_counts, adv_unlock);
-    return pity(ind_chances, hone_costs, unlock, adv_hone_chances, adv_hone_costs)
+    return pity(prob_dist_arr, hone_costs, unlock, adv_hone_chances, adv_hone_costs)
 }
 
 async function CostToChanceWrapper(payload) {

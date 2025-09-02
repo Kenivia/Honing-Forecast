@@ -75,9 +75,9 @@ export function myformat(f) {
     }
     
 }
-export function average(ind_chances, costs, unlock, adv_hone_chances, adv_hone_costs) {  
+export function average(prob_dist_arr, costs, unlock, adv_hone_chances, adv_hone_costs) {  
     let average = Array(adv_hone_costs[0].length).fill(0)
-    for (const [piece, chances] of ind_chances.entries()) {
+    for (const [piece, chances] of prob_dist_arr.entries()) {
         for (const [cost_type, cost] of costs.entries()) {
             for (const [tap_1, prob] of chances.entries()) {
                 average[cost_type] += (tap_1 + 1) * prob * cost[piece]
@@ -96,9 +96,9 @@ export function average(ind_chances, costs, unlock, adv_hone_chances, adv_hone_c
     return average
 }
 
-export function pity(ind_chances, costs, unlock, adv_hone_chances, adv_hone_costs) {
+export function pity(prob_dist_arr, costs, unlock, adv_hone_chances, adv_hone_costs) {
     let pity = Array(adv_hone_costs[0].length).fill(0)
-    for (const [piece, chances] of ind_chances.entries()) {
+    for (const [piece, chances] of prob_dist_arr.entries()) {
         for (const [cost_type, cost] of costs.entries()) {
             pity[cost_type] += chances.length * cost[piece]
         }
@@ -238,12 +238,3 @@ export function ParseBottlenecks(inputRange, targetSums) {
 }
 
 
-// // test function 
-// function GenerateData(counts, chances, weap_costs, armor_costs, weap_unlock, armor_unlock,  actual_budgets, labels, time_limit, adv_counts, adv_costs, adv_unlock, adv_data_10_20, adv_data_30_40 , rigged=false){
-//   let [ind_chances, hone_costs, adv_hone_chances, adv_hone_costs] = parser(hone_counts, chances, weap_costs, armor_costs, adv_counts, adv_costs,adv_data_10_20_juice, adv_data_30_40_juice,adv_data_10_20, adv_data_30_40, adv_hone_strategy)
-    
-//   // let adv_hone_costs = JSON.parse(_json_adv_cost)
-//   // return adv_hone_costs[0]
-//   const cost_size = 10;
-//   return MC_data(ind_chances, hone_costs, time_limit, cost_size, counts, weap_unlock, armor_unlock,adv_counts,adv_hone_chances, adv_hone_costs, adv_unlock,)
-// }

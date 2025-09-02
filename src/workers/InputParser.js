@@ -3,7 +3,6 @@ import { assert } from "./Helper.js"
 
 
 
-
 function raw_chance(base, artisan_rate = 1, extra = 0, extra_num = 0) {
     let chances = []
     let artisan = 0
@@ -27,7 +26,7 @@ function raw_chance(base, artisan_rate = 1, extra = 0, extra_num = 0) {
     }
     return chances
 }
-function individual_chance(raw) {
+function probability_distribution(raw) {
     let chances = new Array(raw.length)
     let cum_chance = 1
     for (const [index, element] of raw.entries()) {
@@ -37,18 +36,18 @@ function individual_chance(raw) {
     return chances
 }
 
-export function parser(counts, chances, weap_costs, armor_costs, adv_counts, adv_costs, adv_data_10_20_juice, adv_data_30_40_juice, adv_data_10_20, adv_data_30_40, adv_hone_strategy) {
-    assert(counts.length == 2)
-    assert(counts[0].length == counts[1].length)
+export function parser(normal_counts, normal_chances, weap_costs, armor_costs, adv_counts, adv_costs, adv_data_10_20_juice, adv_data_30_40_juice, adv_data_10_20, adv_data_30_40, adv_hone_strategy) {
+    assert(normal_counts.length == 2)
+    assert(normal_counts[0].length == normal_counts[1].length)
 
-    assert(Math.max(...counts[0]) <= 5)
-    assert(Math.min(...counts[0]) >= 0)
-    assert(Math.max(...counts[1]) <= 1)
-    assert(Math.min(...counts[1]) >= 0)
-    for (const i of counts[0]) {
+    assert(Math.max(...normal_counts[0]) <= 5)
+    assert(Math.min(...normal_counts[0]) >= 0)
+    assert(Math.max(...normal_counts[1]) <= 1)
+    assert(Math.min(...normal_counts[1]) >= 0)
+    for (const i of normal_counts[0]) {
         assert(Number.isInteger(i))
     }
-    for (const i of counts[1]) {
+    for (const i of normal_counts[1]) {
         assert(Number.isInteger(i))
     }
 
@@ -69,7 +68,7 @@ export function parser(counts, chances, weap_costs, armor_costs, adv_counts, adv
     // for (const i of chances) {
     //     assert(i.length == global_width)
     // }
-    let base_rates = chances
+    let base_rates = normal_chances
     // let artisan_rates = chances[1]
     // let extra_rates = chances[2]
     // let extra_counts = chances[3]
@@ -95,15 +94,15 @@ export function parser(counts, chances, weap_costs, armor_costs, adv_counts, adv
 
     let tags = []
 
-    let ind_chances = []
+    let prob_dist_arr = []
     let hone_costs = Array.from({ length: weap_costs.length }, () => new Array())
 
-    for (let piece_type = 0; piece_type < counts.length; piece_type++) {
+    for (let piece_type = 0; piece_type < normal_counts.length; piece_type++) {
         let cur_cost = piece_type == 0 ? armor_costs : weap_costs
         let current_counter = 0
         
-        for (let i = 0; i < counts[piece_type].length;) {
-            if (current_counter >= counts[piece_type][i]) {
+        for (let i = 0; i < normal_counts[piece_type].length;) {
+            if (current_counter >= normal_counts[piece_type][i]) {
                 i++
                 current_counter = 0
                 continue
@@ -114,13 +113,13 @@ export function parser(counts, chances, weap_costs, armor_costs, adv_counts, adv
             // let extra = extra_rates[i]
             // let extra_num = extra_counts[i]
             let raw = raw_chance(base)
-            let ind_chance = individual_chance(raw)
+            let prob_dist = probability_distribution(raw)
 
             for (const cost_type of [...Array(weap_costs.length).keys()]) {
                 hone_costs[cost_type].push(cur_cost[cost_type][i])
             }
 
-            ind_chances.push(ind_chance)
+            prob_dist_arr.push(prob_dist)
             current_counter++
         }
     }
@@ -165,5 +164,5 @@ export function parser(counts, chances, weap_costs, armor_costs, adv_counts, adv
     }
     if (adv_hone_chances.length == 0) { adv_hone_chances = [] }
     if (adv_hone_costs.length == 0) { adv_hone_costs = [] }
-    return [ind_chances, hone_costs, adv_hone_chances, adv_hone_costs, tags]
+    return [prob_dist_arr, hone_costs, adv_hone_chances, adv_hone_costs, tags]
 }

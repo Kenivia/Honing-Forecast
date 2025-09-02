@@ -12,10 +12,9 @@ export async function ChanceToCost(
     // the closest num_average 'th ones and take the average
     const cost_size = 50000;
     const budget_size = 1000;
-    const chunkSize = 1000;
-    let [ind_chances, hone_costs, adv_hone_chances, adv_hone_costs, tags] = parser(hone_counts, chances, weap_costs, armor_costs, adv_counts, adv_costs, adv_data_10_20_juice, adv_data_30_40_juice, adv_data_10_20, adv_data_30_40, adv_hone_strategy)
+    let [prob_dist_arr, hone_costs, adv_hone_chances, adv_hone_costs, tags] = parser(hone_counts, chances, weap_costs, armor_costs, adv_counts, adv_costs, adv_data_10_20_juice, adv_data_30_40_juice, adv_data_10_20, adv_data_30_40, adv_hone_strategy)
 
-    let [cost_data, budget_data] = await MonteCarlosData(cost_size, budget_size, chunkSize, ind_chances, hone_costs, time_limit, hone_counts, weap_unlock, armor_unlock, adv_counts, adv_hone_chances, adv_hone_costs, adv_unlock, tags)
+    let [cost_data, budget_data] = await MonteCarlosData(cost_size, budget_size, prob_dist_arr, hone_costs, time_limit, hone_counts, weap_unlock, armor_unlock, adv_counts, adv_hone_chances, adv_hone_costs, adv_unlock, tags)
     let failure_counts = countFailuresGAS(cost_data, budget_data)
 
     const N = cost_data.length;
@@ -31,16 +30,16 @@ export async function ChanceToCost(
     const best_budget = budget_data[sorted_indices[0]]
     let potential_budgets = [best_budget]
 
-    for (let piece = 0; piece < ind_chances.length; piece++) {
+    for (let piece = 0; piece < prob_dist_arr.length; piece++) {
         let pos_budget = best_budget.slice()
         let neg_budget = best_budget.slice()
-        let not_seen_taps = [Array(ind_chances.length).keys()]
+        let not_seen_taps = [Array(prob_dist_arr.length).keys()]
         not_seen_taps.splice(piece, 1)
         add_cost(pos_budget, hone_costs, piece)
         add_cost(neg_budget, hone_costs, piece, -1)
         potential_budgets.push(pos_budget.slice())
         potential_budgets.push(neg_budget.slice())
-        for (let depth = 1; depth < ind_chances.length - 1; depth++) {
+        for (let depth = 1; depth < prob_dist_arr.length - 1; depth++) {
             let random = Math.floor(Math.random() * not_seen_taps.length)
             add_cost(pos_budget, hone_costs, random)
             add_cost(neg_budget, hone_costs, random, -1)
