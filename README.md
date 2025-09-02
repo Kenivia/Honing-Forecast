@@ -28,9 +28,10 @@ For Chance to Cost, we generate some artificial budgets and see which ones match
 
 ## WIP
 
-- Cache, rework the monte carlos to do individual pieces so they can be cached for other combinations of ticks(and add them when needed)S
+- Add comments
 - Actually implement special honing and juice considerations(Currently the inputs don't do anything)
-- Get silver unlock cost somewhere(currently silever unlock cost is 0 so its labeled as WIP)
+- Get silver unlock cost somewhere(currently silver unlock cost is 0 so its labeled as WIP)
+- Fine tuning for advanced honing(+1 -1 when adjusting best_budget)
 - Incorporate roster income tracking & pretty graphs(long term)
 - UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI
 - Draggable tick boxes, same as maxroll
@@ -42,3 +43,5 @@ For Chance to Cost, we generate some artificial budgets and see which ones match
 - Add a % behind the cursor for desired chances of success
 - Disallow non-number inputs
 - prettify everything everythign is so ugly right now
+~~- Cache, rework the monte carlos to do individual pieces so they can be cached for other combinations of ticks(and add them when needed)S~~
+~~- Migrate to typescript~~
