@@ -1,42 +1,24 @@
-import React, { useState } from "react";
-import { CallWorker } from './worker_setup.js';
-import { clearObjectStore } from "./workers/Cache.js";
-
+import React, { useState } from "react"
+import { CallWorker } from "./worker_setup.js"
+import { clearObjectStore } from "./workers/Cache.js"
 
 // Default export a single React component (drop into src/App.jsx or similar)
 export default function UpgradeCalculatorUI() {
-    const TOP_ROWS = 6;
-    const TOP_COLS = 25;
-    const BOTTOM_ROWS = 6;
-    const BOTTOM_COLS = 4;
+    const TOP_ROWS = 6
+    const TOP_COLS = 25
+    const BOTTOM_ROWS = 6
+    const BOTTOM_COLS = 4
 
-    const INPUT_LABELS = [
-        "Red",
-        "Blue",
-        "Leaps",
-        "Shards",
-        "Oreha",
-        "Gold",
-        "Silver(WIP)",
-        "Red juice",
-        "Blue juice",
-        "Special leaps",
-    ];
+    const INPUT_LABELS = ["Red", "Blue", "Leaps", "Shards", "Oreha", "Gold", "Silver(WIP)", "Red juice", "Blue juice", "Special leaps"]
 
     // Top grid state (6 x 25)
-    const [topGrid, setTopGrid] = useState(() =>
-        Array.from({ length: TOP_ROWS }, () => Array(TOP_COLS).fill(false))
-    );
+    const [topGrid, setTopGrid] = useState(() => Array.from({ length: TOP_ROWS }, () => Array(TOP_COLS).fill(false)))
 
     // Bottom grid state (6 x 4)
-    const [bottomGrid, setBottomGrid] = useState(() =>
-        Array.from({ length: BOTTOM_ROWS }, () => Array(BOTTOM_COLS).fill(false))
-    );
+    const [bottomGrid, setBottomGrid] = useState(() => Array.from({ length: BOTTOM_ROWS }, () => Array(BOTTOM_COLS).fill(false)))
 
     // Inputs column (10 inputs)
-    const [budget_inputs, set_budget_inputs] = useState(() =>
-        Object.fromEntries(INPUT_LABELS.map((l) => [l, ""]))
-    );
+    const [budget_inputs, set_budget_inputs] = useState(() => Object.fromEntries(INPUT_LABELS.map((l) => [l, ""])))
 
     const [desired_chance, set_desired_chance] = useState(() => "")
     const [adv_hone_strategy, set_adv_hone_strategy_change] = useState(() => "No juice")
@@ -44,148 +26,133 @@ export default function UpgradeCalculatorUI() {
     // Toggle helpers
     const toggleTop = (r: number, c: number) => {
         setTopGrid((prev) => {
-            const copy = prev.map((row) => row.slice());
-            copy[r][c] = !copy[r][c];
-            return copy;
-        });
-    };
+            const copy = prev.map((row) => row.slice())
+            copy[r][c] = !copy[r][c]
+            return copy
+        })
+    }
 
     const toggleBottom = (r: number, c: number) => {
         setBottomGrid((prev) => {
-            const copy = prev.map((row) => row.slice());
-            copy[r][c] = !copy[r][c];
-            return copy;
-        });
-    };
+            const copy = prev.map((row) => row.slice())
+            copy[r][c] = !copy[r][c]
+            return copy
+        })
+    }
 
     // Input change
     const onBudgetChange = (label: string, value: string) => {
-        set_budget_inputs((prev) => ({ ...prev, [label]: value }));
-    };
+        set_budget_inputs((prev) => ({ ...prev, [label]: value }))
+    }
 
     const onDesiredChange = (value: string) => {
-        set_desired_chance(() => (value));
-    };
+        set_desired_chance(() => value)
+    }
     const adv_hone_strategy_change = (value: string) => {
-        set_adv_hone_strategy_change(() => (value));
-    };
-
+        set_adv_hone_strategy_change(() => value)
+    }
 
     const clearAll = () => {
-        setTopGrid(Array.from({ length: TOP_ROWS }, () => Array(TOP_COLS).fill(false)));
-        setBottomGrid(Array.from({ length: BOTTOM_ROWS }, () => Array(BOTTOM_COLS).fill(false)));
-        set_budget_inputs(Object.fromEntries(INPUT_LABELS.map((l) => [l, ""])));
-    };
+        setTopGrid(Array.from({ length: TOP_ROWS }, () => Array(TOP_COLS).fill(false)))
+        setBottomGrid(Array.from({ length: BOTTOM_ROWS }, () => Array(BOTTOM_COLS).fill(false)))
+        set_budget_inputs(Object.fromEntries(INPUT_LABELS.map((l) => [l, ""])))
+    }
 
     const fillRandom = () => {
-        setTopGrid(
-            Array.from({ length: TOP_ROWS }, () =>
-                Array.from({ length: TOP_COLS }, () => Math.random() > 0.7)
-            )
-        );
-        setBottomGrid(
-            Array.from({ length: BOTTOM_ROWS }, () =>
-                Array.from({ length: BOTTOM_COLS }, () => Math.random() > 0.7)
-            )
-        );
-    };
+        setTopGrid(Array.from({ length: TOP_ROWS }, () => Array.from({ length: TOP_COLS }, () => Math.random() > 0.7)))
+        setBottomGrid(Array.from({ length: BOTTOM_ROWS }, () => Array.from({ length: BOTTOM_COLS }, () => Math.random() > 0.7)))
+    }
     const fillMy = () => {
-        setTopGrid(
-            Array.from({ length: TOP_ROWS }, () =>
-                Array.from({ length: TOP_COLS }, (_, ind) => ind == 19 || ind == 20)
-            )
-        );
-        setBottomGrid(
-            Array.from({ length: BOTTOM_ROWS }, () =>
-                Array.from({ length: BOTTOM_COLS }, (_, ind) => ind == 2)
-            )
-        );
+        setTopGrid(Array.from({ length: TOP_ROWS }, () => Array.from({ length: TOP_COLS }, (_, ind) => ind == 19 || ind == 20)))
+        setBottomGrid(Array.from({ length: BOTTOM_ROWS }, () => Array.from({ length: BOTTOM_COLS }, (_, ind) => ind == 2)))
         set_budget_inputs({
-            "Red": "431777",
-            "Blue": "1064398",
-            "Leaps": "23748",
-            "Shards": "9010948",
-            "Oreha": "15125",
-            "Gold": "1803792",
+            Red: "431777",
+            Blue: "1064398",
+            Leaps: "23748",
+            Shards: "9010948",
+            Oreha: "15125",
+            Gold: "1803792",
             "Silver(WIP)": "4294967295",
             "Red juice": "0",
             "Blue juice": "0",
-            "Special leaps": "0"
+            "Special leaps": "0",
         }),
             set_desired_chance("69")
-    };
+    }
 
-    const [chance_result, set_chance_result] = useState(null);
-    const [cost_result, set_cost_result] = useState(null);
-    const [CostToChanceBusy, setCostToChanceBusy] = useState(false);
-    const [ChanceToCostBusy, setChanceToCostBusy] = useState(false);
+    const [chance_result, set_chance_result] = useState(null)
+    const [cost_result, set_cost_result] = useState(null)
+    const [CostToChanceBusy, setCostToChanceBusy] = useState(false)
+    const [ChanceToCostBusy, setChanceToCostBusy] = useState(false)
 
     const HandleCallWorker = async (which_one: string) => {
-
         try {
             // build a payload from your UI state, e.g. getStateObject()
             if (which_one == "CostToChance") {
-                setCostToChanceBusy(true);
-            }
-            else {
+                setCostToChanceBusy(true)
+            } else {
                 setChanceToCostBusy(true)
             }
 
-
-            const payload = (which_one == "CostToChance") ? {
-
-                normal_hone_ticks: topGrid,
-                adv_hone_ticks: bottomGrid,
-                budget: budget_inputs
-            } :
-                {
-                    normal_hone_ticks: topGrid,
-                    adv_hone_ticks: bottomGrid,
-                    desired_chance: desired_chance,
-                    adv_hone_strategy: adv_hone_strategy
-                };
-            const res = await CallWorker(payload, which_one);
+            const payload =
+                which_one == "CostToChance"
+                    ? {
+                        normal_hone_ticks: topGrid,
+                        adv_hone_ticks: bottomGrid,
+                        budget: budget_inputs,
+                    }
+                    : {
+                        normal_hone_ticks: topGrid,
+                        adv_hone_ticks: bottomGrid,
+                        desired_chance: desired_chance,
+                        adv_hone_strategy: adv_hone_strategy,
+                    }
+            const res = await CallWorker(payload, which_one)
             if (which_one == "CostToChance") {
-                set_chance_result(res);
-            }
-            else {
+                set_chance_result(res)
+            } else {
                 set_cost_result(res)
             }
         } catch (err) {
-            console.error('Worker error', err);
+            console.error("Worker error", err)
             if (which_one == "CostToChance") {
                 set_chance_result({ error: String(err) })
-            }
-            else {
+            } else {
                 set_cost_result({ error: String(err) })
             }
-        }
-        finally {
+        } finally {
             if (which_one == "CostToChance") {
-                setCostToChanceBusy(false);
-            }
-            else {
+                setCostToChanceBusy(false)
+            } else {
                 setChanceToCostBusy(false)
             }
         }
-    };
-
+    }
 
     // Simple compact styles (so you don't need Tailwind to see a usable layout)
     const styles = {
         container: { fontFamily: "system-ui, Arial, sans-serif", padding: 16, maxWidth: 1100, margin: "0 auto" } as React.CSSProperties,
         heading: { marginBottom: 12 } as React.CSSProperties,
         gridOuter: { display: "flex", gap: 16, alignItems: "flex-start" } as React.CSSProperties,
-        topGridWrapper: { overflowX: "auto" as React.CSSProperties['overflowX'] },
+        topGridWrapper: { overflowX: "auto" as React.CSSProperties["overflowX"] },
         grid: (cols: number) => ({ display: "grid", gridTemplateColumns: `repeat(${cols}, 28px)`, gap: 6 } as React.CSSProperties),
         smallCheckbox: { width: 18, height: 18 } as React.CSSProperties,
         bottomGridWrapper: { marginTop: 12 } as React.CSSProperties,
-        inputsWrapper: { marginLeft: 12, minWidth: 220, display: "flex", flexDirection: "column" as React.CSSProperties['flexDirection'] },
+        inputsWrapper: { marginLeft: 12, minWidth: 220, display: "flex", flexDirection: "column" as React.CSSProperties["flexDirection"] },
         inputRow: { display: "flex", alignItems: "center", gap: 8, marginBottom: 8 } as React.CSSProperties,
-        labelCol: { width: 100, textAlign: "right" as React.CSSProperties['textAlign'], paddingRight: 8 },
-        controls: { marginTop: 14, display: "flex", gap: 8, flexWrap: "wrap" as React.CSSProperties['flexWrap'] },
-        textarea: { width: "100%", height: 240, marginTop: 12, fontFamily: "monospace", fontSize: 12, padding: 8, borderRadius: 6, border: "1px solid" } as React.CSSProperties,
-    };
+        labelCol: { width: 100, textAlign: "right" as React.CSSProperties["textAlign"], paddingRight: 8 },
+        controls: { marginTop: 14, display: "flex", gap: 8, flexWrap: "wrap" as React.CSSProperties["flexWrap"] },
+        textarea: {
+            width: "100%",
+            height: 240,
+            marginTop: 12,
+            fontFamily: "monospace",
+            fontSize: 12,
+            padding: 8,
+            borderRadius: 6,
+            border: "1px solid",
+        } as React.CSSProperties,
+    }
 
     return (
         <div style={styles.container}>
@@ -199,17 +166,12 @@ export default function UpgradeCalculatorUI() {
                         <div style={styles.grid(TOP_COLS)}>
                             {topGrid.flatMap((row, r) =>
                                 row.map((checked, c) => {
-                                    const key = `t-${r}-${c}`;
+                                    const key = `t-${r}-${c}`
                                     return (
                                         <label key={key} title={`r${r} c${c}`} style={{ display: "inline-block", textAlign: "center" }}>
-                                            <input
-                                                type="checkbox"
-                                                checked={checked}
-                                                onChange={() => toggleTop(r, c)}
-                                                style={styles.smallCheckbox}
-                                            />
+                                            <input type="checkbox" checked={checked} onChange={() => toggleTop(r, c)} style={styles.smallCheckbox} />
                                         </label>
-                                    );
+                                    )
                                 })
                             )}
                         </div>
@@ -225,10 +187,7 @@ export default function UpgradeCalculatorUI() {
                                     </label>
                                 ))
                             )}
-
                         </div>
-
-
                     </div>
                     <button onClick={fillMy}>Fill My custom</button>
                     <button onClick={fillRandom}>Fill random (demo)</button>
@@ -241,11 +200,14 @@ export default function UpgradeCalculatorUI() {
                     >
                         <option value="No juice">No juice</option>
                         <option value="Full juice on grace">Full juice on grace</option>
-
                     </select>
-                    <button onClick={() => { clearObjectStore(); }}>Clear Cache</button>
-
-
+                    <button
+                        onClick={() => {
+                            clearObjectStore()
+                        }}
+                    >
+                        Clear Cache
+                    </button>
                 </div>
                 <div style={styles.inputsWrapper}>
                     <div style={{ fontWeight: 600, marginBottom: 8 }}>Chance to Cost</div>
@@ -259,13 +221,13 @@ export default function UpgradeCalculatorUI() {
                             placeholder="0"
                             style={{ flex: 1, padding: "6px 8px", borderRadius: 6, border: "1px solid #ccc" }}
                         />
-
                     </div>
                     <div style={styles.controls}>
-                        <button onClick={() => HandleCallWorker("ChanceToCost")} disabled={ChanceToCostBusy}>{ChanceToCostBusy ? 'Running…' : 'Find estimated cost'}</button>
+                        <button onClick={() => HandleCallWorker("ChanceToCost")} disabled={ChanceToCostBusy}>
+                            {ChanceToCostBusy ? "Running…" : "Find estimated cost"}
+                        </button>
                     </div>
-                    <pre>{cost_result ? JSON.stringify(cost_result, null, 2) : 'No result yet'}</pre>
-
+                    <pre>{cost_result ? JSON.stringify(cost_result, null, 2) : "No result yet"}</pre>
                 </div>
                 <div style={styles.inputsWrapper}>
                     <div style={{ fontWeight: 600, marginBottom: 8 }}>Cost to Chance</div>
@@ -283,16 +245,22 @@ export default function UpgradeCalculatorUI() {
                     ))}
 
                     <div style={styles.controls}>
-                        <button onClick={() => HandleCallWorker("CostToChance")} disabled={CostToChanceBusy}>{CostToChanceBusy ? 'Running…' : 'Find chance of success'}</button>
-                        <pre>{chance_result ? chance_result.chance + "% chance of success\n" + JSON.stringify(chance_result.reason, null, 2) + "\nRun time: " + chance_result.run_time + "s" : 'No result yet'}</pre>
-
+                        <button onClick={() => HandleCallWorker("CostToChance")} disabled={CostToChanceBusy}>
+                            {CostToChanceBusy ? "Running…" : "Find chance of success"}
+                        </button>
+                        <pre>
+                            {chance_result
+                                ? chance_result.chance +
+                                "% chance of success\n" +
+                                JSON.stringify(chance_result.reason, null, 2) +
+                                "\nRun time: " +
+                                chance_result.run_time +
+                                "s"
+                                : "No result yet"}
+                        </pre>
                     </div>
-
                 </div>
-
-
             </div>
-
         </div>
-    );
+    )
 }

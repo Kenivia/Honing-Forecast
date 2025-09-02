@@ -1,7 +1,4 @@
-
 import { assert } from "./Helper.js"
-
-
 
 function raw_chance(base: number, artisan_rate = 1, extra = 0, extra_num = 0): number[] {
     let chances = []
@@ -26,7 +23,7 @@ function raw_chance(base: number, artisan_rate = 1, extra = 0, extra_num = 0): n
     }
     return chances
 }
-function probability_distribution(raw: number[]):number[] {
+function probability_distribution(raw: number[]): number[] {
     let chances = new Array(raw.length)
     let cum_chance = 1
     for (const [index, element] of raw.entries()) {
@@ -36,17 +33,19 @@ function probability_distribution(raw: number[]):number[] {
     return chances
 }
 
-export function parser(normal_counts:number[][],
- normal_chances: number[],
- weap_costs: number[][],
- armor_costs: number[][],
- adv_counts: number[][],
- adv_costs: number[][],
- adv_data_10_20_juice: number[][],
- adv_data_30_40_juice: number[][],
- adv_data_10_20: number[][],
- adv_data_30_40: number[][],
- adv_hone_strategy: string) :[number[][], number[][], number[][][], number[][][] , string[]] {
+export function parser(
+    normal_counts: number[][],
+    normal_chances: number[],
+    weap_costs: number[][],
+    armor_costs: number[][],
+    adv_counts: number[][],
+    adv_costs: number[][],
+    adv_data_10_20_juice: number[][],
+    adv_data_30_40_juice: number[][],
+    adv_data_10_20: number[][],
+    adv_data_30_40: number[][],
+    adv_hone_strategy: string
+): [number[][], number[][], number[][][], number[][][], string[]] {
     assert(normal_counts.length == 2)
     assert(normal_counts[0].length == normal_counts[1].length)
 
@@ -110,14 +109,14 @@ export function parser(normal_counts:number[][],
     for (let piece_type = 0; piece_type < normal_counts.length; piece_type++) {
         let cur_cost = piece_type == 0 ? armor_costs : weap_costs
         let current_counter = 0
-        
-        for (let i = 0; i < normal_counts[piece_type].length;) {
+
+        for (let i = 0; i < normal_counts[piece_type].length; ) {
             if (current_counter >= normal_counts[piece_type][i]) {
                 i++
                 current_counter = 0
                 continue
             }
-            tags.push("Normal" + (piece_type == 0 ? " Armor " : " Weapon ") + " +"+ i.toString() + "#"+current_counter.toString())
+            tags.push("Normal" + (piece_type == 0 ? " Armor " : " Weapon ") + " +" + i.toString() + "#" + current_counter.toString())
             let base = base_rates[i]
             // let artisan_rate = artisan_rates[i]
             // let extra = extra_rates[i]
@@ -141,30 +140,30 @@ export function parser(normal_counts:number[][],
 
     for (let wep_or_arm = 0; wep_or_arm < adv_counts.length; wep_or_arm++) {
         let current_counter = 0
-        for (let i = 0; i < adv_counts[wep_or_arm].length;) {
+        for (let i = 0; i < adv_counts[wep_or_arm].length; ) {
             if (current_counter >= adv_counts[wep_or_arm][i]) {
                 i++
                 current_counter = 0
                 continue
             }
-            tags.push("Adv" + (wep_or_arm == 0 ? " Armor " : " Weapon ") + " +"+ (i*10).toString() +"#"+ current_counter.toString())
-            let relevant_data;
+            tags.push("Adv" + (wep_or_arm == 0 ? " Armor " : " Weapon ") + " +" + (i * 10).toString() + "#" + current_counter.toString())
+            let relevant_data
             if (adv_hone_strategy == "Juice on grace") {
                 relevant_data = i <= 1 ? adv_data_10_20_juice : adv_data_30_40_juice
-            }
-            else {
+            } else {
                 relevant_data = i <= 1 ? adv_data_10_20 : adv_data_30_40
             }
             let this_chances = Array(relevant_data.length).fill(0)
-            let sum_taps = (relevant_data.map(row => row[2])).reduce((acc, x) => acc + x, 0)
-            let this_cost = Array.from({ length: 9 }, () => new Array(this_chances.length).fill(0));
+            let sum_taps = relevant_data.map((row) => row[2]).reduce((acc, x) => acc + x, 0)
+            let this_cost = Array.from({ length: 9 }, () => new Array(this_chances.length).fill(0))
             for (let row = 0; row < this_chances.length; row++) {
                 this_chances[row] = relevant_data[row][2] / sum_taps
                 for (let cost_type = 0; cost_type < 7; cost_type++) {
                     this_cost[cost_type][row] = adv_costs[cost_type][2 * i + (1 - wep_or_arm)] * relevant_data[row][0]
                 }
                 for (let cost_type = 7; cost_type < 9; cost_type++) {
-                    this_cost[cost_type][row] = adv_costs[cost_type][2 * i + (1 - wep_or_arm)] * relevant_data[row][1] * (adv_hone_strategy == "Juice on grace" ? 1 : 0)
+                    this_cost[cost_type][row] =
+                        adv_costs[cost_type][2 * i + (1 - wep_or_arm)] * relevant_data[row][1] * (adv_hone_strategy == "Juice on grace" ? 1 : 0)
                 }
             }
             adv_hone_chances.push(this_chances)
@@ -172,7 +171,11 @@ export function parser(normal_counts:number[][],
             current_counter++
         }
     }
-    if (adv_hone_chances.length == 0) { adv_hone_chances = [] }
-    if (adv_hone_costs.length == 0) { adv_hone_costs = [] }
+    if (adv_hone_chances.length == 0) {
+        adv_hone_chances = []
+    }
+    if (adv_hone_costs.length == 0) {
+        adv_hone_costs = []
+    }
     return [prob_dist_arr, hone_costs, adv_hone_chances, adv_hone_costs, tags]
 }
