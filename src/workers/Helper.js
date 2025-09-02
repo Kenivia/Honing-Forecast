@@ -176,7 +176,6 @@ export function _countFailuresTranspose(cost_data, budget_data) {
       }
     }
   }
-
   return count;
 }
 
