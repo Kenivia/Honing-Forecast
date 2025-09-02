@@ -3,11 +3,27 @@ import { MonteCarlosData } from "./MonteCarlos.js"
 import { myformat } from "./Helper.js"
 
 
-export async function CostToChance(hone_counts, chances, weap_costs, armor_costs, weap_unlock, armor_unlock, actual_budgets, labels, time_limit, adv_counts, adv_costs, adv_unlock, adv_data_10_20_juice, adv_data_30_40_juice, adv_data_10_20, adv_data_30_40, adv_hone_strategy) {
+export async function CostToChance(
+    hone_counts: number[][],
+ chances: number[],
+ weap_costs: number[][],
+ armor_costs: number[][],
+ weap_unlock: number[][],
+ armor_unlock: number[][],
+ actual_budgets: number[][],
+ labels: string[],
+ adv_counts: number[][],
+ adv_costs: number[][],
+ adv_unlock: number[][],
+ adv_data_10_20_juice: number[][],
+ adv_data_30_40_juice: number[][],
+ adv_data_10_20: number[][],
+ adv_data_30_40: number[][],
+ adv_hone_strategy : string): Promise<[number[], string[]]> {
     let [prob_dist_arr, hone_costs, adv_hone_chances, adv_hone_costs,tags] = parser(hone_counts, chances, weap_costs, armor_costs, adv_counts, adv_costs, adv_data_10_20_juice, adv_data_30_40_juice, adv_data_10_20, adv_data_30_40, adv_hone_strategy)
 
 
-    let [cost_data, _] = await MonteCarlosData(100000, 0, prob_dist_arr, hone_costs, time_limit, hone_counts, weap_unlock, armor_unlock, adv_counts, adv_hone_chances, adv_hone_costs, adv_unlock, tags)
+    let [cost_data, _] = await MonteCarlosData(100000, 0, prob_dist_arr, hone_costs, hone_counts, weap_unlock, armor_unlock, adv_counts, adv_hone_chances, adv_hone_costs, adv_unlock, tags)
 
     let cumulative_pie = Array(actual_budgets[0].length).fill(0)
     let fail_counter = []
@@ -38,7 +54,7 @@ export async function CostToChance(hone_counts, chances, weap_costs, armor_costs
         let displayed = false
         for (let z of failed_indices) {
             let spread = myformat(i[z] / cost_data.length)
-            if (spread >= 0.1 || !displayed) {
+            if (Number(spread) >= 0.1 || !displayed) {
                 this_failed.push(labels[z] + "(" + spread.toString() + "%)")
             }
             displayed = true

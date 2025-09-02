@@ -3,7 +3,7 @@ import { assert } from "./Helper.js"
 
 
 
-function raw_chance(base, artisan_rate = 1, extra = 0, extra_num = 0) {
+function raw_chance(base: number, artisan_rate = 1, extra = 0, extra_num = 0): number[] {
     let chances = []
     let artisan = 0
     let current_chance = base
@@ -26,7 +26,7 @@ function raw_chance(base, artisan_rate = 1, extra = 0, extra_num = 0) {
     }
     return chances
 }
-function probability_distribution(raw) {
+function probability_distribution(raw: number[]):number[] {
     let chances = new Array(raw.length)
     let cum_chance = 1
     for (const [index, element] of raw.entries()) {
@@ -36,7 +36,17 @@ function probability_distribution(raw) {
     return chances
 }
 
-export function parser(normal_counts, normal_chances, weap_costs, armor_costs, adv_counts, adv_costs, adv_data_10_20_juice, adv_data_30_40_juice, adv_data_10_20, adv_data_30_40, adv_hone_strategy) {
+export function parser(normal_counts:number[][],
+ normal_chances: number[],
+ weap_costs: number[][],
+ armor_costs: number[][],
+ adv_counts: number[][],
+ adv_costs: number[][],
+ adv_data_10_20_juice: number[][],
+ adv_data_30_40_juice: number[][],
+ adv_data_10_20: number[][],
+ adv_data_30_40: number[][],
+ adv_hone_strategy: string) :[number[][], number[][], number[][][], number[][][] , string[]] {
     assert(normal_counts.length == 2)
     assert(normal_counts[0].length == normal_counts[1].length)
 
@@ -74,7 +84,7 @@ export function parser(normal_counts, normal_chances, weap_costs, armor_costs, a
     // let extra_counts = chances[3]
 
     for (const i of base_rates) {
-        assert(0 < i <= 1)
+        assert(0 < i && i <= 1)
     }
     // for (const i of artisan_rates) {
     //     assert(0 < i)

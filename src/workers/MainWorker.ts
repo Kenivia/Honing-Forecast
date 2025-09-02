@@ -1,26 +1,27 @@
-import { assert, ticks_to_counts, Unlock, average, pity } from "./Helper.js"
+import { assert, ticks_to_counts} from "./Helper.js"
 import { CostToChance } from "./CostToChance.js"
-import { parser } from "./InputParser.js"
 import { ChanceToCost } from "./ChanceToCost.js";
 
 const LABELS = ["Red", "Blue", "Leaps", "Shards", "Oreha", "Gold", "Silver(WIP)"]
 
 
-export function MaxrollAverage(hone_counts, chances, weap_costs, armor_costs, weap_unlock, armor_unlock, adv_counts, adv_costs, adv_unlock, adv_data_10_20_juice, adv_data_30_40_juice, adv_data_10_20, adv_data_30_40, adv_hone_strategy) {
-    let [prob_dist_arr, hone_costs, adv_hone_chances, adv_hone_costs] = parser(hone_counts, chances, weap_costs, armor_costs, adv_counts, adv_costs, adv_data_10_20_juice, adv_data_30_40_juice, adv_data_10_20, adv_data_30_40, adv_hone_strategy)
+// export function MaxrollAverage(hone_counts, chances, weap_costs, armor_costs, weap_unlock, armor_unlock, adv_counts, adv_costs, adv_unlock, adv_data_10_20_juice, adv_data_30_40_juice, adv_data_10_20, adv_data_30_40, adv_hone_strategy) {
+//     let [prob_dist_arr, hone_costs, adv_hone_chances, adv_hone_costs] = parser(hone_counts, chances, weap_costs, armor_costs, adv_counts, adv_costs, adv_data_10_20_juice, adv_data_30_40_juice, adv_data_10_20, adv_data_30_40, adv_hone_strategy)
 
-    let unlock = Unlock(hone_counts, weap_unlock, armor_unlock, adv_counts, adv_unlock);
-    return average(prob_dist_arr, hone_costs, unlock, adv_hone_chances, adv_hone_costs)
-}
+//     let unlock = Unlock(hone_counts, weap_unlock, armor_unlock, adv_counts, adv_unlock);
+//     return average(prob_dist_arr, hone_costs, unlock, adv_hone_chances, adv_hone_costs)
+// }
 
-export function MaxrollPity(hone_counts, chances, weap_costs, armor_costs, weap_unlock, armor_unlock, adv_counts, adv_costs, adv_unlock, adv_data_10_20_juice, adv_data_30_40_juice, adv_data_10_20, adv_data_30_40, adv_hone_strategy) {
-    let [prob_dist_arr, hone_costs, adv_hone_chances, adv_hone_costs] = parser(hone_counts, chances, weap_costs, armor_costs, adv_counts, adv_costs, adv_data_10_20_juice, adv_data_30_40_juice, adv_data_10_20, adv_data_30_40, adv_hone_strategy)
+// export function MaxrollPity(hone_counts, chances, weap_costs, armor_costs, weap_unlock, armor_unlock, adv_counts, adv_costs, adv_unlock, adv_data_10_20_juice, adv_data_30_40_juice, adv_data_10_20, adv_data_30_40, adv_hone_strategy) {
+//     let [prob_dist_arr, hone_costs, adv_hone_chances, adv_hone_costs] = parser(hone_counts, chances, weap_costs, armor_costs, adv_counts, adv_costs, adv_data_10_20_juice, adv_data_30_40_juice, adv_data_10_20, adv_data_30_40, adv_hone_strategy)
 
-    let unlock = Unlock(hone_counts, weap_unlock, armor_unlock, adv_counts, adv_unlock);
-    return pity(prob_dist_arr, hone_costs, unlock, adv_hone_chances, adv_hone_costs)
-}
+//     let unlock = Unlock(hone_counts, weap_unlock, armor_unlock, adv_counts, adv_unlock);
+//     return pity(prob_dist_arr, hone_costs, unlock, adv_hone_chances, adv_hone_costs)
+// }
 
-async function CostToChanceWrapper(payload) {
+async function CostToChanceWrapper(payload: { normal_hone_ticks: boolean[][]; 
+    adv_hone_ticks: boolean[][];
+     budget: string[]; }) : Promise<{ [key: string]: number | string; }> {
     const normal_hone_ticks = payload.normal_hone_ticks
     const adv_hone_ticks = payload.adv_hone_ticks
     const budget = payload.budget
@@ -55,15 +56,14 @@ async function CostToChanceWrapper(payload) {
         normal_hone_armor_cost,
         normal_hone_weapon_unlock,
         normal_hone_armor_unlock,
-        Array.from(LABELS, x => [budget[x]]),
+        Array.from(LABELS, x => [Number(budget[x])]),
         LABELS,
-        10,
         ticks_to_counts(adv_hone_ticks),
         adv_hone_cost,
         adv_hone_unlock, adv_data_10_20_juice,
         adv_data_30_40_juice,
         adv_data_10_20,
-        adv_data_30_40, "No juice", true
+        adv_data_30_40, "No juice"
     )
     let formatted_chance = (chances[0] * 100).toFixed(2)
     let formatted_reason = reasons[0]
@@ -71,7 +71,10 @@ async function CostToChanceWrapper(payload) {
 
 }
 
-async function ChanceToCostWrapper(payload) {
+async function ChanceToCostWrapper(payload: { normal_hone_ticks: boolean[][]; 
+    adv_hone_ticks: boolean[][];
+     desired_chance: string; 
+     adv_hone_strategy: string; }) : Promise<{ [key: string]: number | string; }> {
     const normal_hone_ticks = payload.normal_hone_ticks
     const adv_hone_ticks = payload.adv_hone_ticks
     const desired_chance = payload.desired_chance
@@ -106,16 +109,14 @@ async function ChanceToCostWrapper(payload) {
         normal_hone_armor_cost,
         normal_hone_weapon_unlock,
         normal_hone_armor_unlock,
-        10,
-        desired_chance / 100,
+        Number(desired_chance) / 100,
         ticks_to_counts(adv_hone_ticks),
         adv_hone_cost,
         adv_hone_unlock, adv_data_10_20_juice,
         adv_data_30_40_juice,
         adv_data_10_20,
         adv_data_30_40,
-        adv_hone_strategy,
-        true
+        adv_hone_strategy
     )
     const this_labels = LABELS.concat(["Red juice", "Blue juice", "Est. Probability"])
 

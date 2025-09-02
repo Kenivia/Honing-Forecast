@@ -1,6 +1,6 @@
-import { useState, } from "react";
-import { CallWorker } from './worker_setup';
-import { clearObjectStore } from "./workers/Cache";
+import React, { useState } from "react";
+import { CallWorker } from './worker_setup.js';
+import { clearObjectStore } from "./workers/Cache.js";
 
 
 // Default export a single React component (drop into src/App.jsx or similar)
@@ -42,7 +42,7 @@ export default function UpgradeCalculatorUI() {
     const [adv_hone_strategy, set_adv_hone_strategy_change] = useState(() => "No juice")
 
     // Toggle helpers
-    const toggleTop = (r, c) => {
+    const toggleTop = (r: number, c: number) => {
         setTopGrid((prev) => {
             const copy = prev.map((row) => row.slice());
             copy[r][c] = !copy[r][c];
@@ -50,7 +50,7 @@ export default function UpgradeCalculatorUI() {
         });
     };
 
-    const toggleBottom = (r, c) => {
+    const toggleBottom = (r: number, c: number) => {
         setBottomGrid((prev) => {
             const copy = prev.map((row) => row.slice());
             copy[r][c] = !copy[r][c];
@@ -59,14 +59,14 @@ export default function UpgradeCalculatorUI() {
     };
 
     // Input change
-    const onBudgetChange = (label, value) => {
+    const onBudgetChange = (label: string, value: string) => {
         set_budget_inputs((prev) => ({ ...prev, [label]: value }));
     };
 
-    const onDesiredChange = (value) => {
+    const onDesiredChange = (value: string) => {
         set_desired_chance(() => (value));
     };
-    const adv_hone_strategy_change = (value) => {
+    const adv_hone_strategy_change = (value: string) => {
         set_adv_hone_strategy_change(() => (value));
     };
 
@@ -101,16 +101,16 @@ export default function UpgradeCalculatorUI() {
             )
         );
         set_budget_inputs({
-            "Red": 431777,
-            "Blue": 1064398,
-            "Leaps": 23748,
-            "Shards": 9010948,
-            "Oreha": 15125,
-            "Gold": 1803792,
-            "Silver(WIP)": 4294967295,
-            "Red juice": 0,
-            "Blue juice": 0,
-            "Special leaps": 0
+            "Red": "431777",
+            "Blue": "1064398",
+            "Leaps": "23748",
+            "Shards": "9010948",
+            "Oreha": "15125",
+            "Gold": "1803792",
+            "Silver(WIP)": "4294967295",
+            "Red juice": "0",
+            "Blue juice": "0",
+            "Special leaps": "0"
         }),
             set_desired_chance("69")
     };
@@ -120,7 +120,7 @@ export default function UpgradeCalculatorUI() {
     const [CostToChanceBusy, setCostToChanceBusy] = useState(false);
     const [ChanceToCostBusy, setChanceToCostBusy] = useState(false);
 
-    const HandleCallWorker = async (which_one) => {
+    const HandleCallWorker = async (which_one: string) => {
 
         try {
             // build a payload from your UI state, e.g. getStateObject()
@@ -173,18 +173,18 @@ export default function UpgradeCalculatorUI() {
 
     // Simple compact styles (so you don't need Tailwind to see a usable layout)
     const styles = {
-        container: { fontFamily: "system-ui, Arial, sans-serif", padding: 16, maxWidth: 1100, margin: "0 auto" },
-        heading: { marginBottom: 12 },
-        gridOuter: { display: "flex", gap: 16, alignItems: "flex-start" },
-        topGridWrapper: { overflowX: "auto", },
-        grid: (cols) => ({ display: "grid", gridTemplateColumns: `repeat(${cols}, 28px)`, gap: 6 }),
-        smallCheckbox: { width: 18, height: 18 },
-        bottomGridWrapper: { marginTop: 12, },
-        inputsWrapper: { marginLeft: 12, minWidth: 220, display: "flex", flexDirection: "column" },
-        inputRow: { display: "flex", alignItems: "center", gap: 8, marginBottom: 8 },
-        labelCol: { width: 100, textAlign: "right", paddingRight: 8 },
-        controls: { marginTop: 14, display: "flex", gap: 8, flexWrap: "wrap" },
-        textarea: { width: "100%", height: 240, marginTop: 12, fontFamily: "monospace", fontSize: 12, padding: 8, borderRadius: 6, border: "1px solid" },
+        container: { fontFamily: "system-ui, Arial, sans-serif", padding: 16, maxWidth: 1100, margin: "0 auto" } as React.CSSProperties,
+        heading: { marginBottom: 12 } as React.CSSProperties,
+        gridOuter: { display: "flex", gap: 16, alignItems: "flex-start" } as React.CSSProperties,
+        topGridWrapper: { overflowX: "auto" as React.CSSProperties['overflowX'] },
+        grid: (cols: number) => ({ display: "grid", gridTemplateColumns: `repeat(${cols}, 28px)`, gap: 6 } as React.CSSProperties),
+        smallCheckbox: { width: 18, height: 18 } as React.CSSProperties,
+        bottomGridWrapper: { marginTop: 12 } as React.CSSProperties,
+        inputsWrapper: { marginLeft: 12, minWidth: 220, display: "flex", flexDirection: "column" as React.CSSProperties['flexDirection'] },
+        inputRow: { display: "flex", alignItems: "center", gap: 8, marginBottom: 8 } as React.CSSProperties,
+        labelCol: { width: 100, textAlign: "right" as React.CSSProperties['textAlign'], paddingRight: 8 },
+        controls: { marginTop: 14, display: "flex", gap: 8, flexWrap: "wrap" as React.CSSProperties['flexWrap'] },
+        textarea: { width: "100%", height: 240, marginTop: 12, fontFamily: "monospace", fontSize: 12, padding: 8, borderRadius: 6, border: "1px solid" } as React.CSSProperties,
     };
 
     return (
@@ -236,14 +236,14 @@ export default function UpgradeCalculatorUI() {
                     <select
                         id="my-dropdown"
                         value={adv_hone_strategy}
-                        onChange={adv_hone_strategy_change}
+                        onChange={(e) => adv_hone_strategy_change(e.target.value)}
                         className="p-2 border rounded"
                     >
                         <option value="No juice">No juice</option>
                         <option value="Full juice on grace">Full juice on grace</option>
 
                     </select>
-                    <button onClick={clearObjectStore}>Clear Cache</button>
+                    <button onClick={() => { clearObjectStore(); }}>Clear Cache</button>
 
 
                 </div>

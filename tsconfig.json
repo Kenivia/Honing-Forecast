@@ -1,0 +1,25 @@
+{
+  "compilerOptions": {
+    "target": "ES2020",
+  "module": "Node16",
+  "moduleResolution": "node16",
+    "lib": ["DOM", "ES2020"],
+    "jsx": "react-jsx",            // or "react" for older JSX
+    "allowJs": true,
+    "checkJs": false,             // set true if you want TS to check .js files
+    "outDir": "dist",
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "strict": false,              // start false; raise to true later
+    "noImplicitAny": false,       // make true as you convert modules
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "baseUrl": ".",
+    "paths": {                    // optional - map aliases to folders
+      "@/*": ["src/*"],
+    }
+  },
+  "include": ["src/**/*", "vite.config.ts"],
+  "exclude": ["node_modules", "dist"]
+}

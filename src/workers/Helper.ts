@@ -3,7 +3,7 @@
 
 
 
-export function ticks_to_counts(ticks){
+export function ticks_to_counts(ticks: boolean[][],){
     let out = Array.from({ length: 2 }, () => new Array(ticks[0].length).fill(0));
     for (let i = 0; i < ticks[0].length; i++){
         out[0][i] = (ticks[0][i] ? 1:0)+(ticks[1][i] ? 1:0)+(ticks[2][i] ? 1:0)+(ticks[3][i] ? 1:0)+(ticks[4][i] ? 1:0)
@@ -15,7 +15,7 @@ export function ticks_to_counts(ticks){
 
 
 
-export function shuffle(array) {
+export function shuffle(array: Uint32Array<ArrayBuffer>[]) {
   let currentIndex = array.length;
 
   // While there remain elements to shuffle...
@@ -31,12 +31,12 @@ export function shuffle(array) {
   }
 }
 
-export function assert(condition) {
+export function assert(condition: boolean) {
     if (!condition) {
         throw "Assertion failed"  
     }
 }
-export function add_cost(a, b, index, multiplier=1) {
+export function add_cost(a: Uint32Array<ArrayBuffer>, b: number[][], index:number, multiplier=1) {
   var n = Math.min(a.length,b.length);
   var i = n;
   while (i--) {
@@ -61,7 +61,7 @@ export function add_cost(a, b, index, multiplier=1) {
 //     i = newArr.findIndex((el) => random <= el)
 //     return items[i]
 // }
-export function myformat(f) {
+export function myformat(f:number):string {
     f *= 100
     let place = 0
     while (true){
@@ -75,46 +75,46 @@ export function myformat(f) {
     }
     
 }
-export function average(prob_dist_arr, costs, unlock, adv_hone_chances, adv_hone_costs) {  
-    let average = Array(adv_hone_costs[0].length).fill(0)
-    for (const [piece, chances] of prob_dist_arr.entries()) {
-        for (const [cost_type, cost] of costs.entries()) {
-            for (const [tap_1, prob] of chances.entries()) {
-                average[cost_type] += (tap_1 + 1) * prob * cost[piece]
-            }
-        }
-    }
-    for (const [piece, chances] of adv_hone_chances.entries()) {
-        for (const [cost_type, _cost] of adv_hone_costs[piece].entries()) {
-            for (const [tap_1, prob] of chances.entries()) {
-                average[cost_type] += prob * adv_hone_costs[piece][cost_type][tap_1]
-            }
-        }
-    }
-    average[3] += unlock[0]
-    average[6] += unlock[1]
-    return average
-}
+// export function average(prob_dist_arr, costs, unlock, adv_hone_chances, adv_hone_costs) {  
+//     let average = Array(adv_hone_costs[0].length).fill(0)
+//     for (const [piece, chances] of prob_dist_arr.entries()) {
+//         for (const [cost_type, cost] of costs.entries()) {
+//             for (const [tap_1, prob] of chances.entries()) {
+//                 average[cost_type] += (tap_1 + 1) * prob * cost[piece]
+//             }
+//         }
+//     }
+//     for (const [piece, chances] of adv_hone_chances.entries()) {
+//         for (const [cost_type, _cost] of adv_hone_costs[piece].entries()) {
+//             for (const [tap_1, prob] of chances.entries()) {
+//                 average[cost_type] += prob * adv_hone_costs[piece][cost_type][tap_1]
+//             }
+//         }
+//     }
+//     average[3] += unlock[0]
+//     average[6] += unlock[1]
+//     return average
+// }
 
-export function pity(prob_dist_arr, costs, unlock, adv_hone_chances, adv_hone_costs) {
-    let pity = Array(adv_hone_costs[0].length).fill(0)
-    for (const [piece, chances] of prob_dist_arr.entries()) {
-        for (const [cost_type, cost] of costs.entries()) {
-            pity[cost_type] += chances.length * cost[piece]
-        }
-    }
-    for (const [piece, _chances] of adv_hone_chances.entries()) {
-        for (const [cost_type, _cost] of adv_hone_costs[piece].entries()) {
-              pity[cost_type] +=  adv_hone_costs[piece][cost_type][adv_hone_costs[piece][cost_type].length-1]
-        }
-    }
-    pity[3] += unlock[0]
-    pity[6] += unlock[1]
-    return pity
-}
+// export function pity(prob_dist_arr, costs, unlock, adv_hone_chances, adv_hone_costs) {
+//     let pity = Array(adv_hone_costs[0].length).fill(0)
+//     for (const [piece, chances] of prob_dist_arr.entries()) {
+//         for (const [cost_type, cost] of costs.entries()) {
+//             pity[cost_type] += chances.length * cost[piece]
+//         }
+//     }
+//     for (const [piece, _chances] of adv_hone_chances.entries()) {
+//         for (const [cost_type, _cost] of adv_hone_costs[piece].entries()) {
+//               pity[cost_type] +=  adv_hone_costs[piece][cost_type][adv_hone_costs[piece][cost_type].length-1]
+//         }
+//     }
+//     pity[3] += unlock[0]
+//     pity[6] += unlock[1]
+//     return pity
+// }
 
 // vibe coded
-export function countFailuresGAS(cost_data, budget_data) {
+export function countFailuresGAS(cost_data:Uint32Array<ArrayBuffer>[], budget_data:Uint32Array<ArrayBuffer>[]):number[] {
   const N = cost_data.length;
   const M = budget_data.length;
   if (N === 0 || M === 0) return new Array(M).fill(0);
@@ -150,7 +150,7 @@ export function countFailuresGAS(cost_data, budget_data) {
 
 
 
-export function Unlock(hone_counts, weap_unlock, armor_unlock, adv_counts=null, adv_unlock=null) {
+export function Unlock(hone_counts:number[][], weap_unlock:number[][], armor_unlock:number[][], adv_counts=null, adv_unlock=null):[number, number] {
     let shard_unlock = 0
     let silver_unlock = 0
     for (const [cost_type, element] of weap_unlock.entries()) {
@@ -202,39 +202,39 @@ export function Unlock(hone_counts, weap_unlock, armor_unlock, adv_counts=null, 
 
 
 
-// vibe coded
-export function ParseBottlenecks(inputRange, targetSums) {
-  var raws  = inputRange .map(r => (typeof r[0]==='string') ? r[0] : '');
-  var sums  = targetSums.map(r => parseFloat(r[0]) || 0);
+// // vibe coded
+// export function ParseBottlenecks(inputRange: any[], targetSums: any[]) {
+//   var raws  = inputRange .map(r => (typeof r[0]==='string') ? r[0] : '');
+//   var sums  = targetSums.map(r => parseFloat(r[0]) || 0);
   
-  var categories = ['Red','Blue','Leaps','Shards','Oreha','Gold','Silver(WIP)'];
+//   var categories = ['Red','Blue','Leaps','Shards','Oreha','Gold','Silver(WIP)'];
   
-  function parseOne(str) {
-    var row = categories.map( () =>0);
-    str.split(',').forEach(item => {
-      var m = item.match(/^\s*([^()]+)\((\d+)%\)/);
-      if (m) {
-        var name = m[1].trim(),
-            pct  = parseInt(m[2],10),
-            i    = categories.indexOf(name);
-        if (i>=0) row[i] = pct;
-      }
-    });
-    return row;
-  }
+//   function parseOne(str) {
+//     var row = categories.map( () =>0);
+//     str.split(',').forEach(item => {
+//       var m = item.match(/^\s*([^()]+)\((\d+)%\)/);
+//       if (m) {
+//         var name = m[1].trim(),
+//             pct  = parseInt(m[2],10),
+//             i    = categories.indexOf(name);
+//         if (i>=0) row[i] = pct;
+//       }
+//     });
+//     return row;
+//   }
   
-  return raws.map(function(str, idx) {
-    var row   = parseOne(str),
-        total = row.reduce((a,b)=>a+b, 0),
-        target= sums[idx];
-    if (total>0 && target!==0) {
-      var factor = target/total;
-      return row.map(v=> v * factor);
-    } else {
-      // if no data or zero target, return zeros
-      return categories.map(()=>"");
-    }
-  });
-}
+//   return raws.map(function(str, idx) {
+//     var row   = parseOne(str),
+//         total = row.reduce((a,b)=>a+b, 0),
+//         target= sums[idx];
+//     if (total>0 && target!==0) {
+//       var factor = target/total;
+//       return row.map(v=> v * factor);
+//     } else {
+//       // if no data or zero target, return zeros
+//       return categories.map(()=>"");
+//     }
+//   });
+// }
 
 

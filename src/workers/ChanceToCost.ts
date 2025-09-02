@@ -4,7 +4,21 @@ import { countFailuresGAS, add_cost } from "./Helper.js"
 
 
 export async function ChanceToCost(
-    hone_counts, chances, weap_costs, armor_costs, weap_unlock, armor_unlock, time_limit, p, adv_counts, adv_costs, adv_unlock, adv_data_10_20_juice, adv_data_30_40_juice, adv_data_10_20, adv_data_30_40, adv_hone_strategy) {
+    hone_counts : number[][],
+     chances : number[],
+ weap_costs: number[][],
+ armor_costs: number[][],
+ weap_unlock: number[][],
+ armor_unlock: number[][],
+ p : number,
+ adv_counts: number[][],
+ adv_costs: number[][],
+ adv_unlock: number[][],
+ adv_data_10_20_juice: number[][],
+ adv_data_30_40_juice: number[][],
+ adv_data_10_20: number[][],
+ adv_data_30_40: number[][],
+ adv_hone_strategy:string) {
     // p = success rate
 
     // the idea is to generate a bunch of random budgets via MC_data and also generate
@@ -14,7 +28,7 @@ export async function ChanceToCost(
     const budget_size = 1000;
     let [prob_dist_arr, hone_costs, adv_hone_chances, adv_hone_costs, tags] = parser(hone_counts, chances, weap_costs, armor_costs, adv_counts, adv_costs, adv_data_10_20_juice, adv_data_30_40_juice, adv_data_10_20, adv_data_30_40, adv_hone_strategy)
 
-    let [cost_data, budget_data] = await MonteCarlosData(cost_size, budget_size, prob_dist_arr, hone_costs, time_limit, hone_counts, weap_unlock, armor_unlock, adv_counts, adv_hone_chances, adv_hone_costs, adv_unlock, tags)
+    let [cost_data, budget_data] = await MonteCarlosData(cost_size, budget_size, prob_dist_arr, hone_costs, hone_counts, weap_unlock, armor_unlock, adv_counts, adv_hone_chances, adv_hone_costs, adv_unlock, tags)
     let failure_counts = countFailuresGAS(cost_data, budget_data)
 
     const N = cost_data.length;
