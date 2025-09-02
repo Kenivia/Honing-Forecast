@@ -47,7 +47,7 @@ async function CostToChanceWrapper(payload) {
 
     } = JSON.parse(text)
     // const result = normal_hone_chances
-    
+
     const [chances, reasons] = CostToChance(
         ticks_to_counts(normal_hone_ticks),
         normal_hone_chances,
@@ -82,7 +82,7 @@ async function ChanceToCostWrapper(payload) {
     // For large numeric arrays prefer to get an ArrayBuffer and use typed arrays
 
 
-    const resp = await  fetch("/Honing-forecast/data.json")
+    const resp = await fetch("/Honing-forecast/data.json")
     const text = await resp.text();
     const { normal_hone_chances,
         normal_hone_weapon_cost,
@@ -120,7 +120,7 @@ async function ChanceToCostWrapper(payload) {
     const this_labels = LABELS.concat(["Red juice", "Blue juice", "Est. Probability"])
 
 
-    return Object.fromEntries(this_labels.map((l,ind) => [l, out[ind]]))
+    return Object.fromEntries(this_labels.map((l, ind) => [l, out[ind]]))
 
 }
 self.addEventListener('message', async (ev) => {

@@ -35,8 +35,8 @@ export default function UpgradeCalculatorUI() {
         Object.fromEntries(INPUT_LABELS.map((l) => [l, ""]))
     );
 
-    const [desired_chance, set_desired_chance] = useState(() => "") 
-    const [adv_hone_strategy, set_adv_hone_strategy_change] = useState(() =>"No juice")
+    const [desired_chance, set_desired_chance] = useState(() => "")
+    const [adv_hone_strategy, set_adv_hone_strategy_change] = useState(() => "No juice")
 
     // Toggle helpers
     const toggleTop = (r, c) => {
@@ -61,10 +61,10 @@ export default function UpgradeCalculatorUI() {
     };
 
     const onDesiredChange = (value) => {
-        set_desired_chance(() => (value ));
+        set_desired_chance(() => (value));
     };
     const adv_hone_strategy_change = (value) => {
-        set_adv_hone_strategy_change(() => (  value ));
+        set_adv_hone_strategy_change(() => (value));
     };
 
 
@@ -98,7 +98,7 @@ export default function UpgradeCalculatorUI() {
             )
         );
         set_budget_inputs({ "Red": 431777, "Blue": 1064398, "Leaps": 23748, "Shards": 9010948, "Oreha": 15125, "Gold": 1803792, "Silver(WIP)": 4294967295, "Red juice": 0, "Blue juice": 0, "Special leaps": 0 }),
-        set_desired_chance("69")
+            set_desired_chance("69")
     };
 
     const [chance_result, set_chance_result] = useState(null);
@@ -107,7 +107,7 @@ export default function UpgradeCalculatorUI() {
     const [ChanceToCostBusy, setChanceToCostBusy] = useState(false);
 
     const HandleCallWorker = async (which_one) => {
-        
+
         try {
             // build a payload from your UI state, e.g. getStateObject()
             if (which_one == "CostToChance") {
@@ -116,10 +116,10 @@ export default function UpgradeCalculatorUI() {
             else {
                 setChanceToCostBusy(true)
             }
-            
+
 
             const payload = (which_one == "CostToChance") ? {
-                
+
                 normal_hone_ticks: topGrid,
                 adv_hone_ticks: bottomGrid,
                 budget: budget_inputs
@@ -244,12 +244,12 @@ export default function UpgradeCalculatorUI() {
                             placeholder="0"
                             style={{ flex: 1, padding: "6px 8px", borderRadius: 6, border: "1px solid #ccc" }}
                         />
-                        
+
                     </div>
                     <div style={styles.controls}>
-                            <button onClick={() => HandleCallWorker("ChanceToCost")} disabled={ChanceToCostBusy}>{ChanceToCostBusy ? 'Running…' : 'Find estimated cost'}</button>
-                        </div>
-                    <pre>{cost_result ? JSON.stringify(cost_result, null, 2)  : 'No result yet'}</pre>
+                        <button onClick={() => HandleCallWorker("ChanceToCost")} disabled={ChanceToCostBusy}>{ChanceToCostBusy ? 'Running…' : 'Find estimated cost'}</button>
+                    </div>
+                    <pre>{cost_result ? JSON.stringify(cost_result, null, 2) : 'No result yet'}</pre>
 
                 </div>
                 <div style={styles.inputsWrapper}>
@@ -274,7 +274,7 @@ export default function UpgradeCalculatorUI() {
                     </div>
 
                 </div>
-                
+
 
             </div>
 

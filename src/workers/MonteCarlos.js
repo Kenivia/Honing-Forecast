@@ -121,8 +121,8 @@ export function LoadorComputeData(cost_size, budget_size, chunkSize, ind_chances
         const budget_data = MC_data(ind_chances, hone_costs, time_limit, budget_size, hone_counts, weap_unlock, armor_unlock, adv_counts, adv_hone_chances, adv_hone_costs, adv_unlock, true)
         return [cost_data, budget_data]
     }
-    else{return [cost_data, []]}
+    else { return [cost_data, []] }
 
-    
+
 }
 

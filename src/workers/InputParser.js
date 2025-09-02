@@ -1,10 +1,10 @@
 
-import {assert } from "./Helper.js"
+import { assert } from "./Helper.js"
 
 
 
 
-function raw_chance(base, artisan_rate=1, extra=0, extra_num=0) {
+function raw_chance(base, artisan_rate = 1, extra = 0, extra_num = 0) {
     let chances = []
     let artisan = 0
     let current_chance = base
@@ -37,7 +37,7 @@ function individual_chance(raw) {
     return chances
 }
 
-export function parser(counts, chances, weap_costs, armor_costs, adv_counts, adv_costs, adv_data_10_20_juice, adv_data_30_40_juice,adv_data_10_20, adv_data_30_40, adv_hone_strategy) {
+export function parser(counts, chances, weap_costs, armor_costs, adv_counts, adv_costs, adv_data_10_20_juice, adv_data_30_40_juice, adv_data_10_20, adv_data_30_40, adv_hone_strategy) {
     assert(counts.length == 2)
     assert(counts[0].length == counts[1].length)
 
@@ -51,7 +51,7 @@ export function parser(counts, chances, weap_costs, armor_costs, adv_counts, adv
     for (const i of counts[1]) {
         assert(Number.isInteger(i))
     }
-    
+
     assert(Math.max(...adv_counts[0]) <= 5)
     assert(Math.min(...adv_counts[0]) >= 0)
     assert(Math.max(...adv_counts[1]) <= 1)
@@ -62,7 +62,7 @@ export function parser(counts, chances, weap_costs, armor_costs, adv_counts, adv
     for (const i of adv_counts[1]) {
         assert(Number.isInteger(i))
     }
-    
+
     // let global_width = counts[0].length
 
     // assert(chances.length == 4)
@@ -73,7 +73,7 @@ export function parser(counts, chances, weap_costs, armor_costs, adv_counts, adv
     // let artisan_rates = chances[1]
     // let extra_rates = chances[2]
     // let extra_counts = chances[3]
-    
+
     for (const i of base_rates) {
         assert(0 < i <= 1)
     }
@@ -89,17 +89,17 @@ export function parser(counts, chances, weap_costs, armor_costs, adv_counts, adv
     // for (const i of extra_counts) {
     //     assert(0 <= i)
     // }
-    
-    assert(adv_hone_strategy == "Juice on grace"  || adv_hone_strategy == "No juice" )
+
+    assert(adv_hone_strategy == "Juice on grace" || adv_hone_strategy == "No juice")
     // won't check the costs because they shouldn't be touched
-    
+
     let ind_chances = []
-    let hone_costs = Array.from({length:weap_costs.length}, () => new Array())
+    let hone_costs = Array.from({ length: weap_costs.length }, () => new Array())
 
     for (let piece_type = 0; piece_type < counts.length; piece_type++) {
         let cur_cost = piece_type == 0 ? armor_costs : weap_costs
         let current_counter = 0
-        for (let i = 0; i < counts[piece_type].length; ) {
+        for (let i = 0; i < counts[piece_type].length;) {
             if (current_counter >= counts[piece_type][i]) {
                 i++
                 current_counter = 0
@@ -128,37 +128,37 @@ export function parser(counts, chances, weap_costs, armor_costs, adv_counts, adv
 
     for (let wep_or_arm = 0; wep_or_arm < adv_counts.length; wep_or_arm++) {
         let current_counter = 0
-        for (let i = 0; i < adv_counts[wep_or_arm].length; ) {
+        for (let i = 0; i < adv_counts[wep_or_arm].length;) {
             if (current_counter >= adv_counts[wep_or_arm][i]) {
                 i++
                 current_counter = 0
                 continue
             }
             let relevant_data;
-            if (adv_hone_strategy == "Juice on grace" ){
-              relevant_data = i <= 1 ? adv_data_10_20_juice : adv_data_30_40_juice
+            if (adv_hone_strategy == "Juice on grace") {
+                relevant_data = i <= 1 ? adv_data_10_20_juice : adv_data_30_40_juice
             }
-            else{
-              relevant_data = i <= 1 ? adv_data_10_20 : adv_data_30_40
+            else {
+                relevant_data = i <= 1 ? adv_data_10_20 : adv_data_30_40
             }
             let this_chances = Array(relevant_data.length).fill(0)
-            let sum_taps =  (relevant_data.map(row => row[2])).reduce((acc, x) => acc + x, 0)
-            let this_cost = Array.from({length: 9}, () => new Array(this_chances.length).fill(0));
-            for (let row=0; row < this_chances.length; row++){ 
-              this_chances[row] = relevant_data[row][2]/sum_taps
-              for (let cost_type = 0; cost_type <7; cost_type ++) {
-                this_cost[cost_type][row] = adv_costs[cost_type][2*i+(1-wep_or_arm)] * relevant_data[row][0]
-              }
-              for (let cost_type = 7; cost_type <9; cost_type ++) {
-                this_cost[cost_type][row] = adv_costs[cost_type][2*i+(1-wep_or_arm) ] * relevant_data[row][1] * (adv_hone_strategy == "Juice on grace" ? 1: 0)
-              }
+            let sum_taps = (relevant_data.map(row => row[2])).reduce((acc, x) => acc + x, 0)
+            let this_cost = Array.from({ length: 9 }, () => new Array(this_chances.length).fill(0));
+            for (let row = 0; row < this_chances.length; row++) {
+                this_chances[row] = relevant_data[row][2] / sum_taps
+                for (let cost_type = 0; cost_type < 7; cost_type++) {
+                    this_cost[cost_type][row] = adv_costs[cost_type][2 * i + (1 - wep_or_arm)] * relevant_data[row][0]
+                }
+                for (let cost_type = 7; cost_type < 9; cost_type++) {
+                    this_cost[cost_type][row] = adv_costs[cost_type][2 * i + (1 - wep_or_arm)] * relevant_data[row][1] * (adv_hone_strategy == "Juice on grace" ? 1 : 0)
+                }
             }
             adv_hone_chances.push(this_chances)
             adv_hone_costs.push(this_cost)
             current_counter++
         }
     }
-    if (adv_hone_chances.length == 0){ adv_hone_chances = [[0]]}
-    if (adv_hone_costs.length == 0){ adv_hone_costs = [[[0],[0],[0],[0],[0],[0],[0],[0],[0]]]}
-    return [ind_chances, hone_costs,adv_hone_chances,adv_hone_costs]
+    if (adv_hone_chances.length == 0) { adv_hone_chances = [[0]] }
+    if (adv_hone_costs.length == 0) { adv_hone_costs = [[[0], [0], [0], [0], [0], [0], [0], [0], [0]]] }
+    return [ind_chances, hone_costs, adv_hone_chances, adv_hone_costs]
 }
