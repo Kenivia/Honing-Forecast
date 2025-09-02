@@ -1,9 +1,9 @@
 import { parser } from "./InputParser.js"
-import { LoadorComputeData } from "./MonteCarlos.js"
+import { MonteCarlosData } from "./MonteCarlos.js"
 import { countFailuresGAS, add_cost } from "./Helper.js"
 
 
-export function ChanceToCost(
+export async function ChanceToCost(
     hone_counts, chances, weap_costs, armor_costs, weap_unlock, armor_unlock, time_limit, p, adv_counts, adv_costs, adv_unlock, adv_data_10_20_juice, adv_data_30_40_juice, adv_data_10_20, adv_data_30_40, adv_hone_strategy) {
     // p = success rate
 
@@ -13,9 +13,9 @@ export function ChanceToCost(
     const cost_size = 50000;
     const budget_size = 1000;
     const chunkSize = 1000;
-    let [ind_chances, hone_costs, adv_hone_chances, adv_hone_costs] = parser(hone_counts, chances, weap_costs, armor_costs, adv_counts, adv_costs, adv_data_10_20_juice, adv_data_30_40_juice, adv_data_10_20, adv_data_30_40, adv_hone_strategy)
+    let [ind_chances, hone_costs, adv_hone_chances, adv_hone_costs, tags] = parser(hone_counts, chances, weap_costs, armor_costs, adv_counts, adv_costs, adv_data_10_20_juice, adv_data_30_40_juice, adv_data_10_20, adv_data_30_40, adv_hone_strategy)
 
-    let [cost_data, budget_data] = LoadorComputeData(cost_size, budget_size, chunkSize, ind_chances, hone_costs, time_limit, hone_counts, weap_unlock, armor_unlock, adv_counts, adv_hone_chances, adv_hone_costs, adv_unlock)
+    let [cost_data, budget_data] = await MonteCarlosData(cost_size, budget_size, chunkSize, ind_chances, hone_costs, time_limit, hone_counts, weap_unlock, armor_unlock, adv_counts, adv_hone_chances, adv_hone_costs, adv_unlock, tags)
     let failure_counts = countFailuresGAS(cost_data, budget_data)
 
     const N = cost_data.length;

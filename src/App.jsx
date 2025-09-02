@@ -1,5 +1,8 @@
 import { useState, } from "react";
 import { CallWorker } from './worker_setup';
+import { clearObjectStore } from "./workers/Cache";
+
+
 // Default export a single React component (drop into src/App.jsx or similar)
 export default function UpgradeCalculatorUI() {
     const TOP_ROWS = 6;
@@ -97,7 +100,18 @@ export default function UpgradeCalculatorUI() {
                 Array.from({ length: BOTTOM_COLS }, (_, ind) => ind == 2)
             )
         );
-        set_budget_inputs({ "Red": 431777, "Blue": 1064398, "Leaps": 23748, "Shards": 9010948, "Oreha": 15125, "Gold": 1803792, "Silver(WIP)": 4294967295, "Red juice": 0, "Blue juice": 0, "Special leaps": 0 }),
+        set_budget_inputs({
+            "Red": 431777,
+            "Blue": 1064398,
+            "Leaps": 23748,
+            "Shards": 9010948,
+            "Oreha": 15125,
+            "Gold": 1803792,
+            "Silver(WIP)": 4294967295,
+            "Red juice": 0,
+            "Blue juice": 0,
+            "Special leaps": 0
+        }),
             set_desired_chance("69")
     };
 
@@ -229,6 +243,7 @@ export default function UpgradeCalculatorUI() {
                         <option value="Full juice on grace">Full juice on grace</option>
 
                     </select>
+                    <button onClick={clearObjectStore}>Clear Cache</button>
 
 
                 </div>

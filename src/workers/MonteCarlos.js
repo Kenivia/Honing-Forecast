@@ -1,9 +1,10 @@
 
 import { shuffle, Unlock } from "./Helper.js"
+import { flatten2DUint32, reconstruct1DTo2D, saveTypedArray, loadTypedArray } from "./Cache.js"
 
 
 
-function normal_hone_blob(ind_chances, costs, _time_limit, count_limit, counts, weap_unlock, armor_unlock, adv_counts, adv_hone_chances, adv_hone_costs, adv_unlock, rigged, shuffle_or_not, piece) {
+function normal_hone_data(ind_chances, costs, _time_limit, count_limit, counts, weap_unlock, armor_unlock, adv_counts, adv_hone_chances, adv_hone_costs, adv_unlock, rigged, shuffle_or_not, piece) {
     let out = Array.from({ length: count_limit }, () => new Uint32Array(7).fill(0))
 
     let cum_weights = ind_chances[piece].map(
@@ -39,7 +40,7 @@ function normal_hone_blob(ind_chances, costs, _time_limit, count_limit, counts, 
 }
 
 
-function adv_hone_blob(ind_chances, costs, _time_limit, count_limit, counts, weap_unlock, armor_unlock, adv_counts, adv_hone_chances, adv_hone_costs, adv_unlock, rigged, shuffle_or_not, piece) {
+function adv_hone_data(ind_chances, costs, _time_limit, count_limit, counts, weap_unlock, armor_unlock, adv_counts, adv_hone_chances, adv_hone_costs, adv_unlock, rigged, shuffle_or_not, piece) {
 
     let out = Array.from({ length: count_limit }, () => new Uint32Array(9).fill(0))
 
@@ -76,11 +77,35 @@ function adv_hone_blob(ind_chances, costs, _time_limit, count_limit, counts, wea
 }
 
 
-export function MC_data(ind_chances, costs, _time_limit, count_limit, counts, weap_unlock, armor_unlock, adv_counts, adv_hone_chances, adv_hone_costs, adv_unlock, rigged = false) {
+async function data_wrapper(hone_type, ind_chances, costs, _time_limit, count_limit, counts, weap_unlock, armor_unlock, adv_counts, adv_hone_chances, adv_hone_costs, adv_unlock, tags, rigged, piece) {
+
+    const key = hone_type + tags[piece + (hone_type == "Adv" ? ind_chances.length : 0)] + rigged.toString() + count_limit.toString()
+
+    const loaded = await loadTypedArray(key)
+    if (loaded == null) {
+        let out;
+        if (hone_type == "Normal") {
+            out = normal_hone_data(ind_chances, costs, _time_limit, count_limit, counts, weap_unlock, armor_unlock, adv_counts, adv_hone_chances, adv_hone_costs, adv_unlock, rigged, !rigged, piece)
+        }
+        else if (hone_type == "Adv") {
+            out = adv_hone_data(ind_chances, costs, _time_limit, count_limit, counts, weap_unlock, armor_unlock, adv_counts, adv_hone_chances, adv_hone_costs, adv_unlock, rigged, !rigged, piece)
+        }
+        else { throw new Error("Invalid hone type " + hone_type) }
+        saveTypedArray(key, flatten2DUint32(out))
+        return out
+    }
+    else {
+        return reconstruct1DTo2D(loaded.arr, count_limit)
+    }
+
+}
+
+
+export async function _mc_data(ind_chances, costs, _time_limit, count_limit, counts, weap_unlock, armor_unlock, adv_counts, adv_hone_chances, adv_hone_costs, adv_unlock, tags, rigged = false) {
 
     let cost_data = Array.from({ length: count_limit }, () => new Uint32Array(9).fill(0))
     for (let piece = 0; piece < ind_chances.length; piece++) {
-        let this_cost = normal_hone_blob(ind_chances, costs, _time_limit, count_limit, counts, weap_unlock, armor_unlock, adv_counts, adv_hone_chances, adv_hone_costs, adv_unlock, rigged, !rigged, piece)
+        let this_cost = await data_wrapper("Normal", ind_chances, costs, _time_limit, count_limit, counts, weap_unlock, armor_unlock, adv_counts, adv_hone_chances, adv_hone_costs, adv_unlock, tags, rigged, piece)
         for (let i = 0; i < this_cost.length; i++) {
             for (let j = 0; j < this_cost[0].length; j++) {
                 cost_data[i][j] += this_cost[i][j]
@@ -89,7 +114,7 @@ export function MC_data(ind_chances, costs, _time_limit, count_limit, counts, we
     }
 
     for (let piece = 0; piece < adv_hone_chances.length; piece++) {
-        let this_cost = adv_hone_blob(ind_chances, costs, _time_limit, count_limit, counts, weap_unlock, armor_unlock, adv_counts, adv_hone_chances, adv_hone_costs, adv_unlock, rigged, !rigged, piece)
+        let this_cost = await data_wrapper("Adv", ind_chances, costs, _time_limit, count_limit, counts, weap_unlock, armor_unlock, adv_counts, adv_hone_chances, adv_hone_costs, adv_unlock, tags, rigged, piece)
         for (let i = 0; i < this_cost.length; i++) {
             for (let j = 0; j < this_cost[0].length; j++) {
                 cost_data[i][j] += this_cost[i][j]
@@ -108,17 +133,16 @@ export function MC_data(ind_chances, costs, _time_limit, count_limit, counts, we
 
 
 
-// vibe coded
-export function LoadorComputeData(cost_size, budget_size, chunkSize, ind_chances, hone_costs, time_limit, hone_counts, weap_unlock, armor_unlock, adv_counts, adv_hone_chances, adv_hone_costs, adv_unlock) {
+export async function MonteCarlosData(cost_size, budget_size, chunkSize, ind_chances, hone_costs, time_limit, hone_counts, weap_unlock, armor_unlock, adv_counts, adv_hone_chances, adv_hone_costs, adv_unlock, tags) {
 
 
     // build all keys we expect in cache (use chunk index i so each chunk has its own key)
 
 
     // compute fresh
-    const cost_data = MC_data(ind_chances, hone_costs, time_limit, cost_size, hone_counts, weap_unlock, armor_unlock, adv_counts, adv_hone_chances, adv_hone_costs, adv_unlock,);
+    const cost_data = await _mc_data(ind_chances, hone_costs, time_limit, cost_size, hone_counts, weap_unlock, armor_unlock, adv_counts, adv_hone_chances, adv_hone_costs, adv_unlock, tags);
     if (budget_size > 0) {
-        const budget_data = MC_data(ind_chances, hone_costs, time_limit, budget_size, hone_counts, weap_unlock, armor_unlock, adv_counts, adv_hone_chances, adv_hone_costs, adv_unlock, true)
+        const budget_data = await _mc_data(ind_chances, hone_costs, time_limit, budget_size, hone_counts, weap_unlock, armor_unlock, adv_counts, adv_hone_chances, adv_hone_costs, adv_unlock, tags, true)
         return [cost_data, budget_data]
     }
     else { return [cost_data, []] }

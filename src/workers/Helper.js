@@ -1,3 +1,8 @@
+
+
+
+
+
 export function ticks_to_counts(ticks){
     let out = Array.from({ length: 2 }, () => new Array(ticks[0].length).fill(0));
     for (let i = 0; i < ticks[0].length; i++){
@@ -110,28 +115,37 @@ export function pity(ind_chances, costs, unlock, adv_hone_chances, adv_hone_cost
 
 // vibe coded
 export function countFailuresGAS(cost_data, budget_data) {
-  var N = cost_data.length;
-  var M = budget_data.length;
-  var count = new Array(M).fill(0);
-  for (var m = 0; m < N; m++) {
-    var c = cost_data[m];
-    // cache cost values into locals
-    var c0 = c[0], c1 = c[1], c2 = c[2], c3 = c[3], c4 = c[4], c5 = c[5], c6 = c[6];
+  const N = cost_data.length;
+  const M = budget_data.length;
+  if (N === 0 || M === 0) return new Array(M).fill(0);
 
-    // inner loop over budgets
-    for (var j = 0; j < M; j++) {
-      var b = budget_data[j];
-      // cache budget values into locals (reduces repeated b[...] lookups)
-      var b0 = b[0], b1 = b[1], b2 = b[2], b3 = b[3], b4 = b[4], b5 = b[5], b6 = b[6];
-      // short-circuit comparisons (left-to-right)
-      if (c0 > b0 || c1 > b1 || c2 > b2 || c3 > b3 || c4 > b4 || c5 > b5 || c6 > b6) {
-        count[j]++;
+  const count = new Uint32Array(M); // faster numeric storage
+  // assume n === 7
+  for (let m = 0; m < N; m++) {
+    const c = cost_data[m];
+    // cache each cost value into local variables (avoids repeated array indexing)
+    const c0 = c[0], c1 = c[1], c2 = c[2], c3 = c[3], c4 = c[4], c5 = c[5], c6 = c[6];
+
+    for (let i = 0; i < M; i++) {
+      const b = budget_data[i];
+      // inline/unrolled comparison with a single boolean expression and no inner loop
+      if (
+        c0 > b[0] ||
+        c1 > b[1] ||
+        c2 > b[2] ||
+        c3 > b[3] ||
+        c4 > b[4] ||
+        c5 > b[5] ||
+        c6 > b[6]
+      ) {
+        count[i]++;
       }
     }
   }
-  return count;
-}
 
+  // return plain array (optional)
+  return Array.from(count);
+}
 
 
 

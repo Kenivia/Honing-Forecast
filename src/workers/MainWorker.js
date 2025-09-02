@@ -48,7 +48,7 @@ async function CostToChanceWrapper(payload) {
     } = JSON.parse(text)
     // const result = normal_hone_chances
 
-    const [chances, reasons] = CostToChance(
+    const [chances, reasons] = await CostToChance(
         ticks_to_counts(normal_hone_ticks),
         normal_hone_chances,
         normal_hone_weapon_cost,
@@ -99,7 +99,7 @@ async function ChanceToCostWrapper(payload) {
 
     } = JSON.parse(text)
     // const result = normal_hone_chances
-    const out = ChanceToCost(
+    const out = await ChanceToCost(
         ticks_to_counts(normal_hone_ticks),
         normal_hone_chances,
         normal_hone_weapon_cost,

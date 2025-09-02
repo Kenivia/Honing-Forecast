@@ -93,18 +93,22 @@ export function parser(counts, chances, weap_costs, armor_costs, adv_counts, adv
     assert(adv_hone_strategy == "Juice on grace" || adv_hone_strategy == "No juice")
     // won't check the costs because they shouldn't be touched
 
+    let tags = []
+
     let ind_chances = []
     let hone_costs = Array.from({ length: weap_costs.length }, () => new Array())
 
     for (let piece_type = 0; piece_type < counts.length; piece_type++) {
         let cur_cost = piece_type == 0 ? armor_costs : weap_costs
         let current_counter = 0
+        
         for (let i = 0; i < counts[piece_type].length;) {
             if (current_counter >= counts[piece_type][i]) {
                 i++
                 current_counter = 0
                 continue
             }
+            tags.push("Normal" + (piece_type == 0 ? " Armor " : " Weapon ") + " +"+ i.toString())
             let base = base_rates[i]
             // let artisan_rate = artisan_rates[i]
             // let extra = extra_rates[i]
@@ -134,6 +138,7 @@ export function parser(counts, chances, weap_costs, armor_costs, adv_counts, adv
                 current_counter = 0
                 continue
             }
+            tags.push("Adv" + (wep_or_arm == 0 ? " Armor " : " Weapon ") + " +"+ (i*10).toString())
             let relevant_data;
             if (adv_hone_strategy == "Juice on grace") {
                 relevant_data = i <= 1 ? adv_data_10_20_juice : adv_data_30_40_juice
@@ -160,5 +165,5 @@ export function parser(counts, chances, weap_costs, armor_costs, adv_counts, adv
     }
     if (adv_hone_chances.length == 0) { adv_hone_chances = [[0]] }
     if (adv_hone_costs.length == 0) { adv_hone_costs = [[[0], [0], [0], [0], [0], [0], [0], [0], [0]]] }
-    return [ind_chances, hone_costs, adv_hone_chances, adv_hone_costs]
+    return [ind_chances, hone_costs, adv_hone_chances, adv_hone_costs, tags]
 }
