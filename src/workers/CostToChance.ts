@@ -86,7 +86,7 @@ export async function CostToChance(
         if (Math.max(...i) == 0) {
             failed_labels.push("None")
         } else {
-            failed_labels.push(this_failed.join(", "))
+            failed_labels.push(this_failed.join("\n"))
         }
     }
     return [cumulative_pie, failed_labels]

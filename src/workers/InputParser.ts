@@ -146,8 +146,8 @@ export function parser(
                 current_counter = 0
                 continue
             }
-            tags.push("Adv" + (wep_or_arm == 0 ? " Armor " : " Weapon ") + " +" + (i * 10).toString() + "#" + current_counter.toString())
-            let relevant_data
+            tags.push("Adv" + (wep_or_arm == 0 ? " Armor " : " Weapon ") + " +" + (i * 10).toString() + adv_hone_strategy + "#" + current_counter.toString())
+            let relevant_data: number[][]
             if (adv_hone_strategy == "Juice on grace") {
                 relevant_data = i <= 1 ? adv_data_10_20_juice : adv_data_30_40_juice
             } else {

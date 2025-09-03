@@ -1,4 +1,4 @@
-# Honing forecast(working name)
+# Honing Forecast
 
 The [Maxroll upgrade calculator](https://maxroll.gg/lost-ark/upgrade-calculator) gives us a rough estimate on how much mats we need to pass certain upgrades, however it only gives the best, average and worst scenarios - this calculator works out everything in between.
 
@@ -28,20 +28,23 @@ For Chance to Cost, we generate some artificial budgets and see which ones match
 
 ## WIP
 
+- WRITE TESTS
 - Add comments
 - Actually implement special honing and juice considerations(Currently the inputs don't do anything)
 - Get silver unlock cost somewhere(currently silver unlock cost is 0 so its labeled as WIP)
 - Fine tuning for advanced honing(+1 -1 when adjusting best_budget)
 - Incorporate roster income tracking & pretty graphs(long term)
 - UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI
-- Draggable tick boxes, same as maxroll
 - Interactable cells for input & output, like spreadsheet
-- Labels for normal honing (+1,+2...), Labels for advanced honing, Labels for pieces
-- Move advanced honing to align with normal honing, move everything else down
 - Icons/color code materials & pieces
 - Align buttons & input fields so the text dont go into the input boxes
-- Add a % behind the cursor for desired chances of success
-- Disallow non-number inputs
+- make the pecent sign follow the input number?(right now it just trails on the right)
+- stricter input control
 - prettify everything everythign is so ugly right now
+~~- Add a % behind the cursor for desired chances of success~~
+~~- Disallow non-number inputs~~
+~~- Draggable tick boxes, same as maxroll~~
+~~- Labels for normal honing (+1,+2...), Labels for advanced honing, Labels for pieces~~
+~~- Move advanced honing to align with normal honing, move everything else down~~
 ~~- Cache, rework the monte carlos to do individual pieces so they can be cached for other combinations of ticks(and add them when needed)S~~
 ~~- Migrate to typescript~~
