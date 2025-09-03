@@ -12,6 +12,10 @@ ModuleRegistry.registerModules([AllCommunityModule])
 import { CallWorker } from "./worker_setup.js"
 import { clearObjectStore } from "./workers/Cache.js"
 const INPUT_LABELS = ["Red", "Blue", "Leaps", "Shards", "Oreha", "Gold", "Silver(WIP)", "Red juice", "Blue juice", "Special leaps"]
+
+
+
+// This UI is unbelievably vibe coded, need to split things up into functions for readability TODO
 export default function UpgradeCalculatorUI() {
     const TOP_ROWS = 6
     const TOP_COLS = 25

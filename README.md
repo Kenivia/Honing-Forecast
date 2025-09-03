@@ -31,14 +31,21 @@ For Chance to Cost, we generate some artificial budgets and see which ones match
 - Special honing and juice considerations(Currently juice inputs for CostToChance don't do anything, even if full on grace is ticked)
 - Remember ticks & cost input - save presets
 - Gamba simulator section
+- Visualize distribution of cost(7 lines showing distribution of each)
+- Incorporate roster income tracking & pretty more graphs(long term)
+
 - Get silver unlock cost somewhere(currently silver unlock cost is 0 so its labeled as WIP)
-- Fine tuning for advanced honing(+1 -1 when adjusting best_budget)
-- Incorporate roster income tracking & pretty graphs(long term)
+- Fine tuning for advanced honing(+1 -1 when adjusting best_budget), cap adjusted values count(so its less than piece^2)
+- countFailure optimization(need to test)
+- test how much worse true monte carlos is performance wise(and figure out how it impacts the estimation)
+- rework the UI, there has to be a better way
+
 - UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI
 - Interactable cells for input & output, like spreadsheet
 - Icons/color code materials & pieces
-- make the pecent sign follow the input number?(right now it just trails on the right)
-- stricter input control
+- Make the pecent sign follow the input number?(right now it just trails on the right)
+- Stricter input control
+- show the bottlenecks in a pie chart?
 - prettify everything everythign is so ugly right now
 
 ~~- WRITE TESTS~~
