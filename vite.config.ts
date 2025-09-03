@@ -1,3 +1,4 @@
+/// <reference types="vitest/config" />
 import { defineConfig } from "vite"
 import react from "@vitejs/plugin-react"
 
@@ -5,4 +6,9 @@ import react from "@vitejs/plugin-react"
 export default defineConfig({
     base: "/Honing-Forecast/",
     plugins: [react()],
+    test: {
+        globals: false, // we'll import describe/it/expect from 'vitest' explicitly
+        environment: "node", // 'jsdom' if you need DOM
+        coverage: { provider: "v8" },
+    },
 })

@@ -1,5 +1,10 @@
 import { assert } from "./Helper.js"
 
+// For example if a piece has 10% base rate, this will output:
+// 0.1, 0.11, 0.12, 0.13 .... 0.2, 0.2 , ... , 0.2, 1(pity)
+// This matches how honing works in Lost Ark but isn't what we need just yet
+// The 46.51 matches maxroll, it seems that's also what they use, but idk what the true value is in LA
+// Was written to support manual input of aritsan multipliers and juice rates/counts, might need it in the future
 function raw_chance(base: number, artisan_rate = 1, extra = 0, extra_num = 0): number[] {
     let chances = []
     let artisan = 0
@@ -23,6 +28,9 @@ function raw_chance(base: number, artisan_rate = 1, extra = 0, extra_num = 0): n
     }
     return chances
 }
+
+// This simplifies honing into a simple weighted draw
+// as in, this tells you the probability to land on each tap individually(before u begin)
 function probability_distribution(raw: number[]): number[] {
     let chances = new Array(raw.length)
     let cum_chance = 1
@@ -33,6 +41,12 @@ function probability_distribution(raw: number[]): number[] {
     return chances
 }
 
+// giga cursed parser, honestly i shouldn't place so much restraints on the counts(0<=x<=5) because it might be useful
+// for when raising multilpe characters
+// This simplifies normal honing into their probability distribution & cost of 1 tap
+// but adv honing also has juice cost, which isn't linear with tap count,
+// so this turns advanced hoining into their probability distribution(computed via the python script) & total cost at that tap(hence the 3 dimensional array)
+// Also gives a tag to identify what piece it is for cacheing reasons.
 export function parser(
     normal_counts: number[][],
     normal_chances: number[],
@@ -71,41 +85,17 @@ export function parser(
         assert(Number.isInteger(i))
     }
 
-    // let global_width = counts[0].length
-
-    // assert(chances.length == 4)
-    // for (const i of chances) {
-    //     assert(i.length == global_width)
-    // }
     let base_rates = normal_chances
-    // let artisan_rates = chances[1]
-    // let extra_rates = chances[2]
-    // let extra_counts = chances[3]
 
     for (const i of base_rates) {
         assert(0 < i && i <= 1)
     }
-    // for (const i of artisan_rates) {
-    //     assert(0 < i)
-    // }
-    // for (const i of extra_rates) {
-    //     assert(0 <= i)
-    // }
-    // for (const i of extra_counts) {
-    //     assert(Number.isInteger(i))
-    // }
-    // for (const i of extra_counts) {
-    //     assert(0 <= i)
-    // }
 
     assert(adv_hone_strategy == "Juice on grace" || adv_hone_strategy == "No juice")
-    // won't check the costs because they shouldn't be touched
 
     let tags = []
-
     let prob_dist_arr = []
     let hone_costs = Array.from({ length: weap_costs.length }, () => new Array())
-
     for (let piece_type = 0; piece_type < normal_counts.length; piece_type++) {
         let cur_cost = piece_type == 0 ? armor_costs : weap_costs
         let current_counter = 0
@@ -134,10 +124,6 @@ export function parser(
     }
     let adv_hone_costs = []
     let adv_hone_chances = []
-    // for (let i = 0; i < adv_costs.length; i++) {
-    //     adv_hone_costs[i] = []
-    // }
-
     for (let wep_or_arm = 0; wep_or_arm < adv_counts.length; wep_or_arm++) {
         let current_counter = 0
         for (let i = 0; i < adv_counts[wep_or_arm].length; ) {

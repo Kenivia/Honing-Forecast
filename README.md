@@ -28,9 +28,7 @@ For Chance to Cost, we generate some artificial budgets and see which ones match
 
 ## WIP
 
-- WRITE TESTS
-- Add comments
-- Actually implement special honing and juice considerations(Currently the inputs don't do anything)
+- Special honing and juice considerations(Currently juice inputs for CostToChance don't do anything, even if full on grace is ticked)
 - Remember ticks & cost input - save presets
 - Gamba simulator section
 - Get silver unlock cost somewhere(currently silver unlock cost is 0 so its labeled as WIP)
@@ -43,6 +41,8 @@ For Chance to Cost, we generate some artificial budgets and see which ones match
 - stricter input control
 - prettify everything everythign is so ugly right now
 
+~~- WRITE TESTS~~
+~~- Add comments~~
 ~~- Align buttons & input fields so the text dont go into the input boxes~~
 ~~- Add a % behind the cursor for desired chances of success~~
 ~~- Disallow non-number inputs~~

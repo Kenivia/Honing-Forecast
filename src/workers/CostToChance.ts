@@ -2,6 +2,8 @@ import { parser } from "./InputParser.js"
 import { MonteCarlosData } from "./MonteCarlos.js"
 import { myformat } from "./Helper.js"
 
+// This actually came before ChanceToCost on my spreadsheet implementation, and it was designed to handle a bunch of budgets(across different weeks)
+// Uses MonetCarlosData and a special failure counting loop that records the reason why it failed
 export async function CostToChance(
     hone_counts: number[][],
     chances: number[],
@@ -57,7 +59,7 @@ export async function CostToChance(
 
     for (let data of cost_data) {
         for (let [cost_type, _] of actual_budgets[0].entries()) {
-            // only compare top 7 entries, ignore juice
+            // only compare top 7 entries
             let failed = false
             for (let i of [...Array(actual_budgets.length).keys()]) {
                 if (actual_budgets[i][cost_type] < data[i]) {
@@ -89,5 +91,5 @@ export async function CostToChance(
             failed_labels.push(this_failed.join("\n"))
         }
     }
-    return [cumulative_pie, failed_labels]
+    return [cumulative_pie, failed_labels] // TODO make it output the failed labels as an object so that it can be expanded more nicely in the UI
 }

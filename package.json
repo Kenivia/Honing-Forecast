@@ -4,13 +4,15 @@
     "version": "0.0.0",
     "type": "module",
     "scripts": {
-        "dev": "vite",
         "build": "vite build",
         "predeploy": "npm run build",
         "deploy": "gh-pages -d dist",
         "lint": "eslint .",
         "preview": "vite preview",
-        "typecheck": "tsc --noEmit"
+        "typecheck": "tsc --noEmit",
+        "dev": "concurrently \"vite\" \"vitest --watch\"",
+        "test": "vitest",
+        "test:watch": "vitest --watch"
     },
     "dependencies": {
         "ag-grid-community": "^34.1.2",
@@ -26,6 +28,7 @@
         "@typescript-eslint/eslint-plugin": "^8.42.0",
         "@typescript-eslint/parser": "^8.42.0",
         "@vitejs/plugin-react": "^5.0.0",
+        "concurrently": "^9.2.1",
         "eslint": "^9.34.0",
         "eslint-formatter-unix": "^8.40.0",
         "eslint-plugin-react-hooks": "^5.2.0",
@@ -33,6 +36,7 @@
         "gh-pages": "^6.3.0",
         "globals": "^16.3.0",
         "typescript": "^5.9.2",
-        "vite": "^7.1.2"
+        "vite": "^7.1.2",
+        "vitest": "^3.2.4"
     }
 }

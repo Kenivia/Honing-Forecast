@@ -1,7 +1,42 @@
 import { parser } from "./InputParser.js"
 import { MonteCarlosData } from "./MonteCarlos.js"
-import { countFailuresGAS, add_cost } from "./Helper.js"
+import { add_cost } from "./Helper.js"
 
+//vibe coded, counts how many of each budget fails.
+//TODO maybe is possible to optimize? maybe sort by each cost type? will need to test
+// or maybe some advanced compiled shit
+export function countFailures(cost_data: Uint32Array<ArrayBuffer>[], budget_data: Uint32Array<ArrayBuffer>[]): number[] {
+    const N = cost_data.length
+    const M = budget_data.length
+    if (N === 0 || M === 0) return new Array(M).fill(0)
+
+    const count = new Uint32Array(M)
+    // assume n === 7
+    for (let m = 0; m < N; m++) {
+        const c = cost_data[m]
+        const c0 = c[0],
+            c1 = c[1],
+            c2 = c[2],
+            c3 = c[3],
+            c4 = c[4],
+            c5 = c[5],
+            c6 = c[6]
+
+        for (let i = 0; i < M; i++) {
+            const b = budget_data[i]
+            // inline/unrolled comparison with a single boolean expression and no inner loop
+            if (c0 > b[0] || c1 > b[1] || c2 > b[2] || c3 > b[3] || c4 > b[4] || c5 > b[5] || c6 > b[6]) {
+                count[i]++
+            }
+        }
+    }
+    return Array.from(count)
+}
+
+// p = success rate
+// the idea is to generate a bunch of random budgets via MonteCarlosData and also generate
+// a bunch of random budgets, see which budgets pass with about the same prob as p, then adjust
+// those budgets by +1 or -1 tap(need to do this for advanced honing)
 export async function ChanceToCost(
     hone_counts: number[][],
     chances: number[],
@@ -19,12 +54,7 @@ export async function ChanceToCost(
     adv_data_30_40: number[][],
     adv_hone_strategy: string
 ) {
-    // p = success rate
-
-    // the idea is to generate a bunch of random budgets via MC_data and also generate
-    // a bunch of random costs, see which budgets pass with about the same prob as p, - then take
-    // the closest num_average 'th ones and take the average
-    const cost_size = 50000
+    const cost_size = 50000 // seems to be the limit right now, any higher and it takes too long
     const budget_size = 1000
     let [prob_dist_arr, hone_costs, adv_hone_chances, adv_hone_costs, tags] = parser(
         hone_counts,
@@ -54,7 +84,7 @@ export async function ChanceToCost(
         adv_unlock,
         tags
     )
-    let failure_counts = countFailuresGAS(cost_data, budget_data)
+    let failure_counts = countFailures(cost_data, budget_data)
 
     const N = cost_data.length
     const k = Math.floor((1 - p) * N)
@@ -69,6 +99,9 @@ export async function ChanceToCost(
     const best_budget = budget_data[sorted_indices[0]]
     let potential_budgets = [best_budget]
 
+    // Right now the tweaking generates piece^2 number of adjusted budgets, 1 for each starting budget
+    // but that's a bit too big for when everything is ticked(because counting failure is O(n*m))
+    // TODO make it so that it's capped at some value, and randomize the starting piece if it's too big
     for (let piece = 0; piece < prob_dist_arr.length; piece++) {
         let pos_budget = best_budget.slice()
         let neg_budget = best_budget.slice()
@@ -87,7 +120,7 @@ export async function ChanceToCost(
             potential_budgets.push(neg_budget.slice())
         }
     }
-    let new_failures = countFailuresGAS(cost_data, potential_budgets)
+    let new_failures = countFailures(cost_data, potential_budgets)
     const new_diffs = new_failures.map((ci) => Math.abs(ci - k))
     const new_sorted = new_diffs
         .map((_, i) => i)
@@ -101,8 +134,7 @@ export async function ChanceToCost(
         y[j] += potential_budgets[new_sorted[0]][j]
     }
 
-    // }
+    // What this one's pass rate was, useful for debug but kinda confusing for user i think, not displayed rn
     y[n] = ((1 - new_failures[new_sorted[0]] / cost_data.length) * 100).toFixed(4)
-    // y[n+1] = sorted_indices[0]/budget_data.length
     return y
 }

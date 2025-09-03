@@ -1,5 +1,7 @@
 type TypedArray = Float32Array | Float64Array | Int16Array | Int32Array | Int8Array | Uint32Array | Uint16Array | Uint8Array | Uint8ClampedArray
 
+// vibe coded, use this to flatten cost_data or budget_data so that they can be saved to indexDB
+// although maybe it's better to just save each entry(as in each cost_type)? so its much easier to reconstruct
 export function flatten2DUint32(arr2d: Uint32Array[]): Uint32Array {
     if (!arr2d || arr2d.length === 0) return new Uint32Array(0)
 
@@ -22,32 +24,7 @@ export function flatten2DUint32(arr2d: Uint32Array[]): Uint32Array {
     return out
 }
 
-export async function clearObjectStore(dbName = "my-cache-db", storeName = "computed"): Promise<boolean> {
-    return new Promise((resolve, reject) => {
-        const openReq = indexedDB.open(dbName)
-        openReq.onerror = () => reject(openReq.error)
-        openReq.onsuccess = () => {
-            const db = openReq.result as IDBDatabase
-            if (!db.objectStoreNames.contains(storeName)) {
-                db.close()
-                console.warn(`object store "${storeName}" does not exist in DB "${dbName}"`)
-                return resolve(false) // nothing to clear
-            }
-            const tx = db.transaction(storeName, "readwrite")
-            const store = tx.objectStore(storeName)
-            const rreq = store.clear()
-            rreq.onsuccess = () => {
-                db.close()
-                resolve(true)
-            }
-            rreq.onerror = () => {
-                db.close()
-                reject(rreq.error)
-            }
-        }
-    })
-}
-
+// vibe coded
 export function reconstruct1DTo2D(flat: Uint32Array | ArrayLike<number>, n: number, opts: { zeroCopy?: boolean } = { zeroCopy: true }): Uint32Array[] {
     const zeroCopy = opts.zeroCopy !== undefined ? opts.zeroCopy : true
 
@@ -81,7 +58,34 @@ export function reconstruct1DTo2D(flat: Uint32Array | ArrayLike<number>, n: numb
     return rows
 }
 
-// Open DB and create object store "computed" (one-time)
+// vibe coded, invoked by clearcache button
+export async function clearObjectStore(dbName = "my-cache-db", storeName = "computed"): Promise<boolean> {
+    return new Promise((resolve, reject) => {
+        const openReq = indexedDB.open(dbName)
+        openReq.onerror = () => reject(openReq.error)
+        openReq.onsuccess = () => {
+            const db = openReq.result as IDBDatabase
+            if (!db.objectStoreNames.contains(storeName)) {
+                db.close()
+                console.warn(`object store "${storeName}" does not exist in DB "${dbName}"`)
+                return resolve(false) // nothing to clear
+            }
+            const tx = db.transaction(storeName, "readwrite")
+            const store = tx.objectStore(storeName)
+            const req = store.clear()
+            req.onsuccess = () => {
+                db.close()
+                resolve(true)
+            }
+            req.onerror = () => {
+                db.close()
+                reject(req.error)
+            }
+        }
+    })
+}
+
+// vibe coded
 function openDB(dbName = "my-cache-db", version = 1): Promise<IDBDatabase> {
     return new Promise((resolve, reject) => {
         const req = indexedDB.open(dbName, version)
@@ -97,7 +101,7 @@ function openDB(dbName = "my-cache-db", version = 1): Promise<IDBDatabase> {
     })
 }
 
-// Save a Float32Array (or any TypedArray) as a Blob with metadata
+// vibe coded
 export async function saveTypedArray(key: string, typedArray: TypedArray, meta: Record<string, any> = {}, dbName = "my-cache-db"): Promise<boolean> {
     const db = await openDB(dbName)
     return new Promise((resolve, reject) => {
@@ -122,7 +126,7 @@ export async function saveTypedArray(key: string, typedArray: TypedArray, meta: 
     })
 }
 
-// Load typed array by key (returns a typed array instance)
+// vibe coded
 export async function loadTypedArray(key: string, dbName = "my-cache-db"): Promise<{ arr: TypedArray; meta: any } | null> {
     const db = await openDB(dbName)
     return new Promise((resolve, reject) => {
