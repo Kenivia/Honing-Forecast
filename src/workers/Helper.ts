@@ -1,6 +1,6 @@
 export const LABELS = ["Red", "Blue", "Leaps", "Shards", "Oreha", "Gold", "Silver(WIP)"]
 
-// Vibe coded, counts how many of each piece type is ticked
+// Counts how many of each piece type is ticked
 export function ticks_to_counts(ticks: boolean[][]) {
     let out = Array.from({ length: 2 }, () => new Array(ticks[0].length).fill(0))
     for (let i = 0; i < ticks[0].length; i++) {
@@ -10,7 +10,7 @@ export function ticks_to_counts(ticks: boolean[][]) {
     return out
 }
 
-// supposed the top of the line algorithm from stack overflow
+// Supposed the top of the line shuffle algorithm from stack overflow
 export function shuffle(array: Uint32Array<ArrayBuffer>[]) {
     let currentIndex = array.length
     while (currentIndex != 0) {

@@ -1,6 +1,10 @@
 import { describe, it, expect } from "vitest"
 import { countFailures, ChanceToCost } from "./ChanceToCost.js"
-import { ticks_to_counts, LABELS } from "./Helper.js"
+import { ticks_to_counts } from "./Helper.js"
+
+// these tests are a bit circular, i just put the previous output as the expected outcome
+// I supposed this will detect if i change something by accident
+// but when i do special honing or whatever i'll have to update again...
 const DATA = {
     normal_hone_chances: [
         1, 1, 1, 0.45, 0.45, 0.45, 0.3, 0.3, 0.15, 0.15, 0.1, 0.1, 0.05, 0.05, 0.04, 0.04, 0.03, 0.03, 0.03, 0.015, 0.015, 0.01, 0.01, 0.005, 0.005,
