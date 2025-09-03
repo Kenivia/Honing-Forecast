@@ -1,11 +1,11 @@
 import { shuffle, Unlock } from "./Helper.js"
 import { flatten2DUint32, reconstruct1DTo2D, saveTypedArray, loadTypedArray } from "./Cache.js"
 
-function normal_hone_data(prob_dist_arr, costs, count_limit, rigged, shuffle_or_not, piece) {
+function normal_hone_data(prob_dist_arr: number[][], costs: number[][], count_limit: number, rigged: boolean, shuffle_or_not: boolean, piece: number) {
     let out = Array.from({ length: count_limit }, () => new Uint32Array(7).fill(0))
     let cum_weights = prob_dist_arr[piece].map(
         (
-            (sum) => (value) =>
+            (sum) => (value: number) =>
                 (sum += value)
         )(0)
     )
@@ -35,12 +35,19 @@ function normal_hone_data(prob_dist_arr, costs, count_limit, rigged, shuffle_or_
     return out
 }
 
-function adv_hone_data(count_limit, adv_hone_chances, adv_hone_costs, rigged, shuffle_or_not, piece) {
+function adv_hone_data(
+    count_limit: number,
+    adv_hone_chances: number[][],
+    adv_hone_costs: number[][][],
+    rigged: boolean,
+    shuffle_or_not: boolean,
+    piece: number
+) {
     let out = Array.from({ length: count_limit }, () => new Uint32Array(9).fill(0))
 
     let cum_weights = adv_hone_chances[piece].map(
         (
-            (sum) => (value) =>
+            (sum) => (value: number) =>
                 (sum += value)
         )(0)
     )
@@ -72,26 +79,23 @@ function adv_hone_data(count_limit, adv_hone_chances, adv_hone_costs, rigged, sh
 }
 
 async function data_wrapper(
-    hone_type,
-    prob_dist_arr,
-    costs,
-    count_limit,
-    counts,
-    weap_unlock,
-    armor_unlock,
-    adv_counts,
-    adv_hone_chances,
-    adv_hone_costs,
-    adv_unlock,
-    tags,
-    rigged,
-    piece
+    hone_type: string,
+    prob_dist_arr: number[][],
+    costs: number[][],
+    count_limit: number,
+
+    adv_hone_chances: number[][],
+    adv_hone_costs: number[][][],
+
+    tags: { [x: string]: any },
+    rigged: boolean,
+    piece: number
 ) {
     const key = hone_type + tags[piece + (hone_type == "Adv" ? prob_dist_arr.length : 0)] + rigged.toString() + count_limit.toString()
 
     const loaded = await loadTypedArray(key)
     if (loaded == null) {
-        let out
+        let out: Uint32Array<ArrayBufferLike>[]
         if (hone_type == "Normal") {
             out = normal_hone_data(prob_dist_arr, costs, count_limit, rigged, !rigged, piece)
         } else if (hone_type == "Adv") {
@@ -107,17 +111,17 @@ async function data_wrapper(
 }
 
 export async function _mc_data(
-    prob_dist_arr,
-    costs,
-    count_limit,
-    counts,
-    weap_unlock,
-    armor_unlock,
-    adv_counts,
-    adv_hone_chances,
-    adv_hone_costs,
-    adv_unlock,
-    tags,
+    prob_dist_arr: number[][],
+    costs: number[][],
+    count_limit: number,
+    counts: number[][],
+    weap_unlock: number[][],
+    armor_unlock: number[][],
+    adv_counts: number[][],
+    adv_hone_chances: number[][],
+    adv_hone_costs: number[][][],
+    adv_unlock: number[][],
+    tags: string[],
     rigged = false
 ) {
     let cost_data = Array.from({ length: count_limit }, () => new Uint32Array(9).fill(0))
@@ -127,13 +131,10 @@ export async function _mc_data(
             prob_dist_arr,
             costs,
             count_limit,
-            counts,
-            weap_unlock,
-            armor_unlock,
-            adv_counts,
+
             adv_hone_chances,
             adv_hone_costs,
-            adv_unlock,
+
             tags,
             rigged,
             piece
@@ -151,13 +152,10 @@ export async function _mc_data(
             prob_dist_arr,
             costs,
             count_limit,
-            counts,
-            weap_unlock,
-            armor_unlock,
-            adv_counts,
+
             adv_hone_chances,
             adv_hone_costs,
-            adv_unlock,
+
             tags,
             rigged,
             piece
@@ -174,23 +172,22 @@ export async function _mc_data(
         cost_data[i][3] += unlock[0]
         cost_data[i][6] += unlock[1]
     }
-
     return cost_data
 }
 
 export async function MonteCarlosData(
-    cost_size,
-    budget_size,
-    prob_dist_arr,
-    hone_costs,
-    hone_counts,
-    weap_unlock,
-    armor_unlock,
-    adv_counts,
-    adv_hone_chances,
-    adv_hone_costs,
-    adv_unlock,
-    tags
+    cost_size: number,
+    budget_size: number,
+    prob_dist_arr: number[][],
+    hone_costs: number[][],
+    hone_counts: number[][],
+    weap_unlock: number[][],
+    armor_unlock: number[][],
+    adv_counts: number[][],
+    adv_hone_chances: number[][],
+    adv_hone_costs: number[][][],
+    adv_unlock: number[][],
+    tags: string[]
 ) {
     const cost_data = await _mc_data(
         prob_dist_arr,

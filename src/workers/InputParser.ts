@@ -45,7 +45,7 @@ export function parser(
     adv_data_10_20: number[][],
     adv_data_30_40: number[][],
     adv_hone_strategy: string
-): [number[][], number[][], number[][][], number[][][], string[]] {
+): [number[][], number[][], number[][], number[][][], string[]] {
     assert(normal_counts.length == 2)
     assert(normal_counts[0].length == normal_counts[1].length)
 

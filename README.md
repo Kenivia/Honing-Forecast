@@ -7,8 +7,8 @@ The [Maxroll upgrade calculator](https://maxroll.gg/lost-ark/upgrade-calculator)
 This improves on the Maxroll calculator. How to use:
 
 1. Tick the upgrades you want(same as Maxroll)
-2. Put in **Desired chance of success**
-3. Press **Find chance of success**
+2. Put in **Desired chanc**(of success)
+3. Press **Find estimated cost**
 4. That's about it
 
 ## Cost to Chance
@@ -31,16 +31,19 @@ For Chance to Cost, we generate some artificial budgets and see which ones match
 - WRITE TESTS
 - Add comments
 - Actually implement special honing and juice considerations(Currently the inputs don't do anything)
+- Remember ticks & cost input - save presets
+- Gamba simulator section
 - Get silver unlock cost somewhere(currently silver unlock cost is 0 so its labeled as WIP)
 - Fine tuning for advanced honing(+1 -1 when adjusting best_budget)
 - Incorporate roster income tracking & pretty graphs(long term)
 - UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI
 - Interactable cells for input & output, like spreadsheet
 - Icons/color code materials & pieces
-- Align buttons & input fields so the text dont go into the input boxes
 - make the pecent sign follow the input number?(right now it just trails on the right)
 - stricter input control
 - prettify everything everythign is so ugly right now
+
+~~- Align buttons & input fields so the text dont go into the input boxes~~
 ~~- Add a % behind the cursor for desired chances of success~~
 ~~- Disallow non-number inputs~~
 ~~- Draggable tick boxes, same as maxroll~~

@@ -195,7 +195,6 @@ export default function UpgradeCalculatorUI() {
 
     const HandleCallWorker = async (which_one: string) => {
         try {
-            // build a payload from your UI state, e.g. getStateObject()
             if (which_one == "CostToChance") {
                 setCostToChanceBusy(true)
                 set_chance_result(null)
@@ -356,11 +355,13 @@ export default function UpgradeCalculatorUI() {
             paddingLeft: 20,
             paddingTop: 10,
             paddingRight: 10,
+            paddingBottom: 20,
             borderRadius: 8,
             alignItems: "stretch", // use "center" if you want each item centered inside column
             width: "100%",
             boxSizing: "border-box",
         } as React.CSSProperties,
+
 
         labeledInputRow: {
             display: "flex",
@@ -473,7 +474,7 @@ export default function UpgradeCalculatorUI() {
                                         </div>
                                     </div>
                                     <div style={{ display: 'flex', gap: 8 }}>
-                                        <div style={{ width: 120, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 6 }}>
+                                        <div style={{ width: 120, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
                                             {['Helmet', 'Shoulder', 'Chest', 'Pants', 'Glove', 'Weapon'].map((lab) => (
                                                 <div key={lab} style={{ height: 28, color: '#ddd', display: 'flex', alignItems: 'center', justifyContent: 'flex-end', paddingRight: 8 }}>{lab}</div>
                                             ))}
@@ -516,7 +517,7 @@ export default function UpgradeCalculatorUI() {
                                         </div>
                                     </div>
                                     <div style={{ display: 'flex', gap: 8 }}>
-                                        <div style={{ width: 120, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 6 }}>
+                                        <div style={{ width: 120, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
                                             {['Helmet', 'Shoulder', 'Chest', 'Pants', 'Glove', 'Weapon'].map((lab) => (
                                                 <div key={lab} style={{ height: 28, color: '#ddd', display: 'flex', alignItems: 'center', justifyContent: 'flex-end', paddingRight: 8 }}>{lab}</div>
                                             ))}
@@ -543,20 +544,22 @@ export default function UpgradeCalculatorUI() {
                                                 )}
                                             </div>
                                         </div>
-                                    </div>
-                                </div>
 
-                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8, alignItems: 'start', width: 420 }}>
+                                    </div>
                                     <select
                                         id="my-dropdown"
                                         value={adv_hone_strategy}
                                         onChange={(e) => adv_hone_strategy_change(e.target.value)}
                                         className="p-2 border rounded"
-                                        style={{ gridColumn: '1 / span 2' }}
+                                        style={{ gridColumn: '1 / span 2', justifyContent: "flex-end" }}
                                     >
                                         <option value="No juice">No juice</option>
                                         <option value="Juice on grace">Juice on grace</option>
                                     </select>
+                                </div>
+
+                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8, alignItems: 'start', width: 420 }}>
+
                                     <button onClick={fillMy}>Fill demo</button>
                                     <button onClick={fillRandom}>Fill random demo</button>
                                     <button onClick={clearAll}>Clear all</button>
@@ -697,6 +700,7 @@ export default function UpgradeCalculatorUI() {
                     </div>
                 </div>
             </div>
+            <div style={{ marginTop: 300 }}></div>
         </div>
     )
 }
