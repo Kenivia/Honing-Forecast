@@ -11,7 +11,7 @@ export function ticks_to_counts(ticks: boolean[][]) {
 }
 
 // Supposed the top of the line shuffle algorithm from stack overflow
-export function shuffle(array: Uint32Array<ArrayBuffer>[]) {
+export function shuffle(array: Uint32Array<ArrayBuffer>[] | number[]) {
     let currentIndex = array.length
     while (currentIndex != 0) {
         let randomIndex = Math.floor(Math.random() * currentIndex)

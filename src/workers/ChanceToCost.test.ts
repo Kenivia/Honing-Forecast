@@ -315,6 +315,14 @@ async function ChanceToCostwrapper(normal_hone_ticks, adv_hone_ticks, desired_ch
     )
 }
 describe("ChanceToCost", () => {
+    it("full ticks ", async () => {
+        const _out = await ChanceToCostwrapper(
+            Array.from({ length: 6 }, () => Array.from({ length: 25 }, () => true)),
+            Array.from({ length: 6 }, () => Array.from({ length: 4 }, () => true)),
+            DESIRED_CHANCE,
+            "Juice on grace"
+        )
+    }, 30000)
     it("my custom demo juice", async () => {
         const out = await ChanceToCostwrapper(NORMAL_HONE_TICKS, ADV_HONE_TICKS, DESIRED_CHANCE, "Juice on grace")
         const expected_out = [324450, 1041580, 21762, 9314400, 17669, 2023270, 56206000, 183, 915, 68.978]

@@ -1,11 +1,100 @@
 import { parser } from "./InputParser.js"
 import { MonteCarlosData } from "./MonteCarlos.js"
-import { add_cost } from "./Helper.js"
+import { add_cost, shuffle } from "./Helper.js"
 
+/**
+ * Checks if a single cost vector can be afforded by a single budget vector.
+ * A cost "passes" if every one of its components is less than or equal to the corresponding budget component.
+ * @param {Uint32Array} cost - The cost vector.
+ * @param {Uint32Array} budget - The budget vector.
+ * @returns {boolean} - True if the cost passes the budget, false otherwise.
+ */
+function costPassesBudget(cost: Uint32Array, budget: Uint32Array): boolean {
+    // This assumes a fixed length of 7, as in the original function.
+    // It's faster than a loop for small, fixed-size arrays.
+    return (
+        cost[0] <= budget[0] &&
+        cost[1] <= budget[1] &&
+        cost[2] <= budget[2] &&
+        cost[3] <= budget[3] &&
+        cost[4] <= budget[4] &&
+        cost[5] <= budget[5] &&
+        cost[6] <= budget[6]
+    )
+}
+
+/**
+ * Efficiently counts, for each budget, how many costs fail it.
+ * This optimized version uses binary search, leveraging the fact that budget_data is sorted.
+ * @param {Uint32Array[]} cost_data - An array of N cost vectors.
+ * @param {Uint32Array[]} budget_data - An array of M budget vectors, sorted element-wise in ascending order.
+ * @returns {number[]} An array of M numbers, where the element at index i is the total number of costs that fail the i-th budget.
+ */
+function countFailuresAscending(cost_data: Uint32Array[], budget_data: Uint32Array[]): number[] {
+    const N = cost_data.length
+    const M = budget_data.length
+    if (N === 0 || M === 0) return new Array(M).fill(0)
+
+    // Step 1: Create a "difference array". We'll use this to efficiently mark the ranges of failures.
+    // We use Int32Array because it can hold negative values.
+    const diffs = new Int32Array(M + 1)
+
+    // Step 2: For each cost, find how many budgets it fails.
+    for (let m = 0; m < N; m++) {
+        const cost = cost_data[m]
+
+        // Binary search to find the *first* budget that this cost passes.
+        // Because budgets are sorted, all budgets before this index will be failures.
+        let low = 0
+        let high = M - 1
+        let firstPassIndex = M // Default to M, meaning it fails ALL budgets.
+
+        while (low <= high) {
+            // Prevent potential overflow and use bitwise shift for performance
+            const mid = low + ((high - low) >> 1)
+
+            if (costPassesBudget(cost, budget_data[mid])) {
+                // This budget is a pass. It could be the first one.
+                // Store it and check the left half for an even earlier pass.
+                firstPassIndex = mid
+                high = mid - 1
+            } else {
+                // This budget is a failure. The first pass must be in the right half.
+                low = mid + 1
+            }
+        }
+
+        // `firstPassIndex` is the number of budgets this cost fails.
+        // We need to increment the count for all budgets in the range [0, firstPassIndex - 1].
+        // We do this in O(1) by marking the start and end points in our difference array.
+        if (firstPassIndex > 0) {
+            diffs[0]++
+            diffs[firstPassIndex]-- // Mark the end of the range.
+        }
+    }
+
+    // Step 3: Convert the difference array into the final counts using a prefix sum.
+    // This reconstructs the results from our range markers in a single O(M) pass.
+    const count = new Uint32Array(M)
+    count[0] = diffs[0]
+    for (let i = 1; i < M; i++) {
+        count[i] = count[i - 1] + diffs[i]
+    }
+
+    return Array.from(count)
+}
+
+export function countFailures(cost_data: Uint32Array<ArrayBuffer>[], budget_data: Uint32Array<ArrayBuffer>[], asc = false): number[] {
+    if (asc) {
+        return countFailuresAscending(cost_data, budget_data)
+    } else {
+        return countFailuresNaive(cost_data, budget_data)
+    }
+}
 //vibe coded, counts how many of each budget fails.
 //TODO maybe is possible to optimize? maybe sort by each cost type? will need to test
 // or maybe some advanced compiled shit
-export function countFailures(cost_data: Uint32Array<ArrayBuffer>[], budget_data: Uint32Array<ArrayBuffer>[]): number[] {
+export function countFailuresNaive(cost_data: Uint32Array<ArrayBuffer>[], budget_data: Uint32Array<ArrayBuffer>[]): number[] {
     const N = cost_data.length
     const M = budget_data.length
     if (N === 0 || M === 0) return new Array(M).fill(0)
@@ -54,8 +143,10 @@ export async function ChanceToCost(
     adv_data_30_40: number[][],
     adv_hone_strategy: string
 ) {
+    console.log("start")
+    const start_time = Date.now()
     const cost_size = 50000 // seems to be the limit right now, any higher and it takes too long
-    const budget_size = 1000
+    const budget_size = 10000
     let [prob_dist_arr, hone_costs, adv_hone_chances, adv_hone_costs, tags] = parser(
         hone_counts,
         chances,
@@ -69,6 +160,7 @@ export async function ChanceToCost(
         adv_data_30_40,
         adv_hone_strategy
     )
+    console.log("parser done: " + ((Date.now() - start_time) / 1000).toString())
 
     let [cost_data, budget_data] = await MonteCarlosData(
         cost_size,
@@ -84,8 +176,9 @@ export async function ChanceToCost(
         adv_unlock,
         tags
     )
-    let failure_counts = countFailures(cost_data, budget_data)
-
+    console.log("Monte carlos done: " + ((Date.now() - start_time) / 1000).toString())
+    let failure_counts = countFailures(cost_data, budget_data, true)
+    console.log("Failure count 1 done: " + ((Date.now() - start_time) / 1000).toString())
     const N = cost_data.length
     const k = Math.floor((1 - p) * N)
     const n = cost_data[0].length
@@ -93,16 +186,18 @@ export async function ChanceToCost(
     const sorted_indices = diffs
         .map((_, i) => i)
         .sort((a, b) => {
-            if (diffs[a] === diffs[b]) return a - b // stable tie-breaker
+            if (diffs[a] === diffs[b]) return a - b // s table tie-breaker
             return diffs[a] - diffs[b]
         })
     const best_budget = budget_data[sorted_indices[0]]
-    let potential_budgets = [best_budget]
 
-    // Right now the tweaking generates piece^2 number of adjusted budgets, 1 for each starting budget
-    // but that's a bit too big for when everything is ticked(because counting failure is O(n*m))
-    // TODO make it so that it's capped at some value, and randomize the starting piece if it's too big
-    for (let piece = 0; piece < prob_dist_arr.length; piece++) {
+    let potential_budgets = [best_budget]
+    let first_layer = Array.from(Array(prob_dist_arr.length + adv_hone_chances.length).keys())
+    shuffle(first_layer)
+    // first_layer = first_layer.slice(0, Math.floor(1000 / (prob_dist_arr.length + adv_hone_chances.length)))
+    let piece = 0
+    for (let p = 0; p < Math.max(1, Math.min(first_layer.length, Math.floor(1000 / (prob_dist_arr.length + adv_hone_chances.length)))); p++) {
+        piece = first_layer[p]
         let pos_budget = best_budget.slice()
         let neg_budget = best_budget.slice()
         let not_seen_taps = [Array(prob_dist_arr.length).keys()]
@@ -121,6 +216,7 @@ export async function ChanceToCost(
         }
     }
     let new_failures = countFailures(cost_data, potential_budgets)
+    console.log("Failure 2 done: " + ((Date.now() - start_time) / 1000).toString())
     const new_diffs = new_failures.map((ci) => Math.abs(ci - k))
     const new_sorted = new_diffs
         .map((_, i) => i)
@@ -136,5 +232,6 @@ export async function ChanceToCost(
 
     // What this one's pass rate was, useful for debug but kinda confusing for user i think, not displayed rn
     y[n] = ((1 - new_failures[new_sorted[0]] / cost_data.length) * 100).toFixed(4)
+    console.log("Finish: " + ((Date.now() - start_time) / 1000).toString())
     return y
 }

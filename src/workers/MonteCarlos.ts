@@ -93,10 +93,8 @@ async function load_or_compute_mc_data(
     prob_dist_arr: number[][],
     costs: number[][],
     count_limit: number,
-
     adv_hone_chances: number[][],
     adv_hone_costs: number[][][],
-
     tags: { [x: string]: any },
     rigged: boolean,
     piece: number
