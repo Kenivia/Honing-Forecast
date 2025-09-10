@@ -31,7 +31,7 @@ pub fn monte_carlos_data(
         for trial_num in 0..cost_size {
             for cost_type in 0..adv_hone_costs.len() {
                 cost_data[trial_num as usize][cost_type] +=
-                    adv_hone_costs[cost_type][piece][wa_table.next_rng(&mut rng)]
+                    adv_hone_costs[piece][cost_type][wa_table.next_rng(&mut rng)]
             }
         }
     }

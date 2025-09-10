@@ -39,9 +39,9 @@ pub fn cost_to_chance(
                 failed = true;
                 typed_fail_counter[cost_type] += 1;
             }
-            if failed {
-                overall_fail_counter += 1;
-            }
+        }
+        if failed {
+            overall_fail_counter += 1;
         }
     }
     let failed_labels: String;
@@ -66,7 +66,7 @@ pub fn cost_to_chance(
         failed_labels = this_failed.join("\n");
     }
     return (
-        overall_fail_counter as f64 / cost_data.len() as f64,
+        1.0_f64 - overall_fail_counter as f64 / cost_data.len() as f64,
         failed_labels,
     );
 }

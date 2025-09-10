@@ -58,6 +58,20 @@ pub fn cost_to_chance_wrapper(input: JsValue) -> JsValue {
     to_value(&(chance, reason)).unwrap()
 }
 
+pub fn cost_to_chance_test_wrapper(
+    normal_hone_ticks: Vec<Vec<bool>>,
+    adv_hone_ticks: Vec<Vec<bool>>,
+    budget: Vec<i64>,
+) -> (f64, String) {
+    let (chance, reason): (f64, String) = cost_to_chance(
+        ticks_to_counts(normal_hone_ticks),
+        budget,
+        ticks_to_counts(adv_hone_ticks),
+        String::from("No juice"),
+    );
+    (chance, reason)
+}
+
 // #[cfg(test)]
 // mod tests {
 //     // Note this useful idiom: importing names from outer (for mod tests) scope.
