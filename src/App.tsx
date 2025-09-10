@@ -213,12 +213,16 @@ export default function UpgradeCalculatorUI() {
                     ? {
                         normal_hone_ticks: topGrid,
                         adv_hone_ticks: bottomGrid,
-                        budget: budget_inputs,
+                        budget: (input =>
+                            Object.fromEntries(
+                                Object.entries(input).map(([k, v]) => [k, Math.round(Number(v))])
+                            )
+                        )(budget_inputs)
                     }
                     : {
                         normal_hone_ticks: topGrid,
                         adv_hone_ticks: bottomGrid,
-                        desired_chance: desired_chance,
+                        desired_chance: parseFloat(desired_chance),
                         adv_hone_strategy: adv_hone_strategy,
                     }
             const res = await CallWorker(payload, which_one)
