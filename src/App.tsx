@@ -209,22 +209,16 @@ export default function UpgradeCalculatorUI() {
             }
 
             const payload =
-                which_one == "CostToChance"
-                    ? {
-                        normal_hone_ticks: topGrid,
-                        adv_hone_ticks: bottomGrid,
-                        budget: (input =>
-                            Object.fromEntries(
-                                Object.entries(input).map(([k, v]) => [k, Math.round(Number(v))])
-                            )
-                        )(budget_inputs)
-                    }
-                    : {
-                        normal_hone_ticks: topGrid,
-                        adv_hone_ticks: bottomGrid,
-                        desired_chance: parseFloat(desired_chance),
-                        adv_hone_strategy: adv_hone_strategy,
-                    }
+            {
+                normal_hone_ticks: topGrid,
+                adv_hone_ticks: bottomGrid,
+                desired_chance: parseFloat(desired_chance),
+                budget: (input =>
+                    Object.entries(input).map(([, v]) => Math.round(Number(v)))
+                )(budget_inputs),
+                adv_hone_strategy: adv_hone_strategy,
+            }
+
             const res = await CallWorker(payload, which_one)
             if (which_one == "CostToChance") {
                 set_chance_result(res)
@@ -664,10 +658,9 @@ export default function UpgradeCalculatorUI() {
                                                 singleClickEdit={true}
                                                 domLayout={'autoHeight'}
                                                 stopEditingWhenCellsLoseFocus={true}
-                                                onGridReady={(params: any) => {
+                                                onGridReady={() => {
                                                     const el = document.getElementById('ag-diagnostic-msg')
                                                     if (el) el.style.display = 'none'
-                                                    console.log('ag-grid ready', params)
                                                 }}
                                                 onCellValueChanged={(event: any) => {
                                                     // Map grid rows back to INPUT_LABELS using row id

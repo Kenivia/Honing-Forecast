@@ -3,7 +3,7 @@ use crate::constants::{ADV_HONE_UNLOCK, NORMAL_HONE_ARMOR_UNLOCK, NORMAL_HONE_WE
 pub fn ticks_to_counts(ticks: Vec<Vec<bool>>) -> Vec<Vec<i64>> {
     // assume ticks is always 6 rows
     let cols = ticks[0].len();
-    let mut out = vec![vec![0i64; cols]; 2];
+    let mut out: Vec<Vec<i64>> = vec![vec![0i64; cols]; 2];
 
     for i in 0..cols {
         // sum ticks[0..4][i]

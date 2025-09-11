@@ -3,10 +3,6 @@ use crate::helpers::{myformat, unlock};
 use crate::monte_carlos::monte_carlos_data;
 use crate::parser::parser;
 
-// Minimal Rust placeholder so the module and function can be imported from `lib.rs`.
-// The real implementation can be restored later. This accepts the 16 arguments
-// that `lib.rs` currently passes and does nothing meaningful — it exists only
-// to make the import and basic compilation succeed while you sort other errors.
 pub fn cost_to_chance(
     hone_counts: Vec<Vec<i64>>,
     actual_budgets: Vec<i64>,
@@ -28,6 +24,7 @@ pub fn cost_to_chance(
         &adv_hone_chances,
         &adv_hone_costs,
         &unlock(&hone_counts, &adv_counts),
+        true,
     );
     let mut typed_fail_counter: Vec<i64> = vec![0; 9];
     let mut overall_fail_counter: i64 = 0;

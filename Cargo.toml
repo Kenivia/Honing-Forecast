@@ -18,7 +18,8 @@ serde_json = "1.0.143"
 js-sys = "0.3.78"
 weighted_rand = "0.4.2"
 getrandom ={version="0.2", features=["js"]}
-
+console_error_panic_hook = "0.1"
+web-sys = { version = "0.3", features = ["console"] }
 
 
 
