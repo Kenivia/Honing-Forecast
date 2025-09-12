@@ -9,7 +9,7 @@ Try it on the [website](https://kenivia.github.io/Honing-Forecast/)!
 This improves on the Maxroll calculator. How to use:
 
 1. Tick the upgrades you want(same as Maxroll)
-2. Put in **Desired chanc**(of success)
+2. Put in **Desired chance**(of success)
 3. Press **Find estimated cost**
 4. That's about it
 
@@ -35,7 +35,7 @@ For Chance to Cost, we generate some artificial budgets and see which ones match
 - Special honing and juice considerations(Currently juice inputs for CostToChance don't do anything, even if full on grace is ticked)
 - Remember ticks & cost input - save presets
 - Gamba simulator section
-- Visualize distribution of cost(7 lines/bares showing distribution of each)
+- Visualize distribution of cost(7 lines/bars showing distribution of each)
 - Incorporate roster income tracking & pretty graphs
 
 ### DEV
