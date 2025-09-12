@@ -1,16 +1,16 @@
 {
-    "name": "my-app",
+    "name": "honing-forecast",
     "private": true,
     "version": "0.0.0",
     "type": "module",
     "scripts": {
-        "build": "vite build",
+        "build": "wasm-pack build --release --target web && vite build",
         "predeploy": "npm run build",
         "deploy": "gh-pages -d dist",
         "lint": "eslint .",
         "preview": "vite preview",
         "typecheck": "tsc --noEmit",
-        "dev": "concurrently \"vite\" \"vitest --watch\"",
+        "dev": "wasm-pack build --release --target web && vite",
         "test": "vitest",
         "test:watch": "vitest --watch"
     },

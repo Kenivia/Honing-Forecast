@@ -2,6 +2,8 @@
 
 The [Maxroll upgrade calculator](https://maxroll.gg/lost-ark/upgrade-calculator) gives us a rough estimate on how much mats we need to pass certain upgrades, however it only gives the best, average and worst scenarios - this calculator works out everything in between.
 
+Try it on the [website](https://kenivia.github.io/Honing-Forecast/)!
+
 ## Chance to Cost
 
 This improves on the Maxroll calculator. How to use:
@@ -13,7 +15,7 @@ This improves on the Maxroll calculator. How to use:
 
 ## Cost to Chance
 
-This is a functionality that Maxroll does not currently have. How to use:
+This is a functionality that Maxroll currently does not have. How to use:
 
 1. Tick the upgrades you want like on Maxroll
 2. Put in how much materials you have
@@ -22,22 +24,27 @@ This is a functionality that Maxroll does not currently have. How to use:
 
 ## How it works
 
-We pull a Dr.Strange and simulate ~100000 tries at passing everything, record how much everything costed and draw some conclusions. If your budget says you have a 69% chance of success, then you suceeeded in 69000 out of 100000 universes.
+We simulate ~100000 tries at passing everything, record how much everything costed and draw some conclusions. If your budget says you have a 69% chance of success, then you suceeeded in 69000 out of 100000 universes.
 
 For Chance to Cost, we generate some artificial budgets and see which ones match your desired chance best using the same principle as above. We balance the luck across pieces with these artificial pieces(this is to avoid the scenario where you one tap armor but pity weapon, which would yield a very high red rocks cost but a very low blue rock cost).
 
 ## WIP
 
+### FEATURES
+
 - Special honing and juice considerations(Currently juice inputs for CostToChance don't do anything, even if full on grace is ticked)
 - Remember ticks & cost input - save presets
 - Gamba simulator section
-- Visualize distribution of cost(7 lines showing distribution of each)
-- Incorporate roster income tracking & pretty more graphs(long term)
+- Visualize distribution of cost(7 lines/bares showing distribution of each)
+- Incorporate roster income tracking & pretty graphs
+
+### DEV
 
 - Get silver unlock cost somewhere(currently silver unlock cost is 0 so its labeled as WIP)
-- Fine tuning for advanced honing(+1 -1 when adjusting best_budget), cap adjusted values count(so its less than piece^2)
-- test how much worse true monte carlos is performance wise(and figure out how it impacts the estimation)
-- rework the UI, there has to be a better way
+- Fine tuning for advanced honing(+1 -1 when adjusting best_budget)(need to implement in rust)~~ cap adjusted values count(so its less than piece^2)~~
+- rework App.tsx, split into funcitons or something there has to be a better way
+
+### UI
 
 - UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI
 - Interactable cells for input & output, like spreadsheet
@@ -45,8 +52,11 @@ For Chance to Cost, we generate some artificial budgets and see which ones match
 - Make the pecent sign follow the input number?(right now it just trails on the right)
 - Stricter input control
 - show the bottlenecks in a pie chart?
-- prettify everything everythign is so ugly right now
+- mobile dragging
+- maybe use some kind of existing library to make everything less ugly
 
+~~- Port the computation to rust to run on webassembly~~
+~~- test how much worse true monte carlos is performance wise(and figure out how it impacts the estimation)~~(answerr is about 30% faster, and has less variance so i think is fine to use it)
 ~~- countFailure optimization(need to test)~~
 -~~ WRITE TESTS~~
 -~~ Add comments~~

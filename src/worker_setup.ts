@@ -1,5 +1,5 @@
 /* eslint-disable no-unused-vars */
-const worker = new Worker(new URL("./workers/MainWorker.js", import.meta.url), { type: "module" })
+const worker = new Worker(new URL("./js_to_wasm.js", import.meta.url), { type: "module" })
 
 let nextId = 1
 type Pending = {

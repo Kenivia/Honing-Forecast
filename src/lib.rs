@@ -31,7 +31,7 @@ pub fn chance_to_cost_wrapper(input: JsValue) -> JsValue {
     let desired_chance: f32 = payload.desired_chance;
     let adv_hone_strategy: String = payload.adv_hone_strategy;
 
-    let out: i64 = chance_to_cost(
+    let out: (Vec<i64>, f32) = chance_to_cost(
         ticks_to_counts(normal_hone_ticks),
         ticks_to_counts(adv_hone_ticks),
         desired_chance,
@@ -62,6 +62,21 @@ pub fn cost_to_chance_wrapper(input: JsValue) -> JsValue {
     to_value(&(chance, reason)).unwrap()
 }
 
+pub fn chance_to_cost_test_wrapper(
+    normal_hone_ticks: Vec<Vec<bool>>,
+    adv_hone_ticks: Vec<Vec<bool>>,
+    desired_chance: f32,
+    adv_hone_strategy: String,
+) -> (Vec<i64>, f32) {
+    let (mats, chance): (Vec<i64>, f32) = chance_to_cost(
+        ticks_to_counts(normal_hone_ticks),
+        ticks_to_counts(adv_hone_ticks),
+        desired_chance,
+        adv_hone_strategy,
+    );
+    (mats, chance)
+}
+
 pub fn cost_to_chance_test_wrapper(
     normal_hone_ticks: Vec<Vec<bool>>,
     adv_hone_ticks: Vec<Vec<bool>>,
@@ -75,20 +90,3 @@ pub fn cost_to_chance_test_wrapper(
     );
     (chance, reason)
 }
-
-// #[cfg(test)]
-// mod tests {
-//     // Note this useful idiom: importing names from outer (for mod tests) scope.
-//     use super::*;
-//     use js_sys::JSON;
-//     #[test]
-//     fn test_demo() {
-//         let js_str: &str = r#"{"normal_hone_ticks":[[false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,true,true,false,false,false,false],[false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,true,true,false,false,false,false],[false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,true,true,false,false,false,false],[false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,true,true,false,false,false,false],[false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,true,true,false,false,false,false],[false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,true,true,false,false,false,false]],"adv_hone_ticks":[[false,false,true,false],[false,false,true,false],[false,false,true,false],[false,false,true,false],[false,false,true,false],[false,false,true,false]],"budget":{"Red":431777,"Blue":1064398,"Leaps":23748,"Shards":9010948,"Oreha":15125,"Gold":1803792,"Silver(WIP)":4294967295,"Red juice":0,"Blue juice":0,"Special leaps":0}}"#;
-//         let parsed: JsValue = JSON::parse(js_str).unwrap();
-//         // let my_data: Payload = serde_json::from_str(js_str).unwrap();
-//         let out: JsValue = chance_to_cost_wrapper(parsed);
-//         let z: String = JSON::stringify(&out).unwrap().into();
-//         println!("{}", z);
-//         assert!(false);
-//     }
-// }

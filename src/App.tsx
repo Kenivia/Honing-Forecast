@@ -10,7 +10,6 @@ import { themeBalham } from 'ag-grid-community';
 // Register all community modules so AG Grid features are available
 ModuleRegistry.registerModules([AllCommunityModule])
 import { CallWorker } from "./worker_setup.js"
-import { clearObjectStore } from "./workers/Cache.js"
 const INPUT_LABELS = ["Red", "Blue", "Leaps", "Shards", "Oreha", "Gold", "Silver(WIP)", "Red juice", "Blue juice", "Special leaps"]
 
 
@@ -565,7 +564,7 @@ export default function UpgradeCalculatorUI() {
                                     <button onClick={fillMy}>Fill demo</button>
                                     <button onClick={fillRandom}>Fill random demo</button>
                                     <button onClick={clearAll}>Clear all</button>
-                                    <button onClick={() => clearObjectStore()}>Clear Cache</button>
+
                                 </div>
                             </div>
                         </div>
@@ -626,7 +625,9 @@ export default function UpgradeCalculatorUI() {
                                 })}
                                 <pre>{cost_result ? "\nRun time: " +
                                     cost_result.run_time +
-                                    "s"
+                                    "s\n" +
+                                    cost_result.actual_prob
+
                                     : ""}</pre>
                             </div>
                         </div>

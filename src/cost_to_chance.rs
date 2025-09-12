@@ -18,13 +18,14 @@ pub fn cost_to_chance(
     ) = parser(&hone_counts, &adv_counts, &adv_hone_strategy);
 
     let cost_data: Vec<Vec<i64>> = monte_carlos_data(
-        100000,
+        200000,
         &prob_dist_arr,
         &hone_costs,
         &adv_hone_chances,
         &adv_hone_costs,
         &unlock(&hone_counts, &adv_counts),
-        true,
+        false,
+        false, //use_true_rng
     );
     let mut typed_fail_counter: Vec<i64> = vec![0; 9];
     let mut overall_fail_counter: i64 = 0;
@@ -32,6 +33,7 @@ pub fn cost_to_chance(
     for (_trail_num, data) in cost_data.iter().enumerate() {
         failed = false;
         for cost_type in 0..7 {
+            // Cost to chance does take silver into account
             if actual_budgets[cost_type as usize] < data[cost_type] {
                 failed = true;
                 typed_fail_counter[cost_type] += 1;
