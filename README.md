@@ -41,7 +41,7 @@ For Chance to Cost, we generate some artificial budgets and see which ones match
 ### DEV
 
 - Get silver unlock cost somewhere(currently silver unlock cost is 0 so its labeled as WIP)
-- Fine tuning for advanced honing(+1 -1 when adjusting best_budget)(need to implement in rust)~~ cap adjusted values count(so its less than piece^2)~~
+- Fine tuning for advanced honing(+1 -1 when adjusting best_budget)(need to implement in rust)
 - rework App.tsx, split into funcitons or something there has to be a better way
 
 ### UI
@@ -54,17 +54,3 @@ For Chance to Cost, we generate some artificial budgets and see which ones match
 - show the bottlenecks in a pie chart?
 - mobile dragging
 - maybe use some kind of existing library to make everything less ugly
-
-~~- Port the computation to rust to run on webassembly~~
-~~- test how much worse true monte carlos is performance wise(and figure out how it impacts the estimation)~~(answerr is about 30% faster, and has less variance so i think is fine to use it)
-~~- countFailure optimization(need to test)~~
--~~ WRITE TESTS~~
--~~ Add comments~~
--~~ Align buttons & input fields so the text dont go into the input boxes~~
--~~ Add a % behind the cursor for desired chances of success~~
--~~ Disallow non-number inputs~~
--~~ Draggable tick boxes, same as maxroll~~
--~~ Labels for normal honing (+1,+2...), Labels for advanced honing, Labels for pieces~~
--~~ Move advanced honing to align with normal honing, move everything else down~~
--~~ Cache, rework the monte carlos to do individual pieces so they can be cached for other combinations of ticks(and add them when needed)S~~
--~~ Migrate to typescript~~
