@@ -32,10 +32,10 @@ For Chance to Cost, we generate some artificial budgets and see which ones match
 
 ### FEATURES
 
-- Special honing and juice considerations(Currently juice inputs for CostToChance don't do anything, even if full on grace is ticked)
+- Special honing and juice considerations(WIP)(need to add: input UI like maxroll for mat prices, toggle between maximizing special leap value and maximizing chance to succeed,)
 - Remember ticks & cost input - save presets
 - Gamba simulator section
-- Visualize distribution of cost(7 lines/bars showing distribution of each)
+- Visualize distribution of cost(7 lines/bars showing distribution of each, maybe scatter graph?)
 - Incorporate roster income tracking & pretty graphs
 
 ### DEV
