@@ -4,6 +4,7 @@ mod cost_to_chance;
 mod helpers;
 mod monte_carlos;
 mod parser;
+mod value_estimation;
 use crate::chance_to_cost::chance_to_cost;
 use crate::cost_to_chance::cost_to_chance;
 use crate::helpers::ticks_to_counts;

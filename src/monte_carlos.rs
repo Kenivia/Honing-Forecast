@@ -4,7 +4,20 @@ use rand::prelude::*;
 
 use weighted_rand::builder::*;
 
-fn tap_map_generator(count_limit: i64, prob_dist: &Vec<f32>) -> Vec<usize> {
+fn calc_failure_lim(avail_special: i64, cost: i64) -> i64 {
+    (avail_special as f64 / cost as f64).floor() as i64 + 1 // just using 12 because its the lowest special leap cost possible
+}
+fn construct_geometric_weights(max_taps: i64, base_chance: f32) -> Vec<f32> {
+    let mut out: Vec<f32> = Vec::with_capacity((max_taps + 1) as usize);
+    let mut cum_chance: f32 = 1.0;
+    for _ in 0..(max_taps) {
+        out.push(cum_chance * base_chance);
+        cum_chance *= 1.0 - base_chance;
+    }
+    out.push(cum_chance); // chance to fail
+    out
+}
+fn tap_map_generator(count_limit: usize, prob_dist: &Vec<f32>) -> Vec<usize> {
     let cum_weights: Vec<f32> = prob_dist
         .iter()
         .enumerate()
@@ -36,16 +49,19 @@ fn tap_map_generator(count_limit: i64, prob_dist: &Vec<f32>) -> Vec<usize> {
 }
 
 pub fn monte_carlos_data(
-    data_size: i64,
+    data_size: usize,
     prob_dist_arr: &Vec<Vec<f32>>,
     hone_costs: &Vec<Vec<i64>>,
     adv_hone_chances: &Vec<Vec<f32>>,
     adv_hone_costs: &Vec<Vec<Vec<i64>>>,
     unlock_costs: &Vec<i64>,
+    avail_special: i64,
+    special_costs: &Vec<i64>,
     rigged: bool,
     use_true_rng: bool,
 ) -> Vec<Vec<i64>> {
     let mut cost_data: Vec<Vec<i64>> = vec![vec![0; 9]; data_size as usize];
+    let mut rng: rand::prelude::ThreadRng = rand::thread_rng();
     if rigged {
         let mut rolled_tap: usize;
         for piece in 0..prob_dist_arr.len() {
@@ -70,16 +86,36 @@ pub fn monte_carlos_data(
             }
         }
     } else {
+        let mut special_wa_table: weighted_rand::table::WalkerTable;
+        let mut rolled_special_cost: i64;
+        let mut special_budgets: Vec<i64> = vec![avail_special; data_size];
         if use_true_rng {
-            let mut rng: rand::prelude::ThreadRng = rand::thread_rng();
             let mut builder: WalkerTableBuilder;
-            let mut wa_table: weighted_rand::table::WalkerTable;
+            let mut tap_wa_table: weighted_rand::table::WalkerTable;
             let mut rolled_tap: usize;
             for piece in 0..prob_dist_arr.len() {
                 builder = WalkerTableBuilder::new(&prob_dist_arr[piece]);
-                wa_table = builder.build();
+                tap_wa_table = builder.build();
+
+                // if *special_budgets.iter().max().unwrap() > 0 {
+
+                // }
+                let special_dist: Vec<f32> = construct_geometric_weights(
+                    calc_failure_lim(avail_special, special_costs[piece]),
+                    prob_dist_arr[piece][0],
+                );
+                special_wa_table = WalkerTableBuilder::new(&special_dist).build();
+
                 for trial_num in 0..data_size as usize {
-                    rolled_tap = wa_table.next_rng(&mut rng);
+                    if special_budgets[trial_num] > 0 {
+                        rolled_special_cost =
+                            (special_wa_table.next_rng(&mut rng) as i64 + 1) * special_costs[piece];
+                        special_budgets[trial_num] -= rolled_special_cost;
+                        if special_budgets[trial_num] > 0 {
+                            continue;
+                        }
+                    }
+                    rolled_tap = tap_wa_table.next_rng(&mut rng);
                     for cost_type in 0..NORMAL_HONE_ARMOR_COST.len() {
                         cost_data[trial_num][cost_type] +=
                             hone_costs[cost_type][piece] * (rolled_tap as i64 + 1);
@@ -88,9 +124,9 @@ pub fn monte_carlos_data(
             }
             for piece in 0..adv_hone_chances.len() {
                 builder = WalkerTableBuilder::new(&adv_hone_chances[piece]);
-                wa_table = builder.build();
+                tap_wa_table = builder.build();
                 for trial_num in 0..data_size as usize {
-                    rolled_tap = wa_table.next_rng(&mut rng);
+                    rolled_tap = tap_wa_table.next_rng(&mut rng);
                     for cost_type in 0..adv_hone_costs[0].len() {
                         cost_data[trial_num][cost_type] +=
                             adv_hone_costs[piece][cost_type][rolled_tap]

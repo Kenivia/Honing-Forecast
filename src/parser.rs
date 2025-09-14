@@ -69,7 +69,7 @@ pub fn parser(
     Vec<Vec<i64>>,
     Vec<Vec<f32>>,
     Vec<Vec<Vec<i64>>>,
-    Vec<String>,
+    Vec<i64>,
 ) {
     // --- Input assertions that match the TS checks ---
     assert!(normal_counts.len() == 2, "normal_counts must have length 2");
@@ -115,6 +115,7 @@ pub fn parser(
     // --- Core logic translation from TS ---
     let mut tags: Vec<String> = Vec::new();
     let mut prob_dist_arr: Vec<Vec<f32>> = Vec::new();
+    let mut special_costs: Vec<i64> = Vec::new();
 
     // hone_costs: create vec of empty vectors equal to number of cost types in weap_costs
     // (TS used weap_costs.length to size this)
@@ -128,6 +129,7 @@ pub fn parser(
         } else {
             &NORMAL_HONE_WEAPON_COST
         };
+
         let mut current_counter: i64 = 0;
 
         // iterate over levels i with repetition according to normal_counts[piece_type][i]
@@ -149,6 +151,7 @@ pub fn parser(
             };
             let tag = format!("Normal{}+{}#{}", piece_str, i, current_counter);
             tags.push(tag);
+            special_costs.push(SPECIAL_LEAPS_COST[piece_type][i]);
 
             let base = NORMAL_HONE_CHANCES[i];
             // TS used raw_chance(base) with default artisan_rate and extras
@@ -281,6 +284,6 @@ pub fn parser(
         hone_costs,
         adv_hone_chances,
         adv_hone_costs,
-        tags,
+        special_costs,
     )
 }

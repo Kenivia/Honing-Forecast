@@ -91,14 +91,14 @@ pub fn chance_to_cost(
     desired_chance: f32,
     adv_hone_strategy: String,
 ) -> (Vec<i64>, f32) {
-    let cost_size: i64 = 200000;
-    let budget_size: i64 = 1000;
-    let (prob_dist_arr, hone_costs, adv_hone_chances, adv_hone_costs, _tags): (
+    let cost_size: usize = 200000;
+    let budget_size: usize = 1000;
+    let (prob_dist_arr, hone_costs, adv_hone_chances, adv_hone_costs, special_costs): (
         Vec<Vec<f32>>,
         Vec<Vec<i64>>,
         Vec<Vec<f32>>,
         Vec<Vec<Vec<i64>>>,
-        Vec<String>,
+        Vec<i64>,
     ) = parser(&hone_counts, &adv_counts, &adv_hone_strategy);
     let cost_data: Vec<Vec<i64>> = monte_carlos_data(
         cost_size,
@@ -107,6 +107,8 @@ pub fn chance_to_cost(
         &adv_hone_chances,
         &adv_hone_costs,
         &unlock(&hone_counts, &adv_counts),
+        0,
+        &special_costs,
         false, //use_true_rng
         false, // rigged
     );
@@ -117,6 +119,8 @@ pub fn chance_to_cost(
         &adv_hone_chances,
         &adv_hone_costs,
         &unlock(&hone_counts, &adv_counts),
+        0,
+        &special_costs,
         true,  // rigged
         false, //use_true_rn
     );
