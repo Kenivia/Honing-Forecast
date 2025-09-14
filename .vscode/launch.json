@@ -1,0 +1,36 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Launch Chrome (Vite)",
+            "type": "chrome",
+            "request": "launch",
+            "url": "http://localhost:5173/Honing-Forecast/",
+            "webRoot": "${workspaceFolder}",
+            "sourceMaps": true,
+            "preLaunchTask": "wasm-and-start-dev",
+            "serverReadyAction": {
+                "pattern": "Local:\\s+(https?://\\S+)",
+                "uriFormat": "%s",
+                "action": "openExternally"
+            }
+        },
+        // {
+        //     "name": "Debug Rust",
+        //     "type": "lldb",
+        //     "request": "launch",
+        //     // "preLaunchTask": "wasm-pack build dev web",
+        //     "cargo": {
+        //         "args": [
+        //             "build",
+        //             "--profile",
+        //             "dev"
+        //         ]
+        //     },
+        //     "cwd": "${workspaceRoot}/target/debug/",
+        //     "sourceLanguages": [
+        //         "rust"
+        //     ]
+        // },
+    ]
+}

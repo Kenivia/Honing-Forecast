@@ -91,3 +91,68 @@ pub fn cost_to_chance_test_wrapper(
     );
     (chance, reason)
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn cost_to_chance_demo() {
+        let (chance, reason): (f64, String) = cost_to_chance_test_wrapper(
+            [
+                [
+                    false, false, false, false, false, false, false, false, false, false, false,
+                    false, false, false, false, false, false, false, false, true, true, false,
+                    false, false, false,
+                ]
+                .to_vec(),
+                [
+                    false, false, false, false, false, false, false, false, false, false, false,
+                    false, false, false, false, false, false, false, false, true, true, false,
+                    false, false, false,
+                ]
+                .to_vec(),
+                [
+                    false, false, false, false, false, false, false, false, false, false, false,
+                    false, false, false, false, false, false, false, false, true, true, false,
+                    false, false, false,
+                ]
+                .to_vec(),
+                [
+                    false, false, false, false, false, false, false, false, false, false, false,
+                    false, false, false, false, false, false, false, false, true, true, false,
+                    false, false, false,
+                ]
+                .to_vec(),
+                [
+                    false, false, false, false, false, false, false, false, false, false, false,
+                    false, false, false, false, false, false, false, false, true, true, false,
+                    false, false, false,
+                ]
+                .to_vec(),
+                [
+                    false, false, false, false, false, false, false, false, false, false, false,
+                    false, false, false, false, false, false, false, false, true, true, false,
+                    false, false, false,
+                ]
+                .to_vec(),
+            ]
+            .to_vec(),
+            [
+                [false, false, true, false].to_vec(),
+                [false, false, true, false].to_vec(),
+                [false, false, true, false].to_vec(),
+                [false, false, true, false].to_vec(),
+                [false, false, true, false].to_vec(),
+                [false, false, true, false].to_vec(),
+            ]
+            .to_vec(),
+            [
+                431777, 1064398, 23748, 9010948, 15125, 1803792, 4294967295, 0, 0, 5000,
+            ]
+            .to_vec(),
+        );
+        println!("{:?}", chance);
+        println!("{:?}", reason);
+    }
+}

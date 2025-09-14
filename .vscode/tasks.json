@@ -1,0 +1,39 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "npm: dev",
+            "type": "shell",
+            "command": "npm run dev",
+            "isBackground": true,
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            }
+        },
+        {
+            "label": "vite: dev",
+            "type": "shell",
+            "command": "npx vite",
+            "isBackground": true,
+        },
+        {
+            "label": "wasm-pack build dev web",
+            "command": "wasm-pack",
+            "args": [
+                "build",
+                "--release",
+                "--target",
+                "web",
+            ],
+        },
+        {
+            "label": "wasm-and-start-dev",
+            "dependsOn": [
+                "wasm-pack build dev web",
+                "vite: dev"
+            ],
+            "isBackground": true,
+        }
+    ]
+}
