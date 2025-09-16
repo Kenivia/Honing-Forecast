@@ -50,9 +50,10 @@ For Chance to Cost, we generate some artificial budgets and see which ones match
 ### UI
 
 - UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI
+- Need to make the layout more intuitive, maybe hover hints
 - Interactable cells for input & output, like spreadsheet
 - Icons/color code materials & pieces
-- Make the pecent sign follow the input number?(right now it just trails on the right)
+- Make the percent sign follow the input number?(right now it just trails on the right)
 - Stricter input control
 - show the bottlenecks in a pie chart?
 - mobile dragging

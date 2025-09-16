@@ -70,8 +70,9 @@ pub fn monte_carlos_data(
 ) -> Vec<Vec<i64>> {
     // dbg!(&upgrade_arr[0]);
 
-    let mut cost_data: Vec<Vec<i64>> = vec![vec![0; 8]; data_size as usize];
+    let mut cost_data: Vec<Vec<i64>> = vec![vec![0; 9]; data_size as usize];
     let mut rng: rand::prelude::ThreadRng = rand::thread_rng();
+    let mut juice_ind: usize;
     if rigged {
         let mut rolled_tap: usize;
         for (_, upgrade) in upgrade_arr.iter().enumerate() {
@@ -83,7 +84,12 @@ pub fn monte_carlos_data(
                         upgrade.costs[cost_type] * (rolled_tap as i64 + 1);
                 }
                 if !upgrade.is_normal_honing {
-                    cost_data[trial_num][7] +=
+                    if upgrade.is_weapon {
+                        juice_ind = 7;
+                    } else {
+                        juice_ind = 8;
+                    }
+                    cost_data[trial_num][juice_ind] +=
                         round_juice(upgrade.adv_juice_cost[rolled_tap], &mut rng);
                 }
             }
@@ -130,7 +136,12 @@ pub fn monte_carlos_data(
                                 * (rolled_tap as i64 + upgrade.adv_cost_start);
                         }
                         if !upgrade.is_normal_honing {
-                            cost_data[trial_num][7] +=
+                            if upgrade.is_weapon {
+                                juice_ind = 7;
+                            } else {
+                                juice_ind = 8;
+                            }
+                            cost_data[trial_num][juice_ind] +=
                                 round_juice(upgrade.adv_juice_cost[rolled_tap], &mut rng);
                         }
                     }

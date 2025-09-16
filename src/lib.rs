@@ -26,6 +26,7 @@ pub struct Payload {
 
 #[wasm_bindgen]
 pub fn chance_to_cost_wrapper(input: JsValue) -> JsValue {
+    console_error_panic_hook::set_once();
     let payload: Payload = from_value(input).unwrap();
     let normal_hone_ticks: Vec<Vec<bool>> = payload.normal_hone_ticks;
     let adv_hone_ticks: Vec<Vec<bool>> = payload.adv_hone_ticks;
@@ -143,6 +144,65 @@ mod tests {
                 [false, false, true, false].to_vec(),
                 [false, false, true, false].to_vec(),
                 [false, false, true, false].to_vec(),
+            ]
+            .to_vec(),
+            [
+                431777, 1064398, 23748, 9010948, 15125, 1803792, 4294967295, 0, 0, 0,
+            ]
+            .to_vec(),
+        );
+        println!("{:?}", chance);
+        println!("{:?}", reason);
+    }
+    #[test]
+    fn cost_to_chance_one_normal() {
+        let (chance, reason): (f64, String) = cost_to_chance_test_wrapper(
+            [
+                [
+                    false, false, false, false, false, false, false, false, false, false, false,
+                    false, false, false, false, false, false, false, false, true, false, false,
+                    false, false, false,
+                ]
+                .to_vec(),
+                [
+                    false, false, false, false, false, false, false, false, false, false, false,
+                    false, false, false, false, false, false, false, false, false, false, false,
+                    false, false, false,
+                ]
+                .to_vec(),
+                [
+                    false, false, false, false, false, false, false, false, false, false, false,
+                    false, false, false, false, false, false, false, false, false, false, false,
+                    false, false, false,
+                ]
+                .to_vec(),
+                [
+                    false, false, false, false, false, false, false, false, false, false, false,
+                    false, false, false, false, false, false, false, false, false, false, false,
+                    false, false, false,
+                ]
+                .to_vec(),
+                [
+                    false, false, false, false, false, false, false, false, false, false, false,
+                    false, false, false, false, false, false, false, false, false, false, false,
+                    false, false, false,
+                ]
+                .to_vec(),
+                [
+                    false, false, false, false, false, false, false, false, false, false, false,
+                    false, false, false, false, false, false, false, false, false, false, false,
+                    false, false, false,
+                ]
+                .to_vec(),
+            ]
+            .to_vec(),
+            [
+                [false, false, false, false].to_vec(),
+                [false, false, false, false].to_vec(),
+                [false, false, false, false].to_vec(),
+                [false, false, false, false].to_vec(),
+                [false, false, false, false].to_vec(),
+                [false, false, false, false].to_vec(),
             ]
             .to_vec(),
             [

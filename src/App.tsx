@@ -174,7 +174,7 @@ export default function UpgradeCalculatorUI() {
         set_desired_chance((Math.random() * 100).toFixed(2).toString())
     }
     const fillMy = () => {
-        setTopGrid(Array.from({ length: TOP_ROWS }, () => Array.from({ length: TOP_COLS }, (_, ind) => ind == 19 || ind == 20)))
+        setTopGrid(Array.from({ length: TOP_ROWS }, () => Array.from({ length: TOP_COLS }, (_, ind) => ind == 19 || ind == 20 || ind == 21)))
         setBottomGrid(Array.from({ length: BOTTOM_ROWS }, () => Array.from({ length: BOTTOM_COLS }, (_, ind) => ind == 2)))
         set_budget_inputs({
             Red: "431777",
@@ -184,9 +184,9 @@ export default function UpgradeCalculatorUI() {
             Oreha: "15125",
             Gold: "1803792",
             "Silver(WIP)": "4294967295",
-            "Red juice": "0",
-            "Blue juice": "0",
-            "Special leaps": "0",
+            "Red juice": "420",
+            "Blue juice": "690",
+            "Special leaps": "6767",
         }),
             set_desired_chance("69")
     }
@@ -695,7 +695,8 @@ export default function UpgradeCalculatorUI() {
                                     <div style={{ ...styles.inputLabelCell, whiteSpace: 'nowrap' }}>Chance of Success</div>
                                     <div style={{ ...styles.inputCell, border: 'none', marginLeft: 40, background: 'transparent', color: '#9ff7c7', fontSize: 20 }}>{chance_result ? (String(chance_result.chance) + '%') : '-'}</div>
                                 </div>
-                                <div style={{ marginTop: 8, color: '#9fe7ff' }}>{chance_result ? (chance_result.reason || '') : ''}</div>
+                                <div style={{ marginTop: 15, ...styles.inputLabelCell, whiteSpace: 'nowrap' }}>Reasons for failures(bottlenecks):</div>
+                                <div style={{ marginTop: 6, color: '#9fe7ff' }}>{chance_result ? (chance_result.reason || '') : ''}</div>
                                 <div style={{ marginTop: 6, color: '#9fe7ff' }}>{chance_result ? ('Run time: ' + chance_result.run_time + 's') : ''}</div>
                             </div>
                         </div>

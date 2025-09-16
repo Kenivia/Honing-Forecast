@@ -28,7 +28,7 @@ fn fail_count_to_string(typed_fail_counter: Vec<f32>, data_size: usize) -> Strin
     {
         failed_labels = "None".to_string();
     } else {
-        failed_labels = this_failed.join("\n");
+        failed_labels = this_failed.join(", ");
     }
     return failed_labels;
 }

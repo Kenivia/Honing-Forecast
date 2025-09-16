@@ -1,6 +1,7 @@
 use crate::helpers::calc_unlock;
 use crate::monte_carlos::monte_carlos_data;
 use crate::parser::{Upgrade, parser};
+use web_sys::console;
 // use crate::{constants::*, cost_to_chance};
 
 fn count_failure_naive(cost_data: &Vec<Vec<i64>>, budget_data: &Vec<Vec<i64>>) -> Vec<i64> {
@@ -31,8 +32,8 @@ fn cost_passes_budget(cost: &[i64], budget: &[i64]) -> bool {
 /// `cost_data` is a slice of N cost vectors; `budget_data` is a slice of M budget vectors
 /// that are sorted element-wise ascending. Returns a Vec<i64> length M.
 fn count_failure_ascending(cost_data: &Vec<Vec<i64>>, budget_data: &Vec<Vec<i64>>) -> Vec<i64> {
-    let n = cost_data.len();
-    let m = budget_data.len();
+    let n: usize = cost_data.len();
+    let m: usize = budget_data.len();
     if n == 0 || m == 0 {
         return vec![0i64; m];
     }
@@ -41,7 +42,7 @@ fn count_failure_ascending(cost_data: &Vec<Vec<i64>>, budget_data: &Vec<Vec<i64>
     let mut diffs: Vec<i64> = vec![0i64; m + 1];
 
     for cost in cost_data.iter() {
-        let cs = cost.as_slice();
+        let cs: &[i64] = cost.as_slice();
 
         // Binary search for the first budget index that the cost *passes*.
         // If none pass, first_pass_index stays m (meaning it fails all budgets).
@@ -50,11 +51,13 @@ fn count_failure_ascending(cost_data: &Vec<Vec<i64>>, budget_data: &Vec<Vec<i64>
         let mut first_pass_index: usize = m;
 
         while low <= high {
-            let mid = ((low + high) >> 1) as usize;
-            let mid_usize = mid as usize;
+            let mid: usize = ((low + high) >> 1) as usize;
 
-            if cost_passes_budget(cs, budget_data[mid_usize].as_slice()) {
-                first_pass_index = mid_usize;
+            if cost_passes_budget(cs, budget_data[mid].as_slice()) || mid == 0 {
+                first_pass_index = mid;
+                if mid == 0 {
+                    break;
+                }
                 high = mid - 1;
             } else {
                 low = mid + 1;
@@ -69,7 +72,7 @@ fn count_failure_ascending(cost_data: &Vec<Vec<i64>>, budget_data: &Vec<Vec<i64>
     }
 
     // Build prefix-sum to obtain counts per budget index.
-    let mut counts = vec![0i64; m];
+    let mut counts: Vec<i64> = vec![0i64; m];
     counts[0] = diffs[0];
     for i in 1..m {
         counts[i] = counts[i - 1] + diffs[i];
