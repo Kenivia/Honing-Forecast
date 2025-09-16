@@ -1,5 +1,21 @@
 use crate::constants::{ADV_HONE_UNLOCK, NORMAL_HONE_ARMOR_UNLOCK, NORMAL_HONE_WEAPON_UNLOCK};
 
+pub fn sort_by_indices<T>(upgrade_arr: &mut Vec<T>, mut indices: Vec<usize>) {
+    for idx in 0..upgrade_arr.len() {
+        if indices[idx] != idx {
+            let mut current_idx = idx;
+            loop {
+                let target_idx = indices[current_idx];
+                indices[current_idx] = current_idx;
+                if indices[target_idx] == target_idx {
+                    break;
+                }
+                upgrade_arr.swap(current_idx, target_idx);
+                current_idx = target_idx;
+            }
+        }
+    }
+}
 pub fn ticks_to_counts(ticks: Vec<Vec<bool>>) -> Vec<Vec<i64>> {
     // assume ticks is always 6 rows
     let cols = ticks[0].len();
@@ -25,7 +41,7 @@ pub fn ticks_to_counts(ticks: Vec<Vec<bool>>) -> Vec<Vec<i64>> {
 /// - `adv_unlock`: Option<&[Vec<i64>]> (if Some, same structure as other unlock arrays)
 ///
 /// Returns: (shard_unlock, silver_unlock)
-pub fn unlock(hone_counts: &Vec<Vec<i64>>, adv_counts: &Vec<Vec<i64>>) -> Vec<i64> {
+pub fn calc_unlock(hone_counts: &Vec<Vec<i64>>, adv_counts: &Vec<Vec<i64>>) -> Vec<i64> {
     let mut shard_unlock: i64 = 0;
     let mut silver_unlock: i64 = 0;
 

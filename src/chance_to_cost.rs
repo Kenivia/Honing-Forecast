@@ -1,6 +1,6 @@
-use crate::helpers::unlock;
+use crate::helpers::calc_unlock;
 use crate::monte_carlos::monte_carlos_data;
-use crate::parser::parser;
+use crate::parser::{Upgrade, parser};
 // use crate::{constants::*, cost_to_chance};
 
 fn count_failure_naive(cost_data: &Vec<Vec<i64>>, budget_data: &Vec<Vec<i64>>) -> Vec<i64> {
@@ -93,34 +93,27 @@ pub fn chance_to_cost(
 ) -> (Vec<i64>, f32) {
     let cost_size: usize = 200000;
     let budget_size: usize = 1000;
-    let (prob_dist_arr, hone_costs, adv_hone_chances, adv_hone_costs, special_costs): (
-        Vec<Vec<f32>>,
-        Vec<Vec<i64>>,
-        Vec<Vec<f32>>,
-        Vec<Vec<Vec<i64>>>,
-        Vec<i64>,
-    ) = parser(&hone_counts, &adv_counts, &adv_hone_strategy);
+    let upgrade_arr: Vec<Upgrade> = parser(
+        &hone_counts,
+        &adv_counts,
+        &adv_hone_strategy,
+        &vec![1.0; 25],
+        &vec![0.0; 25],
+        &vec![1; 25],
+    );
     let cost_data: Vec<Vec<i64>> = monte_carlos_data(
         cost_size,
-        &prob_dist_arr,
-        &hone_costs,
-        &adv_hone_chances,
-        &adv_hone_costs,
-        &unlock(&hone_counts, &adv_counts),
+        &upgrade_arr,
+        &calc_unlock(&hone_counts, &adv_counts),
         0,
-        &special_costs,
         false, //use_true_rng
         false, // rigged
     );
     let budget_data: Vec<Vec<i64>> = monte_carlos_data(
         budget_size,
-        &prob_dist_arr,
-        &hone_costs,
-        &adv_hone_chances,
-        &adv_hone_costs,
-        &unlock(&hone_counts, &adv_counts),
+        &upgrade_arr,
+        &calc_unlock(&hone_counts, &adv_counts),
         0,
-        &special_costs,
         true,  // rigged
         false, //use_true_rn
     );

@@ -54,10 +54,9 @@ pub fn cost_to_chance_wrapper(input: JsValue) -> JsValue {
     let budget: Vec<i64> = payload.budget;
     console::log_1(&"unwrap complete".into());
     let (chance, reason): (f64, String) = cost_to_chance(
-        ticks_to_counts(normal_hone_ticks),
-        budget,
-        ticks_to_counts(adv_hone_ticks),
-        String::from("No juice"),
+        &ticks_to_counts(normal_hone_ticks),
+        &budget,
+        &ticks_to_counts(adv_hone_ticks),
     );
     console::log_1(&"cost_to_chance_complete".into());
     to_value(&(chance, reason)).unwrap()
@@ -84,10 +83,9 @@ pub fn cost_to_chance_test_wrapper(
     budget: Vec<i64>,
 ) -> (f64, String) {
     let (chance, reason): (f64, String) = cost_to_chance(
-        ticks_to_counts(normal_hone_ticks),
-        budget,
-        ticks_to_counts(adv_hone_ticks),
-        String::from("No juice"),
+        &ticks_to_counts(normal_hone_ticks),
+        &budget,
+        &ticks_to_counts(adv_hone_ticks),
     );
     (chance, reason)
 }
@@ -148,7 +146,7 @@ mod tests {
             ]
             .to_vec(),
             [
-                431777, 1064398, 23748, 9010948, 15125, 1803792, 4294967295, 0, 0, 5000,
+                431777, 1064398, 23748, 9010948, 15125, 1803792, 4294967295, 0, 0, 0,
             ]
             .to_vec(),
         );

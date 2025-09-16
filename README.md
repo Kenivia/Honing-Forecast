@@ -40,9 +40,10 @@ For Chance to Cost, we generate some artificial budgets and see which ones match
 
 ### DEV
 
-- Get silver unlock cost somewhere(currently silver unlock cost is 0 so its labeled as WIP)
-- Fine tuning for advanced honing(+1 -1 when adjusting best_budget)(need to implement in rust)
+- Get silver unlock cost somewhere(currently silver unlock cost is 0 so its labeled as WIP)(somewhere = maxroll probably)
+- Fine tuning (+1 -1 when adjusting best_budget)(need to implement in rust)
 - rework App.tsx, split into funcitons or something there has to be a better way
+- Optimize monte carlos - can pre-generate special leaps taps like tap map, move the current tap map into the loop
 
 ### UI
 
@@ -53,4 +54,5 @@ For Chance to Cost, we generate some artificial budgets and see which ones match
 - Stricter input control
 - show the bottlenecks in a pie chart?
 - mobile dragging
+- dark mode(the input goes white rn, and when it loads theres a white flash)
 - maybe use some kind of existing library to make everything less ugly

@@ -1,47 +1,126 @@
 use crate::constants::*;
 
+#[derive(Debug)]
+pub struct Upgrade {
+    pub is_normal_honing: bool,
+    pub prob_dist: Vec<f32>,
+    pub base_chance: f32,
+    pub costs: [i64; 7],
+    pub normal_juice_cost: i64,
+    pub adv_juice_cost: Vec<f32>,
+    pub special_cost: i64,
+    pub values: Vec<f32>,
+    pub prob_dist_len: usize,
+    pub is_weapon: bool,
+    pub artisan_rate: f32,
+    pub adv_cost_start: i64,
+    // pub upgrade_plus_num: usize,
+}
+impl Upgrade {
+    fn new_normal(
+        prob_dist: Vec<f32>,
+        costs: [i64; 7],
+        special_cost: i64,
+        is_weapon: bool,
+        artisan_rate: f32,
+        upgrade_plus_num: usize,
+    ) -> Upgrade {
+        let prob_dist_len: usize = prob_dist.len();
+        let base_chance: f32 = prob_dist[0];
+        Upgrade {
+            is_normal_honing: true,
+            prob_dist,
+            base_chance,
+            costs,
+            normal_juice_cost: NORMAL_JUICE_COST[upgrade_plus_num],
+            adv_juice_cost: vec![],
+            special_cost,
+            values: vec![],
+            prob_dist_len,
+            is_weapon,
+            artisan_rate,
+            adv_cost_start: 0,
+            // upgrade_plus_num,
+        }
+    }
+    fn new_adv(
+        prob_dist: Vec<f32>,
+        costs: [i64; 7],
+        adv_juice_cost: Vec<f32>,
+        is_weapon: bool,
+        adv_cost_start: i64,
+        // _upgrade_plus_num: usize,
+    ) -> Upgrade {
+        let prob_dist_len: usize = prob_dist.len();
+        let base_chance: f32 = prob_dist[0];
+        assert!(prob_dist_len == adv_juice_cost.len());
+        Upgrade {
+            is_normal_honing: false,
+            prob_dist,
+            base_chance: 0.0,
+            costs,
+            normal_juice_cost: 0,
+            adv_juice_cost,
+            special_cost: 0,
+            values: vec![],
+            prob_dist_len,
+            is_weapon,
+            artisan_rate: 0.0,
+            adv_cost_start,
+            // upgrade_plus_num,
+        }
+    }
+}
 /// Produce the raw chance sequence used by the TS `raw_chance` helper.
 /// Mirrors the JS behavior: increasing base chance with soft pity, artisan accumulation,
 /// and stops when artisan >= 1 (in which case the chance is set to 1).
-fn raw_chance(base: f32, artisan_rate: f32, mut extra: f32, mut extra_num: i64) -> Vec<f32> {
-    let mut chances: Vec<f32> = Vec::new();
+/// Produce the per-tap probability distribution used by the TS `raw_chance` + `raw -> distribution` logic.
+/// Mirrors the JS behavior: increasing base chance with soft pity, artisan accumulation,
+/// stops when artisan >= 1 (in which case the chance is set to 1), and converts the
+/// per-try success chances into the probability that success happens exactly on that tap.
+pub fn probability_distribution(
+    base: f32,
+    artisan_rate: f32,
+    mut extra: f32,
+    mut extra_num: usize,
+) -> Vec<f32> {
+    let mut raw_chances: Vec<f32> = Vec::new();
     let mut artisan = 0.0_f32;
-    let mut current_chance: f32;
     let mut count: i64 = 0;
 
     loop {
-        if extra_num <= 0 {
+        if extra_num == 0 {
             extra = 0.0;
+        } else {
+            extra_num -= 1;
         }
-        // current_chance = base + (min(count,10) * base) / 10 + extra
         let min_count = std::cmp::min(count, 10) as f32;
-        current_chance = base + (min_count * base) / 10.0 + extra;
-        extra_num -= 1;
+        let mut current_chance = base + (min_count * base) / 10.0 + extra;
 
         if artisan >= 1.0 {
-            current_chance = 1.0;
-            chances.push(current_chance);
-            break;
+            if extra_num == 0 {
+                current_chance = 1.0;
+                raw_chances.push(current_chance);
+                break;
+            } else {
+                return vec![];
+            }
         }
-        chances.push(current_chance);
+        raw_chances.push(current_chance);
         count += 1;
         artisan += (46.51_f32 / 100.0) * current_chance * artisan_rate;
     }
 
-    chances
-}
-
-/// Convert a raw chance sequence (per-try success chance) into the per-tap probability distribution,
-/// i.e. the probability that success happens exactly on that tap (before starting).
-fn probability_distribution(raw: &[f32]) -> Vec<f32> {
-    let mut chances = vec![0.0_f32; raw.len()];
+    // convert raw per-try chances into per-tap probability distribution
+    let mut chances = vec![0.0_f32; raw_chances.len()];
     let mut cum_chance = 1.0_f32;
-    for (idx, &element) in raw.iter().enumerate() {
+    for (idx, &element) in raw_chances.iter().enumerate() {
         chances[idx] = cum_chance * element;
         cum_chance *= 1.0 - element;
     }
     chances
 }
+
 fn convert_static_to_vec(arr: &[[i64; 3]]) -> Vec<Vec<i64>> {
     arr.iter().map(|inner| inner.to_vec()).collect()
 }
@@ -64,13 +143,10 @@ pub fn parser(
     normal_counts: &Vec<Vec<i64>>,
     adv_counts: &Vec<Vec<i64>>,
     adv_hone_strategy: &String,
-) -> (
-    Vec<Vec<f32>>,
-    Vec<Vec<i64>>,
-    Vec<Vec<f32>>,
-    Vec<Vec<Vec<i64>>>,
-    Vec<i64>,
-) {
+    artisan_rate_arr: &Vec<f32>,
+    extra_arr: &Vec<f32>,
+    extra_num_arr: &Vec<usize>,
+) -> Vec<Upgrade> {
     // --- Input assertions that match the TS checks ---
     assert!(normal_counts.len() == 2, "normal_counts must have length 2");
     assert!(
@@ -79,10 +155,10 @@ pub fn parser(
     );
 
     // ensure integer ranges as in TS: first row values [0..=5], second row values [0..=1]
-    let max_normal0 = *normal_counts[0].iter().max().unwrap_or(&0);
-    let min_normal0 = *normal_counts[0].iter().min().unwrap_or(&0);
-    let max_normal1 = *normal_counts[1].iter().max().unwrap_or(&0);
-    let min_normal1 = *normal_counts[1].iter().min().unwrap_or(&0);
+    let max_normal0: i64 = *normal_counts[0].iter().max().unwrap_or(&0);
+    let min_normal0: i64 = *normal_counts[0].iter().min().unwrap_or(&0);
+    let max_normal1: i64 = *normal_counts[1].iter().max().unwrap_or(&0);
+    let min_normal1: i64 = *normal_counts[1].iter().min().unwrap_or(&0);
 
     assert!(max_normal0 <= 5, "normal_counts[0] max must be <= 5");
     assert!(min_normal0 >= 0, "normal_counts[0] min must be >= 0");
@@ -93,10 +169,10 @@ pub fn parser(
 
     // adv_counts checks
     assert!(adv_counts.len() == 2, "adv_counts must have length 2");
-    let max_adv0 = *adv_counts[0].iter().max().unwrap_or(&0);
-    let min_adv0 = *adv_counts[0].iter().min().unwrap_or(&0);
-    let max_adv1 = *adv_counts[1].iter().max().unwrap_or(&0);
-    let min_adv1 = *adv_counts[1].iter().min().unwrap_or(&0);
+    let max_adv0: i64 = *adv_counts[0].iter().max().unwrap_or(&0);
+    let min_adv0: i64 = *adv_counts[0].iter().min().unwrap_or(&0);
+    let max_adv1: i64 = *adv_counts[1].iter().max().unwrap_or(&0);
+    let min_adv1: i64 = *adv_counts[1].iter().min().unwrap_or(&0);
     assert!(max_adv0 <= 5, "adv_counts[0] max must be <= 5");
     assert!(min_adv0 >= 0, "adv_counts[0] min must be >= 0");
     assert!(max_adv1 <= 1, "adv_counts[1] max must be <= 1");
@@ -113,18 +189,19 @@ pub fn parser(
     );
 
     // --- Core logic translation from TS ---
-    let mut tags: Vec<String> = Vec::new();
-    let mut prob_dist_arr: Vec<Vec<f32>> = Vec::new();
-    let mut special_costs: Vec<i64> = Vec::new();
+    // let mut tags: Vec<String> = Vec::new();
+    // let mut prob_dist_arr: Vec<Vec<f32>> = Vec::new();
+    let mut out: Vec<Upgrade> = Vec::new();
 
     // hone_costs: create vec of empty vectors equal to number of cost types in weap_costs
     // (TS used weap_costs.length to size this)
-    let cost_types_count = NORMAL_HONE_WEAPON_COST.len();
-    let mut hone_costs: Vec<Vec<i64>> = vec![Vec::new(); cost_types_count];
-
+    // let cost_types_count = NORMAL_HONE_WEAPON_COST.len();
+    // let mut hone_costs: Vec<Vec<i64>> = vec![Vec::new(); cost_types_count];
+    let mut this_cost: Vec<i64>;
+    let mut prob_dist: Vec<f32>;
     // For each piece type (0..normal_counts.len())
-    for piece_type in 0..normal_counts.len() {
-        let cur_cost = if piece_type == 0 {
+    for is_weapon in 0..normal_counts.len() {
+        let cur_cost = if is_weapon == 0 {
             &NORMAL_HONE_ARMOR_COST
         } else {
             &NORMAL_HONE_WEAPON_COST
@@ -133,88 +210,78 @@ pub fn parser(
         let mut current_counter: i64 = 0;
 
         // iterate over levels i with repetition according to normal_counts[piece_type][i]
-        let row_len = normal_counts[piece_type].len();
-        let mut i: usize = 0;
-        while i < row_len {
-            let needed = normal_counts[piece_type][i];
+        let row_len = normal_counts[is_weapon].len(); // 25
+        let mut upgrade_plus_num: usize = 0;
+        let mut base: f32;
+        let mut special_cost: i64;
+        let mut prob_dist_len: usize;
+        while upgrade_plus_num < row_len {
+            let needed: i64 = normal_counts[is_weapon][upgrade_plus_num];
             if current_counter >= needed {
-                i += 1;
+                upgrade_plus_num += 1;
                 current_counter = 0;
                 continue;
             }
 
             // tag e.g. "Normal Armor +X#Y" or "Normal Weapon +X#Y"
-            let piece_str = if piece_type == 0 {
-                " Armor "
-            } else {
-                " Weapon "
-            };
-            let tag = format!("Normal{}+{}#{}", piece_str, i, current_counter);
-            tags.push(tag);
-            special_costs.push(SPECIAL_LEAPS_COST[piece_type][i]);
+            // let piece_str = if piece_type == 0 {
+            //     " Armor "
+            // } else {
+            //     " Weapon "
+            // };
+            // let tag = format!("Normal{}+{}#{}", piece_str, i, current_counter);
 
-            let base = NORMAL_HONE_CHANCES[i];
-            // TS used raw_chance(base) with default artisan_rate and extras
-            let raw = raw_chance(base, 1.0, 0.0, 0);
-            let prob_dist = probability_distribution(&raw);
-
+            // special_costs.push(SPECIAL_LEAPS_COST[piece_type][i]);
+            special_cost = SPECIAL_LEAPS_COST[is_weapon][upgrade_plus_num];
+            base = NORMAL_HONE_CHANCES[upgrade_plus_num];
+            prob_dist = probability_distribution(
+                base,
+                artisan_rate_arr[upgrade_plus_num],
+                extra_arr[upgrade_plus_num],
+                extra_num_arr[upgrade_plus_num],
+            );
+            prob_dist_len = prob_dist.len();
+            this_cost = Vec::with_capacity(7);
             // for each cost_type push cur_cost[cost_type][i]
-            for cost_type in 0..cost_types_count {
-                // cur_cost is matrix [cost_type][level_index]
-                // assert bounds
-                let val = cur_cost
-                    .get(cost_type)
-                    .and_then(|r| r.get(i))
-                    .copied()
-                    .unwrap_or(0);
-                hone_costs[cost_type].push(val);
+            for cost_type in 0..7 {
+                this_cost.push(cur_cost[cost_type][upgrade_plus_num]);
             }
 
-            prob_dist_arr.push(prob_dist);
+            out.push(Upgrade::new_normal(
+                prob_dist,
+                this_cost.try_into().unwrap(),
+                special_cost,
+                is_weapon == 1,
+                artisan_rate_arr[upgrade_plus_num],
+                upgrade_plus_num,
+            ));
             current_counter += 1;
         }
     }
 
     // Advanced hone
-    let mut adv_hone_costs: Vec<Vec<Vec<i64>>> = Vec::new(); // Vec of this_cost matrices
-    let mut adv_hone_chances: Vec<Vec<f32>> = Vec::new();
-
-    for wep_or_arm in 0..adv_counts.len() {
+    let mut this_juice_cost: Vec<f32>;
+    for is_weapon in 0..adv_counts.len() {
         let mut current_counter: i64 = 0;
-        let row_len = adv_counts[wep_or_arm].len();
-        let mut i: usize = 0;
-        while i < row_len {
-            let needed = adv_counts[wep_or_arm][i];
+        let row_len = adv_counts[is_weapon].len();
+        let mut upgrade_plus_num: usize = 0;
+        while upgrade_plus_num < row_len {
+            let needed = adv_counts[is_weapon][upgrade_plus_num];
             if current_counter >= needed {
-                i += 1;
+                upgrade_plus_num += 1;
                 current_counter = 0;
                 continue;
             }
 
-            let piece_str = if wep_or_arm == 0 {
-                " Armor "
-            } else {
-                " Weapon "
-            };
-            // Tag example: "Adv Armor +10Juice on grace#0"  (matches TS pattern)
-            let tag = format!(
-                "Adv{}+{}{}#{}",
-                piece_str,
-                i * 10,
-                adv_hone_strategy,
-                current_counter
-            );
-            tags.push(tag);
-
             // pick relevant_data based on strategy and level i (i <= 1 -> 10/20, else 30/40)
             let relevant_data: &Vec<Vec<i64>> = if adv_hone_strategy == "Juice on grace" {
-                if i <= 1 {
+                if upgrade_plus_num <= 1 {
                     &convert_static_to_vec(&ADV_DATA_10_20_JUICE)
                 } else {
                     &convert_static_to_vec(&ADV_DATA_30_40_JUICE)
                 }
             } else {
-                if i <= 1 {
+                if upgrade_plus_num <= 1 {
                     &convert_static_to_vec(&ADV_DATA_10_20)
                 } else {
                     &convert_static_to_vec(&ADV_DATA_30_40)
@@ -223,15 +290,22 @@ pub fn parser(
 
             // this_chances length = relevant_data.len()
             let rows = relevant_data.len();
-            let mut this_chances: Vec<f32> = vec![0.0; rows];
             let sum_taps: i64 = relevant_data
                 .iter()
                 .map(|row| row.get(2).copied().unwrap_or(0))
                 .sum();
 
             // this_cost is 9 x rows matrix of i64 zeros (TS used length 9)
-            let mut this_cost: Vec<Vec<i64>> = vec![vec![0_i64; rows]; 9];
+            let col_index = 2 * (upgrade_plus_num as i64) + (1 - is_weapon as i64);
+            this_cost = Vec::with_capacity(7);
+            for cost_type in 0..7 {
+                // index into adv_costs columns: 2*i + (1 - wep_or_arm)
 
+                let cost_val = ADV_HONE_COST[cost_type][col_index as usize];
+                this_cost.push(cost_val);
+            }
+            prob_dist = Vec::with_capacity(rows);
+            this_juice_cost = Vec::with_capacity(rows);
             for row_idx in 0..rows {
                 // row structure: [something_for_blue_count, something_for_juice_count, taps]
                 let row = &relevant_data[row_idx];
@@ -239,51 +313,26 @@ pub fn parser(
                 let taps = row.get(2).copied().unwrap_or(0);
                 let taps_f = taps as f32;
                 let sum_taps_f = if sum_taps == 0 { 1.0 } else { sum_taps as f32 };
-                this_chances[row_idx] = taps_f / sum_taps_f;
+                prob_dist.push(taps_f / sum_taps_f);
 
-                // For cost_type 0..6
-                for cost_type in 0..7 {
-                    // index into adv_costs columns: 2*i + (1 - wep_or_arm)
-                    let col_index = 2 * (i as i64) + (1 - wep_or_arm as i64);
-                    let cost_val = ADV_HONE_COST
-                        .get(cost_type)
-                        .and_then(|r| r.get(col_index as usize))
-                        .copied()
-                        .unwrap_or(0);
-                    let multiplier = row.get(0).copied().unwrap_or(0);
-                    this_cost[cost_type][row_idx] = cost_val * multiplier;
-                }
-
-                // cost_type 7..8: use row[1] and apply juice strategy multiplier
-                for cost_type in 7..9 {
-                    let col_index = 2 * (i as i64) + (1 - wep_or_arm as i64);
-                    let cost_val = ADV_HONE_COST
-                        .get(cost_type)
-                        .and_then(|r| r.get(col_index as usize))
-                        .copied()
-                        .unwrap_or(0);
-                    let multiplier = row.get(1).copied().unwrap_or(0);
-                    let strategy_mult = if adv_hone_strategy == "Juice on grace" {
-                        1
-                    } else {
-                        0
-                    };
-                    this_cost[cost_type][row_idx] = cost_val * multiplier * strategy_mult;
-                }
+                let cost_val: i64 = ADV_HONE_COST[7][col_index as usize];
+                this_juice_cost
+                    .push(cost_val as f32 * relevant_data[row_idx][1] as f32 / 1000.0_f32);
             }
 
-            adv_hone_chances.push(this_chances);
-            adv_hone_costs.push(this_cost);
+            // adv_hone_chances.push(this_chances);
+            // adv_hone_costs.push(this_cost);
+            out.push(Upgrade::new_adv(
+                prob_dist,
+                this_cost.try_into().unwrap(),
+                this_juice_cost.clone(),
+                is_weapon == 1,
+                relevant_data[0][0],
+                // upgrade_plus_num,
+            ));
             current_counter += 1;
         }
     }
 
-    // TS had a couple of "if length == 0, set to []" - redundant in Rust: Vec already empty.
-    (
-        prob_dist_arr,
-        hone_costs,
-        adv_hone_chances,
-        adv_hone_costs,
-        special_costs,
-    )
+    out
 }
