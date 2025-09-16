@@ -99,23 +99,23 @@ pub fn chance_to_cost(
         &adv_hone_strategy,
         &vec![1.0; 25],
         &vec![0.0; 25],
-        &vec![1; 25],
+        &vec![0; 25],
     );
     let cost_data: Vec<Vec<i64>> = monte_carlos_data(
         cost_size,
         &upgrade_arr,
         &calc_unlock(&hone_counts, &adv_counts),
         0,
-        false, //use_true_rng
-        false, // rigged
+        false, //rigged
+        true,  // use_true_rng
     );
     let budget_data: Vec<Vec<i64>> = monte_carlos_data(
         budget_size,
         &upgrade_arr,
         &calc_unlock(&hone_counts, &adv_counts),
         0,
-        true,  // rigged
-        false, //use_true_rn
+        true, // rigged
+        true, //use_true_rn
     );
     let failure_counts: Vec<i64> = count_failure(&cost_data, &budget_data, true);
 

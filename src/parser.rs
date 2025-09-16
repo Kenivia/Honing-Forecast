@@ -52,7 +52,6 @@ impl Upgrade {
         // _upgrade_plus_num: usize,
     ) -> Upgrade {
         let prob_dist_len: usize = prob_dist.len();
-        let base_chance: f32 = prob_dist[0];
         assert!(prob_dist_len == adv_juice_cost.len());
         Upgrade {
             is_normal_honing: false,
@@ -214,7 +213,6 @@ pub fn parser(
         let mut upgrade_plus_num: usize = 0;
         let mut base: f32;
         let mut special_cost: i64;
-        let mut prob_dist_len: usize;
         while upgrade_plus_num < row_len {
             let needed: i64 = normal_counts[is_weapon][upgrade_plus_num];
             if current_counter >= needed {
@@ -240,7 +238,7 @@ pub fn parser(
                 extra_arr[upgrade_plus_num],
                 extra_num_arr[upgrade_plus_num],
             );
-            prob_dist_len = prob_dist.len();
+
             this_cost = Vec::with_capacity(7);
             // for each cost_type push cur_cost[cost_type][i]
             for cost_type in 0..7 {
