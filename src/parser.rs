@@ -84,7 +84,7 @@ pub fn probability_distribution(
     mut extra_num: usize,
 ) -> Vec<f64> {
     let mut raw_chances: Vec<f64> = Vec::new();
-    let mut artisan = 0.0_f64;
+    let mut artisan: f64 = 0.0_f64;
     let mut count: i64 = 0;
 
     loop {
@@ -93,8 +93,8 @@ pub fn probability_distribution(
         } else {
             extra_num -= 1;
         }
-        let min_count = std::cmp::min(count, 10) as f64;
-        let mut current_chance = base + (min_count * base) / 10.0 + extra;
+        let min_count: f64 = std::cmp::min(count, 10) as f64;
+        let mut current_chance: f64 = base + (min_count * base) / 10.0 + extra;
 
         if artisan >= 1.0 {
             if extra_num == 0 {

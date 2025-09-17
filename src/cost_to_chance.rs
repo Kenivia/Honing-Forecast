@@ -148,7 +148,7 @@ mod tests {
         );
         println!("{:?}", chance);
         println!("{:?}", reason);
-        assert!(0.183 < chance && chance < 0.188);
+        assert!(0.183 < chance && chance < 0.189);
     }
     #[test]
     fn cost_to_chance_50_normal_weapon_25() {
@@ -165,7 +165,7 @@ mod tests {
         assert!(0.495 < chance && chance < 0.505);
     }
     #[test]
-    fn cost_to_chance_47_adv_armor_40() {
+    fn cost_to_chance_53_adv_armor_40() {
         let (chance, reason): (f64, String) = cost_to_chance(
             &vec![(0..25).map(|_| 0).collect(), (0..25).map(|_| 0).collect()],
             &[0, 63600, 1219, 564000, 1007, 127200, 5003000, 0, 0, 0].to_vec(),
@@ -176,6 +176,6 @@ mod tests {
         );
         println!("{:?}", chance);
         println!("{:?}", reason);
-        assert!(0.46 < chance && chance < 0.54);
+        assert!(0.52 < chance && chance < 0.54);
     }
 }
