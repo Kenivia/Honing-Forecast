@@ -3,30 +3,30 @@ use crate::constants::*;
 #[derive(Debug)]
 pub struct Upgrade {
     pub is_normal_honing: bool,
-    pub prob_dist: Vec<f32>,
-    pub base_chance: f32,
+    pub prob_dist: Vec<f64>,
+    pub base_chance: f64,
     pub costs: [i64; 7],
     pub normal_juice_cost: i64,
-    pub adv_juice_cost: Vec<f32>,
+    pub adv_juice_cost: Vec<f64>,
     pub special_cost: i64,
-    pub values: Vec<f32>,
+    pub values: Vec<f64>,
     pub prob_dist_len: usize,
     pub is_weapon: bool,
-    pub artisan_rate: f32,
+    pub artisan_rate: f64,
     pub tap_offset: i64,
     // pub upgrade_plus_num: usize,
 }
 impl Upgrade {
     fn new_normal(
-        prob_dist: Vec<f32>,
+        prob_dist: Vec<f64>,
         costs: [i64; 7],
         special_cost: i64,
         is_weapon: bool,
-        artisan_rate: f32,
+        artisan_rate: f64,
         upgrade_plus_num: usize,
     ) -> Upgrade {
         let prob_dist_len: usize = prob_dist.len();
-        let base_chance: f32 = prob_dist[0];
+        let base_chance: f64 = prob_dist[0];
         Upgrade {
             is_normal_honing: true,
             prob_dist,
@@ -44,9 +44,9 @@ impl Upgrade {
         }
     }
     fn new_adv(
-        prob_dist: Vec<f32>,
+        prob_dist: Vec<f64>,
         costs: [i64; 7],
-        adv_juice_cost: Vec<f32>,
+        adv_juice_cost: Vec<f64>,
         is_weapon: bool,
         adv_cost_start: i64,
         // _upgrade_plus_num: usize,
@@ -78,13 +78,13 @@ impl Upgrade {
 /// stops when artisan >= 1 (in which case the chance is set to 1), and converts the
 /// per-try success chances into the probability that success happens exactly on that tap.
 pub fn probability_distribution(
-    base: f32,
-    artisan_rate: f32,
-    mut extra: f32,
+    base: f64,
+    artisan_rate: f64,
+    mut extra: f64,
     mut extra_num: usize,
-) -> Vec<f32> {
-    let mut raw_chances: Vec<f32> = Vec::new();
-    let mut artisan = 0.0_f32;
+) -> Vec<f64> {
+    let mut raw_chances: Vec<f64> = Vec::new();
+    let mut artisan = 0.0_f64;
     let mut count: i64 = 0;
 
     loop {
@@ -93,7 +93,7 @@ pub fn probability_distribution(
         } else {
             extra_num -= 1;
         }
-        let min_count = std::cmp::min(count, 10) as f32;
+        let min_count = std::cmp::min(count, 10) as f64;
         let mut current_chance = base + (min_count * base) / 10.0 + extra;
 
         if artisan >= 1.0 {
@@ -107,12 +107,12 @@ pub fn probability_distribution(
         }
         raw_chances.push(current_chance);
         count += 1;
-        artisan += (46.51_f32 / 100.0) * current_chance * artisan_rate;
+        artisan += (46.51_f64 / 100.0) * current_chance * artisan_rate;
     }
 
     // convert raw per-try chances into per-tap probability distribution
-    let mut chances = vec![0.0_f32; raw_chances.len()];
-    let mut cum_chance = 1.0_f32;
+    let mut chances = vec![0.0_f64; raw_chances.len()];
+    let mut cum_chance = 1.0_f64;
     for (idx, &element) in raw_chances.iter().enumerate() {
         chances[idx] = cum_chance * element;
         cum_chance *= 1.0 - element;
@@ -142,8 +142,8 @@ pub fn parser(
     normal_counts: &Vec<Vec<i64>>,
     adv_counts: &Vec<Vec<i64>>,
     adv_hone_strategy: &String,
-    artisan_rate_arr: &Vec<f32>,
-    extra_arr: &Vec<f32>,
+    artisan_rate_arr: &Vec<f64>,
+    extra_arr: &Vec<f64>,
     extra_num_arr: &Vec<usize>,
 ) -> Vec<Upgrade> {
     // --- Input assertions that match the TS checks ---
@@ -189,7 +189,7 @@ pub fn parser(
 
     // --- Core logic translation from TS ---
     // let mut tags: Vec<String> = Vec::new();
-    // let mut prob_dist_arr: Vec<Vec<f32>> = Vec::new();
+    // let mut prob_dist_arr: Vec<Vec<f64>> = Vec::new();
     let mut out: Vec<Upgrade> = Vec::new();
 
     // hone_costs: create vec of empty vectors equal to number of cost types in weap_costs
@@ -197,7 +197,7 @@ pub fn parser(
     // let cost_types_count = NORMAL_HONE_WEAPON_COST.len();
     // let mut hone_costs: Vec<Vec<i64>> = vec![Vec::new(); cost_types_count];
     let mut this_cost: Vec<i64>;
-    let mut prob_dist: Vec<f32>;
+    let mut prob_dist: Vec<f64>;
     // For each piece type (0..normal_counts.len())
     for is_weapon in 0..normal_counts.len() {
         let cur_cost = if is_weapon == 0 {
@@ -211,7 +211,7 @@ pub fn parser(
         // iterate over levels i with repetition according to normal_counts[piece_type][i]
         let row_len = normal_counts[is_weapon].len(); // 25
         let mut upgrade_plus_num: usize = 0;
-        let mut base: f32;
+        let mut base: f64;
         let mut special_cost: i64;
         while upgrade_plus_num < row_len {
             let needed: i64 = normal_counts[is_weapon][upgrade_plus_num];
@@ -258,7 +258,7 @@ pub fn parser(
     }
 
     // Advanced hone
-    let mut this_juice_cost: Vec<f32>;
+    let mut this_juice_cost: Vec<f64>;
     for is_weapon in 0..adv_counts.len() {
         let mut current_counter: i64 = 0;
         let row_len = adv_counts[is_weapon].len();
@@ -309,13 +309,13 @@ pub fn parser(
                 let row = &relevant_data[row_idx];
 
                 let taps = row.get(2).copied().unwrap_or(0);
-                let taps_f = taps as f32;
-                let sum_taps_f = if sum_taps == 0 { 1.0 } else { sum_taps as f32 };
+                let taps_f = taps as f64;
+                let sum_taps_f = if sum_taps == 0 { 1.0 } else { sum_taps as f64 };
                 prob_dist.push(taps_f / sum_taps_f);
 
                 let cost_val: i64 = ADV_HONE_COST[7][col_index as usize];
                 this_juice_cost
-                    .push(cost_val as f32 * relevant_data[row_idx][1] as f32 / 1000.0_f32);
+                    .push(cost_val as f64 * relevant_data[row_idx][1] as f64 / 1000.0_f64);
             }
 
             // adv_hone_chances.push(this_chances);

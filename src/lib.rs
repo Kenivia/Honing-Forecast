@@ -19,7 +19,7 @@ use web_sys::console;
 pub struct Payload {
     normal_hone_ticks: Vec<Vec<bool>>,
     adv_hone_ticks: Vec<Vec<bool>>,
-    desired_chance: f32,
+    desired_chance: f64,
     adv_hone_strategy: String,
     budget: Vec<i64>,
 }
@@ -30,10 +30,10 @@ pub fn chance_to_cost_wrapper(input: JsValue) -> JsValue {
     let payload: Payload = from_value(input).unwrap();
     let normal_hone_ticks: Vec<Vec<bool>> = payload.normal_hone_ticks;
     let adv_hone_ticks: Vec<Vec<bool>> = payload.adv_hone_ticks;
-    let desired_chance: f32 = payload.desired_chance;
+    let desired_chance: f64 = payload.desired_chance;
     let adv_hone_strategy: String = payload.adv_hone_strategy;
 
-    let out: (Vec<i64>, f32) = chance_to_cost(
+    let out: (Vec<i64>, f64) = chance_to_cost(
         ticks_to_counts(normal_hone_ticks),
         ticks_to_counts(adv_hone_ticks),
         desired_chance,
@@ -66,10 +66,10 @@ pub fn cost_to_chance_wrapper(input: JsValue) -> JsValue {
 pub fn chance_to_cost_test_wrapper(
     normal_hone_ticks: Vec<Vec<bool>>,
     adv_hone_ticks: Vec<Vec<bool>>,
-    desired_chance: f32,
+    desired_chance: f64,
     adv_hone_strategy: String,
-) -> (Vec<i64>, f32) {
-    let (mats, chance): (Vec<i64>, f32) = chance_to_cost(
+) -> (Vec<i64>, f64) {
+    let (mats, chance): (Vec<i64>, f64) = chance_to_cost(
         ticks_to_counts(normal_hone_ticks),
         ticks_to_counts(adv_hone_ticks),
         desired_chance,
@@ -89,128 +89,4 @@ pub fn cost_to_chance_test_wrapper(
         &ticks_to_counts(adv_hone_ticks),
     );
     (chance, reason)
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn cost_to_chance_demo() {
-        let (chance, reason): (f64, String) = cost_to_chance_test_wrapper(
-            [
-                [
-                    false, false, false, false, false, false, false, false, false, false, false,
-                    false, false, false, false, false, false, false, false, true, true, false,
-                    false, false, false,
-                ]
-                .to_vec(),
-                [
-                    false, false, false, false, false, false, false, false, false, false, false,
-                    false, false, false, false, false, false, false, false, true, true, false,
-                    false, false, false,
-                ]
-                .to_vec(),
-                [
-                    false, false, false, false, false, false, false, false, false, false, false,
-                    false, false, false, false, false, false, false, false, true, true, false,
-                    false, false, false,
-                ]
-                .to_vec(),
-                [
-                    false, false, false, false, false, false, false, false, false, false, false,
-                    false, false, false, false, false, false, false, false, true, true, false,
-                    false, false, false,
-                ]
-                .to_vec(),
-                [
-                    false, false, false, false, false, false, false, false, false, false, false,
-                    false, false, false, false, false, false, false, false, true, true, false,
-                    false, false, false,
-                ]
-                .to_vec(),
-                [
-                    false, false, false, false, false, false, false, false, false, false, false,
-                    false, false, false, false, false, false, false, false, true, true, false,
-                    false, false, false,
-                ]
-                .to_vec(),
-            ]
-            .to_vec(),
-            [
-                [false, false, true, false].to_vec(),
-                [false, false, true, false].to_vec(),
-                [false, false, true, false].to_vec(),
-                [false, false, true, false].to_vec(),
-                [false, false, true, false].to_vec(),
-                [false, false, true, false].to_vec(),
-            ]
-            .to_vec(),
-            [
-                431777, 1064398, 23748, 9010948, 15125, 1803792, 4294967295, 0, 0, 50,
-            ]
-            .to_vec(),
-        );
-        println!("{:?}", chance);
-        println!("{:?}", reason);
-    }
-    #[test]
-    fn cost_to_chance_one_normal() {
-        let (chance, reason): (f64, String) = cost_to_chance_test_wrapper(
-            [
-                [
-                    false, false, false, false, false, false, false, false, false, false, false,
-                    false, false, false, false, false, false, false, false, true, false, false,
-                    false, false, false,
-                ]
-                .to_vec(),
-                [
-                    false, false, false, false, false, false, false, false, false, false, false,
-                    false, false, false, false, false, false, false, false, false, false, false,
-                    false, false, false,
-                ]
-                .to_vec(),
-                [
-                    false, false, false, false, false, false, false, false, false, false, false,
-                    false, false, false, false, false, false, false, false, false, false, false,
-                    false, false, false,
-                ]
-                .to_vec(),
-                [
-                    false, false, false, false, false, false, false, false, false, false, false,
-                    false, false, false, false, false, false, false, false, false, false, false,
-                    false, false, false,
-                ]
-                .to_vec(),
-                [
-                    false, false, false, false, false, false, false, false, false, false, false,
-                    false, false, false, false, false, false, false, false, false, false, false,
-                    false, false, false,
-                ]
-                .to_vec(),
-                [
-                    false, false, false, false, false, false, false, false, false, false, false,
-                    false, false, false, false, false, false, false, false, false, false, false,
-                    false, false, false,
-                ]
-                .to_vec(),
-            ]
-            .to_vec(),
-            [
-                [false, false, false, false].to_vec(),
-                [false, false, false, false].to_vec(),
-                [false, false, false, false].to_vec(),
-                [false, false, false, false].to_vec(),
-                [false, false, false, false].to_vec(),
-                [false, false, false, false].to_vec(),
-            ]
-            .to_vec(),
-            [
-                431777, 1064398, 23748, 9010948, 15125, 1803792, 4294967295, 0, 0, 0,
-            ]
-            .to_vec(),
-        );
-        println!("{:?}", chance);
-        println!("{:?}", reason);
-    }
 }

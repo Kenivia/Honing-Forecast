@@ -1,43 +1,45 @@
 // use crate::constants::*;
 
 use crate::parser::{probability_distribution, Upgrade};
-use assert_float_eq::assert_f32_near;
 
-fn average_tap(prob_dist: &Vec<f32>) -> f32 {
-    let mut out: f32 = 0.0_f32;
-    // println!("{:?}", prob_dist[start_index..].iter().sum::<f32>() as f32);
+#[cfg(debug_assertions)]
+use assert_float_eq::assert_f64_near;
+
+fn average_tap(prob_dist: &Vec<f64>) -> f64 {
+    let mut out: f64 = 0.0_f64;
+    // println!("{:?}", prob_dist[start_index..].iter().sum::<f64>() as f64);
     #[cfg(debug_assertions)]
-    assert_f32_near!(prob_dist.iter().sum::<f32>() as f32, 1.0 as f32, 10);
-    // let sum_before_start: f32 = prob_dist[..start_index].iter().sum();
+    assert_f64_near!(prob_dist.iter().sum::<f64>() as f64, 1.0 as f64, 40);
+    // let sum_before_start: f64 = prob_dist[..start_index].iter().sum();
     for (index, item) in prob_dist.iter().enumerate() {
-        out += item * (index + 1) as f32;
+        out += item * (index + 1) as f64;
     }
     out
 }
 
-// fn average_tap_with_change(prob_dist: &Vec<f32>, change_index: usize, change_value: f32) -> f32 {
-//     let mut out: f32 = 0.0_f32;
-//     // println!("{:?}", prob_dist[start_index..].iter().sum::<f32>() as f32);
+// fn average_tap_with_change(prob_dist: &Vec<f64>, change_index: usize, change_value: f64) -> f64 {
+//     let mut out: f64 = 0.0_f64;
+//     // println!("{:?}", prob_dist[start_index..].iter().sum::<f64>() as f64);
 //     #[cfg(debug_assertions)]
-//     assert_f32_near!(prob_dist.iter().sum::<f32>() as f32, 1.0 as f32, 10);
-//     // let sum_before_start: f32 = prob_dist[..start_index].iter().sum();
+//     assert_f64_near!(prob_dist.iter().sum::<f64>() as f64, 1.0 as f64, 10);
+//     // let sum_before_start: f64 = prob_dist[..start_index].iter().sum();
 //     for (index, item) in prob_dist.iter().enumerate() {
-//         out += (item + ((change_index == index) as i64 as f32) * change_value as f32)
-//             * (index + 1) as f32;
+//         out += (item + ((change_index == index) as i64 as f64) * change_value as f64)
+//             * (index + 1) as f64;
 //     }
 //     out
 // }
-fn average_times_cost(upgrade: &Upgrade, mats_value: &Vec<f32>, average: f32) -> f32 {
-    let mut this_sum = 0.0_f32;
+fn average_times_cost(upgrade: &Upgrade, mats_value: &Vec<f64>, average: f64) -> f64 {
+    let mut this_sum = 0.0_f64;
     for cost_type in 0..7 {
-        this_sum += mats_value[cost_type] * average * upgrade.costs[cost_type] as f32
-            / upgrade.special_cost as f32;
+        this_sum += mats_value[cost_type] * average * upgrade.costs[cost_type] as f64
+            / upgrade.special_cost as f64;
     }
     this_sum
 }
-pub fn est_special_honing_value(upgrade_arr: &Vec<Upgrade>, mats_value: &Vec<f32>) -> Vec<f32> {
-    let mut out: Vec<f32> = Vec::with_capacity(upgrade_arr.len());
-    let mut average: f32;
+pub fn est_special_honing_value(upgrade_arr: &Vec<Upgrade>, mats_value: &Vec<f64>) -> Vec<f64> {
+    let mut out: Vec<f64> = Vec::with_capacity(upgrade_arr.len());
+    let mut average: f64;
     let cost_type_count: usize = 7;
     assert!(mats_value.len() == cost_type_count);
     for (_, upgrade) in upgrade_arr.iter().enumerate() {
@@ -45,19 +47,19 @@ pub fn est_special_honing_value(upgrade_arr: &Vec<Upgrade>, mats_value: &Vec<f32
             average = average_tap(&upgrade.prob_dist);
             out.push(average_times_cost(upgrade, mats_value, average));
         } else {
-            out.push(0.0_f32);
+            out.push(0.0_f64);
         }
     }
 
     out
 }
 
-pub fn est_juice_value(upgrade_arr: &mut Vec<Upgrade>, mats_value: &Vec<f32>) {
-    let mut this_sum: Vec<f32>;
-    let mut prev_cost: f32;
-    let mut next_cost: f32;
+pub fn est_juice_value(upgrade_arr: &mut Vec<Upgrade>, mats_value: &Vec<f64>) {
+    let mut this_sum: Vec<f64>;
+    let mut prev_cost: f64;
+    let mut next_cost: f64;
     let mut extra_count: usize;
-    let mut cur_prob_dist: Vec<f32>;
+    let mut cur_prob_dist: Vec<f64>;
     let cost_type_count: usize = 7;
     assert!(mats_value.len() == cost_type_count);
     for (_, upgrade) in upgrade_arr.iter_mut().enumerate() {

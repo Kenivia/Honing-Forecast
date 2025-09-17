@@ -96,7 +96,7 @@ pub fn calc_unlock(hone_counts: &Vec<Vec<i64>>, adv_counts: &Vec<Vec<i64>>) -> V
 
 pub fn myformat(mut f: f64) -> String {
     f *= 100.0;
-    let mut place = 0;
+    let mut place: i32 = 0;
 
     loop {
         if f >= 1.0 / 10f64.powi(place) {

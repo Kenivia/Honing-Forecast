@@ -18,7 +18,7 @@ use std::collections::{HashMap, VecDeque};
 ///              Pr(K >= k_cap) (all mass of outcomes with final K at least k_cap).
 ///
 /// Returns `Ok(pmf)` on success, or `Err(String)` with an explanatory message on bad input.
-pub fn final_pmf_tail_aggregate(budget: i64, upgrade_arr: &Vec<Upgrade>) -> Vec<f32> {
+pub fn final_pmf_tail_aggregate(budget: i64, upgrade_arr: &Vec<Upgrade>) -> Vec<f64> {
     // Basic validation
 
     // A small overflow-safe cumulative check to compute the budget-limited Kmax.
@@ -41,26 +41,26 @@ pub fn final_pmf_tail_aggregate(budget: i64, upgrade_arr: &Vec<Upgrade>) -> Vec<
         .min(kmax_budget);
     // State probability map: key is (k, spent) -> prob mass (f64).
     // We only store states that have nonzero probability. Use HashMap for sparsity.
-    let mut state_prob: HashMap<(usize, i64), f32> = HashMap::new();
+    let mut state_prob: HashMap<(usize, i64), f64> = HashMap::new();
     let mut queue: VecDeque<(usize, i64)> = VecDeque::new();
 
     // Start at (0,0) with probability 1
-    state_prob.insert((0usize, 0i64), 1.0f32);
+    state_prob.insert((0usize, 0i64), 1.0f64);
     queue.push_back((0usize, 0i64));
 
     // final_pmf: indices 0..k_cap-1 are exact Pr(K=k). Index k_cap aggregates >= k_cap.
-    let mut final_pmf: Vec<f32> = vec![0.0f32; k_cap + 1];
+    let mut final_pmf: Vec<f64> = vec![0.0f64; k_cap + 1];
 
     while let Some((k, spent)) = queue.pop_front() {
         // Safely take the probability mass for this state and mark it processed.
         // We use get_mut so we can set it to 0 (mark) without removing the key.
-        let prob: f32 = match state_prob.get_mut(&(k, spent)) {
+        let prob: f64 = match state_prob.get_mut(&(k, spent)) {
             Some(v) => {
-                let val: f32 = *v;
+                let val: f64 = *v;
                 // Mark as processed. Because transitions always increase `spent` (costs>0),
                 // no future contribution to the exact same (k,spent) will appear after
                 // we've seen *all* predecessors; so setting to 0 here is safe.
-                *v = 0.0f32;
+                *v = 0.0f64;
                 val
             }
             None => {
@@ -97,10 +97,10 @@ pub fn final_pmf_tail_aggregate(budget: i64, upgrade_arr: &Vec<Upgrade>) -> Vec<
         }
 
         let next_spent: i64 = spent + c_k;
-        let p_k: f32 = upgrade_arr[k].base_chance;
+        let p_k: f64 = upgrade_arr[k].base_chance as f64;
 
         // Success transition -> (k+1, next_spent)
-        let success_mass: f32 = prob * p_k;
+        let success_mass: f64 = prob * p_k;
         if success_mass > 0.0 {
             let key_succ: (usize, i64) = (k + 1, next_spent);
             // either update existing entry or insert+enqueue if new
@@ -149,19 +149,19 @@ fn calc_failure_lim(avail_special: i64, cost: i64) -> i64 {
     (avail_special as f64 / cost as f64).floor() as i64
 }
 
-fn construct_geometric_weights(max_taps: i64, base_chance: f32) -> Vec<f32> {
+fn construct_geometric_weights(max_taps: i64, base_chance: f64) -> Vec<f32> {
     let mut out: Vec<f32> = Vec::with_capacity(max_taps as usize + 1);
-    let mut cum_chance: f32 = 1.0;
+    let mut cum_chance: f64 = 1.0;
     for _ in 0..(max_taps) {
-        out.push(cum_chance * base_chance);
-        cum_chance *= 1.0 - base_chance;
+        out.push((cum_chance * base_chance) as f32);
+        cum_chance *= 1.0_f64 - base_chance;
     }
-    out.push(cum_chance); // chance to fail
+    out.push(cum_chance as f32); // chance to fail
     out
 }
 
-fn tap_map_generator(count_limit: usize, prob_dist: &Vec<f32>) -> Vec<usize> {
-    let cum_weights: Vec<f32> = prob_dist
+fn tap_map_generator(count_limit: usize, prob_dist: &Vec<f64>) -> Vec<usize> {
+    let cum_weights: Vec<f64> = prob_dist
         .iter()
         .enumerate()
         .scan(0.0, |s, (i, &x)| {
@@ -172,12 +172,12 @@ fn tap_map_generator(count_limit: usize, prob_dist: &Vec<f32>) -> Vec<usize> {
 
     let mut tap_map: Vec<usize> = Vec::with_capacity(count_limit as usize);
     let mut cur_samples: i64 = 0;
-    let mut temp_samples: f32;
+    let mut temp_samples: f64;
     let mut j: usize = 0;
     let mut rng: ThreadRng = thread_rng();
     for i in 0..cum_weights.len() {
-        temp_samples = (cur_samples as f32).max(cum_weights[i] * (count_limit as f32)); // not using round juice here because i need to keep track of the float(round juice was written for monte carlos later)
-        if temp_samples - temp_samples.floor() as f32 > rng.gen_range(0.0..1.0) {
+        temp_samples = (cur_samples as f64).max(cum_weights[i] * (count_limit as f64)); // not using round juice here because i need to keep track of the float(round juice was written for monte carlos later)
+        if temp_samples - temp_samples.floor() as f64 > rng.gen_range(0.0..1.0) {
             cur_samples = temp_samples.floor() as i64 + 1;
         } else {
             cur_samples = temp_samples.floor() as i64;
@@ -191,9 +191,9 @@ fn tap_map_generator(count_limit: usize, prob_dist: &Vec<f32>) -> Vec<usize> {
     return tap_map;
 }
 
-fn round_juice(this_juice_cost: f32, rng: &mut rand::prelude::ThreadRng) -> i64 {
+fn round_juice(this_juice_cost: f64, rng: &mut rand::prelude::ThreadRng) -> i64 {
     let juice_cost: i64;
-    if this_juice_cost - this_juice_cost.floor() as f32 > rng.gen_range(0.0..1.0) {
+    if this_juice_cost - this_juice_cost.floor() as f64 > rng.gen_range(0.0..1.0) {
         juice_cost = this_juice_cost.floor() as i64 + 1;
     } else {
         juice_cost = this_juice_cost.floor() as i64;
@@ -242,6 +242,7 @@ pub fn monte_carlos_data(
         let mut rolled_tap: usize;
         let mut special_dist: Vec<f32>;
         let mut special_pass_arr: Vec<usize> = vec![0; data_size];
+        let mut prob_dist: Vec<f32>;
         if use_true_rng {
             for (upgrade_index, upgrade) in upgrade_arr.iter().enumerate() {
                 if upgrade.is_normal_honing {
@@ -249,6 +250,7 @@ pub fn monte_carlos_data(
                         calc_failure_lim(avail_special, upgrade.special_cost),
                         upgrade.base_chance,
                     );
+
                     special_wa_table = WalkerTableBuilder::new(&special_dist).build();
                     for trial_num in 0..data_size as usize {
                         if special_budgets[trial_num] <= 0 {
@@ -266,7 +268,9 @@ pub fn monte_carlos_data(
                 }
             }
             for (upgrade_index, upgrade) in upgrade_arr.iter().enumerate() {
-                tap_wa_table = WalkerTableBuilder::new(&upgrade.prob_dist).build();
+                prob_dist = upgrade.prob_dist.iter().map(|&n| n as f32).collect();
+                // tap_map = tap_map_generator(data_size, &prob_dist);
+                tap_wa_table = WalkerTableBuilder::new(&prob_dist).build();
                 for trial_num in 0..data_size as usize {
                     if upgrade_index < special_pass_arr[trial_num] {
                         continue;
@@ -289,6 +293,7 @@ pub fn monte_carlos_data(
             }
         } else {
             let mut tap_map: Vec<usize>;
+
             let special_map: Vec<usize> = tap_map_generator(
                 data_size,
                 &final_pmf_tail_aggregate(avail_special, &upgrade_arr),

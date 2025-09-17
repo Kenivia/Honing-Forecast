@@ -4,8 +4,12 @@ use std::hint::black_box;
 use std::time::Instant;
 pub fn criterion_benchmark(c: &mut Criterion) {
     let now: Instant = Instant::now();
+    let mut group = c.benchmark_group("sample-size-example");
 
-    c.bench_function("cost_to_chance", |b| {
+    // Set the sample size to 10
+    group.sample_size(10);
+
+    group.bench_function("cost_to_chance", |b| {
         b.iter(|| {
             cost_to_chance_test_wrapper(
                 black_box(vec![vec![true; 25]; 6]),

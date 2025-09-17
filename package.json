@@ -4,15 +4,14 @@
     "version": "0.0.0",
     "type": "module",
     "scripts": {
-        "build": "wasm-pack build --release --target web && vite build",
+        "build": "cargo test --profile release -- --show-output && wasm-pack build --release --target web && vite build",
         "predeploy": "npm run build",
         "deploy": "gh-pages -d dist",
         "lint": "eslint .",
         "preview": "vite preview",
         "typecheck": "tsc --noEmit",
-        "dev": "wasm-pack build --release --target web && vite",
-        "test": "vitest",
-        "test:watch": "vitest --watch"
+        "dev": "cargo test --profile release -- --show-output && wasm-pack build --release --target web && vite",
+        "test": "cargo test --profile release -- --show-output"
     },
     "dependencies": {
         "ag-grid-community": "^34.1.2",

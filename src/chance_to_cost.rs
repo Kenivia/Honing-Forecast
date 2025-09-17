@@ -91,9 +91,9 @@ fn count_failure(cost_data: &Vec<Vec<i64>>, budget_data: &Vec<Vec<i64>>, asc: bo
 pub fn chance_to_cost(
     hone_counts: Vec<Vec<i64>>,
     adv_counts: Vec<Vec<i64>>,
-    desired_chance: f32,
+    desired_chance: f64,
     adv_hone_strategy: String,
-) -> (Vec<i64>, f32) {
+) -> (Vec<i64>, f64) {
     let cost_size: usize = 200000;
     let budget_size: usize = 1000;
     let upgrade_arr: Vec<Upgrade> = parser(
@@ -122,7 +122,7 @@ pub fn chance_to_cost(
     );
     let failure_counts: Vec<i64> = count_failure(&cost_data, &budget_data, true);
 
-    let k_i64: i64 = ((1.0f32 - desired_chance / 100f32) * (cost_size as f32)).floor() as i64;
+    let k_i64: i64 = ((1.0f64 - desired_chance / 100f64) * (cost_size as f64)).floor() as i64;
     let diffs: Vec<i64> = failure_counts
         .iter()
         .map(|&ci| (ci - k_i64).abs())
@@ -133,7 +133,7 @@ pub fn chance_to_cost(
     let best_budget: Vec<i64> = budget_data[sorted_indices[0]].clone();
     (
         best_budget,
-        (1 as f32 - (failure_counts[sorted_indices[0]] as f32 / cost_data.len() as f32))
-            * 100 as f32,
+        (1 as f64 - (failure_counts[sorted_indices[0]] as f64 / cost_data.len() as f64))
+            * 100 as f64,
     )
 }
