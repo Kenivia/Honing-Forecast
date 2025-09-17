@@ -45,7 +45,8 @@ For Chance to Cost, we generate some artificial budgets and see which ones match
 - Get silver unlock cost somewhere(currently silver unlock cost is 0 so its labeled as WIP)(somewhere = maxroll probably)
 - Fine tuning (+1 -1 when adjusting best_budget)(need to implement in rust)
 - rework App.tsx, split into funcitons or something there has to be a better way
-- Optimize monte carlos - can pre-generate special leaps taps like tap map, move the current tap map into the loop
+- Variance calculation & confidence interval
+- Maybe use DP instead of monte carlos for cost to chance?
 
 ### UI
 

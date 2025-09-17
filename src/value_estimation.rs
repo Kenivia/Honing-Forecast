@@ -41,8 +41,12 @@ pub fn est_special_honing_value(upgrade_arr: &Vec<Upgrade>, mats_value: &Vec<f32
     let cost_type_count: usize = 7;
     assert!(mats_value.len() == cost_type_count);
     for (_, upgrade) in upgrade_arr.iter().enumerate() {
-        average = average_tap(&upgrade.prob_dist);
-        out.push(average_times_cost(upgrade, mats_value, average));
+        if upgrade.is_normal_honing {
+            average = average_tap(&upgrade.prob_dist);
+            out.push(average_times_cost(upgrade, mats_value, average));
+        } else {
+            out.push(0.0_f32);
+        }
     }
 
     out

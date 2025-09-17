@@ -13,7 +13,7 @@ pub struct Upgrade {
     pub prob_dist_len: usize,
     pub is_weapon: bool,
     pub artisan_rate: f32,
-    pub adv_cost_start: i64,
+    pub tap_offset: i64,
     // pub upgrade_plus_num: usize,
 }
 impl Upgrade {
@@ -39,7 +39,7 @@ impl Upgrade {
             prob_dist_len,
             is_weapon,
             artisan_rate,
-            adv_cost_start: 0,
+            tap_offset: 1,
             // upgrade_plus_num,
         }
     }
@@ -65,7 +65,7 @@ impl Upgrade {
             prob_dist_len,
             is_weapon,
             artisan_rate: 0.0,
-            adv_cost_start,
+            tap_offset: adv_cost_start,
             // upgrade_plus_num,
         }
     }

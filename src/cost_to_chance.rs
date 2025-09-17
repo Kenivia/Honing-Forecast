@@ -56,7 +56,7 @@ fn _cost_to_chance(
         unlock,
         actual_budgets[9],
         false,
-        true, //use_true_rng
+        false, //use_true_rng
     );
     let mut typed_fail_counter: Vec<f32> = vec![0.0_f32; 7];
     let mut overall_fail_counter: i64 = 0;

@@ -1,7 +1,7 @@
 use crate::helpers::calc_unlock;
 use crate::monte_carlos::monte_carlos_data;
 use crate::parser::{Upgrade, parser};
-use web_sys::console;
+// use web_sys::console;
 // use crate::{constants::*, cost_to_chance};
 
 fn count_failure_naive(cost_data: &Vec<Vec<i64>>, budget_data: &Vec<Vec<i64>>) -> Vec<i64> {
@@ -110,7 +110,7 @@ pub fn chance_to_cost(
         &calc_unlock(&hone_counts, &adv_counts),
         0,
         false, //rigged
-        true,  // use_true_rng
+        false, // use_true_rng
     );
     let budget_data: Vec<Vec<i64>> = monte_carlos_data(
         budget_size,
