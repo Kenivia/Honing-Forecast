@@ -1,6 +1,6 @@
 // use crate::constants::*;
 
-use crate::parser::{probability_distribution, Upgrade};
+use crate::parser::{Upgrade, probability_distribution};
 
 #[cfg(debug_assertions)]
 use assert_float_eq::assert_f64_near;
@@ -107,7 +107,7 @@ fn _juice_to_array(upgrade_arr: &mut Vec<Upgrade>, is_weapon: bool, mut juice: i
             .enumerate()
             .max_by_key(|&(_, val)| val)
             .map(|(i, _)| i)
-            .unwrap();
+            .unwrap_or(0);
         idxs = (0..upgrade_arr.len())
             .filter(|&x| {
                 upgrade_arr[x].is_normal_honing

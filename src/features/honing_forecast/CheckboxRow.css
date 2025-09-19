@@ -1,0 +1,75 @@
+/* wrapper for each checkbox (keeps layout stable) */
+.checkbox-item {
+    display: inline-block;
+    height: 28px;
+    width: 28px;
+
+}
+
+/* visually hide the real checkbox but keep it accessible */
+.visually-hidden {
+    position: absolute !important;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    border: 0;
+    clip: rect(0 0 0 0);
+    overflow: hidden;
+    white-space: nowrap;
+}
+
+/* the visible "box" */
+.box {
+
+    display: inline-grid;
+    /* easier to center text */
+    place-items: center;
+    /* center text horizontally+vertically */
+
+    font-weight: 400;
+    font-size: 12px;
+    text-align: center;
+    cursor: pointer;
+    user-select: none;
+    transition: background-color .12s ease, color .12s ease, border-color .12s ease;
+    border-radius: 2px;
+    box-sizing: border-box;
+    height: 26px;
+    width: 26px;
+    margin: 0;
+    padding: 0;
+    border: 1px solid #bbb;
+}
+
+/* make it look focusable for keyboard users */
+.visually-hidden:focus+.box,
+.box:focus {
+    outline: 3px solid rgba(59, 130, 246, 0.35);
+    /* subtle focus ring */
+    outline-offset: 2px;
+}
+
+/* When the input is checked, change the label style.
+   Sibling selector: input:checked + label.box */
+.checkbox-item input:checked+.box {
+    background: #0060df;
+    /* checked background (dark) */
+    color: #ffffff;
+    /* checked text color (light) => flipped */
+    border-color: #111;
+}
+
+/* Optional: slightly different hover state when unchecked */
+.checkbox-item input:not(:checked)+.box:hover {
+    background: #5a5a5a;
+}
+
+/* Optional: small responsive tweak
+@media (max-width: 520px) {
+    .box {
+        width: 44px;
+        height: 44px;
+        font-size: 14px;
+    }
+} */

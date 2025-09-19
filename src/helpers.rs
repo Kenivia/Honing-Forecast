@@ -3,9 +3,9 @@ use crate::constants::{ADV_HONE_UNLOCK, NORMAL_HONE_ARMOR_UNLOCK, NORMAL_HONE_WE
 pub fn sort_by_indices<T>(upgrade_arr: &mut Vec<T>, mut indices: Vec<usize>) {
     for idx in 0..upgrade_arr.len() {
         if indices[idx] != idx {
-            let mut current_idx = idx;
+            let mut current_idx: usize = idx;
             loop {
-                let target_idx = indices[current_idx];
+                let target_idx: usize = indices[current_idx];
                 indices[current_idx] = current_idx;
                 if indices[target_idx] == target_idx {
                     break;
@@ -18,12 +18,14 @@ pub fn sort_by_indices<T>(upgrade_arr: &mut Vec<T>, mut indices: Vec<usize>) {
 }
 pub fn ticks_to_counts(ticks: Vec<Vec<bool>>) -> Vec<Vec<i64>> {
     // assume ticks is always 6 rows
-    let cols = ticks[0].len();
+    let cols: usize = ticks[0].len();
     let mut out: Vec<Vec<i64>> = vec![vec![0i64; cols]; 2];
 
     for i in 0..cols {
         // sum ticks[0..4][i]
-        out[0][i] = (0..5).map(|row| if ticks[row][i] { 1 } else { 0 }).sum();
+        out[0][i] = (0..5)
+            .map(|row: usize| if ticks[row][i] { 1 } else { 0 })
+            .sum();
 
         // ticks[5][i] as 0/1
         out[1][i] = if ticks[5][i] { 1 } else { 0 };

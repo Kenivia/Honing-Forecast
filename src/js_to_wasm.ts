@@ -13,7 +13,6 @@ async function ChanceToCostWasm(payload: any) {
 }
 
 async function CostToChanceWasm(payload: any) {
-    await init()
     try {
         await init() // MUST await initialization
         // debug: call the wrapper in a try/catch to capture thrown exceptions
@@ -37,7 +36,7 @@ self.addEventListener("message", async (ev) => {
         throw "Invalid operation type" + which_one
     }
 
-    const this_labels = LABELS.concat(["Red juice", "Blue juice", "Est. Probability"])
+    const this_labels = LABELS.concat(["Red juice", "Blue juice", "Special Leaps"])
     let result
     if (which_one == "CostToChance") {
         let out = await CostToChanceWasm(payload)
@@ -48,8 +47,7 @@ self.addEventListener("message", async (ev) => {
         result.actual_prob = out[1]
     }
 
-    console.log(result)
-
     result.run_time = ((Date.now() - start_time) / 1000).toFixed(2)
+    console.log(result)
     self.postMessage({ type: "result", id, result: result })
 })

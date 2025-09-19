@@ -47,9 +47,7 @@ fn _cost_to_chance(
     let mut special_indices: Vec<usize> = (0..value_per_special_leap.len()).collect();
     special_indices
         .sort_by(|&a, &b| value_per_special_leap[b].total_cmp(&value_per_special_leap[a]));
-    // dbg!(&upgrade_arr[0]);
     sort_by_indices(upgrade_arr, special_indices.clone());
-
     let cost_data: Vec<Vec<i64>> = monte_carlos_data(
         data_size,
         upgrade_arr,
@@ -74,7 +72,6 @@ fn _cost_to_chance(
             overall_fail_counter += 1;
         }
     }
-
     return (
         1.0_f64 - overall_fail_counter as f64 / cost_data.len() as f64,
         typed_fail_counter,
@@ -115,7 +112,6 @@ pub fn cost_to_chance(
         data_size,
         &typed_fail_counter_1,
     );
-
     return (
         chance_2,
         fail_count_to_string(typed_fail_counter_2, data_size),
@@ -125,7 +121,20 @@ pub fn cost_to_chance(
 #[cfg(test)]
 mod tests {
     use super::*;
-
+    #[test]
+    fn cost_to_chance_stress() {
+        let (_chance, _reason): (f64, String) = cost_to_chance(
+            &vec![(0..25).map(|_| 5).collect(), (0..25).map(|_| 1).collect()],
+            &[
+                431777, 1064398, 23748, 9010948, 15125, 1803792, 4294967295, 420, 690, 6767,
+            ]
+            .to_vec(),
+            &vec![(0..4).map(|_| 5).collect(), (0..4).map(|_| 1).collect()],
+        );
+        // println!("{:?}", chance);
+        // println!("{:?}", reason);
+        // assert!(0.183 < chance && chance < 0.189);
+    }
     #[test]
     fn cost_to_chance_18_demo() {
         let (chance, reason): (f64, String) = cost_to_chance(

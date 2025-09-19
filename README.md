@@ -32,7 +32,7 @@ For Chance to Cost, we generate some artificial budgets and see which ones match
 
 ### FEATURES
 
-- input UI like maxroll for mat prices, toggle between maximizing special leap value and maximizing chance to succeed
+- toggle between maximizing special leap value and maximizing chance to succeed
 - Remember ticks & cost input - save presets
 - Gamba simulator section
 - Visualize distribution of cost(7 lines/bars showing distribution of each, maybe scatter graph?)
@@ -41,22 +41,13 @@ For Chance to Cost, we generate some artificial budgets and see which ones match
 ### DEV
 
 - Write actual tests and also comment
-- Sort out how advanced honing strategy is going to work for cost to chnace
+- Sort out how advanced honing strategy is going to work for cost to chance
 - Get silver unlock cost somewhere(currently silver unlock cost is 0 so its labeled as WIP)(somewhere = maxroll probably)
 - Fine tuning (+1 -1 when adjusting best_budget)(need to implement in rust)
-- rework App.tsx, split into funcitons or something there has to be a better way
 - Variance calculation & confidence interval
-- Maybe use DP instead of monte carlos for cost to chance?
 
 ### UI
 
-- UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI
-- Need to make the layout more intuitive, maybe hover hints
-- Interactable cells for input & output, like spreadsheet
-- Icons/color code materials & pieces
 - Make the percent sign follow the input number?(right now it just trails on the right)
-- Stricter input control
 - show the bottlenecks in a pie chart?
-- mobile dragging
-- dark mode(the input goes white rn, and when it loads theres a white flash)
-- maybe use some kind of existing library to make everything less ugly
+- mobile dragging?

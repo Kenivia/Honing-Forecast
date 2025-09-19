@@ -19,7 +19,7 @@ fn construct_geometric_weights(max_taps: i64, base_chance: f64) -> Vec<f32> {
     out
 }
 
-fn tap_map_generator(count_limit: usize, prob_dist: &Vec<f64>) -> Vec<usize> {
+fn tap_map_generator(count_limit: usize, prob_dist: &Vec<f64>, rng: &mut ThreadRng) -> Vec<usize> {
     let cum_weights: Vec<f64> = prob_dist
         .iter()
         .enumerate()
@@ -33,7 +33,6 @@ fn tap_map_generator(count_limit: usize, prob_dist: &Vec<f64>) -> Vec<usize> {
     let mut cur_samples: i64 = 0;
     let mut temp_samples: f64;
     let mut j: usize = 0;
-    let mut rng: ThreadRng = thread_rng();
     for i in 0..cum_weights.len() {
         temp_samples = (cur_samples as f64).max(cum_weights[i] * (count_limit as f64)); // not using round juice here because i need to keep track of the float(round juice was written for monte carlos later)
         if temp_samples - temp_samples.floor() as f64 > rng.gen_range(0.0..1.0) {
@@ -67,8 +66,6 @@ pub fn monte_carlos_data(
     rigged: bool,
     use_true_rng: bool,
 ) -> Vec<Vec<i64>> {
-    // dbg!(&upgrade_arr[0]);
-
     let mut cost_data: Vec<Vec<i64>> = vec![vec![0; 9]; data_size as usize];
     let mut rng: rand::prelude::ThreadRng = rand::thread_rng();
     let mut juice_ind: usize;
@@ -163,8 +160,7 @@ pub fn monte_carlos_data(
             let mut tap_map: Vec<usize>;
 
             for (upgrade_index, upgrade) in upgrade_arr.iter().enumerate() {
-                tap_map = tap_map_generator(data_size, &upgrade.prob_dist);
-
+                tap_map = tap_map_generator(data_size, &upgrade.prob_dist, &mut rng);
                 for trial_num in 0..data_size as usize {
                     if upgrade_index < special_pass_arr[trial_num] {
                         continue;

@@ -1,0 +1,354 @@
+import React, { useState, useRef, useEffect, useMemo } from 'react'
+import Icon from './Icon.tsx'
+
+interface SpreadsheetGridProps {
+    columnDefs: Array<{ headerName: string; field: string; editable: boolean; flex: number; cellStyle: any }>
+    budget_inputs: Record<string, string>
+    set_budget_inputs: (_next: any) => void
+    readOnly?: boolean
+}
+
+interface Selection {
+    startRow: number
+    startCol: number
+    endRow: number
+    endCol: number
+}
+
+export default function SpreadsheetGrid({ columnDefs, budget_inputs, set_budget_inputs, readOnly = false }: SpreadsheetGridProps) {
+    const [selection, setSelection] = useState<Selection | null>(null)
+    const [isSelecting, setIsSelecting] = useState(false)
+    const [_copiedData, setCopiedData] = useState<string[][] | null>(null)
+    const gridRef = useRef<HTMLDivElement | null>(null)
+
+    // pointer-down tracking so we can detect small drags vs clicks when starting in an input
+    const pointerDownRef = useRef<{
+        startX: number
+        startY: number
+        startRow: number
+        startCol: number
+        startedOnInput: boolean
+        moved: boolean
+    } | null>(null)
+
+    // keep old body user-select so we can restore it after drag
+    const prevUserSelectRef = useRef<string | undefined>(undefined)
+
+    const inputLabels = useMemo(() => ["Red", "Blue", "Leaps", "Shards", "Oreha", "Gold", "Silver(WIP)", "Red juice", "Blue juice", "Special leaps"], [])
+
+    // ---------- helpers ----------
+    const clamp = (v: number, max: number) => Math.min(Math.max(v, 0), max)
+
+    const isCellSelected = (rowIndex: number, colIndex: number) => {
+        if (!selection) return false
+        const { startRow, startCol, endRow, endCol } = selection
+        const minRow = Math.min(startRow, endRow)
+        const maxRow = Math.max(startRow, endRow)
+        const minCol = Math.min(startCol, endCol)
+        const maxCol = Math.max(startCol, endCol)
+
+        return rowIndex >= minRow && rowIndex <= maxRow && colIndex >= minCol && colIndex <= maxCol
+    }
+
+    const handleCellChange = (rowIndex: number, colIndex: number, value: string) => {
+        if (readOnly) return
+
+        const label = inputLabels[rowIndex]
+        if (label) {
+            // Only allow positive integers, reject anything else by overwriting
+            const cleanValue = value.replace(/[^0-9]/g, '')
+            const next = { ...budget_inputs }
+            next[label] = cleanValue
+            set_budget_inputs(next)
+        }
+    }
+
+    // ---------- capture mousedown (so drags that begin inside inputs are detected) ----------
+    useEffect(() => {
+        const grid = gridRef.current
+        if (!grid) return
+
+        const onMouseDownCapture = (e: MouseEvent) => {
+            // only handle left button drags
+            if (e.button !== 0) return
+
+            // find an ancestor cell that contains data-row
+            const target = e.target as HTMLElement | null
+            const cell = target?.closest('[data-row]') as HTMLElement | null
+            if (!cell) return
+
+            const rowIndex = clamp(Number(cell.dataset.row), inputLabels.length - 1)
+            const colIndex = clamp(Number(cell.dataset.col ?? '0'), 0)
+
+            pointerDownRef.current = {
+                startX: e.clientX,
+                startY: e.clientY,
+                startRow: rowIndex,
+                startCol: colIndex,
+                startedOnInput: !!target?.closest('input,textarea'),
+                moved: false
+            }
+
+            setIsSelecting(true)
+            setSelection({
+                startRow: rowIndex,
+                startCol: colIndex,
+                endRow: rowIndex,
+                endCol: colIndex
+            })
+            // DO NOT call e.preventDefault() here — we want a plain click (no drag) to still focus the input for editing.
+        }
+
+        grid.addEventListener('mousedown', onMouseDownCapture, true) // capture phase
+        return () => grid.removeEventListener('mousedown', onMouseDownCapture, true)
+    }, [inputLabels.length]) // reattach if ref changes
+
+    // ---------- mousemove + mouseup to update selection when dragging ----------
+    useEffect(() => {
+        const onMouseMove = (e: MouseEvent) => {
+            const pd = pointerDownRef.current
+            if (!pd) return
+
+            const dx = Math.abs(e.clientX - pd.startX)
+            const dy = Math.abs(e.clientY - pd.startY)
+            const movedNow = dx > 5 || dy > 5 // small threshold = click vs drag
+
+            if (movedNow && !pd.moved) {
+                pd.moved = true
+                // if user started the interaction inside an input, blur + disable user-select to stop text-select
+                if (pd.startedOnInput) {
+                    prevUserSelectRef.current = document.body.style.userSelect
+                    try {
+                        document.body.style.userSelect = 'none'
+                    } catch {
+                        // Ignore errors
+                    }
+                    // blur active element to avoid text caret/selection interfering with drag
+                    if (document.activeElement instanceof HTMLElement) {
+                        (document.activeElement as HTMLElement).blur()
+                    }
+                }
+            }
+
+            // determine cell under pointer
+            const el = document.elementFromPoint(e.clientX, e.clientY) as HTMLElement | null
+            const cell = el?.closest('[data-row]') as HTMLElement | null
+            if (cell) {
+                const row = clamp(Number(cell.dataset.row), inputLabels.length - 1)
+                const col = clamp(Number(cell.dataset.col ?? '0'), 0)
+                setSelection(prev => prev ? { ...prev, endRow: row, endCol: col } : {
+                    startRow: row, startCol: col, endRow: row, endCol: col
+                })
+            }
+        }
+
+        const onMouseUp = () => {
+            // restore `user-select` if we changed it
+            if (pointerDownRef.current?.moved && prevUserSelectRef.current !== undefined) {
+                try {
+                    document.body.style.userSelect = prevUserSelectRef.current
+                } catch {
+                    // Ignore errors
+                }
+                prevUserSelectRef.current = undefined
+            }
+            pointerDownRef.current = null
+            setIsSelecting(false)
+        }
+
+        document.addEventListener('mousemove', onMouseMove)
+        document.addEventListener('mouseup', onMouseUp)
+        return () => {
+            document.removeEventListener('mousemove', onMouseMove)
+            document.removeEventListener('mouseup', onMouseUp)
+        }
+    }, [inputLabels.length])
+
+    // ---------- native copy / paste handlers using system clipboard ----------
+    useEffect(() => {
+        const onCopy = (e: ClipboardEvent) => {
+            // if editing an input/textarea, let native copy happen (don't override)
+            const active = document.activeElement as HTMLElement | null
+            if (active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA')) return
+
+            if (!selection) return
+
+            const { startRow, startCol, endRow, endCol } = selection
+            const minRow = Math.min(startRow, endRow)
+            const maxRow = Math.max(startRow, endRow)
+            const minCol = Math.min(startCol, endCol)
+            const maxCol = Math.max(startCol, endCol)
+
+            const rowsOut: string[] = []
+            for (let r = minRow; r <= maxRow; r++) {
+                const cols: string[] = []
+                for (let c = minCol; c <= maxCol; c++) {
+                    // this grid is 1 column, but keep general logic
+                    const label = inputLabels[r]
+                    cols.push(budget_inputs[label] == "" ? '0' : budget_inputs[label])
+                }
+                rowsOut.push(cols.join('\t')) // tab separated per row
+            }
+            const text = rowsOut.join('\n')
+            if (e.clipboardData) {
+                e.clipboardData.setData('text/plain', text)
+                e.preventDefault()
+            } else if ((window as any).clipboardData) {
+                // IE fallback (unlikely needed)
+                (window as any).clipboardData.setData('Text', text)
+                e.preventDefault()
+            }
+            // store for internal paste if needed
+            setCopiedData(rowsOut.map(r => r.split('\t')))
+        }
+
+        const onPaste = (e: ClipboardEvent) => {
+            if (readOnly) return
+
+            // if editing an input/textarea, let native paste happen
+            // const active = document.activeElement as HTMLElement | null
+            // if (active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA')) return
+
+            const text = e.clipboardData?.getData('text/plain') ?? ''
+            if (!text) return
+
+            // parse text into 2D array: rows by newline, columns by comma/tab/space
+            const parsedRows = text
+                .split(/[\t, \n]+/)
+                .map(r => r.trim())
+                .filter(Boolean)
+
+
+            // determine paste start: use selection start if present, otherwise use focused cell
+            let startRow = selection?.startRow ?? 0
+            if (!selection) {
+                const focused = document.activeElement as HTMLElement | null
+                const cell = focused?.closest('[data-row]') as HTMLElement | null
+                if (cell) {
+                    startRow = clamp(Number(cell.dataset.row), 0)
+                }
+            }
+
+            const newInputs = { ...budget_inputs }
+            for (let r = 0; r < parsedRows.length; r++) {
+
+                const targetRow = startRow + r
+                if (targetRow < inputLabels.length) {
+                    // Clean the pasted value to only allow positive integers
+                    const cleanValue = parsedRows[r].trim().replace(/[^0-9]/g, '')
+                    newInputs[inputLabels[targetRow]] = cleanValue
+                }
+
+            }
+            set_budget_inputs(newInputs)
+            e.preventDefault()
+        }
+
+        document.addEventListener('copy', onCopy)
+        document.addEventListener('paste', onPaste)
+        return () => {
+            document.removeEventListener('copy', onCopy)
+            document.removeEventListener('paste', onPaste)
+        }
+    }, [selection, budget_inputs, inputLabels, set_budget_inputs, readOnly]) // re-register when selection or inputs change
+
+    // ---------- optional grid-level keyboard handler (keeps existing behavior when grid has focus) ----------
+    const handleKeyDown = (e: React.KeyboardEvent) => {
+        // keep earlier copy/paste handling as a fallback if you want it, but
+        // we primarily rely on native clipboard events above.
+        if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'a') {
+            // Example: select all
+            e.preventDefault()
+            setSelection({
+                startRow: 0, startCol: 0, endRow: inputLabels.length - 1, endCol: 0
+            })
+        }
+    }
+
+    // ---------- render ----------
+    return (
+        <div
+            ref={gridRef}
+            onKeyDown={handleKeyDown}
+            tabIndex={0}
+            style={{
+                display: 'flex',
+                padding: 6,
+                outline: 'none',
+                minHeight: '200px'
+            }}
+        >
+            <div style={{ ...columnDefs[0], width: 50 }}>
+                {inputLabels.map((lab) => (
+                    <div
+                        key={lab}
+                        style={{
+                            height: 36,
+                            color: 'var(--text-secondary)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'flex-end',
+                            paddingRight: 8,
+                            whiteSpace: 'nowrap',
+                            fontSize: 'var(--font-size-sm)'
+                        }}
+                    >
+                        <Icon name={lab} size={28} />
+                    </div>
+                ))}
+            </div>
+
+            <div style={{ flex: 1 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 0 }}>
+                    {inputLabels.map((label, rowIndex) => (
+                        // we attach data-row / data-col so the capture handlers can find the cell
+                        <div
+                            key={label}
+                            data-row={rowIndex}
+                            data-col={0}
+                            style={{ height: 36, display: 'flex', alignItems: 'center' }}
+                            onMouseEnter={() => {
+                                // when using normal hover + mouse selection (non-capture), update selection
+                                if (isSelecting && pointerDownRef.current) {
+                                    setSelection(prev => prev ? { ...prev, endRow: rowIndex, endCol: 0 } : {
+                                        startRow: rowIndex, startCol: 0, endRow: rowIndex, endCol: 0
+                                    })
+                                }
+                            }}
+                        >
+                            <input
+                                type="text"
+                                readOnly={readOnly}
+                                value={budget_inputs[label] ?? ''}
+                                onChange={(e) => handleCellChange(rowIndex, 0, e.target.value)}
+                                onKeyDown={(e) => { e.stopPropagation() }} // avoid grid-level key shortcuts while typing
+                                onFocus={() => {
+                                    // focus sets the selection to this cell (useful for keyboard navigation)
+                                    setSelection({
+                                        startRow: rowIndex,
+                                        startCol: 0,
+                                        endRow: rowIndex,
+                                        endCol: 0
+                                    })
+                                }}
+                                style={{
+                                    width: '100%',
+                                    height: '100%',
+                                    padding: '6px 8px',
+                                    border: '1px solid var(--border-accent)',
+                                    background: isCellSelected(rowIndex, 0) ? 'var(--marquee-bg)' : 'transparent',
+                                    color: 'var(--text-primary)',
+                                    fontSize: 'var(--font-size-sm)',
+                                    outline: 'none',
+                                    boxSizing: 'border-box',
+                                    cursor: readOnly ? 'default' : 'text'
+                                }}
+                                placeholder="0"
+                            />
+                        </div>
+                    ))}
+                </div>
+            </div>
+        </div>
+    )
+}

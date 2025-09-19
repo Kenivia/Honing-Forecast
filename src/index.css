@@ -1,41 +1,79 @@
 :root {
+    /* design tokens */
+    --spacing-xl: 24px;
+    --font-size-sm: 14px;
+
+    /* colors */
+    --bg: #1a1a1a;
+    --text: rgba(255, 255, 255, 0.87);
+    --muted: rgba(255, 255, 255, 0.6);
+    --accent: #fff3b5;
+    --accent-hover: #d3b625;
+    --button-bg: #1a1a1a;
+}
+
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+}
+
+/* Base typography and rendering */
+html {
     font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
     line-height: 1.5;
     font-weight: 400;
-
     color-scheme: light dark;
-    color: rgba(255, 255, 255, 0.87);
-    background-color: #242424;
-
-    font-synthesis: none;
     text-rendering: optimizeLegibility;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
 }
 
+/* Page layout — use flex centering if you want the whole app centered.
+   If you don't want centering, change display:block here. */
+body {
+    margin: 0;
+    display: flex;
+    align-items: center;
+    /* vertical centering for flex */
+    justify-content: center;
+    /* horizontal centering for flex */
+    min-width: 320px;
+    min-height: 100vh;
+    background-color: var(--bg);
+    color: var(--text);
+}
+
+/* Ensure controls are selectable and interactable */
+input,
+textarea,
+select,
+button {
+    -webkit-user-select: text;
+    -moz-user-select: text;
+    user-select: text;
+    box-sizing: border-box;
+    caret-color: auto;
+}
+
+/* Anchor styles */
 a {
     font-weight: 500;
-    color: #646cff;
+    color: var(--accent);
     text-decoration: inherit;
 }
 
 a:hover {
-    color: #535bf2;
+    color: var(--accent-hover);
 }
 
-body {
-    margin: 0;
-    display: flex;
-    place-items: center;
-    min-width: 320px;
-    min-height: 100vh;
-}
-
+/* Headline */
 h1 {
     font-size: 3.2em;
     line-height: 1.1;
 }
 
+/* Buttons */
 button {
     border-radius: 8px;
     border: 1px solid transparent;
@@ -43,13 +81,13 @@ button {
     font-size: 1em;
     font-weight: 500;
     font-family: inherit;
-    background-color: #1a1a1a;
+    background-color: var(--button-bg);
     cursor: pointer;
     transition: border-color 0.25s;
 }
 
 button:hover {
-    border-color: #646cff;
+    border-color: var(--accent);
 }
 
 button:focus,
@@ -57,17 +95,32 @@ button:focus-visible {
     outline: 4px auto -webkit-focus-ring-color;
 }
 
-@media (prefers-color-scheme: light) {
+/* Forms: ensure inputs look consistent but don't remove outlines entirely (a11y) */
+input[type="text"],
+input[type="number"],
+textarea {
+    background: transparent;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    padding: 6px 8px;
+    color: inherit;
+    font: inherit;
+    outline: none;
+}
+
+/* Respect user color scheme preferences */
+/* @media (prefers-color-scheme: light) {
     :root {
-        color: #213547;
-        background-color: #ffffff;
+        --bg: #ffffff;
+        --text: #213547;
+        --button-bg: #f9f9f9;
+        --accent-hover: #747bff;
     }
 
     a:hover {
-        color: #747bff;
+        color: var(--accent-hover);
     }
 
     button {
-        background-color: #f9f9f9;
+        background-color: var(--button-bg);
     }
-}
+} */
