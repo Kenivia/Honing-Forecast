@@ -1,8 +1,11 @@
+use crate::constants::BUCKET_COUNT;
 use crate::constants::LABELS;
 use crate::helpers::{calc_unlock, myformat, sort_by_indices};
+use crate::histogram::histograms_for_all_costs;
 use crate::monte_carlos::monte_carlos_data;
-use crate::parser::{parser, Upgrade};
+use crate::parser::{Upgrade, parser};
 use crate::value_estimation::{est_juice_value, est_special_honing_value, juice_to_array};
+use serde::Serialize;
 
 fn fail_count_to_string(typed_fail_counter: Vec<f64>, data_size: usize) -> String {
     let failed_labels: String;
@@ -78,11 +81,22 @@ fn _cost_to_chance(
     );
 }
 
+#[derive(Serialize)]
+pub struct CostToChanceOut {
+    pub chance: f64,
+    pub reason: String,
+    pub hist_counts: Vec<Vec<i64>>, // 7 x num_bins
+    pub hist_mins: Vec<i64>,        // 7
+    pub hist_maxs: Vec<i64>,        // 7
+}
+
 pub fn cost_to_chance(
     hone_counts: &Vec<Vec<i64>>,
     actual_budgets: &Vec<i64>,
     adv_counts: &Vec<Vec<i64>>,
-) -> (f64, String) {
+    express_event: bool,
+    hist_bins: usize,
+) -> CostToChanceOut {
     let data_size: usize = 100000;
     let adv_hone_strategy: String = String::from("No juice");
     let unlock_costs: Vec<i64> = calc_unlock(hone_counts, adv_counts);
@@ -95,6 +109,7 @@ pub fn cost_to_chance(
         &vec![1.0; 25],
         &vec![0.0; 25],
         &vec![0; 25],
+        express_event,
     );
     let (_chance_1, typed_fail_counter_1): (f64, Vec<f64>) = _cost_to_chance(
         &mut upgrade_arr,
@@ -112,10 +127,24 @@ pub fn cost_to_chance(
         data_size,
         &typed_fail_counter_1,
     );
-    return (
-        chance_2,
-        fail_count_to_string(typed_fail_counter_2, data_size),
+    // Generate histogram data from simulated cost data
+    let cost_data_for_hist: Vec<Vec<i64>> = monte_carlos_data(
+        data_size,
+        &upgrade_arr,
+        &unlock_costs,
+        actual_budgets[9],
+        false,
+        false,
     );
+    let bins = hist_bins.min(BUCKET_COUNT).max(1);
+    let (hist_counts, hist_mins, hist_maxs) = histograms_for_all_costs(&cost_data_for_hist, bins);
+    CostToChanceOut {
+        chance: chance_2,
+        reason: fail_count_to_string(typed_fail_counter_2, data_size),
+        hist_counts,
+        hist_mins,
+        hist_maxs,
+    }
 }
 
 #[cfg(test)]
@@ -123,21 +152,23 @@ mod tests {
     use super::*;
     #[test]
     fn cost_to_chance_stress() {
-        let (_chance, _reason): (f64, String) = cost_to_chance(
+        let out = cost_to_chance(
             &vec![(0..25).map(|_| 5).collect(), (0..25).map(|_| 1).collect()],
             &[
                 431777, 1064398, 23748, 9010948, 15125, 1803792, 4294967295, 420, 690, 6767,
             ]
             .to_vec(),
             &vec![(0..4).map(|_| 5).collect(), (0..4).map(|_| 1).collect()],
+            false,
+            1000,
         );
-        // println!("{:?}", chance);
-        // println!("{:?}", reason);
+        let _chance = out.chance;
+        let _reason = out.reason;
         // assert!(0.183 < chance && chance < 0.189);
     }
     #[test]
     fn cost_to_chance_18_demo() {
-        let (chance, reason): (f64, String) = cost_to_chance(
+        let out = cost_to_chance(
             &vec![
                 (0..25)
                     .map(|i| if i == 19 || i == 20 || i == 21 { 5 } else { 0 })
@@ -154,37 +185,43 @@ mod tests {
                 (0..4).map(|i| if i == 2 { 5 } else { 0 }).collect(),
                 (0..4).map(|i| if i == 2 { 1 } else { 0 }).collect(),
             ],
+            false,
+            1000,
         );
-        println!("{:?}", chance);
-        println!("{:?}", reason);
-        assert!(0.183 < chance && chance < 0.189);
+        println!("{:?}", out.chance);
+        println!("{:?}", out.reason);
+        assert!(0.183 < out.chance && out.chance < 0.189);
     }
     #[test]
     fn cost_to_chance_50_normal_weapon_25() {
-        let (chance, reason): (f64, String) = cost_to_chance(
+        let out = cost_to_chance(
             &vec![
                 (0..25).map(|_| 0).collect(),
                 (0..25).map(|i| if i == 24 { 1 } else { 0 }).collect(),
             ],
             &[324000, 0, 4680, 1774000, 3600, 406800, 10800000, 0, 0, 0].to_vec(),
             &vec![(0..4).map(|_| 0).collect(), (0..4).map(|_| 0).collect()],
+            false,
+            1000,
         );
-        println!("{:?}", chance);
-        println!("{:?}", reason);
-        assert!(0.495 < chance && chance < 0.505);
+        println!("{:?}", out.chance);
+        println!("{:?}", out.reason);
+        assert!(0.495 < out.chance && out.chance < 0.505);
     }
     #[test]
     fn cost_to_chance_53_adv_armor_40() {
-        let (chance, reason): (f64, String) = cost_to_chance(
+        let out = cost_to_chance(
             &vec![(0..25).map(|_| 0).collect(), (0..25).map(|_| 0).collect()],
             &[0, 63600, 1219, 564000, 1007, 127200, 5003000, 0, 0, 0].to_vec(),
             &vec![
                 (0..4).map(|x| if x == 3 { 1 } else { 0 }).collect(),
                 (0..4).map(|_| 0).collect(),
             ],
+            false,
+            1000,
         );
-        println!("{:?}", chance);
-        println!("{:?}", reason);
-        assert!(0.52 < chance && chance < 0.54);
+        println!("{:?}", out.chance);
+        println!("{:?}", out.reason);
+        assert!(0.52 < out.chance && out.chance < 0.54);
     }
 }

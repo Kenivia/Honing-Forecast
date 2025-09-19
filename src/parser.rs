@@ -145,6 +145,7 @@ pub fn parser(
     artisan_rate_arr: &Vec<f64>,
     extra_arr: &Vec<f64>,
     extra_num_arr: &Vec<usize>,
+    express_event: bool,
 ) -> Vec<Upgrade> {
     // --- Input assertions that match the TS checks ---
     assert!(normal_counts.len() == 2, "normal_counts must have length 2");
@@ -201,9 +202,9 @@ pub fn parser(
     // For each piece type (0..normal_counts.len())
     for is_weapon in 0..normal_counts.len() {
         let cur_cost = if is_weapon == 0 {
-            &NORMAL_HONE_ARMOR_COST
+            get_event_modified_armor_costs(express_event)
         } else {
-            &NORMAL_HONE_WEAPON_COST
+            get_event_modified_weapon_costs(express_event)
         };
 
         let mut current_counter: i64 = 0;
@@ -232,9 +233,15 @@ pub fn parser(
             // special_costs.push(SPECIAL_LEAPS_COST[piece_type][i]);
             special_cost = SPECIAL_LEAPS_COST[is_weapon][upgrade_plus_num];
             base = NORMAL_HONE_CHANCES[upgrade_plus_num];
+            let event_artisan_rate = if express_event {
+                artisan_rate_arr[upgrade_plus_num] * EVENT_ARTISAN_MULTIPLIER[upgrade_plus_num]
+            } else {
+                artisan_rate_arr[upgrade_plus_num]
+            };
+            
             prob_dist = probability_distribution(
                 base,
-                artisan_rate_arr[upgrade_plus_num],
+                event_artisan_rate,
                 extra_arr[upgrade_plus_num],
                 extra_num_arr[upgrade_plus_num],
             );
@@ -250,7 +257,7 @@ pub fn parser(
                 this_cost.try_into().unwrap(),
                 special_cost,
                 is_weapon == 1,
-                artisan_rate_arr[upgrade_plus_num],
+                event_artisan_rate,
                 upgrade_plus_num,
             ));
             current_counter += 1;

@@ -22,6 +22,15 @@
     --btn-demo: #374151;
     --btn-demo-text: #ffffff;
 
+    /* Graph Series Colors */
+    --series-red: #ff0000;
+    --series-blue: #6666ff;
+    --series-leaps: #b300ff;
+    --series-shards: #f13b9f;
+    --series-oreha: #ff7824;
+    --series-gold: #facc15;
+    --series-silver: #9ca3af;
+
     /* Input Colors */
     --input-bg: #acfffeff;
     --input-text: #000000;

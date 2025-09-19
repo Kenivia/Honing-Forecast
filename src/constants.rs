@@ -2,6 +2,49 @@ pub static NORMAL_JUICE_COST: [i64; 25] = [
     0, 0, 0, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 25, 25, 25, 25, 50, 50,
 ];
 
+// Express event constants
+pub static EVENT_ARTISAN_MULTIPLIER: [f64; 25] = [
+    1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0,
+    2.0, 1.0, 1.0, 1.0, 1.0, 1.0,
+];
+
+pub static EVENT_COST_REDUCTION: [[f64; 25]; 7] = [
+    [1.0; 25], [1.0; 25], [1.0; 25], [1.0; 25], [1.0; 25], [1.0; 25], [1.0; 25],
+];
+
+// Helper function to calculate event-modified costs
+pub fn get_event_modified_weapon_costs(express_event: bool) -> [[i64; 25]; 7] {
+    if !express_event {
+        return DEFAULT_NORMAL_HONE_WEAPON_COST;
+    }
+
+    let mut result = [[0i64; 25]; 7];
+    for cost_type in 0..7 {
+        for level in 0..25 {
+            let base_cost = DEFAULT_NORMAL_HONE_WEAPON_COST[cost_type][level] as f64;
+            let reduction = EVENT_COST_REDUCTION[cost_type][level];
+            result[cost_type][level] = (base_cost * reduction).ceil() as i64;
+        }
+    }
+    result
+}
+
+pub fn get_event_modified_armor_costs(express_event: bool) -> [[i64; 25]; 7] {
+    if !express_event {
+        return DEFAULT_NORMAL_HONE_ARMOR_COST;
+    }
+
+    let mut result = [[0i64; 25]; 7];
+    for cost_type in 0..7 {
+        for level in 0..25 {
+            let base_cost = DEFAULT_NORMAL_HONE_ARMOR_COST[cost_type][level] as f64;
+            let reduction = EVENT_COST_REDUCTION[cost_type][level];
+            result[cost_type][level] = (base_cost * reduction).ceil() as i64;
+        }
+    }
+    result
+}
+
 pub static SPECIAL_LEAPS_COST: [[i64; 25]; 2] = [
     [
         12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 16, 16, 16, 16, 20, 20, 20, 20, 20, 20, 20,
@@ -24,11 +67,14 @@ pub static LABELS: [&str; 10] = [
     "Blue juice",
     "Special Leaps",
 ];
+
+// Maximum histogram bucket count used for graphing
+pub const BUCKET_COUNT: usize = 1000;
 pub static NORMAL_HONE_CHANCES: [f64; 25] = [
     1.0, 1.0, 1.0, 0.45, 0.45, 0.45, 0.3, 0.3, 0.15, 0.15, 0.1, 0.1, 0.05, 0.05, 0.04, 0.04, 0.03,
     0.03, 0.03, 0.015, 0.015, 0.01, 0.01, 0.005, 0.005,
 ];
-pub static NORMAL_HONE_WEAPON_COST: [[i64; 25]; 7] = [
+pub static DEFAULT_NORMAL_HONE_WEAPON_COST: [[i64; 25]; 7] = [
     [
         350, 450, 550, 650, 750, 800, 900, 1000, 1050, 1150, 1250, 1300, 1400, 1550, 1700, 1950,
         2200, 2450, 2700, 2950, 3200, 3700, 4000, 4200, 4500,
@@ -56,7 +102,9 @@ pub static NORMAL_HONE_WEAPON_COST: [[i64; 25]; 7] = [
         55000, 55000, 55000, 65000, 65000, 65000, 90000, 90000, 120000, 120000, 150000, 150000,
     ],
 ];
-pub static NORMAL_HONE_ARMOR_COST: [[i64; 25]; 7] = [
+
+// Calculate event-modified costs by applying reduction and taking ceiling
+pub static DEFAULT_NORMAL_HONE_ARMOR_COST: [[i64; 25]; 7] = [
     [
         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     ],
@@ -84,6 +132,9 @@ pub static NORMAL_HONE_ARMOR_COST: [[i64; 25]; 7] = [
         33000, 33000, 33000, 39000, 39000, 39000, 54000, 54000, 72000, 72000, 90000, 90000,
     ],
 ];
+
+// Calculate event-modified armor costs by applying reduction and taking ceiling
+
 pub static NORMAL_HONE_WEAPON_UNLOCK: [[i64; 25]; 2] = [
     [
         15000, 15000, 15000, 15000, 15000, 16000, 17000, 17000, 18000, 20000, 21000, 23000, 33000,

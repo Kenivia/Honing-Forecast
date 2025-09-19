@@ -1,4 +1,6 @@
+use crate::constants::BUCKET_COUNT;
 use crate::helpers::calc_unlock;
+use crate::histogram::histograms_for_all_costs;
 use crate::monte_carlos::monte_carlos_data;
 use crate::parser::{Upgrade, parser};
 // use web_sys::console;
@@ -88,12 +90,25 @@ fn count_failure(cost_data: &Vec<Vec<i64>>, budget_data: &Vec<Vec<i64>>, asc: bo
         return count_failure_naive(cost_data, budget_data);
     }
 }
+use serde::Serialize;
+
+#[derive(Serialize)]
+pub struct ChanceToCostOut {
+    pub best_budget: Vec<i64>,
+    pub actual_prob: f64,
+    pub hist_counts: Vec<Vec<i64>>, // 7 x num_bins
+    pub hist_mins: Vec<i64>,        // 7
+    pub hist_maxs: Vec<i64>,        // 7
+}
+
 pub fn chance_to_cost(
     hone_counts: Vec<Vec<i64>>,
     adv_counts: Vec<Vec<i64>>,
     desired_chance: f64,
     adv_hone_strategy: String,
-) -> (Vec<i64>, f64) {
+    express_event: bool,
+    hist_bins: usize,
+) -> ChanceToCostOut {
     let cost_size: usize = 200000;
     let budget_size: usize = 1000;
     let upgrade_arr: Vec<Upgrade> = parser(
@@ -103,6 +118,7 @@ pub fn chance_to_cost(
         &vec![1.0; 25],
         &vec![0.0; 25],
         &vec![0; 25],
+        express_event,
     );
     let cost_data: Vec<Vec<i64>> = monte_carlos_data(
         cost_size,
@@ -112,6 +128,8 @@ pub fn chance_to_cost(
         false, //rigged
         false, // use_true_rng
     );
+    let bins = hist_bins.min(BUCKET_COUNT).max(1);
+    let (hist_counts, hist_mins, hist_maxs) = histograms_for_all_costs(&cost_data, bins);
     let budget_data: Vec<Vec<i64>> = monte_carlos_data(
         budget_size,
         &upgrade_arr,
@@ -131,9 +149,13 @@ pub fn chance_to_cost(
     let mut sorted_indices: Vec<usize> = (0..budget_size as usize).collect();
     sorted_indices.sort_by_key(|&i| (diffs[i], i));
     let best_budget: Vec<i64> = budget_data[sorted_indices[0]].clone();
-    (
+    ChanceToCostOut {
         best_budget,
-        (1 as f64 - (failure_counts[sorted_indices[0]] as f64 / cost_data.len() as f64))
+        actual_prob: (1 as f64
+            - (failure_counts[sorted_indices[0]] as f64 / cost_data.len() as f64))
             * 100 as f64,
-    )
+        hist_counts,
+        hist_mins,
+        hist_maxs,
+    }
 }

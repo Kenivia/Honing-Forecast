@@ -1,10 +1,11 @@
-import React, { useState, useRef, useEffect, useMemo } from 'react'
+import React, { useState, useRef, useEffect } from 'react'
 import Icon from './Icon.tsx'
 
 interface SpreadsheetGridProps {
     columnDefs: Array<{ headerName: string; field: string; editable: boolean; flex: number; cellStyle: any }>
-    budget_inputs: Record<string, string>
-    set_budget_inputs: (_next: any) => void
+    labels: string[]
+    sheet_values: Record<string, string>
+    set_sheet_values: (_next: any) => void
     readOnly?: boolean
 }
 
@@ -15,7 +16,7 @@ interface Selection {
     endCol: number
 }
 
-export default function SpreadsheetGrid({ columnDefs, budget_inputs, set_budget_inputs, readOnly = false }: SpreadsheetGridProps) {
+export default function SpreadsheetGrid({ columnDefs, labels, sheet_values: budget_inputs, set_sheet_values: set_sheet_values, readOnly = false }: SpreadsheetGridProps) {
     const [selection, setSelection] = useState<Selection | null>(null)
     const [isSelecting, setIsSelecting] = useState(false)
     const [_copiedData, setCopiedData] = useState<string[][] | null>(null)
@@ -34,7 +35,7 @@ export default function SpreadsheetGrid({ columnDefs, budget_inputs, set_budget_
     // keep old body user-select so we can restore it after drag
     const prevUserSelectRef = useRef<string | undefined>(undefined)
 
-    const inputLabels = useMemo(() => ["Red", "Blue", "Leaps", "Shards", "Oreha", "Gold", "Silver(WIP)", "Red juice", "Blue juice", "Special leaps"], [])
+    // const labels = useMemo(() => labels, [])
 
     // ---------- helpers ----------
     const clamp = (v: number, max: number) => Math.min(Math.max(v, 0), max)
@@ -53,13 +54,17 @@ export default function SpreadsheetGrid({ columnDefs, budget_inputs, set_budget_
     const handleCellChange = (rowIndex: number, colIndex: number, value: string) => {
         if (readOnly) return
 
-        const label = inputLabels[rowIndex]
+        const label = labels[rowIndex]
         if (label) {
             // Only allow positive integers, reject anything else by overwriting
-            const cleanValue = value.replace(/[^0-9]/g, '')
+            let cleanValue = value.replace(/[^0-9]/g, '')
+            // Clamp overly large inputs to 9 digits max value 999,999,999 (no commas stored)
+            if (cleanValue.length > 10) {
+                cleanValue = '999999999'
+            }
             const next = { ...budget_inputs }
             next[label] = cleanValue
-            set_budget_inputs(next)
+            set_sheet_values(next)
         }
     }
 
@@ -77,7 +82,7 @@ export default function SpreadsheetGrid({ columnDefs, budget_inputs, set_budget_
             const cell = target?.closest('[data-row]') as HTMLElement | null
             if (!cell) return
 
-            const rowIndex = clamp(Number(cell.dataset.row), inputLabels.length - 1)
+            const rowIndex = clamp(Number(cell.dataset.row), labels.length - 1)
             const colIndex = clamp(Number(cell.dataset.col ?? '0'), 0)
 
             pointerDownRef.current = {
@@ -101,7 +106,7 @@ export default function SpreadsheetGrid({ columnDefs, budget_inputs, set_budget_
 
         grid.addEventListener('mousedown', onMouseDownCapture, true) // capture phase
         return () => grid.removeEventListener('mousedown', onMouseDownCapture, true)
-    }, [inputLabels.length]) // reattach if ref changes
+    }, [labels.length]) // reattach if ref changes
 
     // ---------- mousemove + mouseup to update selection when dragging ----------
     useEffect(() => {
@@ -134,7 +139,7 @@ export default function SpreadsheetGrid({ columnDefs, budget_inputs, set_budget_
             const el = document.elementFromPoint(e.clientX, e.clientY) as HTMLElement | null
             const cell = el?.closest('[data-row]') as HTMLElement | null
             if (cell) {
-                const row = clamp(Number(cell.dataset.row), inputLabels.length - 1)
+                const row = clamp(Number(cell.dataset.row), labels.length - 1)
                 const col = clamp(Number(cell.dataset.col ?? '0'), 0)
                 setSelection(prev => prev ? { ...prev, endRow: row, endCol: col } : {
                     startRow: row, startCol: col, endRow: row, endCol: col
@@ -162,7 +167,7 @@ export default function SpreadsheetGrid({ columnDefs, budget_inputs, set_budget_
             document.removeEventListener('mousemove', onMouseMove)
             document.removeEventListener('mouseup', onMouseUp)
         }
-    }, [inputLabels.length])
+    }, [labels.length])
 
     // ---------- native copy / paste handlers using system clipboard ----------
     useEffect(() => {
@@ -184,7 +189,7 @@ export default function SpreadsheetGrid({ columnDefs, budget_inputs, set_budget_
                 const cols: string[] = []
                 for (let c = minCol; c <= maxCol; c++) {
                     // this grid is 1 column, but keep general logic
-                    const label = inputLabels[r]
+                    const label = labels[r]
                     cols.push(budget_inputs[label] == "" ? '0' : budget_inputs[label])
                 }
                 rowsOut.push(cols.join('\t')) // tab separated per row
@@ -233,14 +238,15 @@ export default function SpreadsheetGrid({ columnDefs, budget_inputs, set_budget_
             for (let r = 0; r < parsedRows.length; r++) {
 
                 const targetRow = startRow + r
-                if (targetRow < inputLabels.length) {
+                if (targetRow < labels.length) {
                     // Clean the pasted value to only allow positive integers
-                    const cleanValue = parsedRows[r].trim().replace(/[^0-9]/g, '')
-                    newInputs[inputLabels[targetRow]] = cleanValue
+                    let cleanValue = parsedRows[r].trim().replace(/[^0-9]/g, '')
+                    if (cleanValue.length > 10) cleanValue = '999999999'
+                    newInputs[labels[targetRow]] = cleanValue
                 }
 
             }
-            set_budget_inputs(newInputs)
+            set_sheet_values(newInputs)
             e.preventDefault()
         }
 
@@ -250,7 +256,7 @@ export default function SpreadsheetGrid({ columnDefs, budget_inputs, set_budget_
             document.removeEventListener('copy', onCopy)
             document.removeEventListener('paste', onPaste)
         }
-    }, [selection, budget_inputs, inputLabels, set_budget_inputs, readOnly]) // re-register when selection or inputs change
+    }, [selection, budget_inputs, labels, set_sheet_values, readOnly]) // re-register when selection or inputs change
 
     // ---------- optional grid-level keyboard handler (keeps existing behavior when grid has focus) ----------
     const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -260,7 +266,7 @@ export default function SpreadsheetGrid({ columnDefs, budget_inputs, set_budget_
             // Example: select all
             e.preventDefault()
             setSelection({
-                startRow: 0, startCol: 0, endRow: inputLabels.length - 1, endCol: 0
+                startRow: 0, startCol: 0, endRow: labels.length - 1, endCol: 0
             })
         }
     }
@@ -279,7 +285,7 @@ export default function SpreadsheetGrid({ columnDefs, budget_inputs, set_budget_
             }}
         >
             <div style={{ ...columnDefs[0], width: 50 }}>
-                {inputLabels.map((lab) => (
+                {labels.map((lab) => (
                     <div
                         key={lab}
                         style={{
@@ -300,7 +306,7 @@ export default function SpreadsheetGrid({ columnDefs, budget_inputs, set_budget_
 
             <div style={{ flex: 1 }}>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 0 }}>
-                    {inputLabels.map((label, rowIndex) => (
+                    {labels.map((label, rowIndex) => (
                         // we attach data-row / data-col so the capture handlers can find the cell
                         <div
                             key={label}

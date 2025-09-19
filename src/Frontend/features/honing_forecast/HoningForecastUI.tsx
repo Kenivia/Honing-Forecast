@@ -1,11 +1,13 @@
 import React, { useEffect, useRef, useState, useMemo } from 'react'
 import CheckboxGrid from '../../components/CheckboxGrid.tsx'
 import SpreadsheetGrid from '../../components/SpreadsheetGrid.tsx'
+import Graph from '../../components/Graph.tsx'
 import Icon from '../../components/Icon.tsx'
 import { SpawnWorker } from '../../worker_setup.ts'
 import "./CheckboxRow.css"
 
 const INPUT_LABELS = ["Red", "Blue", "Leaps", "Shards", "Oreha", "Gold", "Silver(WIP)", "Red juice", "Blue juice", "Special leaps"]
+const OUTPUT_LABELS = ["Red", "Blue", "Leaps", "Shards", "Oreha", "Gold", "Silver(WIP)", "Red juice", "Blue juice",]
 
 function coordsToCell(ref: HTMLDivElement | null, clientX: number, clientY: number, rows: number, cols: number) {
     if (!ref) return { r: 0, c: 0 }
@@ -31,6 +33,8 @@ export default function HoningForecastUI() {
 
     const [desired_chance, set_desired_chance] = useState(() => '50')
     const [adv_hone_strategy, set_adv_hone_strategy_change] = useState(() => 'No juice')
+    const [express_event, set_express_event] = useState(() => true)
+    const [bucketCount, setBucketCount] = useState<number>(() => 100)
     const [prev_checked_arr, set_prev_checked_arr] = useState(() => Array.from({ length: TOP_COLS }, () => false))
     const [prev_checked_arr_bottom, set_prev_checked_arr_bottom] = useState(() => Array.from({ length: BOTTOM_COLS }, () => false))
 
@@ -189,6 +193,8 @@ export default function HoningForecastUI() {
             'Special leaps': '6767',
         })
         set_desired_chance('69')
+        set_prev_checked_arr(Array.from({ length: TOP_COLS }, (_, ind) => ind == 19 || ind == 20 || ind == 21))
+        set_prev_checked_arr_bottom(Array.from({ length: BOTTOM_COLS }, (_, ind) => ind == 2))
     }
 
     const [chance_result, set_chance_result] = useState<any>(null)
@@ -209,6 +215,8 @@ export default function HoningForecastUI() {
         desired_chance: parseFloat(desired_chance || '0'),
         budget: (input => Object.entries(input).map(([, v]) => Math.round(Number(v))))(budget_inputs),
         adv_hone_strategy: adv_hone_strategy,
+        express_event: express_event,
+        bucket_count: Math.max(1, Math.min(1000, Math.floor(Number(bucketCount) || 1)))
     })
 
     // Helper to start a cancelable worker - it terminates any existing worker for this task
@@ -293,6 +301,8 @@ export default function HoningForecastUI() {
     const budgetKey = useMemo(() => JSON.stringify(budget_inputs), [budget_inputs])
     const desiredKey = useMemo(() => String(desired_chance), [desired_chance])
     const advStrategyKey = useMemo(() => String(adv_hone_strategy), [adv_hone_strategy])
+    const expressEventKey = useMemo(() => String(express_event), [express_event])
+    const graphBucketSizeKey = useMemo(() => String(bucketCount), [bucketCount])
 
     // When budget or grids or strategy change -> run CostToChance (budget -> cost->chance)
     useEffect(() => {
@@ -308,7 +318,7 @@ export default function HoningForecastUI() {
             debounceTimerRef1.current = null
         }, 100) // 100ms debounce
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [budgetKey, topGridKey, bottomGridKey, advStrategyKey])
+    }, [budgetKey, topGridKey, bottomGridKey, advStrategyKey, expressEventKey, graphBucketSizeKey])
 
     // When desired chance or grids or strategy change -> run ChanceToCost (chance -> cost)
     useEffect(() => {
@@ -321,7 +331,7 @@ export default function HoningForecastUI() {
             debounceTimerRef2.current = null
         }, 100)
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [desiredKey, topGridKey, bottomGridKey, advStrategyKey])
+    }, [desiredKey, topGridKey, bottomGridKey, advStrategyKey, expressEventKey, graphBucketSizeKey])
 
     // Cleanup on unmount: terminate any running workers and clear timers
     useEffect(() => {
@@ -400,8 +410,7 @@ export default function HoningForecastUI() {
             borderRadius: 'var(--border-radius)',
             padding: 'var(--spacing-xl)',
             border: '1px solid var(--border-primary)',
-            minWidth: "400px",
-            maxWidth: "400px",
+
         },
         inputLabelCell: {
             width: 100,
@@ -530,9 +539,9 @@ export default function HoningForecastUI() {
 
 
                     {/* Advanced Honing Section with Demo Controls */}
-                    <div style={{ display: 'flex', gap: '400px', alignItems: 'flex-start', }}>
+                    <div style={{ display: 'flex', gap: '300px', alignItems: 'flex-start', }}>
                         <div style={{ maxWidth: '260px' }}>
-                            <h2 style={styles.sectionTitle}>Advanced Honing</h2>
+                            <h2 style={{ ...styles.sectionTitle, marginTop: '-8px', }}>Advanced Honing</h2>
                             <div style={styles.gridSection}>
                                 <div style={{ display: 'flex', gap: 8 }}>
                                     <div style={{ width: 100, display: 'flex', flexDirection: 'column', justifyContent: "flex-start", textWrap: "nowrap", gap: 0 }}>
@@ -611,14 +620,59 @@ export default function HoningForecastUI() {
                             {/* Demo Controls Section */}
 
                         </div>
-                        <div style={{ display: 'flex', flexDirection: "column", gap: 2 }}>
-                            <h3 style={{ color: 'var(--text-primary)', fontSize: 'var(--font-size-base)', fontWeight: 'var(--font-weight-semibold)', margin: '0 0 var(--spacing-md) 0' }}>Demo Controls</h3>
+                        <div style={{ display: 'flex', flexDirection: "column", alignItems: 'flex-start', gap: 0, width: 250 }}>
+                            <h3 style={{ ...styles.sectionTitle, marginTop: '-8px', }}>Demo Controls</h3>
                             <div style={styles.buttonSection}>
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-sm)', width: '100%' }}>
                                     <button style={styles.demoButton} onClick={fillDemo}>Fill Demo</button>
                                     <button style={styles.demoButton} onClick={fillRandom}>Fill Random</button>
                                     <button style={styles.demoButton} onClick={clearAll}>Clear All</button>
 
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '8px' }}>
+                                        <input
+                                            type="checkbox"
+                                            id="express_event"
+                                            checked={express_event}
+                                            onChange={(e) => set_express_event(e.target.checked)}
+                                            style={{
+                                                width: '16px',
+                                                height: '16px',
+                                                cursor: 'pointer'
+                                            }}
+                                        />
+                                        <label
+                                            htmlFor="express_event"
+                                            style={{
+                                                color: 'var(--text-primary)',
+                                                fontSize: 'var(--font-size-sm)',
+                                                cursor: 'pointer'
+                                            }}
+                                        >
+                                            Express event
+                                        </label>
+                                    </div>
+                                    <div style={{ width: 250, display: 'flex', gap: '12px' }}>
+                                        <div style={{ width: 180, textAlign: 'right', paddingRight: 8, color: 'var(--text-secondary)' }}>Graph bucket size</div>
+                                        <input
+                                            type="text"
+                                            value={String(bucketCount)}
+                                            onChange={(e) => {
+                                                const cleaned = e.target.value.replace(/[^0-9]/g, '')
+                                                const n = Math.max(1, Math.min(1000, Number(cleaned || '1')))
+                                                setBucketCount(n)
+                                            }}
+                                            placeholder="1000"
+                                            style={{
+                                                width: 70,
+                                                fontSize: 16,
+                                                padding: '6px 8px',
+                                                borderRadius: 6,
+                                                background: 'var(--input-bg)',
+                                                color: 'var(--input-text)',
+                                                border: '1px solid var(--input-border)'
+                                            }}
+                                        />
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -627,8 +681,8 @@ export default function HoningForecastUI() {
 
                 {/* Input Sections */}
                 {/* Chance to Cost Section */}
-                <div style={styles.inputSection}>
-                    <h3 style={{ color: 'var(--text-primary)', fontSize: 'var(--font-size-base)', fontWeight: 'var(--font-weight-semibold)', margin: '0 0 16px 0' }}>Chance to Cost</h3>
+                <h3 style={{ color: 'var(--text-primary)', fontSize: 'var(--font-size-base)', fontWeight: 'var(--font-weight-semibold)', margin: '0 0 -8px 0' }}>Chance to Cost</h3>
+                <div style={{ ...styles.inputSection, width: 1120 }}>
 
                     <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 16 }}>
                         <div style={{ width: 120, textAlign: 'right', paddingRight: 8, color: 'var(--text-secondary)' }}>Desired chance</div>
@@ -652,51 +706,61 @@ export default function HoningForecastUI() {
                         </div>
                     </div>
 
-                    {/* <div style={{ marginBottom: 16 }}>
-                        <button
-                            style={styles.primaryButton}
-                            onClick={() => HandleCallWorker('ChanceToCost')}
-                            disabled={ChanceToCostBusy}
-                        >
-                            {ChanceToCostBusy ? 'Running…' : `Find estimated cost for ${desired_chance}%`}
-                        </button>
-                    </div> */}
 
-                    <div>
-                        <div style={{ fontWeight: 'var(--font-weight-semibold)', color: 'var(--text-primary)', marginBottom: 8 }}>Estimated cost</div>
-                        <div style={{ marginBottom: 16 }}>
-                            <SpreadsheetGrid
-                                columnDefs={columnDefs}
-                                budget_inputs={cost_result ? Object.fromEntries(INPUT_LABELS.map(label => [label, cost_result[label] != null ? String(cost_result[label]) : 'No results yet'])) : Object.fromEntries(INPUT_LABELS.map(label => [label, 'No results yet']))}
-                                set_budget_inputs={() => { }} // No-op for read-only
-                                readOnly={true}
+                    <div style={{ display: 'flex', gap: 130, alignItems: 'flex-start' }}>
+                        <div>
+                            <div style={{ fontWeight: 'var(--font-weight-semibold)', color: 'var(--text-primary)', marginBottom: 8 }}>Estimated cost</div>
+                            <div style={{ marginBottom: 16, width: 210 }}>
+                                <SpreadsheetGrid
+                                    columnDefs={columnDefs}
+                                    labels={OUTPUT_LABELS}
+                                    sheet_values={cost_result ? Object.fromEntries(OUTPUT_LABELS.map(label => [label, cost_result[label] != null ? String(cost_result[label]) : 'No results yet'])) : Object.fromEntries(OUTPUT_LABELS.map(label => [label, 'No results yet']))}
+                                    set_sheet_values={() => { }} // No-op for read-only
+                                    readOnly={true}
+                                />
+                            </div>
+                            {cost_result && (
+                                <pre style={{ color: 'var(--text-muted)', fontSize: 'var(--font-size-xs)', marginTop: 8 }}>
+                                    Run time: {cost_result.run_time}s{'\n'}{cost_result.actual_prob}
+                                </pre>
+                            )}
+                        </div>
+                        <div style={{ flex: 1 }}>
+                            <Graph
+                                title="Cost distribution"
+                                labels={OUTPUT_LABELS}
+                                counts={cost_result?.hist_counts}
+                                mins={cost_result?.hist_mins}
+                                maxs={cost_result?.hist_maxs}
+                                pointOfInterestBucket={cost_result && cost_result.hist_counts ? Math.round((Number(cost_result.actual_prob || 0)) * (cost_result.hist_counts[0]?.length || 1000) / 100) : null}
+                                width={640}
+                                height={320}
                             />
                         </div>
-                        {cost_result && (
-                            <pre style={{ color: 'var(--text-muted)', fontSize: 'var(--font-size-xs)', marginTop: 8 }}>
-                                Run time: {cost_result.run_time}s{'\n'}{cost_result.actual_prob}
-                            </pre>
-                        )}
                     </div>
                 </div>
 
 
 
                 {/* Cost to Chance Section */}
-                <div style={styles.inputSection}>
-                    <h3 style={{ color: 'var(--text-primary)', fontSize: 'var(--font-size-base)', fontWeight: 'var(--font-weight-semibold)', margin: '0 0 16px 0' }}>Cost to Chance</h3>
+                <h3 style={{ color: 'var(--text-primary)', fontSize: 'var(--font-size-base)', fontWeight: 'var(--font-weight-semibold)', margin: '16px 0 0px 0' }}>Cost to Chance</h3>
+                <div style={{ ...styles.inputSection, flexDirection: "row", width: 1120 }}>
+                    <div style={{ fontWeight: 'var(--font-weight-semibold)', color: 'var(--text-primary)', marginBottom: 8 }}>Input your budget here</div>
+                    <div style={{ display: 'flex', gap: 40, alignItems: 'flex-start' }}>
 
-                    <div style={{ marginBottom: 0, color: 'var(--text-secondary)' }}>Input your budget here</div>
+                        <div style={{ display: 'flex', flexDirection: "column", gap: 0, alignItems: 'flex-start' }}>
 
-                    <div style={{ marginBottom: 16 }}>
-                        <SpreadsheetGrid
-                            columnDefs={columnDefs}
-                            budget_inputs={budget_inputs}
-                            set_budget_inputs={set_budget_inputs}
-                        />
-                    </div>
 
-                    {/* <div style={{ marginBottom: 16 }}>
+                            <div style={{ marginBottom: 16, width: 210 }}>
+                                <SpreadsheetGrid
+                                    columnDefs={columnDefs}
+                                    labels={INPUT_LABELS}
+                                    sheet_values={budget_inputs}
+                                    set_sheet_values={set_budget_inputs}
+                                />
+                            </div>
+
+                            {/* <div style={{ marginBottom: 16 }}>
                         <button
                             style={styles.successButton}
                             onClick={() => HandleCallWorker('CostToChance')}
@@ -706,17 +770,35 @@ export default function HoningForecastUI() {
                         </button>
                     </div> */}
 
-                    <div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8 }}>
-                            <div style={{ ...styles.inputLabelCell, whiteSpace: 'nowrap' }}>Chance of Success</div>
-                            <div style={{ ...styles.inputCell, border: 'none', background: 'transparent', color: 'var(--text-success)', fontSize: 'var(--font-size-xl)' }}>{chance_result ? (String(chance_result.chance) + '%') : '-'}</div>
+
+
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8 }}>
+                                <div style={{ ...styles.inputLabelCell, whiteSpace: 'nowrap' }}>Chance of Success</div>
+                                <div style={{ ...styles.inputCell, border: 'none', background: 'transparent', color: 'var(--text-success)', fontSize: 'var(--font-size-xl)' }}>{chance_result ? (String(chance_result.chance) + '%') : '-'}</div>
+                            </div>
+                            <div style={{ marginTop: 8, ...styles.inputLabelCell, whiteSpace: 'nowrap' }}>Reasons for failures/bottlenecks:</div>
+                            <div style={{ marginTop: 4, color: 'var(--text-muted)', fontSize: 'var(--font-size-sm)', whiteSpace: "wrap", width: 300 }}>{chance_result ? (chance_result.reason || '') : ''}</div>
+                            {chance_result && (
+                                <div style={{ marginTop: 4, color: 'var(--text-muted)', fontSize: 'var(--font-size-xs)' }}>Run time: {chance_result.run_time}s</div>
+                            )}
                         </div>
-                        <div style={{ marginTop: 8, ...styles.inputLabelCell, whiteSpace: 'nowrap' }}>Reasons for failures/bottlenecks:</div>
-                        <div style={{ marginTop: 4, color: 'var(--text-muted)', fontSize: 'var(--font-size-sm)', whiteSpace: "wrap" }}>{chance_result ? (chance_result.reason || '') : ''}</div>
-                        {chance_result && (
-                            <div style={{ marginTop: 4, color: 'var(--text-muted)', fontSize: 'var(--font-size-xs)' }}>Run time: {chance_result.run_time}s</div>
-                        )}
+                        <div style={{ flex: 1 }}>
+                            <Graph
+                                title="Cost distribution"
+                                labels={OUTPUT_LABELS}
+                                counts={chance_result?.hist_counts}
+                                mins={chance_result?.hist_mins}
+                                maxs={chance_result?.hist_maxs}
+                                pointOfInterestBucket={chance_result && chance_result.hist_counts ? Math.round(((Number(chance_result.chance || 0)) / 100) * (chance_result.hist_counts[0]?.length || 1000)) : null}
+                                width={640}
+                                height={320}
+                                displayMode="cost"
+                                budgets={OUTPUT_LABELS.map(label => Number(budget_inputs[label]))}
+                            />
+                        </div>
+
                     </div>
+
                 </div>
             </div>
 

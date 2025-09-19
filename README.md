@@ -30,11 +30,11 @@ For Chance to Cost, we generate some artificial budgets and see which ones match
 
 ### FEATURES
 
-- toggle between maximizing special leap value and maximizing chance to succeed
-- Remember ticks & cost input - save presets
 - Gamba simulator section
-- Visualize distribution of cost(7 lines/bars showing distribution of each, maybe scatter graph?)
 - Incorporate roster income tracking & pretty graphs
+- Book, event support
+- Individual artisan & tap number editing, toggle between maximizing special leap value and maximizing chance to succeed(advanced settings section)
+- toggle between maximizing special leap value and maximizing chance to succeed
 
 ### DEV
 
@@ -43,9 +43,16 @@ For Chance to Cost, we generate some artificial budgets and see which ones match
 - Get silver unlock cost somewhere(currently silver unlock cost is 0 so its labeled as WIP)(somewhere = maxroll probably)
 - Fine tuning (+1 -1 when adjusting best_budget)(need to implement in rust)
 - Variance calculation & confidence interval
+- make it so hover points snap to the closest non-zero point
+- fix unlock cost in graph or whereever is wrong cos something is wrong with it, it should have a different shape to the rest
+- make it say busy instaed of nothing to plot
+- fix the x axis what the fuck is going on
+- fix snapping points of interest & hover point(snapping to the correct +0.5 or -0.5 or whatever its supposed to be)
 
 ### UI
 
 - Make the percent sign follow the input number?(right now it just trails on the right)
 - show the bottlenecks in a pie chart?
 - mobile dragging?
+- maybe add tabs to switch between different functionalities
+- ctrl z support

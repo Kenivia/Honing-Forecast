@@ -2,6 +2,7 @@ mod chance_to_cost;
 mod constants;
 mod cost_to_chance;
 mod helpers;
+mod histogram;
 mod monte_carlos;
 mod parser;
 mod value_estimation;
@@ -22,6 +23,8 @@ pub struct Payload {
     desired_chance: f64,
     adv_hone_strategy: String,
     budget: Vec<i64>,
+    express_event: bool,
+    bucket_count: usize,
 }
 
 #[wasm_bindgen]
@@ -33,14 +36,16 @@ pub fn chance_to_cost_wrapper(input: JsValue) -> JsValue {
     let desired_chance: f64 = payload.desired_chance;
     let adv_hone_strategy: String = payload.adv_hone_strategy;
 
-    let out: (Vec<i64>, f64) = chance_to_cost(
+    let out = chance_to_cost(
         ticks_to_counts(normal_hone_ticks),
         ticks_to_counts(adv_hone_ticks),
         desired_chance,
         adv_hone_strategy,
+        payload.express_event,
+        payload.bucket_count,
     );
 
-    // 3) return JS array/object
+    // Return a JS object with fields to avoid brittle tuple indexing
     to_value(&out).unwrap()
     // input
 }
@@ -54,39 +59,49 @@ pub fn cost_to_chance_wrapper(input: JsValue) -> JsValue {
     let adv_hone_ticks: Vec<Vec<bool>> = payload.adv_hone_ticks;
     let budget: Vec<i64> = payload.budget;
     console::log_1(&"unwrap complete".into());
-    let (chance, reason): (f64, String) = cost_to_chance(
+    let out = cost_to_chance(
         &ticks_to_counts(normal_hone_ticks),
         &budget,
         &ticks_to_counts(adv_hone_ticks),
+        payload.express_event,
+        payload.bucket_count,
     );
     console::log_1(&"cost_to_chance_complete".into());
-    to_value(&(chance, reason)).unwrap()
+    to_value(&out).unwrap()
 }
+
+// Histograms are included in the default wrappers' outputs
 
 pub fn chance_to_cost_test_wrapper(
     normal_hone_ticks: Vec<Vec<bool>>,
     adv_hone_ticks: Vec<Vec<bool>>,
     desired_chance: f64,
     adv_hone_strategy: String,
+    express_event: bool,
 ) -> (Vec<i64>, f64) {
-    let (mats, chance): (Vec<i64>, f64) = chance_to_cost(
+    let out = chance_to_cost(
         ticks_to_counts(normal_hone_ticks),
         ticks_to_counts(adv_hone_ticks),
         desired_chance,
         adv_hone_strategy,
+        express_event,
+        1000,
     );
-    (mats, chance)
+    (out.best_budget, out.actual_prob)
 }
 
 pub fn cost_to_chance_test_wrapper(
     normal_hone_ticks: Vec<Vec<bool>>,
     adv_hone_ticks: Vec<Vec<bool>>,
     budget: Vec<i64>,
+    express_event: bool,
 ) -> (f64, String) {
-    let (chance, reason): (f64, String) = cost_to_chance(
+    let out = cost_to_chance(
         &ticks_to_counts(normal_hone_ticks),
         &budget,
         &ticks_to_counts(adv_hone_ticks),
+        express_event,
+        1000,
     );
-    (chance, reason)
+    (out.chance, out.reason)
 }

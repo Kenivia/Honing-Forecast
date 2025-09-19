@@ -20,6 +20,7 @@ pub fn criterion_benchmark(c: &mut Criterion) {
                     ]
                     .to_vec(),
                 ),
+                true,
             )
         })
     });
