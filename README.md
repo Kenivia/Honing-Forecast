@@ -10,8 +10,7 @@ This improves on the Maxroll calculator. How to use:
 
 1. Tick the upgrades you want(same as Maxroll)
 2. Put in **Desired chance**(of success)
-3. Press **Find estimated cost**
-4. That's about it
+3. That's about it
 
 ## Cost to Chance
 
@@ -19,8 +18,7 @@ This is a functionality that Maxroll currently does not have. How to use:
 
 1. Tick the upgrades you want like on Maxroll
 2. Put in how much materials you have
-3. Press **Find chance of success**
-4. This will tell you how likely you are to succeed, and what are the bottlenecks(the bottlenecks are not mutually exclusive, so they may add up to more than the chance of failure)
+3. This will tell you how likely you are to succeed, and what are the bottlenecks.
 
 ## How it works
 
