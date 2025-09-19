@@ -1,5 +1,5 @@
 // import init from "../../pkg/honing_forecast_bg.js?init"
-import init, { chance_to_cost_wrapper, cost_to_chance_wrapper } from "../pkg/honing_forecast.js" // or "../pkg/honing_wasm"
+import init, { chance_to_cost_wrapper, cost_to_chance_wrapper } from "../../pkg/honing_forecast.js" // or "../pkg/honing_wasm"
 
 const LABELS = ["Red", "Blue", "Leaps", "Shards", "Oreha", "Gold", "Silver(WIP)"]
 

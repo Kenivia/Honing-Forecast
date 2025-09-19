@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState, useMemo } from 'react'
 import CheckboxGrid from '../../components/CheckboxGrid.tsx'
 import SpreadsheetGrid from '../../components/SpreadsheetGrid.tsx'
 import Icon from '../../components/Icon.tsx'
-import { SpawnWorker } from '../../worker_setup.js'
+import { SpawnWorker } from '../../worker_setup.ts'
 import "./CheckboxRow.css"
 
 const INPUT_LABELS = ["Red", "Blue", "Leaps", "Shards", "Oreha", "Gold", "Silver(WIP)", "Red juice", "Blue juice", "Special leaps"]
