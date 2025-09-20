@@ -110,3 +110,37 @@ pub fn myformat(mut f: f64) -> String {
         place += 1;
     }
 }
+
+/// Compress consecutive duplicate strings into one with suffix ` xN`.
+/// Example: ["A", "A", "A", "B", "C", "C"] -> ["A x3", "B", "C x2"].
+pub fn compress_runs(strings: Vec<String>, no_x: bool) -> Vec<String> {
+    if strings.is_empty() {
+        return strings;
+    }
+    let mut out: Vec<String> = Vec::new();
+    let mut prev: &str = &strings[0];
+    let mut count: usize = 1;
+    for s in strings.iter().skip(1) {
+        if s == prev {
+            count += 1;
+        } else {
+            if count > 1 {
+                if no_x {
+                    out.push(format!("{}", prev));
+                } else {
+                    out.push(format!("{} x{}", prev, count));
+                }
+            } else {
+                out.push(prev.to_string());
+            }
+            prev = s;
+            count = 1;
+        }
+    }
+    if count > 1 {
+        out.push(format!("{} x{}", prev, count));
+    } else {
+        out.push(prev.to_string());
+    }
+    out
+}

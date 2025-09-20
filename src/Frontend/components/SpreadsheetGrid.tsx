@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react'
+import React, { useState, useRef, useEffect, useCallback } from 'react'
 import Icon from './Icon.tsx'
 
 interface SpreadsheetGridProps {
@@ -7,6 +7,8 @@ interface SpreadsheetGridProps {
     sheet_values: Record<string, string>
     set_sheet_values: (_next: any) => void
     readOnly?: boolean
+    secondaryValues?: Record<string, string>
+    setSecondaryValues?: (_next: any) => void
 }
 
 interface Selection {
@@ -16,7 +18,7 @@ interface Selection {
     endCol: number
 }
 
-export default function SpreadsheetGrid({ columnDefs, labels, sheet_values: budget_inputs, set_sheet_values: set_sheet_values, readOnly = false }: SpreadsheetGridProps) {
+export default function SpreadsheetGrid({ columnDefs, labels, sheet_values: budget_inputs, set_sheet_values: set_sheet_values, readOnly = false, secondaryValues, setSecondaryValues }: SpreadsheetGridProps) {
     const [selection, setSelection] = useState<Selection | null>(null)
     const [isSelecting, setIsSelecting] = useState(false)
     const [_copiedData, setCopiedData] = useState<string[][] | null>(null)
@@ -39,6 +41,7 @@ export default function SpreadsheetGrid({ columnDefs, labels, sheet_values: budg
 
     // ---------- helpers ----------
     const clamp = (v: number, max: number) => Math.min(Math.max(v, 0), max)
+    const clampCol = useCallback((v: number) => Math.min(Math.max(v, 0), Math.max(0, columnDefs.length - 1)), [columnDefs.length])
 
     const isCellSelected = (rowIndex: number, colIndex: number) => {
         if (!selection) return false
@@ -56,15 +59,28 @@ export default function SpreadsheetGrid({ columnDefs, labels, sheet_values: budg
 
         const label = labels[rowIndex]
         if (label) {
-            // Only allow positive integers, reject anything else by overwriting
-            let cleanValue = value.replace(/[^0-9]/g, '')
-            // Clamp overly large inputs to 9 digits max value 999,999,999 (no commas stored)
-            if (cleanValue.length > 10) {
-                cleanValue = '999999999'
+            if (colIndex === 0) {
+                // Budget column - only allow positive integers
+                let cleanValue = value.replace(/[^0-9]/g, '')
+                // Clamp overly large inputs to 9 digits max value 999,999,999 (no commas stored)
+                if (cleanValue.length > 10) {
+                    cleanValue = '999999999'
+                }
+                const next = { ...budget_inputs }
+                next[label] = cleanValue
+                set_sheet_values(next)
+            } else if (colIndex === 1 && setSecondaryValues && secondaryValues) {
+                // Material value column - allow decimals
+                let cleanValue = value.replace(/[^0-9.]/g, '')
+                // Only allow one decimal point
+                const parts = cleanValue.split('.')
+                if (parts.length > 2) {
+                    cleanValue = parts[0] + '.' + parts.slice(1).join('')
+                }
+                const next = { ...secondaryValues }
+                next[label] = cleanValue
+                setSecondaryValues(next)
             }
-            const next = { ...budget_inputs }
-            next[label] = cleanValue
-            set_sheet_values(next)
         }
     }
 
@@ -83,7 +99,7 @@ export default function SpreadsheetGrid({ columnDefs, labels, sheet_values: budg
             if (!cell) return
 
             const rowIndex = clamp(Number(cell.dataset.row), labels.length - 1)
-            const colIndex = clamp(Number(cell.dataset.col ?? '0'), 0)
+            const colIndex = clampCol(Number(cell.dataset.col ?? '0'))
 
             pointerDownRef.current = {
                 startX: e.clientX,
@@ -106,7 +122,7 @@ export default function SpreadsheetGrid({ columnDefs, labels, sheet_values: budg
 
         grid.addEventListener('mousedown', onMouseDownCapture, true) // capture phase
         return () => grid.removeEventListener('mousedown', onMouseDownCapture, true)
-    }, [labels.length]) // reattach if ref changes
+    }, [labels.length, clampCol]) // reattach if ref changes
 
     // ---------- mousemove + mouseup to update selection when dragging ----------
     useEffect(() => {
@@ -140,7 +156,7 @@ export default function SpreadsheetGrid({ columnDefs, labels, sheet_values: budg
             const cell = el?.closest('[data-row]') as HTMLElement | null
             if (cell) {
                 const row = clamp(Number(cell.dataset.row), labels.length - 1)
-                const col = clamp(Number(cell.dataset.col ?? '0'), 0)
+                const col = clampCol(Number(cell.dataset.col ?? '0'))
                 setSelection(prev => prev ? { ...prev, endRow: row, endCol: col } : {
                     startRow: row, startCol: col, endRow: row, endCol: col
                 })
@@ -167,7 +183,7 @@ export default function SpreadsheetGrid({ columnDefs, labels, sheet_values: budg
             document.removeEventListener('mousemove', onMouseMove)
             document.removeEventListener('mouseup', onMouseUp)
         }
-    }, [labels.length])
+    }, [labels.length, clampCol])
 
     // ---------- native copy / paste handlers using system clipboard ----------
     useEffect(() => {
@@ -266,8 +282,43 @@ export default function SpreadsheetGrid({ columnDefs, labels, sheet_values: budg
             // Example: select all
             e.preventDefault()
             setSelection({
-                startRow: 0, startCol: 0, endRow: labels.length - 1, endCol: 0
+                startRow: 0, startCol: 0, endRow: labels.length - 1, endCol: clampCol(columnDefs.length - 1)
             })
+            return
+        }
+
+        // Clear selected editable cells to 0 on Backspace/Delete for editable grids
+        if (!readOnly && (e.key === 'Backspace' || e.key === 'Delete')) {
+            if (!selection) return
+            e.preventDefault()
+
+            const { startRow, startCol, endRow, endCol } = selection
+            const minRow = Math.min(startRow, endRow)
+            const maxRow = Math.max(startRow, endRow)
+            const minCol = Math.min(startCol, endCol)
+            const maxCol = Math.max(startCol, endCol)
+
+            let nextBudgets = { ...budget_inputs }
+            let nextSecondary = secondaryValues ? { ...secondaryValues } : undefined
+
+            for (let r = minRow; r <= maxRow; r++) {
+                const label = labels[r]
+                for (let c = minCol; c <= maxCol; c++) {
+                    if (c === 0) {
+                        nextBudgets[label] = '0'
+                    } else if (c === 1 && nextSecondary) {
+                        // Only allow editing first 7 rows in second column
+                        if (r < 7) {
+                            nextSecondary[label] = '0'
+                        }
+                    }
+                }
+            }
+
+            set_sheet_values(nextBudgets)
+            if (setSecondaryValues && nextSecondary) {
+                setSecondaryValues(nextSecondary)
+            }
         }
     }
 
@@ -285,7 +336,7 @@ export default function SpreadsheetGrid({ columnDefs, labels, sheet_values: budg
             }}
         >
             <div style={{ ...columnDefs[0], width: 50 }}>
-                {labels.map((lab) => (
+                {[""].concat(labels).map((lab) => (
                     <div
                         key={lab}
                         style={{
@@ -296,63 +347,73 @@ export default function SpreadsheetGrid({ columnDefs, labels, sheet_values: budg
                             justifyContent: 'flex-end',
                             paddingRight: 8,
                             whiteSpace: 'nowrap',
-                            fontSize: 'var(--font-size-sm)'
+                            fontSize: 'var(--font-size-sm)',
+                            paddingTop: 8,
                         }}
                     >
-                        <Icon name={lab} size={28} />
+                        <Icon iconName={lab} size={28} />
                     </div>
                 ))}
             </div>
 
             <div style={{ flex: 1 }}>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 0 }}>
-                    {labels.map((label, rowIndex) => (
-                        // we attach data-row / data-col so the capture handlers can find the cell
-                        <div
-                            key={label}
-                            data-row={rowIndex}
-                            data-col={0}
-                            style={{ height: 36, display: 'flex', alignItems: 'center' }}
-                            onMouseEnter={() => {
-                                // when using normal hover + mouse selection (non-capture), update selection
-                                if (isSelecting && pointerDownRef.current) {
-                                    setSelection(prev => prev ? { ...prev, endRow: rowIndex, endCol: 0 } : {
-                                        startRow: rowIndex, startCol: 0, endRow: rowIndex, endCol: 0
-                                    })
-                                }
-                            }}
-                        >
-                            <input
-                                type="text"
-                                readOnly={readOnly}
-                                value={budget_inputs[label] ?? ''}
-                                onChange={(e) => handleCellChange(rowIndex, 0, e.target.value)}
-                                onKeyDown={(e) => { e.stopPropagation() }} // avoid grid-level key shortcuts while typing
-                                onFocus={() => {
-                                    // focus sets the selection to this cell (useful for keyboard navigation)
-                                    setSelection({
-                                        startRow: rowIndex,
-                                        startCol: 0,
-                                        endRow: rowIndex,
-                                        endCol: 0
-                                    })
-                                }}
-                                style={{
-                                    width: '100%',
-                                    height: '100%',
-                                    padding: '6px 8px',
-                                    border: '1px solid var(--border-accent)',
-                                    background: isCellSelected(rowIndex, 0) ? 'var(--marquee-bg)' : 'transparent',
-                                    color: 'var(--text-primary)',
-                                    fontSize: 'var(--font-size-sm)',
-                                    outline: 'none',
-                                    boxSizing: 'border-box',
-                                    cursor: readOnly ? 'default' : 'text'
-                                }}
-                                placeholder="0"
-                            />
+                {/* Column headers (plain text, aligned) */}
+                <div style={{ display: 'grid', gridTemplateColumns: columnDefs.map(() => '1fr').join(' '), gap: 0, marginBottom: 4, height: 36 }}>
+                    {columnDefs.map((colDef, colIndex) => (
+                        <div key={`hdr-${colIndex}`} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-secondary)', fontSize: 'var(--font-size-sm)' }}>
+                            {colDef.headerName}
                         </div>
                     ))}
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: columnDefs.map(() => '1fr').join(' '), gap: 0 }}>
+                    {labels.map((label, rowIndex) =>
+                        columnDefs.map((colDef, colIndex) => (
+                            <div
+                                key={`${label}-${colIndex}`}
+                                data-row={rowIndex}
+                                data-col={colIndex}
+                                style={{ height: 36, display: 'flex', alignItems: 'center' }}
+                                onMouseEnter={() => {
+                                    if (isSelecting && pointerDownRef.current) {
+                                        setSelection(prev => prev ? { ...prev, endRow: rowIndex, endCol: colIndex } : {
+                                            startRow: rowIndex, startCol: colIndex, endRow: rowIndex, endCol: colIndex
+                                        })
+                                    }
+                                }}
+                            >
+                                <input
+                                    type="text"
+                                    readOnly={readOnly || (colIndex === 1 && rowIndex >= 7)}
+                                    value={colIndex === 0 ? (budget_inputs[label] ?? '') : (secondaryValues?.[label] ?? '')}
+                                    onChange={(e) => handleCellChange(rowIndex, colIndex, e.target.value)}
+                                    onKeyDown={(e) => { e.stopPropagation() }}
+                                    onFocus={() => {
+                                        setSelection({
+                                            startRow: rowIndex,
+                                            startCol: colIndex,
+                                            endRow: rowIndex,
+                                            endCol: colIndex
+                                        })
+                                    }}
+                                    style={{
+                                        width: "100px",
+                                        height: '100%',
+                                        padding: '6px 8px',
+                                        border: '1px solid var(--border-accent)',
+                                        background: isCellSelected(rowIndex, colIndex) ? 'var(--marquee-bg)' : (colDef.cellStyle?.background || 'transparent'),
+                                        color: colDef.cellStyle?.color || 'var(--text-primary)',
+                                        fontSize: 'var(--font-size-sm)',
+                                        outline: 'none',
+                                        boxSizing: 'border-box',
+                                        cursor: (readOnly || (colIndex === 1 && rowIndex >= 7)) ? 'default' : 'text',
+                                        opacity: (colIndex === 1 && rowIndex >= 7) ? 0.5 : 1
+                                    }}
+                                    placeholder="0"
+                                />
+                            </div>
+                        ))
+                    )}
                 </div>
             </div>
         </div>

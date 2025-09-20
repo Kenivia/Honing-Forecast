@@ -9,7 +9,7 @@ pub fn histogram_for_cost_index(
 ) -> (Vec<i64>, i64, i64) {
     let n: usize = cost_data.len();
     let mut values: Vec<i64> = Vec::with_capacity(n);
-    for row in cost_data.iter() {
+    for row  in cost_data.iter() {
         // cost_data rows are at least 7 long in this codebase
         values.push(row[cost_index]);
     }
@@ -17,7 +17,7 @@ pub fn histogram_for_cost_index(
         return (vec![0i64; num_bins], 0, 0);
     }
     values.sort_unstable();
-    let min_val: i64 = values[0];
+    let min_val: i64 = 0;
     let max_val: i64 = *values.last().unwrap();
     let mut counts: Vec<i64> = vec![0i64; num_bins];
 

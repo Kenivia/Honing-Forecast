@@ -1,9 +1,10 @@
 import React from 'react'
 
 interface IconProps {
-    name: string
+    iconName: string
     size?: number
     style?: React.CSSProperties
+    display_text?: string | null
 }
 
 const IconMap: Record<string, string> = {
@@ -25,7 +26,7 @@ const IconMap: Record<string, string> = {
     'Special leaps': '/Honing-Forecast/Icons/Materials/Special leap.webp',
 }
 
-export default function Icon({ name: name, size = 20, style }: IconProps) {
+export default function Icon({ iconName: name, display_text: display_text = null, size = 20, style }: IconProps) {
     const iconPath = IconMap[name]
 
     if (!iconPath) {
@@ -34,7 +35,7 @@ export default function Icon({ name: name, size = 20, style }: IconProps) {
 
     return (
         <div style={{ display: 'flex', alignItems: 'center', gap: '6px', ...style }}>
-            <span>{name}</span>
+            <span>{display_text === null ? name : display_text}</span>
             <img
                 src={iconPath}
                 alt={name}

@@ -6,7 +6,7 @@ pub struct Upgrade {
     pub prob_dist: Vec<f64>,
     pub base_chance: f64,
     pub costs: [i64; 7],
-    pub normal_juice_cost: i64,
+    pub one_juice_cost: i64,
     pub adv_juice_cost: Vec<f64>,
     pub special_cost: i64,
     pub values: Vec<f64>,
@@ -14,7 +14,7 @@ pub struct Upgrade {
     pub is_weapon: bool,
     pub artisan_rate: f64,
     pub tap_offset: i64,
-    // pub upgrade_plus_num: usize,
+    pub upgrade_plus_num: usize,
 }
 impl Upgrade {
     fn new_normal(
@@ -32,7 +32,7 @@ impl Upgrade {
             prob_dist,
             base_chance,
             costs,
-            normal_juice_cost: NORMAL_JUICE_COST[upgrade_plus_num],
+            one_juice_cost: NORMAL_JUICE_COST[upgrade_plus_num],
             adv_juice_cost: vec![],
             special_cost,
             values: vec![],
@@ -40,16 +40,17 @@ impl Upgrade {
             is_weapon,
             artisan_rate,
             tap_offset: 1,
-            // upgrade_plus_num,
+            upgrade_plus_num,
         }
     }
     fn new_adv(
         prob_dist: Vec<f64>,
         costs: [i64; 7],
+        one_juice_cost: i64,
         adv_juice_cost: Vec<f64>,
         is_weapon: bool,
         adv_cost_start: i64,
-        // _upgrade_plus_num: usize,
+        upgrade_plus_num: usize,
     ) -> Upgrade {
         let prob_dist_len: usize = prob_dist.len();
         assert!(prob_dist_len == adv_juice_cost.len());
@@ -58,7 +59,7 @@ impl Upgrade {
             prob_dist,
             base_chance: 0.0,
             costs,
-            normal_juice_cost: 0,
+            one_juice_cost,
             adv_juice_cost,
             special_cost: 0,
             values: vec![],
@@ -66,7 +67,7 @@ impl Upgrade {
             is_weapon,
             artisan_rate: 0.0,
             tap_offset: adv_cost_start,
-            // upgrade_plus_num,
+            upgrade_plus_num,
         }
     }
 }
@@ -233,12 +234,12 @@ pub fn parser(
             // special_costs.push(SPECIAL_LEAPS_COST[piece_type][i]);
             special_cost = SPECIAL_LEAPS_COST[is_weapon][upgrade_plus_num];
             base = NORMAL_HONE_CHANCES[upgrade_plus_num];
-            let event_artisan_rate = if express_event {
-                artisan_rate_arr[upgrade_plus_num] * EVENT_ARTISAN_MULTIPLIER[upgrade_plus_num]
-            } else {
-                artisan_rate_arr[upgrade_plus_num]
-            };
-            
+            // let event_artisan_rate = if express_event {
+            //     artisan_rate_arr[upgrade_plus_num] * EVENT_ARTISAN_MULTIPLIER[upgrade_plus_num]
+            // } else {
+            let event_artisan_rate: f64 = artisan_rate_arr[upgrade_plus_num];
+            // };
+
             prob_dist = probability_distribution(
                 base,
                 event_artisan_rate,
@@ -311,6 +312,7 @@ pub fn parser(
             }
             prob_dist = Vec::with_capacity(rows);
             this_juice_cost = Vec::with_capacity(rows);
+            let cost_val: i64 = ADV_HONE_COST[7][col_index as usize];
             for row_idx in 0..rows {
                 // row structure: [something_for_blue_count, something_for_juice_count, taps]
                 let row = &relevant_data[row_idx];
@@ -320,7 +322,6 @@ pub fn parser(
                 let sum_taps_f = if sum_taps == 0 { 1.0 } else { sum_taps as f64 };
                 prob_dist.push(taps_f / sum_taps_f);
 
-                let cost_val: i64 = ADV_HONE_COST[7][col_index as usize];
                 this_juice_cost
                     .push(cost_val as f64 * relevant_data[row_idx][1] as f64 / 1000.0_f64);
             }
@@ -330,10 +331,11 @@ pub fn parser(
             out.push(Upgrade::new_adv(
                 prob_dist,
                 this_cost.try_into().unwrap(),
+                cost_val,
                 this_juice_cost.clone(),
                 is_weapon == 1,
                 relevant_data[0][0],
-                // upgrade_plus_num,
+                upgrade_plus_num,
             ));
             current_counter += 1;
         }

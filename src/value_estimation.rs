@@ -1,5 +1,6 @@
 // use crate::constants::*;
 
+use crate::helpers::compress_runs;
 use crate::parser::{Upgrade, probability_distribution};
 
 #[cfg(debug_assertions)]
@@ -63,7 +64,7 @@ pub fn est_juice_value(upgrade_arr: &mut Vec<Upgrade>, mats_value: &Vec<f64>) {
     let cost_type_count: usize = 7;
     assert!(mats_value.len() == cost_type_count);
     for (_, upgrade) in upgrade_arr.iter_mut().enumerate() {
-        if !upgrade.is_normal_honing {
+        if !upgrade.is_normal_honing || upgrade.upgrade_plus_num <= 2 {
             continue;
         }
         this_sum = Vec::with_capacity(upgrade.prob_dist_len);
@@ -89,12 +90,44 @@ pub fn est_juice_value(upgrade_arr: &mut Vec<Upgrade>, mats_value: &Vec<f64>) {
     }
 }
 
-pub fn juice_to_array(upgrade_arr: &mut Vec<Upgrade>, blue_juice: i64, red_juice: i64) {
-    _juice_to_array(upgrade_arr, false, blue_juice);
-    _juice_to_array(upgrade_arr, true, red_juice);
+pub fn juice_to_array(
+    upgrade_arr: &mut Vec<Upgrade>,
+    blue_juice: i64,
+    red_juice: i64,
+) -> (Vec<String>, Vec<String>) {
+    // Armor uses blue juice (is_weapon == false), Weapon uses red juice (is_weapon == true)
+    let armor_pairs = _juice_to_array(upgrade_arr, false, blue_juice);
+    let weapon_pairs = _juice_to_array(upgrade_arr, true, red_juice);
+
+    // Convert pairs of (plus_num, taps) to human-readable strings, sorted by plus_num asc
+    let mut armor_sorted = armor_pairs;
+    armor_sorted.sort_by_key(|&(plus, _)| plus);
+    let armor_strings: Vec<String> = compress_runs(
+        armor_sorted
+            .into_iter()
+            .map(|(plus, taps)| format!("+{} armor first {} taps", plus + 1, taps))
+            .collect(),
+        false,
+    );
+
+    let mut weapon_sorted = weapon_pairs;
+    weapon_sorted.sort_by_key(|&(plus, _)| plus);
+    let weapon_strings: Vec<String> = compress_runs(
+        weapon_sorted
+            .into_iter()
+            .map(|(plus, taps)| format!("+{} weapon first {} taps", plus + 1, taps))
+            .collect(),
+        false,
+    );
+
+    (armor_strings, weapon_strings)
 }
 
-fn _juice_to_array(upgrade_arr: &mut Vec<Upgrade>, is_weapon: bool, mut juice: i64) {
+fn _juice_to_array(
+    upgrade_arr: &mut Vec<Upgrade>,
+    is_weapon: bool,
+    mut juice: i64,
+) -> Vec<(usize, usize)> {
     let mut cur_upgrade: &mut Upgrade;
     let mut idxs: Vec<usize>;
     let mut max_value_index: usize;
@@ -112,9 +145,9 @@ fn _juice_to_array(upgrade_arr: &mut Vec<Upgrade>, is_weapon: bool, mut juice: i
             .filter(|&x| {
                 upgrade_arr[x].is_normal_honing
                     && upgrade_arr[x].is_weapon == is_weapon
-                    && upgrade_arr[x].normal_juice_cost <= juice
+                    && upgrade_arr[x].one_juice_cost <= juice
                     && cur_extras[x] < upgrade_arr[x].values.len()
-                // && _max_extra_index != x // for some reason value of each cost isn't monotonic, so i'm forcing it to be here so that the instruction is easier to follow
+                    && _max_extra_index != x // for some reason value of each cost isn't monotonic, so i'm forcing it to be here so that the instruction is easier to follow
                 // it seems to make no discernable difference on the chance of successs... so does this value est thing really work god
             })
             .collect();
@@ -137,6 +170,17 @@ fn _juice_to_array(upgrade_arr: &mut Vec<Upgrade>, is_weapon: bool, mut juice: i
             cur_upgrade.base_chance, // will need to change for books
             cur_extras[max_value_index],
         );
-        juice -= cur_upgrade.normal_juice_cost;
+        juice -= cur_upgrade.one_juice_cost;
     }
+    // Extract (plus_num, taps_used) only for selected type and where taps_used > 0
+    let mut out: Vec<(usize, usize)> = Vec::new();
+    for i in 0..upgrade_arr.len() {
+        if upgrade_arr[i].is_normal_honing && upgrade_arr[i].is_weapon == is_weapon {
+            let taps_used = cur_extras[i];
+            if taps_used > 0 {
+                out.push((upgrade_arr[i].upgrade_plus_num, taps_used));
+            }
+        }
+    }
+    out
 }

@@ -157,6 +157,7 @@ pub fn monte_carlos_data(
                 }
             }
         } else {
+            // This is called latin hypercube sampling apparently
             let mut tap_map: Vec<usize>;
 
             for (upgrade_index, upgrade) in upgrade_arr.iter().enumerate() {

@@ -25,6 +25,7 @@ pub struct Payload {
     budget: Vec<i64>,
     express_event: bool,
     bucket_count: usize,
+    user_mats_value: Option<Vec<f64>>,
 }
 
 #[wasm_bindgen]
@@ -59,12 +60,15 @@ pub fn cost_to_chance_wrapper(input: JsValue) -> JsValue {
     let adv_hone_ticks: Vec<Vec<bool>> = payload.adv_hone_ticks;
     let budget: Vec<i64> = payload.budget;
     console::log_1(&"unwrap complete".into());
+    let user_mats_value = payload.user_mats_value.unwrap_or(vec![0.0; 7]);
     let out = cost_to_chance(
         &ticks_to_counts(normal_hone_ticks),
         &budget,
         &ticks_to_counts(adv_hone_ticks),
         payload.express_event,
         payload.bucket_count,
+        &user_mats_value,
+        payload.adv_hone_strategy,
     );
     console::log_1(&"cost_to_chance_complete".into());
     to_value(&out).unwrap()
@@ -102,6 +106,8 @@ pub fn cost_to_chance_test_wrapper(
         &ticks_to_counts(adv_hone_ticks),
         express_event,
         1000,
+        &vec![0.0; 7],
+        "No juice".to_owned(),
     );
-    (out.chance, out.reason)
+    (out.chance, out.reasons.join(", "))
 }

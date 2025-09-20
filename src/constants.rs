@@ -267,6 +267,23 @@ pub static ADV_DATA_30_40_JUICE: [[i64; 3]; 52] = [
     [71, 10429, 7],
     [72, 10500, 2],
 ];
+pub fn get_adv_data_juice(segment: i64) -> f64 {
+    let mut out: f64 = 0.0_f64;
+    let data: &[[i64; 3]] = if segment <= 1 {
+        &ADV_DATA_10_20_JUICE
+    } else {
+        &ADV_DATA_30_40_JUICE
+    };
+    let sum_taps: i64 = data
+        .iter()
+        .map(|row| row.get(2).copied().unwrap_or(0))
+        .sum();
+    for i in 0..data.len() {
+        out += data[i][1] as f64 * data[i][2] as f64 / sum_taps as f64;
+    }
+    out /= 1000.0_f64;
+    return out;
+}
 pub static ADV_DATA_10_20: [[i64; 3]; 51] = [
     [24, 0, 1],
     [25, 0, 1],

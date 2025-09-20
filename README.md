@@ -32,22 +32,14 @@ For Chance to Cost, we generate some artificial budgets and see which ones match
 
 - Gamba simulator section
 - Incorporate roster income tracking & pretty graphs
-- Book, event support
-- Individual artisan & tap number editing, toggle between maximizing special leap value and maximizing chance to succeed(advanced settings section)
-- toggle between maximizing special leap value and maximizing chance to succeed
+- Book
 
 ### DEV
 
 - Write actual tests and also comment
-- Sort out how advanced honing strategy is going to work for cost to chance
 - Get silver unlock cost somewhere(currently silver unlock cost is 0 so its labeled as WIP)(somewhere = maxroll probably)
 - Fine tuning (+1 -1 when adjusting best_budget)(need to implement in rust)
 - Variance calculation & confidence interval
-- make it so hover points snap to the closest non-zero point
-- fix unlock cost in graph or whereever is wrong cos something is wrong with it, it should have a different shape to the rest
-- make it say busy instaed of nothing to plot
-- fix the x axis what the fuck is going on
-- fix snapping points of interest & hover point(snapping to the correct +0.5 or -0.5 or whatever its supposed to be)
 
 ### UI
 

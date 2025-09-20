@@ -38,7 +38,18 @@ self.addEventListener("message", async (ev) => {
     let result
     if (which_one == "CostToChance") {
         let out = await CostToChanceWasm(payload)
-        result = { chance: (out.chance * 100).toFixed(2), reason: out.reason, hist_counts: out.hist_counts, hist_mins: out.hist_mins, hist_maxs: out.hist_maxs }
+        result = {
+            chance: (out.chance * 100).toFixed(2),
+            reasons: out.reasons,
+            hist_counts: out.hist_counts,
+            hist_mins: out.hist_mins,
+            hist_maxs: out.hist_maxs,
+            upgrade_strings: out.upgrade_strings || [],
+            juice_order_armor: out.juice_order_armor || [],
+            juice_order_weapon: out.juice_order_weapon || [],
+            budgets_red_remaining: out.budgets_red_remaining,
+            budgets_blue_remaining: out.budgets_blue_remaining,
+        }
     } else if (which_one == "ChanceToCost") {
         const this_labels = LABELS.concat(["Red juice", "Blue juice"])
         let out = await ChanceToCostWasm(payload)
@@ -51,6 +62,6 @@ self.addEventListener("message", async (ev) => {
     }
 
     result.run_time = ((Date.now() - start_time) / 1000).toFixed(2)
-    console.log(result)
+    // console.log(result)
     self.postMessage({ type: "result", id, result: result })
 })

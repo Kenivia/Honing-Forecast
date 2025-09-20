@@ -1,4 +1,4 @@
-use crate::constants::BUCKET_COUNT;
+use crate::constants::*;
 use crate::helpers::calc_unlock;
 use crate::histogram::histograms_for_all_costs;
 use crate::monte_carlos::monte_carlos_data;
@@ -111,15 +111,22 @@ pub fn chance_to_cost(
 ) -> ChanceToCostOut {
     let cost_size: usize = 200000;
     let budget_size: usize = 1000;
+    let aritsan_arr: Vec<f64>;
+    if express_event {
+        aritsan_arr = EVENT_ARTISAN_MULTIPLIER.to_vec();
+    } else {
+        aritsan_arr = vec![1.0; 25];
+    }
     let upgrade_arr: Vec<Upgrade> = parser(
         &hone_counts,
         &adv_counts,
         &adv_hone_strategy,
-        &vec![1.0; 25],
+        &aritsan_arr,
         &vec![0.0; 25],
         &vec![0; 25],
         express_event,
     );
+
     let cost_data: Vec<Vec<i64>> = monte_carlos_data(
         cost_size,
         &upgrade_arr,
