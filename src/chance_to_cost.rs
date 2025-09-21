@@ -165,7 +165,7 @@ pub fn chance_to_cost(
             - (failure_counts[sorted_indices[0]] as f64 / cost_data.len() as f64))
             * 100 as f64,
         hist_counts,
-        hist_mins: budget_data[0].clone(),
+        hist_mins: vec![0_i64; 7],
         hist_maxs: budget_data[budget_data.len() - 1].clone(),
     }
 }

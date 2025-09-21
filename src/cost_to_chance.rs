@@ -232,7 +232,7 @@ pub fn cost_to_chance(
         chance: final_chance,
         reasons: fail_count_to_string(typed_fail_counter_final, data_size),
         hist_counts,
-        hist_mins: budget_data[0].clone(),
+        hist_mins: vec![0_i64; 7],
         hist_maxs: budget_data[1].clone(),
         upgrade_strings,
         juice_order_armor,
