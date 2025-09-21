@@ -223,17 +223,8 @@ export default function Graph({ title, labels, counts, mins, maxs, width = 640, 
         const actual_y = innerH + plotBottom - p.y
         const best = visibleYs.reduce((a, b) => Math.abs(a.y - actual_y) < Math.abs(b.y - actual_y) ? a : b)
         setHoverSeries(best.i)
-        // if (displayMode === 'cost' && budgets && mins && maxs) {
-        //     const budget = budgets[best.i] ?? 0
-        //     const min = mins[best.i]
-        //     const max = maxs[best.i]
-        //     const denom = Math.max(1, max - min)
-        //     const b = Math.round(((budget - min) / denom) * (bucketLen - 1))
-        //     setHoverBucket(Math.max(0, Math.min(bucketLen - 1, b)))
-        // } else {
         setHoverBucket(bucket)
-        // }
-    }, [counts, visible, keepMask, bucketLen, width, height, yMax])
+    }, [counts, visible, keepMask, bucketLen, width, height, yMax, cdfSeries, normalizedCounts, cumulative])
 
     const handleMouseLeave = () => { setHoverSeries(null); setHoverBucket(null) }
 

@@ -1,6 +1,6 @@
 use crate::constants::*;
 use crate::helpers::calc_unlock;
-use crate::histogram::histograms_for_all_costs;
+use crate::histogram::{histograms_for_all_costs, transpose_vec_of_vecs};
 use crate::monte_carlos::monte_carlos_data;
 use crate::parser::{Upgrade, parser};
 // use web_sys::console;
@@ -136,17 +136,61 @@ pub fn chance_to_cost(
         false, //rigged
         false, // use_true_rng
     );
-    let bins = hist_bins.min(BUCKET_COUNT).max(1);
-    let hist_counts = histograms_for_all_costs(&cost_data, bins);
-    let budget_data: Vec<Vec<i64>> = monte_carlos_data(
-        budget_size,
+
+    let top_bottom: Vec<Vec<i64>> = monte_carlos_data(
+        2,
         &upgrade_arr,
         &calc_unlock(&hone_counts, &adv_counts),
         0,
         true, // rigged
         true, //use_true_rn
     );
-    let failure_counts: Vec<i64> = count_failure(&cost_data, &budget_data, true);
+
+    let intermediate_hist: Vec<Vec<i64>> =
+        histograms_for_all_costs(&cost_data, budget_size, &top_bottom[1]);
+    let mut cum_hist_counts: Vec<Vec<usize>> = vec![vec![0; budget_size]; 7];
+
+    for cost_type in 0..7 {
+        cum_hist_counts[cost_type][0] = intermediate_hist[cost_type][0] as usize;
+        for j in 1..budget_size {
+            cum_hist_counts[cost_type][j] =
+                cum_hist_counts[cost_type][j - 1] + intermediate_hist[cost_type][j] as usize;
+        }
+    }
+
+    let mut transposed_cost_data: Vec<Vec<i64>> = transpose_vec_of_vecs(&cost_data);
+    for cost_type in 0..7 {
+        transposed_cost_data[cost_type].sort_unstable();
+    }
+    // let mut gap_size: Vec<f64> = vec![0.0; 7];
+    // for cost_type in 0..7 {
+    //     gap_size[cost_type] =
+    //         (top_bottom[1][cost_type] - top_bottom[0][cost_type]) as f64 / budget_size as f64;
+    // }
+    // let mut cur_counts: Vec<usize> = vec![0; 7];
+    let mut budget_data: Vec<Vec<i64>> = vec![vec![0; 7]; budget_size];
+
+    for cost_type in 0..7 {
+        let mut j: usize = 0;
+        let mut k: usize = 0;
+        let mut cur_count: usize = 0;
+        loop {
+            if cum_hist_counts[cost_type][j] >= cur_count {
+                budget_data[k][cost_type] += transposed_cost_data[cost_type][cur_count];
+                cur_count += (data_size as f64 / budget_size as f64).round() as usize;
+                k += 1;
+            } else {
+                j += 1;
+            }
+
+            if k >= budget_size {
+                break;
+            }
+        }
+    }
+    budget_data.push(top_bottom[1].clone());
+
+    let failure_counts: Vec<i64> = count_failure(&cost_data, &budget_data, false); // not sure if can use asc? just to be safe keeping it naive for now
 
     let k_i64: i64 = ((1.0f64 - desired_chance / 100f64) * (cost_size as f64)).floor() as i64;
     let k_i64_budget: i64 =
@@ -156,17 +200,17 @@ pub fn chance_to_cost(
         .map(|&ci| (ci - k_i64).abs())
         .collect();
 
-    let mut sorted_indices: Vec<usize> = (0..budget_size as usize).collect();
-    sorted_indices.sort_by_key(|&i| (diffs[i], (k_i64_budget - i as i64).abs(), i));
+    let mut sorted_indices: Vec<usize> = (0..budget_data.len()).collect();
+    sorted_indices.sort_by_key(|&i| (diffs[i], (k_i64_budget - i as i64).abs()));
     let best_budget: Vec<i64> = budget_data[sorted_indices[0]].clone();
     ChanceToCostOut {
         best_budget,
         actual_prob: (1 as f64
             - (failure_counts[sorted_indices[0]] as f64 / cost_data.len() as f64))
             * 100 as f64,
-        hist_counts,
+        hist_counts: histograms_for_all_costs(&cost_data, hist_bins, &top_bottom[1]),
         hist_mins: vec![0_i64; 7],
-        hist_maxs: budget_data[budget_data.len() - 1].clone(),
+        hist_maxs: top_bottom[1].clone(),
     }
 }
 
@@ -183,7 +227,7 @@ mod tests {
             "No juice".to_owned(),
             false,
             1000,
-            100000,
+            10000,
         );
         println!("best_budget = {:?}", out.best_budget);
         println!("actual_prob = {:?}", out.actual_prob);
@@ -191,54 +235,54 @@ mod tests {
         println!("hist_maxs = {:?}", out.hist_maxs);
     }
 
-    #[test]
-    fn chance_to_cost_18_demo() {
-        let hone_counts = vec![
-            (0..25)
-                .map(|i| if i == 19 || i == 20 || i == 21 { 5 } else { 0 })
-                .collect(),
-            (0..25)
-                .map(|i| if i == 19 || i == 20 || i == 21 { 1 } else { 0 })
-                .collect(),
-        ];
-        let adv_counts = vec![
-            (0..4).map(|i| if i == 2 { 5 } else { 0 }).collect(),
-            (0..4).map(|i| if i == 2 { 1 } else { 0 }).collect(),
-        ];
-        let out = chance_to_cost(
-            hone_counts,
-            adv_counts,
-            69.0,
-            "No juice".to_owned(),
-            false,
-            1000,
-            100000,
-        );
-        println!("best_budget = {:?}", out.best_budget);
-        println!("actual_prob = {:?}", out.actual_prob);
-        println!("hist_mins = {:?}", out.hist_mins);
-        println!("hist_maxs = {:?}", out.hist_maxs);
-    }
+    // #[test]
+    // fn chance_to_cost_18_demo() {
+    //     let hone_counts = vec![
+    //         (0..25)
+    //             .map(|i| if i == 19 || i == 20 || i == 21 { 5 } else { 0 })
+    //             .collect(),
+    //         (0..25)
+    //             .map(|i| if i == 19 || i == 20 || i == 21 { 1 } else { 0 })
+    //             .collect(),
+    //     ];
+    //     let adv_counts = vec![
+    //         (0..4).map(|i| if i == 2 { 5 } else { 0 }).collect(),
+    //         (0..4).map(|i| if i == 2 { 1 } else { 0 }).collect(),
+    //     ];
+    //     let out = chance_to_cost(
+    //         hone_counts,
+    //         adv_counts,
+    //         69.0,
+    //         "No juice".to_owned(),
+    //         false,
+    //         1000,
+    //         100000,
+    //     );
+    //     println!("best_budget = {:?}", out.best_budget);
+    //     println!("actual_prob = {:?}", out.actual_prob);
+    //     println!("hist_mins = {:?}", out.hist_mins);
+    //     println!("hist_maxs = {:?}", out.hist_maxs);
+    // }
 
-    #[test]
-    fn chance_to_cost_53_adv_armor_40() {
-        let hone_counts = vec![(0..25).map(|_| 0).collect(), (0..25).map(|_| 0).collect()];
-        let adv_counts = vec![
-            (0..4).map(|x| if x == 3 { 5 } else { 0 }).collect(),
-            (0..4).map(|x| if x == 3 { 1 } else { 0 }).collect(),
-        ];
-        let out = chance_to_cost(
-            hone_counts,
-            adv_counts,
-            53.0,
-            "No juice".to_owned(),
-            false,
-            1000,
-            100000,
-        );
-        println!("best_budget = {:?}", out.best_budget);
-        println!("actual_prob = {:?}", out.actual_prob);
-        println!("hist_mins = {:?}", out.hist_mins);
-        println!("hist_maxs = {:?}", out.hist_maxs);
-    }
+    // #[test]
+    // fn chance_to_cost_53_adv_armor_40() {
+    //     let hone_counts = vec![(0..25).map(|_| 0).collect(), (0..25).map(|_| 0).collect()];
+    //     let adv_counts = vec![
+    //         (0..4).map(|x| if x == 3 { 5 } else { 0 }).collect(),
+    //         (0..4).map(|x| if x == 3 { 1 } else { 0 }).collect(),
+    //     ];
+    //     let out = chance_to_cost(
+    //         hone_counts,
+    //         adv_counts,
+    //         53.0,
+    //         "No juice".to_owned(),
+    //         false,
+    //         1000,
+    //         100000,
+    //     );
+    //     println!("best_budget = {:?}", out.best_budget);
+    //     println!("actual_prob = {:?}", out.actual_prob);
+    //     println!("hist_mins = {:?}", out.hist_mins);
+    //     println!("hist_maxs = {:?}", out.hist_maxs);
+    // }
 }

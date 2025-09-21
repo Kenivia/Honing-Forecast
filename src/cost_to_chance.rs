@@ -31,7 +31,7 @@ fn fail_count_to_string(typed_fail_counter: Vec<f64>, data_size: usize) -> Vec<S
         spread_num = typed_fail_counter[z] as f64 / data_size as f64;
         spread_str = myformat(spread_num);
         if spread_num >= 0.001 || !displayed {
-            this_failed.push(LABELS[z].to_owned() + "(" + &spread_str + "%)");
+            this_failed.push(spread_str.to_owned() + "% failed due to " + LABELS[z]);
         }
         displayed = true
     }
@@ -219,7 +219,7 @@ pub fn cost_to_chance(
         false,
     );
     let bins = hist_bins.min(BUCKET_COUNT).max(1);
-    let hist_counts: Vec<Vec<i64>> = histograms_for_all_costs(&cost_data_for_hist, bins);
+
     let budget_data: Vec<Vec<i64>> = monte_carlos_data(
         2,
         &upgrade_arr,
@@ -228,6 +228,8 @@ pub fn cost_to_chance(
         true, // rigged
         true, //use_true_rn
     );
+    let hist_counts: Vec<Vec<i64>> =
+        histograms_for_all_costs(&cost_data_for_hist, bins, &budget_data[1]);
     CostToChanceOut {
         chance: final_chance,
         reasons: fail_count_to_string(typed_fail_counter_final, data_size),

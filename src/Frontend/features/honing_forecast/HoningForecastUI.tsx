@@ -742,7 +742,7 @@ export default function HoningForecastUI() {
                             <div style={{ display: 'flex', gap: 8 }}>
                                 <div style={{ width: 100, display: 'flex', flexDirection: 'column', justifyContent: 'flex-start', textWrap: 'nowrap', gap: 0 }}>
                                     {['', 'Helmet', 'Shoulder', 'Chest', 'Pants', 'Glove', 'Weapon'].map((lab) => (
-                                        <div key={lab} style={{ height: 28, color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', justifyContent: 'flex-end', paddingRight: 8 }}>
+                                        <div style={{ height: 28, color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', justifyContent: 'flex-end', paddingRight: 8 }}>
                                             {lab ? <Icon iconName={lab} size={28} style={{ fontSize: 'var(--font-size-sm)' }} /> : ''}
                                         </div>
                                     ))}
@@ -802,7 +802,7 @@ export default function HoningForecastUI() {
                             <div style={{ display: 'flex', gap: 8 }}>
                                 <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'flex-start', textWrap: 'nowrap', gap: 0 }}>
                                     {['', 'Helmet', 'Shoulder', 'Chest', 'Pants', 'Glove', 'Weapon'].map((lab) => (
-                                        <div key={""} style={{ height: 28, color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', justifyContent: 'flex-end', paddingRight: 8 }}>
+                                        <div style={{ height: 28, color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', justifyContent: 'flex-end', paddingRight: 8 }}>
                                             {lab ? <Icon iconName={lab} display_text="" size={28} style={{ fontSize: 'var(--font-size-sm)' }} /> : ''}
                                         </div>
                                     ))}
@@ -990,10 +990,10 @@ export default function HoningForecastUI() {
                             {(chance_result && (chance_result.upgrade_strings?.length > 0 || chance_result.juice_order_armor?.length > 0 || chance_result.juice_order_weapon?.length > 0)) && (
                                 <div style={{ display: 'flex', gap: 0, alignItems: 'flex-start', marginTop: 8 }}>
                                     <div>
-                                        <div style={{ marginTop: 0, ...styles.inputLabelCell, whiteSpace: 'nowrap' }}>Reasons for failures/bottlenecks:</div>
-                                        <div style={{ marginTop: 4, color: 'var(--text-muted)', fontSize: 'var(--font-size-sm)', whiteSpace: "wrap", width: 300 }}>
+                                        <div style={{ marginTop: 0, ...styles.inputLabelCell, whiteSpace: 'nowrap' }}>Reasons for failures:</div>
+                                        <div style={{ marginTop: 4, color: 'var(--text-muted)', fontSize: 'var(--font-size-sm)', whiteSpace: "wrap", width: 200 }}>
                                             {(chance_result.reasons || []).map((s: string, idx: number) => (
-                                                <div key={idx}>{idx + 1}. {s}</div>
+                                                <div>{idx + 1}. {s}</div>
                                             ))}
                                         </div>
                                     </div>
@@ -1001,7 +1001,7 @@ export default function HoningForecastUI() {
                                         <div style={{ ...styles.inputLabelCell, whiteSpace: 'nowrap' }}>Free taps value ranking:</div>
                                         <div style={{ marginTop: 4, color: 'var(--text-muted)', fontSize: 'var(--font-size-sm)', width: 200 }}>
                                             {(chance_result.upgrade_strings || []).map((upgrade: string, index: number) => (
-                                                <div key={index}>{index + 1}. {upgrade}</div>
+                                                <div>{index + 1}. {upgrade}</div>
                                             ))}
                                         </div>
                                     </div>
@@ -1009,7 +1009,7 @@ export default function HoningForecastUI() {
                                         <div style={{ ...styles.inputLabelCell, whiteSpace: 'nowrap' }}>Red juice (weapon):</div>
                                         <div style={{ marginTop: 4, color: 'var(--text-muted)', fontSize: 'var(--font-size-sm)', width: 200 }}>
                                             {(chance_result.juice_order_weapon || []).map((s: string, idx: number) => (
-                                                <div key={idx}>{idx + 1}. {s}</div>
+                                                <div>{idx + 1}. {s}</div>
                                             ))}
                                         </div>
                                     </div>
@@ -1017,7 +1017,7 @@ export default function HoningForecastUI() {
                                         <div style={{ ...styles.inputLabelCell, whiteSpace: 'nowrap' }}>Blue juice (armor):</div>
                                         <div style={{ marginTop: 4, color: 'var(--text-muted)', fontSize: 'var(--font-size-sm)', width: 200 }}>
                                             {(chance_result.juice_order_armor || []).map((s: string, idx: number) => (
-                                                <div key={idx}>{idx + 1}. {s}</div>
+                                                <div>{idx + 1}. {s}</div>
                                             ))}
                                         </div>
                                     </div>
