@@ -6,15 +6,15 @@ pub fn histogram_for_cost_index(
     cost_data: &Vec<Vec<i64>>,
     cost_index: usize,
     num_bins: usize,
-) -> (Vec<i64>, i64, i64) {
+) -> Vec<i64> {
     let n: usize = cost_data.len();
     let mut values: Vec<i64> = Vec::with_capacity(n);
-    for row  in cost_data.iter() {
+    for row in cost_data.iter() {
         // cost_data rows are at least 7 long in this codebase
         values.push(row[cost_index]);
     }
     if values.is_empty() {
-        return (vec![0i64; num_bins], 0, 0);
+        return vec![0i64; num_bins];
     }
     values.sort_unstable();
     let min_val: i64 = 0;
@@ -24,7 +24,7 @@ pub fn histogram_for_cost_index(
     if min_val == max_val {
         // All samples identical; put them in the last bucket to avoid div-by-zero
         counts[num_bins - 1] = n as i64;
-        return (counts, min_val, max_val);
+        return counts;
     }
 
     let range_f64: f64 = (max_val - min_val) as f64;
@@ -36,23 +36,16 @@ pub fn histogram_for_cost_index(
         }
         counts[bin] += 1;
     }
-    (counts, min_val, max_val)
+    counts
 }
 
 /// Compute histograms for the 7 cost types (indices 0..6).
 /// Returns (counts_7xB, mins_7, maxs_7)
-pub fn histograms_for_all_costs(
-    cost_data: &Vec<Vec<i64>>,
-    num_bins: usize,
-) -> (Vec<Vec<i64>>, Vec<i64>, Vec<i64>) {
+pub fn histograms_for_all_costs(cost_data: &Vec<Vec<i64>>, num_bins: usize) -> Vec<Vec<i64>> {
     let mut all_counts: Vec<Vec<i64>> = Vec::with_capacity(7);
-    let mut mins: Vec<i64> = Vec::with_capacity(7);
-    let mut maxs: Vec<i64> = Vec::with_capacity(7);
     for idx in 0..7 {
-        let (counts, min_v, max_v) = histogram_for_cost_index(cost_data, idx, num_bins);
+        let counts = histogram_for_cost_index(cost_data, idx, num_bins);
         all_counts.push(counts);
-        mins.push(min_v);
-        maxs.push(max_v);
     }
-    (all_counts, mins, maxs)
+    all_counts
 }

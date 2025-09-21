@@ -137,7 +137,7 @@ pub fn chance_to_cost(
         false, // use_true_rng
     );
     let bins = hist_bins.min(BUCKET_COUNT).max(1);
-    let (hist_counts, hist_mins, hist_maxs) = histograms_for_all_costs(&cost_data, bins);
+    let hist_counts = histograms_for_all_costs(&cost_data, bins);
     let budget_data: Vec<Vec<i64>> = monte_carlos_data(
         budget_size,
         &upgrade_arr,
@@ -165,8 +165,8 @@ pub fn chance_to_cost(
             - (failure_counts[sorted_indices[0]] as f64 / cost_data.len() as f64))
             * 100 as f64,
         hist_counts,
-        hist_mins,
-        hist_maxs,
+        hist_mins: budget_data[0].clone(),
+        hist_maxs: budget_data[budget_data.len() - 1].clone(),
     }
 }
 

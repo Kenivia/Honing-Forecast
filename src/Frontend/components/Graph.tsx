@@ -288,13 +288,13 @@ export default function Graph({ title, labels, counts, mins, maxs, width = 640, 
                     {/* Remove horizontal grid and y-axis; add vertical grid lines */}
                     <AnimatedGrid columns numTicks={GRID_COUNT} rows={false} />
                     <AnimatedAxis orientation="bottom"
-                        label={'Normalized mats cost(0 to pity*)'}
+                        label={'Normalized mats cost(0 to pity)'}
                         tickValues={tickVals}
                         tickFormat={bottomTickFormat as any} tickLabelProps={() => ({ fill: hoverColor, fontSize: 11, angle: -0 })} />
                     {/* Y axis with custom ticks */}
                     <AnimatedAxis
                         orientation="left"
-                        label={cumulative ? 'Cumulative probability of success' : 'Probability distribution'}
+                        label={cumulative ? 'Cumulative Probability of Success' : 'Probability distribution'}
                         tickValues={(() => {
                             if (cumulative) {
                                 // 0..1 inclusive at 0.1 steps

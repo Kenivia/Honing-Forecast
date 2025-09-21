@@ -219,13 +219,21 @@ pub fn cost_to_chance(
         false,
     );
     let bins = hist_bins.min(BUCKET_COUNT).max(1);
-    let (hist_counts, hist_mins, hist_maxs) = histograms_for_all_costs(&cost_data_for_hist, bins);
+    let hist_counts: Vec<Vec<i64>> = histograms_for_all_costs(&cost_data_for_hist, bins);
+    let budget_data: Vec<Vec<i64>> = monte_carlos_data(
+        2,
+        &upgrade_arr,
+        &calc_unlock(&hone_counts, &adv_counts),
+        0,
+        true, // rigged
+        true, //use_true_rn
+    );
     CostToChanceOut {
         chance: final_chance,
         reasons: fail_count_to_string(typed_fail_counter_final, data_size),
         hist_counts,
-        hist_mins,
-        hist_maxs,
+        hist_mins: budget_data[0].clone(),
+        hist_maxs: budget_data[1].clone(),
         upgrade_strings,
         juice_order_armor,
         juice_order_weapon,
