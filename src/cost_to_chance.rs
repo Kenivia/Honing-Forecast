@@ -164,7 +164,8 @@ pub fn cost_to_chance(
     }
     let mut override_special: Vec<i64> = budgets.clone();
     override_special[9] = 0;
-    let use_calibration: bool = user_forced_mats_value.iter().all(|&x| x == 0.0);
+    let use_calibration: bool = user_forced_mats_value.iter().all(|&x| x == 0.0)
+        && (actual_budgets[9] > 0 || actual_budgets[8] > 0 || actual_budgets[7] > 0);
 
     let (
         final_chance,
@@ -185,12 +186,20 @@ pub fn cost_to_chance(
         est_juice_value(&mut upgrade_arr, &typed_fail_counter_1);
         let (armor_strings, weapon_strings) =
             juice_to_array(&mut upgrade_arr, budgets[8], budgets[7]);
+
+        let bottleneck: f64 = typed_fail_counter_1
+            .iter()
+            .cloned()
+            .fold(f64::NEG_INFINITY, f64::max); // get maximum (unwrap is safe here since arr is non-empty)
         let (fc, tfc, us) = _cost_to_chance(
             &mut upgrade_arr,
             &budgets,
             &unlock_costs,
             data_size,
-            &typed_fail_counter_1,
+            &typed_fail_counter_1
+                .iter()
+                .map(|&x| if x == bottleneck { 1.0_f64 } else { 0.0_f64 })
+                .collect(),
             false,
         );
         (fc, tfc, us, armor_strings, weapon_strings)

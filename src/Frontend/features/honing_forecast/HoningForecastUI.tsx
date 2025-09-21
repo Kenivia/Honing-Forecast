@@ -606,7 +606,7 @@ export default function HoningForecastUI() {
                         <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-sm)', width: '100%' }}>
                             <button style={styles.demoButton} onClick={fillDemo}>Fill Demo</button>
                             <button style={styles.demoButton} onClick={fillRandom}>Fill Random</button>
-                            <button style={styles.demoButton} onClick={clearAll}>Clear All</button>
+                            <button style={styles.demoButton} onClick={clearAll}>Reset All</button>
 
                             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '8px' }}>
                                 <label

@@ -162,11 +162,12 @@ pub fn chance_to_cost(
     for cost_type in 0..7 {
         transposed_cost_data[cost_type].sort_unstable();
     }
-    // let mut gap_size: Vec<f64> = vec![0.0; 7];
-    // for cost_type in 0..7 {
-    //     gap_size[cost_type] =
-    //         (top_bottom[1][cost_type] - top_bottom[0][cost_type]) as f64 / budget_size as f64;
-    // }
+    let mut gap_size: Vec<f64> = vec![0.0; 7];
+    for cost_type in 0..7 {
+        gap_size[cost_type] = (transposed_cost_data[cost_type][cost_data.len() - 1]
+            - transposed_cost_data[cost_type][0]) as f64
+            / budget_size as f64;
+    }
     // let mut cur_counts: Vec<usize> = vec![0; 7];
     let mut budget_data: Vec<Vec<i64>> = vec![vec![0; 7]; budget_size];
 
@@ -175,7 +176,11 @@ pub fn chance_to_cost(
         let mut k: usize = 0;
         let mut cur_count: usize = 0;
         loop {
-            if cum_hist_counts[cost_type][j] >= cur_count {
+            // println!("{:?}", k);
+            if transposed_cost_data[cost_type][j]
+                >= (transposed_cost_data[cost_type][0] as f64 + gap_size[cost_type] * k as f64)
+                    .floor() as i64
+            {
                 budget_data[k][cost_type] += transposed_cost_data[cost_type][cur_count];
                 cur_count += (data_size as f64 / budget_size as f64).round() as usize;
                 k += 1;
