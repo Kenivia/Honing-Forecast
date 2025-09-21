@@ -28,7 +28,7 @@ export default function HoningForecastUI() {
     const BOTTOM_ROWS = 6
     const BOTTOM_COLS = 4
 
-    const [topGrid, setTopGrid] = useState(() => Array.from({ length: TOP_ROWS }, () => Array.from({ length: TOP_COLS }, (_, ind) => ind == 22 || ind == 21)))
+    const [topGrid, setTopGrid] = useState(() => Array.from({ length: TOP_ROWS }, () => Array.from({ length: TOP_COLS }, () => false)))
     const [bottomGrid, setBottomGrid] = useState(() => Array.from({ length: BOTTOM_ROWS }, () => Array(BOTTOM_COLS).fill(false)))
     const [budget_inputs, set_budget_inputs] = useState(() => Object.fromEntries(INPUT_LABELS.map((l) => [l, '0'])))
     const [autoOptimization, setAutoOptimization] = useState(true)
@@ -38,8 +38,10 @@ export default function HoningForecastUI() {
     const [adv_hone_strategy, set_adv_hone_strategy_change] = useState(() => 'No juice')
     const [express_event, set_express_event] = useState(() => true)
     const [bucketCount, _setBucketCount] = useState(() => "100")
-    const [prev_checked_arr, set_prev_checked_arr] = useState(() => Array.from({ length: TOP_COLS }, (_, ind) => ind == 22 || ind == 21))
+    const [prev_checked_arr, set_prev_checked_arr] = useState(() => Array.from({ length: TOP_COLS }, () => false))
     const [prev_checked_arr_bottom, set_prev_checked_arr_bottom] = useState(() => Array.from({ length: BOTTOM_COLS }, () => false))
+    const [cumulativeGraph, setCumulativeGraph] = useState<boolean>(true)
+    const [dataSize, setDataSize] = useState<string>(() => '100000')
 
     // marquee state & refs (kept here so grids stay presentational)
     const topGridRef = useRef<HTMLDivElement | null>(null)
@@ -68,6 +70,8 @@ export default function HoningForecastUI() {
                 if (parsed.budget_inputs && typeof parsed.budget_inputs === 'object') set_budget_inputs(parsed.budget_inputs)
                 if (typeof parsed.autoOptimization === 'boolean') setAutoOptimization(parsed.autoOptimization)
                 if (parsed.userMatsValue && typeof parsed.userMatsValue === 'object') setUserMatsValue(parsed.userMatsValue)
+                if (typeof parsed.cumulativeGraph === 'boolean') setCumulativeGraph(parsed.cumulativeGraph)
+                if (typeof parsed.dataSize === 'string') setDataSize(parsed.dataSize)
             }
         } catch (e) {
             // ignore corrupted storage
@@ -120,6 +124,8 @@ export default function HoningForecastUI() {
                     budget_inputs,
                     autoOptimization,
                     userMatsValue,
+                    cumulativeGraph,
+                    dataSize,
                 }
                 localStorage.setItem(STORAGE_KEY, JSON.stringify(toSave))
             } catch (e) {
@@ -133,7 +139,7 @@ export default function HoningForecastUI() {
                 saveTimerRef.current = null
             }
         }
-    }, [topGrid, bottomGrid, adv_hone_strategy, express_event, prev_checked_arr, prev_checked_arr_bottom, desired_chance, budget_inputs, autoOptimization, userMatsValue])
+    }, [topGrid, bottomGrid, adv_hone_strategy, express_event, prev_checked_arr, prev_checked_arr_bottom, desired_chance, budget_inputs, autoOptimization, userMatsValue, cumulativeGraph, dataSize])
 
     // useEffect(() => {
     //     fillDemo()
@@ -255,12 +261,22 @@ export default function HoningForecastUI() {
     const adv_hone_strategy_change = (value: string) => set_adv_hone_strategy_change(value)
 
     const clearAll = () => {
+        // Grids and their column header checkboxes
         setTopGrid(Array.from({ length: TOP_ROWS }, () => Array(TOP_COLS).fill(false)))
         setBottomGrid(Array.from({ length: BOTTOM_ROWS }, () => Array(BOTTOM_COLS).fill(false)))
         set_prev_checked_arr(Array.from({ length: TOP_COLS }, () => false))
         set_prev_checked_arr_bottom(Array.from({ length: BOTTOM_COLS }, () => false))
+
+        // Inputs and toggles to defaults
         set_budget_inputs(Object.fromEntries(INPUT_LABELS.map((l) => [l, '0'])))
+        setUserMatsValue(Object.fromEntries(INPUT_LABELS.slice(0, 7).map((l) => (l == "Gold") ? [l, "1"] : [l, '0'])))
         set_desired_chance('50')
+        set_adv_hone_strategy_change('No juice')
+        set_express_event(true)
+        setAutoOptimization(true)
+        _setBucketCount("100")
+        setCumulativeGraph(true)
+        setDataSize('100000')
     }
 
     const fillRandom = () => {
@@ -309,7 +325,8 @@ export default function HoningForecastUI() {
         adv_hone_strategy: adv_hone_strategy,
         express_event: express_event,
         bucket_count: Math.max(2, Math.min(1000, Math.floor(Number(bucketCount) || 2))),
-        user_mats_value: autoOptimization ? null : INPUT_LABELS.slice(0, 7).map(label => parseFloat(userMatsValue[label] || '0'))
+        user_mats_value: autoOptimization ? null : INPUT_LABELS.slice(0, 7).map(label => parseFloat(userMatsValue[label] || '0')),
+        data_size: Math.max(1000, Math.floor(Number(dataSize) || 0)),
     })
 
     // Helper to start a cancelable worker - it terminates any existing worker for this task
@@ -398,6 +415,7 @@ export default function HoningForecastUI() {
     const graphBucketSizeKey = useMemo(() => String(bucketCount), [bucketCount])
     const autoOptKey = useMemo(() => String(autoOptimization), [autoOptimization])
     const userMatsKey = useMemo(() => JSON.stringify(userMatsValue), [userMatsValue])
+    const dataSizeKey = useMemo(() => String(dataSize), [dataSize])
 
     // When budget or grids or strategy change -> run CostToChance (budget -> cost->chance)
     useEffect(() => {
@@ -413,7 +431,7 @@ export default function HoningForecastUI() {
             debounceTimerRef1.current = null
         }, 100) // 100ms debounce
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [budgetKey, topGridKey, bottomGridKey, advStrategyKey, expressEventKey, graphBucketSizeKey, autoOptKey, userMatsKey])
+    }, [budgetKey, topGridKey, bottomGridKey, advStrategyKey, expressEventKey, graphBucketSizeKey, autoOptKey, userMatsKey, dataSizeKey])
 
     // When desired chance or grids or strategy change -> run ChanceToCost (chance -> cost)
     useEffect(() => {
@@ -426,7 +444,7 @@ export default function HoningForecastUI() {
             debounceTimerRef2.current = null
         }, 100)
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [desiredKey, topGridKey, bottomGridKey, advStrategyKey, expressEventKey, graphBucketSizeKey])
+    }, [desiredKey, topGridKey, bottomGridKey, advStrategyKey, expressEventKey, graphBucketSizeKey, dataSizeKey])
 
     // Cleanup on unmount: terminate any running workers and clear timers
     useEffect(() => {
@@ -591,6 +609,16 @@ export default function HoningForecastUI() {
                             <button style={styles.demoButton} onClick={clearAll}>Clear All</button>
 
                             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '8px' }}>
+                                <label
+                                    htmlFor="express_event"
+                                    style={{
+                                        color: 'var(--text-primary)',
+                                        fontSize: 'var(--font-size-sm)',
+                                        cursor: 'pointer'
+                                    }}
+                                >
+                                    Express event
+                                </label>
                                 <input
                                     type="checkbox"
                                     id="express_event"
@@ -602,16 +630,69 @@ export default function HoningForecastUI() {
                                         cursor: 'pointer'
                                     }}
                                 />
+
+                            </div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                                 <label
-                                    htmlFor="express_event"
+                                    htmlFor="cumulative_graph"
                                     style={{
                                         color: 'var(--text-primary)',
                                         fontSize: 'var(--font-size-sm)',
                                         cursor: 'pointer'
                                     }}
                                 >
-                                    Express event
+                                    Cumulative Graph
                                 </label>
+                                <input
+                                    type="checkbox"
+                                    id="cumulative_graph"
+                                    checked={cumulativeGraph}
+                                    onChange={(e) => setCumulativeGraph(e.target.checked)}
+                                    style={{
+                                        width: '16px',
+                                        height: '16px',
+                                        cursor: 'pointer'
+                                    }}
+                                />
+                            </div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <label
+                                    htmlFor="data_size"
+                                    style={{
+                                        color: 'var(--text-primary)',
+                                        fontSize: 'var(--font-size-sm)',
+                                        cursor: 'pointer',
+                                        textWrap: 'nowrap',
+                                    }}
+                                >
+                                    Trial count
+                                </label>
+                                <input
+                                    type="text"
+                                    id="data_size"
+                                    value={dataSize}
+                                    onChange={(e) => {
+                                        // allow only digits; strictly positive integer (no zero), strip leading zeros
+                                        let v = e.target.value.replace(/[^0-9]/g, '')
+                                        v = v.replace(/^0+(?=\d)/, '')
+                                        setDataSize(v)
+                                    }}
+                                    onBlur={() => {
+                                        // clamp to 1000 if empty or < 1000
+                                        const n = Math.min(1000000, Math.max(1000, Math.floor(Number(dataSize) || 0)))
+                                        setDataSize(String(n))
+                                    }}
+                                    style={{
+                                        width: 80,
+                                        fontSize: 14,
+                                        padding: '6px 8px',
+                                        borderRadius: 6,
+                                        background: 'var(--input-bg)',
+                                        color: 'var(--input-text)',
+                                        border: '1px solid var(--input-border)'
+                                    }}
+                                    placeholder="100000"
+                                />
                             </div>
                             {/* <div style={{ width: 200, display: 'flex', gap: '12px' }}>
                                 <div style={{ width: "40%", textAlign: 'right', paddingRight: 8, color: 'var(--text-secondary)' }}>Graph bucket size</div>
@@ -851,6 +932,7 @@ export default function HoningForecastUI() {
                                 budgets={cost_result && OUTPUT_LABELS.map(label => Number(cost_result[label]))}
                                 hasSelection={topGrid.some(value => value.some(v => v === true))}
                                 isLoading={ChanceToCostBusy}
+                                cumulative={cumulativeGraph}
                             />
                         </div>
                     </div>
@@ -956,6 +1038,7 @@ export default function HoningForecastUI() {
                                 budgets={OUTPUT_LABELS.map(label => Number(budget_inputs[label]))}
                                 hasSelection={topGrid.some(value => value.some(v => v === true))}
                                 isLoading={CostToChanceBusy}
+                                cumulative={cumulativeGraph}
                             />
                         </div>
 

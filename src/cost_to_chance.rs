@@ -123,8 +123,9 @@ pub fn cost_to_chance(
 
     user_forced_mats_value: &Vec<f64>,
     adv_hone_strategy: String,
+    data_size: usize,
 ) -> CostToChanceOut {
-    let data_size: usize = 100000;
+    let data_size: usize = data_size.max(1000);
     // let adv_hone_strategy: String = String::from("No juice");
     let unlock_costs: Vec<i64> = calc_unlock(hone_counts, adv_counts);
 
@@ -249,6 +250,7 @@ mod tests {
             1000,
             &vec![0.0; 7],
             "No juice".to_owned(),
+            100000,
         );
         let _chance = out.chance;
         let _reasons = out.reasons;
@@ -277,6 +279,7 @@ mod tests {
             1000,
             &vec![0.0; 7],
             "No juice".to_owned(),
+            100000,
         );
         println!("{:?}", out.chance);
         println!("{:?}", out.reasons);
@@ -295,6 +298,7 @@ mod tests {
             1000,
             &vec![0.0; 7],
             "No juice".to_owned(),
+            100000,
         );
         println!("{:?}", out.chance);
         println!("{:?}", out.reasons);
@@ -313,6 +317,7 @@ mod tests {
             1000,
             &vec![0.0; 7],
             "No juice".to_owned(),
+            100000,
         );
         println!("{:?}", out.chance);
         println!("{:?}", out.reasons);

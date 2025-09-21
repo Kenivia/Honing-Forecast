@@ -33,6 +33,7 @@ For Chance to Cost, we generate some artificial budgets and see which ones match
 - Gamba simulator section
 - Incorporate roster income tracking & pretty graphs
 - Book
+- bottleneck graph instead
 
 ### DEV
 
@@ -44,7 +45,6 @@ For Chance to Cost, we generate some artificial budgets and see which ones match
 ### UI
 
 - Make the percent sign follow the input number?(right now it just trails on the right)
-- show the bottlenecks in a pie chart?
 - mobile dragging?
 - maybe add tabs to switch between different functionalities
 - ctrl z support

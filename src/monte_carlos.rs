@@ -19,7 +19,11 @@ fn construct_geometric_weights(max_taps: i64, base_chance: f64) -> Vec<f32> {
     out
 }
 
-fn tap_map_generator(count_limit: usize, prob_dist: &Vec<f64>, rng: &mut ThreadRng) -> Vec<usize> {
+fn tap_map_generator(
+    count_limit: usize,
+    prob_dist: &Vec<f64>,
+    mut rng: &mut ThreadRng,
+) -> Vec<usize> {
     let cum_weights: Vec<f64> = prob_dist
         .iter()
         .enumerate()
@@ -45,11 +49,11 @@ fn tap_map_generator(count_limit: usize, prob_dist: &Vec<f64>, rng: &mut ThreadR
             j += 1;
         }
     }
-    tap_map.shuffle(&mut thread_rng());
+    tap_map.shuffle(&mut rng);
     return tap_map;
 }
 
-fn round_juice(this_juice_cost: f64, rng: &mut rand::prelude::ThreadRng) -> i64 {
+fn round_juice(this_juice_cost: f64, rng: &mut ThreadRng) -> i64 {
     let juice_cost: i64;
     if this_juice_cost - this_juice_cost.floor() as f64 > rng.gen_range(0.0..1.0) {
         juice_cost = this_juice_cost.floor() as i64 + 1;
@@ -69,11 +73,12 @@ pub fn monte_carlos_data(
     let mut cost_data: Vec<Vec<i64>> = vec![vec![0; 9]; data_size as usize];
     let mut rng: rand::prelude::ThreadRng = rand::thread_rng();
     let mut juice_ind: usize;
+    let mut rolled_tap: usize;
     if rigged {
-        let mut rolled_tap: usize;
         for (_, upgrade) in upgrade_arr.iter().enumerate() {
             for trial_num in 0..data_size as usize {
-                rolled_tap = (upgrade.prob_dist_len as f64 * trial_num as f64 / data_size as f64)
+                rolled_tap = ((upgrade.prob_dist_len - 1) as f64 * (trial_num + 1) as f64
+                    / data_size as f64)
                     .floor() as usize;
                 for cost_type in 0..7 {
                     cost_data[trial_num][cost_type] +=
@@ -95,29 +100,30 @@ pub fn monte_carlos_data(
         let mut rolled_special_cost: i64;
         let mut special_budgets: Vec<i64> = vec![avail_special; data_size];
         let mut tap_wa_table: weighted_rand::table::WalkerTable;
-        let mut rolled_tap: usize;
         let mut special_dist: Vec<f32>;
         let mut special_pass_arr: Vec<usize> = vec![0; data_size];
         let mut prob_dist: Vec<f32>;
         // if use_true_rng || avail_special as f64 / 12 as f64 > 100.0_f64 {
-        for (upgrade_index, upgrade) in upgrade_arr.iter().enumerate() {
-            if upgrade.is_normal_honing {
-                special_dist = construct_geometric_weights(
-                    calc_failure_lim(avail_special, upgrade.special_cost),
-                    upgrade.base_chance,
-                );
+        if avail_special > 0 {
+            for (upgrade_index, upgrade) in upgrade_arr.iter().enumerate() {
+                if upgrade.is_normal_honing {
+                    special_dist = construct_geometric_weights(
+                        calc_failure_lim(avail_special, upgrade.special_cost),
+                        upgrade.base_chance,
+                    );
 
-                special_wa_table = WalkerTableBuilder::new(&special_dist).build();
-                for trial_num in 0..data_size as usize {
-                    if special_budgets[trial_num] <= 0 {
-                        continue;
-                    } else {
-                        rolled_special_cost =
-                            (special_wa_table.next_rng(&mut rng) as i64 + 1) * upgrade.special_cost;
-                        special_budgets[trial_num] -= rolled_special_cost;
-                        if special_budgets[trial_num] > 0 {
-                            special_pass_arr[trial_num] += 1;
-                            debug_assert!(special_pass_arr[trial_num] == upgrade_index + 1);
+                    special_wa_table = WalkerTableBuilder::new(&special_dist).build();
+                    for trial_num in 0..data_size as usize {
+                        if special_budgets[trial_num] <= 0 {
+                            continue;
+                        } else {
+                            rolled_special_cost = (special_wa_table.next_rng(&mut rng) as i64 + 1)
+                                * upgrade.special_cost;
+                            special_budgets[trial_num] -= rolled_special_cost;
+                            if special_budgets[trial_num] > 0 {
+                                special_pass_arr[trial_num] += 1;
+                                debug_assert!(special_pass_arr[trial_num] == upgrade_index + 1);
+                            }
                         }
                     }
                 }
@@ -159,7 +165,6 @@ pub fn monte_carlos_data(
         } else {
             // This is called latin hypercube sampling apparently
             let mut tap_map: Vec<usize>;
-
             for (upgrade_index, upgrade) in upgrade_arr.iter().enumerate() {
                 tap_map = tap_map_generator(data_size, &upgrade.prob_dist, &mut rng);
                 for trial_num in 0..data_size as usize {

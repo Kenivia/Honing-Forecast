@@ -16,6 +16,7 @@ type GraphProps = {
     budgets?: number[] | null
     hasSelection?: boolean
     isLoading?: boolean
+    cumulative?: boolean
 }
 
 type Point = { x: number, y: number }
@@ -113,7 +114,7 @@ function to_step(arr: number[]) {
 
 //     return startIndex; // No non-zero element found in the array
 // }
-export default function Graph({ title, labels, counts, mins, maxs, width = 640, height = 320, budgets = null, hasSelection = false, isLoading = false }: GraphProps) {
+export default function Graph({ title, labels, counts, mins, maxs, width = 640, height = 320, budgets = null, hasSelection = false, isLoading = false, cumulative = true }: GraphProps) {
     const [visible, setVisible] = useState<boolean[]>(() => [true, true, false, false, false, true, false])
     const [hoverSeries, setHoverSeries] = useState<number | null>(null)
     const [hoverBucket, setHoverBucket] = useState<number | null>(null)
@@ -132,46 +133,67 @@ export default function Graph({ title, labels, counts, mins, maxs, width = 640, 
         })
     }, [counts])
 
+    const cdfSeries: number[][] | null = useMemo(() => {
+        if (!counts) return null
+        return counts.map(series => {
+            const total = series.reduce((a, b) => a + b, 0) || 1
+            let acc = 0
+            const out = new Array(series.length)
+            for (let i = 0; i < series.length; i++) {
+                acc += series[i]
+                out[i] = acc / total
+            }
+            return out
+        })
+    }, [counts])
+
+    const normalizedCounts: number[][] | null = useMemo(() => {
+        if (!counts) return null
+        const denom = data_size || 1
+        return counts.map(series => series.map(v => v / denom))
+    }, [counts, data_size])
+
     const dataSeries: Point[][] = useMemo(() => {
         if (!counts) return [] as Point[][]
-        let out: Point[][] = Array.from({ length: counts.length }, () => []);
-        for (let i = 0; i < counts.length; i++) {
+        const source = cumulative && cdfSeries ? cdfSeries : (normalizedCounts || counts)
+        let out: Point[][] = Array.from({ length: source.length }, () => []);
+        for (let i = 0; i < source.length; i++) {
             let first = true;
-            let prev = null;
-            for (let b = 0; b < counts[i].length; b++) {
-                // if (counts[i][b] > 0 || first) {
+            let prev: number | null = null;
+            for (let b = 0; b < source[i].length; b++) {
                 if (first) {
                     out[i].push({ x: b, y: 0 })
                 }
-                if (counts[i][b] > 0) {
-                    let t = { x: b, y: counts[i][b] }
-                    out[i].push(t)
+                const y = source[i][b]
+                if (y > 0) {
+                    out[i].push({ x: b, y })
                     first = false;
-                    prev = counts[i][b]
-                } else if (prev) {
+                    prev = y
+                } else if (prev != null) {
                     out[i].push({ x: b, y: prev })
                 }
-                // }
             }
             if (first) {
                 out[i] = [{ x: 0, y: 0 }]
             }
             else {
-                out[i].push({ x: counts[i].length, y: counts[i][counts[i].length - 1] })
+                out[i].push({ x: source[i].length, y: (prev ?? source[i][source[i].length - 1]) })
             }
         }
         return out
-    }, [counts])
+    }, [counts, cumulative, cdfSeries, normalizedCounts])
 
     const yMax: number = useMemo(() => {
         if (!counts) return 0
+        if (cumulative) return 1
+        const denom = data_size || 1
         let m = 0
         for (let i = 0; i < counts.length; i++) {
             if (!visible[i] || !keepMask[i]) continue
-            for (let j = 0; j < counts[i].length; j++) m = Math.max(m, counts[i][j])
+            for (let j = 0; j < counts[i].length; j++) m = Math.max(m, counts[i][j] / denom)
         }
         return m
-    }, [counts, visible, keepMask])
+    }, [counts, visible, keepMask, cumulative, data_size])
 
     // const onLegendToggle = (i: number) => setVisible(v => v.map((b, idx) => idx === i ? !b : b))
 
@@ -192,7 +214,9 @@ export default function Graph({ title, labels, counts, mins, maxs, width = 640, 
         const x = Math.min(Math.max((p?.x ?? 0) - plotLeft, 0), innerW)
         const bucket = Math.round((x / innerW) * (bucketLen - 1))
         // choose series with closest y to cursor vertically if possible; otherwise pick the highest y
-        const ys = counts.map((s, i) => ({ i, y: s[bucket] / Math.max(1, yMax) * innerH, vis: visible[i] && keepMask[i] }))
+        const src = cumulative && cdfSeries ? cdfSeries : (normalizedCounts || counts)
+        const denomY = Math.max(1e-9, yMax)
+        const ys = src.map((s, i) => ({ i, y: s[bucket] / denomY * innerH, vis: visible[i] && keepMask[i] }))
         const visibleYs = ys.filter(o => o.vis)
         if (visibleYs.length === 0) { setHoverSeries(null); return }
         // use highest y bucket as proxy for nearest vertically
@@ -237,11 +261,13 @@ export default function Graph({ title, labels, counts, mins, maxs, width = 640, 
     }, [bucketLen])
     const bottomTickFormat = useCallback((val: any) => {
         if (fallbackSeries == null || !mins || !maxs) return formatSig3(val)
+
         const min = mins[fallbackSeries]
         const max = maxs[fallbackSeries]
+        // return maxs[fallbackSeries]
         const bucketIdx = typeof val === 'number' ? val : Number(val)
         const width = (max - min) / bucketLen
-        const mid = min + (bucketIdx + 0) * width
+        const mid = min + (bucketIdx) * width
         return formatSig3(mid)
     }, [fallbackSeries, mins, maxs, bucketLen])
 
@@ -256,17 +282,38 @@ export default function Graph({ title, labels, counts, mins, maxs, width = 640, 
                     height={height}
                     width={width}
                     xScale={{ type: 'linear', domain: [0, Math.max(0, bucketLen)] }}
-                    yScale={{ type: 'linear', domain: [0, Math.max(1, yMax)] }}
+                    yScale={{ type: 'linear', domain: cumulative ? [0, 1] : [0, Math.max(1e-6, yMax)] }}
                     theme={darkTheme}
                 >
                     {/* Remove horizontal grid and y-axis; add vertical grid lines */}
                     <AnimatedGrid columns numTicks={GRID_COUNT} rows={false} />
                     <AnimatedAxis orientation="bottom"
-                        label={'Normalized mats cost(0 to pity)'}
+                        label={'Normalized mats cost(0 to pity*)'}
                         tickValues={tickVals}
                         tickFormat={bottomTickFormat as any} tickLabelProps={() => ({ fill: hoverColor, fontSize: 11, angle: -0 })} />
-                    {/* hide y-axis */}
-                    <AnimatedAxis orientation="left" numTicks={0} label={'Probability distribution'} />
+                    {/* Y axis with custom ticks */}
+                    <AnimatedAxis
+                        orientation="left"
+                        label={cumulative ? 'Cumulative probability of success' : 'Probability distribution'}
+                        tickValues={(() => {
+                            if (cumulative) {
+                                // 0..1 inclusive at 0.1 steps
+                                const vals: number[] = []
+                                for (let i = 0; i <= 10; i++) vals.push(i / 10)
+                                return vals
+                            } else {
+                                return [0, yMax]
+                            }
+                        })()}
+                        tickFormat={(val: any) => {
+                            if (cumulative) {
+                                const n = typeof val === 'number' ? val : Number(val)
+                                return n.toFixed(1)
+                            }
+                            return formatSig3(typeof val === 'number' ? val : Number(val))
+                        }}
+                        tickLabelProps={() => ({ fill: hoverColor, fontSize: 11 })}
+                    />
                     {sortedVisibleIndices.map((seriesIdx) => (
                         <AnimatedLineSeries
                             key={labels[seriesIdx]}
@@ -292,10 +339,14 @@ export default function Graph({ title, labels, counts, mins, maxs, width = 640, 
                                 let cx, cy, label;
 
                                 // if (displayMode === 'cost') {
-                                const bucket_idx = Math.max(Math.min(Math.round((budgets[i] * bucketLen / (maxs[i] - mins[i]))), bucketLen - 1), 0)
+                                const range = Math.max(1e-9, (maxs[i] - mins[i]))
+                                const frac = (budgets[i] - mins[i]) / range
+                                const bucket_idx = Math.max(0, Math.min(bucketLen - 1, Math.round(frac * (bucketLen - 1))))
                                 // const cumPct = Math.round((counts[i].slice(0, bucket_idx).reduce((partialSum, a) => partialSum + a, 0) / data_size * 100));
                                 cx = plotLeft + (bucket_idx / Math.max(1, bucketLen - 1)) * innerW;
-                                cy = plotTop + innerH - counts[i][bucket_idx] / Math.max(1, yMax) * innerH;
+                                const seriesVals = cumulative && cdfSeries ? cdfSeries[i] : ((normalizedCounts && normalizedCounts[i]) || counts[i])
+                                const denomY2 = Math.max(1e-9, yMax)
+                                cy = plotTop + innerH - seriesVals[bucket_idx] / denomY2 * innerH;
                                 label = formatSig3(budgets[i])
 
 
@@ -320,7 +371,9 @@ export default function Graph({ title, labels, counts, mins, maxs, width = 640, 
                                 const innerW = width - plotLeft - plotRight
                                 const innerH = height - plotTop - plotBottom
                                 const cx = plotLeft + (hoverBucket / Math.max(1, bucketLen)) * innerW
-                                const cy = plotTop + innerH - (to_step(counts[fallbackSeries])[hoverBucket] / Math.max(1, yMax)) * innerH
+                                const hoverSeriesVals = cumulative && cdfSeries ? cdfSeries[fallbackSeries] : ((normalizedCounts && normalizedCounts[fallbackSeries]) || counts[fallbackSeries])
+                                const denomY3 = Math.max(1e-9, yMax)
+                                const cy = plotTop + innerH - (to_step(hoverSeriesVals)[hoverBucket] / denomY3) * innerH
 
                                 return (
                                     <g>
@@ -378,10 +431,11 @@ export default function Graph({ title, labels, counts, mins, maxs, width = 640, 
 
             {!anyVisible && (
                 <div>
-                    <div style={{ color: 'var(--text-secondary)', fontSize: 30, alignSelf: 'center', justifySelf: 'center', marginTop: -200 }}>
+                    <div style={{ color: 'var(--text-secondary)', fontSize: 50, alignSelf: 'center', justifySelf: 'center', marginTop: -200 }}>
                         {hasSelection ? isLoading ? "Loading..." : 'Everything have 100% success rate, nothing to plot.' : 'Nothing to plot, tick an upgrade!'}
                     </div>
-                    <div>{isLoading ? "Please allow up to ~5s, if it still doesnt load then something went probably wrong..." : ""}</div>
+                    <div style={{ fontSize: 12 }}>{isLoading ? "Please allow up to ~5s, if it still doesnt load then something went probably wrong" : ""}</div>
+                    <div style={{ fontSize: 12 }}>{isLoading ? "Also the first run is slower because it has to spin up WebAssembly" : ""}</div>
                 </div>
             )}
         </div>

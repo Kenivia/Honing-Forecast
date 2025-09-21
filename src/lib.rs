@@ -26,6 +26,7 @@ pub struct Payload {
     express_event: bool,
     bucket_count: usize,
     user_mats_value: Option<Vec<f64>>,
+    data_size: Option<usize>,
 }
 
 #[wasm_bindgen]
@@ -36,6 +37,7 @@ pub fn chance_to_cost_wrapper(input: JsValue) -> JsValue {
     let adv_hone_ticks: Vec<Vec<bool>> = payload.adv_hone_ticks;
     let desired_chance: f64 = payload.desired_chance;
     let adv_hone_strategy: String = payload.adv_hone_strategy;
+    let data_size: usize = payload.data_size.unwrap_or(100000).max(1000);
 
     let out = chance_to_cost(
         ticks_to_counts(normal_hone_ticks),
@@ -44,6 +46,7 @@ pub fn chance_to_cost_wrapper(input: JsValue) -> JsValue {
         adv_hone_strategy,
         payload.express_event,
         payload.bucket_count,
+        data_size,
     );
 
     // Return a JS object with fields to avoid brittle tuple indexing
@@ -61,6 +64,7 @@ pub fn cost_to_chance_wrapper(input: JsValue) -> JsValue {
     let budget: Vec<i64> = payload.budget;
     console::log_1(&"unwrap complete".into());
     let user_mats_value = payload.user_mats_value.unwrap_or(vec![0.0; 7]);
+    let data_size: usize = payload.data_size.unwrap_or(100000).max(1000);
     let out = cost_to_chance(
         &ticks_to_counts(normal_hone_ticks),
         &budget,
@@ -69,6 +73,7 @@ pub fn cost_to_chance_wrapper(input: JsValue) -> JsValue {
         payload.bucket_count,
         &user_mats_value,
         payload.adv_hone_strategy,
+        data_size,
     );
     console::log_1(&"cost_to_chance_complete".into());
     to_value(&out).unwrap()
@@ -90,6 +95,7 @@ pub fn chance_to_cost_test_wrapper(
         adv_hone_strategy,
         express_event,
         1000,
+        100000,
     );
     (out.best_budget, out.actual_prob)
 }
@@ -108,6 +114,7 @@ pub fn cost_to_chance_test_wrapper(
         1000,
         &vec![0.0; 7],
         "No juice".to_owned(),
+        100000,
     );
     (out.chance, out.reasons.join(", "))
 }

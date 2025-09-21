@@ -60,9 +60,9 @@ export default function SpreadsheetGrid({ columnDefs, labels, sheet_values: budg
         const label = labels[rowIndex]
         if (label) {
             if (colIndex === 0) {
-                // Budget column - only allow positive integers
+                // Budget column - only allow non-negative integers, strip leading zeros
                 let cleanValue = value.replace(/[^0-9]/g, '')
-                // Clamp overly large inputs to 9 digits max value 999,999,999 (no commas stored)
+                cleanValue = cleanValue.replace(/^0+(?=\d)/, '')
                 if (cleanValue.length > 10) {
                     cleanValue = '999999999'
                 }
@@ -70,12 +70,11 @@ export default function SpreadsheetGrid({ columnDefs, labels, sheet_values: budg
                 next[label] = cleanValue
                 set_sheet_values(next)
             } else if (colIndex === 1 && setSecondaryValues && secondaryValues) {
-                // Material value column - allow decimals
-                let cleanValue = value.replace(/[^0-9.]/g, '')
-                // Only allow one decimal point
-                const parts = cleanValue.split('.')
-                if (parts.length > 2) {
-                    cleanValue = parts[0] + '.' + parts.slice(1).join('')
+                // Gold value column - only allow non-negative integers, strip leading zeros
+                let cleanValue = value.replace(/[^0-9]/g, '')
+                cleanValue = cleanValue.replace(/^0+(?=\d)/, '')
+                if (cleanValue.length > 10) {
+                    cleanValue = '999999999'
                 }
                 const next = { ...secondaryValues }
                 next[label] = cleanValue
@@ -257,6 +256,7 @@ export default function SpreadsheetGrid({ columnDefs, labels, sheet_values: budg
                 if (targetRow < labels.length) {
                     // Clean the pasted value to only allow positive integers
                     let cleanValue = parsedRows[r].trim().replace(/[^0-9]/g, '')
+                    cleanValue = cleanValue.replace(/^0+(?=\d)/, '')
                     if (cleanValue.length > 10) cleanValue = '999999999'
                     newInputs[labels[targetRow]] = cleanValue
                 }
