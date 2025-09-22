@@ -29,7 +29,7 @@ export default function HoningForecastUI() {
     const [bucketCount, _setBucketCount] = useState(() => "100")
     const [prev_checked_arr, set_prev_checked_arr] = useState(() => Array.from({ length: TOP_COLS }, () => false))
     const [prev_checked_arr_bottom, set_prev_checked_arr_bottom] = useState(() => Array.from({ length: BOTTOM_COLS }, () => false))
-    const [cumulativeGraph, setCumulativeGraph] = useState<boolean>(true)
+    const [cumulativeGraph, setCumulativeGraph] = useState<boolean>(false)
     const [dataSize, setDataSize] = useState<string>(() => '100000')
 
     // marquee state & refs (kept here so grids stay presentational)

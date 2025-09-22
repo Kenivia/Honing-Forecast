@@ -30,7 +30,7 @@ export default function ChanceToCostSection({
             <h3 style={{ color: 'var(--text-primary)', fontSize: 'var(--font-size-base)', fontWeight: 'var(--font-weight-semibold)', margin: '0 0 -8px 0' }}>Chance to Cost</h3>
             <div style={{ ...styles.inputSection, width: 1120 }}>
                 <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 16 }}>
-                    <div style={{ width: 120, textAlign: 'right', paddingRight: 8, color: 'var(--text-secondary)' }}>Desired chance</div>
+                    <div style={{ width: 160, fontWeight: 700, textAlign: 'right', paddingRight: 8, color: 'var(--text-primary)' }}>Desired chance</div>
                     <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
                         <input
                             type="text"
@@ -38,7 +38,7 @@ export default function ChanceToCostSection({
                             onChange={(e) => onDesiredChange(e.target.value)}
                             placeholder="0"
                             style={{
-                                width: 160,
+                                width: 70,
                                 fontSize: 16,
                                 padding: '6px 8px',
                                 borderRadius: 6,

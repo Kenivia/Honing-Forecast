@@ -1,4 +1,4 @@
-import { INPUT_LABELS, TOP_ROWS, TOP_COLS, BOTTOM_ROWS, BOTTOM_COLS } from './constants.ts'
+import { INPUT_LABELS, TOP_ROWS, TOP_COLS, BOTTOM_ROWS, BOTTOM_COLS } from "./constants.ts"
 
 export function createClearAll({
     setTopGrid,
@@ -37,15 +37,15 @@ export function createClearAll({
         set_prev_checked_arr_bottom(Array.from({ length: BOTTOM_COLS }, () => false))
 
         // Inputs and toggles to defaults
-        set_budget_inputs(Object.fromEntries(INPUT_LABELS.map((l) => [l, '0'])))
-        setUserMatsValue(Object.fromEntries(INPUT_LABELS.slice(0, 7).map((l) => (l == "Gold") ? [l, "1"] : [l, '0'])))
-        set_desired_chance('50')
-        set_adv_hone_strategy_change('No juice')
+        set_budget_inputs(Object.fromEntries(INPUT_LABELS.map((l) => [l, "0"])))
+        setUserMatsValue(Object.fromEntries(INPUT_LABELS.slice(0, 7).map((l) => (l == "Gold" ? [l, "1"] : [l, "0"]))))
+        set_desired_chance("50")
+        set_adv_hone_strategy_change("No juice")
         set_express_event(true)
         setAutoOptimization(true)
         _setBucketCount("100")
-        setCumulativeGraph(true)
-        setDataSize('100000')
+        setCumulativeGraph(false)
+        setDataSize("100000")
     }
 }
 
@@ -82,19 +82,18 @@ export function createFillDemo({
         setTopGrid(Array.from({ length: TOP_ROWS }, () => Array.from({ length: TOP_COLS }, (_, ind) => ind == 19 || ind == 20 || ind == 21)))
         setBottomGrid(Array.from({ length: BOTTOM_ROWS }, (_, piece) => Array.from({ length: BOTTOM_COLS }, (_, ind) => ind == 3 && piece < 3)))
         set_budget_inputs({
-            Red: '431777',
-            Blue: '1064398',
-            Leaps: '23748',
-            Shards: '9010948',
-            Oreha: '15125',
-            Gold: '1803792',
-            'Silver(WIP)': '999999999',
-            'Red juice': '420',
-            'Blue juice': '690',
-            'Special leaps': '6767',
+            Red: "431777",
+            Blue: "1064398",
+            Leaps: "23748",
+            Shards: "9010948",
+            Oreha: "15125",
+            Gold: "1803792",
+            "Silver(WIP)": "999999999",
+            "Red juice": "420",
+            "Blue juice": "690",
+            "Special leaps": "6767",
         })
-        set_desired_chance('69')
+        set_desired_chance("69")
         set_prev_checked_arr(Array.from({ length: TOP_COLS }, (_, ind) => ind == 19 || ind == 20 || ind == 21))
     }
 }
-

@@ -33,16 +33,16 @@ For Chance to Cost, we generate some artificial budgets and see which ones match
 - Gamba simulator section
 - Incorporate roster income tracking
 - Book support
+- Variance calculation & confidence interval
 
 ### DEV
 
 - Write actual tests and also comment
 - Get silver unlock cost somewhere(currently silver unlock cost is 0 so its labeled as WIP)(somewhere = maxroll probably)
-- Variance calculation & confidence interval
 
 ### UI
 
 - Make the percent sign follow the input number?(right now it just trails on the right)
 - mobile dragging?
 - maybe add tabs to switch between different functionalities
-- ctrl z support
+- ctrl z support, fix backspace & delete
