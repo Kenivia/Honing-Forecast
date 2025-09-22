@@ -4,13 +4,13 @@
     "version": "0.0.0",
     "type": "module",
     "scripts": {
-        "build": "npm run test && wasm-pack build --release --target web && vite build",
+        "build": "wasm-pack build --release --target web && npm run test && vite build",
         "predeploy": "npm run build",
         "deploy": "gh-pages -d dist",
         "lint": "eslint .",
         "preview": "vite preview",
         "typecheck": "tsc --noEmit",
-        "dev": "npm run test && wasm-pack build --release --target web && vite",
+        "dev": "wasm-pack build --release --target web && vite",
         "test": "cargo test --profile release -- --show-output && vitest run",
         "test:ui": "vitest run"
     },

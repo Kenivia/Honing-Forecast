@@ -3,6 +3,7 @@ import { styles } from './styles.ts'
 
 type HoningControlsProps = {
     controlsLeft: number | null
+    mainScale: number
     fillDemo: () => void
     fillRandom: () => void
     clearAll: () => void
@@ -14,9 +15,9 @@ type HoningControlsProps = {
     setDataSize: (_v: string) => void
 }
 
-export default function HoningControls({ controlsLeft, fillDemo, fillRandom, clearAll, express_event, set_express_event, cumulativeGraph, setCumulativeGraph, dataSize, setDataSize }: HoningControlsProps) {
+export default function HoningControls({ controlsLeft, mainScale, fillDemo, fillRandom, clearAll, express_event, set_express_event, cumulativeGraph, setCumulativeGraph, dataSize, setDataSize }: HoningControlsProps) {
     return (
-        <div style={{ position: 'fixed', left: controlsLeft ?? undefined, right: controlsLeft == null ? 0 : undefined, top: '50%', transform: 'translateY(-50%)', width: 200, zIndex: 1000 }}>
+        <div style={{ position: 'fixed', left: controlsLeft ?? undefined, right: controlsLeft == null ? 0 : undefined, top: '50%', transform: `translateY(-50%) scale(${mainScale})`, transformOrigin: 'top', width: 200, zIndex: 1000 }}>
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 0, width: 200 }}>
                 <h3 style={{ ...styles.sectionTitle, marginTop: '-8px', alignSelf: 'center' }}>Controls</h3>
                 <div style={{ ...styles.buttonSection, marginTop: '-8px', width: '200px' }}>

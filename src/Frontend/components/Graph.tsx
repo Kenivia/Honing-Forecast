@@ -323,7 +323,7 @@ export default function Graph({ title, labels, counts, mins, maxs, width = 640, 
                     ))}
 
                     {/* Point of interest - draw a dot for each visible series at poi bucket */}
-                    {counts && anyVisible && (
+                    {counts && anyVisible && budgets && (
                         <g>
                             {labels.map((_, i) => {
                                 if (!visible[i] || !keepMask[i]) return null

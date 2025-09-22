@@ -307,6 +307,7 @@ export default function HoningForecastUI() {
             {/* Fixed Demo Controls anchored relative to main container (30px to the right, clamped to viewport) */}
             <HoningControls
                 controlsLeft={controlsLeft}
+                mainScale={mainScale}
                 fillDemo={fillDemo}
                 fillRandom={fillRandom}
                 clearAll={clearAll}
