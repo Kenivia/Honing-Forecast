@@ -9,7 +9,8 @@ export default defineConfig({
     plugins: [react()],
     test: {
         globals: false, // we'll import describe/it/expect from 'vitest' explicitly
-        environment: "node", // 'jsdom' if you need DOM
+        environment: "jsdom",
+        setupFiles: ["vitest.setup.ts"],
         coverage: { provider: "v8" },
         exclude: [...configDefaults.exclude, "junkyard/*"],
     },

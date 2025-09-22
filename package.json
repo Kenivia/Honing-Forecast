@@ -4,14 +4,15 @@
     "version": "0.0.0",
     "type": "module",
     "scripts": {
-        "build": "cargo test --profile release -- --show-output && wasm-pack build --release --target web && vite build",
+        "build": "npm run test && wasm-pack build --release --target web && vite build",
         "predeploy": "npm run build",
         "deploy": "gh-pages -d dist",
         "lint": "eslint .",
         "preview": "vite preview",
         "typecheck": "tsc --noEmit",
-        "dev": "cargo test --profile release -- --show-output && wasm-pack build --release --target web && vite",
-        "test": "cargo test --profile release -- --show-output"
+        "dev": "npm run test && wasm-pack build --release --target web && vite",
+        "test": "cargo test --profile release -- --show-output && vitest run",
+        "test:ui": "vitest run"
     },
     "dependencies": {
         "@visx/event": "^3.10.0",
@@ -23,6 +24,9 @@
     },
     "devDependencies": {
         "@eslint/js": "^9.33.0",
+        "@testing-library/jest-dom": "^6.8.0",
+        "@testing-library/react": "^16.3.0",
+        "@testing-library/user-event": "^14.6.1",
         "@types/node": "^24.3.0",
         "@types/react": "^19.1.12",
         "@types/react-dom": "^19.1.9",
@@ -36,6 +40,7 @@
         "eslint-plugin-react-refresh": "^0.4.20",
         "gh-pages": "^6.3.0",
         "globals": "^16.3.0",
+        "jsdom": "^27.0.0",
         "typescript": "^5.9.2",
         "vite": "^6.3.6",
         "vite-plugin-wasm": "^3.5.0",
