@@ -4,6 +4,7 @@ use crate::constants::*;
 pub struct Upgrade {
     pub is_normal_honing: bool,
     pub prob_dist: Vec<f64>,
+    pub original_prob_dist: Vec<f64>,
     pub base_chance: f64,
     pub costs: [i64; 7],
     pub one_juice_cost: i64,
@@ -15,6 +16,7 @@ pub struct Upgrade {
     pub artisan_rate: f64,
     pub tap_offset: i64,
     pub upgrade_plus_num: usize,
+    pub special_value: f64,
 }
 impl Upgrade {
     fn new_normal(
@@ -29,7 +31,8 @@ impl Upgrade {
         let base_chance: f64 = prob_dist[0];
         Upgrade {
             is_normal_honing: true,
-            prob_dist,
+            prob_dist: prob_dist.clone(),
+            original_prob_dist: prob_dist.clone(),
             base_chance,
             costs,
             one_juice_cost: NORMAL_JUICE_COST[upgrade_plus_num],
@@ -41,6 +44,7 @@ impl Upgrade {
             artisan_rate,
             tap_offset: 1,
             upgrade_plus_num,
+            special_value: -1.0_f64,
         }
     }
     fn new_adv(
@@ -56,7 +60,8 @@ impl Upgrade {
         assert!(prob_dist_len == adv_juice_cost.len());
         Upgrade {
             is_normal_honing: false,
-            prob_dist,
+            prob_dist: prob_dist.clone(),
+            original_prob_dist: prob_dist.clone(),
             base_chance: 0.0,
             costs,
             one_juice_cost,
@@ -68,6 +73,7 @@ impl Upgrade {
             artisan_rate: 0.0,
             tap_offset: adv_cost_start,
             upgrade_plus_num,
+            special_value: -1.0_f64,
         }
     }
 }

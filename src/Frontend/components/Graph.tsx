@@ -293,15 +293,18 @@ export default function Graph({ title, labels, counts, mins, maxs, width = 640, 
                                 for (let i = 0; i <= 10; i++) vals.push(i / 10)
                                 return vals
                             } else {
-                                return [0, yMax]
+                                const vals: number[] = []
+                                // let sum = counts[0].reduce((partialSum, a) => partialSum + a, 0);
+                                for (let i = 0; i <= 10; i++) vals.push(yMax * i / 10)
+                                return vals
                             }
                         })()}
                         tickFormat={(val: any) => {
-                            if (cumulative) {
-                                const n = typeof val === 'number' ? val : Number(val)
-                                return n.toFixed(1)
-                            }
-                            return formatSig3(typeof val === 'number' ? val : Number(val))
+                            // if (cumulative) {
+                            const n = typeof val === 'number' ? val : Number(val)
+                            return (n * 100).toFixed(0) + "%"
+                            // }
+                            // return formatSig3(typeof val === 'number' ? val * 100 : Number(val * 100)) + "%"
                         }}
                         tickLabelProps={() => ({ fill: hoverColor, fontSize: 11 })}
                     />
@@ -341,7 +344,7 @@ export default function Graph({ title, labels, counts, mins, maxs, width = 640, 
                                 label = formatSig3(budgets[i])
 
 
-                                const boxW = Math.max(34, label.length * 8)
+                                const boxW = Math.max(16, label.length * 8)
                                 const boxH = 18
                                 return (
                                     <g key={`poi - ${i} `}>

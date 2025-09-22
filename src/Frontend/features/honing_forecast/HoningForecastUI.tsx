@@ -325,7 +325,7 @@ export default function HoningForecastUI() {
         adv_hone_strategy: adv_hone_strategy,
         express_event: express_event,
         bucket_count: Math.max(2, Math.min(1000, Math.floor(Number(bucketCount) || 2))),
-        user_mats_value: autoOptimization ? null : INPUT_LABELS.slice(0, 7).map(label => parseFloat(userMatsValue[label] || '0')),
+        user_mats_value: autoOptimization ? INPUT_LABELS.slice(0, 7).map(_ => 0.0) : INPUT_LABELS.slice(0, 7).map(label => parseFloat(userMatsValue[label] || '0')),
         data_size: Math.max(1000, Math.floor(Number(dataSize) || 0)),
     })
 
@@ -333,6 +333,7 @@ export default function HoningForecastUI() {
     const startCancelableWorker = (which_one: 'CostToChance' | 'ChanceToCost') => {
         const payload = buildPayload()
         // console.log('hi')
+        console.log(payload)
         if (which_one === 'CostToChance') {
             // terminate previous
             if (costWorkerRef.current) {
@@ -340,7 +341,6 @@ export default function HoningForecastUI() {
                 costWorkerRef.current = null
             }
             setCostToChanceBusy(true)
-            set_chance_result(null)
 
             const { worker, promise } = SpawnWorker(payload, which_one)
             costWorkerRef.current = worker
@@ -373,7 +373,6 @@ export default function HoningForecastUI() {
                 chanceWorkerRef.current = null
             }
             setChanceToCostBusy(true)
-            set_cost_result(null)
 
             const { worker, promise } = SpawnWorker(payload, which_one)
             chanceWorkerRef.current = worker
@@ -595,6 +594,7 @@ export default function HoningForecastUI() {
             ]
         }
     }, [autoOptimization])
+    const hasTopSelection = useMemo(() => topGrid.some(value => value.some(v => v === true)), [topGrid])
     return (
 
         <div style={styles.pageContainer}>
@@ -742,7 +742,7 @@ export default function HoningForecastUI() {
                             <div style={{ display: 'flex', gap: 8 }}>
                                 <div style={{ width: 100, display: 'flex', flexDirection: 'column', justifyContent: 'flex-start', textWrap: 'nowrap', gap: 0 }}>
                                     {['', 'Helmet', 'Shoulder', 'Chest', 'Pants', 'Glove', 'Weapon'].map((lab) => (
-                                        <div style={{ height: 28, color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', justifyContent: 'flex-end', paddingRight: 8 }}>
+                                        <div key={"Normal Honing label" + lab} style={{ height: 28, color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', justifyContent: 'flex-end', paddingRight: 8 }}>
                                             {lab ? <Icon iconName={lab} size={28} style={{ fontSize: 'var(--font-size-sm)' }} /> : ''}
                                         </div>
                                     ))}
@@ -802,7 +802,7 @@ export default function HoningForecastUI() {
                             <div style={{ display: 'flex', gap: 8 }}>
                                 <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'flex-start', textWrap: 'nowrap', gap: 0 }}>
                                     {['', 'Helmet', 'Shoulder', 'Chest', 'Pants', 'Glove', 'Weapon'].map((lab) => (
-                                        <div style={{ height: 28, color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', justifyContent: 'flex-end', paddingRight: 8 }}>
+                                        <div key={"Adv Honing label" + lab} style={{ height: 28, color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', justifyContent: 'flex-end', paddingRight: 8 }}>
                                             {lab ? <Icon iconName={lab} display_text="" size={28} style={{ fontSize: 'var(--font-size-sm)' }} /> : ''}
                                         </div>
                                     ))}
@@ -812,7 +812,7 @@ export default function HoningForecastUI() {
                                         {[10, 20, 30, 40].map((n, i) => {
                                             const label = `+${n}`
                                             return (
-                                                <div key={label} className="checkbox-item">
+                                                <div key={label + " adv"} className="checkbox-item">
                                                     <input
                                                         id={label + ' adv'}
                                                         type="checkbox"
@@ -924,13 +924,13 @@ export default function HoningForecastUI() {
                             <Graph
                                 title="Cost distribution"
                                 labels={OUTPUT_LABELS}
-                                counts={cost_result?.hist_counts}
+                                counts={hasTopSelection ? cost_result?.hist_counts : null}
                                 mins={cost_result?.hist_mins}
                                 maxs={cost_result?.hist_maxs}
                                 width={640}
                                 height={320}
                                 budgets={cost_result && OUTPUT_LABELS.map(label => Number(cost_result[label]))}
-                                hasSelection={topGrid.some(value => value.some(v => v === true))}
+                                hasSelection={hasTopSelection}
                                 isLoading={ChanceToCostBusy}
                                 cumulative={cumulativeGraph}
                             />
@@ -993,7 +993,7 @@ export default function HoningForecastUI() {
                                         <div style={{ marginTop: 0, ...styles.inputLabelCell, whiteSpace: 'nowrap' }}>Reasons for failures:</div>
                                         <div style={{ marginTop: 4, color: 'var(--text-muted)', fontSize: 'var(--font-size-sm)', whiteSpace: "wrap", width: 200 }}>
                                             {(chance_result.reasons || []).map((s: string, idx: number) => (
-                                                <div>{idx + 1}. {s}</div>
+                                                <div key={"Fail reason" + (idx + 1)}>{idx + 1}. {s}</div>
                                             ))}
                                         </div>
                                     </div>
@@ -1001,23 +1001,23 @@ export default function HoningForecastUI() {
                                         <div style={{ ...styles.inputLabelCell, whiteSpace: 'nowrap' }}>Free taps value ranking:</div>
                                         <div style={{ marginTop: 4, color: 'var(--text-muted)', fontSize: 'var(--font-size-sm)', width: 200 }}>
                                             {(chance_result.upgrade_strings || []).map((upgrade: string, index: number) => (
-                                                <div>{index + 1}. {upgrade}</div>
+                                                <div key={"Free tap value" + (index + 1)}>{index + 1}. {upgrade}</div>
                                             ))}
                                         </div>
                                     </div>
                                     <div>
                                         <div style={{ ...styles.inputLabelCell, whiteSpace: 'nowrap' }}>Red juice (weapon):</div>
-                                        <div style={{ marginTop: 4, color: 'var(--text-muted)', fontSize: 'var(--font-size-sm)', width: 200 }}>
+                                        <div style={{ marginTop: 4, color: 'var(--text-muted)', fontSize: 'var(--font-size-sm)', width: 260 }}>
                                             {(chance_result.juice_order_weapon || []).map((s: string, idx: number) => (
-                                                <div>{idx + 1}. {s}</div>
+                                                <div key={"Red juice value" + (idx + 1)}>{idx + 1}. {s}</div>
                                             ))}
                                         </div>
                                     </div>
                                     <div>
                                         <div style={{ ...styles.inputLabelCell, whiteSpace: 'nowrap' }}>Blue juice (armor):</div>
-                                        <div style={{ marginTop: 4, color: 'var(--text-muted)', fontSize: 'var(--font-size-sm)', width: 200 }}>
+                                        <div style={{ marginTop: 4, color: 'var(--text-muted)', fontSize: 'var(--font-size-sm)', width: 300 }}>
                                             {(chance_result.juice_order_armor || []).map((s: string, idx: number) => (
-                                                <div>{idx + 1}. {s}</div>
+                                                <div key={"Blue juice value" + (idx + 1)}>{idx + 1}. {s}</div>
                                             ))}
                                         </div>
                                     </div>
@@ -1029,14 +1029,14 @@ export default function HoningForecastUI() {
                             <Graph
                                 title="Cost distribution"
                                 labels={OUTPUT_LABELS}
-                                counts={chance_result?.hist_counts}
+                                counts={hasTopSelection ? chance_result?.hist_counts : null}
                                 mins={chance_result?.hist_mins}
                                 maxs={chance_result?.hist_maxs}
                                 width={640}
                                 height={320}
                                 // displayMode="cost"
                                 budgets={OUTPUT_LABELS.map(label => Number(budget_inputs[label]))}
-                                hasSelection={topGrid.some(value => value.some(v => v === true))}
+                                hasSelection={hasTopSelection}
                                 isLoading={CostToChanceBusy}
                                 cumulative={cumulativeGraph}
                             />

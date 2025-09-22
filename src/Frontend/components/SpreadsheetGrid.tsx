@@ -70,14 +70,44 @@ export default function SpreadsheetGrid({ columnDefs, labels, sheet_values: budg
                 next[label] = cleanValue
                 set_sheet_values(next)
             } else if (colIndex === 1 && setSecondaryValues && secondaryValues) {
-                // Gold value column - only allow non-negative integers, strip leading zeros
-                let cleanValue = value.replace(/[^0-9]/g, '')
-                cleanValue = cleanValue.replace(/^0+(?=\d)/, '')
-                if (cleanValue.length > 10) {
-                    cleanValue = '999999999'
+                // Gold value column - allow non-negative decimals while typing
+                // Keep digits and a single dot; don't strip leading/trailing zeros here
+                let clean = value.replace(/[^0-9.]/g, '')
+                const firstDot = clean.indexOf('.')
+                if (firstDot !== -1) {
+                    clean = clean.slice(0, firstDot + 1) + clean.slice(firstDot + 1).replace(/\./g, '')
                 }
+                if (clean.length > 20) clean = clean.slice(0, 20)
                 const next = { ...secondaryValues }
-                next[label] = cleanValue
+                next[label] = clean
+                setSecondaryValues(next)
+            }
+        }
+    }
+
+    const handleCellBlur = (rowIndex: number, colIndex: number) => {
+        const label = labels[rowIndex]
+        if (!label) return
+        if (colIndex === 1 && setSecondaryValues && secondaryValues) {
+            let val = secondaryValues[label] ?? ''
+            // normalize on blur: strip leading zeros in int part, trailing zeros in frac; drop dot if needed
+            let clean = String(val).replace(/[^0-9.]/g, '')
+            const firstDot = clean.indexOf('.')
+            let hadDot = firstDot !== -1
+            if (firstDot !== -1) {
+                clean = clean.slice(0, firstDot + 1) + clean.slice(firstDot + 1).replace(/\./g, '')
+            }
+            let intPart = hadDot ? clean.slice(0, clean.indexOf('.')) : clean
+            let fracPart = hadDot ? clean.slice(clean.indexOf('.') + 1) : ''
+            intPart = intPart.replace(/^0+(?=\d)/, '')
+            if (intPart === '' && (fracPart !== '' || hadDot)) intPart = '0'
+            fracPart = fracPart.replace(/0+$/g, '')
+            let normalized = intPart
+            if (fracPart.length > 0) normalized += '.' + fracPart
+            if (normalized.length > 20) normalized = normalized.slice(0, 20)
+            if (normalized !== (secondaryValues[label] ?? '')) {
+                const next = { ...secondaryValues }
+                next[label] = normalized
                 setSecondaryValues(next)
             }
         }
@@ -388,6 +418,7 @@ export default function SpreadsheetGrid({ columnDefs, labels, sheet_values: budg
                                     value={colIndex === 0 ? (budget_inputs[label] ?? '') : (secondaryValues?.[label] ?? '')}
                                     onChange={(e) => handleCellChange(rowIndex, colIndex, e.target.value)}
                                     onKeyDown={(e) => { e.stopPropagation() }}
+                                    onBlur={() => handleCellBlur(rowIndex, colIndex)}
                                     onFocus={() => {
                                         setSelection({
                                             startRow: rowIndex,

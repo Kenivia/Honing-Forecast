@@ -14,7 +14,7 @@ use serde::Deserialize;
 use serde_wasm_bindgen::{from_value, to_value};
 use wasm_bindgen::JsValue;
 use wasm_bindgen::prelude::*;
-use web_sys::console;
+// use web_sys::console;
 
 #[derive(Deserialize)]
 pub struct Payload {
@@ -57,13 +57,14 @@ pub fn chance_to_cost_wrapper(input: JsValue) -> JsValue {
 #[wasm_bindgen]
 pub fn cost_to_chance_wrapper(input: JsValue) -> JsValue {
     console_error_panic_hook::set_once();
-    console::log_1(&"wasm: start() called".into());
+
     let payload: Payload = from_value(input).unwrap();
     let normal_hone_ticks: Vec<Vec<bool>> = payload.normal_hone_ticks;
     let adv_hone_ticks: Vec<Vec<bool>> = payload.adv_hone_ticks;
     let budget: Vec<i64> = payload.budget;
-    console::log_1(&"unwrap complete".into());
+    // console::log_1(&"unwrap complete".into());
     let user_mats_value = payload.user_mats_value.unwrap_or(vec![0.0; 7]);
+    // console::log_1(user_mats_value[0].into());
     let data_size: usize = payload.data_size.unwrap_or(100000).max(1000);
     let out = cost_to_chance(
         &ticks_to_counts(normal_hone_ticks),
@@ -75,7 +76,7 @@ pub fn cost_to_chance_wrapper(input: JsValue) -> JsValue {
         payload.adv_hone_strategy,
         data_size,
     );
-    console::log_1(&"cost_to_chance_complete".into());
+    // console::log_1(&"cost_to_chance_complete".into());
     to_value(&out).unwrap()
 }
 

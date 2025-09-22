@@ -33,20 +33,28 @@ fn average_tap(prob_dist: &Vec<f64>) -> f64 {
 fn average_times_cost(upgrade: &Upgrade, mats_value: &Vec<f64>, average: f64) -> f64 {
     let mut this_sum = 0.0_f64;
     for cost_type in 0..7 {
-        this_sum += mats_value[cost_type] * average * upgrade.costs[cost_type] as f64
-            / upgrade.special_cost as f64;
+        this_sum += mats_value[cost_type] * average * upgrade.costs[cost_type] as f64;
     }
-    this_sum
+    this_sum / upgrade.special_cost as f64
 }
-pub fn est_special_honing_value(upgrade_arr: &Vec<Upgrade>, mats_value: &Vec<f64>) -> Vec<f64> {
+pub fn est_special_honing_value(
+    upgrade_arr: &mut Vec<Upgrade>,
+    mats_value: &Vec<f64>,
+    calibrating: bool,
+) -> Vec<f64> {
     let mut out: Vec<f64> = Vec::with_capacity(upgrade_arr.len());
     let mut average: f64;
     let cost_type_count: usize = 7;
+    let mut special_value: f64;
     assert!(mats_value.len() == cost_type_count);
-    for (_, upgrade) in upgrade_arr.iter().enumerate() {
+    for (_, upgrade) in upgrade_arr.iter_mut().enumerate() {
         if upgrade.is_normal_honing {
-            average = average_tap(&upgrade.prob_dist);
-            out.push(average_times_cost(upgrade, mats_value, average));
+            average = average_tap(&upgrade.original_prob_dist);
+            special_value = upgrade.base_chance * average_times_cost(upgrade, mats_value, average);
+            out.push(special_value);
+            if !calibrating {
+                upgrade.special_value = special_value
+            }
         } else {
             out.push(0.0_f64);
         }
@@ -94,6 +102,7 @@ pub fn juice_to_array(
     upgrade_arr: &mut Vec<Upgrade>,
     blue_juice: i64,
     red_juice: i64,
+    user_gave_value: bool,
 ) -> (Vec<String>, Vec<String>) {
     // Armor uses blue juice (is_weapon == false), Weapon uses red juice (is_weapon == true)
     let armor_pairs = _juice_to_array(upgrade_arr, false, blue_juice);
@@ -101,21 +110,53 @@ pub fn juice_to_array(
 
     // Convert pairs of (plus_num, taps) to human-readable strings, sorted by plus_num asc
     let mut armor_sorted = armor_pairs;
-    armor_sorted.sort_by_key(|&(plus, _)| plus);
+    armor_sorted.sort_by_key(|&(plus, _, _, low)| (plus, -low.round() as i64));
     let armor_strings: Vec<String> = compress_runs(
         armor_sorted
             .into_iter()
-            .map(|(plus, taps)| format!("+{} armor first {} taps", plus + 1, taps))
+            .map(|(plus, taps, high, low)| {
+                if !user_gave_value {
+                    format!("+{} armor first {} taps", plus + 1, taps,)
+                } else {
+                    if high == low {
+                        format!("+{} armor first {} taps, {}g", plus + 1, taps, high,)
+                    } else {
+                        format!(
+                            "+{} armor first {} taps, {}g to {}g",
+                            plus + 1,
+                            taps,
+                            high,
+                            low
+                        )
+                    }
+                }
+            })
             .collect(),
         false,
     );
 
     let mut weapon_sorted = weapon_pairs;
-    weapon_sorted.sort_by_key(|&(plus, _)| plus);
+    weapon_sorted.sort_by_key(|&(plus, _, _, low)| (plus, -low.round() as i64));
     let weapon_strings: Vec<String> = compress_runs(
         weapon_sorted
             .into_iter()
-            .map(|(plus, taps)| format!("+{} weapon first {} taps", plus + 1, taps))
+            .map(|(plus, taps, high, low)| {
+                if !user_gave_value {
+                    format!("+{} weapon first {} taps", plus + 1, taps,)
+                } else {
+                    if high == low {
+                        format!("+{} weapon first {} taps, {}g", plus + 1, taps, high,)
+                    } else {
+                        format!(
+                            "+{} weapon first {} taps, {}g to {}g",
+                            plus + 1,
+                            taps,
+                            high,
+                            low
+                        )
+                    }
+                }
+            })
             .collect(),
         false,
     );
@@ -127,28 +168,26 @@ fn _juice_to_array(
     upgrade_arr: &mut Vec<Upgrade>,
     is_weapon: bool,
     mut juice: i64,
-) -> Vec<(usize, usize)> {
+) -> Vec<(usize, usize, f64, f64)> {
     let mut cur_upgrade: &mut Upgrade;
     let mut idxs: Vec<usize>;
     let mut max_value_index: usize;
     let mut cur_extras: Vec<usize> = vec![0; upgrade_arr.len()];
-    let mut _max_extra_index: usize;
+    // let mut _max_extra_index: usize;
     loop {
         // max_extra = *cur_extras.iter().max().unwrap();
-        _max_extra_index = cur_extras
-            .iter()
-            .enumerate()
-            .max_by_key(|&(_, val)| val)
-            .map(|(i, _)| i)
-            .unwrap_or(0);
+        // _max_extra_index = cur_extras
+        //     .iter()
+        //     .enumerate()
+        //     .max_by_key(|&(_, val)| val)
+        //     .map(|(i, _)| i)
+        //     .unwrap_or(0);
         idxs = (0..upgrade_arr.len())
             .filter(|&x| {
                 upgrade_arr[x].is_normal_honing
                     && upgrade_arr[x].is_weapon == is_weapon
                     && upgrade_arr[x].one_juice_cost <= juice
                     && cur_extras[x] < upgrade_arr[x].values.len()
-                    && _max_extra_index != x // for some reason value of each cost isn't monotonic, so i'm forcing it to be here so that the instruction is easier to follow
-                // it seems to make no discernable difference on the chance of successs... so does this value est thing really work god
             })
             .collect();
         if idxs.is_empty() {
@@ -173,12 +212,35 @@ fn _juice_to_array(
         juice -= cur_upgrade.one_juice_cost;
     }
     // Extract (plus_num, taps_used) only for selected type and where taps_used > 0
-    let mut out: Vec<(usize, usize)> = Vec::new();
-    for i in 0..upgrade_arr.len() {
-        if upgrade_arr[i].is_normal_honing && upgrade_arr[i].is_weapon == is_weapon {
+    let mut out: Vec<(usize, usize, f64, f64)> = Vec::new();
+    for (i, upgrade) in upgrade_arr.iter().enumerate() {
+        if upgrade.is_normal_honing && upgrade.is_weapon == is_weapon {
             let taps_used = cur_extras[i];
             if taps_used > 0 {
-                out.push((upgrade_arr[i].upgrade_plus_num, taps_used));
+                out.push((
+                    upgrade.upgrade_plus_num,
+                    taps_used,
+                    upgrade
+                        .values
+                        .clone()
+                        .into_iter()
+                        .enumerate()
+                        .filter(|(i, _)| *i < taps_used)
+                        .max_by(|(_, a), (_, b)| a.total_cmp(b))
+                        .unwrap_or((0, 0.0_f64))
+                        .1
+                        .round(),
+                    upgrade
+                        .values
+                        .clone()
+                        .into_iter()
+                        .enumerate()
+                        .filter(|(i, _)| *i < taps_used)
+                        .min_by(|(_, a), (_, b)| a.total_cmp(b))
+                        .unwrap_or((0, 0.0_f64))
+                        .1
+                        .round(),
+                ));
             }
         }
     }

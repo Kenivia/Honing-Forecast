@@ -1,4 +1,55 @@
 use crate::constants::{ADV_HONE_UNLOCK, NORMAL_HONE_ARMOR_UNLOCK, NORMAL_HONE_WEAPON_UNLOCK};
+use std::cmp::Ordering;
+fn cmp_f64_ignore_nan(a: f64, b: f64) -> Ordering {
+    match (a.is_nan(), b.is_nan()) {
+        (true, true) => Ordering::Equal,
+        (true, false) => Ordering::Less,
+        (false, true) => Ordering::Greater,
+        (false, false) => {
+            // Normalize zeros so +0.0 == -0.0
+            if a == 0.0 && b == 0.0 {
+                Ordering::Equal
+            } else {
+                a.total_cmp(&b) // deterministic, total ordering
+            }
+        }
+    }
+}
+pub fn argmax_with_priority(scores: &Vec<f64>, tie_priority: &[usize]) -> Option<usize> {
+    let n = scores.len();
+    if n == 0 {
+        return None;
+    }
+
+    // Build priority_rank[index] = rank (lower = higher priority).
+    // If some indices are missing from tie_priority, they get lower priority after the listed ones.
+    let mut priority_rank = vec![usize::MAX; n];
+    for (rank, &idx) in tie_priority.iter().enumerate() {
+        if idx < n && priority_rank[idx] == usize::MAX {
+            priority_rank[idx] = rank;
+        }
+    }
+    for i in 0..n {
+        if priority_rank[i] == usize::MAX {
+            priority_rank[i] = tie_priority.len() + i;
+        }
+    }
+
+    // Single pass to pick the best index
+    let mut best = 0usize;
+    for i in 1..n {
+        match cmp_f64_ignore_nan(scores[i], scores[best]) {
+            Ordering::Greater => best = i,
+            Ordering::Equal => {
+                if priority_rank[i] < priority_rank[best] {
+                    best = i;
+                }
+            }
+            Ordering::Less => {}
+        }
+    }
+    Some(best)
+}
 
 pub fn sort_by_indices<T>(upgrade_arr: &mut Vec<T>, mut indices: Vec<usize>) {
     for idx in 0..upgrade_arr.len() {
@@ -128,7 +179,7 @@ pub fn compress_runs(strings: Vec<String>, no_x: bool) -> Vec<String> {
                 if no_x {
                     out.push(format!("{}", prev));
                 } else {
-                    out.push(format!("{} x{}", prev, count));
+                    out.push(format!("{} ({} times)", prev, count));
                 }
             } else {
                 out.push(prev.to_string());
@@ -138,7 +189,7 @@ pub fn compress_runs(strings: Vec<String>, no_x: bool) -> Vec<String> {
         }
     }
     if count > 1 {
-        out.push(format!("{} x{}", prev, count));
+        out.push(format!("{} ({} times)", prev, count));
     } else {
         out.push(prev.to_string());
     }

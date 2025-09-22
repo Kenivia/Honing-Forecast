@@ -31,16 +31,15 @@ For Chance to Cost, we generate some artificial budgets and see which ones match
 ### FEATURES
 
 - Gamba simulator section
-- Incorporate roster income tracking & pretty graphs
-- Book
-- bottleneck graph instead
-- juice/ special value calculation
+- Incorporate roster income tracking
+- Book support
 
 ### DEV
 
 - Write actual tests and also comment
 - Get silver unlock cost somewhere(currently silver unlock cost is 0 so its labeled as WIP)(somewhere = maxroll probably)
 - Variance calculation & confidence interval
+- split up HoningForecastUI
 
 ### UI
 
