@@ -428,8 +428,8 @@ export default function Graph({ title, labels, counts, mins, maxs, width = 640, 
                     <div style={{ color: 'var(--text-secondary)', fontSize: 50, alignSelf: 'center', justifySelf: 'center', marginTop: -200 }}>
                         {hasSelection ? isLoading ? "Loading..." : 'Everything have 100% success rate, nothing to plot.' : 'Nothing to plot, tick an upgrade!'}
                     </div>
-                    <div style={{ fontSize: 12 }}>{isLoading ? "Please allow up to ~5s, if it still doesnt load then something went probably wrong" : ""}</div>
-                    <div style={{ fontSize: 12 }}>{isLoading ? "Also the first run is slower because it has to spin up WebAssembly" : ""}</div>
+                    <div style={{ fontSize: 12 }}>{isLoading && hasSelection ? "Please allow up to ~5s, if it still doesnt load then something went probably wrong" : ""}</div>
+                    <div style={{ fontSize: 12 }}>{isLoading && hasSelection ? "Also the first run is slower because it has to spin up WebAssembly" : ""}</div>
                 </div>
             )}
         </div>

@@ -27,7 +27,7 @@ export default function ChanceToCostSection({
 
     return (
         <>
-            <h3 style={{ color: 'var(--text-primary)', fontSize: 'var(--font-size-base)', fontWeight: 'var(--font-weight-semibold)', margin: '0 0 -8px 0' }}>Chance to Cost</h3>
+            {/* <h3 style={{ color: 'var(--text-primary)', fontSize: 'var(--font-size-base)', fontWeight: 'var(--font-weight-semibold)', margin: '0 0 -8px 0' }}>Chance to Cost</h3> */}
             <div style={{ ...styles.inputSection, width: 1120 }}>
                 <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 16 }}>
                     <div style={{ width: 160, fontWeight: 700, textAlign: 'right', paddingRight: 8, color: 'var(--text-primary)' }}>Desired chance</div>

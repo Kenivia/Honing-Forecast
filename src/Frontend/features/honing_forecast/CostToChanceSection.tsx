@@ -35,7 +35,7 @@ export default function CostToChanceSection({
 
     return (
         <>
-            <h3 style={{ color: 'var(--text-primary)', fontSize: 'var(--font-size-base)', fontWeight: 'var(--font-weight-semibold)', margin: '16px 0 0px 0' }}>Cost to Chance</h3>
+            {/* <h3 style={{ color: 'var(--text-primary)', fontSize: 'var(--font-size-base)', fontWeight: 'var(--font-weight-semibold)', margin: '16px 0 0px 0' }}>Cost to Chance</h3> */}
             <div style={{ ...styles.inputSection, flexDirection: "row", width: 1120 }}>
                 <div style={{ display: 'flex', gap: autoOptimization ? 110 : 20, alignItems: 'flex-start' }}>
                     <div style={{ display: 'flex', flexDirection: "column", gap: 0, alignItems: 'flex-start', justifyContent: 'start', width: autoOptimization ? 210 : 300 }}>
@@ -58,7 +58,8 @@ export default function CostToChanceSection({
                                 onChange={(e) => setAutoOptimization(e.target.checked)}
                             />
                             <label htmlFor="auto-optimization" style={{ color: 'var(--text-primary)', fontSize: 'var(--font-size-sm)', whiteSpace: 'nowrap' }}>
-                                Automatic juice and special leap optimization(Normal honing only)
+                                Automatic Juice and Special leap<br />
+                                optimization(Normal honing only)
                             </label>
                         </div>
 

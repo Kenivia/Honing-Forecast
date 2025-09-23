@@ -21,6 +21,8 @@
     --btn-success-text: #021018;
     --btn-demo: #374151;
     --btn-demo-text: #ffffff;
+    --btn-toggle-selected: #0670d4;
+    --btn-toggle-deselected: #6b7280;
 
     /* Graph Series Colors */
     --series-red: #ff0000;

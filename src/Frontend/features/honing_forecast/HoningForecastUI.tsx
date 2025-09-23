@@ -9,6 +9,8 @@ import NormalHoningPanel from './NormalHoningPanel.tsx'
 import AdvancedHoningPanel from './AdvancedHoningPanel.tsx'
 import ChanceToCostSection from './ChanceToCostSection.tsx'
 import CostToChanceSection from './CostToChanceSection.tsx'
+import GambaSection from "./GambaSection.tsx"
+import Separator from './Separator.tsx'
 import { recomputeLayout } from "./Layout.ts"
 import { GridMouseDownLogic, mouseMoveLogic, createMouseUpHandler } from "./Marquee.ts"
 import { createClearAll, createFillRandom, createFillDemo } from './Control.ts'
@@ -31,6 +33,7 @@ export default function HoningForecastUI() {
     const [prev_checked_arr_bottom, set_prev_checked_arr_bottom] = useState(() => Array.from({ length: BOTTOM_COLS }, () => false))
     const [cumulativeGraph, setCumulativeGraph] = useState<boolean>(false)
     const [dataSize, setDataSize] = useState<string>(() => '100000')
+    const [activePage, setActivePage] = useState<'chance-to-cost' | 'cost-to-chance' | 'gamba'>('chance-to-cost')
 
     // marquee state & refs (kept here so grids stay presentational)
     const topGridRef = useRef<HTMLDivElement | null>(null)
@@ -353,30 +356,54 @@ export default function HoningForecastUI() {
                     />
                 </div>
 
-                {/* Input Sections */}
-                <ChanceToCostSection
-                    desired_chance={desired_chance}
-                    onDesiredChange={onDesiredChange}
-                    cost_result={cost_result}
-                    cachedCostGraphData={cachedCostGraphData}
-                    AnythingTicked={AnythingTicked}
-                    ChanceToCostBusy={ChanceToCostBusy}
-                    cumulativeGraph={cumulativeGraph}
-                />
+                {/* Page Separator */}
+                <Separator activePage={activePage} onPageChange={setActivePage} />
 
-                <CostToChanceSection
-                    budget_inputs={budget_inputs}
-                    set_budget_inputs={set_budget_inputs}
-                    userMatsValue={userMatsValue}
-                    setUserMatsValue={setUserMatsValue}
-                    autoOptimization={autoOptimization}
-                    setAutoOptimization={setAutoOptimization}
-                    chance_result={chance_result}
-                    cachedChanceGraphData={cachedChanceGraphData}
-                    AnythingTicked={AnythingTicked}
-                    CostToChanceBusy={CostToChanceBusy}
-                    cumulativeGraph={cumulativeGraph}
-                />
+                {/* Conditional Input Sections */}
+                {activePage === 'chance-to-cost' && (
+                    <ChanceToCostSection
+                        desired_chance={desired_chance}
+                        onDesiredChange={onDesiredChange}
+                        cost_result={cost_result}
+                        cachedCostGraphData={cachedCostGraphData}
+                        AnythingTicked={AnythingTicked}
+                        ChanceToCostBusy={ChanceToCostBusy}
+                        cumulativeGraph={cumulativeGraph}
+                    />
+                )}
+
+                {activePage === 'cost-to-chance' && (
+                    <CostToChanceSection
+                        budget_inputs={budget_inputs}
+                        set_budget_inputs={set_budget_inputs}
+                        userMatsValue={userMatsValue}
+                        setUserMatsValue={setUserMatsValue}
+                        autoOptimization={autoOptimization}
+                        setAutoOptimization={setAutoOptimization}
+                        chance_result={chance_result}
+                        cachedChanceGraphData={cachedChanceGraphData}
+                        AnythingTicked={AnythingTicked}
+                        CostToChanceBusy={CostToChanceBusy}
+                        cumulativeGraph={cumulativeGraph}
+                    />
+                )}
+
+                {activePage === 'gamba' && (
+                    <GambaSection
+                        budget_inputs={budget_inputs}
+                        set_budget_inputs={set_budget_inputs}
+                        userMatsValue={userMatsValue}
+                        setUserMatsValue={setUserMatsValue}
+                        topGrid={topGrid}
+                        bottomGrid={bottomGrid}
+                        adv_hone_strategy={adv_hone_strategy}
+                        express_event={express_event}
+                        desired_chance={desired_chance}
+                        bucketCount={bucketCount}
+                        autoOptimization={autoOptimization}
+                        dataSize={dataSize}
+                    />
+                )}
             </div>
 
         </div >

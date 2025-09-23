@@ -1,5 +1,5 @@
 // import init from "../../pkg/honing_forecast_bg.js?init"
-import init, { chance_to_cost_wrapper, cost_to_chance_wrapper } from "../../pkg/honing_forecast.js" // or "../pkg/honing_wasm"
+import init, { chance_to_cost_wrapper, cost_to_chance_wrapper, parser_wrapper, parser_wrapper_unified } from "../../pkg/honing_forecast.js" // or "../pkg/honing_wasm"
 
 const LABELS = ["Red", "Blue", "Leaps", "Shards", "Oreha", "Gold", "Silver(WIP)"]
 
@@ -25,13 +25,41 @@ async function CostToChanceWasm(payload: any) {
     }
 }
 
+async function ParserWasm(payload: any) {
+    try {
+        await init() // MUST await initialization
+        try {
+            // Returns array of Upgrade objects
+            return parser_wrapper(payload)
+        } catch (e) {
+            console.error("parser call threw:", e)
+        }
+    } catch (initErr) {
+        console.error("parser init failed:", initErr)
+    }
+}
+
+async function ParserWasmUnified(payload: any) {
+    try {
+        await init() // MUST await initialization
+        try {
+            // Returns array of Upgrade objects using unified payload format
+            return parser_wrapper_unified(payload)
+        } catch (e) {
+            console.error("parser unified call threw:", e)
+        }
+    } catch (initErr) {
+        console.error("parser unified init failed:", initErr)
+    }
+}
+
 self.addEventListener("message", async (ev) => {
     const msg = ev.data
     let start_time = Date.now()
 
     const { id, payload, which_one } = msg
 
-    if (!(which_one == "CostToChance" || which_one == "ChanceToCost")) {
+    if (!(which_one == "CostToChance" || which_one == "ChanceToCost" || which_one == "Parser" || which_one == "ParserUnified")) {
         throw "Invalid operation type" + which_one
     }
 
@@ -59,6 +87,16 @@ self.addEventListener("message", async (ev) => {
         result.hist_counts = out.hist_counts
         result.hist_mins = out.hist_mins
         result.hist_maxs = out.hist_maxs
+    } else if (which_one == "Parser") {
+        let out = await ParserWasm(payload)
+        result = {
+            upgrades: out,
+        }
+    } else if (which_one == "ParserUnified") {
+        let out = await ParserWasmUnified(payload)
+        result = {
+            upgrades: out,
+        }
     }
 
     result.run_time = ((Date.now() - start_time) / 1000).toFixed(2)

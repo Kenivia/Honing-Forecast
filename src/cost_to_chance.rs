@@ -1,7 +1,7 @@
 use crate::constants::*;
 use crate::helpers::{argmax_with_priority, calc_unlock, compress_runs, myformat, sort_by_indices};
 use crate::histogram::histograms_for_all_costs;
-use crate::monte_carlos::monte_carlos_data;
+use crate::monte_carlo::monte_carlo_data;
 use crate::parser::{Upgrade, parser};
 use crate::value_estimation::{est_juice_value, est_special_honing_value, juice_to_array};
 use serde::Serialize;
@@ -83,7 +83,7 @@ fn _cost_to_chance(
     special_indices
         .sort_by(|&a, &b| value_per_special_leap[b].total_cmp(&value_per_special_leap[a]));
     sort_by_indices(upgrade_arr, special_indices.clone());
-    let cost_data: Vec<Vec<i64>> = monte_carlos_data(
+    let cost_data: Vec<Vec<i64>> = monte_carlo_data(
         data_size,
         upgrade_arr,
         unlock,
@@ -253,7 +253,7 @@ pub fn cost_to_chance(
     //     )
     // };
     // Generate histogram data from simulated cost data
-    let cost_data_for_hist: Vec<Vec<i64>> = monte_carlos_data(
+    let cost_data_for_hist: Vec<Vec<i64>> = monte_carlo_data(
         data_size,
         &upgrade_arr,
         &unlock_costs,
@@ -263,7 +263,7 @@ pub fn cost_to_chance(
     );
     let bins = hist_bins.min(BUCKET_COUNT).max(1);
 
-    let budget_data: Vec<Vec<i64>> = monte_carlos_data(
+    let budget_data: Vec<Vec<i64>> = monte_carlo_data(
         2,
         &upgrade_arr,
         &calc_unlock(&hone_counts, &adv_counts),

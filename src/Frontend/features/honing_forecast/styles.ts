@@ -6,7 +6,7 @@ export const styles: any = {
         placeItems: "center",
         padding: "var(--spacing-xl)",
         boxSizing: "border-box",
-        paddingBottom: "100px",
+        paddingBottom: "500px",
     },
     mainContainer: {
         display: "flex",
@@ -101,16 +101,14 @@ export const styles: any = {
 
 // Column definitions for spreadsheet grids
 export const createColumnDefs = (autoOptimization: boolean) => {
-    const chanceToCostColumnDefs = [
-        { headerName: 'Estimated cost', field: 'budget', editable: false, flex: 1, cellStyle: { padding: '6px 8px' } }
-    ]
+    const chanceToCostColumnDefs = [{ headerName: "Estimated cost", field: "budget", editable: false, flex: 1, cellStyle: { padding: "6px 8px" } }]
 
     const costToChanceColumnDefs = autoOptimization
-        ? [{ headerName: 'Budget Input', field: 'budget', editable: true, flex: 1, cellStyle: { background: '#072f24', padding: '6px 8px' } }]
+        ? [{ headerName: "Budget Input", field: "budget", editable: true, flex: 1, cellStyle: { background: "#072f24", padding: "6px 8px" } }]
         : [
-            { headerName: 'Budget Input', field: 'budget', editable: true, flex: 1, cellStyle: { background: '#072f24', padding: '6px 8px' } },
-            { headerName: 'Gold Value', field: 'matsValue', editable: true, flex: 1, cellStyle: { background: '#072f24', padding: '6px 8px' } }
-        ]
+              { headerName: "Budget Input", field: "budget", editable: true, flex: 1, cellStyle: { background: "#072f24", padding: "6px 8px" } },
+              { headerName: "Gold Value", field: "matsValue", editable: true, flex: 1, cellStyle: { background: "#072f24", padding: "6px 8px" } },
+          ]
 
     return { chanceToCostColumnDefs, costToChanceColumnDefs }
 }

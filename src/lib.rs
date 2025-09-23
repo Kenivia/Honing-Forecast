@@ -3,12 +3,14 @@ mod constants;
 mod cost_to_chance;
 mod helpers;
 mod histogram;
-mod monte_carlos;
+mod monte_carlo;
 mod parser;
 mod value_estimation;
 use crate::chance_to_cost::chance_to_cost;
+use crate::constants::EVENT_ARTISAN_MULTIPLIER;
 use crate::cost_to_chance::cost_to_chance;
 use crate::helpers::ticks_to_counts;
+use crate::parser::parser;
 
 use serde::Deserialize;
 use serde_wasm_bindgen::{from_value, to_value};
@@ -78,6 +80,68 @@ pub fn cost_to_chance_wrapper(input: JsValue) -> JsValue {
     );
     // console::log_1(&"cost_to_chance_complete".into());
     to_value(&out).unwrap()
+}
+
+#[derive(Deserialize)]
+pub struct ParserPayload {
+    normal_counts: Vec<Vec<i64>>,
+    adv_counts: Vec<Vec<i64>>,
+    adv_hone_strategy: String,
+    artisan_rate_arr: Vec<f64>,
+    extra_arr: Vec<f64>,
+    extra_num_arr: Vec<usize>,
+    express_event: bool,
+}
+
+#[wasm_bindgen]
+pub fn parser_wrapper(input: JsValue) -> JsValue {
+    console_error_panic_hook::set_once();
+    let payload: ParserPayload = from_value(input).unwrap();
+
+    let upgrades = parser(
+        &payload.normal_counts,
+        &payload.adv_counts,
+        &payload.adv_hone_strategy,
+        &payload.artisan_rate_arr,
+        &payload.extra_arr,
+        &payload.extra_num_arr,
+        payload.express_event,
+    );
+
+    to_value(&upgrades).unwrap()
+}
+
+#[wasm_bindgen]
+pub fn parser_wrapper_unified(input: JsValue) -> JsValue {
+    console_error_panic_hook::set_once();
+    let payload: Payload = from_value(input).unwrap();
+
+    // Convert ticks to counts using the existing helper function
+    let normal_counts = ticks_to_counts(payload.normal_hone_ticks);
+    let adv_counts = ticks_to_counts(payload.adv_hone_ticks);
+
+    let artisan_rate_arr: Vec<f64>;
+    if payload.express_event {
+        artisan_rate_arr = EVENT_ARTISAN_MULTIPLIER.to_vec();
+    } else {
+        artisan_rate_arr = vec![1.0; 25];
+    }
+
+    // Default extra values (same as other functions)
+    let extra_arr = vec![0.0; 25];
+    let extra_num_arr = vec![0; 25];
+
+    let upgrades = parser(
+        &normal_counts,
+        &adv_counts,
+        &payload.adv_hone_strategy,
+        &artisan_rate_arr,
+        &extra_arr,
+        &extra_num_arr,
+        payload.express_event,
+    );
+
+    to_value(&upgrades).unwrap()
 }
 
 // Histograms are included in the default wrappers' outputs

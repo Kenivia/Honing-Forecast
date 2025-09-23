@@ -1,7 +1,7 @@
 use crate::constants::*;
 use crate::helpers::calc_unlock;
 use crate::histogram::{histograms_for_all_costs, transpose_vec_of_vecs};
-use crate::monte_carlos::monte_carlos_data;
+use crate::monte_carlo::monte_carlo_data;
 use crate::parser::{Upgrade, parser};
 // use web_sys::console;
 // use crate::{constants::*, cost_to_chance};
@@ -128,7 +128,7 @@ pub fn chance_to_cost(
         express_event,
     );
 
-    let cost_data: Vec<Vec<i64>> = monte_carlos_data(
+    let cost_data: Vec<Vec<i64>> = monte_carlo_data(
         cost_size,
         &upgrade_arr,
         &calc_unlock(&hone_counts, &adv_counts),
@@ -137,7 +137,7 @@ pub fn chance_to_cost(
         false, // use_true_rng
     );
 
-    let top_bottom: Vec<Vec<i64>> = monte_carlos_data(
+    let top_bottom: Vec<Vec<i64>> = monte_carlo_data(
         2,
         &upgrade_arr,
         &calc_unlock(&hone_counts, &adv_counts),

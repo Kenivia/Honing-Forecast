@@ -38,7 +38,7 @@ fn tap_map_generator(
     let mut temp_samples: f64;
     let mut j: usize = 0;
     for i in 0..cum_weights.len() {
-        temp_samples = (cur_samples as f64).max(cum_weights[i] * (count_limit as f64)); // not using round juice here because i need to keep track of the float(round juice was written for monte carlos later)
+        temp_samples = (cur_samples as f64).max(cum_weights[i] * (count_limit as f64)); // not using round juice here because i need to keep track of the float(round juice was written for monte carlo later)
         if temp_samples - temp_samples.floor() as f64 > rng.gen_range(0.0..1.0) {
             cur_samples = temp_samples.floor() as i64 + 1;
         } else {
@@ -62,7 +62,7 @@ fn round_juice(this_juice_cost: f64, rng: &mut ThreadRng) -> i64 {
     }
     juice_cost
 }
-pub fn monte_carlos_data(
+pub fn monte_carlo_data(
     data_size: usize,
     upgrade_arr: &Vec<Upgrade>,
     unlock_costs: &Vec<i64>,

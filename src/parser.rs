@@ -1,6 +1,7 @@
 use crate::constants::*;
+use serde::{Deserialize, Serialize};
 
-#[derive(Debug)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct Upgrade {
     pub is_normal_honing: bool,
     pub prob_dist: Vec<f64>,
