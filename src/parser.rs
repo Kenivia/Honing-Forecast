@@ -506,3 +506,54 @@ pub fn parser(
 
     out
 }
+
+/// Parser that runs twice to get both the main strategy and the other strategy's probability distributions
+/// Returns (main_upgrades, other_strategy_prob_dists)
+pub fn parser_with_other_strategy(
+    normal_counts: &Vec<Vec<i64>>,
+    adv_counts: &Vec<Vec<i64>>,
+    adv_hone_strategy: &String,
+    artisan_rate_arr: &Vec<f64>,
+    extra_arr: &Vec<f64>,
+    extra_num_arr: &Vec<usize>,
+    express_event: bool,
+) -> (Vec<Upgrade>, Vec<Vec<f64>>) {
+    // Run parser with the main strategy
+    let main_upgrades = parser(
+        normal_counts,
+        adv_counts,
+        adv_hone_strategy,
+        artisan_rate_arr,
+        extra_arr,
+        extra_num_arr,
+        express_event,
+    );
+
+    // Determine the other strategy
+    let other_strategy = if adv_hone_strategy == "Juice on grace" {
+        "No juice".to_string()
+    } else {
+        "Juice on grace".to_string()
+    };
+
+    // Run parser with the other strategy
+    let other_upgrades = parser(
+        normal_counts,
+        adv_counts,
+        &other_strategy,
+        artisan_rate_arr,
+        extra_arr,
+        extra_num_arr,
+        express_event,
+    );
+
+    // Extract probability distributions from other strategy upgrades
+    // Only include advanced honing upgrades (not normal honing)
+    let other_strategy_prob_dists: Vec<Vec<f64>> = other_upgrades
+        .iter()
+        .filter(|upgrade| !upgrade.is_normal_honing)
+        .map(|upgrade| upgrade.prob_dist.clone())
+        .collect();
+
+    (main_upgrades, other_strategy_prob_dists)
+}

@@ -132,6 +132,7 @@ interface Upgrade {
     free_taps_so_far?: number // Number of free taps so far
     use_juice?: boolean // Whether juice is currently enabled for this upgrade
     cumulative_chance?: number // Cumulative chance of success for normal honing
+    other_prob_dist?: number[] // Probability distribution for the other strategy (for advanced honing)
 }
 
 
@@ -191,6 +192,20 @@ function updateCumulativeChance(upgrade: Upgrade, attemptChance: number) {
 
     // Ensure it doesn't exceed 1
     upgrade.cumulative_chance = Math.min(1, upgrade.cumulative_chance)
+}
+
+function getTapCountRange(upgrade: Upgrade) {
+    if (upgrade.is_normal_honing) return null
+
+    // Use other strategy's probability distribution if juice is ticked
+    const probDistToUse = upgrade.use_juice && upgrade.other_prob_dist
+        ? upgrade.other_prob_dist
+        : upgrade.prob_dist
+
+    const range = `${upgrade.tap_offset} - ${upgrade.tap_offset + probDistToUse.length}`
+    const isUsingOtherStrategy = upgrade.use_juice && upgrade.other_prob_dist
+
+    return { range, isUsingOtherStrategy }
 }
 export default function GambaSection({
     budget_inputs,
@@ -324,6 +339,7 @@ export default function GambaSection({
         p.then((result: any) => {
             const upgrades = result.upgrades as Upgrade[]
             const unlocks = result.unlocks as number[]
+            const other_strategy_prob_dists = result.other_strategy_prob_dists as number[][]
             setUnlockCosts(unlocks)
             unlockCostsRef.current = unlocks
 
@@ -355,6 +371,15 @@ export default function GambaSection({
             })
             upgradesWithTypes.sort((a, b) => { if (a.is_normal_honing) { return -999 } else { return a.upgrade_plus_num - b.upgrade_plus_num } })
 
+            // Assign other_prob_dist to advanced honing upgrades
+            let advUpgradeIndex = 0
+            upgradesWithTypes.forEach(upgrade => {
+                if (!upgrade.is_normal_honing && advUpgradeIndex < other_strategy_prob_dists.length) {
+                    upgrade.other_prob_dist = other_strategy_prob_dists[advUpgradeIndex]
+                    advUpgradeIndex++
+                }
+            })
+
             // Initialize upgrade completion tracking
             setUpgradeArr(upgradesWithTypes.map(upgrade => ({
                 ...upgrade,
@@ -364,7 +389,7 @@ export default function GambaSection({
                 taps_so_far: 0,
                 juice_taps_so_far: 0,
                 free_taps_so_far: 0,
-                use_juice: false,
+                use_juice: adv_hone_strategy === "Juice on grace" && !upgrade.is_normal_honing,
                 cumulative_chance: 0
             })))
             // Update refs
@@ -503,7 +528,26 @@ export default function GambaSection({
             success = Math.random() < currentChance
         } else {
             // Advanced honing logic - simulate tap count based on probability distribution
-            advTapCount = upgrade.tap_offset + Math.floor(Math.random() * upgrade.prob_dist_len)
+            // Use other strategy's probability distribution if juice is ticked
+            let probDistToUse = upgrade.prob_dist
+            if (upgrade.use_juice && upgrade.other_prob_dist) {
+                probDistToUse = upgrade.other_prob_dist
+            }
+
+            // Sample from the probability distribution
+            const random = Math.random()
+            let cumulativeProb = 0
+            let tapIndex = 0
+            for (let i = 0; i < probDistToUse.length; i++) {
+                cumulativeProb += probDistToUse[i]
+                if (random <= cumulativeProb) {
+                    tapIndex = i
+                    break
+                }
+            }
+            upgrade.cumulative_chance = cumulativeProb
+
+            advTapCount = upgrade.tap_offset + tapIndex
             success = true
             upgrade.taps_so_far = advTapCount - 1
         }
@@ -883,10 +927,22 @@ export default function GambaSection({
                                                 <div>Artisan: {(upgradeArr[selectedUpgradeIndex].current_artisan * 100).toFixed(2)}%</div>
                                                 <div>Trials: {upgradeArr[selectedUpgradeIndex].taps_so_far}</div>
                                                 <div>Free Taps: {upgradeArr[selectedUpgradeIndex].free_taps_so_far}</div>
-                                                <div>In a room of 100 people, you are less lucky than {((upgradeArr[selectedUpgradeIndex].cumulative_chance || 0) * 100).toFixed(0)} people</div>
+                                                <div>In a room of 100 people, you are less lucky than {((upgradeArr[selectedUpgradeIndex].cumulative_chance || 0) * 100).toFixed(0)} of them.</div>
                                             </>
                                         ) : (
-                                            <div>Tap Count Range: {upgradeArr[selectedUpgradeIndex].tap_offset} - {upgradeArr[selectedUpgradeIndex].tap_offset + upgradeArr[selectedUpgradeIndex].prob_dist_len}</div>
+                                            (() => {
+                                                const rangeInfo = getTapCountRange(upgradeArr[selectedUpgradeIndex])
+                                                return rangeInfo ? (
+                                                    <>
+                                                        <div>
+                                                            Tap Count Range: {rangeInfo.range}
+                                                        </div>
+                                                        <div>{"In a room of 100 people, you are less lucky than " + (upgradeArr[selectedUpgradeIndex].cumulative_chance * 100).toFixed(0) + " of them."}</div>
+
+
+                                                    </>
+                                                ) : null
+                                            })()
                                         )}
 
                                         <div style={{ marginTop: 15, display: "flex", flexDirection: "column", gap: 8 }}>
@@ -908,8 +964,9 @@ export default function GambaSection({
                                                     }}
                                                 />
                                                 Use juice
-                                            </label>
 
+                                            </label>
+                                            <div> {!upgradeArr[selectedUpgradeIndex]?.is_normal_honing && (upgradeArr[selectedUpgradeIndex]?.use_juice != (adv_hone_strategy === "Juice on grace")) ? "(Graph below is not updated by this tick, use checkbox under advanced honing section to change graph)" : ""}</div>
                                             <button
                                                 onClick={attemptTap}
                                                 disabled={upgradeArr[selectedUpgradeIndex]?.is_finished || isAutoAttempting || isAutoAttemptingThisOne}
@@ -1004,7 +1061,7 @@ export default function GambaSection({
                         </div>
                     </div>
                 </div>
-            </div>
+            </div >
 
 
 

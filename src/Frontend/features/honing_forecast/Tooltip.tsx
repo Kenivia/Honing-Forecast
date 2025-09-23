@@ -136,7 +136,7 @@ export function renderTooltip(tooltip: TooltipState) {
                         <div>Juice Taps: {upgrade.juice_taps_so_far ?? 0}</div>
                         <div>Free Taps: {upgrade.free_taps_so_far ?? 0}</div>
                         {upgrade.is_normal_honing && upgrade.is_finished && (
-                            <div>In a room of 100 people, you are less lucky than {((upgrade.cumulative_chance || 0) * 100).toFixed(0)} people</div>
+                            <div>In a room of 100 people, you are less lucky than {((upgrade.cumulative_chance || 0) * 100).toFixed(0)} of them.</div>
                         )}
                     </div>
                     <div style={rightColumnStyle}>

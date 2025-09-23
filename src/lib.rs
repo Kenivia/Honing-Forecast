@@ -11,7 +11,7 @@ use crate::constants::EVENT_ARTISAN_MULTIPLIER;
 use crate::cost_to_chance::cost_to_chance;
 use crate::helpers::calc_unlock;
 use crate::helpers::ticks_to_counts;
-use crate::parser::parser;
+use crate::parser::parser_with_other_strategy;
 
 use serde::Deserialize;
 use serde_wasm_bindgen::{from_value, to_value};
@@ -103,7 +103,7 @@ pub fn parser_wrapper_unified(input: JsValue) -> JsValue {
     let extra_arr = vec![0.0; 25];
     let extra_num_arr = vec![0; 25];
 
-    let upgrades = parser(
+    let (upgrades, other_strategy_prob_dists) = parser_with_other_strategy(
         &normal_counts,
         &adv_counts,
         &payload.adv_hone_strategy,
@@ -113,7 +113,12 @@ pub fn parser_wrapper_unified(input: JsValue) -> JsValue {
         payload.express_event,
     );
 
-    to_value(&(upgrades, calc_unlock(&normal_counts, &adv_counts))).unwrap()
+    to_value(&(
+        upgrades,
+        calc_unlock(&normal_counts, &adv_counts),
+        other_strategy_prob_dists,
+    ))
+    .unwrap()
 }
 
 // Histograms are included in the default wrappers' outputs
