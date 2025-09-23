@@ -9,8 +9,8 @@ export function recomputeLayout(mainRef, setMainScale, setControlsLeft) {
 
     // After scaling, use the element's bounding rect to position controls 30px to the right, clamped to viewport
     const rect = mainEl.getBoundingClientRect()
-    const controlsWidth = 200 // fixed width since we'll use transform scale
+    // const controlsWidth = 200 // fixed width since we'll use transform scale
     const desiredLeft = rect.right + 30
-    const maxLeft = vw - controlsWidth + 40 // keep a small margin from the right edge
-    setControlsLeft(Math.min(desiredLeft, Math.max(0, maxLeft)))
+    // const maxLeft = vw - controlsWidth + 100 // keep a small margin from the right edge
+    setControlsLeft(Math.min(desiredLeft, Math.max(0, desiredLeft)))
 }

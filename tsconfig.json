@@ -29,6 +29,11 @@
     "include": [
         "src/**/*",
         "vite.config.ts",
+        "vitest.setup.ts",
+    ],
+    "types": [
+        "vitest/globals",
+        "@testing-library/jest-dom"
     ],
     "exclude": [
         "node_modules",

@@ -9,7 +9,7 @@ import { defineConfig, globalIgnores } from 'eslint/config'
 
 
 export default defineConfig([
-    globalIgnores(['dist', 'junkyard', "vitest.setup.ts"]),
+    globalIgnores(['dist', 'junkyard', "vitest.setup.ts", "/src/types/vitest.d.ts"]),
     // Base config for JS/JSX files
     {
         files: ['**/*.{js,jsx}'],
