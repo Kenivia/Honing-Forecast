@@ -78,9 +78,10 @@ type UpgradeTooltipProps = {
     tooltipHandlers: GambaSectionProps['tooltipHandlers']
 }
 
-function UpgradeTooltip({ upgrade, children, tooltipHandlers }: UpgradeTooltipProps) {
+const UpgradeTooltip = React.memo(function UpgradeTooltip({ upgrade, children, tooltipHandlers }: UpgradeTooltipProps) {
     const costLabels = ['Red', 'Blue', 'Leaps', 'Shards', 'Oreha', "Gold", 'Silver', 'Red Juice', 'Blue Juice', 'Special Leaps']
-    const tapRecordCosts = calculateTapRecordCosts(upgrade)
+    const tapRecordCosts = useMemo(() => calculateTapRecordCosts(upgrade),
+        [upgrade])
 
     const handleMouseEnter = (e: React.MouseEvent) => {
         tooltipHandlers.showUpgradeTooltip(upgrade, costLabels, tapRecordCosts, e.clientX, e.clientY)
@@ -103,7 +104,7 @@ function UpgradeTooltip({ upgrade, children, tooltipHandlers }: UpgradeTooltipPr
             {children}
         </div>
     )
-}
+})
 
 // TypeScript interfaces
 interface Upgrade {
@@ -208,6 +209,7 @@ export default function GambaSection({
     // Worker refs and debounce
     const parserWorkerRef = useRef<Worker | null>(null)
     const debounceTimerRef = useRef<number | null>(null)
+    const pendingRequests = useRef(new Map<string, (_data: any) => void>())
     const autoAttemptIntervalRef = useRef<number | null>(null)
     const currentUpgradeArrRef = useRef<Upgrade[]>([])
     const currentSelectedIndexRef = useRef<number | null>(null)
@@ -221,6 +223,25 @@ export default function GambaSection({
 
 
     const intervalRef = useRef<number | null>(null)
+    const flushTimeoutRef = useRef<number | null>(null)
+
+    const flushUpgradeArrToState = useCallback((immediate = false) => {
+        if (immediate) {
+            if (flushTimeoutRef.current) {
+                clearTimeout(flushTimeoutRef.current)
+                flushTimeoutRef.current = null
+            }
+            // shallow copy the array to trigger React update
+            setUpgradeArr(_prev => upgradeArrRef.current.slice())
+            return
+        }
+        if (flushTimeoutRef.current != null) return
+        flushTimeoutRef.current = window.setTimeout(() => {
+            setUpgradeArr(_prev => upgradeArrRef.current.slice())
+            flushTimeoutRef.current = null
+        }, 100) // coalesce UI updates every 100ms
+    }, [])
+
     // sync refs whenever state changes
     useEffect(() => { selectedUpgradeIndexRef.current = selectedUpgradeIndex }, [selectedUpgradeIndex])
     useEffect(() => { upgradeArrRef.current = upgradeArr }, [upgradeArr])
@@ -232,13 +253,23 @@ export default function GambaSection({
     useEffect(() => {
         // Create a persistent worker for parser calls
         parserWorkerRef.current = new Worker(new URL("../../js_to_wasm.ts", import.meta.url), { type: "module" })
+
+        // Set up message handler once
+        parserWorkerRef.current.onmessage = (e) => {
+            const { id, type, result } = e.data
+            if (type === 'result' && pendingRequests.current.has(id)) {
+                pendingRequests.current.get(id)!(result)
+                pendingRequests.current.delete(id)
+            }
+        }
+
         return () => {
             if (parserWorkerRef.current) {
                 parserWorkerRef.current.terminate()
             }
             // Clean up auto-attempt interval
             if (autoAttemptIntervalRef.current) {
-                clearInterval(autoAttemptIntervalRef.current)
+                clearTimeout(autoAttemptIntervalRef.current)
             }
         }
     }, [])
@@ -263,79 +294,63 @@ export default function GambaSection({
 
         const id = Math.random().toString(36).substr(2, 9)
 
+        // Create promise for this request
+        const p = new Promise(_resolve => pendingRequests.current.set(id, _resolve))
+
         parserWorkerRef.current.postMessage({
             id,
             payload,
             which_one: "ParserUnified"
         })
 
-        parserWorkerRef.current.onmessage = (e) => {
-            if (e.data.type === "result" && e.data.id === id) {
-                const upgrades = e.data.result.upgrades as Upgrade[]
-                const unlocks = e.data.result.unlocks as number[]
-                setUnlockCosts(unlocks)
-                unlockCostsRef.current = unlocks
+        p.then((result: any) => {
+            const upgrades = result.upgrades as Upgrade[]
+            const unlocks = result.unlocks as number[]
+            setUnlockCosts(unlocks)
+            unlockCostsRef.current = unlocks
 
-                // Add equipment types to upgrades based on ticked equipment in grids
-                let seen_ind_normal = Array.from({ length: TOP_COLS }, () => 0);
-                let seen_ind_adv = Array.from({ length: BOTTOM_COLS }, () => 0);
-                let upgradesWithTypes = upgrades.map(upgrade => {
-                    // if (!upgrade.is_normal_honing) {
-                    //     upgrade = { ...upgrade, upgrade_plus_num: (upgrade.upgrade_plus_num + 1) * 10, }
-                    // }
+            // Add equipment types to upgrades based on ticked equipment in grids
+            let seen_ind_normal = Array.from({ length: TOP_COLS }, () => 0);
+            let seen_ind_adv = Array.from({ length: BOTTOM_COLS }, () => 0);
+            let upgradesWithTypes = upgrades.map(upgrade => {
+                if (upgrade.is_weapon) {
+                    return { ...upgrade, equipment_type: 'Weapon' }
+                } else {
+                    // For armor, find which equipment types are ticked in the grid
+                    const equipmentTypes = EQUIPMENT_TYPES.slice(0, 5) // Exclude Weapon
+                    const assignedType = equipmentTypes.find((_, index) => {
+                        if (upgrade.is_normal_honing) {
+                            if (index < seen_ind_normal[upgrade.upgrade_plus_num]) { return false }
+                            const gridRow = topGrid[index] || []
+                            seen_ind_normal[upgrade.upgrade_plus_num] += 1;
+                            return gridRow[upgrade.upgrade_plus_num] || false
+                        }
+                        else {
+                            if (index < seen_ind_adv[upgrade.upgrade_plus_num]) { return false }
+                            const gridRow = bottomGrid[index] || []
+                            seen_ind_adv[upgrade.upgrade_plus_num] += 1;
+                            return gridRow[upgrade.upgrade_plus_num] || false
+                        }
+                    })
+                    return { ...upgrade, equipment_type: assignedType || 'Armor', }
+                }
+            })
+            upgradesWithTypes.sort((a, b) => { if (a.is_normal_honing) { return -999 } else { return a.upgrade_plus_num - b.upgrade_plus_num } })
 
-                    if (upgrade.is_weapon) {
-                        return { ...upgrade, equipment_type: 'Weapon' }
-                    } else {
-                        // For armor, find which equipment types are ticked in the grid
-                        const equipmentTypes = EQUIPMENT_TYPES.slice(0, 5) // Exclude Weapon
-                        // const tickedTypes = equipmentTypes.filter((_, index) => {
-                        //     // Check if this equipment type is ticked in the grid at the upgrade level
-                        //     const gridRow = topGrid[index] || []
-                        //     return gridRow[upgrade.upgrade_plus_num] || false
-                        // })
-
-                        // // Assign equipment type based on what's ticked
-                        // if (tickedTypes.length > 0) {
-                        //     // Find the first ticked equipment type for this upgrade level
-                        const assignedType = equipmentTypes.find((_, index) => {
-                            if (upgrade.is_normal_honing) {
-                                if (index < seen_ind_normal[upgrade.upgrade_plus_num]) { return false }
-                                const gridRow = topGrid[index] || []
-                                seen_ind_normal[upgrade.upgrade_plus_num] += 1;
-                                return gridRow[upgrade.upgrade_plus_num] || false
-                            }
-                            else {
-                                if (index < seen_ind_adv[upgrade.upgrade_plus_num]) { return false }
-                                const gridRow = bottomGrid[index] || []
-                                seen_ind_adv[upgrade.upgrade_plus_num] += 1;
-                                return gridRow[upgrade.upgrade_plus_num] || false
-                            }
-                        })
-                        return { ...upgrade, equipment_type: assignedType || 'Armor', }
-                    }
-
-                })
-                upgradesWithTypes.sort((a, b) => { if (a.is_normal_honing) { return -999 } else { return a.upgrade_plus_num - b.upgrade_plus_num } })
-
-                // Don't set upgradeArr here since we're doing it above with completion tracking
-                // Initialize upgrade states array and add completion tracking
-
-                // Initialize upgrade completion tracking
-                setUpgradeArr(upgradesWithTypes.map(upgrade => ({
-                    ...upgrade,
-                    is_finished: false,
-                    completion_order: 0,
-                    current_artisan: 0,
-                    taps_so_far: 0,
-                    juice_taps_so_far: 0,
-                    free_taps_so_far: 0,
-                    use_juice: false
-                })))
-                // Update refs
-                currentUpgradeArrRef.current = upgradesWithTypes
-            }
-        }
+            // Initialize upgrade completion tracking
+            setUpgradeArr(upgradesWithTypes.map(upgrade => ({
+                ...upgrade,
+                is_finished: false,
+                completion_order: 0,
+                current_artisan: 0,
+                taps_so_far: 0,
+                juice_taps_so_far: 0,
+                free_taps_so_far: 0,
+                use_juice: false
+            })))
+            // Update refs
+            currentUpgradeArrRef.current = upgradesWithTypes
+        })
     }, [topGrid, bottomGrid, adv_hone_strategy, express_event, desired_chance, bucketCount, autoOptimization, userMatsValue, dataSize, budget_inputs])
 
     // Debounce effect for parser calls when grids change
@@ -358,7 +373,7 @@ export default function GambaSection({
 
         // Stop auto-attempting when grids change
         if (autoAttemptIntervalRef.current) {
-            clearInterval(autoAttemptIntervalRef.current)
+            clearTimeout(autoAttemptIntervalRef.current)
             autoAttemptIntervalRef.current = null
         }
         setIsAutoAttempting(false)
@@ -389,7 +404,30 @@ export default function GambaSection({
 
 
 
-    // Sort upgrades: unfinished normal honing first, then advanced honing, then finished upgrades by completion order
+    // Memoize sorted indices to avoid O(n²) findIndex operations in render
+    const sortedWithIndex = useMemo(() => {
+        // create array of indices and sort indices only (no object copies)
+        const idxs = upgradeArr.map((_, i) => i)
+        idxs.sort((ia, ib) => {
+            const a = upgradeArr[ia], b = upgradeArr[ib]
+            // same comparison code as sortedUpgrades but using a & b
+            if (a.is_finished < b.is_finished) return -1
+            if (a.is_finished > b.is_finished) return 1
+            if (a.is_normal_honing < b.is_normal_honing) return 1
+            if (a.is_normal_honing > b.is_normal_honing) return -1
+            if (a.is_finished && b.is_finished) {
+                return (a.completion_order || 0) - (b.completion_order || 0)
+            }
+            if (!a.is_finished && !b.is_finished) {
+                if (a.upgrade_plus_num < b.upgrade_plus_num) return -1
+                if (a.upgrade_plus_num > b.upgrade_plus_num) return 1
+                return EQUIPMENT_TYPES.findIndex(v => a.equipment_type == v)
+                    - EQUIPMENT_TYPES.findIndex(v => b.equipment_type == v)
+            }
+            return 0
+        })
+        return idxs // array of original indices in sorted order
+    }, [upgradeArr])
 
     // Get unfinished normal honing upgrades for auto-attempt logic
     const unfinishedNormalUpgrades = useMemo(() => {
@@ -422,7 +460,7 @@ export default function GambaSection({
         if (selIdx === null || !arr || !arr[selIdx]) {
             // nothing to attempt — stop auto attempting if running
             if (intervalRef.current != null) {
-                clearInterval(intervalRef.current)
+                clearTimeout(intervalRef.current)
                 intervalRef.current = null
                 setIsAutoAttempting(false)
                 isAutoAttemptingRef.current = false
@@ -477,21 +515,19 @@ export default function GambaSection({
             finalCostsRef.current = next
             return next
         })
-        upgrade.taps_so_far += 1
-        upgrade.juice_taps_so_far += upgrade.use_juice ? 1 : 0
+
+        // Update upgrade counters
+        upgrade.taps_so_far = (upgrade.taps_so_far || 0) + 1
+        upgrade.juice_taps_so_far = (upgrade.juice_taps_so_far || 0) + (upgrade.use_juice ? 1 : 0)
         if (success) {
-            // Update tap counts in the upgrade
-
             upgrade.is_finished = true
-            upgrade.completion_order += 1
-
-
+            upgrade.completion_order = (upgrade.completion_order || 0) + 1
             setCompletionCounter(prev => prev + 1)
             // Handle auto-attempting logic
             if (isAutoAttemptingThisOneRef.current) {
                 // Stop "this one" auto-attempting since the upgrade succeeded
                 if (intervalRef.current != null) {
-                    clearInterval(intervalRef.current)
+                    clearTimeout(intervalRef.current)
                     intervalRef.current = null
                 }
                 setIsAutoAttemptingThisOne(false)
@@ -522,7 +558,7 @@ export default function GambaSection({
                 } else {
                     // No more unfinished normal honing upgrades, stop auto-attempting
                     if (intervalRef.current != null) {
-                        clearInterval(intervalRef.current)
+                        clearTimeout(intervalRef.current)
                         intervalRef.current = null
                     }
                     setIsAutoAttempting(false)
@@ -542,15 +578,21 @@ export default function GambaSection({
             }
 
         } else {
-            // failure: increment trials and artisan (functional + update refs immediately)
+            // failure: increment artisan
             const currentChance = calculateCurrentChance(upgrade)
-            upgrade.current_artisan += (46.51 / 100.0) * currentChance * (upgrade.artisan_rate ?? 0)
-            upgrade.current_artisan = Math.min(1, upgrade.current_artisan)
-            // Update the upgrade's tap counts and current artisan in the array
+            upgrade.current_artisan = Math.min(1, (upgrade.current_artisan || 0) + (46.51 / 100.0) * currentChance * (upgrade.artisan_rate ?? 0))
         }
-        upgradeArrRef.current[selIdx] = upgrade;
-        setUpgradeArr(upgradeArrRef.current)
-    }, []) // stable identity — uses refs internally
+
+        // Update the upgrade in the ref array
+        upgradeArrRef.current[selIdx] = upgrade
+
+        // If success (user-visible change) flush immediately, else schedule a coalesced update
+        if (success) {
+            flushUpgradeArrToState(true)
+        } else {
+            flushUpgradeArrToState(false)
+        }
+    }, [flushUpgradeArrToState]) // stable identity — uses refs internally
     // Attempt a tap
     const attemptTap = useCallback(() => performAttempt(), [performAttempt])
 
@@ -558,16 +600,22 @@ export default function GambaSection({
     // Toggle auto-attempt mode
     const startAuto = useCallback((ms: number) => {
         if (intervalRef.current != null) return
-        // use window.setInterval for TS int typing
-        intervalRef.current = window.setInterval(() => {
-            performAttempt()
-        }, ms)
-        setIsAutoAttempting(true)
         isAutoAttemptingRef.current = true
+        setIsAutoAttempting(true)
+
+        const tick = () => {
+            performAttempt()
+            if (isAutoAttemptingRef.current) {
+                intervalRef.current = window.setTimeout(tick, Math.max(5, ms)) // enforce min delay
+            } else {
+                intervalRef.current = null
+            }
+        }
+        tick()
     }, [performAttempt])
     const stopAuto = useCallback(() => {
         if (intervalRef.current != null) {
-            clearInterval(intervalRef.current)
+            clearTimeout(intervalRef.current)
             intervalRef.current = null
         }
         setIsAutoAttempting(false)
@@ -617,44 +665,34 @@ export default function GambaSection({
         const success = Math.random() < upgrade.base_chance
 
         // Add special cost to 10th element
-        const newFinalCosts = [...finalCosts]
-        newFinalCosts[9] += upgrade.special_cost
-        setFinalCosts(newFinalCosts)
+        setFinalCosts(prev => {
+            const next = prev.slice()
+            next[9] = (next[9] || 0) + upgrade.special_cost
+            return next
+        })
 
         if (success) {
             // Success - mark as finished and update tap counts
             setUpgradeArr(prev => {
-                const next = prev.map((upg, i) => {
-                    if (i === selectedUpgradeIndex) {
-                        const newFreeTapsSoFar = (upg.free_taps_so_far ?? 0) + 1
-                        return {
-                            ...upg,
-                            is_finished: true,
-                            completion_order: completionCounter + 1,
-                            free_taps_so_far: newFreeTapsSoFar,
-                        }
-                    }
-                    return upg
-                })
+                const next = prev.slice()
+                next[selectedUpgradeIndex] = {
+                    ...next[selectedUpgradeIndex],
+                    is_finished: true,
+                    completion_order: completionCounter + 1,
+                    free_taps_so_far: (next[selectedUpgradeIndex].free_taps_so_far ?? 0) + 1,
+                }
                 return next
             })
 
             setCompletionCounter(prev => prev + 1)
-
-            // Keep the info box visible but reset state
-
         } else {
             // Failure - still track the free tap
             setUpgradeArr(prev => {
-                const next = prev.map((upg, i) => {
-                    if (i === selectedUpgradeIndex) {
-                        return {
-                            ...upg,
-                            free_taps_so_far: (upg.free_taps_so_far ?? 0) + 1
-                        }
-                    }
-                    return upg
-                })
+                const next = prev.slice()
+                next[selectedUpgradeIndex] = {
+                    ...next[selectedUpgradeIndex],
+                    free_taps_so_far: (next[selectedUpgradeIndex].free_taps_so_far ?? 0) + 1
+                }
                 return next
             })
         }
@@ -669,7 +707,7 @@ export default function GambaSection({
 
     // Create budget data for SpreadsheetGrid
     const budgetTotalData = INPUT_LABELS.reduce((acc, label, index) => {
-        acc[label] = (finalCosts[index] + index == 3 ? unlockCosts[0] : index == 6 ? unlockCosts[1] : 0).toString()
+        acc[label] = (finalCosts[index] + (index === 3 ? unlockCosts[0] : index === 6 ? unlockCosts[1] : 0)).toString()
         return acc
     }, {} as Record<string, string>)
 
@@ -759,8 +797,8 @@ export default function GambaSection({
                             Upgrades: {(isAutoAttempting || isAutoAttemptingThisOne) && <span style={{ color: 'var(--error-color)', fontSize: 'var(--font-size-xs)' }}>AUTO ON</span>}
                         </h4>
                         <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-                            {sortedUpgrades(upgradeArr).map((upgrade, _sortedIndex) => {
-                                const originalIndex = upgradeArr.findIndex(u => u === upgrade)
+                            {sortedWithIndex.map(originalIndex => {
+                                const upgrade = upgradeArr[originalIndex]
                                 return (
                                     <UpgradeTooltip key={originalIndex} upgrade={upgrade} tooltipHandlers={tooltipHandlers}>
                                         <div
@@ -821,15 +859,11 @@ export default function GambaSection({
                                                     onChange={(e) => {
                                                         if (selectedUpgradeIndex !== null) {
                                                             setUpgradeArr(prev => {
-                                                                const next = prev.map((upg, i) => {
-                                                                    if (i === selectedUpgradeIndex) {
-                                                                        return {
-                                                                            ...upg,
-                                                                            use_juice: e.target.checked
-                                                                        }
-                                                                    }
-                                                                    return upg
-                                                                })
+                                                                const next = prev.slice()
+                                                                next[selectedUpgradeIndex] = {
+                                                                    ...next[selectedUpgradeIndex],
+                                                                    use_juice: e.target.checked
+                                                                }
                                                                 return next
                                                             })
                                                         }
@@ -923,7 +957,7 @@ export default function GambaSection({
                                     width={640}
                                     height={320}
                                     budgets={OUTPUT_LABELS.map(label => Number(budget_inputs[label] || 0))}
-                                    additionalBudgets={finalCosts.slice(0, 7).map((v, i) => v + i == 3 ? unlockCosts[0] : i == 6 ? unlockCosts[1] : 0)} // First 7 elements for total costs
+                                    additionalBudgets={finalCosts.slice(0, 7).map((v, i) => v + (i === 3 ? unlockCosts[0] : i === 6 ? unlockCosts[1] : 0))} // First 7 elements for total costs
                                     hasSelection={AnythingTicked}
                                     isLoading={CostToChanceBusy}
                                     cumulative={cumulativeGraph}
