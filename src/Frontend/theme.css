@@ -15,7 +15,7 @@
     --border-accent: #2b3440;
 
     /* Button Colors */
-    --btn-primary: #06b6d4;
+    --btn-primary: #1091a8;
     --btn-primary-text: #021018;
     --btn-success: #16a34a;
     --btn-success-text: #021018;
@@ -23,6 +23,8 @@
     --btn-demo-text: #ffffff;
     --btn-toggle-selected: #0670d4;
     --btn-toggle-deselected: #6b7280;
+
+    --ran-out: #87161650;
 
     /* Graph Series Colors */
     --series-red: #ff0000;

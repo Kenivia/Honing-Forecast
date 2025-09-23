@@ -15,6 +15,7 @@ import { recomputeLayout } from "./Layout.ts"
 import { GridMouseDownLogic, mouseMoveLogic, createMouseUpHandler } from "./Marquee.ts"
 import { createClearAll, createFillRandom, createFillDemo } from './Control.ts'
 import { buildPayload, createStartCancelableWorker, createHandleCallWorker } from './Debounce.ts'
+import { TooltipState, createTooltipHandlers, renderTooltip } from './Tooltip.tsx'
 
 // constants and helpers moved to ./constants and ./utils
 
@@ -44,6 +45,17 @@ export default function HoningForecastUI() {
     const [marqueeRect, setMarqueeRect] = useState<any>(null)
     const marqueeRef = useRef(marquee)
     useEffect(() => { marqueeRef.current = marquee }, [marquee])
+
+    // tooltip state & handlers
+    const [tooltip, setTooltip] = useState<TooltipState>({
+        visible: false,
+        type: null,
+        x: 0,
+        y: 0,
+        content: null,
+        upgradeData: null
+    })
+    const tooltipHandlers = createTooltipHandlers(setTooltip)
 
     // ----- Load saved UI state on mount -----
     useEffect(() => {
@@ -326,6 +338,7 @@ export default function HoningForecastUI() {
                     <div style={{ position: 'fixed', left: marqueeRect.left, top: marqueeRect.top, width: marqueeRect.width, height: marqueeRect.height, background: 'var(--marquee-bg)', border: '2px solid var(--marquee-border)', pointerEvents: 'none', zIndex: 9999 }} />
                 ) : null
             }
+            {renderTooltip(tooltip)}
 
 
             <div ref={mainRef} style={{ ...styles.mainContainer, transform: `scale(${mainScale})`, transformOrigin: 'top', width: "fit-content" }}>
@@ -357,7 +370,7 @@ export default function HoningForecastUI() {
                 </div>
 
                 {/* Page Separator */}
-                <Separator activePage={activePage} onPageChange={setActivePage} />
+                <Separator activePage={activePage} onPageChange={setActivePage} tooltipHandlers={tooltipHandlers} />
 
                 {/* Conditional Input Sections */}
                 {activePage === 'chance-to-cost' && (
@@ -402,6 +415,12 @@ export default function HoningForecastUI() {
                         bucketCount={bucketCount}
                         autoOptimization={autoOptimization}
                         dataSize={dataSize}
+                        tooltipHandlers={tooltipHandlers}
+                        chance_result={chance_result}
+                        cachedChanceGraphData={cachedChanceGraphData}
+                        AnythingTicked={AnythingTicked}
+                        CostToChanceBusy={CostToChanceBusy}
+                        cumulativeGraph={cumulativeGraph}
                     />
                 )}
             </div>

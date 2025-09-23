@@ -14,6 +14,7 @@ type GraphProps = {
     // pointOfInterestBucket?: number | null // 0..999 or null
     // displayMode?: 'probability' | 'cost'
     budgets?: number[] | null
+    additionalBudgets?: number[] | null // Additional set of budget points for second POI
     hasSelection?: boolean
     isLoading?: boolean
     cumulative?: boolean
@@ -114,7 +115,7 @@ function to_step(arr: number[]) {
 
 //     return startIndex; // No non-zero element found in the array
 // }
-export default function Graph({ title, labels, counts, mins, maxs, width = 640, height = 320, budgets = null, hasSelection = false, isLoading = false, cumulative = true }: GraphProps) {
+export default function Graph({ title, labels, counts, mins, maxs, width = 640, height = 320, budgets = null, additionalBudgets = null, hasSelection = false, isLoading = false, cumulative = true }: GraphProps) {
     const [visible, setVisible] = useState<boolean[]>(() => [true, true, false, false, false, true, false])
     const [hoverSeries, setHoverSeries] = useState<number | null>(null)
     const [hoverBucket, setHoverBucket] = useState<number | null>(null)
@@ -322,40 +323,52 @@ export default function Graph({ title, labels, counts, mins, maxs, width = 640, 
                         />
                     ))}
 
-                    {/* Point of interest - draw a dot for each visible series at poi bucket */}
-                    {counts && anyVisible && budgets && (
-                        <g>
-                            {labels.map((_, i) => {
-                                if (!visible[i] || !keepMask[i]) return null
+                    {/* Helper function to render points of interest */}
+                    {(() => {
+                        const renderPointsOfInterest = (budgetData: number[] | null, keyPrefix: string, circleRadius: number = 7, strokeColor: string = "#000") => {
+                            if (!counts || !anyVisible || !budgetData) return null
 
-                                const innerW = width - plotLeft - plotRight
-                                const innerH = height - plotTop - plotBottom
-                                let cx, cy, label;
+                            return (
+                                <g>
+                                    {labels.map((_, i) => {
+                                        if (!visible[i] || !keepMask[i]) return null
 
-                                // if (displayMode === 'cost') {
-                                const range = Math.max(1e-9, (maxs[i] - mins[i]))
-                                const frac = (budgets[i] - mins[i]) / range
-                                const bucket_idx = Math.max(0, Math.min(bucketLen - 1, Math.round(frac * (bucketLen - 1))))
-                                // const cumPct = Math.round((counts[i].slice(0, bucket_idx).reduce((partialSum, a) => partialSum + a, 0) / data_size * 100));
-                                cx = plotLeft + (bucket_idx / Math.max(1, bucketLen - 1)) * innerW;
-                                const seriesVals = cumulative && cdfSeries ? cdfSeries[i] : ((normalizedCounts && normalizedCounts[i]) || counts[i])
-                                const denomY2 = Math.max(1e-9, yMax)
-                                cy = plotTop + innerH - seriesVals[bucket_idx] / denomY2 * innerH;
-                                label = formatSig3(budgets[i])
+                                        const innerW = width - plotLeft - plotRight
+                                        const innerH = height - plotTop - plotBottom
+                                        let cx, cy, label;
 
+                                        const range = Math.max(1e-9, (maxs[i] - mins[i]))
+                                        const frac = (budgetData[i] - mins[i]) / range
+                                        const bucket_idx = Math.max(0, Math.min(bucketLen - 1, Math.round(frac * (bucketLen - 1))))
+                                        cx = plotLeft + (bucket_idx / Math.max(1, bucketLen - 1)) * innerW;
+                                        const seriesVals = cumulative && cdfSeries ? cdfSeries[i] : ((normalizedCounts && normalizedCounts[i]) || counts[i])
+                                        const denomY2 = Math.max(1e-9, yMax)
+                                        cy = plotTop + innerH - seriesVals[bucket_idx] / denomY2 * innerH;
+                                        label = formatSig3(budgetData[i])
 
-                                const boxW = Math.max(16, label.length * 8)
-                                const boxH = 18
-                                return (
-                                    <g key={`poi - ${i} `}>
-                                        <circle cx={cx} cy={cy} r={7} fill={SERIES_COLORS_VARS[i]} stroke="#000" />
-                                        <rect x={cx + 6} y={cy - boxH - 4} width={boxW} height={boxH} fill="rgba(0,0,0,0.5)" rx={3} ry={3} />
-                                        <text x={cx + 10} y={cy - 8} fill={SERIES_COLORS_VARS[i]} fontSize={12}>{label}</text>
-                                    </g>
-                                )
-                            })}
-                        </g>
-                    )}
+                                        const boxW = Math.max(16, label.length * 8)
+                                        const boxH = 18
+                                        return (
+                                            <g key={`${keyPrefix} - ${i}`}>
+                                                <circle cx={cx} cy={cy} r={circleRadius} fill={SERIES_COLORS_VARS[i]} stroke={strokeColor} strokeWidth={2} />
+                                                <rect x={cx + 6} y={cy - boxH - 4} width={boxW} height={boxH} fill="rgba(0,0,0,0.5)" rx={3} ry={3} />
+                                                <text x={cx + 10} y={cy - 8} fill={SERIES_COLORS_VARS[i]} fontSize={12}>{label}</text>
+                                            </g>
+                                        )
+                                    })}
+                                </g>
+                            )
+                        }
+
+                        return (
+                            <>
+                                {/* Primary budget points of interest */}
+                                {renderPointsOfInterest(budgets, "poi-primary", 5, "#000")}
+                                {/* Additional budget points of interest */}
+                                {renderPointsOfInterest(additionalBudgets, "poi-additional", 7, "rgb(0, 255, 0)")}
+                            </>
+                        )
+                    })()}
 
                     {/* Hover point snapped to selected series */}
                     {fallbackSeries != null && hoverBucket != null && counts && visible[fallbackSeries] && keepMask[fallbackSeries] && (

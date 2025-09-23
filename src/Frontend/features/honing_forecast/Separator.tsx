@@ -1,82 +1,46 @@
-import React, { useState, useEffect, useRef } from 'react'
+import React from 'react'
 
 type SeparatorProps = {
     activePage: 'chance-to-cost' | 'cost-to-chance' | 'gamba'
     onPageChange: (_page: 'chance-to-cost' | 'cost-to-chance' | 'gamba') => void
+    tooltipHandlers: {
+        showSeparatorTooltip: (_text: string, _x: number, _y: number) => void
+        hideTooltip: () => void
+        updateTooltipPosition: (_x: number, _y: number) => void
+    }
 }
 
 type TooltipProps = {
     text: string
     children: React.ReactNode
+    tooltipHandlers: SeparatorProps['tooltipHandlers']
 }
 
-function CustomTooltip({ text, children }: TooltipProps) {
-    const [isVisible, setIsVisible] = useState(false)
-    const [position, setPosition] = useState({ x: 0, y: 0 })
-    const elementRef = useRef<HTMLDivElement>(null)
-
-    const handleMouseEnter = () => {
-        setIsVisible(true)
+function CustomTooltip({ text, children, tooltipHandlers }: TooltipProps) {
+    const handleMouseEnter = (e: React.MouseEvent) => {
+        tooltipHandlers.showSeparatorTooltip(text, e.clientX, e.clientY)
     }
 
-    const handleMouseMove = (e: MouseEvent) => {
-        if (elementRef.current && elementRef.current.contains(e.target as Node)) {
-            setPosition({
-                x: e.clientX + 10, // Offset to the right of cursor
-                y: e.clientY - 10  // Offset above cursor
-            })
-        }
+    const handleMouseMove = (e: React.MouseEvent) => {
+        tooltipHandlers.updateTooltipPosition(e.clientX, e.clientY)
     }
 
     const handleMouseLeave = () => {
-        setIsVisible(false)
-    }
-
-    useEffect(() => {
-        if (isVisible) {
-            document.addEventListener('mousemove', handleMouseMove)
-            return () => document.removeEventListener('mousemove', handleMouseMove)
-        }
-    }, [isVisible])
-
-    const tooltipStyle: React.CSSProperties = {
-        position: 'fixed',
-        left: position.x,
-        top: position.y,
-        backgroundColor: 'var(--bg-tertiary)',
-        color: 'var(--text-primary)',
-        padding: '8px 12px',
-        borderRadius: 'var(--border-radius-small)',
-        fontSize: 'var(--font-size-sm)',
-        fontWeight: 'var(--font-weight-normal)',
-        border: '1px solid var(--border-secondary)',
-        boxShadow: '0 4px 12px rgba(0, 0, 0, 0.3)',
-        zIndex: 10000,
-        pointerEvents: 'none',
-        whiteSpace: 'nowrap',
-        opacity: isVisible ? 1 : 0,
-        transition: 'opacity 0.1s ease-in-out',
+        tooltipHandlers.hideTooltip()
     }
 
     return (
-        <>
-            <div
-                ref={elementRef}
-                onMouseEnter={handleMouseEnter}
-                onMouseLeave={handleMouseLeave}
-            >
-                {children}
-            </div>
-            {isVisible && (
-                <div style={tooltipStyle}>
-                    {text}
-                </div>
-            )}
-        </>
+        <div
+            onMouseEnter={handleMouseEnter}
+            onMouseMove={handleMouseMove}
+            onMouseLeave={handleMouseLeave}
+        >
+            {children}
+        </div>
     )
 }
 
-export default function Separator({ activePage, onPageChange }: SeparatorProps) {
+export default function Separator({ activePage, onPageChange, tooltipHandlers }: SeparatorProps) {
     const buttonStyle = (isSelected: boolean) => ({
         backgroundColor: isSelected ? 'var(--btn-toggle-selected)' : 'var(--btn-toggle-deselected)',
         color: isSelected ? '#ffffff' : '#ffffff',
@@ -103,7 +67,7 @@ export default function Separator({ activePage, onPageChange }: SeparatorProps) 
 
     return (
         <div style={containerStyle}>
-            <CustomTooltip text="Calculate the cost required to achieve a desired success chance">
+            <CustomTooltip text="Calculate the cost required to achieve a desired success chance" tooltipHandlers={tooltipHandlers}>
                 <button
                     style={buttonStyle(activePage === 'chance-to-cost')}
                     onClick={() => onPageChange('chance-to-cost')}
@@ -111,7 +75,7 @@ export default function Separator({ activePage, onPageChange }: SeparatorProps) 
                     Chance mode
                 </button>
             </CustomTooltip>
-            <CustomTooltip text="Calculate the success chance for a given budget">
+            <CustomTooltip text="Calculate the success chance for a given budget" tooltipHandlers={tooltipHandlers}>
                 <button
                     style={buttonStyle(activePage === 'cost-to-chance')}
                     onClick={() => onPageChange('cost-to-chance')}
@@ -119,7 +83,7 @@ export default function Separator({ activePage, onPageChange }: SeparatorProps) 
                     Budget mode
                 </button>
             </CustomTooltip>
-            <CustomTooltip text="Simulate gambling scenarios with different strategies">
+            <CustomTooltip text="Simulate gambling scenarios with different strategies" tooltipHandlers={tooltipHandlers}>
                 <button
                     style={buttonStyle(activePage === 'gamba')}
                     onClick={() => onPageChange('gamba')}
