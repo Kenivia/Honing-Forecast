@@ -11,6 +11,7 @@ export function recomputeLayout(mainRef, setMainScale, setControlsLeft) {
     const rect = mainEl.getBoundingClientRect()
     // const controlsWidth = 200 // fixed width since we'll use transform scale
     const desiredLeft = rect.right + 30
+    const maxLeft = desiredLeft - 10
     // const maxLeft = vw - controlsWidth + 100 // keep a small margin from the right edge
-    setControlsLeft(Math.min(desiredLeft, Math.max(0, desiredLeft)))
+    setControlsLeft(Math.min(desiredLeft, Math.max(0, maxLeft)))
 }

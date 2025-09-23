@@ -28,7 +28,7 @@ export default function Separator({ activePage, onPageChange }: SeparatorProps) 
         display: 'flex',
         flexDirection: 'column' as const,
         alignItems: 'flex-start',
-        minHeight: '44px',
+        height: '44px',
     })
 
     const helpTextStyle = {
