@@ -81,7 +81,7 @@ export default function CostToChanceSection({
                         {(chance_result && (chance_result.upgrade_strings?.length > 0 || chance_result.juice_order_armor?.length > 0 || chance_result.juice_order_weapon?.length > 0)) && (
                             <div style={{ display: 'flex', gap: 0, alignItems: 'flex-start', marginTop: 8 }}>
                                 <div>
-                                    <div style={{ marginTop: 0, ...styles.inputLabelCell, whiteSpace: 'nowrap' }}>Reasons for failures:</div>
+                                    <div style={{ marginTop: 0, ...styles.inputLabelCell, whiteSpace: 'nowrap' }}>Bottlenecks:</div>
                                     <div style={{ marginTop: 4, color: 'var(--text-muted)', fontSize: 'var(--font-size-sm)', whiteSpace: "wrap", width: 200 }}>
                                         {(chance_result.reasons || []).map((s: string, idx: number) => (
                                             <div key={"Fail reason" + (idx + 1)}>{idx + 1}. {s}</div>

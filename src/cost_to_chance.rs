@@ -50,7 +50,7 @@ fn fail_count_to_string(typed_fail_counter: Vec<f64>, data_size: usize) -> Vec<S
         spread_num = typed_fail_counter[z] as f64 / data_size as f64;
         spread_str = myformat(spread_num);
         if spread_num >= 0.001 || !displayed {
-            this_failed.push(spread_str.to_owned() + "% failed due to " + LABELS[z]);
+            this_failed.push(spread_str.to_owned() + "% ran out of " + LABELS[z]);
         }
         displayed = true
     }

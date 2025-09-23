@@ -202,6 +202,8 @@ export default function HoningForecastUI() {
         setTopGrid,
         setBottomGrid,
         set_desired_chance,
+        set_prev_checked_arr,
+        set_prev_checked_arr_bottom,
     })
 
     const fillDemo = createFillDemo({

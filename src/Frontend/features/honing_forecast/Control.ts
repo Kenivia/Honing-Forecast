@@ -53,14 +53,34 @@ export function createFillRandom({
     setTopGrid,
     setBottomGrid,
     set_desired_chance,
+    set_prev_checked_arr,
+    set_prev_checked_arr_bottom,
 }: {
     setTopGrid: React.Dispatch<React.SetStateAction<any>>
     setBottomGrid: React.Dispatch<React.SetStateAction<any>>
     set_desired_chance: React.Dispatch<React.SetStateAction<string>>
+    set_prev_checked_arr: React.Dispatch<React.SetStateAction<boolean[]>>
+    set_prev_checked_arr_bottom: React.Dispatch<React.SetStateAction<boolean[]>>
 }) {
     return () => {
-        setTopGrid(Array.from({ length: TOP_ROWS }, () => Array.from({ length: TOP_COLS }, () => Math.random() > 0.7)))
-        setBottomGrid(Array.from({ length: BOTTOM_ROWS }, () => Array.from({ length: BOTTOM_COLS }, () => Math.random() > 0.7)))
+        // Generate random grids
+        const newTopGrid = Array.from({ length: TOP_ROWS }, () => Array.from({ length: TOP_COLS }, () => Math.random() > 0.7))
+        const newBottomGrid = Array.from({ length: BOTTOM_ROWS }, () => Array.from({ length: BOTTOM_COLS }, () => Math.random() > 0.7))
+
+        // Check for full columns in top grid and update prev_checked_arr accordingly
+        const newPrevCheckedArr = Array.from({ length: TOP_COLS }, (_, colIndex) => {
+            return newTopGrid.every((row) => row[colIndex] === true)
+        })
+
+        // Check for full columns in bottom grid and update prev_checked_arr_bottom accordingly
+        const newPrevCheckedArrBottom = Array.from({ length: BOTTOM_COLS }, (_, colIndex) => {
+            return newBottomGrid.every((row) => row[colIndex] === true)
+        })
+
+        setTopGrid(newTopGrid)
+        setBottomGrid(newBottomGrid)
+        set_prev_checked_arr(newPrevCheckedArr)
+        set_prev_checked_arr_bottom(newPrevCheckedArrBottom)
         set_desired_chance((Math.random() * 100).toFixed(2).toString())
     }
 }
