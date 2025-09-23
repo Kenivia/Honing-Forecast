@@ -305,7 +305,7 @@ function Graph({ title, labels, counts, mins, maxs, width = 640, height = 320, b
                 const cx = plotLeft + (bucket_idx / Math.max(1, bucketLen - 1)) * innerW;
                 const seriesVals = cumulative && cdfSeries ? cdfSeries[i] : ((normalizedCounts && normalizedCounts[i]) || counts[i]);
                 const denomY2 = Math.max(1e-9, yMax);
-                const cy = plotTop + innerH - seriesVals[bucket_idx] / denomY2 * innerH;
+                const cy = plotTop + innerH - to_step(seriesVals)[bucket_idx] / denomY2 * innerH;
                 const labelText = formatSig3(budgetData[i]);
                 const boxW = Math.max(16, labelText.length * 8);
                 const boxH = 18;

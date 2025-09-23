@@ -2,6 +2,10 @@
 name = "honing-forecast"
 version = "0.1.0"
 edition = "2024"
+description = "Honing calculator for Lost Ark"
+readme = "README.md"
+repository = "https://github.com/Kenivia/Honing-Forecast"
+license = "AGPL-3.0-or-later"
 
 
 [lib]
