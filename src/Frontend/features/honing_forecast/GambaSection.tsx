@@ -131,6 +131,7 @@ interface Upgrade {
     juice_taps_so_far?: number // Number of taps with juice so far
     free_taps_so_far?: number // Number of free taps so far
     use_juice?: boolean // Whether juice is currently enabled for this upgrade
+    cumulative_chance?: number // Cumulative chance of success for normal honing
 }
 
 
@@ -173,6 +174,23 @@ function calculateCurrentChance(upgrade: Upgrade) {
     const minCount = Math.min(upgrade.taps_so_far, 10)
     const currentChance = baseChance + (baseChance / 10) * minCount
     return Math.max(0, Math.min(1, upgrade.current_artisan >= 1 ? 1 : (upgrade.use_juice ? currentChance + upgrade.base_chance : currentChance)))
+}
+
+function updateCumulativeChance(upgrade: Upgrade, attemptChance: number) {
+    if (!upgrade.is_normal_honing) return
+
+    // Initialize cumulative chance if it doesn't exist
+    if (upgrade.cumulative_chance === undefined) {
+        upgrade.cumulative_chance = 0
+    }
+
+    // Update cumulative chance: add the probability of succeeding on this attempt
+    // given that all previous attempts failed
+    const previousFailureProbability = 1 - upgrade.cumulative_chance
+    upgrade.cumulative_chance += attemptChance * previousFailureProbability
+
+    // Ensure it doesn't exceed 1
+    upgrade.cumulative_chance = Math.min(1, upgrade.cumulative_chance)
 }
 export default function GambaSection({
     budget_inputs,
@@ -346,7 +364,8 @@ export default function GambaSection({
                 taps_so_far: 0,
                 juice_taps_so_far: 0,
                 free_taps_so_far: 0,
-                use_juice: false
+                use_juice: false,
+                cumulative_chance: 0
             })))
             // Update refs
             currentUpgradeArrRef.current = upgradesWithTypes
@@ -498,8 +517,8 @@ export default function GambaSection({
                 }
                 if (upgrade.use_juice) {
                     const juiceCost = upgrade.one_juice_cost ?? 0
-                    if (upgrade.is_weapon) next[8] = (next[8] ?? 0) + juiceCost
-                    else next[7] = (next[7] ?? 0) + juiceCost
+                    if (upgrade.is_weapon) next[7] = (next[7] ?? 0) + juiceCost
+                    else next[8] = (next[8] ?? 0) + juiceCost
                 }
             }
             else {
@@ -519,6 +538,13 @@ export default function GambaSection({
         // Update upgrade counters
         upgrade.taps_so_far = (upgrade.taps_so_far || 0) + 1
         upgrade.juice_taps_so_far = (upgrade.juice_taps_so_far || 0) + (upgrade.use_juice ? 1 : 0)
+
+        // Update cumulative chance for normal honing
+        if (upgrade.is_normal_honing) {
+            const currentChance = calculateCurrentChance(upgrade)
+            updateCumulativeChance(upgrade, currentChance)
+        }
+
         if (success) {
             upgrade.is_finished = true
             upgrade.completion_order = (upgrade.completion_order || 0) + 1
@@ -675,12 +701,17 @@ export default function GambaSection({
             // Success - mark as finished and update tap counts
             setUpgradeArr(prev => {
                 const next = prev.slice()
-                next[selectedUpgradeIndex] = {
+                const updatedUpgrade = {
                     ...next[selectedUpgradeIndex],
                     is_finished: true,
                     completion_order: completionCounter + 1,
                     free_taps_so_far: (next[selectedUpgradeIndex].free_taps_so_far ?? 0) + 1,
                 }
+                // Update cumulative chance for normal honing (free tap uses base chance)
+                if (updatedUpgrade.is_normal_honing) {
+                    updateCumulativeChance(updatedUpgrade, updatedUpgrade.base_chance)
+                }
+                next[selectedUpgradeIndex] = updatedUpgrade
                 return next
             })
 
@@ -689,10 +720,15 @@ export default function GambaSection({
             // Failure - still track the free tap
             setUpgradeArr(prev => {
                 const next = prev.slice()
-                next[selectedUpgradeIndex] = {
+                const updatedUpgrade = {
                     ...next[selectedUpgradeIndex],
                     free_taps_so_far: (next[selectedUpgradeIndex].free_taps_so_far ?? 0) + 1
                 }
+                // Update cumulative chance for normal honing (free tap uses base chance)
+                if (updatedUpgrade.is_normal_honing) {
+                    updateCumulativeChance(updatedUpgrade, updatedUpgrade.base_chance)
+                }
+                next[selectedUpgradeIndex] = updatedUpgrade
                 return next
             })
         }
@@ -843,9 +879,11 @@ export default function GambaSection({
                                             <>
                                                 <div>Base Rate: {(upgradeArr[selectedUpgradeIndex].base_chance * 100).toFixed(2)}%</div>
                                                 <div>Current Chance: {(calculateCurrentChance(upgradeArr[selectedUpgradeIndex]) * 100).toFixed(2)}%</div>
+
                                                 <div>Artisan: {(upgradeArr[selectedUpgradeIndex].current_artisan * 100).toFixed(2)}%</div>
                                                 <div>Trials: {upgradeArr[selectedUpgradeIndex].taps_so_far}</div>
                                                 <div>Free Taps: {upgradeArr[selectedUpgradeIndex].free_taps_so_far}</div>
+                                                <div>In a room of 100 people, you are less lucky than {((upgradeArr[selectedUpgradeIndex].cumulative_chance || 0) * 100).toFixed(0)} people</div>
                                             </>
                                         ) : (
                                             <div>Tap Count Range: {upgradeArr[selectedUpgradeIndex].tap_offset} - {upgradeArr[selectedUpgradeIndex].tap_offset + upgradeArr[selectedUpgradeIndex].prob_dist_len}</div>

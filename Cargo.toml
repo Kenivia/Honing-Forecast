@@ -13,13 +13,13 @@ crate-type = ["cdylib", "rlib"]
 wasm-bindgen = { version = "0.2", features = ["serde-serialize"] }
 serde = { version = "1.0", features = ["derive"] }
 serde-wasm-bindgen = "0.6"   # convert JsValue <-> serde types
-rand = "0.8.5"
+rand = "0.9"
+getrandom = { version = "0.3", features = ["wasm_js"] }
 js-sys = "0.3.78"
-weighted_rand = "0.4.2"
-getrandom ={version="0.2", features=["js"]}
 console_error_panic_hook = "0.1"
 web-sys = { version = "0.3", features = ["console"] }
 assert_float_eq = "1.1.4"
+
 
 [dev-dependencies]
 criterion = { version = "0.5", features = ["html_reports"] }

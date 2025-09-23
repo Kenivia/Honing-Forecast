@@ -1,5 +1,130 @@
 use crate::constants::*;
 use serde::{Deserialize, Serialize};
+// Vose alias table implementation (crate-free).
+// Usage: let alias = VoseAlias::new(elements_vec, probs_vec); alias.sample() or alias.sample_with(&mut rng);
+use rand::Rng;
+
+/// Simple Vose (alias) table implementation that stores the provided `elements`
+/// and a constant-time sampler. `T` must be `Copy`.
+#[derive(Debug, Clone)]
+pub struct VoseAlias<T: Copy> {
+    elements: Vec<T>,
+    /// per-slot probability threshold in [0,1]
+    probs: Vec<f32>,
+    /// alias slot indices (each is an index into `elements` / `probs`)
+    alias: Vec<usize>,
+    n: usize,
+}
+
+impl<T: Copy> VoseAlias<T> {
+    /// Build an alias table.
+    /// `elements.len()` must equal `probs.len()`. `probs` should sum to ~1.0 (we normalize if needed).
+    /// This function performs O(n) preprocessing.
+    pub fn new(elements: Vec<T>, mut probs: Vec<f32>) -> Self {
+        let n = elements.len();
+        assert_eq!(
+            n,
+            probs.len(),
+            "VoseAlias::new: elements and probs must have same length"
+        );
+
+        if n == 0 {
+            return VoseAlias {
+                elements,
+                probs: Vec::new(),
+                alias: Vec::new(),
+                n: 0,
+            };
+        }
+
+        // Normalize (and guard against degenerate / non-finite sums).
+        let sum: f32 = probs.iter().copied().fold(0.0, |a, b| a + b);
+        if !sum.is_finite() || sum <= 0.0 {
+            // fallback -> uniform
+            probs = vec![1.0_f32 / (n as f32); n];
+            // sum = 1.0;
+        } else if (sum - 1.0).abs() > 1e-6 {
+            for p in probs.iter_mut() {
+                *p /= sum;
+            }
+            // sum = 1.0;
+        }
+
+        // scaled probabilities p_i * n
+        let mut scaled: Vec<f32> = probs.iter().map(|&p| p * (n as f32)).collect();
+
+        let mut alias: Vec<usize> = vec![0usize; n];
+        let mut prob: Vec<f32> = vec![0.0f32; n];
+
+        let mut small: Vec<usize> = Vec::with_capacity(n);
+        let mut large: Vec<usize> = Vec::with_capacity(n);
+
+        for (i, &s) in scaled.iter().enumerate() {
+            if s < 1.0 {
+                small.push(i);
+            } else {
+                large.push(i);
+            }
+        }
+
+        // Main construction loop
+        while let (Some(l), Some(g)) = (small.pop(), large.pop()) {
+            prob[l] = scaled[l];
+            alias[l] = g;
+            // move excess from g to make scaled[g] smaller
+            scaled[g] = (scaled[g] + scaled[l]) - 1.0;
+            if scaled[g] < 1.0 {
+                small.push(g);
+            } else {
+                large.push(g);
+            }
+        }
+
+        // Remaining slots: set probability 1 and alias to self
+        for g in large {
+            prob[g] = 1.0;
+            alias[g] = g;
+        }
+        for l in small {
+            prob[l] = 1.0;
+            alias[l] = l;
+        }
+
+        VoseAlias {
+            elements,
+            probs: prob,
+            alias,
+            n,
+        }
+    }
+
+    /// Sample using a thread-local RNG (convenience; matches many existing crate APIs).
+    /// Returns one of the `elements`.
+    pub fn sample(&self) -> T {
+        let mut rng = rand::rng();
+        self.sample_with(&mut rng)
+    }
+
+    /// Sample using the provided RNG (useful to avoid repeated rng() calls).
+    pub fn sample_with<R: Rng + ?Sized>(&self, rng: &mut R) -> T {
+        debug_assert!(self.n > 0, "VoseAlias::sample_with on empty table");
+        let i = rng.random_range(0..self.n);
+        let u: f32 = rng.random_range(0.0..1.0);
+        if u < self.probs[i] {
+            self.elements[i]
+        } else {
+            self.elements[self.alias[i]]
+        }
+    }
+
+    // /// Convenience accessors
+    // pub fn len(&self) -> usize {
+    //     self.n
+    // }
+    // pub fn is_empty(&self) -> bool {
+    //     self.n == 0
+    // }
+}
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Upgrade {
@@ -18,9 +143,31 @@ pub struct Upgrade {
     pub tap_offset: i64,
     pub upgrade_plus_num: usize,
     pub special_value: f64,
+
+    #[serde(skip)]
+    pub alias_table: Option<VoseAlias<usize>>, // precomputed alias (skipped by serde)
 }
+
 impl Upgrade {
-    fn new_normal(
+    // Build an alias table from prob (f64 slice). Normalizes and falls back to uniform if sum <= 0.
+    fn build_alias_table_from_prob(prob: &[f64]) -> Option<VoseAlias<usize>> {
+        if prob.is_empty() {
+            return None;
+        }
+
+        let sum: f64 = prob.iter().sum();
+        let normalized: Vec<f32> = if sum <= 0.0 {
+            let n = prob.len();
+            vec![1.0_f32 / (n as f32); n]
+        } else {
+            prob.iter().map(|&p| (p / sum) as f32).collect()
+        };
+
+        let elements: Vec<usize> = (0..normalized.len()).collect();
+        Some(VoseAlias::new(elements, normalized))
+    }
+
+    pub fn new_normal(
         prob_dist: Vec<f64>,
         costs: [i64; 7],
         special_cost: i64,
@@ -29,7 +176,9 @@ impl Upgrade {
         upgrade_plus_num: usize,
     ) -> Upgrade {
         let prob_dist_len: usize = prob_dist.len();
-        let base_chance: f64 = prob_dist[0];
+        let base_chance: f64 = prob_dist.get(0).cloned().unwrap_or(0.0);
+        let alias_table = Upgrade::build_alias_table_from_prob(&prob_dist);
+
         Upgrade {
             is_normal_honing: true,
             prob_dist: prob_dist.clone(),
@@ -46,9 +195,11 @@ impl Upgrade {
             tap_offset: 1,
             upgrade_plus_num,
             special_value: -1.0_f64,
+            alias_table,
         }
     }
-    fn new_adv(
+
+    pub fn new_adv(
         prob_dist: Vec<f64>,
         costs: [i64; 7],
         one_juice_cost: i64,
@@ -59,6 +210,9 @@ impl Upgrade {
     ) -> Upgrade {
         let prob_dist_len: usize = prob_dist.len();
         assert!(prob_dist_len == adv_juice_cost.len());
+
+        let alias_table = Upgrade::build_alias_table_from_prob(&prob_dist);
+
         Upgrade {
             is_normal_honing: false,
             prob_dist: prob_dist.clone(),
@@ -75,9 +229,11 @@ impl Upgrade {
             tap_offset: adv_cost_start,
             upgrade_plus_num,
             special_value: -1.0_f64,
+            alias_table,
         }
     }
 }
+
 /// Produce the raw chance sequence used by the TS `raw_chance` helper.
 /// Mirrors the JS behavior: increasing base chance with soft pity, artisan accumulation,
 /// and stops when artisan >= 1 (in which case the chance is set to 1).

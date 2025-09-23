@@ -88,7 +88,7 @@ export default function Separator({ activePage, onPageChange }: SeparatorProps) 
                 Gamba simulator
                 {clickedButton === 'gamba' && (
                     <div style={helpTextStyle}>
-                        Simulate honing but it doesn't hurt your wallet or your soul
+                        Try your luck
                     </div>
                 )}
             </button>

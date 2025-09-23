@@ -128,12 +128,16 @@ export function renderTooltip(tooltip: TooltipState) {
                 <div style={containerStyle}>
                     <div style={leftColumnStyle}>
                         <div><strong>{upgrade.is_normal_honing ? '+' : 'Adv +'}{upgrade.upgrade_plus_num + (upgrade.is_normal_honing ? 1 : 0)} {upgrade.equipment_type}</strong></div>
+
                         {upgrade.is_finished && upgrade.current_artisan && (
                             <div>Artisan: {(upgrade.current_artisan * 100).toFixed(2)}%</div>
                         )}
                         <div>Taps: {upgrade.taps_so_far ?? 0}</div>
                         <div>Juice Taps: {upgrade.juice_taps_so_far ?? 0}</div>
                         <div>Free Taps: {upgrade.free_taps_so_far ?? 0}</div>
+                        {upgrade.is_normal_honing && upgrade.is_finished && (
+                            <div>In a room of 100 people, you are less lucky than {((upgrade.cumulative_chance || 0) * 100).toFixed(0)} people</div>
+                        )}
                     </div>
                     <div style={rightColumnStyle}>
                         <div><strong>Costs:</strong></div>
