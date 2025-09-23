@@ -115,11 +115,16 @@ function to_step(arr: number[]) {
 
 //     return startIndex; // No non-zero element found in the array
 // }
-export default function Graph({ title, labels, counts, mins, maxs, width = 640, height = 320, budgets = null, additionalBudgets = null, hasSelection = false, isLoading = false, cumulative = true }: GraphProps) {
+function Graph({ title, labels, counts, mins, maxs, width = 640, height = 320, budgets = null, additionalBudgets = null, hasSelection = false, isLoading = false, cumulative = true }: GraphProps) {
     const [visible, setVisible] = useState<boolean[]>(() => [true, true, false, false, false, true, false])
     const [hoverSeries, setHoverSeries] = useState<number | null>(null)
     const [hoverBucket, setHoverBucket] = useState<number | null>(null)
     const chartRef = useRef<HTMLDivElement | null>(null)
+
+    // Create stable pointer handler
+    const handleSeriesPointerMove = useCallback((idx: number) => () => {
+        setHoverSeries(idx)
+    }, [setHoverSeries])
 
     const bucketLen = counts?.[0]?.length || 1000
     const data_size = counts?.[0].reduce((partialSum, a) => partialSum + a, 0) || 1;
@@ -266,6 +271,73 @@ export default function Graph({ title, labels, counts, mins, maxs, width = 640, 
 
     const anyVisible = useMemo(() => labels.some((_, i) => visible[i] && keepMask[i]), [labels, visible, keepMask])
 
+    // Memoize the AnimatedLineSeries nodes
+    const lineSeriesNodes = useMemo(() => {
+        return sortedVisibleIndices.map((seriesIdx) => (
+            <AnimatedLineSeries
+                key={labels[seriesIdx]}
+                dataKey={labels[seriesIdx]}
+                data={dataSeries[seriesIdx] || []}
+                xAccessor={xAccessor}
+                yAccessor={yAccessor}
+                stroke={SERIES_COLORS_VARS[seriesIdx]}
+                strokeWidth={hoverSeries === seriesIdx ? 4 : 1.5}
+                opacity={1}
+                onPointerMove={handleSeriesPointerMove(seriesIdx)}
+            />
+        ));
+    }, [sortedVisibleIndices, dataSeries, hoverSeries, labels, handleSeriesPointerMove]);
+
+    // Memoize Points Of Interest (POI)
+    const poiNodes = useMemo(() => {
+        if (!counts || !anyVisible) return null;
+        const innerW = width - plotLeft - plotRight;
+        const innerH = height - plotTop - plotBottom;
+        const elems: React.ReactElement[] = [];
+
+        const renderFor = (budgetData: number[] | null, keyPrefix: string, circleRadius = 7, strokeColor = "#000") => {
+            if (!budgetData) return;
+            labels.forEach((_, i) => {
+                if (!visible[i] || !keepMask[i]) return;
+                const range = Math.max(1e-9, (maxs![i] - mins![i]));
+                const frac = (budgetData[i] - mins![i]) / range;
+                const bucket_idx = Math.max(0, Math.min(bucketLen - 1, Math.round(frac * (bucketLen - 1))));
+                const cx = plotLeft + (bucket_idx / Math.max(1, bucketLen - 1)) * innerW;
+                const seriesVals = cumulative && cdfSeries ? cdfSeries[i] : ((normalizedCounts && normalizedCounts[i]) || counts[i]);
+                const denomY2 = Math.max(1e-9, yMax);
+                const cy = plotTop + innerH - seriesVals[bucket_idx] / denomY2 * innerH;
+                const labelText = formatSig3(budgetData[i]);
+                const boxW = Math.max(16, labelText.length * 8);
+                const boxH = 18;
+
+                elems.push(
+                    <g key={`${keyPrefix}-${i}`}>
+                        <circle cx={cx} cy={cy} r={circleRadius} fill={SERIES_COLORS_VARS[i]} stroke={strokeColor} strokeWidth={2} />
+                        <rect x={cx + 6} y={cy - boxH - 4} width={boxW} height={boxH} fill="rgba(0,0,0,0.5)" rx={3} ry={3} />
+                        <text x={cx + 10} y={cy - 8} fill={SERIES_COLORS_VARS[i]} fontSize={12}>{labelText}</text>
+                    </g>
+                );
+            });
+        };
+
+        renderFor(budgets, "poi-primary", 5, "#000");
+        renderFor(additionalBudgets, "poi-additional", 7, "rgb(0,255,0)");
+
+        return elems.length ? <g>{elems}</g> : null;
+    }, [budgets, additionalBudgets, counts, anyVisible, visible, keepMask, width, height, bucketLen, mins, maxs, cdfSeries, normalizedCounts, cumulative, yMax, labels]);
+
+    // Memoize hover marker computation
+    const hoverMarker = useMemo(() => {
+        if (fallbackSeries == null || hoverBucket == null || !counts || !visible[fallbackSeries] || !keepMask[fallbackSeries]) return null;
+        const innerW = width - plotLeft - plotRight;
+        const innerH = height - plotTop - plotBottom;
+        const cx = plotLeft + (hoverBucket / Math.max(1, bucketLen)) * innerW;
+        const hoverSeriesVals = cumulative && cdfSeries ? cdfSeries[fallbackSeries] : ((normalizedCounts && normalizedCounts[fallbackSeries]) || counts[fallbackSeries]);
+        const denomY3 = Math.max(1e-9, yMax);
+        const cy = plotTop + innerH - (to_step(hoverSeriesVals)[hoverBucket] / denomY3) * innerH;
+        return { cx, cy, series: fallbackSeries };
+    }, [fallbackSeries, hoverBucket, counts, visible, keepMask, cumulative, cdfSeries, normalizedCounts, bucketLen, width, height, yMax]);
+
     return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: 16, borderRadius: 16, backgroundColor: 'var(--bg-tertiary)' }} onMouseMove={handleMouseMove} onMouseLeave={handleMouseLeave}>
             {title ? <div style={{ color: 'var(--text-primary)', fontWeight: 600 }}>{title}</div> : null}
@@ -309,85 +381,15 @@ export default function Graph({ title, labels, counts, mins, maxs, width = 640, 
                         }}
                         tickLabelProps={() => ({ fill: hoverColor, fontSize: 11 })}
                     />
-                    {sortedVisibleIndices.map((seriesIdx) => (
-                        <AnimatedLineSeries
-                            key={labels[seriesIdx]}
-                            dataKey={labels[seriesIdx]}
-                            data={dataSeries[seriesIdx] || []}
-                            xAccessor={xAccessor}
-                            yAccessor={yAccessor}
-                            stroke={SERIES_COLORS_VARS[seriesIdx]}
-                            strokeWidth={hoverSeries === seriesIdx ? 4 : 1.5}
-                            opacity={1}
-                            onPointerMove={() => setHoverSeries(seriesIdx)}
-                        />
-                    ))}
+                    {lineSeriesNodes}
 
-                    {/* Helper function to render points of interest */}
-                    {(() => {
-                        const renderPointsOfInterest = (budgetData: number[] | null, keyPrefix: string, circleRadius: number = 7, strokeColor: string = "#000") => {
-                            if (!counts || !anyVisible || !budgetData) return null
-
-                            return (
-                                <g>
-                                    {labels.map((_, i) => {
-                                        if (!visible[i] || !keepMask[i]) return null
-
-                                        const innerW = width - plotLeft - plotRight
-                                        const innerH = height - plotTop - plotBottom
-                                        let cx, cy, label;
-
-                                        const range = Math.max(1e-9, (maxs[i] - mins[i]))
-                                        const frac = (budgetData[i] - mins[i]) / range
-                                        const bucket_idx = Math.max(0, Math.min(bucketLen - 1, Math.round(frac * (bucketLen - 1))))
-                                        cx = plotLeft + (bucket_idx / Math.max(1, bucketLen - 1)) * innerW;
-                                        const seriesVals = cumulative && cdfSeries ? cdfSeries[i] : ((normalizedCounts && normalizedCounts[i]) || counts[i])
-                                        const denomY2 = Math.max(1e-9, yMax)
-                                        cy = plotTop + innerH - seriesVals[bucket_idx] / denomY2 * innerH;
-                                        label = formatSig3(budgetData[i])
-
-                                        const boxW = Math.max(16, label.length * 8)
-                                        const boxH = 18
-                                        return (
-                                            <g key={`${keyPrefix} - ${i}`}>
-                                                <circle cx={cx} cy={cy} r={circleRadius} fill={SERIES_COLORS_VARS[i]} stroke={strokeColor} strokeWidth={2} />
-                                                <rect x={cx + 6} y={cy - boxH - 4} width={boxW} height={boxH} fill="rgba(0,0,0,0.5)" rx={3} ry={3} />
-                                                <text x={cx + 10} y={cy - 8} fill={SERIES_COLORS_VARS[i]} fontSize={12}>{label}</text>
-                                            </g>
-                                        )
-                                    })}
-                                </g>
-                            )
-                        }
-
-                        return (
-                            <>
-                                {/* Primary budget points of interest */}
-                                {renderPointsOfInterest(budgets, "poi-primary", 5, "#000")}
-                                {/* Additional budget points of interest */}
-                                {renderPointsOfInterest(additionalBudgets, "poi-additional", 7, "rgb(0, 255, 0)")}
-                            </>
-                        )
-                    })()}
+                    {/* Primary & additional POI */}
+                    {poiNodes}
 
                     {/* Hover point snapped to selected series */}
-                    {fallbackSeries != null && hoverBucket != null && counts && visible[fallbackSeries] && keepMask[fallbackSeries] && (
+                    {hoverMarker && (
                         <g>
-                            {(() => {
-                                // const bucket_idx = findNearestNonZeroIndex(counts[fallbackSeries], Math.max(Math.min(Math.round((budgets[fallbackSeries] * bucketLen / (maxs[fallbackSeries] - mins[fallbackSeries]))), bucketLen - 1), 0))
-                                const innerW = width - plotLeft - plotRight
-                                const innerH = height - plotTop - plotBottom
-                                const cx = plotLeft + (hoverBucket / Math.max(1, bucketLen)) * innerW
-                                const hoverSeriesVals = cumulative && cdfSeries ? cdfSeries[fallbackSeries] : ((normalizedCounts && normalizedCounts[fallbackSeries]) || counts[fallbackSeries])
-                                const denomY3 = Math.max(1e-9, yMax)
-                                const cy = plotTop + innerH - (to_step(hoverSeriesVals)[hoverBucket] / denomY3) * innerH
-
-                                return (
-                                    <g>
-                                        <circle cx={cx} cy={cy} r={4.5} fill={SERIES_COLORS_VARS[fallbackSeries]} stroke="#000" />
-                                    </g>
-                                )
-                            })()}
+                            <circle cx={hoverMarker.cx} cy={hoverMarker.cy} r={4.5} fill={SERIES_COLORS_VARS[hoverMarker.series]} stroke="#000" />
                         </g>
                     )}
 
@@ -449,4 +451,5 @@ export default function Graph({ title, labels, counts, mins, maxs, width = 640, 
     )
 }
 
-
+// Export memoized component for performance
+export default React.memo(Graph)

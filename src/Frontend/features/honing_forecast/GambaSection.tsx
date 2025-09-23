@@ -79,7 +79,7 @@ type UpgradeTooltipProps = {
 }
 
 function UpgradeTooltip({ upgrade, children, tooltipHandlers }: UpgradeTooltipProps) {
-    const costLabels = ['Shard', 'Blue', 'Red', 'Gold', 'Silver', 'Oreha', 'Leap', 'Blue Juice', 'Red Juice', 'Special Leap']
+    const costLabels = ['Red', 'Blue', 'Leaps', 'Shards', 'Oreha', "Gold", 'Silver', 'Red Juice', 'Blue Juice', 'Special Leaps']
     const tapRecordCosts = calculateTapRecordCosts(upgrade)
 
     const handleMouseEnter = (e: React.MouseEvent) => {
@@ -199,6 +199,7 @@ export default function GambaSection({
     const [upgradeArr, setUpgradeArr] = useState<Upgrade[]>([])
     const [selectedUpgradeIndex, setSelectedUpgradeIndex] = useState<number | null>(0)
     const [finalCosts, setFinalCosts] = useState<number[]>(new Array(10).fill(0))
+    const [unlockCosts, setUnlockCosts] = useState<number[]>(new Array(2).fill(0))
     const [isAutoAttempting, setIsAutoAttempting] = useState<boolean>(false)
     const [isAutoAttemptingThisOne, setIsAutoAttemptingThisOne] = useState<boolean>(false)
     const [completionCounter, setCompletionCounter] = useState<number>(0)
@@ -213,6 +214,7 @@ export default function GambaSection({
     const selectedUpgradeIndexRef = useRef(selectedUpgradeIndex)
     const upgradeArrRef = useRef(upgradeArr)
     const finalCostsRef = useRef(finalCosts)
+    const unlockCostsRef = useRef(unlockCosts)
     const isAutoAttemptingRef = useRef(isAutoAttempting)
     const isAutoAttemptingThisOneRef = useRef(isAutoAttemptingThisOne)
 
@@ -223,6 +225,7 @@ export default function GambaSection({
     useEffect(() => { selectedUpgradeIndexRef.current = selectedUpgradeIndex }, [selectedUpgradeIndex])
     useEffect(() => { upgradeArrRef.current = upgradeArr }, [upgradeArr])
     useEffect(() => { finalCostsRef.current = finalCosts }, [finalCosts])
+    useEffect(() => { unlockCostsRef.current = unlockCosts }, [unlockCosts])
     useEffect(() => { isAutoAttemptingRef.current = isAutoAttempting }, [isAutoAttempting])
     useEffect(() => { isAutoAttemptingThisOneRef.current = isAutoAttemptingThisOne }, [isAutoAttemptingThisOne])
     // Initialize parser worker
@@ -269,6 +272,9 @@ export default function GambaSection({
         parserWorkerRef.current.onmessage = (e) => {
             if (e.data.type === "result" && e.data.id === id) {
                 const upgrades = e.data.result.upgrades as Upgrade[]
+                const unlocks = e.data.result.unlocks as number[]
+                setUnlockCosts(unlocks)
+                unlockCostsRef.current = unlocks
 
                 // Add equipment types to upgrades based on ticked equipment in grids
                 let seen_ind_normal = Array.from({ length: TOP_COLS }, () => 0);
@@ -663,7 +669,7 @@ export default function GambaSection({
 
     // Create budget data for SpreadsheetGrid
     const budgetTotalData = INPUT_LABELS.reduce((acc, label, index) => {
-        acc[label] = finalCosts[index].toString()
+        acc[label] = (finalCosts[index] + index == 3 ? unlockCosts[0] : index == 6 ? unlockCosts[1] : 0).toString()
         return acc
     }, {} as Record<string, string>)
 
@@ -790,7 +796,9 @@ export default function GambaSection({
                         <div style={{ display: "flex", gap: 20 }}>
                             {/* Upgrade Info Box - Always shown */}
                             <div style={{ width: 250, padding: 15, border: '1px solid var(--border-accent)', borderRadius: '8px' }}>
-                                <h4 style={{ margin: 0, marginBottom: 10 }}>Upgrade Info</h4>
+                                <h4 style={{ margin: 0, marginBottom: 10 }}>
+                                    {upgradeArr[selectedUpgradeIndex] === undefined ? "" :
+                                        upgradeArr[selectedUpgradeIndex].is_normal_honing ? '+' : 'Adv +'}{upgradeArr[selectedUpgradeIndex] === undefined ? "" : upgradeArr[selectedUpgradeIndex].is_normal_honing ? upgradeArr[selectedUpgradeIndex].upgrade_plus_num + 1 : (upgradeArr[selectedUpgradeIndex].upgrade_plus_num + 1) * 10} {upgradeArr[selectedUpgradeIndex] === undefined ? "" : upgradeArr[selectedUpgradeIndex].equipment_type}</h4>
                                 {selectedUpgradeIndex !== null && upgradeArr[selectedUpgradeIndex] ? (
                                     <>
                                         {upgradeArr[selectedUpgradeIndex].is_normal_honing ? (
@@ -915,7 +923,7 @@ export default function GambaSection({
                                     width={640}
                                     height={320}
                                     budgets={OUTPUT_LABELS.map(label => Number(budget_inputs[label] || 0))}
-                                    additionalBudgets={finalCosts.slice(0, 7)} // First 7 elements for total costs
+                                    additionalBudgets={finalCosts.slice(0, 7).map((v, i) => v + i == 3 ? unlockCosts[0] : i == 6 ? unlockCosts[1] : 0)} // First 7 elements for total costs
                                     hasSelection={AnythingTicked}
                                     isLoading={CostToChanceBusy}
                                     cumulative={cumulativeGraph}

@@ -173,6 +173,13 @@ export default function HoningForecastUI() {
         const cleanValue = value.replace(/[^0-9.]/g, '')
         set_desired_chance(cleanValue)
     }
+
+    const onDesiredBlur = () => {
+        const numValue = parseFloat(desired_chance)
+        if (!isNaN(numValue) && numValue > 100) {
+            set_desired_chance('100')
+        }
+    }
     const adv_hone_strategy_change = (value: string) => set_adv_hone_strategy_change(value)
 
     const clearAll = createClearAll({
@@ -370,22 +377,23 @@ export default function HoningForecastUI() {
                 </div>
 
                 {/* Page Separator */}
-                <Separator activePage={activePage} onPageChange={setActivePage} tooltipHandlers={tooltipHandlers} />
+                <Separator activePage={activePage} onPageChange={setActivePage} />
 
-                {/* Conditional Input Sections */}
-                {activePage === 'chance-to-cost' && (
+                {/* Always-rendered pages with display toggle */}
+                <div className={activePage === 'chance-to-cost' ? 'page' : 'page page--hidden'} aria-hidden={activePage !== 'chance-to-cost'}>
                     <ChanceToCostSection
                         desired_chance={desired_chance}
                         onDesiredChange={onDesiredChange}
+                        onDesiredBlur={onDesiredBlur}
                         cost_result={cost_result}
                         cachedCostGraphData={cachedCostGraphData}
                         AnythingTicked={AnythingTicked}
                         ChanceToCostBusy={ChanceToCostBusy}
                         cumulativeGraph={cumulativeGraph}
                     />
-                )}
+                </div>
 
-                {activePage === 'cost-to-chance' && (
+                <div className={activePage === 'cost-to-chance' ? 'page' : 'page page--hidden'} aria-hidden={activePage !== 'cost-to-chance'}>
                     <CostToChanceSection
                         budget_inputs={budget_inputs}
                         set_budget_inputs={set_budget_inputs}
@@ -399,9 +407,9 @@ export default function HoningForecastUI() {
                         CostToChanceBusy={CostToChanceBusy}
                         cumulativeGraph={cumulativeGraph}
                     />
-                )}
+                </div>
 
-                {activePage === 'gamba' && (
+                <div className={activePage === 'gamba' ? 'page' : 'page page--hidden'} aria-hidden={activePage !== 'gamba'}>
                     <GambaSection
                         budget_inputs={budget_inputs}
                         set_budget_inputs={set_budget_inputs}
@@ -422,7 +430,7 @@ export default function HoningForecastUI() {
                         CostToChanceBusy={CostToChanceBusy}
                         cumulativeGraph={cumulativeGraph}
                     />
-                )}
+                </div>
             </div>
 
         </div >

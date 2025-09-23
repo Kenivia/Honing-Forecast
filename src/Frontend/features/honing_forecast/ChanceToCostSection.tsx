@@ -7,6 +7,7 @@ import { OUTPUT_LABELS } from './constants.ts'
 type ChanceToCostSectionProps = {
     desired_chance: string
     onDesiredChange: (_: string) => void
+    onDesiredBlur: () => void
     cost_result: any
     cachedCostGraphData: { hist_counts?: any, hist_mins?: any, hist_maxs?: any } | null
     AnythingTicked: boolean
@@ -17,6 +18,7 @@ type ChanceToCostSectionProps = {
 export default function ChanceToCostSection({
     desired_chance,
     onDesiredChange,
+    onDesiredBlur,
     cost_result,
     cachedCostGraphData,
     AnythingTicked,
@@ -36,6 +38,7 @@ export default function ChanceToCostSection({
                             type="text"
                             value={desired_chance}
                             onChange={(e) => onDesiredChange(e.target.value)}
+                            onBlur={onDesiredBlur}
                             placeholder="0"
                             style={{
                                 width: 70,

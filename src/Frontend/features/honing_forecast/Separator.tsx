@@ -1,49 +1,20 @@
-import React from 'react'
+import React, { useState, useEffect } from 'react'
 
 type SeparatorProps = {
     activePage: 'chance-to-cost' | 'cost-to-chance' | 'gamba'
     onPageChange: (_page: 'chance-to-cost' | 'cost-to-chance' | 'gamba') => void
-    tooltipHandlers: {
-        showSeparatorTooltip: (_text: string, _x: number, _y: number) => void
-        hideTooltip: () => void
-        updateTooltipPosition: (_x: number, _y: number) => void
-    }
 }
 
-type TooltipProps = {
-    text: string
-    children: React.ReactNode
-    tooltipHandlers: SeparatorProps['tooltipHandlers']
-}
+export default function Separator({ activePage, onPageChange }: SeparatorProps) {
+    const [clickedButton, setClickedButton] = useState<string | null>(activePage)
 
-function CustomTooltip({ text, children, tooltipHandlers }: TooltipProps) {
-    const handleMouseEnter = (e: React.MouseEvent) => {
-        tooltipHandlers.showSeparatorTooltip(text, e.clientX, e.clientY)
-    }
-
-    const handleMouseMove = (e: React.MouseEvent) => {
-        tooltipHandlers.updateTooltipPosition(e.clientX, e.clientY)
-    }
-
-    const handleMouseLeave = () => {
-        tooltipHandlers.hideTooltip()
-    }
-
-    return (
-        <div
-            onMouseEnter={handleMouseEnter}
-            onMouseMove={handleMouseMove}
-            onMouseLeave={handleMouseLeave}
-        >
-            {children}
-        </div>
-    )
-}
-
-export default function Separator({ activePage, onPageChange, tooltipHandlers }: SeparatorProps) {
+    // Update clickedButton when activePage changes
+    useEffect(() => {
+        setClickedButton(activePage)
+    }, [activePage])
     const buttonStyle = (isSelected: boolean) => ({
         backgroundColor: isSelected ? 'var(--btn-toggle-selected)' : 'var(--btn-toggle-deselected)',
-        color: isSelected ? '#ffffff' : '#ffffff',
+        color: '#ffffff',
         border: '2px',
         padding: '6px 12px',
         borderRadius: 'var(--border-radius-small)',
@@ -53,44 +24,74 @@ export default function Separator({ activePage, onPageChange, tooltipHandlers }:
         transition: 'all 0.2s ease',
         opacity: isSelected ? 1 : 0.6,
         paddingTop: "10px",
+        textAlign: 'left' as const,
+        display: 'flex',
+        flexDirection: 'column' as const,
+        alignItems: 'flex-start',
+        minHeight: '44px',
     })
+
+    const helpTextStyle = {
+        fontSize: '14px',
+        fontWeight: 'normal',
+        marginTop: '4px',
+        whiteSpace: 'nowrap' as const,
+        textAlign: 'left' as const,
+    }
 
     const containerStyle = {
         height: '44px',
         display: 'flex',
-        alignItems: 'center',
+        alignItems: 'flex-start',
         gap: 'var(--spacing-xl)',
         borderBottom: '4px solid var(--btn-toggle-selected)',
         marginTop: '0px',
         marginBottom: '0px',
+        paddingTop: '8px',
+        paddingBottom: '60px',
+    }
+
+    const handleButtonClick = (page: 'chance-to-cost' | 'cost-to-chance' | 'gamba') => {
+        onPageChange(page)
+        // Always show help text for the clicked button, don't toggle off
+        setClickedButton(page)
     }
 
     return (
         <div style={containerStyle}>
-            <CustomTooltip text="Calculate the cost required to achieve a desired success chance" tooltipHandlers={tooltipHandlers}>
-                <button
-                    style={buttonStyle(activePage === 'chance-to-cost')}
-                    onClick={() => onPageChange('chance-to-cost')}
-                >
-                    Chance mode
-                </button>
-            </CustomTooltip>
-            <CustomTooltip text="Calculate the success chance for a given budget" tooltipHandlers={tooltipHandlers}>
-                <button
-                    style={buttonStyle(activePage === 'cost-to-chance')}
-                    onClick={() => onPageChange('cost-to-chance')}
-                >
-                    Budget mode
-                </button>
-            </CustomTooltip>
-            <CustomTooltip text="Simulate gambling scenarios with different strategies" tooltipHandlers={tooltipHandlers}>
-                <button
-                    style={buttonStyle(activePage === 'gamba')}
-                    onClick={() => onPageChange('gamba')}
-                >
-                    Gamba simulator
-                </button>
-            </CustomTooltip>
+            <button
+                style={buttonStyle(activePage === 'chance-to-cost')}
+                onClick={() => handleButtonClick('chance-to-cost')}
+            >
+                Chance mode
+                {clickedButton === 'chance-to-cost' && (
+                    <div style={helpTextStyle}>
+                        I want to have x% chance to pass, how much mats will I need?
+                    </div>
+                )}
+            </button>
+            <button
+                style={buttonStyle(activePage === 'cost-to-chance')}
+                onClick={() => handleButtonClick('cost-to-chance')}
+            >
+                Budget mode
+                {clickedButton === 'cost-to-chance' && (
+                    <div style={helpTextStyle}>
+                        I have this much mats, what are my odds of success?
+                    </div>
+                )}
+            </button>
+            <button
+                style={buttonStyle(activePage === 'gamba')}
+                onClick={() => handleButtonClick('gamba')}
+            >
+                Gamba simulator
+                {clickedButton === 'gamba' && (
+                    <div style={helpTextStyle}>
+                        Simulate honing but it doesn't hurt your wallet or your soul
+                    </div>
+                )}
+            </button>
         </div>
     )
 }

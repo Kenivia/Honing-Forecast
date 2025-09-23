@@ -107,6 +107,17 @@ textarea {
     outline: none;
 }
 
+/* Page visibility classes for performance optimization */
+.page {
+    width: 100%;
+    height: 100%;
+}
+
+.page--hidden {
+    display: none !important;
+    pointer-events: none;
+}
+
 /* Respect user color scheme preferences */
 /* @media (prefers-color-scheme: light) {
     :root {

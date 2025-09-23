@@ -9,6 +9,7 @@ mod value_estimation;
 use crate::chance_to_cost::chance_to_cost;
 use crate::constants::EVENT_ARTISAN_MULTIPLIER;
 use crate::cost_to_chance::cost_to_chance;
+use crate::helpers::calc_unlock;
 use crate::helpers::ticks_to_counts;
 use crate::parser::parser;
 
@@ -82,35 +83,6 @@ pub fn cost_to_chance_wrapper(input: JsValue) -> JsValue {
     to_value(&out).unwrap()
 }
 
-#[derive(Deserialize)]
-pub struct ParserPayload {
-    normal_counts: Vec<Vec<i64>>,
-    adv_counts: Vec<Vec<i64>>,
-    adv_hone_strategy: String,
-    artisan_rate_arr: Vec<f64>,
-    extra_arr: Vec<f64>,
-    extra_num_arr: Vec<usize>,
-    express_event: bool,
-}
-
-#[wasm_bindgen]
-pub fn parser_wrapper(input: JsValue) -> JsValue {
-    console_error_panic_hook::set_once();
-    let payload: ParserPayload = from_value(input).unwrap();
-
-    let upgrades = parser(
-        &payload.normal_counts,
-        &payload.adv_counts,
-        &payload.adv_hone_strategy,
-        &payload.artisan_rate_arr,
-        &payload.extra_arr,
-        &payload.extra_num_arr,
-        payload.express_event,
-    );
-
-    to_value(&upgrades).unwrap()
-}
-
 #[wasm_bindgen]
 pub fn parser_wrapper_unified(input: JsValue) -> JsValue {
     console_error_panic_hook::set_once();
@@ -141,7 +113,7 @@ pub fn parser_wrapper_unified(input: JsValue) -> JsValue {
         payload.express_event,
     );
 
-    to_value(&upgrades).unwrap()
+    to_value(&(upgrades, calc_unlock(&normal_counts, &adv_counts))).unwrap()
 }
 
 // Histograms are included in the default wrappers' outputs

@@ -40,7 +40,7 @@ export function createTooltipHandlers(
             visible: true,
             type: 'upgrade',
             x: x + 10,
-            y: y - 10,
+            y: y,
             content: null,
             upgradeData: {
                 upgrade,

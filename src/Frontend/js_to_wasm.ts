@@ -1,5 +1,5 @@
 // import init from "../../pkg/honing_forecast_bg.js?init"
-import init, { chance_to_cost_wrapper, cost_to_chance_wrapper, parser_wrapper, parser_wrapper_unified } from "../../pkg/honing_forecast.js" // or "../pkg/honing_wasm"
+import init, { chance_to_cost_wrapper, cost_to_chance_wrapper, parser_wrapper_unified } from "../../pkg/honing_forecast.js" // or "../pkg/honing_wasm"
 
 const LABELS = ["Red", "Blue", "Leaps", "Shards", "Oreha", "Gold", "Silver(WIP)"]
 
@@ -25,20 +25,6 @@ async function CostToChanceWasm(payload: any) {
     }
 }
 
-async function ParserWasm(payload: any) {
-    try {
-        await init() // MUST await initialization
-        try {
-            // Returns array of Upgrade objects
-            return parser_wrapper(payload)
-        } catch (e) {
-            console.error("parser call threw:", e)
-        }
-    } catch (initErr) {
-        console.error("parser init failed:", initErr)
-    }
-}
-
 async function ParserWasmUnified(payload: any) {
     try {
         await init() // MUST await initialization
@@ -59,7 +45,7 @@ self.addEventListener("message", async (ev) => {
 
     const { id, payload, which_one } = msg
 
-    if (!(which_one == "CostToChance" || which_one == "ChanceToCost" || which_one == "Parser" || which_one == "ParserUnified")) {
+    if (!(which_one == "CostToChance" || which_one == "ChanceToCost" || which_one == "ParserUnified")) {
         throw "Invalid operation type" + which_one
     }
 
@@ -87,15 +73,12 @@ self.addEventListener("message", async (ev) => {
         result.hist_counts = out.hist_counts
         result.hist_mins = out.hist_mins
         result.hist_maxs = out.hist_maxs
-    } else if (which_one == "Parser") {
-        let out = await ParserWasm(payload)
-        result = {
-            upgrades: out,
-        }
     } else if (which_one == "ParserUnified") {
         let out = await ParserWasmUnified(payload)
+        console.log(out)
         result = {
-            upgrades: out,
+            upgrades: out[0],
+            unlocks: out[1],
         }
     }
 
