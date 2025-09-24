@@ -82,7 +82,6 @@ export default function HoningForecastUI() {
         const updateScale = () => {
             const width = window.innerWidth
             if (width < 1033) {
-                // Scale down proportionally, with a minimum scale of 0.7
                 const scale = Math.max(0, width / 1033)
                 setMainScale(scale)
             } else {
@@ -173,8 +172,34 @@ export default function HoningForecastUI() {
 
     useEffect(() => {
         const temp_fn = function (ev: MouseEvent) { mouseMoveLogic(ev, marqueeRef, topGridRef, bottomGridRef, setMarquee) }
+
+        // Helper function to convert touch event to mouse event
+        const createMouseEventFromTouch = (touchEvent: TouchEvent, type: 'mousemove' | 'mouseup'): MouseEvent => {
+            const touch = touchEvent.touches[0] || touchEvent.changedTouches[0];
+            return {
+                ...touchEvent,
+                type,
+                clientX: touch.clientX,
+                clientY: touch.clientY,
+                button: 0,
+                buttons: type === 'mousemove' ? 1 : 0,
+                preventDefault: touchEvent.preventDefault.bind(touchEvent),
+                stopPropagation: touchEvent.stopPropagation.bind(touchEvent),
+            } as unknown as MouseEvent;
+        };
+
+        const touchMoveHandler = (ev: TouchEvent) => {
+            ev.preventDefault();
+            const mouseEvent = createMouseEventFromTouch(ev, 'mousemove');
+            mouseMoveLogic(mouseEvent, marqueeRef, topGridRef, bottomGridRef, setMarquee);
+        };
+
         window.addEventListener('mousemove', temp_fn)
-        return () => window.removeEventListener('mousemove', temp_fn)
+        window.addEventListener('touchmove', touchMoveHandler, { passive: false })
+        return () => {
+            window.removeEventListener('mousemove', temp_fn)
+            window.removeEventListener('touchmove', touchMoveHandler)
+        }
     }, [])
 
     useEffect(() => {
@@ -188,8 +213,34 @@ export default function HoningForecastUI() {
             set_prev_checked_arr_bottom,
             setMarquee,
         })
+
+        // Helper function to convert touch event to mouse event
+        const createMouseEventFromTouch = (touchEvent: TouchEvent, type: 'mousemove' | 'mouseup'): MouseEvent => {
+            const touch = touchEvent.touches[0] || touchEvent.changedTouches[0];
+            return {
+                ...touchEvent,
+                type,
+                clientX: touch.clientX,
+                clientY: touch.clientY,
+                button: 0,
+                buttons: type === 'mousemove' ? 1 : 0,
+                preventDefault: touchEvent.preventDefault.bind(touchEvent),
+                stopPropagation: touchEvent.stopPropagation.bind(touchEvent),
+            } as unknown as MouseEvent;
+        };
+
+        const touchEndHandler = (ev: TouchEvent) => {
+            ev.preventDefault();
+            const mouseEvent = createMouseEventFromTouch(ev, 'mouseup');
+            onUp(mouseEvent);
+        };
+
         window.addEventListener('mouseup', onUp)
-        return () => window.removeEventListener('mouseup', onUp)
+        window.addEventListener('touchend', touchEndHandler, { passive: false })
+        return () => {
+            window.removeEventListener('mouseup', onUp)
+            window.removeEventListener('touchend', touchEndHandler)
+        }
     }, [])
 
     useEffect(() => {

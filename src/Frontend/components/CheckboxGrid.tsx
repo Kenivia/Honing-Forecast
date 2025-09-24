@@ -13,9 +13,35 @@ type Props = {
     gridName: 'top' | 'bottom'   // NEW required prop
 }
 
+// Helper function to convert touch event to mouse event
+function createMouseEventFromTouch(touchEvent: React.TouchEvent, type: 'mousedown' | 'mousemove' | 'mouseup'): React.MouseEvent {
+    const touch = touchEvent.touches[0] || touchEvent.changedTouches[0];
+    return {
+        ...touchEvent,
+        type,
+        clientX: touch.clientX,
+        clientY: touch.clientY,
+        button: 0, // Left mouse button
+        buttons: type === 'mousedown' ? 1 : (type === 'mouseup' ? 0 : 1),
+        preventDefault: touchEvent.preventDefault.bind(touchEvent),
+        stopPropagation: touchEvent.stopPropagation.bind(touchEvent),
+    } as unknown as React.MouseEvent;
+}
+
 export default function CheckboxGrid({ grid, rows, cols, gridRef, onGridMouseDown, marquee, CELL_W, CELL_H, gridName }: Props) {
+    const handleTouchStart = (e: React.TouchEvent) => {
+        e.preventDefault();
+        const mouseEvent = createMouseEventFromTouch(e, 'mousedown');
+        onGridMouseDown(gridName, mouseEvent);
+    };
+
     return (
-        <div ref={gridRef as any} onMouseDown={(e) => onGridMouseDown(gridName, e)} style={{ display: 'grid', gridTemplateColumns: `repeat(${cols}, ${CELL_W}px)`, gap: 0 }}>
+        <div
+            ref={gridRef as any}
+            onMouseDown={(e) => onGridMouseDown(gridName, e)}
+            onTouchStart={handleTouchStart}
+            style={{ display: 'grid', gridTemplateColumns: `repeat(${cols}, ${CELL_W}px)`, gap: 0 }}
+        >
             {grid.flatMap((row, r) =>
                 row.map((checked, c) => {
                     const key = `${r}-${c}`
