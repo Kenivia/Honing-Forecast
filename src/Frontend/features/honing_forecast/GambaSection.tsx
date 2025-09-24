@@ -475,7 +475,7 @@ export default function GambaSection({
 
     // Get unfinished normal honing upgrades for auto-attempt logic
     const unfinishedNormalUpgrades = useMemo(() => {
-        return upgradeArr.filter(upgrade => !upgrade.is_finished && upgrade.is_normal_honing)
+        return upgradeArr.filter(upgrade => !upgrade.is_finished)
     }, [upgradeArr])
 
     // Handle upgrade selection
@@ -966,7 +966,7 @@ export default function GambaSection({
                                                 Use juice
 
                                             </label>
-                                            <div> {!upgradeArr[selectedUpgradeIndex]?.is_normal_honing && (upgradeArr[selectedUpgradeIndex]?.use_juice != (adv_hone_strategy === "Juice on grace")) ? "(Graph below is not updated by this tick, use checkbox under advanced honing section to change graph)" : ""}</div>
+                                            <div> {!upgradeArr[selectedUpgradeIndex]?.is_normal_honing && (upgradeArr[selectedUpgradeIndex]?.use_juice != (adv_hone_strategy === "Juice on grace")) ? "(Graph below is not updated by this tick)" : ""}</div>
                                             <button
                                                 onClick={attemptTap}
                                                 disabled={upgradeArr[selectedUpgradeIndex]?.is_finished || isAutoAttempting || isAutoAttemptingThisOne}
@@ -980,14 +980,14 @@ export default function GambaSection({
 
                                             <button
                                                 onClick={toggleAutoAttemptThisOne}
-                                                disabled={upgradeArr[selectedUpgradeIndex]?.is_normal_honing === false || upgradeArr[selectedUpgradeIndex]?.is_finished}
+                                                disabled={upgradeArr[selectedUpgradeIndex]?.is_finished || !upgradeArr[selectedUpgradeIndex]?.is_normal_honing}
                                                 style={{
                                                     padding: '5px 10px',
                                                     backgroundColor: isAutoAttemptingThisOne ? 'var(--error-color)' : 'var(--btn-primary)',
                                                     color: isAutoAttemptingThisOne ? 'white' : 'var(--text-primary)',
                                                     border: isAutoAttemptingThisOne ? '2px solid var(--error-color)' : '1px solid var(--border-accent)',
                                                     fontWeight: isAutoAttemptingThisOne ? 'bold' : 'normal',
-                                                    opacity: (upgradeArr[selectedUpgradeIndex]?.is_normal_honing === false || upgradeArr[selectedUpgradeIndex]?.is_finished) ? 0.5 : 1
+                                                    opacity: (upgradeArr[selectedUpgradeIndex]?.is_finished || !upgradeArr[selectedUpgradeIndex]?.is_normal_honing) ? 0.5 : 1
                                                 }}
                                             >
                                                 {isAutoAttemptingThisOne ? 'Auto Tapping This...' : 'Auto Tap This One'}
@@ -995,14 +995,14 @@ export default function GambaSection({
 
                                             <button
                                                 onClick={toggleAutoAttempt}
-                                                disabled={upgradeArr[selectedUpgradeIndex]?.is_normal_honing === false || unfinishedNormalUpgrades.length == 0}
+                                                disabled={unfinishedNormalUpgrades.length <= 1}
                                                 style={{
                                                     padding: '5px 10px',
                                                     backgroundColor: isAutoAttempting ? 'var(--error-color)' : 'var(--btn-primary)',
                                                     color: isAutoAttempting ? 'white' : 'var(--text-primary)',
                                                     border: isAutoAttempting ? '2px solid var(--error-color)' : '1px solid var(--border-accent)',
                                                     fontWeight: isAutoAttempting ? 'bold' : 'normal',
-                                                    opacity: upgradeArr[selectedUpgradeIndex]?.is_normal_honing === false ? 0.5 : 1
+                                                    opacity: unfinishedNormalUpgrades.length <= 1 ? 0.5 : 1
                                                 }}
                                             >
                                                 {isAutoAttempting ? 'Auto Tapping...' : 'Auto Tap All'}
@@ -1010,7 +1010,7 @@ export default function GambaSection({
 
                                             <button
                                                 onClick={freeTap}
-                                                disabled={upgradeArr[selectedUpgradeIndex]?.is_normal_honing === false || isAutoAttempting || isAutoAttemptingThisOne}
+                                                disabled={upgradeArr[selectedUpgradeIndex]?.is_normal_honing === false || upgradeArr[selectedUpgradeIndex]?.is_finished || isAutoAttempting || isAutoAttemptingThisOne}
                                                 style={{
                                                     padding: '5px 10px',
                                                     opacity: upgradeArr[selectedUpgradeIndex]?.is_normal_honing === false ? 0.5 : 1
