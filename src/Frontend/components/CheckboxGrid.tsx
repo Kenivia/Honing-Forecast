@@ -30,6 +30,7 @@ function createMouseEventFromTouch(touchEvent: React.TouchEvent, type: 'mousedow
 
 export default function CheckboxGrid({ grid, rows, cols, gridRef, onGridMouseDown, marquee, CELL_W, CELL_H, gridName }: Props) {
     const handleTouchStart = (e: React.TouchEvent) => {
+        // Only prevent default behavior for grid interactions
         e.preventDefault();
         const mouseEvent = createMouseEventFromTouch(e, 'mousedown');
         onGridMouseDown(gridName, mouseEvent);

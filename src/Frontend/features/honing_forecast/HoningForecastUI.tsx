@@ -189,9 +189,12 @@ export default function HoningForecastUI() {
         };
 
         const touchMoveHandler = (ev: TouchEvent) => {
-            ev.preventDefault();
-            const mouseEvent = createMouseEventFromTouch(ev, 'mousemove');
-            mouseMoveLogic(mouseEvent, marqueeRef, topGridRef, bottomGridRef, setMarquee);
+            // Only prevent default if marquee is active (user is dragging on grid)
+            if (marqueeRef.current && marqueeRef.current.active) {
+                ev.preventDefault();
+                const mouseEvent = createMouseEventFromTouch(ev, 'mousemove');
+                mouseMoveLogic(mouseEvent, marqueeRef, topGridRef, bottomGridRef, setMarquee);
+            }
         };
 
         window.addEventListener('mousemove', temp_fn)
@@ -230,9 +233,12 @@ export default function HoningForecastUI() {
         };
 
         const touchEndHandler = (ev: TouchEvent) => {
-            ev.preventDefault();
-            const mouseEvent = createMouseEventFromTouch(ev, 'mouseup');
-            onUp(mouseEvent);
+            // Only prevent default if marquee is active (user is dragging on grid)
+            if (marqueeRef.current && marqueeRef.current.active) {
+                ev.preventDefault();
+                const mouseEvent = createMouseEventFromTouch(ev, 'mouseup');
+                onUp(mouseEvent);
+            }
         };
 
         window.addEventListener('mouseup', onUp)
