@@ -1,0 +1,77 @@
+/* CheckboxGrid specific styling - similar to CheckboxRow but with different class names */
+
+/* wrapper for each checkbox grid item */
+.checkbox-grid-item {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0;
+}
+
+/* Reset browser default checkbox styles and apply custom styling */
+.checkbox-grid-input {
+    /* Reset browser defaults */
+    -webkit-appearance: none !important;
+    -moz-appearance: none !important;
+    appearance: none !important;
+
+    /* Custom styling */
+    width: 26px !important;
+    height: 26px !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: 1px solid var(--checkbox-border) !important;
+    box-sizing: border-box !important;
+    cursor: pointer !important;
+    transition: background-color 0.12s ease, color 0.12s ease, border-color 0.12s ease !important;
+    border-radius: 2px !important;
+
+    /* Ensure background is transparent by default */
+    background: transparent !important;
+    color: inherit !important;
+}
+
+/* focus styling */
+.checkbox-grid-input:focus {
+    outline: 3px solid var(--checkbox-focus-ring) !important;
+    outline-offset: 2px !important;
+}
+
+/* checked state styling */
+.checkbox-grid-input:checked {
+    background: var(--checkbox-checked-bg) !important;
+    color: var(--checkbox-checked-text) !important;
+    border-color: var(--checkbox-checked-border) !important;
+}
+
+/* unchecked hover state */
+.checkbox-grid-input:not(:checked):hover {
+    background: var(--checkbox-hover-bg) !important;
+}
+
+/* checked hover state */
+.checkbox-grid-input:checked:hover {
+    background: var(--checkbox-checked-bg) !important;
+    opacity: 0.9 !important;
+}
+
+/* Chrome/Safari specific overrides */
+.checkbox-grid-input::-webkit-checkbox {
+    -webkit-appearance: none !important;
+}
+
+/* Firefox specific overrides */
+.checkbox-grid-input::-moz-checkbox {
+    -moz-appearance: none !important;
+}
+
+/* Ensure consistent checkmark styling across browsers */
+.checkbox-grid-input:checked::before {
+    content: "✓" !important;
+    color: var(--checkbox-checked-text) !important;
+    font-size: 16px !important;
+    font-weight: bold !important;
+    display: block !important;
+    text-align: center !important;
+    line-height: 24px !important;
+}

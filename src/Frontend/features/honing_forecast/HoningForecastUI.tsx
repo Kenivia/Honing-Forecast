@@ -1,23 +1,20 @@
 import React, { useEffect, useRef, useState, useMemo } from 'react'
-import { SpawnWorker } from '../../worker_setup.ts'
 import "./CheckboxRow.css"
 import { styles } from './styles.ts'
-import { INPUT_LABELS, OUTPUT_LABELS, STORAGE_KEY, TOP_ROWS, TOP_COLS, BOTTOM_ROWS, BOTTOM_COLS, CELL_W, CELL_H } from './constants.ts'
+import { INPUT_LABELS, TOP_ROWS, TOP_COLS, BOTTOM_ROWS, BOTTOM_COLS, } from './constants.ts'
 import { readSettings, writeSettings } from './Settings.ts'
-import HoningControls from './HoningControls.tsx'
+import ControlPanel from './ControlPanel.tsx'
 import NormalHoningPanel from './NormalHoningPanel.tsx'
 import AdvancedHoningPanel from './AdvancedHoningPanel.tsx'
 import ChanceToCostSection from './ChanceToCostSection.tsx'
 import CostToChanceSection from './CostToChanceSection.tsx'
 import GambaSection from "./GambaSection.tsx"
 import Separator from './Separator.tsx'
-import { recomputeLayout } from "./Layout.ts"
-import { GridMouseDownLogic, mouseMoveLogic, createMouseUpHandler } from "./Marquee.ts"
-import { createClearAll, createFillRandom, createFillDemo } from './Control.ts'
-import { buildPayload, createStartCancelableWorker, createHandleCallWorker } from './Debounce.ts'
 import { TooltipState, createTooltipHandlers, renderTooltip } from './Tooltip.tsx'
 
-// constants and helpers moved to ./constants and ./utils
+import { GridMouseDownLogic, mouseMoveLogic, createMouseUpHandler } from "./Marquee.ts"
+import { createClearAll, createFillRandom, createFillDemo } from './ControlPanelFunctions.ts'
+import { buildPayload, createStartCancelableWorker, createHandleCallWorker } from './Debounce.ts'
 
 export default function HoningForecastUI() {
 
@@ -35,6 +32,7 @@ export default function HoningForecastUI() {
     const [cumulativeGraph, setCumulativeGraph] = useState<boolean>(false)
     const [dataSize, setDataSize] = useState<string>(() => '100000')
     const [activePage, setActivePage] = useState<'chance-to-cost' | 'cost-to-chance' | 'gamba'>('chance-to-cost')
+    const [mainScale, setMainScale] = useState<number>(1)
 
     // marquee state & refs (kept here so grids stay presentational)
     const topGridRef = useRef<HTMLDivElement | null>(null)
@@ -78,15 +76,30 @@ export default function HoningForecastUI() {
         }
     }, [])
 
-    // ----- Responsive: horizontal scale for main container and anchored controls -----
-    const [mainScale, setMainScale] = useState(1)
-    const [controlsLeft, setControlsLeft] = useState<number | null>(null)
+    // ----- Responsive scaling based on window width -----
     useEffect(() => {
-        recomputeLayout(mainRef, setMainScale, setControlsLeft)
-        const temp_fn = function (_) { recomputeLayout(mainRef, setMainScale, setControlsLeft) }
-        window.addEventListener('resize', temp_fn,)
-        return () => window.removeEventListener('resize', temp_fn,)
+        const updateScale = () => {
+            const width = window.innerWidth
+            if (width < 1033) {
+                // Scale down proportionally, with a minimum scale of 0.7
+                const scale = Math.max(0, width / 1033)
+                setMainScale(scale)
+            } else {
+                setMainScale(1)
+            }
+        }
+
+        // Set initial scale
+        updateScale()
+
+        // Add resize listener
+        window.addEventListener('resize', updateScale)
+
+        return () => {
+            window.removeEventListener('resize', updateScale)
+        }
     }, [])
+
 
     // ----- Persist UI state (debounced) -----
     const saveTimerRef = useRef<number | null>(null)
@@ -328,20 +341,6 @@ export default function HoningForecastUI() {
     return (
 
         <div style={styles.pageContainer}>
-            {/* Fixed Demo Controls anchored relative to main container (30px to the right, clamped to viewport) */}
-            <HoningControls
-                controlsLeft={controlsLeft}
-                mainScale={mainScale}
-                fillDemo={fillDemo}
-                fillRandom={fillRandom}
-                clearAll={clearAll}
-                express_event={express_event}
-                set_express_event={set_express_event}
-                cumulativeGraph={cumulativeGraph}
-                setCumulativeGraph={setCumulativeGraph}
-                dataSize={dataSize}
-                setDataSize={setDataSize}
-            />
             {
                 marqueeRect ? (
                     <div style={{ position: 'fixed', left: marqueeRect.left, top: marqueeRect.top, width: marqueeRect.width, height: marqueeRect.height, background: 'var(--marquee-bg)', border: '2px solid var(--marquee-border)', pointerEvents: 'none', zIndex: 9999 }} />
@@ -350,11 +349,15 @@ export default function HoningForecastUI() {
             {renderTooltip(tooltip)}
 
 
-            <div ref={mainRef} style={{ ...styles.mainContainer, transform: `scale(${mainScale})`, transformOrigin: 'top', width: "fit-content" }}>
+            <div ref={mainRef} style={{
+                ...styles.mainContainer,
+                transform: `scale(${mainScale})`,
+                transformOrigin: 'top center'
+            }}>
                 <h1 style={styles.heading}>Honing Forecast</h1>
 
-                {/* Normal + Advanced Honing side-by-side */}
-                <div style={{ display: 'flex', gap: 'var(--spacing-2xl)', alignItems: "flex-start", flexDirection: 'row' }}>
+                {/* Three panels in a responsive flex layout */}
+                <div style={{ display: 'flex', gap: 'var(--spacing-2xl)', alignItems: "flex-start", flexWrap: 'wrap', justifyContent: 'flex-start' }}>
                     <NormalHoningPanel
                         topGrid={topGrid}
                         setTopGrid={setTopGrid}
@@ -375,6 +378,20 @@ export default function HoningForecastUI() {
                         onGridMouseDown={onGridMouseDown}
                         adv_hone_strategy={adv_hone_strategy}
                         adv_hone_strategy_change={adv_hone_strategy_change}
+                    />
+
+                    <ControlPanel
+                        controlsLeft={null}
+                        mainScale={mainScale}
+                        fillDemo={fillDemo}
+                        fillRandom={fillRandom}
+                        clearAll={clearAll}
+                        express_event={express_event}
+                        set_express_event={set_express_event}
+                        cumulativeGraph={cumulativeGraph}
+                        setCumulativeGraph={setCumulativeGraph}
+                        dataSize={dataSize}
+                        setDataSize={setDataSize}
                     />
                 </div>
 

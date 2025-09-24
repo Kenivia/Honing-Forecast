@@ -1,0 +1,75 @@
+.hf-separator {
+    display: flex;
+    align-items: flex-start;
+    /* each button's height may change when selected */
+    gap: var(--spacing-xl);
+    border-bottom-style: solid;
+    border-bottom-width: 10px;
+    border-bottom-color: var(--btn-toggle-selected);
+    box-sizing: border-box;
+}
+
+/* Button base: inline-flex so width auto fits content */
+.hf-btn {
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    border: 0px;
+    border-radius: var(--border-radius-small);
+    background: var(--btn-toggle-deselected);
+    color: #ffffff;
+    cursor: pointer;
+    padding: 6px 12px 6px 12px;
+    margin-bottom: -10px;
+    box-sizing: border-box;
+    display: inline-flex;
+    flex-direction: column;
+    /* label on top, help below when visible */
+    align-items: flex-start;
+    justify-content: center;
+    font-family: var(--hf-ui-font);
+    font-size: 22px;
+    font-weight: var(--font-weight-medium);
+    line-height: 1;
+    /* consistent metrics across fonts */
+    transition: background 0.18s ease, opacity 0.18s ease;
+    opacity: 1;
+    white-space: normal;
+    /* allow help text to be measured */
+    min-height: 44px;
+    /* keeps a consistent baseline */
+}
+
+/* Remove focus outline for separator buttons */
+.hf-btn:focus,
+.hf-btn:focus-visible {
+    outline: none;
+}
+
+/* Label keeps to a single line so deselected buttons are compact */
+.hf-label {
+    white-space: nowrap;
+    display: block;
+    width: auto;
+}
+
+/* Help text is hidden unless selected; when shown it causes the button to widen */
+.hf-help {
+    display: none;
+    margin-top: 6px;
+    font-size: 14px;
+    font-weight: normal;
+    white-space: nowrap;
+    /* keep help text on one line to control width */
+    text-align: left;
+}
+
+/* Selected state shows help and strengthens visuals */
+.hf-btn.selected {
+    background: var(--btn-toggle-selected);
+    opacity: 1;
+}
+
+.hf-btn.selected .hf-help {
+    display: block;
+}

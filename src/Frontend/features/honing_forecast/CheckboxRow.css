@@ -3,7 +3,6 @@
     display: inline-block;
     height: 28px;
     width: 28px;
-
 }
 
 /* visually hide the real checkbox but keep it accessible */
@@ -19,14 +18,19 @@
     white-space: nowrap;
 }
 
+/* Reset browser default checkbox styles */
+.checkbox-item input[type="checkbox"] {
+    -webkit-appearance: none !important;
+    -moz-appearance: none !important;
+    appearance: none !important;
+}
+
 /* the visible "box" */
 .box {
-
     display: inline-grid;
     /* easier to center text */
     place-items: center;
     /* center text horizontally+vertically */
-
     font-weight: 400;
     font-size: 12px;
     text-align: center;
@@ -39,30 +43,43 @@
     width: 26px;
     margin: 0;
     padding: 0;
-    border: 1px solid #bbb;
+    border: 1px solid var(--checkbox-border);
+    background: transparent !important;
+    color: inherit !important;
 }
 
 /* make it look focusable for keyboard users */
 .visually-hidden:focus+.box,
 .box:focus {
-    outline: 3px solid rgba(59, 130, 246, 0.35);
+    outline: 3px solid var(--checkbox-focus-ring) !important;
     /* subtle focus ring */
-    outline-offset: 2px;
+    outline-offset: 2px !important;
 }
 
 /* When the input is checked, change the label style.
    Sibling selector: input:checked + label.box */
 .checkbox-item input:checked+.box {
-    background: #0060df;
+    background: var(--checkbox-checked-bg) !important;
     /* checked background (dark) */
-    color: #ffffff;
+    color: var(--checkbox-checked-text) !important;
     /* checked text color (light) => flipped */
-    border-color: #111;
+    border-color: var(--checkbox-checked-border) !important;
 }
 
 /* Optional: slightly different hover state when unchecked */
 .checkbox-item input:not(:checked)+.box:hover {
-    background: #5a5a5a;
+    background: var(--checkbox-hover-bg) !important;
+}
+
+/* Ensure consistent checkmark styling across browsers for CheckboxRow */
+.checkbox-item input:checked+.box::before {
+    /* content: "✓" !important; */
+    color: var(--checkbox-checked-text) !important;
+    font-size: 16px !important;
+    font-weight: bold !important;
+    display: block !important;
+    text-align: center !important;
+    line-height: 24px !important;
 }
 
 /* Optional: small responsive tweak

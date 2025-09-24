@@ -36,7 +36,7 @@ export default function CostToChanceSection({
     return (
         <>
             {/* <h3 style={{ color: 'var(--text-primary)', fontSize: 'var(--font-size-base)', fontWeight: 'var(--font-weight-semibold)', margin: '16px 0 0px 0' }}>Cost to Chance</h3> */}
-            <div style={{ ...styles.inputSection, flexDirection: "row", width: 1120 }}>
+            <div style={{ ...styles.inputSection, flexDirection: "row", maxWidth: "1200px", width: "100%" }}>
                 <div style={{ display: 'flex', gap: autoOptimization ? 110 : 20, alignItems: 'flex-start' }}>
                     <div style={{ display: 'flex', flexDirection: "column", gap: 0, alignItems: 'flex-start', justifyContent: 'start', width: autoOptimization ? 210 : 300 }}>
                         <div style={{ marginBottom: 16, width: autoOptimization ? 210 : 310 }}>

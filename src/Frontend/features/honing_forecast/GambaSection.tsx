@@ -836,7 +836,7 @@ export default function GambaSection({
             </style>
             {/* <h3 style={{ color: 'var(--text-primary)', fontSize: 'var(--font-size-base)', fontWeight: 'var(--font-weight-semibold)', margin: '16px 0 0px 0' }}>Gamba Section</h3> */}
 
-            <div style={{ ...styles.inputSection, flexDirection: "row", width: 1120 }}>
+            <div style={{ ...styles.inputSection, flexDirection: "row", maxWidth: "1200px", width: "100%" }}>
                 <div style={{ display: "flex", gap: 20, alignItems: "flex-start" }}>
                     {/* Budget Input Grid */}
                     <div style={{ display: 'flex', flexDirection: "column", gap: 0, alignItems: 'flex-start', justifyContent: 'start', width: autoOptimization ? 210 : 300 }}>

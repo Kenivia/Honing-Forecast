@@ -18,7 +18,7 @@ export default function NormalHoningPanel({ topGrid, setTopGrid, prev_checked_ar
     return (
         <div>
             <h2 style={{ ...styles.sectionTitle, marginTop: '-8px' }}>Normal Honing</h2>
-            <div style={styles.gridSection}>
+            <div style={{ ...styles.gridSection, maxWidth: "851px" }}>
                 <div style={{ display: 'flex', gap: 8 }}>
                     <div style={{ width: 100, display: 'flex', flexDirection: 'column', justifyContent: 'flex-start', textWrap: 'nowrap', gap: 0 }}>
                         {['', 'Helmet', 'Shoulder', 'Chest', 'Pants', 'Glove', 'Weapon'].map((lab) => (

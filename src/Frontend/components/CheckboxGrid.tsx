@@ -1,4 +1,6 @@
 /*eslint no-unused-vars: 0*/
+import './CheckboxGrid.css';
+
 type Props = {
     grid: boolean[][]
     rows: number
@@ -29,12 +31,12 @@ export default function CheckboxGrid({ grid, rows, cols, gridRef, onGridMouseDow
                     }
 
                     return (
-                        <div key={key} title={`+${(gridName) === "top" ? c + 1 : (c + 1) * 10}`} style={{ width: CELL_W, height: CELL_H, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', margin: 0 }}>
+                        <div key={key} title={`+${(gridName) === "top" ? c + 1 : (c + 1) * 10}`} className="checkbox-grid-item" style={{ width: CELL_W, height: CELL_H }}>
                             <input
                                 type="checkbox"
-                                checked={inMarquee ? !marquee.initialState : checked}
                                 readOnly
-                                style={{ width: 26, height: 26, margin: 0, padding: 0, border: '1px solid #bbb', boxSizing: 'border-box' }}
+                                checked={inMarquee ? !marquee.initialState : checked}
+                                className="checkbox-grid-input"
                             />
                         </div>
                     )
