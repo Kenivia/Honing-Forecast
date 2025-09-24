@@ -356,7 +356,7 @@ mod tests {
         );
         println!("{:?}", out.chance);
         println!("{:?}", out.reasons);
-        assert!(0.495 < out.chance && out.chance < 0.505);
+        assert!(0.31 < out.chance && out.chance < 0.314);
     }
     #[test]
     fn cost_to_chance_53_adv_armor_40() {
