@@ -1,6 +1,6 @@
 # Honing Forecast
 
-Honing Forecast is a calculator that helps you get an idea of how much a set of upgrades will cost you and your likelyhood of success.
+Honing Forecast is a calculator that helps you get an idea of how much a set of upgrades will cost you and your likelihood of success.
 
 **Try it on the [website](https://kenivia.github.io/Honing-Forecast/)!**
 
@@ -26,5 +26,3 @@ Honing Forecast is a calculator that helps you get an idea of how much a set of 
 
 - Make the percent sign follow the input number?(right now it just trails on the right)
 - ctrl z support, fix backspace & delete
-
-##
