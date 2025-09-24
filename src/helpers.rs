@@ -1,4 +1,7 @@
-use crate::constants::{ADV_HONE_UNLOCK, NORMAL_HONE_ARMOR_UNLOCK, NORMAL_HONE_WEAPON_UNLOCK};
+use crate::constants::{
+    get_event_modified_adv_unlock_cost, get_event_modified_armor_unlock_cost,
+    get_event_modified_weapon_unlock_cost,
+};
 use std::cmp::Ordering;
 fn cmp_f64_ignore_nan(a: f64, b: f64) -> Ordering {
     match (a.is_nan(), b.is_nan()) {
@@ -89,17 +92,25 @@ pub fn ticks_to_counts(ticks: Vec<Vec<bool>>) -> Vec<Vec<i64>> {
 ///
 /// Parameters:
 /// - `hone_counts`: &[Vec<i64>] (expected shape: [armor/weapon][index])
-/// - `weap_unlock`, `armor_unlock`: &[Vec<i64>] (outer index = cost_type)
 /// - `adv_counts`: &[Vec<i64>] (advanced counts)
-/// - `adv_unlock`: Option<&[Vec<i64>]> (if Some, same structure as other unlock arrays)
+/// - `express_event`: bool (whether express event is active)
 ///
 /// Returns: (shard_unlock, silver_unlock)
-pub fn calc_unlock(hone_counts: &Vec<Vec<i64>>, adv_counts: &Vec<Vec<i64>>) -> Vec<i64> {
+pub fn calc_unlock(
+    hone_counts: &Vec<Vec<i64>>,
+    adv_counts: &Vec<Vec<i64>>,
+    express_event: bool,
+) -> Vec<i64> {
     let mut shard_unlock: i64 = 0;
     let mut silver_unlock: i64 = 0;
 
+    // Get event-modified unlock costs
+    let weapon_unlock_costs = get_event_modified_weapon_unlock_cost(express_event);
+    let armor_unlock_costs = get_event_modified_armor_unlock_cost(express_event);
+    let adv_unlock_costs = get_event_modified_adv_unlock_cost(express_event);
+
     // Weapon unlocks: hone_counts[1][index]
-    for (cost_type, element) in NORMAL_HONE_WEAPON_UNLOCK.iter().enumerate() {
+    for (cost_type, element) in weapon_unlock_costs.iter().enumerate() {
         for (index, &cost) in element.iter().enumerate() {
             match cost_type {
                 0 => shard_unlock += hone_counts[1][index] * cost,
@@ -110,7 +121,7 @@ pub fn calc_unlock(hone_counts: &Vec<Vec<i64>>, adv_counts: &Vec<Vec<i64>>) -> V
     }
 
     // Armor unlocks: hone_counts[0][index]
-    for (cost_type, element) in NORMAL_HONE_ARMOR_UNLOCK.iter().enumerate() {
+    for (cost_type, element) in armor_unlock_costs.iter().enumerate() {
         for (index, &cost) in element.iter().enumerate() {
             match cost_type {
                 0 => shard_unlock += hone_counts[0][index] * cost,
@@ -121,8 +132,7 @@ pub fn calc_unlock(hone_counts: &Vec<Vec<i64>>, adv_counts: &Vec<Vec<i64>>) -> V
     }
 
     // Advanced unlocks: indexing alternates between adv_counts[0] and adv_counts[1]
-
-    for (cost_type, element) in ADV_HONE_UNLOCK.iter().enumerate() {
+    for (cost_type, element) in adv_unlock_costs.iter().enumerate() {
         for (index, &cost) in element.iter().enumerate() {
             if index % 2 == 1 {
                 // odd index -> use adv_counts[0][(index-1)/2]

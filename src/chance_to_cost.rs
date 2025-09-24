@@ -147,7 +147,7 @@ pub fn chance_to_cost(
     let cost_data: Vec<Vec<i64>> = monte_carlo_data(
         cost_size,
         &upgrade_arr,
-        &calc_unlock(&hone_counts, &adv_counts),
+        &calc_unlock(&hone_counts, &adv_counts, express_event),
         0,
         false, //rigged
         false, // use_true_rng
@@ -156,7 +156,7 @@ pub fn chance_to_cost(
     let top_bottom: Vec<Vec<i64>> = monte_carlo_data(
         2,
         &upgrade_arr,
-        &calc_unlock(&hone_counts, &adv_counts),
+        &calc_unlock(&hone_counts, &adv_counts, express_event),
         0,
         true, // rigged
         true, //use_true_rn

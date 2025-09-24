@@ -124,7 +124,7 @@ export function createFillDemo({
             Shards: "9010948",
             Oreha: "15125",
             Gold: "1803792",
-            "Silver(WIP)": "999999999",
+            Silver: "999999999",
             "Red juice": "420",
             "Blue juice": "690",
             "Special leaps": "6767",

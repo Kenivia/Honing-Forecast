@@ -132,7 +132,7 @@ pub fn cost_to_chance(
 ) -> CostToChanceOut {
     let data_size: usize = data_size.max(1000);
     // let adv_hone_strategy: String = String::from("No juice");
-    let unlock_costs: Vec<i64> = calc_unlock(hone_counts, adv_counts);
+    let unlock_costs: Vec<i64> = calc_unlock(hone_counts, adv_counts, express_event);
 
     let aritsan_arr: Vec<f64>;
     if express_event {
@@ -266,7 +266,7 @@ pub fn cost_to_chance(
     let budget_data: Vec<Vec<i64>> = monte_carlo_data(
         2,
         &upgrade_arr,
-        &calc_unlock(&hone_counts, &adv_counts),
+        &calc_unlock(&hone_counts, &adv_counts, express_event),
         0,
         true, // rigged
         true, //use_true_rn

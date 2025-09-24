@@ -115,7 +115,7 @@ pub fn parser_wrapper_unified(input: JsValue) -> JsValue {
 
     to_value(&(
         upgrades,
-        calc_unlock(&normal_counts, &adv_counts),
+        calc_unlock(&normal_counts, &adv_counts, payload.express_event),
         other_strategy_prob_dists,
     ))
     .unwrap()

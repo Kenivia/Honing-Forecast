@@ -1,25 +1,30 @@
 # Honing Forecast
 
-The [Maxroll upgrade calculator](https://maxroll.gg/lost-ark/upgrade-calculator) gives us a rough estimate on how much mats we need to pass certain upgrades, however it only gives the best, average and worst scenarios - this calculator works out everything in between.
+Honing Forecast is a calculator that helps you get an idea of how much an upgrade will cost you and your likelyhood of success.
 
-Try it on the [website](https://kenivia.github.io/Honing-Forecast/)!
+**Try it on the [website](https://kenivia.github.io/Honing-Forecast/)!**
 
-## WIP
+## Features
 
-### FEATURES
+- Chance mode - estimate costs based on a given a desired chance
+- Budget mode - estimate how likely you are to succeed given a budget
+- Calculate how to best use your free taps and juices and how much they are worth to you
+- Estimates how likely you are to run out of each mat
+- Gamba simulator for a more hands-on feel of the pain of pity
 
-- Incorporate roster income tracking
+## Work in Progress
+
+### Future Features
+
 - Book support
-- Variance calculation & confidence interval
+- Variance calculation & confidence interval for budget mode
+- Incorporate roster income tracking
 
-### DEV
+### dev
 
 - Write actual tests and also comment
-- Get silver unlock cost somewhere(currently silver unlock cost is 0 so its labeled as WIP)(somewhere = maxroll probably)
 
 ### UI
 
 - Make the percent sign follow the input number?(right now it just trails on the right)
-- mobile dragging?
-- maybe add tabs to switch between different functionalities
 - ctrl z support, fix backspace & delete

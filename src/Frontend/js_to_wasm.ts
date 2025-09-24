@@ -1,7 +1,7 @@
 // import init from "../../pkg/honing_forecast_bg.js?init"
 import init, { chance_to_cost_wrapper, cost_to_chance_wrapper, parser_wrapper_unified, average_cost_wrapper } from "../../pkg/honing_forecast.js" // or "../pkg/honing_wasm"
 
-const LABELS = ["Red", "Blue", "Leaps", "Shards", "Oreha", "Gold", "Silver(WIP)"]
+const LABELS = ["Red", "Blue", "Leaps", "Shards", "Oreha", "Gold", "Silver"]
 
 async function ChanceToCostWasm(payload: any) {
     await init()

@@ -12,6 +12,8 @@ pub static EVENT_COST_REDUCTION: [[f64; 25]; 7] = [
     [1.0; 25], [1.0; 25], [1.0; 25], [1.0; 25], [1.0; 25], [1.0; 25], [1.0; 25],
 ];
 
+pub static EVENT_UNLOCK_REDUCTION: [[f64; 25]; 2] = [[1.0; 25], [1.0; 25]];
+
 // Helper function to calculate event-modified costs
 pub fn get_event_modified_weapon_costs(express_event: bool) -> [[i64; 25]; 7] {
     if !express_event {
@@ -45,6 +47,54 @@ pub fn get_event_modified_armor_costs(express_event: bool) -> [[i64; 25]; 7] {
     result
 }
 
+pub fn get_event_modified_weapon_unlock_cost(express_event: bool) -> [[i64; 25]; 2] {
+    if !express_event {
+        return NORMAL_HONE_WEAPON_UNLOCK;
+    }
+
+    let mut result = [[0i64; 25]; 2];
+    for cost_type in 0..2 {
+        for level in 0..25 {
+            let base_cost = NORMAL_HONE_WEAPON_UNLOCK[cost_type][level] as f64;
+            let reduction = EVENT_UNLOCK_REDUCTION[cost_type][level];
+            result[cost_type][level] = (base_cost * reduction).ceil() as i64;
+        }
+    }
+    result
+}
+
+pub fn get_event_modified_armor_unlock_cost(express_event: bool) -> [[i64; 25]; 2] {
+    if !express_event {
+        return NORMAL_HONE_ARMOR_UNLOCK;
+    }
+
+    let mut result = [[0i64; 25]; 2];
+    for cost_type in 0..2 {
+        for level in 0..25 {
+            let base_cost = NORMAL_HONE_ARMOR_UNLOCK[cost_type][level] as f64;
+            let reduction = EVENT_UNLOCK_REDUCTION[cost_type][level];
+            result[cost_type][level] = (base_cost * reduction).ceil() as i64;
+        }
+    }
+    result
+}
+
+pub fn get_event_modified_adv_unlock_cost(express_event: bool) -> [[i64; 8]; 2] {
+    if !express_event {
+        return ADV_HONE_UNLOCK;
+    }
+
+    let mut result = [[0i64; 8]; 2];
+    for cost_type in 0..2 {
+        for level in 0..8 {
+            let base_cost = ADV_HONE_UNLOCK[cost_type][level] as f64;
+            let reduction = EVENT_UNLOCK_REDUCTION[cost_type][level];
+            result[cost_type][level] = (base_cost * reduction).ceil() as i64;
+        }
+    }
+    result
+}
+
 pub static SPECIAL_LEAPS_COST: [[i64; 25]; 2] = [
     [
         12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 16, 16, 16, 16, 20, 20, 20, 20, 20, 20, 20,
@@ -62,7 +112,7 @@ pub static LABELS: [&str; 10] = [
     "Shards",
     "Oreha",
     "Gold",
-    "Silver(WIP)",
+    "Silver",
     "Red juice",
     "Blue juice",
     "Special Leaps",
@@ -141,7 +191,9 @@ pub static NORMAL_HONE_WEAPON_UNLOCK: [[i64; 25]; 2] = [
         38000, 43000, 49000, 66000, 75000, 85000, 106000, 120000, 135000, 152000, 170000, 190000,
     ],
     [
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        240000, 240000, 240000, 270000, 270000, 320000, 340000, 374000, 396000, 520000, 630000,
+        690000, 825000, 950000, 1075000, 1225000, 1650000, 1875000, 1955000, 2120000, 2400000,
+        2700000, 3040000, 3400000, 4750000,
     ],
 ];
 pub static NORMAL_HONE_ARMOR_UNLOCK: [[i64; 25]; 2] = [
@@ -150,7 +202,9 @@ pub static NORMAL_HONE_ARMOR_UNLOCK: [[i64; 25]; 2] = [
         25000, 29000, 39000, 45000, 510000, 63000, 72000, 81000, 91000, 102000, 114000,
     ],
     [
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        144000, 144000, 144000, 162000, 162000, 180000, 200000, 220000, 220000, 312000, 360000,
+        390000, 475000, 550000, 625000, 725000, 975000, 1125000, 1173000, 1260000, 1440000,
+        1620000, 1820000, 2040000, 2850000,
     ],
 ];
 pub static ADV_HONE_COST: [[i64; 8]; 8] = [

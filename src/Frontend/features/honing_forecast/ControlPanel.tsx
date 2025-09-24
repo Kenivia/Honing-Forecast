@@ -65,7 +65,7 @@ export default function ControlPanel({ controlsLeft: _controlsLeft, mainScale: _
                             v = v.replace(/^0+(?=\d)/, '')
                             setDataSize(v)
                         }} onBlur={() => {
-                            const n = Math.min(200000, Math.max(1000, Math.floor(Number(dataSize) || 0)))
+                            const n = Math.min(1000000, Math.max(1000, Math.floor(Number(dataSize) || 0)))
                             setDataSize(String(n))
                         }} style={{ width: 80, fontSize: 14, padding: '6px 8px', borderRadius: 6, background: 'var(--input-bg)', color: 'var(--input-text)', border: '1px solid var(--input-border)' }} placeholder="100000" />
                     </div>
