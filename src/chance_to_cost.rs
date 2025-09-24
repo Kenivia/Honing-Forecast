@@ -44,6 +44,7 @@ fn cost_passes_budget(cost: &[i64], budget: &[i64]) -> bool {
         && cost[3] <= budget[3]
         && cost[4] <= budget[4]
         && cost[5] <= budget[5]
+        && cost[6] <= budget[6]
 }
 
 /// Count, for each budget, how many costs fail it.
