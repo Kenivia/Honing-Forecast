@@ -82,11 +82,12 @@ export function createStartCancelableWorker({
                     if (costWorkerRef.current === worker) {
                         set_chance_result(res)
                         // Cache graph data for future use
-                        if (res && res.hist_counts) {
+                        if (res && typeof res === "object" && res !== null && "hist_counts" in res) {
+                            const typedRes = res as { hist_counts: any; hist_mins: any; hist_maxs: any }
                             setCachedChanceGraphData({
-                                hist_counts: res.hist_counts,
-                                hist_mins: res.hist_mins,
-                                hist_maxs: res.hist_maxs,
+                                hist_counts: typedRes.hist_counts,
+                                hist_mins: typedRes.hist_mins,
+                                hist_maxs: typedRes.hist_maxs,
                             })
                         }
                     }
@@ -131,11 +132,12 @@ export function createStartCancelableWorker({
                     if (chanceWorkerRef.current === worker) {
                         set_cost_result(res)
                         // Cache graph data for future use
-                        if (res && res.hist_counts) {
+                        if (res && typeof res === "object" && res !== null && "hist_counts" in res) {
+                            const typedRes = res as { hist_counts: any; hist_mins: any; hist_maxs: any }
                             setCachedCostGraphData({
-                                hist_counts: res.hist_counts,
-                                hist_mins: res.hist_mins,
-                                hist_maxs: res.hist_maxs,
+                                hist_counts: typedRes.hist_counts,
+                                hist_mins: typedRes.hist_mins,
+                                hist_maxs: typedRes.hist_maxs,
                             })
                         }
                     }
@@ -165,7 +167,7 @@ export function createHandleCallWorker({
     startCancelableWorker,
     buildPayload,
 }: {
-    startCancelableWorker: (which_one: "CostToChance" | "ChanceToCost", payload: any) => void
+    startCancelableWorker: (_which_one: "CostToChance" | "ChanceToCost", _payload: any) => void
     buildPayload: () => any
 }) {
     return async (which_one: string) => {
@@ -184,12 +186,12 @@ export function createDebounceEffects({
 }: {
     debounceTimerRef1: React.MutableRefObject<number | null>
     debounceTimerRef2: React.MutableRefObject<number | null>
-    startCancelableWorker: (which_one: "CostToChance" | "ChanceToCost", payload: any) => void
+    startCancelableWorker: (_which_one: "CostToChance" | "ChanceToCost", _payload: any) => void
     buildPayload: () => any
 }) {
     return {
         // When budget or grids or strategy change -> run CostToChance (budget -> cost->chance)
-        createCostToChanceEffect: (deps: any[]) => {
+        createCostToChanceEffect: (_deps: any[]) => {
             return () => {
                 // clear existing timer
                 if (debounceTimerRef1.current) {
@@ -206,7 +208,7 @@ export function createDebounceEffects({
         },
 
         // When desired chance or grids or strategy change -> run ChanceToCost (chance -> cost)
-        createChanceToCostEffect: (deps: any[]) => {
+        createChanceToCostEffect: (_deps: any[]) => {
             return () => {
                 if (debounceTimerRef2.current) {
                     window.clearTimeout(debounceTimerRef2.current)

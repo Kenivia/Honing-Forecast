@@ -8,7 +8,10 @@ import NormalHoningPanel from './NormalHoningPanel.tsx'
 import AdvancedHoningPanel from './AdvancedHoningPanel.tsx'
 import ChanceToCostSection from './ChanceToCostSection.tsx'
 import CostToChanceSection from './CostToChanceSection.tsx'
+// const CostToChanceSection = React.lazy(() => import('./CostToChanceSection.tsx'));
+
 import GambaSection from "./GambaSection.tsx"
+// const GambaSection = React.lazy(() => import('./GambaSection.tsx'));
 import Separator from './Separator.tsx'
 import { TooltipState, createTooltipHandlers, renderTooltip } from './Tooltip.tsx'
 import Icon from '../../components/Icon.tsx'

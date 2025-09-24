@@ -114,13 +114,17 @@ export function renderTooltip(tooltip: TooltipState, mainScale: number = 1, zoom
             display: 'flex',
             flexDirection: 'column',
             gap: '4px',
-            marginRight: '16px'
+            marginRight: '16px',
+            width: '35%',
+            minWidth: '120px'
         }
 
         const rightColumnStyle: React.CSSProperties = {
             display: 'flex',
             flexDirection: 'column',
-            gap: '2px'
+            gap: '2px',
+            width: '65%',
+            minWidth: '180px'
         }
 
         const containerStyle: React.CSSProperties = {
@@ -145,7 +149,7 @@ export function renderTooltip(tooltip: TooltipState, mainScale: number = 1, zoom
                         )}
                     </div>
                     <div style={rightColumnStyle}>
-                        <div><strong>Costs:</strong></div>
+                        <div><strong>Costs(excluding unlock):</strong></div>
                         {costLabels.map((label, index) => (
                             <div key={index}>
                                 {label}: {tapRecordCosts[index].toLocaleString()}

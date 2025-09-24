@@ -64,9 +64,9 @@ function calculateTapRecordCosts(upgrade: Upgrade) {
     }
 
     // Free tap costs
-    if (freeTaps > 0) {
-        costs[9] = upgrade.special_cost * freeTaps
-    }
+
+    costs[9] = upgrade.special_cost * freeTaps
+
 
     return costs
 }
@@ -81,7 +81,8 @@ type UpgradeTooltipProps = {
 const UpgradeTooltip = React.memo(function UpgradeTooltip({ upgrade, children, tooltipHandlers }: UpgradeTooltipProps) {
     const costLabels = ['Red', 'Blue', 'Leaps', 'Shards', 'Oreha', "Gold", 'Silver', 'Red Juice', 'Blue Juice', 'Special Leaps']
     const tapRecordCosts = useMemo(() => calculateTapRecordCosts(upgrade),
-        [upgrade])
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+        [upgrade.taps_so_far, upgrade.juice_taps_so_far, upgrade.free_taps_so_far, upgrade.costs, upgrade.one_juice_cost, upgrade.special_cost, upgrade.is_weapon])
 
     const handleMouseEnter = (e: React.MouseEvent) => {
         tooltipHandlers.showUpgradeTooltip(upgrade, costLabels, tapRecordCosts, e.clientX, e.clientY)
@@ -527,72 +528,98 @@ export default function GambaSection({
             return
         }
 
-        let success = false
-        let advTapCount = -1;
-        if (upgrade.is_normal_honing) {
-            const currentChance = calculateCurrentChance(upgrade)
-            success = Math.random() < currentChance
-        } else {
-            // Advanced honing logic - simulate tap count based on probability distribution
-            // Use other strategy's probability distribution if juice is ticked
-            let probDistToUse = upgrade.prob_dist
-            if (upgrade.use_juice && upgrade.other_prob_dist) {
-                probDistToUse = upgrade.other_prob_dist
+        // Helper function to perform a single attempt
+        const performSingleAttempt = () => {
+            let success = false
+            let advTapCount = -1;
+
+            if (upgrade.is_normal_honing) {
+                const currentChance = calculateCurrentChance(upgrade)
+                success = Math.random() < currentChance
+            } else {
+                // Advanced honing logic - simulate tap count based on probability distribution
+                // Use other strategy's probability distribution if juice is ticked
+                let probDistToUse = upgrade.prob_dist
+                if (upgrade.use_juice && upgrade.other_prob_dist) {
+                    probDistToUse = upgrade.other_prob_dist
+                }
+
+                // Sample from the probability distribution
+                const random = Math.random()
+                let cumulativeProb = 0
+                let tapIndex = 0
+                for (let i = 0; i < probDistToUse.length; i++) {
+                    cumulativeProb += probDistToUse[i]
+                    if (random <= cumulativeProb) {
+                        tapIndex = i
+                        break
+                    }
+                }
+                upgrade.cumulative_chance = cumulativeProb
+
+                advTapCount = upgrade.tap_offset + tapIndex
+                success = true
+                upgrade.taps_so_far = advTapCount - 1
             }
 
-            // Sample from the probability distribution
-            const random = Math.random()
-            let cumulativeProb = 0
-            let tapIndex = 0
-            for (let i = 0; i < probDistToUse.length; i++) {
-                cumulativeProb += probDistToUse[i]
-                if (random <= cumulativeProb) {
-                    tapIndex = i
-                    break
+            // Add costs to final_costs (functional update + keep ref in sync)
+            setFinalCosts(prev => {
+                const next = prev.slice()
+                if (upgrade.is_normal_honing) {
+                    for (let i = 0; i < 7; i++) {
+                        next[i] = (next[i] ?? 0) + (upgrade.costs?.[i] ?? 0)
+                    }
+                    if (upgrade.use_juice) {
+                        const juiceCost = upgrade.one_juice_cost ?? 0
+                        if (upgrade.is_weapon) next[7] = (next[7] ?? 0) + juiceCost
+                        else next[8] = (next[8] ?? 0) + juiceCost
+                    }
+                }
+                else {
+                    for (let i = 0; i < 7; i++) {
+                        next[i] = (next[i] ?? 0) + (upgrade.costs?.[i] * advTapCount)
+                    }
+                    if (upgrade.use_juice) {
+                        const juiceCost = upgrade.adv_juice_cost[advTapCount - upgrade.tap_offset] ?? 0
+                        if (upgrade.is_weapon) next[8] = (next[8] ?? 0) + juiceCost
+                        else next[7] = (next[7] ?? 0) + juiceCost
+                    }
+                }
+                finalCostsRef.current = next
+                return next
+            })
+
+            // Update upgrade counters
+            upgrade.taps_so_far = (upgrade.taps_so_far || 0) + 1
+            upgrade.juice_taps_so_far = (upgrade.juice_taps_so_far || 0) + (upgrade.use_juice ? 1 : 0)
+
+            // Update cumulative chance for normal honing
+            if (upgrade.is_normal_honing) {
+                const currentChance = calculateCurrentChance(upgrade)
+                updateCumulativeChance(upgrade, currentChance)
+
+                // Increment artisan on failure for normal honing
+                if (!success) {
+                    upgrade.current_artisan = Math.min(1, (upgrade.current_artisan || 0) + (46.51 / 100.0) * currentChance * (upgrade.artisan_rate ?? 0))
                 }
             }
-            upgrade.cumulative_chance = cumulativeProb
 
-            advTapCount = upgrade.tap_offset + tapIndex
-            success = true
-            upgrade.taps_so_far = advTapCount - 1
+            return { success, advTapCount }
         }
 
-        // Add costs to final_costs (functional update + keep ref in sync)
-        setFinalCosts(prev => {
-            const next = prev.slice()
-            if (upgrade.is_normal_honing) {
-                for (let i = 0; i < 7; i++) {
-                    next[i] = (next[i] ?? 0) + (upgrade.costs?.[i] ?? 0)
-                }
-                if (upgrade.use_juice) {
-                    const juiceCost = upgrade.one_juice_cost ?? 0
-                    if (upgrade.is_weapon) next[7] = (next[7] ?? 0) + juiceCost
-                    else next[8] = (next[8] ?? 0) + juiceCost
-                }
-            }
-            else {
-                for (let i = 0; i < 7; i++) {
-                    next[i] = (next[i] ?? 0) + (upgrade.costs?.[i] * advTapCount)
-                }
-                if (upgrade.use_juice) {
-                    const juiceCost = upgrade.adv_juice_cost[advTapCount - upgrade.tap_offset] ?? 0
-                    if (upgrade.is_weapon) next[8] = (next[8] ?? 0) + juiceCost
-                    else next[7] = (next[7] ?? 0) + juiceCost
-                }
-            }
-            finalCostsRef.current = next
-            return next
-        })
+        // Perform attempts until success when isAutoAttempting is true
+        let success = false
 
-        // Update upgrade counters
-        upgrade.taps_so_far = (upgrade.taps_so_far || 0) + 1
-        upgrade.juice_taps_so_far = (upgrade.juice_taps_so_far || 0) + (upgrade.use_juice ? 1 : 0)
-
-        // Update cumulative chance for normal honing
-        if (upgrade.is_normal_honing) {
-            const currentChance = calculateCurrentChance(upgrade)
-            updateCumulativeChance(upgrade, currentChance)
+        if (isAutoAttemptingRef.current && !isAutoAttemptingThisOneRef.current) {
+            // Loop until success for auto-attempting all
+            do {
+                const result = performSingleAttempt()
+                success = result.success
+            } while (!success)
+        } else {
+            // Single attempt for manual or "this one" auto-attempting
+            const result = performSingleAttempt()
+            success = result.success
         }
 
         if (success) {
@@ -641,22 +668,9 @@ export default function GambaSection({
                     isAutoAttemptingRef.current = false
 
                 }
-            } else {
-                // Move to next unfinished upgrade (top when sorted visually)
-                const nextUnfinishedIndex = upgradeArrRef.current.findIndex(
-                    (z) => z == sortedUpgrades(upgradeArrRef.current).find((upg, i) =>
-                        !upg.is_finished && i !== selIdx))
-                if (nextUnfinishedIndex !== -1) {
-                    setSelectedUpgradeIndex(nextUnfinishedIndex)
-                    selectedUpgradeIndexRef.current = nextUnfinishedIndex
-
-                }
             }
+            // Note: Manual taps do not automatically move to next upgrade
 
-        } else {
-            // failure: increment artisan
-            const currentChance = calculateCurrentChance(upgrade)
-            upgrade.current_artisan = Math.min(1, (upgrade.current_artisan || 0) + (46.51 / 100.0) * currentChance * (upgrade.artisan_rate ?? 0))
         }
 
         // Update the upgrade in the ref array
