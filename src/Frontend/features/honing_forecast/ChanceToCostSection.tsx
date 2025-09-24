@@ -131,18 +131,7 @@ export default function ChanceToCostSection({
                             />
                         </div>
                         <div style={{ marginTop: 12, display: 'flex', alignItems: 'center', gap: 8 }}>
-                            <input
-                                type="checkbox"
-                                id="show-average"
-                                checked={showAverage}
-                                onChange={(e) => setShowAverage(e.target.checked)}
-                                style={{
-                                    width: 16,
-                                    height: 16,
-                                    cursor: 'pointer',
-                                    background: "var(--control-checked-bg)"
-                                }}
-                            />
+
                             <label
                                 htmlFor="show-average"
                                 style={{
@@ -155,6 +144,18 @@ export default function ChanceToCostSection({
                             >
                                 Show Average
                             </label>
+                            <input
+                                type="checkbox"
+                                id="show-average"
+                                checked={showAverage}
+                                onChange={(e) => setShowAverage(e.target.checked)}
+                                style={{
+                                    width: 16,
+                                    height: 16,
+                                    cursor: 'pointer',
+                                    accentColor: "var(--bright-green)"
+                                }}
+                            />
                         </div>
                         {cost_result && (
                             <pre style={{ color: 'var(--text-muted)', fontSize: 'var(--font-size-xs)', marginTop: 8 }}>

@@ -14,8 +14,11 @@
     --btn-toggle-chance-selected: #165ca3;
     --btn-toggle-budget-selected: #1c9164;
     --btn-toggle-gamba-selected: #a40cea;
+    --btn-toggle-lock-selected: rgb(255, 165, 0);
 
-
+    /* Warning/Alert Colors */
+    --warning-bg: rgba(255, 165, 0, 0.12);
+    --warning-border: rgba(255, 165, 0, 0.22);
 
     /* Checkbox Colors */
     --checkbox-border: #bbb;
@@ -56,5 +59,8 @@
     /* Accent Colors */
     --accent: #5be6ff;
     --accent-hover: #0d7a8a;
+
+    /* Additional Colors */
+    --bright-green: rgb(0, 255, 0);
 
 }

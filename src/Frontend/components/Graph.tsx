@@ -421,7 +421,7 @@ function Graph({ title, labels, counts, mins, maxs, width = 640, height = 320, b
         };
 
         renderFor(budgets, "poi-primary", 5, "#000");
-        renderFor(additionalBudgets, "poi-additional", 7, "rgb(0,255,0)");
+        renderFor(additionalBudgets, "poi-additional", 7, "var(--bright-green)");
 
         return elems.length ? <g>{elems}</g> : null;
     }, [budgets, additionalBudgets, effectiveCounts, counts, anyVisible, visible, keepMask, width, height, bucketLen, effectiveMins, effectiveMaxs, cdfSeries, normalizedCounts, cumulative, yMax, labels]);
@@ -449,17 +449,17 @@ function Graph({ title, labels, counts, mins, maxs, width = 640, height = 320, b
                         <div
                             role="status"
                             aria-live="polite"
-                            title="Graph may look a bit wonky in some cases, untick 'Lock x-axis' to get a clean graph"
+                            title="Graph may look a bit wonky in some cases, unlock x-axis to get a cleaner graph"
                             style={{
                                 display: 'inline-flex',
                                 alignItems: 'center',
                                 gap: 6,
-                                background: 'rgba(255,165,0,0.12)',
+                                background: 'var(--warning-bg)',
                                 color: 'white',
                                 padding: '4px 8px',
                                 borderRadius: 8,
                                 fontSize: 12,
-                                border: '1px solid rgba(255,165,0,0.22)'
+                                border: '1px solid var(--warning-border)'
                             }}
                         >
                             x-axis locked at {formatSig3(effectiveMaxs[fallbackSeries])}

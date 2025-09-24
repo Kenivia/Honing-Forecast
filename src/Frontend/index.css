@@ -146,7 +146,7 @@ textarea {
 }
 
 /* Mobile-specific styles to prevent zooming beyond natural width */
-@media (max-width: 1020px) {
+@media (max-width: 1200px) {
     html {
         overflow-x: hidden;
         width: 100%;

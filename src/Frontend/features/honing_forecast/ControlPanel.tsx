@@ -70,22 +70,18 @@ export default function ControlPanel({ controlsLeft: _controlsLeft, mainScale: _
                         }} style={{ width: 80, fontSize: 14, padding: '6px 8px', borderRadius: 6, background: 'var(--input-bg)', color: 'var(--input-text)', border: '1px solid var(--input-border)' }} placeholder="100000" />
                     </div>
 
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <label htmlFor="lock_x_axis" style={{ color: 'var(--text-primary)', fontSize: 'var(--font-size-sm)', cursor: 'pointer' }}>Lock x-axis</label>
-                        <input
-                            type="checkbox"
-                            title="Lock the x-axis to compare the costs of 2 selections"
-                            id="lock_x_axis"
-                            checked={lockXAxis}
-                            onChange={onToggleLockXAxis}
-                            style={{
-                                width: '16px',
-                                height: '16px',
-                                cursor: 'pointer',
-                                accentColor: 'var(--control-checked-bg)'
-                            }}
-                        />
-                    </div>
+                    <button
+                        style={{
+                            ...styles.demoButton,
+                            background: lockXAxis ? 'var(--btn-toggle-lock-selected)' : "var(--btn-demo)",
+                            color: lockXAxis ? '#000000' : 'var(--btn-demo-text)',
+                            width: '100%'
+                        }}
+                        onClick={onToggleLockXAxis}
+                        title="Lock the x-axis to compare the costs of 2 selections"
+                    >
+                        {lockXAxis ? 'x-axis Locked' : 'Lock x-axis'}
+                    </button>
                 </div>
             </div>
         </div>

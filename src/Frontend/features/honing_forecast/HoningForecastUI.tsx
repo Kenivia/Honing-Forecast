@@ -88,8 +88,8 @@ export default function HoningForecastUI() {
     useEffect(() => {
         const updateScale = () => {
             const width = window.innerWidth
-            if (width < 1020) {
-                const scale = Math.max(0, width / 1020)
+            if (width < 1200) {
+                const scale = Math.max(0, width / 1200)
                 setMainScale(scale)
             } else {
                 setMainScale(1)
