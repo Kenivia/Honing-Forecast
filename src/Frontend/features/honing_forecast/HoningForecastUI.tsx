@@ -40,6 +40,7 @@ export default function HoningForecastUI() {
     const [lockXAxis, setLockXAxis] = useState<boolean>(false)
     const [lockedMins, setLockedMins] = useState<number[] | null>(null)
     const [lockedMaxs, setLockedMaxs] = useState<number[] | null>(null)
+    const [showAverage, setShowAverage] = useState<boolean>(false)
 
     // marquee state & refs (kept here so grids stay presentational)
     const topGridRef = useRef<HTMLDivElement | null>(null)
@@ -320,6 +321,7 @@ export default function HoningForecastUI() {
         setLockXAxis,
         setLockedMins,
         setLockedMaxs,
+        setShowAverage,
     })
 
     const fillRandom = createFillRandom({
@@ -529,6 +531,18 @@ export default function HoningForecastUI() {
                         lockXAxis={lockXAxis}
                         lockedMins={lockedMins}
                         lockedMaxs={lockedMaxs}
+                        // Props needed for average_cost calculation
+                        topGrid={topGrid}
+                        bottomGrid={bottomGrid}
+                        adv_hone_strategy={adv_hone_strategy}
+                        express_event={express_event}
+                        bucketCount={bucketCount}
+                        autoOptimization={autoOptimization}
+                        userMatsValue={userMatsValue}
+                        dataSize={dataSize}
+                        // Show Average checkbox props
+                        showAverage={showAverage}
+                        setShowAverage={setShowAverage}
                     />
                 </div>
 

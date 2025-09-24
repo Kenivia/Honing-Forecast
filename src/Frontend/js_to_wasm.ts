@@ -1,5 +1,5 @@
 // import init from "../../pkg/honing_forecast_bg.js?init"
-import init, { chance_to_cost_wrapper, cost_to_chance_wrapper, parser_wrapper_unified } from "../../pkg/honing_forecast.js" // or "../pkg/honing_wasm"
+import init, { chance_to_cost_wrapper, cost_to_chance_wrapper, parser_wrapper_unified, average_cost_wrapper } from "../../pkg/honing_forecast.js" // or "../pkg/honing_wasm"
 
 const LABELS = ["Red", "Blue", "Leaps", "Shards", "Oreha", "Gold", "Silver(WIP)"]
 
@@ -39,13 +39,27 @@ async function ParserWasmUnified(payload: any) {
     }
 }
 
+async function AverageCostWasm(payload: any) {
+    try {
+        await init() // MUST await initialization
+        try {
+            // Returns array of 7 f64 values representing average costs
+            return average_cost_wrapper(payload)
+        } catch (e) {
+            console.error("average cost call threw:", e)
+        }
+    } catch (initErr) {
+        console.error("average cost init failed:", initErr)
+    }
+}
+
 self.addEventListener("message", async (ev) => {
     const msg = ev.data
     let start_time = Date.now()
 
     const { id, payload, which_one } = msg
 
-    if (!(which_one == "CostToChance" || which_one == "ChanceToCost" || which_one == "ParserUnified")) {
+    if (!(which_one == "CostToChance" || which_one == "ChanceToCost" || which_one == "ParserUnified" || which_one == "AverageCost")) {
         throw "Invalid operation type" + which_one
     }
 
@@ -80,6 +94,11 @@ self.addEventListener("message", async (ev) => {
             upgrades: out[0],
             unlocks: out[1],
             other_strategy_prob_dists: out[2],
+        }
+    } else if (which_one == "AverageCost") {
+        let out = await AverageCostWasm(payload)
+        result = {
+            average_costs: out,
         }
     }
 

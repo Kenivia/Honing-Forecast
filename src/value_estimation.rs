@@ -6,14 +6,14 @@ use crate::parser::{Upgrade, probability_distribution};
 #[cfg(debug_assertions)]
 use assert_float_eq::assert_f64_near;
 
-fn average_tap(prob_dist: &Vec<f64>) -> f64 {
+pub fn average_tap(prob_dist: &Vec<f64>, offset: f64) -> f64 {
     let mut out: f64 = 0.0_f64;
     // println!("{:?}", prob_dist[start_index..].iter().sum::<f64>() as f64);
     #[cfg(debug_assertions)]
     assert_f64_near!(prob_dist.iter().sum::<f64>() as f64, 1.0 as f64, 40);
     // let sum_before_start: f64 = prob_dist[..start_index].iter().sum();
     for (index, item) in prob_dist.iter().enumerate() {
-        out += item * (index + 1) as f64;
+        out += item * (index as f64 + offset);
     }
     out
 }
@@ -49,7 +49,7 @@ pub fn est_special_honing_value(
     assert!(mats_value.len() == cost_type_count);
     for (_, upgrade) in upgrade_arr.iter_mut().enumerate() {
         if upgrade.is_normal_honing {
-            average = average_tap(&upgrade.original_prob_dist);
+            average = average_tap(&upgrade.original_prob_dist, upgrade.tap_offset as f64);
             special_value = upgrade.base_chance * average_times_cost(upgrade, mats_value, average);
             out.push(special_value);
             if !calibrating {
@@ -76,7 +76,11 @@ pub fn est_juice_value(upgrade_arr: &mut Vec<Upgrade>, mats_value: &Vec<f64>) {
             continue;
         }
         this_sum = Vec::with_capacity(upgrade.prob_dist_len);
-        prev_cost = average_times_cost(upgrade, mats_value, average_tap(&upgrade.prob_dist));
+        prev_cost = average_times_cost(
+            upgrade,
+            mats_value,
+            average_tap(&upgrade.prob_dist, upgrade.tap_offset as f64),
+        );
         extra_count = 1;
 
         loop {
@@ -89,7 +93,11 @@ pub fn est_juice_value(upgrade_arr: &mut Vec<Upgrade>, mats_value: &Vec<f64>) {
             if cur_prob_dist.len() == 0 {
                 break; // next one is beyond pity
             }
-            next_cost = average_times_cost(upgrade, mats_value, average_tap(&cur_prob_dist));
+            next_cost = average_times_cost(
+                upgrade,
+                mats_value,
+                average_tap(&cur_prob_dist, upgrade.tap_offset as f64),
+            );
             this_sum.push(prev_cost - next_cost);
             prev_cost = next_cost;
             extra_count += 1;

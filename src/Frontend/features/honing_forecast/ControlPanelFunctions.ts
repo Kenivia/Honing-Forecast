@@ -17,6 +17,7 @@ export function createClearAll({
     setLockXAxis,
     setLockedMins,
     setLockedMaxs,
+    setShowAverage,
 }: {
     setTopGrid: React.Dispatch<React.SetStateAction<any>>
     setBottomGrid: React.Dispatch<React.SetStateAction<any>>
@@ -34,6 +35,7 @@ export function createClearAll({
     setLockXAxis: React.Dispatch<React.SetStateAction<boolean>>
     setLockedMins: React.Dispatch<React.SetStateAction<number[] | null>>
     setLockedMaxs: React.Dispatch<React.SetStateAction<number[] | null>>
+    setShowAverage: React.Dispatch<React.SetStateAction<boolean>>
 }) {
     return () => {
         // Grids and their column header checkboxes
@@ -57,6 +59,9 @@ export function createClearAll({
         setLockXAxis(false)
         setLockedMins(null)
         setLockedMaxs(null)
+
+        // Reset show average checkbox
+        setShowAverage(false)
     }
 }
 

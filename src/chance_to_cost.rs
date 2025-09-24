@@ -3,8 +3,24 @@ use crate::helpers::calc_unlock;
 use crate::histogram::{histograms_for_all_costs, transpose_vec_of_vecs};
 use crate::monte_carlo::monte_carlo_data;
 use crate::parser::{Upgrade, parser};
+use crate::value_estimation::average_tap;
 // use web_sys::console;
 // use crate::{constants::*, cost_to_chance};
+
+/// Calculate the total cost for each of the 7 main cost types across all upgrades.
+/// Returns a vector of length 7 containing the total cost for each cost type.
+pub fn average_cost(upgrades: &Vec<Upgrade>) -> Vec<f64> {
+    let mut total_costs: Vec<f64> = vec![0.0; 7];
+
+    for upgrade in upgrades {
+        let avg_taps = average_tap(&upgrade.prob_dist, upgrade.tap_offset as f64);
+        for cost_type in 0..7 {
+            total_costs[cost_type] += upgrade.costs[cost_type] as f64 * (avg_taps as f64);
+        }
+    }
+
+    total_costs
+}
 
 fn count_failure_naive(cost_data: &Vec<Vec<i64>>, budget_data: &Vec<Vec<i64>>) -> Vec<i64> {
     let mut count: Vec<i64> = vec![0; budget_data.len()];
@@ -238,6 +254,30 @@ mod tests {
         println!("actual_prob = {:?}", out.actual_prob);
         println!("hist_mins = {:?}", out.hist_mins);
         println!("hist_maxs = {:?}", out.hist_maxs);
+    }
+
+    #[test]
+    fn test_average_cost() {
+        use crate::parser::parser;
+        let hone_counts = vec![(0..25).map(|_| 5).collect(), (0..25).map(|_| 1).collect()];
+        let adv_counts = vec![(0..4).map(|_| 5).collect(), (0..4).map(|_| 1).collect()];
+        let upgrade_arr = parser(
+            &hone_counts,
+            &adv_counts,
+            &"No juice".to_owned(),
+            &vec![1.0; 25],
+            &vec![0.0; 25],
+            &vec![0; 25],
+            false,
+        );
+
+        let total_costs = average_cost(&upgrade_arr);
+        assert_eq!(total_costs.len(), 7);
+        // Verify that all costs are non-negative (since we're summing positive values)
+        for cost in &total_costs {
+            assert!(*cost >= 0.0);
+        }
+        println!("Total costs: {:?}", total_costs);
     }
 
     // #[test]

@@ -1,8 +1,10 @@
-import React from 'react'
+import React, { useState, useEffect } from 'react'
 import SpreadsheetGrid from '../../components/SpreadsheetGrid.tsx'
 import Graph from '../../components/Graph.tsx'
 import { styles, createColumnDefs, GRAPH_WIDTH, GRAPH_HEIGHT } from './styles.ts'
 import { OUTPUT_LABELS } from './constants.ts'
+import { CallWorker } from '../../worker_setup.ts'
+import { buildPayload } from './Debounce.ts'
 
 type ChanceToCostSectionProps = {
     desired_chance: string
@@ -16,6 +18,18 @@ type ChanceToCostSectionProps = {
     lockXAxis: boolean
     lockedMins: number[] | null
     lockedMaxs: number[] | null
+    // Props needed for average_cost calculation
+    topGrid: boolean[][]
+    bottomGrid: boolean[][]
+    adv_hone_strategy: string
+    express_event: boolean
+    bucketCount: string
+    autoOptimization: boolean
+    userMatsValue: any
+    dataSize: string
+    // Show Average checkbox props
+    showAverage: boolean
+    setShowAverage: React.Dispatch<React.SetStateAction<boolean>>
 }
 
 export default function ChanceToCostSection({
@@ -30,8 +44,53 @@ export default function ChanceToCostSection({
     lockXAxis,
     lockedMins,
     lockedMaxs,
+    // Props needed for average_cost calculation
+    topGrid,
+    bottomGrid,
+    adv_hone_strategy,
+    express_event,
+    bucketCount,
+    autoOptimization,
+    userMatsValue,
+    dataSize,
+    // Show Average checkbox props
+    showAverage,
+    setShowAverage,
 }: ChanceToCostSectionProps) {
     const { chanceToCostColumnDefs } = createColumnDefs(false) // autoOptimization not used for this section
+    const [averageCosts, setAverageCosts] = useState<number[] | null>(null)
+
+    // Effect to calculate average costs when relevant data changes
+    useEffect(() => {
+        if (!AnythingTicked) {
+            setAverageCosts(null)
+            return
+        }
+
+        const payload = buildPayload({
+            topGrid,
+            bottomGrid,
+            desired_chance,
+            budget_inputs: {}, // Not needed for average_cost
+            adv_hone_strategy,
+            express_event,
+            bucketCount,
+            autoOptimization,
+            userMatsValue,
+            dataSize,
+        })
+
+        CallWorker(payload, "AverageCost")
+            .then((result: any) => {
+                if (result && result.average_costs) {
+                    setAverageCosts(result.average_costs)
+                }
+            })
+            .catch((error) => {
+                console.error("Error calculating average costs:", error)
+                setAverageCosts(null)
+            })
+    }, [topGrid, bottomGrid, adv_hone_strategy, express_event, AnythingTicked, autoOptimization, bucketCount, dataSize, desired_chance, userMatsValue])
 
     return (
         <>
@@ -71,6 +130,32 @@ export default function ChanceToCostSection({
                                 readOnly={true}
                             />
                         </div>
+                        <div style={{ marginTop: 12, display: 'flex', alignItems: 'center', gap: 8 }}>
+                            <input
+                                type="checkbox"
+                                id="show-average"
+                                checked={showAverage}
+                                onChange={(e) => setShowAverage(e.target.checked)}
+                                style={{
+                                    width: 16,
+                                    height: 16,
+                                    cursor: 'pointer',
+                                    background: "var(--control-checked-bg)"
+                                }}
+                            />
+                            <label
+                                htmlFor="show-average"
+                                style={{
+                                    color: 'var(--text-primary)',
+                                    fontSize: 'var(--font-size-sm)',
+
+                                    cursor: 'pointer',
+                                    userSelect: 'none'
+                                }}
+                            >
+                                Show Average
+                            </label>
+                        </div>
                         {cost_result && (
                             <pre style={{ color: 'var(--text-muted)', fontSize: 'var(--font-size-xs)', marginTop: 8 }}>
                                 Run time: {cost_result.run_time}s{'\n'}{cost_result.actual_prob}
@@ -87,6 +172,7 @@ export default function ChanceToCostSection({
                             width={GRAPH_WIDTH}
                             height={GRAPH_HEIGHT}
                             budgets={cost_result && OUTPUT_LABELS.map(label => Number(cost_result[label]))}
+                            additionalBudgets={showAverage ? averageCosts : null}
                             hasSelection={AnythingTicked}
                             isLoading={ChanceToCostBusy}
                             cumulative={cumulativeGraph}

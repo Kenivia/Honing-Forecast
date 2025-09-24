@@ -6,12 +6,12 @@ mod histogram;
 mod monte_carlo;
 mod parser;
 mod value_estimation;
-use crate::chance_to_cost::chance_to_cost;
+use crate::chance_to_cost::{average_cost, chance_to_cost};
 use crate::constants::EVENT_ARTISAN_MULTIPLIER;
 use crate::cost_to_chance::cost_to_chance;
 use crate::helpers::calc_unlock;
 use crate::helpers::ticks_to_counts;
-use crate::parser::parser_with_other_strategy;
+use crate::parser::{parser, parser_with_other_strategy};
 
 use serde::Deserialize;
 use serde_wasm_bindgen::{from_value, to_value};
@@ -119,6 +119,40 @@ pub fn parser_wrapper_unified(input: JsValue) -> JsValue {
         other_strategy_prob_dists,
     ))
     .unwrap()
+}
+
+#[wasm_bindgen]
+pub fn average_cost_wrapper(input: JsValue) -> JsValue {
+    console_error_panic_hook::set_once();
+    let payload: Payload = from_value(input).unwrap();
+
+    // Convert ticks to counts using the existing helper function
+    let normal_counts = ticks_to_counts(payload.normal_hone_ticks);
+    let adv_counts = ticks_to_counts(payload.adv_hone_ticks);
+
+    let artisan_rate_arr: Vec<f64>;
+    if payload.express_event {
+        artisan_rate_arr = EVENT_ARTISAN_MULTIPLIER.to_vec();
+    } else {
+        artisan_rate_arr = vec![1.0; 25];
+    }
+
+    // Default extra values (same as other functions)
+    let extra_arr = vec![0.0; 25];
+    let extra_num_arr = vec![0; 25];
+
+    let upgrades = parser(
+        &normal_counts,
+        &adv_counts,
+        &payload.adv_hone_strategy,
+        &artisan_rate_arr,
+        &extra_arr,
+        &extra_num_arr,
+        payload.express_event,
+    );
+
+    let avg_costs = average_cost(&upgrades);
+    to_value(&avg_costs).unwrap()
 }
 
 // Histograms are included in the default wrappers' outputs
