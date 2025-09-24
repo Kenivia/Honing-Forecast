@@ -87,7 +87,17 @@ export default function CostToChanceSection({
                         )}
                         {(chance_result && (chance_result.upgrade_strings?.length > 0 || chance_result.juice_order_armor?.length > 0 || chance_result.juice_order_weapon?.length > 0)) && (
                             <div style={{ display: 'flex', gap: 0, alignItems: 'flex-start', marginTop: 8 }}>
+                                <div>
+                                    <div style={{ ...styles.inputLabelCell, marginTop: 0, whiteSpace: 'nowrap', textAlign: "left", }}>Individual chances:</div>
+                                    <div style={{ marginTop: 4, color: 'var(--text-muted)', fontSize: 'var(--font-size-sm)', whiteSpace: "wrap", width: 300 }}>
+                                        {(chance_result.reasons || []).map((s: string, idx: number) => (
+                                            <div key={"Fail reason" + (idx + 1)}>{idx + 1}. {s}</div>
+                                        ))}
+                                    </div>
+                                    {/* <div style={{ ...styles.inputLabelCell, textAlign: "left", fontSize: 'var(--font-size-sm)', whiteSpace: "wrap", width: 350 }}>
+                                        Note: These are not what you will run out *first* - Imagine the game lets you keep tapping & go into debt, these are the chances that you will end up with a negative.(I know this is less intuitive, but it is much harder to calculate what you run out *first*)</div> */}
 
+                                </div>
                                 <div>
                                     <div style={{ ...styles.inputLabelCell, whiteSpace: 'nowrap' }}>Free taps value ranking:</div>
                                     <div style={{ marginTop: 4, color: 'var(--text-muted)', fontSize: 'var(--font-size-sm)', width: 200 }}>
@@ -112,17 +122,7 @@ export default function CostToChanceSection({
                                         ))}
                                     </div>
                                 </div>
-                                <div>
-                                    <div style={{ ...styles.inputLabelCell, marginTop: 0, whiteSpace: 'nowrap', textAlign: "left", }}>Individual chances:</div>
-                                    <div style={{ marginTop: 4, color: 'var(--text-muted)', fontSize: 'var(--font-size-sm)', whiteSpace: "wrap", width: 250 }}>
-                                        {(chance_result.reasons || []).map((s: string, idx: number) => (
-                                            <div key={"Fail reason" + (idx + 1)}>{idx + 1}. {s}</div>
-                                        ))}
-                                    </div>
-                                    {/* <div style={{ ...styles.inputLabelCell, textAlign: "left", fontSize: 'var(--font-size-sm)', whiteSpace: "wrap", width: 350 }}>
-                                        Note: These are not what you will run out *first* - Imagine the game lets you keep tapping & go into debt, these are the chances that you will end up with a negative.(I know this is less intuitive, but it is much harder to calculate what you run out *first*)</div> */}
 
-                                </div>
                             </div>
                         )}
                     </div>

@@ -14,15 +14,13 @@ Honing Forecast is a calculator that helps you get an idea of how much an upgrad
 
 ## Work in Progress
 
-### Future Features
-
 - Book support
 - Variance calculation & confidence interval for budget mode
 - Incorporate roster income tracking
 
 ### dev
 
-- Write actual tests and also comment
+- Write actual tests and comments
 
 ### UI
 
