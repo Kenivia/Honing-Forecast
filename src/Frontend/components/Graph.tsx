@@ -63,6 +63,36 @@ function formatSig3(n: number, place: number = 3): string {
     return s + suffix
 }
 
+/**
+ * Calculates the optimal number of decimal places for rounding based on cumulative percentage and data size.
+ * The function finds the smallest integer n where |1-cumpct| < 1/10^n, 
+ * but caps n such that 10^(n+1) <= data_size.
+ * 
+ * @param cumpct - The cumulative percentage (0-100)
+ * @param data_size - The total number of data points
+ * @returns The number of decimal places to use for rounding
+ */
+function calculateDecimalPlaces(cumpct: number, data_size: number): number {
+    // Convert cumpct from percentage to decimal (0-1)
+    const cumPctDecimal = cumpct / 100;
+
+    // Calculate the difference from 1
+    const diff = Math.abs(1 - cumPctDecimal);
+    if (diff == 0) { return 0 }
+
+    // Find the smallest n where diff < 1/10^n
+    // This means n > -log10(diff), so n = Math.ceil(-log10(diff))
+    let n = Math.ceil(-Math.log10(diff));
+
+    // Cap n such that 10^(n+1) <= data_size
+    // This means n+1 <= log10(data_size), so n <= log10(data_size) - 1
+    const maxN = Math.floor(Math.log10(data_size)) - 2;
+
+    // Ensure n is at least 0 and at most maxN
+    n = Math.max(0, Math.min(n, maxN));
+
+    return n;
+}
 
 function to_step(arr: number[]) {
     let cur = 0;
@@ -403,7 +433,9 @@ function Graph({ title, labels, counts, mins, maxs, width = 640, height = 320, b
                             const max = maxs[fallbackSeries]
                             // const innerW = Math.max(1, width - plotLeft - plotRight)
                             const mid = min + (hoverBucket + 0.5) * max / bucketLen
-                            const cumPct = (counts[fallbackSeries].slice(0, hoverBucket + 1).reduce((partialSum, a) => partialSum + a, 0) / data_size * 100).toFixed(1)
+                            const cumPctRaw = counts[fallbackSeries].slice(0, hoverBucket + 1).reduce((partialSum, a) => partialSum + a, 0) / data_size * 100
+                            const decimalPlaces = calculateDecimalPlaces(cumPctRaw, data_size)
+                            const cumPct = cumPctRaw.toFixed(decimalPlaces)
                             return (
                                 <div style={{ color: 'var(--text-primary)' }}>
                                     <div style={{ color: SERIES_COLORS_VARS[fallbackSeries], fontWeight: 600 }}>{labels[fallbackSeries]}</div>
