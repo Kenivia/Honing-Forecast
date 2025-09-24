@@ -1028,7 +1028,7 @@ export default function GambaSection({
                             </div>
 
                             {/* Budget Grid (Total Cost + Remaining) */}
-                            <div style={{ width: 200 }}>
+                            <div style={{ width: 200, marginLeft: 70 }}>
                                 <SpreadsheetGrid
                                     columnDefs={budgetColumnDefs}
                                     labels={INPUT_LABELS}
