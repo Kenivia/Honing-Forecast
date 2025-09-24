@@ -15,14 +15,12 @@ Honing Forecast is a calculator that helps you get an idea of how much a set of 
 ## Work in Progress
 
 - Book support
+
 - Variance calculation & confidence interval for budget mode
 - Incorporate roster income tracking
-
-### dev
-
-- Write actual tests and comments
 
 ### UI
 
 - Make the percent sign follow the input number?(right now it just trails on the right)
 - ctrl z support, fix backspace & delete
+- In-line arithmetic calculation for when putting in boxes e.g. input 25*1000 and get 25000
