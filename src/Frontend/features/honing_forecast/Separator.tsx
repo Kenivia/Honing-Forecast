@@ -21,10 +21,27 @@ export default function Separator({ activePage, onPageChange }: SeparatorProps) 
         setClickedButton(page);
     };
 
+    const getSeparatorClass = () => {
+        if (activePage === 'chance-to-cost') return 'hf-separator chance-active';
+        if (activePage === 'cost-to-chance') return 'hf-separator budget-active';
+        if (activePage === 'gamba') return 'hf-separator gamba-active';
+        return 'hf-separator';
+    };
+
+    const getButtonClass = (page: Page) => {
+        const baseClass = 'hf-btn';
+        if (activePage === page) {
+            if (page === 'chance-to-cost') return `${baseClass} chance-selected`;
+            if (page === 'cost-to-chance') return `${baseClass} budget-selected`;
+            if (page === 'gamba') return `${baseClass} gamba-selected`;
+        }
+        return baseClass;
+    };
+
     return (
-        <div className="hf-separator">
+        <div className={getSeparatorClass()}>
             <button
-                className={`hf-btn ${activePage === 'chance-to-cost' ? 'selected' : ''}`}
+                className={getButtonClass('chance-to-cost')}
                 onClick={() => handleButtonClick('chance-to-cost')}
             >
                 <span className="hf-label">Chance mode</span>
@@ -34,7 +51,7 @@ export default function Separator({ activePage, onPageChange }: SeparatorProps) 
             </button>
 
             <button
-                className={`hf-btn ${activePage === 'cost-to-chance' ? 'selected' : ''}`}
+                className={getButtonClass('cost-to-chance')}
                 onClick={() => handleButtonClick('cost-to-chance')}
             >
                 <span className="hf-label">Budget mode</span>
@@ -44,7 +61,7 @@ export default function Separator({ activePage, onPageChange }: SeparatorProps) 
             </button>
 
             <button
-                className={`hf-btn ${activePage === 'gamba' ? 'selected' : ''}`}
+                className={getButtonClass('gamba')}
                 onClick={() => handleButtonClick('gamba')}
             >
                 <span className="hf-label">Gamba simulator</span>

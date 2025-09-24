@@ -1,3 +1,9 @@
+// Graph dimensions constants
+export const GRAPH_WIDTH = 800
+export const GRAPH_HEIGHT = 400
+export const SMALL_GRAPH_WIDTH = 640
+export const SMALL_GRAPH_HEIGHT = 320
+
 export const styles: any = {
     pageContainer: {
         minHeight: "100vh",

@@ -47,10 +47,10 @@ fn fail_count_to_string(typed_fail_counter: Vec<f64>, data_size: usize) -> Vec<S
     let mut spread_str: String;
     let mut spread_num: f64;
     for z in failed_indices {
-        spread_num = typed_fail_counter[z] as f64 / data_size as f64;
+        spread_num = 1.0 - typed_fail_counter[z] as f64 / data_size as f64;
         spread_str = myformat(spread_num);
         if spread_num >= 0.001 || !displayed {
-            this_failed.push(spread_str.to_owned() + "% ran out of " + LABELS[z]);
+            this_failed.push(spread_str.to_owned() + "% chance to have enough " + LABELS[z]);
         }
         displayed = true
     }

@@ -87,7 +87,7 @@ describe('Graph component (unit tests)', () => {
         expect(screen.getByText('Nothing to plot, tick an upgrade!')).toBeInTheDocument()
     })
 
-    test('shows "Everything have 100% success rate, nothing to plot." when no visible series and hasSelection true (not loading)', () => {
+    test('shows "All your ticks have 100% success rate(+1 to +3)" when no visible series and hasSelection true (not loading)', () => {
         // Provide counts such that keepMask will be false for everything (e.g., all zeros or single positive)
         const counts = [
             [1, 0, 0], // only 1 positive -> not enough (needs >1)
@@ -112,7 +112,7 @@ describe('Graph component (unit tests)', () => {
             />
         )
 
-        expect(screen.getByText('Everything have 100% success rate, nothing to plot.')).toBeInTheDocument()
+        expect(screen.getByText('1. All your ticks have 100% success rate(+1 to +3)')).toBeInTheDocument()
     })
 
     test('clicking a legend button toggles its visibility (opacity change)', async () => {

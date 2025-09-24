@@ -149,10 +149,13 @@ pub fn calc_unlock(hone_counts: &Vec<Vec<i64>>, adv_counts: &Vec<Vec<i64>>) -> V
 
 pub fn myformat(mut f: f64) -> String {
     f *= 100.0;
-    let mut place: i32 = 0;
+    if f == 1.0_f64 {
+        return "100".to_owned();
+    }
+    let mut place: i32 = 1;
 
     loop {
-        if f >= 1.0 / 10f64.powi(place) {
+        if (f - 1.0_f64).abs() >= 1.0 / 10f64.powi(place) {
             return format!("{:.*}", place as usize, f);
         }
         if place >= 4 {

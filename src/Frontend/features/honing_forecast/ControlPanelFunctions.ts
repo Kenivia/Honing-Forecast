@@ -14,6 +14,9 @@ export function createClearAll({
     _setBucketCount,
     setCumulativeGraph,
     setDataSize,
+    setLockXAxis,
+    setLockedMins,
+    setLockedMaxs,
 }: {
     setTopGrid: React.Dispatch<React.SetStateAction<any>>
     setBottomGrid: React.Dispatch<React.SetStateAction<any>>
@@ -28,6 +31,9 @@ export function createClearAll({
     _setBucketCount: React.Dispatch<React.SetStateAction<string>>
     setCumulativeGraph: React.Dispatch<React.SetStateAction<boolean>>
     setDataSize: React.Dispatch<React.SetStateAction<string>>
+    setLockXAxis: React.Dispatch<React.SetStateAction<boolean>>
+    setLockedMins: React.Dispatch<React.SetStateAction<number[] | null>>
+    setLockedMaxs: React.Dispatch<React.SetStateAction<number[] | null>>
 }) {
     return () => {
         // Grids and their column header checkboxes
@@ -46,6 +52,11 @@ export function createClearAll({
         _setBucketCount("100")
         setCumulativeGraph(false)
         setDataSize("100000")
+
+        // Reset lock x-axis state
+        setLockXAxis(false)
+        setLockedMins(null)
+        setLockedMaxs(null)
     }
 }
 

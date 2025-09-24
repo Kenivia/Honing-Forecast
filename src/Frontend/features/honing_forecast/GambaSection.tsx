@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from "react"
 import SpreadsheetGrid from "../../components/SpreadsheetGrid.tsx"
 import Graph from "../../components/Graph.tsx"
-import { styles, createColumnDefs } from "./styles.ts"
+import { styles, createColumnDefs, GRAPH_WIDTH, GRAPH_HEIGHT, SMALL_GRAPH_WIDTH, SMALL_GRAPH_HEIGHT } from "./styles.ts"
 import { BOTTOM_COLS, INPUT_LABELS, TOP_COLS, OUTPUT_LABELS } from "./constants.ts"
 import { SpawnWorker } from "../../worker_setup.ts"
 import { buildPayload } from "./Debounce.ts"
@@ -164,6 +164,9 @@ type GambaSectionProps = {
     AnythingTicked: boolean
     CostToChanceBusy: boolean
     cumulativeGraph: boolean
+    lockXAxis: boolean
+    lockedMins: number[] | null
+    lockedMaxs: number[] | null
 }
 
 // Equipment types for armor pieces
@@ -226,6 +229,9 @@ export default function GambaSection({
     AnythingTicked,
     CostToChanceBusy,
     cumulativeGraph,
+    lockXAxis,
+    lockedMins,
+    lockedMaxs,
 }: GambaSectionProps) {
     const { costToChanceColumnDefs } = createColumnDefs(true)
 
@@ -872,11 +878,11 @@ export default function GambaSection({
                     </div>
 
                     {/* Upgrade Selection Grid */}
-                    <div style={{ width: 200 }}>
+                    <div style={{ width: 170 }}>
                         <h4 style={{ margin: 0, fontSize: 'var(--font-size-sm)', marginBottom: 10 }}>
                             Upgrades: {(isAutoAttempting || isAutoAttemptingThisOne) && <span style={{ color: 'var(--error-color)', fontSize: 'var(--font-size-xs)' }}>AUTO ON</span>}
                         </h4>
-                        <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                        <div style={{ display: "flex", flexDirection: "column", gap: 2, width: 170 }}>
                             {sortedWithIndex.map(originalIndex => {
                                 const upgrade = upgradeArr[originalIndex]
                                 return (
@@ -898,7 +904,7 @@ export default function GambaSection({
                                             {upgrade.is_normal_honing ? '+' : 'Adv +'}{upgrade.is_normal_honing ? upgrade.upgrade_plus_num + 1 : (upgrade.upgrade_plus_num + 1) * 10} {upgrade.equipment_type}
                                             {upgrade.is_normal_honing && (
                                                 <span style={{ marginLeft: '4px', fontSize: 'var(--font-size-xs)' }}>
-                                                    {((upgrade.current_artisan ?? 0) * 100).toFixed(0)}%
+                                                    {((upgrade.current_artisan ?? 0) * 100).toFixed(0)}% Artisan
                                                 </span>
                                             )}
 
@@ -913,7 +919,7 @@ export default function GambaSection({
                     <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
                         <div style={{ display: "flex", gap: 20 }}>
                             {/* Upgrade Info Box - Always shown */}
-                            <div style={{ width: 250, padding: 15, border: '1px solid var(--border-accent)', borderRadius: '8px' }}>
+                            <div style={{ width: 300, padding: 15, border: '1px solid var(--border-accent)', borderRadius: '8px' }}>
                                 <h4 style={{ margin: 0, marginBottom: 10 }}>
                                     {upgradeArr[selectedUpgradeIndex] === undefined ? "" :
                                         upgradeArr[selectedUpgradeIndex].is_normal_honing ? '+' : 'Adv +'}{upgradeArr[selectedUpgradeIndex] === undefined ? "" : upgradeArr[selectedUpgradeIndex].is_normal_honing ? upgradeArr[selectedUpgradeIndex].upgrade_plus_num + 1 : (upgradeArr[selectedUpgradeIndex].upgrade_plus_num + 1) * 10} {upgradeArr[selectedUpgradeIndex] === undefined ? "" : upgradeArr[selectedUpgradeIndex].equipment_type}</h4>
@@ -980,14 +986,14 @@ export default function GambaSection({
 
                                             <button
                                                 onClick={toggleAutoAttemptThisOne}
-                                                disabled={upgradeArr[selectedUpgradeIndex]?.is_finished || !upgradeArr[selectedUpgradeIndex]?.is_normal_honing}
+                                                disabled={isAutoAttempting || upgradeArr[selectedUpgradeIndex]?.is_finished || !upgradeArr[selectedUpgradeIndex]?.is_normal_honing}
                                                 style={{
                                                     padding: '5px 10px',
                                                     backgroundColor: isAutoAttemptingThisOne ? 'var(--error-color)' : 'var(--btn-primary)',
                                                     color: isAutoAttemptingThisOne ? 'white' : 'var(--text-primary)',
                                                     border: isAutoAttemptingThisOne ? '2px solid var(--error-color)' : '1px solid var(--border-accent)',
                                                     fontWeight: isAutoAttemptingThisOne ? 'bold' : 'normal',
-                                                    opacity: (upgradeArr[selectedUpgradeIndex]?.is_finished || !upgradeArr[selectedUpgradeIndex]?.is_normal_honing) ? 0.5 : 1
+                                                    opacity: (isAutoAttempting || upgradeArr[selectedUpgradeIndex]?.is_finished || !upgradeArr[selectedUpgradeIndex]?.is_normal_honing) ? 0.5 : 1
                                                 }}
                                             >
                                                 {isAutoAttemptingThisOne ? 'Auto Tapping This...' : 'Auto Tap This One'}
@@ -1049,13 +1055,16 @@ export default function GambaSection({
                                     counts={AnythingTicked ? (chance_result?.hist_counts || cachedChanceGraphData?.hist_counts) : null}
                                     mins={chance_result?.hist_mins || cachedChanceGraphData?.hist_mins}
                                     maxs={chance_result?.hist_maxs || cachedChanceGraphData?.hist_maxs}
-                                    width={640}
-                                    height={320}
+                                    width={SMALL_GRAPH_WIDTH}
+                                    height={SMALL_GRAPH_HEIGHT}
                                     budgets={OUTPUT_LABELS.map(label => Number(budget_inputs[label] || 0))}
                                     additionalBudgets={finalCosts.slice(0, 7).map((v, i) => v + (i === 3 ? unlockCosts[0] : i === 6 ? unlockCosts[1] : 0))} // First 7 elements for total costs
                                     hasSelection={AnythingTicked}
                                     isLoading={CostToChanceBusy}
                                     cumulative={cumulativeGraph}
+                                    lockXAxis={lockXAxis}
+                                    lockedMins={lockedMins}
+                                    lockedMaxs={lockedMaxs}
                                 />
                             </div>
                         </div>

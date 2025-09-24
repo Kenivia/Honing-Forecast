@@ -390,7 +390,7 @@ export default function SpreadsheetGrid({ columnDefs, labels, sheet_values: budg
                 {/* Column headers (plain text, aligned) */}
                 <div style={{ display: 'grid', gridTemplateColumns: columnDefs.map(() => '1fr').join(' '), gap: 0, marginBottom: 4, height: 36 }}>
                     {columnDefs.map((colDef, colIndex) => (
-                        <div key={`hdr-${colIndex}`} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-secondary)', fontSize: 'var(--font-size-sm)' }}>
+                        <div key={`hdr-${colIndex}`} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-primary)', textWrap: "nowrap", fontWeight: 500, fontSize: 'var(--font-size-md)' }}>
                             {colDef.headerName}
                         </div>
                     ))}
@@ -447,6 +447,6 @@ export default function SpreadsheetGrid({ columnDefs, labels, sheet_values: budg
                     )}
                 </div>
             </div>
-        </div>
+        </div >
     )
 }

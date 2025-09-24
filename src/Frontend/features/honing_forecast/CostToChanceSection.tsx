@@ -1,7 +1,7 @@
 import React from 'react'
 import SpreadsheetGrid from '../../components/SpreadsheetGrid.tsx'
 import Graph from '../../components/Graph.tsx'
-import { styles, createColumnDefs } from './styles.ts'
+import { styles, createColumnDefs, GRAPH_WIDTH, GRAPH_HEIGHT } from './styles.ts'
 import { INPUT_LABELS, OUTPUT_LABELS } from './constants.ts'
 
 type CostToChanceSectionProps = {
@@ -16,6 +16,9 @@ type CostToChanceSectionProps = {
     AnythingTicked: boolean
     CostToChanceBusy: boolean
     cumulativeGraph: boolean
+    lockXAxis: boolean
+    lockedMins: number[] | null
+    lockedMaxs: number[] | null
 }
 
 export default function CostToChanceSection({
@@ -30,6 +33,9 @@ export default function CostToChanceSection({
     AnythingTicked,
     CostToChanceBusy,
     cumulativeGraph,
+    lockXAxis,
+    lockedMins,
+    lockedMaxs,
 }: CostToChanceSectionProps) {
     const { costToChanceColumnDefs } = createColumnDefs(autoOptimization)
 
@@ -56,6 +62,7 @@ export default function CostToChanceSection({
                                 id="auto-optimization"
                                 checked={autoOptimization}
                                 onChange={(e) => setAutoOptimization(e.target.checked)}
+                                style={{ accentColor: 'var(--control-checked-bg)' }}
                             />
                             <label htmlFor="auto-optimization" style={{ color: 'var(--text-primary)', fontSize: 'var(--font-size-sm)', whiteSpace: 'nowrap' }}>
                                 Automatic Juice and Special leap<br />
@@ -80,14 +87,7 @@ export default function CostToChanceSection({
                         )}
                         {(chance_result && (chance_result.upgrade_strings?.length > 0 || chance_result.juice_order_armor?.length > 0 || chance_result.juice_order_weapon?.length > 0)) && (
                             <div style={{ display: 'flex', gap: 0, alignItems: 'flex-start', marginTop: 8 }}>
-                                <div>
-                                    <div style={{ marginTop: 0, ...styles.inputLabelCell, whiteSpace: 'nowrap' }}>Bottlenecks:</div>
-                                    <div style={{ marginTop: 4, color: 'var(--text-muted)', fontSize: 'var(--font-size-sm)', whiteSpace: "wrap", width: 200 }}>
-                                        {(chance_result.reasons || []).map((s: string, idx: number) => (
-                                            <div key={"Fail reason" + (idx + 1)}>{idx + 1}. {s}</div>
-                                        ))}
-                                    </div>
-                                </div>
+
                                 <div>
                                     <div style={{ ...styles.inputLabelCell, whiteSpace: 'nowrap' }}>Free taps value ranking:</div>
                                     <div style={{ marginTop: 4, color: 'var(--text-muted)', fontSize: 'var(--font-size-sm)', width: 200 }}>
@@ -112,6 +112,17 @@ export default function CostToChanceSection({
                                         ))}
                                     </div>
                                 </div>
+                                <div>
+                                    <div style={{ ...styles.inputLabelCell, marginTop: 0, whiteSpace: 'nowrap', textAlign: "left", }}>Individual chances:</div>
+                                    <div style={{ marginTop: 4, color: 'var(--text-muted)', fontSize: 'var(--font-size-sm)', whiteSpace: "wrap", width: 250 }}>
+                                        {(chance_result.reasons || []).map((s: string, idx: number) => (
+                                            <div key={"Fail reason" + (idx + 1)}>{idx + 1}. {s}</div>
+                                        ))}
+                                    </div>
+                                    {/* <div style={{ ...styles.inputLabelCell, textAlign: "left", fontSize: 'var(--font-size-sm)', whiteSpace: "wrap", width: 350 }}>
+                                        Note: These are not what you will run out *first* - Imagine the game lets you keep tapping & go into debt, these are the chances that you will end up with a negative.(I know this is less intuitive, but it is much harder to calculate what you run out *first*)</div> */}
+
+                                </div>
                             </div>
                         )}
                     </div>
@@ -122,16 +133,19 @@ export default function CostToChanceSection({
                             counts={AnythingTicked ? (chance_result?.hist_counts || cachedChanceGraphData?.hist_counts) : null}
                             mins={chance_result?.hist_mins || cachedChanceGraphData?.hist_mins}
                             maxs={chance_result?.hist_maxs || cachedChanceGraphData?.hist_maxs}
-                            width={640}
-                            height={320}
+                            width={GRAPH_WIDTH}
+                            height={GRAPH_HEIGHT}
                             budgets={OUTPUT_LABELS.map(label => Number(budget_inputs[label]))}
                             hasSelection={AnythingTicked}
                             isLoading={CostToChanceBusy}
                             cumulative={cumulativeGraph}
+                            lockXAxis={lockXAxis}
+                            lockedMins={lockedMins}
+                            lockedMaxs={lockedMaxs}
                         />
                     </div>
                 </div>
-            </div>
+            </div >
         </>
     )
 }

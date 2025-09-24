@@ -24,6 +24,7 @@ const IconMap: Record<string, string> = {
     'Red juice': '/Honing-Forecast/Icons/Materials/Red juice.webp',
     'Blue juice': '/Honing-Forecast/Icons/Materials/Blue juice.webp',
     'Special leaps': '/Honing-Forecast/Icons/Materials/Special leap.webp',
+    'Forecast Icon': '/Honing-Forecast/forecast icon.webp',
 }
 
 export default function Icon({ iconName: name, display_text: display_text = null, size = 20, style }: IconProps) {

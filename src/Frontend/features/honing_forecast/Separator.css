@@ -3,10 +3,34 @@
     align-items: flex-start;
     /* each button's height may change when selected */
     gap: var(--spacing-xl);
-    border-bottom-style: solid;
-    border-bottom-width: 10px;
-    border-bottom-color: var(--btn-toggle-selected);
     box-sizing: border-box;
+    position: relative;
+    padding-bottom: 10px;
+}
+
+/* Create the border using a pseudo-element */
+.hf-separator::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background-color: var(--btn-toggle-selected);
+    z-index: 2;
+}
+
+/* Bottom border colors for each state */
+.hf-separator.chance-active::after {
+    background-color: var(--btn-toggle-chance-selected);
+}
+
+.hf-separator.budget-active::after {
+    background-color: var(--btn-toggle-budget-selected);
+}
+
+.hf-separator.gamba-active::after {
+    background-color: var(--btn-toggle-gamba-selected);
 }
 
 /* Button base: inline-flex so width auto fits content */
@@ -19,7 +43,7 @@
     background: var(--btn-toggle-deselected);
     color: #ffffff;
     cursor: pointer;
-    padding: 6px 12px 6px 12px;
+    padding: 10px 12px 6px 12px;
     margin-bottom: -10px;
     box-sizing: border-box;
     display: inline-flex;
@@ -38,6 +62,7 @@
     /* allow help text to be measured */
     min-height: 44px;
     /* keeps a consistent baseline */
+    position: relative;
 }
 
 /* Remove focus outline for separator buttons */
@@ -71,5 +96,33 @@
 }
 
 .hf-btn.selected .hf-help {
+    display: block;
+}
+
+/* Specific colors for each button state */
+.hf-btn.chance-selected {
+    background: var(--btn-toggle-chance-selected);
+    opacity: 1;
+}
+
+.hf-btn.chance-selected .hf-help {
+    display: block;
+}
+
+.hf-btn.budget-selected {
+    background: var(--btn-toggle-budget-selected);
+    opacity: 1;
+}
+
+.hf-btn.budget-selected .hf-help {
+    display: block;
+}
+
+.hf-btn.gamba-selected {
+    background: var(--btn-toggle-gamba-selected);
+    opacity: 1;
+}
+
+.hf-btn.gamba-selected .hf-help {
     display: block;
 }

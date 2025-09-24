@@ -1,6 +1,7 @@
 import React, { useMemo, useState, useCallback, useRef } from 'react'
 import { XYChart, AnimatedAxis, AnimatedGrid, AnimatedLineSeries, Tooltip, darkTheme } from '@visx/xychart'
 import { localPoint } from '@visx/event'
+import { remapCountsToLockedXAxis } from '../features/honing_forecast/HistogramUtils.ts'
 const plotLeft = 50, plotRight = 50, plotTop = 50, plotBottom = 50
 const GRID_COUNT = 10
 type GraphProps = {
@@ -18,6 +19,10 @@ type GraphProps = {
     hasSelection?: boolean
     isLoading?: boolean
     cumulative?: boolean
+    // Lock x-axis props
+    lockXAxis?: boolean
+    lockedMins?: number[] | null
+    lockedMaxs?: number[] | null
 }
 
 type Point = { x: number, y: number }
@@ -56,7 +61,7 @@ function formatSig3(n: number, place: number = 3): string {
     let s = parseFloat(
         Number(scaled.toFixed(place)).toPrecision(place)
     ).toLocaleString('en-US', {
-        minimumFractionDigits: scaled < 10 && suffix ? 1 : 0, // show decimals for small K/M/B
+        minimumFractionDigits: 1, // show decimals for small K/M/B
         maximumFractionDigits: place
     })
 
@@ -94,58 +99,60 @@ function calculateDecimalPlaces(cumpct: number, data_size: number): number {
     return n;
 }
 
-function to_step(arr: number[]) {
-    let cur = 0;
-    let out = [];
-    for (let i = 0; i < arr.length; i++) {
-        if (arr[i] != 0) {
-            cur = arr[i]
-        }
-        out.push(cur)
+function to_step(arr: number[]): number[] {
+    const n = arr.length;
+    if (n === 0) return [];
+
+    // find last non-zero index
+    let lastNonZero = -1;
+    for (let i = 0; i < n; i++) {
+        if (arr[i] !== 0) lastNonZero = i;
     }
-    return out
+
+    const out: number[] = [];
+    let cur = 0;
+    let extraUsed = true; // whether we've used the "one extra repeat" after lastNonZero
+
+    if (lastNonZero === -1) {
+        // array is all zeros — return zeros
+        return new Array(n).fill(0);
+    }
+
+    for (let i = 0; i < n; i++) {
+        if (arr[i] !== 0) {
+            // normal non-zero — update current value
+            cur = arr[i];
+            // if this is the last non-zero, reset the extraUsed flag so we can allow one extra repeat
+            if (i === lastNonZero) extraUsed = false;
+        } else {
+            // arr[i] is zero
+            if (i > lastNonZero) {
+                // we're past the last non-zero entry in the input
+                if (!extraUsed) {
+                    // allow one extra repeat of the last non-zero value
+                    cur = arr[lastNonZero];
+                    extraUsed = true;
+                } else {
+                    // after the one extra repeat, force zero
+                    cur = 0;
+                }
+            }
+            // else: we're between non-zero values earlier in the array -> keep cur (carry forward)
+        }
+
+        out.push(cur);
+    }
+
+    return out;
 }
-// function findNearestNonZeroIndex(arr, startIndex) {
-//     if (!Array.isArray(arr) || startIndex < 0 || startIndex >= arr.length) {
-//         console.error("Invalid input: Please provide a valid array and starting index.");
-//         return -1; // Or throw an error
-//     }
+function to_step_points(points: Point[]): Point[] {
+    const ys = points.map(p => p.y);      // extract y values
+    const stepped = to_step(ys);          // reuse our to_step function
+    console.log("stepped", ys, stepped)
+    return points.map((p, i) => ({ x: p.x, y: stepped[i] }));
+}
 
-//     // Check if the element at startIndex is already non-zero
-//     if (arr[startIndex] !== 0) {
-//         return startIndex;
-//     }
-
-//     let leftIndex = startIndex - 1;
-//     let rightIndex = startIndex + 1;
-//     let first_zero_arr = Array.from({ length: arr.length }, () => false)
-//     let first = true
-//     for (let i = 0; i < arr.length; i++) {
-//         if (arr[i] != 0 && first) {
-//             first = false
-//         }
-//         first_zero_arr[i] = first
-
-//     }
-
-//     while (leftIndex >= 0 || rightIndex < arr.length) {
-//         // Check left side
-//         if (leftIndex >= 0 && (arr[leftIndex] !== 0 || first_zero_arr[leftIndex])) {
-//             return leftIndex;
-//         }
-
-//         // Check right side
-//         if (rightIndex < arr.length && (arr[rightIndex] !== 0 || first_zero_arr[rightIndex])) {
-//             return rightIndex;
-//         }
-
-//         leftIndex--;
-//         rightIndex++;
-//     }
-
-//     return startIndex; // No non-zero element found in the array
-// }
-function Graph({ title, labels, counts, mins, maxs, width = 640, height = 320, budgets = null, additionalBudgets = null, hasSelection = false, isLoading = false, cumulative = true }: GraphProps) {
+function Graph({ title, labels, counts, mins, maxs, width = 640, height = 320, budgets = null, additionalBudgets = null, hasSelection = false, isLoading = false, cumulative = true, lockXAxis = false, lockedMins = null, lockedMaxs = null }: GraphProps) {
     const [visible, setVisible] = useState<boolean[]>(() => [true, true, false, false, false, true, false])
     const [hoverSeries, setHoverSeries] = useState<number | null>(null)
     const [hoverBucket, setHoverBucket] = useState<number | null>(null)
@@ -156,22 +163,47 @@ function Graph({ title, labels, counts, mins, maxs, width = 640, height = 320, b
         setHoverSeries(idx)
     }, [setHoverSeries])
 
-    const bucketLen = counts?.[0]?.length || 1000
-    const data_size = counts?.[0].reduce((partialSum, a) => partialSum + a, 0) || 1;
+    // Compute "effective" inputs: if lockXAxis is on we use the locked snapshots for axis range
+    // and remap incoming counts to those locked ranges when lockedMax > incoming newMax.
+    const effectiveCounts: number[][] | null = useMemo(() => {
+        if (!counts) return null;
+        if (!lockXAxis || !lockedMaxs) return counts;
+        // remap using lockedMaxs vs incoming maxs
+        const remapped = remapCountsToLockedXAxis(counts, maxs, lockedMaxs);
+        // console.log('Lock x-axis enabled:', { lockXAxis, lockedMaxs, maxs, originalCounts: counts, remappedCounts: remapped });
+        return remapped;
+    }, [counts, lockXAxis, lockedMaxs, maxs]);
+
+    const effectiveMins: number[] | null = useMemo(() => {
+        if (!lockXAxis || !lockedMins) return mins ?? null;
+        // console.log('Using locked mins:', { lockXAxis, lockedMins, originalMins: mins });
+        return lockedMins;
+    }, [lockXAxis, lockedMins, mins]);
+
+    const effectiveMaxs: number[] | null = useMemo(() => {
+        if (!lockXAxis || !lockedMaxs) return maxs ?? null;
+        // console.log('Using locked maxs:', { lockXAxis, lockedMaxs, originalMaxs: maxs });
+        return lockedMaxs;
+    }, [lockXAxis, lockedMaxs, maxs]);
+
+    const bucketLen = effectiveCounts?.[0]?.length || counts?.[0]?.length || 1000
+    const data_size = (effectiveCounts ?? counts)?.[0]?.reduce((partialSum, a) => partialSum + a, 0) || 1;
 
     // Drop any series where all frequency falls in a single bucket (<=1 positive bin)
     const keepMask: boolean[] = useMemo(() => {
-        if (!counts) return new Array(7).fill(false)
-        return counts.map(series => {
+        const srcCounts = effectiveCounts ?? counts;
+        if (!srcCounts) return new Array(7).fill(false)
+        return srcCounts.map(series => {
             let positiveBins = 0
             for (let i = 0; i < series.length && positiveBins <= 1; i++) if (series[i] > 0) positiveBins++
             return positiveBins > 1
         })
-    }, [counts])
+    }, [effectiveCounts, counts])
 
     const cdfSeries: number[][] | null = useMemo(() => {
-        if (!counts) return null
-        return counts.map(series => {
+        const src = effectiveCounts ?? counts;
+        if (!src) return null
+        return src.map(series => {
             const total = series.reduce((a, b) => a + b, 0) || 1
             let acc = 0
             const out = new Array(series.length)
@@ -181,33 +213,28 @@ function Graph({ title, labels, counts, mins, maxs, width = 640, height = 320, b
             }
             return out
         })
-    }, [counts])
+    }, [effectiveCounts, counts])
 
     const normalizedCounts: number[][] | null = useMemo(() => {
-        if (!counts) return null
+        const src = effectiveCounts ?? counts;
+        if (!src) return null
         const denom = data_size || 1
-        return counts.map(series => series.map(v => v / denom))
-    }, [counts, data_size])
+        return src.map(series => series.map(v => v / denom))
+    }, [effectiveCounts, counts, data_size])
 
     const dataSeries: Point[][] = useMemo(() => {
-        if (!counts) return [] as Point[][]
-        const source = cumulative && cdfSeries ? cdfSeries : (normalizedCounts || counts)
+        console.log("Effective counts", effectiveCounts)
+        const srcCounts = effectiveCounts ?? counts;
+        if (!srcCounts) return [] as Point[][]
+        const source = cumulative && cdfSeries ? cdfSeries : (normalizedCounts || srcCounts)
         let out: Point[][] = Array.from({ length: source.length }, () => []);
         for (let i = 0; i < source.length; i++) {
             let first = true;
             let prev: number | null = null;
             for (let b = 0; b < source[i].length; b++) {
-                if (first) {
-                    out[i].push({ x: b, y: 0 })
-                }
-                const y = source[i][b]
-                if (y > 0) {
-                    out[i].push({ x: b, y })
-                    first = false;
-                    prev = y
-                } else if (prev != null) {
-                    out[i].push({ x: b, y: prev })
-                }
+
+                out[i].push({ x: b, y: source[i][b] })
+                first = false;
             }
             if (first) {
                 out[i] = [{ x: 0, y: 0 }]
@@ -217,19 +244,59 @@ function Graph({ title, labels, counts, mins, maxs, width = 640, height = 320, b
             }
         }
         return out
-    }, [counts, cumulative, cdfSeries, normalizedCounts])
+    }, [effectiveCounts, counts, cumulative, cdfSeries, normalizedCounts])
 
     const yMax: number = useMemo(() => {
-        if (!counts) return 0
+        const srcCounts = effectiveCounts ?? counts;
+        if (!srcCounts) return 0
         if (cumulative) return 1
         const denom = data_size || 1
         let m = 0
-        for (let i = 0; i < counts.length; i++) {
+        for (let i = 0; i < srcCounts.length; i++) {
             if (!visible[i] || !keepMask[i]) continue
-            for (let j = 0; j < counts[i].length; j++) m = Math.max(m, counts[i][j] / denom)
+            for (let j = 0; j < srcCounts[i].length; j++) m = Math.max(m, srcCounts[i][j] / denom)
         }
         return m
-    }, [counts, visible, keepMask, cumulative, data_size])
+    }, [effectiveCounts, counts, visible, keepMask, cumulative, data_size])
+
+    // --- New: detect whether incoming counts contain data outside (to the right of) the effective x-axis ---
+    // i.e. when incoming newMax > effectiveMax AND counts beyond that cutoff are non-zero
+    const hasUnplottedPoints: boolean = useMemo(() => {
+        // Only relevant if we have incoming counts and effective (locked) maxs
+        if (!counts || !maxs || !effectiveMaxs) return false;
+        const nSeries = counts.length;
+        for (let i = 0; i < nSeries; i++) {
+            const seriesCounts = counts[i];
+            const incomingMax = maxs[i];
+            const effectiveMax = effectiveMaxs[i];
+            if (incomingMax == null || effectiveMax == null) continue;
+            // If effectiveMax already >= incomingMax, nothing is truncated
+            if (effectiveMax >= incomingMax) continue;
+
+            // compute incoming bucket width
+            const nBuckets = seriesCounts?.length || bucketLen || 1;
+            // protect against division by zero
+            if (!isFinite(incomingMax) || incomingMax <= 0) {
+                // can't reason about ranges; skip this series
+                continue;
+            }
+            const incomingBin = incomingMax / nBuckets;
+            // first bucket index whose start >= effectiveMax:
+            // bucket j start = j * incomingBin. We want j s.t. j * incomingBin >= effectiveMax
+            // so j >= effectiveMax / incomingBin. Use Math.ceil to get the first index that lies fully >= effectiveMax.
+            const cutoffIndex = Math.max(0, Math.ceil(effectiveMax / incomingBin));
+
+            if (cutoffIndex < seriesCounts.length) {
+                // check if any count beyond cutoffIndex is positive
+                for (let b = cutoffIndex; b < seriesCounts.length; b++) {
+                    if ((seriesCounts[b] ?? 0) > 0) {
+                        return true;
+                    }
+                }
+            }
+        }
+        return false;
+    }, [counts, maxs, effectiveMaxs, bucketLen]);
 
     // const onLegendToggle = (i: number) => setVisible(v => v.map((b, idx) => idx === i ? !b : b))
 
@@ -243,16 +310,17 @@ function Graph({ title, labels, counts, mins, maxs, width = 640, height = 320, b
     const yAccessor = (d: Point) => d.y
 
     const handleMouseMove = useCallback((ev: React.MouseEvent<HTMLDivElement>) => {
-        if (!counts) return
+        const srcCounts = effectiveCounts ?? counts;
+        if (!srcCounts) return
         const p = localPoint(ev)
         const innerW = Math.max(1, width - plotLeft - plotRight)
         const innerH = height - plotTop - plotBottom
         const x = Math.min(Math.max((p?.x ?? 0) - plotLeft, 0), innerW)
-        const bucket = Math.round((x / innerW) * (bucketLen - 1))
+        const bucket = Math.min(bucketLen - 1, Math.round((x / innerW) * (bucketLen)))
         // choose series with closest y to cursor vertically if possible; otherwise pick the highest y
-        const src = cumulative && cdfSeries ? cdfSeries : (normalizedCounts || counts)
+        const src = cumulative && cdfSeries ? cdfSeries : (normalizedCounts || srcCounts)
         const denomY = Math.max(1e-9, yMax)
-        const ys = src.map((s, i) => ({ i, y: s[bucket] / denomY * innerH, vis: visible[i] && keepMask[i] }))
+        const ys = src.map((s, i) => ({ i, y: to_step(s)[bucket] / denomY * innerH, vis: visible[i] && keepMask[i] }))
         const visibleYs = ys.filter(o => o.vis)
         if (visibleYs.length === 0) { setHoverSeries(null); return }
         // use highest y bucket as proxy for nearest vertically
@@ -260,7 +328,7 @@ function Graph({ title, labels, counts, mins, maxs, width = 640, height = 320, b
         const best = visibleYs.reduce((a, b) => Math.abs(a.y - actual_y) < Math.abs(b.y - actual_y) ? a : b)
         setHoverSeries(best.i)
         setHoverBucket(bucket)
-    }, [counts, visible, keepMask, bucketLen, width, height, yMax, cdfSeries, normalizedCounts, cumulative])
+    }, [effectiveCounts, counts, visible, keepMask, bucketLen, width, height, yMax, cdfSeries, normalizedCounts, cumulative])
 
     const handleMouseLeave = () => { setHoverSeries(null); setHoverBucket(null) }
 
@@ -287,16 +355,15 @@ function Graph({ title, labels, counts, mins, maxs, width = 640, height = 320, b
 
     }, [bucketLen])
     const bottomTickFormat = useCallback((val: any) => {
-        if (fallbackSeries == null || !mins || !maxs) return formatSig3(val)
+        if (fallbackSeries == null || !effectiveMins || !effectiveMaxs) return formatSig3(val)
 
-        const min = mins[fallbackSeries]
-        const max = maxs[fallbackSeries]
-        // return maxs[fallbackSeries]
+        const min = effectiveMins[fallbackSeries]
+        const max = effectiveMaxs[fallbackSeries]
         const bucketIdx = typeof val === 'number' ? val : Number(val)
         const width = (max - min) / bucketLen
         const mid = min + (bucketIdx) * width
         return formatSig3(mid)
-    }, [fallbackSeries, mins, maxs, bucketLen])
+    }, [fallbackSeries, effectiveMins, effectiveMaxs, bucketLen])
 
 
     const anyVisible = useMemo(() => labels.some((_, i) => visible[i] && keepMask[i]), [labels, visible, keepMask])
@@ -307,7 +374,7 @@ function Graph({ title, labels, counts, mins, maxs, width = 640, height = 320, b
             <AnimatedLineSeries
                 key={labels[seriesIdx]}
                 dataKey={labels[seriesIdx]}
-                data={dataSeries[seriesIdx] || []}
+                data={to_step_points(dataSeries[seriesIdx]) || []}
                 xAccessor={xAccessor}
                 yAccessor={yAccessor}
                 stroke={SERIES_COLORS_VARS[seriesIdx]}
@@ -320,7 +387,8 @@ function Graph({ title, labels, counts, mins, maxs, width = 640, height = 320, b
 
     // Memoize Points Of Interest (POI)
     const poiNodes = useMemo(() => {
-        if (!counts || !anyVisible) return null;
+        const srcCounts = effectiveCounts ?? counts;
+        if (!srcCounts || !anyVisible) return null;
         const innerW = width - plotLeft - plotRight;
         const innerH = height - plotTop - plotBottom;
         const elems: React.ReactElement[] = [];
@@ -329,12 +397,14 @@ function Graph({ title, labels, counts, mins, maxs, width = 640, height = 320, b
             if (!budgetData) return;
             labels.forEach((_, i) => {
                 if (!visible[i] || !keepMask[i]) return;
-                const range = Math.max(1e-9, (maxs![i] - mins![i]));
-                const frac = (budgetData[i] - mins![i]) / range;
-                const bucket_idx = Math.max(0, Math.min(bucketLen - 1, Math.round(frac * (bucketLen - 1))));
-                const cx = plotLeft + (bucket_idx / Math.max(1, bucketLen - 1)) * innerW;
-                const seriesVals = cumulative && cdfSeries ? cdfSeries[i] : ((normalizedCounts && normalizedCounts[i]) || counts[i]);
+                const range = Math.max(1e-9, ((effectiveMaxs![i] - effectiveMins![i])));
+                const frac = (budgetData[i] - effectiveMins![i]) / range;
+                let bucket_idx = Math.max(0, Math.min(bucketLen, Math.floor(frac * (bucketLen))));
+                const cx = plotLeft + (bucket_idx / Math.max(1, bucketLen)) * innerW;
+                bucket_idx = Math.min(bucket_idx, bucketLen - 1)
+                const seriesVals = cumulative && cdfSeries ? cdfSeries[i] : ((normalizedCounts && normalizedCounts[i]) || srcCounts[i]);
                 const denomY2 = Math.max(1e-9, yMax);
+                // console.log(seriesVals)
                 const cy = plotTop + innerH - to_step(seriesVals)[bucket_idx] / denomY2 * innerH;
                 const labelText = formatSig3(budgetData[i]);
                 const boxW = Math.max(16, labelText.length * 8);
@@ -354,23 +424,53 @@ function Graph({ title, labels, counts, mins, maxs, width = 640, height = 320, b
         renderFor(additionalBudgets, "poi-additional", 7, "rgb(0,255,0)");
 
         return elems.length ? <g>{elems}</g> : null;
-    }, [budgets, additionalBudgets, counts, anyVisible, visible, keepMask, width, height, bucketLen, mins, maxs, cdfSeries, normalizedCounts, cumulative, yMax, labels]);
+    }, [budgets, additionalBudgets, effectiveCounts, counts, anyVisible, visible, keepMask, width, height, bucketLen, effectiveMins, effectiveMaxs, cdfSeries, normalizedCounts, cumulative, yMax, labels]);
 
     // Memoize hover marker computation
     const hoverMarker = useMemo(() => {
-        if (fallbackSeries == null || hoverBucket == null || !counts || !visible[fallbackSeries] || !keepMask[fallbackSeries]) return null;
+        const srcCounts = effectiveCounts ?? counts;
+        if (fallbackSeries == null || hoverBucket == null || !srcCounts || !visible[fallbackSeries] || !keepMask[fallbackSeries]) return null;
         const innerW = width - plotLeft - plotRight;
         const innerH = height - plotTop - plotBottom;
         const cx = plotLeft + (hoverBucket / Math.max(1, bucketLen)) * innerW;
-        const hoverSeriesVals = cumulative && cdfSeries ? cdfSeries[fallbackSeries] : ((normalizedCounts && normalizedCounts[fallbackSeries]) || counts[fallbackSeries]);
+        let bucket_idx = Math.min(hoverBucket, bucketLen - 1)
+        const hoverSeriesVals = cumulative && cdfSeries ? cdfSeries[fallbackSeries] : ((normalizedCounts && normalizedCounts[fallbackSeries]) || srcCounts[fallbackSeries]);
         const denomY3 = Math.max(1e-9, yMax);
-        const cy = plotTop + innerH - (to_step(hoverSeriesVals)[hoverBucket] / denomY3) * innerH;
+        const cy = plotTop + innerH - (to_step(hoverSeriesVals)[bucket_idx] / denomY3) * innerH;
         return { cx, cy, series: fallbackSeries };
-    }, [fallbackSeries, hoverBucket, counts, visible, keepMask, cumulative, cdfSeries, normalizedCounts, bucketLen, width, height, yMax]);
+    }, [fallbackSeries, hoverBucket, effectiveCounts, counts, visible, keepMask, cumulative, cdfSeries, normalizedCounts, bucketLen, width, height, yMax]);
 
     return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: 16, borderRadius: 16, backgroundColor: 'var(--bg-tertiary)' }} onMouseMove={handleMouseMove} onMouseLeave={handleMouseLeave}>
-            {title ? <div style={{ color: 'var(--text-primary)', fontWeight: 600 }}>{title}</div> : null}
+            {title ? (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <div style={{ color: 'var(--text-primary)', fontSize: "var(--font-size-lg)", fontWeight: 600 }}>{title}</div>
+                    {lockXAxis && effectiveMaxs && fallbackSeries != null ? (
+                        <div
+                            role="status"
+                            aria-live="polite"
+                            title="Graph may look a bit wonky in some cases, untick 'Lock x-axis' to get a clean graph"
+                            style={{
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: 6,
+                                background: 'rgba(255,165,0,0.12)',
+                                color: 'white',
+                                padding: '4px 8px',
+                                borderRadius: 8,
+                                fontSize: 12,
+                                border: '1px solid rgba(255,165,0,0.22)'
+                            }}
+                        >
+                            x-axis locked at {formatSig3(effectiveMaxs[fallbackSeries])}
+                            <span style={{ color: SERIES_COLORS_VARS[fallbackSeries] }}>{labels[fallbackSeries].padEnd(Math.max(...labels.slice(0, 7).map(l => l.length)), ' ')}</span>
+                            {hasUnplottedPoints && (
+                                <span>- Some trials used more and were not plotted</span>
+                            )}
+                        </div>
+                    ) : null}
+                </div>
+            ) : null}
             <div ref={chartRef}>
                 <XYChart
                     height={height}
@@ -419,7 +519,7 @@ function Graph({ title, labels, counts, mins, maxs, width = 640, height = 320, b
                     {/* Hover point snapped to selected series */}
                     {hoverMarker && (
                         <g>
-                            <circle cx={hoverMarker.cx} cy={hoverMarker.cy} r={4.5} fill={SERIES_COLORS_VARS[hoverMarker.series]} stroke="#000" />
+                            <circle cx={hoverMarker.cx} cy={hoverMarker.cy} r={4.5} fill={SERIES_COLORS_VARS[hoverMarker.series]} stroke="#fff" strokeWidth={2} />
                         </g>
                     )}
 
@@ -428,19 +528,20 @@ function Graph({ title, labels, counts, mins, maxs, width = 640, height = 320, b
                         snapTooltipToDatumY={true}
                         showSeriesGlyphs={false}
                         renderTooltip={() => {
-                            if (fallbackSeries == null || hoverBucket == null || !mins || !maxs) return null
-                            const min = mins[fallbackSeries]
-                            const max = maxs[fallbackSeries]
-                            // const innerW = Math.max(1, width - plotLeft - plotRight)
-                            const mid = min + (hoverBucket + 0.5) * max / bucketLen
-                            const cumPctRaw = counts[fallbackSeries].slice(0, hoverBucket + 1).reduce((partialSum, a) => partialSum + a, 0) / data_size * 100
+                            if (fallbackSeries == null || hoverBucket == null || !effectiveMins || !effectiveMaxs) return null
+                            const min = effectiveMins[fallbackSeries]
+                            const max = effectiveMaxs[fallbackSeries]
+                            const widthRange = Math.max(1e-9, max - min);
+                            const mid = min + (hoverBucket + 0.5) * (widthRange / bucketLen)
+                            const srcCounts = effectiveCounts ?? counts;
+                            const cumPctRaw = srcCounts[fallbackSeries].slice(0, hoverBucket + 1).reduce((partialSum, a) => partialSum + a, 0) / data_size * 100
                             const decimalPlaces = calculateDecimalPlaces(cumPctRaw, data_size)
                             const cumPct = cumPctRaw.toFixed(decimalPlaces)
                             return (
                                 <div style={{ color: 'var(--text-primary)' }}>
                                     <div style={{ color: SERIES_COLORS_VARS[fallbackSeries], fontWeight: 600 }}>{labels[fallbackSeries]}</div>
                                     <div>{cumPct}% of trials used less</div>
-                                    <div>than {formatSig3(mid)} {labels[fallbackSeries]}</div>
+                                    <div>than ~{formatSig3(mid, 2)} {labels[fallbackSeries]}</div>
                                 </div>
                             )
                         }}
@@ -473,10 +574,12 @@ function Graph({ title, labels, counts, mins, maxs, width = 640, height = 320, b
             {!anyVisible && (
                 <div>
                     <div style={{ color: 'var(--text-secondary)', fontSize: 50, alignSelf: 'center', justifySelf: 'center', marginTop: -200 }}>
-                        {hasSelection ? isLoading ? "Loading..." : 'Everything have 100% success rate, nothing to plot.' : 'Nothing to plot, tick an upgrade!'}
+                        {hasSelection ? isLoading ? "Loading..." : 'Nothing to plot, couple possibilities:' : 'Nothing to plot, tick an upgrade!'}
                     </div>
-                    <div style={{ fontSize: 12 }}>{isLoading && hasSelection ? "Please allow up to ~5s, if it still doesnt load then something went probably wrong" : ""}</div>
+                    <div style={{ fontSize: 12 }}>{isLoading && hasSelection ? "Please allow up to ~5s, if it still doesnt load then gg" : ""}</div>
                     <div style={{ fontSize: 12 }}>{isLoading && hasSelection ? "Also the first run is slower because it has to spin up WebAssembly" : ""}</div>
+                    <div style={{ fontSize: 12 }}>{!isLoading && hasSelection ? "1. All your ticks have 100% success rate(+1 to +3)" : ""}</div>
+                    <div style={{ fontSize: 12 }}>{!isLoading && hasSelection ? "2. The x-axis was locked at too high a value, so everything fell within the first pixel/tick.(Both situations are due to every point landing on the same x value)" : ""}</div>
                 </div>
             )}
         </div>

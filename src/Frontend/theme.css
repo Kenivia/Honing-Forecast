@@ -10,8 +10,24 @@
     --btn-success-text: #021018;
     --btn-demo: #374151;
     --btn-demo-text: #ffffff;
-    --btn-toggle-selected: #0670d4;
     --btn-toggle-deselected: #6b7280;
+    --btn-toggle-chance-selected: #165ca3;
+    --btn-toggle-budget-selected: #1c9164;
+    --btn-toggle-gamba-selected: #a40cea;
+
+
+
+    /* Checkbox Colors */
+    --checkbox-border: #bbb;
+    --checkbox-focus-ring: rgba(59, 130, 246, 0.35);
+    --checkbox-checked-bg: #559bd8;
+    --checkbox-checked-text: #ffffff;
+    --checkbox-checked-border: #5a5a5a00;
+    --checkbox-hover-bg: #5a5a5a;
+
+    /* Control Checkbox Colors */
+    --control-checked-bg: #2197ff;
+
 
     --ran-out: #87161650;
 
@@ -41,11 +57,4 @@
     --accent: #5be6ff;
     --accent-hover: #0d7a8a;
 
-    /* Checkbox Colors */
-    --checkbox-border: #bbb;
-    --checkbox-focus-ring: rgba(59, 130, 246, 0.35);
-    --checkbox-checked-bg: #0060df;
-    --checkbox-checked-text: #ffffff;
-    --checkbox-checked-border: #5a5a5a00;
-    --checkbox-hover-bg: #5a5a5a;
 }

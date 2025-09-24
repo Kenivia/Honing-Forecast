@@ -1,7 +1,7 @@
 import React from 'react'
 import SpreadsheetGrid from '../../components/SpreadsheetGrid.tsx'
 import Graph from '../../components/Graph.tsx'
-import { styles, createColumnDefs } from './styles.ts'
+import { styles, createColumnDefs, GRAPH_WIDTH, GRAPH_HEIGHT } from './styles.ts'
 import { OUTPUT_LABELS } from './constants.ts'
 
 type ChanceToCostSectionProps = {
@@ -13,6 +13,9 @@ type ChanceToCostSectionProps = {
     AnythingTicked: boolean
     ChanceToCostBusy: boolean
     cumulativeGraph: boolean
+    lockXAxis: boolean
+    lockedMins: number[] | null
+    lockedMaxs: number[] | null
 }
 
 export default function ChanceToCostSection({
@@ -24,6 +27,9 @@ export default function ChanceToCostSection({
     AnythingTicked,
     ChanceToCostBusy,
     cumulativeGraph,
+    lockXAxis,
+    lockedMins,
+    lockedMaxs,
 }: ChanceToCostSectionProps) {
     const { chanceToCostColumnDefs } = createColumnDefs(false) // autoOptimization not used for this section
 
@@ -78,12 +84,15 @@ export default function ChanceToCostSection({
                             counts={AnythingTicked ? (cost_result?.hist_counts || cachedCostGraphData?.hist_counts) : null}
                             mins={cost_result?.hist_mins || cachedCostGraphData?.hist_mins}
                             maxs={cost_result?.hist_maxs || cachedCostGraphData?.hist_maxs}
-                            width={640}
-                            height={320}
+                            width={GRAPH_WIDTH}
+                            height={GRAPH_HEIGHT}
                             budgets={cost_result && OUTPUT_LABELS.map(label => Number(cost_result[label]))}
                             hasSelection={AnythingTicked}
                             isLoading={ChanceToCostBusy}
                             cumulative={cumulativeGraph}
+                            lockXAxis={lockXAxis}
+                            lockedMins={lockedMins}
+                            lockedMaxs={lockedMaxs}
                         />
                     </div>
                 </div>

@@ -11,6 +11,7 @@ import CostToChanceSection from './CostToChanceSection.tsx'
 import GambaSection from "./GambaSection.tsx"
 import Separator from './Separator.tsx'
 import { TooltipState, createTooltipHandlers, renderTooltip } from './Tooltip.tsx'
+import Icon from '../../components/Icon.tsx'
 
 import { GridMouseDownLogic, mouseMoveLogic, createMouseUpHandler } from "./Marquee.ts"
 import { createClearAll, createFillRandom, createFillDemo } from './ControlPanelFunctions.ts'
@@ -34,6 +35,11 @@ export default function HoningForecastUI() {
     const [activePage, setActivePage] = useState<'chance-to-cost' | 'cost-to-chance' | 'gamba'>('chance-to-cost')
     const [mainScale, setMainScale] = useState<number>(1)
     const [zoomCompensation, setZoomCompensation] = useState<number>(1)
+
+    // Lock x-axis state (shared across all graphs)
+    const [lockXAxis, setLockXAxis] = useState<boolean>(false)
+    const [lockedMins, setLockedMins] = useState<number[] | null>(null)
+    const [lockedMaxs, setLockedMaxs] = useState<number[] | null>(null)
 
     // marquee state & refs (kept here so grids stay presentational)
     const topGridRef = useRef<HTMLDivElement | null>(null)
@@ -81,8 +87,8 @@ export default function HoningForecastUI() {
     useEffect(() => {
         const updateScale = () => {
             const width = window.innerWidth
-            if (width < 1033) {
-                const scale = Math.max(0, width / 1033)
+            if (width < 1020) {
+                const scale = Math.max(0, width / 1020)
                 setMainScale(scale)
             } else {
                 setMainScale(1)
@@ -278,6 +284,25 @@ export default function HoningForecastUI() {
     }
     const adv_hone_strategy_change = (value: string) => set_adv_hone_strategy_change(value)
 
+    // Lock x-axis handler
+    const onToggleLockXAxis = () => {
+        setLockXAxis(prev => {
+            const newVal = !prev;
+            if (!prev) {
+                // we're turning it ON: snapshot current mins/maxs from cached data
+                const currentMins = cachedChanceGraphData?.hist_mins || cachedCostGraphData?.hist_mins || null;
+                const currentMaxs = cachedChanceGraphData?.hist_maxs || cachedCostGraphData?.hist_maxs || null;
+                setLockedMins(currentMins ? currentMins.slice() : null);
+                setLockedMaxs(currentMaxs ? currentMaxs.slice() : null);
+            } else {
+                // turning it OFF: clear snapshots
+                setLockedMins(null);
+                setLockedMaxs(null);
+            }
+            return newVal;
+        });
+    };
+
     const clearAll = createClearAll({
         setTopGrid,
         setBottomGrid,
@@ -292,6 +317,9 @@ export default function HoningForecastUI() {
         _setBucketCount,
         setCumulativeGraph,
         setDataSize,
+        setLockXAxis,
+        setLockedMins,
+        setLockedMaxs,
     })
 
     const fillRandom = createFillRandom({
@@ -437,7 +465,11 @@ export default function HoningForecastUI() {
                 transform: `scale(${mainScale})`,
                 transformOrigin: 'top center'
             }}>
-                <h1 style={styles.heading}>Honing Forecast</h1>
+
+                <div style={{ display: "flex", flexDirection: "row", gap: 6 }}>
+                    <Icon iconName="Forecast Icon" size={64} style={{ display: 'flex', alignItems: 'center', gap: '12px' }} display_text="" />
+                    <h1 style={styles.heading}>Honing Forecast</h1>
+                </div>
 
                 {/* Three panels in a responsive flex layout */}
                 <div style={{ display: 'flex', gap: 'var(--spacing-2xl)', alignItems: "flex-start", flexWrap: 'wrap', justifyContent: 'flex-start' }}>
@@ -475,6 +507,8 @@ export default function HoningForecastUI() {
                         setCumulativeGraph={setCumulativeGraph}
                         dataSize={dataSize}
                         setDataSize={setDataSize}
+                        lockXAxis={lockXAxis}
+                        onToggleLockXAxis={onToggleLockXAxis}
                     />
                 </div>
 
@@ -492,6 +526,9 @@ export default function HoningForecastUI() {
                         AnythingTicked={AnythingTicked}
                         ChanceToCostBusy={ChanceToCostBusy}
                         cumulativeGraph={cumulativeGraph}
+                        lockXAxis={lockXAxis}
+                        lockedMins={lockedMins}
+                        lockedMaxs={lockedMaxs}
                     />
                 </div>
 
@@ -508,6 +545,9 @@ export default function HoningForecastUI() {
                         AnythingTicked={AnythingTicked}
                         CostToChanceBusy={CostToChanceBusy}
                         cumulativeGraph={cumulativeGraph}
+                        lockXAxis={lockXAxis}
+                        lockedMins={lockedMins}
+                        lockedMaxs={lockedMaxs}
                     />
                 </div>
 
@@ -531,6 +571,9 @@ export default function HoningForecastUI() {
                         AnythingTicked={AnythingTicked}
                         CostToChanceBusy={CostToChanceBusy}
                         cumulativeGraph={cumulativeGraph}
+                        lockXAxis={lockXAxis}
+                        lockedMins={lockedMins}
+                        lockedMaxs={lockedMaxs}
                     />
                 </div>
             </div>
