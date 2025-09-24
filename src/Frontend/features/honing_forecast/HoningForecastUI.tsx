@@ -33,6 +33,7 @@ export default function HoningForecastUI() {
     const [dataSize, setDataSize] = useState<string>(() => '100000')
     const [activePage, setActivePage] = useState<'chance-to-cost' | 'cost-to-chance' | 'gamba'>('chance-to-cost')
     const [mainScale, setMainScale] = useState<number>(1)
+    const [zoomCompensation, setZoomCompensation] = useState<number>(1)
 
     // marquee state & refs (kept here so grids stay presentational)
     const topGridRef = useRef<HTMLDivElement | null>(null)
@@ -100,6 +101,31 @@ export default function HoningForecastUI() {
         }
     }, [])
 
+    // ----- Zoom detection for tooltip compensation -----
+    useEffect(() => {
+        let previousPixelRatio = window.devicePixelRatio
+
+        const checkZoom = () => {
+            const currentPixelRatio = window.devicePixelRatio
+            if (currentPixelRatio !== previousPixelRatio) {
+                previousPixelRatio = currentPixelRatio
+                // Calculate compensation factor to keep tooltips constant size
+                // When zoom increases (devicePixelRatio > 1), we scale down tooltips
+                const compensation = 1 / currentPixelRatio
+                setZoomCompensation(compensation)
+            }
+        }
+
+        // Set initial zoom compensation
+        setZoomCompensation(1 / window.devicePixelRatio)
+
+        // Add resize listener to detect zoom changes
+        window.addEventListener('resize', checkZoom)
+
+        return () => {
+            window.removeEventListener('resize', checkZoom)
+        }
+    }, [])
 
     // ----- Persist UI state (debounced) -----
     const saveTimerRef = useRef<number | null>(null)
@@ -346,7 +372,7 @@ export default function HoningForecastUI() {
                     <div style={{ position: 'fixed', left: marqueeRect.left, top: marqueeRect.top, width: marqueeRect.width, height: marqueeRect.height, background: 'var(--marquee-bg)', border: '2px solid var(--marquee-border)', pointerEvents: 'none', zIndex: 9999 }} />
                 ) : null
             }
-            {renderTooltip(tooltip)}
+            {renderTooltip(tooltip, mainScale, zoomCompensation)}
 
 
             <div ref={mainRef} style={{

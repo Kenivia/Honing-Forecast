@@ -70,8 +70,11 @@ export function createTooltipHandlers(
     }
 }
 
-export function renderTooltip(tooltip: TooltipState) {
+export function renderTooltip(tooltip: TooltipState, mainScale: number = 1, zoomCompensation: number = 1) {
     if (!tooltip.visible) return null
+
+    // Combine main scale and zoom compensation for final tooltip scale
+    const finalScale = mainScale * zoomCompensation
 
     const tooltipStyle: React.CSSProperties = {
         position: 'fixed',
@@ -91,7 +94,9 @@ export function renderTooltip(tooltip: TooltipState) {
         transition: 'opacity 0.1s ease-in-out',
         minWidth: tooltip.type === 'upgrade' ? '300px' : 'auto',
         maxWidth: tooltip.type === 'upgrade' ? '400px' : 'auto',
-        whiteSpace: tooltip.type === 'separator' ? 'nowrap' : 'normal'
+        whiteSpace: tooltip.type === 'separator' ? 'nowrap' : 'normal',
+        transform: `scale(${finalScale})`,
+        transformOrigin: 'top left'
     }
 
     if (tooltip.type === 'separator') {

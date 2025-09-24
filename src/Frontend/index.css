@@ -146,6 +146,38 @@ textarea {
 }
 
 /* Mobile-specific styles to prevent zooming beyond natural width */
+@media (max-width: 1033px) {
+    html {
+        overflow-x: hidden;
+        width: 100%;
+        max-width: 100vw;
+        /* Prevent zooming out on mobile */
+        touch-action: pan-x pan-y;
+        -webkit-text-size-adjust: 100%;
+        -ms-text-size-adjust: 100%;
+    }
+
+    body {
+        overflow-x: hidden;
+        width: 100%;
+        max-width: 100vw;
+        /* Prevent horizontal scrolling on mobile */
+        position: relative;
+    }
+
+    #root {
+        max-width: 100vw;
+        width: 100%;
+        padding: 1rem;
+        overflow-x: hidden;
+    }
+
+    /* Prevent any child elements from causing horizontal overflow */
+    * {
+        max-width: 100%;
+        box-sizing: border-box;
+    }
+}
 
 /* Utility Classes */
 .text-primary {
