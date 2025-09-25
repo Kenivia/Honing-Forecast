@@ -24,7 +24,7 @@ fn find_best_budget_for_this_chance(
         .collect();
 
     let mut sorted_indices: Vec<usize> = (0..budget_data.len()).collect();
-    sorted_indices.sort_by_key(|&i| (diffs[i], (k_i64_budget - i as i64).abs()));
+    sorted_indices.sort_by_key(|&i| (diffs[i], (k_i64_budget - i as i64).abs())); //TODO MAKE THIS A MIN FUNCTION
     let best_budget: Vec<i64> = budget_data[sorted_indices[0]].clone();
     let best_chance: f64 =
         (1 as f64 - (failure_counts[sorted_indices[0]] as f64 / cost_size as f64)) * 100 as f64;
@@ -383,6 +383,7 @@ pub fn chance_to_cost(
         true, // rigged
         true, //use_true_rng
     );
+    budget_data.push(top_bottom[1].clone());
     let failure_counts_1: Vec<i64> = count_failure(&cost_data, &budget_data, true);
     let failure_counts_2: Vec<i64> = count_failure(&cost_data, &budget_data_for_juice, true);
     let closest_indices: Vec<usize> = argmin_indices_closest(&failure_counts_1, &failure_counts_2);
@@ -391,7 +392,7 @@ pub fn chance_to_cost(
         budget_data[i][7] = budget_data_for_juice[closest_indices[i]][7];
         budget_data[i][8] = budget_data_for_juice[closest_indices[i]][8];
     }
-    budget_data.push(top_bottom[1].clone());
+
     let (hundred_budgets, hundred_chances): (Vec<Vec<i64>>, Vec<f64>) = (0..101)
         .into_iter()
         .map(|x| {

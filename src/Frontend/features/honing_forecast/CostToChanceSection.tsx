@@ -109,7 +109,7 @@ export default function CostToChanceSection({
                                 </div>
                                 <div>
                                     <div style={{ ...styles.inputLabelCell, whiteSpace: 'nowrap' }}>Red juice (weapon):</div>
-                                    <div style={{ marginTop: 4, color: 'var(--text-muted)', fontSize: 'var(--font-size-sm)', width: 260 }}>
+                                    <div style={{ marginTop: 4, color: 'var(--text-muted)', fontSize: 'var(--font-size-sm)', width: 220 }}>
                                         {(chance_result.juice_order_weapon || []).map((s: string, idx: number) => (
                                             <div key={"Red juice value" + (idx + 1)}>{idx + 1}. {s}</div>
                                         ))}

@@ -1,3 +1,146 @@
+// Equipment types for armor pieces
+export const EQUIPMENT_TYPES = ["Helmet", "Shoulder", "Chest", "Pants", "Gloves", "Weapon"]
+
+// TypeScript interfaces
+export interface Upgrade {
+    is_normal_honing: boolean
+    prob_dist: number[]
+    original_prob_dist: number[]
+    base_chance: number
+    costs: number[]
+    one_juice_cost: number
+    adv_juice_cost: number[]
+    special_cost: number
+    values: number[]
+    prob_dist_len: number
+    is_weapon: boolean
+    artisan_rate: number
+    tap_offset: number
+    upgrade_plus_num: number
+    special_value: number
+    equipment_type?: string // Added for equipment type
+    is_finished?: boolean // Track if upgrade is completed
+    completion_order?: number // Track order of completion
+    current_artisan?: number // Track current artisan for this upgrade
+    taps_so_far?: number // Number of taps attempted so far
+    juice_taps_so_far?: number // Number of taps with juice so far
+    free_taps_so_far?: number // Number of free taps so far
+    use_juice?: boolean // Whether juice is currently enabled for this upgrade
+    cumulative_chance?: number // Cumulative chance of success for normal honing
+    other_prob_dist?: number[] // Probability distribution for the other strategy (for advanced honing)
+}
+
+export function sortedUpgrades(upgradeArr: Upgrade[]) {
+    let out = [...upgradeArr]
+    out.sort((a, b) => {
+        // Unfinished normal honing upgrades first
+        if (a.is_finished < b.is_finished) {
+            return -1
+        }
+        if (a.is_finished > b.is_finished) {
+            return 1
+        }
+        if (a.is_normal_honing < b.is_normal_honing) {
+            return 1
+        }
+        if (a.is_normal_honing > b.is_normal_honing) {
+            return -1
+        }
+
+        // Then finished upgrades by completion order
+        if (a.is_finished && b.is_finished) {
+            return (a.completion_order || 0) - (b.completion_order || 0)
+        }
+        if (!a.is_finished && !b.is_finished) {
+            if (a.upgrade_plus_num < b.upgrade_plus_num) {
+                return -1
+            }
+            if (a.upgrade_plus_num > b.upgrade_plus_num) {
+                return 1
+            }
+            return EQUIPMENT_TYPES.findIndex((value, _) => a.equipment_type == value) - EQUIPMENT_TYPES.findIndex((value, _) => b.equipment_type == value)
+        }
+        return 0
+    })
+    return out
+}
+
+// Helper function to get the next unfinished upgrade index
+export function getNextUnfinishedIndex(upgradeArr: Upgrade[], excludeIndex?: number): number {
+    let first_try = upgradeArr.findIndex((z) => z == sortedUpgrades(upgradeArr).find((upg, i) => !upg.is_finished && i > excludeIndex))
+    console.log(first_try)
+    if (first_try < 0) {
+        return upgradeArr.findIndex((z) => z == sortedUpgrades(upgradeArr).find((upg, i) => !upg.is_finished && i !== excludeIndex))
+    }
+    return first_try
+}
+
+// Helper function to calculate tap record costs
+export function calculateTapRecordCosts(upgrade: Upgrade) {
+    const costs = new Array(10).fill(0)
+    const taps = upgrade.taps_so_far ?? 0
+    const juiceTaps = upgrade.juice_taps_so_far ?? 0
+    const freeTaps = upgrade.free_taps_so_far ?? 0
+
+    // Regular costs multiplied by taps
+    for (let i = 0; i < 7; i++) {
+        costs[i] = upgrade.costs[i] * taps
+    }
+
+    // Juice costs
+    if (juiceTaps > 0) {
+        const juiceCost = upgrade.one_juice_cost * juiceTaps
+        if (upgrade.is_weapon) {
+            costs[8] = juiceCost // Weapons add to 9th slot (index 8)
+        } else {
+            costs[7] = juiceCost // Armors add to 8th slot (index 7)
+        }
+    }
+
+    // Free tap costs
+
+    costs[9] = upgrade.special_cost * freeTaps
+
+    return costs
+}
+
+export function calculateCurrentChance(upgrade: Upgrade) {
+    if (!upgrade.is_normal_honing) return 0
+    const baseChance = upgrade.base_chance
+    const minCount = Math.min(upgrade.taps_so_far, 10)
+    const currentChance = baseChance + (baseChance / 10) * minCount
+    return Math.max(0, Math.min(1, upgrade.current_artisan >= 1 ? 1 : upgrade.use_juice ? currentChance + upgrade.base_chance : currentChance))
+}
+
+export function updateCumulativeChance(upgrade: Upgrade, attemptChance: number) {
+    if (!upgrade.is_normal_honing) return
+
+    // Initialize cumulative chance if it doesn't exist
+    if (upgrade.cumulative_chance === undefined) {
+        upgrade.cumulative_chance = 0
+    }
+
+    // Update cumulative chance: add the probability of succeeding on this attempt
+    // given that all previous attempts failed
+    const previousFailureProbability = 1 - upgrade.cumulative_chance
+    upgrade.cumulative_chance += attemptChance * previousFailureProbability
+
+    // Ensure it doesn't exceed 1
+    upgrade.cumulative_chance = Math.min(1, upgrade.cumulative_chance)
+}
+
+export function getTapCountRange(upgrade: Upgrade) {
+    if (upgrade.is_normal_honing) return null
+
+    // Use other strategy's probability distribution if juice is ticked
+    const probDistToUse = upgrade.use_juice && upgrade.other_prob_dist ? upgrade.other_prob_dist : upgrade.prob_dist
+
+    const range = `${upgrade.tap_offset} - ${upgrade.tap_offset + probDistToUse.length}`
+    const isUsingOtherStrategy = upgrade.use_juice && upgrade.other_prob_dist
+
+    return { range, isUsingOtherStrategy }
+}
+
 /**
  * Convert ticks (boolean grid) to counts (integer array)
  * Mirrors the Rust implementation in helpers.rs

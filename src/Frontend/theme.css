@@ -58,8 +58,8 @@
     --grid-cell-bg: rgb(172, 255, 254);
     --grid-cell-text: #000000;
     --grid-cell-selected: rgba(172, 255, 254, 0.8);
-    --grid-cell-bg-readonly: rgba(80, 80, 80, 0);
-    --grid-cell-text-readonly: #9ff7c7;
+    --grid-cell-bg-readonly: rgba(34, 34, 34, 0);
+    --grid-cell-text-readonly: #83ffb0;
     --grid-cell-selected-readonly: rgba(122, 194, 175, 0.3);
 
     /* Accent Colors */
@@ -67,7 +67,9 @@
     --accent-hover: #0d7a8a;
 
     /* Additional Colors */
-    --bright-green: rgb(0, 255, 0);
+    --bright-green: #acfffeff;
+    --bright-green-glow: rgba(0, 255, 0, 0.507);
+    --selected-blue: #2196f3;
 
     /* Slider Colors */
     --slider-track-bg: #cccccc;

@@ -192,7 +192,7 @@ pub fn compress_runs(strings: Vec<String>, no_x: bool) -> Vec<String> {
                 if no_x {
                     out.push(format!("{}", prev));
                 } else {
-                    out.push(format!("{} ({} times)", prev, count));
+                    out.push(format!("{} x{} times", prev, count));
                 }
             } else {
                 out.push(prev.to_string());
@@ -202,7 +202,7 @@ pub fn compress_runs(strings: Vec<String>, no_x: bool) -> Vec<String> {
         }
     }
     if count > 1 {
-        out.push(format!("{} ({} times)", prev, count));
+        out.push(format!("{} x{} times", prev, count));
     } else {
         out.push(prev.to_string());
     }

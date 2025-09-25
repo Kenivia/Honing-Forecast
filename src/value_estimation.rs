@@ -55,25 +55,22 @@ pub fn est_special_honing_value(
     for (_, upgrade) in upgrade_arr.iter_mut().enumerate() {
         if upgrade.is_normal_honing {
             average = average_tap(&upgrade.original_prob_dist, upgrade.tap_offset as f64);
-            is_valid = if upgrade.is_weapon {
-                user_gave_weapon
-            } else {
-                user_gave_armor
-            };
-            special_value = if is_valid {
-                upgrade.base_chance
-                    * value_per_special_if_passed(
-                        upgrade,
-                        if upgrade.is_weapon {
-                            weapon_values
-                        } else {
-                            armor_values
-                        },
-                        average,
-                    )
-            } else {
-                0.0
-            };
+            // is_valid = if upgrade.is_weapon {
+            //     user_gave_weapon
+            // } else {
+            //     user_gave_armor
+            // };
+            special_value = upgrade.base_chance
+                * value_per_special_if_passed(
+                    upgrade,
+                    if upgrade.is_weapon {
+                        weapon_values
+                    } else {
+                        armor_values
+                    },
+                    average,
+                );
+
             out.push(special_value);
             if !calibrating {
                 upgrade.special_value = special_value

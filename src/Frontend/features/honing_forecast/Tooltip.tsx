@@ -149,7 +149,7 @@ export function renderTooltip(tooltip: TooltipState, mainScale: number = 1, zoom
                         )}
                     </div>
                     <div style={rightColumnStyle}>
-                        <div><strong>Costs(excluding unlock):</strong></div>
+                        <div><strong>Costs so far(excluding unlock):</strong></div>
                         {costLabels.map((label, index) => (
                             <div key={index}>
                                 {label}: {tapRecordCosts[index].toLocaleString()}

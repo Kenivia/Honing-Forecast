@@ -324,6 +324,7 @@ export function createDebounceEffects({
                 }
                 debounceTimerRef2.current = window.setTimeout(() => {
                     const payload = buildPayload()
+                    // console.log(payload)
                     startCancelableWorker("ChanceToCost", payload)
                     debounceTimerRef2.current = null
                 }, 100)
