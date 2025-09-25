@@ -30,6 +30,149 @@ fn find_best_budget_for_this_chance(
         (1 as f64 - (failure_counts[sorted_indices[0]] as f64 / cost_size as f64)) * 100 as f64;
     (best_budget, best_chance)
 }
+
+/// Given two non-increasing vectors `a` and `b` (both `&Vec<i64>`),
+/// for each element a[i] find an index j into `b` such that
+/// b[j] is the closest-in-value element to a[i].
+///
+/// Tie-breaker:
+///  - if two b-values are equally close in value, choose the j with smaller |j - i|.
+///  - if still tied, choose the smaller j.
+///
+/// Returns a Vec<usize> of length a.len() with the chosen indices into `b`.
+/// Given two non-increasing vectors `a` and `b` (both `&Vec<i64>`),
+/// for each element a[i] find an index j into `b` such that
+/// b[j] is the closest-in-value element to a[i].
+///
+/// Tie-breaker:
+///  - if two b-values are equally close in value, choose the j with smaller |j - i|.
+///  - if still tied, choose the smaller j.
+///
+/// Returns a Vec<usize> of length a.len() with the chosen indices into `b`.
+pub fn argmin_indices_closest(a: &Vec<i64>, b: &Vec<i64>) -> Vec<usize> {
+    let n = a.len();
+    let m = b.len();
+    let mut out = Vec::with_capacity(n);
+
+    if m == 0 {
+        // No candidates in b; nothing we can do — return zeros (or panic depending on desired behaviour)
+        // Here we choose to panic because an index into an empty b is not well-defined.
+        panic!("vec_2 (b) must not be empty");
+    }
+
+    // Helper: find smallest index `k` in [0, m) such that b[k] <= x.
+    // If all b[k] > x, returns m.
+    let first_leq = |x: i64| -> usize {
+        let mut lo: usize = 0;
+        let mut hi: usize = m;
+        while lo < hi {
+            let mid = (lo + hi) / 2;
+            if b[mid] <= x {
+                hi = mid;
+            } else {
+                lo = mid + 1;
+            }
+        }
+        lo
+    };
+
+    // Helper: find smallest index `k` in [0, m) such that b[k] < x.
+    // If no such index, returns m.
+    let first_less = |x: i64| -> usize {
+        let mut lo: usize = 0;
+        let mut hi: usize = m;
+        while lo < hi {
+            let mid = (lo + hi) / 2;
+            if b[mid] < x {
+                hi = mid;
+            } else {
+                lo = mid + 1;
+            }
+        }
+        lo
+    };
+
+    for (i, &val) in a.iter().enumerate() {
+        // idx is first index where b[idx] <= val
+        let idx = first_leq(val);
+
+        // If there is an exact match b[k] == val, find leftmost and rightmost occurrences
+        if idx < m && b[idx] == val {
+            // leftmost is idx (first <= val, and equals val -> leftmost equal)
+            let left = idx;
+            // rightmost: first index where b < val (if any) minus one
+            let right_exclusive = first_less(val);
+            let right = if right_exclusive == 0 {
+                0
+            } else {
+                right_exclusive - 1
+            };
+
+            // choose nearest index in [left..=right] to i
+            let chosen = if i <= left {
+                left
+            } else if i >= right {
+                right
+            } else {
+                // i is inside [left, right], the exact i may be outside range of b length;
+                // but i is usize comparing with right which is usize
+                // choose i clamped into [left..=right]
+                // i is index into `a`, but might be >= m; clamp to nearest in run
+                let i_clamped = std::cmp::min(i, right);
+                std::cmp::max(left, i_clamped)
+            };
+
+            out.push(chosen);
+            continue;
+        }
+
+        // No exact match. Candidate indices are:
+        // - idx (first <= val), if idx < m
+        // - idx - 1 (last > val), if idx > 0
+        let mut candidates = Vec::with_capacity(2);
+        if idx < m {
+            candidates.push(idx);
+        }
+        if idx > 0 {
+            candidates.push(idx - 1);
+        }
+
+        // Safety: candidates must be non-empty because m > 0. But check nonetheless.
+        if candidates.is_empty() {
+            out.push(0);
+            continue;
+        }
+
+        // Choose candidate minimizing value distance; tie-break on index distance to i; final tie-breaker smaller index
+        let mut best = candidates[0];
+        let mut best_val_diff = (b[best] - val).abs();
+        let mut best_idx_diff = if best > i { best - i } else { i - best };
+
+        for &c in &candidates[1..] {
+            let val_diff = (b[c] - val).abs();
+            if val_diff < best_val_diff {
+                best = c;
+                best_val_diff = val_diff;
+                best_idx_diff = if c > i { c - i } else { i - c };
+            } else if val_diff == best_val_diff {
+                let idx_diff = if c > i { c - i } else { i - c };
+                if idx_diff < best_idx_diff {
+                    best = c;
+                    best_idx_diff = idx_diff;
+                } else if idx_diff == best_idx_diff {
+                    if c < best {
+                        best = c;
+                    }
+                }
+            }
+        }
+
+        out.push(best);
+    }
+
+    out
+}
+
 /// Calculate the total cost for each of the 7 main cost types across all upgrades.
 /// Returns a vector of length 7 containing the total cost for each cost type.\
 pub fn average_cost(upgrades: &Vec<Upgrade>) -> Vec<f64> {
@@ -207,7 +350,7 @@ pub fn chance_to_cost(
             / budget_size as f64;
     }
     // let mut cur_counts: Vec<usize> = vec![0; 7];
-    let mut budget_data: Vec<Vec<i64>> = vec![vec![0; 7]; budget_size];
+    let mut budget_data: Vec<Vec<i64>> = vec![vec![0; 9]; budget_size];
 
     for cost_type in 0..7 {
         let mut j: usize = 0;
@@ -231,10 +374,24 @@ pub fn chance_to_cost(
             }
         }
     }
+
+    let budget_data_for_juice: Vec<Vec<i64>> = monte_carlo_data(
+        budget_size,
+        &upgrade_arr,
+        &calc_unlock(&hone_counts, &adv_counts, express_event),
+        0,
+        true, // rigged
+        true, //use_true_rng
+    );
+    let failure_counts_1: Vec<i64> = count_failure(&cost_data, &budget_data, true);
+    let failure_counts_2: Vec<i64> = count_failure(&cost_data, &budget_data_for_juice, true);
+    let closest_indices: Vec<usize> = argmin_indices_closest(&failure_counts_1, &failure_counts_2);
+
+    for i in 0..budget_size {
+        budget_data[i][7] = budget_data_for_juice[closest_indices[i]][7];
+        budget_data[i][8] = budget_data_for_juice[closest_indices[i]][8];
+    }
     budget_data.push(top_bottom[1].clone());
-
-    let failure_counts: Vec<i64> = count_failure(&cost_data, &budget_data, false); // not sure if can use asc? just to be safe keeping it naive for now
-
     let (hundred_budgets, hundred_chances): (Vec<Vec<i64>>, Vec<f64>) = (0..101)
         .into_iter()
         .map(|x| {
@@ -242,7 +399,7 @@ pub fn chance_to_cost(
                 x as f64,
                 data_size,
                 budget_size,
-                &failure_counts,
+                &failure_counts_1,
                 &budget_data,
             )
         })
@@ -270,10 +427,10 @@ mod tests {
             1000,
             10000,
         );
-        println!("hundred_budgets = {:?}", out.hundred_budgets);
+        // println!("hundred_budgets = {:?}", out.hundred_budgets);
         println!("hundred_chances = {:?}", out.hundred_chances);
-        println!("hist_mins = {:?}", out.hist_mins);
-        println!("hist_maxs = {:?}", out.hist_maxs);
+        // println!("hist_mins = {:?}", out.hist_mins);
+        // println!("hist_maxs = {:?}", out.hist_maxs);
     }
 
     #[test]
@@ -298,6 +455,35 @@ mod tests {
             assert!(*cost >= 0.0);
         }
         println!("Total costs: {:?}", total_costs);
+    }
+    #[test]
+    fn boundaries() {
+        let a = vec![200, 10];
+        let b = vec![100, 50, 0];
+        // For 200: all b < 200 -> closest is b[0]
+        // For 10: candidates 50 (idx1) and 0 (idx2): 0 is closer (10 vs 0 diff10, vs 40)
+        let res = argmin_indices_closest(&a, &b);
+        assert_eq!(res, vec![0usize, 2usize]);
+    }
+    #[test]
+    fn basic_examples() {
+        let a = vec![95, 85, 70];
+        let b = vec![100, 90, 90, 80, 60];
+        // For a[0]=95 closest in b is 100 (idx0) vs 90 (idx1): 100 is closer.
+        // For a[1]=85 two candidates 90 (idx1 or idx2) and 80 (idx3). 90 and 80 both dist 5 -> choose
+        // the 90 with index closer to i=1 (idx1 is distance 0, idx2 distance 1) -> idx1.
+        // For a[2]=70 closest is 60 (idx4).
+        let res = argmin_indices_closest(&a, &b);
+        assert_eq!(res, vec![0usize, 1usize, 4usize]);
+    }
+
+    #[test]
+    fn equal_values_choose_nearest_index() {
+        let a = vec![90];
+        let b = vec![100, 90, 90, 90, 80];
+        // exact matches at indices 1..3. a index i=0, nearest index among 1..3 is 1.
+        let res = argmin_indices_closest(&a, &b);
+        assert_eq!(res, vec![1usize]);
     }
 
     // #[test]

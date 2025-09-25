@@ -127,8 +127,7 @@ pub fn monte_carlo_data(
                         upgrade.costs[cost_type] * (rolled_tap as i64 + upgrade.tap_offset);
                 }
                 if !upgrade.is_normal_honing {
-                    let juice_ind = if upgrade.is_weapon { 7 } else { 8 };
-                    cost_data[trial_num][juice_ind] +=
+                    cost_data[trial_num][if upgrade.is_weapon { 7 } else { 8 }] +=
                         round_juice(upgrade.adv_juice_cost[rolled_tap], &mut rng);
                 }
             }
