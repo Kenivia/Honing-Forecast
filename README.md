@@ -6,21 +6,28 @@ Honing Forecast is a calculator that helps you get an idea of how much a set of 
 
 ## Features
 
-- Chance mode - estimate costs based on a given a desired chance
-- Budget mode - estimate how likely you are to succeed given a budget
+### Chance mode
+
+- Estimate how much you need to have x% chance of success
+
+### Budget mode
+
+- Estimate your chance of success within a given budget
 - Calculate how to best use your free taps and juices and how much they are worth to you
 - Estimates how likely you are to run out of each mat
-- Gamba simulator for a more hands-on feel of the pain of pity
+
+### Gamba simulator
+
+-A more hands-on feel of your prospects
 
 ## Work in Progress
 
 - Book support
-
 - Variance calculation & confidence interval for budget mode
 - Incorporate roster income tracking
 
 ### UI
 
-- Make the percent sign follow the input number?(right now it just trails on the right)
 - ctrl z support, fix backspace & delete
 - In-line arithmetic calculation for when putting in boxes e.g. input 25*1000 and get 25000
+- Make the percent sign follow the input number?(right now it just trails on the right)

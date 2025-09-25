@@ -540,8 +540,8 @@ function Graph({ title, labels, counts, mins, maxs, width = 640, height = 320, b
                             return (
                                 <div style={{ color: 'var(--text-primary)' }}>
                                     <div style={{ color: SERIES_COLORS_VARS[fallbackSeries], fontWeight: 600 }}>{labels[fallbackSeries]}</div>
-                                    <div>{cumPct}% of trials used less</div>
-                                    <div>than ~{formatSig3(mid, 2)} {labels[fallbackSeries]}</div>
+                                    <div>In a room of 100 people,</div>
+                                    <div>{cumPct} used less than {formatSig3(mid, 3)} {labels[fallbackSeries]}</div>
                                 </div>
                             )
                         }}

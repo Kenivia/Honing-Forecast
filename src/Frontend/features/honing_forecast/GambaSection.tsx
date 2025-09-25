@@ -969,6 +969,7 @@ export default function GambaSection({
                                             <label style={{ display: "flex", alignItems: "center", gap: 5 }}>
                                                 <input
                                                     type="checkbox"
+                                                    title="This mode does not automatically use your juice, and you may go into juice debt, nobody can stop you"
                                                     checked={upgradeArr[selectedUpgradeIndex]?.use_juice ?? false}
                                                     onChange={(e) => {
                                                         if (selectedUpgradeIndex !== null) {
@@ -986,6 +987,7 @@ export default function GambaSection({
                                                 Use juice
 
                                             </label>
+                                            {/* <div style={{ marginTop: -10, paddingLeft: 20, fontSize: "var(--font-size-xs)" }}> {(Number(budgetRemainingData["Red juice"]) > 0 && upgradeArr[selectedUpgradeIndex]?.is_weapon) || (Number(budgetRemainingData["Blue juice"]) > 0 && !upgradeArr[selectedUpgradeIndex]?.is_weapon) ? "This mode does not automatically use your juice, and you may go into juice debt, nobody can stop you" : ""}</div> */}
                                             <div> {!upgradeArr[selectedUpgradeIndex]?.is_normal_honing && (upgradeArr[selectedUpgradeIndex]?.use_juice != (adv_hone_strategy === "Juice on grace")) ? "(Graph below is not updated by this tick)" : ""}</div>
                                             <button
                                                 onClick={attemptTap}
