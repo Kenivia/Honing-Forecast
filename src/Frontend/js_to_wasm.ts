@@ -5,7 +5,7 @@ const LABELS = ["Red", "Blue", "Leaps", "Shards", "Oreha", "Gold", "Silver"]
 
 async function ChanceToCostWasm(payload: any) {
     await init()
-    // Now returns an object { best_budget, actual_prob, hist_counts, hist_mins, hist_maxs }
+    // Now returns an object { best_budget, best_chance, hist_counts, hist_mins, hist_maxs }
     const out = (chance_to_cost_wrapper as any)(payload)
     return out
 }
@@ -79,14 +79,16 @@ self.addEventListener("message", async (ev) => {
             budgets_blue_remaining: out.budgets_blue_remaining,
         }
     } else if (which_one == "ChanceToCost") {
-        const this_labels = LABELS.concat(["Red juice", "Blue juice"])
+        // const this_labels = LABELS.concat(["Red juice", "Blue juice"])
         let out = await ChanceToCostWasm(payload)
-        const bestBudget = out.best_budget
-        result = Object.fromEntries(this_labels.map((l, ind) => [l, bestBudget[ind]]))
-        result.actual_prob = out.actual_prob
-        result.hist_counts = out.hist_counts
-        result.hist_mins = out.hist_mins
-        result.hist_maxs = out.hist_maxs
+        // console.log(out)
+        result = {
+            hundred_budgets: out.hundred_budgets,
+            hundred_chances: out.hundred_chances,
+            hist_counts: out.hist_counts,
+            hist_mins: out.hist_mins,
+            hist_maxs: out.hist_maxs,
+        }
     } else if (which_one == "ParserUnified") {
         let out = await ParserWasmUnified(payload)
         // console.log(out)

@@ -1,3 +1,4 @@
+import React from "react"
 import { INPUT_LABELS, TOP_ROWS, TOP_COLS, BOTTOM_ROWS, BOTTOM_COLS } from "./constants.ts"
 
 export function createClearAll({
@@ -110,7 +111,7 @@ export function createFillRandom({
         setBottomGrid(newBottomGrid)
         set_prev_checked_arr(newPrevCheckedArr)
         set_prev_checked_arr_bottom(newPrevCheckedArrBottom)
-        set_desired_chance((Math.random() * 100).toFixed(2).toString())
+        set_desired_chance((Math.random() * 100).toFixed(0).toString())
     }
 }
 

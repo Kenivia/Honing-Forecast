@@ -113,7 +113,7 @@ export const createColumnDefs = (autoOptimization: boolean) => {
             field: "budget",
             editable: false,
             flex: 1,
-            cellStyle: { background: "var(--grid-cell-bg-blue)", padding: "6px 8px" },
+            cellStyle: { background: "var(--grid-cell-bg-readonly)", padding: "6px 8px" },
         },
     ]
 

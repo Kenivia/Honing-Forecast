@@ -171,6 +171,8 @@ type GambaSectionProps = {
     useGridInput: boolean
     normalCounts: number[][]
     advCounts: number[][]
+    upgradeArr: any[]
+    ParserBusy: boolean
 }
 
 // Equipment types for armor pieces
@@ -223,7 +225,7 @@ export default function GambaSection({
     bottomGrid,
     adv_hone_strategy,
     express_event,
-    desired_chance,
+
     bucketCount,
     autoOptimization,
     dataSize,
@@ -328,7 +330,6 @@ export default function GambaSection({
         const payload = buildPayload({
             topGrid,
             bottomGrid,
-            desired_chance,
             budget_inputs,
             adv_hone_strategy,
             express_event,
@@ -371,15 +372,29 @@ export default function GambaSection({
                     const assignedType = equipmentTypes.find((_, index) => {
                         if (upgrade.is_normal_honing) {
                             if (index < seen_ind_normal[upgrade.upgrade_plus_num]) { return false }
-                            const gridRow = topGrid[index] || []
-                            seen_ind_normal[upgrade.upgrade_plus_num] += 1;
-                            return gridRow[upgrade.upgrade_plus_num] || false
+                            if (useGridInput) {
+                                const gridRow = topGrid[index] || []
+                                seen_ind_normal[upgrade.upgrade_plus_num] += 1;
+                                return gridRow[upgrade.upgrade_plus_num] || false
+                            } else {
+                                // Use numeric input data - check if this equipment type has a count > 0
+                                const armorCount = normalCounts[0][upgrade.upgrade_plus_num] || 0
+                                seen_ind_normal[upgrade.upgrade_plus_num] += 1;
+                                return index < armorCount
+                            }
                         }
                         else {
                             if (index < seen_ind_adv[upgrade.upgrade_plus_num]) { return false }
-                            const gridRow = bottomGrid[index] || []
-                            seen_ind_adv[upgrade.upgrade_plus_num] += 1;
-                            return gridRow[upgrade.upgrade_plus_num] || false
+                            if (useGridInput) {
+                                const gridRow = bottomGrid[index] || []
+                                seen_ind_adv[upgrade.upgrade_plus_num] += 1;
+                                return gridRow[upgrade.upgrade_plus_num] || false
+                            } else {
+                                // Use numeric input data - check if this equipment type has a count > 0
+                                const armorCount = advCounts[0][upgrade.upgrade_plus_num] || 0
+                                seen_ind_adv[upgrade.upgrade_plus_num] += 1;
+                                return index < armorCount
+                            }
                         }
                     })
                     return { ...upgrade, equipment_type: assignedType || 'Armor', }
@@ -411,11 +426,9 @@ export default function GambaSection({
             // Update refs
             currentUpgradeArrRef.current = upgradesWithTypes
         })
-    }, [topGrid, bottomGrid, adv_hone_strategy, express_event, desired_chance, bucketCount, autoOptimization, userMatsValue, dataSize, budget_inputs, useGridInput, normalCounts, advCounts])
+    }, [topGrid, bottomGrid, adv_hone_strategy, express_event, bucketCount, autoOptimization, userMatsValue, dataSize, budget_inputs, useGridInput, normalCounts, advCounts])
 
     // Debounce effect for parser calls when grids change
-    const topGridKey = useMemo(() => JSON.stringify(topGrid), [topGrid])
-    const bottomGridKey = useMemo(() => JSON.stringify(bottomGrid), [bottomGrid])
     const advStrategyKey = useMemo(() => String(adv_hone_strategy), [adv_hone_strategy])
     const expressEventKey = useMemo(() => String(express_event), [express_event])
     const useGridInputKey = useMemo(() => String(useGridInput), [useGridInput])
@@ -453,7 +466,7 @@ export default function GambaSection({
                 debounceTimerRef.current = null
             }
         }
-    }, [topGridKey, bottomGridKey, advStrategyKey, expressEventKey, refreshKeyMemo, callParser, useGridInputKey, normalCountsKey, advCountsKey])
+    }, [advStrategyKey, expressEventKey, refreshKeyMemo, callParser, useGridInputKey, normalCountsKey, advCountsKey])
 
     // Keep refs updated
     useEffect(() => {

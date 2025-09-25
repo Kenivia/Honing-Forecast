@@ -25,7 +25,7 @@ pub struct Payload {
     adv_hone_ticks: Option<Vec<Vec<bool>>>,
     normal_counts: Option<Vec<Vec<i64>>>,
     adv_counts: Option<Vec<Vec<i64>>>,
-    desired_chance: f64,
+
     adv_hone_strategy: String,
     budget: Vec<i64>,
     express_event: bool,
@@ -56,14 +56,12 @@ pub fn chance_to_cost_wrapper(input: JsValue) -> JsValue {
         panic!("Either adv_counts or adv_hone_ticks must be provided");
     };
 
-    let desired_chance: f64 = payload.desired_chance;
     let adv_hone_strategy: String = payload.adv_hone_strategy;
     let data_size: usize = payload.data_size.unwrap_or(100000).max(1000);
 
     let out = chance_to_cost(
         normal_counts,
         adv_counts,
-        desired_chance,
         adv_hone_strategy,
         payload.express_event,
         payload.bucket_count,
@@ -220,20 +218,18 @@ pub fn average_cost_wrapper(input: JsValue) -> JsValue {
 pub fn chance_to_cost_test_wrapper(
     normal_hone_ticks: Vec<Vec<bool>>,
     adv_hone_ticks: Vec<Vec<bool>>,
-    desired_chance: f64,
     adv_hone_strategy: String,
     express_event: bool,
-) -> (Vec<i64>, f64) {
+) -> (Vec<Vec<i64>>, Vec<f64>) {
     let out = chance_to_cost(
         ticks_to_counts(normal_hone_ticks),
         ticks_to_counts(adv_hone_ticks),
-        desired_chance,
         adv_hone_strategy,
         express_event,
         1000,
         100000,
     );
-    (out.best_budget, out.actual_prob)
+    (out.hundred_budgets, out.hundred_chances)
 }
 
 pub fn cost_to_chance_test_wrapper(

@@ -1,13 +1,50 @@
-import React, { useState, useEffect } from 'react'
+import React from 'react'
+import { Slider, styled } from '@mui/material'
 import SpreadsheetGrid from '../../components/SpreadsheetGrid.tsx'
 import Graph from '../../components/Graph.tsx'
 import { styles, createColumnDefs, GRAPH_WIDTH, GRAPH_HEIGHT } from './styles.ts'
 import { OUTPUT_LABELS } from './constants.ts'
 import { CallWorker } from '../../worker_setup.ts'
-import { buildPayload } from './Debounce.ts'
+
+// Styled Material UI Slider with custom colors
+const StyledSlider = styled(Slider)(() => ({
+    width: 300,
+    color: 'var(--slider-track-active)',
+    '& .MuiSlider-track': {
+        border: 'none',
+        backgroundColor: 'var(--slider-track-active)',
+        height: 6,
+    },
+    '& .MuiSlider-rail': {
+        backgroundColor: 'var(--slider-track-bg)',
+        height: 6,
+    },
+    '& .MuiSlider-thumb': {
+        backgroundColor: 'var(--slider-thumb-bg)',
+        border: '2px solid var(--slider-thumb-bg)',
+        width: 20,
+        height: 20,
+        '&:hover, &.Mui-focusVisible': {
+            backgroundColor: 'var(--slider-thumb-hover)',
+            borderColor: 'var(--slider-thumb-focus)',
+            boxShadow: `0 0 0 8px var(--slider-thumb-shadow)`,
+        },
+        '&.Mui-active': {
+            backgroundColor: 'var(--slider-thumb-hover)',
+            borderColor: 'var(--slider-thumb-focus)',
+        },
+    },
+    '& .MuiSlider-valueLabel': {
+        backgroundColor: 'var(--slider-thumb-bg)',
+        color: 'var(--text-primary)',
+        fontSize: '12px',
+        fontWeight: 'bold',
+    },
+}))
 
 type ChanceToCostSectionProps = {
     desired_chance: string
+    uncleaned_desired_chance: string
     onDesiredChange: (_: string) => void
     onDesiredBlur: () => void
     cost_result: any
@@ -18,26 +55,17 @@ type ChanceToCostSectionProps = {
     lockXAxis: boolean
     lockedMins: number[] | null
     lockedMaxs: number[] | null
-    // Props needed for average_cost calculation
-    topGrid: boolean[][]
-    bottomGrid: boolean[][]
-    adv_hone_strategy: string
-    express_event: boolean
-    bucketCount: string
-    autoOptimization: boolean
-    userMatsValue: any
-    dataSize: string
     // Show Average checkbox props
     showAverage: boolean
     setShowAverage: React.Dispatch<React.SetStateAction<boolean>>
-    // New props for numeric input mode
-    useGridInput: boolean
-    normalCounts: number[][]
-    advCounts: number[][]
+    // Moved worker call results
+    averageCosts: number[] | null
+    AverageCostBusy: boolean
 }
 
 export default function ChanceToCostSection({
     desired_chance,
+    uncleaned_desired_chance,
     onDesiredChange,
     onDesiredBlur,
     cost_result,
@@ -48,60 +76,14 @@ export default function ChanceToCostSection({
     lockXAxis,
     lockedMins,
     lockedMaxs,
-    // Props needed for average_cost calculation
-    topGrid,
-    bottomGrid,
-    adv_hone_strategy,
-    express_event,
-    bucketCount,
-    autoOptimization,
-    userMatsValue,
-    dataSize,
     // Show Average checkbox props
     showAverage,
     setShowAverage,
-    // New props for numeric input mode
-    useGridInput,
-    normalCounts,
-    advCounts,
+    // Moved worker call results
+    averageCosts,
+    AverageCostBusy: _AverageCostBusy,
 }: ChanceToCostSectionProps) {
     const { chanceToCostColumnDefs } = createColumnDefs(false) // autoOptimization not used for this section
-    const [averageCosts, setAverageCosts] = useState<number[] | null>(null)
-
-    // Effect to calculate average costs when relevant data changes
-    useEffect(() => {
-        if (!AnythingTicked) {
-            setAverageCosts(null)
-            return
-        }
-
-        const payload = buildPayload({
-            topGrid,
-            bottomGrid,
-            desired_chance,
-            budget_inputs: {}, // Not needed for average_cost
-            adv_hone_strategy,
-            express_event,
-            bucketCount,
-            autoOptimization,
-            userMatsValue,
-            dataSize,
-            useGridInput,
-            normalCounts,
-            advCounts,
-        })
-
-        CallWorker(payload, "AverageCost")
-            .then((result: any) => {
-                if (result && result.average_costs) {
-                    setAverageCosts(result.average_costs)
-                }
-            })
-            .catch((error) => {
-                console.error("Error calculating average costs:", error)
-                setAverageCosts(null)
-            })
-    }, [topGrid, bottomGrid, adv_hone_strategy, express_event, AnythingTicked, autoOptimization, bucketCount, dataSize, desired_chance, userMatsValue, useGridInput, normalCounts, advCounts])
 
     return (
         <>
@@ -109,24 +91,37 @@ export default function ChanceToCostSection({
             <div style={{ ...styles.inputSection, maxWidth: "1200px", width: "100%" }}>
                 <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 16 }}>
                     <div style={{ width: 160, fontWeight: 700, textAlign: 'right', paddingRight: 8, color: 'var(--text-primary)' }}>Desired chance</div>
-                    <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
-                        <input
-                            type="text"
-                            value={desired_chance}
-                            onChange={(e) => onDesiredChange(e.target.value)}
-                            onBlur={onDesiredBlur}
-                            placeholder="0"
-                            style={{
-                                width: 70,
-                                fontSize: 16,
-                                padding: '6px 8px',
-                                borderRadius: 6,
-                                background: 'var(--input-bg)',
-                                color: 'var(--input-text)',
-                                border: '1px solid var(--input-border)'
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+                        <StyledSlider
+                            value={parseInt(desired_chance) || 0}
+                            onChange={(_, value) => {
+                                const intValue = Math.round(value as number)
+                                onDesiredChange(intValue.toString())
                             }}
+                            min={0}
+                            max={100}
+                            step={1}
+                            valueLabelDisplay="off"
                         />
-                        <span style={{ position: 'absolute', right: 10, pointerEvents: 'none', color: "black" }}>%</span>
+                        <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                            <input
+                                type="text"
+                                value={uncleaned_desired_chance}
+                                onChange={(e) => onDesiredChange(e.target.value)}
+                                onBlur={onDesiredBlur}
+                                placeholder="0"
+                                style={{
+                                    width: 70,
+                                    fontSize: 16,
+                                    padding: '6px 8px',
+                                    borderRadius: 6,
+                                    background: 'var(--input-bg)',
+                                    color: 'var(--input-text)',
+                                    border: '1px solid var(--input-border)'
+                                }}
+                            />
+                            <span style={{ position: 'absolute', right: 10, pointerEvents: 'none', color: "black" }}>%</span>
+                        </div>
                     </div>
                 </div>
 
@@ -136,7 +131,10 @@ export default function ChanceToCostSection({
                             <SpreadsheetGrid
                                 columnDefs={chanceToCostColumnDefs}
                                 labels={OUTPUT_LABELS}
-                                sheet_values={cost_result ? Object.fromEntries(OUTPUT_LABELS.map(label => [label, cost_result[label] != null ? String(cost_result[label]) : 'No results yet'])) : Object.fromEntries(OUTPUT_LABELS.map(label => [label, 'No results yet']))}
+                                sheet_values={cost_result ?
+                                    Object.fromEntries(OUTPUT_LABELS.map((label, lab_index) =>
+                                        [label, String(cost_result.hundred_budgets[parseInt(desired_chance)][lab_index])])) :
+                                    Object.fromEntries(OUTPUT_LABELS.map(label => [label, 'No results yet']))}
                                 set_sheet_values={() => { }} // No-op for read-only
                                 readOnly={true}
                             />
@@ -170,7 +168,7 @@ export default function ChanceToCostSection({
                         </div>
                         {cost_result && (
                             <pre style={{ color: 'var(--text-muted)', fontSize: 'var(--font-size-xs)', marginTop: 8 }}>
-                                Run time: {cost_result.run_time}s{'\n'}{cost_result.actual_prob}
+                                Run time: {cost_result.run_time}s{'\n'}{cost_result.hundred_chances[parseInt(desired_chance)]}
                             </pre>
                         )}
                     </div>
@@ -183,7 +181,8 @@ export default function ChanceToCostSection({
                             maxs={cost_result?.hist_maxs || cachedCostGraphData?.hist_maxs}
                             width={GRAPH_WIDTH}
                             height={GRAPH_HEIGHT}
-                            budgets={cost_result && OUTPUT_LABELS.map(label => Number(cost_result[label]))}
+                            budgets={cost_result && OUTPUT_LABELS.map((_, lab_index) =>
+                                Number(cost_result.hundred_budgets[parseInt(desired_chance)][lab_index]))}
                             additionalBudgets={showAverage ? averageCosts : null}
                             hasSelection={AnythingTicked}
                             isLoading={ChanceToCostBusy}

@@ -437,8 +437,12 @@ export default function SpreadsheetGrid({ columnDefs, labels, sheet_values: budg
                                         height: '100%',
                                         padding: '6px 8px',
                                         border: '1px solid var(--border-accent)',
-                                        background: isCellSelected(rowIndex, colIndex) ? 'var(--grid-cell-selected)' : (typeof colDef.cellStyle === 'function' ? colDef.cellStyle({ value: colIndex === 0 ? (budget_inputs[label] ?? '') : (secondaryValues?.[label] ?? '') })?.backgroundColor || 'transparent' : colDef.cellStyle?.background || 'transparent'),
-                                        color: typeof colDef.cellStyle === 'function' ? colDef.cellStyle({ value: colIndex === 0 ? (budget_inputs[label] ?? '') : (secondaryValues?.[label] ?? '') })?.color || 'var(--text-primary)' : colDef.cellStyle?.color || 'var(--text-primary)',
+                                        background: isCellSelected(rowIndex, colIndex) ?
+                                            ((readOnly || (colIndex === 1 && rowIndex >= 7)) ? 'var(--grid-cell-selected-readonly)' : 'var(--grid-cell-selected)') :
+                                            (typeof colDef.cellStyle === 'function' ? colDef.cellStyle({ value: colIndex === 0 ? (budget_inputs[label] ?? '') : (secondaryValues?.[label] ?? '') })?.backgroundColor || 'transparent' : colDef.cellStyle?.background || 'transparent'),
+                                        color: (readOnly || (colIndex === 1 && rowIndex >= 7)) ?
+                                            'var(--grid-cell-text-readonly)' :
+                                            (typeof colDef.cellStyle === 'function' ? colDef.cellStyle({ value: colIndex === 0 ? (budget_inputs[label] ?? '') : (secondaryValues?.[label] ?? '') })?.color || 'var(--grid-cell-text)' : colDef.cellStyle?.color || 'var(--grid-cell-text)'),
                                         fontSize: 'var(--font-size-sm)',
                                         outline: 'none',
                                         boxSizing: 'border-box',

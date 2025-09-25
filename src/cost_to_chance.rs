@@ -20,6 +20,20 @@ pub struct CostToChanceOut {
     pub budgets_blue_remaining: i64,     // budgets[8]
 }
 
+#[inline]
+fn zero_this_index(arr: &Vec<f64>, ind: usize) -> Vec<f64> {
+    arr.iter()
+        .enumerate()
+        .map(|(i, &x)| if i == ind { 0.0_f64 } else { x })
+        .collect()
+}
+#[inline]
+fn to_onehot(arr: &Vec<f64>, ind: usize) -> Vec<f64> {
+    arr.iter()
+        .enumerate()
+        .map(|(index, _)| if index == ind { 1.0_f64 } else { 0.0_f64 })
+        .collect()
+}
 fn extract_upgrade_strings(upgrade_arr: &Vec<Upgrade>, user_gave_values: bool) -> Vec<String> {
     let mut result: Vec<String> = Vec::new();
     for (_index, upgrade) in upgrade_arr.iter().enumerate() {
@@ -71,14 +85,22 @@ fn _cost_to_chance(
     actual_budgets: &Vec<i64>,
     unlock: &Vec<i64>,
     data_size: usize,
-    mats_value_weight: &Vec<f64>,
+    weapon_value_weight: &Vec<f64>,
+    armor_value_weight: &Vec<f64>,
     calibrating: bool,
-    user_gave_value: bool,
+    user_gave_weapon: bool,
+    user_gave_armor: bool,
 ) -> (f64, Vec<f64>, Vec<String>) {
     // TODO implement tickbox & value in Ui just like maxroll
     // let mats_value_weight: Vec<f64> =;
-    let value_per_special_leap: Vec<f64> =
-        est_special_honing_value(upgrade_arr, &mats_value_weight, calibrating);
+    let value_per_special_leap: Vec<f64> = est_special_honing_value(
+        upgrade_arr,
+        &weapon_value_weight,
+        &armor_value_weight,
+        user_gave_weapon,
+        user_gave_armor,
+        calibrating,
+    );
     let mut special_indices: Vec<usize> = (0..value_per_special_leap.len()).collect();
     special_indices
         .sort_by(|&a, &b| value_per_special_leap[b].total_cmp(&value_per_special_leap[a]));
@@ -110,7 +132,10 @@ fn _cost_to_chance(
     let upgrade_strings = if calibrating {
         Vec::new()
     } else {
-        compress_runs(extract_upgrade_strings(upgrade_arr, user_gave_value), false)
+        compress_runs(
+            extract_upgrade_strings(upgrade_arr, user_gave_weapon || user_gave_armor),
+            false,
+        )
     };
 
     return (
@@ -169,14 +194,17 @@ pub fn cost_to_chance(
     }
     let mut override_special: Vec<i64> = budgets.clone();
     override_special[9] = 0;
-    let valid_armor_values: bool = user_forced_mats_value.iter().skip(1).any(|&x| x != 0.0)
-        || upgrade_arr.iter().all(|x| x.is_weapon);
-    let valid_weapon_value: bool = user_forced_mats_value
-        .iter()
-        .enumerate()
-        .any(|(index, &x)| x != 0.0 && index != 1)
-        || upgrade_arr.iter().all(|x| !x.is_weapon);
-    let user_gave_valid_values: bool = valid_armor_values && valid_weapon_value;
+
+    let user_armor_values: Vec<f64> = zero_this_index(user_forced_mats_value, 0);
+
+    let valid_armor_values: bool =
+        user_armor_values.iter().any(|&x| x != 0.0) || upgrade_arr.iter().all(|x| x.is_weapon);
+
+    let user_weapon_values: Vec<f64> = zero_this_index(user_forced_mats_value, 1);
+    // let user_weapon_values: Vec<f64> =
+    let valid_weapon_values: bool =
+        user_weapon_values.iter().any(|&x| x != 0.0) || upgrade_arr.iter().all(|x| !x.is_weapon);
+    // let both_valid: bool = valid_armor_values && valid_weapon_values;
 
     // let auto_optimize: bool = user_gave_values
     // &&(actual_budgets[9] > 0 || actual_budgets[8] > 0 || actual_budgets[7] > 0);
@@ -189,8 +217,10 @@ pub fn cost_to_chance(
         juice_order_weapon,
     ) = {
         // Use original calibration approach
-        let mats_value: Vec<f64> = if user_gave_valid_values {
-            user_forced_mats_value.clone()
+        let (weapon_values, armor_values): (Vec<f64>, Vec<f64>) = if valid_weapon_values
+            && valid_armor_values
+        {
+            (user_weapon_values.clone(), user_armor_values.clone())
         } else {
             let typed_fail_counter_1: Vec<f64> = _cost_to_chance(
                 &mut upgrade_arr,
@@ -198,31 +228,37 @@ pub fn cost_to_chance(
                 &unlock_costs,
                 data_size,
                 &vec![0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+                &vec![0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
                 true,
-                user_gave_valid_values,
+                valid_weapon_values,
+                valid_armor_values,
             )
             .1;
-            let bottleneck: usize =
-                argmax_with_priority(&typed_fail_counter_1, &[5usize, 4, 3, 2, 6, 1, 0]).unwrap();
-            typed_fail_counter_1
-                .iter()
-                .enumerate()
-                .map(|(index, _)| {
-                    if index == bottleneck {
-                        1.0_f64
-                    } else {
-                        0.0_f64
-                    }
-                })
-                .collect()
+            let weapon_bottleneck: usize =
+                argmax_with_priority(&typed_fail_counter_1, &[6usize, 0, 4, 3, 7, 2, 1]).unwrap();
+            let armor_bottleneck: usize =
+                argmax_with_priority(&typed_fail_counter_1, &[6usize, 0, 4, 3, 7, 2, 1]).unwrap();
+            (
+                if valid_weapon_values {
+                    user_weapon_values
+                } else {
+                    to_onehot(&typed_fail_counter_1, weapon_bottleneck)
+                },
+                if valid_armor_values {
+                    user_armor_values
+                } else {
+                    to_onehot(&typed_fail_counter_1, armor_bottleneck)
+                },
+            )
         };
         // dbg!(&mats_value);
-        est_juice_value(&mut upgrade_arr, &mats_value);
+        est_juice_value(&mut upgrade_arr, &weapon_values, &armor_values);
         let (armor_strings, weapon_strings) = juice_to_array(
             &mut upgrade_arr,
             budgets[8],
             budgets[7],
-            user_gave_valid_values,
+            valid_weapon_values,
+            valid_armor_values,
         );
 
         let (success_chance, typed_fail_counter, upgrade_string) = _cost_to_chance(
@@ -230,9 +266,11 @@ pub fn cost_to_chance(
             &budgets,
             &unlock_costs,
             data_size,
-            &mats_value,
+            &weapon_values,
+            &armor_values,
             false,
-            user_gave_valid_values,
+            valid_weapon_values,
+            valid_armor_values,
         );
         (
             success_chance,
@@ -242,28 +280,7 @@ pub fn cost_to_chance(
             weapon_strings,
         )
     };
-    // else {
-    //     // Use user-provided material values directly
-    //     est_juice_value(&mut upgrade_arr, &user_forced_mats_value);
-    //     let (armor_strings, weapon_strings) =
-    //         juice_to_array(&mut upgrade_arr, budgets[8], budgets[7], user_gave_values);
-    //     let (success_chance, typed_fail_counter, upgrade_string) = _cost_to_chance(
-    //         &mut upgrade_arr,
-    //         &budgets,
-    //         &unlock_costs,
-    //         data_size,
-    //         &user_forced_mats_value,
-    //         false,
-    //         user_gave_values,
-    //     );
-    //     (
-    //         success_chance,
-    //         typed_fail_counter,
-    //         upgrade_string,
-    //         armor_strings,
-    //         weapon_strings,
-    //     )
-    // };
+
     // Generate histogram data from simulated cost data
     let cost_data_for_hist: Vec<Vec<i64>> = monte_carlo_data(
         data_size,

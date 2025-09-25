@@ -29,6 +29,7 @@ export default function HoningForecastUI() {
     const [autoOptimization, setAutoOptimization] = useState(true)
     const [userMatsValue, setUserMatsValue] = useState(() => Object.fromEntries(INPUT_LABELS.slice(0, 7).map((l) => (l == "Gold") ? [l, "1"] : [l, '0'])))
     const [desired_chance, set_desired_chance] = useState(() => '50')
+    const [uncleaned_desired_chance, set_uncleaned_desired_chance] = useState(() => '50')
     const [adv_hone_strategy, set_adv_hone_strategy_change] = useState(() => 'No juice')
     const [express_event, set_express_event] = useState(() => true)
     const [bucketCount, _setBucketCount] = useState(() => "100")
@@ -95,6 +96,23 @@ export default function HoningForecastUI() {
             // ignore corrupted storage
         }
     }, [])
+
+    // Initialize uncleaned_desired_chance from desired_chance after settings load
+    useEffect(() => {
+        set_uncleaned_desired_chance(desired_chance)
+    }, [desired_chance])
+
+    // Sync topGrid changes to normalCounts
+    useEffect(() => {
+        const newNormalCounts = ticksToCounts(topGrid)
+        setNormalCounts(newNormalCounts)
+    }, [topGrid])
+
+    // Sync bottomGrid changes to advCounts
+    useEffect(() => {
+        const newAdvCounts = ticksToCounts(bottomGrid)
+        setAdvCounts(newAdvCounts)
+    }, [bottomGrid])
 
     // ----- Responsive scaling based on window width -----
     useEffect(() => {
@@ -288,14 +306,36 @@ export default function HoningForecastUI() {
     }, [marquee])
 
     const onDesiredChange = (value: string) => {
-        const cleanValue = value.replace(/[^0-9.]/g, '')
-        set_desired_chance(cleanValue)
+        set_uncleaned_desired_chance(value)
+
+        // Check if the input is immediately valid (integer 0-100 inclusive)
+        const cleanValue = value.replace(/[^0-9]/g, '')
+        const numValue = parseInt(cleanValue)
+
+        if (cleanValue === value && !isNaN(numValue) && numValue >= 0 && numValue <= 100) {
+            set_desired_chance(cleanValue)
+        }
     }
 
     const onDesiredBlur = () => {
-        const numValue = parseFloat(desired_chance)
-        if (!isNaN(numValue) && numValue > 100) {
+        const cleanValue = uncleaned_desired_chance.replace(/[^0-9]/g, '')
+        const numValue = parseInt(cleanValue)
+
+        if (cleanValue === '' || isNaN(numValue)) {
+            // If empty or invalid, reset to current desired_chance
+            set_uncleaned_desired_chance(desired_chance)
+        } else if (numValue > 100) {
+            // If over 100, cap at 100
             set_desired_chance('100')
+            set_uncleaned_desired_chance('100')
+        } else if (numValue < 0) {
+            // If negative, set to 0
+            set_desired_chance('0')
+            set_uncleaned_desired_chance('0')
+        } else {
+            // Valid input, update both
+            set_desired_chance(cleanValue)
+            set_uncleaned_desired_chance(cleanValue)
         }
     }
     const adv_hone_strategy_change = (value: string) => set_adv_hone_strategy_change(value)
@@ -400,6 +440,12 @@ export default function HoningForecastUI() {
     const [CostToChanceBusy, setCostToChanceBusy] = useState(false)
     const [ChanceToCostBusy, setChanceToCostBusy] = useState(false)
 
+    // New states for moved worker calls
+    const [averageCosts, setAverageCosts] = useState<number[] | null>(null)
+    const [upgradeArr, setUpgradeArr] = useState<any[]>([])
+    const [AverageCostBusy, setAverageCostBusy] = useState(false)
+    const [ParserBusy, setParserBusy] = useState(false)
+
     // Cached graph data to preserve during recomputation
     const [cachedChanceGraphData, setCachedChanceGraphData] = useState<{ hist_counts?: any, hist_mins?: any, hist_maxs?: any } | null>(null)
     const [cachedCostGraphData, setCachedCostGraphData] = useState<{ hist_counts?: any, hist_mins?: any, hist_maxs?: any } | null>(null)
@@ -407,13 +453,16 @@ export default function HoningForecastUI() {
     // ---------- New: worker refs & debounce refs ----------
     const costWorkerRef = useRef<Worker | null>(null)
     const chanceWorkerRef = useRef<Worker | null>(null)
+    const averageCostWorkerRef = useRef<Worker | null>(null)
+    const parserWorkerRef = useRef<Worker | null>(null)
     const debounceTimerRef1 = useRef<number | null>(null)
     const debounceTimerRef2 = useRef<number | null>(null)
+    const debounceTimerRef3 = useRef<number | null>(null)
+    const debounceTimerRef4 = useRef<number | null>(null)
 
     const payloadBuilder = () => buildPayload({
         topGrid,
         bottomGrid,
-        desired_chance,
         budget_inputs,
         adv_hone_strategy,
         express_event,
@@ -429,10 +478,16 @@ export default function HoningForecastUI() {
     const startCancelableWorker = createStartCancelableWorker({
         costWorkerRef,
         chanceWorkerRef,
+        averageCostWorkerRef,
+        parserWorkerRef,
         setCostToChanceBusy,
         setChanceToCostBusy,
+        setAverageCostBusy,
+        setParserBusy,
         set_chance_result,
         set_cost_result,
+        setAverageCosts,
+        setUpgradeArr,
         setCachedChanceGraphData,
         setCachedCostGraphData,
     })
@@ -444,17 +499,15 @@ export default function HoningForecastUI() {
 
     // ---------- Automatic triggers with debounce ----------
     // We'll watch serialized versions of the inputs to detect deep changes
-    const topGridKey = useMemo(() => JSON.stringify(topGrid), [topGrid])
-    const bottomGridKey = useMemo(() => JSON.stringify(bottomGrid), [bottomGrid])
     const budgetKey = useMemo(() => JSON.stringify(budget_inputs), [budget_inputs])
-    const desiredKey = useMemo(() => String(desired_chance), [desired_chance])
+    // const desiredKey = useMemo(() => String(desired_chance), [desired_chance])
     const advStrategyKey = useMemo(() => String(adv_hone_strategy), [adv_hone_strategy])
     const expressEventKey = useMemo(() => String(express_event), [express_event])
     const graphBucketSizeKey = useMemo(() => String(bucketCount), [bucketCount])
     const autoOptKey = useMemo(() => String(autoOptimization), [autoOptimization])
     const userMatsKey = useMemo(() => JSON.stringify(userMatsValue), [userMatsValue])
     const dataSizeKey = useMemo(() => String(dataSize), [dataSize])
-    const useGridInputKey = useMemo(() => String(useGridInput), [useGridInput])
+    // const useGridInputKey = useMemo(() => String(useGridInput), [useGridInput])
     const normalCountsKey = useMemo(() => JSON.stringify(normalCounts), [normalCounts])
     const advCountsKey = useMemo(() => JSON.stringify(advCounts), [advCounts])
 
@@ -472,7 +525,7 @@ export default function HoningForecastUI() {
             debounceTimerRef1.current = null
         }, 100) // 100ms debounce
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [budgetKey, topGridKey, bottomGridKey, advStrategyKey, expressEventKey, graphBucketSizeKey, autoOptKey, userMatsKey, dataSizeKey, useGridInputKey, normalCountsKey, advCountsKey])
+    }, [budgetKey, advStrategyKey, expressEventKey, graphBucketSizeKey, autoOptKey, userMatsKey, dataSizeKey, normalCountsKey, advCountsKey])
 
     // When desired chance or grids or strategy change -> run ChanceToCost (chance -> cost)
     useEffect(() => {
@@ -486,7 +539,39 @@ export default function HoningForecastUI() {
             debounceTimerRef2.current = null
         }, 100)
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [desiredKey, topGridKey, bottomGridKey, advStrategyKey, expressEventKey, graphBucketSizeKey, dataSizeKey, useGridInputKey, normalCountsKey, advCountsKey])
+    }, [advStrategyKey, expressEventKey, graphBucketSizeKey, dataSizeKey, normalCountsKey, advCountsKey])
+
+    // When grids or strategy change -> run AverageCost (for average cost calculation)
+    useEffect(() => {
+        if (debounceTimerRef3.current) {
+            window.clearTimeout(debounceTimerRef3.current)
+            debounceTimerRef3.current = null
+        }
+        debounceTimerRef3.current = window.setTimeout(() => {
+            if (AnythingTicked) {
+                const payload = payloadBuilder()
+                startCancelableWorker('AverageCost', payload)
+            } else {
+                setAverageCosts(null)
+            }
+            debounceTimerRef3.current = null
+        }, 100)
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [advStrategyKey, expressEventKey, graphBucketSizeKey, dataSizeKey, normalCountsKey, advCountsKey])
+
+    // When grids or strategy change -> run ParserUnified (for upgrade array)
+    useEffect(() => {
+        if (debounceTimerRef4.current) {
+            window.clearTimeout(debounceTimerRef4.current)
+            debounceTimerRef4.current = null
+        }
+        debounceTimerRef4.current = window.setTimeout(() => {
+            const payload = payloadBuilder()
+            startCancelableWorker('ParserUnified', payload)
+            debounceTimerRef4.current = null
+        }, 100)
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [advStrategyKey, expressEventKey, graphBucketSizeKey, dataSizeKey, normalCountsKey, advCountsKey])
 
     // Cleanup on unmount: terminate any running workers and clear timers
     useEffect(() => {
@@ -499,6 +584,14 @@ export default function HoningForecastUI() {
                 try { chanceWorkerRef.current.terminate() } catch (e) { ; }
                 chanceWorkerRef.current = null
             }
+            if (averageCostWorkerRef.current) {
+                try { averageCostWorkerRef.current.terminate() } catch (e) { ; }
+                averageCostWorkerRef.current = null
+            }
+            if (parserWorkerRef.current) {
+                try { parserWorkerRef.current.terminate() } catch (e) { ; }
+                parserWorkerRef.current = null
+            }
             if (debounceTimerRef1.current) {
                 window.clearTimeout(debounceTimerRef1.current)
                 debounceTimerRef1.current = null
@@ -507,11 +600,22 @@ export default function HoningForecastUI() {
                 window.clearTimeout(debounceTimerRef2.current)
                 debounceTimerRef2.current = null
             }
+            if (debounceTimerRef3.current) {
+                window.clearTimeout(debounceTimerRef3.current)
+                debounceTimerRef3.current = null
+            }
+            if (debounceTimerRef4.current) {
+                window.clearTimeout(debounceTimerRef4.current)
+                debounceTimerRef4.current = null
+            }
         }
     }, [])
 
     // styles and column defs moved to ./styles
-    const AnythingTicked = useMemo(() => topGrid.some(value => value.some(v => v === true)) || bottomGrid.some(value => value.some(v => v === true)), [topGrid, bottomGrid])
+    const AnythingTicked = useMemo(() => normalCounts[0].some(x => x > 0) ||
+        normalCounts[1].some(x => x > 0) ||
+        advCounts[0].some(x => x > 0) ||
+        advCounts[1].some(x => x > 0), [normalCounts, advCounts])
     return (
 
         <div style={styles.pageContainer}>
@@ -590,6 +694,7 @@ export default function HoningForecastUI() {
                 <div className={activePage === 'chance-to-cost' ? 'page' : 'page page--hidden'} aria-hidden={activePage !== 'chance-to-cost'}>
                     <ChanceToCostSection
                         desired_chance={desired_chance}
+                        uncleaned_desired_chance={uncleaned_desired_chance}
                         onDesiredChange={onDesiredChange}
                         onDesiredBlur={onDesiredBlur}
                         cost_result={cost_result}
@@ -600,22 +705,12 @@ export default function HoningForecastUI() {
                         lockXAxis={lockXAxis}
                         lockedMins={lockedMins}
                         lockedMaxs={lockedMaxs}
-                        // Props needed for average_cost calculation
-                        topGrid={topGrid}
-                        bottomGrid={bottomGrid}
-                        adv_hone_strategy={adv_hone_strategy}
-                        express_event={express_event}
-                        bucketCount={bucketCount}
-                        autoOptimization={autoOptimization}
-                        userMatsValue={userMatsValue}
-                        dataSize={dataSize}
                         // Show Average checkbox props
                         showAverage={showAverage}
                         setShowAverage={setShowAverage}
-                        // New props for numeric input mode
-                        useGridInput={useGridInput}
-                        normalCounts={normalCounts}
-                        advCounts={advCounts}
+                        // Moved worker call results
+                        averageCosts={averageCosts}
+                        AverageCostBusy={AverageCostBusy}
                     />
                 </div>
 
@@ -664,6 +759,9 @@ export default function HoningForecastUI() {
                         useGridInput={useGridInput}
                         normalCounts={normalCounts}
                         advCounts={advCounts}
+                        // Moved worker call results
+                        upgradeArr={upgradeArr}
+                        ParserBusy={ParserBusy}
                     />
                 </div>
             </div>

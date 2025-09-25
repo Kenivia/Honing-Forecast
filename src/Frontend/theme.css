@@ -54,10 +54,13 @@
     --marquee-border: rgba(46, 241, 176, 0.849);
 
     /* Grid Colors */
-    --grid-cell-bg-blue: rgba(22, 92, 163, 0.3);
-    --grid-cell-bg: #072f24;
-    --grid-cell-text: #9ff7c7;
-    --grid-cell-selected: rgba(16, 185, 129, 0.6);
+
+    --grid-cell-bg: rgb(172, 255, 254);
+    --grid-cell-text: #000000;
+    --grid-cell-selected: rgba(172, 255, 254, 0.8);
+    --grid-cell-bg-readonly: rgba(80, 80, 80, 0);
+    --grid-cell-text-readonly: #9ff7c7;
+    --grid-cell-selected-readonly: rgba(122, 194, 175, 0.3);
 
     /* Accent Colors */
     --accent: #5be6ff;
@@ -65,5 +68,13 @@
 
     /* Additional Colors */
     --bright-green: rgb(0, 255, 0);
+
+    /* Slider Colors */
+    --slider-track-bg: #cccccc;
+    --slider-track-active: #5be6ff;
+    --slider-thumb-bg: #5be6ff;
+    --slider-thumb-hover: #5be6ff;
+    --slider-thumb-focus: #5be6ff;
+    --slider-thumb-shadow: rgba(91, 230, 255, 0.3);
 
 }

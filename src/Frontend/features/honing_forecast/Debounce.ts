@@ -5,7 +5,6 @@ import { ticksToCounts } from "./utils.ts"
 export function buildPayload({
     topGrid,
     bottomGrid,
-    desired_chance,
     budget_inputs,
     adv_hone_strategy,
     express_event,
@@ -19,7 +18,6 @@ export function buildPayload({
 }: {
     topGrid: boolean[][]
     bottomGrid: boolean[][]
-    desired_chance: string
     budget_inputs: any
     adv_hone_strategy: string
     express_event: boolean
@@ -32,7 +30,6 @@ export function buildPayload({
     advCounts?: number[][]
 }) {
     const payload: any = {
-        desired_chance: parseFloat(desired_chance || "0"),
         budget: ((input) => Object.entries(input).map(([, v]) => Math.round(Number(v))))(budget_inputs),
         adv_hone_strategy: adv_hone_strategy,
         express_event: express_event,
@@ -59,23 +56,35 @@ export function buildPayload({
 export function createStartCancelableWorker({
     costWorkerRef,
     chanceWorkerRef,
+    averageCostWorkerRef,
+    parserWorkerRef,
     setCostToChanceBusy,
     setChanceToCostBusy,
+    setAverageCostBusy,
+    setParserBusy,
     set_chance_result,
     set_cost_result,
+    setAverageCosts,
+    setUpgradeArr,
     setCachedChanceGraphData,
     setCachedCostGraphData,
 }: {
     costWorkerRef: React.MutableRefObject<Worker | null>
     chanceWorkerRef: React.MutableRefObject<Worker | null>
+    averageCostWorkerRef: React.MutableRefObject<Worker | null>
+    parserWorkerRef: React.MutableRefObject<Worker | null>
     setCostToChanceBusy: React.Dispatch<React.SetStateAction<boolean>>
     setChanceToCostBusy: React.Dispatch<React.SetStateAction<boolean>>
+    setAverageCostBusy: React.Dispatch<React.SetStateAction<boolean>>
+    setParserBusy: React.Dispatch<React.SetStateAction<boolean>>
     set_chance_result: React.Dispatch<React.SetStateAction<any>>
     set_cost_result: React.Dispatch<React.SetStateAction<any>>
+    setAverageCosts: React.Dispatch<React.SetStateAction<number[] | null>>
+    setUpgradeArr: React.Dispatch<React.SetStateAction<any[]>>
     setCachedChanceGraphData: React.Dispatch<React.SetStateAction<{ hist_counts?: any; hist_mins?: any; hist_maxs?: any } | null>>
     setCachedCostGraphData: React.Dispatch<React.SetStateAction<{ hist_counts?: any; hist_mins?: any; hist_maxs?: any } | null>>
 }) {
-    return (which_one: "CostToChance" | "ChanceToCost", payload: any) => {
+    return (which_one: "CostToChance" | "ChanceToCost" | "AverageCost" | "ParserUnified", payload: any) => {
         if (which_one === "CostToChance") {
             // terminate previous
             if (costWorkerRef.current) {
@@ -127,7 +136,7 @@ export function createStartCancelableWorker({
                         setCostToChanceBusy(false)
                     }
                 })
-        } else {
+        } else if (which_one === "ChanceToCost") {
             // ChanceToCost
             if (chanceWorkerRef.current) {
                 try {
@@ -176,6 +185,88 @@ export function createStartCancelableWorker({
                         setChanceToCostBusy(false)
                     }
                 })
+        } else if (which_one === "AverageCost") {
+            // terminate previous
+            if (averageCostWorkerRef.current) {
+                try {
+                    averageCostWorkerRef.current.terminate()
+                } catch (e) {
+                    /* ignore */
+                }
+                averageCostWorkerRef.current = null
+            }
+            setAverageCostBusy(true)
+            setAverageCosts(null)
+
+            const { worker, promise } = SpawnWorker(payload, which_one)
+            averageCostWorkerRef.current = worker
+
+            promise
+                .then((res) => {
+                    if (averageCostWorkerRef.current === worker) {
+                        if (res && (res as any).average_costs) {
+                            setAverageCosts((res as any).average_costs)
+                        }
+                    }
+                })
+                .catch((err) => {
+                    console.error("AverageCost worker error", err)
+                    if (averageCostWorkerRef.current === worker) {
+                        setAverageCosts(null)
+                    }
+                })
+                .finally(() => {
+                    if (averageCostWorkerRef.current === worker) {
+                        try {
+                            worker.terminate()
+                        } catch (e) {
+                            /* ignore */
+                        }
+                        averageCostWorkerRef.current = null
+                        setAverageCostBusy(false)
+                    }
+                })
+        } else if (which_one === "ParserUnified") {
+            // terminate previous
+            if (parserWorkerRef.current) {
+                try {
+                    parserWorkerRef.current.terminate()
+                } catch (e) {
+                    /* ignore */
+                }
+                parserWorkerRef.current = null
+            }
+            setParserBusy(true)
+            setUpgradeArr([])
+
+            const { worker, promise } = SpawnWorker(payload, which_one)
+            parserWorkerRef.current = worker
+
+            promise
+                .then((res) => {
+                    if (parserWorkerRef.current === worker) {
+                        if (res && (res as any).upgrades) {
+                            setUpgradeArr((res as any).upgrades)
+                        }
+                    }
+                })
+                .catch((err) => {
+                    console.error("Parser worker error", err)
+                    if (parserWorkerRef.current === worker) {
+                        setUpgradeArr([])
+                    }
+                })
+                .finally(() => {
+                    if (parserWorkerRef.current === worker) {
+                        try {
+                            worker.terminate()
+                        } catch (e) {
+                            /* ignore */
+                        }
+                        parserWorkerRef.current = null
+                        setParserBusy(false)
+                    }
+                })
         }
     }
 }
@@ -184,7 +275,7 @@ export function createHandleCallWorker({
     startCancelableWorker,
     buildPayload,
 }: {
-    startCancelableWorker: (_which_one: "CostToChance" | "ChanceToCost", _payload: any) => void
+    startCancelableWorker: (_which_one: "CostToChance" | "ChanceToCost" | "AverageCost" | "ParserUnified", _payload: any) => void
     buildPayload: () => any
 }) {
     return async (which_one: string) => {

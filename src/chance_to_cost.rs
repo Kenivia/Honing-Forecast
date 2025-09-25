@@ -4,11 +4,34 @@ use crate::histogram::{histograms_for_all_costs, transpose_vec_of_vecs};
 use crate::monte_carlo::monte_carlo_data;
 use crate::parser::{Upgrade, parser};
 use crate::value_estimation::average_tap;
+
 // use web_sys::console;
 // use crate::{constants::*, cost_to_chance};
 
+fn find_best_budget_for_this_chance(
+    desired_chance: f64,
+    cost_size: usize,
+    budget_size: usize,
+    failure_counts: &Vec<i64>,
+    budget_data: &Vec<Vec<i64>>,
+) -> (Vec<i64>, f64) {
+    let k_i64: i64 = ((1.0f64 - desired_chance / 100f64) * (cost_size as f64)).floor() as i64;
+    let k_i64_budget: i64 =
+        ((cost_size as f64 - k_i64 as f64) / cost_size as f64 * budget_size as f64).round() as i64;
+    let diffs: Vec<i64> = failure_counts
+        .iter()
+        .map(|&ci| (ci - k_i64).abs())
+        .collect();
+
+    let mut sorted_indices: Vec<usize> = (0..budget_data.len()).collect();
+    sorted_indices.sort_by_key(|&i| (diffs[i], (k_i64_budget - i as i64).abs()));
+    let best_budget: Vec<i64> = budget_data[sorted_indices[0]].clone();
+    let best_chance: f64 =
+        (1 as f64 - (failure_counts[sorted_indices[0]] as f64 / cost_size as f64)) * 100 as f64;
+    (best_budget, best_chance)
+}
 /// Calculate the total cost for each of the 7 main cost types across all upgrades.
-/// Returns a vector of length 7 containing the total cost for each cost type.
+/// Returns a vector of length 7 containing the total cost for each cost type.\
 pub fn average_cost(upgrades: &Vec<Upgrade>) -> Vec<f64> {
     let mut total_costs: Vec<f64> = vec![0.0; 7];
 
@@ -111,23 +134,21 @@ use serde::Serialize;
 
 #[derive(Serialize)]
 pub struct ChanceToCostOut {
-    pub best_budget: Vec<i64>,
-    pub actual_prob: f64,
     pub hist_counts: Vec<Vec<i64>>, // 7 x num_bins
     pub hist_mins: Vec<i64>,        // 7
     pub hist_maxs: Vec<i64>,        // 7
+    pub hundred_budgets: Vec<Vec<i64>>,
+    pub hundred_chances: Vec<f64>,
 }
 
 pub fn chance_to_cost(
     hone_counts: Vec<Vec<i64>>,
     adv_counts: Vec<Vec<i64>>,
-    desired_chance: f64,
     adv_hone_strategy: String,
     express_event: bool,
     hist_bins: usize,
     data_size: usize,
 ) -> ChanceToCostOut {
-    let cost_size: usize = data_size;
     let budget_size: usize = 1000;
     let aritsan_arr: Vec<f64>;
     if express_event {
@@ -146,7 +167,7 @@ pub fn chance_to_cost(
     );
 
     let cost_data: Vec<Vec<i64>> = monte_carlo_data(
-        cost_size,
+        data_size,
         &upgrade_arr,
         &calc_unlock(&hone_counts, &adv_counts, express_event),
         0,
@@ -214,22 +235,21 @@ pub fn chance_to_cost(
 
     let failure_counts: Vec<i64> = count_failure(&cost_data, &budget_data, false); // not sure if can use asc? just to be safe keeping it naive for now
 
-    let k_i64: i64 = ((1.0f64 - desired_chance / 100f64) * (cost_size as f64)).floor() as i64;
-    let k_i64_budget: i64 =
-        ((cost_size as f64 - k_i64 as f64) / cost_size as f64 * budget_size as f64).round() as i64;
-    let diffs: Vec<i64> = failure_counts
-        .iter()
-        .map(|&ci| (ci - k_i64).abs())
+    let (hundred_budgets, hundred_chances): (Vec<Vec<i64>>, Vec<f64>) = (0..101)
+        .into_iter()
+        .map(|x| {
+            find_best_budget_for_this_chance(
+                x as f64,
+                data_size,
+                budget_size,
+                &failure_counts,
+                &budget_data,
+            )
+        })
         .collect();
-
-    let mut sorted_indices: Vec<usize> = (0..budget_data.len()).collect();
-    sorted_indices.sort_by_key(|&i| (diffs[i], (k_i64_budget - i as i64).abs()));
-    let best_budget: Vec<i64> = budget_data[sorted_indices[0]].clone();
     ChanceToCostOut {
-        best_budget,
-        actual_prob: (1 as f64
-            - (failure_counts[sorted_indices[0]] as f64 / cost_data.len() as f64))
-            * 100 as f64,
+        hundred_budgets,
+        hundred_chances,
         hist_counts: histograms_for_all_costs(&cost_data, hist_bins, &top_bottom[1]),
         hist_mins: vec![0_i64; 7],
         hist_maxs: top_bottom[1].clone(),
@@ -245,14 +265,13 @@ mod tests {
         let out = chance_to_cost(
             vec![(0..25).map(|_| 5).collect(), (0..25).map(|_| 1).collect()],
             vec![(0..4).map(|_| 5).collect(), (0..4).map(|_| 1).collect()],
-            100.0,
             "No juice".to_owned(),
             false,
             1000,
             10000,
         );
-        println!("best_budget = {:?}", out.best_budget);
-        println!("actual_prob = {:?}", out.actual_prob);
+        println!("hundred_budgets = {:?}", out.hundred_budgets);
+        println!("hundred_chances = {:?}", out.hundred_chances);
         println!("hist_mins = {:?}", out.hist_mins);
         println!("hist_maxs = {:?}", out.hist_maxs);
     }
@@ -305,7 +324,7 @@ mod tests {
     //         100000,
     //     );
     //     println!("best_budget = {:?}", out.best_budget);
-    //     println!("actual_prob = {:?}", out.actual_prob);
+    //     println!("best_chance = {:?}", out.best_chance);
     //     println!("hist_mins = {:?}", out.hist_mins);
     //     println!("hist_maxs = {:?}", out.hist_maxs);
     // }
@@ -327,7 +346,7 @@ mod tests {
     //         100000,
     //     );
     //     println!("best_budget = {:?}", out.best_budget);
-    //     println!("actual_prob = {:?}", out.actual_prob);
+    //     println!("best_chance = {:?}", out.best_chance);
     //     println!("hist_mins = {:?}", out.hist_mins);
     //     println!("hist_maxs = {:?}", out.hist_maxs);
     // }

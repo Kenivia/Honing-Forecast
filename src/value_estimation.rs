@@ -30,7 +30,7 @@ pub fn average_tap(prob_dist: &Vec<f64>, offset: f64) -> f64 {
 //     }
 //     out
 // }
-fn average_times_cost(upgrade: &Upgrade, mats_value: &Vec<f64>, average: f64) -> f64 {
+fn value_per_special_if_passed(upgrade: &Upgrade, mats_value: &Vec<f64>, average: f64) -> f64 {
     let mut this_sum = 0.0_f64;
     for cost_type in 0..7 {
         this_sum += mats_value[cost_type] * average * upgrade.costs[cost_type] as f64;
@@ -39,18 +39,41 @@ fn average_times_cost(upgrade: &Upgrade, mats_value: &Vec<f64>, average: f64) ->
 }
 pub fn est_special_honing_value(
     upgrade_arr: &mut Vec<Upgrade>,
-    mats_value: &Vec<f64>,
+    weapon_values: &Vec<f64>,
+    armor_values: &Vec<f64>,
+    user_gave_weapon: bool,
+    user_gave_armor: bool,
     calibrating: bool,
 ) -> Vec<f64> {
     let mut out: Vec<f64> = Vec::with_capacity(upgrade_arr.len());
     let mut average: f64;
     let cost_type_count: usize = 7;
     let mut special_value: f64;
-    assert!(mats_value.len() == cost_type_count);
+    let mut is_valid: bool;
+    assert!(weapon_values.len() == cost_type_count);
+    assert!(armor_values.len() == cost_type_count);
     for (_, upgrade) in upgrade_arr.iter_mut().enumerate() {
         if upgrade.is_normal_honing {
             average = average_tap(&upgrade.original_prob_dist, upgrade.tap_offset as f64);
-            special_value = upgrade.base_chance * average_times_cost(upgrade, mats_value, average);
+            is_valid = if upgrade.is_weapon {
+                user_gave_weapon
+            } else {
+                user_gave_armor
+            };
+            special_value = if is_valid {
+                upgrade.base_chance
+                    * value_per_special_if_passed(
+                        upgrade,
+                        if upgrade.is_weapon {
+                            weapon_values
+                        } else {
+                            armor_values
+                        },
+                        average,
+                    )
+            } else {
+                0.0
+            };
             out.push(special_value);
             if !calibrating {
                 upgrade.special_value = special_value
@@ -63,22 +86,31 @@ pub fn est_special_honing_value(
     out
 }
 
-pub fn est_juice_value(upgrade_arr: &mut Vec<Upgrade>, mats_value: &Vec<f64>) {
+pub fn est_juice_value(
+    upgrade_arr: &mut Vec<Upgrade>,
+    weapon_values: &Vec<f64>,
+    armor_values: &Vec<f64>,
+) {
     let mut this_sum: Vec<f64>;
     let mut prev_cost: f64;
     let mut next_cost: f64;
     let mut extra_count: usize;
     let mut cur_prob_dist: Vec<f64>;
     let cost_type_count: usize = 7;
-    assert!(mats_value.len() == cost_type_count);
+    assert!(weapon_values.len() == cost_type_count);
+    assert!(armor_values.len() == cost_type_count);
     for (_, upgrade) in upgrade_arr.iter_mut().enumerate() {
         if !upgrade.is_normal_honing || upgrade.upgrade_plus_num <= 2 {
             continue;
         }
         this_sum = Vec::with_capacity(upgrade.prob_dist_len);
-        prev_cost = average_times_cost(
+        prev_cost = value_per_special_if_passed(
             upgrade,
-            mats_value,
+            if upgrade.is_weapon {
+                weapon_values
+            } else {
+                armor_values
+            },
             average_tap(&upgrade.prob_dist, upgrade.tap_offset as f64),
         );
         extra_count = 1;
@@ -93,9 +125,13 @@ pub fn est_juice_value(upgrade_arr: &mut Vec<Upgrade>, mats_value: &Vec<f64>) {
             if cur_prob_dist.len() == 0 {
                 break; // next one is beyond pity
             }
-            next_cost = average_times_cost(
+            next_cost = value_per_special_if_passed(
                 upgrade,
-                mats_value,
+                if upgrade.is_weapon {
+                    weapon_values
+                } else {
+                    armor_values
+                },
                 average_tap(&cur_prob_dist, upgrade.tap_offset as f64),
             );
             this_sum.push(prev_cost - next_cost);
@@ -110,7 +146,8 @@ pub fn juice_to_array(
     upgrade_arr: &mut Vec<Upgrade>,
     blue_juice: i64,
     red_juice: i64,
-    user_gave_value: bool,
+    user_gave_weapon: bool,
+    user_gave_armor: bool,
 ) -> (Vec<String>, Vec<String>) {
     // Armor uses blue juice (is_weapon == false), Weapon uses red juice (is_weapon == true)
     let armor_pairs = _juice_to_array(upgrade_arr, false, blue_juice);
@@ -123,7 +160,7 @@ pub fn juice_to_array(
         armor_sorted
             .into_iter()
             .map(|(plus, taps, high, low)| {
-                if !user_gave_value {
+                if !user_gave_armor {
                     format!("+{} armor first {} taps", plus + 1, taps,)
                 } else {
                     if high == low {
@@ -149,7 +186,7 @@ pub fn juice_to_array(
         weapon_sorted
             .into_iter()
             .map(|(plus, taps, high, low)| {
-                if !user_gave_value {
+                if !user_gave_weapon {
                     format!("+{} weapon first {} taps", plus + 1, taps,)
                 } else {
                     if high == low {
