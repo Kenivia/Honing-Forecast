@@ -106,8 +106,6 @@ fn _cost_to_chance(
         upgrade_arr,
         &weapon_value_weight,
         &armor_value_weight,
-        user_gave_weapon,
-        user_gave_armor,
         calibrating,
     );
     let mut special_indices: Vec<usize> = (0..value_per_special_leap.len()).collect();

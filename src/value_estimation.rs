@@ -41,15 +41,13 @@ pub fn est_special_honing_value(
     upgrade_arr: &mut Vec<Upgrade>,
     weapon_values: &Vec<f64>,
     armor_values: &Vec<f64>,
-    user_gave_weapon: bool,
-    user_gave_armor: bool,
     calibrating: bool,
 ) -> Vec<f64> {
     let mut out: Vec<f64> = Vec::with_capacity(upgrade_arr.len());
     let mut average: f64;
     let cost_type_count: usize = 7;
     let mut special_value: f64;
-    let mut is_valid: bool;
+    // let mut is_valid: bool;
     assert!(weapon_values.len() == cost_type_count);
     assert!(armor_values.len() == cost_type_count);
     for (_, upgrade) in upgrade_arr.iter_mut().enumerate() {
