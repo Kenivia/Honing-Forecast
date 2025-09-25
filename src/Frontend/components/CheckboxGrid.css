@@ -66,6 +66,28 @@
 }
 
 /* Ensure consistent checkmark styling across browsers */
+
+/* Numeric input styling */
+.numeric-grid-input {
+    -webkit-appearance: none !important;
+    -moz-appearance: none !important;
+    appearance: none !important;
+
+    /* Remove default number input spinners */
+    -moz-appearance: textfield !important;
+}
+
+.numeric-grid-input::-webkit-outer-spin-button,
+.numeric-grid-input::-webkit-inner-spin-button {
+    -webkit-appearance: none !important;
+    margin: 0 !important;
+}
+
+.numeric-grid-input:focus {
+    outline: none !important;
+    outline-offset: 0 !important;
+}
+
 .checkbox-grid-input:checked::before {
     content: "✓" !important;
     color: var(--checkbox-checked-text) !important;

@@ -319,17 +319,28 @@ pub fn parser(
     );
 
     // ensure integer ranges as in TS: first row values [0..=5], second row values [0..=1]
-    let max_normal0: i64 = *normal_counts[0].iter().max().unwrap_or(&0);
-    let min_normal0: i64 = *normal_counts[0].iter().min().unwrap_or(&0);
-    let max_normal1: i64 = *normal_counts[1].iter().max().unwrap_or(&0);
-    let min_normal1: i64 = *normal_counts[1].iter().min().unwrap_or(&0);
+    // let max_normal0: i64 = *normal_counts[0].iter().max().unwrap_or(&0);
+    // let min_normal0: i64 = *normal_counts[0].iter().min().unwrap_or(&0);
+    // let max_normal1: i64 = *normal_counts[1].iter().max().unwrap_or(&0);
+    // let min_normal1: i64 = *normal_counts[1].iter().min().unwrap_or(&0);
 
-    assert!(max_normal0 <= 5, "normal_counts[0] max must be <= 5");
-    assert!(min_normal0 >= 0, "normal_counts[0] min must be >= 0");
-    assert!(max_normal1 <= 1, "normal_counts[1] max must be <= 1");
-    assert!(min_normal1 >= 0, "normal_counts[1] min must be >= 0");
+    // assert!(max_normal0 <= 5, "normal_counts[0] max must be <= 5");
+    // assert!(min_normal0 >= 0, "normal_counts[0] min must be >= 0");
+    // assert!(max_normal1 <= 1, "normal_counts[1] max must be <= 1");
+    // assert!(min_normal1 >= 0, "normal_counts[1] min must be >= 0");
 
-    // each normal_counts entry should already be integers (type i64) so no runtime check required beyond ranges
+    // Validate that all values are non-negative integers (additional check for direct input)
+    for (row_idx, row) in normal_counts.iter().enumerate() {
+        for (col_idx, &value) in row.iter().enumerate() {
+            assert!(
+                value >= 0,
+                "normal_counts[{}][{}] must be non-negative, got {}",
+                row_idx,
+                col_idx,
+                value
+            );
+        }
+    }
 
     // adv_counts checks
     assert!(adv_counts.len() == 2, "adv_counts must have length 2");
@@ -341,6 +352,19 @@ pub fn parser(
     assert!(min_adv0 >= 0, "adv_counts[0] min must be >= 0");
     assert!(max_adv1 <= 1, "adv_counts[1] max must be <= 1");
     assert!(min_adv1 >= 0, "adv_counts[1] min must be >= 0");
+
+    // Validate that all values are non-negative integers (additional check for direct input)
+    for (row_idx, row) in adv_counts.iter().enumerate() {
+        for (col_idx, &value) in row.iter().enumerate() {
+            assert!(
+                value >= 0,
+                "adv_counts[{}][{}] must be non-negative, got {}",
+                row_idx,
+                col_idx,
+                value
+            );
+        }
+    }
 
     // base_rates validation
     for &i in &NORMAL_HONE_CHANCES {

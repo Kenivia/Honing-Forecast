@@ -12,7 +12,10 @@ export function writeSettings(
     autoOptimization,
     userMatsValue,
     cumulativeGraph,
-    dataSize
+    dataSize,
+    useGridInput,
+    normalCounts,
+    advCounts
 ) {
     const toSave = {
         topGrid,
@@ -27,6 +30,9 @@ export function writeSettings(
         userMatsValue,
         cumulativeGraph,
         dataSize,
+        useGridInput,
+        normalCounts,
+        advCounts,
     }
     localStorage.setItem(STORAGE_KEY, JSON.stringify(toSave))
 }
@@ -42,7 +48,10 @@ export function readSettings(
     setAutoOptimization,
     setUserMatsValue,
     setCumulativeGraph,
-    setDataSize
+    setDataSize,
+    setUseGridInput,
+    setNormalCounts,
+    setAdvCounts
 ) {
     const raw = localStorage.getItem(STORAGE_KEY)
     if (!raw) return
@@ -62,5 +71,9 @@ export function readSettings(
         if (parsed.userMatsValue && typeof parsed.userMatsValue === "object") setUserMatsValue(parsed.userMatsValue)
         if (typeof parsed.cumulativeGraph === "boolean") setCumulativeGraph(parsed.cumulativeGraph)
         if (typeof parsed.dataSize === "string") setDataSize(parsed.dataSize)
+        if (typeof parsed.useGridInput === "boolean") setUseGridInput(parsed.useGridInput)
+        if (Array.isArray(parsed.normalCounts) && parsed.normalCounts.length === 2 && parsed.normalCounts[0]?.length === TOP_COLS)
+            setNormalCounts(parsed.normalCounts)
+        if (Array.isArray(parsed.advCounts) && parsed.advCounts.length === 2 && parsed.advCounts[0]?.length === BOTTOM_COLS) setAdvCounts(parsed.advCounts)
     }
 }

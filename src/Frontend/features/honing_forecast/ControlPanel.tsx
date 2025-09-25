@@ -15,9 +15,11 @@ type ControlPanelProps = {
     setDataSize: (_v: string) => void
     lockXAxis: boolean
     onToggleLockXAxis: () => void
+    useGridInput: boolean
+    setUseGridInput: (_next: boolean) => void
 }
 
-export default function ControlPanel({ controlsLeft: _controlsLeft, mainScale: _mainScale, fillDemo, fillRandom, clearAll, express_event, set_express_event, cumulativeGraph, setCumulativeGraph, dataSize, setDataSize, lockXAxis, onToggleLockXAxis }: ControlPanelProps) {
+export default function ControlPanel({ controlsLeft: _controlsLeft, mainScale: _mainScale, fillDemo, fillRandom, clearAll, express_event, set_express_event, cumulativeGraph, setCumulativeGraph, dataSize, setDataSize, lockXAxis, onToggleLockXAxis, useGridInput, setUseGridInput }: ControlPanelProps) {
     return (
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 0, minWidth: 200, flexShrink: 0 }}>
             <h3 style={{ ...styles.sectionTitle, marginTop: '-8px', alignSelf: 'center' }}>Controls</h3>
@@ -50,6 +52,22 @@ export default function ControlPanel({ controlsLeft: _controlsLeft, mainScale: _
                             id="cumulative_graph"
                             checked={cumulativeGraph}
                             onChange={(e) => setCumulativeGraph(e.target.checked)}
+                            style={{
+                                width: '16px',
+                                height: '16px',
+                                cursor: 'pointer',
+                                accentColor: 'var(--control-checked-bg)'
+                            }}
+                        />
+                    </div>
+
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <label htmlFor="grid_input" style={{ color: 'var(--text-primary)', fontSize: 'var(--font-size-sm)', cursor: 'pointer' }}>Grid input</label>
+                        <input
+                            type="checkbox"
+                            id="grid_input"
+                            checked={useGridInput}
+                            onChange={(e) => setUseGridInput(e.target.checked)}
                             style={{
                                 width: '16px',
                                 height: '16px',

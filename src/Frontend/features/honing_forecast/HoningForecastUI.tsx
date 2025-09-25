@@ -19,6 +19,7 @@ import Icon from '../../components/Icon.tsx'
 import { GridMouseDownLogic, mouseMoveLogic, createMouseUpHandler } from "./Marquee.ts"
 import { createClearAll, createFillRandom, createFillDemo } from './ControlPanelFunctions.ts'
 import { buildPayload, createStartCancelableWorker, createHandleCallWorker } from './Debounce.ts'
+import { ticksToCounts, countsToTicks } from './utils.ts'
 
 export default function HoningForecastUI() {
 
@@ -44,6 +45,11 @@ export default function HoningForecastUI() {
     const [lockedMins, setLockedMins] = useState<number[] | null>(null)
     const [lockedMaxs, setLockedMaxs] = useState<number[] | null>(null)
     const [showAverage, setShowAverage] = useState<boolean>(false)
+    const [useGridInput, setUseGridInput] = useState<boolean>(true)
+
+    // Numeric input state for when useGridInput is false
+    const [normalCounts, setNormalCounts] = useState<number[][]>(() => Array.from({ length: 2 }, () => Array(TOP_COLS).fill(0)))
+    const [advCounts, setAdvCounts] = useState<number[][]>(() => Array.from({ length: 2 }, () => Array(BOTTOM_COLS).fill(0)))
 
     // marquee state & refs (kept here so grids stay presentational)
     const topGridRef = useRef<HTMLDivElement | null>(null)
@@ -80,7 +86,10 @@ export default function HoningForecastUI() {
                 setAutoOptimization,
                 setUserMatsValue,
                 setCumulativeGraph,
-                setDataSize)
+                setDataSize,
+                setUseGridInput,
+                setNormalCounts,
+                setAdvCounts)
 
         } catch (e) {
             // ignore corrupted storage
@@ -157,7 +166,10 @@ export default function HoningForecastUI() {
                     autoOptimization,
                     userMatsValue,
                     cumulativeGraph,
-                    dataSize,)
+                    dataSize,
+                    useGridInput,
+                    normalCounts,
+                    advCounts)
             } catch (e) {
                 // ignore quota or serialization errors
             }
@@ -169,7 +181,7 @@ export default function HoningForecastUI() {
                 saveTimerRef.current = null
             }
         }
-    }, [topGrid, bottomGrid, adv_hone_strategy, express_event, prev_checked_arr, prev_checked_arr_bottom, desired_chance, budget_inputs, autoOptimization, userMatsValue, cumulativeGraph, dataSize])
+    }, [topGrid, bottomGrid, adv_hone_strategy, express_event, prev_checked_arr, prev_checked_arr_bottom, desired_chance, budget_inputs, autoOptimization, userMatsValue, cumulativeGraph, dataSize, useGridInput, normalCounts, advCounts])
 
     const onGridMouseDown = GridMouseDownLogic({
         topGridRef,
@@ -307,6 +319,43 @@ export default function HoningForecastUI() {
         });
     };
 
+    // Handler for numeric input changes
+    const handleNumericInputChange = (grid: 'top' | 'bottom', row: number, col: number, value: number) => {
+        if (grid === 'top') {
+            setNormalCounts(prev => {
+                const newCounts = prev.map(row => [...row])
+                newCounts[row === 4 ? 0 : 1][col] = value
+                return newCounts
+            })
+        } else {
+            setAdvCounts(prev => {
+                const newCounts = prev.map(row => [...row])
+                newCounts[row === 4 ? 0 : 1][col] = value
+                return newCounts
+            })
+        }
+    }
+
+    // Handler for switching between grid input modes
+    const handleUseGridInputChange = (newValue: boolean) => {
+        if (newValue !== useGridInput) {
+            if (newValue) {
+                // Switching to grid input mode - convert counts to ticks
+                const newTopGrid = countsToTicks(normalCounts)
+                const newBottomGrid = countsToTicks(advCounts)
+                setTopGrid(newTopGrid)
+                setBottomGrid(newBottomGrid)
+            } else {
+                // Switching to numeric input mode - convert ticks to counts
+                const newNormalCounts = ticksToCounts(topGrid)
+                const newAdvCounts = ticksToCounts(bottomGrid)
+                setNormalCounts(newNormalCounts)
+                setAdvCounts(newAdvCounts)
+            }
+        }
+        setUseGridInput(newValue)
+    }
+
     const clearAll = createClearAll({
         setTopGrid,
         setBottomGrid,
@@ -325,6 +374,9 @@ export default function HoningForecastUI() {
         setLockedMins,
         setLockedMaxs,
         setShowAverage,
+        setUseGridInput,
+        setNormalCounts,
+        setAdvCounts,
     })
 
     const fillRandom = createFillRandom({
@@ -369,6 +421,9 @@ export default function HoningForecastUI() {
         autoOptimization,
         userMatsValue,
         dataSize,
+        useGridInput,
+        normalCounts,
+        advCounts,
     })
 
     const startCancelableWorker = createStartCancelableWorker({
@@ -399,6 +454,9 @@ export default function HoningForecastUI() {
     const autoOptKey = useMemo(() => String(autoOptimization), [autoOptimization])
     const userMatsKey = useMemo(() => JSON.stringify(userMatsValue), [userMatsValue])
     const dataSizeKey = useMemo(() => String(dataSize), [dataSize])
+    const useGridInputKey = useMemo(() => String(useGridInput), [useGridInput])
+    const normalCountsKey = useMemo(() => JSON.stringify(normalCounts), [normalCounts])
+    const advCountsKey = useMemo(() => JSON.stringify(advCounts), [advCounts])
 
     // When budget or grids or strategy change -> run CostToChance (budget -> cost->chance)
     useEffect(() => {
@@ -414,7 +472,7 @@ export default function HoningForecastUI() {
             debounceTimerRef1.current = null
         }, 100) // 100ms debounce
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [budgetKey, topGridKey, bottomGridKey, advStrategyKey, expressEventKey, graphBucketSizeKey, autoOptKey, userMatsKey, dataSizeKey])
+    }, [budgetKey, topGridKey, bottomGridKey, advStrategyKey, expressEventKey, graphBucketSizeKey, autoOptKey, userMatsKey, dataSizeKey, useGridInputKey, normalCountsKey, advCountsKey])
 
     // When desired chance or grids or strategy change -> run ChanceToCost (chance -> cost)
     useEffect(() => {
@@ -428,7 +486,7 @@ export default function HoningForecastUI() {
             debounceTimerRef2.current = null
         }, 100)
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [desiredKey, topGridKey, bottomGridKey, advStrategyKey, expressEventKey, graphBucketSizeKey, dataSizeKey])
+    }, [desiredKey, topGridKey, bottomGridKey, advStrategyKey, expressEventKey, graphBucketSizeKey, dataSizeKey, useGridInputKey, normalCountsKey, advCountsKey])
 
     // Cleanup on unmount: terminate any running workers and clear timers
     useEffect(() => {
@@ -486,6 +544,9 @@ export default function HoningForecastUI() {
                         topGridRef={topGridRef}
                         marquee={marquee}
                         onGridMouseDown={onGridMouseDown}
+                        useGridInput={useGridInput}
+                        normalCounts={normalCounts}
+                        onNumericInputChange={handleNumericInputChange}
                     />
 
                     <AdvancedHoningPanel
@@ -498,6 +559,9 @@ export default function HoningForecastUI() {
                         onGridMouseDown={onGridMouseDown}
                         adv_hone_strategy={adv_hone_strategy}
                         adv_hone_strategy_change={adv_hone_strategy_change}
+                        useGridInput={useGridInput}
+                        advCounts={advCounts}
+                        onNumericInputChange={handleNumericInputChange}
                     />
 
                     <ControlPanel
@@ -514,6 +578,8 @@ export default function HoningForecastUI() {
                         setDataSize={setDataSize}
                         lockXAxis={lockXAxis}
                         onToggleLockXAxis={onToggleLockXAxis}
+                        useGridInput={useGridInput}
+                        setUseGridInput={handleUseGridInputChange}
                     />
                 </div>
 
@@ -546,6 +612,10 @@ export default function HoningForecastUI() {
                         // Show Average checkbox props
                         showAverage={showAverage}
                         setShowAverage={setShowAverage}
+                        // New props for numeric input mode
+                        useGridInput={useGridInput}
+                        normalCounts={normalCounts}
+                        advCounts={advCounts}
                     />
                 </div>
 
@@ -591,6 +661,9 @@ export default function HoningForecastUI() {
                         lockXAxis={lockXAxis}
                         lockedMins={lockedMins}
                         lockedMaxs={lockedMaxs}
+                        useGridInput={useGridInput}
+                        normalCounts={normalCounts}
+                        advCounts={advCounts}
                     />
                 </div>
             </div>

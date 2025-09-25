@@ -140,18 +140,23 @@ export default function SpreadsheetGrid({ columnDefs, labels, sheet_values: budg
             }
 
             setIsSelecting(true)
-            setSelection({
-                startRow: rowIndex,
-                startCol: colIndex,
-                endRow: rowIndex,
-                endCol: colIndex
-            })
+            if (selection) {
+                setSelection(null)
+            }
+            else {
+                setSelection({
+                    startRow: rowIndex,
+                    startCol: colIndex,
+                    endRow: rowIndex,
+                    endCol: colIndex
+                })
+            }
             // DO NOT call e.preventDefault() here — we want a plain click (no drag) to still focus the input for editing.
         }
 
         grid.addEventListener('mousedown', onMouseDownCapture, true) // capture phase
         return () => grid.removeEventListener('mousedown', onMouseDownCapture, true)
-    }, [labels.length, clampCol]) // reattach if ref changes
+    }, [labels.length, clampCol, selection]) // reattach if ref changes
 
     // ---------- mousemove + mouseup to update selection when dragging ----------
     useEffect(() => {
@@ -308,14 +313,14 @@ export default function SpreadsheetGrid({ columnDefs, labels, sheet_values: budg
     const handleKeyDown = (e: React.KeyboardEvent) => {
         // keep earlier copy/paste handling as a fallback if you want it, but
         // we primarily rely on native clipboard events above.
-        if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'a') {
-            // Example: select all
-            e.preventDefault()
-            setSelection({
-                startRow: 0, startCol: 0, endRow: labels.length - 1, endCol: clampCol(columnDefs.length - 1)
-            })
-            return
-        }
+        // if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'a') {
+        //     // Example: select all
+        //     e.preventDefault()
+        //     setSelection({
+        //         startRow: 0, startCol: 0, endRow: labels.length - 1, endCol: clampCol(columnDefs.length - 1)
+        //     })
+        //     return
+        // }
 
         // Clear selected editable cells to 0 on Backspace/Delete for editable grids
         if (!readOnly && (e.key === 'Backspace' || e.key === 'Delete')) {
@@ -432,7 +437,7 @@ export default function SpreadsheetGrid({ columnDefs, labels, sheet_values: budg
                                         height: '100%',
                                         padding: '6px 8px',
                                         border: '1px solid var(--border-accent)',
-                                        background: isCellSelected(rowIndex, colIndex) ? 'var(--marquee-bg)' : (typeof colDef.cellStyle === 'function' ? colDef.cellStyle({ value: colIndex === 0 ? (budget_inputs[label] ?? '') : (secondaryValues?.[label] ?? '') })?.backgroundColor || 'transparent' : colDef.cellStyle?.background || 'transparent'),
+                                        background: isCellSelected(rowIndex, colIndex) ? 'var(--grid-cell-selected)' : (typeof colDef.cellStyle === 'function' ? colDef.cellStyle({ value: colIndex === 0 ? (budget_inputs[label] ?? '') : (secondaryValues?.[label] ?? '') })?.backgroundColor || 'transparent' : colDef.cellStyle?.background || 'transparent'),
                                         color: typeof colDef.cellStyle === 'function' ? colDef.cellStyle({ value: colIndex === 0 ? (budget_inputs[label] ?? '') : (secondaryValues?.[label] ?? '') })?.color || 'var(--text-primary)' : colDef.cellStyle?.color || 'var(--text-primary)',
                                         fontSize: 'var(--font-size-sm)',
                                         outline: 'none',

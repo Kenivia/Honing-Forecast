@@ -30,6 +30,10 @@ type ChanceToCostSectionProps = {
     // Show Average checkbox props
     showAverage: boolean
     setShowAverage: React.Dispatch<React.SetStateAction<boolean>>
+    // New props for numeric input mode
+    useGridInput: boolean
+    normalCounts: number[][]
+    advCounts: number[][]
 }
 
 export default function ChanceToCostSection({
@@ -56,6 +60,10 @@ export default function ChanceToCostSection({
     // Show Average checkbox props
     showAverage,
     setShowAverage,
+    // New props for numeric input mode
+    useGridInput,
+    normalCounts,
+    advCounts,
 }: ChanceToCostSectionProps) {
     const { chanceToCostColumnDefs } = createColumnDefs(false) // autoOptimization not used for this section
     const [averageCosts, setAverageCosts] = useState<number[] | null>(null)
@@ -78,6 +86,9 @@ export default function ChanceToCostSection({
             autoOptimization,
             userMatsValue,
             dataSize,
+            useGridInput,
+            normalCounts,
+            advCounts,
         })
 
         CallWorker(payload, "AverageCost")
@@ -90,7 +101,7 @@ export default function ChanceToCostSection({
                 console.error("Error calculating average costs:", error)
                 setAverageCosts(null)
             })
-    }, [topGrid, bottomGrid, adv_hone_strategy, express_event, AnythingTicked, autoOptimization, bucketCount, dataSize, desired_chance, userMatsValue])
+    }, [topGrid, bottomGrid, adv_hone_strategy, express_event, AnythingTicked, autoOptimization, bucketCount, dataSize, desired_chance, userMatsValue, useGridInput, normalCounts, advCounts])
 
     return (
         <>

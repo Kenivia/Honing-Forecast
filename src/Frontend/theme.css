@@ -12,6 +12,7 @@
     --btn-demo-text: #ffffff;
     --btn-toggle-deselected: #6b7280;
     --btn-toggle-chance-selected: #165ca3;
+
     --btn-toggle-budget-selected: #1c9164;
     --btn-toggle-gamba-selected: #a40cea;
     --btn-toggle-lock-selected: rgb(255, 165, 0);
@@ -49,12 +50,14 @@
     --input-border: #cccccc;
 
     /* Marquee Colors */
-    --marquee-bg: rgba(16, 185, 129, 0.12);
-    --marquee-border: rgba(16, 185, 129, 0.6);
+    --marquee-bg: rgba(64, 248, 187, 0.425);
+    --marquee-border: rgba(46, 241, 176, 0.849);
 
     /* Grid Colors */
+    --grid-cell-bg-blue: rgba(22, 92, 163, 0.3);
     --grid-cell-bg: #072f24;
     --grid-cell-text: #9ff7c7;
+    --grid-cell-selected: rgba(16, 185, 129, 0.6);
 
     /* Accent Colors */
     --accent: #5be6ff;

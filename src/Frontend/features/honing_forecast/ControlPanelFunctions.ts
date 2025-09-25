@@ -18,6 +18,9 @@ export function createClearAll({
     setLockedMins,
     setLockedMaxs,
     setShowAverage,
+    setUseGridInput,
+    setNormalCounts,
+    setAdvCounts,
 }: {
     setTopGrid: React.Dispatch<React.SetStateAction<any>>
     setBottomGrid: React.Dispatch<React.SetStateAction<any>>
@@ -36,6 +39,9 @@ export function createClearAll({
     setLockedMins: React.Dispatch<React.SetStateAction<number[] | null>>
     setLockedMaxs: React.Dispatch<React.SetStateAction<number[] | null>>
     setShowAverage: React.Dispatch<React.SetStateAction<boolean>>
+    setUseGridInput: React.Dispatch<React.SetStateAction<boolean>>
+    setNormalCounts: React.Dispatch<React.SetStateAction<number[][]>>
+    setAdvCounts: React.Dispatch<React.SetStateAction<number[][]>>
 }) {
     return () => {
         // Grids and their column header checkboxes
@@ -62,6 +68,13 @@ export function createClearAll({
 
         // Reset show average checkbox
         setShowAverage(false)
+
+        // Reset grid input checkbox to ticked (default)
+        setUseGridInput(true)
+
+        // Reset numeric input states
+        setNormalCounts(Array.from({ length: 2 }, () => Array(TOP_COLS).fill(0)))
+        setAdvCounts(Array.from({ length: 2 }, () => Array(BOTTOM_COLS).fill(0)))
     }
 }
 

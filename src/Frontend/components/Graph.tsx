@@ -187,7 +187,8 @@ function Graph({ title, labels, counts, mins, maxs, width = 640, height = 320, b
     }, [lockXAxis, lockedMaxs, maxs]);
 
     const bucketLen = effectiveCounts?.[0]?.length || counts?.[0]?.length || 1000
-    const data_size = (effectiveCounts ?? counts)?.[0]?.reduce((partialSum, a) => partialSum + a, 0) || 1;
+    const data_size = Math.max(...Array.from({ length: 7 }, (_, i) =>
+        (effectiveCounts ?? counts)?.[i]?.reduce((partialSum, a) => partialSum + a, 0))) || 1;
 
     // Drop any series where all frequency falls in a single bucket (<=1 positive bin)
     const keepMask: boolean[] = useMemo(() => {
@@ -247,17 +248,20 @@ function Graph({ title, labels, counts, mins, maxs, width = 640, height = 320, b
     }, [effectiveCounts, counts, cumulative, cdfSeries, normalizedCounts])
 
     const yMax: number = useMemo(() => {
-        const srcCounts = effectiveCounts ?? counts;
-        if (!srcCounts) return 0
+
+        if (!dataSeries) return 0
         if (cumulative) return 1
-        const denom = data_size || 1
+        // const denom = data_size || 1
         let m = 0
-        for (let i = 0; i < srcCounts.length; i++) {
+
+        for (let i = 0; i < dataSeries.length; i++) {
             if (!visible[i] || !keepMask[i]) continue
-            for (let j = 0; j < srcCounts[i].length; j++) m = Math.max(m, srcCounts[i][j] / denom)
+            let this_series = to_step_points(dataSeries[i])
+            for (let j = 0; j < dataSeries[i].length; j++) { m = Math.max(m, this_series[j].y); }
         }
+        // console.log(m, data_size, dataSeries, ind)
         return m
-    }, [effectiveCounts, counts, visible, keepMask, cumulative, data_size])
+    }, [dataSeries, visible, keepMask, cumulative])
 
     // --- New: detect whether incoming counts contain data outside (to the right of) the effective x-axis ---
     // i.e. when incoming newMax > effectiveMax AND counts beyond that cutoff are non-zero

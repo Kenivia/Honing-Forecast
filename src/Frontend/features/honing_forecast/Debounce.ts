@@ -1,5 +1,6 @@
 import { SpawnWorker } from "../../worker_setup.ts"
 import { INPUT_LABELS } from "./constants.ts"
+import { ticksToCounts } from "./utils.ts"
 
 export function buildPayload({
     topGrid,
@@ -12,6 +13,9 @@ export function buildPayload({
     autoOptimization,
     userMatsValue,
     dataSize,
+    useGridInput = true,
+    normalCounts,
+    advCounts,
 }: {
     topGrid: boolean[][]
     bottomGrid: boolean[][]
@@ -23,10 +27,11 @@ export function buildPayload({
     autoOptimization: boolean
     userMatsValue: any
     dataSize: string
+    useGridInput?: boolean
+    normalCounts?: number[][]
+    advCounts?: number[][]
 }) {
-    return {
-        normal_hone_ticks: topGrid,
-        adv_hone_ticks: bottomGrid,
+    const payload: any = {
         desired_chance: parseFloat(desired_chance || "0"),
         budget: ((input) => Object.entries(input).map(([, v]) => Math.round(Number(v))))(budget_inputs),
         adv_hone_strategy: adv_hone_strategy,
@@ -37,6 +42,18 @@ export function buildPayload({
             : INPUT_LABELS.slice(0, 7).map((label) => parseFloat(userMatsValue[label] || "0")),
         data_size: Math.max(1000, Math.floor(Number(dataSize) || 0)),
     }
+
+    if (useGridInput) {
+        // Use the traditional tick-based approach
+        payload.normal_hone_ticks = topGrid
+        payload.adv_hone_ticks = bottomGrid
+    } else {
+        // Use direct counts approach
+        payload.normal_counts = normalCounts || ticksToCounts(topGrid)
+        payload.adv_counts = advCounts || ticksToCounts(bottomGrid)
+    }
+
+    return payload
 }
 
 export function createStartCancelableWorker({

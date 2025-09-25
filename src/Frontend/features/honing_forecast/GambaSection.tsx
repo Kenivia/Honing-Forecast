@@ -168,6 +168,9 @@ type GambaSectionProps = {
     lockXAxis: boolean
     lockedMins: number[] | null
     lockedMaxs: number[] | null
+    useGridInput: boolean
+    normalCounts: number[][]
+    advCounts: number[][]
 }
 
 // Equipment types for armor pieces
@@ -233,6 +236,9 @@ export default function GambaSection({
     lockXAxis,
     lockedMins,
     lockedMaxs,
+    useGridInput,
+    normalCounts,
+    advCounts,
 }: GambaSectionProps) {
     const { costToChanceColumnDefs } = createColumnDefs(true)
 
@@ -330,6 +336,9 @@ export default function GambaSection({
             autoOptimization,
             userMatsValue,
             dataSize,
+            useGridInput,
+            normalCounts,
+            advCounts,
         })
 
         const id = Math.random().toString(36).substr(2, 9)
@@ -402,13 +411,16 @@ export default function GambaSection({
             // Update refs
             currentUpgradeArrRef.current = upgradesWithTypes
         })
-    }, [topGrid, bottomGrid, adv_hone_strategy, express_event, desired_chance, bucketCount, autoOptimization, userMatsValue, dataSize, budget_inputs])
+    }, [topGrid, bottomGrid, adv_hone_strategy, express_event, desired_chance, bucketCount, autoOptimization, userMatsValue, dataSize, budget_inputs, useGridInput, normalCounts, advCounts])
 
     // Debounce effect for parser calls when grids change
     const topGridKey = useMemo(() => JSON.stringify(topGrid), [topGrid])
     const bottomGridKey = useMemo(() => JSON.stringify(bottomGrid), [bottomGrid])
     const advStrategyKey = useMemo(() => String(adv_hone_strategy), [adv_hone_strategy])
     const expressEventKey = useMemo(() => String(express_event), [express_event])
+    const useGridInputKey = useMemo(() => String(useGridInput), [useGridInput])
+    const normalCountsKey = useMemo(() => JSON.stringify(normalCounts), [normalCounts])
+    const advCountsKey = useMemo(() => JSON.stringify(advCounts), [advCounts])
     const refreshKeyMemo = useMemo(() => refreshKey, [refreshKey])
 
     useEffect(() => {
@@ -441,7 +453,7 @@ export default function GambaSection({
                 debounceTimerRef.current = null
             }
         }
-    }, [topGridKey, bottomGridKey, advStrategyKey, expressEventKey, refreshKeyMemo, callParser])
+    }, [topGridKey, bottomGridKey, advStrategyKey, expressEventKey, refreshKeyMemo, callParser, useGridInputKey, normalCountsKey, advCountsKey])
 
     // Keep refs updated
     useEffect(() => {

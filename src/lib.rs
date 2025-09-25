@@ -21,8 +21,10 @@ use wasm_bindgen::prelude::*;
 
 #[derive(Deserialize)]
 pub struct Payload {
-    normal_hone_ticks: Vec<Vec<bool>>,
-    adv_hone_ticks: Vec<Vec<bool>>,
+    normal_hone_ticks: Option<Vec<Vec<bool>>>,
+    adv_hone_ticks: Option<Vec<Vec<bool>>>,
+    normal_counts: Option<Vec<Vec<i64>>>,
+    adv_counts: Option<Vec<Vec<i64>>>,
     desired_chance: f64,
     adv_hone_strategy: String,
     budget: Vec<i64>,
@@ -36,15 +38,31 @@ pub struct Payload {
 pub fn chance_to_cost_wrapper(input: JsValue) -> JsValue {
     console_error_panic_hook::set_once();
     let payload: Payload = from_value(input).unwrap();
-    let normal_hone_ticks: Vec<Vec<bool>> = payload.normal_hone_ticks;
-    let adv_hone_ticks: Vec<Vec<bool>> = payload.adv_hone_ticks;
+
+    // Get counts from either direct input or converted from ticks
+    let normal_counts = if let Some(counts) = payload.normal_counts {
+        counts
+    } else if let Some(ticks) = payload.normal_hone_ticks {
+        ticks_to_counts(ticks)
+    } else {
+        panic!("Either normal_counts or normal_hone_ticks must be provided");
+    };
+
+    let adv_counts = if let Some(counts) = payload.adv_counts {
+        counts
+    } else if let Some(ticks) = payload.adv_hone_ticks {
+        ticks_to_counts(ticks)
+    } else {
+        panic!("Either adv_counts or adv_hone_ticks must be provided");
+    };
+
     let desired_chance: f64 = payload.desired_chance;
     let adv_hone_strategy: String = payload.adv_hone_strategy;
     let data_size: usize = payload.data_size.unwrap_or(100000).max(1000);
 
     let out = chance_to_cost(
-        ticks_to_counts(normal_hone_ticks),
-        ticks_to_counts(adv_hone_ticks),
+        normal_counts,
+        adv_counts,
         desired_chance,
         adv_hone_strategy,
         payload.express_event,
@@ -62,17 +80,33 @@ pub fn cost_to_chance_wrapper(input: JsValue) -> JsValue {
     console_error_panic_hook::set_once();
 
     let payload: Payload = from_value(input).unwrap();
-    let normal_hone_ticks: Vec<Vec<bool>> = payload.normal_hone_ticks;
-    let adv_hone_ticks: Vec<Vec<bool>> = payload.adv_hone_ticks;
+
+    // Get counts from either direct input or converted from ticks
+    let normal_counts = if let Some(counts) = payload.normal_counts {
+        counts
+    } else if let Some(ticks) = payload.normal_hone_ticks {
+        ticks_to_counts(ticks)
+    } else {
+        panic!("Either normal_counts or normal_hone_ticks must be provided");
+    };
+
+    let adv_counts = if let Some(counts) = payload.adv_counts {
+        counts
+    } else if let Some(ticks) = payload.adv_hone_ticks {
+        ticks_to_counts(ticks)
+    } else {
+        panic!("Either adv_counts or adv_hone_ticks must be provided");
+    };
+
     let budget: Vec<i64> = payload.budget;
     // console::log_1(&"unwrap complete".into());
     let user_mats_value = payload.user_mats_value.unwrap_or(vec![0.0; 7]);
     // console::log_1(user_mats_value[0].into());
     let data_size: usize = payload.data_size.unwrap_or(100000).max(1000);
     let out = cost_to_chance(
-        &ticks_to_counts(normal_hone_ticks),
+        &normal_counts,
         &budget,
-        &ticks_to_counts(adv_hone_ticks),
+        &adv_counts,
         payload.express_event,
         payload.bucket_count,
         &user_mats_value,
@@ -88,9 +122,22 @@ pub fn parser_wrapper_unified(input: JsValue) -> JsValue {
     console_error_panic_hook::set_once();
     let payload: Payload = from_value(input).unwrap();
 
-    // Convert ticks to counts using the existing helper function
-    let normal_counts = ticks_to_counts(payload.normal_hone_ticks);
-    let adv_counts = ticks_to_counts(payload.adv_hone_ticks);
+    // Get counts from either direct input or converted from ticks
+    let normal_counts = if let Some(counts) = payload.normal_counts {
+        counts
+    } else if let Some(ticks) = payload.normal_hone_ticks {
+        ticks_to_counts(ticks)
+    } else {
+        panic!("Either normal_counts or normal_hone_ticks must be provided");
+    };
+
+    let adv_counts = if let Some(counts) = payload.adv_counts {
+        counts
+    } else if let Some(ticks) = payload.adv_hone_ticks {
+        ticks_to_counts(ticks)
+    } else {
+        panic!("Either adv_counts or adv_hone_ticks must be provided");
+    };
 
     let artisan_rate_arr: Vec<f64>;
     if payload.express_event {
@@ -126,9 +173,22 @@ pub fn average_cost_wrapper(input: JsValue) -> JsValue {
     console_error_panic_hook::set_once();
     let payload: Payload = from_value(input).unwrap();
 
-    // Convert ticks to counts using the existing helper function
-    let normal_counts = ticks_to_counts(payload.normal_hone_ticks);
-    let adv_counts = ticks_to_counts(payload.adv_hone_ticks);
+    // Get counts from either direct input or converted from ticks
+    let normal_counts = if let Some(counts) = payload.normal_counts {
+        counts
+    } else if let Some(ticks) = payload.normal_hone_ticks {
+        ticks_to_counts(ticks)
+    } else {
+        panic!("Either normal_counts or normal_hone_ticks must be provided");
+    };
+
+    let adv_counts = if let Some(counts) = payload.adv_counts {
+        counts
+    } else if let Some(ticks) = payload.adv_hone_ticks {
+        ticks_to_counts(ticks)
+    } else {
+        panic!("Either adv_counts or adv_hone_ticks must be provided");
+    };
 
     let artisan_rate_arr: Vec<f64>;
     if payload.express_event {
