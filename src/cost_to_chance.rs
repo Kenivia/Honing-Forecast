@@ -169,7 +169,15 @@ pub fn cost_to_chance(
     }
     let mut override_special: Vec<i64> = budgets.clone();
     override_special[9] = 0;
-    let user_gave_values: bool = user_forced_mats_value.iter().any(|&x| x != 0.0);
+    let valid_armor_values: bool = user_forced_mats_value.iter().skip(1).any(|&x| x != 0.0)
+        || upgrade_arr.iter().all(|x| x.is_weapon);
+    let valid_weapon_value: bool = user_forced_mats_value
+        .iter()
+        .enumerate()
+        .any(|(index, &x)| x != 0.0 && index != 1)
+        || upgrade_arr.iter().all(|x| !x.is_weapon);
+    let user_gave_valid_values: bool = valid_armor_values && valid_weapon_value;
+
     // let auto_optimize: bool = user_gave_values
     // &&(actual_budgets[9] > 0 || actual_budgets[8] > 0 || actual_budgets[7] > 0);
 
@@ -181,7 +189,7 @@ pub fn cost_to_chance(
         juice_order_weapon,
     ) = {
         // Use original calibration approach
-        let mats_value: Vec<f64> = if user_gave_values {
+        let mats_value: Vec<f64> = if user_gave_valid_values {
             user_forced_mats_value.clone()
         } else {
             let typed_fail_counter_1: Vec<f64> = _cost_to_chance(
@@ -191,7 +199,7 @@ pub fn cost_to_chance(
                 data_size,
                 &vec![0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
                 true,
-                user_gave_values,
+                user_gave_valid_values,
             )
             .1;
             let bottleneck: usize =
@@ -208,10 +216,14 @@ pub fn cost_to_chance(
                 })
                 .collect()
         };
-        dbg!(&mats_value);
+        // dbg!(&mats_value);
         est_juice_value(&mut upgrade_arr, &mats_value);
-        let (armor_strings, weapon_strings) =
-            juice_to_array(&mut upgrade_arr, budgets[8], budgets[7], user_gave_values);
+        let (armor_strings, weapon_strings) = juice_to_array(
+            &mut upgrade_arr,
+            budgets[8],
+            budgets[7],
+            user_gave_valid_values,
+        );
 
         let (success_chance, typed_fail_counter, upgrade_string) = _cost_to_chance(
             &mut upgrade_arr,
@@ -220,7 +232,7 @@ pub fn cost_to_chance(
             data_size,
             &mats_value,
             false,
-            user_gave_values,
+            user_gave_valid_values,
         );
         (
             success_chance,
