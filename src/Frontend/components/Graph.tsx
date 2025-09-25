@@ -148,7 +148,7 @@ function to_step(arr: number[]): number[] {
 function to_step_points(points: Point[]): Point[] {
     const ys = points.map(p => p.y);      // extract y values
     const stepped = to_step(ys);          // reuse our to_step function
-    console.log("stepped", ys, stepped)
+    // console.log("stepped", ys, stepped)
     return points.map((p, i) => ({ x: p.x, y: stepped[i] }));
 }
 
@@ -223,7 +223,7 @@ function Graph({ title, labels, counts, mins, maxs, width = 640, height = 320, b
     }, [effectiveCounts, counts, data_size])
 
     const dataSeries: Point[][] = useMemo(() => {
-        console.log("Effective counts", effectiveCounts)
+        // console.log("Effective counts", effectiveCounts)
         const srcCounts = effectiveCounts ?? counts;
         if (!srcCounts) return [] as Point[][]
         const source = cumulative && cdfSeries ? cdfSeries : (normalizedCounts || srcCounts)

@@ -89,7 +89,7 @@ self.addEventListener("message", async (ev) => {
         result.hist_maxs = out.hist_maxs
     } else if (which_one == "ParserUnified") {
         let out = await ParserWasmUnified(payload)
-        console.log(out)
+        // console.log(out)
         result = {
             upgrades: out[0],
             unlocks: out[1],
