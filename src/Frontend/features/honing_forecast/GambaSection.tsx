@@ -581,8 +581,8 @@ export default function GambaSection({
                     }
                     if (upgrade.use_juice) {
                         const juiceCost = upgrade.adv_juice_cost[advTapCount - upgrade.tap_offset] ?? 0
-                        if (upgrade.is_weapon) next[8] = (next[8] ?? 0) + juiceCost
-                        else next[7] = (next[7] ?? 0) + juiceCost
+                        if (upgrade.is_weapon) next[7] = (next[7] ?? 0) + juiceCost
+                        else next[8] = (next[8] ?? 0) + juiceCost
                     }
                 }
                 finalCostsRef.current = next
@@ -807,12 +807,12 @@ export default function GambaSection({
 
     // Create budget data for SpreadsheetGrid
     const budgetTotalData = INPUT_LABELS.reduce((acc, label, index) => {
-        acc[label] = (finalCosts[index] + (index === 3 ? unlockCosts[0] : index === 6 ? unlockCosts[1] : 0)).toString()
+        acc[label] = (finalCosts[index] + (index === 3 ? unlockCosts[0] : index === 6 ? unlockCosts[1] : 0)).toFixed(0).toString()
         return acc
     }, {} as Record<string, string>)
 
     const budgetRemainingData = INPUT_LABELS.reduce((acc, label, index) => {
-        acc[label] = budgetRemaining[index].toString()
+        acc[label] = budgetRemaining[index].toFixed(0).toString()
         return acc
     }, {} as Record<string, string>)
 
