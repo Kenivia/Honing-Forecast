@@ -63,19 +63,19 @@ fn extract_upgrade_strings(
 }
 
 fn fail_count_to_string(typed_fail_counter: Vec<f64>, data_size: usize) -> Vec<String> {
-    let mut failed_indices: Vec<usize> = (0..typed_fail_counter.len()).collect();
-    failed_indices.sort_by(|&a, &b| typed_fail_counter[b].total_cmp(&typed_fail_counter[a]));
+    let failed_indices: Vec<usize> = (0..typed_fail_counter.len()).collect();
+    // failed_indices.sort_by(|&a, &b| typed_fail_counter[b].total_cmp(&typed_fail_counter[a]));
     let mut this_failed: Vec<String> = Vec::new();
-    let mut displayed: bool = false;
+    // let mut displayed: bool = false;
     let mut spread_str: String;
     let mut spread_num: f64;
     for z in failed_indices {
         spread_num = 1.0 - typed_fail_counter[z] as f64 / data_size as f64;
         spread_str = myformat(spread_num);
-        if spread_num >= 0.001 || !displayed {
-            this_failed.push(spread_str.to_owned() + "% chance to have enough " + LABELS[z]);
-        }
-        displayed = true
+        // if spread_num >= 0.001 || !displayed {
+        this_failed.push(spread_str.to_owned() + "% chance to have enough " + LABELS[z]);
+        // }
+        // displayed = true
     }
     if typed_fail_counter
         .iter()
@@ -233,7 +233,7 @@ pub fn cost_to_chance(
                 &mut upgrade_arr,
                 &override_special,
                 &unlock_costs,
-                data_size,
+                data_size / 5,
                 &vec![0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
                 &vec![0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
                 true,

@@ -79,7 +79,7 @@ export default function CostToChanceSection({
                             <div style={{ marginLeft: 12, color: '#f59e0b', fontSize: 'var(--font-size-sm)', whiteSpace: 'nowrap' }}>
                                 Invalid result!  Missing roughly {Number(chance_result.budgets_red_remaining) < 0 ? (Number(chance_result.budgets_red_remaining) * -1).toString() + ' red juice' : ''}
                                 {(Number(chance_result.budgets_red_remaining) < 0 && Number(chance_result.budgets_blue_remaining) < 0) ? ' and ' : ''}
-                                {Number(chance_result.budgets_blue_remaining) < 0 ? (Number(chance_result.budgets_blue_remaining) * -1).toString() + ' blue juice' : ""} for Advanced Honing, use No Juice option or add more juice
+                                {Number(chance_result.budgets_blue_remaining) < 0 ? (Number(chance_result.budgets_blue_remaining) * -1).toString() + ' blue juice' : ""} for Advanced Honing, use "No Juice" option or add more juice
                             </div>
                         )}
 
