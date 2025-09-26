@@ -151,7 +151,7 @@ export default function ChanceToCostSection({
                                     userSelect: 'none'
                                 }}
                             >
-                                Show Average
+                                Show Average(Maxroll)
                             </label>
                             <input
                                 type="checkbox"
@@ -168,7 +168,7 @@ export default function ChanceToCostSection({
                         </div>
                         {cost_result && (
                             <pre style={{ color: 'var(--text-muted)', fontSize: 'var(--font-size-xs)', marginTop: 8 }}>
-                                Run time: {cost_result.run_time}s{'\n'}{cost_result.hundred_chances[parseInt(desired_chance)]}
+                                Run time: {cost_result.run_time}s{'\nActual chance: '}{cost_result.hundred_chances[parseInt(desired_chance)].toFixed(2)}%
                             </pre>
                         )}
                     </div>

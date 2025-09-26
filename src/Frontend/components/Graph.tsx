@@ -319,6 +319,10 @@ function Graph({ title, labels, counts, mins, maxs, width = 640, height = 320, b
         const p = localPoint(ev)
         const innerW = Math.max(1, width - plotLeft - plotRight)
         const innerH = height - plotTop - plotBottom
+        // console.log(p.y)
+        // if (p.y < plotTop) { handleMouseLeave(); return }
+
+
         const x = Math.min(Math.max((p?.x ?? 0) - plotLeft, 0), innerW)
         const bucket = Math.min(bucketLen - 1, Math.round((x / innerW) * (bucketLen)))
         // choose series with closest y to cursor vertically if possible; otherwise pick the highest y
@@ -445,7 +449,7 @@ function Graph({ title, labels, counts, mins, maxs, width = 640, height = 320, b
     }, [fallbackSeries, hoverBucket, effectiveCounts, counts, visible, keepMask, cumulative, cdfSeries, normalizedCounts, bucketLen, width, height, yMax]);
 
     return (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: 16, borderRadius: 16, backgroundColor: 'var(--bg-tertiary)' }} onMouseMove={handleMouseMove} onMouseLeave={handleMouseLeave}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: 16, borderRadius: 16, backgroundColor: 'var(--bg-tertiary)' }}>
             {title ? (
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                     <div style={{ color: 'var(--text-primary)', fontSize: "var(--font-size-lg)", fontWeight: 600 }}>{title}</div>
@@ -475,7 +479,7 @@ function Graph({ title, labels, counts, mins, maxs, width = 640, height = 320, b
                     ) : null}
                 </div>
             ) : null}
-            <div ref={chartRef}>
+            <div ref={chartRef} onMouseMove={handleMouseMove} onMouseLeave={handleMouseLeave}>
                 <XYChart
                     height={height}
                     width={width}
