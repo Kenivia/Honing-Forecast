@@ -67,15 +67,17 @@
 
     /* Additional Colors */
     --bright-green: #acfffeff;
+    /* color of average cost, this used to be bright green... */
+
     --bright-green-glow: rgba(0, 255, 0, 0.507);
     --selected-blue: #2196f3;
 
     /* Slider Colors */
     --slider-track-bg: #cccccc;
-    --slider-track-active: #5be6ff;
-    --slider-thumb-bg: #5be6ff;
-    --slider-thumb-hover: #5be6ff;
-    --slider-thumb-focus: #5be6ff;
+    --slider-track-active: rgb(172, 255, 254);
+    --slider-thumb-bg: rgb(172, 255, 254);
+    --slider-thumb-hover: rgb(172, 255, 254);
+    --slider-thumb-focus: rgb(172, 255, 254);
     --slider-thumb-shadow: rgba(91, 230, 255, 0.3);
 
 }
