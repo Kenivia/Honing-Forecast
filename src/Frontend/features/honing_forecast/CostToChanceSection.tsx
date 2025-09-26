@@ -57,6 +57,11 @@ export default function CostToChanceSection({
                         </div>
 
                         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+
+                            <label htmlFor="auto-optimization" style={{ color: 'var(--text-primary)', fontSize: 'var(--font-size-sm)', whiteSpace: 'nowrap' }}>
+                                Guesstimate Juice & Special values<br />
+
+                            </label>
                             <input
                                 type="checkbox"
                                 id="auto-optimization"
@@ -64,10 +69,6 @@ export default function CostToChanceSection({
                                 onChange={(e) => setAutoOptimization(e.target.checked)}
                                 style={{ accentColor: 'var(--control-checked-bg)' }}
                             />
-                            <label htmlFor="auto-optimization" style={{ color: 'var(--text-primary)', fontSize: 'var(--font-size-sm)', whiteSpace: 'nowrap' }}>
-                                Guesstimate Juice & Special values<br />
-
-                            </label>
                         </div>
 
                         <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8 }}>
@@ -86,7 +87,7 @@ export default function CostToChanceSection({
                         {chance_result && (
                             <div style={{ marginTop: 4, color: 'var(--text-muted)', fontSize: 'var(--font-size-xs)' }}>Run time: {chance_result.run_time}s</div>
                         )}
-                        {(chance_result && (chance_result.upgrade_strings?.length > 0 || chance_result.juice_strings_armor?.length > 0 || chance_result.juice_strings_weapon?.length > 0)) && (
+                        {(chance_result) && (//&& (chance_result.reasons?.length > 0 || chance_result.upgrade_strings?.length > 0 || chance_result.juice_strings_armor?.length > 0 || chance_result.juice_strings_weapon?.length > 0)) && (
                             <div style={{ display: 'flex', gap: 0, alignItems: 'flex-start', marginTop: 8 }}>
                                 <div>
                                     <div style={{ ...styles.inputLabelCell, marginTop: 0, whiteSpace: 'nowrap', textAlign: "left", }}>Individual chances:</div>

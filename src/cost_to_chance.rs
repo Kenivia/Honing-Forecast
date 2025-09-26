@@ -140,7 +140,7 @@ pub fn cost_to_chance(
     // Use original calibration approach
 
     if !both_valid {
-        mats_value = vec![1.2, 0.1, 13.0, 0.3, 90.0, 1.0, 0.0];
+        mats_value = vec![0.6, 0.1, 13.0, 0.2, 90.0, 1.0, 0.0];
         // valid_weapon_values = vec![1.2, 0.1, 13.0, 0.3, 90.0, 1.0, 0.0];
 
         // let mut prelim_cost_data_arr: Vec<Vec<Vec<i64>>> = Vec::new();
@@ -180,10 +180,10 @@ pub fn cost_to_chance(
     );
     let value_per_special_leap: Vec<f64> = est_special_honing_value(&mut upgrade_arr, &mats_value);
     // if both_valid {
-        let mut special_indices: Vec<usize> = (0..value_per_special_leap.len()).collect();
-        special_indices
-            .sort_by(|&a, &b| value_per_special_leap[b].total_cmp(&value_per_special_leap[a]));
-        sort_by_indices(&mut upgrade_arr, special_indices.clone());
+    let mut special_indices: Vec<usize> = (0..value_per_special_leap.len()).collect();
+    special_indices
+        .sort_by(|&a, &b| value_per_special_leap[b].total_cmp(&value_per_special_leap[a]));
+    sort_by_indices(&mut upgrade_arr, special_indices.clone());
     // } else {
     //     let upgrade_len: i64 = upgrade_arr.len() as i64;
     //     upgrade_arr.sort_by(|a, b| {

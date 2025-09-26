@@ -136,7 +136,7 @@ export function createFillDemo({
         )
         setBottomGrid(Array.from({ length: BOTTOM_ROWS }, (_, piece) => Array.from({ length: BOTTOM_COLS }, (_, ind) => ind == 3 && piece < 3)))
         set_budget_inputs({
-            Red: "831777",
+            Red: "631777",
             Blue: "1064398",
             Leaps: "33748",
             Shards: "12010948",

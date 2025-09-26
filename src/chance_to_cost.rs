@@ -189,7 +189,14 @@ pub fn chance_to_cost(
     }
 
     budget_data.push(top_bottom[1].clone());
+    if adv_hone_strategy == "Juice on grace" {
+        let (avg_red_juice, avg_blue_juice) = average_juice_cost(&upgrade_arr);
 
+        for i in 0..(budget_size + 1) {
+            budget_data[i][7] = avg_red_juice;
+            budget_data[i][8] = avg_blue_juice;
+        }
+    }
     let failure_counts: Vec<i64> = count_failure(&cost_data, &budget_data, true);
 
     let (hundred_budgets, hundred_chances): (Vec<Vec<i64>>, Vec<f64>) = (0..101)
