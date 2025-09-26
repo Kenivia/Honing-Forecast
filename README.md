@@ -1,4 +1,4 @@
-# Honing Forecast
+# About
 
 Honing Forecast is a calculator that tells you how much a set of upgrades will cost and your likelihood of success.
 
@@ -8,25 +8,18 @@ Honing Forecast is a calculator that tells you how much a set of upgrades will c
 
 ### Chance mode
 
-- Estimates how much you need to have x% chance of success
+- If I want to have x% chance of success, how much mats should I prep?
 
 ### Budget mode
 
-- Estimates your chance of success within a given budget
-- Estimates how to best use your free taps and juices and how much they are worth to you
-- Estimates how likely you are to run out of each mat
+- If I have this much mats, what are my odds of success?
+- How should I use my Juice & free taps? How much are they worth?
+- What are my bottlenecks?
 
-### Gamba simulator
+### Bonus: Gamba simulator
 
 - A more hands-on feel of your prospects
 
-## Work in Progress
+## Feedback
 
-- Book support
-- Variance calculation & confidence interval for budget mode
-- Incorporate roster income tracking
-
-### UI
-
-- ctrl z support, fix backspace & delete
-- In-line arithmetic calculation for when putting in boxes e.g. input 25*1000 and get 25000
+Found a bug, spotted an error or got a suggestion? Contact me @kenivia on Discord! Feedback is greatly appreciated.

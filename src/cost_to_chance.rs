@@ -1,12 +1,10 @@
 use crate::chance_to_cost::average_juice_cost;
 use crate::constants::*;
-use crate::helpers::{calc_unlock, compress_runs, count_failure, myformat, sort_by_indices};
+use crate::helpers::{calc_unlock, compress_runs, myformat, sort_by_indices};
 use crate::histogram::histograms_for_all_costs;
 use crate::monte_carlo::monte_carlo_data;
 use crate::parser::{Upgrade, parser};
-use crate::value_estimation::{
-    average_tap, est_juice_value, est_special_honing_value, juice_to_array,
-};
+use crate::value_estimation::{est_juice_value, est_special_honing_value, juice_to_array};
 use serde::Serialize;
 
 #[derive(Serialize, Debug)]
