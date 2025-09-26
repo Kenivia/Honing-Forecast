@@ -1,10 +1,11 @@
 use crate::constants::*;
-use crate::helpers::calc_unlock;
+use crate::helpers::{calc_unlock, count_failure};
 use crate::histogram::{histograms_for_all_costs, transpose_vec_of_vecs};
 use crate::monte_carlo::monte_carlo_data;
 use crate::parser::{Upgrade, parser};
 use crate::value_estimation::average_tap;
 
+use serde::Serialize;
 // use web_sys::console;
 // use crate::{constants::*, cost_to_chance};
 
@@ -31,72 +32,6 @@ fn find_best_budget_for_this_chance(
     (best_budget, best_chance)
 }
 
-/// Given two non-increasing vectors `a` and `b` (both `&Vec<i64>`),
-/// for each element a[i] find an index j into `b` such that
-/// b[j] is the closest-in-value element to a[i].
-///
-/// Tie-breaker:
-///  - if two b-values are equally close in value, choose the j with smaller |j - i|.
-///  - if still tied, choose the smaller j.
-///
-/// Returns a Vec<usize> of length a.len() with the chosen indices into `b`.
-/// Given two non-increasing vectors `a` and `b` (both `&Vec<i64>`),
-/// for each element a[i] find an index j into `b` such that
-/// b[j] is the closest-in-value element to a[i].
-///
-/// Tie-breaker:
-///  - if two b-values are equally close in value, choose the j with smaller |j - i|.
-///  - if still tied, choose the smaller j.
-///
-/// Returns a Vec<usize> of length a.len() with the chosen indices into `b`.
-pub fn argmin_indices_closest(a: &Vec<i64>, b: &Vec<i64>) -> Vec<usize> {
-    let n = a.len();
-    let m = b.len();
-    let mut out = Vec::with_capacity(n);
-
-    if m == 0 {
-        panic!("vec_2 (b) must not be empty");
-    }
-
-    for (i, &val) in a.iter().enumerate() {
-        // Find all indices with minimum value distance
-        let mut best_indices = Vec::new();
-        let mut min_val_diff = i64::MAX;
-
-        for (j, &b_val) in b.iter().enumerate() {
-            let val_diff = (b_val - val).abs();
-            if val_diff < min_val_diff {
-                min_val_diff = val_diff;
-                best_indices.clear();
-                best_indices.push(j);
-            } else if val_diff == min_val_diff {
-                best_indices.push(j);
-            }
-        }
-
-        // Among indices with minimum value distance, choose the one with minimum index distance to i
-        let mut best = best_indices[0];
-        let mut min_idx_diff = if best > i { best - i } else { i - best };
-
-        for &idx in &best_indices[1..] {
-            let idx_diff = if idx > i { idx - i } else { i - idx };
-            if idx_diff < min_idx_diff {
-                best = idx;
-                min_idx_diff = idx_diff;
-            } else if idx_diff == min_idx_diff {
-                // Final tie-breaker: choose smaller index
-                if idx < best {
-                    best = idx;
-                }
-            }
-        }
-
-        out.push(best);
-    }
-
-    out
-}
-
 /// Calculate the total cost for each of the 7 main cost types across all upgrades.
 /// Returns a vector of length 7 containing the total cost for each cost type.\
 pub fn average_cost(upgrades: &Vec<Upgrade>) -> Vec<f64> {
@@ -112,92 +47,46 @@ pub fn average_cost(upgrades: &Vec<Upgrade>) -> Vec<f64> {
     total_costs
 }
 
-fn count_failure_naive(cost_data: &Vec<Vec<i64>>, budget_data: &Vec<Vec<i64>>) -> Vec<i64> {
-    let mut count: Vec<i64> = vec![0; budget_data.len()];
-    for cost in cost_data.iter() {
-        for (i, budget) in budget_data.iter().enumerate() {
-            if !cost_passes_budget(cost, budget)
-            // no silver comparison
-            {
-                count[i] += 1;
-            }
-        }
-    }
-    count
-}
+/// Calculate the average juice cost across all upgrades.
+/// Returns a tuple (red_juice_cost, blue_juice_cost) representing the average cost per upgrade.
+/// Values are rounded to the nearest integer.
+pub fn average_juice_cost(upgrades: &Vec<Upgrade>) -> (i64, i64) {
+    let mut total_red_cost = 0.0;
+    let mut total_blue_cost = 0.0;
+    let mut red_count: i64 = 0;
+    let mut blue_count: i64 = 0;
 
-#[inline]
-fn cost_passes_budget(cost: &[i64], budget: &[i64]) -> bool {
-    cost[0] <= budget[0]
-        && cost[1] <= budget[1]
-        && cost[2] <= budget[2]
-        && cost[3] <= budget[3]
-        && cost[4] <= budget[4]
-        && cost[5] <= budget[5]
-        && cost[6] <= budget[6]
-}
-
-/// Count, for each budget, how many costs fail it.
-/// `cost_data` is a slice of N cost vectors; `budget_data` is a slice of M budget vectors
-/// that are sorted element-wise ascending. Returns a Vec<i64> length M.
-fn count_failure_ascending(cost_data: &Vec<Vec<i64>>, budget_data: &Vec<Vec<i64>>) -> Vec<i64> {
-    let n: usize = cost_data.len();
-    let m: usize = budget_data.len();
-    if n == 0 || m == 0 {
-        return vec![0i64; m];
-    }
-
-    // Difference array approach (length m+1 to mark ranges)
-    let mut diffs: Vec<i64> = vec![0i64; m + 1];
-
-    for cost in cost_data.iter() {
-        let cs: &[i64] = cost.as_slice();
-
-        // Binary search for the first budget index that the cost *passes*.
-        // If none pass, first_pass_index stays m (meaning it fails all budgets).
-        let mut low: usize = 0;
-        let mut high: usize = (m as usize) - 1;
-        let mut first_pass_index: usize = m;
-
-        while low <= high {
-            let mid: usize = ((low + high) >> 1) as usize;
-
-            if cost_passes_budget(cs, budget_data[mid].as_slice()) || mid == 0 {
-                first_pass_index = mid;
-                if mid == 0 {
-                    break;
-                }
-                high = mid - 1;
-            } else {
-                low = mid + 1;
-            }
+    for upgrade in upgrades {
+        if upgrade.is_normal_honing {
+            continue;
         }
 
-        // If first_pass_index > 0 then this cost fails budgets [0 .. first_pass_index-1].
-        if first_pass_index > 0 {
-            diffs[0] += 1;
-            diffs[first_pass_index] -= 1;
+        // Use the proper juice cost calculation from get_adv_data_juice
+        let avg_juice_cost =
+            get_adv_data_juice(upgrade.upgrade_plus_num as i64) * upgrade.one_juice_cost as f64;
+
+        if upgrade.is_weapon {
+            total_red_cost += avg_juice_cost;
+            red_count += 1;
+        } else {
+            total_blue_cost += avg_juice_cost;
+            blue_count += 1;
         }
     }
 
-    // Build prefix-sum to obtain counts per budget index.
-    let mut counts: Vec<i64> = vec![0i64; m];
-    counts[0] = diffs[0];
-    for i in 1..m {
-        counts[i] = counts[i - 1] + diffs[i];
-    }
-
-    counts
+    (
+        if red_count > 0 {
+            total_red_cost.round() as i64
+        } else {
+            0
+        },
+        if blue_count > 0 {
+            total_blue_cost.round() as i64
+        } else {
+            0
+        },
+    )
 }
-
-fn count_failure(cost_data: &Vec<Vec<i64>>, budget_data: &Vec<Vec<i64>>, asc: bool) -> Vec<i64> {
-    if asc {
-        return count_failure_ascending(cost_data, budget_data);
-    } else {
-        return count_failure_naive(cost_data, budget_data);
-    }
-}
-use serde::Serialize;
 
 #[derive(Serialize)]
 pub struct ChanceToCostOut {
@@ -299,23 +188,9 @@ pub fn chance_to_cost(
         }
     }
 
-    let budget_data_for_juice: Vec<Vec<i64>> = monte_carlo_data(
-        budget_size,
-        &upgrade_arr,
-        &calc_unlock(&hone_counts, &adv_counts, express_event),
-        0,
-        true, // rigged
-        true, //use_true_rng
-    );
     budget_data.push(top_bottom[1].clone());
-    let failure_counts_1: Vec<i64> = count_failure(&cost_data, &budget_data, true);
-    let failure_counts_2: Vec<i64> = count_failure(&cost_data, &budget_data_for_juice, true);
-    let closest_indices: Vec<usize> = argmin_indices_closest(&failure_counts_1, &failure_counts_2);
 
-    for i in 0..budget_size {
-        budget_data[i][7] = budget_data_for_juice[closest_indices[i]][7];
-        budget_data[i][8] = budget_data_for_juice[closest_indices[i]][8];
-    }
+    let failure_counts: Vec<i64> = count_failure(&cost_data, &budget_data, true);
 
     let (hundred_budgets, hundred_chances): (Vec<Vec<i64>>, Vec<f64>) = (0..101)
         .into_iter()
@@ -324,7 +199,7 @@ pub fn chance_to_cost(
                 x as f64,
                 data_size,
                 budget_size,
-                &failure_counts_1,
+                &failure_counts,
                 &budget_data,
             )
         })
@@ -381,84 +256,4 @@ mod tests {
         }
         println!("Total costs: {:?}", total_costs);
     }
-    #[test]
-    fn boundaries() {
-        let a = vec![200, 10];
-        let b = vec![100, 50, 0];
-        // For 200: all b < 200 -> closest is b[0]
-        // For 10: candidates 50 (idx1) and 0 (idx2): 0 is closer (10 vs 0 diff10, vs 40)
-        let res = argmin_indices_closest(&a, &b);
-        assert_eq!(res, vec![0usize, 2usize]);
-    }
-    #[test]
-    fn basic_examples() {
-        let a = vec![95, 85, 70];
-        let b = vec![100, 90, 90, 80, 60];
-        // For a[0]=95 closest in b is 100 (idx0) vs 90 (idx1): 100 is closer.
-        // For a[1]=85 two candidates 90 (idx1 or idx2) and 80 (idx3). 90 and 80 both dist 5 -> choose
-        // the 90 with index closer to i=1 (idx1 is distance 0, idx2 distance 1) -> idx1.
-        // For a[2]=70 both 80 (idx3) and 60 (idx4) have distance 10. Choose idx3 (distance |3-2|=1) over idx4 (distance |4-2|=2).
-        let res = argmin_indices_closest(&a, &b);
-        assert_eq!(res, vec![0usize, 1usize, 3usize]);
-    }
-
-    #[test]
-    fn equal_values_choose_nearest_index() {
-        let a = vec![90];
-        let b = vec![100, 90, 90, 90, 80];
-        // exact matches at indices 1..3. a index i=0, nearest index among 1..3 is 1.
-        let res = argmin_indices_closest(&a, &b);
-        assert_eq!(res, vec![1usize]);
-    }
-
-    // #[test]
-    // fn chance_to_cost_18_demo() {
-    //     let hone_counts = vec![
-    //         (0..25)
-    //             .map(|i| if i == 19 || i == 20 || i == 21 { 5 } else { 0 })
-    //             .collect(),
-    //         (0..25)
-    //             .map(|i| if i == 19 || i == 20 || i == 21 { 1 } else { 0 })
-    //             .collect(),
-    //     ];
-    //     let adv_counts = vec![
-    //         (0..4).map(|i| if i == 2 { 5 } else { 0 }).collect(),
-    //         (0..4).map(|i| if i == 2 { 1 } else { 0 }).collect(),
-    //     ];
-    //     let out = chance_to_cost(
-    //         hone_counts,
-    //         adv_counts,
-    //         69.0,
-    //         "No juice".to_owned(),
-    //         false,
-    //         1000,
-    //         100000,
-    //     );
-    //     println!("best_budget = {:?}", out.best_budget);
-    //     println!("best_chance = {:?}", out.best_chance);
-    //     println!("hist_mins = {:?}", out.hist_mins);
-    //     println!("hist_maxs = {:?}", out.hist_maxs);
-    // }
-
-    // #[test]
-    // fn chance_to_cost_53_adv_armor_40() {
-    //     let hone_counts = vec![(0..25).map(|_| 0).collect(), (0..25).map(|_| 0).collect()];
-    //     let adv_counts = vec![
-    //         (0..4).map(|x| if x == 3 { 5 } else { 0 }).collect(),
-    //         (0..4).map(|x| if x == 3 { 1 } else { 0 }).collect(),
-    //     ];
-    //     let out = chance_to_cost(
-    //         hone_counts,
-    //         adv_counts,
-    //         53.0,
-    //         "No juice".to_owned(),
-    //         false,
-    //         1000,
-    //         100000,
-    //     );
-    //     println!("best_budget = {:?}", out.best_budget);
-    //     println!("best_chance = {:?}", out.best_chance);
-    //     println!("hist_mins = {:?}", out.hist_mins);
-    //     println!("hist_maxs = {:?}", out.hist_maxs);
-    // }
 }

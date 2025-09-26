@@ -4,6 +4,29 @@ use serde::{Deserialize, Serialize};
 // Usage: let alias = VoseAlias::new(elements_vec, probs_vec); alias.sample() or alias.sample_with(&mut rng);
 use rand::Rng;
 
+#[derive(Debug, Serialize, Deserialize)]
+pub struct Upgrade {
+    pub is_normal_honing: bool,
+    pub prob_dist: Vec<f64>,
+    pub original_prob_dist: Vec<f64>,
+    pub base_chance: f64,
+    pub costs: [i64; 7],
+    pub one_juice_cost: i64,
+    pub adv_juice_cost: Vec<f64>,
+    pub special_cost: i64,
+    pub values: Vec<f64>,
+    pub prob_dist_len: usize,
+    pub is_weapon: bool,
+    pub artisan_rate: f64,
+    pub tap_offset: i64,
+    pub upgrade_plus_num: usize,
+    pub special_value: f64,
+    // pub failure_raw_delta: i64,
+    // pub failure_delta_order: i64,
+    #[serde(skip)]
+    pub alias_table: Option<VoseAlias<usize>>, // precomputed alias (skipped by serde)
+}
+
 /// Simple Vose (alias) table implementation that stores the provided `elements`
 /// and a constant-time sampler. `T` must be `Copy`.
 #[derive(Debug, Clone)]
@@ -126,28 +149,6 @@ impl<T: Copy> VoseAlias<T> {
     // }
 }
 
-#[derive(Debug, Serialize, Deserialize)]
-pub struct Upgrade {
-    pub is_normal_honing: bool,
-    pub prob_dist: Vec<f64>,
-    pub original_prob_dist: Vec<f64>,
-    pub base_chance: f64,
-    pub costs: [i64; 7],
-    pub one_juice_cost: i64,
-    pub adv_juice_cost: Vec<f64>,
-    pub special_cost: i64,
-    pub values: Vec<f64>,
-    pub prob_dist_len: usize,
-    pub is_weapon: bool,
-    pub artisan_rate: f64,
-    pub tap_offset: i64,
-    pub upgrade_plus_num: usize,
-    pub special_value: f64,
-
-    #[serde(skip)]
-    pub alias_table: Option<VoseAlias<usize>>, // precomputed alias (skipped by serde)
-}
-
 impl Upgrade {
     // Build an alias table from prob (f64 slice). Normalizes and falls back to uniform if sum <= 0.
     fn build_alias_table_from_prob(prob: &[f64]) -> Option<VoseAlias<usize>> {
@@ -196,6 +197,8 @@ impl Upgrade {
             upgrade_plus_num,
             special_value: -1.0_f64,
             alias_table,
+            // failure_raw_delta: -1,
+            // failure_delta_order: -1,
         }
     }
 
@@ -230,6 +233,8 @@ impl Upgrade {
             upgrade_plus_num,
             special_value: -1.0_f64,
             alias_table,
+            // failure_raw_delta: -1,
+            // failure_delta_order: -1,
         }
     }
 }
@@ -261,14 +266,15 @@ pub fn probability_distribution(
         let mut current_chance: f64 = base + (min_count * base) / 10.0 + extra;
 
         if artisan >= 1.0 {
-            if extra_num == 0 {
-                current_chance = 1.0;
-                raw_chances.push(current_chance);
-                break;
-            } else {
-                return vec![];
-            }
+            // if extra_num == 0 {
+            current_chance = 1.0;
+            raw_chances.push(current_chance);
+            break;
         }
+        //     } else {
+        //         return vec![]; // special cased to return empty if going beyond pity
+        //     }
+        // }
         raw_chances.push(current_chance);
         count += 1;
         artisan += (46.51_f64 / 100.0) * current_chance * artisan_rate;

@@ -2,56 +2,92 @@ use crate::constants::{
     get_event_modified_adv_unlock_cost, get_event_modified_armor_unlock_cost,
     get_event_modified_weapon_unlock_cost,
 };
-use std::cmp::Ordering;
-fn cmp_f64_ignore_nan(a: f64, b: f64) -> Ordering {
-    match (a.is_nan(), b.is_nan()) {
-        (true, true) => Ordering::Equal,
-        (true, false) => Ordering::Less,
-        (false, true) => Ordering::Greater,
-        (false, false) => {
-            // Normalize zeros so +0.0 == -0.0
-            if a == 0.0 && b == 0.0 {
-                Ordering::Equal
-            } else {
-                a.total_cmp(&b) // deterministic, total ordering
-            }
-        }
-    }
+
+#[inline]
+fn cost_passes_budget(cost: &[i64], budget: &[i64]) -> bool {
+    cost[0] <= budget[0]
+        && cost[1] <= budget[1]
+        && cost[2] <= budget[2]
+        && cost[3] <= budget[3]
+        && cost[4] <= budget[4]
+        && cost[5] <= budget[5]
+        && cost[6] <= budget[6]
 }
-pub fn argmax_with_priority(scores: &Vec<f64>, tie_priority: &[usize]) -> Option<usize> {
-    let n = scores.len();
-    if n == 0 {
-        return None;
-    }
 
-    // Build priority_rank[index] = rank (lower = higher priority).
-    // If some indices are missing from tie_priority, they get lower priority after the listed ones.
-    let mut priority_rank = vec![usize::MAX; n];
-    for (rank, &idx) in tie_priority.iter().enumerate() {
-        if idx < n && priority_rank[idx] == usize::MAX {
-            priority_rank[idx] = rank;
-        }
-    }
-    for i in 0..n {
-        if priority_rank[i] == usize::MAX {
-            priority_rank[i] = tie_priority.len() + i;
-        }
-    }
-
-    // Single pass to pick the best index
-    let mut best = 0usize;
-    for i in 1..n {
-        match cmp_f64_ignore_nan(scores[i], scores[best]) {
-            Ordering::Greater => best = i,
-            Ordering::Equal => {
-                if priority_rank[i] < priority_rank[best] {
-                    best = i;
-                }
+fn count_failure_naive(cost_data: &Vec<Vec<i64>>, budget_data: &Vec<Vec<i64>>) -> Vec<i64> {
+    let mut count: Vec<i64> = vec![0; budget_data.len()];
+    for cost in cost_data.iter() {
+        for (i, budget) in budget_data.iter().enumerate() {
+            if !cost_passes_budget(cost, budget) {
+                count[i] += 1;
             }
-            Ordering::Less => {}
         }
     }
-    Some(best)
+    count
+}
+/// Count, for each budget, how many costs fail it.
+/// `cost_data` is a slice of N cost vectors; `budget_data` is a slice of M budget vectors
+/// that are sorted element-wise ascending. Returns a Vec<i64> length M.
+fn count_failure_ascending(cost_data: &Vec<Vec<i64>>, budget_data: &Vec<Vec<i64>>) -> Vec<i64> {
+    let n: usize = cost_data.len();
+    let m: usize = budget_data.len();
+    if n == 0 || m == 0 {
+        return vec![0i64; m];
+    }
+
+    // Difference array approach (length m+1 to mark ranges)
+    let mut diffs: Vec<i64> = vec![0i64; m + 1];
+
+    for cost in cost_data.iter() {
+        let cs: &[i64] = cost.as_slice();
+
+        // Binary search for the first budget index that the cost *passes*.
+        // If none pass, first_pass_index stays m (meaning it fails all budgets).
+        let mut low: usize = 0;
+        let mut high: usize = (m as usize) - 1;
+        let mut first_pass_index: usize = m;
+
+        while low <= high {
+            let mid: usize = ((low + high) >> 1) as usize;
+
+            if cost_passes_budget(cs, budget_data[mid].as_slice()) || mid == 0 {
+                first_pass_index = mid;
+                if mid == 0 {
+                    break;
+                }
+                high = mid - 1;
+            } else {
+                low = mid + 1;
+            }
+        }
+
+        // If first_pass_index > 0 then this cost fails budgets [0 .. first_pass_index-1].
+        if first_pass_index > 0 {
+            diffs[0] += 1;
+            diffs[first_pass_index] -= 1;
+        }
+    }
+
+    // Build prefix-sum to obtain counts per budget index.
+    let mut counts: Vec<i64> = vec![0i64; m];
+    counts[0] = diffs[0];
+    for i in 1..m {
+        counts[i] = counts[i - 1] + diffs[i];
+    }
+
+    counts
+}
+
+pub fn count_failure(
+    cost_data: &Vec<Vec<i64>>,
+    budget_data: &Vec<Vec<i64>>,
+    asc: bool,
+) -> Vec<i64> {
+    if asc {
+        return count_failure_ascending(cost_data, budget_data);
+    } else {
+        return count_failure_naive(cost_data, budget_data);
+    }
 }
 
 pub fn sort_by_indices<T>(upgrade_arr: &mut Vec<T>, mut indices: Vec<usize>) {
@@ -192,7 +228,7 @@ pub fn compress_runs(strings: Vec<String>, no_x: bool) -> Vec<String> {
                 if no_x {
                     out.push(format!("{}", prev));
                 } else {
-                    out.push(format!("{} x{} times", prev, count));
+                    out.push(format!("{} ({} such pieces)", prev, count));
                 }
             } else {
                 out.push(prev.to_string());
@@ -201,8 +237,8 @@ pub fn compress_runs(strings: Vec<String>, no_x: bool) -> Vec<String> {
             count = 1;
         }
     }
-    if count > 1 {
-        out.push(format!("{} x{} times", prev, count));
+    if count > 1 && !no_x {
+        out.push(format!("{} ({} such pieces)", prev, count));
     } else {
         out.push(prev.to_string());
     }

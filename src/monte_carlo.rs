@@ -147,13 +147,13 @@ pub fn monte_carlo_data(
                         if special_budgets[trial] <= 0 {
                             continue;
                         }
-                        let k = sample_truncated_geometric(upgrade.base_chance, limit, &mut rng);
-                        // original code used (index + 1) * special_cost when using WalkerTable
+                        let k: usize =
+                            sample_truncated_geometric(upgrade.base_chance, limit, &mut rng);
                         let rolled_special_cost = (k as i64 + 1) * upgrade.special_cost;
                         special_budgets[trial] -= rolled_special_cost;
                         if special_budgets[trial] > 0 {
                             special_pass_arr[trial] += 1;
-                            debug_assert!(special_pass_arr[trial] == upgrade_index + 1);
+                            debug_assert!(special_pass_arr[trial] == upgrade_index + 1); // this breaks when there's an advanced honing upgrade sorted before normal honing upgrade in upgrade_arr
                         }
                     }
                 }

@@ -73,8 +73,8 @@ self.addEventListener("message", async (ev) => {
             hist_mins: out.hist_mins,
             hist_maxs: out.hist_maxs,
             upgrade_strings: out.upgrade_strings || [],
-            juice_order_armor: out.juice_order_armor || [],
-            juice_order_weapon: out.juice_order_weapon || [],
+            juice_strings_armor: out.juice_strings_armor || [],
+            juice_strings_weapon: out.juice_strings_weapon || [],
             budgets_red_remaining: out.budgets_red_remaining,
             budgets_blue_remaining: out.budgets_blue_remaining,
         }

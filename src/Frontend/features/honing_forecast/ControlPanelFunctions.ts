@@ -129,17 +129,21 @@ export function createFillDemo({
     set_prev_checked_arr: React.Dispatch<React.SetStateAction<boolean[]>>
 }) {
     return () => {
-        setTopGrid(Array.from({ length: TOP_ROWS }, () => Array.from({ length: TOP_COLS }, (_, ind) => ind == 19 || ind == 20 || ind == 21)))
+        setTopGrid(
+            Array.from({ length: TOP_ROWS }, (_, row_id) =>
+                Array.from({ length: TOP_COLS }, (_, ind) => ind == 19 || ind == 20 || ind == 21 || (ind > 21 && row_id == 5))
+            )
+        )
         setBottomGrid(Array.from({ length: BOTTOM_ROWS }, (_, piece) => Array.from({ length: BOTTOM_COLS }, (_, ind) => ind == 3 && piece < 3)))
         set_budget_inputs({
-            Red: "431777",
+            Red: "831777",
             Blue: "1064398",
-            Leaps: "23748",
-            Shards: "9010948",
-            Oreha: "15125",
-            Gold: "1803792",
+            Leaps: "33748",
+            Shards: "12010948",
+            Oreha: "25125",
+            Gold: "3803792",
             Silver: "999999999",
-            "Red juice": "420",
+            "Red juice": "1420",
             "Blue juice": "690",
             "Special leaps": "6767",
         })

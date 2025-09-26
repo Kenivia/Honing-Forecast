@@ -65,8 +65,8 @@ export default function CostToChanceSection({
                                 style={{ accentColor: 'var(--control-checked-bg)' }}
                             />
                             <label htmlFor="auto-optimization" style={{ color: 'var(--text-primary)', fontSize: 'var(--font-size-sm)', whiteSpace: 'nowrap' }}>
-                                Automatic Juice and Special leap<br />
-                                optimization(Normal honing only)
+                                Guesstimate Juice & Special values<br />
+
                             </label>
                         </div>
 
@@ -86,7 +86,7 @@ export default function CostToChanceSection({
                         {chance_result && (
                             <div style={{ marginTop: 4, color: 'var(--text-muted)', fontSize: 'var(--font-size-xs)' }}>Run time: {chance_result.run_time}s</div>
                         )}
-                        {(chance_result && (chance_result.upgrade_strings?.length > 0 || chance_result.juice_order_armor?.length > 0 || chance_result.juice_order_weapon?.length > 0)) && (
+                        {(chance_result && (chance_result.upgrade_strings?.length > 0 || chance_result.juice_strings_armor?.length > 0 || chance_result.juice_strings_weapon?.length > 0)) && (
                             <div style={{ display: 'flex', gap: 0, alignItems: 'flex-start', marginTop: 8 }}>
                                 <div>
                                     <div style={{ ...styles.inputLabelCell, marginTop: 0, whiteSpace: 'nowrap', textAlign: "left", }}>Individual chances:</div>
@@ -109,16 +109,16 @@ export default function CostToChanceSection({
                                 </div>
                                 <div>
                                     <div style={{ ...styles.inputLabelCell, whiteSpace: 'nowrap' }}>Red juice (weapon):</div>
-                                    <div style={{ marginTop: 4, color: 'var(--text-muted)', fontSize: 'var(--font-size-sm)', width: 220 }}>
-                                        {(chance_result.juice_order_weapon || []).map((s: string, idx: number) => (
+                                    <div style={{ marginTop: 4, color: 'var(--text-muted)', fontSize: 'var(--font-size-sm)', width: 280 }}>
+                                        {(chance_result.juice_strings_weapon || []).map((s: string, idx: number) => (
                                             <div key={"Red juice value" + (idx + 1)}>{idx + 1}. {s}</div>
                                         ))}
                                     </div>
                                 </div>
                                 <div>
                                     <div style={{ ...styles.inputLabelCell, whiteSpace: 'nowrap' }}>Blue juice (armor):</div>
-                                    <div style={{ marginTop: 4, color: 'var(--text-muted)', fontSize: 'var(--font-size-sm)', width: 300 }}>
-                                        {(chance_result.juice_order_armor || []).map((s: string, idx: number) => (
+                                    <div style={{ marginTop: 4, color: 'var(--text-muted)', fontSize: 'var(--font-size-sm)', width: 400 }}>
+                                        {(chance_result.juice_strings_armor || []).map((s: string, idx: number) => (
                                             <div key={"Blue juice value" + (idx + 1)}>{idx + 1}. {s}</div>
                                         ))}
                                     </div>
