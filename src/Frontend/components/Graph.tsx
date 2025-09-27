@@ -580,14 +580,14 @@ function Graph({ title, labels, counts, mins, maxs, width = 640, height = 320, b
             </div>
 
             {!anyVisible && (
-                <div>
-                    <div style={{ color: 'var(--text-secondary)', fontSize: 50, alignSelf: 'center', justifySelf: 'center', marginTop: -200 }}>
+                <div style={{ marginTop: -250, height: 300 }}>
+                    <div style={{ color: 'var(--text-secondary)', fontSize: 50, alignSelf: 'center', justifySelf: 'center' }}>
                         {hasSelection ? isLoading ? "Loading..." : 'Nothing to plot, couple possibilities:' : 'Nothing to plot, tick an upgrade!'}
                     </div>
-                    <div style={{ fontSize: 12 }}>{isLoading && hasSelection ? "Please allow up to ~5s, if it still doesnt load then gg" : ""}</div>
-                    <div style={{ fontSize: 12 }}>{isLoading && hasSelection ? "Also the first run is slower because it has to spin up WebAssembly" : ""}</div>
-                    <div style={{ fontSize: 12 }}>{!isLoading && hasSelection ? "1. All your ticks have 100% success rate(+1 to +3)" : ""}</div>
-                    <div style={{ fontSize: 12 }}>{!isLoading && hasSelection ? "2. The x-axis was locked at too high a value, so everything fell within the first pixel/tick.(Both situations are due to every point landing on the same x value)" : ""}</div>
+                    <div style={{ fontSize: 16 }}>{isLoading && hasSelection ? "Please allow up to ~5s, if it still doesnt load then gg" : ""}</div>
+                    <div style={{ fontSize: 16 }}>{isLoading && hasSelection ? "Also the first run is slower because it has to spin up WebAssembly" : ""}</div>
+                    <div style={{ fontSize: 16 }}>{!isLoading && hasSelection ? "1. All your ticks have 100% success rate(+1 to +3)" : ""}</div>
+                    <div style={{ fontSize: 16 }}>{!isLoading && hasSelection ? "2. The x-axis was locked at too high a value, so everything fell within the first pixel/tick.(Both situations are due to every point landing on the same x value)" : ""}</div>
                 </div>
             )}
         </div>

@@ -278,6 +278,9 @@ pub fn probability_distribution(
         raw_chances.push(current_chance);
         count += 1;
         artisan += (46.51_f64 / 100.0) * current_chance * artisan_rate;
+        if current_chance == 1.0 {
+            break; // for upgrades that have 100% passrate immediately
+        }
     }
 
     // convert raw per-try chances into per-tap probability distribution

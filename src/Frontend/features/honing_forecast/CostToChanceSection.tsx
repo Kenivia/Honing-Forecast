@@ -59,14 +59,14 @@ export default function CostToChanceSection({
                         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
 
                             <label htmlFor="auto-optimization" style={{ color: 'var(--text-primary)', fontSize: 'var(--font-size-sm)', whiteSpace: 'nowrap' }}>
-                                Guesstimate Juice & Special values<br />
+                                Manual Juice & Special values<br />
 
                             </label>
                             <input
                                 type="checkbox"
                                 id="auto-optimization"
-                                checked={autoOptimization}
-                                onChange={(e) => setAutoOptimization(e.target.checked)}
+                                checked={!autoOptimization}
+                                onChange={(e) => setAutoOptimization(!e.target.checked)}
                                 style={{ accentColor: 'var(--control-checked-bg)' }}
                             />
                         </div>

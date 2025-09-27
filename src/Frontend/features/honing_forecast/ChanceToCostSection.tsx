@@ -174,7 +174,7 @@ export default function ChanceToCostSection({
                     </div>
                     <div style={{ flex: 1 }}>
                         <Graph
-                            title="Cost distribution"
+                            title={cumulativeGraph ? "Cost distribution(Cumulative)" : "Cost distribution"}
                             labels={OUTPUT_LABELS}
                             counts={AnythingTicked ? (cost_result?.hist_counts || cachedCostGraphData?.hist_counts) : null}
                             mins={cost_result?.hist_mins || cachedCostGraphData?.hist_mins}

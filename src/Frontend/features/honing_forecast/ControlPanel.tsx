@@ -77,7 +77,7 @@ export default function ControlPanel({ controlsLeft: _controlsLeft, mainScale: _
                         />
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <label htmlFor="data_size" style={{ color: 'var(--text-primary)', fontSize: 'var(--font-size-sm)', cursor: 'pointer', textWrap: 'nowrap' }}>Trial count</label>
+                        <label htmlFor="data_size" style={{ color: 'var(--text-primary)', fontSize: 'var(--font-size-sm)', cursor: 'pointer', textWrap: 'nowrap' }}>Sample size</label>
                         <input type="text" id="data_size" value={dataSize} onChange={(e) => {
                             let v = e.target.value.replace(/[^0-9]/g, '')
                             v = v.replace(/^0+(?=\d)/, '')

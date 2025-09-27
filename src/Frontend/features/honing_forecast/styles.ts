@@ -118,7 +118,15 @@ export const createColumnDefs = (autoOptimization: boolean) => {
     ]
 
     const costToChanceColumnDefs = autoOptimization
-        ? [{ headerName: "Budget Input", field: "budget", editable: true, flex: 1, cellStyle: { background: "var(--grid-cell-bg)", padding: "6px 8px" } }]
+        ? [
+              {
+                  headerName: "Budget Input",
+                  field: "budget",
+                  editable: true,
+                  flex: 1,
+                  cellStyle: { background: "var(--grid-cell-bg)", padding: "6px 8px" },
+              },
+          ]
         : [
               { headerName: "Budget Input", field: "budget", editable: true, flex: 1, cellStyle: { background: "var(--grid-cell-bg)", padding: "6px 8px" } },
               { headerName: "Gold Value", field: "matsValue", editable: true, flex: 1, cellStyle: { background: "var(--grid-cell-bg)", padding: "6px 8px" } },
