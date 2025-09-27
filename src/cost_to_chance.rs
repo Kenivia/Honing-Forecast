@@ -76,19 +76,26 @@ fn fail_count_to_string(typed_fail_counter: Vec<f64>, data_size: usize) -> Vec<S
     }
 }
 
-pub fn cost_to_chance(
+#[derive(Debug)]
+struct PreparationOutputs {
+    upgrade_arr: Vec<Upgrade>,
+    unlock_costs: Vec<i64>,
+    budgets: Vec<i64>,
+    valid_armor_values: bool,
+    valid_weapon_values: bool,
+    juice_strings_armor: Vec<String>,
+    juice_strings_weapon: Vec<String>,
+}
+
+fn preparation(
     hone_counts: &Vec<Vec<i64>>,
     input_budgets: &Vec<i64>,
     adv_counts: &Vec<Vec<i64>>,
     express_event: bool,
-    hist_bins: usize,
     user_mats_value: &Vec<f64>,
-    adv_hone_strategy: String,
-    data_size: usize,
-) -> CostToChanceOut {
+    adv_hone_strategy: &str,
+) -> PreparationOutputs {
     let mut mats_value: Vec<f64> = user_mats_value.clone();
-    let data_size: usize = data_size.max(1000);
-    // let adv_hone_strategy: String = String::from("No juice");
     let unlock_costs: Vec<i64> = calc_unlock(hone_counts, adv_counts, express_event);
 
     let aritsan_arr: Vec<f64>;
@@ -99,9 +106,9 @@ pub fn cost_to_chance(
     }
 
     let mut upgrade_arr: Vec<Upgrade> = parser(
-        &hone_counts,
-        &adv_counts,
-        &adv_hone_strategy,
+        hone_counts,
+        adv_counts,
+        &adv_hone_strategy.to_string(),
         &aritsan_arr,
         &vec![0.0; 25],
         &vec![0; 25],
@@ -115,16 +122,10 @@ pub fn cost_to_chance(
         budgets[7] -= avg_red_juice;
         budgets[8] -= avg_blue_juice;
     }
-    let mut override_special: Vec<i64> = budgets.clone();
-    override_special[9] = 0;
-
-    // let user_armor_values: Vec<f64> = zero_this_index(user_forced_mats_value, 0);
 
     let valid_armor_values: bool =
         mats_value.iter().skip(1).any(|&x| x != 0.0) || upgrade_arr.iter().all(|x| x.is_weapon);
 
-    // let user_weapon_values: Vec<f64> = zero_this_index(user_forced_mats_value, 1);
-    // let user_weapon_values: Vec<f64> =
     let valid_weapon_values: bool = mats_value
         .iter()
         .enumerate()
@@ -132,40 +133,8 @@ pub fn cost_to_chance(
         || upgrade_arr.iter().all(|x| !x.is_weapon);
     let both_valid: bool = valid_armor_values && valid_weapon_values;
 
-    // let auto_optimize: bool = user_gave_values
-    // &&(actual_budgets[9] > 0 || actual_budgets[8] > 0 || actual_budgets[7] > 0);
-
-    // Use original calibration approach
-
     if !both_valid {
         mats_value = vec![1.0, 0.1, 13.0, 0.2, 90.0, 1.0, 0.0];
-        // valid_weapon_values = vec![1.2, 0.1, 13.0, 0.3, 90.0, 1.0, 0.0];
-
-        // let mut prelim_cost_data_arr: Vec<Vec<Vec<i64>>> = Vec::new();
-
-        // for z in 0..upgrade_arr.len() {
-        //     let mut this_data: Vec<Vec<i64>> = monte_carlo_data(
-        //         data_size / 10,
-        //         &mut upgrade_arr[z..z + 1],
-        //         &unlock_costs,
-        //         0,
-        //         false,
-        //         false,
-        //     );
-        //     for row in this_data.iter_mut() {
-        //         row[3] -= unlock_costs[0];
-        //         row[6] -= unlock_costs[1];
-        //     }
-        //     prelim_cost_data_arr.push(this_data);
-        // }
-        // let toal_cost_data: Vec<Vec<i64>> = calc_failure_raw_delta(
-        //     input_budgets,
-        //     &mut upgrade_arr,
-        //     &prelim_cost_data_arr,
-        //     &unlock_costs,
-        // );
-        // calc_failure_delta_order(input_budgets, &mut upgrade_arr, &toal_cost_data)
-        // // calc_failure_delta_order(&input_budgets, &mut upgrade_arr, &prelim_cost_data);
     };
 
     est_juice_value(&mut upgrade_arr, &mats_value);
@@ -177,36 +146,40 @@ pub fn cost_to_chance(
         valid_weapon_values,
     );
     let value_per_special_leap: Vec<f64> = est_special_honing_value(&mut upgrade_arr, &mats_value);
-    // if both_valid {
     let mut special_indices: Vec<usize> = (0..value_per_special_leap.len()).collect();
     special_indices
         .sort_by(|&a, &b| value_per_special_leap[b].total_cmp(&value_per_special_leap[a]));
     sort_by_indices(&mut upgrade_arr, special_indices.clone());
-    // } else {
-    //     let upgrade_len: i64 = upgrade_arr.len() as i64;
-    //     upgrade_arr.sort_by(|a, b| {
-    //         (if a.is_normal_honing {
-    //             a.failure_delta_order as f64 // a.special_cost as f64 * a.base_chance
-    //         } else {
-    //             upgrade_len as f64
-    //         })
-    //         .total_cmp(
-    //             &(if b.is_normal_honing {
-    //                 b.failure_delta_order as f64 // b.special_cost as f64 * a.base_chance
-    //             } else {
-    //                 upgrade_len as f64
-    //             }),
-    //         )
-    //     });
-    // }
-    let cost_data: Vec<Vec<i64>> = monte_carlo_data(
-        data_size,
-        &mut upgrade_arr,
-        &unlock_costs,
-        input_budgets[9],
-        false,
-        false, //use_true_rng
-    );
+
+    PreparationOutputs {
+        upgrade_arr,
+        unlock_costs,
+        budgets,
+        valid_armor_values,
+        valid_weapon_values,
+        juice_strings_armor,
+        juice_strings_weapon,
+    }
+}
+
+#[derive(Debug)]
+struct FailureAnalysisOutputs {
+    typed_fail_counter_final: Vec<f64>,
+    final_chance: f64,
+    upgrade_strings: Vec<String>,
+    top_bottom: Vec<Vec<i64>>,
+}
+
+fn count_failure_typed(
+    cost_data: &Vec<Vec<i64>>,
+    input_budgets: &Vec<i64>,
+    upgrade_arr: &mut Vec<Upgrade>,
+    valid_weapon_values: bool,
+    valid_armor_values: bool,
+    hone_counts: &Vec<Vec<i64>>,
+    adv_counts: &Vec<Vec<i64>>,
+    express_event: bool,
+) -> FailureAnalysisOutputs {
     let mut typed_fail_counter_final: Vec<f64> = vec![0.0_f64; 7];
     let mut overall_fail_counter: i64 = 0;
     let mut failed;
@@ -225,43 +198,87 @@ pub fn cost_to_chance(
     }
 
     let upgrade_strings: Vec<String> = compress_runs(
-        extract_upgrade_strings(&mut upgrade_arr, valid_weapon_values, valid_armor_values),
+        extract_upgrade_strings(upgrade_arr, valid_weapon_values, valid_armor_values),
         true,
     );
     let final_chance = 1.0_f64 - overall_fail_counter as f64 / cost_data.len() as f64;
 
     // Generate histogram data from simulated cost data
-    let cost_data_for_hist: Vec<Vec<i64>> = monte_carlo_data(
-        data_size,
-        &upgrade_arr,
-        &unlock_costs,
-        budgets[9],
-        false,
-        false,
-    );
-    let bins = hist_bins.min(BUCKET_COUNT).max(1);
 
-    let budget_data: Vec<Vec<i64>> = monte_carlo_data(
+    let top_bottom: Vec<Vec<i64>> = monte_carlo_data(
         2,
-        &upgrade_arr,
-        &calc_unlock(&hone_counts, &adv_counts, express_event),
+        upgrade_arr,
+        &calc_unlock(hone_counts, adv_counts, express_event),
         0,
         true, // rigged
         true, //use_true_rn
     );
+
+    FailureAnalysisOutputs {
+        typed_fail_counter_final,
+        final_chance,
+        upgrade_strings,
+
+        top_bottom,
+    }
+}
+pub fn cost_to_chance(
+    hone_counts: &Vec<Vec<i64>>,
+    input_budgets: &Vec<i64>,
+    adv_counts: &Vec<Vec<i64>>,
+    express_event: bool,
+    hist_bins: usize,
+    user_mats_value: &Vec<f64>,
+    adv_hone_strategy: String,
+    data_size: usize,
+) -> CostToChanceOut {
+    // Section 1: Preparation - setup and parsing
+    let mut prep_outputs = preparation(
+        hone_counts,
+        input_budgets,
+        adv_counts,
+        express_event,
+        user_mats_value,
+        &adv_hone_strategy,
+    );
+
+    // Section 2: Monte Carlo simulation
+    let cost_data: Vec<Vec<i64>> = monte_carlo_data(
+        data_size,
+        &mut prep_outputs.upgrade_arr,
+        &prep_outputs.unlock_costs,
+        input_budgets[9],
+        false,
+        false, //use_true_rng
+    );
+
+    // Section 3: Failure analysis and histogram generation
+    let failure_outputs = count_failure_typed(
+        &cost_data,
+        input_budgets,
+        &mut prep_outputs.upgrade_arr,
+        prep_outputs.valid_weapon_values,
+        prep_outputs.valid_armor_values,
+        hone_counts,
+        adv_counts,
+        express_event,
+    );
+
+    let bins = hist_bins.min(BUCKET_COUNT).max(1);
     let hist_counts: Vec<Vec<i64>> =
-        histograms_for_all_costs(&cost_data_for_hist, bins, &budget_data[1]);
+        histograms_for_all_costs(&cost_data, bins, &failure_outputs.top_bottom[1]);
+
     CostToChanceOut {
-        chance: final_chance,
-        reasons: fail_count_to_string(typed_fail_counter_final, data_size),
+        chance: failure_outputs.final_chance,
+        reasons: fail_count_to_string(failure_outputs.typed_fail_counter_final, data_size),
         hist_counts,
         hist_mins: vec![0_i64; 7],
-        hist_maxs: budget_data[1].clone(),
-        upgrade_strings,
-        juice_strings_armor,
-        juice_strings_weapon,
-        budgets_red_remaining: budgets[7],
-        budgets_blue_remaining: budgets[8],
+        hist_maxs: failure_outputs.top_bottom[1].clone(),
+        upgrade_strings: failure_outputs.upgrade_strings,
+        juice_strings_armor: prep_outputs.juice_strings_armor,
+        juice_strings_weapon: prep_outputs.juice_strings_weapon,
+        budgets_red_remaining: prep_outputs.budgets[7],
+        budgets_blue_remaining: prep_outputs.budgets[8],
     }
 }
 

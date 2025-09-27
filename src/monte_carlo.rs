@@ -121,7 +121,7 @@ pub fn monte_carlo_data(
             let pd_len = upgrade.prob_dist_len.saturating_sub(1) as f64;
             for trial_num in 0..data_size {
                 let rolled_tap =
-                    ((pd_len * (trial_num + 1) as f64) / (data_size as f64)).floor() as usize;
+                    ((pd_len * (trial_num) as f64) / (data_size as f64 - 1.0)).floor() as usize;
                 for cost_type in 0..7 {
                     cost_data[trial_num][cost_type] +=
                         upgrade.costs[cost_type] * (rolled_tap as i64 + upgrade.tap_offset);

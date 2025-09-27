@@ -711,6 +711,8 @@ export default function HoningForecastUI() {
                         // Moved worker call results
                         averageCosts={averageCosts}
                         AverageCostBusy={AverageCostBusy}
+                        // Data size for luckiest draw message
+                        dataSize={dataSize}
                     />
                 </div>
 

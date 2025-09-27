@@ -61,6 +61,8 @@ type ChanceToCostSectionProps = {
     // Moved worker call results
     averageCosts: number[] | null
     AverageCostBusy: boolean
+    // Data size for luckiest draw message
+    dataSize: string
 }
 
 export default function ChanceToCostSection({
@@ -82,6 +84,8 @@ export default function ChanceToCostSection({
     // Moved worker call results
     averageCosts,
     AverageCostBusy: _AverageCostBusy,
+    // Data size for luckiest draw message
+    dataSize,
 }: ChanceToCostSectionProps) {
     const { chanceToCostColumnDefs } = createColumnDefs(false) // autoOptimization not used for this section
 
@@ -122,6 +126,15 @@ export default function ChanceToCostSection({
                             />
                             <span style={{ position: 'absolute', right: 10, pointerEvents: 'none', color: "black" }}>%</span>
                         </div>
+                        {desired_chance === "0" && (
+                            <span style={{
+                                color: 'var(--text-muted)',
+                                fontSize: 'var(--font-size-sm)',
+                                fontStyle: 'italic'
+                            }}>
+                                0% = luckiest draw in {dataSize} samples
+                            </span>
+                        )}
                     </div>
                 </div>
 
