@@ -33,6 +33,10 @@
     background-color: var(--btn-toggle-gamba-selected);
 }
 
+.hf-separator.longterm-active::after {
+    background-color: var(--btn-toggle-longterm-selected);
+}
+
 /* Button base: inline-flex so width auto fits content */
 .hf-btn {
     appearance: none;
@@ -124,5 +128,14 @@
 }
 
 .hf-btn.gamba-selected .hf-help {
+    display: block;
+}
+
+.hf-btn.longterm-selected {
+    background: var(--btn-toggle-longterm-selected);
+    opacity: 1;
+}
+
+.hf-btn.longterm-selected .hf-help {
     display: block;
 }

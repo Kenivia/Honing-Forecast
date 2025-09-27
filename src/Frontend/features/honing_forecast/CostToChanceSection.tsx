@@ -59,7 +59,9 @@ export default function CostToChanceSection({
                         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
 
                             <label htmlFor="auto-optimization" style={{ color: 'var(--text-primary)', fontSize: 'var(--font-size-sm)', whiteSpace: 'nowrap' }}>
-                                Manual Juice & Special values<br />
+                                Custom Gold value for  Juice &<br />
+                                Free taps calculations
+
 
                             </label>
                             <input

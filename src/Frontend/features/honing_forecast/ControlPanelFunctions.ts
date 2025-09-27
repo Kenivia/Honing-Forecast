@@ -121,12 +121,14 @@ export function createFillDemo({
     set_budget_inputs,
     set_desired_chance,
     set_prev_checked_arr,
+    setUserMatsValue,
 }: {
     setTopGrid: React.Dispatch<React.SetStateAction<any>>
     setBottomGrid: React.Dispatch<React.SetStateAction<any>>
     set_budget_inputs: React.Dispatch<React.SetStateAction<any>>
     set_desired_chance: React.Dispatch<React.SetStateAction<string>>
     set_prev_checked_arr: React.Dispatch<React.SetStateAction<boolean[]>>
+    setUserMatsValue: React.Dispatch<React.SetStateAction<any>>
 }) {
     return () => {
         setTopGrid(
@@ -149,5 +151,32 @@ export function createFillDemo({
         })
         set_desired_chance("50")
         set_prev_checked_arr(Array.from({ length: TOP_COLS }, (_, ind) => ind == 19 || ind == 20 || ind == 21))
+
+        // Set userMatsValue to the specified values
+        setUserMatsValue({
+            Red: "1.0",
+            Blue: "0.1",
+            Leaps: "13.0",
+            Shards: "0.2",
+            Oreha: "90.0",
+            Gold: "1.0",
+            Silver: "0.0",
+        })
+
+        // Set income array with specified values using localStorage
+        const income_1680_roster_bound = [2606, 7751, 133, 0, 0, 90000, 69420]
+        const income_1720_char_bound = [13600, 28160, 594, 360279, 1500, 120000, 69420]
+
+        const newIncomeArr = Array.from({ length: 6 }, (_, gridIndex) => {
+            if (gridIndex === 0) {
+                return income_1720_char_bound
+            } else {
+                return income_1680_roster_bound
+            }
+        })
+        localStorage.setItem("honing_forecast_income_arr", JSON.stringify(newIncomeArr))
+
+        // Dispatch custom event to notify LongTermSection of income array update
+        window.dispatchEvent(new CustomEvent("incomeArrayUpdated", { detail: newIncomeArr }))
     }
 }

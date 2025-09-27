@@ -8,7 +8,7 @@ mod parser;
 mod value_estimation;
 use crate::chance_to_cost::{average_cost, chance_to_cost};
 use crate::constants::EVENT_ARTISAN_MULTIPLIER;
-use crate::cost_to_chance::cost_to_chance;
+use crate::cost_to_chance::{cost_to_chance, cost_to_chance_arr};
 use crate::helpers::calc_unlock;
 use crate::helpers::ticks_to_counts;
 use crate::parser::{parser, parser_with_other_strategy};
@@ -30,6 +30,20 @@ pub struct Payload {
     budget: Vec<i64>,
     express_event: bool,
     bucket_count: usize,
+    user_mats_value: Option<Vec<f64>>,
+    data_size: Option<usize>,
+}
+
+#[derive(Deserialize)]
+pub struct PayloadArr {
+    normal_hone_ticks: Option<Vec<Vec<bool>>>,
+    adv_hone_ticks: Option<Vec<Vec<bool>>>,
+    normal_counts: Option<Vec<Vec<i64>>>,
+    adv_counts: Option<Vec<Vec<i64>>>,
+
+    adv_hone_strategy: String,
+    budget_arr: Vec<Vec<i64>>,
+    express_event: bool,
     user_mats_value: Option<Vec<f64>>,
     data_size: Option<usize>,
 }
@@ -213,6 +227,64 @@ pub fn average_cost_wrapper(input: JsValue) -> JsValue {
     to_value(&avg_costs).unwrap()
 }
 
+#[wasm_bindgen]
+pub fn cost_to_chance_arr_wrapper(input: JsValue) -> JsValue {
+    console_error_panic_hook::set_once();
+    let payload: PayloadArr = from_value(input).unwrap();
+
+    // Get counts from either direct input or converted from ticks
+    let normal_counts = if let Some(counts) = payload.normal_counts {
+        counts
+    } else if let Some(ticks) = payload.normal_hone_ticks {
+        ticks_to_counts(ticks)
+    } else {
+        panic!("Either normal_counts or normal_hone_ticks must be provided");
+    };
+
+    let adv_counts = if let Some(counts) = payload.adv_counts {
+        counts
+    } else if let Some(ticks) = payload.adv_hone_ticks {
+        ticks_to_counts(ticks)
+    } else {
+        panic!("Either adv_counts or adv_hone_ticks must be provided");
+    };
+
+    let budget_arr: Vec<Vec<i64>> = payload.budget_arr;
+    let user_mats_value = payload.user_mats_value.unwrap_or(vec![0.0; 7]);
+    let data_size: usize = payload.data_size.unwrap_or(100000).max(1000);
+
+    let (final_chances, typed_fail_counters, budgets_red_remaining, budgets_blue_remaining, pity) =
+        cost_to_chance_arr(
+            &normal_counts,
+            &budget_arr,
+            &adv_counts,
+            payload.express_event,
+            &user_mats_value,
+            payload.adv_hone_strategy,
+            data_size,
+        );
+
+    // Return a JS object with the results
+    #[derive(serde::Serialize)]
+    struct CostToChanceArrResult {
+        final_chances: Vec<f64>,
+        typed_fail_counters: Vec<Vec<f64>>,
+        budgets_red_remaining: i64,
+        budgets_blue_remaining: i64,
+        pity: Vec<i64>,
+    }
+
+    let result = CostToChanceArrResult {
+        final_chances,
+        typed_fail_counters,
+        budgets_red_remaining,
+        budgets_blue_remaining,
+        pity,
+    };
+
+    to_value(&result).unwrap()
+}
+
 // Histograms are included in the default wrappers' outputs
 
 pub fn chance_to_cost_test_wrapper(
@@ -248,5 +320,12 @@ pub fn cost_to_chance_test_wrapper(
         "No juice".to_owned(),
         100000,
     );
-    (out.chance, out.reasons.join(", "))
+    (
+        out.chance,
+        out.reasons
+            .iter()
+            .map(|r| format!("{:.2}%", r * 100.0))
+            .collect::<Vec<String>>()
+            .join(", "),
+    )
 }

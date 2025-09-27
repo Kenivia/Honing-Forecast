@@ -109,18 +109,18 @@ pub static SPECIAL_LEAPS_COST: [[i64; 25]; 2] = [
         50, 50,
     ],
 ];
-pub static LABELS: [&str; 10] = [
-    "Red",
-    "Blue",
-    "Leaps",
-    "Shards",
-    "Oreha",
-    "Gold",
-    "Silver",
-    "Red juice",
-    "Blue juice",
-    "Special Leaps",
-];
+// pub static LABELS: [&str; 10] = [
+//     "Red",
+//     "Blue",
+//     "Leaps",
+//     "Shards",
+//     "Oreha",
+//     "Gold",
+//     "Silver",
+//     "Red juice",
+//     "Blue juice",
+//     "Special Leaps",
+// ];
 
 // Maximum histogram bucket count used for graphing
 pub const BUCKET_COUNT: usize = 1000;

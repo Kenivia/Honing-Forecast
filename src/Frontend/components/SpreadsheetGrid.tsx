@@ -9,6 +9,7 @@ interface SpreadsheetGridProps {
     readOnly?: boolean
     secondaryValues?: Record<string, string>
     setSecondaryValues?: (_next: any) => void
+    hideIcons?: boolean
 }
 
 interface Selection {
@@ -18,7 +19,7 @@ interface Selection {
     endCol: number
 }
 
-export default function SpreadsheetGrid({ columnDefs, labels, sheet_values: budget_inputs, set_sheet_values: set_sheet_values, readOnly = false, secondaryValues, setSecondaryValues }: SpreadsheetGridProps) {
+export default function SpreadsheetGrid({ columnDefs, labels, sheet_values: budget_inputs, set_sheet_values: set_sheet_values, readOnly = false, secondaryValues, setSecondaryValues, hideIcons = false }: SpreadsheetGridProps) {
     const [selection, setSelection] = useState<Selection | null>(null)
     const [isSelecting, setIsSelecting] = useState(false)
     const [_copiedData, setCopiedData] = useState<string[][] | null>(null)
@@ -370,26 +371,28 @@ export default function SpreadsheetGrid({ columnDefs, labels, sheet_values: budg
                 minHeight: '200px'
             }}
         >
-            <div style={{ ...columnDefs[0], width: 50 }}>
-                {[""].concat(labels).map((lab) => (
-                    <div
-                        key={lab}
-                        style={{
-                            height: 36,
-                            color: 'var(--text-secondary)',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'flex-end',
-                            paddingRight: 8,
-                            whiteSpace: 'nowrap',
-                            fontSize: 'var(--font-size-sm)',
-                            paddingTop: 8,
-                        }}
-                    >
-                        <Icon iconName={lab} size={28} />
-                    </div>
-                ))}
-            </div>
+            {!hideIcons && (
+                <div style={{ ...columnDefs[0], width: 50 }}>
+                    {[""].concat(labels).map((lab) => (
+                        <div
+                            key={lab}
+                            style={{
+                                height: 36,
+                                color: 'var(--text-secondary)',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'flex-end',
+                                paddingRight: 8,
+                                whiteSpace: 'nowrap',
+                                fontSize: 'var(--font-size-sm)',
+                                paddingTop: 8,
+                            }}
+                        >
+                            <Icon iconName={lab} size={28} />
+                        </div>
+                    ))}
+                </div>
+            )}
 
             <div style={{ flex: 1 }}>
                 {/* Column headers (plain text, aligned) */}

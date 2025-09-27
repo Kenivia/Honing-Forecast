@@ -14,6 +14,7 @@
     --btn-toggle-chance-selected: #1c9164;
     --btn-toggle-budget-selected: #165ca3;
     --btn-toggle-gamba-selected: #a40cea;
+    --btn-toggle-longterm-selected: #ff6b35;
     --btn-toggle-lock-selected: rgb(255, 165, 0);
 
     /* Warning/Alert Colors */
@@ -42,6 +43,8 @@
     --series-oreha: #ff7824;
     --series-gold: #facc15;
     --series-silver: #9ca3af;
+    --series-overall: #00ff00;
+    --series-brown: #f7893b;
 
     /* Input Colors */
     --input-bg: #acfffeff;

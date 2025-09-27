@@ -193,23 +193,23 @@ pub fn calc_unlock(
     Vec::from([shard_unlock, silver_unlock])
 }
 
-pub fn myformat(mut f: f64) -> String {
-    f *= 100.0;
-    if f == 1.0_f64 {
-        return "100".to_owned();
-    }
-    let mut place: i32 = 1;
+// pub fn myformat(mut f: f64) -> String {
+//     f *= 100.0;
+//     if f == 1.0_f64 {
+//         return "100".to_owned();
+//     }
+//     let mut place: i32 = 1;
 
-    loop {
-        if (f - 1.0_f64).abs() >= 1.0 / 10f64.powi(place) {
-            return format!("{:.*}", place as usize, f);
-        }
-        if place >= 4 {
-            return "0".to_string();
-        }
-        place += 1;
-    }
-}
+//     loop {
+//         if (f - 1.0_f64).abs() >= 1.0 / 10f64.powi(place) {
+//             return format!("{:.*}", place as usize, f);
+//         }
+//         if place >= 4 {
+//             return "0".to_string();
+//         }
+//         place += 1;
+//     }
+// }
 
 /// Compress consecutive duplicate strings into one with suffix ` xN`.
 /// Example: ["A", "A", "A", "B", "C", "C"] -> ["A x3", "B", "C x2"].

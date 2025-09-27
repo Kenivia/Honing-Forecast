@@ -23,6 +23,15 @@ type GraphProps = {
     lockXAxis?: boolean
     lockedMins?: number[] | null
     lockedMaxs?: number[] | null
+    // Graph type
+    graphType?: 'Histogram' | 'Raw' | 'Gold'
+    // Custom axis labels
+    xAxisLabel?: string
+    yAxisLabel?: string
+    // Color override props
+    customColors?: string[] | null // Optional array of custom colors to override default series colors
+    // Y-axis max override
+    yMaxOverride?: number | null // Optional override for y-axis maximum value
 }
 
 type Point = { x: number, y: number }
@@ -35,6 +44,7 @@ const SERIES_COLORS_VARS: string[] = [
     'var(--series-oreha)',
     'var(--series-gold)',
     'var(--series-silver)',
+    'var(--series-overall)', // Color for Overall series
 ]
 
 function formatSig3(n: number, place: number = 3): string {
@@ -152,11 +162,19 @@ function to_step_points(points: Point[]): Point[] {
     return points.map((p, i) => ({ x: p.x, y: stepped[i] }));
 }
 
-function Graph({ title, labels, counts, mins, maxs, width = 640, height = 320, budgets = null, additionalBudgets = null, hasSelection = false, isLoading = false, cumulative = true, lockXAxis = false, lockedMins = null, lockedMaxs = null }: GraphProps) {
-    const [visible, setVisible] = useState<boolean[]>(() => [true, true, false, false, false, true, false])
+function Graph({ title, labels, counts, mins, maxs, width = 640, height = 320, budgets = null, additionalBudgets = null, hasSelection = false, isLoading = false, cumulative = true, lockXAxis = false, lockedMins = null, lockedMaxs = null, graphType = 'Histogram', xAxisLabel, yAxisLabel, customColors = null, yMaxOverride = null }: GraphProps) {
+    const [visible, setVisible] = useState<boolean[]>(() => [true, true, false, false, false, true, false, true])
     const [hoverSeries, setHoverSeries] = useState<number | null>(null)
     const [hoverBucket, setHoverBucket] = useState<number | null>(null)
     const chartRef = useRef<HTMLDivElement | null>(null)
+
+    // Get effective colors (custom or default)
+    const getEffectiveColors = useCallback(() => {
+        if (customColors && customColors.length > 0) {
+            return customColors
+        }
+        return SERIES_COLORS_VARS
+    }, [customColors])
 
     // Create stable pointer handler
     const handleSeriesPointerMove = useCallback((idx: number) => () => {
@@ -219,9 +237,16 @@ function Graph({ title, labels, counts, mins, maxs, width = 640, height = 320, b
     const normalizedCounts: number[][] | null = useMemo(() => {
         const src = effectiveCounts ?? counts;
         if (!src) return null
+
+        // Raw mode: don't divide by data_size, use raw values
+        if (graphType === 'Raw') {
+            return src.map(series => series.map(v => v))
+        }
+
+        // Histogram mode: normalize by data_size
         const denom = data_size || 1
         return src.map(series => series.map(v => v / denom))
-    }, [effectiveCounts, counts, data_size])
+    }, [effectiveCounts, counts, data_size, graphType])
 
     const dataSeries: Point[][] = useMemo(() => {
         // console.log("Effective counts", effectiveCounts)
@@ -237,17 +262,36 @@ function Graph({ title, labels, counts, mins, maxs, width = 640, height = 320, b
                 out[i].push({ x: b, y: source[i][b] })
                 first = false;
             }
-            if (first) {
-                out[i] = [{ x: 0, y: 0 }]
-            }
-            else {
-                out[i].push({ x: source[i].length, y: (prev ?? source[i][source[i].length - 1]) })
+            if (graphType == "Histogram") {
+                if (first) {
+                    out[i] = [{ x: 0, y: 0 }]
+                }
+                else {
+                    out[i].push({ x: source[i].length, y: (prev ?? source[i][source[i].length - 1]) })
+                }
             }
         }
         return out
-    }, [effectiveCounts, counts, cumulative, cdfSeries, normalizedCounts])
+    }, [effectiveCounts, counts, cumulative, cdfSeries, normalizedCounts, graphType])
 
     const yMax: number = useMemo(() => {
+        // Use override if provided
+        if (yMaxOverride !== null) return yMaxOverride
+
+        // Raw mode always uses yMax = 1
+        if (graphType === 'Raw') return 1
+
+        // Gold mode uses the maximum value from the data series
+        if (graphType === 'Gold') {
+            if (!dataSeries) return 0
+            let m = 0
+            for (let i = 0; i < dataSeries.length; i++) {
+                if (!visible[i] || !keepMask[i]) continue
+                let this_series = to_step_points(dataSeries[i])
+                for (let j = 0; j < dataSeries[i].length; j++) { m = Math.max(m, this_series[j].y); }
+            }
+            return m
+        }
 
         if (!dataSeries) return 0
         if (cumulative) return 1
@@ -261,7 +305,7 @@ function Graph({ title, labels, counts, mins, maxs, width = 640, height = 320, b
         }
         // console.log(m, data_size, dataSeries, ind)
         return m
-    }, [dataSeries, visible, keepMask, cumulative])
+    }, [dataSeries, visible, keepMask, cumulative, yMaxOverride, graphType])
 
     // --- New: detect whether incoming counts contain data outside (to the right of) the effective x-axis ---
     // i.e. when incoming newMax > effectiveMax AND counts beyond that cutoff are non-zero
@@ -324,7 +368,7 @@ function Graph({ title, labels, counts, mins, maxs, width = 640, height = 320, b
 
 
         const x = Math.min(Math.max((p?.x ?? 0) - plotLeft, 0), innerW)
-        const bucket = Math.min(bucketLen - 1, Math.round((x / innerW) * (bucketLen)))
+        const bucket = Math.min(bucketLen - 1, Math.round((x / innerW) * (graphType == "Histogram" ? bucketLen : bucketLen - 1)))
         // choose series with closest y to cursor vertically if possible; otherwise pick the highest y
         const src = cumulative && cdfSeries ? cdfSeries : (normalizedCounts || srcCounts)
         const denomY = Math.max(1e-9, yMax)
@@ -336,7 +380,7 @@ function Graph({ title, labels, counts, mins, maxs, width = 640, height = 320, b
         const best = visibleYs.reduce((a, b) => Math.abs(a.y - actual_y) < Math.abs(b.y - actual_y) ? a : b)
         setHoverSeries(best.i)
         setHoverBucket(bucket)
-    }, [effectiveCounts, counts, visible, keepMask, bucketLen, width, height, yMax, cdfSeries, normalizedCounts, cumulative])
+    }, [effectiveCounts, counts, visible, keepMask, bucketLen, width, height, yMax, cdfSeries, normalizedCounts, cumulative, graphType])
 
     const handleMouseLeave = () => { setHoverSeries(null); setHoverBucket(null) }
 
@@ -348,21 +392,27 @@ function Graph({ title, labels, counts, mins, maxs, width = 640, height = 320, b
         return first ?? null
     }, [hoverSeries, labels, keepMask, visible])
 
-    const hoverColor = fallbackSeries != null ? SERIES_COLORS_VARS[fallbackSeries] : 'var(--text-secondary)'
+    const effectiveColors = getEffectiveColors()
+    const hoverColor = fallbackSeries != null ? effectiveColors[fallbackSeries] : 'var(--text-secondary)'
 
     // bottom axis tick values and formatter based on hovered series
     const tickVals = useMemo(() => {
-        // const last = bucketLen - 1
-        // if (maxs) {
+        // In Raw and Gold modes, show every data point
+        if (graphType === 'Raw' || graphType === 'Gold') {
+            return Array.from({ length: bucketLen }, (_, i) => i)
+        }
+
+        // In Histogram mode, use the original grid count
         let out = Array.from({ length: GRID_COUNT + 1 }, (_, i) => Math.min(bucketLen, Math.round(bucketLen * i / (GRID_COUNT))))
         return out
-        // }
-        // else {
-        //     return Array(GRID_COUNT)
-        // }
-
-    }, [bucketLen])
+    }, [bucketLen, graphType])
     const bottomTickFormat = useCallback((val: any) => {
+        // In Raw and Gold modes, just return the integer value (week number) starting from 1
+        if (graphType === 'Raw' || graphType === 'Gold') {
+            const weekNumber = typeof val === 'number' ? val : Number(val)
+            return Math.round(weekNumber + 1).toString()
+        }
+
         if (fallbackSeries == null || !effectiveMins || !effectiveMaxs) return formatSig3(val)
 
         const min = effectiveMins[fallbackSeries]
@@ -371,27 +421,33 @@ function Graph({ title, labels, counts, mins, maxs, width = 640, height = 320, b
         const width = (max - min) / bucketLen
         const mid = min + (bucketIdx) * width
         return formatSig3(mid)
-    }, [fallbackSeries, effectiveMins, effectiveMaxs, bucketLen])
+    }, [fallbackSeries, effectiveMins, effectiveMaxs, bucketLen, graphType])
 
 
     const anyVisible = useMemo(() => labels.some((_, i) => visible[i] && keepMask[i]), [labels, visible, keepMask])
 
     // Memoize the AnimatedLineSeries nodes
     const lineSeriesNodes = useMemo(() => {
-        return sortedVisibleIndices.map((seriesIdx) => (
-            <AnimatedLineSeries
-                key={labels[seriesIdx]}
-                dataKey={labels[seriesIdx]}
-                data={to_step_points(dataSeries[seriesIdx]) || []}
-                xAccessor={xAccessor}
-                yAccessor={yAccessor}
-                stroke={SERIES_COLORS_VARS[seriesIdx]}
-                strokeWidth={hoverSeries === seriesIdx ? 4 : 1.5}
-                opacity={1}
-                onPointerMove={handleSeriesPointerMove(seriesIdx)}
-            />
-        ));
-    }, [sortedVisibleIndices, dataSeries, hoverSeries, labels, handleSeriesPointerMove]);
+        return sortedVisibleIndices.map((seriesIdx, index) => {
+            // In Raw and Gold modes, make all series except the last one dotted
+            const isDotted = (graphType === 'Raw' || graphType === 'Gold') && index < sortedVisibleIndices.length - 1;
+
+            return (
+                <AnimatedLineSeries
+                    key={labels[seriesIdx]}
+                    dataKey={labels[seriesIdx]}
+                    data={to_step_points(dataSeries[seriesIdx]) || []}
+                    xAccessor={xAccessor}
+                    yAccessor={yAccessor}
+                    stroke={effectiveColors[seriesIdx]}
+                    strokeWidth={hoverSeries === seriesIdx ? 4 : 1.5}
+                    strokeDasharray={isDotted ? "5,5" : undefined}
+                    opacity={1}
+                    onPointerMove={handleSeriesPointerMove(seriesIdx)}
+                />
+            );
+        });
+    }, [sortedVisibleIndices, dataSeries, hoverSeries, labels, handleSeriesPointerMove, graphType, effectiveColors]);
 
     // Memoize Points Of Interest (POI)
     const poiNodes = useMemo(() => {
@@ -420,9 +476,9 @@ function Graph({ title, labels, counts, mins, maxs, width = 640, height = 320, b
 
                 elems.push(
                     <g key={`${keyPrefix}-${i}`}>
-                        <circle cx={cx} cy={cy} r={circleRadius} fill={SERIES_COLORS_VARS[i]} stroke={strokeColor} strokeWidth={2} />
+                        <circle cx={cx} cy={cy} r={circleRadius} fill={effectiveColors[i]} stroke={strokeColor} strokeWidth={2} />
                         <rect x={cx + 6} y={cy - boxH - 4} width={boxW} height={boxH} fill="rgba(0,0,0,0.5)" rx={3} ry={3} />
-                        <text x={cx + 10} y={cy - 8} fill={SERIES_COLORS_VARS[i]} fontSize={12}>{labelText}</text>
+                        <text x={cx + 10} y={cy - 8} fill={effectiveColors[i]} fontSize={12}>{labelText}</text>
                     </g>
                 );
             });
@@ -432,7 +488,7 @@ function Graph({ title, labels, counts, mins, maxs, width = 640, height = 320, b
         renderFor(additionalBudgets, "poi-additional", 7, "var(--bright-green)");
 
         return elems.length ? <g>{elems}</g> : null;
-    }, [budgets, additionalBudgets, effectiveCounts, counts, anyVisible, visible, keepMask, width, height, bucketLen, effectiveMins, effectiveMaxs, cdfSeries, normalizedCounts, cumulative, yMax, labels]);
+    }, [budgets, additionalBudgets, effectiveCounts, counts, anyVisible, visible, keepMask, width, height, bucketLen, effectiveMins, effectiveMaxs, cdfSeries, normalizedCounts, cumulative, yMax, labels, effectiveColors]);
 
     // Memoize hover marker computation
     const hoverMarker = useMemo(() => {
@@ -440,13 +496,13 @@ function Graph({ title, labels, counts, mins, maxs, width = 640, height = 320, b
         if (fallbackSeries == null || hoverBucket == null || !srcCounts || !visible[fallbackSeries] || !keepMask[fallbackSeries]) return null;
         const innerW = width - plotLeft - plotRight;
         const innerH = height - plotTop - plotBottom;
-        const cx = plotLeft + (hoverBucket / Math.max(1, bucketLen)) * innerW;
+        const cx = plotLeft + (hoverBucket / (graphType == "Histogram" ? Math.max(1, bucketLen) : Math.max(1, bucketLen - 1))) * innerW;
         let bucket_idx = Math.min(hoverBucket, bucketLen - 1)
         const hoverSeriesVals = cumulative && cdfSeries ? cdfSeries[fallbackSeries] : ((normalizedCounts && normalizedCounts[fallbackSeries]) || srcCounts[fallbackSeries]);
         const denomY3 = Math.max(1e-9, yMax);
         const cy = plotTop + innerH - (to_step(hoverSeriesVals)[bucket_idx] / denomY3) * innerH;
         return { cx, cy, series: fallbackSeries };
-    }, [fallbackSeries, hoverBucket, effectiveCounts, counts, visible, keepMask, cumulative, cdfSeries, normalizedCounts, bucketLen, width, height, yMax]);
+    }, [fallbackSeries, hoverBucket, effectiveCounts, counts, visible, keepMask, cumulative, cdfSeries, normalizedCounts, bucketLen, width, height, yMax, graphType]);
 
     return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: 16, borderRadius: 16, backgroundColor: 'var(--bg-tertiary)' }}>
@@ -471,7 +527,7 @@ function Graph({ title, labels, counts, mins, maxs, width = 640, height = 320, b
                             }}
                         >
                             x-axis locked at {formatSig3(effectiveMaxs[fallbackSeries])}
-                            <span style={{ color: SERIES_COLORS_VARS[fallbackSeries] }}>{labels[fallbackSeries].padEnd(Math.max(...labels.slice(0, 7).map(l => l.length)), ' ')}</span>
+                            <span style={{ color: effectiveColors[fallbackSeries] }}>{labels[fallbackSeries].padEnd(Math.max(...labels.slice(0, 7).map(l => l.length)), ' ')}</span>
                             {hasUnplottedPoints && (
                                 <span>- Some trials used more and were not plotted</span>
                             )}
@@ -483,20 +539,20 @@ function Graph({ title, labels, counts, mins, maxs, width = 640, height = 320, b
                 <XYChart
                     height={height}
                     width={width}
-                    xScale={{ type: 'linear', domain: [0, Math.max(0, bucketLen)] }}
+                    xScale={{ type: 'linear', domain: [0, Math.max(0, graphType == "Histogram" ? bucketLen : bucketLen - 1)] }}
                     yScale={{ type: 'linear', domain: cumulative ? [0, 1] : [0, Math.max(1e-6, yMax)] }}
                     theme={darkTheme}
                 >
                     {/* Remove horizontal grid and y-axis; add vertical grid lines */}
                     <AnimatedGrid columns numTicks={GRID_COUNT} rows={false} />
                     <AnimatedAxis orientation="bottom"
-                        label={'Normalized mats cost(0 to pity)'}
+                        label={xAxisLabel || 'Normalized mats cost(0 to pity)'}
                         tickValues={tickVals}
                         tickFormat={bottomTickFormat as any} tickLabelProps={() => ({ fill: hoverColor, fontSize: 11, angle: -0 })} />
                     {/* Y axis with custom ticks */}
                     <AnimatedAxis
                         orientation="left"
-                        label={cumulative ? 'Cumulative Probability of Success' : 'Probability distribution'}
+                        label={yAxisLabel || (cumulative ? 'Cumulative Probability of Success' : 'Probability distribution')}
                         tickValues={(() => {
                             if (cumulative) {
                                 // 0..1 inclusive at 0.1 steps
@@ -511,11 +567,13 @@ function Graph({ title, labels, counts, mins, maxs, width = 640, height = 320, b
                             }
                         })()}
                         tickFormat={(val: any) => {
-                            // if (cumulative) {
                             const n = typeof val === 'number' ? val : Number(val)
+                            // For Gold mode, don't add percentage or multiply by 100
+                            if (graphType === 'Gold') {
+                                return formatSig3(n)
+                            }
+                            // For other modes, add percentage
                             return (n * 100).toFixed(0) + "%"
-                            // }
-                            // return formatSig3(typeof val === 'number' ? val * 100 : Number(val * 100)) + "%"
                         }}
                         tickLabelProps={() => ({ fill: hoverColor, fontSize: 11 })}
                     />
@@ -527,7 +585,7 @@ function Graph({ title, labels, counts, mins, maxs, width = 640, height = 320, b
                     {/* Hover point snapped to selected series */}
                     {hoverMarker && (
                         <g>
-                            <circle cx={hoverMarker.cx} cy={hoverMarker.cy} r={4.5} fill={SERIES_COLORS_VARS[hoverMarker.series]} stroke="#fff" strokeWidth={2} />
+                            <circle cx={hoverMarker.cx} cy={hoverMarker.cy} r={4.5} fill={effectiveColors[hoverMarker.series]} stroke="#fff" strokeWidth={2} />
                         </g>
                     )}
 
@@ -537,6 +595,58 @@ function Graph({ title, labels, counts, mins, maxs, width = 640, height = 320, b
                         showSeriesGlyphs={false}
                         renderTooltip={() => {
                             if (fallbackSeries == null || hoverBucket == null || !effectiveMins || !effectiveMaxs) return null
+
+                            // Raw mode tooltip
+                            if (graphType === 'Raw') {
+                                const srcCounts = effectiveCounts ?? counts;
+                                const yValue = srcCounts[fallbackSeries][hoverBucket] || 0
+                                const weekNumber = hoverBucket
+
+                                if (fallbackSeries === 7 || labels[fallbackSeries] === 'Overall') {
+                                    // Overall series
+                                    return (
+                                        <div style={{ color: 'var(--text-primary)' }}>
+                                            <div style={{ color: effectiveColors[fallbackSeries], fontWeight: 600 }}>{labels[fallbackSeries]}</div>
+                                            <div>On week {weekNumber + 1}, you have a {(yValue * 100).toFixed(1)}% chance of success overall</div>
+                                        </div>
+                                    )
+                                } else {
+                                    // Material series
+                                    return (
+                                        <div style={{ color: 'var(--text-primary)' }}>
+                                            <div style={{ color: effectiveColors[fallbackSeries], fontWeight: 600 }}>{labels[fallbackSeries]}</div>
+                                            <div>On week {weekNumber + 1}, you have a {(yValue * 100).toFixed(1)}% chance of having enough {labels[fallbackSeries]}</div>
+                                        </div>
+                                    )
+                                }
+                            }
+
+                            // Gold mode tooltip
+                            if (graphType === 'Gold') {
+                                const srcCounts = effectiveCounts ?? counts;
+                                const yValue = srcCounts[fallbackSeries][hoverBucket] || 0
+                                const weekNumber = hoverBucket
+
+                                if (fallbackSeries === 0) {
+                                    // First series - Cost to Pity
+                                    return (
+                                        <div style={{ color: 'var(--text-primary)' }}>
+                                            <div style={{ color: effectiveColors[fallbackSeries], fontWeight: 600 }}>{labels[fallbackSeries]}</div>
+                                            <div>On week {weekNumber + 1}, pity will cost {formatSig3(yValue)} if you buy remaining mats</div>
+                                        </div>
+                                    )
+                                } else if (fallbackSeries === 1) {
+                                    // Second series - Gold from selling
+                                    return (
+                                        <div style={{ color: 'var(--text-primary)' }}>
+                                            <div style={{ color: effectiveColors[fallbackSeries], fontWeight: 600 }}>{labels[fallbackSeries]}</div>
+                                            <div>On week {weekNumber + 1}, you will have {formatSig3(yValue)} Gold if you sell extra mats</div>
+                                        </div>
+                                    )
+                                }
+                            }
+
+                            // Histogram mode tooltip (existing behavior)
                             const min = effectiveMins[fallbackSeries]
                             const max = effectiveMaxs[fallbackSeries]
                             const widthRange = Math.max(1e-9, max - min);
@@ -547,7 +657,7 @@ function Graph({ title, labels, counts, mins, maxs, width = 640, height = 320, b
                             const cumPct = cumPctRaw.toFixed(decimalPlaces)
                             return (
                                 <div style={{ color: 'var(--text-primary)' }}>
-                                    <div style={{ color: SERIES_COLORS_VARS[fallbackSeries], fontWeight: 600 }}>{labels[fallbackSeries]}</div>
+                                    <div style={{ color: effectiveColors[fallbackSeries], fontWeight: 600 }}>{labels[fallbackSeries]}</div>
                                     <div>In a room of 100 people,</div>
                                     <div>{cumPct} used less than {formatSig3(mid, 3)} {labels[fallbackSeries]}</div>
                                 </div>
@@ -573,24 +683,26 @@ function Graph({ title, labels, counts, mins, maxs, width = 640, height = 320, b
 
                         }}
                         style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'transparent', border: '1px solid var(--border-secondary)', padding: '2px 6px', cursor: 'pointer', opacity: visible[i] ? 1 : 0.4 }}>
-                        <span style={{ width: 10, height: 10, background: SERIES_COLORS_VARS[i], display: 'inline-block' }} />
+                        <span style={{ width: 10, height: 10, background: effectiveColors[i], display: 'inline-block' }} />
                         <span style={{ color: 'var(--text-secondary)', fontSize: 12 }}>{lab}</span>
                     </button>
                 ) : null)}
             </div>
 
-            {!anyVisible && (
-                <div style={{ marginTop: -250, height: 300 }}>
-                    <div style={{ color: 'var(--text-secondary)', fontSize: 50, alignSelf: 'center', justifySelf: 'center' }}>
-                        {hasSelection ? isLoading ? "Loading..." : 'Nothing to plot, couple possibilities:' : 'Nothing to plot, tick an upgrade!'}
+            {
+                !anyVisible && (
+                    <div style={{ marginTop: -250, height: 300 }}>
+                        <div style={{ color: 'var(--text-secondary)', fontSize: 50, alignSelf: 'center', justifySelf: 'center' }}>
+                            {hasSelection ? isLoading ? "Loading..." : 'Nothing to plot, couple possibilities:' : 'Nothing to plot, tick an upgrade!'}
+                        </div>
+                        <div style={{ fontSize: 16 }}>{isLoading && hasSelection ? "Please allow up to ~5s, if it still doesnt load then gg" : ""}</div>
+                        <div style={{ fontSize: 16 }}>{isLoading && hasSelection ? "Also the first run is slower because it has to spin up WebAssembly" : ""}</div>
+                        <div style={{ fontSize: 16 }}>{!isLoading && hasSelection ? "1. All your ticks have 100% success rate(+1 to +3)" : ""}</div>
+                        <div style={{ fontSize: 16 }}>{!isLoading && hasSelection ? "2. The x-axis was locked at too high a value, so everything fell within the first pixel/tick.(Both situations are due to every point landing on the same x value)" : ""}</div>
                     </div>
-                    <div style={{ fontSize: 16 }}>{isLoading && hasSelection ? "Please allow up to ~5s, if it still doesnt load then gg" : ""}</div>
-                    <div style={{ fontSize: 16 }}>{isLoading && hasSelection ? "Also the first run is slower because it has to spin up WebAssembly" : ""}</div>
-                    <div style={{ fontSize: 16 }}>{!isLoading && hasSelection ? "1. All your ticks have 100% success rate(+1 to +3)" : ""}</div>
-                    <div style={{ fontSize: 16 }}>{!isLoading && hasSelection ? "2. The x-axis was locked at too high a value, so everything fell within the first pixel/tick.(Both situations are due to every point landing on the same x value)" : ""}</div>
-                </div>
-            )}
-        </div>
+                )
+            }
+        </div >
     )
 }
 

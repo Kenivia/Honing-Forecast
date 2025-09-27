@@ -11,6 +11,7 @@ import CostToChanceSection from './CostToChanceSection.tsx'
 // const CostToChanceSection = React.lazy(() => import('./CostToChanceSection.tsx'));
 
 import GambaSection from "./GambaSection.tsx"
+import LongTermSection from './LongTermSection.tsx'
 // const GambaSection = React.lazy(() => import('./GambaSection.tsx'));
 import Separator from './Separator.tsx'
 import { TooltipState, createTooltipHandlers, renderTooltip } from './Tooltip.tsx'
@@ -37,7 +38,7 @@ export default function HoningForecastUI() {
     const [prev_checked_arr_bottom, set_prev_checked_arr_bottom] = useState(() => Array.from({ length: BOTTOM_COLS }, () => false))
     const [cumulativeGraph, setCumulativeGraph] = useState<boolean>(false)
     const [dataSize, setDataSize] = useState<string>(() => '100000')
-    const [activePage, setActivePage] = useState<'chance-to-cost' | 'cost-to-chance' | 'gamba'>('chance-to-cost')
+    const [activePage, setActivePage] = useState<'chance-to-cost' | 'cost-to-chance' | 'gamba' | 'long-term'>('chance-to-cost')
     const [mainScale, setMainScale] = useState<number>(1)
     const [zoomCompensation, setZoomCompensation] = useState<number>(1)
 
@@ -433,6 +434,7 @@ export default function HoningForecastUI() {
         set_budget_inputs,
         set_desired_chance,
         set_prev_checked_arr,
+        setUserMatsValue,
     })
 
     const [chance_result, set_chance_result] = useState<any>(null)
@@ -764,6 +766,25 @@ export default function HoningForecastUI() {
                         // Moved worker call results
                         upgradeArr={upgradeArr}
                         ParserBusy={ParserBusy}
+                    />
+                </div>
+
+                <div className={activePage === 'long-term' ? 'page' : 'page page--hidden'} aria-hidden={activePage !== 'long-term'}>
+                    <LongTermSection
+                        budget_inputs={budget_inputs}
+                        set_budget_inputs={set_budget_inputs}
+                        userMatsValue={userMatsValue}
+                        setUserMatsValue={setUserMatsValue}
+                        topGrid={topGrid}
+                        bottomGrid={bottomGrid}
+                        adv_hone_strategy={adv_hone_strategy}
+                        express_event={express_event}
+                        bucketCount={bucketCount}
+                        autoOptimization={autoOptimization}
+                        dataSize={dataSize}
+                        useGridInput={useGridInput}
+                        normalCounts={normalCounts}
+                        advCounts={advCounts}
                     />
                 </div>
             </div>

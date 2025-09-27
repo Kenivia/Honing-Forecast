@@ -1,6 +1,6 @@
 use crate::chance_to_cost::average_juice_cost;
 use crate::constants::*;
-use crate::helpers::{calc_unlock, compress_runs, myformat, sort_by_indices};
+use crate::helpers::{calc_unlock, compress_runs, sort_by_indices};
 use crate::histogram::histograms_for_all_costs;
 use crate::monte_carlo::monte_carlo_data;
 use crate::parser::{Upgrade, parser};
@@ -10,7 +10,7 @@ use serde::Serialize;
 #[derive(Serialize, Debug)]
 pub struct CostToChanceOut {
     pub chance: f64,
-    pub reasons: Vec<String>,
+    pub reasons: Vec<f64>,                 // 7 failure rates for each cost type
     pub hist_counts: Vec<Vec<i64>>,        // 7 x num_bins
     pub hist_mins: Vec<i64>,               // 7
     pub hist_maxs: Vec<i64>,               // 7
@@ -49,31 +49,13 @@ fn extract_upgrade_strings(
     result
 }
 
-fn fail_count_to_string(typed_fail_counter: Vec<f64>, data_size: usize) -> Vec<String> {
-    let failed_indices: Vec<usize> = (0..typed_fail_counter.len()).collect();
-    // failed_indices.sort_by(|&a, &b| typed_fail_counter[b].total_cmp(&typed_fail_counter[a]));
-    let mut this_failed: Vec<String> = Vec::new();
-    // let mut displayed: bool = false;
-    let mut spread_str: String;
-    let mut spread_num: f64;
-    for z in failed_indices {
-        spread_num = 1.0 - typed_fail_counter[z] as f64 / data_size as f64;
-        spread_str = myformat(spread_num);
-        // if spread_num >= 0.001 || !displayed {
-        this_failed.push(spread_str.to_owned() + "% chance to have enough " + LABELS[z]);
-        // }
-        // displayed = true
+fn fail_count_to_rates(typed_fail_counter: Vec<f64>, data_size: usize) -> Vec<f64> {
+    let mut failure_rates: Vec<f64> = Vec::new();
+    for z in 0..typed_fail_counter.len() {
+        let failure_rate = 1.0 - typed_fail_counter[z] as f64 / data_size as f64;
+        failure_rates.push(failure_rate);
     }
-    if typed_fail_counter
-        .iter()
-        .copied()
-        .fold(f64::NEG_INFINITY, f64::max)
-        == 0.0_f64
-    {
-        return vec!["None".to_string()];
-    } else {
-        return this_failed;
-    }
+    failure_rates
 }
 
 #[derive(Debug)]
@@ -163,22 +145,23 @@ fn preparation(
 }
 
 #[derive(Debug)]
+struct HistogramOutputs {
+    upgrade_strings: Vec<String>,
+    // top_bottom: Vec<Vec<i64>>,
+    hist_counts: Vec<Vec<i64>>,
+    hist_mins: Vec<i64>,
+    hist_maxs: Vec<i64>,
+}
+
+#[derive(Debug)]
 struct FailureAnalysisOutputs {
     typed_fail_counter_final: Vec<f64>,
     final_chance: f64,
-    upgrade_strings: Vec<String>,
-    top_bottom: Vec<Vec<i64>>,
 }
 
 fn count_failure_typed(
     cost_data: &Vec<Vec<i64>>,
     input_budgets: &Vec<i64>,
-    upgrade_arr: &mut Vec<Upgrade>,
-    valid_weapon_values: bool,
-    valid_armor_values: bool,
-    hone_counts: &Vec<Vec<i64>>,
-    adv_counts: &Vec<Vec<i64>>,
-    express_event: bool,
 ) -> FailureAnalysisOutputs {
     let mut typed_fail_counter_final: Vec<f64> = vec![0.0_f64; 7];
     let mut overall_fail_counter: i64 = 0;
@@ -197,13 +180,44 @@ fn count_failure_typed(
         }
     }
 
+    let final_chance = 1.0_f64 - overall_fail_counter as f64 / cost_data.len() as f64;
+
+    FailureAnalysisOutputs {
+        typed_fail_counter_final,
+        final_chance,
+    }
+}
+
+fn count_failure_typed_arr(
+    cost_data: &Vec<Vec<i64>>,
+    input_budgets_arr: &Vec<Vec<i64>>,
+) -> (Vec<f64>, Vec<Vec<f64>>) {
+    let mut final_chances: Vec<f64> = Vec::new();
+    let mut typed_fail_counters: Vec<Vec<f64>> = Vec::new();
+
+    for input_budgets in input_budgets_arr {
+        let failure_outputs: FailureAnalysisOutputs = count_failure_typed(cost_data, input_budgets);
+        final_chances.push(failure_outputs.final_chance);
+        typed_fail_counters.push(failure_outputs.typed_fail_counter_final);
+    }
+
+    (final_chances, typed_fail_counters)
+}
+
+fn prep_histogram(
+    upgrade_arr: &mut Vec<Upgrade>,
+    valid_weapon_values: bool,
+    valid_armor_values: bool,
+    hone_counts: &Vec<Vec<i64>>,
+    adv_counts: &Vec<Vec<i64>>,
+    express_event: bool,
+    cost_data: &Vec<Vec<i64>>,
+    hist_bins: usize,
+) -> HistogramOutputs {
     let upgrade_strings: Vec<String> = compress_runs(
         extract_upgrade_strings(upgrade_arr, valid_weapon_values, valid_armor_values),
         true,
     );
-    let final_chance = 1.0_f64 - overall_fail_counter as f64 / cost_data.len() as f64;
-
-    // Generate histogram data from simulated cost data
 
     let top_bottom: Vec<Vec<i64>> = monte_carlo_data(
         2,
@@ -214,14 +228,19 @@ fn count_failure_typed(
         true, //use_true_rn
     );
 
-    FailureAnalysisOutputs {
-        typed_fail_counter_final,
-        final_chance,
-        upgrade_strings,
+    let bins = hist_bins.min(BUCKET_COUNT).max(1);
+    let hist_maxs = top_bottom[1].clone();
+    let hist_counts: Vec<Vec<i64>> = histograms_for_all_costs(cost_data, bins, &hist_maxs);
 
-        top_bottom,
+    HistogramOutputs {
+        upgrade_strings,
+        // top_bottom,
+        hist_counts,
+        hist_mins: vec![0_i64; 7],
+        hist_maxs,
     }
 }
+
 pub fn cost_to_chance(
     hone_counts: &Vec<Vec<i64>>,
     input_budgets: &Vec<i64>,
@@ -252,34 +271,85 @@ pub fn cost_to_chance(
         false, //use_true_rng
     );
 
-    // Section 3: Failure analysis and histogram generation
-    let failure_outputs = count_failure_typed(
-        &cost_data,
-        input_budgets,
+    // Section 3: Failure analysis
+    let failure_outputs = count_failure_typed(&cost_data, input_budgets);
+
+    // Section 4: Histogram preparation
+    let histogram_outputs = prep_histogram(
         &mut prep_outputs.upgrade_arr,
         prep_outputs.valid_weapon_values,
         prep_outputs.valid_armor_values,
         hone_counts,
         adv_counts,
         express_event,
+        &cost_data,
+        hist_bins,
     );
-
-    let bins = hist_bins.min(BUCKET_COUNT).max(1);
-    let hist_counts: Vec<Vec<i64>> =
-        histograms_for_all_costs(&cost_data, bins, &failure_outputs.top_bottom[1]);
 
     CostToChanceOut {
         chance: failure_outputs.final_chance,
-        reasons: fail_count_to_string(failure_outputs.typed_fail_counter_final, data_size),
-        hist_counts,
-        hist_mins: vec![0_i64; 7],
-        hist_maxs: failure_outputs.top_bottom[1].clone(),
-        upgrade_strings: failure_outputs.upgrade_strings,
+        reasons: fail_count_to_rates(failure_outputs.typed_fail_counter_final, data_size),
+        hist_counts: histogram_outputs.hist_counts,
+        hist_mins: histogram_outputs.hist_mins,
+        hist_maxs: histogram_outputs.hist_maxs,
+        upgrade_strings: histogram_outputs.upgrade_strings,
         juice_strings_armor: prep_outputs.juice_strings_armor,
         juice_strings_weapon: prep_outputs.juice_strings_weapon,
         budgets_red_remaining: prep_outputs.budgets[7],
         budgets_blue_remaining: prep_outputs.budgets[8],
     }
+}
+
+pub fn cost_to_chance_arr(
+    hone_counts: &Vec<Vec<i64>>,
+    input_budgets_arr: &Vec<Vec<i64>>,
+    adv_counts: &Vec<Vec<i64>>,
+    express_event: bool,
+    user_mats_value: &Vec<f64>,
+    adv_hone_strategy: String,
+    data_size: usize,
+) -> (Vec<f64>, Vec<Vec<f64>>, i64, i64, Vec<i64>) {
+    // Section 1: Preparation - setup and parsing (only run once with first budget)
+    let first_budget = &input_budgets_arr[0];
+    let mut prep_outputs = preparation(
+        hone_counts,
+        first_budget,
+        adv_counts,
+        express_event,
+        user_mats_value,
+        &adv_hone_strategy,
+    );
+
+    // Section 2: Monte Carlo simulation (only run once with first budget's special)
+    let cost_data: Vec<Vec<i64>> = monte_carlo_data(
+        data_size,
+        &mut prep_outputs.upgrade_arr,
+        &prep_outputs.unlock_costs,
+        first_budget[9], // Use first budget's special leap count
+        false,
+        false, //use_true_rng
+    );
+
+    // Section 3: Failure analysis for all budgets
+    let (final_chances, typed_fail_counters) =
+        count_failure_typed_arr(&cost_data, input_budgets_arr);
+
+    let top_bottom: Vec<Vec<i64>> = monte_carlo_data(
+        2,
+        &prep_outputs.upgrade_arr,
+        &calc_unlock(hone_counts, adv_counts, express_event),
+        0,
+        true, // rigged
+        true, //use_true_rn
+    );
+    // Return only the required data: chances, failure counters, and remaining budgets
+    (
+        final_chances,
+        typed_fail_counters,
+        prep_outputs.budgets[7], // budgets_red_remaining
+        prep_outputs.budgets[8], // budgets_blue_remaining
+        top_bottom[1].clone(),
+    )
 }
 
 #[cfg(test)]
@@ -375,5 +445,47 @@ mod tests {
         println!("{:?}", out.chance);
         println!("{:?}", out.reasons);
         assert!(0.52 < out.chance && out.chance < 0.54);
+    }
+
+    #[test]
+    fn cost_to_chance_arr_test() {
+        let budget_arr = vec![
+            vec![
+                431777, 1064398, 23748, 9010948, 15125, 1803792, 4294967295, 420, 690, 6767,
+            ],
+            vec![
+                431777, 1064398, 23748, 9010948, 15125, 1803792, 4294967295, 420, 690, 6767,
+            ],
+        ];
+
+        let (
+            final_chances,
+            typed_fail_counters,
+            budgets_red_remaining,
+            budgets_blue_remaining,
+            _pity,
+        ) = cost_to_chance_arr(
+            &vec![(0..25).map(|_| 5).collect(), (0..25).map(|_| 1).collect()],
+            &budget_arr,
+            &vec![(0..4).map(|_| 5).collect(), (0..4).map(|_| 1).collect()],
+            false,
+            &vec![0.0; 7],
+            "No juice".to_owned(),
+            100000,
+        );
+
+        println!("Final chances: {:?}", final_chances);
+        println!("Typed fail counters: {:?}", typed_fail_counters);
+        println!("Budgets red remaining: {}", budgets_red_remaining);
+        println!("Budgets blue remaining: {}", budgets_blue_remaining);
+
+        // Should have 2 results (one for each budget)
+        assert_eq!(final_chances.len(), 2);
+        assert_eq!(typed_fail_counters.len(), 2);
+        assert_eq!(typed_fail_counters[0].len(), 7);
+        assert_eq!(typed_fail_counters[1].len(), 7);
+
+        // Both budgets are identical, so results should be the same
+        assert!((final_chances[0] - final_chances[1]).abs() < 0.001);
     }
 }

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import './separator.css';
 
 
-type Page = 'chance-to-cost' | 'cost-to-chance' | 'gamba';
+type Page = 'chance-to-cost' | 'cost-to-chance' | 'gamba' | 'long-term';
 
 type SeparatorProps = {
     activePage: Page;
@@ -25,6 +25,7 @@ export default function Separator({ activePage, onPageChange }: SeparatorProps) 
         if (activePage === 'chance-to-cost') return 'hf-separator chance-active';
         if (activePage === 'cost-to-chance') return 'hf-separator budget-active';
         if (activePage === 'gamba') return 'hf-separator gamba-active';
+        if (activePage === 'long-term') return 'hf-separator longterm-active';
         return 'hf-separator';
     };
 
@@ -34,6 +35,7 @@ export default function Separator({ activePage, onPageChange }: SeparatorProps) 
             if (page === 'chance-to-cost') return `${baseClass} chance-selected`;
             if (page === 'cost-to-chance') return `${baseClass} budget-selected`;
             if (page === 'gamba') return `${baseClass} gamba-selected`;
+            if (page === 'long-term') return `${baseClass} longterm-selected`;
         }
         return baseClass;
     };
@@ -58,6 +60,14 @@ export default function Separator({ activePage, onPageChange }: SeparatorProps) 
                 <div className="hf-help">
                     I have this much mats, what are my odds of success?
                 </div>
+            </button>
+
+            <button
+                className={getButtonClass('long-term')}
+                onClick={() => handleButtonClick('long-term')}
+            >
+                <span className="hf-label">Long term chances</span>
+                <div className="hf-help">Can you afford 1740 by Kazeros?</div>
             </button>
 
             <button
