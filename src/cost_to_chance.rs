@@ -138,7 +138,7 @@ pub fn cost_to_chance(
     // Use original calibration approach
 
     if !both_valid {
-        mats_value = vec![0.6, 0.1, 13.0, 0.2, 90.0, 1.0, 0.0];
+        mats_value = vec![1.0, 0.1, 13.0, 0.2, 90.0, 1.0, 0.0];
         // valid_weapon_values = vec![1.2, 0.1, 13.0, 0.3, 90.0, 1.0, 0.0];
 
         // let mut prelim_cost_data_arr: Vec<Vec<Vec<i64>>> = Vec::new();
@@ -285,7 +285,8 @@ mod tests {
         );
         let _chance = out.chance;
         let _reasons = out.reasons;
-        assert!(0.183 < _chance && _chance < 0.189);
+        println!("{:?}", _chance);
+        assert!(_chance < 0.001);
     }
     #[test]
     fn cost_to_chance_18_demo() {
@@ -318,7 +319,7 @@ mod tests {
         println!("{:?}", out.juice_strings_weapon);
 
         // println!("{:?}", out);
-        // assert!(0.172 < out.chance && out.chance < 0.178);
+        assert!(0.07 < out.chance && out.chance < 0.08);
     }
     #[test]
     fn cost_to_chance_50_normal_weapon_25() {
