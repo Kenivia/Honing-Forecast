@@ -18,7 +18,7 @@ import { TooltipState, createTooltipHandlers, renderTooltip } from './Tooltip.ts
 import Icon from '../../components/Icon.tsx'
 
 import { GridMouseDownLogic, mouseMoveLogic, createMouseUpHandler } from "./Marquee.ts"
-import { createClearAll, createFillRandom, createFillDemo } from './ControlPanelFunctions.ts'
+import { createClearAll, createFillRandom, createFillDemo, createFillDemoIncome } from './ControlPanelFunctions.ts'
 import { buildPayload, createStartCancelableWorker, createHandleCallWorker } from './Debounce.ts'
 import { ticksToCounts, countsToTicks } from './utils.ts'
 
@@ -28,7 +28,10 @@ export default function HoningForecastUI() {
     const [bottomGrid, setBottomGrid] = useState(() => Array.from({ length: BOTTOM_ROWS }, () => Array(BOTTOM_COLS).fill(false)))
     const [budget_inputs, set_budget_inputs] = useState(() => Object.fromEntries(INPUT_LABELS.map((l) => [l, '0'])))
     const [autoOptimization, setAutoOptimization] = useState(true)
-    const [userMatsValue, setUserMatsValue] = useState(() => Object.fromEntries(INPUT_LABELS.slice(0, 7).map((l) => (l == "Gold") ? [l, "1"] : [l, '0'])))
+    const [userMatsValue, setUserMatsValue] = useState(() => {
+        const defaultValues = ["1.0", "0.1", "13.0", "0.2", "90.0", "1.0", "0.0"]
+        return Object.fromEntries(INPUT_LABELS.slice(0, 7).map((l, index) => [l, defaultValues[index]]))
+    })
     const [desired_chance, set_desired_chance] = useState(() => '50')
     const [uncleaned_desired_chance, set_uncleaned_desired_chance] = useState(() => '50')
     const [adv_hone_strategy, set_adv_hone_strategy_change] = useState(() => 'No juice')
@@ -52,6 +55,23 @@ export default function HoningForecastUI() {
     // Numeric input state for when useGridInput is false
     const [normalCounts, setNormalCounts] = useState<number[][]>(() => Array.from({ length: 2 }, () => Array(TOP_COLS).fill(0)))
     const [advCounts, setAdvCounts] = useState<number[][]>(() => Array.from({ length: 2 }, () => Array(BOTTOM_COLS).fill(0)))
+
+    // Income array state (6 grids, 7 rows each)
+    const [incomeArr, setIncomeArr] = useState<number[][]>(() => {
+        // Try to load from localStorage first
+        const saved = localStorage.getItem('honing_forecast_income_arr')
+        if (saved) {
+            try {
+                const parsed = JSON.parse(saved)
+                if (Array.isArray(parsed) && parsed.length === 6 && parsed.every(row => Array.isArray(row) && row.length === 7)) {
+                    return parsed
+                }
+            } catch (e) {
+                // If parsing fails, fall back to default
+            }
+        }
+        return Array.from({ length: 6 }, () => Array.from({ length: 7 }, () => 0))
+    })
 
     // marquee state & refs (kept here so grids stay presentational)
     const topGridRef = useRef<HTMLDivElement | null>(null)
@@ -114,6 +134,11 @@ export default function HoningForecastUI() {
         const newAdvCounts = ticksToCounts(bottomGrid)
         setAdvCounts(newAdvCounts)
     }, [bottomGrid])
+
+    // Save income array to localStorage whenever it changes
+    useEffect(() => {
+        localStorage.setItem('honing_forecast_income_arr', JSON.stringify(incomeArr))
+    }, [incomeArr])
 
     // ----- Responsive scaling based on window width -----
     useEffect(() => {
@@ -418,6 +443,7 @@ export default function HoningForecastUI() {
         setUseGridInput,
         setNormalCounts,
         setAdvCounts,
+        setIncomeArr,
     })
 
     const fillRandom = createFillRandom({
@@ -435,6 +461,10 @@ export default function HoningForecastUI() {
         set_desired_chance,
         set_prev_checked_arr,
         setUserMatsValue,
+    })
+
+    const fillDemoIncome = createFillDemoIncome({
+        setIncomeArr,
     })
 
     const [chance_result, set_chance_result] = useState<any>(null)
@@ -674,6 +704,7 @@ export default function HoningForecastUI() {
                         controlsLeft={null}
                         mainScale={mainScale}
                         fillDemo={fillDemo}
+                        fillDemoIncome={fillDemoIncome}
                         fillRandom={fillRandom}
                         clearAll={clearAll}
                         express_event={express_event}
@@ -785,6 +816,15 @@ export default function HoningForecastUI() {
                         useGridInput={useGridInput}
                         normalCounts={normalCounts}
                         advCounts={advCounts}
+                        incomeArr={incomeArr}
+                        setIncomeArr={setIncomeArr}
+                        // Desired chance props
+                        desired_chance={desired_chance}
+                        uncleaned_desired_chance={uncleaned_desired_chance}
+                        onDesiredChange={onDesiredChange}
+                        onDesiredBlur={onDesiredBlur}
+                        // Cost result prop for hundred_budgets
+                        cost_result={cost_result}
                     />
                 </div>
             </div>

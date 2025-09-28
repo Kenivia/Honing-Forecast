@@ -13,8 +13,9 @@
     --btn-toggle-deselected: #6b7280;
     --btn-toggle-chance-selected: #1c9164;
     --btn-toggle-budget-selected: #165ca3;
-    --btn-toggle-gamba-selected: #a40cea;
-    --btn-toggle-longterm-selected: #ff6b35;
+
+    --btn-toggle-longterm-selected: #8235ff;
+    --btn-toggle-gamba-selected: #ea0c74;
     --btn-toggle-lock-selected: rgb(255, 165, 0);
 
     /* Warning/Alert Colors */

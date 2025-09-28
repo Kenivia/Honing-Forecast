@@ -22,6 +22,7 @@ export function createClearAll({
     setUseGridInput,
     setNormalCounts,
     setAdvCounts,
+    setIncomeArr,
 }: {
     setTopGrid: React.Dispatch<React.SetStateAction<any>>
     setBottomGrid: React.Dispatch<React.SetStateAction<any>>
@@ -43,6 +44,7 @@ export function createClearAll({
     setUseGridInput: React.Dispatch<React.SetStateAction<boolean>>
     setNormalCounts: React.Dispatch<React.SetStateAction<number[][]>>
     setAdvCounts: React.Dispatch<React.SetStateAction<number[][]>>
+    setIncomeArr: React.Dispatch<React.SetStateAction<number[][]>>
 }) {
     return () => {
         // Grids and their column header checkboxes
@@ -53,7 +55,14 @@ export function createClearAll({
 
         // Inputs and toggles to defaults
         set_budget_inputs(Object.fromEntries(INPUT_LABELS.map((l) => [l, "0"])))
-        setUserMatsValue(Object.fromEntries(INPUT_LABELS.slice(0, 7).map((l) => (l == "Gold" ? [l, "1"] : [l, "0"]))))
+        setUserMatsValue(
+            Object.fromEntries(
+                INPUT_LABELS.slice(0, 7).map((l, index) => {
+                    const defaultValues = ["1.0", "0.1", "13.0", "0.2", "90.0", "1.0", "0.0"]
+                    return [l, defaultValues[index]]
+                })
+            )
+        )
         set_desired_chance("50")
         set_adv_hone_strategy_change("No juice")
         set_express_event(true)
@@ -76,6 +85,9 @@ export function createClearAll({
         // Reset numeric input states
         setNormalCounts(Array.from({ length: 2 }, () => Array(TOP_COLS).fill(0)))
         setAdvCounts(Array.from({ length: 2 }, () => Array(BOTTOM_COLS).fill(0)))
+
+        // Reset income array
+        setIncomeArr(Array.from({ length: 6 }, () => Array.from({ length: 7 }, () => 0)))
     }
 }
 
@@ -162,8 +174,12 @@ export function createFillDemo({
             Gold: "1.0",
             Silver: "0.0",
         })
+    }
+}
 
-        // Set income array with specified values using localStorage
+export function createFillDemoIncome({ setIncomeArr }: { setIncomeArr: React.Dispatch<React.SetStateAction<number[][]>> }) {
+    return () => {
+        // Set income array with specified values
         const income_1680_roster_bound = [2606, 7751, 133, 0, 0, 90000, 69420]
         const income_1720_char_bound = [13600, 28160, 594, 360279, 1500, 120000, 69420]
 
@@ -174,9 +190,6 @@ export function createFillDemo({
                 return income_1680_roster_bound
             }
         })
-        localStorage.setItem("honing_forecast_income_arr", JSON.stringify(newIncomeArr))
-
-        // Dispatch custom event to notify LongTermSection of income array update
-        window.dispatchEvent(new CustomEvent("incomeArrayUpdated", { detail: newIncomeArr }))
+        setIncomeArr(newIncomeArr)
     }
 }

@@ -1,10 +1,47 @@
 import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react'
+import { Slider, styled } from '@mui/material'
 import SpreadsheetGrid from '../../components/SpreadsheetGrid.tsx'
 import Graph from '../../components/Graph.tsx'
 import { styles, SMALL_GRAPH_WIDTH, SMALL_GRAPH_HEIGHT, GRAPH_HEIGHT, GRAPH_WIDTH } from './styles.ts'
 import { INPUT_LABELS } from './constants.ts'
 import { SpawnWorker } from '../../worker_setup.ts'
 import { buildPayload } from './Debounce.ts'
+
+// Styled Material UI Slider with custom colors
+const StyledSlider = styled(Slider)(() => ({
+    width: 300,
+    color: 'var(--slider-track-active)',
+    '& .MuiSlider-track': {
+        border: 'none',
+        backgroundColor: 'var(--slider-track-active)',
+        height: 6,
+    },
+    '& .MuiSlider-rail': {
+        backgroundColor: 'var(--slider-track-bg)',
+        height: 6,
+    },
+    '& .MuiSlider-thumb': {
+        backgroundColor: 'var(--slider-thumb-bg)',
+        border: '2px solid var(--slider-thumb-bg)',
+        width: 20,
+        height: 20,
+        '&:hover, &.Mui-focusVisible': {
+            backgroundColor: 'var(--slider-thumb-hover)',
+            borderColor: 'var(--slider-thumb-focus)',
+            boxShadow: `0 0 0 8px var(--slider-thumb-shadow)`,
+        },
+        '&.Mui-active': {
+            backgroundColor: 'var(--slider-thumb-hover)',
+            borderColor: 'var(--slider-thumb-focus)',
+        },
+    },
+    '& .MuiSlider-valueLabel': {
+        backgroundColor: 'var(--slider-thumb-bg)',
+        color: 'var(--text-primary)',
+        fontSize: '12px',
+        fontWeight: 'bold',
+    },
+}))
 
 type LongTermSectionProps = {
     budget_inputs: any
@@ -21,11 +58,23 @@ type LongTermSectionProps = {
     useGridInput: any
     normalCounts: any
     advCounts: any
+    incomeArr: number[][]
+    setIncomeArr: React.Dispatch<React.SetStateAction<number[][]>>
+    // Desired chance props
+    desired_chance: string
+    uncleaned_desired_chance: string
+    onDesiredChange: (_value: string) => void
+    onDesiredBlur: () => void
+    // Cost result prop for hundred_budgets
+    cost_result: any
 }
 function cost_to_pity(budget: number[], pity_cost: number[], mat_value: number[]): number {
     let sum = 0;
     for (let i = 0; i < 7; i++) {
-        sum += (pity_cost[i] - budget[i]) * mat_value[i];
+        if (i == 5) { sum += Math.max(0, pity_cost[i]) * mat_value[i] }
+        else {
+            sum += Math.max(0, pity_cost[i] - budget[i]) * mat_value[i];
+        }
     }
     return sum;
 }
@@ -33,9 +82,15 @@ function cost_to_pity(budget: number[], pity_cost: number[], mat_value: number[]
 function gold_from_sell_mats(budget: number[], pity_cost: number[], mat_value: number[]): number {
     let sum = budget[5];
     for (let i = 0; i < 7; i++) {
-        sum += Math.max(0, (budget[i] - pity_cost[i])) * Math.floor(mat_value[i] * 0.95);
+        if (i == 5 || i == 3 || i == 6) { continue; }
+        sum += Math.max(0, (budget[i] - pity_cost[i])) * mat_value[i] * 0.95;
     }
     return sum;
+}
+
+function cost_to_pity_individual(budget: number[], pity_cost: number[], mat_value: number[], materialIndex: number): number {
+    if (materialIndex == 5) { return pity_cost[materialIndex] * mat_value[materialIndex] };
+    return Math.max(0, pity_cost[materialIndex] - budget[materialIndex]) * mat_value[materialIndex];
 }
 
 function weekly_budget(budget: number[], weekly_income: number[]): number[][] {
@@ -67,23 +122,17 @@ export default function LongTermSection({
     useGridInput,
     normalCounts,
     advCounts,
+    incomeArr,
+    setIncomeArr,
+    // Desired chance props
+    desired_chance,
+    uncleaned_desired_chance,
+    onDesiredChange,
+    onDesiredBlur,
+    // Cost result prop for hundred_budgets
+    cost_result,
 }: LongTermSectionProps) {
-    // State for 6 income grids (7 rows each)
-    const [Income_arr, setIncome_arr] = useState<number[][]>(() => {
-        // Try to load from localStorage first
-        const saved = localStorage.getItem('honing_forecast_income_arr')
-        if (saved) {
-            try {
-                const parsed = JSON.parse(saved)
-                if (Array.isArray(parsed) && parsed.length === 6 && parsed.every(row => Array.isArray(row) && row.length === 7)) {
-                    return parsed
-                }
-            } catch (e) {
-                // If parsing fails, fall back to default
-            }
-        }
-        return Array.from({ length: 6 }, () => Array.from({ length: 7 }, () => 0))
-    })
+    // Income array is now managed by parent component
 
     // State for cost_to_chance_arr results
     const [longTermResult, setLongTermResult] = useState<any>(null)
@@ -106,23 +155,7 @@ export default function LongTermSection({
         setMatValues(Object.values(userMatsValue).map(v => parseFloat(v.toString()) || 0))
     }, [userMatsValue])
 
-    // Save income array to localStorage whenever it changes
-    useEffect(() => {
-        localStorage.setItem('honing_forecast_income_arr', JSON.stringify(Income_arr))
-    }, [Income_arr])
-
-    // Listen for income array updates from fillDemo
-    useEffect(() => {
-        const handleIncomeArrayUpdate = (event: CustomEvent) => {
-            setIncome_arr(event.detail)
-        }
-
-        window.addEventListener('incomeArrayUpdated', handleIncomeArrayUpdate as EventListener)
-
-        return () => {
-            window.removeEventListener('incomeArrayUpdated', handleIncomeArrayUpdate as EventListener)
-        }
-    }, [])
+    // Income array is now managed by parent component, no local effects needed
 
     // Column definitions for the long term section - always shows both budget and gold value columns
     const longTermColumnDefs = [
@@ -171,9 +204,9 @@ export default function LongTermSection({
     // Calculate total weekly income (sum of all income grids for each row)
     const totalWeeklyIncome = useMemo(() => {
         return Array.from({ length: 7 }, (_, rowIndex) =>
-            Income_arr.reduce((sum, incomeGrid) => sum + (incomeGrid[rowIndex] || 0), 0)
+            incomeArr.reduce((sum, incomeGrid) => sum + (incomeGrid[rowIndex] || 0), 0)
         )
-    }, [Income_arr])
+    }, [incomeArr])
 
     // Debounce keys for cost_to_chance_arr
     const advStrategyKey = useMemo(() => String(adv_hone_strategy), [adv_hone_strategy])
@@ -285,7 +318,7 @@ export default function LongTermSection({
     // Convert income grid to SpreadsheetGrid format
     const getIncomeGridData = (gridIndex: number) => {
         return incomeLabels.reduce((acc, label, rowIndex) => {
-            acc[label] = Income_arr[gridIndex][rowIndex].toString()
+            acc[label] = incomeArr[gridIndex][rowIndex].toString()
             return acc
         }, {} as Record<string, string>)
     }
@@ -321,23 +354,24 @@ export default function LongTermSection({
         const availableWeeks = Math.min(numWeeks, longTermResult.final_chances.length)
         let truncateLen = numWeeks // default: don't truncate
         if (availableWeeks > 0) {
-            let nonIncreaseCount = 0
             const EPS = 1e-12
+            let lastNonIncreaseStart: number | null = null
+
             for (let i = 1; i < availableWeeks; i++) {
                 if (overallCounts[i] > overallCounts[i - 1] + EPS) {
-                    // we saw an increase — reset counter
-                    nonIncreaseCount = 0
+                    // reset when we see an increase
+                    lastNonIncreaseStart = null
                 } else {
-                    nonIncreaseCount++
+                    // if run not started, mark it
+                    if (lastNonIncreaseStart === null) {
+                        lastNonIncreaseStart = i + 1
+                    }
                 }
+            }
 
-                if (nonIncreaseCount >= 1) {
-                    // the non-increasing run started at:
-                    const startOfRun = i + 1
-                    // we will keep weeks [0 .. startOfRun-1] (i.e. truncate starting at startOfRun)
-                    truncateLen = Math.max(6, startOfRun) // ensure at least 1 week remains
-                    break
-                }
+            if (lastNonIncreaseStart !== null) {
+                // truncate starting at the last non-increase run
+                truncateLen = Math.max(6, lastNonIncreaseStart)
             }
 
             // If availableWeeks is smaller than numWeeks and no plateau found, truncate to availableWeeks
@@ -351,8 +385,10 @@ export default function LongTermSection({
         const mins: number[] = []
         const maxs: number[] = []
 
-        // push overall (truncated)
-
+        // push overall first (truncated)
+        counts.push(overallCounts.slice(0, truncateLen))
+        mins.push(1)
+        maxs.push(truncateLen)
 
         // For each material type (7 types), create a histogram truncated to truncateLen
         const numMaterials = 7
@@ -377,9 +413,6 @@ export default function LongTermSection({
             mins.push(1)
             maxs.push(truncateLen)
         }
-        counts.push(overallCounts.slice(0, truncateLen))
-        mins.push(1)
-        maxs.push(truncateLen)
 
         // debug
         console.log('graphData: truncateLen=', truncateLen, 'counts lengths=', counts.map(c => c.length))
@@ -402,23 +435,41 @@ export default function LongTermSection({
 
         const costToPityData: number[] = []
         const goldFromSellData: number[] = []
+        const individualPityCostsData: number[][] = []
 
+        // Initialize individual pity costs arrays
+        for (let i = 0; i < 7; i++) {
+            individualPityCostsData.push([])
+        }
+
+        const pityCost = cost_result?.hundred_budgets?.[parseInt(desired_chance)] || []
+        console.log("Pitycost", pityCost)
         for (let week = 0; week < Math.min(53, weeklyBudgets.length); week++) {
-            const budget = weeklyBudgets[week]
-            const costToPity = cost_to_pity(budget, longTermResult.pity_cost, matValues)
-            const goldFromSell = gold_from_sell_mats(budget, longTermResult.pity_cost, matValues)
+            const this_week_budget = weeklyBudgets[week]
+            const costToPity = cost_to_pity(this_week_budget, pityCost, matValues)
+            const goldFromSell = gold_from_sell_mats(this_week_budget, pityCost, matValues)
 
             costToPityData.push(costToPity)
             goldFromSellData.push(goldFromSell)
-            if (goldFromSell > costToPity) { break }
+
+            // Calculate individual pity costs for each material
+            for (let materialIndex = 0; materialIndex < 7; materialIndex++) {
+                const individualCost = cost_to_pity_individual(this_week_budget, pityCost, matValues, materialIndex)
+                const clampedCost = Math.max(0, individualCost) // Clamp to 0 if negative
+                individualPityCostsData[materialIndex].push(clampedCost)
+            }
+            console.log("break", goldFromSell, costToPity)
+            if (goldFromSell > costToPity && week > 2) { break }
         }
         console.log(costToPityData,
-            goldFromSellData, longTermResult.pity_cost)
+            goldFromSellData, pityCost)
         return {
             costToPityData,
-            goldFromSellData
+            goldFromSellData,
+            individualPityCostsData,
+            weeklyBudgets
         }
-    }, [longTermResult, budget_inputs, totalWeeklyIncome, matValues])
+    }, [longTermResult, budget_inputs, totalWeeklyIncome, matValues, cost_result, desired_chance])
 
 
     return (
@@ -426,10 +477,10 @@ export default function LongTermSection({
 
             <div style={{ ...styles.inputSection, flexDirection: "row", maxWidth: "1200px", width: "100%" }}>
                 <div style={{ display: 'flex', gap: 20, alignItems: 'center', flexDirection: "column" }}>
-                    <div style={{ display: 'flex', gap: 5, alignItems: 'flex-start' }}>
+                    <div style={{ display: 'flex', gap: 5, alignItems: 'flex-start', alignSelf: "flex-start" }}>
                         {/* Main Budget Input Grid */}
                         <div style={{ display: 'flex', flexDirection: "column", gap: 0, alignItems: 'flex-start', justifyContent: 'start', width: 300 }}>
-                            <div style={{ marginBottom: 16, width: 310 }}>
+                            <div style={{ marginBottom: 16, width: 300 }}>
                                 <SpreadsheetGrid
                                     columnDefs={longTermColumnDefs}
                                     labels={INPUT_LABELS}
@@ -461,7 +512,7 @@ export default function LongTermSection({
                                         sheet_values={getIncomeGridData(gridIndex)}
                                         set_sheet_values={(newValues) => {
                                             // Update the specific income grid
-                                            setIncome_arr(prev => {
+                                            setIncomeArr(prev => {
                                                 const newArr = prev.map(grid => [...grid])
                                                 incomeLabels.forEach((label, rowIndex) => {
                                                     const value = newValues[label] || '0'
@@ -495,8 +546,8 @@ export default function LongTermSection({
                     <div style={{ marginTop: 20, display: 'flex', justifyContent: 'center' }}>
                         <div style={{ width: '100%', maxWidth: '800px' }}>
                             <Graph
-                                title={`Chance of Success Over Time (Weeks 1-${graphData?.counts?.[0]?.length || 52})`}
-                                labels={[...INPUT_LABELS.slice(0, 7), "Overall"]} // 7 material types + Overall
+                                title={`Chance of Success Over Time (0-${(graphData?.counts?.[0]?.length || 53) - 1} weeks from now)`}
+                                labels={["Overall", ...INPUT_LABELS.slice(0, 7).map(label => label)]} // Overall + 7 material types
                                 counts={graphData?.counts || null}
                                 mins={graphData?.mins || null}
                                 maxs={graphData?.maxs || null}
@@ -509,7 +560,58 @@ export default function LongTermSection({
                                 xAxisLabel="Week number"
                                 yAxisLabel="Chance of success"
                                 yMaxOverride={1} // Override yMax to 1 for the first graph
+                                customColors={['var(--series-overall)', 'var(--series-red)', 'var(--series-blue)', 'var(--series-leaps)', 'var(--series-shards)', 'var(--series-oreha)', 'var(--series-gold)', 'var(--series-silver)']}
+                                showWarning={totalWeeklyIncome.every(income => income === 0)}
+                                warningMessage="You are earning nothing per week. Input your income (or click Fill Demo Income) to see your chances in the future."
                             />
+                        </div>
+                    </div>
+
+                    {/* Desired Chance Slider */}
+                    <div style={{ marginTop: 20, display: 'flex', justifyContent: 'center', justifySelf: "left", alignSelf: "flex-start", marginLeft: 100 }}>
+                        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                            <div style={{ width: 160, fontWeight: 700, textAlign: 'right', paddingRight: 8, color: 'var(--text-primary)', textWrap: "nowrap" }}>Desired chance </div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+                                <StyledSlider
+                                    value={parseInt(desired_chance) || 0}
+                                    onChange={(_, value) => {
+                                        const intValue = Math.round(value as number)
+                                        onDesiredChange(intValue.toString())
+                                    }}
+                                    min={0}
+                                    max={100}
+                                    step={1}
+                                    valueLabelDisplay="off"
+                                />
+                                <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                                    <input
+                                        type="text"
+                                        value={uncleaned_desired_chance}
+                                        onChange={(e) => onDesiredChange(e.target.value)}
+                                        onBlur={onDesiredBlur}
+                                        placeholder="0"
+                                        style={{
+                                            width: 70,
+                                            fontSize: 16,
+                                            padding: '6px 8px',
+                                            borderRadius: 6,
+                                            background: 'var(--input-bg)',
+                                            color: 'var(--input-text)',
+                                            border: '1px solid var(--input-border)'
+                                        }}
+                                    />
+                                    <span style={{ position: 'absolute', right: 10, pointerEvents: 'none', color: "black" }}>%</span>
+                                </div>
+                                {desired_chance === "0" && (
+                                    <span style={{
+                                        color: 'var(--text-muted)',
+                                        fontSize: 'var(--font-size-sm)',
+                                        fontStyle: 'italic'
+                                    }}>
+                                        0% = luckiest draw in {dataSize} samples
+                                    </span>
+                                )}
+                            </div>
                         </div>
                     </div>
 
@@ -518,11 +620,11 @@ export default function LongTermSection({
                         <div style={{ marginTop: 20, display: 'flex', justifyContent: 'center' }}>
                             <div style={{ width: '100%', maxWidth: '800px' }}>
                                 <Graph
-                                    title={`Cost to Pity and Gold from Selling Materials (Weeks 1-${newGraphData.costToPityData.length})`}
-                                    labels={["Cost to Pity", "Gold if sell mats"]}
-                                    counts={[newGraphData.costToPityData, newGraphData.goldFromSellData]}
-                                    mins={[1, 1]}
-                                    maxs={[newGraphData.costToPityData.length, newGraphData.goldFromSellData.length]}
+                                    title={`Gold needed to achieve ${parseInt(desired_chance) === 100 ? 'pity' : `${desired_chance}% chance to pass(pessimistic)`} & Gold earned(0-${newGraphData.costToPityData.length - 1} weeks from now)`}
+                                    labels={["Cost to Pity", "Gold if sell mats", ...INPUT_LABELS.slice(0, 7)]}
+                                    counts={[newGraphData.costToPityData, newGraphData.goldFromSellData, ...newGraphData.individualPityCostsData]}
+                                    mins={[0, 0, ...newGraphData.individualPityCostsData.map(() => 0)]}
+                                    maxs={[newGraphData.costToPityData.length - 1, newGraphData.goldFromSellData.length - 1, ...newGraphData.individualPityCostsData.map(data => data.length - 1)]}
                                     width={GRAPH_WIDTH}
                                     height={GRAPH_HEIGHT}
                                     hasSelection={true}
@@ -531,13 +633,17 @@ export default function LongTermSection({
                                     graphType="Gold"
                                     xAxisLabel="Week number"
                                     yAxisLabel="Gold value"
-                                    customColors={['var(--series-brown)', 'var(--series-gold)']}
+                                    // yMaxOverride={newGraphData.costToPityData[0]}
+                                    customColors={['var(--series-brown)', 'var(--series-gold)', 'var(--series-red)', 'var(--series-blue)', 'var(--series-leaps)', 'var(--series-shards)', 'var(--series-oreha)', 'var(--series-gold)', 'var(--series-silver)']}
+                                    weeklyBudgets={newGraphData.weeklyBudgets}
+                                    showWarning={totalWeeklyIncome.every(income => income === 0)}
+                                    warningMessage="You are earning nothing per week. Input your income (or click Fill Demo Income) to see your chances in the future."
                                 />
                             </div>
                         </div>
                     )}
                 </div>
-            </div>
+            </div >
 
 
 

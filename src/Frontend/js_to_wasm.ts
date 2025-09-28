@@ -133,7 +133,6 @@ self.addEventListener("message", async (ev) => {
             failure_rates_arr: failure_rates_arr,
             budgets_red_remaining: out.budgets_red_remaining,
             budgets_blue_remaining: out.budgets_blue_remaining,
-            pity_cost: out.pity,
         }
     } else if (which_one == "ChanceToCost") {
         // const this_labels = LABELS.concat(["Red juice", "Blue juice"])

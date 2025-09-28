@@ -253,7 +253,7 @@ pub fn cost_to_chance_arr_wrapper(input: JsValue) -> JsValue {
     let user_mats_value = payload.user_mats_value.unwrap_or(vec![0.0; 7]);
     let data_size: usize = payload.data_size.unwrap_or(100000).max(1000);
 
-    let (final_chances, typed_fail_counters, budgets_red_remaining, budgets_blue_remaining, pity) =
+    let (final_chances, typed_fail_counters, budgets_red_remaining, budgets_blue_remaining) =
         cost_to_chance_arr(
             &normal_counts,
             &budget_arr,
@@ -271,7 +271,6 @@ pub fn cost_to_chance_arr_wrapper(input: JsValue) -> JsValue {
         typed_fail_counters: Vec<Vec<f64>>,
         budgets_red_remaining: i64,
         budgets_blue_remaining: i64,
-        pity: Vec<i64>,
     }
 
     let result = CostToChanceArrResult {
@@ -279,7 +278,6 @@ pub fn cost_to_chance_arr_wrapper(input: JsValue) -> JsValue {
         typed_fail_counters,
         budgets_red_remaining,
         budgets_blue_remaining,
-        pity,
     };
 
     to_value(&result).unwrap()

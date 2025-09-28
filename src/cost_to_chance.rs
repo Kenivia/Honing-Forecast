@@ -308,7 +308,7 @@ pub fn cost_to_chance_arr(
     user_mats_value: &Vec<f64>,
     adv_hone_strategy: String,
     data_size: usize,
-) -> (Vec<f64>, Vec<Vec<f64>>, i64, i64, Vec<i64>) {
+) -> (Vec<f64>, Vec<Vec<f64>>, i64, i64) {
     // Section 1: Preparation - setup and parsing (only run once with first budget)
     let first_budget = &input_budgets_arr[0];
     let mut prep_outputs = preparation(
@@ -334,21 +334,12 @@ pub fn cost_to_chance_arr(
     let (final_chances, typed_fail_counters) =
         count_failure_typed_arr(&cost_data, input_budgets_arr);
 
-    let top_bottom: Vec<Vec<i64>> = monte_carlo_data(
-        2,
-        &prep_outputs.upgrade_arr,
-        &calc_unlock(hone_counts, adv_counts, express_event),
-        0,
-        true, // rigged
-        true, //use_true_rn
-    );
     // Return only the required data: chances, failure counters, and remaining budgets
     (
         final_chances,
         typed_fail_counters,
         prep_outputs.budgets[7], // budgets_red_remaining
         prep_outputs.budgets[8], // budgets_blue_remaining
-        top_bottom[1].clone(),
     )
 }
 
@@ -458,21 +449,16 @@ mod tests {
             ],
         ];
 
-        let (
-            final_chances,
-            typed_fail_counters,
-            budgets_red_remaining,
-            budgets_blue_remaining,
-            _pity,
-        ) = cost_to_chance_arr(
-            &vec![(0..25).map(|_| 5).collect(), (0..25).map(|_| 1).collect()],
-            &budget_arr,
-            &vec![(0..4).map(|_| 5).collect(), (0..4).map(|_| 1).collect()],
-            false,
-            &vec![0.0; 7],
-            "No juice".to_owned(),
-            100000,
-        );
+        let (final_chances, typed_fail_counters, budgets_red_remaining, budgets_blue_remaining) =
+            cost_to_chance_arr(
+                &vec![(0..25).map(|_| 5).collect(), (0..25).map(|_| 1).collect()],
+                &budget_arr,
+                &vec![(0..4).map(|_| 5).collect(), (0..4).map(|_| 1).collect()],
+                false,
+                &vec![0.0; 7],
+                "No juice".to_owned(),
+                100000,
+            );
 
         println!("Final chances: {:?}", final_chances);
         println!("Typed fail counters: {:?}", typed_fail_counters);
