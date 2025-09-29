@@ -733,7 +733,7 @@ function Graph({ title, labels, counts, mins, maxs, width = 640, height = 320, b
                                     return (
                                         <div style={{ color: 'var(--text-primary)' }}>
                                             <div style={{ color: effectiveColors[fallbackSeries], fontWeight: 600 }}>{labels[fallbackSeries]}</div>
-                                            <div>{weekNumber === 0 ? 'Right now,' : `In ${weekNumber} weeks,`} pity will cost {formatSig3(yValue)} if you buy remaining mats</div>
+                                            <div>{weekNumber === 0 ? 'Right now,' : `In ${weekNumber} weeks,`} this will cost {formatSig3(yValue)} (buying needed mats with gold)</div>
                                         </div>
                                     )
                                 } else if (fallbackSeries === 1) {
@@ -761,7 +761,7 @@ function Graph({ title, labels, counts, mins, maxs, width = 640, height = 320, b
                                     return (
                                         <div style={{ color: 'var(--text-primary)' }}>
                                             <div style={{ color: effectiveColors[fallbackSeries], fontWeight: 600 }}>{labels[fallbackSeries]}</div>
-                                            <div>{weekNumber === 0 ? 'Right now,' : `In ${weekNumber} weeks,`} you need to spend {formatSig3(yValue)} on buying {labels[fallbackSeries]} if you pity</div>
+                                            <div>{weekNumber === 0 ? 'Right now,' : `In ${weekNumber} weeks,`} you need to spend {formatSig3(yValue)} on buying {labels[fallbackSeries]}</div>
                                         </div>
                                     )
                                 }
@@ -804,7 +804,30 @@ function Graph({ title, labels, counts, mins, maxs, width = 640, height = 320, b
                             key={lab}
                             onClick={() => {
                                 // toggle visibility and bring to front by moving last in visible order
-                                const newVisible = visible.map((b, idx) => idx === i ? !b : b)
+                                let newVisible = visible.map((b, idx) => idx === i ? !b : b)
+
+                                // In Raw mode, if toggling series >= index 1, sync all series >= index 1
+                                if (graphType === 'Raw' && i >= 1) {
+                                    const targetState = newVisible[i] // The state we're setting for the clicked series
+                                    newVisible = newVisible.map((b, idx) => {
+                                        if (idx >= 1) {
+                                            return targetState // Sync all series >= 1 to the same state
+                                        }
+                                        return b // Keep series 0 (Overall) unchanged
+                                    })
+                                }
+
+                                // In Gold mode, if toggling series >= index 2, sync all series >= index 2
+                                if (graphType === 'Gold' && i >= 2) {
+                                    const targetState = newVisible[i] // The state we're setting for the clicked series
+                                    newVisible = newVisible.map((b, idx) => {
+                                        if (idx >= 2) {
+                                            return targetState // Sync all series >= 2 to the same state
+                                        }
+                                        return b // Keep series 0-1 unchanged
+                                    })
+                                }
+
                                 setVisible(newVisible)
                                 if (i === hoverSeries && !newVisible[i]) {
                                     // If we're hovering this series and it's being toggled off, clear hover

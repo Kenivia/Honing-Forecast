@@ -66,7 +66,7 @@ export default function Separator({ activePage, onPageChange }: SeparatorProps) 
                 className={getButtonClass('long-term')}
                 onClick={() => handleButtonClick('long-term')}
             >
-                <span className="hf-label">Long term mode</span>
+                <span className="hf-label">Forecast mode</span>
                 <div className="hf-help">If I earn this much per week, what are my odds of success in x weeks?</div>
             </button>
 

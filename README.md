@@ -16,9 +16,22 @@ Honing Forecast is a calculator that tells you how much a set of upgrades will c
 - How should I use my Juice & free taps? How much are they worth?
 - What are my bottlenecks?
 
+### Forecast mode
+
+- What will my chances of success be in x weeks if I earn this much per week?
+- What will be my bottlenecks in the future?
+- How much gold will I need to spend on buying mats in x weeks?(Pessimistic estimate)
+
 ### Bonus: Gamba simulator
 
 - A more hands-on feel of your prospects
+
+## Work in Progress
+
+- Better roster tracking & income estimation
+- Books calculations(Although for the most part just use them same way as juices)
+- Ctrl z
+- Hover question mark tooltips
 
 ## Feedback
 
