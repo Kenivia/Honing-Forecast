@@ -220,8 +220,11 @@ function Graph({ title, labels, counts, mins, maxs, width = 640, height = 320, b
     }, [lockXAxis, lockedMaxs, maxs]);
 
     const bucketLen = effectiveCounts?.[0]?.length || counts?.[0]?.length || 1000
+    // console.log("effective", effectiveCounts, counts, labels)
+    // console.log("data size calc", ...Array.from({ length: labels.length }, (_, i) =>
+    //     (effectiveCounts ?? counts)?.[i]?.reduce((partialSum, a) => partialSum + a, 0)))
     const data_size = Math.max(...Array.from({ length: labels.length }, (_, i) =>
-        (effectiveCounts ?? counts)?.[i]?.reduce((partialSum, a) => partialSum + a, 0))) || 1;
+        (effectiveCounts ?? counts)?.[i]?.reduce((partialSum, a) => partialSum + a, 0) ?? 0)) || 1;
 
     // Drop any series where all frequency falls in a single bucket (<=1 positive bin)
     // For Gold graphs, keep all series regardless of positive bins
@@ -276,7 +279,7 @@ function Graph({ title, labels, counts, mins, maxs, width = 640, height = 320, b
         if (!srcCounts) return [] as Point[][]
         const source = cumulative && cdfSeries ? cdfSeries : (normalizedCounts || srcCounts)
         let out: Point[][] = Array.from({ length: source.length }, () => []);
-
+        // console.log("a", source, normalizedCounts, counts, graphType, data_size)
         for (let i = 0; i < source.length; i++) {
             let first = true;
             let prev: number | null = null;

@@ -59,8 +59,8 @@ export default function CostToChanceSection({
                         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
 
                             <label htmlFor="auto-optimization" style={{ color: 'var(--text-primary)', fontSize: 'var(--font-size-sm)', whiteSpace: 'nowrap' }}>
-                                Custom Gold value for  Juice &<br />
-                                Free taps calculations
+                                Custom Gold values <br /> {/*  for  Juice &<br /> */}
+                                {/* (How much Gold each mat is worth to you) */}
 
 
                             </label>
@@ -74,7 +74,7 @@ export default function CostToChanceSection({
                         </div>
 
                         <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8 }}>
-                            <div style={{ ...styles.inputLabelCell, whiteSpace: 'nowrap', backgroundColor: 'var(--bg-tertiary)' }}>Chance of Success</div>
+                            <div style={{ ...styles.inputLabelCell, whiteSpace: 'nowrap' }}>Chance of Success</div>
                             <div style={{ ...styles.inputCell, border: 'none', background: "transparent", color: 'var(--text-success)', fontSize: 'var(--font-size-xl)' }}>{chance_result ? (String(chance_result.chance) + '%') : '-'}</div>
 
                         </div>
@@ -146,6 +146,7 @@ export default function CostToChanceSection({
                             lockXAxis={lockXAxis}
                             lockedMins={lockedMins}
                             lockedMaxs={lockedMaxs}
+                            graphType={"Histogram"}
                         />
                     </div>
                 </div>

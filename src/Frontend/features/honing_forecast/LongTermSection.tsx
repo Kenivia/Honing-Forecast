@@ -266,7 +266,7 @@ export default function LongTermSection({
         })
 
         p.then((result: any) => {
-            console.log(result, weeklyBudgets, budget_inputs, totalWeeklyIncome)
+            // console.log(result, weeklyBudgets, budget_inputs, totalWeeklyIncome)
             setLongTermResult(result)
         }).catch((err) => {
             console.error("Long term worker error", err)
@@ -415,7 +415,7 @@ export default function LongTermSection({
         }
 
         // debug
-        console.log('graphData: truncateLen=', truncateLen, 'counts lengths=', counts.map(c => c.length))
+        // console.log('graphData: truncateLen=', truncateLen, 'counts lengths=', counts.map(c => c.length))
 
         return {
             counts,
@@ -443,7 +443,7 @@ export default function LongTermSection({
         }
 
         const pityCost = cost_result?.hundred_budgets?.[parseInt(desired_chance)] || []
-        console.log("Pitycost", pityCost)
+        // console.log("Pitycost", pityCost)
         for (let week = 0; week < Math.min(53, weeklyBudgets.length); week++) {
             const this_week_budget = weeklyBudgets[week]
             const costToPity = cost_to_pity(this_week_budget, pityCost, matValues)
@@ -458,11 +458,11 @@ export default function LongTermSection({
                 const clampedCost = Math.max(0, individualCost) // Clamp to 0 if negative
                 individualPityCostsData[materialIndex].push(clampedCost)
             }
-            console.log("break", goldFromSell, costToPity)
+            // console.log("break", goldFromSell, costToPity)
             if (goldFromSell > costToPity && week > 2) { break }
         }
-        console.log(costToPityData,
-            goldFromSellData, pityCost)
+        // console.log(costToPityData,
+        //     goldFromSellData, pityCost)
         return {
             costToPityData,
             goldFromSellData,

@@ -18,7 +18,7 @@ import { TooltipState, createTooltipHandlers, renderTooltip } from './Tooltip.ts
 import Icon from '../../components/Icon.tsx'
 
 import { GridMouseDownLogic, mouseMoveLogic, createMouseUpHandler } from "./Marquee.ts"
-import { createClearAll, createFillRandom, createFillDemo, createFillDemoIncome } from './ControlPanelFunctions.ts'
+import { createClearAll, createFillDemo, createFillDemoIncome } from './ControlPanelFunctions.ts'
 import { buildPayload, createStartCancelableWorker, createHandleCallWorker } from './Debounce.ts'
 import { ticksToCounts, countsToTicks } from './utils.ts'
 
@@ -446,13 +446,13 @@ export default function HoningForecastUI() {
         setIncomeArr,
     })
 
-    const fillRandom = createFillRandom({
-        setTopGrid,
-        setBottomGrid,
-        set_desired_chance,
-        set_prev_checked_arr,
-        set_prev_checked_arr_bottom,
-    })
+    // const fillRandom = createFillRandom({
+    //     setTopGrid,
+    //     setBottomGrid,
+    //     set_desired_chance,
+    //     set_prev_checked_arr,
+    //     set_prev_checked_arr_bottom,
+    // })
 
     const fillDemo = createFillDemo({
         setTopGrid,
@@ -705,7 +705,7 @@ export default function HoningForecastUI() {
                         mainScale={mainScale}
                         fillDemo={fillDemo}
                         fillDemoIncome={fillDemoIncome}
-                        fillRandom={fillRandom}
+                        // fillRandom={fillRandom}
                         clearAll={clearAll}
                         express_event={express_event}
                         set_express_event={set_express_event}

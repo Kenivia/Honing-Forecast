@@ -203,6 +203,7 @@ export default function ChanceToCostSection({
                             lockXAxis={lockXAxis}
                             lockedMins={lockedMins}
                             lockedMaxs={lockedMaxs}
+                            graphType={"Histogram"}
                         />
                     </div>
                 </div>

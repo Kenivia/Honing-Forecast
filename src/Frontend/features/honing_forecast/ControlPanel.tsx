@@ -6,7 +6,7 @@ type ControlPanelProps = {
     mainScale: number
     fillDemo: () => void
     fillDemoIncome: () => void
-    fillRandom: () => void
+    // fillRandom: () => void
     clearAll: () => void
     express_event: boolean
     set_express_event: (_next: boolean) => void
@@ -20,7 +20,7 @@ type ControlPanelProps = {
     setUseGridInput: (_next: boolean) => void
 }
 
-export default function ControlPanel({ controlsLeft: _controlsLeft, mainScale: _mainScale, fillDemo, fillDemoIncome, fillRandom, clearAll, express_event, set_express_event, cumulativeGraph, setCumulativeGraph, dataSize, setDataSize, lockXAxis, onToggleLockXAxis, useGridInput, setUseGridInput }: ControlPanelProps) {
+export default function ControlPanel({ controlsLeft: _controlsLeft, mainScale: _mainScale, fillDemo, fillDemoIncome, clearAll, express_event, set_express_event, cumulativeGraph, setCumulativeGraph, dataSize, setDataSize, lockXAxis, onToggleLockXAxis, useGridInput, setUseGridInput }: ControlPanelProps) {
     return (
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 0, minWidth: 200, flexShrink: 0 }}>
             <h3 style={{ ...styles.sectionTitle, marginTop: '-8px', alignSelf: 'center' }}>Controls</h3>
@@ -28,7 +28,7 @@ export default function ControlPanel({ controlsLeft: _controlsLeft, mainScale: _
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-sm)', width: '100%' }}>
                     <button style={styles.demoButton} onClick={fillDemo}>Fill Demo</button>
                     <button style={styles.demoButton} onClick={fillDemoIncome}>Fill Demo Income</button>
-                    <button style={styles.demoButton} onClick={fillRandom}>Fill Random</button>
+                    {/* <button style={styles.demoButton} onClick={fillRandom}>Fill Random</button> */}
                     <button style={styles.demoButton} onClick={clearAll}>Reset All</button>
 
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '8px' }}>

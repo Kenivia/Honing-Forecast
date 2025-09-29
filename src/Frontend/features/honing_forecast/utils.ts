@@ -68,7 +68,7 @@ export function sortedUpgrades(upgradeArr: Upgrade[]) {
 // Helper function to get the next unfinished upgrade index
 export function getNextUnfinishedIndex(upgradeArr: Upgrade[], excludeIndex?: number): number {
     let first_try = upgradeArr.findIndex((z) => z == sortedUpgrades(upgradeArr).find((upg, i) => !upg.is_finished && i > excludeIndex))
-    console.log(first_try)
+    // console.log(first_try)
     if (first_try < 0) {
         return upgradeArr.findIndex((z) => z == sortedUpgrades(upgradeArr).find((upg, i) => !upg.is_finished && i !== excludeIndex))
     }

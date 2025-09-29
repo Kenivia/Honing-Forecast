@@ -516,6 +516,7 @@ export default function GambaSection({
                                     lockXAxis={lockXAxis}
                                     lockedMins={lockedMins}
                                     lockedMaxs={lockedMaxs}
+                                    graphType={"Histogram"}
                                 />
                             </div>
                         </div>
