@@ -143,7 +143,7 @@ pub fn parser(
     let mut out: Vec<Upgrade> = Vec::new();
 
     for is_weapon in 0..normal_counts.len() {
-        let cur_cost = if is_weapon == 0 {
+        let cur_cost: [[i64; 25]; 7] = if is_weapon == 0 {
             get_event_modified_armor_costs(express_event)
         } else {
             get_event_modified_weapon_costs(express_event)
@@ -218,7 +218,7 @@ pub fn parser(
             this_juice_cost = Vec::with_capacity(rows);
 
             let cost_val: i64 = ADV_HONE_COST[7][col_index];
-            let sum_taps_f = if sum_taps == 0 { 1.0 } else { sum_taps as f64 };
+            let sum_taps_f: f64 = if sum_taps == 0 { 1.0 } else { sum_taps as f64 };
 
             for row in relevant_data.iter() {
                 let taps: i64 = row[2];
@@ -253,7 +253,7 @@ pub fn parser_with_other_strategy(
     extra_num_arr: &[usize],
     express_event: bool,
 ) -> (Vec<Upgrade>, Vec<Vec<f64>>) {
-    let main_upgrades = parser(
+    let main_upgrades: Vec<Upgrade> = parser(
         normal_counts,
         adv_counts,
         adv_hone_strategy,
@@ -263,7 +263,7 @@ pub fn parser_with_other_strategy(
         express_event,
     );
 
-    let other_strategy = if adv_hone_strategy == "Juice on grace" {
+    let other_strategy: String = if adv_hone_strategy == "Juice on grace" {
         "No juice".to_string()
     } else {
         "Juice on grace".to_string()

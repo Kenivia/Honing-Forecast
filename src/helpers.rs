@@ -139,9 +139,9 @@ pub fn calc_unlock(
     let mut silver_unlock: i64 = 0;
 
     // Get event-modified unlock costs
-    let weapon_unlock_costs = get_event_modified_weapon_unlock_cost(express_event);
-    let armor_unlock_costs = get_event_modified_armor_unlock_cost(express_event);
-    let adv_unlock_costs = get_event_modified_adv_unlock_cost(express_event);
+    let weapon_unlock_costs: [[i64; 25]; 2] = get_event_modified_weapon_unlock_cost(express_event);
+    let armor_unlock_costs: [[i64; 25]; 2] = get_event_modified_armor_unlock_cost(express_event);
+    let adv_unlock_costs: [[i64; 8]; 2] = get_event_modified_adv_unlock_cost(express_event);
 
     // Weapon unlocks: hone_counts[1][index]
     for (cost_type, element) in weapon_unlock_costs.iter().enumerate() {
@@ -170,7 +170,7 @@ pub fn calc_unlock(
         for (index, &cost) in element.iter().enumerate() {
             if index % 2 == 1 {
                 // odd index -> use adv_counts[0][(index-1)/2]
-                let idx = (index - 1) / 2;
+                let idx: usize = (index - 1) / 2;
                 match cost_type {
                     0 => shard_unlock += adv_counts[0][idx] * cost,
                     1 => silver_unlock += adv_counts[0][idx] * cost,
@@ -178,7 +178,7 @@ pub fn calc_unlock(
                 }
             } else {
                 // even index -> use adv_counts[1][index/2]
-                let idx = index / 2;
+                let idx: usize = index / 2;
                 match cost_type {
                     0 => shard_unlock += adv_counts[1][idx] * cost,
                     1 => silver_unlock += adv_counts[1][idx] * cost,

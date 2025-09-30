@@ -160,8 +160,8 @@ pub fn juice_to_array(
     user_gave_weapon: bool,
 ) -> (Vec<String>, Vec<String>) {
     // Armor uses blue juice (is_weapon == false), Weapon uses red juice (is_weapon == true)
-    let armor_pairs = _juice_to_array(upgrade_arr, false, blue_juice);
-    let weapon_pairs = _juice_to_array(upgrade_arr, true, red_juice);
+    let armor_pairs: Vec<(usize, usize, f64, f64)> = _juice_to_array(upgrade_arr, false, blue_juice);
+    let weapon_pairs: Vec<(usize, usize, f64, f64)> = _juice_to_array(upgrade_arr, true, red_juice);
 
     // Convert pairs of (plus_num, taps) to human-readable strings, sorted by plus_num asc
     let mut armor_sorted = armor_pairs;
@@ -270,7 +270,7 @@ fn _juice_to_array(
     let mut out: Vec<(usize, usize, f64, f64)> = Vec::new();
     for (i, upgrade) in upgrade_arr.iter().enumerate() {
         if upgrade.is_normal_honing && upgrade.is_weapon == is_weapon {
-            let taps_used = cur_extras[i];
+            let taps_used: usize = cur_extras[i];
             if taps_used > 0 {
                 out.push((
                     upgrade.upgrade_plus_num,

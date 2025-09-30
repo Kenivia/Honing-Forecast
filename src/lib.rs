@@ -7,10 +7,13 @@ mod monte_carlo;
 mod parser;
 mod test_cache;
 mod value_estimation;
+use crate::chance_to_cost::ChanceToCostOut;
 use crate::chance_to_cost::chance_to_cost;
 use crate::constants::{EVENT_ARTISAN_MULTIPLIER, RNG_SEED};
+use crate::cost_to_chance::CostToChanceOut;
 use crate::cost_to_chance::{cost_to_chance, cost_to_chance_arr};
 use crate::helpers::{average_cost, calc_unlock, ticks_to_counts};
+use crate::parser::Upgrade;
 use crate::parser::{parser, parser_with_other_strategy};
 
 use rand::prelude::*;
@@ -55,7 +58,7 @@ pub fn chance_to_cost_wrapper(input: JsValue) -> JsValue {
     let payload: Payload = from_value(input).unwrap();
 
     // Get counts from either direct input or converted from ticks
-    let normal_counts = if let Some(counts) = payload.normal_counts {
+    let normal_counts: Vec<Vec<i64>> = if let Some(counts) = payload.normal_counts {
         counts
     } else if let Some(ticks) = payload.normal_hone_ticks {
         ticks_to_counts(ticks)
@@ -63,7 +66,7 @@ pub fn chance_to_cost_wrapper(input: JsValue) -> JsValue {
         panic!("Either normal_counts or normal_hone_ticks must be provided");
     };
 
-    let adv_counts = if let Some(counts) = payload.adv_counts {
+    let adv_counts: Vec<Vec<i64>> = if let Some(counts) = payload.adv_counts {
         counts
     } else if let Some(ticks) = payload.adv_hone_ticks {
         ticks_to_counts(ticks)
@@ -75,7 +78,7 @@ pub fn chance_to_cost_wrapper(input: JsValue) -> JsValue {
     let data_size: usize = payload.data_size.unwrap_or(100000).max(1000);
 
     let mut rng = StdRng::seed_from_u64(RNG_SEED);
-    let out = chance_to_cost(
+    let out: ChanceToCostOut = chance_to_cost(
         &normal_counts,
         &adv_counts,
         &adv_hone_strategy,
@@ -97,7 +100,7 @@ pub fn cost_to_chance_wrapper(input: JsValue) -> JsValue {
     let payload: Payload = from_value(input).unwrap();
 
     // Get counts from either direct input or converted from ticks
-    let normal_counts = if let Some(counts) = payload.normal_counts {
+    let normal_counts: Vec<Vec<i64>> = if let Some(counts) = payload.normal_counts {
         counts
     } else if let Some(ticks) = payload.normal_hone_ticks {
         ticks_to_counts(ticks)
@@ -105,7 +108,7 @@ pub fn cost_to_chance_wrapper(input: JsValue) -> JsValue {
         panic!("Either normal_counts or normal_hone_ticks must be provided");
     };
 
-    let adv_counts = if let Some(counts) = payload.adv_counts {
+    let adv_counts: Vec<Vec<i64>> = if let Some(counts) = payload.adv_counts {
         counts
     } else if let Some(ticks) = payload.adv_hone_ticks {
         ticks_to_counts(ticks)
@@ -115,11 +118,11 @@ pub fn cost_to_chance_wrapper(input: JsValue) -> JsValue {
 
     let budget: Vec<i64> = payload.budget;
     // console::log_1(&"unwrap complete".into());
-    let user_mats_value = payload.user_mats_value.unwrap_or(vec![0.0; 7]);
+    let user_mats_value: Vec<f64> = payload.user_mats_value.unwrap_or(vec![0.0; 7]);
     // console::log_1(user_mats_value[0].into());
     let data_size: usize = payload.data_size.unwrap_or(100000).max(1000);
     let mut rng = StdRng::seed_from_u64(RNG_SEED);
-    let out = cost_to_chance(
+    let out: CostToChanceOut = cost_to_chance(
         &normal_counts,
         &budget,
         &adv_counts,
@@ -140,7 +143,7 @@ pub fn parser_wrapper_unified(input: JsValue) -> JsValue {
     let payload: Payload = from_value(input).unwrap();
 
     // Get counts from either direct input or converted from ticks
-    let normal_counts = if let Some(counts) = payload.normal_counts {
+    let normal_counts: Vec<Vec<i64>> = if let Some(counts) = payload.normal_counts {
         counts
     } else if let Some(ticks) = payload.normal_hone_ticks {
         ticks_to_counts(ticks)
@@ -148,7 +151,7 @@ pub fn parser_wrapper_unified(input: JsValue) -> JsValue {
         panic!("Either normal_counts or normal_hone_ticks must be provided");
     };
 
-    let adv_counts = if let Some(counts) = payload.adv_counts {
+    let adv_counts: Vec<Vec<i64>> = if let Some(counts) = payload.adv_counts {
         counts
     } else if let Some(ticks) = payload.adv_hone_ticks {
         ticks_to_counts(ticks)
@@ -156,24 +159,25 @@ pub fn parser_wrapper_unified(input: JsValue) -> JsValue {
         panic!("Either adv_counts or adv_hone_ticks must be provided");
     };
 
-    let artisan_rate_arr = if payload.express_event {
+    let artisan_rate_arr: Vec<f64> = if payload.express_event {
         EVENT_ARTISAN_MULTIPLIER.to_vec()
     } else {
         vec![1.0; 25]
     };
 
-    let extra_arr = [0.0; 25];
-    let extra_num_arr = [0; 25];
+    let extra_arr: [f64; 25] = [0.0; 25];
+    let extra_num_arr: [usize; 25] = [0; 25];
 
-    let (upgrades, other_strategy_prob_dists) = parser_with_other_strategy(
-        &normal_counts,
-        &adv_counts,
-        &payload.adv_hone_strategy,
-        &artisan_rate_arr,
-        &extra_arr,
-        &extra_num_arr,
-        payload.express_event,
-    );
+    let (upgrades, other_strategy_prob_dists): (Vec<Upgrade>, Vec<Vec<f64>>) =
+        parser_with_other_strategy(
+            &normal_counts,
+            &adv_counts,
+            &payload.adv_hone_strategy,
+            &artisan_rate_arr,
+            &extra_arr,
+            &extra_num_arr,
+            payload.express_event,
+        );
 
     to_value(&(
         upgrades,
@@ -189,7 +193,7 @@ pub fn average_cost_wrapper(input: JsValue) -> JsValue {
     let payload: Payload = from_value(input).unwrap();
 
     // Get counts from either direct input or converted from ticks
-    let normal_counts = if let Some(counts) = payload.normal_counts {
+    let normal_counts: Vec<Vec<i64>> = if let Some(counts) = payload.normal_counts {
         counts
     } else if let Some(ticks) = payload.normal_hone_ticks {
         ticks_to_counts(ticks)
@@ -197,7 +201,7 @@ pub fn average_cost_wrapper(input: JsValue) -> JsValue {
         panic!("Either normal_counts or normal_hone_ticks must be provided");
     };
 
-    let adv_counts = if let Some(counts) = payload.adv_counts {
+    let adv_counts: Vec<Vec<i64>> = if let Some(counts) = payload.adv_counts {
         counts
     } else if let Some(ticks) = payload.adv_hone_ticks {
         ticks_to_counts(ticks)
@@ -205,16 +209,16 @@ pub fn average_cost_wrapper(input: JsValue) -> JsValue {
         panic!("Either adv_counts or adv_hone_ticks must be provided");
     };
 
-    let artisan_rate_arr = if payload.express_event {
+    let artisan_rate_arr: Vec<f64> = if payload.express_event {
         EVENT_ARTISAN_MULTIPLIER.to_vec()
     } else {
         vec![1.0; 25]
     };
 
-    let extra_arr = [0.0; 25];
-    let extra_num_arr = [0; 25];
+    let extra_arr: [f64; 25] = [0.0; 25];
+    let extra_num_arr: [usize; 25] = [0; 25];
 
-    let upgrades = parser(
+    let upgrades: Vec<Upgrade> = parser(
         &normal_counts,
         &adv_counts,
         &payload.adv_hone_strategy,
@@ -224,7 +228,7 @@ pub fn average_cost_wrapper(input: JsValue) -> JsValue {
         payload.express_event,
     );
 
-    let avg_costs = average_cost(&upgrades);
+    let avg_costs: Vec<f64> = average_cost(&upgrades);
     to_value(&avg_costs).unwrap()
 }
 
@@ -234,7 +238,7 @@ pub fn cost_to_chance_arr_wrapper(input: JsValue) -> JsValue {
     let payload: PayloadArr = from_value(input).unwrap();
 
     // Get counts from either direct input or converted from ticks
-    let normal_counts = if let Some(counts) = payload.normal_counts {
+    let normal_counts: Vec<Vec<i64>> = if let Some(counts) = payload.normal_counts {
         counts
     } else if let Some(ticks) = payload.normal_hone_ticks {
         ticks_to_counts(ticks)
@@ -242,7 +246,7 @@ pub fn cost_to_chance_arr_wrapper(input: JsValue) -> JsValue {
         panic!("Either normal_counts or normal_hone_ticks must be provided");
     };
 
-    let adv_counts = if let Some(counts) = payload.adv_counts {
+    let adv_counts: Vec<Vec<i64>> = if let Some(counts) = payload.adv_counts {
         counts
     } else if let Some(ticks) = payload.adv_hone_ticks {
         ticks_to_counts(ticks)
@@ -251,21 +255,25 @@ pub fn cost_to_chance_arr_wrapper(input: JsValue) -> JsValue {
     };
 
     let budget_arr: Vec<Vec<i64>> = payload.budget_arr;
-    let user_mats_value = payload.user_mats_value.unwrap_or(vec![0.0; 7]);
+    let user_mats_value: Vec<f64> = payload.user_mats_value.unwrap_or(vec![0.0; 7]);
     let data_size: usize = payload.data_size.unwrap_or(100000).max(1000);
 
     let mut rng = StdRng::seed_from_u64(RNG_SEED);
-    let (final_chances, typed_fail_counters, budgets_red_remaining, budgets_blue_remaining) =
-        cost_to_chance_arr(
-            &normal_counts,
-            &budget_arr,
-            &adv_counts,
-            payload.express_event,
-            &user_mats_value,
-            payload.adv_hone_strategy,
-            data_size,
-            &mut rng,
-        );
+    let (final_chances, typed_fail_counters, budgets_red_remaining, budgets_blue_remaining): (
+        Vec<f64>,
+        Vec<Vec<f64>>,
+        i64,
+        i64,
+    ) = cost_to_chance_arr(
+        &normal_counts,
+        &budget_arr,
+        &adv_counts,
+        payload.express_event,
+        &user_mats_value,
+        payload.adv_hone_strategy,
+        data_size,
+        &mut rng,
+    );
 
     // Return a JS object with the results
     #[derive(serde::Serialize)]
@@ -276,7 +284,7 @@ pub fn cost_to_chance_arr_wrapper(input: JsValue) -> JsValue {
         budgets_blue_remaining: i64,
     }
 
-    let result = CostToChanceArrResult {
+    let result: CostToChanceArrResult = CostToChanceArrResult {
         final_chances,
         typed_fail_counters,
         budgets_red_remaining,
@@ -295,7 +303,7 @@ pub fn chance_to_cost_test_wrapper(
     express_event: bool,
 ) -> (Vec<Vec<i64>>, Vec<f64>) {
     let mut rng = StdRng::seed_from_u64(RNG_SEED);
-    let out = chance_to_cost(
+    let out: ChanceToCostOut = chance_to_cost(
         &ticks_to_counts(normal_hone_ticks),
         &ticks_to_counts(adv_hone_ticks),
         &adv_hone_strategy,
@@ -314,7 +322,7 @@ pub fn cost_to_chance_test_wrapper(
     express_event: bool,
 ) -> (f64, String) {
     let mut rng = StdRng::seed_from_u64(RNG_SEED);
-    let out = cost_to_chance(
+    let out: CostToChanceOut = cost_to_chance(
         &ticks_to_counts(normal_hone_ticks),
         &budget,
         &ticks_to_counts(adv_hone_ticks),

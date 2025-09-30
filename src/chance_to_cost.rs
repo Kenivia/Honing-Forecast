@@ -161,8 +161,8 @@ mod tests {
         let adv_counts: Vec<Vec<i64>> =
             vec![(0..4).map(|_| 0).collect(), (0..4).map(|_| 0).collect()];
 
-        let adv_hone_strategy = "No juice";
-        let express_event = true;
+        let adv_hone_strategy: &str = "No juice";
+        let express_event: bool = true;
         let hist_bins: usize = 1000;
         let data_size: usize = 10000;
 
@@ -218,8 +218,8 @@ mod tests {
         let adv_counts: Vec<Vec<i64>> =
             vec![(0..4).map(|_| 0).collect(), (0..4).map(|_| 0).collect()];
 
-        let adv_hone_strategy = "No juice";
-        let express_event = true;
+        let adv_hone_strategy: &str = "No juice";
+        let express_event: bool = true;
         let hist_bins: usize = 1000;
         let data_size: usize = 10000;
 
@@ -243,7 +243,7 @@ mod tests {
             &mut rng,
         );
 
-        let result_of_interst = result.hundred_budgets;
+        let result_of_interst: Vec<Vec<i64>> = result.hundred_budgets;
         if let Some(cached_result) = read_cached_data::<Vec<Vec<i64>>>(test_name, &hash) {
             assert_eq!(result_of_interst, cached_result);
         } else {

@@ -13,7 +13,7 @@ fn calc_failure_lim(avail_special: i64, cost: i64) -> i64 {
 }
 
 fn tap_map_generator<R: Rng>(count_limit: usize, prob_dist: &[f64], rng: &mut R) -> Vec<usize> {
-    let mut tap_map = vec![0usize; count_limit];
+    let mut tap_map: Vec<usize> = vec![0usize; count_limit];
 
     let mut assigned: usize = 0;
     let mut cum: f64 = 0.0;
@@ -22,16 +22,16 @@ fn tap_map_generator<R: Rng>(count_limit: usize, prob_dist: &[f64], rng: &mut R)
         if cum > 1.0 {
             cum = 1.0;
         }
-        let exact_target = cum * (count_limit as f64);
-        let target = exact_target.max(assigned as f64);
-        let frac = target - target.floor();
+        let exact_target: f64 = cum * (count_limit as f64);
+        let target: f64 = exact_target.max(assigned as f64);
+        let frac: f64 = target - target.floor();
         let mut cur_samples = target.floor() as usize;
         if frac > 0.0 && rng.random_bool(frac) {
             cur_samples += 1;
         }
         if cur_samples > assigned {
-            let to_assign = min(cur_samples - assigned, count_limit - assigned);
-            let end = assigned + to_assign;
+            let to_assign: usize = min(cur_samples - assigned, count_limit - assigned);
+            let end: usize = assigned + to_assign;
             for dest in assigned..end {
                 tap_map[dest] = i;
             }
@@ -42,7 +42,7 @@ fn tap_map_generator<R: Rng>(count_limit: usize, prob_dist: &[f64], rng: &mut R)
         }
     }
     if assigned < count_limit {
-        let fill_idx = prob_dist.len().saturating_sub(1);
+        let fill_idx: usize = prob_dist.len().saturating_sub(1);
         for dest in assigned..count_limit {
             tap_map[dest] = fill_idx;
         }
@@ -55,8 +55,8 @@ fn tap_map_generator<R: Rng>(count_limit: usize, prob_dist: &[f64], rng: &mut R)
 /// stochastic rounding helper (juice)
 #[inline]
 fn round_juice<R: Rng>(this_juice_cost: f64, rng: &mut R) -> i64 {
-    let base = this_juice_cost.floor() as i64;
-    let frac = this_juice_cost.fract();
+    let base: i64 = this_juice_cost.floor() as i64;
+    let frac: f64 = this_juice_cost.fract();
     base + if frac > 0.0 && rng.random_bool(frac) {
         1
     } else {
@@ -79,11 +79,11 @@ fn sample_truncated_geometric<R: Rng + ?Sized>(p: f64, max_taps: i64, rng: &mut 
     if p >= 1.0 {
         return 0usize; // succeed immediately
     }
-    let q = 1.0 - p;
+    let q: f64 = 1.0 - p;
     let u: f64 = rng.random_range(0.0..1.0);
     // ln(u)/ln(q) >= 0 (both negative logs) gives k (0-based)
-    let k = (u.ln() / q.ln()).floor() as i64;
-    let k = if k < 0 { 0 } else { k };
+    let k: i64 = (u.ln() / q.ln()).floor() as i64;
+    let k: i64 = if k < 0 { 0 } else { k };
     if k > max_taps {
         max_taps as usize
     } else {
@@ -111,14 +111,14 @@ pub fn monte_carlo_data<R: Rng>(
         for (upgrade_index, upgrade) in upgrade_arr.iter().enumerate() {
             if upgrade.is_normal_honing {
                 // compute limit (max_taps)
-                let limit = calc_failure_lim(avail_special, upgrade.special_cost);
+                let limit: i64 = calc_failure_lim(avail_special, upgrade.special_cost);
                 // We no longer build a WalkerTable; instead sample directly from truncated geometric
                 for trial in 0..data_size {
                     if special_budgets[trial] <= 0 {
                         continue;
                     }
                     let k: usize = sample_truncated_geometric(upgrade.base_chance, limit, &mut rng);
-                    let rolled_special_cost = (k as i64 + 1) * upgrade.special_cost;
+                    let rolled_special_cost: i64 = (k as i64 + 1) * upgrade.special_cost;
                     special_budgets[trial] -= rolled_special_cost;
                     if special_budgets[trial] > 0 {
                         special_pass_arr[trial] += 1;
@@ -131,18 +131,18 @@ pub fn monte_carlo_data<R: Rng>(
 
     // Latin-hypercube sampling path unchanged
     for (upgrade_index, upgrade) in upgrade_arr.iter().enumerate() {
-        let tap_map = tap_map_generator(data_size, &upgrade.prob_dist, rng);
+        let tap_map: Vec<usize> = tap_map_generator(data_size, &upgrade.prob_dist, rng);
         for trial_num in 0..data_size {
             if upgrade_index < special_pass_arr[trial_num] {
                 continue;
             }
-            let rolled_tap = tap_map[trial_num];
+            let rolled_tap: usize = tap_map[trial_num];
             for cost_type in 0..7 {
                 cost_data[trial_num][cost_type] +=
                     upgrade.costs[cost_type] * (rolled_tap as i64 + upgrade.tap_offset);
             }
             if !upgrade.is_normal_honing {
-                let juice_ind = if upgrade.is_weapon { 7 } else { 8 };
+                let juice_ind: usize = if upgrade.is_weapon { 7 } else { 8 };
                 cost_data[trial_num][juice_ind] +=
                     round_juice(upgrade.adv_juice_cost[rolled_tap], &mut rng);
             }
@@ -164,7 +164,7 @@ pub fn get_top_bottom(upgrade_arr: &[Upgrade], unlock_costs: &[i64]) -> Vec<Vec<
     let mut cost_data: Vec<Vec<i64>> = vec![vec![0i64; 9]; DATA_SIZE];
     let mut rng = rand::rng();
     for upgrade in upgrade_arr.iter() {
-        let pd_len = upgrade.prob_dist_len.saturating_sub(1) as f64;
+        let pd_len: f64 = upgrade.prob_dist_len.saturating_sub(1) as f64;
         for trial_num in 0..DATA_SIZE {
             let rolled_tap =
                 ((pd_len * (trial_num) as f64) / (DATA_SIZE as f64 - 1.0)).floor() as usize;

@@ -35,7 +35,7 @@ fn extract_upgrade_strings(
         let level_str: String = format!("+{}", upgrade.upgrade_plus_num + 1);
         let type_str: &'static str = if upgrade.is_weapon { "weapon" } else { "armor" };
         // let value_str: &str = &upgrade.special_value.to_string().as_str();
-        let is_valid = if upgrade.is_weapon {
+        let is_valid: bool = if upgrade.is_weapon {
             user_gave_weapon
         } else {
             user_gave_armor
@@ -53,7 +53,7 @@ fn extract_upgrade_strings(
 fn fail_count_to_rates(typed_fail_counter: Vec<f64>, data_size: usize) -> Vec<f64> {
     let mut failure_rates: Vec<f64> = Vec::new();
     for z in 0..typed_fail_counter.len() {
-        let failure_rate = 1.0 - typed_fail_counter[z] as f64 / data_size as f64;
+        let failure_rate: f64 = 1.0 - typed_fail_counter[z] as f64 / data_size as f64;
         failure_rates.push(failure_rate);
     }
     failure_rates
@@ -101,7 +101,7 @@ fn preparation(
 
     // Add average juice costs to budgets for all upgrades
     if adv_hone_strategy == "Juice on grace" {
-        let (avg_red_juice, avg_blue_juice) = average_juice_cost(&upgrade_arr);
+        let (avg_red_juice, avg_blue_juice): (i64, i64) = average_juice_cost(&upgrade_arr);
         budgets[7] -= avg_red_juice;
         budgets[8] -= avg_blue_juice;
     }
@@ -121,7 +121,7 @@ fn preparation(
     };
 
     est_juice_value(&mut upgrade_arr, &mats_value);
-    let (juice_strings_armor, juice_strings_weapon) = juice_to_array(
+    let (juice_strings_armor, juice_strings_weapon): (Vec<String>, Vec<String>) = juice_to_array(
         &mut upgrade_arr,
         budgets[8],
         budgets[7],
@@ -163,7 +163,7 @@ struct FailureAnalysisOutputs {
 fn count_failure_typed(cost_data: &[Vec<i64>], input_budgets: &[i64]) -> FailureAnalysisOutputs {
     let mut typed_fail_counter_final: Vec<f64> = vec![0.0_f64; 7];
     let mut overall_fail_counter: i64 = 0;
-    let mut failed;
+    let mut failed: bool;
     for (_trail_num, data) in cost_data.iter().enumerate() {
         failed = false;
         for cost_type in 0..7 {
@@ -178,7 +178,7 @@ fn count_failure_typed(cost_data: &[Vec<i64>], input_budgets: &[i64]) -> Failure
         }
     }
 
-    let final_chance = 1.0_f64 - overall_fail_counter as f64 / cost_data.len() as f64;
+    let final_chance: f64 = 1.0_f64 - overall_fail_counter as f64 / cost_data.len() as f64;
 
     FailureAnalysisOutputs {
         typed_fail_counter_final,
@@ -217,8 +217,8 @@ fn prep_histogram(
 
     let top_bottom: Vec<Vec<i64>> = get_top_bottom(upgrade_arr, unlock_costs);
 
-    let bins = hist_bins.min(BUCKET_COUNT).max(1);
-    let hist_maxs = top_bottom[1].clone();
+    let bins: usize = hist_bins.min(BUCKET_COUNT).max(1);
+    let hist_maxs: Vec<i64> = top_bottom[1].clone();
     let hist_counts: Vec<Vec<i64>> = histograms_for_all_costs(cost_data, bins, &hist_maxs);
 
     HistogramOutputs {
@@ -242,7 +242,7 @@ pub fn cost_to_chance<R: rand::Rng>(
     rng: &mut R,
 ) -> CostToChanceOut {
     // Section 1: Preparation - setup and parsing
-    let mut prep_outputs = preparation(
+    let mut prep_outputs: PreparationOutputs = preparation(
         hone_counts,
         input_budgets,
         adv_counts,
@@ -261,10 +261,10 @@ pub fn cost_to_chance<R: rand::Rng>(
     );
 
     // Section 3: Failure analysis
-    let failure_outputs = count_failure_typed(&cost_data, input_budgets);
+    let failure_outputs: FailureAnalysisOutputs = count_failure_typed(&cost_data, input_budgets);
 
     // Section 4: Histogram preparation
-    let histogram_outputs = prep_histogram(
+    let histogram_outputs: HistogramOutputs = prep_histogram(
         &mut prep_outputs.upgrade_arr,
         prep_outputs.valid_weapon_values,
         prep_outputs.valid_armor_values,
@@ -298,8 +298,8 @@ pub fn cost_to_chance_arr<R: rand::Rng>(
     rng: &mut R,
 ) -> (Vec<f64>, Vec<Vec<f64>>, i64, i64) {
     // Section 1: Preparation - setup and parsing (only run once with first budget)
-    let first_budget = &input_budgets_arr[0];
-    let mut prep_outputs = preparation(
+    let first_budget: &Vec<i64> = &input_budgets_arr[0];
+    let mut prep_outputs: PreparationOutputs = preparation(
         hone_counts,
         first_budget,
         adv_counts,
@@ -318,7 +318,7 @@ pub fn cost_to_chance_arr<R: rand::Rng>(
     );
 
     // Section 3: Failure analysis for all budgets
-    let (final_chances, typed_fail_counters) =
+    let (final_chances, typed_fail_counters): (Vec<f64>, Vec<Vec<f64>>) =
         count_failure_typed_arr(&cost_data, input_budgets_arr);
 
     // Return only the required data: chances, failure counters, and remaining budgets
@@ -351,7 +351,7 @@ mod tests {
         let hist_bins: usize = 1000;
         let user_mats_value: Vec<f64> = vec![0.0; 7];
         let adv_hone_strategy: &'static str = "No juice";
-        let data_size: usize = 100000;
+        let data_size: usize = 10000;
 
         let hash = calculate_hash!(
             &hone_counts,
@@ -376,28 +376,26 @@ mod tests {
             &mut rng,
         );
 
-        let result_of_interst = result.chance;
+        let result_of_interst: f64 = result.chance;
         if let Some(cached_result) = read_cached_data::<f64>(test_name, &hash) {
-            assert!((result_of_interst - cached_result).abs() < 0.05);
+            assert_eq!(result_of_interst, cached_result);
         } else {
             write_cached_data(test_name, &hash, &result_of_interst);
             let mut rng2 = StdRng::seed_from_u64(RNG_SEED);
-            assert!(
-                (result_of_interst
-                    - cost_to_chance(
-                        &hone_counts,
-                        &input_budgets,
-                        &adv_counts,
-                        express_event,
-                        hist_bins,
-                        &user_mats_value,
-                        adv_hone_strategy.to_owned(),
-                        data_size,
-                        &mut rng2,
-                    )
-                    .chance)
-                    .abs()
-                    < 0.05
+            assert_eq!(
+                result_of_interst,
+                cost_to_chance(
+                    &hone_counts,
+                    &input_budgets,
+                    &adv_counts,
+                    express_event,
+                    hist_bins,
+                    &user_mats_value,
+                    adv_hone_strategy.to_owned(),
+                    data_size,
+                    &mut rng2,
+                )
+                .chance
             );
         }
     }
@@ -446,28 +444,26 @@ mod tests {
             &mut rng,
         );
 
-        let result_of_interst = result.chance;
+        let result_of_interst: f64 = result.chance;
         if let Some(cached_result) = read_cached_data::<f64>(test_name, &hash) {
-            assert!((result_of_interst - cached_result).abs() < 0.05);
+            assert_eq!(result_of_interst, cached_result);
         } else {
             write_cached_data(test_name, &hash, &result_of_interst);
             let mut rng2 = StdRng::seed_from_u64(RNG_SEED);
-            assert!(
-                (result_of_interst
-                    - cost_to_chance(
-                        &hone_counts,
-                        &input_budgets,
-                        &adv_counts,
-                        express_event,
-                        hist_bins,
-                        &user_mats_value,
-                        adv_hone_strategy.to_owned(),
-                        data_size,
-                        &mut rng2,
-                    )
-                    .chance)
-                    .abs()
-                    < 0.05
+            assert_eq!(
+                result_of_interst,
+                cost_to_chance(
+                    &hone_counts,
+                    &input_budgets,
+                    &adv_counts,
+                    express_event,
+                    hist_bins,
+                    &user_mats_value,
+                    adv_hone_strategy.to_owned(),
+                    data_size,
+                    &mut rng2,
+                )
+                .chance
             );
         }
     }
@@ -509,28 +505,26 @@ mod tests {
             &mut rng,
         );
 
-        let result_of_interst = result.chance;
+        let result_of_interst: f64 = result.chance;
         if let Some(cached_result) = read_cached_data::<f64>(test_name, &hash) {
-            assert!((result_of_interst - cached_result).abs() < 0.05);
+            assert_eq!(result_of_interst, cached_result);
         } else {
             write_cached_data(test_name, &hash, &result_of_interst);
             let mut rng2 = StdRng::seed_from_u64(RNG_SEED);
-            assert!(
-                (result_of_interst
-                    - cost_to_chance(
-                        &hone_counts,
-                        &input_budgets,
-                        &adv_counts,
-                        express_event,
-                        hist_bins,
-                        &user_mats_value,
-                        adv_hone_strategy.to_owned(),
-                        data_size,
-                        &mut rng2,
-                    )
-                    .chance)
-                    .abs()
-                    < 0.05
+            assert_eq!(
+                result_of_interst,
+                cost_to_chance(
+                    &hone_counts,
+                    &input_budgets,
+                    &adv_counts,
+                    express_event,
+                    hist_bins,
+                    &user_mats_value,
+                    adv_hone_strategy.to_owned(),
+                    data_size,
+                    &mut rng2,
+                )
+                .chance
             );
         }
     }
@@ -572,28 +566,26 @@ mod tests {
             &mut rng,
         );
 
-        let result_of_interst = result.chance;
+        let result_of_interst: f64 = result.chance;
         if let Some(cached_result) = read_cached_data::<f64>(test_name, &hash) {
-            assert!((result_of_interst - cached_result).abs() < 0.05);
+            assert_eq!(result_of_interst, cached_result);
         } else {
             write_cached_data(test_name, &hash, &result_of_interst);
             let mut rng2 = StdRng::seed_from_u64(RNG_SEED);
-            assert!(
-                (result_of_interst
-                    - cost_to_chance(
-                        &hone_counts,
-                        &input_budgets,
-                        &adv_counts,
-                        express_event,
-                        hist_bins,
-                        &user_mats_value,
-                        adv_hone_strategy.to_owned(),
-                        data_size,
-                        &mut rng2,
-                    )
-                    .chance)
-                    .abs()
-                    < 0.05
+            assert_eq!(
+                result_of_interst,
+                cost_to_chance(
+                    &hone_counts,
+                    &input_budgets,
+                    &adv_counts,
+                    express_event,
+                    hist_bins,
+                    &user_mats_value,
+                    adv_hone_strategy.to_owned(),
+                    data_size,
+                    &mut rng2,
+                )
+                .chance
             );
         }
     }
@@ -638,7 +630,7 @@ mod tests {
             &mut rng,
         );
 
-        let result_of_interst = result.0;
+        let result_of_interst: Vec<f64> = result.0;
         if let Some(cached_result) = read_cached_data::<Vec<f64>>(test_name, &hash) {
             assert_eq!(result_of_interst, cached_result);
         } else {
