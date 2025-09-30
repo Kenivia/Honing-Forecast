@@ -6,7 +6,7 @@ use crate::parser::{Upgrade, probability_distribution};
 #[cfg(debug_assertions)]
 use assert_float_eq::assert_f64_near;
 
-pub fn average_tap(prob_dist: &Vec<f64>, offset: f64) -> f64 {
+pub fn average_tap(prob_dist: &[f64], offset: f64) -> f64 {
     let mut out: f64 = 0.0_f64;
     // println!("{:?}", prob_dist[start_index..].iter().sum::<f64>() as f64);
     #[cfg(debug_assertions)]
@@ -17,7 +17,7 @@ pub fn average_tap(prob_dist: &Vec<f64>, offset: f64) -> f64 {
     }
     out
 }
-fn truncated_average_tap(prob_dist: &Vec<f64>, offset: f64, truncate: usize) -> f64 {
+fn truncated_average_tap(prob_dist: &[f64], offset: f64, truncate: usize) -> f64 {
     let mut out: f64 = 0.0_f64;
     // println!("{:?}", prob_dist[start_index..].iter().sum::<f64>() as f64);
     #[cfg(debug_assertions)]
@@ -45,7 +45,7 @@ fn truncated_average_tap(prob_dist: &Vec<f64>, offset: f64, truncate: usize) -> 
 //     }
 //     out
 // }
-fn average_value(upgrade: &Upgrade, mats_value: &Vec<f64>, average: f64) -> f64 {
+fn average_value(upgrade: &Upgrade, mats_value: &[f64], average: f64) -> f64 {
     let mut this_sum = 0.0_f64;
     for cost_type in 0..7 {
         this_sum += mats_value[cost_type] * average * upgrade.costs[cost_type] as f64;
@@ -55,8 +55,8 @@ fn average_value(upgrade: &Upgrade, mats_value: &Vec<f64>, average: f64) -> f64 
 
 fn est_juice_value_for_prob_dist(
     upgrade: &Upgrade,
-    mat_values: &Vec<f64>,
-    prob_dist: &Vec<f64>,
+    mat_values: &[f64],
+    prob_dist: &[f64],
     extra_count: usize,
 ) -> f64 {
     // if upgrade.failure_raw_delta < 0 {
@@ -74,7 +74,7 @@ fn est_juice_value_for_prob_dist(
 }
 pub fn est_special_honing_value(
     upgrade_arr: &mut Vec<Upgrade>,
-    mats_values: &Vec<f64>,
+    mats_values: &[f64],
 ) -> Vec<f64> {
     let mut out: Vec<f64> = Vec::with_capacity(upgrade_arr.len());
     let mut average: f64;
@@ -105,7 +105,7 @@ pub fn est_special_honing_value(
     out
 }
 
-pub fn est_juice_value(upgrade_arr: &mut Vec<Upgrade>, mat_values: &Vec<f64>) {
+pub fn est_juice_value(upgrade_arr: &mut Vec<Upgrade>, mat_values: &[f64]) {
     let mut this_sum: Vec<f64>;
     // let mut prev_cost: f64;
     // let mut next_cost: f64;
@@ -147,7 +147,7 @@ pub fn est_juice_value(upgrade_arr: &mut Vec<Upgrade>, mat_values: &Vec<f64>) {
             prev_prob_dist = next_prob_dist;
             extra_count += 1;
         }
-        upgrade.values = this_sum;
+        upgrade.juice_values = this_sum;
     }
 }
 
@@ -242,7 +242,7 @@ fn _juice_to_array(
                 upgrade_arr[x].is_normal_honing
                     && upgrade_arr[x].is_weapon == is_weapon
                     && upgrade_arr[x].one_juice_cost <= juice
-                    && cur_extras[x] < upgrade_arr[x].values.len()
+                    && cur_extras[x] < upgrade_arr[x].juice_values.len()
             })
             .collect();
         if idxs.is_empty() {
@@ -251,8 +251,8 @@ fn _juice_to_array(
         max_value_index = idxs
             .into_iter()
             .max_by(|&a, &b| {
-                upgrade_arr[a].values[cur_extras[a]]
-                    .total_cmp(&upgrade_arr[b].values[cur_extras[b]])
+                upgrade_arr[a].juice_values[cur_extras[a]]
+                    .total_cmp(&upgrade_arr[b].juice_values[cur_extras[b]])
             })
             .unwrap();
 
@@ -276,7 +276,7 @@ fn _juice_to_array(
                     upgrade.upgrade_plus_num,
                     taps_used,
                     upgrade
-                        .values
+                        .juice_values
                         .clone()
                         .into_iter()
                         .enumerate()
@@ -286,7 +286,7 @@ fn _juice_to_array(
                         .1
                         .round(),
                     upgrade
-                        .values
+                        .juice_values
                         .clone()
                         .into_iter()
                         .enumerate()

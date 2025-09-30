@@ -1,4 +1,4 @@
-pub fn transpose_vec_of_vecs(matrix: &Vec<Vec<i64>>) -> Vec<Vec<i64>> {
+pub fn transpose_vec_of_vecs(matrix: &[Vec<i64>]) -> Vec<Vec<i64>> {
     if matrix.is_empty() || matrix[0].is_empty() {
         return Vec::new();
     }
@@ -50,9 +50,9 @@ pub fn histogram_for_cost_index(
 /// Compute histograms for the 7 cost types (indices 0..6).
 /// Returns (counts_7xB, mins_7, maxs_7)
 pub fn histograms_for_all_costs(
-    cost_data: &Vec<Vec<i64>>,
+    cost_data: &[Vec<i64>],
     num_bins: usize,
-    highest: &Vec<i64>,
+    highest: &[i64],
 ) -> Vec<Vec<i64>> {
     let mut all_counts: Vec<Vec<i64>> = Vec::with_capacity(7);
     let mut transposed: Vec<Vec<i64>> = transpose_vec_of_vecs(cost_data);

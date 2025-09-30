@@ -1,7 +1,9 @@
 use crate::constants::{
-    get_event_modified_adv_unlock_cost, get_event_modified_armor_unlock_cost,
+    get_adv_data_juice, get_event_modified_adv_unlock_cost, get_event_modified_armor_unlock_cost,
     get_event_modified_weapon_unlock_cost,
 };
+use crate::parser::Upgrade;
+use crate::value_estimation::average_tap;
 
 #[inline]
 fn cost_passes_budget(cost: &[i64], budget: &[i64]) -> bool {
@@ -14,7 +16,7 @@ fn cost_passes_budget(cost: &[i64], budget: &[i64]) -> bool {
         && cost[6] <= budget[6]
 }
 
-fn count_failure_naive(cost_data: &Vec<Vec<i64>>, budget_data: &Vec<Vec<i64>>) -> Vec<i64> {
+fn count_failure_naive(cost_data: &[Vec<i64>], budget_data: &[Vec<i64>]) -> Vec<i64> {
     let mut count: Vec<i64> = vec![0; budget_data.len()];
     for cost in cost_data.iter() {
         for (i, budget) in budget_data.iter().enumerate() {
@@ -28,7 +30,7 @@ fn count_failure_naive(cost_data: &Vec<Vec<i64>>, budget_data: &Vec<Vec<i64>>) -
 /// Count, for each budget, how many costs fail it.
 /// `cost_data` is a slice of N cost vectors; `budget_data` is a slice of M budget vectors
 /// that are sorted element-wise ascending. Returns a Vec<i64> length M.
-fn count_failure_ascending(cost_data: &Vec<Vec<i64>>, budget_data: &Vec<Vec<i64>>) -> Vec<i64> {
+fn count_failure_ascending(cost_data: &[Vec<i64>], budget_data: &[Vec<i64>]) -> Vec<i64> {
     let n: usize = cost_data.len();
     let m: usize = budget_data.len();
     if n == 0 || m == 0 {
@@ -78,11 +80,7 @@ fn count_failure_ascending(cost_data: &Vec<Vec<i64>>, budget_data: &Vec<Vec<i64>
     counts
 }
 
-pub fn count_failure(
-    cost_data: &Vec<Vec<i64>>,
-    budget_data: &Vec<Vec<i64>>,
-    asc: bool,
-) -> Vec<i64> {
+pub fn count_failure(cost_data: &[Vec<i64>], budget_data: &[Vec<i64>], asc: bool) -> Vec<i64> {
     if asc {
         return count_failure_ascending(cost_data, budget_data);
     } else {
@@ -133,8 +131,8 @@ pub fn ticks_to_counts(ticks: Vec<Vec<bool>>) -> Vec<Vec<i64>> {
 ///
 /// Returns: (shard_unlock, silver_unlock)
 pub fn calc_unlock(
-    hone_counts: &Vec<Vec<i64>>,
-    adv_counts: &Vec<Vec<i64>>,
+    hone_counts: &[Vec<i64>],
+    adv_counts: &[Vec<i64>],
     express_event: bool,
 ) -> Vec<i64> {
     let mut shard_unlock: i64 = 0;
@@ -191,6 +189,58 @@ pub fn calc_unlock(
     }
 
     Vec::from([shard_unlock, silver_unlock])
+}
+
+// (maxroll) average, without the unlock costs
+pub fn average_cost(upgrades: &[Upgrade]) -> Vec<f64> {
+    let mut total_costs: Vec<f64> = vec![0.0; 7];
+
+    for upgrade in upgrades {
+        let avg_taps: f64 = average_tap(&upgrade.prob_dist, upgrade.tap_offset as f64);
+        for cost_type in 0..7 {
+            total_costs[cost_type] += upgrade.costs[cost_type] as f64 * (avg_taps as f64);
+        }
+    }
+
+    total_costs
+}
+
+pub fn average_juice_cost(upgrades: &[Upgrade]) -> (i64, i64) {
+    let mut total_red_cost: f64 = 0.0;
+    let mut total_blue_cost: f64 = 0.0;
+    let mut red_count: i64 = 0;
+    let mut blue_count: i64 = 0;
+
+    for upgrade in upgrades {
+        if upgrade.is_normal_honing {
+            continue;
+        }
+
+        // Use the proper juice cost calculation from get_adv_data_juice
+        let avg_juice_cost =
+            get_adv_data_juice(upgrade.upgrade_plus_num as i64) * upgrade.one_juice_cost as f64;
+
+        if upgrade.is_weapon {
+            total_red_cost += avg_juice_cost;
+            red_count += 1;
+        } else {
+            total_blue_cost += avg_juice_cost;
+            blue_count += 1;
+        }
+    }
+
+    (
+        if red_count > 0 {
+            total_red_cost.round() as i64
+        } else {
+            0
+        },
+        if blue_count > 0 {
+            total_blue_cost.round() as i64
+        } else {
+            0
+        },
+    )
 }
 
 // pub fn myformat(mut f: f64) -> String {

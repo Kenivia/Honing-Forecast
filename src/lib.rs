@@ -5,14 +5,15 @@ mod helpers;
 mod histogram;
 mod monte_carlo;
 mod parser;
+mod test_cache;
 mod value_estimation;
-use crate::chance_to_cost::{average_cost, chance_to_cost};
-use crate::constants::EVENT_ARTISAN_MULTIPLIER;
+use crate::chance_to_cost::chance_to_cost;
+use crate::constants::{EVENT_ARTISAN_MULTIPLIER, RNG_SEED};
 use crate::cost_to_chance::{cost_to_chance, cost_to_chance_arr};
-use crate::helpers::calc_unlock;
-use crate::helpers::ticks_to_counts;
+use crate::helpers::{average_cost, calc_unlock, ticks_to_counts};
 use crate::parser::{parser, parser_with_other_strategy};
 
+use rand::prelude::*;
 use serde::Deserialize;
 use serde_wasm_bindgen::{from_value, to_value};
 use wasm_bindgen::JsValue;
@@ -73,13 +74,15 @@ pub fn chance_to_cost_wrapper(input: JsValue) -> JsValue {
     let adv_hone_strategy: String = payload.adv_hone_strategy;
     let data_size: usize = payload.data_size.unwrap_or(100000).max(1000);
 
+    let mut rng = StdRng::seed_from_u64(RNG_SEED);
     let out = chance_to_cost(
-        normal_counts,
-        adv_counts,
-        adv_hone_strategy,
+        &normal_counts,
+        &adv_counts,
+        &adv_hone_strategy,
         payload.express_event,
         payload.bucket_count,
         data_size,
+        &mut rng,
     );
 
     // Return a JS object with fields to avoid brittle tuple indexing
@@ -115,6 +118,7 @@ pub fn cost_to_chance_wrapper(input: JsValue) -> JsValue {
     let user_mats_value = payload.user_mats_value.unwrap_or(vec![0.0; 7]);
     // console::log_1(user_mats_value[0].into());
     let data_size: usize = payload.data_size.unwrap_or(100000).max(1000);
+    let mut rng = StdRng::seed_from_u64(RNG_SEED);
     let out = cost_to_chance(
         &normal_counts,
         &budget,
@@ -124,6 +128,7 @@ pub fn cost_to_chance_wrapper(input: JsValue) -> JsValue {
         &user_mats_value,
         payload.adv_hone_strategy,
         data_size,
+        &mut rng,
     );
     // console::log_1(&"cost_to_chance_complete".into());
     to_value(&out).unwrap()
@@ -151,16 +156,14 @@ pub fn parser_wrapper_unified(input: JsValue) -> JsValue {
         panic!("Either adv_counts or adv_hone_ticks must be provided");
     };
 
-    let artisan_rate_arr: Vec<f64>;
-    if payload.express_event {
-        artisan_rate_arr = EVENT_ARTISAN_MULTIPLIER.to_vec();
+    let artisan_rate_arr = if payload.express_event {
+        EVENT_ARTISAN_MULTIPLIER.to_vec()
     } else {
-        artisan_rate_arr = vec![1.0; 25];
-    }
+        vec![1.0; 25]
+    };
 
-    // Default extra values (same as other functions)
-    let extra_arr = vec![0.0; 25];
-    let extra_num_arr = vec![0; 25];
+    let extra_arr = [0.0; 25];
+    let extra_num_arr = [0; 25];
 
     let (upgrades, other_strategy_prob_dists) = parser_with_other_strategy(
         &normal_counts,
@@ -202,16 +205,14 @@ pub fn average_cost_wrapper(input: JsValue) -> JsValue {
         panic!("Either adv_counts or adv_hone_ticks must be provided");
     };
 
-    let artisan_rate_arr: Vec<f64>;
-    if payload.express_event {
-        artisan_rate_arr = EVENT_ARTISAN_MULTIPLIER.to_vec();
+    let artisan_rate_arr = if payload.express_event {
+        EVENT_ARTISAN_MULTIPLIER.to_vec()
     } else {
-        artisan_rate_arr = vec![1.0; 25];
-    }
+        vec![1.0; 25]
+    };
 
-    // Default extra values (same as other functions)
-    let extra_arr = vec![0.0; 25];
-    let extra_num_arr = vec![0; 25];
+    let extra_arr = [0.0; 25];
+    let extra_num_arr = [0; 25];
 
     let upgrades = parser(
         &normal_counts,
@@ -253,6 +254,7 @@ pub fn cost_to_chance_arr_wrapper(input: JsValue) -> JsValue {
     let user_mats_value = payload.user_mats_value.unwrap_or(vec![0.0; 7]);
     let data_size: usize = payload.data_size.unwrap_or(100000).max(1000);
 
+    let mut rng = StdRng::seed_from_u64(RNG_SEED);
     let (final_chances, typed_fail_counters, budgets_red_remaining, budgets_blue_remaining) =
         cost_to_chance_arr(
             &normal_counts,
@@ -262,6 +264,7 @@ pub fn cost_to_chance_arr_wrapper(input: JsValue) -> JsValue {
             &user_mats_value,
             payload.adv_hone_strategy,
             data_size,
+            &mut rng,
         );
 
     // Return a JS object with the results
@@ -291,13 +294,15 @@ pub fn chance_to_cost_test_wrapper(
     adv_hone_strategy: String,
     express_event: bool,
 ) -> (Vec<Vec<i64>>, Vec<f64>) {
+    let mut rng = StdRng::seed_from_u64(RNG_SEED);
     let out = chance_to_cost(
-        ticks_to_counts(normal_hone_ticks),
-        ticks_to_counts(adv_hone_ticks),
-        adv_hone_strategy,
+        &ticks_to_counts(normal_hone_ticks),
+        &ticks_to_counts(adv_hone_ticks),
+        &adv_hone_strategy,
         express_event,
         1000,
         100000,
+        &mut rng,
     );
     (out.hundred_budgets, out.hundred_chances)
 }
@@ -308,6 +313,7 @@ pub fn cost_to_chance_test_wrapper(
     budget: Vec<i64>,
     express_event: bool,
 ) -> (f64, String) {
+    let mut rng = StdRng::seed_from_u64(RNG_SEED);
     let out = cost_to_chance(
         &ticks_to_counts(normal_hone_ticks),
         &budget,
@@ -317,6 +323,7 @@ pub fn cost_to_chance_test_wrapper(
         &vec![0.0; 7],
         "No juice".to_owned(),
         100000,
+        &mut rng,
     );
     (
         out.chance,
