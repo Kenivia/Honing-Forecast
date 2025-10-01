@@ -124,7 +124,7 @@ pub fn chance_to_cost<R: rand::Rng>(
             budget_row[8] = avg_blue_juice;
         }
     }
-    let failure_counts: Vec<i64> = count_failure(&cost_data, &budget_data, true);
+    let failure_counts: Vec<i64> = count_failure(&cost_data, &budget_data, false);
 
     let (hundred_budgets, hundred_chances): (Vec<Vec<i64>>, Vec<f64>) = (0..101)
         .map(|x| {

@@ -52,7 +52,7 @@ export default function GambaInfoBox({
                             <div>Artisan: {(upgradeArr[selectedUpgradeIndex].current_artisan * 100).toFixed(2)}%</div>
                             <div>Trials: {upgradeArr[selectedUpgradeIndex].taps_so_far}</div>
                             <div>Free Taps: {upgradeArr[selectedUpgradeIndex].free_taps_so_far}</div>
-                            <div>For this upgrade, in a room of 100 people, you are less lucky than {((upgradeArr[selectedUpgradeIndex].cumulative_chance || 0) * 100).toFixed(0)} of them.</div>
+                            <div>For this upgrade, in a room of 100 people, you are luckier than {(100 - (upgradeArr[selectedUpgradeIndex].cumulative_chance || 0) * 100).toFixed(0)} of them.</div>
                         </>
                     ) : (
                         (() => {
@@ -62,7 +62,7 @@ export default function GambaInfoBox({
                                     <div>
                                         Tap Count Range: {rangeInfo.range}
                                     </div>
-                                    <div>{"For this upgrade, in a room of 100 people, you are less lucky than " + (upgradeArr[selectedUpgradeIndex].cumulative_chance * 100).toFixed(0) + " of them."}</div>
+                                    <div>{"For this upgrade, in a room of 100 people, you are luckier than " + (100 - upgradeArr[selectedUpgradeIndex].cumulative_chance * 100).toFixed(0) + " of them."}</div>
 
 
                                 </>

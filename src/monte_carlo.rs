@@ -178,5 +178,9 @@ pub fn get_top_bottom(upgrade_arr: &[Upgrade], unlock_costs: &[i64]) -> Vec<Vec<
             }
         }
     }
+    for row in cost_data.iter_mut() {
+        row[3] += unlock_costs[0];
+        row[6] += unlock_costs[1];
+    }
     cost_data
 }

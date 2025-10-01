@@ -74,7 +74,7 @@ export default function CostToChanceSection({
                         </div>
 
                         <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8 }}>
-                            <div style={{ ...styles.inputLabelCell, whiteSpace: 'nowrap' }}>Chance of Success</div>
+                            <div style={{ ...styles.inputLabelCell, whiteSpace: 'nowrap', color: 'var(--text-success)', }}>Chance of Success:</div>
                             <div style={{ ...styles.inputCell, border: 'none', background: "transparent", color: 'var(--text-success)', fontSize: 'var(--font-size-xl)' }}>{chance_result ? (String(chance_result.chance) + '%') : '-'}</div>
 
                         </div>

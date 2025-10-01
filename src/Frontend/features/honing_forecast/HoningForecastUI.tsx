@@ -685,39 +685,42 @@ export default function HoningForecastUI() {
                         onNumericInputChange={handleNumericInputChange}
                     />
 
-                    <AdvancedHoningPanel
-                        bottomGrid={bottomGrid}
-                        setBottomGrid={setBottomGrid}
-                        prev_checked_arr_bottom={prev_checked_arr_bottom}
-                        set_prev_checked_arr_bottom={set_prev_checked_arr_bottom}
-                        bottomGridRef={bottomGridRef}
-                        marquee={marquee}
-                        onGridMouseDown={onGridMouseDown}
-                        adv_hone_strategy={adv_hone_strategy}
-                        adv_hone_strategy_change={adv_hone_strategy_change}
-                        useGridInput={useGridInput}
-                        advCounts={advCounts}
-                        onNumericInputChange={handleNumericInputChange}
-                    />
+                    {/* Bundled Advanced Honing Panel and Control Panel */}
+                    <div style={{ display: 'flex', flexDirection: 'row', gap: 'var(--spacing-2xl)' }}>
+                        <AdvancedHoningPanel
+                            bottomGrid={bottomGrid}
+                            setBottomGrid={setBottomGrid}
+                            prev_checked_arr_bottom={prev_checked_arr_bottom}
+                            set_prev_checked_arr_bottom={set_prev_checked_arr_bottom}
+                            bottomGridRef={bottomGridRef}
+                            marquee={marquee}
+                            onGridMouseDown={onGridMouseDown}
+                            adv_hone_strategy={adv_hone_strategy}
+                            adv_hone_strategy_change={adv_hone_strategy_change}
+                            useGridInput={useGridInput}
+                            advCounts={advCounts}
+                            onNumericInputChange={handleNumericInputChange}
+                        />
 
-                    <ControlPanel
-                        controlsLeft={null}
-                        mainScale={mainScale}
-                        fillDemo={fillDemo}
-                        fillDemoIncome={fillDemoIncome}
-                        // fillRandom={fillRandom}
-                        clearAll={clearAll}
-                        express_event={express_event}
-                        set_express_event={set_express_event}
-                        cumulativeGraph={cumulativeGraph}
-                        setCumulativeGraph={setCumulativeGraph}
-                        dataSize={dataSize}
-                        setDataSize={setDataSize}
-                        lockXAxis={lockXAxis}
-                        onToggleLockXAxis={onToggleLockXAxis}
-                        useGridInput={useGridInput}
-                        setUseGridInput={handleUseGridInputChange}
-                    />
+                        <ControlPanel
+                            controlsLeft={null}
+                            mainScale={mainScale}
+                            fillDemo={fillDemo}
+                            fillDemoIncome={fillDemoIncome}
+                            // fillRandom={fillRandom}
+                            clearAll={clearAll}
+                            express_event={express_event}
+                            set_express_event={set_express_event}
+                            cumulativeGraph={cumulativeGraph}
+                            setCumulativeGraph={setCumulativeGraph}
+                            dataSize={dataSize}
+                            setDataSize={setDataSize}
+                            lockXAxis={lockXAxis}
+                            onToggleLockXAxis={onToggleLockXAxis}
+                            useGridInput={useGridInput}
+                            setUseGridInput={handleUseGridInputChange}
+                        />
+                    </div>
                 </div>
 
                 {/* Page Separator */}

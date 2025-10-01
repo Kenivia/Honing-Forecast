@@ -44,7 +44,7 @@
     --series-oreha: #ff7824;
     --series-gold: #facc15;
     --series-silver: #9ca3af;
-    --series-overall: #00ff00;
+    --series-overall: #9ff7c7;
     --series-brown: #f7893b;
 
     /* Input Colors */
@@ -62,7 +62,7 @@
     --grid-cell-text: #000000;
     --grid-cell-selected: rgba(172, 255, 254, 0.8);
     --grid-cell-bg-readonly: rgba(34, 34, 34, 0);
-    --grid-cell-text-readonly: #83ffb0;
+    --grid-cell-text-readonly: #fbff00;
     --grid-cell-selected-readonly: rgba(122, 194, 175, 0.3);
 
     /* Accent Colors */

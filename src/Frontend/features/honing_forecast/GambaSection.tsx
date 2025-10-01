@@ -383,7 +383,7 @@ export default function GambaSection({
     // Column definitions for budget grid (2 columns: Total Cost, Remaining)
     const budgetColumnDefs = [
         {
-            headerName: "Total Cost",
+            headerName: "Cost so far",
             field: "total",
             editable: false,
             flex: 1,
