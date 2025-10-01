@@ -7,14 +7,11 @@ mod monte_carlo;
 mod parser;
 mod test_cache;
 mod value_estimation;
-use crate::chance_to_cost::ChanceToCostOut;
-use crate::chance_to_cost::chance_to_cost;
-use crate::constants::{EVENT_ARTISAN_MULTIPLIER, RNG_SEED};
-use crate::cost_to_chance::CostToChanceOut;
-use crate::cost_to_chance::{cost_to_chance, cost_to_chance_arr};
+use crate::chance_to_cost::{ChanceToCostOut, chance_to_cost};
+use crate::constants::EVENT_ARTISAN_MULTIPLIER;
+use crate::cost_to_chance::{CostToChanceOut, cost_to_chance, cost_to_chance_arr};
 use crate::helpers::{average_cost, calc_unlock, ticks_to_counts};
-use crate::parser::Upgrade;
-use crate::parser::{parser, parser_with_other_strategy};
+use crate::parser::{Upgrade, parser, parser_with_other_strategy};
 
 use rand::prelude::*;
 use serde::Deserialize;
@@ -77,7 +74,7 @@ pub fn chance_to_cost_wrapper(input: JsValue) -> JsValue {
     let adv_hone_strategy: String = payload.adv_hone_strategy;
     let data_size: usize = payload.data_size.unwrap_or(100000).max(1000);
 
-    let mut rng = StdRng::seed_from_u64(RNG_SEED);
+    let mut rng: ThreadRng = rand::rng();
     let out: ChanceToCostOut = chance_to_cost(
         &normal_counts,
         &adv_counts,
@@ -121,7 +118,7 @@ pub fn cost_to_chance_wrapper(input: JsValue) -> JsValue {
     let user_mats_value: Vec<f64> = payload.user_mats_value.unwrap_or(vec![0.0; 7]);
     // console::log_1(user_mats_value[0].into());
     let data_size: usize = payload.data_size.unwrap_or(100000).max(1000);
-    let mut rng = StdRng::seed_from_u64(RNG_SEED);
+    let mut rng: ThreadRng = rand::rng();
     let out: CostToChanceOut = cost_to_chance(
         &normal_counts,
         &budget,
@@ -258,7 +255,7 @@ pub fn cost_to_chance_arr_wrapper(input: JsValue) -> JsValue {
     let user_mats_value: Vec<f64> = payload.user_mats_value.unwrap_or(vec![0.0; 7]);
     let data_size: usize = payload.data_size.unwrap_or(100000).max(1000);
 
-    let mut rng = StdRng::seed_from_u64(RNG_SEED);
+    let mut rng: ThreadRng = rand::rng();
     let (final_chances, typed_fail_counters, budgets_red_remaining, budgets_blue_remaining): (
         Vec<f64>,
         Vec<Vec<f64>>,
@@ -302,7 +299,7 @@ pub fn chance_to_cost_test_wrapper(
     adv_hone_strategy: String,
     express_event: bool,
 ) -> (Vec<Vec<i64>>, Vec<f64>) {
-    let mut rng = StdRng::seed_from_u64(RNG_SEED);
+    let mut rng: ThreadRng = rand::rng();
     let out: ChanceToCostOut = chance_to_cost(
         &ticks_to_counts(normal_hone_ticks),
         &ticks_to_counts(adv_hone_ticks),
@@ -321,7 +318,7 @@ pub fn cost_to_chance_test_wrapper(
     budget: Vec<i64>,
     express_event: bool,
 ) -> (f64, String) {
-    let mut rng = StdRng::seed_from_u64(RNG_SEED);
+    let mut rng: ThreadRng = rand::rng();
     let out: CostToChanceOut = cost_to_chance(
         &ticks_to_counts(normal_hone_ticks),
         &budget,

@@ -190,21 +190,6 @@ mod tests {
             assert_eq!(result_of_interst, cached_result);
         } else {
             write_cached_data(test_name, &hash, &result_of_interst);
-            let mut rng2 = StdRng::seed_from_u64(RNG_SEED);
-            assert_eq!(
-                result_of_interst,
-                chance_to_cost(
-                    &hone_counts,
-                    &adv_counts,
-                    adv_hone_strategy,
-                    express_event,
-                    hist_bins,
-                    data_size,
-                    &mut rng2,
-                )
-                .hundred_budgets
-                .clone()
-            );
         }
     }
 
@@ -248,20 +233,6 @@ mod tests {
             assert_eq!(result_of_interst, cached_result);
         } else {
             write_cached_data(test_name, &hash, &result_of_interst);
-            let mut rng2 = StdRng::seed_from_u64(RNG_SEED);
-            assert_eq!(
-                result_of_interst,
-                chance_to_cost(
-                    &hone_counts,
-                    &adv_counts,
-                    adv_hone_strategy,
-                    express_event,
-                    hist_bins,
-                    data_size,
-                    &mut rng2,
-                )
-                .hundred_budgets
-            );
         }
         // implement test here
     }

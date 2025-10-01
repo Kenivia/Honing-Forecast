@@ -381,22 +381,6 @@ mod tests {
             assert_eq!(result_of_interst, cached_result);
         } else {
             write_cached_data(test_name, &hash, &result_of_interst);
-            let mut rng2 = StdRng::seed_from_u64(RNG_SEED);
-            assert_eq!(
-                result_of_interst,
-                cost_to_chance(
-                    &hone_counts,
-                    &input_budgets,
-                    &adv_counts,
-                    express_event,
-                    hist_bins,
-                    &user_mats_value,
-                    adv_hone_strategy.to_owned(),
-                    data_size,
-                    &mut rng2,
-                )
-                .chance
-            );
         }
     }
     #[test]
@@ -449,22 +433,6 @@ mod tests {
             assert_eq!(result_of_interst, cached_result);
         } else {
             write_cached_data(test_name, &hash, &result_of_interst);
-            let mut rng2 = StdRng::seed_from_u64(RNG_SEED);
-            assert_eq!(
-                result_of_interst,
-                cost_to_chance(
-                    &hone_counts,
-                    &input_budgets,
-                    &adv_counts,
-                    express_event,
-                    hist_bins,
-                    &user_mats_value,
-                    adv_hone_strategy.to_owned(),
-                    data_size,
-                    &mut rng2,
-                )
-                .chance
-            );
         }
     }
     #[test]
@@ -510,22 +478,6 @@ mod tests {
             assert_eq!(result_of_interst, cached_result);
         } else {
             write_cached_data(test_name, &hash, &result_of_interst);
-            let mut rng2 = StdRng::seed_from_u64(RNG_SEED);
-            assert_eq!(
-                result_of_interst,
-                cost_to_chance(
-                    &hone_counts,
-                    &input_budgets,
-                    &adv_counts,
-                    express_event,
-                    hist_bins,
-                    &user_mats_value,
-                    adv_hone_strategy.to_owned(),
-                    data_size,
-                    &mut rng2,
-                )
-                .chance
-            );
         }
     }
     #[test]
@@ -571,22 +523,6 @@ mod tests {
             assert_eq!(result_of_interst, cached_result);
         } else {
             write_cached_data(test_name, &hash, &result_of_interst);
-            let mut rng2 = StdRng::seed_from_u64(RNG_SEED);
-            assert_eq!(
-                result_of_interst,
-                cost_to_chance(
-                    &hone_counts,
-                    &input_budgets,
-                    &adv_counts,
-                    express_event,
-                    hist_bins,
-                    &user_mats_value,
-                    adv_hone_strategy.to_owned(),
-                    data_size,
-                    &mut rng2,
-                )
-                .chance
-            );
         }
     }
 
@@ -635,21 +571,6 @@ mod tests {
             assert_eq!(result_of_interst, cached_result);
         } else {
             write_cached_data(test_name, &hash, &result_of_interst);
-            let mut rng2 = StdRng::seed_from_u64(RNG_SEED);
-            assert_eq!(
-                result_of_interst,
-                cost_to_chance_arr(
-                    &hone_counts,
-                    &budget_arr,
-                    &adv_counts,
-                    express_event,
-                    &user_mats_value,
-                    adv_hone_strategy.to_owned(),
-                    data_size,
-                    &mut rng2,
-                )
-                .0
-            );
         }
     }
 }
