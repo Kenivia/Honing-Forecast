@@ -501,7 +501,7 @@ export default function GambaSection({
                         <div style={{ marginTop: 20, display: 'flex', gap: 20 }}>
                             <div style={{ flex: 1 }}>
                                 <Graph
-                                    title="Cost distribution?"
+                                    title="Cost distribution"
                                     labels={OUTPUT_LABELS}
                                     counts={AnythingTicked ? (chance_result?.hist_counts || cachedChanceGraphData?.hist_counts) : null}
                                     mins={chance_result?.hist_mins || cachedChanceGraphData?.hist_mins}
