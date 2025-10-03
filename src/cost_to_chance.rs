@@ -117,7 +117,7 @@ fn preparation(
     let both_valid: bool = valid_armor_values && valid_weapon_values;
 
     if !both_valid {
-        mats_value = vec![1.0, 0.1, 13.0, 0.2, 90.0, 1.0, 0.0];
+        mats_value = DEFAULT_GOLD_VALUES.to_vec();
     };
 
     est_juice_value(&mut upgrade_arr, &mats_value);

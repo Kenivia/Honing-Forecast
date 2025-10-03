@@ -38,6 +38,8 @@ Honing Forecast is a calculator that tells you how much a set of upgrades will c
 - Matrix operation libraries to speed up monte carlo and what not? maybe go back to caching results?
 - Confidence intervals(might have to actually learn some math first)
 - Success chance optimization in juice/free tap usage(right now it just calculates a gold value, want to replace non-custom gold value with true highest success chance).
+- Gold eqv cost minimized chance mode
+- Automatic Market price integration
 
 ## Feedback
 
