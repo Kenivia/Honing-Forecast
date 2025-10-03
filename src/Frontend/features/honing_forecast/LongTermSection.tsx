@@ -79,7 +79,7 @@ function cost_to_pity(budget: number[], pity_cost: number[], mat_value: number[]
     return sum;
 }
 
-function gold_from_sell_mats(budget: number[], pity_cost: number[], mat_value: number[]): number {
+function gold_plus_sell_mats(budget: number[], pity_cost: number[], mat_value: number[]): number {
     let sum = budget[5];
     for (let i = 0; i < 7; i++) {
         if (i == 5 || i == 3 || i == 6) { continue; }
@@ -447,7 +447,7 @@ export default function LongTermSection({
         for (let week = 0; week < Math.min(53, weeklyBudgets.length); week++) {
             const this_week_budget = weeklyBudgets[week]
             const costToPity = cost_to_pity(this_week_budget, pityCost, matValues)
-            const goldFromSell = gold_from_sell_mats(this_week_budget, pityCost, matValues)
+            const goldFromSell = gold_plus_sell_mats(this_week_budget, pityCost, matValues)
 
             costToPityData.push(costToPity)
             goldFromSellData.push(goldFromSell)

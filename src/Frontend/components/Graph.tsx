@@ -726,6 +726,8 @@ function Graph({ title, labels, counts, mins, maxs, width = 640, height = 320, b
                             if (graphType === 'Gold') {
                                 const srcCounts = effectiveCounts ?? counts;
                                 const yValue = srcCounts[fallbackSeries][hoverBucket] || 0
+                                const costToPity = srcCounts[0][hoverBucket] || 0
+                                const goldFromSell = srcCounts[1][hoverBucket] || 0
                                 const weekNumber = hoverBucket
 
                                 if (fallbackSeries === 0) {
@@ -733,15 +735,15 @@ function Graph({ title, labels, counts, mins, maxs, width = 640, height = 320, b
                                     return (
                                         <div style={{ color: 'var(--text-primary)' }}>
                                             <div style={{ color: effectiveColors[fallbackSeries], fontWeight: 600 }}>{labels[fallbackSeries]}</div>
-                                            <div>{weekNumber === 0 ? 'Right now,' : `In ${weekNumber} weeks,`} this will cost {formatSig3(yValue)} (buying needed mats with gold)</div>
+                                            <div>{weekNumber === 0 ? 'Right now,' : `In ${weekNumber} weeks,`} this will cost {formatSig3(yValue)} (buying needed mats with {formatSig3(costToPity - srcCounts[5][hoverBucket])} Gold)</div>
                                         </div>
                                     )
                                 } else if (fallbackSeries === 1) {
                                     // Second series - Gold from selling
-                                    const goldBudget = weeklyBudgets && weeklyBudgets[weekNumber] ? weeklyBudgets[weekNumber][5] : 0 // Gold is at index 5
+                                    const goldBudget = weeklyBudgets[hoverBucket][5]// Gold is at index 5
 
                                     // Check if Gold from selling equals Gold budget (nothing to sell)
-                                    if (Math.abs(yValue - goldBudget) < 1e-9) {
+                                    if (Math.abs(goldFromSell - goldBudget) < 1e-9) {
                                         return (
                                             <div style={{ color: 'var(--text-primary)' }}>
                                                 <div style={{ color: effectiveColors[fallbackSeries], fontWeight: 600 }}>{labels[fallbackSeries]}</div>
@@ -752,7 +754,7 @@ function Graph({ title, labels, counts, mins, maxs, width = 640, height = 320, b
                                         return (
                                             <div style={{ color: 'var(--text-primary)' }}>
                                                 <div style={{ color: effectiveColors[fallbackSeries], fontWeight: 600 }}>{labels[fallbackSeries]}</div>
-                                                <div>{weekNumber === 0 ? 'Right now,' : `In ${weekNumber} weeks,`} you will have {formatSig3(yValue)} Gold if you sell mats, {formatSig3(goldBudget)} if you don't</div>
+                                                <div>{weekNumber === 0 ? 'Right now,' : `In ${weekNumber} weeks,`} you will have {formatSig3(goldFromSell)} Gold if you sell mats, {formatSig3(goldBudget)} if you don't</div>
                                             </div>
                                         )
                                     }
