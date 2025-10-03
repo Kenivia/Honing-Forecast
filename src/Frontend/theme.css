@@ -62,7 +62,7 @@
     --grid-cell-text: #000000;
     --grid-cell-selected: rgba(172, 255, 254, 0.8);
     --grid-cell-bg-readonly: rgba(34, 34, 34, 0);
-    --grid-cell-text-readonly: #fbff00;
+    --grid-cell-text-readonly: #9ff7c7;
     --grid-cell-selected-readonly: rgba(122, 194, 175, 0.3);
 
     /* Accent Colors */
