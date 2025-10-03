@@ -30,6 +30,21 @@ This project started in Google sheets as a roster income tracker, then I want co
 
 I'm still in the process of writing proper comments & tests, I apologize for the mess.
 
+## Work in Progress
+
+- Better roster tracking & income estimation(I don't think automatic game-to-website input is possible)
+- Input arithmetic parsing(e.g. allow inputs like 25*1234 for easier boxes calculation)
+- Books & scroll calculations(Although for the most part just use them same way as juices)
+- Ctrl z, delete
+- Hover question mark tooltips
+- MUCH more tests, need to actually test the components(like count_failure, tap_map and such), also need implement more integration tests
+- Pre-compute prob_dist of groups of upgrades(such as +n all 5 armours etc)
+- Matrix operation libraries to speed up monte carlo and what not? maybe go back to caching results?
+- Confidence intervals(might have to actually learn some math first)
+- Success chance optimization in juice/free tap usage(right now it just calculates a gold value, want to replace non-custom gold value with true highest success chance).
+- Gold eqv cost minimized chance mode
+- Automatic Market price integration
+
 ## Contributing
 
 Contributions would be greatly appreciated! If you would like to add this to your own tool, there is no API to speak of (given there's no server) but you're welcome to copy any of code(the rust compute section probably the most useful) as long as you comply with AGPL.
