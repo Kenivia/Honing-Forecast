@@ -507,7 +507,7 @@ export default function LongTermSection({
                             </h4> */}
                                 <div style={{ width: 120 }}>
                                     <SpreadsheetGrid
-                                        columnDefs={[{ ...incomeColumnDefs[0], headerName: "Income " + gridIndex }]}
+                                        columnDefs={[{ ...incomeColumnDefs[0], headerName: "Income " + (gridIndex + 1) }]}
                                         labels={incomeLabels}
                                         sheet_values={getIncomeGridData(gridIndex)}
                                         set_sheet_values={(newValues) => {
