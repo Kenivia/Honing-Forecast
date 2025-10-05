@@ -1,4 +1,4 @@
-# Details, last updated 2025/10/3
+# Details, last updated 2025/10/5
 
 The main functionalities of the calculator are based on random samples. We generate "cost data" consisting of ~100k samples, where each sample is the cost of all selected upgrades. Note that we don't stop for failures in this data generation - we just keep going til everything succeeds and record how much things costed.
 
@@ -32,18 +32,29 @@ I'm still in the process of writing proper comments & tests, I apologize for the
 
 ## Work in Progress
 
+### Features
+
+- Confidence intervals(might have to actually learn some math first)
+- Success chance optimization in juice/free tap usage(right now it just calculates a gold value, want to replace non-custom gold value with true highest success chance).
+- Gold eqv cost minimized chance mode
+- Automatic Market price integration
+- Juice box opening optimization(do i open for red or blue)
+- Bottleneck-aware juice/free tap gold value estimation
+
+### UI
+
 - Better roster tracking & income estimation(I don't think automatic game-to-website input is possible)
 - Input arithmetic parsing(e.g. allow inputs like 25*1234 for easier boxes calculation)
 - Books & scroll calculations(Although for the most part just use them same way as juices)
 - Ctrl z, delete
 - Hover question mark tooltips
+- Adjustable week number in raw / Gold graph
+
+### DEV
+
 - MUCH more tests, need to actually test the components(like count_failure, tap_map and such), also need implement more integration tests
 - Pre-compute prob_dist of groups of upgrades(such as +n all 5 armours etc)
 - Matrix operation libraries to speed up monte carlo and what not? maybe go back to caching results?
-- Confidence intervals(might have to actually learn some math first)
-- Success chance optimization in juice/free tap usage(right now it just calculates a gold value, want to replace non-custom gold value with true highest success chance).
-- Gold eqv cost minimized chance mode
-- Automatic Market price integration
 
 ## Contributing
 
