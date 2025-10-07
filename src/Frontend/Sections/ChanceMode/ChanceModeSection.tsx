@@ -1,46 +1,10 @@
 import React from 'react'
-import { Slider, styled } from '@mui/material'
 import SpreadsheetGrid from '../../Components/SpreadsheetGrid.tsx'
 import Graph from '../../Components/Graph.tsx'
 import { styles, createColumnDefs, GRAPH_WIDTH, GRAPH_HEIGHT } from '../../Utils/Styles.ts'
 import { OUTPUT_LABELS } from '../../Utils/Constants.ts'
-import { CallWorker } from '../../WasmInterface/worker_setup.ts'
-
+import { StyledSlider } from '../../Utils/Styles.ts'
 // Styled Material UI Slider with custom colors
-const StyledSlider = styled(Slider)(() => ({
-    width: 300,
-    color: 'var(--slider-track-active)',
-    '& .MuiSlider-track': {
-        border: 'none',
-        backgroundColor: 'var(--slider-track-active)',
-        height: 6,
-    },
-    '& .MuiSlider-rail': {
-        backgroundColor: 'var(--slider-track-bg)',
-        height: 6,
-    },
-    '& .MuiSlider-thumb': {
-        backgroundColor: 'var(--slider-thumb-bg)',
-        border: '2px solid var(--slider-thumb-bg)',
-        width: 20,
-        height: 20,
-        '&:hover, &.Mui-focusVisible': {
-            backgroundColor: 'var(--slider-thumb-hover)',
-            borderColor: 'var(--slider-thumb-focus)',
-            boxShadow: `0 0 0 8px var(--slider-thumb-shadow)`,
-        },
-        '&.Mui-active': {
-            backgroundColor: 'var(--slider-thumb-hover)',
-            borderColor: 'var(--slider-thumb-focus)',
-        },
-    },
-    '& .MuiSlider-valueLabel': {
-        backgroundColor: 'var(--slider-thumb-bg)',
-        color: 'var(--text-primary)',
-        fontSize: '12px',
-        fontWeight: 'bold',
-    },
-}))
 
 type ChanceToCostSectionProps = {
     desired_chance: string

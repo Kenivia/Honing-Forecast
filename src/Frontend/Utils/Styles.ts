@@ -1,8 +1,46 @@
+import { Slider, styled } from "@mui/material"
+
 // Graph dimensions constants
+
 export const GRAPH_WIDTH = 800
 export const GRAPH_HEIGHT = 400
 export const SMALL_GRAPH_WIDTH = 640
 export const SMALL_GRAPH_HEIGHT = 320
+// Styled Material UI Slider with custom colors
+export const StyledSlider = styled(Slider)(() => ({
+    width: 300,
+    color: "var(--slider-track-active)",
+    "& .MuiSlider-track": {
+        border: "none",
+        backgroundColor: "var(--slider-track-active)",
+        height: 6,
+    },
+    "& .MuiSlider-rail": {
+        backgroundColor: "var(--slider-track-bg)",
+        height: 6,
+    },
+    "& .MuiSlider-thumb": {
+        backgroundColor: "var(--slider-thumb-bg)",
+        border: "2px solid var(--slider-thumb-bg)",
+        width: 20,
+        height: 20,
+        "&:hover, &.Mui-focusVisible": {
+            backgroundColor: "var(--slider-thumb-hover)",
+            borderColor: "var(--slider-thumb-focus)",
+            boxShadow: `0 0 0 8px var(--slider-thumb-shadow)`,
+        },
+        "&.Mui-active": {
+            backgroundColor: "var(--slider-thumb-hover)",
+            borderColor: "var(--slider-thumb-focus)",
+        },
+    },
+    "& .MuiSlider-valueLabel": {
+        backgroundColor: "var(--slider-thumb-bg)",
+        color: "var(--text-primary)",
+        fontSize: "12px",
+        fontWeight: "bold",
+    },
+}))
 
 export const styles: any = {
     pageContainer: {

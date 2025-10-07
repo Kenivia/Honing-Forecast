@@ -146,7 +146,7 @@ pub fn cost_to_chance_optimized_wrapper(input: JsValue) -> JsValue {
         data_size,
         &mut rng,
     );
-    // console::log_1(&"cost_to_chance_complete".into());
+
     to_value(&out).unwrap()
 }
 
