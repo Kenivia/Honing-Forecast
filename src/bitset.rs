@@ -135,11 +135,11 @@ pub fn beam_search<R: rand::Rng>(
     input_budget_no_gold[5] = 0;
     let k: f64 = input_budget[5] as f64;
     let dims: usize = 7;
-    let beam_width: usize = 32; // W
+    let beam_width: usize = 16; // W
     let children_per_parent: usize = 12; // target children per parent (including greedy child)
-    let greedy_step_max: usize = 10; // greedy increments up to 1..=3
-    let random_step_max: i64 = 10; // random +/- steps per dim
-    let beam_rounds: usize = 20; // T
+    let greedy_step_max: usize = 25; // greedy increments up to 1..=3
+    let random_step_max: i64 = 50; // random +/- steps per dim
+    let beam_rounds: usize = 60; // T
 
     // convenience access
     let thresholds = &bitset_bundle.transposed_thresholds;
@@ -288,23 +288,23 @@ pub fn beam_search<R: rand::Rng>(
                 }
 
                 // ensure within bounds and cost feasible; if over budget, try to reduce some dims randomly until feasible
-                let mut cand_cost = compute_cost(&cand);
-                if cand_cost > k + 1e-12 {
-                    // attempt to reduce some dims randomly
-                    for _attempt in 0..10 {
-                        let dim = rng.random_range(0..dims);
-                        // reduce by 1..=random_step_max if possible
-                        if cand[dim] > 0 {
-                            let reduce = 1 + (rng.random_range(0..(random_step_max as usize) + 1));
-                            let new_idx = cand[dim].saturating_sub(reduce);
-                            cand[dim] = new_idx;
-                            cand_cost = compute_cost(&cand);
-                            if cand_cost <= k + 1e-12 {
-                                break;
-                            }
-                        }
-                    }
-                }
+                let cand_cost = compute_cost(&cand);
+                // if cand_cost > k + 1e-12 {
+                //     // attempt to reduce some dims randomly
+                //     for _attempt in 0..10 {
+                //         let dim = rng.random_range(0..dims);
+                //         // reduce by 1..=random_step_max if possible
+                //         if cand[dim] > 0 {
+                //             let reduce = 1 + (rng.random_range(0..(random_step_max as usize) + 1));
+                //             let new_idx = cand[dim].saturating_sub(reduce);
+                //             cand[dim] = new_idx;
+                //             cand_cost = compute_cost(&cand);
+                //             if cand_cost <= k + 1e-12 {
+                //                 break;
+                //             }
+                //         }
+                //     }
+                // }
                 // dbg!(cand_cost, k);
                 if cand_cost > k + 1e-12 {
                     // can't make it feasible, skip this random child
