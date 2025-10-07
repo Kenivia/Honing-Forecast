@@ -1,5 +1,5 @@
 import React from "react"
-import { INPUT_LABELS, TOP_ROWS, TOP_COLS, BOTTOM_ROWS, BOTTOM_COLS } from "./constants.ts"
+import { INPUT_LABELS, TOP_ROWS, TOP_COLS, BOTTOM_ROWS, BOTTOM_COLS } from "../../Utils/Constants.ts"
 
 export function createClearAll({
     setTopGrid,

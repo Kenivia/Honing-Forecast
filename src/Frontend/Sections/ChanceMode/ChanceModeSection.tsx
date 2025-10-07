@@ -1,10 +1,10 @@
 import React from 'react'
 import { Slider, styled } from '@mui/material'
-import SpreadsheetGrid from '../../components/SpreadsheetGrid.tsx'
-import Graph from '../../components/Graph.tsx'
-import { styles, createColumnDefs, GRAPH_WIDTH, GRAPH_HEIGHT } from './styles.ts'
-import { OUTPUT_LABELS } from './constants.ts'
-import { CallWorker } from '../../worker_setup.ts'
+import SpreadsheetGrid from '../../Components/SpreadsheetGrid.tsx'
+import Graph from '../../Components/Graph.tsx'
+import { styles, createColumnDefs, GRAPH_WIDTH, GRAPH_HEIGHT } from '../../Utils/Styles.ts'
+import { OUTPUT_LABELS } from '../../Utils/Constants.ts'
+import { CallWorker } from '../../WasmInterface/worker_setup.ts'
 
 // Styled Material UI Slider with custom colors
 const StyledSlider = styled(Slider)(() => ({

@@ -1,5 +1,5 @@
 import React from "react"
-import { Upgrade, calculateCurrentChance, getTapCountRange } from "./utils.ts"
+import { Upgrade, calculateCurrentChance, getTapCountRange } from "../../Utils/Helpers.ts"
 
 interface GambaInfoBoxProps {
     upgradeArr: Upgrade[]

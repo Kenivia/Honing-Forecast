@@ -1,4 +1,4 @@
-import { TOP_ROWS, TOP_COLS, BOTTOM_ROWS, BOTTOM_COLS } from "./constants.ts"
+import { TOP_ROWS, TOP_COLS, BOTTOM_ROWS, BOTTOM_COLS } from "../../Utils/Constants.ts"
 
 export function coordsToCell(ref: HTMLDivElement | null, clientX: number, clientY: number, rows: number, cols: number) {
     if (!ref) return { r: 0, c: 0 }

@@ -1,11 +1,11 @@
 import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react'
 import { Slider, styled } from '@mui/material'
-import SpreadsheetGrid from '../../components/SpreadsheetGrid.tsx'
-import Graph from '../../components/Graph.tsx'
-import { styles, SMALL_GRAPH_WIDTH, SMALL_GRAPH_HEIGHT, GRAPH_HEIGHT, GRAPH_WIDTH } from './styles.ts'
-import { INPUT_LABELS } from './constants.ts'
-import { SpawnWorker } from '../../worker_setup.ts'
-import { buildPayload } from './Debounce.ts'
+import SpreadsheetGrid from '../../Components/SpreadsheetGrid.tsx'
+import Graph from '../../Components/Graph.tsx'
+import { styles, SMALL_GRAPH_WIDTH, SMALL_GRAPH_HEIGHT, GRAPH_HEIGHT, GRAPH_WIDTH } from '../../Utils/Styles.ts'
+import { INPUT_LABELS } from '../../Utils/Constants.ts'
+import { SpawnWorker } from '../../WasmInterface/worker_setup.ts'
+import { buildPayload } from '../../WasmInterface/WorkerRunner.ts'
 
 // Styled Material UI Slider with custom colors
 const StyledSlider = styled(Slider)(() => ({

@@ -1,5 +1,5 @@
 import React from 'react'
-import { styles } from './styles.ts'
+import { styles } from '../../Utils/Styles.ts'
 
 type ControlPanelProps = {
     controlsLeft: number | null

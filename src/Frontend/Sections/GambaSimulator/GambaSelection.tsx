@@ -1,5 +1,5 @@
 import React from "react"
-import { Upgrade } from "./utils.ts"
+import { Upgrade } from "../../Utils/Helpers.ts"
 
 interface GambaSelectionProps {
     upgradeArr: Upgrade[]

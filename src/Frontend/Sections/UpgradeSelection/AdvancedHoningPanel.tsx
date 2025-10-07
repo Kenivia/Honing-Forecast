@@ -1,8 +1,8 @@
 import React from 'react'
-import { styles } from './styles.ts'
-import CheckboxGrid from '../../components/CheckboxGrid.tsx'
-import Icon from '../../components/Icon.tsx'
-import { BOTTOM_ROWS, BOTTOM_COLS, CELL_W, CELL_H } from './constants.ts'
+import { styles } from '../../Utils/Styles.ts'
+import CheckboxGrid from '../../Components/CheckboxGrid.tsx'
+import Icon from '../../Components/Icon.tsx'
+import { BOTTOM_ROWS, BOTTOM_COLS, CELL_W, CELL_H } from '../../Utils/Constants.ts'
 
 type AdvancedHoningPanelProps = {
     bottomGrid: boolean[][]

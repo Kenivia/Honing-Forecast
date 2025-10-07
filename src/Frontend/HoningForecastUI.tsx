@@ -1,26 +1,26 @@
 import React, { useEffect, useRef, useState, useMemo } from 'react'
 import "./CheckboxRow.css"
-import { styles } from './styles.ts'
-import { INPUT_LABELS, TOP_ROWS, TOP_COLS, BOTTOM_ROWS, BOTTOM_COLS, } from './constants.ts'
-import { readSettings, writeSettings } from './Settings.ts'
-import ControlPanel from './ControlPanel.tsx'
-import NormalHoningPanel from './NormalHoningPanel.tsx'
-import AdvancedHoningPanel from './AdvancedHoningPanel.tsx'
-import ChanceToCostSection from './ChanceToCostSection.tsx'
-import CostToChanceSection from './CostToChanceSection.tsx'
+import { styles } from './Utils/Styles.ts'
+import { INPUT_LABELS, TOP_ROWS, TOP_COLS, BOTTOM_ROWS, BOTTOM_COLS, } from './Utils/Constants.ts'
+import { readSettings, writeSettings } from './Utils/Settings.ts'
+import ControlPanel from './Sections/ControlPanel/ControlPanel.tsx'
+import NormalHoningPanel from './Sections/UpgradeSelection/NormalHoningPanel.tsx'
+import AdvancedHoningPanel from './Sections/UpgradeSelection/AdvancedHoningPanel.tsx'
+import ChanceToCostSection from './Sections/ChanceMode/ChanceModeSection.tsx'
+import CostToChanceSection from './Sections/BudgetMode/BudgetModeSection.tsx'
 // const CostToChanceSection = React.lazy(() => import('./CostToChanceSection.tsx'));
 
-import GambaSection from "./GambaSection.tsx"
-import LongTermSection from './LongTermSection.tsx'
+import GambaSection from "./Sections/GambaSimulator/GambaSection.tsx"
+import LongTermSection from './Sections/ForecastMode/ForecastModeSection.tsx'
 // const GambaSection = React.lazy(() => import('./GambaSection.tsx'));
-import Separator from './Separator.tsx'
-import { TooltipState, createTooltipHandlers, renderTooltip } from './Tooltip.tsx'
-import Icon from '../../components/Icon.tsx'
+import Separator from './Sections/Separator/Separator.tsx'
+import { TooltipState, createTooltipHandlers, renderTooltip } from './Utils/Tooltip.tsx'
+import Icon from './Components/Icon.tsx'
 
-import { GridMouseDownLogic, mouseMoveLogic, createMouseUpHandler } from "./Marquee.ts"
-import { createClearAll, createFillDemo, createFillDemoIncome } from './ControlPanelFunctions.ts'
-import { buildPayload, createCancelableWorkerRunner } from './Debounce.ts'
-import { ticksToCounts, countsToTicks } from './utils.ts'
+import { GridMouseDownLogic, mouseMoveLogic, createMouseUpHandler } from "./Sections/UpgradeSelection/Marquee.ts"
+import { createClearAll, createFillDemo, createFillDemoIncome } from './Sections/ControlPanel/ControlPanelFunctions.ts'
+import { buildPayload, createCancelableWorkerRunner } from './WasmInterface/WorkerRunner.ts'
+import { ticksToCounts, countsToTicks } from './Utils/Helpers.ts'
 
 export default function HoningForecastUI() {
 
@@ -430,17 +430,6 @@ export default function HoningForecastUI() {
     const fillDemoIncome = createFillDemoIncome({
         setIncomeArr,
     })
-
-
-
-
-
-    // New states for moved worker calls
-
-    // Cached graph data to preserve during recomputation
-
-
-    // ---------- New: worker refs & debounce refs ----------
 
 
 

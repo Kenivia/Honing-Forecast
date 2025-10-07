@@ -1,8 +1,8 @@
 import React from 'react'
-import SpreadsheetGrid from '../../components/SpreadsheetGrid.tsx'
-import Graph from '../../components/Graph.tsx'
-import { styles, createColumnDefs, GRAPH_WIDTH, GRAPH_HEIGHT } from './styles.ts'
-import { INPUT_LABELS, OUTPUT_LABELS } from './constants.ts'
+import SpreadsheetGrid from '../../Components/SpreadsheetGrid.tsx'
+import Graph from '../../Components/Graph.tsx'
+import { styles, createColumnDefs, GRAPH_WIDTH, GRAPH_HEIGHT } from '../../Utils/Styles.ts'
+import { INPUT_LABELS, OUTPUT_LABELS } from '../../Utils/Constants.ts'
 
 type CostToChanceSectionProps = {
     budget_inputs: any

@@ -1,7 +1,7 @@
 import React, { useMemo, useState, useCallback, useRef } from 'react'
 import { XYChart, AnimatedAxis, AnimatedGrid, AnimatedLineSeries, Tooltip, darkTheme } from '@visx/xychart'
 import { localPoint } from '@visx/event'
-import { remapCountsToLockedXAxis } from '../features/honing_forecast/HistogramUtils.ts'
+import { remapCountsToLockedXAxis } from '../Utils/HistogramUtils.ts'
 const plotLeft = 50, plotRight = 50, plotTop = 50, plotBottom = 50
 const GRID_COUNT = 10
 type GraphProps = {

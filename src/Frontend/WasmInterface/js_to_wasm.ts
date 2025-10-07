@@ -5,7 +5,7 @@ import init, {
     cost_to_chance_optimized_wrapper,
     parser_wrapper_unified,
     average_cost_wrapper,
-} from "../../pkg/honing_forecast.js"
+} from "../../../pkg/honing_forecast.js"
 
 const LABELS = ["Red", "Blue", "Leaps", "Shards", "Oreha", "Gold", "Silver"]
 
