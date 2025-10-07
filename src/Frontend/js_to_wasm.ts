@@ -44,6 +44,20 @@ async function CostToChanceArrWasm(payload: any) {
         console.error("cost_to_chance_arr init failed:", initErr)
     }
 }
+async function CostToChanceOptimizedWasm(payload: any) {
+    try {
+        await init() // MUST await initialization
+        // debug: call the wrapper in a try/catch to capture thrown exceptions
+        try {
+            // Returns { chance, reason, hist_counts, hist_mins, hist_maxs }
+            return cost_to_chance_wrapper(payload)
+        } catch (e) {
+            console.error("call threw:", e)
+        }
+    } catch (initErr) {
+        console.error("init failed:", initErr)
+    }
+}
 
 async function ParserWasmUnified(payload: any) {
     try {
@@ -131,6 +145,26 @@ self.addEventListener("message", async (ev) => {
         result = {
             final_chances: final_chances_percent,
             failure_rates_arr: failure_rates_arr,
+            budgets_red_remaining: out.budgets_red_remaining,
+            budgets_blue_remaining: out.budgets_blue_remaining,
+        }
+    } else if (which_one == "CostToChanceOptimized") {
+        let out = await CostToChanceOptimizedWasm(payload)
+        // Convert final chances to percentages
+        const final_chances_percent = out.final_chances.map((chance: number) => (chance * 100).toFixed(2))
+
+        // Convert typed fail counters to failure rates for each budget
+        const failure_rates_arr = out.typed_fail_counters.map((typed_fail_counter: number[]) => {
+            return typed_fail_counter.map((fail_count: number, _index: number) => {
+                const failure_rate = fail_count / (out.final_chances.length > 0 ? 100000 : 1) // Assuming data_size
+                const percentage = failure_rate
+                return percentage
+            })
+        })
+        result = {
+            final_chances: final_chances_percent,
+            failure_rates_arr: failure_rates_arr,
+            buy_arr: out.buy_arr,
             budgets_red_remaining: out.budgets_red_remaining,
             budgets_blue_remaining: out.budgets_blue_remaining,
         }

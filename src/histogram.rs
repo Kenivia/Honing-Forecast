@@ -1,20 +1,4 @@
-pub fn transpose_vec_of_vecs(matrix: &[Vec<i64>]) -> Vec<Vec<i64>> {
-    if matrix.is_empty() || matrix[0].is_empty() {
-        return Vec::new();
-    }
-
-    let rows: usize = matrix.len();
-    let cols: usize = matrix[0].len();
-
-    let mut transposed: Vec<Vec<i64>> = vec![vec![0_i64; rows]; cols]; // Initialize with default values
-
-    for r in 0..rows {
-        for c in 0..cols {
-            transposed[c][r] = matrix[r][c];
-        }
-    }
-    transposed
-}
+use crate::helpers::transpose_vec_of_vecs;
 
 pub fn histogram_for_cost_index(
     cost_data_row: &mut Vec<i64>,

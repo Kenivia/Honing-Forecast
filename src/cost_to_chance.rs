@@ -1,11 +1,12 @@
+use crate::bitset::{BitsetBundle, beam_search, generate_bit_sets};
 use crate::constants::*;
 use crate::helpers::average_juice_cost;
 use crate::helpers::{calc_unlock, compress_runs, sort_by_indices};
 use crate::histogram::histograms_for_all_costs;
-use crate::monte_carlo::{get_top_bottom, monte_carlo_data};
+use crate::monte_carlo::{generate_budget_data, get_top_bottom, monte_carlo_data};
 use crate::parser::{Upgrade, parser};
 use crate::value_estimation::{est_juice_value, est_special_honing_value, juice_to_array};
-
+// use assert_float_eq::assert_f64_near;
 use serde::Serialize;
 
 #[derive(Serialize, Debug)]
@@ -21,7 +22,27 @@ pub struct CostToChanceOut {
     pub budgets_red_remaining: i64,        // budgets[7]
     pub budgets_blue_remaining: i64,       // budgets[8]
 }
-
+#[derive(Serialize, Debug)]
+pub struct CostToChanceOptimizedOut {
+    pub chance: f64,
+    pub reasons: Vec<f64>,                 // 7 failure rates for each cost type
+    pub hist_counts: Vec<Vec<i64>>,        // 7 x num_bins
+    pub hist_mins: Vec<i64>,               // 7
+    pub hist_maxs: Vec<i64>,               // 7
+    pub upgrade_strings: Vec<String>,      // ordered upgrade descriptions
+    pub juice_strings_armor: Vec<String>,  // e.g., ["+14 armor first 10 taps", ...]
+    pub juice_strings_weapon: Vec<String>, // e.g., ["+15 weapon first 6 taps", ...]
+    pub budgets_red_remaining: i64,        // budgets[7]
+    pub budgets_blue_remaining: i64,       // budgets[8]
+    pub buy_arr: Vec<i64>,
+}
+#[derive(serde::Serialize)]
+pub struct CostToChanceArrResult {
+    pub final_chances: Vec<f64>,
+    pub typed_fail_counters: Vec<Vec<f64>>,
+    pub budgets_red_remaining: i64,
+    pub budgets_blue_remaining: i64,
+}
 fn extract_upgrade_strings(
     upgrade_arr: &[Upgrade],
     user_gave_weapon: bool,
@@ -330,12 +351,134 @@ pub fn cost_to_chance_arr<R: rand::Rng>(
     )
 }
 
+pub fn cost_to_chance_optimized<R: rand::Rng>(
+    hone_counts: &[Vec<i64>],
+    input_budgets: &[i64],
+    adv_counts: &[Vec<i64>],
+    express_event: bool,
+    hist_bins: usize,
+    user_mats_value: &[f64],
+    adv_hone_strategy: String,
+    data_size: usize,
+    rng: &mut R,
+) -> CostToChanceOptimizedOut {
+    // Section 1: Preparation - setup and parsing
+    let mut prep_outputs: PreparationOutputs = preparation(
+        hone_counts,
+        input_budgets,
+        adv_counts,
+        express_event,
+        user_mats_value,
+        &adv_hone_strategy,
+    );
+
+    // Section 2: Monte Carlo simulation
+    let cost_data: Vec<Vec<i64>> = monte_carlo_data(
+        data_size,
+        &mut prep_outputs.upgrade_arr,
+        &prep_outputs.unlock_costs,
+        input_budgets[9],
+        rng,
+    );
+    let thresholds: Vec<Vec<i64>> = generate_budget_data(&cost_data, 1000, data_size);
+    let top_bottom: Vec<Vec<i64>> =
+        get_top_bottom(&prep_outputs.upgrade_arr, &prep_outputs.unlock_costs);
+    let bitset_bundle: BitsetBundle =
+        generate_bit_sets(&cost_data, thresholds, &top_bottom[1].clone(), data_size);
+    let (optimized_budget, optimized_chance): (Vec<i64>, f64) =
+        beam_search(&bitset_bundle, user_mats_value, &input_budgets, rng);
+
+    // Section 3: Failure analysis
+    let failure_outputs: FailureAnalysisOutputs =
+        count_failure_typed(&cost_data, &optimized_budget);
+    dbg!(optimized_chance, failure_outputs.final_chance);
+    dbg!(&optimized_budget);
+
+    // Section 4: Histogram preparation
+    let histogram_outputs: HistogramOutputs = prep_histogram(
+        &mut prep_outputs.upgrade_arr,
+        prep_outputs.valid_weapon_values,
+        prep_outputs.valid_armor_values,
+        &cost_data,
+        hist_bins,
+        &prep_outputs.unlock_costs,
+    );
+
+    CostToChanceOptimizedOut {
+        chance: failure_outputs.final_chance,
+        reasons: fail_count_to_rates(failure_outputs.typed_fail_counter_final, data_size),
+        hist_counts: histogram_outputs.hist_counts,
+        hist_mins: histogram_outputs.hist_mins,
+        hist_maxs: histogram_outputs.hist_maxs,
+        upgrade_strings: histogram_outputs.upgrade_strings,
+        juice_strings_armor: prep_outputs.juice_strings_armor,
+        juice_strings_weapon: prep_outputs.juice_strings_weapon,
+        budgets_red_remaining: prep_outputs.budgets[7],
+        budgets_blue_remaining: prep_outputs.budgets[8],
+        buy_arr: optimized_budget,
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::calculate_hash;
     use crate::test_cache::{read_cached_data, write_cached_data};
     use rand::prelude::*;
+
+    #[test]
+    fn cost_to_chance_18_demo_optimized() {
+        let test_name: &str = "cost_to_chance_18_demo_optimized";
+        let hone_counts = vec![
+            (0..25)
+                .map(|i| if i == 19 || i == 20 || i == 21 { 5 } else { 0 })
+                .collect(),
+            (0..25).map(|i| if i >= 19 { 1 } else { 0 }).collect(),
+        ];
+        let input_budgets = vec![
+            631777, 1064398, 33748, 12010948, 25125, 3803792, 999999999, 1420, 690, 6767,
+        ];
+        let adv_counts = vec![
+            (0..4).map(|i| if i == 3 { 3 } else { 0 }).collect(),
+            (0..4).map(|i| if i == 2 { 0 } else { 0 }).collect(),
+        ];
+        let express_event = false;
+        let hist_bins: usize = 1000;
+        let user_mats_value = DEFAULT_GOLD_VALUES.to_vec();
+        let adv_hone_strategy = "No juice";
+        let data_size: usize = 100000;
+
+        let hash = calculate_hash!(
+            &hone_counts,
+            &input_budgets,
+            &adv_counts,
+            express_event,
+            hist_bins,
+            &adv_hone_strategy,
+            data_size
+        );
+        // Run the function to get the full output
+        let mut rng = StdRng::seed_from_u64(RNG_SEED);
+        let result: CostToChanceOptimizedOut = cost_to_chance_optimized(
+            &hone_counts,
+            &input_budgets,
+            &adv_counts,
+            express_event,
+            hist_bins,
+            &user_mats_value,
+            adv_hone_strategy.to_owned(),
+            data_size,
+            &mut rng,
+        );
+
+        let result_of_interst: f64 = result.chance;
+        if let Some(cached_result) = read_cached_data::<f64>(test_name, &hash) {
+            assert_float_eq::assert_f64_near!(result_of_interst, cached_result);
+        } else {
+            write_cached_data(test_name, &hash, &result_of_interst);
+        }
+    }
+
     #[test]
     fn cost_to_chance_stress() {
         let test_name: &str = "cost_to_chance_stress";

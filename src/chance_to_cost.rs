@@ -1,7 +1,7 @@
 use crate::constants::*;
 use crate::helpers::{average_juice_cost, calc_unlock, count_failure};
-use crate::histogram::{histograms_for_all_costs, transpose_vec_of_vecs};
-use crate::monte_carlo::{get_top_bottom, monte_carlo_data};
+use crate::histogram::histograms_for_all_costs;
+use crate::monte_carlo::{generate_budget_data, get_top_bottom, monte_carlo_data};
 use crate::parser::{Upgrade, parser};
 
 use serde::{Deserialize, Serialize};
@@ -70,52 +70,11 @@ pub fn chance_to_cost<R: rand::Rng>(
 
     let unlock_cost: Vec<i64> = calc_unlock(&hone_counts, &adv_counts, express_event);
     let cost_data: Vec<Vec<i64>> = monte_carlo_data(data_size, &upgrade_arr, &unlock_cost, 0, rng);
-
     let top_bottom: Vec<Vec<i64>> = get_top_bottom(&upgrade_arr, &unlock_cost);
 
-    let intermediate_hist: Vec<Vec<i64>> =
-        histograms_for_all_costs(&cost_data, budget_size, &top_bottom[1]);
-    let mut cum_hist_counts: Vec<Vec<usize>> = vec![vec![0; budget_size]; 7];
-
-    for (cost_type, cum_hist) in cum_hist_counts.iter_mut().enumerate() {
-        cum_hist[0] = intermediate_hist[cost_type][0] as usize;
-        for j in 1..budget_size {
-            cum_hist[j] = cum_hist[j - 1] + intermediate_hist[cost_type][j] as usize;
-        }
-    }
-
-    let mut transposed_cost_data: Vec<Vec<i64>> = transpose_vec_of_vecs(&cost_data);
-    for transposed_row in &mut transposed_cost_data {
-        transposed_row.sort_unstable();
-    }
-    let gap_size: Vec<f64> = transposed_cost_data
-        .iter()
-        .map(|row| (row[row.len() - 1] - row[0]) as f64 / budget_size as f64)
-        .collect();
-    let mut budget_data: Vec<Vec<i64>> = vec![vec![0; 9]; budget_size];
-
-    for (cost_type, transposed_row) in transposed_cost_data.iter().enumerate() {
-        let mut j: usize = 0;
-        let mut k: usize = 0;
-        let mut cur_count: usize = 0;
-        loop {
-            if transposed_row[j]
-                >= (transposed_row[0] as f64 + gap_size[cost_type] * k as f64).floor() as i64
-            {
-                budget_data[k][cost_type] = transposed_row[cur_count];
-                cur_count += (data_size as f64 / budget_size as f64).round() as usize;
-                k += 1;
-            } else {
-                j += 1;
-            }
-
-            if k >= budget_size {
-                break;
-            }
-        }
-    }
-
+    let mut budget_data: Vec<Vec<i64>> = generate_budget_data(&cost_data, budget_size, data_size);
     budget_data.push(top_bottom[1].clone());
+
     if adv_hone_strategy == "Juice on grace" {
         let (avg_red_juice, avg_blue_juice) = average_juice_cost(&upgrade_arr);
 
@@ -145,6 +104,48 @@ pub fn chance_to_cost<R: rand::Rng>(
         hist_maxs: top_bottom[1].clone(),
     }
 }
+
+// pub fn chance_to_cost_minimize_gold_eqv_cost<R: rand::Rng>(
+//     hone_counts: &[Vec<i64>],
+//     adv_counts: &[Vec<i64>],
+//     adv_hone_strategy: &str,
+//     express_event: bool,
+//     hist_bins: usize,
+//     data_size: usize,
+//     rng: &mut R,
+//     input_budgets: &[i64],
+// ) -> ChanceToCostOut {
+//     let budget_size: usize = 1000;
+//     let artisan_arr: Vec<f64> = if express_event {
+//         EVENT_ARTISAN_MULTIPLIER.to_vec()
+//     } else {
+//         vec![1.0; 25]
+//     };
+//     let upgrade_arr: Vec<Upgrade> = parser(
+//         hone_counts,
+//         adv_counts,
+//         &adv_hone_strategy.to_string(),
+//         &artisan_arr,
+//         &[0.0; 25],
+//         &[0; 25],
+//         express_event,
+//     );
+
+//     let unlock_cost: Vec<i64> = calc_unlock(&hone_counts, &adv_counts, express_event);
+//     let cost_data: Vec<Vec<i64>> = monte_carlo_data(data_size, &upgrade_arr, &unlock_cost, 0, rng);
+
+//     let top_bottom: Vec<Vec<i64>> = get_top_bottom(&upgrade_arr, &unlock_cost);
+//     let bitset_bundle: BitsetBundle =
+//         generate_bit_sets(&cost_data, &top_bottom[1].clone(), budget_size, data_size);
+
+//     ChanceToCostOut {
+//         hundred_budgets: vec![],
+//         hundred_chances: vec![],
+//         hist_counts: histograms_for_all_costs(&cost_data, hist_bins, &top_bottom[1]),
+//         hist_mins: vec![0_i64; 7],
+//         hist_maxs: top_bottom[1].clone(),
+//     }
+// }
 
 #[cfg(test)]
 mod tests {

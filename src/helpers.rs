@@ -5,8 +5,25 @@ use crate::constants::{
 use crate::parser::Upgrade;
 use crate::value_estimation::average_tap;
 
+pub fn transpose_vec_of_vecs(matrix: &[Vec<i64>]) -> Vec<Vec<i64>> {
+    if matrix.is_empty() || matrix[0].is_empty() {
+        return Vec::new();
+    }
+
+    let rows: usize = matrix.len();
+    let cols: usize = matrix[0].len();
+
+    let mut transposed: Vec<Vec<i64>> = vec![vec![0_i64; rows]; cols]; // Initialize with default values
+
+    for r in 0..rows {
+        for c in 0..cols {
+            transposed[c][r] = matrix[r][c];
+        }
+    }
+    transposed
+}
 #[inline]
-fn cost_passes_budget(cost: &[i64], budget: &[i64]) -> bool {
+pub fn budget_is_enough(cost: &[i64], budget: &[i64]) -> bool {
     cost[0] <= budget[0]
         && cost[1] <= budget[1]
         && cost[2] <= budget[2]
@@ -20,7 +37,7 @@ fn count_failure_naive(cost_data: &[Vec<i64>], budget_data: &[Vec<i64>]) -> Vec<
     let mut count: Vec<i64> = vec![0; budget_data.len()];
     for cost in cost_data.iter() {
         for (i, budget) in budget_data.iter().enumerate() {
-            if !cost_passes_budget(cost, budget) {
+            if !budget_is_enough(cost, budget) {
                 count[i] += 1;
             }
         }
@@ -52,7 +69,7 @@ fn count_failure_ascending(cost_data: &[Vec<i64>], budget_data: &[Vec<i64>]) -> 
         while low <= high {
             let mid: usize = ((low + high) >> 1) as usize;
 
-            if cost_passes_budget(cs, budget_data[mid].as_slice()) || mid == 0 {
+            if budget_is_enough(cs, budget_data[mid].as_slice()) || mid == 0 {
                 first_pass_index = mid;
                 if mid == 0 {
                     break;
