@@ -469,7 +469,8 @@ export default function HoningForecastUI() {
     const chanceToCostWorkerRef = useRef<Worker | null>(null)
     const [chanceToCostBusy, setChanceToCostBusy] = useState(false)
     const [chanceToCostResult, setChanceToCostResult] = useState<any>(null)
-    const [cachedChanceGraphData, setCachedChanceGraphData] = useState<{ hist_counts?: any, hist_mins?: any, hist_maxs?: any } | null>(null)
+    const [cachedCostGraphData, setCachedCostGraphData] = useState<{ hist_counts?: any, hist_mins?: any, hist_maxs?: any } | null>(null)
+
     useEffect(() => {
         runner.start({
             which_one: "ChanceToCost",
@@ -477,16 +478,16 @@ export default function HoningForecastUI() {
             workerRef: chanceToCostWorkerRef,
             setBusy: setChanceToCostBusy,
             setResult: setChanceToCostResult,
-            setCachedGraphData: setCachedChanceGraphData,
+            setCachedGraphData: setCachedCostGraphData,
         })
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [budgetKey, advStrategyKey, expressEventKey, graphBucketSizeKey, autoOptKey, userMatsKey, dataSizeKey, normalCountsKey, advCountsKey])
+    }, [advStrategyKey, expressEventKey, graphBucketSizeKey, dataSizeKey, normalCountsKey, advCountsKey])
 
 
     const costToChanceWorkerRef = useRef<Worker | null>(null)
     const [costToChanceBusy, setCostToChanceBusy] = useState(false)
     const [costToChanceResult, setCostToChanceResult] = useState<any>(null)
-    const [cachedCostGraphData, setCachedCostGraphData] = useState<{ hist_counts?: any, hist_mins?: any, hist_maxs?: any } | null>(null)
+    const [cachedChanceGraphData, setCachedChanceGraphData] = useState<{ hist_counts?: any, hist_mins?: any, hist_maxs?: any } | null>(null)
     useEffect(() => {
         runner.start({
             which_one: "CostToChance",
@@ -494,21 +495,21 @@ export default function HoningForecastUI() {
             workerRef: costToChanceWorkerRef,
             setBusy: setCostToChanceBusy,
             setResult: setCostToChanceResult,
-            setCachedGraphData: setCachedCostGraphData,
+            setCachedGraphData: setCachedChanceGraphData,
         })
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [advStrategyKey, expressEventKey, graphBucketSizeKey, dataSizeKey, normalCountsKey, advCountsKey])
+    }, [budgetKey, advStrategyKey, expressEventKey, graphBucketSizeKey, autoOptKey, userMatsKey, dataSizeKey, normalCountsKey, advCountsKey])
 
     const averageCostWorkerRef = useRef<Worker | null>(null)
     const [averageCostBusy, setAverageCostBusy] = useState(false)
-    const [averageCosts, setAverageCosts] = useState<number[] | null>(null)
+    const [averageCostsResult, setAverageCostsResult] = useState<{ average_costs?: any } | null>(null)
     useEffect(() => {
         runner.start({
             which_one: "AverageCost",
             payloadBuilder,
             workerRef: averageCostWorkerRef,
             setBusy: setAverageCostBusy,
-            setResult: setAverageCosts,
+            setResult: setAverageCostsResult,
         })
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [advStrategyKey, expressEventKey, graphBucketSizeKey, dataSizeKey, normalCountsKey, advCountsKey])
@@ -636,7 +637,7 @@ export default function HoningForecastUI() {
                         showAverage={showAverage}
                         setShowAverage={setShowAverage}
                         // Moved worker call results
-                        averageCosts={averageCosts}
+                        averageCosts={averageCostsResult?.average_costs}
                         AverageCostBusy={averageCostBusy}
                         // Data size for luckiest draw message
                         dataSize={dataSize}

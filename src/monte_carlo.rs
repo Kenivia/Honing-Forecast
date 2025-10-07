@@ -9,7 +9,7 @@ use std::cmp::min;
 // pity because there is a distinction between pity and the unluckiest draw in 100k.
 // (where 0th percentile is the luckiest draws of each dimension)
 pub fn generate_budget_data(
-    cost_data: &Vec<Vec<i64>>,
+    cost_data: &[Vec<i64>],
     budget_size: usize,
     data_size: usize,
 ) -> Vec<Vec<i64>> {

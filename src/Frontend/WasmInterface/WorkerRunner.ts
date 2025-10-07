@@ -198,6 +198,7 @@ export function createCancelableWorkerRunner() {
             timers.set(debounceKey, t as unknown as number)
         } else {
             // no debounce requested — run immediately
+
             runNow()
         }
     }
