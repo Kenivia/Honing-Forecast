@@ -178,7 +178,7 @@ export default function GambaSection({
         })
 
         p.then((result: any) => {
-            const upgrades = result.upgrades as Upgrade[]
+            const upgrades = result.upgradeArr as Upgrade[]
             const unlocks = result.unlocks as number[]
             const other_strategy_prob_dists = result.other_strategy_prob_dists as number[][]
             setUnlockCosts(unlocks)

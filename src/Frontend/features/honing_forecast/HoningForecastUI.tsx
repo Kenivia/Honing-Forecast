@@ -511,7 +511,7 @@ export default function HoningForecastUI() {
     }, [advStrategyKey, expressEventKey, graphBucketSizeKey, dataSizeKey, normalCountsKey, advCountsKey])
 
     const averageCostWorkerRef = useRef<Worker | null>(null)
-    const [AverageCostBusy, setAverageCostBusy] = useState(false)
+    const [averageCostBusy, setAverageCostBusy] = useState(false)
     const [averageCosts, setAverageCosts] = useState<number[] | null>(null)
     useEffect(() => {
         runner.start({
@@ -525,7 +525,7 @@ export default function HoningForecastUI() {
     }, [advStrategyKey, expressEventKey, graphBucketSizeKey, dataSizeKey, normalCountsKey, advCountsKey])
 
     const parserWorkerRef = useRef<Worker | null>(null)
-    const [upgradeArr, setUpgradeArr] = useState<any[]>([])
+    const [parserResult, setparserResult] = useState<{ upgradeArr: any, unlocks: any, other_strategy_prob_dists: any } | null>(null)
     const [ParserBusy, setParserBusy] = useState(false)
     useEffect(() => {
         runner.start({
@@ -533,7 +533,7 @@ export default function HoningForecastUI() {
             payloadBuilder,
             workerRef: parserWorkerRef,
             setBusy: setParserBusy,
-            setResult: setUpgradeArr,
+            setResult: setparserResult,
         })
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [advStrategyKey, expressEventKey, graphBucketSizeKey, dataSizeKey, normalCountsKey, advCountsKey])
@@ -648,7 +648,7 @@ export default function HoningForecastUI() {
                         setShowAverage={setShowAverage}
                         // Moved worker call results
                         averageCosts={averageCosts}
-                        AverageCostBusy={AverageCostBusy}
+                        AverageCostBusy={averageCostBusy}
                         // Data size for luckiest draw message
                         dataSize={dataSize}
                     />
@@ -700,7 +700,7 @@ export default function HoningForecastUI() {
                         normalCounts={normalCounts}
                         advCounts={advCounts}
                         // Moved worker call results
-                        upgradeArr={upgradeArr}
+                        upgradeArr={parserResult ? parserResult.upgradeArr : []}
                         ParserBusy={ParserBusy}
                     />
                 </div>

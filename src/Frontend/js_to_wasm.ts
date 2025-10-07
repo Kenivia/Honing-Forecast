@@ -134,7 +134,7 @@ self.addEventListener("message", async (ev) => {
         let out = await ParserWasmUnified(payload)
 
         result = {
-            upgrades: out[0],
+            upgradeArr: out[0],
             unlocks: out[1],
             other_strategy_prob_dists: out[2],
         }
