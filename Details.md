@@ -37,6 +37,7 @@ I'm still in the process of writing proper comments & tests, I apologize for the
 - Gold eqv cost minimized chance mode(If i want x% chance, how do i achieve this with the least amount of gold?(assuming buying all mats))
 - Similarly for budget mode - If I have this budget, how do I buy mats to maximize my chance of success?
 - Raw graph that adjusts for mats purchased with gold, based on the budget mode above
+- True juice usage optimization(maximize chance of success)
 - Bottleneck-aware juice/free tap gold value estimation(only count the mats that needs buying, might depend on the above mentioned algorithm(s) again)
 
 ### Other features
