@@ -15,7 +15,8 @@ export function writeSettings(
     dataSize,
     useGridInput,
     normalCounts,
-    advCounts
+    advCounts,
+    incomeArr
 ) {
     const toSave = {
         topGrid,
@@ -33,6 +34,7 @@ export function writeSettings(
         useGridInput,
         normalCounts,
         advCounts,
+        incomeArr,
     }
     localStorage.setItem(STORAGE_KEY, JSON.stringify(toSave))
 }
@@ -51,7 +53,8 @@ export function readSettings(
     setDataSize,
     setUseGridInput,
     setNormalCounts,
-    setAdvCounts
+    setAdvCounts,
+    setIncomeArr
 ) {
     const raw = localStorage.getItem(STORAGE_KEY)
     if (!raw) return
@@ -75,5 +78,8 @@ export function readSettings(
         if (Array.isArray(parsed.normalCounts) && parsed.normalCounts.length === 2 && parsed.normalCounts[0]?.length === TOP_COLS)
             setNormalCounts(parsed.normalCounts)
         if (Array.isArray(parsed.advCounts) && parsed.advCounts.length === 2 && parsed.advCounts[0]?.length === BOTTOM_COLS) setAdvCounts(parsed.advCounts)
+
+        if (Array.isArray(parsed.incomeArr) && parsed.length === 6 && parsed.every((row) => Array.isArray(row) && row.length === 7))
+            setIncomeArr(parsed.incomeArr)
     }
 }

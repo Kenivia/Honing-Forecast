@@ -19,7 +19,7 @@ import Icon from '../../components/Icon.tsx'
 
 import { GridMouseDownLogic, mouseMoveLogic, createMouseUpHandler } from "./Marquee.ts"
 import { createClearAll, createFillDemo, createFillDemoIncome } from './ControlPanelFunctions.ts'
-import { buildPayload, createStartCancelableWorker, createHandleCallWorker } from './Debounce.ts'
+import { buildPayload, createCancelableWorkerRunner } from './Debounce.ts'
 import { ticksToCounts, countsToTicks } from './utils.ts'
 
 export default function HoningForecastUI() {
@@ -36,12 +36,12 @@ export default function HoningForecastUI() {
     const [uncleaned_desired_chance, set_uncleaned_desired_chance] = useState(() => '50')
     const [adv_hone_strategy, set_adv_hone_strategy_change] = useState(() => 'No juice')
     const [express_event, set_express_event] = useState(() => true)
-    const [bucketCount, _setBucketCount] = useState(() => "100")
-    const [prev_checked_arr, set_prev_checked_arr] = useState(() => Array.from({ length: TOP_COLS }, () => false))
+    const [bucketCount, _setBucketCount] = useState(() => "100") // leaving the door open for changing bucket count later
+    const [prev_checked_arr, set_prev_checked_arr] = useState(() => Array.from({ length: TOP_COLS }, () => false)) // the extra rows on top of the grids
     const [prev_checked_arr_bottom, set_prev_checked_arr_bottom] = useState(() => Array.from({ length: BOTTOM_COLS }, () => false))
     const [cumulativeGraph, setCumulativeGraph] = useState<boolean>(false)
     const [dataSize, setDataSize] = useState<string>(() => '100000')
-    const [activePage, setActivePage] = useState<'chance-to-cost' | 'cost-to-chance' | 'gamba' | 'long-term'>('chance-to-cost')
+    const [activePage, setActivePage] = useState<'chance-to-cost' | 'cost-to-chance' | 'gamba' | 'forecast'>('chance-to-cost')
     const [mainScale, setMainScale] = useState<number>(1)
     const [zoomCompensation, setZoomCompensation] = useState<number>(1)
 
@@ -57,21 +57,7 @@ export default function HoningForecastUI() {
     const [advCounts, setAdvCounts] = useState<number[][]>(() => Array.from({ length: 2 }, () => Array(BOTTOM_COLS).fill(0)))
 
     // Income array state (6 grids, 7 rows each)
-    const [incomeArr, setIncomeArr] = useState<number[][]>(() => {
-        // Try to load from localStorage first
-        const saved = localStorage.getItem('honing_forecast_income_arr')
-        if (saved) {
-            try {
-                const parsed = JSON.parse(saved)
-                if (Array.isArray(parsed) && parsed.length === 6 && parsed.every(row => Array.isArray(row) && row.length === 7)) {
-                    return parsed
-                }
-            } catch (e) {
-                // If parsing fails, fall back to default
-            }
-        }
-        return Array.from({ length: 6 }, () => Array.from({ length: 7 }, () => 0))
-    })
+    const [incomeArr, setIncomeArr] = useState<number[][]>(() => Array.from({ length: 6 }, () => Array.from({ length: 7 }, () => 0)))
 
     // marquee state & refs (kept here so grids stay presentational)
     const topGridRef = useRef<HTMLDivElement | null>(null)
@@ -111,7 +97,9 @@ export default function HoningForecastUI() {
                 setDataSize,
                 setUseGridInput,
                 setNormalCounts,
-                setAdvCounts)
+                setAdvCounts,
+                setIncomeArr
+            )
 
         } catch (e) {
             // ignore corrupted storage
@@ -135,10 +123,6 @@ export default function HoningForecastUI() {
         setAdvCounts(newAdvCounts)
     }, [bottomGrid])
 
-    // Save income array to localStorage whenever it changes
-    useEffect(() => {
-        localStorage.setItem('honing_forecast_income_arr', JSON.stringify(incomeArr))
-    }, [incomeArr])
 
     // ----- Responsive scaling based on window width -----
     useEffect(() => {
@@ -151,13 +135,8 @@ export default function HoningForecastUI() {
                 setMainScale(1)
             }
         }
-
-        // Set initial scale
         updateScale()
-
-        // Add resize listener
         window.addEventListener('resize', updateScale)
-
         return () => {
             window.removeEventListener('resize', updateScale)
         }
@@ -177,11 +156,7 @@ export default function HoningForecastUI() {
                 setZoomCompensation(compensation)
             }
         }
-
-        // Set initial zoom compensation
         setZoomCompensation(1 / window.devicePixelRatio)
-
-        // Add resize listener to detect zoom changes
         window.addEventListener('resize', checkZoom)
 
         return () => {
@@ -213,7 +188,8 @@ export default function HoningForecastUI() {
                     dataSize,
                     useGridInput,
                     normalCounts,
-                    advCounts)
+                    advCounts,
+                    incomeArr)
             } catch (e) {
                 // ignore quota or serialization errors
             }
@@ -225,7 +201,7 @@ export default function HoningForecastUI() {
                 saveTimerRef.current = null
             }
         }
-    }, [topGrid, bottomGrid, adv_hone_strategy, express_event, prev_checked_arr, prev_checked_arr_bottom, desired_chance, budget_inputs, autoOptimization, userMatsValue, cumulativeGraph, dataSize, useGridInput, normalCounts, advCounts])
+    }, [topGrid, bottomGrid, adv_hone_strategy, express_event, prev_checked_arr, prev_checked_arr_bottom, desired_chance, budget_inputs, autoOptimization, userMatsValue, cumulativeGraph, dataSize, useGridInput, normalCounts, advCounts, incomeArr])
 
     const onGridMouseDown = GridMouseDownLogic({
         topGridRef,
@@ -348,18 +324,14 @@ export default function HoningForecastUI() {
         const numValue = parseInt(cleanValue)
 
         if (cleanValue === '' || isNaN(numValue)) {
-            // If empty or invalid, reset to current desired_chance
             set_uncleaned_desired_chance(desired_chance)
         } else if (numValue > 100) {
-            // If over 100, cap at 100
             set_desired_chance('100')
             set_uncleaned_desired_chance('100')
         } else if (numValue < 0) {
-            // If negative, set to 0
             set_desired_chance('0')
             set_uncleaned_desired_chance('0')
         } else {
-            // Valid input, update both
             set_desired_chance(cleanValue)
             set_uncleaned_desired_chance(cleanValue)
         }
@@ -446,14 +418,6 @@ export default function HoningForecastUI() {
         setIncomeArr,
     })
 
-    // const fillRandom = createFillRandom({
-    //     setTopGrid,
-    //     setBottomGrid,
-    //     set_desired_chance,
-    //     set_prev_checked_arr,
-    //     set_prev_checked_arr_bottom,
-    // })
-
     const fillDemo = createFillDemo({
         setTopGrid,
         setBottomGrid,
@@ -467,30 +431,18 @@ export default function HoningForecastUI() {
         setIncomeArr,
     })
 
-    const [chance_result, set_chance_result] = useState<any>(null)
-    const [cost_result, set_cost_result] = useState<any>(null)
-    const [CostToChanceBusy, setCostToChanceBusy] = useState(false)
-    const [ChanceToCostBusy, setChanceToCostBusy] = useState(false)
+
+
+
 
     // New states for moved worker calls
-    const [averageCosts, setAverageCosts] = useState<number[] | null>(null)
-    const [upgradeArr, setUpgradeArr] = useState<any[]>([])
-    const [AverageCostBusy, setAverageCostBusy] = useState(false)
-    const [ParserBusy, setParserBusy] = useState(false)
 
     // Cached graph data to preserve during recomputation
-    const [cachedChanceGraphData, setCachedChanceGraphData] = useState<{ hist_counts?: any, hist_mins?: any, hist_maxs?: any } | null>(null)
-    const [cachedCostGraphData, setCachedCostGraphData] = useState<{ hist_counts?: any, hist_mins?: any, hist_maxs?: any } | null>(null)
+
 
     // ---------- New: worker refs & debounce refs ----------
-    const costWorkerRef = useRef<Worker | null>(null)
-    const chanceWorkerRef = useRef<Worker | null>(null)
-    const averageCostWorkerRef = useRef<Worker | null>(null)
-    const parserWorkerRef = useRef<Worker | null>(null)
-    const debounceTimerRef1 = useRef<number | null>(null)
-    const debounceTimerRef2 = useRef<number | null>(null)
-    const debounceTimerRef3 = useRef<number | null>(null)
-    const debounceTimerRef4 = useRef<number | null>(null)
+
+
 
     const payloadBuilder = () => buildPayload({
         topGrid,
@@ -507,27 +459,9 @@ export default function HoningForecastUI() {
         advCounts,
     })
 
-    const startCancelableWorker = createStartCancelableWorker({
-        costWorkerRef,
-        chanceWorkerRef,
-        averageCostWorkerRef,
-        parserWorkerRef,
-        setCostToChanceBusy,
-        setChanceToCostBusy,
-        setAverageCostBusy,
-        setParserBusy,
-        set_chance_result,
-        set_cost_result,
-        setAverageCosts,
-        setUpgradeArr,
-        setCachedChanceGraphData,
-        setCachedCostGraphData,
-    })
 
-    const HandleCallWorker = createHandleCallWorker({
-        startCancelableWorker,
-        buildPayload: payloadBuilder,
-    })
+    const runner = createCancelableWorkerRunner();
+
 
     // ---------- Automatic triggers with debounce ----------
     // We'll watch serialized versions of the inputs to detect deep changes
@@ -543,105 +477,73 @@ export default function HoningForecastUI() {
     const normalCountsKey = useMemo(() => JSON.stringify(normalCounts), [normalCounts])
     const advCountsKey = useMemo(() => JSON.stringify(advCounts), [advCounts])
 
-    // When budget or grids or strategy change -> run CostToChance (budget -> cost->chance)
+    const chanceToCostWorkerRef = useRef<Worker | null>(null)
+    const [chanceToCostBusy, setChanceToCostBusy] = useState(false)
+    const [chanceToCostResult, setChanceToCostResult] = useState<any>(null)
+    const [cachedChanceGraphData, setCachedChanceGraphData] = useState<{ hist_counts?: any, hist_mins?: any, hist_maxs?: any } | null>(null)
     useEffect(() => {
-        // clear existing timer
-        if (debounceTimerRef1.current) {
-            window.clearTimeout(debounceTimerRef1.current)
-            debounceTimerRef1.current = null
-        }
-        // start new delayed work
-        debounceTimerRef1.current = window.setTimeout(() => {
-            const payload = payloadBuilder()
-            startCancelableWorker('CostToChance', payload)
-            debounceTimerRef1.current = null
-        }, 100) // 100ms debounce
+        runner.start({
+            which_one: "ChanceToCost",
+            payloadBuilder,
+            workerRef: chanceToCostWorkerRef,
+            setBusy: setChanceToCostBusy,
+            setResult: setChanceToCostResult,
+            setCachedGraphData: setCachedChanceGraphData,
+        })
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [budgetKey, advStrategyKey, expressEventKey, graphBucketSizeKey, autoOptKey, userMatsKey, dataSizeKey, normalCountsKey, advCountsKey])
 
-    // When desired chance or grids or strategy change -> run ChanceToCost (chance -> cost)
+
+    const costToChanceWorkerRef = useRef<Worker | null>(null)
+    const [costToChanceBusy, setCostToChanceBusy] = useState(false)
+    const [costToChanceResult, setCostToChanceResult] = useState<any>(null)
+    const [cachedCostGraphData, setCachedCostGraphData] = useState<{ hist_counts?: any, hist_mins?: any, hist_maxs?: any } | null>(null)
     useEffect(() => {
-        if (debounceTimerRef2.current) {
-            window.clearTimeout(debounceTimerRef2.current)
-            debounceTimerRef2.current = null
-        }
-        debounceTimerRef2.current = window.setTimeout(() => {
-            const payload = payloadBuilder()
-            startCancelableWorker('ChanceToCost', payload)
-            debounceTimerRef2.current = null
-        }, 100)
+        runner.start({
+            which_one: "CostToChance",
+            payloadBuilder,
+            workerRef: costToChanceWorkerRef,
+            setBusy: setCostToChanceBusy,
+            setResult: setCostToChanceResult,
+            setCachedGraphData: setCachedCostGraphData,
+        })
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [advStrategyKey, expressEventKey, graphBucketSizeKey, dataSizeKey, normalCountsKey, advCountsKey])
 
-    // When grids or strategy change -> run AverageCost (for average cost calculation)
+    const averageCostWorkerRef = useRef<Worker | null>(null)
+    const [AverageCostBusy, setAverageCostBusy] = useState(false)
+    const [averageCosts, setAverageCosts] = useState<number[] | null>(null)
     useEffect(() => {
-        if (debounceTimerRef3.current) {
-            window.clearTimeout(debounceTimerRef3.current)
-            debounceTimerRef3.current = null
-        }
-        debounceTimerRef3.current = window.setTimeout(() => {
-            if (AnythingTicked) {
-                const payload = payloadBuilder()
-                startCancelableWorker('AverageCost', payload)
-            } else {
-                setAverageCosts(null)
-            }
-            debounceTimerRef3.current = null
-        }, 100)
+        runner.start({
+            which_one: "AverageCost",
+            payloadBuilder,
+            workerRef: averageCostWorkerRef,
+            setBusy: setAverageCostBusy,
+            setResult: setAverageCosts,
+        })
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [advStrategyKey, expressEventKey, graphBucketSizeKey, dataSizeKey, normalCountsKey, advCountsKey])
 
-    // When grids or strategy change -> run ParserUnified (for upgrade array)
+    const parserWorkerRef = useRef<Worker | null>(null)
+    const [upgradeArr, setUpgradeArr] = useState<any[]>([])
+    const [ParserBusy, setParserBusy] = useState(false)
     useEffect(() => {
-        if (debounceTimerRef4.current) {
-            window.clearTimeout(debounceTimerRef4.current)
-            debounceTimerRef4.current = null
-        }
-        debounceTimerRef4.current = window.setTimeout(() => {
-            const payload = payloadBuilder()
-            startCancelableWorker('ParserUnified', payload)
-            debounceTimerRef4.current = null
-        }, 100)
+        runner.start({
+            which_one: "ParserUnified",
+            payloadBuilder,
+            workerRef: parserWorkerRef,
+            setBusy: setParserBusy,
+            setResult: setUpgradeArr,
+        })
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [advStrategyKey, expressEventKey, graphBucketSizeKey, dataSizeKey, normalCountsKey, advCountsKey])
 
     // Cleanup on unmount: terminate any running workers and clear timers
-    useEffect(() => {
-        return () => {
-            if (costWorkerRef.current) {
-                try { costWorkerRef.current.terminate() } catch (e) { ; }
-                costWorkerRef.current = null
-            }
-            if (chanceWorkerRef.current) {
-                try { chanceWorkerRef.current.terminate() } catch (e) { ; }
-                chanceWorkerRef.current = null
-            }
-            if (averageCostWorkerRef.current) {
-                try { averageCostWorkerRef.current.terminate() } catch (e) { ; }
-                averageCostWorkerRef.current = null
-            }
-            if (parserWorkerRef.current) {
-                try { parserWorkerRef.current.terminate() } catch (e) { ; }
-                parserWorkerRef.current = null
-            }
-            if (debounceTimerRef1.current) {
-                window.clearTimeout(debounceTimerRef1.current)
-                debounceTimerRef1.current = null
-            }
-            if (debounceTimerRef2.current) {
-                window.clearTimeout(debounceTimerRef2.current)
-                debounceTimerRef2.current = null
-            }
-            if (debounceTimerRef3.current) {
-                window.clearTimeout(debounceTimerRef3.current)
-                debounceTimerRef3.current = null
-            }
-            if (debounceTimerRef4.current) {
-                window.clearTimeout(debounceTimerRef4.current)
-                debounceTimerRef4.current = null
-            }
-        }
-    }, [])
+    // useEffect(() => {
+    //     return () => {
+    //         runner.cancel()
+    //     }
+    // }, [])
 
     // styles and column defs moved to ./styles
     const AnythingTicked = useMemo(() => normalCounts[0].some(x => x > 0) ||
@@ -733,10 +635,10 @@ export default function HoningForecastUI() {
                         uncleaned_desired_chance={uncleaned_desired_chance}
                         onDesiredChange={onDesiredChange}
                         onDesiredBlur={onDesiredBlur}
-                        cost_result={cost_result}
+                        cost_result={chanceToCostResult}
                         cachedCostGraphData={cachedCostGraphData}
                         AnythingTicked={AnythingTicked}
-                        ChanceToCostBusy={ChanceToCostBusy}
+                        ChanceToCostBusy={chanceToCostBusy}
                         cumulativeGraph={cumulativeGraph}
                         lockXAxis={lockXAxis}
                         lockedMins={lockedMins}
@@ -760,10 +662,10 @@ export default function HoningForecastUI() {
                         setUserMatsValue={setUserMatsValue}
                         autoOptimization={autoOptimization}
                         setAutoOptimization={setAutoOptimization}
-                        chance_result={chance_result}
+                        chance_result={costToChanceResult}
                         cachedChanceGraphData={cachedChanceGraphData}
                         AnythingTicked={AnythingTicked}
-                        CostToChanceBusy={CostToChanceBusy}
+                        CostToChanceBusy={costToChanceBusy}
                         cumulativeGraph={cumulativeGraph}
                         lockXAxis={lockXAxis}
                         lockedMins={lockedMins}
@@ -786,10 +688,10 @@ export default function HoningForecastUI() {
                         autoOptimization={autoOptimization}
                         dataSize={dataSize}
                         tooltipHandlers={tooltipHandlers}
-                        chance_result={chance_result}
+                        chance_result={costToChanceResult}
                         cachedChanceGraphData={cachedChanceGraphData}
                         AnythingTicked={AnythingTicked}
-                        CostToChanceBusy={CostToChanceBusy}
+                        CostToChanceBusy={costToChanceBusy}
                         cumulativeGraph={cumulativeGraph}
                         lockXAxis={lockXAxis}
                         lockedMins={lockedMins}
@@ -803,7 +705,7 @@ export default function HoningForecastUI() {
                     />
                 </div>
 
-                <div className={activePage === 'long-term' ? 'page' : 'page page--hidden'} aria-hidden={activePage !== 'long-term'}>
+                <div className={activePage === 'forecast' ? 'page' : 'page page--hidden'} aria-hidden={activePage !== 'forecast'}>
                     <LongTermSection
                         budget_inputs={budget_inputs}
                         set_budget_inputs={set_budget_inputs}
@@ -827,7 +729,7 @@ export default function HoningForecastUI() {
                         onDesiredChange={onDesiredChange}
                         onDesiredBlur={onDesiredBlur}
                         // Cost result prop for hundred_budgets
-                        cost_result={cost_result}
+                        cost_result={chanceToCostResult}
                     />
                 </div>
             </div>

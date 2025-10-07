@@ -53,282 +53,179 @@ export function buildPayload({
     return payload
 }
 
-export function createStartCancelableWorker({
-    costWorkerRef,
-    chanceWorkerRef,
-    averageCostWorkerRef,
-    parserWorkerRef,
-    setCostToChanceBusy,
-    setChanceToCostBusy,
-    setAverageCostBusy,
-    setParserBusy,
-    set_chance_result,
-    set_cost_result,
-    setAverageCosts,
-    setUpgradeArr,
-    setCachedChanceGraphData,
-    setCachedCostGraphData,
-}: {
-    costWorkerRef: React.MutableRefObject<Worker | null>
-    chanceWorkerRef: React.MutableRefObject<Worker | null>
-    averageCostWorkerRef: React.MutableRefObject<Worker | null>
-    parserWorkerRef: React.MutableRefObject<Worker | null>
-    setCostToChanceBusy: React.Dispatch<React.SetStateAction<boolean>>
-    setChanceToCostBusy: React.Dispatch<React.SetStateAction<boolean>>
-    setAverageCostBusy: React.Dispatch<React.SetStateAction<boolean>>
-    setParserBusy: React.Dispatch<React.SetStateAction<boolean>>
-    set_chance_result: React.Dispatch<React.SetStateAction<any>>
-    set_cost_result: React.Dispatch<React.SetStateAction<any>>
-    setAverageCosts: React.Dispatch<React.SetStateAction<number[] | null>>
-    setUpgradeArr: React.Dispatch<React.SetStateAction<any[]>>
-    setCachedChanceGraphData: React.Dispatch<React.SetStateAction<{ hist_counts?: any; hist_mins?: any; hist_maxs?: any } | null>>
-    setCachedCostGraphData: React.Dispatch<React.SetStateAction<{ hist_counts?: any; hist_mins?: any; hist_maxs?: any } | null>>
-}) {
-    return (which_one: "CostToChance" | "ChanceToCost" | "AverageCost" | "ParserUnified", payload: any) => {
-        if (which_one === "CostToChance") {
-            // terminate previous
-            if (costWorkerRef.current) {
+/** Optional shape for cached graph setters */
+type CachedGraphSetter = React.Dispatch<React.SetStateAction<{ hist_counts?: any; hist_mins?: any; hist_maxs?: any } | null>>
+
+type BusySetter = React.Dispatch<React.SetStateAction<boolean>>
+type ResultSetter = React.Dispatch<React.SetStateAction<any>>
+
+/**
+ * Options for a single start call.
+ * All except `workerRef` and `setBusy`/`setResult` are optional.
+ */
+export type StartOptions = {
+    which_one: string
+    payloadBuilder: () => any
+    workerRef: React.MutableRefObject<Worker | null>
+    setBusy: BusySetter
+    setResult: ResultSetter
+    setCachedGraphData?: CachedGraphSetter
+    // optional: extra success handler
+    onSuccess?: (_) => void
+    // optional: extra error handler
+    onError?: (_) => void
+    // optional: extra finally handler
+    onFinally?: () => void
+    // debounce key (defaults to which_one); different keys share different debounce timers
+    debounceKey?: string
+    // optional per-call debounce delay ms (if 0 or undefined, no debounce)
+    debounceMs?: number
+}
+
+/**
+ * Factory that returns `start` and `cancel` functions.
+ * - `start(opts)` starts a worker (debounced if requested).
+ * - `cancel(key)` cancels any pending debounce + terminates the live worker for that key.
+ *
+ * Uses an internal map keyed by debounceKey (or which_one) so you can independently debounce
+ * different kinds of workers.
+ */
+export function createCancelableWorkerRunner() {
+    // map of debounce timers keyed by string
+    const timers = new Map<string, number>()
+    // map of running workers keyed by string (so cancel(key) terminates only that worker)
+    const runningWorkers = new Map<string, Worker>()
+    function terminateWorkerSafe(worker: Worker | null) {
+        if (!worker) return
+        try {
+            worker.terminate()
+        } catch (e) {
+            // ignore termination errors
+        }
+    }
+    /**
+     * Start a worker with the provided options.
+     */
+    function start(opts: StartOptions) {
+        const {
+            which_one,
+            payloadBuilder,
+            workerRef,
+            setBusy,
+            setResult,
+            setCachedGraphData,
+            onSuccess,
+            onError,
+            onFinally,
+            debounceKey = which_one,
+            debounceMs = 150,
+        } = opts
+
+        const runNow = () => {
+            // Cancel/terminate any previous worker referenced by workerRef
+            if (workerRef.current) {
                 try {
-                    costWorkerRef.current.terminate()
+                    workerRef.current.terminate()
                 } catch (e) {
                     /* ignore */
                 }
-                costWorkerRef.current = null
+                workerRef.current = null
             }
-            setCostToChanceBusy(true)
-            // Clear text results but preserve graph data
-            set_chance_result(null)
 
-            const { worker, promise } = SpawnWorker(payload, which_one)
-            costWorkerRef.current = worker
+            // mark as busy, clear previous result (but let caller decide cached graph preservation)
+            setBusy(true)
+            setResult(null)
+
+            // spawn the worker (uses your existing SpawnWorker)
+            const { worker, promise } = SpawnWorker(payloadBuilder(), which_one)
+
+            // store refs so cancel(key) can terminate this worker specifically
+            workerRef.current = worker
+            runningWorkers.set(debounceKey, worker)
 
             promise
                 .then((res) => {
-                    // only set if this worker is still the current one
-                    if (costWorkerRef.current === worker) {
-                        set_chance_result(res)
-                        // Cache graph data for future use
-                        if (res && typeof res === "object" && res !== null && "hist_counts" in res) {
-                            const typedRes = res as { hist_counts: any; hist_mins: any; hist_maxs: any }
-                            setCachedChanceGraphData({
+                    // only act if this worker is still the current one
+                    if (workerRef.current === worker) {
+                        setResult(res)
+                        // auto-cache graph-like data if present and setter provided
+                        if (setCachedGraphData && res && typeof res === "object" && "hist_counts" in res) {
+                            const typedRes = res as { hist_counts?: any; hist_mins?: any; hist_maxs?: any }
+                            setCachedGraphData({
                                 hist_counts: typedRes.hist_counts,
                                 hist_mins: typedRes.hist_mins,
                                 hist_maxs: typedRes.hist_maxs,
                             })
                         }
+                        onSuccess?.(res)
                     }
                 })
                 .catch((err) => {
                     console.error("Worker error", err)
-                    if (costWorkerRef.current === worker) {
-                        set_chance_result({ error: String(err) })
+                    if (workerRef.current === worker) {
+                        setResult({ error: String(err) })
                     }
+                    onError?.(err)
                 })
                 .finally(() => {
-                    // cleanup if this worker is the current one
-                    if (costWorkerRef.current === worker) {
+                    // cleanup only if this worker is still current
+                    if (workerRef.current === worker) {
                         try {
                             worker.terminate()
                         } catch (e) {
                             /* ignore */
                         }
-                        costWorkerRef.current = null
-                        setCostToChanceBusy(false)
-                    }
-                })
-        } else if (which_one === "ChanceToCost") {
-            // ChanceToCost
-            if (chanceWorkerRef.current) {
-                try {
-                    chanceWorkerRef.current.terminate()
-                } catch (e) {
-                    /* ignore */
-                }
-                chanceWorkerRef.current = null
-            }
-            setChanceToCostBusy(true)
-            // Clear text results but preserve graph data
-            set_cost_result(null)
-
-            const { worker, promise } = SpawnWorker(payload, which_one)
-            chanceWorkerRef.current = worker
-
-            promise
-                .then((res) => {
-                    if (chanceWorkerRef.current === worker) {
-                        set_cost_result(res)
-                        // Cache graph data for future use
-                        if (res && typeof res === "object" && res !== null && "hist_counts" in res) {
-                            const typedRes = res as { hist_counts: any; hist_mins: any; hist_maxs: any }
-                            setCachedCostGraphData({
-                                hist_counts: typedRes.hist_counts,
-                                hist_mins: typedRes.hist_mins,
-                                hist_maxs: typedRes.hist_maxs,
-                            })
-                        }
-                    }
-                })
-                .catch((err) => {
-                    console.error("Worker error", err)
-                    if (chanceWorkerRef.current === worker) {
-                        set_cost_result({ error: String(err) })
-                    }
-                })
-                .finally(() => {
-                    if (chanceWorkerRef.current === worker) {
-                        try {
-                            worker.terminate()
-                        } catch (e) {
-                            /* ignore */
-                        }
-                        chanceWorkerRef.current = null
-                        setChanceToCostBusy(false)
-                    }
-                })
-        } else if (which_one === "AverageCost") {
-            // terminate previous
-            if (averageCostWorkerRef.current) {
-                try {
-                    averageCostWorkerRef.current.terminate()
-                } catch (e) {
-                    /* ignore */
-                }
-                averageCostWorkerRef.current = null
-            }
-            setAverageCostBusy(true)
-            setAverageCosts(null)
-
-            const { worker, promise } = SpawnWorker(payload, which_one)
-            averageCostWorkerRef.current = worker
-
-            promise
-                .then((res) => {
-                    if (averageCostWorkerRef.current === worker) {
-                        if (res && (res as any).average_costs) {
-                            setAverageCosts((res as any).average_costs)
-                        }
-                    }
-                })
-                .catch((err) => {
-                    console.error("AverageCost worker error", err)
-                    if (averageCostWorkerRef.current === worker) {
-                        setAverageCosts(null)
-                    }
-                })
-                .finally(() => {
-                    if (averageCostWorkerRef.current === worker) {
-                        try {
-                            worker.terminate()
-                        } catch (e) {
-                            /* ignore */
-                        }
-                        averageCostWorkerRef.current = null
-                        setAverageCostBusy(false)
-                    }
-                })
-        } else if (which_one === "ParserUnified") {
-            // terminate previous
-            if (parserWorkerRef.current) {
-                try {
-                    parserWorkerRef.current.terminate()
-                } catch (e) {
-                    /* ignore */
-                }
-                parserWorkerRef.current = null
-            }
-            setParserBusy(true)
-            setUpgradeArr([])
-
-            const { worker, promise } = SpawnWorker(payload, which_one)
-            parserWorkerRef.current = worker
-
-            promise
-                .then((res) => {
-                    if (parserWorkerRef.current === worker) {
-                        if (res && (res as any).upgrades) {
-                            setUpgradeArr((res as any).upgrades)
-                        }
-                    }
-                })
-                .catch((err) => {
-                    console.error("Parser worker error", err)
-                    if (parserWorkerRef.current === worker) {
-                        setUpgradeArr([])
-                    }
-                })
-                .finally(() => {
-                    if (parserWorkerRef.current === worker) {
-                        try {
-                            worker.terminate()
-                        } catch (e) {
-                            /* ignore */
-                        }
-                        parserWorkerRef.current = null
-                        setParserBusy(false)
+                        workerRef.current = null
+                        runningWorkers.delete(debounceKey)
+                        setBusy(false)
+                        onFinally?.()
                     }
                 })
         }
-    }
-}
 
-export function createHandleCallWorker({
-    startCancelableWorker,
-    buildPayload,
-}: {
-    startCancelableWorker: (_which_one: "CostToChance" | "ChanceToCost" | "AverageCost" | "ParserUnified", _payload: any) => void
-    buildPayload: () => any
-}) {
-    return async (which_one: string) => {
-        // keep the old behavior for manual button calls but make it cancel previous worker using startCancelableWorker
-        const payload = buildPayload()
-        if (which_one === "CostToChance") startCancelableWorker("CostToChance", payload)
-        else startCancelableWorker("ChanceToCost", payload)
-    }
-}
-
-export function createDebounceEffects({
-    debounceTimerRef1,
-    debounceTimerRef2,
-    startCancelableWorker,
-    buildPayload,
-}: {
-    debounceTimerRef1: React.MutableRefObject<number | null>
-    debounceTimerRef2: React.MutableRefObject<number | null>
-    startCancelableWorker: (_which_one: "CostToChance" | "ChanceToCost", _payload: any) => void
-    buildPayload: () => any
-}) {
-    return {
-        // When budget or grids or strategy change -> run CostToChance (budget -> cost->chance)
-        createCostToChanceEffect: (_deps: any[]) => {
-            return () => {
-                // clear existing timer
-                if (debounceTimerRef1.current) {
-                    window.clearTimeout(debounceTimerRef1.current)
-                    debounceTimerRef1.current = null
-                }
-                // start new delayed work
-                debounceTimerRef1.current = window.setTimeout(() => {
-                    const payload = buildPayload()
-                    startCancelableWorker("CostToChance", payload)
-                    debounceTimerRef1.current = null
-                }, 100) // 100ms debounce
+        // If debounceMs provided and > 0, schedule with debounce
+        if (debounceMs && debounceMs > 0) {
+            // clear any existing timer for this key
+            const existingTimer = timers.get(debounceKey)
+            if (existingTimer) {
+                clearTimeout(existingTimer)
             }
-        },
-
-        // When desired chance or grids or strategy change -> run ChanceToCost (chance -> cost)
-        createChanceToCostEffect: (_deps: any[]) => {
-            return () => {
-                if (debounceTimerRef2.current) {
-                    window.clearTimeout(debounceTimerRef2.current)
-                    debounceTimerRef2.current = null
-                }
-                debounceTimerRef2.current = window.setTimeout(() => {
-                    const payload = buildPayload()
-                    // console.log(payload)
-                    startCancelableWorker("ChanceToCost", payload)
-                    debounceTimerRef2.current = null
-                }, 100)
-            }
-        },
+            // schedule new timer (window.setTimeout returns number)
+            const t = window.setTimeout(() => {
+                timers.delete(debounceKey)
+                runNow()
+            }, debounceMs)
+            timers.set(debounceKey, t as unknown as number)
+        } else {
+            // no debounce requested — run immediately
+            runNow()
+        }
     }
+
+    /**
+     * Cancel pending debounce or running worker for a given key.
+     * If no key provided, cancels everything.
+     */
+    function cancel(key?: string) {
+        if (key) {
+            const t = timers.get(key)
+            if (t) {
+                clearTimeout(t)
+                timers.delete(key)
+            }
+            const w = runningWorkers.get(key)
+            if (w) {
+                terminateWorkerSafe(w)
+                runningWorkers.delete(key)
+            }
+        } else {
+            // clear all timers and terminate all running workers
+            for (const t of timers.values()) clearTimeout(t)
+            timers.clear()
+            for (const w of runningWorkers.values()) terminateWorkerSafe(w)
+            runningWorkers.clear()
+        }
+    }
+
+    return { start, cancel }
 }

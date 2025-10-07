@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import './separator.css';
 
 
-type Page = 'chance-to-cost' | 'cost-to-chance' | 'gamba' | 'long-term';
+type Page = 'chance-to-cost' | 'cost-to-chance' | 'gamba' | 'forecast';
 
 type SeparatorProps = {
     activePage: Page;
@@ -25,7 +25,7 @@ export default function Separator({ activePage, onPageChange }: SeparatorProps) 
         if (activePage === 'chance-to-cost') return 'hf-separator chance-active';
         if (activePage === 'cost-to-chance') return 'hf-separator budget-active';
         if (activePage === 'gamba') return 'hf-separator gamba-active';
-        if (activePage === 'long-term') return 'hf-separator longterm-active';
+        if (activePage === 'forecast') return 'hf-separator longterm-active';
         return 'hf-separator';
     };
 
@@ -35,7 +35,7 @@ export default function Separator({ activePage, onPageChange }: SeparatorProps) 
             if (page === 'chance-to-cost') return `${baseClass} chance-selected`;
             if (page === 'cost-to-chance') return `${baseClass} budget-selected`;
             if (page === 'gamba') return `${baseClass} gamba-selected`;
-            if (page === 'long-term') return `${baseClass} longterm-selected`;
+            if (page === 'forecast') return `${baseClass} longterm-selected`;
         }
         return baseClass;
     };
@@ -63,8 +63,8 @@ export default function Separator({ activePage, onPageChange }: SeparatorProps) 
             </button>
 
             <button
-                className={getButtonClass('long-term')}
-                onClick={() => handleButtonClick('long-term')}
+                className={getButtonClass('forecast')}
+                onClick={() => handleButtonClick('forecast')}
             >
                 <span className="hf-label">Forecast mode</span>
                 <div className="hf-help">If I earn this much per week, what are my odds of success in x weeks?</div>
