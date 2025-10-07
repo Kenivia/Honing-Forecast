@@ -276,7 +276,7 @@ export default function LongTermSection({
 
     // Initialize worker
     useEffect(() => {
-        longTermWorkerRef.current = new Worker(new URL("../../js_to_wasm.ts", import.meta.url), { type: "module" })
+        longTermWorkerRef.current = new Worker(new URL("../../WasmInterface/js_to_wasm.ts", import.meta.url), { type: "module" })
         return () => {
             if (longTermWorkerRef.current) {
                 longTermWorkerRef.current.terminate()

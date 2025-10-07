@@ -1,5 +1,5 @@
 
-import HoningForecastUI from './HoningForecastUI.tsx'
+import HoningForecastUI from './MainUI.tsx'
 
 export default function App() {
 

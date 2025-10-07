@@ -124,7 +124,7 @@ export default function GambaSection({
     // Initialize parser worker
     useEffect(() => {
         // Create a persistent worker for parser calls
-        parserWorkerRef.current = new Worker(new URL("../../js_to_wasm.ts", import.meta.url), { type: "module" })
+        parserWorkerRef.current = new Worker(new URL("../../WasmInterface/js_to_wasm.ts", import.meta.url), { type: "module" })
 
         // Set up message handler once
         parserWorkerRef.current.onmessage = (e) => {

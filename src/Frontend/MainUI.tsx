@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState, useMemo } from 'react'
-import "./CheckboxRow.css"
+import "./Sections/UpgradeSelection//CheckboxRow.css"
 import { styles } from './Utils/Styles.ts'
 import { INPUT_LABELS, TOP_ROWS, TOP_COLS, BOTTOM_ROWS, BOTTOM_COLS, } from './Utils/Constants.ts'
 import { readSettings, writeSettings } from './Utils/Settings.ts'
