@@ -21,7 +21,7 @@ type GambaSectionProps = {
     express_event: boolean
     desired_chance: string
     bucketCount: string
-    autoOptimization: boolean
+    customGoldValues: boolean
     dataSize: string
     tooltipHandlers: {
         showUpgradeTooltip: (_upgrade: any, _costLabels: string[], _tapRecordCosts: number[], _x: number, _y: number) => void
@@ -55,7 +55,7 @@ export default function GambaSection({
     express_event,
 
     bucketCount,
-    autoOptimization,
+    customGoldValues,
     dataSize,
     tooltipHandlers,
     chance_result,
@@ -157,7 +157,7 @@ export default function GambaSection({
             adv_hone_strategy,
             express_event,
             bucketCount,
-            autoOptimization,
+            customGoldValues,
             userMatsValue,
             dataSize,
             useGridInput,
@@ -249,7 +249,7 @@ export default function GambaSection({
             // Update refs
             currentUpgradeArrRef.current = upgradesWithTypes
         })
-    }, [topGrid, bottomGrid, adv_hone_strategy, express_event, bucketCount, autoOptimization, userMatsValue, dataSize, budget_inputs, useGridInput, normalCounts, advCounts])
+    }, [topGrid, bottomGrid, adv_hone_strategy, express_event, bucketCount, customGoldValues, userMatsValue, dataSize, budget_inputs, useGridInput, normalCounts, advCounts])
 
     // Debounce effect for parser calls when grids change
     const advStrategyKey = useMemo(() => String(adv_hone_strategy), [adv_hone_strategy])
@@ -422,7 +422,7 @@ export default function GambaSection({
             <div style={{ ...styles.inputSection, flexDirection: "row", maxWidth: "1200px", width: "100%" }}>
                 <div style={{ display: "flex", gap: 20, alignItems: "flex-start" }}>
                     {/* Budget Input Grid */}
-                    <div style={{ display: 'flex', flexDirection: "column", gap: 0, alignItems: 'flex-start', justifyContent: 'start', width: autoOptimization ? 210 : 300 }}>
+                    <div style={{ display: 'flex', flexDirection: "column", gap: 0, alignItems: 'flex-start', justifyContent: 'start', width: customGoldValues ? 210 : 300 }}>
                         <div style={{ width: 210 }}>
                             <SpreadsheetGrid
                                 columnDefs={costToChanceColumnDefs}

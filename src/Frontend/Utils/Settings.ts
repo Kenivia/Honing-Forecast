@@ -9,7 +9,7 @@ export function writeSettings(
     prev_checked_arr_bottom,
     desired_chance,
     budget_inputs,
-    autoOptimization,
+    customGoldValues,
     userMatsValue,
     cumulativeGraph,
     dataSize,
@@ -27,7 +27,7 @@ export function writeSettings(
         prev_checked_arr_bottom,
         desired_chance,
         budget_inputs,
-        autoOptimization,
+        customGoldValues,
         userMatsValue,
         cumulativeGraph,
         dataSize,
@@ -47,7 +47,7 @@ export function readSettings(
     set_prev_checked_arr_bottom,
     set_desired_chance,
     set_budget_inputs,
-    setAutoOptimization,
+    setCustomGoldValues,
     setUserMatsValue,
     setCumulativeGraph,
     setDataSize,
@@ -70,7 +70,7 @@ export function readSettings(
             set_prev_checked_arr_bottom(parsed.prev_checked_arr_bottom)
         if (typeof parsed.desired_chance === "string") set_desired_chance(parsed.desired_chance)
         if (parsed.budget_inputs && typeof parsed.budget_inputs === "object") set_budget_inputs(parsed.budget_inputs)
-        if (typeof parsed.autoOptimization === "boolean") setAutoOptimization(parsed.autoOptimization)
+        if (typeof parsed.customGoldValues === "boolean") setCustomGoldValues(parsed.customGoldValues)
         if (parsed.userMatsValue && typeof parsed.userMatsValue === "object") setUserMatsValue(parsed.userMatsValue)
         if (typeof parsed.cumulativeGraph === "boolean") setCumulativeGraph(parsed.cumulativeGraph)
         if (typeof parsed.dataSize === "string") setDataSize(parsed.dataSize)

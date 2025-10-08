@@ -51,7 +51,7 @@ export default function ChanceToCostSection({
     // Data size for luckiest draw message
     dataSize,
 }: ChanceToCostSectionProps) {
-    const { chanceToCostColumnDefs } = createColumnDefs(false) // autoOptimization not used for this section
+    const { chanceToCostColumnDefs } = createColumnDefs(false) // customGoldValues not used for this section
 
     return (
         <>

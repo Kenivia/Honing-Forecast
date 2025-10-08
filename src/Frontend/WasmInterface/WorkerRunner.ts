@@ -9,7 +9,7 @@ export function buildPayload({
     adv_hone_strategy,
     express_event,
     bucketCount,
-    autoOptimization,
+    customGoldValues,
     userMatsValue,
     dataSize,
     useGridInput = true,
@@ -22,7 +22,7 @@ export function buildPayload({
     adv_hone_strategy: string
     express_event: boolean
     bucketCount: string
-    autoOptimization: boolean
+    customGoldValues: boolean
     userMatsValue: any
     dataSize: string
     useGridInput?: boolean
@@ -34,7 +34,7 @@ export function buildPayload({
         adv_hone_strategy: adv_hone_strategy,
         express_event: express_event,
         bucket_count: Math.max(2, Math.min(1000, Math.floor(Number(bucketCount) || 2))),
-        user_mats_value: autoOptimization
+        user_mats_value: customGoldValues
             ? INPUT_LABELS.slice(0, 7).map((_) => 0.0)
             : INPUT_LABELS.slice(0, 7).map((label) => parseFloat(userMatsValue[label] || "0")),
         data_size: Math.max(1000, Math.floor(Number(dataSize) || 0)),

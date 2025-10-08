@@ -27,7 +27,7 @@ export default function HoningForecastUI() {
     const [topGrid, setTopGrid] = useState(() => Array.from({ length: TOP_ROWS }, () => Array.from({ length: TOP_COLS }, () => false)))
     const [bottomGrid, setBottomGrid] = useState(() => Array.from({ length: BOTTOM_ROWS }, () => Array(BOTTOM_COLS).fill(false)))
     const [budget_inputs, set_budget_inputs] = useState(() => Object.fromEntries(INPUT_LABELS.map((l) => [l, '0'])))
-    const [autoOptimization, setAutoOptimization] = useState(true)
+    const [customGoldValues, setCustomGoldValues] = useState(true)
     const [userMatsValue, setUserMatsValue] = useState(() => {
         const defaultValues = ["1.0", "0.1", "13.0", "0.2", "90.0", "1.0", "0.0"]
         return Object.fromEntries(INPUT_LABELS.slice(0, 7).map((l, index) => [l, defaultValues[index]]))
@@ -91,7 +91,7 @@ export default function HoningForecastUI() {
                 set_prev_checked_arr_bottom,
                 set_desired_chance,
                 set_budget_inputs,
-                setAutoOptimization,
+                setCustomGoldValues,
                 setUserMatsValue,
                 setCumulativeGraph,
                 setDataSize,
@@ -182,7 +182,7 @@ export default function HoningForecastUI() {
                     prev_checked_arr_bottom,
                     desired_chance,
                     budget_inputs,
-                    autoOptimization,
+                    customGoldValues,
                     userMatsValue,
                     cumulativeGraph,
                     dataSize,
@@ -201,7 +201,7 @@ export default function HoningForecastUI() {
                 saveTimerRef.current = null
             }
         }
-    }, [topGrid, bottomGrid, adv_hone_strategy, express_event, prev_checked_arr, prev_checked_arr_bottom, desired_chance, budget_inputs, autoOptimization, userMatsValue, cumulativeGraph, dataSize, useGridInput, normalCounts, advCounts, incomeArr])
+    }, [topGrid, bottomGrid, adv_hone_strategy, express_event, prev_checked_arr, prev_checked_arr_bottom, desired_chance, budget_inputs, customGoldValues, userMatsValue, cumulativeGraph, dataSize, useGridInput, normalCounts, advCounts, incomeArr])
 
     const onGridMouseDown = GridMouseDownLogic({
         topGridRef,
@@ -404,7 +404,7 @@ export default function HoningForecastUI() {
         set_desired_chance,
         set_adv_hone_strategy_change,
         set_express_event,
-        setAutoOptimization,
+        setCustomGoldValues,
         _setBucketCount,
         setCumulativeGraph,
         setDataSize,
@@ -440,7 +440,7 @@ export default function HoningForecastUI() {
         adv_hone_strategy,
         express_event,
         bucketCount,
-        autoOptimization,
+        customGoldValues,
         userMatsValue,
         dataSize,
         useGridInput,
@@ -459,7 +459,7 @@ export default function HoningForecastUI() {
     const advStrategyKey = useMemo(() => String(adv_hone_strategy), [adv_hone_strategy])
     const expressEventKey = useMemo(() => String(express_event), [express_event])
     const graphBucketSizeKey = useMemo(() => String(bucketCount), [bucketCount])
-    const autoOptKey = useMemo(() => String(autoOptimization), [autoOptimization])
+    const autoOptKey = useMemo(() => String(customGoldValues), [customGoldValues])
     const userMatsKey = useMemo(() => JSON.stringify(userMatsValue), [userMatsValue])
     const dataSizeKey = useMemo(() => String(dataSize), [dataSize])
     // const useGridInputKey = useMemo(() => String(useGridInput), [useGridInput])
@@ -650,8 +650,8 @@ export default function HoningForecastUI() {
                         set_budget_inputs={set_budget_inputs}
                         userMatsValue={userMatsValue}
                         setUserMatsValue={setUserMatsValue}
-                        autoOptimization={autoOptimization}
-                        setAutoOptimization={setAutoOptimization}
+                        customGoldValues={customGoldValues}
+                        setCustomGoldValues={setCustomGoldValues}
                         chance_result={costToChanceResult}
                         cachedChanceGraphData={cachedChanceGraphData}
                         AnythingTicked={AnythingTicked}
@@ -675,7 +675,7 @@ export default function HoningForecastUI() {
                         express_event={express_event}
                         desired_chance={desired_chance}
                         bucketCount={bucketCount}
-                        autoOptimization={autoOptimization}
+                        customGoldValues={customGoldValues}
                         dataSize={dataSize}
                         tooltipHandlers={tooltipHandlers}
                         chance_result={costToChanceResult}
@@ -706,7 +706,7 @@ export default function HoningForecastUI() {
                         adv_hone_strategy={adv_hone_strategy}
                         express_event={express_event}
                         bucketCount={bucketCount}
-                        autoOptimization={autoOptimization}
+                        customGoldValues={customGoldValues}
                         dataSize={dataSize}
                         useGridInput={useGridInput}
                         normalCounts={normalCounts}

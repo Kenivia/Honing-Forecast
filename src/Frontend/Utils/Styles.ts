@@ -144,7 +144,7 @@ export const styles: any = {
 }
 
 // Column definitions for spreadsheet grids
-export const createColumnDefs = (autoOptimization: boolean) => {
+export const createColumnDefs = (customGoldValues: boolean) => {
     const chanceToCostColumnDefs = [
         {
             headerName: "Estimated cost",
@@ -155,7 +155,7 @@ export const createColumnDefs = (autoOptimization: boolean) => {
         },
     ]
 
-    const costToChanceColumnDefs = autoOptimization
+    const costToChanceColumnDefs = customGoldValues
         ? [
               {
                   headerName: "Budget Input",

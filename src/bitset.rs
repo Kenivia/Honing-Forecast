@@ -119,7 +119,7 @@ struct State {
     cost: f64,
 }
 
-/// Beam search implementation.
+/// Beam search implementation. INSANELY RUDIMENTARY AND NEEDS A LOT OF WORK
 /// - bitset_bundle: precomputed bitsets + thresholds
 /// - initial_arr: currently ignored (we start from zeros) but left in signature for future seeds
 /// - price_arr: price per dimension (len==7)

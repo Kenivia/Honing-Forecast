@@ -9,8 +9,8 @@ type CostToChanceSectionProps = {
     set_budget_inputs: React.Dispatch<React.SetStateAction<any>>
     userMatsValue: any
     setUserMatsValue: React.Dispatch<React.SetStateAction<any>>
-    autoOptimization: boolean
-    setAutoOptimization: React.Dispatch<React.SetStateAction<boolean>>
+    customGoldValues: boolean
+    setCustomGoldValues: React.Dispatch<React.SetStateAction<boolean>>
     chance_result: any
     cachedChanceGraphData: { hist_counts?: any, hist_mins?: any, hist_maxs?: any } | null
     AnythingTicked: boolean
@@ -26,8 +26,8 @@ export default function CostToChanceSection({
     set_budget_inputs,
     userMatsValue,
     setUserMatsValue,
-    autoOptimization,
-    setAutoOptimization,
+    customGoldValues,
+    setCustomGoldValues,
     chance_result,
     cachedChanceGraphData,
     AnythingTicked,
@@ -37,15 +37,15 @@ export default function CostToChanceSection({
     lockedMins,
     lockedMaxs,
 }: CostToChanceSectionProps) {
-    const { costToChanceColumnDefs } = createColumnDefs(autoOptimization)
+    const { costToChanceColumnDefs } = createColumnDefs(customGoldValues)
 
     return (
         <>
             {/* <h3 style={{ color: 'var(--text-primary)', fontSize: 'var(--font-size-base)', fontWeight: 'var(--font-weight-semibold)', margin: '16px 0 0px 0' }}>Cost to Chance</h3> */}
             <div style={{ ...styles.inputSection, flexDirection: "row", maxWidth: "1200px", width: "100%" }}>
-                <div style={{ display: 'flex', gap: autoOptimization ? 110 : 20, alignItems: 'flex-start' }}>
-                    <div style={{ display: 'flex', flexDirection: "column", gap: 0, alignItems: 'flex-start', justifyContent: 'start', width: autoOptimization ? 210 : 300 }}>
-                        <div style={{ marginBottom: 16, width: autoOptimization ? 210 : 310 }}>
+                <div style={{ display: 'flex', gap: customGoldValues ? 110 : 20, alignItems: 'flex-start' }}>
+                    <div style={{ display: 'flex', flexDirection: "column", gap: 0, alignItems: 'flex-start', justifyContent: 'start', width: customGoldValues ? 210 : 300 }}>
+                        <div style={{ marginBottom: 16, width: customGoldValues ? 210 : 310 }}>
                             <SpreadsheetGrid
                                 columnDefs={costToChanceColumnDefs}
                                 labels={INPUT_LABELS}
@@ -67,8 +67,8 @@ export default function CostToChanceSection({
                             <input
                                 type="checkbox"
                                 id="auto-optimization"
-                                checked={!autoOptimization}
-                                onChange={(e) => setAutoOptimization(!e.target.checked)}
+                                checked={!customGoldValues}
+                                onChange={(e) => setCustomGoldValues(!e.target.checked)}
                                 style={{ accentColor: 'var(--control-checked-bg)' }}
                             />
                         </div>
