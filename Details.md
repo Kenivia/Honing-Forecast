@@ -34,26 +34,24 @@ I'm still in the process of writing proper comments & tests, I apologize for the
 
 ### Next big step(s)
 
-- Gold eqv cost minimized chance mode(If i want x% chance, how do i achieve this with the least amount of gold?(assuming buying all mats))
-- Similarly for budget mode - If I have this budget, how do I buy mats to maximize my chance of success?
+- COMBINING CHANCE AND BUDGET MODE: slider chance - give optimized gold purchase to hit that percentage, optionally add your budget, which updates that purchase and clamps the chance slider to the current chance
 - Raw graph that adjusts for mats purchased with gold, based on the budget mode above
-- True juice usage optimization(maximize chance of success)
-- Bottleneck-aware juice/free tap gold value estimation(only count the mats that needs buying, might depend on the above mentioned algorithm(s) again)
+- ~~True juice usage optimization(maximize chance of success)~~ might not be possible, at least with beam search because evaluating the effect is way too hard
+- ~~option for Bottleneck-aware juice/free tap gold value estimation~~ but the gold value will depend on how we've used it... idk if this is possible
 
 ### Other features
 
+- Books & scroll calculations
+- Automatic Market price integration(via some kind of API, or just updating the site at a regular interval automatically)
+- Juice box opening optimization(do i open for red or blue)
 - Confidence intervals(might have to actually learn some math first)
-- Success chance optimization in juice/free tap usage(right now it just calculates a gold value, want to replace non-custom gold value with true highest success chance).
-- Automatic Market price integration(via some kind of API)
-- Juice box opening optimization(do i open for red or blue) (ZERO clue how to do this right now)
-- Books & scroll calculations(Although for the most part just use them same way as juices)
 
 ### UI
 
 - Better roster tracking & income estimation(I don't think automatic game-to-website input is possible, but something like a generic 1680 income would be nice, need information/data on this)
 - Input arithmetic parsing(e.g. allow inputs like 25*1234 for easier boxes calculation)
 - Ctrl z, delete
-- Hover question mark tooltips for various systems, also still aim to be intuitive
+- Hover question mark tooltips for various systems, but still aim to be intuitive
 - Adjustable week number in raw / Gold graph
 
 ### DEV
