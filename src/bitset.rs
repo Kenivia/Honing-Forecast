@@ -1,5 +1,7 @@
 // use crate::helpers::budget_is_enough;
-use std::collections::HashSet; // already present in your module
+use std::collections::HashSet;
+
+// use serde::de::IntoDeserializer; // already present in your module
 #[derive(Clone)]
 pub struct Bitset {
     data: Vec<u64>,
@@ -29,7 +31,7 @@ impl Bitset {
     pub fn set_zero(&mut self, idx: usize) {
         let word: usize = idx / 64;
         let bit: usize = idx % 64;
-        self.data[word] &= !1u64 << bit;
+        self.data[word] &= !(1u64 << bit);
     }
     // #[inline]
     // pub fn get(&self, idx: usize) -> bool {
@@ -114,9 +116,34 @@ fn oracle(bitset_bundle: &BitsetBundle, input: &Vec<usize>) -> f64 {
 
 #[derive(Clone, Debug)]
 struct State {
-    idxs: Vec<usize>,
+    indices: Vec<usize>,
     score: f64,
     cost: f64,
+}
+
+fn compute_diff_cost(
+    thresholds: &[Vec<i64>],
+    cur_cand: &[usize],
+    change_index: usize,
+    change_amount: isize,
+    price_arr: &[f64],
+) -> f64 {
+    (thresholds[change_index][(cur_cand[change_index] as isize + change_amount) as usize]
+        - thresholds[change_index][cur_cand[change_index]]) as f64
+        * price_arr[change_index]
+}
+fn compute_cost(
+    thresholds: &[Vec<i64>],
+    idxs: &[usize],
+    input_budget_no_gold: &[i64],
+    price_arr: &[f64],
+) -> f64 {
+    let mut c: f64 = 0f64;
+    for i in 0..7 {
+        let val = (thresholds[i][idxs[i]] - input_budget_no_gold[i]).max(0) as f64;
+        c += price_arr[i] * val;
+    }
+    c
 }
 
 /// Beam search implementation. INSANELY RUDIMENTARY AND NEEDS A LOT OF WORK
@@ -128,207 +155,210 @@ pub fn beam_search<R: rand::Rng>(
     bitset_bundle: &BitsetBundle,
     price_arr: &[f64],
     input_budget: &[i64],
-    rng: &mut R,
-    beam_width: usize,
-    children_per_parent: usize,
-    beam_rounds: usize,
+    _rng: &mut R,
 ) -> (Vec<i64>, f64) {
     // parameters you can tune
     let mut input_budget_no_gold: Vec<i64> = input_budget.to_vec();
     input_budget_no_gold[5] = 0;
     let k: f64 = input_budget[5] as f64;
     let dims: usize = 7;
-    // let beam_width: usize = 16; // W
+    let beam_width: usize = 8; // W
     // let children_per_parent: usize = 12; // target children per parent (including greedy child)
-    let greedy_step_max: usize = 1500 / beam_rounds; // greedy increments up to 1..=3
-    let random_step_max: i64 = 1500 / beam_rounds as i64; // random +/- steps per dim
+    // let greedy_step_max: usize = 1500 / beam_rounds; // greedy increments up to 1..=3
+    // let random_step_max: i64 = 1500 / beam_rounds as i64; // random +/- steps per dim
     // let beam_rounds: usize = 30; // T
 
     // convenience access
     let thresholds = &bitset_bundle.transposed_thresholds;
-    let max_idx = if thresholds.is_empty() {
-        0
-    } else {
-        thresholds[0].len() - 1
-    };
-    // quick helper to compute cost of an index vector
-    let compute_cost = |idxs: &Vec<usize>| -> f64 {
-        let mut c: f64 = 0f64;
-        for i in 0..dims {
-            let val = (thresholds[i][idxs[i]] - input_budget_no_gold[i]).max(0) as f64;
-            c += price_arr[i] * val;
-        }
-        c
-    };
-    // helper to clamp an index
-    let clamp_idx = |v: isize| -> usize {
-        if v < 0 {
-            0
-        } else if (v as usize) > max_idx {
-            max_idx
-        } else {
-            v as usize
-        }
-    };
+    let threshold_len: usize = thresholds[0].len();
 
-    let mut start_idxs: Vec<usize> = vec![];
+    // let max_idx = if thresholds.is_empty() {
+    //     0
+    // } else {
+    //     thresholds[0].len() - 1
+    // };
+    // quick helper to compute cost of an index vector
+
+    // // helper to clamp an index
+    // let clamp_idx = |v: isize| -> usize {
+    //     if v < 0 {
+    //         0
+    //     } else if (v as usize) > max_idx {
+    //         max_idx
+    //     } else {
+    //         v as usize
+    //     }
+    // };
+    let mut min_indices: Vec<usize> = vec![];
     for i in 0..7_usize {
+        if i == 5 {
+            min_indices.push(0);
+            continue;
+        }
+        let mut yes: bool = false;
         for (index, thresh) in thresholds[i].iter().enumerate() {
-            if *thresh >= input_budget[i] || index == thresholds[i].len() - 1 {
-                start_idxs.push(index);
+            if *thresh >= input_budget[i] {
+                min_indices.push(index.saturating_sub(1));
+                yes = true;
                 break;
             }
         }
+        if !yes {
+            min_indices.push(threshold_len - 1);
+        }
     }
-    start_idxs[5] = start_idxs[5].min(thresholds[0].len() / 2);
 
-    dbg!("start", &start_idxs);
+    let mut uniform_index: usize = threshold_len - 1;
+    let mut cur_index: Vec<usize> = vec![0; 7];
+    for thresh_index in 0..threshold_len {
+        debug_assert_eq!(cur_index[0], thresh_index);
+        let w: f64 = compute_cost(thresholds, &cur_index, &input_budget_no_gold, &price_arr);
+        dbg!(w);
+        if w > k {
+            uniform_index = thresh_index.saturating_sub(1);
+            break;
+        }
+        for i in 0..7 {
+            cur_index[i] += 1;
+        }
+    }
+    // start_idxs[5] = start_idxs[5].min(thresholds[0].len() / 2);
+    let mut start_idxs: Vec<usize> = vec![uniform_index; 7];
+    for i in 0..7 {
+        start_idxs[i] = start_idxs[i].max(min_indices[i]);
+    }
+    dbg!(&start_idxs);
+    dbg!(&min_indices);
+
     dbg!(&input_budget_no_gold);
-    let start_cost: f64 = compute_cost(&start_idxs);
-    let start_score: f64 = oracle(bitset_bundle, &start_idxs);
 
-    //oracle_cache.insert(start_idxs.clone(), start_score);
-    // try to consume budget from zero via greedy fill
-    // let (start_idxs_filled, start_score_filled, start_cost_filled) =
-    //     fill_budget(start_idxs, start_score, start_cost);
+    // let start_cost: f64 = compute_cost(thresholds, &start_idxs, &input_budget_no_gold, &price_arr);
+    let start_score: f64 = oracle(bitset_bundle, &start_idxs);
 
     // initial beam: single state for now (we can add more seeds later)
     let mut beam: Vec<State> = vec![State {
-        idxs: start_idxs.clone(),
+        indices: start_idxs.clone(),
         score: start_score,
-        cost: start_cost,
+        cost: compute_cost(&thresholds, &start_idxs, &input_budget_no_gold, &price_arr),
     }];
 
     // track best overall
     let mut best_state: State = beam[0].clone();
+    let perturb_limits: Vec<usize> = vec![
+        512, 512, 512, 256, 256, 256, 128, 128, 128, 64, 64, 64, 32, 32, 32, 16, 16, 16, 8, 8, 8,
+        4, 4, 4, 2, 2, 2, 1, 1, 1, 1,
+    ];
 
     // beam loop
-    for _round in 0..beam_rounds {
+    for perturb_limit in perturb_limits.into_iter() {
         // generate candidates
+
         let mut candidates: Vec<State> = Vec::new();
         let mut seen: HashSet<Vec<usize>> = HashSet::new();
+
         // dbg!(&best_state);
         // Expand each parent in beam
+        let mut cand: Vec<usize>;
         for parent in &beam {
             // Add parent itself as a candidate (to keep it eligible)
-            if !seen.contains(&parent.idxs) {
+            if !seen.contains(&parent.indices) {
                 candidates.push(parent.clone());
-                seen.insert(parent.idxs.clone());
+                seen.insert(parent.indices.clone());
             }
 
-            // --- GREEDY child: increment the most "efficient" index by 1..=greedy_step_max (best marginal per cost)
-            {
-                let mut best_marginal = std::f64::NEG_INFINITY;
-                let mut best_dim: Option<usize> = None;
-                let mut best_new_idx: Option<usize> = None;
-                // let mut best_new_score: f64 = parent.score;
+            for up_index in 0..7_usize {
+                for mut down_index in 0..6_usize {
+                    cand = parent.indices.clone();
+                    down_index += if down_index >= up_index { 1 } else { 0 };
+                    let mut max_change: usize = perturb_limit;
+                    // for i in 1..=perturb_limit {
+                    if cand[up_index] + perturb_limit >= threshold_len.saturating_sub(1) {
+                        max_change = max_change.min(threshold_len - 1 - cand[up_index]);
+                    }
+                    if cand[down_index] < perturb_limit
+                        || down_index.saturating_sub(perturb_limit) < min_indices[down_index]
+                    {
+                        max_change = max_change.min(cand[down_index] - min_indices[down_index]);
+                    }
+                    // }
+                    if max_change == 0 {
+                        continue;
+                    }
+                    let left_overs: f64 =
+                        k - compute_cost(thresholds, &cand, &input_budget_no_gold, &price_arr);
 
-                for i in 0..dims {
-                    let cur_idx = parent.idxs[i];
-                    for step in 1..=greedy_step_max {
-                        if step > 10 && !(step % 5 == 0) {
-                            continue;
-                        }
-                        let next_idx = cur_idx.saturating_add(step).min(max_idx);
+                    let mut needed_cash: f64 = compute_diff_cost(
+                        &thresholds,
+                        &cand,
+                        up_index,
+                        max_change as isize,
+                        &price_arr,
+                    );
 
-                        let added_cost = price_arr[i]
-                            * (thresholds[i][next_idx] as f64 - thresholds[i][cur_idx] as f64);
-                        if parent.cost + added_cost > k + 1e-12 {
+                    let mut avail_cash: f64 = left_overs
+                        - compute_diff_cost(
+                            &thresholds,
+                            &cand,
+                            down_index,
+                            -(max_change as isize),
+                            &price_arr,
+                        );
+
+                    let mut actual_up_change: usize = max_change;
+                    let mut actual_down_change: usize = max_change;
+                    while needed_cash > avail_cash && actual_up_change > 1 {
+                        actual_up_change = actual_up_change.saturating_sub(1);
+                        needed_cash = compute_diff_cost(
+                            &thresholds,
+                            &cand,
+                            up_index,
+                            actual_up_change as isize,
+                            &price_arr,
+                        );
+                    }
+                    if needed_cash > avail_cash {
+                        continue;
+                    }
+                    while actual_down_change > 0 {
+                        avail_cash = left_overs
+                            - compute_diff_cost(
+                                &thresholds,
+                                &cand,
+                                down_index,
+                                -((actual_down_change.saturating_sub(1)) as isize),
+                                &price_arr,
+                            );
+                        if avail_cash < needed_cash {
                             break;
-                        }
-                        let mut cand_idxs = parent.idxs.clone();
-                        cand_idxs[i] = next_idx;
-                        let cand_score: f64 = oracle(bitset_bundle, &cand_idxs);
-                        //oracle_cache.insert(cand_idxs.clone(), cand_score);
-                        let marginal: f64 = cand_score - parent.score;
-                        // let ratio: f64 = marginal / added_cost;
-                        if marginal > 0.0 && marginal > best_marginal {
-                            best_marginal = marginal;
-                            best_dim = Some(i);
-                            best_new_idx = Some(next_idx);
-                            // best_new_score = cand_score;
+                        } else {
+                            actual_down_change = actual_down_change.saturating_sub(1);
                         }
                     }
-                }
-
-                if let (Some(dim), Some(nidx)) = (best_dim, best_new_idx) {
-                    // create greedy child then fill budget
-                    let mut greedy_idxs = parent.idxs.clone();
-                    greedy_idxs[dim] = nidx;
-                    let greedy_cost = compute_cost(&greedy_idxs);
-                    let greedy_score = oracle(bitset_bundle, &greedy_idxs);
-                    //oracle_cache.insert(greedy_idxs.clone(), greedy_score);
-                    // let (filled_idxs, filled_score, filled_cost) =
-                    //     fill_budget(greedy_idxs, greedy_score, greedy_cost);
-
-                    if !seen.contains(&greedy_idxs) {
-                        candidates.push(State {
-                            idxs: greedy_idxs.clone(),
-                            score: greedy_score,
-                            cost: greedy_cost,
-                        });
-                        seen.insert(greedy_idxs);
-                    }
+                    cand[up_index] += actual_up_change;
+                    cand[down_index] = cand[down_index].saturating_sub(actual_down_change);
+                    // dbg!(&cand, round);
+                    candidates.push(State {
+                        indices: cand.clone(),
+                        score: oracle(bitset_bundle, &cand),
+                        cost: compute_cost(&thresholds, &cand, &input_budget_no_gold, &price_arr),
+                    });
+                    seen.insert(cand);
                 }
             }
-
-            // --- RANDOM children
-            let mut child_count = 0usize;
-            // dbg!(children_per_parent);
-            while child_count < (children_per_parent.saturating_sub(1)) {
-                child_count += 1;
-                // start from parent
-                let mut cand = parent.idxs.clone();
-
-                // randomly perturb several dims (some may decrease)
-                // decide how many dims to touch: 1..=dims
-                let dims_to_touch: usize = rng.random_range(1..=dims);
-                for _ in 0..dims_to_touch {
-                    let dim: usize = rng.random_range(0..dims);
-                    let delta: i64 = if price_arr[dim] == 0.0 {
-                        max_idx as i64
-                    } else {
-                        rng.random_range(-random_step_max..random_step_max)
-                    };
-
-                    let new_idx_isize = cand[dim] as isize + delta as isize;
-                    let mut new_idx = clamp_idx(new_idx_isize);
-                    if dim != 5 {
-                        new_idx = new_idx.max(start_idxs[dim]);
-                    }
-                    cand[dim] = new_idx;
-                }
-
-                // ensure within bounds and cost feasible; if over budget, try to reduce some dims randomly until feasible
-                if seen.contains(&cand) {
-                    continue;
-                }
-
-                let cand_cost = compute_cost(&cand);
-                if cand_cost > k + 1e-12 {
-                    continue;
-                }
-                let cand_score: f64 = oracle(bitset_bundle, &cand);
-
-                candidates.push(State {
-                    idxs: cand.clone(),
-                    score: cand_score,
-                    cost: cand_cost,
-                });
-                seen.insert(cand);
-            } // random children loop
         } // for each parent
 
-        // pick top beam_width candidates by score (descending)
         candidates.sort_unstable_by(|a, b| {
             b.score
                 .partial_cmp(&a.score)
                 .unwrap_or(std::cmp::Ordering::Equal)
+                .then_with(|| {
+                    a.cost
+                        .partial_cmp(&b.cost)
+                        .unwrap_or(std::cmp::Ordering::Equal)
+                })
         });
-        candidates.truncate(beam_width);
 
-        // update best overall
-        // dbg!(&candidates);
+        candidates.truncate(beam_width);
         if let Some(top) = candidates.get(0) {
             dbg!("top", top);
             if top.score > best_state.score {
@@ -336,18 +366,35 @@ pub fn beam_search<R: rand::Rng>(
             }
         }
 
-        // new beam = candidates
         beam = candidates;
-
-        // small early stop if beam didn't improve much (optional)
-        // (we track best_state, but continue for full rounds for robustness)
     } // beam rounds
 
     // convert best_state idices -> threshold values Vec<i64>
     let mut best_values: Vec<i64> = vec![0i64; dims];
     for i in 0..dims {
-        best_values[i] = thresholds[i][best_state.idxs[i]];
+        best_values[i] = thresholds[i][best_state.indices[i]];
+        if i == 5 {
+            best_values[5] += (k - compute_cost(
+                thresholds,
+                &best_state.indices,
+                &input_budget_no_gold,
+                &price_arr,
+            ))
+            .floor() as i64;
+            dbg!(
+                (k - compute_cost(
+                    thresholds,
+                    &best_state.indices,
+                    &input_budget_no_gold,
+                    &price_arr,
+                ))
+                .floor() as i64
+            );
+        }
     }
-    dbg!("best", &best_state);
+
+    dbg!(&best_state);
+    dbg!(&best_values);
+    dbg!(oracle(bitset_bundle, &best_state.indices));
     (best_values, best_state.score)
 }
