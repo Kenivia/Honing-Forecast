@@ -11,7 +11,7 @@ export function createClearAll({
     set_desired_chance,
     set_adv_hone_strategy_change,
     set_express_event,
-    setCustomGoldValues,
+    setAutoGoldValues,
     _setBucketCount,
     setCumulativeGraph,
     setDataSize,
@@ -33,7 +33,7 @@ export function createClearAll({
     set_desired_chance: React.Dispatch<React.SetStateAction<string>>
     set_adv_hone_strategy_change: React.Dispatch<React.SetStateAction<string>>
     set_express_event: React.Dispatch<React.SetStateAction<boolean>>
-    setCustomGoldValues: React.Dispatch<React.SetStateAction<boolean>>
+    setAutoGoldValues: React.Dispatch<React.SetStateAction<boolean>>
     _setBucketCount: React.Dispatch<React.SetStateAction<string>>
     setCumulativeGraph: React.Dispatch<React.SetStateAction<boolean>>
     setDataSize: React.Dispatch<React.SetStateAction<string>>
@@ -66,7 +66,7 @@ export function createClearAll({
         set_desired_chance("50")
         set_adv_hone_strategy_change("No juice")
         set_express_event(true)
-        setCustomGoldValues(true)
+        setAutoGoldValues(true)
         _setBucketCount("100")
         setCumulativeGraph(false)
         setDataSize("100000")

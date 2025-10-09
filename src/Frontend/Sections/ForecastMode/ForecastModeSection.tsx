@@ -15,7 +15,7 @@ type LongTermSectionProps = {
     adv_hone_strategy: any
     express_event: any
     bucketCount: any
-    customGoldValues: any
+    autoGoldValues: any
     dataSize: any
     useGridInput: any
     normalCounts: any
@@ -79,7 +79,7 @@ export default function LongTermSection({
     adv_hone_strategy,
     express_event,
     bucketCount,
-    customGoldValues,
+    autoGoldValues,
     dataSize,
     useGridInput,
     normalCounts,
@@ -196,7 +196,7 @@ export default function LongTermSection({
             adv_hone_strategy,
             express_event,
             bucketCount,
-            customGoldValues,
+            autoGoldValues,
             userMatsValue,
             dataSize,
             useGridInput,
@@ -234,7 +234,7 @@ export default function LongTermSection({
             console.error("Long term worker error", err)
             setLongTermResult(null)
         })
-    }, [topGrid, bottomGrid, adv_hone_strategy, express_event, bucketCount, customGoldValues, userMatsValue, dataSize, budget_inputs, useGridInput, normalCounts, advCounts, totalWeeklyIncome])
+    }, [topGrid, bottomGrid, adv_hone_strategy, express_event, bucketCount, autoGoldValues, userMatsValue, dataSize, budget_inputs, useGridInput, normalCounts, advCounts, totalWeeklyIncome])
 
     // Initialize worker
     useEffect(() => {

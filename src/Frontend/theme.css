@@ -1,7 +1,8 @@
 /* Global CSS Variables for Theming - Colors Only */
 :root {
-    --text-muted: #9fe7ff;
+    --text-muted: #ffffff;
     --text-success: #9ff7c7;
+    --text-optimized: rgb(247, 219, 159);
     --text: var(--text-primary);
     /* Button Colors */
     --btn-primary: #1091a8;
@@ -47,6 +48,7 @@
     --series-overall: #9ff7c7;
     --series-brown: #f7893b;
 
+    --free-tap: #fd9be8;
     /* Input Colors */
     --input-bg: #acfffeff;
     --input-text: #000000;

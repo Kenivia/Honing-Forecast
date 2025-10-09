@@ -35,6 +35,8 @@ pub struct CostToChanceOptimizedOut {
     pub budgets_red_remaining: i64,        // budgets[7]
     pub budgets_blue_remaining: i64,       // budgets[8]
     pub buy_arr: Vec<i64>,
+    pub optimized_chance: f64,
+    pub optimized_reasons: Vec<f64>,
 }
 #[derive(serde::Serialize)]
 pub struct CostToChanceArrResult {
@@ -89,6 +91,7 @@ struct PreparationOutputs {
     valid_weapon_values: bool,
     juice_strings_armor: Vec<String>,
     juice_strings_weapon: Vec<String>,
+    mats_value: Vec<f64>,
 }
 
 fn preparation(
@@ -163,6 +166,7 @@ fn preparation(
         valid_weapon_values,
         juice_strings_armor,
         juice_strings_weapon,
+        mats_value,
     }
 }
 
@@ -380,18 +384,29 @@ pub fn cost_to_chance_optimized<R: rand::Rng>(
         input_budgets[9],
         rng,
     );
+
+    let failure_outputs_initial: FailureAnalysisOutputs =
+        count_failure_typed(&cost_data, &input_budgets);
+
     let thresholds: Vec<Vec<i64>> = generate_budget_data(&cost_data, 1000, data_size);
     let top_bottom: Vec<Vec<i64>> =
         get_top_bottom(&prep_outputs.upgrade_arr, &prep_outputs.unlock_costs);
     let bitset_bundle: BitsetBundle =
         generate_bit_sets(&cost_data, thresholds, &top_bottom[1].clone(), data_size);
-    let (optimized_budget, optimized_chance): (Vec<i64>, f64) =
-        beam_search(&bitset_bundle, user_mats_value, &input_budgets, rng);
+    let (optimized_budget, optimized_chance): (Vec<i64>, f64) = beam_search(
+        &bitset_bundle,
+        &prep_outputs.mats_value,
+        &input_budgets,
+        rng,
+        16,
+        12,
+        30,
+    );
 
     // Section 3: Failure analysis
-    let failure_outputs: FailureAnalysisOutputs =
+    let failure_outputs_optimized: FailureAnalysisOutputs =
         count_failure_typed(&cost_data, &optimized_budget);
-    dbg!(optimized_chance, failure_outputs.final_chance);
+    dbg!(optimized_chance, failure_outputs_optimized.final_chance);
     dbg!(&optimized_budget);
 
     // Section 4: Histogram preparation
@@ -405,8 +420,8 @@ pub fn cost_to_chance_optimized<R: rand::Rng>(
     );
 
     CostToChanceOptimizedOut {
-        chance: failure_outputs.final_chance,
-        reasons: fail_count_to_rates(failure_outputs.typed_fail_counter_final, data_size),
+        chance: failure_outputs_initial.final_chance,
+        reasons: fail_count_to_rates(failure_outputs_initial.typed_fail_counter_final, data_size),
         hist_counts: histogram_outputs.hist_counts,
         hist_mins: histogram_outputs.hist_mins,
         hist_maxs: histogram_outputs.hist_maxs,
@@ -416,6 +431,11 @@ pub fn cost_to_chance_optimized<R: rand::Rng>(
         budgets_red_remaining: prep_outputs.budgets[7],
         budgets_blue_remaining: prep_outputs.budgets[8],
         buy_arr: optimized_budget,
+        optimized_chance: failure_outputs_optimized.final_chance,
+        optimized_reasons: fail_count_to_rates(
+            failure_outputs_optimized.typed_fail_counter_final,
+            data_size,
+        ),
     }
 }
 
@@ -471,7 +491,7 @@ mod tests {
             &mut rng,
         );
 
-        let result_of_interst: f64 = result.chance;
+        let result_of_interst: f64 = result.optimized_chance;
         if let Some(cached_result) = read_cached_data::<f64>(test_name, &hash) {
             assert_float_eq::assert_f64_near!(result_of_interst, cached_result);
         } else {

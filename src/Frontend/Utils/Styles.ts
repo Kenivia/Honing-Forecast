@@ -93,8 +93,7 @@ export const styles: any = {
         border: "1px solid var(--border-primary)",
     },
     inputLabelCell: {
-        width: 100,
-        textAlign: "right",
+        textAlign: "left",
         paddingRight: 8,
         color: "var(--text-secondary)",
         whiteSpace: "nowrap",
@@ -103,7 +102,7 @@ export const styles: any = {
     },
     inputCell: {
         flex: 1,
-        padding: "6px 45px",
+        padding: "6px 6px",
         border: "1px solid var(--border-accent)",
         background: "transparent",
         color: "var(--text-primary)",
@@ -144,7 +143,7 @@ export const styles: any = {
 }
 
 // Column definitions for spreadsheet grids
-export const createColumnDefs = (customGoldValues: boolean) => {
+export const createColumnDefs = (autoGoldValues: boolean) => {
     const chanceToCostColumnDefs = [
         {
             headerName: "Estimated cost",
@@ -155,7 +154,7 @@ export const createColumnDefs = (customGoldValues: boolean) => {
         },
     ]
 
-    const costToChanceColumnDefs = customGoldValues
+    const costToChanceColumnDefs = autoGoldValues
         ? [
               {
                   headerName: "Budget Input",

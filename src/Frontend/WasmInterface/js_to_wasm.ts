@@ -59,10 +59,16 @@ self.addEventListener("message", async (ev) => {
 
     let result
     if (which_one == "CostToChance") {
-        let out = await CostToChanceWasm(payload)
+        // always run optimized
+        let out = await CostToChanceOptimizedWasm(payload)
 
         // Convert f64 failure rates to formatted strings
         const reasons = out.reasons.map((rate: number, index: number) => {
+            const percentage = (rate * 100).toFixed(2)
+            return `${percentage}% chance to have enough ${LABELS[index]}`
+        })
+
+        const optimized_reasons = out.optimized_reasons.map((rate: number, index: number) => {
             const percentage = (rate * 100).toFixed(2)
             return `${percentage}% chance to have enough ${LABELS[index]}`
         })
@@ -78,6 +84,9 @@ self.addEventListener("message", async (ev) => {
             juice_strings_weapon: out.juice_strings_weapon || [],
             budgets_red_remaining: out.budgets_red_remaining,
             budgets_blue_remaining: out.budgets_blue_remaining,
+            buy_arr: out.buy_arr,
+            optimized_chance: (out.optimized_chance * 100).toFixed(2),
+            optimized_reasons: optimized_reasons,
         }
     } else if (which_one == "CostToChanceArr") {
         let out = await CostToChanceArrWasm(payload)
@@ -100,27 +109,29 @@ self.addEventListener("message", async (ev) => {
             budgets_red_remaining: out.budgets_red_remaining,
             budgets_blue_remaining: out.budgets_blue_remaining,
         }
-    } else if (which_one == "CostToChanceOptimized") {
-        let out = await CostToChanceOptimizedWasm(payload)
-        // Convert f64 failure rates to formatted strings
-        const reasons = out.reasons.map((rate: number, index: number) => {
-            const percentage = (rate * 100).toFixed(2)
-            return `${percentage}% chance to have enough ${LABELS[index]}`
-        })
+    }
+    // else if (which_one == "CostToChanceOptimized") {
+    //     let out = await CostToChanceOptimizedWasm(payload)
+    //     // Convert f64 failure rates to formatted strings
+    //     const reasons = out.reasons.map((rate: number, index: number) => {
+    //         const percentage = (rate * 100).toFixed(2)
+    //         return `${percentage}% chance to have enough ${LABELS[index]}`
+    //     })
 
-        result = {
-            chance: (out.chance * 100).toFixed(2),
-            reasons: reasons,
-            hist_counts: out.hist_counts,
-            hist_mins: out.hist_mins,
-            hist_maxs: out.hist_maxs,
-            upgrade_strings: out.upgrade_strings || [],
-            juice_strings_armor: out.juice_strings_armor || [],
-            juice_strings_weapon: out.juice_strings_weapon || [],
-            budgets_red_remaining: out.budgets_red_remaining,
-            budgets_blue_remaining: out.budgets_blue_remaining,
-        }
-    } else if (which_one == "ChanceToCost") {
+    //     result = {
+    //         chance: (out.chance * 100).toFixed(2),
+    //         reasons: reasons,
+    //         hist_counts: out.hist_counts,
+    //         hist_mins: out.hist_mins,
+    //         hist_maxs: out.hist_maxs,
+    //         upgrade_strings: out.upgrade_strings || [],
+    //         juice_strings_armor: out.juice_strings_armor || [],
+    //         juice_strings_weapon: out.juice_strings_weapon || [],
+    //         budgets_red_remaining: out.budgets_red_remaining,
+    //         budgets_blue_remaining: out.budgets_blue_remaining,
+    //     }
+    // }
+    else if (which_one == "ChanceToCost") {
         let out = await ChanceToCostWasm(payload)
 
         result = {

@@ -129,17 +129,20 @@ pub fn beam_search<R: rand::Rng>(
     price_arr: &[f64],
     input_budget: &[i64],
     rng: &mut R,
+    beam_width: usize,
+    children_per_parent: usize,
+    beam_rounds: usize,
 ) -> (Vec<i64>, f64) {
     // parameters you can tune
     let mut input_budget_no_gold: Vec<i64> = input_budget.to_vec();
     input_budget_no_gold[5] = 0;
     let k: f64 = input_budget[5] as f64;
     let dims: usize = 7;
-    let beam_width: usize = 16; // W
-    let children_per_parent: usize = 12; // target children per parent (including greedy child)
-    let greedy_step_max: usize = 25; // greedy increments up to 1..=3
-    let random_step_max: i64 = 50; // random +/- steps per dim
-    let beam_rounds: usize = 60; // T
+    // let beam_width: usize = 16; // W
+    // let children_per_parent: usize = 12; // target children per parent (including greedy child)
+    let greedy_step_max: usize = 1500 / beam_rounds; // greedy increments up to 1..=3
+    let random_step_max: i64 = 1500 / beam_rounds as i64; // random +/- steps per dim
+    // let beam_rounds: usize = 30; // T
 
     // convenience access
     let thresholds = &bitset_bundle.transposed_thresholds;
@@ -171,12 +174,14 @@ pub fn beam_search<R: rand::Rng>(
     let mut start_idxs: Vec<usize> = vec![];
     for i in 0..7_usize {
         for (index, thresh) in thresholds[i].iter().enumerate() {
-            if *thresh >= input_budget_no_gold[i] || index == thresholds[i].len() - 1 {
+            if *thresh >= input_budget[i] || index == thresholds[i].len() - 1 {
                 start_idxs.push(index);
                 break;
             }
         }
     }
+    start_idxs[5] = start_idxs[5].min(thresholds[0].len() / 2);
+
     dbg!("start", &start_idxs);
     dbg!(&input_budget_no_gold);
     let start_cost: f64 = compute_cost(&start_idxs);
@@ -221,6 +226,9 @@ pub fn beam_search<R: rand::Rng>(
                 for i in 0..dims {
                     let cur_idx = parent.idxs[i];
                     for step in 1..=greedy_step_max {
+                        if step > 10 && !(step % 5 == 0) {
+                            continue;
+                        }
                         let next_idx = cur_idx.saturating_add(step).min(max_idx);
 
                         let added_cost = price_arr[i]
@@ -268,6 +276,7 @@ pub fn beam_search<R: rand::Rng>(
             let mut child_count = 0usize;
             // dbg!(children_per_parent);
             while child_count < (children_per_parent.saturating_sub(1)) {
+                child_count += 1;
                 // start from parent
                 let mut cand = parent.idxs.clone();
 
@@ -283,52 +292,30 @@ pub fn beam_search<R: rand::Rng>(
                     };
 
                     let new_idx_isize = cand[dim] as isize + delta as isize;
-                    let new_idx = clamp_idx(new_idx_isize);
+                    let mut new_idx = clamp_idx(new_idx_isize);
+                    if dim != 5 {
+                        new_idx = new_idx.max(start_idxs[dim]);
+                    }
                     cand[dim] = new_idx;
                 }
 
                 // ensure within bounds and cost feasible; if over budget, try to reduce some dims randomly until feasible
-                let cand_cost = compute_cost(&cand);
-                // if cand_cost > k + 1e-12 {
-                //     // attempt to reduce some dims randomly
-                //     for _attempt in 0..10 {
-                //         let dim = rng.random_range(0..dims);
-                //         // reduce by 1..=random_step_max if possible
-                //         if cand[dim] > 0 {
-                //             let reduce = 1 + (rng.random_range(0..(random_step_max as usize) + 1));
-                //             let new_idx = cand[dim].saturating_sub(reduce);
-                //             cand[dim] = new_idx;
-                //             cand_cost = compute_cost(&cand);
-                //             if cand_cost <= k + 1e-12 {
-                //                 break;
-                //             }
-                //         }
-                //     }
-                // }
-                // dbg!(cand_cost, k);
-                if cand_cost > k + 1e-12 {
-                    // can't make it feasible, skip this random child
-                    child_count += 1;
+                if seen.contains(&cand) {
                     continue;
                 }
 
-                // fill budget greedily from this perturbed starting point
-                let cand_score: f64 = oracle(bitset_bundle, &cand);
-                //oracle_cache.insert(cand.clone(), cand_score);
-                // dbg!(&cand);
-                // let (filled_idxs, filled_score, filled_cost) =
-                //     fill_budget(cand, cand_score, cand_cost);
-                // dbg!(&filled_idxs);
-                if !seen.contains(&cand) {
-                    candidates.push(State {
-                        idxs: cand.clone(),
-                        score: cand_score,
-                        cost: cand_cost,
-                    });
-                    seen.insert(cand);
+                let cand_cost = compute_cost(&cand);
+                if cand_cost > k + 1e-12 {
+                    continue;
                 }
+                let cand_score: f64 = oracle(bitset_bundle, &cand);
 
-                child_count += 1;
+                candidates.push(State {
+                    idxs: cand.clone(),
+                    score: cand_score,
+                    cost: cand_cost,
+                });
+                seen.insert(cand);
             } // random children loop
         } // for each parent
 
