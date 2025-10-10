@@ -34,7 +34,7 @@ I'm still in the process of writing proper comments & tests, I apologize for the
 
 ### Next big step(s)
 
-- COMBINING CHANCE AND BUDGET MODE: slider chance - give optimized gold purchase to hit that percentage, optionally add your budget, which updates that purchase and clamps the chance slider to the current chance
+- idk whats happening anymore ~~COMBINING CHANCE AND BUDGET MODE: slider chance - give optimized gold purchase to hit that percentage, optionally add your budget, which updates that purchase and clamps the chance slider to the current chance~~
 - Raw graph that adjusts for mats purchased with gold, based on the budget mode above
 - ~~True juice usage optimization(maximize chance of success)~~ might not be possible, at least with beam search because evaluating the effect is way too hard
 - ~~option for Bottleneck-aware juice/free tap gold value estimation~~ but the gold value will depend on how we've used it... idk if this is possible
@@ -59,7 +59,9 @@ I'm still in the process of writing proper comments & tests, I apologize for the
 - MUCH more tests, need to actually test the components(like count_failure, tap_map and such), also need implement more integration tests
 - Pre-compute prob_dist of groups of upgrades(such as +n all 5 armours etc)
 - Matrix operation libraries to speed up monte carlo and what not?
-- maybe go back to caching results?
+- ~~maybe go back to caching results?~~ DEFINITELY caching the monte carlo + orcale bitsets
+- figure out why oracle is off by a tiny bit sometimes
+- Graph is off by 0.5 all the time, and the points of interest snap the the one below(i tihnk?) which isnt quite right idk, kinda scared to touch it
 
 ## Contributing
 

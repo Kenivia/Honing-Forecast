@@ -385,24 +385,9 @@ pub fn beam_search<R: rand::Rng>(
     // convert best_state idices -> threshold values Vec<i64>
     let mut best_values: Vec<i64> = vec![0i64; dims];
     for i in 0..dims {
-        best_values[i] = thresholds[i][best_state.indices[i]];
+        best_values[i] = thresholds[i][best_state.indices[i]].max(input_budget_no_gold[i]);
         if i == 5 {
-            best_values[5] += (k - compute_cost(
-                thresholds,
-                &best_state.indices,
-                &input_budget_no_gold,
-                &price_arr,
-            ))
-            .floor() as i64;
-            dbg!(
-                (k - compute_cost(
-                    thresholds,
-                    &best_state.indices,
-                    &input_budget_no_gold,
-                    &price_arr,
-                ))
-                .floor() as i64
-            );
+            best_values[5] += (k - best_state.cost).round() as i64;
         }
     }
 
