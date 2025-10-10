@@ -448,15 +448,9 @@ mod tests {
         let test_name: &str = "cost_to_chance_18_demo_optimized";
         let hone_counts = vec![
             (0..25)
-                .map(|i| {
-                    if i == 19 || i == 20 || i == 21 || i == 18 {
-                        5
-                    } else {
-                        0
-                    }
-                })
+                .map(|i| if i == 19 || i == 20 || i == 21 { 5 } else { 0 })
                 .collect(),
-            (0..25).map(|i| if i >= 19 { 0 } else { 0 }).collect(),
+            (0..25).map(|i| if i >= 19 { 1 } else { 0 }).collect(),
         ];
         let input_budgets = vec![
             631777, 1064398, 33748, 12010948, 25125, 3803792, 999999999, 1420, 690, 6767,
