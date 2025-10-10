@@ -1,5 +1,5 @@
 // use crate::helpers::budget_is_enough;
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 
 // use serde::de::IntoDeserializer; // already present in your module
 #[derive(Clone)]
@@ -98,7 +98,15 @@ pub fn generate_bit_sets(
     }
 }
 
-fn oracle(bitset_bundle: &BitsetBundle, input: &Vec<usize>) -> f64 {
+fn oracle(
+    bitset_bundle: &BitsetBundle,
+    input: &Vec<usize>,
+    cache: &mut HashMap<Vec<usize>, f64>,
+) -> f64 {
+    if let Some(&cached_result) = cache.get(input) {
+        return cached_result;
+    }
+
     let mut result_bitset: Bitset = Bitset::new(bitset_bundle.data_size, true);
     // let min: usize = *input.iter().min().unwrap();
     for (cost_type, i) in input.iter().enumerate() {
@@ -111,7 +119,9 @@ fn oracle(bitset_bundle: &BitsetBundle, input: &Vec<usize>) -> f64 {
     // if min > 0 {
     //     panic!();
     // }
-    result_bitset.get_success()
+    let result = result_bitset.get_success();
+    cache.insert(input.clone(), result);
+    result
 }
 
 #[derive(Clone, Debug)]
@@ -232,8 +242,11 @@ pub fn beam_search<R: rand::Rng>(
 
     dbg!(&input_budget_no_gold);
 
+    // Initialize oracle cache
+    let mut oracle_cache: HashMap<Vec<usize>, f64> = HashMap::new();
+
     // let start_cost: f64 = compute_cost(thresholds, &start_idxs, &input_budget_no_gold, &price_arr);
-    let start_score: f64 = oracle(bitset_bundle, &start_idxs);
+    let start_score: f64 = oracle(bitset_bundle, &start_idxs, &mut oracle_cache);
 
     // initial beam: single state for now (we can add more seeds later)
     let mut beam: Vec<State> = vec![State {
@@ -339,7 +352,7 @@ pub fn beam_search<R: rand::Rng>(
                     // dbg!(&cand, round);
                     candidates.push(State {
                         indices: cand.clone(),
-                        score: oracle(bitset_bundle, &cand),
+                        score: oracle(bitset_bundle, &cand, &mut oracle_cache),
                         cost: compute_cost(&thresholds, &cand, &input_budget_no_gold, &price_arr),
                     });
                     seen.insert(cand);
@@ -395,6 +408,10 @@ pub fn beam_search<R: rand::Rng>(
 
     dbg!(&best_state);
     dbg!(&best_values);
-    dbg!(oracle(bitset_bundle, &best_state.indices));
+    dbg!(oracle(
+        bitset_bundle,
+        &best_state.indices,
+        &mut oracle_cache
+    ));
     (best_values, best_state.score)
 }
