@@ -56,102 +56,117 @@ export default function ChanceToCostSection({
     return (
         <>
             {/* <h3 style={{ color: 'var(--text-primary)', fontSize: 'var(--font-size-base)', fontWeight: 'var(--font-weight-semibold)', margin: '0 0 -8px 0' }}>Chance to Cost</h3> */}
-            <div style={{ ...styles.inputSection, maxWidth: "1200px", width: "100%" }}>
-                <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 16 }}>
-                    <div style={{ width: 160, fontWeight: 700, textAlign: 'right', paddingRight: 8, color: 'var(--text-primary)' }}>Desired chance</div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-                        <StyledSlider
-                            value={parseInt(desired_chance) || 0}
-                            onChange={(_, value) => {
-                                const intValue = Math.round(value as number)
-                                onDesiredChange(intValue.toString())
-                            }}
-                            min={0}
-                            max={100}
-                            step={1}
-                            valueLabelDisplay="off"
-                        />
-                        <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
-                            <input
-                                type="text"
-                                value={uncleaned_desired_chance}
-                                onChange={(e) => onDesiredChange(e.target.value)}
-                                onBlur={onDesiredBlur}
-                                placeholder="0"
-                                style={{
-                                    width: 70,
-                                    fontSize: 16,
-                                    padding: '6px 8px',
-                                    borderRadius: 6,
-                                    background: 'var(--input-bg)',
-                                    color: 'var(--input-text)',
-                                    border: '1px solid var(--input-border)'
-                                }}
-                            />
-                            <span style={{ position: 'absolute', right: 10, pointerEvents: 'none', color: "black" }}>%</span>
+            <div style={{ ...styles.inputSection, maxWidth: "1000px", width: "100%" }}>
+                <div style={{ display: "flex", flexDirection: "column", paddingLeft: 50, }}>
+                    <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 16 }}>
+                        <div style={{ display: "flex", flexDirection: "column", height: 100, marginLeft: 100 }}>
+                            <div style={{ display: "flex", flexDirection: "row", gap: 100, marginLeft: -10 }}>
+                                <div style={{ width: 160, fontWeight: 700, fontSize: 20, textAlign: 'right', paddingRight: 8, paddingTop: 4, color: 'var(--text-primary)' }}>Desired chance</div>
+                                <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                                    <input
+                                        type="text"
+                                        value={uncleaned_desired_chance}
+                                        onChange={(e) => onDesiredChange(e.target.value)}
+                                        onBlur={onDesiredBlur}
+                                        placeholder="0"
+                                        style={{
+                                            width: 70,
+                                            fontSize: 16,
+                                            padding: '6px 8px',
+                                            borderRadius: 6,
+                                            background: 'var(--input-bg)',
+                                            color: 'var(--input-text)',
+                                            border: '1px solid var(--input-border)'
+                                        }}
+                                    />
+                                    <span style={{ position: 'absolute', right: 10, pointerEvents: 'none', color: "black" }}>%</span>
+                                </div>
+                            </div>
+                            <div style={{ display: "flex", flexDirection: "row", gap: 20 }}>
+
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+
+                                    <StyledSlider
+                                        value={parseInt(desired_chance) || 0}
+                                        onChange={(_, value) => {
+                                            const intValue = Math.round(value as number)
+                                            onDesiredChange(intValue.toString())
+                                        }}
+                                        min={0}
+                                        max={100}
+                                        step={1}
+                                        valueLabelDisplay="off"
+                                    />
+                                </div>
+
+
+                            </div>
+
+                            {desired_chance === "0" && (
+                                <span style={{
+                                    color: 'var(--text-muted)',
+                                    fontSize: 'var(--font-size-sm)',
+                                    fontStyle: 'italic'
+                                }}>
+                                    0% = luckiest draw in {dataSize} samples
+                                </span>
+                            )}
                         </div>
-                        {desired_chance === "0" && (
-                            <span style={{
-                                color: 'var(--text-muted)',
-                                fontSize: 'var(--font-size-sm)',
-                                fontStyle: 'italic'
-                            }}>
-                                0% = luckiest draw in {dataSize} samples
-                            </span>
-                        )}
+                        <div style={{ marginLeft: 100 }}>
+                            <div style={{ marginBottom: 16, width: 210 }}>
+                                <SpreadsheetGrid
+                                    columnDefs={chanceToCostColumnDefs}
+                                    labels={OUTPUT_LABELS}
+                                    sheet_values={cost_result ?
+                                        Object.fromEntries(OUTPUT_LABELS.map((label, lab_index) =>
+                                            [label, String(cost_result.hundred_budgets[parseInt(desired_chance)][lab_index])])) :
+                                        Object.fromEntries(OUTPUT_LABELS.map(label => [label, 'No results yet']))}
+                                    set_sheet_values={() => { }} // No-op for read-only
+                                    readOnly={true}
+                                />
+                            </div>
+                            <div style={{ marginTop: 12, display: 'flex', alignItems: 'center', gap: 8, }}>
+
+                                <label
+                                    htmlFor="show-average"
+                                    style={{
+                                        color: 'var(--text-primary)',
+                                        fontSize: 'var(--font-size-sm)',
+
+                                        cursor: 'pointer',
+                                        userSelect: 'none'
+                                    }}
+                                >
+                                    Show Average on graph
+                                </label>
+                                <input
+                                    type="checkbox"
+                                    id="show-average"
+                                    checked={showAverage}
+                                    onChange={(e) => setShowAverage(e.target.checked)}
+                                    style={{
+                                        width: 16,
+                                        height: 16,
+                                        cursor: 'pointer',
+                                        accentColor: "var(--bright-green)"
+                                    }}
+                                />
+                            </div>
+                            {cost_result && (
+                                <pre style={{ color: 'var(--text-muted)', fontSize: 'var(--font-size-xs)', marginTop: 8, }}>
+                                    Run time: {cost_result.run_time}s{'\nActual chance: '}{cost_result.hundred_chances[parseInt(desired_chance)].toFixed(2)}%
+                                </pre>
+                            )}
+
+                        </div>
                     </div>
                 </div>
 
-                <div style={{ display: 'flex', gap: 110, alignItems: 'flex-start' }}>
-                    <div>
-                        <div style={{ marginBottom: 16, width: 210 }}>
-                            <SpreadsheetGrid
-                                columnDefs={chanceToCostColumnDefs}
-                                labels={OUTPUT_LABELS}
-                                sheet_values={cost_result ?
-                                    Object.fromEntries(OUTPUT_LABELS.map((label, lab_index) =>
-                                        [label, String(cost_result.hundred_budgets[parseInt(desired_chance)][lab_index])])) :
-                                    Object.fromEntries(OUTPUT_LABELS.map(label => [label, 'No results yet']))}
-                                set_sheet_values={() => { }} // No-op for read-only
-                                readOnly={true}
-                            />
-                        </div>
-                        <div style={{ marginTop: 12, display: 'flex', alignItems: 'center', gap: 8 }}>
+                <div style={{ display: 'flex', gap: 110, alignItems: 'center', width: 850, justifySelf: "center", paddingLeft: 70 }}>
 
-                            <label
-                                htmlFor="show-average"
-                                style={{
-                                    color: 'var(--text-primary)',
-                                    fontSize: 'var(--font-size-sm)',
-
-                                    cursor: 'pointer',
-                                    userSelect: 'none'
-                                }}
-                            >
-                                Show Average(Maxroll)
-                            </label>
-                            <input
-                                type="checkbox"
-                                id="show-average"
-                                checked={showAverage}
-                                onChange={(e) => setShowAverage(e.target.checked)}
-                                style={{
-                                    width: 16,
-                                    height: 16,
-                                    cursor: 'pointer',
-                                    accentColor: "var(--bright-green)"
-                                }}
-                            />
-                        </div>
-                        {cost_result && (
-                            <pre style={{ color: 'var(--text-muted)', fontSize: 'var(--font-size-xs)', marginTop: 8 }}>
-                                Run time: {cost_result.run_time}s{'\nActual chance: '}{cost_result.hundred_chances[parseInt(desired_chance)].toFixed(2)}%
-                            </pre>
-                        )}
-                    </div>
                     <div style={{ flex: 1 }}>
                         <Graph
-                            title={cumulativeGraph ? "Cost distribution(Cumulative)" : "Cost distribution"}
+                            title={(cumulativeGraph ? "Cost distribution(Cumulative)" : "Cost distribution")}
                             labels={OUTPUT_LABELS}
                             counts={AnythingTicked ? (cost_result?.hist_counts || cachedCostGraphData?.hist_counts) : null}
                             mins={cost_result?.hist_mins || cachedCostGraphData?.hist_mins}

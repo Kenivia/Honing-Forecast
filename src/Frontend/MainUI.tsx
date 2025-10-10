@@ -27,9 +27,9 @@ export default function HoningForecastUI() {
     const [topGrid, setTopGrid] = useState(() => Array.from({ length: TOP_ROWS }, () => Array.from({ length: TOP_COLS }, () => false)))
     const [bottomGrid, setBottomGrid] = useState(() => Array.from({ length: BOTTOM_ROWS }, () => Array(BOTTOM_COLS).fill(false)))
     const [budget_inputs, set_budget_inputs] = useState(() => Object.fromEntries(INPUT_LABELS.map((l) => [l, '0'])))
-    const [autoGoldValues, setAutoGoldValues] = useState(true)
+    const [autoGoldValues, setAutoGoldValues] = useState(false)
     const [userMatsValue, setUserMatsValue] = useState(() => {
-        const defaultValues = ["1.0", "0.1", "13.0", "0.2", "90.0", "1.0", "0.0"]
+        const defaultValues = ["3.4", "0.3", "13.0", "0.4", "95.0", "1.0", "0.0"]
         return Object.fromEntries(INPUT_LABELS.slice(0, 7).map((l, index) => [l, defaultValues[index]]))
     })
     const [desired_chance, set_desired_chance] = useState(() => '50')

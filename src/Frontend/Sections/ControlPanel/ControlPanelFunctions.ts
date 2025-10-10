@@ -66,7 +66,7 @@ export function createClearAll({
         set_desired_chance("50")
         set_adv_hone_strategy_change("No juice")
         set_express_event(true)
-        setAutoGoldValues(true)
+        setAutoGoldValues(false)
         _setBucketCount("100")
         setCumulativeGraph(false)
         setDataSize("100000")
@@ -166,11 +166,11 @@ export function createFillDemo({
 
         // Set userMatsValue to the specified values
         setUserMatsValue({
-            Red: "1.0",
-            Blue: "0.1",
+            Red: "3.4",
+            Blue: "0.3",
             Leaps: "13.0",
-            Shards: "0.2",
-            Oreha: "90.0",
+            Shards: "0.4",
+            Oreha: "95.0",
             Gold: "1.0",
             Silver: "0.0",
         })
