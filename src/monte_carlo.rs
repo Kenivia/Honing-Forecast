@@ -10,8 +10,9 @@ use std::cmp::min;
 // (where 0th percentile is the luckiest draws of each dimension)
 pub fn generate_budget_data(
     cost_data: &[Vec<i64>],
+    initial_budget: &[i64],
     budget_size: usize,
-    data_size: usize,
+    // data_size: usize,
 ) -> Vec<Vec<i64>> {
     let mut transposed_cost_data: Vec<Vec<i64>> = transpose_vec_of_vecs(&cost_data);
     for transposed_row in &mut transposed_cost_data {
@@ -19,20 +20,29 @@ pub fn generate_budget_data(
     }
     let gap_size: Vec<f64> = transposed_cost_data
         .iter()
-        .map(|row| (row[row.len() - 1] - row[0]) as f64 / budget_size as f64)
+        .enumerate()
+        .take(7)
+        .map(|(index, row)| {
+            (row[row.len() - 1] - initial_budget[index].max(row[0])).max(0) as f64
+                / budget_size as f64
+        })
         .collect();
-    let mut budget_data: Vec<Vec<i64>> = vec![vec![0; 9]; budget_size];
+    let mut budget_data: Vec<Vec<i64>> = vec![vec![0; 9]; budget_size]; // red juice and blue juice will be left as 0
 
-    for (cost_type, transposed_row) in transposed_cost_data.iter().enumerate() {
+    for (cost_type, transposed_row) in transposed_cost_data.iter().enumerate().take(7) {
         let mut j: usize = 0;
         let mut k: usize = 0;
         let mut cur_count: usize = 0;
         loop {
             if transposed_row[j]
-                >= (transposed_row[0] as f64 + gap_size[cost_type] * k as f64).floor() as i64
+                >= (initial_budget[cost_type].max(transposed_row[0]) as f64
+                    + gap_size[cost_type] * k as f64)
+                    .min(transposed_row[transposed_row.len() - 1] as f64)
+                    .floor() as i64
             {
                 budget_data[k][cost_type] = transposed_row[cur_count];
-                cur_count += (data_size as f64 / budget_size as f64).round() as usize;
+                cur_count = j;
+                // (data_size as f64 / budget_size as f64).round() as usize;
                 k += 1;
             } else {
                 j += 1;
@@ -165,7 +175,8 @@ pub fn monte_carlo_data<R: Rng>(
                     special_budgets[trial] -= rolled_special_cost;
                     if special_budgets[trial] > 0 {
                         special_pass_arr[trial] += 1;
-                        debug_assert!(special_pass_arr[trial] == upgrade_index + 1); // this breaks when there's an advanced honing upgrade sorted before normal honing upgrade in upgrade_arr
+                        debug_assert!(special_pass_arr[trial] == upgrade_index + 1);
+                        // this breaks when there's an advanced honing upgrade sorted before normal honing upgrade in upgrade_arr
                     }
                 }
             }

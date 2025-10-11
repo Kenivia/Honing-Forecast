@@ -72,7 +72,8 @@ pub fn chance_to_cost<R: rand::Rng>(
     let cost_data: Vec<Vec<i64>> = monte_carlo_data(data_size, &upgrade_arr, &unlock_cost, 0, rng);
     let top_bottom: Vec<Vec<i64>> = get_top_bottom(&upgrade_arr, &unlock_cost);
 
-    let mut budget_data: Vec<Vec<i64>> = generate_budget_data(&cost_data, budget_size, data_size);
+    let mut budget_data: Vec<Vec<i64>> =
+        generate_budget_data(&cost_data, &vec![0_i64; 7], budget_size);
     budget_data.push(top_bottom[1].clone());
 
     if adv_hone_strategy == "Juice on grace" {

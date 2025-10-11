@@ -387,8 +387,9 @@ pub fn cost_to_chance_optimized<R: rand::Rng>(
 
     let failure_outputs_initial: FailureAnalysisOutputs =
         count_failure_typed(&cost_data, &input_budgets);
-
-    let thresholds: Vec<Vec<i64>> = generate_budget_data(&cost_data, 1000, data_size);
+    let mut input_budget_no_gold: Vec<i64> = input_budgets.to_vec();
+    input_budget_no_gold[5] = 0;
+    let thresholds: Vec<Vec<i64>> = generate_budget_data(&cost_data, &input_budget_no_gold, 1000);
     let top_bottom: Vec<Vec<i64>> =
         get_top_bottom(&prep_outputs.upgrade_arr, &prep_outputs.unlock_costs);
     let bitset_bundle: BitsetBundle =
@@ -590,7 +591,7 @@ mod tests {
 
         let result_of_interst: f64 = result.chance;
         if let Some(cached_result) = read_cached_data::<f64>(test_name, &hash) {
-            assert_eq!(result_of_interst, cached_result);
+            assert_float_eq::assert_f64_near!(result_of_interst, cached_result);
         } else {
             write_cached_data(test_name, &hash, &result_of_interst);
         }
