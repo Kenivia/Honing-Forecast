@@ -484,6 +484,21 @@ export default function HoningForecastUI() {
     }, [advStrategyKey, expressEventKey, graphBucketSizeKey, dataSizeKey, normalCountsKey, advCountsKey])
 
 
+    const chanceToCostResultOptimizedWorkerRef = useRef<Worker | null>(null)
+    const [_chanceToCostResultOptimizedBusy, setchanceToCostResultOptimizedBusy] = useState(false)
+    const [chanceToCostOptimizedResult, setChanceToCostOptimizedResult] = useState<any>(null)
+    useEffect(() => {
+        runner.start({
+            which_one: "ChanceToCostOptimized",
+            payloadBuilder,
+            workerRef: chanceToCostResultOptimizedWorkerRef,
+            setBusy: setchanceToCostResultOptimizedBusy,
+            setResult: setChanceToCostOptimizedResult,
+        })
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [advStrategyKey, expressEventKey, graphBucketSizeKey, dataSizeKey, normalCountsKey, advCountsKey, budgetKey, userMatsKey])
+
+
     const costToChanceWorkerRef = useRef<Worker | null>(null)
     const [costToChanceBusy, setCostToChanceBusy] = useState(false)
     const [costToChanceResult, setCostToChanceResult] = useState<any>(null)
@@ -626,9 +641,11 @@ export default function HoningForecastUI() {
                         onDesiredChange={onDesiredChange}
                         onDesiredBlur={onDesiredBlur}
                         cost_result={chanceToCostResult}
+                        cost_result_optimized={chanceToCostOptimizedResult}
                         cachedCostGraphData={cachedCostGraphData}
                         AnythingTicked={AnythingTicked}
                         ChanceToCostBusy={chanceToCostBusy}
+
                         cumulativeGraph={cumulativeGraph}
                         lockXAxis={lockXAxis}
                         lockedMins={lockedMins}
@@ -720,6 +737,7 @@ export default function HoningForecastUI() {
                         onDesiredBlur={onDesiredBlur}
                         // Cost result prop for hundred_budgets
                         cost_result={chanceToCostResult}
+                    //TODOcost_result_optimized={chanceToCostOptimizedResult}
                     />
                 </div>
             </div>

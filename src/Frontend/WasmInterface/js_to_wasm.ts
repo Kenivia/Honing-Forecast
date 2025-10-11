@@ -5,10 +5,14 @@ import init, {
     cost_to_chance_optimized_wrapper,
     parser_wrapper_unified,
     average_cost_wrapper,
+    chance_to_cost_optimized_wrapper,
 } from "../../../pkg/honing_forecast.js"
 
 const LABELS = ["Red", "Blue", "Leaps", "Shards", "Oreha", "Gold", "Silver"]
-
+async function ChanceToCostOptimizedWasm(payload: any) {
+    await init()
+    return (chance_to_cost_optimized_wrapper as any)(payload)
+}
 async function ChanceToCostWasm(payload: any) {
     await init()
     return (chance_to_cost_wrapper as any)(payload)
@@ -51,10 +55,11 @@ self.addEventListener("message", async (ev) => {
             which_one == "CostToChanceOptimized" ||
             which_one == "ChanceToCost" ||
             which_one == "ParserUnified" ||
-            which_one == "AverageCost"
+            which_one == "AverageCost" ||
+            which_one == "ChanceToCostOptimized"
         )
     ) {
-        throw "Invalid operation type" + which_one
+        throw "Invalid js_to_wasm operation type: " + which_one
     }
 
     let result
@@ -133,6 +138,16 @@ self.addEventListener("message", async (ev) => {
     // }
     else if (which_one == "ChanceToCost") {
         let out = await ChanceToCostWasm(payload)
+
+        result = {
+            hundred_budgets: out.hundred_budgets,
+            hundred_chances: out.hundred_chances,
+            hist_counts: out.hist_counts,
+            hist_mins: out.hist_mins,
+            hist_maxs: out.hist_maxs,
+        }
+    } else if (which_one == "ChanceToCostOptimized") {
+        let out = await ChanceToCostOptimizedWasm(payload)
 
         result = {
             hundred_budgets: out.hundred_budgets,

@@ -11,7 +11,7 @@ mod value_estimation;
 #[cfg(test)]
 mod test_cache;
 
-use crate::chance_to_cost::{ChanceToCostOut, chance_to_cost};
+use crate::chance_to_cost::{ChanceToCostOut, chance_to_cost, chance_to_cost_optimized};
 use crate::constants::EVENT_ARTISAN_MULTIPLIER;
 use crate::cost_to_chance::{
     CostToChanceArrResult, CostToChanceOptimizedOut, CostToChanceOut, cost_to_chance,
@@ -145,6 +145,35 @@ pub fn cost_to_chance_optimized_wrapper(input: JsValue) -> JsValue {
         payload.adv_hone_strategy,
         data_size,
         &mut rng,
+    );
+
+    to_value(&out).unwrap()
+}
+
+#[wasm_bindgen]
+pub fn chance_to_cost_optimized_wrapper(input: JsValue) -> JsValue {
+    console_error_panic_hook::set_once();
+
+    let payload: Payload = from_value(input).unwrap();
+
+    let normal_counts: Vec<Vec<i64>> = get_count(payload.normal_counts, payload.normal_hone_ticks);
+    let adv_counts: Vec<Vec<i64>> = get_count(payload.adv_counts, payload.adv_hone_ticks);
+
+    let budget: Vec<i64> = payload.budget;
+    let user_mats_value: Vec<f64> = payload.user_mats_value.unwrap_or(vec![0.0; 7]);
+    let data_size: usize = payload.data_size.unwrap_or(100000).max(1000);
+
+    let mut rng: ThreadRng = rand::rng();
+    let out: ChanceToCostOut = chance_to_cost_optimized(
+        &normal_counts,
+        &adv_counts,
+        &payload.adv_hone_strategy,
+        payload.express_event,
+        payload.bucket_count,
+        data_size,
+        &mut rng,
+        &budget,
+        &user_mats_value,
     );
 
     to_value(&out).unwrap()

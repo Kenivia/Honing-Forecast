@@ -56,7 +56,7 @@ impl Bitset {
 
 pub struct BitsetBundle {
     bitsets: Vec<Vec<Bitset>>,
-    transposed_thresholds: Vec<Vec<i64>>,
+    pub transposed_thresholds: Vec<Vec<i64>>,
     data_size: usize,
     // filtered_size: usize,
 }
@@ -142,7 +142,7 @@ fn compute_diff_cost(
         - thresholds[change_index][cur_cand[change_index]]) as f64
         * price_arr[change_index]
 }
-fn compute_cost(
+pub fn compute_gold_cost(
     thresholds: &[Vec<i64>],
     idxs: &[usize],
     input_budget_no_gold: &[i64],
@@ -222,7 +222,7 @@ pub fn beam_search<R: rand::Rng>(
     let mut cur_index: Vec<usize> = vec![0; 7];
     for thresh_index in 0..threshold_len {
         debug_assert_eq!(cur_index[0], thresh_index);
-        let w: f64 = compute_cost(thresholds, &cur_index, &input_budget_no_gold, &price_arr);
+        let w: f64 = compute_gold_cost(thresholds, &cur_index, &input_budget_no_gold, &price_arr);
         dbg!(w);
         if w > k {
             uniform_index = thresh_index.saturating_sub(1);
@@ -252,7 +252,7 @@ pub fn beam_search<R: rand::Rng>(
     let mut beam: Vec<State> = vec![State {
         indices: start_idxs.clone(),
         score: start_score,
-        cost: compute_cost(&thresholds, &start_idxs, &input_budget_no_gold, &price_arr),
+        cost: compute_gold_cost(&thresholds, &start_idxs, &input_budget_no_gold, &price_arr),
     }];
 
     // track best overall
@@ -298,7 +298,7 @@ pub fn beam_search<R: rand::Rng>(
                         continue;
                     }
                     let left_overs: f64 =
-                        k - compute_cost(thresholds, &cand, &input_budget_no_gold, &price_arr);
+                        k - compute_gold_cost(thresholds, &cand, &input_budget_no_gold, &price_arr);
 
                     let mut needed_cash: f64 = compute_diff_cost(
                         &thresholds,
@@ -353,7 +353,12 @@ pub fn beam_search<R: rand::Rng>(
                     candidates.push(State {
                         indices: cand.clone(),
                         score: oracle(bitset_bundle, &cand, &mut oracle_cache),
-                        cost: compute_cost(&thresholds, &cand, &input_budget_no_gold, &price_arr),
+                        cost: compute_gold_cost(
+                            &thresholds,
+                            &cand,
+                            &input_budget_no_gold,
+                            &price_arr,
+                        ),
                     });
                     seen.insert(cand);
                 }
