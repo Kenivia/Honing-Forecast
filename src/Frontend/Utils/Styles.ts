@@ -142,32 +142,74 @@ export const styles: any = {
     },
 }
 
+export type ColumnDef = {
+    headerName: string
+
+    editable: boolean
+    flex: number
+    background: string
+    backgroundSelected: string
+    color: string
+    backgroundRanOut?: string
+}
+
 // Column definitions for spreadsheet grids
-export const createColumnDefs = (autoGoldValues: boolean) => {
-    const chanceToCostColumnDefs = [
+export const createColumnDefs = (_autoGoldValues: boolean) => {
+    const chanceToCostColumnDefs: ColumnDef[] = [
         {
             headerName: "Estimated cost",
-            field: "budget",
             editable: false,
             flex: 1,
-            cellStyle: { background: "var(--grid-cell-bg-readonly)", padding: "6px 8px" },
+            background: "var(--grid-cell-bg-readonly)",
+            backgroundSelected: "var(--grid-cell-selected-readonly)",
+            color: "var(--grid-cell-text-readonly)",
         },
     ]
 
-    const costToChanceColumnDefs = autoGoldValues
-        ? [
-              {
-                  headerName: "Budget Input",
-                  field: "budget",
-                  editable: true,
-                  flex: 1,
-                  cellStyle: { background: "var(--grid-cell-bg)", padding: "6px 8px" },
-              },
-          ]
-        : [
-              { headerName: "Budget Input", field: "budget", editable: true, flex: 1, cellStyle: { background: "var(--grid-cell-bg)", padding: "6px 8px" } },
-              { headerName: "Gold Value", field: "matsValue", editable: true, flex: 1, cellStyle: { background: "var(--grid-cell-bg)", padding: "6px 8px" } },
-          ]
+    const costToChanceColumnDefs: ColumnDef[] = [
+        {
+            headerName: "Budget Input",
+            editable: true,
+            flex: 1,
+            background: "var(--grid-cell-bg)",
+            backgroundSelected: "var(--grid-cell-selected)",
+            color: "var(--grid-cell-text)",
+        },
+        {
+            headerName: "Gold Value",
+            editable: true,
+            flex: 1,
+            background: "var(--grid-cell-bg)",
+            backgroundSelected: "var(--grid-cell-selected)",
+            color: "var(--grid-cell-text)",
+        },
+    ]
+    const optimizedColumnDefs: ColumnDef[] = [
+        // {
+        //     headerName: "Budget Input",
+        //     editable: true,
+        //     flex: 1,
+        //     background: "var(--grid-cell-bg)",
+        //     backgroundSelected: "var(--grid-cell-selected)",
+        //     color: "var(--grid-cell-text)",
+        // },
+        {
+            headerName: "Should Buy",
+            editable: false,
+            flex: 1,
+            background: "var(--grid-cell-bg-readonly)",
+            backgroundSelected: "var(--grid-cell-selected-readonly)",
+            color: "var(--text-optimized)",
+        },
+        {
+            headerName: "Total",
+            editable: false,
+            flex: 1,
+            background: "var(--grid-cell-bg-readonly)",
+            backgroundSelected: "var(--grid-cell-selected-readonly)",
+            color: "var(--text-optimized)",
+        },
+    ]
 
-    return { chanceToCostColumnDefs, costToChanceColumnDefs }
+    return { chanceToCostColumnDefs, costToChanceColumnDefs, optimizedColumnDefs }
 }

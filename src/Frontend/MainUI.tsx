@@ -683,6 +683,12 @@ export default function HoningForecastUI() {
                         lockXAxis={lockXAxis}
                         lockedMins={lockedMins}
                         lockedMaxs={lockedMaxs}
+                        desired_chance={desired_chance}
+                        uncleaned_desired_chance={uncleaned_desired_chance}
+                        onDesiredChange={onDesiredChange}
+                        onDesiredBlur={onDesiredBlur}
+                        dataSize={dataSize}
+                        cost_result_optimized={chanceToCostOptimizedResult}
                     />
                 </div>
 

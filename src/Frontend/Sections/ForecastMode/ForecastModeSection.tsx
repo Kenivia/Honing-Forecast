@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react'
 import SpreadsheetGrid from '@/Frontend/Components/SpreadsheetGrid.tsx'
 import Graph from '@/Frontend/Components/Graph.tsx'
-import { styles, StyledSlider, GRAPH_HEIGHT, GRAPH_WIDTH } from '@/Frontend/Utils/Styles.ts'
+import { styles, StyledSlider, GRAPH_HEIGHT, GRAPH_WIDTH, ColumnDef } from '@/Frontend/Utils/Styles.ts'
 import { INPUT_LABELS } from '@/Frontend/Utils/Constants.ts'
 import { buildPayload } from '@/Frontend/WasmInterface/WorkerRunner.ts'
 
@@ -120,46 +120,46 @@ export default function LongTermSection({
     // Income array is now managed by parent component, no local effects needed
 
     // Column definitions for the long term section - always shows both budget and gold value columns
-    const longTermColumnDefs = [
+    const longTermColumnDefs: ColumnDef[] = [
         {
             headerName: "Budget Input",
-            field: "budget",
             editable: true,
             flex: 1,
-            cellStyle: { background: "var(--grid-cell-bg)", padding: "6px 8px" }
+            background: "var(--grid-cell-bg)",
+            backgroundSelected: "var(--grid-cell-selected)",
+            color: "var(--grid-cell-text)",
         },
         {
             headerName: "Gold Value",
-            field: "matsValue",
             editable: true,
             flex: 1,
-            cellStyle: { background: "var(--grid-cell-bg)", padding: "6px 8px" }
+            background: "var(--grid-cell-bg)",
+            backgroundSelected: "var(--grid-cell-selected)",
+            color: "var(--grid-cell-text)",
         }
     ]
 
     // Column definitions for income grids (1 column each)
-    const incomeColumnDefs = [
+    const incomeColumnDefs: ColumnDef[] = [
         {
             headerName: "Income",
-            field: "income",
             editable: true,
             flex: 1,
-            cellStyle: { background: "var(--grid-cell-bg)", padding: "6px 8px" }
+            background: "var(--grid-cell-bg)",
+            backgroundSelected: "var(--grid-cell-selected)",
+            color: "var(--grid-cell-text)",
         }
     ]
 
     // Column definitions for total weekly income grid (read-only)
-    const totalIncomeColumnDefs = [
+    const totalIncomeColumnDefs: ColumnDef[] = [
         {
             headerName: "Total weekly",
-            field: "total",
             editable: false,
             flex: 1,
-            cellStyle: {
-                background: "var(--background-secondary)",
-                color: "var(--text-primary)",
-                padding: "6px 8px"
-            }
+            background: "var(--grid-cell-bg-readonly)",
+            backgroundSelected: "var(--grid-cell-selected-readonly)",
+            color: "var(--grid-cell-text-readonly)",
         }
     ]
 
@@ -446,10 +446,8 @@ export default function LongTermSection({
                                 <SpreadsheetGrid
                                     columnDefs={longTermColumnDefs}
                                     labels={INPUT_LABELS}
-                                    sheet_values={budget_inputs}
-                                    set_sheet_values={set_budget_inputs}
-                                    secondaryValues={userMatsValue}
-                                    setSecondaryValues={setUserMatsValue}
+                                    sheetValuesArr={[budget_inputs, userMatsValue]}
+                                    setSheetValuesArr={[set_budget_inputs, setUserMatsValue]}
                                 />
                             </div>
                         </div>
@@ -471,8 +469,8 @@ export default function LongTermSection({
                                     <SpreadsheetGrid
                                         columnDefs={[{ ...incomeColumnDefs[0], headerName: "Income " + (gridIndex + 1) }]}
                                         labels={incomeLabels}
-                                        sheet_values={getIncomeGridData(gridIndex)}
-                                        set_sheet_values={(newValues) => {
+                                        sheetValuesArr={[getIncomeGridData(gridIndex)]}
+                                        setSheetValuesArr={[(newValues) => {
                                             // Update the specific income grid
                                             setIncomeArr(prev => {
                                                 const newArr = prev.map(grid => [...grid])
@@ -483,7 +481,7 @@ export default function LongTermSection({
                                                 })
                                                 return newArr
                                             })
-                                        }}
+                                        }]}
                                         hideIcons={true}
                                     />
                                 </div>
@@ -497,9 +495,8 @@ export default function LongTermSection({
                                 <SpreadsheetGrid
                                     columnDefs={totalIncomeColumnDefs}
                                     labels={incomeLabels}
-                                    sheet_values={totalIncomeData}
-                                    set_sheet_values={() => { }} // Read-only
-                                    readOnly={true}
+                                    sheetValuesArr={[totalIncomeData]}
+                                    setSheetValuesArr={[() => { }]} // Read-only
                                     hideIcons={true}
                                 />
                             </div>

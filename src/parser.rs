@@ -1,5 +1,95 @@
 use crate::constants::*;
+use crate::helpers::{average_juice_cost, calc_unlock, sort_by_indices};
+use crate::value_estimation::{est_juice_value, est_special_honing_value, juice_to_array};
 use serde::{Deserialize, Serialize};
+
+#[derive(Debug)]
+pub struct PreparationOutputs {
+    pub upgrade_arr: Vec<Upgrade>,
+    pub unlock_costs: Vec<i64>,
+    pub budgets: Vec<i64>,
+    pub valid_armor_values: bool,
+    pub valid_weapon_values: bool,
+    pub juice_strings_armor: Vec<String>,
+    pub juice_strings_weapon: Vec<String>,
+    pub mats_value: Vec<f64>,
+}
+
+pub fn preparation(
+    hone_counts: &[Vec<i64>],
+    input_budgets: &[i64],
+    adv_counts: &[Vec<i64>],
+    express_event: bool,
+    user_mats_value: &[f64],
+    adv_hone_strategy: &str,
+) -> PreparationOutputs {
+    let mut mats_value: Vec<f64> = user_mats_value.to_vec();
+    let unlock_costs: Vec<i64> = calc_unlock(hone_counts, adv_counts, express_event);
+
+    let aritsan_arr: Vec<f64>;
+    if express_event {
+        aritsan_arr = EVENT_ARTISAN_MULTIPLIER.to_vec();
+    } else {
+        aritsan_arr = vec![1.0; 25];
+    }
+
+    let mut upgrade_arr: Vec<Upgrade> = parser(
+        hone_counts,
+        adv_counts,
+        &adv_hone_strategy.to_string(),
+        &aritsan_arr,
+        &vec![0.0; 25],
+        &vec![0; 25],
+        express_event,
+    );
+    let mut budgets: Vec<i64> = input_budgets.to_vec();
+
+    // Add average juice costs to budgets for all upgrades
+    if adv_hone_strategy == "Juice on grace" {
+        let (avg_red_juice, avg_blue_juice): (i64, i64) = average_juice_cost(&upgrade_arr);
+        budgets[7] -= avg_red_juice;
+        budgets[8] -= avg_blue_juice;
+    }
+
+    let valid_armor_values: bool =
+        mats_value.iter().skip(1).any(|&x| x != 0.0) || upgrade_arr.iter().all(|x| x.is_weapon);
+
+    let valid_weapon_values: bool = mats_value
+        .iter()
+        .enumerate()
+        .any(|(index, &x)| index != 1 && x != 0.0)
+        || upgrade_arr.iter().all(|x| !x.is_weapon);
+    let both_valid: bool = valid_armor_values && valid_weapon_values;
+
+    if !both_valid {
+        mats_value = DEFAULT_GOLD_VALUES.to_vec();
+    };
+
+    est_juice_value(&mut upgrade_arr, &mats_value);
+    let (juice_strings_armor, juice_strings_weapon): (Vec<String>, Vec<String>) = juice_to_array(
+        &mut upgrade_arr,
+        budgets[8],
+        budgets[7],
+        valid_armor_values,
+        valid_weapon_values,
+    );
+    let value_per_special_leap: Vec<f64> = est_special_honing_value(&mut upgrade_arr, &mats_value);
+    let mut special_indices: Vec<usize> = (0..value_per_special_leap.len()).collect();
+    special_indices
+        .sort_by(|&a, &b| value_per_special_leap[b].total_cmp(&value_per_special_leap[a]));
+    sort_by_indices(&mut upgrade_arr, special_indices.clone());
+
+    PreparationOutputs {
+        upgrade_arr,
+        unlock_costs,
+        budgets,
+        valid_armor_values,
+        valid_weapon_values,
+        juice_strings_armor,
+        juice_strings_weapon,
+        mats_value,
+    }
+}
 
 // the parser function turns a selection of upgrades into an array of Upgrade objects
 #[derive(Debug, Serialize, Deserialize)]

@@ -383,26 +383,28 @@ export default function GambaSection({
     const budgetColumnDefs = [
         {
             headerName: "Cost so far",
-            field: "total",
             editable: false,
             flex: 1,
-            cellStyle: {
-                backgroundColor: 'var(--background-secondary)',
-                color: 'var(--text-primary)'
-            }
+            background: "var(--grid-cell-bg-readonly)",
+            backgroundSelected: "var(--grid-cell-selected-readonly)",
+            color: "var(--grid-cell-text-readonly)",
         },
         {
             headerName: "Remaining",
-            field: "remaining",
             editable: false,
             flex: 1,
-            cellStyle: (params: any) => {
-                const value = parseInt(params.value || '0')
-                return {
-                    backgroundColor: value < 0 ? 'var(--ran-out)' : 'transparent',
-                    color: value < 0 ? 'white' : 'var(--text-primary)'
-                }
-            }
+            background: "var(--grid-cell-bg-readonly)",
+            backgroundSelected: "var(--grid-cell-selected-readonly)",
+            color: "var(--grid-cell-text-readonly)",
+            // editable: false,
+            // flex: 1,
+            // cellStyle: (params: any) => {
+            //     const value = parseInt(params.value || '0')
+            //     return {
+            //         backgroundColor: value < 0 ? 'var(--ran-out)' : 'transparent',
+            //         color: value < 0 ? 'white' : 'var(--text-primary)'
+            //     }
+            // }
         }
     ]
 
@@ -427,10 +429,8 @@ export default function GambaSection({
                             <SpreadsheetGrid
                                 columnDefs={costToChanceColumnDefs}
                                 labels={INPUT_LABELS}
-                                sheet_values={budget_inputs}
-                                set_sheet_values={set_budget_inputs}
-                                secondaryValues={userMatsValue}
-                                setSecondaryValues={setUserMatsValue}
+                                sheetValuesArr={[budget_inputs, userMatsValue]}
+                                setSheetValuesArr={[set_budget_inputs, setUserMatsValue]}
                             />
                         </div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8 }}>
@@ -488,11 +488,8 @@ export default function GambaSection({
                                 <SpreadsheetGrid
                                     columnDefs={budgetColumnDefs}
                                     labels={INPUT_LABELS}
-                                    sheet_values={budgetTotalData}
-                                    set_sheet_values={() => { }} // Read-only
-                                    secondaryValues={budgetRemainingData}
-                                    setSecondaryValues={() => { }} // Read-only
-                                    readOnly={true}
+                                    sheetValuesArr={[budgetTotalData, budgetRemainingData]}
+                                    setSheetValuesArr={[() => { }, () => { }]} // Read-only
                                 />
                             </div>
                         </div>

@@ -4,8 +4,8 @@ import SpreadsheetGrid from './SpreadsheetGrid.tsx'
 
 describe('SpreadsheetGrid', () => {
     const columnDefs = [
-        { headerName: 'Budget', field: 'budget', editable: true, flex: 1, cellStyle: {} },
-        { headerName: 'Gold', field: 'gold', editable: true, flex: 1, cellStyle: {} }
+        { headerName: 'Budget', editable: true, flex: 1, cellStyle: {} },
+        { headerName: 'Gold', editable: true, flex: 1, cellStyle: {} }
     ]
     const labels = ['Item1', 'Item2', 'Item3']
 
@@ -19,8 +19,8 @@ describe('SpreadsheetGrid', () => {
             <SpreadsheetGrid
                 columnDefs={columnDefs}
                 labels={labels}
-                sheet_values={{}}
-                set_sheet_values={set_sheet_values}
+                sheetValuesArr={[{}]}
+                setSheetValuesArr={[set_sheet_values]}
             />
         )
 
@@ -39,8 +39,8 @@ describe('SpreadsheetGrid', () => {
             <SpreadsheetGrid
                 columnDefs={columnDefs}
                 labels={labels}
-                sheet_values={{}}
-                set_sheet_values={set_sheet_values}
+                sheetValuesArr={[{}]}
+                setSheetValuesArr={[set_sheet_values]}
             />
         )
 
@@ -60,10 +60,8 @@ describe('SpreadsheetGrid', () => {
             <SpreadsheetGrid
                 columnDefs={columnDefs}
                 labels={labels}
-                sheet_values={{}}
-                set_sheet_values={set_sheet_values}
-                secondaryValues={secondaryValues}
-                setSecondaryValues={setSecondaryValues}
+                sheetValuesArr={[{}, secondaryValues]}
+                setSheetValuesArr={[set_sheet_values, setSecondaryValues]}
             />
         )
 
@@ -81,9 +79,8 @@ describe('SpreadsheetGrid', () => {
             <SpreadsheetGrid
                 columnDefs={columnDefs}
                 labels={labels}
-                sheet_values={{}}
-                set_sheet_values={set_sheet_values}
-                readOnly={true}
+                sheetValuesArr={[{}]}
+                setSheetValuesArr={[undefined]} // readOnly
             />
         )
 

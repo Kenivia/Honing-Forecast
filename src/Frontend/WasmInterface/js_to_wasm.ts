@@ -70,7 +70,7 @@ self.addEventListener("message", async (ev) => {
         // Convert f64 failure rates to formatted strings
         const reasons = out.reasons.map((rate: number, index: number) => {
             const percentage = (rate * 100).toFixed(2)
-            return `${percentage}% chance to have enough ${LABELS[index]}`
+            return `${LABELS[index]}: ${percentage}% chance to have enough ${LABELS[index]}`
         })
 
         const optimized_reasons = out.optimized_reasons.map((rate: number, index: number) => {

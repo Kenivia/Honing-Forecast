@@ -4,6 +4,7 @@ import Graph from '@/Frontend/Components/Graph.tsx'
 import LabeledCheckbox from '@/Frontend/Components/LabeledCheckbox.tsx'
 import { styles, createColumnDefs, GRAPH_WIDTH, GRAPH_HEIGHT } from '@/Frontend/Utils/Styles.ts'
 import { INPUT_LABELS, OUTPUT_LABELS } from '@/Frontend/Utils/Constants.ts'
+import { SliderBundle } from '@/Frontend/Components/SliderBundle.tsx'
 
 type CostToChanceSectionProps = {
     budget_inputs: any
@@ -20,6 +21,12 @@ type CostToChanceSectionProps = {
     lockXAxis: boolean
     lockedMins: number[] | null
     lockedMaxs: number[] | null
+    cost_result_optimized: any
+    desired_chance: string
+    uncleaned_desired_chance: string
+    onDesiredChange: (_: string) => void
+    onDesiredBlur: () => void
+    dataSize: string
 }
 
 export default function CostToChanceSection({
@@ -37,140 +44,177 @@ export default function CostToChanceSection({
     lockXAxis,
     lockedMins,
     lockedMaxs,
+
+    cost_result_optimized,
+
+    desired_chance,
+    uncleaned_desired_chance,
+    onDesiredChange,
+    onDesiredBlur,
+
+    dataSize,
 }: CostToChanceSectionProps) {
-    const { costToChanceColumnDefs } = createColumnDefs(autoGoldValues)
+    const { costToChanceColumnDefs, optimizedColumnDefs } = createColumnDefs(false) // autoGoldValues not used for this section
     const [showOptimized, setShowOptimized] = useState<boolean>(() => false);
     const [showOptimizedDetails, setShowOptimizedDetails] = useState<boolean>(() => false);
     // const [showGraph, setShowGraph] = useState<boolean>(() => false);
+    /* <h3 style={{ color: 'var(--text-primary)', fontSize: 'var(--font-size-base)', fontWeight: 'var(--font-weight-semibold)', margin: '16px 0 0px 0' }}>Cost to Chance</h3> */
     return (
-        <>
-            {/* <h3 style={{ color: 'var(--text-primary)', fontSize: 'var(--font-size-base)', fontWeight: 'var(--font-weight-semibold)', margin: '16px 0 0px 0' }}>Cost to Chance</h3> */}
-            <div style={{ ...styles.inputSection, flexDirection: "row", maxWidth: "1200px", width: "100%" }}>
-                <div style={{ display: 'flex', gap: autoGoldValues ? 110 : 20, alignItems: 'flex-start' }}>
-                    <div style={{ display: 'flex', flexDirection: "column", gap: 0, alignItems: 'flex-start', justifyContent: 'start', width: autoGoldValues ? 210 : 300 }}>
-                        <div style={{ display: 'flex', gap: autoGoldValues ? 100 : 0, alignItems: 'flex-start' }}>
-                            <div style={{ marginBottom: 16, width: autoGoldValues ? 210 : 310, marginLeft: 10 }}>
-                                <SpreadsheetGrid
-                                    columnDefs={costToChanceColumnDefs}
-                                    labels={INPUT_LABELS}
-                                    sheet_values={budget_inputs}
-                                    set_sheet_values={set_budget_inputs}
-                                    secondaryValues={userMatsValue}
-                                    setSecondaryValues={setUserMatsValue}
-                                />
-                                {/* <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8, marginLeft: 0 }}>
+
+
+        < div style={{ ...styles.inputSection, flexDirection: "row", maxWidth: "1200px", width: "100%" }}>
+            <div style={{ display: 'flex', gap: autoGoldValues ? 110 : 20, alignItems: 'flex-start' }}>
+                <div style={{ display: 'flex', flexDirection: "column", gap: 0, alignItems: 'flex-start', justifyContent: 'start', width: autoGoldValues ? 210 : 300 }}>
+
+
+                    {/* Budget input, chance of success and individual chances */}
+                    <div style={{ display: 'flex', gap: autoGoldValues ? 100 : 0, alignItems: 'flex-start' }}>
+                        <div style={{ marginBottom: 16, width: autoGoldValues ? 210 : 310, marginLeft: 10 }}>
+                            <SpreadsheetGrid
+                                columnDefs={costToChanceColumnDefs}
+                                labels={INPUT_LABELS}
+                                sheetValuesArr={[budget_inputs, userMatsValue]}
+                                setSheetValuesArr={[set_budget_inputs, setUserMatsValue]}
+                            />
+                            {/* <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8, marginLeft: 0 }}>
                                     <LabeledCheckbox
                                         label="Custom Gold values"
                                         checked={!autoGoldValues}
                                         setChecked={(checked) => setAutoGoldValues(!checked)}
                                     />
                                 </div> */}
-                            </div>
-                            <div style={{ display: 'flex', flexDirection: "row" }}>
-                                <div style={{ display: 'flex', flexDirection: "row", gap: 0, alignItems: 'flex-start', height: 400 }}>
+                        </div>
+                        <div style={{ display: 'flex', flexDirection: "column", gap: 25 }}>
+                            <div style={{ display: 'flex', flexDirection: "row", gap: 0, alignItems: 'flex-start' }}>
 
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 150, marginLeft: 60 }}>
-                                        <div style={{ ...styles.inputLabelCell, whiteSpace: 'nowrap', color: 'var(--text-success)', textAlign: "right", width: 200, fontSize: 20 }}>Chance of success:</div>
-                                        <div style={{ ...styles.inputCell, border: 'none', background: "transparent", color: 'var(--text-success)', fontSize: 28, width: 130, }}>{chance_result ? (String(chance_result.chance) + '%') : '-'}</div>
-
-                                    </div>
-                                    {(chance_result) && < div style={{ marginLeft: 80, flexDirection: "column", display: "flex", marginTop: 100, }}>
-                                        <div style={{ ...styles.inputLabelCell, marginTop: 0, whiteSpace: 'nowrap', textAlign: "left", color: 'var(--text-success)', }}>Individual chances:</div>
-                                        <div style={{ marginTop: 4, color: 'var(--text-muted)', fontSize: 'var(--font-size-sm)', whiteSpace: "wrap", width: 300 }}>
-                                            {(chance_result.reasons || []).map((s: string, idx: number) => (
-                                                <div key={"Fail reason" + (idx + 1)}> {s}</div>
-                                            ))}
-                                        </div>
-                                    </div>}
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 120, marginLeft: 60 }}>
+                                    <div style={{ ...styles.inputLabelCell, whiteSpace: 'nowrap', color: 'var(--text-success)', textAlign: "right", width: 200, fontSize: 20 }}>Chance without buying:</div>
+                                    <div style={{ ...styles.inputCell, border: 'none', background: "transparent", color: 'var(--text-success)', fontSize: 28, width: 130, }}>{chance_result ? (String(chance_result.chance) + '%') : '-'}</div>
 
                                 </div>
 
 
+                                {(chance_result) && <div style={{ marginLeft: 80, flexDirection: "column", display: "flex", marginTop: 60, }}>
+                                    <div style={{ ...styles.inputLabelCell, marginTop: 0, whiteSpace: 'nowrap', textAlign: "left", color: 'var(--text-success)', }}>Individual chances:</div>
+                                    <div style={{ marginTop: 4, color: 'var(--text-muted)', fontSize: 'var(--font-size-sm)', whiteSpace: "wrap", width: 300 }}>
+                                        {(chance_result.reasons || []).map((s: string, idx: number) => (
+                                            <div key={"Fail reason" + (idx + 1)}> {s}</div>
+                                        ))}
+                                    </div>
+                                </div>}
+
+
+
+
                             </div>
+
 
                         </div>
 
-                        {chance_result && (Number(chance_result.budgets_red_remaining) < 0 || Number(chance_result.budgets_blue_remaining) < 0) && (
-                            <div style={{ marginLeft: 12, color: '#f59e0b', fontSize: 'var(--font-size-sm)', whiteSpace: 'nowrap' }}>
-                                Invalid result!  Missing roughly {Number(chance_result.budgets_red_remaining) < 0 ? (Number(chance_result.budgets_red_remaining) * -1).toString() + ' red juice' : ''}
-                                {(Number(chance_result.budgets_red_remaining) < 0 && Number(chance_result.budgets_blue_remaining) < 0) ? ' and ' : ''}
-                                {Number(chance_result.budgets_blue_remaining) < 0 ? (Number(chance_result.budgets_blue_remaining) * -1).toString() + ' blue juice' : ""} for Advanced Honing, use "No Juice" option or add more juice
-                            </div>
-                        )}
-
-                        {chance_result && (
-                            <div style={{ marginTop: 4, color: 'var(--text-muted)', fontSize: 'var(--font-size-xs)' }}>Run time: {chance_result.run_time}s</div>
-                        )}
-
-                        <div style={{ display: 'flex', flexDirection: "row", gap: 50, alignItems: 'flex-start', marginTop: -130, marginLeft: 320 }}>
-                            <div style={{ display: "flex", flexDirection: "column" }}>
-
-                                <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 0 }}>
-                                    <div style={{ ...styles.inputLabelCell, whiteSpace: 'nowrap', color: 'var(--text-optimized)', textAlign: "right", width: 200 }}>Optimal chance:</div>
-                                    <div style={{ ...styles.inputCell, border: 'none', background: "transparent", color: 'var(--text-optimized)', fontSize: 'var(--font-size-xl)' }}>{chance_result ? (String(chance_result.optimized_chance) + '%') : '-'}</div>
-
-                                </div>
-
-                                <div style={{ ...styles.inputLabelCell, color: '#ffffff', whiteSpace: 'wrap', textAlign: "left", width: 250, fontSize: 14, marginLeft: 80 }}>Your Chance of Success if you use some of your gold to <span style={{ color: "var(--text-optimized)" }}>buy other mats  </span> (excluding juice).</div>
+                    </div>
 
 
-                                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8, justifySelf: "center", marginLeft: 100, marginTop: 20 }}>
-
-                                    <LabeledCheckbox
-                                        label="Show details"
-                                        checked={showOptimizedDetails}
-                                        setChecked={setShowOptimizedDetails}
-                                    />
-                                </div>
-                            </div>
-                            {showOptimizedDetails &&
-                                <div style={{ display: "flex", flexDirection: "column" }}>
-                                    {/* <div style={{ ...styles.inputLabelCell, whiteSpace: 'wrap', textAlign: "left", width: 450, fontSize: 14, marginLeft: 0, marginTop: 0 }}>⚠️ Warning! The info below is calculated without knowing how your taps go. You should not pre-emptively buy mats based on this, only buy when you run out! </div> */}
-                                    <div style={{ display: "flex", flexDirection: "row" }}>
-                                        <div style={{ display: "flex", flexDirection: "column" }}>
-                                            <div style={{ ...styles.inputLabelCell, marginTop: 0, whiteSpace: 'nowrap', textAlign: "left", color: 'var(--text-optimized)', paddingTop: 0, marginLeft: 0, width: 200, }}>Buy these:</div>
-                                            {chance_result &&
-                                                <div style={{ marginTop: 4, color: 'var(--text-muted)', fontSize: 'var(--font-size-sm)', whiteSpace: "wrap", width: 200, marginLeft: 0 }}>
-                                                    {(chance_result.buy_arr || []).map((s: string, idx: number) => (
-                                                        <div key={"buy arr" + (idx + 1)}>{INPUT_LABELS[idx]}: {Math.max(Number(idx == 5) * (parseInt(s) - budget_inputs[INPUT_LABELS[idx]]),
-                                                            parseInt(s) - budget_inputs[INPUT_LABELS[idx]])}
-                                                        </div>
-                                                    ))}
-                                                    <div style={{ ...styles.inputLabelCell, whiteSpace: "wrap", marginLeft: -30, fontSize: 12, width: 200 }}>There are many ways to spend your gold, this gives the best chance of success.</div>
-                                                </div>}
-                                            <div>
-                                            </div>
+                    {/* Run time*/}
+                    {chance_result && (
+                        <div style={{ marginTop: 4, color: 'var(--text-muted)', fontSize: 'var(--font-size-xs)' }}>Run time: {chance_result.run_time}s</div>
+                    )}
 
 
-                                        </div>
-                                        <div style={{ display: "flex", flexDirection: "column" }}>
-                                            <div style={{ ...styles.inputLabelCell, marginTop: 0, whiteSpace: 'nowrap', textAlign: "left", color: 'var(--text-optimized)', width: 300 }}>Individual chances After buying:</div>
-                                            {chance_result &&
-                                                <div style={{ marginTop: 4, color: 'var(--text-muted)', fontSize: 'var(--font-size-sm)', whiteSpace: "wrap", width: 300 }}>
-                                                    {(chance_result.optimized_reasons || []).map((s: string, idx: number) => (
-                                                        <div key={"Fail reason" + (idx + 1)}>{s}</div>
-                                                    ))}
-                                                </div>
-                                            }
-                                        </div>
-                                    </div>
-
-                                    <div style={{ display: 'flex', flexDirection: "row", alignItems: 'center', gap: 8, marginBottom: 8, marginLeft: 220 }}>
-
-                                        <LabeledCheckbox
-                                            label="Show this on graph"
-                                            checked={showOptimized}
-                                            setChecked={setShowOptimized}
-                                        />
-                                    </div>
-                                </div>
-
-
-                            }
+                    {/* Not enough Juice warning*/}
+                    {chance_result && (Number(chance_result.budgets_red_remaining) < 0 || Number(chance_result.budgets_blue_remaining) < 0) && (
+                        <div style={{ marginLeft: 12, color: '#f59e0b', fontSize: 'var(--font-size-sm)', whiteSpace: 'nowrap' }}>
+                            Invalid result!  Missing roughly {Number(chance_result.budgets_red_remaining) < 0 ? (Number(chance_result.budgets_red_remaining) * -1).toString() + ' red juice' : ''}
+                            {(Number(chance_result.budgets_red_remaining) < 0 && Number(chance_result.budgets_blue_remaining) < 0) ? ' and ' : ''}
+                            {Number(chance_result.budgets_blue_remaining) < 0 ? (Number(chance_result.budgets_blue_remaining) * -1).toString() + ' blue juice' : ""} for Advanced Honing, use "No Juice" option or add more juice
                         </div>
-                        <div style={{ display: 'flex', gap: 0, alignItems: 'flex-start', marginTop: showOptimizedDetails ? 0 : 104, flexDirection: "column", width: "100%" }}>
+                    )}
 
-                            {chance_result && <div style={{ display: "flex", flexDirection: "row", marginTop: 0 }}>
+
+
+
+                    {/* Optimized chances slider and answer*/}
+                    <div style={{ display: 'flex', flexDirection: "row", gap: 0, alignItems: 'center', width: "100%", marginTop: -200, marginLeft: 280 }}>
+                        <SliderBundle
+                            desiredChance={String(Math.max(Math.floor(chance_result?.optimized_chance ?? 0), Number(desired_chance)))}
+                            uncleanedDesiredChance={uncleaned_desired_chance}
+                            onDesiredChange={(value) => onDesiredChange(String(Math.max(Math.floor(chance_result?.optimized_chance ?? 0), Number(value))))}
+                            onDesiredBlur={onDesiredBlur}
+                            lowThreshold={100}//{Math.ceil(chance_result?.optimized_chance ?? 0)}
+                            lowText={//(chance_result && Number(desired_chance) <= Math.ceil(chance_result?.optimized_chance) ? `Your current chance is ${chance_result.optimized_chance}%` : '') +
+                                '\nExtra gold needed: ' + (cost_result_optimized ? (cost_result_optimized.hundred_gold_costs[parseInt(desired_chance)] - budget_inputs["Gold"]).toLocaleString("en-US", {
+                                    minimumFractionDigits: 0, // show decimals for small K/M/B
+                                    maximumFractionDigits: 0,
+                                }) : "") + (chance_result && Number(desired_chance) <= Math.ceil(chance_result?.optimized_chance) ? ". If you spend your gold according to the list on the right, you already have " + chance_result?.optimized_chance + "% chance to succeed" : "")}
+                            lowTextColor={"var(--text-optimized)"}
+                        />
+
+
+                        <div style={{ marginLeft: 100 }}>
+                            <div style={{ marginBottom: 16, width: 210 }}>
+                                <SpreadsheetGrid
+                                    columnDefs={optimizedColumnDefs}
+                                    labels={OUTPUT_LABELS}
+                                    sheetValuesArr={
+                                        [
+                                            // budget_inputs,
+
+                                            Object.fromEntries(OUTPUT_LABELS.map((label, lab_index) =>
+                                                [label, cost_result_optimized ? String(label == "Gold" ? "N/A" : cost_result_optimized.hundred_budgets[parseInt(desired_chance)][lab_index] - budget_inputs[label]) : 'Calculating...'])),
+
+                                            Object.fromEntries(OUTPUT_LABELS.map((label, lab_index) =>
+                                                [label, cost_result_optimized ? String(cost_result_optimized.hundred_budgets[parseInt(desired_chance)][lab_index]) : 'Calculating...'])),
+
+
+                                        ]}
+
+                                    setSheetValuesArr={[() => { }, () => { }]} // No-op for read-only
+
+                                />
+                            </div>
+
+                            {cost_result_optimized && (
+                                <pre style={{ color: 'var(--text-muted)', fontSize: 'var(--font-size-xs)', marginTop: 8, }}>
+                                    Run time: {cost_result_optimized.run_time}s
+                                    {'\nActual chance: '}{cost_result_optimized.hundred_chances[parseInt(desired_chance)].toFixed(2)}%
+                                    {'\nTotal gold cost: '}{(cost_result_optimized.hundred_gold_costs[parseInt(desired_chance)]).toLocaleString("en-US", {
+                                        minimumFractionDigits: 0, // show decimals for small K/M/B
+                                        maximumFractionDigits: 0,
+                                    })}
+                                </pre>
+                            )}
+
+                        </div>
+
+
+                    </div>
+
+                    {/* <div style={{ display: "flex", flexDirection: "column" }}>
+
+
+
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8, justifySelf: "center", marginLeft: 100, marginTop: 20 }}>
+
+                            <LabeledCheckbox
+                                label="Show details"
+                                checked={showOptimizedDetails}
+                                setChecked={setShowOptimizedDetails}
+                            />
+                        </div>
+                    </div> */}
+                    {/* {showOptimizedDetails &&
+                       
+
+
+                    } */}
+
+
+
+
+
+                    <div style={{ display: 'flex', gap: 0, alignItems: 'flex-start', marginTop: 0, flexDirection: "column", width: "100%" }}>
+
+                        {chance_result &&
+                            <div style={{ display: "flex", flexDirection: "row", marginTop: 0 }}>
                                 <div>
                                     <div style={{ ...styles.inputLabelCell, whiteSpace: 'nowrap', color: 'var(--free-tap)', }}>Free taps value ranking:</div>
                                     <div style={{ marginTop: 4, color: 'var(--text-muted)', fontSize: 'var(--font-size-sm)', width: 250 }}>
@@ -195,16 +239,16 @@ export default function CostToChanceSection({
                                         ))}
                                     </div>
                                 </div>
-                            </div>
-                            }
-                            {/* {(chance_result) && <div style={{ display: 'flex', flexDirection: "row", alignItems: 'center', gap: 8, marginBottom: 8, marginLeft: 240, marginTop: 30 }}>
+
+
+                                {/* {(chance_result) && <div style={{ display: 'flex', flexDirection: "row", alignItems: 'center', gap: 8, marginBottom: 8, marginLeft: 240, marginTop: 30 }}>
 
                                 <label htmlFor="show-graph" style={{ fontSize: 25, whiteSpace: 'nowrap' }}>
                                     Show cool Graph<br /> {/*  for  Juice &<br /> */}
-                            {/* (How much Gold each mat is worth to you) */}
+                                {/* (How much Gold each mat is worth to you) */}
 
 
-                            {/* </label>
+                                {/* </label>
                                 <input
                                     type="checkbox"
                                     id="show-graph"
@@ -214,41 +258,61 @@ export default function CostToChanceSection({
                                 />
                             </div>}
                              */}
-                            {(chance_result) && (//&& (chance_result.reasons?.length > 0 || chance_result.upgrade_strings?.length > 0 || chance_result.juice_strings_armor?.length > 0 || chance_result.juice_strings_weapon?.length > 0)) && (
 
-                                <div style={{ display: "flex", marginLeft: 150, marginBottom: 30, marginTop: 30 }}>
-
-                                    <div style={{ flex: 1 }}>
-                                        <Graph
-                                            title="Cost distribution(uses free tap & juice)"
-                                            labels={OUTPUT_LABELS}
-                                            counts={AnythingTicked ? (chance_result?.hist_counts || cachedChanceGraphData?.hist_counts) : null}
-                                            mins={chance_result?.hist_mins || cachedChanceGraphData?.hist_mins}
-                                            maxs={chance_result?.hist_maxs || cachedChanceGraphData?.hist_maxs}
-                                            width={GRAPH_WIDTH}
-                                            height={GRAPH_HEIGHT}
-                                            budgets={OUTPUT_LABELS.map(label => Number(budget_inputs[label]))}
-                                            hasSelection={AnythingTicked}
-                                            isLoading={CostToChanceBusy}
-                                            cumulative={cumulativeGraph}
-                                            lockXAxis={lockXAxis}
-                                            lockedMins={lockedMins}
-                                            lockedMaxs={lockedMaxs}
-                                            graphType={"Histogram"}
-                                            additionalBudgets={showOptimized ? chance_result?.buy_arr : null}
-                                        />
-                                    </div>
-
-                                </div>
-
-
-                            )}
-                        </div>
+                            </div>
+                        }
                     </div>
 
+
                 </div>
-            </div >
-        </>
+
+
+            </div>
+            {/* <div style={{ display: 'flex', flexDirection: "row", alignItems: 'center', gap: 8, marginBottom: 8, marginLeft: 150 }}>
+
+                <LabeledCheckbox
+                    label="Show Optimal"
+                    checked={showOptimized}
+                    setChecked={setShowOptimized}
+                />
+            </div> */}
+            {
+                (chance_result) && (//&& (chance_result.reasons?.length > 0 || chance_result.upgrade_strings?.length > 0 || chance_result.juice_strings_armor?.length > 0 || chance_result.juice_strings_weapon?.length > 0)) && (
+
+
+                    <div style={{ display: "flex", marginLeft: 150, marginBottom: 30, marginTop: 30, width: GRAPH_WIDTH }}>
+
+                        <div style={{ flex: 1 }}>
+                            <Graph
+                                title="Cost distribution(uses free tap & juice)"
+                                labels={OUTPUT_LABELS}
+                                counts={AnythingTicked ? (chance_result?.hist_counts || cachedChanceGraphData?.hist_counts) : null}
+                                mins={chance_result?.hist_mins || cachedChanceGraphData?.hist_mins}
+                                maxs={chance_result?.hist_maxs || cachedChanceGraphData?.hist_maxs}
+                                width={GRAPH_WIDTH}
+                                height={GRAPH_HEIGHT}
+                                budgets={OUTPUT_LABELS.map(label => Number(budget_inputs[label]))}
+                                hasSelection={AnythingTicked}
+                                isLoading={CostToChanceBusy}
+                                cumulative={cumulativeGraph}
+                                lockXAxis={lockXAxis}
+                                lockedMins={lockedMins}
+                                lockedMaxs={lockedMaxs}
+                                graphType={"Histogram"}
+                                additionalBudgets={showOptimized ? chance_result?.buy_arr : null}
+                            />
+                        </div>
+
+                    </div>
+
+
+                )
+            }
+        </div >
+
+
+
+
     )
 }
 

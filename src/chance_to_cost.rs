@@ -6,7 +6,7 @@ use crate::constants::*;
 use crate::helpers::{average_juice_cost, calc_unlock, count_failure};
 use crate::histogram::histograms_for_all_costs;
 use crate::monte_carlo::{generate_budget_data, get_top_bottom, monte_carlo_data};
-use crate::parser::{Upgrade, parser};
+use crate::parser::{PreparationOutputs, Upgrade, parser, preparation};
 use serde::{Deserialize, Serialize};
 
 // find the budget in budget_data that most closely matches desired_chance
@@ -16,6 +16,7 @@ fn find_best_budget_for_this_chance(
     budget_size: usize,
     failure_counts: &[i64],
     budget_data: &[Vec<i64>],
+    tiebreak_with_lowest: bool,
 ) -> (Vec<i64>, f64) {
     let k_i64: i64 = ((1.0 - desired_chance / 100.0) * cost_size as f64).floor() as i64;
     let k_i64_budget: i64 = (((cost_size as f64 - k_i64 as f64) / cost_size as f64)
@@ -28,7 +29,16 @@ fn find_best_budget_for_this_chance(
         .collect();
 
     let best_index: usize = (0..budget_data.len())
-        .min_by_key(|&i| (diffs[i], (k_i64_budget - i as i64).abs()))
+        .min_by_key(|&i| {
+            (
+                diffs[i],
+                if tiebreak_with_lowest {
+                    i as i64
+                } else {
+                    (k_i64_budget - i as i64).abs()
+                },
+            )
+        })
         .expect("budget_data should not be empty");
 
     let best_budget: Vec<i64> = budget_data[best_index].clone();
@@ -88,7 +98,6 @@ pub fn chance_to_cost<R: rand::Rng>(
         }
     }
     let failure_counts: Vec<i64> = count_failure(&cost_data, &budget_data, false);
-
     let (hundred_budgets, hundred_chances): (Vec<Vec<i64>>, Vec<f64>) = (0..101)
         .map(|x| {
             find_best_budget_for_this_chance(
@@ -97,6 +106,7 @@ pub fn chance_to_cost<R: rand::Rng>(
                 budget_size,
                 &failure_counts,
                 &budget_data,
+                false,
             )
         })
         .collect();
@@ -130,28 +140,30 @@ pub fn chance_to_cost_optimized<R: rand::Rng>(
     mats_value: &[f64],
 ) -> ChanceToCostOptimizedOut {
     let budget_size: usize = 1000;
-    let artisan_arr: Vec<f64> = if express_event {
-        EVENT_ARTISAN_MULTIPLIER.to_vec()
-    } else {
-        vec![1.0; 25]
-    };
-    let upgrade_arr: Vec<Upgrade> = parser(
+
+    let mut prep_outputs: PreparationOutputs = preparation(
         hone_counts,
+        input_budgets,
         adv_counts,
-        &adv_hone_strategy.to_string(),
-        &artisan_arr,
-        &[0.0; 25],
-        &[0; 25],
         express_event,
+        mats_value,
+        &adv_hone_strategy,
     );
 
-    let unlock_costs: Vec<i64> = calc_unlock(&hone_counts, &adv_counts, express_event);
-    let cost_data: Vec<Vec<i64>> = monte_carlo_data(data_size, &upgrade_arr, &unlock_costs, 0, rng);
+    // Section 2: Monte Carlo simulation (use outputs from preparation)
+    let cost_data: Vec<Vec<i64>> = monte_carlo_data(
+        data_size,
+        &mut prep_outputs.upgrade_arr,
+        &prep_outputs.unlock_costs,
+        input_budgets[9],
+        rng,
+    );
 
     let mut input_budget_no_gold: Vec<i64> = input_budgets.to_vec();
     input_budget_no_gold[5] = 0;
     let thresholds: Vec<Vec<i64>> = generate_budget_data(&cost_data, &input_budget_no_gold, 1000);
-    let top_bottom: Vec<Vec<i64>> = get_top_bottom(&upgrade_arr, &unlock_costs);
+    let top_bottom: Vec<Vec<i64>> =
+        get_top_bottom(&prep_outputs.upgrade_arr, &prep_outputs.unlock_costs);
     let bitset_bundle: BitsetBundle = generate_bit_sets(
         &cost_data,
         thresholds.clone(),
@@ -165,10 +177,9 @@ pub fn chance_to_cost_optimized<R: rand::Rng>(
         &input_budget_no_gold,
         &mats_value,
     );
-    let resolution: usize = 200;
+    let resolution: usize = 300;
     let gap_size: f64 = (pity_cost - input_budgets[5] as f64) / resolution as f64;
     let mut budget_data: Vec<Vec<i64>> = Vec::with_capacity(resolution + 1);
-    let mut hundred_gold_costs: Vec<i64> = Vec::with_capacity(resolution + 1);
 
     let mut new_input_budget: Vec<i64>;
     let mut prev_optimized: Vec<usize> = vec![]; // invalid on purpose
@@ -184,17 +195,20 @@ pub fn chance_to_cost_optimized<R: rand::Rng>(
             &mut prev_optimized,
         );
 
-        hundred_gold_costs.push(
-            compute_gold_cost_from_raw(&optimized_budget, &input_budget_no_gold, &mats_value).ceil()
-                as i64,
-        );
         budget_data.push(optimized_budget);
     }
 
-    budget_data.push(top_bottom[1].clone());
+    budget_data.push(
+        top_bottom[1]
+            .iter()
+            .zip(input_budgets.iter())
+            .map(|(a, b)| a.max(b))
+            .cloned()
+            .collect(),
+    );
 
     if adv_hone_strategy == "Juice on grace" {
-        let (avg_red_juice, avg_blue_juice) = average_juice_cost(&upgrade_arr);
+        let (avg_red_juice, avg_blue_juice) = average_juice_cost(&prep_outputs.upgrade_arr);
 
         for budget_row in &mut budget_data {
             budget_row[7] = avg_red_juice;
@@ -211,9 +225,16 @@ pub fn chance_to_cost_optimized<R: rand::Rng>(
                 budget_size,
                 &failure_counts,
                 &budget_data,
+                true,
             )
         })
         .collect();
+    let mut hundred_gold_costs: Vec<i64> = Vec::with_capacity(resolution + 1);
+    for budget in hundred_budgets.iter() {
+        hundred_gold_costs.push(
+            compute_gold_cost_from_raw(&budget, &input_budget_no_gold, &mats_value).ceil() as i64,
+        );
+    }
 
     ChanceToCostOptimizedOut {
         hundred_budgets,

@@ -1,14 +1,14 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react'
 import Icon from './Icon.tsx'
+import { ColumnDef } from '../Utils/Styles.ts'
 
 interface SpreadsheetGridProps {
-    columnDefs: Array<{ headerName: string; field: string; editable: boolean; flex: number; cellStyle: any }>
+    columnDefs: ColumnDef[]
     labels: string[]
-    sheet_values: Record<string, string>
-    set_sheet_values: (_next: any) => void
-    readOnly?: boolean
-    secondaryValues?: Record<string, string>
-    setSecondaryValues?: (_next: any) => void
+    // sheet values per-column. index matches columnDefs index
+    sheetValuesArr: Record<string, string>[]
+    // setters per-column. Optional for read-only columns; index matches columnDefs
+    setSheetValuesArr: Array<((_next: Record<string, string>) => void) | undefined>
     hideIcons?: boolean
 }
 
@@ -19,7 +19,7 @@ interface Selection {
     endCol: number
 }
 
-export default function SpreadsheetGrid({ columnDefs, labels, sheet_values: budget_inputs, set_sheet_values: set_sheet_values, readOnly = false, secondaryValues, setSecondaryValues, hideIcons = false }: SpreadsheetGridProps) {
+export default function SpreadsheetGrid({ columnDefs, labels, sheetValuesArr, setSheetValuesArr, hideIcons = false }: SpreadsheetGridProps) {
     const [selection, setSelection] = useState<Selection | null>(null)
     const [isSelecting, setIsSelecting] = useState(false)
     const [_copiedData, setCopiedData] = useState<string[][] | null>(null)
@@ -56,41 +56,55 @@ export default function SpreadsheetGrid({ columnDefs, labels, sheet_values: budg
     }
 
     const handleCellChange = (rowIndex: number, colIndex: number, value: string) => {
-        if (readOnly) return
+        if (!columnDefs[colIndex].editable) return
 
         const label = labels[rowIndex]
-        if (label) {
-            if (colIndex === 0) {
-                // Budget column - only allow non-negative integers, strip leading zeros
-                let cleanValue = value.replace(/[^0-9]/g, '')
-                cleanValue = cleanValue.replace(/^0+(?=\d)/, '')
-                if (cleanValue.length > 10) {
-                    cleanValue = '999999999'
-                }
-                const next = { ...budget_inputs }
-                next[label] = cleanValue
-                set_sheet_values(next)
-            } else if (colIndex === 1 && setSecondaryValues && secondaryValues) {
-                // Gold value column - allow non-negative decimals while typing
-                // Keep digits and a single dot; don't strip leading/trailing zeros here
-                let clean = value.replace(/[^0-9.]/g, '')
-                const firstDot = clean.indexOf('.')
-                if (firstDot !== -1) {
-                    clean = clean.slice(0, firstDot + 1) + clean.slice(firstDot + 1).replace(/\./g, '')
-                }
-                if (clean.length > 20) clean = clean.slice(0, 20)
-                const next = { ...secondaryValues }
-                next[label] = clean
-                setSecondaryValues(next)
+        if (!label) return
+
+        // Get current column values and setter
+        const colValues = sheetValuesArr[colIndex] ?? {}
+        const setter = setSheetValuesArr[colIndex]
+
+        if (!setter) return // read-only column
+
+        if (colIndex === 0) {
+            // Budget column - only allow non-negative integers, strip leading zeros
+            let cleanValue = value.replace(/[^0-9]/g, '')
+            cleanValue = cleanValue.replace(/^0+(?=\d)/, '')
+            if (cleanValue.length > 10) {
+                cleanValue = '999999999'
             }
+            const next = { ...colValues }
+            next[label] = cleanValue
+            setter(next)
+        } else if (colIndex === 1) {
+            // Gold value-like column - allow non-negative decimals while typing
+            let clean = value.replace(/[^0-9.]/g, '')
+            const firstDot = clean.indexOf('.')
+            if (firstDot !== -1) {
+                clean = clean.slice(0, firstDot + 1) + clean.slice(firstDot + 1).replace(/\./g, '')
+            }
+            if (clean.length > 20) clean = clean.slice(0, 20)
+            const next = { ...colValues }
+            next[label] = clean
+            setter(next)
+        } else {
+            // Generic editable column: store raw string
+            const next = { ...colValues }
+            next[label] = value
+            setter(next)
         }
     }
 
     const handleCellBlur = (rowIndex: number, colIndex: number) => {
         const label = labels[rowIndex]
         if (!label) return
-        if (colIndex === 1 && setSecondaryValues && secondaryValues) {
-            let val = secondaryValues[label] ?? ''
+        // Only normalize decimal-like second column
+        if (colIndex === 1) {
+            const colValues = sheetValuesArr[1] ?? {}
+            const setter = setSheetValuesArr[1]
+            if (!setter) return
+            let val = colValues[label] ?? ''
             // normalize on blur: strip leading zeros in int part, trailing zeros in frac; drop dot if needed
             let clean = String(val).replace(/[^0-9.]/g, '')
             const firstDot = clean.indexOf('.')
@@ -106,10 +120,10 @@ export default function SpreadsheetGrid({ columnDefs, labels, sheet_values: budg
             let normalized = intPart
             if (fracPart.length > 0) normalized += '.' + fracPart
             if (normalized.length > 20) normalized = normalized.slice(0, 20)
-            if (normalized !== (secondaryValues[label] ?? '')) {
-                const next = { ...secondaryValues }
+            if (normalized !== (colValues[label] ?? '')) {
+                const next = { ...colValues }
                 next[label] = normalized
-                setSecondaryValues(next)
+                setter(next)
             }
         }
     }
@@ -239,9 +253,8 @@ export default function SpreadsheetGrid({ columnDefs, labels, sheet_values: budg
             for (let r = minRow; r <= maxRow; r++) {
                 const cols: string[] = []
                 for (let c = minCol; c <= maxCol; c++) {
-                    // this grid is 1 column, but keep general logic
                     const label = labels[r]
-                    cols.push(budget_inputs[label] == "" ? '0' : budget_inputs[label])
+                    cols.push((sheetValuesArr[c]?.[label] ?? '') === '' ? '0' : (sheetValuesArr[c]?.[label] ?? ''))
                 }
                 rowsOut.push(cols.join('\t')) // tab separated per row
             }
@@ -259,7 +272,7 @@ export default function SpreadsheetGrid({ columnDefs, labels, sheet_values: budg
         }
 
         const onPaste = (e: ClipboardEvent) => {
-            if (readOnly) return
+
 
             // if editing an input/textarea, let native paste happen
             // const active = document.activeElement as HTMLElement | null
@@ -268,37 +281,42 @@ export default function SpreadsheetGrid({ columnDefs, labels, sheet_values: budg
             const text = e.clipboardData?.getData('text/plain') ?? ''
             if (!text) return
 
-            // parse text into 2D array: rows by newline, columns by comma/tab/space
-            const parsedRows = text
-                .split(/[\t, \n]+/)
-                .map(r => r.trim())
-                .filter(Boolean)
-
+            // parse text into tokens separated by newline or tabs/commas/spaces
+            const parsedTokens = text
+                .split(/\n/) // split rows first
+                .map(r => r.split(/\t|,|\s+/).map(c => c.trim()).filter(Boolean))
 
             // determine paste start: use selection start if present, otherwise use focused cell
             let startRow = selection?.startRow ?? 0
+            let startCol = selection?.startCol ?? 0
             if (!selection) {
                 const focused = document.activeElement as HTMLElement | null
                 const cell = focused?.closest('[data-row]') as HTMLElement | null
                 if (cell) {
                     startRow = clamp(Number(cell.dataset.row), 0)
+                    startCol = clampCol(Number(cell.dataset.col ?? '0'))
                 }
             }
 
-            const newInputs = { ...budget_inputs }
-            for (let r = 0; r < parsedRows.length; r++) {
+            // For simplicity, paste tokens column-wise into the startCol only (common UX)
+            if (!columnDefs[startCol].editable) return
 
+            // copy existing column object, or create new
+            const colValues = { ...(sheetValuesArr[startCol] ?? {}) }
+            for (let r = 0; r < parsedTokens.length; r++) {
+                const tokenRow = parsedTokens[r]
+                if (tokenRow.length === 0) continue
+                const cellToken = tokenRow[0] // take first cell of each pasted row for single-column paste
                 const targetRow = startRow + r
                 if (targetRow < labels.length) {
-                    // Clean the pasted value to only allow positive integers
-                    let cleanValue = parsedRows[r].trim().replace(/[^0-9]/g, '')
+                    let cleanValue = cellToken.trim().replace(/[^0-9]/g, '')
                     cleanValue = cleanValue.replace(/^0+(?=\d)/, '')
                     if (cleanValue.length > 10) cleanValue = '999999999'
-                    newInputs[labels[targetRow]] = cleanValue
+                    colValues[labels[targetRow]] = cleanValue
                 }
-
             }
-            set_sheet_values(newInputs)
+            const setter = setSheetValuesArr[startCol]
+            if (setter) setter(colValues)
             e.preventDefault()
         }
 
@@ -308,10 +326,10 @@ export default function SpreadsheetGrid({ columnDefs, labels, sheet_values: budg
             document.removeEventListener('copy', onCopy)
             document.removeEventListener('paste', onPaste)
         }
-    }, [selection, budget_inputs, labels, set_sheet_values, readOnly]) // re-register when selection or inputs change
+    }, [selection, sheetValuesArr, labels, setSheetValuesArr, columnDefs, clampCol]) // re-register when selection or inputs change
 
     // ---------- optional grid-level keyboard handler (keeps existing behavior when grid has focus) ----------
-    const handleKeyDown = (e: React.KeyboardEvent) => {
+    const handleKeyDown = (_e: React.KeyboardEvent) => {
         // keep earlier copy/paste handling as a fallback if you want it, but
         // we primarily rely on native clipboard events above.
         // if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'a') {
@@ -324,38 +342,7 @@ export default function SpreadsheetGrid({ columnDefs, labels, sheet_values: budg
         // }
 
         // Clear selected editable cells to 0 on Backspace/Delete for editable grids
-        if (!readOnly && (e.key === 'Backspace' || e.key === 'Delete')) {
-            if (!selection) return
-            e.preventDefault()
-
-            const { startRow, startCol, endRow, endCol } = selection
-            const minRow = Math.min(startRow, endRow)
-            const maxRow = Math.max(startRow, endRow)
-            const minCol = Math.min(startCol, endCol)
-            const maxCol = Math.max(startCol, endCol)
-
-            let nextBudgets = { ...budget_inputs }
-            let nextSecondary = secondaryValues ? { ...secondaryValues } : undefined
-
-            for (let r = minRow; r <= maxRow; r++) {
-                const label = labels[r]
-                for (let c = minCol; c <= maxCol; c++) {
-                    if (c === 0) {
-                        nextBudgets[label] = '0'
-                    } else if (c === 1 && nextSecondary) {
-                        // Only allow editing first 7 rows in second column
-                        if (r < 7) {
-                            nextSecondary[label] = '0'
-                        }
-                    }
-                }
-            }
-
-            set_sheet_values(nextBudgets)
-            if (setSecondaryValues && nextSecondary) {
-                setSecondaryValues(nextSecondary)
-            }
-        }
+        //
     }
 
     // ---------- render ----------
@@ -372,7 +359,7 @@ export default function SpreadsheetGrid({ columnDefs, labels, sheet_values: budg
             }}
         >
             {!hideIcons && (
-                <div style={{ ...columnDefs[0], width: 50 }}>
+                <div style={{ flex: 1, width: 50 }}>
                     {[""].concat(labels).map((lab) => (
                         <div
                             key={lab}
@@ -422,8 +409,8 @@ export default function SpreadsheetGrid({ columnDefs, labels, sheet_values: budg
                             >
                                 <input
                                     type="text"
-                                    readOnly={readOnly || (colIndex === 1 && rowIndex >= 7)}
-                                    value={colIndex === 0 ? (budget_inputs[label] ?? '') : (secondaryValues?.[label] ?? '')}
+                                    readOnly={!columnDefs[colIndex].editable || (colIndex === 1 && rowIndex >= 7)}
+                                    value={(sheetValuesArr[colIndex]?.[label] ?? '')}
                                     onChange={(e) => handleCellChange(rowIndex, colIndex, e.target.value)}
                                     onKeyDown={(e) => { e.stopPropagation() }}
                                     onBlur={() => handleCellBlur(rowIndex, colIndex)}
@@ -440,17 +427,14 @@ export default function SpreadsheetGrid({ columnDefs, labels, sheet_values: budg
                                         height: '100%',
                                         padding: '6px 8px',
                                         border: '1px solid var(--border-accent)',
-                                        background: isCellSelected(rowIndex, colIndex) ?
-                                            ((readOnly || (colIndex === 1 && rowIndex >= 7)) ? 'var(--grid-cell-selected-readonly)' : 'var(--grid-cell-selected)') :
-                                            (typeof colDef.cellStyle === 'function' ? colDef.cellStyle({ value: colIndex === 0 ? (budget_inputs[label] ?? '') : (secondaryValues?.[label] ?? '') })?.backgroundColor || 'transparent' : colDef.cellStyle?.background || 'transparent'),
-                                        color: (readOnly || (colIndex === 1 && rowIndex >= 7)) ?
-                                            'var(--grid-cell-text-readonly)' :
-                                            (typeof colDef.cellStyle === 'function' ? colDef.cellStyle({ value: colIndex === 0 ? (budget_inputs[label] ?? '') : (secondaryValues?.[label] ?? '') })?.color || 'var(--grid-cell-text)' : colDef.cellStyle?.color || 'var(--grid-cell-text)'),
+                                        background: columnDefs[colIndex].backgroundRanOut && parseInt(sheetValuesArr[colIndex][label]) < 0 ? columnDefs[colIndex].backgroundRanOut
+                                            : isCellSelected(rowIndex, colIndex) ? columnDefs[colIndex].backgroundSelected : columnDefs[colIndex].background,
+                                        color: columnDefs[colIndex].color,
                                         fontSize: 'var(--font-size-sm)',
                                         outline: 'none',
                                         boxSizing: 'border-box',
-                                        cursor: (readOnly || (colIndex === 1 && rowIndex >= 7)) ? 'default' : 'text',
-                                        opacity: (colIndex === 1 && rowIndex >= 7) ? 0.5 : 1
+                                        cursor: (!columnDefs[colIndex].editable || (colIndex === 1 && rowIndex >= 7)) ? 'default' : 'text',
+                                        opacity: (colIndex >= 1 && rowIndex >= 7) ? 0.5 : 1
                                     }}
                                     placeholder="0"
                                 />

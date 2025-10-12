@@ -150,7 +150,7 @@ pub fn compute_gold_cost_from_indices(
 ) -> f64 {
     let mut c: f64 = 0f64;
     for i in 0..7 {
-        let val = (thresholds[i][idxs[i]] - input_budget_no_gold[i]).max(0) as f64;
+        let val: f64 = (thresholds[i][idxs[i]] - input_budget_no_gold[i]).max(0) as f64;
         c += price_arr[i] * val;
     }
     c
@@ -180,6 +180,7 @@ pub fn beam_search<R: rand::Rng>(
     _rng: &mut R,
     search_depth: usize,
     prev_indices: &mut Vec<usize>,
+    // prevent_spend_gold: bool,
 ) -> (Vec<i64>, f64) {
     // parameters you can tune
     let mut input_budget_no_gold: Vec<i64> = input_budget.to_vec();
@@ -200,23 +201,6 @@ pub fn beam_search<R: rand::Rng>(
     let thresholds = &bitset_bundle.transposed_thresholds;
     let threshold_len: usize = thresholds[0].len();
 
-    // let max_idx = if thresholds.is_empty() {
-    //     0
-    // } else {
-    //     thresholds[0].len() - 1
-    // };
-    // quick helper to compute cost of an index vector
-
-    // // helper to clamp an index
-    // let clamp_idx = |v: isize| -> usize {
-    //     if v < 0 {
-    //         0
-    //     } else if (v as usize) > max_idx {
-    //         max_idx
-    //     } else {
-    //         v as usize
-    //     }
-    // };
     let mut min_indices: Vec<usize> = vec![];
     for i in 0..7_usize {
         if i == 5 {
