@@ -2,6 +2,7 @@ import React, { useMemo, useState, useCallback, useRef } from 'react'
 import { XYChart, AnimatedAxis, AnimatedGrid, AnimatedLineSeries, Tooltip, darkTheme } from '@visx/xychart'
 import { localPoint } from '@visx/event'
 import { remapCountsToLockedXAxis } from '../Utils/HistogramUtils.ts'
+import { formatSig } from "../Utils/Helpers.ts"
 const plotLeft = 50, plotRight = 50, plotTop = 50, plotBottom = 50
 const GRID_COUNT = 10
 type GraphProps = {
@@ -50,37 +51,6 @@ const SERIES_COLORS_VARS: string[] = [
     'var(--series-gold)',
     'var(--series-silver)',
 ]
-
-function formatSig3(n: number, place: number = 3): string {
-    if (!isFinite(n)) return ''
-
-    const abs = Math.abs(n)
-    let suffix = ''
-    let divisor = 1
-
-    if (abs >= 1_000_000_000) {
-        suffix = 'B'
-        divisor = 1_000_000_000
-    } else if (abs >= 1_000_000) {
-        suffix = 'M'
-        divisor = 1_000_000
-    } else if (abs >= 1_000) {
-        suffix = 'K'
-        divisor = 1_000
-    }
-
-    const scaled = n / divisor
-
-    // keep `place` significant figures, but trim trailing zeros
-    let s = parseFloat(
-        Number(scaled.toFixed(place)).toPrecision(place)
-    ).toLocaleString('en-US', {
-        minimumFractionDigits: 1, // show decimals for small K/M/B
-        maximumFractionDigits: place
-    })
-
-    return s + suffix
-}
 
 /**
  * Calculates the optimal number of decimal places for rounding based on cumulative percentage and data size.
@@ -476,14 +446,14 @@ function Graph({ title, labels, counts, mins, maxs, width = 640, height = 320, b
             return Math.round(weekNumber).toString()
         }
 
-        if (fallbackSeries == null || !effectiveMins || !effectiveMaxs) return formatSig3(val)
+        if (fallbackSeries == null || !effectiveMins || !effectiveMaxs) return formatSig(val)
 
         const min = effectiveMins[fallbackSeries]
         const max = effectiveMaxs[fallbackSeries]
         const bucketIdx = typeof val === 'number' ? val : Number(val)
         const width = (max - min) / bucketLen
         const mid = min + (bucketIdx) * width
-        return formatSig3(mid)
+        return formatSig(mid)
     }, [fallbackSeries, effectiveMins, effectiveMaxs, bucketLen, graphType])
 
 
@@ -536,7 +506,7 @@ function Graph({ title, labels, counts, mins, maxs, width = 640, height = 320, b
                 const denomY2 = Math.max(1e-9, yMax);
                 // console.log(seriesVals)
                 const cy = plotTop + innerH - to_step(seriesVals)[bucket_idx] / denomY2 * innerH;
-                const labelText = formatSig3(budgetData[i]);
+                const labelText = formatSig(budgetData[i]);
                 const boxW = Math.max(16, labelText.length * 8);
                 const boxH = 18;
 
@@ -602,7 +572,7 @@ function Graph({ title, labels, counts, mins, maxs, width = 640, height = 320, b
                                     border: '1px solid var(--warning-border)'
                                 }}
                             >
-                                x-axis locked at {formatSig3(effectiveMaxs[fallbackSeries])}
+                                x-axis locked at {formatSig(effectiveMaxs[fallbackSeries])}
                                 <span style={{ color: effectiveColors[fallbackSeries] }}>{labels[fallbackSeries].padEnd(Math.max(...labels.map(l => l.length)), ' ')}</span>
                                 {hasUnplottedPoints && (
                                     <span>- Some trials used more and were not plotted</span>
@@ -671,7 +641,7 @@ function Graph({ title, labels, counts, mins, maxs, width = 640, height = 320, b
                             const n = typeof val === 'number' ? val : Number(val)
                             // For Gold mode, don't add percentage or multiply by 100
                             if (graphType === 'Gold') {
-                                return formatSig3(n)
+                                return formatSig(n)
                             }
                             // For other modes, add percentage
                             return (n * 100).toFixed(0) + "%"
@@ -735,7 +705,7 @@ function Graph({ title, labels, counts, mins, maxs, width = 640, height = 320, b
                                     return (
                                         <div style={{ color: 'var(--text-primary)' }}>
                                             <div style={{ color: effectiveColors[fallbackSeries], fontWeight: 600 }}>{labels[fallbackSeries]}</div>
-                                            <div>{weekNumber === 0 ? 'Right now,' : `In ${weekNumber} weeks,`} this will cost {formatSig3(yValue)} (buying needed mats with {formatSig3(costToPity - srcCounts[5][hoverBucket])} Gold)</div>
+                                            <div>{weekNumber === 0 ? 'Right now,' : `In ${weekNumber} weeks,`} this will cost {formatSig(yValue)} (buying needed mats with {formatSig(costToPity - srcCounts[5][hoverBucket])} Gold)</div>
                                         </div>
                                     )
                                 } else if (fallbackSeries === 1) {
@@ -747,14 +717,14 @@ function Graph({ title, labels, counts, mins, maxs, width = 640, height = 320, b
                                         return (
                                             <div style={{ color: 'var(--text-primary)' }}>
                                                 <div style={{ color: effectiveColors[fallbackSeries], fontWeight: 600 }}>{labels[fallbackSeries]}</div>
-                                                <div>{weekNumber === 0 ? 'Right now,' : `In ${weekNumber} weeks,`} you will have {formatSig3(goldBudget)} Gold (nothing to sell)</div>
+                                                <div>{weekNumber === 0 ? 'Right now,' : `In ${weekNumber} weeks,`} you will have {formatSig(goldBudget)} Gold (nothing to sell)</div>
                                             </div>
                                         )
                                     } else {
                                         return (
                                             <div style={{ color: 'var(--text-primary)' }}>
                                                 <div style={{ color: effectiveColors[fallbackSeries], fontWeight: 600 }}>{labels[fallbackSeries]}</div>
-                                                <div>{weekNumber === 0 ? 'Right now,' : `In ${weekNumber} weeks,`} you will have {formatSig3(goldFromSell)} Gold if you sell mats, {formatSig3(goldBudget)} if you don't</div>
+                                                <div>{weekNumber === 0 ? 'Right now,' : `In ${weekNumber} weeks,`} you will have {formatSig(goldFromSell)} Gold if you sell mats, {formatSig(goldBudget)} if you don't</div>
                                             </div>
                                         )
                                     }
@@ -763,7 +733,7 @@ function Graph({ title, labels, counts, mins, maxs, width = 640, height = 320, b
                                     return (
                                         <div style={{ color: 'var(--text-primary)' }}>
                                             <div style={{ color: effectiveColors[fallbackSeries], fontWeight: 600 }}>{labels[fallbackSeries]}</div>
-                                            <div>{weekNumber === 0 ? 'Right now,' : `In ${weekNumber} weeks,`} you need to spend {formatSig3(yValue)} on buying {labels[fallbackSeries]}</div>
+                                            <div>{weekNumber === 0 ? 'Right now,' : `In ${weekNumber} weeks,`} you need to spend {formatSig(yValue)} on buying {labels[fallbackSeries]}</div>
                                         </div>
                                     )
                                 }
@@ -782,7 +752,7 @@ function Graph({ title, labels, counts, mins, maxs, width = 640, height = 320, b
                                 <div style={{ color: 'var(--text-primary)' }}>
                                     <div style={{ color: effectiveColors[fallbackSeries], fontWeight: 600 }}>{labels[fallbackSeries]}</div>
                                     <div>In a room of 100 people,</div>
-                                    <div>{cumPct} used less than {formatSig3(mid, 3)} {labels[fallbackSeries]}</div>
+                                    <div>{cumPct} used less than {formatSig(mid, 3)} {labels[fallbackSeries]}</div>
                                 </div>
                             )
                         }}

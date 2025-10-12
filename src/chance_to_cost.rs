@@ -1,4 +1,7 @@
-use crate::bitset::{BitsetBundle, beam_search, compute_gold_cost, generate_bit_sets};
+use crate::bitset::{
+    BitsetBundle, beam_search, compute_gold_cost_from_indices, compute_gold_cost_from_raw,
+    generate_bit_sets,
+};
 use crate::constants::*;
 use crate::helpers::{average_juice_cost, calc_unlock, count_failure};
 use crate::histogram::histograms_for_all_costs;
@@ -106,6 +109,15 @@ pub fn chance_to_cost<R: rand::Rng>(
     }
 }
 
+#[derive(Serialize, Deserialize)]
+pub struct ChanceToCostOptimizedOut {
+    pub hist_counts: Vec<Vec<i64>>,     // 7 x num_bins
+    pub hist_mins: Vec<i64>,            // 7
+    pub hist_maxs: Vec<i64>,            // 7
+    pub hundred_budgets: Vec<Vec<i64>>, // actually 101 length, 0 to 100%
+    pub hundred_chances: Vec<f64>,      // actually 101 length, 0 to 100%
+    pub hundred_gold_costs: Vec<i64>,
+}
 pub fn chance_to_cost_optimized<R: rand::Rng>(
     hone_counts: &[Vec<i64>],
     adv_counts: &[Vec<i64>],
@@ -116,7 +128,7 @@ pub fn chance_to_cost_optimized<R: rand::Rng>(
     rng: &mut R,
     input_budgets: &[i64],
     mats_value: &[f64],
-) -> ChanceToCostOut {
+) -> ChanceToCostOptimizedOut {
     let budget_size: usize = 1000;
     let artisan_arr: Vec<f64> = if express_event {
         EVENT_ARTISAN_MULTIPLIER.to_vec()
@@ -147,21 +159,35 @@ pub fn chance_to_cost_optimized<R: rand::Rng>(
         data_size,
     );
 
-    let pity_cost: f64 = compute_gold_cost(
+    let pity_cost: f64 = compute_gold_cost_from_indices(
         &bitset_bundle.transposed_thresholds,
         &vec![bitset_bundle.transposed_thresholds[0].len() - 1; 7],
         &input_budget_no_gold,
         &mats_value,
     );
-    let resolution: usize = 1000;
+    let resolution: usize = 200;
     let gap_size: f64 = (pity_cost - input_budgets[5] as f64) / resolution as f64;
     let mut budget_data: Vec<Vec<i64>> = Vec::with_capacity(resolution + 1);
+    let mut hundred_gold_costs: Vec<i64> = Vec::with_capacity(resolution + 1);
+
     let mut new_input_budget: Vec<i64>;
+    let mut prev_optimized: Vec<usize> = vec![]; // invalid on purpose
     for i in 0..resolution {
         new_input_budget = input_budgets.to_vec().clone();
         new_input_budget[5] = input_budgets[5] + (gap_size * i as f64).round() as i64;
-        let (optimized_budget, _optimized_chance): (Vec<i64>, f64) =
-            beam_search(&bitset_bundle, &mats_value, &new_input_budget, rng);
+        let (optimized_budget, _optimized_chance): (Vec<i64>, f64) = beam_search(
+            &bitset_bundle,
+            &mats_value,
+            &new_input_budget,
+            rng,
+            if i == 0 { 999 } else { 12 },
+            &mut prev_optimized,
+        );
+
+        hundred_gold_costs.push(
+            compute_gold_cost_from_raw(&optimized_budget, &input_budget_no_gold, &mats_value).ceil()
+                as i64,
+        );
         budget_data.push(optimized_budget);
     }
 
@@ -188,12 +214,14 @@ pub fn chance_to_cost_optimized<R: rand::Rng>(
             )
         })
         .collect();
-    ChanceToCostOut {
+
+    ChanceToCostOptimizedOut {
         hundred_budgets,
         hundred_chances,
         hist_counts: histograms_for_all_costs(&cost_data, hist_bins, &top_bottom[1]),
         hist_mins: vec![0_i64; 7],
         hist_maxs: top_bottom[1].clone(),
+        hundred_gold_costs,
     }
 }
 

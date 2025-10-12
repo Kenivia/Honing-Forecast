@@ -1,6 +1,36 @@
 // Equipment types for armor pieces
 export const EQUIPMENT_TYPES = ["Helmet", "Shoulder", "Chest", "Pants", "Gloves", "Weapon"]
 
+export function formatSig(n: number, place: number = 3): string {
+    if (!isFinite(n)) return ""
+    place = Math.max(1, Math.min(100, place))
+
+    const abs = Math.abs(n)
+    let suffix = ""
+    let divisor = 1
+
+    if (abs >= 1_000_000_000) {
+        suffix = "B"
+        divisor = 1_000_000_000
+    } else if (abs >= 1_000_000) {
+        suffix = "M"
+        divisor = 1_000_000
+    } else if (abs >= 1_000) {
+        suffix = "K"
+        divisor = 1_000
+    }
+
+    const scaled = n / divisor
+
+    // keep `place` significant figures, but trim trailing zeros
+    let s = parseFloat(Number(scaled.toFixed(place)).toPrecision(place)).toLocaleString("en-US", {
+        minimumFractionDigits: 1, // show decimals for small K/M/B
+        maximumFractionDigits: place,
+    })
+
+    return s + suffix
+}
+
 // TypeScript interfaces
 export interface Upgrade {
     is_normal_honing: boolean

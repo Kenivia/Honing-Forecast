@@ -5,7 +5,8 @@ import { styles, createColumnDefs, GRAPH_WIDTH, GRAPH_HEIGHT, } from '../../Util
 import { OUTPUT_LABELS, INPUT_LABELS, } from '../../Utils/Constants.ts'
 import { StyledSlider } from '../../Utils/Styles.ts'
 import LabeledCheckbox from '../../Components/LabeledCheckbox.tsx'
-// Styled Material UI Slider with custom colors
+// import { formatSig } from "@/Frontend/Utils/Helpers.ts"
+
 
 type ChanceToCostSectionProps = {
     desired_chance: string
@@ -135,7 +136,7 @@ export default function ChanceToCostSection({
                                 sheet_values={cost_result ?
                                     Object.fromEntries(OUTPUT_LABELS.map((label, lab_index) =>
                                         [label, String(cost_result.hundred_budgets[parseInt(desired_chance)][lab_index])])) :
-                                    Object.fromEntries(OUTPUT_LABELS.map(label => [label, 'No results yet']))}
+                                    Object.fromEntries(OUTPUT_LABELS.map(label => [label, 'Calculating...']))}
                                 set_sheet_values={() => { }} // No-op for read-only
                                 readOnly={true}
                             />
@@ -150,7 +151,8 @@ export default function ChanceToCostSection({
                         </div>
                         {cost_result && (
                             <pre style={{ color: 'var(--text-muted)', fontSize: 'var(--font-size-xs)', marginTop: 8, }}>
-                                Run time: {cost_result.run_time}s{'\nActual chance: '}{cost_result.hundred_chances[parseInt(desired_chance)].toFixed(2)}%
+                                Run time: {cost_result.run_time}s
+                                {'\nActual chance: '}{cost_result.hundred_chances[parseInt(desired_chance)].toFixed(2)}%
                             </pre>
                         )}
 
@@ -180,7 +182,7 @@ export default function ChanceToCostSection({
                                 sheet_values={cost_result_optimized ?
                                     Object.fromEntries(OUTPUT_LABELS.map((label, lab_index) =>
                                         [label, String(cost_result_optimized.hundred_budgets[parseInt(desired_chance)][lab_index])])) :
-                                    Object.fromEntries(OUTPUT_LABELS.map(label => [label, 'No results yet']))}
+                                    Object.fromEntries(OUTPUT_LABELS.map(label => [label, 'Calculating...']))}
                                 set_sheet_values={() => { }} // No-op for read-only
                                 readOnly={true}
                             />
@@ -188,7 +190,12 @@ export default function ChanceToCostSection({
 
                         {cost_result_optimized && (
                             <pre style={{ color: 'var(--text-muted)', fontSize: 'var(--font-size-xs)', marginTop: 8, }}>
-                                Run time: {cost_result_optimized.run_time}s{'\nActual chance: '}{cost_result_optimized.hundred_chances[parseInt(desired_chance)].toFixed(2)}%
+                                Run time: {cost_result_optimized.run_time}s
+                                {'\nActual chance: '}{cost_result_optimized.hundred_chances[parseInt(desired_chance)].toFixed(2)}%
+                                {'\nTotal gold cost: '}{(cost_result_optimized.hundred_gold_costs[parseInt(desired_chance)]).toLocaleString("en-US", {
+                                    minimumFractionDigits: 0, // show decimals for small K/M/B
+                                    maximumFractionDigits: 0,
+                                })}
                             </pre>
                         )}
 

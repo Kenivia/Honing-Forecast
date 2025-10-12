@@ -11,7 +11,9 @@ mod value_estimation;
 #[cfg(test)]
 mod test_cache;
 
-use crate::chance_to_cost::{ChanceToCostOut, chance_to_cost, chance_to_cost_optimized};
+use crate::chance_to_cost::{
+    ChanceToCostOptimizedOut, ChanceToCostOut, chance_to_cost, chance_to_cost_optimized,
+};
 use crate::constants::EVENT_ARTISAN_MULTIPLIER;
 use crate::cost_to_chance::{
     CostToChanceArrResult, CostToChanceOptimizedOut, CostToChanceOut, cost_to_chance,
@@ -164,7 +166,7 @@ pub fn chance_to_cost_optimized_wrapper(input: JsValue) -> JsValue {
     let data_size: usize = payload.data_size.unwrap_or(100000).max(1000);
 
     let mut rng: ThreadRng = rand::rng();
-    let out: ChanceToCostOut = chance_to_cost_optimized(
+    let out: ChanceToCostOptimizedOut = chance_to_cost_optimized(
         &normal_counts,
         &adv_counts,
         &payload.adv_hone_strategy,

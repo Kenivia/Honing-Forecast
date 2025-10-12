@@ -142,7 +142,7 @@ fn compute_diff_cost(
         - thresholds[change_index][cur_cand[change_index]]) as f64
         * price_arr[change_index]
 }
-pub fn compute_gold_cost(
+pub fn compute_gold_cost_from_indices(
     thresholds: &[Vec<i64>],
     idxs: &[usize],
     input_budget_no_gold: &[i64],
@@ -151,6 +151,18 @@ pub fn compute_gold_cost(
     let mut c: f64 = 0f64;
     for i in 0..7 {
         let val = (thresholds[i][idxs[i]] - input_budget_no_gold[i]).max(0) as f64;
+        c += price_arr[i] * val;
+    }
+    c
+}
+pub fn compute_gold_cost_from_raw(
+    needed: &[i64],
+    input_budget_no_gold: &[i64],
+    price_arr: &[f64],
+) -> f64 {
+    let mut c: f64 = 0f64;
+    for i in 0..7 {
+        let val = (needed[i] - input_budget_no_gold[i]).max(0) as f64;
         c += price_arr[i] * val;
     }
     c
@@ -166,6 +178,8 @@ pub fn beam_search<R: rand::Rng>(
     price_arr: &[f64],
     input_budget: &[i64],
     _rng: &mut R,
+    search_depth: usize,
+    prev_indices: &mut Vec<usize>,
 ) -> (Vec<i64>, f64) {
     // parameters you can tune
     let mut input_budget_no_gold: Vec<i64> = input_budget.to_vec();
@@ -173,6 +187,10 @@ pub fn beam_search<R: rand::Rng>(
     let k: f64 = input_budget[5] as f64;
     let dims: usize = 7;
     let beam_width: usize = 8; // W
+    let perturb_limits: Vec<usize> = vec![
+        512, 512, 512, 256, 256, 256, 128, 128, 128, 64, 64, 64, 32, 32, 32, 16, 16, 16, 8, 8, 8,
+        4, 4, 4, 2, 2, 2, 1, 1, 1, 1,
+    ];
     // let children_per_parent: usize = 12; // target children per parent (including greedy child)
     // let greedy_step_max: usize = 1500 / beam_rounds; // greedy increments up to 1..=3
     // let random_step_max: i64 = 1500 / beam_rounds as i64; // random +/- steps per dim
@@ -218,27 +236,36 @@ pub fn beam_search<R: rand::Rng>(
         }
     }
 
-    let mut uniform_index: usize = threshold_len - 1;
-    let mut cur_index: Vec<usize> = vec![0; 7];
-    for thresh_index in 0..threshold_len {
-        debug_assert_eq!(cur_index[0], thresh_index);
-        let w: f64 = compute_gold_cost(thresholds, &cur_index, &input_budget_no_gold, &price_arr);
-        dbg!(w);
-        if w > k {
-            uniform_index = thresh_index.saturating_sub(1);
-            break;
+    let mut start_idxs: Vec<usize>;
+    if prev_indices.len() != 7 {
+        let mut uniform_index: usize = threshold_len - 1;
+        let mut cur_index: Vec<usize> = vec![0; 7];
+        for thresh_index in 0..threshold_len {
+            debug_assert_eq!(cur_index[0], thresh_index);
+            let w: f64 = compute_gold_cost_from_indices(
+                thresholds,
+                &cur_index,
+                &input_budget_no_gold,
+                &price_arr,
+            );
+            dbg!(w);
+            if w > k {
+                uniform_index = thresh_index.saturating_sub(1);
+                break;
+            }
+            for i in 0..7 {
+                cur_index[i] += 1;
+            }
         }
+        // start_idxs[5] = start_idxs[5].min(thresholds[0].len() / 2);
+        start_idxs = vec![uniform_index; 7];
         for i in 0..7 {
-            cur_index[i] += 1;
+            start_idxs[i] = start_idxs[i].max(min_indices[i]);
         }
-    }
-    // start_idxs[5] = start_idxs[5].min(thresholds[0].len() / 2);
-    let mut start_idxs: Vec<usize> = vec![uniform_index; 7];
-    for i in 0..7 {
-        start_idxs[i] = start_idxs[i].max(min_indices[i]);
+    } else {
+        start_idxs = prev_indices.clone();
     }
     dbg!(&start_idxs);
-    dbg!(&min_indices);
 
     dbg!(&input_budget_no_gold);
 
@@ -252,18 +279,19 @@ pub fn beam_search<R: rand::Rng>(
     let mut beam: Vec<State> = vec![State {
         indices: start_idxs.clone(),
         score: start_score,
-        cost: compute_gold_cost(&thresholds, &start_idxs, &input_budget_no_gold, &price_arr),
+        cost: compute_gold_cost_from_indices(
+            &thresholds,
+            &start_idxs,
+            &input_budget_no_gold,
+            &price_arr,
+        ),
     }];
 
     // track best overall
     let mut best_state: State = beam[0].clone();
-    let perturb_limits: Vec<usize> = vec![
-        512, 512, 512, 256, 256, 256, 128, 128, 128, 64, 64, 64, 32, 32, 32, 16, 16, 16, 8, 8, 8,
-        4, 4, 4, 2, 2, 2, 1, 1, 1, 1,
-    ];
 
     // beam loop
-    for perturb_limit in perturb_limits.into_iter() {
+    for perturb_limit in perturb_limits.into_iter().rev().take(search_depth).rev() {
         // generate candidates
 
         let mut candidates: Vec<State> = Vec::new();
@@ -297,8 +325,12 @@ pub fn beam_search<R: rand::Rng>(
                     if max_change == 0 {
                         continue;
                     }
-                    let left_overs: f64 =
-                        k - compute_gold_cost(thresholds, &cand, &input_budget_no_gold, &price_arr);
+                    let left_overs: f64 = k - compute_gold_cost_from_indices(
+                        thresholds,
+                        &cand,
+                        &input_budget_no_gold,
+                        &price_arr,
+                    );
 
                     let mut needed_cash: f64 = compute_diff_cost(
                         &thresholds,
@@ -353,7 +385,7 @@ pub fn beam_search<R: rand::Rng>(
                     candidates.push(State {
                         indices: cand.clone(),
                         score: oracle(bitset_bundle, &cand, &mut oracle_cache),
-                        cost: compute_gold_cost(
+                        cost: compute_gold_cost_from_indices(
                             &thresholds,
                             &cand,
                             &input_budget_no_gold,
@@ -403,5 +435,6 @@ pub fn beam_search<R: rand::Rng>(
         &best_state.indices,
         &mut oracle_cache
     ));
+    *prev_indices = best_state.indices;
     (best_values, best_state.score)
 }

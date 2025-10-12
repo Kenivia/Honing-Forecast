@@ -399,6 +399,8 @@ pub fn cost_to_chance_optimized<R: rand::Rng>(
         &prep_outputs.mats_value,
         &input_budgets,
         rng,
+        999,
+        &mut vec![],
     );
 
     // Section 3: Failure analysis
