@@ -2,7 +2,7 @@ use crate::bitset::{
     BitsetBundle, beam_search, compute_gold_cost_from_indices, compute_gold_cost_from_raw,
     generate_bit_sets,
 };
-use crate::constants::*;
+use crate::constants::EVENT_ARTISAN_MULTIPLIER;
 use crate::helpers::{average_juice_cost, calc_unlock, count_failure};
 use crate::histogram::histograms_for_all_costs;
 use crate::monte_carlo::{generate_budget_data, get_top_bottom, monte_carlo_data};
@@ -81,12 +81,12 @@ pub fn chance_to_cost<R: rand::Rng>(
         express_event,
     );
 
-    let unlock_cost: Vec<i64> = calc_unlock(&hone_counts, &adv_counts, express_event);
+    let unlock_cost: Vec<i64> = calc_unlock(hone_counts, adv_counts, express_event);
     let cost_data: Vec<Vec<i64>> = monte_carlo_data(data_size, &upgrade_arr, &unlock_cost, 0, rng);
     let top_bottom: Vec<Vec<i64>> = get_top_bottom(&upgrade_arr, &unlock_cost);
 
     let mut budget_data: Vec<Vec<i64>> =
-        generate_budget_data(&cost_data, &vec![0_i64; 7], budget_size);
+        generate_budget_data(&cost_data, &[0_i64; 7], budget_size);
     budget_data.push(top_bottom[1].clone());
 
     if adv_hone_strategy == "Juice on grace" {
@@ -101,7 +101,7 @@ pub fn chance_to_cost<R: rand::Rng>(
     let (hundred_budgets, hundred_chances): (Vec<Vec<i64>>, Vec<f64>) = (0..101)
         .map(|x| {
             find_best_budget_for_this_chance(
-                x as f64,
+                f64::from(x),
                 data_size,
                 budget_size,
                 &failure_counts,
@@ -147,7 +147,7 @@ pub fn chance_to_cost_optimized<R: rand::Rng>(
         adv_counts,
         express_event,
         mats_value,
-        &adv_hone_strategy,
+        adv_hone_strategy,
     );
 
     // Section 2: Monte Carlo simulation (use outputs from preparation)
@@ -166,16 +166,16 @@ pub fn chance_to_cost_optimized<R: rand::Rng>(
         get_top_bottom(&prep_outputs.upgrade_arr, &prep_outputs.unlock_costs);
     let bitset_bundle: BitsetBundle = generate_bit_sets(
         &cost_data,
-        thresholds.clone(),
+        thresholds,
         &top_bottom[1].clone(),
         data_size,
     );
 
     let pity_cost: f64 = compute_gold_cost_from_indices(
         &bitset_bundle.transposed_thresholds,
-        &vec![bitset_bundle.transposed_thresholds[0].len() - 1; 7],
+        &[bitset_bundle.transposed_thresholds[0].len() - 1; 7],
         &input_budget_no_gold,
-        &mats_value,
+        mats_value,
     );
     let resolution: usize = 300;
     let gap_size: f64 = (pity_cost - input_budgets[5] as f64) / resolution as f64;
@@ -188,7 +188,7 @@ pub fn chance_to_cost_optimized<R: rand::Rng>(
         new_input_budget[5] = input_budgets[5] + (gap_size * i as f64).round() as i64;
         let (optimized_budget, _optimized_chance): (Vec<i64>, f64) = beam_search(
             &bitset_bundle,
-            &mats_value,
+            mats_value,
             &new_input_budget,
             rng,
             if i == 0 { 999 } else { 12 },
@@ -203,7 +203,7 @@ pub fn chance_to_cost_optimized<R: rand::Rng>(
             .iter()
             .zip(input_budgets.iter())
             .map(|(a, b)| a.max(b))
-            .cloned()
+            .copied()
             .collect(),
     );
 
@@ -220,7 +220,7 @@ pub fn chance_to_cost_optimized<R: rand::Rng>(
     let (hundred_budgets, hundred_chances): (Vec<Vec<i64>>, Vec<f64>) = (0..101)
         .map(|x| {
             find_best_budget_for_this_chance(
-                x as f64,
+                f64::from(x),
                 data_size,
                 budget_size,
                 &failure_counts,
@@ -230,9 +230,9 @@ pub fn chance_to_cost_optimized<R: rand::Rng>(
         })
         .collect();
     let mut hundred_gold_costs: Vec<i64> = Vec::with_capacity(resolution + 1);
-    for budget in hundred_budgets.iter() {
+    for budget in &hundred_budgets {
         hundred_gold_costs.push(
-            compute_gold_cost_from_raw(&budget, &input_budget_no_gold, &mats_value).ceil() as i64,
+            compute_gold_cost_from_raw(budget, &input_budget_no_gold, mats_value).ceil() as i64,
         );
     }
 

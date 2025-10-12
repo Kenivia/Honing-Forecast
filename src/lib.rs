@@ -60,14 +60,15 @@ pub struct PayloadArr {
 
 fn get_count(counts: Option<Vec<Vec<i64>>>, ticks: Option<Vec<Vec<bool>>>) -> Vec<Vec<i64>> {
     if counts.is_some() {
-        return counts.unwrap();
+        counts.unwrap()
     } else if ticks.is_some() {
-        return ticks_to_counts(ticks.unwrap());
+        ticks_to_counts(ticks.unwrap())
     } else {
         panic!("Either normal_counts or normal_hone_ticks must be provided");
     }
 }
 #[wasm_bindgen]
+#[must_use] 
 pub fn chance_to_cost_wrapper(input: JsValue) -> JsValue {
     console_error_panic_hook::set_once();
     let payload: Payload = from_value(input).unwrap();
@@ -95,6 +96,7 @@ pub fn chance_to_cost_wrapper(input: JsValue) -> JsValue {
 }
 
 #[wasm_bindgen]
+#[must_use] 
 pub fn cost_to_chance_wrapper(input: JsValue) -> JsValue {
     console_error_panic_hook::set_once();
 
@@ -124,6 +126,7 @@ pub fn cost_to_chance_wrapper(input: JsValue) -> JsValue {
 }
 
 #[wasm_bindgen]
+#[must_use] 
 pub fn cost_to_chance_optimized_wrapper(input: JsValue) -> JsValue {
     console_error_panic_hook::set_once();
 
@@ -153,6 +156,7 @@ pub fn cost_to_chance_optimized_wrapper(input: JsValue) -> JsValue {
 }
 
 #[wasm_bindgen]
+#[must_use] 
 pub fn chance_to_cost_optimized_wrapper(input: JsValue) -> JsValue {
     console_error_panic_hook::set_once();
 
@@ -182,6 +186,7 @@ pub fn chance_to_cost_optimized_wrapper(input: JsValue) -> JsValue {
 }
 
 #[wasm_bindgen]
+#[must_use] 
 pub fn parser_wrapper_unified(input: JsValue) -> JsValue {
     console_error_panic_hook::set_once();
     let payload: Payload = from_value(input).unwrap();
@@ -218,6 +223,7 @@ pub fn parser_wrapper_unified(input: JsValue) -> JsValue {
 }
 
 #[wasm_bindgen]
+#[must_use] 
 pub fn average_cost_wrapper(input: JsValue) -> JsValue {
     console_error_panic_hook::set_once();
     let payload: Payload = from_value(input).unwrap();
@@ -249,6 +255,7 @@ pub fn average_cost_wrapper(input: JsValue) -> JsValue {
 }
 
 #[wasm_bindgen]
+#[must_use] 
 pub fn cost_to_chance_arr_wrapper(input: JsValue) -> JsValue {
     console_error_panic_hook::set_once();
     let payload: PayloadArr = from_value(input).unwrap();
@@ -289,6 +296,7 @@ pub fn cost_to_chance_arr_wrapper(input: JsValue) -> JsValue {
 
 // Histograms are included in the default wrappers' outputs
 
+#[must_use] 
 pub fn chance_to_cost_test_wrapper(
     normal_hone_ticks: Vec<Vec<bool>>,
     adv_hone_ticks: Vec<Vec<bool>>,
@@ -308,6 +316,7 @@ pub fn chance_to_cost_test_wrapper(
     (out.hundred_budgets, out.hundred_chances)
 }
 
+#[must_use] 
 pub fn cost_to_chance_test_wrapper(
     normal_hone_ticks: Vec<Vec<bool>>,
     adv_hone_ticks: Vec<Vec<bool>>,
@@ -321,7 +330,7 @@ pub fn cost_to_chance_test_wrapper(
         &ticks_to_counts(adv_hone_ticks),
         express_event,
         1000,
-        &vec![0.0; 7],
+        &[0.0; 7],
         "No juice".to_owned(),
         100000,
         &mut rng,

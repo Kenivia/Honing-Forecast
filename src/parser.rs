@@ -1,4 +1,4 @@
-use crate::constants::*;
+use crate::constants::{EVENT_ARTISAN_MULTIPLIER, DEFAULT_GOLD_VALUES, NORMAL_JUICE_COST, get_event_modified_armor_costs, get_event_modified_weapon_costs, SPECIAL_LEAPS_COST, NORMAL_HONE_CHANCES, ADV_DATA_10_20_JUICE, ADV_DATA_30_40_JUICE, ADV_DATA_10_20, ADV_DATA_30_40, ADV_HONE_COST};
 use crate::helpers::{average_juice_cost, calc_unlock, sort_by_indices};
 use crate::value_estimation::{est_juice_value, est_special_honing_value, juice_to_array};
 use serde::{Deserialize, Serialize};
@@ -38,8 +38,8 @@ pub fn preparation(
         adv_counts,
         &adv_hone_strategy.to_string(),
         &aritsan_arr,
-        &vec![0.0; 25],
-        &vec![0; 25],
+        &[0.0; 25],
+        &[0; 25],
         express_event,
     );
     let mut budgets: Vec<i64> = input_budgets.to_vec();
@@ -63,7 +63,7 @@ pub fn preparation(
 
     if !both_valid {
         mats_value = DEFAULT_GOLD_VALUES.to_vec();
-    };
+    }
 
     est_juice_value(&mut upgrade_arr, &mats_value);
     let (juice_strings_armor, juice_strings_weapon): (Vec<String>, Vec<String>) = juice_to_array(
@@ -119,14 +119,14 @@ impl Upgrade {
         is_weapon: bool,
         artisan_rate: f64,
         upgrade_plus_num: usize,
-    ) -> Upgrade {
+    ) -> Self {
         let prob_dist_len: usize = prob_dist.len();
-        let base_chance: f64 = prob_dist.get(0).cloned().unwrap_or(0.0);
+        let base_chance: f64 = prob_dist.first().copied().unwrap_or(0.0);
 
-        Upgrade {
+        Self {
             is_normal_honing: true,
             prob_dist: prob_dist.clone(),
-            original_prob_dist: prob_dist.clone(),
+            original_prob_dist: prob_dist,
             base_chance,
             costs,
             one_juice_cost: NORMAL_JUICE_COST[upgrade_plus_num],
@@ -150,14 +150,14 @@ impl Upgrade {
         is_weapon: bool,
         adv_cost_start: i64,
         upgrade_plus_num: usize,
-    ) -> Upgrade {
+    ) -> Self {
         let prob_dist_len: usize = prob_dist.len();
         assert!(prob_dist_len == adv_juice_cost.len());
 
-        Upgrade {
+        Self {
             is_normal_honing: false,
             prob_dist: prob_dist.clone(),
-            original_prob_dist: prob_dist.clone(),
+            original_prob_dist: prob_dist,
             base_chance: 0.0,
             costs,
             one_juice_cost,
@@ -292,17 +292,15 @@ pub fn parser(
                 } else {
                     &ADV_DATA_30_40_JUICE
                 }
+            } else if upgrade_plus_num <= 1 {
+                &ADV_DATA_10_20
             } else {
-                if upgrade_plus_num <= 1 {
-                    &ADV_DATA_10_20
-                } else {
-                    &ADV_DATA_30_40
-                }
+                &ADV_DATA_30_40
             };
 
             let rows: usize = relevant_data.len();
             let sum_taps: i64 = relevant_data.iter().map(|row: &[i64; 3]| row[2]).sum(); // 2nd index is frequency
-            let col_index: usize = 2 * upgrade_plus_num as usize + (1 - is_weapon);
+            let col_index: usize = 2 * upgrade_plus_num + (1 - is_weapon);
 
             prob_dist = Vec::with_capacity(rows);
             this_juice_cost = Vec::with_capacity(rows);
@@ -310,7 +308,7 @@ pub fn parser(
             let cost_val: i64 = ADV_HONE_COST[7][col_index];
             let sum_taps_f: f64 = if sum_taps == 0 { 1.0 } else { sum_taps as f64 };
 
-            for row in relevant_data.iter() {
+            for row in relevant_data {
                 let taps: i64 = row[2];
                 prob_dist.push((taps as f64) / sum_taps_f);
                 this_juice_cost.push(cost_val as f64 * row[1] as f64 / 1000.0_f64);

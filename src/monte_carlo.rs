@@ -14,7 +14,7 @@ pub fn generate_budget_data(
     budget_size: usize,
     // data_size: usize,
 ) -> Vec<Vec<i64>> {
-    let mut transposed_cost_data: Vec<Vec<i64>> = transpose_vec_of_vecs(&cost_data);
+    let mut transposed_cost_data: Vec<Vec<i64>> = transpose_vec_of_vecs(cost_data);
     for transposed_row in &mut transposed_cost_data {
         transposed_row.sort_unstable();
     }
@@ -35,8 +35,7 @@ pub fn generate_budget_data(
         let mut cur_count: usize = 0;
         loop {
             if transposed_row[j]
-                >= (initial_budget[cost_type].max(transposed_row[0]) as f64
-                    + gap_size[cost_type] * k as f64)
+                >= gap_size[cost_type].mul_add(k as f64, initial_budget[cost_type].max(transposed_row[0]) as f64)
                     .min(transposed_row[transposed_row.len() - 1] as f64)
                     .floor() as i64
             {
@@ -110,16 +109,12 @@ fn tap_map_generator<R: Rng>(count_limit: usize, prob_dist: &[f64], rng: &mut R)
 fn round_juice<R: Rng>(this_juice_cost: f64, rng: &mut R) -> i64 {
     let base: i64 = this_juice_cost.floor() as i64;
     let frac: f64 = this_juice_cost.fract();
-    base + if frac > 0.0 && rng.random_bool(frac) {
-        1
-    } else {
-        0
-    }
+    base + i64::from(frac > 0.0 && rng.random_bool(frac))
 }
 
 /// Sample from a geometric distribution with parameter `p = base_chance`
-/// producing k in 0..=max_taps such that k == max_taps represents the tail.
-/// Uses the identity k = floor( ln(U) / ln(q) ) (q = 1-p) and truncates to max_taps.
+/// producing k in `0..=max_taps` such that k == `max_taps` represents the tail.
+/// Uses the identity k = floor( ln(U) / ln(q) ) (q = 1-p) and truncates to `max_taps`.
 /// Handles edge cases p <= 0 and p >= 1.
 #[inline]
 fn sample_truncated_geometric<R: Rng + ?Sized>(p: f64, max_taps: i64, rng: &mut R) -> usize {
@@ -135,7 +130,7 @@ fn sample_truncated_geometric<R: Rng + ?Sized>(p: f64, max_taps: i64, rng: &mut 
     let q: f64 = 1.0 - p;
     let u: f64 = rng.random_range(0.0..1.0);
     // ln(u)/ln(q) >= 0 (both negative logs) gives k (0-based)
-    let k: i64 = (u.ln() / q.ln()).floor() as i64;
+    let k: i64 = u.log(q).floor() as i64;
     let k: i64 = if k < 0 { 0 } else { k };
     if k > max_taps {
         max_taps as usize
@@ -204,7 +199,7 @@ pub fn monte_carlo_data<R: Rng>(
     }
 
     // apply unlock costs
-    for row in cost_data.iter_mut() {
+    for row in &mut cost_data {
         row[3] += unlock_costs[0];
         row[6] += unlock_costs[1];
     }
@@ -217,7 +212,7 @@ pub fn get_top_bottom(upgrade_arr: &[Upgrade], unlock_costs: &[i64]) -> Vec<Vec<
     const DATA_SIZE: usize = 2;
     let mut cost_data: Vec<Vec<i64>> = vec![vec![0i64; 9]; DATA_SIZE];
     let mut rng = rand::rng();
-    for upgrade in upgrade_arr.iter() {
+    for upgrade in upgrade_arr {
         let pd_len: f64 = upgrade.prob_dist_len.saturating_sub(1) as f64;
         for trial_num in 0..DATA_SIZE {
             let rolled_tap =
@@ -232,7 +227,7 @@ pub fn get_top_bottom(upgrade_arr: &[Upgrade], unlock_costs: &[i64]) -> Vec<Vec<
             }
         }
     }
-    for row in cost_data.iter_mut() {
+    for row in &mut cost_data {
         row[3] += unlock_costs[0];
         row[6] += unlock_costs[1];
     }

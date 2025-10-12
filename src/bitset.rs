@@ -10,11 +10,11 @@ pub struct Bitset {
 
 impl Bitset {
     pub fn new(size: usize, ones: bool) -> Self {
-        let mut out: Bitset = Self {
-            data: vec![if ones { u64::MAX } else { 0 }; (size + 63) / 64],
+        let mut out: Self = Self {
+            data: vec![if ones { u64::MAX } else { 0 }; size.div_ceil(64)],
             actual_size: size,
         };
-        for i in out.actual_size..((size + 63) / 64) * 64 {
+        for i in out.actual_size..size.div_ceil(64) * 64 {
             out.set_zero(i);
         }
         out
@@ -47,9 +47,9 @@ impl Bitset {
     }
 
     #[inline]
-    pub fn intersect_into(&self, out: &mut Bitset) {
+    pub fn intersect_into(&self, out: &mut Self) {
         for i in 0..self.data.len() {
-            out.data[i] = self.data[i] & out.data[i];
+            out.data[i] &= self.data[i];
         }
     }
 }
@@ -76,7 +76,7 @@ pub fn generate_bit_sets(
 
     let mut transposed_thresholds: Vec<Vec<i64>> = vec![vec![]; 7];
     // let mut budget: Vec<i64> = vec![0; 7];
-    for thresh in thresholds.iter() {
+    for thresh in &thresholds {
         this_bitset = vec![Bitset::new(data_size, false); 7];
         for (cost_index, cost) in cost_data.iter().enumerate() {
             for i in 0..7 {
@@ -169,9 +169,9 @@ pub fn compute_gold_cost_from_raw(
 }
 
 /// Beam search implementation. INSANELY RUDIMENTARY AND NEEDS A LOT OF WORK
-/// - bitset_bundle: precomputed bitsets + thresholds
-/// - initial_arr: currently ignored (we start from zeros) but left in signature for future seeds
-/// - price_arr: price per dimension (len==7)
+/// - `bitset_bundle`: precomputed bitsets + thresholds
+/// - `initial_arr`: currently ignored (we start from zeros) but left in signature for future seeds
+/// - `price_arr`: price per dimension (len==7)
 /// - K: budget
 pub fn beam_search<R: rand::Rng>(
     bitset_bundle: &BitsetBundle,
@@ -221,7 +221,9 @@ pub fn beam_search<R: rand::Rng>(
     }
 
     let mut start_idxs: Vec<usize>;
-    if prev_indices.len() != 7 {
+    if prev_indices.len() == 7 {
+        start_idxs = prev_indices.clone();
+    } else {
         let mut uniform_index: usize = threshold_len - 1;
         let mut cur_index: Vec<usize> = vec![0; 7];
         for thresh_index in 0..threshold_len {
@@ -230,7 +232,7 @@ pub fn beam_search<R: rand::Rng>(
                 thresholds,
                 &cur_index,
                 &input_budget_no_gold,
-                &price_arr,
+                price_arr,
             );
             dbg!(w);
             if w > k {
@@ -246,8 +248,6 @@ pub fn beam_search<R: rand::Rng>(
         for i in 0..7 {
             start_idxs[i] = start_idxs[i].max(min_indices[i]);
         }
-    } else {
-        start_idxs = prev_indices.clone();
     }
     dbg!(&start_idxs);
 
@@ -264,10 +264,10 @@ pub fn beam_search<R: rand::Rng>(
         indices: start_idxs.clone(),
         score: start_score,
         cost: compute_gold_cost_from_indices(
-            &thresholds,
+            thresholds,
             &start_idxs,
             &input_budget_no_gold,
-            &price_arr,
+            price_arr,
         ),
     }];
 
@@ -294,7 +294,7 @@ pub fn beam_search<R: rand::Rng>(
             for up_index in 0..7_usize {
                 for mut down_index in 0..6_usize {
                     cand = parent.indices.clone();
-                    down_index += if down_index >= up_index { 1 } else { 0 };
+                    down_index += usize::from(down_index >= up_index);
                     let mut max_change: usize = perturb_limit;
                     // for i in 1..=perturb_limit {
                     if cand[up_index] + perturb_limit >= threshold_len.saturating_sub(1) {
@@ -313,24 +313,24 @@ pub fn beam_search<R: rand::Rng>(
                         thresholds,
                         &cand,
                         &input_budget_no_gold,
-                        &price_arr,
+                        price_arr,
                     );
 
                     let mut needed_cash: f64 = compute_diff_cost(
-                        &thresholds,
+                        thresholds,
                         &cand,
                         up_index,
                         max_change as isize,
-                        &price_arr,
+                        price_arr,
                     );
 
                     let mut avail_cash: f64 = left_overs
                         - compute_diff_cost(
-                            &thresholds,
+                            thresholds,
                             &cand,
                             down_index,
                             -(max_change as isize),
-                            &price_arr,
+                            price_arr,
                         );
 
                     let mut actual_up_change: usize = max_change;
@@ -338,11 +338,11 @@ pub fn beam_search<R: rand::Rng>(
                     while needed_cash > avail_cash && actual_up_change > 1 {
                         actual_up_change = actual_up_change.saturating_sub(1);
                         needed_cash = compute_diff_cost(
-                            &thresholds,
+                            thresholds,
                             &cand,
                             up_index,
                             actual_up_change as isize,
-                            &price_arr,
+                            price_arr,
                         );
                     }
                     if needed_cash > avail_cash {
@@ -351,17 +351,16 @@ pub fn beam_search<R: rand::Rng>(
                     while actual_down_change > 0 {
                         avail_cash = left_overs
                             - compute_diff_cost(
-                                &thresholds,
+                                thresholds,
                                 &cand,
                                 down_index,
                                 -((actual_down_change.saturating_sub(1)) as isize),
-                                &price_arr,
+                                price_arr,
                             );
                         if avail_cash < needed_cash {
                             break;
-                        } else {
-                            actual_down_change = actual_down_change.saturating_sub(1);
                         }
+                        actual_down_change = actual_down_change.saturating_sub(1);
                     }
                     cand[up_index] += actual_up_change;
                     cand[down_index] = cand[down_index].saturating_sub(actual_down_change);
@@ -370,10 +369,10 @@ pub fn beam_search<R: rand::Rng>(
                         indices: cand.clone(),
                         score: oracle(bitset_bundle, &cand, &mut oracle_cache),
                         cost: compute_gold_cost_from_indices(
-                            &thresholds,
+                            thresholds,
                             &cand,
                             &input_budget_no_gold,
-                            &price_arr,
+                            price_arr,
                         ),
                     });
                     seen.insert(cand);
@@ -393,7 +392,7 @@ pub fn beam_search<R: rand::Rng>(
         });
 
         candidates.truncate(beam_width);
-        if let Some(top) = candidates.get(0) {
+        if let Some(top) = candidates.first() {
             dbg!("top", top);
             if top.score > best_state.score {
                 best_state = top.clone();

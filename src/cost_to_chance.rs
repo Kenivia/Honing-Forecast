@@ -1,5 +1,5 @@
 use crate::bitset::{BitsetBundle, beam_search, generate_bit_sets};
-use crate::constants::*;
+use crate::constants::BUCKET_COUNT;
 
 use crate::helpers::compress_runs;
 use crate::histogram::histograms_for_all_costs;
@@ -51,7 +51,7 @@ fn extract_upgrade_strings(
     user_gave_armor: bool,
 ) -> Vec<String> {
     let mut result: Vec<String> = Vec::new();
-    for (_index, upgrade) in upgrade_arr.iter().enumerate() {
+    for upgrade in upgrade_arr {
         if !upgrade.is_normal_honing {
             continue;
         }
@@ -63,12 +63,12 @@ fn extract_upgrade_strings(
         } else {
             user_gave_armor
         };
-        let value_string: String = if !is_valid {
-            "".to_owned()
-        } else {
+        let value_string: String = if is_valid {
             " ".to_owned() + &upgrade.special_value.round().to_string() + "g"
+        } else {
+            String::new()
         };
-        result.push(format!("{} {}{}", level_str, type_str, value_string));
+        result.push(format!("{level_str} {type_str}{value_string}"));
     }
     result
 }
@@ -76,7 +76,7 @@ fn extract_upgrade_strings(
 fn fail_count_to_rates(typed_fail_counter: Vec<f64>, data_size: usize) -> Vec<f64> {
     let mut failure_rates: Vec<f64> = Vec::new();
     for z in 0..typed_fail_counter.len() {
-        let failure_rate: f64 = 1.0 - typed_fail_counter[z] as f64 / data_size as f64;
+        let failure_rate: f64 = 1.0 - typed_fail_counter[z] / data_size as f64;
         failure_rates.push(failure_rate);
     }
     failure_rates
@@ -101,11 +101,11 @@ fn count_failure_typed(cost_data: &[Vec<i64>], input_budgets: &[i64]) -> Failure
     let mut typed_fail_counter_final: Vec<f64> = vec![0.0_f64; 7];
     let mut overall_fail_counter: i64 = 0;
     let mut failed: bool;
-    for (_trail_num, data) in cost_data.iter().enumerate() {
+    for data in cost_data {
         failed = false;
         for cost_type in 0..7 {
             // Cost to chance does take silver into account
-            if input_budgets[cost_type as usize] < data[cost_type] {
+            if input_budgets[cost_type] < data[cost_type] {
                 failed = true;
                 typed_fail_counter_final[cost_type] += 1.0_f64;
             }
@@ -298,7 +298,7 @@ pub fn cost_to_chance_optimized<R: rand::Rng>(
     );
 
     let failure_outputs_initial: FailureAnalysisOutputs =
-        count_failure_typed(&cost_data, &input_budgets);
+        count_failure_typed(&cost_data, input_budgets);
     let mut input_budget_no_gold: Vec<i64> = input_budgets.to_vec();
     input_budget_no_gold[5] = 0;
     let thresholds: Vec<Vec<i64>> = generate_budget_data(&cost_data, &input_budget_no_gold, 1000);
@@ -309,7 +309,7 @@ pub fn cost_to_chance_optimized<R: rand::Rng>(
     let (optimized_budget, optimized_chance): (Vec<i64>, f64) = beam_search(
         &bitset_bundle,
         &prep_outputs.mats_value,
-        &input_budgets,
+        input_budgets,
         rng,
         999,
         &mut vec![],

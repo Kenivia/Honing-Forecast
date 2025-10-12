@@ -35,7 +35,7 @@ pub fn budget_is_enough(cost: &[i64], budget: &[i64]) -> bool {
 
 fn count_failure_naive(cost_data: &[Vec<i64>], budget_data: &[Vec<i64>]) -> Vec<i64> {
     let mut count: Vec<i64> = vec![0; budget_data.len()];
-    for cost in cost_data.iter() {
+    for cost in cost_data {
         for (i, budget) in budget_data.iter().enumerate() {
             if !budget_is_enough(cost, budget) {
                 count[i] += 1;
@@ -57,17 +57,17 @@ fn count_failure_ascending(cost_data: &[Vec<i64>], budget_data: &[Vec<i64>]) -> 
     // Difference array approach (length m+1 to mark ranges)
     let mut diffs: Vec<i64> = vec![0i64; m + 1];
 
-    for cost in cost_data.iter() {
+    for cost in cost_data {
         let cs: &[i64] = cost.as_slice();
 
         // Binary search for the first budget index that the cost *passes*.
         // If none pass, first_pass_index stays m (meaning it fails all budgets).
         let mut low: usize = 0;
-        let mut high: usize = (m as usize) - 1;
+        let mut high: usize = m - 1;
         let mut first_pass_index: usize = m;
 
         while low <= high {
-            let mid: usize = ((low + high) >> 1) as usize;
+            let mid: usize = (low + high) >> 1;
 
             if budget_is_enough(cs, budget_data[mid].as_slice()) || mid == 0 {
                 first_pass_index = mid;
@@ -99,9 +99,9 @@ fn count_failure_ascending(cost_data: &[Vec<i64>], budget_data: &[Vec<i64>]) -> 
 
 pub fn count_failure(cost_data: &[Vec<i64>], budget_data: &[Vec<i64>], asc: bool) -> Vec<i64> {
     if asc {
-        return count_failure_ascending(cost_data, budget_data);
+        count_failure_ascending(cost_data, budget_data)
     } else {
-        return count_failure_naive(cost_data, budget_data);
+        count_failure_naive(cost_data, budget_data)
     }
 }
 
@@ -129,11 +129,11 @@ pub fn ticks_to_counts(ticks: Vec<Vec<bool>>) -> Vec<Vec<i64>> {
     for i in 0..cols {
         // sum ticks[0..4][i]
         out[0][i] = (0..5)
-            .map(|row: usize| if ticks[row][i] { 1 } else { 0 })
+            .map(|row: usize| i64::from(ticks[row][i]))
             .sum();
 
         // ticks[5][i] as 0/1
-        out[1][i] = if ticks[5][i] { 1 } else { 0 };
+        out[1][i] = i64::from(ticks[5][i]);
     }
 
     out
@@ -146,7 +146,7 @@ pub fn ticks_to_counts(ticks: Vec<Vec<bool>>) -> Vec<Vec<i64>> {
 /// - `adv_counts`: &[Vec<i64>] (advanced counts)
 /// - `express_event`: bool (whether express event is active)
 ///
-/// Returns: (shard_unlock, silver_unlock)
+/// Returns: (`shard_unlock`, `silver_unlock`)
 pub fn calc_unlock(
     hone_counts: &[Vec<i64>],
     adv_counts: &[Vec<i64>],
@@ -215,7 +215,7 @@ pub fn average_cost(upgrades: &[Upgrade]) -> Vec<f64> {
     for upgrade in upgrades {
         let avg_taps: f64 = average_tap(&upgrade.prob_dist, upgrade.tap_offset as f64);
         for cost_type in 0..7 {
-            total_costs[cost_type] += upgrade.costs[cost_type] as f64 * (avg_taps as f64);
+            total_costs[cost_type] += upgrade.costs[cost_type] as f64 * avg_taps;
         }
     }
 
@@ -293,9 +293,9 @@ pub fn compress_runs(strings: Vec<String>, no_x: bool) -> Vec<String> {
         } else {
             if count > 1 {
                 if no_x {
-                    out.push(format!("{}", prev));
+                    out.push(prev.to_string());
                 } else {
-                    out.push(format!("{} ({} such pieces)", prev, count));
+                    out.push(format!("{prev} ({count} such pieces)"));
                 }
             } else {
                 out.push(prev.to_string());
@@ -305,7 +305,7 @@ pub fn compress_runs(strings: Vec<String>, no_x: bool) -> Vec<String> {
         }
     }
     if count > 1 && !no_x {
-        out.push(format!("{} ({} such pieces)", prev, count));
+        out.push(format!("{prev} ({count} such pieces)"));
     } else {
         out.push(prev.to_string());
     }

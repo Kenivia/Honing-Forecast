@@ -10,7 +10,7 @@ pub fn average_tap(prob_dist: &[f64], offset: f64) -> f64 {
     let mut out: f64 = 0.0_f64;
     // println!("{:?}", prob_dist[start_index..].iter().sum::<f64>() as f64);
     #[cfg(debug_assertions)]
-    assert_f64_near!(prob_dist.iter().sum::<f64>() as f64, 1.0 as f64, 40);
+    assert_f64_near!(prob_dist.iter().sum::<f64>(), 1.0_f64, 40);
     // let sum_before_start: f64 = prob_dist[..start_index].iter().sum();
     for (index, item) in prob_dist.iter().enumerate() {
         out += item * (index as f64 + offset);
@@ -21,11 +21,11 @@ fn truncated_average_tap(prob_dist: &[f64], offset: f64, truncate: usize) -> f64
     let mut out: f64 = 0.0_f64;
     // println!("{:?}", prob_dist[start_index..].iter().sum::<f64>() as f64);
     #[cfg(debug_assertions)]
-    assert_f64_near!(prob_dist.iter().sum::<f64>() as f64, 1.0 as f64, 40);
+    assert_f64_near!(prob_dist.iter().sum::<f64>(), 1.0_f64, 40);
     // let sum_before_start: f64 = prob_dist[..start_index].iter().sum();
     for (index, item) in prob_dist.iter().enumerate() {
         if index < truncate - 1 {
-            out += 0.0
+            out += 0.0;
         } else {
             out += item * (index as f64 + offset);
         }
@@ -50,7 +50,7 @@ fn average_value(upgrade: &Upgrade, mats_value: &[f64], average: f64) -> f64 {
     for cost_type in 0..7 {
         this_sum += mats_value[cost_type] * average * upgrade.costs[cost_type] as f64;
     }
-    this_sum as f64
+    this_sum
 }
 
 fn est_juice_value_for_prob_dist(
@@ -82,7 +82,7 @@ pub fn est_special_honing_value(
     let mut special_value: f64;
     // let mut is_valid: bool;
     debug_assert!(mats_values.len() == cost_type_count);
-    for (_, upgrade) in upgrade_arr.iter_mut().enumerate() {
+    for upgrade in upgrade_arr.iter_mut() {
         if upgrade.is_normal_honing {
             average = average_tap(&upgrade.original_prob_dist, upgrade.tap_offset as f64);
             // is_valid = if upgrade.is_weapon {
@@ -96,7 +96,7 @@ pub fn est_special_honing_value(
 
             out.push(special_value);
 
-            upgrade.special_value = special_value
+            upgrade.special_value = special_value;
         } else {
             out.push(0.0_f64);
         }
@@ -112,7 +112,7 @@ pub fn est_juice_value(upgrade_arr: &mut Vec<Upgrade>, mat_values: &[f64]) {
     let mut extra_count: usize;
     // let mut cur_prob_dist: Vec<f64>;
 
-    for (_, upgrade) in upgrade_arr.iter_mut().enumerate() {
+    for upgrade in upgrade_arr.iter_mut() {
         if !upgrade.is_normal_honing || upgrade.upgrade_plus_num <= 2 {
             continue;
         }
@@ -172,18 +172,16 @@ pub fn juice_to_array(
             .map(|(plus, taps, high, low)| {
                 if !user_gave_armor {
                     format!("+{} armor, First {} taps", plus + 1, taps,)
+                } else if high == low {
+                    format!("+{} armor, First {} taps, {}g", plus + 1, taps, high,)
                 } else {
-                    if high == low {
-                        format!("+{} armor, First {} taps, {}g", plus + 1, taps, high,)
-                    } else {
-                        format!(
-                            "+{} armor, first {} taps, {}g to {}g",
-                            plus + 1,
-                            taps,
-                            high,
-                            low
-                        )
-                    }
+                    format!(
+                        "+{} armor, first {} taps, {}g to {}g",
+                        plus + 1,
+                        taps,
+                        high,
+                        low
+                    )
                 }
             })
             .collect(),
@@ -198,18 +196,16 @@ pub fn juice_to_array(
             .map(|(plus, taps, high, low)| {
                 if !user_gave_weapon {
                     format!("+{} weapon, First {} taps", plus + 1, taps,)
+                } else if high == low {
+                    format!("+{} weapon, First {} taps, {}g", plus + 1, taps, high,)
                 } else {
-                    if high == low {
-                        format!("+{} weapon, First {} taps, {}g", plus + 1, taps, high,)
-                    } else {
-                        format!(
-                            "+{} weapon, First {} taps, {}g to {}g",
-                            plus + 1,
-                            taps,
-                            high,
-                            low
-                        )
-                    }
+                    format!(
+                        "+{} weapon, First {} taps, {}g to {}g",
+                        plus + 1,
+                        taps,
+                        high,
+                        low
+                    )
                 }
             })
             .collect(),
