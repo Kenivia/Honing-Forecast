@@ -1,9 +1,9 @@
 import React, { useState } from 'react'
-import SpreadsheetGrid from '../../Components/SpreadsheetGrid.tsx'
-import Graph from '../../Components/Graph.tsx'
-import LabeledCheckbox from '../../Components/LabeledCheckbox.tsx'
-import { styles, createColumnDefs, GRAPH_WIDTH, GRAPH_HEIGHT } from '../../Utils/Styles.ts'
-import { INPUT_LABELS, OUTPUT_LABELS } from '../../Utils/Constants.ts'
+import SpreadsheetGrid from '@/Frontend/Components/SpreadsheetGrid.tsx'
+import Graph from '@/Frontend/Components/Graph.tsx'
+import LabeledCheckbox from '@/Frontend/Components/LabeledCheckbox.tsx'
+import { styles, createColumnDefs, GRAPH_WIDTH, GRAPH_HEIGHT } from '@/Frontend/Utils/Styles.ts'
+import { INPUT_LABELS, OUTPUT_LABELS } from '@/Frontend/Utils/Constants.ts'
 
 type CostToChanceSectionProps = {
     budget_inputs: any

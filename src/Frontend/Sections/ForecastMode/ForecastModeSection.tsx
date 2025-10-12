@@ -1,9 +1,9 @@
 import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react'
-import SpreadsheetGrid from '../../Components/SpreadsheetGrid.tsx'
-import Graph from '../../Components/Graph.tsx'
-import { styles, StyledSlider, GRAPH_HEIGHT, GRAPH_WIDTH } from '../../Utils/Styles.ts'
-import { INPUT_LABELS } from '../../Utils/Constants.ts'
-import { buildPayload } from '../../WasmInterface/WorkerRunner.ts'
+import SpreadsheetGrid from '@/Frontend/Components/SpreadsheetGrid.tsx'
+import Graph from '@/Frontend/Components/Graph.tsx'
+import { styles, StyledSlider, GRAPH_HEIGHT, GRAPH_WIDTH } from '@/Frontend/Utils/Styles.ts'
+import { INPUT_LABELS } from '@/Frontend/Utils/Constants.ts'
+import { buildPayload } from '@/Frontend/WasmInterface/WorkerRunner.ts'
 
 type LongTermSectionProps = {
     budget_inputs: any
@@ -238,7 +238,7 @@ export default function LongTermSection({
 
     // Initialize worker
     useEffect(() => {
-        longTermWorkerRef.current = new Worker(new URL("../../WasmInterface/js_to_wasm.ts", import.meta.url), { type: "module" })
+        longTermWorkerRef.current = new Worker(new URL("@/Frontend/WasmInterface/js_to_wasm.ts", import.meta.url), { type: "module" })
         return () => {
             if (longTermWorkerRef.current) {
                 longTermWorkerRef.current.terminate()

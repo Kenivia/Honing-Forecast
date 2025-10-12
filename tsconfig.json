@@ -18,11 +18,11 @@
         "noImplicitAny": false, // make true as you convert modules
         "resolveJsonModule": true,
         "isolatedModules": true,
-        "baseUrl": ".",
-        "paths": { // optional - map aliases to folders
+        "baseUrl": "src",
+        "paths": {
             "@/*": [
-                "src/*"
-            ],
+                "*"
+            ]
         },
         "allowImportingTsExtensions": true
     },

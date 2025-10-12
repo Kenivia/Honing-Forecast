@@ -1,10 +1,10 @@
 import React from 'react'
-import SpreadsheetGrid from '../../Components/SpreadsheetGrid.tsx'
-import Graph from '../../Components/Graph.tsx'
-import { styles, createColumnDefs, GRAPH_WIDTH, GRAPH_HEIGHT, } from '../../Utils/Styles.ts'
-import { OUTPUT_LABELS, INPUT_LABELS, } from '../../Utils/Constants.ts'
-import { StyledSlider } from '../../Utils/Styles.ts'
-import LabeledCheckbox from '../../Components/LabeledCheckbox.tsx'
+import SpreadsheetGrid from '@/Frontend/Components/SpreadsheetGrid.tsx'
+import Graph from '@/Frontend/Components/Graph.tsx'
+import { styles, createColumnDefs, GRAPH_WIDTH, GRAPH_HEIGHT, } from '@/Frontend/Utils/Styles.ts'
+import { OUTPUT_LABELS, INPUT_LABELS, } from '@/Frontend/Utils/Constants.ts'
+import { StyledSlider } from '@/Frontend/Utils/Styles.ts'
+import LabeledCheckbox from '@/Frontend/Components/LabeledCheckbox.tsx'
 // import { formatSig } from "@/Frontend/Utils/Helpers.ts"
 
 

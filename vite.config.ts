@@ -2,6 +2,7 @@
 import { defineConfig } from "vite"
 import react from "@vitejs/plugin-react"
 import { configDefaults } from "vitest/config"
+import path from "path"
 // import { visualizer } from "rollup-plugin-visualizer"
 
 // https://vite.dev/config/
@@ -16,6 +17,14 @@ export default defineConfig({
         //     brotliSize: true,
         // }),
     ],
+    resolve: {
+        alias: {
+            // eslint-disable-next-line no-undef
+            "@": path.resolve(__dirname, "src"),
+            // or add others:
+            // '@components': path.resolve(__dirname, 'src/Frontend/Components')
+        },
+    },
 
     test: {
         globals: false, // we'll import describe/it/expect from 'vitest' explicitly

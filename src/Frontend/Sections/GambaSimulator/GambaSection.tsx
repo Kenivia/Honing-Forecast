@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from "react"
-import SpreadsheetGrid from "../../Components/SpreadsheetGrid.tsx"
-import Graph from "../../Components/Graph.tsx"
-import { styles, createColumnDefs, SMALL_GRAPH_WIDTH, SMALL_GRAPH_HEIGHT } from "../../Utils/Styles.ts"
-import { BOTTOM_COLS, INPUT_LABELS, TOP_COLS, OUTPUT_LABELS } from "../../Utils/Constants.ts"
-import { buildPayload } from "../../WasmInterface/WorkerRunner.ts"
-import { Upgrade, EQUIPMENT_TYPES } from "../../Utils/Helpers.ts"
+import SpreadsheetGrid from "@/Frontend/Components/SpreadsheetGrid.tsx"
+import Graph from "@/Frontend/Components/Graph.tsx"
+import { styles, createColumnDefs, SMALL_GRAPH_WIDTH, SMALL_GRAPH_HEIGHT } from "@/Frontend/Utils/Styles.ts"
+import { BOTTOM_COLS, INPUT_LABELS, TOP_COLS, OUTPUT_LABELS } from "@/Frontend/Utils/Constants.ts"
+import { buildPayload } from "@/Frontend/WasmInterface/WorkerRunner.ts"
+import { Upgrade, EQUIPMENT_TYPES } from "@/Frontend/Utils/Helpers.ts"
 import GambaInfoBox from "./GambaInfoBox.tsx"
 import GambaSelection from "./GambaSelection.tsx"
 import { useGambaLogic } from "./GambaLogic.tsx"
@@ -123,7 +123,7 @@ export default function GambaSection({
     // Initialize parser worker
     useEffect(() => {
         // Create a persistent worker for parser calls
-        parserWorkerRef.current = new Worker(new URL("../../WasmInterface/js_to_wasm.ts", import.meta.url), { type: "module" })
+        parserWorkerRef.current = new Worker(new URL("@/Frontend/WasmInterface/js_to_wasm.ts", import.meta.url), { type: "module" })
 
         // Set up message handler once
         parserWorkerRef.current.onmessage = (e) => {

@@ -1,6 +1,6 @@
 import React from 'react'
-import { styles } from '../../Utils/Styles.ts'
-import LabeledCheckbox from '../../Components/LabeledCheckbox.tsx'
+import { styles } from '@/Frontend/Utils/Styles.ts'
+import LabeledCheckbox from '@/Frontend/Components/LabeledCheckbox.tsx'
 
 type ControlPanelProps = {
     controlsLeft: number | null

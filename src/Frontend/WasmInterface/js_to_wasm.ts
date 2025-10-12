@@ -6,7 +6,7 @@ import init, {
     parser_wrapper_unified,
     average_cost_wrapper,
     chance_to_cost_optimized_wrapper,
-} from "../../../pkg/honing_forecast.js"
+} from "@/../pkg/honing_forecast.js"
 
 const LABELS = ["Red", "Blue", "Leaps", "Shards", "Oreha", "Gold", "Silver"]
 async function ChanceToCostOptimizedWasm(payload: any) {

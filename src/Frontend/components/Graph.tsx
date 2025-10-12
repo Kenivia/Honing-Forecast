@@ -1,8 +1,8 @@
 import React, { useMemo, useState, useCallback, useRef } from 'react'
 import { XYChart, AnimatedAxis, AnimatedGrid, AnimatedLineSeries, Tooltip, darkTheme } from '@visx/xychart'
 import { localPoint } from '@visx/event'
-import { remapCountsToLockedXAxis } from '../Utils/HistogramUtils.ts'
-import { formatSig } from "../Utils/Helpers.ts"
+import { remapCountsToLockedXAxis } from '@/Frontend/Utils/HistogramUtils.ts'
+import { formatSig } from "@/Frontend/Utils/Helpers.ts"
 const plotLeft = 50, plotRight = 50, plotTop = 50, plotBottom = 50
 const GRID_COUNT = 10
 type GraphProps = {
