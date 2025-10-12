@@ -1,9 +1,10 @@
 import React from 'react'
 import SpreadsheetGrid from '../../Components/SpreadsheetGrid.tsx'
 import Graph from '../../Components/Graph.tsx'
-import { styles, createColumnDefs, GRAPH_WIDTH, GRAPH_HEIGHT } from '../../Utils/Styles.ts'
-import { OUTPUT_LABELS } from '../../Utils/Constants.ts'
+import { styles, createColumnDefs, GRAPH_WIDTH, GRAPH_HEIGHT, } from '../../Utils/Styles.ts'
+import { OUTPUT_LABELS, INPUT_LABELS, } from '../../Utils/Constants.ts'
 import { StyledSlider } from '../../Utils/Styles.ts'
+import LabeledCheckbox from '../../Components/LabeledCheckbox.tsx'
 // Styled Material UI Slider with custom colors
 
 type ChanceToCostSectionProps = {
@@ -29,6 +30,10 @@ type ChanceToCostSectionProps = {
     AverageCostBusy: boolean
     // Data size for luckiest draw message
     dataSize: string
+    budget_inputs: any
+    set_budget_inputs: React.Dispatch<React.SetStateAction<any>>
+    userMatsValue: any
+    setUserMatsValue: React.Dispatch<React.SetStateAction<any>>
 }
 
 export default function ChanceToCostSection({
@@ -55,9 +60,14 @@ export default function ChanceToCostSection({
     AverageCostBusy: _AverageCostBusy,
     // Data size for luckiest draw message
     dataSize,
-}: ChanceToCostSectionProps) {
-    const { chanceToCostColumnDefs } = createColumnDefs(false) // autoGoldValues not used for this section
 
+    budget_inputs,
+    set_budget_inputs,
+    userMatsValue,
+    setUserMatsValue
+}: ChanceToCostSectionProps) {
+    const { chanceToCostColumnDefs, costToChanceColumnDefs } = createColumnDefs(false) // autoGoldValues not used for this section
+    // const { costToChanceColumnDefs } = createColumnDefs(false)
     return (
         <>
             {/* <h3 style={{ color: 'var(--text-primary)', fontSize: 'var(--font-size-base)', fontWeight: 'var(--font-weight-semibold)', margin: '0 0 -8px 0' }}>Chance to Cost</h3> */}
@@ -131,31 +141,12 @@ export default function ChanceToCostSection({
                             />
                         </div>
                         <div style={{ marginTop: 12, display: 'flex', alignItems: 'center', gap: 8, }}>
-
-                            <label
-                                htmlFor="show-average"
-                                style={{
-                                    color: 'var(--text-primary)',
-                                    fontSize: 'var(--font-size-sm)',
-
-                                    cursor: 'pointer',
-                                    userSelect: 'none'
-                                }}
-                            >
-                                Show Average on graph
-                            </label>
-                            <input
-                                type="checkbox"
-                                id="show-average"
+                            <LabeledCheckbox
+                                label="Show Average on graph"
                                 checked={showAverage}
-                                onChange={(e) => setShowAverage(e.target.checked)}
-                                style={{
-                                    width: 16,
-                                    height: 16,
-                                    cursor: 'pointer',
-                                    accentColor: "var(--bright-green)"
-                                }}
+                                setChecked={setShowAverage}
                             />
+
                         </div>
                         {cost_result && (
                             <pre style={{ color: 'var(--text-muted)', fontSize: 'var(--font-size-xs)', marginTop: 8, }}>
@@ -169,11 +160,22 @@ export default function ChanceToCostSection({
 
 
                 <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 16, paddingLeft: 50, }}>
+                    <div style={{ marginBottom: 16, width: 210, marginLeft: 10 }}>
+                        <SpreadsheetGrid
+                            columnDefs={costToChanceColumnDefs}
+                            labels={INPUT_LABELS}
+                            sheet_values={budget_inputs}
+                            set_sheet_values={set_budget_inputs}
+                            secondaryValues={userMatsValue}
+                            setSecondaryValues={setUserMatsValue}
+                        />
+
+                    </div>
 
                     <div style={{ marginLeft: 100 }}>
                         <div style={{ marginBottom: 16, width: 210 }}>
                             <SpreadsheetGrid
-                                columnDefs={chanceToCostColumnDefs}
+                                columnDefs={[{ ...chanceToCostColumnDefs[0], headerName: "Optimized Estimation " }]}
                                 labels={OUTPUT_LABELS}
                                 sheet_values={cost_result_optimized ?
                                     Object.fromEntries(OUTPUT_LABELS.map((label, lab_index) =>

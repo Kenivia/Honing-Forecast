@@ -544,11 +544,12 @@ export default function HoningForecastUI() {
     }, [advStrategyKey, expressEventKey, graphBucketSizeKey, dataSizeKey, normalCountsKey, advCountsKey])
 
     // Cleanup on unmount: terminate any running workers and clear timers
-    // useEffect(() => {
-    //     return () => {
-    //         runner.cancel()
-    //     }
-    // }, [])
+    useEffect(() => {
+        return () => {
+            runner.cancel()
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [])
 
     // styles and column defs moved to ./styles
     const AnythingTicked = useMemo(() => normalCounts[0].some(x => x > 0) ||
@@ -650,14 +651,19 @@ export default function HoningForecastUI() {
                         lockXAxis={lockXAxis}
                         lockedMins={lockedMins}
                         lockedMaxs={lockedMaxs}
-                        // Show Average checkbox props
+
                         showAverage={showAverage}
                         setShowAverage={setShowAverage}
-                        // Moved worker call results
+
                         averageCosts={averageCostsResult?.average_costs}
                         AverageCostBusy={averageCostBusy}
-                        // Data size for luckiest draw message
+
                         dataSize={dataSize}
+                        budget_inputs={budget_inputs}
+
+                        set_budget_inputs={set_budget_inputs}
+                        userMatsValue={userMatsValue}
+                        setUserMatsValue={setUserMatsValue}
                     />
                 </div>
 

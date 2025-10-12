@@ -135,7 +135,6 @@ pub fn chance_to_cost_optimized<R: rand::Rng>(
 
     let unlock_costs: Vec<i64> = calc_unlock(&hone_counts, &adv_counts, express_event);
     let cost_data: Vec<Vec<i64>> = monte_carlo_data(data_size, &upgrade_arr, &unlock_costs, 0, rng);
-    // let top_bottom: Vec<Vec<i64>> = get_top_bottom(&upgrade_arr, &unlock_costs);
 
     let mut input_budget_no_gold: Vec<i64> = input_budgets.to_vec();
     input_budget_no_gold[5] = 0;
@@ -154,7 +153,7 @@ pub fn chance_to_cost_optimized<R: rand::Rng>(
         &input_budget_no_gold,
         &mats_value,
     );
-    let resolution: usize = 100;
+    let resolution: usize = 1000;
     let gap_size: f64 = (pity_cost - input_budgets[5] as f64) / resolution as f64;
     let mut budget_data: Vec<Vec<i64>> = Vec::with_capacity(resolution + 1);
     let mut new_input_budget: Vec<i64>;
@@ -166,8 +165,6 @@ pub fn chance_to_cost_optimized<R: rand::Rng>(
         budget_data.push(optimized_budget);
     }
 
-    // let mut budget_data: Vec<Vec<i64>> =
-    //     generate_budget_data(&cost_data, &vec![0_i64; 7], budget_size);
     budget_data.push(top_bottom[1].clone());
 
     if adv_hone_strategy == "Juice on grace" {

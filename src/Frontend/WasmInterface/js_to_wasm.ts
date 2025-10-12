@@ -61,7 +61,7 @@ self.addEventListener("message", async (ev) => {
     ) {
         throw "Invalid js_to_wasm operation type: " + which_one
     }
-
+    console.log(which_one)
     let result
     if (which_one == "CostToChance") {
         // always run optimized

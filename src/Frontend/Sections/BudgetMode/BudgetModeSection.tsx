@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
 import SpreadsheetGrid from '../../Components/SpreadsheetGrid.tsx'
 import Graph from '../../Components/Graph.tsx'
+import LabeledCheckbox from '../../Components/LabeledCheckbox.tsx'
 import { styles, createColumnDefs, GRAPH_WIDTH, GRAPH_HEIGHT } from '../../Utils/Styles.ts'
 import { INPUT_LABELS, OUTPUT_LABELS } from '../../Utils/Constants.ts'
 
@@ -58,16 +59,10 @@ export default function CostToChanceSection({
                                     setSecondaryValues={setUserMatsValue}
                                 />
                                 {/* <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8, marginLeft: 0 }}>
-
-                                    <label htmlFor="custom-gold-values" style={{ color: 'var(--text-primary)', fontSize: 'var(--font-size-sm)', whiteSpace: 'nowrap' }}>
-                                        Custom Gold values
-                                    </label>
-                                    <input
-                                        type="checkbox"
-                                        id="custom-gold-values"
+                                    <LabeledCheckbox
+                                        label="Custom Gold values"
                                         checked={!autoGoldValues}
-                                        onChange={(e) => setAutoGoldValues(!e.target.checked)}
-                                        style={{ accentColor: 'var(--control-checked-bg)' }}
+                                        setChecked={(checked) => setAutoGoldValues(!checked)}
                                     />
                                 </div> */}
                             </div>
@@ -121,15 +116,10 @@ export default function CostToChanceSection({
 
                                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8, justifySelf: "center", marginLeft: 100, marginTop: 20 }}>
 
-                                    <label htmlFor="show-optimized-details" style={{ color: 'var(--text-primary)', fontSize: 'var(--font-size-sm)', whiteSpace: 'nowrap' }}>
-                                        Show details
-                                    </label>
-                                    <input
-                                        type="checkbox"
-                                        id="show-optimized-details"
+                                    <LabeledCheckbox
+                                        label="Show details"
                                         checked={showOptimizedDetails}
-                                        onChange={(e) => setShowOptimizedDetails(e.target.checked)}
-                                        style={{ accentColor: 'var(--control-checked-bg)' }}
+                                        setChecked={setShowOptimizedDetails}
                                     />
                                 </div>
                             </div>
@@ -167,15 +157,10 @@ export default function CostToChanceSection({
 
                                     <div style={{ display: 'flex', flexDirection: "row", alignItems: 'center', gap: 8, marginBottom: 8, marginLeft: 220 }}>
 
-                                        <label htmlFor="show-optimized" style={{ color: 'var(--text-muted)', fontSize: 'var(--font-size-sm)', whiteSpace: 'nowrap' }}>
-                                            Show this on graph
-                                        </label>
-                                        <input
-                                            type="checkbox"
-                                            id="show-optimized"
+                                        <LabeledCheckbox
+                                            label="Show this on graph"
                                             checked={showOptimized}
-                                            onChange={(e) => setShowOptimized(e.target.checked)}
-                                            style={{ accentColor: 'var(--control-checked-bg)' }}
+                                            setChecked={setShowOptimized}
                                         />
                                     </div>
                                 </div>

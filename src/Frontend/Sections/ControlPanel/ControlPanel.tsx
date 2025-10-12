@@ -1,5 +1,6 @@
 import React from 'react'
 import { styles } from '../../Utils/Styles.ts'
+import LabeledCheckbox from '../../Components/LabeledCheckbox.tsx'
 
 type ControlPanelProps = {
     controlsLeft: number | null
@@ -32,50 +33,26 @@ export default function ControlPanel({ controlsLeft: _controlsLeft, mainScale: _
                     <button style={styles.demoButton} onClick={clearAll}>Reset All</button>
 
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '8px' }}>
-                        <label htmlFor="express_event" style={{ color: 'var(--text-primary)', fontSize: 'var(--font-size-sm)', cursor: 'pointer' }}>Express event</label>
-                        <input
-                            type="checkbox"
-                            id="express_event"
+                        <LabeledCheckbox
+                            label="Express event"
                             checked={express_event}
-                            onChange={(e) => set_express_event(e.target.checked)}
-                            style={{
-                                width: '16px',
-                                height: '16px',
-                                cursor: 'pointer',
-                                accentColor: 'var(--control-checked-bg)'
-                            }}
+                            setChecked={set_express_event}
                         />
                     </div>
 
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <label htmlFor="cumulative_graph" style={{ color: 'var(--text-primary)', fontSize: 'var(--font-size-sm)', cursor: 'pointer' }}>Cumulative Graph</label>
-                        <input
-                            type="checkbox"
-                            id="cumulative_graph"
+                        <LabeledCheckbox
+                            label="Cumulative Graph"
                             checked={cumulativeGraph}
-                            onChange={(e) => setCumulativeGraph(e.target.checked)}
-                            style={{
-                                width: '16px',
-                                height: '16px',
-                                cursor: 'pointer',
-                                accentColor: 'var(--control-checked-bg)'
-                            }}
+                            setChecked={setCumulativeGraph}
                         />
                     </div>
 
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <label htmlFor="grid_input" style={{ color: 'var(--text-primary)', fontSize: 'var(--font-size-sm)', cursor: 'pointer' }}>Grid input</label>
-                        <input
-                            type="checkbox"
-                            id="grid_input"
+                        <LabeledCheckbox
+                            label="Grid input"
                             checked={useGridInput}
-                            onChange={(e) => setUseGridInput(e.target.checked)}
-                            style={{
-                                width: '16px',
-                                height: '16px',
-                                cursor: 'pointer',
-                                accentColor: 'var(--control-checked-bg)'
-                            }}
+                            setChecked={setUseGridInput}
                         />
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
