@@ -106,7 +106,7 @@ export default function CostToChanceSection({
                                               maximumFractionDigits: 0,
                                           })
                                         : "Calculating...") +
-                                    (chance_result && Number(desired_chance) < chance_result?.optimized_chance
+                                    (chance_result && Number(desired_chance) < chance_result?.optimized_chance && AnythingTicked
                                         ? ". If you spend your gold according to the list on the right, you already have " +
                                           chance_result?.optimized_chance +
                                           "% chance to succeed"
@@ -119,12 +119,12 @@ export default function CostToChanceSection({
                                 <div style={{ marginBottom: 0, width: 210 }}>
                                     <SpreadsheetGrid
                                         columnDefs={optimizedColumnDefs}
-                                        labels={OUTPUT_LABELS}
+                                        labels={OUTPUT_LABELS.slice(0, 7)}
                                         sheetValuesArr={[
                                             // budget_inputs,
 
                                             Object.fromEntries(
-                                                OUTPUT_LABELS.map((label, lab_index) => [
+                                                OUTPUT_LABELS.slice(0, 7).map((label, lab_index) => [
                                                     label,
                                                     cost_result_optimized
                                                         ? String(
@@ -138,7 +138,7 @@ export default function CostToChanceSection({
                                             ),
 
                                             Object.fromEntries(
-                                                OUTPUT_LABELS.map((label, lab_index) => [
+                                                OUTPUT_LABELS.slice(0, 7).map((label, lab_index) => [
                                                     label,
                                                     cost_result_optimized
                                                         ? String(cost_result_optimized.hundred_budgets[parseInt(desired_chance)][lab_index])
@@ -226,7 +226,7 @@ export default function CostToChanceSection({
                             </div>
 
                             {chance_result && (
-                                <div style={{ marginLeft: 10, marginBottom: 50, flexDirection: "column", display: "flex", marginTop: 0 }}>
+                                <div style={{ marginLeft: 10, flexDirection: "column", display: "flex", marginTop: 0 }}>
                                     <div
                                         style={{
                                             ...styles.inputLabelCell,
@@ -248,7 +248,7 @@ export default function CostToChanceSection({
                         </div>
                     )}
 
-                    <div style={{ display: "flex", gap: 0, alignItems: "flex-start", marginTop: 0, flexDirection: "column", width: "100%" }}>
+                    <div style={{ display: "flex", gap: 0, alignItems: "flex-start", marginTop: 0, flexDirection: "column", width: 1000 }}>
                         {chance_result && (
                             <div style={{ display: "flex", flexDirection: "row", marginTop: 0 }}>
                                 <div>
@@ -298,6 +298,11 @@ export default function CostToChanceSection({
                                 />
                             </div>}
                              */}
+                            </div>
+                        )}
+                        {chance_result && (
+                            <div style={{ marginTop: 0, fontSize: "var(--font-size-xs)", fontStyle: "italic", marginLeft: -0, marginBottom: 5 }}>
+                                Currently, these gold values assumes that you are buying ALL mats. This is a work in progress
                             </div>
                         )}
                     </div>

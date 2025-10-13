@@ -126,7 +126,7 @@ export default function LongTermSection({
     // Column definitions for the long term section - always shows both budget and gold value columns
     const longTermColumnDefs: ColumnDef[] = [
         {
-            headerName: "Budget Input",
+            headerName: "Owned now",
             editable: true,
             flex: 1,
             background: "var(--grid-cell-bg)",
@@ -134,7 +134,7 @@ export default function LongTermSection({
             color: "var(--grid-cell-text)",
         },
         {
-            headerName: "Gold Value",
+            headerName: "Gold Price",
             editable: true,
             flex: 1,
             background: "var(--grid-cell-bg)",
@@ -463,7 +463,7 @@ export default function LongTermSection({
             <div style={{ ...styles.inputSection, flexDirection: "row", maxWidth: "1200px", width: "100%" }}>
                 <div style={{ display: "flex", gap: 20, alignItems: "center", flexDirection: "column" }}>
                     <div style={{ display: "flex", gap: 5, alignItems: "flex-start", alignSelf: "flex-start" }}>
-                        {/* Main Budget Input Grid */}
+                        {/* Main Owned now Grid */}
                         <div style={{ display: "flex", flexDirection: "column", gap: 0, alignItems: "flex-start", justifyContent: "start", width: 300 }}>
                             <div style={{ marginBottom: 16, width: 300 }}>
                                 <SpreadsheetGrid

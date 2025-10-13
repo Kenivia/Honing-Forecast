@@ -168,7 +168,7 @@ export const createColumnDefs = (_autoGoldValues: boolean) => {
 
     const costToChanceColumnDefs: ColumnDef[] = [
         {
-            headerName: "Budget Input",
+            headerName: "Owned now",
             editable: true,
             flex: 1,
             background: "var(--grid-cell-bg)",
@@ -176,7 +176,7 @@ export const createColumnDefs = (_autoGoldValues: boolean) => {
             color: "var(--grid-cell-text)",
         },
         {
-            headerName: "Gold Value",
+            headerName: "Gold Price",
             editable: true,
             flex: 1,
             background: "var(--grid-cell-bg)",
@@ -186,7 +186,7 @@ export const createColumnDefs = (_autoGoldValues: boolean) => {
     ]
     const optimizedColumnDefs: ColumnDef[] = [
         // {
-        //     headerName: "Budget Input",
+        //     headerName: "Owned now",
         //     editable: true,
         //     flex: 1,
         //     background: "var(--grid-cell-bg)",

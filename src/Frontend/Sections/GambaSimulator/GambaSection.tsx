@@ -447,7 +447,7 @@ export default function GambaSection({
 
             <div style={{ ...styles.inputSection, flexDirection: "row", maxWidth: "1200px", width: "100%" }}>
                 <div style={{ display: "flex", gap: 20, alignItems: "flex-start" }}>
-                    {/* Budget Input Grid */}
+                    {/* Owned now Grid */}
                     <div
                         style={{
                             display: "flex",

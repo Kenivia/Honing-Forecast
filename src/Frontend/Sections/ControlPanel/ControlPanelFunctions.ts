@@ -58,7 +58,7 @@ export function createClearAll({
         setUserMatsValue(
             Object.fromEntries(
                 INPUT_LABELS.slice(0, 7).map((l, index) => {
-                    const defaultValues = ["1.0", "0.1", "13.0", "0.2", "90.0", "1.0", "0.0"]
+                    const defaultValues = ["1.65", "0.03", "13.0", "0.5", "95.0", "1.0", "0.0"]
                     return [l, defaultValues[index]]
                 })
             )

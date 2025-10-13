@@ -730,7 +730,7 @@ export default function HoningForecastUI() {
                     />
                 </div>
 
-                <div className={activePage === "cost-to-chance" ? "page" : "page page--hidden"} aria-hidden={activePage !== "cost-to-chance"}>
+                <div className={activePage === "gamba" ? "page" : "page page--hidden"} aria-hidden={activePage !== "cost-to-chance"}>
                     <GambaSection
                         budget_inputs={budget_inputs}
                         set_budget_inputs={set_budget_inputs}
