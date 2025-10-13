@@ -304,10 +304,43 @@ mod tests {
     use crate::constants::{DEFAULT_GOLD_VALUES, EVENT_ARTISAN_MULTIPLIER};
     use crate::parser::parser;
     use crate::test_cache::{read_cached_data, write_cached_data};
-
     #[test]
-    fn est_juice_value_22_wep() {
-        let test_name: &str = "est_juice_value_22_wep";
+    fn est_juice_value_25_wep() {
+        let test_name: &str = "est_juice_value_25_wep";
+        let hone_counts: Vec<Vec<i64>> = vec![
+            (0..25).map(|_| 0).collect(),
+            (0..25).map(|x| if x == 24 { 1 } else { 0 }).collect(),
+        ];
+        let adv_counts: Vec<Vec<i64>> =
+            vec![(0..4).map(|_| 0).collect(), (0..4).map(|_| 0).collect()];
+
+        let adv_hone_strategy: &str = "No juice";
+        let express_event: bool = true;
+
+        let hash: String =
+            calculate_hash!(&hone_counts, &adv_counts, adv_hone_strategy, express_event);
+
+        let mut upgrade_arr = parser(
+            &hone_counts,
+            &adv_counts,
+            &adv_hone_strategy.to_string(),
+            &EVENT_ARTISAN_MULTIPLIER.to_vec(),
+            &[0.0; 25],
+            &[0; 25],
+            express_event,
+        );
+
+        est_juice_value(&mut upgrade_arr, &DEFAULT_GOLD_VALUES);
+        let result: Vec<f64> = upgrade_arr[0].juice_values.clone();
+        if let Some(cached_result) = read_cached_data::<Vec<f64>>(test_name, &hash) {
+            assert_eq!(result, cached_result);
+        } else {
+            write_cached_data(test_name, &hash, &result);
+        }
+    }
+    #[test]
+    fn est_juice_value_23_wep() {
+        let test_name: &str = "est_juice_value_23_wep";
         let hone_counts: Vec<Vec<i64>> = vec![
             (0..25).map(|_| 0).collect(),
             (0..25).map(|x| if x == 22 { 1 } else { 0 }).collect(),
