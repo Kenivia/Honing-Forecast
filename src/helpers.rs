@@ -128,9 +128,7 @@ pub fn ticks_to_counts(ticks: Vec<Vec<bool>>) -> Vec<Vec<i64>> {
 
     for i in 0..cols {
         // sum ticks[0..4][i]
-        out[0][i] = (0..5)
-            .map(|row: usize| i64::from(ticks[row][i]))
-            .sum();
+        out[0][i] = (0..5).map(|row: usize| i64::from(ticks[row][i])).sum();
 
         // ticks[5][i] as 0/1
         out[1][i] = i64::from(ticks[5][i]);

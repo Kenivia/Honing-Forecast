@@ -409,7 +409,7 @@ pub fn beam_search<R: rand::Rng>(
     for i in 0..dims {
         best_values[i] = thresholds[i][best_state.indices[i]].max(input_budget_no_gold[i]);
         if i == 5 {
-            best_values[5] = (k - best_state.mats_cost).round() as i64;
+            best_values[5] = (k - best_state.mats_cost).floor() as i64;
         }
     }
 

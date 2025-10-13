@@ -32,7 +32,7 @@ export function useGambaLogic({
     isAutoAttemptingThisOne,
     setIsAutoAttemptingThisOne,
     unfinishedNormalUpgrades,
-    flushUpgradeArrToState
+    flushUpgradeArrToState,
 }: GambaLogicProps) {
     // Refs for stable references
     const upgradeArrRef = useRef(upgradeArr)
@@ -77,7 +77,7 @@ export function useGambaLogic({
         // Helper function to perform a single attempt
         const performSingleAttempt = () => {
             let success = false
-            let advTapCount = -1;
+            let advTapCount = -1
 
             if (upgrade.is_normal_honing) {
                 const currentChance = calculateCurrentChance(upgrade)
@@ -109,7 +109,7 @@ export function useGambaLogic({
             }
 
             // Add costs to final_costs (functional update + keep ref in sync)
-            setFinalCosts(prev => {
+            setFinalCosts((prev) => {
                 const next = prev.slice()
                 if (upgrade.is_normal_honing) {
                     for (let i = 0; i < 7; i++) {
@@ -120,10 +120,9 @@ export function useGambaLogic({
                         if (upgrade.is_weapon) next[7] = (next[7] ?? 0) + juiceCost
                         else next[8] = (next[8] ?? 0) + juiceCost
                     }
-                }
-                else {
+                } else {
                     for (let i = 0; i < 7; i++) {
-                        next[i] = (next[i] ?? 0) + (upgrade.costs?.[i] * advTapCount)
+                        next[i] = (next[i] ?? 0) + upgrade.costs?.[i] * advTapCount
                     }
                     if (upgrade.use_juice) {
                         const juiceCost = upgrade.adv_juice_cost[advTapCount - upgrade.tap_offset] ?? 0
@@ -171,7 +170,7 @@ export function useGambaLogic({
         if (success) {
             upgrade.is_finished = true
             upgrade.completion_order = (upgrade.completion_order || 0) + 1
-            setCompletionCounter(prev => prev + 1)
+            setCompletionCounter((prev) => prev + 1)
             // Handle auto-attempting logic
             if (isAutoAttemptingThisOneRef.current) {
                 // Stop "this one" auto-attempting since the upgrade succeeded
@@ -193,7 +192,6 @@ export function useGambaLogic({
                 //     selectedUpgradeIndexRef.current = nextUnfinishedIndex
                 // }
             } else if (isAutoAttemptingRef.current) {
-
                 // Move to next unfinished upgrade if auto-attempting all
                 const nextUnfinishedIndex = getNextUnfinishedIndex(upgradeArrRef.current, selIdx)
                 // console.log("auto", nextUnfinishedIndex, upgradeArrRef.current[nextUnfinishedIndex])
@@ -208,11 +206,9 @@ export function useGambaLogic({
                     }
                     setIsAutoAttempting(false)
                     isAutoAttemptingRef.current = false
-
                 }
             }
             // Note: Manual taps do not automatically move to next upgrade
-
         }
 
         // Update the upgrade in the ref array
@@ -230,21 +226,24 @@ export function useGambaLogic({
     const attemptTap = useCallback(() => performAttempt(), [performAttempt])
 
     // Toggle auto-attempt mode
-    const startAuto = useCallback((ms: number) => {
-        if (intervalRef.current != null) return
-        isAutoAttemptingRef.current = true
-        setIsAutoAttempting(true)
+    const startAuto = useCallback(
+        (ms: number) => {
+            if (intervalRef.current != null) return
+            isAutoAttemptingRef.current = true
+            setIsAutoAttempting(true)
 
-        const tick = () => {
-            performAttempt()
-            if (isAutoAttemptingRef.current) {
-                intervalRef.current = window.setTimeout(tick, Math.max(5, ms)) // enforce min delay
-            } else {
-                intervalRef.current = null
+            const tick = () => {
+                performAttempt()
+                if (isAutoAttemptingRef.current) {
+                    intervalRef.current = window.setTimeout(tick, Math.max(5, ms)) // enforce min delay
+                } else {
+                    intervalRef.current = null
+                }
             }
-        }
-        tick()
-    }, [performAttempt, setIsAutoAttempting])
+            tick()
+        },
+        [performAttempt, setIsAutoAttempting]
+    )
 
     const stopAuto = useCallback(() => {
         if (intervalRef.current != null) {
@@ -263,9 +262,7 @@ export function useGambaLogic({
         } else {
             // Only start auto-attempt if there are unfinished normal honing upgrades
             if (unfinishedNormalUpgrades.length > 0) {
-                if (!selectedUpgradeIndex ||
-                    !upgradeArr[selectedUpgradeIndex] ||
-                    upgradeArr[selectedUpgradeIndex].is_finished) {
+                if (!selectedUpgradeIndex || !upgradeArr[selectedUpgradeIndex] || upgradeArr[selectedUpgradeIndex].is_finished) {
                     const nextUnfinishedIndex = getNextUnfinishedIndex(upgradeArrRef.current, selectedUpgradeIndex)
                     setSelectedUpgradeIndex(nextUnfinishedIndex)
                     selectedUpgradeIndexRef.current = nextUnfinishedIndex
@@ -296,7 +293,7 @@ export function useGambaLogic({
         const success = Math.random() < upgrade.base_chance
 
         // Add special cost to 10th element
-        setFinalCosts(prev => {
+        setFinalCosts((prev) => {
             const next = prev.slice()
             next[9] = (next[9] || 0) + upgrade.special_cost
             return next
@@ -304,7 +301,7 @@ export function useGambaLogic({
 
         if (success) {
             // Success - mark as finished and update tap counts
-            setUpgradeArr(prev => {
+            setUpgradeArr((prev) => {
                 const next = prev.slice()
                 const updatedUpgrade = {
                     ...next[selectedUpgradeIndex],
@@ -320,14 +317,14 @@ export function useGambaLogic({
                 return next
             })
 
-            setCompletionCounter(prev => prev + 1)
+            setCompletionCounter((prev) => prev + 1)
         } else {
             // Failure - still track the free tap
-            setUpgradeArr(prev => {
+            setUpgradeArr((prev) => {
                 const next = prev.slice()
                 const updatedUpgrade = {
                     ...next[selectedUpgradeIndex],
-                    free_taps_so_far: (next[selectedUpgradeIndex].free_taps_so_far ?? 0) + 1
+                    free_taps_so_far: (next[selectedUpgradeIndex].free_taps_so_far ?? 0) + 1,
                 }
                 // Update cumulative chance for normal honing (free tap uses base chance)
                 if (updatedUpgrade.is_normal_honing) {
@@ -343,6 +340,6 @@ export function useGambaLogic({
         attemptTap,
         toggleAutoAttempt,
         toggleAutoAttemptThisOne,
-        freeTap
+        freeTap,
     }
 }

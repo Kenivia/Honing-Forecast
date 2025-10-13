@@ -72,10 +72,7 @@ fn est_juice_value_for_prob_dist(
         // })
     ) / upgrade.one_juice_cost as f64
 }
-pub fn est_special_honing_value(
-    upgrade_arr: &mut Vec<Upgrade>,
-    mats_values: &[f64],
-) -> Vec<f64> {
+pub fn est_special_honing_value(upgrade_arr: &mut Vec<Upgrade>, mats_values: &[f64]) -> Vec<f64> {
     let mut out: Vec<f64> = Vec::with_capacity(upgrade_arr.len());
     let mut average: f64;
     let cost_type_count: usize = 7;
@@ -160,7 +157,8 @@ pub fn juice_to_array(
     user_gave_weapon: bool,
 ) -> (Vec<String>, Vec<String>) {
     // Armor uses blue juice (is_weapon == false), Weapon uses red juice (is_weapon == true)
-    let armor_pairs: Vec<(usize, usize, f64, f64)> = _juice_to_array(upgrade_arr, false, blue_juice);
+    let armor_pairs: Vec<(usize, usize, f64, f64)> =
+        _juice_to_array(upgrade_arr, false, blue_juice);
     let weapon_pairs: Vec<(usize, usize, f64, f64)> = _juice_to_array(upgrade_arr, true, red_juice);
 
     // Convert pairs of (plus_num, taps) to human-readable strings, sorted by plus_num asc

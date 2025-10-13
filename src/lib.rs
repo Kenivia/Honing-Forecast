@@ -68,7 +68,7 @@ fn get_count(counts: Option<Vec<Vec<i64>>>, ticks: Option<Vec<Vec<bool>>>) -> Ve
     }
 }
 #[wasm_bindgen]
-#[must_use] 
+#[must_use]
 pub fn chance_to_cost_wrapper(input: JsValue) -> JsValue {
     console_error_panic_hook::set_once();
     let payload: Payload = from_value(input).unwrap();
@@ -96,7 +96,7 @@ pub fn chance_to_cost_wrapper(input: JsValue) -> JsValue {
 }
 
 #[wasm_bindgen]
-#[must_use] 
+#[must_use]
 pub fn cost_to_chance_wrapper(input: JsValue) -> JsValue {
     console_error_panic_hook::set_once();
 
@@ -126,7 +126,7 @@ pub fn cost_to_chance_wrapper(input: JsValue) -> JsValue {
 }
 
 #[wasm_bindgen]
-#[must_use] 
+#[must_use]
 pub fn cost_to_chance_optimized_wrapper(input: JsValue) -> JsValue {
     console_error_panic_hook::set_once();
 
@@ -156,7 +156,7 @@ pub fn cost_to_chance_optimized_wrapper(input: JsValue) -> JsValue {
 }
 
 #[wasm_bindgen]
-#[must_use] 
+#[must_use]
 pub fn chance_to_cost_optimized_wrapper(input: JsValue) -> JsValue {
     console_error_panic_hook::set_once();
 
@@ -186,7 +186,7 @@ pub fn chance_to_cost_optimized_wrapper(input: JsValue) -> JsValue {
 }
 
 #[wasm_bindgen]
-#[must_use] 
+#[must_use]
 pub fn parser_wrapper_unified(input: JsValue) -> JsValue {
     console_error_panic_hook::set_once();
     let payload: Payload = from_value(input).unwrap();
@@ -223,7 +223,7 @@ pub fn parser_wrapper_unified(input: JsValue) -> JsValue {
 }
 
 #[wasm_bindgen]
-#[must_use] 
+#[must_use]
 pub fn average_cost_wrapper(input: JsValue) -> JsValue {
     console_error_panic_hook::set_once();
     let payload: Payload = from_value(input).unwrap();
@@ -255,7 +255,7 @@ pub fn average_cost_wrapper(input: JsValue) -> JsValue {
 }
 
 #[wasm_bindgen]
-#[must_use] 
+#[must_use]
 pub fn cost_to_chance_arr_wrapper(input: JsValue) -> JsValue {
     console_error_panic_hook::set_once();
     let payload: PayloadArr = from_value(input).unwrap();
@@ -296,7 +296,7 @@ pub fn cost_to_chance_arr_wrapper(input: JsValue) -> JsValue {
 
 // Histograms are included in the default wrappers' outputs
 
-#[must_use] 
+#[must_use]
 pub fn chance_to_cost_test_wrapper(
     normal_hone_ticks: Vec<Vec<bool>>,
     adv_hone_ticks: Vec<Vec<bool>>,
@@ -316,7 +316,7 @@ pub fn chance_to_cost_test_wrapper(
     (out.hundred_budgets, out.hundred_chances)
 }
 
-#[must_use] 
+#[must_use]
 pub fn cost_to_chance_test_wrapper(
     normal_hone_ticks: Vec<Vec<bool>>,
     adv_hone_ticks: Vec<Vec<bool>>,

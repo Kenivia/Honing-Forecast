@@ -1,47 +1,46 @@
-import React, { useEffect, useRef, useState, useMemo } from 'react'
+import React, { useEffect, useRef, useState, useMemo } from "react"
 import "./Sections/UpgradeSelection//CheckboxRow.css"
-import { styles } from './Utils/Styles.ts'
-import { INPUT_LABELS, TOP_ROWS, TOP_COLS, BOTTOM_ROWS, BOTTOM_COLS, } from './Utils/Constants.ts'
-import { readSettings, writeSettings } from './Utils/Settings.ts'
-import ControlPanel from './Sections/ControlPanel/ControlPanel.tsx'
-import NormalHoningPanel from './Sections/UpgradeSelection/NormalHoningPanel.tsx'
-import AdvancedHoningPanel from './Sections/UpgradeSelection/AdvancedHoningPanel.tsx'
-import ChanceToCostSection from './Sections/ChanceMode/ChanceModeSection.tsx'
-import CostToChanceSection from './Sections/BudgetMode/BudgetModeSection.tsx'
+import { styles } from "./Utils/Styles.ts"
+import { INPUT_LABELS, TOP_ROWS, TOP_COLS, BOTTOM_ROWS, BOTTOM_COLS } from "./Utils/Constants.ts"
+import { readSettings, writeSettings } from "./Utils/Settings.ts"
+import ControlPanel from "./Sections/ControlPanel/ControlPanel.tsx"
+import NormalHoningPanel from "./Sections/UpgradeSelection/NormalHoningPanel.tsx"
+import AdvancedHoningPanel from "./Sections/UpgradeSelection/AdvancedHoningPanel.tsx"
+import ChanceToCostSection from "./Sections/ChanceMode/ChanceModeSection.tsx"
+import CostToChanceSection from "./Sections/BudgetMode/BudgetModeSection.tsx"
 // const CostToChanceSection = React.lazy(() => import('./CostToChanceSection.tsx'));
 
 import GambaSection from "./Sections/GambaSimulator/GambaSection.tsx"
-import LongTermSection from './Sections/ForecastMode/ForecastModeSection.tsx'
+import LongTermSection from "./Sections/ForecastMode/ForecastModeSection.tsx"
 // const GambaSection = React.lazy(() => import('./GambaSection.tsx'));
-import Separator from './Sections/Separator/Separator.tsx'
-import { TooltipState, createTooltipHandlers, renderTooltip } from './Utils/Tooltip.tsx'
-import Icon from './Components/Icon.tsx'
+import Separator from "./Sections/Separator/Separator.tsx"
+import { TooltipState, createTooltipHandlers, renderTooltip } from "./Utils/Tooltip.tsx"
+import Icon from "./Components/Icon.tsx"
 
 import { GridMouseDownLogic, mouseMoveLogic, createMouseUpHandler } from "./Sections/UpgradeSelection/Marquee.ts"
-import { createClearAll, createFillDemo, createFillDemoIncome } from './Sections/ControlPanel/ControlPanelFunctions.ts'
-import { buildPayload, createCancelableWorkerRunner } from './WasmInterface/WorkerRunner.ts'
-import { ticksToCounts, countsToTicks } from './Utils/Helpers.ts'
+import { createClearAll, createFillDemo, createFillDemoIncome } from "./Sections/ControlPanel/ControlPanelFunctions.ts"
+import { buildPayload, createCancelableWorkerRunner } from "./WasmInterface/WorkerRunner.ts"
+import { ticksToCounts, countsToTicks } from "./Utils/Helpers.ts"
 
 export default function HoningForecastUI() {
-
     const [topGrid, setTopGrid] = useState(() => Array.from({ length: TOP_ROWS }, () => Array.from({ length: TOP_COLS }, () => false)))
     const [bottomGrid, setBottomGrid] = useState(() => Array.from({ length: BOTTOM_ROWS }, () => Array(BOTTOM_COLS).fill(false)))
-    const [budget_inputs, set_budget_inputs] = useState(() => Object.fromEntries(INPUT_LABELS.map((l) => [l, '0'])))
+    const [budget_inputs, set_budget_inputs] = useState(() => Object.fromEntries(INPUT_LABELS.map((l) => [l, "0"])))
     const [autoGoldValues, setAutoGoldValues] = useState(false)
     const [userMatsValue, setUserMatsValue] = useState(() => {
         const defaultValues = ["3.4", "0.3", "13.0", "0.4", "95.0", "1.0", "0.0"]
         return Object.fromEntries(INPUT_LABELS.slice(0, 7).map((l, index) => [l, defaultValues[index]]))
     })
-    const [desired_chance, set_desired_chance] = useState(() => '50')
-    const [uncleaned_desired_chance, set_uncleaned_desired_chance] = useState(() => '50')
-    const [adv_hone_strategy, set_adv_hone_strategy_change] = useState(() => 'No juice')
+    const [desired_chance, set_desired_chance] = useState(() => "50")
+    const [uncleaned_desired_chance, set_uncleaned_desired_chance] = useState(() => "50")
+    const [adv_hone_strategy, set_adv_hone_strategy_change] = useState(() => "No juice")
     const [express_event, set_express_event] = useState(() => true)
     const [bucketCount, _setBucketCount] = useState(() => "100") // leaving the door open for changing bucket count later
     const [prev_checked_arr, set_prev_checked_arr] = useState(() => Array.from({ length: TOP_COLS }, () => false)) // the extra rows on top of the grids
     const [prev_checked_arr_bottom, set_prev_checked_arr_bottom] = useState(() => Array.from({ length: BOTTOM_COLS }, () => false))
     const [cumulativeGraph, setCumulativeGraph] = useState<boolean>(false)
-    const [dataSize, setDataSize] = useState<string>(() => '100000')
-    const [activePage, setActivePage] = useState<'chance-to-cost' | 'cost-to-chance' | 'gamba' | 'forecast'>('chance-to-cost')
+    const [dataSize, setDataSize] = useState<string>(() => "100000")
+    const [activePage, setActivePage] = useState<"chance-to-cost" | "cost-to-chance" | "gamba" | "forecast">("chance-to-cost")
     const [mainScale, setMainScale] = useState<number>(1)
     const [zoomCompensation, setZoomCompensation] = useState<number>(1)
 
@@ -64,10 +63,24 @@ export default function HoningForecastUI() {
     const bottomGridRef = useRef<HTMLDivElement | null>(null)
     const mainRef = useRef<HTMLDivElement | null>(null)
     // const controlsRef = useRef<HTMLDivElement | null>(null)
-    const [marquee, setMarquee] = useState<any>({ active: false, grid: null, startR: 0, startC: 0, endR: 0, endC: 0, startClientX: 0, startClientY: 0, endClientX: 0, endClientY: 0, initialState: false })
+    const [marquee, setMarquee] = useState<any>({
+        active: false,
+        grid: null,
+        startR: 0,
+        startC: 0,
+        endR: 0,
+        endC: 0,
+        startClientX: 0,
+        startClientY: 0,
+        endClientX: 0,
+        endClientY: 0,
+        initialState: false,
+    })
     const [marqueeRect, setMarqueeRect] = useState<any>(null)
     const marqueeRef = useRef(marquee)
-    useEffect(() => { marqueeRef.current = marquee }, [marquee])
+    useEffect(() => {
+        marqueeRef.current = marquee
+    }, [marquee])
 
     // tooltip state & handlers
     const [tooltip, setTooltip] = useState<TooltipState>({
@@ -76,14 +89,15 @@ export default function HoningForecastUI() {
         x: 0,
         y: 0,
         content: null,
-        upgradeData: null
+        upgradeData: null,
     })
     const tooltipHandlers = createTooltipHandlers(setTooltip)
 
     // ----- Load saved UI state on mount -----
     useEffect(() => {
         try {
-            readSettings(setTopGrid,
+            readSettings(
+                setTopGrid,
                 setBottomGrid,
                 set_adv_hone_strategy_change,
                 set_express_event,
@@ -100,7 +114,6 @@ export default function HoningForecastUI() {
                 setAdvCounts,
                 setIncomeArr
             )
-
         } catch (e) {
             // ignore corrupted storage
         }
@@ -123,7 +136,6 @@ export default function HoningForecastUI() {
         setAdvCounts(newAdvCounts)
     }, [bottomGrid])
 
-
     // ----- Responsive scaling based on window width -----
     useEffect(() => {
         const updateScale = () => {
@@ -136,9 +148,9 @@ export default function HoningForecastUI() {
             }
         }
         updateScale()
-        window.addEventListener('resize', updateScale)
+        window.addEventListener("resize", updateScale)
         return () => {
-            window.removeEventListener('resize', updateScale)
+            window.removeEventListener("resize", updateScale)
         }
     }, [])
 
@@ -157,10 +169,10 @@ export default function HoningForecastUI() {
             }
         }
         setZoomCompensation(1 / window.devicePixelRatio)
-        window.addEventListener('resize', checkZoom)
+        window.addEventListener("resize", checkZoom)
 
         return () => {
-            window.removeEventListener('resize', checkZoom)
+            window.removeEventListener("resize", checkZoom)
         }
     }, [])
 
@@ -189,7 +201,8 @@ export default function HoningForecastUI() {
                     useGridInput,
                     normalCounts,
                     advCounts,
-                    incomeArr)
+                    incomeArr
+                )
             } catch (e) {
                 // ignore quota or serialization errors
             }
@@ -201,7 +214,24 @@ export default function HoningForecastUI() {
                 saveTimerRef.current = null
             }
         }
-    }, [topGrid, bottomGrid, adv_hone_strategy, express_event, prev_checked_arr, prev_checked_arr_bottom, desired_chance, budget_inputs, autoGoldValues, userMatsValue, cumulativeGraph, dataSize, useGridInput, normalCounts, advCounts, incomeArr])
+    }, [
+        topGrid,
+        bottomGrid,
+        adv_hone_strategy,
+        express_event,
+        prev_checked_arr,
+        prev_checked_arr_bottom,
+        desired_chance,
+        budget_inputs,
+        autoGoldValues,
+        userMatsValue,
+        cumulativeGraph,
+        dataSize,
+        useGridInput,
+        normalCounts,
+        advCounts,
+        incomeArr,
+    ])
 
     const onGridMouseDown = GridMouseDownLogic({
         topGridRef,
@@ -210,40 +240,42 @@ export default function HoningForecastUI() {
         topGrid,
         bottomGrid,
         setMarquee,
-    });
+    })
 
     useEffect(() => {
-        const temp_fn = function (ev: MouseEvent) { mouseMoveLogic(ev, marqueeRef, topGridRef, bottomGridRef, setMarquee) }
+        const temp_fn = function (ev: MouseEvent) {
+            mouseMoveLogic(ev, marqueeRef, topGridRef, bottomGridRef, setMarquee)
+        }
 
         // Helper function to convert touch event to mouse event
-        const createMouseEventFromTouch = (touchEvent: TouchEvent, type: 'mousemove' | 'mouseup'): MouseEvent => {
-            const touch = touchEvent.touches[0] || touchEvent.changedTouches[0];
+        const createMouseEventFromTouch = (touchEvent: TouchEvent, type: "mousemove" | "mouseup"): MouseEvent => {
+            const touch = touchEvent.touches[0] || touchEvent.changedTouches[0]
             return {
                 ...touchEvent,
                 type,
                 clientX: touch.clientX,
                 clientY: touch.clientY,
                 button: 0,
-                buttons: type === 'mousemove' ? 1 : 0,
+                buttons: type === "mousemove" ? 1 : 0,
                 preventDefault: touchEvent.preventDefault.bind(touchEvent),
                 stopPropagation: touchEvent.stopPropagation.bind(touchEvent),
-            } as unknown as MouseEvent;
-        };
+            } as unknown as MouseEvent
+        }
 
         const touchMoveHandler = (ev: TouchEvent) => {
             // Only prevent default if marquee is active (user is dragging on grid)
             if (marqueeRef.current && marqueeRef.current.active) {
-                ev.preventDefault();
-                const mouseEvent = createMouseEventFromTouch(ev, 'mousemove');
-                mouseMoveLogic(mouseEvent, marqueeRef, topGridRef, bottomGridRef, setMarquee);
+                ev.preventDefault()
+                const mouseEvent = createMouseEventFromTouch(ev, "mousemove")
+                mouseMoveLogic(mouseEvent, marqueeRef, topGridRef, bottomGridRef, setMarquee)
             }
-        };
+        }
 
-        window.addEventListener('mousemove', temp_fn)
-        window.addEventListener('touchmove', touchMoveHandler, { passive: false })
+        window.addEventListener("mousemove", temp_fn)
+        window.addEventListener("touchmove", touchMoveHandler, { passive: false })
         return () => {
-            window.removeEventListener('mousemove', temp_fn)
-            window.removeEventListener('touchmove', touchMoveHandler)
+            window.removeEventListener("mousemove", temp_fn)
+            window.removeEventListener("touchmove", touchMoveHandler)
         }
     }, [])
 
@@ -260,34 +292,34 @@ export default function HoningForecastUI() {
         })
 
         // Helper function to convert touch event to mouse event
-        const createMouseEventFromTouch = (touchEvent: TouchEvent, type: 'mousemove' | 'mouseup'): MouseEvent => {
-            const touch = touchEvent.touches[0] || touchEvent.changedTouches[0];
+        const createMouseEventFromTouch = (touchEvent: TouchEvent, type: "mousemove" | "mouseup"): MouseEvent => {
+            const touch = touchEvent.touches[0] || touchEvent.changedTouches[0]
             return {
                 ...touchEvent,
                 type,
                 clientX: touch.clientX,
                 clientY: touch.clientY,
                 button: 0,
-                buttons: type === 'mousemove' ? 1 : 0,
+                buttons: type === "mousemove" ? 1 : 0,
                 preventDefault: touchEvent.preventDefault.bind(touchEvent),
                 stopPropagation: touchEvent.stopPropagation.bind(touchEvent),
-            } as unknown as MouseEvent;
-        };
+            } as unknown as MouseEvent
+        }
 
         const touchEndHandler = (ev: TouchEvent) => {
             // Only prevent default if marquee is active (user is dragging on grid)
             if (marqueeRef.current && marqueeRef.current.active) {
-                ev.preventDefault();
-                const mouseEvent = createMouseEventFromTouch(ev, 'mouseup');
-                onUp(mouseEvent);
+                ev.preventDefault()
+                const mouseEvent = createMouseEventFromTouch(ev, "mouseup")
+                onUp(mouseEvent)
             }
-        };
+        }
 
-        window.addEventListener('mouseup', onUp)
-        window.addEventListener('touchend', touchEndHandler, { passive: false })
+        window.addEventListener("mouseup", onUp)
+        window.addEventListener("touchend", touchEndHandler, { passive: false })
         return () => {
-            window.removeEventListener('mouseup', onUp)
-            window.removeEventListener('touchend', touchEndHandler)
+            window.removeEventListener("mouseup", onUp)
+            window.removeEventListener("touchend", touchEndHandler)
         }
     }, [])
 
@@ -311,7 +343,7 @@ export default function HoningForecastUI() {
         set_uncleaned_desired_chance(value)
 
         // Check if the input is immediately valid (integer 0-100 inclusive)
-        const cleanValue = value.replace(/[^0-9]/g, '')
+        const cleanValue = value.replace(/[^0-9]/g, "")
         const numValue = parseInt(cleanValue)
 
         if (cleanValue === value && !isNaN(numValue) && numValue >= 0 && numValue <= 100) {
@@ -320,17 +352,17 @@ export default function HoningForecastUI() {
     }
 
     const onDesiredBlur = () => {
-        const cleanValue = uncleaned_desired_chance.replace(/[^0-9]/g, '')
+        const cleanValue = uncleaned_desired_chance.replace(/[^0-9]/g, "")
         const numValue = parseInt(cleanValue)
 
-        if (cleanValue === '' || isNaN(numValue)) {
+        if (cleanValue === "" || isNaN(numValue)) {
             set_uncleaned_desired_chance(desired_chance)
         } else if (numValue > 100) {
-            set_desired_chance('100')
-            set_uncleaned_desired_chance('100')
+            set_desired_chance("100")
+            set_uncleaned_desired_chance("100")
         } else if (numValue < 0) {
-            set_desired_chance('0')
-            set_uncleaned_desired_chance('0')
+            set_desired_chance("0")
+            set_uncleaned_desired_chance("0")
         } else {
             set_desired_chance(cleanValue)
             set_uncleaned_desired_chance(cleanValue)
@@ -340,34 +372,34 @@ export default function HoningForecastUI() {
 
     // Lock x-axis handler
     const onToggleLockXAxis = () => {
-        setLockXAxis(prev => {
-            const newVal = !prev;
+        setLockXAxis((prev) => {
+            const newVal = !prev
             if (!prev) {
                 // we're turning it ON: snapshot current mins/maxs from cached data
-                const currentMins = cachedChanceGraphData?.hist_mins || cachedCostGraphData?.hist_mins || null;
-                const currentMaxs = cachedChanceGraphData?.hist_maxs || cachedCostGraphData?.hist_maxs || null;
-                setLockedMins(currentMins ? currentMins.slice() : null);
-                setLockedMaxs(currentMaxs ? currentMaxs.slice() : null);
+                const currentMins = cachedChanceGraphData?.hist_mins || cachedCostGraphData?.hist_mins || null
+                const currentMaxs = cachedChanceGraphData?.hist_maxs || cachedCostGraphData?.hist_maxs || null
+                setLockedMins(currentMins ? currentMins.slice() : null)
+                setLockedMaxs(currentMaxs ? currentMaxs.slice() : null)
             } else {
                 // turning it OFF: clear snapshots
-                setLockedMins(null);
-                setLockedMaxs(null);
+                setLockedMins(null)
+                setLockedMaxs(null)
             }
-            return newVal;
-        });
-    };
+            return newVal
+        })
+    }
 
     // Handler for numeric input changes
-    const handleNumericInputChange = (grid: 'top' | 'bottom', row: number, col: number, value: number) => {
-        if (grid === 'top') {
-            setNormalCounts(prev => {
-                const newCounts = prev.map(row => [...row])
+    const handleNumericInputChange = (grid: "top" | "bottom", row: number, col: number, value: number) => {
+        if (grid === "top") {
+            setNormalCounts((prev) => {
+                const newCounts = prev.map((row) => [...row])
                 newCounts[row === 4 ? 0 : 1][col] = value
                 return newCounts
             })
         } else {
-            setAdvCounts(prev => {
-                const newCounts = prev.map(row => [...row])
+            setAdvCounts((prev) => {
+                const newCounts = prev.map((row) => [...row])
                 newCounts[row === 4 ? 0 : 1][col] = value
                 return newCounts
             })
@@ -431,26 +463,23 @@ export default function HoningForecastUI() {
         setIncomeArr,
     })
 
+    const payloadBuilder = () =>
+        buildPayload({
+            topGrid,
+            bottomGrid,
+            budget_inputs,
+            adv_hone_strategy,
+            express_event,
+            bucketCount,
+            autoGoldValues,
+            userMatsValue,
+            dataSize,
+            useGridInput,
+            normalCounts,
+            advCounts,
+        })
 
-
-    const payloadBuilder = () => buildPayload({
-        topGrid,
-        bottomGrid,
-        budget_inputs,
-        adv_hone_strategy,
-        express_event,
-        bucketCount,
-        autoGoldValues,
-        userMatsValue,
-        dataSize,
-        useGridInput,
-        normalCounts,
-        advCounts,
-    })
-
-
-    const runner = createCancelableWorkerRunner();
-
+    const runner = createCancelableWorkerRunner()
 
     // ---------- Automatic triggers with debounce ----------
     // We'll watch serialized versions of the inputs to detect deep changes
@@ -469,7 +498,7 @@ export default function HoningForecastUI() {
     const chanceToCostWorkerRef = useRef<Worker | null>(null)
     const [chanceToCostBusy, setChanceToCostBusy] = useState(false)
     const [chanceToCostResult, setChanceToCostResult] = useState<any>(null)
-    const [cachedCostGraphData, setCachedCostGraphData] = useState<{ hist_counts?: any, hist_mins?: any, hist_maxs?: any } | null>(null)
+    const [cachedCostGraphData, setCachedCostGraphData] = useState<{ hist_counts?: any; hist_mins?: any; hist_maxs?: any } | null>(null)
 
     useEffect(() => {
         runner.start({
@@ -482,7 +511,6 @@ export default function HoningForecastUI() {
         })
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [advStrategyKey, expressEventKey, graphBucketSizeKey, dataSizeKey, normalCountsKey, advCountsKey])
-
 
     const chanceToCostResultOptimizedWorkerRef = useRef<Worker | null>(null)
     const [_chanceToCostResultOptimizedBusy, setchanceToCostResultOptimizedBusy] = useState(false)
@@ -498,11 +526,10 @@ export default function HoningForecastUI() {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [advStrategyKey, expressEventKey, graphBucketSizeKey, dataSizeKey, normalCountsKey, advCountsKey, budgetKey, userMatsKey])
 
-
     const costToChanceWorkerRef = useRef<Worker | null>(null)
     const [costToChanceBusy, setCostToChanceBusy] = useState(false)
     const [costToChanceResult, setCostToChanceResult] = useState<any>(null)
-    const [cachedChanceGraphData, setCachedChanceGraphData] = useState<{ hist_counts?: any, hist_mins?: any, hist_maxs?: any } | null>(null)
+    const [cachedChanceGraphData, setCachedChanceGraphData] = useState<{ hist_counts?: any; hist_mins?: any; hist_maxs?: any } | null>(null)
     useEffect(() => {
         runner.start({
             which_one: "CostToChance",
@@ -530,7 +557,7 @@ export default function HoningForecastUI() {
     }, [advStrategyKey, expressEventKey, graphBucketSizeKey, dataSizeKey, normalCountsKey, advCountsKey])
 
     const parserWorkerRef = useRef<Worker | null>(null)
-    const [parserResult, setparserResult] = useState<{ upgradeArr: any, unlocks: any, other_strategy_prob_dists: any } | null>(null)
+    const [parserResult, setparserResult] = useState<{ upgradeArr: any; unlocks: any; other_strategy_prob_dists: any } | null>(null)
     const [ParserBusy, setParserBusy] = useState(false)
     useEffect(() => {
         runner.start({
@@ -552,34 +579,44 @@ export default function HoningForecastUI() {
     }, [])
 
     // styles and column defs moved to ./styles
-    const AnythingTicked = useMemo(() => normalCounts[0].some(x => x > 0) ||
-        normalCounts[1].some(x => x > 0) ||
-        advCounts[0].some(x => x > 0) ||
-        advCounts[1].some(x => x > 0), [normalCounts, advCounts])
+    const AnythingTicked = useMemo(
+        () => normalCounts[0].some((x) => x > 0) || normalCounts[1].some((x) => x > 0) || advCounts[0].some((x) => x > 0) || advCounts[1].some((x) => x > 0),
+        [normalCounts, advCounts]
+    )
     return (
-
         <div style={styles.pageContainer}>
-            {
-                marqueeRect ? (
-                    <div style={{ position: 'fixed', left: marqueeRect.left, top: marqueeRect.top, width: marqueeRect.width, height: marqueeRect.height, background: 'var(--marquee-bg)', border: '2px solid var(--marquee-border)', pointerEvents: 'none', zIndex: 9999 }} />
-                ) : null
-            }
+            {marqueeRect ? (
+                <div
+                    style={{
+                        position: "fixed",
+                        left: marqueeRect.left,
+                        top: marqueeRect.top,
+                        width: marqueeRect.width,
+                        height: marqueeRect.height,
+                        background: "var(--marquee-bg)",
+                        border: "2px solid var(--marquee-border)",
+                        pointerEvents: "none",
+                        zIndex: 9999,
+                    }}
+                />
+            ) : null}
             {renderTooltip(tooltip, mainScale, zoomCompensation)}
 
-
-            <div ref={mainRef} style={{
-                ...styles.mainContainer,
-                transform: `scale(${mainScale})`,
-                transformOrigin: 'top center'
-            }}>
-
+            <div
+                ref={mainRef}
+                style={{
+                    ...styles.mainContainer,
+                    transform: `scale(${mainScale})`,
+                    transformOrigin: "top center",
+                }}
+            >
                 <div style={{ display: "flex", flexDirection: "row", gap: 6 }}>
-                    <Icon iconName="Forecast Icon" size={64} style={{ display: 'flex', alignItems: 'center', gap: '12px' }} display_text="" />
+                    <Icon iconName="Forecast Icon" size={64} style={{ display: "flex", alignItems: "center", gap: "12px" }} display_text="" />
                     <h1 style={styles.heading}>Honing Forecast</h1>
                 </div>
 
                 {/* Three panels in a responsive flex layout */}
-                <div style={{ display: 'flex', gap: 'var(--spacing-2xl)', alignItems: "flex-start", flexWrap: 'wrap', justifyContent: 'flex-start' }}>
+                <div style={{ display: "flex", gap: "var(--spacing-2xl)", alignItems: "flex-start", flexWrap: "wrap", justifyContent: "flex-start" }}>
                     <NormalHoningPanel
                         topGrid={topGrid}
                         setTopGrid={setTopGrid}
@@ -594,7 +631,7 @@ export default function HoningForecastUI() {
                     />
 
                     {/* Bundled Advanced Honing Panel and Control Panel */}
-                    <div style={{ display: 'flex', flexDirection: 'row', gap: 'var(--spacing-2xl)' }}>
+                    <div style={{ display: "flex", flexDirection: "row", gap: "var(--spacing-2xl)" }}>
                         <AdvancedHoningPanel
                             bottomGrid={bottomGrid}
                             setBottomGrid={setBottomGrid}
@@ -635,7 +672,7 @@ export default function HoningForecastUI() {
                 <Separator activePage={activePage} onPageChange={setActivePage} />
 
                 {/* Always-rendered pages with display toggle */}
-                <div className={activePage === 'chance-to-cost' ? 'page' : 'page page--hidden'} aria-hidden={activePage !== 'chance-to-cost'}>
+                <div className={activePage === "chance-to-cost" ? "page" : "page page--hidden"} aria-hidden={activePage !== "chance-to-cost"}>
                     <ChanceToCostSection
                         desired_chance={desired_chance}
                         uncleaned_desired_chance={uncleaned_desired_chance}
@@ -646,28 +683,23 @@ export default function HoningForecastUI() {
                         cachedCostGraphData={cachedCostGraphData}
                         AnythingTicked={AnythingTicked}
                         ChanceToCostBusy={chanceToCostBusy}
-
                         cumulativeGraph={cumulativeGraph}
                         lockXAxis={lockXAxis}
                         lockedMins={lockedMins}
                         lockedMaxs={lockedMaxs}
-
                         showAverage={showAverage}
                         setShowAverage={setShowAverage}
-
                         averageCosts={averageCostsResult?.average_costs}
                         AverageCostBusy={averageCostBusy}
-
                         dataSize={dataSize}
                         budget_inputs={budget_inputs}
-
                         set_budget_inputs={set_budget_inputs}
                         userMatsValue={userMatsValue}
                         setUserMatsValue={setUserMatsValue}
                     />
                 </div>
 
-                <div className={activePage === 'cost-to-chance' ? 'page' : 'page page--hidden'} aria-hidden={activePage !== 'cost-to-chance'}>
+                <div className={activePage === "cost-to-chance" ? "page" : "page page--hidden"} aria-hidden={activePage !== "cost-to-chance"}>
                     <CostToChanceSection
                         budget_inputs={budget_inputs}
                         set_budget_inputs={set_budget_inputs}
@@ -687,12 +719,11 @@ export default function HoningForecastUI() {
                         uncleaned_desired_chance={uncleaned_desired_chance}
                         onDesiredChange={onDesiredChange}
                         onDesiredBlur={onDesiredBlur}
-                        dataSize={dataSize}
                         cost_result_optimized={chanceToCostOptimizedResult}
                     />
                 </div>
 
-                <div className={activePage === 'gamba' ? 'page' : 'page page--hidden'} aria-hidden={activePage !== 'gamba'}>
+                <div className={activePage === "gamba" ? "page" : "page page--hidden"} aria-hidden={activePage !== "gamba"}>
                     <GambaSection
                         budget_inputs={budget_inputs}
                         set_budget_inputs={set_budget_inputs}
@@ -724,7 +755,7 @@ export default function HoningForecastUI() {
                     />
                 </div>
 
-                <div className={activePage === 'forecast' ? 'page' : 'page page--hidden'} aria-hidden={activePage !== 'forecast'}>
+                <div className={activePage === "forecast" ? "page" : "page page--hidden"} aria-hidden={activePage !== "forecast"}>
                     <LongTermSection
                         budget_inputs={budget_inputs}
                         set_budget_inputs={set_budget_inputs}
@@ -749,13 +780,10 @@ export default function HoningForecastUI() {
                         onDesiredBlur={onDesiredBlur}
                         // Cost result prop for hundred_budgets
                         cost_result={chanceToCostResult}
-                    //TODOcost_result_optimized={chanceToCostOptimizedResult}
+                        //TODOcost_result_optimized={chanceToCostOptimizedResult}
                     />
                 </div>
             </div>
-
-        </div >
-
+        </div>
     )
-
 }

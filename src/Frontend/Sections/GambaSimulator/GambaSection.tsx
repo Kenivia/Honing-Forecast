@@ -9,7 +9,6 @@ import GambaInfoBox from "./GambaInfoBox.tsx"
 import GambaSelection from "./GambaSelection.tsx"
 import { useGambaLogic } from "./GambaLogic.tsx"
 
-
 type GambaSectionProps = {
     budget_inputs: any
     set_budget_inputs: React.Dispatch<React.SetStateAction<any>>
@@ -29,7 +28,7 @@ type GambaSectionProps = {
         updateTooltipPosition: (_x: number, _y: number) => void
     }
     chance_result: any
-    cachedChanceGraphData: { hist_counts?: any, hist_mins?: any, hist_maxs?: any } | null
+    cachedChanceGraphData: { hist_counts?: any; hist_mins?: any; hist_maxs?: any } | null
     AnythingTicked: boolean
     CostToChanceBusy: boolean
     cumulativeGraph: boolean
@@ -42,7 +41,6 @@ type GambaSectionProps = {
     upgradeArr: any[]
     ParserBusy: boolean
 }
-
 
 export default function GambaSection({
     budget_inputs,
@@ -94,8 +92,6 @@ export default function GambaSection({
     const finalCostsRef = useRef(finalCosts)
     const unlockCostsRef = useRef(unlockCosts)
 
-
-
     const flushTimeoutRef = useRef<number | null>(null)
 
     const flushUpgradeArrToState = useCallback((immediate = false) => {
@@ -105,21 +101,29 @@ export default function GambaSection({
                 flushTimeoutRef.current = null
             }
             // shallow copy the array to trigger React update
-            setUpgradeArr(_prev => upgradeArrRef.current.slice())
+            setUpgradeArr((_prev) => upgradeArrRef.current.slice())
             return
         }
         if (flushTimeoutRef.current != null) return
         flushTimeoutRef.current = window.setTimeout(() => {
-            setUpgradeArr(_prev => upgradeArrRef.current.slice())
+            setUpgradeArr((_prev) => upgradeArrRef.current.slice())
             flushTimeoutRef.current = null
         }, 100) // coalesce UI updates every 100ms
     }, [])
 
     // sync refs whenever state changes
-    useEffect(() => { selectedUpgradeIndexRef.current = selectedUpgradeIndex }, [selectedUpgradeIndex])
-    useEffect(() => { upgradeArrRef.current = upgradeArr }, [upgradeArr])
-    useEffect(() => { finalCostsRef.current = finalCosts }, [finalCosts])
-    useEffect(() => { unlockCostsRef.current = unlockCosts }, [unlockCosts])
+    useEffect(() => {
+        selectedUpgradeIndexRef.current = selectedUpgradeIndex
+    }, [selectedUpgradeIndex])
+    useEffect(() => {
+        upgradeArrRef.current = upgradeArr
+    }, [upgradeArr])
+    useEffect(() => {
+        finalCostsRef.current = finalCosts
+    }, [finalCosts])
+    useEffect(() => {
+        unlockCostsRef.current = unlockCosts
+    }, [unlockCosts])
     // Initialize parser worker
     useEffect(() => {
         // Create a persistent worker for parser calls
@@ -128,7 +132,7 @@ export default function GambaSection({
         // Set up message handler once
         parserWorkerRef.current.onmessage = (e) => {
             const { id, type, result } = e.data
-            if (type === 'result' && pendingRequests.current.has(id)) {
+            if (type === "result" && pendingRequests.current.has(id)) {
                 pendingRequests.current.get(id)!(result)
                 pendingRequests.current.delete(id)
             }
@@ -168,12 +172,12 @@ export default function GambaSection({
         const id = Math.random().toString(36).substr(2, 9)
 
         // Create promise for this request
-        const p = new Promise(_resolve => pendingRequests.current.set(id, _resolve))
+        const p = new Promise((_resolve) => pendingRequests.current.set(id, _resolve))
 
         parserWorkerRef.current.postMessage({
             id,
             payload,
-            which_one: "ParserUnified"
+            which_one: "ParserUnified",
         })
 
         p.then((result: any) => {
@@ -184,50 +188,59 @@ export default function GambaSection({
             unlockCostsRef.current = unlocks
 
             // Add equipment types to upgrades based on ticked equipment in grids
-            let seen_ind_normal = Array.from({ length: TOP_COLS }, () => 0);
-            let seen_ind_adv = Array.from({ length: BOTTOM_COLS }, () => 0);
-            let upgradesWithTypes = upgrades.map(upgrade => {
+            let seen_ind_normal = Array.from({ length: TOP_COLS }, () => 0)
+            let seen_ind_adv = Array.from({ length: BOTTOM_COLS }, () => 0)
+            let upgradesWithTypes = upgrades.map((upgrade) => {
                 if (upgrade.is_weapon) {
-                    return { ...upgrade, equipment_type: 'Weapon' }
+                    return { ...upgrade, equipment_type: "Weapon" }
                 } else {
                     // For armor, find which equipment types are ticked in the grid
                     const equipmentTypes = EQUIPMENT_TYPES.slice(0, 5) // Exclude Weapon
                     const assignedType = equipmentTypes.find((_, index) => {
                         if (upgrade.is_normal_honing) {
-                            if (index < seen_ind_normal[upgrade.upgrade_plus_num]) { return false }
+                            if (index < seen_ind_normal[upgrade.upgrade_plus_num]) {
+                                return false
+                            }
                             if (useGridInput) {
                                 const gridRow = topGrid[index] || []
-                                seen_ind_normal[upgrade.upgrade_plus_num] += 1;
+                                seen_ind_normal[upgrade.upgrade_plus_num] += 1
                                 return gridRow[upgrade.upgrade_plus_num] || false
                             } else {
                                 // Use numeric input data - check if this equipment type has a count > 0
                                 const armorCount = normalCounts[0][upgrade.upgrade_plus_num] || 0
-                                seen_ind_normal[upgrade.upgrade_plus_num] += 1;
+                                seen_ind_normal[upgrade.upgrade_plus_num] += 1
                                 return index < armorCount
                             }
-                        }
-                        else {
-                            if (index < seen_ind_adv[upgrade.upgrade_plus_num]) { return false }
+                        } else {
+                            if (index < seen_ind_adv[upgrade.upgrade_plus_num]) {
+                                return false
+                            }
                             if (useGridInput) {
                                 const gridRow = bottomGrid[index] || []
-                                seen_ind_adv[upgrade.upgrade_plus_num] += 1;
+                                seen_ind_adv[upgrade.upgrade_plus_num] += 1
                                 return gridRow[upgrade.upgrade_plus_num] || false
                             } else {
                                 // Use numeric input data - check if this equipment type has a count > 0
                                 const armorCount = advCounts[0][upgrade.upgrade_plus_num] || 0
-                                seen_ind_adv[upgrade.upgrade_plus_num] += 1;
+                                seen_ind_adv[upgrade.upgrade_plus_num] += 1
                                 return index < armorCount
                             }
                         }
                     })
-                    return { ...upgrade, equipment_type: assignedType || 'Armor', }
+                    return { ...upgrade, equipment_type: assignedType || "Armor" }
                 }
             })
-            upgradesWithTypes.sort((a, b) => { if (a.is_normal_honing) { return -999 } else { return a.upgrade_plus_num - b.upgrade_plus_num } })
+            upgradesWithTypes.sort((a, b) => {
+                if (a.is_normal_honing) {
+                    return -999
+                } else {
+                    return a.upgrade_plus_num - b.upgrade_plus_num
+                }
+            })
 
             // Assign other_prob_dist to advanced honing upgrades
             let advUpgradeIndex = 0
-            upgradesWithTypes.forEach(upgrade => {
+            upgradesWithTypes.forEach((upgrade) => {
                 if (!upgrade.is_normal_honing && advUpgradeIndex < other_strategy_prob_dists.length) {
                     upgrade.other_prob_dist = other_strategy_prob_dists[advUpgradeIndex]
                     advUpgradeIndex++
@@ -235,21 +248,36 @@ export default function GambaSection({
             })
 
             // Initialize upgrade completion tracking
-            setUpgradeArr(upgradesWithTypes.map(upgrade => ({
-                ...upgrade,
-                is_finished: false,
-                completion_order: 0,
-                current_artisan: 0,
-                taps_so_far: 0,
-                juice_taps_so_far: 0,
-                free_taps_so_far: 0,
-                use_juice: adv_hone_strategy === "Juice on grace" && !upgrade.is_normal_honing,
-                cumulative_chance: 0
-            })))
+            setUpgradeArr(
+                upgradesWithTypes.map((upgrade) => ({
+                    ...upgrade,
+                    is_finished: false,
+                    completion_order: 0,
+                    current_artisan: 0,
+                    taps_so_far: 0,
+                    juice_taps_so_far: 0,
+                    free_taps_so_far: 0,
+                    use_juice: adv_hone_strategy === "Juice on grace" && !upgrade.is_normal_honing,
+                    cumulative_chance: 0,
+                }))
+            )
             // Update refs
             currentUpgradeArrRef.current = upgradesWithTypes
         })
-    }, [topGrid, bottomGrid, adv_hone_strategy, express_event, bucketCount, autoGoldValues, userMatsValue, dataSize, budget_inputs, useGridInput, normalCounts, advCounts])
+    }, [
+        topGrid,
+        bottomGrid,
+        adv_hone_strategy,
+        express_event,
+        bucketCount,
+        autoGoldValues,
+        userMatsValue,
+        dataSize,
+        budget_inputs,
+        useGridInput,
+        normalCounts,
+        advCounts,
+    ])
 
     // Debounce effect for parser calls when grids change
     const advStrategyKey = useMemo(() => String(adv_hone_strategy), [adv_hone_strategy])
@@ -300,15 +328,13 @@ export default function GambaSection({
         currentSelectedIndexRef.current = selectedUpgradeIndex
     }, [selectedUpgradeIndex])
 
-
-
-
     // Memoize sorted indices to avoid O(n²) findIndex operations in render
     const sortedWithIndex = useMemo(() => {
         // create array of indices and sort indices only (no object copies)
         const idxs = upgradeArr.map((_, i) => i)
         idxs.sort((ia, ib) => {
-            const a = upgradeArr[ia], b = upgradeArr[ib]
+            const a = upgradeArr[ia],
+                b = upgradeArr[ib]
             // same comparison code as sortedUpgrades but using a & b
             if (a.is_finished < b.is_finished) return -1
             if (a.is_finished > b.is_finished) return 1
@@ -320,8 +346,7 @@ export default function GambaSection({
             if (!a.is_finished && !b.is_finished) {
                 if (a.upgrade_plus_num < b.upgrade_plus_num) return -1
                 if (a.upgrade_plus_num > b.upgrade_plus_num) return 1
-                return EQUIPMENT_TYPES.findIndex(v => a.equipment_type == v)
-                    - EQUIPMENT_TYPES.findIndex(v => b.equipment_type == v)
+                return EQUIPMENT_TYPES.findIndex((v) => a.equipment_type == v) - EQUIPMENT_TYPES.findIndex((v) => b.equipment_type == v)
             }
             return 0
         })
@@ -330,7 +355,7 @@ export default function GambaSection({
 
     // Get unfinished normal honing upgrades for auto-attempt logic
     const unfinishedNormalUpgrades = useMemo(() => {
-        return upgradeArr.filter(upgrade => !upgrade.is_finished)
+        return upgradeArr.filter((upgrade) => !upgrade.is_finished)
     }, [upgradeArr])
 
     // Use the GambaLogic hook for tapping functionality
@@ -348,7 +373,7 @@ export default function GambaSection({
         isAutoAttemptingThisOne,
         setIsAutoAttemptingThisOne,
         unfinishedNormalUpgrades,
-        flushUpgradeArrToState
+        flushUpgradeArrToState,
     })
 
     // Handle upgrade selection
@@ -357,13 +382,12 @@ export default function GambaSection({
     }, [])
 
     const handleRefresh = useCallback(() => {
-        setRefreshKey(prev => !prev)
+        setRefreshKey((prev) => !prev)
     }, [])
-
 
     // Calculate budget remaining
     const budgetRemaining = INPUT_LABELS.map((label, index) => {
-        const budget = parseInt(budget_inputs[label] || '0')
+        const budget = parseInt(budget_inputs[label] || "0")
         const finalCost = finalCosts[index] || 0
         return budget - finalCost
     })
@@ -405,7 +429,7 @@ export default function GambaSection({
             //         color: value < 0 ? 'white' : 'var(--text-primary)'
             //     }
             // }
-        }
+        },
     ]
 
     return (
@@ -424,7 +448,16 @@ export default function GambaSection({
             <div style={{ ...styles.inputSection, flexDirection: "row", maxWidth: "1200px", width: "100%" }}>
                 <div style={{ display: "flex", gap: 20, alignItems: "flex-start" }}>
                     {/* Budget Input Grid */}
-                    <div style={{ display: 'flex', flexDirection: "column", gap: 0, alignItems: 'flex-start', justifyContent: 'start', width: autoGoldValues ? 210 : 300 }}>
+                    <div
+                        style={{
+                            display: "flex",
+                            flexDirection: "column",
+                            gap: 0,
+                            alignItems: "flex-start",
+                            justifyContent: "start",
+                            width: autoGoldValues ? 210 : 300,
+                        }}
+                    >
                         <div style={{ width: 210 }}>
                             <SpreadsheetGrid
                                 columnDefs={costToChanceColumnDefs}
@@ -433,21 +466,31 @@ export default function GambaSection({
                                 setSheetValuesArr={[set_budget_inputs, setUserMatsValue]}
                             />
                         </div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8 }}>
-                            <div style={{ ...styles.inputLabelCell, whiteSpace: 'nowrap', backgroundColor: 'var(--bg-tertiary)' }}>Chance of Success</div>
-                            <div style={{ ...styles.inputCell, border: 'none', background: "transparent", color: 'var(--text-success)', fontSize: 'var(--font-size-xl)' }}>{chance_result ? (String(chance_result.chance) + '%') : '-'}</div>
+                        <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 8 }}>
+                            <div style={{ ...styles.inputLabelCell, whiteSpace: "nowrap", backgroundColor: "var(--bg-tertiary)" }}>Chance of Success</div>
+                            <div
+                                style={{
+                                    ...styles.inputCell,
+                                    border: "none",
+                                    background: "transparent",
+                                    color: "var(--text-success)",
+                                    fontSize: "var(--font-size-xl)",
+                                }}
+                            >
+                                {chance_result ? String(chance_result.chance) + "%" : "-"}
+                            </div>
                         </div>
                         <button
                             onClick={handleRefresh}
                             style={{
-                                padding: '8px 16px',
-                                backgroundColor: 'var(--btn-primary)',
-                                color: 'var(--text-primary)',
-                                border: '1px solid var(--border-accent)',
-                                borderRadius: '4px',
-                                cursor: 'pointer',
-                                fontSize: 'var(--font-size-sm)',
-                                fontWeight: 'var(--font-weight-bold)'
+                                padding: "8px 16px",
+                                backgroundColor: "var(--btn-primary)",
+                                color: "var(--text-primary)",
+                                border: "1px solid var(--border-accent)",
+                                borderRadius: "4px",
+                                cursor: "pointer",
+                                fontSize: "var(--font-size-sm)",
+                                fontWeight: "var(--font-weight-bold)",
                             }}
                         >
                             Restart gamba
@@ -489,22 +532,22 @@ export default function GambaSection({
                                     columnDefs={budgetColumnDefs}
                                     labels={INPUT_LABELS}
                                     sheetValuesArr={[budgetTotalData, budgetRemainingData]}
-                                    setSheetValuesArr={[() => { }, () => { }]} // Read-only
+                                    setSheetValuesArr={[() => {}, () => {}]} // Read-only
                                 />
                             </div>
                         </div>
                         {/* Graph Section */}
-                        <div style={{ marginTop: 20, display: 'flex', gap: 20 }}>
+                        <div style={{ marginTop: 20, display: "flex", gap: 20 }}>
                             <div style={{ flex: 1 }}>
                                 <Graph
                                     title="Cost distribution"
                                     labels={OUTPUT_LABELS}
-                                    counts={AnythingTicked ? (chance_result?.hist_counts || cachedChanceGraphData?.hist_counts) : null}
+                                    counts={AnythingTicked ? chance_result?.hist_counts || cachedChanceGraphData?.hist_counts : null}
                                     mins={chance_result?.hist_mins || cachedChanceGraphData?.hist_mins}
                                     maxs={chance_result?.hist_maxs || cachedChanceGraphData?.hist_maxs}
                                     width={SMALL_GRAPH_WIDTH}
                                     height={SMALL_GRAPH_HEIGHT}
-                                    budgets={OUTPUT_LABELS.map(label => Number(budget_inputs[label] || 0))}
+                                    budgets={OUTPUT_LABELS.map((label) => Number(budget_inputs[label] || 0))}
                                     additionalBudgets={finalCosts.slice(0, 7).map((v, i) => v + (i === 3 ? unlockCosts[0] : i === 6 ? unlockCosts[1] : 0))} // First 7 elements for total costs
                                     hasSelection={AnythingTicked}
                                     isLoading={CostToChanceBusy}
@@ -518,10 +561,7 @@ export default function GambaSection({
                         </div>
                     </div>
                 </div>
-            </div >
-
-
-
+            </div>
         </>
     )
 }

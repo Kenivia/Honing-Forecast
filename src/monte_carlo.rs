@@ -35,7 +35,11 @@ pub fn generate_budget_data(
         let mut cur_count: usize = 0;
         loop {
             if transposed_row[j]
-                >= gap_size[cost_type].mul_add(k as f64, initial_budget[cost_type].max(transposed_row[0]) as f64)
+                >= gap_size[cost_type]
+                    .mul_add(
+                        k as f64,
+                        initial_budget[cost_type].max(transposed_row[0]) as f64,
+                    )
                     .min(transposed_row[transposed_row.len() - 1] as f64)
                     .floor() as i64
             {
