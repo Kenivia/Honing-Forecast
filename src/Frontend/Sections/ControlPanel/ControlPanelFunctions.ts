@@ -166,10 +166,10 @@ export function createFillDemo({
 
         // Set userMatsValue to the specified values
         setUserMatsValue({
-            Red: "3.4",
-            Blue: "0.3",
+            Red: "1.65",
+            Blue: "0.03",
             Leaps: "13.0",
-            Shards: "0.4",
+            Shards: "0.5",
             Oreha: "95.0",
             Gold: "1.0",
             Silver: "0.0",

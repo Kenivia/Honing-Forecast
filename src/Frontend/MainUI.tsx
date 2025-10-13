@@ -28,7 +28,7 @@ export default function HoningForecastUI() {
     const [budget_inputs, set_budget_inputs] = useState(() => Object.fromEntries(INPUT_LABELS.map((l) => [l, "0"])))
     const [autoGoldValues, setAutoGoldValues] = useState(false)
     const [userMatsValue, setUserMatsValue] = useState(() => {
-        const defaultValues = ["3.4", "0.3", "13.0", "0.4", "95.0", "1.0", "0.0"]
+        const defaultValues = ["1.65", "0.03", "13.0", "0.5", "95.0", "1.0", "0.0"]
         return Object.fromEntries(INPUT_LABELS.slice(0, 7).map((l, index) => [l, defaultValues[index]]))
     })
     const [desired_chance, set_desired_chance] = useState(() => "50")
