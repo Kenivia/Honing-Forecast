@@ -1,28 +1,30 @@
-# Details, last updated 2025/10/5
+# Details, last updated 2025/10/13
 
-The main functionalities of the calculator are based on random samples. We generate "cost data" consisting of ~100k samples, where each sample is the cost of all selected upgrades. Note that we don't stop for failures in this data generation - we just keep going til everything succeeds and record how much things costed.
+This calculator primarily relies on random samples. We generate "cost data" consisting of ~100k samples, where each sample is the cost of all selected upgrades. We will be using this to evaluate how good a given budget is. We compare the budget against a sample, if any of the mats are below the cost, we mark it as a fail. We repeat this for all ~100k data sets and obtain a "chance of success".
 
-We use random samples because I'm pretty sure it's not practical to calculate the true values, though I'd love to be proven wrong.
+## Basic mode
 
-## Chance mode
+The question is: **"How much mats do I need, to have x % chance of success?"** Turns out there's multiple answers for this - you can one tap your armor and pity your weapon, then you only need a little bit of blue but a LOT of everything else.
 
-To implement chance mode we actually need to start thinking about "budgets". In the end, we want a budget that has roughly x% chance of passing - as in all 7 numbers are bigger than their counterpart in x% of samples. We also want a budget that is a good representative. For example, a budget that assumes you will one tap all your weapons and pity all your armors is not a good representative, even if the odds of that happening matches x%.  
+In Basic mode, we assume that every material falls in the same percentile(its actually split into 1000 buckets). For example, if 69% of peolpe used less than 100k red, 69% of people used less than 200k blue, and 69% of people ...blah blah for all 7 mats - we put these(100k, 200k, ...) together and figure out the combined chance of success of this. We try this for all percentiles. If the result falls closest to your x%, that'll be the result we display.
 
-To achieve this, we balance the budgets by percentile - all components of a budget are forced to be in the same percentile (in their own dimension) and as such, all components have the same chance of failing. A side effect of this is that the end result is not a "real" cost that is actually achieved by putting together costs of taps (oh well).
+## Advanced mode
 
-The alternative is to produce a budget that minimizes the equivalent gold cost while also having roughly/at least x% chance of passing. I'm still trying to figure out how to do that...
+We may have an abundance of one mat and a bottleneck of another. Clearly we should produce a result that increases the bottleneck more than the abundant one, but how exactly?
 
-## Budget mode
+We first find the optimal way to spend our gold(I'm working on allowing selling mats) to achieve the highest chance of success. Then we increase our gold budget by some increment, up until we can afford to buy all mats til pity. Then we do a similiar thing to Basic mode - we test these arbitrary budgets(that each are the highest chance given some gold) for what percent chance of success they are, and show whatever's the closest to the desired chnace slider.
 
-Now budget mode is much easier - we just count how many samples are below our budget. The tough part is figuring out how to best use your juice & free taps. Currently we calculate the expected gold value of the juice/free tap and pick the highest valued taps. This is the best strategy if your goal is to preserve your other mats, but it's not the true way to maximize your chance of success (although it also does that pretty well).
+### The juice, the free taps and the bane of my existence
 
-Currently if "Custom Gold value" is unticked, it just uses a hard-coded list of gold values. I originally wanted to make that a "Optimize juice & freetap usage" button, as in it optimizes the chance of success rather than the average gold values. This removes the need for an arbitrary gold value list and would be useful if your goal is just to pass the upgrades ASAP(such as on your main). However this is much harder a problem than I thought(if you know how to do it please help).
+Due to how our algorithm is implemented, evaluating the effect of a juiced tap on the overall chance of success is exceedingly difficult. This is because changing a juice usage will affect the whole cost_data and that is no beuno.
 
-From a user standpoint, perhaps the hardest part is actually tallying up all the mats in the inventory, especially if you have a messy one. Not sure if anything can be done about that, but perhaps the wonders of ✨Ai✨ will save us. On the other hand market price integration might be possible with something like [loa buddy](https://www.reddit.com/r/lostarkgame/comments/1ly5qjv/loa_buddy_is_now_out_marketdata_calculator_tools/).
+Currently we resort to simply calculating the expected decrease in mats usage and convert it into gold, then use our juice & free taps accordingly.
+
+This is a work in progress
 
 ## Forecast mode
 
-This section just applies the previous two to the projected budget. The income input is currently completely up to the user. There are better income tracking tools out there, and lot of the time a personal spreadsheet is easier. Maybe in the future we can integrate a tool tho.
+This section repeats what we've done before on a series of extrapolated budgets = what-we-have-now + week-number * income-per-week.
 
 ## Dev
 

@@ -42,13 +42,13 @@ export default function Separator({ activePage, onPageChange }: SeparatorProps) 
     return (
         <div className={getSeparatorClass()}>
             <button className={getButtonClass("chance-to-cost")} onClick={() => handleButtonClick("chance-to-cost")}>
-                <span className="hf-label">Simple mode</span>
+                <span className="hf-label">Basic mode</span>
                 <div className="hf-help">I want to have x% chance to pass, how much mats will I need?</div>
             </button>
 
             <button className={getButtonClass("cost-to-chance")} onClick={() => handleButtonClick("cost-to-chance")}>
                 <span className="hf-label">Advanced mode</span>
-                <div className="hf-help"> Simple mode, but tailored to your specific situation</div>
+                <div className="hf-help"> Basic mode, but tailored to your specific situation</div>
             </button>
 
             <button className={getButtonClass("forecast")} onClick={() => handleButtonClick("forecast")}>

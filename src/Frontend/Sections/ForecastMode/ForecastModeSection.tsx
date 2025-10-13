@@ -628,9 +628,9 @@ export default function LongTermSection({
                         <div style={{ marginTop: 20, display: "flex", justifyContent: "center" }}>
                             <div style={{ width: "100%", maxWidth: "800px" }}>
                                 <Graph
-                                    title={`Gold needed to achieve ${
-                                        parseInt(desired_chance) === 100 ? "pity" : `${desired_chance}% chance to pass(pessimistic)`
-                                    } (0-${goldGraphData.costToPityData.length - 1} weeks from now)`}
+                                    title={`Gold needed to achieve ${parseInt(desired_chance) === 100 ? "pity" : `${desired_chance}% chance to pass`} (0-${
+                                        goldGraphData.costToPityData.length - 1
+                                    } weeks from now)`}
                                     labels={["Cost to Pity", "Gold if sell mats", ...INPUT_LABELS.slice(0, 7)]}
                                     counts={[goldGraphData.costToPityData, goldGraphData.goldFromSellData, ...goldGraphData.individualPityCostsData]}
                                     mins={[0, 0, ...goldGraphData.individualPityCostsData.map(() => 0)]}
