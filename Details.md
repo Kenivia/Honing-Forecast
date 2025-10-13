@@ -28,10 +28,10 @@ This section repeats what we've done before on a series of extrapolated budgets 
 
 ## Dev
 
-This project started in Google sheets as a roster income tracker, then I want comparing my budget with the Maxroll average to see when I'd hit it. At some point I realized that hitting the average doesn't actually tell me my chances of seeing my ilevel go up, so I started implementing the Monte Carlo thing in Google Appscript, which is insultingly slow (although my algorithm back then was also an insult to humanity). When I couldn't stand it anymore I started making my own website, ported the heavy compute to Rust and wrote a front end. I've had 0 experience in front end/GUI before, so that was done with a LOT of help from various AI tools.
+This project started in Google sheets as a roster income tracker, then I wanted to compare my budget with the Maxroll average to see when I'd hit it. At some point I realized that hitting the average doesn't actually tell me my chances of seeing my ilevel go up, so I started implementing the Monte Carlo thing in Google Appscript, which is insultingly slow - when I couldn't stand it anymore I started making my own website, ported the heavy compute to Rust and wrote a front end. I had 0 experience in front end/GUI before this, so that was done with a LOT of help from various AI tools.
 
 I'm still in the process of writing proper comments & tests, I apologize for the mess.
 
 ## Contributing
 
-Contributions would be greatly appreciated! If you would like to add this to your own tool, there is no API to speak of (given there's no server) but you're welcome to copy any of code(the rust compute section probably the most useful) as long as you comply with AGPL.
+Contributions would be greatly appreciated! If you would like to add this to your own tool, there is no API to speak of (given there's no server) but you're welcome to copy any of the code(the rust compute section probably the most useful) as long as you comply with AGPL.

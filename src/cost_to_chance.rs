@@ -309,7 +309,7 @@ fn optimization<R: rand::Rng>(
         Vec<Vec<f64>>,
         Vec<Vec<i64>>,
     ) = (Vec::new(), Vec::new(), Vec::new());
-    let mut prev_optimized: Vec<usize> = vec![]; // invalid on purpose
+    let prev_optimized: Vec<usize> = vec![]; // invalid on purpose
     for (index, budget) in input_budgets_arr.iter().enumerate() {
         let (optimized_budget, _optimized_chance): (Vec<i64>, f64) = beam_search(
             &bitset_bundle,
