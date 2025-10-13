@@ -12,7 +12,7 @@ dist
 dist-ssr
 *.local
 
-CONOUT
+CONOUT$
 # Editor directories and files, pushing .vscode
 !.vscode/extensions.json
 .idea

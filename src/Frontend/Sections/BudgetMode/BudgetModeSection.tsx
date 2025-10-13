@@ -84,32 +84,69 @@ export default function CostToChanceSection({
                                     />
                                 </div> */}
                         </div>
-                        <div style={{ display: 'flex', flexDirection: "column", gap: 25 }}>
-                            <div style={{ display: 'flex', flexDirection: "row", gap: 0, alignItems: 'flex-start' }}>
+                        {/* Optimized chances slider and answer*/}
+                        <div style={{ display: 'flex', flexDirection: "row", gap: 0, alignItems: 'center', width: 600, marginTop: 0, marginLeft: 0 }}>
+                            <SliderBundle
+                                desiredChance={String(Math.max(Math.floor(chance_result?.optimized_chance ?? 0), Number(desired_chance)))}
+                                uncleanedDesiredChance={uncleaned_desired_chance}
+                                onDesiredChange={(value) => onDesiredChange(String(Math.max(Math.floor(chance_result?.optimized_chance ?? 0), Number(value))))}
+                                onDesiredBlur={onDesiredBlur}
+                                lowThreshold={100}//{Math.ceil(chance_result?.optimized_chance ?? 0)}
+                                lowText={//(chance_result && Number(desired_chance) <= Math.ceil(chance_result?.optimized_chance) ? `Your current chance is ${chance_result.optimized_chance}%` : '') +
+                                    '\nExtra gold needed: ' + (cost_result_optimized ? (cost_result_optimized.hundred_gold_costs[parseInt(desired_chance)] - budget_inputs["Gold"]).toLocaleString("en-US", {
+                                        minimumFractionDigits: 0, // show decimals for small K/M/B
+                                        maximumFractionDigits: 0,
+                                    }) : "") + (chance_result && Number(desired_chance) < chance_result?.optimized_chance ? ". If you spend your gold according to the list on the right, you already have " + chance_result?.optimized_chance + "% chance to succeed" : "")}
+                                lowTextColor={"var(--text-success)"}
+                            />
 
-                                <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 120, marginLeft: 60 }}>
-                                    <div style={{ ...styles.inputLabelCell, whiteSpace: 'nowrap', color: 'var(--text-success)', textAlign: "right", width: 200, fontSize: 20 }}>Chance without buying:</div>
-                                    <div style={{ ...styles.inputCell, border: 'none', background: "transparent", color: 'var(--text-success)', fontSize: 28, width: 130, }}>{chance_result ? (String(chance_result.chance) + '%') : '-'}</div>
 
+                            <div style={{ marginLeft: 100 }}>
+                                <div style={{ marginBottom: 0, width: 210 }}>
+                                    <SpreadsheetGrid
+                                        columnDefs={optimizedColumnDefs}
+                                        labels={OUTPUT_LABELS}
+                                        sheetValuesArr={
+                                            [
+                                                // budget_inputs,
+
+                                                Object.fromEntries(OUTPUT_LABELS.map((label, lab_index) =>
+                                                    [label, cost_result_optimized ? String(label == "Gold" ? "N/A" : cost_result_optimized.hundred_budgets[parseInt(desired_chance)][lab_index] - budget_inputs[label]) : 'Calculating...'])),
+
+                                                Object.fromEntries(OUTPUT_LABELS.map((label, lab_index) =>
+                                                    [label, cost_result_optimized ? String(cost_result_optimized.hundred_budgets[parseInt(desired_chance)][lab_index]) : 'Calculating...'])),
+
+
+                                            ]}
+
+                                        setSheetValuesArr={[() => { }, () => { }]} // No-op for read-only
+
+                                    />
                                 </div>
+                                <div style={{ display: 'flex', flexDirection: "row", alignItems: 'left', gap: 8, marginBottom: 8, marginLeft: 0 }}>
 
-
-                                {(chance_result) && <div style={{ marginLeft: 80, flexDirection: "column", display: "flex", marginTop: 60, }}>
-                                    <div style={{ ...styles.inputLabelCell, marginTop: 0, whiteSpace: 'nowrap', textAlign: "left", color: 'var(--text-success)', }}>Individual chances:</div>
-                                    <div style={{ marginTop: 4, color: 'var(--text-muted)', fontSize: 'var(--font-size-sm)', whiteSpace: "wrap", width: 300 }}>
-                                        {(chance_result.reasons || []).map((s: string, idx: number) => (
-                                            <div key={"Fail reason" + (idx + 1)}> {s}</div>
-                                        ))}
-                                    </div>
-                                </div>}
-
-
-
+                                    <LabeledCheckbox
+                                        label="Show this on the graph"
+                                        checked={showOptimized}
+                                        setChecked={setShowOptimized}
+                                    />
+                                </div>
+                                {cost_result_optimized && (
+                                    <pre style={{ color: 'var(--text-muted)', fontSize: 'var(--font-size-xs)', marginTop: 0, }}>
+                                        Run time: {cost_result_optimized.run_time}s
+                                        {'\nActual chance: '}{cost_result_optimized.hundred_chances[parseInt(desired_chance)].toFixed(2)}%
+                                        {'\nTotal gold cost: '}{(cost_result_optimized.hundred_gold_costs[parseInt(desired_chance)]).toLocaleString("en-US", {
+                                            minimumFractionDigits: 0, // show decimals for small K/M/B
+                                            maximumFractionDigits: 0,
+                                        })}
+                                    </pre>
+                                )}
 
                             </div>
 
 
                         </div>
+
 
                     </div>
 
@@ -122,90 +159,54 @@ export default function CostToChanceSection({
 
                     {/* Not enough Juice warning*/}
                     {chance_result && (Number(chance_result.budgets_red_remaining) < 0 || Number(chance_result.budgets_blue_remaining) < 0) && (
-                        <div style={{ marginLeft: 12, color: '#f59e0b', fontSize: 'var(--font-size-sm)', whiteSpace: 'nowrap' }}>
-                            Invalid result!  Missing roughly {Number(chance_result.budgets_red_remaining) < 0 ? (Number(chance_result.budgets_red_remaining) * -1).toString() + ' red juice' : ''}
+                        <div style={{ marginLeft: 12, color: '#f59e0b', fontSize: 'var(--font-size-xl)', whiteSpace: 'nowrap' }}>
+                            Invalid result!  Missing ~{Number(chance_result.budgets_red_remaining) < 0 ? (Number(chance_result.budgets_red_remaining) * -1).toString() + ' red juice' : ''}
                             {(Number(chance_result.budgets_red_remaining) < 0 && Number(chance_result.budgets_blue_remaining) < 0) ? ' and ' : ''}
                             {Number(chance_result.budgets_blue_remaining) < 0 ? (Number(chance_result.budgets_blue_remaining) * -1).toString() + ' blue juice' : ""} for Advanced Honing, use "No Juice" option or add more juice
                         </div>
                     )}
 
 
+                    <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8, marginBottom: 8, justifySelf: "left", marginLeft: 30, marginTop: 20 }}>
 
-
-                    {/* Optimized chances slider and answer*/}
-                    <div style={{ display: 'flex', flexDirection: "row", gap: 0, alignItems: 'center', width: "100%", marginTop: -200, marginLeft: 280 }}>
-                        <SliderBundle
-                            desiredChance={String(Math.max(Math.floor(chance_result?.optimized_chance ?? 0), Number(desired_chance)))}
-                            uncleanedDesiredChance={uncleaned_desired_chance}
-                            onDesiredChange={(value) => onDesiredChange(String(Math.max(Math.floor(chance_result?.optimized_chance ?? 0), Number(value))))}
-                            onDesiredBlur={onDesiredBlur}
-                            lowThreshold={100}//{Math.ceil(chance_result?.optimized_chance ?? 0)}
-                            lowText={//(chance_result && Number(desired_chance) <= Math.ceil(chance_result?.optimized_chance) ? `Your current chance is ${chance_result.optimized_chance}%` : '') +
-                                '\nExtra gold needed: ' + (cost_result_optimized ? (cost_result_optimized.hundred_gold_costs[parseInt(desired_chance)] - budget_inputs["Gold"]).toLocaleString("en-US", {
-                                    minimumFractionDigits: 0, // show decimals for small K/M/B
-                                    maximumFractionDigits: 0,
-                                }) : "") + (chance_result && Number(desired_chance) <= Math.ceil(chance_result?.optimized_chance) ? ". If you spend your gold according to the list on the right, you already have " + chance_result?.optimized_chance + "% chance to succeed" : "")}
-                            lowTextColor={"var(--text-optimized)"}
+                        <LabeledCheckbox
+                            label="I don't want to buy anything at all"
+                            checked={showOptimizedDetails}
+                            setChecked={setShowOptimizedDetails}
+                            textColor='var(--text-optimized)'
+                            accentColor='var(--text-optimized)'
                         />
-
-
-                        <div style={{ marginLeft: 100 }}>
-                            <div style={{ marginBottom: 16, width: 210 }}>
-                                <SpreadsheetGrid
-                                    columnDefs={optimizedColumnDefs}
-                                    labels={OUTPUT_LABELS}
-                                    sheetValuesArr={
-                                        [
-                                            // budget_inputs,
-
-                                            Object.fromEntries(OUTPUT_LABELS.map((label, lab_index) =>
-                                                [label, cost_result_optimized ? String(label == "Gold" ? "N/A" : cost_result_optimized.hundred_budgets[parseInt(desired_chance)][lab_index] - budget_inputs[label]) : 'Calculating...'])),
-
-                                            Object.fromEntries(OUTPUT_LABELS.map((label, lab_index) =>
-                                                [label, cost_result_optimized ? String(cost_result_optimized.hundred_budgets[parseInt(desired_chance)][lab_index]) : 'Calculating...'])),
-
-
-                                        ]}
-
-                                    setSheetValuesArr={[() => { }, () => { }]} // No-op for read-only
-
-                                />
-                            </div>
-
-                            {cost_result_optimized && (
-                                <pre style={{ color: 'var(--text-muted)', fontSize: 'var(--font-size-xs)', marginTop: 8, }}>
-                                    Run time: {cost_result_optimized.run_time}s
-                                    {'\nActual chance: '}{cost_result_optimized.hundred_chances[parseInt(desired_chance)].toFixed(2)}%
-                                    {'\nTotal gold cost: '}{(cost_result_optimized.hundred_gold_costs[parseInt(desired_chance)]).toLocaleString("en-US", {
-                                        minimumFractionDigits: 0, // show decimals for small K/M/B
-                                        maximumFractionDigits: 0,
-                                    })}
-                                </pre>
-                            )}
-
-                        </div>
-
-
                     </div>
 
-                    {/* <div style={{ display: "flex", flexDirection: "column" }}>
+                    {showOptimizedDetails && chance_result &&
+
+                        <div style={{ display: 'flex', flexDirection: "column", gap: 0, marginLeft: 50 }}>
+
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 0, marginLeft: 0 }}>
+                                <div style={{ ...styles.inputLabelCell, whiteSpace: 'nowrap', color: 'var(--text-optimized)', textAlign: "right", width: 200, fontSize: 20 }}>Chance without buying:</div>
+                                <div style={{ ...styles.inputCell, border: 'none', background: "transparent", color: 'var(--text-optimized)', fontSize: 28, width: 130, }}>{chance_result ? (String(chance_result.chance) + '%') : '-'}</div>
+
+                            </div>
+
+
+                            {(chance_result) && <div style={{ marginLeft: 10, marginBottom: 50, flexDirection: "column", display: "flex", marginTop: 0, }}>
+                                <div style={{ ...styles.inputLabelCell, marginTop: 0, whiteSpace: 'nowrap', textAlign: "left", color: 'var(--text-optimized)', }}>Individual chances:</div>
+                                <div style={{ marginTop: 4, color: 'var(--text-muted)', fontSize: 'var(--font-size-sm)', whiteSpace: "wrap", width: 300 }}>
+                                    {(chance_result.reasons || []).map((s: string, idx: number) => (
+                                        <div key={"Fail reason" + (idx + 1)}> {s}</div>
+                                    ))}
+                                </div>
+                            </div>}
 
 
 
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8, justifySelf: "center", marginLeft: 100, marginTop: 20 }}>
 
-                            <LabeledCheckbox
-                                label="Show details"
-                                checked={showOptimizedDetails}
-                                setChecked={setShowOptimizedDetails}
-                            />
+
+
+
                         </div>
-                    </div> */}
-                    {/* {showOptimizedDetails &&
-                       
 
-
-                    } */}
+                    }
 
 
 
@@ -268,14 +269,7 @@ export default function CostToChanceSection({
 
 
             </div>
-            {/* <div style={{ display: 'flex', flexDirection: "row", alignItems: 'center', gap: 8, marginBottom: 8, marginLeft: 150 }}>
 
-                <LabeledCheckbox
-                    label="Show Optimal"
-                    checked={showOptimized}
-                    setChecked={setShowOptimized}
-                />
-            </div> */}
             {
                 (chance_result) && (//&& (chance_result.reasons?.length > 0 || chance_result.upgrade_strings?.length > 0 || chance_result.juice_strings_armor?.length > 0 || chance_result.juice_strings_weapon?.length > 0)) && (
 
@@ -299,7 +293,7 @@ export default function CostToChanceSection({
                                 lockedMins={lockedMins}
                                 lockedMaxs={lockedMaxs}
                                 graphType={"Histogram"}
-                                additionalBudgets={showOptimized ? chance_result?.buy_arr : null}
+                                additionalBudgets={showOptimized ? cost_result_optimized?.hundred_budgets[parseInt(desired_chance)] : null}
                             />
                         </div>
 

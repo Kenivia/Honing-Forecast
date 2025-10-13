@@ -10,7 +10,7 @@ export interface SliderBundleProps {
     lowTextColor?: string;
 }
 
-export function SliderBundle({ desiredChance, uncleanedDesiredChance, onDesiredChange, onDesiredBlur, lowThreshold, lowText, lowTextColor = 'var(--input-text)' }: SliderBundleProps) {
+export function SliderBundle({ desiredChance, uncleanedDesiredChance, onDesiredChange, onDesiredBlur, lowThreshold, lowText, lowTextColor = 'var(--text-muted)' }: SliderBundleProps) {
     const intDesired = parseInt(desiredChance) || 0
     const showLowText = (typeof lowThreshold === 'number') && (lowText !== undefined) && (intDesired <= lowThreshold)
 

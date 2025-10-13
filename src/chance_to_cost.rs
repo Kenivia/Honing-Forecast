@@ -85,8 +85,7 @@ pub fn chance_to_cost<R: rand::Rng>(
     let cost_data: Vec<Vec<i64>> = monte_carlo_data(data_size, &upgrade_arr, &unlock_cost, 0, rng);
     let top_bottom: Vec<Vec<i64>> = get_top_bottom(&upgrade_arr, &unlock_cost);
 
-    let mut budget_data: Vec<Vec<i64>> =
-        generate_budget_data(&cost_data, &[0_i64; 7], budget_size);
+    let mut budget_data: Vec<Vec<i64>> = generate_budget_data(&cost_data, &[0_i64; 7], budget_size);
     budget_data.push(top_bottom[1].clone());
 
     if adv_hone_strategy == "Juice on grace" {
@@ -164,12 +163,8 @@ pub fn chance_to_cost_optimized<R: rand::Rng>(
     let thresholds: Vec<Vec<i64>> = generate_budget_data(&cost_data, &input_budget_no_gold, 1000);
     let top_bottom: Vec<Vec<i64>> =
         get_top_bottom(&prep_outputs.upgrade_arr, &prep_outputs.unlock_costs);
-    let bitset_bundle: BitsetBundle = generate_bit_sets(
-        &cost_data,
-        thresholds,
-        &top_bottom[1].clone(),
-        data_size,
-    );
+    let bitset_bundle: BitsetBundle =
+        generate_bit_sets(&cost_data, thresholds, &top_bottom[1].clone(), data_size);
 
     let pity_cost: f64 = compute_gold_cost_from_indices(
         &bitset_bundle.transposed_thresholds,
@@ -179,7 +174,7 @@ pub fn chance_to_cost_optimized<R: rand::Rng>(
     );
     let resolution: usize = 300;
     let gap_size: f64 = (pity_cost - input_budgets[5] as f64) / resolution as f64;
-    let mut budget_data: Vec<Vec<i64>> = Vec::with_capacity(resolution + 1);
+    let mut budget_data: Vec<Vec<i64>> = Vec::with_capacity(resolution + 2);
 
     let mut new_input_budget: Vec<i64>;
     let mut prev_optimized: Vec<usize> = vec![]; // invalid on purpose
@@ -191,13 +186,18 @@ pub fn chance_to_cost_optimized<R: rand::Rng>(
             mats_value,
             &new_input_budget,
             rng,
-            if i == 0 { 999 } else { 12 },
+            if i == 0 { 999 } else { 999 },
             &mut prev_optimized,
         );
 
         budget_data.push(optimized_budget);
     }
 
+    let mut best_pull: Vec<i64> = vec![];
+    for thresh in bitset_bundle.transposed_thresholds {
+        best_pull.push(thresh[0]);
+    }
+    budget_data.push(best_pull);
     budget_data.push(
         top_bottom[1]
             .iter()
@@ -250,8 +250,51 @@ pub fn chance_to_cost_optimized<R: rand::Rng>(
 mod tests {
     use super::*;
     use crate::calculate_hash;
+    use crate::constants::{DEFAULT_GOLD_VALUES, RNG_SEED};
     use crate::test_cache::{read_cached_data, write_cached_data};
     use rand::prelude::*;
+
+    #[test]
+    fn chance_to_cost_optimized_0_budget() {
+        let test_name: &str = "chance_to_cost_optimized_0_budget";
+        let hone_counts: Vec<Vec<i64>> =
+            vec![(0..25).map(|_| 5).collect(), (0..25).map(|_| 1).collect()];
+        let adv_counts: Vec<Vec<i64>> =
+            vec![(0..4).map(|_| 0).collect(), (0..4).map(|_| 0).collect()];
+
+        let adv_hone_strategy: &str = "No juice";
+        let express_event: bool = true;
+        let hist_bins: usize = 1000;
+        let data_size: usize = 10000;
+
+        let hash: String = calculate_hash!(
+            &hone_counts,
+            &adv_counts,
+            adv_hone_strategy,
+            express_event,
+            hist_bins,
+            data_size
+        );
+        // Run the function to get the full output
+        let mut rng = StdRng::seed_from_u64(RNG_SEED);
+        let result: ChanceToCostOptimizedOut = chance_to_cost_optimized(
+            &hone_counts,
+            &adv_counts,
+            &adv_hone_strategy.to_owned(),
+            express_event,
+            hist_bins,
+            data_size,
+            &mut rng,
+            &[0; 10],
+            &DEFAULT_GOLD_VALUES,
+        );
+        let result_of_interst: Vec<Vec<i64>> = result.hundred_budgets.clone();
+        if let Some(cached_result) = read_cached_data::<Vec<Vec<i64>>>(test_name, &hash) {
+            assert_eq!(result_of_interst, cached_result);
+        } else {
+            write_cached_data(test_name, &hash, &result_of_interst);
+        }
+    }
 
     #[test]
     fn chance_to_cost_all_normal() {

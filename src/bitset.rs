@@ -128,7 +128,7 @@ fn oracle(
 struct State {
     indices: Vec<usize>,
     score: f64,
-    cost: f64,
+    mats_cost: f64,
 }
 
 fn compute_diff_cost(
@@ -234,7 +234,7 @@ pub fn beam_search<R: rand::Rng>(
                 &input_budget_no_gold,
                 price_arr,
             );
-            dbg!(w);
+            // dbg!(w);
             if w > k {
                 uniform_index = thresh_index.saturating_sub(1);
                 break;
@@ -249,6 +249,7 @@ pub fn beam_search<R: rand::Rng>(
             start_idxs[i] = start_idxs[i].max(min_indices[i]);
         }
     }
+    dbg!(&input_budget);
     dbg!(&start_idxs);
 
     dbg!(&input_budget_no_gold);
@@ -263,7 +264,7 @@ pub fn beam_search<R: rand::Rng>(
     let mut beam: Vec<State> = vec![State {
         indices: start_idxs.clone(),
         score: start_score,
-        cost: compute_gold_cost_from_indices(
+        mats_cost: compute_gold_cost_from_indices(
             thresholds,
             &start_idxs,
             &input_budget_no_gold,
@@ -277,7 +278,6 @@ pub fn beam_search<R: rand::Rng>(
     // beam loop
     for perturb_limit in perturb_limits.into_iter().rev().take(search_depth).rev() {
         // generate candidates
-
         let mut candidates: Vec<State> = Vec::new();
         let mut seen: HashSet<Vec<usize>> = HashSet::new();
 
@@ -295,18 +295,21 @@ pub fn beam_search<R: rand::Rng>(
                 for mut down_index in 0..6_usize {
                     cand = parent.indices.clone();
                     down_index += usize::from(down_index >= up_index);
-                    let mut max_change: usize = perturb_limit;
+
+                    let mut max_up_change: usize = perturb_limit;
+                    let mut max_down_change: usize = perturb_limit;
                     // for i in 1..=perturb_limit {
                     if cand[up_index] + perturb_limit >= threshold_len.saturating_sub(1) {
-                        max_change = max_change.min(threshold_len - 1 - cand[up_index]);
+                        max_up_change = max_up_change.min(threshold_len - 1 - cand[up_index]);
                     }
                     if cand[down_index] < perturb_limit
                         || down_index.saturating_sub(perturb_limit) < min_indices[down_index]
                     {
-                        max_change = max_change.min(cand[down_index] - min_indices[down_index]);
+                        max_down_change =
+                            max_down_change.min(cand[down_index] - min_indices[down_index]);
                     }
                     // }
-                    if max_change == 0 {
+                    if max_up_change == 0 && max_down_change == 0 {
                         continue;
                     }
                     let left_overs: f64 = k - compute_gold_cost_from_indices(
@@ -320,7 +323,7 @@ pub fn beam_search<R: rand::Rng>(
                         thresholds,
                         &cand,
                         up_index,
-                        max_change as isize,
+                        max_up_change as isize,
                         price_arr,
                     );
 
@@ -329,12 +332,12 @@ pub fn beam_search<R: rand::Rng>(
                             thresholds,
                             &cand,
                             down_index,
-                            -(max_change as isize),
+                            -(max_down_change as isize),
                             price_arr,
                         );
 
-                    let mut actual_up_change: usize = max_change;
-                    let mut actual_down_change: usize = max_change;
+                    let mut actual_up_change: usize = max_up_change;
+                    let mut actual_down_change: usize = max_down_change;
                     while needed_cash > avail_cash && actual_up_change > 1 {
                         actual_up_change = actual_up_change.saturating_sub(1);
                         needed_cash = compute_diff_cost(
@@ -368,12 +371,12 @@ pub fn beam_search<R: rand::Rng>(
                     candidates.push(State {
                         indices: cand.clone(),
                         score: oracle(bitset_bundle, &cand, &mut oracle_cache),
-                        cost: compute_gold_cost_from_indices(
+                        mats_cost: compute_gold_cost_from_indices(
                             thresholds,
                             &cand,
                             &input_budget_no_gold,
                             price_arr,
-                        ),
+                        ) - thresholds[5][cand[5]] as f64,
                     });
                     seen.insert(cand);
                 }
@@ -385,18 +388,17 @@ pub fn beam_search<R: rand::Rng>(
                 .partial_cmp(&a.score)
                 .unwrap_or(std::cmp::Ordering::Equal)
                 .then_with(|| {
-                    a.cost
-                        .partial_cmp(&b.cost)
+                    a.mats_cost
+                        .partial_cmp(&b.mats_cost)
                         .unwrap_or(std::cmp::Ordering::Equal)
                 })
         });
 
         candidates.truncate(beam_width);
         if let Some(top) = candidates.first() {
-            dbg!("top", top);
-            if top.score > best_state.score {
-                best_state = top.clone();
-            }
+            // dbg!("top", top);
+
+            best_state = top.clone();
         }
 
         beam = candidates;
@@ -407,17 +409,20 @@ pub fn beam_search<R: rand::Rng>(
     for i in 0..dims {
         best_values[i] = thresholds[i][best_state.indices[i]].max(input_budget_no_gold[i]);
         if i == 5 {
-            best_values[5] += (k - best_state.cost).round() as i64;
+            best_values[5] += (k - best_state.mats_cost).round() as i64;
         }
     }
 
-    dbg!(&best_state);
-    dbg!(&best_values);
-    dbg!(oracle(
-        bitset_bundle,
-        &best_state.indices,
-        &mut oracle_cache
-    ));
-    *prev_indices = best_state.indices;
+    // dbg!(&best_state);
+    // dbg!(&best_values);
+    // dbg!(oracle(
+    //     bitset_bundle,
+    //     &best_state.indices,
+    //     &mut oracle_cache
+    // ));
+    // if *best_state.indices.iter().min_by(|a, b| a.cmp(b)).unwrap() > 0_usize {
+    //     *prev_indices = best_state.indices;
+    // }
+
     (best_values, best_state.score)
 }

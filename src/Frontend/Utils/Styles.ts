@@ -199,7 +199,7 @@ export const createColumnDefs = (_autoGoldValues: boolean) => {
             flex: 1,
             background: "var(--grid-cell-bg-readonly)",
             backgroundSelected: "var(--grid-cell-selected-readonly)",
-            color: "var(--text-optimized)",
+            color: "var(--text-success)",
         },
         {
             headerName: "Total",
@@ -207,7 +207,7 @@ export const createColumnDefs = (_autoGoldValues: boolean) => {
             flex: 1,
             background: "var(--grid-cell-bg-readonly)",
             backgroundSelected: "var(--grid-cell-selected-readonly)",
-            color: "var(--text-optimized)",
+            color: "var(--text-success)",
         },
     ]
 

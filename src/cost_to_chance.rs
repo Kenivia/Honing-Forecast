@@ -355,6 +355,7 @@ pub fn cost_to_chance_optimized<R: rand::Rng>(
 mod tests {
     use super::*;
     use crate::calculate_hash;
+    use crate::constants::{DEFAULT_GOLD_VALUES, RNG_SEED};
     use crate::test_cache::{read_cached_data, write_cached_data};
     use rand::prelude::*;
 
