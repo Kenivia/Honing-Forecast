@@ -221,34 +221,35 @@ pub fn beam_search<R: rand::Rng>(
     }
 
     let mut start_idxs: Vec<usize>;
-    if prev_indices.len() == 7 {
-        start_idxs = prev_indices.clone();
-    } else {
-        let mut uniform_index: usize = threshold_len - 1;
-        let mut cur_index: Vec<usize> = vec![0; 7];
-        for thresh_index in 0..threshold_len {
-            debug_assert_eq!(cur_index[0], thresh_index);
-            let w: f64 = compute_gold_cost_from_indices(
-                thresholds,
-                &cur_index,
-                &input_budget_no_gold,
-                price_arr,
-            );
-            // dbg!(w);
-            if w > k {
-                uniform_index = thresh_index.saturating_sub(1);
-                break;
-            }
-            for i in 0..7 {
-                cur_index[i] += 1;
-            }
+
+    let mut uniform_index: usize = threshold_len - 1;
+    let mut cur_index: Vec<usize> = vec![0; 7];
+    for thresh_index in 0..threshold_len {
+        debug_assert_eq!(cur_index[0], thresh_index);
+        let w: f64 = compute_gold_cost_from_indices(
+            thresholds,
+            &cur_index,
+            &input_budget_no_gold,
+            price_arr,
+        );
+        // dbg!(w);
+        if w > k {
+            uniform_index = thresh_index.saturating_sub(1);
+            break;
         }
-        // start_idxs[5] = start_idxs[5].min(thresholds[0].len() / 2);
-        start_idxs = vec![uniform_index; 7];
         for i in 0..7 {
-            start_idxs[i] = start_idxs[i].max(min_indices[i]);
+            cur_index[i] += 1;
         }
     }
+    // start_idxs[5] = start_idxs[5].min(thresholds[0].len() / 2);
+    start_idxs = vec![uniform_index; 7];
+    for i in 0..7 {
+        start_idxs[i] = start_idxs[i].max(min_indices[i]);
+        if prev_indices.len() == 7 {
+            start_idxs[i] = start_idxs[i].max(prev_indices[i]);
+        }
+    }
+
     dbg!(&input_budget);
     dbg!(&start_idxs);
 
@@ -420,9 +421,9 @@ pub fn beam_search<R: rand::Rng>(
     //     &best_state.indices,
     //     &mut oracle_cache
     // ));
-    // if *best_state.indices.iter().min_by(|a, b| a.cmp(b)).unwrap() > 0_usize {
-    //     *prev_indices = best_state.indices;
-    // }
+    if *best_state.indices.iter().min_by(|a, b| a.cmp(b)).unwrap() > 0_usize {
+        *prev_indices = best_state.indices;
+    }
 
     (best_values, best_state.score)
 }

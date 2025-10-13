@@ -48,7 +48,7 @@ export default function Separator({ activePage, onPageChange }: SeparatorProps) 
 
             <button className={getButtonClass("cost-to-chance")} onClick={() => handleButtonClick("cost-to-chance")}>
                 <span className="hf-label">Advanced mode</span>
-                <div className="hf-help"> How much will I need if I already have this much?</div>
+                <div className="hf-help"> Simple mode, but tailored to your specific situation</div>
             </button>
 
             <button className={getButtonClass("forecast")} onClick={() => handleButtonClick("forecast")}>

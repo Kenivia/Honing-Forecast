@@ -27,10 +27,11 @@ fn truncated_average_tap(prob_dist: &[f64], offset: f64, truncate: usize) -> f64
         if index < truncate - 1 {
             out += 0.0;
         } else {
-            out += item * (index as f64 + offset);
+            out += item * (index as f64 + offset)
+                / (1.0 - prob_dist.iter().take(truncate - 1).sum::<f64>());
         }
     }
-    out + (truncate - 1) as f64 + offset
+    out + (truncate - 1) as f64
 }
 
 // fn average_tap_with_change(prob_dist: &Vec<f64>, change_index: usize, change_value: f64) -> f64 {
@@ -70,7 +71,7 @@ fn est_juice_value_for_prob_dist(
         //         * upgrade.base_chance
         //         * truncated_average_tap(prob_dist, upgrade.tap_offset as f64, extra_count)
         // })
-    ) / upgrade.one_juice_cost as f64
+    )
 }
 pub fn est_special_honing_value(upgrade_arr: &mut Vec<Upgrade>, mats_values: &[f64]) -> Vec<f64> {
     let mut out: Vec<f64> = Vec::with_capacity(upgrade_arr.len());
@@ -140,7 +141,7 @@ pub fn est_juice_value(upgrade_arr: &mut Vec<Upgrade>, mat_values: &[f64]) {
             let value_without_juice: f64 =
                 est_juice_value_for_prob_dist(upgrade, mat_values, &prev_prob_dist, extra_count);
 
-            this_sum.push(value_without_juice - value_with_juice);
+            this_sum.push((value_without_juice - value_with_juice) / upgrade.one_juice_cost as f64);
             prev_prob_dist = next_prob_dist;
             extra_count += 1;
         }
@@ -294,4 +295,120 @@ fn _juice_to_array(
         }
     }
     out
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::calculate_hash;
+    use crate::constants::{DEFAULT_GOLD_VALUES, EVENT_ARTISAN_MULTIPLIER};
+    use crate::parser::parser;
+    use crate::test_cache::{read_cached_data, write_cached_data};
+
+    #[test]
+    fn est_juice_value_22_wep() {
+        let test_name: &str = "est_juice_value_22_wep";
+        let hone_counts: Vec<Vec<i64>> = vec![
+            (0..25).map(|_| 0).collect(),
+            (0..25).map(|x| if x == 22 { 1 } else { 0 }).collect(),
+        ];
+        let adv_counts: Vec<Vec<i64>> =
+            vec![(0..4).map(|_| 0).collect(), (0..4).map(|_| 0).collect()];
+
+        let adv_hone_strategy: &str = "No juice";
+        let express_event: bool = true;
+
+        let hash: String =
+            calculate_hash!(&hone_counts, &adv_counts, adv_hone_strategy, express_event);
+
+        let mut upgrade_arr = parser(
+            &hone_counts,
+            &adv_counts,
+            &adv_hone_strategy.to_string(),
+            &EVENT_ARTISAN_MULTIPLIER.to_vec(),
+            &[0.0; 25],
+            &[0; 25],
+            express_event,
+        );
+
+        est_juice_value(&mut upgrade_arr, &DEFAULT_GOLD_VALUES);
+        let result: Vec<f64> = upgrade_arr[0].juice_values.clone();
+        if let Some(cached_result) = read_cached_data::<Vec<f64>>(test_name, &hash) {
+            assert_eq!(result, cached_result);
+        } else {
+            write_cached_data(test_name, &hash, &result);
+        }
+    }
+
+    #[test]
+    fn est_juice_value_5_wep() {
+        let test_name: &str = "est_juice_value_5_wep";
+        let hone_counts: Vec<Vec<i64>> = vec![
+            (0..25).map(|_| 0).collect(),
+            (0..25).map(|x| if x == 4 { 1 } else { 0 }).collect(),
+        ];
+        let adv_counts: Vec<Vec<i64>> =
+            vec![(0..4).map(|_| 0).collect(), (0..4).map(|_| 0).collect()];
+
+        let adv_hone_strategy: &str = "No juice";
+        let express_event: bool = true;
+
+        let hash: String =
+            calculate_hash!(&hone_counts, &adv_counts, adv_hone_strategy, express_event);
+
+        let mut upgrade_arr = parser(
+            &hone_counts,
+            &adv_counts,
+            &adv_hone_strategy.to_string(),
+            &EVENT_ARTISAN_MULTIPLIER.to_vec(),
+            &[0.0; 25],
+            &[0; 25],
+            express_event,
+        );
+
+        est_juice_value(&mut upgrade_arr, &DEFAULT_GOLD_VALUES);
+        let result: Vec<f64> = upgrade_arr[0].juice_values.clone();
+        if let Some(cached_result) = read_cached_data::<Vec<f64>>(test_name, &hash) {
+            assert_eq!(result, cached_result);
+        } else {
+            write_cached_data(test_name, &hash, &result);
+        }
+    }
+
+    // #[test]
+    // fn juice_to_array_25() {
+    //     let test_name: &str = "juice_to_array_25";
+    //     let hone_counts: Vec<Vec<i64>> = vec![
+    //         (0..25).map(|_| 0).collect(),
+    //         (0..25).map(|x| if x == 24 { 1 } else { 0 }).collect(),
+    //     ];
+    //     let adv_counts: Vec<Vec<i64>> =
+    //         vec![(0..4).map(|_| 0).collect(), (0..4).map(|_| 0).collect()];
+
+    //     let adv_hone_strategy: &str = "No juice";
+    //     let express_event: bool = true;
+
+    //     let hash: String =
+    //         calculate_hash!(&hone_counts, &adv_counts, adv_hone_strategy, express_event);
+
+    //     let mut upgrade_arr = parser(
+    //         &hone_counts,
+    //         &adv_counts,
+    //         &adv_hone_strategy.to_string(),
+    //         &EVENT_ARTISAN_MULTIPLIER.to_vec(),
+    //         &[0.0; 25],
+    //         &[0; 25],
+    //         express_event,
+    //     );
+
+    //     let result: Vec<(usize, usize, f64, f64)> = _juice_to_array(&mut upgrade_arr, true, 1000);
+
+    //     if let Some(cached_result) =
+    //         read_cached_data::<Vec<(usize, usize, f64, f64)>>(test_name, &hash)
+    //     {
+    //         assert_eq!(result, cached_result);
+    //     } else {
+    //         write_cached_data(test_name, &hash, &result);
+    //     }
+    // }
 }
