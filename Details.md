@@ -2,7 +2,7 @@
 
 The main functionalities of the calculator are based on random samples. We generate "cost data" consisting of ~100k samples, where each sample is the cost of all selected upgrades. Note that we don't stop for failures in this data generation - we just keep going til everything succeeds and record how much things costed.
 
-We use random samples because I'm pretty sure it's not practical to calculate all the possibilities, though I'd love to be proven wrong.
+We use random samples because I'm pretty sure it's not practical to calculate the true values, though I'd love to be proven wrong.
 
 ## Chance mode
 
