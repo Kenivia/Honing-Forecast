@@ -3,8 +3,9 @@
 
 ## Next big step(s)
 
-- ~~True juice usage optimization(maximize chance of success)~~ might not be possible, at least with beam search because evaluating the effect is way too hard
+- ~~True juice usage optimization(maximize chance of success)~~ might not be possible, at least with beam search because evaluating the effect is way too hard but WE WILL TRY
 - ~~option for Bottleneck-aware juice/free tap gold value estimation~~ but the gold value will depend on how we've used it... idk if this is possible
+- Allow beamsearch to go below min indices(allow selling materials)
 
 ## Other features
 
@@ -28,4 +29,6 @@
 - Matrix operation libraries to speed up monte carlo and what not?
 - ~~maybe go back to caching results?~~ DEFINITELY caching the monte carlo + orcale bitsets
 - Graph is off by 0.5 all the time, and the points of interest snap the the one below(i tihnk?) which isnt quite right idk, kinda scared to touch it
-- Improve beamsearch algorithm
+- Improve beam search algorithm.
+- Sort out input parsing (clamping) for desired_chance, prolly make a new variable
+- better input cleaning for spreadsheetgrids

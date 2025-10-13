@@ -100,15 +100,6 @@ self.addEventListener("message", async (ev) => {
         const final_chances_percent = out.final_chances.map((chance: number) => (chance * 100).toFixed(2))
         const optimized_percent = out.optimized_chances.map((chance: number) => (chance * 100).toFixed(2))
 
-        // Convert typed fail counters to failure rates for each budget
-        // const failure_rates_arr = out.typed_fail_counters.map((typed_fail_counter: number[]) => {
-        //     return typed_fail_counter.map((fail_count: number, _index: number) => {
-        //         const failure_rate = fail_count / (out.final_chances.length > 0 ? 100000 : 1) // Assuming data_size
-        //         const percentage = failure_rate
-        //         return percentage
-        //     })
-        // })
-
         result = {
             final_chances: final_chances_percent,
             failure_rates_arr: out.typed_fail_counters,

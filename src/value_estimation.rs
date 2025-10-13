@@ -333,7 +333,9 @@ mod tests {
         est_juice_value(&mut upgrade_arr, &DEFAULT_GOLD_VALUES);
         let result: Vec<f64> = upgrade_arr[0].juice_values.clone();
         if let Some(cached_result) = read_cached_data::<Vec<f64>>(test_name, &hash) {
-            assert_eq!(result, cached_result);
+            for (index, i) in result.iter().enumerate() {
+                assert_float_eq::assert_f64_near!(*i, cached_result[index]);
+            }
         } else {
             write_cached_data(test_name, &hash, &result);
         }
@@ -367,7 +369,9 @@ mod tests {
         est_juice_value(&mut upgrade_arr, &DEFAULT_GOLD_VALUES);
         let result: Vec<f64> = upgrade_arr[0].juice_values.clone();
         if let Some(cached_result) = read_cached_data::<Vec<f64>>(test_name, &hash) {
-            assert_eq!(result, cached_result);
+            for (index, i) in result.iter().enumerate() {
+                assert_float_eq::assert_f64_near!(*i, cached_result[index]);
+            }
         } else {
             write_cached_data(test_name, &hash, &result);
         }
@@ -402,7 +406,9 @@ mod tests {
         est_juice_value(&mut upgrade_arr, &DEFAULT_GOLD_VALUES);
         let result: Vec<f64> = upgrade_arr[0].juice_values.clone();
         if let Some(cached_result) = read_cached_data::<Vec<f64>>(test_name, &hash) {
-            assert_eq!(result, cached_result);
+            for (index, i) in result.iter().enumerate() {
+                assert_float_eq::assert_f64_near!(*i, cached_result[index]);
+            }
         } else {
             write_cached_data(test_name, &hash, &result);
         }

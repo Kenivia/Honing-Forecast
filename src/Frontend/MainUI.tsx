@@ -786,10 +786,11 @@ export default function HoningForecastUI() {
                         onDesiredChange={onDesiredChange}
                         onDesiredBlur={onDesiredBlur}
                         // Cost result prop for hundred_budgets
-                        cost_result={chanceToCostResult}
+                        // cost_result={chanceToCostResult}
                         //TODOcost_result_optimized={chanceToCostOptimizedResult}
                         showOptimizedDetails={showOptimizedDetails}
                         setShowOptimizedDetails={setShowOptimizedDetails}
+                        chanceToCostOptimizedResult={chanceToCostOptimizedResult}
                     />
                 </div>
             </div>

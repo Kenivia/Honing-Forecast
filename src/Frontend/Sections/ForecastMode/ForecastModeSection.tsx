@@ -31,9 +31,10 @@ type LongTermSectionProps = {
     onDesiredChange: (_value: string) => void
     onDesiredBlur: () => void
     // Cost result prop for hundred_budgets
-    cost_result: any
+    // cost_result: any
+    chanceToCostOptimizedResult: any
 }
-function cost_to_pity(budget: number[], pity_cost: number[], mat_value: number[]): number {
+function cost_to_achieve(budget: number[], pity_cost: number[], mat_value: number[]): number {
     let sum = 0
     for (let i = 0; i < 7; i++) {
         if (i == 5) {
@@ -45,16 +46,16 @@ function cost_to_pity(budget: number[], pity_cost: number[], mat_value: number[]
     return sum
 }
 
-function gold_plus_sell_mats(budget: number[], pity_cost: number[], mat_value: number[]): number {
-    let sum = budget[5]
-    for (let i = 0; i < 7; i++) {
-        if (i == 5 || i == 3 || i == 6) {
-            continue
-        }
-        sum += Math.max(0, budget[i] - pity_cost[i]) * mat_value[i] * 0.95
-    }
-    return sum
-}
+// function gold_plus_sell_mats(budget: number[], pity_cost: number[], mat_value: number[]): number {
+//     let sum = budget[5]
+//     for (let i = 0; i < 7; i++) {
+//         if (i == 5 || i == 3 || i == 6) {
+//             continue
+//         }
+//         sum += Math.max(0, budget[i] - pity_cost[i]) * mat_value[i] * 0.95
+//     }
+//     return sum
+// }
 
 function cost_to_pity_individual(budget: number[], pity_cost: number[], mat_value: number[], materialIndex: number): number {
     if (materialIndex == 5) {
@@ -99,7 +100,8 @@ export default function LongTermSection({
     onDesiredChange,
     onDesiredBlur,
     // Cost result prop for hundred_budgets
-    cost_result,
+    // cost_result,
+    chanceToCostOptimizedResult,
 }: LongTermSectionProps) {
     // Income array is now managed by parent component
 
@@ -411,7 +413,7 @@ export default function LongTermSection({
 
     // Calculate data for the new graph (cost to pity and gold from selling materials)
     const goldGraphData = useMemo(() => {
-        if (!longTermResult) return null
+        if (!chanceToCostOptimizedResult) return null
 
         const weeklyBudgets = weekly_budget(
             Object.values(budget_inputs).map((v) => Math.round(Number(v))),
@@ -427,36 +429,34 @@ export default function LongTermSection({
             individualPityCostsData.push([])
         }
 
-        const pityCost = cost_result?.hundred_budgets?.[parseInt(desired_chance)] || []
+        const needed_budget = chanceToCostOptimizedResult.hundred_budgets[parseInt(desired_chance)] || []
         // console.log("Pitycost", pityCost)
         for (let week = 0; week < Math.min(53, weeklyBudgets.length); week++) {
-            const this_week_budget = weeklyBudgets[week]
-            const costToPity = cost_to_pity(this_week_budget, pityCost, matValues)
-            const goldFromSell = gold_plus_sell_mats(this_week_budget, pityCost, matValues)
+            const costToAchieve = cost_to_achieve(weeklyBudgets[week], needed_budget, matValues)
+            const goldFromSell = weeklyBudgets[week][5] // gold_plus_sell_mats(this_week_budget, goldCost, matValues)
 
-            costToPityData.push(costToPity)
-            goldFromSellData.push(goldFromSell)
+            costToPityData.push(costToAchieve)
+            goldFromSellData.push(weeklyBudgets[week][5]) // til i sort out selling shinanigan
 
             // Calculate individual pity costs for each material
             for (let materialIndex = 0; materialIndex < 7; materialIndex++) {
-                const individualCost = cost_to_pity_individual(this_week_budget, pityCost, matValues, materialIndex)
+                const individualCost = cost_to_pity_individual(weeklyBudgets[week], needed_budget, matValues, materialIndex)
                 const clampedCost = Math.max(0, individualCost) // Clamp to 0 if negative
                 individualPityCostsData[materialIndex].push(clampedCost)
             }
             // console.log("break", goldFromSell, costToPity)
-            if (goldFromSell > costToPity && week > 2) {
+            if (goldFromSell > costToAchieve && week > 2) {
                 break
             }
         }
-        // console.log(costToPityData,
-        //     goldFromSellData, pityCost)
+
         return {
             costToPityData,
             goldFromSellData,
             individualPityCostsData,
             weeklyBudgets,
         }
-    }, [longTermResult, budget_inputs, totalWeeklyIncome, matValues, cost_result, desired_chance])
+    }, [chanceToCostOptimizedResult, budget_inputs, totalWeeklyIncome, matValues, desired_chance])
 
     return (
         <>

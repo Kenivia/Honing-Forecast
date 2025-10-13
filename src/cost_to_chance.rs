@@ -321,7 +321,7 @@ fn optimization<R: rand::Rng>(
             } else {
                 12
             },
-            &mut prev_optimized,
+            &mut vec![], // not doing anything smart for now
         );
         let failure_outputs_optimized: FailureAnalysisOutputs =
             count_failure_typed(&cost_data, &optimized_budget);
