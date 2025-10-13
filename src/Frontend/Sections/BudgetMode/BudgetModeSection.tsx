@@ -26,6 +26,8 @@ type CostToChanceSectionProps = {
     uncleaned_desired_chance: string
     onDesiredChange: (_: string) => void
     onDesiredBlur: () => void
+    showOptimizedDetails: boolean
+    setShowOptimizedDetails: React.Dispatch<React.SetStateAction<boolean>>
 }
 
 export default function CostToChanceSection({
@@ -50,10 +52,11 @@ export default function CostToChanceSection({
     uncleaned_desired_chance,
     onDesiredChange,
     onDesiredBlur,
+    showOptimizedDetails,
+    setShowOptimizedDetails,
 }: CostToChanceSectionProps) {
     const { costToChanceColumnDefs, optimizedColumnDefs } = createColumnDefs(false) // autoGoldValues not used for this section
     const [showOptimized, setShowOptimized] = useState<boolean>(() => false)
-    const [showOptimizedDetails, setShowOptimizedDetails] = useState<boolean>(() => false)
     // const [showGraph, setShowGraph] = useState<boolean>(() => false);
     /* <h3 style={{ color: 'var(--text-primary)', fontSize: 'var(--font-size-base)', fontWeight: 'var(--font-weight-semibold)', margin: '16px 0 0px 0' }}>Cost to Chance</h3> */
     return (
@@ -235,7 +238,7 @@ export default function CostToChanceSection({
                                     >
                                         Individual chances:
                                     </div>
-                                    <div style={{ marginTop: 4, color: "var(--text-muted)", fontSize: "var(--font-size-sm)", whiteSpace: "wrap", width: 300 }}>
+                                    <div style={{ marginTop: 4, color: "var(--text-muted)", fontSize: "var(--font-size-sm)", whiteSpace: "wrap", width: 350 }}>
                                         {(chance_result.reasons || []).map((s: string, idx: number) => (
                                             <div key={"Fail reason" + (idx + 1)}> {s}</div>
                                         ))}

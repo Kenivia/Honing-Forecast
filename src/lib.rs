@@ -16,7 +16,7 @@ use crate::chance_to_cost::{
 };
 use crate::constants::EVENT_ARTISAN_MULTIPLIER;
 use crate::cost_to_chance::{
-    CostToChanceArrResult, CostToChanceOptimizedOut, CostToChanceOut, cost_to_chance,
+    CostToChanceArrOut, CostToChanceOptimizedOut, CostToChanceOut, cost_to_chance,
     cost_to_chance_arr, cost_to_chance_optimized,
 };
 use crate::helpers::{average_cost, calc_unlock, ticks_to_counts};
@@ -268,12 +268,7 @@ pub fn cost_to_chance_arr_wrapper(input: JsValue) -> JsValue {
     let data_size: usize = payload.data_size.unwrap_or(100000).max(1000);
 
     let mut rng: ThreadRng = rand::rng();
-    let (final_chances, typed_fail_counters, budgets_red_remaining, budgets_blue_remaining): (
-        Vec<f64>,
-        Vec<Vec<f64>>,
-        i64,
-        i64,
-    ) = cost_to_chance_arr(
+    let result: CostToChanceArrOut = cost_to_chance_arr(
         &normal_counts,
         &budget_arr,
         &adv_counts,
@@ -283,13 +278,6 @@ pub fn cost_to_chance_arr_wrapper(input: JsValue) -> JsValue {
         data_size,
         &mut rng,
     );
-
-    let result: CostToChanceArrResult = CostToChanceArrResult {
-        final_chances,
-        typed_fail_counters,
-        budgets_red_remaining,
-        budgets_blue_remaining,
-    };
 
     to_value(&result).unwrap()
 }

@@ -16,6 +16,7 @@ import LongTermSection from "./Sections/ForecastMode/ForecastModeSection.tsx"
 import Separator from "./Sections/Separator/Separator.tsx"
 import { TooltipState, createTooltipHandlers, renderTooltip } from "./Utils/Tooltip.tsx"
 import Icon from "./Components/Icon.tsx"
+import LabeledCheckbox from "./Components/LabeledCheckbox.tsx"
 
 import { GridMouseDownLogic, mouseMoveLogic, createMouseUpHandler } from "./Sections/UpgradeSelection/Marquee.ts"
 import { createClearAll, createFillDemo, createFillDemoIncome } from "./Sections/ControlPanel/ControlPanelFunctions.ts"
@@ -36,6 +37,7 @@ export default function HoningForecastUI() {
     const [adv_hone_strategy, set_adv_hone_strategy_change] = useState(() => "No juice")
     const [express_event, set_express_event] = useState(() => true)
     const [bucketCount, _setBucketCount] = useState(() => "100") // leaving the door open for changing bucket count later
+
     const [prev_checked_arr, set_prev_checked_arr] = useState(() => Array.from({ length: TOP_COLS }, () => false)) // the extra rows on top of the grids
     const [prev_checked_arr_bottom, set_prev_checked_arr_bottom] = useState(() => Array.from({ length: BOTTOM_COLS }, () => false))
     const [cumulativeGraph, setCumulativeGraph] = useState<boolean>(false)
@@ -43,6 +45,9 @@ export default function HoningForecastUI() {
     const [activePage, setActivePage] = useState<"chance-to-cost" | "cost-to-chance" | "gamba" | "forecast">("chance-to-cost")
     const [mainScale, setMainScale] = useState<number>(1)
     const [zoomCompensation, setZoomCompensation] = useState<number>(1)
+
+    // State for optimized details
+    const [showOptimizedDetails, setShowOptimizedDetails] = useState<boolean>(false)
 
     // Lock x-axis state (shared across all graphs)
     const [lockXAxis, setLockXAxis] = useState<boolean>(false)
@@ -720,10 +725,12 @@ export default function HoningForecastUI() {
                         onDesiredChange={onDesiredChange}
                         onDesiredBlur={onDesiredBlur}
                         cost_result_optimized={chanceToCostOptimizedResult}
+                        showOptimizedDetails={showOptimizedDetails}
+                        setShowOptimizedDetails={setShowOptimizedDetails}
                     />
                 </div>
 
-                <div className={activePage === "gamba" ? "page" : "page page--hidden"} aria-hidden={activePage !== "gamba"}>
+                <div className={activePage === "cost-to-chance" ? "page" : "page page--hidden"} aria-hidden={activePage !== "cost-to-chance"}>
                     <GambaSection
                         budget_inputs={budget_inputs}
                         set_budget_inputs={set_budget_inputs}
@@ -781,6 +788,8 @@ export default function HoningForecastUI() {
                         // Cost result prop for hundred_budgets
                         cost_result={chanceToCostResult}
                         //TODOcost_result_optimized={chanceToCostOptimizedResult}
+                        showOptimizedDetails={showOptimizedDetails}
+                        setShowOptimizedDetails={setShowOptimizedDetails}
                     />
                 </div>
             </div>

@@ -186,7 +186,11 @@ pub fn chance_to_cost_optimized<R: rand::Rng>(
             mats_value,
             &new_input_budget,
             rng,
-            if i == 0 { 999 } else { 999 },
+            if i == 0 || prev_optimized.len() != 7 {
+                999
+            } else {
+                12
+            },
             &mut prev_optimized,
         );
 

@@ -4,6 +4,7 @@ import Graph from "@/Frontend/Components/Graph.tsx"
 import { styles, StyledSlider, GRAPH_HEIGHT, GRAPH_WIDTH, ColumnDef } from "@/Frontend/Utils/Styles.ts"
 import { INPUT_LABELS } from "@/Frontend/Utils/Constants.ts"
 import { buildPayload } from "@/Frontend/WasmInterface/WorkerRunner.ts"
+import LabeledCheckbox from "@/Frontend/Components/LabeledCheckbox.tsx"
 
 type LongTermSectionProps = {
     budget_inputs: any
@@ -20,6 +21,8 @@ type LongTermSectionProps = {
     useGridInput: any
     normalCounts: any
     advCounts: any
+    showOptimizedDetails: boolean
+    setShowOptimizedDetails: React.Dispatch<React.SetStateAction<boolean>>
     incomeArr: number[][]
     setIncomeArr: React.Dispatch<React.SetStateAction<number[][]>>
     // Desired chance props
@@ -86,6 +89,8 @@ export default function LongTermSection({
     useGridInput,
     normalCounts,
     advCounts,
+    showOptimizedDetails,
+    setShowOptimizedDetails,
     incomeArr,
     setIncomeArr,
     // Desired chance props
@@ -301,9 +306,24 @@ export default function LongTermSection({
 
     // Transform longTermResult data for Graph component
     const graphData = useMemo(() => {
-        if (!longTermResult || !longTermResult.final_chances) return null
-
-        // const chances = longTermResult.final_chances.map((chance: string) => parseFloat(chance))
+        if (!longTermResult) return null
+        let relevant_chance_result
+        let relevant_fail_arr
+        if (showOptimizedDetails) {
+            if (!longTermResult.final_chances) {
+                return null
+            } else {
+                relevant_chance_result = longTermResult.final_chances
+                relevant_fail_arr = longTermResult.failure_rates_arr
+            }
+        } else {
+            if (!longTermResult.optimized_chances) {
+                return null
+            } else {
+                relevant_chance_result = longTermResult.optimized_chances
+                relevant_fail_arr = longTermResult.optimized_fail_arr
+            }
+        } // const chances = longTermResult.final_chances.map((chance: string) => parseFloat(chance))
 
         // Create histogram-like data for Graph component
         // We need to create counts array where each week (0-52) represents a "bucket"
@@ -312,16 +332,16 @@ export default function LongTermSection({
         // --- Build overallCounts first (so truncation is driven by overall) ---
         const overallCounts = new Array(numWeeks).fill(0)
         for (let week = 0; week < numWeeks; week++) {
-            if (week < longTermResult.final_chances.length) {
+            if (week < relevant_chance_result.length) {
                 // normalize percent -> fraction
-                overallCounts[week] = parseFloat(longTermResult.final_chances[week]) / 100
+                overallCounts[week] = relevant_chance_result[week] / 100
             }
         }
 
         // Determine truncation length:
         // If overallCounts stops increasing for 4 consecutive weeks, cut off from the start of that run.
         // Only scan up to the weeks we actually have final_chances for (so trailing zero-filled weeks don't immediately trigger a cutoff).
-        const availableWeeks = Math.min(numWeeks, longTermResult.final_chances.length)
+        const availableWeeks = Math.min(numWeeks, relevant_chance_result.length)
         let truncateLen = numWeeks // default: don't truncate
         if (availableWeeks > 0) {
             const EPS = 1e-12
@@ -367,13 +387,8 @@ export default function LongTermSection({
 
             for (let week = 0; week < truncateLen; week++) {
                 // safety: check failure_rates_arr bounds
-                if (
-                    longTermResult.failure_rates_arr &&
-                    week < longTermResult.failure_rates_arr.length &&
-                    longTermResult.failure_rates_arr[week] &&
-                    materialIndex < longTermResult.failure_rates_arr[week].length
-                ) {
-                    materialCounts[week] = 1 - longTermResult.failure_rates_arr[week][materialIndex]
+                if (relevant_fail_arr && week < relevant_fail_arr.length && relevant_fail_arr[week] && materialIndex < relevant_fail_arr[week].length) {
+                    materialCounts[week] = relevant_fail_arr[week][materialIndex]
                 } else {
                     materialCounts[week] = 0
                 }
@@ -386,16 +401,16 @@ export default function LongTermSection({
 
         // debug
         // console.log('graphData: truncateLen=', truncateLen, 'counts lengths=', counts.map(c => c.length))
-
+        console.log(longTermResult)
         return {
             counts,
             mins,
             maxs,
         }
-    }, [longTermResult])
+    }, [longTermResult, showOptimizedDetails])
 
     // Calculate data for the new graph (cost to pity and gold from selling materials)
-    const newGraphData = useMemo(() => {
+    const goldGraphData = useMemo(() => {
         if (!longTermResult) return null
 
         const weeklyBudgets = weekly_budget(
@@ -514,11 +529,20 @@ export default function LongTermSection({
                             </div>
                         </div>
                     </div>
+                    <div style={{ display: "flex", alignItems: "flex-start", gap: 8, marginBottom: 8, justifySelf: "left", marginLeft: 30, marginTop: 20 }}>
+                        <LabeledCheckbox
+                            label="I don't want to buy anything at all"
+                            checked={showOptimizedDetails}
+                            setChecked={setShowOptimizedDetails}
+                            textColor="var(--text-optimized)"
+                            accentColor="var(--text-optimized)"
+                        />
+                    </div>
                     <div style={{ marginTop: 20, display: "flex", justifyContent: "center" }}>
                         <div style={{ width: "100%", maxWidth: "800px" }}>
                             <Graph
                                 title={`Chance of Success Over Time (0-${(graphData?.counts?.[0]?.length || 53) - 1} weeks from now)`}
-                                labels={["Overall", ...INPUT_LABELS.slice(0, 7).map((label) => label)]} // Overall + 7 material types
+                                labels={[showOptimizedDetails ? "Overall no buy" : "Overall", ...INPUT_LABELS.slice(0, 7).map((label) => label)]} // Overall + 7 material types
                                 counts={graphData?.counts || null}
                                 mins={graphData?.mins || null}
                                 maxs={graphData?.maxs || null}
@@ -532,7 +556,7 @@ export default function LongTermSection({
                                 yAxisLabel="Chance of success"
                                 yMaxOverride={1} // Override yMax to 1 for the first graph
                                 customColors={[
-                                    "var(--series-overall)",
+                                    showOptimizedDetails ? "var(--text-optimized)" : "var(--series-overall)",
                                     "var(--series-red)",
                                     "var(--series-blue)",
                                     "var(--series-leaps)",
@@ -600,20 +624,20 @@ export default function LongTermSection({
                     </div>
 
                     {/* New Graph for Cost to Pity and Gold from Selling Materials */}
-                    {newGraphData && (
+                    {goldGraphData && (
                         <div style={{ marginTop: 20, display: "flex", justifyContent: "center" }}>
                             <div style={{ width: "100%", maxWidth: "800px" }}>
                                 <Graph
                                     title={`Gold needed to achieve ${
                                         parseInt(desired_chance) === 100 ? "pity" : `${desired_chance}% chance to pass(pessimistic)`
-                                    } (0-${newGraphData.costToPityData.length - 1} weeks from now)`}
+                                    } (0-${goldGraphData.costToPityData.length - 1} weeks from now)`}
                                     labels={["Cost to Pity", "Gold if sell mats", ...INPUT_LABELS.slice(0, 7)]}
-                                    counts={[newGraphData.costToPityData, newGraphData.goldFromSellData, ...newGraphData.individualPityCostsData]}
-                                    mins={[0, 0, ...newGraphData.individualPityCostsData.map(() => 0)]}
+                                    counts={[goldGraphData.costToPityData, goldGraphData.goldFromSellData, ...goldGraphData.individualPityCostsData]}
+                                    mins={[0, 0, ...goldGraphData.individualPityCostsData.map(() => 0)]}
                                     maxs={[
-                                        newGraphData.costToPityData.length - 1,
-                                        newGraphData.goldFromSellData.length - 1,
-                                        ...newGraphData.individualPityCostsData.map((data) => data.length - 1),
+                                        goldGraphData.costToPityData.length - 1,
+                                        goldGraphData.goldFromSellData.length - 1,
+                                        ...goldGraphData.individualPityCostsData.map((data) => data.length - 1),
                                     ]}
                                     width={GRAPH_WIDTH}
                                     height={GRAPH_HEIGHT}
@@ -635,7 +659,7 @@ export default function LongTermSection({
                                         "var(--series-gold)",
                                         "var(--series-silver)",
                                     ]}
-                                    weeklyBudgets={newGraphData.weeklyBudgets}
+                                    weeklyBudgets={goldGraphData.weeklyBudgets}
                                     showWarning={totalWeeklyIncome.every((income) => income === 0)}
                                     warningMessage="You are earning nothing per week. Input your income (or click Fill Demo Income) to see your chances in the future."
                                 />

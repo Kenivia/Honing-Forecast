@@ -98,21 +98,24 @@ self.addEventListener("message", async (ev) => {
 
         // Convert final chances to percentages
         const final_chances_percent = out.final_chances.map((chance: number) => (chance * 100).toFixed(2))
+        const optimized_percent = out.optimized_chances.map((chance: number) => (chance * 100).toFixed(2))
 
         // Convert typed fail counters to failure rates for each budget
-        const failure_rates_arr = out.typed_fail_counters.map((typed_fail_counter: number[]) => {
-            return typed_fail_counter.map((fail_count: number, _index: number) => {
-                const failure_rate = fail_count / (out.final_chances.length > 0 ? 100000 : 1) // Assuming data_size
-                const percentage = failure_rate
-                return percentage
-            })
-        })
+        // const failure_rates_arr = out.typed_fail_counters.map((typed_fail_counter: number[]) => {
+        //     return typed_fail_counter.map((fail_count: number, _index: number) => {
+        //         const failure_rate = fail_count / (out.final_chances.length > 0 ? 100000 : 1) // Assuming data_size
+        //         const percentage = failure_rate
+        //         return percentage
+        //     })
+        // })
 
         result = {
             final_chances: final_chances_percent,
-            failure_rates_arr: failure_rates_arr,
+            failure_rates_arr: out.typed_fail_counters,
             budgets_red_remaining: out.budgets_red_remaining,
             budgets_blue_remaining: out.budgets_blue_remaining,
+            optimized_chances: optimized_percent,
+            optimized_fail_arr: out.optimized_fail_counters,
         }
     } else if (which_one == "ChanceToCost") {
         let out = await ChanceToCostWasm(payload)
