@@ -6,7 +6,7 @@ use crate::histogram::histograms_for_all_costs;
 use crate::monte_carlo::{generate_budget_data, get_top_bottom, monte_carlo_data};
 use crate::parser::{PreparationOutputs, Upgrade, preparation};
 
-// use assert_float_eq::assert_f64_near;
+use assert_float_eq::assert_float_absolute_eq;
 // use assert_float_eq::assert_f64_near;
 use serde::Serialize;
 
@@ -310,9 +310,9 @@ pub fn optimization<R: rand::Rng>(
         Vec<Vec<f64>>,
         Vec<Vec<i64>>,
     ) = (Vec::new(), Vec::new(), Vec::new());
-    let prev_optimized: Vec<usize> = vec![]; // invalid on purpose
+    let mut prev_optimized: Vec<usize> = vec![]; // invalid on purpose
     for (index, budget) in input_budgets_arr.iter().enumerate() {
-        let (optimized_budget, _optimized_chance): (Vec<i64>, f64) = beam_search(
+        let (optimized_budget, optimized_chance): (Vec<i64>, f64) = beam_search(
             &bitset_bundle,
             &prep_outputs.mats_value,
             &budget,
@@ -320,14 +320,20 @@ pub fn optimization<R: rand::Rng>(
             if index == 0 || prev_optimized.len() != 7 {
                 999
             } else {
-                12
+                999
             },
-            &mut vec![], // not doing anything smart for now
-                         // #[cfg(test)]
-                         // cost_data,
+            &mut prev_optimized, // not doing anything smart for now
+                                 // #[cfg(test)]
+                                 // cost_data,
         );
         let failure_outputs_optimized: FailureAnalysisOutputs =
             count_failure_typed(&cost_data, &optimized_budget);
+
+        assert_float_absolute_eq!(
+            optimized_chance,
+            failure_outputs_optimized.final_chance,
+            1.0 / 1000000.0
+        );
         optimized_chances.push(failure_outputs_optimized.final_chance);
         optimized_fail_counters.push(failure_outputs_optimized.typed_fail_counter_final);
         optimized_budgets.push(optimized_budget);

@@ -132,7 +132,7 @@ fn oracle(
 struct State {
     indices: Vec<usize>,
     score: f64,
-    mats_cost: f64,
+    all_cost: f64,
 }
 
 fn compute_diff_cost(
@@ -192,16 +192,20 @@ pub fn beam_search<R: rand::Rng>(
     input_budget_no_gold[5] = 0;
     let k: f64 = input_budget[5] as f64;
     let dims: usize = 7;
-    let beam_width: usize = 8; // W
-    let perturb_limits: Vec<usize> = vec![
-        512, 512, 512, 256, 256, 256, 128, 128, 128, 64, 64, 64, 32, 32, 32, 16, 16, 16, 8, 8, 8,
-        4, 4, 4, 2, 2, 2, 1, 1, 1, 1,
-    ];
+    let beam_width: usize = 128; // W
     // let perturb_limits: Vec<usize> = vec![
-    //     512, 512, 512, 512, 512, 512, 256, 256, 256, 256, 256, 256, 128, 128, 128, 128, 128, 128,
-    //     64, 64, 64, 64, 64, 64, 32, 32, 32, 32, 32, 32, 16, 16, 16, 16, 16, 16, 8, 8, 8, 8, 8, 8,
-    //     4, 4, 4, 4, 4, 4, 2, 2, 2, 2, 2, 2, 1, 1, 1, 1, 1, 1, 1, 1,
+    //     512, 512, 512, 384, 384, 384, 192, 192, 192, 96, 96, 96, 48, 48, 48, 24, 24, 24, 12, 12,
+    //     12, 6, 6, 6, 3, 3, 3, 2, 2, 2, 2,1,1,1,1,
     // ];
+    // let perturb_limits: Vec<usize> = vec![
+    //     512, 512, 512, 256, 256, 256, 128, 128, 128, 64, 64, 64, 32, 32, 32, 16, 16, 16, 8, 8, 8,
+    //     4, 4, 4, 2, 2, 2, 1, 1, 1, 1,
+    // ];
+    let perturb_limits: Vec<usize> = vec![
+        512, 512, 512, 512, 512, 512, 256, 256, 256, 256, 256, 256, 128, 128, 128, 128, 128, 128,
+        64, 64, 64, 64, 64, 64, 32, 32, 32, 32, 32, 32, 16, 16, 16, 16, 16, 16, 8, 8, 8, 8, 8, 8,
+        4, 4, 4, 4, 4, 4, 2, 2, 2, 2, 2, 2, 1, 1, 1, 1, 1, 1, 1, 1,
+    ];
     // let children_per_parent: usize = 12; // target children per parent (including greedy child)
     // let greedy_step_max: usize = 1500 / beam_rounds; // greedy increments up to 1..=3
     // let random_step_max: i64 = 1500 / beam_rounds as i64; // random +/- steps per dim
@@ -262,6 +266,7 @@ pub fn beam_search<R: rand::Rng>(
 
     // dbg!(&input_budget);
     // dbg!(&start_idxs);
+    // dbg!(&prev_indices);
 
     // dbg!(&input_budget_no_gold);
 
@@ -275,7 +280,7 @@ pub fn beam_search<R: rand::Rng>(
     let mut beam: Vec<State> = vec![State {
         indices: start_idxs.clone(),
         score: start_score,
-        mats_cost: compute_gold_cost_from_indices(
+        all_cost: compute_gold_cost_from_indices(
             thresholds,
             &start_idxs,
             &input_budget_no_gold,
@@ -286,19 +291,27 @@ pub fn beam_search<R: rand::Rng>(
     // track best overall
     let mut best_state: State = beam[0].clone();
 
+    let start_state: State = beam[0].clone();
+    let actual_search_depth_1: usize = (perturb_limits.len() - 1).min(search_depth - 1);
     // beam loop
-    for perturb_limit in perturb_limits.into_iter().rev().take(search_depth).rev() {
+    let mut seen: HashSet<Vec<usize>> = HashSet::new();
+    let mut candidates: Vec<State> = Vec::new();
+    for (perturb_index, perturb_limit) in perturb_limits
+        .into_iter()
+        .rev()
+        .take(search_depth)
+        .rev()
+        .enumerate()
+    {
         // generate candidates
-        let mut candidates: Vec<State> = Vec::new();
-        let mut seen: HashSet<Vec<usize>> = HashSet::new();
 
         // dbg!(&best_state);
         // Expand each parent in beam
         let mut cand: Vec<usize>;
         for parent in &beam {
             // Add parent itself as a candidate (to keep it eligible)
+            // candidates.push(parent.clone());
             if !seen.contains(&parent.indices) {
-                candidates.push(parent.clone());
                 seen.insert(parent.indices.clone());
             }
 
@@ -379,77 +392,95 @@ pub fn beam_search<R: rand::Rng>(
                     cand[up_index] += actual_up_change;
                     cand[down_index] = cand[down_index].saturating_sub(actual_down_change);
                     // dbg!(&cand, round);
+                    if !seen.contains(&cand) {
+                        candidates.push(State {
+                            indices: cand.clone(),
+                            score: oracle(bitset_bundle, &cand, &mut oracle_cache),
+                            all_cost: compute_gold_cost_from_indices(
+                                thresholds,
+                                &cand,
+                                &input_budget_no_gold,
+                                price_arr,
+                            ),
+                        });
 
-                    candidates.push(State {
-                        indices: cand.clone(),
-                        score: oracle(bitset_bundle, &cand, &mut oracle_cache),
-                        mats_cost: compute_gold_cost_from_indices(
-                            thresholds,
-                            &cand,
-                            &input_budget_no_gold,
-                            price_arr,
-                        ) - thresholds[5][cand[5]] as f64,
-                    });
+                        // #[cfg(test)]
+                        // let mut budget_data: Vec<Vec<i64>> = vec![vec![]];
+                        // #[cfg(test)]
+                        // for i in 0..7 {
+                        //     budget_data[0].push(thresholds[i][cand[i]]);
+                        // }
+                        // #[cfg(test)]
+                        // assert!(
+                        //     oracle(bitset_bundle, &cand, &mut oracle_cache)
+                        //         - (1.0
+                        //             - count_failure(cost_data, &budget_data, false)[0] as f64
+                        //                 / cost_data.len() as f64)
+                        //         < 1.0 / 1000000.0 as f64
+                        // );
 
-                    // #[cfg(test)]
-                    // let mut budget_data: Vec<Vec<i64>> = vec![vec![]];
-                    // #[cfg(test)]
-                    // for i in 0..7 {
-                    //     budget_data[0].push(thresholds[i][cand[i]]);
-                    // }
-                    // #[cfg(test)]
-                    // assert!(
-                    //     oracle(bitset_bundle, &cand, &mut oracle_cache)
-                    //         - (1.0
-                    //             - count_failure(cost_data, &budget_data, false)[0] as f64
-                    //                 / cost_data.len() as f64)
-                    //         < 1.0 / 1000000.0 as f64
-                    // );
-
-                    seen.insert(cand);
+                        seen.insert(cand);
+                    }
                 }
             }
         } // for each parent
 
-        candidates.sort_unstable_by(|a, b| {
-            b.score
-                .partial_cmp(&a.score)
-                .unwrap_or(std::cmp::Ordering::Equal)
-                .then_with(|| {
-                    a.mats_cost
-                        .partial_cmp(&b.mats_cost)
-                        .unwrap_or(std::cmp::Ordering::Equal)
-                })
-        });
-
-        candidates.truncate(beam_width);
-        if let Some(top) = candidates.first() {
+        if actual_search_depth_1 == perturb_index {
             // dbg!("top", top);
 
-            best_state = top.clone();
+            candidates.push(start_state.clone());
+            candidates.sort_unstable_by(|a, b| {
+                b.score
+                    .partial_cmp(&a.score)
+                    .unwrap_or(std::cmp::Ordering::Equal)
+                    .then_with(|| {
+                        b.all_cost
+                            .partial_cmp(&a.all_cost)
+                            .unwrap_or(std::cmp::Ordering::Equal)
+                    })
+            });
+            best_state = candidates.first().unwrap().clone();
+        } else {
+            candidates.sort_unstable_by(|a, b| {
+                b.score
+                    .partial_cmp(&a.score)
+                    .unwrap_or(std::cmp::Ordering::Equal)
+                    .then_with(|| {
+                        b.all_cost
+                            .partial_cmp(&a.all_cost)
+                            .unwrap_or(std::cmp::Ordering::Equal)
+                    })
+            });
+
+            candidates.truncate(beam_width);
+
+            // candidates.push(start_state.clone());
         }
 
-        beam = candidates;
+        beam = candidates.clone();
     } // beam rounds
 
     // convert best_state idices -> threshold values Vec<i64>
     let mut best_values: Vec<i64> = vec![0i64; dims];
     for i in 0..dims {
         best_values[i] = thresholds[i][best_state.indices[i]].max(input_budget_no_gold[i]);
-        if i == 5 {
-            best_values[5] = (k - best_state.mats_cost).floor() as i64;
-        }
+        // if i == 5 {
+        //     best_values[5] = (k - best_state.all_cost).floor() as i64;
+        // }
     }
 
-    // dbg!(&best_state);
+    dbg!(&best_state);
     // dbg!(&best_values);
     // dbg!(oracle(
     //     bitset_bundle,
     //     &best_state.indices,
     //     &mut oracle_cache
     // ));
-    if *best_state.indices.iter().min_by(|a, b| a.cmp(b)).unwrap() > 0_usize {
+    if best_state.score > 0.00000001
+        && *best_state.indices.iter().min_by(|a, b| a.cmp(b)).unwrap() > 0_usize
+    {
         *prev_indices = best_state.indices;
+        dbg!("stored");
     }
 
     (best_values, best_state.score)

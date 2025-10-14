@@ -1,3 +1,5 @@
+use core::f64;
+
 use crate::bitset::compute_gold_cost_from_raw;
 use crate::constants::EVENT_ARTISAN_MULTIPLIER;
 use crate::cost_to_chance::{OptimizationOut, optimization};
@@ -123,6 +125,8 @@ pub struct ChanceToCostOptimizedOut {
     pub hundred_budgets: Vec<Vec<i64>>, // actually 101 length, 0 to 100%
     pub hundred_chances: Vec<f64>,      // actually 101 length, 0 to 100%
     pub hundred_gold_costs: Vec<i64>,
+    #[cfg(test)]
+    optimized_chances: Vec<f64>,
 }
 pub fn chance_to_cost_optimized<R: rand::Rng>(
     hone_counts: &[Vec<i64>],
@@ -161,17 +165,29 @@ pub fn chance_to_cost_optimized<R: rand::Rng>(
     let top_bottom: Vec<Vec<i64>> =
         get_top_bottom(&prep_outputs.upgrade_arr, &prep_outputs.unlock_costs);
 
-    let pity_cost: f64 =
-        compute_gold_cost_from_raw(&top_bottom[1].clone(), &input_budget_no_gold, mats_value);
+    let mut highest_cost: f64 = -1.0;
+    //  compute_gold_cost_from_raw(&top_bottom[1].clone(), &input_budget_no_gold, mats_value);
+    let mut min_cost: f64 = f64::MAX;
+    for cost in cost_data.iter() {
+        let this: f64 = compute_gold_cost_from_raw(cost, &input_budget_no_gold, mats_value);
+        if this < min_cost {
+            min_cost = this;
+        }
+        if this > highest_cost {
+            highest_cost = this;
+        }
+    }
+
+    dbg!(min_cost);
     let resolution: usize = 300;
-    let gap_size: f64 = (pity_cost - input_budgets[5] as f64) / resolution as f64;
+    let gap_size: f64 = (highest_cost.ceil() - min_cost as f64) / resolution as f64;
     // let mut budget_data: Vec<Vec<i64>> = Vec::with_capacity(resolution + 2);
-    let mut input_budgets_arr: Vec<Vec<i64>> = Vec::with_capacity(resolution);
+    let mut input_budgets_arr: Vec<Vec<i64>> = Vec::with_capacity(resolution + 1);
     let mut new_input_budget: Vec<i64>;
     // let mut prev_optimized: Vec<usize> = vec![]; // invalid on purpose
-    for i in 0..resolution {
+    for i in 0..resolution + 1 {
         new_input_budget = input_budgets.to_vec().clone();
-        new_input_budget[5] = input_budgets[5] + (gap_size * i as f64).round() as i64;
+        new_input_budget[5] = min_cost.ceil() as i64 + (gap_size * i as f64).ceil() as i64;
         input_budgets_arr.push(new_input_budget);
     }
 
@@ -182,6 +198,15 @@ pub fn chance_to_cost_optimized<R: rand::Rng>(
         data_size,
         rng,
     );
+
+    dbg!(highest_cost);
+    dbg!(compute_gold_cost_from_raw(
+        &optimize_out.optimized_budgets[optimize_out.optimized_budgets.len() - 1],
+        &vec![0; 7],
+        mats_value
+    ));
+    dbg!(&optimize_out.optimized_budgets[optimize_out.optimized_budgets.len() - 1]);
+    dbg!(&top_bottom[1]);
     let mut best_pull: Vec<i64> = vec![];
     for thresh in optimize_out.bitset_bundle.transposed_thresholds {
         best_pull.push(thresh[0]);
@@ -225,7 +250,7 @@ pub fn chance_to_cost_optimized<R: rand::Rng>(
             compute_gold_cost_from_raw(budget, &input_budget_no_gold, mats_value).ceil() as i64,
         );
     }
-
+    dbg!(&optimize_out.optimized_chances);
     ChanceToCostOptimizedOut {
         hundred_budgets,
         hundred_chances,
@@ -233,6 +258,8 @@ pub fn chance_to_cost_optimized<R: rand::Rng>(
         hist_mins: vec![0_i64; 7],
         hist_maxs: top_bottom[1].clone(),
         hundred_gold_costs,
+        #[cfg(test)]
+        optimized_chances: optimize_out.optimized_chances,
     }
 }
 
@@ -245,8 +272,8 @@ mod tests {
     use rand::prelude::*;
 
     #[test]
-    fn chance_to_cost_optimized_0_budget() {
-        let test_name: &str = "chance_to_cost_optimized_0_budget";
+    fn chance_to_cost_optimized_all_normal() {
+        let test_name: &str = "chance_to_cost_optimized_all_normal";
         let hone_counts: Vec<Vec<i64>> =
             vec![(0..25).map(|_| 5).collect(), (0..25).map(|_| 1).collect()];
         let adv_counts: Vec<Vec<i64>> =
@@ -278,9 +305,67 @@ mod tests {
             &[0; 10],
             &DEFAULT_GOLD_VALUES,
         );
-        let result_of_interst: Vec<Vec<i64>> = result.hundred_budgets.clone();
-        if let Some(cached_result) = read_cached_data::<Vec<Vec<i64>>>(test_name, &hash) {
-            assert_eq!(result_of_interst, cached_result);
+        let result_of_interst: Vec<f64> = result.optimized_chances.clone();
+        if let Some(cached_result) = read_cached_data::<Vec<f64>>(test_name, &hash) {
+            let mut diff_counter: usize = 0;
+            let mut better_counter: usize = 0;
+            for (index, i) in result.optimized_chances.iter().enumerate() {
+                if (*i - cached_result[index]).abs() > 1.0 / 10000000.0 {
+                    diff_counter += 1;
+                    if *i > cached_result[index] + 1.0 / 10000000.0 {
+                        better_counter += 1;
+                        dbg!(i, cached_result[index]);
+                    }
+                };
+            }
+            dbg!(diff_counter, better_counter);
+            for (index, i) in result.optimized_chances.iter().enumerate() {
+                assert_float_eq::assert_f64_near!(*i, cached_result[index]);
+            }
+        } else {
+            write_cached_data(test_name, &hash, &result_of_interst);
+        }
+    }
+    #[test]
+    fn chance_to_cost_optimized_all() {
+        let test_name: &str = "chance_to_cost_optimized_all";
+        let hone_counts: Vec<Vec<i64>> =
+            vec![(0..25).map(|_| 5).collect(), (0..25).map(|_| 1).collect()];
+        let adv_counts: Vec<Vec<i64>> =
+            vec![(0..4).map(|_| 5).collect(), (0..4).map(|_| 1).collect()];
+
+        let adv_hone_strategy: &str = "No juice";
+        let express_event: bool = true;
+        let hist_bins: usize = 1000;
+        let data_size: usize = 10000;
+
+        let hash: String = calculate_hash!(
+            &hone_counts,
+            &adv_counts,
+            adv_hone_strategy,
+            express_event,
+            hist_bins,
+            data_size
+        );
+        // Run the function to get the full output
+        let mut rng = StdRng::seed_from_u64(RNG_SEED);
+        let result: ChanceToCostOptimizedOut = chance_to_cost_optimized(
+            &hone_counts,
+            &adv_counts,
+            &adv_hone_strategy.to_owned(),
+            express_event,
+            hist_bins,
+            data_size,
+            &mut rng,
+            &[0; 10],
+            &DEFAULT_GOLD_VALUES,
+        );
+        let result_of_interst: Vec<f64> = result.optimized_chances.clone();
+        if let Some(cached_result) = read_cached_data::<Vec<f64>>(test_name, &hash) {
+            for (index, i) in result.optimized_chances.iter().enumerate() {
+                assert_float_eq::assert_f64_near!(*i, cached_result[index]);
+            }
+            // assert_eq!(result_of_interst, cached_result);
         } else {
             write_cached_data(test_name, &hash, &result_of_interst);
         }
