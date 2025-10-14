@@ -36,8 +36,8 @@
 - Improve beam search algorithm.
 - Sort out input parsing (clamping) for desired_chance, prolly make a new variable
 - better input cleaning for spreadsheetgrids
-- make longtermresult debounce use the universal function
 
 ## Done / cancelled
 
 - ~~Pre-compute prob_dist of groups of upgrades(such as +n all 5 armours etc)~~ not possible with juice being a thing i think
+- ~~make longtermresult debounce use the universal function~~

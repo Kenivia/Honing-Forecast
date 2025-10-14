@@ -791,6 +791,8 @@ export default function HoningForecastUI() {
                         showOptimizedDetails={showOptimizedDetails}
                         setShowOptimizedDetails={setShowOptimizedDetails}
                         chanceToCostOptimizedResult={chanceToCostOptimizedResult}
+                        payloadBuilder={payloadBuilder}
+                        runner={runner}
                     />
                 </div>
             </div>

@@ -61,7 +61,7 @@ self.addEventListener("message", async (ev) => {
     ) {
         throw "Invalid js_to_wasm operation type: " + which_one
     }
-    console.log(which_one)
+
     let result
     if (which_one == "CostToChance") {
         // always run optimized
@@ -145,5 +145,6 @@ self.addEventListener("message", async (ev) => {
     }
 
     result.run_time = ((Date.now() - start_time) / 1000).toFixed(2)
+    console.log(which_one + " finished after" + String(result.run_time))
     self.postMessage({ type: "result", id, result: result })
 })

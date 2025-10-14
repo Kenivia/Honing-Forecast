@@ -80,7 +80,7 @@ export function readSettings(
             setNormalCounts(parsed.normalCounts)
         if (Array.isArray(parsed.advCounts) && parsed.advCounts.length === 2 && parsed.advCounts[0]?.length === BOTTOM_COLS) setAdvCounts(parsed.advCounts)
 
-        if (Array.isArray(parsed.incomeArr) && parsed.length === 6 && parsed.every((row) => Array.isArray(row) && row.length === 7))
+        if (Array.isArray(parsed.incomeArr) && parsed.incomeArr.length === 6 && parsed.every((row) => Array.isArray(row) && row.length === 7))
             setIncomeArr(parsed.incomeArr)
     }
 }

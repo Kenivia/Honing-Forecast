@@ -1,9 +1,9 @@
-import React, { useState, useMemo, useEffect, useRef, useCallback } from "react"
+import React, { useState, useMemo, useEffect, useRef } from "react"
 import SpreadsheetGrid from "@/Frontend/Components/SpreadsheetGrid.tsx"
 import Graph from "@/Frontend/Components/Graph.tsx"
 import { styles, StyledSlider, GRAPH_HEIGHT, GRAPH_WIDTH, ColumnDef } from "@/Frontend/Utils/Styles.ts"
 import { INPUT_LABELS } from "@/Frontend/Utils/Constants.ts"
-import { buildPayload } from "@/Frontend/WasmInterface/WorkerRunner.ts"
+
 import LabeledCheckbox from "@/Frontend/Components/LabeledCheckbox.tsx"
 
 type LongTermSectionProps = {
@@ -33,6 +33,8 @@ type LongTermSectionProps = {
     // Cost result prop for hundred_budgets
     // cost_result: any
     chanceToCostOptimizedResult: any
+    payloadBuilder: any
+    runner: any
 }
 function cost_to_achieve(budget: number[], pity_cost: number[], mat_value: number[]): number {
     let sum = 0
@@ -80,12 +82,8 @@ export default function LongTermSection({
     set_budget_inputs,
     userMatsValue,
     setUserMatsValue,
-    topGrid,
-    bottomGrid,
     adv_hone_strategy,
     express_event,
-    bucketCount,
-    autoGoldValues,
     dataSize,
     useGridInput,
     normalCounts,
@@ -102,19 +100,17 @@ export default function LongTermSection({
     // Cost result prop for hundred_budgets
     // cost_result,
     chanceToCostOptimizedResult,
+    payloadBuilder,
+    runner,
 }: LongTermSectionProps) {
     // Income array is now managed by parent component
 
     // State for cost_to_chance_arr results
-    const [longTermResult, setLongTermResult] = useState<any>(null)
-    const [longTermBusy, setLongTermBusy] = useState<boolean>(false)
 
     // State for pity costs and material values
     const [matValues, setMatValues] = useState<number[]>(() => Object.values(userMatsValue).map((v) => parseFloat(v.toString()) || 0))
 
     // Worker refs and debounce
-    const longTermWorkerRef = useRef<Worker | null>(null)
-    const debounceTimerRef = useRef<number | null>(null)
 
     // Function to get pity costs using average_cost_wrapper
 
@@ -174,6 +170,12 @@ export default function LongTermSection({
         return Array.from({ length: 7 }, (_, rowIndex) => incomeArr.reduce((sum, incomeGrid) => sum + (incomeGrid[rowIndex] || 0), 0))
     }, [incomeArr])
 
+    const weeklyBudgets = useMemo(() => {
+        return weekly_budget(
+            Object.values(budget_inputs).map((v) => Math.round(Number(v))),
+            totalWeeklyIncome
+        )
+    }, [budget_inputs, totalWeeklyIncome])
     // Debounce keys for cost_to_chance_arr
     const advStrategyKey = useMemo(() => String(adv_hone_strategy), [adv_hone_strategy])
     const expressEventKey = useMemo(() => String(express_event), [express_event])
@@ -183,111 +185,25 @@ export default function LongTermSection({
     const totalWeeklyIncomeKey = useMemo(() => JSON.stringify(totalWeeklyIncome), [totalWeeklyIncome])
 
     // Function to call cost_to_chance_arr
-    const callCostToChanceArr = useCallback(async () => {
-        if (!longTermWorkerRef.current) return
+    const chanceToCostArrWorkerRef = useRef<Worker | null>(null)
+    const [longTermBusy, setLongTermBusy] = useState(false)
+    const [longTermResult, setLongTermResult] = useState<any>(null)
 
-        // Create weekly budget array (0-52 weeks)
-        const weeklyBudgets = weekly_budget(
-            Object.values(budget_inputs).map((v) => Math.round(Number(v))),
-            totalWeeklyIncome
-        )
-
-        // Create payload using the same format as other functions
-        const payload = buildPayload({
-            topGrid,
-            bottomGrid,
-            budget_inputs,
-            adv_hone_strategy,
-            express_event,
-            bucketCount,
-            autoGoldValues,
-            userMatsValue,
-            dataSize,
-            useGridInput,
-            normalCounts,
-            advCounts,
-        })
-
-        // Replace the single budget with the weekly budgets array
-        payload.budget_arr = weeklyBudgets
-
-        const id = Math.random().toString(36).substr(2, 9)
-
-        // Create promise for this request
-        const p = new Promise((resolve) => {
-            const handler = (e: MessageEvent) => {
-                const { id: responseId, type, result } = e.data
-                if (responseId === id && type === "result") {
-                    longTermWorkerRef.current?.removeEventListener("message", handler)
-                    resolve(result)
-                }
-            }
-            longTermWorkerRef.current?.addEventListener("message", handler)
-        })
-
-        longTermWorkerRef.current.postMessage({
-            id,
-            payload,
+    useEffect(() => {
+        runner.start({
             which_one: "CostToChanceArr",
+            payloadBuilder: () => {
+                let x = payloadBuilder()
+                x.budget_arr = weeklyBudgets
+                // console.log(x)
+                return x
+            },
+            workerRef: chanceToCostArrWorkerRef,
+            setBusy: setLongTermBusy,
+            setResult: setLongTermResult,
         })
-
-        p.then((result: any) => {
-            // console.log(result, weeklyBudgets, budget_inputs, totalWeeklyIncome)
-            setLongTermResult(result)
-        }).catch((err) => {
-            console.error("Long term worker error", err)
-            setLongTermResult(null)
-        })
-    }, [
-        topGrid,
-        bottomGrid,
-        adv_hone_strategy,
-        express_event,
-        bucketCount,
-        autoGoldValues,
-        userMatsValue,
-        dataSize,
-        budget_inputs,
-        useGridInput,
-        normalCounts,
-        advCounts,
-        totalWeeklyIncome,
-    ])
-
-    // Initialize worker
-    useEffect(() => {
-        longTermWorkerRef.current = new Worker(new URL("@/Frontend/WasmInterface/js_to_wasm.ts", import.meta.url), { type: "module" })
-        return () => {
-            if (longTermWorkerRef.current) {
-                longTermWorkerRef.current.terminate()
-            }
-        }
-    }, [])
-
-    // Debounce effect for cost_to_chance_arr calls
-    useEffect(() => {
-        // Clear existing timer
-        if (debounceTimerRef.current) {
-            window.clearTimeout(debounceTimerRef.current)
-            debounceTimerRef.current = null
-        }
-
-        // Start new delayed work
-        debounceTimerRef.current = window.setTimeout(() => {
-            setLongTermBusy(true)
-            Promise.all([callCostToChanceArr()]).finally(() => {
-                setLongTermBusy(false)
-            })
-            debounceTimerRef.current = null
-        }, 100) // 100ms debounce
-
-        return () => {
-            if (debounceTimerRef.current) {
-                window.clearTimeout(debounceTimerRef.current)
-                debounceTimerRef.current = null
-            }
-        }
-    }, [advStrategyKey, expressEventKey, useGridInputKey, normalCountsKey, advCountsKey, totalWeeklyIncomeKey, callCostToChanceArr])
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [advStrategyKey, expressEventKey, useGridInputKey, normalCountsKey, advCountsKey, totalWeeklyIncomeKey, weeklyBudgets])
 
     // Labels for income grids (7 rows) - use proper labels but hide icons
     const incomeLabels = INPUT_LABELS.slice(0, 7)
@@ -415,11 +331,6 @@ export default function LongTermSection({
     const goldGraphData = useMemo(() => {
         if (!chanceToCostOptimizedResult) return null
 
-        const weeklyBudgets = weekly_budget(
-            Object.values(budget_inputs).map((v) => Math.round(Number(v))),
-            totalWeeklyIncome
-        )
-
         const costToPityData: number[] = []
         const goldFromSellData: number[] = []
         const individualPityCostsData: number[][] = []
@@ -456,7 +367,7 @@ export default function LongTermSection({
             individualPityCostsData,
             weeklyBudgets,
         }
-    }, [chanceToCostOptimizedResult, budget_inputs, totalWeeklyIncome, matValues, desired_chance])
+    }, [chanceToCostOptimizedResult, matValues, desired_chance, weeklyBudgets])
 
     return (
         <>
