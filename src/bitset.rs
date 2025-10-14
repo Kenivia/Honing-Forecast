@@ -1,6 +1,9 @@
 // use crate::helpers::budget_is_enough;
+#[cfg(test)]
+use crate::helpers::count_failure;
+#[cfg(test)]
+use assert_float_eq::assert_f64_near;
 use std::collections::{HashMap, HashSet};
-
 // use serde::de::IntoDeserializer; // already present in your module
 #[derive(Clone)]
 pub struct Bitset {
@@ -120,6 +123,7 @@ fn oracle(
     //     panic!();
     // }
     let result = result_bitset.get_success();
+
     cache.insert(input.clone(), result);
     result
 }
@@ -180,6 +184,8 @@ pub fn beam_search<R: rand::Rng>(
     _rng: &mut R,
     search_depth: usize,
     prev_indices: &mut Vec<usize>,
+
+    #[cfg(test)] cost_data: &[Vec<i64>],
     // prevent_spend_gold: bool,
 ) -> (Vec<i64>, f64) {
     // parameters you can tune
@@ -192,6 +198,11 @@ pub fn beam_search<R: rand::Rng>(
         512, 512, 512, 256, 256, 256, 128, 128, 128, 64, 64, 64, 32, 32, 32, 16, 16, 16, 8, 8, 8,
         4, 4, 4, 2, 2, 2, 1, 1, 1, 1,
     ];
+    // let perturb_limits: Vec<usize> = vec![
+    //     512, 512, 512, 512, 512, 512, 256, 256, 256, 256, 256, 256, 128, 128, 128, 128, 128, 128,
+    //     64, 64, 64, 64, 64, 64, 32, 32, 32, 32, 32, 32, 16, 16, 16, 16, 16, 16, 8, 8, 8, 8, 8, 8,
+    //     4, 4, 4, 4, 4, 4, 2, 2, 2, 2, 2, 2, 1, 1, 1, 1, 1, 1, 1, 1,
+    // ];
     // let children_per_parent: usize = 12; // target children per parent (including greedy child)
     // let greedy_step_max: usize = 1500 / beam_rounds; // greedy increments up to 1..=3
     // let random_step_max: i64 = 1500 / beam_rounds as i64; // random +/- steps per dim
@@ -250,10 +261,10 @@ pub fn beam_search<R: rand::Rng>(
         }
     }
 
-    dbg!(&input_budget);
-    dbg!(&start_idxs);
+    // dbg!(&input_budget);
+    // dbg!(&start_idxs);
 
-    dbg!(&input_budget_no_gold);
+    // dbg!(&input_budget_no_gold);
 
     // Initialize oracle cache
     let mut oracle_cache: HashMap<Vec<usize>, f64> = HashMap::new();
@@ -369,6 +380,7 @@ pub fn beam_search<R: rand::Rng>(
                     cand[up_index] += actual_up_change;
                     cand[down_index] = cand[down_index].saturating_sub(actual_down_change);
                     // dbg!(&cand, round);
+
                     candidates.push(State {
                         indices: cand.clone(),
                         score: oracle(bitset_bundle, &cand, &mut oracle_cache),
@@ -379,6 +391,22 @@ pub fn beam_search<R: rand::Rng>(
                             price_arr,
                         ) - thresholds[5][cand[5]] as f64,
                     });
+
+                    #[cfg(test)]
+                    let mut budget_data: Vec<Vec<i64>> = vec![vec![]];
+                    #[cfg(test)]
+                    for i in 0..7 {
+                        budget_data[0].push(thresholds[i][cand[i]]);
+                    }
+                    #[cfg(test)]
+                    assert!(
+                        oracle(bitset_bundle, &cand, &mut oracle_cache)
+                            - (1.0
+                                - count_failure(cost_data, &budget_data, false)[0] as f64
+                                    / cost_data.len() as f64)
+                            < 1.0 / 1000000.0 as f64
+                    );
+
                     seen.insert(cand);
                 }
             }

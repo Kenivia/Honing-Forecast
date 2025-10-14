@@ -283,12 +283,13 @@ pub fn cost_to_chance_arr<R: rand::Rng>(
     }
 }
 
-struct OptimizationOut {
-    optimized_chances: Vec<f64>,
-    optimized_fail_counters: Vec<Vec<f64>>,
-    optimized_budgets: Vec<Vec<i64>>,
+pub struct OptimizationOut {
+    pub optimized_chances: Vec<f64>,
+    pub optimized_fail_counters: Vec<Vec<f64>>,
+    pub optimized_budgets: Vec<Vec<i64>>,
+    pub bitset_bundle: BitsetBundle,
 }
-fn optimization<R: rand::Rng>(
+pub fn optimization<R: rand::Rng>(
     cost_data: &[Vec<i64>],
     input_budgets_arr: &[Vec<i64>],
     prep_outputs: &PreparationOutputs,
@@ -322,6 +323,8 @@ fn optimization<R: rand::Rng>(
                 12
             },
             &mut vec![], // not doing anything smart for now
+            #[cfg(test)]
+            cost_data,
         );
         let failure_outputs_optimized: FailureAnalysisOutputs =
             count_failure_typed(&cost_data, &optimized_budget);
@@ -333,6 +336,7 @@ fn optimization<R: rand::Rng>(
         optimized_chances,
         optimized_fail_counters,
         optimized_budgets,
+        bitset_bundle,
     }
 }
 

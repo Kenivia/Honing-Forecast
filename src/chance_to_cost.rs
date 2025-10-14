@@ -1,14 +1,11 @@
-use crate::bitset::{
-    BitsetBundle, beam_search, compute_gold_cost_from_indices, compute_gold_cost_from_raw,
-    generate_bit_sets,
-};
+use crate::bitset::compute_gold_cost_from_raw;
 use crate::constants::EVENT_ARTISAN_MULTIPLIER;
+use crate::cost_to_chance::{OptimizationOut, optimization};
 use crate::helpers::{average_juice_cost, calc_unlock, count_failure};
 use crate::histogram::histograms_for_all_costs;
 use crate::monte_carlo::{generate_budget_data, get_top_bottom, monte_carlo_data};
 use crate::parser::{PreparationOutputs, Upgrade, parser, preparation};
 use serde::{Deserialize, Serialize};
-
 // find the budget in budget_data that most closely matches desired_chance
 fn find_best_budget_for_this_chance(
     desired_chance: f64,
@@ -160,49 +157,37 @@ pub fn chance_to_cost_optimized<R: rand::Rng>(
 
     let mut input_budget_no_gold: Vec<i64> = input_budgets.to_vec();
     input_budget_no_gold[5] = 0;
-    let thresholds: Vec<Vec<i64>> = generate_budget_data(&cost_data, &input_budget_no_gold, 1000);
+
     let top_bottom: Vec<Vec<i64>> =
         get_top_bottom(&prep_outputs.upgrade_arr, &prep_outputs.unlock_costs);
-    let bitset_bundle: BitsetBundle =
-        generate_bit_sets(&cost_data, thresholds, &top_bottom[1].clone(), data_size);
 
-    let pity_cost: f64 = compute_gold_cost_from_indices(
-        &bitset_bundle.transposed_thresholds,
-        &[bitset_bundle.transposed_thresholds[0].len() - 1; 7],
-        &input_budget_no_gold,
-        mats_value,
-    );
+    let pity_cost: f64 =
+        compute_gold_cost_from_raw(&top_bottom[1].clone(), &input_budget_no_gold, mats_value);
     let resolution: usize = 300;
     let gap_size: f64 = (pity_cost - input_budgets[5] as f64) / resolution as f64;
-    let mut budget_data: Vec<Vec<i64>> = Vec::with_capacity(resolution + 2);
-
+    // let mut budget_data: Vec<Vec<i64>> = Vec::with_capacity(resolution + 2);
+    let mut input_budgets_arr: Vec<Vec<i64>> = Vec::with_capacity(resolution);
     let mut new_input_budget: Vec<i64>;
-    let mut prev_optimized: Vec<usize> = vec![]; // invalid on purpose
+    // let mut prev_optimized: Vec<usize> = vec![]; // invalid on purpose
     for i in 0..resolution {
         new_input_budget = input_budgets.to_vec().clone();
         new_input_budget[5] = input_budgets[5] + (gap_size * i as f64).round() as i64;
-        let (optimized_budget, _optimized_chance): (Vec<i64>, f64) = beam_search(
-            &bitset_bundle,
-            mats_value,
-            &new_input_budget,
-            rng,
-            if i == 0 || prev_optimized.len() != 7 {
-                999
-            } else {
-                12
-            },
-            &mut prev_optimized,
-        );
-
-        budget_data.push(optimized_budget);
+        input_budgets_arr.push(new_input_budget);
     }
 
+    let mut optimize_out: OptimizationOut = optimization(
+        &cost_data,
+        &input_budgets_arr,
+        &prep_outputs,
+        data_size,
+        rng,
+    );
     let mut best_pull: Vec<i64> = vec![];
-    for thresh in bitset_bundle.transposed_thresholds {
+    for thresh in optimize_out.bitset_bundle.transposed_thresholds {
         best_pull.push(thresh[0]);
     }
-    budget_data.push(best_pull);
-    budget_data.push(
+    optimize_out.optimized_budgets.push(best_pull);
+    optimize_out.optimized_budgets.push(
         top_bottom[1]
             .iter()
             .zip(input_budgets.iter())
@@ -214,12 +199,13 @@ pub fn chance_to_cost_optimized<R: rand::Rng>(
     if adv_hone_strategy == "Juice on grace" {
         let (avg_red_juice, avg_blue_juice) = average_juice_cost(&prep_outputs.upgrade_arr);
 
-        for budget_row in &mut budget_data {
+        for budget_row in &mut optimize_out.optimized_budgets {
             budget_row[7] = avg_red_juice;
             budget_row[8] = avg_blue_juice;
         }
     }
-    let failure_counts: Vec<i64> = count_failure(&cost_data, &budget_data, false);
+    let failure_counts: Vec<i64> =
+        count_failure(&cost_data, &optimize_out.optimized_budgets, false);
 
     let (hundred_budgets, hundred_chances): (Vec<Vec<i64>>, Vec<f64>) = (0..101)
         .map(|x| {
@@ -228,7 +214,7 @@ pub fn chance_to_cost_optimized<R: rand::Rng>(
                 data_size,
                 budget_size,
                 &failure_counts,
-                &budget_data,
+                &optimize_out.optimized_budgets,
                 true,
             )
         })
