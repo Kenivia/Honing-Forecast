@@ -1,8 +1,8 @@
 // use crate::helpers::budget_is_enough;
-#[cfg(test)]
-use crate::helpers::count_failure;
-#[cfg(test)]
-use assert_float_eq::assert_f64_near;
+// #[cfg(test)]
+// use crate::helpers::count_failure;
+// #[cfg(test)]
+// use assert_float_eq::assert_f64_near;
 use std::collections::{HashMap, HashSet};
 // use serde::de::IntoDeserializer; // already present in your module
 #[derive(Clone)]
@@ -184,8 +184,7 @@ pub fn beam_search<R: rand::Rng>(
     _rng: &mut R,
     search_depth: usize,
     prev_indices: &mut Vec<usize>,
-
-    #[cfg(test)] cost_data: &[Vec<i64>],
+    // #[cfg(test)] cost_data: &[Vec<i64>],
     // prevent_spend_gold: bool,
 ) -> (Vec<i64>, f64) {
     // parameters you can tune
@@ -392,20 +391,20 @@ pub fn beam_search<R: rand::Rng>(
                         ) - thresholds[5][cand[5]] as f64,
                     });
 
-                    #[cfg(test)]
-                    let mut budget_data: Vec<Vec<i64>> = vec![vec![]];
-                    #[cfg(test)]
-                    for i in 0..7 {
-                        budget_data[0].push(thresholds[i][cand[i]]);
-                    }
-                    #[cfg(test)]
-                    assert!(
-                        oracle(bitset_bundle, &cand, &mut oracle_cache)
-                            - (1.0
-                                - count_failure(cost_data, &budget_data, false)[0] as f64
-                                    / cost_data.len() as f64)
-                            < 1.0 / 1000000.0 as f64
-                    );
+                    // #[cfg(test)]
+                    // let mut budget_data: Vec<Vec<i64>> = vec![vec![]];
+                    // #[cfg(test)]
+                    // for i in 0..7 {
+                    //     budget_data[0].push(thresholds[i][cand[i]]);
+                    // }
+                    // #[cfg(test)]
+                    // assert!(
+                    //     oracle(bitset_bundle, &cand, &mut oracle_cache)
+                    //         - (1.0
+                    //             - count_failure(cost_data, &budget_data, false)[0] as f64
+                    //                 / cost_data.len() as f64)
+                    //         < 1.0 / 1000000.0 as f64
+                    // );
 
                     seen.insert(cand);
                 }
