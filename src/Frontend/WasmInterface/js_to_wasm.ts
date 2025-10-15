@@ -90,12 +90,14 @@ self.addEventListener("message", async (ev) => {
         // Convert final chances to percentages
         const final_chances_percent = out.final_chances.map((chance: number) => (chance * 100).toFixed(2))
 
+        const buy_chances_percent = out.buy_chances.map((chance: number) => (chance * 100).toFixed(2))
+
         result = {
             final_chances: final_chances_percent,
             failure_rates_arr: out.typed_fail_counters,
             budgets_red_remaining: out.budgets_red_remaining,
             budgets_blue_remaining: out.budgets_blue_remaining,
-            buy_chances: out.buy_chances,
+            buy_chances: buy_chances_percent,
             // buy_gold_costs: out.buy_gold_costs,
         }
     } else if (which_one == "ChanceToCost") {

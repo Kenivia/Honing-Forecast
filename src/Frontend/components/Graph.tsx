@@ -235,8 +235,11 @@ function Graph({
         if (!srcCounts) return new Array(labels.length).fill(false)
 
         // For Gold graphs, keep all series (don't filter based on positive bins)
-        if (graphType === "Gold" || graphType === "Raw") {
+        if (graphType === "Gold") {
             return new Array(labels.length).fill(true)
+        }
+        if (graphType === "Raw") {
+            return Array.from({ length: labels.length }, (_, i) => i < srcCounts.length)
         }
 
         return srcCounts.map((series) => {
