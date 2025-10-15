@@ -517,20 +517,6 @@ export default function HoningForecastUI() {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [advStrategyKey, expressEventKey, graphBucketSizeKey, dataSizeKey, normalCountsKey, advCountsKey])
 
-    const chanceToCostResultOptimizedWorkerRef = useRef<Worker | null>(null)
-    const [_chanceToCostResultOptimizedBusy, setchanceToCostResultOptimizedBusy] = useState(false)
-    const [chanceToCostOptimizedResult, setChanceToCostOptimizedResult] = useState<any>(null)
-    useEffect(() => {
-        runner.start({
-            which_one: "ChanceToCostOptimized",
-            payloadBuilder,
-            workerRef: chanceToCostResultOptimizedWorkerRef,
-            setBusy: setchanceToCostResultOptimizedBusy,
-            setResult: setChanceToCostOptimizedResult,
-        })
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [advStrategyKey, expressEventKey, graphBucketSizeKey, dataSizeKey, normalCountsKey, advCountsKey, budgetKey, userMatsKey])
-
     const costToChanceWorkerRef = useRef<Worker | null>(null)
     const [costToChanceBusy, setCostToChanceBusy] = useState(false)
     const [costToChanceResult, setCostToChanceResult] = useState<any>(null)
@@ -684,7 +670,6 @@ export default function HoningForecastUI() {
                         onDesiredChange={onDesiredChange}
                         onDesiredBlur={onDesiredBlur}
                         cost_result={chanceToCostResult}
-                        cost_result_optimized={chanceToCostOptimizedResult}
                         cachedCostGraphData={cachedCostGraphData}
                         AnythingTicked={AnythingTicked}
                         ChanceToCostBusy={chanceToCostBusy}
@@ -724,7 +709,6 @@ export default function HoningForecastUI() {
                         uncleaned_desired_chance={uncleaned_desired_chance}
                         onDesiredChange={onDesiredChange}
                         onDesiredBlur={onDesiredBlur}
-                        cost_result_optimized={chanceToCostOptimizedResult}
                         showOptimizedDetails={showOptimizedDetails}
                         setShowOptimizedDetails={setShowOptimizedDetails}
                     />
@@ -790,9 +774,9 @@ export default function HoningForecastUI() {
                         //TODOcost_result_optimized={chanceToCostOptimizedResult}
                         showOptimizedDetails={showOptimizedDetails}
                         setShowOptimizedDetails={setShowOptimizedDetails}
-                        chanceToCostOptimizedResult={chanceToCostOptimizedResult}
                         payloadBuilder={payloadBuilder}
                         runner={runner}
+                        costToChanceResult={costToChanceResult}
                     />
                 </div>
             </div>

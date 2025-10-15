@@ -1,4 +1,4 @@
-import React, { useState } from "react"
+import React from "react"
 import SpreadsheetGrid from "@/Frontend/Components/SpreadsheetGrid.tsx"
 import Graph from "@/Frontend/Components/Graph.tsx"
 import LabeledCheckbox from "@/Frontend/Components/LabeledCheckbox.tsx"
@@ -21,7 +21,7 @@ type CostToChanceSectionProps = {
     lockXAxis: boolean
     lockedMins: number[] | null
     lockedMaxs: number[] | null
-    cost_result_optimized: any
+    // cost_result_optimized: any
     desired_chance: string
     uncleaned_desired_chance: string
     onDesiredChange: (_: string) => void
@@ -46,7 +46,7 @@ export default function CostToChanceSection({
     lockedMins,
     lockedMaxs,
 
-    cost_result_optimized,
+    // cost_result_optimized,
 
     desired_chance,
     uncleaned_desired_chance,
@@ -55,8 +55,8 @@ export default function CostToChanceSection({
     showOptimizedDetails,
     setShowOptimizedDetails,
 }: CostToChanceSectionProps) {
-    const { costToChanceColumnDefs, optimizedColumnDefs } = createColumnDefs(false) // autoGoldValues not used for this section
-    const [showOptimized, setShowOptimized] = useState<boolean>(() => false)
+    const { costToChanceColumnDefs } = createColumnDefs(false) // autoGoldValues not used for this section
+    // const [showOptimized, setShowOptimized] = useState<boolean>(() => false)
     // const [showGraph, setShowGraph] = useState<boolean>(() => false);
     /* <h3 style={{ color: 'var(--text-primary)', fontSize: 'var(--font-size-base)', fontWeight: 'var(--font-weight-semibold)', margin: '16px 0 0px 0' }}>Cost to Chance</h3> */
     return (
@@ -100,69 +100,16 @@ export default function CostToChanceSection({
                                 lowText={
                                     //(chance_result && Number(desired_chance) <= Math.ceil(chance_result?.optimized_chance) ? `Your current chance is ${chance_result.optimized_chance}%` : '') +
                                     "\nExtra gold needed: " +
-                                    (cost_result_optimized
-                                        ? (cost_result_optimized.hundred_gold_costs[parseInt(desired_chance)] - budget_inputs["Gold"]).toLocaleString("en-US", {
+                                    (chance_result
+                                        ? (chance_result.hundred_gold_costs[parseInt(desired_chance)] - budget_inputs["Gold"]).toLocaleString("en-US", {
                                               minimumFractionDigits: 0, // show decimals for small K/M/B
                                               maximumFractionDigits: 0,
                                           })
                                         : "Calculating...") +
-                                    (chance_result && Number(desired_chance) < chance_result?.optimized_chance && AnythingTicked
-                                        ? ". If you spend your gold according to the list on the right, you already have " +
-                                          chance_result?.optimized_chance +
-                                          "% chance to succeed"
-                                        : "")
+                                    (chance_result && Number(desired_chance) < chance_result?.optimized_chance && AnythingTicked ? "aaa" : "")
                                 }
                                 lowTextColor={"var(--text-success)"}
                             />
-
-                            <div style={{ marginLeft: 100 }}>
-                                <div style={{ marginBottom: 0, width: 210 }}>
-                                    <SpreadsheetGrid
-                                        columnDefs={optimizedColumnDefs}
-                                        labels={OUTPUT_LABELS.slice(0, 7)}
-                                        sheetValuesArr={[
-                                            // budget_inputs,
-
-                                            Object.fromEntries(
-                                                OUTPUT_LABELS.slice(0, 7).map((label, lab_index) => [
-                                                    label,
-                                                    cost_result_optimized
-                                                        ? String(
-                                                              label == "Gold"
-                                                                  ? "N/A"
-                                                                  : cost_result_optimized.hundred_budgets[parseInt(desired_chance)][lab_index] -
-                                                                        budget_inputs[label]
-                                                          )
-                                                        : "Calculating...",
-                                                ])
-                                            ),
-
-                                            Object.fromEntries(
-                                                OUTPUT_LABELS.slice(0, 7).map((label, lab_index) => [
-                                                    label,
-                                                    cost_result_optimized
-                                                        ? String(cost_result_optimized.hundred_budgets[parseInt(desired_chance)][lab_index])
-                                                        : "Calculating...",
-                                                ])
-                                            ),
-                                        ]}
-                                        setSheetValuesArr={[() => {}, () => {}]} // No-op for read-only
-                                    />
-                                </div>
-                                <div style={{ display: "flex", flexDirection: "row", alignItems: "left", gap: 8, marginBottom: 8, marginLeft: 0 }}>
-                                    <LabeledCheckbox label="Show this on the graph" checked={showOptimized} setChecked={setShowOptimized} />
-                                </div>
-                                {cost_result_optimized && (
-                                    <pre style={{ color: "var(--text-muted)", fontSize: "var(--font-size-xs)", marginTop: 0 }}>
-                                        Run time: {cost_result_optimized.run_time}s{"\nActual chance: "}
-                                        {cost_result_optimized.hundred_chances[parseInt(desired_chance)].toFixed(2)}%{"\nTotal gold cost: "}
-                                        {cost_result_optimized.hundred_gold_costs[parseInt(desired_chance)].toLocaleString("en-US", {
-                                            minimumFractionDigits: 0, // show decimals for small K/M/B
-                                            maximumFractionDigits: 0,
-                                        })}
-                                    </pre>
-                                )}
-                            </div>
                         </div>
                     </div>
 
@@ -328,7 +275,7 @@ export default function CostToChanceSection({
                             lockedMins={lockedMins}
                             lockedMaxs={lockedMaxs}
                             graphType={"Histogram"}
-                            additionalBudgets={showOptimized ? cost_result_optimized?.hundred_budgets[parseInt(desired_chance)] : null}
+                            // additionalBudgets={showOptimized ? cost_result_optimized?.hundred_budgets[parseInt(desired_chance)] : null}
                         />
                     </div>
                 </div>

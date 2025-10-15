@@ -32,21 +32,23 @@ type LongTermSectionProps = {
     onDesiredBlur: () => void
     // Cost result prop for hundred_budgets
     // cost_result: any
-    chanceToCostOptimizedResult: any
+    // chanceToCostOptimizedResult: any
     payloadBuilder: any
     runner: any
+
+    costToChanceResult: any
 }
-function cost_to_achieve(budget: number[], pity_cost: number[], mat_value: number[]): number {
-    let sum = 0
-    for (let i = 0; i < 7; i++) {
-        if (i == 5) {
-            sum += Math.max(0, pity_cost[i]) * mat_value[i]
-        } else {
-            sum += Math.max(0, pity_cost[i] - budget[i]) * mat_value[i]
-        }
-    }
-    return sum
-}
+// function cost_to_achieve(budget: number[], pity_cost: number[], mat_value: number[]): number {
+//     let sum = 0
+//     for (let i = 0; i < 7; i++) {
+//         if (i == 5) {
+//             sum += Math.max(0, pity_cost[i]) * mat_value[i]
+//         } else {
+//             sum += Math.max(0, pity_cost[i] - budget[i]) * mat_value[i]
+//         }
+//     }
+//     return sum
+// }
 
 // function gold_plus_sell_mats(budget: number[], pity_cost: number[], mat_value: number[]): number {
 //     let sum = budget[5]
@@ -59,12 +61,12 @@ function cost_to_achieve(budget: number[], pity_cost: number[], mat_value: numbe
 //     return sum
 // }
 
-function cost_to_pity_individual(budget: number[], pity_cost: number[], mat_value: number[], materialIndex: number): number {
-    if (materialIndex == 5) {
-        return pity_cost[materialIndex] * mat_value[materialIndex]
-    }
-    return Math.max(0, pity_cost[materialIndex] - budget[materialIndex]) * mat_value[materialIndex]
-}
+// function cost_to_pity_individual(budget: number[], pity_cost: number[], mat_value: number[], materialIndex: number): number {
+//     if (materialIndex == 5) {
+//         return pity_cost[materialIndex] * mat_value[materialIndex]
+//     }
+//     return Math.max(0, pity_cost[materialIndex] - budget[materialIndex]) * mat_value[materialIndex]
+// }
 
 function weekly_budget(budget: number[], weekly_income: number[]): number[][] {
     let current = budget
@@ -99,16 +101,17 @@ export default function LongTermSection({
     onDesiredBlur,
     // Cost result prop for hundred_budgets
     // cost_result,
-    chanceToCostOptimizedResult,
+    // chanceToCostOptimizedResult,
     payloadBuilder,
     runner,
+    costToChanceResult,
 }: LongTermSectionProps) {
     // Income array is now managed by parent component
 
     // State for cost_to_chance_arr results
 
     // State for pity costs and material values
-    const [matValues, setMatValues] = useState<number[]>(() => Object.values(userMatsValue).map((v) => parseFloat(v.toString()) || 0))
+    const [_, setMatValues] = useState<number[]>(() => Object.values(userMatsValue).map((v) => parseFloat(v.toString()) || 0))
 
     // Worker refs and debounce
 
@@ -235,11 +238,11 @@ export default function LongTermSection({
                 relevant_fail_arr = longTermResult.failure_rates_arr
             }
         } else {
-            if (!longTermResult.optimized_chances) {
+            if (!longTermResult.buy_chances) {
                 return null
             } else {
-                relevant_chance_result = longTermResult.optimized_chances
-                relevant_fail_arr = longTermResult.optimized_fail_arr
+                relevant_chance_result = longTermResult.buy_chances
+                // relevant_fail_arr = longTermResult.buy_cost
             }
         } // const chances = longTermResult.final_chances.map((chance: string) => parseFloat(chance))
 
@@ -300,23 +303,24 @@ export default function LongTermSection({
 
         // For each material type (7 types), create a histogram truncated to truncateLen
         const numMaterials = 7
-        for (let materialIndex = 0; materialIndex < numMaterials; materialIndex++) {
-            const materialCounts = new Array(truncateLen).fill(0)
+        if (showOptimizedDetails) {
+            for (let materialIndex = 0; materialIndex < numMaterials; materialIndex++) {
+                const materialCounts = new Array(truncateLen).fill(0)
 
-            for (let week = 0; week < truncateLen; week++) {
-                // safety: check failure_rates_arr bounds
-                if (relevant_fail_arr && week < relevant_fail_arr.length && relevant_fail_arr[week] && materialIndex < relevant_fail_arr[week].length) {
-                    materialCounts[week] = relevant_fail_arr[week][materialIndex]
-                } else {
-                    materialCounts[week] = 0
+                for (let week = 0; week < truncateLen; week++) {
+                    // safety: check failure_rates_arr bounds
+                    if (relevant_fail_arr && week < relevant_fail_arr.length && relevant_fail_arr[week] && materialIndex < relevant_fail_arr[week].length) {
+                        materialCounts[week] = relevant_fail_arr[week][materialIndex]
+                    } else {
+                        materialCounts[week] = 0
+                    }
                 }
+
+                counts.push(materialCounts)
+                mins.push(1)
+                maxs.push(truncateLen)
             }
-
-            counts.push(materialCounts)
-            mins.push(1)
-            maxs.push(truncateLen)
         }
-
         // debug
         // console.log('graphData: truncateLen=', truncateLen, 'counts lengths=', counts.map(c => c.length))
         console.log(longTermResult)
@@ -329,7 +333,7 @@ export default function LongTermSection({
 
     // Calculate data for the new graph (cost to pity and gold from selling materials)
     const goldGraphData = useMemo(() => {
-        if (!chanceToCostOptimizedResult) return null
+        if (!costToChanceResult) return null
 
         const costToPityData: number[] = []
         const goldFromSellData: number[] = []
@@ -340,22 +344,22 @@ export default function LongTermSection({
             individualPityCostsData.push([])
         }
 
-        const needed_budget = chanceToCostOptimizedResult.hundred_budgets[parseInt(desired_chance)] || []
+        // const needed_budget = costToChanceResult.hundred_budgets[parseInt(desired_chance)] || []
         // console.log("Pitycost", pityCost)
         for (let week = 0; week < Math.min(53, weeklyBudgets.length); week++) {
-            const costToAchieve = cost_to_achieve(weeklyBudgets[week], needed_budget, matValues)
+            const costToAchieve = costToChanceResult.hundred_gold_costs[parseInt(desired_chance)]
             const goldFromSell = weeklyBudgets[week][5] // gold_plus_sell_mats(this_week_budget, goldCost, matValues)
 
             costToPityData.push(costToAchieve)
             goldFromSellData.push(weeklyBudgets[week][5]) // til i sort out selling shinanigan
 
-            // Calculate individual pity costs for each material
-            for (let materialIndex = 0; materialIndex < 7; materialIndex++) {
-                const individualCost = cost_to_pity_individual(weeklyBudgets[week], needed_budget, matValues, materialIndex)
-                const clampedCost = Math.max(0, individualCost) // Clamp to 0 if negative
-                individualPityCostsData[materialIndex].push(clampedCost)
-            }
-            // console.log("break", goldFromSell, costToPity)
+            // // Calculate individual pity costs for each material
+            // for (let materialIndex = 0; materialIndex < 7; materialIndex++) {
+            //     const individualCost = cost_to_pity_individual(weeklyBudgets[week], needed_budget, matValues, materialIndex)
+            //     const clampedCost = Math.max(0, individualCost) // Clamp to 0 if negative
+            //     individualPityCostsData[materialIndex].push(clampedCost)
+            // }
+            // // console.log("break", goldFromSell, costToPity)
             if (goldFromSell > costToAchieve && week > 2) {
                 break
             }
@@ -367,7 +371,7 @@ export default function LongTermSection({
             individualPityCostsData,
             weeklyBudgets,
         }
-    }, [chanceToCostOptimizedResult, matValues, desired_chance, weeklyBudgets])
+    }, [costToChanceResult, desired_chance, weeklyBudgets])
 
     return (
         <>

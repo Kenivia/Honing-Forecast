@@ -13,7 +13,7 @@ type ChanceToCostSectionProps = {
     onDesiredChange: (_: string) => void
     onDesiredBlur: () => void
     cost_result: any
-    cost_result_optimized: any
+    // cost_result_optimized: any
     cachedCostGraphData: { hist_counts?: any; hist_mins?: any; hist_maxs?: any } | null
     AnythingTicked: boolean
     ChanceToCostBusy: boolean
