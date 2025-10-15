@@ -1,7 +1,7 @@
 use crate::constants::{
     ADV_DATA_10_20, ADV_DATA_10_20_JUICE, ADV_DATA_30_40, ADV_DATA_30_40_JUICE, ADV_HONE_COST,
-    DEFAULT_GOLD_VALUES, EVENT_ARTISAN_MULTIPLIER, NORMAL_HONE_CHANCES, NORMAL_JUICE_COST,
-    SPECIAL_LEAPS_COST, get_event_modified_armor_costs, get_event_modified_weapon_costs,
+    DEFAULT_GOLD_VALUES, NORMAL_HONE_CHANCES, NORMAL_JUICE_COST, SPECIAL_LEAPS_COST,
+    get_event_modified_armor_costs, get_event_modified_artisan, get_event_modified_weapon_costs,
 };
 use crate::helpers::{average_juice_cost, calc_unlock, sort_by_indices};
 use crate::value_estimation::{est_juice_value, est_special_honing_value, juice_to_array};
@@ -30,20 +30,10 @@ pub fn preparation(
     let mut mats_value: Vec<f64> = user_mats_value.to_vec();
     let unlock_costs: Vec<i64> = calc_unlock(hone_counts, adv_counts, express_event);
 
-    let aritsan_arr: Vec<f64>;
-    if express_event {
-        aritsan_arr = EVENT_ARTISAN_MULTIPLIER.to_vec();
-    } else {
-        aritsan_arr = vec![1.0; 25];
-    }
-
     let mut upgrade_arr: Vec<Upgrade> = parser(
         hone_counts,
         adv_counts,
         &adv_hone_strategy.to_string(),
-        &aritsan_arr,
-        &[0.0; 25],
-        &[0; 25],
         express_event,
     );
     let mut budgets: Vec<i64> = input_budgets.to_vec();
@@ -181,24 +171,15 @@ impl Upgrade {
 }
 
 // prob distribution of normal honing, adjusting for any juice usage
-pub fn probability_distribution(
-    base: f64,
-    artisan_rate: f64,
-    mut extra: f64,
-    mut extra_num: usize,
-) -> Vec<f64> {
+pub fn probability_distribution(base: f64, artisan_rate: f64, extra_arr: &[f64]) -> Vec<f64> {
     let mut raw_chances: Vec<f64> = Vec::new();
     let mut artisan: f64 = 0.0_f64;
-    let mut count: i64 = 0;
+    let mut count: usize = 0;
 
     loop {
-        if extra_num == 0 {
-            extra = 0.0;
-        } else {
-            extra_num -= 1;
-        }
         let min_count: f64 = std::cmp::min(count, 10) as f64;
-        let mut current_chance: f64 = base + (min_count * base) / 10.0 + extra;
+        let mut current_chance: f64 =
+            base + (min_count * base) * 0.1 + extra_arr.get(count).unwrap_or(&0.0);
 
         if artisan >= 1.0 {
             current_chance = 1.0;
@@ -229,13 +210,11 @@ pub fn parser(
     normal_counts: &[Vec<i64>],
     adv_counts: &[Vec<i64>],
     adv_hone_strategy: &String,
-    artisan_rate_arr: &[f64],
-    extra_arr: &[f64],
-    extra_num_arr: &[usize],
+
     express_event: bool,
 ) -> Vec<Upgrade> {
     let mut out: Vec<Upgrade> = Vec::new();
-
+    let artisan_rate_arr: [f64; 25] = get_event_modified_artisan(express_event);
     for is_weapon in 0..normal_counts.len() {
         let cur_cost: [[i64; 25]; 7] = if is_weapon == 0 {
             get_event_modified_armor_costs(express_event)
@@ -261,8 +240,7 @@ pub fn parser(
                 probability_distribution(
                     NORMAL_HONE_CHANCES[upgrade_plus_num],
                     event_artisan_rate,
-                    extra_arr[upgrade_plus_num],
-                    extra_num_arr[upgrade_plus_num],
+                    &[],
                 ),
                 std::array::from_fn(|cost_type: usize| cur_cost[cost_type][upgrade_plus_num]),
                 special_cost,
@@ -340,20 +318,11 @@ pub fn parser_with_other_strategy(
     normal_counts: &[Vec<i64>],
     adv_counts: &[Vec<i64>],
     adv_hone_strategy: &String,
-    artisan_rate_arr: &[f64],
-    extra_arr: &[f64],
-    extra_num_arr: &[usize],
+
     express_event: bool,
 ) -> (Vec<Upgrade>, Vec<Vec<f64>>) {
-    let main_upgrades: Vec<Upgrade> = parser(
-        normal_counts,
-        adv_counts,
-        adv_hone_strategy,
-        artisan_rate_arr,
-        extra_arr,
-        extra_num_arr,
-        express_event,
-    );
+    let main_upgrades: Vec<Upgrade> =
+        parser(normal_counts, adv_counts, adv_hone_strategy, express_event);
 
     let other_strategy: String = if adv_hone_strategy == "Juice on grace" {
         "No juice".to_string()
@@ -361,15 +330,8 @@ pub fn parser_with_other_strategy(
         "Juice on grace".to_string()
     };
 
-    let other_upgrades: Vec<Upgrade> = parser(
-        normal_counts,
-        adv_counts,
-        &other_strategy,
-        artisan_rate_arr,
-        extra_arr,
-        extra_num_arr,
-        express_event,
-    );
+    let other_upgrades: Vec<Upgrade> =
+        parser(normal_counts, adv_counts, &other_strategy, express_event);
 
     let other_strategy_prob_dists: Vec<Vec<f64>> = other_upgrades
         .iter()

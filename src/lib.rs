@@ -4,15 +4,15 @@ mod constants;
 mod cost_to_chance;
 mod helpers;
 mod histogram;
+pub mod juice_generation;
 mod monte_carlo;
 mod parser;
 mod value_estimation;
 
-#[cfg(test)]
 mod test_cache;
 
 use crate::chance_to_cost::{ChanceToCostOut, chance_to_cost};
-use crate::constants::EVENT_ARTISAN_MULTIPLIER;
+
 use crate::cost_to_chance::{
     CostToChanceArrOut, CostToChanceOut, cost_to_chance, cost_to_chance_arr,
 };
@@ -131,23 +131,11 @@ pub fn parser_wrapper_unified(input: JsValue) -> JsValue {
     let normal_counts: Vec<Vec<i64>> = get_count(payload.normal_counts, payload.normal_hone_ticks);
     let adv_counts: Vec<Vec<i64>> = get_count(payload.adv_counts, payload.adv_hone_ticks);
 
-    let artisan_rate_arr: Vec<f64> = if payload.express_event {
-        EVENT_ARTISAN_MULTIPLIER.to_vec()
-    } else {
-        vec![1.0; 25]
-    };
-
-    let extra_arr: [f64; 25] = [0.0; 25];
-    let extra_num_arr: [usize; 25] = [0; 25];
-
     let (upgrades, other_strategy_prob_dists): (Vec<Upgrade>, Vec<Vec<f64>>) =
         parser_with_other_strategy(
             &normal_counts,
             &adv_counts,
             &payload.adv_hone_strategy,
-            &artisan_rate_arr,
-            &extra_arr,
-            &extra_num_arr,
             payload.express_event,
         );
 
@@ -168,22 +156,10 @@ pub fn average_cost_wrapper(input: JsValue) -> JsValue {
     let normal_counts: Vec<Vec<i64>> = get_count(payload.normal_counts, payload.normal_hone_ticks);
     let adv_counts: Vec<Vec<i64>> = get_count(payload.adv_counts, payload.adv_hone_ticks);
 
-    let artisan_rate_arr: Vec<f64> = if payload.express_event {
-        EVENT_ARTISAN_MULTIPLIER.to_vec()
-    } else {
-        vec![1.0; 25]
-    };
-
-    let extra_arr: [f64; 25] = [0.0; 25];
-    let extra_num_arr: [usize; 25] = [0; 25];
-
     let upgrades: Vec<Upgrade> = parser(
         &normal_counts,
         &adv_counts,
         &payload.adv_hone_strategy,
-        &artisan_rate_arr,
-        &extra_arr,
-        &extra_num_arr,
         payload.express_event,
     );
 

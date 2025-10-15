@@ -5,6 +5,9 @@ use crate::constants::{
 use crate::parser::Upgrade;
 use crate::value_estimation::average_tap;
 
+pub fn generate_first_deltas(delta: f64, length: usize, non_zeros: usize) -> Vec<f64> {
+    vec![vec![delta; non_zeros], vec![0.0; length - non_zeros]].concat()
+}
 pub fn transpose_vec_of_vecs(matrix: &[Vec<i64>]) -> Vec<Vec<i64>> {
     if matrix.is_empty() || matrix[0].is_empty() {
         return Vec::new();

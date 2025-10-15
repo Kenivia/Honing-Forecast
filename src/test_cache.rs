@@ -1,13 +1,11 @@
-#[cfg(test)]
 use serde_json;
-#[cfg(test)]
+
 use std::fs;
-#[cfg(test)]
+
 use std::path::PathBuf;
 
 /// Calculate a hash from multiple hashable values
 #[macro_export]
-#[cfg(test)]
 macro_rules! calculate_hash {
     ($($input:expr),*) => {{
         use std::collections::hash_map::DefaultHasher;
@@ -18,13 +16,11 @@ macro_rules! calculate_hash {
     }};
 }
 
-#[cfg(test)]
 /// Get the filename for a cached test case
 fn get_cache_filename(test_name: &str, hash: &String) -> String {
     format!("{}_{}.json", test_name, hash)
 }
 
-#[cfg(test)]
 /// Read cached data from a test case file
 pub fn read_cached_data<T>(test_name: &str, hash: &String) -> Option<T>
 where
@@ -61,7 +57,6 @@ where
     }
 }
 
-#[cfg(test)]
 /// Write cached data to a test case file
 pub fn write_cached_data<T>(test_name: &str, hash: &String, data: &T)
 where

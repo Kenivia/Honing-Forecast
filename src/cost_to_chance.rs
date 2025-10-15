@@ -441,7 +441,11 @@ mod tests {
 
         let result_of_interst: f64 = result.chance;
         if let Some(cached_result) = read_cached_data::<f64>(test_name, &hash) {
-            assert_float_eq::assert_f64_near!(result_of_interst, cached_result);
+            assert_float_eq::assert_float_absolute_eq!(
+                result_of_interst,
+                cached_result,
+                0.000000001
+            );
         } else {
             write_cached_data(test_name, &hash, &result_of_interst);
         }

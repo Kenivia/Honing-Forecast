@@ -1,5 +1,3 @@
-use crate::constants::EVENT_ARTISAN_MULTIPLIER;
-
 use crate::helpers::{average_juice_cost, calc_unlock, count_failure};
 use crate::histogram::histograms_for_all_costs;
 use crate::monte_carlo::{generate_budget_data, get_top_bottom, monte_carlo_data};
@@ -62,18 +60,11 @@ pub fn chance_to_cost<R: rand::Rng>(
     rng: &mut R,
 ) -> ChanceToCostOut {
     let budget_size: usize = 1000;
-    let artisan_arr: Vec<f64> = if express_event {
-        EVENT_ARTISAN_MULTIPLIER.to_vec()
-    } else {
-        vec![1.0; 25]
-    };
+
     let upgrade_arr: Vec<Upgrade> = parser(
         hone_counts,
         adv_counts,
         &adv_hone_strategy.to_string(),
-        &artisan_arr,
-        &[0.0; 25],
-        &[0; 25],
         express_event,
     );
 

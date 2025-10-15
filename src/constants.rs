@@ -453,3 +453,11 @@ pub fn get_event_modified_weapon_unlock_cost(express_event: bool) -> [[i64; 25];
     }
     result
 }
+
+pub fn get_event_modified_artisan(express_event: bool) -> [f64; 25] {
+    if !express_event {
+        return [1.0; 25];
+    }
+
+    EVENT_ARTISAN_MULTIPLIER
+}
