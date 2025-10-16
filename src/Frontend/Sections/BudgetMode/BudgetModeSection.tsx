@@ -90,7 +90,7 @@ export default function CostToChanceSection({
                                 </div> */}
                         </div>
                         {/* Optimized chances slider and answer*/}
-                        <div style={{ display: "flex", flexDirection: "row", gap: 0, alignItems: "center", width: 600, marginTop: 0, marginLeft: 0 }}>
+                        <div style={{ display: "flex", flexDirection: "row", gap: 0, alignItems: "center", width: 600, marginTop: 100, marginLeft: 0 }}>
                             <SliderBundle
                                 desiredChance={String(Math.max(Math.floor(chance_result?.optimized_chance ?? 0), Number(desired_chance)))}
                                 uncleanedDesiredChance={uncleaned_desired_chance}
@@ -98,13 +98,15 @@ export default function CostToChanceSection({
                                 onDesiredBlur={onDesiredBlur}
                                 lowThreshold={100} //{Math.ceil(chance_result?.optimized_chance ?? 0)}
                                 lowText={
-                                    //(chance_result && Number(desired_chance) <= Math.ceil(chance_result?.optimized_chance) ? `Your current chance is ${chance_result.optimized_chance}%` : '') +
-                                    "\nExtra gold needed: " +
+                                    (chance_result ? `Your current chance is ${chance_result.chance_if_buy}% if you buy mats with gold` : "") +
                                     (chance_result
-                                        ? (chance_result.hundred_gold_costs[parseInt(desired_chance)] - budget_inputs["Gold"]).toLocaleString("en-US", {
-                                              minimumFractionDigits: 0, // show decimals for small K/M/B
-                                              maximumFractionDigits: 0,
-                                          })
+                                        ? chance_result.chance_if_buy < desired_chance + 1
+                                            ? "\nExtra gold needed: " +
+                                              (chance_result.hundred_gold_costs[parseInt(desired_chance)] - budget_inputs["Gold"]).toLocaleString("en-US", {
+                                                  minimumFractionDigits: 0, // show decimals for small K/M/B
+                                                  maximumFractionDigits: 0,
+                                              })
+                                            : ""
                                         : "Calculating...") +
                                     (chance_result && Number(desired_chance) < chance_result?.optimized_chance && AnythingTicked ? "aaa" : "")
                                 }

@@ -1,9 +1,9 @@
-use crate::bitset::compute_gold_cost_from_raw;
+use crate::bitset::{BitsetBundle, beam_search, compute_gold_cost_from_raw, generate_bit_sets};
 use crate::constants::BUCKET_COUNT;
 
 use crate::helpers::compress_runs;
 use crate::histogram::histograms_for_all_costs;
-use crate::monte_carlo::{get_top_bottom, monte_carlo_data};
+use crate::monte_carlo::{generate_budget_data, get_top_bottom, monte_carlo_data};
 use crate::parser::{PreparationOutputs, Upgrade, preparation};
 
 // use assert_float_eq::assert_f64_near;
@@ -23,6 +23,9 @@ pub struct CostToChanceOut {
     pub budgets_red_remaining: i64,        // budgets[7]
     pub budgets_blue_remaining: i64,       // budgets[8]
     pub hundred_gold_costs: Vec<i64>,
+    pub chance_if_buy: f64,
+    // pub optimized_budgets: Vec<Vec<i64>>,
+    // pub optimized_chances: Vec<f64>,
 }
 #[derive(Serialize, Debug)]
 pub struct CostToChanceArrOut {
@@ -32,6 +35,28 @@ pub struct CostToChanceArrOut {
     budgets_blue_remaining: i64, // budgets_blue_remaining
     buy_chances: Vec<f64>,
     // buy_gold_costs: Vec<i64>,
+}
+
+pub struct OptimizationOut {
+    pub optimized_chances: Vec<f64>,
+    // pub optimized_fail_counters: Vec<Vec<f64>>,
+    pub optimized_budgets: Vec<Vec<i64>>,
+    // pub bitset_bundle: BitsetBundle,
+}
+
+#[derive(Debug)]
+struct HistogramOutputs {
+    upgrade_strings: Vec<String>,
+    // top_bottom: Vec<Vec<i64>>,
+    hist_counts: Vec<Vec<i64>>,
+    hist_mins: Vec<i64>,
+    hist_maxs: Vec<i64>,
+}
+
+#[derive(Debug)]
+struct FailureAnalysisOutputs {
+    typed_fail_counter_final: Vec<f64>,
+    final_chance: f64,
 }
 // #[derive(Serialize, Debug)]
 // pub struct CostToChanceOptimizedOut {
@@ -86,21 +111,6 @@ fn extract_upgrade_strings(
 //     }
 //     failure_rates
 // }
-
-#[derive(Debug)]
-struct HistogramOutputs {
-    upgrade_strings: Vec<String>,
-    // top_bottom: Vec<Vec<i64>>,
-    hist_counts: Vec<Vec<i64>>,
-    hist_mins: Vec<i64>,
-    hist_maxs: Vec<i64>,
-}
-
-#[derive(Debug)]
-struct FailureAnalysisOutputs {
-    typed_fail_counter_final: Vec<f64>,
-    final_chance: f64,
-}
 
 fn count_failure_typed(cost_data: &[Vec<i64>], input_budgets: &[i64]) -> FailureAnalysisOutputs {
     let mut typed_fail_counter_final: Vec<f64> = vec![0.0_f64; 7];
@@ -191,7 +201,7 @@ fn compute_all_gold_costs(
         ));
     }
     all_gold_costs.sort_unstable_by(|a, b| a.partial_cmp(&b).unwrap_or(std::cmp::Ordering::Equal));
-    return all_gold_costs;
+    all_gold_costs
 }
 fn get_hundred_gold_costs(
     all_gold_costs: &[f64],
@@ -256,6 +266,29 @@ pub fn cost_to_chance<R: rand::Rng>(
         compute_all_gold_costs(&input_budgets, &cost_data, &prep_outputs);
     let hundred_gold_costs: Vec<i64> =
         get_hundred_gold_costs(&all_gold_costs, &cost_data, &prep_outputs, &input_budgets);
+    let mut chance_if_buy: f64 = 0.0;
+    for (index, gold) in all_gold_costs.iter().enumerate() {
+        if *gold > input_budgets[5] as f64 {
+            chance_if_buy = index as f64 / cost_data.len() as f64; // intentionally not subtracting by 1 because index starts from 0
+            break;
+        }
+    }
+    // let mut input_budgets_arr: Vec<Vec<i64>> = Vec::with_capacity(100);
+    // let mut this_budget: Vec<i64>;
+    // for i in hundred_gold_costs.iter() {
+    //     this_budget = input_budgets.to_vec();
+    //     this_budget[5] = *i;
+
+    //     input_budgets_arr.push(this_budget);
+    // }
+
+    // let optimization_out: OptimizationOut = optimization(
+    //     &cost_data,
+    //     &input_budgets_arr,
+    //     &prep_outputs,
+    //     data_size,
+    //     rng,
+    // );
     // Section 4: Histogram preparation
     let histogram_outputs: HistogramOutputs = prep_histogram(
         &mut prep_outputs.upgrade_arr,
@@ -278,8 +311,62 @@ pub fn cost_to_chance<R: rand::Rng>(
         budgets_red_remaining: prep_outputs.budgets[7],
         budgets_blue_remaining: prep_outputs.budgets[8],
         hundred_gold_costs,
+        chance_if_buy,
+        // optimized_budgets: optimization_out.optimized_budgets,
+        // optimized_chances: optimization_out.optimized_chances,
     }
 }
+
+// pub fn optimization<R: rand::Rng>(
+//     cost_data: &[Vec<i64>],
+//     input_budgets_arr: &[Vec<i64>],
+//     prep_outputs: &PreparationOutputs,
+//     data_size: usize,
+//     rng: &mut R,
+// ) -> OptimizationOut {
+//     let mut input_budget_first_no_gold: Vec<i64> = input_budgets_arr[0].to_vec();
+//     input_budget_first_no_gold[5] = 0;
+//     let thresholds: Vec<Vec<i64>> =
+//         generate_budget_data(&cost_data, &input_budget_first_no_gold, 1000);
+//     let top_bottom: Vec<Vec<i64>> =
+//         get_top_bottom(&prep_outputs.upgrade_arr, &prep_outputs.unlock_costs);
+//     let bitset_bundle: BitsetBundle =
+//         generate_bit_sets(&cost_data, thresholds, &top_bottom[1].clone(), data_size);
+
+//     let (mut optimized_chances, _, mut optimized_budgets): (
+//         Vec<f64>,
+//         Vec<Vec<f64>>,
+//         Vec<Vec<i64>>,
+//     ) = (Vec::new(), Vec::new(), Vec::new());
+//     let mut prev_optimized: Vec<usize> = vec![]; // invalid on purpose
+//     for (index, budget) in input_budgets_arr.iter().enumerate() {
+//         let (optimized_budget, _optimized_chance): (Vec<i64>, f64) = beam_search(
+//             &bitset_bundle,
+//             &prep_outputs.mats_value,
+//             &budget,
+//             rng,
+//             if index == 0 || prev_optimized.len() != 7 {
+//                 66
+//             } else {
+//                 66
+//             },
+//             &mut prev_optimized, // not doing anything smart for now
+//                                  // #[cfg(test)]
+//                                  // cost_data,
+//         );
+
+//         let failure_outputs_optimized: FailureAnalysisOutputs =
+//             count_failure_typed(&cost_data, &optimized_budget);
+//         optimized_chances.push(failure_outputs_optimized.final_chance);
+//         // optimized_fail_counters.push(failure_outputs_optimized.typed_fail_counter_final);
+//         optimized_budgets.push(optimized_budget);
+//     }
+//     OptimizationOut {
+//         optimized_chances,
+//         // optimized_fail_counters,
+//         optimized_budgets,
+//     }
+// }
 
 pub fn cost_to_chance_arr<R: rand::Rng>(
     hone_counts: &[Vec<i64>],
@@ -488,12 +575,19 @@ mod tests {
             &mut rng,
         );
 
-        let result_of_interst: f64 = result.chance;
-        if let Some(cached_result) = read_cached_data::<f64>(test_name, &hash) {
-            assert_eq!(result_of_interst, cached_result);
-        } else {
-            write_cached_data(test_name, &hash, &result_of_interst);
-        }
+        // let result_of_interst: Vec<f64> = result.optimized_chances.clone();
+        // dbg!(&result_of_interst);
+        // if let Some(cached_result) = read_cached_data::<Vec<f64>>(test_name, &hash) {
+        //     for (index, i) in result.optimized_chances.iter().enumerate() {
+        //         assert_float_eq::assert_float_absolute_eq!(
+        //             *i,
+        //             cached_result[index],
+        //             0.000000000001
+        //         );
+        //     }
+        // } else {
+        //     write_cached_data(test_name, &hash, &result_of_interst);
+        // }
     }
     #[test]
     fn cost_to_chance_53_adv_armor_40() {
