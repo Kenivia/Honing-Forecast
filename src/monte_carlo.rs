@@ -9,7 +9,7 @@ use std::cmp::min;
 // pity because there is a distinction between pity and the unluckiest draw in 100k.
 // (where 0th percentile is the luckiest draws of each dimension)
 pub fn generate_budget_data(
-    cost_data: &[Vec<i64>],
+    cost_data: &[[i64; 9]],
     initial_budget: &[i64],
     budget_size: usize,
     // data_size: usize,
@@ -149,10 +149,10 @@ pub fn monte_carlo_data<R: Rng>(
     unlock_costs: &[i64],
     avail_special: i64,
     mut rng: &mut R,
-) -> Vec<Vec<i64>> {
+) -> Vec<[i64; 9]> {
     debug_assert!(unlock_costs.len() == 2);
 
-    let mut cost_data: Vec<Vec<i64>> = vec![vec![0i64; 9]; data_size];
+    let mut cost_data: Vec<[i64; 9]> = vec![[0i64; 9]; data_size];
     // let mut rng = rand::rng();
 
     // special budgets & pass counts

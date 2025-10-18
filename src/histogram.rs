@@ -34,7 +34,7 @@ pub fn histogram_for_cost_index(
 /// Compute histograms for the 7 cost types (indices 0..6).
 /// Returns (`counts_7xB`, `mins_7`, `maxs_7`)
 pub fn histograms_for_all_costs(
-    cost_data: &[Vec<i64>],
+    cost_data: &[[i64; 9]],
     num_bins: usize,
     highest: &[i64],
 ) -> Vec<Vec<i64>> {

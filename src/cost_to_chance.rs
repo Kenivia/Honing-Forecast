@@ -112,7 +112,7 @@ fn extract_upgrade_strings(
 //     failure_rates
 // }
 
-fn count_failure_typed(cost_data: &[Vec<i64>], input_budgets: &[i64]) -> FailureAnalysisOutputs {
+fn count_failure_typed(cost_data: &[[i64; 9]], input_budgets: &[i64]) -> FailureAnalysisOutputs {
     let mut typed_fail_counter_final: Vec<f64> = vec![0.0_f64; 7];
     let mut overall_fail_counter: i64 = 0;
     let mut failed: bool;
@@ -142,7 +142,7 @@ fn count_failure_typed(cost_data: &[Vec<i64>], input_budgets: &[i64]) -> Failure
 }
 
 fn count_failure_typed_arr(
-    cost_data: &[Vec<i64>],
+    cost_data: &[[i64; 9]],
     input_budgets_arr: &[Vec<i64>],
 ) -> (Vec<f64>, Vec<Vec<f64>>) {
     let mut final_chances: Vec<f64> = Vec::new();
@@ -161,7 +161,7 @@ fn prep_histogram(
     upgrade_arr: &mut Vec<Upgrade>,
     valid_weapon_values: bool,
     valid_armor_values: bool,
-    cost_data: &[Vec<i64>],
+    cost_data: &[[i64; 9]],
     hist_bins: usize,
     unlock_costs: &[i64],
 ) -> HistogramOutputs {
@@ -187,7 +187,7 @@ fn prep_histogram(
 }
 pub fn compute_all_gold_costs(
     input_budgets: &[i64],
-    cost_data: &[Vec<i64>],
+    cost_data: &[[i64; 9]],
     prep_outputs: &PreparationOutputs,
 ) -> Vec<f64> {
     let mut input_budget_no_gold: Vec<i64> = input_budgets.to_vec();
@@ -196,7 +196,7 @@ pub fn compute_all_gold_costs(
     let mut all_gold_costs: Vec<f64> = Vec::with_capacity(cost_data.len());
     for cost in cost_data.iter() {
         all_gold_costs.push(compute_gold_cost_from_raw(
-            &cost,
+            cost,
             &input_budget_no_gold,
             &prep_outputs.mats_value,
         ));
@@ -206,7 +206,7 @@ pub fn compute_all_gold_costs(
 }
 fn get_hundred_gold_costs(
     all_gold_costs: &[f64],
-    cost_data: &[Vec<i64>],
+    cost_data: &[[i64; 9]],
     prep_outputs: &PreparationOutputs,
     input_budgets: &[i64],
 ) -> Vec<i64> {
@@ -252,7 +252,7 @@ pub fn cost_to_chance<R: rand::Rng>(
     );
 
     // Section 2: Monte Carlo simulation
-    let cost_data: Vec<Vec<i64>> = monte_carlo_data(
+    let cost_data: Vec<[i64; 9]> = monte_carlo_data(
         data_size,
         &mut prep_outputs.upgrade_arr,
         &prep_outputs.unlock_costs,
@@ -391,7 +391,7 @@ pub fn cost_to_chance_arr<R: rand::Rng>(
     );
 
     // Section 2: Monte Carlo simulation (only run once with first budget's special)
-    let cost_data: Vec<Vec<i64>> = monte_carlo_data(
+    let cost_data: Vec<[i64; 9]> = monte_carlo_data(
         data_size,
         &mut prep_outputs.upgrade_arr,
         &prep_outputs.unlock_costs,

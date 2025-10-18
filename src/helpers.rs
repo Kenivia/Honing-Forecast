@@ -21,7 +21,7 @@ pub fn compute_gold_cost_from_raw(
 pub fn generate_first_deltas(delta: f64, length: usize, non_zeros: usize) -> Vec<f64> {
     vec![vec![delta; non_zeros], vec![0.0; length - non_zeros]].concat()
 }
-pub fn transpose_vec_of_vecs(matrix: &[Vec<i64>]) -> Vec<Vec<i64>> {
+pub fn transpose_vec_of_vecs(matrix: &[[i64; 9]]) -> Vec<Vec<i64>> {
     if matrix.is_empty() || matrix[0].is_empty() {
         return Vec::new();
     }
@@ -49,7 +49,7 @@ pub fn budget_is_enough(cost: &[i64], budget: &[i64]) -> bool {
         && cost[6] <= budget[6]
 }
 
-fn count_failure_naive(cost_data: &[Vec<i64>], budget_data: &[Vec<i64>]) -> Vec<i64> {
+fn count_failure_naive(cost_data: &[[i64; 9]], budget_data: &[Vec<i64>]) -> Vec<i64> {
     let mut count: Vec<i64> = vec![0; budget_data.len()];
     for cost in cost_data {
         for (i, budget) in budget_data.iter().enumerate() {
@@ -63,7 +63,7 @@ fn count_failure_naive(cost_data: &[Vec<i64>], budget_data: &[Vec<i64>]) -> Vec<
 /// Count, for each budget, how many costs fail it.
 /// `cost_data` is a slice of N cost vectors; `budget_data` is a slice of M budget vectors
 /// that are sorted element-wise ascending. Returns a Vec<i64> length M.
-fn count_failure_ascending(cost_data: &[Vec<i64>], budget_data: &[Vec<i64>]) -> Vec<i64> {
+fn count_failure_ascending(cost_data: &[[i64; 9]], budget_data: &[Vec<i64>]) -> Vec<i64> {
     let n: usize = cost_data.len();
     let m: usize = budget_data.len();
     if n == 0 || m == 0 {
@@ -113,7 +113,7 @@ fn count_failure_ascending(cost_data: &[Vec<i64>], budget_data: &[Vec<i64>]) -> 
     counts
 }
 
-pub fn count_failure(cost_data: &[Vec<i64>], budget_data: &[Vec<i64>], asc: bool) -> Vec<i64> {
+pub fn count_failure(cost_data: &[[i64; 9]], budget_data: &[Vec<i64>], asc: bool) -> Vec<i64> {
     if asc {
         count_failure_ascending(cost_data, budget_data)
     } else {
