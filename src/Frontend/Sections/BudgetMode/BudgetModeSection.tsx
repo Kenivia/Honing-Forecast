@@ -208,7 +208,7 @@ export default function CostToChanceSection({
                                         paddingTop: 25,
                                     }}
                                 >
-                                    We are unable to calculate how much gold is spent on each mats right now. This is a work in progress
+                                    We are unable to calculate how much gold is spent on each mat right now. This is a work in progress
                                 </div>
                             )}
                             {noBuyChecked && (

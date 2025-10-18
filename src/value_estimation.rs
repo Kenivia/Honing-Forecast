@@ -155,18 +155,21 @@ pub fn juice_to_array(
     // user_gave_weapon: bool,
 ) -> (Vec<String>, Vec<String>) {
     // Armor uses blue juice (is_weapon == false), Weapon uses red juice (is_weapon == true)
-    let armor_pairs: Vec<(usize, usize, f64)> = _juice_to_array(upgrade_arr, false, blue_juice);
-    let weapon_pairs: Vec<(usize, usize, f64)> = _juice_to_array(upgrade_arr, true, red_juice);
+    let (mut armor_sorted, next_armor_value): (Vec<(usize, usize, f64)>, f64) =
+        _juice_to_array(upgrade_arr, false, blue_juice);
+    let (mut weapon_sorted, next_weapon_value): (Vec<(usize, usize, f64)>, f64) =
+        _juice_to_array(upgrade_arr, true, red_juice);
 
     // Convert pairs of (plus_num, taps) to human-readable strings, sorted by plus_num asc
-    let min_armor_value: f64 = armor_pairs
-        .iter()
-        .map(|(_, _, val)| val)
-        .cloned()
-        .fold(f64::INFINITY, f64::min)
-        .round();
-    let mut armor_sorted: Vec<(usize, usize, f64)> = armor_pairs;
+    // let min_armor_value: f64 = armor_pairs
+    //     .iter()
+    //     .map(|(_, _, val)| val)
+    //     .cloned()
+    //     .fold(f64::INFINITY, f64::min)
+    //     .round();
+    // let (mut armor_sorted, next_value): (Vec<(usize, usize, f64)>, f64) = armor_pairs;
     armor_sorted.sort_by_key(|&(plus, _, min)| (plus, -min.round() as i64));
+    weapon_sorted.sort_by_key(|&(plus, _, min)| (plus, -min.round() as i64));
     let armor_strings: Vec<String> = compress_runs(
         armor_sorted
             .into_iter()
@@ -185,17 +188,16 @@ pub fn juice_to_array(
             .collect(),
         false,
         vec![format!(
-            "You should buy more if the price is lower than: {min_armor_value}"
+            "You should buy more if the price is lower than: {next_armor_value}"
         )],
     );
-    let min_weapon_value: f64 = weapon_pairs
-        .iter()
-        .map(|(_, _, val)| val)
-        .cloned()
-        .fold(f64::INFINITY, f64::min)
-        .round();
-    let mut weapon_sorted = weapon_pairs;
-    weapon_sorted.sort_by_key(|&(plus, _, min)| (plus, -min.round() as i64));
+    // let min_weapon_value: f64 = weapon_pairs
+    //     .iter()
+    //     .map(|(_, _, val)| val)
+    //     .cloned()
+    //     .fold(f64::INFINITY, f64::min)
+    //     .round();
+
     let weapon_strings: Vec<String> = compress_runs(
         weapon_sorted
             .into_iter()
@@ -214,7 +216,7 @@ pub fn juice_to_array(
             .collect(),
         false,
         vec![format!(
-            "You should buy more if the price is lower than: {min_weapon_value}"
+            "You should buy more if the price is lower than: {next_weapon_value}"
         )],
     );
 
@@ -225,13 +227,27 @@ fn _juice_to_array(
     upgrade_arr: &mut Vec<Upgrade>,
     is_weapon: bool,
     mut juice: i64,
-) -> Vec<(usize, usize, f64)> {
+) -> (Vec<(usize, usize, f64)>, f64) {
     let mut cur_upgrade: &mut Upgrade;
     let mut idxs: Vec<usize>;
     let mut max_value_index: usize;
     let mut cur_extras: Vec<usize> = vec![0; upgrade_arr.len()];
+    let mut next_value: f64;
     // let mut _max_extra_index: usize;
     loop {
+        next_value = upgrade_arr
+            .into_iter()
+            .enumerate()
+            .filter(|(index, x)| {
+                x.is_normal_honing
+                    && x.is_weapon == is_weapon
+                    && cur_extras[*index] + 1 < x.juice_values.len()
+            })
+            .map(|(index, x)| x.juice_values[cur_extras[index] + 1])
+            .max_by(|a, b| a.total_cmp(b))
+            .unwrap_or(0.0)
+            .ceil();
+
         // max_extra = *cur_extras.iter().max().unwrap();
         // _max_extra_index = cur_extras
         //     .iter()
@@ -294,7 +310,7 @@ fn _juice_to_array(
             }
         }
     }
-    out
+    (out, next_value)
 }
 
 #[cfg(test)]

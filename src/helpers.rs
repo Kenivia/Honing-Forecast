@@ -296,7 +296,7 @@ pub fn average_juice_cost(upgrades: &[Upgrade]) -> (i64, i64) {
 /// Example: ["A", "A", "A", "B", "C", "C"] -> ["A x3", "B", "C x2"].
 pub fn compress_runs(strings: Vec<String>, no_x: bool, mut out: Vec<String>) -> Vec<String> {
     if strings.is_empty() {
-        return strings;
+        return out;
     }
     // let mut out: Vec<String> = out;
     let mut prev: &str = &strings[0];
