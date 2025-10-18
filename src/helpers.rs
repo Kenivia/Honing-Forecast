@@ -5,6 +5,19 @@ use crate::constants::{
 use crate::parser::Upgrade;
 use crate::value_estimation::average_tap;
 
+pub fn compute_gold_cost_from_raw(
+    needed: &[i64],
+    input_budget_no_gold: &[i64],
+    price_arr: &[f64],
+) -> f64 {
+    let mut c: f64 = 0f64;
+    for i in 0..7 {
+        let val = (needed[i] - input_budget_no_gold[i]).max(0) as f64;
+        c += price_arr[i] * val;
+    }
+    c
+}
+
 pub fn generate_first_deltas(delta: f64, length: usize, non_zeros: usize) -> Vec<f64> {
     vec![vec![delta; non_zeros], vec![0.0; length - non_zeros]].concat()
 }
@@ -281,11 +294,11 @@ pub fn average_juice_cost(upgrades: &[Upgrade]) -> (i64, i64) {
 
 /// Compress consecutive duplicate strings into one with suffix ` xN`.
 /// Example: ["A", "A", "A", "B", "C", "C"] -> ["A x3", "B", "C x2"].
-pub fn compress_runs(strings: Vec<String>, no_x: bool) -> Vec<String> {
+pub fn compress_runs(strings: Vec<String>, no_x: bool, mut out: Vec<String>) -> Vec<String> {
     if strings.is_empty() {
         return strings;
     }
-    let mut out: Vec<String> = Vec::new();
+    // let mut out: Vec<String> = out;
     let mut prev: &str = &strings[0];
     let mut count: usize = 1;
     for s in strings.iter().skip(1) {

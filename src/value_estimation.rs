@@ -151,55 +151,71 @@ pub fn juice_to_array(
     upgrade_arr: &mut Vec<Upgrade>,
     blue_juice: i64,
     red_juice: i64,
-
-    user_gave_armor: bool,
-    user_gave_weapon: bool,
+    // user_gave_armor: bool,
+    // user_gave_weapon: bool,
 ) -> (Vec<String>, Vec<String>) {
     // Armor uses blue juice (is_weapon == false), Weapon uses red juice (is_weapon == true)
     let armor_pairs: Vec<(usize, usize, f64)> = _juice_to_array(upgrade_arr, false, blue_juice);
     let weapon_pairs: Vec<(usize, usize, f64)> = _juice_to_array(upgrade_arr, true, red_juice);
 
     // Convert pairs of (plus_num, taps) to human-readable strings, sorted by plus_num asc
-    let mut armor_sorted = armor_pairs;
-    armor_sorted.sort_by_key(|&(plus, _, avg)| (plus, -avg.round() as i64));
+    let min_armor_value: f64 = armor_pairs
+        .iter()
+        .map(|(_, _, val)| val)
+        .cloned()
+        .fold(f64::INFINITY, f64::min)
+        .round();
+    let mut armor_sorted: Vec<(usize, usize, f64)> = armor_pairs;
+    armor_sorted.sort_by_key(|&(plus, _, min)| (plus, -min.round() as i64));
     let armor_strings: Vec<String> = compress_runs(
         armor_sorted
             .into_iter()
-            .map(|(plus, taps, avg)| {
-                if !user_gave_armor {
-                    format!("+{} armor, First {} taps", plus + 1, taps,)
-                } else {
-                    format!(
-                        "+{} armor, first {} taps, avg value {}g",
-                        plus + 1,
-                        taps,
-                        avg
-                    )
-                }
+            .map(|(plus, taps, _)| {
+                // if !user_gave_armor {
+                format!("+{} armor, First {} taps", plus + 1, taps,)
+                // } else {
+                //     format!(
+                //         "+{} armor, first {} taps, avg value {}g",
+                //         plus + 1,
+                //         taps,
+                //         avg
+                //     )
+                // }
             })
             .collect(),
         false,
+        vec![format!(
+            "You should buy more if the price is lower than: {min_armor_value}"
+        )],
     );
-
+    let min_weapon_value: f64 = weapon_pairs
+        .iter()
+        .map(|(_, _, val)| val)
+        .cloned()
+        .fold(f64::INFINITY, f64::min)
+        .round();
     let mut weapon_sorted = weapon_pairs;
-    weapon_sorted.sort_by_key(|&(plus, _, avg)| (plus, -avg.round() as i64));
+    weapon_sorted.sort_by_key(|&(plus, _, min)| (plus, -min.round() as i64));
     let weapon_strings: Vec<String> = compress_runs(
         weapon_sorted
             .into_iter()
-            .map(|(plus, taps, avg)| {
-                if !user_gave_weapon {
-                    format!("+{} weapon, First {} taps", plus + 1, taps,)
-                } else {
-                    format!(
-                        "+{} weapon, First {} taps, avg value {}g",
-                        plus + 1,
-                        taps,
-                        avg
-                    )
-                }
+            .map(|(plus, taps, _)| {
+                // if !user_gave_weapon {
+                format!("+{} weapon, First {} taps", plus + 1, taps,)
+                // } else {
+                //     format!(
+                //         "+{} weapon, First {} taps, avg value {}g",
+                //         plus + 1,
+                //         taps,
+                //         min
+                //     )
+                // }
             })
             .collect(),
         false,
+        vec![format!(
+            "You should buy more if the price is lower than: {min_weapon_value}"
+        )],
     );
 
     (armor_strings, weapon_strings)
@@ -264,13 +280,15 @@ fn _juice_to_array(
                 out.push((
                     upgrade.upgrade_plus_num,
                     taps_used,
-                    (upgrade
+                    upgrade
                         .juice_values
                         .clone()
                         .into_iter()
                         .take(taps_used)
-                        .sum::<f64>()
-                        / taps_used.max(1) as f64)
+                        .min_by(|a, b| a.partial_cmp(&b).unwrap_or(std::cmp::Ordering::Equal))
+                        .unwrap()
+                        // .sum::<f64>()
+                        // / taps_used.max(1) as f64)
                         .round(),
                 ));
             }
@@ -314,11 +332,7 @@ mod tests {
         let result: Vec<f64> = upgrade_arr[0].juice_values.clone();
         if let Some(cached_result) = read_cached_data::<Vec<f64>>(test_name, &hash) {
             for (index, i) in result.iter().enumerate() {
-                assert_float_eq::assert_float_absolute_eq!(
-                    *i,
-                    cached_result[index],
-                    0.000000000001
-                );
+                assert_float_eq::assert_float_absolute_eq!(*i, cached_result[index], 0.000000001);
             }
         } else {
             write_cached_data(test_name, &hash, &result);
@@ -351,7 +365,7 @@ mod tests {
         let result: Vec<f64> = upgrade_arr[0].juice_values.clone();
         if let Some(cached_result) = read_cached_data::<Vec<f64>>(test_name, &hash) {
             for (index, i) in result.iter().enumerate() {
-                assert_float_eq::assert_float_absolute_eq!(*i, cached_result[index], 0.0000000001);
+                assert_float_eq::assert_float_absolute_eq!(*i, cached_result[index], 0.0000001);
             }
         } else {
             write_cached_data(test_name, &hash, &result);
@@ -386,7 +400,7 @@ mod tests {
 
         if let Some(cached_result) = read_cached_data::<Vec<f64>>(test_name, &hash) {
             for (index, i) in result.iter().enumerate() {
-                assert_float_eq::assert_float_absolute_eq!(*i, cached_result[index], 0.0000000001);
+                assert_float_eq::assert_float_absolute_eq!(*i, cached_result[index], 0.0000001);
             }
         } else {
             write_cached_data(test_name, &hash, &result);

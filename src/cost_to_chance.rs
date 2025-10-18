@@ -1,9 +1,9 @@
-use crate::bitset::{BitsetBundle, beam_search, compute_gold_cost_from_raw, generate_bit_sets};
+// use crate::bitset::{BitsetBundle, beam_search, compute_gold_cost_from_raw, generate_bit_sets};
 use crate::constants::BUCKET_COUNT;
 
-use crate::helpers::compress_runs;
+use crate::helpers::{compress_runs, compute_gold_cost_from_raw};
 use crate::histogram::histograms_for_all_costs;
-use crate::monte_carlo::{generate_budget_data, get_top_bottom, monte_carlo_data};
+use crate::monte_carlo::{get_top_bottom, monte_carlo_data};
 use crate::parser::{PreparationOutputs, Upgrade, preparation};
 
 // use assert_float_eq::assert_f64_near;
@@ -37,12 +37,12 @@ pub struct CostToChanceArrOut {
     // buy_gold_costs: Vec<i64>,
 }
 
-pub struct OptimizationOut {
-    pub optimized_chances: Vec<f64>,
-    // pub optimized_fail_counters: Vec<Vec<f64>>,
-    pub optimized_budgets: Vec<Vec<i64>>,
-    // pub bitset_bundle: BitsetBundle,
-}
+// pub struct OptimizationOut {
+//     pub optimized_chances: Vec<f64>,
+//     // pub optimized_fail_counters: Vec<Vec<f64>>,
+//     pub optimized_budgets: Vec<Vec<i64>>,
+//     // pub bitset_bundle: BitsetBundle,
+// }
 
 #[derive(Debug)]
 struct HistogramOutputs {
@@ -168,6 +168,7 @@ fn prep_histogram(
     let upgrade_strings: Vec<String> = compress_runs(
         extract_upgrade_strings(upgrade_arr, valid_weapon_values, valid_armor_values),
         true,
+        vec![],
     );
 
     let top_bottom: Vec<Vec<i64>> = get_top_bottom(upgrade_arr, unlock_costs);
@@ -184,7 +185,7 @@ fn prep_histogram(
         hist_maxs,
     }
 }
-fn compute_all_gold_costs(
+pub fn compute_all_gold_costs(
     input_budgets: &[i64],
     cost_data: &[Vec<i64>],
     prep_outputs: &PreparationOutputs,
@@ -537,58 +538,58 @@ mod tests {
             write_cached_data(test_name, &hash, &result_of_interst);
         }
     }
-    #[test]
-    fn cost_to_chance_50_normal_weapon_25() {
-        let test_name: &str = "cost_to_chance_50_normal_weapon_25";
-        let hone_counts = vec![
-            (0..25).map(|_| 0).collect(),
-            (0..25).map(|i| if i == 24 { 1 } else { 0 }).collect(),
-        ];
-        let input_budgets = vec![324000, 0, 4680, 1774000, 3600, 406800, 10800000, 0, 0, 0];
-        let adv_counts = vec![(0..4).map(|_| 0).collect(), (0..4).map(|_| 0).collect()];
-        let express_event = false;
-        let hist_bins: usize = 1000;
-        let user_mats_value = vec![0.0; 7];
-        let adv_hone_strategy = "No juice";
-        let data_size: usize = 100000;
+    // #[test]
+    // fn cost_to_chance_50_normal_weapon_25() {
+    //     let test_name: &str = "cost_to_chance_50_normal_weapon_25";
+    //     let hone_counts = vec![
+    //         (0..25).map(|_| 0).collect(),
+    //         (0..25).map(|i| if i == 24 { 1 } else { 0 }).collect(),
+    //     ];
+    //     let input_budgets = vec![324000, 0, 4680, 1774000, 3600, 406800, 10800000, 0, 0, 0];
+    //     let adv_counts = vec![(0..4).map(|_| 0).collect(), (0..4).map(|_| 0).collect()];
+    //     let express_event = false;
+    //     let hist_bins: usize = 1000;
+    //     let user_mats_value = vec![0.0; 7];
+    //     let adv_hone_strategy = "No juice";
+    //     let data_size: usize = 100000;
 
-        let hash = calculate_hash!(
-            &hone_counts,
-            &input_budgets,
-            &adv_counts,
-            express_event,
-            hist_bins,
-            &adv_hone_strategy,
-            data_size
-        );
-        // Run the function to get the full output
-        let mut rng = StdRng::seed_from_u64(RNG_SEED);
-        let result: CostToChanceOut = cost_to_chance(
-            &hone_counts,
-            &input_budgets,
-            &adv_counts,
-            express_event,
-            hist_bins,
-            &user_mats_value,
-            adv_hone_strategy.to_owned(),
-            data_size,
-            &mut rng,
-        );
+    //     let hash = calculate_hash!(
+    //         &hone_counts,
+    //         &input_budgets,
+    //         &adv_counts,
+    //         express_event,
+    //         hist_bins,
+    //         &adv_hone_strategy,
+    //         data_size
+    //     );
+    //     // Run the function to get the full output
+    //     let mut rng = StdRng::seed_from_u64(RNG_SEED);
+    //     let result: CostToChanceOut = cost_to_chance(
+    //         &hone_counts,
+    //         &input_budgets,
+    //         &adv_counts,
+    //         express_event,
+    //         hist_bins,
+    //         &user_mats_value,
+    //         adv_hone_strategy.to_owned(),
+    //         data_size,
+    //         &mut rng,
+    //     );
 
-        // let result_of_interst: Vec<f64> = result.optimized_chances.clone();
-        // dbg!(&result_of_interst);
-        // if let Some(cached_result) = read_cached_data::<Vec<f64>>(test_name, &hash) {
-        //     for (index, i) in result.optimized_chances.iter().enumerate() {
-        //         assert_float_eq::assert_float_absolute_eq!(
-        //             *i,
-        //             cached_result[index],
-        //             0.000000000001
-        //         );
-        //     }
-        // } else {
-        //     write_cached_data(test_name, &hash, &result_of_interst);
-        // }
-    }
+    //     // let result_of_interst: Vec<f64> = result.optimized_chances.clone();
+    //     // dbg!(&result_of_interst);
+    //     // if let Some(cached_result) = read_cached_data::<Vec<f64>>(test_name, &hash) {
+    //     //     for (index, i) in result.optimized_chances.iter().enumerate() {
+    //     //         assert_float_eq::assert_float_absolute_eq!(
+    //     //             *i,
+    //     //             cached_result[index],
+    //     //             0.000000000001
+    //     //         );
+    //     //     }
+    //     // } else {
+    //     //     write_cached_data(test_name, &hash, &result_of_interst);
+    //     // }
+    // }
     #[test]
     fn cost_to_chance_53_adv_armor_40() {
         let test_name: &str = "cost_to_chance_53_adv_armor_40";

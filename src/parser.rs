@@ -64,8 +64,8 @@ pub fn preparation(
         &mut upgrade_arr,
         budgets[8],
         budgets[7],
-        valid_armor_values,
-        valid_weapon_values,
+        // valid_armor_values,
+        // valid_weapon_values,
     );
     let value_per_special_leap: Vec<f64> = est_special_honing_value(&mut upgrade_arr, &mats_value);
     let mut special_indices: Vec<usize> = (0..value_per_special_leap.len()).collect();

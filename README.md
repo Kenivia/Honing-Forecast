@@ -6,14 +6,15 @@ Honing Forecast is a calculator that tells you how much a set of upgrades will c
 
 ## Features
 
-### Basic mode
+### Chance mode
 
 - If I want to have x% chance of success, how much mats should I prep?
 
-### Advanced mode
+### Budget mode
 
-- Here's the mats I have right now, how much more gold/mats do I need?
-- How should I use my juice & free taps? How much are they worth?
+- I have this much mats, what are my odds of success?
+- How much more gold will I need for x% chance?
+- How should I use my juice & free taps? Should I buy them?
 
 ### Forecast mode
 

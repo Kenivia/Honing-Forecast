@@ -162,7 +162,7 @@ export const createColumnDefs = (_autoGoldValues: boolean) => {
             flex: 1,
             background: "var(--grid-cell-bg-readonly)",
             backgroundSelected: "var(--grid-cell-selected-readonly)",
-            color: "var(--grid-cell-text-readonly)",
+            color: "var(--text-optimized)",
         },
     ]
 

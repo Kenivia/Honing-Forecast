@@ -1,3 +1,4 @@
+// use crate::cost_to_chance::compute_all_gold_costs;
 use crate::helpers::{average_juice_cost, calc_unlock, count_failure};
 use crate::histogram::histograms_for_all_costs;
 use crate::monte_carlo::{generate_budget_data, get_top_bottom, monte_carlo_data};
@@ -83,6 +84,7 @@ pub fn chance_to_cost<R: rand::Rng>(
             budget_row[8] = avg_blue_juice;
         }
     }
+    // let all_gold_costs: Vec<f64> = compute_all_gold_costs(&vec![0.0; 7], &cost_data, &prep_outputs);
     let failure_counts: Vec<i64> = count_failure(&cost_data, &budget_data, false);
     let (hundred_budgets, hundred_chances): (Vec<Vec<i64>>, Vec<f64>) = (0..101)
         .map(|x| {

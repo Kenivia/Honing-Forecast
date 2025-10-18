@@ -695,7 +695,6 @@ export default function HoningForecastUI() {
                         set_budget_inputs={set_budget_inputs}
                         userMatsValue={userMatsValue}
                         setUserMatsValue={setUserMatsValue}
-                        autoGoldValues={autoGoldValues}
                         setAutoGoldValues={setAutoGoldValues}
                         chance_result={costToChanceResult}
                         cachedChanceGraphData={cachedChanceGraphData}

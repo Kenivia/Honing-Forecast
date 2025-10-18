@@ -446,7 +446,7 @@ export default function LongTermSection({
                     </div>
                     <div style={{ display: "flex", alignItems: "flex-start", gap: 8, marginBottom: 8, justifySelf: "left", marginLeft: 30, marginTop: 20 }}>
                         <LabeledCheckbox
-                            label="I don't want to buy anything at all"
+                            label="I don't want to buy anything"
                             checked={showOptimizedDetails}
                             setChecked={setShowOptimizedDetails}
                             textColor="var(--text-optimized)"
