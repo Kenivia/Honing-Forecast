@@ -4,7 +4,6 @@
 ## Next big step(s)
 
 - ~~True juice usage optimization(maximize chance of success)~~ might not be possible, at least with beam search because evaluating the effect is way too hard but WE WILL TRY
-- Better juice usage recommendation and value estimation to answer - Should I buy juice? How should I use juice
 - Books & scroll calculations
 
 ## Other features
@@ -24,15 +23,13 @@
 ## DEV
 
 - MUCH more tests, specifically:
-- Test bitset success count evaluations
 - Test countfailure non-naive version actually works
-- Test average tap and truncated average tap
+- Test average tap and ~~truncated average tap~~
 - Test Tap map generator(and improve it maybe)
 - Matrix operation libraries to speed up monte carlo and what not?
 - ~~maybe go back to caching results?~~ DEFINITELY caching the monte carlo + orcale bitsets
 - Graph is off by 0.5 all the time, and the points of interest snap the the one below(i tihnk?) which isnt quite right idk, kinda scared to touch it
 - better input cleaning for spreadsheetgrids
-- Optimize how chance_to_chance works
 
 ## Done / cancelled
 
@@ -42,3 +39,6 @@
 - ~~Improve beam search algorithm.~~
 - ~~Sort out input parsing (clamping) for desired_chance, prolly make a new variable~~
 - ~~Test beamsearch actually finding the best index(or close enough)~~
+- ~~Better juice usage recommendation and value estimation to answer - Should I buy juice? How should I use juice~~
+- ~~Test bitset success count evaluations~~
+- ~~Optimize how chance_to_chance works~~

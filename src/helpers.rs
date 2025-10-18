@@ -85,12 +85,12 @@ fn count_failure_ascending(cost_data: &[Vec<i64>], budget_data: &[Vec<i64>]) -> 
         while low <= high {
             let mid: usize = (low + high) >> 1;
 
-            if budget_is_enough(cs, budget_data[mid].as_slice()) || mid == 0 {
+            if budget_is_enough(cs, budget_data[mid].as_slice()) {
                 first_pass_index = mid;
                 if mid == 0 {
                     break;
                 }
-                high = mid - 1;
+                high = mid.saturating_sub(1);
             } else {
                 low = mid + 1;
             }

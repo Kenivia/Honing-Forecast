@@ -85,7 +85,7 @@ pub fn chance_to_cost<R: rand::Rng>(
         }
     }
     // let all_gold_costs: Vec<f64> = compute_all_gold_costs(&vec![0.0; 7], &cost_data, &prep_outputs);
-    let failure_counts: Vec<i64> = count_failure(&cost_data, &budget_data, false);
+    let failure_counts: Vec<i64> = count_failure(&cost_data, &budget_data, true);
     let (hundred_budgets, hundred_chances): (Vec<Vec<i64>>, Vec<f64>) = (0..101)
         .map(|x| {
             find_best_budget_for_this_chance(
@@ -189,6 +189,7 @@ mod tests {
             data_size,
             &mut rng,
         );
+        dbg!(&result.hundred_chances);
 
         if let Some(cached_result) = read_cached_data::<ChanceToCostOut>(test_name, &hash) {
             my_assert!(result, cached_result);
