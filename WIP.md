@@ -9,7 +9,6 @@
 ## Other features
 
 - Automatic Market price integration(via some kind of API, or just updating the site at a regular interval automatically)
-- Juice box opening optimization(do i open for red or blue)
 - Confidence intervals(might have to actually learn some math first)
 
 ## UI
@@ -27,7 +26,7 @@
 - Test average tap and ~~truncated average tap~~
 - Test Tap map generator(and improve it maybe)
 - Matrix operation libraries to speed up monte carlo and what not?
-- ~~maybe go back to caching results?~~ DEFINITELY caching the monte carlo + orcale bitsets
+- ~~maybe go back to caching results?~~ DEFINITELY caching ~~the monte carlo~~ + orcale bitsets
 - Graph is off by 0.5 all the time, and the points of interest snap the the one below(i tihnk?) which isnt quite right idk, kinda scared to touch it
 - better input cleaning for spreadsheetgrids
 
@@ -42,3 +41,4 @@
 - ~~Better juice usage recommendation and value estimation to answer - Should I buy juice? How should I use juice~~
 - ~~Test bitset success count evaluations~~
 - ~~Optimize how chance_to_chance works~~
+- ~~Juice box opening optimization(do i open for red or blue)~~

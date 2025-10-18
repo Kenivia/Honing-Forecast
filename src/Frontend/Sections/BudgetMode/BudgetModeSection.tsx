@@ -115,132 +115,132 @@ export default function CostToChanceSection({
                         />
                     </div>
 
-                    {chance_result && (
-                        <div style={{ flexDirection: "column", marginTop: 50 }}>
-                            <div style={{ display: "flex", flexDirection: "column", width: 600, marginTop: 0 }}>
-                                <LabeledCheckbox
-                                    label="I will buy mats with gold when I run out"
-                                    checked={!noBuyChecked}
-                                    setChecked={(x) => setShowOptimizedDetails(!x)}
-                                    textColor="var(--text-success)"
-                                    accentColor="var(--text-success)"
-                                />
+                    <div style={{ flexDirection: "column", marginTop: 50 }}>
+                        <div style={{ display: "flex", flexDirection: "column", width: 600, marginTop: 0 }}>
+                            <LabeledCheckbox
+                                label="I will buy mats with gold when I run out"
+                                checked={!noBuyChecked}
+                                setChecked={(x) => setShowOptimizedDetails(!x)}
+                                textColor="var(--text-success)"
+                                accentColor="var(--text-success)"
+                            />
 
-                                <LabeledCheckbox
-                                    label="I don't want to buy anything"
-                                    checked={noBuyChecked}
-                                    setChecked={setShowOptimizedDetails}
-                                    textColor="var(--text-optimized)"
-                                    accentColor="var(--text-optimized)"
+                            <LabeledCheckbox
+                                label="I don't want to buy anything"
+                                checked={noBuyChecked}
+                                setChecked={setShowOptimizedDetails}
+                                textColor="var(--text-optimized)"
+                                accentColor="var(--text-optimized)"
+                            />
+                        </div>
+
+                        <div style={{ display: "flex", flexDirection: "row" }}>
+                            <div
+                                style={{
+                                    ...styles.inputLabelCell,
+                                    whiteSpace: "nowrap",
+                                    color: "var(--text-primary)",
+                                    fontSize: 20,
+                                    marginTop: 16,
+                                }}
+                            >
+                                {"Current chance:"}
+                            </div>
+                            <div
+                                style={{
+                                    ...styles.inputCell,
+                                    border: "none",
+                                    background: "transparent",
+                                    color: noBuyChecked ? "var(--text-optimized)" : "var(--text-success)",
+                                    fontSize: 28,
+                                }}
+                            >
+                                {chance_result ? (noBuyChecked ? String(chance_result.chance) : String(chance_result.chance_if_buy)) + "%" : "Calculating..."}
+                            </div>
+                        </div>
+                        {!noBuyChecked && (
+                            <div
+                                style={{
+                                    display: "flex",
+                                    flexDirection: "row",
+                                    gap: 0,
+                                    alignItems: "center",
+                                    width: 300,
+                                    marginLeft: -95,
+                                    marginTop: 20,
+                                    marginBottom: -30,
+                                }}
+                            >
+                                <SliderBundle
+                                    desiredChance={String(Math.max(Math.floor(chance_result?.optimized_chance ?? 0), Number(desired_chance)))}
+                                    uncleanedDesiredChance={uncleaned_desired_chance}
+                                    onDesiredChange={(value) =>
+                                        onDesiredChange(String(Math.max(Math.floor(chance_result?.optimized_chance ?? 0), Number(value))))
+                                    }
+                                    onDesiredBlur={onDesiredBlur}
                                 />
                             </div>
-
-                            <div style={{ display: "flex", flexDirection: "row" }}>
+                        )}
+                        {!noBuyChecked && (
+                            <div style={{ display: "flex", flexDirection: "row", marginTop: 8, marginLeft: 0 }}>
+                                <div style={{ color: "var(--text-primary)", fontSize: 20, marginTop: 8 }}>Extra gold needed for</div>
+                                <div style={{ color: "var(--input-bg)", fontSize: 24, marginLeft: 8, marginTop: 4 }}>{parseInt(desired_chance)}%: </div>
+                                <div style={{ color: "var(--text-success)", fontSize: 28, marginLeft: 8 }}>
+                                    {chance_result
+                                        ? Math.max(0, chance_result.hundred_gold_costs[parseInt(desired_chance)] - budget_inputs["Gold"]).toLocaleString(
+                                              "en-US",
+                                              {
+                                                  minimumFractionDigits: 0, // show decimals for small K/M/B
+                                                  maximumFractionDigits: 0,
+                                              }
+                                          )
+                                        : "Calculating..."}
+                                </div>
+                            </div>
+                        )}
+                        {!noBuyChecked && (
+                            <div
+                                style={{
+                                    marginTop: 0,
+                                    fontSize: "var(--font-size-xs)",
+                                    fontStyle: "italic",
+                                    whiteSpace: "wrap",
+                                    marginLeft: 0,
+                                    paddingTop: 25,
+                                }}
+                            >
+                                We are unable to calculate how much gold is spent on each mat right now. This is a work in progress
+                            </div>
+                        )}
+                        {noBuyChecked && (
+                            <div style={{ marginLeft: 10, flexDirection: "column", display: "flex", marginTop: 0 }}>
                                 <div
                                     style={{
                                         ...styles.inputLabelCell,
+                                        marginTop: 0,
                                         whiteSpace: "nowrap",
-                                        color: "var(--text-primary)",
-                                        fontSize: 20,
-                                        marginTop: 16,
+                                        textAlign: "left",
+                                        color: "var(--text-optimized)",
                                     }}
                                 >
-                                    {"Current chance:"}
+                                    Individual chances:
                                 </div>
                                 <div
                                     style={{
-                                        ...styles.inputCell,
-                                        border: "none",
-                                        background: "transparent",
-                                        color: noBuyChecked ? "var(--text-optimized)" : "var(--text-success)",
-                                        fontSize: 28,
+                                        marginTop: 4,
+                                        color: "var(--text-muted)",
+                                        fontSize: "var(--font-size-sm)",
+                                        whiteSpace: "wrap",
+                                        width: 350,
                                     }}
                                 >
-                                    {(noBuyChecked ? String(chance_result.chance) : String(chance_result.chance_if_buy)) + "%"}
+                                    {(chance_result?.reasons ?? []).map((s: string, idx: number) => (
+                                        <div key={"Fail reason" + (idx + 1)}> {s}</div>
+                                    ))}
                                 </div>
                             </div>
-                            {!noBuyChecked && (
-                                <div
-                                    style={{
-                                        display: "flex",
-                                        flexDirection: "row",
-                                        gap: 0,
-                                        alignItems: "center",
-                                        width: 300,
-                                        marginLeft: -95,
-                                        marginTop: 20,
-                                        marginBottom: -30,
-                                    }}
-                                >
-                                    <SliderBundle
-                                        desiredChance={String(Math.max(Math.floor(chance_result?.optimized_chance ?? 0), Number(desired_chance)))}
-                                        uncleanedDesiredChance={uncleaned_desired_chance}
-                                        onDesiredChange={(value) =>
-                                            onDesiredChange(String(Math.max(Math.floor(chance_result?.optimized_chance ?? 0), Number(value))))
-                                        }
-                                        onDesiredBlur={onDesiredBlur}
-                                    />
-                                </div>
-                            )}
-                            {!noBuyChecked && (
-                                <div style={{ display: "flex", flexDirection: "row", marginTop: 8, marginLeft: 0 }}>
-                                    <div style={{ color: "var(--text-primary)", fontSize: 20, marginTop: 8 }}>Extra gold needed for</div>
-                                    <div style={{ color: "var(--input-bg)", fontSize: 24, marginLeft: 8, marginTop: 4 }}>{parseInt(desired_chance)}%: </div>
-                                    <div style={{ color: "var(--text-success)", fontSize: 28, marginLeft: 8 }}>
-                                        {Math.max(0, chance_result.hundred_gold_costs[parseInt(desired_chance)] - budget_inputs["Gold"]).toLocaleString(
-                                            "en-US",
-                                            {
-                                                minimumFractionDigits: 0, // show decimals for small K/M/B
-                                                maximumFractionDigits: 0,
-                                            }
-                                        )}
-                                    </div>
-                                </div>
-                            )}
-                            {!noBuyChecked && (
-                                <div
-                                    style={{
-                                        marginTop: 0,
-                                        fontSize: "var(--font-size-xs)",
-                                        fontStyle: "italic",
-                                        whiteSpace: "wrap",
-                                        marginLeft: 0,
-                                        paddingTop: 25,
-                                    }}
-                                >
-                                    We are unable to calculate how much gold is spent on each mat right now. This is a work in progress
-                                </div>
-                            )}
-                            {noBuyChecked && (
-                                <div style={{ marginLeft: 10, flexDirection: "column", display: "flex", marginTop: 0 }}>
-                                    <div
-                                        style={{
-                                            ...styles.inputLabelCell,
-                                            marginTop: 0,
-                                            whiteSpace: "nowrap",
-                                            textAlign: "left",
-                                            color: "var(--text-optimized)",
-                                        }}
-                                    >
-                                        Individual chances:
-                                    </div>
-                                    <div
-                                        style={{
-                                            marginTop: 4,
-                                            color: "var(--text-muted)",
-                                            fontSize: "var(--font-size-sm)",
-                                            whiteSpace: "wrap",
-                                            width: 350,
-                                        }}
-                                    >
-                                        {(chance_result.reasons || []).map((s: string, idx: number) => (
-                                            <div key={"Fail reason" + (idx + 1)}> {s}</div>
-                                        ))}
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-                    )}
+                        )}
+                    </div>
                 </div>
 
                 {/* Not enough Juice warning*/}
