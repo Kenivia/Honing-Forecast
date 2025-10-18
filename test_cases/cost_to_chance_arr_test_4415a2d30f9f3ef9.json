@@ -1,4 +1,32 @@
-[
-  0.0,
-  0.0
-]
+{
+  "final_chances": [
+    0.0,
+    0.0
+  ],
+  "typed_fail_counters": [
+    [
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      1.0
+    ],
+    [
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      1.0
+    ]
+  ],
+  "budgets_red_remaining": 420,
+  "budgets_blue_remaining": 690,
+  "buy_chances": [
+    0.0,
+    0.0
+  ]
+}

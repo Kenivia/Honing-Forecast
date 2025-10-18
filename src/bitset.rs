@@ -185,7 +185,7 @@
 //     let mut uniform_index = threshold_len - 1;
 //     let mut cur_index = vec![0; 7];
 //     for thresh_index in 0..threshold_len {
-//         debug_assert_eq!(cur_index[0], thresh_index);
+//         debug_my_assert!(cur_index[0], thresh_index);
 //         let w = compute_gold_cost_from_indices(
 //             thresholds,
 //             &cur_index,

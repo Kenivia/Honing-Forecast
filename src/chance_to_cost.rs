@@ -110,9 +110,9 @@ pub fn chance_to_cost<R: rand::Rng>(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::calculate_hash;
     use crate::constants::RNG_SEED;
-    use crate::test_cache::{read_cached_data, write_cached_data};
+    use crate::test_utils::*;
+    use crate::{calculate_hash, my_assert};
     use rand::prelude::*;
 
     #[test]
@@ -147,11 +147,11 @@ mod tests {
             data_size,
             &mut rng,
         );
-        let result_of_interst: Vec<Vec<i64>> = result.hundred_budgets.clone();
-        if let Some(cached_result) = read_cached_data::<Vec<Vec<i64>>>(test_name, &hash) {
-            assert_eq!(result_of_interst, cached_result);
+
+        if let Some(cached_result) = read_cached_data::<ChanceToCostOut>(test_name, &hash) {
+            my_assert!(result, cached_result);
         } else {
-            write_cached_data(test_name, &hash, &result_of_interst);
+            write_cached_data(test_name, &hash, &result);
         }
     }
 
@@ -190,11 +190,10 @@ mod tests {
             &mut rng,
         );
 
-        let result_of_interst: Vec<Vec<i64>> = result.hundred_budgets;
-        if let Some(cached_result) = read_cached_data::<Vec<Vec<i64>>>(test_name, &hash) {
-            assert_eq!(result_of_interst, cached_result);
+        if let Some(cached_result) = read_cached_data::<ChanceToCostOut>(test_name, &hash) {
+            my_assert!(result, cached_result);
         } else {
-            write_cached_data(test_name, &hash, &result_of_interst);
+            write_cached_data(test_name, &hash, &result);
         }
         // implement test here
     }

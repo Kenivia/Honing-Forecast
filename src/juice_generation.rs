@@ -175,7 +175,7 @@
 //     if let Some(cached_result) = read_cached_data::<Vec<Vec<f64>>>(test_name, &hash) {
 //         for (a, i) in result.iter().enumerate() {
 //             for (b, z) in i.iter().enumerate() {
-//                 assert_float_eq::assert_float_absolute_eq!(*z, cached_result[a][b], 0.000000001);
+//                 my_assert!(*z, cached_result[a][b], 0.000000001);
 //             }
 //         }
 //     } else {
@@ -221,7 +221,7 @@
 //         if let Some(cached_result) = read_cached_data::<Vec<Vec<f64>>>(test_name, &hash) {
 //             for (a, i) in result.iter().enumerate() {
 //                 for (b, z) in i.iter().enumerate() {
-//                     assert_float_eq::assert_float_absolute_eq!(*z, cached_result[a][b], 0.00000001);
+//                     my_assert!(*z, cached_result[a][b], 0.00000001);
 //                 }
 //             }
 //         } else {
@@ -235,7 +235,7 @@
 //     fn test_basic_example() {
 //         let delta = 0.5;
 //         let arrangements: Vec<Vec<f64>> = generate_arrangements(3, 2, delta).collect();
-//         assert_eq!(arrangements.len(), 3);
+//         my_assert!(arrangements.len(), 3);
 
 //         // Check that we have the expected arrangements
 //         let expected = vec![
@@ -263,8 +263,8 @@
 //         for arr in &arrangements {
 //             let delta_count = arr.iter().filter(|&&x| (x - delta).abs() < 1e-10).count();
 //             let zero_count = arr.iter().filter(|&&x| x.abs() < 1e-10).count();
-//             assert_eq!(delta_count, 2);
-//             assert_eq!(zero_count, 1);
+//             my_assert!(delta_count, 2);
+//             my_assert!(zero_count, 1);
 //         }
 //     }
 
@@ -274,21 +274,21 @@
 
 //         // All zeros
 //         let arr: Vec<Vec<f64>> = generate_arrangements(3, 0, delta).collect();
-//         assert_eq!(arr.len(), 1);
+//         my_assert!(arr.len(), 1);
 //         for val in &arr[0] {
 //             assert_float_absolute_eq!(*val, 0.0, 0.0000000001);
 //         }
 
 //         // All deltas
 //         let arr: Vec<Vec<f64>> = generate_arrangements(3, 3, delta).collect();
-//         assert_eq!(arr.len(), 1);
+//         my_assert!(arr.len(), 1);
 //         for val in &arr[0] {
 //             assert_float_absolute_eq!(*val, delta, 0.000000001);
 //         }
 
 //         // Invalid case
 //         let arr: Vec<Vec<f64>> = generate_arrangements(3, 4, delta).collect();
-//         assert_eq!(arr.len(), 0);
+//         my_assert!(arr.len(), 0);
 //     }
 
 //     #[test]
@@ -297,11 +297,11 @@
 
 //         // C(5, 2) = 10
 //         let count = generate_arrangements(5, 2, delta).count();
-//         assert_eq!(count, 10);
+//         my_assert!(count, 10);
 
 //         // C(6, 3) = 20
 //         let count = generate_arrangements(6, 3, delta).count();
-//         assert_eq!(count, 20);
+//         my_assert!(count, 20);
 //     }
 
 //     #[test]
@@ -309,18 +309,18 @@
 //         let delta = 2.5;
 //         // Test that it works with larger numbers (not too large to avoid test timeout)
 //         let count = generate_arrangements(20, 10, delta).count();
-//         assert_eq!(count, 184_756); // C(20, 10)
+//         my_assert!(count, 184_756); // C(20, 10)
 //     }
 
 //     #[test]
 //     fn test_negative_delta() {
 //         let delta = -0.5;
 //         let arrangements: Vec<Vec<f64>> = generate_arrangements(3, 1, delta).collect();
-//         assert_eq!(arrangements.len(), 3);
+//         my_assert!(arrangements.len(), 3);
 
 //         for arr in &arrangements {
 //             let delta_count = arr.iter().filter(|&&x| (x - delta).abs() < 1e-10).count();
-//             assert_eq!(delta_count, 1);
+//             my_assert!(delta_count, 1);
 //         }
 //     }
 // }

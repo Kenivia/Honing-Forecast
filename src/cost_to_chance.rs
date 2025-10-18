@@ -8,9 +8,9 @@ use crate::parser::{PreparationOutputs, Upgrade, preparation};
 
 // use assert_float_eq::assert_f64_near;
 // use assert_float_eq::assert_f64_near;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
-#[derive(Serialize, Debug)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct CostToChanceOut {
     pub chance: f64,
     pub reasons: Vec<f64>,                 // 7 failure rates for each cost type
@@ -27,13 +27,13 @@ pub struct CostToChanceOut {
     // pub optimized_budgets: Vec<Vec<i64>>,
     // pub optimized_chances: Vec<f64>,
 }
-#[derive(Serialize, Debug)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct CostToChanceArrOut {
-    final_chances: Vec<f64>,
-    typed_fail_counters: Vec<Vec<f64>>,
-    budgets_red_remaining: i64,  // budgets_red_remaining
-    budgets_blue_remaining: i64, // budgets_blue_remaining
-    buy_chances: Vec<f64>,
+    pub final_chances: Vec<f64>,
+    pub typed_fail_counters: Vec<Vec<f64>>,
+    pub budgets_red_remaining: i64,  // budgets_red_remaining
+    pub budgets_blue_remaining: i64, // budgets_blue_remaining
+    pub buy_chances: Vec<f64>,
     // buy_gold_costs: Vec<i64>,
 }
 
@@ -430,9 +430,9 @@ pub fn cost_to_chance_arr<R: rand::Rng>(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::calculate_hash;
     use crate::constants::RNG_SEED;
-    use crate::test_cache::{read_cached_data, write_cached_data};
+    use crate::test_utils::{read_cached_data, write_cached_data};
+    use crate::{calculate_hash, my_assert};
     use rand::prelude::*;
 
     #[test]
@@ -452,7 +452,7 @@ mod tests {
         let adv_hone_strategy: &'static str = "No juice";
         let data_size: usize = 10000;
 
-        let hash = calculate_hash!(
+        let hash: String = calculate_hash!(
             &hone_counts,
             &input_budgets,
             &adv_counts,
@@ -462,7 +462,7 @@ mod tests {
             data_size
         );
         // Run the function to get the full output
-        let mut rng = StdRng::seed_from_u64(RNG_SEED);
+        let mut rng: StdRng = StdRng::seed_from_u64(RNG_SEED);
         let result: CostToChanceOut = cost_to_chance(
             &hone_counts,
             &input_budgets,
@@ -475,11 +475,10 @@ mod tests {
             &mut rng,
         );
 
-        let result_of_interst: f64 = result.chance;
-        if let Some(cached_result) = read_cached_data::<f64>(test_name, &hash) {
-            assert_eq!(result_of_interst, cached_result);
+        if let Some(cached_result) = read_cached_data::<CostToChanceOut>(test_name, &hash) {
+            my_assert!(result, cached_result);
         } else {
-            write_cached_data(test_name, &hash, &result_of_interst);
+            write_cached_data(test_name, &hash, &result);
         }
     }
     #[test]
@@ -527,15 +526,10 @@ mod tests {
             &mut rng,
         );
 
-        let result_of_interst: f64 = result.chance;
-        if let Some(cached_result) = read_cached_data::<f64>(test_name, &hash) {
-            assert_float_eq::assert_float_absolute_eq!(
-                result_of_interst,
-                cached_result,
-                0.000000001
-            );
+        if let Some(cached_result) = read_cached_data::<CostToChanceOut>(test_name, &hash) {
+            my_assert!(result, cached_result);
         } else {
-            write_cached_data(test_name, &hash, &result_of_interst);
+            write_cached_data(test_name, &hash, &result);
         }
     }
     // #[test]
@@ -580,7 +574,7 @@ mod tests {
     //     // dbg!(&result_of_interst);
     //     // if let Some(cached_result) = read_cached_data::<Vec<f64>>(test_name, &hash) {
     //     //     for (index, i) in result.optimized_chances.iter().enumerate() {
-    //     //         assert_float_eq::assert_float_absolute_eq!(
+    //     //         my_assert!(
     //     //             *i,
     //     //             cached_result[index],
     //     //             0.000000000001
@@ -628,11 +622,10 @@ mod tests {
             &mut rng,
         );
 
-        let result_of_interst: f64 = result.chance;
-        if let Some(cached_result) = read_cached_data::<f64>(test_name, &hash) {
-            assert_eq!(result_of_interst, cached_result);
+        if let Some(cached_result) = read_cached_data::<CostToChanceOut>(test_name, &hash) {
+            my_assert!(result, cached_result);
         } else {
-            write_cached_data(test_name, &hash, &result_of_interst);
+            write_cached_data(test_name, &hash, &result);
         }
     }
 
@@ -665,7 +658,7 @@ mod tests {
         );
         // Run the function to get the full output
         let mut rng = StdRng::seed_from_u64(RNG_SEED);
-        let result = cost_to_chance_arr(
+        let result: CostToChanceArrOut = cost_to_chance_arr(
             &hone_counts,
             &budget_arr,
             &adv_counts,
@@ -676,11 +669,10 @@ mod tests {
             &mut rng,
         );
 
-        let result_of_interst: Vec<f64> = result.final_chances;
-        if let Some(cached_result) = read_cached_data::<Vec<f64>>(test_name, &hash) {
-            assert_eq!(result_of_interst, cached_result);
+        if let Some(cached_result) = read_cached_data::<CostToChanceArrOut>(test_name, &hash) {
+            my_assert!(result, cached_result);
         } else {
-            write_cached_data(test_name, &hash, &result_of_interst);
+            write_cached_data(test_name, &hash, &result);
         }
     }
 }

@@ -316,10 +316,9 @@ fn _juice_to_array(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::calculate_hash;
     use crate::constants::DEFAULT_GOLD_VALUES;
     use crate::parser::parser;
-    use crate::test_cache::{read_cached_data, write_cached_data};
+    use crate::test_utils::{read_cached_data, write_cached_data};
 
     #[test]
     fn est_juice_value_25_wep() {
@@ -348,7 +347,7 @@ mod tests {
         let result: Vec<f64> = upgrade_arr[0].juice_values.clone();
         if let Some(cached_result) = read_cached_data::<Vec<f64>>(test_name, &hash) {
             for (index, i) in result.iter().enumerate() {
-                assert_float_eq::assert_float_absolute_eq!(*i, cached_result[index], 0.000000001);
+                my_assert!(*i, cached_result[index]);
             }
         } else {
             write_cached_data(test_name, &hash, &result);
@@ -380,9 +379,7 @@ mod tests {
         est_juice_value(&mut upgrade_arr, &DEFAULT_GOLD_VALUES);
         let result: Vec<f64> = upgrade_arr[0].juice_values.clone();
         if let Some(cached_result) = read_cached_data::<Vec<f64>>(test_name, &hash) {
-            for (index, i) in result.iter().enumerate() {
-                assert_float_eq::assert_float_absolute_eq!(*i, cached_result[index], 0.0000001);
-            }
+            my_assert!(*result, cached_result);
         } else {
             write_cached_data(test_name, &hash, &result);
         }
@@ -416,7 +413,7 @@ mod tests {
 
         if let Some(cached_result) = read_cached_data::<Vec<f64>>(test_name, &hash) {
             for (index, i) in result.iter().enumerate() {
-                assert_float_eq::assert_float_absolute_eq!(*i, cached_result[index], 0.0000001);
+                my_assert!(*i, cached_result[index]);
             }
         } else {
             write_cached_data(test_name, &hash, &result);
@@ -454,7 +451,7 @@ mod tests {
     //     if let Some(cached_result) =
     //         read_cached_data::<Vec<(usize, usize, f64, f64)>>(test_name, &hash)
     //     {
-    //         assert_eq!(result, cached_result);
+    //         my_assert!(result, cached_result);
     //     } else {
     //         write_cached_data(test_name, &hash, &result);
     //     }

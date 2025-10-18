@@ -7,9 +7,12 @@ mod histogram;
 pub mod juice_generation;
 mod monte_carlo;
 mod parser;
-mod value_estimation;
 
-mod test_cache;
+#[cfg(test)]
+#[macro_use]
+mod test_utils;
+
+mod value_estimation;
 
 use crate::chance_to_cost::{ChanceToCostOut, chance_to_cost};
 
