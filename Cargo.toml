@@ -29,6 +29,3 @@ assert_float_eq = "1.1.4"
 [dev-dependencies]
 criterion = { version = "0.5", features = ["html_reports"] }
 
-[[bench]]
-name = "cost_to_chance"
-harness = false

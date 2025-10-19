@@ -15,6 +15,7 @@ export function buildPayload({
     useGridInput = true,
     normalCounts,
     advCounts,
+    monteCarloResult,
 }: {
     topGrid: boolean[][]
     bottomGrid: boolean[][]
@@ -28,6 +29,7 @@ export function buildPayload({
     useGridInput?: boolean
     normalCounts?: number[][]
     advCounts?: number[][]
+    monteCarloResult?: any
 }) {
     const payload: any = {
         budget: ((input) => Object.entries(input).map(([, v]) => Math.round(Number(v))))(budget_inputs),
@@ -49,7 +51,9 @@ export function buildPayload({
         payload.normal_counts = normalCounts || ticksToCounts(topGrid)
         payload.adv_counts = advCounts || ticksToCounts(bottomGrid)
     }
-
+    if (monteCarloResult) {
+        payload.cost_data = monteCarloResult.cost_data
+    }
     return payload
 }
 
@@ -80,6 +84,7 @@ export type StartOptions = {
     debounceKey?: string
     // optional per-call debounce delay ms (if 0 or undefined, no debounce)
     debounceMs?: number
+    dependency?: boolean
 }
 
 /**
@@ -119,6 +124,7 @@ export function createCancelableWorkerRunner() {
             onFinally,
             debounceKey = which_one,
             debounceMs = 150,
+            dependency = true,
         } = opts
 
         const runNow = () => {
@@ -133,8 +139,13 @@ export function createCancelableWorkerRunner() {
             }
 
             // mark as busy, clear previous result (but let caller decide cached graph preservation)
-            setBusy(true)
             setResult(null)
+            if (!dependency) {
+                // console.log("tried", which_one, "but monte carlo wasn't ready")
+                return
+            }
+            // console.log("actually started", which_one)
+            setBusy(true)
 
             // spawn the worker (uses your existing SpawnWorker)
             const { worker, promise } = SpawnWorker(payloadBuilder(), which_one)

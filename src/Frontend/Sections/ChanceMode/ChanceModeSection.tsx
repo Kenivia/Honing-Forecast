@@ -34,6 +34,7 @@ type ChanceToCostSectionProps = {
     set_budget_inputs: React.Dispatch<React.SetStateAction<any>>
     userMatsValue: any
     setUserMatsValue: React.Dispatch<React.SetStateAction<any>>
+    monteCarloResult: any
 }
 
 export default function ChanceToCostSection({
@@ -60,6 +61,7 @@ export default function ChanceToCostSection({
     AverageCostBusy: _AverageCostBusy,
     // Data size for luckiest draw message
     dataSize,
+    monteCarloResult,
 }: ChanceToCostSectionProps) {
     const { chanceToCostColumnDefs } = createColumnDefs(false)
     return (
@@ -104,13 +106,18 @@ export default function ChanceToCostSection({
                                 style={{
                                     color: "var(--text-muted)",
                                     fontSize: "var(--font-size-xs)",
-                                    opacity: cost_result ? 1 : 0, // Control visibility with opacity
-                                    margin: 0, // Good practice to reset default pre margins
+                                    opacity: cost_result && monteCarloResult ? 1 : 0,
+                                    margin: 0,
                                 }}
                             >
-                                {/* Use optional chaining to prevent errors when cost_result is null */}
-                                Run time: {cost_result?.run_time}s{"\nActual chance: "}
-                                {cost_result?.hundred_chances[parseInt(desired_chance)]?.toFixed(2)}%
+                                {cost_result && monteCarloResult ? (
+                                    <>
+                                        Run time: {Number(cost_result.run_time) + Number(monteCarloResult.run_time)}s{"\nActual chance: "}
+                                        {cost_result.hundred_chances[parseInt(desired_chance)]?.toFixed(2)}%
+                                    </>
+                                ) : (
+                                    "Run time: Calculating..."
+                                )}
                             </pre>
                         </div>
                     </div>

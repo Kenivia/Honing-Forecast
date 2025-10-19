@@ -4,10 +4,15 @@ import init, {
     cost_to_chance_arr_wrapper,
     parser_wrapper_unified,
     average_cost_wrapper,
+    monte_carlo_wrapper,
 } from "@/../pkg/honing_forecast.js"
 
 const LABELS = ["Red", "Blue", "Leaps", "Shards", "Oreha", "Gold", "Silver"]
 
+async function MonteCarloWasm(payload: any) {
+    await init()
+    return (monte_carlo_wrapper as any)(payload)
+}
 async function ChanceToCostWasm(payload: any) {
     await init()
     return (chance_to_cost_wrapper as any)(payload)
@@ -47,7 +52,8 @@ self.addEventListener("message", async (ev) => {
                 // which_one == "CostToChanceOptimized" ||
                 which_one == "ChanceToCost" ||
                 which_one == "ParserUnified" ||
-                which_one == "AverageCost"
+                which_one == "AverageCost" ||
+                which_one == "MonteCarlo"
             )
             // which_one == "ChanceToCostOptimized"
         )
@@ -57,7 +63,12 @@ self.addEventListener("message", async (ev) => {
     // console.log(which_one, "Began")
 
     let result
-    if (which_one == "CostToChance") {
+    if (which_one == "MonteCarlo") {
+        let out = await MonteCarloWasm(payload)
+
+        // console.log("monte carlo out", out)
+        result = { cost_data: out }
+    } else if (which_one == "CostToChance") {
         // always run optimized
         let out = await CostToChanceWasm(payload)
 
@@ -128,6 +139,6 @@ self.addEventListener("message", async (ev) => {
     }
 
     result.run_time = ((Date.now() - start_time) / 1000).toFixed(2)
-    console.log(which_one + " finished after" + String(result.run_time))
+    console.log(which_one + " finished after " + String(result.run_time))
     self.postMessage({ type: "result", id, result: result })
 })

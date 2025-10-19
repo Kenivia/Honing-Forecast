@@ -37,36 +37,8 @@ type LongTermSectionProps = {
     runner: any
 
     costToChanceResult: any
+    monteCarloResult: any
 }
-// function cost_to_achieve(budget: number[], pity_cost: number[], mat_value: number[]): number {
-//     let sum = 0
-//     for (let i = 0; i < 7; i++) {
-//         if (i == 5) {
-//             sum += Math.max(0, pity_cost[i]) * mat_value[i]
-//         } else {
-//             sum += Math.max(0, pity_cost[i] - budget[i]) * mat_value[i]
-//         }
-//     }
-//     return sum
-// }
-
-// function gold_plus_sell_mats(budget: number[], pity_cost: number[], mat_value: number[]): number {
-//     let sum = budget[5]
-//     for (let i = 0; i < 7; i++) {
-//         if (i == 5 || i == 3 || i == 6) {
-//             continue
-//         }
-//         sum += Math.max(0, budget[i] - pity_cost[i]) * mat_value[i] * 0.95
-//     }
-//     return sum
-// }
-
-// function cost_to_pity_individual(budget: number[], pity_cost: number[], mat_value: number[], materialIndex: number): number {
-//     if (materialIndex == 5) {
-//         return pity_cost[materialIndex] * mat_value[materialIndex]
-//     }
-//     return Math.max(0, pity_cost[materialIndex] - budget[materialIndex]) * mat_value[materialIndex]
-// }
 
 function weekly_budget(budget: number[], weekly_income: number[]): number[][] {
     let current = budget
@@ -105,6 +77,7 @@ export default function LongTermSection({
     payloadBuilder,
     runner,
     costToChanceResult,
+    monteCarloResult,
 }: LongTermSectionProps) {
     // Income array is now managed by parent component
 
@@ -204,9 +177,10 @@ export default function LongTermSection({
             workerRef: chanceToCostArrWorkerRef,
             setBusy: setLongTermBusy,
             setResult: setLongTermResult,
+            dependency: monteCarloResult != null,
         })
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [advStrategyKey, expressEventKey, useGridInputKey, normalCountsKey, advCountsKey, totalWeeklyIncomeKey, weeklyBudgets])
+    }, [advStrategyKey, expressEventKey, useGridInputKey, normalCountsKey, advCountsKey, totalWeeklyIncomeKey, weeklyBudgets, monteCarloResult])
 
     // Labels for income grids (7 rows) - use proper labels but hide icons
     const incomeLabels = INPUT_LABELS.slice(0, 7)

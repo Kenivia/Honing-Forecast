@@ -135,7 +135,7 @@ function to_step(arr: number[]): number[] {
     return out
 }
 function to_step_points(points: Point[]): Point[] {
-    console.log(points)
+    // console.log(points)
     const ys = points.map((p) => p.y) // extract y values
     const stepped = to_step(ys) // reuse our to_step function
     // console.log("stepped", ys, stepped)

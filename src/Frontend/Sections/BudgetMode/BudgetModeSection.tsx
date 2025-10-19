@@ -28,6 +28,7 @@ type CostToChanceSectionProps = {
     onDesiredBlur: () => void
     showOptimizedDetails: boolean
     setShowOptimizedDetails: React.Dispatch<React.SetStateAction<boolean>>
+    monteCarloResult: any
 }
 
 export default function CostToChanceSection({
@@ -54,6 +55,7 @@ export default function CostToChanceSection({
     onDesiredBlur,
     showOptimizedDetails: noBuyChecked,
     setShowOptimizedDetails,
+    monteCarloResult,
 }: CostToChanceSectionProps) {
     const { costToChanceColumnDefs } = createColumnDefs(false) // autoGoldValues not used for this section
 
@@ -316,9 +318,15 @@ export default function CostToChanceSection({
                 </div>
             </div>
             {/* Run time*/}
-            {chance_result && (
-                <div style={{ marginTop: 4, color: "var(--text-muted)", fontSize: "var(--font-size-xs)" }}>Run time: {chance_result.run_time}s</div>
-            )}
+
+            <div style={{ marginTop: 4, color: "var(--text-muted)", fontSize: "var(--font-size-xs)" }}>
+                {chance_result && monteCarloResult ? (
+                    <>Run time: {Number(chance_result.run_time) + Number(monteCarloResult.run_time)}s</>
+                ) : (
+                    "Run time: Calculating..."
+                )}
+            </div>
+
             {chance_result && ( //&& (chance_result.reasons?.length > 0 || chance_result.upgrade_strings?.length > 0 || chance_result.juice_strings_armor?.length > 0 || chance_result.juice_strings_weapon?.length > 0)) && (
                 <div style={{ display: "flex", marginLeft: 150, marginBottom: 30, marginTop: 30, width: GRAPH_WIDTH }}>
                     <div style={{ flex: 1 }}>

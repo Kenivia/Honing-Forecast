@@ -431,43 +431,6 @@ export default function HoningForecastUI() {
         setUseGridInput(newValue)
     }
 
-    const clearAll = createClearAll({
-        setTopGrid,
-        setBottomGrid,
-        set_prev_checked_arr,
-        set_prev_checked_arr_bottom,
-        set_budget_inputs,
-        setUserMatsValue,
-        set_desired_chance,
-        set_adv_hone_strategy_change,
-        set_express_event,
-        setAutoGoldValues,
-        _setBucketCount,
-        setCumulativeGraph,
-        setDataSize,
-        setLockXAxis,
-        setLockedMins,
-        setLockedMaxs,
-        setShowAverage,
-        setUseGridInput,
-        setNormalCounts,
-        setAdvCounts,
-        setIncomeArr,
-    })
-
-    const fillDemo = createFillDemo({
-        setTopGrid,
-        setBottomGrid,
-        set_budget_inputs,
-        set_desired_chance,
-        set_prev_checked_arr,
-        setUserMatsValue,
-    })
-
-    const fillDemoIncome = createFillDemoIncome({
-        setIncomeArr,
-    })
-
     const payloadBuilder = () =>
         buildPayload({
             topGrid,
@@ -482,6 +445,7 @@ export default function HoningForecastUI() {
             useGridInput,
             normalCounts,
             advCounts,
+            monteCarloResult,
         })
 
     const runner = createCancelableWorkerRunner()
@@ -500,6 +464,20 @@ export default function HoningForecastUI() {
     const normalCountsKey = useMemo(() => JSON.stringify(normalCounts), [normalCounts])
     const advCountsKey = useMemo(() => JSON.stringify(advCounts), [advCounts])
 
+    const monteCarloWorkerRef = useRef<Worker | null>(null)
+    const [_monteCarloBusy, setMonteCarloBusy] = useState(false)
+    const [monteCarloResult, setMonteCarloResult] = useState<any>(null)
+    useEffect(() => {
+        runner.start({
+            which_one: "MonteCarlo",
+            payloadBuilder,
+            workerRef: monteCarloWorkerRef,
+            setBusy: setMonteCarloBusy,
+            setResult: setMonteCarloResult,
+        })
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [advStrategyKey, expressEventKey, dataSizeKey, normalCountsKey, advCountsKey])
+
     const chanceToCostWorkerRef = useRef<Worker | null>(null)
     const [chanceToCostBusy, setChanceToCostBusy] = useState(false)
     const [chanceToCostResult, setChanceToCostResult] = useState<any>(null)
@@ -513,9 +491,10 @@ export default function HoningForecastUI() {
             setBusy: setChanceToCostBusy,
             setResult: setChanceToCostResult,
             setCachedGraphData: setCachedCostGraphData,
+            dependency: monteCarloResult != null,
         })
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [advStrategyKey, expressEventKey, graphBucketSizeKey, dataSizeKey, normalCountsKey, advCountsKey])
+    }, [advStrategyKey, expressEventKey, graphBucketSizeKey, dataSizeKey, normalCountsKey, advCountsKey, monteCarloResult])
 
     const costToChanceWorkerRef = useRef<Worker | null>(null)
     const [costToChanceBusy, setCostToChanceBusy] = useState(false)
@@ -529,9 +508,10 @@ export default function HoningForecastUI() {
             setBusy: setCostToChanceBusy,
             setResult: setCostToChanceResult,
             setCachedGraphData: setCachedChanceGraphData,
+            dependency: monteCarloResult != null,
         })
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [budgetKey, advStrategyKey, expressEventKey, graphBucketSizeKey, autoOptKey, userMatsKey, dataSizeKey, normalCountsKey, advCountsKey])
+    }, [budgetKey, advStrategyKey, expressEventKey, graphBucketSizeKey, autoOptKey, userMatsKey, dataSizeKey, normalCountsKey, advCountsKey, monteCarloResult])
 
     const averageCostWorkerRef = useRef<Worker | null>(null)
     const [averageCostBusy, setAverageCostBusy] = useState(false)
@@ -561,6 +541,43 @@ export default function HoningForecastUI() {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [advStrategyKey, expressEventKey, graphBucketSizeKey, dataSizeKey, normalCountsKey, advCountsKey])
 
+    const clearAll = createClearAll({
+        setTopGrid,
+        setBottomGrid,
+        set_prev_checked_arr,
+        set_prev_checked_arr_bottom,
+        set_budget_inputs,
+        setUserMatsValue,
+        set_desired_chance,
+        set_adv_hone_strategy_change,
+        set_express_event,
+        setAutoGoldValues,
+        _setBucketCount,
+        setCumulativeGraph,
+        setDataSize,
+        setLockXAxis,
+        setLockedMins,
+        setLockedMaxs,
+        setShowAverage,
+        setUseGridInput,
+        setNormalCounts,
+        setAdvCounts,
+        setIncomeArr,
+        setMonteCarloResult,
+    })
+
+    const fillDemo = createFillDemo({
+        setTopGrid,
+        setBottomGrid,
+        set_budget_inputs,
+        set_desired_chance,
+        set_prev_checked_arr,
+        setUserMatsValue,
+    })
+
+    const fillDemoIncome = createFillDemoIncome({
+        setIncomeArr,
+    })
     // Cleanup on unmount: terminate any running workers and clear timers
     useEffect(() => {
         return () => {
@@ -686,6 +703,7 @@ export default function HoningForecastUI() {
                         set_budget_inputs={set_budget_inputs}
                         userMatsValue={userMatsValue}
                         setUserMatsValue={setUserMatsValue}
+                        monteCarloResult={monteCarloResult}
                     />
                 </div>
 
@@ -710,6 +728,7 @@ export default function HoningForecastUI() {
                         onDesiredBlur={onDesiredBlur}
                         showOptimizedDetails={showOptimizedDetails}
                         setShowOptimizedDetails={setShowOptimizedDetails}
+                        monteCarloResult={monteCarloResult}
                     />
                 </div>
 
@@ -776,6 +795,7 @@ export default function HoningForecastUI() {
                         payloadBuilder={payloadBuilder}
                         runner={runner}
                         costToChanceResult={costToChanceResult}
+                        monteCarloResult={monteCarloResult}
                     />
                 </div>
             </div>

@@ -5,6 +5,16 @@ use crate::constants::{
 use crate::parser::Upgrade;
 use crate::value_estimation::average_tap;
 
+pub fn get_count(counts: Option<Vec<Vec<i64>>>, ticks: Option<Vec<Vec<bool>>>) -> Vec<Vec<i64>> {
+    if counts.is_some() {
+        counts.unwrap()
+    } else if ticks.is_some() {
+        ticks_to_counts(ticks.unwrap())
+    } else {
+        panic!("Either normal_counts or normal_hone_ticks must be provided");
+    }
+}
+
 pub fn compute_gold_cost_from_raw(
     needed: &[i64],
     input_budget_no_gold: &[i64],

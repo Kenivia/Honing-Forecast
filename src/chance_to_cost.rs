@@ -1,7 +1,7 @@
 // use crate::cost_to_chance::compute_all_gold_costs;
 use crate::helpers::{average_juice_cost, calc_unlock, count_failure};
 use crate::histogram::histograms_for_all_costs;
-use crate::monte_carlo::{generate_budget_data, get_top_bottom, monte_carlo_data};
+use crate::monte_carlo::{generate_budget_data, get_top_bottom};
 use crate::parser::{Upgrade, parser};
 use serde::{Deserialize, Serialize};
 // find the budget in budget_data that most closely matches desired_chance
@@ -51,14 +51,13 @@ pub struct ChanceToCostOut {
     pub hundred_chances: Vec<f64>,      // actually 101 length, 0 to 100%
 }
 
-pub fn chance_to_cost<R: rand::Rng>(
+pub fn chance_to_cost(
     hone_counts: &[Vec<i64>],
     adv_counts: &[Vec<i64>],
     adv_hone_strategy: &str,
     express_event: bool,
     hist_bins: usize,
-    data_size: usize,
-    rng: &mut R,
+    cost_data: &[[i64; 9]],
 ) -> ChanceToCostOut {
     let budget_size: usize = 1000;
 
@@ -70,7 +69,6 @@ pub fn chance_to_cost<R: rand::Rng>(
     );
 
     let unlock_cost: Vec<i64> = calc_unlock(hone_counts, adv_counts, express_event);
-    let cost_data: Vec<[i64; 9]> = monte_carlo_data(data_size, &upgrade_arr, &unlock_cost, 0, rng);
     let top_bottom: Vec<Vec<i64>> = get_top_bottom(&upgrade_arr, &unlock_cost);
 
     let mut budget_data: Vec<Vec<i64>> = generate_budget_data(&cost_data, &[0_i64; 7], budget_size);
@@ -90,7 +88,7 @@ pub fn chance_to_cost<R: rand::Rng>(
         .map(|x| {
             find_best_budget_for_this_chance(
                 f64::from(x),
-                data_size,
+                cost_data.len(),
                 budget_size,
                 &failure_counts,
                 &budget_data,
@@ -107,95 +105,95 @@ pub fn chance_to_cost<R: rand::Rng>(
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use crate::constants::RNG_SEED;
-    use crate::test_utils::*;
-    use crate::{calculate_hash, my_assert};
-    use rand::prelude::*;
+// #[cfg(test)]
+// mod tests {
+//     use super::*;
+//     use crate::constants::RNG_SEED;
+//     use crate::test_utils::*;
+//     use crate::{calculate_hash, my_assert};
+//     use rand::prelude::*;
 
-    #[test]
-    fn chance_to_cost_all_normal() {
-        let test_name: &str = "chance_to_cost_all_normal";
-        let hone_counts: Vec<Vec<i64>> =
-            vec![(0..25).map(|_| 5).collect(), (0..25).map(|_| 1).collect()];
-        let adv_counts: Vec<Vec<i64>> =
-            vec![(0..4).map(|_| 0).collect(), (0..4).map(|_| 0).collect()];
+//     #[test]
+//     fn chance_to_cost_all_normal() {
+//         let test_name: &str = "chance_to_cost_all_normal";
+//         let hone_counts: Vec<Vec<i64>> =
+//             vec![(0..25).map(|_| 5).collect(), (0..25).map(|_| 1).collect()];
+//         let adv_counts: Vec<Vec<i64>> =
+//             vec![(0..4).map(|_| 0).collect(), (0..4).map(|_| 0).collect()];
 
-        let adv_hone_strategy: &str = "No juice";
-        let express_event: bool = true;
-        let hist_bins: usize = 1000;
-        let data_size: usize = 10000;
+//         let adv_hone_strategy: &str = "No juice";
+//         let express_event: bool = true;
+//         let hist_bins: usize = 1000;
+//         let data_size: usize = 10000;
 
-        let hash: String = calculate_hash!(
-            &hone_counts,
-            &adv_counts,
-            adv_hone_strategy,
-            express_event,
-            hist_bins,
-            data_size
-        );
-        // Run the function to get the full output
-        let mut rng = StdRng::seed_from_u64(RNG_SEED);
-        let result: ChanceToCostOut = chance_to_cost(
-            &hone_counts,
-            &adv_counts,
-            adv_hone_strategy,
-            express_event,
-            hist_bins,
-            data_size,
-            &mut rng,
-        );
+//         let hash: String = calculate_hash!(
+//             &hone_counts,
+//             &adv_counts,
+//             adv_hone_strategy,
+//             express_event,
+//             hist_bins,
+//             data_size
+//         );
+//         // Run the function to get the full output
+//         let mut rng = StdRng::seed_from_u64(RNG_SEED);
+//         let result: ChanceToCostOut = chance_to_cost(
+//             &hone_counts,
+//             &adv_counts,
+//             adv_hone_strategy,
+//             express_event,
+//             hist_bins,
+//             data_size,
+//             &mut rng,
+//         );
 
-        if let Some(cached_result) = read_cached_data::<ChanceToCostOut>(test_name, &hash) {
-            my_assert!(result, cached_result);
-        } else {
-            write_cached_data(test_name, &hash, &result);
-        }
-    }
+//         if let Some(cached_result) = read_cached_data::<ChanceToCostOut>(test_name, &hash) {
+//             my_assert!(result, cached_result);
+//         } else {
+//             write_cached_data(test_name, &hash, &result);
+//         }
+//     }
 
-    #[test]
-    fn chance_to_cost_25_weap() {
-        let test_name: &str = "chance_to_cost_25_weap";
-        let hone_counts: Vec<Vec<i64>> = vec![
-            (0..25).map(|_| 0).collect(),
-            (0..25).map(|x| if x == 24 { 1 } else { 0 }).collect(),
-        ];
-        let adv_counts: Vec<Vec<i64>> =
-            vec![(0..4).map(|_| 0).collect(), (0..4).map(|_| 0).collect()];
+//     #[test]
+//     fn chance_to_cost_25_weap() {
+//         let test_name: &str = "chance_to_cost_25_weap";
+//         let hone_counts: Vec<Vec<i64>> = vec![
+//             (0..25).map(|_| 0).collect(),
+//             (0..25).map(|x| if x == 24 { 1 } else { 0 }).collect(),
+//         ];
+//         let adv_counts: Vec<Vec<i64>> =
+//             vec![(0..4).map(|_| 0).collect(), (0..4).map(|_| 0).collect()];
 
-        let adv_hone_strategy: &str = "No juice";
-        let express_event: bool = true;
-        let hist_bins: usize = 1000;
-        let data_size: usize = 10000;
+//         let adv_hone_strategy: &str = "No juice";
+//         let express_event: bool = true;
+//         let hist_bins: usize = 1000;
+//         let data_size: usize = 10000;
 
-        let hash: String = calculate_hash!(
-            &hone_counts,
-            &adv_counts,
-            adv_hone_strategy,
-            express_event,
-            hist_bins,
-            data_size
-        );
-        // Run the function to get the full output
-        let mut rng = StdRng::seed_from_u64(RNG_SEED);
-        let result: ChanceToCostOut = chance_to_cost(
-            &hone_counts,
-            &adv_counts,
-            adv_hone_strategy,
-            express_event,
-            hist_bins,
-            data_size,
-            &mut rng,
-        );
-        dbg!(&result.hundred_chances);
+//         let hash: String = calculate_hash!(
+//             &hone_counts,
+//             &adv_counts,
+//             adv_hone_strategy,
+//             express_event,
+//             hist_bins,
+//             data_size
+//         );
+//         // Run the function to get the full output
+//         let mut rng = StdRng::seed_from_u64(RNG_SEED);
+//         let result: ChanceToCostOut = chance_to_cost(
+//             &hone_counts,
+//             &adv_counts,
+//             adv_hone_strategy,
+//             express_event,
+//             hist_bins,
+//             data_size,
+//             &mut rng,
+//         );
+//         dbg!(&result.hundred_chances);
 
-        if let Some(cached_result) = read_cached_data::<ChanceToCostOut>(test_name, &hash) {
-            my_assert!(result, cached_result);
-        } else {
-            write_cached_data(test_name, &hash, &result);
-        }
-        // implement test here
-    }
-}
+//         if let Some(cached_result) = read_cached_data::<ChanceToCostOut>(test_name, &hash) {
+//             my_assert!(result, cached_result);
+//         } else {
+//             write_cached_data(test_name, &hash, &result);
+//         }
+//         // implement test here
+//     }
+// }

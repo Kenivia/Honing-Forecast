@@ -23,6 +23,7 @@ export function createClearAll({
     setNormalCounts,
     setAdvCounts,
     setIncomeArr,
+    setMonteCarloResult,
 }: {
     setTopGrid: React.Dispatch<React.SetStateAction<any>>
     setBottomGrid: React.Dispatch<React.SetStateAction<any>>
@@ -45,6 +46,7 @@ export function createClearAll({
     setNormalCounts: React.Dispatch<React.SetStateAction<number[][]>>
     setAdvCounts: React.Dispatch<React.SetStateAction<number[][]>>
     setIncomeArr: React.Dispatch<React.SetStateAction<number[][]>>
+    setMonteCarloResult: React.Dispatch<React.SetStateAction<any>>
 }) {
     return () => {
         // Grids and their column header checkboxes
@@ -88,6 +90,7 @@ export function createClearAll({
 
         // Reset income array
         setIncomeArr(Array.from({ length: 6 }, () => Array.from({ length: 7 }, () => 0)))
+        setMonteCarloResult(null)
     }
 }
 
