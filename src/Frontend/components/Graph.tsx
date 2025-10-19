@@ -135,6 +135,7 @@ function to_step(arr: number[]): number[] {
     return out
 }
 function to_step_points(points: Point[]): Point[] {
+    console.log(points)
     const ys = points.map((p) => p.y) // extract y values
     const stepped = to_step(ys) // reuse our to_step function
     // console.log("stepped", ys, stepped)
@@ -899,6 +900,7 @@ function Graph({
                                 key={lab}
                                 onClick={() => {
                                     // toggle visibility and bring to front by moving last in visible order
+
                                     let newVisible = visible.map((b, idx) => (idx === i ? !b : b))
 
                                     // In Raw mode, if toggling series >= index 1, sync all series >= index 1
@@ -960,13 +962,14 @@ function Graph({
                         {isLoading && hasSelection ? "Please allow up to ~5s, if it still doesnt load then something probably went wrong" : ""}
                     </div>
                     <div style={{ fontSize: 16 }}>{isLoading && hasSelection ? "Also the first run is slower because it has to spin up WebAssembly" : ""}</div>
-                    <div style={{ fontSize: 16 }}>{!isLoading && hasSelection ? "1. All your ticks have 100% success rate(+1 to +3)" : ""}</div>
+                    <div style={{ fontSize: 16 }}>{!isLoading && hasSelection ? "1. All the lines were unticked" : ""}</div>
+                    <div style={{ fontSize: 16 }}>{!isLoading && hasSelection ? "2. All your ticks have 100% success rate(+1 to +3)" : ""}</div>
                     <div style={{ fontSize: 16 }}>
                         {!isLoading && hasSelection
-                            ? "2. The x-axis was locked at too high a value, so everything fell within the first pixel/tick.(Both situations are due to every point landing on the same x value)"
+                            ? "3. The x-axis was locked at too high a value, so everything fell within the first pixel/tick.(Both situations are due to every point landing on the same x value)"
                             : ""}
                     </div>
-                    <div style={{ fontSize: 16 }}>{!isLoading && hasSelection ? "3. Sum ting wong" : ""}</div>
+                    <div style={{ fontSize: 16 }}>{!isLoading && hasSelection ? "4. Sum ting wong" : ""}</div>
                 </div>
             )}
         </div>

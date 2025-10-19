@@ -215,7 +215,7 @@ pub fn get_top_bottom(upgrade_arr: &[Upgrade], unlock_costs: &[i64]) -> Vec<Vec<
     debug_assert!(unlock_costs.len() == 2);
     const DATA_SIZE: usize = 2;
     let mut cost_data: Vec<Vec<i64>> = vec![vec![0i64; 9]; DATA_SIZE];
-    let mut rng = rand::rng();
+    let mut rng = rand::rng(); // NOTE THAT THIS IS PRODUCING NON-DETERMINISTIC RESULTS FOR TESTS!! 
     for upgrade in upgrade_arr {
         let pd_len: f64 = upgrade.prob_dist_len.saturating_sub(1) as f64;
         for trial_num in 0..DATA_SIZE {

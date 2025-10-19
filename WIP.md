@@ -26,9 +26,10 @@
 - Test average tap and ~~truncated average tap~~
 - Test Tap map generator(and improve it maybe)
 - Matrix operation libraries to speed up monte carlo and what not?
-- ~~maybe go back to caching results?~~ DEFINITELY caching ~~the monte carlo~~ + orcale bitsets
+- ~~maybe go back to caching results?~~ DEFINITELY caching the monte carlo + orcale bitsets
 - Graph is off by 0.5 all the time, and the points of interest snap the the one below(i tihnk?) which isnt quite right idk, kinda scared to touch it
 - better input cleaning for spreadsheetgrids
+- make get_top_bottom take in seeded rng
 
 ## Done / cancelled
 
