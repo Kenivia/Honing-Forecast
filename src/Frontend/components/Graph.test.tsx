@@ -100,7 +100,7 @@ describe("Graph component (unit tests)", () => {
             />
         )
 
-        expect(screen.getByText("1. All your ticks have 100% success rate(+1 to +3)")).toBeInTheDocument()
+        expect(screen.getByText("2. All your ticks have 100% success rate(+1 to +3)")).toBeInTheDocument()
     })
 
     test("clicking a legend button toggles its visibility (opacity change)", async () => {
