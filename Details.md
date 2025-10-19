@@ -1,4 +1,4 @@
-# Details, last updated 2025/10/13
+# Details, last updated 2025/10/19
 
 This calculator primarily relies on random samples. We generate "cost data" consisting of ~100k samples, where each sample is the cost of all selected upgrades. We will be using this to evaluate how good a given budget is. We compare the budget against a sample, if any of the mats are below the cost, we mark it as a fail. We repeat this for all ~100k data sets and obtain a "chance of success".
 
