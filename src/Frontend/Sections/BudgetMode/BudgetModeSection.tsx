@@ -321,7 +321,7 @@ export default function CostToChanceSection({
 
             <div style={{ marginTop: 4, color: "var(--text-muted)", fontSize: "var(--font-size-xs)" }}>
                 {chance_result && monteCarloResult ? (
-                    <>Run time: {Number(chance_result.run_time) + Number(monteCarloResult.run_time)}s</>
+                    <>Run time: {(Number(chance_result.run_time) + Number(monteCarloResult.run_time)).toFixed(2)}s</>
                 ) : (
                     "Run time: Calculating..."
                 )}
