@@ -2,25 +2,29 @@
 
 This calculator primarily relies on random samples. We generate "cost data" consisting of ~100k samples, where each sample is the cost of all selected upgrades. We will be using this to evaluate how good a given budget is. We compare the budget against a sample, if any of the mats are below the cost, we mark it as a fail. We repeat this for all ~100k data sets and obtain a "chance of success".
 
-## Basic mode
+## Chance mode
 
-The question is: **"How much mats do I need, to have x % chance of success?"** Turns out there's multiple answers for this - you can one tap your armor and pity your weapon, then you only need a little bit of blue but a LOT of everything else.
+The question is: *"How much mats do I need, to have x % chance of success?"* Turns out there's multiple answers for this - you can one tap your armor and pity your weapon, then you only need a little bit of blue but a LOT of everything else. This makes it quite difficult to give one answer to this question.
 
-In Basic mode, we assume that every material falls in the same percentile(its actually split into 1000 buckets). For example, if 69% of peolpe used less than 100k red, 69% of people used less than 200k blue, and 69% of people ...blah blah for all 7 mats - we put these(100k, 200k, ...) together and figure out the combined chance of success of this. We try this for all percentiles. If the result falls closest to your x%, that'll be the result we display.
+In Chance mode, we assume that every material falls in the same percentile(its actually split into 1000 buckets). For example, if 69% of peolpe used less than 100k red, 69% of people used less than 200k blue, and 69% of people ...blah blah for all 7 mats - we put these(100k, 200k, ...) together and figure out the combined chance of success of this. We try this for all percentiles. If the result falls closest to your x%, that'll be the result we display.
 
-## Advanced mode
+This is not perfect as it falsely assumes that we earn/buy mats evenly. This is a work in progress
 
-We may have an abundance of one mat and a bottleneck of another. Clearly we should produce a result that increases the bottleneck more than the abundant one, but how exactly?
+## Budget mode
 
-We first find the optimal way to spend our gold(I'm working on allowing selling mats) to achieve the highest chance of success. Then we increase our gold budget by some increment, up until we can afford to buy all mats til pity. Then we do a similiar thing to Basic mode - we test these arbitrary budgets(that each are the highest chance given some gold) for what percent chance of success they are, and show whatever's the closest to the desired chnace slider.
+There are two sub-modes within this:
 
-### The juice, the free taps and the bane of my existence
+### Buying mats with gold
 
-Due to how our algorithm is implemented, evaluating the effect of a juiced tap on the overall chance of success is exceedingly difficult. This is because changing a juice usage will affect the whole cost_data and that is no beuno.
+- DONE *"How much gold do I need for x%"* is the central question. This is fairly easy to answer(we rank the cost data by their equivalent gold cost and find the appropriate percentile according to x%). However:
+- **WIP** An estimate of how much gold is spent on each mat / how much of each mats will need to be bought. This is a little bit vague, and I'm still working on how to interpret(let alone answer) this.
+- DONE? Juice & Free tap usage optimized to minimize gold cost. Currently the we work out the juice/free tap usage by finding the average decrease in gold equivaleent cost, which (i think?) achieve this. This also gives an estimated gold value.
+- **WIP** Juice purchasing recommendation given market price / juice box 1-to-3 opening optimization.
 
-Currently we resort to simply calculating the expected decrease in mats usage and convert it into gold, then use our juice & free taps accordingly.
+### Not buying mats with gold
 
-This is a work in progress
+- DONE *"What's the chance that I finish all the taps before running out of something?"* We simply comepare the given budget against each entry in cost data and record how many succeeded.
+- **WIP** juice & free tap usage optimized to maximize this chance of success.
 
 ## Forecast mode
 

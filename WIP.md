@@ -3,8 +3,10 @@
 
 ## Next big step(s)
 
-- ~~True juice usage optimization(maximize chance of success)~~ might not be possible, at least with beam search because evaluating the effect is way too hard but WE WILL TRY
+- True juice optimization for success chance
+- Budget needed estimation -> merge chance & budget mode
 - Books & scroll calculations
+- Juice / Book / Scroll purchase & chest openinig optimization
 
 ## Other features
 
@@ -25,11 +27,12 @@
 - Test countfailure non-naive version actually works
 - Test average tap and ~~truncated average tap~~
 - Test Tap map generator(and improve it maybe)
+
 - Matrix operation libraries to speed up monte carlo and what not?
-- ~~maybe go back to caching results?~~ DEFINITELY caching the monte carlo + orcale bitsets
 - Graph is off by 0.5 all the time, and the points of interest snap the the one below(i tihnk?) which isnt quite right idk, kinda scared to touch it
 - better input cleaning for spreadsheetgrids
 - make get_top_bottom take in seeded rng
+- cache using array buffer? dont know if it's worth the effort
 
 ## Done / cancelled
 
@@ -43,3 +46,4 @@
 - ~~Test bitset success count evaluations~~
 - ~~Optimize how chance_to_chance works~~
 - ~~Juice box opening optimization(do i open for red or blue)~~
+- ~~maybe go back to caching results?DEFINITELY caching the monte carlo + orcale bitsets~~
