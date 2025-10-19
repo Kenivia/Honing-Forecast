@@ -110,9 +110,9 @@ export default function ChanceToCostSection({
                                     margin: 0,
                                 }}
                             >
-                                {cost_result && monteCarloResult ? (
+                                {cost_result ? (
                                     <>
-                                        Run time: {Number(cost_result.run_time) + Number(monteCarloResult.run_time)}s{"\nActual chance: "}
+                                        Run time: {Number(cost_result.run_time)}s{"\nActual chance: "}
                                         {cost_result.hundred_chances[parseInt(desired_chance)]?.toFixed(2)}%
                                     </>
                                 ) : (

@@ -97,6 +97,7 @@ self.addEventListener("message", async (ev) => {
             hundred_gold_costs: out.hundred_gold_costs,
             chance_if_buy: (out.chance_if_buy * 100).toFixed(2),
         }
+        // console.log(result.hist_counts)
     } else if (which_one == "CostToChanceArr") {
         let out = await CostToChanceArrWasm(payload)
 

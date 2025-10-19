@@ -1,8 +1,9 @@
 // use crate::cost_to_chance::compute_all_gold_costs;
 use crate::helpers::{average_juice_cost, calc_unlock, count_failure};
 use crate::histogram::histograms_for_all_costs;
-use crate::monte_carlo::{generate_budget_data, get_top_bottom};
+use crate::monte_carlo::{generate_budget_data, get_top_bottom, monte_carlo_data};
 use crate::parser::{Upgrade, parser};
+use rand::Rng;
 use serde::{Deserialize, Serialize};
 // find the budget in budget_data that most closely matches desired_chance
 fn find_best_budget_for_this_chance(
@@ -51,13 +52,15 @@ pub struct ChanceToCostOut {
     pub hundred_chances: Vec<f64>,      // actually 101 length, 0 to 100%
 }
 
-pub fn chance_to_cost(
+pub fn chance_to_cost<R: Rng>(
     hone_counts: &[Vec<i64>],
     adv_counts: &[Vec<i64>],
     adv_hone_strategy: &str,
     express_event: bool,
     hist_bins: usize,
-    cost_data: &[[i64; 9]],
+    data_size: usize,
+    mut rng: &mut R,
+    // cost_data: &[[i64; 9]],
 ) -> ChanceToCostOut {
     let budget_size: usize = 1000;
 
@@ -68,9 +71,10 @@ pub fn chance_to_cost(
         express_event,
     );
 
-    let unlock_cost: Vec<i64> = calc_unlock(hone_counts, adv_counts, express_event);
-    let top_bottom: Vec<Vec<i64>> = get_top_bottom(&upgrade_arr, &unlock_cost);
-
+    let unlock_costs: Vec<i64> = calc_unlock(hone_counts, adv_counts, express_event);
+    let top_bottom: Vec<Vec<i64>> = get_top_bottom(&upgrade_arr, &unlock_costs);
+    let cost_data: Vec<[i64; 9]> =
+        monte_carlo_data(data_size, &upgrade_arr, &unlock_costs, 0, &mut rng);
     let mut budget_data: Vec<Vec<i64>> = generate_budget_data(&cost_data, &[0_i64; 7], budget_size);
     budget_data.push(top_bottom[1].clone());
 

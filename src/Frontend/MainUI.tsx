@@ -476,7 +476,7 @@ export default function HoningForecastUI() {
             setResult: setMonteCarloResult,
         })
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [advStrategyKey, expressEventKey, dataSizeKey, normalCountsKey, advCountsKey])
+    }, [advStrategyKey, expressEventKey, dataSizeKey, normalCountsKey, advCountsKey, budgetKey, userMatsKey])
 
     const chanceToCostWorkerRef = useRef<Worker | null>(null)
     const [chanceToCostBusy, setChanceToCostBusy] = useState(false)
@@ -491,10 +491,9 @@ export default function HoningForecastUI() {
             setBusy: setChanceToCostBusy,
             setResult: setChanceToCostResult,
             setCachedGraphData: setCachedCostGraphData,
-            dependency: monteCarloResult != null,
         })
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [advStrategyKey, expressEventKey, graphBucketSizeKey, dataSizeKey, normalCountsKey, advCountsKey, monteCarloResult])
+    }, [advStrategyKey, expressEventKey, graphBucketSizeKey, dataSizeKey, normalCountsKey, advCountsKey])
 
     const costToChanceWorkerRef = useRef<Worker | null>(null)
     const [costToChanceBusy, setCostToChanceBusy] = useState(false)

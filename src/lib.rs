@@ -148,25 +148,15 @@ pub fn chance_to_cost_wrapper(input: JsValue) -> JsValue {
     let adv_counts: Vec<Vec<i64>> = get_count(payload.adv_counts, payload.adv_hone_ticks);
 
     let adv_hone_strategy: String = payload.adv_hone_strategy;
-
-    let cost_vec: Vec<Vec<i64>> = payload.cost_data.unwrap();
-    let cost_data: Vec<[i64; 9]> = cost_vec
-        .into_iter()
-        .map(|row| {
-            let mut a = [0i64; 9];
-            for (i, v) in row.into_iter().enumerate().take(9) {
-                a[i] = v;
-            }
-            a
-        })
-        .collect();
+    let mut rng: ThreadRng = rand::rng();
     let out: ChanceToCostOut = chance_to_cost(
         &normal_counts,
         &adv_counts,
         &adv_hone_strategy,
         payload.express_event,
         payload.bucket_count,
-        &cost_data,
+        payload.data_size.unwrap(),
+        &mut rng,
     );
 
     // Return a JS object with fields to avoid brittle tuple indexing

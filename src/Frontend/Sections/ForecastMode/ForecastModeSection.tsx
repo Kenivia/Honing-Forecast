@@ -297,7 +297,7 @@ export default function LongTermSection({
         }
         // debug
         // console.log('graphData: truncateLen=', truncateLen, 'counts lengths=', counts.map(c => c.length))
-        console.log(longTermResult)
+        // console.log(longTermResult)
         return {
             counts,
             mins,
