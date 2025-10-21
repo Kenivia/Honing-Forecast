@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react"
 import "./separator.css"
 
-type Page = "chance-to-cost" | "cost-to-chance" | "gamba" | "forecast"
+type Page = "cost-to-chance" | "gamba" | "forecast" //"chance-to-cost" |
 
 type SeparatorProps = {
     activePage: Page
@@ -21,7 +21,7 @@ export default function Separator({ activePage, onPageChange }: SeparatorProps) 
     }
 
     const getSeparatorClass = () => {
-        if (activePage === "chance-to-cost") return "hf-separator chance-active"
+        // if (activePage === "chance-to-cost") return "hf-separator chance-active"
         if (activePage === "cost-to-chance") return "hf-separator budget-active"
         if (activePage === "gamba") return "hf-separator gamba-active"
         if (activePage === "forecast") return "hf-separator longterm-active"
@@ -31,7 +31,7 @@ export default function Separator({ activePage, onPageChange }: SeparatorProps) 
     const getButtonClass = (page: Page) => {
         const baseClass = "hf-btn"
         if (activePage === page) {
-            if (page === "chance-to-cost") return `${baseClass} chance-selected`
+            // if (page === "chance-to-cost") return `${baseClass} chance-selected`
             if (page === "cost-to-chance") return `${baseClass} budget-selected`
             if (page === "gamba") return `${baseClass} gamba-selected`
             if (page === "forecast") return `${baseClass} longterm-selected`
@@ -41,14 +41,14 @@ export default function Separator({ activePage, onPageChange }: SeparatorProps) 
 
     return (
         <div className={getSeparatorClass()}>
-            <button className={getButtonClass("chance-to-cost")} onClick={() => handleButtonClick("chance-to-cost")}>
+            {/* <button className={getButtonClass("chance-to-cost")} onClick={() => handleButtonClick("chance-to-cost")}>
                 <span className="hf-label">Chance mode</span>
                 <div className="hf-help">I want to have x% chance to pass, how much mats will I need?</div>
-            </button>
+            </button> */}
 
             <button className={getButtonClass("cost-to-chance")} onClick={() => handleButtonClick("cost-to-chance")}>
-                <span className="hf-label">Budget mode</span>
-                <div className="hf-help">I have this much mats, what are my odds of success?</div>
+                <span className="hf-label">idk what name this should be</span>
+                <div className="hf-help">I want x% chance of success, how much will it cost?</div>
             </button>
 
             <button className={getButtonClass("forecast")} onClick={() => handleButtonClick("forecast")}>

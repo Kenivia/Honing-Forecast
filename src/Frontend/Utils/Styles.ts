@@ -157,18 +157,18 @@ export type ColumnDef = {
 export const createColumnDefs = (_autoGoldValues: boolean) => {
     const chanceToCostColumnDefs: ColumnDef[] = [
         {
-            headerName: "Estimated cost",
+            headerName: "Est. cost",
             editable: false,
             flex: 1,
             background: "var(--grid-cell-bg-readonly)",
             backgroundSelected: "var(--grid-cell-selected-readonly)",
-            color: "var(--text-optimized)",
+            color: "var(--text-success)",
         },
     ]
 
     const costToChanceColumnDefs: ColumnDef[] = [
         {
-            headerName: "Owned now",
+            headerName: "Owned mats (optional)",
             editable: true,
             flex: 1,
             background: "var(--grid-cell-bg)",

@@ -202,6 +202,7 @@ export function createCancelableWorkerRunner() {
             if (existingTimer) {
                 clearTimeout(existingTimer)
             }
+            setResult(null)
             // schedule new timer (window.setTimeout returns number)
             const t = window.setTimeout(() => {
                 timers.delete(debounceKey)

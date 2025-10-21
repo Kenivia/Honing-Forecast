@@ -76,39 +76,9 @@ export default function CostToChanceSection({
                 }}
             >
                 {/* Budget input, chance of success and individual chances */}
-                <div style={{ display: "flex", gap: 0, alignItems: "flex-start", marginLeft: 200 }}>
-                    {/* Optimized chances slider and answer*/}
-                    <div style={{ flexDirection: "column" }}>
-                        {/* <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8, marginLeft: 0 }}>
-                                <LabeledCheckbox label="Custom Gold values" checked={!autoGoldValues} setChecked={(checked) => setAutoGoldValues(!checked)} />
-                            </div> */}
 
-                        {chance_result && <div style={{ display: "flex", flexDirection: "column", gap: 12, marginTop: 0, marginLeft: 0 }}></div>}
-                    </div>
-
-                    {/* <div style={{ marginBottom: 16, marginTop: 30, width: 210 }}>
-                        <SpreadsheetGrid
-                            columnDefs={chanceToCostColumnDefs}
-                            labels={OUTPUT_LABELS}
-                            sheetValuesArr={
-                                cost_result
-                                    ? [
-                                          Object.fromEntries(
-                                              OUTPUT_LABELS.map((label, lab_index) => [
-                                                  label,
-                                                  String(cost_result.hundred_budgets[parseInt(desired_chance)][lab_index]),
-                                              ])
-                                          ),
-                                      ]
-                                    : [Object.fromEntries(OUTPUT_LABELS.map((label) => [label, "Calculating..."]))]
-                            }
-                            setSheetValuesArr={[() => {}]} // No-op for read-only
-                        />
-                    </div> */}
-                </div>
-
-                <div style={{ display: "flex", flexDirection: "row", gap: 100, marginTop: 0, marginLeft: 30 }}>
-                    <div style={{ marginBottom: 16, width: 310, marginLeft: 10 }}>
+                <div style={{ display: "flex", flexDirection: "row", gap: 100, marginTop: 0, marginLeft: 0, width: 1200 }}>
+                    <div style={{ marginBottom: 16, width: 310, marginLeft: 0 }}>
                         <SpreadsheetGrid
                             columnDefs={costToChanceColumnDefs}
                             labels={INPUT_LABELS}
@@ -117,8 +87,57 @@ export default function CostToChanceSection({
                         />
                     </div>
 
-                    <div style={{ flexDirection: "column", marginTop: 50 }}>
-                        <div style={{ display: "flex", flexDirection: "column", width: 600, marginTop: 0 }}>
+                    <div style={{ flexDirection: "column", marginTop: 20 }}>
+                        {!noBuyChecked && (
+                            <div
+                                style={{
+                                    display: "flex",
+                                    flexDirection: "row",
+                                    gap: 0,
+                                    alignItems: "center",
+                                    width: 300,
+                                    marginLeft: -155,
+                                    marginTop: 20,
+                                    marginBottom: -30,
+                                }}
+                            >
+                                <SliderBundle
+                                    desiredChance={String(Math.max(Math.floor(chance_result?.optimized_chance ?? 0), Number(desired_chance)))}
+                                    uncleanedDesiredChance={uncleaned_desired_chance}
+                                    onDesiredChange={(value) =>
+                                        onDesiredChange(String(Math.max(Math.floor(chance_result?.optimized_chance ?? 0), Number(value))))
+                                    }
+                                    onDesiredBlur={onDesiredBlur}
+                                />
+                            </div>
+                        )}
+                        {!noBuyChecked && (
+                            <div style={{ marginBottom: 16, width: 210, marginLeft: 30, marginTop: 0 }}>
+                                <SpreadsheetGrid
+                                    columnDefs={chanceToCostColumnDefs}
+                                    labels={OUTPUT_LABELS.slice(0, 7)}
+                                    sheetValuesArr={
+                                        chance_result
+                                            ? [
+                                                  Object.fromEntries(
+                                                      OUTPUT_LABELS.slice(0, 7).map((label, lab_index) => [
+                                                          label,
+                                                          String(chance_result.typical_costs[parseInt(desired_chance)][lab_index]),
+                                                      ])
+                                                  ),
+                                              ]
+                                            : [Object.fromEntries(OUTPUT_LABELS.map((label) => [label, "Calculating..."]))]
+                                    }
+                                    setSheetValuesArr={[() => {}]} // No-op for read-only
+                                />
+                            </div>
+                        )}
+                        {/* {!noBuyChecked && (
+                         
+                        )} */}
+                    </div>
+                    <div style={{ flexDirection: "column", marginTop: 70, marginLeft: noBuyChecked ? 240 : 10 }}>
+                        <div style={{ display: "flex", flexDirection: "column", width: 300, marginTop: 0 }}>
                             <LabeledCheckbox
                                 label="I will buy mats with gold when I run out"
                                 checked={!noBuyChecked}
@@ -128,7 +147,7 @@ export default function CostToChanceSection({
                             />
 
                             <LabeledCheckbox
-                                label="I don't want to buy anything"
+                                label="I will stop when I run out"
                                 checked={noBuyChecked}
                                 setChecked={setShowOptimizedDetails}
                                 textColor="var(--text-optimized)"
@@ -161,33 +180,12 @@ export default function CostToChanceSection({
                             </div>
                         </div>
                         {!noBuyChecked && (
-                            <div
-                                style={{
-                                    display: "flex",
-                                    flexDirection: "row",
-                                    gap: 0,
-                                    alignItems: "center",
-                                    width: 300,
-                                    marginLeft: -95,
-                                    marginTop: 20,
-                                    marginBottom: -30,
-                                }}
-                            >
-                                <SliderBundle
-                                    desiredChance={String(Math.max(Math.floor(chance_result?.optimized_chance ?? 0), Number(desired_chance)))}
-                                    uncleanedDesiredChance={uncleaned_desired_chance}
-                                    onDesiredChange={(value) =>
-                                        onDesiredChange(String(Math.max(Math.floor(chance_result?.optimized_chance ?? 0), Number(value))))
-                                    }
-                                    onDesiredBlur={onDesiredBlur}
-                                />
-                            </div>
-                        )}
-                        {!noBuyChecked && (
-                            <div style={{ display: "flex", flexDirection: "row", marginTop: 8, marginLeft: 0 }}>
-                                <div style={{ color: "var(--text-primary)", fontSize: 20, marginTop: 8 }}>Extra gold needed for</div>
-                                <div style={{ color: "var(--input-bg)", fontSize: 24, marginLeft: 8, marginTop: 4 }}>{parseInt(desired_chance)}%: </div>
-                                <div style={{ color: "var(--text-success)", fontSize: 28, marginLeft: 8 }}>
+                            <div style={{ display: "flex", flexDirection: "column" }}>
+                                <div style={{ display: "flex", flexDirection: "row", marginTop: 8, marginLeft: 0 }}>
+                                    <div style={{ color: "var(--text-primary)", fontSize: 20, marginTop: 8 }}>Extra gold needed for</div>
+                                    <div style={{ color: "var(--input-bg)", fontSize: 24, marginLeft: 8, marginTop: 4 }}>{parseInt(desired_chance)}%: </div>
+                                </div>
+                                <div style={{ color: "var(--text-success)", fontSize: 28, marginRight: 80, textAlign: "center" }}>
                                     {chance_result
                                         ? Math.max(0, chance_result.hundred_gold_costs[parseInt(desired_chance)] - budget_inputs["Gold"]).toLocaleString(
                                               "en-US",
@@ -198,39 +196,32 @@ export default function CostToChanceSection({
                                           )
                                         : "Calculating..."}
                                 </div>
-                                <div style={{ marginBottom: 16, width: 210 }}>
-                                    <SpreadsheetGrid
-                                        columnDefs={chanceToCostColumnDefs}
-                                        labels={OUTPUT_LABELS.slice(0, 7)}
-                                        sheetValuesArr={
-                                            chance_result
-                                                ? [
-                                                      Object.fromEntries(
-                                                          OUTPUT_LABELS.slice(0, 7).map((label, lab_index) => [
-                                                              label,
-                                                              String(chance_result.typical_costs[parseInt(desired_chance)][lab_index]),
-                                                          ])
-                                                      ),
-                                                  ]
-                                                : [Object.fromEntries(OUTPUT_LABELS.map((label) => [label, "Calculating..."]))]
-                                        }
-                                        setSheetValuesArr={[() => {}]} // No-op for read-only
-                                    />
+
+                                <div
+                                    style={{
+                                        marginTop: 5,
+                                        fontSize: "var(--font-size-sm)",
+                                        fontStyle: "italic",
+                                        whiteSpace: "wrap",
+                                        marginLeft: 0,
+                                        width: 320,
+                                    }}
+                                >
+                                    You must balance <span style={{ fontWeight: "bold", fontStyle: "normal" }}>pre-buying</span> (to get a good deal from the
+                                    market) and the risk of <span style={{ fontWeight: "bold", fontStyle: "normal" }}>over-buying</span> by yourself.
                                 </div>
-                            </div>
-                        )}
-                        {!noBuyChecked && (
-                            <div
-                                style={{
-                                    marginTop: 0,
-                                    fontSize: "var(--font-size-xs)",
-                                    fontStyle: "italic",
-                                    whiteSpace: "wrap",
-                                    marginLeft: 0,
-                                    paddingTop: 25,
-                                }}
-                            >
-                                We are unable to calculate how much gold is spent on each mat right now. This is a work in progress
+                                <div
+                                    style={{
+                                        marginTop: 5,
+                                        fontSize: "var(--font-size-xs)",
+                                        whiteSpace: "wrap",
+                                        marginLeft: 0,
+                                        width: 320,
+                                    }}
+                                >
+                                    The above Gold value assumes that you buy mats as you need them (no overbuying, optimistic) and the left numbers assume you
+                                    pre-buy most things.
+                                </div>
                             </div>
                         )}
                         {noBuyChecked && (
@@ -277,6 +268,29 @@ export default function CostToChanceSection({
                     </div>
                 )}
 
+                <div style={{ display: "flex", marginLeft: 150, marginBottom: 30, marginTop: 0, width: GRAPH_WIDTH }}>
+                    <div style={{ flex: 1 }}>
+                        <Graph
+                            title="Cost distribution (uses free tap & juice)"
+                            labels={OUTPUT_LABELS}
+                            counts={AnythingTicked ? chance_result?.hist_counts || cachedChanceGraphData?.hist_counts : null}
+                            mins={chance_result?.hist_mins || cachedChanceGraphData?.hist_mins}
+                            maxs={chance_result?.hist_maxs || cachedChanceGraphData?.hist_maxs}
+                            width={GRAPH_WIDTH}
+                            height={GRAPH_HEIGHT}
+                            budgets={OUTPUT_LABELS.map((label) => Number(budget_inputs[label]))}
+                            hasSelection={AnythingTicked}
+                            isLoading={CostToChanceBusy}
+                            cumulative={cumulativeGraph}
+                            lockXAxis={lockXAxis}
+                            lockedMins={lockedMins}
+                            lockedMaxs={lockedMaxs}
+                            graphType={"Histogram"}
+                            additionalBudgets={!noBuyChecked ? chance_result?.typical_costs[parseInt(desired_chance)] || null : null}
+                        />
+                    </div>
+                </div>
+
                 <div style={{ display: "flex", gap: 0, alignItems: "flex-start", marginTop: 0, flexDirection: "column", width: 1000 }}>
                     {chance_result && (
                         <div style={{ display: "flex", flexDirection: "row", marginTop: 0 }}>
@@ -292,7 +306,7 @@ export default function CostToChanceSection({
                             </div>
                             <div>
                                 <div style={{ ...styles.inputLabelCell, whiteSpace: "nowrap", color: "var(--series-red)" }}>Red juice (weapon):</div>
-                                <div style={{ marginTop: 4, color: "var(--text-muted)", fontSize: "var(--font-size-sm)", width: 330 }}>
+                                <div style={{ marginTop: 4, color: "var(--text-muted)", fontSize: "var(--font-size-sm)", width: 450 }}>
                                     {(chance_result.juice_strings_weapon || []).map((s: string, idx: number) => (
                                         <div key={"Red juice value" + idx}>
                                             {idx ? idx + "." : ""} {s}
@@ -345,31 +359,6 @@ export default function CostToChanceSection({
                     "Run time: Calculating..."
                 )}
             </div>
-
-            {chance_result && ( //&& (chance_result.reasons?.length > 0 || chance_result.upgrade_strings?.length > 0 || chance_result.juice_strings_armor?.length > 0 || chance_result.juice_strings_weapon?.length > 0)) && (
-                <div style={{ display: "flex", marginLeft: 150, marginBottom: 30, marginTop: 30, width: GRAPH_WIDTH }}>
-                    <div style={{ flex: 1 }}>
-                        <Graph
-                            title="Cost distribution(uses free tap & juice)"
-                            labels={OUTPUT_LABELS}
-                            counts={AnythingTicked ? chance_result?.hist_counts || cachedChanceGraphData?.hist_counts : null}
-                            mins={chance_result?.hist_mins || cachedChanceGraphData?.hist_mins}
-                            maxs={chance_result?.hist_maxs || cachedChanceGraphData?.hist_maxs}
-                            width={GRAPH_WIDTH}
-                            height={GRAPH_HEIGHT}
-                            budgets={OUTPUT_LABELS.map((label) => Number(budget_inputs[label]))}
-                            hasSelection={AnythingTicked}
-                            isLoading={CostToChanceBusy}
-                            cumulative={cumulativeGraph}
-                            lockXAxis={lockXAxis}
-                            lockedMins={lockedMins}
-                            lockedMaxs={lockedMaxs}
-                            graphType={"Histogram"}
-                            // additionalBudgets={showOptimized ? cost_result_optimized?.hundred_budgets[parseInt(desired_chance)] : null}
-                        />
-                    </div>
-                </div>
-            )}
         </div>
     )
 }

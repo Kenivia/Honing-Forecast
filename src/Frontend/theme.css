@@ -72,7 +72,7 @@
     --accent-hover: #0d7a8a;
 
     /* Additional Colors */
-    --bright-green: #acfffeff;
+    --bright-green: rgb(82, 255, 91);
     /* color of average cost, this used to be bright green... */
 
     --bright-green-glow: rgba(0, 255, 0, 0.507);

@@ -188,7 +188,7 @@ pub fn juice_to_array(
             .collect(),
         false,
         vec![format!(
-            "You should buy more if the price is lower than: {next_armor_value}"
+            "Next value: {next_armor_value}. You should buy more if the price is lower than {next_armor_value}"
         )],
     );
     // let min_weapon_value: f64 = weapon_pairs
@@ -216,7 +216,7 @@ pub fn juice_to_array(
             .collect(),
         false,
         vec![format!(
-            "You should buy more if the price is lower than: {next_weapon_value}"
+            "Next value: {next_weapon_value}. You should buy more if the price is lower than {next_weapon_value}."
         )],
     );
 

@@ -573,7 +573,7 @@ function Graph({
             })
         }
 
-        renderFor(budgets, "poi-primary", 5, "#000")
+        renderFor(budgets, "poi-primary", 5, graphType == "Raw" ? "#000" : "var(--input-bg)")
         renderFor(additionalBudgets, "poi-additional", 7, "var(--bright-green)")
 
         return elems.length ? <g>{elems}</g> : null
@@ -596,6 +596,7 @@ function Graph({
         yMax,
         labels,
         effectiveColors,
+        graphType,
     ])
 
     // Memoize hover marker computation

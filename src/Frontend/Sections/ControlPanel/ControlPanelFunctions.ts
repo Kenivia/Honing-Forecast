@@ -18,7 +18,7 @@ export function createClearAll({
     setLockXAxis,
     setLockedMins,
     setLockedMaxs,
-    setShowAverage,
+    // setShowAverage,
     setUseGridInput,
     setNormalCounts,
     setAdvCounts,
@@ -41,7 +41,7 @@ export function createClearAll({
     setLockXAxis: React.Dispatch<React.SetStateAction<boolean>>
     setLockedMins: React.Dispatch<React.SetStateAction<number[] | null>>
     setLockedMaxs: React.Dispatch<React.SetStateAction<number[] | null>>
-    setShowAverage: React.Dispatch<React.SetStateAction<boolean>>
+    // setShowAverage: React.Dispatch<React.SetStateAction<boolean>>
     setUseGridInput: React.Dispatch<React.SetStateAction<boolean>>
     setNormalCounts: React.Dispatch<React.SetStateAction<number[][]>>
     setAdvCounts: React.Dispatch<React.SetStateAction<number[][]>>
@@ -79,7 +79,7 @@ export function createClearAll({
         setLockedMaxs(null)
 
         // Reset show average checkbox
-        setShowAverage(false)
+        // setShowAverage(false)
 
         // Reset grid input checkbox to ticked (default)
         setUseGridInput(true)

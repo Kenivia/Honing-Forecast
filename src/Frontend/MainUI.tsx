@@ -6,7 +6,7 @@ import { readSettings, writeSettings } from "./Utils/Settings.ts"
 import ControlPanel from "./Sections/ControlPanel/ControlPanel.tsx"
 import NormalHoningPanel from "./Sections/UpgradeSelection/NormalHoningPanel.tsx"
 import AdvancedHoningPanel from "./Sections/UpgradeSelection/AdvancedHoningPanel.tsx"
-import ChanceToCostSection from "./Sections/ChanceMode/ChanceModeSection.tsx"
+// import ChanceToCostSection from "./Sections/ChanceMode/ChanceModeSection.tsx"
 import CostToChanceSection from "./Sections/BudgetMode/BudgetModeSection.tsx"
 // const CostToChanceSection = React.lazy(() => import('./CostToChanceSection.tsx'));
 
@@ -40,9 +40,9 @@ export default function HoningForecastUI() {
 
     const [prev_checked_arr, set_prev_checked_arr] = useState(() => Array.from({ length: TOP_COLS }, () => false)) // the extra rows on top of the grids
     const [prev_checked_arr_bottom, set_prev_checked_arr_bottom] = useState(() => Array.from({ length: BOTTOM_COLS }, () => false))
-    const [cumulativeGraph, setCumulativeGraph] = useState<boolean>(false)
+    const [cumulativeGraph, setCumulativeGraph] = useState<boolean>(true)
     const [dataSize, setDataSize] = useState<string>(() => "100000")
-    const [activePage, setActivePage] = useState<"chance-to-cost" | "cost-to-chance" | "gamba" | "forecast">("chance-to-cost")
+    const [activePage, setActivePage] = useState<"cost-to-chance" | "gamba" | "forecast">("cost-to-chance") // "chance-to-cost" |
     const [mainScale, setMainScale] = useState<number>(1)
     const [zoomCompensation, setZoomCompensation] = useState<number>(1)
 
@@ -53,7 +53,7 @@ export default function HoningForecastUI() {
     const [lockXAxis, setLockXAxis] = useState<boolean>(false)
     const [lockedMins, setLockedMins] = useState<number[] | null>(null)
     const [lockedMaxs, setLockedMaxs] = useState<number[] | null>(null)
-    const [showAverage, setShowAverage] = useState<boolean>(false)
+    // const [showAverage, setShowAverage] = useState<boolean>(false)
     const [useGridInput, setUseGridInput] = useState<boolean>(true)
 
     // Numeric input state for when useGridInput is false
@@ -381,8 +381,8 @@ export default function HoningForecastUI() {
             const newVal = !prev
             if (!prev) {
                 // we're turning it ON: snapshot current mins/maxs from cached data
-                const currentMins = cachedChanceGraphData?.hist_mins || cachedCostGraphData?.hist_mins || null
-                const currentMaxs = cachedChanceGraphData?.hist_maxs || cachedCostGraphData?.hist_maxs || null
+                const currentMins = cachedChanceGraphData?.hist_mins || null
+                const currentMaxs = cachedChanceGraphData?.hist_maxs || null
                 setLockedMins(currentMins ? currentMins.slice() : null)
                 setLockedMaxs(currentMaxs ? currentMaxs.slice() : null)
             } else {
@@ -478,22 +478,22 @@ export default function HoningForecastUI() {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [advStrategyKey, expressEventKey, dataSizeKey, normalCountsKey, advCountsKey, budgetKey, userMatsKey])
 
-    const chanceToCostWorkerRef = useRef<Worker | null>(null)
-    const [chanceToCostBusy, setChanceToCostBusy] = useState(false)
-    const [chanceToCostResult, setChanceToCostResult] = useState<any>(null)
-    const [cachedCostGraphData, setCachedCostGraphData] = useState<{ hist_counts?: any; hist_mins?: any; hist_maxs?: any } | null>(null)
+    // const chanceToCostWorkerRef = useRef<Worker | null>(null)
+    // const [chanceToCostBusy, setChanceToCostBusy] = useState(false)
+    // const [chanceToCostResult, setChanceToCostResult] = useState<any>(null)
+    // const [cachedCostGraphData, setCachedCostGraphData] = useState<{ hist_counts?: any; hist_mins?: any; hist_maxs?: any } | null>(null)
 
-    useEffect(() => {
-        runner.start({
-            which_one: "ChanceToCost",
-            payloadBuilder,
-            workerRef: chanceToCostWorkerRef,
-            setBusy: setChanceToCostBusy,
-            setResult: setChanceToCostResult,
-            setCachedGraphData: setCachedCostGraphData,
-        })
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [advStrategyKey, expressEventKey, graphBucketSizeKey, dataSizeKey, normalCountsKey, advCountsKey])
+    // useEffect(() => {
+    //     runner.start({
+    //         which_one: "ChanceToCost",
+    //         payloadBuilder,
+    //         workerRef: chanceToCostWorkerRef,
+    //         setBusy: setChanceToCostBusy,
+    //         setResult: setChanceToCostResult,
+    //         setCachedGraphData: setCachedCostGraphData,
+    //     })
+    //     // eslint-disable-next-line react-hooks/exhaustive-deps
+    // }, [advStrategyKey, expressEventKey, graphBucketSizeKey, dataSizeKey, normalCountsKey, advCountsKey])
 
     const costToChanceWorkerRef = useRef<Worker | null>(null)
     const [costToChanceBusy, setCostToChanceBusy] = useState(false)
@@ -512,19 +512,19 @@ export default function HoningForecastUI() {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [budgetKey, advStrategyKey, expressEventKey, graphBucketSizeKey, autoOptKey, userMatsKey, dataSizeKey, normalCountsKey, advCountsKey, monteCarloResult])
 
-    const averageCostWorkerRef = useRef<Worker | null>(null)
-    const [averageCostBusy, setAverageCostBusy] = useState(false)
-    const [averageCostsResult, setAverageCostsResult] = useState<{ average_costs?: any } | null>(null)
-    useEffect(() => {
-        runner.start({
-            which_one: "AverageCost",
-            payloadBuilder,
-            workerRef: averageCostWorkerRef,
-            setBusy: setAverageCostBusy,
-            setResult: setAverageCostsResult,
-        })
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [advStrategyKey, expressEventKey, graphBucketSizeKey, dataSizeKey, normalCountsKey, advCountsKey])
+    // const averageCostWorkerRef = useRef<Worker | null>(null)
+    // const [averageCostBusy, setAverageCostBusy] = useState(false)
+    // const [averageCostsResult, setAverageCostsResult] = useState<{ average_costs?: any } | null>(null)
+    // useEffect(() => {
+    //     runner.start({
+    //         which_one: "AverageCost",
+    //         payloadBuilder,
+    //         workerRef: averageCostWorkerRef,
+    //         setBusy: setAverageCostBusy,
+    //         setResult: setAverageCostsResult,
+    //     })
+    //     // eslint-disable-next-line react-hooks/exhaustive-deps
+    // }, [advStrategyKey, expressEventKey, graphBucketSizeKey, dataSizeKey, normalCountsKey, advCountsKey])
 
     const parserWorkerRef = useRef<Worker | null>(null)
     const [parserResult, setparserResult] = useState<{ upgradeArr: any; unlocks: any; other_strategy_prob_dists: any } | null>(null)
@@ -557,7 +557,7 @@ export default function HoningForecastUI() {
         setLockXAxis,
         setLockedMins,
         setLockedMaxs,
-        setShowAverage,
+        // setShowAverage,
         setUseGridInput,
         setNormalCounts,
         setAdvCounts,
@@ -679,7 +679,7 @@ export default function HoningForecastUI() {
                 <Separator activePage={activePage} onPageChange={setActivePage} />
 
                 {/* Always-rendered pages with display toggle */}
-                <div className={activePage === "chance-to-cost" ? "page" : "page page--hidden"} aria-hidden={activePage !== "chance-to-cost"}>
+                {/* <div className={activePage === "chance-to-cost" ? "page" : "page page--hidden"} aria-hidden={activePage !== "chance-to-cost"}>
                     <ChanceToCostSection
                         desired_chance={desired_chance}
                         uncleaned_desired_chance={uncleaned_desired_chance}
@@ -704,7 +704,7 @@ export default function HoningForecastUI() {
                         setUserMatsValue={setUserMatsValue}
                         monteCarloResult={monteCarloResult}
                     />
-                </div>
+                </div> */}
 
                 <div className={activePage === "cost-to-chance" ? "page" : "page page--hidden"} aria-hidden={activePage !== "cost-to-chance"}>
                     <CostToChanceSection

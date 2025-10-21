@@ -100,7 +100,7 @@ export default function LongTermSection({
     // Column definitions for the long term section - always shows both budget and gold value columns
     const longTermColumnDefs: ColumnDef[] = [
         {
-            headerName: "Owned now",
+            headerName: "Owned mats (optional)",
             editable: true,
             flex: 1,
             background: "var(--grid-cell-bg)",

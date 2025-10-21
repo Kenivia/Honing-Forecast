@@ -4,7 +4,6 @@
 ## Next big step(s)
 
 - True juice optimization for success chance
-- Budget needed estimation -> merge chance & budget mode
 - Books & scroll calculations
 - Juice / Book / Scroll purchase & chest openinig optimization
 
@@ -33,6 +32,7 @@
 - better input cleaning for spreadsheetgrids
 - make get_top_bottom take in seeded rng
 - cache using array buffer? dont know if it's worth the effort
+- fix the react stuff, i think there's way too much usememo(the website feels sluggish)
 
 ## Done / cancelled
 
@@ -47,3 +47,4 @@
 - ~~Optimize how chance_to_chance works~~
 - ~~Juice box opening optimization(do i open for red or blue)~~
 - ~~maybe go back to caching results?DEFINITELY caching the monte carlo + orcale bitsets~~
+- ~~Budget needed estimation -> merge chance & budget mode~~

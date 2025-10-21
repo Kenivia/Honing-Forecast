@@ -400,9 +400,13 @@ export default function SpreadsheetGrid({ columnDefs, labels, sheetValuesArr, se
                                 alignItems: "center",
                                 justifyContent: "center",
                                 color: "var(--text-primary)",
-                                textWrap: "nowrap",
+                                textWrap: "wrap",
+                                height: colDef.headerName.length > 12 ? 30 : 15,
+                                textAlign: "center",
                                 fontWeight: 500,
                                 fontSize: "var(--font-size-md)",
+                                marginLeft: colDef.headerName.length > 12 ? -8 : -12,
+                                marginTop: colDef.headerName.length > 12 ? 0 : 18,
                             }}
                         >
                             {colDef.headerName}
