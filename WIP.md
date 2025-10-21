@@ -33,6 +33,7 @@
 - make get_top_bottom take in seeded rng
 - cache using array buffer? dont know if it's worth the effort
 - fix the react stuff, i think there's way too much usememo(the website feels sluggish)
+- improve how the cost estimation works / verify that it actually works
 
 ## Done / cancelled
 
