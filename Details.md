@@ -16,7 +16,7 @@ There are two sub-modes within this:
 
 ### Buying mats with gold
 
-- DONE *"How much gold do I need for x%"* is the central question. This is fairly easy to answer(we rank the cost data by their equivalent gold cost and find the appropriate percentile according to x%). However:
+- DONE *"How much gold do I need for x%"* is the central question. This is fairly easy to answer(we rank the cost data by their equivalent gold cost and find the appropriate percentile according to x%).
 - **WIP** An estimate of how much gold is spent on each mat / how much of each mats will need to be bought. This is a little bit vague, and I'm still working on how to interpret(let alone answer) this.
 - DONE? Juice & Free tap usage optimized to minimize gold cost. Currently the we work out the juice/free tap usage by finding the average decrease in gold equivaleent cost, which (i think?) achieve this. This also gives an estimated gold value.
 - **WIP** Juice purchasing recommendation given market price / juice box 1-to-3 opening optimization.

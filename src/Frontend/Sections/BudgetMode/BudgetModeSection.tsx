@@ -57,7 +57,7 @@ export default function CostToChanceSection({
     setShowOptimizedDetails,
     monteCarloResult,
 }: CostToChanceSectionProps) {
-    const { costToChanceColumnDefs } = createColumnDefs(false) // autoGoldValues not used for this section
+    const { chanceToCostColumnDefs, costToChanceColumnDefs } = createColumnDefs(false) // autoGoldValues not used for this section
 
     // const [showOptimized, setShowOptimized] = useState<boolean>(() => false)
     // const [showGraph, setShowGraph] = useState<boolean>(() => false);
@@ -197,6 +197,25 @@ export default function CostToChanceSection({
                                               }
                                           )
                                         : "Calculating..."}
+                                </div>
+                                <div style={{ marginBottom: 16, width: 210 }}>
+                                    <SpreadsheetGrid
+                                        columnDefs={chanceToCostColumnDefs}
+                                        labels={OUTPUT_LABELS.slice(0, 7)}
+                                        sheetValuesArr={
+                                            chance_result
+                                                ? [
+                                                      Object.fromEntries(
+                                                          OUTPUT_LABELS.slice(0, 7).map((label, lab_index) => [
+                                                              label,
+                                                              String(chance_result.typical_costs[parseInt(desired_chance)][lab_index]),
+                                                          ])
+                                                      ),
+                                                  ]
+                                                : [Object.fromEntries(OUTPUT_LABELS.map((label) => [label, "Calculating..."]))]
+                                        }
+                                        setSheetValuesArr={[() => {}]} // No-op for read-only
+                                    />
                                 </div>
                             </div>
                         )}

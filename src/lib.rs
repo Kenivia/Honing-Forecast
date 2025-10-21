@@ -113,7 +113,7 @@ pub fn cost_to_chance_wrapper(input: JsValue) -> JsValue {
 
     // let mut rng: ThreadRng = rand::rng();
     let cost_vec: Vec<Vec<i64>> = payload.cost_data.unwrap();
-    let cost_data: Vec<[i64; 9]> = cost_vec
+    let mut cost_data: Vec<[i64; 9]> = cost_vec
         .into_iter()
         .map(|row| {
             let mut a = [0i64; 9];
@@ -131,7 +131,7 @@ pub fn cost_to_chance_wrapper(input: JsValue) -> JsValue {
         payload.bucket_count,
         &user_mats_value,
         payload.adv_hone_strategy,
-        &cost_data,
+        &mut cost_data,
     );
 
     // console::log_1(&"cost_to_chance_complete".into());
