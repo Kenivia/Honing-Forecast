@@ -99,7 +99,7 @@ self.addEventListener("message", async (ev) => {
             typical_costs: out.typical_costs,
         }
 
-        console.log(result.typical_costs)
+        // console.log(result.typical_costs)
     } else if (which_one == "CostToChanceArr") {
         let out = await CostToChanceArrWasm(payload)
 

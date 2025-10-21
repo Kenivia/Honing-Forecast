@@ -3,7 +3,7 @@ use core::f64;
 // use crate::bitset::{BitsetBundle, beam_search, compute_gold_cost_from_raw, generate_bit_sets};
 use crate::constants::BUCKET_COUNT;
 
-use crate::helpers::{compress_runs, compute_gold_cost_from_raw, transpose_vec_of_vecs};
+use crate::helpers::{compress_runs, compute_gold_cost_from_raw};
 use crate::histogram::histograms_for_all_costs;
 use crate::monte_carlo::get_top_bottom;
 use crate::parser::{PreparationOutputs, Upgrade, preparation};
@@ -315,30 +315,100 @@ fn typical_cost(
     desired_chance: f64,
     price_arr: &[f64],
     input_budget_no_gold: &[i64],
-    hundred_gold_costs: &[i64],
+    target_gold: i64,
 ) -> [i64; 9] {
     let relevant_data: &[[i64; 9]] = get_percentile_window(desired_chance, cost_data_sorted);
 
-    let mut transposed_relevant_dtaa: Vec<Vec<i64>> = transpose_vec_of_vecs(relevant_data);
     // let mut median: Vec<f64> = Vec::with_capacity(9);
-
-    for row in transposed_relevant_dtaa.iter_mut() {
-        row.sort();
-    }
-    let mut percentile: Vec<i64> = vec![0; 9];
-    for i in 0..transposed_relevant_dtaa[0].len() {
-        let mut needed: Vec<i64> = Vec::with_capacity(9);
-        for z in 0..9 {
-            needed.push(transposed_relevant_dtaa[z][i]);
+    let mut average: Vec<f64> = vec![0.0; 9];
+    for data in relevant_data {
+        for i in 0..7 {
+            average[i] += data[i] as f64;
         }
-        if compute_gold_cost_from_raw(&needed, input_budget_no_gold, price_arr)
-            > hundred_gold_costs[(desired_chance * 100.0).floor() as usize] as f64
-        {
-            percentile = needed.iter().map(|x: &i64| *x).collect();
-            web_sys::console::log_1(&i.into());
+    }
+    for i in 0..7 {
+        average[i] /= relevant_data.len() as f64;
+    }
+    let mut total_cost: f64 = 0.0;
+    for (index, a) in average.iter().enumerate() {
+        if index >= 7 {
             break;
         }
+        total_cost += *a * price_arr[index];
     }
+    let mut average_spending_proportion: Vec<f64> = Vec::with_capacity(9);
+    for (index, a) in average.iter().enumerate() {
+        if index >= 7 {
+            break;
+        }
+        average_spending_proportion.push(a * price_arr[index] / total_cost);
+    }
+
+    let mut out: [i64; 9] = average
+        .iter()
+        .map(|x| x.round() as i64)
+        .collect::<Vec<i64>>()
+        .try_into()
+        .unwrap();
+    // web_sys::console::log_1(&desired_chance.into());
+    for _iteration in 0..3 {
+        // honestly idk why it doesn't just take 1 iteration but here we are
+        let gold_cost_of_average: f64 =
+            compute_gold_cost_from_raw(&out, &input_budget_no_gold, &price_arr);
+        let mut modified_gold_costs: Vec<f64> = Vec::with_capacity(cost_data_sorted.len());
+        for cost in cost_data_sorted {
+            modified_gold_costs.push(compute_gold_cost_from_raw(cost, &out, &price_arr));
+        }
+        modified_gold_costs
+            .sort_unstable_by(|a, b| a.partial_cmp(&b).unwrap_or(std::cmp::Ordering::Equal));
+        let mut current_success_chance: f64 = 1.0;
+        for (index, g) in modified_gold_costs.iter().enumerate() {
+            if *g > gold_cost_of_average - target_gold as f64 {
+                // web_sys::console::log_1(&(*g).into());
+                current_success_chance =
+                    index.saturating_sub(1) as f64 / modified_gold_costs.len() as f64;
+
+                break;
+            }
+        }
+        // web_sys::console::log_1(&current_success_chance.into());
+        // web_sys::console::log_1(&gold_cost_of_average.into());
+        // web_sys::console::log_1(&target_gold.into());
+
+        if current_success_chance >= (desired_chance - 0.005).max(0.0) {
+            break;
+        }
+        let needed_gold_for_modified: f64 = modified_gold_costs
+            [(desired_chance as f64 * modified_gold_costs.len() as f64).ceil() as usize];
+        // web_sys::console::log_1(&needed_gold_for_modified.into());
+        for (index, o) in out.iter_mut().enumerate() {
+            if index >= 7 {
+                break;
+            }
+            *o += (needed_gold_for_modified * average_spending_proportion[index] / price_arr[index])
+                .round() as i64;
+        }
+    }
+
+    out
+    // let mut transposed_relevant_dtaa: Vec<Vec<i64>> = transpose_vec_of_vecs(relevant_data);
+    // for row in transposed_relevant_dtaa.iter_mut() {
+    //     row.sort();
+    // }
+    // let mut percentile: Vec<i64> = vec![0; 9];
+    // for i in 0..transposed_relevant_dtaa[0].len() {
+    //     let mut needed: Vec<i64> = Vec::with_capacity(9);
+    //     for z in 0..9 {
+    //         needed.push(transposed_relevant_dtaa[z][i]);
+    //     }
+    //     if compute_gold_cost_from_raw(&needed, input_budget_no_gold, price_arr)
+    //         > hundred_gold_costs[(desired_chance * 100.0).floor() as usize] as f64
+    //     {
+    //         percentile = needed.iter().map(|x: &i64| *x).collect();
+    //         web_sys::console::log_1(&i.into());
+    //         break;
+    //     }
+    // }
 
     // for data in relevant_data.iter() {
     //     for (index, i) in data.iter().enumerate() {
@@ -364,7 +434,7 @@ fn typical_cost(
     //     }
     // }
     // best_match
-    percentile.try_into().unwrap()
+    // percentile.try_into().unwrap()
 }
 pub fn cost_to_chance(
     hone_counts: &[Vec<i64>],
@@ -411,10 +481,10 @@ pub fn cost_to_chance(
     for i in 0..100 {
         typical_costs.push(typical_cost(
             &cost_data_to_sort,
-            (i as f64 / 100.0).max(chance_if_buy),
+            i as f64 / 100.0,
             &prep_outputs.mats_value,
             &input_budget_no_gold,
-            &hundred_gold_costs,
+            hundred_gold_costs[i],
         ));
     }
     typical_costs.push(
