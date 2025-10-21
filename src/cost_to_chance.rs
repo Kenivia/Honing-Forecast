@@ -279,66 +279,103 @@ fn get_hundred_gold_costs(
     hundred_gold_costs
 }
 
-fn get_percentile_window(p: f64, cost_data: &[[i64; 9]]) -> &[[i64; 9]] {
-    let n = cost_data.len();
-
+fn get_percentile_window<'a>(
+    all_gold_costs: &[f64],
+    cost_data: &'a [[i64; 9]],
+    bottom: f64,
+    top: f64,
+) -> &'a [[i64; 9]] {
+    let n: usize = cost_data.len();
+    let mut lower_idx: usize = 0;
+    let mut upper_idx: usize = n - 1;
+    for i in 0..n {
+        if all_gold_costs[i] >= bottom {
+            lower_idx = i.saturating_sub(1);
+            break;
+        }
+    }
+    for i in 0..n {
+        if all_gold_costs[i] >= top {
+            upper_idx = (i + 1).max(n - 1);
+            break;
+        }
+    }
+    web_sys::console::log_1(&lower_idx.into());
+    web_sys::console::log_1(&upper_idx.into());
     // Calculate the lower bound: (p - 0.005) * n, floored
-    let lower_p = p - 0.005;
-    let mut lower_idx = if lower_p <= 0.0 {
-        0
-    } else {
-        let idx = (lower_p * n as f64).floor() as usize;
-        idx.min(n - 1)
-    };
+    // let lower_p = p - 0.005;
+    // let mut lower_idx = if lower_p <= 0.0 {
+    //     0
+    // } else {
+    //     let idx = (lower_p * n as f64).floor() as usize;
+    //     idx.min(n - 1)
+    // };
 
-    // Calculate the upper bound: (p + 0.005) * n, ceiled
-    let upper_p = p + 0.005;
-    let mut upper_idx = if upper_p >= 1.0 {
-        n - 1
-    } else {
-        let idx = (upper_p * n as f64).ceil() as usize;
-        idx.min(n - 1)
-    };
+    // // Calculate the upper bound: (p + 0.005) * n, ceiled
+    // let upper_p = p + 0.005;
+    // let mut upper_idx = if upper_p >= 1.0 {
+    //     n - 1
+    // } else {
+    //     let idx = (upper_p * n as f64).ceil() as usize;
+    //     idx.min(n - 1)
+    // };
 
-    if lower_idx == 0 {
-        upper_idx = 0;
-    }
-    if upper_idx == n - 1 {
-        lower_idx = n - 1;
-    }
+    // if lower_idx == 0 {
+    //     upper_idx = 0;
+    // }
+    // if upper_idx == n - 1 {
+    //     lower_idx = n - 1;
+    // }
 
     // Return the slice (upper_idx is inclusive, so we add 1)
     &cost_data[lower_idx..=upper_idx]
 }
 fn typical_cost(
     cost_data_sorted: &[[i64; 9]],
+    all_gold_costs: &[f64],
     desired_chance: f64,
     price_arr: &[f64],
     input_budget_no_gold: &[i64],
     hundred_gold_costs: &[i64],
 ) -> [i64; 9] {
-    let relevant_data: &[[i64; 9]] = get_percentile_window(desired_chance, cost_data_sorted);
+    // let relevant_data: &[[i64; 9]] = get_percentile_window(
+    //     all_gold_costs,
+    //     cost_data_sorted,
+    //     hundred_gold_costs[(desired_chance * 100.0).floor() as usize] as f64,
+    //     hundred_gold_costs[(desired_chance * 100.0).floor() as usize + 1] as f64,
+    // );
 
-    let mut transposed_relevant_dtaa: Vec<Vec<i64>> = transpose_vec_of_vecs(relevant_data);
-    // let mut median: Vec<f64> = Vec::with_capacity(9);
+    // let mut transposed_relevant_dtaa: Vec<Vec<i64>> = transpose_vec_of_vecs(relevant_data);
+    // // let mut median: Vec<f64> = Vec::with_capacity(9);
 
-    for row in transposed_relevant_dtaa.iter_mut() {
-        row.sort();
-    }
-    let mut percentile: Vec<i64> = vec![0; 9];
-    for i in 0..transposed_relevant_dtaa[0].len() {
-        let mut needed: Vec<i64> = Vec::with_capacity(9);
-        for z in 0..9 {
-            needed.push(transposed_relevant_dtaa[z][i]);
-        }
-        if compute_gold_cost_from_raw(&needed, input_budget_no_gold, price_arr)
-            > hundred_gold_costs[(desired_chance * 100.0).floor() as usize] as f64
-        {
-            percentile = needed.iter().map(|x: &i64| *x).collect();
-            web_sys::console::log_1(&i.into());
-            break;
-        }
-    }
+    // for row in transposed_relevant_dtaa.iter_mut() {
+    //     row.sort();
+    // }
+    // let mut percentile: Vec<i64> = vec![0; 9];
+    // for i in 0..transposed_relevant_dtaa[0].len() {
+    //     let mut needed: Vec<i64> = Vec::with_capacity(9);
+    //     for z in 0..9 {
+    //         needed.push(transposed_relevant_dtaa[z][i]);
+    //     }
+    //     if compute_gold_cost_from_raw(&needed, input_budget_no_gold, price_arr)
+    //         > hundred_gold_costs[(desired_chance * 100.0).floor() as usize] as f64
+    //     {
+    //         percentile = needed.iter().map(|x: &i64| *x).collect();
+    //         // web_sys::console::log_1(&i.into());
+    //         // break;
+    //     }
+    // }
+    // web_sys::console::log_1(&transposed_relevant_dtaa[0].len().into());
+    // web_sys::console::log_1(&desired_chance.into());
+    // web_sys::console::log_1(
+    //     &(hundred_gold_costs[(desired_chance * 100.0).floor() as usize] as f64).into(),
+    // );
+    // web_sys::console::log_1(
+    //     &(hundred_gold_costs[(desired_chance * 100.0).floor() as usize + 1] as f64).into(),
+    // );
+    // web_sys::console::log_1(&hundred_gold_costs[0].into());
+    // web_sys::console::log_1(&hundred_gold_costs[1].into());
+    // web_sys::console::log_1(&hundred_gold_costs[2].into());
 
     // for data in relevant_data.iter() {
     //     for (index, i) in data.iter().enumerate() {
@@ -411,6 +448,7 @@ pub fn cost_to_chance(
     for i in 0..100 {
         typical_costs.push(typical_cost(
             &cost_data_to_sort,
+            &all_gold_costs,
             (i as f64 / 100.0).max(chance_if_buy),
             &prep_outputs.mats_value,
             &input_budget_no_gold,
