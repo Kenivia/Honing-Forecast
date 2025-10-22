@@ -22,4 +22,4 @@ Honing Forecast is a calculator that tells you how much a set of upgrades will c
 
 ## Feedback
 
-Found a bug, spotted an error or got a suggestion? Contact me @kenivia on Discord! Feedback is greatly appreciated. Some details / explanations can be found in [DETAILS.md](https://github.com/Kenivia/Honing-Forecast/blob/53d7ca0b6ccd7a0c05bb53d126513b27a27ee69c/Details.md)
+Found a bug, spotted an error or got a suggestion? Contact me @kenivia on Discord! Feedback is greatly appreciated. Some details / explanations can be found in [DETAILS.md](https://github.com/Kenivia/Honing-Forecast/blob/main/Details.md)
