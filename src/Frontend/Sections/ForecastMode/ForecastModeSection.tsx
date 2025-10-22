@@ -142,9 +142,9 @@ export default function LongTermSection({
     ]
 
     // Calculate total weekly income (sum of all income grids for each row)
-    const totalWeeklyIncome = useMemo(() => {
+    const totalWeeklyIncome = (() => {
         return Array.from({ length: 7 }, (_, rowIndex) => incomeArr.reduce((sum, incomeGrid) => sum + (incomeGrid[rowIndex] || 0), 0))
-    }, [incomeArr])
+    })()
 
     const weeklyBudgets = useMemo(() => {
         return weekly_budget(
@@ -153,12 +153,12 @@ export default function LongTermSection({
         )
     }, [budget_inputs, totalWeeklyIncome])
     // Debounce keys for cost_to_chance_arr
-    const advStrategyKey = useMemo(() => String(adv_hone_strategy), [adv_hone_strategy])
-    const expressEventKey = useMemo(() => String(express_event), [express_event])
-    const useGridInputKey = useMemo(() => String(useGridInput), [useGridInput])
-    const normalCountsKey = useMemo(() => JSON.stringify(normalCounts), [normalCounts])
-    const advCountsKey = useMemo(() => JSON.stringify(advCounts), [advCounts])
-    const totalWeeklyIncomeKey = useMemo(() => JSON.stringify(totalWeeklyIncome), [totalWeeklyIncome])
+    const advStrategyKey = String(adv_hone_strategy)
+    const expressEventKey = String(express_event)
+    const useGridInputKey = String(useGridInput)
+    const normalCountsKey = JSON.stringify(normalCounts)
+    const advCountsKey = JSON.stringify(advCounts)
+    const totalWeeklyIncomeKey = JSON.stringify(totalWeeklyIncome)
 
     // Function to call cost_to_chance_arr
     const chanceToCostArrWorkerRef = useRef<Worker | null>(null)

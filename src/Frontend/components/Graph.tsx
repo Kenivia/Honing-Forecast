@@ -318,7 +318,7 @@ function Graph({
         return out
     }, [effectiveCounts, counts, cumulative, cdfSeries, normalizedCounts, graphType, visible, keepMask])
 
-    const yMax: number = useMemo(() => {
+    const yMax: number = (() => {
         // Use override if provided
         if (yMaxOverride !== null) return yMaxOverride
 
@@ -353,11 +353,11 @@ function Graph({
         }
         // console.log(m, data_size, dataSeries, ind)
         return m
-    }, [dataSeries, visible, keepMask, cumulative, yMaxOverride, graphType])
+    })()
 
     // --- New: detect whether incoming counts contain data outside (to the right of) the effective x-axis ---
     // i.e. when incoming newMax > effectiveMax AND counts beyond that cutoff are non-zero
-    const hasUnplottedPoints: boolean = useMemo(() => {
+    const hasUnplottedPoints: boolean = (() => {
         // Only relevant if we have incoming counts and effective (locked) maxs
         if (!counts || !maxs || !effectiveMaxs) return false
         const nSeries = counts.length
@@ -392,7 +392,7 @@ function Graph({
             }
         }
         return false
-    }, [counts, maxs, effectiveMaxs, bucketLen])
+    })()
 
     // const onLegendToggle = (i: number) => setVisible(v => v.map((b, idx) => idx === i ? !b : b))
 
@@ -467,19 +467,19 @@ function Graph({
         setHoverBucket(null)
     }
 
-    const fallbackSeries = useMemo(() => {
+    const fallbackSeries: number = (() => {
         if (hoverSeries != null && keepMask[hoverSeries]) return hoverSeries
         const goldIdx = labels.indexOf("Gold")
         if (goldIdx >= 0 && keepMask[goldIdx] && visible[goldIdx]) return goldIdx
         const first = labels.map((_, i) => i).find((i) => keepMask[i] && visible[i])
         return first ?? null
-    }, [hoverSeries, labels, keepMask, visible])
+    })()
 
     const effectiveColors = getEffectiveColors()
     const hoverColor = fallbackSeries != null ? effectiveColors[fallbackSeries] : "var(--text-secondary)"
 
     // bottom axis tick values and formatter based on hovered series
-    const tickVals = useMemo(() => {
+    const tickVals: number[] = useMemo(() => {
         // In Raw and Gold modes, show every data point
         if (graphType === "Raw" || graphType === "Gold") {
             return Array.from({ length: bucketLen }, (_, i) => i)
@@ -509,7 +509,7 @@ function Graph({
         [fallbackSeries, effectiveMins, effectiveMaxs, bucketLen, graphType]
     )
 
-    const anyVisible = useMemo(() => labels.some((_, i) => visible[i] && keepMask[i]), [labels, visible, keepMask])
+    const anyVisible: Boolean = (() => labels.some((_, i) => visible[i] && keepMask[i]))()
 
     // Memoize the AnimatedLineSeries nodes
     const lineSeriesNodes = useMemo(() => {

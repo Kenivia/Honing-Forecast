@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState, useMemo } from "react"
+import React, { useEffect, useRef, useState } from "react"
 import "./Sections/UpgradeSelection//CheckboxRow.css"
 import { styles } from "./Utils/Styles.ts"
 import { INPUT_LABELS, TOP_ROWS, TOP_COLS, BOTTOM_ROWS, BOTTOM_COLS } from "./Utils/Constants.ts"
@@ -452,17 +452,17 @@ export default function HoningForecastUI() {
 
     // ---------- Automatic triggers with debounce ----------
     // We'll watch serialized versions of the inputs to detect deep changes
-    const budgetKey = useMemo(() => JSON.stringify(budget_inputs), [budget_inputs])
+    const budgetKey = JSON.stringify(budget_inputs)
     // const desiredKey = useMemo(() => String(desired_chance), [desired_chance])
-    const advStrategyKey = useMemo(() => String(adv_hone_strategy), [adv_hone_strategy])
-    const expressEventKey = useMemo(() => String(express_event), [express_event])
-    const graphBucketSizeKey = useMemo(() => String(bucketCount), [bucketCount])
-    const autoOptKey = useMemo(() => String(autoGoldValues), [autoGoldValues])
-    const userMatsKey = useMemo(() => JSON.stringify(userMatsValue), [userMatsValue])
-    const dataSizeKey = useMemo(() => String(dataSize), [dataSize])
+    const advStrategyKey = String(adv_hone_strategy)
+    const expressEventKey = String(express_event)
+    const graphBucketSizeKey = String(bucketCount)
+    const autoOptKey = String(autoGoldValues)
+    const userMatsKey = JSON.stringify(userMatsValue)
+    const dataSizeKey = String(dataSize)
     // const useGridInputKey = useMemo(() => String(useGridInput), [useGridInput])
-    const normalCountsKey = useMemo(() => JSON.stringify(normalCounts), [normalCounts])
-    const advCountsKey = useMemo(() => JSON.stringify(advCounts), [advCounts])
+    const normalCountsKey = JSON.stringify(normalCounts)
+    const advCountsKey = JSON.stringify(advCounts)
 
     const monteCarloWorkerRef = useRef<Worker | null>(null)
     const [_monteCarloBusy, setMonteCarloBusy] = useState(false)
@@ -586,10 +586,9 @@ export default function HoningForecastUI() {
     }, [])
 
     // styles and column defs moved to ./styles
-    const AnythingTicked = useMemo(
-        () => normalCounts[0].some((x) => x > 0) || normalCounts[1].some((x) => x > 0) || advCounts[0].some((x) => x > 0) || advCounts[1].some((x) => x > 0),
-        [normalCounts, advCounts]
-    )
+    const AnythingTicked =
+        normalCounts[0].some((x) => x > 0) || normalCounts[1].some((x) => x > 0) || advCounts[0].some((x) => x > 0) || advCounts[1].some((x) => x > 0)
+
     return (
         <div style={styles.pageContainer}>
             {marqueeRect ? (

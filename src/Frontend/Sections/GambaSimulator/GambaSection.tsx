@@ -280,12 +280,12 @@ export default function GambaSection({
     ])
 
     // Debounce effect for parser calls when grids change
-    const advStrategyKey = useMemo(() => String(adv_hone_strategy), [adv_hone_strategy])
-    const expressEventKey = useMemo(() => String(express_event), [express_event])
-    const useGridInputKey = useMemo(() => String(useGridInput), [useGridInput])
-    const normalCountsKey = useMemo(() => JSON.stringify(normalCounts), [normalCounts])
-    const advCountsKey = useMemo(() => JSON.stringify(advCounts), [advCounts])
-    const refreshKeyMemo = useMemo(() => refreshKey, [refreshKey])
+    const advStrategyKey = String(adv_hone_strategy)
+    const expressEventKey = String(express_event)
+    const useGridInputKey = String(useGridInput)
+    const normalCountsKey = JSON.stringify(normalCounts)
+    const advCountsKey = JSON.stringify(advCounts)
+    const refreshKeyMemo = refreshKey
 
     useEffect(() => {
         // Clear existing timer
