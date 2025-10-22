@@ -22,6 +22,7 @@
 - Adjustable week number in raw / Gold graph
 - Achieved ilevel
 - Something seems to be broken in drag-to-select spreadsheetgrid
+- Artisan level editing
 
 ## DEV
 

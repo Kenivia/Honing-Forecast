@@ -467,7 +467,7 @@ pub fn cost_to_chance(
         &prep_outputs,
         &input_budgets,
     );
-    let mut chance_if_buy: f64 = 0.0;
+    let mut chance_if_buy: f64 = 1.0;
     for (index, gold) in all_gold_costs.iter().enumerate() {
         if *gold > input_budgets[5] as f64 {
             chance_if_buy = index as f64 / cost_data_to_sort.len() as f64; // intentionally not subtracting by 1 because index starts from 0
