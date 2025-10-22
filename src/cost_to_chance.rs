@@ -283,7 +283,7 @@ fn get_percentile_window(p: f64, cost_data: &[[i64; 9]]) -> &[[i64; 9]] {
     let n = cost_data.len();
 
     // Calculate the lower bound: (p - 0.005) * n, floored
-    let lower_p = p - 0.005;
+    let lower_p = p - 0.0099;
     let mut lower_idx = if lower_p <= 0.0 {
         0
     } else {
@@ -292,7 +292,7 @@ fn get_percentile_window(p: f64, cost_data: &[[i64; 9]]) -> &[[i64; 9]] {
     };
 
     // Calculate the upper bound: (p + 0.005) * n, ceiled
-    let upper_p = p + 0.005;
+    let upper_p = p + 0.0099;
     let mut upper_idx = if upper_p >= 1.0 {
         n - 1
     } else {
