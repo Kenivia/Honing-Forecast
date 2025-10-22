@@ -25,7 +25,7 @@ export function SliderBundle({
     return (
         <div style={{ display: "flex", flexDirection: "column", height: 100, marginLeft: 100 }}>
             <div style={{ display: "flex", flexDirection: "row", gap: 100, marginLeft: -10 }}>
-                <div style={{ width: 160, fontWeight: 700, fontSize: 20, textAlign: "right", paddingRight: 8, paddingTop: 4, color: "var(--text-primary)" }}>
+                <div style={{ width: 160, fontWeight: 700, fontSize: 20, textAlign: "right", paddingRight: 8, paddingTop: 4, color: "var(--input-bg)" }}>
                     Desired chance
                 </div>
                 <div style={{ position: "relative", display: "flex", alignItems: "center" }}>
