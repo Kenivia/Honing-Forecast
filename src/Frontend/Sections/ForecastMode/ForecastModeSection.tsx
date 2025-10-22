@@ -26,17 +26,17 @@ type LongTermSectionProps = {
     incomeArr: number[][]
     setIncomeArr: React.Dispatch<React.SetStateAction<number[][]>>
     // Desired chance props
-    desired_chance: string
-    uncleaned_desired_chance: string
-    onDesiredChange: (_value: string) => void
-    onDesiredBlur: () => void
+    // desired_chance: string
+    // uncleaned_desired_chance: string
+    // onDesiredChange: (_value: string) => void
+    // onDesiredBlur: () => void
     // Cost result prop for hundred_budgets
     // cost_result: any
     // chanceToCostOptimizedResult: any
     payloadBuilder: any
     runner: any
 
-    costToChanceResult: any
+    // costToChanceResult: any
     monteCarloResult: any
 }
 
@@ -58,7 +58,7 @@ export default function LongTermSection({
     setUserMatsValue,
     adv_hone_strategy,
     express_event,
-    dataSize,
+    // dataSize,
     useGridInput,
     normalCounts,
     advCounts,
@@ -66,17 +66,17 @@ export default function LongTermSection({
     setShowOptimizedDetails,
     incomeArr,
     setIncomeArr,
-    // Desired chance props
-    desired_chance,
-    uncleaned_desired_chance,
-    onDesiredChange,
-    onDesiredBlur,
+    // // Desired chance props
+    // desired_chance,
+    // uncleaned_desired_chance,
+    // onDesiredChange,
+    // onDesiredBlur,
     // Cost result prop for hundred_budgets
     // cost_result,
     // chanceToCostOptimizedResult,
     payloadBuilder,
     runner,
-    costToChanceResult,
+    // costToChanceResult,
     monteCarloResult,
 }: LongTermSectionProps) {
     // Income array is now managed by parent component
@@ -306,52 +306,52 @@ export default function LongTermSection({
     }, [longTermResult, showOptimizedDetails])
 
     // Calculate data for the new graph (cost to pity and gold from selling materials)
-    const goldGraphData = useMemo(() => {
-        if (!costToChanceResult) return null
+    // const goldGraphData = useMemo(() => {
+    //     if (!costToChanceResult) return null
 
-        const costToPityData: number[] = []
-        const goldFromSellData: number[] = []
-        const individualPityCostsData: number[][] = []
+    //     const costToPityData: number[] = []
+    //     const goldFromSellData: number[] = []
+    //     const individualPityCostsData: number[][] = []
 
-        // Initialize individual pity costs arrays
-        for (let i = 0; i < 7; i++) {
-            individualPityCostsData.push([])
-        }
+    //     // Initialize individual pity costs arrays
+    //     for (let i = 0; i < 7; i++) {
+    //         individualPityCostsData.push([])
+    //     }
 
-        // const needed_budget = costToChanceResult.hundred_budgets[parseInt(desired_chance)] || []
-        // console.log("Pitycost", pityCost)
-        for (let week = 0; week < Math.min(53, weeklyBudgets.length); week++) {
-            const costToAchieve = costToChanceResult.hundred_gold_costs[parseInt(desired_chance)]
-            const goldFromSell = weeklyBudgets[week][5] // gold_plus_sell_mats(this_week_budget, goldCost, matValues)
+    //     // const needed_budget = costToChanceResult.hundred_budgets[parseInt(desired_chance)] || []
+    //     // console.log("Pitycost", pityCost)
+    //     for (let week = 0; week < Math.min(53, weeklyBudgets.length); week++) {
+    //         const costToAchieve = costToChanceResult.hundred_gold_costs[parseInt(desired_chance)]
+    //         const goldFromSell = weeklyBudgets[week][5] // gold_plus_sell_mats(this_week_budget, goldCost, matValues)
 
-            costToPityData.push(costToAchieve)
-            goldFromSellData.push(weeklyBudgets[week][5]) // til i sort out selling shinanigan
+    //         costToPityData.push(costToAchieve)
+    //         goldFromSellData.push(weeklyBudgets[week][5]) // til i sort out selling shinanigan
 
-            // // Calculate individual pity costs for each material
-            // for (let materialIndex = 0; materialIndex < 7; materialIndex++) {
-            //     const individualCost = cost_to_pity_individual(weeklyBudgets[week], needed_budget, matValues, materialIndex)
-            //     const clampedCost = Math.max(0, individualCost) // Clamp to 0 if negative
-            //     individualPityCostsData[materialIndex].push(clampedCost)
-            // }
-            // // console.log("break", goldFromSell, costToPity)
-            if (goldFromSell > costToAchieve && week > 2) {
-                break
-            }
-        }
+    //         // // Calculate individual pity costs for each material
+    //         // for (let materialIndex = 0; materialIndex < 7; materialIndex++) {
+    //         //     const individualCost = cost_to_pity_individual(weeklyBudgets[week], needed_budget, matValues, materialIndex)
+    //         //     const clampedCost = Math.max(0, individualCost) // Clamp to 0 if negative
+    //         //     individualPityCostsData[materialIndex].push(clampedCost)
+    //         // }
+    //         // // console.log("break", goldFromSell, costToPity)
+    //         if (goldFromSell > costToAchieve && week > 2) {
+    //             break
+    //         }
+    //     }
 
-        return {
-            costToPityData,
-            goldFromSellData,
-            individualPityCostsData,
-            weeklyBudgets,
-        }
-    }, [costToChanceResult, desired_chance, weeklyBudgets])
+    //     return {
+    //         costToPityData,
+    //         goldFromSellData,
+    //         individualPityCostsData,
+    //         weeklyBudgets,
+    //     }
+    // }, [costToChanceResult, desired_chance, weeklyBudgets])
 
     return (
         <>
             <div style={{ ...styles.inputSection, flexDirection: "row", maxWidth: "1200px", width: "100%" }}>
-                <div style={{ display: "flex", gap: 20, alignItems: "center", flexDirection: "column" }}>
-                    <div style={{ display: "flex", gap: 5, alignItems: "flex-start", alignSelf: "flex-start" }}>
+                <div style={{ display: "flex", gap: 0, alignItems: "center", flexDirection: "column" }}>
+                    <div style={{ display: "flex", gap: 0, alignItems: "flex-start", alignSelf: "flex-start" }}>
                         {/* Main Owned now Grid */}
                         <div style={{ display: "flex", flexDirection: "column", gap: 0, alignItems: "flex-start", justifyContent: "start", width: 300 }}>
                             <div style={{ marginBottom: 16, width: 300 }}>
@@ -418,7 +418,7 @@ export default function LongTermSection({
                             </div>
                         </div>
                     </div>
-                    <div style={{ display: "flex", alignItems: "flex-start", gap: 8, marginBottom: 8, justifySelf: "left", marginLeft: 30, marginTop: 20 }}>
+                    <div style={{ display: "flex", alignItems: "flex-start", gap: 8, marginBottom: 0, justifySelf: "left", marginLeft: 30, marginTop: 0 }}>
                         <LabeledCheckbox
                             label="I don't want to buy anything"
                             checked={showOptimizedDetails}
@@ -427,7 +427,7 @@ export default function LongTermSection({
                             accentColor="var(--text-optimized)"
                         />
                     </div>
-                    <div style={{ marginTop: 20, display: "flex", justifyContent: "center" }}>
+                    <div style={{ marginTop: 0, display: "flex", justifyContent: "center" }}>
                         <div style={{ width: "100%", maxWidth: "800px" }}>
                             <Graph
                                 title={`Chance of Success Over Time (0-${(graphData?.counts?.[0]?.length || 53) - 1} weeks from now)`}
@@ -461,7 +461,7 @@ export default function LongTermSection({
                     </div>
 
                     {/* Desired Chance Slider */}
-                    <div style={{ marginTop: 20, display: "flex", justifyContent: "center", justifySelf: "left", alignSelf: "flex-start", marginLeft: 100 }}>
+                    {/* <div style={{ marginTop: 20, display: "flex", justifyContent: "center", justifySelf: "left", alignSelf: "flex-start", marginLeft: 100 }}>
                         <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
                             <div style={{ width: 160, fontWeight: 700, textAlign: "right", paddingRight: 8, color: "var(--text-primary)", textWrap: "nowrap" }}>
                                 Desired chance{" "}
@@ -510,10 +510,10 @@ export default function LongTermSection({
                                 )}
                             </div>
                         </div>
-                    </div>
+                    </div> */}
 
                     {/* New Graph for Cost to Pity and Gold from Selling Materials */}
-                    {goldGraphData && (
+                    {/* {goldGraphData && (
                         <div style={{ marginTop: 20, display: "flex", justifyContent: "center" }}>
                             <div style={{ width: "100%", maxWidth: "800px" }}>
                                 <Graph
@@ -554,7 +554,7 @@ export default function LongTermSection({
                                 />
                             </div>
                         </div>
-                    )}
+                    )} */}
                 </div>
             </div>
         </>

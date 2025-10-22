@@ -782,10 +782,10 @@ export default function HoningForecastUI() {
                         incomeArr={incomeArr}
                         setIncomeArr={setIncomeArr}
                         // Desired chance props
-                        desired_chance={desired_chance}
-                        uncleaned_desired_chance={uncleaned_desired_chance}
-                        onDesiredChange={onDesiredChange}
-                        onDesiredBlur={onDesiredBlur}
+                        // desired_chance={desired_chance}
+                        // uncleaned_desired_chance={uncleaned_desired_chance}
+                        // onDesiredChange={onDesiredChange}
+                        // onDesiredBlur={onDesiredBlur}
                         // Cost result prop for hundred_budgets
                         // cost_result={chanceToCostResult}
                         //TODOcost_result_optimized={chanceToCostOptimizedResult}
@@ -793,7 +793,7 @@ export default function HoningForecastUI() {
                         setShowOptimizedDetails={setShowOptimizedDetails}
                         payloadBuilder={payloadBuilder}
                         runner={runner}
-                        costToChanceResult={costToChanceResult}
+                        // costToChanceResult={costToChanceResult}
                         monteCarloResult={monteCarloResult}
                     />
                 </div>
