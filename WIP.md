@@ -11,6 +11,7 @@
 
 - Automatic Market price integration(via some kind of API, or just updating the site at a regular interval automatically)
 - Confidence intervals(might have to actually learn some math first)
+- Allow selling mats
 
 ## UI
 
@@ -19,6 +20,8 @@
 - Ctrl z, delete
 - Hover question mark tooltips for various systems, but still aim to be intuitive
 - Adjustable week number in raw / Gold graph
+- Achieved ilevel
+- Something seems to be broken in drag-to-select spreadsheetgrid
 
 ## DEV
 

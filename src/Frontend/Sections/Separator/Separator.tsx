@@ -47,7 +47,7 @@ export default function Separator({ activePage, onPageChange }: SeparatorProps) 
             </button> */}
 
             <button className={getButtonClass("cost-to-chance")} onClick={() => handleButtonClick("cost-to-chance")}>
-                <span className="hf-label">idk what name this should be</span>
+                <span className="hf-label">Calc (slang for calculator)</span>
                 <div className="hf-help">I want x% chance of success, how much will it cost?</div>
             </button>
 

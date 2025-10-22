@@ -348,7 +348,7 @@ export default function SpreadsheetGrid({ columnDefs, labels, sheetValuesArr, se
         //         startRow: 0, startCol: 0, endRow: labels.length - 1, endCol: clampCol(columnDefs.length - 1)
         //     })
         //     return
-        // }
+        // },
         // Clear selected editable cells to 0 on Backspace/Delete for editable grids
         //
     }

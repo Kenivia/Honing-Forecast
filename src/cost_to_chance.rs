@@ -351,33 +351,31 @@ fn typical_cost(
         .try_into()
         .unwrap();
     // web_sys::console::log_1(&desired_chance.into());
-    for _iteration in 0..3 {
-        // honestly idk why it doesn't just take 1 iteration but here we are
-        let gold_cost_of_average: f64 =
-            compute_gold_cost_from_raw(&out, &input_budget_no_gold, &price_arr);
-        let mut modified_gold_costs: Vec<f64> = Vec::with_capacity(cost_data_sorted.len());
-        for cost in cost_data_sorted {
-            modified_gold_costs.push(compute_gold_cost_from_raw(cost, &out, &price_arr));
-        }
-        modified_gold_costs
-            .sort_unstable_by(|a, b| a.partial_cmp(&b).unwrap_or(std::cmp::Ordering::Equal));
-        let mut current_success_chance: f64 = 1.0;
-        for (index, g) in modified_gold_costs.iter().enumerate() {
-            if *g > gold_cost_of_average - target_gold as f64 {
-                // web_sys::console::log_1(&(*g).into());
-                current_success_chance =
-                    index.saturating_sub(1) as f64 / modified_gold_costs.len() as f64;
+    // for _iteration in 0..1 {
+    // honestly idk why it doesn't just take 1 iteration but here we are
+    let gold_cost_of_average: f64 =
+        compute_gold_cost_from_raw(&out, &input_budget_no_gold, &price_arr);
+    let mut modified_gold_costs: Vec<f64> = Vec::with_capacity(cost_data_sorted.len());
+    for cost in cost_data_sorted {
+        modified_gold_costs.push(compute_gold_cost_from_raw(cost, &out, &price_arr));
+    }
+    modified_gold_costs
+        .sort_unstable_by(|a, b| a.partial_cmp(&b).unwrap_or(std::cmp::Ordering::Equal));
+    let mut current_success_chance: f64 = 1.0;
+    for (index, g) in modified_gold_costs.iter().enumerate() {
+        if *g > gold_cost_of_average - target_gold as f64 {
+            // web_sys::console::log_1(&(*g).into());
+            current_success_chance =
+                index.saturating_sub(1) as f64 / modified_gold_costs.len() as f64;
 
-                break;
-            }
-        }
-        // web_sys::console::log_1(&current_success_chance.into());
-        // web_sys::console::log_1(&gold_cost_of_average.into());
-        // web_sys::console::log_1(&target_gold.into());
-
-        if current_success_chance >= (desired_chance - 0.005).max(0.0) {
             break;
         }
+    }
+    // web_sys::console::log_1(&current_success_chance.into());
+    // web_sys::console::log_1(&gold_cost_of_average.into());
+    // web_sys::console::log_1(&target_gold.into());
+
+    if current_success_chance < (desired_chance - 0.005).max(0.0) {
         let needed_gold_for_modified: f64 = modified_gold_costs
             [(desired_chance as f64 * modified_gold_costs.len() as f64).ceil() as usize];
         // web_sys::console::log_1(&needed_gold_for_modified.into());
@@ -389,6 +387,7 @@ fn typical_cost(
                 .round() as i64;
         }
     }
+    // }
 
     out
     // let mut transposed_relevant_dtaa: Vec<Vec<i64>> = transpose_vec_of_vecs(relevant_data);

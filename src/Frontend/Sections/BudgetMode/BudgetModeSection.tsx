@@ -136,7 +136,7 @@ export default function CostToChanceSection({
                          
                         )} */}
                     </div>
-                    <div style={{ flexDirection: "column", marginTop: 70, marginLeft: noBuyChecked ? 240 : 10 }}>
+                    <div style={{ flexDirection: "column", marginTop: 70, marginLeft: noBuyChecked ? 240 : 0 }}>
                         <div style={{ display: "flex", flexDirection: "column", width: 300, marginTop: 0 }}>
                             <LabeledCheckbox
                                 label="I will buy mats with gold when I run out"
@@ -214,13 +214,14 @@ export default function CostToChanceSection({
                                     style={{
                                         marginTop: 5,
                                         fontSize: "var(--font-size-xs)",
+                                        fontStyle: "italic",
                                         whiteSpace: "wrap",
                                         marginLeft: 0,
                                         width: 320,
                                     }}
                                 >
-                                    The above Gold value assumes that you buy mats as you need them (no overbuying, optimistic) and the left numbers assume you
-                                    pre-buy most things.
+                                    The above Gold value assumes no pre-buying (so 0 over-buying, most efficient) and the left numbers assume you pre-buy almost
+                                    everything.
                                 </div>
                             </div>
                         )}
