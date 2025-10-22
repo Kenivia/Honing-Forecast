@@ -16,7 +16,6 @@ import LongTermSection from "./Sections/ForecastMode/ForecastModeSection.tsx"
 import Separator from "./Sections/Separator/Separator.tsx"
 import { TooltipState, createTooltipHandlers, renderTooltip } from "./Utils/Tooltip.tsx"
 import Icon from "./Components/Icon.tsx"
-import LabeledCheckbox from "./Components/LabeledCheckbox.tsx"
 
 import { GridMouseDownLogic, mouseMoveLogic, createMouseUpHandler } from "./Sections/UpgradeSelection/Marquee.ts"
 import { createClearAll, createFillDemo, createFillDemoIncome } from "./Sections/ControlPanel/ControlPanelFunctions.ts"
@@ -706,97 +705,101 @@ export default function HoningForecastUI() {
                     />
                 </div> */}
 
-                <div className={activePage === "cost-to-chance" ? "page" : "page page--hidden"} aria-hidden={activePage !== "cost-to-chance"}>
-                    <CostToChanceSection
-                        budget_inputs={budget_inputs}
-                        set_budget_inputs={set_budget_inputs}
-                        userMatsValue={userMatsValue}
-                        setUserMatsValue={setUserMatsValue}
-                        setAutoGoldValues={setAutoGoldValues}
-                        chance_result={costToChanceResult}
-                        cachedChanceGraphData={cachedChanceGraphData}
-                        AnythingTicked={AnythingTicked}
-                        CostToChanceBusy={costToChanceBusy}
-                        cumulativeGraph={cumulativeGraph}
-                        lockXAxis={lockXAxis}
-                        lockedMins={lockedMins}
-                        lockedMaxs={lockedMaxs}
-                        desired_chance={desired_chance}
-                        uncleaned_desired_chance={uncleaned_desired_chance}
-                        onDesiredChange={onDesiredChange}
-                        onDesiredBlur={onDesiredBlur}
-                        showOptimizedDetails={showOptimizedDetails}
-                        setShowOptimizedDetails={setShowOptimizedDetails}
-                        monteCarloResult={monteCarloResult}
-                    />
-                </div>
-
-                <div className={activePage === "gamba" ? "page" : "page page--hidden"} aria-hidden={activePage !== "cost-to-chance"}>
-                    <GambaSection
-                        budget_inputs={budget_inputs}
-                        set_budget_inputs={set_budget_inputs}
-                        userMatsValue={userMatsValue}
-                        setUserMatsValue={setUserMatsValue}
-                        topGrid={topGrid}
-                        bottomGrid={bottomGrid}
-                        adv_hone_strategy={adv_hone_strategy}
-                        express_event={express_event}
-                        desired_chance={desired_chance}
-                        bucketCount={bucketCount}
-                        autoGoldValues={autoGoldValues}
-                        dataSize={dataSize}
-                        tooltipHandlers={tooltipHandlers}
-                        chance_result={costToChanceResult}
-                        cachedChanceGraphData={cachedChanceGraphData}
-                        AnythingTicked={AnythingTicked}
-                        CostToChanceBusy={costToChanceBusy}
-                        cumulativeGraph={cumulativeGraph}
-                        lockXAxis={lockXAxis}
-                        lockedMins={lockedMins}
-                        lockedMaxs={lockedMaxs}
-                        useGridInput={useGridInput}
-                        normalCounts={normalCounts}
-                        advCounts={advCounts}
-                        // Moved worker call results
-                        upgradeArr={parserResult ? parserResult.upgradeArr : []}
-                        ParserBusy={ParserBusy}
-                    />
-                </div>
-
-                <div className={activePage === "forecast" ? "page" : "page page--hidden"} aria-hidden={activePage !== "forecast"}>
-                    <LongTermSection
-                        budget_inputs={budget_inputs}
-                        set_budget_inputs={set_budget_inputs}
-                        userMatsValue={userMatsValue}
-                        setUserMatsValue={setUserMatsValue}
-                        topGrid={topGrid}
-                        bottomGrid={bottomGrid}
-                        adv_hone_strategy={adv_hone_strategy}
-                        express_event={express_event}
-                        bucketCount={bucketCount}
-                        autoGoldValues={autoGoldValues}
-                        dataSize={dataSize}
-                        useGridInput={useGridInput}
-                        normalCounts={normalCounts}
-                        advCounts={advCounts}
-                        incomeArr={incomeArr}
-                        setIncomeArr={setIncomeArr}
-                        // Desired chance props
-                        // desired_chance={desired_chance}
-                        // uncleaned_desired_chance={uncleaned_desired_chance}
-                        // onDesiredChange={onDesiredChange}
-                        // onDesiredBlur={onDesiredBlur}
-                        // Cost result prop for hundred_budgets
-                        // cost_result={chanceToCostResult}
-                        //TODOcost_result_optimized={chanceToCostOptimizedResult}
-                        showOptimizedDetails={showOptimizedDetails}
-                        setShowOptimizedDetails={setShowOptimizedDetails}
-                        payloadBuilder={payloadBuilder}
-                        runner={runner}
-                        // costToChanceResult={costToChanceResult}
-                        monteCarloResult={monteCarloResult}
-                    />
-                </div>
+                {activePage === "cost-to-chance" && (
+                    <div className={activePage === "cost-to-chance" ? "page" : "page page--hidden"}>
+                        <CostToChanceSection
+                            budget_inputs={budget_inputs}
+                            set_budget_inputs={set_budget_inputs}
+                            userMatsValue={userMatsValue}
+                            setUserMatsValue={setUserMatsValue}
+                            setAutoGoldValues={setAutoGoldValues}
+                            chance_result={costToChanceResult}
+                            cachedChanceGraphData={cachedChanceGraphData}
+                            AnythingTicked={AnythingTicked}
+                            CostToChanceBusy={costToChanceBusy}
+                            cumulativeGraph={cumulativeGraph}
+                            lockXAxis={lockXAxis}
+                            lockedMins={lockedMins}
+                            lockedMaxs={lockedMaxs}
+                            desired_chance={desired_chance}
+                            uncleaned_desired_chance={uncleaned_desired_chance}
+                            onDesiredChange={onDesiredChange}
+                            onDesiredBlur={onDesiredBlur}
+                            showOptimizedDetails={showOptimizedDetails}
+                            setShowOptimizedDetails={setShowOptimizedDetails}
+                            monteCarloResult={monteCarloResult}
+                        />
+                    </div>
+                )}
+                {activePage === "gamba" && (
+                    <div className={activePage === "gamba" ? "page" : "page page--hidden"}>
+                        <GambaSection
+                            budget_inputs={budget_inputs}
+                            set_budget_inputs={set_budget_inputs}
+                            userMatsValue={userMatsValue}
+                            setUserMatsValue={setUserMatsValue}
+                            topGrid={topGrid}
+                            bottomGrid={bottomGrid}
+                            adv_hone_strategy={adv_hone_strategy}
+                            express_event={express_event}
+                            desired_chance={desired_chance}
+                            bucketCount={bucketCount}
+                            autoGoldValues={autoGoldValues}
+                            dataSize={dataSize}
+                            tooltipHandlers={tooltipHandlers}
+                            chance_result={costToChanceResult}
+                            cachedChanceGraphData={cachedChanceGraphData}
+                            AnythingTicked={AnythingTicked}
+                            CostToChanceBusy={costToChanceBusy}
+                            cumulativeGraph={cumulativeGraph}
+                            lockXAxis={lockXAxis}
+                            lockedMins={lockedMins}
+                            lockedMaxs={lockedMaxs}
+                            useGridInput={useGridInput}
+                            normalCounts={normalCounts}
+                            advCounts={advCounts}
+                            // Moved worker call results
+                            upgradeArr={parserResult ? parserResult.upgradeArr : []}
+                            ParserBusy={ParserBusy}
+                        />
+                    </div>
+                )}
+                {activePage === "forecast" && (
+                    <div className={activePage === "forecast" ? "page" : "page page--hidden"}>
+                        <LongTermSection
+                            budget_inputs={budget_inputs}
+                            set_budget_inputs={set_budget_inputs}
+                            userMatsValue={userMatsValue}
+                            setUserMatsValue={setUserMatsValue}
+                            topGrid={topGrid}
+                            bottomGrid={bottomGrid}
+                            adv_hone_strategy={adv_hone_strategy}
+                            express_event={express_event}
+                            bucketCount={bucketCount}
+                            autoGoldValues={autoGoldValues}
+                            dataSize={dataSize}
+                            useGridInput={useGridInput}
+                            normalCounts={normalCounts}
+                            advCounts={advCounts}
+                            incomeArr={incomeArr}
+                            setIncomeArr={setIncomeArr}
+                            // Desired chance props
+                            // desired_chance={desired_chance}
+                            // uncleaned_desired_chance={uncleaned_desired_chance}
+                            // onDesiredChange={onDesiredChange}
+                            // onDesiredBlur={onDesiredBlur}
+                            // Cost result prop for hundred_budgets
+                            // cost_result={chanceToCostResult}
+                            //TODOcost_result_optimized={chanceToCostOptimizedResult}
+                            showOptimizedDetails={showOptimizedDetails}
+                            setShowOptimizedDetails={setShowOptimizedDetails}
+                            payloadBuilder={payloadBuilder}
+                            runner={runner}
+                            // costToChanceResult={costToChanceResult}
+                            monteCarloResult={monteCarloResult}
+                        />
+                    </div>
+                )}
             </div>
         </div>
     )
