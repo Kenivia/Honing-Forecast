@@ -467,13 +467,15 @@ export default function GambaSection({
                             />
                         </div>
                         <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 8 }}>
-                            <div style={{ ...styles.inputLabelCell, whiteSpace: "nowrap", backgroundColor: "var(--bg-tertiary)" }}>Chance of Success</div>
+                            <div style={{ ...styles.inputLabelCell, whiteSpace: "nowrap", backgroundColor: "var(--bg-tertiary)" }}>
+                                Chance of Success (no buy)
+                            </div>
                             <div
                                 style={{
                                     ...styles.inputCell,
                                     border: "none",
                                     background: "transparent",
-                                    color: "var(--text-success)",
+                                    color: "var(--text-optimized)",
                                     fontSize: "var(--font-size-xl)",
                                 }}
                             >
