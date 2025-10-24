@@ -193,9 +193,9 @@ export default function SpreadsheetGrid({ columnDefs, labels, sheetValuesArr, se
                         // Ignore errors
                     }
                     // blur active element to avoid text caret/selection interfering with drag
-                    if (document.activeElement instanceof HTMLElement) {
-                        ;(document.activeElement as HTMLElement).blur()
-                    }
+                    // if (document.activeElement instanceof HTMLElement) {
+                    //     ;(document.activeElement as HTMLElement).blur()
+                    // }
                 }
             }
 
@@ -470,7 +470,7 @@ export default function SpreadsheetGrid({ columnDefs, labels, sheetValuesArr, se
                                         outline: "none",
                                         boxSizing: "border-box",
                                         cursor: !columnDefs[colIndex].editable || (colIndex === 1 && rowIndex >= 7) ? "default" : "text",
-                                        opacity: colIndex >= 1 && rowIndex >= 7 ? 0.5 : 1,
+                                        opacity: colIndex >= 1 && rowIndex >= 7 ? 0 : 1,
                                     }}
                                     placeholder="0"
                                 />
