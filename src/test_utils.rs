@@ -380,7 +380,6 @@ macro_rules! my_assert {
         AssertApproxEq::assert_approx_eq(left_val, right_val, &ctx);
     }};
 }
-
 #[cfg(test)]
 #[macro_export]
 macro_rules! calculate_hash {
@@ -388,7 +387,9 @@ macro_rules! calculate_hash {
         use std::collections::hash_map::DefaultHasher;
         use std::hash::{Hash, Hasher};
         let mut hasher = DefaultHasher::new();
-        $( $input.hash(&mut hasher); )*
+        $(
+            format!("{:?}", $input).hash(&mut hasher);
+        )*
         format!("{:x}", hasher.finish())
     }};
 }
