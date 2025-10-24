@@ -177,7 +177,7 @@ mod tests {
         let hist_bins: usize = 1000;
         let user_mats_value: Vec<f64> = vec![0.0; 7];
         let adv_hone_strategy: &'static str = "No juice";
-        let data_size: usize = 10000;
+        let data_size: usize = 100000;
 
         let hash: String = calculate_hash!(
             &hone_counts,
