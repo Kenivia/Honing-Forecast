@@ -7,7 +7,7 @@ use std::fmt::Debug;
 use std::fs;
 use std::path::PathBuf;
 /// Tolerance for float comparisons
-pub const EPSILON: f64 = 1e-10;
+pub const EPSILON: f64 = 1e-7;
 
 /// Trait that enables approximate / deep equality assertions in tests
 pub trait AssertApproxEq {

@@ -6,6 +6,8 @@ use crate::parser::{Upgrade, probability_distribution};
 #[cfg(debug_assertions)]
 use assert_float_eq::assert_float_absolute_eq;
 
+// use itertools::Itertools;
+
 pub fn average_tap(prob_dist: &[f64], offset: f64) -> f64 {
     let mut out: f64 = 0.0_f64;
     // println!("{:?}", prob_dist[start_index..].iter().sum::<f64>() as f64);
@@ -17,22 +19,32 @@ pub fn average_tap(prob_dist: &[f64], offset: f64) -> f64 {
     }
     out
 }
-// fn truncated_average_tap(prob_dist: &[f64], offset: f64, truncate: usize) -> f64 {
-//     let mut out: f64 = 0.0_f64;
-//     // println!("{:?}", prob_dist[start_index..].iter().sum::<f64>() as f64);
-//     #[cfg(debug_assertions)]
-//     assert_float_absolute_eq!(prob_dist.iter().sum::<f64>(), 1.0_f64, 0.0000000001);
-//     // let sum_before_start: f64 = prob_dist[..start_index].iter().sum();
-//     for (index, item) in prob_dist.iter().enumerate() {
-//         if index < truncate - 1 {
-//             out += 0.0;
-//         } else {
-//             out += item * (index as f64 + offset)
-//                 / (1.0 - prob_dist.iter().take(truncate - 1).sum::<f64>());
-//         }
-//     }
-//     out + (truncate - 1) as f64
-// }
+fn truncated_average_tap(prob_dist: &[f64], offset: f64, truncate: usize) -> f64 {
+    let mut out: f64 = 0.0_f64;
+    // println!("{:?}", prob_dist[start_index..].iter().sum::<f64>() as f64);
+    #[cfg(debug_assertions)]
+    assert_float_absolute_eq!(prob_dist.iter().sum::<f64>(), 1.0_f64, 0.0000000001);
+    let sum_before_start: f64 = prob_dist.iter().take(truncate - 1).sum();
+    // let mut sum_so_far: f64 = 0.0;
+
+    dbg!(&prob_dist);
+    dbg!(&truncate);
+    for (index, item) in prob_dist.iter().enumerate() {
+        if index < truncate - 1 {
+            out += 0.0;
+        } else {
+            // out += if index == prob_dist.len() - 1 {
+            //     1.0 - sum_so_far
+            // } else {
+            //     *item
+            // } * (index as f64 + offset);
+            dbg!(&(item / (1.0 - sum_before_start)));
+            // sum_so_far += item;
+            out += item * (index as f64 + offset) / (1.0 - sum_before_start);
+        }
+    }
+    out + (truncate - 1) as f64
+}
 
 // fn average_tap_with_change(prob_dist: &Vec<f64>, change_index: usize, change_value: f64) -> f64 {
 //     let mut out: f64 = 0.0_f64;
@@ -58,19 +70,18 @@ fn est_juice_value_for_prob_dist(
     upgrade: &Upgrade,
     mat_values: &[f64],
     prob_dist: &[f64],
-    // extra_count: usize,
+    extra_count: usize,
 ) -> f64 {
     // if upgrade.failure_raw_delta < 0 {
     average_value(
         upgrade,
         mat_values,
-        average_tap(prob_dist, upgrade.tap_offset as f64),
-        //     )
-        // } else {
-        //     upgrade.failure_raw_delta as f64
-        //         * upgrade.base_chance
-        //         * truncated_average_tap(prob_dist, upgrade.tap_offset as f64, extra_count)
-        // })
+        truncated_average_tap(prob_dist, upgrade.tap_offset as f64, extra_count), //     )
+                                                                                  // } else {
+                                                                                  //     upgrade.failure_raw_delta as f64
+                                                                                  //         * upgrade.base_chance
+                                                                                  //         * truncated_average_tap(prob_dist, upgrade.tap_offset as f64, extra_count)
+                                                                                  // })
     )
 }
 pub fn est_special_honing_value(upgrade_arr: &mut Vec<Upgrade>, mats_values: &[f64]) -> Vec<f64> {
@@ -134,10 +145,10 @@ pub fn est_juice_value(upgrade_arr: &mut Vec<Upgrade>, mat_values: &[f64]) {
             );
 
             let value_with_juice: f64 =
-                est_juice_value_for_prob_dist(upgrade, mat_values, &next_prob_dist);
+                est_juice_value_for_prob_dist(upgrade, mat_values, &next_prob_dist, extra_count);
 
             let value_without_juice: f64 =
-                est_juice_value_for_prob_dist(upgrade, mat_values, &prev_prob_dist);
+                est_juice_value_for_prob_dist(upgrade, mat_values, &prev_prob_dist, extra_count);
 
             this_sum.push((value_without_juice - value_with_juice) / upgrade.one_juice_cost as f64);
             prev_prob_dist = next_prob_dist;
@@ -243,11 +254,21 @@ fn _juice_to_array(
                     && x.is_weapon == is_weapon
                     && cur_extras[*index] + 1 < x.juice_values.len()
             })
-            .map(|(index, x)| x.juice_values[cur_extras[index] + 1])
+            .map(|(index, x)| {
+                if cur_extras[index] + 1 == x.juice_values.len() - 1 {
+                    x.juice_values[cur_extras[index] + 1]
+                } else {
+                    (x.juice_values[cur_extras[index] + 1] + x.juice_values[cur_extras[index] + 2])
+                        / 2.0
+                }
+            })
+            // .sorted_unstable_by(|a, b| b.total_cmp(a))
+            // .take(2)
             .max_by(|a, b| a.total_cmp(b))
             .unwrap_or(0.0)
             .ceil();
-
+        // dbg!(&next_value);
+        // .sum::<f64>()
         // max_extra = *cur_extras.iter().max().unwrap();
         // _max_extra_index = cur_extras
         //     .iter()
@@ -269,8 +290,24 @@ fn _juice_to_array(
         max_value_index = idxs
             .into_iter()
             .max_by(|&a, &b| {
-                upgrade_arr[a].juice_values[cur_extras[a]]
-                    .total_cmp(&upgrade_arr[b].juice_values[cur_extras[b]])
+                (if cur_extras[a] == upgrade_arr[a].juice_values.len() - 1 {
+                    upgrade_arr[a].juice_values[cur_extras[a]]
+                } else {
+                    (upgrade_arr[a].juice_values[cur_extras[a]]
+                        + upgrade_arr[a].juice_values[cur_extras[a] + 1])
+                        / 2.0
+                })
+                .total_cmp(
+                    &(if cur_extras[b] == upgrade_arr[b].juice_values.len() - 1 {
+                        upgrade_arr[b].juice_values[cur_extras[b]]
+                    } else {
+                        (upgrade_arr[b].juice_values[cur_extras[b]]
+                            + upgrade_arr[b].juice_values[cur_extras[b] + 1])
+                            / 2.0
+                    }),
+                )
+                // upgrade_arr[a].juice_values[cur_extras[a]]
+                //     .total_cmp(&upgrade_arr[b].juice_values[cur_extras[b]])
             })
             .unwrap();
 
