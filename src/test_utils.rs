@@ -1,5 +1,3 @@
-// Put this in your crate (e.g. near the bottom of src/lib.rs) so it's only compiled for tests.
-
 use crate::parser::Upgrade;
 
 use serde_json;
@@ -212,35 +210,6 @@ impl AssertApproxEq for Upgrade {
     }
 }
 // --- impl for ChanceToCostOut ---
-use crate::chance_to_cost::ChanceToCostOut;
-
-impl AssertApproxEq for ChanceToCostOut {
-    fn assert_approx_eq(&self, other: &Self, ctx: &str) {
-        // hist_counts: Vec<Vec<i64>>
-        self.hist_counts
-            .assert_approx_eq(&other.hist_counts, &format!("{} -> hist_counts", ctx));
-
-        // hist_mins: Vec<i64>
-        self.hist_mins
-            .assert_approx_eq(&other.hist_mins, &format!("{} -> hist_mins", ctx));
-
-        // hist_maxs: Vec<i64>
-        self.hist_maxs
-            .assert_approx_eq(&other.hist_maxs, &format!("{} -> hist_maxs", ctx));
-
-        // hundred_budgets: Vec<Vec<i64>>
-        self.hundred_budgets.assert_approx_eq(
-            &other.hundred_budgets,
-            &format!("{} -> hundred_budgets", ctx),
-        );
-
-        // hundred_chances: Vec<f64>
-        self.hundred_chances.assert_approx_eq(
-            &other.hundred_chances,
-            &format!("{} -> hundred_chances", ctx),
-        );
-    }
-}
 
 // --- impl for CostToChanceOut ---
 use crate::cost_to_chance::CostToChanceOut;

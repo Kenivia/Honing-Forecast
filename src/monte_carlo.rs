@@ -1,64 +1,7 @@
-use crate::helpers::transpose_vec_of_vecs;
 use crate::parser::Upgrade;
 use rand::Rng;
 use rand::prelude::*;
 use std::cmp::min;
-// use vose_alias::VoseAlias;
-
-// generates budget from 0th to 99th percentile(or 99.9th more specifically), intentionally leaving out
-// pity because there is a distinction between pity and the unluckiest draw in 100k.
-// (where 0th percentile is the luckiest draws of each dimension)
-pub fn generate_budget_data(
-    cost_data: &[[i64; 9]],
-    initial_budget: &[i64],
-    budget_size: usize,
-    // data_size: usize,
-) -> Vec<Vec<i64>> {
-    let mut transposed_cost_data: Vec<Vec<i64>> = transpose_vec_of_vecs(cost_data);
-    for transposed_row in &mut transposed_cost_data {
-        transposed_row.sort_unstable();
-    }
-    let gap_size: Vec<f64> = transposed_cost_data
-        .iter()
-        .enumerate()
-        .take(7)
-        .map(|(index, row)| {
-            (row[row.len() - 1] - initial_budget[index].max(row[0])).max(0) as f64
-                / budget_size as f64
-        })
-        .collect();
-    let mut budget_data: Vec<Vec<i64>> = vec![vec![0; 9]; budget_size]; // red juice and blue juice will be left as 0
-
-    for (cost_type, transposed_row) in transposed_cost_data.iter().enumerate().take(7) {
-        let mut j: usize = 0;
-        let mut k: usize = 0;
-        let mut cur_count: usize = 0;
-        loop {
-            if transposed_row[j]
-                >= gap_size[cost_type]
-                    .mul_add(
-                        k as f64,
-                        initial_budget[cost_type].max(transposed_row[0]) as f64,
-                    )
-                    .min(transposed_row[transposed_row.len() - 1] as f64)
-                    .floor() as i64
-            {
-                budget_data[k][cost_type] = transposed_row[cur_count];
-                cur_count = j;
-                // (data_size as f64 / budget_size as f64).round() as usize;
-                k += 1;
-            } else {
-                j += 1;
-            }
-
-            if k >= budget_size {
-                break;
-            }
-        }
-    }
-
-    budget_data
-}
 
 #[inline]
 fn calc_failure_lim(avail_special: i64, cost: i64) -> i64 {

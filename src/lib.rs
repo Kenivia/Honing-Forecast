@@ -1,20 +1,14 @@
-mod bitset;
-mod chance_to_cost;
 mod constants;
 mod cost_to_chance;
 mod helpers;
 mod histogram;
-pub mod juice_generation;
 mod monte_carlo;
 mod parser;
+mod value_estimation;
 
 #[cfg(test)]
 #[macro_use]
 mod test_utils;
-
-mod value_estimation;
-
-use crate::chance_to_cost::{ChanceToCostOut, chance_to_cost};
 
 use crate::cost_to_chance::{
     CostToChanceArrOut, CostToChanceOut, cost_to_chance, cost_to_chance_arr,
@@ -29,7 +23,7 @@ use serde_wasm_bindgen::{from_value, to_value};
 use wasm_bindgen::JsValue;
 use wasm_bindgen::prelude::*;
 // use web_sys::console;
-// use std::cell::RefCell;
+
 #[derive(Deserialize)]
 pub struct Payload {
     normal_hone_ticks: Option<Vec<Vec<bool>>>,
@@ -140,31 +134,6 @@ pub fn cost_to_chance_wrapper(input: JsValue) -> JsValue {
 
 #[wasm_bindgen]
 #[must_use]
-pub fn chance_to_cost_wrapper(input: JsValue) -> JsValue {
-    console_error_panic_hook::set_once();
-    let payload: Payload = from_value(input).unwrap();
-
-    let normal_counts: Vec<Vec<i64>> = get_count(payload.normal_counts, payload.normal_hone_ticks);
-    let adv_counts: Vec<Vec<i64>> = get_count(payload.adv_counts, payload.adv_hone_ticks);
-
-    let adv_hone_strategy: String = payload.adv_hone_strategy;
-    let mut rng: ThreadRng = rand::rng();
-    let out: ChanceToCostOut = chance_to_cost(
-        &normal_counts,
-        &adv_counts,
-        &adv_hone_strategy,
-        payload.express_event,
-        payload.bucket_count,
-        payload.data_size.unwrap(),
-        &mut rng,
-    );
-
-    // Return a JS object with fields to avoid brittle tuple indexing
-    to_value(&out).unwrap()
-    // input
-}
-#[wasm_bindgen]
-#[must_use]
 pub fn parser_wrapper_unified(input: JsValue) -> JsValue {
     console_error_panic_hook::set_once();
     let payload: Payload = from_value(input).unwrap();
@@ -242,54 +211,3 @@ pub fn cost_to_chance_arr_wrapper(input: JsValue) -> JsValue {
 
     to_value(&result).unwrap()
 }
-
-// Histograms are included in the default wrappers' outputs
-
-// #[must_use]
-// pub fn chance_to_cost_test_wrapper(
-//     normal_hone_ticks: Vec<Vec<bool>>,
-//     adv_hone_ticks: Vec<Vec<bool>>,
-//     adv_hone_strategy: String,
-//     express_event: bool,
-// ) -> (Vec<Vec<i64>>, Vec<f64>) {
-//     let mut rng: ThreadRng = rand::rng();
-//     let out: ChanceToCostOut = chance_to_cost(
-//         &ticks_to_counts(normal_hone_ticks),
-//         &ticks_to_counts(adv_hone_ticks),
-//         &adv_hone_strategy,
-//         express_event,
-//         1000,
-//         100000,
-//         &mut rng,
-//     );
-//     (out.hundred_budgets, out.hundred_chances)
-// }
-
-// #[must_use]
-// pub fn cost_to_chance_test_wrapper(
-//     normal_hone_ticks: Vec<Vec<bool>>,
-//     adv_hone_ticks: Vec<Vec<bool>>,
-//     budget: Vec<i64>,
-//     express_event: bool,
-// ) -> (f64, String) {
-//     let mut rng: ThreadRng = rand::rng();
-//     let out: CostToChanceOut = cost_to_chance(
-//         &ticks_to_counts(normal_hone_ticks),
-//         &budget,
-//         &ticks_to_counts(adv_hone_ticks),
-//         express_event,
-//         1000,
-//         &[0.0; 7],
-//         "No juice".to_owned(),
-//         100000,
-//         &mut rng,
-//     );
-//     (
-//         out.chance,
-//         out.reasons
-//             .iter()
-//             .map(|r| format!("{:.2}%", r * 100.0))
-//             .collect::<Vec<String>>()
-//             .join(", "),
-//     )
-// }

@@ -1,5 +1,4 @@
 import init, {
-    chance_to_cost_wrapper,
     cost_to_chance_wrapper,
     cost_to_chance_arr_wrapper,
     parser_wrapper_unified,
@@ -12,10 +11,6 @@ const LABELS = ["Red", "Blue", "Leaps", "Shards", "Oreha", "Gold", "Silver"]
 async function MonteCarloWasm(payload: any) {
     await init()
     return (monte_carlo_wrapper as any)(payload)
-}
-async function ChanceToCostWasm(payload: any) {
-    await init()
-    return (chance_to_cost_wrapper as any)(payload)
 }
 
 async function CostToChanceWasm(payload: any) {
@@ -50,7 +45,6 @@ self.addEventListener("message", async (ev) => {
                 which_one == "CostToChance" ||
                 which_one == "CostToChanceArr" ||
                 // which_one == "CostToChanceOptimized" ||
-                which_one == "ChanceToCost" ||
                 which_one == "ParserUnified" ||
                 which_one == "AverageCost" ||
                 which_one == "MonteCarlo"
@@ -115,16 +109,6 @@ self.addEventListener("message", async (ev) => {
             budgets_blue_remaining: out.budgets_blue_remaining,
             buy_chances: buy_chances_percent,
             // buy_gold_costs: out.buy_gold_costs,
-        }
-    } else if (which_one == "ChanceToCost") {
-        let out = await ChanceToCostWasm(payload)
-
-        result = {
-            hundred_budgets: out.hundred_budgets,
-            hundred_chances: out.hundred_chances,
-            hist_counts: out.hist_counts,
-            hist_mins: out.hist_mins,
-            hist_maxs: out.hist_maxs,
         }
     } else if (which_one == "ParserUnified") {
         let out = await ParserWasmUnified(payload)

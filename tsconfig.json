@@ -30,6 +30,7 @@
         "src/**/*",
         "vite.config.ts",
         "vitest.setup.ts",
+        "junkyard/ChanceMode",
     ],
     "types": [
         "vitest/globals",

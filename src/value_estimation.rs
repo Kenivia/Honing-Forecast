@@ -1,12 +1,8 @@
-// use crate::constants::*;
-
 use crate::helpers::{compress_runs, generate_first_deltas};
 use crate::parser::{Upgrade, probability_distribution};
 
 #[cfg(debug_assertions)]
 use assert_float_eq::assert_float_absolute_eq;
-
-// use itertools::Itertools;
 
 pub fn average_tap(prob_dist: &[f64], offset: f64) -> f64 {
     let mut out: f64 = 0.0_f64;
@@ -46,18 +42,6 @@ fn truncated_average_tap(prob_dist: &[f64], offset: f64, truncate: usize) -> f64
     out + (truncate - 1) as f64
 }
 
-// fn average_tap_with_change(prob_dist: &Vec<f64>, change_index: usize, change_value: f64) -> f64 {
-//     let mut out: f64 = 0.0_f64;
-//     // println!("{:?}", prob_dist[start_index..].iter().sum::<f64>() as f64);
-//     #[cfg(debug_assertions)]
-//     assert_f64_near!(prob_dist.iter().sum::<f64>() as f64, 1.0 as f64, 10);
-//     // let sum_before_start: f64 = prob_dist[..start_index].iter().sum();
-//     for (index, item) in prob_dist.iter().enumerate() {
-//         out += (item + ((change_index == index) as i64 as f64) * change_value as f64)
-//             * (index + 1) as f64;
-//     }
-//     out
-// }
 fn average_value(upgrade: &Upgrade, mats_value: &[f64], average: f64) -> f64 {
     let mut this_sum = 0.0_f64;
     for cost_type in 0..7 {
@@ -76,12 +60,7 @@ fn est_juice_value_for_prob_dist(
     average_value(
         upgrade,
         mat_values,
-        truncated_average_tap(prob_dist, upgrade.tap_offset as f64, extra_count), //     )
-                                                                                  // } else {
-                                                                                  //     upgrade.failure_raw_delta as f64
-                                                                                  //         * upgrade.base_chance
-                                                                                  //         * truncated_average_tap(prob_dist, upgrade.tap_offset as f64, extra_count)
-                                                                                  // })
+        truncated_average_tap(prob_dist, upgrade.tap_offset as f64, extra_count),
     )
 }
 pub fn est_special_honing_value(upgrade_arr: &mut Vec<Upgrade>, mats_values: &[f64]) -> Vec<f64> {
@@ -94,12 +73,6 @@ pub fn est_special_honing_value(upgrade_arr: &mut Vec<Upgrade>, mats_values: &[f
     for upgrade in upgrade_arr.iter_mut() {
         if upgrade.is_normal_honing {
             average = average_tap(&upgrade.original_prob_dist, upgrade.tap_offset as f64);
-            // is_valid = if upgrade.is_weapon {
-            //     user_gave_weapon
-            // } else {
-            //     user_gave_armor
-            // };
-            // debug_assert!(upgrade.failure_raw_delta < 0);
             special_value = upgrade.base_chance * average_value(upgrade, mats_values, average)
                 / upgrade.special_cost as f64;
 
@@ -162,8 +135,6 @@ pub fn juice_to_array(
     upgrade_arr: &mut Vec<Upgrade>,
     blue_juice: i64,
     red_juice: i64,
-    // user_gave_armor: bool,
-    // user_gave_weapon: bool,
 ) -> (Vec<String>, Vec<String>) {
     // Armor uses blue juice (is_weapon == false), Weapon uses red juice (is_weapon == true)
     let (mut armor_sorted, next_armor_value): (Vec<(usize, usize, f64)>, f64) =
@@ -171,59 +142,23 @@ pub fn juice_to_array(
     let (mut weapon_sorted, next_weapon_value): (Vec<(usize, usize, f64)>, f64) =
         _juice_to_array(upgrade_arr, true, red_juice);
 
-    // Convert pairs of (plus_num, taps) to human-readable strings, sorted by plus_num asc
-    // let min_armor_value: f64 = armor_pairs
-    //     .iter()
-    //     .map(|(_, _, val)| val)
-    //     .cloned()
-    //     .fold(f64::INFINITY, f64::min)
-    //     .round();
-    // let (mut armor_sorted, next_value): (Vec<(usize, usize, f64)>, f64) = armor_pairs;
     armor_sorted.sort_by_key(|&(plus, _, min)| (plus, -min.round() as i64));
     weapon_sorted.sort_by_key(|&(plus, _, min)| (plus, -min.round() as i64));
     let armor_strings: Vec<String> = compress_runs(
         armor_sorted
             .into_iter()
-            .map(|(plus, taps, _)| {
-                // if !user_gave_armor {
-                format!("+{} armor, First {} taps", plus + 1, taps,)
-                // } else {
-                //     format!(
-                //         "+{} armor, first {} taps, avg value {}g",
-                //         plus + 1,
-                //         taps,
-                //         avg
-                //     )
-                // }
-            })
+            .map(|(plus, taps, _)| format!("+{} armor, First {} taps", plus + 1, taps,))
             .collect(),
         false,
         vec![format!(
             "Next value: {next_armor_value}. You should buy more if the price is lower than {next_armor_value}"
         )],
     );
-    // let min_weapon_value: f64 = weapon_pairs
-    //     .iter()
-    //     .map(|(_, _, val)| val)
-    //     .cloned()
-    //     .fold(f64::INFINITY, f64::min)
-    //     .round();
 
     let weapon_strings: Vec<String> = compress_runs(
         weapon_sorted
             .into_iter()
-            .map(|(plus, taps, _)| {
-                // if !user_gave_weapon {
-                format!("+{} weapon, First {} taps", plus + 1, taps,)
-                // } else {
-                //     format!(
-                //         "+{} weapon, First {} taps, avg value {}g",
-                //         plus + 1,
-                //         taps,
-                //         min
-                //     )
-                // }
-            })
+            .map(|(plus, taps, _)| format!("+{} weapon, First {} taps", plus + 1, taps,))
             .collect(),
         false,
         vec![format!(
@@ -247,7 +182,7 @@ fn _juice_to_array(
     // let mut _max_extra_index: usize;
     loop {
         next_value = upgrade_arr
-            .into_iter()
+            .iter_mut()
             .enumerate()
             .filter(|(index, x)| {
                 x.is_normal_honing
@@ -262,20 +197,10 @@ fn _juice_to_array(
                         / 2.0
                 }
             })
-            // .sorted_unstable_by(|a, b| b.total_cmp(a))
-            // .take(2)
             .max_by(|a, b| a.total_cmp(b))
             .unwrap_or(0.0)
             .ceil();
-        // dbg!(&next_value);
-        // .sum::<f64>()
-        // max_extra = *cur_extras.iter().max().unwrap();
-        // _max_extra_index = cur_extras
-        //     .iter()
-        //     .enumerate()
-        //     .max_by_key(|&(_, val)| val)
-        //     .map(|(i, _)| i)
-        //     .unwrap_or(0);
+
         idxs = (0..upgrade_arr.len())
             .filter(|&x| {
                 upgrade_arr[x].is_normal_honing
@@ -306,8 +231,6 @@ fn _juice_to_array(
                             / 2.0
                     }),
                 )
-                // upgrade_arr[a].juice_values[cur_extras[a]]
-                //     .total_cmp(&upgrade_arr[b].juice_values[cur_extras[b]])
             })
             .unwrap();
 
@@ -338,10 +261,8 @@ fn _juice_to_array(
                         .clone()
                         .into_iter()
                         .take(taps_used)
-                        .min_by(|a, b| a.partial_cmp(&b).unwrap_or(std::cmp::Ordering::Equal))
+                        .min_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal))
                         .unwrap()
-                        // .sum::<f64>()
-                        // / taps_used.max(1) as f64)
                         .round(),
                 ));
             }
@@ -355,7 +276,8 @@ mod tests {
     use super::*;
     use crate::constants::DEFAULT_GOLD_VALUES;
     use crate::parser::parser;
-    use crate::test_utils::{read_cached_data, write_cached_data};
+    use crate::test_utils::*;
+    use crate::{calculate_hash, my_assert};
 
     #[test]
     fn est_juice_value_25_wep() {
@@ -456,41 +378,4 @@ mod tests {
             write_cached_data(test_name, &hash, &result);
         }
     }
-
-    // #[test]
-    // fn juice_to_array_25() {
-    //     let test_name: &str = "juice_to_array_25";
-    //     let hone_counts: Vec<Vec<i64>> = vec![
-    //         (0..25).map(|_| 0).collect(),
-    //         (0..25).map(|x| if x == 24 { 1 } else { 0 }).collect(),
-    //     ];
-    //     let adv_counts: Vec<Vec<i64>> =
-    //         vec![(0..4).map(|_| 0).collect(), (0..4).map(|_| 0).collect()];
-
-    //     let adv_hone_strategy: &str = "No juice";
-    //     let express_event: bool = true;
-
-    //     let hash: String =
-    //         calculate_hash!(&hone_counts, &adv_counts, adv_hone_strategy, express_event);
-
-    //     let mut upgrade_arr = parser(
-    //         &hone_counts,
-    //         &adv_counts,
-    //         &adv_hone_strategy.to_string(),
-    //         &EVENT_ARTISAN_MULTIPLIER.to_vec(),
-    //         &[0.0; 25],
-    //         &[0; 25],
-    //         express_event,
-    //     );
-
-    //     let result: Vec<(usize, usize, f64, f64)> = _juice_to_array(&mut upgrade_arr, true, 1000);
-
-    //     if let Some(cached_result) =
-    //         read_cached_data::<Vec<(usize, usize, f64, f64)>>(test_name, &hash)
-    //     {
-    //         my_assert!(result, cached_result);
-    //     } else {
-    //         write_cached_data(test_name, &hash, &result);
-    //     }
-    // }
 }

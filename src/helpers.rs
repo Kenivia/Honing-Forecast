@@ -29,7 +29,7 @@ pub fn compute_gold_cost_from_raw(
 }
 
 pub fn generate_first_deltas(delta: f64, length: usize, non_zeros: usize) -> Vec<f64> {
-    vec![vec![delta; non_zeros], vec![0.0; length - non_zeros]].concat()
+    [vec![delta; non_zeros], vec![0.0; length - non_zeros]].concat()
 }
 pub fn transpose_vec_of_vecs(matrix: &[[i64; 9]]) -> Vec<Vec<i64>> {
     if matrix.is_empty() || matrix[0].is_empty() {
@@ -48,88 +48,6 @@ pub fn transpose_vec_of_vecs(matrix: &[[i64; 9]]) -> Vec<Vec<i64>> {
     }
     transposed
 }
-#[inline]
-pub fn budget_is_enough(cost: &[i64], budget: &[i64]) -> bool {
-    cost[0] <= budget[0]
-        && cost[1] <= budget[1]
-        && cost[2] <= budget[2]
-        && cost[3] <= budget[3]
-        && cost[4] <= budget[4]
-        && cost[5] <= budget[5]
-        && cost[6] <= budget[6]
-}
-
-fn count_failure_naive(cost_data: &[[i64; 9]], budget_data: &[Vec<i64>]) -> Vec<i64> {
-    let mut count: Vec<i64> = vec![0; budget_data.len()];
-    for cost in cost_data {
-        for (i, budget) in budget_data.iter().enumerate() {
-            if !budget_is_enough(cost, budget) {
-                count[i] += 1;
-            }
-        }
-    }
-    count
-}
-/// Count, for each budget, how many costs fail it.
-/// `cost_data` is a slice of N cost vectors; `budget_data` is a slice of M budget vectors
-/// that are sorted element-wise ascending. Returns a Vec<i64> length M.
-fn count_failure_ascending(cost_data: &[[i64; 9]], budget_data: &[Vec<i64>]) -> Vec<i64> {
-    let n: usize = cost_data.len();
-    let m: usize = budget_data.len();
-    if n == 0 || m == 0 {
-        return vec![0i64; m];
-    }
-
-    // Difference array approach (length m+1 to mark ranges)
-    let mut diffs: Vec<i64> = vec![0i64; m + 1];
-
-    for cost in cost_data {
-        let cs: &[i64] = cost.as_slice();
-
-        // Binary search for the first budget index that the cost *passes*.
-        // If none pass, first_pass_index stays m (meaning it fails all budgets).
-        let mut low: usize = 0;
-        let mut high: usize = m - 1;
-        let mut first_pass_index: usize = m;
-
-        while low <= high {
-            let mid: usize = (low + high) >> 1;
-
-            if budget_is_enough(cs, budget_data[mid].as_slice()) {
-                first_pass_index = mid;
-                if mid == 0 {
-                    break;
-                }
-                high = mid.saturating_sub(1);
-            } else {
-                low = mid + 1;
-            }
-        }
-
-        // If first_pass_index > 0 then this cost fails budgets [0 .. first_pass_index-1].
-        if first_pass_index > 0 {
-            diffs[0] += 1;
-            diffs[first_pass_index] -= 1;
-        }
-    }
-
-    // Build prefix-sum to obtain counts per budget index.
-    let mut counts: Vec<i64> = vec![0i64; m];
-    counts[0] = diffs[0];
-    for i in 1..m {
-        counts[i] = counts[i - 1] + diffs[i];
-    }
-
-    counts
-}
-
-pub fn count_failure(cost_data: &[[i64; 9]], budget_data: &[Vec<i64>], asc: bool) -> Vec<i64> {
-    if asc {
-        count_failure_ascending(cost_data, budget_data)
-    } else {
-        count_failure_naive(cost_data, budget_data)
-    }
-}
 
 pub fn sort_by_indices<T>(upgrade_arr: &mut Vec<T>, mut indices: Vec<usize>) {
     for idx in 0..upgrade_arr.len() {
@@ -147,6 +65,7 @@ pub fn sort_by_indices<T>(upgrade_arr: &mut Vec<T>, mut indices: Vec<usize>) {
         }
     }
 }
+
 pub fn ticks_to_counts(ticks: Vec<Vec<bool>>) -> Vec<Vec<i64>> {
     // assume ticks is always 6 rows
     let cols: usize = ticks[0].len();
