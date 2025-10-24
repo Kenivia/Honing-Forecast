@@ -23,19 +23,12 @@ fn truncated_average_tap(prob_dist: &[f64], offset: f64, truncate: usize) -> f64
     let sum_before_start: f64 = prob_dist.iter().take(truncate - 1).sum();
     // let mut sum_so_far: f64 = 0.0;
 
-    dbg!(&prob_dist);
-    dbg!(&truncate);
+    // dbg!(&prob_dist);
+    // dbg!(&truncate);
     for (index, item) in prob_dist.iter().enumerate() {
         if index < truncate - 1 {
             out += 0.0;
         } else {
-            // out += if index == prob_dist.len() - 1 {
-            //     1.0 - sum_so_far
-            // } else {
-            //     *item
-            // } * (index as f64 + offset);
-            dbg!(&(item / (1.0 - sum_before_start)));
-            // sum_so_far += item;
             out += item * (index as f64 + offset) / (1.0 - sum_before_start);
         }
     }
@@ -50,6 +43,32 @@ fn average_value(upgrade: &Upgrade, mats_value: &[f64], average: f64) -> f64 {
     this_sum
 }
 
+pub fn extract_special_strings(
+    upgrade_arr: &[Upgrade],
+    user_gave_weapon: bool,
+    user_gave_armor: bool,
+) -> Vec<String> {
+    let mut result: Vec<String> = Vec::new();
+    for upgrade in upgrade_arr {
+        if !upgrade.is_normal_honing {
+            continue;
+        }
+        let level_str: String = format!("+{}", upgrade.upgrade_plus_num + 1);
+        let type_str: &'static str = if upgrade.is_weapon { "weapon" } else { "armor" };
+        let is_valid: bool = if upgrade.is_weapon {
+            user_gave_weapon
+        } else {
+            user_gave_armor
+        };
+        let value_string: String = if is_valid {
+            " ".to_owned() + &upgrade.special_value.round().to_string() + "g"
+        } else {
+            String::new()
+        };
+        result.push(format!("{level_str} {type_str}{value_string}"));
+    }
+    result
+}
 fn est_juice_value_for_prob_dist(
     upgrade: &Upgrade,
     mat_values: &[f64],
@@ -215,22 +234,24 @@ fn _juice_to_array(
         max_value_index = idxs
             .into_iter()
             .max_by(|&a, &b| {
-                (if cur_extras[a] == upgrade_arr[a].juice_values.len() - 1 {
-                    upgrade_arr[a].juice_values[cur_extras[a]]
-                } else {
-                    (upgrade_arr[a].juice_values[cur_extras[a]]
-                        + upgrade_arr[a].juice_values[cur_extras[a] + 1])
-                        / 2.0
-                })
-                .total_cmp(
-                    &(if cur_extras[b] == upgrade_arr[b].juice_values.len() - 1 {
-                        upgrade_arr[b].juice_values[cur_extras[b]]
-                    } else {
-                        (upgrade_arr[b].juice_values[cur_extras[b]]
-                            + upgrade_arr[b].juice_values[cur_extras[b] + 1])
-                            / 2.0
-                    }),
-                )
+                upgrade_arr[a].juice_values[cur_extras[a]]
+                    .total_cmp(&upgrade_arr[b].juice_values[cur_extras[b]])
+                // (if cur_extras[a] == upgrade_arr[a].juice_values.len() - 1 {
+                //     upgrade_arr[a].juice_values[cur_extras[a]]
+                // } else {
+                //     (upgrade_arr[a].juice_values[cur_extras[a]]
+                //         + upgrade_arr[a].juice_values[cur_extras[a] + 1])
+                //         / 2.0
+                // })
+                // .total_cmp(
+                //     &(if cur_extras[b] == upgrade_arr[b].juice_values.len() - 1 {
+                //         upgrade_arr[b].juice_values[cur_extras[b]]
+                //     } else {
+                //         (upgrade_arr[b].juice_values[cur_extras[b]]
+                //             + upgrade_arr[b].juice_values[cur_extras[b] + 1])
+                //             / 2.0
+                //     }),
+                // )
             })
             .unwrap();
 
