@@ -83,7 +83,7 @@ self.addEventListener("message", async (ev) => {
             hist_counts: out.hist_counts,
             hist_mins: out.hist_mins,
             hist_maxs: out.hist_maxs,
-            upgrade_strings: out.upgrade_strings || [],
+            special_strings: out.special_strings || [],
             juice_strings_armor: out.juice_strings_armor || [],
             juice_strings_weapon: out.juice_strings_weapon || [],
             budgets_red_remaining: out.budgets_red_remaining,
@@ -98,16 +98,16 @@ self.addEventListener("message", async (ev) => {
         let out = await CostToChanceArrWasm(payload)
 
         // Convert final chances to percentages
-        const final_chances_percent = out.final_chances.map((chance: number) => (chance * 100).toFixed(2))
+        const no_buy_chance_arr_percent = out.no_buy_chance_arr.map((chance: number) => (chance * 100).toFixed(2))
 
-        const buy_chances_percent = out.buy_chances.map((chance: number) => (chance * 100).toFixed(2))
+        const buy_chances_percent = out.buy_chance_arr.map((chance: number) => (chance * 100).toFixed(2))
 
         result = {
-            final_chances: final_chances_percent,
+            no_buy_chance_arr: no_buy_chance_arr_percent,
             failure_rates_arr: out.typed_fail_counters,
             budgets_red_remaining: out.budgets_red_remaining,
             budgets_blue_remaining: out.budgets_blue_remaining,
-            buy_chances: buy_chances_percent,
+            buy_chance_arr: buy_chances_percent,
             // buy_gold_costs: out.buy_gold_costs,
         }
     } else if (which_one == "ParserUnified") {

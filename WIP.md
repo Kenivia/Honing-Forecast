@@ -34,7 +34,7 @@
 - Matrix operation libraries to speed up monte carlo and what not?
 - Graph is off by 0.5 all the time, and the points of interest snap the the one below(i tihnk?) which isnt quite right idk, kinda scared to touch it
 - better input cleaning for spreadsheetgrids
-- make get_top_bottom take in seeded rng
+- make get_one_tap_pity take in seeded rng
 - cache using array buffer? dont know if it's worth the effort
 - fix the react stuff, i think there's way too much usememo(the website feels sluggish)
 - improve how the cost estimation works / verify that it actually works

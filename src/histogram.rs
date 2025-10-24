@@ -1,4 +1,7 @@
-use crate::helpers::transpose_vec_of_vecs;
+use crate::constants::BUCKET_COUNT;
+use crate::helpers::{get_one_tap_pity, transpose_vec_of_vecs};
+
+use crate::parser::Upgrade;
 
 pub fn histogram_for_cost_index(
     cost_data_row: &mut Vec<i64>,
@@ -46,4 +49,27 @@ pub fn histograms_for_all_costs(
         all_counts.push(counts);
     }
     all_counts
+}
+#[derive(Debug)]
+pub struct HistogramOutputs {
+    pub hist_counts: Vec<Vec<i64>>,
+    pub hist_mins: Vec<i64>,
+    pub hist_maxs: Vec<i64>,
+}
+pub fn prep_histogram(
+    upgrade_arr: &mut Vec<Upgrade>,
+    cost_data: &[[i64; 9]],
+    hist_bins: usize,
+    unlock_costs: &[i64],
+) -> HistogramOutputs {
+    let one_tap_pity: Vec<Vec<i64>> = get_one_tap_pity(upgrade_arr, unlock_costs);
+    let bins: usize = hist_bins.min(BUCKET_COUNT).max(1);
+    let hist_maxs: Vec<i64> = one_tap_pity[1].clone();
+    let hist_counts: Vec<Vec<i64>> = histograms_for_all_costs(cost_data, bins, &hist_maxs);
+
+    HistogramOutputs {
+        hist_counts,
+        hist_mins: vec![0_i64; 7],
+        hist_maxs,
+    }
 }

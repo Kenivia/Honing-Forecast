@@ -5,6 +5,74 @@ use crate::constants::{
 use crate::parser::Upgrade;
 use crate::value_estimation::average_tap;
 
+use rand::Rng;
+
+#[inline]
+pub fn round_juice<R: Rng>(this_juice_cost: f64, rng: &mut R) -> i64 {
+    let base: i64 = this_juice_cost.floor() as i64;
+    let frac: f64 = this_juice_cost.fract();
+    base + i64::from(frac > 0.0 && rng.random_bool(frac))
+}
+
+pub fn get_one_tap_pity(upgrade_arr: &[Upgrade], unlock_costs: &[i64]) -> Vec<Vec<i64>> {
+    debug_assert!(unlock_costs.len() == 2);
+    const DATA_SIZE: usize = 2;
+    let mut cost_data: Vec<Vec<i64>> = vec![vec![0i64; 9]; DATA_SIZE];
+
+    for upgrade in upgrade_arr {
+        let pd_len: f64 = upgrade.prob_dist.len().saturating_sub(1) as f64;
+        for trial_num in 0..DATA_SIZE {
+            let rolled_tap =
+                ((pd_len * (trial_num) as f64) / (DATA_SIZE as f64 - 1.0)).floor() as usize;
+            for cost_type in 0..7 {
+                cost_data[trial_num][cost_type] +=
+                    upgrade.costs[cost_type] * (rolled_tap as i64 + upgrade.tap_offset);
+            }
+            if !upgrade.is_normal_honing {
+                cost_data[trial_num][if upgrade.is_weapon { 7 } else { 8 }] +=
+                    upgrade.adv_juice_cost[rolled_tap].ceil() as i64;
+            }
+        }
+    }
+    for row in &mut cost_data {
+        row[3] += unlock_costs[0];
+        row[6] += unlock_costs[1];
+    }
+    cost_data
+}
+
+pub fn get_percentile_window(p: f64, cost_data: &[[i64; 9]]) -> &[[i64; 9]] {
+    let n = cost_data.len();
+
+    // Calculate the lower bound: (p - 0.005) * n, floored
+    let lower_p = p - 0.005;
+    let mut lower_idx = if lower_p <= 0.0 {
+        0
+    } else {
+        let idx = (lower_p * n as f64).floor() as usize;
+        idx.min(n - 1)
+    };
+
+    // Calculate the upper bound: (p + 0.005) * n, ceiled
+    let upper_p = p + 0.005;
+    let mut upper_idx = if upper_p >= 1.0 {
+        n - 1
+    } else {
+        let idx = (upper_p * n as f64).ceil() as usize;
+        idx.min(n - 1)
+    };
+
+    if lower_idx == 0 {
+        upper_idx = 0;
+    }
+    if upper_idx == n - 1 {
+        lower_idx = n - 1;
+    }
+
+    // Return the slice (upper_idx is inclusive, so we add 1)
+    &cost_data[lower_idx..=upper_idx]
+}
+
 pub fn get_count(counts: Option<Vec<Vec<i64>>>, ticks: Option<Vec<Vec<bool>>>) -> Vec<Vec<i64>> {
     if counts.is_some() {
         counts.unwrap()
@@ -202,24 +270,6 @@ pub fn average_juice_cost(upgrades: &[Upgrade]) -> (i64, i64) {
         },
     )
 }
-
-// pub fn myformat(mut f: f64) -> String {
-//     f *= 100.0;
-//     if f == 1.0_f64 {
-//         return "100".to_owned();
-//     }
-//     let mut place: i32 = 1;
-
-//     loop {
-//         if (f - 1.0_f64).abs() >= 1.0 / 10f64.powi(place) {
-//             return format!("{:.*}", place as usize, f);
-//         }
-//         if place >= 4 {
-//             return "0".to_string();
-//         }
-//         place += 1;
-//     }
-// }
 
 /// Compress consecutive duplicate strings into one with suffix ` xN`.
 /// Example: ["A", "A", "A", "B", "C", "C"] -> ["A x3", "B", "C x2"].

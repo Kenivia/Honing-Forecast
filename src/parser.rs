@@ -3,8 +3,10 @@ use crate::constants::{
     DEFAULT_GOLD_VALUES, NORMAL_HONE_CHANCES, NORMAL_JUICE_COST, SPECIAL_LEAPS_COST,
     get_event_modified_armor_costs, get_event_modified_artisan, get_event_modified_weapon_costs,
 };
-use crate::helpers::{average_juice_cost, calc_unlock, sort_by_indices};
-use crate::value_estimation::{est_juice_value, est_special_honing_value, juice_to_array};
+use crate::helpers::{average_juice_cost, calc_unlock, compress_runs, sort_by_indices};
+use crate::value_estimation::{
+    est_juice_value, est_special_honing_value, extract_special_strings, juice_to_array,
+};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug)]
@@ -12,11 +14,10 @@ pub struct PreparationOutputs {
     pub upgrade_arr: Vec<Upgrade>,
     pub unlock_costs: Vec<i64>,
     pub budgets: Vec<i64>,
-    pub valid_armor_values: bool,
-    pub valid_weapon_values: bool,
     pub juice_strings_armor: Vec<String>,
     pub juice_strings_weapon: Vec<String>,
     pub mats_value: Vec<f64>,
+    pub special_strings: Vec<String>,
 }
 
 pub fn preparation(
@@ -60,28 +61,26 @@ pub fn preparation(
     }
 
     est_juice_value(&mut upgrade_arr, &mats_value);
-    let (juice_strings_armor, juice_strings_weapon): (Vec<String>, Vec<String>) = juice_to_array(
-        &mut upgrade_arr,
-        budgets[8],
-        budgets[7],
-        // valid_armor_values,
-        // valid_weapon_values,
-    );
+    let (juice_strings_armor, juice_strings_weapon): (Vec<String>, Vec<String>) =
+        juice_to_array(&mut upgrade_arr, budgets[8], budgets[7]);
     let value_per_special_leap: Vec<f64> = est_special_honing_value(&mut upgrade_arr, &mats_value);
     let mut special_indices: Vec<usize> = (0..value_per_special_leap.len()).collect();
     special_indices
         .sort_by(|&a, &b| value_per_special_leap[b].total_cmp(&value_per_special_leap[a]));
     sort_by_indices(&mut upgrade_arr, special_indices.clone());
-
+    let special_strings: Vec<String> = compress_runs(
+        extract_special_strings(&upgrade_arr, valid_weapon_values, valid_armor_values),
+        true,
+        vec![],
+    );
     PreparationOutputs {
         upgrade_arr,
         unlock_costs,
         budgets,
-        valid_armor_values,
-        valid_weapon_values,
         juice_strings_armor,
         juice_strings_weapon,
         mats_value,
+        special_strings,
     }
 }
 

@@ -298,7 +298,7 @@ export default function CostToChanceSection({
                             <div>
                                 <div style={{ ...styles.inputLabelCell, whiteSpace: "nowrap", color: "var(--free-tap)" }}>Free taps value ranking:</div>
                                 <div style={{ marginTop: 4, color: "var(--text-muted)", fontSize: "var(--font-size-sm)", width: 250 }}>
-                                    {(chance_result.upgrade_strings || []).slice(0, 10).map((upgrade: string, index: number) => (
+                                    {(chance_result.special_strings || []).slice(0, 10).map((upgrade: string, index: number) => (
                                         <div key={"Free tap value" + (index + 1)}>
                                             {index + 1}. {upgrade}
                                         </div>

@@ -237,18 +237,18 @@ impl AssertApproxEq for CostToChanceOut {
             .assert_approx_eq(&other.hist_maxs, &format!("{} -> hist_maxs", ctx));
 
         // upgrade_strings: Vec<String> (exact equality per element)
-        if self.upgrade_strings.len() != other.upgrade_strings.len() {
+        if self.special_strings.len() != other.special_strings.len() {
             panic!(
                 "{} -> upgrade_strings length mismatch: {} != {}",
                 ctx,
-                self.upgrade_strings.len(),
-                other.upgrade_strings.len()
+                self.special_strings.len(),
+                other.special_strings.len()
             );
         }
         for (i, (a, b)) in self
-            .upgrade_strings
+            .special_strings
             .iter()
-            .zip(other.upgrade_strings.iter())
+            .zip(other.special_strings.iter())
             .enumerate()
         {
             if a != b {
@@ -334,9 +334,11 @@ use crate::cost_to_chance::CostToChanceArrOut;
 
 impl AssertApproxEq for CostToChanceArrOut {
     fn assert_approx_eq(&self, other: &Self, ctx: &str) {
-        // final_chances: Vec<f64>
-        self.final_chances
-            .assert_approx_eq(&other.final_chances, &format!("{} -> final_chances", ctx));
+        // no_buy_chance_arr: Vec<f64>
+        self.no_buy_chance_arr.assert_approx_eq(
+            &other.no_buy_chance_arr,
+            &format!("{} -> no_buy_chance_arr", ctx),
+        );
 
         // typed_fail_counters: Vec<Vec<f64>>
         self.typed_fail_counters.assert_approx_eq(
@@ -356,9 +358,9 @@ impl AssertApproxEq for CostToChanceArrOut {
             &format!("{} -> budgets_blue_remaining", ctx),
         );
 
-        // buy_chances: Vec<f64>
-        self.buy_chances
-            .assert_approx_eq(&other.buy_chances, &format!("{} -> buy_chances", ctx));
+        // buy_chance_arr: Vec<f64>
+        self.buy_chance_arr
+            .assert_approx_eq(&other.buy_chance_arr, &format!("{} -> buy_chance_arr", ctx));
     }
 }
 

@@ -205,20 +205,20 @@ export default function LongTermSection({
         let relevant_chance_result
         let relevant_fail_arr
         if (showOptimizedDetails) {
-            if (!longTermResult.final_chances) {
+            if (!longTermResult.no_buy_chance_arr) {
                 return null
             } else {
-                relevant_chance_result = longTermResult.final_chances
+                relevant_chance_result = longTermResult.no_buy_chance_arr
                 relevant_fail_arr = longTermResult.failure_rates_arr
             }
         } else {
-            if (!longTermResult.buy_chances) {
+            if (!longTermResult.buy_chance_arr) {
                 return null
             } else {
-                relevant_chance_result = longTermResult.buy_chances
+                relevant_chance_result = longTermResult.buy_chance_arr
                 // relevant_fail_arr = longTermResult.buy_cost
             }
-        } // const chances = longTermResult.final_chances.map((chance: string) => parseFloat(chance))
+        } // const chances = longTermResult.no_buy_chance_arr.map((chance: string) => parseFloat(chance))
 
         // Create histogram-like data for Graph component
         // We need to create counts array where each week (0-52) represents a "bucket"
@@ -235,7 +235,7 @@ export default function LongTermSection({
 
         // Determine truncation length:
         // If overallCounts stops increasing for 4 consecutive weeks, cut off from the start of that run.
-        // Only scan up to the weeks we actually have final_chances for (so trailing zero-filled weeks don't immediately trigger a cutoff).
+        // Only scan up to the weeks we actually have no_buy_chance_arr for (so trailing zero-filled weeks don't immediately trigger a cutoff).
         const availableWeeks = Math.min(numWeeks, relevant_chance_result.length)
         let truncateLen = numWeeks // default: don't truncate
         if (availableWeeks > 0) {

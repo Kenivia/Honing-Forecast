@@ -1,9 +1,16 @@
+/// Wrappers for functoins to be called via something like
+/// async function MonteCarloWasm(payload: any) {
+///     await init()
+///     return (monte_carlo_wrapper as any)(payload)
+/// }
+/// (imported via import init, {monte_carlo_wrapper} from "@/../pkg/honing_forecast.js"
 mod constants;
 mod cost_to_chance;
 mod helpers;
 mod histogram;
 mod monte_carlo;
 mod parser;
+mod success_analysis;
 mod value_estimation;
 
 #[cfg(test)]
@@ -103,9 +110,6 @@ pub fn cost_to_chance_wrapper(input: JsValue) -> JsValue {
 
     let budget: Vec<i64> = payload.budget;
     let user_mats_value: Vec<f64> = payload.user_mats_value.unwrap_or(vec![0.0; 7]);
-    // let data_size: usize = payload.data_size.unwrap_or(100000).max(1000);
-
-    // let mut rng: ThreadRng = rand::rng();
     let cost_vec: Vec<Vec<i64>> = payload.cost_data.unwrap();
     let mut cost_data: Vec<[i64; 9]> = cost_vec
         .into_iter()
@@ -127,8 +131,6 @@ pub fn cost_to_chance_wrapper(input: JsValue) -> JsValue {
         payload.adv_hone_strategy,
         &mut cost_data,
     );
-
-    // console::log_1(&"cost_to_chance_complete".into());
     to_value(&out).unwrap()
 }
 
