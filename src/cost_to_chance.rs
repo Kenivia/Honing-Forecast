@@ -283,7 +283,7 @@ fn get_percentile_window(p: f64, cost_data: &[[i64; 9]]) -> &[[i64; 9]] {
     let n = cost_data.len();
 
     // Calculate the lower bound: (p - 0.005) * n, floored
-    let lower_p = p - 0.0099;
+    let lower_p = p - 0.005;
     let mut lower_idx = if lower_p <= 0.0 {
         0
     } else {
@@ -292,7 +292,7 @@ fn get_percentile_window(p: f64, cost_data: &[[i64; 9]]) -> &[[i64; 9]] {
     };
 
     // Calculate the upper bound: (p + 0.005) * n, ceiled
-    let upper_p = p + 0.0099;
+    let upper_p = p + 0.005;
     let mut upper_idx = if upper_p >= 1.0 {
         n - 1
     } else {
@@ -323,26 +323,28 @@ fn typical_cost(
     let mut average: Vec<f64> = vec![0.0; 9];
     for data in relevant_data {
         for i in 0..7 {
-            average[i] += data[i] as f64;
+            if i != 5 {
+                average[i] += data[i] as f64;
+            }
         }
     }
     for i in 0..7 {
         average[i] /= relevant_data.len() as f64;
     }
-    let mut total_cost: f64 = 0.0;
-    for (index, a) in average.iter().enumerate() {
-        if index >= 7 {
-            break;
-        }
-        total_cost += *a * price_arr[index];
-    }
-    let mut average_spending_proportion: Vec<f64> = Vec::with_capacity(9);
-    for (index, a) in average.iter().enumerate() {
-        if index >= 7 {
-            break;
-        }
-        average_spending_proportion.push(a * price_arr[index] / total_cost);
-    }
+    // let mut total_cost: f64 = 0.0;
+    // for (index, a) in average.iter().enumerate() {
+    //     if index >= 7 {
+    //         break;
+    //     }
+    //     total_cost += *a * price_arr[index];
+    // }
+    // let mut average_spending_proportion: Vec<f64> = Vec::with_capacity(9);
+    // for (index, a) in average.iter().enumerate() {
+    //     if index >= 7 {
+    //         break;
+    //     }
+    //     average_spending_proportion.push(a * price_arr[index] / total_cost);
+    // }
 
     let mut out: [i64; 9] = average
         .iter()
@@ -377,15 +379,16 @@ fn typical_cost(
 
     if current_success_chance < (desired_chance - 0.005).max(0.0) {
         let needed_gold_for_modified: f64 = modified_gold_costs
-            [(desired_chance as f64 * modified_gold_costs.len() as f64).ceil() as usize];
+            [((desired_chance) * modified_gold_costs.len() as f64).ceil() as usize];
         // web_sys::console::log_1(&needed_gold_for_modified.into());
-        for (index, o) in out.iter_mut().enumerate() {
-            if index >= 7 {
-                break;
-            }
-            *o += (needed_gold_for_modified * average_spending_proportion[index] / price_arr[index])
-                .round() as i64;
-        }
+        // for (index, o) in out.iter_mut().enumerate() {
+        //     if index >= 7 {
+        //         break;
+        //     }
+        //     *o += (needed_gold_for_modified * average_spending_proportion[index] / price_arr[index])
+        //         .round() as i64;
+        // }
+        out[5] += needed_gold_for_modified.round() as i64;
     }
     // }
 
