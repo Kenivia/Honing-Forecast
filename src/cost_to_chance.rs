@@ -158,7 +158,7 @@ mod tests {
     use super::*;
     use crate::constants::RNG_SEED;
     use crate::monte_carlo::monte_carlo_data;
-    use crate::test_utils::{read_cached_data, write_cached_data};
+    use crate::test_utils::{DEFAULT_GOLD_VALUES, read_cached_data, write_cached_data};
     use crate::{calculate_hash, my_assert};
     use rand::prelude::*;
 
@@ -175,7 +175,7 @@ mod tests {
         ];
         let express_event: bool = false;
         let hist_bins: usize = 1000;
-        let user_mats_value: Vec<f64> = vec![0.0; 7];
+        let user_mats_value: [f64; 7] = DEFAULT_GOLD_VALUES;
         let adv_hone_strategy: &'static str = "No juice";
         let data_size: usize = 100000;
 
@@ -240,7 +240,7 @@ mod tests {
         ];
         let express_event = false;
         let hist_bins: usize = 1000;
-        let user_mats_value = vec![0.0; 7];
+        let user_mats_value = DEFAULT_GOLD_VALUES;
         let adv_hone_strategy = "No juice";
         let data_size: usize = 100000;
 
@@ -297,7 +297,7 @@ mod tests {
         let adv_counts = vec![(0..4).map(|_| 0).collect(), (0..4).map(|_| 0).collect()];
         let express_event = false;
         let hist_bins: usize = 1000;
-        let user_mats_value = vec![0.0; 7];
+        let user_mats_value: [f64; 7] = DEFAULT_GOLD_VALUES;
         let adv_hone_strategy = "No juice";
         let data_size: usize = 100000;
 
@@ -354,7 +354,7 @@ mod tests {
         ];
         let express_event = false;
         let hist_bins: usize = 1000;
-        let user_mats_value = vec![0.0; 7];
+        let user_mats_value = DEFAULT_GOLD_VALUES;
         let adv_hone_strategy = "No juice";
         let data_size: usize = 100000;
 
@@ -416,7 +416,7 @@ mod tests {
         let hone_counts = vec![(0..25).map(|_| 5).collect(), (0..25).map(|_| 1).collect()];
         let adv_counts = vec![(0..4).map(|_| 5).collect(), (0..4).map(|_| 1).collect()];
         let express_event = false;
-        let user_mats_value = vec![0.0; 7];
+        let user_mats_value = DEFAULT_GOLD_VALUES;
         let adv_hone_strategy = "No juice";
         let data_size: usize = 100000;
 

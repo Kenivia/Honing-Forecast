@@ -8263,15 +8263,15 @@
     0
   ],
   "special_strings": [
-    "+25 weapon",
-    "+24 weapon",
-    "+22 armor",
-    "+21 armor",
-    "+23 weapon",
-    "+20 armor",
-    "+22 weapon",
-    "+21 weapon",
-    "+20 weapon"
+    "+25 weapon 269g",
+    "+24 weapon 255g",
+    "+22 armor 251g",
+    "+21 armor 244g",
+    "+23 weapon 237g",
+    "+20 armor 231g",
+    "+22 weapon 224g",
+    "+21 weapon 213g",
+    "+20 weapon 200g"
   ],
   "juice_strings_armor": [
     "Next value: 215. You should buy more if the price is lower than 215",
