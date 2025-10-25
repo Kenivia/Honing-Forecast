@@ -1,5 +1,3 @@
-pub static DEFAULT_GOLD_VALUES: [f64; 7] = [1.65, 0.03, 13.0, 0.5, 95.0, 1.0, 0.0];
-
 // +11 to +18 double artisan, +15 to 18 mats cost reduced by 10%, unlock cost reduced by 20%
 pub static EVENT_ARTISAN_MULTIPLIER: [f64; 25] = [
     1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 1.0,

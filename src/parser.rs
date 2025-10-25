@@ -1,7 +1,7 @@
 use crate::constants::{
     ADV_DATA_10_20, ADV_DATA_10_20_JUICE, ADV_DATA_30_40, ADV_DATA_30_40_JUICE, ADV_HONE_COST,
-    DEFAULT_GOLD_VALUES, NORMAL_HONE_CHANCES, NORMAL_JUICE_COST, SPECIAL_LEAPS_COST,
-    get_event_modified_armor_costs, get_event_modified_artisan, get_event_modified_weapon_costs,
+    NORMAL_HONE_CHANCES, NORMAL_JUICE_COST, SPECIAL_LEAPS_COST, get_event_modified_armor_costs,
+    get_event_modified_artisan, get_event_modified_weapon_costs,
 };
 use crate::helpers::{average_juice_cost, calc_unlock, compress_runs, sort_by_indices};
 use crate::value_estimation::{
@@ -28,7 +28,7 @@ pub fn preparation(
     user_mats_value: &[f64],
     adv_hone_strategy: &str,
 ) -> PreparationOutputs {
-    let mut mats_value: Vec<f64> = user_mats_value.to_vec();
+    let mats_value: Vec<f64> = user_mats_value.to_vec();
     let unlock_costs: Vec<i64> = calc_unlock(hone_counts, adv_counts, express_event);
 
     let mut upgrade_arr: Vec<Upgrade> = parser(
@@ -46,20 +46,6 @@ pub fn preparation(
         budgets[8] -= avg_blue_juice;
     }
 
-    let valid_armor_values: bool =
-        mats_value.iter().skip(1).any(|&x| x != 0.0) || upgrade_arr.iter().all(|x| x.is_weapon);
-
-    let valid_weapon_values: bool = mats_value
-        .iter()
-        .enumerate()
-        .any(|(index, &x)| index != 1 && x != 0.0)
-        || upgrade_arr.iter().all(|x| !x.is_weapon);
-    let both_valid: bool = valid_armor_values && valid_weapon_values;
-
-    if !both_valid {
-        mats_value = DEFAULT_GOLD_VALUES.to_vec();
-    }
-
     est_juice_value(&mut upgrade_arr, &mats_value);
     let (juice_strings_armor, juice_strings_weapon): (Vec<String>, Vec<String>) =
         juice_to_array(&mut upgrade_arr, budgets[8], budgets[7]);
@@ -68,11 +54,8 @@ pub fn preparation(
     special_indices
         .sort_by(|&a, &b| value_per_special_leap[b].total_cmp(&value_per_special_leap[a]));
     sort_by_indices(&mut upgrade_arr, special_indices.clone());
-    let special_strings: Vec<String> = compress_runs(
-        extract_special_strings(&upgrade_arr, valid_weapon_values, valid_armor_values),
-        true,
-        vec![],
-    );
+    let special_strings: Vec<String> =
+        compress_runs(extract_special_strings(&upgrade_arr), true, vec![]);
     PreparationOutputs {
         upgrade_arr,
         unlock_costs,

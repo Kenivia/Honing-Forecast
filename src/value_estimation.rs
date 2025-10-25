@@ -43,11 +43,7 @@ fn average_value(upgrade: &Upgrade, mats_value: &[f64], average: f64) -> f64 {
     this_sum
 }
 
-pub fn extract_special_strings(
-    upgrade_arr: &[Upgrade],
-    user_gave_weapon: bool,
-    user_gave_armor: bool,
-) -> Vec<String> {
+pub fn extract_special_strings(upgrade_arr: &[Upgrade]) -> Vec<String> {
     let mut result: Vec<String> = Vec::new();
     for upgrade in upgrade_arr {
         if !upgrade.is_normal_honing {
@@ -55,16 +51,10 @@ pub fn extract_special_strings(
         }
         let level_str: String = format!("+{}", upgrade.upgrade_plus_num + 1);
         let type_str: &'static str = if upgrade.is_weapon { "weapon" } else { "armor" };
-        let is_valid: bool = if upgrade.is_weapon {
-            user_gave_weapon
-        } else {
-            user_gave_armor
-        };
-        let value_string: String = if is_valid {
-            " ".to_owned() + &upgrade.special_value.round().to_string() + "g"
-        } else {
-            String::new()
-        };
+
+        let value_string: String =
+            " ".to_owned() + &upgrade.special_value.round().to_string() + "g";
+
         result.push(format!("{level_str} {type_str}{value_string}"));
     }
     result
@@ -75,7 +65,6 @@ fn est_juice_value_for_prob_dist(
     prob_dist: &[f64],
     extra_count: usize,
 ) -> f64 {
-    // if upgrade.failure_raw_delta < 0 {
     average_value(
         upgrade,
         mat_values,
@@ -116,6 +105,7 @@ pub fn est_juice_value(upgrade_arr: &mut Vec<Upgrade>, mat_values: &[f64]) {
     for upgrade in upgrade_arr.iter_mut() {
         if !upgrade.is_normal_honing || upgrade.upgrade_plus_num <= 2 {
             continue;
+            //TODO add adv honing juice value estimation
         }
         this_sum = Vec::with_capacity(upgrade.prob_dist_len);
         let mut prev_prob_dist: Vec<f64> = probability_distribution(
@@ -236,22 +226,6 @@ fn _juice_to_array(
             .max_by(|&a, &b| {
                 upgrade_arr[a].juice_values[cur_extras[a]]
                     .total_cmp(&upgrade_arr[b].juice_values[cur_extras[b]])
-                // (if cur_extras[a] == upgrade_arr[a].juice_values.len() - 1 {
-                //     upgrade_arr[a].juice_values[cur_extras[a]]
-                // } else {
-                //     (upgrade_arr[a].juice_values[cur_extras[a]]
-                //         + upgrade_arr[a].juice_values[cur_extras[a] + 1])
-                //         / 2.0
-                // })
-                // .total_cmp(
-                //     &(if cur_extras[b] == upgrade_arr[b].juice_values.len() - 1 {
-                //         upgrade_arr[b].juice_values[cur_extras[b]]
-                //     } else {
-                //         (upgrade_arr[b].juice_values[cur_extras[b]]
-                //             + upgrade_arr[b].juice_values[cur_extras[b] + 1])
-                //             / 2.0
-                //     }),
-                // )
             })
             .unwrap();
 
@@ -295,7 +269,6 @@ fn _juice_to_array(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::constants::DEFAULT_GOLD_VALUES;
     use crate::parser::parser;
     use crate::test_utils::*;
     use crate::{calculate_hash, my_assert};
