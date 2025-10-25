@@ -3,15 +3,18 @@
 
 ## Next big step(s)
 
-- True juice optimization for success chance
+- Juice(and Book / Scroll) purchase suggestion
 - Books & scroll calculations
-- Juice / Book / Scroll purchase & chest openinig optimization
+- True juice optimization for success chance(no buy)
 
 ## Other features
 
 - Automatic Market price integration(via some kind of API, or just updating the site at a regular interval automatically)
 - Confidence intervals(might have to actually learn some math first)
 - Allow selling mats
+- Raw gold graph and overall gold(including used in buying mats) lines in the
+graph
+- juce chest openinig optimization
 
 ## UI
 
