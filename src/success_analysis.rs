@@ -109,24 +109,12 @@ pub fn compute_all_gold_costs_and_sort_data(
             .unwrap_or(std::cmp::Ordering::Equal)
     });
 
-    // Apply permutation in-place using cycle-following algorithm
-    for i in 0..indices.len() {
-        if indices[i] != i {
-            let mut current = i;
-            loop {
-                let next = indices[current];
-                indices[current] = current; // Mark as visited
-                if next == i {
-                    break;
-                }
-                cost_data.swap(current, next);
-                current = next;
-            }
-        }
+    let temp_cost_data: Vec<[i64; 9]> = cost_data.to_vec();
+    for (index, cost) in cost_data.iter_mut().enumerate() {
+        *cost = temp_cost_data[indices[index]];
     }
-
     // Sort all_gold_costs to match
-    all_gold_costs.sort_unstable_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
+    all_gold_costs = indices.iter().map(|&i| all_gold_costs[i]).collect(); //.sort_unstable_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
     all_gold_costs
 }
 

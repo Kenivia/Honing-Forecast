@@ -29,7 +29,6 @@ use serde::Deserialize;
 use serde_wasm_bindgen::{from_value, to_value};
 use wasm_bindgen::JsValue;
 use wasm_bindgen::prelude::*;
-// use web_sys::console;
 
 #[derive(Deserialize)]
 pub struct Payload {
