@@ -95,6 +95,7 @@ pub fn monte_carlo_data<R: Rng>(
     // pre-generate an array of how many pieces were free tapped, mostly because it just makes things easier
     // i doubt it's actually faster
     if avail_special > 0 {
+        // TODO ignore when later passed ->
         for (upgrade_index, upgrade) in upgrade_arr.iter().enumerate() {
             if upgrade.is_normal_honing {
                 let limit: i64 = calc_failure_lim(avail_special, upgrade.special_cost);

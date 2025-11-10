@@ -95,6 +95,37 @@ impl AssertApproxEq for [f64] {
         }
     }
 }
+impl AssertApproxEq for [(Vec<i64>, Vec<i64>)] {
+    fn assert_approx_eq(&self, other: &Self, ctx: &str) {
+        for (i, (a, b)) in self
+            .iter()
+            .map(|x| &(*x).0)
+            .zip(other.iter().map(|x| &(*x).0))
+            .enumerate()
+        {
+            if a != b {
+                panic!(
+                    "Assertion failed (array 1, [i64] at index {}): {}\n  left = {:?}\n right = {:?}",
+                    i, ctx, self, other
+                );
+            }
+        }
+
+        for (i, (a, b)) in self
+            .iter()
+            .map(|x| &(*x).1)
+            .zip(other.iter().map(|x| &(*x).1))
+            .enumerate()
+        {
+            if a != b {
+                panic!(
+                    "Assertion failed (array 2,  [i64] at index {}): {}\n  left = {:?}\n right = {:?}",
+                    i, ctx, self, other
+                );
+            }
+        }
+    }
+}
 
 // Vec<T> where T: AssertApproxEq
 impl<T> AssertApproxEq for Vec<T>
