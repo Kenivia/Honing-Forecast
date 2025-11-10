@@ -85,7 +85,7 @@ pub fn cost_to_chance(
 
     CostToChanceOut {
         chance: no_buy_failure_outputs.no_buy_chance,
-        reasons: no_buy_failure_outputs.typed_fail_counter_final,
+        reasons: no_buy_failure_outputs.typed_success_chances,
         hist_counts: histogram_outputs.hist_counts,
         hist_mins: histogram_outputs.hist_mins,
         hist_maxs: histogram_outputs.hist_maxs,
@@ -127,7 +127,7 @@ pub fn cost_to_chance_arr(
     for input_budgets in input_budgets_arr {
         let failure_outputs: NoBuyAnalysisOutputs = no_buy_analysis(cost_data, input_budgets);
         no_buy_chance_arr.push(failure_outputs.no_buy_chance);
-        typed_fail_counters.push(failure_outputs.typed_fail_counter_final);
+        typed_fail_counters.push(failure_outputs.typed_success_chances);
     }
 
     // Buy analysis

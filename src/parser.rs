@@ -1,14 +1,16 @@
 use crate::constants::{
     ADV_DATA_10_20, ADV_DATA_10_20_JUICE, ADV_DATA_30_40, ADV_DATA_30_40_JUICE, ADV_HONE_COST,
-    NORMAL_HONE_CHANCES, NORMAL_JUICE_COST, SPECIAL_LEAPS_COST, get_event_modified_armor_costs,
-    get_event_modified_artisan, get_event_modified_weapon_costs,
+    NORMAL_HONE_CHANCES, NORMAL_JUICE_COST, RNG_SEED, SPECIAL_LEAPS_COST,
+    get_event_modified_armor_costs, get_event_modified_artisan, get_event_modified_weapon_costs,
 };
 use crate::helpers::{average_juice_cost, calc_unlock, compress_runs, sort_by_indices};
+use crate::monte_carlo::monte_carlo_data;
+use crate::success_analysis::{NoBuyAnalysisOutputs, no_buy_analysis};
 use crate::value_estimation::{
     est_juice_value, est_special_honing_value, extract_special_strings, juice_to_array,
 };
+use rand::prelude::*;
 use serde::{Deserialize, Serialize};
-
 #[derive(Debug)]
 pub struct PreparationOutputs {
     pub upgrade_arr: Vec<Upgrade>,
@@ -39,17 +41,36 @@ pub fn preparation(
     );
     let mut budgets: Vec<i64> = input_budgets.to_vec();
 
-    // Add average juice costs to budgets for all upgrades
+    // take off average juice cost of adv honings
+    // this will not be a thing anymore after juice purchase recommendation
     if adv_hone_strategy == "Juice on grace" {
         let (avg_red_juice, avg_blue_juice): (i64, i64) = average_juice_cost(&upgrade_arr);
         budgets[7] -= avg_red_juice;
         budgets[8] -= avg_blue_juice;
     }
 
-    est_juice_value(&mut upgrade_arr, &mats_value);
+    let no_buy_analysis_output: NoBuyAnalysisOutputs = no_buy_analysis(
+        &monte_carlo_data(
+            10000,
+            &upgrade_arr,
+            &unlock_costs,
+            input_budgets[9],
+            &mut StdRng::seed_from_u64(RNG_SEED),
+        ),
+        &input_budgets,
+    );
+    est_juice_value(
+        &mut upgrade_arr,
+        &mats_value,
+        &no_buy_analysis_output.typed_success_chances,
+    );
     let (juice_strings_armor, juice_strings_weapon): (Vec<String>, Vec<String>) =
         juice_to_array(&mut upgrade_arr, budgets[8], budgets[7]);
-    let value_per_special_leap: Vec<f64> = est_special_honing_value(&mut upgrade_arr, &mats_value);
+    let value_per_special_leap: Vec<f64> = est_special_honing_value(
+        &mut upgrade_arr,
+        &mats_value,
+        &no_buy_analysis_output.typed_success_chances,
+    );
     let mut special_indices: Vec<usize> = (0..value_per_special_leap.len()).collect();
     special_indices
         .sort_by(|&a, &b| value_per_special_leap[b].total_cmp(&value_per_special_leap[a]));

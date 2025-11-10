@@ -2,7 +2,7 @@ use crate::helpers::{compute_gold_cost_from_raw, get_one_tap_pity, get_percentil
 use crate::parser::PreparationOutputs;
 #[derive(Debug)]
 pub struct NoBuyAnalysisOutputs {
-    pub typed_fail_counter_final: Vec<f64>,
+    pub typed_success_chances: Vec<f64>,
     pub no_buy_chance: f64,
 }
 
@@ -13,7 +13,7 @@ pub struct BuyAnalysisOutput {
 }
 
 pub fn no_buy_analysis(cost_data: &[[i64; 9]], input_budgets: &[i64]) -> NoBuyAnalysisOutputs {
-    let mut typed_fail_counter_final: Vec<f64> = vec![0.0_f64; 7];
+    let mut typed_success_chances: Vec<f64> = vec![0.0_f64; 7];
     let mut overall_fail_counter: i64 = 0;
     let mut failed: bool;
     for data in cost_data {
@@ -21,7 +21,7 @@ pub fn no_buy_analysis(cost_data: &[[i64; 9]], input_budgets: &[i64]) -> NoBuyAn
         for cost_type in 0..7 {
             if input_budgets[cost_type] < data[cost_type] {
                 failed = true;
-                typed_fail_counter_final[cost_type] += 1.0_f64;
+                typed_success_chances[cost_type] += 1.0_f64;
             }
         }
         if failed {
@@ -31,11 +31,11 @@ pub fn no_buy_analysis(cost_data: &[[i64; 9]], input_budgets: &[i64]) -> NoBuyAn
 
     let no_buy_chance: f64 = 1.0_f64 - overall_fail_counter as f64 / cost_data.len() as f64;
     for cost_type in 0..7 {
-        typed_fail_counter_final[cost_type] =
-            1.0 - typed_fail_counter_final[cost_type] / cost_data.len() as f64;
+        typed_success_chances[cost_type] =
+            1.0 - typed_success_chances[cost_type] / cost_data.len() as f64;
     }
     NoBuyAnalysisOutputs {
-        typed_fail_counter_final,
+        typed_success_chances,
         no_buy_chance,
     }
 }

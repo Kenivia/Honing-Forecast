@@ -4,6 +4,7 @@
 ## Next big step(s)
 
 - Juice(and Book / Scroll) purchase suggestion
+  - Some how find "adjusted value" for juice - a value that only counts things that will run out(and proportional to how much it'll be short?)
 - Books & scroll calculations
 - True juice optimization for success chance(no buy)
 

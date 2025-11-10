@@ -1,5 +1,6 @@
 use crate::helpers::round_juice;
 use crate::parser::Upgrade;
+use crate::value_estimation::juice_value_now;
 use rand::Rng;
 use rand::prelude::*;
 use std::cmp::min;
@@ -83,11 +84,11 @@ pub fn monte_carlo_data<R: Rng>(
     data_size: usize,
     upgrade_arr: &[Upgrade],
     unlock_costs: &[i64],
-    avail_special: i64,
+    input_budgets: &[i64],
     mut rng: &mut R,
 ) -> Vec<[i64; 9]> {
     debug_assert!(unlock_costs.len() == 2);
-
+    let avail_special: i64 = input_budgets[9];
     let mut cost_data: Vec<[i64; 9]> = vec![[0i64; 9]; data_size];
     let mut special_budgets: Vec<i64> = vec![avail_special; data_size];
     let mut special_pass_arr: Vec<usize> = vec![0usize; data_size];

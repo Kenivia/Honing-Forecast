@@ -35,10 +35,18 @@ fn truncated_average_tap(prob_dist: &[f64], offset: f64, truncate: usize) -> f64
     out + (truncate - 1) as f64
 }
 
-fn average_value(upgrade: &Upgrade, mats_value: &[f64], average: f64) -> f64 {
+fn average_value(
+    upgrade: &Upgrade,
+    mats_value: &[f64],
+    average: f64,
+    chance_of_not_needing: &[f64],
+) -> f64 {
     let mut this_sum = 0.0_f64;
     for cost_type in 0..7 {
-        this_sum += mats_value[cost_type] * average * upgrade.costs[cost_type] as f64;
+        this_sum += mats_value[cost_type]
+            * average
+            * upgrade.costs[cost_type] as f64
+            * chance_of_not_needing[cost_type]; // this actually changes as we use juice, but no idea how to actually track that
     }
     this_sum
 }
@@ -64,14 +72,20 @@ fn est_juice_value_for_prob_dist(
     mat_values: &[f64],
     prob_dist: &[f64],
     extra_count: usize,
+    chance_of_not_needing: &[f64],
 ) -> f64 {
     average_value(
         upgrade,
         mat_values,
         truncated_average_tap(prob_dist, upgrade.tap_offset as f64, extra_count),
+        chance_of_not_needing,
     )
 }
-pub fn est_special_honing_value(upgrade_arr: &mut Vec<Upgrade>, mats_values: &[f64]) -> Vec<f64> {
+pub fn est_special_honing_value(
+    upgrade_arr: &mut Vec<Upgrade>,
+    mats_values: &[f64],
+    chance_of_not_needing: &[f64],
+) -> Vec<f64> {
     let mut out: Vec<f64> = Vec::with_capacity(upgrade_arr.len());
     let mut average: f64;
     let cost_type_count: usize = 7;
@@ -81,7 +95,8 @@ pub fn est_special_honing_value(upgrade_arr: &mut Vec<Upgrade>, mats_values: &[f
     for upgrade in upgrade_arr.iter_mut() {
         if upgrade.is_normal_honing {
             average = average_tap(&upgrade.original_prob_dist, upgrade.tap_offset as f64);
-            special_value = upgrade.base_chance * average_value(upgrade, mats_values, average)
+            special_value = upgrade.base_chance
+                * average_value(upgrade, mats_values, average, &chance_of_not_needing)
                 / upgrade.special_cost as f64;
 
             out.push(special_value);
@@ -95,7 +110,11 @@ pub fn est_special_honing_value(upgrade_arr: &mut Vec<Upgrade>, mats_values: &[f
     out
 }
 
-pub fn est_juice_value(upgrade_arr: &mut Vec<Upgrade>, mat_values: &[f64]) {
+pub fn est_juice_value(
+    upgrade_arr: &mut Vec<Upgrade>,
+    mat_values: &[f64],
+    chance_of_not_needing: &[f64],
+) {
     let mut this_sum: Vec<f64>;
     // let mut prev_cost: f64;
     // let mut next_cost: f64;
@@ -126,11 +145,21 @@ pub fn est_juice_value(upgrade_arr: &mut Vec<Upgrade>, mat_values: &[f64]) {
                 &generate_first_deltas(upgrade.base_chance, upgrade.prob_dist_len, extra_count),
             );
 
-            let value_with_juice: f64 =
-                est_juice_value_for_prob_dist(upgrade, mat_values, &next_prob_dist, extra_count);
+            let value_with_juice: f64 = est_juice_value_for_prob_dist(
+                upgrade,
+                mat_values,
+                &next_prob_dist,
+                extra_count,
+                &chance_of_not_needing,
+            );
 
-            let value_without_juice: f64 =
-                est_juice_value_for_prob_dist(upgrade, mat_values, &prev_prob_dist, extra_count);
+            let value_without_juice: f64 = est_juice_value_for_prob_dist(
+                upgrade,
+                mat_values,
+                &prev_prob_dist,
+                extra_count,
+                &chance_of_not_needing,
+            );
 
             this_sum.push((value_without_juice - value_with_juice) / upgrade.one_juice_cost as f64);
             prev_prob_dist = next_prob_dist;
@@ -269,9 +298,14 @@ fn _juice_to_array(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::constants::RNG_SEED;
+    use crate::helpers::calc_unlock;
+    use crate::monte_carlo::monte_carlo_data;
     use crate::parser::parser;
+    use crate::success_analysis::no_buy_analysis;
     use crate::test_utils::*;
     use crate::{calculate_hash, my_assert};
+    use rand::prelude::*;
 
     #[test]
     fn est_juice_value_25_wep() {
@@ -285,9 +319,14 @@ mod tests {
 
         let adv_hone_strategy: &str = "No juice";
         let express_event: bool = true;
-
-        let hash: String =
-            calculate_hash!(&hone_counts, &adv_counts, adv_hone_strategy, express_event);
+        let input_budgets = vec![324000, 0, 4680, 1774000, 3600, 406800, 10800000, 0, 0, 0];
+        let hash: String = calculate_hash!(
+            &hone_counts,
+            &adv_counts,
+            adv_hone_strategy,
+            express_event,
+            &input_budgets
+        );
 
         let mut upgrade_arr = parser(
             &hone_counts,
@@ -295,8 +334,22 @@ mod tests {
             &adv_hone_strategy.to_string(),
             express_event,
         );
-
-        est_juice_value(&mut upgrade_arr, &DEFAULT_GOLD_VALUES);
+        let chance_of_not_needing: Vec<f64> = no_buy_analysis(
+            &monte_carlo_data(
+                10000,
+                &upgrade_arr,
+                &calc_unlock(&hone_counts, &adv_counts, express_event),
+                input_budgets[9],
+                &mut StdRng::seed_from_u64(RNG_SEED),
+            ),
+            &input_budgets,
+        )
+        .typed_success_chances;
+        est_juice_value(
+            &mut upgrade_arr,
+            &DEFAULT_GOLD_VALUES,
+            &chance_of_not_needing,
+        );
         let result: Vec<f64> = upgrade_arr[0].juice_values.clone();
         if let Some(cached_result) = read_cached_data::<Vec<f64>>(test_name, &hash) {
             for (index, i) in result.iter().enumerate() {
@@ -319,8 +372,14 @@ mod tests {
         let adv_hone_strategy: &str = "No juice";
         let express_event: bool = true;
 
-        let hash: String =
-            calculate_hash!(&hone_counts, &adv_counts, adv_hone_strategy, express_event);
+        let input_budgets = vec![324000, 0, 4680, 1774000, 3600, 406800, 10800000, 0, 0, 0];
+        let hash: String = calculate_hash!(
+            &hone_counts,
+            &adv_counts,
+            adv_hone_strategy,
+            express_event,
+            &input_budgets
+        );
 
         let mut upgrade_arr = parser(
             &hone_counts,
@@ -328,8 +387,22 @@ mod tests {
             &adv_hone_strategy.to_string(),
             express_event,
         );
-
-        est_juice_value(&mut upgrade_arr, &DEFAULT_GOLD_VALUES);
+        let chance_of_not_needing: Vec<f64> = no_buy_analysis(
+            &monte_carlo_data(
+                10000,
+                &upgrade_arr,
+                &calc_unlock(&hone_counts, &adv_counts, express_event),
+                input_budgets[9],
+                &mut StdRng::seed_from_u64(RNG_SEED),
+            ),
+            &input_budgets,
+        )
+        .typed_success_chances;
+        est_juice_value(
+            &mut upgrade_arr,
+            &DEFAULT_GOLD_VALUES,
+            &chance_of_not_needing,
+        );
         let result: Vec<f64> = upgrade_arr[0].juice_values.clone();
         if let Some(cached_result) = read_cached_data::<Vec<f64>>(test_name, &hash) {
             my_assert!(*result, cached_result);
@@ -351,8 +424,14 @@ mod tests {
         let adv_hone_strategy: &str = "No juice";
         let express_event: bool = true;
 
-        let hash: String =
-            calculate_hash!(&hone_counts, &adv_counts, adv_hone_strategy, express_event);
+        let input_budgets = vec![324000, 0, 4680, 1774000, 3600, 406800, 10800000, 0, 0, 0];
+        let hash: String = calculate_hash!(
+            &hone_counts,
+            &adv_counts,
+            adv_hone_strategy,
+            express_event,
+            &input_budgets
+        );
 
         let mut upgrade_arr = parser(
             &hone_counts,
@@ -360,8 +439,22 @@ mod tests {
             &adv_hone_strategy.to_string(),
             express_event,
         );
-
-        est_juice_value(&mut upgrade_arr, &DEFAULT_GOLD_VALUES);
+        let chance_of_not_needing: Vec<f64> = no_buy_analysis(
+            &monte_carlo_data(
+                10000,
+                &upgrade_arr,
+                &calc_unlock(&hone_counts, &adv_counts, express_event),
+                input_budgets[9],
+                &mut StdRng::seed_from_u64(RNG_SEED),
+            ),
+            &input_budgets,
+        )
+        .typed_success_chances;
+        est_juice_value(
+            &mut upgrade_arr,
+            &DEFAULT_GOLD_VALUES,
+            &chance_of_not_needing,
+        );
         let result: Vec<f64> = upgrade_arr[0].juice_values.clone();
 
         if let Some(cached_result) = read_cached_data::<Vec<f64>>(test_name, &hash) {
@@ -371,5 +464,81 @@ mod tests {
         } else {
             write_cached_data(test_name, &hash, &result);
         }
+    }
+}
+
+pub fn juice_value_now(upgrade: &mut Upgrade, mat_values: &[f64]) {
+    let mut this_sum: Vec<f64>;
+    // let mut prev_cost: f64;
+    // let mut next_cost: f64;
+    let mut extra_count: usize;
+
+    // let mut cur_prob_dist: Vec<f64>;
+    let mut unacceptable_juice_value: i64 = 0;
+    // for upgrade in upgrade_arr.iter_mut() {
+    if !upgrade.is_normal_honing || upgrade.upgrade_plus_num <= 2 {
+        return;
+        //TODO add adv honing juice value estimation
+    }
+    let relevant_juice_cost: f64 = if upgrade.is_weapon {
+        mat_values[8]
+    } else {
+        mat_values[7]
+    };
+    this_sum = Vec::with_capacity(upgrade.prob_dist_len);
+    let mut prev_prob_dist: Vec<f64> = probability_distribution(
+        upgrade.base_chance,
+        upgrade.artisan_rate,
+        &generate_first_deltas(upgrade.base_chance, upgrade.prob_dist_len, 0),
+    );
+    let mut next_prob_dist: Vec<f64>;
+    let mut rolling_avg: f64;
+    extra_count = 1;
+
+    loop {
+        if extra_count >= prev_prob_dist.len() {
+            // trying to juice the pity tap
+            break;
+        }
+        next_prob_dist = probability_distribution(
+            upgrade.base_chance,
+            upgrade.artisan_rate,
+            &generate_first_deltas(upgrade.base_chance, upgrade.prob_dist_len, extra_count),
+        );
+
+        let value_with_juice: f64 = est_juice_value_for_prob_dist(
+            upgrade,
+            mat_values,
+            &next_prob_dist,
+            extra_count,
+            &chance_of_not_needing,
+        );
+
+        let value_without_juice: f64 = est_juice_value_for_prob_dist(
+            upgrade,
+            mat_values,
+            &prev_prob_dist,
+            extra_count,
+            &chance_of_not_needing,
+        );
+
+        let this_juice_value: f64 =
+            (value_without_juice - value_with_juice) / upgrade.one_juice_cost as f64;
+            if extra_count == 1{
+                rolling_avg = 
+            }
+        if this_juice_value < relevant_juice_cost {
+            unacceptable_juice_value += 1;
+        } else {
+            unacceptable_juice_value = 0
+        }
+        if unacceptable_juice_value >= 2 {
+            return;
+        } else {
+        }
+        prev_prob_dist = next_prob_dist;
+        extra_count += 1;
+
+        // upgrade.juice_values = this_sum;
     }
 }
