@@ -1,34 +1,85 @@
-use crate::helpers::{compress_runs, generate_first_deltas};
+use crate::helpers::{compress_runs, compute_gold_cost_from_raw, generate_first_deltas};
 use crate::parser::{PreparationOutputs, Upgrade, probability_distribution};
 use crate::success_analysis::compute_all_gold_costs;
+
 #[cfg(debug_assertions)]
 use assert_float_eq::assert_float_absolute_eq;
 
-pub fn explore_one(
-    decision: &(Vec<i64>, Vec<i64>),
-    input_budgets: &[i64],
-    prep_outputs: &PreparationOutputs,
-    data_size: usize,
-) -> Vec<f64> {
-    let mut this_data: Vec<[i64; 9]> = vec![[0i64; 9]; data_size];
-    for (index, upgrade) in prep_outputs.upgrade_arr.iter().enumerate() {
-        for data in 0..data_size {
-            for i in 0..9 {
-                // dbg!(&this_data);
-                // dbg!(&upgrade.cost_data_arr);
-                // dbg!(data, i, decision, index);
-                this_data[data][i] += upgrade.cost_data_arr[decision.0[index] as usize][0][data][i];
-            }
-        }
-    }
-    let all_gold_costs: Vec<f64> =
-        compute_all_gold_costs(&input_budgets, &this_data, &prep_outputs);
-    let mut out: Vec<f64> = Vec::with_capacity(101);
-    for i in 0..1_usize {
-        out.push(all_gold_costs[((69 * data_size) as f64 / 100.0).round() as usize])
-    }
-    out
-}
+// pub fn explore_one(
+//     decision: &(Vec<i64>, Vec<i64>),
+//     input_budgets: &[i64],
+//     prep_outputs: &PreparationOutputs,
+//     data_size: usize,
+// ) -> Vec<f64> {
+//     let mut combined_prob_dist: Vec<(f64, f64)> = Vec::new();
+//     for taps_iter in decision_space_iterator(
+//         prep_outputs
+//             .upgrade_arr
+//             .iter()
+//             .map(|x| x.prob_dist_len as i64)
+//             .collect(),
+//     ) {
+//         let taps: Vec<i64> = taps_iter.0;
+//         let mut this_cost: Vec<i64> = vec![0; 9];
+//         let mut chance: f64 = 1.0;
+//         // TODO unlock costs not included right now
+//         for (index, tap) in taps.iter().enumerate() {
+//             let upgrade: &Upgrade = &prep_outputs.upgrade_arr[index];
+//             for cost_type in 0..7 {
+//                 this_cost[cost_type] += (tap + upgrade.tap_offset) * upgrade.costs[cost_type];
+//             }
+
+//             if upgrade.is_normal_honing {
+//                 let juice_ind: usize = if upgrade.is_weapon { 7 } else { 8 };
+//                 this_cost[juice_ind] +=
+//                     (*tap + upgrade.tap_offset).min(decision.0[index]) * upgrade.one_juice_cost;
+//             }
+//             let dist: Vec<f64> = probability_distribution(
+//                 upgrade.base_chance,
+//                 upgrade.artisan_rate,
+//                 &generate_first_deltas(
+//                     upgrade.base_chance,
+//                     upgrade.prob_dist_len,
+//                     decision.0[index] as usize,
+//                 ),
+//             );
+//             chance *= if *tap < dist.len() as i64 {
+//                 dist[*tap as usize]
+//             } else {
+//                 0.0
+//             };
+//             if chance == 0.0 {
+//                 break;
+//             }
+//         }
+//         if chance == 0.0 {
+//             continue;
+//         }
+//         let gold_cost: f64 =
+//             compute_gold_cost_from_raw(&this_cost, input_budgets, &prep_outputs.mats_value);
+//         combined_prob_dist.push((gold_cost, chance));
+//     }
+
+//     combined_prob_dist
+//         .sort_unstable_by(|(a, _), (c, _)| a.partial_cmp(c).unwrap_or(std::cmp::Ordering::Equal));
+//     let mut cumulative: f64 = 0.0;
+//     let mut next_thresh: i64 = 0;
+//     let mut out: Vec<f64> = Vec::new();
+//     let last: usize = combined_prob_dist.len() - 1;
+//     let mut index: usize = 0;
+//     while next_thresh < 100 {
+//         let pair = combined_prob_dist[index];
+//         cumulative += pair.1;
+//         if cumulative > next_thresh as f64 / 100.0 {
+//             out.push(pair.0);
+//             next_thresh += 1;
+//         } else {
+//             index += 1;
+//         }
+//     }
+//     out.push(combined_prob_dist[last].0);
+//     out
+// }
 pub fn average_tap(prob_dist: &[f64], offset: f64) -> f64 {
     let mut out: f64 = 0.0_f64;
     // println!("{:?}", prob_dist[start_index..].iter().sum::<f64>() as f64);
@@ -102,7 +153,7 @@ pub fn est_special_honing_value(upgrade_arr: &mut Vec<Upgrade>, mats_values: &[f
     let cost_type_count: usize = 7;
     let mut special_value: f64;
     // let mut is_valid: bool;
-    debug_assert!(mats_values.len() == cost_type_count);
+    // debug_assert!(mats_values.len() == cost_type_count);
     for upgrade in upgrade_arr.iter_mut() {
         if upgrade.is_normal_honing {
             average = average_tap(&upgrade.original_prob_dist, upgrade.tap_offset as f64);

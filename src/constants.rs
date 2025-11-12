@@ -34,7 +34,7 @@ pub const BUCKET_COUNT: usize = 1000;
 
 // RNG seed for deterministic testing
 #[allow(dead_code)]
-pub const RNG_SEED: u64 = 12345;
+pub const RNG_SEED: u64 = 123456;
 
 pub static NORMAL_HONE_CHANCES: [f64; 25] = [
     1.0, 1.0, 1.0, 0.45, 0.45, 0.45, 0.3, 0.3, 0.15, 0.15, 0.1, 0.1, 0.05, 0.05, 0.04, 0.04, 0.03,

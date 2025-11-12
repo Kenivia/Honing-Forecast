@@ -25,6 +25,7 @@ console_error_panic_hook = "0.1"
 web-sys = { version = "0.3", features = ["console"] }
 assert_float_eq = "1.1.4"
 itertools = "0.14.0"
+rayon = "1.11.0"
 
 
 [dev-dependencies]

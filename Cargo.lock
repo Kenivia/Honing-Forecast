@@ -229,6 +229,7 @@ dependencies = [
  "itertools 0.14.0",
  "js-sys",
  "rand",
+ "rayon",
  "serde",
  "serde-wasm-bindgen",
  "serde_json",

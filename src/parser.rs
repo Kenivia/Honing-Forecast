@@ -48,23 +48,23 @@ pub fn preparation(
         budgets[7] -= avg_red_juice;
         budgets[8] -= avg_blue_juice;
     }
-    for upgrade in upgrade_arr.iter_mut() {
-        let mut rng: StdRng = StdRng::seed_from_u64(RNG_SEED);
-        for i in 0..upgrade.full_juice_len {
-            upgrade.cost_data_arr.push(vec![]); // this will contain different free taps eventually i think
-            upgrade.prob_dist = probability_distribution(
-                upgrade.base_chance,
-                upgrade.artisan_rate,
-                &generate_first_deltas(
-                    upgrade.base_chance,
-                    upgrade.prob_dist_len, // this is excessive but its fine
-                    i,
-                ),
-            );
-            let this_data: Vec<[i64; 10]> = monte_carlo_one(100000, upgrade, 0, i as i64, &mut rng);
-            upgrade.cost_data_arr[i].push(this_data);
-        }
-    }
+    // for upgrade in upgrade_arr.iter_mut() {
+    //     let mut rng: StdRng = StdRng::seed_from_u64(RNG_SEED);
+    //     for i in 0..upgrade.full_juice_len {
+    //         upgrade.cost_data_arr.push(vec![]); // this will contain different free taps eventually i think
+    //         upgrade.prob_dist = probability_distribution(
+    //             upgrade.base_chance,
+    //             upgrade.artisan_rate,
+    //             &generate_first_deltas(
+    //                 upgrade.base_chance,
+    //                 upgrade.prob_dist_len, // this is excessive but its fine
+    //                 i,
+    //             ),
+    //         );
+    //         let this_data: Vec<[i64; 10]> = monte_carlo_one(100000, upgrade, 0, i as i64, &mut rng);
+    //         upgrade.cost_data_arr[i].push(this_data);
+    //     }
+    // }
 
     //XXXXXXXXXXXXXXXXXXXXXXXXXXXXX defunct code here to keep rust analyzer happy
     est_juice_value(&mut upgrade_arr, &mats_value);
