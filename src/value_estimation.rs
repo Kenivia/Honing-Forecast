@@ -1,38 +1,34 @@
 use crate::helpers::{compress_runs, generate_first_deltas};
-use crate::parser::{Upgrade, probability_distribution};
+use crate::parser::{PreparationOutputs, Upgrade, probability_distribution};
+use crate::success_analysis::compute_all_gold_costs;
 #[cfg(debug_assertions)]
 use assert_float_eq::assert_float_absolute_eq;
-use itertools::{Itertools, iproduct};
 
-fn decision_space_iterator(upgrade_arr: &[Upgrade]) -> impl Iterator<Item = (Vec<i64>, Vec<i64>)> {
-    let mut max_juice_counts: Vec<i64> = Vec::with_capacity(upgrade_arr.len());
-    for upgrade in upgrade_arr {
-        max_juice_counts.push(
-            probability_distribution(
-                upgrade.base_chance,
-                upgrade.artisan_rate,
-                &generate_first_deltas(
-                    upgrade.base_chance,
-                    upgrade.prob_dist_len,
-                    upgrade.prob_dist_len,
-                ),
-            )
-            .len() as i64,
-        );
+pub fn explore_one(
+    decision: &(Vec<i64>, Vec<i64>),
+    input_budgets: &[i64],
+    prep_outputs: &PreparationOutputs,
+    data_size: usize,
+) -> Vec<f64> {
+    let mut this_data: Vec<[i64; 9]> = vec![[0i64; 9]; data_size];
+    for (index, upgrade) in prep_outputs.upgrade_arr.iter().enumerate() {
+        for data in 0..data_size {
+            for i in 0..9 {
+                // dbg!(&this_data);
+                // dbg!(&upgrade.cost_data_arr);
+                // dbg!(data, i, decision, index);
+                this_data[data][i] += upgrade.cost_data_arr[decision.0[index] as usize][0][data][i];
+            }
+        }
     }
-    let juice_decision_space: Vec<Vec<i64>> = max_juice_counts
-        .into_iter()
-        .map(|x: i64| (0..=x).collect())
-        .collect();
-
-    // decision_space.push();
-    // dbg!(&juice_decision_space);
-    iproduct!(
-        juice_decision_space.into_iter().multi_cartesian_product(),
-        (0..upgrade_arr.len() as i64).permutations(10.min(upgrade_arr.len()))
-    )
+    let all_gold_costs: Vec<f64> =
+        compute_all_gold_costs(&input_budgets, &this_data, &prep_outputs);
+    let mut out: Vec<f64> = Vec::with_capacity(101);
+    for i in 0..1_usize {
+        out.push(all_gold_costs[((69 * data_size) as f64 / 100.0).round() as usize])
+    }
+    out
 }
-
 pub fn average_tap(prob_dist: &[f64], offset: f64) -> f64 {
     let mut out: f64 = 0.0_f64;
     // println!("{:?}", prob_dist[start_index..].iter().sum::<f64>() as f64);
@@ -301,41 +297,41 @@ mod tests {
     use crate::parser::parser;
     use crate::test_utils::*;
     use crate::{calculate_hash, my_assert};
-    #[test]
-    fn decision_space_test() {
-        let test_name: &str = "decision_space_test";
-        let hone_counts: Vec<Vec<i64>> = vec![
-            (0..25).map(|_| 0).collect(),
-            (0..25)
-                .map(|x| if x == 10 || x == 11 { 1 } else { 0 })
-                .collect(),
-        ];
-        let adv_counts: Vec<Vec<i64>> =
-            vec![(0..4).map(|_| 0).collect(), (0..4).map(|_| 0).collect()];
+    // #[test]
+    // fn decision_space_test() {
+    //     let test_name: &str = "decision_space_test";
+    //     let hone_counts: Vec<Vec<i64>> = vec![
+    //         (0..25).map(|_| 0).collect(),
+    //         (0..25)
+    //             .map(|x| if x == 10 || x == 11 { 1 } else { 0 })
+    //             .collect(),
+    //     ];
+    //     let adv_counts: Vec<Vec<i64>> =
+    //         vec![(0..4).map(|_| 0).collect(), (0..4).map(|_| 0).collect()];
 
-        let adv_hone_strategy: &str = "No juice";
-        let express_event: bool = true;
+    //     let adv_hone_strategy: &str = "No juice";
+    //     let express_event: bool = true;
 
-        let hash: String =
-            calculate_hash!(&hone_counts, &adv_counts, adv_hone_strategy, express_event);
+    //     let hash: String =
+    //         calculate_hash!(&hone_counts, &adv_counts, adv_hone_strategy, express_event);
 
-        let mut upgrade_arr = parser(
-            &hone_counts,
-            &adv_counts,
-            &adv_hone_strategy.to_string(),
-            express_event,
-        );
+    //     let mut upgrade_arr = parser(
+    //         &hone_counts,
+    //         &adv_counts,
+    //         &adv_hone_strategy.to_string(),
+    //         express_event,
+    //     );
 
-        let result: Vec<(Vec<i64>, Vec<i64>)> = decision_space_iterator(&mut upgrade_arr).collect();
-        dbg!(result.len());
-        // let result: Vec<Vec<i64>> = out.clone();
-        if let Some(cached_result) = read_cached_data::<Vec<(Vec<i64>, Vec<i64>)>>(test_name, &hash)
-        {
-            my_assert!(*result, cached_result);
-        } else {
-            write_cached_data(test_name, &hash, &result);
-        }
-    }
+    //     let result: Vec<(Vec<i64>, Vec<i64>)> = decision_space_iterator(&mut upgrade_arr).collect();
+    //     dbg!(result.len());
+    //     // let result: Vec<Vec<i64>> = out.clone();
+    //     if let Some(cached_result) = read_cached_data::<Vec<(Vec<i64>, Vec<i64>)>>(test_name, &hash)
+    //     {
+    //         my_assert!(*result, cached_result);
+    //     } else {
+    //         write_cached_data(test_name, &hash, &result);
+    //     }
+    // }
     #[test]
     fn est_juice_value_25_wep() {
         let test_name: &str = "est_juice_value_25_wep";

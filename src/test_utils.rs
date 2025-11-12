@@ -7,7 +7,7 @@ use std::path::PathBuf;
 /// Tolerance for float comparisons
 pub const EPSILON: f64 = 1e-7;
 #[cfg(test)]
-pub static DEFAULT_GOLD_VALUES: [f64; 7] = [1.65, 0.03, 13.0, 0.5, 95.0, 1.0, 0.0];
+pub static DEFAULT_GOLD_VALUES: [f64; 9] = [1.65, 0.03, 13.0, 0.5, 95.0, 1.0, 0.0, 300.0, 150.0];
 /// Trait that enables approximate / deep equality assertions in tests
 pub trait AssertApproxEq {
     /// ctx is used to include context in panic messages (like file:line)
@@ -95,6 +95,7 @@ impl AssertApproxEq for [f64] {
         }
     }
 }
+
 impl AssertApproxEq for [(Vec<i64>, Vec<i64>)] {
     fn assert_approx_eq(&self, other: &Self, ctx: &str) {
         for (i, (a, b)) in self
@@ -122,6 +123,21 @@ impl AssertApproxEq for [(Vec<i64>, Vec<i64>)] {
                     "Assertion failed (array 2,  [i64] at index {}): {}\n  left = {:?}\n right = {:?}",
                     i, ctx, self, other
                 );
+            }
+        }
+    }
+}
+
+impl AssertApproxEq for [Vec<f64>] {
+    fn assert_approx_eq(&self, other: &Self, ctx: &str) {
+        for (ind1, (a, b)) in self.iter().zip(other.iter()).enumerate() {
+            for (ind2, (c, d)) in a.iter().zip(b.iter()).enumerate() {
+                if !my_float_eq(*c, *d) {
+                    panic!(
+                        "Assertion failed (array [f64] at index ({}, {})): {}\n  left = {:?}\n right = {:?}",
+                        ind1, ind2, ctx, self, other
+                    );
+                }
             }
         }
     }

@@ -33,7 +33,6 @@ pub static SPECIAL_LEAPS_COST: [[i64; 25]; 2] = [
 pub const BUCKET_COUNT: usize = 1000;
 
 // RNG seed for deterministic testing
-#[cfg(test)]
 #[allow(dead_code)]
 pub const RNG_SEED: u64 = 12345;
 

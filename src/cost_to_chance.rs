@@ -204,7 +204,7 @@ mod tests {
         ];
         let express_event: bool = false;
         let hist_bins: usize = 1000;
-        let user_mats_value: [f64; 7] = DEFAULT_GOLD_VALUES;
+        let user_mats_value: [f64; 9] = DEFAULT_GOLD_VALUES;
         let adv_hone_strategy: &'static str = "No juice";
         let data_size: usize = 100000;
 
@@ -326,7 +326,7 @@ mod tests {
         let adv_counts = vec![(0..4).map(|_| 0).collect(), (0..4).map(|_| 0).collect()];
         let express_event = false;
         let hist_bins: usize = 1000;
-        let user_mats_value: [f64; 7] = DEFAULT_GOLD_VALUES;
+        let user_mats_value: [f64; 9] = DEFAULT_GOLD_VALUES;
         let adv_hone_strategy = "No juice";
         let data_size: usize = 100000;
 

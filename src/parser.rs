@@ -1,14 +1,17 @@
 use crate::constants::{
     ADV_DATA_10_20, ADV_DATA_10_20_JUICE, ADV_DATA_30_40, ADV_DATA_30_40_JUICE, ADV_HONE_COST,
-    NORMAL_HONE_CHANCES, NORMAL_JUICE_COST, SPECIAL_LEAPS_COST, get_event_modified_armor_costs,
-    get_event_modified_artisan, get_event_modified_weapon_costs,
+    NORMAL_HONE_CHANCES, NORMAL_JUICE_COST, RNG_SEED, SPECIAL_LEAPS_COST,
+    get_event_modified_armor_costs, get_event_modified_artisan, get_event_modified_weapon_costs,
 };
-use crate::helpers::{average_juice_cost, calc_unlock, compress_runs, sort_by_indices};
+use crate::helpers::{
+    average_juice_cost, calc_unlock, compress_runs, generate_first_deltas, sort_by_indices,
+};
+use crate::monte_carlo::monte_carlo_one;
 use crate::value_estimation::{
     est_juice_value, est_special_honing_value, extract_special_strings, juice_to_array,
 };
+use rand::prelude::*;
 use serde::{Deserialize, Serialize};
-
 #[derive(Debug)]
 pub struct PreparationOutputs {
     pub upgrade_arr: Vec<Upgrade>,
@@ -45,7 +48,25 @@ pub fn preparation(
         budgets[7] -= avg_red_juice;
         budgets[8] -= avg_blue_juice;
     }
+    for upgrade in upgrade_arr.iter_mut() {
+        let mut rng: StdRng = StdRng::seed_from_u64(RNG_SEED);
+        for i in 0..upgrade.full_juice_len {
+            upgrade.cost_data_arr.push(vec![]); // this will contain different free taps eventually i think
+            upgrade.prob_dist = probability_distribution(
+                upgrade.base_chance,
+                upgrade.artisan_rate,
+                &generate_first_deltas(
+                    upgrade.base_chance,
+                    upgrade.prob_dist_len, // this is excessive but its fine
+                    i,
+                ),
+            );
+            let this_data: Vec<[i64; 10]> = monte_carlo_one(100000, upgrade, 0, i as i64, &mut rng);
+            upgrade.cost_data_arr[i].push(this_data);
+        }
+    }
 
+    //XXXXXXXXXXXXXXXXXXXXXXXXXXXXX defunct code here to keep rust analyzer happy
     est_juice_value(&mut upgrade_arr, &mats_value);
     let (juice_strings_armor, juice_strings_weapon): (Vec<String>, Vec<String>) =
         juice_to_array(&mut upgrade_arr, budgets[8], budgets[7]);
@@ -56,6 +77,8 @@ pub fn preparation(
     sort_by_indices(&mut upgrade_arr, special_indices.clone());
     let special_strings: Vec<String> =
         compress_runs(extract_special_strings(&upgrade_arr), true, vec![]);
+    //XXXXXXXXXXXXXXXXXXXXXXXXXXXXX defunct code here to keep rust analyzer happy
+
     PreparationOutputs {
         upgrade_arr,
         unlock_costs,
@@ -68,7 +91,7 @@ pub fn preparation(
 }
 
 // the parser function turns a selection of upgrades into an array of Upgrade objects
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Upgrade {
     pub is_normal_honing: bool,
     pub prob_dist: Vec<f64>,
@@ -85,6 +108,8 @@ pub struct Upgrade {
     pub tap_offset: i64,
     pub upgrade_plus_num: usize,
     pub special_value: f64,
+    pub full_juice_len: usize,
+    pub cost_data_arr: Vec<Vec<Vec<[i64; 10]>>>, // cost_data_arr[juice_count][special_count] = cost_data for that decision
 }
 
 impl Upgrade {
@@ -98,7 +123,16 @@ impl Upgrade {
     ) -> Self {
         let prob_dist_len: usize = prob_dist.len();
         let base_chance: f64 = prob_dist.first().copied().unwrap_or(0.0);
-
+        let full_juice_len: usize = probability_distribution(
+            base_chance,
+            artisan_rate,
+            &generate_first_deltas(
+                base_chance,
+                prob_dist_len, // this is excessive but its fine
+                prob_dist_len,
+            ),
+        )
+        .len();
         Self {
             is_normal_honing: true,
             prob_dist: prob_dist.clone(),
@@ -115,6 +149,8 @@ impl Upgrade {
             tap_offset: 1,
             upgrade_plus_num,
             special_value: -1.0_f64,
+            full_juice_len,
+            cost_data_arr: vec![], // to be filled
         }
     }
 
@@ -146,6 +182,8 @@ impl Upgrade {
             tap_offset: adv_cost_start,
             upgrade_plus_num,
             special_value: -1.0_f64,
+            full_juice_len: 1, // need to sort this out
+            cost_data_arr: vec![],
             // failure_raw_delta: -1,
             // failure_delta_order: -1,
         }
