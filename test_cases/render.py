@@ -4,7 +4,7 @@ import json
 from matplotlib.widgets import Slider
 
 # Load data
-data = np.array(json.load(open("./test_cases/brute_test_5c403ba6f102e45d.json", "r")))
+data = np.array(json.load(open("./test_cases/brute_test_c8815b6eb66b137.json", "r")))
 
 n, m = data[0].shape
 init_idx = 69

@@ -224,8 +224,10 @@ mod tests {
     fn brute_test() {
         let test_name: &str = "brute_test";
         let hone_counts: Vec<Vec<i64>> = vec![
-            (0..25).map(|x| if x == 24 { 1 } else { 0 }).collect(),
-            (0..25).map(|x| if x == 24 { 1 } else { 0 }).collect(),
+            (0..25).map(|x| if x == 24 { 0 } else { 0 }).collect(),
+            (0..25)
+                .map(|x| if x == 24 || x == 20 { 1 } else { 0 })
+                .collect(),
         ];
         let adv_counts: Vec<Vec<i64>> =
             vec![(0..4).map(|_| 0).collect(), (0..4).map(|_| 0).collect()];

@@ -90,7 +90,8 @@ pub fn compute_gold_cost_from_raw(
 ) -> f64 {
     let mut c: f64 = 0f64;
     for i in 0..9 {
-        let val = (needed[i] - input_budget_no_gold[i]).max(0) as f64;
+        let val = (needed[i] - input_budget_no_gold[i]).max(0) as f64
+            - (input_budget_no_gold[i] - needed[i]).max(0) as f64 * 0.95;
         c += price_arr[i] * val;
     }
     c
