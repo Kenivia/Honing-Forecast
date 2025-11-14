@@ -6,7 +6,7 @@ use crate::helpers::compute_gold_cost_from_raw;
 use crate::test_utils::PROB_MODE;
 use itertools::{Itertools, iproduct};
 
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc, RwLock};
 
 use rayon::prelude::*;
 #[cfg(test)]
@@ -28,10 +28,11 @@ pub fn brute(
 
     let num_p = 101; // 0..=99 for 1%–100%, 100 = worst-case (100%)
     let flat_size = num_p * len0 * len1;
-    let flat_results: Arc<Mutex<Vec<(f64, String)>>> = Arc::new(Mutex::new(vec![
+
+    let flat_results: Arc<RwLock<Vec<(f64, String)>>> = Arc::new(RwLock::new(vec![
         (
             if PROB_MODE { 0.0_f64 } else { f64::MAX },
-            "uninitiated".to_owned()
+            "uninitiated".to_owned(),
         );
         flat_size
     ]));
@@ -63,16 +64,38 @@ pub fn brute(
             let quantiles = compute_quantiles(combined, worst_cost, best_cost);
 
             // lock and write
-            let mut vec = flat_results.lock().unwrap();
+            // let mut vec = flat_results.lock().unwrap();
             for (i, val) in quantiles.iter().enumerate() {
+                // Compute idx first (no lock)
                 let idx = i * stride_p
                     + supports0[j0].1.iter().filter(|x| **x > 0.0).count() * stride0
                     + supports1[j1].1.iter().filter(|x| **x > 0.0).count();
-                if (PROB_MODE && val.0 > vec[idx].0)
-                    || (!PROB_MODE && val.0 < vec[idx].0)
-                    || (val.0 == vec[idx].0 && vec[idx].1 == "uninitiated")
+
+                // Shared read lock
                 {
-                    vec[idx] = val.clone();
+                    let vec = flat_results.read().unwrap();
+                    let current = &vec[idx];
+
+                    let should_update = (PROB_MODE && val.0 > current.0)
+                        || (!PROB_MODE && val.0 < current.0)
+                        || (val.0 == current.0 && current.1 == "uninitiated");
+
+                    if !should_update {
+                        return;
+                    }
+                }
+
+                // Exclusive write lock
+                {
+                    let mut vec = flat_results.write().unwrap();
+                    let current = &vec[idx];
+                    // Re-check
+                    if (PROB_MODE && val.0 > current.0)
+                        || (!PROB_MODE && val.0 < current.0)
+                        || (val.0 == current.0 && current.1 == "uninitiated")
+                    {
+                        vec[idx] = val.clone();
+                    }
                 }
             }
         });
@@ -278,13 +301,15 @@ mod tests {
     use crate::constants::RNG_SEED;
     use crate::parser::preparation;
     use crate::test_utils::*;
+    use std::time::Instant;
 
     #[test]
     fn brute_arrangement_test() {
+        let start = Instant::now();
         let test_name: &str = "brute_arrangement_test";
         let hone_counts: Vec<Vec<i64>> = vec![
-            (0..25).map(|x| if x == 9 { 1 } else { 0 }).collect(),
-            (0..25).map(|x| if x == 9 { 1 } else { 0 }).collect(),
+            (0..25).map(|x| if x == 10 { 1 } else { 0 }).collect(),
+            (0..25).map(|x| if x == 10 { 1 } else { 0 }).collect(),
         ];
         let adv_counts: Vec<Vec<i64>> =
             vec![(0..4).map(|_| 0).collect(), (0..4).map(|_| 0).collect()];
@@ -326,6 +351,7 @@ mod tests {
         } else {
             write_cached_data(test_name, &hash, &result);
         }
+        dbg!(start.elapsed());
         // let result: Vec<(Vec<i64>, Vec<i64>)> = brute(&mut upgrade_arr);
         // dbg!(result.len());
         // // let result: Vec<Vec<i64>> = out.clone();
