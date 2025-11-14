@@ -278,13 +278,14 @@ mod tests {
     use crate::constants::RNG_SEED;
     use crate::parser::preparation;
     use crate::test_utils::*;
-
+    use std::time::Instant;
     #[test]
     fn brute_arrangement_test() {
+        let start = Instant::now();
         let test_name: &str = "brute_arrangement_test";
         let hone_counts: Vec<Vec<i64>> = vec![
-            (0..25).map(|x| if x == 9 { 1 } else { 0 }).collect(),
-            (0..25).map(|x| if x == 9 { 1 } else { 0 }).collect(),
+            (0..25).map(|x| if x == 10 { 1 } else { 0 }).collect(),
+            (0..25).map(|x| if x == 10 { 1 } else { 0 }).collect(),
         ];
         let adv_counts: Vec<Vec<i64>> =
             vec![(0..4).map(|_| 0).collect(), (0..4).map(|_| 0).collect()];
@@ -326,6 +327,7 @@ mod tests {
         } else {
             write_cached_data(test_name, &hash, &result);
         }
+        dbg!(start.elapsed());
         // let result: Vec<(Vec<i64>, Vec<i64>)> = brute(&mut upgrade_arr);
         // dbg!(result.len());
         // // let result: Vec<Vec<i64>> = out.clone();
