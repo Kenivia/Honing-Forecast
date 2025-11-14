@@ -1,4 +1,4 @@
-use crate::helpers::generate_first_deltas;
+use crate::helpers::{generate_first_deltas, get_one_tap_pity};
 use crate::parser::{PreparationOutputs, Upgrade, probability_distribution};
 // use crate::value_estimation::explore_one;
 use crate::helpers::compute_gold_cost_from_raw;
@@ -78,6 +78,16 @@ pub fn brute(
 
     let stride_p = len0 * len1;
     let stride0 = len1;
+    let worst_cost: f64 = compute_gold_cost_from_raw(
+        &get_one_tap_pity(&prep_outputs.upgrade_arr, &prep_outputs.unlock_costs)[1],
+        &input_budgets,
+        &prep_outputs.mats_value,
+    );
+    let best_cost: f64 = compute_gold_cost_from_raw(
+        &get_one_tap_pity(&prep_outputs.upgrade_arr, &prep_outputs.unlock_costs)[0],
+        &input_budgets,
+        &prep_outputs.mats_value,
+    );
 
     // === Parallel over every (juice0, juice1) pair ===
     iproduct!(0..len0, 0..len1)
@@ -90,7 +100,7 @@ pub fn brute(
                 &prep_outputs.mats_value,
             );
 
-            let quantiles = compute_quantiles(combined);
+            let quantiles = compute_quantiles(combined, worst_cost, best_cost);
 
             // lock and write
             let mut vec = flat_results.lock().unwrap();
@@ -185,30 +195,30 @@ fn build_combined_prob_dist(
     combined
 }
 
-fn compute_quantiles(mut outcomes: Vec<(f64, f64)>) -> [f64; 101] {
-    if outcomes.is_empty() {
-        return [0.0; 101];
-    }
-
+fn compute_quantiles(mut outcomes: Vec<(f64, f64)>, worst_cost: f64, best_cost: f64) -> [f64; 101] {
+    // .0 = gold cost, .1 = probability
     outcomes.sort_unstable_by(|a, b| a.0.partial_cmp(&b.0).unwrap_or(std::cmp::Ordering::Equal));
 
-    let mut res = [0.0_f64; 101];
-    let mut cum = 0.0_f64;
-    let mut i = 0;
-    let n = outcomes.len();
-    let worst = outcomes[n - 1].0;
+    let mut res: [f64; 101] = [0.0; 101];
+    let mut cum_cost: f64 = 0.0;
+    let mut cum_chance: f64 = 0.0;
+    let mut i: usize = 0;
+    let n: usize = outcomes.len();
+    // let worst_cost: ;
+    // let best_cost =0.0;
 
-    // 0..=99 → 1% to 100% quantiles, 100 → explicit worst-case
-    for percentile in 1..=100 {
-        let target = percentile as f64 * 0.01;
+    for seggment in 0..=100 {
+        // just evenly dividing the best to the worst rn
+        let target: f64 = seggment as f64 * (worst_cost - best_cost) / 100.0 + best_cost;
 
-        while i < n && cum < target {
-            cum += outcomes[i].1;
+        while i < n && cum_cost < target {
+            cum_cost = outcomes[i].0;
+            cum_chance += outcomes[i].1;
             i += 1;
         }
-        res[percentile - 1] = if i > 0 { outcomes[i - 1].0 } else { worst };
+        res[seggment] = if i > 0 { cum_chance } else { 0.0 };
     }
-    res[100] = worst;
+    // res[100] = worst;
 
     res
 }
@@ -226,7 +236,7 @@ mod tests {
         let hone_counts: Vec<Vec<i64>> = vec![
             (0..25).map(|x| if x == 24 { 0 } else { 0 }).collect(),
             (0..25)
-                .map(|x| if x == 24 || x == 20 { 1 } else { 0 })
+                .map(|x| if x == 24 || x == 24 { 2 } else { 0 })
                 .collect(),
         ];
         let adv_counts: Vec<Vec<i64>> =
@@ -235,7 +245,7 @@ mod tests {
         let adv_hone_strategy: &str = "No juice";
         let express_event: bool = true;
         let input_budgets = vec![
-            324000, 924000, 4680, 1774000, 3600, 406800, 10800000, 900, 900, 0,
+            324000, 924000, 4680, 1774000, 3600, 0, 10800000, 900, 900, 0,
         ];
         let user_mats_value = DEFAULT_GOLD_VALUES;
         let data_size: usize = 100000;
