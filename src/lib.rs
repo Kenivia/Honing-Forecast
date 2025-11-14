@@ -12,6 +12,7 @@ mod monte_carlo;
 mod parser;
 mod success_analysis;
 mod value_estimation;
+#[cfg(test)]
 mod visualizer;
 
 #[cfg(test)]

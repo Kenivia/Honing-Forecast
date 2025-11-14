@@ -2,79 +2,39 @@ use crate::helpers::{generate_first_deltas, get_one_tap_pity};
 use crate::parser::{PreparationOutputs, Upgrade, probability_distribution};
 // use crate::value_estimation::explore_one;
 use crate::helpers::compute_gold_cost_from_raw;
+#[cfg(test)]
+use crate::test_utils::PROB_MODE;
 use itertools::{Itertools, iproduct};
+
 use std::sync::{Arc, Mutex};
 
 use rayon::prelude::*;
-
-// pub fn decision_space_iterator(
-//     max_juice_counts: Vec<i64>,
-// ) -> impl Iterator<Item = (Vec<i64>, Vec<i64>)> {
-//     // let mut max_juice_counts: Vec<i64> = Vec::with_capacity(upgrade_arr.len());
-//     // for upgrade in upgrade_arr {
-//     //     max_juice_counts.push(upgrade.full_juice_len as i64);
-//     // }
-//     let juice_decision_space: Vec<Vec<i64>> = max_juice_counts
-//         .into_iter()
-//         .map(|x: i64| (0..x).collect())
-//         .collect();
-
-//     // decision_space.push();
-//     // dbg!(&juice_decision_space);
-//     iproduct!(
-//         juice_decision_space.into_iter().multi_cartesian_product(),
-//         vec![vec![0]].into_iter() //(0..upgrade_arr.len() as i64).permutations(10.min(upgrade_arr.len()))
-//     )
-// }
-
-// fn brute(
-//     input_budgets: &[i64],
-//     prep_outputs: &PreparationOutputs,
-//     data_size: usize,
-// ) -> Vec<Vec<Vec<f64>>> {
-//     let mut out: Vec<Vec<Vec<f64>>> =
-//         vec![
-//             vec![
-//                 vec![-1.0; prep_outputs.upgrade_arr[1].full_juice_len];
-//                 prep_outputs.upgrade_arr[0].full_juice_len
-//             ];
-//             101
-//         ];
-
-//     for decision in decision_space_iterator(
-//         prep_outputs
-//             .upgrade_arr
-//             .iter()
-//             .map(|x| x.full_juice_len as i64)
-//             .collect(),
-//     ) {
-//         // dbg!(&decision);
-//         let result = explore_one(&decision, &input_budgets, prep_outputs, data_size);
-//         for i in 0..result.len() {
-//             out[i][decision.0[0] as usize][decision.0[1] as usize] = result[i];
-//         }
-//     }
-//     out
-// }
-
+#[cfg(test)]
 pub fn brute(
     input_budgets: &[i64],
     prep_outputs: &PreparationOutputs,
-    _data_size: usize,
-) -> Vec<Vec<Vec<f64>>> {
+) -> Vec<Vec<Vec<(f64, String)>>> {
+    use core::f64;
+
     let u0 = &prep_outputs.upgrade_arr[0];
     let u1 = &prep_outputs.upgrade_arr[1];
 
-    let len0 = u0.full_juice_len;
-    let len1 = u1.full_juice_len;
+    let len0 = u0.full_juice_len + 1;
+    let len1 = u1.full_juice_len + 1;
 
     // === Precompute supports for every juice value ===
-    let supports0 = precompute_supports(u0, len0);
-    let supports1 = precompute_supports(u1, len1);
+    let supports0: Vec<(Vec<([i64; 9], f64)>, Vec<f64>)> = precompute_supports(u0, len0);
+    let supports1: Vec<(Vec<([i64; 9], f64)>, Vec<f64>)> = precompute_supports(u1, len1);
 
     let num_p = 101; // 0..=99 for 1%–100%, 100 = worst-case (100%)
     let flat_size = num_p * len0 * len1;
-    let mut flat_results = Arc::new(Mutex::new(vec![0.0_f64; flat_size]));
+    let flat_results: Arc<Mutex<Vec<(f64, String)>>> = Arc::new(Mutex::new(vec![
+        (
+            if PROB_MODE { 0.0_f64 } else { f64::MAX },
+            "uninitiated".to_owned()
+        );
+        flat_size
+    ]));
 
     let stride_p = len0 * len1;
     let stride0 = len1;
@@ -90,7 +50,7 @@ pub fn brute(
     );
 
     // === Parallel over every (juice0, juice1) pair ===
-    iproduct!(0..len0, 0..len1)
+    iproduct!(0..supports0.len(), 0..supports1.len())
         .par_bridge()
         .for_each(|(j0, j1)| {
             let combined = build_combined_prob_dist(
@@ -104,9 +64,16 @@ pub fn brute(
 
             // lock and write
             let mut vec = flat_results.lock().unwrap();
-            for (p, &val) in quantiles.iter().enumerate() {
-                let idx = p * stride_p + j0 * stride0 + j1;
-                vec[idx] = val;
+            for (i, val) in quantiles.iter().enumerate() {
+                let idx = i * stride_p
+                    + supports0[j0].1.iter().filter(|x| **x > 0.0).count() * stride0
+                    + supports1[j1].1.iter().filter(|x| **x > 0.0).count();
+                if (PROB_MODE && val.0 > vec[idx].0)
+                    || (!PROB_MODE && val.0 < vec[idx].0)
+                    || (val.0 == vec[idx].0 && vec[idx].1 == "uninitiated")
+                {
+                    vec[idx] = val.clone();
+                }
             }
         });
 
@@ -115,13 +82,14 @@ pub fn brute(
         .into_inner()
         .unwrap();
     // === Reshape flat → nested Vec<Vec<Vec<f64>>> (as your original signature) ===
-    let mut out = vec![vec![vec![0.0_f64; len1]; len0]; num_p];
+    let mut out: Vec<Vec<Vec<(f64, String)>>> =
+        vec![vec![vec![(0.0_f64, "uninitiated".to_owned()); len1]; len0]; num_p];
     for p in 0..num_p {
         let base_p = p * stride_p;
         for j0 in 0..len0 {
             let base0 = base_p + j0 * stride0;
             for j1 in 0..len1 {
-                out[p][j0][j1] = result_vec[base0 + j1];
+                out[p][j0][j1] = result_vec[base0 + j1].clone();
             }
         }
     }
@@ -131,124 +99,204 @@ pub fn brute(
 
 // ==============================================================
 
-type SupportEntry = ([i64; 9], f64);
+pub fn arrangements<T: Clone + Default>(p: T, n: usize, k: usize) -> Vec<Vec<T>> {
+    // if impossible, return empty (could also return vec![vec![T::default(); n]] when k==0)
+    if k > n {
+        return Vec::new();
+    }
 
-fn precompute_supports(upgrade: &Upgrade, max_juice: usize) -> Vec<Vec<SupportEntry>> {
-    let mut supports = vec![Vec::new(); max_juice];
+    // handle k == 0: single vector of defaults
+    if k == 0 {
+        return vec![vec![T::default(); n]];
+    }
 
-    for juice in 0..max_juice {
-        let first_deltas = generate_first_deltas(upgrade.base_chance, upgrade.prob_dist_len, juice);
-        let dist =
-            probability_distribution(upgrade.base_chance, upgrade.artisan_rate, &first_deltas);
+    let mut out = Vec::new();
 
-        let mut list = Vec::with_capacity(dist.len());
-        for tap in 0..dist.len() {
-            let prob = dist[tap];
-            if prob == 0.0 {
-                // huge speedup in practice
-                continue;
-            }
-
-            let taps_real = tap as i64 + upgrade.tap_offset;
-            let mut delta = [0_i64; 9];
-
-            for c in 0..7 {
-                delta[c] = taps_real * upgrade.costs[c];
-            }
-            if upgrade.is_normal_honing {
-                let j_idx = if upgrade.is_weapon { 7 } else { 8 };
-                let juice_used = taps_real.min(juice as i64);
-                delta[j_idx] = juice_used * upgrade.one_juice_cost;
-            }
-
-            list.push((delta, prob));
+    // iterate combinations of indices 0..n taken k at a time
+    for comb in (0..n).combinations(k) {
+        let mut v = vec![T::default(); n];
+        for &idx in &comb {
+            v[idx] = p.clone();
         }
-        supports[juice] = list;
+        out.push(v);
+    }
+
+    out
+}
+
+fn precompute_supports(
+    upgrade: &Upgrade,
+    max_juice: usize,
+) -> Vec<(Vec<([i64; 9], f64)>, Vec<f64>)> {
+    let mut supports: Vec<(Vec<([i64; 9], f64)>, Vec<f64>)> = Vec::new();
+
+    for juice in 0..=max_juice {
+        let first_deltas = generate_first_deltas(upgrade.base_chance, upgrade.prob_dist_len, juice);
+        let dist_first_deltas =
+            probability_distribution(upgrade.base_chance, upgrade.artisan_rate, &first_deltas);
+        let chance_arrangements: Vec<Vec<f64>> =
+            arrangements(upgrade.base_chance, dist_first_deltas.len(), juice);
+
+        for chance_delta_arr in chance_arrangements.iter() {
+            let this_dist = probability_distribution(
+                upgrade.base_chance,
+                upgrade.artisan_rate,
+                &chance_delta_arr,
+            );
+            let mut list = Vec::with_capacity(dist_first_deltas.len());
+            let mut juice_count_so_far: i64 = 0;
+            for tap in 0..this_dist.len() {
+                let prob: f64 = this_dist[tap];
+                if prob == 0.0 {
+                    continue;
+                }
+
+                let taps_real = tap as i64 + upgrade.tap_offset;
+                let mut this_costs = [0_i64; 9];
+
+                for c in 0..7 {
+                    this_costs[c] = taps_real * upgrade.costs[c];
+                }
+                if upgrade.is_normal_honing {
+                    if tap < chance_delta_arr.len() && chance_delta_arr[tap] > 0.0 {
+                        juice_count_so_far += 1;
+                    }
+                    let j_idx = if upgrade.is_weapon { 7 } else { 8 };
+                    this_costs[j_idx] = juice_count_so_far * upgrade.one_juice_cost;
+                }
+
+                list.push((this_costs, prob));
+            }
+            supports.push((list, chance_delta_arr.clone()));
+        }
     }
     supports
 }
 
 fn build_combined_prob_dist(
-    list0: &[SupportEntry],
-    list1: &[SupportEntry],
+    input1: &(Vec<([i64; 9], f64)>, Vec<f64>),
+    input2: &(Vec<([i64; 9], f64)>, Vec<f64>),
     input_budgets: &[i64],
     mats_value: &Vec<f64>,
-) -> Vec<(f64, f64)> {
-    let cap = list0.len() * list1.len();
-    let mut combined = Vec::with_capacity(cap);
+) -> (Vec<(f64, f64)>, String) {
+    let cap: usize = input1.0.len() * input2.0.len();
+    let mut combined: Vec<(f64, f64)> = Vec::with_capacity(cap);
 
-    for &(delta0, p0) in list0 {
-        for &(delta1, p1) in list1 {
-            let mut cost = [0_i64; 9];
+    for entries_1 in input1.0.iter() {
+        for entries_2 in input2.0.iter() {
+            let costs_1 = entries_1.0;
+            let p1 = entries_1.1;
+            let costs_2 = entries_2.0;
+            let p2 = entries_2.1;
+            let mut costs = [0_i64; 9];
             for i in 0..9 {
-                cost[i] = delta0[i] + delta1[i];
+                costs[i] = costs_1[i] + costs_2[i];
             }
 
-            let gold = compute_gold_cost_from_raw(&cost, input_budgets, mats_value);
-            let prob = p0 * p1;
+            let gold: f64 = compute_gold_cost_from_raw(&costs, input_budgets, mats_value);
+            let prob: f64 = p1 * p2;
 
             if prob > 0.0 {
                 combined.push((gold, prob));
             }
         }
     }
-    combined
+
+    (combined, encode_positions(&input1.1, &input2.1))
 }
 
-fn compute_quantiles(mut outcomes: Vec<(f64, f64)>, worst_cost: f64, best_cost: f64) -> [f64; 101] {
-    // .0 = gold cost, .1 = probability
-    outcomes.sort_unstable_by(|a, b| a.0.partial_cmp(&b.0).unwrap_or(std::cmp::Ordering::Equal));
+pub fn encode_positions(v1: &[f64], v2: &[f64]) -> String {
+    let mut s1 = String::new();
+    let mut s2 = String::new();
 
-    let mut res: [f64; 101] = [0.0; 101];
+    for i in 0..v1.len() {
+        // first vector row
+        if v1[i] > 0.0 {
+            s1.push('1');
+        } else {
+            s1.push('0');
+        }
+    }
+    for i in 0..v2.len() {
+        // second vector row
+        if v2[i] > 0.0 {
+            s2.push('2');
+        } else {
+            s2.push('0');
+        }
+    }
+
+    format!("{s1} {s2}")
+}
+
+#[cfg(test)]
+fn compute_quantiles(
+    mut input: (Vec<(f64, f64)>, String),
+    worst_cost: f64,
+    best_cost: f64,
+) -> [(f64, String); 101] {
+    // .0 = gold cost, .1 = probability
+
+    let mut res: Vec<(f64, String)> = Vec::with_capacity(101);
+
     let mut cum_cost: f64 = 0.0;
     let mut cum_chance: f64 = 0.0;
+    let outcomes = &mut input.0;
+    outcomes.sort_unstable_by(|a, b| a.0.partial_cmp(&b.0).unwrap_or(std::cmp::Ordering::Equal));
+
     let mut i: usize = 0;
     let n: usize = outcomes.len();
-    // let worst_cost: ;
-    // let best_cost =0.0;
 
     for seggment in 0..=100 {
         // just evenly dividing the best to the worst rn
-        let target: f64 = seggment as f64 * (worst_cost - best_cost) / 100.0 + best_cost;
+        if PROB_MODE {
+            let target: f64 = seggment as f64 * (worst_cost - best_cost) / 100.0 + best_cost;
 
-        while i < n && cum_cost < target {
-            cum_cost = outcomes[i].0;
-            cum_chance += outcomes[i].1;
-            i += 1;
+            while i < n && cum_cost < target {
+                cum_cost = outcomes[i].0;
+                cum_chance += outcomes[i].1;
+                i += 1;
+            }
+            let candidate: f64 = if i > 0 { cum_chance } else { 0.0 };
+
+            res.push((candidate, input.1.clone()));
+        } else {
+            while i < n && cum_chance < seggment as f64 / 100.0 {
+                cum_chance += outcomes[i].1;
+                i += 1;
+            }
+            res.push((outcomes[i.min(n - 1)].0, input.1.clone()))
         }
-        res[seggment] = if i > 0 { cum_chance } else { 0.0 };
     }
+    res.try_into().unwrap()
     // res[100] = worst;
-
-    res
 }
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::calculate_hash;
     use crate::constants::RNG_SEED;
-    use crate::parser::{parser, preparation};
+    use crate::parser::preparation;
     use crate::test_utils::*;
-    use crate::{calculate_hash, my_assert};
 
     #[test]
-    fn brute_test() {
-        let test_name: &str = "brute_test";
+    fn brute_arrangement_test() {
+        let test_name: &str = "brute_arrangement_test";
         let hone_counts: Vec<Vec<i64>> = vec![
-            (0..25).map(|x| if x == 24 { 0 } else { 0 }).collect(),
-            (0..25)
-                .map(|x| if x == 24 || x == 24 { 2 } else { 0 })
-                .collect(),
+            (0..25).map(|x| if x == 9 { 1 } else { 0 }).collect(),
+            (0..25).map(|x| if x == 9 { 1 } else { 0 }).collect(),
         ];
         let adv_counts: Vec<Vec<i64>> =
             vec![(0..4).map(|_| 0).collect(), (0..4).map(|_| 0).collect()];
 
         let adv_hone_strategy: &str = "No juice";
-        let express_event: bool = true;
+        let express_event: bool = false;
         let input_budgets = vec![
-            324000, 924000, 4680, 1774000, 3600, 0, 10800000, 900, 900, 0,
+            // 324000, 924000, 4680, 1774000, 3600, 0, 10800000, 900, 900, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
         ];
         let user_mats_value = DEFAULT_GOLD_VALUES;
-        let data_size: usize = 100000;
+        // let data_size: usize = 100000;
         let hash: String = calculate_hash!(
             &hone_counts,
             &adv_counts,
@@ -256,7 +304,7 @@ mod tests {
             express_event,
             &input_budgets,
             &user_mats_value,
-            data_size,
+            // data_size,
             RNG_SEED
         );
 
@@ -268,10 +316,12 @@ mod tests {
             &user_mats_value,
             adv_hone_strategy,
         );
-        let result: Vec<Vec<Vec<f64>>> = brute(&input_budgets, &prep_outputs, data_size);
+        let result: Vec<Vec<Vec<(f64, String)>>> = brute(&input_budgets, &prep_outputs);
         dbg!(result.len());
         // let result: Vec<Vec<i64>> = out.clone();
-        if let Some(cached_result) = read_cached_data::<Vec<Vec<Vec<f64>>>>(test_name, &hash) {
+        if let Some(_cached_result) =
+            read_cached_data::<Vec<Vec<Vec<(f64, String)>>>>(test_name, &hash)
+        {
             // my_assert!(*result, cached_result);
         } else {
             write_cached_data(test_name, &hash, &result);

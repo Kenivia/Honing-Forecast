@@ -1,6 +1,6 @@
-use crate::helpers::{compress_runs, compute_gold_cost_from_raw, generate_first_deltas};
-use crate::parser::{PreparationOutputs, Upgrade, probability_distribution};
-use crate::success_analysis::compute_all_gold_costs;
+use crate::helpers::{compress_runs, generate_first_deltas};
+use crate::parser::{Upgrade, probability_distribution};
+// use crate::success_analysis::compute_all_gold_costs;
 
 #[cfg(debug_assertions)]
 use assert_float_eq::assert_float_absolute_eq;
@@ -150,7 +150,7 @@ fn est_juice_value_for_prob_dist(
 pub fn est_special_honing_value(upgrade_arr: &mut Vec<Upgrade>, mats_values: &[f64]) -> Vec<f64> {
     let mut out: Vec<f64> = Vec::with_capacity(upgrade_arr.len());
     let mut average: f64;
-    let cost_type_count: usize = 7;
+    // let cost_type_count: usize = 7;
     let mut special_value: f64;
     // let mut is_valid: bool;
     // debug_assert!(mats_values.len() == cost_type_count);

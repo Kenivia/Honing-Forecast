@@ -152,56 +152,56 @@ pub fn monte_carlo_data<R: Rng>(
     cost_data
 }
 
-pub fn monte_carlo_one<R: Rng>(
-    data_size: usize,
-    upgrade: &Upgrade,
-    avail_special: i64,
-    juice_count: i64,
-    mut rng: &mut R,
-) -> Vec<[i64; 10]> {
-    let mut cost_data: Vec<[i64; 10]> = vec![[0i64; 10]; data_size];
-    // let mut special_budgets: Vec<i64> = vec![avail_special; data_size];
-    // let mut special_pass_arr: Vec<usize> = vec![0usize; data_size];
+// pub fn monte_carlo_one<R: Rng>(
+//     data_size: usize,
+//     upgrade: &Upgrade,
+//     avail_special: i64,
+//     juice_count: i64,
+//     mut rng: &mut R,
+// ) -> Vec<[i64; 10]> {
+//     let mut cost_data: Vec<[i64; 10]> = vec![[0i64; 10]; data_size];
+//     // let mut special_budgets: Vec<i64> = vec![avail_special; data_size];
+//     // let mut special_pass_arr: Vec<usize> = vec![0usize; data_size];
 
-    // TODO
-    // if avail_special > 0 {
-    //     // TODO ignore when later passed ->
-    //     for (upgrade_index, upgrade) in upgrade_arr.iter().enumerate() {
-    //         if upgrade.is_normal_honing {
-    //             let limit: i64 = calc_failure_lim(avail_special, upgrade.special_cost);
-    //             for trial in 0..data_size {
-    //                 if special_budgets[trial] <= 0 {
-    //                     continue;
-    //                 }
-    //                 let taps_used: usize =
-    //                     sample_truncated_geometric(upgrade.base_chance, limit, &mut rng);
-    //                 let rolled_special_cost: i64 = (taps_used as i64 + 1) * upgrade.special_cost;
-    //                 special_budgets[trial] -= rolled_special_cost;
-    //                 if special_budgets[trial] > 0 {
-    //                     special_pass_arr[trial] += 1;
-    //                     debug_assert!(special_pass_arr[trial] == upgrade_index + 1);
-    //                     // this assertion is triggered when there's an advanced honing upgrade sorted before normal honing upgrade in upgrade_arr
-    //                     // which shouldnt happen
-    //                 }
-    //             }
-    //         }
-    //     }
-    // }
+//     // TODO
+//     // if avail_special > 0 {
+//     //     // TODO ignore when later passed ->
+//     //     for (upgrade_index, upgrade) in upgrade_arr.iter().enumerate() {
+//     //         if upgrade.is_normal_honing {
+//     //             let limit: i64 = calc_failure_lim(avail_special, upgrade.special_cost);
+//     //             for trial in 0..data_size {
+//     //                 if special_budgets[trial] <= 0 {
+//     //                     continue;
+//     //                 }
+//     //                 let taps_used: usize =
+//     //                     sample_truncated_geometric(upgrade.base_chance, limit, &mut rng);
+//     //                 let rolled_special_cost: i64 = (taps_used as i64 + 1) * upgrade.special_cost;
+//     //                 special_budgets[trial] -= rolled_special_cost;
+//     //                 if special_budgets[trial] > 0 {
+//     //                     special_pass_arr[trial] += 1;
+//     //                     debug_assert!(special_pass_arr[trial] == upgrade_index + 1);
+//     //                     // this assertion is triggered when there's an advanced honing upgrade sorted before normal honing upgrade in upgrade_arr
+//     //                     // which shouldnt happen
+//     //                 }
+//     //             }
+//     //         }
+//     //     }
+//     // }
 
-    let tap_map: Vec<usize> = tap_map_generator(data_size, &upgrade.prob_dist, rng);
-    for trial_num in 0..data_size {
-        let rolled_tap: usize = tap_map[trial_num];
-        for cost_type in 0..7 {
-            cost_data[trial_num][cost_type] +=
-                upgrade.costs[cost_type] * (rolled_tap as i64 + upgrade.tap_offset);
-        }
+//     let tap_map: Vec<usize> = tap_map_generator(data_size, &upgrade.prob_dist, rng);
+//     for trial_num in 0..data_size {
+//         let rolled_tap: usize = tap_map[trial_num];
+//         for cost_type in 0..7 {
+//             cost_data[trial_num][cost_type] +=
+//                 upgrade.costs[cost_type] * (rolled_tap as i64 + upgrade.tap_offset);
+//         }
 
-        if upgrade.is_normal_honing {
-            let juice_ind: usize = if upgrade.is_weapon { 7 } else { 8 };
-            cost_data[trial_num][juice_ind] +=
-                (rolled_tap as i64).min(juice_count) * upgrade.one_juice_cost;
-        }
-    }
+//         if upgrade.is_normal_honing {
+//             let juice_ind: usize = if upgrade.is_weapon { 7 } else { 8 };
+//             cost_data[trial_num][juice_ind] +=
+//                 (rolled_tap as i64).min(juice_count) * upgrade.one_juice_cost;
+//         }
+//     }
 
-    cost_data
-}
+//     cost_data
+// }
