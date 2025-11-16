@@ -21,6 +21,7 @@ pub struct PreparationOutputs {
     pub juice_strings_weapon: Vec<String>,
     pub mats_value: Vec<f64>,
     pub special_strings: Vec<String>,
+    pub budgets_no_gold: Vec<i64>,
 }
 
 pub fn preparation(
@@ -48,23 +49,25 @@ pub fn preparation(
         budgets[7] -= avg_red_juice;
         budgets[8] -= avg_blue_juice;
     }
-    // for upgrade in upgrade_arr.iter_mut() {
-    //     let mut rng: StdRng = StdRng::seed_from_u64(RNG_SEED);
-    //     for i in 0..upgrade.full_juice_len {
-    //         upgrade.cost_data_arr.push(vec![]); // this will contain different free taps eventually i think
-    //         upgrade.prob_dist = probability_distribution(
-    //             upgrade.base_chance,
-    //             upgrade.artisan_rate,
-    //             &generate_first_deltas(
-    //                 upgrade.base_chance,
-    //                 upgrade.prob_dist_len, // this is excessive but its fine
-    //                 i,
-    //             ),
-    //         );
-    //         let this_data: Vec<[i64; 10]> = monte_carlo_one(100000, upgrade, 0, i as i64, &mut rng);
-    //         upgrade.cost_data_arr[i].push(this_data);
-    //     }
-    // }
+    for upgrade in upgrade_arr.iter_mut() {
+        // let mut rng: StdRng = StdRng::seed_from_u64(RNG_SEED);
+        for i in 0..upgrade.full_juice_len {
+            // upgrade.support_lengths.push(vec![]); // this will contain different free taps eventually i think
+
+            upgrade.support_lengths.push(
+                probability_distribution(
+                    upgrade.base_chance,
+                    upgrade.artisan_rate,
+                    &generate_first_deltas(
+                        upgrade.base_chance,
+                        upgrade.prob_dist_len, // this is excessive but its fine
+                        i,
+                    ),
+                )
+                .len(),
+            );
+        }
+    }
 
     //XXXXXXXXXXXXXXXXXXXXXXXXXXXXX defunct code here to keep rust analyzer happy
     est_juice_value(&mut upgrade_arr, &mats_value);
@@ -78,7 +81,8 @@ pub fn preparation(
     let special_strings: Vec<String> =
         compress_runs(extract_special_strings(&upgrade_arr), true, vec![]);
     //XXXXXXXXXXXXXXXXXXXXXXXXXXXXX defunct code here to keep rust analyzer happy
-
+    let mut budgets_no_gold: Vec<i64> = budgets.clone();
+    budgets_no_gold[5] = 0;
     PreparationOutputs {
         upgrade_arr,
         unlock_costs,
@@ -87,6 +91,7 @@ pub fn preparation(
         juice_strings_weapon,
         mats_value,
         special_strings,
+        budgets_no_gold,
     }
 }
 
@@ -109,7 +114,7 @@ pub struct Upgrade {
     pub upgrade_plus_num: usize,
     pub special_value: f64,
     pub full_juice_len: usize,
-    pub cost_data_arr: Vec<Vec<Vec<[i64; 10]>>>, // cost_data_arr[juice_count][special_count] = cost_data for that decision
+    pub support_lengths: Vec<usize>, //Vec<Vec<Vec<[i64; 10]>>>, // cost_data_arr[juice_count][special_count] = cost_data for that decision
 }
 
 impl Upgrade {
@@ -150,7 +155,7 @@ impl Upgrade {
             upgrade_plus_num,
             special_value: -1.0_f64,
             full_juice_len,
-            cost_data_arr: vec![], // to be filled
+            support_lengths: vec![], // to be filled
         }
     }
 
@@ -183,7 +188,7 @@ impl Upgrade {
             upgrade_plus_num,
             special_value: -1.0_f64,
             full_juice_len: 1, // need to sort this out
-            cost_data_arr: vec![],
+            support_lengths: vec![],
             // failure_raw_delta: -1,
             // failure_delta_order: -1,
         }

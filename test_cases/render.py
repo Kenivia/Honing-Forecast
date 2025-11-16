@@ -5,7 +5,7 @@ from matplotlib.widgets import Slider
 import matplotlib.cm as cm
 import matplotlib.colors as colors
 # Load data
-data = np.array(json.load(open("./test_cases/brute_arrangement_test_4a7351cb55913efe.json", "r")))
+data = np.array(json.load(open("./test_cases/brute_arrangement_test_4dc2dfb84301975b.json", "r")))
 
 n, m,_ = data[0].shape
 init_idx = 0

@@ -6,16 +6,16 @@ use crate::helpers::compute_gold_cost_from_raw;
 use crate::test_utils::PROB_MODE;
 use itertools::{Itertools, iproduct};
 
-use std::sync::{Arc, RwLock};
-
 use rayon::prelude::*;
+use std::f64;
+use std::sync::{Arc, RwLock};
+// use std::time::Instant;
+
 #[cfg(test)]
 pub fn brute(
     input_budgets: &[i64],
     prep_outputs: &PreparationOutputs,
 ) -> Vec<Vec<Vec<(f64, String)>>> {
-    use core::f64;
-
     let u0 = &prep_outputs.upgrade_arr[0];
     let u1 = &prep_outputs.upgrade_arr[1];
 
@@ -23,9 +23,10 @@ pub fn brute(
     let len1 = u1.full_juice_len + 1;
 
     // === Precompute supports for every juice value ===
+    // let support = Instant::now();
     let supports0: Vec<(Vec<([i64; 9], f64)>, Vec<f64>)> = precompute_supports(u0, len0);
     let supports1: Vec<(Vec<([i64; 9], f64)>, Vec<f64>)> = precompute_supports(u1, len1);
-
+    // dbg!(support.elapsed());
     let num_p = 101; // 0..=99 for 1%–100%, 100 = worst-case (100%)
     let flat_size = num_p * len0 * len1;
 
@@ -61,7 +62,7 @@ pub fn brute(
                 &prep_outputs.mats_value,
             );
 
-            let quantiles = compute_quantiles(combined, worst_cost, best_cost);
+            let quantiles = compute_quantiles(combined, worst_cost, 34567.0);
 
             // lock and write
             // let mut vec = flat_results.lock().unwrap();
@@ -306,7 +307,8 @@ mod tests {
     #[test]
     fn brute_arrangement_test() {
         let start = Instant::now();
-        let test_name: &str = "brute_arrangement_test";
+        let suffix: &str = if PROB_MODE { "_prob" } else { "_gold" };
+        let test_name = format!("brute_arrangement_test{suffix}");
         let hone_counts: Vec<Vec<i64>> = vec![
             (0..25).map(|x| if x == 10 { 1 } else { 0 }).collect(),
             (0..25).map(|x| if x == 10 { 1 } else { 0 }).collect(),
@@ -317,8 +319,8 @@ mod tests {
         let adv_hone_strategy: &str = "No juice";
         let express_event: bool = false;
         let input_budgets = vec![
-            // 324000, 924000, 4680, 1774000, 3600, 0, 10800000, 900, 900, 0,
-            0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            3240, 9240, 46, 17740, 36, 0, 108000, 90, 90, 0,
+            // 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
         ];
         let user_mats_value = DEFAULT_GOLD_VALUES;
         // let data_size: usize = 100000;
@@ -330,7 +332,8 @@ mod tests {
             &input_budgets,
             &user_mats_value,
             // data_size,
-            RNG_SEED
+            RNG_SEED,
+            PROB_MODE
         );
 
         let prep_outputs: PreparationOutputs = preparation(
@@ -345,11 +348,11 @@ mod tests {
         dbg!(result.len());
         // let result: Vec<Vec<i64>> = out.clone();
         if let Some(_cached_result) =
-            read_cached_data::<Vec<Vec<Vec<(f64, String)>>>>(test_name, &hash)
+            read_cached_data::<Vec<Vec<Vec<(f64, String)>>>>(test_name.as_str(), &hash)
         {
             // my_assert!(*result, cached_result);
         } else {
-            write_cached_data(test_name, &hash, &result);
+            write_cached_data(test_name.as_str(), &hash, &result);
         }
         dbg!(start.elapsed());
         // let result: Vec<(Vec<i64>, Vec<i64>)> = brute(&mut upgrade_arr);

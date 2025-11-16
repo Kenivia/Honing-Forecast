@@ -10,8 +10,10 @@ mod helpers;
 mod histogram;
 mod monte_carlo;
 mod parser;
+mod simulated_annealing;
 mod success_analysis;
 mod value_estimation;
+
 #[cfg(test)]
 mod visualizer;
 
