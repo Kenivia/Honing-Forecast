@@ -26,6 +26,10 @@ web-sys = { version = "0.3", features = ["console"] }
 assert_float_eq = "1.1.4"
 itertools = "0.14.0"
 rayon = "1.11.0"
+fast_polynomial = "0.4.0"
+statrs = "0.18.0"
+num = "0.4.3"
+quad-rs = "0.2.3"
 
 
 [dev-dependencies]

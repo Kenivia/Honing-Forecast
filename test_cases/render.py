@@ -4,45 +4,39 @@ import json
 from matplotlib.widgets import Slider
 import matplotlib.cm as cm
 import matplotlib.colors as colors
-# Load data
-data = np.array(json.load(open("./test_cases/brute_arrangement_test_4dc2dfb84301975b.json", "r")))
 
-n, m,_ = data[0].shape
+# Load data from two files
+data1 = np.array(json.load(open("./test_cases/brute_saddle_approx_test_prob_eb189d9f0a441959.json", "r")))
+data2 = np.array(json.load(open("./test_cases/9_9_brute_arrangement_test_prob_eb189d9f0a441959.json", "r")))
+
 init_idx = 0
 
-# Create meshgrid
-x = np.arange(n)
-y = np.arange(m)
-X, Y = np.meshgrid(x, y, indexing='ij')
+# Create figure with two subplots side by side
+fig = plt.figure(figsize=(14, 5))
+ax1 = fig.add_subplot(121)
+ax2 = fig.add_subplot(122)
 
-# Create figure
-fig = plt.figure()
-ax = fig.add_subplot(111, )
-
-# Function to plot surface + minima
-import numpy as np
-import matplotlib.pyplot as plt
-
-def plot_surface_with_minima(idx):
+# Function to plot surface + minima on a specific axis
+def plot_surface_with_minima(data, ax, idx):
     """
     Plots Z with imshow and enables hover tooltip showing labels for the pixel under the cursor.
-    - idx: index into `data` (same as your original)
+    - data: the dataset to plot from
     - ax: matplotlib Axes to draw on
-    - fig: matplotlib Figure (used for connecting events)
-    Returns the AxesImage (surf) and a function to disconnect the hover if desired.
+    - idx: index into `data`
     """
+    ax.clear()
 
-    # Prepare arrays (keep same structure as your original)
-    Z = np.array([[float(y[0]) for y in z] for z in data[idx]])
-
+    # Prepare arrays
+    Z = np.array([[min(float(y[0]),1) for y in z] for z in data[idx]])
     labels = np.array([[y[1] for y in z] for z in data[idx]], dtype=object)
+    
     # Find minima (could be multiple)
     val_of_interest = np.max(Z) 
     if abs(val_of_interest) > 1:
         val_of_interest = np.min(Z)
     optima = np.argwhere(Z == val_of_interest)
-    surf = ax.imshow(Z, cmap="viridis_r" if abs(val_of_interest) > 1 else "viridis" , origin="lower",
-                 )
+    
+    surf = ax.imshow(Z, cmap="viridis_r" if abs(val_of_interest) > 1 else "viridis", origin="lower")
 
     # Single annotation object (tooltip) — start hidden
     annot = ax.annotate(
@@ -98,9 +92,6 @@ def plot_surface_with_minima(idx):
         annot.set_text(label_text)
         annot.set_visible(True)
 
-        # Optionally you can style text (font size, etc) here:
-        # annot.get_bbox_patch().set_alpha(0.9)
-
         fig.canvas.draw_idle()
 
     # Also hide the annotation when leaving the axes
@@ -113,48 +104,38 @@ def plot_surface_with_minima(idx):
     cid_move = fig.canvas.mpl_connect("motion_notify_event", on_move)
     cid_leave = fig.canvas.mpl_connect("axes_leave_event", on_leave)
 
-    # Return surf and a disconnect function so the caller can remove handlers if needed
-    def disconnect():
-        try:
-            fig.canvas.mpl_disconnect(cid_move)
-            fig.canvas.mpl_disconnect(cid_leave)
-        except Exception:
-            pass
-
-
-
-
+    # Scatter plot for optima
     ax.scatter(
-       optima[:, 1],
+        optima[:, 1],
         optima[:, 0],
-         
         color='red',
         s=40,
-        label='Maxima'
+        label='Optima'
     )
 
     ax.set_xlabel('a1')
     ax.set_ylabel('a2')
     if val_of_interest > 1:
-        ax.set_title(f"Max = {np.max(Z):.0f} Min = {val_of_interest:.0f}" )
-    else :
-        ax.set_title(f"Max = {val_of_interest*100:.4f}% Min = { np.min(Z)*100:.4f}%")
+        ax.set_title(f"Max = {np.max(Z):.0f} Min = {val_of_interest:.0f}")
+    else:
+        ax.set_title(f"Max = {val_of_interest*100:.4f}% Min = {np.min(Z)*100:.4f}%")
 
-    return surf, disconnect
+    return surf
 
 
 # Initial plot
-surf = plot_surface_with_minima(init_idx)
+plot_surface_with_minima(data1, ax1, init_idx)
+plot_surface_with_minima(data2, ax2, init_idx)
 
 # Slider
 ax_slider = plt.axes([0.25, 0.05, 0.5, 0.03])
-slider = Slider(ax_slider, "prob", 0, len(data) - 1, valinit=init_idx, valstep=1)
+slider = Slider(ax_slider, "", 0, len(data1) - 1, valinit=init_idx, valstep=1)
 
 # Update callback
 def update(val):
     idx = int(slider.val)
-    ax.clear()
-    plot_surface_with_minima(idx)
+    plot_surface_with_minima(data1, ax1, idx)
+    plot_surface_with_minima(data2, ax2, idx)
     fig.canvas.draw_idle()
 
 slider.on_changed(update)

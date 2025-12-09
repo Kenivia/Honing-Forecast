@@ -6,7 +6,24 @@ use crate::parser::Upgrade;
 use crate::value_estimation::average_tap;
 
 use rand::Rng;
+pub fn eqv_gold_per_tap(upgrade: &Upgrade, price_arr: &[f64]) -> f64 {
+    // a bit redundent but whatever
+    let mut c: f64 = 0.0;
+    for i in 0..7 {
+        c += price_arr[i] * upgrade.costs[i] as f64;
+    }
+    c
+}
 
+pub fn eqv_gold_unlock(unlock_costs: &[i64], price_arr: &[f64]) -> f64 {
+    // a bit redundent but whatever
+    let mut c: f64 = 0.0;
+
+    c += unlock_costs[0] as f64 * price_arr[3];
+    c += unlock_costs[1] as f64 * price_arr[6];
+
+    c
+}
 #[inline]
 pub fn round_juice<R: Rng>(this_juice_cost: f64, rng: &mut R) -> i64 {
     let base: i64 = this_juice_cost.floor() as i64;

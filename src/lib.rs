@@ -6,6 +6,7 @@
 /// (imported via import init, {monte_carlo_wrapper} from "@/../pkg/honing_forecast.js"
 mod constants;
 mod cost_to_chance;
+mod energy;
 mod helpers;
 mod histogram;
 mod monte_carlo;

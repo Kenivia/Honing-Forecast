@@ -4,7 +4,8 @@ use crate::constants::{
     get_event_modified_artisan, get_event_modified_weapon_costs,
 };
 use crate::helpers::{
-    average_juice_cost, calc_unlock, compress_runs, generate_first_deltas, sort_by_indices,
+    average_juice_cost, calc_unlock, compress_runs, eqv_gold_per_tap, generate_first_deltas,
+    sort_by_indices,
 };
 // use crate::monte_carlo::monte_carlo_one;
 use crate::value_estimation::{
@@ -51,22 +52,22 @@ pub fn preparation(
     }
     for upgrade in upgrade_arr.iter_mut() {
         // let mut rng: StdRng = StdRng::seed_from_u64(RNG_SEED);
-        for i in 0..upgrade.full_juice_len {
-            // upgrade.support_lengths.push(vec![]); // this will contain different free taps eventually i think
-
-            upgrade.support_lengths.push(
-                probability_distribution(
-                    upgrade.base_chance,
-                    upgrade.artisan_rate,
-                    &generate_first_deltas(
-                        upgrade.base_chance,
-                        upgrade.prob_dist_len, // this is excessive but its fine
-                        i,
-                    ),
-                )
-                .len(),
-            );
-        }
+        upgrade.eqv_gold_per_tap = eqv_gold_per_tap(upgrade, user_mats_value);
+        // for i in 0..upgrade.full_juice_len {
+        //     // upgrade.support_lengths.push(vec![]); // this will contain different free taps eventually i think
+        //     upgrade.support_lengths.push(
+        //         probability_distribution(
+        //             upgrade.base_chance,
+        //             upgrade.artisan_rate,
+        //             &generate_first_deltas(
+        //                 upgrade.base_chance,
+        //                 upgrade.prob_dist_len, // this is excessive but its fine
+        //                 i,
+        //             ),
+        //         )
+        //         .len(),
+        //     );
+        // }
     }
 
     //XXXXXXXXXXXXXXXXXXXXXXXXXXXXX defunct code here to keep rust analyzer happy
@@ -115,6 +116,8 @@ pub struct Upgrade {
     pub special_value: f64,
     pub full_juice_len: usize,
     pub support_lengths: Vec<usize>, //Vec<Vec<Vec<[i64; 10]>>>, // cost_data_arr[juice_count][special_count] = cost_data for that decision
+    pub eqv_gold_per_tap: f64,
+    pub log_prob_dist: Vec<f64>,
 }
 
 impl Upgrade {
@@ -155,7 +158,9 @@ impl Upgrade {
             upgrade_plus_num,
             special_value: -1.0_f64,
             full_juice_len,
-            support_lengths: vec![], // to be filled
+            support_lengths: vec![],    // to be filled
+            log_prob_dist: vec![], // will change with each arrangement, maybe use a hashmap later
+            eqv_gold_per_tap: -1.0_f64, // dummy value
         }
     }
 
@@ -189,8 +194,10 @@ impl Upgrade {
             special_value: -1.0_f64,
             full_juice_len: 1, // need to sort this out
             support_lengths: vec![],
-            // failure_raw_delta: -1,
-            // failure_delta_order: -1,
+            log_prob_dist: vec![], // will change with each arrangement, maybe use a hashmap later
+            eqv_gold_per_tap: -1.0_f64, // dummy value
+                                   // failure_raw_delta: -1,
+                                   // failure_delta_order: -1,
         }
     }
 }

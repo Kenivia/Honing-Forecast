@@ -6,10 +6,131 @@ use crate::helpers::compute_gold_cost_from_raw;
 use crate::test_utils::PROB_MODE;
 use itertools::{Itertools, iproduct};
 
+use crate::energy::{saddlepoint_approximation, saddlepoint_inversion};
 use rayon::prelude::*;
 use std::f64;
 use std::sync::{Arc, RwLock};
 // use std::time::Instant;
+use crate::helpers::eqv_gold_unlock;
+
+#[cfg(test)]
+pub fn brute_with_saddlepoint_approximation(
+    input_budgets: &[i64],
+    prep_outputs: &PreparationOutputs,
+) -> Vec<Vec<Vec<(f64, String)>>> {
+    // Clone upgrade_arr (we will mutate per-task copies)
+    let upgrade_arr_base: Vec<Upgrade> = prep_outputs.upgrade_arr.clone();
+    let u0 = &prep_outputs.upgrade_arr[0];
+    let u1 = &prep_outputs.upgrade_arr[1];
+
+    let len0 = u0.full_juice_len + 1;
+    let len1 = u1.full_juice_len + 1;
+
+    // pity boundaries
+    let tap_pity_results = get_one_tap_pity(&prep_outputs.upgrade_arr, &prep_outputs.unlock_costs);
+
+    let worst_cost: f64 = compute_gold_cost_from_raw(
+        &tap_pity_results[1],
+        &input_budgets,
+        &prep_outputs.mats_value,
+    ) - eqv_gold_unlock(&prep_outputs.unlock_costs, &prep_outputs.mats_value);
+
+    let best_cost: f64 = compute_gold_cost_from_raw(
+        &tap_pity_results[0],
+        &input_budgets,
+        &prep_outputs.mats_value,
+    ) - eqv_gold_unlock(&prep_outputs.unlock_costs, &prep_outputs.mats_value);
+
+    // === Precompute supports ===
+    let supports0: Vec<(Vec<([i64; 9], f64)>, Vec<f64>)> = precompute_supports(u0, len0);
+    let supports1: Vec<(Vec<([i64; 9], f64)>, Vec<f64>)> = precompute_supports(u1, len1);
+
+    // We flatten [101][len0][len1] into 1D for safe parallel writes.
+    let num_p = 101;
+    let flat_size = num_p * len0 * len1;
+
+    let flat_results: Arc<RwLock<Vec<(f64, String)>>> =
+        Arc::new(RwLock::new(vec![
+            (0.0_f64, "uninitiated".to_owned());
+            flat_size
+        ]));
+
+    let stride_p = len0 * len1;
+    let stride0 = len1;
+
+    // === Parallel over all (j0, j1) ===
+    iproduct!(0..supports0.len(), 0..supports1.len())
+        .par_bridge()
+        .for_each(|(j0, j1)| {
+            // Each thread gets its own upgrade_arr
+            let mut upgrade_arr = upgrade_arr_base.clone();
+
+            let count0 = supports0[j0].1.iter().filter(|x| **x > 0.0).count();
+            let count1 = supports1[j1].1.iter().filter(|x| **x > 0.0).count();
+
+            // Set prob_dist based on support slice
+            upgrade_arr[0].prob_dist = probability_distribution(
+                upgrade_arr[0].base_chance,
+                upgrade_arr[0].artisan_rate,
+                &supports0[j0].1,
+            );
+            upgrade_arr[1].prob_dist = probability_distribution(
+                upgrade_arr[1].base_chance,
+                upgrade_arr[1].artisan_rate,
+                &supports1[j1].1,
+            );
+
+            // log probabilities
+            for up in upgrade_arr.iter_mut() {
+                up.log_prob_dist = up.prob_dist.iter().map(|p| p.ln()).collect();
+            }
+
+            // === Iterate 0..=100 threshold segments ===
+            for seg in 0..=100 {
+                let target = seg as f64 * (worst_cost - best_cost) / 100.0 + best_cost;
+
+                let res = saddlepoint_approximation(&upgrade_arr, target, &prep_outputs.mats_value);
+
+                let idx = seg * stride_p + count0 * stride0 + count1;
+
+                // First, check via read-lock
+                {
+                    let r = flat_results.read().unwrap();
+                    if res <= r[idx].0 {
+                        continue;
+                    }
+                }
+
+                // Now try to claim via write lock
+                {
+                    let mut w = flat_results.write().unwrap();
+                    if res > w[idx].0 {
+                        w[idx] = (res, encode_positions(&supports0[j0].1, &supports1[j1].1));
+                    }
+                }
+            }
+        });
+
+    // Unwrap Arc, push into final nested structure
+    let final_flat = Arc::try_unwrap(flat_results)
+        .expect("no other refs")
+        .into_inner()
+        .unwrap();
+
+    let mut out = vec![vec![vec![(0.0_f64, "uninitiated".to_owned()); len1]; len0]; num_p];
+
+    for p in 0..num_p {
+        let base_p = p * stride_p;
+        for j0 in 0..len0 {
+            let base0 = base_p + j0 * stride0;
+            for j1 in 0..len1 {
+                out[p][j0][j1] = final_flat[base0 + j1].clone();
+            }
+        }
+    }
+
+    out
+}
 
 #[cfg(test)]
 pub fn brute(
@@ -40,13 +161,14 @@ pub fn brute(
 
     let stride_p = len0 * len1;
     let stride0 = len1;
+    let tap_pity_results = get_one_tap_pity(&prep_outputs.upgrade_arr, &prep_outputs.unlock_costs);
     let worst_cost: f64 = compute_gold_cost_from_raw(
-        &get_one_tap_pity(&prep_outputs.upgrade_arr, &prep_outputs.unlock_costs)[1],
+        &tap_pity_results[1],
         &input_budgets,
         &prep_outputs.mats_value,
     );
     let best_cost: f64 = compute_gold_cost_from_raw(
-        &get_one_tap_pity(&prep_outputs.upgrade_arr, &prep_outputs.unlock_costs)[0],
+        &tap_pity_results[0],
         &input_budgets,
         &prep_outputs.mats_value,
     );
@@ -62,7 +184,7 @@ pub fn brute(
                 &prep_outputs.mats_value,
             );
 
-            let quantiles = compute_quantiles(combined, worst_cost, 34567.0);
+            let quantiles = compute_quantiles(combined, worst_cost, best_cost);
 
             // lock and write
             // let mut vec = flat_results.lock().unwrap();
@@ -303,15 +425,61 @@ mod tests {
     use crate::parser::preparation;
     use crate::test_utils::*;
     use std::time::Instant;
+    #[test]
+    fn brute_saddle_approx_test() {
+        let start = Instant::now();
+        let suffix: &str = if PROB_MODE { "_prob" } else { "_gold" };
 
+        let test_name = format!("brute_saddle_approx_test{suffix}");
+        let hone_counts: Vec<Vec<i64>> = vec![
+            (0..25).map(|x| if x == 9 { 1 } else { 0 }).collect(),
+            (0..25).map(|x| if x == 9 { 1 } else { 0 }).collect(),
+        ];
+        let adv_counts: Vec<Vec<i64>> =
+            vec![(0..4).map(|_| 0).collect(), (0..4).map(|_| 0).collect()];
+
+        let adv_hone_strategy: &str = "No juice";
+        let express_event: bool = false;
+        let input_budgets = vec![0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+        let user_mats_value = DEFAULT_GOLD_VALUES;
+        let hash: String = calculate_hash!(
+            &hone_counts,
+            &adv_counts,
+            adv_hone_strategy,
+            express_event,
+            &input_budgets,
+            &user_mats_value,
+            RNG_SEED,
+            PROB_MODE
+        );
+
+        let prep_outputs: PreparationOutputs = preparation(
+            &hone_counts,
+            &input_budgets,
+            &adv_counts,
+            express_event,
+            &user_mats_value,
+            adv_hone_strategy,
+        );
+        let result: Vec<Vec<Vec<(f64, String)>>> =
+            brute_with_saddlepoint_approximation(&input_budgets, &prep_outputs);
+        dbg!(result.len());
+        if let Some(_cached_result) =
+            read_cached_data::<Vec<Vec<Vec<(f64, String)>>>>(test_name.as_str(), &hash)
+        {
+        } else {
+            write_cached_data(test_name.as_str(), &hash, &result);
+        }
+        dbg!(start.elapsed());
+    }
     #[test]
     fn brute_arrangement_test() {
         let start = Instant::now();
         let suffix: &str = if PROB_MODE { "_prob" } else { "_gold" };
         let test_name = format!("brute_arrangement_test{suffix}");
         let hone_counts: Vec<Vec<i64>> = vec![
-            (0..25).map(|x| if x == 10 { 1 } else { 0 }).collect(),
-            (0..25).map(|x| if x == 10 { 1 } else { 0 }).collect(),
+            (0..25).map(|x| if x == 9 { 1 } else { 0 }).collect(),
+            (0..25).map(|x| if x == 9 { 1 } else { 0 }).collect(),
         ];
         let adv_counts: Vec<Vec<i64>> =
             vec![(0..4).map(|_| 0).collect(), (0..4).map(|_| 0).collect()];
@@ -319,8 +487,8 @@ mod tests {
         let adv_hone_strategy: &str = "No juice";
         let express_event: bool = false;
         let input_budgets = vec![
-            3240, 9240, 46, 17740, 36, 0, 108000, 90, 90, 0,
-            // 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            // 3240, 9240, 46, 17740, 36, 0, 108000, 90, 90, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
         ];
         let user_mats_value = DEFAULT_GOLD_VALUES;
         // let data_size: usize = 100000;
