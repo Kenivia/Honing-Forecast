@@ -6,9 +6,11 @@ import matplotlib.cm as cm
 import matplotlib.colors as colors
 
 # Load data from two files
-data1 = np.array(json.load(open("./test_cases/brute_saddle_approx_test_prob_eb189d9f0a441959.json", "r")))
-data2 = np.array(json.load(open("./test_cases/9_9_brute_arrangement_test_prob_eb189d9f0a441959.json", "r")))
+# data1 = np.array(json.load(open("./test_cases/saved brute_saddle_approx_test_prob_eb189d9f0a441959.json", "r")))
 
+data1 = np.array(json.load(open("./test_cases/brute_saddle_approx_test_prob_eb189d9f0a441959.json", "r")))
+data2 = np.array(json.load(open("./test_cases/brute_arrangement_test_prob_eb189d9f0a441959.json", "r")))
+# data2 = np.array(json.load(open("./test_cases/incorrect brute_saddle_approx_test_prob_eb189d9f0a441959.json", "r")))
 init_idx = 0
 
 # Create figure with two subplots side by side
@@ -85,7 +87,7 @@ def plot_surface_with_minima(data, ax, idx):
         last_idx['i'], last_idx['j'] = i, j
 
         # Get label for this pixel
-        label_text = str(labels[i, j])
+        label_text = str(Z[i,j]) +" "+ labels[i, j]
 
         # Update annotation: position it at the data coordinates (j, i)
         annot.xy = (j, i)

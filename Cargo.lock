@@ -289,6 +289,7 @@ dependencies = [
  "quad-rs",
  "rand 0.9.2",
  "rayon",
+ "rootfinder",
  "serde",
  "serde-wasm-bindgen",
  "serde_json",
@@ -714,6 +715,15 @@ name = "regex-syntax"
 version = "0.8.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "caf4aa5b0f434c91fe5c7f1ecb6a5ece2130b02ad2a590589dda5146df959001"
+
+[[package]]
+name = "rootfinder"
+version = "0.4.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7de3b7748fc5c9062b118e715b6de13d44ae5ef67495ffe7819f34633a38789d"
+dependencies = [
+ "once_cell",
+]
 
 [[package]]
 name = "rustversion"

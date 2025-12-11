@@ -1,12 +1,12 @@
 use crate::helpers::{generate_first_deltas, get_one_tap_pity};
 use crate::parser::{PreparationOutputs, Upgrade, probability_distribution};
 // use crate::value_estimation::explore_one;
+use crate::energy::saddlepoint_approximation;
 use crate::helpers::compute_gold_cost_from_raw;
+use crate::helpers::eqv_gold_per_tap;
 #[cfg(test)]
 use crate::test_utils::PROB_MODE;
 use itertools::{Itertools, iproduct};
-
-use crate::energy::{saddlepoint_approximation, saddlepoint_inversion};
 use rayon::prelude::*;
 use std::f64;
 use std::sync::{Arc, RwLock};
@@ -23,8 +23,8 @@ pub fn brute_with_saddlepoint_approximation(
     let u0 = &prep_outputs.upgrade_arr[0];
     let u1 = &prep_outputs.upgrade_arr[1];
 
-    let len0 = u0.full_juice_len + 1;
-    let len1 = u1.full_juice_len + 1;
+    let len0 = u0.full_juice_len;
+    let len1 = u1.full_juice_len;
 
     // pity boundaries
     let tap_pity_results = get_one_tap_pity(&prep_outputs.upgrade_arr, &prep_outputs.unlock_costs);
@@ -60,7 +60,7 @@ pub fn brute_with_saddlepoint_approximation(
 
     // === Parallel over all (j0, j1) ===
     iproduct!(0..supports0.len(), 0..supports1.len())
-        .par_bridge()
+        // .par_bridge()
         .for_each(|(j0, j1)| {
             // Each thread gets its own upgrade_arr
             let mut upgrade_arr = upgrade_arr_base.clone();
@@ -74,23 +74,37 @@ pub fn brute_with_saddlepoint_approximation(
                 upgrade_arr[0].artisan_rate,
                 &supports0[j0].1,
             );
+            upgrade_arr[0].juiced_arr = supports0[j0].1.clone();
             upgrade_arr[1].prob_dist = probability_distribution(
                 upgrade_arr[1].base_chance,
                 upgrade_arr[1].artisan_rate,
                 &supports1[j1].1,
             );
+            upgrade_arr[1].juiced_arr = supports0[j1].1.clone();
 
-            // log probabilities
-            for up in upgrade_arr.iter_mut() {
-                up.log_prob_dist = up.prob_dist.iter().map(|p| p.ln()).collect();
+            for upgrade in upgrade_arr.iter_mut() {
+                upgrade.log_prob_dist = upgrade.prob_dist.iter().map(|p| p.ln()).collect();
+                upgrade.eqv_gold_per_tap = eqv_gold_per_tap(upgrade, &prep_outputs.mats_value);
+                let juice_ind: usize = if upgrade.is_weapon { 7 } else { 8 };
+                upgrade.eqv_gold_per_juice =
+                    prep_outputs.mats_value[juice_ind] * upgrade.one_juice_cost as f64;
             }
 
             // === Iterate 0..=100 threshold segments ===
+
             for seg in 0..=100 {
                 let target = seg as f64 * (worst_cost - best_cost) / 100.0 + best_cost;
 
-                let res = saddlepoint_approximation(&upgrade_arr, target, &prep_outputs.mats_value);
-
+                let res = saddlepoint_approximation(&upgrade_arr, target);
+                if res < 0.0 || res > 1.0 {
+                    dbg!(
+                        res,
+                        target,
+                        encode_positions(&supports0[j0].1, &supports1[j1].1),
+                        &upgrade_arr[0].prob_dist,
+                        &upgrade_arr[1].prob_dist,
+                    );
+                }
                 let idx = seg * stride_p + count0 * stride0 + count1;
 
                 // First, check via read-lock
@@ -140,8 +154,8 @@ pub fn brute(
     let u0 = &prep_outputs.upgrade_arr[0];
     let u1 = &prep_outputs.upgrade_arr[1];
 
-    let len0 = u0.full_juice_len + 1;
-    let len1 = u1.full_juice_len + 1;
+    let len0 = u0.full_juice_len;
+    let len1 = u1.full_juice_len;
 
     // === Precompute supports for every juice value ===
     // let support = Instant::now();
@@ -166,13 +180,13 @@ pub fn brute(
         &tap_pity_results[1],
         &input_budgets,
         &prep_outputs.mats_value,
-    );
+    ) - eqv_gold_unlock(&prep_outputs.unlock_costs, &prep_outputs.mats_value);
     let best_cost: f64 = compute_gold_cost_from_raw(
         &tap_pity_results[0],
         &input_budgets,
         &prep_outputs.mats_value,
-    );
-
+    ) - eqv_gold_unlock(&prep_outputs.unlock_costs, &prep_outputs.mats_value);
+    // dbg!(best_cost, worst_cost);
     // === Parallel over every (juice0, juice1) pair ===
     iproduct!(0..supports0.len(), 0..supports1.len())
         .par_bridge()
@@ -245,7 +259,7 @@ pub fn brute(
 
 // ==============================================================
 
-pub fn arrangements<T: Clone + Default>(p: T, n: usize, k: usize) -> Vec<Vec<T>> {
+pub fn arrangements(p: f64, n: usize, k: usize) -> Vec<Vec<f64>> {
     // if impossible, return empty (could also return vec![vec![T::default(); n]] when k==0)
     if k > n {
         return Vec::new();
@@ -253,18 +267,20 @@ pub fn arrangements<T: Clone + Default>(p: T, n: usize, k: usize) -> Vec<Vec<T>>
 
     // handle k == 0: single vector of defaults
     if k == 0 {
-        return vec![vec![T::default(); n]];
+        return vec![vec![0.0; n]];
     }
 
     let mut out = Vec::new();
 
     // iterate combinations of indices 0..n taken k at a time
     for comb in (0..n).combinations(k) {
-        let mut v = vec![T::default(); n];
+        let mut v: Vec<f64> = vec![0.0; n + 1];
         for &idx in &comb {
-            v[idx] = p.clone();
+            v[idx] = p;
         }
-        out.push(v);
+        if v[n - 1] == 0.0 {
+            out.push(v);
+        }
     }
 
     out
@@ -276,7 +292,7 @@ fn precompute_supports(
 ) -> Vec<(Vec<([i64; 9], f64)>, Vec<f64>)> {
     let mut supports: Vec<(Vec<([i64; 9], f64)>, Vec<f64>)> = Vec::new();
 
-    for juice in 0..=max_juice {
+    for juice in 0..max_juice {
         let first_deltas = generate_first_deltas(upgrade.base_chance, upgrade.prob_dist_len, juice);
         let dist_first_deltas =
             probability_distribution(upgrade.base_chance, upgrade.artisan_rate, &first_deltas);

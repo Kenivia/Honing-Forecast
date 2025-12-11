@@ -88,79 +88,79 @@ fn prob_to_maximize(
     input_budget_no_gold: &[i64],
     price_arr: &[f64],
     threshold: f64,
-    depth: usize,
-    cache: &mut HashMap<(Vec<bool>, usize), Vec<([i64; 9], f64)>>,
+    // depth: usize,
+    // cache: &mut HashMap<(Vec<bool>, usize), Vec<([i64; 9], f64)>>,
 ) -> f64 {
-    let key: (Vec<bool>, usize) = (state[depth].clone(), depth); // need to use an actual bitset here eventually
-    let costs_dist: Vec<([i64; 9], f64)> = if !cache.contains_key(&key) {
-        let this_dist: Vec<f64> = state_dist(
-            upgrade_arr[depth].base_chance,
-            upgrade_arr[depth].artisan_rate,
-            &state[depth],
-            upgrade_arr[depth].base_chance,
-        );
-        dist_to_costs(
-            // automatically monotone(sorted)
-            &this_dist,
-            &upgrade_arr[depth],
-            &state[depth],
-            price_arr,
-        )
-    } else {
-        cache[&key].clone()
-    };
-
-    // let costs_dist: Vec<([i64; 9], f64)> = {
+    // let key: (Vec<bool>, usize) = (state[depth].clone(), depth); // need to use an actual bitset here eventually
+    // let costs_dist: Vec<([i64; 9], f64)> = if !cache.contains_key(&key) {
     //     let this_dist: Vec<f64> = state_dist(
     //         upgrade_arr[depth].base_chance,
     //         upgrade_arr[depth].artisan_rate,
     //         &state[depth],
     //         upgrade_arr[depth].base_chance,
     //     );
-    //     dist_to_costs(&this_dist, &upgrade_arr[depth], &state[depth], price_arr)
+    //     dist_to_costs(
+    //         // automatically monotone(sorted)
+    //         &this_dist,
+    //         &upgrade_arr[depth],
+    //         &state[depth],
+    //         price_arr,
+    //     )
+    // } else {
+    //     cache[&key].clone()
     // };
 
-    if depth == state.len() - 1 {
-        return costs_dist
-            .iter()
-            .take_while(|(costs, _)| {
-                let new_cost: Vec<i64> = cost_so_far
-                    .to_vec()
-                    .iter_mut()
-                    .enumerate()
-                    .map(|(index, x)| costs[index] + *x)
-                    .collect::<Vec<i64>>();
-                compute_gold_cost_from_raw(&new_cost, input_budget_no_gold, price_arr) <= threshold
-            })
-            .fold(0.0, |acc, (_, prob)| acc + prob);
-    } else {
-        return costs_dist.iter().fold(0.0, |acc, (costs, prob)| {
-            let new_cost: Vec<i64> = cost_so_far
-                .to_vec()
-                .iter_mut()
-                .enumerate()
-                .map(|(index, x)| costs[index] + *x)
-                .collect::<Vec<i64>>();
-            acc + if threshold
-                < compute_gold_cost_from_raw(&new_cost, input_budget_no_gold, price_arr)
-            {
-                0.0
-            } else {
-                prob * prob_to_maximize(
-                    state,
-                    upgrade_arr,
-                    &new_cost,
-                    input_budget_no_gold,
-                    price_arr,
-                    threshold,
-                    depth + 1,
-                    cache,
-                )
-            }
-        });
-    }
+    // // let costs_dist: Vec<([i64; 9], f64)> = {
+    // //     let this_dist: Vec<f64> = state_dist(
+    // //         upgrade_arr[depth].base_chance,
+    // //         upgrade_arr[depth].artisan_rate,
+    // //         &state[depth],
+    // //         upgrade_arr[depth].base_chance,
+    // //     );
+    // //     dist_to_costs(&this_dist, &upgrade_arr[depth], &state[depth], price_arr)
+    // // };
 
+    // if depth == state.len() - 1 {
+    //     return costs_dist
+    //         .iter()
+    //         .take_while(|(costs, _)| {
+    //             let new_cost: Vec<i64> = cost_so_far
+    //                 .to_vec()
+    //                 .iter_mut()
+    //                 .enumerate()
+    //                 .map(|(index, x)| costs[index] + *x)
+    //                 .collect::<Vec<i64>>();
+    //             compute_gold_cost_from_raw(&new_cost, input_budget_no_gold, price_arr) <= threshold
+    //         })
+    //         .fold(0.0, |acc, (_, prob)| acc + prob);
+    // } else {
+    //     return costs_dist.iter().fold(0.0, |acc, (costs, prob)| {
+    //         let new_cost: Vec<i64> = cost_so_far
+    //             .to_vec()
+    //             .iter_mut()
+    //             .enumerate()
+    //             .map(|(index, x)| costs[index] + *x)
+    //             .collect::<Vec<i64>>();
+    //         acc + if threshold
+    //             < compute_gold_cost_from_raw(&new_cost, input_budget_no_gold, price_arr)
+    //         {
+    //             0.0
+    //         } else {
+    //             prob * prob_to_maximize(
+    //                 state,
+    //                 upgrade_arr,
+    //                 &new_cost,
+    //                 input_budget_no_gold,
+    //                 price_arr,
+    //                 threshold,
+    //                 depth + 1,
+    //                 cache,
+    //             )
+    //         }
+    //     });
     // }
+
+    // // }
 }
 
 fn acceptance<R: Rng>(new: f64, old: f64, temperature: f64, rng: &mut R) -> bool {

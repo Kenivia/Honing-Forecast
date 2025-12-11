@@ -30,6 +30,7 @@ fast_polynomial = "0.4.0"
 statrs = "0.18.0"
 num = "0.4.3"
 quad-rs = "0.2.3"
+rootfinder = "0.4.1"
 
 
 [dev-dependencies]
