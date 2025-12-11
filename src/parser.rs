@@ -53,21 +53,21 @@ pub fn preparation(
     for upgrade in upgrade_arr.iter_mut() {
         // let mut rng: StdRng = StdRng::seed_from_u64(RNG_SEED);
         upgrade.eqv_gold_per_tap = eqv_gold_per_tap(upgrade, user_mats_value);
-        // for i in 0..upgrade.full_juice_len {
-        //     // upgrade.support_lengths.push(vec![]); // this will contain different free taps eventually i think
-        //     upgrade.support_lengths.push(
-        //         probability_distribution(
-        //             upgrade.base_chance,
-        //             upgrade.artisan_rate,
-        //             &generate_first_deltas(
-        //                 upgrade.base_chance,
-        //                 upgrade.prob_dist_len, // this is excessive but its fine
-        //                 i,
-        //             ),
-        //         )
-        //         .len(),
-        //     );
-        // }
+        for i in 0..upgrade.full_juice_len {
+            // upgrade.support_lengths.push(vec![]); // this will contain different free taps eventually i think
+            upgrade.support_lengths.push(
+                probability_distribution(
+                    upgrade.base_chance,
+                    upgrade.artisan_rate,
+                    &generate_first_deltas(
+                        upgrade.base_chance,
+                        upgrade.prob_dist_len, // this is excessive but its fine
+                        i,
+                    ),
+                )
+                .len(),
+            );
+        }
     }
 
     //XXXXXXXXXXXXXXXXXXXXXXXXXXXXX defunct code here to keep rust analyzer happy

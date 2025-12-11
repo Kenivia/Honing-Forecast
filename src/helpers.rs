@@ -114,6 +114,14 @@ pub fn compute_gold_cost_from_raw(
     c
 }
 
+pub fn compute_eqv_gold_values(input_budget: &[i64], price_arr: &[f64]) -> f64 {
+    let mut c: f64 = 0f64;
+    for i in 0..9 {
+        c += price_arr[i] * input_budget[i] as f64;
+    }
+    c
+}
+
 pub fn generate_first_deltas(delta: f64, length: usize, non_zeros: usize) -> Vec<f64> {
     [vec![delta; non_zeros], vec![0.0; length - non_zeros]].concat()
 }
