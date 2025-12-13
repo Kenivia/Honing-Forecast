@@ -1,9 +1,9 @@
 use crate::helpers::{generate_first_deltas, get_one_tap_pity};
 use crate::parser::{PreparationOutputs, Upgrade, probability_distribution};
 // use crate::value_estimation::explore_one;
-use crate::energy::saddlepoint_approximation;
-use crate::helpers::compute_gold_cost_from_raw;
+use crate::helpers::compute_eqv_gold_values;
 use crate::helpers::eqv_gold_per_tap;
+use crate::saddlepoint_approximation::saddlepoint_approximation;
 #[cfg(test)]
 use crate::test_utils::PROB_MODE;
 use itertools::{Itertools, iproduct};
@@ -29,17 +29,11 @@ pub fn brute_with_saddlepoint_approximation(
     // pity boundaries
     let tap_pity_results = get_one_tap_pity(&prep_outputs.upgrade_arr, &prep_outputs.unlock_costs);
 
-    let worst_cost: f64 = compute_gold_cost_from_raw(
-        &tap_pity_results[1],
-        &input_budgets,
-        &prep_outputs.mats_value,
-    ) - eqv_gold_unlock(&prep_outputs.unlock_costs, &prep_outputs.mats_value);
+    let worst_cost: f64 = compute_eqv_gold_values(&tap_pity_results[1], &prep_outputs.mats_value)
+        - eqv_gold_unlock(&prep_outputs.unlock_costs, &prep_outputs.mats_value);
 
-    let best_cost: f64 = compute_gold_cost_from_raw(
-        &tap_pity_results[0],
-        &input_budgets,
-        &prep_outputs.mats_value,
-    ) - eqv_gold_unlock(&prep_outputs.unlock_costs, &prep_outputs.mats_value);
+    let best_cost: f64 = compute_eqv_gold_values(&tap_pity_results[0], &prep_outputs.mats_value)
+        - eqv_gold_unlock(&prep_outputs.unlock_costs, &prep_outputs.mats_value);
 
     // === Precompute supports ===
     let supports0: Vec<(Vec<([i64; 9], f64)>, Vec<f64>)> = precompute_supports(u0, len0);
@@ -60,7 +54,7 @@ pub fn brute_with_saddlepoint_approximation(
 
     // === Parallel over all (j0, j1) ===
     iproduct!(0..supports0.len(), 0..supports1.len())
-        // .par_bridge()
+        .par_bridge()
         .for_each(|(j0, j1)| {
             // Each thread gets its own upgrade_arr
             let mut upgrade_arr = upgrade_arr_base.clone();
@@ -96,7 +90,7 @@ pub fn brute_with_saddlepoint_approximation(
                 let target = seg as f64 * (worst_cost - best_cost) / 100.0 + best_cost;
 
                 let res = saddlepoint_approximation(&upgrade_arr, target);
-                if res < 0.0 || res > 1.0 {
+                if res < 0.0 || res > 1.0 || !res.is_finite() {
                     dbg!(
                         res,
                         target,
@@ -176,16 +170,10 @@ pub fn brute(
     let stride_p = len0 * len1;
     let stride0 = len1;
     let tap_pity_results = get_one_tap_pity(&prep_outputs.upgrade_arr, &prep_outputs.unlock_costs);
-    let worst_cost: f64 = compute_gold_cost_from_raw(
-        &tap_pity_results[1],
-        &input_budgets,
-        &prep_outputs.mats_value,
-    ) - eqv_gold_unlock(&prep_outputs.unlock_costs, &prep_outputs.mats_value);
-    let best_cost: f64 = compute_gold_cost_from_raw(
-        &tap_pity_results[0],
-        &input_budgets,
-        &prep_outputs.mats_value,
-    ) - eqv_gold_unlock(&prep_outputs.unlock_costs, &prep_outputs.mats_value);
+    let worst_cost: f64 = compute_eqv_gold_values(&tap_pity_results[1], &prep_outputs.mats_value)
+        - eqv_gold_unlock(&prep_outputs.unlock_costs, &prep_outputs.mats_value);
+    let best_cost: f64 = compute_eqv_gold_values(&tap_pity_results[0], &prep_outputs.mats_value)
+        - eqv_gold_unlock(&prep_outputs.unlock_costs, &prep_outputs.mats_value);
     // dbg!(best_cost, worst_cost);
     // === Parallel over every (juice0, juice1) pair ===
     iproduct!(0..supports0.len(), 0..supports1.len())
@@ -355,7 +343,7 @@ fn build_combined_prob_dist(
                 costs[i] = costs_1[i] + costs_2[i];
             }
 
-            let gold: f64 = compute_gold_cost_from_raw(&costs, input_budgets, mats_value);
+            let gold: f64 = compute_eqv_gold_values(&costs, mats_value);
             let prob: f64 = p1 * p2;
 
             if prob > 0.0 {
@@ -401,10 +389,10 @@ fn compute_quantiles(
 
     let mut res: Vec<(f64, String)> = Vec::with_capacity(101);
 
-    let mut cum_cost: f64 = 0.0;
-    let mut cum_chance: f64 = 0.0;
     let outcomes = &mut input.0;
     outcomes.sort_unstable_by(|a, b| a.0.partial_cmp(&b.0).unwrap_or(std::cmp::Ordering::Equal));
+    let mut cum_cost: f64 = 0.0;
+    let mut cum_chance: f64 = 0.0;
 
     let mut i: usize = 0;
     let n: usize = outcomes.len();
@@ -414,8 +402,21 @@ fn compute_quantiles(
         if PROB_MODE {
             let target: f64 = seggment as f64 * (worst_cost - best_cost) / 100.0 + best_cost;
 
-            while i < n && cum_cost < target {
+            while i < n {
+                // if seggment == 0 && input.1.chars().nth(0).unwrap() != '0' {
+                //     dbg!(
+                //         outcomes[i].0,
+                //         outcomes[i].1,
+                //         &input.1,
+                //         target,
+                //         best_cost,
+                //         worst_cost
+                //     );
+                // }
                 cum_cost = outcomes[i].0;
+                if cum_cost > target {
+                    break;
+                }
                 cum_chance += outcomes[i].1;
                 i += 1;
             }

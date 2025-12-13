@@ -11,6 +11,7 @@ mod helpers;
 mod histogram;
 mod monte_carlo;
 mod parser;
+mod saddlepoint_approximation;
 mod simulated_annealing;
 mod success_analysis;
 mod value_estimation;

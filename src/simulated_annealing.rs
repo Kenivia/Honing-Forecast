@@ -1,180 +1,12 @@
-use crate::energy::saddlepoint_approximation;
-use crate::helpers::{compute_eqv_gold_values, eqv_gold_per_tap, eqv_gold_unlock};
-use crate::parser::{PreparationOutputs, Upgrade, probability_distribution};
+use crate::energy::prob_to_maximize_exact;
+use crate::helpers::{compute_eqv_gold_values, eqv_gold_unlock};
+use crate::parser::{PreparationOutputs, Upgrade};
+use crate::saddlepoint_approximation::prob_to_maximize;
 use rand::Rng;
 use rand::distr::Distribution;
 use rand::distr::weighted::WeightedIndex;
 use rand::seq::IteratorRandom;
 use std::collections::HashMap;
-fn state_dist(base: f64, artisan_rate: f64, extra_arr: &[bool], extra_amount: f64) -> Vec<f64> {
-    let mut raw_chances: Vec<f64> = Vec::new();
-    let mut artisan: f64 = 0.0_f64;
-    let mut count: usize = 0;
-
-    loop {
-        let min_count: f64 = std::cmp::min(count, 10) as f64;
-        let mut current_chance: f64 = base
-            + (min_count * base) * 0.1
-            + if *extra_arr.get(count).unwrap_or(&false) {
-                extra_amount
-            } else {
-                0.0
-            };
-
-        if artisan >= 1.0 {
-            current_chance = 1.0;
-            raw_chances.push(current_chance);
-            break;
-        }
-
-        raw_chances.push(current_chance);
-        count += 1;
-        artisan += (46.51_f64 / 100.0) * current_chance * artisan_rate;
-        if current_chance == 1.0 {
-            break; // for upgrades that have 100% passrate immediately
-        }
-    }
-
-    // convert raw per-try chances into per-tap probability distribution
-    let mut chances = vec![0.0_f64; raw_chances.len()];
-    let mut cum_chance = 1.0_f64;
-    for (idx, &element) in raw_chances.iter().enumerate() {
-        chances[idx] = cum_chance * element;
-        cum_chance *= 1.0 - element;
-    }
-    chances
-}
-
-fn dist_to_costs(
-    this_dist: &[f64],
-    upgrade: &Upgrade,
-    extra_arr: &[bool],
-    // input_budget_no_gold: &[i64],
-    price_arr: &[f64],
-) -> Vec<([i64; 9], f64)> {
-    let mut list = Vec::with_capacity(this_dist.len());
-    let mut juice_count_so_far: i64 = 0;
-    for tap in 0..this_dist.len() {
-        let prob: f64 = this_dist[tap];
-        if prob == 0.0 {
-            continue;
-        }
-
-        let taps_real = tap as i64 + upgrade.tap_offset;
-        let mut this_costs = [0_i64; 9];
-
-        for c in 0..7 {
-            this_costs[c] = taps_real * upgrade.costs[c];
-        }
-        if upgrade.is_normal_honing {
-            if tap < extra_arr.len() && extra_arr[tap] {
-                juice_count_so_far += 1;
-            }
-            let j_idx = if upgrade.is_weapon { 7 } else { 8 };
-            this_costs[j_idx] = juice_count_so_far * upgrade.one_juice_cost;
-        }
-
-        list.push((
-            this_costs, // compute_gold_cost_from_raw(&this_costs, input_budget_no_gold, price_arr),
-            prob,
-        ));
-    }
-    list
-}
-
-fn prob_to_maximize(
-    state: &[Vec<bool>],
-    upgrade_arr: &mut [Upgrade],
-    price_arr: &[f64],
-    budget: f64,
-    // depth: usize,
-    // cache: &mut HashMap<(Vec<bool>, usize), Vec<([i64; 9], f64)>>,
-) -> f64 {
-    for (index, upgrade) in upgrade_arr.iter_mut().enumerate() {
-        let new_extra: Vec<f64> = state[index]
-            .iter()
-            .map(|x| if *x { upgrade.base_chance } else { 0.0 })
-            .collect();
-
-        upgrade.prob_dist =
-            probability_distribution(upgrade.base_chance, upgrade.artisan_rate, &new_extra);
-
-        upgrade.log_prob_dist = upgrade.prob_dist.iter().map(|x| x.ln()).collect();
-        upgrade.eqv_gold_per_tap = eqv_gold_per_tap(upgrade, &price_arr);
-        upgrade.juiced_arr = new_extra;
-    }
-    saddlepoint_approximation(upgrade_arr, budget)
-    // let key: (Vec<bool>, usize) = (state[depth].clone(), depth); // need to use an actual bitset here eventually
-    // let costs_dist: Vec<([i64; 9], f64)> = if !cache.contains_key(&key) {
-    //     let this_dist: Vec<f64> = state_dist(
-    //         upgrade_arr[depth].base_chance,
-    //         upgrade_arr[depth].artisan_rate,
-    //         &state[depth],
-    //         upgrade_arr[depth].base_chance,
-    //     );
-    //     dist_to_costs(
-    //         // automatically monotone(sorted)
-    //         &this_dist,
-    //         &upgrade_arr[depth],
-    //         &state[depth],
-    //         price_arr,
-    //     )
-    // } else {
-    //     cache[&key].clone()
-    // };
-
-    // // let costs_dist: Vec<([i64; 9], f64)> = {
-    // //     let this_dist: Vec<f64> = state_dist(
-    // //         upgrade_arr[depth].base_chance,
-    // //         upgrade_arr[depth].artisan_rate,
-    // //         &state[depth],
-    // //         upgrade_arr[depth].base_chance,
-    // //     );
-    // //     dist_to_costs(&this_dist, &upgrade_arr[depth], &state[depth], price_arr)
-    // // };
-
-    // if depth == state.len() - 1 {
-    //     return costs_dist
-    //         .iter()
-    //         .take_while(|(costs, _)| {
-    //             let new_cost: Vec<i64> = cost_so_far
-    //                 .to_vec()
-    //                 .iter_mut()
-    //                 .enumerate()
-    //                 .map(|(index, x)| costs[index] + *x)
-    //                 .collect::<Vec<i64>>();
-    //             compute_gold_cost_from_raw(&new_cost, input_budget_no_gold, price_arr) <= threshold
-    //         })
-    //         .fold(0.0, |acc, (_, prob)| acc + prob);
-    // } else {
-    //     return costs_dist.iter().fold(0.0, |acc, (costs, prob)| {
-    //         let new_cost: Vec<i64> = cost_so_far
-    //             .to_vec()
-    //             .iter_mut()
-    //             .enumerate()
-    //             .map(|(index, x)| costs[index] + *x)
-    //             .collect::<Vec<i64>>();
-    //         acc + if threshold
-    //             < compute_gold_cost_from_raw(&new_cost, input_budget_no_gold, price_arr)
-    //         {
-    //             0.0
-    //         } else {
-    //             prob * prob_to_maximize(
-    //                 state,
-    //                 upgrade_arr,
-    //                 &new_cost,
-    //                 input_budget_no_gold,
-    //                 price_arr,
-    //                 threshold,
-    //                 depth + 1,
-    //                 cache,
-    //             )
-    //         }
-    //     });
-    // }
-
-    // // }
-}
 
 fn acceptance<R: Rng>(new: f64, old: f64, temperature: f64, rng: &mut R) -> bool {
     let delta: f64 = old - new;
@@ -184,7 +16,7 @@ fn acceptance<R: Rng>(new: f64, old: f64, temperature: f64, rng: &mut R) -> bool
         0.0
     } else {
         // canonical Boltzmann acceptance with k = 1
-        let p = (-delta / temperature).exp();
+        let p = (-delta / (temperature / 1000.0)).exp();
         // numeric safety clamp
         if p.is_finite() {
             p.min(1.0).max(0.0)
@@ -332,7 +164,7 @@ fn new_temp(temp: f64, alpha: f64) -> f64 {
         return -6.9;
     }
     let new: f64 = temp * alpha;
-    if new < 0.00005 {
+    if new < 0.005 {
         return 0.0;
     }
     return new; // this is very much subject to change
@@ -342,11 +174,12 @@ fn simulated_annealing<R: Rng>(
     rng: &mut R,
 ) -> (Vec<Vec<bool>>, f64) {
     let init_temp: f64 = -1.0 / 0.969_f64.ln(); // 0.969 = ~32
-    let mut cache: HashMap<(Vec<bool>, usize), Vec<([i64; 9], f64)>> = HashMap::new();
+    // let mut cache: HashMap<(Vec<bool>, usize), Vec<([i64; 9], f64)>> = HashMap::new();
     let mut temp: f64 = init_temp;
     let mut state: Vec<Vec<bool>> = Vec::with_capacity(prep_output.upgrade_arr.len());
     for upgrade in prep_output.upgrade_arr.iter() {
-        state.push(vec![false; upgrade.support_lengths[0]]); // random.
+        state.push(vec![rng.random_bool(0.5); upgrade.support_lengths[0]]);
+        // state.push(vec![true; upgrade.support_lengths[0]]);
     }
     let mut prev_prob: f64 = prob_to_maximize(
         &state,
@@ -356,7 +189,7 @@ fn simulated_annealing<R: Rng>(
             - eqv_gold_unlock(&prep_output.unlock_costs, &prep_output.mats_value),
     );
 
-    let iterations_per_temp = 120;
+    let iterations_per_temp = 333;
     let mut temperature_level_k = 0;
     let mut count: i32 = 0;
     let alpha: f64 = 0.99;
@@ -367,6 +200,11 @@ fn simulated_annealing<R: Rng>(
     while temp >= 0.0 {
         let new_state: Vec<Vec<bool>> =
             neighbour(&state, &prep_output.upgrade_arr, temp, init_temp, rng);
+        // dbg!(
+        //     compute_eqv_gold_values(&prep_output.budgets, &prep_output.mats_value),
+        //     eqv_gold_unlock(&prep_output.unlock_costs, &prep_output.mats_value)
+        // );
+        // panic!();
         let new_prob: f64 = prob_to_maximize(
             &state,
             &mut prep_output.upgrade_arr,
@@ -374,7 +212,9 @@ fn simulated_annealing<R: Rng>(
             compute_eqv_gold_values(&prep_output.budgets, &prep_output.mats_value)
                 - eqv_gold_unlock(&prep_output.unlock_costs, &prep_output.mats_value),
         );
-
+        // if new_prob > 0.13 {
+        //     panic!();
+        // }
         if new_prob > best_prob_so_far {
             best_prob_so_far = new_prob;
             best_state_so_far = new_state.clone();
@@ -396,7 +236,9 @@ fn simulated_annealing<R: Rng>(
                 (prev_prob * 100.0),
                 (best_prob_so_far * 100.0) // encode_all(&state)
             );
-            if temps_without_improvement as f64 > (100.0 * temp).max(3.0) {
+            if temps_without_improvement as f64 > (1.0 * temp).max(3.0)
+            // || (best_prob_so_far - prev_prob) > 0.005
+            {
                 state = best_state_so_far.clone();
                 prev_prob = best_prob_so_far.clone();
                 temps_without_improvement = 0;
@@ -411,6 +253,18 @@ fn simulated_annealing<R: Rng>(
         temp.to_string(),
         (best_prob_so_far * 100.0).to_string(),
         encode_all(&best_state_so_far)
+    );
+    println!(
+        "Exact value: {:.6}",
+        prob_to_maximize_exact(
+            &best_state_so_far,
+            &mut prep_output.upgrade_arr,
+            0.0,
+            &prep_output.mats_value,
+            compute_eqv_gold_values(&prep_output.budgets, &prep_output.mats_value)
+                - eqv_gold_unlock(&prep_output.unlock_costs, &prep_output.mats_value),
+            0
+        )
     );
     (best_state_so_far, best_prob_so_far)
 }
@@ -453,7 +307,7 @@ mod tests {
         let test_name: &str = "SA";
         let hone_counts: Vec<Vec<i64>> = vec![
             (0..25)
-                .map(|x| if x == 10 || x == 24 { 1 } else { 0 })
+                .map(|x| if x == 23 || x == 24 { 1 } else { 0 })
                 .collect(),
             (0..25).map(|x| if x == 24 { 1 } else { 0 }).collect(),
         ];
@@ -491,73 +345,6 @@ mod tests {
         );
         let mut rng: StdRng = StdRng::seed_from_u64(RNG_SEED);
         let result = simulated_annealing(&mut prep_outputs, &mut rng);
-
-        // let result: Vec<Vec<i64>> = out.clone();
-        if let Some(_cached_result) =
-            read_cached_data::<Vec<Vec<Vec<(f64, String)>>>>(test_name, &hash)
-        {
-            // my_assert!(*result, cached_result);
-        } else {
-            write_cached_data(test_name, &hash, &result);
-        }
-        dbg!(start.elapsed());
-        // let result: Vec<(Vec<i64>, Vec<i64>)> = brute(&mut upgrade_arr);
-        // dbg!(result.len());
-        // // let result: Vec<Vec<i64>> = out.clone();
-        // if let Some(cached_result) = read_cached_data::<Vec<(Vec<i64>, Vec<i64>)>>(test_name, &hash)
-        // {
-        //     my_assert!(*result, cached_result);
-        // } else {
-        //     write_cached_data(test_name, &hash, &result);
-        // }
-    }
-    #[test]
-    fn energy_test() {
-        let start = Instant::now();
-        let test_name: &str = "energy_test";
-        let hone_counts: Vec<Vec<i64>> = vec![
-            (0..25).map(|x| if x == 10 { 1 } else { 0 }).collect(),
-            (0..25).map(|x| if x == 10 { 1 } else { 0 }).collect(),
-        ];
-        let adv_counts: Vec<Vec<i64>> =
-            vec![(0..4).map(|_| 0).collect(), (0..4).map(|_| 0).collect()];
-
-        let adv_hone_strategy: &str = "No juice";
-        let express_event: bool = false;
-        let input_budgets = vec![
-            3240, 9240, 46, 17740, 36, 0, 108000, 90, 90, 0,
-            // 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        ];
-        let user_mats_value = DEFAULT_GOLD_VALUES;
-        // let data_size: usize = 100000;
-        let hash: String = calculate_hash!(
-            &hone_counts,
-            &adv_counts,
-            adv_hone_strategy,
-            express_event,
-            &input_budgets,
-            &user_mats_value,
-            // data_size,
-            RNG_SEED,
-            PROB_MODE
-        );
-
-        let mut prep_output: PreparationOutputs = preparation(
-            &hone_counts,
-            &input_budgets,
-            &adv_counts,
-            express_event,
-            &user_mats_value,
-            adv_hone_strategy,
-        );
-        // let mut cache: HashMap<(Vec<bool>, usize), Vec<([i64; 9], f64)>> = HashMap::new();
-        let result = prob_to_maximize(
-            &vec![vec![true, true, true], vec![true, true, true]],
-            &mut prep_output.upgrade_arr,
-            &prep_output.mats_value,
-            66666.6 + compute_eqv_gold_values(&prep_output.budgets, &prep_output.mats_value)
-                - eqv_gold_unlock(&prep_output.unlock_costs, &prep_output.mats_value),
-        );
 
         // let result: Vec<Vec<i64>> = out.clone();
         if let Some(_cached_result) =
