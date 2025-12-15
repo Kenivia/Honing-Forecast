@@ -16,7 +16,7 @@ fn acceptance<R: Rng>(new: f64, old: f64, temperature: f64, rng: &mut R) -> bool
         0.0
     } else {
         // canonical Boltzmann acceptance with k = 1
-        let p = (-delta / (temperature / 1000.0)).exp();
+        let p = (-delta / (temperature)).exp();
         // numeric safety clamp
         if p.is_finite() {
             p.min(1.0).max(0.0)
@@ -98,10 +98,9 @@ fn neighbour<R: Rng>(
 ) -> Vec<Vec<bool>> {
     let mut new_state: Vec<Vec<bool>> = state.to_vec();
     for (u_index, s) in new_state.iter_mut().enumerate() {
-        // kinda like noise here ig
         let want_to_flip: usize = WeightedIndex::new(my_pmf(
             (s.len() - 1).max(1),
-            (temp / init_temp * s.len() as f64 - 1.0)
+            ((temp / init_temp).cbrt() * s.len() as f64 - 1.0)
                 .min(s.len() as f64)
                 .max(0.0),
             // .max(),
@@ -109,11 +108,14 @@ fn neighbour<R: Rng>(
         .unwrap()
         .sample(rng)
             + 1;
+        let flip_target = rng.random_bool(0.5);
         // dbg!(want_to_flip);
-        let want_to_flip_indices: Vec<usize> = (0..s.len()).choose_multiple(rng, want_to_flip);
+        let mut want_to_flip_indices: Vec<usize> = (0..s.len()).choose_multiple(rng, want_to_flip);
+        want_to_flip_indices.sort();
         let mut flipped_index: usize = 0;
         let mut true_count: usize = 0;
         for (s_index, bit) in s.iter_mut().enumerate() {
+            // TODO IMPLEMENT SOME ARENA / TEST / BENCHMARK SYSTEM / ELO SYSTEM MAYBE SO THAT I CAN VERIFY CHANGES BETTER
             // dbg!(
             //     s_index,
             //     &bit,
@@ -129,8 +131,14 @@ fn neighbour<R: Rng>(
                 if flipped_index < want_to_flip_indices.len()
                     && s_index == want_to_flip_indices[flipped_index]
                 {
-                    flipped_index += 1;
-                    *bit = !*bit;
+                    if *bit == flip_target {
+                        flipped_index += 1;
+                        *bit = !*bit;
+                    } else {
+                        want_to_flip_indices[flipped_index] = s_index + 1;
+                    }
+
+                    // *bit = rng.random_bool(0.5);
                 }
                 if *bit {
                     true_count += 1;
@@ -164,7 +172,7 @@ fn new_temp(temp: f64, alpha: f64) -> f64 {
         return -6.9;
     }
     let new: f64 = temp * alpha;
-    if new < 0.005 {
+    if new < 0.05 {
         return 0.0;
     }
     return new; // this is very much subject to change
@@ -173,13 +181,13 @@ fn simulated_annealing<R: Rng>(
     prep_output: &mut PreparationOutputs,
     rng: &mut R,
 ) -> (Vec<Vec<bool>>, f64) {
-    let init_temp: f64 = -1.0 / 0.969_f64.ln(); // 0.969 = ~32
+    let init_temp: f64 = 333.0; // 0.969 = ~32
     // let mut cache: HashMap<(Vec<bool>, usize), Vec<([i64; 9], f64)>> = HashMap::new();
     let mut temp: f64 = init_temp;
     let mut state: Vec<Vec<bool>> = Vec::with_capacity(prep_output.upgrade_arr.len());
     for upgrade in prep_output.upgrade_arr.iter() {
-        state.push(vec![rng.random_bool(0.5); upgrade.support_lengths[0]]);
-        // state.push(vec![true; upgrade.support_lengths[0]]);
+        // state.push(vec![rng.random_bool(0.5); upgrade.support_lengths[0]]);
+        state.push(vec![false; upgrade.support_lengths[0]]);
     }
     let mut prev_prob: f64 = prob_to_maximize(
         &state,
@@ -219,6 +227,22 @@ fn simulated_annealing<R: Rng>(
             best_prob_so_far = new_prob;
             best_state_so_far = new_state.clone();
             temps_without_improvement = 0;
+            println!(
+                "Temp: {:.6} Prob: {:.6} Best prob: {:.6} True prob: {:.6} Best state: \n{}",
+                temp,
+                (prev_prob * 100.0),
+                (best_prob_so_far * 100.0),
+                prob_to_maximize_exact(
+                    &best_state_so_far,
+                    &mut prep_output.upgrade_arr,
+                    0.0,
+                    &prep_output.mats_value,
+                    compute_eqv_gold_values(&prep_output.budgets, &prep_output.mats_value)
+                        - eqv_gold_unlock(&prep_output.unlock_costs, &prep_output.mats_value),
+                    0
+                ),
+                encode_all(&&best_state_so_far)
+            );
         }
 
         if acceptance(new_prob, prev_prob, temp, rng) {
@@ -231,10 +255,19 @@ fn simulated_annealing<R: Rng>(
             temperature_level_k += 1;
 
             println!(
-                "Temp: {:.6} Prob: {:.6} Best prob: {:.6}",
+                "Temp: {:.6} Prob: {:.6} Best prob: {:.6} True prob: {:.6} ",
                 temp,
                 (prev_prob * 100.0),
-                (best_prob_so_far * 100.0) // encode_all(&state)
+                (best_prob_so_far * 100.0),
+                prob_to_maximize_exact(
+                    &best_state_so_far,
+                    &mut prep_output.upgrade_arr,
+                    0.0,
+                    &prep_output.mats_value,
+                    compute_eqv_gold_values(&prep_output.budgets, &prep_output.mats_value)
+                        - eqv_gold_unlock(&prep_output.unlock_costs, &prep_output.mats_value),
+                    0
+                ),
             );
             if temps_without_improvement as f64 > (1.0 * temp).max(3.0)
             // || (best_prob_so_far - prev_prob) > 0.005
@@ -249,7 +282,7 @@ fn simulated_annealing<R: Rng>(
         }
     }
     println!(
-        "Temp: {} Prob: {} State: {} (Final)",
+        "Temp: {} Prob: {} State (Final): \n{} ",
         temp.to_string(),
         (best_prob_so_far * 100.0).to_string(),
         encode_all(&best_state_so_far)
@@ -288,7 +321,7 @@ fn encode_all(input: &[Vec<bool>]) -> String {
     for i in input.iter() {
         strings.push(encode_one_positions(i));
     }
-    strings.join(" ")
+    strings.join("\n")
 }
 #[cfg(test)]
 mod tests {
@@ -345,6 +378,16 @@ mod tests {
         );
         let mut rng: StdRng = StdRng::seed_from_u64(RNG_SEED);
         let result = simulated_annealing(&mut prep_outputs, &mut rng);
+        // Naive using current method on website
+        //        [src\energy.rs:293:9] approx_result = 0.11184558035823722
+        // [src\energy.rs:293:9] exact_result = 0.10790167013427635
+
+        // starting from all trues
+        //         Temp: -6.9 Prob: 11.411211267350826 State (Final):
+        // 011100101000000010000100011001000000011000010101010011000010101001010000000011010000010000001100111010010001000100001010101011101110101000000000000101111100011011011000001010000000001100000000000000000000000000000000000
+        // 000000000100001000100011100000010100010110000010100001000010011010011000011011011000000100000011100011110110000101101110101000111100111110100100000100101010110011000001101101100000010000000000000000000000000000000000000
+        // 000101000011000000000111000000000010011000001000101100000110110100110100001110010010111101001110101000011111110100111001001001011101101001111011101101110010010011000111101101100000000000000000000000000000000000000000000
+        // Exact value: 0.110932
 
         // let result: Vec<Vec<i64>> = out.clone();
         if let Some(_cached_result) =

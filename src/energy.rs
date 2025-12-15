@@ -233,8 +233,10 @@ mod tests {
         let start = Instant::now();
         let test_name: &str = "energy_test";
         let hone_counts: Vec<Vec<i64>> = vec![
-            (0..25).map(|x| if x == 9 { 1 } else { 0 }).collect(),
-            (0..25).map(|x| if x == 9 { 1 } else { 0 }).collect(),
+            (0..25)
+                .map(|x| if x == 23 || x == 24 { 1 } else { 0 })
+                .collect(),
+            (0..25).map(|x| if x == 24 { 1 } else { 0 }).collect(),
         ];
         let adv_counts: Vec<Vec<i64>> =
             vec![(0..4).map(|_| 0).collect(), (0..4).map(|_| 0).collect()];
@@ -242,9 +244,9 @@ mod tests {
         let adv_hone_strategy: &str = "No juice";
         let express_event: bool = false;
         let input_budgets = vec![
-            // 3240, 9240, 46, 17740, 36, 66666, 108000, 90, 90,
-            // 0,
-            0, 0, 0, 0, 0, 16000, 0, 0, 0, 0,
+            3240, 9240, 46, 17740, 36, 1945670, 108000, 900, 900,
+            0,
+            // 0, 0, 0, 0, 0, 16000, 0, 0, 0, 0,
         ];
         let user_mats_value = DEFAULT_GOLD_VALUES;
         // let data_size: usize = 100000;
@@ -269,22 +271,23 @@ mod tests {
             adv_hone_strategy,
         );
         // let mut cache: HashMap<(Vec<bool>, usize), Vec<([i64; 9], f64)>> = HashMap::new();
-
+        // dbg!(prep_output.upgrade_arr);
+        // panic!();
         let approx_result = prob_to_maximize(
-            &vec![vec![false, true, true, true], vec![true, true, true, true]],
+            &vec![vec![true; 16], vec![true; 2], vec![true; 18]],
             &mut prep_output.upgrade_arr,
             &prep_output.mats_value,
-            compute_eqv_gold_values(&prep_output.budgets, &prep_output.mats_value),
-                // - eqv_gold_unlock(&prep_output.unlock_costs, &prep_output.mats_value),
+            compute_eqv_gold_values(&prep_output.budgets, &prep_output.mats_value)
+            - eqv_gold_unlock(&prep_output.unlock_costs, &prep_output.mats_value),
         );
 
         let exact_result = prob_to_maximize_exact(
-            &vec![vec![false, true, true, true], vec![true, true, true, true]],
+            &vec![vec![true; 16], vec![true; 2], vec![true; 18]],
             &mut prep_output.upgrade_arr,
             0.0,
             &prep_output.mats_value,
-            compute_eqv_gold_values(&prep_output.budgets, &prep_output.mats_value),
-                // - eqv_gold_unlock(&prep_output.unlock_costs, &prep_output.mats_value),
+            compute_eqv_gold_values(&prep_output.budgets, &prep_output.mats_value)
+            - eqv_gold_unlock(&prep_output.unlock_costs, &prep_output.mats_value),
             0,
         );
         dbg!(approx_result, exact_result);

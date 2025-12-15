@@ -10,7 +10,7 @@ pub const EPSILON: f64 = 1e-7;
 #[cfg(test)]
 pub static PROB_MODE: bool = true;
 #[cfg(test)]
-pub static DEFAULT_GOLD_VALUES: [f64; 9] = [1.65, 0.03, 13.0, 0.5, 95.0, 1.0, 0.0, 200.0, 100.0];
+pub static DEFAULT_GOLD_VALUES: [f64; 9] = [1.65, 0.03, 13.0, 0.5, 95.0, 1.0, 0.0, 300.0, 150.0];
 /// Trait that enables approximate / deep equality assertions in tests
 pub trait AssertApproxEq {
     /// ctx is used to include context in panic messages (like file:line)
