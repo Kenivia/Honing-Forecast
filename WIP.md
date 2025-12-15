@@ -1,6 +1,23 @@
 
 # Work in Progress
 
+## SA WIP
+
+- Benchmark system, kinda like fish test, to do the following:
+  - tune parameters / algorithm, specifically:
+    - Annealing schedule (and starting temperature)
+    - Restart system
+    - Neighbour function
+    - Time / iterations allowed
+  - case specific / adaptive solutions
+    - Known / brute forced solutions for individual pieces, exact prob eval for low number of pieces etc
+    - Tuned parameters (probably specifically the annealing schedule) based on complexeity of problem / pieces selected
+
+- Also need to do special honing and even advanced honing eventually maybe
+
+- More specific TODO list:
+  - Force use all owned juice
+  
 ## Next big step(s)
 
 - Juice(and Book / Scroll) purchase suggestion
