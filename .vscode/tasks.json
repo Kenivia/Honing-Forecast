@@ -22,6 +22,7 @@
             "command": "wasm-pack",
             "args": [
                 "build",
+                "crates/wasm",
                 "--release",
                 "--target",
                 "web",
@@ -30,7 +31,7 @@
         {
             "label": "wasm-and-start-dev",
             "dependsOn": [
-                "wasm-pack build dev web",
+                "wasm-pack build crates/wasm dev web",
                 "vite: dev"
             ],
             "isBackground": true,

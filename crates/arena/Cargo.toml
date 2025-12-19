@@ -1,0 +1,10 @@
+[package]
+name = "hf-arena"
+edition = "2024"
+description = "Honing calculator for Lost Ark"
+repository = "https://github.com/Kenivia/Honing-Forecast"
+license = "AGPL-3.0-or-later"
+
+[dependencies]
+hf-core = { path = "../core" }
+rayon = "1.11.0"

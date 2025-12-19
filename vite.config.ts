@@ -22,7 +22,7 @@ export default defineConfig({
             // eslint-disable-next-line no-undef
             "@": path.resolve(__dirname, "src"),
             // or add others:
-            // '@components': path.resolve(__dirname, 'src/Frontend/Components')
+            // '@components': path.resolve(__dirname, 'frontend/Components')
         },
     },
 
@@ -46,42 +46,42 @@ export default defineConfig({
 
         //                 // Core components chunk
         //                 components: [
-        //                     "./src/Frontend/components/Graph.tsx",
-        //                     "./src/Frontend/components/SpreadsheetGrid.tsx",
-        //                     "./src/Frontend/components/Icon.tsx",
-        //                     "./src/Frontend/components/CheckboxGrid.tsx",
+        //                     "./frontend/components/Graph.tsx",
+        //                     "./frontend/components/SpreadsheetGrid.tsx",
+        //                     "./frontend/components/Icon.tsx",
+        //                     "./frontend/components/CheckboxGrid.tsx",
         //                 ],
 
         //                 // Feature sections chunks
-        //                 "chance-to-cost": ["./src/Frontend/features/honing_forecast/ChanceToCostSection.tsx"],
-        //                 "cost-to-chance": ["./src/Frontend/features/honing_forecast/CostToChanceSection.tsx"],
+        //                 "chance-to-cost": ["./frontend/features/honing_forecast/ChanceToCostSection.tsx"],
+        //                 "cost-to-chance": ["./frontend/features/honing_forecast/CostToChanceSection.tsx"],
         //                 gamba: [
-        //                     "./src/Frontend/features/honing_forecast/GambaSection.tsx",
-        //                     "./src/Frontend/features/honing_forecast/GambaLogic.tsx",
-        //                     "./src/Frontend/features/honing_forecast/GambaInfoBox.tsx",
-        //                     "./src/Frontend/features/honing_forecast/GambaSelection.tsx",
+        //                     "./frontend/features/honing_forecast/GambaSection.tsx",
+        //                     "./frontend/features/honing_forecast/GambaLogic.tsx",
+        //                     "./frontend/features/honing_forecast/GambaInfoBox.tsx",
+        //                     "./frontend/features/honing_forecast/GambaSelection.tsx",
         //                 ],
 
         //                 // Control and utility chunks
         //                 "control-panel": [
-        //                     "./src/Frontend/features/honing_forecast/ControlPanel.tsx",
-        //                     "./src/Frontend/features/honing_forecast/ControlPanelFunctions.ts",
-        //                     "./src/Frontend/features/honing_forecast/NormalHoningPanel.tsx",
-        //                     "./src/Frontend/features/honing_forecast/AdvancedHoningPanel.tsx",
+        //                     "./frontend/features/honing_forecast/ControlPanel.tsx",
+        //                     "./frontend/features/honing_forecast/ControlPanelFunctions.ts",
+        //                     "./frontend/features/honing_forecast/NormalHoningPanel.tsx",
+        //                     "./frontend/features/honing_forecast/AdvancedHoningPanel.tsx",
         //                 ],
 
         //                 // WASM and workers chunk
-        //                 "wasm-workers": ["./src/Frontend/js_to_wasm.ts", "./src/Frontend/worker_setup.ts"],
+        //                 "wasm-workers": ["./frontend/js_to_wasm.ts", "./frontend/worker_setup.ts"],
 
         //                 // Utilities chunk
         //                 utils: [
-        //                     "./src/Frontend/features/honing_forecast/utils.ts",
-        //                     "./src/Frontend/features/honing_forecast/Debounce.ts",
-        //                     "./src/Frontend/features/honing_forecast/Marquee.ts",
-        //                     "./src/Frontend/features/honing_forecast/HistogramUtils.ts",
-        //                     "./src/Frontend/features/honing_forecast/Settings.ts",
-        //                     "./src/Frontend/features/honing_forecast/Tooltip.tsx",
-        //                     "./src/Frontend/features/honing_forecast/Separator.tsx",
+        //                     "./frontend/features/honing_forecast/utils.ts",
+        //                     "./frontend/features/honing_forecast/Debounce.ts",
+        //                     "./frontend/features/honing_forecast/Marquee.ts",
+        //                     "./frontend/features/honing_forecast/HistogramUtils.ts",
+        //                     "./frontend/features/honing_forecast/Settings.ts",
+        //                     "./frontend/features/honing_forecast/Tooltip.tsx",
+        //                     "./frontend/features/honing_forecast/Separator.tsx",
         //                 ],
         //             },
         //         },

@@ -6,19 +6,19 @@
             "DOM",
             "ES2020"
         ],
-        "jsx": "react-jsx", // or "react" for older JSX
+        "jsx": "react-jsx",
         "allowJs": true,
-        "checkJs": false, // set true if you want TS to check .js files
+        "checkJs": false,
         "outDir": "dist",
         "noEmit": true,
         "esModuleInterop": true,
         "skipLibCheck": true,
         "forceConsistentCasingInFileNames": true,
-        "strict": false, // start false; raise to true later
-        "noImplicitAny": false, // make true as you convert modules
+        "strict": false,
+        "noImplicitAny": false,
         "resolveJsonModule": true,
         "isolatedModules": true,
-        "baseUrl": "src",
+        "baseUrl": "frontend",
         "paths": {
             "@/*": [
                 "*"
@@ -27,7 +27,7 @@
         "allowImportingTsExtensions": true
     },
     "include": [
-        "src/**/*",
+        "frontend/*",
         "vite.config.ts",
         "vitest.setup.ts",
         "junkyard/ChanceMode",
