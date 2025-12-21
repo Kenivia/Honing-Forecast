@@ -7,6 +7,7 @@ use serde::Deserialize;
 seq!(N in 1..=25 {
 #[derive(Debug, Deserialize)]
     struct Row {
+        test_number: i64,
         #( armor_~N: i64, )*
         #( weap_~N: i64, )*
         red_owned: i64,
@@ -36,6 +37,7 @@ seq!(N in 1..=25 {
         adv_weap_30: i64,
         adv_weap_40: i64,
         express: bool,
+
     }
 
 });
@@ -102,14 +104,16 @@ pub fn parse_csv(path: &Path) -> Result<Vec<PreparationOutputs>, csv::Error> {
             row.red_juice_price,
             row.blue_juice_price,
         ];
-        out.push(preparation(
+        let mut this = preparation(
             &hone_counts,
             &budget,
             &adv_counts,
             row.express,
             &prices,
             "No juice",
-        ));
+        );
+        this.test_number = row.test_number;
+        out.push(this);
     }
     Ok(out)
 }

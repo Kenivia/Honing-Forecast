@@ -23,6 +23,7 @@ pub struct PreparationOutputs {
     pub mats_value: Vec<f64>,
     pub special_strings: Vec<String>,
     pub budgets_no_gold: Vec<i64>,
+    pub test_number: i64,
 }
 
 pub fn preparation(
@@ -93,6 +94,7 @@ pub fn preparation(
         mats_value,
         special_strings,
         budgets_no_gold,
+        test_number: -1, // arena will overwrite this
     }
 }
 
