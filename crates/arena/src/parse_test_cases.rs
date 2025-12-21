@@ -63,7 +63,7 @@ macro_rules! row_to_vec_zero {
 
     };
 }
-pub fn read_csv(path: &Path) -> Result<Vec<PreparationOutputs>, csv::Error> {
+pub fn parse_csv(path: &Path) -> Result<Vec<PreparationOutputs>, csv::Error> {
     let mut rdr = csv::Reader::from_path(path)?;
 
     let mut out: Vec<PreparationOutputs> = Vec::new();
