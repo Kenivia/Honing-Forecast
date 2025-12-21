@@ -5,3 +5,4 @@ members = [
     "crates/wasm",
     "crates/arena",
 ]
+resolver="3"
