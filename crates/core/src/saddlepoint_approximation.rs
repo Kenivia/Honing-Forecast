@@ -273,6 +273,7 @@ pub fn prob_to_maximize(
     upgrade_arr: &mut [Upgrade],
     price_arr: &[f64],
     budget: f64,
+    states_evaled: &mut i64,
     // depth: usize,
     // cache: &mut HashMap<(Vec<bool>, usize), Vec<([i64; 9], f64)>>,
 ) -> f64 {
@@ -294,6 +295,7 @@ pub fn prob_to_maximize(
     }
     // dbg!(budget);
     // panic!();
+    *states_evaled += 1;
     saddlepoint_approximation(upgrade_arr, budget)
 }
 

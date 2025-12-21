@@ -115,13 +115,6 @@ fn neighbour<R: Rng>(
         let mut flipped_index: usize = 0;
         let mut true_count: usize = 0;
         for (s_index, bit) in s.iter_mut().enumerate() {
-            // TODO IMPLEMENT SOME ARENA / TEST / BENCHMARK SYSTEM / ELO SYSTEM MAYBE SO THAT I CAN VERIFY CHANGES BETTER
-            // dbg!(
-            //     s_index,
-            //     &bit,
-            //     true_count,
-            //     &upgrade_arr[u_index].support_lengths
-            // );
             if s_index
                 > upgrade_arr[u_index].support_lengths
                     [true_count.min(upgrade_arr[u_index].support_lengths.len() - 1)]
@@ -180,6 +173,7 @@ fn new_temp(temp: f64, alpha: f64) -> f64 {
 fn simulated_annealing<R: Rng>(
     prep_output: &mut PreparationOutputs,
     rng: &mut R,
+    states_evaled: &mut i64,
 ) -> (Vec<Vec<bool>>, f64) {
     let init_temp: f64 = 333.0; // 0.969 = ~32
     // let mut cache: HashMap<(Vec<bool>, usize), Vec<([i64; 9], f64)>> = HashMap::new();
@@ -195,9 +189,10 @@ fn simulated_annealing<R: Rng>(
         &prep_output.mats_value,
         compute_eqv_gold_values(&prep_output.budgets, &prep_output.mats_value)
             - eqv_gold_unlock(&prep_output.unlock_costs, &prep_output.mats_value),
+        states_evaled,
     );
 
-    let iterations_per_temp = 333;
+    let iterations_per_temp = 69;
     let mut temperature_level_k = 0;
     let mut count: i32 = 0;
     let alpha: f64 = 0.99;
@@ -219,6 +214,7 @@ fn simulated_annealing<R: Rng>(
             &prep_output.mats_value,
             compute_eqv_gold_values(&prep_output.budgets, &prep_output.mats_value)
                 - eqv_gold_unlock(&prep_output.unlock_costs, &prep_output.mats_value),
+            states_evaled,
         );
         // if new_prob > 0.13 {
         //     panic!();
@@ -228,19 +224,19 @@ fn simulated_annealing<R: Rng>(
             best_state_so_far = new_state.clone();
             temps_without_improvement = 0;
             println!(
-                "Temp: {:.6} Prob: {:.6} Best prob: {:.6} True prob: {:.6} Best state: \n{}",
+                "Temp: {:.6} Prob: {:.6} Best prob: {:.6} Best state: \n{}",
                 temp,
                 (prev_prob * 100.0),
                 (best_prob_so_far * 100.0),
-                prob_to_maximize_exact(
-                    &best_state_so_far,
-                    &mut prep_output.upgrade_arr,
-                    0.0,
-                    &prep_output.mats_value,
-                    compute_eqv_gold_values(&prep_output.budgets, &prep_output.mats_value)
-                        - eqv_gold_unlock(&prep_output.unlock_costs, &prep_output.mats_value),
-                    0
-                ),
+                // prob_to_maximize_exact(
+                //     &best_state_so_far,
+                //     &mut prep_output.upgrade_arr,
+                //     0.0,
+                //     &prep_output.mats_value,
+                //     compute_eqv_gold_values(&prep_output.budgets, &prep_output.mats_value)
+                //         - eqv_gold_unlock(&prep_output.unlock_costs, &prep_output.mats_value),
+                //     0
+                // ),
                 encode_all(&&best_state_so_far)
             );
         }
@@ -255,19 +251,19 @@ fn simulated_annealing<R: Rng>(
             temperature_level_k += 1;
 
             println!(
-                "Temp: {:.6} Prob: {:.6} Best prob: {:.6} True prob: {:.6} ",
+                "Temp: {:.6} Prob: {:.6} Best prob: {:.6}",
                 temp,
                 (prev_prob * 100.0),
                 (best_prob_so_far * 100.0),
-                prob_to_maximize_exact(
-                    &best_state_so_far,
-                    &mut prep_output.upgrade_arr,
-                    0.0,
-                    &prep_output.mats_value,
-                    compute_eqv_gold_values(&prep_output.budgets, &prep_output.mats_value)
-                        - eqv_gold_unlock(&prep_output.unlock_costs, &prep_output.mats_value),
-                    0
-                ),
+                // prob_to_maximize_exact(
+                //     &best_state_so_far,
+                //     &mut prep_output.upgrade_arr,
+                //     0.0,
+                //     &prep_output.mats_value,
+                //     compute_eqv_gold_values(&prep_output.budgets, &prep_output.mats_value)
+                //         - eqv_gold_unlock(&prep_output.unlock_costs, &prep_output.mats_value),
+                //     0
+                // ),
             );
             if temps_without_improvement as f64 > (1.0 * temp).max(3.0)
             // || (best_prob_so_far - prev_prob) > 0.005
@@ -287,18 +283,18 @@ fn simulated_annealing<R: Rng>(
         (best_prob_so_far * 100.0).to_string(),
         encode_all(&best_state_so_far)
     );
-    println!(
-        "Exact value: {:.6}",
-        prob_to_maximize_exact(
-            &best_state_so_far,
-            &mut prep_output.upgrade_arr,
-            0.0,
-            &prep_output.mats_value,
-            compute_eqv_gold_values(&prep_output.budgets, &prep_output.mats_value)
-                - eqv_gold_unlock(&prep_output.unlock_costs, &prep_output.mats_value),
-            0
-        )
-    );
+    // println!(
+    //     "Exact value: {:.6}",
+    //     prob_to_maximize_exact(
+    //         &best_state_so_far,
+    //         &mut prep_output.upgrade_arr,
+    //         0.0,
+    //         &prep_output.mats_value,
+    //         compute_eqv_gold_values(&prep_output.budgets, &prep_output.mats_value)
+    //             - eqv_gold_unlock(&prep_output.unlock_costs, &prep_output.mats_value),
+    //         0
+    //     )
+    // );
     (best_state_so_far, best_prob_so_far)
 }
 
@@ -323,7 +319,11 @@ fn encode_all(input: &[Vec<bool>]) -> String {
     }
     strings.join("\n")
 }
-pub fn solve() {
-
-    
+pub fn solve<R: Rng>(
+    states_evaled: &mut i64,
+    prep_output: &mut PreparationOutputs,
+    rng: &mut R,
+) -> (String, f64) {
+    let (state, prob) = simulated_annealing(prep_output, rng, states_evaled);
+    (encode_all(&state), prob)
 }

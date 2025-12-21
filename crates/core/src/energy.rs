@@ -273,12 +273,14 @@ mod tests {
         // let mut cache: HashMap<(Vec<bool>, usize), Vec<([i64; 9], f64)>> = HashMap::new();
         // dbg!(prep_output.upgrade_arr);
         // panic!();
+        let mut states_evaled: i64 = 0;
         let approx_result = prob_to_maximize(
             &vec![vec![true; 16], vec![true; 2], vec![true; 18]],
             &mut prep_output.upgrade_arr,
             &prep_output.mats_value,
             compute_eqv_gold_values(&prep_output.budgets, &prep_output.mats_value)
-            - eqv_gold_unlock(&prep_output.unlock_costs, &prep_output.mats_value),
+                - eqv_gold_unlock(&prep_output.unlock_costs, &prep_output.mats_value),
+            &mut states_evaled,
         );
 
         let exact_result = prob_to_maximize_exact(
@@ -287,10 +289,10 @@ mod tests {
             0.0,
             &prep_output.mats_value,
             compute_eqv_gold_values(&prep_output.budgets, &prep_output.mats_value)
-            - eqv_gold_unlock(&prep_output.unlock_costs, &prep_output.mats_value),
+                - eqv_gold_unlock(&prep_output.unlock_costs, &prep_output.mats_value),
             0,
         );
-        dbg!(approx_result, exact_result);
+        dbg!(approx_result, exact_result, states_evaled);
         // let result: Vec<Vec<i64>> = out.clone();
         if let Some(_cached_result) =
             read_cached_data::<Vec<Vec<Vec<(f64, String)>>>>(test_name, &hash)

@@ -2,12 +2,15 @@ use chrono::Local;
 use hf_arena::engine::{NOTES, solve};
 use hf_arena::parse_test_cases::parse_csv;
 use hf_core::parser::PreparationOutputs;
+
+use rand::prelude::*;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::env;
-use std::fs::{File, OpenOptions};
+use std::fs::{File, OpenOptions, remove_file};
 use std::io::{BufRead, BufReader, BufWriter, Error, Write};
 use std::path::Path;
+use std::time::Instant;
 
 static NUM_TESTS_TO_RUN: i64 = 10; // TODO this should be replaced by statistical tests like fishtest eventually
 
@@ -19,13 +22,13 @@ struct Header {
 }
 #[derive(Debug, Serialize, Deserialize)]
 struct Output {
-    test_number: i64,
+    test_case: i64,
     trial_num: i64,
     wall_time: f64,
     states_evaled: i64,
     prob: f64,
     state: String,
-    seed: i64,
+    seed: u64,
     time_finished: String,
 }
 
@@ -67,18 +70,23 @@ fn main() {
     );
 
     let mut seen_tests: HashMap<i64, i64> = HashMap::new();
-
+    let mut at_least_one_line: bool = false;
     if Path::new(&file_name).exists() {
         let file: File = File::open(&file_name).unwrap(); // this really shouldnt go wrong 
         let reader: BufReader<File> = BufReader::new(file);
-        for line in reader.lines() {
+        for line in reader.lines().skip(1) {
+            at_least_one_line = true;
             let out: Output = serde_json::from_str::<Output>(
                 &line.expect("Failed to parse existing result file"),
             )
             .expect("Failed to parse existing result file");
-            *seen_tests.entry(out.test_number).or_insert(0) += 1;
+            *seen_tests.entry(out.test_case).or_insert(0) += 1;
         }
-    } else {
+    }
+    if !at_least_one_line {
+        if Path::new(&file_name).exists() {
+            remove_file(&file_name).expect("Failed to delete empty file");
+        }
         let header: Header = Header {
             version: built_info::FEATURES_LOWERCASE_STR.to_string(),
             build_time: current_time_string(),
@@ -87,23 +95,40 @@ fn main() {
         write_jsonl(&header, &file_name).expect("Failed to write to result file");
     }
 
-    let test_cases: Vec<PreparationOutputs> =
+    let mut seed_rng: ThreadRng = rand::rng();
+
+    let mut test_cases: Vec<PreparationOutputs> =
         parse_csv(Path::new("test_cases.csv")).expect("Failed to read test_case.csv");
-    for case in test_cases {
-        if seen_tests.contains_key(&case.test_number)
-            && seen_tests[&case.test_number] > NUM_TESTS_TO_RUN
-        {
-            continue;
+    for _ in 0..NUM_TESTS_TO_RUN {
+        for case in test_cases.iter_mut() {
+            let instant: Instant = Instant::now();
+            if seen_tests.contains_key(&case.test_case)
+                && seen_tests[&case.test_case] > NUM_TESTS_TO_RUN
+            {
+                continue;
+            }
+            let seed: u64 = seed_rng.next_u64();
+            let mut rng: StdRng = StdRng::seed_from_u64(seed);
+            let mut states_evaled: i64 = 0;
+            let (out_string, prob) = solve(&mut states_evaled, case, &mut rng);
+
+            let output: Output = Output {
+                test_case: case.test_case,
+                trial_num: *seen_tests.entry(case.test_case).or_insert(0) + 1,
+                wall_time: instant.elapsed().as_secs_f64(),
+                states_evaled,
+                prob,
+                state: out_string,
+                seed,
+                time_finished: current_time_string(),
+            };
+
+            write_jsonl(&output, &file_name).expect("Failed to write to result file");
+            *seen_tests.entry(case.test_case).or_insert(0) += 1;
+
+            // if case already ran, skip it (maybe add a flag to rerun)
+            // otherwise, call solve, write results after each solve call
+            //
         }
-
-        solve();
-
-        let output: Output;
-        write_jsonl(&output, &file_name).expect("Failed to write to result file");
-        *seen_tests.entry(case.test_number).or_insert(0) += 1;
-
-        // if case already ran, skip it (maybe add a flag to rerun)
-        // otherwise, call solve, write results after each solve call
-        //
     }
 }

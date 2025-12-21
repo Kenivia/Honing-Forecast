@@ -16,8 +16,10 @@
 - Also need to do special honing and even advanced honing eventually maybe
 
 - More specific TODO list:
-  - Force use all owned juice
-  
+  - fix either the neighbor function or the prob_to_maximize function to force use owned juice/punish unused juice
+  - implement average-optimizing evaluation
+  - set up slurm on laptop
+
 ## Next big step(s)
 
 - Juice(and Book / Scroll) purchase suggestion
