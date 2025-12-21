@@ -1,13 +1,10 @@
 use crate::helpers::eqv_gold_per_tap;
 use crate::parser::Upgrade;
 use crate::parser::probability_distribution;
-use num::Float;
-use num::complex::Complex64;
-use quad_rs::{EvaluationError, Integrable, Integrator};
+
 use rootfinder::{Interval, SolverSettings, root_bisection};
 use statrs::distribution::{Continuous, ContinuousCDF, Normal};
-use std::f64::consts::PI;
-use std::ops::Range;
+
 static TOL: f64 = 1e-6;
 fn ks_01234(upgrade_arr: &[Upgrade], theta: f64) -> (f64, f64, f64, f64, f64) {
     let mut total_k: f64 = 0.0;
@@ -96,7 +93,7 @@ pub fn saddlepoint_approximation(upgrade_arr: &[Upgrade], budget: f64) -> f64 {
     let mut min_value: f64 = 0.0;
     let mut max_value: f64 = 0.0; // pre-calculate this  TODO
     for upgrade in upgrade_arr {
-        for (index, i) in upgrade.prob_dist.iter().enumerate() {
+        for (index, _) in upgrade.prob_dist.iter().enumerate() {
             let mut this_value = upgrade.eqv_gold_per_tap;
 
             if index < upgrade.juiced_arr.len() - 1 && upgrade.juiced_arr[index] > 0.0 {
@@ -195,18 +192,17 @@ pub fn saddlepoint_approximation(upgrade_arr: &[Upgrade], budget: f64) -> f64 {
     //     // &upgrade_arr[0].prob_dist,
     //     // &upgrade_arr[1].prob_dist,
     // );
-    let (ks, ks1, ks2, ks3, ks4);
+    let (_ks, ks1, ks2, ks3, ks4);
 
-    let mut theta_hat;
-
-    theta_hat = result.unwrap();
+    let theta_hat: f64 = result.unwrap();
 
     // dbg!(theta_hat);
     let normal_dist: Normal = Normal::new(0.0, 1.0).unwrap(); // TODO can i pre initialize this or is there no point
     // dbg!(theta_hat, budget);
+    #[allow(unused_assignments)]
     if theta_hat.abs() < 1e-6 {
         // pre-calculate K(0) and stuff TODO
-        (ks, ks1, ks2, ks3, ks4) = ks_01234(upgrade_arr, 0.0);
+        (_ks, ks1, ks2, ks3, ks4) = ks_01234(upgrade_arr, 0.0);
 
         let std = ks2.sqrt();
         let z = (budget - ks1) / std;
@@ -223,7 +219,7 @@ pub fn saddlepoint_approximation(upgrade_arr: &[Upgrade], budget: f64) -> f64 {
                 + (gamma4 / 24.0) * (z * z * z - 3.0 * z)
                 + (gamma3 * gamma3 / 72.0) * (z * z * z * z * z - 10.0 * z * z * z + 15.0 * z));
 
-        let approx = (cdf + cdf_correction);
+        let approx = cdf + cdf_correction;
         // dbg!(1);
         // dbg!(
         //     theta_hat,
@@ -239,8 +235,8 @@ pub fn saddlepoint_approximation(upgrade_arr: &[Upgrade], budget: f64) -> f64 {
         // );
         approx
     } else {
-        (ks, ks1, ks2, ks3, ks4) = ks_01234(upgrade_arr, theta_hat);
-        let w_hat: f64 = theta_hat.signum() * (2.0 * (theta_hat * budget - ks)).sqrt();
+        (_ks, ks1, ks2, ks3, ks4) = ks_01234(upgrade_arr, theta_hat);
+        let w_hat: f64 = theta_hat.signum() * (2.0 * (theta_hat * budget - _ks)).sqrt();
         let u_hat: f64 = theta_hat * ks2.sqrt();
         // dbg!(2);
         let out = normal_dist.cdf(w_hat) + normal_dist.pdf(w_hat) * (1.0 / w_hat - 1.0 / u_hat);
@@ -305,8 +301,8 @@ mod tests {
     use crate::calculate_hash;
     use crate::constants::RNG_SEED;
     use crate::helpers::eqv_gold_unlock;
+    use crate::parser::PreparationOutputs;
     use crate::parser::preparation;
-    use crate::parser::{PreparationOutputs, Upgrade, probability_distribution};
     use crate::test_utils::*;
     use std::time::Instant;
     #[test]

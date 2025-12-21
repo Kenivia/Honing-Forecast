@@ -1,3 +1,4 @@
+#![allow(unused_imports, unused_variables, dead_code, unused_assignments)]
 use crate::helpers::{generate_first_deltas, get_one_tap_pity};
 use crate::parser::{PreparationOutputs, Upgrade, probability_distribution};
 // use crate::value_estimation::explore_one;

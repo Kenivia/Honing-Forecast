@@ -19,6 +19,11 @@
   - fix either the neighbor function or the prob_to_maximize function to force use owned juice/punish unused juice
   - implement average-optimizing evaluation
   - set up slurm on laptop
+  - implement fft or something for medium sized complexity because lr kinda very bad
+
+- Algorithm ideas
+  - use newtons methods until 0 derivative or something, this bisection kinda slow
+  - Make a ks_012 and only call ks_01234 function when needed
 
 ## Next big step(s)
 

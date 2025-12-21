@@ -2,16 +2,19 @@ use crate::parser::Upgrade;
 
 use core::f64;
 
-use crate::helpers::{compute_eqv_gold_values, eqv_gold_per_tap};
+use crate::helpers::compute_eqv_gold_values;
 
+#[cfg(test)]
+use crate::helpers::eqv_gold_per_tap;
+#[cfg(test)]
 use crate::saddlepoint_approximation::saddlepoint_approximation;
-use num::Float;
-use num::complex::Complex64;
-use quad_rs::{EvaluationError, Integrable, Integrator};
-use rootfinder::{Interval, SolverSettings, root_bisection};
-use statrs::distribution::{Continuous, ContinuousCDF, Normal};
-use std::f64::consts::PI;
-use std::ops::Range;
+// use num::Float;
+// use num::complex::Complex64;
+// use quad_rs::{EvaluationError, Integrable, Integrator};
+// use rootfinder::{Interval, SolverSettings, root_bisection};
+// use statrs::distribution::{Continuous, ContinuousCDF, Normal};
+// use std::f64::consts::PI;
+// use std::ops::Range;
 
 fn dist_to_costs(
     this_dist: &[f64],
@@ -160,8 +163,8 @@ mod tests {
     use crate::calculate_hash;
     use crate::constants::RNG_SEED;
     use crate::helpers::eqv_gold_unlock;
+    use crate::parser::PreparationOutputs;
     use crate::parser::preparation;
-    use crate::parser::{PreparationOutputs, Upgrade, probability_distribution};
     use crate::saddlepoint_approximation::prob_to_maximize;
     use crate::test_utils::*;
     use std::time::Instant;

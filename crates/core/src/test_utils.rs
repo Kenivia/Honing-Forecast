@@ -1,8 +1,10 @@
 use crate::parser::Upgrade;
-
+#[cfg(test)]
 use serde_json;
 use std::fmt::Debug;
+#[cfg(test)]
 use std::fs;
+#[cfg(test)]
 use std::path::PathBuf;
 /// Tolerance for float comparisons
 pub const EPSILON: f64 = 1e-7;

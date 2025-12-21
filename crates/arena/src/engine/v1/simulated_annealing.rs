@@ -1,4 +1,4 @@
-use hf_core::energy::prob_to_maximize_exact;
+// use hf_core::energy::prob_to_maximize_exact;
 use hf_core::helpers::{compute_eqv_gold_values, eqv_gold_unlock};
 use hf_core::parser::{PreparationOutputs, Upgrade};
 use hf_core::saddlepoint_approximation::prob_to_maximize;
@@ -6,7 +6,7 @@ use rand::Rng;
 use rand::distr::Distribution;
 use rand::distr::weighted::WeightedIndex;
 use rand::seq::IteratorRandom;
-use std::collections::HashMap;
+// use std::collections::HashMap;
 
 fn acceptance<R: Rng>(new: f64, old: f64, temperature: f64, rng: &mut R) -> bool {
     let delta: f64 = old - new;
@@ -51,43 +51,43 @@ pub fn my_pmf(max_len: usize, expected: f64) -> Vec<f64> {
 /// - `rotate_left = true` rotates left; `false` rotates right.
 /// - `amount` may be >= prefix length; it's reduced modulo prefix length.
 /// - The function does nothing when `amount % prefix_len == 0` or prefix_len == 0.
-pub fn rotate_prefix_bool_vec(
-    v: &mut Vec<bool>,
-    end_index: usize,
-    rotate_left: bool,
-    amount: usize,
-) {
-    let n = end_index + 1; // prefix length
-    if n == 0 {
-        return;
-    } // (this can only happen if end_index == usize::MAX, but keep for completeness)
-    if amount == 0 {
-        return;
-    }
+// pub fn rotate_prefix_bool_vec(
+//     v: &mut Vec<bool>,
+//     end_index: usize,
+//     rotate_left: bool,
+//     amount: usize,
+// ) {
+//     let n = end_index + 1; // prefix length
+//     if n == 0 {
+//         return;
+//     } // (this can only happen if end_index == usize::MAX, but keep for completeness)
+//     if amount == 0 {
+//         return;
+//     }
 
-    let k = amount % n;
-    if k == 0 {
-        return;
-    }
+//     let k = amount % n;
+//     if k == 0 {
+//         return;
+//     }
 
-    // Convert a right rotation into an equivalent left rotation.
-    let left_k = if rotate_left { k } else { (n - k) % n };
+//     // Convert a right rotation into an equivalent left rotation.
+//     let left_k = if rotate_left { k } else { (n - k) % n };
 
-    // Copy prefix into temporary buffer and write rotated values back.
-    let mut tmp = Vec::with_capacity(n);
-    // initialize with false to set length
-    tmp.resize(n, false);
+//     // Copy prefix into temporary buffer and write rotated values back.
+//     let mut tmp = Vec::with_capacity(n);
+//     // initialize with false to set length
+//     tmp.resize(n, false);
 
-    // new[i] = old[(i + left_k) % n]
-    for i in 0..n {
-        tmp[i] = v[(i + left_k) % n];
-    }
+//     // new[i] = old[(i + left_k) % n]
+//     for i in 0..n {
+//         tmp[i] = v[(i + left_k) % n];
+//     }
 
-    // write rotated prefix back into v[0..n]
-    for i in 0..n {
-        v[i] = tmp[i];
-    }
-}
+//     // write rotated prefix back into v[0..n]
+//     for i in 0..n {
+//         v[i] = tmp[i];
+//     }
+// }
 
 fn neighbour<R: Rng>(
     state: &[Vec<bool>],
@@ -193,7 +193,7 @@ fn simulated_annealing<R: Rng>(
     );
 
     let iterations_per_temp = 69;
-    let mut temperature_level_k = 0;
+    // let mut temperature_level_k = 0;
     let mut count: i32 = 0;
     let alpha: f64 = 0.99;
 
@@ -248,7 +248,7 @@ fn simulated_annealing<R: Rng>(
         count += 1;
         if count > iterations_per_temp {
             count = 0;
-            temperature_level_k += 1;
+            // temperature_level_k += 1;
 
             println!(
                 "Temp: {:.6} Prob: {:.6} Best prob: {:.6}",
