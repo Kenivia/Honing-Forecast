@@ -85,7 +85,7 @@ fn ks_01234(upgrade_arr: &[Upgrade], theta: f64) -> (f64, f64, f64, f64, f64) {
     (total_k, total_k1, total_k2, total_k3, total_k4)
 }
 
-pub fn saddlepoint_approximation(upgrade_arr: &[Upgrade], budget: f64) -> f64 {
+pub fn saddlepoint_approximation(upgrade_arr: &[Upgrade], budget: f64, leftover: f64) -> f64 {
     // let (theta_hat, ks, ks1, ks2, ks3) = newton(upgrade_arr, budget);
     let f = |theta: f64| ks_01234(upgrade_arr, theta).1 - budget;
 
@@ -123,11 +123,11 @@ pub fn saddlepoint_approximation(upgrade_arr: &[Upgrade], budget: f64) -> f64 {
         }
         return prob;
     }
-    if budget > max_value - TOL {
+    if budget + leftover > max_value - TOL {
         return 1.0;
     }
 
-    if DEBUG {
+    if DEBUG || result.is_err() {
         dbg!(
             f(10000.0),
             f(1.0),
@@ -238,6 +238,7 @@ pub fn prob_to_maximize(
     saddlepoint_approximation(
         &prep_outputs.upgrade_arr,
         prep_outputs.base_gold_budget - expected_juice_leftover(prep_outputs),
+        expected_juice_leftover(prep_outputs),
     )
 }
 

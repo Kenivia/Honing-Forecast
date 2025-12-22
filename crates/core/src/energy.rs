@@ -222,6 +222,7 @@ mod tests {
             // 38591813.0 - eqv_gold_unlock(&prep_outputs.unlock_costs, &prep_outputs.mats_value),
             // 25916.0 - eqv_gold_unlock(&prep_outputs.unlock_costs, &prep_outputs.mats_value),
             62010.0 - eqv_gold_unlock(&prep_outputs.unlock_costs, &prep_outputs.mats_value),
+            0.0,
         );
         dbg!(result);
         if let Some(_cached_result) = read_cached_data::<f64>(test_name.as_str(), &hash) {

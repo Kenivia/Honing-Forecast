@@ -90,7 +90,7 @@ pub fn brute_with_saddlepoint_approximation(
             for seg in 0..=100 {
                 let target = seg as f64 * (worst_cost - best_cost) / 100.0 + best_cost;
 
-                let res = saddlepoint_approximation(&upgrade_arr, target);
+                let res = saddlepoint_approximation(&upgrade_arr, target, 0.0);
                 if res < 0.0 || res > 1.0 || !res.is_finite() {
                     dbg!(
                         res,

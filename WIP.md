@@ -16,9 +16,9 @@
 - Also need to do special honing and even advanced honing eventually maybe
 
 - More specific TODO list:
-  - fix either the neighbor function or the prob_to_maximize function to force use owned juice/punish unused juice
-  - add upgrade name to states when saving them
-  - implement average-optimizing evaluation
+ ~~ - fix either the neighbor function or the prob_to_maximize function to force use owned juice/punish unused juice~~
+  - add upgrade name to states when saving them, add some way to keep track of where bits are to make neighbor potentially more efficient
+  - implement average-optimizing evaluation(switch to this when prob = 100 also)
   - implement fft or something for medium sized complexity because lr kinda very bad(also use (and optimize) exact convolution for single piece(maybe 2))
   - monte carlo at the end to verify / sanity check / just to look at it
   - set up books support so state will be integers instead of bools
