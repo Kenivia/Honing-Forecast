@@ -25,7 +25,7 @@ pub struct PreparationOutput {
     pub budgets_no_gold: Vec<i64>,
     pub test_case: i64,
     pub base_gold_budget: f64,
-    pub avail_juices: Vec<Vec<f64>>,
+    pub avail_juices: (Vec<Vec<f64>>, Vec<Vec<(f64, f64)>>),
 }
 
 pub fn preparation(

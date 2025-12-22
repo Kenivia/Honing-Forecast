@@ -4,7 +4,7 @@ use crate::parser::{PreparationOutput, Upgrade, probability_distribution};
 // use crate::value_estimation::explore_one;
 use crate::helpers::compute_eqv_gold_values;
 use crate::helpers::eqv_gold_per_tap;
-use crate::saddlepoint_approximation::saddlepoint_approximation;
+use crate::saddlepoint_approximation::{StateBundle, saddlepoint_approximation};
 #[cfg(test)]
 use crate::test_utils::PROB_MODE;
 use itertools::{Itertools, iproduct};
@@ -90,7 +90,17 @@ pub fn brute_with_saddlepoint_approximation(
             for seg in 0..=100 {
                 let target = seg as f64 * (worst_cost - best_cost) / 100.0 + best_cost;
 
-                let res = saddlepoint_approximation(&upgrade_arr, target, 0.0);
+                let res = saddlepoint_approximation(
+                    &prep_output,
+                    &StateBundle {
+                        state: vec![vec![vec![false]]; 2],
+                        names: vec![],
+                        state_index: vec![],
+                        prob: -1.0,
+                    },
+                    target,
+                    0.0,
+                );
                 if res < 0.0 || res > 1.0 || !res.is_finite() {
                     dbg!(
                         res,

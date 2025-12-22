@@ -195,7 +195,13 @@ mod tests {
             upgrade.juice_arr = vec![0.0];
         }
         let result: f64 = saddlepoint_approximation(
-            &prep_output.upgrade_arr,
+            &prep_output,
+            &StateBundle {
+                state: vec![vec![vec![false]]; 2],
+                names: vec![],
+                state_index: vec![],
+                prob: -1.0,
+            },
             // 38591813.0 - eqv_gold_unlock(&prep_output.unlock_costs, &prep_output.mats_value),
             // 25916.0 - eqv_gold_unlock(&prep_output.unlock_costs, &prep_output.mats_value),
             62010.0 - eqv_gold_unlock(&prep_output.unlock_costs, &prep_output.mats_value),

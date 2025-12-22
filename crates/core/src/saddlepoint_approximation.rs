@@ -93,9 +93,14 @@ fn ks_01234(upgrade_arr: &[Upgrade], theta: f64) -> (f64, f64, f64, f64, f64) {
     (total_k, total_k1, total_k2, total_k3, total_k4)
 }
 
-pub fn saddlepoint_approximation(upgrade_arr: &[Upgrade], budget: f64, leftover: f64) -> f64 {
+pub fn saddlepoint_approximation(
+    prep_output: &PreparationOutput,
+    state_bundle: &StateBundle,
+    budget: f64,
+    leftover: f64,
+) -> f64 {
     // let (theta_hat, ks, ks1, ks2, ks3) = newton(upgrade_arr, budget);
-    let f = |theta: f64| ks_01234(upgrade_arr, theta).1 - budget;
+    let f = |theta: f64| ks_01234(&prep_output.upgrade_arr, theta).1 - budget;
 
     let settings = SolverSettings {
         vtol: Some(TOL),
@@ -104,17 +109,23 @@ pub fn saddlepoint_approximation(upgrade_arr: &[Upgrade], budget: f64, leftover:
     };
     let mut min_value: f64 = 0.0;
     let mut max_value: f64 = 0.0; // pre-calculate this  TODO
-    for upgrade in upgrade_arr {
-        for (index, _) in upgrade.prob_dist.iter().enumerate() {
+    for (u_index, upgrade) in prep_output.upgrade_arr.iter().enumerate() {
+        for (p_index, _) in upgrade.prob_dist.iter().enumerate() {
             let mut this_value = upgrade.eqv_gold_per_tap;
+            for (bit_index, bit) in state_bundle.state[u_index][p_index].iter().enumerate() {
+                if *bit {
+                    let this_price = prep_output.avail_juices.1[upgrade.upgrade_index][bit_index];
+                    if upgrade.is_weapon {
+                        this_value += this_price.0;
+                    } else {
+                        this_value += this_price.1;
+                    }
+                }
+            }
 
-            if index < upgrade.juice_arr.len() - 1 && upgrade.juice_arr[index] > 0.0 {
-                this_value += upgrade.eqv_gold_per_juice;
-            }
-            if index < upgrade.prob_dist.len() {
-                max_value += this_value;
-            }
-            if index <= 0 {
+            max_value += this_value;
+
+            if p_index <= 0 {
                 min_value += this_value;
             }
         }
@@ -126,7 +137,7 @@ pub fn saddlepoint_approximation(upgrade_arr: &[Upgrade], budget: f64, leftover:
     }
     if budget < min_value + TOL {
         let mut prob: f64 = 1.0;
-        for upgrade in upgrade_arr {
+        for upgrade in prep_output.upgrade_arr.iter() {
             prob *= upgrade.prob_dist[0];
         }
         return prob;
@@ -156,7 +167,7 @@ pub fn saddlepoint_approximation(upgrade_arr: &[Upgrade], budget: f64, leftover:
     #[allow(unused_assignments)]
     if theta_hat.abs() < TOL {
         // pre-calculate K(0) and stuff TODO
-        (ks, ks1, ks2, ks3, ks4) = ks_01234(upgrade_arr, 0.0);
+        (ks, ks1, ks2, ks3, ks4) = ks_01234(&prep_output.upgrade_arr, 0.0);
 
         let std = ks2.sqrt();
         let z = (budget - ks1) / std;
@@ -190,7 +201,7 @@ pub fn saddlepoint_approximation(upgrade_arr: &[Upgrade], budget: f64, leftover:
         }
         approx
     } else {
-        (ks, ks1, ks2, ks3, ks4) = ks_01234(upgrade_arr, theta_hat);
+        (ks, ks1, ks2, ks3, ks4) = ks_01234(&prep_output.upgrade_arr, theta_hat);
         let w_hat: f64 = theta_hat.signum() * (2.0 * (theta_hat * budget - ks)).sqrt();
         let u_hat: f64 = theta_hat * ks2.sqrt();
 
@@ -222,7 +233,7 @@ pub fn saddlepoint_approximation(upgrade_arr: &[Upgrade], budget: f64, leftover:
 }
 
 pub fn prob_to_maximize(
-    state: &StateBundle,
+    state_bundle: &StateBundle,
     prep_output: &mut PreparationOutput,
 
     states_evaled: &mut i64,
@@ -230,12 +241,12 @@ pub fn prob_to_maximize(
     // cache: &mut HashMap<(Vec<bool>, usize), Vec<([i64; 9], f64)>>,
 ) -> f64 {
     for (index, upgrade) in prep_output.upgrade_arr.iter_mut().enumerate() {
-        let new_extra: Vec<f64> = state.state[index]
+        let new_extra: Vec<f64> = state_bundle.state[index]
             .iter()
             .map(|x| {
                 x.iter().enumerate().fold(0.0, |last, (index, y)| {
                     if *y {
-                        last + prep_output.avail_juices[upgrade.upgrade_index][index]
+                        last + prep_output.avail_juices.0[upgrade.upgrade_index][index]
                     } else {
                         last
                     }
@@ -252,7 +263,8 @@ pub fn prob_to_maximize(
     *states_evaled += 1;
 
     saddlepoint_approximation(
-        &prep_output.upgrade_arr,
+        prep_output,
+        state_bundle,
         prep_output.base_gold_budget - expected_juice_leftover(prep_output),
         expected_juice_leftover(prep_output),
     )

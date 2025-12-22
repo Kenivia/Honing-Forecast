@@ -1,4 +1,3 @@
-use std::collections::HashSet;
 // +11 to +18 double artisan, +15 to 18 mats cost reduced by 10%, unlock cost reduced by 20%
 pub static EVENT_ARTISAN_MULTIPLIER: [f64; 25] = [
     1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 1.0,
@@ -41,40 +40,62 @@ pub static NORMAL_HONE_CHANCES: [f64; 25] = [
     1.0, 1.0, 1.0, 0.45, 0.45, 0.45, 0.3, 0.3, 0.15, 0.15, 0.1, 0.1, 0.05, 0.05, 0.04, 0.04, 0.03,
     0.03, 0.03, 0.015, 0.015, 0.01, 0.01, 0.005, 0.005,
 ];
-pub static AVAIL_JUICES: &[&[i64]] = &[
-    &[0],
-    &[0],
-    &[0],
-    &[4500],
-    &[4500],
-    &[4500],
-    &[3000],
-    &[3000],
-    &[1500],
-    &[1500],
-    &[1000],
-    &[1000],
-    &[500],
-    &[500],
-    &[400],
-    &[400],
-    &[300],
-    &[300],
-    &[300],
-    &[150],
-    &[150],
-    &[100],
-    &[100],
-    &[50],
-    &[50],
-]; // prob up to 2 decimal place like 0.6967 = 6967
 
-pub fn get_avail_juice_combs() -> Vec<Vec<f64>> {
-    let mut out: Vec<Vec<f64>> = Vec::new();
-    for &upgrade in AVAIL_JUICES {
-        out.push(upgrade.into_iter().map(|x| *x as f64 / 1000.0).collect());
+//  [  ( [ (upgrade_index, % amt, cost per juice(books = 1)  )] , gold_value of the juice/book wep version, armor version) ]
+pub static JUICE_BOOKS_AVAIL: &[(&[(usize, f64, i64)], f64, f64)] = &[
+    (
+        &[
+            (3, 0.45, 20),
+            (4, 0.45, 20),
+            (5, 0.45, 20),
+            (6, 0.3, 20),
+            (7, 0.3, 20),
+            (8, 0.15, 20),
+            (9, 0.15, 20),
+            (10, 0.1, 20),
+            (11, 0.1, 20),
+            (12, 0.05, 20),
+            (13, 0.05, 20),
+            (14, 0.04, 20),
+            (15, 0.04, 20),
+            (16, 0.03, 20),
+            (17, 0.03, 20),
+            (18, 0.03, 20),
+            (19, 0.015, 25),
+            (20, 0.015, 25),
+            (21, 0.01, 25),
+            (22, 0.01, 25),
+            (23, 0.005, 50),
+            (24, 0.005, 50),
+        ],
+        380.0,
+        290.0,
+    ),
+    // Hellfire 11-14
+    (
+        &[(10, 0.1, 1), (11, 0.1, 1), (12, 0.05, 1), (13, 0.05, 1)],
+        50.0,
+        35.0,
+    ),
+    // 15-18
+    (
+        &[(14, 0.04, 1), (15, 0.04, 1), (16, 0.03, 1), (17, 0.03, 1)],
+        1400.0,
+        900.0,
+    ),
+    //19-20
+    (&[(18, 0.03, 1), (19, 0.015, 1)], 8000.0, 4500.0),
+];
+pub fn get_avail_juice_combs() -> (Vec<Vec<f64>>, Vec<Vec<(f64, f64)>>) {
+    let mut chances: Vec<Vec<f64>> = vec![vec![]; 25];
+    let mut gold_costs: Vec<Vec<(f64, f64)>> = vec![vec![]; 25];
+    for rows in JUICE_BOOKS_AVAIL {
+        for &(index, chance, amt) in rows.0.iter() {
+            chances[index].push(chance);
+            gold_costs[index].push((amt as f64 * rows.1, amt as f64 * rows.2));
+        }
     }
-    out
+    (chances, gold_costs)
 }
 // these costs are manually copied from lost ark codex, dont bet on it being 100% correct
 pub static DEFAULT_NORMAL_HONE_WEAPON_COST: [[i64; 25]; 7] = [
