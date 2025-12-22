@@ -5,17 +5,13 @@
 
 ### Now
 
-- add upgrade name to states when saving them, add some way to keep track of where bits are to make neighbor potentially more efficient
+- need to add more columns to test cases, book count storage etc, add easy book adding system (specify amt of % array, which upgrades they can be on etc)
 - limit neighbor function - 1 click 10 taps, limit amt of toggles maybe
-- set up books support so state will be~~ integers ~~instead of bools ( need to add more columns to test cases, book count storage etc)
-  - need to use lists of bools instead, integers doesn't quite work i think because need to keep track of costs
-- modify the current too-many-juice checker to accomodate books
 
 ### Big
 
-- implement average-optimizing evaluation(switch to this when prob = 100 also), add field to result json etc
+- implement average-optimizing evaluation(tiebreak with this when prob = 100 also maybe?), add field to result json etc (can think abt bound/tradable maybe)
 - set up slurm on laptop
-- data analysis
 - how to evaluate adaptive policies???
 - Also need to do special honing and even advanced honing eventually maybe
 
@@ -25,11 +21,17 @@
 - Make a ks_012 and only call ks_01234 function when needed
 - implement fft or something for medium sized complexity because lr kinda very bad(also use (and optimize) exact convolution for single piece(maybe 2))
 - monte carlo at the end to verify / sanity check / just to look at it (also can compute confidence interval with variance etc)
+-~~ add upgrade name to states when saving them,~~ maybe add some way to keep track of where bits are to make neighbor potentially more efficient
 
 ### Algorithm ideas
 
 - stopping early if no improvements
 - start with VERY broad neighbors - all true, all false etc, then refine until limit reached (such as 10 taps), test how much the limit affects performance
+- keep a top 10 list and randomly restart to them instead of just the top 1
+
+### Data analysis
+
+- elo or percentage deviation? idk need to do more research
 
 ## Next big step(s)
 
@@ -75,6 +77,9 @@ graph
 
 ## Done / cancelled
 
+- ~~modify the current too-many-juice checker to accomodate books~~
+- ~~ set up books support so state will be~~ integers ~~instead of bools~~
+- ~~need to use lists of bools instead, integers doesn't quite work i think because need to keep track of costs~~
 - ~~fix either the neighbor function or the prob_to_maximize function to force use owned juice/punish unused juice~~
 - ~~Pre-compute prob_dist of groups of upgrades(such as +n all 5 armours etc)~~ not possible with juice being a thing i think
 - ~~make longtermresult debounce use the universal function~~

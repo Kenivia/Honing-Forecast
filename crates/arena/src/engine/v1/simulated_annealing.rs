@@ -1,6 +1,6 @@
 // use hf_core::energy::prob_to_maximize_exact;
 
-use hf_core::parser::{PreparationOutputs, Upgrade};
+use hf_core::parser::PreparationOutput;
 use hf_core::saddlepoint_approximation::{StateBundle, prob_to_maximize};
 use rand::Rng;
 use rand::distr::Distribution;
@@ -45,18 +45,20 @@ pub fn my_pmf(max_len: usize, expected: f64) -> Vec<f64> {
 }
 
 fn neighbour<R: Rng>(
-    state: &[Vec<i64>],
-    upgrade_arr: &[Upgrade],
+    state_bundle: &mut StateBundle,
+    prep_output: &PreparationOutput,
     temp: f64,
     init_temp: f64,
     rng: &mut R,
-) -> Vec<Vec<i64>> {
-    let mut new_state: Vec<Vec<i64>> = state.to_vec();
-    for (u_index, s) in new_state.iter_mut().enumerate() {
+) {
+    for (u_index, upgrade_state) in state_bundle.state.iter_mut().enumerate() {
+        let upgrade = &prep_output.upgrade_arr[u_index];
+        let choice_len: usize = upgrade_state[0].len();
+
         let want_to_flip: usize = WeightedIndex::new(my_pmf(
-            (s.len() - 1).max(1),
-            ((temp / init_temp).cbrt() * s.len() as f64 - 1.0)
-                .min(s.len() as f64)
+            (upgrade_state.len() - 1).max(1),
+            ((temp / init_temp).cbrt() * upgrade_state.len() as f64 - 1.0)
+                .min(upgrade_state.len() as f64)
                 .max(0.0),
             // .max(),
         ))
@@ -65,37 +67,48 @@ fn neighbour<R: Rng>(
             + 1;
         let flip_target = rng.random_bool(0.5);
         // dbg!(want_to_flip);
-        let mut want_to_flip_indices: Vec<usize> = (0..s.len()).choose_multiple(rng, want_to_flip);
+        let mut want_to_flip_indices: Vec<usize> =
+            (0..upgrade_state.len()).choose_multiple(rng, want_to_flip);
         want_to_flip_indices.sort();
         let mut flipped_index: usize = 0;
-        let mut true_count: usize = 0;
-        for (s_index, bit) in s.iter_mut().enumerate() {
-            if s_index
-                > upgrade_arr[u_index].support_lengths
-                    [true_count.min(upgrade_arr[u_index].support_lengths.len() - 1)]
-            {
-                *bit = 0;
-            } else {
-                if flipped_index < want_to_flip_indices.len()
-                    && s_index == want_to_flip_indices[flipped_index]
-                {
-                    if *bit == flip_target {
-                        flipped_index += 1;
-                        *bit = !*bit;
-                    } else {
-                        want_to_flip_indices[flipped_index] = s_index + 1;
-                    }
 
-                    // *bit = rng.random_bool(0.5);
+        let mut artisan: f64 = 0.0;
+        for (s_index, bits) in upgrade_state.iter_mut().enumerate() {
+            if artisan >= 1.0 {
+                for bit in bits {
+                    *bit = false;
                 }
-                if *bit {
-                    true_count += 1;
-                }
+                continue;
             }
+            if flipped_index < want_to_flip_indices.len()
+                && s_index == want_to_flip_indices[flipped_index]
+            {
+                let rolled_index: usize = rng.random_range(0..choice_len);
+                let bit: &mut bool = &mut bits[rolled_index];
+                if *bit == flip_target {
+                    flipped_index += 1;
+                    *bit = !*bit;
+                } else {
+                    want_to_flip_indices[flipped_index] = s_index + 1;
+                }
+
+                // *bit = rng.random_bool(0.5);
+            }
+            artisan += (46.51_f64 / 100.0)
+                * upgrade.artisan_rate
+                * (upgrade.base_chance
+                    + bits
+                        .iter_mut()
+                        .enumerate()
+                        .fold(0.0, |last, (index, this)| {
+                            if *this {
+                                last + prep_output.avail_juices[upgrade.upgrade_index][index]
+                            } else {
+                                last
+                            }
+                        }));
         }
     }
-
-    new_state
 }
 fn new_temp(temp: f64, alpha: f64) -> f64 {
     if temp == 0.0 {
@@ -108,20 +121,27 @@ fn new_temp(temp: f64, alpha: f64) -> f64 {
     return new; // this is very much subject to change
 }
 fn simulated_annealing<R: Rng>(
-    prep_output: &mut PreparationOutputs,
+    prep_output: &mut PreparationOutput,
     rng: &mut R,
     states_evaled: &mut i64,
-) -> (Vec<Vec<i64>>, f64) {
+) -> StateBundle {
     let init_temp: f64 = 333.0; // 0.969 = ~32
     // let mut cache: HashMap<(Vec<bool>, usize), Vec<([i64; 9], f64)>> = HashMap::new();
     let mut temp: f64 = init_temp;
-    let mut state: Vec<Vec<i64>> = Vec::with_capacity(prep_output.upgrade_arr.len());
+    let mut state: Vec<Vec<Vec<bool>>> = Vec::with_capacity(prep_output.upgrade_arr.len());
     for upgrade in prep_output.upgrade_arr.iter() {
         // state.push(vec![rng.random_bool(0.5); upgrade.support_lengths[0]]);
-        state.push(vec![0; upgrade.support_lengths[0]]);
+        state.push(vec![
+            vec![
+                false;
+                prep_output.avail_juices[upgrade.upgrade_index]
+                    .len()
+            ];
+            upgrade.support_lengths[0]
+        ]);
     }
-    let state_bundle: StateBundle = StateBundle {
-        state: state.clone(),
+    let mut state_bundle: StateBundle = StateBundle {
+        state: state,
         names: prep_output
             .upgrade_arr
             .iter()
@@ -132,43 +152,43 @@ fn simulated_annealing<R: Rng>(
                     "adv_".to_owned()
                 };
                 string += if x.is_weapon { "weap_" } else { "armor_" };
-                string += stringify!(x.upgrade_plus_num);
+                string += &x.upgrade_index.to_string();
                 string
             })
             .collect::<Vec<String>>(),
         state_index: vec![],
+        prob: -1.0,
     };
-    let mut prev_prob: f64 = prob_to_maximize(&state_bundle, prep_output, states_evaled);
+    state_bundle.prob = prob_to_maximize(&state_bundle, prep_output, states_evaled);
+    let mut prev_state: StateBundle = state_bundle.clone();
 
     let iterations_per_temp = 69;
     // let mut temperature_level_k = 0;
     let mut count: i32 = 0;
     let alpha: f64 = 0.99;
 
-    let mut best_state_so_far: Vec<Vec<i64>> = state_bundle.state.clone();
-    let mut best_prob_so_far: f64 = prev_prob;
+    let mut best_state_so_far: StateBundle = state_bundle.clone();
+
     let mut temps_without_improvement = 1;
     while temp >= 0.0 {
-        let new_state: Vec<Vec<i64>> =
-            neighbour(&state, &prep_output.upgrade_arr, temp, init_temp, rng);
+        neighbour(&mut state_bundle, prep_output, temp, init_temp, rng);
+        state_bundle.prob = prob_to_maximize(&state_bundle, prep_output, states_evaled);
         // dbg!(
         //     compute_eqv_gold_values(&prep_output.budgets, &prep_output.mats_value),
         //     eqv_gold_unlock(&prep_output.unlock_costs, &prep_output.mats_value)
         // );
         // panic!();
-        let new_prob: f64 = prob_to_maximize(&state_bundle, prep_output, states_evaled);
+
         // if new_prob > 0.13 {
         //     panic!();
         // }
-        if new_prob > best_prob_so_far {
-            best_prob_so_far = new_prob;
-            best_state_so_far = new_state.clone();
+        if state_bundle.prob > best_state_so_far.prob {
+            best_state_so_far = state_bundle.clone();
             temps_without_improvement = 0;
             println!(
-                "Temp: {:.6} Prob: {:.6} Best prob: {:.6} Best state: \n{}",
+                "Temp: {:.6} Best prob: {:.6} Best state: \n{}",
                 temp,
-                (prev_prob * 100.0),
-                (best_prob_so_far * 100.0),
+                (best_state_so_far.prob * 100.0),
                 // prob_to_maximize_exact(
                 //     &best_state_so_far,
                 //     &mut prep_output.upgrade_arr,
@@ -182,9 +202,10 @@ fn simulated_annealing<R: Rng>(
             );
         }
 
-        if acceptance(new_prob, prev_prob, temp, rng) {
-            state = new_state;
-            prev_prob = new_prob;
+        if acceptance(state_bundle.prob, prev_state.prob, temp, rng) {
+            prev_state = state_bundle.clone();
+        } else {
+            state_bundle.clone_from(&prev_state);
         }
         count += 1;
         if count > iterations_per_temp {
@@ -209,21 +230,24 @@ fn simulated_annealing<R: Rng>(
             if temps_without_improvement as f64 > (1.0 * temp).max(3.0)
             // || (best_prob_so_far - prev_prob) > 0.005
             {
-                state = best_state_so_far.clone();
-                prev_prob = best_prob_so_far.clone();
+                state_bundle.clone_from(&best_state_so_far);
                 temps_without_improvement = 0;
                 // dbg!("restarted");
             }
             temps_without_improvement += 1;
             temp = new_temp(temp, alpha);
         }
+        if best_state_so_far.prob >= 1.0 {
+            break; // optimize average later
+        }
     }
     println!(
         "Temp: {} Prob: {} State (Final): \n{} ",
         temp.to_string(),
-        (best_prob_so_far * 100.0).to_string(),
+        (best_state_so_far.prob * 100.0).to_string(),
         encode_all(&best_state_so_far)
     );
+
     // println!(
     //     "Exact value: {:.6}",
     //     prob_to_maximize_exact(
@@ -236,30 +260,41 @@ fn simulated_annealing<R: Rng>(
     //         0
     //     )
     // );
-    (best_state_so_far, best_prob_so_far)
+    best_state_so_far
 }
 
-fn encode_one_positions(v1: &[i64]) -> String {
+fn encode_one_positions(v1: &[Vec<bool>]) -> String {
     let mut s1 = String::new();
 
-    for &val in v1 {
-        s1.push_str(&val.to_string());
+    for val in v1 {
+        s1.push_str(
+            &val.iter()
+                .enumerate()
+                .fold(0, |last, (index, this)| {
+                    if *this {
+                        last + 2_i64.pow(index as u32)
+                    } else {
+                        last
+                    }
+                })
+                .to_string(),
+        );
     }
 
     s1
 }
-fn encode_all(input: &[Vec<i64>]) -> String {
+fn encode_all(input: &StateBundle) -> String {
     let mut strings = Vec::new();
-    for i in input.iter() {
-        strings.push(encode_one_positions(i));
+    for (index, i) in input.state.iter().enumerate() {
+        strings.push(input.names[index].clone() + ": " + &encode_one_positions(i));
     }
     strings.join("\n")
 }
 pub fn solve<R: Rng>(
     states_evaled: &mut i64,
-    prep_output: &mut PreparationOutputs,
+    prep_output: &mut PreparationOutput,
     rng: &mut R,
 ) -> (String, f64) {
-    let (state, prob) = simulated_annealing(prep_output, rng, states_evaled);
-    (encode_all(&state), prob)
+    let state_bundle = simulated_annealing(prep_output, rng, states_evaled);
+    (encode_all(&state_bundle), state_bundle.prob)
 }

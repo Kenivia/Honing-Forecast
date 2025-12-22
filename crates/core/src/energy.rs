@@ -10,13 +10,6 @@ use crate::helpers::eqv_gold_per_tap;
 use crate::saddlepoint_approximation::StateBundle;
 #[cfg(test)]
 use crate::saddlepoint_approximation::saddlepoint_approximation;
-// use num::Float;
-// use num::complex::Complex64;
-// use quad_rs::{EvaluationError, Integrable, Integrator};
-// use rootfinder::{Interval, SolverSettings, root_bisection};
-// use statrs::distribution::{Continuous, ContinuousCDF, Normal};
-// use std::f64::consts::PI;
-// use std::ops::Range;
 
 fn dist_to_costs(
     this_dist: &[f64],
@@ -101,10 +94,7 @@ pub fn prob_to_maximize_exact(
     price_arr: &[f64],
     budget: f64,
     depth: usize,
-    // cache: &mut HashMap<(Vec<bool>, usize), Vec<([i64; 9], f64)>>,
 ) -> f64 {
-    // let key: (Vec<bool>, usize) = (state[depth].clone(), depth); // need to use an actual bitset here eventually
-    //if !cache.contains_key(&key) {
     let this_dist: Vec<f64> = state_dist(
         upgrade_arr[depth].base_chance,
         upgrade_arr[depth].artisan_rate,
@@ -118,21 +108,6 @@ pub fn prob_to_maximize_exact(
         &state[depth],
         price_arr,
     );
-    // dbg!(&costs_dist);
-    // }
-    // else {
-    //     cache[&key].clone()
-    // };
-
-    // let costs_dist: Vec<([i64; 9], f64)> = {
-    //     let this_dist: Vec<f64> = state_dist(
-    //         upgrade_arr[depth].base_chance,
-    //         upgrade_arr[depth].artisan_rate,
-    //         &state[depth],
-    //         upgrade_arr[depth].base_chance,
-    //     );
-    //     dist_to_costs(&this_dist, &upgrade_arr[depth], &state[depth], price_arr)
-    // };
 
     if depth == state.len() - 1 {
         return costs_dist
@@ -165,7 +140,7 @@ mod tests {
     use crate::calculate_hash;
     use crate::constants::RNG_SEED;
     use crate::helpers::eqv_gold_unlock;
-    use crate::parser::PreparationOutputs;
+    use crate::parser::PreparationOutput;
     use crate::parser::preparation;
     use crate::saddlepoint_approximation::prob_to_maximize;
     use crate::test_utils::*;
@@ -198,7 +173,7 @@ mod tests {
             PROB_MODE
         );
 
-        let mut prep_outputs: PreparationOutputs = preparation(
+        let mut prep_output: PreparationOutput = preparation(
             &hone_counts,
             &input_budgets,
             &adv_counts,
@@ -207,23 +182,23 @@ mod tests {
             adv_hone_strategy,
         );
 
-        for upgrade in prep_outputs.upgrade_arr.iter_mut() {
+        for upgrade in prep_output.upgrade_arr.iter_mut() {
             let mut log_prob_dist: Vec<f64> = Vec::with_capacity(upgrade.prob_dist.len());
             for i in upgrade.prob_dist.iter() {
                 log_prob_dist.push(i.ln());
             }
             upgrade.log_prob_dist = log_prob_dist;
-            upgrade.eqv_gold_per_tap = eqv_gold_per_tap(upgrade, &prep_outputs.mats_value);
+            upgrade.eqv_gold_per_tap = eqv_gold_per_tap(upgrade, &prep_output.mats_value);
             let juice_ind: usize = if upgrade.is_weapon { 7 } else { 8 };
             upgrade.eqv_gold_per_juice =
-                &prep_outputs.mats_value[juice_ind] * upgrade.one_juice_cost as f64;
-            upgrade.juiced_arr = vec![0.0];
+                &prep_output.mats_value[juice_ind] * upgrade.one_juice_cost as f64;
+            upgrade.juice_arr = vec![0.0];
         }
         let result: f64 = saddlepoint_approximation(
-            &prep_outputs.upgrade_arr,
-            // 38591813.0 - eqv_gold_unlock(&prep_outputs.unlock_costs, &prep_outputs.mats_value),
-            // 25916.0 - eqv_gold_unlock(&prep_outputs.unlock_costs, &prep_outputs.mats_value),
-            62010.0 - eqv_gold_unlock(&prep_outputs.unlock_costs, &prep_outputs.mats_value),
+            &prep_output.upgrade_arr,
+            // 38591813.0 - eqv_gold_unlock(&prep_output.unlock_costs, &prep_output.mats_value),
+            // 25916.0 - eqv_gold_unlock(&prep_output.unlock_costs, &prep_output.mats_value),
+            62010.0 - eqv_gold_unlock(&prep_output.unlock_costs, &prep_output.mats_value),
             0.0,
         );
         dbg!(result);
@@ -270,7 +245,7 @@ mod tests {
             PROB_MODE
         );
 
-        let mut prep_output: PreparationOutputs = preparation(
+        let mut prep_output: PreparationOutput = preparation(
             &hone_counts,
             &input_budgets,
             &adv_counts,
@@ -288,13 +263,14 @@ mod tests {
                     // vec![true; 16],
                     // vec![true; 2],
                     // vec![true; 18],
-                    vec![0],
-                    vec![0],
-                    vec![0],
-                    vec![0],
+                    vec![vec![true]],
+                    vec![vec![true]],
+                    vec![vec![true]],
+                    vec![vec![true]],
                 ],
                 names: vec![],
                 state_index: vec![],
+                prob: -1.0,
             },
             &mut prep_output,
             &mut states_evaled,

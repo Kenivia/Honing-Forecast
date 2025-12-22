@@ -46,7 +46,7 @@ export interface Upgrade {
     is_weapon: boolean
     artisan_rate: number
     tap_offset: number
-    upgrade_plus_num: number
+    upgrade_index: number
     special_value: number
     equipment_type?: string // Added for equipment type
     is_finished?: boolean // Track if upgrade is completed
@@ -82,10 +82,10 @@ export function sortedUpgrades(upgradeArr: Upgrade[]) {
             return (a.completion_order || 0) - (b.completion_order || 0)
         }
         if (!a.is_finished && !b.is_finished) {
-            if (a.upgrade_plus_num < b.upgrade_plus_num) {
+            if (a.upgrade_index < b.upgrade_index) {
                 return -1
             }
-            if (a.upgrade_plus_num > b.upgrade_plus_num) {
+            if (a.upgrade_index > b.upgrade_index) {
                 return 1
             }
             return EQUIPMENT_TYPES.findIndex((value, _) => a.equipment_type == value) - EQUIPMENT_TYPES.findIndex((value, _) => b.equipment_type == value)

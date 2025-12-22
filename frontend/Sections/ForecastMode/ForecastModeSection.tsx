@@ -1,10 +1,10 @@
 import React, { useState, useMemo, useEffect, useRef } from "react"
-import SpreadsheetGrid from "@//Components/SpreadsheetGrid.tsx"
-import Graph from "@//Components/Graph.tsx"
-import { styles, StyledSlider, GRAPH_HEIGHT, GRAPH_WIDTH, ColumnDef } from "@//Utils/Styles.ts"
-import { INPUT_LABELS } from "@//Utils/Constants.ts"
+import SpreadsheetGrid from "@/Components/SpreadsheetGrid.tsx"
+import Graph from "@/Components/Graph.tsx"
+import { styles, StyledSlider, GRAPH_HEIGHT, GRAPH_WIDTH, ColumnDef } from "@/Utils/Styles.ts"
+import { INPUT_LABELS } from "@/Utils/Constants.ts"
 
-import LabeledCheckbox from "@//Components/LabeledCheckbox.tsx"
+import LabeledCheckbox from "@/Components/LabeledCheckbox.tsx"
 
 type LongTermSectionProps = {
     budget_inputs: any

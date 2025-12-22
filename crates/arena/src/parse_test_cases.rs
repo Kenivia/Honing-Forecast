@@ -1,6 +1,6 @@
 use std::path::Path;
 
-use hf_core::parser::{PreparationOutputs, preparation};
+use hf_core::parser::{PreparationOutput, preparation};
 use paste::paste;
 use seq_macro::seq;
 use serde::{Deserialize, Deserializer};
@@ -112,10 +112,10 @@ where
         _ => Err(serde::de::Error::custom(format!("invalid boolean: {}", s))),
     }
 }
-pub fn parse_csv(path: &Path) -> Result<Vec<PreparationOutputs>, csv::Error> {
+pub fn parse_csv(path: &Path) -> Result<Vec<PreparationOutput>, csv::Error> {
     let mut rdr = csv::Reader::from_path(path)?;
 
-    let mut out: Vec<PreparationOutputs> = Vec::new();
+    let mut out: Vec<PreparationOutput> = Vec::new();
 
     for result in rdr.deserialize() {
         let row: Row = result?;

@@ -3,7 +3,7 @@ use core::f64;
 use std::time::Instant;
 
 use crate::histogram::{HistogramOutputs, prep_histogram};
-use crate::parser::{PreparationOutputs, preparation};
+use crate::parser::{PreparationOutput, preparation};
 use crate::success_analysis::{
     BuyAnalysisOutput, NoBuyAnalysisOutputs, buy_analysis, compute_all_gold_costs,
     generate_typical_cost, no_buy_analysis,
@@ -58,7 +58,7 @@ pub fn cost_to_chance(
 ) -> CostToChanceOut {
     #[cfg(test)]
     let mut now: Instant = Instant::now();
-    let mut prep_outputs: PreparationOutputs = preparation(
+    let mut prep_output: PreparationOutput = preparation(
         hone_counts,
         input_budgets,
         adv_counts,
@@ -80,7 +80,7 @@ pub fn cost_to_chance(
         now = Instant::now();
     }
     let buy_failure_outputs: BuyAnalysisOutput =
-        buy_analysis(&input_budgets, &mut cost_data_to_sort, &prep_outputs);
+        buy_analysis(&input_budgets, &mut cost_data_to_sort, &prep_output);
     #[cfg(test)]
     {
         println!("buy_analysis took {} ms.", now.elapsed().as_millis());
@@ -89,7 +89,7 @@ pub fn cost_to_chance(
     let typical_costs: Vec<[i64; 9]> = generate_typical_cost(
         &input_budgets,
         &mut cost_data_to_sort,
-        &prep_outputs,
+        &prep_output,
         &buy_failure_outputs,
     );
     #[cfg(test)]
@@ -102,10 +102,10 @@ pub fn cost_to_chance(
     }
     // Section 4: Histogram preparation
     let histogram_outputs: HistogramOutputs = prep_histogram(
-        &mut prep_outputs.upgrade_arr,
+        &mut prep_output.upgrade_arr,
         cost_data_to_sort,
         hist_bins,
-        &prep_outputs.unlock_costs,
+        &prep_output.unlock_costs,
     );
     #[cfg(test)]
     {
@@ -118,11 +118,11 @@ pub fn cost_to_chance(
         hist_counts: histogram_outputs.hist_counts,
         hist_mins: histogram_outputs.hist_mins,
         hist_maxs: histogram_outputs.hist_maxs,
-        special_strings: prep_outputs.special_strings,
-        juice_strings_armor: prep_outputs.juice_strings_armor,
-        juice_strings_weapon: prep_outputs.juice_strings_weapon,
-        budgets_red_remaining: prep_outputs.budgets[7],
-        budgets_blue_remaining: prep_outputs.budgets[8],
+        special_strings: prep_output.special_strings,
+        juice_strings_armor: prep_output.juice_strings_armor,
+        juice_strings_weapon: prep_output.juice_strings_weapon,
+        budgets_red_remaining: prep_output.budgets[7],
+        budgets_blue_remaining: prep_output.budgets[8],
         hundred_gold_costs: buy_failure_outputs.hundred_gold_costs,
         chance_if_buy: buy_failure_outputs.buy_chance,
         typical_costs,
@@ -140,7 +140,7 @@ pub fn cost_to_chance_arr(
     cost_data: &[[i64; 9]],
 ) -> CostToChanceArrOut {
     let first_budget: &Vec<i64> = &input_budgets_arr[0];
-    let prep_outputs: PreparationOutputs = preparation(
+    let prep_output: PreparationOutput = preparation(
         hone_counts,
         first_budget,
         adv_counts,
@@ -163,7 +163,7 @@ pub fn cost_to_chance_arr(
     let mut buy_chance_arr: Vec<f64> = Vec::with_capacity(input_budgets_arr.len());
     let mut all_gold_costs: Vec<f64>;
     for budget in input_budgets_arr {
-        all_gold_costs = compute_all_gold_costs(budget, cost_data, &prep_outputs);
+        all_gold_costs = compute_all_gold_costs(budget, cost_data, &prep_output);
         let mut count: f64 = 0.0;
         for gold in all_gold_costs.iter() {
             if *gold <= budget[5] as f64 {
@@ -176,8 +176,8 @@ pub fn cost_to_chance_arr(
     CostToChanceArrOut {
         no_buy_chance_arr: no_buy_chance_arr,
         typed_fail_counters,
-        budgets_red_remaining: prep_outputs.budgets[7],
-        budgets_blue_remaining: prep_outputs.budgets[8],
+        budgets_red_remaining: prep_output.budgets[7],
+        budgets_blue_remaining: prep_output.budgets[8],
         buy_chance_arr: buy_chance_arr,
     }
 }
@@ -219,7 +219,7 @@ mod tests {
         );
         // Run the function to get the full output
         let mut rng: StdRng = StdRng::seed_from_u64(RNG_SEED);
-        let prep_outputs: PreparationOutputs = preparation(
+        let prep_output: PreparationOutput = preparation(
             &hone_counts,
             &input_budgets,
             &adv_counts,
@@ -229,8 +229,8 @@ mod tests {
         );
         let mut cost_data = monte_carlo_data(
             data_size,
-            &prep_outputs.upgrade_arr,
-            &prep_outputs.unlock_costs,
+            &prep_output.upgrade_arr,
+            &prep_output.unlock_costs,
             input_budgets[9],
             &mut rng,
         );
@@ -283,7 +283,7 @@ mod tests {
             data_size
         );
         let mut rng: StdRng = StdRng::seed_from_u64(RNG_SEED);
-        let prep_outputs: PreparationOutputs = preparation(
+        let prep_output: PreparationOutput = preparation(
             &hone_counts,
             &input_budgets,
             &adv_counts,
@@ -293,8 +293,8 @@ mod tests {
         );
         let mut cost_data = monte_carlo_data(
             data_size,
-            &prep_outputs.upgrade_arr,
-            &prep_outputs.unlock_costs,
+            &prep_output.upgrade_arr,
+            &prep_output.unlock_costs,
             input_budgets[9],
             &mut rng,
         );
@@ -340,7 +340,7 @@ mod tests {
             data_size
         );
         let mut rng: StdRng = StdRng::seed_from_u64(RNG_SEED);
-        let prep_outputs: PreparationOutputs = preparation(
+        let prep_output: PreparationOutput = preparation(
             &hone_counts,
             &input_budgets,
             &adv_counts,
@@ -350,8 +350,8 @@ mod tests {
         );
         let mut cost_data = monte_carlo_data(
             data_size,
-            &prep_outputs.upgrade_arr,
-            &prep_outputs.unlock_costs,
+            &prep_output.upgrade_arr,
+            &prep_output.unlock_costs,
             input_budgets[9],
             &mut rng,
         );
@@ -397,7 +397,7 @@ mod tests {
             data_size
         );
         let mut rng: StdRng = StdRng::seed_from_u64(RNG_SEED);
-        let prep_outputs: PreparationOutputs = preparation(
+        let prep_output: PreparationOutput = preparation(
             &hone_counts,
             &input_budgets,
             &adv_counts,
@@ -407,8 +407,8 @@ mod tests {
         );
         let mut cost_data = monte_carlo_data(
             data_size,
-            &prep_outputs.upgrade_arr,
-            &prep_outputs.unlock_costs,
+            &prep_output.upgrade_arr,
+            &prep_output.unlock_costs,
             input_budgets[9],
             &mut rng,
         );
@@ -459,7 +459,7 @@ mod tests {
         );
         // Run the function to get the full output
         let mut rng: StdRng = StdRng::seed_from_u64(RNG_SEED);
-        let prep_outputs: PreparationOutputs = preparation(
+        let prep_output: PreparationOutput = preparation(
             &hone_counts,
             &budget_arr[0],
             &adv_counts,
@@ -469,8 +469,8 @@ mod tests {
         );
         let mut cost_data = monte_carlo_data(
             data_size,
-            &prep_outputs.upgrade_arr,
-            &prep_outputs.unlock_costs,
+            &prep_output.upgrade_arr,
+            &prep_output.unlock_costs,
             budget_arr[0][9],
             &mut rng,
         );

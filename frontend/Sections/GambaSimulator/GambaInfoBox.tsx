@@ -1,5 +1,5 @@
 import React from "react"
-import { Upgrade, calculateCurrentChance, getTapCountRange } from "@//Utils/Helpers.ts"
+import { Upgrade, calculateCurrentChance, getTapCountRange } from "@/Utils/Helpers.ts"
 
 interface GambaInfoBoxProps {
     upgradeArr: Upgrade[]
@@ -46,8 +46,8 @@ export default function GambaInfoBox({
                 {upgradeArr[selectedUpgradeIndex] === undefined
                     ? ""
                     : upgradeArr[selectedUpgradeIndex].is_normal_honing
-                    ? upgradeArr[selectedUpgradeIndex].upgrade_plus_num + 1
-                    : (upgradeArr[selectedUpgradeIndex].upgrade_plus_num + 1) * 10}{" "}
+                    ? upgradeArr[selectedUpgradeIndex].upgrade_index + 1
+                    : (upgradeArr[selectedUpgradeIndex].upgrade_index + 1) * 10}{" "}
                 {upgradeArr[selectedUpgradeIndex] === undefined ? "" : upgradeArr[selectedUpgradeIndex].equipment_type}
             </h4>
             {selectedUpgradeIndex !== null && upgradeArr[selectedUpgradeIndex] ? (

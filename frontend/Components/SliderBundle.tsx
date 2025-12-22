@@ -1,4 +1,4 @@
-import { StyledSlider } from "@//Utils/Styles.ts"
+import { StyledSlider } from "@/Utils/Styles.ts"
 
 export interface SliderBundleProps {
     desiredChance: string

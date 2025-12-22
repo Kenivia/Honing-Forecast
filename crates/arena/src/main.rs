@@ -1,7 +1,7 @@
 use chrono::Local;
 use hf_arena::engine::{NOTES, solve};
 use hf_arena::parse_test_cases::parse_csv;
-use hf_core::parser::PreparationOutputs;
+use hf_core::parser::PreparationOutput;
 
 use rand::prelude::*;
 use serde::{Deserialize, Serialize};
@@ -12,7 +12,7 @@ use std::io::{BufRead, BufReader, BufWriter, Error, Write};
 use std::path::Path;
 use std::time::Instant;
 
-static NUM_TESTS_TO_RUN: i64 = 5; // TODO this should be replaced by statistical tests like fishtest eventually
+static NUM_TESTS_TO_RUN: i64 = 6; // TODO this should be replaced by statistical tests like fishtest eventually
 
 #[derive(Debug, Serialize)]
 struct Header {
@@ -98,7 +98,7 @@ fn main() {
 
     let mut seed_rng: ThreadRng = rand::rng();
 
-    let mut test_cases: Vec<PreparationOutputs> =
+    let mut test_cases: Vec<PreparationOutput> =
         parse_csv(Path::new("test_cases.csv")).expect("Failed to read test_case.csv");
     for _ in 0..NUM_TESTS_TO_RUN {
         for case in test_cases.iter_mut() {

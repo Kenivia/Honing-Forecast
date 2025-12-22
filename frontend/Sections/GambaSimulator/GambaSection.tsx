@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from "react"
-import SpreadsheetGrid from "@//Components/SpreadsheetGrid.tsx"
-import Graph from "@//Components/Graph.tsx"
-import { styles, createColumnDefs, SMALL_GRAPH_WIDTH, SMALL_GRAPH_HEIGHT } from "@//Utils/Styles.ts"
-import { BOTTOM_COLS, INPUT_LABELS, TOP_COLS, OUTPUT_LABELS } from "@//Utils/Constants.ts"
-import { buildPayload } from "@//WasmInterface/WorkerRunner.ts"
-import { Upgrade, EQUIPMENT_TYPES } from "@//Utils/Helpers.ts"
+import SpreadsheetGrid from "@/Components/SpreadsheetGrid.tsx"
+import Graph from "@/Components/Graph.tsx"
+import { styles, createColumnDefs, SMALL_GRAPH_WIDTH, SMALL_GRAPH_HEIGHT } from "@/Utils/Styles.ts"
+import { BOTTOM_COLS, INPUT_LABELS, TOP_COLS, OUTPUT_LABELS } from "@/Utils/Constants.ts"
+import { buildPayload } from "@/WasmInterface/WorkerRunner.ts"
+import { Upgrade, EQUIPMENT_TYPES } from "@/Utils/Helpers.ts"
 import GambaInfoBox from "./GambaInfoBox.tsx"
 import GambaSelection from "./GambaSelection.tsx"
 import { useGambaLogic } from "./GambaLogic.tsx"
@@ -127,7 +127,7 @@ export default function GambaSection({
     // Initialize parser worker
     useEffect(() => {
         // Create a persistent worker for parser calls
-        parserWorkerRef.current = new Worker(new URL("@//WasmInterface/js_to_wasm.ts", import.meta.url), { type: "module" })
+        parserWorkerRef.current = new Worker(new URL("@/WasmInterface/js_to_wasm.ts", import.meta.url), { type: "module" })
 
         // Set up message handler once
         parserWorkerRef.current.onmessage = (e) => {
@@ -198,31 +198,31 @@ export default function GambaSection({
                     const equipmentTypes = EQUIPMENT_TYPES.slice(0, 5) // Exclude Weapon
                     const assignedType = equipmentTypes.find((_, index) => {
                         if (upgrade.is_normal_honing) {
-                            if (index < seen_ind_normal[upgrade.upgrade_plus_num]) {
+                            if (index < seen_ind_normal[upgrade.upgrade_index]) {
                                 return false
                             }
                             if (useGridInput) {
                                 const gridRow = topGrid[index] || []
-                                seen_ind_normal[upgrade.upgrade_plus_num] += 1
-                                return gridRow[upgrade.upgrade_plus_num] || false
+                                seen_ind_normal[upgrade.upgrade_index] += 1
+                                return gridRow[upgrade.upgrade_index] || false
                             } else {
                                 // Use numeric input data - check if this equipment type has a count > 0
-                                const armorCount = normalCounts[0][upgrade.upgrade_plus_num] || 0
-                                seen_ind_normal[upgrade.upgrade_plus_num] += 1
+                                const armorCount = normalCounts[0][upgrade.upgrade_index] || 0
+                                seen_ind_normal[upgrade.upgrade_index] += 1
                                 return index < armorCount
                             }
                         } else {
-                            if (index < seen_ind_adv[upgrade.upgrade_plus_num]) {
+                            if (index < seen_ind_adv[upgrade.upgrade_index]) {
                                 return false
                             }
                             if (useGridInput) {
                                 const gridRow = bottomGrid[index] || []
-                                seen_ind_adv[upgrade.upgrade_plus_num] += 1
-                                return gridRow[upgrade.upgrade_plus_num] || false
+                                seen_ind_adv[upgrade.upgrade_index] += 1
+                                return gridRow[upgrade.upgrade_index] || false
                             } else {
                                 // Use numeric input data - check if this equipment type has a count > 0
-                                const armorCount = advCounts[0][upgrade.upgrade_plus_num] || 0
-                                seen_ind_adv[upgrade.upgrade_plus_num] += 1
+                                const armorCount = advCounts[0][upgrade.upgrade_index] || 0
+                                seen_ind_adv[upgrade.upgrade_index] += 1
                                 return index < armorCount
                             }
                         }
@@ -234,7 +234,7 @@ export default function GambaSection({
                 if (a.is_normal_honing) {
                     return -999
                 } else {
-                    return a.upgrade_plus_num - b.upgrade_plus_num
+                    return a.upgrade_index - b.upgrade_index
                 }
             })
 
@@ -344,8 +344,8 @@ export default function GambaSection({
                 return (a.completion_order || 0) - (b.completion_order || 0)
             }
             if (!a.is_finished && !b.is_finished) {
-                if (a.upgrade_plus_num < b.upgrade_plus_num) return -1
-                if (a.upgrade_plus_num > b.upgrade_plus_num) return 1
+                if (a.upgrade_index < b.upgrade_index) return -1
+                if (a.upgrade_index > b.upgrade_index) return 1
                 return EQUIPMENT_TYPES.findIndex((v) => a.equipment_type == v) - EQUIPMENT_TYPES.findIndex((v) => b.equipment_type == v)
             }
             return 0

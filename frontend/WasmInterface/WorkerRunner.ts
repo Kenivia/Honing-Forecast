@@ -1,6 +1,6 @@
 import { SpawnWorker } from "./worker_setup.ts"
-import { INPUT_LABELS } from "@//Utils/Constants.ts"
-import { ticksToCounts } from "@//Utils/Helpers.ts"
+import { INPUT_LABELS } from "@/Utils/Constants.ts"
+import { ticksToCounts } from "@/Utils/Helpers.ts"
 
 export function buildPayload({
     topGrid,

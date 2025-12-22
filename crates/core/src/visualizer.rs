@@ -1,6 +1,6 @@
 #![allow(unused_imports, unused_variables, dead_code, unused_assignments)]
 use crate::helpers::{generate_first_deltas, get_one_tap_pity};
-use crate::parser::{PreparationOutputs, Upgrade, probability_distribution};
+use crate::parser::{PreparationOutput, Upgrade, probability_distribution};
 // use crate::value_estimation::explore_one;
 use crate::helpers::compute_eqv_gold_values;
 use crate::helpers::eqv_gold_per_tap;
@@ -17,24 +17,24 @@ use crate::helpers::eqv_gold_unlock;
 #[cfg(test)]
 pub fn brute_with_saddlepoint_approximation(
     input_budgets: &[i64],
-    prep_outputs: &PreparationOutputs,
+    prep_output: &PreparationOutput,
 ) -> Vec<Vec<Vec<(f64, String)>>> {
     // Clone upgrade_arr (we will mutate per-task copies)
-    let upgrade_arr_base: Vec<Upgrade> = prep_outputs.upgrade_arr.clone();
-    let u0 = &prep_outputs.upgrade_arr[0];
-    let u1 = &prep_outputs.upgrade_arr[1];
+    let upgrade_arr_base: Vec<Upgrade> = prep_output.upgrade_arr.clone();
+    let u0 = &prep_output.upgrade_arr[0];
+    let u1 = &prep_output.upgrade_arr[1];
 
     let len0 = u0.full_juice_len;
     let len1 = u1.full_juice_len;
 
     // pity boundaries
-    let tap_pity_results = get_one_tap_pity(&prep_outputs.upgrade_arr, &prep_outputs.unlock_costs);
+    let tap_pity_results = get_one_tap_pity(&prep_output.upgrade_arr, &prep_output.unlock_costs);
 
-    let worst_cost: f64 = compute_eqv_gold_values(&tap_pity_results[1], &prep_outputs.mats_value)
-        - eqv_gold_unlock(&prep_outputs.unlock_costs, &prep_outputs.mats_value);
+    let worst_cost: f64 = compute_eqv_gold_values(&tap_pity_results[1], &prep_output.mats_value)
+        - eqv_gold_unlock(&prep_output.unlock_costs, &prep_output.mats_value);
 
-    let best_cost: f64 = compute_eqv_gold_values(&tap_pity_results[0], &prep_outputs.mats_value)
-        - eqv_gold_unlock(&prep_outputs.unlock_costs, &prep_outputs.mats_value);
+    let best_cost: f64 = compute_eqv_gold_values(&tap_pity_results[0], &prep_output.mats_value)
+        - eqv_gold_unlock(&prep_output.unlock_costs, &prep_output.mats_value);
 
     // === Precompute supports ===
     let supports0: Vec<(Vec<([i64; 9], f64)>, Vec<f64>)> = precompute_supports(u0, len0);
@@ -69,20 +69,20 @@ pub fn brute_with_saddlepoint_approximation(
                 upgrade_arr[0].artisan_rate,
                 &supports0[j0].1,
             );
-            upgrade_arr[0].juiced_arr = supports0[j0].1.clone();
+            upgrade_arr[0].juice_arr = supports0[j0].1.clone();
             upgrade_arr[1].prob_dist = probability_distribution(
                 upgrade_arr[1].base_chance,
                 upgrade_arr[1].artisan_rate,
                 &supports1[j1].1,
             );
-            upgrade_arr[1].juiced_arr = supports0[j1].1.clone();
+            upgrade_arr[1].juice_arr = supports0[j1].1.clone();
 
             for upgrade in upgrade_arr.iter_mut() {
                 upgrade.log_prob_dist = upgrade.prob_dist.iter().map(|p| p.ln()).collect();
-                upgrade.eqv_gold_per_tap = eqv_gold_per_tap(upgrade, &prep_outputs.mats_value);
+                upgrade.eqv_gold_per_tap = eqv_gold_per_tap(upgrade, &prep_output.mats_value);
                 let juice_ind: usize = if upgrade.is_weapon { 7 } else { 8 };
                 upgrade.eqv_gold_per_juice =
-                    prep_outputs.mats_value[juice_ind] * upgrade.one_juice_cost as f64;
+                    prep_output.mats_value[juice_ind] * upgrade.one_juice_cost as f64;
             }
 
             // === Iterate 0..=100 threshold segments ===
@@ -144,10 +144,10 @@ pub fn brute_with_saddlepoint_approximation(
 #[cfg(test)]
 pub fn brute(
     input_budgets: &[i64],
-    prep_outputs: &PreparationOutputs,
+    prep_output: &PreparationOutput,
 ) -> Vec<Vec<Vec<(f64, String)>>> {
-    let u0 = &prep_outputs.upgrade_arr[0];
-    let u1 = &prep_outputs.upgrade_arr[1];
+    let u0 = &prep_output.upgrade_arr[0];
+    let u1 = &prep_output.upgrade_arr[1];
 
     let len0 = u0.full_juice_len;
     let len1 = u1.full_juice_len;
@@ -170,11 +170,11 @@ pub fn brute(
 
     let stride_p = len0 * len1;
     let stride0 = len1;
-    let tap_pity_results = get_one_tap_pity(&prep_outputs.upgrade_arr, &prep_outputs.unlock_costs);
-    let worst_cost: f64 = compute_eqv_gold_values(&tap_pity_results[1], &prep_outputs.mats_value)
-        - eqv_gold_unlock(&prep_outputs.unlock_costs, &prep_outputs.mats_value);
-    let best_cost: f64 = compute_eqv_gold_values(&tap_pity_results[0], &prep_outputs.mats_value)
-        - eqv_gold_unlock(&prep_outputs.unlock_costs, &prep_outputs.mats_value);
+    let tap_pity_results = get_one_tap_pity(&prep_output.upgrade_arr, &prep_output.unlock_costs);
+    let worst_cost: f64 = compute_eqv_gold_values(&tap_pity_results[1], &prep_output.mats_value)
+        - eqv_gold_unlock(&prep_output.unlock_costs, &prep_output.mats_value);
+    let best_cost: f64 = compute_eqv_gold_values(&tap_pity_results[0], &prep_output.mats_value)
+        - eqv_gold_unlock(&prep_output.unlock_costs, &prep_output.mats_value);
     // dbg!(best_cost, worst_cost);
     // === Parallel over every (juice0, juice1) pair ===
     iproduct!(0..supports0.len(), 0..supports1.len())
@@ -184,7 +184,7 @@ pub fn brute(
                 &supports0[j0],
                 &supports1[j1],
                 input_budgets,
-                &prep_outputs.mats_value,
+                &prep_output.mats_value,
             );
 
             let quantiles = compute_quantiles(combined, worst_cost, best_cost);
@@ -471,7 +471,7 @@ mod tests {
             PROB_MODE
         );
 
-        let prep_outputs: PreparationOutputs = preparation(
+        let prep_output: PreparationOutput = preparation(
             &hone_counts,
             &input_budgets,
             &adv_counts,
@@ -480,7 +480,7 @@ mod tests {
             adv_hone_strategy,
         );
         let result: Vec<Vec<Vec<(f64, String)>>> =
-            brute_with_saddlepoint_approximation(&input_budgets, &prep_outputs);
+            brute_with_saddlepoint_approximation(&input_budgets, &prep_output);
         dbg!(result.len());
         if let Some(_cached_result) =
             read_cached_data::<Vec<Vec<Vec<(f64, String)>>>>(test_name.as_str(), &hash)
@@ -522,7 +522,7 @@ mod tests {
             PROB_MODE
         );
 
-        let prep_outputs: PreparationOutputs = preparation(
+        let prep_output: PreparationOutput = preparation(
             &hone_counts,
             &input_budgets,
             &adv_counts,
@@ -530,7 +530,7 @@ mod tests {
             &user_mats_value,
             adv_hone_strategy,
         );
-        let result: Vec<Vec<Vec<(f64, String)>>> = brute(&input_budgets, &prep_outputs);
+        let result: Vec<Vec<Vec<(f64, String)>>> = brute(&input_budgets, &prep_output);
         dbg!(result.len());
         // let result: Vec<Vec<i64>> = out.clone();
         if let Some(_cached_result) =

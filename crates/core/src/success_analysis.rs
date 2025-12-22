@@ -1,5 +1,5 @@
 use crate::helpers::{compute_gold_cost_from_raw, get_one_tap_pity, get_percentile_window};
-use crate::parser::PreparationOutputs;
+use crate::parser::PreparationOutput;
 #[derive(Debug)]
 pub struct NoBuyAnalysisOutputs {
     pub typed_fail_counter_final: Vec<f64>,
@@ -43,14 +43,14 @@ pub fn no_buy_analysis(cost_data: &[[i64; 9]], input_budgets: &[i64]) -> NoBuyAn
 pub fn buy_analysis(
     input_budgets: &[i64],
     cost_data_to_sort: &mut [[i64; 9]],
-    prep_outputs: &PreparationOutputs,
+    prep_output: &PreparationOutput,
 ) -> BuyAnalysisOutput {
     let all_gold_costs: Vec<f64> =
-        compute_all_gold_costs_and_sort_data(input_budgets, cost_data_to_sort, &prep_outputs);
+        compute_all_gold_costs_and_sort_data(input_budgets, cost_data_to_sort, &prep_output);
     let hundred_gold_costs: Vec<i64> = get_hundred_gold_costs(
         &all_gold_costs,
         cost_data_to_sort,
-        &prep_outputs,
+        &prep_output,
         input_budgets,
     );
     let mut buy_chance: f64 = 1.0;
@@ -69,7 +69,7 @@ pub fn buy_analysis(
 pub fn compute_all_gold_costs(
     input_budgets: &[i64],
     cost_data: &[[i64; 9]],
-    prep_outputs: &PreparationOutputs,
+    prep_output: &PreparationOutput,
 ) -> Vec<f64> {
     let mut input_budget_no_gold: Vec<i64> = input_budgets.to_vec();
     input_budget_no_gold[5] = 0;
@@ -78,7 +78,7 @@ pub fn compute_all_gold_costs(
         all_gold_costs.push(compute_gold_cost_from_raw(
             cost,
             &input_budget_no_gold,
-            &prep_outputs.mats_value,
+            &prep_output.mats_value,
         ));
     }
     all_gold_costs.sort_unstable_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
@@ -87,7 +87,7 @@ pub fn compute_all_gold_costs(
 pub fn compute_all_gold_costs_and_sort_data(
     input_budgets: &[i64],
     cost_data: &mut [[i64; 9]],
-    prep_outputs: &PreparationOutputs,
+    prep_output: &PreparationOutput,
 ) -> Vec<f64> {
     let mut input_budget_no_gold: Vec<i64> = input_budgets.to_vec();
     input_budget_no_gold[5] = 0;
@@ -97,7 +97,7 @@ pub fn compute_all_gold_costs_and_sort_data(
         all_gold_costs.push(compute_gold_cost_from_raw(
             cost,
             &input_budget_no_gold,
-            &prep_outputs.mats_value,
+            &prep_output.mats_value,
         ));
     }
 
@@ -121,7 +121,7 @@ pub fn compute_all_gold_costs_and_sort_data(
 fn get_hundred_gold_costs(
     all_gold_costs: &[f64],
     cost_data: &[[i64; 9]],
-    prep_outputs: &PreparationOutputs,
+    prep_output: &PreparationOutput,
     input_budgets: &[i64],
 ) -> Vec<i64> {
     let mut input_budget_no_gold: Vec<i64> = input_budgets.to_vec();
@@ -135,9 +135,9 @@ fn get_hundred_gold_costs(
     }
     hundred_gold_costs.push(
         compute_gold_cost_from_raw(
-            &get_one_tap_pity(&prep_outputs.upgrade_arr, &prep_outputs.unlock_costs)[1],
+            &get_one_tap_pity(&prep_output.upgrade_arr, &prep_output.unlock_costs)[1],
             &input_budget_no_gold,
-            &prep_outputs.mats_value,
+            &prep_output.mats_value,
         )
         .ceil() as i64,
     );
@@ -200,7 +200,7 @@ fn one_typical_cost(
 pub fn generate_typical_cost(
     input_budgets: &[i64],
     cost_data_sorted: &[[i64; 9]],
-    prep_outputs: &PreparationOutputs,
+    prep_output: &PreparationOutput,
     buy_failure_outputs: &BuyAnalysisOutput,
 ) -> Vec<[i64; 9]> {
     let mut typical_costs: Vec<[i64; 9]> = Vec::with_capacity(101);
@@ -210,13 +210,13 @@ pub fn generate_typical_cost(
         typical_costs.push(one_typical_cost(
             cost_data_sorted,
             i as f64 / 100.0,
-            &prep_outputs.mats_value,
+            &prep_output.mats_value,
             &input_budget_no_gold,
             buy_failure_outputs.hundred_gold_costs[i],
         ));
     }
     typical_costs.push(
-        get_one_tap_pity(&prep_outputs.upgrade_arr, &prep_outputs.unlock_costs)[1]
+        get_one_tap_pity(&prep_output.upgrade_arr, &prep_output.unlock_costs)[1]
             .clone()
             .try_into()
             .unwrap(),

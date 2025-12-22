@@ -14,7 +14,7 @@ use crate::value_estimation::{
 // use rand::prelude::*;
 use serde::{Deserialize, Serialize};
 #[derive(Debug)]
-pub struct PreparationOutputs {
+pub struct PreparationOutput {
     pub upgrade_arr: Vec<Upgrade>,
     pub unlock_costs: Vec<i64>,
     pub budgets: Vec<i64>,
@@ -25,7 +25,7 @@ pub struct PreparationOutputs {
     pub budgets_no_gold: Vec<i64>,
     pub test_case: i64,
     pub base_gold_budget: f64,
-    pub avail_juice_combs: Vec<Vec<f64>>,
+    pub avail_juices: Vec<Vec<f64>>,
 }
 
 pub fn preparation(
@@ -35,7 +35,7 @@ pub fn preparation(
     express_event: bool,
     user_mats_value: &[f64],
     adv_hone_strategy: &str,
-) -> PreparationOutputs {
+) -> PreparationOutput {
     let mats_value: Vec<f64> = user_mats_value.to_vec();
     let unlock_costs: Vec<i64> = calc_unlock(hone_counts, adv_counts, express_event);
 
@@ -93,7 +93,7 @@ pub fn preparation(
 
     let base_gold_budget: f64 = compute_eqv_gold_values(&budgets, &mats_value)
         - eqv_gold_unlock(&unlock_costs, &mats_value);
-    PreparationOutputs {
+    PreparationOutput {
         upgrade_arr,
         unlock_costs,
         budgets,
@@ -104,7 +104,7 @@ pub fn preparation(
         budgets_no_gold,
         test_case: -1, // arena will overwrite this
         base_gold_budget,
-        avail_juice_combs: get_avail_juice_combs(),
+        avail_juices: get_avail_juice_combs(),
     }
 }
 
@@ -124,13 +124,13 @@ pub struct Upgrade {
     pub is_weapon: bool,
     pub artisan_rate: f64,
     pub tap_offset: i64,
-    pub upgrade_plus_num: usize,
+    pub upgrade_index: usize,
     pub special_value: f64,
     pub full_juice_len: usize,
     pub support_lengths: Vec<usize>, //Vec<Vec<Vec<[i64; 10]>>>, // cost_data_arr[juice_count][special_count] = cost_data for that decision
     pub eqv_gold_per_tap: f64,
     pub log_prob_dist: Vec<f64>,
-    pub juiced_arr: Vec<f64>,
+    pub juice_arr: Vec<f64>,
     pub eqv_gold_per_juice: f64,
 }
 
@@ -141,7 +141,7 @@ impl Upgrade {
         special_cost: i64,
         is_weapon: bool,
         artisan_rate: f64,
-        upgrade_plus_num: usize,
+        upgrade_index: usize,
     ) -> Self {
         let prob_dist_len: usize = prob_dist.len();
         let base_chance: f64 = prob_dist.first().copied().unwrap_or(0.0);
@@ -161,7 +161,7 @@ impl Upgrade {
             original_prob_dist: prob_dist,
             base_chance,
             costs,
-            one_juice_cost: NORMAL_JUICE_COST[upgrade_plus_num],
+            one_juice_cost: NORMAL_JUICE_COST[upgrade_index],
             adv_juice_cost: vec![],
             special_cost,
             juice_values: vec![],
@@ -169,13 +169,13 @@ impl Upgrade {
             is_weapon,
             artisan_rate,
             tap_offset: 1,
-            upgrade_plus_num,
+            upgrade_index,
             special_value: -1.0_f64,
             full_juice_len,
             support_lengths: vec![],    // to be filled
             log_prob_dist: vec![], // will change with each arrangement, maybe use a hashmap later
             eqv_gold_per_tap: -1.0_f64, // dummy value
-            juiced_arr: vec![],
+            juice_arr: vec![],
             eqv_gold_per_juice: -1.0_f64,
         }
     }
@@ -187,7 +187,7 @@ impl Upgrade {
         adv_juice_cost: Vec<f64>,
         is_weapon: bool,
         adv_cost_start: i64,
-        upgrade_plus_num: usize,
+        upgrade_index: usize,
     ) -> Self {
         let prob_dist_len: usize = prob_dist.len();
         assert!(prob_dist_len == adv_juice_cost.len());
@@ -206,13 +206,13 @@ impl Upgrade {
             is_weapon,
             artisan_rate: 0.0,
             tap_offset: adv_cost_start,
-            upgrade_plus_num,
+            upgrade_index,
             special_value: -1.0_f64,
             full_juice_len: 1, // need to sort this out
             support_lengths: vec![],
             log_prob_dist: vec![], // will change with each arrangement, maybe use a hashmap later
             eqv_gold_per_tap: -1.0_f64, // dummy value
-            juiced_arr: vec![],
+            juice_arr: vec![],
             eqv_gold_per_juice: -1.0_f64,
             // failure_raw_delta: -1,
             // failure_delta_order: -1,
@@ -274,29 +274,29 @@ pub fn parser(
 
         let mut current_counter: i64 = 0;
         let row_len: usize = normal_counts[is_weapon].len(); // 25
-        let mut upgrade_plus_num: usize = 0;
+        let mut upgrade_index: usize = 0;
 
-        while upgrade_plus_num < row_len {
-            let needed: i64 = normal_counts[is_weapon][upgrade_plus_num];
+        while upgrade_index < row_len {
+            let needed: i64 = normal_counts[is_weapon][upgrade_index];
             if current_counter >= needed {
-                upgrade_plus_num += 1;
+                upgrade_index += 1;
                 current_counter = 0;
                 continue;
             }
 
-            let special_cost: i64 = SPECIAL_LEAPS_COST[is_weapon][upgrade_plus_num];
-            let event_artisan_rate: f64 = artisan_rate_arr[upgrade_plus_num];
+            let special_cost: i64 = SPECIAL_LEAPS_COST[is_weapon][upgrade_index];
+            let event_artisan_rate: f64 = artisan_rate_arr[upgrade_index];
             out.push(Upgrade::new_normal(
                 probability_distribution(
-                    NORMAL_HONE_CHANCES[upgrade_plus_num],
+                    NORMAL_HONE_CHANCES[upgrade_index],
                     event_artisan_rate,
                     &[],
                 ),
-                std::array::from_fn(|cost_type: usize| cur_cost[cost_type][upgrade_plus_num]),
+                std::array::from_fn(|cost_type: usize| cur_cost[cost_type][upgrade_index]),
                 special_cost,
                 is_weapon == 1,
                 event_artisan_rate,
-                upgrade_plus_num,
+                upgrade_index,
             ));
             current_counter += 1;
         }
@@ -308,23 +308,23 @@ pub fn parser(
     for is_weapon in 0..adv_counts.len() {
         let mut current_counter: i64 = 0;
         let row_len: usize = adv_counts[is_weapon].len();
-        let mut upgrade_plus_num: usize = 0;
-        while upgrade_plus_num < row_len {
-            let needed: i64 = adv_counts[is_weapon][upgrade_plus_num];
+        let mut upgrade_index: usize = 0;
+        while upgrade_index < row_len {
+            let needed: i64 = adv_counts[is_weapon][upgrade_index];
             if current_counter >= needed {
-                upgrade_plus_num += 1;
+                upgrade_index += 1;
                 current_counter = 0;
                 continue;
             }
 
             // pick relevant_data based on strategy and level i (i <= 1 -> 10/20, else 30/40)
             let relevant_data: &'static [[i64; 3]] = if adv_hone_strategy == "Juice on grace" {
-                if upgrade_plus_num <= 1 {
+                if upgrade_index <= 1 {
                     &ADV_DATA_10_20_JUICE
                 } else {
                     &ADV_DATA_30_40_JUICE
                 }
-            } else if upgrade_plus_num <= 1 {
+            } else if upgrade_index <= 1 {
                 &ADV_DATA_10_20
             } else {
                 &ADV_DATA_30_40
@@ -332,7 +332,7 @@ pub fn parser(
 
             let rows: usize = relevant_data.len();
             let sum_taps: i64 = relevant_data.iter().map(|row: &[i64; 3]| row[2]).sum(); // 2nd index is frequency
-            let col_index: usize = 2 * upgrade_plus_num + (1 - is_weapon);
+            let col_index: usize = 2 * upgrade_index + (1 - is_weapon);
 
             prob_dist = Vec::with_capacity(rows);
             this_juice_cost = Vec::with_capacity(rows);
@@ -353,7 +353,7 @@ pub fn parser(
                 this_juice_cost,
                 is_weapon == 1,
                 relevant_data[0][0],
-                upgrade_plus_num,
+                upgrade_index,
             ));
             current_counter += 1;
         }

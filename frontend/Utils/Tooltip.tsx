@@ -127,7 +127,7 @@ export function renderTooltip(tooltip: TooltipState, mainScale: number = 1, zoom
                         <div>
                             <strong>
                                 {upgrade.is_normal_honing ? "+" : "Adv +"}
-                                {upgrade.upgrade_plus_num + (upgrade.is_normal_honing ? 1 : 0)} {upgrade.equipment_type}
+                                {upgrade.upgrade_index + (upgrade.is_normal_honing ? 1 : 0)} {upgrade.equipment_type}
                             </strong>
                         </div>
 

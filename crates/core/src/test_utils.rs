@@ -251,11 +251,9 @@ impl AssertApproxEq for Upgrade {
         self.tap_offset
             .assert_approx_eq(&other.tap_offset, &format!("{} -> tap_offset", ctx));
 
-        // upgrade_plus_num: usize
-        self.upgrade_plus_num.assert_approx_eq(
-            &other.upgrade_plus_num,
-            &format!("{} -> upgrade_plus_num", ctx),
-        );
+        // upgrade_index: usize
+        self.upgrade_index
+            .assert_approx_eq(&other.upgrade_index, &format!("{} -> upgrade_index", ctx));
 
         // special_value: f64
         self.special_value

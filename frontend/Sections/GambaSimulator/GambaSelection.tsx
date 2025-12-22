@@ -1,5 +1,5 @@
 import React from "react"
-import { Upgrade } from "@//Utils/Helpers.ts"
+import { Upgrade } from "@/Utils/Helpers.ts"
 
 interface GambaSelectionProps {
     upgradeArr: Upgrade[]
@@ -143,7 +143,7 @@ export default function GambaSelection({
                                 }}
                             >
                                 {upgrade.is_normal_honing ? "+" : "Adv +"}
-                                {upgrade.is_normal_honing ? upgrade.upgrade_plus_num + 1 : (upgrade.upgrade_plus_num + 1) * 10} {upgrade.equipment_type}
+                                {upgrade.is_normal_honing ? upgrade.upgrade_index + 1 : (upgrade.upgrade_index + 1) * 10} {upgrade.equipment_type}
                                 {upgrade.is_normal_honing && (
                                     <span style={{ marginLeft: "4px", fontSize: "var(--font-size-xs)" }}>
                                         {((upgrade.current_artisan ?? 0) * 100).toFixed(0)}% Artisan

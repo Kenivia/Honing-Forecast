@@ -1,5 +1,5 @@
 import { useCallback, useRef } from "react"
-import { Upgrade, getNextUnfinishedIndex, calculateCurrentChance, updateCumulativeChance } from "@//Utils/Helpers.ts"
+import { Upgrade, getNextUnfinishedIndex, calculateCurrentChance, updateCumulativeChance } from "@/Utils/Helpers.ts"
 
 interface GambaLogicProps {
     upgradeArr: Upgrade[]

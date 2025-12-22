@@ -8,12 +8,12 @@ use assert_float_eq::assert_float_absolute_eq;
 // pub fn explore_one(
 //     decision: &(Vec<i64>, Vec<i64>),
 //     input_budgets: &[i64],
-//     prep_outputs: &PreparationOutputs,
+//     prep_output: &PreparationOutput,
 //     data_size: usize,
 // ) -> Vec<f64> {
 //     let mut combined_prob_dist: Vec<(f64, f64)> = Vec::new();
 //     for taps_iter in decision_space_iterator(
-//         prep_outputs
+//         prep_output
 //             .upgrade_arr
 //             .iter()
 //             .map(|x| x.prob_dist_len as i64)
@@ -24,7 +24,7 @@ use assert_float_eq::assert_float_absolute_eq;
 //         let mut chance: f64 = 1.0;
 //         // TODO unlock costs not included right now
 //         for (index, tap) in taps.iter().enumerate() {
-//             let upgrade: &Upgrade = &prep_outputs.upgrade_arr[index];
+//             let upgrade: &Upgrade = &prep_output.upgrade_arr[index];
 //             for cost_type in 0..7 {
 //                 this_cost[cost_type] += (tap + upgrade.tap_offset) * upgrade.costs[cost_type];
 //             }
@@ -56,7 +56,7 @@ use assert_float_eq::assert_float_absolute_eq;
 //             continue;
 //         }
 //         let gold_cost: f64 =
-//             compute_gold_cost_from_raw(&this_cost, input_budgets, &prep_outputs.mats_value);
+//             compute_gold_cost_from_raw(&this_cost, input_budgets, &prep_output.mats_value);
 //         combined_prob_dist.push((gold_cost, chance));
 //     }
 
@@ -125,7 +125,7 @@ pub fn extract_special_strings(upgrade_arr: &[Upgrade]) -> Vec<String> {
         if !upgrade.is_normal_honing {
             continue;
         }
-        let level_str: String = format!("+{}", upgrade.upgrade_plus_num + 1);
+        let level_str: String = format!("+{}", upgrade.upgrade_index + 1);
         let type_str: &'static str = if upgrade.is_weapon { "weapon" } else { "armor" };
 
         let value_string: String =
@@ -179,7 +179,7 @@ pub fn est_juice_value(upgrade_arr: &mut Vec<Upgrade>, mat_values: &[f64]) {
     // let mut cur_prob_dist: Vec<f64>;
 
     for upgrade in upgrade_arr.iter_mut() {
-        if !upgrade.is_normal_honing || upgrade.upgrade_plus_num <= 2 {
+        if !upgrade.is_normal_honing || upgrade.upgrade_index <= 2 {
             continue;
             //TODO add adv honing juice value estimation
         }
@@ -325,7 +325,7 @@ fn _juice_to_array(
             let taps_used: usize = cur_extras[i];
             if taps_used > 0 {
                 out.push((
-                    upgrade.upgrade_plus_num,
+                    upgrade.upgrade_index,
                     taps_used,
                     upgrade
                         .juice_values

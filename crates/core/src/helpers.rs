@@ -272,7 +272,7 @@ pub fn average_juice_cost(upgrades: &[Upgrade]) -> (i64, i64) {
 
         // Use the proper juice cost calculation from get_adv_data_juice
         let avg_juice_cost =
-            get_adv_data_juice(upgrade.upgrade_plus_num as i64) * upgrade.one_juice_cost as f64;
+            get_adv_data_juice(upgrade.upgrade_index as i64) * upgrade.one_juice_cost as f64;
 
         if upgrade.is_weapon {
             total_red_cost += avg_juice_cost;

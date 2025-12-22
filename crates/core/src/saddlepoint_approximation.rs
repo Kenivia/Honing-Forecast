@@ -1,4 +1,4 @@
-use crate::parser::PreparationOutputs;
+use crate::parser::PreparationOutput;
 use crate::parser::Upgrade;
 use crate::parser::probability_distribution;
 
@@ -7,15 +7,13 @@ use statrs::distribution::{Continuous, ContinuousCDF, Normal};
 
 static DEBUG: bool = false;
 static TOL: f64 = 1e-10;
-
+#[derive(Clone)]
 pub struct StateBundle {
-    pub state: Vec<Vec<i64>>,
+    pub state: Vec<Vec<Vec<bool>>>,
     pub names: Vec<String>,
     pub state_index: Vec<Vec<Vec<i64>>>, // state_index[which_upgrade][what_number(0,1,2] = [indices that number]
+    pub prob: f64,
 }
-
-/// Returns all unique subset sums of `values`.
-/// Includes the empty subset (sum = 0).
 
 fn ks_01234(upgrade_arr: &[Upgrade], theta: f64) -> (f64, f64, f64, f64, f64) {
     let mut total_k: f64 = 0.0;
@@ -30,9 +28,9 @@ fn ks_01234(upgrade_arr: &[Upgrade], theta: f64) -> (f64, f64, f64, f64, f64) {
         let mut cur_juice_count = 0;
 
         for (index, l) in upgrade.log_prob_dist.iter().enumerate() {
-            if index < upgrade.juiced_arr.len()
+            if index < upgrade.juice_arr.len()
                 && index < upgrade.log_prob_dist.len() - 1
-                && upgrade.juiced_arr[index] > 0.0
+                && upgrade.juice_arr[index] > 0.0
             {
                 cur_juice_count += 1;
             }
@@ -62,9 +60,9 @@ fn ks_01234(upgrade_arr: &[Upgrade], theta: f64) -> (f64, f64, f64, f64, f64) {
         }
 
         for (index, &u) in u_arr.iter().enumerate() {
-            if index < upgrade.juiced_arr.len()
+            if index < upgrade.juice_arr.len()
                 && index < upgrade.log_prob_dist.len() - 1
-                && upgrade.juiced_arr[index] > 0.0
+                && upgrade.juice_arr[index] > 0.0
             {
                 cur_juice_count += 1;
             }
@@ -110,7 +108,7 @@ pub fn saddlepoint_approximation(upgrade_arr: &[Upgrade], budget: f64, leftover:
         for (index, _) in upgrade.prob_dist.iter().enumerate() {
             let mut this_value = upgrade.eqv_gold_per_tap;
 
-            if index < upgrade.juiced_arr.len() - 1 && upgrade.juiced_arr[index] > 0.0 {
+            if index < upgrade.juice_arr.len() - 1 && upgrade.juice_arr[index] > 0.0 {
                 this_value += upgrade.eqv_gold_per_juice;
             }
             if index < upgrade.prob_dist.len() {
@@ -225,40 +223,48 @@ pub fn saddlepoint_approximation(upgrade_arr: &[Upgrade], budget: f64, leftover:
 
 pub fn prob_to_maximize(
     state: &StateBundle,
-    prep_outputs: &mut PreparationOutputs,
+    prep_output: &mut PreparationOutput,
 
     states_evaled: &mut i64,
     // depth: usize,
     // cache: &mut HashMap<(Vec<bool>, usize), Vec<([i64; 9], f64)>>,
 ) -> f64 {
-    for (index, upgrade) in prep_outputs.upgrade_arr.iter_mut().enumerate() {
+    for (index, upgrade) in prep_output.upgrade_arr.iter_mut().enumerate() {
         let new_extra: Vec<f64> = state.state[index]
             .iter()
-            .map(|x| if *x > 0 { upgrade.base_chance } else { 0.0 }) //
+            .map(|x| {
+                x.iter().enumerate().fold(0.0, |last, (index, y)| {
+                    if *y {
+                        last + prep_output.avail_juices[upgrade.upgrade_index][index]
+                    } else {
+                        last
+                    }
+                })
+            }) //if *x > 0 { upgrade.base_chance } else { 0.0 }) //
             .collect();
 
         upgrade.prob_dist =
             probability_distribution(upgrade.base_chance, upgrade.artisan_rate, &new_extra);
         upgrade.log_prob_dist = upgrade.prob_dist.iter().map(|x| x.ln()).collect();
-        upgrade.juiced_arr = new_extra;
+        upgrade.juice_arr = new_extra;
     }
 
     *states_evaled += 1;
 
     saddlepoint_approximation(
-        &prep_outputs.upgrade_arr,
-        prep_outputs.base_gold_budget - expected_juice_leftover(prep_outputs),
-        expected_juice_leftover(prep_outputs),
+        &prep_output.upgrade_arr,
+        prep_output.base_gold_budget - expected_juice_leftover(prep_output),
+        expected_juice_leftover(prep_output),
     )
 }
 
-fn expected_juice_leftover(prep_outputs: &PreparationOutputs) -> f64 {
+fn expected_juice_leftover(prep_output: &PreparationOutput) -> f64 {
     let mut avg_used_blue: f64 = 0.0;
     let mut avg_used_red: f64 = 0.0;
-    for (_, upgrade) in prep_outputs.upgrade_arr.iter().enumerate() {
+    for (_, upgrade) in prep_output.upgrade_arr.iter().enumerate() {
         let mut cur_juice_count = 0.0;
         for (index, p) in upgrade.prob_dist.iter().enumerate() {
-            if upgrade.juiced_arr[index] > 0.0 {
+            if upgrade.juice_arr[index] > 0.0 {
                 cur_juice_count += 1.0;
             }
             let amt: f64 = cur_juice_count * p * upgrade.one_juice_cost as f64;
@@ -269,8 +275,8 @@ fn expected_juice_leftover(prep_outputs: &PreparationOutputs) -> f64 {
             }
         }
     }
-    (prep_outputs.budgets[8] as f64 - avg_used_blue).max(0.0) * prep_outputs.mats_value[8]
-        + (prep_outputs.budgets[7] as f64 - avg_used_red).max(0.0) * prep_outputs.mats_value[7]
+    (prep_output.budgets[8] as f64 - avg_used_blue).max(0.0) * prep_output.mats_value[8]
+        + (prep_output.budgets[7] as f64 - avg_used_red).max(0.0) * prep_output.mats_value[7]
 }
 
 // #[cfg(test)]
@@ -279,7 +285,7 @@ fn expected_juice_leftover(prep_outputs: &PreparationOutputs) -> f64 {
 //     use crate::calculate_hash;
 //     use crate::constants::RNG_SEED;
 //     use crate::helpers::eqv_gold_unlock;
-//     use crate::parser::PreparationOutputs;
+//     use crate::parser::PreparationOutput;
 //     use crate::parser::preparation;
 //     use crate::test_utils::*;
 //     use std::time::Instant;
@@ -311,7 +317,7 @@ fn expected_juice_leftover(prep_outputs: &PreparationOutputs) -> f64 {
 //             PROB_MODE
 //         );
 
-//         let mut prep_outputs: PreparationOutputs = preparation(
+//         let mut prep_output: PreparationOutput = preparation(
 //             &hone_counts,
 //             &input_budgets,
 //             &adv_counts,
@@ -320,23 +326,23 @@ fn expected_juice_leftover(prep_outputs: &PreparationOutputs) -> f64 {
 //             adv_hone_strategy,
 //         );
 
-//         for upgrade in prep_outputs.upgrade_arr.iter_mut() {
+//         for upgrade in prep_output.upgrade_arr.iter_mut() {
 //             let mut log_prob_dist: Vec<f64> = Vec::with_capacity(upgrade.prob_dist.len());
 //             for i in upgrade.prob_dist.iter() {
 //                 log_prob_dist.push(i.ln());
 //             }
 //             upgrade.log_prob_dist = log_prob_dist;
-//             upgrade.eqv_gold_per_tap = eqv_gold_per_tap(upgrade, &prep_outputs.mats_value);
+//             upgrade.eqv_gold_per_tap = eqv_gold_per_tap(upgrade, &prep_output.mats_value);
 //             let juice_ind: usize = if upgrade.is_weapon { 7 } else { 8 };
 //             upgrade.eqv_gold_per_juice =
-//                 &prep_outputs.mats_value[juice_ind] * upgrade.one_juice_cost as f64;
+//                 &prep_output.mats_value[juice_ind] * upgrade.one_juice_cost as f64;
 //             upgrade.juiced_arr = vec![0.0];
 //         }
 //         let result: f64 = saddlepoint_approximation(
-//             &prep_outputs.upgrade_arr,
-//             // 38591813.0 - eqv_gold_unlock(&prep_outputs.unlock_costs, &prep_outputs.mats_value),
-//             // 25916.0 - eqv_gold_unlock(&prep_outputs.unlock_costs, &prep_outputs.mats_value),
-//             62010.0 - eqv_gold_unlock(&prep_outputs.unlock_costs, &prep_outputs.mats_value),
+//             &prep_output.upgrade_arr,
+//             // 38591813.0 - eqv_gold_unlock(&prep_output.unlock_costs, &prep_output.mats_value),
+//             // 25916.0 - eqv_gold_unlock(&prep_output.unlock_costs, &prep_output.mats_value),
+//             62010.0 - eqv_gold_unlock(&prep_output.unlock_costs, &prep_output.mats_value),
 //         );
 //         if DEBUG {
 //             dbg!(result);

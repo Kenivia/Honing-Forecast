@@ -23,19 +23,19 @@
 // #[macro_use]
 // mod test_utils;
 use hf_core::cost_to_chance::{
-    cost_to_chance, cost_to_chance_arr, CostToChanceArrOut, CostToChanceOut,
+    CostToChanceArrOut, CostToChanceOut, cost_to_chance, cost_to_chance_arr,
 };
 use hf_core::helpers::{average_cost, calc_unlock, get_count};
 use hf_core::monte_carlo::monte_carlo_data;
 use hf_core::parser::{
-    parser, parser_with_other_strategy, preparation, PreparationOutputs, Upgrade,
+    PreparationOutput, Upgrade, parser, parser_with_other_strategy, preparation,
 };
 
 use rand::prelude::*;
 use serde::Deserialize;
 use serde_wasm_bindgen::{from_value, to_value};
-use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsValue;
+use wasm_bindgen::prelude::*;
 
 #[derive(Deserialize)]
 pub struct Payload {
@@ -83,7 +83,7 @@ pub fn monte_carlo_wrapper(input: JsValue) -> JsValue {
     let adv_hone_strategy: String = payload.adv_hone_strategy;
     let data_size: usize = payload.data_size.unwrap_or(100000).max(1000);
 
-    let mut prep_outputs: PreparationOutputs = preparation(
+    let mut prep_output: PreparationOutput = preparation(
         &normal_counts,
         &payload.budget,
         &adv_counts,
@@ -94,8 +94,8 @@ pub fn monte_carlo_wrapper(input: JsValue) -> JsValue {
     let mut rng: ThreadRng = rand::rng();
     let cost_data: Vec<[i64; 9]> = monte_carlo_data(
         data_size,
-        &mut prep_outputs.upgrade_arr,
-        &prep_outputs.unlock_costs,
+        &mut prep_output.upgrade_arr,
+        &prep_output.unlock_costs,
         payload.budget[9], // Use first budget's special leap count
         &mut rng,
     );
