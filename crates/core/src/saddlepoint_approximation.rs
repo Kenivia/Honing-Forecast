@@ -7,6 +7,16 @@ use statrs::distribution::{Continuous, ContinuousCDF, Normal};
 
 static DEBUG: bool = false;
 static TOL: f64 = 1e-10;
+
+pub struct StateBundle {
+    pub state: Vec<Vec<i64>>,
+    pub names: Vec<String>,
+    pub state_index: Vec<Vec<Vec<i64>>>, // state_index[which_upgrade][what_number(0,1,2] = [indices that number]
+}
+
+/// Returns all unique subset sums of `values`.
+/// Includes the empty subset (sum = 0).
+
 fn ks_01234(upgrade_arr: &[Upgrade], theta: f64) -> (f64, f64, f64, f64, f64) {
     let mut total_k: f64 = 0.0;
     let mut total_k1: f64 = 0.0;
@@ -214,7 +224,7 @@ pub fn saddlepoint_approximation(upgrade_arr: &[Upgrade], budget: f64, leftover:
 }
 
 pub fn prob_to_maximize(
-    state: &[Vec<bool>],
+    state: &StateBundle,
     prep_outputs: &mut PreparationOutputs,
 
     states_evaled: &mut i64,
@@ -222,9 +232,9 @@ pub fn prob_to_maximize(
     // cache: &mut HashMap<(Vec<bool>, usize), Vec<([i64; 9], f64)>>,
 ) -> f64 {
     for (index, upgrade) in prep_outputs.upgrade_arr.iter_mut().enumerate() {
-        let new_extra: Vec<f64> = state[index]
+        let new_extra: Vec<f64> = state.state[index]
             .iter()
-            .map(|x| if *x { upgrade.base_chance } else { 0.0 })
+            .map(|x| if *x > 0 { upgrade.base_chance } else { 0.0 }) //
             .collect();
 
         upgrade.prob_dist =
@@ -246,15 +256,16 @@ fn expected_juice_leftover(prep_outputs: &PreparationOutputs) -> f64 {
     let mut avg_used_blue: f64 = 0.0;
     let mut avg_used_red: f64 = 0.0;
     for (_, upgrade) in prep_outputs.upgrade_arr.iter().enumerate() {
+        let mut cur_juice_count = 0.0;
         for (index, p) in upgrade.prob_dist.iter().enumerate() {
             if upgrade.juiced_arr[index] > 0.0 {
-                let amt: f64 =
-                    (index as i64 + upgrade.tap_offset) as f64 * p * upgrade.one_juice_cost as f64;
-                if upgrade.is_weapon {
-                    avg_used_red += amt;
-                } else {
-                    avg_used_blue += amt;
-                }
+                cur_juice_count += 1.0;
+            }
+            let amt: f64 = cur_juice_count * p * upgrade.one_juice_cost as f64;
+            if upgrade.is_weapon {
+                avg_used_red += amt;
+            } else {
+                avg_used_blue += amt;
             }
         }
     }

@@ -21,15 +21,20 @@
   - implement average-optimizing evaluation(switch to this when prob = 100 also)
   - implement fft or something for medium sized complexity because lr kinda very bad(also use (and optimize) exact convolution for single piece(maybe 2))
   - monte carlo at the end to verify / sanity check / just to look at it
-  - set up books support so state will be integers instead of bools
+  - set up books support so state will be integers instead of bools ( need to add more columns to test cases, book count storage etc)
+    - modify the current too-many-juice checker to accomodate books (or many just fuck that )
+    - roll a different flip target for each upgrade(for now)
   - set up slurm on laptop
   - evaluate adaptive policies with monte carlo?
   - limit neighbor function - 1 click 10 taps, limit amt of toggles maybe
-
-- Algorithm ideas
+  - data analysis
   - use newtons methods until 0 derivative or something, this bisection kinda slow
   - Make a ks_012 and only call ks_01234 function when needed
 
+- Algorithm ideas
+  - shifting/rotating bits
+  - flipping only targetted bits
+  
 ## Next big step(s)
 
 - Juice(and Book / Scroll) purchase suggestion

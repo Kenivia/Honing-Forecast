@@ -1,3 +1,4 @@
+use std::collections::HashSet;
 // +11 to +18 double artisan, +15 to 18 mats cost reduced by 10%, unlock cost reduced by 20%
 pub static EVENT_ARTISAN_MULTIPLIER: [f64; 25] = [
     1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 1.0,
@@ -40,7 +41,50 @@ pub static NORMAL_HONE_CHANCES: [f64; 25] = [
     1.0, 1.0, 1.0, 0.45, 0.45, 0.45, 0.3, 0.3, 0.15, 0.15, 0.1, 0.1, 0.05, 0.05, 0.04, 0.04, 0.03,
     0.03, 0.03, 0.015, 0.015, 0.01, 0.01, 0.005, 0.005,
 ];
+pub static AVAIL_JUICES: &[&[i64]] = &[
+    &[0],
+    &[0],
+    &[0],
+    &[0, 4500],
+    &[0, 4500],
+    &[0, 4500],
+    &[0, 3000],
+    &[0, 3000],
+    &[0, 1500],
+    &[0, 1500],
+    &[0, 1000],
+    &[0, 1000],
+    &[0, 500],
+    &[0, 500],
+    &[0, 400],
+    &[0, 400],
+    &[0, 300],
+    &[0, 300],
+    &[0, 300],
+    &[0, 150],
+    &[0, 150],
+    &[0, 100],
+    &[0, 100],
+    &[0, 50],
+    &[0, 50],
+]; // prob up to 2 decimal place like 0.6967 = 6967
 
+pub fn get_avail_juice_combs() -> Vec<Vec<f64>> {
+    let mut out: Vec<Vec<f64>> = Vec::new();
+    for &upgrade in AVAIL_JUICES {
+        let mut sums: HashSet<i64> = HashSet::new();
+        sums.insert(0);
+
+        for &v in upgrade {
+            // Take a snapshot to avoid mutating while iterating
+            let new_sums: Vec<i64> = sums.iter().map(|&s| s + v).collect();
+            sums.extend(new_sums);
+        }
+
+        out.push(sums.into_iter().map(|x| x as f64 / 1000.0).collect());
+    }
+    out
+}
 // these costs are manually copied from lost ark codex, dont bet on it being 100% correct
 pub static DEFAULT_NORMAL_HONE_WEAPON_COST: [[i64; 25]; 7] = [
     [

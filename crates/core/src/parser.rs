@@ -1,7 +1,7 @@
 use crate::constants::{
     ADV_DATA_10_20, ADV_DATA_10_20_JUICE, ADV_DATA_30_40, ADV_DATA_30_40_JUICE, ADV_HONE_COST,
-    NORMAL_HONE_CHANCES, NORMAL_JUICE_COST, SPECIAL_LEAPS_COST, get_event_modified_armor_costs,
-    get_event_modified_artisan, get_event_modified_weapon_costs,
+    NORMAL_HONE_CHANCES, NORMAL_JUICE_COST, SPECIAL_LEAPS_COST, get_avail_juice_combs,
+    get_event_modified_armor_costs, get_event_modified_artisan, get_event_modified_weapon_costs,
 };
 use crate::helpers::{
     average_juice_cost, calc_unlock, compress_runs, compute_eqv_gold_values, eqv_gold_per_tap,
@@ -25,6 +25,7 @@ pub struct PreparationOutputs {
     pub budgets_no_gold: Vec<i64>,
     pub test_case: i64,
     pub base_gold_budget: f64,
+    pub avail_juice_combs: Vec<Vec<f64>>,
 }
 
 pub fn preparation(
@@ -103,6 +104,7 @@ pub fn preparation(
         budgets_no_gold,
         test_case: -1, // arena will overwrite this
         base_gold_budget,
+        avail_juice_combs: get_avail_juice_combs(),
     }
 }
 

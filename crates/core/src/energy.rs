@@ -7,6 +7,8 @@ use crate::helpers::compute_eqv_gold_values;
 #[cfg(test)]
 use crate::helpers::eqv_gold_per_tap;
 #[cfg(test)]
+use crate::saddlepoint_approximation::StateBundle;
+#[cfg(test)]
 use crate::saddlepoint_approximation::saddlepoint_approximation;
 // use num::Float;
 // use num::complex::Complex64;
@@ -281,15 +283,19 @@ mod tests {
         // panic!();
         let mut states_evaled: i64 = 0;
         let approx_result = prob_to_maximize(
-            &vec![
-                // vec![true; 16],
-                // vec![true; 2],
-                // vec![true; 18],
-                vec![false],
-                vec![false],
-                vec![false],
-                vec![false],
-            ],
+            &StateBundle {
+                state: vec![
+                    // vec![true; 16],
+                    // vec![true; 2],
+                    // vec![true; 18],
+                    vec![0],
+                    vec![0],
+                    vec![0],
+                    vec![0],
+                ],
+                names: vec![],
+                state_index: vec![],
+            },
             &mut prep_output,
             &mut states_evaled,
         );

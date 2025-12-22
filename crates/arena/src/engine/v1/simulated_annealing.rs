@@ -1,7 +1,7 @@
 // use hf_core::energy::prob_to_maximize_exact;
 
 use hf_core::parser::{PreparationOutputs, Upgrade};
-use hf_core::saddlepoint_approximation::prob_to_maximize;
+use hf_core::saddlepoint_approximation::{StateBundle, prob_to_maximize};
 use rand::Rng;
 use rand::distr::Distribution;
 use rand::distr::weighted::WeightedIndex;
@@ -90,13 +90,13 @@ pub fn my_pmf(max_len: usize, expected: f64) -> Vec<f64> {
 // }
 
 fn neighbour<R: Rng>(
-    state: &[Vec<bool>],
+    state: &[Vec<i64>],
     upgrade_arr: &[Upgrade],
     temp: f64,
     init_temp: f64,
     rng: &mut R,
-) -> Vec<Vec<bool>> {
-    let mut new_state: Vec<Vec<bool>> = state.to_vec();
+) -> Vec<Vec<i64>> {
+    let mut new_state: Vec<Vec<i64>> = state.to_vec();
     for (u_index, s) in new_state.iter_mut().enumerate() {
         let want_to_flip: usize = WeightedIndex::new(my_pmf(
             (s.len() - 1).max(1),
@@ -119,7 +119,7 @@ fn neighbour<R: Rng>(
                 > upgrade_arr[u_index].support_lengths
                     [true_count.min(upgrade_arr[u_index].support_lengths.len() - 1)]
             {
-                *bit = false;
+                *bit = 0;
             } else {
                 if flipped_index < want_to_flip_indices.len()
                     && s_index == want_to_flip_indices[flipped_index]
@@ -174,34 +174,52 @@ fn simulated_annealing<R: Rng>(
     prep_output: &mut PreparationOutputs,
     rng: &mut R,
     states_evaled: &mut i64,
-) -> (Vec<Vec<bool>>, f64) {
+) -> (Vec<Vec<i64>>, f64) {
     let init_temp: f64 = 333.0; // 0.969 = ~32
     // let mut cache: HashMap<(Vec<bool>, usize), Vec<([i64; 9], f64)>> = HashMap::new();
     let mut temp: f64 = init_temp;
-    let mut state: Vec<Vec<bool>> = Vec::with_capacity(prep_output.upgrade_arr.len());
+    let mut state: Vec<Vec<i64>> = Vec::with_capacity(prep_output.upgrade_arr.len());
     for upgrade in prep_output.upgrade_arr.iter() {
         // state.push(vec![rng.random_bool(0.5); upgrade.support_lengths[0]]);
-        state.push(vec![false; upgrade.support_lengths[0]]);
+        state.push(vec![0; upgrade.support_lengths[0]]);
     }
-    let mut prev_prob: f64 = prob_to_maximize(&state, prep_output, states_evaled);
+    let state_bundle: StateBundle = StateBundle {
+        state: state.clone(),
+        names: prep_output
+            .upgrade_arr
+            .iter()
+            .map(|x| {
+                let mut string: String = if x.is_normal_honing {
+                    "".to_owned()
+                } else {
+                    "adv_".to_owned()
+                };
+                string += if x.is_weapon { "weap_" } else { "armor_" };
+                string += stringify!(x.upgrade_plus_num);
+                string
+            })
+            .collect::<Vec<String>>(),
+        state_index: vec![],
+    };
+    let mut prev_prob: f64 = prob_to_maximize(&state_bundle, prep_output, states_evaled);
 
     let iterations_per_temp = 69;
     // let mut temperature_level_k = 0;
     let mut count: i32 = 0;
     let alpha: f64 = 0.99;
 
-    let mut best_state_so_far: Vec<Vec<bool>> = state.clone();
+    let mut best_state_so_far: Vec<Vec<i64>> = state_bundle.state.clone();
     let mut best_prob_so_far: f64 = prev_prob;
     let mut temps_without_improvement = 1;
     while temp >= 0.0 {
-        let new_state: Vec<Vec<bool>> =
+        let new_state: Vec<Vec<i64>> =
             neighbour(&state, &prep_output.upgrade_arr, temp, init_temp, rng);
         // dbg!(
         //     compute_eqv_gold_values(&prep_output.budgets, &prep_output.mats_value),
         //     eqv_gold_unlock(&prep_output.unlock_costs, &prep_output.mats_value)
         // );
         // panic!();
-        let new_prob: f64 = prob_to_maximize(&state, prep_output, states_evaled);
+        let new_prob: f64 = prob_to_maximize(&state_bundle, prep_output, states_evaled);
         // if new_prob > 0.13 {
         //     panic!();
         // }
@@ -284,21 +302,16 @@ fn simulated_annealing<R: Rng>(
     (best_state_so_far, best_prob_so_far)
 }
 
-fn encode_one_positions(v1: &[bool]) -> String {
+fn encode_one_positions(v1: &[i64]) -> String {
     let mut s1 = String::new();
 
-    for i in 0..v1.len() {
-        // first vector row
-        if v1[i] {
-            s1.push('1');
-        } else {
-            s1.push('0');
-        }
+    for &val in v1 {
+        s1.push_str(&val.to_string());
     }
 
-    format!("{s1}")
+    s1
 }
-fn encode_all(input: &[Vec<bool>]) -> String {
+fn encode_all(input: &[Vec<i64>]) -> String {
     let mut strings = Vec::new();
     for i in input.iter() {
         strings.push(encode_one_positions(i));
