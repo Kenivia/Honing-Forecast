@@ -44,51 +44,6 @@ pub fn my_pmf(max_len: usize, expected: f64) -> Vec<f64> {
     v
 }
 
-/// Rotate the prefix `v[0..=end_index]` of `v` by `amount`.
-///
-/// - `v` is modified in-place.
-/// - `end_index` is inclusive (so prefix length = `end_index + 1`).
-/// - `rotate_left = true` rotates left; `false` rotates right.
-/// - `amount` may be >= prefix length; it's reduced modulo prefix length.
-/// - The function does nothing when `amount % prefix_len == 0` or prefix_len == 0.
-// pub fn rotate_prefix_bool_vec(
-//     v: &mut Vec<bool>,
-//     end_index: usize,
-//     rotate_left: bool,
-//     amount: usize,
-// ) {
-//     let n = end_index + 1; // prefix length
-//     if n == 0 {
-//         return;
-//     } // (this can only happen if end_index == usize::MAX, but keep for completeness)
-//     if amount == 0 {
-//         return;
-//     }
-
-//     let k = amount % n;
-//     if k == 0 {
-//         return;
-//     }
-
-//     // Convert a right rotation into an equivalent left rotation.
-//     let left_k = if rotate_left { k } else { (n - k) % n };
-
-//     // Copy prefix into temporary buffer and write rotated values back.
-//     let mut tmp = Vec::with_capacity(n);
-//     // initialize with false to set length
-//     tmp.resize(n, false);
-
-//     // new[i] = old[(i + left_k) % n]
-//     for i in 0..n {
-//         tmp[i] = v[(i + left_k) % n];
-//     }
-
-//     // write rotated prefix back into v[0..n]
-//     for i in 0..n {
-//         v[i] = tmp[i];
-//     }
-// }
-
 fn neighbour<R: Rng>(
     state: &[Vec<i64>],
     upgrade_arr: &[Upgrade],
@@ -138,26 +93,8 @@ fn neighbour<R: Rng>(
                 }
             }
         }
-
-        // let rotate_count: usize = WeightedIndex::new(binomial_pmf(
-        //     (s.len() as f64).ceil() as usize,
-        //     (temp / init_temp * s.len() as f64 - 1.0)
-        //         .min(s.len() as f64)
-        //         .max(0.1),
-        // ))
-        // .unwrap()
-        // .sample(rng);
-        // rotate_prefix_bool_vec(
-        //     s,
-        //     upgrade_arr[u_index].support_lengths
-        //         [true_count.min(upgrade_arr[u_index].support_lengths.len() - 1)]
-        //         - 1,
-        //     rng.random_bool(0.5),
-        //     rotate_count,
-        // );
-        // dbg!(want_to_flip, flipped_index, rotate_count);
     }
-    // dbg!(&new_state);
+
     new_state
 }
 fn new_temp(temp: f64, alpha: f64) -> f64 {
