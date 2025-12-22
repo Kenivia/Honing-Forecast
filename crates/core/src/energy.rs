@@ -239,7 +239,9 @@ mod tests {
             (0..25)
                 .map(|x| if x == 23 || x == 24 { 1 } else { 0 })
                 .collect(),
-            (0..25).map(|x| if x == 24 { 1 } else { 0 }).collect(),
+            (0..25)
+                .map(|x| if x == 23 || x == 24 { 1 } else { 0 })
+                .collect(),
         ];
         let adv_counts: Vec<Vec<i64>> =
             vec![(0..4).map(|_| 0).collect(), (0..4).map(|_| 0).collect()];
@@ -247,7 +249,7 @@ mod tests {
         let adv_hone_strategy: &str = "No juice";
         let express_event: bool = false;
         let input_budgets = vec![
-            3240, 9240, 46, 17740, 36, 1945670, 108000, 900, 900,
+            3240, 9240, 46, 17740, 36, 7945670, 108000, 0, 0,
             0,
             // 0, 0, 0, 0, 0, 16000, 0, 0, 0, 0,
         ];
@@ -278,16 +280,29 @@ mod tests {
         // panic!();
         let mut states_evaled: i64 = 0;
         let approx_result = prob_to_maximize(
-            &vec![vec![true; 16], vec![true; 2], vec![true; 18]],
-            &mut prep_output.upgrade_arr,
-            &prep_output.mats_value,
-            compute_eqv_gold_values(&prep_output.budgets, &prep_output.mats_value)
-                - eqv_gold_unlock(&prep_output.unlock_costs, &prep_output.mats_value),
+            &vec![
+                // vec![true; 16],
+                // vec![true; 2],
+                // vec![true; 18],
+                vec![false],
+                vec![false],
+                vec![false],
+                vec![false],
+            ],
+            &mut prep_output,
             &mut states_evaled,
         );
 
         let exact_result = prob_to_maximize_exact(
-            &vec![vec![true; 16], vec![true; 2], vec![true; 18]],
+            &vec![
+                // vec![true; 16],
+                // vec![true; 2],
+                // vec![true; 18],
+                vec![false],
+                vec![false],
+                vec![false],
+                vec![false],
+            ],
             &mut prep_output.upgrade_arr,
             0.0,
             &prep_output.mats_value,
@@ -295,14 +310,16 @@ mod tests {
                 - eqv_gold_unlock(&prep_output.unlock_costs, &prep_output.mats_value),
             0,
         );
-        dbg!(approx_result, exact_result, states_evaled);
+        dbg!(approx_result);
+
+        dbg!(exact_result);
         // let result: Vec<Vec<i64>> = out.clone();
         if let Some(_cached_result) =
             read_cached_data::<Vec<Vec<Vec<(f64, String)>>>>(test_name, &hash)
         {
             // my_assert!(*result, cached_result);
         } else {
-            write_cached_data(test_name, &hash, &exact_result);
+            write_cached_data(test_name, &hash, &approx_result);
         }
         dbg!(start.elapsed());
         // let result: Vec<(Vec<i64>, Vec<i64>)> = brute(&mut upgrade_arr);

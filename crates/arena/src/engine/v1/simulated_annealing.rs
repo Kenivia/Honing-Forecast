@@ -1,5 +1,5 @@
 // use hf_core::energy::prob_to_maximize_exact;
-use hf_core::helpers::{compute_eqv_gold_values, eqv_gold_unlock};
+
 use hf_core::parser::{PreparationOutputs, Upgrade};
 use hf_core::saddlepoint_approximation::prob_to_maximize;
 use rand::Rng;
@@ -183,14 +183,7 @@ fn simulated_annealing<R: Rng>(
         // state.push(vec![rng.random_bool(0.5); upgrade.support_lengths[0]]);
         state.push(vec![false; upgrade.support_lengths[0]]);
     }
-    let mut prev_prob: f64 = prob_to_maximize(
-        &state,
-        &mut prep_output.upgrade_arr,
-        &prep_output.mats_value,
-        compute_eqv_gold_values(&prep_output.budgets, &prep_output.mats_value)
-            - eqv_gold_unlock(&prep_output.unlock_costs, &prep_output.mats_value),
-        states_evaled,
-    );
+    let mut prev_prob: f64 = prob_to_maximize(&state, prep_output, states_evaled);
 
     let iterations_per_temp = 69;
     // let mut temperature_level_k = 0;
@@ -208,14 +201,7 @@ fn simulated_annealing<R: Rng>(
         //     eqv_gold_unlock(&prep_output.unlock_costs, &prep_output.mats_value)
         // );
         // panic!();
-        let new_prob: f64 = prob_to_maximize(
-            &state,
-            &mut prep_output.upgrade_arr,
-            &prep_output.mats_value,
-            compute_eqv_gold_values(&prep_output.budgets, &prep_output.mats_value)
-                - eqv_gold_unlock(&prep_output.unlock_costs, &prep_output.mats_value),
-            states_evaled,
-        );
+        let new_prob: f64 = prob_to_maximize(&state, prep_output, states_evaled);
         // if new_prob > 0.13 {
         //     panic!();
         // }
@@ -250,28 +236,28 @@ fn simulated_annealing<R: Rng>(
             count = 0;
             // temperature_level_k += 1;
 
-            println!(
-                "Temp: {:.6} Prob: {:.6} Best prob: {:.6}",
-                temp,
-                (prev_prob * 100.0),
-                (best_prob_so_far * 100.0),
-                // prob_to_maximize_exact(
-                //     &best_state_so_far,
-                //     &mut prep_output.upgrade_arr,
-                //     0.0,
-                //     &prep_output.mats_value,
-                //     compute_eqv_gold_values(&prep_output.budgets, &prep_output.mats_value)
-                //         - eqv_gold_unlock(&prep_output.unlock_costs, &prep_output.mats_value),
-                //     0
-                // ),
-            );
+            // println!(
+            //     "Temp: {:.6} Prob: {:.6} Best prob: {:.6}",
+            //     temp,
+            //     (prev_prob * 100.0),
+            //     (best_prob_so_far * 100.0),
+            //     // prob_to_maximize_exact(
+            //     //     &best_state_so_far,
+            //     //     &mut prep_output.upgrade_arr,
+            //     //     0.0,
+            //     //     &prep_output.mats_value,
+            //     //     compute_eqv_gold_values(&prep_output.budgets, &prep_output.mats_value)
+            //     //         - eqv_gold_unlock(&prep_output.unlock_costs, &prep_output.mats_value),
+            //     //     0
+            //     // ),
+            // );
             if temps_without_improvement as f64 > (1.0 * temp).max(3.0)
             // || (best_prob_so_far - prev_prob) > 0.005
             {
                 state = best_state_so_far.clone();
                 prev_prob = best_prob_so_far.clone();
                 temps_without_improvement = 0;
-                dbg!("restarted");
+                // dbg!("restarted");
             }
             temps_without_improvement += 1;
             temp = new_temp(temp, alpha);

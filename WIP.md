@@ -17,9 +17,14 @@
 
 - More specific TODO list:
   - fix either the neighbor function or the prob_to_maximize function to force use owned juice/punish unused juice
+  - add upgrade name to states when saving them
   - implement average-optimizing evaluation
+  - implement fft or something for medium sized complexity because lr kinda very bad(also use (and optimize) exact convolution for single piece(maybe 2))
+  - monte carlo at the end to verify / sanity check / just to look at it
+  - set up books support so state will be integers instead of bools
   - set up slurm on laptop
-  - implement fft or something for medium sized complexity because lr kinda very bad
+  - evaluate adaptive policies with monte carlo?
+  - limit neighbor function - 1 click 10 taps, limit amt of toggles maybe
 
 - Algorithm ideas
   - use newtons methods until 0 derivative or something, this bisection kinda slow

@@ -12,7 +12,7 @@ use std::io::{BufRead, BufReader, BufWriter, Error, Write};
 use std::path::Path;
 use std::time::Instant;
 
-static NUM_TESTS_TO_RUN: i64 = 10; // TODO this should be replaced by statistical tests like fishtest eventually
+static NUM_TESTS_TO_RUN: i64 = 5; // TODO this should be replaced by statistical tests like fishtest eventually
 
 #[derive(Debug, Serialize)]
 struct Header {
@@ -83,6 +83,7 @@ fn main() {
             *seen_tests.entry(out.test_case).or_insert(0) += 1;
         }
     }
+    dbg!(&seen_tests);
     if !at_least_one_line {
         if Path::new(&file_name).exists() {
             remove_file(&file_name).expect("Failed to delete empty file");
@@ -103,13 +104,14 @@ fn main() {
         for case in test_cases.iter_mut() {
             let instant: Instant = Instant::now();
             if seen_tests.contains_key(&case.test_case)
-                && seen_tests[&case.test_case] > NUM_TESTS_TO_RUN
+                && seen_tests[&case.test_case] >= NUM_TESTS_TO_RUN
             {
                 continue;
             }
             let seed: u64 = seed_rng.next_u64();
             let mut rng: StdRng = StdRng::seed_from_u64(seed);
             let mut states_evaled: i64 = 0;
+            println!("Test case {}", case.test_case);
             let (out_string, prob) = solve(&mut states_evaled, case, &mut rng);
 
             let output: Output = Output {

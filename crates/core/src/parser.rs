@@ -4,8 +4,8 @@ use crate::constants::{
     get_event_modified_artisan, get_event_modified_weapon_costs,
 };
 use crate::helpers::{
-    average_juice_cost, calc_unlock, compress_runs, eqv_gold_per_tap, generate_first_deltas,
-    sort_by_indices,
+    average_juice_cost, calc_unlock, compress_runs, compute_eqv_gold_values, eqv_gold_per_tap,
+    eqv_gold_unlock, generate_first_deltas, sort_by_indices,
 };
 // use crate::monte_carlo::monte_carlo_one;
 use crate::value_estimation::{
@@ -24,6 +24,7 @@ pub struct PreparationOutputs {
     pub special_strings: Vec<String>,
     pub budgets_no_gold: Vec<i64>,
     pub test_case: i64,
+    pub base_gold_budget: f64,
 }
 
 pub fn preparation(
@@ -69,6 +70,9 @@ pub fn preparation(
                 .len(),
             );
         }
+
+        let juice_ind: usize = if upgrade.is_weapon { 7 } else { 8 };
+        upgrade.eqv_gold_per_juice = user_mats_value[juice_ind] * upgrade.one_juice_cost as f64;
     }
 
     //XXXXXXXXXXXXXXXXXXXXXXXXXXXXX defunct code here to keep rust analyzer happy
@@ -85,6 +89,9 @@ pub fn preparation(
     //XXXXXXXXXXXXXXXXXXXXXXXXXXXXX defunct code here to keep rust analyzer happy
     let mut budgets_no_gold: Vec<i64> = budgets.clone();
     budgets_no_gold[5] = 0;
+
+    let base_gold_budget: f64 = compute_eqv_gold_values(&budgets, &mats_value)
+        - eqv_gold_unlock(&unlock_costs, &mats_value);
     PreparationOutputs {
         upgrade_arr,
         unlock_costs,
@@ -95,6 +102,7 @@ pub fn preparation(
         special_strings,
         budgets_no_gold,
         test_case: -1, // arena will overwrite this
+        base_gold_budget,
     }
 }
 
