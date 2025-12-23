@@ -6,8 +6,11 @@
 ### Now
 
 - special honing
-  - need to add a 0th slot to prob_dist or?
-- state of this is actually integers
+  - need to add a 0th slot to prob_dist or? have to strip out a lot of stuff
+  - ~~state of this is actually integers~~ this isnt actually so simple because we can finish early
+  - state = order of which ones to attempt first
+    - p =1 - PRODUCT (1 - p_i * P(got special leaps left) )
+    - estimate this P(got special leaps left) with saddlepoint(wow this thing is tas)
 
 - procedually generate test cases
   - figure out how to fit the juice prices into the csv
@@ -15,18 +18,21 @@
 
 ### Big
 
-- implement average-optimizing evaluation(tiebreak with this when prob = 100 also maybe?), add field to result json etc (can think abt bound/tradable maybe)
+- implement average-optimizing evaluation(tiebreak with this when prob = 100 also maybe?),
+  - more precisely this minimizes what the "buy mats with gold" option is doing currently, as in the average gold needed (raw + spent on buying mats)
   - this can keep track of each dimension individually & calculate leftover precisely
+    - add field to result json etc (can think abt bound/tradable maybe)
   - customizable sell ratio
   - juice chest opening simulation
 - set up slurm on laptop
-- how to evaluate adaptive policies???
-- Also need to do special honing and even advanced honing eventually maybe
-- Wire up all this to the website
+- how to evaluate adaptive policies??? (also allow fixing the first few outcomes and wire that up to the website(artisan editing))
+- advanced honing eventually
+- wire up all this to the website
 
 ### Energy
 
-- implement fft or something for medium sized complexity because lr kinda very bad(also use (and optimize) exact convolution for single piece(maybe 2))
+- implement fft or something for medium sized complexity because lr kinda very bad
+  - (also use (and optimize) exact convolution for single piece(maybe 2))
 -~~ add upgrade name to states when saving them,~~ maybe add some way to keep track of where bits are to make neighbor potentially more efficient
 
 ### Algorithm ideas
@@ -36,8 +42,6 @@
   - start with VERY broad neighbors - all true, all false etc, then refine until limit reached (such as 10 taps), test how much the limit affects performance
 - keep a top 10 list and randomly restart to them instead of just the top 1
 - some kind of heatmap of which bits were the most impactful? but i feel like this wouldnt actually do much
-
-### Arena
 
 ### Data analysis
 

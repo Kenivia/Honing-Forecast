@@ -49,6 +49,7 @@ fn ks_12_for_newton(
         let mut cur_gold_cost = 0.0;
         let mut gold_cost_record: Vec<f64> = Vec::with_capacity(upgrade.log_prob_dist.len());
         for (p_index, l) in upgrade.log_prob_dist.iter().enumerate() {
+            // TODO pre compute alpha_arr i cant believe i havnt
             increment_gold_cost(
                 &mut cur_gold_cost,
                 upgrade,
@@ -83,8 +84,8 @@ fn ks_12_for_newton(
             if u == 0.0 {
                 continue;
             }
-            let w = u / s;
-            let x = gold_cost_record[p_index];
+            let w: f64 = u / s;
+            let x: f64 = gold_cost_record[p_index];
             mean += x * w;
             second += (x * x) * w;
         }
@@ -235,7 +236,7 @@ fn my_newton<F>(f_df: F) -> (f64, f64)
 where
     F: FnMut(f64) -> (f64, f64),
 {
-    let root = find_root(f_df, 0.0, -1.0, 1.0, TOL, 20);
+    let root = find_root(f_df, 0.0, -1.0, 1.0, TOL, 20); // i mean its usually like 3 iters but idk 
     return root;
 }
 
@@ -245,14 +246,13 @@ pub fn saddlepoint_approximation(
     budget: f64,
     leftover: f64,
 ) -> f64 {
-    // let (theta_hat, ks, ks1, ks2, ks3) = newton(upgrade_arr, budget);
-    let f = |theta| {
+    let f_df = |theta| {
         let ks_12 = ks_12_for_newton(state_bundle, prep_output, theta);
         (ks_12.0 - budget, ks_12.1)
     };
 
     let mut min_value: f64 = 0.0;
-    let mut max_value: f64 = 0.0; // pre-calculate this  TODO
+    let mut max_value: f64 = 0.0; // pre-calculate this(count the juice and use a hashmap)  TODO
     for (u_index, upgrade) in prep_output.upgrade_arr.iter().enumerate() {
         for (p_index, _) in upgrade.prob_dist.iter().enumerate() {
             let mut this_value = upgrade.eqv_gold_per_tap;
@@ -276,7 +276,7 @@ pub fn saddlepoint_approximation(
         }
     }
 
-    let result = my_newton(&f); // (&f, Interval::new(-1.0, 1.0), Some(&settings), None);
+    let result = my_newton(&f_df);
     if budget < min_value - TOL {
         return 0.0;
     }
@@ -292,12 +292,13 @@ pub fn saddlepoint_approximation(
     }
 
     if DEBUG || !result.0.is_finite() || !result.1.is_finite() {
+        //       ^this shouldnt ever happen now^
         dbg!(
-            f(10000.0),
-            f(1.0),
-            f(0.0000001),
-            f(-1.0),
-            f(-10000.0),
+            f_df(10000.0),
+            f_df(1.0),
+            f_df(0.0000001),
+            f_df(-1.0),
+            f_df(-10000.0),
             budget,
             min_value,
             max_value,
@@ -347,17 +348,14 @@ pub fn saddlepoint_approximation(
 
         let approx = cdf - cdf_correction;
         if DEBUG || approx < 0.0 || approx > 1.0 {
-            dbg!(theta_hat, theta_error);
-            dbg!(w_hat, u_hat, error, out, old_out);
             dbg!(
-                theta_hat,
-                ks,
-                ks1,
-                ks2,
-                ks3,
                 budget - ks1,
                 z,
+                std,
+                gamma3,
+                gamma4,
                 cdf,
+                pdf,
                 cdf_correction,
                 approx
             );
@@ -365,7 +363,6 @@ pub fn saddlepoint_approximation(
         out = approx;
     }
 
-    // if out < 0.0 || out > 1.0 || ks2.abs() < 1e-12 {
     if DEBUG || out < 0.0 || out > 1.0 {
         dbg!(theta_hat, theta_error);
         dbg!(w_hat, u_hat, w_last, u_last, error, out, old_out);
@@ -391,7 +388,6 @@ pub fn saddlepoint_approximation(
 
     out
 }
-//P(S<B)≈Φ(w^)+ϕ(w^)(w^1​−u^1​)
 
 pub fn prob_to_maximize(
     state_bundle: &StateBundle,
@@ -429,6 +425,7 @@ pub fn prob_to_maximize(
     )
 }
 
+// this feels SO wrong but idk how else to do this
 fn expected_juice_leftover(prep_output: &PreparationOutput, state_bundle: &StateBundle) -> f64 {
     let mut avg_used: Vec<(f64, f64)> =
         vec![(0.0, 0.0); prep_output.juice_info.one_gold_cost_id.len()];
