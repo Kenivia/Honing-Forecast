@@ -160,7 +160,7 @@ mod tests {
         let adv_hone_strategy: &str = "No juice";
         let express_event: bool = false;
         let input_budgets = vec![
-            3240, 9240, 46, 17740, 36, 7945670, 108000, 0, 0,
+            3240, 9240, 46, 17740, 36, 7545670, 108000, 0, 0,
             0,
             // 0, 0, 0, 0, 0, 16000, 0, 0, 0, 0,
         ];

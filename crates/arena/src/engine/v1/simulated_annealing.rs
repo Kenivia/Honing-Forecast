@@ -188,21 +188,21 @@ fn simulated_annealing<R: Rng>(
         if state_bundle.prob > best_state_so_far.prob {
             best_state_so_far = state_bundle.clone();
             temps_without_improvement = 0;
-            println!(
-                "Temp: {:.6} Best prob: {:.6} Best state: \n{}",
-                temp,
-                (best_state_so_far.prob * 100.0),
-                // prob_to_maximize_exact(
-                //     &best_state_so_far,
-                //     &mut prep_output.upgrade_arr,
-                //     0.0,
-                //     &prep_output.mats_value,
-                //     compute_eqv_gold_values(&prep_output.budgets, &prep_output.mats_value)
-                //         - eqv_gold_unlock(&prep_output.unlock_costs, &prep_output.mats_value),
-                //     0
-                // ),
-                encode_all(&&best_state_so_far)
-            );
+            // println!(
+            //     "Temp: {:.6} Best prob: {:.6} Best state: \n{}",
+            //     temp,
+            //     (best_state_so_far.prob * 100.0),
+            //     // prob_to_maximize_exact(
+            //     //     &best_state_so_far,
+            //     //     &mut prep_output.upgrade_arr,
+            //     //     0.0,
+            //     //     &prep_output.mats_value,
+            //     //     compute_eqv_gold_values(&prep_output.budgets, &prep_output.mats_value)
+            //     //         - eqv_gold_unlock(&prep_output.unlock_costs, &prep_output.mats_value),
+            //     //     0
+            //     // ),
+            //     encode_all(&&best_state_so_far)
+            // );
         }
 
         if acceptance(state_bundle.prob, prev_state.prob, temp, rng) {
@@ -244,12 +244,12 @@ fn simulated_annealing<R: Rng>(
             break; // optimize average later
         }
     }
-    println!(
-        "Temp: {} Prob: {} State (Final): \n{} ",
-        temp.to_string(),
-        (best_state_so_far.prob * 100.0).to_string(),
-        encode_all(&best_state_so_far)
-    );
+    // println!(
+    //     "Temp: {} Prob: {} State (Final): \n{} ",
+    //     temp.to_string(),
+    //     (best_state_so_far.prob * 100.0).to_string(),
+    //     encode_all(&best_state_so_far)
+    // );
 
     // println!(
     //     "Exact value: {:.6}",

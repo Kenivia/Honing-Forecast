@@ -14,8 +14,6 @@
 
 ### Energy
 
-- use newtons methods until 0 derivative or something, this bisection kinda slow
-- Make a ks_012 and only call ks_01234 function when needed
 - implement fft or something for medium sized complexity because lr kinda very bad(also use (and optimize) exact convolution for single piece(maybe 2))
 -~~ add upgrade name to states when saving them,~~ maybe add some way to keep track of where bits are to make neighbor potentially more efficient
 
@@ -82,6 +80,8 @@ graph
 
 ## Done / cancelled
 
+- ~~use newtons methods until 0 derivative or something, this bisection kinda slow~~
+- ~~Make a ks_012 and only call ks_01234 function when needed~~
 - ~~need to add more columns to test cases, book count storage etc, add easy book adding system (specify amt of % array, which upgrades they can be on etc)~~
 - ~~modify the current too-many-juice checker to accomodate books~~
 - ~~ set up books support so state will be~~ integers ~~instead of bools~~

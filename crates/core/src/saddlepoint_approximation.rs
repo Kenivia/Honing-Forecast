@@ -74,7 +74,7 @@ fn ks_12_for_newton(
 
         let mut u_arr: Vec<f64> = Vec::with_capacity(upgrade.log_prob_dist.len());
         for aj in alpha_arr.iter() {
-            let u: f64 = (aj - shift).exp(); // this can for sure be optimized into a polynomial TODO
+            let u: f64 = (aj - shift).exp();
             s += u;
             u_arr.push(u);
         }
@@ -141,7 +141,7 @@ fn ks_01234(
 
         let mut u_arr: Vec<f64> = Vec::with_capacity(upgrade.log_prob_dist.len());
         for aj in alpha_arr.iter() {
-            let u: f64 = (aj - shift).exp(); // this can for sure be optimized into a polynomial TODO
+            let u: f64 = (aj - shift).exp(); // i dont think this can be turned into a poly? cos cur_gold_cost is not linear
             s += u;
             u_arr.push(u);
         }
@@ -180,29 +180,37 @@ pub fn find_root<F>(
     max: f64,
     tol: f64,
     max_iter: usize,
-) -> Option<f64>
+) -> (f64, f64)
 where
     F: FnMut(f64) -> (f64, f64),
 {
     let mut theta: f64 = init_theta.max(min).min(max);
 
-    for _ in 0..max_iter {
-        let (y, dy) = func(theta);
-
-        if y.abs() < 1e-12 {
-            // this is largely irrelevant because we're interested in theta
-            return Some(theta);
+    let mut count = 0;
+    loop {
+        if DEBUG {
+            dbg!(count);
         }
 
-        if dy.abs() < 1e-12 {
+        let (y, dy) = func(theta);
+
+        // if y.abs() < 1e-12 {
+        //     // this is largely irrelevant because we're interested in theta
+        //     return Some(theta);
+        // }
+
+        if dy.abs() < 1e-14 {
             let (y_min, _) = func(min);
             let (y_max, _) = func(max);
 
-            return if y_min.abs() < y_max.abs() {
-                Some(min)
-            } else {
-                Some(max)
-            };
+            return (
+                if y_min.abs() < y_max.abs() { min } else { max },
+                if y_min.abs() < y_max.abs() {
+                    min + TOL
+                } else {
+                    max - TOL
+                },
+            );
         }
 
         let delta: f64 = y / dy;
@@ -212,28 +220,23 @@ where
             dbg!(y, dy, delta, theta);
             panic!();
         }
-        if new_theta < min {
-            new_theta = min;
-        } else if new_theta > max {
-            new_theta = max;
-        }
 
-        if (new_theta - theta).abs() < tol {
-            return Some(new_theta);
-        }
+        new_theta = new_theta.max(min).min(max);
 
+        count += 1;
+        if (new_theta - theta).abs() < tol || count >= max_iter {
+            return (new_theta, theta);
+        }
         theta = new_theta;
     }
-
-    None
 }
 
-fn my_newton<F>(f_df: F) -> f64
+fn my_newton<F>(f_df: F) -> (f64, f64)
 where
     F: FnMut(f64) -> (f64, f64),
 {
-    let root = find_root(f_df, 0.0, -1.0, 1.0, TOL, 100);
-    return root.expect("Failed to find root");
+    let root = find_root(f_df, 0.0, -1.0, 1.0, TOL, 20);
+    return root;
 }
 
 pub fn saddlepoint_approximation(
@@ -288,7 +291,7 @@ pub fn saddlepoint_approximation(
         return 1.0;
     }
 
-    if DEBUG || !result.is_finite() {
+    if DEBUG || !result.0.is_finite() || !result.1.is_finite() {
         dbg!(
             f(10000.0),
             f(1.0),
@@ -302,15 +305,32 @@ pub fn saddlepoint_approximation(
     }
     let (ks, ks1, ks2, ks3, ks4);
 
-    let theta_hat: f64 = result;
-
+    let (theta_hat, last_theta) = result;
+    let theta_error = (theta_hat - last_theta).abs();
+    if DEBUG {
+        dbg!(theta_hat, theta_error);
+    }
     let normal_dist: Normal = Normal::new(0.0, 1.0).unwrap(); // TODO can i pre initialize this or is there no point
 
-    #[allow(unused_assignments)]
-    if theta_hat.abs() < TOL {
-        // pre-calculate K(0) and stuff TODO
-        (ks, ks1, ks2, ks3, ks4) = ks_01234(state_bundle, prep_output, 0.0);
+    (ks, ks1, ks2, ks3, ks4) = ks_01234(state_bundle, prep_output, theta_hat); // technically is better to have a ks_0 here and reuse ks_2 but i cbb
+    let (last_ks, _, last_ks2, _, _) = ks_01234(state_bundle, prep_output, last_theta);
 
+    let w = |t: f64, ks_inp: f64| t.signum() * (2.0 * (t * budget - ks_inp)).sqrt();
+    let u = |t: f64, ks2_inp: f64| t * ks2_inp.sqrt();
+    let w_hat = w(theta_hat, ks);
+    let u_hat = u(theta_hat, ks2);
+    let w_last = w(last_theta, last_ks);
+    let u_last = u(last_theta, last_ks2);
+    let new = 1.0 / w_hat - 1.0 / u_hat;
+    let old = 1.0 / w_last - 1.0 / u_last;
+    let error = (new - old).abs();
+    let mut out = normal_dist.cdf(w_hat) + normal_dist.pdf(w_hat) * (1.0 / w_hat - 1.0 / u_hat);
+    let old_out = normal_dist.cdf(w_last) + normal_dist.pdf(w_last) * old;
+    if DEBUG {
+        dbg!(w_hat, u_hat, w_last, u_last, error, out, old_out);
+    }
+    //  ~ 1% raw error in the end, hopefully edgeworth can do better
+    if error > 1e-2 || !error.is_finite() {
         let std = ks2.sqrt();
         let z = (budget - ks1) / std;
 
@@ -326,53 +346,53 @@ pub fn saddlepoint_approximation(
                 + (gamma4 / 24.0) * (z * z * z - 3.0 * z)
                 + (gamma3 * gamma3 / 72.0) * (z * z * z * z * z - 10.0 * z * z * z + 15.0 * z));
 
-        let approx = cdf + cdf_correction;
-        if DEBUG {
-            dbg!(
-                theta_hat,
-                ks,
-                ks1,
-                ks2,
-                ks3,
-                budget - ks1,
-                z,
-                cdf,
-                cdf_correction,
-                approx
-            );
-        }
-        approx
-    } else {
-        (ks, ks1, ks2, ks3, ks4) = ks_01234(state_bundle, prep_output, theta_hat);
-        let w_hat: f64 = theta_hat.signum() * (2.0 * (theta_hat * budget - ks)).sqrt();
-        let u_hat: f64 = theta_hat * ks2.sqrt();
-
-        let out = normal_dist.cdf(w_hat) + normal_dist.pdf(w_hat) * (1.0 / w_hat - 1.0 / u_hat);
-        // if out < 0.0 || out > 1.0 || ks2.abs() < 1e-12 {
-        if DEBUG {
-            dbg!(
-                theta_hat,
-                ks,
-                ks1,
-                ks2,
-                ks3,
-                2.0 * (theta_hat * budget - ks),
-                w_hat,
-                u_hat,
-                normal_dist.cdf(w_hat),
-                normal_dist.pdf(w_hat),
-                1.0 / w_hat - 1.0 / u_hat,
-                budget,
-                min_value,
-                max_value,
-                out
-            );
-        }
+        let approx = cdf - cdf_correction;
+        // if DEBUG {
+        // dbg!(theta_hat, theta_error);
+        // dbg!(w_hat, u_hat, error, out, old_out);
+        // dbg!(
+        //     theta_hat,
+        //     ks,
+        //     ks1,
+        //     ks2,
+        //     ks3,
+        //     budget - ks1,
+        //     z,
+        //     cdf,
+        //     cdf_correction,
+        //     approx
+        // );
         // }
-        out
+        out = approx;
     }
-    //P(S<B)≈Φ(w^)+ϕ(w^)(w^1​−u^1​)
+
+    // if out < 0.0 || out > 1.0 || ks2.abs() < 1e-12 {
+    if DEBUG || out < 0.0 || out > 1.0 {
+        dbg!(theta_hat, theta_error);
+        dbg!(w_hat, u_hat, w_last, u_last, error, out, old_out);
+        dbg!(
+            theta_hat,
+            ks,
+            ks1,
+            ks2,
+            ks3,
+            2.0 * (theta_hat * budget - ks),
+            w_hat,
+            u_hat,
+            normal_dist.cdf(w_hat),
+            normal_dist.pdf(w_hat),
+            1.0 / w_hat - 1.0 / u_hat,
+            budget,
+            min_value,
+            max_value,
+            out
+        );
+        println!("==============================");
+    }
+
+    out
 }
+//P(S<B)≈Φ(w^)+ϕ(w^)(w^1​−u^1​)
 
 pub fn prob_to_maximize(
     state_bundle: &StateBundle,

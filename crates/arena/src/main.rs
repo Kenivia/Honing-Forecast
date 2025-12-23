@@ -12,7 +12,7 @@ use std::io::{BufRead, BufReader, BufWriter, Error, Write};
 use std::path::Path;
 use std::time::Instant;
 
-static NUM_TESTS_TO_RUN: i64 = 7; // TODO this should be replaced by statistical tests like fishtest eventually
+static NUM_TESTS_TO_RUN: i64 = 5; // TODO this should be replaced by statistical tests like fishtest eventually
 
 #[derive(Debug, Serialize)]
 struct Header {
