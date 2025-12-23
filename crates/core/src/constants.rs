@@ -42,6 +42,7 @@ pub static NORMAL_HONE_CHANCES: [f64; 25] = [
 ];
 
 //  [  ( [ (upgrade_index, % amt, cost per juice(books = 1)  )] , gold_value of the juice/book wep version, armor version) ]
+// add new entries from the bottom, order matters
 pub static JUICE_BOOKS_AVAIL: &[(&[(usize, f64, i64)], f64, f64)] = &[
     (
         &[
@@ -86,16 +87,36 @@ pub static JUICE_BOOKS_AVAIL: &[(&[(usize, f64, i64)], f64, f64)] = &[
     //19-20
     (&[(18, 0.03, 1), (19, 0.015, 1)], 8000.0, 4500.0),
 ];
-pub fn get_avail_juice_combs() -> (Vec<Vec<f64>>, Vec<Vec<(f64, f64)>>) {
+#[derive(Debug)]
+pub struct JuiceInfo {
+    pub chances: Vec<Vec<f64>>,
+    pub gold_costs: Vec<Vec<(f64, f64)>>,
+    pub amt_used: Vec<Vec<(i64, i64)>>,
+    pub ids: Vec<Vec<usize>>,
+    pub one_gold_cost_id: Vec<(f64, f64)>,
+}
+pub fn get_avail_juice_combs() -> JuiceInfo {
     let mut chances: Vec<Vec<f64>> = vec![vec![]; 25];
     let mut gold_costs: Vec<Vec<(f64, f64)>> = vec![vec![]; 25];
-    for rows in JUICE_BOOKS_AVAIL {
-        for &(index, chance, amt) in rows.0.iter() {
-            chances[index].push(chance);
-            gold_costs[index].push((amt as f64 * rows.1, amt as f64 * rows.2));
+    let mut amt_used: Vec<Vec<(i64, i64)>> = vec![vec![]; 25];
+    let mut ids: Vec<Vec<usize>> = vec![vec![]; 25];
+    let mut one_gold_cost_id: Vec<(f64, f64)> = vec![(0.0, 0.0); JUICE_BOOKS_AVAIL.len()];
+    for (id, rows) in JUICE_BOOKS_AVAIL.iter().enumerate() {
+        for &(upgrade_index, chance, amt) in rows.0.iter() {
+            chances[upgrade_index].push(chance);
+            gold_costs[upgrade_index].push((amt as f64 * rows.1, amt as f64 * rows.2));
+            amt_used[upgrade_index].push((amt, amt));
+            ids[upgrade_index].push(id);
         }
+        one_gold_cost_id[id] = (rows.1, rows.2);
     }
-    (chances, gold_costs)
+    JuiceInfo {
+        chances,
+        gold_costs,
+        amt_used,
+        ids,
+        one_gold_cost_id,
+    }
 }
 // these costs are manually copied from lost ark codex, dont bet on it being 100% correct
 pub static DEFAULT_NORMAL_HONE_WEAPON_COST: [[i64; 25]; 7] = [

@@ -15,28 +15,55 @@ pub struct StateBundle {
     pub prob: f64,
 }
 
-fn ks_01234(upgrade_arr: &[Upgrade], theta: f64) -> (f64, f64, f64, f64, f64) {
+fn increment_gold_cost(
+    cur_gold_cost: &mut f64,
+    upgrade: &Upgrade,
+    state_bundle: &StateBundle,
+    prep_output: &PreparationOutput,
+    u_index: usize,
+    p_index: usize,
+) {
+    *cur_gold_cost += upgrade.eqv_gold_per_tap;
+    for (bit_index, bit) in state_bundle.state[u_index][p_index].iter().enumerate() {
+        if *bit {
+            let this_price = prep_output.juice_info.gold_costs[upgrade.upgrade_index][bit_index];
+            if upgrade.is_weapon {
+                *cur_gold_cost += this_price.0;
+            } else {
+                *cur_gold_cost += this_price.1;
+            }
+        }
+    }
+}
+fn ks_01234(
+    state_bundle: &StateBundle,
+    prep_output: &PreparationOutput,
+    theta: f64,
+) -> (f64, f64, f64, f64, f64) {
     let mut total_k: f64 = 0.0;
     let mut total_k1: f64 = 0.0;
     let mut total_k2: f64 = 0.0;
     let mut total_k3: f64 = 0.0;
     let mut total_k4: f64 = 0.0;
 
-    for upgrade in upgrade_arr {
+    for (u_index, upgrade) in prep_output.upgrade_arr.iter().enumerate() {
         let mut alpha_arr: Vec<f64> = Vec::with_capacity(upgrade.log_prob_dist.len());
         let mut shift: f64 = f64::NEG_INFINITY;
-        let mut cur_juice_count = 0;
 
-        for (index, l) in upgrade.log_prob_dist.iter().enumerate() {
-            if index < upgrade.juice_arr.len()
-                && index < upgrade.log_prob_dist.len() - 1
-                && upgrade.juice_arr[index] > 0.0
-            {
-                cur_juice_count += 1;
-            }
-            let this_alpha: f64 = l + theta
-                * ((index as f64 + upgrade.tap_offset as f64) * upgrade.eqv_gold_per_tap
-                    + cur_juice_count as f64 * upgrade.eqv_gold_per_juice);
+        let mut cur_gold_cost = 0.0;
+        let mut gold_cost_record: Vec<f64> = Vec::with_capacity(upgrade.log_prob_dist.len());
+        for (p_index, l) in upgrade.log_prob_dist.iter().enumerate() {
+            increment_gold_cost(
+                &mut cur_gold_cost,
+                upgrade,
+                state_bundle,
+                prep_output,
+                u_index,
+                p_index,
+            );
+            gold_cost_record.push(cur_gold_cost);
+            let this_alpha: f64 = l + theta * cur_gold_cost;
+
             alpha_arr.push(this_alpha);
             shift = this_alpha.max(shift);
         }
@@ -46,12 +73,11 @@ fn ks_01234(upgrade_arr: &[Upgrade], theta: f64) -> (f64, f64, f64, f64, f64) {
         let mut second: f64 = 0.0;
         let mut third: f64 = 0.0;
         let mut fourth: f64 = 0.0;
-        let mut cur_juice_count = 0;
-        if theta == 0.0 {
-            if DEBUG {
-                dbg!(&alpha_arr);
-            }
+
+        if theta == 0.0 && DEBUG {
+            dbg!(&alpha_arr);
         }
+
         let mut u_arr: Vec<f64> = Vec::with_capacity(upgrade.log_prob_dist.len());
         for aj in alpha_arr.iter() {
             let u: f64 = (aj - shift).exp(); // this can for sure be optimized into a polynomial TODO
@@ -59,19 +85,12 @@ fn ks_01234(upgrade_arr: &[Upgrade], theta: f64) -> (f64, f64, f64, f64, f64) {
             u_arr.push(u);
         }
 
-        for (index, &u) in u_arr.iter().enumerate() {
-            if index < upgrade.juice_arr.len()
-                && index < upgrade.log_prob_dist.len() - 1
-                && upgrade.juice_arr[index] > 0.0
-            {
-                cur_juice_count += 1;
-            }
+        for (p_index, &u) in u_arr.iter().enumerate() {
             if u == 0.0 {
                 continue;
             }
             let w = u / s;
-            let x = (index as f64 + upgrade.tap_offset as f64) * upgrade.eqv_gold_per_tap
-                + cur_juice_count as f64 * upgrade.eqv_gold_per_juice; // can reuse the calculatoin from alpha array
+            let x = gold_cost_record[p_index];
             mean += x * w;
             second += (x * x) * w;
             third += (x * x * x) * w;
@@ -100,7 +119,7 @@ pub fn saddlepoint_approximation(
     leftover: f64,
 ) -> f64 {
     // let (theta_hat, ks, ks1, ks2, ks3) = newton(upgrade_arr, budget);
-    let f = |theta: f64| ks_01234(&prep_output.upgrade_arr, theta).1 - budget;
+    let f = |theta: f64| ks_01234(state_bundle, prep_output, theta).1 - budget;
 
     let settings = SolverSettings {
         vtol: Some(TOL),
@@ -114,7 +133,8 @@ pub fn saddlepoint_approximation(
             let mut this_value = upgrade.eqv_gold_per_tap;
             for (bit_index, bit) in state_bundle.state[u_index][p_index].iter().enumerate() {
                 if *bit {
-                    let this_price = prep_output.avail_juices.1[upgrade.upgrade_index][bit_index];
+                    let this_price =
+                        prep_output.juice_info.gold_costs[upgrade.upgrade_index][bit_index];
                     if upgrade.is_weapon {
                         this_value += this_price.0;
                     } else {
@@ -167,7 +187,7 @@ pub fn saddlepoint_approximation(
     #[allow(unused_assignments)]
     if theta_hat.abs() < TOL {
         // pre-calculate K(0) and stuff TODO
-        (ks, ks1, ks2, ks3, ks4) = ks_01234(&prep_output.upgrade_arr, 0.0);
+        (ks, ks1, ks2, ks3, ks4) = ks_01234(state_bundle, prep_output, 0.0);
 
         let std = ks2.sqrt();
         let z = (budget - ks1) / std;
@@ -201,7 +221,7 @@ pub fn saddlepoint_approximation(
         }
         approx
     } else {
-        (ks, ks1, ks2, ks3, ks4) = ks_01234(&prep_output.upgrade_arr, theta_hat);
+        (ks, ks1, ks2, ks3, ks4) = ks_01234(state_bundle, prep_output, theta_hat);
         let w_hat: f64 = theta_hat.signum() * (2.0 * (theta_hat * budget - ks)).sqrt();
         let u_hat: f64 = theta_hat * ks2.sqrt();
 
@@ -235,7 +255,6 @@ pub fn saddlepoint_approximation(
 pub fn prob_to_maximize(
     state_bundle: &StateBundle,
     prep_output: &mut PreparationOutput,
-
     states_evaled: &mut i64,
     // depth: usize,
     // cache: &mut HashMap<(Vec<bool>, usize), Vec<([i64; 9], f64)>>,
@@ -246,7 +265,7 @@ pub fn prob_to_maximize(
             .map(|x| {
                 x.iter().enumerate().fold(0.0, |last, (index, y)| {
                     if *y {
-                        last + prep_output.avail_juices.0[upgrade.upgrade_index][index]
+                        last + prep_output.juice_info.chances[upgrade.upgrade_index][index]
                     } else {
                         last
                     }
@@ -257,38 +276,70 @@ pub fn prob_to_maximize(
         upgrade.prob_dist =
             probability_distribution(upgrade.base_chance, upgrade.artisan_rate, &new_extra);
         upgrade.log_prob_dist = upgrade.prob_dist.iter().map(|x| x.ln()).collect();
-        upgrade.juice_arr = new_extra;
     }
 
     *states_evaled += 1;
-
+    let expected_leftover: f64 = expected_juice_leftover(prep_output, state_bundle);
     saddlepoint_approximation(
         prep_output,
         state_bundle,
-        prep_output.base_gold_budget - expected_juice_leftover(prep_output),
-        expected_juice_leftover(prep_output),
+        prep_output.base_gold_budget - expected_leftover,
+        expected_leftover,
     )
 }
 
-fn expected_juice_leftover(prep_output: &PreparationOutput) -> f64 {
-    let mut avg_used_blue: f64 = 0.0;
-    let mut avg_used_red: f64 = 0.0;
-    for (_, upgrade) in prep_output.upgrade_arr.iter().enumerate() {
-        let mut cur_juice_count = 0.0;
-        for (index, p) in upgrade.prob_dist.iter().enumerate() {
-            if upgrade.juice_arr[index] > 0.0 {
-                cur_juice_count += 1.0;
-            }
-            let amt: f64 = cur_juice_count * p * upgrade.one_juice_cost as f64;
-            if upgrade.is_weapon {
-                avg_used_red += amt;
-            } else {
-                avg_used_blue += amt;
+fn expected_juice_leftover(prep_output: &PreparationOutput, state_bundle: &StateBundle) -> f64 {
+    let mut avg_used: Vec<(f64, f64)> =
+        vec![(0.0, 0.0); prep_output.juice_info.one_gold_cost_id.len()];
+    let mut full_avg: Vec<(f64, f64)> =
+        vec![(0.0, 0.0); prep_output.juice_info.one_gold_cost_id.len()];
+    for (u_index, upgrade) in prep_output.upgrade_arr.iter().enumerate() {
+        let mut used_so_far: Vec<(i64, i64)> = vec![(0, 0); prep_output.juice_info.ids.len()];
+        let mut max_used: Vec<(i64, i64)> = vec![(0, 0); prep_output.juice_info.ids.len()];
+        for (p_index, p) in upgrade.prob_dist.iter().enumerate() {
+            for (bit_index, bit) in state_bundle.state[u_index][p_index].iter().enumerate() {
+                // dbg!(&prep_output.juice_info);
+                let id = prep_output.juice_info.ids[upgrade.upgrade_index][bit_index];
+
+                if upgrade.is_weapon {
+                    if *bit {
+                        used_so_far[id].0 +=
+                            prep_output.juice_info.amt_used[upgrade.upgrade_index][bit_index].0;
+                    }
+                    max_used[id].0 +=
+                        prep_output.juice_info.amt_used[upgrade.upgrade_index][bit_index].0;
+                } else {
+                    if *bit {
+                        used_so_far[id].1 +=
+                            prep_output.juice_info.amt_used[upgrade.upgrade_index][bit_index].1;
+                    }
+                    max_used[id].1 +=
+                        prep_output.juice_info.amt_used[upgrade.upgrade_index][bit_index].1;
+                }
+
+                avg_used[id].0 += p * used_so_far[id].0 as f64;
+                avg_used[id].1 += p * used_so_far[id].1 as f64;
+
+                full_avg[id].0 += p * max_used[id].0 as f64;
+                full_avg[id].1 += p * max_used[id].1 as f64;
             }
         }
     }
-    (prep_output.budgets[8] as f64 - avg_used_blue).max(0.0) * prep_output.mats_value[8]
-        + (prep_output.budgets[7] as f64 - avg_used_red).max(0.0) * prep_output.mats_value[7]
+    // dbg!(
+    //     &prep_output.juice_info,
+    //     &prep_output.juice_books_owned,
+    //     &avg_used
+    // );
+    let mut total_gold: f64 = 0.0;
+    for (id, a) in avg_used.iter().enumerate() {
+        total_gold += ((prep_output.juice_books_owned[id].0 as f64).min(full_avg[id].0) - a.0)
+            .max(0.0) as f64
+            * prep_output.juice_info.one_gold_cost_id[id].0;
+        total_gold += ((prep_output.juice_books_owned[id].1 as f64).min(full_avg[id].1) - a.1)
+            .max(0.0) as f64
+            * prep_output.juice_info.one_gold_cost_id[id].1;
+    }
+    total_gold
 }
 
 // #[cfg(test)]

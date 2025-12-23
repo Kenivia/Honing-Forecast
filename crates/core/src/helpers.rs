@@ -106,7 +106,7 @@ pub fn compute_gold_cost_from_raw(
     price_arr: &[f64],
 ) -> f64 {
     let mut c: f64 = 0f64;
-    for i in 0..9 {
+    for i in 0..7 {
         let val = (needed[i] - input_budget_no_gold[i]).max(0) as f64
             - (input_budget_no_gold[i] - needed[i]).max(0) as f64 * 1.0; // this constant will be customizable 
         c += price_arr[i] * val;
@@ -116,7 +116,7 @@ pub fn compute_gold_cost_from_raw(
 
 pub fn compute_eqv_gold_values(input_budget: &[i64], price_arr: &[f64]) -> f64 {
     let mut c: f64 = 0f64;
-    for i in 0..9 {
+    for i in 0..7 {
         c += price_arr[i] * input_budget[i] as f64;
     }
     c

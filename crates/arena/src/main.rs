@@ -101,7 +101,7 @@ fn main() {
     let mut test_cases: Vec<PreparationOutput> =
         parse_csv(Path::new("test_cases.csv")).expect("Failed to read test_case.csv");
     for _ in 0..NUM_TESTS_TO_RUN {
-        for case in test_cases.iter_mut() {
+        for case in test_cases.iter_mut().rev() {
             let instant: Instant = Instant::now();
             if seen_tests.contains_key(&case.test_case)
                 && seen_tests[&case.test_case] >= NUM_TESTS_TO_RUN

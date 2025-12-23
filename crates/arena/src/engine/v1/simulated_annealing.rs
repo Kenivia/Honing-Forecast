@@ -102,7 +102,7 @@ fn neighbour<R: Rng>(
                         .enumerate()
                         .fold(0.0, |last, (index, this)| {
                             if *this {
-                                last + prep_output.avail_juices.0[upgrade.upgrade_index][index]
+                                last + prep_output.juice_info.chances[upgrade.upgrade_index][index]
                             } else {
                                 last
                             }
@@ -134,7 +134,8 @@ fn simulated_annealing<R: Rng>(
         state.push(vec![
             vec![
                 false;
-                prep_output.avail_juices.0[upgrade.upgrade_index]
+                prep_output.juice_info.chances
+                    [upgrade.upgrade_index]
                     .len()
             ];
             upgrade.support_lengths[0]

@@ -69,20 +69,16 @@ pub fn brute_with_saddlepoint_approximation(
                 upgrade_arr[0].artisan_rate,
                 &supports0[j0].1,
             );
-            upgrade_arr[0].juice_arr = supports0[j0].1.clone();
+
             upgrade_arr[1].prob_dist = probability_distribution(
                 upgrade_arr[1].base_chance,
                 upgrade_arr[1].artisan_rate,
                 &supports1[j1].1,
             );
-            upgrade_arr[1].juice_arr = supports0[j1].1.clone();
 
             for upgrade in upgrade_arr.iter_mut() {
                 upgrade.log_prob_dist = upgrade.prob_dist.iter().map(|p| p.ln()).collect();
                 upgrade.eqv_gold_per_tap = eqv_gold_per_tap(upgrade, &prep_output.mats_value);
-                let juice_ind: usize = if upgrade.is_weapon { 7 } else { 8 };
-                upgrade.eqv_gold_per_juice =
-                    prep_output.mats_value[juice_ind] * upgrade.one_juice_cost as f64;
             }
 
             // === Iterate 0..=100 threshold segments ===
@@ -488,6 +484,7 @@ mod tests {
             express_event,
             &user_mats_value,
             adv_hone_strategy,
+            &vec![],
         );
         let result: Vec<Vec<Vec<(f64, String)>>> =
             brute_with_saddlepoint_approximation(&input_budgets, &prep_output);
@@ -539,6 +536,7 @@ mod tests {
             express_event,
             &user_mats_value,
             adv_hone_strategy,
+            &vec![],
         );
         let result: Vec<Vec<Vec<(f64, String)>>> = brute(&input_budgets, &prep_output);
         dbg!(result.len());

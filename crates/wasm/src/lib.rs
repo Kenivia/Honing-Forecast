@@ -90,6 +90,7 @@ pub fn monte_carlo_wrapper(input: JsValue) -> JsValue {
         payload.express_event,
         &user_mats_value,
         &adv_hone_strategy,
+        &vec![],
     );
     let mut rng: ThreadRng = rand::rng();
     let cost_data: Vec<[i64; 9]> = monte_carlo_data(

@@ -23,10 +23,6 @@ pub struct CostToChanceOut {
     pub hist_mins: Vec<i64>,        // 7
     pub hist_maxs: Vec<i64>,        // 7
 
-    pub special_strings: Vec<String>,      // ["+14 armor 69g" ...]
-    pub juice_strings_armor: Vec<String>,  // e.g. ["+14 armor first 10 taps" ...]
-    pub juice_strings_weapon: Vec<String>, // e.g. ["+15 weapon first 6 taps" ...]
-
     pub budgets_red_remaining: i64, // budgets[7], these are just here to provide warning for when there's not enough juice for advanced honing
     pub budgets_blue_remaining: i64, // budgets[8]
 }
@@ -65,6 +61,7 @@ pub fn cost_to_chance(
         express_event,
         user_mats_value,
         &adv_hone_strategy,
+        &vec![], // TODO fix this later
     );
     #[cfg(test)]
     {
@@ -118,9 +115,7 @@ pub fn cost_to_chance(
         hist_counts: histogram_outputs.hist_counts,
         hist_mins: histogram_outputs.hist_mins,
         hist_maxs: histogram_outputs.hist_maxs,
-        special_strings: prep_output.special_strings,
-        juice_strings_armor: prep_output.juice_strings_armor,
-        juice_strings_weapon: prep_output.juice_strings_weapon,
+
         budgets_red_remaining: prep_output.budgets[7],
         budgets_blue_remaining: prep_output.budgets[8],
         hundred_gold_costs: buy_failure_outputs.hundred_gold_costs,
@@ -147,6 +142,7 @@ pub fn cost_to_chance_arr(
         express_event,
         user_mats_value,
         &adv_hone_strategy,
+        &vec![], // TODO fix this later
     );
 
     // No buy analysis
@@ -226,6 +222,7 @@ mod tests {
             express_event,
             &user_mats_value,
             adv_hone_strategy,
+            &vec![],
         );
         let mut cost_data = monte_carlo_data(
             data_size,
@@ -290,6 +287,7 @@ mod tests {
             express_event,
             &user_mats_value,
             adv_hone_strategy,
+            &vec![],
         );
         let mut cost_data = monte_carlo_data(
             data_size,
@@ -347,6 +345,7 @@ mod tests {
             express_event,
             &user_mats_value,
             adv_hone_strategy,
+            &vec![],
         );
         let mut cost_data = monte_carlo_data(
             data_size,
@@ -404,6 +403,7 @@ mod tests {
             express_event,
             &user_mats_value,
             adv_hone_strategy,
+            &vec![],
         );
         let mut cost_data = monte_carlo_data(
             data_size,
@@ -466,6 +466,7 @@ mod tests {
             express_event,
             &user_mats_value,
             adv_hone_strategy,
+            &vec![],
         );
         let mut cost_data = monte_carlo_data(
             data_size,

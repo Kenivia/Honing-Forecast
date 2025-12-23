@@ -1,16 +1,16 @@
 use crate::constants::{
     ADV_DATA_10_20, ADV_DATA_10_20_JUICE, ADV_DATA_30_40, ADV_DATA_30_40_JUICE, ADV_HONE_COST,
-    NORMAL_HONE_CHANCES, NORMAL_JUICE_COST, SPECIAL_LEAPS_COST, get_avail_juice_combs,
+    JuiceInfo, NORMAL_HONE_CHANCES, NORMAL_JUICE_COST, SPECIAL_LEAPS_COST, get_avail_juice_combs,
     get_event_modified_armor_costs, get_event_modified_artisan, get_event_modified_weapon_costs,
 };
 use crate::helpers::{
-    average_juice_cost, calc_unlock, compress_runs, compute_eqv_gold_values, eqv_gold_per_tap,
-    eqv_gold_unlock, generate_first_deltas, sort_by_indices,
+    average_juice_cost, calc_unlock, compute_eqv_gold_values, eqv_gold_per_tap, eqv_gold_unlock,
+    generate_first_deltas,
 };
 // use crate::monte_carlo::monte_carlo_one;
-use crate::value_estimation::{
-    est_juice_value, est_special_honing_value, extract_special_strings, juice_to_array,
-};
+// use crate::value_estimation::{
+//     est_juice_value, est_special_honing_value, extract_special_strings, juice_to_array,
+// };
 // use rand::prelude::*;
 use serde::{Deserialize, Serialize};
 #[derive(Debug)]
@@ -18,16 +18,15 @@ pub struct PreparationOutput {
     pub upgrade_arr: Vec<Upgrade>,
     pub unlock_costs: Vec<i64>,
     pub budgets: Vec<i64>,
-    pub juice_strings_armor: Vec<String>,
-    pub juice_strings_weapon: Vec<String>,
+
     pub mats_value: Vec<f64>,
-    pub special_strings: Vec<String>,
+
     pub budgets_no_gold: Vec<i64>,
     pub test_case: i64,
     pub base_gold_budget: f64,
-    pub avail_juices: (Vec<Vec<f64>>, Vec<Vec<(f64, f64)>>),
+    pub juice_info: JuiceInfo,
+    pub juice_books_owned: Vec<(i64, i64)>, // juice_books_owned[id].0 = weap
 }
-
 pub fn preparation(
     hone_counts: &[Vec<i64>],
     input_budgets: &[i64],
@@ -35,6 +34,7 @@ pub fn preparation(
     express_event: bool,
     user_mats_value: &[f64],
     adv_hone_strategy: &str,
+    juice_books_budget: &[(i64, i64)],
 ) -> PreparationOutput {
     let mats_value: Vec<f64> = user_mats_value.to_vec();
     let unlock_costs: Vec<i64> = calc_unlock(hone_counts, adv_counts, express_event);
@@ -72,22 +72,10 @@ pub fn preparation(
             );
         }
 
-        let juice_ind: usize = if upgrade.is_weapon { 7 } else { 8 };
-        upgrade.eqv_gold_per_juice = user_mats_value[juice_ind] * upgrade.one_juice_cost as f64;
+        // let juice_ind: usize = if upgrade.is_weapon { 7 } else { 8 };
+        // upgrade.eqv_gold_per_juice = user_mats_value[juice_ind] * upgrade.one_juice_cost as f64;
     }
 
-    //XXXXXXXXXXXXXXXXXXXXXXXXXXXXX defunct code here to keep rust analyzer happy
-    est_juice_value(&mut upgrade_arr, &mats_value);
-    let (juice_strings_armor, juice_strings_weapon): (Vec<String>, Vec<String>) =
-        juice_to_array(&mut upgrade_arr, budgets[8], budgets[7]);
-    let value_per_special_leap: Vec<f64> = est_special_honing_value(&mut upgrade_arr, &mats_value);
-    let mut special_indices: Vec<usize> = (0..value_per_special_leap.len()).collect();
-    special_indices
-        .sort_by(|&a, &b| value_per_special_leap[b].total_cmp(&value_per_special_leap[a]));
-    sort_by_indices(&mut upgrade_arr, special_indices.clone());
-    let special_strings: Vec<String> =
-        compress_runs(extract_special_strings(&upgrade_arr), true, vec![]);
-    //XXXXXXXXXXXXXXXXXXXXXXXXXXXXX defunct code here to keep rust analyzer happy
     let mut budgets_no_gold: Vec<i64> = budgets.clone();
     budgets_no_gold[5] = 0;
 
@@ -97,14 +85,14 @@ pub fn preparation(
         upgrade_arr,
         unlock_costs,
         budgets,
-        juice_strings_armor,
-        juice_strings_weapon,
+
         mats_value,
-        special_strings,
+
         budgets_no_gold,
         test_case: -1, // arena will overwrite this
         base_gold_budget,
-        avail_juices: get_avail_juice_combs(),
+        juice_info: get_avail_juice_combs(),
+        juice_books_owned: juice_books_budget.to_vec(),
     }
 }
 
@@ -130,8 +118,7 @@ pub struct Upgrade {
     pub support_lengths: Vec<usize>, //Vec<Vec<Vec<[i64; 10]>>>, // cost_data_arr[juice_count][special_count] = cost_data for that decision
     pub eqv_gold_per_tap: f64,
     pub log_prob_dist: Vec<f64>,
-    pub juice_arr: Vec<f64>,
-    pub eqv_gold_per_juice: f64,
+    // pub juice_arr: Vec<f64>,
 }
 
 impl Upgrade {
@@ -172,11 +159,11 @@ impl Upgrade {
             upgrade_index,
             special_value: -1.0_f64,
             full_juice_len,
-            support_lengths: vec![],    // to be filled
-            log_prob_dist: vec![], // will change with each arrangement, maybe use a hashmap later
+            support_lengths: vec![], // to be filled
+            log_prob_dist: vec![],   // will change with each arrangement, maybe use a hashmap later
             eqv_gold_per_tap: -1.0_f64, // dummy value
-            juice_arr: vec![],
-            eqv_gold_per_juice: -1.0_f64,
+                                     // juice_arr: vec![],
+                                     // eqv_gold_per_juice: -1.0_f64,
         }
     }
 
@@ -212,10 +199,10 @@ impl Upgrade {
             support_lengths: vec![],
             log_prob_dist: vec![], // will change with each arrangement, maybe use a hashmap later
             eqv_gold_per_tap: -1.0_f64, // dummy value
-            juice_arr: vec![],
-            eqv_gold_per_juice: -1.0_f64,
-            // failure_raw_delta: -1,
-            // failure_delta_order: -1,
+                                   // juice_arr: vec![],
+                                   // eqv_gold_per_juice: -1.0_f64,
+                                   // failure_raw_delta: -1,
+                                   // failure_delta_order: -1,
         }
     }
 }

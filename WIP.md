@@ -5,7 +5,6 @@
 
 ### Now
 
-- need to add more columns to test cases, book count storage etc, add easy book adding system (specify amt of % array, which upgrades they can be on etc)
 - limit neighbor function - 1 click 10 taps, limit amt of toggles maybe
 
 ### Big
@@ -20,7 +19,6 @@
 - use newtons methods until 0 derivative or something, this bisection kinda slow
 - Make a ks_012 and only call ks_01234 function when needed
 - implement fft or something for medium sized complexity because lr kinda very bad(also use (and optimize) exact convolution for single piece(maybe 2))
-- monte carlo at the end to verify / sanity check / just to look at it (also can compute confidence interval with variance etc)
 -~~ add upgrade name to states when saving them,~~ maybe add some way to keep track of where bits are to make neighbor potentially more efficient
 
 ### Algorithm ideas
@@ -28,10 +26,18 @@
 - stopping early if no improvements
 - start with VERY broad neighbors - all true, all false etc, then refine until limit reached (such as 10 taps), test how much the limit affects performance
 - keep a top 10 list and randomly restart to them instead of just the top 1
+- some kind of heatmap of which bits were the most impactful? but i feel like this wouldnt actually do much
+
+### Arena
+
+- procedually generate test cases
+  - figure out how to fit the juice prices into the csv
+- monte carlo at the end to verify / sanity check / just to look at it (also can compute confidence interval with variance etc)
 
 ### Data analysis
 
 - elo or percentage deviation? idk need to do more research
+- how to visualize / interact with this data
 
 ## Next big step(s)
 
@@ -77,6 +83,7 @@ graph
 
 ## Done / cancelled
 
+- ~~need to add more columns to test cases, book count storage etc, add easy book adding system (specify amt of % array, which upgrades they can be on etc)~~
 - ~~modify the current too-many-juice checker to accomodate books~~
 - ~~ set up books support so state will be~~ integers ~~instead of bools~~
 - ~~need to use lists of bools instead, integers doesn't quite work i think because need to keep track of costs~~

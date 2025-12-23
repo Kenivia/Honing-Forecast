@@ -180,6 +180,7 @@ mod tests {
             express_event,
             &user_mats_value,
             adv_hone_strategy,
+            &vec![],
         );
 
         for upgrade in prep_output.upgrade_arr.iter_mut() {
@@ -189,10 +190,6 @@ mod tests {
             }
             upgrade.log_prob_dist = log_prob_dist;
             upgrade.eqv_gold_per_tap = eqv_gold_per_tap(upgrade, &prep_output.mats_value);
-            let juice_ind: usize = if upgrade.is_weapon { 7 } else { 8 };
-            upgrade.eqv_gold_per_juice =
-                &prep_output.mats_value[juice_ind] * upgrade.one_juice_cost as f64;
-            upgrade.juice_arr = vec![0.0];
         }
         let result: f64 = saddlepoint_approximation(
             &prep_output,
@@ -258,6 +255,7 @@ mod tests {
             express_event,
             &user_mats_value,
             adv_hone_strategy,
+            &vec![],
         );
         // let mut cache: HashMap<(Vec<bool>, usize), Vec<([i64; 9], f64)>> = HashMap::new();
         // dbg!(prep_output.upgrade_arr);

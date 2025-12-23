@@ -32,10 +32,6 @@ seq!(N in 1..=25 {
         #[serde(deserialize_with = "empty_as_default")]
         silver_owned: i64,
         #[serde(deserialize_with = "empty_as_default")]
-        red_juice_owned: i64,
-        #[serde(deserialize_with = "empty_as_default")]
-        blue_juice_owned: i64,
-        #[serde(deserialize_with = "empty_as_default")]
         special_owned: i64,
         red_price: f64,
         blue_price: f64,
@@ -43,8 +39,6 @@ seq!(N in 1..=25 {
         shards_price: f64,
         oreha_price: f64,
         silver_price: f64,
-        red_juice_price: f64,
-        blue_juice_price: f64,
         #[serde(deserialize_with = "empty_as_default")]
         adv_armor_10: i64,
         #[serde(deserialize_with = "empty_as_default")]
@@ -64,6 +58,23 @@ seq!(N in 1..=25 {
 
         #[serde(deserialize_with = "deserialize_bool")]
         express: bool,
+
+         #[serde(deserialize_with = "empty_as_default")]
+        juice_weap_1: i64,
+        #[serde(deserialize_with = "empty_as_default")]
+        juice_armor_1: i64,
+        #[serde(deserialize_with = "empty_as_default")]
+        juice_weap_2: i64,
+        #[serde(deserialize_with = "empty_as_default")]
+        juice_armor_2: i64,
+         #[serde(deserialize_with = "empty_as_default")]
+        juice_weap_3: i64,
+        #[serde(deserialize_with = "empty_as_default")]
+        juice_armor_3: i64,
+        #[serde(deserialize_with = "empty_as_default")]
+        juice_weap_4: i64,
+        #[serde(deserialize_with = "empty_as_default")]
+        juice_armor_4: i64,
 
     }
 
@@ -127,6 +138,14 @@ pub fn parse_csv(path: &Path) -> Result<Vec<PreparationOutput>, csv::Error> {
             row_to_vec_zero!(row, adv_armor_, 1, 4),
             row_to_vec_zero!(row, adv_weap_, 1, 4),
         ];
+        let temp_juice_books_owned: Vec<Vec<i64>> = vec![
+            row_to_vec!(row, juice_weap_, 1, 4),
+            row_to_vec!(row, juice_armor_, 1, 4),
+        ];
+        let juice_books_owned: Vec<(i64, i64)> = (0..4_usize)
+            .into_iter()
+            .map(|x| (temp_juice_books_owned[0][x], temp_juice_books_owned[1][x]))
+            .collect();
         let budget: Vec<i64> = vec![
             row.red_owned,
             row.blue_owned,
@@ -135,8 +154,6 @@ pub fn parse_csv(path: &Path) -> Result<Vec<PreparationOutput>, csv::Error> {
             row.oreha_owned,
             row.gold_owned,
             row.silver_owned,
-            row.red_juice_owned,
-            row.blue_juice_owned,
             row.special_owned,
         ];
 
@@ -148,8 +165,6 @@ pub fn parse_csv(path: &Path) -> Result<Vec<PreparationOutput>, csv::Error> {
             row.oreha_price,
             1.0,
             row.silver_price,
-            row.red_juice_price,
-            row.blue_juice_price,
         ];
         let mut this = preparation(
             &hone_counts,
@@ -158,6 +173,7 @@ pub fn parse_csv(path: &Path) -> Result<Vec<PreparationOutput>, csv::Error> {
             row.express,
             &prices,
             "No juice",
+            &juice_books_owned,
         );
         this.test_case = row.test_case;
         out.push(this);
