@@ -5,12 +5,24 @@
 
 ### Now
 
+- special honing
+  - need to add a 0th slot to prob_dist or?
+- state of this is actually integers
+
+- procedually generate test cases
+  - figure out how to fit the juice prices into the csv
+- monte carlo at the end to verify / sanity check / just to look at it (also can compute confidence interval with variance etc)
+
 ### Big
 
 - implement average-optimizing evaluation(tiebreak with this when prob = 100 also maybe?), add field to result json etc (can think abt bound/tradable maybe)
+  - this can keep track of each dimension individually & calculate leftover precisely
+  - customizable sell ratio
+  - juice chest opening simulation
 - set up slurm on laptop
 - how to evaluate adaptive policies???
 - Also need to do special honing and even advanced honing eventually maybe
+- Wire up all this to the website
 
 ### Energy
 
@@ -19,17 +31,13 @@
 
 ### Algorithm ideas
 
-- stopping early if no improvements
+- stopping early if no improvements (an adaptive temperature / annealing schedule i guess )
 - limit neighbor function - 1 click 10 taps, limit amt of toggles maybe
   - start with VERY broad neighbors - all true, all false etc, then refine until limit reached (such as 10 taps), test how much the limit affects performance
 - keep a top 10 list and randomly restart to them instead of just the top 1
 - some kind of heatmap of which bits were the most impactful? but i feel like this wouldnt actually do much
 
 ### Arena
-
-- procedually generate test cases
-  - figure out how to fit the juice prices into the csv
-- monte carlo at the end to verify / sanity check / just to look at it (also can compute confidence interval with variance etc)
 
 ### Data analysis
 
@@ -50,7 +58,7 @@
 - Allow selling mats
 - Raw gold graph and overall gold(including used in buying mats) lines in the
 graph
-- juce chest openinig optimization
+- juice chest openinig optimization
 
 ## UI
 

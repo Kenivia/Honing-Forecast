@@ -321,11 +321,9 @@ pub fn saddlepoint_approximation(
     let u_hat = u(theta_hat, ks2);
     let w_last = w(last_theta, last_ks);
     let u_last = u(last_theta, last_ks2);
-    let new = 1.0 / w_hat - 1.0 / u_hat;
-    let old = 1.0 / w_last - 1.0 / u_last;
 
     let mut out = normal_dist.cdf(w_hat) + normal_dist.pdf(w_hat) * (1.0 / w_hat - 1.0 / u_hat);
-    let old_out = normal_dist.cdf(w_last) + normal_dist.pdf(w_last) * old;
+    let old_out = normal_dist.cdf(w_last) + normal_dist.pdf(w_last) * (1.0 / w_last - 1.0 / u_last);
     let error = (out - old_out).abs();
     if DEBUG {
         dbg!(w_hat, u_hat, w_last, u_last, error, out, old_out);
