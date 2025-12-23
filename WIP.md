@@ -5,8 +5,6 @@
 
 ### Now
 
-- limit neighbor function - 1 click 10 taps, limit amt of toggles maybe
-
 ### Big
 
 - implement average-optimizing evaluation(tiebreak with this when prob = 100 also maybe?), add field to result json etc (can think abt bound/tradable maybe)
@@ -24,7 +22,8 @@
 ### Algorithm ideas
 
 - stopping early if no improvements
-- start with VERY broad neighbors - all true, all false etc, then refine until limit reached (such as 10 taps), test how much the limit affects performance
+- limit neighbor function - 1 click 10 taps, limit amt of toggles maybe
+  - start with VERY broad neighbors - all true, all false etc, then refine until limit reached (such as 10 taps), test how much the limit affects performance
 - keep a top 10 list and randomly restart to them instead of just the top 1
 - some kind of heatmap of which bits were the most impactful? but i feel like this wouldnt actually do much
 

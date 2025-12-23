@@ -5,11 +5,7 @@ use core::f64;
 use crate::helpers::compute_eqv_gold_values;
 
 #[cfg(test)]
-use crate::helpers::eqv_gold_per_tap;
-#[cfg(test)]
 use crate::saddlepoint_approximation::StateBundle;
-#[cfg(test)]
-use crate::saddlepoint_approximation::saddlepoint_approximation;
 
 fn dist_to_costs(
     this_dist: &[f64],
@@ -145,72 +141,6 @@ mod tests {
     use crate::saddlepoint_approximation::prob_to_maximize;
     use crate::test_utils::*;
     use std::time::Instant;
-    #[test]
-    fn saddlepoint_approximation_test() {
-        let start = Instant::now();
-        let test_name = format!("saddlepoint_approximation_test");
-        let hone_counts: Vec<Vec<i64>> = vec![
-            (0..25).map(|x| if x == 9 { 1 } else { 0 }).collect(),
-            (0..25).map(|x| if x == 9 { 1 } else { 0 }).collect(),
-        ];
-        // let hone_counts: Vec<Vec<i64>> =
-        //     vec![(0..25).map(|_| 5).collect(), (0..25).map(|_| 1).collect()];
-        let adv_counts: Vec<Vec<i64>> =
-            vec![(0..4).map(|_| 0).collect(), (0..4).map(|_| 0).collect()];
-
-        let adv_hone_strategy: &str = "No juice";
-        let express_event: bool = true;
-        let input_budgets = vec![0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
-        let user_mats_value = DEFAULT_GOLD_VALUES;
-        let hash: String = calculate_hash!(
-            &hone_counts,
-            &adv_counts,
-            adv_hone_strategy,
-            express_event,
-            &input_budgets,
-            &user_mats_value,
-            RNG_SEED,
-            PROB_MODE
-        );
-
-        let mut prep_output: PreparationOutput = preparation(
-            &hone_counts,
-            &input_budgets,
-            &adv_counts,
-            express_event,
-            &user_mats_value,
-            adv_hone_strategy,
-            &vec![],
-        );
-
-        for upgrade in prep_output.upgrade_arr.iter_mut() {
-            let mut log_prob_dist: Vec<f64> = Vec::with_capacity(upgrade.prob_dist.len());
-            for i in upgrade.prob_dist.iter() {
-                log_prob_dist.push(i.ln());
-            }
-            upgrade.log_prob_dist = log_prob_dist;
-            upgrade.eqv_gold_per_tap = eqv_gold_per_tap(upgrade, &prep_output.mats_value);
-        }
-        let result: f64 = saddlepoint_approximation(
-            &prep_output,
-            &StateBundle {
-                state: vec![vec![vec![false]]; 2],
-                names: vec![],
-                state_index: vec![],
-                prob: -1.0,
-            },
-            // 38591813.0 - eqv_gold_unlock(&prep_output.unlock_costs, &prep_output.mats_value),
-            // 25916.0 - eqv_gold_unlock(&prep_output.unlock_costs, &prep_output.mats_value),
-            62010.0 - eqv_gold_unlock(&prep_output.unlock_costs, &prep_output.mats_value),
-            0.0,
-        );
-        dbg!(result);
-        if let Some(_cached_result) = read_cached_data::<f64>(test_name.as_str(), &hash) {
-        } else {
-            write_cached_data(test_name.as_str(), &hash, &result);
-        }
-        dbg!(start.elapsed());
-    }
 
     #[test]
     fn energy_test() {
@@ -255,7 +185,7 @@ mod tests {
             express_event,
             &user_mats_value,
             adv_hone_strategy,
-            &vec![],
+            &vec![(0, 0), (0, 0), (0, 0), (0, 0)],
         );
         // let mut cache: HashMap<(Vec<bool>, usize), Vec<([i64; 9], f64)>> = HashMap::new();
         // dbg!(prep_output.upgrade_arr);
@@ -267,10 +197,10 @@ mod tests {
                     // vec![true; 16],
                     // vec![true; 2],
                     // vec![true; 18],
-                    vec![vec![true]],
-                    vec![vec![true]],
-                    vec![vec![true]],
-                    vec![vec![true]],
+                    vec![vec![false]; 300],
+                    vec![vec![false]; 300],
+                    vec![vec![false]; 300],
+                    vec![vec![false]; 300],
                 ],
                 names: vec![],
                 state_index: vec![],
@@ -298,7 +228,6 @@ mod tests {
             0,
         );
         dbg!(approx_result);
-
         dbg!(exact_result);
         // let result: Vec<Vec<i64>> = out.clone();
         if let Some(_cached_result) =
@@ -319,4 +248,70 @@ mod tests {
         //     write_cached_data(test_name, &hash, &result);
         // }
     }
+    //     #[test]
+    // fn saddlepoint_approximation_test() {
+    //     let start = Instant::now();
+    //     let test_name = format!("saddlepoint_approximation_test");
+    //     let hone_counts: Vec<Vec<i64>> = vec![
+    //         (0..25).map(|x| if x == 9 { 1 } else { 0 }).collect(),
+    //         (0..25).map(|x| if x == 9 { 1 } else { 0 }).collect(),
+    //     ];
+    //     // let hone_counts: Vec<Vec<i64>> =
+    //     //     vec![(0..25).map(|_| 5).collect(), (0..25).map(|_| 1).collect()];
+    //     let adv_counts: Vec<Vec<i64>> =
+    //         vec![(0..4).map(|_| 0).collect(), (0..4).map(|_| 0).collect()];
+
+    //     let adv_hone_strategy: &str = "No juice";
+    //     let express_event: bool = true;
+    //     let input_budgets = vec![0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+    //     let user_mats_value = DEFAULT_GOLD_VALUES;
+    //     let hash: String = calculate_hash!(
+    //         &hone_counts,
+    //         &adv_counts,
+    //         adv_hone_strategy,
+    //         express_event,
+    //         &input_budgets,
+    //         &user_mats_value,
+    //         RNG_SEED,
+    //         PROB_MODE
+    //     );
+
+    //     let mut prep_output: PreparationOutput = preparation(
+    //         &hone_counts,
+    //         &input_budgets,
+    //         &adv_counts,
+    //         express_event,
+    //         &user_mats_value,
+    //         adv_hone_strategy,
+    //         &vec![],
+    //     );
+
+    //     for upgrade in prep_output.upgrade_arr.iter_mut() {
+    //         let mut log_prob_dist: Vec<f64> = Vec::with_capacity(upgrade.prob_dist.len());
+    //         for i in upgrade.prob_dist.iter() {
+    //             log_prob_dist.push(i.ln());
+    //         }
+    //         upgrade.log_prob_dist = log_prob_dist;
+    //         upgrade.eqv_gold_per_tap = eqv_gold_per_tap(upgrade, &prep_output.mats_value);
+    //     }
+    //     let result: f64 = saddlepoint_approximation(
+    //         &prep_output,
+    //         &StateBundle {
+    //             state: vec![vec![vec![false]]; 2],
+    //             names: vec![],
+    //             state_index: vec![],
+    //             prob: -1.0,
+    //         },
+    //         // 38591813.0 - eqv_gold_unlock(&prep_output.unlock_costs, &prep_output.mats_value),
+    //         // 25916.0 - eqv_gold_unlock(&prep_output.unlock_costs, &prep_output.mats_value),
+    //         62010.0 - eqv_gold_unlock(&prep_output.unlock_costs, &prep_output.mats_value),
+    //         0.0,
+    //     );
+    //     dbg!(result);
+    //     if let Some(_cached_result) = read_cached_data::<f64>(test_name.as_str(), &hash) {
+    //     } else {
+    //         write_cached_data(test_name.as_str(), &hash, &result);
+    //     }
+    //     dbg!(start.elapsed());
+    // }
 }

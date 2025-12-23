@@ -2,7 +2,6 @@ use crate::parser::PreparationOutput;
 use crate::parser::Upgrade;
 use crate::parser::probability_distribution;
 
-use rootfinder::{Interval, SolverSettings, root_bisection};
 use statrs::distribution::{Continuous, ContinuousCDF, Normal};
 
 static DEBUG: bool = false;
@@ -34,6 +33,68 @@ fn increment_gold_cost(
             }
         }
     }
+}
+fn ks_12_for_newton(
+    state_bundle: &StateBundle,
+    prep_output: &PreparationOutput,
+    theta: f64,
+) -> (f64, f64) {
+    let mut total_k1: f64 = 0.0;
+    let mut total_k2: f64 = 0.0;
+
+    for (u_index, upgrade) in prep_output.upgrade_arr.iter().enumerate() {
+        let mut alpha_arr: Vec<f64> = Vec::with_capacity(upgrade.log_prob_dist.len());
+        let mut shift: f64 = f64::NEG_INFINITY;
+
+        let mut cur_gold_cost = 0.0;
+        let mut gold_cost_record: Vec<f64> = Vec::with_capacity(upgrade.log_prob_dist.len());
+        for (p_index, l) in upgrade.log_prob_dist.iter().enumerate() {
+            increment_gold_cost(
+                &mut cur_gold_cost,
+                upgrade,
+                state_bundle,
+                prep_output,
+                u_index,
+                p_index,
+            );
+            gold_cost_record.push(cur_gold_cost);
+            let this_alpha: f64 = l + theta * cur_gold_cost;
+
+            alpha_arr.push(this_alpha);
+            shift = this_alpha.max(shift);
+        }
+
+        let mut s: f64 = 0.0;
+        let mut mean: f64 = 0.0;
+        let mut second: f64 = 0.0;
+
+        // if theta == 0.0 && DEBUG {
+        //     dbg!(&alpha_arr);
+        // }
+
+        let mut u_arr: Vec<f64> = Vec::with_capacity(upgrade.log_prob_dist.len());
+        for aj in alpha_arr.iter() {
+            let u: f64 = (aj - shift).exp(); // this can for sure be optimized into a polynomial TODO
+            s += u;
+            u_arr.push(u);
+        }
+
+        for (p_index, &u) in u_arr.iter().enumerate() {
+            if u == 0.0 {
+                continue;
+            }
+            let w = u / s;
+            let x = gold_cost_record[p_index];
+            mean += x * w;
+            second += (x * x) * w;
+        }
+
+        let mu2 = second - mean * mean;
+        total_k1 += mean;
+        total_k2 += mu2.max(0.0);
+    }
+
+    (total_k1, total_k2)
 }
 fn ks_01234(
     state_bundle: &StateBundle,
@@ -112,6 +173,69 @@ fn ks_01234(
     (total_k, total_k1, total_k2, total_k3, total_k4)
 }
 
+pub fn find_root<F>(
+    mut func: F,
+    init_theta: f64,
+    min: f64,
+    max: f64,
+    tol: f64,
+    max_iter: usize,
+) -> Option<f64>
+where
+    F: FnMut(f64) -> (f64, f64),
+{
+    let mut theta: f64 = init_theta.max(min).min(max);
+
+    for _ in 0..max_iter {
+        let (y, dy) = func(theta);
+
+        if y.abs() < 1e-12 {
+            // this is largely irrelevant because we're interested in theta
+            return Some(theta);
+        }
+
+        if dy.abs() < 1e-12 {
+            let (y_min, _) = func(min);
+            let (y_max, _) = func(max);
+
+            return if y_min.abs() < y_max.abs() {
+                Some(min)
+            } else {
+                Some(max)
+            };
+        }
+
+        let delta: f64 = y / dy;
+        let mut new_theta: f64 = theta - delta;
+
+        if !new_theta.is_finite() {
+            dbg!(y, dy, delta, theta);
+            panic!();
+        }
+        if new_theta < min {
+            new_theta = min;
+        } else if new_theta > max {
+            new_theta = max;
+        }
+
+        if (new_theta - theta).abs() < tol {
+            return Some(new_theta);
+        }
+
+        theta = new_theta;
+    }
+
+    None
+}
+
+fn my_newton<F>(f_df: F) -> f64
+where
+    F: FnMut(f64) -> (f64, f64),
+{
+    let root = find_root(f_df, 0.0, -1.0, 1.0, TOL, 100);
+    return root.expect("Failed to find root");
+}
+
 pub fn saddlepoint_approximation(
     prep_output: &PreparationOutput,
     state_bundle: &StateBundle,
@@ -119,13 +243,11 @@ pub fn saddlepoint_approximation(
     leftover: f64,
 ) -> f64 {
     // let (theta_hat, ks, ks1, ks2, ks3) = newton(upgrade_arr, budget);
-    let f = |theta: f64| ks_01234(state_bundle, prep_output, theta).1 - budget;
-
-    let settings = SolverSettings {
-        vtol: Some(TOL),
-        rebracket: Some(true),
-        ..Default::default() // fill other fields with None
+    let f = |theta| {
+        let ks_12 = ks_12_for_newton(state_bundle, prep_output, theta);
+        (ks_12.0 - budget, ks_12.1)
     };
+
     let mut min_value: f64 = 0.0;
     let mut max_value: f64 = 0.0; // pre-calculate this  TODO
     for (u_index, upgrade) in prep_output.upgrade_arr.iter().enumerate() {
@@ -151,7 +273,7 @@ pub fn saddlepoint_approximation(
         }
     }
 
-    let result = root_bisection(&f, Interval::new(-1.0, 1.0), Some(&settings), None);
+    let result = my_newton(&f); // (&f, Interval::new(-1.0, 1.0), Some(&settings), None);
     if budget < min_value - TOL {
         return 0.0;
     }
@@ -166,7 +288,7 @@ pub fn saddlepoint_approximation(
         return 1.0;
     }
 
-    if DEBUG || result.is_err() {
+    if DEBUG || !result.is_finite() {
         dbg!(
             f(10000.0),
             f(1.0),
@@ -180,7 +302,7 @@ pub fn saddlepoint_approximation(
     }
     let (ks, ks1, ks2, ks3, ks4);
 
-    let theta_hat: f64 = result.unwrap();
+    let theta_hat: f64 = result;
 
     let normal_dist: Normal = Normal::new(0.0, 1.0).unwrap(); // TODO can i pre initialize this or is there no point
 
@@ -297,6 +419,7 @@ fn expected_juice_leftover(prep_output: &PreparationOutput, state_bundle: &State
         let mut used_so_far: Vec<(i64, i64)> = vec![(0, 0); prep_output.juice_info.ids.len()];
         let mut max_used: Vec<(i64, i64)> = vec![(0, 0); prep_output.juice_info.ids.len()];
         for (p_index, p) in upgrade.prob_dist.iter().enumerate() {
+            // dbg!(&state_bundle.state);
             for (bit_index, bit) in state_bundle.state[u_index][p_index].iter().enumerate() {
                 // dbg!(&prep_output.juice_info);
                 let id = prep_output.juice_info.ids[upgrade.upgrade_index][bit_index];
