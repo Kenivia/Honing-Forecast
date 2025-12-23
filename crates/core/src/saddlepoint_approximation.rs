@@ -1,3 +1,4 @@
+use crate::constants::JuiceInfo;
 use crate::parser::PreparationOutput;
 use crate::parser::Upgrade;
 use crate::parser::probability_distribution;
@@ -18,14 +19,14 @@ fn increment_gold_cost(
     cur_gold_cost: &mut f64,
     upgrade: &Upgrade,
     state_bundle: &StateBundle,
-    prep_output: &PreparationOutput,
+    juice_info: &JuiceInfo,
     u_index: usize,
     p_index: usize,
 ) {
     *cur_gold_cost += upgrade.eqv_gold_per_tap;
     for (bit_index, bit) in state_bundle.state[u_index][p_index].iter().enumerate() {
         if *bit {
-            let this_price = prep_output.juice_info.gold_costs[upgrade.upgrade_index][bit_index];
+            let this_price = juice_info.gold_costs[upgrade.upgrade_index][bit_index];
             if upgrade.is_weapon {
                 *cur_gold_cost += this_price.0;
             } else {
@@ -34,73 +35,11 @@ fn increment_gold_cost(
         }
     }
 }
-fn ks_12_for_newton(
-    state_bundle: &StateBundle,
-    prep_output: &PreparationOutput,
-    theta: f64,
-) -> (f64, f64) {
-    let mut total_k1: f64 = 0.0;
-    let mut total_k2: f64 = 0.0;
 
-    for (u_index, upgrade) in prep_output.upgrade_arr.iter().enumerate() {
-        let mut alpha_arr: Vec<f64> = Vec::with_capacity(upgrade.log_prob_dist.len());
-        let mut shift: f64 = f64::NEG_INFINITY;
-
-        let mut cur_gold_cost = 0.0;
-        let mut gold_cost_record: Vec<f64> = Vec::with_capacity(upgrade.log_prob_dist.len());
-        for (p_index, l) in upgrade.log_prob_dist.iter().enumerate() {
-            // TODO pre compute alpha_arr i cant believe i havnt
-            increment_gold_cost(
-                &mut cur_gold_cost,
-                upgrade,
-                state_bundle,
-                prep_output,
-                u_index,
-                p_index,
-            );
-            gold_cost_record.push(cur_gold_cost);
-            let this_alpha: f64 = l + theta * cur_gold_cost;
-
-            alpha_arr.push(this_alpha);
-            shift = this_alpha.max(shift);
-        }
-
-        let mut s: f64 = 0.0;
-        let mut mean: f64 = 0.0;
-        let mut second: f64 = 0.0;
-
-        // if theta == 0.0 && DEBUG {
-        //     dbg!(&alpha_arr);
-        // }
-
-        let mut u_arr: Vec<f64> = Vec::with_capacity(upgrade.log_prob_dist.len());
-        for aj in alpha_arr.iter() {
-            let u: f64 = (aj - shift).exp();
-            s += u;
-            u_arr.push(u);
-        }
-
-        for (p_index, &u) in u_arr.iter().enumerate() {
-            if u == 0.0 {
-                continue;
-            }
-            let w: f64 = u / s;
-            let x: f64 = gold_cost_record[p_index];
-            mean += x * w;
-            second += (x * x) * w;
-        }
-
-        let mu2 = second - mean * mean;
-        total_k1 += mean;
-        total_k2 += mu2.max(0.0);
-    }
-
-    (total_k1, total_k2)
-}
 fn ks_01234(
-    state_bundle: &StateBundle,
     prep_output: &PreparationOutput,
     theta: f64,
+    toggle: &(bool, bool, bool, bool, bool),
 ) -> (f64, f64, f64, f64, f64) {
     let mut total_k: f64 = 0.0;
     let mut total_k1: f64 = 0.0;
@@ -108,23 +47,12 @@ fn ks_01234(
     let mut total_k3: f64 = 0.0;
     let mut total_k4: f64 = 0.0;
 
-    for (u_index, upgrade) in prep_output.upgrade_arr.iter().enumerate() {
+    for (_, upgrade) in prep_output.upgrade_arr.iter().enumerate() {
         let mut alpha_arr: Vec<f64> = Vec::with_capacity(upgrade.log_prob_dist.len());
         let mut shift: f64 = f64::NEG_INFINITY;
 
-        let mut cur_gold_cost = 0.0;
-        let mut gold_cost_record: Vec<f64> = Vec::with_capacity(upgrade.log_prob_dist.len());
         for (p_index, l) in upgrade.log_prob_dist.iter().enumerate() {
-            increment_gold_cost(
-                &mut cur_gold_cost,
-                upgrade,
-                state_bundle,
-                prep_output,
-                u_index,
-                p_index,
-            );
-            gold_cost_record.push(cur_gold_cost);
-            let this_alpha: f64 = l + theta * cur_gold_cost;
+            let this_alpha: f64 = l + theta * upgrade.gold_cost_record[p_index];
 
             alpha_arr.push(this_alpha);
             shift = this_alpha.max(shift);
@@ -152,23 +80,47 @@ fn ks_01234(
                 continue;
             }
             let w = u / s;
-            let x = gold_cost_record[p_index];
-            mean += x * w;
-            second += (x * x) * w;
-            third += (x * x * x) * w;
-            fourth += x * x * x * x * w;
+            let x = upgrade.gold_cost_record[p_index];
+
+            if toggle.1 || toggle.2 || toggle.3 || toggle.4 {
+                mean += x * w;
+                if toggle.2 || toggle.3 || toggle.4 {
+                    let x2: f64 = x * x;
+                    second += x2 * w;
+                    if toggle.3 || toggle.4 {
+                        let x3: f64 = x2 * x;
+                        third += x3 * w;
+                        if toggle.4 {
+                            fourth += x3 * x * w;
+                        }
+                    }
+                }
+            }
         }
 
-        let mu2 = second - mean * mean;
-        let mu3 = third - 3.0 * second * mean + 2.0 * mean * mean * mean;
-        let mu4 = fourth - 4.0 * third * mean + 6.0 * second * mean * mean
-            - 3.0 * mean * mean * mean * mean;
-
-        total_k += shift + s.ln();
-        total_k1 += mean;
-        total_k2 += mu2.max(0.0);
-        total_k3 += mu3;
-        total_k4 += mu4 - 3.0 * mu2 * mu2;
+        if toggle.0 {
+            total_k += shift + s.ln();
+        }
+        let mut mu2: f64 = -1.0;
+        if toggle.1 {
+            total_k1 += mean;
+        }
+        if toggle.2 || toggle.4 {
+            mu2 = (second - mean * mean).max(0.0);
+            total_k2 += mu2;
+        }
+        if toggle.3 {
+            let mu3 = third - 3.0 * second * mean + 2.0 * mean * mean * mean;
+            total_k3 += mu3;
+        }
+        if toggle.4 {
+            if !toggle.2 {
+                mu2 = (second - mean * mean).max(0.0);
+            }
+            let mu4 = fourth - 4.0 * third * mean + 6.0 * second * mean * mean
+                - 3.0 * mean * mean * mean * mean;
+            total_k4 += mu4 - 3.0 * mu2 * mu2;
+        }
     }
 
     (total_k, total_k1, total_k2, total_k3, total_k4)
@@ -247,7 +199,7 @@ pub fn saddlepoint_approximation(
     leftover: f64,
 ) -> f64 {
     let f_df = |theta| {
-        let ks_12 = ks_12_for_newton(state_bundle, prep_output, theta);
+        let ks_12 = ks_01234(prep_output, theta, &(false, true, true, false, false));
         (ks_12.0 - budget, ks_12.1)
     };
 
@@ -313,8 +265,9 @@ pub fn saddlepoint_approximation(
     }
     let normal_dist: Normal = Normal::new(0.0, 1.0).unwrap(); // TODO can i pre initialize this or is there no point
 
-    (ks, ks1, ks2, ks3, ks4) = ks_01234(state_bundle, prep_output, theta_hat); // technically is better to have a ks_0 here and reuse ks_2 but i cbb
-    let (last_ks, _, last_ks2, _, _) = ks_01234(state_bundle, prep_output, last_theta);
+    (ks, ks1, ks2, ks3, ks4) = ks_01234(prep_output, theta_hat, &(true, true, true, true, true)); // technically is better to have a ks_0 here and reuse ks_2 but i cbb
+    let (last_ks, _, last_ks2, _, _) =
+        ks_01234(prep_output, last_theta, &(true, false, true, false, false));
 
     let w = |t: f64, ks_inp: f64| t.signum() * (2.0 * (t * budget - ks_inp)).sqrt();
     let u = |t: f64, ks2_inp: f64| t * ks2_inp.sqrt();
@@ -396,8 +349,8 @@ pub fn prob_to_maximize(
     // depth: usize,
     // cache: &mut HashMap<(Vec<bool>, usize), Vec<([i64; 9], f64)>>,
 ) -> f64 {
-    for (index, upgrade) in prep_output.upgrade_arr.iter_mut().enumerate() {
-        let new_extra: Vec<f64> = state_bundle.state[index]
+    for (u_index, upgrade) in prep_output.upgrade_arr.iter_mut().enumerate() {
+        let new_extra: Vec<f64> = state_bundle.state[u_index]
             .iter()
             .map(|x| {
                 x.iter().enumerate().fold(0.0, |last, (index, y)| {
@@ -413,6 +366,18 @@ pub fn prob_to_maximize(
         upgrade.prob_dist =
             probability_distribution(upgrade.base_chance, upgrade.artisan_rate, &new_extra);
         upgrade.log_prob_dist = upgrade.prob_dist.iter().map(|x| x.ln()).collect();
+        let mut cur_gold_cost = 0.0;
+        for (p_index, _) in upgrade.log_prob_dist.iter().enumerate() {
+            increment_gold_cost(
+                &mut cur_gold_cost,
+                upgrade,
+                state_bundle,
+                &prep_output.juice_info,
+                u_index,
+                p_index,
+            );
+            upgrade.gold_cost_record.push(cur_gold_cost);
+        }
     }
 
     *states_evaled += 1;

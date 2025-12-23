@@ -9,7 +9,7 @@
   - need to add a 0th slot to prob_dist or? have to strip out a lot of stuff
   - ~~state of this is actually integers~~ this isnt actually so simple because we can finish early
   - state = order of which ones to attempt first
-    - p =1 - PRODUCT (1 - p_i * P(got special leaps left) )
+    - p = 1 - PRODUCT (1 - p_i * P(got special leaps left) )
     - estimate this P(got special leaps left) with saddlepoint(wow this thing is tas)
 
 - procedually generate test cases
@@ -92,6 +92,7 @@ graph
 
 ## Done / cancelled
 
+- ~~rewrite Ks to allow different stuff to be in(pre calculate alpha_arr), and to allow toggling of the derivative calculations instead of having 2 funcs~~
 - ~~use newtons methods until 0 derivative or something, this bisection kinda slow~~
 - ~~Make a ks_012 and only call ks_01234 function when needed~~
 - ~~need to add more columns to test cases, book count storage etc, add easy book adding system (specify amt of % array, which upgrades they can be on etc)~~

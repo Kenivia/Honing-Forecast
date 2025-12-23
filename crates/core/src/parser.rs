@@ -118,6 +118,7 @@ pub struct Upgrade {
     pub support_lengths: Vec<usize>, //Vec<Vec<Vec<[i64; 10]>>>, // cost_data_arr[juice_count][special_count] = cost_data for that decision
     pub eqv_gold_per_tap: f64,
     pub log_prob_dist: Vec<f64>,
+    pub gold_cost_record: Vec<f64>,
     // pub juice_arr: Vec<f64>,
 }
 
@@ -159,11 +160,12 @@ impl Upgrade {
             upgrade_index,
             special_value: -1.0_f64,
             full_juice_len,
-            support_lengths: vec![], // to be filled
-            log_prob_dist: vec![],   // will change with each arrangement, maybe use a hashmap later
+            support_lengths: vec![],    // to be filled
+            log_prob_dist: vec![], // will change with each arrangement, maybe use a hashmap later
             eqv_gold_per_tap: -1.0_f64, // dummy value
-                                     // juice_arr: vec![],
-                                     // eqv_gold_per_juice: -1.0_f64,
+            gold_cost_record: vec![],
+            // juice_arr: vec![],
+            // eqv_gold_per_juice: -1.0_f64,
         }
     }
 
@@ -199,10 +201,11 @@ impl Upgrade {
             support_lengths: vec![],
             log_prob_dist: vec![], // will change with each arrangement, maybe use a hashmap later
             eqv_gold_per_tap: -1.0_f64, // dummy value
-                                   // juice_arr: vec![],
-                                   // eqv_gold_per_juice: -1.0_f64,
-                                   // failure_raw_delta: -1,
-                                   // failure_delta_order: -1,
+            gold_cost_record: vec![],
+            // juice_arr: vec![],
+            // eqv_gold_per_juice: -1.0_f64,
+            // failure_raw_delta: -1,
+            // failure_delta_order: -1,
         }
     }
 }
