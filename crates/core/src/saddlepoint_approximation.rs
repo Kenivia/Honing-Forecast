@@ -323,9 +323,10 @@ pub fn saddlepoint_approximation(
     let u_last = u(last_theta, last_ks2);
     let new = 1.0 / w_hat - 1.0 / u_hat;
     let old = 1.0 / w_last - 1.0 / u_last;
-    let error = (new - old).abs();
+
     let mut out = normal_dist.cdf(w_hat) + normal_dist.pdf(w_hat) * (1.0 / w_hat - 1.0 / u_hat);
     let old_out = normal_dist.cdf(w_last) + normal_dist.pdf(w_last) * old;
+    let error = (out - old_out).abs();
     if DEBUG {
         dbg!(w_hat, u_hat, w_last, u_last, error, out, old_out);
     }
@@ -347,22 +348,22 @@ pub fn saddlepoint_approximation(
                 + (gamma3 * gamma3 / 72.0) * (z * z * z * z * z - 10.0 * z * z * z + 15.0 * z));
 
         let approx = cdf - cdf_correction;
-        // if DEBUG {
-        // dbg!(theta_hat, theta_error);
-        // dbg!(w_hat, u_hat, error, out, old_out);
-        // dbg!(
-        //     theta_hat,
-        //     ks,
-        //     ks1,
-        //     ks2,
-        //     ks3,
-        //     budget - ks1,
-        //     z,
-        //     cdf,
-        //     cdf_correction,
-        //     approx
-        // );
-        // }
+        if DEBUG || approx < 0.0 || approx > 1.0 {
+            dbg!(theta_hat, theta_error);
+            dbg!(w_hat, u_hat, error, out, old_out);
+            dbg!(
+                theta_hat,
+                ks,
+                ks1,
+                ks2,
+                ks3,
+                budget - ks1,
+                z,
+                cdf,
+                cdf_correction,
+                approx
+            );
+        }
         out = approx;
     }
 
