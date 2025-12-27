@@ -5,6 +5,9 @@ use crate::saddlepoint_approximation::saddlepoint_approximation;
 use crate::saddlepoint_approximation::{FLOAT_TOL, StateBundle};
 use std::collections::HashSet;
 
+fn normalize_factor(n: i32, p: f64) -> f64 {
+    (1.0 - (1.0 - p).powi(n)).ln()
+}
 pub fn special_probs(prep_output: &PreparationOutput, state_bundle: &StateBundle) -> Vec<f64> {
     let u_len: usize = prep_output.upgrade_arr.len();
     let upgrade_arr: &Vec<Upgrade> = &prep_output.upgrade_arr;
@@ -14,7 +17,7 @@ pub fn special_probs(prep_output: &PreparationOutput, state_bundle: &StateBundle
         .map(|x| (1.0 - x.base_chance).ln())
         .collect();
 
-    let mut attempt_count: Vec<f64> = vec![0.0; u_len];
+    let mut attempt_count: Vec<usize> = vec![0; u_len];
     let mut not_succeeded_shadow: Vec<f64> = vec![1.0; u_len];
 
     let mut result: Vec<f64> = vec![0.0; u_len];
@@ -32,13 +35,24 @@ pub fn special_probs(prep_output: &PreparationOutput, state_bundle: &StateBundle
             minimal_cost += this_special_cost;
             seen.insert(*upgrade_index);
         }
-        let this_attempt_count: &mut f64 = &mut attempt_count[*upgrade_index];
-        *this_attempt_count += 1.0;
+        let this_attempt_count: &mut usize = &mut attempt_count[*upgrade_index];
+        *this_attempt_count += 1;
 
-        support_arr[*upgrade_index].push(this_special_cost * *this_attempt_count);
+        support_arr[*upgrade_index].push(this_special_cost * *this_attempt_count as f64);
+
+        let norm_factor: f64 = normalize_factor(
+            *this_attempt_count as i32,
+            prep_output.upgrade_arr[*upgrade_index].base_chance,
+        );
+        for (index, l) in log_prob_dist_arr[*upgrade_index].iter_mut().enumerate() {
+            *l = log_base_chance_arr[*upgrade_index]
+                + log_base_chance_one_minus_arr[*upgrade_index] * index as f64
+                - norm_factor;
+        }
         log_prob_dist_arr[*upgrade_index].push(
             log_base_chance_arr[*upgrade_index]
-                + log_base_chance_one_minus_arr[*upgrade_index] * (*this_attempt_count - 1.0),
+                + log_base_chance_one_minus_arr[*upgrade_index] * (*this_attempt_count - 1) as f64
+                - norm_factor,
         );
         let mut alpha: f64 = 0.0; // prob that we got enough special leaps left, but the calculation assumes infinite budget(does not consider the times where we stop because we ran out)
         let needed: f64 = special_owned - this_special_cost; // default to trivial case (prob_got_enough_special_left = 0)
@@ -56,10 +70,10 @@ pub fn special_probs(prep_output: &PreparationOutput, state_bundle: &StateBundle
             // dbg!(needed, alpha, &support_arr);
         }
 
-        result[*upgrade_index] +=
-            alpha * not_succeeded_shadow[*upgrade_index] * upgrade.base_chance;
+        let new: f64 = alpha * not_succeeded_shadow[*upgrade_index] * upgrade.base_chance;
+        result[*upgrade_index] += new;
 
-        if alpha < 1e-4 {
+        if new < 1e-7 {
             break;
         }
 

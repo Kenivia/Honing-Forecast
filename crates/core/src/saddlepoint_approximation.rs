@@ -40,11 +40,28 @@ pub fn ks_01234(
         let mut alpha_arr: Vec<f64> = Vec::with_capacity(log_prob_dist.len());
         let mut alpha_shift: f64 = f64::NEG_INFINITY;
 
+        let mut sanity_check: f64 = 0.0;
         for (p_index, l) in log_prob_dist.iter().enumerate() {
             let this_alpha: f64 = l + theta * support[p_index];
 
             alpha_arr.push(this_alpha);
             alpha_shift = this_alpha.max(alpha_shift);
+            sanity_check += l.exp();
+        }
+        if (1.0 - sanity_check).abs() > FLOAT_TOL {
+            dbg!(
+                sanity_check,
+                log_prob_dist,
+                log_prob_dist_arr
+                    .iter()
+                    .map(|x| x.iter().map(|y| y.exp()).sum::<f64>())
+                    .collect::<Vec<f64>>(),
+                log_prob_dist_arr
+                    .iter()
+                    .map(|x| x.iter().map(|y| y.exp()).collect())
+                    .collect::<Vec<Vec<f64>>>(),
+            );
+            panic!();
         }
 
         let mut s: f64 = 0.0;
