@@ -3,10 +3,7 @@ use crate::constants::{
     JuiceInfo, NORMAL_HONE_CHANCES, NORMAL_JUICE_COST, SPECIAL_LEAPS_COST, get_avail_juice_combs,
     get_event_modified_armor_costs, get_event_modified_artisan, get_event_modified_weapon_costs,
 };
-use crate::helpers::{
-    average_juice_cost, calc_unlock, compute_eqv_gold_values, eqv_gold_per_tap, eqv_gold_unlock,
-    generate_first_deltas,
-};
+use crate::helpers::{calc_unlock, eqv_gold_per_tap, generate_first_deltas};
 // use crate::monte_carlo::monte_carlo_one;
 // use crate::value_estimation::{
 //     est_juice_value, est_special_honing_value, extract_special_strings, juice_to_array,
@@ -19,80 +16,116 @@ pub struct PreparationOutput {
     pub unlock_costs: Vec<i64>,
     pub budgets: Vec<i64>,
 
-    pub mats_value: Vec<f64>,
+    pub price_arr: Vec<f64>,
 
     pub budgets_no_gold: Vec<i64>,
     pub test_case: i64,
-    pub base_gold_budget: f64,
+    pub budget_eqv_gold: f64,
     pub juice_info: JuiceInfo,
-    pub juice_books_owned: Vec<(i64, i64)>, // juice_books_owned[id].0 = weap
+    pub juice_books_owned: Vec<(i64, i64)>, // juice_books_owned[id].0 = weap owned
+    pub sellable_toggles: Vec<bool>,
 }
-pub fn preparation(
-    hone_counts: &[Vec<i64>],
-    input_budgets: &[i64],
-    adv_counts: &[Vec<i64>],
-    express_event: bool,
-    user_mats_value: &[f64],
-    adv_hone_strategy: &str,
-    juice_books_budget: &[(i64, i64)],
-) -> PreparationOutput {
-    let mats_value: Vec<f64> = user_mats_value.to_vec();
-    let unlock_costs: Vec<i64> = calc_unlock(hone_counts, adv_counts, express_event);
 
-    let mut upgrade_arr: Vec<Upgrade> = parser(
-        hone_counts,
-        adv_counts,
-        &adv_hone_strategy.to_string(),
-        express_event,
-    );
-    let mut budgets: Vec<i64> = input_budgets.to_vec();
-
-    // Add average juice costs to budgets for all upgrades
-    if adv_hone_strategy == "Juice on grace" {
-        let (avg_red_juice, avg_blue_juice): (i64, i64) = average_juice_cost(&upgrade_arr);
-        budgets[7] -= avg_red_juice;
-        budgets[8] -= avg_blue_juice;
+fn actual_eqv_gold(
+    price_arr: &[f64],
+    budgets: &[i64],
+    juice_info: &JuiceInfo,
+    unlock_costs: &[i64],
+    juice_books_owned: &[(i64, i64)],
+) -> f64 {
+    let mut total = 0.0;
+    for i in 0..7 {
+        total += price_arr[i] * budgets[i] as f64;
     }
-    for upgrade in upgrade_arr.iter_mut() {
-        // let mut rng: StdRng = StdRng::seed_from_u64(RNG_SEED);
-        upgrade.eqv_gold_per_tap = eqv_gold_per_tap(upgrade, user_mats_value);
-        for i in 0..upgrade.full_juice_len {
-            // upgrade.support_lengths.push(vec![]); // this will contain different free taps eventually i think
-            upgrade.support_lengths.push(
-                probability_distribution(
-                    upgrade.base_chance,
-                    upgrade.artisan_rate,
-                    &generate_first_deltas(
+    for (index, i) in juice_books_owned.iter().enumerate() {
+        total += i.0 as f64 * juice_info.one_gold_cost_id[index].0 as f64;
+        total += i.1 as f64 * juice_info.one_gold_cost_id[index].1 as f64;
+    }
+    total -= unlock_costs[0] as f64 * price_arr[3];
+    total -= unlock_costs[1] as f64 * price_arr[6];
+
+    total
+}
+impl PreparationOutput {
+    pub fn initialize(
+        hone_counts: &[Vec<i64>],
+        input_budgets: &[i64],
+        adv_counts: &[Vec<i64>],
+        express_event: bool,
+        user_price_arr: &[f64],
+        adv_hone_strategy: &str,
+        juice_books_budget: &[(i64, i64)],
+    ) -> PreparationOutput {
+        let price_arr: Vec<f64> = user_price_arr.to_vec();
+        let unlock_costs: Vec<i64> = calc_unlock(hone_counts, adv_counts, express_event);
+
+        let mut upgrade_arr: Vec<Upgrade> = parser(
+            hone_counts,
+            adv_counts,
+            &adv_hone_strategy.to_string(),
+            express_event,
+        );
+        let budgets: Vec<i64> = input_budgets.to_vec();
+
+        // // Add average juice costs to budgets for all upgrades
+        // if adv_hone_strategy == "Juice on grace" {
+        //     let (avg_red_juice, avg_blue_juice): (i64, i64) = average_juice_cost(&upgrade_arr);
+        //     budgets[7] -= avg_red_juice;
+        //     budgets[8] -= avg_blue_juice;
+        // }
+
+        for upgrade in upgrade_arr.iter_mut() {
+            // let mut rng: StdRng = StdRng::seed_from_u64(RNG_SEED);
+            upgrade.eqv_gold_per_tap = eqv_gold_per_tap(upgrade, user_price_arr);
+            for i in 0..upgrade.full_juice_len {
+                // upgrade.support_lengths.push(vec![]); // this will contain different free taps eventually i think
+                upgrade.support_lengths.push(
+                    probability_distribution(
                         upgrade.base_chance,
-                        upgrade.prob_dist_len, // this is excessive but its fine
-                        i,
-                    ),
-                )
-                .len(),
-            );
+                        upgrade.artisan_rate,
+                        &generate_first_deltas(
+                            upgrade.base_chance,
+                            upgrade.prob_dist_len, // this is excessive but its fine
+                            i,
+                        ),
+                        0.0,
+                    )
+                    .len(),
+                );
+            }
+
+            // let juice_ind: usize = if upgrade.is_weapon { 7 } else { 8 };
+            // upgrade.eqv_gold_per_juice = user_price_arr[juice_ind] * upgrade.one_juice_cost as f64;
         }
 
-        // let juice_ind: usize = if upgrade.is_weapon { 7 } else { 8 };
-        // upgrade.eqv_gold_per_juice = user_mats_value[juice_ind] * upgrade.one_juice_cost as f64;
-    }
+        let mut budgets_no_gold: Vec<i64> = budgets.clone();
+        budgets_no_gold[5] = 0;
+        let sellable_toggles: Vec<bool> = vec![
+            true, true, true, true, true, true, true, false, false, false, false, false, false,
+            false,
+        ];
 
-    let mut budgets_no_gold: Vec<i64> = budgets.clone();
-    budgets_no_gold[5] = 0;
-
-    let base_gold_budget: f64 = compute_eqv_gold_values(&budgets, &mats_value)
-        - eqv_gold_unlock(&unlock_costs, &mats_value);
-    PreparationOutput {
-        upgrade_arr,
-        unlock_costs,
-        budgets,
-
-        mats_value,
-
-        budgets_no_gold,
-        test_case: -1, // arena will overwrite this
-        base_gold_budget,
-        juice_info: get_avail_juice_combs(),
-        juice_books_owned: juice_books_budget.to_vec(),
+        let juice_info: JuiceInfo = get_avail_juice_combs();
+        let juice_books_owned: Vec<(i64, i64)> = juice_books_budget.to_vec();
+        let budget_eqv_gold: f64 = actual_eqv_gold(
+            &price_arr,
+            &budgets,
+            &juice_info,
+            &unlock_costs,
+            &juice_books_owned,
+        );
+        Self {
+            upgrade_arr,
+            unlock_costs,
+            budgets,
+            price_arr,
+            budgets_no_gold,
+            test_case: -1, // arena will overwrite this
+            budget_eqv_gold,
+            juice_info,
+            juice_books_owned,
+            sellable_toggles, //TODO READ THIS FROM AN ACUTAL INPUT LATEr cant be bother rn
+        }
     }
 }
 
@@ -117,8 +150,6 @@ pub struct Upgrade {
     pub full_juice_len: usize,
     pub support_lengths: Vec<usize>, //Vec<Vec<Vec<[i64; 10]>>>, // cost_data_arr[juice_count][special_count] = cost_data for that decision
     pub eqv_gold_per_tap: f64,
-    pub log_prob_dist: Vec<f64>,
-    pub gold_cost_record: Vec<f64>,
     // pub juice_arr: Vec<f64>,
 }
 
@@ -132,7 +163,7 @@ impl Upgrade {
         upgrade_index: usize,
     ) -> Self {
         let prob_dist_len: usize = prob_dist.len();
-        let base_chance: f64 = prob_dist.first().copied().unwrap_or(0.0);
+        let base_chance: f64 = prob_dist[1];
         let full_juice_len: usize = probability_distribution(
             base_chance,
             artisan_rate,
@@ -141,6 +172,7 @@ impl Upgrade {
                 prob_dist_len, // this is excessive but its fine
                 prob_dist_len,
             ),
+            0.0,
         )
         .len();
         Self {
@@ -156,16 +188,16 @@ impl Upgrade {
             prob_dist_len,
             is_weapon,
             artisan_rate,
-            tap_offset: 1,
+            tap_offset: 0,
             upgrade_index,
             special_value: -1.0_f64,
             full_juice_len,
-            support_lengths: vec![],    // to be filled
-            log_prob_dist: vec![], // will change with each arrangement, maybe use a hashmap later
+            support_lengths: vec![], // to be filled
+            // log_prob_dist: vec![], // will change with each arrangement, maybe use a hashmap later
             eqv_gold_per_tap: -1.0_f64, // dummy value
-            gold_cost_record: vec![],
-            // juice_arr: vec![],
-            // eqv_gold_per_juice: -1.0_f64,
+                                        // gold_cost_record: vec![],
+                                        // juice_arr: vec![],
+                                        // eqv_gold_per_juice: -1.0_f64,
         }
     }
 
@@ -199,20 +231,25 @@ impl Upgrade {
             special_value: -1.0_f64,
             full_juice_len: 1, // need to sort this out
             support_lengths: vec![],
-            log_prob_dist: vec![], // will change with each arrangement, maybe use a hashmap later
+            // log_prob_dist: vec![], // will change with each arrangement, maybe use a hashmap later
             eqv_gold_per_tap: -1.0_f64, // dummy value
-            gold_cost_record: vec![],
-            // juice_arr: vec![],
-            // eqv_gold_per_juice: -1.0_f64,
-            // failure_raw_delta: -1,
-            // failure_delta_order: -1,
+                                        // gold_cost_record: vec![],
+                                        // juice_arr: vec![],
+                                        // eqv_gold_per_juice: -1.0_f64,
+                                        // failure_raw_delta: -1,
+                                        // failure_delta_order: -1,
         }
     }
 }
 
 // prob distribution of normal honing, adjusting for any juice usage
-pub fn probability_distribution(base: f64, artisan_rate: f64, extra_arr: &[f64]) -> Vec<f64> {
-    let mut raw_chances: Vec<f64> = Vec::new();
+pub fn probability_distribution(
+    base: f64,
+    artisan_rate: f64,
+    extra_arr: &[f64],
+    zero: f64,
+) -> Vec<f64> {
+    let mut raw_chances: Vec<f64> = vec![zero];
     let mut artisan: f64 = 0.0_f64;
     let mut count: usize = 0;
 
@@ -242,6 +279,7 @@ pub fn probability_distribution(base: f64, artisan_rate: f64, extra_arr: &[f64])
         chances[idx] = cum_chance * element;
         cum_chance *= 1.0 - element;
     }
+
     chances
 }
 
@@ -276,11 +314,13 @@ pub fn parser(
 
             let special_cost: i64 = SPECIAL_LEAPS_COST[is_weapon][upgrade_index];
             let event_artisan_rate: f64 = artisan_rate_arr[upgrade_index];
+
             out.push(Upgrade::new_normal(
                 probability_distribution(
                     NORMAL_HONE_CHANCES[upgrade_index],
                     event_artisan_rate,
                     &[],
+                    0.0,
                 ),
                 std::array::from_fn(|cost_type: usize| cur_cost[cost_type][upgrade_index]),
                 special_cost,
@@ -288,6 +328,7 @@ pub fn parser(
                 event_artisan_rate,
                 upgrade_index,
             ));
+
             current_counter += 1;
         }
     }

@@ -1,8 +1,8 @@
 // use hf_core::energy::prob_to_maximize_exact;
 
-use hf_core::helpers::encode_all;
+use hf_core::normal_sa::normal_honing_sa_wrapper;
 use hf_core::parser::PreparationOutput;
-use hf_core::saddlepoint_approximation::{StateBundle, prob_to_maximize};
+use hf_core::saddlepoint_approximation::StateBundle;
 use rand::Rng;
 use rand::distr::Distribution;
 use rand::distr::weighted::WeightedIndex;
@@ -76,7 +76,7 @@ fn neighbour<R: Rng>(
 
         let mut artisan: f64 = 0.0;
         for (s_index, bits) in upgrade_state.iter_mut().enumerate() {
-            if artisan >= 1.0 {
+            if artisan >= 1.0 || s_index == 0 {
                 for bit in bits {
                     *bit = false;
                 }
@@ -122,7 +122,7 @@ fn new_temp(temp: f64, alpha: f64) -> f64 {
     }
     return new; // this is very much subject to change
 }
-fn simulated_annealing<R: Rng>(
+pub fn solve<R: Rng>(
     prep_output: &mut PreparationOutput,
     rng: &mut R,
     states_evaled: &mut i64,
@@ -131,7 +131,8 @@ fn simulated_annealing<R: Rng>(
     // let mut cache: HashMap<(Vec<bool>, usize), Vec<([i64; 9], f64)>> = HashMap::new();
     let mut temp: f64 = init_temp;
     let mut state: Vec<Vec<Vec<bool>>> = Vec::with_capacity(prep_output.upgrade_arr.len());
-    for upgrade in prep_output.upgrade_arr.iter() {
+    let mut starting_special: Vec<usize> = Vec::with_capacity(prep_output.upgrade_arr.len() * 50);
+    for (index, upgrade) in prep_output.upgrade_arr.iter().enumerate() {
         // state.push(vec![rng.random_bool(0.5); upgrade.support_lengths[0]]);
         state.push(vec![
             vec![
@@ -142,7 +143,11 @@ fn simulated_annealing<R: Rng>(
             ];
             upgrade.support_lengths[0]
         ]);
+        for _ in 0..50 {
+            starting_special.push(index);
+        }
     }
+
     let mut state_bundle: StateBundle = StateBundle {
         state: state,
         names: prep_output
@@ -161,8 +166,12 @@ fn simulated_annealing<R: Rng>(
             .collect::<Vec<String>>(),
         state_index: vec![],
         prob: -1.0,
+        special_state: starting_special,
+        log_prob_dist_arr: vec![],
+        gold_costs_arr: vec![],
     };
-    state_bundle.prob = prob_to_maximize(&state_bundle, prep_output, states_evaled);
+
+    state_bundle.prob = normal_honing_sa_wrapper(&mut state_bundle, prep_output, states_evaled);
     let mut prev_state: StateBundle = state_bundle.clone();
 
     let iterations_per_temp = 69;
@@ -175,16 +184,8 @@ fn simulated_annealing<R: Rng>(
     let mut temps_without_improvement = 1;
     while temp >= 0.0 {
         neighbour(&mut state_bundle, prep_output, temp, init_temp, rng);
-        state_bundle.prob = prob_to_maximize(&state_bundle, prep_output, states_evaled);
-        // dbg!(
-        //     compute_eqv_gold_values(&prep_output.budgets, &prep_output.mats_value),
-        //     eqv_gold_unlock(&prep_output.unlock_costs, &prep_output.mats_value)
-        // );
-        // panic!();
+        state_bundle.prob = normal_honing_sa_wrapper(&mut state_bundle, prep_output, states_evaled);
 
-        // if new_prob > 0.13 {
-        //     panic!();
-        // }
         if state_bundle.prob > best_state_so_far.prob {
             best_state_so_far = state_bundle.clone();
             temps_without_improvement = 0;
@@ -196,9 +197,9 @@ fn simulated_annealing<R: Rng>(
             //     //     &best_state_so_far,
             //     //     &mut prep_output.upgrade_arr,
             //     //     0.0,
-            //     //     &prep_output.mats_value,
-            //     //     compute_eqv_gold_values(&prep_output.budgets, &prep_output.mats_value)
-            //     //         - eqv_gold_unlock(&prep_output.unlock_costs, &prep_output.mats_value),
+            //     //     &prep_output.price_arr,
+            //     //     compute_eqv_gold_values(&prep_output.budgets, &prep_output.price_arr)
+            //     //         - eqv_gold_unlock(&prep_output.unlock_costs, &prep_output.price_arr),
             //     //     0
             //     // ),
             //     encode_all(&&best_state_so_far)
@@ -224,9 +225,9 @@ fn simulated_annealing<R: Rng>(
             //     //     &best_state_so_far,
             //     //     &mut prep_output.upgrade_arr,
             //     //     0.0,
-            //     //     &prep_output.mats_value,
-            //     //     compute_eqv_gold_values(&prep_output.budgets, &prep_output.mats_value)
-            //     //         - eqv_gold_unlock(&prep_output.unlock_costs, &prep_output.mats_value),
+            //     //     &prep_output.price_arr,
+            //     //     compute_eqv_gold_values(&prep_output.budgets, &prep_output.price_arr)
+            //     //         - eqv_gold_unlock(&prep_output.unlock_costs, &prep_output.price_arr),
             //     //     0
             //     // ),
             // );
@@ -257,20 +258,11 @@ fn simulated_annealing<R: Rng>(
     //         &best_state_so_far,
     //         &mut prep_output.upgrade_arr,
     //         0.0,
-    //         &prep_output.mats_value,
-    //         compute_eqv_gold_values(&prep_output.budgets, &prep_output.mats_value)
-    //             - eqv_gold_unlock(&prep_output.unlock_costs, &prep_output.mats_value),
+    //         &prep_output.price_arr,
+    //         compute_eqv_gold_values(&prep_output.budgets, &prep_output.price_arr)
+    //             - eqv_gold_unlock(&prep_output.unlock_costs, &prep_output.price_arr),
     //         0
     //     )
     // );
     best_state_so_far
-}
-
-pub fn solve<R: Rng>(
-    states_evaled: &mut i64,
-    prep_output: &mut PreparationOutput,
-    rng: &mut R,
-) -> (String, f64) {
-    let state_bundle = simulated_annealing(prep_output, rng, states_evaled);
-    (encode_all(&state_bundle), state_bundle.prob)
 }

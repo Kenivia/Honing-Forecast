@@ -1,7 +1,10 @@
 use chrono::Local;
 use hf_arena::engine::{NOTES, solve};
 use hf_arena::parse_test_cases::parse_csv;
+use hf_core::helpers::encode_all;
+use hf_core::normal_sa::compute_leftover_probs;
 use hf_core::parser::PreparationOutput;
+use hf_core::saddlepoint_approximation::StateBundle;
 
 use rand::prelude::*;
 use serde::{Deserialize, Serialize};
@@ -30,6 +33,7 @@ struct Output {
     state: String,
     seed: u64,
     time_finished: String,
+    prob_leftover: Vec<f64>,
 }
 
 // Include the generated-file as a separate module
@@ -100,33 +104,36 @@ fn main() {
 
     let mut test_cases: Vec<PreparationOutput> =
         parse_csv(Path::new("test_cases.csv")).expect("Failed to read test_case.csv");
+
     for _ in 0..NUM_TESTS_TO_RUN {
-        for case in test_cases.iter_mut().rev() {
+        for prep_output in test_cases.iter_mut() {
             let instant: Instant = Instant::now();
-            if seen_tests.contains_key(&case.test_case)
-                && seen_tests[&case.test_case] >= NUM_TESTS_TO_RUN
+            if seen_tests.contains_key(&prep_output.test_case)
+                && seen_tests[&prep_output.test_case] >= NUM_TESTS_TO_RUN
             {
                 continue;
             }
             let seed: u64 = seed_rng.next_u64();
             let mut rng: StdRng = StdRng::seed_from_u64(seed);
             let mut states_evaled: i64 = 0;
-            println!("Test case {}", case.test_case);
-            let (out_string, prob) = solve(&mut states_evaled, case, &mut rng);
+            println!("Test case {}", prep_output.test_case);
+
+            let state_bundle: StateBundle = solve(prep_output, &mut rng, &mut states_evaled);
 
             let output: Output = Output {
-                test_case: case.test_case,
-                trial_num: *seen_tests.entry(case.test_case).or_insert(0) + 1,
+                test_case: prep_output.test_case,
+                trial_num: *seen_tests.entry(prep_output.test_case).or_insert(0) + 1,
                 wall_time: instant.elapsed().as_secs_f64(),
                 states_evaled,
-                prob,
-                state: out_string,
+                prob: state_bundle.prob,
+                state: encode_all(&state_bundle),
                 seed,
                 time_finished: current_time_string(),
+                prob_leftover: compute_leftover_probs(prep_output, &state_bundle),
             };
 
             write_jsonl(&output, &file_name).expect("Failed to write to result file");
-            *seen_tests.entry(case.test_case).or_insert(0) += 1;
+            *seen_tests.entry(prep_output.test_case).or_insert(0) += 1;
 
             // if case already ran, skip it (maybe add a flag to rerun)
             // otherwise, call solve, write results after each solve call

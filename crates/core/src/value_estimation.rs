@@ -56,7 +56,7 @@ use assert_float_eq::assert_float_absolute_eq;
 //             continue;
 //         }
 //         let gold_cost: f64 =
-//             compute_gold_cost_from_raw(&this_cost, input_budgets, &prep_output.mats_value);
+//             compute_gold_cost_from_raw(&this_cost, input_budgets, &prep_output.price_arr);
 //         combined_prob_dist.push((gold_cost, chance));
 //     }
 
@@ -111,10 +111,10 @@ fn truncated_average_tap(prob_dist: &[f64], offset: f64, truncate: usize) -> f64
     out + (truncate - 1) as f64
 }
 
-fn average_value(upgrade: &Upgrade, mats_value: &[f64], average: f64) -> f64 {
+fn average_value(upgrade: &Upgrade, price_arr: &[f64], average: f64) -> f64 {
     let mut this_sum = 0.0_f64;
     for cost_type in 0..7 {
-        this_sum += mats_value[cost_type] * average * upgrade.costs[cost_type] as f64;
+        this_sum += price_arr[cost_type] * average * upgrade.costs[cost_type] as f64;
     }
     this_sum
 }
@@ -147,17 +147,17 @@ fn est_juice_value_for_prob_dist(
         truncated_average_tap(prob_dist, upgrade.tap_offset as f64, extra_count),
     )
 }
-pub fn est_special_honing_value(upgrade_arr: &mut Vec<Upgrade>, mats_values: &[f64]) -> Vec<f64> {
+pub fn est_special_honing_value(upgrade_arr: &mut Vec<Upgrade>, price_arrs: &[f64]) -> Vec<f64> {
     let mut out: Vec<f64> = Vec::with_capacity(upgrade_arr.len());
     let mut average: f64;
     // let cost_type_count: usize = 7;
     let mut special_value: f64;
     // let mut is_valid: bool;
-    // debug_assert!(mats_values.len() == cost_type_count);
+    // debug_assert!(price_arrs.len() == cost_type_count);
     for upgrade in upgrade_arr.iter_mut() {
         if upgrade.is_normal_honing {
             average = average_tap(&upgrade.original_prob_dist, upgrade.tap_offset as f64);
-            special_value = upgrade.base_chance * average_value(upgrade, mats_values, average)
+            special_value = upgrade.base_chance * average_value(upgrade, price_arrs, average)
                 / upgrade.special_cost as f64;
 
             out.push(special_value);
@@ -188,6 +188,7 @@ pub fn est_juice_value(upgrade_arr: &mut Vec<Upgrade>, mat_values: &[f64]) {
             upgrade.base_chance,
             upgrade.artisan_rate,
             &generate_first_deltas(upgrade.base_chance, upgrade.prob_dist_len, 0),
+            0.0,
         );
         extra_count = 1;
 
@@ -200,6 +201,7 @@ pub fn est_juice_value(upgrade_arr: &mut Vec<Upgrade>, mat_values: &[f64]) {
                 upgrade.base_chance,
                 upgrade.artisan_rate,
                 &generate_first_deltas(upgrade.base_chance, upgrade.prob_dist_len, extra_count),
+                0.0,
             );
 
             let value_with_juice: f64 =
@@ -315,6 +317,7 @@ fn _juice_to_array(
                 cur_upgrade.prob_dist_len,
                 cur_extras[max_value_index],
             ),
+            0.0,
         );
         juice -= cur_upgrade.one_juice_cost;
     }

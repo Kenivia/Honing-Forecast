@@ -3,7 +3,7 @@ use core::f64;
 use std::time::Instant;
 
 use crate::histogram::{HistogramOutputs, prep_histogram};
-use crate::parser::{PreparationOutput, preparation};
+use crate::parser::PreparationOutput;
 use crate::success_analysis::{
     BuyAnalysisOutput, NoBuyAnalysisOutputs, buy_analysis, compute_all_gold_costs,
     generate_typical_cost, no_buy_analysis,
@@ -48,18 +48,18 @@ pub fn cost_to_chance(
     adv_counts: &[Vec<i64>],
     express_event: bool,
     hist_bins: usize,
-    user_mats_value: &[f64],
+    user_price_arr: &[f64],
     adv_hone_strategy: String,
     mut cost_data_to_sort: &mut [[i64; 9]],
 ) -> CostToChanceOut {
     #[cfg(test)]
     let mut now: Instant = Instant::now();
-    let mut prep_output: PreparationOutput = preparation(
+    let mut prep_output: PreparationOutput = PreparationOutput::initialize(
         hone_counts,
         input_budgets,
         adv_counts,
         express_event,
-        user_mats_value,
+        user_price_arr,
         &adv_hone_strategy,
         &vec![], // TODO fix this later
     );
@@ -130,17 +130,17 @@ pub fn cost_to_chance_arr(
     input_budgets_arr: &[Vec<i64>],
     adv_counts: &[Vec<i64>],
     express_event: bool,
-    user_mats_value: &[f64],
+    user_price_arr: &[f64],
     adv_hone_strategy: String,
     cost_data: &[[i64; 9]],
 ) -> CostToChanceArrOut {
     let first_budget: &Vec<i64> = &input_budgets_arr[0];
-    let prep_output: PreparationOutput = preparation(
+    let prep_output: PreparationOutput = PreparationOutput::initialize(
         hone_counts,
         first_budget,
         adv_counts,
         express_event,
-        user_mats_value,
+        user_price_arr,
         &adv_hone_strategy,
         &vec![], // TODO fix this later
     );
@@ -200,7 +200,7 @@ mod tests {
         ];
         let express_event: bool = false;
         let hist_bins: usize = 1000;
-        let user_mats_value: [f64; 9] = DEFAULT_GOLD_VALUES;
+        let user_price_arr: [f64; 9] = DEFAULT_GOLD_VALUES;
         let adv_hone_strategy: &'static str = "No juice";
         let data_size: usize = 100000;
 
@@ -215,12 +215,12 @@ mod tests {
         );
         // Run the function to get the full output
         let mut rng: StdRng = StdRng::seed_from_u64(RNG_SEED);
-        let prep_output: PreparationOutput = preparation(
+        let prep_output: PreparationOutput = PreparationOutput::initialize(
             &hone_counts,
             &input_budgets,
             &adv_counts,
             express_event,
-            &user_mats_value,
+            &user_price_arr,
             adv_hone_strategy,
             &vec![],
         );
@@ -237,7 +237,7 @@ mod tests {
             &adv_counts,
             express_event,
             hist_bins,
-            &user_mats_value,
+            &user_price_arr,
             adv_hone_strategy.to_owned(),
             &mut cost_data,
         );
@@ -266,7 +266,7 @@ mod tests {
         ];
         let express_event = false;
         let hist_bins: usize = 1000;
-        let user_mats_value = DEFAULT_GOLD_VALUES;
+        let user_price_arr = DEFAULT_GOLD_VALUES;
         let adv_hone_strategy = "No juice";
         let data_size: usize = 100000;
 
@@ -280,12 +280,12 @@ mod tests {
             data_size
         );
         let mut rng: StdRng = StdRng::seed_from_u64(RNG_SEED);
-        let prep_output: PreparationOutput = preparation(
+        let prep_output: PreparationOutput = PreparationOutput::initialize(
             &hone_counts,
             &input_budgets,
             &adv_counts,
             express_event,
-            &user_mats_value,
+            &user_price_arr,
             adv_hone_strategy,
             &vec![],
         );
@@ -302,7 +302,7 @@ mod tests {
             &adv_counts,
             express_event,
             hist_bins,
-            &user_mats_value,
+            &user_price_arr,
             adv_hone_strategy.to_owned(),
             &mut cost_data,
         );
@@ -324,7 +324,7 @@ mod tests {
         let adv_counts = vec![(0..4).map(|_| 0).collect(), (0..4).map(|_| 0).collect()];
         let express_event = false;
         let hist_bins: usize = 1000;
-        let user_mats_value: [f64; 9] = DEFAULT_GOLD_VALUES;
+        let user_price_arr: [f64; 9] = DEFAULT_GOLD_VALUES;
         let adv_hone_strategy = "No juice";
         let data_size: usize = 100000;
 
@@ -338,12 +338,12 @@ mod tests {
             data_size
         );
         let mut rng: StdRng = StdRng::seed_from_u64(RNG_SEED);
-        let prep_output: PreparationOutput = preparation(
+        let prep_output: PreparationOutput = PreparationOutput::initialize(
             &hone_counts,
             &input_budgets,
             &adv_counts,
             express_event,
-            &user_mats_value,
+            &user_price_arr,
             adv_hone_strategy,
             &vec![],
         );
@@ -360,7 +360,7 @@ mod tests {
             &adv_counts,
             express_event,
             hist_bins,
-            &user_mats_value,
+            &user_price_arr,
             adv_hone_strategy.to_owned(),
             &mut cost_data,
         );
@@ -382,7 +382,7 @@ mod tests {
         ];
         let express_event = false;
         let hist_bins: usize = 1000;
-        let user_mats_value = DEFAULT_GOLD_VALUES;
+        let user_price_arr = DEFAULT_GOLD_VALUES;
         let adv_hone_strategy = "No juice";
         let data_size: usize = 100000;
 
@@ -396,12 +396,12 @@ mod tests {
             data_size
         );
         let mut rng: StdRng = StdRng::seed_from_u64(RNG_SEED);
-        let prep_output: PreparationOutput = preparation(
+        let prep_output: PreparationOutput = PreparationOutput::initialize(
             &hone_counts,
             &input_budgets,
             &adv_counts,
             express_event,
-            &user_mats_value,
+            &user_price_arr,
             adv_hone_strategy,
             &vec![],
         );
@@ -418,7 +418,7 @@ mod tests {
             &adv_counts,
             express_event,
             hist_bins,
-            &user_mats_value,
+            &user_price_arr,
             adv_hone_strategy.to_owned(),
             &mut cost_data,
         );
@@ -445,7 +445,7 @@ mod tests {
         let hone_counts = vec![(0..25).map(|_| 5).collect(), (0..25).map(|_| 1).collect()];
         let adv_counts = vec![(0..4).map(|_| 5).collect(), (0..4).map(|_| 1).collect()];
         let express_event = false;
-        let user_mats_value = DEFAULT_GOLD_VALUES;
+        let user_price_arr = DEFAULT_GOLD_VALUES;
         let adv_hone_strategy = "No juice";
         let data_size: usize = 100000;
 
@@ -459,12 +459,12 @@ mod tests {
         );
         // Run the function to get the full output
         let mut rng: StdRng = StdRng::seed_from_u64(RNG_SEED);
-        let prep_output: PreparationOutput = preparation(
+        let prep_output: PreparationOutput = PreparationOutput::initialize(
             &hone_counts,
             &budget_arr[0],
             &adv_counts,
             express_event,
-            &user_mats_value,
+            &user_price_arr,
             adv_hone_strategy,
             &vec![],
         );
@@ -480,7 +480,7 @@ mod tests {
             &budget_arr,
             &adv_counts,
             express_event,
-            &user_mats_value,
+            &user_price_arr,
             adv_hone_strategy.to_owned(),
             &mut cost_data,
         );

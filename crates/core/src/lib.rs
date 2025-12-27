@@ -1,11 +1,13 @@
 pub mod constants;
 pub mod cost_to_chance;
-pub mod energy;
+pub mod exact_prob;
 pub mod helpers;
 pub mod histogram;
 pub mod monte_carlo;
+pub mod normal_sa;
 pub mod parser;
 pub mod saddlepoint_approximation;
+pub mod special_sa;
 pub mod success_analysis;
 pub mod value_estimation;
 pub mod visualizer;

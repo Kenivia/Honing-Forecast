@@ -5,16 +5,14 @@
 
 ### Now
 
-- special honing
-  - need to add a 0th slot to prob_dist or? have to strip out a lot of stuff
-  - ~~state of this is actually integers~~ this isnt actually so simple because we can finish early
-  - state = order of which ones to attempt first
-    - p = 1 - PRODUCT (1 - p_i * P(got special leaps left) )
-    - estimate this P(got special leaps left) with saddlepoint(wow this thing is tas)
-
 - procedually generate test cases
   - figure out how to fit the juice prices into the csv
 - monte carlo at the end to verify / sanity check / just to look at it (also can compute confidence interval with variance etc)
+
+- BOOKS ARE MUTUALLY EXCLUSIVE maybe just make sure that neighbor function handles it? idk
+- perform a final saddlepoint for P(Y1 < H1), P(Y2 < H2) ... P(Yn < Hn) warn if any is high
+- turn a lot of helper functions to class functions of prep_output or state_bundle
+- change all the i64 budgets to f64 god
 
 ### Big
 
@@ -91,6 +89,21 @@ graph
 - improve how the cost estimation works / verify that it actually works
 
 ## Done / cancelled
+
+- ~~rewrite the saddlepoint stuff to actually be used in other situations~~
+  - ~~initialize the stratch pads in state bundle somewhere?~~
+- ~~special honing~~
+  - ~~need to add a 0th slot to prob_dist or? have to strip out a lot of stuff~~
+  - ~~state of this is actually integers this isnt actually so simple because we can finish early~~
+  - ~~state = order of which ones to attempt first~~
+    - ~~p = 1 - PRODUCT (1 - p_i *P(got special leaps left)* P(this upgrade hasn't succeeded yet))~~
+    - ~~estimate this P(got special leaps left) with saddlepoint(wow this thing is tas)~~
+- ~~Adjust for owned juice only for prob maximizing mode, don't ~~care abt~~ allow books because it should only be used for mains~~
+  - ~~because evaluating P(Y < H) and P(X + Y < H + B) which need saddlepoint and is quite expensive~~
+  - ~~probably roughly x2 for 1 type, x6? = P(Y1 < H1), P(Y2 < H2), P(X < B), P(X < B+H1), P(X < B + H2), P(X < B + H1 + H2), and this is assuming Y1 Y2 are independent which they arent...  way more for 3+ types~~
+- ~~The punishment for not using juice is incorrect rn~~
+  - ~~again this is much harder thank i thought fuck~~
+  - ~~but if i manage to do it it can accomodate other non-sellable mats~~
 
 - ~~rewrite Ks to allow different stuff to be in(pre calculate alpha_arr), and to allow toggling of the derivative calculations instead of having 2 funcs~~
 - ~~use newtons methods until 0 derivative or something, this bisection kinda slow~~

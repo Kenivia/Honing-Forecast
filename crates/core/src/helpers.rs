@@ -8,6 +8,19 @@ use crate::value_estimation::average_tap;
 
 use rand::Rng;
 
+pub fn find_non_zero_min(support_arr: &Vec<Vec<f64>>, log_prob_dist_arr: &Vec<Vec<f64>>) -> f64 {
+    support_arr
+        .iter()
+        .enumerate()
+        .map(|(u_index, x)| {
+            x.iter()
+                .enumerate()
+                .find(|(index, _)| log_prob_dist_arr[u_index][*index] > f64::NEG_INFINITY)
+                .unwrap_or((0, &0.0))
+                .1
+        })
+        .sum()
+}
 fn encode_one_positions(v1: &[Vec<bool>]) -> String {
     let mut s1 = String::new();
 

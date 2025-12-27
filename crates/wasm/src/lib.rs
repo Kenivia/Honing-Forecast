@@ -27,9 +27,7 @@ use hf_core::cost_to_chance::{
 };
 use hf_core::helpers::{average_cost, calc_unlock, get_count};
 use hf_core::monte_carlo::monte_carlo_data;
-use hf_core::parser::{
-    PreparationOutput, Upgrade, parser, parser_with_other_strategy, preparation,
-};
+use hf_core::parser::{PreparationOutput, Upgrade, parser, parser_with_other_strategy};
 
 use rand::prelude::*;
 use serde::Deserialize;
@@ -48,7 +46,7 @@ pub struct Payload {
     budget: Vec<i64>,
     express_event: bool,
     bucket_count: usize,
-    user_mats_value: Option<Vec<f64>>,
+    user_price_arr: Option<Vec<f64>>,
     data_size: Option<usize>,
     cost_data: Option<Vec<Vec<i64>>>,
 }
@@ -63,7 +61,7 @@ pub struct PayloadArr {
     adv_hone_strategy: String,
     budget_arr: Vec<Vec<i64>>,
     express_event: bool,
-    user_mats_value: Option<Vec<f64>>,
+    user_price_arr: Option<Vec<f64>>,
 
     #[allow(dead_code)]
     data_size: Option<usize>,
@@ -79,16 +77,16 @@ pub fn monte_carlo_wrapper(input: JsValue) -> JsValue {
     let normal_counts: Vec<Vec<i64>> = get_count(payload.normal_counts, payload.normal_hone_ticks);
     let adv_counts: Vec<Vec<i64>> = get_count(payload.adv_counts, payload.adv_hone_ticks);
 
-    let user_mats_value: Vec<f64> = payload.user_mats_value.unwrap_or(vec![0.0; 7]);
+    let user_price_arr: Vec<f64> = payload.user_price_arr.unwrap_or(vec![0.0; 7]);
     let adv_hone_strategy: String = payload.adv_hone_strategy;
     let data_size: usize = payload.data_size.unwrap_or(100000).max(1000);
 
-    let mut prep_output: PreparationOutput = preparation(
+    let mut prep_output: PreparationOutput = PreparationOutput::initialize(
         &normal_counts,
         &payload.budget,
         &adv_counts,
         payload.express_event,
-        &user_mats_value,
+        &user_price_arr,
         &adv_hone_strategy,
         &vec![],
     );
@@ -116,7 +114,7 @@ pub fn cost_to_chance_wrapper(input: JsValue) -> JsValue {
     let adv_counts: Vec<Vec<i64>> = get_count(payload.adv_counts, payload.adv_hone_ticks);
 
     let budget: Vec<i64> = payload.budget;
-    let user_mats_value: Vec<f64> = payload.user_mats_value.unwrap_or(vec![0.0; 7]);
+    let user_price_arr: Vec<f64> = payload.user_price_arr.unwrap_or(vec![0.0; 7]);
     let cost_vec: Vec<Vec<i64>> = payload.cost_data.unwrap();
     let mut cost_data: Vec<[i64; 9]> = cost_vec
         .into_iter()
@@ -134,7 +132,7 @@ pub fn cost_to_chance_wrapper(input: JsValue) -> JsValue {
         &adv_counts,
         payload.express_event,
         payload.bucket_count,
-        &user_mats_value,
+        &user_price_arr,
         payload.adv_hone_strategy,
         &mut cost_data,
     );
@@ -196,7 +194,7 @@ pub fn cost_to_chance_arr_wrapper(input: JsValue) -> JsValue {
     let adv_counts: Vec<Vec<i64>> = get_count(payload.adv_counts, payload.adv_hone_ticks);
 
     let budget_arr: Vec<Vec<i64>> = payload.budget_arr;
-    let user_mats_value: Vec<f64> = payload.user_mats_value.unwrap_or(vec![0.0; 7]);
+    let user_price_arr: Vec<f64> = payload.user_price_arr.unwrap_or(vec![0.0; 7]);
     let cost_vec: Vec<Vec<i64>> = payload.cost_data.unwrap();
     let cost_data: Vec<[i64; 9]> = cost_vec
         .into_iter()
@@ -213,7 +211,7 @@ pub fn cost_to_chance_arr_wrapper(input: JsValue) -> JsValue {
         &budget_arr,
         &adv_counts,
         payload.express_event,
-        &user_mats_value,
+        &user_price_arr,
         payload.adv_hone_strategy,
         &cost_data,
     );

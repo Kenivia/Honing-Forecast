@@ -1,6 +1,6 @@
 use std::path::Path;
 
-use hf_core::parser::{PreparationOutput, preparation};
+use hf_core::parser::PreparationOutput;
 use paste::paste;
 use seq_macro::seq;
 use serde::{Deserialize, Deserializer};
@@ -166,7 +166,8 @@ pub fn parse_csv(path: &Path) -> Result<Vec<PreparationOutput>, csv::Error> {
             1.0,
             row.silver_price,
         ];
-        let mut this = preparation(
+
+        let mut this: PreparationOutput = PreparationOutput::initialize(
             &hone_counts,
             &budget,
             &adv_counts,
@@ -175,6 +176,7 @@ pub fn parse_csv(path: &Path) -> Result<Vec<PreparationOutput>, csv::Error> {
             "No juice",
             &juice_books_owned,
         );
+
         this.test_case = row.test_case;
         out.push(this);
     }

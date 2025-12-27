@@ -78,7 +78,7 @@ pub fn compute_all_gold_costs(
         all_gold_costs.push(compute_gold_cost_from_raw(
             cost,
             &input_budget_no_gold,
-            &prep_output.mats_value,
+            &prep_output.price_arr,
         ));
     }
     all_gold_costs.sort_unstable_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
@@ -97,7 +97,7 @@ pub fn compute_all_gold_costs_and_sort_data(
         all_gold_costs.push(compute_gold_cost_from_raw(
             cost,
             &input_budget_no_gold,
-            &prep_output.mats_value,
+            &prep_output.price_arr,
         ));
     }
 
@@ -137,7 +137,7 @@ fn get_hundred_gold_costs(
         compute_gold_cost_from_raw(
             &get_one_tap_pity(&prep_output.upgrade_arr, &prep_output.unlock_costs)[1],
             &input_budget_no_gold,
-            &prep_output.mats_value,
+            &prep_output.price_arr,
         )
         .ceil() as i64,
     );
@@ -210,7 +210,7 @@ pub fn generate_typical_cost(
         typical_costs.push(one_typical_cost(
             cost_data_sorted,
             i as f64 / 100.0,
-            &prep_output.mats_value,
+            &prep_output.price_arr,
             &input_budget_no_gold,
             buy_failure_outputs.hundred_gold_costs[i],
         ));

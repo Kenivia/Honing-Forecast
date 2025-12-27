@@ -135,10 +135,10 @@ mod tests {
     use super::*;
     use crate::calculate_hash;
     use crate::constants::RNG_SEED;
-    use crate::helpers::eqv_gold_unlock;
+
+    use crate::normal_sa::normal_honing_sa_wrapper;
     use crate::parser::PreparationOutput;
-    use crate::parser::preparation;
-    use crate::saddlepoint_approximation::prob_to_maximize;
+
     use crate::test_utils::*;
     use std::time::Instant;
 
@@ -164,7 +164,7 @@ mod tests {
             0,
             // 0, 0, 0, 0, 0, 16000, 0, 0, 0, 0,
         ];
-        let user_mats_value = DEFAULT_GOLD_VALUES;
+        let user_price_arr = DEFAULT_GOLD_VALUES;
         // let data_size: usize = 100000;
         let hash: String = calculate_hash!(
             &hone_counts,
@@ -172,18 +172,18 @@ mod tests {
             adv_hone_strategy,
             express_event,
             &input_budgets,
-            &user_mats_value,
+            &user_price_arr,
             // data_size,
             RNG_SEED,
             PROB_MODE
         );
 
-        let mut prep_output: PreparationOutput = preparation(
+        let mut prep_output: PreparationOutput = PreparationOutput::initialize(
             &hone_counts,
             &input_budgets,
             &adv_counts,
             express_event,
-            &user_mats_value,
+            &user_price_arr,
             adv_hone_strategy,
             &vec![(0, 0), (0, 0), (0, 0), (0, 0)],
         );
@@ -191,8 +191,8 @@ mod tests {
         // dbg!(prep_output.upgrade_arr);
         // panic!();
         let mut states_evaled: i64 = 0;
-        let approx_result = prob_to_maximize(
-            &StateBundle {
+        let approx_result = normal_honing_sa_wrapper(
+            &mut StateBundle {
                 state: vec![
                     // vec![true; 16],
                     // vec![true; 2],
@@ -205,11 +205,14 @@ mod tests {
                 names: vec![],
                 state_index: vec![],
                 prob: -1.0,
+                special_state: vec![],
+                log_prob_dist_arr: vec![],
+                gold_costs_arr: vec![],
             },
             &mut prep_output,
             &mut states_evaled,
         );
-
+        let budget: f64 = prep_output.budget_eqv_gold;
         let exact_result = prob_to_maximize_exact(
             &vec![
                 // vec![true; 16],
@@ -222,9 +225,8 @@ mod tests {
             ],
             &mut prep_output.upgrade_arr,
             0.0,
-            &prep_output.mats_value,
-            compute_eqv_gold_values(&prep_output.budgets, &prep_output.mats_value)
-                - eqv_gold_unlock(&prep_output.unlock_costs, &prep_output.mats_value),
+            &prep_output.price_arr,
+            budget,
             0,
         );
         dbg!(approx_result);
@@ -264,14 +266,14 @@ mod tests {
     //     let adv_hone_strategy: &str = "No juice";
     //     let express_event: bool = true;
     //     let input_budgets = vec![0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
-    //     let user_mats_value = DEFAULT_GOLD_VALUES;
+    //     let user_price_arr = DEFAULT_GOLD_VALUES;
     //     let hash: String = calculate_hash!(
     //         &hone_counts,
     //         &adv_counts,
     //         adv_hone_strategy,
     //         express_event,
     //         &input_budgets,
-    //         &user_mats_value,
+    //         &user_price_arr,
     //         RNG_SEED,
     //         PROB_MODE
     //     );
@@ -281,7 +283,7 @@ mod tests {
     //         &input_budgets,
     //         &adv_counts,
     //         express_event,
-    //         &user_mats_value,
+    //         &user_price_arr,
     //         adv_hone_strategy,
     //         &vec![],
     //     );
@@ -292,7 +294,7 @@ mod tests {
     //             log_prob_dist.push(i.ln());
     //         }
     //         upgrade.log_prob_dist = log_prob_dist;
-    //         upgrade.eqv_gold_per_tap = eqv_gold_per_tap(upgrade, &prep_output.mats_value);
+    //         upgrade.eqv_gold_per_tap = eqv_gold_per_tap(upgrade, &prep_output.price_arr);
     //     }
     //     let result: f64 = saddlepoint_approximation(
     //         &prep_output,
@@ -302,9 +304,9 @@ mod tests {
     //             state_index: vec![],
     //             prob: -1.0,
     //         },
-    //         // 38591813.0 - eqv_gold_unlock(&prep_output.unlock_costs, &prep_output.mats_value),
-    //         // 25916.0 - eqv_gold_unlock(&prep_output.unlock_costs, &prep_output.mats_value),
-    //         62010.0 - eqv_gold_unlock(&prep_output.unlock_costs, &prep_output.mats_value),
+    //         // 38591813.0 - eqv_gold_unlock(&prep_output.unlock_costs, &prep_output.price_arr),
+    //         // 25916.0 - eqv_gold_unlock(&prep_output.unlock_costs, &prep_output.price_arr),
+    //         62010.0 - eqv_gold_unlock(&prep_output.unlock_costs, &prep_output.price_arr),
     //         0.0,
     //     );
     //     dbg!(result);
