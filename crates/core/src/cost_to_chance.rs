@@ -54,13 +54,14 @@ pub fn cost_to_chance(
 ) -> CostToChanceOut {
     #[cfg(test)]
     let mut now: Instant = Instant::now();
-    let mut prep_output: PreparationOutput = PreparationOutput::initialize(
+    let prep_output: PreparationOutput = PreparationOutput::initialize(
         hone_counts,
         input_budgets,
         adv_counts,
         express_event,
         user_price_arr,
         &adv_hone_strategy,
+        &vec![], // TODO fix this later
         &vec![], // TODO fix this later
     );
     #[cfg(test)]
@@ -98,12 +99,8 @@ pub fn cost_to_chance(
         now = Instant::now();
     }
     // Section 4: Histogram preparation
-    let histogram_outputs: HistogramOutputs = prep_histogram(
-        &mut prep_output.upgrade_arr,
-        cost_data_to_sort,
-        hist_bins,
-        &prep_output.unlock_costs,
-    );
+    let histogram_outputs: HistogramOutputs =
+        prep_histogram(&prep_output, cost_data_to_sort, hist_bins);
     #[cfg(test)]
     {
         println!("prep_histogram took {} ms.", now.elapsed().as_millis());
@@ -142,6 +139,7 @@ pub fn cost_to_chance_arr(
         express_event,
         user_price_arr,
         &adv_hone_strategy,
+        &vec![], // TODO fix this later
         &vec![], // TODO fix this later
     );
 
@@ -223,6 +221,7 @@ mod tests {
             &user_price_arr,
             adv_hone_strategy,
             &vec![],
+            &vec![],
         );
         let mut cost_data = monte_carlo_data(
             data_size,
@@ -288,6 +287,7 @@ mod tests {
             &user_price_arr,
             adv_hone_strategy,
             &vec![],
+            &vec![],
         );
         let mut cost_data = monte_carlo_data(
             data_size,
@@ -346,6 +346,7 @@ mod tests {
             &user_price_arr,
             adv_hone_strategy,
             &vec![],
+            &vec![],
         );
         let mut cost_data = monte_carlo_data(
             data_size,
@@ -403,6 +404,7 @@ mod tests {
             express_event,
             &user_price_arr,
             adv_hone_strategy,
+            &vec![],
             &vec![],
         );
         let mut cost_data = monte_carlo_data(
@@ -466,6 +468,7 @@ mod tests {
             express_event,
             &user_price_arr,
             adv_hone_strategy,
+            &vec![],
             &vec![],
         );
         let mut cost_data = monte_carlo_data(

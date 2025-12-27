@@ -1,9 +1,7 @@
-use crate::parser::Upgrade;
-
 use core::f64;
 
 use crate::helpers::compute_eqv_gold_values;
-
+use crate::parser::Upgrade;
 #[cfg(test)]
 use crate::saddlepoint_approximation::StateBundle;
 
@@ -186,6 +184,7 @@ mod tests {
             &user_price_arr,
             adv_hone_strategy,
             &vec![(0, 0), (0, 0), (0, 0), (0, 0)],
+            &vec![(0.0, 0.0), (0.0, 0.0), (0.0, 0.0), (0.0, 0.0)],
         );
         // let mut cache: HashMap<(Vec<bool>, usize), Vec<([i64; 9], f64)>> = HashMap::new();
         // dbg!(prep_output.upgrade_arr);

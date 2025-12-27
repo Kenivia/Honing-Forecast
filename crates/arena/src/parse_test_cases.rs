@@ -1,14 +1,13 @@
-use std::path::Path;
-
+use csv::Reader;
 use hf_core::parser::PreparationOutput;
 use paste::paste;
 use seq_macro::seq;
-use serde::{Deserialize, Deserializer};
+use serde::{Deserialize, Deserializer, Serialize};
+use std::path::Path;
 seq!(N in 1..=25 {
-#[derive(Debug, Deserialize)]
-    struct Row {
-        test_case: i64,
-
+#[derive(Debug, Deserialize, Serialize, Clone)]
+    pub struct Row {
+        pub test_case: i64,
         #(
             #[serde(deserialize_with = "empty_as_default")]
              armor_~N: i64,
@@ -18,27 +17,27 @@ seq!(N in 1..=25 {
          weap_~N: i64,
          )*
          #[serde(deserialize_with = "empty_as_default")]
-        red_owned: i64,
+     pub      red_owned: i64,
         #[serde(deserialize_with = "empty_as_default")]
-        blue_owned: i64,
+      pub     blue_owned: i64,
         #[serde(deserialize_with = "empty_as_default")]
-        leaps_owned: i64,
+      pub     leaps_owned: i64,
         #[serde(deserialize_with = "empty_as_default")]
-        shards_owned: i64,
+       pub    shards_owned: i64,
         #[serde(deserialize_with = "empty_as_default")]
-        oreha_owned: i64,
+      pub     oreha_owned: i64,
         #[serde(deserialize_with = "empty_as_default")]
-        gold_owned: i64,
+      pub     gold_owned: i64,
         #[serde(deserialize_with = "empty_as_default")]
-        silver_owned: i64,
+      pub     silver_owned: i64,
         #[serde(deserialize_with = "empty_as_default")]
-        special_owned: i64,
-        red_price: f64,
-        blue_price: f64,
-        leaps_price: f64,
-        shards_price: f64,
-        oreha_price: f64,
-        silver_price: f64,
+     pub   special_owned: i64,
+      pub     red_price: f64,
+      pub     blue_price: f64,
+      pub     leaps_price: f64,
+     pub      shards_price: f64,
+     pub      oreha_price: f64,
+     pub      silver_price: f64,
         #[serde(deserialize_with = "empty_as_default")]
         adv_armor_10: i64,
         #[serde(deserialize_with = "empty_as_default")]
@@ -57,24 +56,33 @@ seq!(N in 1..=25 {
         adv_weap_40: i64,
 
         #[serde(deserialize_with = "deserialize_bool")]
-        express: bool,
+        pub express: bool,
 
          #[serde(deserialize_with = "empty_as_default")]
-        juice_weap_1: i64,
+     pub      juice_weap_1: i64,
         #[serde(deserialize_with = "empty_as_default")]
-        juice_armor_1: i64,
+    pub       juice_armor_1: i64,
         #[serde(deserialize_with = "empty_as_default")]
-        juice_weap_2: i64,
+     pub      juice_weap_2: i64,
         #[serde(deserialize_with = "empty_as_default")]
-        juice_armor_2: i64,
+     pub      juice_armor_2: i64,
          #[serde(deserialize_with = "empty_as_default")]
-        juice_weap_3: i64,
+      pub     juice_weap_3: i64,
         #[serde(deserialize_with = "empty_as_default")]
-        juice_armor_3: i64,
+       pub    juice_armor_3: i64,
         #[serde(deserialize_with = "empty_as_default")]
-        juice_weap_4: i64,
+      pub     juice_weap_4: i64,
         #[serde(deserialize_with = "empty_as_default")]
-        juice_armor_4: i64,
+       pub    juice_armor_4: i64,
+
+      pub     juice_weap_price_1: f64,
+      pub     juice_armor_price_1: f64,
+       pub    juice_weap_price_2: f64,
+      pub     juice_armor_price_2: f64,
+      pub     juice_weap_price_3: f64,
+       pub    juice_armor_price_3: f64,
+       pub    juice_weap_price_4: f64,
+       pub    juice_armor_price_4: f64,
 
     }
 
@@ -123,13 +131,13 @@ where
         _ => Err(serde::de::Error::custom(format!("invalid boolean: {}", s))),
     }
 }
-pub fn parse_csv(path: &Path) -> Result<Vec<PreparationOutput>, csv::Error> {
-    let mut rdr = csv::Reader::from_path(path)?;
+pub fn parse_csv(path: &Path) -> Vec<PreparationOutput> {
+    let mut rdr = Reader::from_path(path).unwrap();
 
     let mut out: Vec<PreparationOutput> = Vec::new();
 
     for result in rdr.deserialize() {
-        let row: Row = result?;
+        let row: Row = result.unwrap();
         let hone_counts: Vec<Vec<i64>> = vec![
             row_to_vec!(row, armor_, 1, 25),
             row_to_vec!(row, weap_, 1, 25),
@@ -145,6 +153,15 @@ pub fn parse_csv(path: &Path) -> Result<Vec<PreparationOutput>, csv::Error> {
         let juice_books_owned: Vec<(i64, i64)> = (0..4_usize)
             .into_iter()
             .map(|x| (temp_juice_books_owned[0][x], temp_juice_books_owned[1][x]))
+            .collect();
+
+        let temp_juice_prices: Vec<Vec<f64>> = vec![
+            row_to_vec!(row, juice_weap_price_, 1, 4),
+            row_to_vec!(row, juice_armor_price_, 1, 4),
+        ];
+        let juice_prices: Vec<(f64, f64)> = (0..4_usize)
+            .into_iter()
+            .map(|x| (temp_juice_prices[0][x], temp_juice_prices[1][x]))
             .collect();
         let budget: Vec<i64> = vec![
             row.red_owned,
@@ -175,10 +192,11 @@ pub fn parse_csv(path: &Path) -> Result<Vec<PreparationOutput>, csv::Error> {
             &prices,
             "No juice",
             &juice_books_owned,
+            &juice_prices,
         );
 
         this.test_case = row.test_case;
         out.push(this);
     }
-    Ok(out)
+    out
 }

@@ -55,6 +55,7 @@ impl PreparationOutput {
         user_price_arr: &[f64],
         adv_hone_strategy: &str,
         juice_books_budget: &[(i64, i64)],
+        juice_prices: &[(f64, f64)],
     ) -> PreparationOutput {
         let price_arr: Vec<f64> = user_price_arr.to_vec();
         let unlock_costs: Vec<i64> = calc_unlock(hone_counts, adv_counts, express_event);
@@ -66,13 +67,6 @@ impl PreparationOutput {
             express_event,
         );
         let budgets: Vec<i64> = input_budgets.to_vec();
-
-        // // Add average juice costs to budgets for all upgrades
-        // if adv_hone_strategy == "Juice on grace" {
-        //     let (avg_red_juice, avg_blue_juice): (i64, i64) = average_juice_cost(&upgrade_arr);
-        //     budgets[7] -= avg_red_juice;
-        //     budgets[8] -= avg_blue_juice;
-        // }
 
         for upgrade in upgrade_arr.iter_mut() {
             // let mut rng: StdRng = StdRng::seed_from_u64(RNG_SEED);
@@ -105,7 +99,7 @@ impl PreparationOutput {
             false,
         ];
 
-        let juice_info: JuiceInfo = get_avail_juice_combs();
+        let juice_info: JuiceInfo = get_avail_juice_combs(juice_prices);
         let juice_books_owned: Vec<(i64, i64)> = juice_books_budget.to_vec();
         let budget_eqv_gold: f64 = actual_eqv_gold(
             &price_arr,
@@ -126,6 +120,40 @@ impl PreparationOutput {
             juice_books_owned,
             sellable_toggles, //TODO READ THIS FROM AN ACUTAL INPUT LATEr cant be bother rn
         }
+    }
+
+    pub fn one_tap(&self) -> Vec<i64> {
+        self.get_one_tap_pity().0
+    }
+    pub fn pity(&self) -> Vec<i64> {
+        self.get_one_tap_pity().1
+    }
+
+    pub fn get_one_tap_pity(&self) -> (Vec<i64>, Vec<i64>) {
+        debug_assert!(self.unlock_costs.len() == 2);
+        const DATA_SIZE: usize = 2;
+        let mut cost_data: Vec<Vec<i64>> = vec![vec![0i64; 9]; DATA_SIZE];
+
+        for upgrade in self.upgrade_arr.iter() {
+            let pd_len: f64 = upgrade.prob_dist.len().saturating_sub(1) as f64;
+            for trial_num in 0..DATA_SIZE {
+                let rolled_tap =
+                    ((pd_len * (trial_num) as f64) / (DATA_SIZE as f64 - 1.0)).floor() as usize;
+                for cost_type in 0..7 {
+                    cost_data[trial_num][cost_type] +=
+                        upgrade.costs[cost_type] * (rolled_tap as i64 + upgrade.tap_offset);
+                }
+                if !upgrade.is_normal_honing {
+                    cost_data[trial_num][if upgrade.is_weapon { 7 } else { 8 }] +=
+                        upgrade.adv_juice_cost[rolled_tap].ceil() as i64;
+                }
+            }
+        }
+        for row in &mut cost_data {
+            row[3] += self.unlock_costs[0];
+            row[6] += self.unlock_costs[1];
+        }
+        (cost_data[0].clone(), cost_data[1].clone())
     }
 }
 

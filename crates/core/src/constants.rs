@@ -43,49 +43,37 @@ pub static NORMAL_HONE_CHANCES: [f64; 25] = [
 
 //  [  ( [ (upgrade_index, % amt, cost per juice(books = 1)  )] , gold_value of the juice/book wep version, armor version) ]
 // add new entries from the bottom, order matters
-pub static JUICE_BOOKS_AVAIL: &[(&[(usize, f64, i64)], f64, f64)] = &[
-    (
-        &[
-            (3, 0.45, 20),
-            (4, 0.45, 20),
-            (5, 0.45, 20),
-            (6, 0.3, 20),
-            (7, 0.3, 20),
-            (8, 0.15, 20),
-            (9, 0.15, 20),
-            (10, 0.1, 20),
-            (11, 0.1, 20),
-            (12, 0.05, 20),
-            (13, 0.05, 20),
-            (14, 0.04, 20),
-            (15, 0.04, 20),
-            (16, 0.03, 20),
-            (17, 0.03, 20),
-            (18, 0.03, 20),
-            (19, 0.015, 25),
-            (20, 0.015, 25),
-            (21, 0.01, 25),
-            (22, 0.01, 25),
-            (23, 0.005, 50),
-            (24, 0.005, 50),
-        ],
-        380.0,
-        290.0,
-    ),
+pub static JUICE_BOOKS_AVAIL: &[&[(usize, f64, i64)]] = &[
+    &[
+        (3, 0.45, 20),
+        (4, 0.45, 20),
+        (5, 0.45, 20),
+        (6, 0.3, 20),
+        (7, 0.3, 20),
+        (8, 0.15, 20),
+        (9, 0.15, 20),
+        (10, 0.1, 20),
+        (11, 0.1, 20),
+        (12, 0.05, 20),
+        (13, 0.05, 20),
+        (14, 0.04, 20),
+        (15, 0.04, 20),
+        (16, 0.03, 20),
+        (17, 0.03, 20),
+        (18, 0.03, 20),
+        (19, 0.015, 25),
+        (20, 0.015, 25),
+        (21, 0.01, 25),
+        (22, 0.01, 25),
+        (23, 0.005, 50),
+        (24, 0.005, 50),
+    ],
     // Hellfire 11-14
-    (
-        &[(10, 0.1, 1), (11, 0.1, 1), (12, 0.05, 1), (13, 0.05, 1)],
-        50.0,
-        35.0,
-    ),
+    &[(10, 0.1, 1), (11, 0.1, 1), (12, 0.05, 1), (13, 0.05, 1)],
     // 15-18
-    (
-        &[(14, 0.04, 1), (15, 0.04, 1), (16, 0.03, 1), (17, 0.03, 1)],
-        1400.0,
-        900.0,
-    ),
+    &[(14, 0.04, 1), (15, 0.04, 1), (16, 0.03, 1), (17, 0.03, 1)],
     //19-20
-    (&[(18, 0.03, 1), (19, 0.015, 1)], 8000.0, 4500.0),
+    &[(18, 0.03, 1), (19, 0.015, 1)],
 ];
 #[derive(Debug)]
 pub struct JuiceInfo {
@@ -95,20 +83,23 @@ pub struct JuiceInfo {
     pub ids: Vec<Vec<usize>>,
     pub one_gold_cost_id: Vec<(f64, f64)>,
 }
-pub fn get_avail_juice_combs() -> JuiceInfo {
+pub fn get_avail_juice_combs(juice_prices: &[(f64, f64)]) -> JuiceInfo {
     let mut chances: Vec<Vec<f64>> = vec![vec![]; 25];
     let mut gold_costs: Vec<Vec<(f64, f64)>> = vec![vec![]; 25];
     let mut amt_used: Vec<Vec<(i64, i64)>> = vec![vec![]; 25];
     let mut ids: Vec<Vec<usize>> = vec![vec![]; 25];
     let mut one_gold_cost_id: Vec<(f64, f64)> = vec![(0.0, 0.0); JUICE_BOOKS_AVAIL.len()];
     for (id, rows) in JUICE_BOOKS_AVAIL.iter().enumerate() {
-        for &(upgrade_index, chance, amt) in rows.0.iter() {
+        for &(upgrade_index, chance, amt) in rows.iter() {
             chances[upgrade_index].push(chance);
-            gold_costs[upgrade_index].push((amt as f64 * rows.1, amt as f64 * rows.2));
+            gold_costs[upgrade_index].push((
+                amt as f64 * juice_prices[id].0,
+                amt as f64 * juice_prices[id].1,
+            ));
             amt_used[upgrade_index].push((amt, amt));
             ids[upgrade_index].push(id);
         }
-        one_gold_cost_id[id] = (rows.1, rows.2);
+        one_gold_cost_id[id] = (juice_prices[id].0, juice_prices[id].1);
     }
     JuiceInfo {
         chances,

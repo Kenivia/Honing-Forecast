@@ -5,14 +5,15 @@
 
 ### Now
 
-- procedually generate test cases
-  - figure out how to fit the juice prices into the csv
 - monte carlo at the end to verify / sanity check / just to look at it (also can compute confidence interval with variance etc)
 
 - BOOKS ARE MUTUALLY EXCLUSIVE maybe just make sure that neighbor function handles it? idk
-- perform a final saddlepoint for P(Y1 < H1), P(Y2 < H2) ... P(Yn < Hn) warn if any is high
 - turn a lot of helper functions to class functions of prep_output or state_bundle
 - change all the i64 budgets to f64 god
+
+- figure out how to optimize special its way too slow rn
+- figure out how to do neighbors for special state
+-
 
 ### Big
 
@@ -90,6 +91,10 @@ graph
 
 ## Done / cancelled
 
+- ~~procedually generate test cases~~
+  - ~~figure out how to fit the juice prices into the csv~~
+- ~~adjust special such that the probabilities add up to 1 ~~
+- ~~ perform a final saddlepoint for P(Y1 < H1), P(Y2 < H2) ... P(Yn < Hn) warn if any is high~~
 - ~~rewrite the saddlepoint stuff to actually be used in other situations~~
   - ~~initialize the stratch pads in state bundle somewhere?~~
 - ~~special honing~~

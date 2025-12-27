@@ -102,8 +102,7 @@ fn main() {
 
     let mut seed_rng: ThreadRng = rand::rng();
 
-    let mut test_cases: Vec<PreparationOutput> =
-        parse_csv(Path::new("test_cases.csv")).expect("Failed to read test_case.csv");
+    let mut test_cases: Vec<PreparationOutput> = parse_csv(Path::new("bloated_test_cases.csv"));
 
     for _ in 0..NUM_TESTS_TO_RUN {
         for prep_output in test_cases.iter_mut() {

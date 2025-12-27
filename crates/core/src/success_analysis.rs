@@ -1,4 +1,4 @@
-use crate::helpers::{compute_gold_cost_from_raw, get_one_tap_pity, get_percentile_window};
+use crate::helpers::{compute_gold_cost_from_raw, get_percentile_window};
 use crate::parser::PreparationOutput;
 #[derive(Debug)]
 pub struct NoBuyAnalysisOutputs {
@@ -135,7 +135,7 @@ fn get_hundred_gold_costs(
     }
     hundred_gold_costs.push(
         compute_gold_cost_from_raw(
-            &get_one_tap_pity(&prep_output.upgrade_arr, &prep_output.unlock_costs)[1],
+            &prep_output.pity(),
             &input_budget_no_gold,
             &prep_output.price_arr,
         )
@@ -215,11 +215,6 @@ pub fn generate_typical_cost(
             buy_failure_outputs.hundred_gold_costs[i],
         ));
     }
-    typical_costs.push(
-        get_one_tap_pity(&prep_output.upgrade_arr, &prep_output.unlock_costs)[1]
-            .clone()
-            .try_into()
-            .unwrap(),
-    );
+    typical_costs.push(prep_output.pity().try_into().unwrap());
     typical_costs
 }
