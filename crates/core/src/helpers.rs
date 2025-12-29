@@ -3,7 +3,7 @@ use crate::constants::{
     get_event_modified_weapon_unlock_cost,
 };
 use crate::parser::Upgrade;
-use crate::saddlepoint_approximation::StateBundle;
+
 use crate::value_estimation::average_tap;
 
 use rand::Rng;
@@ -21,30 +21,7 @@ pub fn find_non_zero_min(support_arr: &Vec<Vec<f64>>, log_prob_dist_arr: &Vec<Ve
         })
         .sum()
 }
-fn encode_one_positions(v1: &[(bool, usize)]) -> String {
-    v1.iter()
-        .map(|(uppercase, num)| {
-            let letter: char = if *num == 0 {
-                'x' as char
-            } else {
-                (b'a' + (*num as u8 - 1)) as char
-            };
 
-            if *uppercase {
-                letter.to_ascii_uppercase()
-            } else {
-                letter
-            }
-        })
-        .collect()
-}
-pub fn encode_all(input: &StateBundle) -> String {
-    let mut strings = Vec::new();
-    for (index, i) in input.state.iter().enumerate() {
-        strings.push(input.names[index].clone() + ": " + &encode_one_positions(i));
-    }
-    strings.join("\n")
-}
 pub fn eqv_gold_per_tap(upgrade: &Upgrade, price_arr: &[f64]) -> f64 {
     // a bit redundent but whatever
     let mut c: f64 = 0.0;

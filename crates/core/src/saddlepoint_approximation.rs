@@ -4,19 +4,6 @@ pub static DEBUG: bool = false;
 pub static THETA_TOL: f64 = 1e-10;
 pub static FLOAT_TOL: f64 = 1e-12; // it could prolly be lower? idk doesnt matter
 
-#[derive(Clone, Debug)]
-pub struct StateBundle {
-    pub state: Vec<Vec<(bool, usize)>>,
-    pub names: Vec<String>,
-    pub log_prob_dist_arr: Vec<Vec<f64>>,
-    pub gold_costs_arr: Vec<Vec<f64>>,
-    // the above entries are tied to each upgrade, so arr[upgrade_index] correspond to the appropriate info for a particular upgrade
-    // probably should make another struct for this at some point
-    pub special_state: Vec<usize>, // arbitrary length
-    pub prob: f64,
-    pub state_index: Vec<Vec<Vec<i64>>>, // i pre-added this for caching but havnt implemented anything
-}
-
 pub fn ks_01234(
     log_prob_dist_arr: &[Vec<f64>],
     support_arr: &[Vec<f64>],

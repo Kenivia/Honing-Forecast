@@ -8,6 +8,7 @@ pub mod normal_sa;
 pub mod parser;
 pub mod saddlepoint_approximation;
 pub mod special_sa;
+pub mod state;
 pub mod success_analysis;
 pub mod value_estimation;
 pub mod visualizer;

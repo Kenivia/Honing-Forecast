@@ -3,7 +3,7 @@ use core::f64;
 use crate::helpers::compute_eqv_gold_values;
 use crate::parser::Upgrade;
 #[cfg(test)]
-use crate::saddlepoint_approximation::StateBundle;
+use crate::state::StateBundle;
 
 fn dist_to_costs(
     this_dist: &[f64],

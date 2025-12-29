@@ -5,10 +5,6 @@
 
 ### Now
 
-- BOOKS ARE MUTUALLY EXCLUSIVE maybe ~~just make sure that neighbor function handles it? idk~~
-  - change state to be (bool , i64), -1 = no books
-- turn a lot of helper functions to class functions of prep_output or state_bundle
-
 - figure out how to optimize special its way too slow rn
   - limit special state to never switch up/switch up once only? then it'll be a list of how many & which ones rather than like individual indices
     - bundle the streaks together see if theres any optimization there
@@ -103,6 +99,9 @@ graph
 
 ## Done / cancelled
 
+- ~~turn a lot of helper functions to class functions of prep_output or state_bundle~~ turns out there's not that much ig
+- ~~BOOKS ARE MUTUALLY EXCLUSIVE maybe just make sure that neighbor function handles it? idk~~
+  - ~~change state to be (bool , i64), -1 = no books~~
 - ~~procedually generate test cases~~
   - ~~figure out how to fit the juice prices into the csv~~
 - ~~adjust special such that the probabilities add up to 1 ~~

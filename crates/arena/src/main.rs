@@ -1,10 +1,9 @@
 use chrono::Local;
 use hf_arena::engine::{NOTES, solve};
 use hf_arena::parse_test_cases::parse_csv;
-use hf_core::helpers::encode_all;
 use hf_core::normal_sa::compute_leftover_probs;
 use hf_core::parser::PreparationOutput;
-use hf_core::saddlepoint_approximation::StateBundle;
+use hf_core::state::StateBundle;
 
 use rand::prelude::*;
 use serde::{Deserialize, Serialize};
@@ -125,7 +124,7 @@ fn main() {
                 wall_time: instant.elapsed().as_secs_f64(),
                 states_evaled,
                 prob: state_bundle.prob,
-                state: encode_all(&state_bundle),
+                state: state_bundle.encode_all(),
                 seed,
                 time_finished: current_time_string(),
                 prob_leftover: compute_leftover_probs(prep_output, &state_bundle),

@@ -2,7 +2,7 @@
 
 use hf_core::normal_sa::normal_honing_sa_wrapper;
 use hf_core::parser::PreparationOutput;
-use hf_core::saddlepoint_approximation::StateBundle;
+use hf_core::state::StateBundle;
 use rand::Rng;
 use rand::distr::Distribution;
 use rand::distr::weighted::WeightedIndex;
