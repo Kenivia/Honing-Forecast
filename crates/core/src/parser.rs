@@ -70,7 +70,10 @@ impl PreparationOutput {
 
         for upgrade in upgrade_arr.iter_mut() {
             // let mut rng: StdRng = StdRng::seed_from_u64(RNG_SEED);
+
             upgrade.eqv_gold_per_tap = eqv_gold_per_tap(upgrade, user_price_arr);
+
+            // THIS IS JUST HERE TO KEEP COMPILER HAPPY RN
             for i in 0..upgrade.full_juice_len {
                 // upgrade.support_lengths.push(vec![]); // this will contain different free taps eventually i think
                 upgrade.support_lengths.push(
@@ -100,6 +103,15 @@ impl PreparationOutput {
         ];
 
         let juice_info: JuiceInfo = get_avail_juice_combs(juice_prices);
+
+        for upgrade in upgrade_arr.iter_mut() {
+            // JUST GONNA ASSUME THAT not have juice => not have book or book => juice or first element is always juice (if there's a first element)
+            let both_avail: usize = juice_info.gold_costs[upgrade.upgrade_index].len();
+            if both_avail > 0 {
+                upgrade.juice_avail = true;
+            }
+            upgrade.books_avail = (both_avail - 1).max(0) as i64;
+        }
         let juice_books_owned: Vec<(i64, i64)> = juice_books_budget.to_vec();
         let budget_eqv_gold: f64 = actual_eqv_gold(
             &price_arr,
@@ -178,6 +190,8 @@ pub struct Upgrade {
     pub full_juice_len: usize,
     pub support_lengths: Vec<usize>, //Vec<Vec<Vec<[i64; 10]>>>, // cost_data_arr[juice_count][special_count] = cost_data for that decision
     pub eqv_gold_per_tap: f64,
+    pub juice_avail: bool,
+    pub books_avail: i64,
     // pub juice_arr: Vec<f64>,
 }
 
@@ -223,9 +237,11 @@ impl Upgrade {
             support_lengths: vec![], // to be filled
             // log_prob_dist: vec![], // will change with each arrangement, maybe use a hashmap later
             eqv_gold_per_tap: -1.0_f64, // dummy value
-                                        // gold_cost_record: vec![],
-                                        // juice_arr: vec![],
-                                        // eqv_gold_per_juice: -1.0_f64,
+            // gold_cost_record: vec![],
+            // juice_arr: vec![],
+            // eqv_gold_per_juice: -1.0_f64,
+            juice_avail: upgrade_index > 2, // will overwrite this in prep initialization anyway
+            books_avail: -1,                // will overwrite in prep
         }
     }
 
@@ -261,11 +277,13 @@ impl Upgrade {
             support_lengths: vec![],
             // log_prob_dist: vec![], // will change with each arrangement, maybe use a hashmap later
             eqv_gold_per_tap: -1.0_f64, // dummy value
-                                        // gold_cost_record: vec![],
-                                        // juice_arr: vec![],
-                                        // eqv_gold_per_juice: -1.0_f64,
-                                        // failure_raw_delta: -1,
-                                        // failure_delta_order: -1,
+            // gold_cost_record: vec![],
+            // juice_arr: vec![],
+            // eqv_gold_per_juice: -1.0_f64,
+            // failure_raw_delta: -1,
+            // failure_delta_order: -1,
+            juice_avail: upgrade_index > 2, // will overwrite this in prep initialization anyway
+            books_avail: -1,                // will overwrite in prep
         }
     }
 }

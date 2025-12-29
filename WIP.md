@@ -5,15 +5,15 @@
 
 ### Now
 
-- monte carlo at the end to verify / sanity check / just to look at it (also can compute confidence interval with variance etc)
-
-- BOOKS ARE MUTUALLY EXCLUSIVE maybe just make sure that neighbor function handles it? idk
+- BOOKS ARE MUTUALLY EXCLUSIVE maybe ~~just make sure that neighbor function handles it? idk~~
+  - change state to be (bool , i64), -1 = no books
 - turn a lot of helper functions to class functions of prep_output or state_bundle
-- change all the i64 budgets to f64 god
 
 - figure out how to optimize special its way too slow rn
+  - limit special state to never switch up/switch up once only? then it'll be a list of how many & which ones rather than like individual indices
+    - bundle the streaks together see if theres any optimization there
+
 - figure out how to do neighbors for special state
--
 
 ### Big
 
@@ -26,7 +26,18 @@
 - set up slurm on laptop
 - how to evaluate adaptive policies??? (also allow fixing the first few outcomes and wire that up to the website(artisan editing))
 - advanced honing eventually
-- wire up all this to the website
+
+- wire up all this to the website:
+  - Average mode / alt modee / efficiency mode:
+    - input: market price + leftover "price"/ leftover value / care abt it or not toggle
+      - avg = needed x market price - leftover x leftover price
+    - output: juice advice, new avg values(also show old/naive?)
+
+  - Prob maximizing mode / main mode:
+    - input: market price, owned budget
+    - output: juice advice, new prob(old prob)
+
+both: updatable clicks
 
 ### Energy
 
@@ -46,6 +57,7 @@
 
 - elo or percentage deviation? idk need to do more research
 - how to visualize / interact with this data
+- monte carlo at the end to verify / sanity check / just to look at it (also can compute confidence interval with variance etc)
 
 ## Next big step(s)
 

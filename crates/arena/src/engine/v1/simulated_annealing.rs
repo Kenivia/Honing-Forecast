@@ -55,7 +55,7 @@ fn neighbour<R: Rng>(
 ) {
     for (u_index, upgrade_state) in state_bundle.state.iter_mut().enumerate() {
         let upgrade = &prep_output.upgrade_arr[u_index];
-        let choice_len: usize = upgrade_state[0].len();
+        let choice_len: usize = upgrade.books_avail as usize;
 
         let want_to_flip: usize = WeightedIndex::new(my_pmf(
             (upgrade_state.len() - 1).max(1),
@@ -67,48 +67,71 @@ fn neighbour<R: Rng>(
         .unwrap()
         .sample(rng)
             + 1;
+
+        let want_to_book: usize = WeightedIndex::new(my_pmf(
+            (upgrade_state.len() - 1).max(1),
+            ((temp / init_temp).cbrt() * upgrade_state.len() as f64 - 1.0)
+                .min(upgrade_state.len() as f64)
+                .max(0.0),
+            // .max(),
+        ))
+        .unwrap()
+        .sample(rng)
+            + 1;
         let flip_target = rng.random_bool(0.5);
+
         // dbg!(want_to_flip);
         let mut want_to_flip_indices: Vec<usize> =
             (0..upgrade_state.len()).choose_multiple(rng, want_to_flip);
         want_to_flip_indices.sort();
         let mut flipped_index: usize = 0;
 
+        let book_target: usize = rng.random_range(0..=choice_len);
+        let mut want_to_book_indices: Vec<usize> =
+            (0..upgrade_state.len()).choose_multiple(rng, want_to_book);
+        want_to_book_indices.sort();
+        let mut booked_index: usize = 0;
+
         let mut artisan: f64 = 0.0;
-        for (s_index, bits) in upgrade_state.iter_mut().enumerate() {
+        for (s_index, (juice, book)) in upgrade_state.iter_mut().enumerate() {
             if artisan >= 1.0 || s_index == 0 {
-                for bit in bits {
-                    *bit = false;
-                }
+                (*juice, *book) = (false, 0);
                 continue;
             }
             if flipped_index < want_to_flip_indices.len()
                 && s_index == want_to_flip_indices[flipped_index]
             {
-                let rolled_index: usize = rng.random_range(0..choice_len);
-                let bit: &mut bool = &mut bits[rolled_index];
-                if *bit == flip_target {
+                if *juice != flip_target {
                     flipped_index += 1;
-                    *bit = !*bit;
+                    *juice = flip_target;
                 } else {
                     want_to_flip_indices[flipped_index] = s_index + 1;
                 }
+            }
 
-                // *bit = rng.random_bool(0.5);
+            if booked_index < want_to_book_indices.len()
+                && s_index == want_to_book_indices[booked_index]
+            {
+                if *book != book_target {
+                    booked_index += 1;
+                    *book = book_target;
+                } else {
+                    want_to_book_indices[booked_index] = s_index + 1;
+                }
             }
             artisan += (46.51_f64 / 100.0)
                 * upgrade.artisan_rate
                 * (upgrade.base_chance
-                    + bits
-                        .iter_mut()
-                        .enumerate()
-                        .fold(0.0, |last, (index, this)| {
-                            if *this {
-                                last + prep_output.juice_info.chances[upgrade.upgrade_index][index]
-                            } else {
-                                last
-                            }
-                        }));
+                    + if *juice {
+                        prep_output.juice_info.chances[upgrade.upgrade_index][0]
+                    } else {
+                        0.0
+                    }
+                    + if *book > 0 {
+                        prep_output.juice_info.chances[upgrade.upgrade_index][(*book + 1) as usize]
+                    } else {
+                        0.0
+                    });
         }
     }
 }
@@ -130,19 +153,11 @@ pub fn solve<R: Rng>(
     let init_temp: f64 = 333.0; // 0.969 = ~32
     // let mut cache: HashMap<(Vec<bool>, usize), Vec<([i64; 9], f64)>> = HashMap::new();
     let mut temp: f64 = init_temp;
-    let mut state: Vec<Vec<Vec<bool>>> = Vec::with_capacity(prep_output.upgrade_arr.len());
+    let mut state: Vec<Vec<(bool, usize)>> = Vec::with_capacity(prep_output.upgrade_arr.len());
     let mut starting_special: Vec<usize> = Vec::with_capacity(prep_output.upgrade_arr.len() * 50);
     for (index, upgrade) in prep_output.upgrade_arr.iter().enumerate() {
         // state.push(vec![rng.random_bool(0.5); upgrade.support_lengths[0]]);
-        state.push(vec![
-            vec![
-                false;
-                prep_output.juice_info.chances
-                    [upgrade.upgrade_index]
-                    .len()
-            ];
-            upgrade.support_lengths[0]
-        ]);
+        state.push(vec![(false, 0); upgrade.prob_dist_len]);
         for _ in 0..50 {
             starting_special.push(index);
         }

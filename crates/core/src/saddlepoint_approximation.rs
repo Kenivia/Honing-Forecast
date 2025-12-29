@@ -6,7 +6,7 @@ pub static FLOAT_TOL: f64 = 1e-12; // it could prolly be lower? idk doesnt matte
 
 #[derive(Clone, Debug)]
 pub struct StateBundle {
-    pub state: Vec<Vec<Vec<bool>>>,
+    pub state: Vec<Vec<(bool, usize)>>,
     pub names: Vec<String>,
     pub log_prob_dist_arr: Vec<Vec<f64>>,
     pub gold_costs_arr: Vec<Vec<f64>>,
@@ -234,7 +234,9 @@ pub fn saddlepoint_approximation(
     if budget > max_value - FLOAT_TOL {
         return 1.0;
     }
-
+    if DEBUG {
+        dbg!(budget, min_value, max_value,);
+    }
     let f_df = |theta| {
         let mut ks_tuple = (0.0, 0.0, 0.0, 0.0, 0.0);
         ks_01234(
@@ -253,16 +255,13 @@ pub fn saddlepoint_approximation(
         || !result.1.is_finite()
         || f_df(1.0).0.signum() == f_df(-1.0).0.signum()
     {
-        //       ^this shouldnt ever happen now^
+        //   (this means budget is outside of range)
         dbg!(
             f_df(10000.0),
             f_df(1.0),
             f_df(0.0000001),
             f_df(-1.0),
             f_df(-10000.0),
-            budget,
-            min_value,
-            max_value,
         );
     }
 

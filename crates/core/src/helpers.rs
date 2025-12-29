@@ -21,25 +21,22 @@ pub fn find_non_zero_min(support_arr: &Vec<Vec<f64>>, log_prob_dist_arr: &Vec<Ve
         })
         .sum()
 }
-fn encode_one_positions(v1: &[Vec<bool>]) -> String {
-    let mut s1 = String::new();
+fn encode_one_positions(v1: &[(bool, usize)]) -> String {
+    v1.iter()
+        .map(|(uppercase, num)| {
+            let letter: char = if *num == 0 {
+                'x' as char
+            } else {
+                (b'a' + (*num as u8 - 1)) as char
+            };
 
-    for val in v1 {
-        s1.push_str(
-            &val.iter()
-                .enumerate()
-                .fold(0, |last, (index, this)| {
-                    if *this {
-                        last + 2_i64.pow(index as u32)
-                    } else {
-                        last
-                    }
-                })
-                .to_string(),
-        );
-    }
-
-    s1
+            if *uppercase {
+                letter.to_ascii_uppercase()
+            } else {
+                letter
+            }
+        })
+        .collect()
 }
 pub fn encode_all(input: &StateBundle) -> String {
     let mut strings = Vec::new();

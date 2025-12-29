@@ -1,9 +1,24 @@
+use crate::constants::JuiceInfo;
 use crate::helpers::find_non_zero_min;
 use crate::parser::PreparationOutput;
+use crate::parser::Upgrade;
 use crate::parser::probability_distribution;
 use crate::saddlepoint_approximation::{StateBundle, saddlepoint_approximation};
 use crate::special_sa::special_probs;
 
+fn add_juice_gold_cost(
+    juice_info: &JuiceInfo,
+    upgrade: &Upgrade,
+    cost_so_far: &mut f64,
+    index: usize,
+) {
+    let this_price: (f64, f64) = juice_info.gold_costs[upgrade.upgrade_index][index];
+    if upgrade.is_weapon {
+        *cost_so_far += this_price.0;
+    } else {
+        *cost_so_far += this_price.1;
+    }
+}
 fn generate_combined(
     prep_output: &mut PreparationOutput,
     state_bundle: &StateBundle,
@@ -16,16 +31,17 @@ fn generate_combined(
         for (p_index, _) in state_bundle.log_prob_dist_arr[u_index].iter().enumerate() {
             combined_costs[u_index].push(cost_so_far);
             cost_so_far += upgrade.eqv_gold_per_tap;
-            for (bit_index, bit) in state_bundle.state[u_index][p_index].iter().enumerate() {
-                if *bit {
-                    let this_price: (f64, f64) =
-                        prep_output.juice_info.gold_costs[upgrade.upgrade_index][bit_index];
-                    if upgrade.is_weapon {
-                        cost_so_far += this_price.0;
-                    } else {
-                        cost_so_far += this_price.1;
-                    }
-                }
+            let (juice, book) = state_bundle.state[u_index][p_index];
+            if juice {
+                add_juice_gold_cost(&prep_output.juice_info, &upgrade, &mut cost_so_far, 0);
+            }
+            if book > 0 {
+                add_juice_gold_cost(
+                    &prep_output.juice_info,
+                    &upgrade,
+                    &mut cost_so_far,
+                    book as usize,
+                );
             }
         }
         // combined_costs[u_index].push(cost_so_far);
@@ -57,7 +73,7 @@ pub fn generate_individual(
         for id_to_match in 0..j_len {
             let mut this_weap: Vec<f64> = Vec::with_capacity(l_len);
             let mut this_armor: Vec<f64> = Vec::with_capacity(l_len);
-            for (bit_index, gold_costs) in prep_output.juice_info.gold_costs[upgrade.upgrade_index]
+            for (bit_index, _) in prep_output.juice_info.gold_costs[upgrade.upgrade_index]
                 .iter()
                 .enumerate()
             {
@@ -70,12 +86,30 @@ pub fn generate_individual(
                 for (p_index, _) in state_bundle.log_prob_dist_arr[u_index].iter().enumerate() {
                     this_weap.push(costs_so_far.0);
                     this_armor.push(costs_so_far.1);
-                    if state_bundle.state[u_index][p_index][bit_index] {
-                        if upgrade.is_weapon {
-                            costs_so_far.0 += gold_costs.0; // TODO collapse identical support into one prob if that makes sense
-                        } else {
-                            costs_so_far.1 += gold_costs.1;
-                        }
+                    let (juice, book) = state_bundle.state[u_index][p_index];
+                    if juice {
+                        add_juice_gold_cost(
+                            &prep_output.juice_info,
+                            &upgrade,
+                            if upgrade.is_weapon {
+                                &mut costs_so_far.0
+                            } else {
+                                &mut costs_so_far.1
+                            },
+                            0,
+                        );
+                    }
+                    if book > 0 {
+                        add_juice_gold_cost(
+                            &prep_output.juice_info,
+                            &upgrade,
+                            if upgrade.is_weapon {
+                                &mut costs_so_far.0
+                            } else {
+                                &mut costs_so_far.1
+                            },
+                            book as usize,
+                        );
                     }
                 }
                 // this_weap.push(costs_so_far.0);
@@ -148,14 +182,15 @@ pub fn normal_honing_sa_wrapper(
     for (u_index, upgrade) in prep_output.upgrade_arr.iter_mut().enumerate() {
         let new_extra: Vec<f64> = state_bundle.state[u_index]
             .iter()
-            .map(|x| {
-                x.iter().enumerate().fold(0.0, |last, (index, y)| {
-                    if *y {
-                        last + prep_output.juice_info.chances[upgrade.upgrade_index][index]
-                    } else {
-                        last
-                    }
-                })
+            .map(|(juice, book)| {
+                let mut chance: f64 = upgrade.base_chance;
+                if *juice {
+                    chance += prep_output.juice_info.chances[upgrade.upgrade_index][0];
+                }
+                if *book > 0 {
+                    chance += prep_output.juice_info.chances[upgrade.upgrade_index][*book];
+                }
+                chance
             }) //if *x > 0 { upgrade.base_chance } else { 0.0 }) //
             .collect();
 
