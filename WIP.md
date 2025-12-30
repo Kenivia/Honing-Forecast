@@ -44,6 +44,7 @@ both: updatable clicks
   - start with VERY broad neighbors - all true, all false etc, then refine until limit reached (such as 10 taps), test how much the limit affects performance
 - keep a top 10 list and randomly restart to them instead of just the top 1
 - some kind of heatmap of which bits were the most impactful? but i feel like this wouldnt actually do much
+  - can definitely think about which upgrades were the most impactful tho
 
 ### Data analysis
 

@@ -88,37 +88,3 @@ pub fn special_probs(prep_output: &PreparationOutput, state_bundle: &StateBundle
     }
     result
 }
-
-//         # 1. Define Target for specific step
-//         # We need P(Sum of Costs <= budget - target_goal_c)
-//         limit = budget - target_goal_c
-
-//         # 2. Check trivial bounds
-//         # If limit < 0, prob is 0. If limit is huge, prob is 1.
-//         min_possible_cost = sum(k_counts[i] * c for i in ...) # minimal if all succeed immediately
-//         if limit < min_possible_cost:
-//             alpha = 0.0
-//         else:
-
-//             # 4. Apply Lugannani-Rice
-//             w = ...
-//             u = ...
-//             alpha = ... (formula above)
-
-//         # 5. Update Real Probabilities
-//         pi = pi_shadow[goal_idx]
-//         real_success_prob[goal_idx] += alpha * pi * target_goal_p
-
-//         # 6. Update State
-//         pi_shadow[goal_idx] *= (1.0 - target_goal_p)
-//         k_counts[goal_idx] += 1
-
-//     return real_success_prob
-
-// def compute_cumulants(k_counts, goals, s):
-//     # Returns K, K', K'' summed over all goals
-//     # Uses the geometric sum formulas for M(s), M'(s), M''(s)
-//     # K = sum ln(M_i)
-//     # K' = sum M_i' / M_i
-//     # K'' = sum (M_i'' M_i - (M_i')^2) / M_i^2
-//     pass

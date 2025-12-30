@@ -2,7 +2,9 @@ use chrono::Local;
 use hf_arena::engine::{NOTES, solve};
 use hf_arena::parse_test_cases::parse_csv;
 use hf_core::parser::PreparationOutput;
-use hf_core::saddlepoint_approximation::normal_sa::compute_leftover_probs;
+use hf_core::saddlepoint_approximation::normal_sa::{
+    compute_leftover_probs, normal_honing_sa_wrapper,
+};
 use hf_core::state::StateBundle;
 
 use rand::prelude::*;
@@ -116,7 +118,12 @@ fn main() {
             let mut states_evaled: i64 = 0;
             println!("Test case {}", prep_output.test_case);
 
-            let state_bundle: StateBundle = solve(prep_output, &mut rng, &mut states_evaled);
+            let state_bundle: StateBundle = solve(
+                prep_output,
+                &mut rng,
+                &mut states_evaled,
+                normal_honing_sa_wrapper,
+            );
 
             let output: Output = Output {
                 test_case: prep_output.test_case,

@@ -172,8 +172,6 @@ pub fn normal_honing_sa_wrapper(
     state_bundle: &mut StateBundle,
     prep_output: &mut PreparationOutput,
     states_evaled: &mut i64,
-    // depth: usize,
-    // cache: &mut HashMap<(Vec<bool>, usize), Vec<([i64; 9], f64)>>,
 ) -> f64 {
     let u_len: usize = prep_output.upgrade_arr.len();
     // dbg!(&prep_output, &state_bundle);

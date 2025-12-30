@@ -1,7 +1,6 @@
 // use hf_core::energy::prob_to_maximize_exact;
 
 use hf_core::parser::PreparationOutput;
-use hf_core::saddlepoint_approximation::normal_sa::normal_honing_sa_wrapper;
 use hf_core::state::StateBundle;
 use rand::Rng;
 use rand::distr::Distribution;
@@ -180,11 +179,16 @@ fn new_temp(temp: f64, alpha: f64) -> f64 {
     }
     return new; // this is very much subject to change
 }
-pub fn solve<R: Rng>(
+
+pub fn solve<R: Rng, F>(
     prep_output: &mut PreparationOutput,
     rng: &mut R,
     states_evaled: &mut i64,
-) -> StateBundle {
+    mut metric: F,
+) -> StateBundle
+where
+    F: FnMut(&mut StateBundle, &mut PreparationOutput, &mut i64) -> f64,
+{
     let init_temp: f64 = 333.0; // 0.969 = ~32
     // let mut cache: HashMap<(Vec<bool>, usize), Vec<([i64; 9], f64)>> = HashMap::new();
     let mut temp: f64 = init_temp;
@@ -222,7 +226,7 @@ pub fn solve<R: Rng>(
         gold_costs_arr: vec![],
     };
 
-    state_bundle.prob = normal_honing_sa_wrapper(&mut state_bundle, prep_output, states_evaled);
+    state_bundle.prob = metric(&mut state_bundle, prep_output, states_evaled);
     let mut prev_state: StateBundle = state_bundle.clone();
 
     let iterations_per_temp = 69;
@@ -235,7 +239,7 @@ pub fn solve<R: Rng>(
     let mut temps_without_improvement = 1;
     while temp >= 0.0 {
         neighbour(&mut state_bundle, prep_output, temp, init_temp, rng);
-        state_bundle.prob = normal_honing_sa_wrapper(&mut state_bundle, prep_output, states_evaled);
+        state_bundle.prob = metric(&mut state_bundle, prep_output, states_evaled);
 
         if state_bundle.prob > best_state_so_far.prob {
             best_state_so_far = state_bundle.clone();
