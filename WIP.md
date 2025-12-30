@@ -5,12 +5,6 @@
 
 ### Now
 
-- figure out how to optimize special its way too slow rn
-  - limit special state to never switch up/switch up once only? then it'll be a list of how many & which ones rather than like individual indices
-    - bundle the streaks together see if theres any optimization there
-
-- figure out how to do neighbors for special state
-
 ### Big
 
 - implement average-optimizing evaluation(tiebreak with this when prob = 100 also maybe?),
@@ -40,6 +34,8 @@ both: updatable clicks
 - implement fft or something for medium sized complexity because lr kinda very bad
   - (also use (and optimize) exact convolution for single piece(maybe 2))
 -~~ add upgrade name to states when saving them,~~ maybe add some way to keep track of where bits are to make neighbor potentially more efficient
+- optimize special?
+  - bundle the streaks together see if theres any optimization there
 
 ### Algorithm ideas
 
@@ -99,6 +95,9 @@ graph
 
 ## Done / cancelled
 
+- ~~figure out how to optimize special its way too slow rn~~
+  - ~~limit special state to never switch up/switch up once only? then it'll be a list of how many & which ones rather than like individual indices~~
+- ~~figure out how to do neighbors for special state~~
 - ~~turn a lot of helper functions to class functions of prep_output or state_bundle~~ turns out there's not that much ig
 - ~~BOOKS ARE MUTUALLY EXCLUSIVE maybe just make sure that neighbor function handles it? idk~~
   - ~~change state to be (bool , i64), -1 = no books~~

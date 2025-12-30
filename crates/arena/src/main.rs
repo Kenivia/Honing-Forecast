@@ -1,8 +1,8 @@
 use chrono::Local;
 use hf_arena::engine::{NOTES, solve};
 use hf_arena::parse_test_cases::parse_csv;
-use hf_core::normal_sa::compute_leftover_probs;
 use hf_core::parser::PreparationOutput;
+use hf_core::saddlepoint_approximation::normal_sa::compute_leftover_probs;
 use hf_core::state::StateBundle;
 
 use rand::prelude::*;

@@ -1,7 +1,7 @@
 // use hf_core::energy::prob_to_maximize_exact;
 
-use hf_core::normal_sa::normal_honing_sa_wrapper;
 use hf_core::parser::PreparationOutput;
+use hf_core::saddlepoint_approximation::normal_sa::normal_honing_sa_wrapper;
 use hf_core::state::StateBundle;
 use rand::Rng;
 use rand::distr::Distribution;
@@ -37,15 +37,35 @@ fn acceptance<R: Rng>(new: f64, old: f64, temperature: f64, rng: &mut R) -> bool
 /// - `expected` is the desired expected value (can be non-integer).
 ///
 /// The returned Vec has length `max_len + 1` with pmf[k] = P(X = k).
-pub fn my_pmf(max_len: usize, expected: f64) -> Vec<f64> {
+pub fn my_pmf(max_len: usize, expected: f64, ratio: f64) -> Vec<f64> {
     // If NaN/inf, return a safe default: all mass at 0
     let mut v = vec![0.0; max_len + 1];
     for (index, v) in v.iter_mut().enumerate() {
-        *v = 0.8_f64.powf(index as f64 - expected);
+        *v = ratio.powf(index as f64 - expected);
     }
     v
 }
 
+fn my_weighted_rand<R: Rng>(
+    length: usize,
+    temp: f64,
+    init_temp: f64,
+    offset: usize,
+    ratio: f64,
+    rng: &mut R,
+) -> usize {
+    // dbg!(length, temp, init_temp, offset, ratio,);
+    WeightedIndex::new(my_pmf(
+        (length - 1).max(1),
+        ((temp / (init_temp)).cbrt() * length as f64 - 1.0)
+            .min(length as f64 - 1.0)
+            .max(0.0),
+        ratio, // .max(),
+    ))
+    .unwrap()
+    .sample(rng)
+        + offset
+}
 fn neighbour<R: Rng>(
     state_bundle: &mut StateBundle,
     prep_output: &PreparationOutput,
@@ -53,31 +73,46 @@ fn neighbour<R: Rng>(
     init_temp: f64,
     rng: &mut R,
 ) {
+    let want_to_swap: usize = my_weighted_rand(
+        state_bundle.special_state.len() / 2,
+        temp,
+        init_temp,
+        1,
+        0.8,
+        rng,
+    );
+    for _ in 0..want_to_swap {
+        let want_to_swap_indices: Vec<usize> =
+            (0..state_bundle.special_state.len()).choose_multiple(rng, 2);
+        let first = want_to_swap_indices[0];
+        let second = want_to_swap_indices[1];
+        let temp = state_bundle.special_state[first].0;
+        state_bundle.special_state[first].0 = state_bundle.special_state[second].0;
+        state_bundle.special_state[second].0 = temp;
+    }
+
+    for (u_index, repeat_count) in state_bundle.special_state.iter_mut() {
+        let max = (*repeat_count + 10)
+            .max((1.5_f64 / prep_output.upgrade_arr[*u_index].base_chance).round() as usize);
+        *repeat_count = my_weighted_rand(
+            max,
+            *repeat_count as f64,
+            max as f64,
+            1,
+            (temp / init_temp).max(0.1),
+            rng,
+        );
+    }
     for (u_index, upgrade_state) in state_bundle.state.iter_mut().enumerate() {
         let upgrade = &prep_output.upgrade_arr[u_index];
         let choice_len: usize = upgrade.books_avail as usize;
 
-        let want_to_flip: usize = WeightedIndex::new(my_pmf(
-            (upgrade_state.len() - 1).max(1),
-            ((temp / init_temp).cbrt() * upgrade_state.len() as f64 - 1.0)
-                .min(upgrade_state.len() as f64)
-                .max(0.0),
-            // .max(),
-        ))
-        .unwrap()
-        .sample(rng)
-            + 1;
+        let want_to_flip: usize =
+            my_weighted_rand(upgrade_state.len(), temp, init_temp, 1, 0.8, rng);
 
-        let want_to_book: usize = WeightedIndex::new(my_pmf(
-            (upgrade_state.len() - 1).max(1),
-            ((temp / init_temp).cbrt() * upgrade_state.len() as f64 - 1.0)
-                .min(upgrade_state.len() as f64)
-                .max(0.0),
-            // .max(),
-        ))
-        .unwrap()
-        .sample(rng)
-            + 1;
+        let want_to_book: usize =
+            my_weighted_rand(upgrade_state.len(), temp, init_temp, 1, 0.8, rng);
+
         let flip_target = rng.random_bool(0.5);
 
         // dbg!(want_to_flip);
@@ -154,12 +189,13 @@ pub fn solve<R: Rng>(
     // let mut cache: HashMap<(Vec<bool>, usize), Vec<([i64; 9], f64)>> = HashMap::new();
     let mut temp: f64 = init_temp;
     let mut state: Vec<Vec<(bool, usize)>> = Vec::with_capacity(prep_output.upgrade_arr.len());
-    let mut starting_special: Vec<usize> = Vec::with_capacity(prep_output.upgrade_arr.len() * 50);
+    let mut starting_special: Vec<(usize, usize)> =
+        Vec::with_capacity(prep_output.upgrade_arr.len() * 2);
     for (index, upgrade) in prep_output.upgrade_arr.iter().enumerate() {
         // state.push(vec![rng.random_bool(0.5); upgrade.support_lengths[0]]);
         state.push(vec![(false, 0); upgrade.prob_dist_len]);
-        for _ in 0..50 {
-            starting_special.push(index);
+        for _ in 0..2 {
+            starting_special.push((index, 0)) //(index, (1.0 / upgrade.base_chance).round() as usize));
         }
     }
 

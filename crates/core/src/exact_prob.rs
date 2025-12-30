@@ -134,8 +134,8 @@ mod tests {
     use crate::calculate_hash;
     use crate::constants::RNG_SEED;
 
-    use crate::normal_sa::normal_honing_sa_wrapper;
     use crate::parser::PreparationOutput;
+    use crate::saddlepoint_approximation::normal_sa::normal_honing_sa_wrapper;
 
     use crate::test_utils::*;
     use std::time::Instant;
