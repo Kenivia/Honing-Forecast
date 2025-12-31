@@ -10,7 +10,7 @@ fn main() {
     let mut rdr = Reader::from_path(Path::new("test_cases.csv")).unwrap();
 
     let mut rng: ThreadRng = rand::rng();
-    let outputs: Vec<PreparationOutput> = parse_csv(Path::new("test_cases.csv"));
+    let outputs: Vec<(PreparationOutput, Vec<bool>)> = parse_csv(Path::new("test_cases.csv"));
     let mut out: Vec<Row> = Vec::new();
 
     let mut rows: Vec<Row> = Vec::with_capacity(outputs.len());
@@ -18,7 +18,7 @@ fn main() {
         rows.push(result.unwrap());
     }
     let mut count: i64 = 0;
-    for (index, prep_output) in outputs.iter().enumerate() {
+    for (index, (prep_output, _tests_to_run)) in outputs.iter().enumerate() {
         let (one_tap_costs, pity_costs) = prep_output.get_one_tap_pity();
 
         for i in 0..BLOAT_FACTOR {
@@ -26,7 +26,7 @@ fn main() {
             count += 1;
             this_row.test_case = count;
             if i != 0 {
-                let multiply_f64: Vec<&mut f64> = vec![
+                let mut multiply_f64: Vec<&mut f64> = vec![
                     &mut this_row.red_price,
                     &mut this_row.blue_price,
                     &mut this_row.leaps_price,
@@ -42,10 +42,38 @@ fn main() {
                     &mut this_row.juice_weap_price_4,
                     &mut this_row.juice_armor_price_4,
                 ];
-                for price in multiply_f64 {
+                let old_len = multiply_f64.len();
+                for price in multiply_f64.iter_mut() {
                     let this_multiplier: f64 =
                         MULTIPLIER_RANGE.powf(rng.random_range(-1.0..1.0_f64));
-                    *price *= this_multiplier;
+                    **price *= this_multiplier;
+                }
+
+                let mut leftovers: Vec<&mut f64> = vec![
+                    &mut this_row.red_leftover,
+                    &mut this_row.blue_leftover,
+                    &mut this_row.leaps_leftover,
+                    &mut this_row.shards_leftover,
+                    &mut this_row.oreha_leftover,
+                    &mut this_row.silver_leftover,
+                    &mut this_row.juice_weap_leftover_1,
+                    &mut this_row.juice_armor_leftover_1,
+                    &mut this_row.juice_weap_leftover_2,
+                    &mut this_row.juice_armor_leftover_2,
+                    &mut this_row.juice_weap_leftover_3,
+                    &mut this_row.juice_armor_leftover_3,
+                    &mut this_row.juice_weap_leftover_4,
+                    &mut this_row.juice_armor_leftover_4,
+                    &mut this_row.gold_leftover,
+                ];
+
+                for (index, leftover) in leftovers.iter_mut().enumerate() {
+                    let this_multiplier: f64 =
+                        MULTIPLIER_RANGE.powf(rng.random_range(-1.0..1.0_f64));
+                    **leftover *= this_multiplier;
+                    if index < old_len {
+                        **leftover = (**leftover).min(*multiply_f64[index]);
+                    }
                 }
 
                 let pity_i64: Vec<&mut i64> = vec![

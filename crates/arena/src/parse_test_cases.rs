@@ -38,6 +38,23 @@ seq!(N in 1..=25 {
      pub      shards_price: f64,
      pub      oreha_price: f64,
      pub      silver_price: f64,
+
+     #[serde(deserialize_with="empty_as_negative")]
+           pub     red_leftover: f64,
+     #[serde(deserialize_with="empty_as_negative")]
+      pub     blue_leftover: f64,
+     #[serde(deserialize_with="empty_as_negative")]
+      pub     leaps_leftover: f64,
+     #[serde(deserialize_with="empty_as_negative")]
+     pub      shards_leftover: f64,
+     #[serde(deserialize_with="empty_as_negative")]
+     pub      oreha_leftover: f64,
+     #[serde(deserialize_with="empty_as_negative")]
+     pub gold_leftover:f64,
+     #[serde(deserialize_with="empty_as_negative")]
+     pub      silver_leftover: f64,
+
+
         #[serde(deserialize_with = "empty_as_default")]
         adv_armor_10: i64,
         #[serde(deserialize_with = "empty_as_default")]
@@ -84,6 +101,30 @@ seq!(N in 1..=25 {
        pub    juice_weap_price_4: f64,
        pub    juice_armor_price_4: f64,
 
+
+     #[serde(deserialize_with="empty_as_negative")]
+      pub     juice_weap_leftover_1: f64,
+     #[serde(deserialize_with="empty_as_negative")]
+      pub     juice_armor_leftover_1: f64,
+     #[serde(deserialize_with="empty_as_negative")]
+       pub    juice_weap_leftover_2: f64,
+     #[serde(deserialize_with="empty_as_negative")]
+      pub     juice_armor_leftover_2: f64,
+     #[serde(deserialize_with="empty_as_negative")]
+      pub     juice_weap_leftover_3: f64,
+     #[serde(deserialize_with="empty_as_negative")]
+       pub    juice_armor_leftover_3: f64,
+     #[serde(deserialize_with="empty_as_negative")]
+       pub    juice_weap_leftover_4: f64,
+     #[serde(deserialize_with="empty_as_negative")]
+       pub    juice_armor_leftover_4: f64,
+
+    #[serde(deserialize_with = "deserialize_bool")]
+    pub saddlepoint_approximation : bool ,
+    #[serde(deserialize_with = "deserialize_bool")]
+     pub average: bool,
+     #[serde(deserialize_with = "deserialize_bool")]
+     pub brute: bool
     }
 
 });
@@ -120,6 +161,14 @@ where
     let opt = Option::<T>::deserialize(deserializer)?;
     Ok(opt.unwrap_or_default())
 }
+
+fn empty_as_negative<'de, D>(deserializer: D) -> Result<f64, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    let opt = Option::<f64>::deserialize(deserializer)?;
+    Ok(opt.unwrap_or(-1.0))
+}
 fn deserialize_bool<'de, D>(deserializer: D) -> Result<bool, D::Error>
 where
     D: Deserializer<'de>,
@@ -131,10 +180,10 @@ where
         _ => Err(serde::de::Error::custom(format!("invalid boolean: {}", s))),
     }
 }
-pub fn parse_csv(path: &Path) -> Vec<PreparationOutput> {
+pub fn parse_csv(path: &Path) -> Vec<(PreparationOutput, Vec<bool>)> {
     let mut rdr = Reader::from_path(path).unwrap();
 
-    let mut out: Vec<PreparationOutput> = Vec::new();
+    let mut out: Vec<(PreparationOutput, Vec<bool>)> = Vec::new();
 
     for result in rdr.deserialize() {
         let row: Row = result.unwrap();
@@ -163,6 +212,15 @@ pub fn parse_csv(path: &Path) -> Vec<PreparationOutput> {
             .into_iter()
             .map(|x| (temp_juice_prices[0][x], temp_juice_prices[1][x]))
             .collect();
+
+        let temp_juice_leftover: Vec<Vec<f64>> = vec![
+            row_to_vec!(row, juice_weap_leftover_, 1, 4),
+            row_to_vec!(row, juice_armor_leftover_, 1, 4),
+        ];
+        let juice_leftover: Vec<(f64, f64)> = (0..4_usize)
+            .into_iter()
+            .map(|x| (temp_juice_leftover[0][x], temp_juice_leftover[1][x]))
+            .collect();
         let budget: Vec<i64> = vec![
             row.red_owned,
             row.blue_owned,
@@ -184,6 +242,16 @@ pub fn parse_csv(path: &Path) -> Vec<PreparationOutput> {
             row.silver_price,
         ];
 
+        let leftover_values: Vec<f64> = vec![
+            row.red_leftover,
+            row.blue_leftover,
+            row.leaps_leftover,
+            row.shards_leftover,
+            row.oreha_leftover,
+            row.gold_leftover,
+            row.silver_leftover,
+        ];
+
         let mut this: PreparationOutput = PreparationOutput::initialize(
             &hone_counts,
             &budget,
@@ -193,10 +261,25 @@ pub fn parse_csv(path: &Path) -> Vec<PreparationOutput> {
             "No juice",
             &juice_books_owned,
             &juice_prices,
+            &leftover_values,
+            &juice_leftover,
         );
 
         this.test_case = row.test_case;
-        out.push(this);
+
+        let tests_to_run: Vec<bool> = vec![row.saddlepoint_approximation, row.average, row.brute];
+        let minimum: f64 = leftover_values
+            .iter()
+            .fold(f64::INFINITY, |a, &b| a.min(b))
+            .min(
+                juice_leftover
+                    .iter()
+                    .fold(f64::INFINITY, |a, &b| a.min(b.0.min(b.1))),
+            );
+        if row.average {
+            assert!(minimum >= 0.0);
+        }
+        out.push((this, tests_to_run));
     }
     out
 }

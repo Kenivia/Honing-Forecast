@@ -79,34 +79,54 @@ pub static JUICE_BOOKS_AVAIL: &[&[(usize, f64, i64)]] = &[
 pub struct JuiceInfo {
     pub chances: Vec<Vec<f64>>,
     pub gold_costs: Vec<Vec<(f64, f64)>>,
-    pub amt_used: Vec<Vec<(i64, i64)>>,
+    pub amt_used: Vec<Vec<i64>>,
     pub ids: Vec<Vec<usize>>,
-    pub one_gold_cost_id: Vec<(f64, f64)>,
+    pub one_gold_cost: Vec<(f64, f64)>,
+    pub leftover_values: Vec<Vec<(f64, f64)>>,
+    pub one_leftover_value: Vec<(f64, f64)>,
+    pub amt_used_id: Vec<Vec<i64>>,
 }
-pub fn get_avail_juice_combs(juice_prices: &[(f64, f64)]) -> JuiceInfo {
+pub fn get_avail_juice_combs(
+    juice_prices: &[(f64, f64)],
+    leftover_prices: &[(f64, f64)],
+) -> JuiceInfo {
     let mut chances: Vec<Vec<f64>> = vec![vec![]; 25];
     let mut gold_costs: Vec<Vec<(f64, f64)>> = vec![vec![]; 25];
-    let mut amt_used: Vec<Vec<(i64, i64)>> = vec![vec![]; 25];
+    let mut leftover_values: Vec<Vec<(f64, f64)>> = vec![vec![]; 25];
+    let mut amt_used: Vec<Vec<i64>> = vec![vec![]; 25];
     let mut ids: Vec<Vec<usize>> = vec![vec![]; 25];
-    let mut one_gold_cost_id: Vec<(f64, f64)> = vec![(0.0, 0.0); JUICE_BOOKS_AVAIL.len()];
+
+    let mut amt_used_id: Vec<Vec<i64>> = vec![vec![0; 25]; JUICE_BOOKS_AVAIL.len()];
+    let mut one_gold_cost: Vec<(f64, f64)> = vec![(0.0, 0.0); JUICE_BOOKS_AVAIL.len()];
+    let mut one_leftover_value: Vec<(f64, f64)> = vec![(0.0, 0.0); JUICE_BOOKS_AVAIL.len()];
     for (id, rows) in JUICE_BOOKS_AVAIL.iter().enumerate() {
         for &(upgrade_index, chance, amt) in rows.iter() {
             chances[upgrade_index].push(chance);
+
             gold_costs[upgrade_index].push((
                 amt as f64 * juice_prices[id].0,
                 amt as f64 * juice_prices[id].1,
             ));
-            amt_used[upgrade_index].push((amt, amt));
+            leftover_values[upgrade_index].push((
+                amt as f64 * leftover_prices[id].0,
+                amt as f64 * leftover_prices[id].1,
+            ));
+            amt_used[upgrade_index].push(amt);
             ids[upgrade_index].push(id);
+            amt_used_id[id][upgrade_index] = amt;
         }
-        one_gold_cost_id[id] = (juice_prices[id].0, juice_prices[id].1);
+        one_gold_cost[id] = (juice_prices[id].0, juice_prices[id].1);
+        one_leftover_value[id] = (leftover_prices[id].0, leftover_prices[id].1);
     }
     JuiceInfo {
         chances,
         gold_costs,
         amt_used,
         ids,
-        one_gold_cost_id,
+        one_gold_cost,
+        leftover_values,
+        one_leftover_value,
+        amt_used_id,
     }
 }
 // these costs are manually copied from lost ark codex, dont bet on it being 100% correct

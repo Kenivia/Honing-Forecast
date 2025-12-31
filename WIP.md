@@ -5,17 +5,19 @@
 
 ### Now
 
+- juice chest opening simulation
+- ALSO JUICE CHESTS AND MAYBE EVEN BOOKS CHESTS
+  - binary search on the open split?
+
+- continuity correction? maybe not needed?
+
 ### Big
 
-- implement average-optimizing evaluation(tiebreak with this when prob = 100 also maybe?),
-  - more precisely this minimizes what the "buy mats with gold" option is doing currently, as in the average gold needed (raw + spent on buying mats)
-  - this can keep track of each dimension individually & calculate leftover precisely
-    - add field to result json etc (can think abt bound/tradable maybe)
-  - customizable sell ratio
-  - juice chest opening simulation
 - set up slurm on laptop
 - how to evaluate adaptive policies??? (also allow fixing the first few outcomes and wire that up to the website(artisan editing))
 - advanced honing eventually
+- multiple selectable & editable express
+  - rework constant.rs to take in a json or something so it can interface with the website
 
 - wire up all this to the website:
   - Average mode / alt modee / efficiency mode:
@@ -28,6 +30,8 @@
     - output: juice advice, new prob(old prob)
 
 both: updatable clicks
+
+- add assertions to a lot of prepoutput stuff
 
 ### Energy
 
@@ -96,6 +100,16 @@ graph
 
 ## Done / cancelled
 
+- ~~implement average-optimizing evaluation(tiebreak with this when prob = 100 also maybe?),~~
+  - ~~more precisely this minimizes what the "buy mats with gold" option is doing currently, as in the average gold needed (raw + spent on buying mats)~~
+    - ~~plus the value of leftovers as specified~~
+  - ~~this can keep track of each dimension individually & calculate leftover precisely~~
+    - ~~add field to result json etc (can think abt bound/tradable maybe)~~
+  - ~~customizable sell ratio~~
+- ~~allow arena to take in the various metric functions~~
+- ~~separate sa / avg test cases because they take in different inputs~~
+  -~~ specifically avg additionally takes in another set of prices (leftover values)~~
+  - ~~need to also set up bloating of this~~
 - ~~figure out how to optimize special its way too slow rn~~
   - ~~limit special state to never switch up/switch up once only? then it'll be a list of how many & which ones rather than like individual indices~~
 - ~~figure out how to do neighbors for special state~~

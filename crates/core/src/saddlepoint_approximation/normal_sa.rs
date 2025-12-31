@@ -54,7 +54,7 @@ pub fn generate_individual(
     state_bundle: &StateBundle,
 ) -> (Vec<Vec<Vec<f64>>>, Vec<Vec<Vec<f64>>>, Vec<Vec<Vec<f64>>>) {
     let u_len: usize = prep_output.upgrade_arr.len();
-    let j_len: usize = prep_output.juice_info.one_gold_cost_id.len();
+    let j_len: usize = prep_output.juice_info.one_gold_cost.len();
 
     let mut mats_costs: Vec<Vec<Vec<f64>>> = vec![Vec::with_capacity(u_len); 7];
     let mut weap_juices_costs: Vec<Vec<Vec<f64>>> = vec![Vec::with_capacity(u_len); j_len];
@@ -131,8 +131,10 @@ pub fn generate_individual(
 
 pub fn compute_leftover_probs(
     prep_output: &mut PreparationOutput,
-    state_bundle: &StateBundle,
+    state_bundle: &mut StateBundle,
 ) -> Vec<f64> {
+    init_dist(state_bundle, prep_output);
+
     let (mats_costs, weap_juices_costs, armor_juices_costs) =
         generate_individual(prep_output, &state_bundle);
     let mut prob_leftover: Vec<f64> = Vec::new();
@@ -168,42 +170,56 @@ pub fn compute_leftover_probs(
     }
     prob_leftover
 }
-pub fn normal_honing_sa_wrapper(
-    state_bundle: &mut StateBundle,
-    prep_output: &mut PreparationOutput,
-    states_evaled: &mut i64,
-) -> f64 {
+
+pub fn new_prob_dist(
+    state: &Vec<(bool, usize)>,
+    juice_info: &JuiceInfo,
+    upgrade: &Upgrade,
+    zero: f64,
+) -> Vec<f64> {
+    let new_extra: Vec<f64> = state
+        .iter()
+        .map(|(juice, book)| {
+            let mut chance: f64 = upgrade.base_chance;
+            if *juice {
+                chance += juice_info.chances[upgrade.upgrade_index][0];
+            }
+            if *book > 0 {
+                chance += juice_info.chances[upgrade.upgrade_index][*book];
+            }
+            chance
+        }) //if *x > 0 { upgrade.base_chance } else { 0.0 }) //
+        .collect();
+
+    probability_distribution(upgrade.base_chance, upgrade.artisan_rate, &new_extra, zero)
+}
+
+pub fn init_dist(state_bundle: &mut StateBundle, prep_output: &mut PreparationOutput) {
     let u_len: usize = prep_output.upgrade_arr.len();
     // dbg!(&prep_output, &state_bundle);
     let zero_probs: Vec<f64> = special_probs(prep_output, state_bundle);
     // dbg!(&zero_probs);
     let mut log_prob_dist_arr: Vec<Vec<f64>> = Vec::with_capacity(u_len);
     for (u_index, upgrade) in prep_output.upgrade_arr.iter_mut().enumerate() {
-        let new_extra: Vec<f64> = state_bundle.state[u_index]
-            .iter()
-            .map(|(juice, book)| {
-                let mut chance: f64 = upgrade.base_chance;
-                if *juice {
-                    chance += prep_output.juice_info.chances[upgrade.upgrade_index][0];
-                }
-                if *book > 0 {
-                    chance += prep_output.juice_info.chances[upgrade.upgrade_index][*book];
-                }
-                chance
-            }) //if *x > 0 { upgrade.base_chance } else { 0.0 }) //
-            .collect();
-
-        let prob_dist: Vec<f64> = probability_distribution(
-            upgrade.base_chance,
-            upgrade.artisan_rate,
-            &new_extra,
+        let prob_dist: Vec<f64> = new_prob_dist(
+            &state_bundle.state[u_index],
+            &prep_output.juice_info,
+            upgrade,
             zero_probs[u_index],
         );
         let log_prob_dist: Vec<f64> = prob_dist.iter().map(|x| x.ln()).collect();
+        upgrade.prob_dist = prob_dist;
         log_prob_dist_arr.push(log_prob_dist);
         // gold_costs_arr.push(gold_cost_record);
     }
     state_bundle.log_prob_dist_arr = log_prob_dist_arr;
+}
+pub fn normal_honing_sa_wrapper(
+    state_bundle: &mut StateBundle,
+    prep_output: &mut PreparationOutput,
+    states_evaled: &mut i64,
+) -> f64 {
+    init_dist(state_bundle, prep_output);
     *states_evaled += 1;
     let combined_costs: Vec<Vec<f64>> = generate_combined(prep_output, state_bundle);
     let min_value: f64 = find_non_zero_min(&combined_costs, &state_bundle.log_prob_dist_arr);

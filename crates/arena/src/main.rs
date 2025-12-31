@@ -1,6 +1,8 @@
 use chrono::Local;
 use hf_arena::engine::{NOTES, solve};
 use hf_arena::parse_test_cases::parse_csv;
+use hf_core::average::average_gold_wrapper;
+use hf_core::brute::brute;
 use hf_core::parser::PreparationOutput;
 use hf_core::saddlepoint_approximation::normal_sa::{
     compute_leftover_probs, normal_honing_sa_wrapper,
@@ -17,6 +19,13 @@ use std::path::Path;
 use std::time::Instant;
 
 static NUM_TESTS_TO_RUN: i64 = 10; // TODO this should be replaced by statistical tests like fishtest eventually
+type EvalFn = fn(&mut StateBundle, &mut PreparationOutput, &mut i64) -> f64;
+
+static METRICS: [(&str, EvalFn); 3] = [
+    ("SA", normal_honing_sa_wrapper),
+    ("Avg", average_gold_wrapper),
+    ("Brute", brute),
+];
 
 #[derive(Debug, Serialize)]
 struct Header {
@@ -27,10 +36,11 @@ struct Header {
 #[derive(Debug, Serialize, Deserialize)]
 struct Output {
     test_case: i64,
+    metric_type: String,
     trial_num: i64,
     wall_time: f64,
     states_evaled: i64,
-    prob: f64,
+    best: f64,
     state: String,
     seed: u64,
     time_finished: String,
@@ -74,7 +84,7 @@ fn main() {
         task_id
     );
 
-    let mut seen_tests: HashMap<i64, i64> = HashMap::new();
+    let mut seen_tests: HashMap<(i64, String), i64> = HashMap::new();
     let mut at_least_one_line: bool = false;
     if Path::new(&file_name).exists() {
         let file: File = File::open(&file_name).unwrap(); // this really shouldnt go wrong 
@@ -85,7 +95,9 @@ fn main() {
                 &line.expect("Failed to parse existing result file"),
             )
             .expect("Failed to parse existing result file");
-            *seen_tests.entry(out.test_case).or_insert(0) += 1;
+            *seen_tests
+                .entry((out.test_case, out.metric_type))
+                .or_insert(0) += 1;
         }
     }
     dbg!(&seen_tests);
@@ -103,46 +115,50 @@ fn main() {
 
     let mut seed_rng: ThreadRng = rand::rng();
 
-    let mut test_cases: Vec<PreparationOutput> = parse_csv(Path::new("bloated_test_cases.csv"));
+    let mut test_cases: Vec<(PreparationOutput, Vec<bool>)> =
+        parse_csv(Path::new("bloated_test_cases.csv"));
 
     for _ in 0..NUM_TESTS_TO_RUN {
-        for prep_output in test_cases.iter_mut() {
-            let instant: Instant = Instant::now();
-            if seen_tests.contains_key(&prep_output.test_case)
-                && seen_tests[&prep_output.test_case] >= NUM_TESTS_TO_RUN
-            {
-                continue;
+        for (prep_output, tests_to_run) in test_cases.iter_mut() {
+            for (index, (metric_type_str, metric_function)) in METRICS.iter().enumerate() {
+                if !tests_to_run[index] {
+                    continue;
+                }
+                let metric_type = metric_type_str.to_string();
+                let instant: Instant = Instant::now();
+                let key = (prep_output.test_case, metric_type.clone());
+                if seen_tests.contains_key(&key) && seen_tests[&key] >= NUM_TESTS_TO_RUN {
+                    continue;
+                }
+                let seed: u64 = seed_rng.next_u64();
+                let mut rng: StdRng = StdRng::seed_from_u64(seed);
+                let mut states_evaled: i64 = 0;
+                println!("Test case {:?}", key);
+
+                let mut state_bundle: StateBundle =
+                    solve(prep_output, &mut rng, &mut states_evaled, metric_function);
+
+                let trial_num = seen_tests.entry(key).or_insert(0);
+                *trial_num += 1;
+                let output: Output = Output {
+                    test_case: prep_output.test_case,
+                    trial_num: *trial_num,
+                    wall_time: instant.elapsed().as_secs_f64(),
+                    states_evaled,
+                    best: state_bundle.metric,
+                    state: state_bundle.encode_all(),
+                    seed,
+                    time_finished: current_time_string(),
+                    prob_leftover: compute_leftover_probs(prep_output, &mut state_bundle),
+                    metric_type,
+                };
+
+                write_jsonl(&output, &file_name).expect("Failed to write to result file");
+
+                // if case already ran, skip it (maybe add a flag to rerun)
+                // otherwise, call solve, write results after each solve call
+                //
             }
-            let seed: u64 = seed_rng.next_u64();
-            let mut rng: StdRng = StdRng::seed_from_u64(seed);
-            let mut states_evaled: i64 = 0;
-            println!("Test case {}", prep_output.test_case);
-
-            let state_bundle: StateBundle = solve(
-                prep_output,
-                &mut rng,
-                &mut states_evaled,
-                normal_honing_sa_wrapper,
-            );
-
-            let output: Output = Output {
-                test_case: prep_output.test_case,
-                trial_num: *seen_tests.entry(prep_output.test_case).or_insert(0) + 1,
-                wall_time: instant.elapsed().as_secs_f64(),
-                states_evaled,
-                prob: state_bundle.prob,
-                state: state_bundle.encode_all(),
-                seed,
-                time_finished: current_time_string(),
-                prob_leftover: compute_leftover_probs(prep_output, &state_bundle),
-            };
-
-            write_jsonl(&output, &file_name).expect("Failed to write to result file");
-            *seen_tests.entry(prep_output.test_case).or_insert(0) += 1;
-
-            // if case already ran, skip it (maybe add a flag to rerun)
-            // otherwise, call solve, write results after each solve call
-            //
         }
     }
 }

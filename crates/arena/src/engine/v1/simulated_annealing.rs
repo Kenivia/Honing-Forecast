@@ -220,13 +220,13 @@ where
             })
             .collect::<Vec<String>>(),
         state_index: vec![],
-        prob: -1.0,
+        metric: -1.0,
         special_state: starting_special,
         log_prob_dist_arr: vec![],
         gold_costs_arr: vec![],
     };
 
-    state_bundle.prob = metric(&mut state_bundle, prep_output, states_evaled);
+    state_bundle.metric = metric(&mut state_bundle, prep_output, states_evaled);
     let mut prev_state: StateBundle = state_bundle.clone();
 
     let iterations_per_temp = 69;
@@ -239,9 +239,9 @@ where
     let mut temps_without_improvement = 1;
     while temp >= 0.0 {
         neighbour(&mut state_bundle, prep_output, temp, init_temp, rng);
-        state_bundle.prob = metric(&mut state_bundle, prep_output, states_evaled);
+        state_bundle.metric = metric(&mut state_bundle, prep_output, states_evaled);
 
-        if state_bundle.prob > best_state_so_far.prob {
+        if state_bundle.metric > best_state_so_far.metric {
             best_state_so_far = state_bundle.clone();
             temps_without_improvement = 0;
             // println!(
@@ -261,7 +261,7 @@ where
             // );
         }
 
-        if acceptance(state_bundle.prob, prev_state.prob, temp, rng) {
+        if acceptance(state_bundle.metric, prev_state.metric, temp, rng) {
             prev_state = state_bundle.clone();
         } else {
             state_bundle.clone_from(&prev_state);
@@ -295,9 +295,6 @@ where
             }
             temps_without_improvement += 1;
             temp = new_temp(temp, alpha);
-        }
-        if best_state_so_far.prob >= 1.0 {
-            break; // optimize average later
         }
     }
     // println!(

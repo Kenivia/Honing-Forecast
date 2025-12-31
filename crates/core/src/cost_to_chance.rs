@@ -63,6 +63,8 @@ pub fn cost_to_chance(
         &adv_hone_strategy,
         &vec![], // TODO fix this later
         &vec![], // TODO fix this later
+        &vec![], // TODO fix this later
+        &vec![], // TODO fix this later
     );
     #[cfg(test)]
     {
@@ -139,6 +141,8 @@ pub fn cost_to_chance_arr(
         express_event,
         user_price_arr,
         &adv_hone_strategy,
+        &vec![], // TODO fix this later
+        &vec![], // TODO fix this later
         &vec![], // TODO fix this later
         &vec![], // TODO fix this later
     );
@@ -222,6 +226,8 @@ mod tests {
             adv_hone_strategy,
             &vec![],
             &vec![],
+            &vec![], // TODO fix this later
+            &vec![], // TODO fix this later
         );
         let mut cost_data = monte_carlo_data(
             data_size,
@@ -288,6 +294,8 @@ mod tests {
             adv_hone_strategy,
             &vec![],
             &vec![],
+            &vec![], // TODO fix this later
+            &vec![], // TODO fix this later
         );
         let mut cost_data = monte_carlo_data(
             data_size,
@@ -347,6 +355,8 @@ mod tests {
             adv_hone_strategy,
             &vec![],
             &vec![],
+            &vec![],
+            &vec![],
         );
         let mut cost_data = monte_carlo_data(
             data_size,
@@ -404,6 +414,8 @@ mod tests {
             express_event,
             &user_price_arr,
             adv_hone_strategy,
+            &vec![],
+            &vec![],
             &vec![],
             &vec![],
         );
@@ -468,6 +480,8 @@ mod tests {
             express_event,
             &user_price_arr,
             adv_hone_strategy,
+            &vec![],
+            &vec![],
             &vec![],
             &vec![],
         );

@@ -17,6 +17,7 @@ pub struct PreparationOutput {
     pub budgets: Vec<i64>,
 
     pub price_arr: Vec<f64>,
+    pub leftover_values: Vec<f64>,
 
     pub budgets_no_gold: Vec<i64>,
     pub test_case: i64,
@@ -38,13 +39,25 @@ fn actual_eqv_gold(
         total += price_arr[i] * budgets[i] as f64;
     }
     for (index, i) in juice_books_owned.iter().enumerate() {
-        total += i.0 as f64 * juice_info.one_gold_cost_id[index].0 as f64;
-        total += i.1 as f64 * juice_info.one_gold_cost_id[index].1 as f64;
+        total += i.0 as f64 * juice_info.one_gold_cost[index].0 as f64;
+        total += i.1 as f64 * juice_info.one_gold_cost[index].1 as f64;
     }
     total -= unlock_costs[0] as f64 * price_arr[3];
     total -= unlock_costs[1] as f64 * price_arr[6];
 
     total
+}
+
+fn copy_leftover<T: Clone>(inp_leftover_values: &[T], original: &[T]) -> Vec<T> {
+    let out: Vec<T>;
+    if inp_leftover_values.len() == 0 {
+        out = original.to_vec();
+    } else if inp_leftover_values.len() == original.len() {
+        out = inp_leftover_values.to_vec();
+    } else {
+        panic!("bad leftover input");
+    }
+    out
 }
 impl PreparationOutput {
     pub fn initialize(
@@ -52,12 +65,18 @@ impl PreparationOutput {
         input_budgets: &[i64],
         adv_counts: &[Vec<i64>],
         express_event: bool,
-        user_price_arr: &[f64],
+        inp_price_arr: &[f64],
         adv_hone_strategy: &str,
         juice_books_budget: &[(i64, i64)],
         juice_prices: &[(f64, f64)],
+        inp_leftover_values: &[f64],
+        inp_leftover_juice_values: &[(f64, f64)],
     ) -> PreparationOutput {
-        let price_arr: Vec<f64> = user_price_arr.to_vec();
+        let price_arr: Vec<f64> = inp_price_arr.to_vec();
+
+        let leftover_values = copy_leftover(inp_leftover_values, inp_price_arr);
+        let leftover_juice_values = copy_leftover(inp_leftover_juice_values, juice_prices);
+
         let unlock_costs: Vec<i64> = calc_unlock(hone_counts, adv_counts, express_event);
 
         let mut upgrade_arr: Vec<Upgrade> = parser(
@@ -71,7 +90,7 @@ impl PreparationOutput {
         for upgrade in upgrade_arr.iter_mut() {
             // let mut rng: StdRng = StdRng::seed_from_u64(RNG_SEED);
 
-            upgrade.eqv_gold_per_tap = eqv_gold_per_tap(upgrade, user_price_arr);
+            upgrade.eqv_gold_per_tap = eqv_gold_per_tap(upgrade, inp_price_arr);
 
             // THIS IS JUST HERE TO KEEP COMPILER HAPPY RN
             for i in 0..upgrade.full_juice_len {
@@ -102,7 +121,7 @@ impl PreparationOutput {
             false,
         ];
 
-        let juice_info: JuiceInfo = get_avail_juice_combs(juice_prices);
+        let juice_info: JuiceInfo = get_avail_juice_combs(juice_prices, &leftover_juice_values);
 
         for upgrade in upgrade_arr.iter_mut() {
             // JUST GONNA ASSUME THAT not have juice => not have book or book => juice or first element is always juice (if there's a first element)
@@ -131,6 +150,7 @@ impl PreparationOutput {
             juice_info,
             juice_books_owned,
             sellable_toggles, //TODO READ THIS FROM AN ACUTAL INPUT LATEr cant be bother rn
+            leftover_values,
         }
     }
 

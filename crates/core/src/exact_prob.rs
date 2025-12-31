@@ -185,6 +185,8 @@ mod tests {
             adv_hone_strategy,
             &vec![(0, 0), (0, 0), (0, 0), (0, 0)],
             &vec![(0.0, 0.0), (0.0, 0.0), (0.0, 0.0), (0.0, 0.0)],
+            &vec![],
+            &vec![],
         );
         // let mut cache: HashMap<(Vec<bool>, usize), Vec<([i64; 9], f64)>> = HashMap::new();
         // dbg!(prep_output.upgrade_arr);
@@ -203,7 +205,7 @@ mod tests {
                 ],
                 names: vec![],
                 state_index: vec![],
-                prob: -1.0,
+                metric: -1.0,
                 special_state: vec![],
                 log_prob_dist_arr: vec![],
                 gold_costs_arr: vec![],
