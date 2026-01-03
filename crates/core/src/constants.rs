@@ -85,6 +85,7 @@ pub struct JuiceInfo {
     pub leftover_values: Vec<Vec<(f64, f64)>>,
     pub one_leftover_value: Vec<(f64, f64)>,
     pub amt_used_id: Vec<Vec<i64>>,
+    pub gold_costs_id: Vec<Vec<(f64, f64)>>,
 }
 pub fn get_avail_juice_combs(
     juice_prices: &[(f64, f64)],
@@ -96,17 +97,19 @@ pub fn get_avail_juice_combs(
     let mut amt_used: Vec<Vec<i64>> = vec![vec![]; 25];
     let mut ids: Vec<Vec<usize>> = vec![vec![]; 25];
 
+    let mut gold_costs_id: Vec<Vec<(f64, f64)>> =
+        vec![vec![(0.0, 0.0); 25]; JUICE_BOOKS_AVAIL.len()];
     let mut amt_used_id: Vec<Vec<i64>> = vec![vec![0; 25]; JUICE_BOOKS_AVAIL.len()];
     let mut one_gold_cost: Vec<(f64, f64)> = vec![(0.0, 0.0); JUICE_BOOKS_AVAIL.len()];
     let mut one_leftover_value: Vec<(f64, f64)> = vec![(0.0, 0.0); JUICE_BOOKS_AVAIL.len()];
     for (id, rows) in JUICE_BOOKS_AVAIL.iter().enumerate() {
         for &(upgrade_index, chance, amt) in rows.iter() {
             chances[upgrade_index].push(chance);
-
-            gold_costs[upgrade_index].push((
+            let this_gold_costs: (f64, f64) = (
                 amt as f64 * juice_prices[id].0,
                 amt as f64 * juice_prices[id].1,
-            ));
+            );
+            gold_costs[upgrade_index].push(this_gold_costs);
             leftover_values[upgrade_index].push((
                 amt as f64 * leftover_prices[id].0,
                 amt as f64 * leftover_prices[id].1,
@@ -114,6 +117,7 @@ pub fn get_avail_juice_combs(
             amt_used[upgrade_index].push(amt);
             ids[upgrade_index].push(id);
             amt_used_id[id][upgrade_index] = amt;
+            gold_costs_id[id][upgrade_index] = this_gold_costs;
         }
         one_gold_cost[id] = (juice_prices[id].0, juice_prices[id].1);
         one_leftover_value[id] = (leftover_prices[id].0, leftover_prices[id].1);
@@ -127,6 +131,7 @@ pub fn get_avail_juice_combs(
         leftover_values,
         one_leftover_value,
         amt_used_id,
+        gold_costs_id,
     }
 }
 // these costs are manually copied from lost ark codex, dont bet on it being 100% correct

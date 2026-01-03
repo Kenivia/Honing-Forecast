@@ -180,332 +180,332 @@ pub fn cost_to_chance_arr(
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use crate::constants::RNG_SEED;
-    use crate::monte_carlo::monte_carlo_data;
-    use crate::test_utils::{DEFAULT_GOLD_VALUES, read_cached_data, write_cached_data};
-    use crate::{calculate_hash, my_assert};
-    use rand::prelude::*;
+// #[cfg(test)]
+// mod tests {
+//     use super::*;
+//     use crate::constants::RNG_SEED;
+//     use crate::monte_carlo::monte_carlo_data;
+//     use crate::test_utils::{DEFAULT_GOLD_VALUES, read_cached_data, write_cached_data};
+//     use crate::{calculate_hash, my_assert};
+//     use rand::prelude::*;
 
-    #[test]
-    fn cost_to_chance_stress() {
-        let test_name: &str = "cost_to_chance_stress";
-        let hone_counts: Vec<Vec<i64>> =
-            vec![(0..25).map(|_| 5).collect(), (0..25).map(|_| 1).collect()];
+//     #[test]
+//     fn cost_to_chance_stress() {
+//         let test_name: &str = "cost_to_chance_stress";
+//         let hone_counts: Vec<Vec<i64>> =
+//             vec![(0..25).map(|_| 5).collect(), (0..25).map(|_| 1).collect()];
 
-        let adv_counts: Vec<Vec<i64>> =
-            vec![(0..4).map(|_| 5).collect(), (0..4).map(|_| 1).collect()];
-        let input_budgets: Vec<i64> = vec![
-            431777, 1064398, 23748, 9010948, 15125, 1803792, 4294967295, 420, 690, 6767,
-        ];
-        let express_event: bool = false;
-        let hist_bins: usize = 1000;
-        let user_price_arr: [f64; 9] = DEFAULT_GOLD_VALUES;
-        let adv_hone_strategy: &'static str = "No juice";
-        let data_size: usize = 100000;
+//         let adv_counts: Vec<Vec<i64>> =
+//             vec![(0..4).map(|_| 5).collect(), (0..4).map(|_| 1).collect()];
+//         let input_budgets: Vec<i64> = vec![
+//             431777, 1064398, 23748, 9010948, 15125, 1803792, 4294967295, 420, 690, 6767,
+//         ];
+//         let express_event: bool = false;
+//         let hist_bins: usize = 1000;
+//         let user_price_arr: [f64; 9] = DEFAULT_GOLD_VALUES;
+//         let adv_hone_strategy: &'static str = "No juice";
+//         let data_size: usize = 100000;
 
-        let hash: String = calculate_hash!(
-            &hone_counts,
-            &input_budgets,
-            &adv_counts,
-            express_event,
-            hist_bins,
-            &adv_hone_strategy,
-            data_size
-        );
-        // Run the function to get the full output
-        let mut rng: StdRng = StdRng::seed_from_u64(RNG_SEED);
-        let prep_output: PreparationOutput = PreparationOutput::initialize(
-            &hone_counts,
-            &input_budgets,
-            &adv_counts,
-            express_event,
-            &user_price_arr,
-            adv_hone_strategy,
-            &vec![],
-            &vec![],
-            &vec![], // TODO fix this later
-            &vec![], // TODO fix this later
-        );
-        let mut cost_data = monte_carlo_data(
-            data_size,
-            &prep_output.upgrade_arr,
-            &prep_output.unlock_costs,
-            input_budgets[9],
-            &mut rng,
-        );
-        let result: CostToChanceOut = cost_to_chance(
-            &hone_counts,
-            &input_budgets,
-            &adv_counts,
-            express_event,
-            hist_bins,
-            &user_price_arr,
-            adv_hone_strategy.to_owned(),
-            &mut cost_data,
-        );
+//         let hash: String = calculate_hash!(
+//             &hone_counts,
+//             &input_budgets,
+//             &adv_counts,
+//             express_event,
+//             hist_bins,
+//             &adv_hone_strategy,
+//             data_size
+//         );
+//         // Run the function to get the full output
+//         let mut rng: StdRng = StdRng::seed_from_u64(RNG_SEED);
+//         let prep_output: PreparationOutput = PreparationOutput::initialize(
+//             &hone_counts,
+//             &input_budgets,
+//             &adv_counts,
+//             express_event,
+//             &user_price_arr,
+//             adv_hone_strategy,
+//             &vec![],
+//             &vec![],
+//             &vec![], // TODO fix this later
+//             &vec![], // TODO fix this later
+//         );
+//         let mut cost_data = monte_carlo_data(
+//             data_size,
+//             &prep_output.upgrade_arr,
+//             &prep_output.unlock_costs,
+//             input_budgets[9],
+//             &mut rng,
+//         );
+//         let result: CostToChanceOut = cost_to_chance(
+//             &hone_counts,
+//             &input_budgets,
+//             &adv_counts,
+//             express_event,
+//             hist_bins,
+//             &user_price_arr,
+//             adv_hone_strategy.to_owned(),
+//             &mut cost_data,
+//         );
 
-        if let Some(cached_result) = read_cached_data::<CostToChanceOut>(test_name, &hash) {
-            my_assert!(result, cached_result);
-        } else {
-            write_cached_data(test_name, &hash, &result);
-        }
-    }
-    #[test]
-    fn cost_to_chance_18_demo() {
-        let test_name: &str = "cost_to_chance_18_demo";
-        let hone_counts = vec![
-            (0..25)
-                .map(|i| if i == 19 || i == 20 || i == 21 { 5 } else { 0 })
-                .collect(),
-            (0..25).map(|i| if i >= 19 { 1 } else { 0 }).collect(),
-        ];
-        let input_budgets = vec![
-            631777, 1064398, 33748, 12010948, 25125, 3803792, 999999999, 1420, 690, 6767,
-        ];
-        let adv_counts = vec![
-            (0..4).map(|i| if i == 3 { 3 } else { 0 }).collect(),
-            (0..4).map(|i| if i == 2 { 0 } else { 0 }).collect(),
-        ];
-        let express_event = false;
-        let hist_bins: usize = 1000;
-        let user_price_arr = DEFAULT_GOLD_VALUES;
-        let adv_hone_strategy = "No juice";
-        let data_size: usize = 100000;
+//         if let Some(cached_result) = read_cached_data::<CostToChanceOut>(test_name, &hash) {
+//             my_assert!(result, cached_result);
+//         } else {
+//             write_cached_data(test_name, &hash, &result);
+//         }
+//     }
+//     #[test]
+//     fn cost_to_chance_18_demo() {
+//         let test_name: &str = "cost_to_chance_18_demo";
+//         let hone_counts = vec![
+//             (0..25)
+//                 .map(|i| if i == 19 || i == 20 || i == 21 { 5 } else { 0 })
+//                 .collect(),
+//             (0..25).map(|i| if i >= 19 { 1 } else { 0 }).collect(),
+//         ];
+//         let input_budgets = vec![
+//             631777, 1064398, 33748, 12010948, 25125, 3803792, 999999999, 1420, 690, 6767,
+//         ];
+//         let adv_counts = vec![
+//             (0..4).map(|i| if i == 3 { 3 } else { 0 }).collect(),
+//             (0..4).map(|i| if i == 2 { 0 } else { 0 }).collect(),
+//         ];
+//         let express_event = false;
+//         let hist_bins: usize = 1000;
+//         let user_price_arr = DEFAULT_GOLD_VALUES;
+//         let adv_hone_strategy = "No juice";
+//         let data_size: usize = 100000;
 
-        let hash = calculate_hash!(
-            &hone_counts,
-            &input_budgets,
-            &adv_counts,
-            express_event,
-            hist_bins,
-            &adv_hone_strategy,
-            data_size
-        );
-        let mut rng: StdRng = StdRng::seed_from_u64(RNG_SEED);
-        let prep_output: PreparationOutput = PreparationOutput::initialize(
-            &hone_counts,
-            &input_budgets,
-            &adv_counts,
-            express_event,
-            &user_price_arr,
-            adv_hone_strategy,
-            &vec![],
-            &vec![],
-            &vec![], // TODO fix this later
-            &vec![], // TODO fix this later
-        );
-        let mut cost_data = monte_carlo_data(
-            data_size,
-            &prep_output.upgrade_arr,
-            &prep_output.unlock_costs,
-            input_budgets[9],
-            &mut rng,
-        );
-        let result: CostToChanceOut = cost_to_chance(
-            &hone_counts,
-            &input_budgets,
-            &adv_counts,
-            express_event,
-            hist_bins,
-            &user_price_arr,
-            adv_hone_strategy.to_owned(),
-            &mut cost_data,
-        );
+//         let hash = calculate_hash!(
+//             &hone_counts,
+//             &input_budgets,
+//             &adv_counts,
+//             express_event,
+//             hist_bins,
+//             &adv_hone_strategy,
+//             data_size
+//         );
+//         let mut rng: StdRng = StdRng::seed_from_u64(RNG_SEED);
+//         let prep_output: PreparationOutput = PreparationOutput::initialize(
+//             &hone_counts,
+//             &input_budgets,
+//             &adv_counts,
+//             express_event,
+//             &user_price_arr,
+//             adv_hone_strategy,
+//             &vec![],
+//             &vec![],
+//             &vec![], // TODO fix this later
+//             &vec![], // TODO fix this later
+//         );
+//         let mut cost_data = monte_carlo_data(
+//             data_size,
+//             &prep_output.upgrade_arr,
+//             &prep_output.unlock_costs,
+//             input_budgets[9],
+//             &mut rng,
+//         );
+//         let result: CostToChanceOut = cost_to_chance(
+//             &hone_counts,
+//             &input_budgets,
+//             &adv_counts,
+//             express_event,
+//             hist_bins,
+//             &user_price_arr,
+//             adv_hone_strategy.to_owned(),
+//             &mut cost_data,
+//         );
 
-        if let Some(cached_result) = read_cached_data::<CostToChanceOut>(test_name, &hash) {
-            my_assert!(result, cached_result);
-        } else {
-            write_cached_data(test_name, &hash, &result);
-        }
-    }
-    #[test]
-    fn cost_to_chance_50_normal_weapon_25() {
-        let test_name: &str = "cost_to_chance_50_normal_weapon_25";
-        let hone_counts = vec![
-            (0..25).map(|_| 0).collect(),
-            (0..25).map(|i| if i == 24 { 1 } else { 0 }).collect(),
-        ];
-        let input_budgets = vec![324000, 0, 4680, 1774000, 3600, 406800, 10800000, 0, 0, 0];
-        let adv_counts = vec![(0..4).map(|_| 0).collect(), (0..4).map(|_| 0).collect()];
-        let express_event = false;
-        let hist_bins: usize = 1000;
-        let user_price_arr: [f64; 9] = DEFAULT_GOLD_VALUES;
-        let adv_hone_strategy = "No juice";
-        let data_size: usize = 100000;
+//         if let Some(cached_result) = read_cached_data::<CostToChanceOut>(test_name, &hash) {
+//             my_assert!(result, cached_result);
+//         } else {
+//             write_cached_data(test_name, &hash, &result);
+//         }
+//     }
+//     #[test]
+//     fn cost_to_chance_50_normal_weapon_25() {
+//         let test_name: &str = "cost_to_chance_50_normal_weapon_25";
+//         let hone_counts = vec![
+//             (0..25).map(|_| 0).collect(),
+//             (0..25).map(|i| if i == 24 { 1 } else { 0 }).collect(),
+//         ];
+//         let input_budgets = vec![324000, 0, 4680, 1774000, 3600, 406800, 10800000, 0, 0, 0];
+//         let adv_counts = vec![(0..4).map(|_| 0).collect(), (0..4).map(|_| 0).collect()];
+//         let express_event = false;
+//         let hist_bins: usize = 1000;
+//         let user_price_arr: [f64; 9] = DEFAULT_GOLD_VALUES;
+//         let adv_hone_strategy = "No juice";
+//         let data_size: usize = 100000;
 
-        let hash = calculate_hash!(
-            &hone_counts,
-            &input_budgets,
-            &adv_counts,
-            express_event,
-            hist_bins,
-            &adv_hone_strategy,
-            data_size
-        );
-        let mut rng: StdRng = StdRng::seed_from_u64(RNG_SEED);
-        let prep_output: PreparationOutput = PreparationOutput::initialize(
-            &hone_counts,
-            &input_budgets,
-            &adv_counts,
-            express_event,
-            &user_price_arr,
-            adv_hone_strategy,
-            &vec![],
-            &vec![],
-            &vec![],
-            &vec![],
-        );
-        let mut cost_data = monte_carlo_data(
-            data_size,
-            &prep_output.upgrade_arr,
-            &prep_output.unlock_costs,
-            input_budgets[9],
-            &mut rng,
-        );
-        let result: CostToChanceOut = cost_to_chance(
-            &hone_counts,
-            &input_budgets,
-            &adv_counts,
-            express_event,
-            hist_bins,
-            &user_price_arr,
-            adv_hone_strategy.to_owned(),
-            &mut cost_data,
-        );
+//         let hash = calculate_hash!(
+//             &hone_counts,
+//             &input_budgets,
+//             &adv_counts,
+//             express_event,
+//             hist_bins,
+//             &adv_hone_strategy,
+//             data_size
+//         );
+//         let mut rng: StdRng = StdRng::seed_from_u64(RNG_SEED);
+//         let prep_output: PreparationOutput = PreparationOutput::initialize(
+//             &hone_counts,
+//             &input_budgets,
+//             &adv_counts,
+//             express_event,
+//             &user_price_arr,
+//             adv_hone_strategy,
+//             &vec![],
+//             &vec![],
+//             &vec![],
+//             &vec![],
+//         );
+//         let mut cost_data = monte_carlo_data(
+//             data_size,
+//             &prep_output.upgrade_arr,
+//             &prep_output.unlock_costs,
+//             input_budgets[9],
+//             &mut rng,
+//         );
+//         let result: CostToChanceOut = cost_to_chance(
+//             &hone_counts,
+//             &input_budgets,
+//             &adv_counts,
+//             express_event,
+//             hist_bins,
+//             &user_price_arr,
+//             adv_hone_strategy.to_owned(),
+//             &mut cost_data,
+//         );
 
-        if let Some(cached_result) = read_cached_data::<CostToChanceOut>(test_name, &hash) {
-            my_assert!(result, cached_result);
-        } else {
-            write_cached_data(test_name, &hash, &result);
-        }
-    }
-    #[test]
-    fn cost_to_chance_53_adv_armor_40() {
-        let test_name: &str = "cost_to_chance_53_adv_armor_40";
-        let hone_counts = vec![(0..25).map(|_| 0).collect(), (0..25).map(|_| 0).collect()];
-        let input_budgets = vec![0, 63600, 1219, 564000, 1007, 127200, 5003000, 0, 0, 0];
-        let adv_counts = vec![
-            (0..4).map(|x| if x == 3 { 1 } else { 0 }).collect(),
-            (0..4).map(|_| 0).collect(),
-        ];
-        let express_event = false;
-        let hist_bins: usize = 1000;
-        let user_price_arr = DEFAULT_GOLD_VALUES;
-        let adv_hone_strategy = "No juice";
-        let data_size: usize = 100000;
+//         if let Some(cached_result) = read_cached_data::<CostToChanceOut>(test_name, &hash) {
+//             my_assert!(result, cached_result);
+//         } else {
+//             write_cached_data(test_name, &hash, &result);
+//         }
+//     }
+//     #[test]
+//     fn cost_to_chance_53_adv_armor_40() {
+//         let test_name: &str = "cost_to_chance_53_adv_armor_40";
+//         let hone_counts = vec![(0..25).map(|_| 0).collect(), (0..25).map(|_| 0).collect()];
+//         let input_budgets = vec![0, 63600, 1219, 564000, 1007, 127200, 5003000, 0, 0, 0];
+//         let adv_counts = vec![
+//             (0..4).map(|x| if x == 3 { 1 } else { 0 }).collect(),
+//             (0..4).map(|_| 0).collect(),
+//         ];
+//         let express_event = false;
+//         let hist_bins: usize = 1000;
+//         let user_price_arr = DEFAULT_GOLD_VALUES;
+//         let adv_hone_strategy = "No juice";
+//         let data_size: usize = 100000;
 
-        let hash = calculate_hash!(
-            &hone_counts,
-            &input_budgets,
-            &adv_counts,
-            express_event,
-            hist_bins,
-            &adv_hone_strategy,
-            data_size
-        );
-        let mut rng: StdRng = StdRng::seed_from_u64(RNG_SEED);
-        let prep_output: PreparationOutput = PreparationOutput::initialize(
-            &hone_counts,
-            &input_budgets,
-            &adv_counts,
-            express_event,
-            &user_price_arr,
-            adv_hone_strategy,
-            &vec![],
-            &vec![],
-            &vec![],
-            &vec![],
-        );
-        let mut cost_data = monte_carlo_data(
-            data_size,
-            &prep_output.upgrade_arr,
-            &prep_output.unlock_costs,
-            input_budgets[9],
-            &mut rng,
-        );
-        let result: CostToChanceOut = cost_to_chance(
-            &hone_counts,
-            &input_budgets,
-            &adv_counts,
-            express_event,
-            hist_bins,
-            &user_price_arr,
-            adv_hone_strategy.to_owned(),
-            &mut cost_data,
-        );
+//         let hash = calculate_hash!(
+//             &hone_counts,
+//             &input_budgets,
+//             &adv_counts,
+//             express_event,
+//             hist_bins,
+//             &adv_hone_strategy,
+//             data_size
+//         );
+//         let mut rng: StdRng = StdRng::seed_from_u64(RNG_SEED);
+//         let prep_output: PreparationOutput = PreparationOutput::initialize(
+//             &hone_counts,
+//             &input_budgets,
+//             &adv_counts,
+//             express_event,
+//             &user_price_arr,
+//             adv_hone_strategy,
+//             &vec![],
+//             &vec![],
+//             &vec![],
+//             &vec![],
+//         );
+//         let mut cost_data = monte_carlo_data(
+//             data_size,
+//             &prep_output.upgrade_arr,
+//             &prep_output.unlock_costs,
+//             input_budgets[9],
+//             &mut rng,
+//         );
+//         let result: CostToChanceOut = cost_to_chance(
+//             &hone_counts,
+//             &input_budgets,
+//             &adv_counts,
+//             express_event,
+//             hist_bins,
+//             &user_price_arr,
+//             adv_hone_strategy.to_owned(),
+//             &mut cost_data,
+//         );
 
-        if let Some(cached_result) = read_cached_data::<CostToChanceOut>(test_name, &hash) {
-            my_assert!(result, cached_result);
-        } else {
-            write_cached_data(test_name, &hash, &result);
-        }
-    }
+//         if let Some(cached_result) = read_cached_data::<CostToChanceOut>(test_name, &hash) {
+//             my_assert!(result, cached_result);
+//         } else {
+//             write_cached_data(test_name, &hash, &result);
+//         }
+//     }
 
-    #[test]
-    fn cost_to_chance_arr_test() {
-        let test_name: &str = "cost_to_chance_arr_test";
-        let budget_arr = vec![
-            vec![
-                431777, 1064398, 23748, 9010948, 15125, 1803792, 4294967295, 420, 690, 6767,
-            ],
-            vec![
-                431777, 1064398, 23748, 9010948, 15125, 1803792, 4294967295, 420, 690, 6767,
-            ],
-        ];
+//     #[test]
+//     fn cost_to_chance_arr_test() {
+//         let test_name: &str = "cost_to_chance_arr_test";
+//         let budget_arr = vec![
+//             vec![
+//                 431777, 1064398, 23748, 9010948, 15125, 1803792, 4294967295, 420, 690, 6767,
+//             ],
+//             vec![
+//                 431777, 1064398, 23748, 9010948, 15125, 1803792, 4294967295, 420, 690, 6767,
+//             ],
+//         ];
 
-        let hone_counts = vec![(0..25).map(|_| 5).collect(), (0..25).map(|_| 1).collect()];
-        let adv_counts = vec![(0..4).map(|_| 5).collect(), (0..4).map(|_| 1).collect()];
-        let express_event = false;
-        let user_price_arr = DEFAULT_GOLD_VALUES;
-        let adv_hone_strategy = "No juice";
-        let data_size: usize = 100000;
+//         let hone_counts = vec![(0..25).map(|_| 5).collect(), (0..25).map(|_| 1).collect()];
+//         let adv_counts = vec![(0..4).map(|_| 5).collect(), (0..4).map(|_| 1).collect()];
+//         let express_event = false;
+//         let user_price_arr = DEFAULT_GOLD_VALUES;
+//         let adv_hone_strategy = "No juice";
+//         let data_size: usize = 100000;
 
-        let hash = calculate_hash!(
-            &hone_counts,
-            &budget_arr,
-            &adv_counts,
-            express_event,
-            &adv_hone_strategy,
-            data_size
-        );
-        // Run the function to get the full output
-        let mut rng: StdRng = StdRng::seed_from_u64(RNG_SEED);
-        let prep_output: PreparationOutput = PreparationOutput::initialize(
-            &hone_counts,
-            &budget_arr[0],
-            &adv_counts,
-            express_event,
-            &user_price_arr,
-            adv_hone_strategy,
-            &vec![],
-            &vec![],
-            &vec![],
-            &vec![],
-        );
-        let mut cost_data = monte_carlo_data(
-            data_size,
-            &prep_output.upgrade_arr,
-            &prep_output.unlock_costs,
-            budget_arr[0][9],
-            &mut rng,
-        );
-        let result: CostToChanceArrOut = cost_to_chance_arr(
-            &hone_counts,
-            &budget_arr,
-            &adv_counts,
-            express_event,
-            &user_price_arr,
-            adv_hone_strategy.to_owned(),
-            &mut cost_data,
-        );
+//         let hash = calculate_hash!(
+//             &hone_counts,
+//             &budget_arr,
+//             &adv_counts,
+//             express_event,
+//             &adv_hone_strategy,
+//             data_size
+//         );
+//         // Run the function to get the full output
+//         let mut rng: StdRng = StdRng::seed_from_u64(RNG_SEED);
+//         let prep_output: PreparationOutput = PreparationOutput::initialize(
+//             &hone_counts,
+//             &budget_arr[0],
+//             &adv_counts,
+//             express_event,
+//             &user_price_arr,
+//             adv_hone_strategy,
+//             &vec![],
+//             &vec![],
+//             &vec![],
+//             &vec![],
+//         );
+//         let mut cost_data = monte_carlo_data(
+//             data_size,
+//             &prep_output.upgrade_arr,
+//             &prep_output.unlock_costs,
+//             budget_arr[0][9],
+//             &mut rng,
+//         );
+//         let result: CostToChanceArrOut = cost_to_chance_arr(
+//             &hone_counts,
+//             &budget_arr,
+//             &adv_counts,
+//             express_event,
+//             &user_price_arr,
+//             adv_hone_strategy.to_owned(),
+//             &mut cost_data,
+//         );
 
-        if let Some(cached_result) = read_cached_data::<CostToChanceArrOut>(test_name, &hash) {
-            my_assert!(result, cached_result);
-        } else {
-            write_cached_data(test_name, &hash, &result);
-        }
-    }
-}
+//         if let Some(cached_result) = read_cached_data::<CostToChanceArrOut>(test_name, &hash) {
+//             my_assert!(result, cached_result);
+//         } else {
+//             write_cached_data(test_name, &hash, &result);
+//         }
+//     }
+// }

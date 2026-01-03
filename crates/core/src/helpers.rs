@@ -2,13 +2,29 @@ use crate::constants::{
     get_adv_data_juice, get_event_modified_adv_unlock_cost, get_event_modified_armor_unlock_cost,
     get_event_modified_weapon_unlock_cost,
 };
-use crate::parser::Upgrade;
+use crate::parser::{PreparationOutput, Upgrade};
 
 use crate::value_estimation::average_tap;
 
 use rand::Rng;
 
-pub fn find_non_zero_min(support_arr: &Vec<Vec<f64>>, log_prob_dist_arr: &Vec<Vec<f64>>) -> f64 {
+pub fn find_non_zero_min_prep(support_arr: &[Vec<f64>], prep_output: &PreparationOutput) -> f64 {
+    support_arr
+        .iter()
+        .enumerate()
+        .map(|(u_index, x)| {
+            x.iter()
+                .enumerate()
+                .find(|(index, _)| {
+                    prep_output.upgrade_arr[u_index].log_prob_dist[*index] > f64::NEG_INFINITY
+                })
+                .unwrap_or((0, &0.0))
+                .1
+        })
+        .sum()
+}
+
+pub fn find_non_zero_min_vec(support_arr: &[Vec<f64>], log_prob_dist_arr: &[Vec<f64>]) -> f64 {
     support_arr
         .iter()
         .enumerate()

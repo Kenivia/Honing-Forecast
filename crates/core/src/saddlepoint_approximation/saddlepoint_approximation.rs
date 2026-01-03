@@ -1,8 +1,12 @@
 use statrs::distribution::{Continuous, ContinuousCDF, Normal};
 
+use crate::brute::brute_naive;
+
 pub static DEBUG: bool = false;
 pub static THETA_TOL: f64 = 1e-10;
+pub static THETA_LIMIT: f64 = 1e2; // th
 pub static FLOAT_TOL: f64 = 1e-12; // it could prolly be lower? idk doesnt matter
+pub static MAX_BRUTE_SIZE: usize = 100000;
 
 pub fn ks_01234(
     log_prob_dist_arr: &[Vec<f64>],
@@ -99,24 +103,6 @@ pub fn ks_01234(
 
         if toggle.0 {
             *total_k += alpha_shift + s.ln();
-            // if alpha_shift + s.ln() < 0.0 {
-            //     dbg!(
-            //         &alpha_arr,
-            //         alpha_shift,
-            //         s,
-            //         s.ln(),
-            //         // support_arr,
-            //         log_prob_dist_arr
-            //             .iter()
-            //             .map(|x| x.iter().map(|y| y.exp()).sum::<f64>())
-            //             .collect::<Vec<f64>>(),
-            //         log_prob_dist_arr
-            //             .iter()
-            //             .map(|x| x.iter().map(|y| y.exp()).collect())
-            //             .collect::<Vec<Vec<f64>>>(),
-            //     );
-            //     // panic!();
-            // }
         }
         let mut mu2: f64 = -1.0;
         if toggle.1 {
@@ -148,66 +134,87 @@ pub fn find_root<F>(
     max: f64,
     tol: f64,
     max_iter: usize,
-) -> (f64, f64)
+) -> Option<(f64, f64)>
 where
     F: FnMut(f64) -> (f64, f64),
 {
     let mut theta: f64 = init_theta.max(min).min(max);
 
     let mut count = 0;
+    let (mut y, mut dy) = func(theta);
     loop {
-        if DEBUG {
-            dbg!(count);
-        }
-
-        let (y, dy) = func(theta);
-
+        // dbg!(count, theta, y, dy);
         // if y.abs() < 1e-12 {
         //     // this is largely irrelevant because we're interested in theta
         //     return Some(theta);
         // }
 
-        if dy.abs() < 1e-14 {
-            let (y_min, _) = func(min);
-            let (y_max, _) = func(max);
-
-            return (
-                if y_min.abs() < y_max.abs() { min } else { max },
-                if y_min.abs() < y_max.abs() {
-                    min + THETA_TOL
-                } else {
-                    max - THETA_TOL
-                },
-            );
+        if dy == 0.0 {
+            // let (y_min, _) = func(min);
+            // let (y_max, _) = func(max);
+            // this shouldn't happen no more
+            return None;
+            // return Some((
+            //     if y_min.abs() < y_max.abs() { min } else { max },
+            //     if y_min.abs() < y_max.abs() {
+            //         min + THETA_TOL
+            //     } else {
+            //         max - THETA_TOL
+            //     },
+            // ));
         }
 
-        let delta: f64 = y / dy;
-        let mut new_theta: f64 = theta - delta;
+        let proposed_delta: f64 = -y / dy;
+        let mut cur_delta: f64 = proposed_delta;
+        let mut damping_factor = 1.0;
+        let mut new_theta: f64 = theta + cur_delta;
+        let (mut new_y, mut new_dy);
+        loop {
+            (new_y, new_dy) = func(new_theta);
+            // dbg!(count, new_theta, new_y, new_dy);
+            // If the error (magnitude of y) got worse, reduce step size
+            if new_y.abs() > y.abs() {
+                damping_factor *= 0.5;
+                cur_delta = proposed_delta * damping_factor;
+                new_theta = theta + cur_delta;
 
+                if damping_factor < 1e-3 {
+                    // Fallback: Use gradient descent or simply take the tiny step
+                    break;
+                }
+            } else {
+                // The step is good, it reduced the error
+
+                break;
+            }
+        }
         if !new_theta.is_finite() {
-            dbg!(y, dy, delta, theta);
-            panic!();
+            dbg!(y, dy, proposed_delta, theta);
+            return None;
         }
 
-        new_theta = new_theta.max(min).min(max);
+        // assert!(new_theta < max && new_theta > min);
 
         count += 1;
         if (new_theta - theta).abs() < tol || count >= max_iter {
-            return (new_theta, theta);
+            return Some((new_theta, theta));
         }
+
         theta = new_theta;
+        (y, dy) = (new_y, new_dy);
     }
 }
 
-pub fn my_newton<F>(f_df: F, init_theta: f64) -> (f64, f64)
+pub fn my_newton<F>(f_df: F, init_theta: f64) -> Option<(f64, f64)>
 where
     F: FnMut(f64) -> (f64, f64),
 {
-    let root = find_root(f_df, init_theta, -1.0, 1.0, THETA_TOL, 20); // i mean its usually like 3 iters but idk 
-    return root;
+    let root = find_root(f_df, init_theta, -THETA_LIMIT, THETA_LIMIT, THETA_TOL, 20); // i mean its usually like 3 iters but idk 
+    root
 }
-pub fn saddlepoint_approximation(
+pub fn saddlepoint_approximation_wrapper(
     log_prob_dist_arr: &[Vec<f64>],
+    prob_dist_arr: &[Vec<f64>],
     support_arr: &[Vec<f64>],
     min_value: f64,
     max_value: f64,
@@ -221,9 +228,42 @@ pub fn saddlepoint_approximation(
     if budget > max_value - FLOAT_TOL {
         return 1.0;
     }
-    if DEBUG {
-        dbg!(budget, min_value, max_value,);
+
+    if support_size_too_big(support_arr, MAX_BRUTE_SIZE) {
+        return saddlepoint_approximation(
+            log_prob_dist_arr,
+            support_arr,
+            min_value,
+            max_value, // here for debugging purpose only
+            budget,
+            init_theta,
+        );
+    } else {
+        return brute_naive(prob_dist_arr, support_arr, budget);
     }
+}
+fn support_size_too_big(arr: &[Vec<f64>], max: usize) -> bool {
+    let mut out: usize = 0;
+    for a in arr {
+        if out == 0 {
+            out = a.len();
+        } else {
+            out *= a.len().max(1);
+            if out >= max {
+                return true;
+            }
+        }
+    }
+    false
+}
+pub fn saddlepoint_approximation(
+    log_prob_dist_arr: &[Vec<f64>],
+    support_arr: &[Vec<f64>],
+    min_value: f64,
+    max_value: f64,
+    budget: f64,
+    init_theta: &mut f64,
+) -> f64 {
     let f_df = |theta| {
         let mut ks_tuple = (0.0, 0.0, 0.0, 0.0, 0.0);
         ks_01234(
@@ -236,19 +276,34 @@ pub fn saddlepoint_approximation(
         (ks_tuple.1 - budget, ks_tuple.2)
     };
     // f_df(1.0).0.signum() == f_df(-1.0).0.signum()
-    let result = my_newton(&f_df, *init_theta);
+    let result_opt = my_newton(&f_df, *init_theta);
+
+    if DEBUG || result_opt.is_none() {
+        dbg!(
+            budget,
+            min_value,
+            max_value,
+            log_prob_dist_arr
+                .iter()
+                .map(|x| x.iter().map(|y| y.exp()).collect())
+                .collect::<Vec<Vec<f64>>>(),
+            support_arr,
+        );
+    }
+    let result = result_opt.unwrap();
     if DEBUG
         || !result.0.is_finite()
         || !result.1.is_finite()
-        || f_df(1.0).0.signum() == f_df(-1.0).0.signum()
+        || f_df(THETA_LIMIT).0.signum() == f_df(-THETA_LIMIT).0.signum()
     {
         //   (this means budget is outside of range)
         dbg!(
-            f_df(10000.0),
+            f_df(THETA_LIMIT),
             f_df(1.0),
-            f_df(0.0000001),
+            f_df(0.0),
             f_df(-1.0),
-            f_df(-10000.0),
+            f_df(-THETA_LIMIT),
+            result
         );
     }
 
@@ -296,7 +351,7 @@ pub fn saddlepoint_approximation(
     //  ~ 1% raw error in the end, hopefully edgeworth can do better
     // this is supposedly caused by a very small theta but instead of checking for small theta we check for large error,
     // maybe change this later to only check error when theta is small TODO
-    if error > 1e-2 || !error.is_finite() {
+    if error > 1e-2 || !error.is_finite() || out < 0.0 || out > 1.0 || !out.is_finite() {
         let std = ks_tuple.2.sqrt();
         let z = (budget - ks_tuple.1) / std;
 
@@ -329,7 +384,14 @@ pub fn saddlepoint_approximation(
         out = approx;
     }
 
-    if DEBUG || out < 0.0 || out > 1.0 {
+    if DEBUG || out < 0.0 || out > 1.0 || !out.is_finite() {
+        dbg!(
+            f_df(THETA_LIMIT),
+            f_df(1.0),
+            f_df(0.0),
+            f_df(-1.0),
+            f_df(-THETA_LIMIT),
+        );
         dbg!(theta_hat, theta_error);
         dbg!(w_hat, u_hat, w_last, u_last, error, out, old_out);
         dbg!(
@@ -347,12 +409,18 @@ pub fn saddlepoint_approximation(
             budget,
             min_value,
             max_value,
+            log_prob_dist_arr
+                .iter()
+                .map(|x| x.iter().map(|y| y.exp()).collect())
+                .collect::<Vec<Vec<f64>>>(),
+            support_arr,
             out
         );
         println!("==============================");
+        panic!();
     }
 
-    out
+    out.max(0.0).min(1.0) // head in the sand
 }
 
 // #[cfg(test)]

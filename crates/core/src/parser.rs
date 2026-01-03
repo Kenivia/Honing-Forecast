@@ -21,7 +21,7 @@ pub struct PreparationOutput {
 
     pub budgets_no_gold: Vec<i64>,
     pub test_case: i64,
-    pub budget_eqv_gold: f64,
+    pub eqv_gold_budget: f64,
     pub juice_info: JuiceInfo,
     pub juice_books_owned: Vec<(i64, i64)>, // juice_books_owned[id].0 = weap owned
     pub sellable_toggles: Vec<bool>,
@@ -146,7 +146,7 @@ impl PreparationOutput {
             price_arr,
             budgets_no_gold,
             test_case: -1, // arena will overwrite this
-            budget_eqv_gold,
+            eqv_gold_budget: budget_eqv_gold,
             juice_info,
             juice_books_owned,
             sellable_toggles, //TODO READ THIS FROM AN ACUTAL INPUT LATEr cant be bother rn
@@ -187,6 +187,15 @@ impl PreparationOutput {
         }
         (cost_data[0].clone(), cost_data[1].clone())
     }
+    pub fn gather_dists(&self) -> (Vec<Vec<f64>>, Vec<Vec<f64>>) {
+        let mut prob_dist_arr = Vec::with_capacity(self.upgrade_arr.len());
+        let mut log_prob_dist_arr = Vec::with_capacity(self.upgrade_arr.len());
+        for upgrade in self.upgrade_arr.iter() {
+            log_prob_dist_arr.push(upgrade.log_prob_dist.clone());
+            prob_dist_arr.push(upgrade.prob_dist.clone());
+        }
+        (log_prob_dist_arr, prob_dist_arr)
+    }
 }
 
 // the parser function turns a selection of upgrades into an array of Upgrade objects
@@ -213,6 +222,7 @@ pub struct Upgrade {
     pub juice_avail: bool,
     pub books_avail: i64,
     // pub juice_arr: Vec<f64>,
+    pub log_prob_dist: Vec<f64>,
 }
 
 impl Upgrade {
@@ -262,6 +272,7 @@ impl Upgrade {
             // eqv_gold_per_juice: -1.0_f64,
             juice_avail: upgrade_index > 2, // will overwrite this in prep initialization anyway
             books_avail: -1,                // will overwrite in prep
+            log_prob_dist: vec![],
         }
     }
 
@@ -304,6 +315,7 @@ impl Upgrade {
             // failure_delta_order: -1,
             juice_avail: upgrade_index > 2, // will overwrite this in prep initialization anyway
             books_avail: -1,                // will overwrite in prep
+            log_prob_dist: vec![],
         }
     }
 }

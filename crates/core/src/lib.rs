@@ -2,7 +2,6 @@ pub mod average;
 pub mod brute;
 pub mod constants;
 pub mod cost_to_chance;
-pub mod exact_prob;
 pub mod helpers;
 pub mod histogram;
 pub mod monte_carlo;

@@ -4,32 +4,13 @@
 ///     return (monte_carlo_wrapper as any)(payload)
 /// }
 /// (imported via import init, {monte_carlo_wrapper} from "@/../pkg/honing_forecast.js"
-// mod constants;
-// mod cost_to_chance;
-// mod energy;
-// mod helpers;
-// mod histogram;
-// mod monte_carlo;
-// mod parser;
-// mod saddlepoint_approximation;
-// mod simulated_annealing;
-// mod success_analysis;
-// mod value_estimation;
-
-// #[cfg(test)]
-// mod visualizer;
-
-// #[cfg(test)]
-// #[macro_use]
-// mod test_utils;
 use hf_core::cost_to_chance::{
     CostToChanceArrOut, CostToChanceOut, cost_to_chance, cost_to_chance_arr,
 };
 use hf_core::helpers::{average_cost, calc_unlock, get_count};
-use hf_core::monte_carlo::monte_carlo_data;
-use hf_core::parser::{PreparationOutput, Upgrade, parser, parser_with_other_strategy};
 
-use rand::prelude::*;
+use hf_core::parser::{Upgrade, parser, parser_with_other_strategy};
+
 use serde::Deserialize;
 use serde_wasm_bindgen::{from_value, to_value};
 use wasm_bindgen::JsValue;
@@ -47,6 +28,7 @@ pub struct Payload {
     express_event: bool,
     bucket_count: usize,
     user_price_arr: Option<Vec<f64>>,
+    #[allow(dead_code)]
     data_size: Option<usize>,
     cost_data: Option<Vec<Vec<i64>>>,
 }
@@ -68,43 +50,43 @@ pub struct PayloadArr {
     cost_data: Option<Vec<Vec<i64>>>,
 }
 
-#[wasm_bindgen]
-#[must_use]
-pub fn monte_carlo_wrapper(input: JsValue) -> JsValue {
-    console_error_panic_hook::set_once();
-    let payload: Payload = from_value(input).unwrap();
+// #[wasm_bindgen]
+// #[must_use]
+// pub fn monte_carlo_wrapper(input: JsValue) -> JsValue {
+//     console_error_panic_hook::set_once();
+//     let payload: Payload = from_value(input).unwrap();
 
-    let normal_counts: Vec<Vec<i64>> = get_count(payload.normal_counts, payload.normal_hone_ticks);
-    let adv_counts: Vec<Vec<i64>> = get_count(payload.adv_counts, payload.adv_hone_ticks);
+//     let normal_counts: Vec<Vec<i64>> = get_count(payload.normal_counts, payload.normal_hone_ticks);
+//     let adv_counts: Vec<Vec<i64>> = get_count(payload.adv_counts, payload.adv_hone_ticks);
 
-    let user_price_arr: Vec<f64> = payload.user_price_arr.unwrap_or(vec![0.0; 7]);
-    let adv_hone_strategy: String = payload.adv_hone_strategy;
-    let data_size: usize = payload.data_size.unwrap_or(100000).max(1000);
+//     let user_price_arr: Vec<f64> = payload.user_price_arr.unwrap_or(vec![0.0; 7]);
+//     let adv_hone_strategy: String = payload.adv_hone_strategy;
+//     let data_size: usize = payload.data_size.unwrap_or(100000).max(1000);
 
-    let mut prep_output: PreparationOutput = PreparationOutput::initialize(
-        &normal_counts,
-        &payload.budget,
-        &adv_counts,
-        payload.express_event,
-        &user_price_arr,
-        &adv_hone_strategy,
-        &vec![],
-        &vec![],
-        &vec![],
-        &vec![],
-    );
-    let mut rng: ThreadRng = rand::rng();
-    let cost_data: Vec<[i64; 9]> = monte_carlo_data(
-        data_size,
-        &mut prep_output.upgrade_arr,
-        &prep_output.unlock_costs,
-        payload.budget[9], // Use first budget's special leap count
-        &mut rng,
-    );
+//     let mut prep_output: PreparationOutput = PreparationOutput::initialize(
+//         &normal_counts,
+//         &payload.budget,
+//         &adv_counts,
+//         payload.express_event,
+//         &user_price_arr,
+//         &adv_hone_strategy,
+//         &vec![],
+//         &vec![],
+//         &vec![],
+//         &vec![],
+//     );
+//     let mut rng: ThreadRng = rand::rng();
+//     let cost_data: Vec<[i64; 9]> = monte_carlo_data(
+//         data_size,
+//         &mut prep_output.upgrade_arr,
+//         &prep_output.unlock_costs,
+//         payload.budget[9], // Use first budget's special leap count
+//         &mut rng,
+//     );
 
-    let js_ready: Vec<Vec<i64>> = cost_data.iter().map(|arr| arr.to_vec()).collect();
-    to_value(&js_ready).unwrap()
-}
+//     let js_ready: Vec<Vec<i64>> = cost_data.iter().map(|arr| arr.to_vec()).collect();
+//     to_value(&js_ready).unwrap()
+// }
 
 #[wasm_bindgen]
 #[must_use]

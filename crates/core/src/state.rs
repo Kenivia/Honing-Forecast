@@ -2,8 +2,7 @@
 pub struct StateBundle {
     pub state: Vec<Vec<(bool, usize)>>,
     pub names: Vec<String>,
-    pub log_prob_dist_arr: Vec<Vec<f64>>,
-    pub gold_costs_arr: Vec<Vec<f64>>,
+
     // the above entries are tied to each upgrade, so arr[upgrade_index] correspond to the appropriate info for a particular upgrade
     // probably should make another struct for this at some point
     pub special_state: Vec<(usize, usize)>, // arbitrary length

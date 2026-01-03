@@ -1,12 +1,13 @@
 use chrono::Local;
 use hf_arena::engine::{NOTES, solve};
 use hf_arena::parse_test_cases::parse_csv;
-use hf_core::average::average_gold_wrapper;
-use hf_core::brute::brute;
-use hf_core::parser::PreparationOutput;
-use hf_core::saddlepoint_approximation::normal_sa::{
-    compute_leftover_probs, normal_honing_sa_wrapper,
+use hf_core::average::{
+    add_up_golds, apply_price_leftovers, apply_price_naive, average_gold_wrapper,
 };
+use hf_core::brute::brute_naive_wrapper;
+use hf_core::monte_carlo::monte_carlo_data;
+use hf_core::parser::PreparationOutput;
+use hf_core::saddlepoint_approximation::normal_sa::{compute_leftover_probs, honing_sa_metric};
 use hf_core::state::StateBundle;
 
 use rand::prelude::*;
@@ -19,12 +20,13 @@ use std::path::Path;
 use std::time::Instant;
 
 static NUM_TESTS_TO_RUN: i64 = 10; // TODO this should be replaced by statistical tests like fishtest eventually
+static MONTE_CARLO_COUNT: usize = 1_000_000;
 type EvalFn = fn(&mut StateBundle, &mut PreparationOutput, &mut i64) -> f64;
 
 static METRICS: [(&str, EvalFn); 3] = [
-    ("SA", normal_honing_sa_wrapper),
+    ("SA", honing_sa_metric),
     ("Avg", average_gold_wrapper),
-    ("Brute", brute),
+    ("Brute", brute_naive_wrapper),
 ];
 
 #[derive(Debug, Serialize)]
@@ -125,7 +127,7 @@ fn main() {
                     continue;
                 }
                 let metric_type = metric_type_str.to_string();
-                let instant: Instant = Instant::now();
+                let mut instant: Instant = Instant::now();
                 let key = (prep_output.test_case, metric_type.clone());
                 if seen_tests.contains_key(&key) && seen_tests[&key] >= NUM_TESTS_TO_RUN {
                     continue;
@@ -150,9 +152,82 @@ fn main() {
                     seed,
                     time_finished: current_time_string(),
                     prob_leftover: compute_leftover_probs(prep_output, &mut state_bundle),
-                    metric_type,
+                    metric_type: metric_type.clone(),
                 };
 
+                instant = Instant::now();
+                if *trial_num == 1 {
+                    let (cost_data, juice_data) = monte_carlo_data(
+                        MONTE_CARLO_COUNT,
+                        &mut state_bundle,
+                        prep_output,
+                        &mut rng,
+                    );
+                    let mut success_count: i64 = 0;
+                    let mut average: f64 = 0.0;
+                    let mut leftover_counts: Vec<i64> =
+                        vec![0; 7 + prep_output.juice_info.one_gold_cost.len() * 2];
+                    for (r_index, row) in cost_data.iter().enumerate() {
+                        let float_row: Vec<f64> = row.iter().map(|x| *x as f64).collect();
+                        let float_juice: Vec<(f64, f64)> = juice_data[r_index]
+                            .iter()
+                            .map(|x| (x.0 as f64, x.1 as f64))
+                            .collect();
+                        let (mats_gold_leftover, juice_gold_leftover) =
+                            apply_price_leftovers(&float_row, &float_juice, prep_output);
+
+                        let (mats_gold_naive, juice_gold_naive) =
+                            apply_price_naive(&float_row, &float_juice, prep_output);
+                        let gold_eqv_naive: f64 = add_up_golds(&mats_gold_naive, &juice_gold_naive);
+                        if gold_eqv_naive > 0.0 {
+                            success_count += 1;
+                        }
+                        average += add_up_golds(&mats_gold_leftover, &juice_gold_leftover);
+
+                        let mut leftover_index: usize = 0;
+                        for (index, mat) in row.iter().enumerate() {
+                            if *mat < prep_output.budgets[index] {
+                                leftover_counts[leftover_index] += 1;
+                            }
+                            leftover_index += 1;
+                        }
+                        for (index, juice) in juice_data[r_index].iter().enumerate() {
+                            if juice.0 < prep_output.juice_books_owned[index].0 {
+                                leftover_counts[leftover_index] += 1;
+                            }
+                            leftover_index += 1;
+                        }
+                        for (index, juice) in juice_data[r_index].iter().enumerate() {
+                            if juice.1 < prep_output.juice_books_owned[index].1 {
+                                leftover_counts[leftover_index] += 1;
+                            }
+                            leftover_index += 1;
+                        }
+                    }
+
+                    let prob_leftover: Vec<f64> = leftover_counts
+                        .into_iter()
+                        .map(|x| x as f64 / MONTE_CARLO_COUNT as f64)
+                        .collect();
+                    let verification_output: Output = Output {
+                        test_case: prep_output.test_case,
+                        trial_num: 0,
+                        wall_time: instant.elapsed().as_secs_f64(),
+                        states_evaled: 1,
+                        best: if metric_type == "SA" || metric_type == "brute" {
+                            success_count as f64 / MONTE_CARLO_COUNT as f64
+                        } else {
+                            average / MONTE_CARLO_COUNT as f64
+                        },
+                        state: state_bundle.encode_all(),
+                        seed,
+                        time_finished: current_time_string(),
+                        prob_leftover,
+                        metric_type: "MC_".to_string() + &metric_type,
+                    };
+                    write_jsonl(&verification_output, &file_name)
+                        .expect("Failed to write to result file");
+                }
                 write_jsonl(&output, &file_name).expect("Failed to write to result file");
 
                 // if case already ran, skip it (maybe add a flag to rerun)

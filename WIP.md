@@ -5,11 +5,16 @@
 
 ### Now
 
-- juice chest opening simulation
-- ALSO JUICE CHESTS AND MAYBE EVEN BOOKS CHESTS
-  - binary search on the open split?
+- figure out what's the like optimal brute threshold
+
+- JUICE CHESTS AND MAYBE EVEN BOOKS CHESTS
+  - just a greedy algorithm based on the prices
 
 - continuity correction? maybe not needed?
+
+- force special state to respect upgrade order (no +16 before at least 1 +15)
+
+- why is warmstart theta not working hm
 
 ### Big
 
@@ -36,8 +41,7 @@ both: updatable clicks
 ### Energy
 
 - implement fft or something for medium sized complexity because lr kinda very bad
-  - (also use (and optimize) exact convolution for single piece(maybe 2))
--~~ add upgrade name to states when saving them,~~ maybe add some way to keep track of where bits are to make neighbor potentially more efficient
+  - maybe add some way to keep track of where bits are to make neighbor potentially more efficient
 - optimize special?
   - bundle the streaks together see if theres any optimization there
 
@@ -54,7 +58,6 @@ both: updatable clicks
 
 - elo or percentage deviation? idk need to do more research
 - how to visualize / interact with this data
-- monte carlo at the end to verify / sanity check / just to look at it (also can compute confidence interval with variance etc)
 
 ## Next big step(s)
 
@@ -100,6 +103,13 @@ graph
 
 ## Done / cancelled
 
+- ~~(also use (and optimize) exact convolution for single piece(maybe 2))~~
+- ~~ add upgrade name to states when saving them,~~
+- ~~ monte carlo at the end to verify / sanity check / just to look at it (also can compute confidence interval with variance etc)~~
+- ~~implement brute~~
+- ~~actually simulate special with monte carlo~~
+- ~~debug saddleponit approximation why does it tweak out some time~~
+- ~~ adjust theta bounds cos like sometimes its actually bigger than 1 i think~~
 - ~~implement average-optimizing evaluation(tiebreak with this when prob = 100 also maybe?),~~
   - ~~more precisely this minimizes what the "buy mats with gold" option is doing currently, as in the average gold needed (raw + spent on buying mats)~~
     - ~~plus the value of leftovers as specified~~
