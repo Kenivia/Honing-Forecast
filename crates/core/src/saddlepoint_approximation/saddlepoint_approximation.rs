@@ -152,6 +152,7 @@ where
         if dy == 0.0 {
             // let (y_min, _) = func(min);
             // let (y_max, _) = func(max);
+            dbg!(y, dy, theta);
             // this shouldn't happen no more
             return None;
             // return Some((
@@ -171,20 +172,18 @@ where
         let (mut new_y, mut new_dy);
         loop {
             (new_y, new_dy) = func(new_theta);
-            // dbg!(count, new_theta, new_y, new_dy);
+
             // If the error (magnitude of y) got worse, reduce step size
-            if new_y.abs() > y.abs() {
+            if new_y.abs() > y.abs() || new_dy == 0.0 {
                 damping_factor *= 0.5;
                 cur_delta = proposed_delta * damping_factor;
                 new_theta = theta + cur_delta;
 
                 if damping_factor < 1e-3 {
-                    // Fallback: Use gradient descent or simply take the tiny step
                     break;
                 }
             } else {
                 // The step is good, it reduced the error
-
                 break;
             }
         }
@@ -212,6 +211,7 @@ where
     let root = find_root(f_df, init_theta, -THETA_LIMIT, THETA_LIMIT, THETA_TOL, 20); // i mean its usually like 3 iters but idk 
     root
 }
+
 pub fn saddlepoint_approximation_wrapper(
     log_prob_dist_arr: &[Vec<f64>],
     prob_dist_arr: &[Vec<f64>],
@@ -221,15 +221,18 @@ pub fn saddlepoint_approximation_wrapper(
     budget: f64,
     init_theta: &mut f64,
 ) -> f64 {
-    if budget < min_value + FLOAT_TOL {
+    if budget < min_value - FLOAT_TOL {
         return 0.0;
     }
 
-    if budget > max_value - FLOAT_TOL {
+    if budget > max_value + FLOAT_TOL {
         return 1.0;
     }
+    if min_value == max_value {
+        return if min_value <= 0.0 { 1.0 } else { 0.0 };
+    }
 
-    if support_size_too_big(support_arr, MAX_BRUTE_SIZE) {
+    if support_size_too_big(support_arr, budget, MAX_BRUTE_SIZE) {
         return saddlepoint_approximation(
             log_prob_dist_arr,
             support_arr,
@@ -242,13 +245,14 @@ pub fn saddlepoint_approximation_wrapper(
         return brute_naive(prob_dist_arr, support_arr, budget);
     }
 }
-fn support_size_too_big(arr: &[Vec<f64>], max: usize) -> bool {
+fn support_size_too_big(arr: &[Vec<f64>], budget: f64, max: usize) -> bool {
     let mut out: usize = 0;
     for a in arr {
         if out == 0 {
             out = a.len();
         } else {
-            out *= a.len().max(1);
+            out *= a.iter().take_while(|x| **x <= budget).count().max(1);
+            // the hope is that if budget is very close to min_value then we will use brute, because that will break SA
             if out >= max {
                 return true;
             }
@@ -256,14 +260,54 @@ fn support_size_too_big(arr: &[Vec<f64>], max: usize) -> bool {
     }
     false
 }
+
+fn float_gcd(inp_a: f64, inp_b: f64) -> f64 {
+    let mut a = inp_a;
+    let mut b = inp_b;
+    while b > FLOAT_TOL {
+        (a, b) = (b, a % b);
+        if (b - a).abs() < FLOAT_TOL {
+            b = 0.0;
+        }
+    }
+    a
+}
+
+fn lattice_span(support_arr: &[Vec<f64>]) -> f64 {
+    let mut cur_span: f64 = 0.001;
+    let mut found_non_zeros: bool = false;
+
+    for s in support_arr.iter().flatten() {
+        if *s < FLOAT_TOL {
+            continue;
+        }
+        if !found_non_zeros {
+            cur_span = *s;
+            found_non_zeros = true;
+        } else {
+            cur_span = float_gcd(*s, cur_span);
+        }
+        if cur_span < 0.001 {
+            return 0.001; // always do a little bit of cont correction ig cos why not 
+        }
+    }
+    // if !cur_span.is_finite() || cur_span < 1.0 {
+    //     dbg!(cur_span);
+    //     panic!();
+    // }
+    cur_span
+}
 pub fn saddlepoint_approximation(
     log_prob_dist_arr: &[Vec<f64>],
     support_arr: &[Vec<f64>],
     min_value: f64,
     max_value: f64,
-    budget: f64,
+    inp_budget: f64,
     init_theta: &mut f64,
 ) -> f64 {
+    let h = lattice_span(support_arr);
+    let budget = (inp_budget / h).floor() * h + h / 2.0;
+    // dbg!(h);
     let f_df = |theta| {
         let mut ks_tuple = (0.0, 0.0, 0.0, 0.0, 0.0);
         ks_01234(
@@ -285,9 +329,13 @@ pub fn saddlepoint_approximation(
             max_value,
             log_prob_dist_arr
                 .iter()
+                .map(|x| x.iter().map(|y| y.exp()).sum::<f64>())
+                .collect::<Vec<f64>>(),
+            log_prob_dist_arr
+                .iter()
                 .map(|x| x.iter().map(|y| y.exp()).collect())
                 .collect::<Vec<Vec<f64>>>(),
-            support_arr,
+            support_arr
         );
     }
     let result = result_opt.unwrap();
@@ -303,11 +351,12 @@ pub fn saddlepoint_approximation(
             f_df(0.0),
             f_df(-1.0),
             f_df(-THETA_LIMIT),
-            result
+            result,
         );
     }
 
     let (theta_hat, last_theta) = result;
+
     *init_theta = theta_hat;
     let theta_error = (theta_hat - last_theta).abs();
     if DEBUG {
@@ -325,33 +374,53 @@ pub fn saddlepoint_approximation(
         &(true, true, true, true, true),
     );
 
-    let mut last_ks_tuple = (0.0, 0.0, 0.0, 0.0, 0.0);
-
-    ks_01234(
-        &log_prob_dist_arr,
-        &support_arr,
-        last_theta,
-        &mut last_ks_tuple,
-        &(true, false, true, false, false),
-    );
-
     let w = |t: f64, ks_inp: f64| t.signum() * (2.0 * (t * budget - ks_inp)).sqrt();
-    let u = |t: f64, ks2_inp: f64| t * ks2_inp.sqrt();
+    let u = |t: f64, ks2_inp: f64| 2.0 / h * (h * t / 2.0).sinh() * ks2_inp.sqrt(); // second continuity correction 
     let w_hat = w(theta_hat, ks_tuple.0);
     let u_hat = u(theta_hat, ks_tuple.2);
-    let w_last = w(last_theta, last_ks_tuple.0);
-    let u_last = u(last_theta, last_ks_tuple.2);
 
-    let mut out = normal_dist.cdf(w_hat) + normal_dist.pdf(w_hat) * (1.0 / w_hat - 1.0 / u_hat);
-    let old_out = normal_dist.cdf(w_last) + normal_dist.pdf(w_last) * (1.0 / w_last - 1.0 / u_last);
-    let error = (out - old_out).abs();
-    if DEBUG {
-        dbg!(w_hat, u_hat, w_last, u_last, error, out, old_out);
+    let mut error: f64 = 0.0;
+    let sa_out: f64 = normal_dist.cdf(w_hat) + normal_dist.pdf(w_hat) * (1.0 / w_hat - 1.0 / u_hat);
+    if theta_hat.abs() < THETA_TOL * 100.0 || theta_error / theta_hat < 0.01 {
+        // this theta error / theta hat checkshould only trigger when newton fails after 20 cycles
+        let mut last_ks_tuple = (0.0, 0.0, 0.0, 0.0, 0.0);
+
+        ks_01234(
+            &log_prob_dist_arr,
+            &support_arr,
+            last_theta,
+            &mut last_ks_tuple,
+            &(true, false, true, false, false),
+        );
+
+        let w_last = w(last_theta, last_ks_tuple.0);
+        let u_last = u(last_theta, last_ks_tuple.2);
+
+        let old_out =
+            normal_dist.cdf(w_last) + normal_dist.pdf(w_last) * (1.0 / w_last - 1.0 / u_last);
+        error = (sa_out - old_out).abs();
     }
-    //  ~ 1% raw error in the end, hopefully edgeworth can do better
-    // this is supposedly caused by a very small theta but instead of checking for small theta we check for large error,
-    // maybe change this later to only check error when theta is small TODO
-    if error > 1e-2 || !error.is_finite() || out < 0.0 || out > 1.0 || !out.is_finite() {
+
+    // if !error.is_finite() || !out.is_finite() {
+    //     dbg!(
+    //         theta_hat,
+    //         theta_error,
+    //         w_hat,
+    //         u_hat,
+    //         w_last,
+    //         u_last,
+    //         error,
+    //         out,
+    //         old_out
+    //     );
+    // }
+    // //  > 1% raw error in the end, hopefully edgeworth can do better
+    // // this is supposedly caused by a very small theta but instead of checking for small theta we check for large error,
+    // // maybe change this later to only check error when theta is small TODO
+    // else {
+    let mut approx: f64 = -6.9;
+    let mut actual_out = sa_out;
+    if error > 1e-2 || !error.is_finite() {
         let std = ks_tuple.2.sqrt();
         let z = (budget - ks_tuple.1) / std;
 
@@ -367,9 +436,10 @@ pub fn saddlepoint_approximation(
                 + (gamma4 / 24.0) * (z * z * z - 3.0 * z)
                 + (gamma3 * gamma3 / 72.0) * (z * z * z * z * z - 10.0 * z * z * z + 15.0 * z));
 
-        let approx = cdf - cdf_correction;
+        approx = cdf - cdf_correction;
         if DEBUG || approx < 0.0 || approx > 1.0 {
             dbg!(
+                error,
                 budget - ks_tuple.1,
                 z,
                 std,
@@ -381,10 +451,10 @@ pub fn saddlepoint_approximation(
                 approx
             );
         }
-        out = approx;
+        actual_out = approx;
     }
 
-    if DEBUG || out < 0.0 || out > 1.0 || !out.is_finite() {
+    if DEBUG || actual_out < 0.0 || actual_out > 1.0 || !actual_out.is_finite() {
         dbg!(
             f_df(THETA_LIMIT),
             f_df(1.0),
@@ -393,7 +463,18 @@ pub fn saddlepoint_approximation(
             f_df(-THETA_LIMIT),
         );
         dbg!(theta_hat, theta_error);
-        dbg!(w_hat, u_hat, w_last, u_last, error, out, old_out);
+        dbg!(w_hat, u_hat, error, sa_out);
+        dbg!(
+            log_prob_dist_arr
+                .iter()
+                .map(|x| x.iter().map(|y| y.exp()).sum::<f64>())
+                .collect::<Vec<f64>>(),
+            log_prob_dist_arr
+                .iter()
+                .map(|x| x.iter().map(|y| y.exp()).collect())
+                .collect::<Vec<Vec<f64>>>(),
+            support_arr
+        );
         dbg!(
             theta_hat,
             ks_tuple,
@@ -406,21 +487,18 @@ pub fn saddlepoint_approximation(
             normal_dist.cdf(w_hat),
             normal_dist.pdf(w_hat),
             1.0 / w_hat - 1.0 / u_hat,
-            budget,
             min_value,
+            budget,
             max_value,
-            log_prob_dist_arr
-                .iter()
-                .map(|x| x.iter().map(|y| y.exp()).collect())
-                .collect::<Vec<Vec<f64>>>(),
-            support_arr,
-            out
+            sa_out,
+            approx,
+            actual_out
         );
         println!("==============================");
         panic!();
     }
 
-    out.max(0.0).min(1.0) // head in the sand
+    actual_out.max(0.0).min(1.0) // head in the sand
 }
 
 // #[cfg(test)]

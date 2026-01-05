@@ -5,16 +5,21 @@
 
 ### Now
 
+- figure out why MC agrees like half the time but not half the other times
+
+- normalize average metric's interaction with acceptance
+
+### Later
+
 - figure out what's the like optimal brute threshold
 
 - JUICE CHESTS AND MAYBE EVEN BOOKS CHESTS
   - just a greedy algorithm based on the prices
 
-- continuity correction? maybe not needed?
-
 - force special state to respect upgrade order (no +16 before at least 1 +15)
-
-- why is warmstart theta not working hm
+  - need to store helmet/whatever informaiton in Upgrade,
+    - get rid of non-tick input i guess?
+  - also maybe get rid of the count in special state? just the order? (and maybe incorporate normal honing order?)
 
 ### Big
 
@@ -33,15 +38,17 @@
   - Prob maximizing mode / main mode:
     - input: market price, owned budget
     - output: juice advice, new prob(old prob)
+  - need to figure out how the ui is gonna look like
 
-both: updatable clicks
+  - both: updatable clicks
 
 - add assertions to a lot of prepoutput stuff
+  
+- SURELY there's a better way to lay out juiceinfo...
 
 ### Energy
 
-- implement fft or something for medium sized complexity because lr kinda very bad
-  - maybe add some way to keep track of where bits are to make neighbor potentially more efficient
+- maybe add some way to keep track of where bits are to make neighbor potentially more efficient
 - optimize special?
   - bundle the streaks together see if theres any optimization there
 
@@ -103,6 +110,10 @@ graph
 
 ## Done / cancelled
 
+- ~~continuity correction? maybe not needed?~~
+- ~~why is warmstart theta not working hm~~
+  - ~~theta can be VERY small because budget can be VERY big -> almost all edgeworth~~
+- ~~implement fft or something for medium sized complexity because lr kinda very bad~~
 - ~~(also use (and optimize) exact convolution for single piece(maybe 2))~~
 - ~~ add upgrade name to states when saving them,~~
 - ~~ monte carlo at the end to verify / sanity check / just to look at it (also can compute confidence interval with variance etc)~~

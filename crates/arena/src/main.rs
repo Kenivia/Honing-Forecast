@@ -1,11 +1,9 @@
 use chrono::Local;
 use hf_arena::engine::{NOTES, solve};
 use hf_arena::parse_test_cases::parse_csv;
-use hf_core::average::{
-    add_up_golds, apply_price_leftovers, apply_price_naive, average_gold_wrapper,
-};
+use hf_core::average::average_gold_wrapper;
 use hf_core::brute::brute_naive_wrapper;
-use hf_core::monte_carlo::monte_carlo_data;
+use hf_core::monte_carlo::monte_carlo_wrapper;
 use hf_core::parser::PreparationOutput;
 use hf_core::saddlepoint_approximation::normal_sa::{compute_leftover_probs, honing_sa_metric};
 use hf_core::state::StateBundle;
@@ -102,7 +100,7 @@ fn main() {
                 .or_insert(0) += 1;
         }
     }
-    dbg!(&seen_tests);
+    // dbg!(&seen_tests);
     if !at_least_one_line {
         if Path::new(&file_name).exists() {
             remove_file(&file_name).expect("Failed to delete empty file");
@@ -118,7 +116,7 @@ fn main() {
     let mut seed_rng: ThreadRng = rand::rng();
 
     let mut test_cases: Vec<(PreparationOutput, Vec<bool>)> =
-        parse_csv(Path::new("bloated_test_cases.csv"));
+        parse_csv(Path::new("test_cases.csv")); // bloated_
 
     for _ in 0..NUM_TESTS_TO_RUN {
         for (prep_output, tests_to_run) in test_cases.iter_mut() {
@@ -135,13 +133,13 @@ fn main() {
                 let seed: u64 = seed_rng.next_u64();
                 let mut rng: StdRng = StdRng::seed_from_u64(seed);
                 let mut states_evaled: i64 = 0;
-                println!("Test case {:?}", key);
 
+                let trial_num = seen_tests.entry(key.clone()).or_insert(0);
+                *trial_num += 1;
+                println!("Test case {:?} trial {}", key, trial_num);
                 let mut state_bundle: StateBundle =
                     solve(prep_output, &mut rng, &mut states_evaled, metric_function);
 
-                let trial_num = seen_tests.entry(key).or_insert(0);
-                *trial_num += 1;
                 let output: Output = Output {
                     test_case: prep_output.test_case,
                     trial_num: *trial_num,
@@ -157,67 +155,21 @@ fn main() {
 
                 instant = Instant::now();
                 if *trial_num == 1 {
-                    let (cost_data, juice_data) = monte_carlo_data(
+                    let (prob_leftover, success_rate, average_rate) = monte_carlo_wrapper(
                         MONTE_CARLO_COUNT,
                         &mut state_bundle,
                         prep_output,
                         &mut rng,
                     );
-                    let mut success_count: i64 = 0;
-                    let mut average: f64 = 0.0;
-                    let mut leftover_counts: Vec<i64> =
-                        vec![0; 7 + prep_output.juice_info.one_gold_cost.len() * 2];
-                    for (r_index, row) in cost_data.iter().enumerate() {
-                        let float_row: Vec<f64> = row.iter().map(|x| *x as f64).collect();
-                        let float_juice: Vec<(f64, f64)> = juice_data[r_index]
-                            .iter()
-                            .map(|x| (x.0 as f64, x.1 as f64))
-                            .collect();
-                        let (mats_gold_leftover, juice_gold_leftover) =
-                            apply_price_leftovers(&float_row, &float_juice, prep_output);
-
-                        let (mats_gold_naive, juice_gold_naive) =
-                            apply_price_naive(&float_row, &float_juice, prep_output);
-                        let gold_eqv_naive: f64 = add_up_golds(&mats_gold_naive, &juice_gold_naive);
-                        if gold_eqv_naive > 0.0 {
-                            success_count += 1;
-                        }
-                        average += add_up_golds(&mats_gold_leftover, &juice_gold_leftover);
-
-                        let mut leftover_index: usize = 0;
-                        for (index, mat) in row.iter().enumerate() {
-                            if *mat < prep_output.budgets[index] {
-                                leftover_counts[leftover_index] += 1;
-                            }
-                            leftover_index += 1;
-                        }
-                        for (index, juice) in juice_data[r_index].iter().enumerate() {
-                            if juice.0 < prep_output.juice_books_owned[index].0 {
-                                leftover_counts[leftover_index] += 1;
-                            }
-                            leftover_index += 1;
-                        }
-                        for (index, juice) in juice_data[r_index].iter().enumerate() {
-                            if juice.1 < prep_output.juice_books_owned[index].1 {
-                                leftover_counts[leftover_index] += 1;
-                            }
-                            leftover_index += 1;
-                        }
-                    }
-
-                    let prob_leftover: Vec<f64> = leftover_counts
-                        .into_iter()
-                        .map(|x| x as f64 / MONTE_CARLO_COUNT as f64)
-                        .collect();
                     let verification_output: Output = Output {
                         test_case: prep_output.test_case,
                         trial_num: 0,
                         wall_time: instant.elapsed().as_secs_f64(),
                         states_evaled: 1,
                         best: if metric_type == "SA" || metric_type == "brute" {
-                            success_count as f64 / MONTE_CARLO_COUNT as f64
+                            success_rate
                         } else {
-                            average / MONTE_CARLO_COUNT as f64
+                            average_rate
                         },
                         state: state_bundle.encode_all(),
                         seed,

@@ -187,7 +187,7 @@ pub fn solve<R: Rng, F>(
     prep_output: &mut PreparationOutput,
     rng: &mut R,
     states_evaled: &mut i64,
-    mut metric: F,
+    mut metric: F, // note that we're always trying to maximize this metric which is why i'm not calling it energy
 ) -> StateBundle
 where
     F: FnMut(&mut StateBundle, &mut PreparationOutput, &mut i64) -> f64,
@@ -231,7 +231,7 @@ where
 
     let iterations_per_temp = 69;
     // let mut temperature_level_k = 0;
-    let mut count: i32 = 0;
+    let mut count: i64 = 0;
     let alpha: f64 = 0.99;
 
     let mut best_state_so_far: StateBundle = state_bundle.clone();
@@ -274,8 +274,8 @@ where
             // println!(
             //     "Temp: {:.6} Prob: {:.6} Best prob: {:.6}",
             //     temp,
-            //     (prev_prob * 100.0),
-            //     (best_prob_so_far * 100.0),
+            //     prev_state.metric,
+            //     (best_state_so_far.metric),
             //     // prob_to_maximize_exact(
             //     //     &best_state_so_far,
             //     //     &mut prep_output.upgrade_arr,
@@ -300,8 +300,8 @@ where
     // println!(
     //     "Temp: {} Prob: {} State (Final): \n{} ",
     //     temp.to_string(),
-    //     (best_state_so_far.prob * 100.0).to_string(),
-    //     encode_all(&best_state_so_far)
+    //     (best_state_so_far.metric).to_string(),
+    //     best_state_so_far.encode_all(),
     // );
 
     // println!(

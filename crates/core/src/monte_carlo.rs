@@ -1,3 +1,4 @@
+use crate::average::{add_up_golds, apply_price_leftovers, apply_price_naive};
 use crate::parser::PreparationOutput;
 use crate::parser::Upgrade;
 use crate::saddlepoint_approximation::normal_sa::init_dist;
@@ -134,12 +135,10 @@ pub fn monte_carlo_data<R: Rng>(
 
             let attempts_specified = *juice as i64;
             let max_affordable_attempts = (*this_special_left / upgrade.special_cost).max(0);
-            if max_affordable_attempts >= 1 && attempts_specified > 0 {
-                let taps_rolled = sample_truncated_geometric(
-                    upgrade.base_chance,
-                    max_affordable_attempts + 1,
-                    rng,
-                ) + 1;
+            if max_affordable_attempts > 0 && attempts_specified > 0 {
+                let taps_rolled =
+                    sample_truncated_geometric(upgrade.base_chance, max_affordable_attempts, rng)
+                        + 1;
                 *this_special_left -= taps_rolled.min(attempts_specified) * upgrade.special_cost;
                 if taps_rolled <= max_affordable_attempts.min(attempts_specified) {
                     continue;
@@ -166,6 +165,66 @@ pub fn monte_carlo_data<R: Rng>(
     }
 
     (mats_data, juice_data)
+}
+
+pub fn monte_carlo_wrapper<R: Rng>(
+    data_size: usize,
+    state_bundle: &mut StateBundle,
+    prep_output: &mut PreparationOutput,
+    rng: &mut R,
+) -> (Vec<f64>, f64, f64) {
+    let (cost_data, juice_data) = monte_carlo_data(data_size, state_bundle, prep_output, rng);
+    let mut success_count: i64 = 0;
+    let mut average: f64 = 0.0;
+    let mut leftover_counts: Vec<i64> = vec![0; 7 + prep_output.juice_info.one_gold_cost.len() * 2];
+    for (r_index, row) in cost_data.iter().enumerate() {
+        let float_row: Vec<f64> = row.iter().map(|x| *x as f64).collect();
+        let float_juice: Vec<(f64, f64)> = juice_data[r_index]
+            .iter()
+            .map(|x| (x.0 as f64, x.1 as f64))
+            .collect();
+        let (mats_gold_leftover, juice_gold_leftover) =
+            apply_price_leftovers(&float_row, &float_juice, prep_output);
+
+        let (mats_gold_naive, juice_gold_naive) =
+            apply_price_naive(&float_row, &float_juice, prep_output);
+        let gold_eqv_naive: f64 = add_up_golds(&mats_gold_naive, &juice_gold_naive);
+        if gold_eqv_naive >= 0.0 {
+            success_count += 1;
+        }
+        average += add_up_golds(&mats_gold_leftover, &juice_gold_leftover);
+
+        let mut leftover_index: usize = 0;
+        for (index, mat) in row.iter().enumerate() {
+            if *mat < prep_output.budgets[index] {
+                leftover_counts[leftover_index] += 1;
+            }
+            leftover_index += 1;
+        }
+        for (index, juice) in juice_data[r_index].iter().enumerate() {
+            if juice.0 < prep_output.juice_books_owned[index].0 {
+                leftover_counts[leftover_index] += 1;
+            }
+            leftover_index += 1;
+        }
+        for (index, juice) in juice_data[r_index].iter().enumerate() {
+            if juice.1 < prep_output.juice_books_owned[index].1 {
+                leftover_counts[leftover_index] += 1;
+            }
+            leftover_index += 1;
+        }
+    }
+
+    let prob_leftover: Vec<f64> = leftover_counts
+        .into_iter()
+        .map(|x| x as f64 / data_size as f64)
+        .collect();
+
+    (
+        prob_leftover,
+        success_count as f64 / data_size as f64,
+        average / data_size as f64,
+    )
 }
 
 // pub fn monte_carlo_one<R: Rng>(
