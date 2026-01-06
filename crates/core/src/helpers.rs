@@ -148,7 +148,7 @@ pub fn transpose_vec_of_vecs(matrix: &[[i64; 9]]) -> Vec<Vec<i64>> {
     transposed
 }
 
-pub fn sort_by_indices<T>(upgrade_arr: &mut Vec<T>, mut indices: Vec<usize>) {
+pub fn sort_by_indices<T>(upgrade_arr: &mut [T], mut indices: Vec<usize>) {
     for idx in 0..upgrade_arr.len() {
         if indices[idx] != idx {
             let mut current_idx: usize = idx;

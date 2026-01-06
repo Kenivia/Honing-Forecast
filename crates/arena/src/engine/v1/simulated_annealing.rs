@@ -73,102 +73,88 @@ fn neighbour<R: Rng>(
     init_temp: f64,
     rng: &mut R,
 ) {
-    let want_to_swap: usize = my_weighted_rand(
-        state_bundle.special_state.len(),
-        temp / 2.0,
-        init_temp,
-        1,
-        0.8,
-        rng,
-    );
-    for _ in 0..want_to_swap {
-        let want_to_swap_indices: Vec<usize> =
-            (0..state_bundle.special_state.len()).choose_multiple(rng, 2);
-        let first = want_to_swap_indices[0];
-        let second = want_to_swap_indices[1];
-        let temp = state_bundle.special_state[first].0;
-        state_bundle.special_state[first].0 = state_bundle.special_state[second].0;
-        state_bundle.special_state[second].0 = temp;
+    if state_bundle.special_state.len() > 1 {
+        let want_to_swap: usize = my_weighted_rand(
+            state_bundle.special_state.len(),
+            temp / 2.0,
+            init_temp,
+            1,
+            0.8,
+            rng,
+        );
+        for _ in 0..want_to_swap {
+            let want_to_swap_indices: Vec<usize> =
+                (0..state_bundle.special_state.len()).choose_multiple(rng, 2);
+            let first = want_to_swap_indices[0];
+            let second = want_to_swap_indices[1];
+            let temp = state_bundle.special_state[first];
+            state_bundle.special_state[first] = state_bundle.special_state[second];
+            state_bundle.special_state[second] = temp;
+        }
     }
 
-    if rng.random_bool(0.5) {
-        for (u_index, repeat_count) in state_bundle.special_state.iter_mut() {
-            let max = (*repeat_count + 10)
-                .max((1.5_f64 / prep_output.upgrade_arr[*u_index].base_chance).round() as usize);
-            *repeat_count = my_weighted_rand(
-                max,
-                *repeat_count as f64,
-                max as f64,
-                1,
-                (temp / init_temp).max(0.8),
-                rng,
-            );
-        }
-    } else {
-        for (u_index, state) in state_bundle.state.iter_mut().enumerate() {
-            let upgrade = &prep_output.upgrade_arr[u_index];
-            let choice_len: usize = upgrade.books_avail as usize;
+    for (u_index, state) in state_bundle.state.iter_mut().enumerate() {
+        let upgrade = &prep_output.upgrade_arr[u_index];
+        let choice_len: usize = upgrade.books_avail as usize;
 
-            let want_to_flip: usize = my_weighted_rand(state.len(), temp, init_temp, 1, 0.8, rng);
+        let want_to_flip: usize = my_weighted_rand(state.len(), temp, init_temp, 1, 0.8, rng);
 
-            let want_to_book: usize = my_weighted_rand(state.len(), temp, init_temp, 1, 0.8, rng);
+        let want_to_book: usize = my_weighted_rand(state.len(), temp, init_temp, 1, 0.8, rng);
 
-            let flip_target = rng.random_bool(0.5);
+        let flip_target = rng.random_bool(0.5);
 
-            // dbg!(want_to_flip);
-            let mut want_to_flip_indices: Vec<usize> =
-                (1..state.len() - 1).choose_multiple(rng, want_to_flip);
-            want_to_flip_indices.sort();
-            let mut flipped_index: usize = 0;
+        // dbg!(want_to_flip);
+        let mut want_to_flip_indices: Vec<usize> =
+            (1..state.len() - 1).choose_multiple(rng, want_to_flip);
+        want_to_flip_indices.sort();
+        let mut flipped_index: usize = 0;
 
-            let book_target: usize = rng.random_range(0..=choice_len);
-            let mut want_to_book_indices: Vec<usize> =
-                (1..state.len() - 1).choose_multiple(rng, want_to_book);
-            want_to_book_indices.sort();
-            let mut booked_index: usize = 0;
+        let book_target: usize = rng.random_range(0..=choice_len);
+        let mut want_to_book_indices: Vec<usize> =
+            (1..state.len() - 1).choose_multiple(rng, want_to_book);
+        want_to_book_indices.sort();
+        let mut booked_index: usize = 0;
 
-            let mut artisan: f64 = 0.0;
-            for (s_index, (juice, book_index)) in state.iter_mut().enumerate() {
-                if artisan >= 1.0 || s_index == 0 {
-                    (*juice, *book_index) = (false, 0);
-                    continue;
-                }
-                if flipped_index < want_to_flip_indices.len()
-                    && s_index == want_to_flip_indices[flipped_index]
-                {
-                    if *juice != flip_target {
-                        flipped_index += 1;
-                        *juice = flip_target;
-                    } else {
-                        want_to_flip_indices[flipped_index] = s_index + 1;
-                    }
-                }
-
-                if booked_index < want_to_book_indices.len()
-                    && s_index == want_to_book_indices[booked_index]
-                {
-                    if *book_index != book_target {
-                        booked_index += 1;
-                        *book_index = book_target;
-                    } else {
-                        want_to_book_indices[booked_index] = s_index + 1;
-                    }
-                }
-                artisan += (46.51_f64 / 100.0)
-                    * upgrade.artisan_rate
-                    * (upgrade.base_chance
-                        + if *juice {
-                            prep_output.juice_info.chances[upgrade.upgrade_index][0]
-                        } else {
-                            0.0
-                        }
-                        + if *book_index > 0 {
-                            prep_output.juice_info.chances[upgrade.upgrade_index]
-                                [*book_index as usize]
-                        } else {
-                            0.0
-                        });
+        let mut artisan: f64 = 0.0;
+        for (s_index, (juice, book_index)) in state.iter_mut().enumerate() {
+            if artisan >= 1.0 || s_index == 0 {
+                (*juice, *book_index) = (false, 0);
+                continue;
             }
+            if flipped_index < want_to_flip_indices.len()
+                && s_index == want_to_flip_indices[flipped_index]
+            {
+                if *juice != flip_target {
+                    flipped_index += 1;
+                    *juice = flip_target;
+                } else {
+                    want_to_flip_indices[flipped_index] = s_index + 1;
+                }
+            }
+
+            if booked_index < want_to_book_indices.len()
+                && s_index == want_to_book_indices[booked_index]
+            {
+                if *book_index != book_target {
+                    booked_index += 1;
+                    *book_index = book_target;
+                } else {
+                    want_to_book_indices[booked_index] = s_index + 1;
+                }
+            }
+            artisan += (46.51_f64 / 100.0)
+                * upgrade.artisan_rate
+                * (upgrade.base_chance
+                    + if *juice {
+                        prep_output.juice_info.chances[upgrade.upgrade_index][0]
+                    } else {
+                        0.0
+                    }
+                    + if *book_index > 0 {
+                        prep_output.juice_info.chances[upgrade.upgrade_index][*book_index as usize]
+                    } else {
+                        0.0
+                    });
         }
     }
 }
@@ -196,13 +182,12 @@ where
     // let mut cache: HashMap<(Vec<bool>, usize), Vec<([i64; 9], f64)>> = HashMap::new();
     let mut temp: f64 = init_temp;
     let mut state: Vec<Vec<(bool, usize)>> = Vec::with_capacity(prep_output.upgrade_arr.len());
-    let mut starting_special: Vec<(usize, usize)> =
-        Vec::with_capacity(prep_output.upgrade_arr.len() * 2);
+    let mut starting_special: Vec<usize> = Vec::with_capacity(prep_output.upgrade_arr.len() * 2);
     for (index, upgrade) in prep_output.upgrade_arr.iter().enumerate() {
         // state.push(vec![rng.random_bool(0.5); upgrade.support_lengths[0]]);
         state.push(vec![(false, 0); upgrade.original_prob_dist.len()]);
 
-        starting_special.push((index, (1.0 / upgrade.base_chance).round() as usize));
+        starting_special.push(index); //, (1.0 / upgrade.base_chance).round() as usize));
     }
 
     let mut state_bundle: StateBundle = StateBundle {

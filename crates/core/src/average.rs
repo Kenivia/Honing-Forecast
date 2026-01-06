@@ -1,7 +1,8 @@
-use crate::parser::PreparationOutput;
+use crate::parser::{PreparationOutput, Upgrade};
 use crate::saddlepoint_approximation::normal_sa::init_dist;
-
+use crate::saddlepoint_approximation::special_sa::special_probs;
 use crate::state::StateBundle;
+
 pub fn average_gold_wrapper(
     state_bundle: &mut StateBundle,
     prep_output: &mut PreparationOutput,
@@ -85,41 +86,76 @@ pub fn individual_averages(
     state_bundle: &mut StateBundle,
     prep_output: &mut PreparationOutput,
 ) -> (Vec<f64>, Vec<(f64, f64)>) {
-    let mut avg_mats: Vec<f64> = vec![0.0; 7];
-    let mut avg_juices: Vec<(f64, f64)> =
-        vec![(0.0, 0.0); prep_output.juice_info.amt_used_id.len()];
+    let mut avg_mats = vec![0.0; 7];
+    let mut avg_juices = vec![(0.0, 0.0); prep_output.juice_info.amt_used_id.len()];
 
     avg_mats[3] += prep_output.unlock_costs[0] as f64;
     avg_mats[6] += prep_output.unlock_costs[1] as f64;
 
-    for (u_index, upgrade) in prep_output.upgrade_arr.iter_mut().enumerate() {
-        let mut mats_so_far: Vec<f64> = vec![0.0; 7];
-        let mut juice_so_far: Vec<f64> = vec![0.0; prep_output.juice_info.amt_used_id.len()];
+    let mut upgrade_expectations: Vec<(Vec<f64>, Vec<(f64, f64)>)> =
+        Vec::with_capacity(prep_output.upgrade_arr.len());
+    for (u_index, upgrade) in prep_output.upgrade_arr.iter().enumerate() {
+        let exp = expected_contribution(upgrade, &state_bundle.state[u_index], prep_output);
+        upgrade_expectations.push(exp);
+    }
 
-        for (p_index, p) in upgrade.prob_dist.iter().enumerate() {
-            let (juice, book_index) = state_bundle.state[u_index][p_index];
-            for (index, avg_mat) in avg_mats.iter_mut().enumerate() {
-                *avg_mat += p * mats_so_far[index];
-                mats_so_far[index] += upgrade.costs[index] as f64;
+    for (k, &special_prob) in special_probs(prep_output, state_bundle).iter().enumerate() {
+        if k > 0 && special_prob < 1e-7 {
+            break;
+        }
+
+        for &u_index in state_bundle.special_state.iter().skip(k) {
+            let (mats_u, juices_u) = &upgrade_expectations[u_index];
+
+            for i in 0..7 {
+                avg_mats[i] += special_prob * mats_u[i];
             }
 
-            for (id, (avg_weap, avg_armor)) in avg_juices.iter_mut().enumerate() {
-                if upgrade.is_weapon {
-                    *avg_weap += p * juice_so_far[id];
-                } else {
-                    *avg_armor += p * juice_so_far[id];
-                }
-                let juice_amt =
-                    prep_output.juice_info.amt_used_id[id][upgrade.upgrade_index] as f64;
-                if id == 0 && juice {
-                    juice_so_far[id] += juice_amt;
-                } else if id > 0
-                    && prep_output.juice_info.ids[upgrade.upgrade_index][book_index] == id
-                {
-                    juice_so_far[id] += juice_amt;
-                }
+            for j in 0..avg_juices.len() {
+                avg_juices[j].0 += special_prob * juices_u[j].0;
+                avg_juices[j].1 += special_prob * juices_u[j].1;
             }
         }
     }
+
     (avg_mats, avg_juices)
+}
+fn expected_contribution(
+    upgrade: &Upgrade,
+    state_row: &[(bool, usize)],
+    prep_output: &PreparationOutput,
+) -> (Vec<f64>, Vec<(f64, f64)>) {
+    let mut exp_mats = vec![0.0; 7];
+    let mut exp_juices = vec![(0.0, 0.0); prep_output.juice_info.amt_used_id.len()];
+
+    let mut mats_so_far = vec![0.0; 7];
+    let mut juice_so_far = vec![0.0; prep_output.juice_info.amt_used_id.len()];
+
+    for (p_index, &p) in upgrade.prob_dist.iter().enumerate() {
+        let (juice, book_index) = state_row[p_index];
+
+        for i in 0..7 {
+            exp_mats[i] += p * mats_so_far[i];
+            mats_so_far[i] += upgrade.costs[i] as f64;
+        }
+
+        for id in 0..exp_juices.len() {
+            if upgrade.is_weapon {
+                exp_juices[id].0 += p * juice_so_far[id];
+            } else {
+                exp_juices[id].1 += p * juice_so_far[id];
+            }
+
+            let juice_amt = prep_output.juice_info.amt_used_id[id][upgrade.upgrade_index] as f64;
+
+            if id == 0 && juice {
+                juice_so_far[id] += juice_amt;
+            } else if id > 0 && prep_output.juice_info.ids[upgrade.upgrade_index][book_index] == id
+            {
+                juice_so_far[id] += juice_amt;
+            }
+        }
+    }
+
+    (exp_mats, exp_juices)
 }

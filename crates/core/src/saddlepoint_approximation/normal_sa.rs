@@ -1,12 +1,12 @@
 use super::saddlepoint_approximation::saddlepoint_approximation_wrapper;
 use crate::constants::JuiceInfo;
-use crate::helpers::find_non_zero_min_prep;
+use crate::helpers::find_non_zero_min_vec;
+use crate::helpers::sort_by_indices;
 use crate::parser::PreparationOutput;
 use crate::parser::Upgrade;
 use crate::parser::probability_distribution;
 use crate::saddlepoint_approximation::special_sa::special_probs;
 use crate::state::StateBundle;
-
 fn add_juice_gold_cost(
     juice_info: &JuiceInfo,
     upgrade: &Upgrade,
@@ -130,25 +130,28 @@ pub fn compute_leftover_probs(
 ) -> Vec<f64> {
     init_dist(state_bundle, prep_output);
 
-    let (mats_costs, weap_juices_costs, armor_juices_costs) =
+    let (mut mats_costs, mut weap_juices_costs, mut armor_juices_costs) =
         generate_individual(prep_output, &state_bundle);
     let mut prob_leftover: Vec<f64> = Vec::new();
-    for (t_index, support_arr) in mats_costs.iter().enumerate() {
+    for (t_index, support_arr) in mats_costs.iter_mut().enumerate() {
         prob_leftover.push(honing_sa_wrapper(
+            state_bundle,
             prep_output,
             support_arr,
             prep_output.budgets[t_index] as f64,
         ));
     }
-    for (t_index, support_arr) in weap_juices_costs.iter().enumerate() {
+    for (t_index, support_arr) in weap_juices_costs.iter_mut().enumerate() {
         prob_leftover.push(honing_sa_wrapper(
+            state_bundle,
             prep_output,
             support_arr,
             prep_output.juice_books_owned[t_index].0 as f64,
         ));
     }
-    for (t_index, support_arr) in armor_juices_costs.iter().enumerate() {
+    for (t_index, support_arr) in armor_juices_costs.iter_mut().enumerate() {
         prob_leftover.push(honing_sa_wrapper(
+            state_bundle,
             prep_output,
             support_arr,
             prep_output.juice_books_owned[t_index].1 as f64,
@@ -196,14 +199,14 @@ pub fn new_prob_dist(
 
 pub fn init_dist(state_bundle: &mut StateBundle, prep_output: &mut PreparationOutput) {
     // dbg!(&prep_output, &state_bundle);
-    let zero_probs: Vec<f64> = special_probs(prep_output, state_bundle);
+    // let zero_probs: Vec<f64> = special_probs(prep_output, state_bundle);
     // dbg!(&zero_probs);
     for (u_index, upgrade) in prep_output.upgrade_arr.iter_mut().enumerate() {
         let prob_dist: Vec<f64> = new_prob_dist(
             &state_bundle.state[u_index],
             &prep_output.juice_info,
             upgrade,
-            zero_probs[u_index],
+            0.0,
         );
         let log_prob_dist: Vec<f64> = prob_dist.iter().map(|x| x.ln()).collect();
         upgrade.prob_dist = prob_dist;
@@ -214,98 +217,51 @@ pub fn init_dist(state_bundle: &mut StateBundle, prep_output: &mut PreparationOu
 }
 
 fn honing_sa_wrapper(
+    state_bundle: &mut StateBundle,
     prep_output: &mut PreparationOutput,
-    support_arr: &[Vec<f64>],
+    mut support_arr: &mut [Vec<f64>],
     budget: f64,
 ) -> f64 {
-    let (log_prob_dist_arr, prob_dist_arr) = prep_output.gather_dists();
-    saddlepoint_approximation_wrapper(
-        &log_prob_dist_arr,
-        &prob_dist_arr,
-        support_arr,
-        find_non_zero_min_prep(support_arr, prep_output),
-        support_arr.iter().map(|x| x.last().unwrap()).sum(),
-        budget,
-        &mut 0.0,
-    )
+    let mut out: f64 = 0.0;
+
+    let (mut log_prob_dist_arr, mut prob_dist_arr) = prep_output.gather_dists();
+    sort_by_indices(&mut log_prob_dist_arr, state_bundle.special_state.clone());
+    sort_by_indices(&mut prob_dist_arr, state_bundle.special_state.clone());
+    sort_by_indices(&mut support_arr, state_bundle.special_state.clone());
+    for (index, prob) in special_probs(prep_output, state_bundle).iter().enumerate() {
+        if index > 0 && *prob < 1e-7 {
+            break;
+        }
+        // dbg!(&support_arr[index..]);
+        let this_prob: f64 = saddlepoint_approximation_wrapper(
+            &log_prob_dist_arr[index..],
+            &prob_dist_arr[index..],
+            &support_arr[index..],
+            find_non_zero_min_vec(&support_arr[index..], &log_prob_dist_arr[index..]),
+            support_arr[index..].iter().map(|x| x.last().unwrap()).sum(),
+            budget,
+            &mut 0.0,
+        );
+
+        out += *prob * this_prob;
+    }
+
+    out
 }
 pub fn honing_sa_metric(
     state_bundle: &mut StateBundle,
     prep_output: &mut PreparationOutput,
     states_evaled: &mut i64,
 ) -> f64 {
-    init_dist(state_bundle, prep_output);
     *states_evaled += 1;
 
-    let combined_costs: Vec<Vec<f64>> = generate_combined(prep_output, state_bundle);
-    let out: f64 = honing_sa_wrapper(prep_output, &combined_costs, prep_output.eqv_gold_budget);
-
-    // dbg!(
-    //     prep_output.budget_eqv_gold,
-    //     out,
-    //     &state_bundle.log_prob_dist_arr.len(),
-    //     &state_bundle.log_prob_dist_arr[0].len(),
-    //     &combined_costs.len(),
-    //     &combined_costs[0].len(),
-    //     min_value,
-    //     max_value
-    // );
-    // panic!();
+    init_dist(state_bundle, prep_output);
+    let mut combined_costs: Vec<Vec<f64>> = generate_combined(prep_output, state_bundle);
+    let out: f64 = honing_sa_wrapper(
+        state_bundle,
+        prep_output,
+        &mut combined_costs,
+        prep_output.eqv_gold_budget,
+    );
     out
 }
-
-// // this feels SO wrong but idk how else to do this
-// fn expected_juice_leftover(prep_output: &PreparationOutput, state_bundle: &StateBundle) -> f64 {
-//     let mut avg_used: Vec<(f64, f64)> =
-//         vec![(0.0, 0.0); prep_output.juice_info.one_gold_cost_id.len()];
-//     let mut full_avg: Vec<(f64, f64)> =
-//         vec![(0.0, 0.0); prep_output.juice_info.one_gold_cost_id.len()];
-//     for (u_index, upgrade) in prep_output.upgrade_arr.iter().enumerate() {
-//         let mut used_so_far: Vec<(i64, i64)> = vec![(0, 0); prep_output.juice_info.ids.len()];
-//         let mut max_used: Vec<(i64, i64)> = vec![(0, 0); prep_output.juice_info.ids.len()];
-//         for (p_index, p) in upgrade.prob_dist.iter().enumerate() {
-//             // dbg!(&state_bundle.state);
-//             for (bit_index, bit) in state_bundle.state[u_index][p_index].iter().enumerate() {
-//                 // dbg!(&prep_output.juice_info);
-//                 let id = prep_output.juice_info.ids[upgrade.upgrade_index][bit_index];
-
-//                 if upgrade.is_weapon {
-//                     if *bit {
-//                         used_so_far[id].0 +=
-//                             prep_output.juice_info.amt_used[upgrade.upgrade_index][bit_index].0;
-//                     }
-//                     max_used[id].0 +=
-//                         prep_output.juice_info.amt_used[upgrade.upgrade_index][bit_index].0;
-//                 } else {
-//                     if *bit {
-//                         used_so_far[id].1 +=
-//                             prep_output.juice_info.amt_used[upgrade.upgrade_index][bit_index].1;
-//                     }
-//                     max_used[id].1 +=
-//                         prep_output.juice_info.amt_used[upgrade.upgrade_index][bit_index].1;
-//                 }
-
-//                 avg_used[id].0 += p * used_so_far[id].0 as f64;
-//                 avg_used[id].1 += p * used_so_far[id].1 as f64;
-
-//                 full_avg[id].0 += p * max_used[id].0 as f64;
-//                 full_avg[id].1 += p * max_used[id].1 as f64;
-//             }
-//         }
-//     }
-//     // dbg!(
-//     //     &prep_output.juice_info,
-//     //     &prep_output.juice_books_owned,
-//     //     &avg_used
-//     // );
-//     let mut total_gold: f64 = 0.0;
-//     for (id, a) in avg_used.iter().enumerate() {
-//         total_gold += ((prep_output.juice_books_owned[id].0 as f64).min(full_avg[id].0) - a.0)
-//             .max(0.0) as f64
-//             * prep_output.juice_info.one_gold_cost_id[id].0;
-//         total_gold += ((prep_output.juice_books_owned[id].1 as f64).min(full_avg[id].1) - a.1)
-//             .max(0.0) as f64
-//             * prep_output.juice_info.one_gold_cost_id[id].1;
-//     }
-//     total_gold
-// }

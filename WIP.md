@@ -5,8 +5,18 @@
 
 ### Now
 
-- ~~figure out why MC agrees like half the time but not half the other times~~
-- SPECIAL iS NOT INDEPENDENT GG NEED TO FIGURE OUT HOW TO DO THIS AHHHHHHHHHHH
+- imporve how state bundle works
+  - store a copy of prep output in state bundle
+  - make a lot of functions that currently take in a statebundle and a prepoutput class functions of statebundle
+  - add a performacne tracker struct and put it in state bundle, track these:
+    - total states evaluated(what we have now)
+    - states evaluated with SA
+      - times that Ks was called
+      - average newton iterations
+      - times that we used edgeworth vs times that we used lugganani
+    - whatever we do with special also
+    - states evaluated with brute
+    - then also repeat all these for the "best" state
 
 - normalize average metric's interaction with acceptance
 
@@ -21,6 +31,8 @@
   - need to store helmet/whatever informaiton in Upgrade,
     - get rid of non-tick input i guess?
   - also maybe get rid of the count in special state? just the order? (and maybe incorporate normal honing order?)
+
+- start working on visualizing this stuff
 
 ### Big
 
@@ -46,6 +58,8 @@
 - add assertions to a lot of prepoutput stuff
   
 - SURELY there's a better way to lay out juiceinfo...
+
+- figure out why special stuff is still slightly off(or is it just how SA be)
 
 ### Energy
 
@@ -111,6 +125,9 @@ graph
 
 ## Done / cancelled
 
+- ~~figure out why MC agrees like half the time but not half the other times~~
+- ~~SPECIAL iS NOT INDEPENDENT GG NEED TO FIGURE OUT HOW TO DO THIS AHHHHHHHHHHH~~
+  - ~~right now its 2^n possibilities but if i change it from specifying attempt counts to "try until run out / suceess" then uh its n possibilities thats crazy~~
 - ~~continuity correction? maybe not needed?~~
 - ~~why is warmstart theta not working hm~~
   - ~~theta can be VERY small because budget can be VERY big -> almost all edgeworth~~

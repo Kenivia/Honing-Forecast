@@ -1,5 +1,6 @@
 use std::f64;
 
+use crate::constants::FLOAT_TOL;
 // use super::saddlepoint_approximation::saddlepoint_approximation_wrapper;
 // use crate::helpers::find_non_zero_min_vec;
 use crate::parser::PreparationOutput;
@@ -88,7 +89,7 @@ pub fn special_probs(prep_output: &PreparationOutput, state_bundle: &StateBundle
     let m = upgrades.len();
 
     let budget: usize = prep_output.budgets[7] as usize; // total special budget B
-    let mut result = vec![0.0_f64; m];
+    let mut result = vec![0.0_f64; m + 1];
 
     // active[b] = probability we are still running and have 'b' special left
     let mut active: Vec<f64> = vec![0.0_f64; budget + 1];
@@ -98,17 +99,13 @@ pub fn special_probs(prep_output: &PreparationOutput, state_bundle: &StateBundle
     // let mut stopped = vec![0.0_f64; budget + 1];
 
     // Process streaks in order
-    for &(upgrade_index, repeat_count) in state_bundle.special_state.iter() {
-        let upg = &upgrades[upgrade_index];
-        let p = upg.base_chance;
+    for (attempt_index, u_index) in state_bundle.special_state.iter().enumerate() {
+        let upgrade = &upgrades[*u_index];
+        let p = upgrade.base_chance;
         let one_minus_p = 1.0 - p;
-        let this_special_cost = upg.special_cost as usize;
+        let this_special_cost = upgrade.special_cost as usize;
 
-        if repeat_count == 0 || p == 0.0 {
-            // Nothing happens in this streak; propagate active as-is
-            continue;
-        }
-
+        let repeat_count = (budget / this_special_cost).max(0);
         // Precompute geometric probabilities p * (1-p)^(t-1) up to L
         let mut geom = vec![0.0_f64; repeat_count + 1]; // 1-based: geom[t] for t=1..L
         let mut pow = 1.0_f64;
@@ -136,13 +133,10 @@ pub fn special_probs(prep_output: &PreparationOutput, state_bundle: &StateBundle
 
             // Success probability on this upgrade from this starting budget
             let fail_all_a = one_minus_p.powi(actual_repeated as i32);
-            result[upgrade_index] += mass * (1.0 - fail_all_a);
+            result[attempt_index + 1] += mass * (1.0 - fail_all_a);
 
             for succeed_at in 1..actual_repeated {
                 let prob_n_t = geom[succeed_at];
-                if prob_n_t == 0.0 {
-                    continue;
-                }
                 let b2 = b - succeed_at * this_special_cost;
                 next_active[b2] += mass * prob_n_t;
             }
@@ -155,8 +149,129 @@ pub fn special_probs(prep_output: &PreparationOutput, state_bundle: &StateBundle
 
         active = next_active;
     }
-    // dbg!(&state_bundle.special_state);
-    // dbg!(&result);
-    // panic!();
-    result
+
+    result[0] = 1.0 - result[1]; // nothing free tapped
+    let mut actual_out = Vec::with_capacity(result.len());
+
+    for (index, &i) in result.iter().enumerate() {
+        // if index < 1 {
+        //     actual_out.push(cumulative * *i);
+        // } else {
+        if index == result.len() - 1 || index == 0 {
+            actual_out.push(i);
+        } else {
+            actual_out.push(i - result[index + 1]);
+        }
+    }
+    // dbg!(&result, &  actual_out, actual_out.iter().sum::<f64>());
+    assert!((actual_out.iter().sum::<f64>() - 1.0).abs() < FLOAT_TOL);
+    actual_out
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::calculate_hash;
+    use crate::constants::RNG_SEED;
+
+    use crate::parser::PreparationOutput;
+
+    use crate::test_utils::*;
+
+    use std::time::Instant;
+    static DEBUG: bool = true;
+    #[test]
+    fn special_sa_test() {
+        let start = Instant::now();
+        let test_name = format!("special_sa_test");
+        let hone_counts: Vec<Vec<i64>> = vec![
+            (0..25).map(|x| if x == 24 { 2 } else { 0 }).collect(),
+            (0..25).map(|x| if x == 24 { 1 } else { 0 }).collect(),
+        ];
+        // let hone_counts: Vec<Vec<i64>> =
+        //     vec![(0..25).map(|_| 5).collect(), (0..25).map(|_| 1).collect()];
+        let adv_counts: Vec<Vec<i64>> =
+            vec![(0..4).map(|_| 0).collect(), (0..4).map(|_| 0).collect()];
+
+        let adv_hone_strategy: &str = "No juice";
+        let express_event: bool = true;
+        let budget = vec![0, 0, 0, 0, 0, 3333333, 0, 6767];
+        let juice_books_owned: Vec<(i64, i64)> = vec![(0, 0), (0, 0), (0, 0), (0, 0)];
+        let juice_prices: Vec<(f64, f64)> = vec![
+            (123.0, 123.0),
+            (123.0, 123.0),
+            (123.0, 123.0),
+            (123.0, 123.0),
+        ];
+        let prices = DEFAULT_GOLD_VALUES;
+        let hash: String = calculate_hash!(
+            &hone_counts,
+            &adv_counts,
+            adv_hone_strategy,
+            express_event,
+            &budget,
+            &prices,
+            RNG_SEED,
+            PROB_MODE
+        );
+
+        let prep_output: PreparationOutput = PreparationOutput::initialize(
+            &hone_counts,
+            &budget,
+            &adv_counts,
+            express_event,
+            &prices,
+            adv_hone_strategy,
+            &juice_books_owned,
+            &juice_prices,
+            &prices,
+            &juice_prices,
+        );
+
+        let mut state: Vec<Vec<(bool, usize)>> = Vec::with_capacity(prep_output.upgrade_arr.len());
+        let mut starting_special: Vec<usize> =
+            Vec::with_capacity(prep_output.upgrade_arr.len() * 2);
+        for (index, upgrade) in prep_output.upgrade_arr.iter().enumerate() {
+            // state.push(vec![rng.random_bool(0.5); upgrade.support_lengths[0]]);
+            state.push(vec![(false, 0); upgrade.original_prob_dist.len()]);
+
+            starting_special.push(index); //, (1.0 / upgrade.base_chance).round() as usize));
+        }
+        let state_bundle: StateBundle = StateBundle {
+            state: state,
+            names: prep_output
+                .upgrade_arr
+                .iter()
+                .map(|x| {
+                    let mut string: String = if x.is_normal_honing {
+                        "".to_owned()
+                    } else {
+                        "adv_".to_owned()
+                    };
+                    string += if x.is_weapon { "weap_" } else { "armor_" };
+                    string += &x.upgrade_index.to_string();
+                    string
+                })
+                .collect::<Vec<String>>(),
+            state_index: vec![],
+            metric: -1.0,
+            special_state: starting_special,
+        };
+
+        // init_dist(&mut state_bundle, &mut prep_output);
+
+        // dbg!(&state_bundle, &prep_output.upgrade_arr);
+        let result: Vec<f64> = special_probs(&prep_output, &state_bundle);
+
+        if DEBUG {
+            dbg!(&result);
+        }
+        if let Some(_cached_result) = read_cached_data::<Vec<f64>>(test_name.as_str(), &hash) {
+        } else {
+            write_cached_data(test_name.as_str(), &hash, &result);
+        }
+        if DEBUG {
+            dbg!(start.elapsed());
+        }
+    }
 }

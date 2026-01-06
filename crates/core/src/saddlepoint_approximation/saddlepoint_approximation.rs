@@ -1,12 +1,12 @@
 use statrs::distribution::{Continuous, ContinuousCDF, Normal};
 
-use crate::brute::brute_naive;
+use crate::brute::{MAX_BRUTE_SIZE, brute_naive};
+use crate::constants::FLOAT_TOL;
 
 pub static DEBUG: bool = false;
 pub static THETA_TOL: f64 = 1e-10;
 pub static THETA_LIMIT: f64 = 1e2; // th
-pub static FLOAT_TOL: f64 = 1e-12; // it could prolly be lower? idk doesnt matter
-pub static MAX_BRUTE_SIZE: usize = 100000;
+pub static MIN_LATTICE_SPAN: f64 = 1.0;
 
 pub fn ks_01234(
     log_prob_dist_arr: &[Vec<f64>],
@@ -231,8 +231,11 @@ pub fn saddlepoint_approximation_wrapper(
     if min_value == max_value {
         return if min_value <= 0.0 { 1.0 } else { 0.0 };
     }
-
-    if support_size_too_big(support_arr, budget, MAX_BRUTE_SIZE) {
+    let h = lattice_span(support_arr);
+    if support_size_too_big(support_arr, budget, MAX_BRUTE_SIZE)
+        && budget > min_value + h + FLOAT_TOL
+        && budget < max_value - h - FLOAT_TOL
+    {
         return saddlepoint_approximation(
             log_prob_dist_arr,
             support_arr,
@@ -240,12 +243,14 @@ pub fn saddlepoint_approximation_wrapper(
             max_value, // here for debugging purpose only
             budget,
             init_theta,
+            h,
         );
     } else {
         return brute_naive(prob_dist_arr, support_arr, budget);
     }
 }
 fn support_size_too_big(arr: &[Vec<f64>], budget: f64, max: usize) -> bool {
+    let mut low_side_too_big: bool = false;
     let mut out: usize = 0;
     for a in arr {
         if out == 0 {
@@ -254,11 +259,13 @@ fn support_size_too_big(arr: &[Vec<f64>], budget: f64, max: usize) -> bool {
             out *= a.iter().take_while(|x| **x <= budget).count().max(1);
             // the hope is that if budget is very close to min_value then we will use brute, because that will break SA
             if out >= max {
-                return true;
+                low_side_too_big = true;
+                // return true;
+                break;
             }
         }
     }
-    false
+    low_side_too_big //&& high_side_too_big
 }
 
 fn float_gcd(inp_a: f64, inp_b: f64) -> f64 {
@@ -274,7 +281,7 @@ fn float_gcd(inp_a: f64, inp_b: f64) -> f64 {
 }
 
 fn lattice_span(support_arr: &[Vec<f64>]) -> f64 {
-    let mut cur_span: f64 = 0.001;
+    let mut cur_span: f64 = MIN_LATTICE_SPAN;
     let mut found_non_zeros: bool = false;
 
     for s in support_arr.iter().flatten() {
@@ -287,8 +294,8 @@ fn lattice_span(support_arr: &[Vec<f64>]) -> f64 {
         } else {
             cur_span = float_gcd(*s, cur_span);
         }
-        if cur_span < 0.001 {
-            return 0.001; // always do a little bit of cont correction ig cos why not 
+        if cur_span < MIN_LATTICE_SPAN {
+            return MIN_LATTICE_SPAN; // always do a little bit of cont correction ig cos why not 
         }
     }
     // if !cur_span.is_finite() || cur_span < 1.0 {
@@ -304,9 +311,9 @@ pub fn saddlepoint_approximation(
     max_value: f64,
     inp_budget: f64,
     init_theta: &mut f64,
+    span: f64,
 ) -> f64 {
-    let h = lattice_span(support_arr);
-    let budget = (inp_budget / h).floor() * h + h / 2.0;
+    let budget = (inp_budget / span).floor() * span + span / 2.0;
     // dbg!(h);
     let f_df = |theta| {
         let mut ks_tuple = (0.0, 0.0, 0.0, 0.0, 0.0);
@@ -375,7 +382,7 @@ pub fn saddlepoint_approximation(
     );
 
     let w = |t: f64, ks_inp: f64| t.signum() * (2.0 * (t * budget - ks_inp)).sqrt();
-    let u = |t: f64, ks2_inp: f64| 2.0 / h * (h * t / 2.0).sinh() * ks2_inp.sqrt(); // second continuity correction 
+    let u = |t: f64, ks2_inp: f64| 2.0 / span * (span * t / 2.0).sinh() * ks2_inp.sqrt(); // second continuity correction 
     let w_hat = w(theta_hat, ks_tuple.0);
     let u_hat = u(theta_hat, ks_tuple.2);
 

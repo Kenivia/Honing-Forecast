@@ -1,4 +1,5 @@
 use crate::average::{add_up_golds, apply_price_leftovers, apply_price_naive};
+use crate::constants::FLOAT_TOL;
 use crate::parser::PreparationOutput;
 use crate::parser::Upgrade;
 use crate::saddlepoint_approximation::normal_sa::init_dist;
@@ -53,7 +54,7 @@ fn tap_map_generator<R: Rng>(count_limit: usize, prob_dist: &[f64], rng: &mut R)
 /// Handles edge cases p <= 0 and p >= 1.
 #[inline]
 fn sample_truncated_geometric<R: Rng + ?Sized>(p: f64, max_taps: i64, rng: &mut R) -> i64 {
-    if max_taps < 0 {
+    if max_taps <= 0 {
         panic!();
     }
     if p <= 0.0 {
@@ -66,8 +67,8 @@ fn sample_truncated_geometric<R: Rng + ?Sized>(p: f64, max_taps: i64, rng: &mut 
     let u: f64 = rng.random_range(0.0..1.0);
     // ln(u)/ln(q) >= 0 (both negative logs) gives k (0-based)
     let k: i64 = u.log(q).floor() as i64;
-    let k: i64 = if k < 0 { 0 } else { k };
-    if k > max_taps { max_taps } else { k }
+    let k: i64 = if k < 0 { 1 } else { k + 1 };
+    if k > max_taps { max_taps + 1 } else { k }
 }
 
 fn juice_map(
@@ -118,14 +119,13 @@ pub fn monte_carlo_data<R: Rng>(
     rng: &mut R,
 ) -> (Vec<[i64; 7]>, Vec<Vec<(i64, i64)>>) {
     let mut special_left: Vec<i64> = vec![prep_output.budgets[7]; data_size];
-    prep_output.budgets[7] = 0;
     init_dist(state_bundle, prep_output);
     let mut mats_data: Vec<[i64; 7]> = vec![[0i64; 7]; data_size];
 
     let mut juice_data: Vec<Vec<(i64, i64)>> =
         vec![vec![(0, 0); prep_output.juice_info.amt_used_id.len()]; data_size];
-
-    for (u_index, juice) in state_bundle.special_state.iter() {
+    // dbg!(&state_bundle, &prep_output);
+    for u_index in state_bundle.special_state.iter() {
         let upgrade = &prep_output.upgrade_arr[*u_index];
         let tap_map: Vec<usize> = tap_map_generator(data_size, &upgrade.prob_dist, rng);
         let juice_map: Vec<Vec<(i64, i64)>> =
@@ -133,14 +133,13 @@ pub fn monte_carlo_data<R: Rng>(
         for trial_num in 0..data_size {
             let this_special_left: &mut i64 = &mut special_left[trial_num];
 
-            let attempts_specified = *juice as i64;
             let max_affordable_attempts = (*this_special_left / upgrade.special_cost).max(0);
-            if max_affordable_attempts > 0 && attempts_specified > 0 {
+            if max_affordable_attempts > 0 {
                 let taps_rolled =
-                    sample_truncated_geometric(upgrade.base_chance, max_affordable_attempts, rng)
-                        + 1;
-                *this_special_left -= taps_rolled.min(attempts_specified) * upgrade.special_cost;
-                if taps_rolled <= max_affordable_attempts.min(attempts_specified) {
+                    sample_truncated_geometric(upgrade.base_chance, max_affordable_attempts, rng);
+
+                *this_special_left -= taps_rolled * upgrade.special_cost;
+                if *this_special_left >= 0 {
                     continue;
                 }
             }
@@ -189,7 +188,7 @@ pub fn monte_carlo_wrapper<R: Rng>(
         let (mats_gold_naive, juice_gold_naive) =
             apply_price_naive(&float_row, &float_juice, prep_output);
         let gold_eqv_naive: f64 = add_up_golds(&mats_gold_naive, &juice_gold_naive);
-        if gold_eqv_naive >= 0.0 {
+        if gold_eqv_naive > -FLOAT_TOL {
             success_count += 1;
         }
         average += add_up_golds(&mats_gold_leftover, &juice_gold_leftover);

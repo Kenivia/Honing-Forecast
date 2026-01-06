@@ -5,7 +5,7 @@ pub struct StateBundle {
 
     // the above entries are tied to each upgrade, so arr[upgrade_index] correspond to the appropriate info for a particular upgrade
     // probably should make another struct for this at some point
-    pub special_state: Vec<(usize, usize)>, // arbitrary length
+    pub special_state: Vec<usize>, // arbitrary length
     pub metric: f64,
     pub state_index: Vec<Vec<Vec<i64>>>, // i pre-added this for caching but havnt implemented anything
 }
