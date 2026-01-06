@@ -5,7 +5,8 @@
 
 ### Now
 
-- figure out why MC agrees like half the time but not half the other times
+- ~~figure out why MC agrees like half the time but not half the other times~~
+- SPECIAL iS NOT INDEPENDENT GG NEED TO FIGURE OUT HOW TO DO THIS AHHHHHHHHHHH
 
 - normalize average metric's interaction with acceptance
 
