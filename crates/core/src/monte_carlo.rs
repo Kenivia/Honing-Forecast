@@ -1,8 +1,9 @@
-use crate::average::{add_up_golds, apply_price_leftovers, apply_price_naive};
 use crate::constants::FLOAT_TOL;
-use crate::parser::PreparationOutput;
+use crate::normal_honing_utils::init_dist;
+use crate::normal_honing_utils::{add_up_golds, apply_price_leftovers, apply_price_naive};
 use crate::parser::Upgrade;
-use crate::saddlepoint_approximation::normal_sa::init_dist;
+use crate::saddlepoint_approximation::special::special_probs;
+
 use crate::state::StateBundle;
 use rand::Rng;
 use rand::prelude::*;
@@ -61,38 +62,24 @@ fn sample_truncated_geometric<R: Rng + ?Sized>(p: f64, max_taps: i64, rng: &mut 
         return max_taps; // degenerate -> always tail
     }
     if p >= 1.0 {
-        return 0; // succeed immediately
+        return 1; // succeed immediately
     }
     let q: f64 = 1.0 - p;
     let u: f64 = rng.random_range(0.0..1.0);
     // ln(u)/ln(q) >= 0 (both negative logs) gives k (0-based)
-    let k: i64 = u.log(q).floor() as i64;
-    let k: i64 = if k < 0 { 1 } else { k + 1 };
+    let k: i64 = u.log(q).ceil() as i64;
+    let k: i64 = if k <= 0 { 1 } else { k };
     if k > max_taps { max_taps + 1 } else { k }
 }
 
-fn juice_map(
-    upgrade: &Upgrade,
-    state_bundle: &StateBundle,
-    prep_output: &PreparationOutput,
-    u_index: usize,
-) -> Vec<Vec<(i64, i64)>> {
+fn juice_costs(upgrade: &Upgrade, state_bundle: &StateBundle) -> Vec<Vec<(i64, i64)>> {
+    let prep_output = &state_bundle.prep_output;
     let mut juice_so_far: Vec<i64> = vec![0; prep_output.juice_info.amt_used_id.len()];
 
     let mut juice_used: Vec<Vec<(i64, i64)>> =
         vec![vec![(0, 0); prep_output.juice_info.amt_used_id.len()]; upgrade.prob_dist.len()];
     for (p_index, _) in upgrade.prob_dist.iter().enumerate() {
-        if u_index >= state_bundle.state.len() || p_index >= state_bundle.state[u_index].len() {
-            dbg!(
-                state_bundle.state.len(),
-                u_index,
-                p_index,
-                state_bundle.state[u_index].len(),
-                &state_bundle.state[u_index],
-                &upgrade.prob_dist
-            );
-        }
-        let (juice, book_index) = state_bundle.state[u_index][p_index];
+        let (juice, book_index) = upgrade.state[p_index];
         for (id, (weap_used, armor_used)) in juice_used[p_index].iter_mut().enumerate() {
             if upgrade.is_weapon {
                 *weap_used += juice_so_far[id];
@@ -114,35 +101,37 @@ fn juice_map(
 pub fn monte_carlo_data<R: Rng>(
     data_size: usize,
     state_bundle: &mut StateBundle,
-    prep_output: &mut PreparationOutput,
-
     rng: &mut R,
 ) -> (Vec<[i64; 7]>, Vec<Vec<(i64, i64)>>) {
-    let mut special_left: Vec<i64> = vec![prep_output.budgets[7]; data_size];
-    init_dist(state_bundle, prep_output);
+    let mut special_left: Vec<i64> = vec![state_bundle.prep_output.budgets[7]; data_size];
+    init_dist(state_bundle);
     let mut mats_data: Vec<[i64; 7]> = vec![[0i64; 7]; data_size];
 
     let mut juice_data: Vec<Vec<(i64, i64)>> =
-        vec![vec![(0, 0); prep_output.juice_info.amt_used_id.len()]; data_size];
+        vec![vec![(0, 0); state_bundle.prep_output.juice_info.amt_used_id.len()]; data_size];
+
+    let mut actually_paid: Vec<i64> = vec![0; state_bundle.prep_output.upgrade_arr.len() + 1];
     // dbg!(&state_bundle, &prep_output);
-    for u_index in state_bundle.special_state.iter() {
-        let upgrade = &prep_output.upgrade_arr[*u_index];
+    for (attempt_index, u_index) in state_bundle.special_state.iter().enumerate() {
+        let upgrade = &state_bundle.prep_output.upgrade_arr[*u_index];
         let tap_map: Vec<usize> = tap_map_generator(data_size, &upgrade.prob_dist, rng);
-        let juice_map: Vec<Vec<(i64, i64)>> =
-            juice_map(upgrade, state_bundle, prep_output, *u_index);
+        let juice_costs: Vec<Vec<(i64, i64)>> = juice_costs(upgrade, state_bundle);
+
         for trial_num in 0..data_size {
             let this_special_left: &mut i64 = &mut special_left[trial_num];
 
             let max_affordable_attempts = (*this_special_left / upgrade.special_cost).max(0);
             if max_affordable_attempts > 0 {
-                let taps_rolled =
+                let special_taps_needed =
                     sample_truncated_geometric(upgrade.base_chance, max_affordable_attempts, rng);
 
-                *this_special_left -= taps_rolled * upgrade.special_cost;
+                *this_special_left -= special_taps_needed * upgrade.special_cost;
+
                 if *this_special_left >= 0 {
                     continue;
                 }
             }
+            actually_paid[attempt_index + 1] += 1;
 
             let rolled_tap: usize = tap_map[trial_num];
             assert!(rolled_tap > 0); // we simulate special directly above instead of relying on special_sa(to test if its working), init_dist should've been called with 0 special owned 
@@ -150,70 +139,136 @@ pub fn monte_carlo_data<R: Rng>(
                 mats_data[trial_num][cost_type] +=
                     upgrade.costs[cost_type] * (rolled_tap as i64 + upgrade.tap_offset);
             }
-            for id in 0..prep_output.juice_info.amt_used_id.len() {
-                juice_data[trial_num][id].0 += juice_map[rolled_tap][id].0;
-                juice_data[trial_num][id].1 += juice_map[rolled_tap][id].1;
+            for id in 0..state_bundle.prep_output.juice_info.amt_used_id.len() {
+                juice_data[trial_num][id].0 += juice_costs[rolled_tap][id].0;
+                juice_data[trial_num][id].1 += juice_costs[rolled_tap][id].1;
             }
         }
     }
 
     // unlock costs
     for row in &mut mats_data {
-        row[3] += prep_output.unlock_costs[0];
-        row[6] += prep_output.unlock_costs[1];
+        row[3] += state_bundle.prep_output.unlock_costs[0];
+        row[6] += state_bundle.prep_output.unlock_costs[1];
     }
+    let mut result = actually_paid
+        .into_iter()
+        .map(|x| 1.0 - x as f64 / data_size as f64)
+        .collect::<Vec<f64>>();
+    // dbg!(&result);
+    result[0] = 1.0 - result[1]; // nothing free tapped
+    let mut actual_out = Vec::with_capacity(result.len());
 
+    for (index, &i) in result.iter().enumerate() {
+        // if index < 1 {
+        //     actual_out.push(cumulative * *i);
+        // } else {
+        if index == result.len() - 1 || index == 0 {
+            actual_out.push(i);
+        } else {
+            actual_out.push(i - result[index + 1]);
+        }
+    }
+    // dbg!(actual_out);
+    // dbg!(&special_probs(state_bundle));
     (mats_data, juice_data)
 }
 
 pub fn monte_carlo_wrapper<R: Rng>(
     data_size: usize,
     state_bundle: &mut StateBundle,
-    prep_output: &mut PreparationOutput,
     rng: &mut R,
 ) -> (Vec<f64>, f64, f64) {
-    let (cost_data, juice_data) = monte_carlo_data(data_size, state_bundle, prep_output, rng);
+    let (cost_data, juice_data) = monte_carlo_data(data_size, state_bundle, rng);
     let mut success_count: i64 = 0;
     let mut average: f64 = 0.0;
-    let mut leftover_counts: Vec<i64> = vec![0; 7 + prep_output.juice_info.one_gold_cost.len() * 2];
+    let mut leftover_counts: Vec<i64> =
+        vec![0; 7 + state_bundle.prep_output.juice_info.one_gold_cost_id.len() * 2];
+
+    let mut debug_avg_mats: Vec<f64> = vec![0.0; 7];
+    let mut debug_avg_juices: Vec<(f64, f64)> =
+        vec![(0.0, 0.0); state_bundle.prep_output.juice_info.one_gold_cost_id.len()];
     for (r_index, row) in cost_data.iter().enumerate() {
         let float_row: Vec<f64> = row.iter().map(|x| *x as f64).collect();
         let float_juice: Vec<(f64, f64)> = juice_data[r_index]
             .iter()
             .map(|x| (x.0 as f64, x.1 as f64))
             .collect();
-        let (mats_gold_leftover, juice_gold_leftover) =
-            apply_price_leftovers(&float_row, &float_juice, prep_output);
 
+        for (index, d) in debug_avg_mats.iter_mut().enumerate() {
+            let diff = state_bundle.prep_output.budgets[index] as f64 - float_row[index];
+            *d += (diff)
+                * if diff > 0.0 {
+                    state_bundle.prep_output.leftover_values[index]
+                } else {
+                    state_bundle.prep_output.price_arr[index]
+                };
+        }
+        // dbg!(&debug_avg_juices);
+        for (id, d) in debug_avg_juices.iter_mut().enumerate() {
+            let diff_weap = state_bundle.prep_output.juice_books_owned[id].0 as f64 - float_row[id];
+            d.0 += (diff_weap)
+                * if d.0 > 0.0 {
+                    state_bundle.prep_output.juice_info.one_leftover_value_id[id].0
+                } else {
+                    state_bundle.prep_output.juice_info.one_gold_cost_id[id].0
+                };
+            let diff_armor =
+                state_bundle.prep_output.juice_books_owned[id].1 as f64 - float_row[id];
+            d.1 += (diff_armor)
+                * if d.1 > 0.0 {
+                    state_bundle.prep_output.juice_info.one_leftover_value_id[id].1
+                } else {
+                    state_bundle.prep_output.juice_info.one_gold_cost_id[id].1
+                };
+        }
+
+        let (mats_gold_leftover, juice_gold_leftover) =
+            apply_price_leftovers(&float_row, &float_juice, state_bundle);
+        let this: f64 = add_up_golds(&mats_gold_leftover, &juice_gold_leftover);
+        average += this;
+        // dbg!(this);
         let (mats_gold_naive, juice_gold_naive) =
-            apply_price_naive(&float_row, &float_juice, prep_output);
+            apply_price_naive(&float_row, &float_juice, state_bundle);
         let gold_eqv_naive: f64 = add_up_golds(&mats_gold_naive, &juice_gold_naive);
         if gold_eqv_naive > -FLOAT_TOL {
             success_count += 1;
         }
-        average += add_up_golds(&mats_gold_leftover, &juice_gold_leftover);
 
         let mut leftover_index: usize = 0;
         for (index, mat) in row.iter().enumerate() {
-            if *mat < prep_output.budgets[index] {
+            if *mat < state_bundle.prep_output.budgets[index] {
                 leftover_counts[leftover_index] += 1;
             }
             leftover_index += 1;
         }
         for (index, juice) in juice_data[r_index].iter().enumerate() {
-            if juice.0 < prep_output.juice_books_owned[index].0 {
+            if juice.0 < state_bundle.prep_output.juice_books_owned[index].0 {
                 leftover_counts[leftover_index] += 1;
             }
             leftover_index += 1;
         }
         for (index, juice) in juice_data[r_index].iter().enumerate() {
-            if juice.1 < prep_output.juice_books_owned[index].1 {
+            if juice.1 < state_bundle.prep_output.juice_books_owned[index].1 {
                 leftover_counts[leftover_index] += 1;
             }
             leftover_index += 1;
         }
     }
+    for (index, d) in debug_avg_mats.iter_mut().enumerate() {
+        *d /= data_size as f64;
+    }
+    for (id, d) in debug_avg_juices.iter_mut().enumerate() {
+        d.0 /= data_size as f64;
 
+        d.1 /= data_size as f64;
+    }
+    // dbg!(
+    //     &debug_avg_mats,
+    //     &state_bundle.prep_output.price_arr,
+    //     &state_bundle.prep_output.leftover_values,
+    //     &debug_avg_juices
+    // );
     let prob_leftover: Vec<f64> = leftover_counts
         .into_iter()
         .map(|x| x as f64 / data_size as f64)

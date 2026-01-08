@@ -1,11 +1,11 @@
 use crate::constants::FLOAT_TOL;
-use crate::parser::PreparationOutput;
-use crate::saddlepoint_approximation::normal_sa::{generate_combined, init_dist};
+use crate::normal_honing_utils::{generate_combined, init_dist};
+use crate::performance::Performance;
 use crate::state::StateBundle;
 
 use std::collections::HashMap;
 use std::hash::{Hash, Hasher};
-pub static MAX_BRUTE_SIZE: usize = 100000;
+pub static MAX_BRUTE_SIZE: usize = 50000;
 // 1. Helper wrapper to use f64 as a HashMap key
 // (Rust floats don't implement Eq/Hash by default due to NaN)
 #[derive(Clone, Copy, Debug)]
@@ -153,18 +153,21 @@ pub fn brute_naive(prob_dist_arr: &[Vec<f64>], support_arr: &[Vec<f64>], budget:
 }
 
 // naive as in it doesn't take into account leftover prices
-pub fn brute_naive_wrapper(
+pub fn brute_success_prob_metric(
     state_bundle: &mut StateBundle,
-    prep_output: &mut PreparationOutput,
-
-    states_evaled: &mut i64,
+    performance: &mut Performance,
 ) -> f64 {
-    *states_evaled += 1;
-    init_dist(state_bundle, prep_output);
-    let (_, prob_dist_arr) = prep_output.gather_dists();
+    performance.states_evaluated += 1;
+    performance.brute_count += 1;
+    init_dist(state_bundle);
+    let (_, prob_dist_arr) = state_bundle.prep_output.gather_dists();
 
-    let combined_costs: Vec<Vec<f64>> = generate_combined(prep_output, state_bundle);
+    let combined_costs: Vec<Vec<f64>> = generate_combined(state_bundle);
     // brute_naive(&prob_dist_arr, &combined_costs, prep_output.eqv_gold_budget)
 
-    brute_optimized_pruned(&prob_dist_arr, &combined_costs, prep_output.eqv_gold_budget)
+    brute_optimized_pruned(
+        &prob_dist_arr,
+        &combined_costs,
+        state_bundle.prep_output.eqv_gold_budget,
+    )
 }

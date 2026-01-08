@@ -3,7 +3,6 @@ use std::f64;
 use crate::constants::FLOAT_TOL;
 // use super::saddlepoint_approximation::saddlepoint_approximation_wrapper;
 // use crate::helpers::find_non_zero_min_vec;
-use crate::parser::PreparationOutput;
 // use crate::parser::Upgrade;
 use crate::state::StateBundle;
 
@@ -84,7 +83,8 @@ use crate::state::StateBundle;
 //     }
 //     result
 // }
-pub fn special_probs(prep_output: &PreparationOutput, state_bundle: &StateBundle) -> Vec<f64> {
+pub fn special_probs(state_bundle: &StateBundle) -> Vec<f64> {
+    let prep_output = &state_bundle.prep_output;
     let upgrades = &prep_output.upgrade_arr;
     let m = upgrades.len();
 
@@ -135,16 +135,11 @@ pub fn special_probs(prep_output: &PreparationOutput, state_bundle: &StateBundle
             let fail_all_a = one_minus_p.powi(actual_repeated as i32);
             result[attempt_index + 1] += mass * (1.0 - fail_all_a);
 
-            for succeed_at in 1..actual_repeated {
+            for succeed_at in 1..=actual_repeated {
                 let prob_n_t = geom[succeed_at];
                 let b2 = b - succeed_at * this_special_cost;
                 next_active[b2] += mass * prob_n_t;
             }
-
-            // t = A
-            let prob_n_a = one_minus_p.powi((actual_repeated - 1) as i32);
-            let b2 = b - actual_repeated * this_special_cost;
-            next_active[b2] += mass * prob_n_a;
         }
 
         active = next_active;
@@ -163,7 +158,8 @@ pub fn special_probs(prep_output: &PreparationOutput, state_bundle: &StateBundle
             actual_out.push(i - result[index + 1]);
         }
     }
-    // dbg!(&result, &  actual_out, actual_out.iter().sum::<f64>());
+
+    // dbg!(&result, &actual_out, actual_out.iter().sum::<f64>());
     assert!((actual_out.iter().sum::<f64>() - 1.0).abs() < FLOAT_TOL);
     actual_out
 }
@@ -228,17 +224,12 @@ mod tests {
             &juice_prices,
         );
 
-        let mut state: Vec<Vec<(bool, usize)>> = Vec::with_capacity(prep_output.upgrade_arr.len());
         let mut starting_special: Vec<usize> =
             Vec::with_capacity(prep_output.upgrade_arr.len() * 2);
-        for (index, upgrade) in prep_output.upgrade_arr.iter().enumerate() {
-            // state.push(vec![rng.random_bool(0.5); upgrade.support_lengths[0]]);
-            state.push(vec![(false, 0); upgrade.original_prob_dist.len()]);
-
+        for (index, _upgrade) in prep_output.upgrade_arr.iter().enumerate() {
             starting_special.push(index); //, (1.0 / upgrade.base_chance).round() as usize));
         }
         let state_bundle: StateBundle = StateBundle {
-            state: state,
             names: prep_output
                 .upgrade_arr
                 .iter()
@@ -256,12 +247,13 @@ mod tests {
             state_index: vec![],
             metric: -1.0,
             special_state: starting_special,
+            prep_output,
         };
 
         // init_dist(&mut state_bundle, &mut prep_output);
 
         // dbg!(&state_bundle, &prep_output.upgrade_arr);
-        let result: Vec<f64> = special_probs(&prep_output, &state_bundle);
+        let result: Vec<f64> = special_probs(&state_bundle);
 
         if DEBUG {
             dbg!(&result);

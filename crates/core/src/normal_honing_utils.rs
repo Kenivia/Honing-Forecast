@@ -1,12 +1,89 @@
-use super::saddlepoint_approximation::saddlepoint_approximation_wrapper;
 use crate::constants::JuiceInfo;
-use crate::helpers::find_non_zero_min_vec;
-use crate::helpers::sort_by_indices;
-use crate::parser::PreparationOutput;
-use crate::parser::Upgrade;
-use crate::parser::probability_distribution;
-use crate::saddlepoint_approximation::special_sa::special_probs;
+
+use crate::parser::{Upgrade, probability_distribution};
+use crate::performance::Performance;
+use crate::saddlepoint_approximation::success_prob::honing_sa_wrapper;
 use crate::state::StateBundle;
+
+/// Sums up gold values from materials and juices
+pub fn add_up_golds(mats_gold: &Vec<f64>, juice_gold: &Vec<(f64, f64)>) -> f64 {
+    mats_gold.iter().fold(0.0, |last, new| last + *new)
+        + juice_gold
+            .iter()
+            .fold(0.0, |last, new| last + new.0 + new.1)
+}
+
+/// Applies price/leftover pricing to concrete consumption values.
+/// Used by Monte Carlo simulation where we have actual consumption, not expectations.
+/// positive diff = leftover (use leftover_value), negative diff = shortage (use price)
+pub fn apply_price_leftovers(
+    mats: &[f64],
+    juice: &[(f64, f64)],
+    state_bundle: &StateBundle,
+) -> (Vec<f64>, Vec<(f64, f64)>) {
+    apply_price_generic(mats, juice, state_bundle, false)
+}
+
+/// Applies naive (linear) pricing to concrete consumption values.
+/// Used by Monte Carlo simulation. This is equivalent to apply_price_leftovers
+/// when leftover_price = price.
+pub fn apply_price_naive(
+    mats: &[f64],
+    juice: &[(f64, f64)],
+    state_bundle: &StateBundle,
+) -> (Vec<f64>, Vec<(f64, f64)>) {
+    apply_price_generic(mats, juice, state_bundle, true)
+}
+
+/// Generic price application for concrete consumption values.
+/// When `naive` is true, uses price for both leftover and shortage.
+fn apply_price_generic(
+    mats: &[f64],
+    juice: &[(f64, f64)],
+    state_bundle: &StateBundle,
+    naive: bool,
+) -> (Vec<f64>, Vec<(f64, f64)>) {
+    let mut mats_gold = vec![0.0; mats.len()];
+    let mut juice_gold = vec![(0.0, 0.0); juice.len()];
+
+    for (index, gold) in mats_gold.iter_mut().enumerate() {
+        let diff: f64 = state_bundle.prep_output.budgets[index] as f64 - mats[index];
+        *gold = diff
+            * if naive {
+                state_bundle.prep_output.price_arr[index]
+            } else if diff > 0.0 {
+                state_bundle.prep_output.leftover_values[index]
+            } else {
+                state_bundle.prep_output.price_arr[index]
+            };
+    }
+
+    for (id, (weap, armor)) in juice_gold.iter_mut().enumerate() {
+        let weap_diff: f64 = state_bundle.prep_output.juice_books_owned[id].0 as f64 - juice[id].0;
+        let armor_diff: f64 = state_bundle.prep_output.juice_books_owned[id].1 as f64 - juice[id].1;
+
+        *weap = weap_diff
+            * if naive {
+                state_bundle.prep_output.juice_info.one_gold_cost_id[id].0
+            } else if weap_diff > 0.0 {
+                state_bundle.prep_output.juice_info.one_leftover_value_id[id].0
+            } else {
+                state_bundle.prep_output.juice_info.one_gold_cost_id[id].0
+            };
+
+        *armor = armor_diff
+            * if naive {
+                state_bundle.prep_output.juice_info.one_gold_cost_id[id].1
+            } else if armor_diff > 0.0 {
+                state_bundle.prep_output.juice_info.one_leftover_value_id[id].1
+            } else {
+                state_bundle.prep_output.juice_info.one_gold_cost_id[id].1
+            };
+    }
+
+    (mats_gold, juice_gold)
+}
+
 fn add_juice_gold_cost(
     juice_info: &JuiceInfo,
     upgrade: &Upgrade,
@@ -21,10 +98,8 @@ fn add_juice_gold_cost(
     }
 }
 
-pub fn generate_combined(
-    prep_output: &mut PreparationOutput,
-    state_bundle: &StateBundle,
-) -> Vec<Vec<f64>> {
+pub fn generate_combined(state_bundle: &StateBundle) -> Vec<Vec<f64>> {
+    let prep_output = &state_bundle.prep_output;
     let u_len: usize = prep_output.upgrade_arr.len();
     let mut combined_costs: Vec<Vec<f64>> = Vec::with_capacity(u_len);
     for (u_index, upgrade) in prep_output.upgrade_arr.iter().enumerate() {
@@ -33,16 +108,16 @@ pub fn generate_combined(
         for (p_index, _) in upgrade.log_prob_dist.iter().enumerate() {
             combined_costs[u_index].push(cost_so_far);
             cost_so_far += upgrade.eqv_gold_per_tap;
-            let (juice, book_index) = state_bundle.state[u_index][p_index];
+            let (juice, book_index) = upgrade.state[p_index];
             if juice {
-                add_juice_gold_cost(&prep_output.juice_info, &upgrade, &mut cost_so_far, 0);
+                add_juice_gold_cost(&prep_output.juice_info, upgrade, &mut cost_so_far, 0);
             }
             if book_index > 0 {
                 add_juice_gold_cost(
                     &prep_output.juice_info,
-                    &upgrade,
+                    upgrade,
                     &mut cost_so_far,
-                    book_index as usize,
+                    book_index,
                 );
             }
         }
@@ -51,11 +126,11 @@ pub fn generate_combined(
     combined_costs
 }
 pub fn generate_individual(
-    prep_output: &mut PreparationOutput,
     state_bundle: &StateBundle,
 ) -> (Vec<Vec<Vec<f64>>>, Vec<Vec<Vec<f64>>>, Vec<Vec<Vec<f64>>>) {
+    let prep_output = &state_bundle.prep_output;
     let u_len: usize = prep_output.upgrade_arr.len();
-    let j_len: usize = prep_output.juice_info.one_gold_cost.len();
+    let j_len: usize = prep_output.juice_info.one_gold_cost_id.len();
 
     let mut mats_costs: Vec<Vec<Vec<f64>>> = vec![Vec::with_capacity(u_len); 7];
     let mut weap_juices_costs: Vec<Vec<Vec<f64>>> = vec![Vec::with_capacity(u_len); j_len];
@@ -88,7 +163,7 @@ pub fn generate_individual(
                 for (p_index, _) in upgrade.log_prob_dist.iter().enumerate() {
                     this_weap.push(costs_so_far.0);
                     this_armor.push(costs_so_far.1);
-                    let (juice, book_index) = state_bundle.state[u_index][p_index];
+                    let (juice, book_index) = upgrade.state[p_index];
                     if juice {
                         if upgrade.is_weapon {
                             costs_so_far.0 +=
@@ -124,37 +199,35 @@ pub fn generate_individual(
     (mats_costs, weap_juices_costs, armor_juices_costs)
 }
 
-pub fn compute_leftover_probs(
-    prep_output: &mut PreparationOutput,
-    state_bundle: &mut StateBundle,
-) -> Vec<f64> {
-    init_dist(state_bundle, prep_output);
+pub fn compute_leftover_probs(state_bundle: &mut StateBundle) -> Vec<f64> {
+    init_dist(state_bundle);
 
     let (mut mats_costs, mut weap_juices_costs, mut armor_juices_costs) =
-        generate_individual(prep_output, &state_bundle);
+        generate_individual(state_bundle);
     let mut prob_leftover: Vec<f64> = Vec::new();
+    let mut dummy_performance = Performance::new();
     for (t_index, support_arr) in mats_costs.iter_mut().enumerate() {
         prob_leftover.push(honing_sa_wrapper(
             state_bundle,
-            prep_output,
             support_arr,
-            prep_output.budgets[t_index] as f64,
+            state_bundle.prep_output.budgets[t_index] as f64,
+            &mut dummy_performance,
         ));
     }
     for (t_index, support_arr) in weap_juices_costs.iter_mut().enumerate() {
         prob_leftover.push(honing_sa_wrapper(
             state_bundle,
-            prep_output,
             support_arr,
-            prep_output.juice_books_owned[t_index].0 as f64,
+            state_bundle.prep_output.juice_books_owned[t_index].0 as f64,
+            &mut dummy_performance,
         ));
     }
     for (t_index, support_arr) in armor_juices_costs.iter_mut().enumerate() {
         prob_leftover.push(honing_sa_wrapper(
             state_bundle,
-            prep_output,
             support_arr,
-            prep_output.juice_books_owned[t_index].1 as f64,
+            state_bundle.prep_output.juice_books_owned[t_index].1 as f64,
+            &mut dummy_performance,
         ));
     }
     prob_leftover
@@ -197,14 +270,15 @@ pub fn new_prob_dist(
     out
 }
 
-pub fn init_dist(state_bundle: &mut StateBundle, prep_output: &mut PreparationOutput) {
+pub fn init_dist(state_bundle: &mut StateBundle) {
+    // TODO add a toggle for computing log or not
     // dbg!(&prep_output, &state_bundle);
     // let zero_probs: Vec<f64> = special_probs(prep_output, state_bundle);
     // dbg!(&zero_probs);
-    for (u_index, upgrade) in prep_output.upgrade_arr.iter_mut().enumerate() {
+    for upgrade in state_bundle.prep_output.upgrade_arr.iter_mut() {
         let prob_dist: Vec<f64> = new_prob_dist(
-            &state_bundle.state[u_index],
-            &prep_output.juice_info,
+            &upgrade.state,
+            &state_bundle.prep_output.juice_info,
             upgrade,
             0.0,
         );
@@ -214,54 +288,4 @@ pub fn init_dist(state_bundle: &mut StateBundle, prep_output: &mut PreparationOu
 
         // gold_costs_arr.push(gold_cost_record);
     }
-}
-
-fn honing_sa_wrapper(
-    state_bundle: &mut StateBundle,
-    prep_output: &mut PreparationOutput,
-    mut support_arr: &mut [Vec<f64>],
-    budget: f64,
-) -> f64 {
-    let mut out: f64 = 0.0;
-
-    let (mut log_prob_dist_arr, mut prob_dist_arr) = prep_output.gather_dists();
-    sort_by_indices(&mut log_prob_dist_arr, state_bundle.special_state.clone());
-    sort_by_indices(&mut prob_dist_arr, state_bundle.special_state.clone());
-    sort_by_indices(&mut support_arr, state_bundle.special_state.clone());
-    for (index, prob) in special_probs(prep_output, state_bundle).iter().enumerate() {
-        if index > 0 && *prob < 1e-7 {
-            break;
-        }
-        // dbg!(&support_arr[index..]);
-        let this_prob: f64 = saddlepoint_approximation_wrapper(
-            &log_prob_dist_arr[index..],
-            &prob_dist_arr[index..],
-            &support_arr[index..],
-            find_non_zero_min_vec(&support_arr[index..], &log_prob_dist_arr[index..]),
-            support_arr[index..].iter().map(|x| x.last().unwrap()).sum(),
-            budget,
-            &mut 0.0,
-        );
-
-        out += *prob * this_prob;
-    }
-
-    out
-}
-pub fn honing_sa_metric(
-    state_bundle: &mut StateBundle,
-    prep_output: &mut PreparationOutput,
-    states_evaled: &mut i64,
-) -> f64 {
-    *states_evaled += 1;
-
-    init_dist(state_bundle, prep_output);
-    let mut combined_costs: Vec<Vec<f64>> = generate_combined(prep_output, state_bundle);
-    let out: f64 = honing_sa_wrapper(
-        state_bundle,
-        prep_output,
-        &mut combined_costs,
-        prep_output.eqv_gold_budget,
-    );
-    out
 }

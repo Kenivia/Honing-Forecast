@@ -1,3 +1,5 @@
-pub mod normal_sa;
+pub mod average;
+mod core;
 mod saddlepoint_approximation;
-pub mod special_sa;
+pub mod special;
+pub mod success_prob;

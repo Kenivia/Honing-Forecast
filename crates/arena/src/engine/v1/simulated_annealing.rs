@@ -1,6 +1,7 @@
 // use hf_core::energy::prob_to_maximize_exact;
 
 use hf_core::parser::PreparationOutput;
+use hf_core::performance::Performance;
 use hf_core::state::StateBundle;
 use rand::Rng;
 use rand::distr::Distribution;
@@ -10,7 +11,7 @@ use rand::seq::IteratorRandom;
 // use std::collections::HashMap;
 
 fn acceptance<R: Rng>(new: f64, old: f64, temperature: f64, rng: &mut R) -> bool {
-    let delta: f64 = old - new;
+    let delta: f64 = (old - new) / old.abs().max(1.0);
     let prob: f64 = if delta <= 0.0 {
         1.0
     } else if temperature <= 0.0 {
@@ -66,13 +67,7 @@ fn my_weighted_rand<R: Rng>(
     }
     res.unwrap().sample(rng) + offset
 }
-fn neighbour<R: Rng>(
-    state_bundle: &mut StateBundle,
-    prep_output: &PreparationOutput,
-    temp: f64,
-    init_temp: f64,
-    rng: &mut R,
-) {
+fn neighbour<R: Rng>(state_bundle: &mut StateBundle, temp: f64, init_temp: f64, rng: &mut R) {
     if state_bundle.special_state.len() > 1 {
         let want_to_swap: usize = my_weighted_rand(
             state_bundle.special_state.len(),
@@ -93,9 +88,9 @@ fn neighbour<R: Rng>(
         }
     }
 
-    for (u_index, state) in state_bundle.state.iter_mut().enumerate() {
-        let upgrade = &prep_output.upgrade_arr[u_index];
+    for upgrade in state_bundle.prep_output.upgrade_arr.iter_mut() {
         let choice_len: usize = upgrade.books_avail as usize;
+        let state = &mut upgrade.state;
 
         let want_to_flip: usize = my_weighted_rand(state.len(), temp, init_temp, 1, 0.8, rng);
 
@@ -116,6 +111,11 @@ fn neighbour<R: Rng>(
         let mut booked_index: usize = 0;
 
         let mut artisan: f64 = 0.0;
+        let base_chance = upgrade.base_chance;
+        let artisan_rate = upgrade.artisan_rate;
+        let upgrade_index = upgrade.upgrade_index;
+        let juice_chances = state_bundle.prep_output.juice_info.chances[upgrade_index].clone();
+
         for (s_index, (juice, book_index)) in state.iter_mut().enumerate() {
             if artisan >= 1.0 || s_index == 0 {
                 (*juice, *book_index) = (false, 0);
@@ -143,15 +143,11 @@ fn neighbour<R: Rng>(
                 }
             }
             artisan += (46.51_f64 / 100.0)
-                * upgrade.artisan_rate
-                * (upgrade.base_chance
-                    + if *juice {
-                        prep_output.juice_info.chances[upgrade.upgrade_index][0]
-                    } else {
-                        0.0
-                    }
+                * artisan_rate
+                * (base_chance
+                    + if *juice { juice_chances[0] } else { 0.0 }
                     + if *book_index > 0 {
-                        prep_output.juice_info.chances[upgrade.upgrade_index][*book_index as usize]
+                        juice_chances[*book_index as usize]
                     } else {
                         0.0
                     });
@@ -170,28 +166,24 @@ fn new_temp(temp: f64, alpha: f64) -> f64 {
 }
 
 pub fn solve<R: Rng, F>(
-    prep_output: &mut PreparationOutput,
+    prep_output: PreparationOutput,
     rng: &mut R,
-    states_evaled: &mut i64,
+    performance: &mut Performance,
     mut metric: F, // note that we're always trying to maximize this metric which is why i'm not calling it energy
 ) -> StateBundle
 where
-    F: FnMut(&mut StateBundle, &mut PreparationOutput, &mut i64) -> f64,
+    F: FnMut(&mut StateBundle, &mut Performance) -> f64,
 {
-    let init_temp: f64 = 333.0; // 0.969 = ~32
+    let init_temp: f64 = 333.0;
+    // let init_temp: f64 = -1.0; // 0.969 = ~32
     // let mut cache: HashMap<(Vec<bool>, usize), Vec<([i64; 9], f64)>> = HashMap::new();
     let mut temp: f64 = init_temp;
-    let mut state: Vec<Vec<(bool, usize)>> = Vec::with_capacity(prep_output.upgrade_arr.len());
     let mut starting_special: Vec<usize> = Vec::with_capacity(prep_output.upgrade_arr.len() * 2);
-    for (index, upgrade) in prep_output.upgrade_arr.iter().enumerate() {
-        // state.push(vec![rng.random_bool(0.5); upgrade.support_lengths[0]]);
-        state.push(vec![(false, 0); upgrade.original_prob_dist.len()]);
-
+    for (index, _upgrade) in prep_output.upgrade_arr.iter().enumerate() {
         starting_special.push(index); //, (1.0 / upgrade.base_chance).round() as usize));
     }
 
     let mut state_bundle: StateBundle = StateBundle {
-        state: state,
         names: prep_output
             .upgrade_arr
             .iter()
@@ -209,9 +201,10 @@ where
         state_index: vec![],
         metric: -1.0,
         special_state: starting_special,
+        prep_output,
     };
 
-    state_bundle.metric = metric(&mut state_bundle, prep_output, states_evaled);
+    state_bundle.metric = metric(&mut state_bundle, performance);
     let mut prev_state: StateBundle = state_bundle.clone();
 
     let iterations_per_temp = 69;
@@ -223,8 +216,8 @@ where
 
     let mut temps_without_improvement = 1;
     while temp >= 0.0 {
-        neighbour(&mut state_bundle, prep_output, temp, init_temp, rng);
-        state_bundle.metric = metric(&mut state_bundle, prep_output, states_evaled);
+        neighbour(&mut state_bundle, temp, init_temp, rng);
+        state_bundle.metric = metric(&mut state_bundle, performance);
 
         if state_bundle.metric > best_state_so_far.metric {
             best_state_so_far = state_bundle.clone();

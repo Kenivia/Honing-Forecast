@@ -77,15 +77,15 @@ pub static JUICE_BOOKS_AVAIL: &[&[(usize, f64, i64)]] = &[
     //19-20
     &[(18, 0.03, 1), (19, 0.015, 1)],
 ];
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct JuiceInfo {
     pub chances: Vec<Vec<f64>>,
     pub gold_costs: Vec<Vec<(f64, f64)>>,
     pub amt_used: Vec<Vec<i64>>,
     pub ids: Vec<Vec<usize>>,
-    pub one_gold_cost: Vec<(f64, f64)>,
+    pub one_gold_cost_id: Vec<(f64, f64)>,
     pub leftover_values: Vec<Vec<(f64, f64)>>,
-    pub one_leftover_value: Vec<(f64, f64)>,
+    pub one_leftover_value_id: Vec<(f64, f64)>,
     pub amt_used_id: Vec<Vec<i64>>,
     pub gold_costs_id: Vec<Vec<(f64, f64)>>,
 }
@@ -129,9 +129,9 @@ pub fn get_avail_juice_combs(
         gold_costs,
         amt_used,
         ids,
-        one_gold_cost,
+        one_gold_cost_id: one_gold_cost,
         leftover_values,
-        one_leftover_value,
+        one_leftover_value_id: one_leftover_value,
         amt_used_id,
         gold_costs_id,
     }

@@ -1,11 +1,13 @@
 use chrono::Local;
 use hf_arena::engine::{NOTES, solve};
 use hf_arena::parse_test_cases::parse_csv;
-use hf_core::average::average_gold_wrapper;
-use hf_core::brute::brute_naive_wrapper;
+use hf_core::brute::brute_success_prob_metric;
 use hf_core::monte_carlo::monte_carlo_wrapper;
+use hf_core::normal_honing_utils::compute_leftover_probs;
 use hf_core::parser::PreparationOutput;
-use hf_core::saddlepoint_approximation::normal_sa::{compute_leftover_probs, honing_sa_metric};
+use hf_core::performance::{Performance, PerformanceToWrite};
+use hf_core::saddlepoint_approximation::average::average_gold_metric;
+use hf_core::saddlepoint_approximation::success_prob::success_prob_metric;
 use hf_core::state::StateBundle;
 
 use rand::prelude::*;
@@ -17,14 +19,14 @@ use std::io::{BufRead, BufReader, BufWriter, Error, Write};
 use std::path::Path;
 use std::time::Instant;
 
-static NUM_TESTS_TO_RUN: i64 = 10; // TODO this should be replaced by statistical tests like fishtest eventually
+static NUM_TESTS_TO_RUN: i64 = 1; // TODO this should be replaced by statistical tests like fishtest eventually
 static MONTE_CARLO_COUNT: usize = 1_000_000;
-type EvalFn = fn(&mut StateBundle, &mut PreparationOutput, &mut i64) -> f64;
+type EvalFn = fn(&mut StateBundle, &mut Performance) -> f64;
 
 static METRICS: [(&str, EvalFn); 3] = [
-    ("SA", honing_sa_metric),
-    ("Avg", average_gold_wrapper),
-    ("Brute", brute_naive_wrapper),
+    ("SA", success_prob_metric),
+    ("Avg", average_gold_metric),
+    ("Brute", brute_success_prob_metric),
 ];
 
 #[derive(Debug, Serialize)]
@@ -39,8 +41,9 @@ struct Output {
     metric_type: String,
     trial_num: i64,
     wall_time: f64,
-    states_evaled: i64,
     best: f64,
+    performance: PerformanceToWrite,
+    best_state_performance: PerformanceToWrite,
     state: String,
     seed: u64,
     time_finished: String,
@@ -78,10 +81,11 @@ fn main() {
     let job_id: String = env::var("SLURM_JOB_ID").unwrap_or_else(|_| "local".to_string());
     let task_id: String = env::var("SLURM_ARRAY_TASK_ID").unwrap_or_else(|_| "0".to_string());
     let file_name: String = format!(
-        "Result_{}_{}_{}.jsonl",
+        "Result_{}_{}_{}_{}.jsonl",
         built_info::FEATURES_LOWERCASE_STR.to_string(),
         job_id,
-        task_id
+        task_id,
+        current_time_string().replace(":", "-"),
     );
 
     let mut seen_tests: HashMap<(i64, String), i64> = HashMap::new();
@@ -116,7 +120,7 @@ fn main() {
     let mut seed_rng: ThreadRng = rand::rng();
 
     let mut test_cases: Vec<(PreparationOutput, Vec<bool>)> =
-        parse_csv(Path::new("test_cases.csv")); // bloated_
+        parse_csv(Path::new("bloated_test_cases.csv")); // bloated_
 
     for _ in 0..NUM_TESTS_TO_RUN {
         for (prep_output, tests_to_run) in test_cases.iter_mut() {
@@ -132,40 +136,48 @@ fn main() {
                 }
                 let seed: u64 = seed_rng.next_u64();
                 let mut rng: StdRng = StdRng::seed_from_u64(seed);
-                let mut states_evaled: i64 = 0;
+                let mut performance: Performance = Performance::new();
 
                 let trial_num = seen_tests.entry(key.clone()).or_insert(0);
                 *trial_num += 1;
                 println!("Test case {:?} trial {}", key, trial_num);
-                let mut state_bundle: StateBundle =
-                    solve(prep_output, &mut rng, &mut states_evaled, metric_function);
+                let mut state_bundle: StateBundle = solve(
+                    prep_output.clone(),
+                    &mut rng,
+                    &mut performance,
+                    metric_function,
+                );
+
+                // Call metric on best state to get standalone performance metrics
+                let mut best_state_performance = Performance::new();
+                let _ = metric_function(&mut state_bundle, &mut best_state_performance);
 
                 let output: Output = Output {
-                    test_case: prep_output.test_case,
+                    test_case: state_bundle.prep_output.test_case,
                     trial_num: *trial_num,
                     wall_time: instant.elapsed().as_secs_f64(),
-                    states_evaled,
+
                     best: state_bundle.metric,
                     state: state_bundle.encode_all(),
                     seed,
                     time_finished: current_time_string(),
-                    prob_leftover: compute_leftover_probs(prep_output, &mut state_bundle),
+                    prob_leftover: compute_leftover_probs(&mut state_bundle),
                     metric_type: metric_type.clone(),
+                    performance: performance.to_write(),
+                    best_state_performance: best_state_performance.to_write(),
                 };
 
                 instant = Instant::now();
                 if *trial_num == 1 {
-                    let (prob_leftover, success_rate, average_rate) = monte_carlo_wrapper(
-                        MONTE_CARLO_COUNT,
-                        &mut state_bundle,
-                        prep_output,
-                        &mut rng,
-                    );
+                    let (prob_leftover, success_rate, average_rate) =
+                        monte_carlo_wrapper(MONTE_CARLO_COUNT, &mut state_bundle, &mut rng);
+                    let mut mc_performance = Performance::new();
+                    mc_performance.states_evaluated = 1;
                     let verification_output: Output = Output {
-                        test_case: prep_output.test_case,
+                        test_case: state_bundle.prep_output.test_case,
                         trial_num: 0,
                         wall_time: instant.elapsed().as_secs_f64(),
-                        states_evaled: 1,
+
                         best: if metric_type == "SA" || metric_type == "brute" {
                             success_rate
                         } else {
@@ -176,6 +188,8 @@ fn main() {
                         time_finished: current_time_string(),
                         prob_leftover,
                         metric_type: "MC_".to_string() + &metric_type,
+                        performance: mc_performance.to_write(),
+                        best_state_performance: mc_performance.to_write(),
                     };
                     write_jsonl(&verification_output, &file_name)
                         .expect("Failed to write to result file");

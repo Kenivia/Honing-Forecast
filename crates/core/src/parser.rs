@@ -10,9 +10,8 @@ use crate::helpers::{calc_unlock, eqv_gold_per_tap, generate_first_deltas};
 // };
 // use rand::prelude::*;
 use serde::{Deserialize, Serialize};
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct PreparationOutput {
-    pub upgrade_arr: Vec<Upgrade>,
     pub unlock_costs: Vec<i64>,
     pub budgets: Vec<i64>,
 
@@ -25,6 +24,7 @@ pub struct PreparationOutput {
     pub juice_info: JuiceInfo,
     pub juice_books_owned: Vec<(i64, i64)>, // juice_books_owned[id].0 = weap owned
     pub sellable_toggles: Vec<bool>,
+    pub upgrade_arr: Vec<Upgrade>,
 }
 
 fn actual_eqv_gold(
@@ -38,9 +38,9 @@ fn actual_eqv_gold(
     for i in 0..7 {
         total += price_arr[i] * budgets[i] as f64;
     }
-    for (index, i) in juice_books_owned.iter().enumerate() {
-        total += i.0 as f64 * juice_info.one_gold_cost[index].0 as f64;
-        total += i.1 as f64 * juice_info.one_gold_cost[index].1 as f64;
+    for (id, i) in juice_books_owned.iter().enumerate() {
+        total += i.0 as f64 * juice_info.one_gold_cost_id[id].0 as f64;
+        total += i.1 as f64 * juice_info.one_gold_cost_id[id].1 as f64;
     }
     total -= unlock_costs[0] as f64 * price_arr[3];
     total -= unlock_costs[1] as f64 * price_arr[6];
@@ -223,6 +223,7 @@ pub struct Upgrade {
     pub books_avail: i64,
     // pub juice_arr: Vec<f64>,
     pub log_prob_dist: Vec<f64>,
+    pub state: Vec<(bool, usize)>, // state for this upgrade - (juice_used, book_index) per tap
 }
 
 impl Upgrade {
@@ -250,7 +251,7 @@ impl Upgrade {
         Self {
             is_normal_honing: true,
             prob_dist: prob_dist.clone(),
-            original_prob_dist: prob_dist,
+            original_prob_dist: prob_dist.clone(),
             base_chance,
             costs,
             one_juice_cost: NORMAL_JUICE_COST[upgrade_index],
@@ -273,6 +274,7 @@ impl Upgrade {
             juice_avail: upgrade_index > 2, // will overwrite this in prep initialization anyway
             books_avail: -1,                // will overwrite in prep
             log_prob_dist: vec![],
+            state: vec![(false, 0); prob_dist.len()], // initialize state with default values
         }
     }
 
@@ -291,7 +293,7 @@ impl Upgrade {
         Self {
             is_normal_honing: false,
             prob_dist: prob_dist.clone(),
-            original_prob_dist: prob_dist,
+            original_prob_dist: prob_dist.clone(),
             base_chance: 0.0,
             costs,
             one_juice_cost,
@@ -316,6 +318,7 @@ impl Upgrade {
             juice_avail: upgrade_index > 2, // will overwrite this in prep initialization anyway
             books_avail: -1,                // will overwrite in prep
             log_prob_dist: vec![],
+            state: vec![(false, 0); prob_dist.len()], // initialize state with default values
         }
     }
 }
