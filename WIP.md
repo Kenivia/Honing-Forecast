@@ -6,9 +6,12 @@
 ### Now
 
 - normalize average metric's interaction with acceptance
+  - use the "biggest seen gap" to normalize?
 - work on making things faster cos god its slow af now with the special stuff
   - is there really no better way to do the special probs(can i get away with an approximation some how)
-  - is theer any shortcuts i can take by limiting special
+    - cache the geom calculations
+    - take advantage of the fact that the special costs share a common factor
+    - somehow avoid re-allocating maybe
 
 - um make sure things are like correct like why tf did monte carlo change
 
@@ -23,7 +26,8 @@
   - need to store helmet/whatever informaiton in Upgrade,
     - get rid of non-tick input i guess?
 
-- start working on visualizing this stuff
+- How to allow artisan / upgrade chances editing
+  - disallow numerical input and only allow taps via UI? that'd make more sense I think
 
 ### Big
 
@@ -49,6 +53,8 @@
 - add assertions to a lot of prepoutput stuff
   
 - SURELY there's a better way to lay out juiceinfo...
+
+- start working on visualizing this stuff
 
 ### Energy
 

@@ -257,7 +257,7 @@ pub fn calc_unlock(
         }
     }
 
-    Vec::from([0, 0, 0, shard_unlock, 0, 0, silver_unlock])
+    vec![shard_unlock, silver_unlock]
 }
 
 // // (maxroll) average, without the unlock costs

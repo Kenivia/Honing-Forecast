@@ -169,7 +169,9 @@ pub fn monte_carlo_data<R: Rng>(
         }
     }
     // dbg!(actual_out);
-    // dbg!(&special_probs(state_bundle));
+    // dbg!(&crate::saddlepoint_approximation::special::special_probs(
+    //     state_bundle
+    // ));
     (mats_data, juice_data)
 }
 
@@ -262,12 +264,12 @@ pub fn monte_carlo_wrapper<R: Rng>(
 
         d.1 /= data_size as f64;
     }
-    // dbg!(
-    //     &debug_avg_mats,
-    //     &state_bundle.prep_output.price_arr,
-    //     &state_bundle.prep_output.leftover_values,
-    //     &debug_avg_juices
-    // );
+    dbg!(
+        &debug_avg_mats,
+        &state_bundle.prep_output.price_arr,
+        &state_bundle.prep_output.leftover_values,
+        &debug_avg_juices
+    );
     let prob_leftover: Vec<f64> = leftover_counts
         .into_iter()
         .map(|x| x as f64 / data_size as f64)
