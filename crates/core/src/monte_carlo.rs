@@ -238,19 +238,19 @@ pub fn monte_carlo_wrapper<R: Rng>(
 
         let mut leftover_index: usize = 0;
         for (index, mat) in row.iter().enumerate() {
-            if *mat < state_bundle.prep_output.budgets[index] {
+            if *mat <= state_bundle.prep_output.budgets[index] {
                 leftover_counts[leftover_index] += 1;
             }
             leftover_index += 1;
         }
         for (index, juice) in juice_data[r_index].iter().enumerate() {
-            if juice.0 < state_bundle.prep_output.juice_books_owned[index].0 {
+            if juice.0 <= state_bundle.prep_output.juice_books_owned[index].0 {
                 leftover_counts[leftover_index] += 1;
             }
             leftover_index += 1;
         }
         for (index, juice) in juice_data[r_index].iter().enumerate() {
-            if juice.1 < state_bundle.prep_output.juice_books_owned[index].1 {
+            if juice.1 <= state_bundle.prep_output.juice_books_owned[index].1 {
                 leftover_counts[leftover_index] += 1;
             }
             leftover_index += 1;

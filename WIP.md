@@ -5,11 +5,6 @@
 
 ### Now
 
-- normalize average metric's interaction with acceptance
-  - use the "biggest seen gap" to normalize?
-  
-- fix the leftover evaluation like i think sometimes the trivial case is wrong
-
 - make a more sensible suite of test cases to test the behaviour of the metric functions
 
 #### Optimizations
@@ -38,6 +33,13 @@
     - get rid of non-tick input i guess?
 
 - better average evaluation (like is there a better estimate)
+  - also hunt down the edge case where sa failed - i think something wrong with the support or something
+
+- add assertions to a lot of prepoutput stuff
+  
+- SURELY there's a better way to lay out juiceinfo...
+
+- start working on visualizing this stuff
 
 ### Big
 
@@ -79,13 +81,21 @@
     - output: juice advice, new prob(old prob)
   - need to figure out how the ui is gonna look like
 
-  - both: updatable clicks
+  - (both: updatable clicks)
 
-- add assertions to a lot of prepoutput stuff
-  
-- SURELY there's a better way to lay out juiceinfo...
+- should probably start from the user experience:
+  - Simple/average/alt/efficiency mode:
+    1. tick upgrades
+    2. adjust price / leftover and input owned budget
+    3. done (average optimizing algorithm gives a state & special state)
+    4. (optional) click taps as we go and update "mats used" and stuff and update the state
 
-- start working on visualizing this stuff
+  - Advanced/prob-of-success/main/play-it-safe mode:
+    1. warn if applicable, tell user to untick(set price to 0) mats that they have too much of
+    2. same thing as simple mode
+
+  - Forecast mode for both: just a convenience thing, add a column of "earned per week" and how many weeks to forecast
+  - (idk i'll figure out forecast later)
 
 ### Algorithm ideas
 
@@ -141,6 +151,10 @@ graph
 
 ## Done / cancelled
 
+- ~~fix the leftover evaluation like i think sometimes the trivial case is wrong~~
+- ~~normalize average metric's interaction with acceptance~~
+  - ~~use the "biggest seen gap" to normalize?~~
+  
 - ~~um make sure things are like correct like why tf did monte carlo change~~
 - ~~rework how special state works (just re-oredr upgrade_arr i think)~~
   - ~~optimize the reorder with swap maybe while i'm at it~~

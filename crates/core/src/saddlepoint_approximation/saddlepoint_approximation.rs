@@ -5,6 +5,7 @@ use crate::performance::Performance;
 use crate::saddlepoint_approximation::core::{THETA_LIMIT, THETA_TOL, ks_01234, my_newton};
 use crate::state::StateBundle;
 use statrs::distribution::{Continuous, ContinuousCDF, Normal};
+
 pub static DEBUG: bool = false;
 
 pub static MIN_LATTICE_SPAN: f64 = 1e-2;
@@ -143,8 +144,13 @@ pub fn saddlepoint_approximation(
     }
     if min_value + FLOAT_TOL + span > max_value - FLOAT_TOL - span {
         // this is just for when support is all 0s, idek what the condition should be
+        // im pre sure this case is impossible but i dont wanan think abt it
         performance.trivial_count += 1;
-        return if min_value <= inp_budget { 1.0 } else { 0.0 };
+        return if max_value + FLOAT_TOL <= inp_budget {
+            1.0
+        } else {
+            0.0
+        };
     }
 
     let budget = (inp_budget / span).floor() * span + span / 2.0;
@@ -306,7 +312,7 @@ pub fn saddlepoint_approximation(
         // }
     }
 
-    if DEBUG || actual_out < 0.0 || actual_out > 1.0 || !actual_out.is_finite() {
+    if DEBUG || actual_out < -FLOAT_TOL || actual_out > FLOAT_TOL || !actual_out.is_finite() {
         dbg!(
             f_df(THETA_LIMIT),
             f_df(1.0),
@@ -316,17 +322,22 @@ pub fn saddlepoint_approximation(
         );
         dbg!(theta_hat, theta_error);
         dbg!(w_hat, u_hat, error, sa_out);
-        // dbg!(
-        //     log_prob_dist_arr
-        //         .iter()
-        //         .map(|x| x.iter().map(|y| y.exp()).sum::<f64>())
-        //         .collect::<Vec<f64>>(),
-        //     log_prob_dist_arr
-        //         .iter()
-        //         .map(|x| x.iter().map(|y| y.exp()).collect())
-        //         .collect::<Vec<Vec<f64>>>(),
-        //     support_arr
-        // );
+        dbg!(
+            state_bundle
+                .extract_log_prob(skip_count)
+                .into_iter()
+                .map(|x| x.iter().map(|y| y.exp()).sum::<f64>())
+                .collect::<Vec<f64>>(),
+            state_bundle
+                .extract_log_prob(skip_count)
+                .into_iter()
+                .map(|x| x.iter().map(|y| y.exp()).collect())
+                .collect::<Vec<Vec<f64>>>(),
+            state_bundle
+                .extract_support(support_index, skip_count)
+                .into_iter()
+                .collect::<Vec<&Vec<f64>>>(),
+        );
         dbg!(
             theta_hat,
             ks_tuple,
@@ -341,6 +352,10 @@ pub fn saddlepoint_approximation(
             1.0 / w_hat - 1.0 / u_hat,
             min_value,
             budget,
+            crate::saddlepoint_approximation::average::simple_average(
+                state_bundle.extract_prob(skip_count),
+                state_bundle.extract_support(support_index, skip_count),
+            ),
             max_value,
             sa_out,
             approx,

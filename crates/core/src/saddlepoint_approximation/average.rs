@@ -10,7 +10,7 @@ use crate::saddlepoint_approximation::special::special_probs;
 use crate::state::StateBundle;
 
 use statrs::distribution::{Continuous, Normal};
-/// Computes average gold using leftover pricing (leftover_value for excess, price for shortage)
+
 pub fn average_gold_metric(state_bundle: &mut StateBundle, performance: &mut Performance) -> f64 {
     state_bundle.update_dist();
     state_bundle.update_individual_support();
@@ -126,7 +126,7 @@ pub fn average_gold_metric(state_bundle: &mut StateBundle, performance: &mut Per
 //     total_gold
 // }
 
-fn simple_average<'a, I>(prob_dist_arr: I, support_arr: I) -> f64
+pub fn simple_average<'a, I>(prob_dist_arr: I, support_arr: I) -> f64
 where
     I: F64_2d<'a>,
 {

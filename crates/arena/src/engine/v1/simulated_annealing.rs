@@ -1,5 +1,7 @@
 // use hf_core::energy::prob_to_maximize_exact;
 
+use std::f64::{MAX, MIN};
+
 use hf_core::parser::PreparationOutput;
 use hf_core::performance::Performance;
 use hf_core::state::StateBundle;
@@ -10,8 +12,14 @@ use rand::seq::IteratorRandom;
 
 // use std::collections::HashMap;
 
-fn acceptance<R: Rng>(new: f64, old: f64, temperature: f64, rng: &mut R) -> bool {
-    let delta: f64 = (old - new) / old.abs().max(1.0);
+fn acceptance<R: Rng>(
+    new: f64,
+    old: f64,
+    temperature: f64,
+    biggest_gap_seen: f64,
+    rng: &mut R,
+) -> bool {
+    let delta: f64 = (old - new) / biggest_gap_seen.max(1.0);
     let prob: f64 = if delta <= 0.0 {
         1.0
     } else if temperature <= 0.0 {
@@ -212,14 +220,16 @@ where
     // let mut temperature_level_k = 0;
     let mut count: i64 = 0;
     let alpha: f64 = 0.99;
-
+    let mut highest_seen: f64 = MIN;
+    let mut lowest_seen: f64 = MAX;
     let mut best_state_so_far: StateBundle = state_bundle.clone();
 
     let mut temps_without_improvement = 1;
     while temp >= 0.0 {
         neighbour(&mut state_bundle, temp, init_temp, rng);
         state_bundle.metric = metric(&mut state_bundle, performance);
-
+        highest_seen = highest_seen.max(state_bundle.metric);
+        lowest_seen = lowest_seen.min(state_bundle.metric);
         if state_bundle.metric > best_state_so_far.metric {
             best_state_so_far = state_bundle.clone();
             temps_without_improvement = 0;
@@ -240,7 +250,13 @@ where
             // );
         }
 
-        if acceptance(state_bundle.metric, prev_state.metric, temp, rng) {
+        if acceptance(
+            state_bundle.metric,
+            prev_state.metric,
+            temp,
+            highest_seen - lowest_seen,
+            rng,
+        ) {
             prev_state = state_bundle.clone();
         } else {
             state_bundle.clone_from(&prev_state);
