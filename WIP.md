@@ -7,35 +7,66 @@
 
 - normalize average metric's interaction with acceptance
   - use the "biggest seen gap" to normalize?
-- work on making things faster cos god its slow af now with the special stuff
-  - is there really no better way to do the special probs(can i get away with an approximation some how)
-    - cache the geom calculations
-    - take advantage of the fact that the special costs share a common factor
-    - somehow avoid re-allocating maybe
+  
+- fix the leftover evaluation like i think sometimes the trivial case is wrong
 
-- um make sure things are like correct like why tf did monte carlo change
+- make a more sensible suite of test cases to test the behaviour of the metric functions
 
-### Later
+#### Optimizations
+
+- is there really no better way to do the special probs(can i get away with an approximation some how)
+  - cache the geom calculations
+  - take advantage of the fact that the special costs share a common factor
+  - somehow avoid re-allocating maybe
+  - skip small mass?
+
+- use polynomial for equal stepped stuff like for mat costs in averages
+  - add a tag to the support or just do it via support index
+
+- add a brute forced average evaluator?
+
+### Misc
 
 - figure out what's the like optimal brute threshold
 
 - JUICE CHESTS AND MAYBE EVEN BOOKS CHESTS
   - just a greedy algorithm based on the prices
 
-- force special state to respect upgrade order (no +16 before at least 1 +15)
-  - need to store helmet/whatever informaiton in Upgrade,
+- force special state to respect upgrade order
+  - just ignore invalid ones? or what
+  - need to store helmet/whatever information in Upgrade,
     - get rid of non-tick input i guess?
 
-- How to allow artisan / upgrade chances editing
-  - disallow numerical input and only allow taps via UI? that'd make more sense I think
+- better average evaluation (like is there a better estimate)
 
 ### Big
 
+#### Scale up compute
+
 - set up slurm on laptop
-- how to evaluate adaptive policies??? (also allow fixing the first few outcomes and wire that up to the website(artisan editing))
-- advanced honing eventually
+  - maybe write a dispatcher instead of naively running them in parallel
+
+#### Analysis
+
+- elo or percentage deviation? idk need to do more research
+- how to visualize / interact with this data
+- how to evaluate adaptive policies???
+
+#### Advanced honing
+
+- use monte carlo to generate the distribution, then allow for a few strategies
+  - no juice, full juice, no juice full scroll, full juice full scroll, FULL SCROLL etc
+  - then the state just selects one of these distributions
+
+#### Editable artisan / progress
+
+- each upgrade will have a starting artisan value attached, state generation and stuff should work automatically
+
+#### Website
+
 - multiple selectable & editable express
   - rework constant.rs to take in a json or something so it can interface with the website
+  - eventually T4.5 integration
 
 - wire up all this to the website:
   - Average mode / alt modee / efficiency mode:
@@ -56,10 +87,6 @@
 
 - start working on visualizing this stuff
 
-### Energy
-
-- maybe add some way to keep track of where bits are to make neighbor potentially more efficient
-
 ### Algorithm ideas
 
 - stopping early if no improvements (an adaptive temperature / annealing schedule i guess )
@@ -68,11 +95,7 @@
 - keep a top 10 list and randomly restart to them instead of just the top 1
 - some kind of heatmap of which bits were the most impactful? but i feel like this wouldnt actually do much
   - can definitely think about which upgrades were the most impactful tho
-
-### Data analysis
-
-- elo or percentage deviation? idk need to do more research
-- how to visualize / interact with this data
+- maybe add some way to keep track of where bits are to make neighbor potentially more efficient
 
 ## Next big step(s)
 
@@ -118,6 +141,7 @@ graph
 
 ## Done / cancelled
 
+- ~~um make sure things are like correct like why tf did monte carlo change~~
 - ~~rework how special state works (just re-oredr upgrade_arr i think)~~
   - ~~optimize the reorder with swap maybe while i'm at it~~
 
