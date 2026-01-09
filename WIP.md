@@ -6,6 +6,11 @@
 ### Now
 
 - normalize average metric's interaction with acceptance
+- work on making things faster cos god its slow af now with the special stuff
+  - is there really no better way to do the special probs(can i get away with an approximation some how)
+  - is theer any shortcuts i can take by limiting special
+
+- um make sure things are like correct like why tf did monte carlo change
 
 ### Later
 
@@ -106,6 +111,9 @@ graph
 - improve how the cost estimation works / verify that it actually works
 
 ## Done / cancelled
+
+- ~~rework how special state works (just re-oredr upgrade_arr i think)~~
+  - ~~optimize the reorder with swap maybe while i'm at it~~
 
 - ~~imporve how state bundle works~~
   - ~~store a copy of prep output in state bundle~~

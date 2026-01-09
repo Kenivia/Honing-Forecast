@@ -1,17 +1,19 @@
 use crate::constants::FLOAT_TOL;
+use crate::helpers::F64_2d;
 use crate::performance::Performance;
-
 pub static THETA_TOL: f64 = 1e-10;
 pub static THETA_LIMIT: f64 = 1e2; // th
-pub fn ks_01234(
-    log_prob_dist_arr: &[Vec<f64>],
-    support_arr: &[Vec<f64>],
+
+pub fn ks_01234<'a, I>(
+    log_prob_dist_arr: I,
+    support_arr: I,
     theta: f64,
     (total_k, total_k1, total_k2, total_k3, total_k4): &mut (f64, f64, f64, f64, f64),
     toggle: &(bool, bool, bool, bool, bool), // honestly the performance gain here is probably so negligible compared to all the exp and ln calls but whatever
-) {
-    for (u_index, log_prob_dist) in log_prob_dist_arr.iter().enumerate() {
-        let support = &support_arr[u_index];
+) where
+    I: F64_2d<'a>,
+{
+    for (log_prob_dist, support) in log_prob_dist_arr.into_iter().zip(support_arr) {
         let mut ignore: bool = true;
         for i in support {
             if *i > 0.0 {
@@ -38,14 +40,14 @@ pub fn ks_01234(
             dbg!(
                 sanity_check,
                 log_prob_dist,
-                log_prob_dist_arr
-                    .iter()
-                    .map(|x| x.iter().map(|y| y.exp()).sum::<f64>())
-                    .collect::<Vec<f64>>(),
-                log_prob_dist_arr
-                    .iter()
-                    .map(|x| x.iter().map(|y| y.exp()).collect())
-                    .collect::<Vec<Vec<f64>>>(),
+                // log_prob_dist_arr
+                //     .into_iter()
+                //     .map(|x| x.iter().map(|y| y.exp()).sum::<f64>())
+                //     .collect::<Vec<f64>>(),
+                // log_prob_dist_arr
+                //     .into_iter()
+                //     .map(|x| x.iter().map(|y| y.exp()).collect())
+                //     .collect::<Vec<Vec<f64>>>(),
             );
             panic!();
         }

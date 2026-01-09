@@ -202,6 +202,7 @@ where
         metric: -1.0,
         special_state: starting_special,
         prep_output,
+        combined_gold_costs: vec![],
     };
 
     state_bundle.metric = metric(&mut state_bundle, performance);

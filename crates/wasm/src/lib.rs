@@ -1,205 +1,205 @@
-/// Wrappers for functoins to be called via something like
-/// async function MonteCarloWasm(payload: any) {
-///     await init()
-///     return (monte_carlo_wrapper as any)(payload)
-/// }
-/// (imported via import init, {monte_carlo_wrapper} from "@/../pkg/honing_forecast.js"
-use hf_core::cost_to_chance::{
-    CostToChanceArrOut, CostToChanceOut, cost_to_chance, cost_to_chance_arr,
-};
-use hf_core::helpers::{average_cost, calc_unlock, get_count};
+// /// Wrappers for functoins to be called via something like
+// /// async function MonteCarloWasm(payload: any) {
+// ///     await init()
+// ///     return (monte_carlo_wrapper as any)(payload)
+// /// }
+// /// (imported via import init, {monte_carlo_wrapper} from "@/../pkg/honing_forecast.js"
+// use hf_core::cost_to_chance::{
+//     CostToChanceArrOut, CostToChanceOut, cost_to_chance, cost_to_chance_arr,
+// };
+// use hf_core::helpers::{calc_unlock, get_count};
 
-use hf_core::parser::{Upgrade, parser, parser_with_other_strategy};
+// use hf_core::parser::{parser, parser_with_other_strategy};
+// use hf_core::upgrade::Upgrade;
+// use serde::Deserialize;
+// use serde_wasm_bindgen::{from_value, to_value};
+// use wasm_bindgen::JsValue;
+// use wasm_bindgen::prelude::*;
 
-use serde::Deserialize;
-use serde_wasm_bindgen::{from_value, to_value};
-use wasm_bindgen::JsValue;
-use wasm_bindgen::prelude::*;
+// #[derive(Deserialize)]
+// pub struct Payload {
+//     normal_hone_ticks: Option<Vec<Vec<bool>>>,
+//     adv_hone_ticks: Option<Vec<Vec<bool>>>,
+//     normal_counts: Option<Vec<Vec<i64>>>,
+//     adv_counts: Option<Vec<Vec<i64>>>,
 
-#[derive(Deserialize)]
-pub struct Payload {
-    normal_hone_ticks: Option<Vec<Vec<bool>>>,
-    adv_hone_ticks: Option<Vec<Vec<bool>>>,
-    normal_counts: Option<Vec<Vec<i64>>>,
-    adv_counts: Option<Vec<Vec<i64>>>,
+//     adv_hone_strategy: String,
+//     budget: Vec<i64>,
+//     express_event: bool,
+//     bucket_count: usize,
+//     user_price_arr: Option<Vec<f64>>,
+//     #[allow(dead_code)]
+//     data_size: Option<usize>,
+//     cost_data: Option<Vec<Vec<i64>>>,
+// }
 
-    adv_hone_strategy: String,
-    budget: Vec<i64>,
-    express_event: bool,
-    bucket_count: usize,
-    user_price_arr: Option<Vec<f64>>,
-    #[allow(dead_code)]
-    data_size: Option<usize>,
-    cost_data: Option<Vec<Vec<i64>>>,
-}
+// #[derive(Deserialize)]
+// pub struct PayloadArr {
+//     normal_hone_ticks: Option<Vec<Vec<bool>>>,
+//     adv_hone_ticks: Option<Vec<Vec<bool>>>,
+//     normal_counts: Option<Vec<Vec<i64>>>,
+//     adv_counts: Option<Vec<Vec<i64>>>,
 
-#[derive(Deserialize)]
-pub struct PayloadArr {
-    normal_hone_ticks: Option<Vec<Vec<bool>>>,
-    adv_hone_ticks: Option<Vec<Vec<bool>>>,
-    normal_counts: Option<Vec<Vec<i64>>>,
-    adv_counts: Option<Vec<Vec<i64>>>,
+//     adv_hone_strategy: String,
+//     budget_arr: Vec<Vec<i64>>,
+//     express_event: bool,
+//     user_price_arr: Option<Vec<f64>>,
 
-    adv_hone_strategy: String,
-    budget_arr: Vec<Vec<i64>>,
-    express_event: bool,
-    user_price_arr: Option<Vec<f64>>,
+//     #[allow(dead_code)]
+//     data_size: Option<usize>,
+//     cost_data: Option<Vec<Vec<i64>>>,
+// }
 
-    #[allow(dead_code)]
-    data_size: Option<usize>,
-    cost_data: Option<Vec<Vec<i64>>>,
-}
+// // #[wasm_bindgen]
+// // #[must_use]
+// // pub fn monte_carlo_wrapper(input: JsValue) -> JsValue {
+// //     console_error_panic_hook::set_once();
+// //     let payload: Payload = from_value(input).unwrap();
+
+// //     let normal_counts: Vec<Vec<i64>> = get_count(payload.normal_counts, payload.normal_hone_ticks);
+// //     let adv_counts: Vec<Vec<i64>> = get_count(payload.adv_counts, payload.adv_hone_ticks);
+
+// //     let user_price_arr: Vec<f64> = payload.user_price_arr.unwrap_or(vec![0.0; 7]);
+// //     let adv_hone_strategy: String = payload.adv_hone_strategy;
+// //     let data_size: usize = payload.data_size.unwrap_or(100000).max(1000);
+
+// //     let mut prep_output: PreparationOutput = PreparationOutput::initialize(
+// //         &normal_counts,
+// //         &payload.budget,
+// //         &adv_counts,
+// //         payload.express_event,
+// //         &user_price_arr,
+// //         &adv_hone_strategy,
+// //         &vec![],
+// //         &vec![],
+// //         &vec![],
+// //         &vec![],
+// //     );
+// //     let mut rng: ThreadRng = rand::rng();
+// //     let cost_data: Vec<[i64; 9]> = monte_carlo_data(
+// //         data_size,
+// //         &mut prep_output.upgrade_arr,
+// //         &prep_output.unlock_costs,
+// //         payload.budget[9], // Use first budget's special leap count
+// //         &mut rng,
+// //     );
+
+// //     let js_ready: Vec<Vec<i64>> = cost_data.iter().map(|arr| arr.to_vec()).collect();
+// //     to_value(&js_ready).unwrap()
+// // }
 
 // #[wasm_bindgen]
 // #[must_use]
-// pub fn monte_carlo_wrapper(input: JsValue) -> JsValue {
+// pub fn cost_to_chance_wrapper(input: JsValue) -> JsValue {
+//     console_error_panic_hook::set_once();
+
+//     let payload: Payload = from_value(input).unwrap();
+
+//     let normal_counts: Vec<Vec<i64>> = get_count(payload.normal_counts, payload.normal_hone_ticks);
+//     let adv_counts: Vec<Vec<i64>> = get_count(payload.adv_counts, payload.adv_hone_ticks);
+
+//     let budget: Vec<i64> = payload.budget;
+//     let user_price_arr: Vec<f64> = payload.user_price_arr.unwrap_or(vec![0.0; 7]);
+//     let cost_vec: Vec<Vec<i64>> = payload.cost_data.unwrap();
+//     let mut cost_data: Vec<[i64; 9]> = cost_vec
+//         .into_iter()
+//         .map(|row| {
+//             let mut a = [0i64; 9];
+//             for (i, v) in row.into_iter().enumerate().take(9) {
+//                 a[i] = v;
+//             }
+//             a
+//         })
+//         .collect();
+//     let out: CostToChanceOut = cost_to_chance(
+//         &normal_counts,
+//         &budget,
+//         &adv_counts,
+//         payload.express_event,
+//         payload.bucket_count,
+//         &user_price_arr,
+//         payload.adv_hone_strategy,
+//         &mut cost_data,
+//     );
+//     to_value(&out).unwrap()
+// }
+
+// #[wasm_bindgen]
+// #[must_use]
+// pub fn parser_wrapper_unified(input: JsValue) -> JsValue {
 //     console_error_panic_hook::set_once();
 //     let payload: Payload = from_value(input).unwrap();
 
 //     let normal_counts: Vec<Vec<i64>> = get_count(payload.normal_counts, payload.normal_hone_ticks);
 //     let adv_counts: Vec<Vec<i64>> = get_count(payload.adv_counts, payload.adv_hone_ticks);
 
-//     let user_price_arr: Vec<f64> = payload.user_price_arr.unwrap_or(vec![0.0; 7]);
-//     let adv_hone_strategy: String = payload.adv_hone_strategy;
-//     let data_size: usize = payload.data_size.unwrap_or(100000).max(1000);
+//     let (upgrades, other_strategy_prob_dists): (Vec<Upgrade>, Vec<Vec<f64>>) =
+//         parser_with_other_strategy(
+//             &normal_counts,
+//             &adv_counts,
+//             &payload.adv_hone_strategy,
+//             payload.express_event,
+//         );
 
-//     let mut prep_output: PreparationOutput = PreparationOutput::initialize(
-//         &normal_counts,
-//         &payload.budget,
-//         &adv_counts,
-//         payload.express_event,
-//         &user_price_arr,
-//         &adv_hone_strategy,
-//         &vec![],
-//         &vec![],
-//         &vec![],
-//         &vec![],
-//     );
-//     let mut rng: ThreadRng = rand::rng();
-//     let cost_data: Vec<[i64; 9]> = monte_carlo_data(
-//         data_size,
-//         &mut prep_output.upgrade_arr,
-//         &prep_output.unlock_costs,
-//         payload.budget[9], // Use first budget's special leap count
-//         &mut rng,
-//     );
-
-//     let js_ready: Vec<Vec<i64>> = cost_data.iter().map(|arr| arr.to_vec()).collect();
-//     to_value(&js_ready).unwrap()
+//     to_value(&(
+//         upgrades,
+//         calc_unlock(&normal_counts, &adv_counts, payload.express_event),
+//         other_strategy_prob_dists,
+//     ))
+//     .unwrap()
 // }
 
-#[wasm_bindgen]
-#[must_use]
-pub fn cost_to_chance_wrapper(input: JsValue) -> JsValue {
-    console_error_panic_hook::set_once();
+// // #[wasm_bindgen]
+// // #[must_use]
+// // pub fn average_cost_wrapper(input: JsValue) -> JsValue {
+// //     console_error_panic_hook::set_once();
+// //     let payload: Payload = from_value(input).unwrap();
 
-    let payload: Payload = from_value(input).unwrap();
+// //     let normal_counts: Vec<Vec<i64>> = get_count(payload.normal_counts, payload.normal_hone_ticks);
+// //     let adv_counts: Vec<Vec<i64>> = get_count(payload.adv_counts, payload.adv_hone_ticks);
 
-    let normal_counts: Vec<Vec<i64>> = get_count(payload.normal_counts, payload.normal_hone_ticks);
-    let adv_counts: Vec<Vec<i64>> = get_count(payload.adv_counts, payload.adv_hone_ticks);
+// //     let upgrades: Vec<Upgrade> = parser(
+// //         &normal_counts,
+// //         &adv_counts,
+// //         &payload.adv_hone_strategy,
+// //         payload.express_event,
+// //     );
 
-    let budget: Vec<i64> = payload.budget;
-    let user_price_arr: Vec<f64> = payload.user_price_arr.unwrap_or(vec![0.0; 7]);
-    let cost_vec: Vec<Vec<i64>> = payload.cost_data.unwrap();
-    let mut cost_data: Vec<[i64; 9]> = cost_vec
-        .into_iter()
-        .map(|row| {
-            let mut a = [0i64; 9];
-            for (i, v) in row.into_iter().enumerate().take(9) {
-                a[i] = v;
-            }
-            a
-        })
-        .collect();
-    let out: CostToChanceOut = cost_to_chance(
-        &normal_counts,
-        &budget,
-        &adv_counts,
-        payload.express_event,
-        payload.bucket_count,
-        &user_price_arr,
-        payload.adv_hone_strategy,
-        &mut cost_data,
-    );
-    to_value(&out).unwrap()
-}
+// //     let avg_costs: Vec<f64> = average_cost(&upgrades);
+// //     to_value(&avg_costs).unwrap()
+// // }
 
-#[wasm_bindgen]
-#[must_use]
-pub fn parser_wrapper_unified(input: JsValue) -> JsValue {
-    console_error_panic_hook::set_once();
-    let payload: Payload = from_value(input).unwrap();
+// // #[wasm_bindgen]
+// // #[must_use]
+// // pub fn cost_to_chance_arr_wrapper(input: JsValue) -> JsValue {
+// //     console_error_panic_hook::set_once();
+// //     let payload: PayloadArr = from_value(input).unwrap();
 
-    let normal_counts: Vec<Vec<i64>> = get_count(payload.normal_counts, payload.normal_hone_ticks);
-    let adv_counts: Vec<Vec<i64>> = get_count(payload.adv_counts, payload.adv_hone_ticks);
+// //     let normal_counts: Vec<Vec<i64>> = get_count(payload.normal_counts, payload.normal_hone_ticks);
+// //     let adv_counts: Vec<Vec<i64>> = get_count(payload.adv_counts, payload.adv_hone_ticks);
 
-    let (upgrades, other_strategy_prob_dists): (Vec<Upgrade>, Vec<Vec<f64>>) =
-        parser_with_other_strategy(
-            &normal_counts,
-            &adv_counts,
-            &payload.adv_hone_strategy,
-            payload.express_event,
-        );
+// //     let budget_arr: Vec<Vec<i64>> = payload.budget_arr;
+// //     let user_price_arr: Vec<f64> = payload.user_price_arr.unwrap_or(vec![0.0; 7]);
+// //     let cost_vec: Vec<Vec<i64>> = payload.cost_data.unwrap();
+// //     let cost_data: Vec<[i64; 9]> = cost_vec
+// //         .into_iter()
+// //         .map(|row| {
+// //             let mut a = [0i64; 9];
+// //             for (i, v) in row.into_iter().enumerate().take(9) {
+// //                 a[i] = v;
+// //             }
+// //             a
+// //         })
+// //         .collect();
+// //     let result: CostToChanceArrOut = cost_to_chance_arr(
+// //         &normal_counts,
+// //         &budget_arr,
+// //         &adv_counts,
+// //         payload.express_event,
+// //         &user_price_arr,
+// //         payload.adv_hone_strategy,
+// //         &cost_data,
+// //     );
 
-    to_value(&(
-        upgrades,
-        calc_unlock(&normal_counts, &adv_counts, payload.express_event),
-        other_strategy_prob_dists,
-    ))
-    .unwrap()
-}
-
-#[wasm_bindgen]
-#[must_use]
-pub fn average_cost_wrapper(input: JsValue) -> JsValue {
-    console_error_panic_hook::set_once();
-    let payload: Payload = from_value(input).unwrap();
-
-    let normal_counts: Vec<Vec<i64>> = get_count(payload.normal_counts, payload.normal_hone_ticks);
-    let adv_counts: Vec<Vec<i64>> = get_count(payload.adv_counts, payload.adv_hone_ticks);
-
-    let upgrades: Vec<Upgrade> = parser(
-        &normal_counts,
-        &adv_counts,
-        &payload.adv_hone_strategy,
-        payload.express_event,
-    );
-
-    let avg_costs: Vec<f64> = average_cost(&upgrades);
-    to_value(&avg_costs).unwrap()
-}
-
-#[wasm_bindgen]
-#[must_use]
-pub fn cost_to_chance_arr_wrapper(input: JsValue) -> JsValue {
-    console_error_panic_hook::set_once();
-    let payload: PayloadArr = from_value(input).unwrap();
-
-    let normal_counts: Vec<Vec<i64>> = get_count(payload.normal_counts, payload.normal_hone_ticks);
-    let adv_counts: Vec<Vec<i64>> = get_count(payload.adv_counts, payload.adv_hone_ticks);
-
-    let budget_arr: Vec<Vec<i64>> = payload.budget_arr;
-    let user_price_arr: Vec<f64> = payload.user_price_arr.unwrap_or(vec![0.0; 7]);
-    let cost_vec: Vec<Vec<i64>> = payload.cost_data.unwrap();
-    let cost_data: Vec<[i64; 9]> = cost_vec
-        .into_iter()
-        .map(|row| {
-            let mut a = [0i64; 9];
-            for (i, v) in row.into_iter().enumerate().take(9) {
-                a[i] = v;
-            }
-            a
-        })
-        .collect();
-    let result: CostToChanceArrOut = cost_to_chance_arr(
-        &normal_counts,
-        &budget_arr,
-        &adv_counts,
-        payload.express_event,
-        &user_price_arr,
-        payload.adv_hone_strategy,
-        &cost_data,
-    );
-
-    to_value(&result).unwrap()
-}
+// //     to_value(&result).unwrap()
+// // }

@@ -1,5 +1,5 @@
 pub static FLOAT_TOL: f64 = 1e-9; // it could prolly be lower? idk doesnt matter
-
+pub static SPECIAL_TOL: f64 = 1e-7;
 // +11 to +18 double artisan, +15 to 18 mats cost reduced by 10%, unlock cost reduced by 20%
 pub static EVENT_ARTISAN_MULTIPLIER: [f64; 25] = [
     1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 1.0,
@@ -88,6 +88,7 @@ pub struct JuiceInfo {
     pub one_leftover_value_id: Vec<(f64, f64)>,
     pub amt_used_id: Vec<Vec<i64>>,
     pub gold_costs_id: Vec<Vec<(f64, f64)>>,
+    pub num_avail: usize,
 }
 pub fn get_avail_juice_combs(
     juice_prices: &[(f64, f64)],
@@ -102,8 +103,8 @@ pub fn get_avail_juice_combs(
     let mut gold_costs_id: Vec<Vec<(f64, f64)>> =
         vec![vec![(0.0, 0.0); 25]; JUICE_BOOKS_AVAIL.len()];
     let mut amt_used_id: Vec<Vec<i64>> = vec![vec![0; 25]; JUICE_BOOKS_AVAIL.len()];
-    let mut one_gold_cost: Vec<(f64, f64)> = vec![(0.0, 0.0); JUICE_BOOKS_AVAIL.len()];
-    let mut one_leftover_value: Vec<(f64, f64)> = vec![(0.0, 0.0); JUICE_BOOKS_AVAIL.len()];
+    let mut one_gold_cost_id: Vec<(f64, f64)> = vec![(0.0, 0.0); JUICE_BOOKS_AVAIL.len()];
+    let mut one_leftover_value_id: Vec<(f64, f64)> = vec![(0.0, 0.0); JUICE_BOOKS_AVAIL.len()];
     for (id, rows) in JUICE_BOOKS_AVAIL.iter().enumerate() {
         for &(upgrade_index, chance, amt) in rows.iter() {
             chances[upgrade_index].push(chance);
@@ -121,19 +122,20 @@ pub fn get_avail_juice_combs(
             amt_used_id[id][upgrade_index] = amt;
             gold_costs_id[id][upgrade_index] = this_gold_costs;
         }
-        one_gold_cost[id] = (juice_prices[id].0, juice_prices[id].1);
-        one_leftover_value[id] = (leftover_prices[id].0, leftover_prices[id].1);
+        one_gold_cost_id[id] = (juice_prices[id].0, juice_prices[id].1);
+        one_leftover_value_id[id] = (leftover_prices[id].0, leftover_prices[id].1);
     }
     JuiceInfo {
         chances,
         gold_costs,
         amt_used,
         ids,
-        one_gold_cost_id: one_gold_cost,
+        one_gold_cost_id,
         leftover_values,
-        one_leftover_value_id: one_leftover_value,
+        one_leftover_value_id,
         amt_used_id,
         gold_costs_id,
+        num_avail: JUICE_BOOKS_AVAIL.len(),
     }
 }
 // these costs are manually copied from lost ark codex, dont bet on it being 100% correct

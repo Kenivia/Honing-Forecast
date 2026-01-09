@@ -1,4 +1,4 @@
-use crate::parser::Upgrade;
+use crate::upgrade::Upgrade;
 #[cfg(test)]
 use serde_json;
 use std::fmt::Debug;

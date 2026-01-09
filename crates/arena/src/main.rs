@@ -3,7 +3,7 @@ use hf_arena::engine::{NOTES, solve};
 use hf_arena::parse_test_cases::parse_csv;
 use hf_core::brute::brute_success_prob_metric;
 use hf_core::monte_carlo::monte_carlo_wrapper;
-use hf_core::normal_honing_utils::compute_leftover_probs;
+
 use hf_core::parser::PreparationOutput;
 use hf_core::performance::{Performance, PerformanceToWrite};
 use hf_core::saddlepoint_approximation::average::average_gold_metric;
@@ -161,7 +161,7 @@ fn main() {
                     state: state_bundle.encode_all(),
                     seed,
                     time_finished: current_time_string(),
-                    prob_leftover: compute_leftover_probs(&mut state_bundle),
+                    prob_leftover: state_bundle.compute_leftover_probs(),
                     metric_type: metric_type.clone(),
                     performance: performance.to_write(),
                     best_state_performance: best_state_performance.to_write(),

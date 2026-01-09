@@ -1,12 +1,16 @@
 use crate::constants::{
-    get_adv_data_juice, get_event_modified_adv_unlock_cost, get_event_modified_armor_unlock_cost,
+    get_event_modified_adv_unlock_cost, get_event_modified_armor_unlock_cost,
     get_event_modified_weapon_unlock_cost,
 };
-use crate::parser::{PreparationOutput, Upgrade};
+use crate::parser::PreparationOutput;
+use crate::upgrade::Upgrade;
 
-use crate::value_estimation::average_tap;
+// use crate::value_estimation::average_tap;
 
 use rand::Rng;
+
+pub trait F64_2d<'a>: Iterator<Item = &'a Vec<f64>> {}
+impl<'a, T> F64_2d<'a> for T where T: Iterator<Item = &'a Vec<f64>> {}
 
 pub fn find_non_zero_min_prep(support_arr: &[Vec<f64>], prep_output: &PreparationOutput) -> f64 {
     support_arr
@@ -38,6 +42,24 @@ pub fn find_non_zero_min_vec(support_arr: &[Vec<f64>], log_prob_dist_arr: &[Vec<
         .sum()
 }
 
+pub fn find_non_zero_min_iter<'a, I>(support_arr: I, log_prob_dist_arr: I) -> f64
+where
+    I: F64_2d<'a>,
+{
+    support_arr
+        .into_iter()
+        .zip(log_prob_dist_arr)
+        .map(|(support, log_prob_dist)| {
+            support
+                .iter()
+                .zip(log_prob_dist)
+                .find(|(_, lp)| **lp > f64::NEG_INFINITY)
+                .unwrap_or((&0.0, &0.0))
+                .0
+        })
+        .sum()
+}
+
 pub fn eqv_gold_per_tap(upgrade: &Upgrade, price_arr: &[f64]) -> f64 {
     // a bit redundent but whatever
     let mut c: f64 = 0.0;
@@ -47,15 +69,6 @@ pub fn eqv_gold_per_tap(upgrade: &Upgrade, price_arr: &[f64]) -> f64 {
     c
 }
 
-pub fn eqv_gold_unlock(unlock_costs: &[i64], price_arr: &[f64]) -> f64 {
-    // a bit redundent but whatever
-    let mut c: f64 = 0.0;
-
-    c += unlock_costs[0] as f64 * price_arr[3];
-    c += unlock_costs[1] as f64 * price_arr[6];
-
-    c
-}
 #[inline]
 pub fn round_juice<R: Rng>(this_juice_cost: f64, rng: &mut R) -> i64 {
     let base: i64 = this_juice_cost.floor() as i64;
@@ -127,9 +140,6 @@ pub fn compute_eqv_gold_values(input_budget: &[i64], price_arr: &[f64]) -> f64 {
     c
 }
 
-pub fn generate_first_deltas(delta: f64, length: usize, non_zeros: usize) -> Vec<f64> {
-    [vec![delta; non_zeros], vec![0.0; length - non_zeros]].concat()
-}
 pub fn transpose_vec_of_vecs(matrix: &[[i64; 9]]) -> Vec<Vec<i64>> {
     if matrix.is_empty() || matrix[0].is_empty() {
         return Vec::new();
@@ -247,60 +257,60 @@ pub fn calc_unlock(
         }
     }
 
-    Vec::from([shard_unlock, silver_unlock])
+    Vec::from([0, 0, 0, shard_unlock, 0, 0, silver_unlock])
 }
 
-// (maxroll) average, without the unlock costs
-pub fn average_cost(upgrades: &[Upgrade]) -> Vec<f64> {
-    let mut total_costs: Vec<f64> = vec![0.0; 7];
+// // (maxroll) average, without the unlock costs
+// pub fn average_cost(upgrades: &[Upgrade]) -> Vec<f64> {
+//     let mut total_costs: Vec<f64> = vec![0.0; 7];
 
-    for upgrade in upgrades {
-        let avg_taps: f64 = average_tap(&upgrade.prob_dist, upgrade.tap_offset as f64);
-        for cost_type in 0..7 {
-            total_costs[cost_type] += upgrade.costs[cost_type] as f64 * avg_taps;
-        }
-    }
+//     for upgrade in upgrades {
+//         let avg_taps: f64 = average_tap(&upgrade.prob_dist, upgrade.tap_offset as f64);
+//         for cost_type in 0..7 {
+//             total_costs[cost_type] += upgrade.costs[cost_type] as f64 * avg_taps;
+//         }
+//     }
 
-    total_costs
-}
+//     total_costs
+// }
 
-pub fn average_juice_cost(upgrades: &[Upgrade]) -> (i64, i64) {
-    let mut total_red_cost: f64 = 0.0;
-    let mut total_blue_cost: f64 = 0.0;
-    let mut red_count: i64 = 0;
-    let mut blue_count: i64 = 0;
+// pub fn average_juice_cost(upgrades: &[Upgrade]) -> (i64, i64) {
+//     let mut total_red_cost: f64 = 0.0;
+//     let mut total_blue_cost: f64 = 0.0;
+//     let mut red_count: i64 = 0;
+//     let mut blue_count: i64 = 0;
 
-    for upgrade in upgrades {
-        if upgrade.is_normal_honing {
-            continue;
-        }
+//     for upgrade in upgrades {
+//         if upgrade.is_normal_honing {
+//             continue;
+//         }
 
-        // Use the proper juice cost calculation from get_adv_data_juice
-        let avg_juice_cost =
-            get_adv_data_juice(upgrade.upgrade_index as i64) * upgrade.one_juice_cost as f64;
+//         // Use the proper juice cost calculation from get_adv_data_juice
+//         let avg_juice_cost =
+//             get_adv_data_juice(upgrade.upgrade_index as i64) * upgrade.one_juice_cost as f64;
 
-        if upgrade.is_weapon {
-            total_red_cost += avg_juice_cost;
-            red_count += 1;
-        } else {
-            total_blue_cost += avg_juice_cost;
-            blue_count += 1;
-        }
-    }
+//         if upgrade.is_weapon {
+//             total_red_cost += avg_juice_cost;
+//             red_count += 1;
+//         } else {
+//             total_blue_cost += avg_juice_cost;
+//             blue_count += 1;
+//         }
+//     }
 
-    (
-        if red_count > 0 {
-            total_red_cost.round() as i64
-        } else {
-            0
-        },
-        if blue_count > 0 {
-            total_blue_cost.round() as i64
-        } else {
-            0
-        },
-    )
-}
+//     (
+//         if red_count > 0 {
+//             total_red_cost.round() as i64
+//         } else {
+//             0
+//         },
+//         if blue_count > 0 {
+//             total_blue_cost.round() as i64
+//         } else {
+//             0
+//         },
+//     )
+// }
 
 /// Compress consecutive duplicate strings into one with suffix ` xN`.
 /// Example: ["A", "A", "A", "B", "C", "C"] -> ["A x3", "B", "C x2"].

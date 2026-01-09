@@ -1,10 +1,9 @@
 use crate::constants::FLOAT_TOL;
-use crate::normal_honing_utils::init_dist;
+
 use crate::normal_honing_utils::{add_up_golds, apply_price_leftovers, apply_price_naive};
-use crate::parser::Upgrade;
-use crate::saddlepoint_approximation::special::special_probs;
 
 use crate::state::StateBundle;
+use crate::upgrade::Upgrade;
 use rand::Rng;
 use rand::prelude::*;
 use std::cmp::min;
@@ -104,7 +103,7 @@ pub fn monte_carlo_data<R: Rng>(
     rng: &mut R,
 ) -> (Vec<[i64; 7]>, Vec<Vec<(i64, i64)>>) {
     let mut special_left: Vec<i64> = vec![state_bundle.prep_output.budgets[7]; data_size];
-    init_dist(state_bundle);
+    state_bundle.update_dist();
     let mut mats_data: Vec<[i64; 7]> = vec![[0i64; 7]; data_size];
 
     let mut juice_data: Vec<Vec<(i64, i64)>> =
@@ -255,10 +254,10 @@ pub fn monte_carlo_wrapper<R: Rng>(
             leftover_index += 1;
         }
     }
-    for (index, d) in debug_avg_mats.iter_mut().enumerate() {
+    for (_index, d) in debug_avg_mats.iter_mut().enumerate() {
         *d /= data_size as f64;
     }
-    for (id, d) in debug_avg_juices.iter_mut().enumerate() {
+    for (_id, d) in debug_avg_juices.iter_mut().enumerate() {
         d.0 /= data_size as f64;
 
         d.1 /= data_size as f64;

@@ -11,5 +11,6 @@ pub mod saddlepoint_approximation;
 pub mod state;
 pub mod success_analysis;
 pub mod test_utils;
+pub mod upgrade;
 pub mod value_estimation;
 pub mod visualizer;

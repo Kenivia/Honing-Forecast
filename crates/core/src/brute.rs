@@ -1,5 +1,4 @@
 use crate::constants::FLOAT_TOL;
-use crate::normal_honing_utils::{generate_combined, init_dist};
 use crate::performance::Performance;
 use crate::state::StateBundle;
 
@@ -24,11 +23,7 @@ impl Hash for FloatKey {
     }
 }
 
-pub fn brute_optimized_pruned(
-    prob_dist_arr: &[Vec<f64>],
-    support_arr: &[Vec<f64>],
-    budget: f64,
-) -> f64 {
+pub fn brute_naive(prob_dist_arr: &[Vec<f64>], support_arr: &[Vec<f64>], budget: f64) -> f64 {
     let n = prob_dist_arr.len();
 
     // --- STEP 1: Pre-calculate Look-Ahead Bounds ---
@@ -147,10 +142,6 @@ pub fn brute_optimized_pruned(
 // }
 
 // this is actually just another wrapper
-pub fn brute_naive(prob_dist_arr: &[Vec<f64>], support_arr: &[Vec<f64>], budget: f64) -> f64 {
-    brute_optimized_pruned(&prob_dist_arr, support_arr, budget)
-    // brute_naive_recursive(prob_dist_arr, support_arr, 0.0, budget, 0)
-}
 
 // naive as in it doesn't take into account leftover prices
 pub fn brute_success_prob_metric(
@@ -159,15 +150,15 @@ pub fn brute_success_prob_metric(
 ) -> f64 {
     performance.states_evaluated += 1;
     performance.brute_count += 1;
-    init_dist(state_bundle);
-    let (_, prob_dist_arr) = state_bundle.prep_output.gather_dists();
+    state_bundle.update_dist();
+    let prob_dist_arr = state_bundle.gather_prob_dist();
 
-    let combined_costs: Vec<Vec<f64>> = generate_combined(state_bundle);
+    state_bundle.update_combined();
     // brute_naive(&prob_dist_arr, &combined_costs, prep_output.eqv_gold_budget)
 
-    brute_optimized_pruned(
+    brute_naive(
         &prob_dist_arr,
-        &combined_costs,
+        &state_bundle.combined_gold_costs,
         state_bundle.prep_output.eqv_gold_budget,
     )
 }
