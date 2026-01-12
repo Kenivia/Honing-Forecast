@@ -15,8 +15,6 @@ pub struct StateBundle {
     pub metric: f64,
     pub state_index: Vec<Vec<Vec<i64>>>, // i pre-added this for caching but havnt implemented anything
     pub prep_output: PreparationOutput,
-
-    pub combined_gold_costs: Vec<Vec<f64>>,
 }
 pub fn encode_one_positions(v1: &[(bool, usize)]) -> String {
     v1.iter()
@@ -48,6 +46,19 @@ impl StateBundle {
             .sum();
         (min_value, max_value)
     }
+
+    pub fn find_biased_min_max(&self, support_index: i64, skip_count: usize) -> (f64, f64) {
+        let min_value = find_non_zero_min_iter(
+            self.extract_support(support_index, skip_count),
+            self.extract_biased_log_prob(skip_count, support_index),
+        );
+        let max_value = self
+            .extract_support(support_index, skip_count)
+            .into_iter()
+            .map(|x| x.last().unwrap())
+            .sum();
+        (min_value, max_value)
+    }
     pub fn encode_all(&self) -> String {
         let mut strings = Vec::new();
         strings.push(format!("{:?}", self.special_state));
@@ -61,7 +72,7 @@ impl StateBundle {
         Box::new(
             self.special_state
                 .iter()
-                .map(|x| &self.prep_output.upgrade_arr[*x].log_prob_dist)
+                .map(move |x| &self.prep_output.upgrade_arr[*x].log_prob_dist)
                 .skip(skip_count),
         )
     }
@@ -70,10 +81,41 @@ impl StateBundle {
         Box::new(
             self.special_state
                 .iter()
-                .map(|x| &self.prep_output.upgrade_arr[*x].prob_dist)
+                .map(move |x| &self.prep_output.upgrade_arr[*x].prob_dist)
                 .skip(skip_count),
         )
     }
+
+    pub fn extract_biased_prob(
+        &self,
+        skip_count: usize,
+        support_index: usize,
+    ) -> Box<dyn Iterator<Item = &Vec<f64>> + '_> {
+        assert!(support_index >= 0);
+        Box::new(
+            self.special_state
+                .iter()
+                .map(move |x| &self.prep_output.upgrade_arr[*x].biased_prob_dist[support_index])
+                .skip(skip_count),
+        )
+    }
+
+    pub fn extract_biased_log_prob(
+        &self,
+        skip_count: usize,
+        support_index: i64,
+    ) -> Box<dyn Iterator<Item = &Vec<f64>> + '_> {
+        assert!(support_index >= 0);
+        Box::new(
+            self.special_state
+                .iter()
+                .map(move |x| {
+                    &self.prep_output.upgrade_arr[*x].biased_log_prob_dist[support_index as usize]
+                })
+                .skip(skip_count),
+        )
+    }
+
     pub fn extract_support(
         &self,
         support_index: i64,
@@ -98,6 +140,7 @@ impl StateBundle {
                 .skip(skip_count),
         )
     }
+    pub fn extract_size_biased() {}
     pub fn update_combined(&mut self) {
         let prep_output = &mut self.prep_output;
 
@@ -135,10 +178,12 @@ impl StateBundle {
             let mut this_weap_juices_costs: Vec<Vec<f64>> = vec![Vec::with_capacity(l_len); j_len];
             let mut this_armor_juices_costs: Vec<Vec<f64>> = vec![Vec::with_capacity(l_len); j_len];
 
+            let mut means = vec![0.0; 7 + j_len * 2];
             for t_index in 0..7 {
                 let mut cost_so_far = 0.0;
-                for _ in upgrade.log_prob_dist.iter() {
+                for p in upgrade.prob_dist.iter() {
                     this_mats_costs[t_index].push(cost_so_far);
+                    means[t_index] += cost_so_far * p;
                     cost_so_far += upgrade.costs[t_index] as f64;
                 }
 
@@ -160,9 +205,11 @@ impl StateBundle {
                     }
                     let mut costs_so_far: (f64, f64) = (0.0, 0.0);
 
-                    for (p_index, _) in upgrade.log_prob_dist.iter().enumerate() {
+                    for (p_index, p) in upgrade.prob_dist.iter().enumerate() {
                         this_weap.push(costs_so_far.0);
                         this_armor.push(costs_so_far.1);
+                        means[7 + id] += costs_so_far.0 * p;
+                        means[7 + j_len + id] += costs_so_far.1 * p;
                         let (juice, book_index) = upgrade.state[p_index];
                         if juice {
                             if upgrade.is_weapon {
@@ -200,6 +247,26 @@ impl StateBundle {
             }
             upgrade.weap_juice_costs = this_weap_juices_costs;
             upgrade.armor_juice_costs = this_armor_juices_costs;
+
+            upgrade.biased_prob_dist = upgrade
+                .cost_dist
+                .iter()
+                .chain(upgrade.weap_juice_costs.iter())
+                .chain(upgrade.armor_juice_costs.iter())
+                .enumerate()
+                .map(|(index, s_arr)| {
+                    s_arr
+                        .iter()
+                        .zip(upgrade.prob_dist.clone())
+                        .map(|(s, p)| s * p / means[index])
+                        .collect()
+                })
+                .collect();
+            upgrade.biased_log_prob_dist = upgrade
+                .biased_prob_dist
+                .iter()
+                .map(|x| x.iter().map(|y| y.ln()).collect())
+                .collect();
         }
     }
 
@@ -231,6 +298,7 @@ impl StateBundle {
         for upgrade in self.prep_output.upgrade_arr.iter_mut() {
             let prob_dist: Vec<f64> =
                 new_prob_dist(&upgrade.state, &self.prep_output.juice_info, upgrade, 0.0);
+            // let biasted_prob_dist = prob_dist.iter().enumerate().map(|(index, x)| x * )
             let log_prob_dist: Vec<f64> = prob_dist.iter().map(|x| x.ln()).collect();
             upgrade.prob_dist = prob_dist;
             upgrade.log_prob_dist = log_prob_dist;
@@ -300,18 +368,26 @@ impl StateBundle {
     }
 
     pub fn gather_prob_dist(&self) -> Vec<Vec<f64>> {
-        let mut prob_dist_arr = Vec::with_capacity(self.prep_output.upgrade_arr.len());
+        let mut arr = Vec::with_capacity(self.prep_output.upgrade_arr.len());
 
         for upgrade in self.prep_output.upgrade_arr.iter() {
-            prob_dist_arr.push(upgrade.prob_dist.clone());
+            arr.push(upgrade.prob_dist.clone());
         }
-        prob_dist_arr
+        arr
     }
     pub fn gather_log_prob_dist(&self) -> Vec<Vec<f64>> {
-        let mut log_prob_dist_arr = Vec::with_capacity(self.prep_output.upgrade_arr.len());
+        let mut arr = Vec::with_capacity(self.prep_output.upgrade_arr.len());
         for upgrade in self.prep_output.upgrade_arr.iter() {
-            log_prob_dist_arr.push(upgrade.log_prob_dist.clone());
+            arr.push(upgrade.log_prob_dist.clone());
         }
-        log_prob_dist_arr
+        arr
+    }
+
+    pub fn gather_combined_gold_cost(&self) -> Vec<Vec<f64>> {
+        let mut arr = Vec::with_capacity(self.prep_output.upgrade_arr.len());
+        for upgrade in self.prep_output.upgrade_arr.iter() {
+            arr.push(upgrade.combined_gold_costs.clone());
+        }
+        arr
     }
 }

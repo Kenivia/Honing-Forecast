@@ -5,6 +5,7 @@ use crate::state::StateBundle;
 use std::collections::HashMap;
 use std::hash::{Hash, Hasher};
 pub static MAX_BRUTE_SIZE: usize = 50000;
+
 // 1. Helper wrapper to use f64 as a HashMap key
 // (Rust floats don't implement Eq/Hash by default due to NaN)
 #[derive(Clone, Copy, Debug)]
@@ -23,7 +24,11 @@ impl Hash for FloatKey {
     }
 }
 
-pub fn brute_naive(prob_dist_arr: &[Vec<f64>], support_arr: &[Vec<f64>], budget: f64) -> f64 {
+pub fn brute_success_prob(
+    prob_dist_arr: &[Vec<f64>],
+    support_arr: &[Vec<f64>],
+    budget: f64,
+) -> f64 {
     let n = prob_dist_arr.len();
 
     // --- STEP 1: Pre-calculate Look-Ahead Bounds ---
@@ -151,14 +156,13 @@ pub fn brute_success_prob_metric(
     performance.states_evaluated += 1;
     performance.brute_count += 1;
     state_bundle.update_dist();
-    let prob_dist_arr = state_bundle.gather_prob_dist();
 
     state_bundle.update_combined();
     // brute_naive(&prob_dist_arr, &combined_costs, prep_output.eqv_gold_budget)
 
-    brute_naive(
-        &prob_dist_arr,
-        &state_bundle.combined_gold_costs,
+    brute_success_prob(
+        &state_bundle.gather_prob_dist(),
+        &state_bundle.gather_combined_gold_cost(),
         state_bundle.prep_output.eqv_gold_budget,
     )
 }

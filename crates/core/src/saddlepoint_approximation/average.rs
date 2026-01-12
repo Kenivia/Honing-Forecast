@@ -1,3 +1,5 @@
+use std::f64::NAN;
+
 use crate::constants::FLOAT_TOL;
 use crate::constants::SPECIAL_TOL;
 use crate::helpers::F64_2d;
@@ -18,6 +20,7 @@ pub fn average_gold_metric(state_bundle: &mut StateBundle, performance: &mut Per
 
     let mut total_gold: f64 = 0.0;
 
+    let mut dbg_sa_avg = vec![0.0; 15];
     for (skip_count, special_prob) in special_probs(state_bundle).iter().enumerate() {
         if *special_prob < SPECIAL_TOL {
             continue;
@@ -42,11 +45,26 @@ pub fn average_gold_metric(state_bundle: &mut StateBundle, performance: &mut Per
                 leftover,
             );
             // dbg!(this_avg);
+            dbg!(
+                skip_count,
+                support_index,
+                effective_budget,
+                price,
+                leftover,
+                this_avg,
+                *special_prob,
+                simple_average(
+                    state_bundle.extract_prob(skip_count),
+                    state_bundle.extract_support(support_index as i64, skip_count)
+                ),
+                *special_prob * this_avg,
+                "================================"
+            );
             total_gold += *special_prob * this_avg;
+            dbg_sa_avg[support_index] += *special_prob * this_avg;
         }
-
-        // dbg!(special_prob, total_gold);
     }
+    dbg!(dbg_sa_avg);
 
     // dbg!(
     //     total_gold,
@@ -54,77 +72,6 @@ pub fn average_gold_metric(state_bundle: &mut StateBundle, performance: &mut Per
     // );
     total_gold
 }
-
-// pub fn average_gold_naive_wrapper(
-//     state_bundle: &mut StateBundle,
-//     performance: &mut Performance,
-// ) -> f64 {
-//     init_dist(state_bundle);
-//     performance.states_evaluated += 1;
-
-//     let prep_output = &state_bundle.prep_output;
-//     let mut total_gold: f64 = 0.0;
-//     //
-//     let mut effective_budgets: Vec<f64> = state_bundle
-//         .prep_output
-//         .budgets
-//         .iter()
-//         .map(|&b| b as f64)
-//         .collect();
-//     effective_budgets[3] -= prep_output.unlock_costs[0] as f64;
-//     effective_budgets[6] -= prep_output.unlock_costs[1] as f64;
-
-//     let (mut mats_costs, mut weap_juices_costs, mut armor_juices_costs) =
-//         generate_individual(state_bundle);
-
-//     let (mut log_prob_dist_arr, mut prob_dist_arr) = state_bundle.prep_output.gather_dists();
-//     sort_by_indices(&mut log_prob_dist_arr, state_bundle.special_state.clone());
-//     sort_by_indices(&mut prob_dist_arr, state_bundle.special_state.clone());
-//     for row in mats_costs.iter_mut() {
-//         sort_by_indices(row, state_bundle.special_state.clone());
-//     }
-//     for row in weap_juices_costs.iter_mut() {
-//         sort_by_indices(row, state_bundle.special_state.clone());
-//     }
-//     for row in armor_juices_costs.iter_mut() {
-//         sort_by_indices(row, state_bundle.special_state.clone());
-//     }
-
-//     for (skip_count, special_prob) in special_probs(state_bundle).iter().enumerate() {
-//         // Skip scenarios with negligible probability, but don't break early
-//         // because probabilities can be non-monotonic (high special budget = high k has most probability)
-//         if *special_prob < SPECIAL_TOL {
-//             continue;
-//         }
-//         // dbg!(&support_arr[index..]);
-
-//         for (index, support_arr) in mats_costs.iter().enumerate() {
-//             let this_avg: f64 = (effective_budgets[index] as f64
-//                 - simple_average(&prob_dist_arr[skip_count..], &support_arr[skip_count..]))
-//                 * prep_output.price_arr[index];
-
-//             total_gold += *special_prob * this_avg;
-//         }
-
-//         for (id, support_arr) in weap_juices_costs.iter_mut().enumerate() {
-//             let this_avg: f64 = (prep_output.juice_books_owned[id].0 as f64
-//                 - simple_average(&prob_dist_arr[skip_count..], &support_arr[skip_count..]))
-//                 * prep_output.juice_info.one_gold_cost_id[id].0;
-
-//             total_gold += *special_prob * this_avg;
-//         }
-
-//         for (id, support_arr) in armor_juices_costs.iter_mut().enumerate() {
-//             let this_avg: f64 = (prep_output.juice_books_owned[id].1 as f64
-//                 - simple_average(&prob_dist_arr[skip_count..], &support_arr[skip_count..]))
-//                 * prep_output.juice_info.one_gold_cost_id[id].1;
-
-//             total_gold += *special_prob * this_avg;
-//         }
-//     }
-
-//     total_gold
-// }
 
 pub fn simple_average<'a, I>(prob_dist_arr: I, support_arr: I) -> f64
 where
@@ -167,58 +114,50 @@ pub fn saddlepoint_approximation_average_wrapper(
     leftover_value: f64,
 ) -> f64 {
     performance.sa_count += 1;
-    let (min_value, max_value) = state_bundle.find_min_max(support_index, skip_count);
-    let mean: f64 = simple_average(
+    let simple_mean: f64 = simple_average(
         state_bundle.extract_prob(skip_count),
         state_bundle.extract_support(support_index, skip_count),
     );
+
     if price == leftover_value {
-        return price * (effective_budget - mean);
+        return price * (effective_budget - simple_mean);
     }
-    let std: f64 = simple_variance(
-        state_bundle.extract_prob(skip_count),
-        state_bundle.extract_support(support_index, skip_count),
-    )
-    .sqrt();
-    let mut derivative: f64 = 0.0; // default if it's trivial 
-    let prob: f64 = saddlepoint_approximation(
+
+    // let mut truncated_mean: f64 = NAN; // default if it's trivial
+    let biased_prob: f64 = saddlepoint_approximation(
         state_bundle,
         support_index,
         skip_count,
-        min_value,
-        max_value,
+        effective_budget,
+        init_theta,
+        performance,
+        true,
+    );
+    let prob = saddlepoint_approximation(
+        state_bundle,
+        support_index,
+        skip_count,
         effective_budget,
         init_theta,
         performance,
         false,
-        &mut derivative,
-        mean,
     );
-    let normal_dist: Normal = Normal::new(0.0, 1.0).unwrap(); // TODO can i pre initialize this or is there no point
-    let naive_normal_correction =
-        if (prob - 1.0).abs() > FLOAT_TOL && prob.abs() > FLOAT_TOL && std.abs() > FLOAT_TOL {
-            -std * normal_dist.pdf((effective_budget - mean) / std)
-        } else {
-            0.0
-        };
-    let out: f64 = price * (effective_budget - mean)
-        + (leftover_value - price) * ((effective_budget - mean) * prob - naive_normal_correction);
-    // let out_naive: f64 = price * (budget - mean)
-    //     + (leftover_value - price) * ((budget - mean) * prob - naive_normal_correction);
-    // if std.abs() > FLOAT_TOL {
-    //     dbg!(
-    //         mean,
-    //         budget,
-    //         prob,
-    //         std,
-    //         naive_normal_correction,
-    //         derivative,
-    //         price,
-    //         leftover_value,
-    //         out,
-    //         out_naive,
-    //         "================================"
-    //     );
-    // }
+
+    let out: f64 = price * (effective_budget - simple_mean)
+        + (leftover_value - price) * (effective_budget * prob - biased_prob * (simple_mean));
+
+    let left = effective_budget - simple_mean;
+    let right = effective_budget * prob - biased_prob * (simple_mean);
+    dbg!(
+        simple_mean,
+        effective_budget,
+        biased_prob,
+        left,
+        right,
+        price,
+        leftover_value,
+        out,
+    );
+    // // }
     return out;
 }

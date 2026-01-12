@@ -19,7 +19,7 @@ use std::io::{BufRead, BufReader, BufWriter, Error, Write};
 use std::path::Path;
 use std::time::Instant;
 
-static NUM_TESTS_TO_RUN: i64 = 5; // TODO this should be replaced by statistical tests like fishtest eventually
+static NUM_TESTS_TO_RUN: i64 = 1; // TODO this should be replaced by statistical tests like fishtest eventually
 static MONTE_CARLO_COUNT: usize = 1_000_000;
 type EvalFn = fn(&mut StateBundle, &mut Performance) -> f64;
 
@@ -120,7 +120,7 @@ fn main() {
     let mut seed_rng: ThreadRng = rand::rng();
 
     let mut test_cases: Vec<(PreparationOutput, Vec<bool>)> =
-        parse_csv(Path::new("bloated_test_cases.csv")); // bloated_
+        parse_csv(Path::new("TEST_test_cases.csv")); // bloated_
 
     for _ in 0..NUM_TESTS_TO_RUN {
         for (prep_output, tests_to_run) in test_cases.iter_mut() {

@@ -32,6 +32,9 @@ pub struct Upgrade {
     pub weap_juice_costs: Vec<Vec<f64>>,
     pub armor_juice_costs: Vec<Vec<f64>>,
     pub combined_gold_costs: Vec<f64>,
+
+    pub biased_log_prob_dist: Vec<Vec<f64>>,
+    pub biased_prob_dist: Vec<Vec<f64>>,
 }
 
 impl Upgrade {
@@ -86,7 +89,11 @@ impl Upgrade {
             cost_dist: vec![],
             weap_juice_costs: vec![],
             armor_juice_costs: vec![],
+
             combined_gold_costs: vec![],
+
+            biased_prob_dist: vec![],
+            biased_log_prob_dist: vec![],
         }
     }
 
@@ -134,7 +141,11 @@ impl Upgrade {
             cost_dist: vec![],
             weap_juice_costs: vec![],
             armor_juice_costs: vec![],
+
             combined_gold_costs: vec![],
+
+            biased_prob_dist: vec![],
+            biased_log_prob_dist: vec![],
         }
     }
 }

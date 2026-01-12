@@ -5,8 +5,6 @@
 
 ### Now
 
-- make a more sensible suite of test cases to test the behaviour of the metric functions
-
 #### Optimizations
 
 - is there really no better way to do the special probs(can i get away with an approximation some how)
@@ -47,6 +45,7 @@
 
 - set up slurm on laptop
   - maybe write a dispatcher instead of naively running them in parallel
+- profile the thing maybe
 
 #### Analysis
 
@@ -151,6 +150,7 @@ graph
 
 ## Done / cancelled
 
+- ~~make a more sensible suite of test cases to test the behaviour of the metric functions~~
 - ~~fix the leftover evaluation like i think sometimes the trivial case is wrong~~
 - ~~normalize average metric's interaction with acceptance~~
   - ~~use the "biggest seen gap" to normalize?~~

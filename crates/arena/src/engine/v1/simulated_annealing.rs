@@ -182,7 +182,7 @@ pub fn solve<R: Rng, F>(
 where
     F: FnMut(&mut StateBundle, &mut Performance) -> f64,
 {
-    let init_temp: f64 = 333.0;
+    let init_temp: f64 = -1.0;
     // let init_temp: f64 = -1.0; // 0.969 = ~32
     // let mut cache: HashMap<(Vec<bool>, usize), Vec<([i64; 9], f64)>> = HashMap::new();
     let mut temp: f64 = init_temp;
@@ -210,7 +210,6 @@ where
         metric: -1.0,
         special_state: starting_special,
         prep_output,
-        combined_gold_costs: vec![],
     };
 
     state_bundle.metric = metric(&mut state_bundle, performance);

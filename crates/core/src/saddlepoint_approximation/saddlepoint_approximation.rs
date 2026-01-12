@@ -1,4 +1,6 @@
-use crate::brute::{MAX_BRUTE_SIZE, brute_naive};
+use std::f64::consts::PI;
+
+use crate::brute::{MAX_BRUTE_SIZE, brute_success_prob};
 use crate::constants::FLOAT_TOL;
 use crate::helpers::F64_2d;
 use crate::performance::Performance;
@@ -31,14 +33,10 @@ pub fn saddlepoint_approximation_prob_wrapper(
             state_bundle,
             support_index,
             skip_count,
-            min_value,
-            max_value, // here for debugging purpose only
             budget,
             init_theta,
             performance,
             false,
-            &mut 6.9,
-            6.9,
         );
     } else {
         performance.brute_count += 1;
@@ -52,7 +50,7 @@ pub fn saddlepoint_approximation_prob_wrapper(
             .into_iter()
             .cloned()
             .collect();
-        return brute_naive(&probs, &supports, budget);
+        return brute_success_prob(&probs, &supports, budget);
     }
 }
 
@@ -121,27 +119,31 @@ pub fn saddlepoint_approximation(
     state_bundle: &StateBundle,
     support_index: i64,
     skip_count: usize,
-    min_value: f64,
-    max_value: f64,
+
     inp_budget: f64,
     init_theta: &mut f64,
 
     performance: &mut Performance,
-    compute_derivative: bool,
-    derivative_output: &mut f64,
-    mean: f64,
+    compute_truncated_mean: bool,
 ) -> f64 {
+    let (min_value, max_value) = if compute_truncated_mean {
+        state_bundle.find_biased_min_max(support_index, skip_count)
+    } else {
+        state_bundle.find_min_max(support_index, skip_count)
+    };
+
     let span = lattice_span(state_bundle.extract_support(support_index, skip_count));
 
-    if inp_budget < min_value - FLOAT_TOL + span {
+    if inp_budget > max_value + FLOAT_TOL {
+        performance.trivial_count += 1;
+        return 1.0;
+    }
+
+    if inp_budget < min_value - FLOAT_TOL {
         performance.trivial_count += 1;
         return 0.0;
     }
 
-    if inp_budget > max_value + FLOAT_TOL - span {
-        performance.trivial_count += 1;
-        return 1.0;
-    }
     if min_value + FLOAT_TOL + span > max_value - FLOAT_TOL - span {
         // this is just for when support is all 0s, idek what the condition should be
         // im pre sure this case is impossible but i dont wanan think abt it
@@ -161,7 +163,11 @@ pub fn saddlepoint_approximation(
         let mut ks_tuple = (0.0, 0.0, 0.0, 0.0, 0.0);
 
         ks_01234(
-            state_bundle.extract_log_prob(skip_count),
+            if compute_truncated_mean {
+                state_bundle.extract_biased_log_prob(skip_count, support_index)
+            } else {
+                state_bundle.extract_log_prob(skip_count)
+            },
             state_bundle.extract_support(support_index, skip_count),
             theta,
             &mut ks_tuple,
@@ -217,7 +223,11 @@ pub fn saddlepoint_approximation(
     let mut ks_tuple = (0.0, 0.0, 0.0, 0.0, 0.0);
     performance.ks_count += 1;
     ks_01234(
-        state_bundle.extract_log_prob(skip_count),
+        if compute_truncated_mean {
+            state_bundle.extract_biased_log_prob(skip_count, support_index)
+        } else {
+            state_bundle.extract_log_prob(skip_count)
+        },
         state_bundle.extract_support(support_index, skip_count),
         theta_hat,
         &mut ks_tuple,
@@ -237,7 +247,11 @@ pub fn saddlepoint_approximation(
         let mut last_ks_tuple = (0.0, 0.0, 0.0, 0.0, 0.0);
         performance.ks_count += 1;
         ks_01234(
-            state_bundle.extract_log_prob(skip_count),
+            if compute_truncated_mean {
+                state_bundle.extract_biased_log_prob(skip_count, support_index)
+            } else {
+                state_bundle.extract_log_prob(skip_count)
+            },
             state_bundle.extract_support(support_index, skip_count),
             last_theta,
             &mut last_ks_tuple,
@@ -286,16 +300,30 @@ pub fn saddlepoint_approximation(
                 approx
             );
         }
-        if compute_derivative {
-            dbg!("edge");
-            *derivative_output = -normal_dist.pdf(w_hat) * (budget - mean) / w_hat;
-        }
+        // if compute_truncated_mean {
+        //     dbg!("edge");
+        //     let z2 = z * z;
+        //     let z3 = z2 * z;
+        //     let z4 = z2 * z2;
+        //     let z6 = z3 * z3;
+
+        //     let poly_gamma3 = z3;
+        //     let poly_gamma4 = z4 - 2.0 * z2 - 1.0;
+        //     let poly_gamma3_sq = z6 - 9.0 * z4 + 9.0 * z2 + 3.0;
+
+        //     let moment_expansion = 1.0
+        //         + (gamma3 / 6.0) * poly_gamma3
+        //         + (gamma4 / 24.0) * poly_gamma4
+        //         + (gamma3 * gamma3 / 72.0) * poly_gamma3_sq;
+
+        //     let integral_z_pdf = -pdf * moment_expansion;
+
+        //     *truncated_mean_output = ks_tuple.1 * approx + std * integral_z_pdf;
+        // }
         actual_out = approx;
     } else {
-        // let std = ks_tuple.2.sqrt();
-        // let gamma3 = ks_tuple.3 / std.powi(3); // skewness
         // performance.lugganani_count += 1;
-        // if compute_derivative {
+        // if compute_truncated_mean {
         //     // dbg!(
         //     //     -normal_dist.pdf(w_hat) / theta_hat,
         //     //     -normal_dist.pdf(w_hat) * (budget - mean) / w_hat,
@@ -304,15 +332,32 @@ pub fn saddlepoint_approximation(
         //     // );
         //     // *derivative_output = -normal_dist.pdf(w_hat) / theta_hat
         //     //     * (1.0 + 1.0 / ((theta_hat * std).powi(2)) - gamma3 / (2.0 * theta_hat * std))
-
-        //     *derivative_output = normal_dist.pdf(w_hat)
-        //         * ((budget - mean) / u_hat
-        //             - 1.0 / (u_hat * theta_hat)
-        //             - (budget - mean) / w_hat.powi(3) * (1.0 - w_hat / u_hat))
+        //     dbg!(
+        //         theta_hat,
+        //         ks_tuple,
+        //         ks_tuple.1,
+        //         ks_tuple.2,
+        //         ks_tuple.3,
+        //         2.0 * (theta_hat * budget - ks_tuple.0),
+        //         w_hat,
+        //         u_hat,
+        //         normal_dist.cdf(w_hat),
+        //         normal_dist.pdf(w_hat),
+        //         1.0 / w_hat - 1.0 / u_hat,
+        //         min_value,
+        //         budget,
+        //         simple_mean,
+        //         max_value,
+        //         sa_out,
+        //         approx,
+        //         actual_out
+        //     );
+        //     *truncated_mean_output = simple_mean * normal_dist.cdf(w_hat)
+        //         + normal_dist.pdf(w_hat) * (simple_mean / w_hat - budget / u_hat);
         // }
     }
 
-    if DEBUG || actual_out < -FLOAT_TOL || actual_out > FLOAT_TOL || !actual_out.is_finite() {
+    if DEBUG || actual_out < -FLOAT_TOL || actual_out > 1.0 + FLOAT_TOL || !actual_out.is_finite() {
         dbg!(
             f_df(THETA_LIMIT),
             f_df(1.0),
@@ -323,20 +368,29 @@ pub fn saddlepoint_approximation(
         dbg!(theta_hat, theta_error);
         dbg!(w_hat, u_hat, error, sa_out);
         dbg!(
-            state_bundle
-                .extract_log_prob(skip_count)
-                .into_iter()
-                .map(|x| x.iter().map(|y| y.exp()).sum::<f64>())
-                .collect::<Vec<f64>>(),
-            state_bundle
-                .extract_log_prob(skip_count)
-                .into_iter()
-                .map(|x| x.iter().map(|y| y.exp()).collect())
-                .collect::<Vec<Vec<f64>>>(),
-            state_bundle
-                .extract_support(support_index, skip_count)
-                .into_iter()
-                .collect::<Vec<&Vec<f64>>>(),
+            if compute_truncated_mean {
+                state_bundle.extract_biased_log_prob(skip_count, support_index)
+            } else {
+                state_bundle.extract_log_prob(skip_count)
+            }
+            .into_iter()
+            .map(|x| x.iter().map(|y| y.exp()).sum::<f64>())
+            .collect::<Vec<f64>>(),
+            if compute_truncated_mean {
+                state_bundle.extract_biased_log_prob(skip_count, support_index)
+            } else {
+                state_bundle.extract_log_prob(skip_count)
+            }
+            .into_iter()
+            .map(|x| x.iter().map(|y| y.exp()).collect())
+            .collect::<Vec<Vec<f64>>>(),
+            if compute_truncated_mean {
+                state_bundle.extract_biased_log_prob(skip_count, support_index)
+            } else {
+                state_bundle.extract_log_prob(skip_count)
+            }
+            .into_iter()
+            .collect::<Vec<&Vec<f64>>>(),
         );
         dbg!(
             theta_hat,
@@ -353,7 +407,7 @@ pub fn saddlepoint_approximation(
             min_value,
             budget,
             crate::saddlepoint_approximation::average::simple_average(
-                state_bundle.extract_prob(skip_count),
+                state_bundle.extract_prob(skip_count,),
                 state_bundle.extract_support(support_index, skip_count),
             ),
             max_value,

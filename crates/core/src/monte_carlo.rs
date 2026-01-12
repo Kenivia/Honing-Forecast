@@ -168,10 +168,10 @@ pub fn monte_carlo_data<R: Rng>(
             actual_out.push(i - result[index + 1]);
         }
     }
-    // dbg!(actual_out);
-    // dbg!(&crate::saddlepoint_approximation::special::special_probs(
-    //     state_bundle
-    // ));
+    dbg!(actual_out);
+    dbg!(&crate::saddlepoint_approximation::special::special_probs(
+        state_bundle
+    ));
     (mats_data, juice_data)
 }
 
@@ -207,7 +207,8 @@ pub fn monte_carlo_wrapper<R: Rng>(
         }
         // dbg!(&debug_avg_juices);
         for (id, d) in debug_avg_juices.iter_mut().enumerate() {
-            let diff_weap = state_bundle.prep_output.juice_books_owned[id].0 as f64 - float_row[id];
+            let diff_weap =
+                state_bundle.prep_output.juice_books_owned[id].0 as f64 - float_juice[id].0;
             d.0 += (diff_weap)
                 * if d.0 > 0.0 {
                     state_bundle.prep_output.juice_info.one_leftover_value_id[id].0
@@ -215,7 +216,7 @@ pub fn monte_carlo_wrapper<R: Rng>(
                     state_bundle.prep_output.juice_info.one_gold_cost_id[id].0
                 };
             let diff_armor =
-                state_bundle.prep_output.juice_books_owned[id].1 as f64 - float_row[id];
+                state_bundle.prep_output.juice_books_owned[id].1 as f64 - float_juice[id].1;
             d.1 += (diff_armor)
                 * if d.1 > 0.0 {
                     state_bundle.prep_output.juice_info.one_leftover_value_id[id].1
@@ -264,12 +265,12 @@ pub fn monte_carlo_wrapper<R: Rng>(
 
         d.1 /= data_size as f64;
     }
-    // dbg!(
-    //     &debug_avg_mats,
-    //     &state_bundle.prep_output.price_arr,
-    //     &state_bundle.prep_output.leftover_values,
-    //     &debug_avg_juices
-    // );
+    dbg!(
+        &debug_avg_mats,
+        &state_bundle.prep_output.price_arr,
+        &state_bundle.prep_output.leftover_values,
+        &debug_avg_juices
+    );
     let prob_leftover: Vec<f64> = leftover_counts
         .into_iter()
         .map(|x| x as f64 / data_size as f64)

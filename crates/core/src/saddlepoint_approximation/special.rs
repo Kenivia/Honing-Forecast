@@ -248,7 +248,6 @@ mod tests {
             metric: -1.0,
             special_state: starting_special,
             prep_output,
-            combined_gold_costs: vec![],
         };
 
         // init_dist(&mut state_bundle, &mut prep_output);
