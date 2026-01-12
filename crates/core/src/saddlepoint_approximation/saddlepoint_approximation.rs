@@ -37,8 +37,6 @@ pub fn saddlepoint_approximation_prob_wrapper(
             init_theta,
             performance,
             false,
-            &mut 0.0,
-            0.0,
         );
     } else {
         performance.brute_count += 1;
@@ -127,10 +125,12 @@ pub fn saddlepoint_approximation(
 
     performance: &mut Performance,
     compute_truncated_mean: bool,
-    truncated_mean_output: &mut f64,
-    simple_mean: f64,
 ) -> f64 {
-    let (min_value, max_value) = state_bundle.find_min_max(support_index, skip_count);
+    let (min_value, max_value) = if compute_truncated_mean {
+        state_bundle.find_biased_min_max(support_index, skip_count)
+    } else {
+        state_bundle.find_min_max(support_index, skip_count)
+    };
 
     let span = lattice_span(state_bundle.extract_support(support_index, skip_count));
 
@@ -163,7 +163,11 @@ pub fn saddlepoint_approximation(
         let mut ks_tuple = (0.0, 0.0, 0.0, 0.0, 0.0);
 
         ks_01234(
-            state_bundle.extract_log_prob(skip_count),
+            if compute_truncated_mean {
+                state_bundle.extract_biased_log_prob(skip_count, support_index)
+            } else {
+                state_bundle.extract_log_prob(skip_count)
+            },
             state_bundle.extract_support(support_index, skip_count),
             theta,
             &mut ks_tuple,
@@ -219,7 +223,11 @@ pub fn saddlepoint_approximation(
     let mut ks_tuple = (0.0, 0.0, 0.0, 0.0, 0.0);
     performance.ks_count += 1;
     ks_01234(
-        state_bundle.extract_log_prob(skip_count),
+        if compute_truncated_mean {
+            state_bundle.extract_biased_log_prob(skip_count, support_index)
+        } else {
+            state_bundle.extract_log_prob(skip_count)
+        },
         state_bundle.extract_support(support_index, skip_count),
         theta_hat,
         &mut ks_tuple,
@@ -239,7 +247,11 @@ pub fn saddlepoint_approximation(
         let mut last_ks_tuple = (0.0, 0.0, 0.0, 0.0, 0.0);
         performance.ks_count += 1;
         ks_01234(
-            state_bundle.extract_log_prob(skip_count),
+            if compute_truncated_mean {
+                state_bundle.extract_biased_log_prob(skip_count, support_index)
+            } else {
+                state_bundle.extract_log_prob(skip_count)
+            },
             state_bundle.extract_support(support_index, skip_count),
             last_theta,
             &mut last_ks_tuple,
@@ -288,61 +300,61 @@ pub fn saddlepoint_approximation(
                 approx
             );
         }
-        if compute_truncated_mean {
-            dbg!("edge");
-            let z2 = z * z;
-            let z3 = z2 * z;
-            let z4 = z2 * z2;
-            let z6 = z3 * z3;
+        // if compute_truncated_mean {
+        //     dbg!("edge");
+        //     let z2 = z * z;
+        //     let z3 = z2 * z;
+        //     let z4 = z2 * z2;
+        //     let z6 = z3 * z3;
 
-            let poly_gamma3 = z3;
-            let poly_gamma4 = z4 - 2.0 * z2 - 1.0;
-            let poly_gamma3_sq = z6 - 9.0 * z4 + 9.0 * z2 + 3.0;
+        //     let poly_gamma3 = z3;
+        //     let poly_gamma4 = z4 - 2.0 * z2 - 1.0;
+        //     let poly_gamma3_sq = z6 - 9.0 * z4 + 9.0 * z2 + 3.0;
 
-            let moment_expansion = 1.0
-                + (gamma3 / 6.0) * poly_gamma3
-                + (gamma4 / 24.0) * poly_gamma4
-                + (gamma3 * gamma3 / 72.0) * poly_gamma3_sq;
+        //     let moment_expansion = 1.0
+        //         + (gamma3 / 6.0) * poly_gamma3
+        //         + (gamma4 / 24.0) * poly_gamma4
+        //         + (gamma3 * gamma3 / 72.0) * poly_gamma3_sq;
 
-            let integral_z_pdf = -pdf * moment_expansion;
+        //     let integral_z_pdf = -pdf * moment_expansion;
 
-            *truncated_mean_output = ks_tuple.1 * approx + std * integral_z_pdf;
-        }
+        //     *truncated_mean_output = ks_tuple.1 * approx + std * integral_z_pdf;
+        // }
         actual_out = approx;
     } else {
         // performance.lugganani_count += 1;
-        if compute_truncated_mean {
-            // dbg!(
-            //     -normal_dist.pdf(w_hat) / theta_hat,
-            //     -normal_dist.pdf(w_hat) * (budget - mean) / w_hat,
-            //     -normal_dist.pdf(w_hat) / theta_hat
-            //         * (1.0 + 1.0 / ((theta_hat * std).powi(2)) - gamma3 / (2.0 * theta_hat * std))
-            // );
-            // *derivative_output = -normal_dist.pdf(w_hat) / theta_hat
-            //     * (1.0 + 1.0 / ((theta_hat * std).powi(2)) - gamma3 / (2.0 * theta_hat * std))
-            dbg!(
-                theta_hat,
-                ks_tuple,
-                ks_tuple.1,
-                ks_tuple.2,
-                ks_tuple.3,
-                2.0 * (theta_hat * budget - ks_tuple.0),
-                w_hat,
-                u_hat,
-                normal_dist.cdf(w_hat),
-                normal_dist.pdf(w_hat),
-                1.0 / w_hat - 1.0 / u_hat,
-                min_value,
-                budget,
-                simple_mean,
-                max_value,
-                sa_out,
-                approx,
-                actual_out
-            );
-            *truncated_mean_output = simple_mean * normal_dist.cdf(w_hat)
-                + normal_dist.pdf(w_hat) * (simple_mean / w_hat - budget / u_hat);
-        }
+        // if compute_truncated_mean {
+        //     // dbg!(
+        //     //     -normal_dist.pdf(w_hat) / theta_hat,
+        //     //     -normal_dist.pdf(w_hat) * (budget - mean) / w_hat,
+        //     //     -normal_dist.pdf(w_hat) / theta_hat
+        //     //         * (1.0 + 1.0 / ((theta_hat * std).powi(2)) - gamma3 / (2.0 * theta_hat * std))
+        //     // );
+        //     // *derivative_output = -normal_dist.pdf(w_hat) / theta_hat
+        //     //     * (1.0 + 1.0 / ((theta_hat * std).powi(2)) - gamma3 / (2.0 * theta_hat * std))
+        //     dbg!(
+        //         theta_hat,
+        //         ks_tuple,
+        //         ks_tuple.1,
+        //         ks_tuple.2,
+        //         ks_tuple.3,
+        //         2.0 * (theta_hat * budget - ks_tuple.0),
+        //         w_hat,
+        //         u_hat,
+        //         normal_dist.cdf(w_hat),
+        //         normal_dist.pdf(w_hat),
+        //         1.0 / w_hat - 1.0 / u_hat,
+        //         min_value,
+        //         budget,
+        //         simple_mean,
+        //         max_value,
+        //         sa_out,
+        //         approx,
+        //         actual_out
+        //     );
+        //     *truncated_mean_output = simple_mean * normal_dist.cdf(w_hat)
+        //         + normal_dist.pdf(w_hat) * (simple_mean / w_hat - budget / u_hat);
+        // }
     }
 
     if DEBUG || actual_out < -FLOAT_TOL || actual_out > 1.0 + FLOAT_TOL || !actual_out.is_finite() {
@@ -356,20 +368,29 @@ pub fn saddlepoint_approximation(
         dbg!(theta_hat, theta_error);
         dbg!(w_hat, u_hat, error, sa_out);
         dbg!(
-            state_bundle
-                .extract_log_prob(skip_count)
-                .into_iter()
-                .map(|x| x.iter().map(|y| y.exp()).sum::<f64>())
-                .collect::<Vec<f64>>(),
-            state_bundle
-                .extract_log_prob(skip_count)
-                .into_iter()
-                .map(|x| x.iter().map(|y| y.exp()).collect())
-                .collect::<Vec<Vec<f64>>>(),
-            state_bundle
-                .extract_log_prob(skip_count)
-                .into_iter()
-                .collect::<Vec<&Vec<f64>>>(),
+            if compute_truncated_mean {
+                state_bundle.extract_biased_log_prob(skip_count, support_index)
+            } else {
+                state_bundle.extract_log_prob(skip_count)
+            }
+            .into_iter()
+            .map(|x| x.iter().map(|y| y.exp()).sum::<f64>())
+            .collect::<Vec<f64>>(),
+            if compute_truncated_mean {
+                state_bundle.extract_biased_log_prob(skip_count, support_index)
+            } else {
+                state_bundle.extract_log_prob(skip_count)
+            }
+            .into_iter()
+            .map(|x| x.iter().map(|y| y.exp()).collect())
+            .collect::<Vec<Vec<f64>>>(),
+            if compute_truncated_mean {
+                state_bundle.extract_biased_log_prob(skip_count, support_index)
+            } else {
+                state_bundle.extract_log_prob(skip_count)
+            }
+            .into_iter()
+            .collect::<Vec<&Vec<f64>>>(),
         );
         dbg!(
             theta_hat,

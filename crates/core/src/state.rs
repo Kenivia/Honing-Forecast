@@ -47,18 +47,18 @@ impl StateBundle {
         (min_value, max_value)
     }
 
-    // pub fn find_biased_min_max(&self, support_index: i64, skip_count: usize) -> (f64, f64) {
-    //     let min_value = find_non_zero_min_iter(
-    //         self.extract_support(support_index, skip_count),
-    //         self.extract_biased_log_prob(skip_count, support_index),
-    //     );
-    //     let max_value = self
-    //         .extract_support(support_index, skip_count)
-    //         .into_iter()
-    //         .map(|x| x.last().unwrap())
-    //         .sum();
-    //     (min_value, max_value)
-    // }
+    pub fn find_biased_min_max(&self, support_index: i64, skip_count: usize) -> (f64, f64) {
+        let min_value = find_non_zero_min_iter(
+            self.extract_support(support_index, skip_count),
+            self.extract_biased_log_prob(skip_count, support_index),
+        );
+        let max_value = self
+            .extract_support(support_index, skip_count)
+            .into_iter()
+            .map(|x| x.last().unwrap())
+            .sum();
+        (min_value, max_value)
+    }
     pub fn encode_all(&self) -> String {
         let mut strings = Vec::new();
         strings.push(format!("{:?}", self.special_state));
@@ -86,35 +86,35 @@ impl StateBundle {
         )
     }
 
-    // pub fn extract_biased_prob(
-    //     &self,
-    //     skip_count: usize,
-    //     support_index: usize,
-    // ) -> Box<dyn Iterator<Item = &Vec<f64>> + '_> {
-    //     assert!(support_index >= 0);
-    //     Box::new(
-    //         self.special_state
-    //             .iter()
-    //             .map(move |x| &self.prep_output.upgrade_arr[*x].biased_prob_dist[support_index])
-    //             .skip(skip_count),
-    //     )
-    // }
+    pub fn extract_biased_prob(
+        &self,
+        skip_count: usize,
+        support_index: usize,
+    ) -> Box<dyn Iterator<Item = &Vec<f64>> + '_> {
+        assert!(support_index >= 0);
+        Box::new(
+            self.special_state
+                .iter()
+                .map(move |x| &self.prep_output.upgrade_arr[*x].biased_prob_dist[support_index])
+                .skip(skip_count),
+        )
+    }
 
-    // pub fn extract_biased_log_prob(
-    //     &self,
-    //     skip_count: usize,
-    //     support_index: i64,
-    // ) -> Box<dyn Iterator<Item = &Vec<f64>> + '_> {
-    //     assert!(support_index >= 0);
-    //     Box::new(
-    //         self.special_state
-    //             .iter()
-    //             .map(move |x| {
-    //                 &self.prep_output.upgrade_arr[*x].biased_log_prob_dist[support_index as usize]
-    //             })
-    //             .skip(skip_count),
-    //     )
-    // }
+    pub fn extract_biased_log_prob(
+        &self,
+        skip_count: usize,
+        support_index: i64,
+    ) -> Box<dyn Iterator<Item = &Vec<f64>> + '_> {
+        assert!(support_index >= 0);
+        Box::new(
+            self.special_state
+                .iter()
+                .map(move |x| {
+                    &self.prep_output.upgrade_arr[*x].biased_log_prob_dist[support_index as usize]
+                })
+                .skip(skip_count),
+        )
+    }
 
     pub fn extract_support(
         &self,

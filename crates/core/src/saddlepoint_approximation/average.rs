@@ -123,8 +123,8 @@ pub fn saddlepoint_approximation_average_wrapper(
         return price * (effective_budget - simple_mean);
     }
 
-    let mut truncated_mean: f64 = NAN;
-    let prob: f64 = saddlepoint_approximation(
+    // let mut truncated_mean: f64 = NAN; // default if it's trivial
+    let biased_prob: f64 = saddlepoint_approximation(
         state_bundle,
         support_index,
         skip_count,
@@ -132,24 +132,26 @@ pub fn saddlepoint_approximation_average_wrapper(
         init_theta,
         performance,
         true,
-        &mut truncated_mean,
-        simple_mean,
     );
-    if prob.abs() < FLOAT_TOL {
-        truncated_mean = 0.0;
-    } else if (prob - 1.0).abs() < FLOAT_TOL {
-        truncated_mean = simple_mean
-    }
+    let prob = saddlepoint_approximation(
+        state_bundle,
+        support_index,
+        skip_count,
+        effective_budget,
+        init_theta,
+        performance,
+        false,
+    );
 
     let out: f64 = price * (effective_budget - simple_mean)
-        + (leftover_value - price) * (effective_budget * prob - truncated_mean);
+        + (leftover_value - price) * (effective_budget * prob - biased_prob * (simple_mean));
 
     let left = effective_budget - simple_mean;
-    let right = effective_budget * prob - truncated_mean;
+    let right = effective_budget * prob - biased_prob * (simple_mean);
     dbg!(
         simple_mean,
         effective_budget,
-        truncated_mean,
+        biased_prob,
         left,
         right,
         price,
