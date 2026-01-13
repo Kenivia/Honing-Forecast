@@ -1,7 +1,7 @@
 use crate::constants::FLOAT_TOL;
 
 use crate::normal_honing_utils::{add_up_golds, apply_price_leftovers, apply_price_naive};
-
+use crate::saddlepoint_approximation::average::DEBUG_AVERAGE;
 use crate::state::StateBundle;
 use crate::upgrade::Upgrade;
 use rand::Rng;
@@ -101,7 +101,7 @@ pub fn monte_carlo_data<R: Rng>(
     data_size: usize,
     state_bundle: &mut StateBundle,
     rng: &mut R,
-) -> (Vec<[i64; 7]>, Vec<Vec<(i64, i64)>>) {
+) -> (Vec<[i64; 7]>, Vec<Vec<(i64, i64)>>, Vec<usize>) {
     let mut special_left: Vec<i64> = vec![state_bundle.prep_output.budgets[7]; data_size];
     state_bundle.update_dist();
     let mut mats_data: Vec<[i64; 7]> = vec![[0i64; 7]; data_size];
@@ -110,6 +110,7 @@ pub fn monte_carlo_data<R: Rng>(
         vec![vec![(0, 0); state_bundle.prep_output.juice_info.amt_used_id.len()]; data_size];
 
     let mut actually_paid: Vec<i64> = vec![0; state_bundle.prep_output.upgrade_arr.len() + 1];
+    let mut skip_count_data: Vec<usize> = vec![0; data_size];
     // dbg!(&state_bundle, &prep_output);
     for (attempt_index, u_index) in state_bundle.special_state.iter().enumerate() {
         let upgrade = &state_bundle.prep_output.upgrade_arr[*u_index];
@@ -127,6 +128,7 @@ pub fn monte_carlo_data<R: Rng>(
                 *this_special_left -= special_taps_needed * upgrade.special_cost;
 
                 if *this_special_left >= 0 {
+                    skip_count_data[trial_num] += 1;
                     continue;
                 }
             }
@@ -151,8 +153,8 @@ pub fn monte_carlo_data<R: Rng>(
         row[6] += state_bundle.prep_output.unlock_costs[1];
     }
     let mut result = actually_paid
-        .into_iter()
-        .map(|x| 1.0 - x as f64 / data_size as f64)
+        .iter()
+        .map(|&x| 1.0 - x as f64 / data_size as f64)
         .collect::<Vec<f64>>();
     // dbg!(&result);
     result[0] = 1.0 - result[1]; // nothing free tapped
@@ -168,11 +170,14 @@ pub fn monte_carlo_data<R: Rng>(
             actual_out.push(i - result[index + 1]);
         }
     }
-    dbg!(actual_out);
-    dbg!(&crate::saddlepoint_approximation::special::special_probs(
-        state_bundle
-    ));
-    (mats_data, juice_data)
+    if DEBUG_AVERAGE {
+        dbg!(actual_out);
+        dbg!(&crate::saddlepoint_approximation::special::special_probs(
+            state_bundle
+        ));
+    }
+
+    (mats_data, juice_data, skip_count_data)
 }
 
 pub fn monte_carlo_wrapper<R: Rng>(
@@ -180,14 +185,16 @@ pub fn monte_carlo_wrapper<R: Rng>(
     state_bundle: &mut StateBundle,
     rng: &mut R,
 ) -> (Vec<f64>, f64, f64) {
-    let (cost_data, juice_data) = monte_carlo_data(data_size, state_bundle, rng);
+    let (cost_data, juice_data, skip_count_data) = monte_carlo_data(data_size, state_bundle, rng);
     let mut success_count: i64 = 0;
     let mut average: f64 = 0.0;
     let mut leftover_counts: Vec<i64> =
         vec![0; 7 + state_bundle.prep_output.juice_info.one_gold_cost_id.len() * 2];
 
-    let mut debug_avg_mats: Vec<f64> = vec![0.0; 7];
-    let mut debug_avg_juices: Vec<(f64, f64)> =
+    let mut debug_avg_gold_by_mats: Vec<f64> = vec![0.0; 7];
+    let mut debug_avg_gold_by_mats_by_skip: Vec<Vec<f64>> =
+        vec![vec![0.0; 7]; state_bundle.prep_output.upgrade_arr.len() + 1];
+    let mut debug_avg_gold_by_juices: Vec<(f64, f64)> =
         vec![(0.0, 0.0); state_bundle.prep_output.juice_info.one_gold_cost_id.len()];
     for (r_index, row) in cost_data.iter().enumerate() {
         let float_row: Vec<f64> = row.iter().map(|x| *x as f64).collect();
@@ -196,7 +203,19 @@ pub fn monte_carlo_wrapper<R: Rng>(
             .map(|x| (x.0 as f64, x.1 as f64))
             .collect();
 
-        for (index, d) in debug_avg_mats.iter_mut().enumerate() {
+        for (index, d) in debug_avg_gold_by_mats.iter_mut().enumerate() {
+            let diff = state_bundle.prep_output.budgets[index] as f64 - float_row[index];
+            *d += (diff)
+                * if diff > 0.0 {
+                    state_bundle.prep_output.leftover_values[index]
+                } else {
+                    state_bundle.prep_output.price_arr[index]
+                };
+        }
+        for (index, d) in debug_avg_gold_by_mats_by_skip[skip_count_data[r_index]]
+            .iter_mut()
+            .enumerate()
+        {
             let diff = state_bundle.prep_output.budgets[index] as f64 - float_row[index];
             *d += (diff)
                 * if diff > 0.0 {
@@ -206,7 +225,7 @@ pub fn monte_carlo_wrapper<R: Rng>(
                 };
         }
         // dbg!(&debug_avg_juices);
-        for (id, d) in debug_avg_juices.iter_mut().enumerate() {
+        for (id, d) in debug_avg_gold_by_juices.iter_mut().enumerate() {
             let diff_weap =
                 state_bundle.prep_output.juice_books_owned[id].0 as f64 - float_juice[id].0;
             d.0 += (diff_weap)
@@ -257,20 +276,29 @@ pub fn monte_carlo_wrapper<R: Rng>(
             leftover_index += 1;
         }
     }
-    for (_index, d) in debug_avg_mats.iter_mut().enumerate() {
+    for (_index, d) in debug_avg_gold_by_mats.iter_mut().enumerate() {
         *d /= data_size as f64;
     }
-    for (_id, d) in debug_avg_juices.iter_mut().enumerate() {
+    for row in debug_avg_gold_by_mats_by_skip.iter_mut() {
+        for d in row.iter_mut() {
+            *d /= data_size as f64;
+        }
+    }
+    for (_id, d) in debug_avg_gold_by_juices.iter_mut().enumerate() {
         d.0 /= data_size as f64;
 
         d.1 /= data_size as f64;
     }
-    dbg!(
-        &debug_avg_mats,
-        &state_bundle.prep_output.price_arr,
-        &state_bundle.prep_output.leftover_values,
-        &debug_avg_juices
-    );
+
+    if DEBUG_AVERAGE {
+        dbg!(
+            &debug_avg_gold_by_mats,
+            &debug_avg_gold_by_mats_by_skip,
+            &state_bundle.prep_output.price_arr,
+            &state_bundle.prep_output.leftover_values,
+            &debug_avg_gold_by_juices
+        );
+    }
     let prob_leftover: Vec<f64> = leftover_counts
         .into_iter()
         .map(|x| x as f64 / data_size as f64)

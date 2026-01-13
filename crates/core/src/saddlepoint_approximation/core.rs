@@ -176,7 +176,8 @@ where
             // If the error (magnitude of y) got worse, reduce step size
             if new_y.abs() > y.abs() || new_dy == 0.0 {
                 damping_factor *= 0.5;
-                cur_delta = proposed_delta * damping_factor;
+                cur_delta =
+                    proposed_delta.signum() * proposed_delta.abs().min(1.0) * damping_factor;
                 new_theta = theta + cur_delta;
 
                 if damping_factor < 1e-3 {

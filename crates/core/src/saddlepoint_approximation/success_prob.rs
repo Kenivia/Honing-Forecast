@@ -26,6 +26,7 @@ pub fn honing_sa_wrapper(
             budget,
             &mut 0.0,
             performance,
+            false,
         );
 
         out += *special_prob * this_prob;

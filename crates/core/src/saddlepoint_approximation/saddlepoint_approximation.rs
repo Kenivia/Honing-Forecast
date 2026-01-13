@@ -1,4 +1,4 @@
-use std::f64::consts::PI;
+// use std::f64::consts::PI;
 
 use crate::brute::{MAX_BRUTE_SIZE, brute_success_prob};
 use crate::constants::FLOAT_TOL;
@@ -6,6 +6,7 @@ use crate::helpers::F64_2d;
 use crate::performance::Performance;
 use crate::saddlepoint_approximation::core::{THETA_LIMIT, THETA_TOL, ks_01234, my_newton};
 use crate::state::StateBundle;
+use itertools::Itertools;
 use statrs::distribution::{Continuous, ContinuousCDF, Normal};
 
 pub static DEBUG: bool = false;
@@ -19,29 +20,47 @@ pub fn saddlepoint_approximation_prob_wrapper(
     budget: f64,
     init_theta: &mut f64,
     performance: &mut Performance,
+    compute_biased: bool,
 ) -> f64 {
-    let (min_value, max_value) = state_bundle.find_min_max(support_index, skip_count);
-    let h = lattice_span(state_bundle.extract_support(support_index, skip_count));
+    let (min_value, max_value) = if compute_biased {
+        state_bundle.find_biased_min_max(support_index, skip_count)
+    } else {
+        state_bundle.find_min_max(support_index, skip_count)
+    };
+
+    let span = lattice_span(state_bundle.extract_support(support_index, skip_count));
+    if budget > max_value + FLOAT_TOL {
+        performance.trivial_count += 1;
+        return 1.0;
+    }
+
+    if budget < min_value - FLOAT_TOL {
+        performance.trivial_count += 1;
+        return 0.0;
+    }
     if support_size_too_big(
         state_bundle.extract_support(support_index, skip_count),
         budget,
         MAX_BRUTE_SIZE,
-    ) && budget > min_value + h + FLOAT_TOL
-        && budget < max_value - h - FLOAT_TOL
+    ) && budget > min_value + span / 2.0 + FLOAT_TOL
+        && budget < max_value - span / 2.0 - FLOAT_TOL
     {
         return saddlepoint_approximation(
             state_bundle,
             support_index,
             skip_count,
+            min_value,
+            max_value,
+            span,
             budget,
             init_theta,
             performance,
-            false,
+            compute_biased,
         );
     } else {
         performance.brute_count += 1;
         let probs: Vec<Vec<f64>> = state_bundle
-            .extract_prob(skip_count)
+            .extract_prob_wrapper(skip_count, support_index, compute_biased)
             .into_iter()
             .cloned()
             .collect();
@@ -64,7 +83,11 @@ where
         if out == 0 {
             out = a.len();
         } else {
-            out *= a.iter().take_while(|x| **x <= budget).count().max(1);
+            out *= a
+                .iter()
+                .take_while(|x| **x + FLOAT_TOL <= budget)
+                .count()
+                .max(1);
             // the hope is that if budget is very close to min_value then we will use brute, because that will break SA
             if out >= max {
                 low_side_too_big = true;
@@ -119,43 +142,18 @@ pub fn saddlepoint_approximation(
     state_bundle: &StateBundle,
     support_index: i64,
     skip_count: usize,
-
+    min_value: f64,
+    max_value: f64,
+    span: f64,
     inp_budget: f64,
     init_theta: &mut f64,
-
     performance: &mut Performance,
-    compute_truncated_mean: bool,
+    compute_biased: bool,
 ) -> f64 {
-    let (min_value, max_value) = if compute_truncated_mean {
-        state_bundle.find_biased_min_max(support_index, skip_count)
-    } else {
-        state_bundle.find_min_max(support_index, skip_count)
-    };
-
-    let span = lattice_span(state_bundle.extract_support(support_index, skip_count));
-
-    if inp_budget > max_value + FLOAT_TOL {
-        performance.trivial_count += 1;
-        return 1.0;
-    }
-
-    if inp_budget < min_value - FLOAT_TOL {
-        performance.trivial_count += 1;
-        return 0.0;
-    }
-
-    if min_value + FLOAT_TOL + span > max_value - FLOAT_TOL - span {
-        // this is just for when support is all 0s, idek what the condition should be
-        // im pre sure this case is impossible but i dont wanan think abt it
-        performance.trivial_count += 1;
-        return if max_value + FLOAT_TOL <= inp_budget {
-            1.0
-        } else {
-            0.0
-        };
-    }
-
-    let budget = (inp_budget / span).floor() * span + span / 2.0;
+    let budget = ((inp_budget / span).floor() * span)
+        .min(max_value - span)
+        .max(min_value)
+        + span / 2.0;
     performance.sa_count += 1;
 
     // dbg!(h);
@@ -163,11 +161,7 @@ pub fn saddlepoint_approximation(
         let mut ks_tuple = (0.0, 0.0, 0.0, 0.0, 0.0);
 
         ks_01234(
-            if compute_truncated_mean {
-                state_bundle.extract_biased_log_prob(skip_count, support_index)
-            } else {
-                state_bundle.extract_log_prob(skip_count)
-            },
+            state_bundle.extract_log_prob_wrapper(skip_count, support_index, compute_biased),
             state_bundle.extract_support(support_index, skip_count),
             theta,
             &mut ks_tuple,
@@ -180,18 +174,32 @@ pub fn saddlepoint_approximation(
     let result_opt = my_newton(&f_df, *init_theta, performance);
 
     if DEBUG || result_opt.is_none() {
+        dbg!(budget, min_value, max_value,);
         dbg!(
-            budget, min_value,
-            max_value,
-            // log_prob_dist_arr
-            //     .iter()
-            //     .map(|x| x.iter().map(|y| y.exp()).sum::<f64>())
-            //     .collect::<Vec<f64>>(),
-            // log_prob_dist_arr
-            //     .iter()
-            //     .map(|x| x.iter().map(|y| y.exp()).collect())
-            //     .collect::<Vec<Vec<f64>>>(),
-            // support_arr
+            f_df(THETA_LIMIT),
+            f_df(1.0),
+            f_df(0.0),
+            f_df(-1.0),
+            f_df(-THETA_LIMIT),
+        );
+        dbg!(
+            state_bundle
+                .extract_log_prob_wrapper(skip_count, support_index, compute_biased)
+                .into_iter()
+                .map(|x| x.iter().map(|y| y.exp()).sum::<f64>())
+                .collect::<Vec<f64>>(),
+            state_bundle
+                .extract_log_prob_wrapper(skip_count, support_index, compute_biased)
+                .into_iter()
+                .map(|x| x.iter().map(|y| y.exp()).collect())
+                .collect::<Vec<Vec<f64>>>(),
+            state_bundle
+                .extract_log_prob_wrapper(skip_count, support_index, compute_biased)
+                .into_iter()
+                .collect::<Vec<&Vec<f64>>>(),
+            state_bundle
+                .extract_support(support_index, skip_count)
+                .collect::<Vec<&Vec<f64>>>()
         );
     }
     let result = result_opt.unwrap();
@@ -223,11 +231,7 @@ pub fn saddlepoint_approximation(
     let mut ks_tuple = (0.0, 0.0, 0.0, 0.0, 0.0);
     performance.ks_count += 1;
     ks_01234(
-        if compute_truncated_mean {
-            state_bundle.extract_biased_log_prob(skip_count, support_index)
-        } else {
-            state_bundle.extract_log_prob(skip_count)
-        },
+        state_bundle.extract_log_prob_wrapper(skip_count, support_index, compute_biased),
         state_bundle.extract_support(support_index, skip_count),
         theta_hat,
         &mut ks_tuple,
@@ -247,11 +251,7 @@ pub fn saddlepoint_approximation(
         let mut last_ks_tuple = (0.0, 0.0, 0.0, 0.0, 0.0);
         performance.ks_count += 1;
         ks_01234(
-            if compute_truncated_mean {
-                state_bundle.extract_biased_log_prob(skip_count, support_index)
-            } else {
-                state_bundle.extract_log_prob(skip_count)
-            },
+            state_bundle.extract_log_prob_wrapper(skip_count, support_index, compute_biased),
             state_bundle.extract_support(support_index, skip_count),
             last_theta,
             &mut last_ks_tuple,
@@ -300,7 +300,7 @@ pub fn saddlepoint_approximation(
                 approx
             );
         }
-        // if compute_truncated_mean {
+        // if compute_biased {
         //     dbg!("edge");
         //     let z2 = z * z;
         //     let z3 = z2 * z;
@@ -323,7 +323,7 @@ pub fn saddlepoint_approximation(
         actual_out = approx;
     } else {
         // performance.lugganani_count += 1;
-        // if compute_truncated_mean {
+        // if compute_biased {
         //     // dbg!(
         //     //     -normal_dist.pdf(w_hat) / theta_hat,
         //     //     -normal_dist.pdf(w_hat) * (budget - mean) / w_hat,
@@ -368,29 +368,31 @@ pub fn saddlepoint_approximation(
         dbg!(theta_hat, theta_error);
         dbg!(w_hat, u_hat, error, sa_out);
         dbg!(
-            if compute_truncated_mean {
-                state_bundle.extract_biased_log_prob(skip_count, support_index)
-            } else {
-                state_bundle.extract_log_prob(skip_count)
-            }
-            .into_iter()
-            .map(|x| x.iter().map(|y| y.exp()).sum::<f64>())
-            .collect::<Vec<f64>>(),
-            if compute_truncated_mean {
-                state_bundle.extract_biased_log_prob(skip_count, support_index)
-            } else {
-                state_bundle.extract_log_prob(skip_count)
-            }
-            .into_iter()
-            .map(|x| x.iter().map(|y| y.exp()).collect())
-            .collect::<Vec<Vec<f64>>>(),
-            if compute_truncated_mean {
-                state_bundle.extract_biased_log_prob(skip_count, support_index)
-            } else {
-                state_bundle.extract_log_prob(skip_count)
-            }
-            .into_iter()
-            .collect::<Vec<&Vec<f64>>>(),
+            state_bundle
+                .extract_log_prob_wrapper(skip_count, support_index, compute_biased)
+                .into_iter()
+                .map(|x| x.iter().map(|y| y.exp()).sum::<f64>())
+                .collect::<Vec<f64>>(),
+            state_bundle
+                .extract_log_prob_wrapper(skip_count, support_index, compute_biased)
+                .into_iter()
+                .map(|x| x.iter().map(|y| y.exp()).collect())
+                .collect::<Vec<Vec<f64>>>(),
+            state_bundle
+                .extract_log_prob_wrapper(skip_count, support_index, compute_biased)
+                .into_iter()
+                .collect::<Vec<&Vec<f64>>>(),
+            state_bundle
+                .extract_support(support_index, skip_count)
+                .collect::<Vec<&Vec<f64>>>(),
+            state_bundle
+                .extract_support(support_index, skip_count)
+                .try_len()
+                .unwrap(),
+            state_bundle
+                .extract_log_prob_wrapper(skip_count, support_index, compute_biased)
+                .try_len()
+                .unwrap(),
         );
         dbg!(
             theta_hat,

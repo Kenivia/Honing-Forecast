@@ -108,13 +108,13 @@ fn neighbour<R: Rng>(state_bundle: &mut StateBundle, temp: f64, init_temp: f64, 
 
         // dbg!(want_to_flip);
         let mut want_to_flip_indices: Vec<usize> =
-            (1..state.len() - 1).choose_multiple(rng, want_to_flip);
+            (0..state.len() - 1).choose_multiple(rng, want_to_flip);
         want_to_flip_indices.sort();
         let mut flipped_index: usize = 0;
 
         let book_target: usize = rng.random_range(0..=choice_len);
         let mut want_to_book_indices: Vec<usize> =
-            (1..state.len() - 1).choose_multiple(rng, want_to_book);
+            (0..state.len() - 1).choose_multiple(rng, want_to_book);
         want_to_book_indices.sort();
         let mut booked_index: usize = 0;
 
@@ -122,7 +122,7 @@ fn neighbour<R: Rng>(state_bundle: &mut StateBundle, temp: f64, init_temp: f64, 
         let base_chance = upgrade.base_chance;
         let artisan_rate = upgrade.artisan_rate;
         let upgrade_index = upgrade.upgrade_index;
-        let juice_chances = state_bundle.prep_output.juice_info.chances[upgrade_index].clone();
+        let juice_chances = &state_bundle.prep_output.juice_info.chances[upgrade_index];
 
         for (s_index, (juice, book_index)) in state.iter_mut().enumerate() {
             if artisan >= 1.0 || s_index == 0 {
@@ -182,8 +182,8 @@ pub fn solve<R: Rng, F>(
 where
     F: FnMut(&mut StateBundle, &mut Performance) -> f64,
 {
-    let init_temp: f64 = -1.0;
-    // let init_temp: f64 = -1.0; // 0.969 = ~32
+    // let init_temp: f64 = 333.0;
+    let init_temp: f64 = -1.0; // 0.969 = ~32
     // let mut cache: HashMap<(Vec<bool>, usize), Vec<([i64; 9], f64)>> = HashMap::new();
     let mut temp: f64 = init_temp;
     let mut starting_special: Vec<usize> = Vec::with_capacity(prep_output.upgrade_arr.len() * 2);

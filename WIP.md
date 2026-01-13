@@ -13,10 +13,12 @@
   - somehow avoid re-allocating maybe
   - skip small mass?
 
+-
 - use polynomial for equal stepped stuff like for mat costs in averages
   - add a tag to the support or just do it via support index
+- collapse identical supports
 
-- add a brute forced average evaluator?
+- ^ both of these will probabily need like a custom vecf64 wrapper kinda structs
 
 ### Misc
 
@@ -150,6 +152,7 @@ graph
 
 ## Done / cancelled
 
+- ~~add a brute forced average evaluator?~~
 - ~~make a more sensible suite of test cases to test the behaviour of the metric functions~~
 - ~~fix the leftover evaluation like i think sometimes the trivial case is wrong~~
 - ~~normalize average metric's interaction with acceptance~~

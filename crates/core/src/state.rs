@@ -1,5 +1,6 @@
 use itertools::Itertools;
 
+use crate::constants::FLOAT_TOL;
 use crate::helpers::find_non_zero_min_iter;
 use crate::normal_honing_utils::{add_juice_gold_cost, new_prob_dist};
 use crate::parser::PreparationOutput;
@@ -67,6 +68,31 @@ impl StateBundle {
         }
         strings.join("\n")
     }
+    pub fn extract_log_prob_wrapper(
+        &self,
+        skip_count: usize,
+        support_index: i64,
+        biased: bool,
+    ) -> Box<dyn Iterator<Item = &Vec<f64>> + '_> {
+        Box::new(if biased {
+            self.extract_biased_log_prob(skip_count, support_index)
+        } else {
+            self.extract_log_prob(skip_count)
+        })
+    }
+
+    pub fn extract_prob_wrapper(
+        &self,
+        skip_count: usize,
+        support_index: i64,
+        biased: bool,
+    ) -> Box<dyn Iterator<Item = &Vec<f64>> + '_> {
+        Box::new(if biased {
+            self.extract_biased_prob(skip_count, support_index)
+        } else {
+            self.extract_prob(skip_count)
+        })
+    }
 
     pub fn extract_log_prob(&self, skip_count: usize) -> Box<dyn Iterator<Item = &Vec<f64>> + '_> {
         Box::new(
@@ -89,13 +115,15 @@ impl StateBundle {
     pub fn extract_biased_prob(
         &self,
         skip_count: usize,
-        support_index: usize,
+        support_index: i64,
     ) -> Box<dyn Iterator<Item = &Vec<f64>> + '_> {
         assert!(support_index >= 0);
         Box::new(
             self.special_state
                 .iter()
-                .map(move |x| &self.prep_output.upgrade_arr[*x].biased_prob_dist[support_index])
+                .map(move |x| {
+                    &self.prep_output.upgrade_arr[*x].biased_prob_dist[support_index as usize]
+                })
                 .skip(skip_count),
         )
     }
@@ -255,11 +283,16 @@ impl StateBundle {
                 .chain(upgrade.armor_juice_costs.iter())
                 .enumerate()
                 .map(|(index, s_arr)| {
-                    s_arr
-                        .iter()
-                        .zip(upgrade.prob_dist.clone())
-                        .map(|(s, p)| s * p / means[index])
-                        .collect()
+                    if means[index].abs() < FLOAT_TOL {
+                        vec![1.0 / upgrade.prob_dist.len() as f64; upgrade.prob_dist.len()]
+                        // i mean we should just change this to [1.0] but then i have to change the support and prob dist and everything so that's a TODO for me
+                    } else {
+                        s_arr
+                            .iter()
+                            .zip(upgrade.prob_dist.clone())
+                            .map(|(s, p)| s * p / means[index])
+                            .collect()
+                    }
                 })
                 .collect();
             upgrade.biased_log_prob_dist = upgrade

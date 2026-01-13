@@ -107,7 +107,17 @@ pub fn brute_success_prob(
 
     // The answer is the sum of paths that were "Guaranteed Early"
     // + paths that survived to the very end validly.
-    total_guaranteed_prob + current_states.values().sum::<f64>()
+    let out = total_guaranteed_prob + current_states.values().sum::<f64>();
+    if !out.is_finite() {
+        dbg!(
+            prob_dist_arr,
+            support_arr,
+            total_guaranteed_prob,
+            current_states.values().sum::<f64>()
+        );
+        panic!();
+    }
+    out
 }
 // fn brute_naive_recursive(
 //     prob_dist_arr: &[Vec<f64>],

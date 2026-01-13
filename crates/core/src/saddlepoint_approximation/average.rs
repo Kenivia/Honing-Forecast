@@ -1,17 +1,19 @@
-use std::f64::NAN;
+// use std::f64::NAN;
 
-use crate::constants::FLOAT_TOL;
+// use crate::constants::FLOAT_TOL;
 use crate::constants::SPECIAL_TOL;
 use crate::helpers::F64_2d;
 
 use itertools::izip;
 
 use crate::performance::Performance;
-use crate::saddlepoint_approximation::saddlepoint_approximation::saddlepoint_approximation;
+
+use crate::saddlepoint_approximation::saddlepoint_approximation::saddlepoint_approximation_prob_wrapper;
 use crate::saddlepoint_approximation::special::special_probs;
 use crate::state::StateBundle;
 
-use statrs::distribution::{Continuous, Normal};
+pub static DEBUG_AVERAGE: bool = true;
+// use statrs::distribution::{Continuous, Normal};
 
 pub fn average_gold_metric(state_bundle: &mut StateBundle, performance: &mut Performance) -> f64 {
     state_bundle.update_dist();
@@ -45,31 +47,33 @@ pub fn average_gold_metric(state_bundle: &mut StateBundle, performance: &mut Per
                 leftover,
             );
             // dbg!(this_avg);
-            dbg!(
-                skip_count,
-                support_index,
-                effective_budget,
-                price,
-                leftover,
-                this_avg,
-                *special_prob,
-                simple_average(
-                    state_bundle.extract_prob(skip_count),
-                    state_bundle.extract_support(support_index as i64, skip_count)
-                ),
-                *special_prob * this_avg,
-                "================================"
-            );
+
+            if DEBUG_AVERAGE {
+                dbg!(
+                    skip_count,
+                    support_index,
+                    effective_budget,
+                    price,
+                    leftover,
+                    this_avg,
+                    *special_prob,
+                    simple_average(
+                        state_bundle.extract_prob(skip_count),
+                        state_bundle.extract_support(support_index as i64, skip_count)
+                    ),
+                    *special_prob * this_avg,
+                    "================================"
+                );
+            }
             total_gold += *special_prob * this_avg;
             dbg_sa_avg[support_index] += *special_prob * this_avg;
         }
     }
-    dbg!(dbg_sa_avg);
 
-    // dbg!(
-    //     total_gold,
-    //     &average_gold_naive_wrapper(state_bundle, performance)
-    // );
+    if DEBUG_AVERAGE {
+        dbg!(dbg_sa_avg);
+    }
+
     total_gold
 }
 
@@ -85,23 +89,23 @@ where
     }
     mean
 }
-fn simple_variance<'a, I>(prob_dist_arr: I, support_arr: I) -> f64
-where
-    I: F64_2d<'a>,
-{
-    let mut total_var = 0.0;
-    for (support, prob_dist) in support_arr.into_iter().zip(prob_dist_arr) {
-        let mut mean = 0.0;
-        let mut ex2 = 0.0;
-        for (s, p) in support.iter().zip(prob_dist) {
-            mean += s * p;
-            ex2 += s * s * p;
-        }
-        total_var += ex2 - mean * mean;
-    }
+// fn simple_variance<'a, I>(prob_dist_arr: I, support_arr: I) -> f64
+// where
+//     I: F64_2d<'a>,
+// {
+//     let mut total_var = 0.0;
+//     for (support, prob_dist) in support_arr.into_iter().zip(prob_dist_arr) {
+//         let mut mean = 0.0;
+//         let mut ex2 = 0.0;
+//         for (s, p) in support.iter().zip(prob_dist) {
+//             mean += s * p;
+//             ex2 += s * s * p;
+//         }
+//         total_var += ex2 - mean * mean;
+//     }
 
-    total_var
-}
+//     total_var
+// }
 
 pub fn saddlepoint_approximation_average_wrapper(
     state_bundle: &StateBundle,
@@ -124,7 +128,7 @@ pub fn saddlepoint_approximation_average_wrapper(
     }
 
     // let mut truncated_mean: f64 = NAN; // default if it's trivial
-    let biased_prob: f64 = saddlepoint_approximation(
+    let biased_prob: f64 = saddlepoint_approximation_prob_wrapper(
         state_bundle,
         support_index,
         skip_count,
@@ -133,7 +137,7 @@ pub fn saddlepoint_approximation_average_wrapper(
         performance,
         true,
     );
-    let prob = saddlepoint_approximation(
+    let prob = saddlepoint_approximation_prob_wrapper(
         state_bundle,
         support_index,
         skip_count,
@@ -144,20 +148,23 @@ pub fn saddlepoint_approximation_average_wrapper(
     );
 
     let out: f64 = price * (effective_budget - simple_mean)
-        + (leftover_value - price) * (effective_budget * prob - biased_prob * (simple_mean));
+        + (leftover_value - price) * (effective_budget * prob - biased_prob * simple_mean);
 
     let left = effective_budget - simple_mean;
     let right = effective_budget * prob - biased_prob * (simple_mean);
-    dbg!(
-        simple_mean,
-        effective_budget,
-        biased_prob,
-        left,
-        right,
-        price,
-        leftover_value,
-        out,
-    );
-    // // }
+    if !out.is_finite() || DEBUG_AVERAGE {
+        dbg!(
+            simple_mean,
+            effective_budget,
+            biased_prob,
+            left,
+            right,
+            price,
+            leftover_value,
+            out,
+        );
+    }
+
+    // }
     return out;
 }
