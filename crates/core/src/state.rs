@@ -1,6 +1,7 @@
 use itertools::Itertools;
 
-use crate::helpers::find_non_zero_min_iter;
+use crate::constants::FLOAT_TOL;
+use crate::helpers::F64_2d;
 use crate::normal_honing_utils::{add_juice_gold_cost, new_prob_dist};
 use crate::parser::PreparationOutput;
 use crate::performance::Performance;
@@ -33,11 +34,37 @@ pub fn encode_one_positions(v1: &[(bool, usize)]) -> String {
         })
         .collect()
 }
+
+pub fn find_non_zero<'a, I>(support_arr: I, log_prob_dist_arr: I, biased: bool) -> f64
+where
+    I: F64_2d<'a>,
+{
+    support_arr
+        .into_iter()
+        .zip(log_prob_dist_arr)
+        .map(|(support, log_prob_dist)| {
+            support
+                .iter()
+                .zip(log_prob_dist)
+                .find(|(support, lp)| {
+                    if biased {
+                        **lp > f64::NEG_INFINITY && support.abs() > FLOAT_TOL
+                    } else {
+                        **lp > f64::NEG_INFINITY
+                    }
+                })
+                .unwrap_or((&0.0, &0.0))
+                .0
+        })
+        .sum()
+}
+
 impl StateBundle {
-    pub fn find_min_max(&self, support_index: i64, skip_count: usize) -> (f64, f64) {
-        let min_value = find_non_zero_min_iter(
+    pub fn find_min_max(&self, support_index: i64, skip_count: usize, biased: bool) -> (f64, f64) {
+        let min_value = find_non_zero(
             self.extract_support(support_index, skip_count),
             self.extract_log_prob(skip_count),
+            biased,
         );
         let max_value = self
             .extract_support(support_index, skip_count)
@@ -98,7 +125,7 @@ impl StateBundle {
                 .skip(skip_count),
         )
     }
-    pub fn extract_size_biased() {}
+
     pub fn update_combined(&mut self) {
         let prep_output = &mut self.prep_output;
 

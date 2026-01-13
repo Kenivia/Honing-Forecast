@@ -42,24 +42,6 @@ pub fn find_non_zero_min_vec(support_arr: &[Vec<f64>], log_prob_dist_arr: &[Vec<
         .sum()
 }
 
-pub fn find_non_zero_min_iter<'a, I>(support_arr: I, log_prob_dist_arr: I) -> f64
-where
-    I: F64_2d<'a>,
-{
-    support_arr
-        .into_iter()
-        .zip(log_prob_dist_arr)
-        .map(|(support, log_prob_dist)| {
-            support
-                .iter()
-                .zip(log_prob_dist)
-                .find(|(_, lp)| **lp > f64::NEG_INFINITY)
-                .unwrap_or((&0.0, &0.0))
-                .0
-        })
-        .sum()
-}
-
 pub fn eqv_gold_per_tap(upgrade: &Upgrade, price_arr: &[f64]) -> f64 {
     // a bit redundent but whatever
     let mut c: f64 = 0.0;

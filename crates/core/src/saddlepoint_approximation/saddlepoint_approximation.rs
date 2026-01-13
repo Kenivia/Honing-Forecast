@@ -27,7 +27,8 @@ pub fn saddlepoint_approximation_prob_wrapper(
     compute_biased: bool,
     mean: f64,
 ) -> f64 {
-    let (min_value, max_value) = state_bundle.find_min_max(support_index, skip_count);
+    let (min_value, max_value) =
+        state_bundle.find_min_max(support_index, skip_count, compute_biased);
 
     let span = lattice_span(state_bundle.extract_support(support_index, skip_count));
     if budget > max_value + FLOAT_TOL {
