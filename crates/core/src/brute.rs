@@ -1,5 +1,6 @@
 use crate::constants::FLOAT_TOL;
 use crate::performance::Performance;
+
 use crate::state::StateBundle;
 
 use std::collections::HashMap;
@@ -119,42 +120,55 @@ pub fn brute_success_prob(
     }
     out
 }
-// fn brute_naive_recursive(
-//     prob_dist_arr: &[Vec<f64>],
-//     support_arr: &[Vec<f64>],
-//     cost_so_far: f64,
-//     budget: f64,
-//     depth: usize,
-// ) -> f64 {
-//     let prob_dist: &Vec<f64> = &prob_dist_arr[depth];
-
-//     let cost_arr: &Vec<f64> = &support_arr[depth];
-
-//     if depth == prob_dist_arr.len() - 1 {
-//         return cost_arr
-//             .iter()
-//             .enumerate()
-//             .take_while(|(_, cost)| cost_so_far + **cost <= budget)
-//             .fold(0.0, |acc, (index, _)| acc + prob_dist[index]);
-//     } else {
-//         return cost_arr.iter().enumerate().fold(0.0, |acc, (index, cost)| {
-//             let new_cost: f64 = cost_so_far + *cost;
-//             acc + if budget < new_cost {
-//                 0.0
-//             } else {
-//                 prob_dist[index]
-//                     * brute_naive_recursive(
-//                         prob_dist_arr,
-//                         support_arr,
-//                         new_cost,
-//                         budget,
-//                         depth + 1,
-//                         // cache,
-//                     )
-//             }
-//         });
-//     }
-// }
+pub fn brute_average_recursive(
+    prob_dist_arr: &[Vec<f64>],
+    support_arr: &[Vec<f64>],
+    cost_so_far: f64,
+    budget: f64,
+    depth: usize,
+    mean: f64,
+) -> f64 {
+    if prob_dist_arr.len() == 0 {
+        return 0.0;
+    }
+    if depth == prob_dist_arr.len() - 1 {
+        let prob_dist: &Vec<f64> = &prob_dist_arr[depth];
+        let cost_arr: &Vec<f64> = &support_arr[depth];
+        return cost_arr
+            .iter()
+            .map(|cost| cost_so_far + *cost)
+            .take_while(|cost_sum| *cost_sum <= budget)
+            .enumerate()
+            .fold(0.0, |acc, (index, cost_sum)| {
+                acc + prob_dist[index]
+                    * if mean.abs() < FLOAT_TOL {
+                        assert!(cost_sum.abs() < FLOAT_TOL);
+                        0.0
+                    } else {
+                        cost_sum / mean
+                    }
+            });
+    } else {
+        let prob_dist: &Vec<f64> = &prob_dist_arr[depth];
+        let cost_arr: &Vec<f64> = &support_arr[depth];
+        return cost_arr.iter().enumerate().fold(0.0, |acc, (index, cost)| {
+            let new_cost: f64 = cost_so_far + *cost;
+            acc + if budget < new_cost {
+                0.0
+            } else {
+                prob_dist[index]
+                    * brute_average_recursive(
+                        prob_dist_arr,
+                        support_arr,
+                        new_cost,
+                        budget,
+                        depth + 1,
+                        mean,
+                    )
+            }
+        });
+    }
+}
 
 // this is actually just another wrapper
 

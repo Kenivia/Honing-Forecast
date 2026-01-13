@@ -12,8 +12,10 @@
   - take advantage of the fact that the special costs share a common factor
   - somehow avoid re-allocating maybe
   - skip small mass?
+  - definitely cache this result
 
--
+- profile the things
+
 - use polynomial for equal stepped stuff like for mat costs in averages
   - add a tag to the support or just do it via support index
 - collapse identical supports

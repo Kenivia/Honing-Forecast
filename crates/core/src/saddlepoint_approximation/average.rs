@@ -1,5 +1,7 @@
 // use std::f64::NAN;
 
+use std::f64::NAN;
+
 // use crate::constants::FLOAT_TOL;
 use crate::constants::SPECIAL_TOL;
 use crate::helpers::F64_2d;
@@ -12,7 +14,8 @@ use crate::saddlepoint_approximation::saddlepoint_approximation::saddlepoint_app
 use crate::saddlepoint_approximation::special::special_probs;
 use crate::state::StateBundle;
 
-pub static DEBUG_AVERAGE: bool = true;
+pub static DEBUG_AVERAGE: bool = false;
+pub static DEBUG_AVG_INDEX: i64 = 0;
 // use statrs::distribution::{Continuous, Normal};
 
 pub fn average_gold_metric(state_bundle: &mut StateBundle, performance: &mut Performance) -> f64 {
@@ -49,21 +52,23 @@ pub fn average_gold_metric(state_bundle: &mut StateBundle, performance: &mut Per
             // dbg!(this_avg);
 
             if DEBUG_AVERAGE {
-                dbg!(
-                    skip_count,
-                    support_index,
-                    effective_budget,
-                    price,
-                    leftover,
-                    this_avg,
-                    *special_prob,
-                    simple_average(
-                        state_bundle.extract_prob(skip_count),
-                        state_bundle.extract_support(support_index as i64, skip_count)
-                    ),
-                    *special_prob * this_avg,
-                    "================================"
-                );
+                if support_index == DEBUG_AVG_INDEX as usize {
+                    dbg!(
+                        skip_count,
+                        support_index,
+                        effective_budget,
+                        price,
+                        leftover,
+                        this_avg,
+                        *special_prob,
+                        simple_average(
+                            state_bundle.extract_prob(skip_count),
+                            state_bundle.extract_support(support_index as i64, skip_count)
+                        ),
+                        *special_prob * this_avg,
+                        "================================"
+                    );
+                }
             }
             total_gold += *special_prob * this_avg;
             dbg_sa_avg[support_index] += *special_prob * this_avg;
@@ -136,6 +141,7 @@ pub fn saddlepoint_approximation_average_wrapper(
         init_theta,
         performance,
         true,
+        simple_mean,
     );
     let prob = saddlepoint_approximation_prob_wrapper(
         state_bundle,
@@ -145,6 +151,7 @@ pub fn saddlepoint_approximation_average_wrapper(
         init_theta,
         performance,
         false,
+        NAN,
     );
 
     let out: f64 = price * (effective_budget - simple_mean)
@@ -152,17 +159,22 @@ pub fn saddlepoint_approximation_average_wrapper(
 
     let left = effective_budget - simple_mean;
     let right = effective_budget * prob - biased_prob * (simple_mean);
+    let truncated_mean = biased_prob * (simple_mean);
     if !out.is_finite() || DEBUG_AVERAGE {
-        dbg!(
-            simple_mean,
-            effective_budget,
-            biased_prob,
-            left,
-            right,
-            price,
-            leftover_value,
-            out,
-        );
+        if support_index == DEBUG_AVG_INDEX {
+            dbg!(
+                simple_mean,
+                effective_budget,
+                biased_prob,
+                prob,
+                truncated_mean,
+                left,
+                right,
+                price,
+                leftover_value,
+                out,
+            );
+        }
     }
 
     // }

@@ -111,6 +111,7 @@ pub fn monte_carlo_data<R: Rng>(
 
     let mut actually_paid: Vec<i64> = vec![0; state_bundle.prep_output.upgrade_arr.len() + 1];
     let mut skip_count_data: Vec<usize> = vec![0; data_size];
+
     // dbg!(&state_bundle, &prep_output);
     for (attempt_index, u_index) in state_bundle.special_state.iter().enumerate() {
         let upgrade = &state_bundle.prep_output.upgrade_arr[*u_index];
@@ -196,6 +197,8 @@ pub fn monte_carlo_wrapper<R: Rng>(
         vec![vec![0.0; 7]; state_bundle.prep_output.upgrade_arr.len() + 1];
     let mut debug_avg_gold_by_juices: Vec<(f64, f64)> =
         vec![(0.0, 0.0); state_bundle.prep_output.juice_info.one_gold_cost_id.len()];
+    let mut debug_truncated_mean_by_skip: Vec<Vec<f64>> =
+        vec![vec![0.0; 7]; state_bundle.prep_output.upgrade_arr.len() + 1];
     for (r_index, row) in cost_data.iter().enumerate() {
         let float_row: Vec<f64> = row.iter().map(|x| *x as f64).collect();
         let float_juice: Vec<(f64, f64)> = juice_data[r_index]
@@ -205,6 +208,9 @@ pub fn monte_carlo_wrapper<R: Rng>(
 
         for (index, d) in debug_avg_gold_by_mats.iter_mut().enumerate() {
             let diff = state_bundle.prep_output.budgets[index] as f64 - float_row[index];
+            if diff > 0.0 {
+                debug_truncated_mean_by_skip[skip_count_data[r_index]][index] += diff;
+            }
             *d += (diff)
                 * if diff > 0.0 {
                     state_bundle.prep_output.leftover_values[index]
@@ -279,6 +285,11 @@ pub fn monte_carlo_wrapper<R: Rng>(
     for (_index, d) in debug_avg_gold_by_mats.iter_mut().enumerate() {
         *d /= data_size as f64;
     }
+    for (index, row) in debug_truncated_mean_by_skip.iter_mut().enumerate() {
+        for d in row.iter_mut() {
+            *d /= skip_count_data.iter().filter(|x| **x == index).count() as f64;
+        }
+    }
     for row in debug_avg_gold_by_mats_by_skip.iter_mut() {
         for d in row.iter_mut() {
             *d /= data_size as f64;
@@ -294,9 +305,10 @@ pub fn monte_carlo_wrapper<R: Rng>(
         dbg!(
             &debug_avg_gold_by_mats,
             &debug_avg_gold_by_mats_by_skip,
+            &debug_avg_gold_by_juices,
+            &debug_truncated_mean_by_skip,
             &state_bundle.prep_output.price_arr,
             &state_bundle.prep_output.leftover_values,
-            &debug_avg_gold_by_juices
         );
     }
     let prob_leftover: Vec<f64> = leftover_counts

@@ -1,6 +1,5 @@
 use itertools::Itertools;
 
-use crate::constants::FLOAT_TOL;
 use crate::helpers::find_non_zero_min_iter;
 use crate::normal_honing_utils::{add_juice_gold_cost, new_prob_dist};
 use crate::parser::PreparationOutput;
@@ -48,18 +47,6 @@ impl StateBundle {
         (min_value, max_value)
     }
 
-    pub fn find_biased_min_max(&self, support_index: i64, skip_count: usize) -> (f64, f64) {
-        let min_value = find_non_zero_min_iter(
-            self.extract_support(support_index, skip_count),
-            self.extract_biased_log_prob(skip_count, support_index),
-        );
-        let max_value = self
-            .extract_support(support_index, skip_count)
-            .into_iter()
-            .map(|x| x.last().unwrap())
-            .sum();
-        (min_value, max_value)
-    }
     pub fn encode_all(&self) -> String {
         let mut strings = Vec::new();
         strings.push(format!("{:?}", self.special_state));
@@ -67,31 +54,6 @@ impl StateBundle {
             strings.push(self.names[index].clone() + ": " + &encode_one_positions(&upgrade.state));
         }
         strings.join("\n")
-    }
-    pub fn extract_log_prob_wrapper(
-        &self,
-        skip_count: usize,
-        support_index: i64,
-        biased: bool,
-    ) -> Box<dyn Iterator<Item = &Vec<f64>> + '_> {
-        Box::new(if biased {
-            self.extract_biased_log_prob(skip_count, support_index)
-        } else {
-            self.extract_log_prob(skip_count)
-        })
-    }
-
-    pub fn extract_prob_wrapper(
-        &self,
-        skip_count: usize,
-        support_index: i64,
-        biased: bool,
-    ) -> Box<dyn Iterator<Item = &Vec<f64>> + '_> {
-        Box::new(if biased {
-            self.extract_biased_prob(skip_count, support_index)
-        } else {
-            self.extract_prob(skip_count)
-        })
     }
 
     pub fn extract_log_prob(&self, skip_count: usize) -> Box<dyn Iterator<Item = &Vec<f64>> + '_> {
@@ -108,38 +70,6 @@ impl StateBundle {
             self.special_state
                 .iter()
                 .map(move |x| &self.prep_output.upgrade_arr[*x].prob_dist)
-                .skip(skip_count),
-        )
-    }
-
-    pub fn extract_biased_prob(
-        &self,
-        skip_count: usize,
-        support_index: i64,
-    ) -> Box<dyn Iterator<Item = &Vec<f64>> + '_> {
-        assert!(support_index >= 0);
-        Box::new(
-            self.special_state
-                .iter()
-                .map(move |x| {
-                    &self.prep_output.upgrade_arr[*x].biased_prob_dist[support_index as usize]
-                })
-                .skip(skip_count),
-        )
-    }
-
-    pub fn extract_biased_log_prob(
-        &self,
-        skip_count: usize,
-        support_index: i64,
-    ) -> Box<dyn Iterator<Item = &Vec<f64>> + '_> {
-        assert!(support_index >= 0);
-        Box::new(
-            self.special_state
-                .iter()
-                .map(move |x| {
-                    &self.prep_output.upgrade_arr[*x].biased_log_prob_dist[support_index as usize]
-                })
                 .skip(skip_count),
         )
     }
@@ -206,12 +136,11 @@ impl StateBundle {
             let mut this_weap_juices_costs: Vec<Vec<f64>> = vec![Vec::with_capacity(l_len); j_len];
             let mut this_armor_juices_costs: Vec<Vec<f64>> = vec![Vec::with_capacity(l_len); j_len];
 
-            let mut means = vec![0.0; 7 + j_len * 2];
             for t_index in 0..7 {
                 let mut cost_so_far = 0.0;
-                for p in upgrade.prob_dist.iter() {
+                for _ in upgrade.prob_dist.iter() {
                     this_mats_costs[t_index].push(cost_so_far);
-                    means[t_index] += cost_so_far * p;
+                    // means[t_index] += cost_so_far * p;
                     cost_so_far += upgrade.costs[t_index] as f64;
                 }
 
@@ -233,11 +162,11 @@ impl StateBundle {
                     }
                     let mut costs_so_far: (f64, f64) = (0.0, 0.0);
 
-                    for (p_index, p) in upgrade.prob_dist.iter().enumerate() {
+                    for (p_index, _) in upgrade.prob_dist.iter().enumerate() {
                         this_weap.push(costs_so_far.0);
                         this_armor.push(costs_so_far.1);
-                        means[7 + id] += costs_so_far.0 * p;
-                        means[7 + j_len + id] += costs_so_far.1 * p;
+                        // means[7 + id] += costs_so_far.0 * p;
+                        // means[7 + j_len + id] += costs_so_far.1 * p;
                         let (juice, book_index) = upgrade.state[p_index];
                         if juice {
                             if upgrade.is_weapon {
@@ -276,30 +205,30 @@ impl StateBundle {
             upgrade.weap_juice_costs = this_weap_juices_costs;
             upgrade.armor_juice_costs = this_armor_juices_costs;
 
-            upgrade.biased_prob_dist = upgrade
-                .cost_dist
-                .iter()
-                .chain(upgrade.weap_juice_costs.iter())
-                .chain(upgrade.armor_juice_costs.iter())
-                .enumerate()
-                .map(|(index, s_arr)| {
-                    if means[index].abs() < FLOAT_TOL {
-                        vec![1.0 / upgrade.prob_dist.len() as f64; upgrade.prob_dist.len()]
-                        // i mean we should just change this to [1.0] but then i have to change the support and prob dist and everything so that's a TODO for me
-                    } else {
-                        s_arr
-                            .iter()
-                            .zip(upgrade.prob_dist.clone())
-                            .map(|(s, p)| s * p / means[index])
-                            .collect()
-                    }
-                })
-                .collect();
-            upgrade.biased_log_prob_dist = upgrade
-                .biased_prob_dist
-                .iter()
-                .map(|x| x.iter().map(|y| y.ln()).collect())
-                .collect();
+            // upgrade.biased_prob_dist = upgrade
+            //     .cost_dist
+            //     .iter()
+            //     .chain(upgrade.weap_juice_costs.iter())
+            //     .chain(upgrade.armor_juice_costs.iter())
+            //     .enumerate()
+            //     .map(|(index, s_arr)| {
+            //         if means[index].abs() < FLOAT_TOL {
+            //             vec![1.0 / upgrade.prob_dist.len() as f64; upgrade.prob_dist.len()]
+            //             // i mean we should just change this to [1.0] but then i have to change the support and prob dist and everything so that's a TODO for me
+            //         } else {
+            //             s_arr
+            //                 .iter()
+            //                 .zip(upgrade.prob_dist.clone())
+            //                 .map(|(s, p)| s * p / means[index])
+            //                 .collect()
+            //         }
+            //     })
+            //     .collect();
+            // upgrade.biased_log_prob_dist = upgrade
+            //     .biased_prob_dist
+            //     .iter()
+            //     .map(|x| x.iter().map(|y| y.ln()).collect())
+            //     .collect();
         }
     }
 

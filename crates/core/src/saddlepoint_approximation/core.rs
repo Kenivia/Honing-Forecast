@@ -8,11 +8,17 @@ pub fn ks_01234<'a, I>(
     log_prob_dist_arr: I,
     support_arr: I,
     theta: f64,
-    (total_k, total_k1, total_k2, total_k3, total_k4): &mut (f64, f64, f64, f64, f64),
-    toggle: &(bool, bool, bool, bool, bool), // honestly the performance gain here is probably so negligible compared to all the exp and ln calls but whatever
-) where
+    toggle: &(bool, bool, bool, bool, bool),
+) -> (f64, f64, f64, f64, f64)
+where
     I: F64_2d<'a>,
 {
+    let mut total_k = 0.0;
+    let mut total_k1 = 0.0;
+    let mut total_k2 = 0.0;
+    let mut total_k3 = 0.0;
+    let mut total_k4 = 0.0;
+
     for (log_prob_dist, support) in log_prob_dist_arr.into_iter().zip(support_arr) {
         let mut ignore: bool = true;
         for i in support {
@@ -99,19 +105,19 @@ pub fn ks_01234<'a, I>(
         }
 
         if toggle.0 {
-            *total_k += alpha_shift + s.ln();
+            total_k += alpha_shift + s.ln();
         }
         let mut mu2: f64 = -1.0;
         if toggle.1 {
-            *total_k1 += mean;
+            total_k1 += mean;
         }
         if toggle.2 || toggle.4 {
             mu2 = (second - mean * mean).max(0.0);
-            *total_k2 += mu2;
+            total_k2 += mu2;
         }
         if toggle.3 {
             let mu3 = third - 3.0 * second * mean + 2.0 * mean * mean * mean;
-            *total_k3 += mu3;
+            total_k3 += mu3;
         }
         if toggle.4 {
             if !toggle.2 {
@@ -119,9 +125,11 @@ pub fn ks_01234<'a, I>(
             }
             let mu4 = fourth - 4.0 * third * mean + 6.0 * second * mean * mean
                 - 3.0 * mean * mean * mean * mean;
-            *total_k4 += mu4 - 3.0 * mu2 * mu2;
+            total_k4 += mu4 - 3.0 * mu2 * mu2;
         }
     }
+
+    (total_k, total_k1, total_k2, total_k3, total_k4)
 }
 
 pub fn find_root<F>(

@@ -4,6 +4,7 @@ use std::f64::{MAX, MIN};
 
 use hf_core::parser::PreparationOutput;
 use hf_core::performance::Performance;
+use hf_core::saddlepoint_approximation::average::DEBUG_AVERAGE;
 use hf_core::state::StateBundle;
 use rand::Rng;
 use rand::distr::Distribution;
@@ -182,8 +183,8 @@ pub fn solve<R: Rng, F>(
 where
     F: FnMut(&mut StateBundle, &mut Performance) -> f64,
 {
-    // let init_temp: f64 = 333.0;
-    let init_temp: f64 = -1.0; // 0.969 = ~32
+    let init_temp: f64 = if DEBUG_AVERAGE { -1.0 } else { -1.0 };
+    // let init_temp: f64 = -1.0; // 0.969 = ~32
     // let mut cache: HashMap<(Vec<bool>, usize), Vec<([i64; 9], f64)>> = HashMap::new();
     let mut temp: f64 = init_temp;
     let mut starting_special: Vec<usize> = Vec::with_capacity(prep_output.upgrade_arr.len() * 2);

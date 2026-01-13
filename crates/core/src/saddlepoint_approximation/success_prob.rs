@@ -1,3 +1,5 @@
+use std::f64::NAN;
+
 use super::saddlepoint_approximation::saddlepoint_approximation_prob_wrapper;
 
 use crate::constants::SPECIAL_TOL;
@@ -27,6 +29,7 @@ pub fn honing_sa_wrapper(
             &mut 0.0,
             performance,
             false,
+            NAN,
         );
 
         out += *special_prob * this_prob;
