@@ -146,10 +146,10 @@ fn main() {
                 *trial_num += 1;
                 println!("Test case {:?} trial {}", key, trial_num);
                 let mut state_bundle: StateBundle = solve(
-                    prep_output.clone(),
                     &mut rng,
                     &mut performance,
                     metric_function,
+                    StateBundle::new(prep_output.clone()),
                 );
 
                 // Call metric on best state to get standalone performance metrics

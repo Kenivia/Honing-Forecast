@@ -1,9 +1,7 @@
 // use hf_core::energy::prob_to_maximize_exact;
 
-use std::collections::HashMap;
 use std::f64::{MAX, MIN};
 
-use hf_core::parser::PreparationOutput;
 use hf_core::performance::Performance;
 use hf_core::saddlepoint_approximation::average::DEBUG_AVERAGE;
 use hf_core::state::StateBundle;
@@ -176,10 +174,10 @@ fn new_temp(temp: f64, alpha: f64) -> f64 {
 }
 
 pub fn solve<R: Rng, F>(
-    prep_output: PreparationOutput,
     rng: &mut R,
     performance: &mut Performance,
     mut metric: F, // note that we're always trying to maximize this metric which is why i'm not calling it energy
+    mut state_bundle: StateBundle,
 ) -> StateBundle
 where
     F: FnMut(&mut StateBundle, &mut Performance) -> f64,
@@ -188,32 +186,6 @@ where
     // let init_temp: f64 = -1.0; // 0.969 = ~32
     // let mut cache: HashMap<(Vec<bool>, usize), Vec<([i64; 9], f64)>> = HashMap::new();
     let mut temp: f64 = init_temp;
-    let mut starting_special: Vec<usize> = Vec::with_capacity(prep_output.upgrade_arr.len() * 2);
-    for (index, _upgrade) in prep_output.upgrade_arr.iter().enumerate() {
-        starting_special.push(index); //, (1.0 / upgrade.base_chance).round() as usize));
-    }
-
-    let mut state_bundle: StateBundle = StateBundle {
-        names: prep_output
-            .upgrade_arr
-            .iter()
-            .map(|x| {
-                let mut string: String = if x.is_normal_honing {
-                    "".to_owned()
-                } else {
-                    "adv_".to_owned()
-                };
-                string += if x.is_weapon { "weap_" } else { "armor_" };
-                string += &x.upgrade_index.to_string();
-                string
-            })
-            .collect::<Vec<String>>(),
-        state_index: vec![],
-        metric: -1.0,
-        special_state: starting_special,
-        prep_output,
-        special_cache: HashMap::new(),
-    };
 
     state_bundle.metric = metric(&mut state_bundle, performance);
     let mut prev_state: StateBundle = state_bundle.clone();

@@ -63,6 +63,36 @@ where
 }
 
 impl StateBundle {
+    pub fn new(prep_output: PreparationOutput) -> StateBundle {
+        let mut starting_special: Vec<usize> =
+            Vec::with_capacity(prep_output.upgrade_arr.len() * 2);
+        for (index, _upgrade) in prep_output.upgrade_arr.iter().enumerate() {
+            starting_special.push(index); //, (1.0 / upgrade.base_chance).round() as usize));
+        }
+
+        let state_bundle: StateBundle = StateBundle {
+            names: prep_output
+                .upgrade_arr
+                .iter()
+                .map(|x| {
+                    let mut string: String = if x.is_normal_honing {
+                        "".to_owned()
+                    } else {
+                        "adv_".to_owned()
+                    };
+                    string += if x.is_weapon { "weap_" } else { "armor_" };
+                    string += &x.upgrade_index.to_string();
+                    string
+                })
+                .collect::<Vec<String>>(),
+            state_index: vec![],
+            metric: -1.0,
+            special_state: starting_special,
+            prep_output,
+            special_cache: HashMap::new(),
+        };
+        return state_bundle;
+    }
     pub fn find_min_max(&self, support_index: i64, skip_count: usize, biased: bool) -> (f64, f64) {
         let min_value = find_non_zero(
             self.extract_support(support_index, skip_count),
