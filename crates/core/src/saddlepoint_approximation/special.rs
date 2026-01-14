@@ -1,98 +1,150 @@
 use std::f64;
+use std::mem::swap;
 
 use crate::constants::FLOAT_TOL;
 // use super::saddlepoint_approximation::saddlepoint_approximation_wrapper;
 // use crate::helpers::find_non_zero_min_vec;
 // use crate::parser::Upgrade;
 use crate::state::StateBundle;
+use num::Integer;
 
 impl StateBundle {
     pub fn special_probs(&self) -> &Vec<f64> {
         return &self.special_cache[&self.special_state];
     }
-
-    pub fn comput_special_probs(&mut self) {
-        if !self.special_cache.contains_key(&self.special_state) {
-            let prep_output = &self.prep_output;
-            let upgrades = &prep_output.upgrade_arr;
-            let m = upgrades.len();
-
-            let budget: usize = prep_output.budgets[7] as usize; // total special budget B
-            let mut result = vec![0.0_f64; m + 1];
-
-            // active[b] = probability we are still running and have 'b' special left
-            let mut active: Vec<f64> = vec![0.0_f64; budget + 1];
-            active[budget] = 1.0;
-
-            // optional: track stopped distribution; not needed if you only care about success probs
-            // let mut stopped = vec![0.0_f64; budget + 1];
-
-            // Process streaks in order
-            for (attempt_index, u_index) in self.special_state.iter().enumerate() {
-                let upgrade = &upgrades[*u_index];
-                let p = upgrade.base_chance;
-                let one_minus_p = 1.0 - p;
-                let this_special_cost = upgrade.special_cost as usize;
-
-                let repeat_count = (budget / this_special_cost).max(0);
-                // Precompute geometric probabilities p * (1-p)^(t-1) up to L
-                let mut geom = vec![0.0_f64; repeat_count + 1]; // 1-based: geom[t] for t=1..L
-                let mut pow = 1.0_f64;
-                for t in 1..=repeat_count {
-                    geom[t] = p * pow;
-                    pow *= one_minus_p;
-                }
-                // pow now equals (1-p)^L, but we also need (1-p)^(A-1) often, see below.
-
-                let mut next_active = vec![0.0_f64; budget + 1];
-
-                for b in 0..=budget {
-                    let mass = active[b];
-                    if mass == 0.0 {
-                        continue;
-                    }
-
-                    if b < this_special_cost {
-                        continue; // do not propagate to next_active
-                    }
-
-                    // Max attempts allowed by budget and streak length
-                    let max_by_budget = b / this_special_cost;
-                    let actual_repeated = repeat_count.min(max_by_budget);
-
-                    // Success probability on this upgrade from this starting budget
-                    let fail_all_a = one_minus_p.powi(actual_repeated as i32);
-                    result[attempt_index + 1] += mass * (1.0 - fail_all_a);
-
-                    for succeed_at in 1..=actual_repeated {
-                        let prob_n_t = geom[succeed_at];
-                        let b2 = b - succeed_at * this_special_cost;
-                        next_active[b2] += mass * prob_n_t;
-                    }
-                }
-
-                active = next_active;
+    fn gcd_special(&self) -> i64 {
+        let mut out: i64 = 1;
+        for (index, upgrade) in self.prep_output.upgrade_arr.iter().enumerate() {
+            if index == 0 {
+                out = upgrade.special_cost;
+            } else {
+                out = out.gcd(&upgrade.special_cost);
             }
-
-            result[0] = 1.0 - result[1]; // nothing free tapped
-            let mut actual_out = Vec::with_capacity(result.len());
-
-            for (index, &i) in result.iter().enumerate() {
-                // if index < 1 {
-                //     actual_out.push(cumulative * *i);
-                // } else {
-                if index == result.len() - 1 || index == 0 {
-                    actual_out.push(i);
-                } else {
-                    actual_out.push(i - result[index + 1]);
-                }
-            }
-
-            // dbg!(&result, &actual_out, actual_out.iter().sum::<f64>());
-            assert!((actual_out.iter().sum::<f64>() - 1.0).abs() < FLOAT_TOL);
-            self.special_cache
-                .insert(self.special_state.clone(), actual_out);
         }
+
+        out
+    }
+    pub fn compute_special_probs(&mut self) {
+        if self.special_cache.contains_key(&self.special_state) {
+            return;
+        }
+
+        let prep_output = &self.prep_output;
+        let upgrades = &prep_output.upgrade_arr;
+        let m = upgrades.len();
+
+        // 1. GCD Optimization: Scale the world down
+        let gcd = self.gcd_special() as usize; // Ensure this returns 1 if no upgrades
+        let raw_budget: usize = prep_output.budgets[7] as usize;
+        let budget = raw_budget / gcd;
+
+        // active[b] = probability we are running with 'b' SCALED budget left
+        let mut active: Vec<f64> = vec![0.0; budget + 1];
+        active[budget] = 1.0;
+
+        // result[k] will store the cumulative probability of passing stage k
+        let mut result = vec![0.0; m + 1];
+
+        // We reuse this vector to avoid allocation in the loop
+        let mut next_active = vec![0.0; budget + 1];
+        // Cache for powers of (1-p). Size is budget + 1 to cover max possible attempts.
+        let mut fail_probs = vec![0.0; budget + 1];
+
+        for (attempt_index, u_index) in self.special_state.iter().enumerate() {
+            let upgrade = &upgrades[*u_index];
+            let p = upgrade.base_chance;
+            let one_minus_p = 1.0 - p;
+
+            // Scale cost
+            let cost = (upgrade.special_cost as usize) / gcd;
+
+            // If cost is higher than total budget, we can't possibly succeed.
+            // (Probability mass stays in 'active' and doesn't move to 'result')
+            if cost > budget {
+                active.fill(0.0); // No more moves possible
+                break;
+            }
+
+            // 2. Precompute Failure Probabilities
+            // fail_probs[k] = (1-p)^k
+            fail_probs[0] = 1.0;
+            for t in 1..=budget {
+                fail_probs[t] = fail_probs[t - 1] * one_minus_p; //TODO cache this 
+            }
+
+            // 3. Calculate "Success" (passing this stage)
+            // We iterate to calculate how much mass moves to the next STAGE (result),
+            // but we don't move the mass in the 'active' vector yet.
+            for b in 0..=budget {
+                let mass = active[b];
+                if mass == 0.0 {
+                    continue;
+                }
+
+                if b < cost {
+                    // Cannot afford even one attempt.
+                    // Mass stays here (implicit failure to proceed).
+                    continue;
+                }
+
+                let max_attempts = b / cost;
+                // fail_all = (1-p) ^ max_attempts
+                // We read from our cache instead of calling powi
+                let fail_all = fail_probs[max_attempts];
+
+                // Add the mass that successfully moved to the next stage
+                result[attempt_index + 1] += mass * (1.0 - fail_all);
+            }
+
+            // 4. Linear Recurrence for Next Budget State
+            // We calculate where the mass lands for the NEXT upgrade iteration.
+            // Recurrence: Next[b] = p*Active[b+C] + (1-p)*Next[b+C]
+            // We must iterate downwards from (budget - cost) to avoid reading dirty data,
+            // or simply strictly follow the dependency chain.
+            // Since Next[b] depends on Next[b+C], we go High -> Low.
+
+            // Clear next_active (or just overwrite if we are careful, but fill(0) is safer)
+            next_active.fill(0.0);
+
+            let start_idx = budget - cost;
+
+            // We use a 'sliding window' logic based on modulo classes implicitly.
+            // By iterating backwards, next_active[b+cost] is already computed.
+            for b in (0..=start_idx).rev() {
+                let source_idx = b + cost;
+
+                // The probability flowing into 'b' comes from 'source_idx' trying once (p)
+                // OR flowing through 'source_idx' from even higher budgets (1-p)
+                let flow_from_above = next_active[source_idx];
+                let source_mass = active[source_idx];
+
+                // Note: The recurrence formula is technically:
+                // next[b] = p * active[b+cost] + (1-p) * next[b+cost]
+                next_active[b] = (p * source_mass) + (one_minus_p * flow_from_above);
+            }
+
+            // Swap vectors to prepare for next upgrade
+            swap(&mut active, &mut next_active);
+        }
+
+        result[0] = 1.0 - result[1];
+
+        let mut actual_out = Vec::with_capacity(result.len());
+
+        for (index, &val) in result.iter().enumerate() {
+            if index == result.len() - 1 || index == 0 {
+                actual_out.push(val);
+            } else {
+                actual_out.push(val - result[index + 1]);
+            }
+        }
+
+        // Tolerance check
+        let sum: f64 = actual_out.iter().sum();
+        assert!((sum - 1.0).abs() < FLOAT_TOL);
+
+        self.special_cache
+            .insert(self.special_state.clone(), actual_out);
     }
 }
 
@@ -187,7 +239,7 @@ mod tests {
         // init_dist(&mut state_bundle, &mut prep_output);
 
         // dbg!(&state_bundle, &prep_output.upgrade_arr);
-        state_bundle.comput_special_probs();
+        state_bundle.compute_special_probs();
         let result: Vec<f64> = state_bundle.special_probs().clone();
 
         if DEBUG {

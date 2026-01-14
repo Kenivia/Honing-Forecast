@@ -15,7 +15,7 @@ use statrs::distribution::{Continuous, ContinuousCDF, Normal};
 
 pub static DEBUG_SA: bool = false;
 
-pub static MIN_LATTICE_SPAN: f64 = 1e-2;
+pub static MIN_LATTICE_SPAN: f64 = 1.0;
 
 pub fn saddlepoint_approximation_prob_wrapper(
     state_bundle: &StateBundle,
@@ -83,7 +83,7 @@ pub fn saddlepoint_approximation_prob_wrapper(
                 dbg!("brute");
             }
 
-            return brute_average_recursive(&prob_dist_arr, &support_arr, 0.0, budget, 0, mean);
+            return brute_average_recursive(&prob_dist_arr, &support_arr, budget, mean);
         } else {
             return brute_success_prob(&prob_dist_arr, &support_arr, budget);
         }

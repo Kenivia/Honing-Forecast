@@ -184,7 +184,7 @@ pub fn solve<R: Rng, F>(
 where
     F: FnMut(&mut StateBundle, &mut Performance) -> f64,
 {
-    let init_temp: f64 = if DEBUG_AVERAGE { -1.0 } else { -1.0 };
+    let init_temp: f64 = if DEBUG_AVERAGE { -1.0 } else { 333.3 };
     // let init_temp: f64 = -1.0; // 0.969 = ~32
     // let mut cache: HashMap<(Vec<bool>, usize), Vec<([i64; 9], f64)>> = HashMap::new();
     let mut temp: f64 = init_temp;

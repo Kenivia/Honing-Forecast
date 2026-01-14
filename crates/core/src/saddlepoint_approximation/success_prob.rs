@@ -42,6 +42,7 @@ pub fn success_prob_metric(state_bundle: &mut StateBundle, performance: &mut Per
 
     state_bundle.update_dist();
     state_bundle.update_combined();
+    state_bundle.compute_special_probs();
     let budget = state_bundle.prep_output.eqv_gold_budget;
     let out: f64 = honing_sa_wrapper(state_bundle, -1, budget, performance);
 

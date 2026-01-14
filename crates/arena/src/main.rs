@@ -19,7 +19,7 @@ use std::io::{BufRead, BufReader, BufWriter, Error, Write};
 use std::path::Path;
 use std::time::Instant;
 
-static NUM_TESTS_TO_RUN: i64 = if DEBUG_AVERAGE { 1 } else { 5 }; // TODO this should be replaced by statistical tests like fishtest eventually
+static NUM_TESTS_TO_RUN: i64 = if DEBUG_AVERAGE { 1 } else { 1 }; // TODO this should be replaced by statistical tests like fishtest eventually
 static MONTE_CARLO_COUNT: usize = 1_000_000;
 type EvalFn = fn(&mut StateBundle, &mut Performance) -> f64;
 
@@ -123,7 +123,7 @@ fn main() {
         parse_csv(Path::new(if DEBUG_AVERAGE {
             "TEST_test_cases.csv"
         } else {
-            "bloated_test_cases.csv"
+            "TEST_test_cases.csv"
         })); // bloated_
 
     for _ in 0..NUM_TESTS_TO_RUN {

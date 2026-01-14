@@ -21,7 +21,7 @@ pub static DEBUG_AVG_INDEX: i64 = 0;
 pub fn average_gold_metric(state_bundle: &mut StateBundle, performance: &mut Performance) -> f64 {
     state_bundle.update_dist();
     state_bundle.update_individual_support();
-    state_bundle.comput_special_probs();
+    state_bundle.compute_special_probs();
     performance.states_evaluated += 1;
 
     let mut total_gold: f64 = 0.0;

@@ -9,14 +9,15 @@
 
 #### Optimizations
 
-- is there really no better way to do the special probs(can i get away with an approximation some how)
+- ~is there really no better way to do the special probs(can i get away with an approximation some how)~
   - cache the geom calculations
-  - take advantage of the fact that the special costs share a common factor
-  - somehow avoid re-allocating maybe
-  - skip small mass?
-  - definitely cache this result
+  - ~~take advantage of the fact that the special costs share a common factor~~
+  - ~~somehow avoid re-allocating maybe~~
+  -~~ skip small mass?~~
+  - ~~definitely cache this result~~
 
-- profile the things
+- ~~profile the things~~
+- cache lattice span
 
 - use polynomial for equal stepped stuff like for mat costs in averages
   - add a tag to the support or just do it via support index
