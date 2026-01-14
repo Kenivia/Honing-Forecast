@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use itertools::Itertools;
 
 use crate::constants::FLOAT_TOL;
@@ -16,6 +18,7 @@ pub struct StateBundle {
     pub metric: f64,
     pub state_index: Vec<Vec<Vec<i64>>>, // i pre-added this for caching but havnt implemented anything
     pub prep_output: PreparationOutput,
+    pub special_cache: HashMap<Vec<usize>, Vec<f64>>,
 }
 pub fn encode_one_positions(v1: &[(bool, usize)]) -> String {
     v1.iter()

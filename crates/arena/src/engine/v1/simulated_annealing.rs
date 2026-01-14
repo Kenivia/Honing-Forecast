@@ -1,5 +1,6 @@
 // use hf_core::energy::prob_to_maximize_exact;
 
+use std::collections::HashMap;
 use std::f64::{MAX, MIN};
 
 use hf_core::parser::PreparationOutput;
@@ -211,6 +212,7 @@ where
         metric: -1.0,
         special_state: starting_special,
         prep_output,
+        special_cache: HashMap::new(),
     };
 
     state_bundle.metric = metric(&mut state_bundle, performance);

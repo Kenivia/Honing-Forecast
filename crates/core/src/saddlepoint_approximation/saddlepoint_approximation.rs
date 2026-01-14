@@ -283,8 +283,8 @@ pub fn saddlepoint_approximation(
     let u_hat = u(theta_hat, ks_tuple.2);
 
     let mut error: f64 = 0.0;
-    let correction_multiplier = 1.0 / w_hat - 1.0 / u_hat;
-    let sa_out: f64 = normal_dist.cdf(w_hat) + normal_dist.pdf(w_hat) * correction_multiplier;
+
+    let sa_out: f64 = normal_dist.cdf(w_hat) + normal_dist.pdf(w_hat) * (1.0 / w_hat - 1.0 / u_hat);
     if theta_hat.abs() < THETA_TOL * 100.0 || theta_error / theta_hat < 0.01 {
         // this theta error / theta hat checkshould only trigger when newton fails after 20 cycles
         let last_ks_tuple = {

@@ -5,7 +5,7 @@ use super::saddlepoint_approximation::saddlepoint_approximation_prob_wrapper;
 use crate::constants::SPECIAL_TOL;
 
 use crate::performance::Performance;
-use crate::saddlepoint_approximation::special::special_probs;
+
 use crate::state::StateBundle;
 
 pub fn honing_sa_wrapper(
@@ -16,8 +16,8 @@ pub fn honing_sa_wrapper(
 ) -> f64 {
     let mut out: f64 = 0.0;
 
-    for (skip_count, special_prob) in special_probs(state_bundle).iter().enumerate() {
-        if *special_prob < SPECIAL_TOL {
+    for (skip_count, &special_prob) in state_bundle.special_probs().iter().enumerate() {
+        if special_prob < SPECIAL_TOL {
             continue;
         }
         // dbg!(&support_arr[index..]);
@@ -32,7 +32,7 @@ pub fn honing_sa_wrapper(
             NAN,
         );
 
-        out += *special_prob * this_prob;
+        out += special_prob * this_prob;
     }
 
     out

@@ -11,7 +11,7 @@ use itertools::izip;
 use crate::performance::Performance;
 
 use crate::saddlepoint_approximation::saddlepoint_approximation::saddlepoint_approximation_prob_wrapper;
-use crate::saddlepoint_approximation::special::special_probs;
+
 use crate::state::StateBundle;
 
 pub static DEBUG_AVERAGE: bool = false;
@@ -21,13 +21,14 @@ pub static DEBUG_AVG_INDEX: i64 = 0;
 pub fn average_gold_metric(state_bundle: &mut StateBundle, performance: &mut Performance) -> f64 {
     state_bundle.update_dist();
     state_bundle.update_individual_support();
+    state_bundle.comput_special_probs();
     performance.states_evaluated += 1;
 
     let mut total_gold: f64 = 0.0;
 
     let mut dbg_sa_avg = vec![0.0; 15];
-    for (skip_count, special_prob) in special_probs(state_bundle).iter().enumerate() {
-        if *special_prob < SPECIAL_TOL {
+    for (skip_count, &special_prob) in state_bundle.special_probs().iter().enumerate() {
+        if special_prob < SPECIAL_TOL {
             continue;
         }
         // dbg!(special_prob);
@@ -60,18 +61,18 @@ pub fn average_gold_metric(state_bundle: &mut StateBundle, performance: &mut Per
                         price,
                         leftover,
                         this_avg,
-                        *special_prob,
+                        special_prob,
                         simple_average(
                             state_bundle.extract_prob(skip_count),
                             state_bundle.extract_support(support_index as i64, skip_count)
                         ),
-                        *special_prob * this_avg,
+                        special_prob * this_avg,
                         "================================"
                     );
                 }
             }
-            total_gold += *special_prob * this_avg;
-            dbg_sa_avg[support_index] += *special_prob * this_avg;
+            total_gold += special_prob * this_avg;
+            dbg_sa_avg[support_index] += special_prob * this_avg;
         }
     }
 

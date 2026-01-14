@@ -5,6 +5,8 @@
 
 ### Now
 
+- streameline solve such that it takes in an initial state instead of relying on initializing in there
+
 #### Optimizations
 
 - is there really no better way to do the special probs(can i get away with an approximation some how)

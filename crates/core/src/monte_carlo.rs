@@ -173,9 +173,7 @@ pub fn monte_carlo_data<R: Rng>(
     }
     if DEBUG_AVERAGE {
         dbg!(actual_out);
-        dbg!(&crate::saddlepoint_approximation::special::special_probs(
-            state_bundle
-        ));
+        dbg!(state_bundle.special_probs());
     }
 
     (mats_data, juice_data, skip_count_data)

@@ -22,7 +22,7 @@ where
     for (log_prob_dist, support) in log_prob_dist_arr.into_iter().zip(support_arr) {
         let mut ignore: bool = true;
         for i in support {
-            if *i > 0.0 {
+            if i.abs() > FLOAT_TOL {
                 ignore = false;
                 break;
             }
