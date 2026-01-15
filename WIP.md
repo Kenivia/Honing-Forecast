@@ -5,25 +5,12 @@
 
 ### Now
 
-- streameline solve such that it takes in an initial state instead of relying on initializing in there
-
-#### Optimizations
-
-- ~is there really no better way to do the special probs(can i get away with an approximation some how)~
-  - cache the geom calculations
-  - ~~take advantage of the fact that the special costs share a common factor~~
-  - ~~somehow avoid re-allocating maybe~~
-  -~~ skip small mass?~~
-  - ~~definitely cache this result~~
-
-- ~~profile the things~~
-- cache lattice span
-
+- clean up how support stuff get updated (update_individual)
 - use polynomial for equal stepped stuff like for mat costs in averages
-  - add a tag to the support or just do it via support index
-- collapse identical supports
-
-- ^ both of these will probabily need like a custom vecf64 wrapper kinda structs
+- cache lattice span
+- cache the geom calculations
+  
+#### Optimizations
 
 ### Misc
 
@@ -45,6 +32,8 @@
 - SURELY there's a better way to lay out juiceinfo...
 
 - start working on visualizing this stuff
+
+- I should separate upgrade_arr from prep_output cos everything else in prep_output doesn't change with the state, realisitically it should pass a
 
 ### Big
 
@@ -157,6 +146,17 @@ graph
 
 ## Done / cancelled
 
+- ~~is there really no better way to do the special probs(can i get away with an approximation some how)~~
+  - ~~take advantage of the fact that the special costs share a common factor~~
+  - ~~somehow avoid re-allocating maybe~~
+  -~~ skip small mass?~~
+  - ~~definitely cache this result~~
+- ~~profile the things~~
+- ~~^ both of these will probabily need like a custom vecf64 wrapper kinda structs~~
+- ~~add a tag to the support or just do it via support index~~
+- ~~collapse identical supports~~
+- ~~refactor stuff so that everytihng is a state class function~~
+- ~~streameline solve such that it takes in an initial state instead of relying on initializing in there~~
 - ~~add a brute forced average evaluator?~~
 - ~~make a more sensible suite of test cases to test the behaviour of the metric functions~~
 - ~~fix the leftover evaluation like i think sometimes the trivial case is wrong~~

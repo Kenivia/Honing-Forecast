@@ -1,50 +1,58 @@
 use std::f64::NAN;
 
-use super::saddlepoint_approximation::saddlepoint_approximation_prob_wrapper;
-
 use crate::constants::SPECIAL_TOL;
 
-use crate::performance::Performance;
+use crate::state_bundle::StateBundle;
 
-use crate::state::StateBundle;
+use itertools::Itertools;
 
-pub fn honing_sa_wrapper(
-    state_bundle: &StateBundle,
-    support_index: i64,
-    budget: f64,
-    performance: &mut Performance,
-) -> f64 {
-    let mut out: f64 = 0.0;
+impl StateBundle {
+    pub fn success_prob_metric(&mut self) -> f64 {
+        // self.performance.states_evaluated += 1;
 
-    for (skip_count, &special_prob) in state_bundle.special_probs().iter().enumerate() {
-        if special_prob < SPECIAL_TOL {
-            continue;
-        }
-        // dbg!(&support_arr[index..]);
-        let this_prob: f64 = saddlepoint_approximation_prob_wrapper(
-            state_bundle,
-            support_index,
-            skip_count,
-            budget,
-            &mut 0.0,
-            performance,
-            false,
-            NAN,
-        );
+        self.update_dist(true);
+        self.update_combined();
+        self.compute_special_probs();
+        let budget = self.prep_output.eqv_gold_budget;
+        let out: f64 = self.honing_sa_wrapper(-1, budget);
 
-        out += special_prob * this_prob;
+        out
     }
+    fn honing_sa_wrapper(&self, support_index: i64, budget: f64) -> f64 {
+        let mut out: f64 = 0.0;
 
-    out
-}
-pub fn success_prob_metric(state_bundle: &mut StateBundle, performance: &mut Performance) -> f64 {
-    performance.states_evaluated += 1;
+        let special_probs = self.special_cache[&self.special_state].clone();
 
-    state_bundle.update_dist();
-    state_bundle.update_combined();
-    state_bundle.compute_special_probs();
-    let budget = state_bundle.prep_output.eqv_gold_budget;
-    let out: f64 = honing_sa_wrapper(state_bundle, -1, budget, performance);
+        for (skip_count, &special_prob) in special_probs.iter().enumerate() {
+            if special_prob < SPECIAL_TOL {
+                continue;
+            }
+            // dbg!(&support_arr[index..]);
+            let this_prob: f64 = self.saddlepoint_approximation_prob_wrapper(
+                support_index,
+                skip_count,
+                budget,
+                &mut 0.0,
+                false,
+                NAN,
+            );
 
-    out
+            out += special_prob * this_prob;
+        }
+
+        out
+    }
+    pub fn compute_leftover_probs(&mut self) -> Vec<f64> {
+        self.update_dist(true);
+        self.update_individual_support();
+        self.compute_special_probs();
+        let mut prob_leftover: Vec<f64> =
+            Vec::with_capacity(self.flattened_effective_budgets().try_len().unwrap());
+
+        for (support_index, effective_budget) in self.flattened_effective_budgets().enumerate() {
+            prob_leftover.push(self.honing_sa_wrapper(support_index as i64, effective_budget));
+        }
+
+        prob_leftover
+    }
 }

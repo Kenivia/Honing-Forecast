@@ -26,7 +26,7 @@ pub struct PreparationOutput {
     pub juice_info: JuiceInfo,
     pub juice_books_owned: Vec<(i64, i64)>, // juice_books_owned[id].0 = weap owned
     pub sellable_toggles: Vec<bool>,
-    pub upgrade_arr: Vec<Upgrade>,
+    // pub upgrade_arr: Vec<Upgrade>,
     pub effective_budgets: Vec<i64>,
 }
 
@@ -74,7 +74,7 @@ impl PreparationOutput {
         juice_prices: &[(f64, f64)],
         inp_leftover_values: &[f64],
         inp_leftover_juice_values: &[(f64, f64)],
-    ) -> PreparationOutput {
+    ) -> (PreparationOutput, Vec<Upgrade>) {
         let price_arr: Vec<f64> = inp_price_arr.to_vec();
 
         let leftover_values = copy_leftover(inp_leftover_values, inp_price_arr);
@@ -82,13 +82,35 @@ impl PreparationOutput {
 
         let unlock_costs: Vec<i64> = calc_unlock(hone_counts, adv_counts, express_event);
 
+        let budgets: Vec<i64> = input_budgets.to_vec();
+
+        let mut budgets_no_gold: Vec<i64> = budgets.clone();
+        budgets_no_gold[5] = 0;
+        let sellable_toggles: Vec<bool> = vec![
+            true, true, true, true, true, true, true, false, false, false, false, false, false,
+            false,
+        ];
+
+        let juice_info: JuiceInfo = get_avail_juice_combs(juice_prices, &leftover_juice_values);
+
+        let juice_books_owned: Vec<(i64, i64)> = juice_books_budget.to_vec();
+        let eqv_gold_budget: f64 = actual_eqv_gold(
+            &price_arr,
+            &budgets,
+            &juice_info,
+            &unlock_costs,
+            &juice_books_owned,
+        );
+        let mut effective_budgets: Vec<i64> = budgets[0..7].to_vec();
+        effective_budgets[3] -= unlock_costs[0];
+        effective_budgets[6] -= unlock_costs[1];
+
         let mut upgrade_arr: Vec<Upgrade> = parser(
             hone_counts,
             adv_counts,
             &adv_hone_strategy.to_string(),
             express_event,
         );
-        let budgets: Vec<i64> = input_budgets.to_vec();
 
         for upgrade in upgrade_arr.iter_mut() {
             // let mut rng: StdRng = StdRng::seed_from_u64(RNG_SEED);
@@ -116,16 +138,6 @@ impl PreparationOutput {
             // let juice_ind: usize = if upgrade.is_weapon { 7 } else { 8 };
             // upgrade.eqv_gold_per_juice = user_price_arr[juice_ind] * upgrade.one_juice_cost as f64;
         }
-
-        let mut budgets_no_gold: Vec<i64> = budgets.clone();
-        budgets_no_gold[5] = 0;
-        let sellable_toggles: Vec<bool> = vec![
-            true, true, true, true, true, true, true, false, false, false, false, false, false,
-            false,
-        ];
-
-        let juice_info: JuiceInfo = get_avail_juice_combs(juice_prices, &leftover_juice_values);
-
         for upgrade in upgrade_arr.iter_mut() {
             // JUST GONNA ASSUME THAT not have juice => not have book or book => juice or first element is always juice (if there's a first element)
             let both_avail: usize = juice_info.gold_costs[upgrade.upgrade_index].len();
@@ -134,31 +146,24 @@ impl PreparationOutput {
             }
             upgrade.books_avail = (both_avail - 1).max(0) as i64;
         }
-        let juice_books_owned: Vec<(i64, i64)> = juice_books_budget.to_vec();
-        let eqv_gold_budget: f64 = actual_eqv_gold(
-            &price_arr,
-            &budgets,
-            &juice_info,
-            &unlock_costs,
-            &juice_books_owned,
-        );
-        let mut effective_budgets: Vec<i64> = budgets[0..7].to_vec();
-        effective_budgets[3] -= unlock_costs[0];
-        effective_budgets[6] -= unlock_costs[1];
-        Self {
+
+        (
+            Self {
+                // upgrade_arr,
+                unlock_costs,
+                budgets,
+                price_arr,
+                budgets_no_gold,
+                test_case: -1, // arena will overwrite this
+                eqv_gold_budget,
+                juice_info,
+                juice_books_owned,
+                sellable_toggles, //TODO READ THIS FROM AN ACUTAL INPUT LATEr cant be bother rn
+                leftover_values,
+                effective_budgets,
+            },
             upgrade_arr,
-            unlock_costs,
-            budgets,
-            price_arr,
-            budgets_no_gold,
-            test_case: -1, // arena will overwrite this
-            eqv_gold_budget,
-            juice_info,
-            juice_books_owned,
-            sellable_toggles, //TODO READ THIS FROM AN ACUTAL INPUT LATEr cant be bother rn
-            leftover_values,
-            effective_budgets,
-        }
+        )
     }
     pub fn eqv_gold_unlock(&self) -> f64 {
         // a bit redundent but whatever
@@ -168,39 +173,6 @@ impl PreparationOutput {
         c += self.unlock_costs[1] as f64 * self.price_arr[6];
 
         c
-    }
-    pub fn one_tap(&self) -> Vec<i64> {
-        self.get_one_tap_pity().0
-    }
-    pub fn pity(&self) -> Vec<i64> {
-        self.get_one_tap_pity().1
-    }
-
-    pub fn get_one_tap_pity(&self) -> (Vec<i64>, Vec<i64>) {
-        debug_assert!(self.unlock_costs.len() == 2);
-        const DATA_SIZE: usize = 2;
-        let mut cost_data: Vec<Vec<i64>> = vec![vec![0i64; 9]; DATA_SIZE];
-
-        for upgrade in self.upgrade_arr.iter() {
-            let pd_len: f64 = upgrade.prob_dist.len().saturating_sub(1) as f64;
-            for trial_num in 0..DATA_SIZE {
-                let rolled_tap =
-                    ((pd_len * (trial_num) as f64) / (DATA_SIZE as f64 - 1.0)).floor() as usize;
-                for cost_type in 0..7 {
-                    cost_data[trial_num][cost_type] +=
-                        upgrade.costs[cost_type] * (rolled_tap as i64 + upgrade.tap_offset);
-                }
-                if !upgrade.is_normal_honing {
-                    cost_data[trial_num][if upgrade.is_weapon { 7 } else { 8 }] +=
-                        upgrade.adv_juice_cost[rolled_tap].ceil() as i64;
-                }
-            }
-        }
-        for row in &mut cost_data {
-            row[3] += self.unlock_costs[0];
-            row[6] += self.unlock_costs[1];
-        }
-        (cost_data[0].clone(), cost_data[1].clone())
     }
 }
 
@@ -314,32 +286,32 @@ pub fn parser(
     out
 }
 
-/// Parser that runs twice to get both the main strategy and the other strategy's probability distributions
-/// Used by Gamba  when toggling on/off juice for a particular adv honing piece
-pub fn parser_with_other_strategy(
-    normal_counts: &[Vec<i64>],
-    adv_counts: &[Vec<i64>],
-    adv_hone_strategy: &String,
+// /// Parser that runs twice to get both the main strategy and the other strategy's probability distributions
+// /// Used by Gamba  when toggling on/off juice for a particular adv honing piece
+// pub fn parser_with_other_strategy(
+//     normal_counts: &[Vec<i64>],
+//     adv_counts: &[Vec<i64>],
+//     adv_hone_strategy: &String,
 
-    express_event: bool,
-) -> (Vec<Upgrade>, Vec<Vec<f64>>) {
-    let main_upgrades: Vec<Upgrade> =
-        parser(normal_counts, adv_counts, adv_hone_strategy, express_event);
+//     express_event: bool,
+// ) -> (Vec<Upgrade>, Vec<Vec<f64>>) {
+//     let main_upgrades: Vec<Upgrade> =
+//         parser(normal_counts, adv_counts, adv_hone_strategy, express_event);
 
-    let other_strategy: String = if adv_hone_strategy == "Juice on grace" {
-        "No juice".to_string()
-    } else {
-        "Juice on grace".to_string()
-    };
+//     let other_strategy: String = if adv_hone_strategy == "Juice on grace" {
+//         "No juice".to_string()
+//     } else {
+//         "Juice on grace".to_string()
+//     };
 
-    let other_upgrades: Vec<Upgrade> =
-        parser(normal_counts, adv_counts, &other_strategy, express_event);
+//     let other_upgrades: Vec<Upgrade> =
+//         parser(normal_counts, adv_counts, &other_strategy, express_event);
 
-    let other_strategy_prob_dists: Vec<Vec<f64>> = other_upgrades
-        .iter()
-        .filter(|upgrade| !upgrade.is_normal_honing)
-        .map(|upgrade| upgrade.prob_dist.clone())
-        .collect();
+//     let other_strategy_prob_dists: Vec<Vec<f64>> = other_upgrades
+//         .iter()
+//         .filter(|upgrade| !upgrade.is_normal_honing)
+//         .map(|upgrade| upgrade.prob_dist.clone())
+//         .collect();
 
-    (main_upgrades, other_strategy_prob_dists)
-}
+//     (main_upgrades, other_strategy_prob_dists)
+// }

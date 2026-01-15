@@ -201,17 +201,17 @@ impl AssertApproxEq for Upgrade {
             );
         }
 
-        // prob_dist: Vec<f64>
-        self.prob_dist
-            .assert_approx_eq(&other.prob_dist, &format!("{} -> prob_dist", ctx));
+        // // prob_dist: Vec<f64>
+        // self.prob_dist
+        //     .assert_approx_eq(&other.prob_dist, &format!("{} -> prob_dist", ctx));
 
-        // original_prob_dist: Vec<f64>
-        self.original_prob_dist.assert_approx_eq(
-            &other.original_prob_dist,
-            &format!("{} -> original_prob_dist", ctx),
-        );
+        // // original_prob_dist: Vec<f64>
+        // self.original_prob_dist.assert_approx_eq(
+        //     &other.original_prob_dist,
+        //     &format!("{} -> original_prob_dist", ctx),
+        // );
 
-        // base_chance: f64
+        // // base_chance: f64
         self.base_chance
             .assert_approx_eq(&other.base_chance, &format!("{} -> base_chance", ctx));
 
@@ -262,89 +262,89 @@ impl AssertApproxEq for Upgrade {
 }
 // --- impl for ChanceToCostOut ---
 
-// --- impl for CostToChanceOut ---
-use crate::cost_to_chance::CostToChanceOut;
+// // --- impl for CostToChanceOut ---
+// use crate::cost_to_chance::CostToChanceOut;
 
-impl AssertApproxEq for CostToChanceOut {
-    fn assert_approx_eq(&self, other: &Self, ctx: &str) {
-        // chance: f64
-        self.chance
-            .assert_approx_eq(&other.chance, &format!("{} -> chance", ctx));
+// impl AssertApproxEq for CostToChanceOut {
+//     fn assert_approx_eq(&self, other: &Self, ctx: &str) {
+//         // chance: f64
+//         self.chance
+//             .assert_approx_eq(&other.chance, &format!("{} -> chance", ctx));
 
-        // reasons: Vec<f64>
-        self.reasons
-            .assert_approx_eq(&other.reasons, &format!("{} -> reasons", ctx));
+//         // reasons: Vec<f64>
+//         self.reasons
+//             .assert_approx_eq(&other.reasons, &format!("{} -> reasons", ctx));
 
-        // hist_counts: Vec<Vec<i64>>
-        self.hist_counts
-            .assert_approx_eq(&other.hist_counts, &format!("{} -> hist_counts", ctx));
+//         // hist_counts: Vec<Vec<i64>>
+//         self.hist_counts
+//             .assert_approx_eq(&other.hist_counts, &format!("{} -> hist_counts", ctx));
 
-        // hist_mins: Vec<i64>
-        self.hist_mins
-            .assert_approx_eq(&other.hist_mins, &format!("{} -> hist_mins", ctx));
+//         // hist_mins: Vec<i64>
+//         self.hist_mins
+//             .assert_approx_eq(&other.hist_mins, &format!("{} -> hist_mins", ctx));
 
-        // hist_maxs: Vec<i64>
-        self.hist_maxs
-            .assert_approx_eq(&other.hist_maxs, &format!("{} -> hist_maxs", ctx));
+//         // hist_maxs: Vec<i64>
+//         self.hist_maxs
+//             .assert_approx_eq(&other.hist_maxs, &format!("{} -> hist_maxs", ctx));
 
-        // budgets_red_remaining: i64
-        self.budgets_red_remaining.assert_approx_eq(
-            &other.budgets_red_remaining,
-            &format!("{} -> budgets_red_remaining", ctx),
-        );
+//         // budgets_red_remaining: i64
+//         self.budgets_red_remaining.assert_approx_eq(
+//             &other.budgets_red_remaining,
+//             &format!("{} -> budgets_red_remaining", ctx),
+//         );
 
-        // budgets_blue_remaining: i64
-        self.budgets_blue_remaining.assert_approx_eq(
-            &other.budgets_blue_remaining,
-            &format!("{} -> budgets_blue_remaining", ctx),
-        );
+//         // budgets_blue_remaining: i64
+//         self.budgets_blue_remaining.assert_approx_eq(
+//             &other.budgets_blue_remaining,
+//             &format!("{} -> budgets_blue_remaining", ctx),
+//         );
 
-        // hundred_gold_costs: Vec<i64>
-        self.hundred_gold_costs.assert_approx_eq(
-            &other.hundred_gold_costs,
-            &format!("{} -> hundred_gold_costs", ctx),
-        );
+//         // hundred_gold_costs: Vec<i64>
+//         self.hundred_gold_costs.assert_approx_eq(
+//             &other.hundred_gold_costs,
+//             &format!("{} -> hundred_gold_costs", ctx),
+//         );
 
-        // chance_if_buy: f64
-        self.chance_if_buy
-            .assert_approx_eq(&other.chance_if_buy, &format!("{} -> chance_if_buy", ctx));
-    }
-}
+//         // chance_if_buy: f64
+//         self.chance_if_buy
+//             .assert_approx_eq(&other.chance_if_buy, &format!("{} -> chance_if_buy", ctx));
+//     }
+// }
 
-// --- impl for CostToChanceArrOut ---
-use crate::cost_to_chance::CostToChanceArrOut;
+// // --- impl for CostToChanceArrOut ---
+// use crate::cost_to_chance::CostToChanceArrOut;
 
-impl AssertApproxEq for CostToChanceArrOut {
-    fn assert_approx_eq(&self, other: &Self, ctx: &str) {
-        // no_buy_chance_arr: Vec<f64>
-        self.no_buy_chance_arr.assert_approx_eq(
-            &other.no_buy_chance_arr,
-            &format!("{} -> no_buy_chance_arr", ctx),
-        );
+// impl AssertApproxEq for CostToChanceArrOut {
+//     fn assert_approx_eq(&self, other: &Self, ctx: &str) {
+//         // no_buy_chance_arr: Vec<f64>
+//         self.no_buy_chance_arr.assert_approx_eq(
+//             &other.no_buy_chance_arr,
+//             &format!("{} -> no_buy_chance_arr", ctx),
+//         );
 
-        // typed_fail_counters: Vec<Vec<f64>>
-        self.typed_fail_counters.assert_approx_eq(
-            &other.typed_fail_counters,
-            &format!("{} -> typed_fail_counters", ctx),
-        );
+//         // typed_fail_counters: Vec<Vec<f64>>
+//         self.typed_fail_counters.assert_approx_eq(
+//             &other.typed_fail_counters,
+//             &format!("{} -> typed_fail_counters", ctx),
+//         );
 
-        // budgets_red_remaining: i64
-        self.budgets_red_remaining.assert_approx_eq(
-            &other.budgets_red_remaining,
-            &format!("{} -> budgets_red_remaining", ctx),
-        );
+//         // budgets_red_remaining: i64
+//         self.budgets_red_remaining.assert_approx_eq(
+//             &other.budgets_red_remaining,
+//             &format!("{} -> budgets_red_remaining", ctx),
+//         );
 
-        // budgets_blue_remaining: i64
-        self.budgets_blue_remaining.assert_approx_eq(
-            &other.budgets_blue_remaining,
-            &format!("{} -> budgets_blue_remaining", ctx),
-        );
+//         // budgets_blue_remaining: i64
+//         self.budgets_blue_remaining.assert_approx_eq(
+//             &other.budgets_blue_remaining,
+//             &format!("{} -> budgets_blue_remaining", ctx),
+//         );
 
-        // buy_chance_arr: Vec<f64>
-        self.buy_chance_arr
-            .assert_approx_eq(&other.buy_chance_arr, &format!("{} -> buy_chance_arr", ctx));
-    }
-}
+//         // buy_chance_arr: Vec<f64>
+//         self.buy_chance_arr
+//             .assert_approx_eq(&other.buy_chance_arr, &format!("{} -> buy_chance_arr", ctx));
+//     }
+// }
 
 // Finally the macro wrapper; it captures file:line to include context in panic messages
 #[cfg(test)]

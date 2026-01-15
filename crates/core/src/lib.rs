@@ -8,7 +8,7 @@ pub mod normal_honing_utils;
 pub mod parser;
 pub mod performance;
 pub mod saddlepoint_approximation;
-pub mod state;
+pub mod state_bundle;
 pub mod success_analysis;
 pub mod test_utils;
 pub mod upgrade;

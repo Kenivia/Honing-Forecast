@@ -21,15 +21,15 @@
 //     prep_output: &PreparationOutput,
 // ) -> Vec<Vec<Vec<(f64, String)>>> {
 //     // Clone upgrade_arr (we will mutate per-task copies)
-//     let upgrade_arr_base: Vec<Upgrade> = prep_output.upgrade_arr.clone();
-//     let u0 = &prep_output.upgrade_arr[0];
-//     let u1 = &prep_output.upgrade_arr[1];
+//     let upgrade_arr_base: Vec<Upgrade> = upgrade_arr.clone();
+//     let u0 = &upgrade_arr[0];
+//     let u1 = &upgrade_arr[1];
 
 //     let len0 = u0.full_juice_len;
 //     let len1 = u1.full_juice_len;
 
 //     // pity boundaries
-//     let tap_pity_results = get_one_tap_pity(&prep_output.upgrade_arr, &prep_output.unlock_costs);
+//     let tap_pity_results = get_one_tap_pity(&upgrade_arr, &prep_output.unlock_costs);
 
 //     let worst_cost: f64 = compute_eqv_gold_values(&tap_pity_results[1], &prep_output.price_arr)
 //         - eqv_gold_unlock(&prep_output.unlock_costs, &prep_output.price_arr);
@@ -157,8 +157,8 @@
 //     input_budgets: &[i64],
 //     prep_output: &PreparationOutput,
 // ) -> Vec<Vec<Vec<(f64, String)>>> {
-//     let u0 = &prep_output.upgrade_arr[0];
-//     let u1 = &prep_output.upgrade_arr[1];
+//     let u0 = &upgrade_arr[0];
+//     let u1 = &upgrade_arr[1];
 
 //     let len0 = u0.full_juice_len;
 //     let len1 = u1.full_juice_len;
@@ -181,7 +181,7 @@
 
 //     let stride_p = len0 * len1;
 //     let stride0 = len1;
-//     let tap_pity_results = get_one_tap_pity(&prep_output.upgrade_arr, &prep_output.unlock_costs);
+//     let tap_pity_results = get_one_tap_pity(&upgrade_arr, &prep_output.unlock_costs);
 //     let worst_cost: f64 = compute_eqv_gold_values(&tap_pity_results[1], &prep_output.price_arr)
 //         - eqv_gold_unlock(&prep_output.unlock_costs, &prep_output.price_arr);
 //     let best_cost: f64 = compute_eqv_gold_values(&tap_pity_results[0], &prep_output.price_arr)

@@ -1,14 +1,12 @@
 use chrono::Local;
 use hf_arena::engine::{NOTES, solve};
 use hf_arena::parse_test_cases::parse_csv;
-use hf_core::brute::brute_success_prob_metric;
+
 use hf_core::monte_carlo::monte_carlo_wrapper;
 
-use hf_core::parser::PreparationOutput;
-use hf_core::performance::{Performance, PerformanceToWrite};
-use hf_core::saddlepoint_approximation::average::{DEBUG_AVERAGE, average_gold_metric};
-use hf_core::saddlepoint_approximation::success_prob::success_prob_metric;
-use hf_core::state::StateBundle;
+use hf_core::saddlepoint_approximation::average::DEBUG_AVERAGE;
+
+use hf_core::state_bundle::StateBundle;
 
 use rand::prelude::*;
 use serde::{Deserialize, Serialize};
@@ -21,14 +19,7 @@ use std::time::Instant;
 
 static NUM_TESTS_TO_RUN: i64 = if DEBUG_AVERAGE { 1 } else { 1 }; // TODO this should be replaced by statistical tests like fishtest eventually
 static MONTE_CARLO_COUNT: usize = 1_000_000;
-type EvalFn = fn(&mut StateBundle, &mut Performance) -> f64;
-
-static METRICS: [(&str, EvalFn); 3] = [
-    ("SA", success_prob_metric),
-    ("Avg", average_gold_metric),
-    ("Brute", brute_success_prob_metric),
-];
-
+static METRICS: [(&str, i64); 2] = [("SA", 0), ("Avg", 1)];
 #[derive(Debug, Serialize)]
 struct Header {
     version: String,
@@ -42,8 +33,8 @@ struct Output {
     trial_num: i64,
     wall_time: f64,
     best: f64,
-    performance: PerformanceToWrite,
-    best_state_performance: PerformanceToWrite,
+    // performance: PerformanceToWrite,
+    // best_state_performance: PerformanceToWrite,
     state: String,
     seed: u64,
     time_finished: String,
@@ -119,42 +110,39 @@ fn main() {
 
     let mut seed_rng: ThreadRng = rand::rng();
 
-    let mut test_cases: Vec<(PreparationOutput, Vec<bool>)> =
-        parse_csv(Path::new(if DEBUG_AVERAGE {
-            "TEST_test_cases.csv"
-        } else {
-            "TEST_test_cases.csv"
-        })); // bloated_
+    let test_cases: Vec<(StateBundle, Vec<bool>)> = parse_csv(Path::new(if DEBUG_AVERAGE {
+        "TEST_test_cases.csv"
+    } else {
+        "TEST_test_cases.csv"
+    })); // bloated_
 
     for _ in 0..NUM_TESTS_TO_RUN {
-        for (prep_output, tests_to_run) in test_cases.iter_mut() {
-            for (index, (metric_type_str, metric_function)) in METRICS.iter().enumerate() {
+        for (state_bundle, tests_to_run) in test_cases.iter() {
+            for (index, (metric_type_str, metric_type)) in METRICS.iter().enumerate() {
                 if !tests_to_run[index] {
                     continue;
                 }
-                let metric_type = metric_type_str.to_string();
+                let metric_type_string = metric_type_str.to_string();
                 let mut instant: Instant = Instant::now();
-                let key = (prep_output.test_case, metric_type.clone());
+                let key = (
+                    state_bundle.prep_output.test_case,
+                    metric_type_string.clone(),
+                );
                 if seen_tests.contains_key(&key) && seen_tests[&key] >= NUM_TESTS_TO_RUN {
                     continue;
                 }
                 let seed: u64 = seed_rng.next_u64();
                 let mut rng: StdRng = StdRng::seed_from_u64(seed);
-                let mut performance: Performance = Performance::new();
 
                 let trial_num = seen_tests.entry(key.clone()).or_insert(0);
                 *trial_num += 1;
                 println!("Test case {:?} trial {}", key, trial_num);
-                let mut state_bundle: StateBundle = solve(
-                    &mut rng,
-                    &mut performance,
-                    metric_function,
-                    StateBundle::new(prep_output.clone()),
-                );
+                let mut state_bundle: StateBundle =
+                    solve(&mut rng, *metric_type, state_bundle.clone());
 
                 // Call metric on best state to get standalone performance metrics
-                let mut best_state_performance = Performance::new();
-                let _ = metric_function(&mut state_bundle, &mut best_state_performance);
+
+                let _ = state_bundle.metric_router(*metric_type);
 
                 let output: Output = Output {
                     test_case: state_bundle.prep_output.test_case,
@@ -166,23 +154,22 @@ fn main() {
                     seed,
                     time_finished: current_time_string(),
                     prob_leftover: state_bundle.compute_leftover_probs(),
-                    metric_type: metric_type.clone(),
-                    performance: performance.to_write(),
-                    best_state_performance: best_state_performance.to_write(),
+                    metric_type: metric_type_string.clone(),
+                    // performance: performance.to_write(),
+                    // best_state_performance: best_state_performance.to_write(),
                 };
 
                 instant = Instant::now();
                 if *trial_num == 1 {
                     let (prob_leftover, success_rate, average_rate) =
                         monte_carlo_wrapper(MONTE_CARLO_COUNT, &mut state_bundle, &mut rng);
-                    let mut mc_performance = Performance::new();
-                    mc_performance.states_evaluated = 1;
+
                     let verification_output: Output = Output {
                         test_case: state_bundle.prep_output.test_case,
                         trial_num: 0,
                         wall_time: instant.elapsed().as_secs_f64(),
 
-                        best: if metric_type == "SA" || metric_type == "brute" {
+                        best: if metric_type_string == "SA" || metric_type_string == "brute" {
                             success_rate
                         } else {
                             average_rate
@@ -191,9 +178,9 @@ fn main() {
                         seed,
                         time_finished: current_time_string(),
                         prob_leftover,
-                        metric_type: "MC_".to_string() + &metric_type,
-                        performance: mc_performance.to_write(),
-                        best_state_performance: mc_performance.to_write(),
+                        metric_type: "MC_".to_string() + &metric_type_string,
+                        // performance: mc_performance.to_write(),
+                        // best_state_performance: mc_performance.to_write(),
                     };
                     write_jsonl(&verification_output, &file_name)
                         .expect("Failed to write to result file");

@@ -4,12 +4,13 @@ use std::f64::NAN;
 
 use crate::brute::{MAX_BRUTE_SIZE, brute_average_recursive, brute_success_prob};
 use crate::constants::FLOAT_TOL;
-use crate::helpers::F64_2d;
-use crate::performance::Performance;
+use crate::helpers::TripletIterator;
 
 use crate::saddlepoint_approximation::average::{DEBUG_AVERAGE, DEBUG_AVG_INDEX};
-use crate::saddlepoint_approximation::core::{THETA_LIMIT, THETA_TOL, ks_01234, my_newton};
-use crate::state::StateBundle;
+use crate::saddlepoint_approximation::core::{THETA_LIMIT, THETA_TOL};
+use crate::state_bundle::StateBundle;
+use crate::upgrade::Support;
+
 use itertools::Itertools;
 use statrs::distribution::{Continuous, ContinuousCDF, Normal};
 
@@ -17,82 +18,9 @@ pub static DEBUG_SA: bool = false;
 
 pub static MIN_LATTICE_SPAN: f64 = 1.0;
 
-pub fn saddlepoint_approximation_prob_wrapper(
-    state_bundle: &StateBundle,
-    support_index: i64,
-    skip_count: usize,
-    budget: f64,
-    init_theta: &mut f64,
-    performance: &mut Performance,
-    compute_biased: bool,
-    mean: f64,
-) -> f64 {
-    let (min_value, max_value) =
-        state_bundle.find_min_max(support_index, skip_count, compute_biased);
-
-    let span = lattice_span(state_bundle.extract_support(support_index, skip_count));
-    if budget > max_value + FLOAT_TOL {
-        performance.trivial_count += 1;
-        return 1.0;
-    }
-
-    if budget < min_value - FLOAT_TOL {
-        performance.trivial_count += 1;
-        return 0.0;
-    }
-    if support_size_too_big(
-        state_bundle.extract_support(support_index, skip_count),
-        budget,
-        MAX_BRUTE_SIZE,
-    ) && budget > min_value + span / 2.0 + FLOAT_TOL
-        && budget < max_value - span / 2.0 - FLOAT_TOL
-    {
-        return saddlepoint_approximation(
-            state_bundle,
-            support_index,
-            skip_count,
-            min_value,
-            max_value,
-            span,
-            budget,
-            init_theta,
-            performance,
-            compute_biased,
-            mean,
-        );
-    } else {
-        performance.brute_count += 1;
-        let prob_dist_arr: Vec<Vec<f64>> = state_bundle
-            .extract_prob(skip_count)
-            .into_iter()
-            .cloned()
-            .collect();
-        // dbg!(
-        //     probs
-        //         .iter()
-        //         .map(|x| x.into_iter().sum::<f64>())
-        //         .collect::<Vec<f64>>()
-        // );
-        let support_arr: Vec<Vec<f64>> = state_bundle
-            .extract_support(support_index, skip_count)
-            .into_iter()
-            .cloned()
-            .collect();
-        if compute_biased {
-            if support_index == DEBUG_AVG_INDEX && DEBUG_AVERAGE {
-                dbg!("brute");
-            }
-
-            return brute_average_recursive(&prob_dist_arr, &support_arr, budget, mean);
-        } else {
-            return brute_success_prob(&prob_dist_arr, &support_arr, budget);
-        }
-    }
-}
-
 fn support_size_too_big<'a, I>(arr: I, budget: f64, max: usize) -> bool
 where
-    I: F64_2d<'a>,
+    I: TripletIterator<'a>,
 {
     let mut low_side_too_big: bool = false;
     let mut out: usize = 0;
@@ -102,7 +30,7 @@ where
         } else {
             out *= a
                 .iter()
-                .take_while(|x| **x + FLOAT_TOL <= budget)
+                .take_while(|x| x.0 + FLOAT_TOL <= budget)
                 .count()
                 .max(1);
             // the hope is that if budget is very close to min_value then we will use brute, because that will break SA
@@ -128,14 +56,14 @@ fn float_gcd(inp_a: f64, inp_b: f64) -> f64 {
     a
 }
 
-fn lattice_span<'a, I>(support_arr: I) -> f64
+fn lattice_span<'a, I>(triplet_arr: I) -> f64
 where
-    I: F64_2d<'a>,
+    I: TripletIterator<'a>,
 {
     let mut cur_span: f64 = MIN_LATTICE_SPAN;
     let mut found_non_zeros: bool = false;
 
-    for s in support_arr.into_iter().flatten() {
+    for (s, _, _) in triplet_arr.flatten() {
         if *s < FLOAT_TOL {
             continue;
         }
@@ -155,294 +83,380 @@ where
     // }
     cur_span
 }
-pub fn saddlepoint_approximation(
-    state_bundle: &StateBundle,
-    support_index: i64,
-    skip_count: usize,
-    min_value: f64,
-    max_value: f64,
-    span: f64,
-    inp_budget: f64,
-    init_theta: &mut f64,
-    performance: &mut Performance,
-    compute_biased: bool,
-    mean: f64,
-) -> f64 {
-    let budget = ((inp_budget / span).floor() * span)
-        .min(max_value - span)
-        .max(min_value)
-        + span / 2.0;
-    performance.sa_count += 1;
-    let mean_log = mean.ln();
-    let ks = |theta, toggle: &(bool, bool, bool, bool, bool)| {
-        if compute_biased {
-            let new_toggle = (
-                toggle.0,
-                toggle.0 || toggle.1 || toggle.2 || toggle.3,
-                toggle.1 || toggle.2 || toggle.3,
-                toggle.2 || toggle.3,
-                toggle.3,
-            );
 
-            let ksx = ks_01234(
-                state_bundle.extract_log_prob(skip_count),
-                state_bundle.extract_support(support_index, skip_count),
-                theta,
-                &new_toggle,
-            );
-            (
-                ksx.0 + ksx.1.ln() - mean_log,
-                ksx.1 + ksx.2 / ksx.1,
-                ksx.2 + (ksx.3 * ksx.1 - ksx.2.powi(2)) / (ksx.1.powi(2)),
-                ksx.3
-                    + (2.0 * ksx.2.powi(3) + ksx.4 * ksx.1.powi(2) - 3.0 * ksx.3 * ksx.1 * ksx.2)
-                        / ksx.1.powi(3),
-                NAN,
-            )
-        } else {
-            ks_01234(
-                state_bundle.extract_log_prob(skip_count),
-                state_bundle.extract_support(support_index, skip_count),
-                theta,
-                toggle,
-            )
+impl StateBundle {
+    pub fn saddlepoint_approximation_prob_wrapper(
+        &self,
+        support_index: i64,
+        skip_count: usize,
+        budget: f64,
+        init_theta: &mut f64,
+
+        compute_biased: bool,
+        mean: f64,
+    ) -> f64 {
+        let (min_value, max_value) = self.find_min_max(support_index, skip_count, compute_biased);
+
+        let span = lattice_span(self.extract_triplet(support_index, skip_count));
+        if budget > max_value + FLOAT_TOL {
+            // self.performance.trivial_count += 1;
+            return 1.0;
         }
-    };
-    // dbg!(h);
-    let f_df = |theta| {
-        let ks_tuple = ks(theta, &(false, true, true, false, false));
-        (ks_tuple.1 - budget, ks_tuple.2)
-    };
-    // f_df(1.0).0.signum() == f_df(-1.0).0.signum()
 
-    let result_opt = my_newton(&f_df, *init_theta, performance);
-
-    if DEBUG_SA || result_opt.is_none() {
-        dbg!(budget, min_value, max_value,);
-        dbg!(
-            f_df(THETA_LIMIT),
-            f_df(1.0),
-            f_df(0.0),
-            f_df(-1.0),
-            f_df(-THETA_LIMIT),
-        );
-        dbg!(
-            state_bundle
-                .extract_log_prob(skip_count)
-                .into_iter()
-                .map(|x| x.iter().map(|y| y.exp()).sum::<f64>())
-                .collect::<Vec<f64>>(),
-            state_bundle
-                .extract_log_prob(skip_count)
-                .into_iter()
-                .map(|x| x.iter().map(|y| y.exp()).collect())
-                .collect::<Vec<Vec<f64>>>(),
-            state_bundle
-                .extract_log_prob(skip_count)
-                .into_iter()
-                .collect::<Vec<&Vec<f64>>>(),
-            state_bundle
-                .extract_support(support_index, skip_count)
-                .collect::<Vec<&Vec<f64>>>()
-        );
-    }
-    let result = result_opt.unwrap();
-    // if DEBUG
-    //     || !result.0.is_finite()
-    //     || !result.1.is_finite()
-    //     || f_df(THETA_LIMIT).0.signum() == f_df(-THETA_LIMIT).0.signum()
-    // {
-    //     //   (this means budget is outside of range)
-    //     dbg!(
-    //         f_df(THETA_LIMIT),
-    //         f_df(1.0),
-    //         f_df(0.0),
-    //         f_df(-1.0),
-    //         f_df(-THETA_LIMIT),
-    //         result,
-    //     );
-    // }
-
-    let (theta_hat, last_theta) = result;
-
-    *init_theta = theta_hat;
-    let theta_error = (theta_hat - last_theta).abs();
-    if DEBUG_SA {
-        dbg!(theta_hat, theta_error);
-    }
-    let normal_dist: Normal = Normal::new(0.0, 1.0).unwrap();
-
-    let ks_tuple = {
-        performance.ks_count += 1;
-        ks(theta_hat, &(true, true, true, true, true))
-    };
-
-    let w = |t: f64, ks_inp: f64| t.signum() * (2.0 * (t * budget - ks_inp)).sqrt();
-    let u = |t: f64, ks2_inp: f64| 2.0 / span * (span * t / 2.0).sinh() * ks2_inp.sqrt(); // second continuity correction 
-    let w_hat = w(theta_hat, ks_tuple.0);
-    let u_hat = u(theta_hat, ks_tuple.2);
-
-    let mut error: f64 = 0.0;
-
-    let sa_out: f64 = normal_dist.cdf(w_hat) + normal_dist.pdf(w_hat) * (1.0 / w_hat - 1.0 / u_hat);
-    if theta_hat.abs() < THETA_TOL * 100.0 || theta_error / theta_hat < 0.01 {
-        // this theta error / theta hat checkshould only trigger when newton fails after 20 cycles
-        let last_ks_tuple = {
-            performance.ks_count += 1;
-            ks(last_theta, &(true, false, true, false, false))
-        };
-
-        let w_last = w(last_theta, last_ks_tuple.0);
-        let u_last = u(last_theta, last_ks_tuple.2);
-
-        let old_out =
-            normal_dist.cdf(w_last) + normal_dist.pdf(w_last) * (1.0 / w_last - 1.0 / u_last);
-        error = (sa_out - old_out).abs();
-    }
-
-    let mut approx: f64 = -6.9;
-    let mut actual_out = sa_out;
-    if error > 1e-2 || !error.is_finite() {
-        performance.edgeworth_count += 1;
-        let std = ks_tuple.2.sqrt();
-        let z = (budget - ks_tuple.1) / std;
-
-        let gamma3 = ks_tuple.3 / std.powi(3); // skewness
-
-        let pdf = normal_dist.pdf(z);
-        let cdf = normal_dist.cdf(z);
-
-        // Edgeworth (cdf) up to 4th cumulant and k3^2 term:
-        let cdf_correction = pdf
-            * ((gamma3 / 6.0) * (z.powi(2) - 1.0)
-                + if compute_biased {
-                    0.0
-                } else {
-                    let gamma4 = ks_tuple.4 / std.powi(4); // excess kurtosis
-                    (gamma4 / 24.0) * (z.powi(3) - 3.0 * z)
-                        + (gamma3 * gamma3 / 72.0) * (z.powi(5) - 10.0 * z.powi(3) + 15.0 * z)
-                });
-
-        approx = cdf - cdf_correction;
-        if DEBUG_SA || approx < 0.0 || approx > 1.0 {
-            dbg!(
-                error,
-                budget - ks_tuple.1,
-                z,
-                std,
-                gamma3,
-                cdf,
-                pdf,
-                cdf_correction,
-                approx
-            );
+        if budget < min_value - FLOAT_TOL {
+            // self.performance.trivial_count += 1;
+            return 0.0;
         }
-        if DEBUG_AVERAGE && support_index == DEBUG_AVG_INDEX {
-            dbg!("edge", approx, actual_out);
-        }
-        actual_out = approx;
-    } else {
-        // performance.lugganani_count += 1;
-        // if compute_biased {
-        //     // dbg!(
-        //     //     -normal_dist.pdf(w_hat) / theta_hat,
-        //     //     -normal_dist.pdf(w_hat) * (budget - mean) / w_hat,
-        //     //     -normal_dist.pdf(w_hat) / theta_hat
-        //     //         * (1.0 + 1.0 / ((theta_hat * std).powi(2)) - gamma3 / (2.0 * theta_hat * std))
-        //     // );
-        //     // *derivative_output = -normal_dist.pdf(w_hat) / theta_hat
-        //     //     * (1.0 + 1.0 / ((theta_hat * std).powi(2)) - gamma3 / (2.0 * theta_hat * std))
-        //     dbg!(
-        //         theta_hat,
-        //         ks_tuple,
-        //         ks_tuple.1,
-        //         ks_tuple.2,
-        //         ks_tuple.3,
-        //         2.0 * (theta_hat * budget - ks_tuple.0),
-        //         w_hat,
-        //         u_hat,
-        //         normal_dist.cdf(w_hat),
-        //         normal_dist.pdf(w_hat),
-        //         1.0 / w_hat - 1.0 / u_hat,
-        //         min_value,
-        //         budget,
-        //         simple_mean,
-        //         max_value,
-        //         sa_out,
-        //         approx,
-        //         actual_out
-        //     );
-        //     *truncated_mean_output = simple_mean * normal_dist.cdf(w_hat)
-        //         + normal_dist.pdf(w_hat) * (simple_mean / w_hat - budget / u_hat);
-        // }
-    }
-
-    if DEBUG_SA
-        || actual_out < -FLOAT_TOL
-        || actual_out > 1.0 + FLOAT_TOL
-        || !actual_out.is_finite()
-    {
-        dbg!(
-            f_df(THETA_LIMIT),
-            f_df(1.0),
-            f_df(0.0),
-            f_df(-1.0),
-            f_df(-THETA_LIMIT),
-        );
-        dbg!(theta_hat, theta_error);
-        dbg!(w_hat, u_hat, error, sa_out);
-        dbg!(
-            state_bundle
-                .extract_log_prob(skip_count)
-                .into_iter()
-                .map(|x| x.iter().map(|y| y.exp()).sum::<f64>())
-                .collect::<Vec<f64>>(),
-            state_bundle
-                .extract_log_prob(skip_count)
-                .into_iter()
-                .map(|x| x.iter().map(|y| y.exp()).collect())
-                .collect::<Vec<Vec<f64>>>(),
-            state_bundle
-                .extract_log_prob(skip_count)
-                .into_iter()
-                .collect::<Vec<&Vec<f64>>>(),
-            state_bundle
-                .extract_support(support_index, skip_count)
-                .collect::<Vec<&Vec<f64>>>(),
-            state_bundle
-                .extract_support(support_index, skip_count)
-                .try_len()
-                .unwrap(),
-            state_bundle.extract_log_prob(skip_count).try_len().unwrap(),
-        );
-        dbg!(
-            theta_hat,
-            ks_tuple,
-            ks_tuple.1,
-            ks_tuple.2,
-            ks_tuple.3,
-            2.0 * (theta_hat * budget - ks_tuple.0),
-            w_hat,
-            u_hat,
-            normal_dist.cdf(w_hat),
-            normal_dist.pdf(w_hat),
-            1.0 / w_hat - 1.0 / u_hat,
-            min_value,
+        if support_size_too_big(
+            self.extract_triplet(support_index, skip_count),
             budget,
-            crate::saddlepoint_approximation::average::simple_average(
-                state_bundle.extract_prob(skip_count),
-                state_bundle.extract_support(support_index, skip_count),
-            ),
-            max_value,
-            sa_out,
-            approx,
-            actual_out
-        );
-        println!("==============================");
-        panic!();
+            MAX_BRUTE_SIZE,
+        ) && budget > min_value + span / 2.0 + FLOAT_TOL
+            && budget < max_value - span / 2.0 - FLOAT_TOL
+        {
+            return self.saddlepoint_approximation(
+                support_index,
+                skip_count,
+                min_value,
+                max_value,
+                span,
+                budget,
+                init_theta,
+                compute_biased,
+                mean,
+            );
+        } else {
+            // self.performance.brute_count += 1;
+            // let prob_dist_arr: Vec<Vec<f64>> =
+            //     self.extract_prob(skip_count).into_iter().cloned().collect();
+            // dbg!(
+            //     probs
+            //         .iter()
+            //         .map(|x| x.into_iter().sum::<f64>())
+            //         .collect::<Vec<f64>>()
+
+            if compute_biased {
+                if support_index == DEBUG_AVG_INDEX && DEBUG_AVERAGE {
+                    dbg!("brute");
+                }
+
+                return brute_average_recursive(
+                    &self.gather_collapsed(support_index, skip_count, 1),
+                    &self.gather_collapsed(support_index, skip_count, 0),
+                    budget,
+                    mean,
+                );
+            } else {
+                return brute_success_prob(
+                    &self.gather_collapsed(support_index, skip_count, 1),
+                    &self.gather_collapsed(support_index, skip_count, 0),
+                    budget,
+                );
+            }
+        }
     }
 
-    actual_out.max(0.0).min(1.0) // head in the sand
+    pub fn saddlepoint_approximation(
+        &self,
+        support_index: i64,
+        skip_count: usize,
+        min_value: f64,
+        max_value: f64,
+        span: f64,
+        inp_budget: f64,
+        init_theta: &mut f64,
+        compute_biased: bool,
+        mean: f64,
+    ) -> f64 {
+        let budget = ((inp_budget / span).floor() * span)
+            .min(max_value - span)
+            .max(min_value)
+            + span / 2.0;
+        // self.performance.sa_count += 1;
+        let mean_log = if compute_biased { mean.ln() } else { NAN };
+
+        // dbg!(h);
+
+        // f_df(1.0).0.signum() == f_df(-1.0).0.signum()
+
+        let result_opt = self.my_newton(
+            *init_theta,
+            compute_biased,
+            mean_log,
+            support_index,
+            skip_count,
+            budget,
+        );
+
+        if DEBUG_SA || result_opt.is_none() {
+            dbg!(budget, min_value, max_value,);
+            println!(
+                "{:?}",
+                self.ks(
+                    -THETA_LIMIT,
+                    &(false, true, true, false, false),
+                    compute_biased,
+                    mean_log,
+                    support_index,
+                    skip_count
+                )
+            );
+            println!(
+                "{:?}",
+                self.ks(
+                    -1.0,
+                    &(false, true, true, false, false),
+                    compute_biased,
+                    mean_log,
+                    support_index,
+                    skip_count
+                )
+            );
+            println!(
+                "{:?}",
+                self.ks(
+                    0.0,
+                    &(false, true, true, false, false),
+                    compute_biased,
+                    mean_log,
+                    support_index,
+                    skip_count
+                )
+            );
+            println!(
+                "{:?}",
+                self.ks(
+                    1.0,
+                    &(false, true, true, false, false),
+                    compute_biased,
+                    mean_log,
+                    support_index,
+                    skip_count
+                )
+            );
+            println!(
+                "{:?}",
+                self.ks(
+                    THETA_LIMIT,
+                    &(false, true, true, false, false),
+                    compute_biased,
+                    mean_log,
+                    support_index,
+                    skip_count
+                )
+            );
+            dbg!(
+                self.extract_triplet(support_index, skip_count)
+                    .into_iter()
+                    .map(|x| x.iter().map(|(_, _, y)| y.exp()).sum::<f64>())
+                    .collect::<Vec<f64>>(),
+                self.extract_triplet(support_index, skip_count)
+                    .into_iter()
+                    .map(|x| x.iter().map(|(_, _, y)| y.exp()).collect())
+                    .collect::<Vec<Vec<f64>>>(),
+                self.extract_support_with_meta(support_index, skip_count)
+                    .into_iter()
+                    .collect::<Vec<&Support>>(),
+            );
+        }
+        let result = result_opt.unwrap();
+        // if DEBUG
+        //     || !result.0.is_finite()
+        //     || !result.1.is_finite()
+        //     || f_df(THETA_LIMIT).0.signum() == f_df(-THETA_LIMIT).0.signum()
+        // {
+        //     //   (this means budget is outside of range)
+        //     dbg!(
+        //         f_df(THETA_LIMIT),
+        //         f_df(1.0),
+        //         f_df(0.0),
+        //         f_df(-1.0),
+        //         f_df(-THETA_LIMIT),
+        //         result,
+        //     );
+        // }
+
+        let (theta_hat, last_theta, _) = result;
+        // self.performance.newton_iterations += count as i64 - 1;
+        // self.performance.ks_count += count as i64;
+        *init_theta = theta_hat;
+        let theta_error = (theta_hat - last_theta).abs();
+        if DEBUG_SA {
+            dbg!(theta_hat, theta_error);
+        }
+        let normal_dist: Normal = Normal::new(0.0, 1.0).unwrap();
+        // self.performance.ks_count += 1;
+        let ks_tuple = self.ks(
+            theta_hat,
+            &(true, true, true, true, true),
+            compute_biased,
+            mean_log,
+            support_index,
+            skip_count,
+        );
+
+        let w = |t: f64, ks_inp: f64| t.signum() * (2.0 * (t * budget - ks_inp)).sqrt();
+        let u = |t: f64, ks2_inp: f64| 2.0 / span * (span * t / 2.0).sinh() * ks2_inp.sqrt(); // second continuity correction 
+        let w_hat = w(theta_hat, ks_tuple.0);
+        let u_hat = u(theta_hat, ks_tuple.2);
+
+        let mut error: f64 = 0.0;
+
+        let sa_out: f64 =
+            normal_dist.cdf(w_hat) + normal_dist.pdf(w_hat) * (1.0 / w_hat - 1.0 / u_hat);
+        if theta_hat.abs() < THETA_TOL * 100.0 || theta_error / theta_hat < 0.01 {
+            // this theta error / theta hat checkshould only trigger when newton fails after 20 cycles
+            // self.performance.ks_count += 1;
+            let last_ks_tuple = self.ks(
+                theta_hat,
+                &(true, true, true, true, true),
+                compute_biased,
+                mean_log,
+                support_index,
+                skip_count,
+            );
+
+            let w_last = w(last_theta, last_ks_tuple.0);
+            let u_last = u(last_theta, last_ks_tuple.2);
+
+            let old_out =
+                normal_dist.cdf(w_last) + normal_dist.pdf(w_last) * (1.0 / w_last - 1.0 / u_last);
+            error = (sa_out - old_out).abs();
+        }
+
+        let mut approx: f64 = -6.9;
+        let mut actual_out = sa_out;
+        if error > 1e-2 || !error.is_finite() {
+            // self.performance.edgeworth_count += 1;
+            let std = ks_tuple.2.sqrt();
+            let z = (budget - ks_tuple.1) / std;
+
+            let gamma3 = ks_tuple.3 / std.powi(3); // skewness
+
+            let pdf = normal_dist.pdf(z);
+            let cdf = normal_dist.cdf(z);
+
+            // Edgeworth (cdf) up to 4th cumulant and k3^2 term:
+            let cdf_correction = pdf
+                * ((gamma3 / 6.0) * (z.powi(2) - 1.0)
+                    + if compute_biased {
+                        0.0
+                    } else {
+                        let gamma4 = ks_tuple.4 / std.powi(4); // excess kurtosis
+                        (gamma4 / 24.0) * (z.powi(3) - 3.0 * z)
+                            + (gamma3 * gamma3 / 72.0) * (z.powi(5) - 10.0 * z.powi(3) + 15.0 * z)
+                    });
+
+            approx = cdf - cdf_correction;
+            if DEBUG_SA || approx < 0.0 || approx > 1.0 {
+                dbg!(
+                    error,
+                    budget - ks_tuple.1,
+                    z,
+                    std,
+                    gamma3,
+                    cdf,
+                    pdf,
+                    cdf_correction,
+                    approx
+                );
+            }
+            if DEBUG_AVERAGE && support_index == DEBUG_AVG_INDEX {
+                dbg!("edge", approx, actual_out);
+            }
+            actual_out = approx;
+        } else {
+            // performance.lugganani_count += 1;
+            // if compute_biased {
+            //     // dbg!(
+            //     //     -normal_dist.pdf(w_hat) / theta_hat,
+            //     //     -normal_dist.pdf(w_hat) * (budget - mean) / w_hat,
+            //     //     -normal_dist.pdf(w_hat) / theta_hat
+            //     //         * (1.0 + 1.0 / ((theta_hat * std).powi(2)) - gamma3 / (2.0 * theta_hat * std))
+            //     // );
+            //     // *derivative_output = -normal_dist.pdf(w_hat) / theta_hat
+            //     //     * (1.0 + 1.0 / ((theta_hat * std).powi(2)) - gamma3 / (2.0 * theta_hat * std))
+            //     dbg!(
+            //         theta_hat,
+            //         ks_tuple,
+            //         ks_tuple.1,
+            //         ks_tuple.2,
+            //         ks_tuple.3,
+            //         2.0 * (theta_hat * budget - ks_tuple.0),
+            //         w_hat,
+            //         u_hat,
+            //         normal_dist.cdf(w_hat),
+            //         normal_dist.pdf(w_hat),
+            //         1.0 / w_hat - 1.0 / u_hat,
+            //         min_value,
+            //         budget,
+            //         simple_mean,
+            //         max_value,
+            //         sa_out,
+            //         approx,
+            //         actual_out
+            //     );
+            //     *truncated_mean_output = simple_mean * normal_dist.cdf(w_hat)
+            //         + normal_dist.pdf(w_hat) * (simple_mean / w_hat - budget / u_hat);
+            // }
+        }
+
+        if DEBUG_SA
+            || actual_out < -FLOAT_TOL
+            || actual_out > 1.0 + FLOAT_TOL
+            || !actual_out.is_finite()
+        {
+            // dbg!(
+            //     f_df(THETA_LIMIT),
+            //     f_df(1.0),
+            //     f_df(0.0),
+            //     f_df(-1.0),
+            //     f_df(-THETA_LIMIT),
+            // );
+            dbg!(theta_hat, theta_error);
+            dbg!(w_hat, u_hat, error, sa_out);
+            dbg!(
+                self.extract_triplet(support_index, skip_count)
+                    .into_iter()
+                    .map(|x| x.iter().map(|y| y.2.exp()).sum::<f64>())
+                    .collect::<Vec<f64>>(),
+                self.extract_triplet(support_index, skip_count)
+                    .into_iter()
+                    .map(|x| x.iter().map(|y| y.2.exp()).collect())
+                    .collect::<Vec<Vec<f64>>>(),
+                self.extract_triplet(support_index, skip_count)
+                    .into_iter()
+                    .collect::<Vec<&Vec<(f64, f64, f64)>>>(),
+                self.extract_triplet(support_index, skip_count)
+                    .try_len()
+                    .unwrap(),
+            );
+            dbg!(
+                theta_hat,
+                ks_tuple,
+                ks_tuple.1,
+                ks_tuple.2,
+                ks_tuple.3,
+                2.0 * (theta_hat * budget - ks_tuple.0),
+                w_hat,
+                u_hat,
+                normal_dist.cdf(w_hat),
+                normal_dist.pdf(w_hat),
+                1.0 / w_hat - 1.0 / u_hat,
+                min_value,
+                budget,
+                self.simple_average(support_index, skip_count),
+                max_value,
+                sa_out,
+                approx,
+                actual_out
+            );
+            println!("==============================");
+            panic!();
+        }
+
+        actual_out.max(0.0).min(1.0) // head in the sand
+    }
 }
 
 // #[cfg(test)]
@@ -492,7 +506,7 @@ pub fn saddlepoint_approximation(
 //             adv_hone_strategy,
 //         );
 
-//         for upgrade in prep_output.upgrade_arr.iter_mut() {
+//         for upgrade in upgrade_arr.iter_mut() {
 //             let mut log_prob_dist: Vec<f64> = Vec::with_capacity(upgrade.prob_dist.len());
 //             for i in upgrade.prob_dist.iter() {
 //                 log_prob_dist.push(i.ln());
@@ -505,7 +519,7 @@ pub fn saddlepoint_approximation(
 //             upgrade.juiced_arr = vec![0.0];
 //         }
 //         let result: f64 = saddlepoint_approximation(
-//             &prep_output.upgrade_arr,
+//             &upgrade_arr,
 //             // 38591813.0 - eqv_gold_unlock(&prep_output.unlock_costs, &prep_output.price_arr),
 //             // 25916.0 - eqv_gold_unlock(&prep_output.unlock_costs, &prep_output.price_arr),
 //             62010.0 - eqv_gold_unlock(&prep_output.unlock_costs, &prep_output.price_arr),

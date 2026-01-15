@@ -24,7 +24,7 @@
 // //         let mut chance: f64 = 1.0;
 // //         // TODO unlock costs not included right now
 // //         for (index, tap) in taps.iter().enumerate() {
-// //             let upgrade: &Upgrade = &prep_output.upgrade_arr[index];
+// //             let upgrade: &Upgrade = &upgrade_arr[index];
 // //             for cost_type in 0..7 {
 // //                 this_cost[cost_type] += (tap + upgrade.tap_offset) * upgrade.costs[cost_type];
 // //             }

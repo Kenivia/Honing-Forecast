@@ -1,6 +1,6 @@
 use csv::{Reader, Writer};
 use hf_arena::parse_test_cases::{Row, parse_csv};
-use hf_core::parser::PreparationOutput;
+use hf_core::state_bundle::StateBundle;
 use rand::prelude::*;
 use std::path::Path;
 
@@ -10,7 +10,7 @@ fn main() {
     let mut rdr = Reader::from_path(Path::new("test_cases.csv")).unwrap();
 
     let mut rng: ThreadRng = rand::rng();
-    let outputs: Vec<(PreparationOutput, Vec<bool>)> = parse_csv(Path::new("test_cases.csv"));
+    let outputs: Vec<(StateBundle, Vec<bool>)> = parse_csv(Path::new("test_cases.csv"));
     let mut out: Vec<Row> = Vec::new();
 
     let mut rows: Vec<Row> = Vec::with_capacity(outputs.len());
@@ -18,8 +18,8 @@ fn main() {
         rows.push(result.unwrap());
     }
     let mut count: i64 = 0;
-    for (index, (prep_output, _tests_to_run)) in outputs.iter().enumerate() {
-        let (one_tap_costs, pity_costs) = prep_output.get_one_tap_pity();
+    for (index, (state_bundle, _tests_to_run)) in outputs.iter().enumerate() {
+        let (one_tap_costs, pity_costs) = state_bundle.get_one_tap_pity();
 
         for i in 0..BLOAT_FACTOR {
             let mut this_row: Row = rows[index].clone();

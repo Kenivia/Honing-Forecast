@@ -2,7 +2,7 @@ use crate::constants::FLOAT_TOL;
 
 use crate::normal_honing_utils::{add_up_golds, apply_price_leftovers, apply_price_naive};
 use crate::saddlepoint_approximation::average::DEBUG_AVERAGE;
-use crate::state::StateBundle;
+use crate::state_bundle::StateBundle;
 use crate::upgrade::Upgrade;
 use rand::Rng;
 use rand::prelude::*;
@@ -103,18 +103,18 @@ pub fn monte_carlo_data<R: Rng>(
     rng: &mut R,
 ) -> (Vec<[i64; 7]>, Vec<Vec<(i64, i64)>>, Vec<usize>) {
     let mut special_left: Vec<i64> = vec![state_bundle.prep_output.budgets[7]; data_size];
-    state_bundle.update_dist();
+    state_bundle.update_dist(false);
     let mut mats_data: Vec<[i64; 7]> = vec![[0i64; 7]; data_size];
 
     let mut juice_data: Vec<Vec<(i64, i64)>> =
         vec![vec![(0, 0); state_bundle.prep_output.juice_info.amt_used_id.len()]; data_size];
 
-    let mut actually_paid: Vec<i64> = vec![0; state_bundle.prep_output.upgrade_arr.len() + 1];
+    let mut actually_paid: Vec<i64> = vec![0; state_bundle.upgrade_arr.len() + 1];
     let mut skip_count_data: Vec<usize> = vec![0; data_size];
 
     // dbg!(&state_bundle, &prep_output);
     for (attempt_index, u_index) in state_bundle.special_state.iter().enumerate() {
-        let upgrade = &state_bundle.prep_output.upgrade_arr[*u_index];
+        let upgrade = &state_bundle.upgrade_arr[*u_index];
         let tap_map: Vec<usize> = tap_map_generator(data_size, &upgrade.prob_dist, rng);
         let juice_costs: Vec<Vec<(i64, i64)>> = juice_costs(upgrade, state_bundle);
 
@@ -193,11 +193,11 @@ pub fn monte_carlo_wrapper<R: Rng>(
 
     let mut debug_avg_gold_by_mats: Vec<f64> = vec![0.0; 7];
     let mut debug_avg_gold_by_mats_by_skip: Vec<Vec<f64>> =
-        vec![vec![0.0; 7]; state_bundle.prep_output.upgrade_arr.len() + 1];
+        vec![vec![0.0; 7]; state_bundle.upgrade_arr.len() + 1];
     let mut debug_avg_gold_by_juices: Vec<(f64, f64)> =
         vec![(0.0, 0.0); state_bundle.prep_output.juice_info.one_gold_cost_id.len()];
     let mut debug_truncated_mean_by_skip: Vec<Vec<f64>> =
-        vec![vec![0.0; 7]; state_bundle.prep_output.upgrade_arr.len() + 1];
+        vec![vec![0.0; 7]; state_bundle.upgrade_arr.len() + 1];
     for (r_index, row) in cost_data.iter().enumerate() {
         let float_row: Vec<f64> = row.iter().map(|x| *x as f64).collect();
         let float_juice: Vec<(f64, f64)> = juice_data[r_index]

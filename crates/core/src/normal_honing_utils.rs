@@ -1,6 +1,443 @@
+use crate::constants::FLOAT_TOL;
 use crate::constants::JuiceInfo;
-use crate::state::StateBundle;
-use crate::upgrade::Upgrade;
+use crate::parser::PreparationOutput;
+use crate::state_bundle::StateBundle;
+use crate::upgrade::{Support, Upgrade};
+
+pub fn encode_one_positions(v1: &[(bool, usize)]) -> String {
+    v1.iter()
+        .map(|(uppercase, num)| {
+            let letter: char = if *num == 0 {
+                'x' as char
+            } else {
+                (b'a' + (*num as u8 - 1)) as char
+            };
+
+            if *uppercase {
+                letter.to_ascii_uppercase()
+            } else {
+                letter
+            }
+        })
+        .collect()
+}
+
+impl StateBundle {
+    pub fn one_tap(&self) -> Vec<i64> {
+        self.get_one_tap_pity().0
+    }
+    pub fn pity(&self) -> Vec<i64> {
+        self.get_one_tap_pity().1
+    }
+    pub fn find_min_max(&self, support_index: i64, skip_count: usize, biased: bool) -> (f64, f64) {
+        let min_value = self
+            .extract_triplet(support_index, skip_count)
+            .map(|triplet_arr| {
+                triplet_arr
+                    .iter()
+                    .find(|(support, p, _)| {
+                        if biased {
+                            p.abs() > FLOAT_TOL && support.abs() > FLOAT_TOL
+                        } else {
+                            p.abs() > FLOAT_TOL
+                        }
+                    })
+                    .map(|x| x.0)
+                    .unwrap_or(0.0)
+            })
+            .sum();
+        let max_value = self
+            .extract_triplet(support_index, skip_count)
+            .map(|triplet_arr| triplet_arr.last().unwrap().0)
+            .sum();
+        (min_value, max_value)
+    }
+
+    pub fn encode_all(&self) -> String {
+        let mut strings = Vec::new();
+        strings.push(format!("{:?}", self.special_state));
+        for (index, upgrade) in self.upgrade_arr.iter().enumerate() {
+            strings.push(
+                self.upgrade_arr[index].name_string.clone()
+                    + ": "
+                    + &encode_one_positions(&upgrade.state),
+            );
+        }
+        strings.join("\n")
+    }
+
+    pub fn extract_support_with_meta(
+        &self,
+        support_index: i64,
+        skip_count: usize,
+    ) -> Box<dyn Iterator<Item = &Support> + '_> {
+        let num_avail = self.prep_output.juice_info.num_avail;
+        Box::new(
+            self.special_state
+                .iter()
+                .map(move |&u_index| {
+                    let upgrade = &self.upgrade_arr[u_index];
+                    if support_index < 0 {
+                        &upgrade.combined_gold_costs
+                    } else if support_index < 7 {
+                        &upgrade.cost_dist[support_index as usize]
+                    } else if support_index < 7 + num_avail as i64 {
+                        &upgrade.weap_juice_costs[support_index as usize - 7]
+                    } else {
+                        &upgrade.armor_juice_costs[support_index as usize - 7 - num_avail]
+                    }
+                })
+                .skip(skip_count),
+        )
+    }
+    pub fn extract_triplet(
+        &self,
+        support_index: i64,
+        skip_count: usize,
+    ) -> Box<dyn Iterator<Item = &Vec<(f64, f64, f64)>> + '_> {
+        let num_avail = self.prep_output.juice_info.num_avail;
+        Box::new(
+            self.special_state
+                .iter()
+                .map(move |&u_index| {
+                    let upgrade = &self.upgrade_arr[u_index];
+                    if support_index < 0 {
+                        upgrade.combined_gold_costs.access_collapsed()
+                    } else if support_index < 7 {
+                        upgrade.cost_dist[support_index as usize].access_collapsed()
+                    } else if support_index < 7 + num_avail as i64 {
+                        upgrade.weap_juice_costs[support_index as usize - 7].access_collapsed()
+                    } else {
+                        upgrade.armor_juice_costs[support_index as usize - 7 - num_avail]
+                            .access_collapsed()
+                    }
+                })
+                .skip(skip_count),
+        )
+    }
+
+    pub fn update_combined(&mut self) {
+        let prep_output: &mut PreparationOutput = &mut self.prep_output;
+
+        for upgrade in self.upgrade_arr.iter_mut() {
+            let mut this_combined = Vec::with_capacity(upgrade.prob_dist.len());
+            let mut cost_so_far: f64 = 0.0;
+            for (p_index, _) in upgrade.prob_dist.iter().enumerate() {
+                this_combined.push(cost_so_far);
+                cost_so_far += upgrade.eqv_gold_per_tap;
+                let (juice, book_index) = upgrade.state[p_index];
+                if juice {
+                    add_juice_gold_cost(&prep_output.juice_info, upgrade, &mut cost_so_far, 0);
+                }
+                if book_index > 0 {
+                    add_juice_gold_cost(
+                        &prep_output.juice_info,
+                        upgrade,
+                        &mut cost_so_far,
+                        book_index,
+                    );
+                }
+            }
+            upgrade.combined_gold_costs.update_payload(
+                this_combined,
+                upgrade.state.hash,
+                &mut upgrade.prob_dist,
+            );
+
+            // upgrade.combined_gold_costs.associated_state_hash
+        }
+    }
+
+    pub fn update_individual_support(&mut self) {
+        let prep_output = &mut self.prep_output;
+
+        let j_len: usize = prep_output.juice_info.num_avail;
+
+        for upgrade in self.upgrade_arr.iter_mut() {
+            let l_len: usize = upgrade.prob_dist.len();
+
+            for t_index in 0..7 {
+                let mut this_mats_costs: Vec<f64> = Vec::with_capacity(l_len);
+                let mut cost_so_far = 0.0;
+                for _ in upgrade.prob_dist.iter() {
+                    this_mats_costs.push(cost_so_far);
+                    cost_so_far += upgrade.costs[t_index] as f64;
+                }
+                if upgrade.cost_dist.len() <= t_index {
+                    upgrade.cost_dist.push(Support::new(
+                        this_mats_costs.clone(),
+                        upgrade.state.hash,
+                        true,
+                        true,
+                    ));
+                }
+                upgrade.cost_dist[t_index].update_payload(
+                    this_mats_costs,
+                    upgrade.state.hash,
+                    &mut upgrade.prob_dist,
+                );
+            }
+
+            // ts so weird but idk if theres a better way, i think i just designed this special state poorly maybe
+            for id_to_match in 0..j_len {
+                let mut this_weap: Vec<f64> = Vec::with_capacity(l_len);
+                let mut this_armor: Vec<f64> = Vec::with_capacity(l_len);
+                for (bit_index, _) in prep_output.juice_info.gold_costs[upgrade.upgrade_index]
+                    .iter()
+                    .enumerate()
+                {
+                    let id: usize = prep_output.juice_info.ids[upgrade.upgrade_index][bit_index];
+                    if id_to_match != id {
+                        continue;
+                    }
+                    let mut costs_so_far: (f64, f64) = (0.0, 0.0);
+
+                    for (p_index, _) in upgrade.prob_dist.iter().enumerate() {
+                        this_weap.push(costs_so_far.0);
+                        this_armor.push(costs_so_far.1);
+                        let (juice, book_index) = upgrade.state[p_index];
+                        if juice {
+                            if upgrade.is_weapon {
+                                costs_so_far.0 += prep_output.juice_info.amt_used
+                                    [upgrade.upgrade_index][0]
+                                    as f64;
+                            } else {
+                                costs_so_far.1 += prep_output.juice_info.amt_used
+                                    [upgrade.upgrade_index][0]
+                                    as f64;
+                            }
+                        }
+                        if book_index > 0 {
+                            if upgrade.is_weapon {
+                                costs_so_far.0 += prep_output.juice_info.amt_used
+                                    [upgrade.upgrade_index][book_index]
+                                    as f64;
+                            } else {
+                                costs_so_far.1 += prep_output.juice_info.amt_used
+                                    [upgrade.upgrade_index][book_index]
+                                    as f64;
+                            }
+                        }
+                    }
+
+                    break;
+                }
+
+                // all this is so fucking ugly but whatever
+                if upgrade.weap_juice_costs.len() <= id_to_match {
+                    if this_weap.len() > 0 {
+                        upgrade.weap_juice_costs.push(Support::new(
+                            this_weap.clone(),
+                            upgrade.state.hash,
+                            false,
+                            false,
+                        ));
+                    } else {
+                        upgrade.weap_juice_costs.push(Support::new(
+                            vec![0.0; l_len],
+                            upgrade.state.hash,
+                            false,
+                            false,
+                        ));
+                    }
+
+                    if this_armor.len() > 0 {
+                        upgrade.armor_juice_costs.push(Support::new(
+                            this_armor.clone(),
+                            upgrade.state.hash,
+                            false,
+                            false,
+                        ));
+                    } else {
+                        upgrade.armor_juice_costs.push(Support::new(
+                            vec![0.0; l_len],
+                            upgrade.state.hash,
+                            false,
+                            false,
+                        ));
+                    }
+                }
+                if this_armor.len() > 0 {
+                    upgrade.weap_juice_costs[id_to_match].update_payload(
+                        this_weap,
+                        upgrade.state.hash,
+                        &mut upgrade.prob_dist,
+                    );
+                    upgrade.armor_juice_costs[id_to_match].update_payload(
+                        this_armor,
+                        upgrade.state.hash,
+                        &mut upgrade.prob_dist,
+                    );
+                } else {
+                    // TODO maybe tihs can be optimized
+                    upgrade.weap_juice_costs[id_to_match].update_payload(
+                        vec![0.0; l_len],
+                        upgrade.state.hash,
+                        &mut upgrade.prob_dist,
+                    );
+                    upgrade.armor_juice_costs[id_to_match].update_payload(
+                        vec![0.0; l_len],
+                        upgrade.state.hash,
+                        &mut upgrade.prob_dist,
+                    );
+                }
+            }
+        }
+    }
+
+    pub fn update_dist(&mut self, compute_log: bool) {
+        // TODO add a toggle for computing log or not
+        // dbg!(&prep_output, &state_bundle);
+        // let zero_probs: Vec<f64> = special_probs(prep_output, state_bundle);
+        // dbg!(&zero_probs);
+        for upgrade in self.upgrade_arr.iter_mut() {
+            let prob_dist: Vec<f64> =
+                new_prob_dist(&upgrade.state, &self.prep_output.juice_info, upgrade, 0.0);
+            // let biasted_prob_dist = prob_dist.iter().enumerate().map(|(index, x)| x * )
+            upgrade
+                .prob_dist
+                .update_payload(prob_dist, upgrade.state.hash);
+            if compute_log {
+                upgrade.prob_dist.compute_log();
+            }
+
+            // gold_costs_arr.push(gold_cost_record);
+        }
+    }
+    pub fn flattened_effective_budgets(&self) -> impl Iterator<Item = f64> {
+        self.prep_output
+            .effective_budgets
+            .iter()
+            .map(|x| *x as f64)
+            .chain(
+                self.prep_output
+                    .juice_books_owned
+                    .iter()
+                    .map(|x| x.0 as f64),
+            )
+            .chain(
+                self.prep_output
+                    .juice_books_owned
+                    .iter()
+                    .map(|x| x.1 as f64),
+            )
+    }
+
+    pub fn flattened_price(&self) -> impl Iterator<Item = f64> {
+        self.prep_output
+            .price_arr
+            .iter()
+            .map(|x| *x as f64)
+            .chain(
+                self.prep_output
+                    .juice_info
+                    .one_gold_cost_id
+                    .iter()
+                    .map(|x| x.0 as f64),
+            )
+            .chain(
+                self.prep_output
+                    .juice_info
+                    .one_gold_cost_id
+                    .iter()
+                    .map(|x| x.1 as f64),
+            )
+    }
+
+    pub fn flattened_leftover(&self) -> impl Iterator<Item = f64> {
+        self.prep_output
+            .leftover_values
+            .iter()
+            .map(|x| *x as f64)
+            .chain(
+                self.prep_output
+                    .juice_info
+                    .one_leftover_value_id
+                    .iter()
+                    .map(|x| x.0 as f64),
+            )
+            .chain(
+                self.prep_output
+                    .juice_info
+                    .one_leftover_value_id
+                    .iter()
+                    .map(|x| x.1 as f64),
+            )
+    }
+
+    // these are for brute force stuff that expect to be able to index into the array that uh i can't be bothered to rewrite (it's 100% possible)
+    pub fn gather_prob_dist(&self) -> Vec<Vec<f64>> {
+        let mut arr = Vec::with_capacity(self.upgrade_arr.len());
+        for upgrade in self.upgrade_arr.iter() {
+            arr.push(upgrade.prob_dist.payload.clone());
+        }
+        arr
+    }
+    pub fn gather_log_prob_dist(&self) -> Vec<Vec<f64>> {
+        let mut arr = Vec::with_capacity(self.upgrade_arr.len());
+        for upgrade in self.upgrade_arr.iter() {
+            arr.push(upgrade.prob_dist.log_prob_dist().clone());
+        }
+        arr
+    }
+
+    pub fn gather_collapsed(
+        &self,
+        support_index: i64,
+        skip_count: usize,
+        field: usize,
+    ) -> Vec<Vec<f64>> {
+        self.extract_support_with_meta(support_index, skip_count)
+            .map(|support| {
+                support
+                    .access_collapsed()
+                    .iter()
+                    .map(|(x, y, z)| match field {
+                        0 => *x,
+                        1 => *y,
+                        _ => *z,
+                    })
+                    .collect()
+            })
+            .collect()
+    }
+
+    pub fn gather_combined_gold_cost(&self) -> Vec<Vec<f64>> {
+        let mut arr = Vec::with_capacity(self.upgrade_arr.len());
+        for upgrade in self.upgrade_arr.iter() {
+            arr.push(upgrade.combined_gold_costs.support.clone());
+        }
+        arr
+    }
+
+    pub fn get_one_tap_pity(&self) -> (Vec<i64>, Vec<i64>) {
+        debug_assert!(self.prep_output.unlock_costs.len() == 2);
+        const DATA_SIZE: usize = 2;
+        let mut cost_data: Vec<Vec<i64>> = vec![vec![0i64; 9]; DATA_SIZE];
+
+        for upgrade in self.upgrade_arr.iter() {
+            let pd_len: f64 = upgrade.prob_dist.len().saturating_sub(1) as f64;
+            for trial_num in 0..DATA_SIZE {
+                let rolled_tap =
+                    ((pd_len * (trial_num) as f64) / (DATA_SIZE as f64 - 1.0)).floor() as usize;
+                for cost_type in 0..7 {
+                    cost_data[trial_num][cost_type] +=
+                        upgrade.costs[cost_type] * (rolled_tap as i64 + upgrade.tap_offset);
+                }
+                if !upgrade.is_normal_honing {
+                    cost_data[trial_num][if upgrade.is_weapon { 7 } else { 8 }] +=
+                        upgrade.adv_juice_cost[rolled_tap].ceil() as i64;
+                }
+            }
+        }
+        for row in &mut cost_data {
+            row[3] += self.prep_output.unlock_costs[0];
+            row[6] += self.prep_output.unlock_costs[1];
+        }
+        (cost_data[0].clone(), cost_data[1].clone())
+    }
+}
+
 pub fn generate_first_deltas(delta: f64, length: usize, non_zeros: usize) -> Vec<f64> {
     [vec![delta; non_zeros], vec![0.0; length - non_zeros]].concat()
 }

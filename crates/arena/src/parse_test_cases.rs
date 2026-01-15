@@ -1,5 +1,5 @@
 use csv::Reader;
-use hf_core::parser::PreparationOutput;
+use hf_core::{parser::PreparationOutput, state_bundle::StateBundle, upgrade::Upgrade};
 use paste::paste;
 use seq_macro::seq;
 use serde::{Deserialize, Deserializer, Serialize};
@@ -180,10 +180,10 @@ where
         _ => Err(serde::de::Error::custom(format!("invalid boolean: {}", s))),
     }
 }
-pub fn parse_csv(path: &Path) -> Vec<(PreparationOutput, Vec<bool>)> {
+pub fn parse_csv(path: &Path) -> Vec<(StateBundle, Vec<bool>)> {
     let mut rdr = Reader::from_path(path).unwrap();
 
-    let mut out: Vec<(PreparationOutput, Vec<bool>)> = Vec::new();
+    let mut out: Vec<(StateBundle, Vec<bool>)> = Vec::new();
 
     for result in rdr.deserialize() {
         let row: Row = result.unwrap();
@@ -252,18 +252,19 @@ pub fn parse_csv(path: &Path) -> Vec<(PreparationOutput, Vec<bool>)> {
             row.silver_leftover,
         ];
 
-        let mut this: PreparationOutput = PreparationOutput::initialize(
-            &hone_counts,
-            &budget,
-            &adv_counts,
-            row.express,
-            &prices,
-            "No juice",
-            &juice_books_owned,
-            &juice_prices,
-            &leftover_values,
-            &juice_leftover,
-        );
+        let (mut this, upgrade_arr): (PreparationOutput, Vec<Upgrade>) =
+            PreparationOutput::initialize(
+                &hone_counts,
+                &budget,
+                &adv_counts,
+                row.express,
+                &prices,
+                "No juice",
+                &juice_books_owned,
+                &juice_prices,
+                &leftover_values,
+                &juice_leftover,
+            );
 
         this.test_case = row.test_case;
 
@@ -279,7 +280,7 @@ pub fn parse_csv(path: &Path) -> Vec<(PreparationOutput, Vec<bool>)> {
         if row.average {
             assert!(minimum >= 0.0);
         }
-        out.push((this, tests_to_run));
+        out.push((StateBundle::new(this, upgrade_arr), tests_to_run));
     }
     out
 }

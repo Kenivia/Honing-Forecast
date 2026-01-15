@@ -78,7 +78,7 @@
 // //     let mut rng: ThreadRng = rand::rng();
 // //     let cost_data: Vec<[i64; 9]> = monte_carlo_data(
 // //         data_size,
-// //         &mut prep_output.upgrade_arr,
+// //         &mut upgrade_arr,
 // //         &prep_output.unlock_costs,
 // //         payload.budget[9], // Use first budget's special leap count
 // //         &mut rng,

@@ -2,9 +2,8 @@
 
 use std::f64::{MAX, MIN};
 
-use hf_core::performance::Performance;
 use hf_core::saddlepoint_approximation::average::DEBUG_AVERAGE;
-use hf_core::state::StateBundle;
+use hf_core::state_bundle::StateBundle;
 use rand::Rng;
 use rand::distr::Distribution;
 use rand::distr::weighted::WeightedIndex;
@@ -96,7 +95,7 @@ fn neighbour<R: Rng>(state_bundle: &mut StateBundle, temp: f64, init_temp: f64, 
         }
     }
 
-    for upgrade in state_bundle.prep_output.upgrade_arr.iter_mut() {
+    for upgrade in state_bundle.upgrade_arr.iter_mut() {
         let choice_len: usize = upgrade.books_avail as usize;
         let state = &mut upgrade.state;
 
@@ -123,7 +122,7 @@ fn neighbour<R: Rng>(state_bundle: &mut StateBundle, temp: f64, init_temp: f64, 
         let artisan_rate = upgrade.artisan_rate;
         let upgrade_index = upgrade.upgrade_index;
         let juice_chances = &state_bundle.prep_output.juice_info.chances[upgrade_index];
-
+        // dbg!(&state, choice_len);
         for (s_index, (juice, book_index)) in state.iter_mut().enumerate() {
             if artisan >= 1.0 || s_index == 0 {
                 (*juice, *book_index) = (false, 0);
@@ -155,11 +154,12 @@ fn neighbour<R: Rng>(state_bundle: &mut StateBundle, temp: f64, init_temp: f64, 
                 * (base_chance
                     + if *juice { juice_chances[0] } else { 0.0 }
                     + if *book_index > 0 {
-                        juice_chances[*book_index as usize]
+                        juice_chances[*book_index]
                     } else {
                         0.0
                     });
         }
+        state.update_hash();
     }
 }
 fn new_temp(temp: f64, alpha: f64) -> f64 {
@@ -173,21 +173,17 @@ fn new_temp(temp: f64, alpha: f64) -> f64 {
     return new; // this is very much subject to change
 }
 
-pub fn solve<R: Rng, F>(
+pub fn solve<R: Rng>(
     rng: &mut R,
-    performance: &mut Performance,
-    mut metric: F, // note that we're always trying to maximize this metric which is why i'm not calling it energy
+    metric_type: i64, // note that we're always trying to maximize this metric which is why i'm not calling it energy
     mut state_bundle: StateBundle,
-) -> StateBundle
-where
-    F: FnMut(&mut StateBundle, &mut Performance) -> f64,
-{
+) -> StateBundle {
     let init_temp: f64 = if DEBUG_AVERAGE { -1.0 } else { 333.3 };
     // let init_temp: f64 = -1.0; // 0.969 = ~32
     // let mut cache: HashMap<(Vec<bool>, usize), Vec<([i64; 9], f64)>> = HashMap::new();
     let mut temp: f64 = init_temp;
 
-    state_bundle.metric = metric(&mut state_bundle, performance);
+    state_bundle.metric = state_bundle.metric_router(metric_type);
     let mut prev_state: StateBundle = state_bundle.clone();
 
     let iterations_per_temp = 69;
@@ -201,7 +197,7 @@ where
     let mut temps_without_improvement = 1;
     while temp >= 0.0 {
         neighbour(&mut state_bundle, temp, init_temp, rng);
-        state_bundle.metric = metric(&mut state_bundle, performance);
+        state_bundle.metric = state_bundle.metric_router(metric_type);
         highest_seen = highest_seen.max(state_bundle.metric);
         lowest_seen = lowest_seen.min(state_bundle.metric);
         if state_bundle.metric > best_state_so_far.metric {
@@ -213,7 +209,7 @@ where
             //     (best_state_so_far.prob * 100.0),
             //     // prob_to_maximize_exact(
             //     //     &best_state_so_far,
-            //     //     &mut prep_output.upgrade_arr,
+            //     //     &mut upgrade_arr,
             //     //     0.0,
             //     //     &prep_output.price_arr,
             //     //     compute_eqv_gold_values(&prep_output.budgets, &prep_output.price_arr)
@@ -247,7 +243,7 @@ where
             //     (best_state_so_far.metric),
             //     // prob_to_maximize_exact(
             //     //     &best_state_so_far,
-            //     //     &mut prep_output.upgrade_arr,
+            //     //     &mut upgrade_arr,
             //     //     0.0,
             //     //     &prep_output.price_arr,
             //     //     compute_eqv_gold_values(&prep_output.budgets, &prep_output.price_arr)
@@ -277,7 +273,7 @@ where
     //     "Exact value: {:.6}",
     //     prob_to_maximize_exact(
     //         &best_state_so_far,
-    //         &mut prep_output.upgrade_arr,
+    //         &mut upgrade_arr,
     //         0.0,
     //         &prep_output.price_arr,
     //         compute_eqv_gold_values(&prep_output.budgets, &prep_output.price_arr)

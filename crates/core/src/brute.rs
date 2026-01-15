@@ -1,7 +1,6 @@
 use crate::constants::FLOAT_TOL;
-use crate::performance::Performance;
 
-use crate::state::StateBundle;
+use crate::state_bundle::StateBundle;
 
 use std::collections::HashMap;
 use std::hash::{Hash, Hasher};
@@ -10,7 +9,7 @@ pub static MAX_BRUTE_SIZE: usize = 500;
 // 1. Helper wrapper to use f64 as a HashMap key
 // (Rust floats don't implement Eq/Hash by default due to NaN)
 #[derive(Clone, Copy, Debug)]
-struct FloatKey(f64);
+pub struct FloatKey(f64);
 
 impl PartialEq for FloatKey {
     fn eq(&self, other: &Self) -> bool {
@@ -252,21 +251,18 @@ fn recurse_upper(
 
 // this is actually just another wrapper
 
-// naive as in it doesn't take into account leftover prices
-pub fn brute_success_prob_metric(
-    state_bundle: &mut StateBundle,
-    performance: &mut Performance,
-) -> f64 {
-    performance.states_evaluated += 1;
-    performance.brute_count += 1;
-    state_bundle.update_dist();
+impl StateBundle {
+    // it doesn't take into account leftover prices
+    pub fn brute_success_prob_metric(&mut self) -> f64 {
+        self.update_dist(false);
 
-    state_bundle.update_combined();
-    // brute_naive(&prob_dist_arr, &combined_costs, prep_output.eqv_gold_budget)
+        self.update_combined();
+        // brute_naive(&prob_dist_arr, &combined_costs, prep_output.eqv_gold_budget)
 
-    brute_success_prob(
-        &state_bundle.gather_prob_dist(),
-        &state_bundle.gather_combined_gold_cost(),
-        state_bundle.prep_output.eqv_gold_budget,
-    )
+        brute_success_prob(
+            &self.gather_prob_dist(),
+            &self.gather_combined_gold_cost(),
+            self.prep_output.eqv_gold_budget,
+        )
+    }
 }

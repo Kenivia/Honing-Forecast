@@ -2,19 +2,18 @@ use std::f64;
 use std::mem::swap;
 
 use crate::constants::FLOAT_TOL;
-// use super::saddlepoint_approximation::saddlepoint_approximation_wrapper;
-// use crate::helpers::find_non_zero_min_vec;
-// use crate::parser::Upgrade;
-use crate::state::StateBundle;
+
+use crate::state_bundle::StateBundle;
 use num::Integer;
 
 impl StateBundle {
     pub fn special_probs(&self) -> &Vec<f64> {
+        // this isn't like automatically with the special because it takes in a &mut and messes with loops
         return &self.special_cache[&self.special_state];
     }
     fn gcd_special(&self) -> i64 {
         let mut out: i64 = 1;
-        for (index, upgrade) in self.prep_output.upgrade_arr.iter().enumerate() {
+        for (index, upgrade) in self.upgrade_arr.iter().enumerate() {
             if index == 0 {
                 out = upgrade.special_cost;
             } else {
@@ -30,8 +29,8 @@ impl StateBundle {
         }
 
         let prep_output = &self.prep_output;
-        let upgrades = &prep_output.upgrade_arr;
-        let m = upgrades.len();
+
+        let m = self.upgrade_arr.len();
 
         // 1. GCD Optimization: Scale the world down
         let gcd = self.gcd_special() as usize; // Ensure this returns 1 if no upgrades
@@ -51,7 +50,7 @@ impl StateBundle {
         let mut fail_probs = vec![0.0; budget + 1];
 
         for (attempt_index, u_index) in self.special_state.iter().enumerate() {
-            let upgrade = &upgrades[*u_index];
+            let upgrade = &self.upgrade_arr[*u_index];
             let p = upgrade.base_chance;
             let one_minus_p = 1.0 - p;
 
@@ -196,49 +195,39 @@ mod tests {
             PROB_MODE
         );
 
-        let prep_output: PreparationOutput = PreparationOutput::initialize(
+        let (prep_output, upgrade_arr) = PreparationOutput::initialize(
             &hone_counts,
             &budget,
             &adv_counts,
             express_event,
             &prices,
-            adv_hone_strategy,
+            &adv_hone_strategy,
             &juice_books_owned,
             &juice_prices,
             &prices,
             &juice_prices,
         );
 
-        let mut starting_special: Vec<usize> =
-            Vec::with_capacity(prep_output.upgrade_arr.len() * 2);
-        for (index, _upgrade) in prep_output.upgrade_arr.iter().enumerate() {
+        let mut starting_special: Vec<usize> = Vec::with_capacity(upgrade_arr.len() * 2);
+        for (index, _upgrade) in upgrade_arr.iter().enumerate() {
             starting_special.push(index); //, (1.0 / upgrade.base_chance).round() as usize));
         }
+
         let mut state_bundle: StateBundle = StateBundle {
-            names: prep_output
-                .upgrade_arr
-                .iter()
-                .map(|x| {
-                    let mut string: String = if x.is_normal_honing {
-                        "".to_owned()
-                    } else {
-                        "adv_".to_owned()
-                    };
-                    string += if x.is_weapon { "weap_" } else { "armor_" };
-                    string += &x.upgrade_index.to_string();
-                    string
-                })
-                .collect::<Vec<String>>(),
             state_index: vec![],
             metric: -1.0,
             special_state: starting_special,
             prep_output,
             special_cache: HashMap::new(),
+            upgrade_arr,
+
+            metric_type: 0,
         };
 
         // init_dist(&mut state_bundle, &mut prep_output);
 
-        // dbg!(&state_bundle, &prep_output.upgrade_arr);
+        // dbg!(&state_bundle, &upgrade_arr);
+        state_bundle.update_dist(true);
         state_bundle.compute_special_probs();
         let result: Vec<f64> = state_bundle.special_probs().clone();
 
