@@ -227,7 +227,7 @@ mod tests {
         // init_dist(&mut state_bundle, &mut prep_output);
 
         // dbg!(&state_bundle, &upgrade_arr);
-        state_bundle.update_dist(true);
+        state_bundle.update_dist();
         state_bundle.compute_special_probs();
         let result: Vec<f64> = state_bundle.special_probs().clone();
 

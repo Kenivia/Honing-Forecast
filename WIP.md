@@ -7,10 +7,24 @@
 
 - clean up how support stuff get updated (update_individual)
 - use polynomial for equal stepped stuff like for mat costs in averages
-- cache lattice span
+  - need to work out the math first
+- ~~cache lattice span~~ or just compute it more cleverly
 - cache the geom calculations
+- figure out how to update best_state_so_far without cloning all the time
+- figure out how not to allocate on every ks call? i thought i was avoiding that
+- figure out why sa is failing sometimes
+  - force it to never underflow
+  - also logp is lowkey kinda uselesscos scaling alpha doesn't actually help
   
 #### Optimizations
+
+1. cloning state
+2. cloning triplet (i think its caused by the length call)
+3. exp -> linear?
+4. maybe its time to get rid of Box< iterator>
+5. pre-allocate scratch space maybe?
+6. cache min max values with triplet
+7.
 
 ### Misc
 
@@ -24,16 +38,11 @@
   - need to store helmet/whatever information in Upgrade,
     - get rid of non-tick input i guess?
 
-- better average evaluation (like is there a better estimate)
-  - also hunt down the edge case where sa failed - i think something wrong with the support or something
-
 - add assertions to a lot of prepoutput stuff
   
 - SURELY there's a better way to lay out juiceinfo...
 
 - start working on visualizing this stuff
-
-- I should separate upgrade_arr from prep_output cos everything else in prep_output doesn't change with the state, realisitically it should pass a
 
 ### Big
 
@@ -41,7 +50,6 @@
 
 - set up slurm on laptop
   - maybe write a dispatcher instead of naively running them in parallel
-- profile the thing maybe
 
 #### Analysis
 
@@ -146,6 +154,10 @@ graph
 
 ## Done / cancelled
 
+- ~~better average evaluation (like is there a better estimate)~~
+  - ~~also hunt down the edge case where sa failed - i think something wrong with the support or something~~
+- ~~profile the thing maybe~~
+- ~~I should separate upgrade_arr from prep_output cos everything else in prep_output doesn't change with the state, realisitically it should pass a~~
 - ~~is there really no better way to do the special probs(can i get away with an approximation some how)~~
   - ~~take advantage of the fact that the special costs share a common factor~~
   - ~~somehow avoid re-allocating maybe~~

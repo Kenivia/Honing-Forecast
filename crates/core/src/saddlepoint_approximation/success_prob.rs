@@ -10,7 +10,7 @@ impl StateBundle {
     pub fn success_prob_metric(&mut self) -> f64 {
         // self.performance.states_evaluated += 1;
 
-        self.update_dist(true);
+        self.update_dist();
         self.update_combined();
         self.compute_special_probs();
         let budget = self.prep_output.eqv_gold_budget;
@@ -43,7 +43,7 @@ impl StateBundle {
         out
     }
     pub fn compute_leftover_probs(&mut self) -> Vec<f64> {
-        self.update_dist(true);
+        self.update_dist();
         self.update_individual_support();
         self.compute_special_probs();
         let mut prob_leftover: Vec<f64> =

@@ -56,26 +56,31 @@ fn float_gcd(inp_a: f64, inp_b: f64) -> f64 {
     a
 }
 
-fn lattice_span<'a, I>(triplet_arr: I) -> f64
+fn lattice_span<'a, I>(meta_support_arr: I) -> f64
 where
-    I: TripletIterator<'a>,
+    I: Iterator<Item = &'a Support>,
 {
     let mut cur_span: f64 = MIN_LATTICE_SPAN;
     let mut found_non_zeros: bool = false;
 
-    for (s, _, _) in triplet_arr.flatten() {
-        if *s < FLOAT_TOL {
+    for support in meta_support_arr {
+        // for (index, (s, _, _)) in support.access_collapsed().iter().enumerate() {
+        //     if support.linear && index > 1 {
+        //         break;
+        //     }
+        if support.gap_size < FLOAT_TOL || support.ignore {
             continue;
         }
         if !found_non_zeros {
-            cur_span = *s;
+            cur_span = support.gap_size;
             found_non_zeros = true;
         } else {
-            cur_span = float_gcd(*s, cur_span);
+            cur_span = float_gcd(support.gap_size, cur_span);
         }
         if cur_span < MIN_LATTICE_SPAN {
             return MIN_LATTICE_SPAN; // always do a little bit of cont correction ig cos why not 
         }
+        // }
     }
     // if !cur_span.is_finite() || cur_span < 1.0 {
     //     dbg!(cur_span);
@@ -97,7 +102,7 @@ impl StateBundle {
     ) -> f64 {
         let (min_value, max_value) = self.find_min_max(support_index, skip_count, compute_biased);
 
-        let span = lattice_span(self.extract_triplet(support_index, skip_count));
+        let span = lattice_span(self.extract_support_with_meta(support_index, skip_count));
         if budget > max_value + FLOAT_TOL {
             // self.performance.trivial_count += 1;
             return 1.0;
@@ -248,11 +253,11 @@ impl StateBundle {
             dbg!(
                 self.extract_triplet(support_index, skip_count)
                     .into_iter()
-                    .map(|x| x.iter().map(|(_, _, y)| y.exp()).sum::<f64>())
+                    .map(|x| x.iter().map(|(_, y)| y).sum::<f64>())
                     .collect::<Vec<f64>>(),
                 self.extract_triplet(support_index, skip_count)
                     .into_iter()
-                    .map(|x| x.iter().map(|(_, _, y)| y.exp()).collect())
+                    .map(|x| x.iter().map(|(_, y)| *y).collect())
                     .collect::<Vec<Vec<f64>>>(),
                 self.extract_support_with_meta(support_index, skip_count)
                     .into_iter()
@@ -418,15 +423,15 @@ impl StateBundle {
             dbg!(
                 self.extract_triplet(support_index, skip_count)
                     .into_iter()
-                    .map(|x| x.iter().map(|y| y.2.exp()).sum::<f64>())
+                    .map(|x| x.iter().map(|y| y.1).sum::<f64>())
                     .collect::<Vec<f64>>(),
                 self.extract_triplet(support_index, skip_count)
                     .into_iter()
-                    .map(|x| x.iter().map(|y| y.2.exp()).collect())
+                    .map(|x| x.iter().map(|y| y.1).collect())
                     .collect::<Vec<Vec<f64>>>(),
                 self.extract_triplet(support_index, skip_count)
                     .into_iter()
-                    .collect::<Vec<&Vec<(f64, f64, f64)>>>(),
+                    .collect::<Vec<&Vec<(f64, f64)>>>(),
                 self.extract_triplet(support_index, skip_count)
                     .try_len()
                     .unwrap(),

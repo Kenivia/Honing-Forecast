@@ -1,5 +1,5 @@
 use crate::constants::{
-    get_event_modified_adv_unlock_cost, get_event_modified_armor_unlock_cost,
+    FLOAT_TOL, get_event_modified_adv_unlock_cost, get_event_modified_armor_unlock_cost,
     get_event_modified_weapon_unlock_cost,
 };
 
@@ -9,17 +9,17 @@ use crate::upgrade::Upgrade;
 
 use rand::Rng;
 
-pub trait TripletIterator<'a>: Iterator<Item = &'a Vec<(f64, f64, f64)>> {}
-impl<'a, T> TripletIterator<'a> for T where T: Iterator<Item = &'a Vec<(f64, f64, f64)>> {}
+pub trait TripletIterator<'a>: Iterator<Item = &'a Vec<(f64, f64)>> {}
+impl<'a, T> TripletIterator<'a> for T where T: Iterator<Item = &'a Vec<(f64, f64)>> {}
 
-pub fn find_non_zero_min_vec(support_arr: &[Vec<f64>], log_prob_dist_arr: &[Vec<f64>]) -> f64 {
+pub fn find_non_zero_min_vec(support_arr: &[Vec<f64>], prob_dist_arr: &[Vec<f64>]) -> f64 {
     support_arr
         .iter()
         .enumerate()
         .map(|(u_index, x)| {
             x.iter()
                 .enumerate()
-                .find(|(index, _)| log_prob_dist_arr[u_index][*index] > f64::NEG_INFINITY)
+                .find(|(index, _)| prob_dist_arr[u_index][*index] > FLOAT_TOL)
                 .unwrap_or((0, &0.0))
                 .1
         })

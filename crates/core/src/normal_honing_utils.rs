@@ -35,7 +35,7 @@ impl StateBundle {
             .map(|triplet_arr| {
                 triplet_arr
                     .iter()
-                    .find(|(support, p, _)| {
+                    .find(|(support, p)| {
                         if biased {
                             p.abs() > FLOAT_TOL && support.abs() > FLOAT_TOL
                         } else {
@@ -94,7 +94,7 @@ impl StateBundle {
         &self,
         support_index: i64,
         skip_count: usize,
-    ) -> Box<dyn Iterator<Item = &Vec<(f64, f64, f64)>> + '_> {
+    ) -> Box<dyn Iterator<Item = &Vec<(f64, f64)>> + '_> {
         let num_avail = self.prep_output.juice_info.num_avail;
         Box::new(
             self.special_state
@@ -169,6 +169,7 @@ impl StateBundle {
                         upgrade.state.hash,
                         true,
                         true,
+                        upgrade.costs[t_index] as f64,
                     ));
                 }
                 upgrade.cost_dist[t_index].update_payload(
@@ -231,6 +232,8 @@ impl StateBundle {
                             upgrade.state.hash,
                             false,
                             false,
+                            prep_output.juice_info.amt_used_id[id_to_match][upgrade.upgrade_index]
+                                as f64,
                         ));
                     } else {
                         upgrade.weap_juice_costs.push(Support::new(
@@ -238,6 +241,8 @@ impl StateBundle {
                             upgrade.state.hash,
                             false,
                             false,
+                            prep_output.juice_info.amt_used_id[id_to_match][upgrade.upgrade_index]
+                                as f64,
                         ));
                     }
 
@@ -247,6 +252,8 @@ impl StateBundle {
                             upgrade.state.hash,
                             false,
                             false,
+                            prep_output.juice_info.amt_used_id[id_to_match][upgrade.upgrade_index]
+                                as f64,
                         ));
                     } else {
                         upgrade.armor_juice_costs.push(Support::new(
@@ -254,6 +261,8 @@ impl StateBundle {
                             upgrade.state.hash,
                             false,
                             false,
+                            prep_output.juice_info.amt_used_id[id_to_match][upgrade.upgrade_index]
+                                as f64,
                         ));
                     }
                 }
@@ -285,7 +294,7 @@ impl StateBundle {
         }
     }
 
-    pub fn update_dist(&mut self, compute_log: bool) {
+    pub fn update_dist(&mut self) {
         // TODO add a toggle for computing log or not
         // dbg!(&prep_output, &state_bundle);
         // let zero_probs: Vec<f64> = special_probs(prep_output, state_bundle);
@@ -297,9 +306,9 @@ impl StateBundle {
             upgrade
                 .prob_dist
                 .update_payload(prob_dist, upgrade.state.hash);
-            if compute_log {
-                upgrade.prob_dist.compute_log();
-            }
+            // if compute_log {
+            //     upgrade.prob_dist.compute_log();
+            // }
 
             // gold_costs_arr.push(gold_cost_record);
         }
@@ -373,13 +382,13 @@ impl StateBundle {
         }
         arr
     }
-    pub fn gather_log_prob_dist(&self) -> Vec<Vec<f64>> {
-        let mut arr = Vec::with_capacity(self.upgrade_arr.len());
-        for upgrade in self.upgrade_arr.iter() {
-            arr.push(upgrade.prob_dist.log_prob_dist().clone());
-        }
-        arr
-    }
+    // pub fn gather_log_prob_dist(&self) -> Vec<Vec<f64>> {
+    //     let mut arr = Vec::with_capacity(self.upgrade_arr.len());
+    //     for upgrade in self.upgrade_arr.iter() {
+    //         arr.push(upgrade.prob_dist.log_prob_dist().clone());
+    //     }
+    //     arr
+    // }
 
     pub fn gather_collapsed(
         &self,
@@ -392,10 +401,9 @@ impl StateBundle {
                 support
                     .access_collapsed()
                     .iter()
-                    .map(|(x, y, z)| match field {
+                    .map(|(x, y)| match field {
                         0 => *x,
-                        1 => *y,
-                        _ => *z,
+                        _ => *y,
                     })
                     .collect()
             })

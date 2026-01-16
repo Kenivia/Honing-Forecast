@@ -103,7 +103,7 @@ pub fn monte_carlo_data<R: Rng>(
     rng: &mut R,
 ) -> (Vec<[i64; 7]>, Vec<Vec<(i64, i64)>>, Vec<usize>) {
     let mut special_left: Vec<i64> = vec![state_bundle.prep_output.budgets[7]; data_size];
-    state_bundle.update_dist(false);
+    state_bundle.update_dist();
     let mut mats_data: Vec<[i64; 7]> = vec![[0i64; 7]; data_size];
 
     let mut juice_data: Vec<Vec<(i64, i64)>> =

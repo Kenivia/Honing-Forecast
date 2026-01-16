@@ -254,7 +254,7 @@ fn recurse_upper(
 impl StateBundle {
     // it doesn't take into account leftover prices
     pub fn brute_success_prob_metric(&mut self) -> f64 {
-        self.update_dist(false);
+        self.update_dist();
 
         self.update_combined();
         // brute_naive(&prob_dist_arr, &combined_costs, prep_output.eqv_gold_budget)

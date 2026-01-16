@@ -82,8 +82,8 @@ impl DerefMut for State {
 pub struct ProbDist {
     pub payload: Vec<f64>,
     pub prob_state_hash: u64,
-    logged_payload: Vec<f64>, // force access through the function to do the check
-    pub log_state_hash: u64,
+    // logged_payload: Vec<f64>, // force access through the function to do the check
+    // pub log_state_hash: u64,
 }
 
 impl Default for ProbDist {
@@ -91,8 +91,8 @@ impl Default for ProbDist {
         Self {
             payload: vec![],
             prob_state_hash: 0,
-            logged_payload: vec![],
-            log_state_hash: 0,
+            // logged_payload: vec![],
+            // log_state_hash: 0,
         }
     }
 }
@@ -102,33 +102,33 @@ impl ProbDist {
         ProbDist {
             payload: new_payload,
             prob_state_hash: 0,
-            logged_payload: vec![],
-            log_state_hash: 0,
+            // logged_payload: vec![],
+            // log_state_hash: 0,
         }
     }
     pub fn update_payload(&mut self, new_payload: Vec<f64>, new_state_hash: u64) {
         self.payload = new_payload;
         self.prob_state_hash = new_state_hash;
     }
-    pub fn logged_iter(&self) -> impl Iterator<Item = &f64> {
-        assert!(self.log_state_hash == self.prob_state_hash);
-        self.logged_payload.iter()
-    }
+    // pub fn logged_iter(&self) -> impl Iterator<Item = &f64> {
+    //     assert!(self.log_state_hash == self.prob_state_hash);
+    //     self.logged_payload.iter()
+    // }
 
-    pub fn log_prob_dist(&self) -> &Vec<f64> {
-        assert!(self.log_state_hash == self.prob_state_hash);
-        &self.logged_payload
-    }
+    // pub fn log_prob_dist(&self) -> &Vec<f64> {
+    //     assert!(self.log_state_hash == self.prob_state_hash);
+    //     &self.logged_payload
+    // }
 
-    pub fn compute_log(&mut self) {
-        if self.log_state_hash != self.prob_state_hash {
-            self.logged_payload = self.payload.iter().map(|x| x.ln()).collect();
-            self.log_state_hash = self.prob_state_hash;
-        }
-    }
-    pub fn is_log_valid(&self) -> bool {
-        self.log_state_hash == self.prob_state_hash
-    }
+    // pub fn compute_log(&mut self) {
+    //     if self.log_state_hash != self.prob_state_hash {
+    //         self.logged_payload = self.payload.iter().map(|x| x.ln()).collect();
+    //         self.log_state_hash = self.prob_state_hash;
+    //     }
+    // }
+    // pub fn is_log_valid(&self) -> bool {
+    //     self.log_state_hash == self.prob_state_hash
+    // }
 }
 
 impl Deref for ProbDist {
@@ -145,13 +145,14 @@ pub struct Support {
     pub state_invariant: bool,   // only talking about the support, prob can always change
     pub linear: bool,            // gap between 0 and 1 = gap between n and n+1
 
-    collapsed_triplet: Vec<(f64, f64, f64)>, // (support, prob, logged_prob)
+    collapsed_triplet: Vec<(f64, f64)>, // (support, prob, logged_prob)
     pub collapsed_state_hash: u64,
     pub ignore: bool,
+    pub gap_size: f64,
 }
 
 impl Support {
-    pub fn access_collapsed(&self) -> &Vec<(f64, f64, f64)> {
+    pub fn access_collapsed(&self) -> &Vec<(f64, f64)> {
         assert!(self.collapsed_state_hash == self.support_state_hash);
         &self.collapsed_triplet
     }
@@ -160,74 +161,40 @@ impl Support {
         assert!(prob_dist.payload.len() == self.support.len());
         assert!(prob_dist.prob_state_hash == self.support_state_hash);
 
-        let valid_log = prob_dist.is_log_valid();
-        let mut result: Vec<(f64, f64, f64)> = Vec::with_capacity(self.support.len());
+        // let valid_log = prob_dist.is_log_valid();
+        let mut result: Vec<(f64, f64)> = Vec::with_capacity(self.support.len());
         if self.collapsed_state_hash != self.support_state_hash {
-            if valid_log {
-                let mut iter = izip!(
-                    self.support.iter(),
-                    prob_dist.iter(),
-                    prob_dist.logged_iter()
-                );
+            let mut iter = izip!(self.support.iter(), prob_dist.iter(),);
 
-                let mut count = 0;
-                if let Some((&s, &p, &log_p)) = iter.next() {
-                    let mut cur_s = s;
-                    let mut cur_p = p;
-                    let mut cur_log_p = log_p;
-
-                    for (&new_s, &new_p, &new_log_p) in iter {
-                        if new_s == cur_s {
-                            cur_p += new_p;
-                            count += 1;
-                        } else {
-                            result.push((
-                                cur_s,
-                                cur_p,
-                                if count > 0 { cur_p.ln() } else { cur_log_p },
-                            ));
-
-                            count = 0;
-
-                            cur_s = new_s;
-                            cur_p = new_p;
-                            cur_log_p = new_log_p;
-                        }
+            if let Some((&s, &p)) = iter.next() {
+                let mut cur_s = s;
+                let mut cur_p = p;
+                for (&new_s, &new_p) in iter {
+                    if new_s == cur_s {
+                        cur_p += new_p;
+                    } else {
+                        result.push((cur_s, cur_p));
+                        cur_s = new_s;
+                        cur_p = new_p;
                     }
-
-                    // push the final run
-                    result.push((cur_s, cur_p, if count > 0 { cur_p.ln() } else { cur_log_p }));
                 }
-                self.ignore = result.len() == 1 && result[0].0.abs() < FLOAT_TOL;
-                self.collapsed_triplet = result;
-                self.collapsed_state_hash = self.support_state_hash;
-            } else {
-                let mut iter = izip!(self.support.iter(), prob_dist.iter(),);
 
-                if let Some((&s, &p)) = iter.next() {
-                    let mut cur_s = s;
-                    let mut cur_p = p;
-                    for (&new_s, &new_p) in iter {
-                        if new_s == cur_s {
-                            cur_p += new_p;
-                        } else {
-                            result.push((cur_s, cur_p, NAN));
-                            cur_s = new_s;
-                            cur_p = new_p;
-                        }
-                    }
-
-                    // push the final run
-                    result.push((cur_s, cur_p, NAN));
-                }
-                self.ignore = result.len() == 1 && result[0].0.abs() < FLOAT_TOL;
-                self.collapsed_triplet = result;
-                self.collapsed_state_hash = self.support_state_hash;
+                // push the final run
+                result.push((cur_s, cur_p));
             }
+            self.ignore = result.len() == 1 && result[0].0.abs() < FLOAT_TOL;
+            self.collapsed_triplet = result;
+            self.collapsed_state_hash = self.support_state_hash;
         }
     }
 
-    pub fn new(payload: Vec<f64>, state_hash: u64, state_invariant: bool, linear: bool) -> Self {
+    pub fn new(
+        payload: Vec<f64>,
+        state_hash: u64,
+        state_invariant: bool,
+        linear: bool,
+        gap_size: f64,
+    ) -> Self {
         Self {
             support: payload.clone(),
             support_state_hash: state_hash,
@@ -235,10 +202,11 @@ impl Support {
             linear: linear,
             collapsed_triplet: payload
                 .iter()
-                .map(|&x| (x, NAN, NAN))
-                .collect::<Vec<(f64, f64, f64)>>(),
+                .map(|&x| (x, NAN))
+                .collect::<Vec<(f64, f64)>>(),
             collapsed_state_hash: 0,
             ignore: false,
+            gap_size,
         }
     }
 
@@ -265,6 +233,7 @@ impl Default for Support {
             collapsed_state_hash: 0,
             collapsed_triplet: vec![],
             ignore: false,
+            gap_size: 1.0,
         }
     }
 }

@@ -34,14 +34,14 @@ impl StateBundle {
     pub fn simple_average(&self, support_index: i64, skip_count: usize) -> f64 {
         let mut mean: f64 = 0.0;
         for triplet_arr in self.extract_triplet(support_index, skip_count) {
-            for (s, p, _) in triplet_arr.iter() {
+            for (s, p) in triplet_arr.iter() {
                 mean += s * p; // technically if theta is 0.0 we can use the K' or k1 from there but like nah cbb
             }
         }
         mean
     }
     pub fn average_gold_metric(&mut self) -> f64 {
-        self.update_dist(true);
+        self.update_dist();
         self.update_individual_support();
         self.compute_special_probs();
         // self.performance.states_evaluated += 1;
@@ -56,7 +56,7 @@ impl StateBundle {
                 continue;
             }
             // // dbg!(special_prob);
-            // let zipped: Vec<(f64, f64, f64)> =
+            // let zipped: Vec<(f64, f64)> =
             // .collect();
 
             for (support_index, (effective_budget, price, leftover)) in izip!(
