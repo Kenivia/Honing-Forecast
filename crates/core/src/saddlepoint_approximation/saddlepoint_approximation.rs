@@ -2,47 +2,20 @@
 
 use std::f64::NAN;
 
-use crate::brute::{MAX_BRUTE_SIZE, brute_average_recursive, brute_success_prob};
+use crate::brute::{MAX_BRUTE_SIZE, brute_biased_recursive, brute_success_prob};
 use crate::constants::FLOAT_TOL;
-use crate::helpers::TripletIterator;
+// use crate::helpers::PairIterator;
 
 use crate::saddlepoint_approximation::average::{DEBUG_AVERAGE, DEBUG_AVG_INDEX};
-use crate::saddlepoint_approximation::core::{THETA_LIMIT, THETA_TOL};
+// use crate::saddlepoint_approximation::core::THETA_TOL;
 use crate::state_bundle::StateBundle;
 use crate::upgrade::Support;
 
-use itertools::Itertools;
 use statrs::distribution::{Continuous, ContinuousCDF, Normal};
 
 pub static DEBUG_SA: bool = false;
 
 pub static MIN_LATTICE_SPAN: f64 = 1.0;
-
-fn support_size_too_big<'a, I>(arr: I, budget: f64, max: usize) -> bool
-where
-    I: TripletIterator<'a>,
-{
-    let mut low_side_too_big: bool = false;
-    let mut out: usize = 0;
-    for a in arr {
-        if out == 0 {
-            out = a.len();
-        } else {
-            out *= a
-                .iter()
-                .take_while(|x| x.0 + FLOAT_TOL <= budget)
-                .count()
-                .max(1);
-            // the hope is that if budget is very close to min_value then we will use brute, because that will break SA
-            if out >= max {
-                low_side_too_big = true;
-                // return true;
-                break;
-            }
-        }
-    }
-    low_side_too_big //&& high_side_too_big // hopefully high side wont have any problems idk 
-}
 
 fn float_gcd(inp_a: f64, inp_b: f64) -> f64 {
     let mut a = inp_a;
@@ -90,74 +63,160 @@ where
 }
 
 impl StateBundle {
-    pub fn saddlepoint_approximation_prob_wrapper(
+    pub fn support_size_too_big(
         &self,
         support_index: i64,
         skip_count: usize,
         budget: f64,
+
+        // mean: f64,
+        max_value: f64,
+    ) -> bool {
+        self.low_side_too_big(budget, support_index, skip_count)
+            && self.high_side_too_big(budget, support_index, skip_count, max_value)
+    }
+
+    fn low_side_too_big(&self, budget: f64, support_index: i64, skip_count: usize) -> bool {
+        // let mut low_side_too_big: bool = false;
+        let mut out: usize = 0;
+        for a in self.extract_collapsed_pair(support_index, skip_count) {
+            if out == 0 {
+                out = a.len();
+            } else {
+                out *= a
+                    .iter()
+                    .take_while(|x| x.0 + FLOAT_TOL <= budget)
+                    .count()
+                    .max(1);
+                // the hope is that if budget is very close to min_value then we will use brute, because that will break SA
+                if out >= MAX_BRUTE_SIZE {
+                    // low_side_too_big = true;
+                    return true;
+                    // break;
+                }
+            }
+        }
+        false
+        // low_side_too_big
+    }
+
+    fn high_side_too_big(
+        &self,
+        budget: f64,
+        support_index: i64,
+        skip_count: usize,
+        max_value: f64,
+    ) -> bool {
+        let inverse_budget = max_value - budget;
+        // let mut high_side_too_big = false;
+        let mut high_out: usize = 0;
+
+        for dist in self.extract_collapsed_pair(support_index, skip_count) {
+            let local_max = dist.last().map(|x| x.0).unwrap_or(0.0);
+
+            let count = dist
+                .iter()
+                .rev()
+                .take_while(|x| (local_max - x.0) + FLOAT_TOL <= inverse_budget)
+                .count()
+                .max(1);
+
+            if high_out == 0 {
+                high_out = count;
+            } else {
+                high_out *= count;
+            }
+
+            if high_out >= MAX_BRUTE_SIZE {
+                return true;
+                // high_side_too_big = true;
+                // break;
+            }
+        }
+        false
+    }
+    pub fn saddlepoint_approximation_prob_wrapper(
+        &self,
+        support_index: i64,
+        skip_count: usize,
+        inp_budget: f64,
         init_theta: &mut f64,
 
         compute_biased: bool,
-        mean: f64,
+        mean_var: (f64, f64),
     ) -> f64 {
         let (min_value, max_value) = self.find_min_max(support_index, skip_count, compute_biased);
 
         let span = lattice_span(self.extract_support_with_meta(support_index, skip_count));
-        if budget > max_value + FLOAT_TOL {
+        if inp_budget > max_value + FLOAT_TOL {
             // self.performance.trivial_count += 1;
             return 1.0;
         }
 
-        if budget < min_value - FLOAT_TOL {
-            // self.performance.trivial_count += 1;
+        if inp_budget < min_value - FLOAT_TOL {
+            //inp_budgetself.performance.trivial_count += 1;
             return 0.0;
         }
-        if support_size_too_big(
-            self.extract_triplet(support_index, skip_count),
-            budget,
-            MAX_BRUTE_SIZE,
-        ) && budget > min_value + span / 2.0 + FLOAT_TOL
-            && budget < max_value - span / 2.0 - FLOAT_TOL
-        {
-            return self.saddlepoint_approximation(
-                support_index,
-                skip_count,
-                min_value,
-                max_value,
-                span,
-                budget,
-                init_theta,
-                compute_biased,
-                mean,
-            );
-        } else {
-            // self.performance.brute_count += 1;
-            // let prob_dist_arr: Vec<Vec<f64>> =
-            //     self.extract_prob(skip_count).into_iter().cloned().collect();
-            // dbg!(
-            //     probs
-            //         .iter()
-            //         .map(|x| x.into_iter().sum::<f64>())
-            //         .collect::<Vec<f64>>()
 
-            if compute_biased {
-                if support_index == DEBUG_AVG_INDEX && DEBUG_AVERAGE {
-                    dbg!("brute");
-                }
-
-                return brute_average_recursive(
-                    &self.gather_collapsed(support_index, skip_count, 1),
-                    &self.gather_collapsed(support_index, skip_count, 0),
+        if self.support_size_too_big(support_index, skip_count, inp_budget, max_value) {
+            let budget = ((inp_budget / span).floor() * span)
+                .min(max_value - span)
+                .max(min_value)
+                + span / 2.0;
+            let (soft_low_limit, mut guess, soft_high_limit) =
+                self.min_guess_max_triplet(support_index, skip_count);
+            let soft_low_budget = self
+                .ks(
+                    soft_low_limit,
+                    &(false, true, false, false, false),
+                    compute_biased,
+                    mean_var.0.ln(),
+                    support_index,
+                    skip_count,
+                )
+                .1;
+            let soft_high_budget = self
+                .ks(
+                    soft_high_limit,
+                    &(false, true, false, false, false),
+                    compute_biased,
+                    mean_var.0.ln(),
+                    support_index,
+                    skip_count,
+                )
+                .1;
+            // dbg!(soft_low_budget, soft_high_budget);
+            if soft_low_budget < budget && budget < soft_high_budget {
+                return self.saddlepoint_approximation(
+                    support_index,
+                    skip_count,
+                    min_value,
+                    max_value,
+                    span,
                     budget,
-                    mean,
-                );
-            } else {
-                return brute_success_prob(
-                    &self.gather_collapsed(support_index, skip_count, 1),
-                    &self.gather_collapsed(support_index, skip_count, 0),
-                    budget,
+                    &mut guess,
+                    compute_biased,
+                    mean_var,
                 );
             }
+        }
+        if compute_biased {
+            if support_index == DEBUG_AVG_INDEX && DEBUG_AVERAGE {
+                dbg!("brute");
+            }
+
+            return brute_biased_recursive(
+                &self.gather_collapsed(support_index, skip_count, 1),
+                &self.gather_collapsed(support_index, skip_count, 0),
+                inp_budget,
+                mean_var.0,
+            );
+        } else {
+            return brute_success_prob(
+                &self.gather_collapsed(support_index, skip_count, 1),
+                &self.gather_collapsed(support_index, skip_count, 0),
+                inp_budget,
+            );
         }
     }
 
@@ -168,55 +227,79 @@ impl StateBundle {
         min_value: f64,
         max_value: f64,
         span: f64,
-        inp_budget: f64,
+        budget: f64,
         init_theta: &mut f64,
         compute_biased: bool,
-        mean: f64,
+        mean_var: (f64, f64),
+        // limit: f64,
     ) -> f64 {
-        let budget = ((inp_budget / span).floor() * span)
-            .min(max_value - span)
-            .max(min_value)
-            + span / 2.0;
         // self.performance.sa_count += 1;
-        let mean_log = if compute_biased { mean.ln() } else { NAN };
+        let mean_log = if compute_biased {
+            assert!(!mean_var.0.is_nan());
+            mean_var.0.ln()
+        } else {
+            NAN // log is only needed in the compute biased path
+        };
 
-        // dbg!(h);
+        let mean_var = if compute_biased {
+            let out = self.ks(
+                0.0,
+                &(false, true, false, false, false),
+                compute_biased,
+                mean_log,
+                support_index,
+                skip_count,
+            );
+            (out.1, out.2)
+        } else {
+            mean_var
+        };
+        let k1_zero = mean_var.0;
 
-        // f_df(1.0).0.signum() == f_df(-1.0).0.signum()
-
-        let result_opt = self.my_newton(
-            *init_theta,
+        let result_opt = self.my_householder(
+            0.0,
             compute_biased,
             mean_log,
             support_index,
             skip_count,
             budget,
+            min_value,
+            max_value, // limit,
+            mean_var,
         );
 
         if DEBUG_SA || result_opt.is_none() {
-            dbg!(budget, min_value, max_value,);
-            println!(
-                "{:?}",
-                self.ks(
-                    -THETA_LIMIT,
-                    &(false, true, true, false, false),
-                    compute_biased,
-                    mean_log,
-                    support_index,
-                    skip_count
-                )
+            let (low_limit, guess, high_limit) = self.min_guess_max_triplet(
+                // budget,
+                // max_value,
+                // min_value,
+                support_index,
+                skip_count,
+                // mean_var,
+                // compute_biased,
+            );
+            dbg!(
+                budget,
+                min_value,
+                max_value,
+                compute_biased,
+                support_index,
+                low_limit,
+                high_limit,
+                span,
             );
             println!(
                 "{:?}",
                 self.ks(
-                    -1.0,
+                    low_limit,
                     &(false, true, true, false, false),
                     compute_biased,
                     mean_log,
                     support_index,
-                    skip_count
+                    skip_count,
                 )
             );
+
             println!(
                 "{:?}",
                 self.ks(
@@ -225,70 +308,56 @@ impl StateBundle {
                     compute_biased,
                     mean_log,
                     support_index,
-                    skip_count
+                    skip_count,
                 )
             );
+
             println!(
                 "{:?}",
                 self.ks(
-                    1.0,
+                    guess,
                     &(false, true, true, false, false),
                     compute_biased,
                     mean_log,
                     support_index,
-                    skip_count
+                    skip_count,
                 )
             );
+
             println!(
                 "{:?}",
                 self.ks(
-                    THETA_LIMIT,
+                    high_limit,
                     &(false, true, true, false, false),
                     compute_biased,
                     mean_log,
                     support_index,
-                    skip_count
+                    skip_count,
                 )
             );
-            dbg!(
-                self.extract_triplet(support_index, skip_count)
-                    .into_iter()
-                    .map(|x| x.iter().map(|(_, y)| y).sum::<f64>())
-                    .collect::<Vec<f64>>(),
-                self.extract_triplet(support_index, skip_count)
-                    .into_iter()
-                    .map(|x| x.iter().map(|(_, y)| *y).collect())
-                    .collect::<Vec<Vec<f64>>>(),
-                self.extract_support_with_meta(support_index, skip_count)
-                    .into_iter()
-                    .collect::<Vec<&Support>>(),
-            );
+            // dbg!(
+            //     self.extract_collapsed_pair(support_index, skip_count)
+            //         .into_iter()
+            //         .map(|x| x.iter().map(|(_, y)| y).sum::<f64>())
+            //         .collect::<Vec<f64>>(),
+            //     self.extract_collapsed_pair(support_index, skip_count)
+            //         .into_iter()
+            //         .map(|x| x.iter().map(|(_, y)| *y).collect())
+            //         .collect::<Vec<Vec<f64>>>(),
+            //     self.extract_support_with_meta(support_index, skip_count)
+            //         .into_iter()
+            //         .collect::<Vec<&Support>>(),
+            // );
         }
         let result = result_opt.unwrap();
-        // if DEBUG
-        //     || !result.0.is_finite()
-        //     || !result.1.is_finite()
-        //     || f_df(THETA_LIMIT).0.signum() == f_df(-THETA_LIMIT).0.signum()
-        // {
-        //     //   (this means budget is outside of range)
-        //     dbg!(
-        //         f_df(THETA_LIMIT),
-        //         f_df(1.0),
-        //         f_df(0.0),
-        //         f_df(-1.0),
-        //         f_df(-THETA_LIMIT),
-        //         result,
-        //     );
-        // }
 
-        let (theta_hat, last_theta, _) = result;
-        // self.performance.newton_iterations += count as i64 - 1;
-        // self.performance.ks_count += count as i64;
+        let theta_hat = result.0;
+
         *init_theta = theta_hat;
-        let theta_error = (theta_hat - last_theta).abs();
-        if DEBUG_SA {
-            dbg!(theta_hat, theta_error);
-        }
+        // // let theta_error = (theta_hat - last_theta).abs();
+        // if DEBUG_SA {
+        //     dbg!(theta_hat, theta_error);
+        // }
         let normal_dist: Normal = Normal::new(0.0, 1.0).unwrap();
         // self.performance.ks_count += 1;
         let ks_tuple = self.ks(
@@ -305,67 +374,68 @@ impl StateBundle {
         let w_hat = w(theta_hat, ks_tuple.0);
         let u_hat = u(theta_hat, ks_tuple.2);
 
-        let mut error: f64 = 0.0;
+        // let mut error: f64 = 0.0;
 
         let sa_out: f64 =
             normal_dist.cdf(w_hat) + normal_dist.pdf(w_hat) * (1.0 / w_hat - 1.0 / u_hat);
-        if theta_hat.abs() < THETA_TOL * 100.0 || theta_error / theta_hat < 0.01 {
-            // this theta error / theta hat checkshould only trigger when newton fails after 20 cycles
-            // self.performance.ks_count += 1;
-            let last_ks_tuple = self.ks(
-                theta_hat,
-                &(true, true, true, true, true),
-                compute_biased,
-                mean_log,
-                support_index,
-                skip_count,
-            );
+        // if theta_hat.abs() < THETA_TOL * 100.0 || theta_error / theta_hat > 0.01 {
+        //     // this theta error / theta hat checkshould only trigger when newton fails after 20 cycles
+        //     // self.performance.ks_count += 1;
+        //     let last_ks_tuple = self.ks(
+        //         theta_hat,
+        //         &(true, true, true, true, true),
+        //         compute_biased,
+        //         mean_log,
+        //         support_index,
+        //         skip_count,
+        //     );
 
-            let w_last = w(last_theta, last_ks_tuple.0);
-            let u_last = u(last_theta, last_ks_tuple.2);
+        //     let w_last = w(last_theta, last_ks_tuple.0);
+        //     let u_last = u(last_theta, last_ks_tuple.2);
 
-            let old_out =
-                normal_dist.cdf(w_last) + normal_dist.pdf(w_last) * (1.0 / w_last - 1.0 / u_last);
-            error = (sa_out - old_out).abs();
-        }
-
+        //     let old_out =
+        //         normal_dist.cdf(w_last) + normal_dist.pdf(w_last) * (1.0 / w_last - 1.0 / u_last);
+        //     error = (sa_out - old_out).abs();
+        // }
         let mut approx: f64 = -6.9;
+        let std = ks_tuple.2.sqrt();
+        let z = (budget - ks_tuple.1) / std;
+
+        let gamma3 = ks_tuple.3 / std.powi(3); // skewness
+
+        let pdf = normal_dist.pdf(z);
+        let cdf = normal_dist.cdf(z);
+
+        // Edgeworth (cdf) up to 4th cumulant and k3^2 term:
+        let cdf_correction = pdf
+            * ((gamma3 / 6.0) * (z.powi(2) - 1.0)
+                + if compute_biased {
+                    0.0
+                } else {
+                    let gamma4 = ks_tuple.4 / std.powi(4); // excess kurtosis
+                    (gamma4 / 24.0) * (z.powi(3) - 3.0 * z)
+                        + (gamma3 * gamma3 / 72.0) * (z.powi(5) - 10.0 * z.powi(3) + 15.0 * z)
+                });
+
+        approx = cdf - cdf_correction;
+        // if DEBUG_SA || approx < 0.0 || approx > 1.0 {
+        //     dbg!(
+        //         // error,
+        //         budget - ks_tuple.1,
+        //         z,
+        //         std,
+        //         gamma3,
+        //         cdf,
+        //         pdf,
+        //         cdf_correction,
+        //         approx
+        //     );
+        // }
+
         let mut actual_out = sa_out;
-        if error > 1e-2 || !error.is_finite() {
+        if (k1_zero - budget).abs() / (k1_zero.max(budget).max(1.0)) < 1e-5 {
             // self.performance.edgeworth_count += 1;
-            let std = ks_tuple.2.sqrt();
-            let z = (budget - ks_tuple.1) / std;
 
-            let gamma3 = ks_tuple.3 / std.powi(3); // skewness
-
-            let pdf = normal_dist.pdf(z);
-            let cdf = normal_dist.cdf(z);
-
-            // Edgeworth (cdf) up to 4th cumulant and k3^2 term:
-            let cdf_correction = pdf
-                * ((gamma3 / 6.0) * (z.powi(2) - 1.0)
-                    + if compute_biased {
-                        0.0
-                    } else {
-                        let gamma4 = ks_tuple.4 / std.powi(4); // excess kurtosis
-                        (gamma4 / 24.0) * (z.powi(3) - 3.0 * z)
-                            + (gamma3 * gamma3 / 72.0) * (z.powi(5) - 10.0 * z.powi(3) + 15.0 * z)
-                    });
-
-            approx = cdf - cdf_correction;
-            if DEBUG_SA || approx < 0.0 || approx > 1.0 {
-                dbg!(
-                    error,
-                    budget - ks_tuple.1,
-                    z,
-                    std,
-                    gamma3,
-                    cdf,
-                    pdf,
-                    cdf_correction,
-                    approx
-                );
-            }
             if DEBUG_AVERAGE && support_index == DEBUG_AVG_INDEX {
                 dbg!("edge", approx, actual_out);
             }
@@ -418,25 +488,92 @@ impl StateBundle {
             //     f_df(-1.0),
             //     f_df(-THETA_LIMIT),
             // );
-            dbg!(theta_hat, theta_error);
-            dbg!(w_hat, u_hat, error, sa_out);
-            dbg!(
-                self.extract_triplet(support_index, skip_count)
-                    .into_iter()
-                    .map(|x| x.iter().map(|y| y.1).sum::<f64>())
-                    .collect::<Vec<f64>>(),
-                self.extract_triplet(support_index, skip_count)
-                    .into_iter()
-                    .map(|x| x.iter().map(|y| y.1).collect())
-                    .collect::<Vec<Vec<f64>>>(),
-                self.extract_triplet(support_index, skip_count)
-                    .into_iter()
-                    .collect::<Vec<&Vec<(f64, f64)>>>(),
-                self.extract_triplet(support_index, skip_count)
-                    .try_len()
-                    .unwrap(),
+            dbg!(theta_hat, k1_zero);
+            dbg!(w_hat, u_hat, sa_out);
+            // dbg!(
+            //     self.extract_collapsed_pair(support_index, skip_count)
+            //         .into_iter()
+            //         .map(|x| x.iter().map(|y| y.1).sum::<f64>())
+            //         .collect::<Vec<f64>>(),
+            //     self.extract_collapsed_pair(support_index, skip_count)
+            //         .into_iter()
+            //         .map(|x| x.iter().map(|y| y.1).collect())
+            //         .collect::<Vec<Vec<f64>>>(),
+            //     self.extract_collapsed_pair(support_index, skip_count)
+            //         .into_iter()
+            //         .collect::<Vec<&Vec<(f64, f64)>>>(),
+            //     self.extract_collapsed_pair(support_index, skip_count)
+            //         .try_len()
+            //         .unwrap(),
+            // );
+            let (low_limit, guess, high_limit) = self.min_guess_max_triplet(
+                // budget,
+                // max_value,
+                // min_value,
+                support_index,
+                skip_count,
+                // mean_var,
+                // compute_biased,
             );
             dbg!(
+                budget,
+                min_value,
+                max_value,
+                compute_biased,
+                support_index,
+                low_limit,
+                guess,
+                high_limit
+            );
+            println!(
+                "{:?}",
+                self.ks(
+                    low_limit,
+                    &(false, true, true, false, false),
+                    compute_biased,
+                    mean_log,
+                    support_index,
+                    skip_count,
+                )
+            );
+
+            println!(
+                "{:?}",
+                self.ks(
+                    0.0,
+                    &(false, true, true, false, false),
+                    compute_biased,
+                    mean_log,
+                    support_index,
+                    skip_count,
+                )
+            );
+
+            println!(
+                "{:?}",
+                self.ks(
+                    guess,
+                    &(false, true, true, false, false),
+                    compute_biased,
+                    mean_log,
+                    support_index,
+                    skip_count,
+                )
+            );
+
+            println!(
+                "{:?}",
+                self.ks(
+                    high_limit,
+                    &(false, true, true, false, false),
+                    compute_biased,
+                    mean_log,
+                    support_index,
+                    skip_count,
+                )
+            );
+            dbg!(
+                compute_biased,
                 theta_hat,
                 ks_tuple,
                 ks_tuple.1,
@@ -450,7 +587,7 @@ impl StateBundle {
                 1.0 / w_hat - 1.0 / u_hat,
                 min_value,
                 budget,
-                self.simple_average(support_index, skip_count),
+                self.simple_avg_var(support_index, skip_count),
                 max_value,
                 sa_out,
                 approx,

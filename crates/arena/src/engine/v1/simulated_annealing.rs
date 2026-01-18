@@ -178,7 +178,7 @@ pub fn solve<R: Rng>(
     metric_type: i64, // note that we're always trying to maximize this metric which is why i'm not calling it energy
     mut state_bundle: StateBundle,
 ) -> StateBundle {
-    let init_temp: f64 = if DEBUG_AVERAGE { -1.0 } else { 333.3 };
+    let init_temp: f64 = if DEBUG_AVERAGE { -1.0 } else { -1.0 };
     // let init_temp: f64 = -1.0; // 0.969 = ~32
     // let mut cache: HashMap<(Vec<bool>, usize), Vec<([i64; 9], f64)>> = HashMap::new();
     let mut temp: f64 = init_temp;
@@ -201,7 +201,7 @@ pub fn solve<R: Rng>(
         highest_seen = highest_seen.max(state_bundle.metric);
         lowest_seen = lowest_seen.min(state_bundle.metric);
         if state_bundle.metric > best_state_so_far.metric {
-            best_state_so_far = state_bundle.clone();
+            best_state_so_far.my_clone_from(&state_bundle);
             temps_without_improvement = 0;
             // println!(
             //     "Temp: {:.6} Best prob: {:.6} Best state: \n{}",
@@ -227,9 +227,9 @@ pub fn solve<R: Rng>(
             highest_seen - lowest_seen,
             rng,
         ) {
-            prev_state = state_bundle.clone();
+            prev_state.my_clone_from(&state_bundle);
         } else {
-            state_bundle.clone_from(&prev_state);
+            state_bundle.my_clone_from(&prev_state);
         }
         count += 1;
         if count > iterations_per_temp {
@@ -254,7 +254,7 @@ pub fn solve<R: Rng>(
             if temps_without_improvement as f64 > (1.0 * temp).max(3.0)
             // || (best_prob_so_far - prev_prob) > 0.005
             {
-                state_bundle.clone_from(&best_state_so_far);
+                state_bundle.my_clone_from(&best_state_so_far);
                 temps_without_improvement = 0;
                 // dbg!("restarted");
             }

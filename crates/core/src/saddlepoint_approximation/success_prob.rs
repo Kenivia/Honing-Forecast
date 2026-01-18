@@ -1,5 +1,3 @@
-use std::f64::NAN;
-
 use crate::constants::SPECIAL_TOL;
 
 use crate::state_bundle::StateBundle;
@@ -34,7 +32,7 @@ impl StateBundle {
                 budget,
                 &mut 0.0,
                 false,
-                NAN,
+                self.simple_avg_var(support_index, skip_count),
             );
 
             out += special_prob * this_prob;

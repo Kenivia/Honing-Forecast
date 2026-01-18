@@ -4,7 +4,7 @@ use crate::state_bundle::StateBundle;
 
 use std::collections::HashMap;
 use std::hash::{Hash, Hasher};
-pub static MAX_BRUTE_SIZE: usize = 500;
+pub static MAX_BRUTE_SIZE: usize = 50000;
 
 // 1. Helper wrapper to use f64 as a HashMap key
 // (Rust floats don't implement Eq/Hash by default due to NaN)
@@ -125,7 +125,7 @@ struct LookaheadBounds {
     max_suffix: Vec<f64>,
 }
 
-pub fn brute_average_recursive(
+pub fn brute_biased_recursive(
     prob_dist_arr: &[Vec<f64>],
     support_arr: &[Vec<f64>],
     budget: f64,

@@ -51,4 +51,19 @@ impl StateBundle {
 
         return state_bundle;
     }
+    pub fn my_clone_from(&mut self, source: &StateBundle) {
+        // update_special_cache: bool
+        for (source, upgrade) in source.upgrade_arr.iter().zip(self.upgrade_arr.iter_mut()) {
+            upgrade.state.clone_from(&source.state);
+        }
+        self.special_state.clone_from(&source.special_state);
+        self.metric = source.metric;
+        // if update_special_cache {
+        //     for (k, v) in source.special_cache.iter() {
+        //         self.special_cache.entry(k.clone()).or_insert(v.clone());
+        //     }
+        // }
+
+        // metric type should be the same
+    }
 }

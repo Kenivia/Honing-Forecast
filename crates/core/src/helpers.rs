@@ -9,8 +9,8 @@ use crate::upgrade::Upgrade;
 
 use rand::Rng;
 
-pub trait TripletIterator<'a>: Iterator<Item = &'a Vec<(f64, f64)>> {}
-impl<'a, T> TripletIterator<'a> for T where T: Iterator<Item = &'a Vec<(f64, f64)>> {}
+pub trait PairIterator<'a>: Iterator<Item = &'a Vec<(f64, f64)>> {}
+impl<'a, T> PairIterator<'a> for T where T: Iterator<Item = &'a Vec<(f64, f64)>> {}
 
 pub fn find_non_zero_min_vec(support_arr: &[Vec<f64>], prob_dist_arr: &[Vec<f64>]) -> f64 {
     support_arr

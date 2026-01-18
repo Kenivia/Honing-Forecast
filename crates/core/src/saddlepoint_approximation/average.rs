@@ -1,7 +1,5 @@
 // use std::f64::NAN;
 
-use std::f64::NAN;
-
 // use crate::constants::FLOAT_TOL;
 use crate::constants::SPECIAL_TOL;
 
@@ -31,15 +29,22 @@ pub static DEBUG_AVG_INDEX: i64 = 0;
 //     total_var
 // }
 impl StateBundle {
-    pub fn simple_average(&self, support_index: i64, skip_count: usize) -> f64 {
+    pub fn simple_avg_var(&self, support_index: i64, skip_count: usize) -> (f64, f64) {
         let mut mean: f64 = 0.0;
-        for triplet_arr in self.extract_triplet(support_index, skip_count) {
-            for (s, p) in triplet_arr.iter() {
-                mean += s * p; // technically if theta is 0.0 we can use the K' or k1 from there but like nah cbb
+        let mut var: f64 = 0.0;
+        for pair_arr in self.extract_collapsed_pair(support_index, skip_count) {
+            let mut this_mean: f64 = 0.0;
+            let mut x2 = 0.0;
+            for (s, p) in pair_arr.iter() {
+                this_mean += s * p;
+                x2 += s * s * p
             }
+            mean += this_mean;
+            var += x2 - this_mean * this_mean;
         }
-        mean
+        (mean, var)
     }
+
     pub fn average_gold_metric(&mut self) -> f64 {
         self.update_dist();
         self.update_individual_support();
@@ -49,9 +54,10 @@ impl StateBundle {
         let mut total_gold: f64 = 0.0;
 
         let mut dbg_sa_avg = vec![0.0; 15];
-        let special_probs = self.special_cache[&self.special_state].clone();
 
-        for (skip_count, special_prob) in special_probs.into_iter().enumerate() {
+        for (skip_count, &special_prob) in
+            self.special_cache[&self.special_state].iter().enumerate()
+        {
             if special_prob < SPECIAL_TOL {
                 continue;
             }
@@ -86,7 +92,7 @@ impl StateBundle {
                             leftover,
                             this_avg,
                             special_prob,
-                            self.simple_average(support_index as i64, skip_count),
+                            self.simple_avg_var(support_index as i64, skip_count),
                             special_prob * this_avg,
                             "================================"
                         );
@@ -114,10 +120,10 @@ impl StateBundle {
         price: f64,
         leftover_value: f64,
     ) -> f64 {
-        let simple_mean: f64 = self.simple_average(support_index, skip_count);
+        let mean_var: (f64, f64) = self.simple_avg_var(support_index, skip_count);
 
         if price == leftover_value {
-            return price * (effective_budget - simple_mean);
+            return price * (effective_budget - mean_var.0);
         }
 
         // let mut truncated_mean: f64 = NAN; // default if it's trivial
@@ -127,7 +133,7 @@ impl StateBundle {
             effective_budget,
             init_theta,
             true,
-            simple_mean,
+            mean_var,
         );
         let prob = self.saddlepoint_approximation_prob_wrapper(
             support_index,
@@ -135,9 +141,9 @@ impl StateBundle {
             effective_budget,
             init_theta,
             false,
-            NAN,
+            mean_var,
         );
-
+        let simple_mean = mean_var.0;
         let out: f64 = price * (effective_budget - simple_mean)
             + (leftover_value - price) * (effective_budget * prob - biased_prob * simple_mean);
 

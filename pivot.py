@@ -1,7 +1,7 @@
 import pandas as pd
 
-INPUT_CSV = "output2.csv"
-OUTPUT_CSV = "output2_pivoted.csv"
+INPUT_CSV = "output3.csv"
+OUTPUT_CSV = "output3_pivoted.csv"
 
 # Load
 df = pd.read_csv(INPUT_CSV)

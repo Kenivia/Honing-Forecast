@@ -145,7 +145,7 @@ pub struct Support {
     pub state_invariant: bool,   // only talking about the support, prob can always change
     pub linear: bool,            // gap between 0 and 1 = gap between n and n+1
 
-    collapsed_triplet: Vec<(f64, f64)>, // (support, prob, logged_prob)
+    collapsed_pair: Vec<(f64, f64)>, // (support, prob, logged_prob)
     pub collapsed_state_hash: u64,
     pub ignore: bool,
     pub gap_size: f64,
@@ -154,7 +154,7 @@ pub struct Support {
 impl Support {
     pub fn access_collapsed(&self) -> &Vec<(f64, f64)> {
         assert!(self.collapsed_state_hash == self.support_state_hash);
-        &self.collapsed_triplet
+        &self.collapsed_pair
     }
 
     pub fn collapse_support(&mut self, prob_dist: &mut ProbDist) {
@@ -183,7 +183,7 @@ impl Support {
                 result.push((cur_s, cur_p));
             }
             self.ignore = result.len() == 1 && result[0].0.abs() < FLOAT_TOL;
-            self.collapsed_triplet = result;
+            self.collapsed_pair = result;
             self.collapsed_state_hash = self.support_state_hash;
         }
     }
@@ -200,7 +200,7 @@ impl Support {
             support_state_hash: state_hash,
             state_invariant,
             linear: linear,
-            collapsed_triplet: payload
+            collapsed_pair: payload
                 .iter()
                 .map(|&x| (x, NAN))
                 .collect::<Vec<(f64, f64)>>(),
@@ -231,7 +231,7 @@ impl Default for Support {
             // initialized: false,
             linear: false,
             collapsed_state_hash: 0,
-            collapsed_triplet: vec![],
+            collapsed_pair: vec![],
             ignore: false,
             gap_size: 1.0,
         }

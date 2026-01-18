@@ -1,9 +1,8 @@
-use core::panic;
-use std::f64::{NAN, NEG_INFINITY};
+use std::f64::NAN;
 
 use crate::{constants::FLOAT_TOL, state_bundle::StateBundle};
 pub static THETA_TOL: f64 = 1e-10;
-pub static THETA_LIMIT: f64 = 1e2;
+// pub static THETA_LIMIT: f64 = 1e2;
 
 impl StateBundle {
     pub fn ks(
@@ -55,33 +54,6 @@ impl StateBundle {
             if meta_support.ignore {
                 continue;
             }
-            // let triplet_arr: &Vec<(f64, f64)> = ;
-
-            // let mut alpha_arr: Vec<f64> = Vec::with_capacity(triplet_arr.len());
-            // let mut alpha_shift: f64 = f64::NEG_INFINITY;
-
-            // for (s, _p, log_p) in triplet_arr.iter() {
-            //     let this_alpha: f64 = log_p + theta * s;
-
-            //     alpha_arr.push(this_alpha);
-            //     // alpha_shift = this_alpha.max(alpha_shift);
-            //     // sanity_check += p;
-            // }
-            // if (1.0 - sanity_check).abs() > FLOAT_TOL {
-            //     dbg!(
-            //         sanity_check,
-            //         &triplet_arr,
-            //         // log_prob_dist_arr
-            //         //     .into_iter()
-            //         //     .map(|x| x.iter().map(|y| y.exp()).sum::<f64>())
-            //         //     .collect::<Vec<f64>>(),
-            //         // log_prob_dist_arr
-            //         //     .into_iter()
-            //         //     .map(|x| x.iter().map(|y| y.exp()).collect())
-            //         //     .collect::<Vec<Vec<f64>>>(),
-            //     );
-            //     panic!();
-            // }
 
             let mut sum: f64 = 0.0;
             let mut mean: f64 = 0.0;
@@ -94,37 +66,57 @@ impl StateBundle {
             // }
 
             let mut u_arr: Vec<f64> = Vec::with_capacity(meta_support.access_collapsed().len());
-            if meta_support.linear {
-                let base: f64 = (theta * meta_support.access_collapsed()[1].0).exp();
-                let mut cur: f64 = base;
-                for (s, p) in meta_support.access_collapsed().iter() {
-                    if *s < FLOAT_TOL {
-                        u_arr.push(*p);
-                        continue;
-                    }
+            let biggest_shift = if theta >= 0.0 {
+                theta * meta_support.access_collapsed().iter().last().unwrap().0
+            } else {
+                theta * meta_support.access_collapsed().iter().next().unwrap().0
+            };
+
+            if meta_support.linear && false {
+                // ITS like ALWAYS LINEAR !! ( except combined in success_prob )
+                let base: f64 = (theta
+                    * -meta_support
+                        .access_collapsed()
+                        .iter()
+                        .find(|(s, _p)| *s > FLOAT_TOL)
+                        .unwrap()
+                        .0)
+                    .exp();
+                // this is uh 1 / e ^ ( s_base * theta )
+
+                let mut cur: f64 = 1.0;
+                for (_, p) in meta_support.access_collapsed().iter().rev() {
+                    // e ^ ((s_base * i -  s_max ) theta)) = e ^ ( s_base * i * theta) - biggest_shift)  going in reverse to make it easier
                     let u: f64 = p * cur;
-                    sum += u;
                     cur *= base;
                     u_arr.push(u);
                 }
+
+                u_arr.reverse();
             } else {
                 for (s, p) in meta_support.access_collapsed().iter() {
-                    let u: f64 = p * (s * theta).exp();
+                    let u: f64 = p * (s * theta - biggest_shift).exp();
                     sum += u;
                     u_arr.push(u);
                 }
             }
-            if sum == 0.0 {
-                dbg!(meta_support.access_collapsed(), &u_arr);
-                panic!();
+            if sum == 0.0 || !sum.is_finite() {
+                dbg!(
+                    &u_arr,
+                    theta,
+                    meta_support.linear,
+                    meta_support.access_collapsed()
+                );
+                return (NAN, NAN, NAN, NAN, NAN);
+                // panic!();
             }
-            for (&u, triplet) in u_arr.iter().zip(meta_support.access_collapsed().iter()) {
+            for (&u, pair) in u_arr.iter().zip(meta_support.access_collapsed().iter()) {
                 if u == 0.0 {
                     //   l = -inf , p = 0
                     continue;
                 }
                 let w = u / sum;
-                let x = triplet.0;
+                let x = pair.0;
 
                 if toggle.1 || toggle.2 || toggle.3 || toggle.4 {
                     mean += x * w;
@@ -143,7 +135,7 @@ impl StateBundle {
             }
 
             if toggle.0 {
-                total_k += sum.ln(); //alpha_shift +                                                                                                                                                    
+                total_k += biggest_shift + sum.ln();
             }
             let mut mu2: f64 = -1.0;
             if toggle.1 {
@@ -170,7 +162,7 @@ impl StateBundle {
         (total_k, total_k1, total_k2, total_k3, total_k4)
     }
 
-    pub fn my_newton(
+    pub fn my_householder(
         &self,
         init_theta: f64,
         compute_biased: bool,
@@ -178,19 +170,27 @@ impl StateBundle {
         support_index: i64,
         skip_count: usize,
         budget: f64,
+        min_value: f64,
+        max_value: f64, // limit: f64,
+        mean_var: (f64, f64),
     ) -> Option<(f64, f64, usize)> {
-        let biggest_s: f64 = self
-            .extract_triplet(support_index, skip_count)
-            .map(|triplet_arr| triplet_arr.last().unwrap().0)
-            .fold(NEG_INFINITY, |a, b| a.max(b));
-        let limit: f64 = 700.0_f64 / biggest_s; // e ^ like 718 or soemtihng overflows, using 700 to make sure summing a few of these wont overflow
+        // e ^ like 718 or soemtihng overflows, using 700 to make sure summing a few of these wont overflow
+        let (low, guess, high) = self.min_guess_max_triplet(
+            // budget,
+            // max_value,
+            // min_value,
+            support_index,
+            skip_count,
+            // mean_var,
+            // compute_biased,
+        );
         let root = self.find_root(
-            init_theta,
-            -limit,
-            limit,
+            guess,
+            low,
+            high,
             THETA_TOL,
-            20,
-            &(false, true, true, false, false),
+            10,
+            &(false, true, true, true, true),
             compute_biased,
             mean_log,
             support_index,
@@ -203,9 +203,9 @@ impl StateBundle {
     pub fn find_root(
         &self,
         init_theta: f64,
-        min: f64,
-        max: f64,
-        tol: f64,
+        min_theta: f64,
+        max_theta: f64,
+        theta_tol: f64,
         max_iter: usize,
         toggle: &(bool, bool, bool, bool, bool),
         compute_biased: bool,
@@ -214,111 +214,149 @@ impl StateBundle {
         skip_count: usize,
         budget: f64,
     ) -> Option<(f64, f64, usize)> {
-        let mut theta: f64 = init_theta.max(min).min(max);
+        let mut lower = min_theta;
+        let mut upper = max_theta;
 
-        let mut count: usize = 0;
+        let mut theta = init_theta;
 
-        let (_, mut y, mut dy, _, _) = self.ks(
-            theta,
-            toggle,
-            compute_biased,
-            mean_log,
-            support_index,
-            skip_count,
-        );
-        y -= budget;
-        loop {
-            // dbg!(count, theta, y, dy);
-            // if y.abs() < 1e-12 {
-            //     // this is largely irrelevant because we're interested in theta
-            //     return Some(theta);
-            // }
+        theta = theta.min(max_theta).max(min_theta);
 
-            if dy == 0.0 {
-                // let (y_min, _) = func(min);
-                // let (y_max, _) = func(max);
-                dbg!(y, dy, theta);
-                // this shouldn't happen no more
-                return None;
-                // return Some((
-                //     if y_min.abs() < y_max.abs() { min } else { max },
-                //     if y_min.abs() < y_max.abs() {
-                //         min + THETA_TOL
-                //     } else {
-                //         max - THETA_TOL
-                //     },
-                // ));
+        let mut init_y: f64 = NAN; // this is K'(0) = the mean 
+        let mut debug_record: Vec<(f64, f64, f64, f64, f64)> = Vec::new();
+
+        for iter in 0..max_iter {
+            // 2. Evaluate Function and Derivatives
+            let (_, mut y, dy, dy2, dy3) = self.ks(
+                theta,
+                toggle,
+                compute_biased,
+                mean_log,
+                support_index,
+                skip_count,
+            );
+            if iter == 0 {
+                init_y = y;
             }
 
-            let proposed_delta: f64 = -y / dy;
+            y -= budget;
+            debug_record.push((theta, y, dy, dy2, dy3));
 
-            let proposed_delta = proposed_delta.clamp(min - theta, max - theta);
-            if (proposed_delta).abs() < tol {
-                return Some((theta + proposed_delta, theta, count + 1));
+            if y < 0.0 {
+                lower = theta;
+            } else {
+                upper = theta;
             }
 
-            let mut cur_delta: f64 = proposed_delta;
-            let mut damping_factor = 1.0;
-            let mut new_theta: f64 = theta + cur_delta;
-            let (mut new_y, mut new_dy): (f64, f64);
-            loop {
-                if !new_theta.is_finite() {
-                    dbg!(y, dy, proposed_delta, theta);
-                    return None;
-                }
-                (_, new_y, new_dy, _, _) = self.ks(
-                    new_theta,
-                    toggle,
-                    compute_biased,
-                    mean_log,
-                    support_index,
-                    skip_count,
-                );
-                new_y -= budget;
-
-                // If the error (magnitude of y) got worse, reduce step size
-                if new_y.abs() > y.abs() || new_dy == 0.0 {
-                    damping_factor *= 0.5;
-                    cur_delta = proposed_delta * damping_factor;
-                    new_theta = theta + cur_delta;
-
-                    if damping_factor < 0.2 {
-                        dbg!(
-                            theta,
-                            new_theta,
-                            min,
-                            max,
-                            damping_factor,
-                            proposed_delta,
-                            new_y,
-                            y
-                        );
-                        panic!("lot of dampening");
-                        // break;
-                    }
-                } else {
-                    // The step is good, it reduced the error
-                    break;
-                }
-            }
-            if !new_theta.is_finite() {
-                dbg!(y, dy, proposed_delta, theta);
-                return None;
+            if (upper - lower) < theta_tol || y.abs() < FLOAT_TOL {
+                return Some((theta, init_y, iter));
             }
 
-            // assert!(new_theta < max && new_theta > min);
+            let delta = if compute_biased {
+                (-2.0 * y * dy) / (-y * dy2 + 2.0 * dy.powi(2))
+            } else {
+                let dy_sq = dy.powi(2);
+                let y_sq = y.powi(2);
+                -(6.0 * y * dy_sq - 3.0 * y_sq * dy2)
+                    / (6.0 * dy_sq * dy - 6.0 * y * dy * dy2 + y_sq * dy3)
+            };
 
-            count += 1;
+            let proposed_theta = theta + delta;
 
-            if (new_theta - theta).abs() < tol {
-                return Some((new_theta, theta, count + 1));
+            // last_theta = theta;
+            if proposed_theta > lower && proposed_theta < upper && dy.abs() > 0.1 {
+                theta = proposed_theta.clamp(min_theta, max_theta);
+            } else {
+                theta = 0.5 * (lower + upper);
             }
-            if count >= max_iter {
-                return None;
-            }
-
-            theta = new_theta;
-            (y, dy) = (new_y, new_dy);
         }
+
+        dbg!(debug_record);
+        None
     }
+    //     let mut theta: f64 = init_theta.max(min_theta).min(max_theta);
+
+    //     let mut count: usize = 0;
+    //     // dbg!("start");
+    //     let (int_y, mut y, mut dy, mut dy2, mut dy3) = self.ks(
+    //         theta,
+    //         toggle,
+    //         compute_biased,
+    //         mean_log,
+    //         support_index,
+    //         skip_count,
+    //     );
+    //     y -= budget;
+
+    //     let mut debug_record: Vec<(f64, f64, f64, f64, f64)> = Vec::new();
+    //     loop {
+    //         if dy == 0.0 {
+    //             dbg!(y, dy, theta, min_theta, max_theta,);
+    //             dbg!(debug_record);
+    //             return None;
+    //         }
+
+    //         let proposed_delta: f64;
+
+    //         if compute_biased {
+    //             proposed_delta = (-2.0 * y * dy) / (-y * dy2 + 2.0 * dy.powi(2))
+    //         } else {
+    //             let dy_sq = dy.powi(2);
+    //             let y_sq = y.powi(2);
+    //             proposed_delta = -(6.0 * y * dy_sq - 3.0 * y_sq * dy2)
+    //                 / (6.0 * dy_sq * dy - 6.0 * y * dy * dy2 + y_sq * dy3);
+    //         }
+
+    //         let proposed_delta = proposed_delta.clamp(min_theta - theta, max_theta - theta);
+    //         if (proposed_delta).abs() < theta_tol {
+    //             return Some((theta + proposed_delta, theta, count + 1));
+    //         }
+
+    //         let mut cur_delta: f64 = proposed_delta;
+    //         let mut damping_factor = 1.0;
+    //         let mut new_theta: f64 = theta + cur_delta;
+    //         let (mut new_y, mut new_dy, mut new_dy2, mut new_dy3): (f64, f64, f64, f64);
+    //         loop {
+    //             if !new_theta.is_finite() {
+    //                 dbg!(new_theta);
+    //                 dbg!(debug_record);
+    //                 return None;
+    //             }
+    //             (_, new_y, new_dy, new_dy2, new_dy3) = self.ks(
+    //                 new_theta,
+    //                 toggle,
+    //                 compute_biased,
+    //                 mean_log,
+    //                 support_index,
+    //                 skip_count,
+    //             );
+    //             new_y -= budget;
+    //             debug_record.push((new_theta, new_y, new_dy, new_dy2, new_dy3));
+    //             if new_y.abs() > y.abs() || new_dy == 0.0 {
+    //                 // dbg!(y, new_y, theta, proposed_delta);
+
+    //                 damping_factor *= 0.5;
+    //                 cur_delta = proposed_delta * damping_factor;
+    //                 new_theta = theta + cur_delta;
+    //             } else {
+    //                 break;
+    //             }
+    //         }
+
+    //         // assert!(new_theta < max && new_theta > min);
+
+    //         count += 1;
+
+    //         if (new_theta - theta).abs() < theta_tol {
+    //             return Some((new_theta, theta, count + 1));
+    //         }
+    //         if count >= max_iter {
+    //             dbg!(new_y, new_dy, min_theta, max_theta);
+    //             dbg!(debug_record);
+    //             return None;
+    //         }
+
+    //         theta = new_theta;
+    //         (y, dy, dy2, dy3) = (new_y, new_dy, new_dy2, new_dy3);
+    //     }
+    // }
 }

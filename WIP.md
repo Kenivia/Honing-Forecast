@@ -5,33 +5,27 @@
 
 ### Now
 
+- use higher derivatives than newton
+  - will need to um strip out how the current error dection works
+
 - clean up how support stuff get updated (update_individual)
-- use polynomial for equal stepped stuff like for mat costs in averages
-  - need to work out the math first
-- ~~cache lattice span~~ or just compute it more cleverly
-- cache the geom calculations
-- figure out how to update best_state_so_far without cloning all the time
-- figure out how not to allocate on every ks call? i thought i was avoiding that
-- figure out why sa is failing sometimes
-  - force it to never underflow
-  - also logp is lowkey kinda uselesscos scaling alpha doesn't actually help
-  
+
 #### Optimizations
 
-1. cloning state
-2. cloning triplet (i think its caused by the length call)
-3. exp -> linear?
-4. maybe its time to get rid of Box< iterator>
-5. pre-allocate scratch space maybe?
-6. cache min max values with triplet
-7.
+- maybe its time to get rid of Box< iterator >
+
+- pre-allocate scratch space maybe?
+
+- cache min max values with pair
+
+- cache the geom calculations  (special_prob seems fast enough so cbb rn)
 
 ### Misc
 
 - figure out what's the like optimal brute threshold
 
 - JUICE CHESTS AND MAYBE EVEN BOOKS CHESTS
-  - just a greedy algorithm based on the prices
+  - ~~just a greedy algorithm based on the prices~~ um might be more complicated than i think
 
 - force special state to respect upgrade order
   - just ignore invalid ones? or what
@@ -153,6 +147,17 @@ graph
 - improve how the cost estimation works / verify that it actually works
 
 ## Done / cancelled
+
+- ~~figure out what exactly needs to be cloned in Upgrade~
+- ~~use polynomial for equal stepped stuff like for mat costs in averages~~
+  - ~~need to work out the math first~~
+- ~~cache lattice span~~ or just compute it more cleverly
+
+- ~~figure out how to update best_state_so_far without cloning all the time~~
+- ~~figure out how not to allocate on every ks call? i thought i was avoiding that~~
+- ~~figure out why sa is failing sometimes~~
+  - ~~force it to never underflow~~
+  - ~~also logp is lowkey kinda uselesscos scaling alpha doesn't actually help~~
 
 - ~~better average evaluation (like is there a better estimate)~~
   - ~~also hunt down the edge case where sa failed - i think something wrong with the support or something~~

@@ -31,9 +31,9 @@ impl StateBundle {
     }
     pub fn find_min_max(&self, support_index: i64, skip_count: usize, biased: bool) -> (f64, f64) {
         let min_value = self
-            .extract_triplet(support_index, skip_count)
-            .map(|triplet_arr| {
-                triplet_arr
+            .extract_collapsed_pair(support_index, skip_count)
+            .map(|pair_arr| {
+                pair_arr
                     .iter()
                     .find(|(support, p)| {
                         if biased {
@@ -47,8 +47,8 @@ impl StateBundle {
             })
             .sum();
         let max_value = self
-            .extract_triplet(support_index, skip_count)
-            .map(|triplet_arr| triplet_arr.last().unwrap().0)
+            .extract_collapsed_pair(support_index, skip_count)
+            .map(|pair_arr| pair_arr.last().unwrap().0)
             .sum();
         (min_value, max_value)
     }
@@ -90,7 +90,7 @@ impl StateBundle {
                 .skip(skip_count),
         )
     }
-    pub fn extract_triplet(
+    pub fn extract_collapsed_pair(
         &self,
         support_index: i64,
         skip_count: usize,
@@ -197,7 +197,7 @@ impl StateBundle {
                         this_weap.push(costs_so_far.0);
                         this_armor.push(costs_so_far.1);
                         let (juice, book_index) = upgrade.state[p_index];
-                        if juice {
+                        if juice && id == 0 {
                             if upgrade.is_weapon {
                                 costs_so_far.0 += prep_output.juice_info.amt_used
                                     [upgrade.upgrade_index][0]
@@ -208,7 +208,7 @@ impl StateBundle {
                                     as f64;
                             }
                         }
-                        if book_index > 0 {
+                        if book_index > 0 && book_index == id {
                             if upgrade.is_weapon {
                                 costs_so_far.0 += prep_output.juice_info.amt_used
                                     [upgrade.upgrade_index][book_index]
@@ -231,7 +231,7 @@ impl StateBundle {
                             this_weap.clone(),
                             upgrade.state.hash,
                             false,
-                            false,
+                            true,
                             prep_output.juice_info.amt_used_id[id_to_match][upgrade.upgrade_index]
                                 as f64,
                         ));
@@ -240,7 +240,7 @@ impl StateBundle {
                             vec![0.0; l_len],
                             upgrade.state.hash,
                             false,
-                            false,
+                            true,
                             prep_output.juice_info.amt_used_id[id_to_match][upgrade.upgrade_index]
                                 as f64,
                         ));
@@ -251,7 +251,7 @@ impl StateBundle {
                             this_armor.clone(),
                             upgrade.state.hash,
                             false,
-                            false,
+                            true,
                             prep_output.juice_info.amt_used_id[id_to_match][upgrade.upgrade_index]
                                 as f64,
                         ));
@@ -260,7 +260,7 @@ impl StateBundle {
                             vec![0.0; l_len],
                             upgrade.state.hash,
                             false,
-                            false,
+                            true,
                             prep_output.juice_info.amt_used_id[id_to_match][upgrade.upgrade_index]
                                 as f64,
                         ));

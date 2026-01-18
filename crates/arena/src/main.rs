@@ -113,7 +113,7 @@ fn main() {
     let test_cases: Vec<(StateBundle, Vec<bool>)> = parse_csv(Path::new(if DEBUG_AVERAGE {
         "TEST_test_cases.csv"
     } else {
-        "TEST_test_cases.csv"
+        "bloated_test_cases.csv"
     })); // bloated_
 
     for _ in 0..NUM_TESTS_TO_RUN {

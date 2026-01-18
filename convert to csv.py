@@ -1,8 +1,8 @@
 import json
 import csv
 
-input_path = "Result_default, v1_local_0_2026-01-15 09-54-02 +00-00.jsonl"
-output_path = "output2.csv"
+input_path = "Result_default, v1_local_0_2026-01-18 18-42-38 +00-00.jsonl"
+output_path = "output3.csv"
 
 required_fields = ["test_case", "metric_type", "trial_num", "best"]
 

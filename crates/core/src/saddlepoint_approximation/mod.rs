@@ -1,4 +1,5 @@
 pub mod average;
+mod bound;
 mod core;
 mod saddlepoint_approximation;
 pub mod special;
