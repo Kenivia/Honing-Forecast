@@ -244,7 +244,7 @@ impl StateBundle {
         let mean_var = if compute_biased {
             let out = self.ks(
                 0.0,
-                &(false, true, false, false, false),
+                &(false, true, true, false, false),
                 compute_biased,
                 mean_log,
                 support_index,

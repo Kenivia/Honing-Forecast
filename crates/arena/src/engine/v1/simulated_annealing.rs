@@ -1,13 +1,14 @@
 // use hf_core::energy::prob_to_maximize_exact;
 
-use std::f64::{MAX, MIN};
-
 use hf_core::saddlepoint_approximation::average::DEBUG_AVERAGE;
 use hf_core::state_bundle::StateBundle;
 use rand::Rng;
 use rand::distr::Distribution;
 use rand::distr::weighted::WeightedIndex;
 use rand::seq::IteratorRandom;
+use std::f64::{MAX, MIN};
+use std::fs::File;
+use std::io::Write;
 
 // use std::collections::HashMap;
 
@@ -288,5 +289,49 @@ pub fn solve<R: Rng>(
     //         0
     //     )
     // );
+
+    if metric_type == 1 {
+        let mut results: Vec<(f64, f64)> = Vec::new();
+        best_state_so_far.update_dist();
+        best_state_so_far.update_individual_support();
+
+        let (soft_low_limit, mut guess, soft_high_limit) =
+            best_state_so_far.min_guess_max_triplet(4, 0);
+
+        let mean_var = {
+            let out = best_state_so_far.ks(
+                0.0,
+                &(false, true, true, true, true),
+                true,
+                best_state_so_far.simple_avg_var(4, 0).0,
+                4,
+                0,
+            );
+            dbg!(out);
+            (out.1, out.2)
+        };
+        for i in 0..100_000 {
+            let theta =
+                i as f64 / 100_000_f64 * (soft_high_limit - soft_low_limit) + soft_low_limit;
+            let res = best_state_so_far
+                .ks(
+                    theta,
+                    &(false, true, false, false, false),
+                    true,
+                    mean_var.0.ln(),
+                    4,
+                    0,
+                )
+                .1
+                - state_bundle.prep_output.budgets[4] as f64;
+            results.push((theta, res));
+        }
+        let json_data: Vec<Vec<f64>> = results.iter().map(|(x, y)| vec![*x, *y]).collect();
+
+        let json_string = serde_json::to_string_pretty(&json_data).unwrap();
+
+        let mut file = File::create("results.json").unwrap();
+        file.write_all(json_string.as_bytes()).unwrap();
+    }
     best_state_so_far
 }
