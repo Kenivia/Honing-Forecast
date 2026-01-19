@@ -10,6 +10,8 @@ pub struct Performance {
     pub newton_iterations: i64,
     pub brute_count: i64,
     pub trivial_count: i64,
+    pub householder_count: i64,
+    pub bisection_count: i64,
 }
 
 impl Performance {
@@ -23,6 +25,8 @@ impl Performance {
             newton_iterations: 0,
             brute_count: 0,
             trivial_count: 0,
+            householder_count: 0,
+            bisection_count: 0,
         }
     }
 
@@ -47,6 +51,8 @@ impl Performance {
             ks_per_sa,
             newton_per_sa,
             edgeworth_per_sa,
+            bisection_ratio: (self.bisection_count as f64)
+                / (self.bisection_count as f64 + self.householder_count as f64),
         }
     }
 }
@@ -80,4 +86,7 @@ pub struct PerformanceToWrite {
     pub newton_per_sa: f64,
     #[serde(serialize_with = "serialize_nan_as_neg")]
     pub edgeworth_per_sa: f64, // edgeworth / (edge + lugganani)
+
+    #[serde(serialize_with = "serialize_nan_as_neg")]
+    pub bisection_ratio: f64, // edgeworth / (edge + lugganani)
 }

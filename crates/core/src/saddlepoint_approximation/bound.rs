@@ -1,14 +1,13 @@
-use std::f64::{INFINITY, NAN, NEG_INFINITY};
+use std::f64::{INFINITY, NAN};
 
 use crate::{constants::FLOAT_TOL, state_bundle::StateBundle};
 
-static EDGE_PERCENTAGES: f64 = 0.05;
 impl StateBundle {
     pub fn min_guess_max_triplet(
         &self,
         // budget: f64,
-        // max_value: f64,
-        // min_value: f64,
+        min_value: f64,
+        max_value: f64,
         support_index: i64,
         skip_count: usize,
         // mean_var: (f64, f64),
@@ -49,18 +48,18 @@ impl StateBundle {
         //     );
         // }
         (
-            2.0 * self.theta_guess_min_tail(
+            1.0 * self.theta_guess_min_tail(
                 support_index,
                 skip_count,
                 // EDGE_PERCENTAGES * (max_value - min_value) + min_value,
                 // min_value,
             ),
             0.0,
-            2.0 * self.theta_guess_max_tail(
+            1.0 * self.theta_guess_max_tail(
                 support_index,
                 skip_count,
                 // (1.0 - EDGE_PERCENTAGES) * (max_value - min_value) + min_value,
-                // max_value,
+                max_value,
             ),
         )
     }
@@ -73,7 +72,7 @@ impl StateBundle {
         support_index: i64,
         skip_count: usize,
         // budget: f64,
-        // max_value: f64,
+        max_value: f64,
     ) -> f64 {
         let mut min_delta: f64 = INFINITY;
         let mut sum_c: f64 = 0.0;
@@ -132,8 +131,8 @@ impl StateBundle {
             sum_c += first_two[1].0 * first_two[1].1 / first_two[0].1;
         }
 
-        let min = (((min_delta.abs() * 0.5) / sum_c).ln() / min_delta);
-
+        let min = ((min_delta.abs()) / sum_c).ln() / min_delta;
+        // dbg!(min_delta);
         min
     }
 }

@@ -1,6 +1,6 @@
 use std::f64::NAN;
 
-use crate::{constants::FLOAT_TOL, state_bundle::StateBundle};
+use crate::{constants::FLOAT_TOL, performance::Performance, state_bundle::StateBundle};
 pub static THETA_TOL: f64 = 1e-10;
 // pub static THETA_LIMIT: f64 = 1e2;
 
@@ -13,7 +13,9 @@ impl StateBundle {
         mean_log: f64,
         support_index: i64,
         skip_count: usize,
+        performance: &mut Performance,
     ) -> (f64, f64, f64, f64, f64) {
+        performance.ks_count += 1;
         if compute_biased {
             let new_toggle = (
                 toggle.0,
@@ -185,26 +187,19 @@ impl StateBundle {
 
     pub fn my_householder(
         &self,
-        init_theta: f64,
+
         compute_biased: bool,
         mean_log: f64,
         support_index: i64,
         skip_count: usize,
         budget: f64,
-        min_value: f64,
-        max_value: f64, // limit: f64,
-        mean_var: (f64, f64),
+        low: f64,
+        guess: f64,
+        high: f64,
+        performance: &mut Performance,
     ) -> Option<(f64, f64, usize)> {
         // e ^ like 718 or soemtihng overflows, using 700 to make sure summing a few of these wont overflow
-        let (low, guess, high) = self.min_guess_max_triplet(
-            // budget,
-            // max_value,
-            // min_value,
-            support_index,
-            skip_count,
-            // mean_var,
-            // compute_biased,
-        );
+
         let root = self.find_root(
             guess,
             low,
@@ -217,6 +212,7 @@ impl StateBundle {
             support_index,
             skip_count,
             budget,
+            performance,
         );
         root
     }
@@ -234,6 +230,7 @@ impl StateBundle {
         support_index: i64,
         skip_count: usize,
         budget: f64,
+        performance: &mut Performance,
     ) -> Option<(f64, f64, usize)> {
         let mut lower = min_theta;
         let mut upper = max_theta;
@@ -254,6 +251,7 @@ impl StateBundle {
                 mean_log,
                 support_index,
                 skip_count,
+                performance,
             );
             if iter == 0 {
                 init_y = y;
@@ -284,10 +282,13 @@ impl StateBundle {
             let proposed_theta = theta + delta;
 
             // last_theta = theta;
+            performance.newton_iterations += 1;
             if proposed_theta > lower && proposed_theta < upper && dy.abs() > 0.1 {
                 theta = proposed_theta.clamp(min_theta, max_theta);
+                performance.householder_count += 1;
             } else {
                 theta = 0.5 * (lower + upper);
+                performance.bisection_count += 1;
             }
         }
 

@@ -1,7 +1,10 @@
 // use std::f64::NAN;
 
 // use crate::constants::FLOAT_TOL;
-use crate::constants::{FLOAT_TOL, SPECIAL_TOL};
+use crate::{
+    constants::{FLOAT_TOL, SPECIAL_TOL},
+    performance::Performance,
+};
 
 use itertools::izip;
 
@@ -45,11 +48,11 @@ impl StateBundle {
         (mean, var)
     }
 
-    pub fn average_gold_metric(&mut self) -> f64 {
+    pub fn average_gold_metric(&mut self, performance: &mut Performance) -> f64 {
         self.update_dist();
         self.update_individual_support();
         self.compute_special_probs();
-        // self.performance.states_evaluated += 1;
+        performance.states_evaluated += 1;
 
         let mut total_gold: f64 = 0.0;
 
@@ -76,9 +79,9 @@ impl StateBundle {
                     support_index as i64,
                     skip_count,
                     effective_budget,
-                    &mut 0.0,
                     price,
                     leftover,
+                    performance,
                 );
                 // dbg!(this_avg);
 
@@ -115,10 +118,10 @@ impl StateBundle {
         support_index: i64,
         skip_count: usize,
         effective_budget: f64,
-        init_theta: &mut f64,
 
         price: f64,
         leftover_value: f64,
+        performance: &mut Performance,
     ) -> f64 {
         let mean_var: (f64, f64) = self.simple_avg_var(support_index, skip_count);
 
@@ -126,21 +129,21 @@ impl StateBundle {
             return price * (effective_budget - mean_var.0);
         }
 
-        let biased_prob: f64 = self.saddlepoint_approximation_prob_wrapper(
+        let biased_prob: f64 = self.saddlepoint_approximation_wrapper(
             support_index,
             skip_count,
             effective_budget,
-            init_theta,
             true,
             mean_var,
+            performance,
         );
-        let prob = self.saddlepoint_approximation_prob_wrapper(
+        let prob = self.saddlepoint_approximation_wrapper(
             support_index,
             skip_count,
             effective_budget,
-            init_theta,
             false,
             mean_var,
+            performance,
         );
         let simple_mean = mean_var.0;
         let out: f64 = price * (effective_budget - simple_mean)

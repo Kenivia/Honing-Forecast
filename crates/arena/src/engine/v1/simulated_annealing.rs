@@ -7,8 +7,8 @@ use rand::distr::Distribution;
 use rand::distr::weighted::WeightedIndex;
 use rand::seq::IteratorRandom;
 use std::f64::{MAX, MIN};
-use std::fs::File;
-use std::io::Write;
+// use std::fs::File;
+// use std::io::Write;
 
 // use std::collections::HashMap;
 
@@ -185,13 +185,14 @@ pub fn solve<R: Rng>(
     rng: &mut R,
     metric_type: i64, // note that we're always trying to maximize this metric which is why i'm not calling it energy
     mut state_bundle: StateBundle,
+    performance: &mut hf_core::performance::Performance,
 ) -> StateBundle {
-    let init_temp: f64 = if DEBUG_AVERAGE { -1.0 } else { -333.0 };
+    let init_temp: f64 = if DEBUG_AVERAGE { -1.0 } else { 333.0 };
     // let init_temp: f64 = -1.0; // 0.969 = ~32
     // let mut cache: HashMap<(Vec<bool>, usize), Vec<([i64; 9], f64)>> = HashMap::new();
     let mut temp: f64 = init_temp;
 
-    state_bundle.metric = state_bundle.metric_router(metric_type);
+    state_bundle.metric = state_bundle.metric_router(metric_type, performance);
     let mut prev_state: StateBundle = state_bundle.clone();
 
     let iterations_per_temp = 69;
@@ -205,7 +206,7 @@ pub fn solve<R: Rng>(
     let mut temps_without_improvement = 1;
     while temp >= 0.0 {
         neighbour(&mut state_bundle, temp, init_temp, rng);
-        state_bundle.metric = state_bundle.metric_router(metric_type);
+        state_bundle.metric = state_bundle.metric_router(metric_type, performance);
         highest_seen = highest_seen.max(state_bundle.metric);
         lowest_seen = lowest_seen.min(state_bundle.metric);
         if state_bundle.metric > best_state_so_far.metric {
@@ -290,48 +291,48 @@ pub fn solve<R: Rng>(
     //     )
     // );
 
-    if metric_type == 1 {
-        let mut results: Vec<(f64, f64)> = Vec::new();
-        best_state_so_far.update_dist();
-        best_state_so_far.update_individual_support();
+    // if metric_type == 1 {
+    //     let mut results: Vec<(f64, f64)> = Vec::new();
+    //     best_state_so_far.update_dist();
+    //     best_state_so_far.update_individual_support();
 
-        let (soft_low_limit, mut guess, soft_high_limit) =
-            best_state_so_far.min_guess_max_triplet(4, 0);
+    //     let (soft_low_limit, mut guess, soft_high_limit) =
+    //         best_state_so_far.min_guess_max_triplet(4, 0);
 
-        let mean_var = {
-            let out = best_state_so_far.ks(
-                0.0,
-                &(false, true, true, true, true),
-                true,
-                best_state_so_far.simple_avg_var(4, 0).0,
-                4,
-                0,
-            );
-            dbg!(out);
-            (out.1, out.2)
-        };
-        for i in 0..100_000 {
-            let theta =
-                i as f64 / 100_000_f64 * (soft_high_limit - soft_low_limit) + soft_low_limit;
-            let res = best_state_so_far
-                .ks(
-                    theta,
-                    &(false, true, false, false, false),
-                    true,
-                    mean_var.0.ln(),
-                    4,
-                    0,
-                )
-                .1
-                - state_bundle.prep_output.budgets[4] as f64;
-            results.push((theta, res));
-        }
-        let json_data: Vec<Vec<f64>> = results.iter().map(|(x, y)| vec![*x, *y]).collect();
+    //     let mean_var = {
+    //         let out = best_state_so_far.ks(
+    //             0.0,
+    //             &(false, true, true, true, true),
+    //             true,
+    //             best_state_so_far.simple_avg_var(4, 0).0,
+    //             4,
+    //             0,
+    //         );
+    //         dbg!(out);
+    //         (out.1, out.2)
+    //     };
+    //     for i in 0..100_000 {
+    //         let theta =
+    //             i as f64 / 100_000_f64 * (soft_high_limit - soft_low_limit) + soft_low_limit;
+    //         let res = best_state_so_far
+    //             .ks(
+    //                 theta,
+    //                 &(false, true, false, false, false),
+    //                 true,
+    //                 mean_var.0.ln(),
+    //                 4,
+    //                 0,
+    //             )
+    //             .1
+    //             - state_bundle.prep_output.budgets[4] as f64;
+    //         results.push((theta, res));
+    //     }
+    //     let json_data: Vec<Vec<f64>> = results.iter().map(|(x, y)| vec![*x, *y]).collect();
 
-        let json_string = serde_json::to_string_pretty(&json_data).unwrap();
+    //     let json_string = serde_json::to_string_pretty(&json_data).unwrap();
 
-        let mut file = File::create("results.json").unwrap();
-        file.write_all(json_string.as_bytes()).unwrap();
-    }
+    //     let mut file = File::create("results.json").unwrap();
+    //     file.write_all(json_string.as_bytes()).unwrap();
+    // }
     best_state_so_far
 }

@@ -6,6 +6,7 @@ use crate::brute::{MAX_BRUTE_SIZE, brute_biased_recursive, brute_success_prob};
 use crate::constants::FLOAT_TOL;
 // use crate::helpers::PairIterator;
 
+use crate::performance::Performance;
 use crate::saddlepoint_approximation::average::{DEBUG_AVERAGE, DEBUG_AVG_INDEX};
 // use crate::saddlepoint_approximation::core::THETA_TOL;
 use crate::state_bundle::StateBundle;
@@ -135,26 +136,26 @@ impl StateBundle {
         }
         false
     }
-    pub fn saddlepoint_approximation_prob_wrapper(
+    pub fn saddlepoint_approximation_wrapper(
         &self,
         support_index: i64,
         skip_count: usize,
         inp_budget: f64,
-        init_theta: &mut f64,
 
         compute_biased: bool,
         mean_var: (f64, f64),
+        performance: &mut Performance,
     ) -> f64 {
         let (min_value, max_value) = self.find_min_max(support_index, skip_count, compute_biased);
 
         let span = lattice_span(self.extract_support_with_meta(support_index, skip_count));
         if inp_budget > max_value + FLOAT_TOL {
-            // self.performance.trivial_count += 1;
+            performance.trivial_count += 1;
             return 1.0;
         }
 
         if inp_budget < min_value - FLOAT_TOL {
-            //inp_budgetself.performance.trivial_count += 1;
+            performance.trivial_count += 1;
             return 0.0;
         }
 
@@ -163,8 +164,8 @@ impl StateBundle {
                 .min(max_value - span)
                 .max(min_value)
                 + span / 2.0;
-            let (soft_low_limit, mut guess, soft_high_limit) =
-                self.min_guess_max_triplet(support_index, skip_count);
+            let (soft_low_limit, guess, soft_high_limit) =
+                self.min_guess_max_triplet(min_value, max_value, support_index, skip_count);
             let soft_low_budget = self
                 .ks(
                     soft_low_limit,
@@ -173,6 +174,7 @@ impl StateBundle {
                     mean_var.0.ln(),
                     support_index,
                     skip_count,
+                    performance,
                 )
                 .1;
             let soft_high_budget = self
@@ -183,9 +185,12 @@ impl StateBundle {
                     mean_var.0.ln(),
                     support_index,
                     skip_count,
+                    performance,
                 )
                 .1;
-            // dbg!(soft_low_budget, soft_high_budget);
+
+            // dbg!(soft_low_budget, soft_high_budget, min_value, max_value);
+            // panic!();
             if soft_low_budget < budget && budget < soft_high_budget {
                 return self.saddlepoint_approximation(
                     support_index,
@@ -194,16 +199,18 @@ impl StateBundle {
                     max_value,
                     span,
                     budget,
-                    &mut guess,
                     compute_biased,
                     mean_var,
+                    performance,
+                    (soft_low_limit, guess, soft_high_limit),
                 );
             }
         }
         if compute_biased {
-            if support_index == DEBUG_AVG_INDEX && DEBUG_AVERAGE {
-                dbg!("brute");
-            }
+            // if support_index == DEBUG_AVG_INDEX && DEBUG_AVERAGE {
+            //     dbg!("brute");
+            // }
+            performance.brute_count += 1;
 
             return brute_biased_recursive(
                 &self.gather_collapsed(support_index, skip_count, 1),
@@ -228,12 +235,13 @@ impl StateBundle {
         max_value: f64,
         span: f64,
         budget: f64,
-        init_theta: &mut f64,
+
         compute_biased: bool,
         mean_var: (f64, f64),
-        // limit: f64,
+        performance: &mut Performance,
+        guess_triplet: (f64, f64, f64), // limit: f64,
     ) -> f64 {
-        // self.performance.sa_count += 1;
+        performance.sa_count += 1;
         let mean_log = if compute_biased {
             assert!(!mean_var.0.is_nan());
             mean_var.0.ln()
@@ -249,6 +257,7 @@ impl StateBundle {
                 mean_log,
                 support_index,
                 skip_count,
+                performance,
             );
             (out.1, out.2)
         } else {
@@ -256,28 +265,21 @@ impl StateBundle {
         };
         let k1_zero = mean_var.0;
 
+        let (low_limit, guess, high_limit) = guess_triplet; //self.min_guess_max_triplet(support_index, skip_count);
+
         let result_opt = self.my_householder(
-            0.0,
             compute_biased,
             mean_log,
             support_index,
             skip_count,
             budget,
-            min_value,
-            max_value, // limit,
-            mean_var,
+            low_limit,
+            guess,
+            high_limit,
+            performance,
         );
 
         if DEBUG_SA || result_opt.is_none() {
-            let (low_limit, guess, high_limit) = self.min_guess_max_triplet(
-                // budget,
-                // max_value,
-                // min_value,
-                support_index,
-                skip_count,
-                // mean_var,
-                // compute_biased,
-            );
             dbg!(
                 budget,
                 min_value,
@@ -297,6 +299,7 @@ impl StateBundle {
                     mean_log,
                     support_index,
                     skip_count,
+                    performance,
                 )
             );
 
@@ -309,6 +312,7 @@ impl StateBundle {
                     mean_log,
                     support_index,
                     skip_count,
+                    performance,
                 )
             );
 
@@ -321,6 +325,7 @@ impl StateBundle {
                     mean_log,
                     support_index,
                     skip_count,
+                    performance,
                 )
             );
 
@@ -333,6 +338,7 @@ impl StateBundle {
                     mean_log,
                     support_index,
                     skip_count,
+                    performance,
                 )
             );
             // dbg!(
@@ -353,7 +359,6 @@ impl StateBundle {
 
         let theta_hat = result.0;
 
-        *init_theta = theta_hat;
         // // let theta_error = (theta_hat - last_theta).abs();
         // if DEBUG_SA {
         //     dbg!(theta_hat, theta_error);
@@ -367,6 +372,7 @@ impl StateBundle {
             mean_log,
             support_index,
             skip_count,
+            performance,
         );
 
         let w = |t: f64, ks_inp: f64| t.signum() * (2.0 * (t * budget - ks_inp)).sqrt();
@@ -398,26 +404,7 @@ impl StateBundle {
         //     error = (sa_out - old_out).abs();
         // }
         let mut approx: f64 = -6.9;
-        let std = ks_tuple.2.sqrt();
-        let z = (budget - ks_tuple.1) / std;
 
-        let gamma3 = ks_tuple.3 / std.powi(3); // skewness
-
-        let pdf = normal_dist.pdf(z);
-        let cdf = normal_dist.cdf(z);
-
-        // Edgeworth (cdf) up to 4th cumulant and k3^2 term:
-        let cdf_correction = pdf
-            * ((gamma3 / 6.0) * (z.powi(2) - 1.0)
-                + if compute_biased {
-                    0.0
-                } else {
-                    let gamma4 = ks_tuple.4 / std.powi(4); // excess kurtosis
-                    (gamma4 / 24.0) * (z.powi(3) - 3.0 * z)
-                        + (gamma3 * gamma3 / 72.0) * (z.powi(5) - 10.0 * z.powi(3) + 15.0 * z)
-                });
-
-        approx = cdf - cdf_correction;
         // if DEBUG_SA || approx < 0.0 || approx > 1.0 {
         //     dbg!(
         //         // error,
@@ -434,14 +421,34 @@ impl StateBundle {
 
         let mut actual_out = sa_out;
         if (k1_zero - budget).abs() / (k1_zero.max(budget).max(1.0)) < 1e-5 {
-            // self.performance.edgeworth_count += 1;
+            performance.edgeworth_count += 1;
 
             if DEBUG_AVERAGE && support_index == DEBUG_AVG_INDEX {
                 dbg!("edge", approx, actual_out);
             }
+            let std = ks_tuple.2.sqrt();
+            let z = (budget - ks_tuple.1) / std;
+
+            let gamma3 = ks_tuple.3 / std.powi(3); // skewness
+
+            let pdf = normal_dist.pdf(z);
+            let cdf = normal_dist.cdf(z);
+
+            // Edgeworth (cdf) up to 4th cumulant and k3^2 term:
+            let cdf_correction = pdf
+                * ((gamma3 / 6.0) * (z.powi(2) - 1.0)
+                    + if compute_biased {
+                        0.0
+                    } else {
+                        let gamma4 = ks_tuple.4 / std.powi(4); // excess kurtosis
+                        (gamma4 / 24.0) * (z.powi(3) - 3.0 * z)
+                            + (gamma3 * gamma3 / 72.0) * (z.powi(5) - 10.0 * z.powi(3) + 15.0 * z)
+                    });
+
+            approx = cdf - cdf_correction;
             actual_out = approx;
         } else {
-            // performance.lugganani_count += 1;
+            performance.lugganani_count += 1;
             // if compute_biased {
             //     // dbg!(
             //     //     -normal_dist.pdf(w_hat) / theta_hat,
@@ -505,16 +512,7 @@ impl StateBundle {
             //     self.extract_collapsed_pair(support_index, skip_count)
             //         .try_len()
             //         .unwrap(),
-            // );
-            let (low_limit, guess, high_limit) = self.min_guess_max_triplet(
-                // budget,
-                // max_value,
-                // min_value,
-                support_index,
-                skip_count,
-                // mean_var,
-                // compute_biased,
-            );
+
             dbg!(
                 budget,
                 min_value,
@@ -534,6 +532,7 @@ impl StateBundle {
                     mean_log,
                     support_index,
                     skip_count,
+                    performance,
                 )
             );
 
@@ -546,6 +545,7 @@ impl StateBundle {
                     mean_log,
                     support_index,
                     skip_count,
+                    performance,
                 )
             );
 
@@ -558,6 +558,7 @@ impl StateBundle {
                     mean_log,
                     support_index,
                     skip_count,
+                    performance,
                 )
             );
 
@@ -570,6 +571,7 @@ impl StateBundle {
                     mean_log,
                     support_index,
                     skip_count,
+                    performance,
                 )
             );
             dbg!(

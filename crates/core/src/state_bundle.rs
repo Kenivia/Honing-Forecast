@@ -1,5 +1,6 @@
 use crate::parser::PreparationOutput;
 
+use crate::performance::Performance;
 use crate::upgrade::Upgrade;
 use std::collections::HashMap;
 
@@ -19,10 +20,10 @@ pub struct StateBundle {
 }
 
 impl StateBundle {
-    pub fn metric_router(&mut self, metric_type: i64) -> f64 {
+    pub fn metric_router(&mut self, metric_type: i64, performance: &mut Performance) -> f64 {
         match metric_type {
-            0 => self.success_prob_metric(),
-            1 => self.average_gold_metric(),
+            0 => self.success_prob_metric(performance),
+            1 => self.average_gold_metric(performance),
             _ => NAN,
         }
     }
