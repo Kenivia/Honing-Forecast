@@ -32,7 +32,7 @@ pub struct Upgrade {
     pub juice_avail: bool,
     pub books_avail: i64,
     // pub juice_arr: Vec<f64>,
-    pub state: State, // state for this upgrade - (juice_used, book_index) per tap
+    pub state: State, // state for this upgrade - (juice_used? , id) per tap
     pub cost_dist: Vec<Support>,
     pub weap_juice_costs: Vec<Support>,
     pub armor_juice_costs: Vec<Support>,
@@ -149,6 +149,7 @@ pub struct Support {
     pub collapsed_state_hash: u64,
     pub ignore: bool,
     pub gap_size: f64,
+    pub max_value: f64,
 }
 
 impl Support {
@@ -157,7 +158,7 @@ impl Support {
         &self.collapsed_pair
     }
 
-    pub fn collapse_support(&mut self, prob_dist: &mut ProbDist) {
+    pub fn collapse_support(&mut self, prob_dist: &ProbDist) {
         assert!(prob_dist.payload.len() == self.support.len());
         assert!(prob_dist.prob_state_hash == self.support_state_hash);
 
@@ -188,37 +189,41 @@ impl Support {
         }
     }
 
-    pub fn new(
-        payload: Vec<f64>,
-        state_hash: u64,
-        state_invariant: bool,
-        linear: bool,
-        gap_size: f64,
-    ) -> Self {
-        Self {
-            support: payload.clone(),
-            support_state_hash: state_hash,
-            state_invariant,
-            linear: linear,
-            collapsed_pair: payload
-                .iter()
-                .map(|&x| (x, NAN))
-                .collect::<Vec<(f64, f64)>>(),
-            collapsed_state_hash: 0,
-            ignore: false,
-            gap_size,
-        }
-    }
+    // pub fn new(
+    //     payload: Vec<f64>,
+    //     state_hash: u64,
+    //     state_invariant: bool,
+    //     linear: bool,
+    //     gap_size: f64,
+    // ) -> Self {
+    //     Self {
+    //         support: payload.clone(),
+    //         support_state_hash: state_hash,
+    //         state_invariant,
+    //         linear: linear,
+    //         collapsed_pair: payload
+    //             .iter()
+    //             .map(|&x| (x, NAN))
+    //             .collect::<Vec<(f64, f64)>>(),
+    //         collapsed_state_hash: 0,
+    //         ignore: false,
+    //         gap_size,
+    //     }
+    // }
 
     pub fn update_payload(
         &mut self,
         new_payload: Vec<f64>,
         new_state_hash: u64,
-        prob_dist: &mut ProbDist,
+        prob_dist: &ProbDist,
+        gap_size: f64,
+        max: f64,
     ) {
         self.support = new_payload;
         self.support_state_hash = new_state_hash;
         self.collapse_support(prob_dist);
+        self.gap_size = gap_size;
+        self.max_value = max;
     }
 }
 
@@ -233,7 +238,8 @@ impl Default for Support {
             collapsed_state_hash: 0,
             collapsed_pair: vec![],
             ignore: false,
-            gap_size: 1.0,
+            gap_size: NAN,
+            max_value: NAN,
         }
     }
 }
@@ -254,6 +260,7 @@ impl Upgrade {
         is_weapon: bool,
         artisan_rate: f64,
         upgrade_index: usize,
+        num_juice_avail: usize,
     ) -> Self {
         let prob_dist_len: usize = prob_dist.len();
         let base_chance: f64 = prob_dist[1];
@@ -294,9 +301,9 @@ impl Upgrade {
             books_avail: -1,                // will overwrite in prep
 
             state: State::new(prob_dist_len), // initialize state with default values
-            cost_dist: vec![],
-            weap_juice_costs: vec![],
-            armor_juice_costs: vec![],
+            cost_dist: vec![Support::default(); 7],
+            weap_juice_costs: vec![Support::default(); num_juice_avail],
+            armor_juice_costs: vec![Support::default(); num_juice_avail],
 
             combined_gold_costs: Support::default(),
             name_string: {

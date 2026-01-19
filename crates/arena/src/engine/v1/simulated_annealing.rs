@@ -111,7 +111,9 @@ fn neighbour<R: Rng>(state_bundle: &mut StateBundle, temp: f64, init_temp: f64, 
         want_to_flip_indices.sort();
         let mut flipped_index: usize = 0;
 
-        let book_target: usize = rng.random_range(0..=choice_len);
+        let ids = &state_bundle.prep_output.juice_info.ids[upgrade.upgrade_index];
+        let book_target_index: usize = rng.random_range(0..=choice_len);
+        let book_target_id: usize = ids[book_target_index];
         let mut want_to_book_indices: Vec<usize> =
             (0..state.len() - 1).choose_multiple(rng, want_to_book);
         want_to_book_indices.sort();
@@ -120,12 +122,13 @@ fn neighbour<R: Rng>(state_bundle: &mut StateBundle, temp: f64, init_temp: f64, 
         let mut artisan: f64 = 0.0;
         let base_chance = upgrade.base_chance;
         let artisan_rate = upgrade.artisan_rate;
-        let upgrade_index = upgrade.upgrade_index;
-        let juice_chances = &state_bundle.prep_output.juice_info.chances[upgrade_index];
+
+        let juice_chances = &state_bundle.prep_output.juice_info.chances_id;
+
         // dbg!(&state, choice_len);
-        for (s_index, (juice, book_index)) in state.iter_mut().enumerate() {
+        for (s_index, (juice, id)) in state.iter_mut().enumerate() {
             if artisan >= 1.0 || s_index == 0 {
-                (*juice, *book_index) = (false, 0);
+                (*juice, *id) = (false, 0);
                 continue;
             }
             if flipped_index < want_to_flip_indices.len()
@@ -142,9 +145,9 @@ fn neighbour<R: Rng>(state_bundle: &mut StateBundle, temp: f64, init_temp: f64, 
             if booked_index < want_to_book_indices.len()
                 && s_index == want_to_book_indices[booked_index]
             {
-                if *book_index != book_target {
+                if *id != book_target_id {
                     booked_index += 1;
-                    *book_index = book_target;
+                    *id = book_target_id;
                 } else {
                     want_to_book_indices[booked_index] = s_index + 1;
                 }
@@ -152,9 +155,13 @@ fn neighbour<R: Rng>(state_bundle: &mut StateBundle, temp: f64, init_temp: f64, 
             artisan += (46.51_f64 / 100.0)
                 * artisan_rate
                 * (base_chance
-                    + if *juice { juice_chances[0] } else { 0.0 }
-                    + if *book_index > 0 {
-                        juice_chances[*book_index]
+                    + if *juice {
+                        juice_chances[0][upgrade.upgrade_index]
+                    } else {
+                        0.0
+                    }
+                    + if *id > 0 {
+                        juice_chances[*id][upgrade.upgrade_index]
                     } else {
                         0.0
                     });

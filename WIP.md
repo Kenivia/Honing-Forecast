@@ -5,11 +5,6 @@
 
 ### Now
 
-- hunt down the discrepancy with juiced states
-  - rewrite how juiceinfo is laid out and use id in the state immediately ( only same "ids" arr in juice info to convert)
-  - clean up how support stuff get updated (update_individual)
-  - just hope that the problem will reveal itself when i tidy up the mess ig
-
 #### Optimizations
 
 - maybe its time to get rid of Box< iterator >
@@ -30,7 +25,7 @@
 ### Misc
 
 - JUICE CHESTS AND MAYBE EVEN BOOKS CHESTS
-  - ~~just a greedy algorithm based on the prices~~ um might be more complicated than i think
+  - ~~just a greedy algorithm based on the prices~~ um might be more complicated than i think, maybe need to add it to the decision space but that sounds incredibly uh wasteful, maybe just do it naively
 
 - force special state to respect upgrade order
   - just ignore invalid ones? or what
@@ -38,8 +33,6 @@
     - get rid of non-tick input i guess?
 
 - add assertions to a lot of prepoutput stuff
-  
-- SURELY there's a better way to lay out juiceinfo...
 
 - start working on visualizing this stuff
 
@@ -155,6 +148,11 @@ graph
 
 ## Done / cancelled
 
+- ~~SURELY there's a better way to lay out juiceinfo...~~ yes there was
+- ~~hunt down the discrepancy with juiced states~~
+  - ~~rewrite how juiceinfo is laid out and use id in the state immediately ( only same "ids" arr in juice info to convert)~~
+  - ~~clean up how support stuff get updated (update_individual)~~
+  - ~~just hope that the problem will reveal itself when i tidy up the mess ig~~ it did
 - ~~figure out what's the like optimal brute threshold~~ support size estimate turns out to be kinda useless
 - ~~test how good newton is compared to what im doing now~~ a decent amount, keeping householder yippy
 - ~~test how much linear helps~~ a good amt in some cases

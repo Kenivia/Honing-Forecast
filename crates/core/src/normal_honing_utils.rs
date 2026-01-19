@@ -120,21 +120,27 @@ impl StateBundle {
         let prep_output: &mut PreparationOutput = &mut self.prep_output;
 
         for upgrade in self.upgrade_arr.iter_mut() {
-            let mut this_combined = Vec::with_capacity(upgrade.prob_dist.len());
+            let l_len = upgrade.prob_dist.len();
+            let mut this_combined = Vec::with_capacity(l_len);
             let mut cost_so_far: f64 = 0.0;
             for (p_index, _) in upgrade.prob_dist.iter().enumerate() {
                 this_combined.push(cost_so_far);
+
+                if p_index >= l_len - 1 {
+                    break;
+                }
+
                 cost_so_far += upgrade.eqv_gold_per_tap;
-                let (juice, book_index) = upgrade.state[p_index];
+                let (juice, state_id) = upgrade.state[p_index];
                 if juice {
                     add_juice_gold_cost(&prep_output.juice_info, upgrade, &mut cost_so_far, 0);
                 }
-                if book_index > 0 {
+                if state_id > 0 {
                     add_juice_gold_cost(
                         &prep_output.juice_info,
                         upgrade,
                         &mut cost_so_far,
-                        book_index,
+                        state_id,
                     );
                 }
             }
@@ -142,6 +148,8 @@ impl StateBundle {
                 this_combined,
                 upgrade.state.hash,
                 &mut upgrade.prob_dist,
+                1.0,
+                cost_so_far,
             );
 
             // upgrade.combined_gold_costs.associated_state_hash
@@ -151,145 +159,78 @@ impl StateBundle {
     pub fn update_individual_support(&mut self) {
         let prep_output = &mut self.prep_output;
 
-        let j_len: usize = prep_output.juice_info.num_avail;
+        // let j_len: usize = prep_output.juice_info.num_avail;
 
         for upgrade in self.upgrade_arr.iter_mut() {
             let l_len: usize = upgrade.prob_dist.len();
 
             for t_index in 0..7 {
                 let mut this_mats_costs: Vec<f64> = Vec::with_capacity(l_len);
-                let mut cost_so_far = 0.0;
-                for _ in upgrade.prob_dist.iter() {
+                let mut cost_so_far: f64 = 0.0;
+                let this_cost: f64 = upgrade.costs[t_index] as f64;
+                for (index, _p) in upgrade.prob_dist.iter().enumerate() {
                     this_mats_costs.push(cost_so_far);
-                    cost_so_far += upgrade.costs[t_index] as f64;
+
+                    if index >= l_len - 1 {
+                        break;
+                    }
+
+                    cost_so_far += this_cost;
                 }
-                if upgrade.cost_dist.len() <= t_index {
-                    upgrade.cost_dist.push(Support::new(
-                        this_mats_costs.clone(),
-                        upgrade.state.hash,
-                        true,
-                        true,
-                        upgrade.costs[t_index] as f64,
-                    ));
-                }
+
                 upgrade.cost_dist[t_index].update_payload(
                     this_mats_costs,
                     upgrade.state.hash,
-                    &mut upgrade.prob_dist,
+                    &upgrade.prob_dist,
+                    this_cost,
+                    cost_so_far,
                 );
             }
 
             // ts so weird but idk if theres a better way, i think i just designed this special state poorly maybe
-            for id_to_match in 0..j_len {
-                let mut this_weap: Vec<f64> = Vec::with_capacity(l_len);
-                let mut this_armor: Vec<f64> = Vec::with_capacity(l_len);
-                for (bit_index, _) in prep_output.juice_info.gold_costs[upgrade.upgrade_index]
-                    .iter()
-                    .enumerate()
-                {
-                    let id: usize = prep_output.juice_info.ids[upgrade.upgrade_index][bit_index];
-                    if id_to_match != id {
-                        continue;
-                    }
-                    let mut costs_so_far: (f64, f64) = (0.0, 0.0);
 
-                    for (p_index, _) in upgrade.prob_dist.iter().enumerate() {
-                        this_weap.push(costs_so_far.0);
-                        this_armor.push(costs_so_far.1);
-                        let (juice, book_index) = upgrade.state[p_index];
-                        if juice && id == 0 {
-                            if upgrade.is_weapon {
-                                costs_so_far.0 += prep_output.juice_info.amt_used
-                                    [upgrade.upgrade_index][0]
-                                    as f64;
-                            } else {
-                                costs_so_far.1 += prep_output.juice_info.amt_used
-                                    [upgrade.upgrade_index][0]
-                                    as f64;
-                            }
-                        }
-                        if book_index > 0 && book_index == id {
-                            if upgrade.is_weapon {
-                                costs_so_far.0 += prep_output.juice_info.amt_used
-                                    [upgrade.upgrade_index][book_index]
-                                    as f64;
-                            } else {
-                                costs_so_far.1 += prep_output.juice_info.amt_used
-                                    [upgrade.upgrade_index][book_index]
-                                    as f64;
-                            }
+            for id in 0..prep_output.juice_info.num_avail {
+                let mut weap_cost: f64 = 0.0;
+                let mut armor_cost: f64 = 0.0;
+                let mut weap_support: Vec<f64> = Vec::with_capacity(l_len);
+                let mut armor_support: Vec<f64> = Vec::with_capacity(l_len);
+                let amt = prep_output.juice_info.amt_used_id[id][upgrade.upgrade_index] as f64;
+                for (index, (juice, book)) in upgrade.state.iter().take(l_len).enumerate() {
+                    weap_support.push(weap_cost);
+                    armor_support.push(armor_cost);
+                    if index >= l_len - 1 {
+                        break;
+                    }
+                    if *juice && id == 0 {
+                        if upgrade.is_weapon {
+                            weap_cost += amt;
+                        } else {
+                            armor_cost += amt;
                         }
                     }
-
-                    break;
-                }
-
-                // all this is so fucking ugly but whatever
-                if upgrade.weap_juice_costs.len() <= id_to_match {
-                    if this_weap.len() > 0 {
-                        upgrade.weap_juice_costs.push(Support::new(
-                            this_weap.clone(),
-                            upgrade.state.hash,
-                            false,
-                            true,
-                            prep_output.juice_info.amt_used_id[id_to_match][upgrade.upgrade_index]
-                                as f64,
-                        ));
-                    } else {
-                        upgrade.weap_juice_costs.push(Support::new(
-                            vec![0.0; l_len],
-                            upgrade.state.hash,
-                            false,
-                            true,
-                            prep_output.juice_info.amt_used_id[id_to_match][upgrade.upgrade_index]
-                                as f64,
-                        ));
-                    }
-
-                    if this_armor.len() > 0 {
-                        upgrade.armor_juice_costs.push(Support::new(
-                            this_armor.clone(),
-                            upgrade.state.hash,
-                            false,
-                            true,
-                            prep_output.juice_info.amt_used_id[id_to_match][upgrade.upgrade_index]
-                                as f64,
-                        ));
-                    } else {
-                        upgrade.armor_juice_costs.push(Support::new(
-                            vec![0.0; l_len],
-                            upgrade.state.hash,
-                            false,
-                            true,
-                            prep_output.juice_info.amt_used_id[id_to_match][upgrade.upgrade_index]
-                                as f64,
-                        ));
+                    if *book == id && id > 0 {
+                        if upgrade.is_weapon {
+                            weap_cost += amt;
+                        } else {
+                            armor_cost += amt;
+                        }
                     }
                 }
-                if this_armor.len() > 0 {
-                    upgrade.weap_juice_costs[id_to_match].update_payload(
-                        this_weap,
-                        upgrade.state.hash,
-                        &mut upgrade.prob_dist,
-                    );
-                    upgrade.armor_juice_costs[id_to_match].update_payload(
-                        this_armor,
-                        upgrade.state.hash,
-                        &mut upgrade.prob_dist,
-                    );
-                } else {
-                    // TODO maybe tihs can be optimized
-                    upgrade.weap_juice_costs[id_to_match].update_payload(
-                        vec![0.0; l_len],
-                        upgrade.state.hash,
-                        &mut upgrade.prob_dist,
-                    );
-                    upgrade.armor_juice_costs[id_to_match].update_payload(
-                        vec![0.0; l_len],
-                        upgrade.state.hash,
-                        &mut upgrade.prob_dist,
-                    );
-                }
+                upgrade.weap_juice_costs[id].update_payload(
+                    weap_support,
+                    upgrade.state.hash,
+                    &upgrade.prob_dist,
+                    amt,
+                    weap_cost,
+                );
+
+                upgrade.armor_juice_costs[id].update_payload(
+                    armor_support,
+                    upgrade.state.hash,
+                    &upgrade.prob_dist,
+                    amt,
+                    armor_cost,
+                );
             }
         }
     }
@@ -533,14 +474,14 @@ pub fn add_juice_gold_cost(
     juice_info: &JuiceInfo,
     upgrade: &Upgrade,
     cost_so_far: &mut f64,
-    index: usize,
+    id: usize,
 ) {
-    let this_cost: (f64, f64) = juice_info.gold_costs[upgrade.upgrade_index][index];
-    if upgrade.is_weapon {
-        *cost_so_far += this_cost.0;
-    } else {
-        *cost_so_far += this_cost.1;
-    }
+    *cost_so_far += juice_info.amt_used_id[id][upgrade.upgrade_index] as f64
+        * if upgrade.is_weapon {
+            juice_info.one_gold_cost_id[id].0
+        } else {
+            juice_info.one_gold_cost_id[id].1
+        };
 }
 
 pub fn new_prob_dist(
@@ -551,13 +492,13 @@ pub fn new_prob_dist(
 ) -> Vec<f64> {
     let new_extra: Vec<f64> = state
         .iter()
-        .map(|(juice, book_index)| {
+        .map(|(juice, id)| {
             let mut chance: f64 = 0.0;
             if *juice {
-                chance += juice_info.chances[upgrade.upgrade_index][0];
+                chance += juice_info.chances_id[0][upgrade.upgrade_index];
             }
-            if *book_index > 0 {
-                chance += juice_info.chances[upgrade.upgrade_index][*book_index];
+            if *id > 0 {
+                chance += juice_info.chances_id[*id][upgrade.upgrade_index];
             }
             chance
         }) //if *x > 0 { upgrade.base_chance } else { 0.0 }) //

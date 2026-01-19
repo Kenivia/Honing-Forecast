@@ -110,6 +110,7 @@ impl PreparationOutput {
             adv_counts,
             &adv_hone_strategy.to_string(),
             express_event,
+            juice_info.num_avail,
         );
 
         for upgrade in upgrade_arr.iter_mut() {
@@ -140,7 +141,7 @@ impl PreparationOutput {
         }
         for upgrade in upgrade_arr.iter_mut() {
             // JUST GONNA ASSUME THAT not have juice => not have book or book => juice or first element is always juice (if there's a first element)
-            let both_avail: usize = juice_info.gold_costs[upgrade.upgrade_index].len();
+            let both_avail: usize = juice_info.ids[upgrade.upgrade_index].len();
             if both_avail > 0 {
                 upgrade.juice_avail = true;
             }
@@ -181,8 +182,8 @@ pub fn parser(
     normal_counts: &[Vec<i64>],
     adv_counts: &[Vec<i64>],
     adv_hone_strategy: &String,
-
     express_event: bool,
+    num_juice_avail: usize,
 ) -> Vec<Upgrade> {
     let mut out: Vec<Upgrade> = Vec::new();
     let artisan_rate_arr: [f64; 25] = get_event_modified_artisan(express_event);
@@ -220,6 +221,7 @@ pub fn parser(
                 is_weapon == 1,
                 event_artisan_rate,
                 upgrade_index,
+                num_juice_avail,
             ));
 
             current_counter += 1;

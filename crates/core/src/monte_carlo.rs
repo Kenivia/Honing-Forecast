@@ -78,7 +78,7 @@ fn juice_costs(upgrade: &Upgrade, state_bundle: &StateBundle) -> Vec<Vec<(i64, i
     let mut juice_used: Vec<Vec<(i64, i64)>> =
         vec![vec![(0, 0); prep_output.juice_info.amt_used_id.len()]; upgrade.prob_dist.len()];
     for (p_index, _) in upgrade.prob_dist.iter().enumerate() {
-        let (juice, book_index) = upgrade.state[p_index];
+        let (juice, state_id) = upgrade.state[p_index];
         for (id, (weap_used, armor_used)) in juice_used[p_index].iter_mut().enumerate() {
             if upgrade.is_weapon {
                 *weap_used += juice_so_far[id];
@@ -88,8 +88,7 @@ fn juice_costs(upgrade: &Upgrade, state_bundle: &StateBundle) -> Vec<Vec<(i64, i
             let juice_amt = prep_output.juice_info.amt_used_id[id][upgrade.upgrade_index];
             if id == 0 && juice {
                 juice_so_far[id] += juice_amt;
-            } else if id > 0 && prep_output.juice_info.ids[upgrade.upgrade_index][book_index] == id
-            {
+            } else if id > 0 && state_id == id {
                 juice_so_far[id] += juice_amt;
             }
         }
