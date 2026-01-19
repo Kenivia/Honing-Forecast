@@ -234,7 +234,7 @@ pub fn monte_carlo_wrapper<R: Rng>(
             let diff_weap =
                 state_bundle.prep_output.juice_books_owned[id].0 as f64 - float_juice[id].0;
             d.0 += (diff_weap)
-                * if d.0 > 0.0 {
+                * if diff_weap > 0.0 {
                     state_bundle.prep_output.juice_info.one_leftover_value_id[id].0
                 } else {
                     state_bundle.prep_output.juice_info.one_gold_cost_id[id].0
@@ -242,7 +242,7 @@ pub fn monte_carlo_wrapper<R: Rng>(
             let diff_armor =
                 state_bundle.prep_output.juice_books_owned[id].1 as f64 - float_juice[id].1;
             d.1 += (diff_armor)
-                * if d.1 > 0.0 {
+                * if diff_armor > 0.0 {
                     state_bundle.prep_output.juice_info.one_leftover_value_id[id].1
                 } else {
                     state_bundle.prep_output.juice_info.one_gold_cost_id[id].1
@@ -308,6 +308,7 @@ pub fn monte_carlo_wrapper<R: Rng>(
             &debug_truncated_mean_by_skip,
             &state_bundle.prep_output.price_arr,
             &state_bundle.prep_output.leftover_values,
+            average / data_size as f64
         );
     }
     let prob_leftover: Vec<f64> = leftover_counts

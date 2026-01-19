@@ -6,8 +6,9 @@
 ### Now
 
 - hunt down the discrepancy with juiced states
-
-- clean up how support stuff get updated (update_individual)
+  - rewrite how juiceinfo is laid out and use id in the state immediately ( only same "ids" arr in juice info to convert)
+  - clean up how support stuff get updated (update_individual)
+  - just hope that the problem will reveal itself when i tidy up the mess ig
 
 #### Optimizations
 
@@ -17,14 +18,16 @@
 
 - cache min max values with pair
   - aka step size & max size
+  - also min_delta of both top side and bottom side
+  - can use this to calculate lattice span also at least for linear cases
 
 - cache the geom calculations  (special_prob seems fast enough so cbb rn)
 
 - can actually save 1 evaluation at the end of special_prob by setting the zero prob...
 
-### Misc
+- how to better guess theta
 
-- figure out what's the like optimal brute threshold
+### Misc
 
 - JUICE CHESTS AND MAYBE EVEN BOOKS CHESTS
   - ~~just a greedy algorithm based on the prices~~ um might be more complicated than i think
@@ -152,6 +155,7 @@ graph
 
 ## Done / cancelled
 
+- ~~figure out what's the like optimal brute threshold~~ support size estimate turns out to be kinda useless
 - ~~test how good newton is compared to what im doing now~~ a decent amount, keeping householder yippy
 - ~~test how much linear helps~~ a good amt in some cases
 - ~~use higher derivatives than newton~~

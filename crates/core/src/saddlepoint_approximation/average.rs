@@ -1,7 +1,7 @@
 // use std::f64::NAN;
 
 // use crate::constants::FLOAT_TOL;
-use crate::constants::SPECIAL_TOL;
+use crate::constants::{FLOAT_TOL, SPECIAL_TOL};
 
 use itertools::izip;
 
@@ -122,7 +122,7 @@ impl StateBundle {
     ) -> f64 {
         let mean_var: (f64, f64) = self.simple_avg_var(support_index, skip_count);
 
-        if price == leftover_value {
+        if (price - leftover_value).abs() < FLOAT_TOL {
             return price * (effective_budget - mean_var.0);
         }
 
