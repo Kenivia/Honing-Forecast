@@ -185,7 +185,7 @@ pub fn solve<R: Rng>(
     metric_type: i64, // note that we're always trying to maximize this metric which is why i'm not calling it energy
     mut state_bundle: StateBundle,
 ) -> StateBundle {
-    let init_temp: f64 = if DEBUG_AVERAGE { -1.0 } else { 333.0 };
+    let init_temp: f64 = if DEBUG_AVERAGE { -1.0 } else { -333.0 };
     // let init_temp: f64 = -1.0; // 0.969 = ~32
     // let mut cache: HashMap<(Vec<bool>, usize), Vec<([i64; 9], f64)>> = HashMap::new();
     let mut temp: f64 = init_temp;
