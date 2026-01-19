@@ -375,6 +375,7 @@ impl StateBundle {
     }
 
     // these are for brute force stuff that expect to be able to index into the array that uh i can't be bothered to rewrite (it's 100% possible)
+    // actaully can probably just store a vector of references?
     pub fn gather_prob_dist(&self) -> Vec<Vec<f64>> {
         let mut arr = Vec::with_capacity(self.upgrade_arr.len());
         for upgrade in self.upgrade_arr.iter() {

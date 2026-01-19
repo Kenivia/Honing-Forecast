@@ -126,7 +126,6 @@ impl StateBundle {
             return price * (effective_budget - mean_var.0);
         }
 
-        // let mut truncated_mean: f64 = NAN; // default if it's trivial
         let biased_prob: f64 = self.saddlepoint_approximation_prob_wrapper(
             support_index,
             skip_count,

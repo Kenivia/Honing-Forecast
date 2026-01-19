@@ -49,14 +49,14 @@ impl StateBundle {
         //     );
         // }
         (
-            self.theta_guess_min_tail(
+            2.0 * self.theta_guess_min_tail(
                 support_index,
                 skip_count,
                 // EDGE_PERCENTAGES * (max_value - min_value) + min_value,
                 // min_value,
             ),
             0.0,
-            self.theta_guess_max_tail(
+            2.0 * self.theta_guess_max_tail(
                 support_index,
                 skip_count,
                 // (1.0 - EDGE_PERCENTAGES) * (max_value - min_value) + min_value,

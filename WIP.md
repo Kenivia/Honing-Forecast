@@ -5,8 +5,7 @@
 
 ### Now
 
-- use higher derivatives than newton
-  - will need to um strip out how the current error dection works
+- hunt down the discrepancy with juiced states
 
 - clean up how support stuff get updated (update_individual)
 
@@ -17,8 +16,11 @@
 - pre-allocate scratch space maybe?
 
 - cache min max values with pair
+  - aka step size & max size
 
 - cache the geom calculations  (special_prob seems fast enough so cbb rn)
+
+- can actually save 1 evaluation at the end of special_prob by setting the zero prob...
 
 ### Misc
 
@@ -37,6 +39,8 @@
 - SURELY there's a better way to lay out juiceinfo...
 
 - start working on visualizing this stuff
+
+- rework collapseed so that p = 0 are removed, need to update everything in core also
 
 ### Big
 
@@ -148,7 +152,12 @@ graph
 
 ## Done / cancelled
 
-- ~~figure out what exactly needs to be cloned in Upgrade~
+- ~~test how good newton is compared to what im doing now~~ a decent amount, keeping householder yippy
+- ~~test how much linear helps~~ a good amt in some cases
+- ~~use higher derivatives than newton~~
+  -~~ will need to um strip out how the current error dection works~~
+
+- ~~figure out what exactly needs to be cloned in Upgrade~~
 - ~~use polynomial for equal stepped stuff like for mat costs in averages~~
   - ~~need to work out the math first~~
 - ~~cache lattice span~~ or just compute it more cleverly

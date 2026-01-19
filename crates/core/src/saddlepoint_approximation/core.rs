@@ -64,35 +64,56 @@ impl StateBundle {
             // if theta == 0.0 && DEBUG {
             //     dbg!(&alpha_arr);
             // }
-
-            let mut u_arr: Vec<f64> = Vec::with_capacity(meta_support.access_collapsed().len());
+            let support_len = meta_support.access_collapsed().len();
+            let mut u_arr: Vec<f64> = Vec::with_capacity(support_len);
             let biggest_shift = if theta >= 0.0 {
                 theta * meta_support.access_collapsed().iter().last().unwrap().0
             } else {
-                theta * meta_support.access_collapsed().iter().next().unwrap().0
+                theta * meta_support.access_collapsed().iter().next().unwrap().0 // this is just 0 
             };
 
-            if meta_support.linear && false {
-                // ITS like ALWAYS LINEAR !! ( except combined in success_prob )
-                let base: f64 = (theta
-                    * -meta_support
-                        .access_collapsed()
-                        .iter()
-                        .find(|(s, _p)| *s > FLOAT_TOL)
-                        .unwrap()
-                        .0)
-                    .exp();
-                // this is uh 1 / e ^ ( s_base * theta )
+            if meta_support.linear {
+                let step = meta_support
+                    .access_collapsed()
+                    .iter()
+                    .skip(1)
+                    .next()
+                    .unwrap()
+                    .0;
 
-                let mut cur: f64 = 1.0;
-                for (_, p) in meta_support.access_collapsed().iter().rev() {
-                    // e ^ ((s_base * i -  s_max ) theta)) = e ^ ( s_base * i * theta) - biggest_shift)  going in reverse to make it easier
-                    let u: f64 = p * cur;
-                    cur *= base;
-                    u_arr.push(u);
+                if theta >= 0.0 {
+                    let decay_factor = (-step * theta).exp();
+                    let mut current_exp_val = 1.0;
+                    // dbg!(decay_factor, biggest_shift, step, theta);
+                    for (_s, p) in meta_support.access_collapsed().iter().rev() {
+                        // let correct_u = p * (_s * theta - biggest_shift).exp();
+
+                        let u = p * current_exp_val;
+                        // dbg!(correct_u, u);
+                        sum += u;
+                        u_arr.push(u);
+                        current_exp_val *= decay_factor;
+                    }
+                    // dbg!(decay_factor, step);
+                    u_arr.reverse();
+                    // panic!();
+                } else {
+                    let decay_factor = (step * theta).exp();
+                    let mut current_exp_val = 1.0;
+
+                    for (_s, p) in meta_support.access_collapsed().iter() {
+                        // let correct_u = p * (_s * theta - biggest_shift).exp();
+                        let u = p * current_exp_val;
+
+                        // dbg!(correct_u, u, current_exp_val);
+                        sum += u;
+                        u_arr.push(u);
+
+                        current_exp_val *= decay_factor;
+                    }
+                    // dbg!(decay_factor, step, meta_support.access_collapsed());
                 }
-
-                u_arr.reverse();
+                // panic!();
             } else {
                 for (s, p) in meta_support.access_collapsed().iter() {
                     let u: f64 = p * (s * theta - biggest_shift).exp();
@@ -189,7 +210,7 @@ impl StateBundle {
             low,
             high,
             THETA_TOL,
-            10,
+            20,
             &(false, true, true, true, true),
             compute_biased,
             mean_log,
