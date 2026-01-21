@@ -1,6 +1,5 @@
 use std::f64::NAN;
 
-use crate::constants::FLOAT_TOL;
 use crate::constants::JuiceInfo;
 use crate::parser::PreparationOutput;
 use crate::state_bundle::StateBundle;
@@ -31,26 +30,14 @@ impl StateBundle {
     pub fn pity(&self) -> Vec<i64> {
         self.get_one_tap_pity().1
     }
-    pub fn find_min_max(&self, support_index: i64, skip_count: usize, biased: bool) -> (f64, f64) {
+    pub fn find_min_max(&self, support_index: i64, skip_count: usize) -> (f64, f64) {
         let min_value = self
-            .extract_collapsed_pair(support_index, skip_count)
-            .map(|pair_arr| {
-                pair_arr
-                    .iter()
-                    .find(|(support, p)| {
-                        if biased {
-                            p.abs() > FLOAT_TOL && support.abs() > FLOAT_TOL
-                        } else {
-                            p.abs() > FLOAT_TOL
-                        }
-                    })
-                    .map(|x| x.0)
-                    .unwrap_or(0.0)
-            })
+            .extract_support_with_meta(support_index, skip_count)
+            .map(|support| support.gap_size) // TODO if i ever decide to make 0 probable again then this will be wrong
             .sum();
         let max_value = self
-            .extract_collapsed_pair(support_index, skip_count)
-            .map(|pair_arr| pair_arr.last().unwrap().0)
+            .extract_support_with_meta(support_index, skip_count)
+            .map(|support| support.max_value)
             .sum();
         (min_value, max_value)
     }
