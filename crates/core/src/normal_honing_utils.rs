@@ -96,7 +96,7 @@ impl StateBundle {
         &self,
         support_index: i64,
         skip_count: usize,
-    ) -> Box<dyn Iterator<Item = &Vec<(f64, f64)>> + '_> {
+    ) -> Box<dyn DoubleEndedIterator<Item = &Vec<(f64, f64)>> + '_> {
         let num_avail = self.prep_output.juice_info.num_avail;
         Box::new(
             self.special_state

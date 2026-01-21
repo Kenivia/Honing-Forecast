@@ -1,8 +1,6 @@
-use std::f64::{INFINITY, NAN, NEG_INFINITY, consts::LOG2_E};
-
 use num::traits::Inv;
 
-use crate::{constants::FLOAT_TOL, state_bundle::StateBundle};
+use crate::state_bundle::StateBundle;
 
 impl StateBundle {
     pub fn min_guess_max_triplet(
@@ -10,8 +8,8 @@ impl StateBundle {
         budget: f64,
         min_value: f64,
         max_value: f64,
-        support_index: i64,
-        skip_count: usize,
+        // support_index: i64,
+        // skip_count: usize,
         mean_var_skew: (f64, f64, f64),
         // compute_biased: bool,
     ) -> (f64, f64, f64) {
@@ -50,15 +48,15 @@ impl StateBundle {
         //     );
         // }
         (
-            inverse_sigmoid(min_value, max_value, mean_var_skew, min_value + 1.0),
+            inverse_shifted_sigmoid(min_value, max_value, mean_var_skew, min_value + 1.0),
             // 1.0 * self.theta_guess_min_tail(
             //     support_index,
             //     skip_count,
             //     // EDGE_PERCENTAGES * (max_value - min_value) + min_value,
             //     // min_value,
             // ),
-            self.theta_guess_sigmoid(min_value, max_value, budget, mean_var_skew),
-            inverse_sigmoid(min_value, max_value, mean_var_skew, max_value - 1.0),
+            inverse_shifted_sigmoid(min_value, max_value, mean_var_skew, budget),
+            inverse_shifted_sigmoid(min_value, max_value, mean_var_skew, max_value - 1.0),
             // 1.0 * self.theta_guess_max_tail(
             //     support_index,
             //     skip_count,
@@ -67,88 +65,88 @@ impl StateBundle {
             // ),
         )
     }
-    pub fn theta_guess_sigmoid(
-        &self,
-        min_value: f64,
-        max_value: f64,
-        budget: f64,
-        mean_var_skew: (f64, f64, f64),
-    ) -> f64 {
-        inverse_sigmoid(min_value, max_value, mean_var_skew, budget)
-    }
+    // pub fn theta_guess_sigmoid(
+    //     &self,
+    //     min_value: f64,
+    //     max_value: f64,
+    //     budget: f64,
+    //     mean_var_skew: (f64, f64, f64),
+    // ) -> f64 {
+    //     inverse_sigmoid(min_value, max_value, mean_var_skew, budget)
+    // }
 
-    pub fn theta_guess_max_tail(
-        &self,
-        support_index: i64,
-        skip_count: usize,
-        // budget: f64,
-        max_value: f64,
-    ) -> f64 {
-        let mut min_delta: f64 = INFINITY;
-        let mut sum_c: f64 = 0.0;
-        for support in self.extract_support_with_meta(support_index, skip_count) {
-            if support.ignore {
-                continue;
-            }
+    // pub fn theta_guess_max_tail(
+    //     &self,
+    //     support_index: i64,
+    //     skip_count: usize,
+    //     // budget: f64,
+    //     // max_value: f64,
+    // ) -> f64 {
+    //     let mut min_delta: f64 = INFINITY;
+    //     let mut sum_c: f64 = 0.0;
+    //     for support in self.extract_support_with_meta(support_index, skip_count) {
+    //         if support.ignore {
+    //             continue;
+    //         }
 
-            let mut last_two: [(f64, f64); 2] = [(NAN, NAN); 2];
-            for (index, pair) in support.access_collapsed().iter().rev().take(2).enumerate() {
-                last_two[index] = *pair;
-                // if index > 1 {
-                //     break;
-                // }
-            }
-            //               s_next           s_max
-            let delta: f64 = last_two[1].0 - last_two[0].0;
-            min_delta = min_delta.min(delta); // these should be negative
-            sum_c += last_two[1].0 * last_two[0].1 / last_two[1].1;
-        }
-        assert!(min_delta < 0.0);
-        let max = ((min_delta.abs()) / sum_c).ln() / min_delta;
-        // dbg!(max, sum_c, min_delta, budget, max_value);
-        max
-        // 999.9
-    }
+    //         let mut last_two: [(f64, f64); 2] = [(NAN, NAN); 2];
+    //         for (index, pair) in support.access_collapsed().iter().rev().take(2).enumerate() {
+    //             last_two[index] = *pair;
+    //             // if index > 1 {
+    //             //     break;
+    //             // }
+    //         }
+    //         //               s_next           s_max
+    //         let delta: f64 = last_two[1].0 - last_two[0].0;
+    //         min_delta = min_delta.min(delta); // these should be negative
+    //         sum_c += last_two[1].0 * last_two[0].1 / last_two[1].1;
+    //     }
+    //     assert!(min_delta < 0.0);
+    //     let max = ((min_delta.abs()) / sum_c).ln() / min_delta;
+    //     // dbg!(max, sum_c, min_delta, budget, max_value);
+    //     max
+    //     // 999.9
+    // }
 
-    pub fn theta_guess_min_tail(
-        &self,
-        support_index: i64,
-        skip_count: usize,
-        // budget: f64,
-        // min_value: f64,
-    ) -> f64 {
-        let mut max_delta: f64 = NEG_INFINITY;
-        let mut min_delta: f64 = INFINITY;
-        let mut sum_c: f64 = 0.0;
-        for support in self.extract_support_with_meta(support_index, skip_count) {
-            if support.ignore {
-                continue;
-            }
+    // pub fn theta_guess_min_tail(
+    //     &self,
+    //     support_index: i64,
+    //     skip_count: usize,
+    //     // budget: f64,
+    //     // min_value: f64,
+    // ) -> f64 {
+    //     let mut max_delta: f64 = NEG_INFINITY;
+    //     let mut min_delta: f64 = INFINITY;
+    //     let mut sum_c: f64 = 0.0;
+    //     for support in self.extract_support_with_meta(support_index, skip_count) {
+    //         if support.ignore {
+    //             continue;
+    //         }
 
-            let mut first_two: [(f64, f64); 2] = [(NAN, NAN); 2];
-            let mut index: usize = 0;
-            for pair in support.access_collapsed().iter() {
-                if pair.1 < FLOAT_TOL {
-                    continue;
-                }
+    //         let mut first_two: [(f64, f64); 2] = [(NAN, NAN); 2];
+    //         let mut index: usize = 0;
+    //         for pair in support.access_collapsed().iter() {
+    //             if pair.1 < FLOAT_TOL {
+    //                 continue;
+    //             }
 
-                first_two[index] = *pair;
-                index += 1;
-                if index > 1 {
-                    break;
-                }
-            }
-            let delta: f64 = first_two[1].0 - first_two[0].0;
-            max_delta = max_delta.max(delta);
-            min_delta = min_delta.min(delta);
-            sum_c += first_two[1].0 * first_two[1].1 / first_two[0].1;
-        }
+    //             first_two[index] = *pair;
+    //             index += 1;
+    //             if index > 1 {
+    //                 break;
+    //             }
+    //         }
+    //         let delta: f64 = first_two[1].0 - first_two[0].0;
+    //         max_delta = max_delta.max(delta);
+    //         min_delta = min_delta.min(delta);
+    //         sum_c += first_two[1].0 * first_two[1].1 / first_two[0].1;
+    //     }
 
-        let min = ((min_delta.abs()) / sum_c).ln() / min_delta;
-        // dbg!(min_delta);
-        min
-        // -999.9
-    }
+    //     let min = ((min_delta.abs()) / sum_c).ln() / min_delta;
+    //     // dbg!(min_delta);
+    //     min
+    //     // -999.9
+    // }
 }
 // pub fn scaled_sigmoid(
 //     min_value: f64,
@@ -174,7 +172,7 @@ impl StateBundle {
 
 //     // a / (1.0 + (-b * theta).exp()).powf(v)
 // }
-pub fn inverse_sigmoid(
+pub fn inverse_shifted_sigmoid(
     min_value: f64,
     max_value: f64,
     (mean, var, skew): (f64, f64, f64),

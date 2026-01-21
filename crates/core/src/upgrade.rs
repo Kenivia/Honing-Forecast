@@ -9,7 +9,7 @@ use std::f64::NAN;
 use std::ops::{Deref, DerefMut};
 
 use std::hash::{Hash, Hasher};
-use std::usize::MAX;
+
 // the parser function turns a selection of upgrades into an array of Upgrade objects
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Upgrade {

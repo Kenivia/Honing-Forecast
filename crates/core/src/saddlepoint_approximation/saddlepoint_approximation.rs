@@ -1,8 +1,8 @@
 // use std::f64::consts::PI;
 
-use std::f64::{INFINITY, NAN};
+use std::f64::INFINITY;
 
-use crate::brute::{MAX_BRUTE_SIZE, brute_biased_recursive, brute_success_prob};
+use crate::brute::MAX_BRUTE_SIZE;
 use crate::constants::FLOAT_TOL;
 // use crate::helpers::PairIterator;
 
@@ -149,7 +149,6 @@ impl StateBundle {
     ) -> f64 {
         let (min_value, max_value) = self.find_min_max(support_index, skip_count, compute_biased);
 
-        let span = lattice_span(self.extract_support_with_meta(support_index, skip_count));
         if inp_budget > max_value + FLOAT_TOL {
             performance.trivial_count += 1;
             return 1.0;
@@ -158,31 +157,8 @@ impl StateBundle {
         if inp_budget < min_value - FLOAT_TOL {
             performance.trivial_count += 1;
             return 0.0;
-        }
-        let mut mean_var_skew: (f64, f64, f64) = (NAN, NAN, NAN);
+        };
         if self.support_size_too_big(support_index, skip_count, inp_budget, max_value) {
-            let res: (f64, f64, f64, f64, f64) = self.ks(
-                0.0,
-                &(false, true, true, true, false),
-                compute_biased,
-                simple_mean_log,
-                support_index,
-                skip_count,
-                performance,
-            );
-            mean_var_skew = (res.1, res.2, res.3);
-            let budget = ((inp_budget / span).floor() * span)
-                .min(max_value - span)
-                .max(min_value)
-                + span / 2.0;
-            let (soft_low_limit, guess, soft_high_limit) = self.min_guess_max_triplet(
-                budget,
-                min_value,
-                max_value,
-                support_index,
-                skip_count,
-                mean_var_skew,
-            );
             // let soft_low_budget = self
             //     .ks(
             //         soft_low_limit,
@@ -262,7 +238,11 @@ impl StateBundle {
             // );
             // dbg!(verify_low_budget, verify_high_budget);
             // panic!();
-
+            let span = lattice_span(self.extract_support_with_meta(support_index, skip_count));
+            let budget = ((inp_budget / span).floor() * span)
+                .min(max_value - span)
+                .max(min_value)
+                + span / 2.0;
             // UM this should be the size of the second gap so might not be accurate for combined cost ? CBB
             let min_delta = self
                 .extract_support_with_meta(support_index, skip_count)
@@ -275,6 +255,19 @@ impl StateBundle {
                     }
                 });
             if min_value + min_delta + 1.0 < budget && budget < max_value - min_delta - 1.0 {
+                let res: (f64, f64, f64, f64, f64) = self.ks(
+                    0.0,
+                    &(false, true, true, true, false),
+                    compute_biased,
+                    simple_mean_log,
+                    support_index,
+                    skip_count,
+                    performance,
+                );
+                let mean_var_skew: (f64, f64, f64) = (res.1, res.2, res.3);
+
+                let (soft_low_limit, guess, soft_high_limit) =
+                    self.min_guess_max_triplet(budget, min_value, max_value, mean_var_skew);
                 return self.saddlepoint_approximation(
                     support_index,
                     skip_count,
@@ -296,31 +289,14 @@ impl StateBundle {
             //     dbg!("brute");
             // }
 
-            return brute_biased_recursive(
-                &self.gather_collapsed(support_index, skip_count, 1),
-                &self.gather_collapsed(support_index, skip_count, 0),
+            return self.brute_biased_recursive(
+                support_index,
+                skip_count,
                 inp_budget,
-                if mean_var_skew.0.is_nan() {
-                    self.ks(
-                        0.0,
-                        &(false, true, false, false, false),
-                        compute_biased,
-                        simple_mean_log,
-                        support_index,
-                        skip_count,
-                        performance,
-                    )
-                    .1
-                } else {
-                    mean_var_skew.0
-                },
+                (min_value + max_value) * 0.5,
             );
         } else {
-            return brute_success_prob(
-                &self.gather_collapsed(support_index, skip_count, 1),
-                &self.gather_collapsed(support_index, skip_count, 0),
-                inp_budget,
-            );
+            return self.brute_success_prob(support_index, skip_count, inp_budget);
         }
     }
 
