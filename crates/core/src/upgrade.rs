@@ -39,6 +39,7 @@ pub struct Upgrade {
     pub armor_juice_costs: Vec<Support>,
     pub combined_gold_costs: Support,
     pub name_string: String,
+    pub piece_type: usize,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -266,6 +267,7 @@ impl Upgrade {
         costs: [i64; 7],
         special_cost: i64,
         is_weapon: bool,
+        piece_type: usize,
         artisan_rate: f64,
         upgrade_index: usize,
         num_juice_avail: usize,
@@ -294,6 +296,7 @@ impl Upgrade {
             juice_values: vec![],
             prob_dist_len,
             is_weapon,
+            piece_type,
             artisan_rate,
             tap_offset: 0,
             upgrade_index,
@@ -329,6 +332,7 @@ impl Upgrade {
         one_juice_cost: i64,
         adv_juice_cost: Vec<f64>,
         is_weapon: bool,
+        piece_type: usize,
         adv_cost_start: i64,
         upgrade_index: usize,
     ) -> Self {
@@ -346,6 +350,7 @@ impl Upgrade {
             juice_values: vec![],
             prob_dist_len,
             is_weapon,
+            piece_type,
             artisan_rate: 0.0,
             tap_offset: adv_cost_start,
             upgrade_index,

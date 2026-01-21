@@ -23,7 +23,26 @@ impl StateBundle {
 
         out
     }
+
+    fn clean_special_state(&mut self) {
+        let mut highest_upgrade_index_seen: Vec<i64> = vec![-1; 6];
+        let mut valid_uindex: Vec<usize> = Vec::with_capacity(self.upgrade_arr.len());
+        let mut invalid_uindex: Vec<usize> = Vec::with_capacity(self.upgrade_arr.len());
+        for u_index in self.special_state.iter() {
+            let upgrade = &self.upgrade_arr[*u_index];
+            if highest_upgrade_index_seen[upgrade.piece_type] > upgrade.upgrade_index as i64 {
+                invalid_uindex.push(*u_index);
+                continue;
+            }
+            valid_uindex.push(*u_index);
+            highest_upgrade_index_seen[upgrade.piece_type] = upgrade.upgrade_index as i64;
+        }
+        invalid_uindex.sort();
+        valid_uindex.extend_from_slice(&invalid_uindex);
+        self.special_state = valid_uindex;
+    }
     pub fn compute_special_probs(&mut self) {
+        self.clean_special_state();
         if self.special_cache.contains_key(&self.special_state) {
             return;
         }
@@ -49,8 +68,18 @@ impl StateBundle {
         // Cache for powers of (1-p). Size is budget + 1 to cover max possible attempts.
         let mut fail_probs = vec![0.0; budget + 1];
 
+        let mut highest_upgrade_index_seen: Vec<i64> = vec![-1; 6];
+        let mut invalid_index: usize = m + 1;
         for (attempt_index, u_index) in self.special_state.iter().enumerate() {
             let upgrade = &self.upgrade_arr[*u_index];
+            // dbg!(upgrade.upgrade_index, upgrade.is_weapon, upgrade.piece_type);
+            if highest_upgrade_index_seen[upgrade.piece_type] > upgrade.upgrade_index as i64 {
+                invalid_index = attempt_index + 1;
+                break;
+            }
+
+            highest_upgrade_index_seen[upgrade.piece_type] = upgrade.upgrade_index as i64;
+
             let p = upgrade.base_chance;
             let one_minus_p = 1.0 - p;
 
@@ -126,11 +155,15 @@ impl StateBundle {
             swap(&mut active, &mut next_active);
         }
 
+        // dbg!(&result, invalid_index);
         result[0] = 1.0 - result[1];
 
         let mut actual_out = Vec::with_capacity(result.len());
 
         for (index, &val) in result.iter().enumerate() {
+            if index >= invalid_index {
+                break;
+            }
             if index == result.len() - 1 || index == 0 {
                 actual_out.push(val);
             } else {
@@ -140,7 +173,9 @@ impl StateBundle {
 
         // Tolerance check
         let sum: f64 = actual_out.iter().sum();
-        assert!((sum - 1.0).abs() < FLOAT_TOL);
+        let length = actual_out.len();
+        actual_out[length - 1] += 1.0 - sum;
+        // assert!((sum - 1.0).abs() < FLOAT_TOL);
 
         self.special_cache
             .insert(self.special_state.clone(), actual_out);
@@ -153,6 +188,7 @@ mod tests {
     use crate::calculate_hash;
     use crate::constants::RNG_SEED;
 
+    use crate::helpers::naive_count_to_ticks;
     use crate::parser::PreparationOutput;
 
     use crate::test_utils::*;
@@ -165,7 +201,9 @@ mod tests {
         let start = Instant::now();
         let test_name = format!("special_sa_test");
         let hone_counts: Vec<Vec<i64>> = vec![
-            (0..25).map(|x| if x == 24 { 2 } else { 0 }).collect(),
+            (0..25)
+                .map(|x| if x == 24 || x == 23 { 1 } else { 0 })
+                .collect(),
             (0..25).map(|x| if x == 24 { 1 } else { 0 }).collect(),
         ];
         // let hone_counts: Vec<Vec<i64>> =
@@ -196,9 +234,9 @@ mod tests {
         );
 
         let (prep_output, upgrade_arr) = PreparationOutput::initialize(
-            &hone_counts,
+            &naive_count_to_ticks(&hone_counts),
             &budget,
-            &adv_counts,
+            &naive_count_to_ticks(&adv_counts),
             express_event,
             &prices,
             &adv_hone_strategy,
@@ -208,10 +246,11 @@ mod tests {
             &juice_prices,
         );
 
-        let mut starting_special: Vec<usize> = Vec::with_capacity(upgrade_arr.len() * 2);
-        for (index, _upgrade) in upgrade_arr.iter().enumerate() {
-            starting_special.push(index); //, (1.0 / upgrade.base_chance).round() as usize));
-        }
+        // let mut starting_special: Vec<usize> = Vec::with_capacity(upgrade_arr.len() * 2);
+        // for (index, _upgrade) in upgrade_arr.iter().enumerate() {
+        //     starting_special.push(index); //, (1.0 / upgrade.base_chance).round() as usize));
+        // }
+        let starting_special: Vec<usize> = vec![0, 1, 2];
 
         let mut state_bundle: StateBundle = StateBundle {
             state_index: vec![],

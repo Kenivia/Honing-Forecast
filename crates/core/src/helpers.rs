@@ -9,6 +9,21 @@ use crate::upgrade::Upgrade;
 
 use rand::Rng;
 
+pub fn naive_count_to_ticks(counts: &[Vec<i64>]) -> Vec<Vec<bool>> {
+    let mut ticks: Vec<Vec<bool>> = vec![vec![false; counts[0].len()]; 6];
+    for (index, count) in counts[0].iter().enumerate() {
+        for i in 0..*count {
+            ticks[i as usize][index] = true;
+        }
+    }
+
+    for (index, count) in counts[1].iter().enumerate() {
+        if *count == 1 {
+            ticks[5][index] = true;
+        }
+    }
+    ticks
+}
 pub trait PairIterator<'a>: Iterator<Item = &'a Vec<(f64, f64)>> {}
 impl<'a, T> PairIterator<'a> for T where T: Iterator<Item = &'a Vec<(f64, f64)>> {}
 
@@ -78,7 +93,7 @@ pub fn get_count(counts: Option<Vec<Vec<i64>>>, ticks: Option<Vec<Vec<bool>>>) -
     if counts.is_some() {
         counts.unwrap()
     } else if ticks.is_some() {
-        ticks_to_counts(ticks.unwrap())
+        ticks_to_counts(&ticks.unwrap())
     } else {
         panic!("Either normal_counts or normal_hone_ticks must be provided");
     }
@@ -141,7 +156,7 @@ pub fn sort_by_indices<T>(arr: &mut [T], mut indices: Vec<usize>) {
     }
 }
 
-pub fn ticks_to_counts(ticks: Vec<Vec<bool>>) -> Vec<Vec<i64>> {
+pub fn ticks_to_counts(ticks: &[Vec<bool>]) -> Vec<Vec<i64>> {
     // assume ticks is always 6 rows
     let cols: usize = ticks[0].len();
     let mut out: Vec<Vec<i64>> = vec![vec![0i64; cols]; 2];
@@ -166,12 +181,14 @@ pub fn ticks_to_counts(ticks: Vec<Vec<bool>>) -> Vec<Vec<i64>> {
 ///
 /// Returns: (`shard_unlock`, `silver_unlock`)
 pub fn calc_unlock(
-    hone_counts: &[Vec<i64>],
-    adv_counts: &[Vec<i64>],
+    hone_ticks: &[Vec<bool>],
+    adv_ticks: &[Vec<bool>],
     express_event: bool,
 ) -> Vec<i64> {
     let mut shard_unlock: i64 = 0;
     let mut silver_unlock: i64 = 0;
+    let hone_counts = ticks_to_counts(hone_ticks);
+    let adv_counts = ticks_to_counts(adv_ticks);
 
     // Get event-modified unlock costs
     let weapon_unlock_costs: [[i64; 25]; 2] = get_event_modified_weapon_unlock_cost(express_event);

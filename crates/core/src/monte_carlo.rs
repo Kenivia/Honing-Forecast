@@ -111,27 +111,44 @@ pub fn monte_carlo_data<R: Rng>(
     let mut actually_paid: Vec<i64> = vec![0; state_bundle.upgrade_arr.len() + 1];
     let mut skip_count_data: Vec<usize> = vec![0; data_size];
 
+    let mut highest_upgrade_index_seen: Vec<i64> = vec![-1; 6];
+    let mut special_valid: bool;
     // dbg!(&state_bundle, &prep_output);
     for (attempt_index, u_index) in state_bundle.special_state.iter().enumerate() {
         let upgrade = &state_bundle.upgrade_arr[*u_index];
         let tap_map: Vec<usize> = tap_map_generator(data_size, &upgrade.prob_dist, rng);
         let juice_costs: Vec<Vec<(i64, i64)>> = juice_costs(upgrade, state_bundle);
 
+        // for (attempt_index, u_index) in self.special_state.iter().enumerate() {
+        //     let upgrade = &self.upgrade_arr[*u_index];
+        if highest_upgrade_index_seen[upgrade.piece_type] > upgrade.upgrade_index as i64 {
+            special_valid = false;
+        } else {
+            highest_upgrade_index_seen[upgrade.piece_type] = upgrade.upgrade_index as i64;
+            special_valid = true;
+        }
+
         for trial_num in 0..data_size {
-            let this_special_left: &mut i64 = &mut special_left[trial_num];
+            if special_valid {
+                let this_special_left: &mut i64 = &mut special_left[trial_num];
 
-            let max_affordable_attempts = (*this_special_left / upgrade.special_cost).max(0);
-            if max_affordable_attempts > 0 {
-                let special_taps_needed =
-                    sample_truncated_geometric(upgrade.base_chance, max_affordable_attempts, rng);
+                let max_affordable_attempts = (*this_special_left / upgrade.special_cost).max(0);
+                if max_affordable_attempts > 0 {
+                    let special_taps_needed = sample_truncated_geometric(
+                        upgrade.base_chance,
+                        max_affordable_attempts,
+                        rng,
+                    );
 
-                *this_special_left -= special_taps_needed * upgrade.special_cost;
+                    *this_special_left -= special_taps_needed * upgrade.special_cost;
 
-                if *this_special_left >= 0 {
-                    skip_count_data[trial_num] += 1;
-                    continue;
+                    if *this_special_left >= 0 {
+                        skip_count_data[trial_num] += 1;
+                        continue;
+                    }
                 }
             }
+
             actually_paid[attempt_index + 1] += 1;
 
             let rolled_tap: usize = tap_map[trial_num];

@@ -64,9 +64,9 @@ fn copy_leftover<T: Clone>(inp_leftover_values: &[T], original: &[T]) -> Vec<T> 
 }
 impl PreparationOutput {
     pub fn initialize(
-        hone_counts: &[Vec<i64>],
+        hone_counts: &[Vec<bool>],
         input_budgets: &[i64],
-        adv_counts: &[Vec<i64>],
+        adv_counts: &[Vec<bool>],
         express_event: bool,
         inp_price_arr: &[f64],
         adv_hone_strategy: &str,
@@ -179,34 +179,39 @@ impl PreparationOutput {
 
 // Constructs vector of Upgrade objects according to what upgrades were selected and the appropriate juice applieid
 pub fn parser(
-    normal_counts: &[Vec<i64>],
-    adv_counts: &[Vec<i64>],
+    normal_ticks: &[Vec<bool>],
+    adv_ticks: &[Vec<bool>],
     adv_hone_strategy: &String,
     express_event: bool,
     num_juice_avail: usize,
 ) -> Vec<Upgrade> {
     let mut out: Vec<Upgrade> = Vec::new();
     let artisan_rate_arr: [f64; 25] = get_event_modified_artisan(express_event);
-    for is_weapon in 0..normal_counts.len() {
-        let cur_cost: [[i64; 25]; 7] = if is_weapon == 0 {
+    for piece_type in 0..normal_ticks.len() {
+        let cur_cost: [[i64; 25]; 7] = if piece_type < 5 {
             get_event_modified_armor_costs(express_event)
         } else {
             get_event_modified_weapon_costs(express_event)
         };
 
-        let mut current_counter: i64 = 0;
-        let row_len: usize = normal_counts[is_weapon].len(); // 25
+        // let mut current_counter: i64 = 0;
+        let row_len: usize = normal_ticks[piece_type].len(); // 25
         let mut upgrade_index: usize = 0;
 
         while upgrade_index < row_len {
-            let needed: i64 = normal_counts[is_weapon][upgrade_index];
-            if current_counter >= needed {
+            let needed: bool = normal_ticks[piece_type][upgrade_index];
+            if !needed {
                 upgrade_index += 1;
-                current_counter = 0;
                 continue;
             }
+            // if current_counter >= needed {
+            //     upgrade_index += 1;
+            //     current_counter = 0;
+            //     continue;
+            // }
 
-            let special_cost: i64 = SPECIAL_LEAPS_COST[is_weapon][upgrade_index];
+            let special_cost: i64 =
+                SPECIAL_LEAPS_COST[if piece_type == 5 { 0 } else { 1 }][upgrade_index];
             let event_artisan_rate: f64 = artisan_rate_arr[upgrade_index];
 
             out.push(Upgrade::new_normal(
@@ -218,30 +223,34 @@ pub fn parser(
                 ),
                 std::array::from_fn(|cost_type: usize| cur_cost[cost_type][upgrade_index]),
                 special_cost,
-                is_weapon == 1,
+                piece_type == 5,
+                piece_type,
                 event_artisan_rate,
                 upgrade_index,
                 num_juice_avail,
             ));
-
-            current_counter += 1;
+            upgrade_index += 1;
+            // current_counter += 1;
         }
     }
 
     // Advanced hone
     let mut this_juice_cost: Vec<f64>;
     let mut prob_dist: Vec<f64>;
-    for is_weapon in 0..adv_counts.len() {
-        let mut current_counter: i64 = 0;
-        let row_len: usize = adv_counts[is_weapon].len();
+    for piece_type in 0..adv_ticks.len() {
+        let row_len: usize = adv_ticks[piece_type].len();
         let mut upgrade_index: usize = 0;
         while upgrade_index < row_len {
-            let needed: i64 = adv_counts[is_weapon][upgrade_index];
-            if current_counter >= needed {
+            let needed: bool = adv_ticks[piece_type][upgrade_index];
+            if !needed {
                 upgrade_index += 1;
-                current_counter = 0;
                 continue;
             }
+            // if current_counter >= needed {
+
+            //     current_counter = 0;
+            //     continue;
+            // }
 
             // pick relevant_data based on strategy and level i (i <= 1 -> 10/20, else 30/40)
             let relevant_data: &'static [[i64; 3]] = if adv_hone_strategy == "Juice on grace" {
@@ -258,7 +267,7 @@ pub fn parser(
 
             let rows: usize = relevant_data.len();
             let sum_taps: i64 = relevant_data.iter().map(|row: &[i64; 3]| row[2]).sum(); // 2nd index is frequency
-            let col_index: usize = 2 * upgrade_index + (1 - is_weapon);
+            let col_index: usize = 2 * upgrade_index + (1 - piece_type);
 
             prob_dist = Vec::with_capacity(rows);
             this_juice_cost = Vec::with_capacity(rows);
@@ -277,11 +286,13 @@ pub fn parser(
                 std::array::from_fn(|cost_type: usize| ADV_HONE_COST[cost_type][col_index]),
                 cost_val,
                 this_juice_cost,
-                is_weapon == 1,
+                piece_type == 5,
+                piece_type,
                 relevant_data[0][0],
                 upgrade_index,
             ));
-            current_counter += 1;
+            // current_counter += 1;
+            upgrade_index += 1;
         }
     }
 

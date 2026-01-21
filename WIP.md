@@ -5,34 +5,18 @@
 
 ### Now
 
-- crawling back to performance
-
 #### Optimizations
 
 - maybe its time to get rid of Box< iterator >
-
-- pre-allocate scratch space maybe?
-
-- cache min max values with pair
-  - aka step size & max size
-  - also min_delta of both top side and bottom side
-  - can use this to calculate lattice span also at least for linear cases
 
 - cache the geom calculations  (special_prob seems fast enough so cbb rn)
 
 - can actually save 1 evaluation at the end of special_prob by setting the zero prob...
 
-- how to better guess theta
-
 ### Misc
 
 - JUICE CHESTS AND MAYBE EVEN BOOKS CHESTS
   - ~~just a greedy algorithm based on the prices~~ um might be more complicated than i think, maybe need to add it to the decision space but that sounds incredibly uh wasteful, maybe just do it naively
-
-- force special state to respect upgrade order
-  - just ignore invalid ones? or what
-  - need to store helmet/whatever information in Upgrade,
-    - get rid of non-tick input i guess?
 
 - add assertions to a lot of prepoutput stuff
 
@@ -150,6 +134,20 @@ graph
 
 ## Done / cancelled
 
+- ~~force special state to respect upgrade order~~
+  - ~~just ignore invalid ones? or what~~
+  - ~~need to store helmet/whatever information in Upgrade,~~
+    - ~~get rid of non-tick input i guess?~~
+- ~~crawling back to performance~~
+- ~~pre-allocate scratch space maybe?~~ dont need u_arr at all
+
+-~~ cache min max values with pair~~
+
+- ~~aka step size & max size~~
+  -~~ also min_delta of both top side and bottom side~~
+  -~~ can use this to calculate lattice span also at least for linear cases~~
+
+- ~~how to better guess theta~~
 - ~~SURELY there's a better way to lay out juiceinfo...~~ yes there was
 - ~~hunt down the discrepancy with juiced states~~
   - ~~rewrite how juiceinfo is laid out and use id in the state immediately ( only same "ids" arr in juice info to convert)~~

@@ -1,5 +1,8 @@
 use csv::Reader;
-use hf_core::{parser::PreparationOutput, state_bundle::StateBundle, upgrade::Upgrade};
+use hf_core::{
+    helpers::naive_count_to_ticks, parser::PreparationOutput, state_bundle::StateBundle,
+    upgrade::Upgrade,
+};
 use paste::paste;
 use seq_macro::seq;
 use serde::{Deserialize, Deserializer, Serialize};
@@ -180,6 +183,7 @@ where
         _ => Err(serde::de::Error::custom(format!("invalid boolean: {}", s))),
     }
 }
+
 pub fn parse_csv(path: &Path) -> Vec<(StateBundle, Vec<bool>)> {
     let mut rdr = Reader::from_path(path).unwrap();
 
@@ -254,9 +258,9 @@ pub fn parse_csv(path: &Path) -> Vec<(StateBundle, Vec<bool>)> {
 
         let (mut this, upgrade_arr): (PreparationOutput, Vec<Upgrade>) =
             PreparationOutput::initialize(
-                &hone_counts,
+                &naive_count_to_ticks(&hone_counts),
                 &budget,
-                &adv_counts,
+                &naive_count_to_ticks(&adv_counts),
                 row.express,
                 &prices,
                 "No juice",
