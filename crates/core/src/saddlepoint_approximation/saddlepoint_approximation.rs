@@ -1,6 +1,6 @@
 // use std::f64::consts::PI;
 
-use std::f64::NAN;
+use std::f64::{INFINITY, NAN};
 
 use crate::brute::{MAX_BRUTE_SIZE, brute_biased_recursive, brute_success_prob};
 use crate::constants::FLOAT_TOL;
@@ -9,9 +9,9 @@ use crate::constants::FLOAT_TOL;
 use crate::performance::Performance;
 use crate::saddlepoint_approximation::average::{DEBUG_AVERAGE, DEBUG_AVG_INDEX};
 // use crate::saddlepoint_approximation::core::THETA_TOL;
+// use crate::saddlepoint_approximation::bound::{self, inverse_sigmoid, scaled_sigmoid};
 use crate::state_bundle::StateBundle;
 use crate::upgrade::Support;
-
 use statrs::distribution::{Continuous, ContinuousCDF, Normal};
 
 pub static DEBUG_SA: bool = false;
@@ -143,7 +143,8 @@ impl StateBundle {
         inp_budget: f64,
 
         compute_biased: bool,
-        mean_var: (f64, f64),
+        simple_mean_log: f64,
+        // mean_var_skew: (f64, f64, f64),
         performance: &mut Performance,
     ) -> f64 {
         let (min_value, max_value) = self.find_min_max(support_index, skip_count, compute_biased);
@@ -158,40 +159,122 @@ impl StateBundle {
             performance.trivial_count += 1;
             return 0.0;
         }
-
+        let mut mean_var_skew: (f64, f64, f64) = (NAN, NAN, NAN);
         if self.support_size_too_big(support_index, skip_count, inp_budget, max_value) {
+            let res: (f64, f64, f64, f64, f64) = self.ks(
+                0.0,
+                &(false, true, true, true, false),
+                compute_biased,
+                simple_mean_log,
+                support_index,
+                skip_count,
+                performance,
+            );
+            mean_var_skew = (res.1, res.2, res.3);
             let budget = ((inp_budget / span).floor() * span)
                 .min(max_value - span)
                 .max(min_value)
                 + span / 2.0;
-            let (soft_low_limit, guess, soft_high_limit) =
-                self.min_guess_max_triplet(min_value, max_value, support_index, skip_count);
-            let soft_low_budget = self
-                .ks(
-                    soft_low_limit,
-                    &(false, true, false, false, false),
-                    compute_biased,
-                    mean_var.0.ln(),
-                    support_index,
-                    skip_count,
-                    performance,
-                )
-                .1;
-            let soft_high_budget = self
-                .ks(
-                    soft_high_limit,
-                    &(false, true, false, false, false),
-                    compute_biased,
-                    mean_var.0.ln(),
-                    support_index,
-                    skip_count,
-                    performance,
-                )
-                .1;
+            let (soft_low_limit, guess, soft_high_limit) = self.min_guess_max_triplet(
+                budget,
+                min_value,
+                max_value,
+                support_index,
+                skip_count,
+                mean_var_skew,
+            );
+            // let soft_low_budget = self
+            //     .ks(
+            //         soft_low_limit,
+            //         &(false, true, false, false, false),
+            //         compute_biased,
+            //         simple_mean_log,
+            //         support_index,
+            //         skip_count,
+            //         performance,
+            //     )
+            //     .1;
+            // // let sig_low_limit =
+            // //     inverse_sigmoid(min_value, max_value, mean_var.1, budget, min_value + 1.0);
+            // let soft_high_budget = self
+            //     .ks(
+            //         soft_high_limit,
+            //         &(false, true, false, false, false),
+            //         compute_biased,
+            //         simple_mean_log,
+            //         support_index,
+            //         skip_count,
+            //         performance,
+            //     )
+            //     .1;
+            // let sig_high_limit =
+            //     inverse_sigmoid(min_value, max_value, mean_var.1, budget, max_value - 1.0);
 
-            // dbg!(soft_low_budget, soft_high_budget, min_value, max_value);
+            // let sig_low_budget =
+            //     scaled_sigmoid(min_value, max_value, mean_var.1, budget, sig_low_limit);
+
+            // let sig_high_budget =
+            //     scaled_sigmoid(min_value, max_value, mean_var.1, budget, sig_high_limit);
+
+            // let verify_low_budget = self
+            //     .ks(
+            //         sig_low_limit,
+            //         &(false, true, false, false, false),
+            //         compute_biased,
+            //         mean_var.0.ln(),
+            //         support_index,
+            //         skip_count,
+            //         performance,
+            //     )
+            //     .1;
+
+            // let verify_high_budget = self
+            //     .ks(
+            //         sig_high_limit,
+            //         &(false, true, false, false, false),
+            //         compute_biased,
+            //         mean_var.0.ln(),
+            //         support_index,
+            //         skip_count,
+            //         performance,
+            //     )
+            //     .1;
+
+            // let soft_sigmoid_low_budget =
+            //     scaled_sigmoid(min_value, max_value, mean_var.1, budget, soft_low_limit);
+            // let soft_sigmoid_high_budget =
+            //     scaled_sigmoid(min_value, max_value, mean_var.1, budget, soft_high_limit);
+
+            // dbg!(min_value, budget, max_value, compute_biased);
+            // dbg!(
+            //     soft_low_limit,
+            //     soft_low_budget,
+            //     soft_high_limit,
+            //     soft_high_budget,
+            //     // soft_sigmoid_low_budget,
+            //     // soft_sigmoid_high_budget
+            // );
+            // dbg!(
+            //     // sig_low_limit,
+            //     // sig_low_budget,
+            //     // sig_high_limit,
+            //     // sig_high_budget,
+            // );
+            // dbg!(verify_low_budget, verify_high_budget);
             // panic!();
-            if soft_low_budget < budget && budget < soft_high_budget {
+
+            // UM this should be the size of the second gap so might not be accurate for combined cost ? CBB
+            let min_delta = self
+                .extract_support_with_meta(support_index, skip_count)
+                .map(|x| x.gap_size)
+                .fold(INFINITY, |prev, next| {
+                    if next > FLOAT_TOL {
+                        prev.min(next)
+                    } else {
+                        prev
+                    }
+                });
+            if min_value + min_delta + 1.0 < budget && budget < max_value - min_delta - 1.0 {
                 return self.saddlepoint_approximation(
                     support_index,
                     skip_count,
@@ -200,23 +283,37 @@ impl StateBundle {
                     span,
                     budget,
                     compute_biased,
-                    mean_var,
+                    simple_mean_log,
+                    mean_var_skew,
                     performance,
                     (soft_low_limit, guess, soft_high_limit),
                 );
             }
         }
+        performance.brute_count += 1;
         if compute_biased {
             // if support_index == DEBUG_AVG_INDEX && DEBUG_AVERAGE {
             //     dbg!("brute");
             // }
-            performance.brute_count += 1;
 
             return brute_biased_recursive(
                 &self.gather_collapsed(support_index, skip_count, 1),
                 &self.gather_collapsed(support_index, skip_count, 0),
                 inp_budget,
-                mean_var.0,
+                if mean_var_skew.0.is_nan() {
+                    self.ks(
+                        0.0,
+                        &(false, true, false, false, false),
+                        compute_biased,
+                        simple_mean_log,
+                        support_index,
+                        skip_count,
+                        performance,
+                    )
+                    .1
+                } else {
+                    mean_var_skew.0
+                },
             );
         } else {
             return brute_success_prob(
@@ -237,45 +334,32 @@ impl StateBundle {
         budget: f64,
 
         compute_biased: bool,
-        mean_var: (f64, f64),
+        simple_mean_log: f64,
+        mean_var: (f64, f64, f64),
         performance: &mut Performance,
         guess_triplet: (f64, f64, f64), // limit: f64,
     ) -> f64 {
         performance.sa_count += 1;
-        let mean_log = if compute_biased {
-            assert!(!mean_var.0.is_nan());
-            mean_var.0.ln()
-        } else {
-            NAN // log is only needed in the compute biased path
-        };
+        // let simple_mean_log = if compute_biased {
+        //     assert!(!simple_mean.is_nan());
+        //     simple_mean.ln()
+        // } else {
+        //     NAN // mean log should only needed used the compute biased path
+        // };
 
-        let mean_var = if compute_biased {
-            let out = self.ks(
-                0.0,
-                &(false, true, true, false, false),
-                compute_biased,
-                mean_log,
-                support_index,
-                skip_count,
-                performance,
-            );
-            (out.1, out.2)
-        } else {
-            mean_var
-        };
         let k1_zero = mean_var.0;
 
         let (low_limit, guess, high_limit) = guess_triplet; //self.min_guess_max_triplet(support_index, skip_count);
 
         let result_opt = self.my_householder(
             compute_biased,
-            mean_log,
+            simple_mean_log,
             support_index,
             skip_count,
             budget,
-            low_limit,
+            // low_limit,
             guess,
-            high_limit,
+            // high_limit,
             performance,
         );
 
@@ -296,7 +380,7 @@ impl StateBundle {
                     low_limit,
                     &(false, true, true, false, false),
                     compute_biased,
-                    mean_log,
+                    simple_mean_log,
                     support_index,
                     skip_count,
                     performance,
@@ -309,7 +393,7 @@ impl StateBundle {
                     0.0,
                     &(false, true, true, false, false),
                     compute_biased,
-                    mean_log,
+                    simple_mean_log,
                     support_index,
                     skip_count,
                     performance,
@@ -322,7 +406,7 @@ impl StateBundle {
                     guess,
                     &(false, true, true, false, false),
                     compute_biased,
-                    mean_log,
+                    simple_mean_log,
                     support_index,
                     skip_count,
                     performance,
@@ -335,7 +419,7 @@ impl StateBundle {
                     high_limit,
                     &(false, true, true, false, false),
                     compute_biased,
-                    mean_log,
+                    simple_mean_log,
                     support_index,
                     skip_count,
                     performance,
@@ -369,7 +453,7 @@ impl StateBundle {
             theta_hat,
             &(true, true, true, true, true),
             compute_biased,
-            mean_log,
+            simple_mean_log,
             support_index,
             skip_count,
             performance,
@@ -391,7 +475,7 @@ impl StateBundle {
         //         theta_hat,
         //         &(true, true, true, true, true),
         //         compute_biased,
-        //         mean_log,
+        //         simple_mean_log,
         //         support_index,
         //         skip_count,
         //     );
@@ -517,6 +601,7 @@ impl StateBundle {
                 budget,
                 min_value,
                 max_value,
+                k1_zero,
                 compute_biased,
                 support_index,
                 low_limit,
@@ -524,12 +609,12 @@ impl StateBundle {
                 high_limit
             );
             println!(
-                "{:?}",
+                "low_limit {:?}",
                 self.ks(
                     low_limit,
                     &(false, true, true, false, false),
                     compute_biased,
-                    mean_log,
+                    simple_mean_log,
                     support_index,
                     skip_count,
                     performance,
@@ -537,12 +622,12 @@ impl StateBundle {
             );
 
             println!(
-                "{:?}",
+                "zero {:?}",
                 self.ks(
                     0.0,
                     &(false, true, true, false, false),
                     compute_biased,
-                    mean_log,
+                    simple_mean_log,
                     support_index,
                     skip_count,
                     performance,
@@ -550,12 +635,12 @@ impl StateBundle {
             );
 
             println!(
-                "{:?}",
+                "guess {:?}",
                 self.ks(
                     guess,
                     &(false, true, true, false, false),
                     compute_biased,
-                    mean_log,
+                    simple_mean_log,
                     support_index,
                     skip_count,
                     performance,
@@ -563,12 +648,12 @@ impl StateBundle {
             );
 
             println!(
-                "{:?}",
+                "high_limit {:?}",
                 self.ks(
                     high_limit,
                     &(false, true, true, false, false),
                     compute_biased,
-                    mean_log,
+                    simple_mean_log,
                     support_index,
                     skip_count,
                     performance,
@@ -589,7 +674,7 @@ impl StateBundle {
                 1.0 / w_hat - 1.0 / u_hat,
                 min_value,
                 budget,
-                self.simple_avg_var(support_index, skip_count),
+                self.simple_avg(support_index, skip_count),
                 max_value,
                 sa_out,
                 approx,

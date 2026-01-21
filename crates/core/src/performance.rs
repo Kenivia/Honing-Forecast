@@ -31,7 +31,7 @@ impl Performance {
     }
 
     pub fn to_write(&self) -> PerformanceToWrite {
-        let ks_per_sa = self.ks_count as f64 / self.sa_count as f64;
+        let ks_per_state = self.ks_count as f64 / self.states_evaluated as f64;
 
         let total = (self.sa_count + self.brute_count + self.trivial_count) as f64;
         let total_per_state = total / self.states_evaluated as f64;
@@ -40,7 +40,7 @@ impl Performance {
         let trivial_ratio: f64 = self.trivial_count as f64 / total;
 
         let newton_per_sa = self.newton_iterations as f64 / self.sa_count as f64;
-        let edgeworth_per_sa = self.edgeworth_count as f64 / self.sa_count as f64;
+        let edgeworth_ratio = self.edgeworth_count as f64 / self.sa_count as f64;
 
         PerformanceToWrite {
             states_evaluated: self.states_evaluated,
@@ -48,9 +48,9 @@ impl Performance {
             sa_ratio,
             brute_ratio,
             trivial_ratio,
-            ks_per_sa,
+            ks_per_state,
             newton_per_sa,
-            edgeworth_per_sa,
+            edgeworth_ratio,
             bisection_ratio: (self.bisection_count as f64)
                 / (self.bisection_count as f64 + self.householder_count as f64),
         }
@@ -81,11 +81,11 @@ pub struct PerformanceToWrite {
     pub trivial_ratio: f64,
 
     #[serde(serialize_with = "serialize_nan_as_neg")]
-    pub ks_per_sa: f64,
+    pub ks_per_state: f64,
     #[serde(serialize_with = "serialize_nan_as_neg")]
     pub newton_per_sa: f64,
     #[serde(serialize_with = "serialize_nan_as_neg")]
-    pub edgeworth_per_sa: f64, // edgeworth / (edge + lugganani)
+    pub edgeworth_ratio: f64, // edgeworth / (edge + lugganani)
 
     #[serde(serialize_with = "serialize_nan_as_neg")]
     pub bisection_ratio: f64, // edgeworth / (edge + lugganani)

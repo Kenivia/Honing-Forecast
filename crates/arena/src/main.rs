@@ -133,6 +133,7 @@ fn main() {
                     continue;
                 }
                 let seed: u64 = seed_rng.next_u64();
+                // let seed: u64 = 886717209566745136;
                 let mut rng: StdRng = StdRng::seed_from_u64(seed);
 
                 let trial_num = seen_tests.entry(key.clone()).or_insert(0);
@@ -140,8 +141,12 @@ fn main() {
                 println!("Test case {:?} trial {}", key, trial_num);
 
                 let mut state_performance: Performance = Performance::new();
-                let mut state_bundle: StateBundle =
-                    solve(&mut rng, *metric_type, state_bundle.clone(), &mut state_performance);
+                let mut state_bundle: StateBundle = solve(
+                    &mut rng,
+                    *metric_type,
+                    state_bundle.clone(),
+                    &mut state_performance,
+                );
 
                 // Call metric on best state to get standalone performance metrics
                 let mut best_state_performance: Performance = Performance::new();

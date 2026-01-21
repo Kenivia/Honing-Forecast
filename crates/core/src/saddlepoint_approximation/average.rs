@@ -1,5 +1,7 @@
 // use std::f64::NAN;
 
+use std::f64::NAN;
+
 // use crate::constants::FLOAT_TOL;
 use crate::{
     constants::{FLOAT_TOL, SPECIAL_TOL},
@@ -32,20 +34,21 @@ pub static DEBUG_AVG_INDEX: i64 = 0;
 //     total_var
 // }
 impl StateBundle {
-    pub fn simple_avg_var(&self, support_index: i64, skip_count: usize) -> (f64, f64) {
+    pub fn simple_avg(&self, support_index: i64, skip_count: usize) -> f64 {
         let mut mean: f64 = 0.0;
-        let mut var: f64 = 0.0;
+        // let mut var: f64 = 0.0;
         for pair_arr in self.extract_collapsed_pair(support_index, skip_count) {
             let mut this_mean: f64 = 0.0;
-            let mut x2 = 0.0;
+            // let mut x2 = 0.0;
             for (s, p) in pair_arr.iter() {
                 this_mean += s * p;
-                x2 += s * s * p
+                // x2 += s * s * p
             }
             mean += this_mean;
-            var += x2 - this_mean * this_mean;
+            // var += x2 - this_mean * this_mean;
         }
-        (mean, var)
+        mean
+        // (mean, var)
     }
 
     pub fn average_gold_metric(&mut self, performance: &mut Performance) -> f64 {
@@ -95,7 +98,7 @@ impl StateBundle {
                             leftover,
                             this_avg,
                             special_prob,
-                            self.simple_avg_var(support_index as i64, skip_count),
+                            self.simple_avg(support_index as i64, skip_count),
                             special_prob * this_avg,
                             "================================"
                         );
@@ -123,10 +126,10 @@ impl StateBundle {
         leftover_value: f64,
         performance: &mut Performance,
     ) -> f64 {
-        let mean_var: (f64, f64) = self.simple_avg_var(support_index, skip_count);
+        let simple_mean: f64 = self.simple_avg(support_index, skip_count);
 
         if (price - leftover_value).abs() < FLOAT_TOL {
-            return price * (effective_budget - mean_var.0);
+            return price * (effective_budget - simple_mean);
         }
 
         let biased_prob: f64 = self.saddlepoint_approximation_wrapper(
@@ -134,7 +137,7 @@ impl StateBundle {
             skip_count,
             effective_budget,
             true,
-            mean_var,
+            simple_mean.ln(),
             performance,
         );
         let prob = self.saddlepoint_approximation_wrapper(
@@ -142,10 +145,10 @@ impl StateBundle {
             skip_count,
             effective_budget,
             false,
-            mean_var,
+            NAN,
             performance,
         );
-        let simple_mean = mean_var.0;
+
         let out: f64 = price * (effective_budget - simple_mean)
             + (leftover_value - price) * (effective_budget * prob - biased_prob * simple_mean);
 

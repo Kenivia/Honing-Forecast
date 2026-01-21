@@ -1,3 +1,5 @@
+use std::f64::NAN;
+
 use crate::constants::FLOAT_TOL;
 use crate::constants::JuiceInfo;
 use crate::parser::PreparationOutput;
@@ -123,6 +125,7 @@ impl StateBundle {
             let l_len = upgrade.prob_dist.len();
             let mut this_combined = Vec::with_capacity(l_len);
             let mut cost_so_far: f64 = 0.0;
+            let mut first_gap: f64 = NAN;
             for (p_index, _) in upgrade.prob_dist.iter().enumerate() {
                 this_combined.push(cost_so_far);
 
@@ -143,12 +146,15 @@ impl StateBundle {
                         state_id,
                     );
                 }
+                if first_gap.is_nan() {
+                    first_gap = cost_so_far;
+                }
             }
             upgrade.combined_gold_costs.update_payload(
                 this_combined,
                 upgrade.state.hash,
                 &mut upgrade.prob_dist,
-                1.0,
+                first_gap,
                 cost_so_far,
             );
 

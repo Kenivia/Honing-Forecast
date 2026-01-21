@@ -37,7 +37,7 @@ impl StateBundle {
                 skip_count,
                 budget,
                 false,
-                self.simple_avg_var(support_index, skip_count),
+                self.simple_avg(support_index, skip_count),
                 performance,
             );
 

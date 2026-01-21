@@ -1,4 +1,4 @@
-use std::f64::NAN;
+use std::f64::{INFINITY, NAN, NEG_INFINITY};
 
 use crate::{constants::FLOAT_TOL, performance::Performance, state_bundle::StateBundle};
 pub static THETA_TOL: f64 = 1e-10;
@@ -10,7 +10,7 @@ impl StateBundle {
         theta: f64,
         toggle: &(bool, bool, bool, bool, bool),
         compute_biased: bool,
-        mean_log: f64,
+        simple_mean_log: f64,
         support_index: i64,
         skip_count: usize,
         performance: &mut Performance,
@@ -27,7 +27,7 @@ impl StateBundle {
 
             let ksx = self.ks_01234(support_index, skip_count, theta, &new_toggle);
             (
-                ksx.0 + ksx.1.ln() - mean_log,
+                ksx.0 + ksx.1.ln() - simple_mean_log,
                 ksx.1 + ksx.2 / ksx.1,
                 ksx.2 + (ksx.3 * ksx.1 - ksx.2.powi(2)) / (ksx.1.powi(2)),
                 ksx.3
@@ -69,19 +69,20 @@ impl StateBundle {
             let support_len = meta_support.access_collapsed().len();
             let mut u_arr: Vec<f64> = Vec::with_capacity(support_len);
             let biggest_shift = if theta >= 0.0 {
-                theta * meta_support.access_collapsed().iter().last().unwrap().0
+                theta * meta_support.max_value
             } else {
-                theta * meta_support.access_collapsed().iter().next().unwrap().0 // this is just 0 
+                theta
+                    * meta_support
+                        .access_collapsed()
+                        .iter()
+                        .skip(meta_support.first_non_zero_prob_index)
+                        .next()
+                        .unwrap()
+                        .0
             };
 
             if meta_support.linear {
-                let step = meta_support
-                    .access_collapsed()
-                    .iter()
-                    .skip(1)
-                    .next()
-                    .unwrap()
-                    .0;
+                let step = meta_support.gap_size;
 
                 if theta >= 0.0 {
                     let decay_factor = (-step * theta).exp();
@@ -89,7 +90,9 @@ impl StateBundle {
                     // dbg!(decay_factor, biggest_shift, step, theta);
                     for (_s, p) in meta_support.access_collapsed().iter().rev() {
                         // let correct_u = p * (_s * theta - biggest_shift).exp();
-
+                        if p.abs() < FLOAT_TOL {
+                            continue;
+                        }
                         let u = p * current_exp_val;
                         // dbg!(correct_u, u);
                         sum += u;
@@ -103,21 +106,31 @@ impl StateBundle {
                     let decay_factor = (step * theta).exp();
                     let mut current_exp_val = 1.0;
 
-                    for (_s, p) in meta_support.access_collapsed().iter() {
+                    for (index, (_s, p)) in meta_support.access_collapsed().iter().enumerate() {
                         // let correct_u = p * (_s * theta - biggest_shift).exp();
+                        if p.abs() < FLOAT_TOL {
+                            continue;
+                        }
                         let u = p * current_exp_val;
 
                         // dbg!(correct_u, u, current_exp_val);
                         sum += u;
                         u_arr.push(u);
-
-                        current_exp_val *= decay_factor;
+                        if index > 0 {
+                            current_exp_val *= decay_factor;
+                        }
                     }
                     // dbg!(decay_factor, step, meta_support.access_collapsed());
                 }
                 // panic!();
             } else {
                 for (s, p) in meta_support.access_collapsed().iter() {
+                    if p.abs() < FLOAT_TOL {
+                        // this avoids 0.0 * inf  which is NAN
+                        u_arr.push(0.0);
+                        continue;
+                    }
+                    // dbg!(s, s * theta, biggest_shift, s * theta - biggest_shift);
                     let u: f64 = p * (s * theta - biggest_shift).exp();
                     sum += u;
                     u_arr.push(u);
@@ -127,11 +140,12 @@ impl StateBundle {
                 dbg!(
                     &u_arr,
                     theta,
+                    biggest_shift,
                     meta_support.linear,
                     meta_support.access_collapsed()
                 );
-                return (NAN, NAN, NAN, NAN, NAN);
                 // panic!();
+                return (NAN, NAN, NAN, NAN, NAN);
             }
             for (&u, pair) in u_arr.iter().zip(meta_support.access_collapsed().iter()) {
                 if u == 0.0 {
@@ -187,28 +201,27 @@ impl StateBundle {
 
     pub fn my_householder(
         &self,
-
         compute_biased: bool,
-        mean_log: f64,
+        simple_mean_log: f64,
         support_index: i64,
         skip_count: usize,
         budget: f64,
-        low: f64,
+        // low: f64,
         guess: f64,
-        high: f64,
+        // high: f64,
         performance: &mut Performance,
     ) -> Option<(f64, f64, usize)> {
         // e ^ like 718 or soemtihng overflows, using 700 to make sure summing a few of these wont overflow
 
         let root = self.find_root(
             guess,
-            low,
-            high,
+            // low,
+            // high,
             THETA_TOL,
             20,
             &(false, true, true, true, true),
             compute_biased,
-            mean_log,
+            simple_mean_log,
             support_index,
             skip_count,
             budget,
@@ -220,24 +233,24 @@ impl StateBundle {
     pub fn find_root(
         &self,
         init_theta: f64,
-        min_theta: f64,
-        max_theta: f64,
+        // min_theta: f64,
+        // max_theta: f64,
         theta_tol: f64,
         max_iter: usize,
         toggle: &(bool, bool, bool, bool, bool),
         compute_biased: bool,
-        mean_log: f64,
+        simple_mean_log: f64,
         support_index: i64,
         skip_count: usize,
         budget: f64,
         performance: &mut Performance,
     ) -> Option<(f64, f64, usize)> {
-        let mut lower = min_theta;
-        let mut upper = max_theta;
+        let mut lower = NEG_INFINITY;
+        let mut upper = INFINITY;
 
         let mut theta = init_theta;
 
-        theta = theta.min(max_theta).max(min_theta);
+        // theta = theta.min(max_theta).max(min_theta);
 
         let mut init_y: f64 = NAN; // this is K'(0) = the mean 
         let mut debug_record: Vec<(f64, f64, f64, f64, f64)> = Vec::new();
@@ -248,7 +261,7 @@ impl StateBundle {
                 theta,
                 toggle,
                 compute_biased,
-                mean_log,
+                simple_mean_log,
                 support_index,
                 skip_count,
                 performance,
@@ -284,10 +297,28 @@ impl StateBundle {
             // last_theta = theta;
             performance.newton_iterations += 1;
             if proposed_theta > lower && proposed_theta < upper && dy.abs() > 0.1 {
-                theta = proposed_theta.clamp(min_theta, max_theta);
+                theta = proposed_theta;
                 performance.householder_count += 1;
             } else {
-                theta = 0.5 * (lower + upper);
+                if upper.is_finite() && lower.is_finite() {
+                    theta = 0.5 * (upper + lower);
+                } else if upper.is_finite() {
+                    if (theta - upper).abs() < FLOAT_TOL {
+                        theta = 0.5 * theta;
+                    } else {
+                        theta = 0.5 * (theta + upper);
+                    }
+                } else if lower.is_finite() {
+                    if (theta - lower).abs() < FLOAT_TOL {
+                        theta = 0.5 * theta;
+                    } else {
+                        theta = 0.5 * (theta + lower);
+                    }
+                } else {
+                    //  not possible
+                    panic!();
+                }
+
                 performance.bisection_count += 1;
             }
         }
@@ -303,7 +334,7 @@ impl StateBundle {
     //         theta,
     //         toggle,
     //         compute_biased,
-    //         mean_log,
+    //         simple_mean_log,
     //         support_index,
     //         skip_count,
     //     );
@@ -347,7 +378,7 @@ impl StateBundle {
     //                 new_theta,
     //                 toggle,
     //                 compute_biased,
-    //                 mean_log,
+    //                 simple_mean_log,
     //                 support_index,
     //                 skip_count,
     //             );

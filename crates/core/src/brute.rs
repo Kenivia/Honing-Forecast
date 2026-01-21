@@ -40,11 +40,23 @@ pub fn brute_success_prob(
     for i in (0..n).rev() {
         // Find min and max cost for this specific layer
         // We use fold because f64 doesn't implement Ord
-        let (local_min, local_max) = support_arr[i]
-            .iter()
-            .fold((f64::INFINITY, f64::NEG_INFINITY), |(min, max), &val| {
-                (min.min(val), max.max(val))
-            });
+        let (local_min, local_max) = support_arr[i].iter().enumerate().fold(
+            (f64::INFINITY, f64::NEG_INFINITY),
+            |(min, max), (index, &val)| {
+                (
+                    if prob_dist_arr[i][index].abs() > FLOAT_TOL {
+                        min.min(val)
+                    } else {
+                        min
+                    },
+                    if prob_dist_arr[i][index].abs() > FLOAT_TOL {
+                        max.max(val)
+                    } else {
+                        max
+                    },
+                )
+            },
+        );
 
         min_suffix[i] = min_suffix[i + 1] + local_min;
         max_suffix[i] = max_suffix[i + 1] + local_max;
@@ -140,7 +152,12 @@ pub fn brute_biased_recursive(
 
     for i in (0..n).rev() {
         // Assumes support_arr is sorted. If not, replace first()/last() with min()/max()
-        let min_val = support_arr[i].first().cloned().unwrap_or(0.0);
+        let min_val = support_arr[i]
+            .iter()
+            .enumerate()
+            .find(|(index, _)| prob_dist_arr[i][*index] > FLOAT_TOL)
+            .unwrap_or((0, &0.0))
+            .1;
         let max_val = support_arr[i].last().cloned().unwrap_or(0.0);
 
         min_suffix[i] = min_suffix[i + 1] + min_val;
@@ -199,7 +216,11 @@ fn recurse_lower(
         // Tighter local pruning: check if next step + min future exceeds budget
         .take_while(|(new_cost, _)| *new_cost + bounds.min_suffix[depth + 1] <= budget)
         .fold(0.0, |acc, (new_cost, prob)| {
-            acc + prob * recurse_lower(probs, supports, bounds, new_cost, budget, depth + 1, mean)
+            acc + if prob.abs() > FLOAT_TOL {
+                0.0
+            } else {
+                prob * recurse_lower(probs, supports, bounds, new_cost, budget, depth + 1, mean)
+            }
         })
 }
 
@@ -243,8 +264,11 @@ fn recurse_upper(
             if new_cost + bounds.max_suffix[depth + 1] <= budget {
                 acc // Add 0.0
             } else {
-                acc + prob
-                    * recurse_upper(probs, supports, bounds, new_cost, budget, depth + 1, mean)
+                acc + if prob.abs() > FLOAT_TOL {
+                    0.0
+                } else {
+                    prob * recurse_upper(probs, supports, bounds, new_cost, budget, depth + 1, mean)
+                }
             }
         })
 }

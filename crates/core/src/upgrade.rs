@@ -9,6 +9,7 @@ use std::f64::NAN;
 use std::ops::{Deref, DerefMut};
 
 use std::hash::{Hash, Hasher};
+use std::usize::MAX;
 // the parser function turns a selection of upgrades into an array of Upgrade objects
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Upgrade {
@@ -150,6 +151,7 @@ pub struct Support {
     pub ignore: bool,
     pub gap_size: f64,
     pub max_value: f64,
+    pub first_non_zero_prob_index: usize,
 }
 
 impl Support {
@@ -164,6 +166,7 @@ impl Support {
 
         // let valid_log = prob_dist.is_log_valid();
         let mut result: Vec<(f64, f64)> = Vec::with_capacity(self.support.len());
+
         if self.collapsed_state_hash != self.support_state_hash {
             let mut iter = izip!(self.support.iter(), prob_dist.iter(),);
 
@@ -184,6 +187,10 @@ impl Support {
                 result.push((cur_s, cur_p));
             }
             self.ignore = result.len() == 1 && result[0].0.abs() < FLOAT_TOL;
+            self.first_non_zero_prob_index = result
+                .iter()
+                .take_while(|(_, p)| p.abs() < FLOAT_TOL)
+                .count();
             self.collapsed_pair = result;
             self.collapsed_state_hash = self.support_state_hash;
         }
@@ -240,6 +247,7 @@ impl Default for Support {
             ignore: false,
             gap_size: NAN,
             max_value: NAN,
+            first_non_zero_prob_index: 0,
         }
     }
 }
