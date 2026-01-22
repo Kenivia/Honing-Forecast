@@ -6,6 +6,40 @@
 ### Now
 
 - rebuild stuff and re-wire things to the website
+  - figure out a way to export state_bundle to js and be able to pass it to monte carlo appropriately
+    - literally just state and special state
+  - this should also be uh editable in js by ui
+  - all the existing functions now take in a statebundle instead (still initialize prep_output like before)
+  - make sure all existing things work, then start work on the new page(s)
+
+    - ACTUALLY need to do the editable artisan thing first(which i mean shouldnt be that hard)
+
+    - as in:
+    - Average mode / alt modee / efficiency mode:
+      - input: market price + leftover "price"/ leftover value / care abt it or not toggle
+      - avg = needed x market price - leftover x leftover price
+      - output: juice advice, new avg values(also show old/naive?)
+
+    - Prob maximizing mode / main mode:
+      - input: market price, owned budget
+      - output: juice advice, new prob(old prob)
+    - need to figure out how the ui is gonna look like
+
+    - (both: updatable clicks)
+
+    - should probably start from the user experience:
+    - Simple/average/alt/efficiency mode:
+        1. tick upgrades
+        2. adjust price / leftover and input owned budget
+        3. done (average optimizing algorithm gives a state & special state)
+        4. (optional) click taps as we go and update "mats used" and stuff and update the state
+
+    - Advanced/prob-of-success/main/play-it-safe mode:
+        1. warn if applicable, tell user to untick(set price to 0) mats that they have too much of
+        2. same thing as simple mode
+
+    - Forecast mode for both: just a convenience thing, add a column of "earned per week" and how many weeks to forecast
+    - (idk i'll figure out forecast later)
 
 #### Optimizations
 
@@ -16,6 +50,7 @@
 - can actually save 1 evaluation at the end of special_prob by setting the zero prob...
 
 - multi-threading????
+  - will prep by compling using all the right tools(i hope) and then figuring it out later
 
 ### Misc
 
@@ -56,33 +91,6 @@
 - multiple selectable & editable express
   - rework constant.rs to take in a json or something so it can interface with the website
   - eventually T4.5 integration
-
-- wire up all this to the website:
-  - Average mode / alt modee / efficiency mode:
-    - input: market price + leftover "price"/ leftover value / care abt it or not toggle
-      - avg = needed x market price - leftover x leftover price
-    - output: juice advice, new avg values(also show old/naive?)
-
-  - Prob maximizing mode / main mode:
-    - input: market price, owned budget
-    - output: juice advice, new prob(old prob)
-  - need to figure out how the ui is gonna look like
-
-  - (both: updatable clicks)
-
-- should probably start from the user experience:
-  - Simple/average/alt/efficiency mode:
-    1. tick upgrades
-    2. adjust price / leftover and input owned budget
-    3. done (average optimizing algorithm gives a state & special state)
-    4. (optional) click taps as we go and update "mats used" and stuff and update the state
-
-  - Advanced/prob-of-success/main/play-it-safe mode:
-    1. warn if applicable, tell user to untick(set price to 0) mats that they have too much of
-    2. same thing as simple mode
-
-  - Forecast mode for both: just a convenience thing, add a column of "earned per week" and how many weeks to forecast
-  - (idk i'll figure out forecast later)
 
 ### Algorithm ideas
 
