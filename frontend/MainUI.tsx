@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState, useMemo } from "react"
-import "./Sections/UpgradeSelection//CheckboxRow.css"
+import "./Sections/UpgradeSelection/CheckboxRow.css"
 import { styles } from "./Utils/Styles.ts"
 import { MATS_LABELS, TOP_ROWS, TOP_COLS, BOTTOM_ROWS, BOTTOM_COLS, DEFAULT_MATS_PRICES, DEFAULT_JUICE_PRICES, JUICE_LABELS } from "./Utils/Constants.ts"
 import { readSettings, writeSettings } from "./Utils/Settings.ts"
@@ -9,6 +9,8 @@ import AdvancedHoningPanel from "./Sections/UpgradeSelection/AdvancedHoningPanel
 // import ChanceToCostSection from "./Sections/ChanceMode/ChanceModeSection.tsx"
 import CostToChanceSection from "./Sections/BudgetMode/BudgetModeSection.tsx"
 // const CostToChanceSection = React.lazy(() => import('./CostToChanceSection.tsx'));
+
+import InputsSection from "./Sections/Inputs/InputsSection.tsx"
 
 import GambaSection from "./Sections/GambaSimulator/GambaSection.tsx"
 import LongTermSection from "./Sections/ForecastMode/ForecastModeSection.tsx"
@@ -21,6 +23,7 @@ import { GridMouseDownLogic, mouseMoveLogic, createMouseUpHandler } from "./Sect
 import { createClearAll, createFillDemo, createFillDemoIncome } from "./Sections/ControlPanel/ControlPanelFunctions.ts"
 import { buildPayload, createCancelableWorkerRunner } from "./WasmInterface/WorkerRunner.ts"
 import { ticksToCounts, countsToTicks } from "./Utils/Helpers.ts"
+import type { InputsBundleWithSetters, InputsSetters, InputsValues } from "./Utils/InputBundles.ts"
 
 const NUM_JUICE_AVAIL = 4
 export default function HoningForecastUI() {
@@ -36,15 +39,97 @@ export default function HoningForecastUI() {
         return Object.fromEntries(MATS_LABELS.map((label, index) => [label, DEFAULT_MATS_PRICES[index]]))
     })
 
-    const [userJuiceOwned, setUserJuiceOwned] = useState(() => Object.fromEntries(JUICE_LABELS.map((l) => [l, "0"])))
-
-    const [userJuicePrices, setUserJuicePrices] = useState(() => {
-        return Object.fromEntries(JUICE_LABELS.map((label, index) => [label, DEFAULT_JUICE_PRICES[index]]))
+    const [userWeaponJuiceOwned, setUserWeaponJuiceOwned] = useState(() => {
+        return Object.fromEntries(JUICE_LABELS.map((label_row) => [label_row[0], "0"]))
     })
 
-    const [userJuiceLeftover, setUserJuiceLeftover] = useState(() => {
-        return Object.fromEntries(JUICE_LABELS.map((label, index) => [label, DEFAULT_JUICE_PRICES[index]]))
+    const [userArmorJuiceOwned, setUserArmorJuiceOwned] = useState(() => {
+        return Object.fromEntries(JUICE_LABELS.map((label_row) => [label_row[1], "0"]))
     })
+
+    const [userWeaponJuicePrices, setUserWeaponJuicePrices] = useState(() => {
+        return Object.fromEntries(JUICE_LABELS.map((label_row, row_index) => [label_row[0], DEFAULT_JUICE_PRICES[row_index][0]]))
+    })
+
+    const [userArmorJuicePrices, setUserArmorJuicePrices] = useState(() => {
+        return Object.fromEntries(JUICE_LABELS.map((label_row, row_index) => [label_row[1], DEFAULT_JUICE_PRICES[row_index][1]]))
+    })
+
+    const [userWeaponJuiceLeftover, setUserWeaponJuiceLeftover] = useState(() => {
+        return Object.fromEntries(JUICE_LABELS.map((label_row, row_index) => [label_row[0], DEFAULT_JUICE_PRICES[row_index][0]]))
+    })
+
+    const [userArmorJuiceLeftover, setUserArmorJuiceLeftover] = useState(() => {
+        return Object.fromEntries(JUICE_LABELS.map((label_row, row_index) => [label_row[1], DEFAULT_JUICE_PRICES[row_index][1]]))
+    })
+
+    const inputsValues = useMemo<InputsValues>(
+        () => ({
+            mats: {
+                owned: userMatsOwned,
+                prices: userMatsPrices,
+                leftover: userMatsLeftover,
+            },
+            juice: {
+                weapon: {
+                    owned: userWeaponJuiceOwned,
+                    prices: userWeaponJuicePrices,
+                    leftover: userWeaponJuiceLeftover,
+                },
+                armor: {
+                    owned: userArmorJuiceOwned,
+                    prices: userArmorJuicePrices,
+                    leftover: userArmorJuiceLeftover,
+                },
+            },
+        }),
+        [
+            userMatsOwned,
+            userMatsPrices,
+            userMatsLeftover,
+            userWeaponJuiceOwned,
+            userWeaponJuicePrices,
+            userWeaponJuiceLeftover,
+            userArmorJuiceOwned,
+            userArmorJuicePrices,
+            userArmorJuiceLeftover,
+        ],
+    )
+
+    const inputsSetters = useMemo<InputsSetters>(
+        () => ({
+            mats: {
+                setOwned: setUserMatsOwned,
+                setPrices: setUserMatsPrices,
+                setLeftover: setUserMatsLeftover,
+            },
+            juice: {
+                weapon: {
+                    setOwned: setUserWeaponJuiceOwned,
+                    setPrices: setUserWeaponJuicePrices,
+                    setLeftover: setUserWeaponJuiceLeftover,
+                },
+                armor: {
+                    setOwned: setUserArmorJuiceOwned,
+                    setPrices: setUserArmorJuicePrices,
+                    setLeftover: setUserArmorJuiceLeftover,
+                },
+            },
+        }),
+        [
+            setUserMatsOwned,
+            setUserMatsPrices,
+            setUserMatsLeftover,
+            setUserWeaponJuiceOwned,
+            setUserWeaponJuicePrices,
+            setUserWeaponJuiceLeftover,
+            setUserArmorJuiceOwned,
+            setUserArmorJuicePrices,
+            setUserArmorJuiceLeftover,
+        ],
+    )
+
+    const inputsBundle = useMemo<InputsBundleWithSetters>(() => ({ values: inputsValues, setters: inputsSetters }), [inputsValues, inputsSetters])
 
     const [desired_chance, set_desired_chance] = useState(() => "50")
     const [uncleaned_desired_chance, set_uncleaned_desired_chance] = useState(() => "50")
@@ -56,7 +141,7 @@ export default function HoningForecastUI() {
     const [prev_checked_arr_bottom, set_prev_checked_arr_bottom] = useState(() => Array.from({ length: BOTTOM_COLS }, () => false))
     const [cumulativeGraph, setCumulativeGraph] = useState<boolean>(true)
     const [dataSize, setDataSize] = useState<string>(() => "100000")
-    const [activePage, setActivePage] = useState<"cost-to-chance" | "gamba" | "forecast">("cost-to-chance") // "chance-to-cost" |
+    const [activePage, setActivePage] = useState<"optimize" | "cost-to-chance" | "gamba" | "forecast">("cost-to-chance") // "chance-to-cost" |
     const [mainScale, setMainScale] = useState<number>(1)
     const [zoomCompensation, setZoomCompensation] = useState<number>(1)
 
@@ -449,22 +534,16 @@ export default function HoningForecastUI() {
         buildPayload({
             topGrid,
             bottomGrid,
-            userMatsOwned,
             adv_hone_strategy,
             express_event,
             bucketCount,
 
-            userMatsPrices,
             dataSize,
             useGridInput,
             normalCounts,
             advCounts,
 
-            userMatsLeftover,
-
-            userJuiceOwned,
-            userJuicePrices,
-            userJuiceLeftover,
+            inputs: inputsValues,
             // monteCarloResult,
         })
 
@@ -695,6 +774,9 @@ export default function HoningForecastUI() {
                 </div>
 
                 {/* Page Separator */}
+                <div>
+                    <InputsSection inputs={inputsBundle} />
+                </div>
                 <Separator activePage={activePage} onPageChange={setActivePage} />
 
                 {/* Always-rendered pages with display toggle */}
@@ -724,14 +806,18 @@ export default function HoningForecastUI() {
                         monteCarloResult={monteCarloResult}
                     />
                 </div> */}
-
+                {activePage === "optimize" && (
+                    <div className={activePage === "optimize" ? "page" : "page page--hidden"}>
+                        {/* <OptimizeSection
+               
+                        /> */}
+                    </div>
+                )}
                 {activePage === "cost-to-chance" && (
                     <div className={activePage === "cost-to-chance" ? "page" : "page page--hidden"}>
                         <CostToChanceSection
-                            budget_inputs={userMatsOwned}
-                            set_budget_inputs={setUserMatsOwned}
-                            userMatsPrices={userMatsPrices}
-                            setUserMatsPrices={setUserMatsPrices}
+                            inputsBundle={inputsBundle}
+
                             chance_result={costToChanceResult}
                             cachedChanceGraphData={cachedChanceGraphData}
                             AnythingTicked={AnythingTicked}
@@ -753,14 +839,7 @@ export default function HoningForecastUI() {
                 {activePage === "gamba" && (
                     <div className={activePage === "gamba" ? "page" : "page page--hidden"}>
                         <GambaSection
-                            userMatsOwned={userMatsOwned}
-                            setUserMatsOwned={setUserMatsOwned}
-                            userMatsPrices={userMatsPrices}
-                            setUserMatsPrices={setUserMatsPrices}
-                            userMatsLeftover={userMatsLeftover}
-                            userJuiceOwned={userJuiceOwned}
-                            userJuicePrices={userJuicePrices}
-                            userJuiceLeftover={userJuiceLeftover}
+                            inputs={inputsBundle}
                             topGrid={topGrid}
                             bottomGrid={bottomGrid}
                             adv_hone_strategy={adv_hone_strategy}

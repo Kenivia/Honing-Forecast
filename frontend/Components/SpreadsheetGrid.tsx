@@ -209,11 +209,11 @@ export default function SpreadsheetGrid({ columnDefs, labels, sheetValuesArr, se
                     prev
                         ? { ...prev, endRow: row, endCol: col }
                         : {
-                              startRow: row,
-                              startCol: col,
-                              endRow: row,
-                              endCol: col,
-                          }
+                            startRow: row,
+                            startCol: col,
+                            endRow: row,
+                            endCol: col,
+                        }
                 )
             }
         }
@@ -270,7 +270,7 @@ export default function SpreadsheetGrid({ columnDefs, labels, sheetValuesArr, se
                 e.preventDefault()
             } else if ((window as any).clipboardData) {
                 // IE fallback (unlikely needed)
-                ;(window as any).clipboardData.setData("Text", text)
+                ; (window as any).clipboardData.setData("Text", text)
                 e.preventDefault()
             }
             // store for internal paste if needed
@@ -377,10 +377,13 @@ export default function SpreadsheetGrid({ columnDefs, labels, sheetValuesArr, se
                                 display: "flex",
                                 alignItems: "center",
                                 justifyContent: "flex-end",
-                                paddingRight: 8,
-                                whiteSpace: "nowrap",
+                                paddingRight: 0,
+                                lineHeight: 0.9,
+                                whiteSpace: "wrap",
                                 fontSize: "var(--font-size-sm)",
                                 paddingTop: 8,
+                                width: "100%",
+                                textAlign: "right",
                             }}
                         >
                             <Icon iconName={lab} size={28} />
@@ -401,12 +404,13 @@ export default function SpreadsheetGrid({ columnDefs, labels, sheetValuesArr, se
                                 justifyContent: "center",
                                 color: "var(--text-primary)",
                                 textWrap: "wrap",
-                                height: colDef.headerName.length > 12 ? 30 : 15,
+                                height: 15,
                                 textAlign: "center",
                                 fontWeight: 500,
-                                fontSize: "var(--font-size-md)",
-                                marginLeft: colDef.headerName.length > 12 ? -8 : -12,
-                                marginTop: colDef.headerName.length > 12 ? 0 : 18,
+                                fontSize: colIndex == 0 ? "var(--font-size-md)" : "var(--font-size-xs)",
+                                lineHeight: 0.8,
+                                marginTop: 18,
+                                width: colIndex == 0 ? "80px" : "50px",
                             }}
                         >
                             {colDef.headerName}
@@ -428,11 +432,11 @@ export default function SpreadsheetGrid({ columnDefs, labels, sheetValuesArr, se
                                             prev
                                                 ? { ...prev, endRow: rowIndex, endCol: colIndex }
                                                 : {
-                                                      startRow: rowIndex,
-                                                      startCol: colIndex,
-                                                      endRow: rowIndex,
-                                                      endCol: colIndex,
-                                                  }
+                                                    startRow: rowIndex,
+                                                    startCol: colIndex,
+                                                    endRow: rowIndex,
+                                                    endCol: colIndex,
+                                                }
                                         )
                                     }
                                 }}
@@ -455,7 +459,7 @@ export default function SpreadsheetGrid({ columnDefs, labels, sheetValuesArr, se
                                         })
                                     }}
                                     style={{
-                                        width: "100px",
+                                        width: colIndex == 0 ? "80px" : "50px",
                                         height: "100%",
                                         padding: "6px 8px",
                                         border: "1px solid var(--border-accent)",
@@ -463,8 +467,8 @@ export default function SpreadsheetGrid({ columnDefs, labels, sheetValuesArr, se
                                             columnDefs[colIndex].backgroundRanOut && parseInt(sheetValuesArr[colIndex][label]) < 0
                                                 ? columnDefs[colIndex].backgroundRanOut
                                                 : isCellSelected(rowIndex, colIndex)
-                                                ? columnDefs[colIndex].backgroundSelected
-                                                : columnDefs[colIndex].background,
+                                                    ? columnDefs[colIndex].backgroundSelected
+                                                    : columnDefs[colIndex].background,
                                         color: columnDefs[colIndex].color,
                                         fontSize: "var(--font-size-sm)",
                                         outline: "none",

@@ -154,7 +154,7 @@ export type ColumnDef = {
 }
 
 // Column definitions for spreadsheet grids
-export const createColumnDefs = (_autoGoldValues: boolean) => {
+export const createColumnDefs = () => {
     const chanceToCostColumnDefs: ColumnDef[] = [
         {
             headerName: "Est. cost",
@@ -166,9 +166,9 @@ export const createColumnDefs = (_autoGoldValues: boolean) => {
         },
     ]
 
-    const costToChanceColumnDefs: ColumnDef[] = [
+    const matsColumnDef: ColumnDef[] = [
         {
-            headerName: "Owned mats (optional)",
+            headerName: "Owned",
             editable: true,
             flex: 1,
             background: "var(--grid-cell-bg)",
@@ -176,40 +176,51 @@ export const createColumnDefs = (_autoGoldValues: boolean) => {
             color: "var(--grid-cell-text)",
         },
         {
-            headerName: "Gold Price",
+            headerName: "Market price",
             editable: true,
             flex: 1,
             background: "var(--grid-cell-bg)",
             backgroundSelected: "var(--grid-cell-selected)",
             color: "var(--grid-cell-text)",
         },
-    ]
-    const optimizedColumnDefs: ColumnDef[] = [
-        // {
-        //     headerName: "Owned now",
-        //     editable: true,
-        //     flex: 1,
-        //     background: "var(--grid-cell-bg)",
-        //     backgroundSelected: "var(--grid-cell-selected)",
-        //     color: "var(--grid-cell-text)",
-        // },
         {
-            headerName: "Should Buy",
-            editable: false,
+            headerName: "Leftover value",
+            editable: true,
             flex: 1,
-            background: "var(--grid-cell-bg-readonly)",
-            backgroundSelected: "var(--grid-cell-selected-readonly)",
-            color: "var(--text-success)",
-        },
-        {
-            headerName: "Total",
-            editable: false,
-            flex: 1,
-            background: "var(--grid-cell-bg-readonly)",
-            backgroundSelected: "var(--grid-cell-selected-readonly)",
-            color: "var(--text-success)",
+            background: "var(--grid-cell-bg)",
+            backgroundSelected: "var(--grid-cell-selected)",
+            color: "var(--grid-cell-text)",
         },
     ]
 
-    return { chanceToCostColumnDefs, costToChanceColumnDefs, optimizedColumnDefs }
+    const juiceColumnDef: ColumnDef[] = [
+        {
+            headerName: "Owned",
+            editable: true,
+            flex: 1,
+            background: "var(--grid-cell-bg)",
+            backgroundSelected: "var(--grid-cell-selected)",
+            color: "var(--grid-cell-text)",
+        },
+        {
+            headerName: "Market price",
+            editable: true,
+            flex: 1,
+            background: "var(--grid-cell-bg)",
+            backgroundSelected: "var(--grid-cell-selected)",
+            color: "var(--grid-cell-text)",
+        },
+        {
+            headerName: "Leftover value",
+            editable: true,
+            flex: 1,
+            background: "var(--grid-cell-bg)",
+            backgroundSelected: "var(--grid-cell-selected)",
+            color: "var(--grid-cell-text)",
+        },
+
+       
+    ]
+
+    return { chanceToCostColumnDefs, matsColumnDef, juiceColumnDef }
 }

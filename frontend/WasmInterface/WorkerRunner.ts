@@ -1,21 +1,17 @@
 import { SpawnWorker } from "./worker_setup.ts"
 import { JUICE_LABELS, MATS_LABELS } from "@/Utils/Constants.ts"
+import type { InputsValues } from "@/Utils/InputBundles.ts"
 // import { ticksToCounts } from "@/Utils/Helpers.ts"
 
 export function buildPayload({
     topGrid,
     bottomGrid,
-    userMatsOwned,
     adv_hone_strategy,
     express_event,
     bucketCount,
     // autoGoldValues,
-    userMatsPrices,
     dataSize,
-    userMatsLeftover,
-    userJuiceOwned,
-    userJuicePrices,
-    userJuiceLeftover,
+    inputs,
     // useGridInput = true,
     // normalCounts,
     // advCounts,
@@ -23,36 +19,32 @@ export function buildPayload({
 }: {
     topGrid: boolean[][]
     bottomGrid: boolean[][]
-    userMatsOwned: any
     adv_hone_strategy: string
     express_event: boolean
     bucketCount: string
 
-    userMatsPrices: any
     dataSize: string
     useGridInput?: boolean
     normalCounts?: number[][]
     advCounts?: number[][]
     monteCarloResult?: any
 
-    userMatsLeftover: any
-    userJuiceOwned: any
-    userJuicePrices: any
-    userJuiceLeftover: any
+    inputs: InputsValues
 }) {
+    const { mats, juice } = inputs
     const payload: any = {
-        mats_budget: ((input) => Object.entries(input).map(([, v]) => Math.round(Number(v))))(userMatsOwned),
+        mats_budget: ((input) => Object.entries(input).map(([, v]) => Math.round(Number(v))))(mats.owned),
         adv_hone_strategy: adv_hone_strategy,
         express_event: express_event,
         bucket_count: Math.max(2, Math.min(1000, Math.floor(Number(bucketCount) || 2))),
-        user_price_arr: MATS_LABELS.slice(0, 7).map((label) => parseFloat(userMatsPrices[label] || "0")),
+        user_price_arr: MATS_LABELS.slice(0, 7).map((label) => parseFloat(mats.prices[label] || "0")),
         data_size: Math.max(1000, Math.floor(Number(dataSize) || 0)),
-        inp_leftover_values: MATS_LABELS.slice(0, 7).map((label) => parseFloat(userMatsLeftover[label] || "0")),
-        juice_books_budget: JUICE_LABELS.map((label_row) => label_row.map((label) => userJuiceOwned[label])),
+        inp_leftover_values: MATS_LABELS.slice(0, 7).map((label) => parseFloat(mats.leftover[label] || "0")),
+        juice_books_budget: JUICE_LABELS.map((label_row) => [juice.weapon.owned[label_row[0]], juice.armor.owned[label_row[1]]]),
 
-        juice_prices: JUICE_LABELS.map((label_row) => label_row.map((label) => userJuicePrices[label])),
+        juice_prices: JUICE_LABELS.map((label_row) => [juice.weapon.prices[label_row[0]], juice.armor.prices[label_row[1]]]),
 
-        inp_leftover_juice_values: JUICE_LABELS.map((label_row) => label_row.map((label) => userJuiceLeftover[label])),
+        inp_leftover_juice_values: JUICE_LABELS.map((label_row) => [juice.weapon.leftover[label_row[0]], juice.armor.leftover[label_row[1]]]),
     }
 
     // if (useGridInput) {

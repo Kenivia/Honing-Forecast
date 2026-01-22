@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react"
 import "./separator.css"
 
-type Page = "cost-to-chance" | "gamba" | "forecast" //"chance-to-cost" |
+type Page = "optimize" | "cost-to-chance" | "gamba" | "forecast" //"chance-to-cost" |
 
 type SeparatorProps = {
     activePage: Page
@@ -32,6 +32,7 @@ export default function Separator({ activePage, onPageChange }: SeparatorProps) 
         const baseClass = "hf-btn"
         if (activePage === page) {
             // if (page === "chance-to-cost") return `${baseClass} chance-selected`
+            if (page === "optimize") return `${baseClass} optimize-selected`
             if (page === "cost-to-chance") return `${baseClass} budget-selected`
             if (page === "gamba") return `${baseClass} gamba-selected`
             if (page === "forecast") return `${baseClass} longterm-selected`
@@ -45,9 +46,12 @@ export default function Separator({ activePage, onPageChange }: SeparatorProps) 
                 <span className="hf-label">Chance mode</span>
                 <div className="hf-help">I want to have x% chance to pass, how much mats will I need?</div>
             </button> */}
-
             <button className={getButtonClass("cost-to-chance")} onClick={() => handleButtonClick("cost-to-chance")}>
-                <span className="hf-label">Calc (slang for calculator)</span>
+                <span className="hf-label">Cool graphs</span>
+                <div className="hf-help">I want x% chance of success, how much will it cost?</div>
+            </button>
+            <button className={getButtonClass("cost-to-chance")} onClick={() => handleButtonClick("cost-to-chance")}>
+                <span className="hf-label">Cool graphs</span>
                 <div className="hf-help">I want x% chance of success, how much will it cost?</div>
             </button>
 

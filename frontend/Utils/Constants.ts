@@ -1,7 +1,7 @@
 export const MATS_LABELS = ["Red", "Blue", "Leaps", "Shards", "Oreha", "Gold", "Silver", "Special leaps"]
 
 export const JUICE_LABELS = [
-    ["Lava breath", "Guardian breath"],
+    ["Lava's Breath", "Glacier's Breath"],
     ["11-14 Weapon", "11-14 Armor"],
     ["15-18 Weapon", "15-18 Armor"],
     ["19-20 Weapon", "19-20 Armor"],

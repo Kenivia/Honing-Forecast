@@ -5,13 +5,9 @@ import LabeledCheckbox from "@/Components/LabeledCheckbox.tsx"
 import { styles, createColumnDefs, GRAPH_WIDTH, GRAPH_HEIGHT } from "@/Utils/Styles.ts"
 import { MATS_LABELS, OUTPUT_LABELS } from "@/Utils/Constants.ts"
 import { SliderBundle } from "@/Components/SliderBundle.tsx"
-
+import { InputsBundle } from "@/Utils/InputBundles.ts"
 type CostToChanceSectionProps = {
-    budget_inputs: any
-    set_budget_inputs: React.Dispatch<React.SetStateAction<any>>
-    userMatsPrices: any
-    setUserMatsPrices: React.Dispatch<React.SetStateAction<any>>
-
+    inputsBundle: InputsBundle
     chance_result: any
     cachedChanceGraphData: { hist_counts?: any; hist_mins?: any; hist_maxs?: any } | null
     AnythingTicked: boolean
@@ -31,11 +27,8 @@ type CostToChanceSectionProps = {
 }
 
 export default function CostToChanceSection({
-    budget_inputs,
-    set_budget_inputs,
-    userMatsPrices,
-    setUserMatsPrices,
 
+    inputsBundle,
     // setAutoGoldValues: _setAutoGoldValues,
     chance_result,
     cachedChanceGraphData,
@@ -56,7 +49,7 @@ export default function CostToChanceSection({
     setShowOptimizedDetails,
     monteCarloResult,
 }: CostToChanceSectionProps) {
-    const { chanceToCostColumnDefs, costToChanceColumnDefs } = createColumnDefs(false) // autoGoldValues not used for this section
+    const { chanceToCostColumnDefs } = createColumnDefs() // autoGoldValues not used for this section
 
     // const [showOptimized, setShowOptimized] = useState<boolean>(() => false)
     // const [showGraph, setShowGraph] = useState<boolean>(() => false);
@@ -76,15 +69,15 @@ export default function CostToChanceSection({
             >
                 {/* Budget input, chance of success and individual chances */}
 
-                <div style={{ display: "flex", flexDirection: "row", gap: 100, marginTop: 0, marginLeft: 0, width: 1200 }}>
-                    <div style={{ marginBottom: 16, width: 310, marginLeft: 0 }}>
+                <div style={{ display: "flex", flexDirection: "row", gap: 100, marginTop: 0, marginLeft: 100, width: 1200 }}>
+                    {/* <div style={{ marginBottom: 16, width: 310, marginLeft: 0 }}>
                         <SpreadsheetGrid
-                            columnDefs={costToChanceColumnDefs}
+                            columnDefs={matsColumnDef}
                             labels={MATS_LABELS}
                             sheetValuesArr={[budget_inputs, userMatsPrices]}
                             setSheetValuesArr={[set_budget_inputs, setUserMatsPrices]}
                         />
-                    </div>
+                    </div> */}
 
                     <div style={{ flexDirection: "column", marginTop: 20 }}>
                         {!noBuyChecked && (
@@ -118,16 +111,16 @@ export default function CostToChanceSection({
                                     sheetValuesArr={
                                         chance_result
                                             ? [
-                                                  Object.fromEntries(
-                                                      OUTPUT_LABELS.slice(0, 7).map((label, lab_index) => [
-                                                          label,
-                                                          String(chance_result.typical_costs[parseInt(desired_chance)][lab_index]),
-                                                      ]),
-                                                  ),
-                                              ]
+                                                Object.fromEntries(
+                                                    OUTPUT_LABELS.slice(0, 7).map((label, lab_index) => [
+                                                        label,
+                                                        String(chance_result.typical_costs[parseInt(desired_chance)][lab_index]),
+                                                    ]),
+                                                ),
+                                            ]
                                             : [Object.fromEntries(OUTPUT_LABELS.map((label) => [label, "Calculating..."]))]
                                     }
-                                    setSheetValuesArr={[() => {}]} // No-op for read-only
+                                    setSheetValuesArr={[() => { }]} // No-op for read-only
                                 />
                             </div>
                         )}
@@ -184,17 +177,17 @@ export default function CostToChanceSection({
                                     <div style={{ color: "var(--text-primary)", fontSize: 20, marginTop: 8 }}>Extra gold needed for</div>
                                     <div style={{ color: "var(--input-bg)", fontSize: 24, marginLeft: 8, marginTop: 4 }}>{parseInt(desired_chance)}%: </div>
                                 </div>
-                                <div style={{ color: "var(--text-success)", fontSize: 28, marginRight: 80, textAlign: "center" }}>
+                                {/* <div style={{ color: "var(--text-success)", fontSize: 28, marginRight: 80, textAlign: "center" }}>
                                     {chance_result
                                         ? Math.max(0, chance_result.hundred_gold_costs[parseInt(desired_chance)] - budget_inputs["Gold"]).toLocaleString(
-                                              "en-US",
-                                              {
-                                                  minimumFractionDigits: 0, // show decimals for small K/M/B
-                                                  maximumFractionDigits: 0,
-                                              },
-                                          )
+                                            "en-US",
+                                            {
+                                                minimumFractionDigits: 0, // show decimals for small K/M/B
+                                                maximumFractionDigits: 0,
+                                            },
+                                        )
                                         : "Calculating..."}
-                                </div>
+                                </div> */}
 
                                 <div
                                     style={{
@@ -278,7 +271,7 @@ export default function CostToChanceSection({
                             maxs={chance_result?.hist_maxs || cachedChanceGraphData?.hist_maxs}
                             width={GRAPH_WIDTH}
                             height={GRAPH_HEIGHT}
-                            budgets={OUTPUT_LABELS.map((label) => Number(budget_inputs[label]))}
+                            budgets={OUTPUT_LABELS.map((label) => Number(inputsBundle.values.mats[label]))}
                             hasSelection={AnythingTicked}
                             isLoading={CostToChanceBusy}
                             cumulative={cumulativeGraph}
