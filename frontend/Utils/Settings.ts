@@ -1,4 +1,4 @@
-import { INPUT_LABELS, OUTPUT_LABELS, STORAGE_KEY, TOP_ROWS, TOP_COLS, BOTTOM_ROWS, BOTTOM_COLS, CELL_W, CELL_H } from "./Constants.ts"
+import { MATS_LABELS, OUTPUT_LABELS, STORAGE_KEY, TOP_ROWS, TOP_COLS, BOTTOM_ROWS, BOTTOM_COLS, CELL_W, CELL_H } from "./Constants.ts"
 
 export function writeSettings(
     topGrid,
@@ -9,14 +9,14 @@ export function writeSettings(
     prev_checked_arr_bottom,
     desired_chance,
     budget_inputs,
-    autoGoldValues,
-    userMatsValue,
+
+    userMatsPrices,
     cumulativeGraph,
     dataSize,
     useGridInput,
     normalCounts,
     advCounts,
-    incomeArr
+    incomeArr,
 ) {
     const toSave = {
         topGrid,
@@ -27,8 +27,8 @@ export function writeSettings(
         prev_checked_arr_bottom,
         desired_chance,
         budget_inputs,
-        autoGoldValues,
-        userMatsValue,
+
+        userMatsPrices,
         cumulativeGraph,
         dataSize,
         useGridInput,
@@ -47,14 +47,14 @@ export function readSettings(
     set_prev_checked_arr_bottom,
     set_desired_chance,
     set_budget_inputs,
-    setAutoGoldValues,
-    setUserMatsValue,
+
+    setUserMatsPrices,
     setCumulativeGraph,
     setDataSize,
     setUseGridInput,
     setNormalCounts,
     setAdvCounts,
-    setIncomeArr
+    setIncomeArr,
 ) {
     const raw = localStorage.getItem(STORAGE_KEY)
     if (!raw) return
@@ -71,8 +71,8 @@ export function readSettings(
         if (typeof parsed.desired_chance === "string") set_desired_chance(parsed.desired_chance)
         if (parsed.budget_inputs && typeof parsed.budget_inputs === "object") set_budget_inputs(parsed.budget_inputs)
         // if (typeof parsed.autoGoldValues === "boolean") setAutoGoldValues(parsed.autoGoldValues)
-        if (typeof parsed.autoGoldValues === "boolean") setAutoGoldValues(false)
-        if (parsed.userMatsValue && typeof parsed.userMatsValue === "object") setUserMatsValue(parsed.userMatsValue)
+
+        if (parsed.userMatsPrices && typeof parsed.userMatsPrices === "object") setUserMatsPrices(parsed.userMatsPrices)
         if (typeof parsed.cumulativeGraph === "boolean") setCumulativeGraph(parsed.cumulativeGraph)
         if (typeof parsed.dataSize === "string") setDataSize(parsed.dataSize)
         if (typeof parsed.useGridInput === "boolean") setUseGridInput(parsed.useGridInput)

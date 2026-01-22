@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useMemo, useCallback } from "react"
 import SpreadsheetGrid from "@/Components/SpreadsheetGrid.tsx"
 import Graph from "@/Components/Graph.tsx"
 import { styles, createColumnDefs, SMALL_GRAPH_WIDTH, SMALL_GRAPH_HEIGHT } from "@/Utils/Styles.ts"
-import { BOTTOM_COLS, INPUT_LABELS, TOP_COLS, OUTPUT_LABELS } from "@/Utils/Constants.ts"
+import { BOTTOM_COLS, MATS_LABELS, TOP_COLS, OUTPUT_LABELS } from "@/Utils/Constants.ts"
 import { buildPayload } from "@/WasmInterface/WorkerRunner.ts"
 import { Upgrade, EQUIPMENT_TYPES } from "@/Utils/Helpers.ts"
 import GambaInfoBox from "./GambaInfoBox.tsx"
@@ -10,17 +10,21 @@ import GambaSelection from "./GambaSelection.tsx"
 import { useGambaLogic } from "./GambaLogic.tsx"
 
 type GambaSectionProps = {
-    budget_inputs: any
-    set_budget_inputs: React.Dispatch<React.SetStateAction<any>>
-    userMatsValue: any
-    setUserMatsValue: React.Dispatch<React.SetStateAction<any>>
+    userMatsOwned: any
+    setUserMatsOwned: React.Dispatch<React.SetStateAction<any>>
+    userMatsPrices: any
+    setUserMatsPrices: React.Dispatch<React.SetStateAction<any>>
+    userMatsLeftover: any
+    userJuiceOwned: any
+    userJuicePrices: any
+    userJuiceLeftover: any
     topGrid: boolean[][]
     bottomGrid: boolean[][]
     adv_hone_strategy: string
     express_event: boolean
     desired_chance: string
     bucketCount: string
-    autoGoldValues: boolean
+
     dataSize: string
     tooltipHandlers: {
         showUpgradeTooltip: (_upgrade: any, _costLabels: string[], _tapRecordCosts: number[], _x: number, _y: number) => void
@@ -43,17 +47,21 @@ type GambaSectionProps = {
 }
 
 export default function GambaSection({
-    budget_inputs,
-    set_budget_inputs,
-    userMatsValue,
-    setUserMatsValue,
+    userMatsOwned,
+    setUserMatsOwned,
+    userMatsPrices,
+    setUserMatsPrices,
+    userMatsLeftover,
+    userJuiceOwned,
+    userJuicePrices,
+    userJuiceLeftover,
     topGrid,
     bottomGrid,
     adv_hone_strategy,
     express_event,
 
     bucketCount,
-    autoGoldValues,
+    // autoGoldValues,
     dataSize,
     tooltipHandlers,
     chance_result,
@@ -157,16 +165,20 @@ export default function GambaSection({
         const payload = buildPayload({
             topGrid,
             bottomGrid,
-            budget_inputs,
+            userMatsOwned,
             adv_hone_strategy,
             express_event,
             bucketCount,
-            autoGoldValues,
-            userMatsValue,
+            // autoGoldValues,
+            userMatsPrices,
             dataSize,
             useGridInput,
             normalCounts,
             advCounts,
+            userMatsLeftover,
+            userJuiceOwned,
+            userJuicePrices,
+            userJuiceLeftover,
         })
 
         const id = Math.random().toString(36).substr(2, 9)
@@ -259,7 +271,7 @@ export default function GambaSection({
                     free_taps_so_far: 0,
                     use_juice: adv_hone_strategy === "Juice on grace" && !upgrade.is_normal_honing,
                     cumulative_chance: 0,
-                }))
+                })),
             )
             // Update refs
             currentUpgradeArrRef.current = upgradesWithTypes
@@ -270,10 +282,14 @@ export default function GambaSection({
         adv_hone_strategy,
         express_event,
         bucketCount,
-        autoGoldValues,
-        userMatsValue,
+        // autoGoldValues,
+        userMatsPrices,
         dataSize,
-        budget_inputs,
+        userMatsOwned,
+        userMatsLeftover,
+        userJuiceOwned,
+        userJuicePrices,
+        userJuiceLeftover,
         useGridInput,
         normalCounts,
         advCounts,
@@ -386,22 +402,28 @@ export default function GambaSection({
     }, [])
 
     // Calculate budget remaining
-    const budgetRemaining = INPUT_LABELS.map((label, index) => {
-        const budget = parseInt(budget_inputs[label] || "0")
+    const budgetRemaining = MATS_LABELS.map((label, index) => {
+        const budget = parseInt(userMatsOwned[label] || "0")
         const finalCost = finalCosts[index] || 0
         return budget - finalCost
     })
 
     // Create budget data for SpreadsheetGrid
-    const budgetTotalData = INPUT_LABELS.reduce((acc, label, index) => {
-        acc[label] = (finalCosts[index] + (index === 3 ? unlockCosts[0] : index === 6 ? unlockCosts[1] : 0)).toFixed(0).toString()
-        return acc
-    }, {} as Record<string, string>)
+    const budgetTotalData = MATS_LABELS.reduce(
+        (acc, label, index) => {
+            acc[label] = (finalCosts[index] + (index === 3 ? unlockCosts[0] : index === 6 ? unlockCosts[1] : 0)).toFixed(0).toString()
+            return acc
+        },
+        {} as Record<string, string>,
+    )
 
-    const budgetRemainingData = INPUT_LABELS.reduce((acc, label, index) => {
-        acc[label] = budgetRemaining[index].toFixed(0).toString()
-        return acc
-    }, {} as Record<string, string>)
+    const budgetRemainingData = MATS_LABELS.reduce(
+        (acc, label, index) => {
+            acc[label] = budgetRemaining[index].toFixed(0).toString()
+            return acc
+        },
+        {} as Record<string, string>,
+    )
 
     // Column definitions for budget grid (2 columns: Total Cost, Remaining)
     const budgetColumnDefs = [
@@ -455,15 +477,15 @@ export default function GambaSection({
                             gap: 0,
                             alignItems: "flex-start",
                             justifyContent: "start",
-                            width: autoGoldValues ? 210 : 300,
+                            // width: autoGoldValues ? 210 : 300,
                         }}
                     >
                         <div style={{ width: 210 }}>
                             <SpreadsheetGrid
                                 columnDefs={costToChanceColumnDefs}
-                                labels={INPUT_LABELS}
-                                sheetValuesArr={[budget_inputs, userMatsValue]}
-                                setSheetValuesArr={[set_budget_inputs, setUserMatsValue]}
+                                labels={MATS_LABELS}
+                                sheetValuesArr={[userMatsOwned, userMatsPrices]}
+                                setSheetValuesArr={[setUserMatsOwned, setUserMatsPrices]}
                             />
                         </div>
                         <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 8 }}>
@@ -532,7 +554,7 @@ export default function GambaSection({
                             <div style={{ width: 200, marginLeft: 70 }}>
                                 <SpreadsheetGrid
                                     columnDefs={budgetColumnDefs}
-                                    labels={INPUT_LABELS}
+                                    labels={MATS_LABELS}
                                     sheetValuesArr={[budgetTotalData, budgetRemainingData]}
                                     setSheetValuesArr={[() => {}, () => {}]} // Read-only
                                 />
@@ -549,7 +571,7 @@ export default function GambaSection({
                                     maxs={chance_result?.hist_maxs || cachedChanceGraphData?.hist_maxs}
                                     width={SMALL_GRAPH_WIDTH}
                                     height={SMALL_GRAPH_HEIGHT}
-                                    budgets={OUTPUT_LABELS.map((label) => Number(budget_inputs[label] || 0))}
+                                    budgets={OUTPUT_LABELS.map((label) => Number(userMatsOwned[label] || 0))}
                                     additionalBudgets={finalCosts.slice(0, 7).map((v, i) => v + (i === 3 ? unlockCosts[0] : i === 6 ? unlockCosts[1] : 0))} // First 7 elements for total costs
                                     hasSelection={AnythingTicked}
                                     isLoading={CostToChanceBusy}

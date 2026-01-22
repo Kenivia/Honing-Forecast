@@ -1,5 +1,7 @@
-use hf_core::helpers::{compute_gold_cost_from_raw, get_percentile_window};
-use hf_core::parser::PreparationOutput;
+// use hf_core::helpers::{compute_gold_cost_from_raw, get_percentile_window};
+use hf_core::parser::actual_eqv_gold;
+// use hf_core::performance::Performance;
+use hf_core::state_bundle::StateBundle;
 
 #[derive(Debug)]
 pub struct NoBuyAnalysisOutputs {
@@ -13,59 +15,51 @@ pub struct BuyAnalysisOutput {
     pub buy_chance: f64,
 }
 
-// pub fn no_buy_analysis(cost_data: &[[i64; 9]], input_budgets: &[i64]) -> NoBuyAnalysisOutputs {
-//     let mut typed_fail_counter_final: Vec<f64> = vec![0.0_f64; 7];
-//     let mut overall_fail_counter: i64 = 0;
-//     let mut failed: bool;
-//     for data in cost_data {
-//         failed = false;
-//         for cost_type in 0..7 {
-//             if input_budgets[cost_type] < data[cost_type] {
-//                 failed = true;
-//                 typed_fail_counter_final[cost_type] += 1.0_f64;
-//             }
-//         }
-//         if failed {
-//             overall_fail_counter += 1;
-//         }
-//     }
+pub fn no_buy_analysis(state_bundle: &StateBundle) -> NoBuyAnalysisOutputs {
+    let typed_fail_counter_final: Vec<f64> = state_bundle
+        .compute_leftover_probs_for_analysis()
+        .into_iter()
+        .collect::<Vec<f64>>();
+    let no_buy_chance: f64 = -6.9;
+    NoBuyAnalysisOutputs {
+        typed_fail_counter_final,
+        no_buy_chance,
+    }
+}
 
-//     let no_buy_chance: f64 = 1.0_f64 - overall_fail_counter as f64 / cost_data.len() as f64;
-//     for cost_type in 0..7 {
-//         typed_fail_counter_final[cost_type] =
-//             1.0 - typed_fail_counter_final[cost_type] / cost_data.len() as f64;
-//     }
-//     NoBuyAnalysisOutputs {
-//         typed_fail_counter_final,
-//         no_buy_chance,
-//     }
-// }
+pub fn buy_analysis(state_bundle: &StateBundle) -> BuyAnalysisOutput {
+    // TODO need to update how this is interpreted, before it was how muchg old to get 1% chance success,
+    // now it's given x gold = 1/00 pity, whats the % chance of success
 
-// pub fn buy_analysis(
-//     input_budgets: &[i64],
-//     cost_data_to_sort: &mut [[i64; 9]],
-//     prep_output: &PreparationOutput,
-// ) -> BuyAnalysisOutput {
-//     let all_gold_costs: Vec<f64> =
-//         compute_all_gold_costs_and_sort_data(input_budgets, cost_data_to_sort, &prep_output);
-//     let hundred_gold_costs: Vec<i64> = get_hundred_gold_costs(
-//         &all_gold_costs,
-//         cost_data_to_sort,
-//         &prep_output,
-//         input_budgets,
-//     );
-//     let mut buy_chance: f64 = 1.0;
-//     for (index, gold) in all_gold_costs.iter().enumerate() {
-//         if *gold > input_budgets[5] as f64 {
-//             buy_chance = index as f64 / cost_data_to_sort.len() as f64; // intentionally not subtracting by 1 because index starts from 0
-//             break;
-//         }
-//     }
-//     BuyAnalysisOutput {
-//         hundred_gold_costs,
-//         buy_chance,
-//     }
-// }
+    let mut hundred_gold_costs: Vec<i64> = Vec::with_capacity(101);
+
+    let one_tap_gold_eqv = actual_eqv_gold(
+        &state_bundle.prep_output.price_arr,
+        &state_bundle.one_tap(),
+        &state_bundle.prep_output.juice_info,
+        &state_bundle.prep_output.unlock_costs,
+        &state_bundle.prep_output.juice_books_owned,
+    );
+
+    let pity_gold_eqv = actual_eqv_gold(
+        &state_bundle.prep_output.price_arr,
+        &state_bundle.pity(),
+        &state_bundle.prep_output.juice_info,
+        &state_bundle.prep_output.unlock_costs,
+        &state_bundle.prep_output.juice_books_owned,
+    );
+
+    for i in 0..101 {
+        let this_budget = one_tap_gold_eqv + i as f64 * 0.01 * (pity_gold_eqv - one_tap_gold_eqv);
+        hundred_gold_costs
+            .push((state_bundle.success_prob_for_analysis(this_budget) * 100.0).round() as i64);
+    }
+    BuyAnalysisOutput {
+        hundred_gold_costs,
+        buy_chance: state_bundle
+            .success_prob_for_analysis(state_bundle.prep_output.eqv_gold_budget),
+    }
+}
 
 // pub fn compute_all_gold_costs(
 //     input_budgets: &[i64],

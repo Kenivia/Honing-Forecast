@@ -1,14 +1,13 @@
 use core::f64;
-#[cfg(test)]
-use std::time::Instant;
+// #[cfg(test)]
+// use std::time::Instant;
 
 use crate::histogram::{HistogramOutputs, prep_histogram};
-// use crate::success_analysis::{
-//     BuyAnalysisOutput, NoBuyAnalysisOutputs, buy_analysis, compute_all_gold_costs,
-//     generate_typical_cost, no_buy_analysis,
-// };
-use hf_core::parser::PreparationOutput;
-use hf_core::upgrade::Upgrade;
+use crate::success_analysis::{
+    BuyAnalysisOutput, NoBuyAnalysisOutputs, buy_analysis, no_buy_analysis,
+};
+// use hf_core::upgrade::Upgrade;
+use hf_core::state_bundle::StateBundle;
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -27,98 +26,41 @@ pub struct CostToChanceOut {
     pub budgets_red_remaining: i64, // budgets[7], these are just here to provide warning for when there's not enough juice for advanced honing
     pub budgets_blue_remaining: i64, // budgets[8]
 }
-#[derive(Serialize, Deserialize, Debug)]
-pub struct CostToChanceArrOut {
-    pub buy_chance_arr: Vec<f64>,
+// #[derive(Serialize, Deserialize, Debug)]
+// pub struct CostToChanceArrOut {
+//     pub buy_chance_arr: Vec<f64>,
 
-    pub no_buy_chance_arr: Vec<f64>,
-    pub typed_fail_counters: Vec<Vec<f64>>,
+//     pub no_buy_chance_arr: Vec<f64>,
+//     pub typed_fail_counters: Vec<Vec<f64>>,
 
-    pub budgets_red_remaining: i64,
-    pub budgets_blue_remaining: i64,
-}
-
-// pub fn cost_to_chance(
-//     hone_ticks: &[Vec<bool>],
-//     input_budgets: &[i64],
-//     adv_ticks: &[Vec<bool>],
-//     express_event: bool,
-//     hist_bins: usize,
-//     user_price_arr: &[f64],
-//     adv_hone_strategy: String,
-//     mut cost_data_to_sort: &mut [[i64; 9]],
-// ) -> CostToChanceOut {
-//     #[cfg(test)]
-//     let mut now: Instant = Instant::now();
-//     let (prep_output, upgrade_arr): (PreparationOutput, Vec<Upgrade>) =
-//         PreparationOutput::initialize(
-//             hone_ticks,
-//             input_budgets,
-//             adv_ticks,
-//             express_event,
-//             user_price_arr,
-//             &adv_hone_strategy,
-//             &vec![], // TODO fix this later
-//             &vec![], // TODO fix this later
-//             &vec![], // TODO fix this later
-//             &vec![], // TODO fix this later
-//         );
-//     #[cfg(test)]
-//     {
-//         println!("preparation took {} ms.", now.elapsed().as_millis());
-//         now = Instant::now();
-//     }
-//     let no_buy_failure_outputs: NoBuyAnalysisOutputs =
-//         no_buy_analysis(cost_data_to_sort, input_budgets);
-
-//     #[cfg(test)]
-//     {
-//         println!("no_buy_analysis took {} ms.", now.elapsed().as_millis());
-//         now = Instant::now();
-//     }
-//     let buy_failure_outputs: BuyAnalysisOutput =
-//         buy_analysis(&input_budgets, &mut cost_data_to_sort, &prep_output);
-//     #[cfg(test)]
-//     {
-//         println!("buy_analysis took {} ms.", now.elapsed().as_millis());
-//         now = Instant::now();
-//     }
-//     let typical_costs: Vec<[i64; 9]> = generate_typical_cost(
-//         &input_budgets,
-//         &mut cost_data_to_sort,
-//         &prep_output,
-//         &buy_failure_outputs,
-//     );
-//     #[cfg(test)]
-//     {
-//         println!(
-//             "generate_typical_cost took {} ms.",
-//             now.elapsed().as_millis()
-//         );
-//         now = Instant::now();
-//     }
-//     // Section 4: Histogram preparation
-//     let histogram_outputs: HistogramOutputs =
-//         prep_histogram(&prep_output, cost_data_to_sort, hist_bins);
-//     #[cfg(test)]
-//     {
-//         println!("prep_histogram took {} ms.", now.elapsed().as_millis());
-//     }
-
-//     CostToChanceOut {
-//         chance: no_buy_failure_outputs.no_buy_chance,
-//         reasons: no_buy_failure_outputs.typed_fail_counter_final,
-//         hist_counts: histogram_outputs.hist_counts,
-//         hist_mins: histogram_outputs.hist_mins,
-//         hist_maxs: histogram_outputs.hist_maxs,
-
-//         budgets_red_remaining: prep_output.budgets[7],
-//         budgets_blue_remaining: prep_output.budgets[8],
-//         hundred_gold_costs: buy_failure_outputs.hundred_gold_costs,
-//         chance_if_buy: buy_failure_outputs.buy_chance,
-//         typical_costs,
-//     }
+//     pub budgets_red_remaining: i64,
+//     pub budgets_blue_remaining: i64,
 // }
+
+pub fn cost_to_chance(state_bundle: &StateBundle) -> CostToChanceOut {
+    let no_buy_failure_outputs: NoBuyAnalysisOutputs = no_buy_analysis(&state_bundle);
+
+    let buy_failure_outputs: BuyAnalysisOutput = buy_analysis(&state_bundle);
+
+    let typical_costs: Vec<[i64; 9]> = vec![[-67; 9]; 101]; // i dont think this is gonna work 
+
+    // Section 4: Histogram preparation
+    let histogram_outputs: HistogramOutputs = prep_histogram(&state_bundle, 100, 100_000);
+
+    CostToChanceOut {
+        chance: no_buy_failure_outputs.no_buy_chance,
+        reasons: no_buy_failure_outputs.typed_fail_counter_final,
+        hist_counts: histogram_outputs.hist_counts,
+        hist_mins: histogram_outputs.hist_mins,
+        hist_maxs: histogram_outputs.hist_maxs,
+
+        budgets_red_remaining: 0,
+        budgets_blue_remaining: 0,
+        hundred_gold_costs: buy_failure_outputs.hundred_gold_costs,
+        chance_if_buy: buy_failure_outputs.buy_chance,
+        typical_costs,
+    }
+}
 
 // /// Same as cost_to_chance, but repeats it over projected budgets
 // pub fn cost_to_chance_arr(

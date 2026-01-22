@@ -1,6 +1,6 @@
 use std::f64::NAN;
 
-use crate::constants::JuiceInfo;
+use crate::constants::{FLOAT_TOL, JuiceInfo};
 use crate::parser::PreparationOutput;
 use crate::state_bundle::StateBundle;
 use crate::upgrade::{Support, Upgrade};
@@ -25,10 +25,38 @@ pub fn encode_one_positions(v1: &[(bool, usize)]) -> String {
 
 impl StateBundle {
     pub fn one_tap(&self) -> Vec<i64> {
-        self.get_one_tap_pity().0
+        let mut out = vec![0i64; 7 + self.prep_output.juice_info.num_avail * 2];
+        // for upgrade in self.upgrade_arr.iter() {
+        for (support_index, cost) in out.iter_mut().enumerate() {
+            *cost += self
+                .extract_support_with_meta(support_index as i64, 0)
+                .map(|support| {
+                    support
+                        .access_collapsed()
+                        .iter()
+                        .find(|(_, p)| *p > FLOAT_TOL)
+                        .unwrap()
+                        .0
+                        .ceil() as i64
+                })
+                .sum::<i64>();
+        }
+        // }
+        out
     }
     pub fn pity(&self) -> Vec<i64> {
-        self.get_one_tap_pity().1
+        let mut out = vec![0i64; 7 + self.prep_output.juice_info.num_avail * 2];
+        for (support_index, cost) in out.iter_mut().enumerate() {
+            *cost += self
+                .extract_support_with_meta(support_index as i64, 0)
+                .map(|support| support.max_value.ceil() as i64)
+                .sum::<i64>();
+        }
+
+        out
+    }
+    pub fn get_one_tap_pity(&self) -> (Vec<i64>, Vec<i64>) {
+        (self.one_tap(), self.pity())
     }
     pub fn find_min_max(&self, support_index: i64, skip_count: usize) -> (f64, f64) {
         let min_value = self
@@ -353,32 +381,34 @@ impl StateBundle {
         arr
     }
 
-    pub fn get_one_tap_pity(&self) -> (Vec<i64>, Vec<i64>) {
-        debug_assert!(self.prep_output.unlock_costs.len() == 2);
-        const DATA_SIZE: usize = 2;
-        let mut cost_data: Vec<Vec<i64>> = vec![vec![0i64; 9]; DATA_SIZE];
+    // pub fn get_one_tap_pity(&self) -> (Vec<i64>, Vec<i64>) {
+    //     debug_assert!(self.prep_output.unlock_costs.len() == 2);
+    //     const DATA_SIZE: usize = 2;
+    //     let mut cost_data: Vec<Vec<i64>> =
+    //         vec![vec![0i64; 7 + self.prep_output.juice_info.num_avail * 2]; 2];
 
-        for upgrade in self.upgrade_arr.iter() {
-            let pd_len: f64 = upgrade.prob_dist.len().saturating_sub(1) as f64;
-            for trial_num in 0..DATA_SIZE {
-                let rolled_tap =
-                    ((pd_len * (trial_num) as f64) / (DATA_SIZE as f64 - 1.0)).floor() as usize;
-                for cost_type in 0..7 {
-                    cost_data[trial_num][cost_type] +=
-                        upgrade.costs[cost_type] * (rolled_tap as i64 + upgrade.tap_offset);
-                }
-                if !upgrade.is_normal_honing {
-                    cost_data[trial_num][if upgrade.is_weapon { 7 } else { 8 }] +=
-                        upgrade.adv_juice_cost[rolled_tap].ceil() as i64;
-                }
-            }
-        }
-        for row in &mut cost_data {
-            row[3] += self.prep_output.unlock_costs[0];
-            row[6] += self.prep_output.unlock_costs[1];
-        }
-        (cost_data[0].clone(), cost_data[1].clone())
-    }
+    //     for upgrade in self.upgrade_arr.iter() {
+    //         cost_data[0]
+    //         // let pd_len: f64 = upgrade.prob_dist.len().saturating_sub(1) as f64;
+    //         // for trial_num in 0..DATA_SIZE {
+    //         //     let rolled_tap =
+    //         //         ((pd_len * (trial_num) as f64) / (DATA_SIZE as f64 - 1.0)).floor() as usize;
+    //         //     for cost_type in 0..7 {
+    //         //         cost_data[trial_num][cost_type] +=
+    //         //             upgrade.costs[cost_type] * (rolled_tap as i64 + upgrade.tap_offset);
+    //         //     }
+    //         //     if !upgrade.is_normal_honing {
+    //         //         cost_data[trial_num][if upgrade.is_weapon { 7 } else { 8 }] +=
+    //         //             upgrade.adv_juice_cost[rolled_tap].ceil() as i64;
+    //         //     }
+    //         // }
+    //     }
+    //     for row in &mut cost_data {
+    //         row[3] += self.prep_output.unlock_costs[0];
+    //         row[6] += self.prep_output.unlock_costs[1];
+    //     }
+    //     (cost_data[0].clone(), cost_data[1].clone())
+    // }
 }
 
 pub fn generate_first_deltas(delta: f64, length: usize, non_zeros: usize) -> Vec<f64> {

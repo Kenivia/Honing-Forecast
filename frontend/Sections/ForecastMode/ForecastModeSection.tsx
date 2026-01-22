@@ -2,21 +2,21 @@ import React, { useState, useMemo, useEffect, useRef } from "react"
 import SpreadsheetGrid from "@/Components/SpreadsheetGrid.tsx"
 import Graph from "@/Components/Graph.tsx"
 import { styles, StyledSlider, GRAPH_HEIGHT, GRAPH_WIDTH, ColumnDef } from "@/Utils/Styles.ts"
-import { INPUT_LABELS } from "@/Utils/Constants.ts"
+import { MATS_LABELS } from "@/Utils/Constants.ts"
 
 import LabeledCheckbox from "@/Components/LabeledCheckbox.tsx"
 
 type LongTermSectionProps = {
     budget_inputs: any
     set_budget_inputs: React.Dispatch<React.SetStateAction<any>>
-    userMatsValue: any
-    setUserMatsValue: React.Dispatch<React.SetStateAction<any>>
+    userMatsPrices: any
+    setUserMatsPrices: React.Dispatch<React.SetStateAction<any>>
     topGrid: any
     bottomGrid: any
     adv_hone_strategy: any
     express_event: any
     bucketCount: any
-    autoGoldValues: any
+
     dataSize: any
     useGridInput: any
     normalCounts: any
@@ -54,8 +54,8 @@ function weekly_budget(budget: number[], weekly_income: number[]): number[][] {
 export default function LongTermSection({
     budget_inputs,
     set_budget_inputs,
-    userMatsValue,
-    setUserMatsValue,
+    userMatsPrices,
+    setUserMatsPrices,
     adv_hone_strategy,
     express_event,
     // dataSize,
@@ -84,16 +84,16 @@ export default function LongTermSection({
     // State for cost_to_chance_arr results
 
     // State for pity costs and material values
-    const [_, setMatValues] = useState<number[]>(() => Object.values(userMatsValue).map((v) => parseFloat(v.toString()) || 0))
+    const [_, setMatValues] = useState<number[]>(() => Object.values(userMatsPrices).map((v) => parseFloat(v.toString()) || 0))
 
     // Worker refs and debounce
 
     // Function to get pity costs using average_cost_wrapper
 
-    // Update material values when userMatsValue changes
+    // Update material values when userMatsPrices changes
     useEffect(() => {
-        setMatValues(Object.values(userMatsValue).map((v) => parseFloat(v.toString()) || 0))
-    }, [userMatsValue])
+        setMatValues(Object.values(userMatsPrices).map((v) => parseFloat(v.toString()) || 0))
+    }, [userMatsPrices])
 
     // Income array is now managed by parent component, no local effects needed
 
@@ -149,7 +149,7 @@ export default function LongTermSection({
     const weeklyBudgets = useMemo(() => {
         return weekly_budget(
             Object.values(budget_inputs).map((v) => Math.round(Number(v))),
-            totalWeeklyIncome
+            totalWeeklyIncome,
         )
     }, [budget_inputs, totalWeeklyIncome])
     // Debounce keys for cost_to_chance_arr
@@ -183,21 +183,27 @@ export default function LongTermSection({
     }, [advStrategyKey, expressEventKey, useGridInputKey, normalCountsKey, advCountsKey, totalWeeklyIncomeKey, weeklyBudgets, monteCarloResult])
 
     // Labels for income grids (7 rows) - use proper labels but hide icons
-    const incomeLabels = INPUT_LABELS.slice(0, 7)
+    const incomeLabels = MATS_LABELS.slice(0, 7)
 
     // Convert income grid to SpreadsheetGrid format
     const getIncomeGridData = (gridIndex: number) => {
-        return incomeLabels.reduce((acc, label, rowIndex) => {
-            acc[label] = incomeArr[gridIndex][rowIndex].toString()
-            return acc
-        }, {} as Record<string, string>)
+        return incomeLabels.reduce(
+            (acc, label, rowIndex) => {
+                acc[label] = incomeArr[gridIndex][rowIndex].toString()
+                return acc
+            },
+            {} as Record<string, string>,
+        )
     }
 
     // Convert total income to SpreadsheetGrid format
-    const totalIncomeData = incomeLabels.reduce((acc, label, rowIndex) => {
-        acc[label] = totalWeeklyIncome[rowIndex].toString()
-        return acc
-    }, {} as Record<string, string>)
+    const totalIncomeData = incomeLabels.reduce(
+        (acc, label, rowIndex) => {
+            acc[label] = totalWeeklyIncome[rowIndex].toString()
+            return acc
+        },
+        {} as Record<string, string>,
+    )
 
     // Transform longTermResult data for Graph component
     const graphData = useMemo(() => {
@@ -357,9 +363,9 @@ export default function LongTermSection({
                             <div style={{ marginBottom: 16, width: 300 }}>
                                 <SpreadsheetGrid
                                     columnDefs={longTermColumnDefs}
-                                    labels={INPUT_LABELS}
-                                    sheetValuesArr={[budget_inputs, userMatsValue]}
-                                    setSheetValuesArr={[set_budget_inputs, setUserMatsValue]}
+                                    labels={MATS_LABELS}
+                                    sheetValuesArr={[budget_inputs, userMatsPrices]}
+                                    setSheetValuesArr={[set_budget_inputs, setUserMatsPrices]}
                                 />
                             </div>
                         </div>
@@ -431,7 +437,7 @@ export default function LongTermSection({
                         <div style={{ width: "100%", maxWidth: "800px" }}>
                             <Graph
                                 title={`Chance of Success Over Time (0-${(graphData?.counts?.[0]?.length || 53) - 1} weeks from now)`}
-                                labels={[showOptimizedDetails ? "Overall no buy" : "Overall", ...INPUT_LABELS.slice(0, 7).map((label) => label)]} // Overall + 7 material types
+                                labels={[showOptimizedDetails ? "Overall no buy" : "Overall", ...MATS_LABELS.slice(0, 7).map((label) => label)]} // Overall + 7 material types
                                 counts={graphData?.counts || null}
                                 mins={graphData?.mins || null}
                                 maxs={graphData?.maxs || null}

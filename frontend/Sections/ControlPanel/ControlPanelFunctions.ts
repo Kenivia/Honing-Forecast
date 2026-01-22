@@ -1,5 +1,5 @@
 import React from "react"
-import { INPUT_LABELS, TOP_ROWS, TOP_COLS, BOTTOM_ROWS, BOTTOM_COLS } from "@/Utils/Constants.ts"
+import { MATS_LABELS, TOP_ROWS, TOP_COLS, BOTTOM_ROWS, BOTTOM_COLS } from "@/Utils/Constants.ts"
 
 export function createClearAll({
     setTopGrid,
@@ -7,11 +7,11 @@ export function createClearAll({
     set_prev_checked_arr,
     set_prev_checked_arr_bottom,
     set_budget_inputs,
-    setUserMatsValue,
+    setUserMatsPrices,
     set_desired_chance,
     set_adv_hone_strategy_change,
     set_express_event,
-    setAutoGoldValues,
+    // setAutoGoldValues,
     _setBucketCount,
     setCumulativeGraph,
     setDataSize,
@@ -23,18 +23,18 @@ export function createClearAll({
     setNormalCounts,
     setAdvCounts,
     setIncomeArr,
-    setMonteCarloResult,
+    // setMonteCarloResult,
 }: {
     setTopGrid: React.Dispatch<React.SetStateAction<any>>
     setBottomGrid: React.Dispatch<React.SetStateAction<any>>
     set_prev_checked_arr: React.Dispatch<React.SetStateAction<boolean[]>>
     set_prev_checked_arr_bottom: React.Dispatch<React.SetStateAction<boolean[]>>
     set_budget_inputs: React.Dispatch<React.SetStateAction<any>>
-    setUserMatsValue: React.Dispatch<React.SetStateAction<any>>
+    setUserMatsPrices: React.Dispatch<React.SetStateAction<any>>
     set_desired_chance: React.Dispatch<React.SetStateAction<string>>
     set_adv_hone_strategy_change: React.Dispatch<React.SetStateAction<string>>
     set_express_event: React.Dispatch<React.SetStateAction<boolean>>
-    setAutoGoldValues: React.Dispatch<React.SetStateAction<boolean>>
+    // setAutoGoldValues: React.Dispatch<React.SetStateAction<boolean>>
     _setBucketCount: React.Dispatch<React.SetStateAction<string>>
     setCumulativeGraph: React.Dispatch<React.SetStateAction<boolean>>
     setDataSize: React.Dispatch<React.SetStateAction<string>>
@@ -46,7 +46,7 @@ export function createClearAll({
     setNormalCounts: React.Dispatch<React.SetStateAction<number[][]>>
     setAdvCounts: React.Dispatch<React.SetStateAction<number[][]>>
     setIncomeArr: React.Dispatch<React.SetStateAction<number[][]>>
-    setMonteCarloResult: React.Dispatch<React.SetStateAction<any>>
+    // setMonteCarloResult: React.Dispatch<React.SetStateAction<any>>
 }) {
     return () => {
         // Grids and their column header checkboxes
@@ -56,19 +56,19 @@ export function createClearAll({
         set_prev_checked_arr_bottom(Array.from({ length: BOTTOM_COLS }, () => false))
 
         // Inputs and toggles to defaults
-        set_budget_inputs(Object.fromEntries(INPUT_LABELS.map((l) => [l, "0"])))
-        setUserMatsValue(
+        set_budget_inputs(Object.fromEntries(MATS_LABELS.map((l) => [l, "0"])))
+        setUserMatsPrices(
             Object.fromEntries(
-                INPUT_LABELS.slice(0, 7).map((l, index) => {
+                MATS_LABELS.slice(0, 7).map((l, index) => {
                     const defaultValues = ["1.65", "0.03", "13.0", "0.5", "95.0", "1.0", "0.0"]
                     return [l, defaultValues[index]]
-                })
-            )
+                }),
+            ),
         )
         set_desired_chance("50")
         set_adv_hone_strategy_change("No juice")
         set_express_event(true)
-        setAutoGoldValues(false)
+        // setAutoGoldValues(false)
         _setBucketCount("100")
         setCumulativeGraph(false)
         setDataSize("100000")
@@ -90,7 +90,7 @@ export function createClearAll({
 
         // Reset income array
         setIncomeArr(Array.from({ length: 6 }, () => Array.from({ length: 7 }, () => 0)))
-        setMonteCarloResult(null)
+        // setMonteCarloResult(null)
     }
 }
 
@@ -136,20 +136,20 @@ export function createFillDemo({
     set_budget_inputs,
     set_desired_chance,
     set_prev_checked_arr,
-    setUserMatsValue,
+    setUserMatsPrices,
 }: {
     setTopGrid: React.Dispatch<React.SetStateAction<any>>
     setBottomGrid: React.Dispatch<React.SetStateAction<any>>
     set_budget_inputs: React.Dispatch<React.SetStateAction<any>>
     set_desired_chance: React.Dispatch<React.SetStateAction<string>>
     set_prev_checked_arr: React.Dispatch<React.SetStateAction<boolean[]>>
-    setUserMatsValue: React.Dispatch<React.SetStateAction<any>>
+    setUserMatsPrices: React.Dispatch<React.SetStateAction<any>>
 }) {
     return () => {
         setTopGrid(
             Array.from({ length: TOP_ROWS }, (_, row_id) =>
-                Array.from({ length: TOP_COLS }, (_, ind) => ind == 19 || ind == 20 || ind == 21 || (ind > 21 && row_id == 5))
-            )
+                Array.from({ length: TOP_COLS }, (_, ind) => ind == 19 || ind == 20 || ind == 21 || (ind > 21 && row_id == 5)),
+            ),
         )
         setBottomGrid(Array.from({ length: BOTTOM_ROWS }, (_, piece) => Array.from({ length: BOTTOM_COLS }, (_, ind) => ind == 3 && piece < 3)))
         set_budget_inputs({
@@ -167,8 +167,8 @@ export function createFillDemo({
         set_desired_chance("50")
         set_prev_checked_arr(Array.from({ length: TOP_COLS }, (_, ind) => ind == 19 || ind == 20 || ind == 21))
 
-        // Set userMatsValue to the specified values
-        setUserMatsValue({
+        // Set userMatsPrices to the specified values
+        setUserMatsPrices({
             Red: "1.65",
             Blue: "0.03",
             Leaps: "13.0",

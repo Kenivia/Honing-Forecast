@@ -3,15 +3,17 @@
 ///     await init()
 ///     return (monte_carlo_wrapper as any)(payload)
 /// }
-/// (imported via import init, {monte_carlo_wrapper} from "@/../pkg/honing_forecast.js"
+/// (imported via import init, {monte_carlo_wrapper} from "@/../crates/wasm/pkg/honing_forecast.js"
 mod cost_to_chance;
 mod histogram;
 mod success_analysis;
-use crate::cost_to_chance::{CostToChanceArrOut, CostToChanceOut};
-use hf_core::helpers::{calc_unlock, get_count};
+use crate::cost_to_chance::{CostToChanceOut, cost_to_chance};
+// use hf_core::helpers::{calc_unlock, get_count};
 
-use hf_core::parser::parser;
-use hf_core::upgrade::Upgrade;
+// use hf_core::parser::parser;
+use hf_core::state_bundle::{StateBundle, StateBundleJs};
+// use hf_core::upgrade::Upgrade;
+// use rand::rngs::ThreadRng;
 use serde::Deserialize;
 use serde_wasm_bindgen::{from_value, to_value};
 use wasm_bindgen::JsValue;
@@ -19,23 +21,31 @@ use wasm_bindgen::prelude::*;
 
 pub use wasm_bindgen_rayon::init_thread_pool;
 #[derive(Deserialize)]
+#[allow(dead_code)]
 pub struct Payload {
-    normal_hone_ticks: Option<Vec<Vec<bool>>>,
-    adv_hone_ticks: Option<Vec<Vec<bool>>>,
-    normal_counts: Option<Vec<Vec<i64>>>,
-    adv_counts: Option<Vec<Vec<i64>>>,
-
+    normal_hone_ticks: Vec<Vec<bool>>,
+    adv_hone_ticks: Vec<Vec<bool>>,
+    // normal_counts: Option<Vec<Vec<i64>>>,
+    // adv_counts: Option<Vec<Vec<i64>>>,
     adv_hone_strategy: String,
-    budget: Vec<i64>,
+
     express_event: bool,
     bucket_count: usize,
-    user_price_arr: Option<Vec<f64>>,
-    #[allow(dead_code)]
-    data_size: Option<usize>,
-    cost_data: Option<Vec<Vec<i64>>>,
+
+    data_size: usize,
+    // cost_data: Option<Vec<Vec<i64>>>,
+    mats_budget: Vec<i64>,
+    user_price_arr: Vec<f64>,
+    inp_leftover_values: Vec<f64>,
+    juice_books_budget: Vec<(i64, i64)>,
+    juice_prices: Vec<(f64, f64)>,
+    inp_leftover_juice_values: Vec<(f64, f64)>,
+
+    state_bundle_js: StateBundleJs,
 }
 
 #[derive(Deserialize)]
+#[allow(dead_code)]
 pub struct PayloadArr {
     normal_hone_ticks: Option<Vec<Vec<bool>>>,
     adv_hone_ticks: Option<Vec<Vec<bool>>>,
@@ -47,9 +57,8 @@ pub struct PayloadArr {
     express_event: bool,
     user_price_arr: Option<Vec<f64>>,
 
-    #[allow(dead_code)]
     data_size: Option<usize>,
-    cost_data: Option<Vec<Vec<i64>>>,
+    // cost_data: Option<Vec<Vec<i64>>>,
 }
 
 // #[wasm_bindgen]
@@ -58,25 +67,27 @@ pub struct PayloadArr {
 //     console_error_panic_hook::set_once();
 //     let payload: Payload = from_value(input).unwrap();
 
-//     let normal_counts: Vec<Vec<i64>> = get_count(payload.normal_counts, payload.normal_hone_ticks);
-//     let adv_counts: Vec<Vec<i64>> = get_count(payload.adv_counts, payload.adv_hone_ticks);
+//     // let normal_counts: Vec<Vec<i64>> = get_count(payload.normal_counts, payload.normal_hone_ticks);
+//     // let adv_counts: Vec<Vec<i64>> = get_count(payload.adv_counts, payload.adv_hone_ticks);
 
-//     let user_price_arr: Vec<f64> = payload.user_price_arr.unwrap_or(vec![0.0; 7]);
+//     let user_price_arr: Vec<f64> = payload.user_price_arr;
 //     let adv_hone_strategy: String = payload.adv_hone_strategy;
-//     let data_size: usize = payload.data_size.unwrap_or(100000).max(1000);
+//     let data_size: usize = payload.data_size;
 
-//     let mut prep_output: PreparationOutput = PreparationOutput::initialize(
-//         &normal_counts,
+//     let state_bundle = StateBundle::init_from_inputs(
+//         &payload.normal_hone_ticks,
 //         &payload.budget,
-//         &adv_counts,
+//         &payload.adv_hone_ticks,
 //         payload.express_event,
-//         &user_price_arr,
+//         &payload.user_price_arr,
 //         &adv_hone_strategy,
-//         &vec![],
-//         &vec![],
-//         &vec![],
-//         &vec![],
+//         juice_books_budget,
+//         juice_prices,
+//         inp_leftover_values,
+//         inp_leftover_juice_values,
+//         state_bundle_js,
 //     );
+
 //     let mut rng: ThreadRng = rand::rng();
 //     let cost_data: Vec<[i64; 9]> = monte_carlo_data(
 //         data_size,
@@ -90,38 +101,29 @@ pub struct PayloadArr {
 //     to_value(&js_ready).unwrap()
 // }
 
-// #[wasm_bindgen]
-// #[must_use]
-// pub fn cost_to_chance_wrapper(input: JsValue) -> JsValue {
-//     console_error_panic_hook::set_once();
+#[wasm_bindgen]
+#[must_use]
+pub fn cost_to_chance_wrapper(input: JsValue) -> JsValue {
+    console_error_panic_hook::set_once();
 
-//     let payload: Payload = from_value(input).unwrap();
+    let payload: Payload = from_value(input).unwrap();
 
-//     let budget: Vec<i64> = payload.budget;
-//     let user_price_arr: Vec<f64> = payload.user_price_arr.unwrap_or(vec![0.0; 7]);
-//     let cost_vec: Vec<Vec<i64>> = payload.cost_data.unwrap();
-//     let mut cost_data: Vec<[i64; 9]> = cost_vec
-//         .into_iter()
-//         .map(|row| {
-//             let mut a = [0i64; 9];
-//             for (i, v) in row.into_iter().enumerate().take(9) {
-//                 a[i] = v;
-//             }
-//             a
-//         })
-//         .collect();
-//     let out: CostToChanceOut = cost_to_chance(
-//         &payload.normal_hone_ticks.unwrap(),
-//         &budget,
-//         &payload.adv_hone_ticks.unwrap(),
-//         payload.express_event,
-//         payload.bucket_count,
-//         &user_price_arr,
-//         payload.adv_hone_strategy,
-//         &mut cost_data,
-//     );
-//     to_value(&out).unwrap()
-// }
+    let state_bundle = StateBundle::init_from_inputs(
+        &payload.normal_hone_ticks,
+        &payload.mats_budget,
+        &payload.adv_hone_ticks,
+        payload.express_event,
+        &payload.user_price_arr,
+        &payload.adv_hone_strategy,
+        &payload.juice_books_budget,
+        &payload.juice_prices,
+        &payload.inp_leftover_values,
+        &payload.inp_leftover_juice_values,
+        &payload.state_bundle_js,
+    );
+    let out: CostToChanceOut = cost_to_chance(&state_bundle);
+    to_value(&out).unwrap()
+}
 
 // #[wasm_bindgen]
 // #[must_use]

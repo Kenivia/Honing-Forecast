@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState, useMemo } from "react"
 import "./Sections/UpgradeSelection//CheckboxRow.css"
 import { styles } from "./Utils/Styles.ts"
-import { INPUT_LABELS, TOP_ROWS, TOP_COLS, BOTTOM_ROWS, BOTTOM_COLS } from "./Utils/Constants.ts"
+import { MATS_LABELS, TOP_ROWS, TOP_COLS, BOTTOM_ROWS, BOTTOM_COLS, DEFAULT_MATS_PRICES, DEFAULT_JUICE_PRICES, JUICE_LABELS } from "./Utils/Constants.ts"
 import { readSettings, writeSettings } from "./Utils/Settings.ts"
 import ControlPanel from "./Sections/ControlPanel/ControlPanel.tsx"
 import NormalHoningPanel from "./Sections/UpgradeSelection/NormalHoningPanel.tsx"
@@ -22,15 +22,30 @@ import { createClearAll, createFillDemo, createFillDemoIncome } from "./Sections
 import { buildPayload, createCancelableWorkerRunner } from "./WasmInterface/WorkerRunner.ts"
 import { ticksToCounts, countsToTicks } from "./Utils/Helpers.ts"
 
+const NUM_JUICE_AVAIL = 4
 export default function HoningForecastUI() {
     const [topGrid, setTopGrid] = useState(() => Array.from({ length: TOP_ROWS }, () => Array.from({ length: TOP_COLS }, () => false)))
     const [bottomGrid, setBottomGrid] = useState(() => Array.from({ length: BOTTOM_ROWS }, () => Array(BOTTOM_COLS).fill(false)))
-    const [budget_inputs, set_budget_inputs] = useState(() => Object.fromEntries(INPUT_LABELS.map((l) => [l, "0"])))
-    const [autoGoldValues, setAutoGoldValues] = useState(false)
-    const [userMatsValue, setUserMatsValue] = useState(() => {
-        const defaultValues = ["1.65", "0.03", "13.0", "0.5", "95.0", "1.0", "0.0"]
-        return Object.fromEntries(INPUT_LABELS.slice(0, 7).map((l, index) => [l, defaultValues[index]]))
+    const [userMatsOwned, setUserMatsOwned] = useState(() => Object.fromEntries(MATS_LABELS.map((l) => [l, "0"])))
+
+    const [userMatsPrices, setUserMatsPrices] = useState(() => {
+        return Object.fromEntries(MATS_LABELS.slice(0, 7).map((label, index) => [label, DEFAULT_MATS_PRICES[index]]))
     })
+
+    const [userMatsLeftover, setUserMatsLeftover] = useState(() => {
+        return Object.fromEntries(MATS_LABELS.map((label, index) => [label, DEFAULT_MATS_PRICES[index]]))
+    })
+
+    const [userJuiceOwned, setUserJuiceOwned] = useState(() => Object.fromEntries(JUICE_LABELS.map((l) => [l, "0"])))
+
+    const [userJuicePrices, setUserJuicePrices] = useState(() => {
+        return Object.fromEntries(JUICE_LABELS.map((label, index) => [label, DEFAULT_JUICE_PRICES[index]]))
+    })
+
+    const [userJuiceLeftover, setUserJuiceLeftover] = useState(() => {
+        return Object.fromEntries(JUICE_LABELS.map((label, index) => [label, DEFAULT_JUICE_PRICES[index]]))
+    })
+
     const [desired_chance, set_desired_chance] = useState(() => "50")
     const [uncleaned_desired_chance, set_uncleaned_desired_chance] = useState(() => "50")
     const [adv_hone_strategy, set_adv_hone_strategy_change] = useState(() => "No juice")
@@ -108,15 +123,15 @@ export default function HoningForecastUI() {
                 set_prev_checked_arr,
                 set_prev_checked_arr_bottom,
                 set_desired_chance,
-                set_budget_inputs,
-                setAutoGoldValues,
-                setUserMatsValue,
+                setUserMatsOwned,
+
+                setUserMatsPrices,
                 setCumulativeGraph,
                 setDataSize,
                 setUseGridInput,
                 setNormalCounts,
                 setAdvCounts,
-                setIncomeArr
+                setIncomeArr,
             )
         } catch (e) {
             // ignore corrupted storage
@@ -197,15 +212,15 @@ export default function HoningForecastUI() {
                     prev_checked_arr,
                     prev_checked_arr_bottom,
                     desired_chance,
-                    budget_inputs,
-                    autoGoldValues,
-                    userMatsValue,
+                    userMatsOwned,
+
+                    userMatsPrices,
                     cumulativeGraph,
                     dataSize,
                     useGridInput,
                     normalCounts,
                     advCounts,
-                    incomeArr
+                    incomeArr,
                 )
             } catch (e) {
                 // ignore quota or serialization errors
@@ -226,9 +241,9 @@ export default function HoningForecastUI() {
         prev_checked_arr,
         prev_checked_arr_bottom,
         desired_chance,
-        budget_inputs,
-        autoGoldValues,
-        userMatsValue,
+        userMatsOwned,
+
+        userMatsPrices,
         cumulativeGraph,
         dataSize,
         useGridInput,
@@ -434,48 +449,54 @@ export default function HoningForecastUI() {
         buildPayload({
             topGrid,
             bottomGrid,
-            budget_inputs,
+            userMatsOwned,
             adv_hone_strategy,
             express_event,
             bucketCount,
-            autoGoldValues,
-            userMatsValue,
+
+            userMatsPrices,
             dataSize,
             useGridInput,
             normalCounts,
             advCounts,
-            monteCarloResult,
+
+            userMatsLeftover,
+
+            userJuiceOwned,
+            userJuicePrices,
+            userJuiceLeftover,
+            // monteCarloResult,
         })
 
     const runner = createCancelableWorkerRunner()
 
     // ---------- Automatic triggers with debounce ----------
     // We'll watch serialized versions of the inputs to detect deep changes
-    const budgetKey = useMemo(() => JSON.stringify(budget_inputs), [budget_inputs])
+    const budgetKey = useMemo(() => JSON.stringify(userMatsOwned), [userMatsOwned])
     // const desiredKey = useMemo(() => String(desired_chance), [desired_chance])
     const advStrategyKey = useMemo(() => String(adv_hone_strategy), [adv_hone_strategy])
     const expressEventKey = useMemo(() => String(express_event), [express_event])
     const graphBucketSizeKey = useMemo(() => String(bucketCount), [bucketCount])
-    const autoOptKey = useMemo(() => String(autoGoldValues), [autoGoldValues])
-    const userMatsKey = useMemo(() => JSON.stringify(userMatsValue), [userMatsValue])
+    // const autoOptKey = useMemo(() => String(autoGoldValues), [autoGoldValues])
+    const userMatsKey = useMemo(() => JSON.stringify(userMatsPrices), [userMatsPrices])
     const dataSizeKey = useMemo(() => String(dataSize), [dataSize])
     // const useGridInputKey = useMemo(() => String(useGridInput), [useGridInput])
     const normalCountsKey = useMemo(() => JSON.stringify(normalCounts), [normalCounts])
     const advCountsKey = useMemo(() => JSON.stringify(advCounts), [advCounts])
 
-    const monteCarloWorkerRef = useRef<Worker | null>(null)
-    const [_monteCarloBusy, setMonteCarloBusy] = useState(false)
-    const [monteCarloResult, setMonteCarloResult] = useState<any>(null)
-    useEffect(() => {
-        runner.start({
-            which_one: "MonteCarlo",
-            payloadBuilder,
-            workerRef: monteCarloWorkerRef,
-            setBusy: setMonteCarloBusy,
-            setResult: setMonteCarloResult,
-        })
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [advStrategyKey, expressEventKey, dataSizeKey, normalCountsKey, advCountsKey, budgetKey, userMatsKey])
+    // const monteCarloWorkerRef = useRef<Worker | null>(null)
+    // const [_monteCarloBusy, setMonteCarloBusy] = useState(false)
+    // const [monteCarloResult, setMonteCarloResult] = useState<any>(null)
+    // useEffect(() => {
+    //     runner.start({
+    //         which_one: "MonteCarlo",
+    //         payloadBuilder,
+    //         workerRef: monteCarloWorkerRef,
+    //         setBusy: setMonteCarloBusy,
+    //         setResult: setMonteCarloResult,
+    //     })
+    //     // eslint-disable-next-line react-hooks/exhaustive-deps
+    // }, [advStrategyKey, expressEventKey, dataSizeKey, normalCountsKey, advCountsKey, budgetKey, userMatsKey])
 
     // const chanceToCostWorkerRef = useRef<Worker | null>(null)
     // const [chanceToCostBusy, setChanceToCostBusy] = useState(false)
@@ -506,10 +527,9 @@ export default function HoningForecastUI() {
             setBusy: setCostToChanceBusy,
             setResult: setCostToChanceResult,
             setCachedGraphData: setCachedChanceGraphData,
-            dependency: monteCarloResult != null,
         })
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [budgetKey, advStrategyKey, expressEventKey, graphBucketSizeKey, autoOptKey, userMatsKey, dataSizeKey, normalCountsKey, advCountsKey, monteCarloResult])
+    }, [budgetKey, advStrategyKey, expressEventKey, graphBucketSizeKey, userMatsKey, dataSizeKey, normalCountsKey, advCountsKey])
 
     // const averageCostWorkerRef = useRef<Worker | null>(null)
     // const [averageCostBusy, setAverageCostBusy] = useState(false)
@@ -544,12 +564,12 @@ export default function HoningForecastUI() {
         setBottomGrid,
         set_prev_checked_arr,
         set_prev_checked_arr_bottom,
-        set_budget_inputs,
-        setUserMatsValue,
+        set_budget_inputs: setUserMatsOwned,
+        setUserMatsPrices,
         set_desired_chance,
         set_adv_hone_strategy_change,
         set_express_event,
-        setAutoGoldValues,
+
         _setBucketCount,
         setCumulativeGraph,
         setDataSize,
@@ -561,16 +581,16 @@ export default function HoningForecastUI() {
         setNormalCounts,
         setAdvCounts,
         setIncomeArr,
-        setMonteCarloResult,
+        // setMonteCarloResult,
     })
 
     const fillDemo = createFillDemo({
         setTopGrid,
         setBottomGrid,
-        set_budget_inputs,
+        set_budget_inputs: setUserMatsOwned,
         set_desired_chance,
         set_prev_checked_arr,
-        setUserMatsValue,
+        setUserMatsPrices,
     })
 
     const fillDemoIncome = createFillDemoIncome({
@@ -587,7 +607,7 @@ export default function HoningForecastUI() {
     // styles and column defs moved to ./styles
     const AnythingTicked = useMemo(
         () => normalCounts[0].some((x) => x > 0) || normalCounts[1].some((x) => x > 0) || advCounts[0].some((x) => x > 0) || advCounts[1].some((x) => x > 0),
-        [normalCounts, advCounts]
+        [normalCounts, advCounts],
     )
     return (
         <div style={styles.pageContainer}>
@@ -699,8 +719,8 @@ export default function HoningForecastUI() {
                         dataSize={dataSize}
                         budget_inputs={budget_inputs}
                         set_budget_inputs={set_budget_inputs}
-                        userMatsValue={userMatsValue}
-                        setUserMatsValue={setUserMatsValue}
+                        userMatsPrices={userMatsPrices}
+                        setUserMatsPrices={setUserMatsPrices}
                         monteCarloResult={monteCarloResult}
                     />
                 </div> */}
@@ -708,11 +728,10 @@ export default function HoningForecastUI() {
                 {activePage === "cost-to-chance" && (
                     <div className={activePage === "cost-to-chance" ? "page" : "page page--hidden"}>
                         <CostToChanceSection
-                            budget_inputs={budget_inputs}
-                            set_budget_inputs={set_budget_inputs}
-                            userMatsValue={userMatsValue}
-                            setUserMatsValue={setUserMatsValue}
-                            setAutoGoldValues={setAutoGoldValues}
+                            budget_inputs={userMatsOwned}
+                            set_budget_inputs={setUserMatsOwned}
+                            userMatsPrices={userMatsPrices}
+                            setUserMatsPrices={setUserMatsPrices}
                             chance_result={costToChanceResult}
                             cachedChanceGraphData={cachedChanceGraphData}
                             AnythingTicked={AnythingTicked}
@@ -727,24 +746,27 @@ export default function HoningForecastUI() {
                             onDesiredBlur={onDesiredBlur}
                             showOptimizedDetails={showOptimizedDetails}
                             setShowOptimizedDetails={setShowOptimizedDetails}
-                            monteCarloResult={monteCarloResult}
+                            monteCarloResult={null}
                         />
                     </div>
                 )}
                 {activePage === "gamba" && (
                     <div className={activePage === "gamba" ? "page" : "page page--hidden"}>
                         <GambaSection
-                            budget_inputs={budget_inputs}
-                            set_budget_inputs={set_budget_inputs}
-                            userMatsValue={userMatsValue}
-                            setUserMatsValue={setUserMatsValue}
+                            userMatsOwned={userMatsOwned}
+                            setUserMatsOwned={setUserMatsOwned}
+                            userMatsPrices={userMatsPrices}
+                            setUserMatsPrices={setUserMatsPrices}
+                            userMatsLeftover={userMatsLeftover}
+                            userJuiceOwned={userJuiceOwned}
+                            userJuicePrices={userJuicePrices}
+                            userJuiceLeftover={userJuiceLeftover}
                             topGrid={topGrid}
                             bottomGrid={bottomGrid}
                             adv_hone_strategy={adv_hone_strategy}
                             express_event={express_event}
                             desired_chance={desired_chance}
                             bucketCount={bucketCount}
-                            autoGoldValues={autoGoldValues}
                             dataSize={dataSize}
                             tooltipHandlers={tooltipHandlers}
                             chance_result={costToChanceResult}
@@ -767,16 +789,15 @@ export default function HoningForecastUI() {
                 {activePage === "forecast" && (
                     <div className={activePage === "forecast" ? "page" : "page page--hidden"}>
                         <LongTermSection
-                            budget_inputs={budget_inputs}
-                            set_budget_inputs={set_budget_inputs}
-                            userMatsValue={userMatsValue}
-                            setUserMatsValue={setUserMatsValue}
+                            budget_inputs={userMatsOwned}
+                            set_budget_inputs={setUserMatsOwned}
+                            userMatsPrices={userMatsPrices}
+                            setUserMatsPrices={setUserMatsPrices}
                             topGrid={topGrid}
                             bottomGrid={bottomGrid}
                             adv_hone_strategy={adv_hone_strategy}
                             express_event={express_event}
                             bucketCount={bucketCount}
-                            autoGoldValues={autoGoldValues}
                             dataSize={dataSize}
                             useGridInput={useGridInput}
                             normalCounts={normalCounts}
@@ -796,7 +817,7 @@ export default function HoningForecastUI() {
                             payloadBuilder={payloadBuilder}
                             runner={runner}
                             // costToChanceResult={costToChanceResult}
-                            monteCarloResult={monteCarloResult}
+                            monteCarloResult={null}
                         />
                     </div>
                 )}

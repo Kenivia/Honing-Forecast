@@ -1,59 +1,74 @@
 import { SpawnWorker } from "./worker_setup.ts"
-import { INPUT_LABELS } from "@/Utils/Constants.ts"
-import { ticksToCounts } from "@/Utils/Helpers.ts"
+import { JUICE_LABELS, MATS_LABELS } from "@/Utils/Constants.ts"
+// import { ticksToCounts } from "@/Utils/Helpers.ts"
 
 export function buildPayload({
     topGrid,
     bottomGrid,
-    budget_inputs,
+    userMatsOwned,
     adv_hone_strategy,
     express_event,
     bucketCount,
-    autoGoldValues,
-    userMatsValue,
+    // autoGoldValues,
+    userMatsPrices,
     dataSize,
-    useGridInput = true,
-    normalCounts,
-    advCounts,
-    monteCarloResult,
+    userMatsLeftover,
+    userJuiceOwned,
+    userJuicePrices,
+    userJuiceLeftover,
+    // useGridInput = true,
+    // normalCounts,
+    // advCounts,
+    // monteCarloResult,
 }: {
     topGrid: boolean[][]
     bottomGrid: boolean[][]
-    budget_inputs: any
+    userMatsOwned: any
     adv_hone_strategy: string
     express_event: boolean
     bucketCount: string
-    autoGoldValues: boolean
-    userMatsValue: any
+
+    userMatsPrices: any
     dataSize: string
     useGridInput?: boolean
     normalCounts?: number[][]
     advCounts?: number[][]
     monteCarloResult?: any
+
+    userMatsLeftover: any
+    userJuiceOwned: any
+    userJuicePrices: any
+    userJuiceLeftover: any
 }) {
     const payload: any = {
-        budget: ((input) => Object.entries(input).map(([, v]) => Math.round(Number(v))))(budget_inputs),
+        mats_budget: ((input) => Object.entries(input).map(([, v]) => Math.round(Number(v))))(userMatsOwned),
         adv_hone_strategy: adv_hone_strategy,
         express_event: express_event,
         bucket_count: Math.max(2, Math.min(1000, Math.floor(Number(bucketCount) || 2))),
-        user_price_arr: autoGoldValues
-            ? INPUT_LABELS.slice(0, 7).map((_) => 0.0)
-            : INPUT_LABELS.slice(0, 7).map((label) => parseFloat(userMatsValue[label] || "0")),
+        user_price_arr: MATS_LABELS.slice(0, 7).map((label) => parseFloat(userMatsPrices[label] || "0")),
         data_size: Math.max(1000, Math.floor(Number(dataSize) || 0)),
+        inp_leftover_values: MATS_LABELS.slice(0, 7).map((label) => parseFloat(userMatsLeftover[label] || "0")),
+        juice_books_budget: JUICE_LABELS.map((label_row) => label_row.map((label) => userJuiceOwned[label])),
+
+        juice_prices: JUICE_LABELS.map((label_row) => label_row.map((label) => userJuicePrices[label])),
+
+        inp_leftover_juice_values: JUICE_LABELS.map((label_row) => label_row.map((label) => userJuiceLeftover[label])),
     }
 
-    if (useGridInput) {
-        // Use the traditional tick-based approach
-        payload.normal_hone_ticks = topGrid
-        payload.adv_hone_ticks = bottomGrid
-    } else {
-        // Use direct counts approach
-        payload.normal_counts = normalCounts || ticksToCounts(topGrid)
-        payload.adv_counts = advCounts || ticksToCounts(bottomGrid)
-    }
-    if (monteCarloResult) {
-        payload.cost_data = monteCarloResult.cost_data
-    }
+    // if (useGridInput) {
+    // Use the traditional tick-based approach
+    payload.normal_hone_ticks = topGrid
+    payload.adv_hone_ticks = bottomGrid
+    // }
+
+    // else {
+    //     // Use direct counts approach
+    //     payload.normal_counts = normalCounts || ticksToCounts(topGrid)
+    //     payload.adv_counts = advCounts || ticksToCounts(bottomGrid)
+    // }
+    // if (monteCarloResult) {
+    //     payload.cost_data = monteCarloResult.cost_data
+    // }
     return payload
 }
 

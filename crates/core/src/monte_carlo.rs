@@ -187,8 +187,9 @@ pub fn monte_carlo_data<R: Rng>(
             actual_out.push(i - result[index + 1]);
         }
     }
-    state_bundle.compute_special_probs();
+
     if DEBUG_AVERAGE {
+        state_bundle.compute_special_probs();
         dbg!(actual_out);
         dbg!(state_bundle.special_probs());
     }

@@ -253,7 +253,7 @@ mod tests {
         let starting_special: Vec<usize> = vec![0, 1, 2];
 
         let mut state_bundle: StateBundle = StateBundle {
-            state_index: vec![],
+            // state_index: vec![],
             metric: -1.0,
             special_state: starting_special,
             prep_output,

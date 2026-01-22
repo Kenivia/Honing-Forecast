@@ -30,7 +30,7 @@ pub struct PreparationOutput {
     pub effective_budgets: Vec<i64>,
 }
 
-fn actual_eqv_gold(
+pub fn actual_eqv_gold(
     price_arr: &[f64],
     budgets: &[i64],
     juice_info: &JuiceInfo,
@@ -64,9 +64,9 @@ fn copy_leftover<T: Clone>(inp_leftover_values: &[T], original: &[T]) -> Vec<T> 
 }
 impl PreparationOutput {
     pub fn initialize(
-        hone_counts: &[Vec<bool>],
+        hone_ticks: &[Vec<bool>],
         input_budgets: &[i64],
-        adv_counts: &[Vec<bool>],
+        adv_ticks: &[Vec<bool>],
         express_event: bool,
         inp_price_arr: &[f64],
         adv_hone_strategy: &str,
@@ -80,7 +80,7 @@ impl PreparationOutput {
         let leftover_values = copy_leftover(inp_leftover_values, inp_price_arr);
         let leftover_juice_values = copy_leftover(inp_leftover_juice_values, juice_prices);
 
-        let unlock_costs: Vec<i64> = calc_unlock(hone_counts, adv_counts, express_event);
+        let unlock_costs: Vec<i64> = calc_unlock(hone_ticks, adv_ticks, express_event);
 
         let budgets: Vec<i64> = input_budgets.to_vec();
 
@@ -106,8 +106,8 @@ impl PreparationOutput {
         effective_budgets[6] -= unlock_costs[1];
 
         let mut upgrade_arr: Vec<Upgrade> = parser(
-            hone_counts,
-            adv_counts,
+            hone_ticks,
+            adv_ticks,
             &adv_hone_strategy.to_string(),
             express_event,
             juice_info.num_avail,

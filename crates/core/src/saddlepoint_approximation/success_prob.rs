@@ -17,8 +17,15 @@ impl StateBundle {
 
         out
     }
-    fn honing_sa_wrapper(
-        &mut self,
+
+    pub fn success_prob_for_analysis(&self, budget: f64) -> f64 {
+        let mut dummy_performance = Performance::new();
+        let out: f64 = self.honing_sa_wrapper(-1, budget, &mut dummy_performance);
+
+        out
+    }
+    pub fn honing_sa_wrapper(
+        &self,
         support_index: i64,
         budget: f64,
         performance: &mut Performance,
@@ -54,8 +61,26 @@ impl StateBundle {
             Vec::with_capacity(self.flattened_effective_budgets().try_len().unwrap());
 
         let items: Vec<_> = self.flattened_effective_budgets().enumerate().collect();
+        let mut dummy_performance = Performance::new();
         for (support_index, effective_budget) in items {
-            let mut dummy_performance = Performance::new();
+            prob_leftover.push(self.honing_sa_wrapper(
+                support_index as i64,
+                effective_budget,
+                &mut dummy_performance,
+            ));
+        }
+
+        prob_leftover
+    }
+
+    pub fn compute_leftover_probs_for_analysis(&self) -> Vec<f64> {
+        // assume initialized properly
+        let mut prob_leftover: Vec<f64> =
+            Vec::with_capacity(self.flattened_effective_budgets().try_len().unwrap());
+
+        let items: Vec<_> = self.flattened_effective_budgets().enumerate().collect();
+        let mut dummy_performance = Performance::new();
+        for (support_index, effective_budget) in items {
             prob_leftover.push(self.honing_sa_wrapper(
                 support_index as i64,
                 effective_budget,

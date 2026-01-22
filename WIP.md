@@ -9,6 +9,7 @@
   - figure out a way to export state_bundle to js and be able to pass it to monte carlo appropriately
     - literally just state and special state
   - this should also be uh editable in js by ui
+    - add uh all the owned juice and stuff
   - all the existing functions now take in a statebundle instead (still initialize prep_output like before)
   - make sure all existing things work, then start work on the new page(s)
 

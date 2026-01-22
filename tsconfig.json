@@ -27,7 +27,8 @@
         "allowImportingTsExtensions": true
     },
     "include": [
-        "frontend/*",
+        "frontend/**/*",
+        "crates/wasm/pkg/**/*",
         "vite.config.ts",
         "vitest.setup.ts",
     ],

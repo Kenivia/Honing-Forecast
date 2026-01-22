@@ -3,16 +3,15 @@ import SpreadsheetGrid from "@/Components/SpreadsheetGrid.tsx"
 import Graph from "@/Components/Graph.tsx"
 import LabeledCheckbox from "@/Components/LabeledCheckbox.tsx"
 import { styles, createColumnDefs, GRAPH_WIDTH, GRAPH_HEIGHT } from "@/Utils/Styles.ts"
-import { INPUT_LABELS, OUTPUT_LABELS } from "@/Utils/Constants.ts"
+import { MATS_LABELS, OUTPUT_LABELS } from "@/Utils/Constants.ts"
 import { SliderBundle } from "@/Components/SliderBundle.tsx"
 
 type CostToChanceSectionProps = {
     budget_inputs: any
     set_budget_inputs: React.Dispatch<React.SetStateAction<any>>
-    userMatsValue: any
-    setUserMatsValue: React.Dispatch<React.SetStateAction<any>>
+    userMatsPrices: any
+    setUserMatsPrices: React.Dispatch<React.SetStateAction<any>>
 
-    setAutoGoldValues: React.Dispatch<React.SetStateAction<boolean>>
     chance_result: any
     cachedChanceGraphData: { hist_counts?: any; hist_mins?: any; hist_maxs?: any } | null
     AnythingTicked: boolean
@@ -34,10 +33,10 @@ type CostToChanceSectionProps = {
 export default function CostToChanceSection({
     budget_inputs,
     set_budget_inputs,
-    userMatsValue,
-    setUserMatsValue,
+    userMatsPrices,
+    setUserMatsPrices,
 
-    setAutoGoldValues: _setAutoGoldValues,
+    // setAutoGoldValues: _setAutoGoldValues,
     chance_result,
     cachedChanceGraphData,
     AnythingTicked,
@@ -81,9 +80,9 @@ export default function CostToChanceSection({
                     <div style={{ marginBottom: 16, width: 310, marginLeft: 0 }}>
                         <SpreadsheetGrid
                             columnDefs={costToChanceColumnDefs}
-                            labels={INPUT_LABELS}
-                            sheetValuesArr={[budget_inputs, userMatsValue]}
-                            setSheetValuesArr={[set_budget_inputs, setUserMatsValue]}
+                            labels={MATS_LABELS}
+                            sheetValuesArr={[budget_inputs, userMatsPrices]}
+                            setSheetValuesArr={[set_budget_inputs, setUserMatsPrices]}
                         />
                     </div>
 
@@ -123,7 +122,7 @@ export default function CostToChanceSection({
                                                       OUTPUT_LABELS.slice(0, 7).map((label, lab_index) => [
                                                           label,
                                                           String(chance_result.typical_costs[parseInt(desired_chance)][lab_index]),
-                                                      ])
+                                                      ]),
                                                   ),
                                               ]
                                             : [Object.fromEntries(OUTPUT_LABELS.map((label) => [label, "Calculating..."]))]
@@ -192,7 +191,7 @@ export default function CostToChanceSection({
                                               {
                                                   minimumFractionDigits: 0, // show decimals for small K/M/B
                                                   maximumFractionDigits: 0,
-                                              }
+                                              },
                                           )
                                         : "Calculating..."}
                                 </div>
