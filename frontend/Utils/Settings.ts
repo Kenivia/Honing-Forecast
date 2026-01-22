@@ -13,9 +13,6 @@ export function writeSettings(
     userMatsPrices,
     cumulativeGraph,
     dataSize,
-    useGridInput,
-    normalCounts,
-    advCounts,
     incomeArr,
 ) {
     const toSave = {
@@ -31,9 +28,6 @@ export function writeSettings(
         userMatsPrices,
         cumulativeGraph,
         dataSize,
-        useGridInput,
-        normalCounts,
-        advCounts,
         incomeArr,
     }
     localStorage.setItem(STORAGE_KEY, JSON.stringify(toSave))
@@ -51,9 +45,6 @@ export function readSettings(
     setUserMatsPrices,
     setCumulativeGraph,
     setDataSize,
-    setUseGridInput,
-    setNormalCounts,
-    setAdvCounts,
     setIncomeArr,
 ) {
     const raw = localStorage.getItem(STORAGE_KEY)
@@ -75,10 +66,6 @@ export function readSettings(
         if (parsed.userMatsPrices && typeof parsed.userMatsPrices === "object") setUserMatsPrices(parsed.userMatsPrices)
         if (typeof parsed.cumulativeGraph === "boolean") setCumulativeGraph(parsed.cumulativeGraph)
         if (typeof parsed.dataSize === "string") setDataSize(parsed.dataSize)
-        if (typeof parsed.useGridInput === "boolean") setUseGridInput(parsed.useGridInput)
-        if (Array.isArray(parsed.normalCounts) && parsed.normalCounts.length === 2 && parsed.normalCounts[0]?.length === TOP_COLS)
-            setNormalCounts(parsed.normalCounts)
-        if (Array.isArray(parsed.advCounts) && parsed.advCounts.length === 2 && parsed.advCounts[0]?.length === BOTTOM_COLS) setAdvCounts(parsed.advCounts)
 
         if (Array.isArray(parsed.incomeArr) && parsed.incomeArr.length === 6 && parsed.every((row) => Array.isArray(row) && row.length === 7))
             setIncomeArr(parsed.incomeArr)

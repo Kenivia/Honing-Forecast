@@ -33,9 +33,6 @@ type GambaSectionProps = {
     lockXAxis: boolean
     lockedMins: number[] | null
     lockedMaxs: number[] | null
-    useGridInput: boolean
-    normalCounts: number[][]
-    advCounts: number[][]
     upgradeArr: any[]
     ParserBusy: boolean
 }
@@ -59,9 +56,6 @@ export default function GambaSection({
     lockXAxis,
     lockedMins,
     lockedMaxs,
-    useGridInput,
-    normalCounts,
-    advCounts,
 }: GambaSectionProps) {
     const { matsColumnDef } = createColumnDefs()
     const { values, setters } = inputs
@@ -161,9 +155,6 @@ export default function GambaSection({
             bucketCount,
             // autoGoldValues,
             dataSize,
-            useGridInput,
-            normalCounts,
-            advCounts,
         })
 
         const id = Math.random().toString(36).substr(2, 9)
@@ -198,30 +189,16 @@ export default function GambaSection({
                             if (index < seen_ind_normal[upgrade.upgrade_index]) {
                                 return false
                             }
-                            if (useGridInput) {
-                                const gridRow = topGrid[index] || []
-                                seen_ind_normal[upgrade.upgrade_index] += 1
-                                return gridRow[upgrade.upgrade_index] || false
-                            } else {
-                                // Use numeric input data - check if this equipment type has a count > 0
-                                const armorCount = normalCounts[0][upgrade.upgrade_index] || 0
-                                seen_ind_normal[upgrade.upgrade_index] += 1
-                                return index < armorCount
-                            }
+                            const gridRow = topGrid[index] || []
+                            seen_ind_normal[upgrade.upgrade_index] += 1
+                            return gridRow[upgrade.upgrade_index] || false
                         } else {
                             if (index < seen_ind_adv[upgrade.upgrade_index]) {
                                 return false
                             }
-                            if (useGridInput) {
-                                const gridRow = bottomGrid[index] || []
-                                seen_ind_adv[upgrade.upgrade_index] += 1
-                                return gridRow[upgrade.upgrade_index] || false
-                            } else {
-                                // Use numeric input data - check if this equipment type has a count > 0
-                                const armorCount = advCounts[0][upgrade.upgrade_index] || 0
-                                seen_ind_adv[upgrade.upgrade_index] += 1
-                                return index < armorCount
-                            }
+                            const gridRow = bottomGrid[index] || []
+                            seen_ind_adv[upgrade.upgrade_index] += 1
+                            return gridRow[upgrade.upgrade_index] || false
                         }
                     })
                     return { ...upgrade, equipment_type: assignedType || "Armor" }
@@ -270,17 +247,11 @@ export default function GambaSection({
         bucketCount,
         // autoGoldValues,
         dataSize,
-        useGridInput,
-        normalCounts,
-        advCounts,
     ])
 
     // Debounce effect for parser calls when grids change
     const advStrategyKey = useMemo(() => String(adv_hone_strategy), [adv_hone_strategy])
     const expressEventKey = useMemo(() => String(express_event), [express_event])
-    const useGridInputKey = useMemo(() => String(useGridInput), [useGridInput])
-    const normalCountsKey = useMemo(() => JSON.stringify(normalCounts), [normalCounts])
-    const advCountsKey = useMemo(() => JSON.stringify(advCounts), [advCounts])
     const refreshKeyMemo = useMemo(() => refreshKey, [refreshKey])
 
     useEffect(() => {
@@ -313,7 +284,7 @@ export default function GambaSection({
                 debounceTimerRef.current = null
             }
         }
-    }, [advStrategyKey, expressEventKey, refreshKeyMemo, callParser, useGridInputKey, normalCountsKey, advCountsKey])
+    }, [advStrategyKey, expressEventKey, refreshKeyMemo, callParser])
 
     // Keep refs updated
     useEffect(() => {
@@ -411,6 +382,7 @@ export default function GambaSection({
             headerName: "Cost so far",
             editable: false,
             flex: 1,
+            width: "80px",
             background: "var(--grid-cell-bg-readonly)",
             backgroundSelected: "var(--grid-cell-selected-readonly)",
             color: "var(--grid-cell-text-readonly)",
@@ -419,6 +391,7 @@ export default function GambaSection({
             headerName: "Remaining",
             editable: false,
             flex: 1,
+            width: "80px",
             background: "var(--grid-cell-bg-readonly)",
             backgroundSelected: "var(--grid-cell-selected-readonly)",
             color: "var(--grid-cell-text-readonly)",
@@ -536,7 +509,7 @@ export default function GambaSection({
                                     columnDefs={budgetColumnDefs}
                                     labels={MATS_LABELS}
                                     sheetValuesArr={[budgetTotalData, budgetRemainingData]}
-                                    setSheetValuesArr={[() => { }, () => { }]} // Read-only
+                                    setSheetValuesArr={[() => {}, () => {}]} // Read-only
                                 />
                             </div>
                         </div>

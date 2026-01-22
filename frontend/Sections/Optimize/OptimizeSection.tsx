@@ -3,47 +3,35 @@ import { JUICE_LABELS, MATS_LABELS } from "@/Utils/Constants.ts"
 import { createColumnDefs, styles } from "@/Utils/Styles.ts"
 import type { InputsBundleWithSetters } from "@/Utils/InputBundles.ts"
 import React from "react"
-
-type InputsSectionProps = {
+type OptimizeSectionProps = {
     inputsBundle: InputsBundleWithSetters
 }
 
-export default function InputsSection({ inputsBundle: inputs }: InputsSectionProps) {
-    const { matsColumnDef, juiceColumnDef } = createColumnDefs()
-    const { values, setters } = inputs
+export default function OptimizeSection({ inputsBundle }: OptimizeSectionProps) {
+    const { wideMatsColumnDefs } = createColumnDefs()
+    const { values, setters } = inputsBundle
     const { mats, juice } = values
     const { mats: matsSetters, juice: juiceSetters } = setters
+
     return (
-        <div style={{ ...styles.inputSection, flexDirection: "row", maxWidth: "1200px" }}>
-            <div
-                style={{
-                    display: "flex",
-                    flexDirection: "row",
-                    gap: 10,
-                    marginLeft: "auto",
-                    marginRight: "auto",
-                    minWidth: 200,
-                    flexShrink: 0,
-                    marginTop: -20,
-                    width: "90%",
-                }}
-            >
+        <div style={{ ...styles.inputSection, flexDirection: "row", maxWidth: "1200px", width: "100%" }}>
+            <div style={{ display: "flex", flexDirection: "row", alignItems: "flex-start", gap: 0, minWidth: 200, flexShrink: 0, marginTop: -20 }}>
                 <SpreadsheetGrid
-                    columnDefs={matsColumnDef}
+                    columnDefs={wideMatsColumnDefs}
                     labels={MATS_LABELS}
                     sheetValuesArr={[mats.owned, mats.prices, mats.leftover]}
                     setSheetValuesArr={[matsSetters.setOwned, matsSetters.setPrices, matsSetters.setLeftover]}
                 />
 
                 <SpreadsheetGrid
-                    columnDefs={juiceColumnDef}
+                    columnDefs={wideMatsColumnDefs}
                     labels={JUICE_LABELS.map((label_row) => label_row[0])}
                     sheetValuesArr={[juice.weapon.owned, juice.weapon.prices, juice.weapon.leftover]}
                     setSheetValuesArr={[juiceSetters.weapon.setOwned, juiceSetters.weapon.setPrices, juiceSetters.weapon.setLeftover]}
                 />
 
                 <SpreadsheetGrid
-                    columnDefs={juiceColumnDef}
+                    columnDefs={wideMatsColumnDefs}
                     labels={JUICE_LABELS.map((label_row) => label_row[1])}
                     sheetValuesArr={[juice.armor.owned, juice.armor.prices, juice.armor.leftover]}
                     setSheetValuesArr={[juiceSetters.armor.setOwned, juiceSetters.armor.setPrices, juiceSetters.armor.setLeftover]}

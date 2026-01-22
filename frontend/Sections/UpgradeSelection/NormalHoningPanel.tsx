@@ -12,9 +12,6 @@ type NormalHoningPanelProps = {
     topGridRef: React.RefObject<HTMLDivElement | null>
     marquee: any
     onGridMouseDown: (_grid: "top" | "bottom", _e: React.MouseEvent) => void
-    useGridInput?: boolean
-    normalCounts?: number[][]
-    onNumericInputChange?: (_grid: "top" | "bottom", _row: number, _col: number, _value: number) => void
 }
 
 export default function NormalHoningPanel({
@@ -25,9 +22,6 @@ export default function NormalHoningPanel({
     topGridRef,
     marquee,
     onGridMouseDown,
-    useGridInput = true,
-    normalCounts,
-    onNumericInputChange,
 }: NormalHoningPanelProps) {
     return (
         <div>
@@ -95,9 +89,6 @@ export default function NormalHoningPanel({
                             CELL_W={CELL_W}
                             CELL_H={CELL_H}
                             gridName="top"
-                            useGridInput={useGridInput}
-                            numericInputs={normalCounts}
-                            onNumericInputChange={onNumericInputChange}
                         />
                     </div>
                 </div>

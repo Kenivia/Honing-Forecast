@@ -21,6 +21,11 @@
 }
 
 /* Bottom border colors for each state */
+.hf-separator.optimize-active::after {
+    background-color: var(--btn-toggle-optimize-selected);
+}
+
+
 .hf-separator.chance-active::after {
     background-color: var(--btn-toggle-chance-selected);
 }
@@ -112,6 +117,18 @@
 .hf-btn.chance-selected .hf-help {
     display: block;
 }
+
+/* Specific colors for each button state */
+.hf-btn.optimize-selected {
+    background: var(--btn-toggle-optimize-selected);
+    opacity: 1;
+}
+
+.hf-btn.optimize-selected .hf-help {
+    display: block;
+}
+
+
 
 .hf-btn.budget-selected {
     background: var(--btn-toggle-budget-selected);

@@ -17,8 +17,6 @@ type ControlPanelProps = {
     setDataSize: (_v: string) => void
     lockXAxis: boolean
     onToggleLockXAxis: () => void
-    useGridInput: boolean
-    setUseGridInput: (_next: boolean) => void
 }
 
 export default function ControlPanel({
@@ -35,8 +33,6 @@ export default function ControlPanel({
     setDataSize,
     lockXAxis,
     onToggleLockXAxis,
-    useGridInput,
-    setUseGridInput,
 }: ControlPanelProps) {
     return (
         <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 0, minWidth: 200, flexShrink: 0 }}>
@@ -62,9 +58,6 @@ export default function ControlPanel({
                         <LabeledCheckbox label="Cumulative Graph" checked={cumulativeGraph} setChecked={setCumulativeGraph} />
                     </div>
 
-                    <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                        <LabeledCheckbox label="Grid input" checked={useGridInput} setChecked={setUseGridInput} />
-                    </div>
                     <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                         <label
                             htmlFor="data_size"

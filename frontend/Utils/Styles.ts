@@ -147,6 +147,7 @@ export type ColumnDef = {
 
     editable: boolean
     flex: number
+    width: string
     background: string
     backgroundSelected: string
     color: string
@@ -160,6 +161,7 @@ export const createColumnDefs = () => {
             headerName: "Est. cost",
             editable: false,
             flex: 1,
+            width: "80px",
             background: "var(--grid-cell-bg-readonly)",
             backgroundSelected: "var(--grid-cell-selected-readonly)",
             color: "var(--text-success)",
@@ -171,6 +173,7 @@ export const createColumnDefs = () => {
             headerName: "Owned",
             editable: true,
             flex: 1,
+            width: "80px",
             background: "var(--grid-cell-bg)",
             backgroundSelected: "var(--grid-cell-selected)",
             color: "var(--grid-cell-text)",
@@ -179,6 +182,7 @@ export const createColumnDefs = () => {
             headerName: "Market price",
             editable: true,
             flex: 1,
+            width: "50px",
             background: "var(--grid-cell-bg)",
             backgroundSelected: "var(--grid-cell-selected)",
             color: "var(--grid-cell-text)",
@@ -187,6 +191,7 @@ export const createColumnDefs = () => {
             headerName: "Leftover value",
             editable: true,
             flex: 1,
+            width: "50px",
             background: "var(--grid-cell-bg)",
             backgroundSelected: "var(--grid-cell-selected)",
             color: "var(--grid-cell-text)",
@@ -198,6 +203,7 @@ export const createColumnDefs = () => {
             headerName: "Owned",
             editable: true,
             flex: 1,
+            width: "80px",
             background: "var(--grid-cell-bg)",
             backgroundSelected: "var(--grid-cell-selected)",
             color: "var(--grid-cell-text)",
@@ -206,6 +212,7 @@ export const createColumnDefs = () => {
             headerName: "Market price",
             editable: true,
             flex: 1,
+            width: "50px",
             background: "var(--grid-cell-bg)",
             backgroundSelected: "var(--grid-cell-selected)",
             color: "var(--grid-cell-text)",
@@ -214,13 +221,50 @@ export const createColumnDefs = () => {
             headerName: "Leftover value",
             editable: true,
             flex: 1,
+            width: "50px",
             background: "var(--grid-cell-bg)",
             backgroundSelected: "var(--grid-cell-selected)",
             color: "var(--grid-cell-text)",
         },
-
-       
     ]
+    const wideMatsColumnDefs: ColumnDef[] = [
+        // {
+        //     headerName: "Owned",
+        //     editable: true,
+        //     flex: 1,
+        //     width: "80px",
+        //     background: "var(--grid-cell-bg)",
+        //     backgroundSelected: "var(--grid-cell-selected)",
+        //     color: "var(--grid-cell-text)",
+        // },
+        {
+            headerName: "Average used",
+            editable: false,
+            flex: 1,
+            width: "80px",
+            background: "var(--grid-cell-bg-readonly)",
+            backgroundSelected: "var(--grid-cell-selected-readonly)",
+            color: "var(--text-success)",
+        },
+        {
+            headerName: "Average leftover",
+            editable: false,
+            flex: 1,
+            width: "80px",
+            background: "var(--grid-cell-bg-readonly)",
+            backgroundSelected: "var(--grid-cell-selected-readonly)",
+            color: "var(--text-success)",
+        },
 
-    return { chanceToCostColumnDefs, matsColumnDef, juiceColumnDef }
+        {
+            headerName: "Eqv gold",
+            editable: false,
+            flex: 1,
+            width: "80px",
+            background: "var(--grid-cell-bg-readonly)",
+            backgroundSelected: "var(--grid-cell-selected-readonly)",
+            color: "var(--text-success)",
+        },
+    ]
+    return { chanceToCostColumnDefs, matsColumnDef, juiceColumnDef, wideMatsColumnDefs }
 }

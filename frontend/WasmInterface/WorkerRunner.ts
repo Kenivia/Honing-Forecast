@@ -12,10 +12,6 @@ export function buildPayload({
     // autoGoldValues,
     dataSize,
     inputs,
-    // useGridInput = true,
-    // normalCounts,
-    // advCounts,
-    // monteCarloResult,
 }: {
     topGrid: boolean[][]
     bottomGrid: boolean[][]
@@ -24,11 +20,6 @@ export function buildPayload({
     bucketCount: string
 
     dataSize: string
-    useGridInput?: boolean
-    normalCounts?: number[][]
-    advCounts?: number[][]
-    monteCarloResult?: any
-
     inputs: InputsValues
 }) {
     const { mats, juice } = inputs
@@ -47,20 +38,10 @@ export function buildPayload({
         inp_leftover_juice_values: JUICE_LABELS.map((label_row) => [juice.weapon.leftover[label_row[0]], juice.armor.leftover[label_row[1]]]),
     }
 
-    // if (useGridInput) {
-    // Use the traditional tick-based approach
+    // Always use the traditional tick-based approach
     payload.normal_hone_ticks = topGrid
     payload.adv_hone_ticks = bottomGrid
-    // }
 
-    // else {
-    //     // Use direct counts approach
-    //     payload.normal_counts = normalCounts || ticksToCounts(topGrid)
-    //     payload.adv_counts = advCounts || ticksToCounts(bottomGrid)
-    // }
-    // if (monteCarloResult) {
-    //     payload.cost_data = monteCarloResult.cost_data
-    // }
     return payload
 }
 

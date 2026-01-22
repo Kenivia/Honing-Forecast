@@ -209,11 +209,11 @@ export default function SpreadsheetGrid({ columnDefs, labels, sheetValuesArr, se
                     prev
                         ? { ...prev, endRow: row, endCol: col }
                         : {
-                            startRow: row,
-                            startCol: col,
-                            endRow: row,
-                            endCol: col,
-                        }
+                              startRow: row,
+                              startCol: col,
+                              endRow: row,
+                              endCol: col,
+                          },
                 )
             }
         }
@@ -260,7 +260,7 @@ export default function SpreadsheetGrid({ columnDefs, labels, sheetValuesArr, se
                 const cols: string[] = []
                 for (let c = minCol; c <= maxCol; c++) {
                     const label = labels[r]
-                    cols.push((sheetValuesArr[c]?.[label] ?? "") === "" ? "0" : sheetValuesArr[c]?.[label] ?? "")
+                    cols.push((sheetValuesArr[c]?.[label] ?? "") === "" ? "0" : (sheetValuesArr[c]?.[label] ?? ""))
                 }
                 rowsOut.push(cols.join("\t")) // tab separated per row
             }
@@ -270,7 +270,7 @@ export default function SpreadsheetGrid({ columnDefs, labels, sheetValuesArr, se
                 e.preventDefault()
             } else if ((window as any).clipboardData) {
                 // IE fallback (unlikely needed)
-                ; (window as any).clipboardData.setData("Text", text)
+                ;(window as any).clipboardData.setData("Text", text)
                 e.preventDefault()
             }
             // store for internal paste if needed
@@ -292,7 +292,7 @@ export default function SpreadsheetGrid({ columnDefs, labels, sheetValuesArr, se
                     r
                         .split(/\t|,|\s+/)
                         .map((c) => c.trim())
-                        .filter(Boolean)
+                        .filter(Boolean),
                 )
 
             // determine paste start: use selection start if present, otherwise use focused cell
@@ -377,7 +377,7 @@ export default function SpreadsheetGrid({ columnDefs, labels, sheetValuesArr, se
                                 display: "flex",
                                 alignItems: "center",
                                 justifyContent: "flex-end",
-                                paddingRight: 0,
+                                paddingRight: 3,
                                 lineHeight: 0.9,
                                 whiteSpace: "wrap",
                                 fontSize: "var(--font-size-sm)",
@@ -394,7 +394,7 @@ export default function SpreadsheetGrid({ columnDefs, labels, sheetValuesArr, se
 
             <div style={{ flex: 1 }}>
                 {/* Column headers (plain text, aligned) */}
-                <div style={{ display: "grid", gridTemplateColumns: columnDefs.map(() => "1fr").join(" "), gap: 0, marginBottom: 4, height: 36 }}>
+                <div style={{ display: "grid", gridTemplateColumns: columnDefs.map((col) => col.width).join(" "), gap: 0, marginBottom: 4, height: 36 }}>
                     {columnDefs.map((colDef, colIndex) => (
                         <div
                             key={`hdr-${colIndex}`}
@@ -410,7 +410,7 @@ export default function SpreadsheetGrid({ columnDefs, labels, sheetValuesArr, se
                                 fontSize: colIndex == 0 ? "var(--font-size-md)" : "var(--font-size-xs)",
                                 lineHeight: 0.8,
                                 marginTop: 18,
-                                width: colIndex == 0 ? "80px" : "50px",
+                                width: colDef.width,
                             }}
                         >
                             {colDef.headerName}
@@ -418,7 +418,7 @@ export default function SpreadsheetGrid({ columnDefs, labels, sheetValuesArr, se
                     ))}
                 </div>
 
-                <div style={{ display: "grid", gridTemplateColumns: columnDefs.map(() => "1fr").join(" "), gap: 0 }}>
+                <div style={{ display: "grid", gridTemplateColumns: columnDefs.map((col) => col.width).join(" "), gap: 0 }}>
                     {labels.map((label, rowIndex) =>
                         columnDefs.map((colDef, colIndex) => (
                             <div
@@ -432,11 +432,11 @@ export default function SpreadsheetGrid({ columnDefs, labels, sheetValuesArr, se
                                             prev
                                                 ? { ...prev, endRow: rowIndex, endCol: colIndex }
                                                 : {
-                                                    startRow: rowIndex,
-                                                    startCol: colIndex,
-                                                    endRow: rowIndex,
-                                                    endCol: colIndex,
-                                                }
+                                                      startRow: rowIndex,
+                                                      startCol: colIndex,
+                                                      endRow: rowIndex,
+                                                      endCol: colIndex,
+                                                  },
                                         )
                                     }
                                 }}
@@ -459,7 +459,8 @@ export default function SpreadsheetGrid({ columnDefs, labels, sheetValuesArr, se
                                         })
                                     }}
                                     style={{
-                                        width: colIndex == 0 ? "80px" : "50px",
+                                        width: colDef.width,
+
                                         height: "100%",
                                         padding: "6px 8px",
                                         border: "1px solid var(--border-accent)",
@@ -467,8 +468,8 @@ export default function SpreadsheetGrid({ columnDefs, labels, sheetValuesArr, se
                                             columnDefs[colIndex].backgroundRanOut && parseInt(sheetValuesArr[colIndex][label]) < 0
                                                 ? columnDefs[colIndex].backgroundRanOut
                                                 : isCellSelected(rowIndex, colIndex)
-                                                    ? columnDefs[colIndex].backgroundSelected
-                                                    : columnDefs[colIndex].background,
+                                                  ? columnDefs[colIndex].backgroundSelected
+                                                  : columnDefs[colIndex].background,
                                         color: columnDefs[colIndex].color,
                                         fontSize: "var(--font-size-sm)",
                                         outline: "none",
@@ -479,7 +480,7 @@ export default function SpreadsheetGrid({ columnDefs, labels, sheetValuesArr, se
                                     placeholder="0"
                                 />
                             </div>
-                        ))
+                        )),
                     )}
                 </div>
             </div>

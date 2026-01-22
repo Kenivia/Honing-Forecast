@@ -4,8 +4,8 @@ import SpreadsheetGrid from "./SpreadsheetGrid.tsx"
 
 describe("SpreadsheetGrid", () => {
     const columnDefs = [
-        { headerName: "Budget", editable: true, flex: 1, background: "", backgroundSelected: "", color: "" },
-        { headerName: "Gold", editable: true, flex: 1, background: "", backgroundSelected: "", color: "" },
+        { headerName: "Budget", editable: true, flex: 1, width: "80px", background: "", backgroundSelected: "", color: "" },
+        { headerName: "Gold", editable: true, flex: 1, width: "80px", background: "", backgroundSelected: "", color: "" },
     ]
     const labels = ["Item1", "Item2", "Item3"]
 
@@ -16,7 +16,7 @@ describe("SpreadsheetGrid", () => {
     it("renders cells and headers", () => {
         const set_sheet_values = vi.fn()
         const { getAllByPlaceholderText, getByText } = render(
-            <SpreadsheetGrid columnDefs={columnDefs} labels={labels} sheetValuesArr={[{}]} setSheetValuesArr={[set_sheet_values]} />
+            <SpreadsheetGrid columnDefs={columnDefs} labels={labels} sheetValuesArr={[{}]} setSheetValuesArr={[set_sheet_values]} />,
         )
 
         // Check headers
@@ -31,7 +31,7 @@ describe("SpreadsheetGrid", () => {
     it("updates budget values on input change", async () => {
         const set_sheet_values = vi.fn()
         const { getAllByPlaceholderText } = render(
-            <SpreadsheetGrid columnDefs={columnDefs} labels={labels} sheetValuesArr={[{}]} setSheetValuesArr={[set_sheet_values]} />
+            <SpreadsheetGrid columnDefs={columnDefs} labels={labels} sheetValuesArr={[{}]} setSheetValuesArr={[set_sheet_values]} />,
         )
 
         const inputs = getAllByPlaceholderText("0")
@@ -52,7 +52,7 @@ describe("SpreadsheetGrid", () => {
                 labels={labels}
                 sheetValuesArr={[{}, secondaryValues]}
                 setSheetValuesArr={[set_sheet_values, setSecondaryValues]}
-            />
+            />,
         )
 
         const inputs = getAllByPlaceholderText("0")
@@ -71,7 +71,7 @@ describe("SpreadsheetGrid", () => {
                 labels={labels}
                 sheetValuesArr={[{}]}
                 setSheetValuesArr={[undefined]} // readOnly
-            />
+            />,
         )
 
         const inputs = getAllByPlaceholderText("0")

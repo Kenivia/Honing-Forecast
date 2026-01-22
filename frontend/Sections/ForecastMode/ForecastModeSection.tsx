@@ -18,9 +18,6 @@ type LongTermSectionProps = {
     bucketCount: any
 
     dataSize: any
-    useGridInput: any
-    normalCounts: any
-    advCounts: any
     showOptimizedDetails: boolean
     setShowOptimizedDetails: React.Dispatch<React.SetStateAction<boolean>>
     incomeArr: number[][]
@@ -59,9 +56,6 @@ export default function LongTermSection({
     adv_hone_strategy,
     express_event,
     // dataSize,
-    useGridInput,
-    normalCounts,
-    advCounts,
     showOptimizedDetails,
     setShowOptimizedDetails,
     incomeArr,
@@ -103,6 +97,7 @@ export default function LongTermSection({
             headerName: "Owned mats (optional)",
             editable: true,
             flex: 1,
+            width: "80px",
             background: "var(--grid-cell-bg)",
             backgroundSelected: "var(--grid-cell-selected)",
             color: "var(--grid-cell-text)",
@@ -111,6 +106,7 @@ export default function LongTermSection({
             headerName: "Gold Price",
             editable: true,
             flex: 1,
+            width: "80px",
             background: "var(--grid-cell-bg)",
             backgroundSelected: "var(--grid-cell-selected)",
             color: "var(--grid-cell-text)",
@@ -123,6 +119,7 @@ export default function LongTermSection({
             headerName: "Income",
             editable: true,
             flex: 1,
+            width: "80px",
             background: "var(--grid-cell-bg)",
             backgroundSelected: "var(--grid-cell-selected)",
             color: "var(--grid-cell-text)",
@@ -135,6 +132,7 @@ export default function LongTermSection({
             headerName: "Total weekly",
             editable: false,
             flex: 1,
+            width: "80px",
             background: "var(--grid-cell-bg-readonly)",
             backgroundSelected: "var(--grid-cell-selected-readonly)",
             color: "var(--grid-cell-text-readonly)",
@@ -155,9 +153,6 @@ export default function LongTermSection({
     // Debounce keys for cost_to_chance_arr
     const advStrategyKey = useMemo(() => String(adv_hone_strategy), [adv_hone_strategy])
     const expressEventKey = useMemo(() => String(express_event), [express_event])
-    const useGridInputKey = useMemo(() => String(useGridInput), [useGridInput])
-    const normalCountsKey = useMemo(() => JSON.stringify(normalCounts), [normalCounts])
-    const advCountsKey = useMemo(() => JSON.stringify(advCounts), [advCounts])
     const totalWeeklyIncomeKey = useMemo(() => JSON.stringify(totalWeeklyIncome), [totalWeeklyIncome])
 
     // Function to call cost_to_chance_arr
@@ -180,7 +175,7 @@ export default function LongTermSection({
             dependency: monteCarloResult != null,
         })
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [advStrategyKey, expressEventKey, useGridInputKey, normalCountsKey, advCountsKey, totalWeeklyIncomeKey, weeklyBudgets, monteCarloResult])
+    }, [advStrategyKey, expressEventKey, totalWeeklyIncomeKey, weeklyBudgets, monteCarloResult])
 
     // Labels for income grids (7 rows) - use proper labels but hide icons
     const incomeLabels = MATS_LABELS.slice(0, 7)

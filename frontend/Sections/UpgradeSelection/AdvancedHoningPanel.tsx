@@ -14,9 +14,6 @@ type AdvancedHoningPanelProps = {
     onGridMouseDown: (_grid: "top" | "bottom", _e: React.MouseEvent) => void
     adv_hone_strategy: string
     adv_hone_strategy_change: (_v: string) => void
-    useGridInput?: boolean
-    advCounts?: number[][]
-    onNumericInputChange?: (_grid: "top" | "bottom", _row: number, _col: number, _value: number) => void
 }
 
 export default function AdvancedHoningPanel({
@@ -29,9 +26,6 @@ export default function AdvancedHoningPanel({
     onGridMouseDown,
     adv_hone_strategy,
     adv_hone_strategy_change,
-    useGridInput = true,
-    advCounts,
-    onNumericInputChange,
 }: AdvancedHoningPanelProps) {
     return (
         <div>
@@ -99,9 +93,6 @@ export default function AdvancedHoningPanel({
                             CELL_W={CELL_W}
                             CELL_H={CELL_H}
                             gridName="bottom"
-                            useGridInput={useGridInput}
-                            numericInputs={advCounts}
-                            onNumericInputChange={onNumericInputChange}
                         />
                     </div>
                 </div>
