@@ -5,6 +5,8 @@
 
 ### Now
 
+- rebuild stuff and re-wire things to the website
+
 #### Optimizations
 
 - maybe its time to get rid of Box< iterator >
@@ -13,10 +15,12 @@
 
 - can actually save 1 evaluation at the end of special_prob by setting the zero prob...
 
+- multi-threading????
+
 ### Misc
 
 - JUICE CHESTS AND MAYBE EVEN BOOKS CHESTS
-  - ~~just a greedy algorithm based on the prices~~ um might be more complicated than i think, maybe need to add it to the decision space but that sounds incredibly uh wasteful, maybe just do it naively
+  - ~~just a greedy algorithm based on the prices~~ ~~um might be more complicated than i think, maybe need to add it to the decision space but that sounds incredibly uh wasteful, maybe just do it naively~~ actually can just tell user to open as they run out?
 
 - add assertions to a lot of prepoutput stuff
 

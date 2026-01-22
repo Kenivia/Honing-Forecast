@@ -1,7 +1,7 @@
 use std::f64;
 use std::mem::swap;
 
-use crate::constants::FLOAT_TOL;
+// use crate::constants::FLOAT_TOL;
 
 use crate::state_bundle::StateBundle;
 use num::Integer;

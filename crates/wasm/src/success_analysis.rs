@@ -1,16 +1,17 @@
-// use crate::helpers::{compute_gold_cost_from_raw, get_percentile_window};
-// use crate::parser::PreparationOutput;
-// #[derive(Debug)]
-// pub struct NoBuyAnalysisOutputs {
-//     pub typed_fail_counter_final: Vec<f64>,
-//     pub no_buy_chance: f64,
-// }
+use hf_core::helpers::{compute_gold_cost_from_raw, get_percentile_window};
+use hf_core::parser::PreparationOutput;
 
-// #[derive(Debug)]
-// pub struct BuyAnalysisOutput {
-//     pub hundred_gold_costs: Vec<i64>,
-//     pub buy_chance: f64,
-// }
+#[derive(Debug)]
+pub struct NoBuyAnalysisOutputs {
+    pub typed_fail_counter_final: Vec<f64>,
+    pub no_buy_chance: f64,
+}
+
+#[derive(Debug)]
+pub struct BuyAnalysisOutput {
+    pub hundred_gold_costs: Vec<i64>,
+    pub buy_chance: f64,
+}
 
 // pub fn no_buy_analysis(cost_data: &[[i64; 9]], input_budgets: &[i64]) -> NoBuyAnalysisOutputs {
 //     let mut typed_fail_counter_final: Vec<f64> = vec![0.0_f64; 7];

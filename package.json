@@ -3,13 +3,13 @@
     "private": true,
     "type": "module",
     "scripts": {
-        "build": "wasm-pack build --release --target web && npm run test && vite build",
+        "build": "wasm-pack build crates/wasm --release --target web && npm run test && vite build",
         "predeploy": "npm run build",
         "deploy": "gh-pages -d dist",
         "lint": "eslint .",
         "preview": "vite preview",
         "typecheck": "tsc --noEmit",
-        "dev": "wasm-pack build --release --target web && vite",
+        "dev": "wasm-pack build crates/wasm --release --target web && vite",
         "test": "cargo test --profile release -- --show-output && vitest run",
         "test:ui": "vitest run"
     },
