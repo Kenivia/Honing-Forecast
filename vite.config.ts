@@ -20,7 +20,7 @@ export default defineConfig({
     resolve: {
         alias: {
             // eslint-disable-next-line no-undef
-            "@": path.resolve(__dirname, "src"),
+            "@": path.resolve(__dirname, "frontend"),
             // or add others:
             // '@components': path.resolve(__dirname, 'frontend/Components')
         },
