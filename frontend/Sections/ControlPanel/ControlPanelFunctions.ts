@@ -149,7 +149,7 @@ export function createFillDemo({
             Silver: "999999999",
             "Red juice": "1420",
             "Blue juice": "690",
-            "Special leaps": "6767",
+            "Special Leap": "6767",
         })
         set_desired_chance("50")
         set_prev_checked_arr(Array.from({ length: TOP_COLS }, (_, ind) => ind == 19 || ind == 20 || ind == 21))

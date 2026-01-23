@@ -23,7 +23,7 @@ type UpgradeTooltipProps = {
 }
 
 const UpgradeTooltip = React.memo(function UpgradeTooltip({ upgrade, children, tooltipHandlers }: UpgradeTooltipProps) {
-    const costLabels = ["Red", "Blue", "Leaps", "Shards", "Oreha", "Gold", "Silver", "Red Juice", "Blue Juice", "Special Leaps"]
+    const costLabels = ["Red", "Blue", "Leaps", "Shards", "Oreha", "Gold", "Silver", "Red Juice", "Blue Juice", "Special Leap"]
     const tapRecordCosts = React.useMemo(() => {
         const costs = new Array(10).fill(0)
         const taps = upgrade.taps_so_far ?? 0

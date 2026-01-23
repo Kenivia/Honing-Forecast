@@ -19,7 +19,7 @@ export default function InputsSection({ inputsBundle: inputs }: InputsSectionPro
                 style={{
                     display: "flex",
                     flexDirection: "row",
-                    gap: 10,
+                    gap: 40,
                     marginLeft: "auto",
                     marginRight: "auto",
                     minWidth: 200,

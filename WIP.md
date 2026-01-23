@@ -53,6 +53,8 @@
 - multi-threading????
   - will prep by compling using all the right tools(i hope) and then figuring it out later
 
+- store simple averages and add them up when needed
+
 ### Misc
 
 - JUICE CHESTS AND MAYBE EVEN BOOKS CHESTS

@@ -21,9 +21,9 @@ const IconMap: Record<string, string> = {
     Oreha: "/Honing-Forecast/Icons/Materials/Oreha.webp",
     Gold: "/Honing-Forecast/Icons/Materials/Gold.webp",
     Silver: "/Honing-Forecast/Icons/Materials/Silver.webp",
-    "Red juice": "/Honing-Forecast/Icons/Materials/Red juice.webp",
-    "Blue juice": "/Honing-Forecast/Icons/Materials/Blue juice.webp",
-    "Special leaps": "/Honing-Forecast/Icons/Materials/Special leap.webp",
+    "Lava's Breath": "/Honing-Forecast/Icons/Materials/Lava's Breath.webp",
+    "Glacier's Breath": "/Honing-Forecast/Icons/Materials/Glacier's Breath.webp",
+    "Special Leap": "/Honing-Forecast/Icons/Materials/Special Leap.webp",
     "Forecast Icon": "/Honing-Forecast/forecast icon.webp",
 }
 

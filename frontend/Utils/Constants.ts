@@ -1,4 +1,4 @@
-export const MATS_LABELS = ["Red", "Blue", "Leaps", "Shards", "Oreha", "Gold", "Silver", "Special leaps"]
+export const MATS_LABELS = ["Red", "Blue", "Leaps", "Shards", "Oreha", "Gold", "Silver", "Special Leap"]
 
 export const JUICE_LABELS = [
     ["Lava's Breath", "Glacier's Breath"],

@@ -378,7 +378,7 @@ export default function SpreadsheetGrid({ columnDefs, labels, sheetValuesArr, se
                                 alignItems: "center",
                                 justifyContent: "flex-end",
                                 paddingRight: 3,
-                                lineHeight: 0.9,
+                                lineHeight: 1,
                                 whiteSpace: "wrap",
                                 fontSize: "var(--font-size-sm)",
                                 paddingTop: 8,
