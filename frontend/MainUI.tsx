@@ -153,7 +153,7 @@ export default function HoningForecastUI() {
     const [prev_checked_arr_bottom, set_prev_checked_arr_bottom] = useState(() => Array.from({ length: BOTTOM_COLS }, () => false))
     const [cumulativeGraph, setCumulativeGraph] = useState<boolean>(true)
     const [dataSize, setDataSize] = useState<string>(() => "100000")
-    const [activePage, setActivePage] = useState<"optimize" | "cost-to-chance" | "gamba" | "forecast">("cost-to-chance") // "chance-to-cost" |
+    const [activePage, setActivePage] = useState<"optimize" | "cost-to-chance" | "gamba" | "forecast">("optimize") // "chance-to-cost" |
     const [mainScale, setMainScale] = useState<number>(1)
     const [zoomCompensation, setZoomCompensation] = useState<number>(1)
     const [optimizeButtonPress, setOptimizeButtonPress] = useState<number>(0)
@@ -168,6 +168,9 @@ export default function HoningForecastUI() {
 
     const [flatUnlockArr, setFlatUnlockArr] = useState<boolean[]>([])
     const [unlockGrid, setUnlockGrid] = useState<boolean[][]>(Array(6).fill(Array(25).fill(false)))
+
+    const [flatSucceedArr, setFlatSucceedArr] = useState<boolean[]>([])
+    const [succeededGrid, setSucceededGrid] = useState<boolean[][]>(Array(6).fill(Array(25).fill(false)))
 
 
     const [specialState, setSpecialState] = useState<number[]>([])
@@ -505,6 +508,7 @@ export default function HoningForecastUI() {
             inputs: inputsValues,
             progressGrid,
             unlockGrid,
+            succeededGrid,
             stateBundleGrid,
             specialState,
             // monteCarloResult,
@@ -530,6 +534,7 @@ export default function HoningForecastUI() {
 
     const StateBundleGridKey = useMemo(() => String(stateBundleGrid), [stateBundleGrid])
     const UnlockGridKey = useMemo(() => String(unlockGrid), [unlockGrid])
+    const SucceededGridKey = useMemo(() => String(succeededGrid), [succeededGrid])
 
     const inputBundleKey = useMemo(
         () =>
@@ -574,6 +579,9 @@ export default function HoningForecastUI() {
                 flatUnlockArr,
                 unlockGrid,
                 setUnlockGrid,
+                flatSucceedArr,
+                succeededGrid,
+                setSucceededGrid,
                 flatStateBundle,
                 stateBundleGrid,
                 setStateBundleGrid,
@@ -581,7 +589,7 @@ export default function HoningForecastUI() {
         }
 
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [flatProgressArr, flatUnlockArr, flatStateBundle])
+    }, [flatProgressArr, flatUnlockArr, flatSucceedArr, flatStateBundle])
     // const monteCarloWorkerRef = useRef<Worker | null>(null)
     // const [_monteCarloBusy, setMonteCarloBusy] = useState(false)
     // const [monteCarloResult, setMonteCarloResult] = useState<any>(null)
@@ -630,11 +638,23 @@ export default function HoningForecastUI() {
                 setFlatStateBundle(res.upgrade_arr.map((upgrade) => upgrade.state))
                 setFlatProgressArr(res.upgrade_arr.map((_, index) => progressGrid[res.upgrade_arr[index].piece_type][res.upgrade_arr[index].upgrade_index]))
                 setFlatUnlockArr(res.upgrade_arr.map((_, index) => unlockGrid[res.upgrade_arr[index].piece_type][res.upgrade_arr[index].upgrade_index]))
+                setFlatSucceedArr(res.upgrade_arr.map((_, index) => succeededGrid[res.upgrade_arr[index].piece_type][res.upgrade_arr[index].upgrade_index]))
             },
             debounceMs: 10,
         })
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [advStrategyKey, expressEventKey, graphBucketSizeKey, dataSizeKey, topGridKey, ProgressGridKey, UnlockGridKey, StateBundleGridKey, inputBundleKey])
+    }, [
+        advStrategyKey,
+        expressEventKey,
+        graphBucketSizeKey,
+        dataSizeKey,
+        topGridKey,
+        ProgressGridKey,
+        UnlockGridKey,
+        SucceededGridKey,
+        StateBundleGridKey,
+        inputBundleKey,
+    ])
 
     const optimizeAvgWorkerRef = useRef<Worker | null>(null)
     const [optimizeAvgBusy, setOptimizeAvgBusy] = useState(false)
@@ -829,6 +849,8 @@ export default function HoningForecastUI() {
                             setFlatProgressArr={setFlatProgressArr}
                             flatUnlockArr={flatUnlockArr}
                             setFlatUnlockArr={setFlatUnlockArr}
+                            flatSucceedArr={flatSucceedArr}
+                            setFlatSucceedArr={setFlatSucceedArr}
                             flatStateBundle={flatStateBundle}
                             setFlatStateBundle={setFlatStateBundle}
                             allowUserChangeState={allowUserChangeState}
@@ -858,7 +880,7 @@ export default function HoningForecastUI() {
                         />
                     </div>
                 )} */}
-                {activePage === "gamba" && (
+                {/* {activePage === "gamba" && (
                     <div className={activePage === "gamba" ? "page" : "page page--hidden"}>
                         <GambaSection
                             inputs={inputsBundle}
@@ -918,7 +940,7 @@ export default function HoningForecastUI() {
                             monteCarloResult={null}
                         />
                     </div>
-                )}
+                )} */}
             </div>
         </div>
     )

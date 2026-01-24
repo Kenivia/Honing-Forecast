@@ -22,6 +22,9 @@ type OptimizeSectionProps = {
     flatUnlockArr: boolean[]
     setFlatUnlockArr: React.Dispatch<React.SetStateAction<any>>
 
+    flatSucceedArr: boolean[]
+    setFlatSucceedArr: React.Dispatch<React.SetStateAction<any>>
+
     flatStateBundle: StatePair[][]
     setFlatStateBundle: React.Dispatch<React.SetStateAction<any>>
     allowUserChangeState: boolean,
@@ -52,6 +55,8 @@ export default function OptimizeSection({
     setFlatProgressArr,
     flatUnlockArr,
     setFlatUnlockArr,
+    flatSucceedArr,
+    setFlatSucceedArr,
     flatStateBundle,
     setFlatStateBundle,
     allowUserChangeState,
@@ -74,6 +79,8 @@ export default function OptimizeSection({
                     setFlatProgressArr={setFlatProgressArr}
                     flatUnlockArr={flatUnlockArr}
                     setFlatUnlockArr={setFlatUnlockArr}
+                    flatSucceedArr={flatSucceedArr}
+                    setFlatSucceedArr={setFlatSucceedArr}
                     flatStateBundle={flatStateBundle}
                     setFlatStateBundle={setFlatStateBundle}
                     allowUserChangeState={allowUserChangeState}
@@ -81,8 +88,8 @@ export default function OptimizeSection({
                 />
             )}
             <div>
-                Already spent + more to come: {evaluateAverageResult?.metric}
-                <br />
+                {/* Already spent + more to come: {evaluateAverageResult?.metric}
+                <br /> */}
                 Already spent: {evaluateAverageResult?.prep_output.already_spent[3]}
                 <br />
                 Average cost from now on: {evaluateAverageResult?.metric - evaluateAverageResult?.prep_output.already_spent[3]}

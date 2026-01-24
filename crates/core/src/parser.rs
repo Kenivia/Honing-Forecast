@@ -286,10 +286,10 @@ pub fn parser(
                 unlock_grid.as_ref().unwrap()[piece_type][upgrade_index]
             };
             // web_sys::console::log_1(&this_progress.into());
-            web_sys::console::log_1(&format!("{:?}", unlock_grid).into());
+            // web_sys::console::log_1(&format!("{:?}", unlock_grid).into());
 
-            web_sys::console::log_1(&format!("{:?}", this_unlocked).into());
-            web_sys::console::log_1(&format!("{:?}, {:?}", piece_type, upgrade_index).into());
+            // web_sys::console::log_1(&format!("{:?}", this_unlocked).into());
+            // web_sys::console::log_1(&format!("{:?}, {:?}", piece_type, upgrade_index).into());
 
             let relevant = if piece_type == 5 {
                 weapon_unlock_costs

@@ -1,0 +1,33 @@
+.state-grid-row {
+    display: flex;
+    gap: 8px;
+    align-items: flex-start;
+
+}
+
+.state-grid-wrapper {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+
+
+}
+
+.state-grid-scroll {
+    display: flex;
+    gap: 0;
+    overflow: auto;
+    max-width: 1000px;
+
+
+}
+
+.state-grid-overlay {
+    position: absolute;
+    inset: 0;
+    background: var(--success-overlay);
+    z-index: 2;
+    pointer-events: auto;
+    cursor: not-allowed;
+}

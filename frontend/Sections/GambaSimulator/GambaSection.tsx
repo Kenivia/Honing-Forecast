@@ -36,6 +36,7 @@ type GambaSectionProps = {
     lockedMins: number[] | null
     lockedMaxs: number[] | null
     unlockGrid: boolean[][]
+    succeededGrid: boolean[][]
     stateBundleGrid: StatePair[][][]
     specialState: number[]
     upgradeArr: any[]
@@ -63,6 +64,7 @@ export default function GambaSection({
     lockedMins,
     lockedMaxs,
     unlockGrid,
+    succeededGrid,
     stateBundleGrid,
     specialState,
 }: GambaSectionProps) {
@@ -166,6 +168,7 @@ export default function GambaSection({
             dataSize,
             progressGrid,
             unlockGrid,
+            succeededGrid,
             stateBundleGrid,
             specialState,
         })

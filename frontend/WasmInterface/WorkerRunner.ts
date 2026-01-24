@@ -15,6 +15,7 @@ export function buildPayload({
     inputs,
     progressGrid,
     unlockGrid,
+    succeededGrid,
     stateBundleGrid,
     specialState,
 }: {
@@ -28,6 +29,7 @@ export function buildPayload({
     inputs: InputsValues
     progressGrid: number[][]
     unlockGrid: boolean[][]
+    succeededGrid: boolean[][]
     stateBundleGrid: StatePair[][][]
     specialState: number[]
 }) {
@@ -50,6 +52,7 @@ export function buildPayload({
 
         progress_grid: progressGrid,
         unlocked_grid: unlockGrid,
+        succeeded_grid: succeededGrid,
         state_grid: stateBundleGrid,
         special_state: specialState,
     }

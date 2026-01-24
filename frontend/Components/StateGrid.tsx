@@ -1,7 +1,9 @@
 import { CELL_H, CELL_W, JUICE_LABELS, PIECE_NAMES } from "@/Utils/Constants.ts"
+import { styles } from "@/Utils/Styles.ts"
 import React, { useMemo } from "react"
 import Icon from "./Icon.tsx"
 import "./CheckboxGrid.css"
+import "./StateGrid.css"
 
 export type StatePair = [boolean, number]
 
@@ -9,15 +11,29 @@ interface RowBundleProps {
     bundleIndex: number
     progress: number
     unlock: boolean
+    succeed: boolean
     statePairs: StatePair[]
     onUpdateProgress: (_: number) => void
     onUpdateUnlock: (_: boolean) => void
+    onUpdateSucceed: (_: boolean) => void
     onUpdateStatePairs: (_: StatePair[]) => void
     allowUserChangeState: boolean
     upgrade: any
 }
 
-const RowBundle = ({ bundleIndex, progress, unlock, statePairs, onUpdateProgress, onUpdateUnlock, onUpdateStatePairs, allowUserChangeState, upgrade }: RowBundleProps) => {
+const RowBundle = ({
+    bundleIndex,
+    progress,
+    unlock,
+    succeed,
+    statePairs,
+    onUpdateProgress,
+    onUpdateUnlock,
+    onUpdateSucceed,
+    onUpdateStatePairs,
+    allowUserChangeState,
+    upgrade,
+}: RowBundleProps) => {
     // 2.1 Find unique "book numbers" (excluding 0) and sort ascending
     const uniqueBookNumbers = useMemo(() => {
         const numbers = new Set<number>()
@@ -41,7 +57,11 @@ const RowBundle = ({ bundleIndex, progress, unlock, statePairs, onUpdateProgress
         // Bottom (totalRows - 1) = Progress
         // 2nd from Bottom (totalRows - 2) = Juice
         // Others = Books
+
+        // console.log("aaa", newPairs)
+        // onUpdateStatePairs(newPairs)
         if (colIndex >= pity_len) {
+
             return
         }
         const isProgressRow = visualRowIndex === totalRows - 1
@@ -56,17 +76,22 @@ const RowBundle = ({ bundleIndex, progress, unlock, statePairs, onUpdateProgress
             if (new_progress > 0) {
                 onUpdateUnlock(true)
             }
-
+            if (new_progress >= pity_len) {
+                onUpdateSucceed(true)
+            }
             return
         }
 
         // 5. Block other changes if not allowed
-        if (!allowUserChangeState || colIndex < progress) return
+        if (!allowUserChangeState || colIndex < progress || colIndex >= pity_len - 1) return
 
         // Create a copy of the state for this bundle
         const newPairs = [...statePairs]
         const currentPair = newPairs[colIndex] // [boolean, number]
-
+        for (let i = max_len - 1; i >= pity_len - 1; i--) {
+            console.log("index", i, pity_len, max_len)
+            newPairs[i] = [false, 0]
+        }
         // 2. Juice Row Logic
         if (isJuiceRow) {
             // Toggle boolean juice
@@ -138,146 +163,186 @@ const RowBundle = ({ bundleIndex, progress, unlock, statePairs, onUpdateProgress
 
     }
 
+    const handleSucceedClick = () => {
+        if (!succeed) {
+            if (!unlock) {
+                onUpdateUnlock(true)
+            }
+            onUpdateProgress(Math.min(progress + 1, pity_len))
+        }
+        else {
+            onUpdateProgress(Math.max(progress - 1, 0))
+        }
+
+        onUpdateSucceed(!succeed)
+    }
+
+    // const nextProgressIndex = progress < pity_len ? progress : -1
+
     return (
         <div className="row-bundle-container" style={{ marginBottom: "5px" }}>
-            <h4 style={{ margin: "0 0 0 0" }}>
-                <Icon
-                    iconName={PIECE_NAMES[upgrade.piece_type]}
-                    display_text=""
-                    display_text_right={PIECE_NAMES[upgrade.piece_type] + " +" + String(upgrade.upgrade_index + 1)}
-                ></Icon>
-            </h4>
-            <div style={{ display: "flex", gap: 0, overflow: "auto", }}>
-                <div style={{ position: "relative", width: CELL_W, height: totalRows * CELL_H, flex: "0 0 auto" }}>
-                    <div
-                        className="checkbox-grid-item"
-                        style={{
-                            width: CELL_W,
-                            height: CELL_H,
-                            position: "absolute",
-                            bottom: 0,
-                            left: 0,
-                            display: "flex",
-                            justifyContent: "center",
-                            alignItems: "center",
-                            cursor: "pointer",
-                        }}
-                        onMouseDown={(e) => {
-                            e.preventDefault() // Prevent text selection
-                            handleUnlockClick()
-                        }}
-                    >
-                        <input type="checkbox" readOnly checked={unlock} className="checkbox-grid-input" />
-                        {unlock && (
+            <div className="state-grid-row">
+                <div className="state-grid-wrapper">
+                    <h4 style={{ margin: "0 0 0 0" }}>
+                        <Icon
+                            iconName={PIECE_NAMES[upgrade.piece_type]}
+                            display_text=""
+                            display_text_right={PIECE_NAMES[upgrade.piece_type] + " +" + String(upgrade.upgrade_index + 1)}
+                        ></Icon>
+                    </h4>
+                    <div className="state-grid-scroll">
+                        <div style={{ position: "relative", width: CELL_W, height: totalRows * CELL_H, flex: "0 0 auto", marginRight: 5, }}>
                             <div
+                                className="checkbox-grid-item"
                                 style={{
+                                    width: CELL_W,
+                                    height: CELL_H,
                                     position: "absolute",
-                                    top: 0,
+                                    bottom: 0,
                                     left: 0,
-                                    width: "100%",
-                                    height: "100%",
+
                                     display: "flex",
-                                    alignItems: "center",
                                     justifyContent: "center",
-                                    pointerEvents: "none",
+                                    alignItems: "center",
+                                    cursor: "pointer",
+                                }}
+                                onMouseDown={(e) => {
+                                    e.preventDefault() // Prevent text selection
+                                    handleUnlockClick()
                                 }}
                             >
-                                <span>✓</span>
-                            </div>
-                        )}
-                    </div>
-                </div>
-                <div style={{ display: "grid", gridTemplateColumns: `repeat(${cols}, ${CELL_W}px)`, gap: 0, marginBottom: "15px" }}>
-                    {gridRows.flatMap((row, rIndex) =>
-                        row.map((cell, cIndex) => {
-                            const key = `${bundleIndex}-${rIndex}-${cIndex}`
-                            // console.log(cIndex)
-                            // if (cIndex > upgrade.prob_dist.length) {
-                            //     console.log(upgrade.prob_dist, cIndex)
-                            //     return
-                            // }
-                            return (
-                                <div
-                                    key={key}
-                                    className="checkbox-grid-item"
-                                    style={{
-                                        width: CELL_W,
-                                        height: CELL_H,
-                                        // border: "1px solid #eee",
-                                        position: "relative",
-                                        display: "flex",
-                                        justifyContent: "center",
-                                        alignItems: "center",
-                                        // backgroundColor: "#fff",
-                                        cursor: (!allowUserChangeState || cIndex < progress) && cell.type !== "progress" || cIndex >= pity_len ? "not-allowed" : "pointer",
-                                        opacity: (!allowUserChangeState || cIndex < progress) && cell.type !== "progress" || cIndex >= pity_len ? 0.3 : 1,
-                                    }}
-                                    onMouseDown={(e) => {
-                                        e.preventDefault() // Prevent text selection
-                                        handleCellClick(rIndex, cIndex)
-                                    }}
-                                >
-
-                                    {/* The Base Checkbox (Visual only, state controlled by parent div click) */}
-                                    <input
-                                        type="checkbox"
-                                        readOnly
-                                        checked={cell.active}
-                                        // style={{
-                                        //     width: "24px",
-                                        //     height: "24px",
-                                        //     cursor: "inherit",
-                                        //     // Hide the default checkbox checkmark if we have an icon,
-                                        //     // or keep it if you want the icon to *cover* it.
-                                        //     // Given the requirement "Icon goes over the checkbox visually",
-                                        //     // we can keep the input for the box border, but the Icon sits on top.
-                                        //     visibility: cell.active ? "hidden" : "visible",
-                                        // }}
-                                        className="checkbox-grid-input"
+                                <input type="checkbox" readOnly checked={unlock} className="checkbox-grid-input" />
+                                {unlock && (
+                                    <div
                                         style={{
-                                            "--checkbox-content": "um idk why an empty string doesn't over write the default",
-
-                                            "cursor": (!allowUserChangeState || cIndex < progress || cIndex >= pity_len) && cell.type !== "progress" ? "not-allowed" : "pointer",
-                                        } as React.CSSProperties}
-
-                                    />
-
-                                    {/* The Overlay Icon for True State */}
-                                    {cell.active && (
+                                            position: "absolute",
+                                            top: 0,
+                                            left: 0,
+                                            width: "100%",
+                                            height: "100%",
+                                            display: "flex",
+                                            alignItems: "center",
+                                            justifyContent: "center",
+                                            pointerEvents: "none",
+                                        }}
+                                    >
+                                        <span>✓</span>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                        <div style={{ display: "grid", gridTemplateColumns: `repeat(${cols}, ${CELL_W}px)`, gap: 0, marginBottom: "15px" }}>
+                            {gridRows.flatMap((row, rIndex) =>
+                                row.map((cell, cIndex) => {
+                                    const key = `${bundleIndex}-${rIndex}-${cIndex}`
+                                    const showSucceedMarker = cell.type === "progress" && cIndex === progress - 1
+                                    // console.log(cIndex)
+                                    // if (cIndex > upgrade.prob_dist.length) {
+                                    //     console.log(upgrade.prob_dist, cIndex)
+                                    //     return
+                                    // }
+                                    return (
                                         <div
+                                            key={key}
+                                            className="checkbox-grid-item"
                                             style={{
-                                                position: "absolute",
-                                                top: 0,
-                                                left: 0,
-                                                width: "100%",
-                                                height: "100%",
+                                                width: CELL_W,
+                                                height: CELL_H,
+                                                // border: "1px solid #eee",
+                                                position: "relative",
                                                 display: "flex",
-                                                alignItems: "center",
                                                 justifyContent: "center",
-                                                pointerEvents: "none", // Let clicks pass to the div
-                                                // backgroundColor: cell.type === "progress" ? "#e6f7ff" : "transparent", // Optional tint for progress
+                                                alignItems: "center",
+
+                                                // backgroundColor: "#fff",
+                                                cursor: (!allowUserChangeState || cIndex < progress || cIndex >= pity_len - 1) && cell.type !== "progress" || cIndex >= pity_len ? "not-allowed" : "pointer",
+                                                opacity: (!allowUserChangeState || cIndex < progress || cIndex >= pity_len - 1) && cell.type !== "progress" || cIndex >= pity_len ? 0.3 : 1,
+                                            }}
+                                            onMouseDown={(e) => {
+                                                e.preventDefault() // Prevent text selection
+                                                handleCellClick(rIndex, cIndex)
                                             }}
                                         >
-                                            {cell.type === "progress" ? (
 
-                                                <span>{cIndex + 1}</span>
-                                            ) : (
-                                                <div>
-                                                    <Icon
-                                                        iconName={cell.label}
-                                                        size={Math.min(CELL_W, CELL_H) - 6}
-                                                        // Hide text for the grid cells, only show image/symbol
-                                                        display_text=""
-                                                    />
+                                            {/* The Base Checkbox (Visual only, state controlled by parent div click) */}
+                                            <input
+                                                type="checkbox"
+                                                readOnly
+                                                checked={cell.active}
+                                                // style={{
+                                                //     width: "24px",
+                                                //     height: "24px",
+                                                //     cursor: "inherit",
+                                                //     // Hide the default checkbox checkmark if we have an icon,
+                                                //     // or keep it if you want the icon to *cover* it.
+                                                //     // Given the requirement "Icon goes over the checkbox visually",
+                                                //     // we can keep the input for the box border, but the Icon sits on top.
+                                                //     visibility: cell.active ? "hidden" : "visible",
+                                                // }}
+                                                className="checkbox-grid-input"
+                                                style={{
+                                                    "--checkbox-content": "um idk why an empty string doesn't over write the default",
+
+                                                } as React.CSSProperties}
+
+                                            />
+
+                                            {/* The Overlay Icon for True State */}
+                                            {(cell.active || (succeed && showSucceedMarker)) && (
+                                                <div
+                                                    style={{
+                                                        position: "absolute",
+                                                        top: 0,
+                                                        left: 0,
+                                                        width: "100%",
+                                                        height: "100%",
+                                                        display: "flex",
+                                                        alignItems: "center",
+                                                        justifyContent: "center",
+                                                        pointerEvents: "none", // Let clicks pass to the div
+                                                        background: succeed && showSucceedMarker ? "var(--text-success)" : "undefined",
+                                                        color: succeed && showSucceedMarker ? "var(--btn-success-text)" : "undefined",
+                                                        // backgroundColor: cell.type === "progress" ? "#e6f7ff" : "transparent", // Optional tint for progress
+                                                    }}
+                                                >
+                                                    {cell.type === "progress" ? (
+                                                        <span>{cell.active ? cIndex + 1 : "✓"}</span>
+                                                    ) : (
+                                                        <div>
+                                                            <Icon
+                                                                iconName={cell.label}
+                                                                size={Math.min(CELL_W, CELL_H) - 6}
+                                                                // Hide text for the grid cells, only show image/symbol
+                                                                display_text=""
+                                                            />
+                                                        </div>
+                                                    )}
                                                 </div>
                                             )}
                                         </div>
-                                    )}
-                                </div>
-                            )
-                        }),
-                    )}
+                                    )
+                                }),
+                            )}
+                        </div>
+                    </div>
+                    {succeed && <div className="state-grid-overlay" />}
                 </div>
+                <button
+                    style={{
+                        ...styles.demoButton,
+                        background: succeed ? "var(--btn-success-cancel)" : "var(--btn-success)",
+                        color: succeed ? "var(--btn-success-cancel-text)" : "var(--btn-success-text)",
+
+                        height: 28,
+                        padding: "0 10px",
+                        alignSelf: "center",
+                        marginTop: 4,
+                        width: 90
+                    }}
+                    onClick={handleSucceedClick}
+                >
+                    {succeed ? "Succeeded" : "Succeed"}
+                </button>
             </div>
         </div>
     )
@@ -289,6 +354,8 @@ interface ComplexGridProps {
     setFlatProgressArr: React.Dispatch<React.SetStateAction<number[]>>
     flatUnlockArr: boolean[]
     setFlatUnlockArr: React.Dispatch<React.SetStateAction<boolean[]>>
+    flatSucceedArr: boolean[]
+    setFlatSucceedArr: React.Dispatch<React.SetStateAction<boolean[]>>
     flatStateBundle: StatePair[][]
     setFlatStateBundle: React.Dispatch<React.SetStateAction<StatePair[][]>>
     allowUserChangeState: boolean
@@ -300,6 +367,8 @@ export default function StateGridsManager({
     setFlatProgressArr,
     flatUnlockArr,
     setFlatUnlockArr,
+    flatSucceedArr,
+    setFlatSucceedArr,
     flatStateBundle,
     setFlatStateBundle,
     allowUserChangeState,
@@ -328,8 +397,18 @@ export default function StateGridsManager({
         setFlatUnlockArr(newArr)
     }
 
+    const handleUpdateSucceed = (index: number, newValue: boolean) => {
+        const newArr = [...flatSucceedArr]
+        newArr[index] = newValue
+        setFlatSucceedArr(newArr)
+    }
+
     // Safe check to ensure lengths match
-    if (flatProgressArr.length !== flatStateBundle.length || flatUnlockArr.length !== flatStateBundle.length) {
+    if (
+        flatProgressArr.length !== flatStateBundle.length ||
+        flatUnlockArr.length !== flatStateBundle.length ||
+        flatSucceedArr.length !== flatStateBundle.length
+    ) {
         return <div>Error: Input arrays have mismatched lengths.</div>
     }
 
@@ -349,10 +428,12 @@ export default function StateGridsManager({
                     bundleIndex={index}
                     progress={progressVal}
                     unlock={flatUnlockArr[index]}
+                    succeed={flatSucceedArr[index]}
                     statePairs={flatStateBundle[index]}
                     allowUserChangeState={allowUserChangeState}
                     onUpdateProgress={(val) => handleUpdateProgress(index, val)}
                     onUpdateUnlock={(val) => handleUpdateUnlock(index, val)}
+                    onUpdateSucceed={(val) => handleUpdateSucceed(index, val)}
                     onUpdateStatePairs={(pairs) => handleUpdateStateBundle(index, pairs)}
                     upgrade={upgradeArr[index]}
                 />

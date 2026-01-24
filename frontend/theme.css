@@ -7,8 +7,13 @@
     /* Button Colors */
     --btn-primary: #1091a8;
     --btn-primary-text: #021018;
-    --btn-success: #16a34a;
+    --btn-success: #9ff7c7;
     --btn-success-text: #021018;
+    --btn-success-cancel: #2e6944;
+    --btn-success-cancel-text: #ffffff;
+    --success-overlay: rgba(39, 71, 39, 0.5);
+
+
     --btn-demo: #374151;
     --btn-demo-text: #ffffff;
     --btn-toggle-deselected: #6b7280;

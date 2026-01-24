@@ -138,6 +138,7 @@ pub fn evaluate_average_wrapper(input: JsValue) -> JsValue {
     let mut dummy_performance = Performance::new();
     let metric = state_bundle.average_gold_metric(&mut dummy_performance);
     state_bundle.metric = metric;
+    state_bundle.clean_state();
     // let out: CostToChanceOut = cost_to_chance(&state_bundle);
     web_sys::console::log_1(&format!("{:?}", state_bundle).into());
     to_value(&state_bundle).unwrap()
