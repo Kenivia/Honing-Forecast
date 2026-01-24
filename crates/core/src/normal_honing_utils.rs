@@ -187,79 +187,8 @@ impl StateBundle {
     pub fn update_individual_support(&mut self) {
         let prep_output = &mut self.prep_output;
 
-        // let j_len: usize = prep_output.juice_info.num_avail;
-
         for upgrade in self.upgrade_arr.iter_mut() {
-            let l_len: usize = upgrade.prob_dist.len();
-
-            for t_index in 0..7 {
-                let mut this_mats_costs: Vec<f64> = Vec::with_capacity(l_len);
-                let mut cost_so_far: f64 = 0.0;
-                let this_cost: f64 = upgrade.costs[t_index] as f64;
-                for (index, _p) in upgrade.prob_dist.iter().enumerate() {
-                    this_mats_costs.push(cost_so_far);
-
-                    if index >= l_len - 1 {
-                        break;
-                    }
-
-                    cost_so_far += this_cost;
-                }
-
-                upgrade.cost_dist[t_index].update_payload(
-                    this_mats_costs,
-                    upgrade.state.hash,
-                    &upgrade.prob_dist,
-                    this_cost,
-                    cost_so_far,
-                );
-            }
-
-            // ts so weird but idk if theres a better way, i think i just designed this special state poorly maybe
-
-            for id in 0..prep_output.juice_info.num_avail {
-                let mut weap_cost: f64 = 0.0;
-                let mut armor_cost: f64 = 0.0;
-                let mut weap_support: Vec<f64> = Vec::with_capacity(l_len);
-                let mut armor_support: Vec<f64> = Vec::with_capacity(l_len);
-                let amt = prep_output.juice_info.amt_used_id[id][upgrade.upgrade_index] as f64;
-                for (index, (juice, book)) in upgrade.state.iter().take(l_len).enumerate() {
-                    weap_support.push(weap_cost);
-                    armor_support.push(armor_cost);
-                    if index >= l_len - 1 {
-                        break;
-                    }
-                    if *juice && id == 0 {
-                        if upgrade.is_weapon {
-                            weap_cost += amt;
-                        } else {
-                            armor_cost += amt;
-                        }
-                    }
-                    if *book == id && id > 0 {
-                        if upgrade.is_weapon {
-                            weap_cost += amt;
-                        } else {
-                            armor_cost += amt;
-                        }
-                    }
-                }
-                upgrade.weap_juice_costs[id].update_payload(
-                    weap_support,
-                    upgrade.state.hash,
-                    &upgrade.prob_dist,
-                    amt,
-                    weap_cost,
-                );
-
-                upgrade.armor_juice_costs[id].update_payload(
-                    armor_support,
-                    upgrade.state.hash,
-                    &upgrade.prob_dist,
-                    amt,
-                    armor_cost,
-                );
-            }
+            upgrade.update_this_individual_support(prep_output);
         }
     }
 
@@ -269,12 +198,7 @@ impl StateBundle {
         // let zero_probs: Vec<f64> = special_probs(prep_output, state_bundle);
         // dbg!(&zero_probs);
         for upgrade in self.upgrade_arr.iter_mut() {
-            let prob_dist: Vec<f64> =
-                new_prob_dist(&upgrade.state, &self.prep_output.juice_info, upgrade, 0.0);
-            // let biasted_prob_dist = prob_dist.iter().enumerate().map(|(index, x)| x * )
-            upgrade
-                .prob_dist
-                .update_payload(prob_dist, upgrade.state.hash);
+            upgrade.update_this_prob_dist(&self.prep_output);
             // if compute_log {
             //     upgrade.prob_dist.compute_log();
             // }
@@ -437,7 +361,7 @@ pub fn apply_price_leftovers(
     juice: &[(f64, f64)],
     state_bundle: &StateBundle,
 ) -> (Vec<f64>, Vec<(f64, f64)>) {
-    apply_price_generic(mats, juice, state_bundle, false)
+    apply_price_generic(mats, juice, &state_bundle.prep_output, false)
 }
 
 /// Applies naive (linear) pricing to concrete consumption values.
@@ -448,52 +372,52 @@ pub fn apply_price_naive(
     juice: &[(f64, f64)],
     state_bundle: &StateBundle,
 ) -> (Vec<f64>, Vec<(f64, f64)>) {
-    apply_price_generic(mats, juice, state_bundle, true)
+    apply_price_generic(mats, juice, &state_bundle.prep_output, true)
 }
 
 /// Generic price application for concrete consumption values.
 /// When `naive` is true, uses price for both leftover and shortage.
-fn apply_price_generic(
+pub fn apply_price_generic(
     mats: &[f64],
     juice: &[(f64, f64)],
-    state_bundle: &StateBundle,
+    prep_output: &PreparationOutput,
     naive: bool,
 ) -> (Vec<f64>, Vec<(f64, f64)>) {
     let mut mats_gold = vec![0.0; mats.len()];
     let mut juice_gold = vec![(0.0, 0.0); juice.len()];
 
     for (index, gold) in mats_gold.iter_mut().enumerate() {
-        let diff: f64 = state_bundle.prep_output.budgets[index] as f64 - mats[index];
+        let diff: f64 = prep_output.budgets[index] as f64 - mats[index];
         *gold = diff
             * if naive {
-                state_bundle.prep_output.price_arr[index]
+                prep_output.price_arr[index]
             } else if diff > 0.0 {
-                state_bundle.prep_output.leftover_values[index]
+                prep_output.leftover_values[index]
             } else {
-                state_bundle.prep_output.price_arr[index]
+                prep_output.price_arr[index]
             };
     }
 
     for (id, (weap, armor)) in juice_gold.iter_mut().enumerate() {
-        let weap_diff: f64 = state_bundle.prep_output.juice_books_owned[id].0 as f64 - juice[id].0;
-        let armor_diff: f64 = state_bundle.prep_output.juice_books_owned[id].1 as f64 - juice[id].1;
+        let weap_diff: f64 = prep_output.juice_books_owned[id].0 as f64 - juice[id].0;
+        let armor_diff: f64 = prep_output.juice_books_owned[id].1 as f64 - juice[id].1;
 
         *weap = weap_diff
             * if naive {
-                state_bundle.prep_output.juice_info.one_gold_cost_id[id].0
+                prep_output.juice_info.one_gold_cost_id[id].0
             } else if weap_diff > 0.0 {
-                state_bundle.prep_output.juice_info.one_leftover_value_id[id].0
+                prep_output.juice_info.one_leftover_value_id[id].0
             } else {
-                state_bundle.prep_output.juice_info.one_gold_cost_id[id].0
+                prep_output.juice_info.one_gold_cost_id[id].0
             };
 
         *armor = armor_diff
             * if naive {
-                state_bundle.prep_output.juice_info.one_gold_cost_id[id].1
+                prep_output.juice_info.one_gold_cost_id[id].1
             } else if armor_diff > 0.0 {
-                state_bundle.prep_output.juice_info.one_leftover_value_id[id].1
+                prep_output.juice_info.one_leftover_value_id[id].1
             } else {
-                state_bundle.prep_output.juice_info.one_gold_cost_id[id].1
+                prep_output.juice_info.one_gold_cost_id[id].1
             };
     }
 

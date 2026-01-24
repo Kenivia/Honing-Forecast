@@ -7,7 +7,7 @@
 mod cost_to_chance;
 mod histogram;
 mod success_analysis;
-use crate::cost_to_chance::{CostToChanceOut, cost_to_chance};
+// use crate::cost_to_chance::{CostToChanceOut, cost_to_chance};
 // use hf_core::helpers::{calc_unlock, get_count};
 
 use hf_core::performance::Performance;
@@ -47,9 +47,11 @@ pub struct Payload {
     juice_prices: Vec<(f64, f64)>,
     inp_leftover_juice_values: Vec<(f64, f64)>,
 
+    // honestly in js i have to initialize these arrays anyway (instead of leaving as null) so theres not much point doing Option but whatever
     progress_grid: Option<Vec<Vec<usize>>>,
     state_grid: Option<Vec<Vec<Vec<(bool, usize)>>>>,
     special_state: Option<Vec<usize>>,
+    unlocked_grid: Option<Vec<Vec<bool>>>,
 }
 
 #[derive(Deserialize)]
@@ -130,6 +132,7 @@ pub fn evaluate_average_wrapper(input: JsValue) -> JsValue {
         payload.progress_grid,
         payload.state_grid,
         payload.special_state,
+        payload.unlocked_grid,
     );
 
     let mut dummy_performance = Performance::new();
@@ -166,6 +169,7 @@ pub fn optimize_average_wrapper(input: JsValue) -> JsValue {
         payload.progress_grid,
         payload.state_grid,
         payload.special_state,
+        payload.unlocked_grid,
     );
 
     let mut rng: ThreadRng = rand::rng();

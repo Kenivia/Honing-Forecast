@@ -14,6 +14,7 @@ export function buildPayload({
     dataSize,
     inputs,
     progressGrid,
+    unlockGrid,
     stateBundleGrid,
     specialState,
 }: {
@@ -26,6 +27,7 @@ export function buildPayload({
     dataSize: string
     inputs: InputsValues
     progressGrid: number[][]
+    unlockGrid: boolean[][]
     stateBundleGrid: StatePair[][][]
     specialState: number[]
 }) {
@@ -47,6 +49,7 @@ export function buildPayload({
         ]),
 
         progress_grid: progressGrid,
+        unlocked_grid: unlockGrid,
         state_grid: stateBundleGrid,
         special_state: specialState,
     }
@@ -54,7 +57,7 @@ export function buildPayload({
     // Always use the traditional tick-based approach
     payload.normal_hone_ticks = topGrid
     payload.adv_hone_ticks = bottomGrid
-    console.log(payload)
+    console.log("payload:", payload)
     return payload
 }
 

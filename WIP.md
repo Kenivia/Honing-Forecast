@@ -7,24 +7,38 @@
 
 -~~ wire up the new budget / price keys~~
 
-- figureout already-spent cost and display these
-- cap displayed progress / statebundle to the pity length
-  - similarly disallow juice inputs to the left of progress
+-~~ figure out already-spent cost and display these~~
 
-- rebuild stuff and re-wire things to the website
-  - figure out a way to export state_bundle to js and be able to pass it to monte carlo appropriately
-    - literally just state and special state
-  - this should also be uh editable in js by ui
-    - add uh all the owned juice and stuff
-  - all the existing functions now take in a statebundle instead (still initialize prep_output like before)
+- ~~add extra "unlocked" buttons and handle it accordingly in rust~~
+  -~~ parse this in rust via update_individual~~
+- ~~cap displayed progress / statebundle to the pity length~~
+  - ~~similarly disallow juice inputs to the left of progress~~
+
+- add succeed button and handle it correctly
+  - succeededGrid, which causese it to render in js (greyed out) but rust ignores it(does not put it in upgrade_arr, but contributes to already-spent cost)
+- special state user input & passing into eval
+  - store the "invalid index" from special probs so that js knows when to stop rendering the list
+
+- show breakdown of average gold costs and already-spent costs
+- 10 at a time toggle, need to modify neighbour function & stategrid
+- instead of counting unique elements in statebundle it should read from juiceinfo instead
+
+- marquee for state grid also?
+
+- add optimizer button
+  - stream intermediate results that'd be so cool
+
+  - ~~figure out a way to export state_bundle to js and be able to pass it to monte carlo appropriately~~
+    - ~~literally just state and special state~~
+  - ~~this should also be uh editable in js by ui~~
+    - ~~add uh all the owned juice and stuff~~
+  -~~ all the existing functions now take in a statebundle instead (still initialize prep_output like before)~~
   - make sure all existing things work, then start work on the new page(s)
 
-    - ACTUALLY need to do the editable artisan thing first(which i mean shouldnt be that hard)
+    -~~ ACTUALLY need to do the editable artisan thing first(which i mean shouldnt be that hard)~~
 
-    - as in:
     - Average mode / alt modee / efficiency mode:
-      - input: market price + leftover "price"/ leftover value / care abt it or not toggle
-      - avg = needed x market price - leftover x leftover price
+      - ~~input: market price + leftover "price"/ leftover value / care abt it or not toggle~~
       - output: juice advice, new avg values(also show old/naive?)
 
     - Prob maximizing mode / main mode:

@@ -8,6 +8,9 @@ export function applyFlatToGrid(
     progressGrid:number[][],
     setProgressGrid: React.Dispatch<React.SetStateAction<any>>,
 
+    flatUnlockArr: boolean[],
+    unlockGrid:boolean[][],
+    setUnlockGrid: React.Dispatch<React.SetStateAction<any>>,
 
     flatStateBundle: StatePair[][],
     stateBundleGrid: StatePair[][][],
@@ -15,6 +18,7 @@ export function applyFlatToGrid(
 
 ){
     let newProgressGrid = [...progressGrid]
+    let newUnlockGrid = [...unlockGrid]
     let newStateBundleGrid = [...stateBundleGrid]
 
     for (let index = 0;  index < flatProgressArr.length; index ++){
@@ -23,9 +27,11 @@ export function applyFlatToGrid(
         // console.log(row, col, newProgressGrid)
         // console.log(evaluateAverageResult)
         newProgressGrid[row][col] = flatProgressArr[index]
+        newUnlockGrid[row][col] = flatUnlockArr[index]
 
         newStateBundleGrid[row][col] = flatStateBundle[index]
     }
     setProgressGrid(newProgressGrid)
+    setUnlockGrid(newUnlockGrid)
     setStateBundleGrid(newStateBundleGrid)
 }

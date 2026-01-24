@@ -6,6 +6,7 @@ import { BOTTOM_COLS, MATS_LABELS, TOP_COLS, OUTPUT_LABELS, PIECE_NAMES } from "
 import { buildPayload } from "@/WasmInterface/WorkerRunner.ts"
 import type { InputsBundleWithSetters } from "@/Utils/InputBundles.ts"
 import { Upgrade } from "@/Utils/Helpers.ts"
+import type { StatePair } from "@/Components/StateGrid.tsx"
 import GambaInfoBox from "./GambaInfoBox.tsx"
 import GambaSelection from "./GambaSelection.tsx"
 import { useGambaLogic } from "./GambaLogic.tsx"
@@ -20,6 +21,7 @@ type GambaSectionProps = {
     bucketCount: string
 
     dataSize: string
+    progressGrid: number[][]
     tooltipHandlers: {
         showUpgradeTooltip: (_upgrade: any, _costLabels: string[], _tapRecordCosts: number[], _x: number, _y: number) => void
         hideTooltip: () => void
@@ -33,6 +35,9 @@ type GambaSectionProps = {
     lockXAxis: boolean
     lockedMins: number[] | null
     lockedMaxs: number[] | null
+    unlockGrid: boolean[][]
+    stateBundleGrid: StatePair[][][]
+    specialState: number[]
     upgradeArr: any[]
     ParserBusy: boolean
 }
@@ -47,6 +52,7 @@ export default function GambaSection({
     bucketCount,
     // autoGoldValues,
     dataSize,
+    progressGrid,
     tooltipHandlers,
     chance_result,
     cachedChanceGraphData,
@@ -56,6 +62,9 @@ export default function GambaSection({
     lockXAxis,
     lockedMins,
     lockedMaxs,
+    unlockGrid,
+    stateBundleGrid,
+    specialState,
 }: GambaSectionProps) {
     const { matsColumnDef } = createColumnDefs()
     const { values, setters } = inputs
@@ -155,6 +164,10 @@ export default function GambaSection({
             bucketCount,
             // autoGoldValues,
             dataSize,
+            progressGrid,
+            unlockGrid,
+            stateBundleGrid,
+            specialState,
         })
 
         const id = Math.random().toString(36).substr(2, 9)

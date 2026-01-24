@@ -3,10 +3,14 @@ use serde::{Deserialize, Serialize};
 use crate::constants::{
     ADV_DATA_10_20, ADV_DATA_10_20_JUICE, ADV_DATA_30_40, ADV_DATA_30_40_JUICE, ADV_HONE_COST,
     JuiceInfo, NORMAL_HONE_CHANCES, SPECIAL_LEAPS_COST, get_avail_juice_combs,
-    get_event_modified_armor_costs, get_event_modified_artisan, get_event_modified_weapon_costs,
+    get_event_modified_adv_unlock_cost, get_event_modified_armor_costs,
+    get_event_modified_armor_unlock_cost, get_event_modified_artisan,
+    get_event_modified_weapon_costs, get_event_modified_weapon_unlock_cost,
 };
 use crate::helpers::{calc_unlock, eqv_gold_per_tap};
-use crate::normal_honing_utils::probability_distribution;
+use crate::normal_honing_utils::{
+    add_up_golds, apply_price_generic, apply_price_leftovers, probability_distribution,
+};
 use crate::upgrade::Upgrade;
 // use crate::monte_carlo::monte_carlo_one;
 // use crate::value_estimation::{
@@ -30,8 +34,61 @@ pub struct PreparationOutput {
     // pub sellable_toggles: Vec<bool>,
     // pub upgrade_arr: Vec<Upgrade>,
     pub effective_budgets: Vec<i64>,
+    pub already_spent: Option<(Vec<i64>, Vec<i64>, Vec<i64>, f64)>,
 }
 
+fn compute_already_spent(
+    upgrade_arr: &mut Vec<Upgrade>,
+    prep_output: &PreparationOutput,
+) -> (Vec<i64>, Vec<i64>, Vec<i64>, f64) {
+    let mut out_mats_float: Vec<f64> = vec![0.0; 7];
+    let mut out_weapon_float: Vec<f64> = vec![0.0; prep_output.juice_info.num_avail];
+    let mut out_armor_float: Vec<f64> = vec![0.0; prep_output.juice_info.num_avail];
+    for upgrade in upgrade_arr.iter_mut() {
+        upgrade.update_this_prob_dist(prep_output);
+        upgrade.update_this_individual_support(prep_output);
+        for i in 0..7 {
+            out_mats_float[i] += upgrade.cost_dist[i].support[upgrade.alr_failed];
+        }
+        if upgrade.alr_failed > 0 {
+            if !upgrade.unlocked {
+                web_sys::console::log_1(&format!("{:?}", upgrade).into());
+            }
+            assert!(upgrade.unlocked)
+        }
+        if upgrade.unlocked {
+            out_mats_float[3] += upgrade.unlock_costs[0] as f64;
+            out_mats_float[6] += upgrade.unlock_costs[1] as f64;
+        }
+
+        for i in 0..prep_output.juice_info.num_avail {
+            out_weapon_float[i] += upgrade.weap_juice_costs[i].support[upgrade.alr_failed];
+            out_armor_float[i] += upgrade.armor_juice_costs[i].support[upgrade.alr_failed];
+        }
+    }
+    let zipped = out_weapon_float
+        .iter()
+        .copied()
+        .zip(out_armor_float.iter().copied())
+        .collect::<Vec<(f64, f64)>>();
+    let applied: (Vec<f64>, Vec<(f64, f64)>) =
+        apply_price_generic(&out_mats_float, &zipped, &prep_output, false);
+    (
+        out_mats_float
+            .iter()
+            .map(|x| x.round() as i64)
+            .collect::<Vec<i64>>(),
+        out_weapon_float
+            .iter()
+            .map(|x| x.round() as i64)
+            .collect::<Vec<i64>>(),
+        out_armor_float
+            .iter()
+            .map(|x| x.round() as i64)
+            .collect::<Vec<i64>>(),
+        add_up_golds(&applied.0, &applied.1),
+    )
+}
 pub fn actual_eqv_gold(
     price_arr: &[f64],
     budgets: &[i64],
@@ -64,6 +121,7 @@ fn copy_leftover<T: Clone>(inp_leftover_values: &[T], original: &[T]) -> Vec<T> 
     }
     out
 }
+
 impl PreparationOutput {
     pub fn initialize(
         hone_ticks: &[Vec<bool>],
@@ -78,6 +136,7 @@ impl PreparationOutput {
         inp_leftover_juice_values: &[(f64, f64)],
         progress_grid: Option<Vec<Vec<usize>>>,
         state_grid: Option<Vec<Vec<Vec<(bool, usize)>>>>,
+        unlock_grid: Option<Vec<Vec<bool>>>,
     ) -> (PreparationOutput, Vec<Upgrade>) {
         let price_arr: Vec<f64> = inp_price_arr.to_vec();
 
@@ -117,6 +176,7 @@ impl PreparationOutput {
             juice_info.num_avail,
             progress_grid,
             state_grid,
+            unlock_grid,
         );
 
         for upgrade in upgrade_arr.iter_mut() {
@@ -136,23 +196,23 @@ impl PreparationOutput {
             upgrade.books_avail = (both_avail - 1).max(0) as i64;
         }
 
-        (
-            Self {
-                // upgrade_arr,
-                unlock_costs,
-                budgets,
-                price_arr,
-                budgets_no_gold,
-                test_case: -1, // arena will overwrite this
-                eqv_gold_budget,
-                juice_info,
-                juice_books_owned,
-                // sellable_toggles, //TODO READ THIS FROM AN ACUTAL INPUT LATEr cant be bother rn
-                leftover_values,
-                effective_budgets,
-            },
-            upgrade_arr,
-        )
+        let mut out: PreparationOutput = Self {
+            // upgrade_arr,
+            unlock_costs,
+            budgets,
+            price_arr,
+            budgets_no_gold,
+            test_case: -1, // arena will overwrite this
+            eqv_gold_budget,
+            juice_info,
+            juice_books_owned,
+            // sellable_toggles, //TODO READ THIS FROM AN ACUTAL INPUT LATEr cant be bother rn
+            leftover_values,
+            effective_budgets,
+            already_spent: None,
+        };
+        out.already_spent = Some(compute_already_spent(&mut upgrade_arr, &out));
+        (out, upgrade_arr)
     }
     pub fn eqv_gold_unlock(&self) -> f64 {
         // a bit redundent but whatever
@@ -174,9 +234,12 @@ pub fn parser(
     num_juice_avail: usize,
     progress_arr_opt: Option<Vec<Vec<usize>>>,
     state_given_opt: Option<Vec<Vec<Vec<(bool, usize)>>>>,
+    unlock_grid: Option<Vec<Vec<bool>>>,
 ) -> Vec<Upgrade> {
     let mut out: Vec<Upgrade> = Vec::new();
-
+    let weapon_unlock_costs: [[i64; 25]; 2] = get_event_modified_weapon_unlock_cost(express_event);
+    let armor_unlock_costs: [[i64; 25]; 2] = get_event_modified_armor_unlock_cost(express_event);
+    let adv_unlock_costs: [[i64; 8]; 2] = get_event_modified_adv_unlock_cost(express_event);
     let artisan_rate_arr: [f64; 25] = get_event_modified_artisan(express_event);
     for piece_type in 0..normal_ticks.len() {
         let cur_cost: [[i64; 25]; 7] = if piece_type < 5 {
@@ -217,8 +280,22 @@ pub fn parser(
             } else {
                 Some(state_given_opt.as_ref().unwrap()[piece_type][upgrade_index].clone())
             };
+            let this_unlocked: bool = if unlock_grid.is_none() {
+                false
+            } else {
+                unlock_grid.as_ref().unwrap()[piece_type][upgrade_index]
+            };
             // web_sys::console::log_1(&this_progress.into());
-            // web_sys::console::log_1(&format!("{:?}", this_state_given).into());
+            web_sys::console::log_1(&format!("{:?}", unlock_grid).into());
+
+            web_sys::console::log_1(&format!("{:?}", this_unlocked).into());
+            web_sys::console::log_1(&format!("{:?}, {:?}", piece_type, upgrade_index).into());
+
+            let relevant = if piece_type == 5 {
+                weapon_unlock_costs
+            } else {
+                armor_unlock_costs
+            };
             out.push(Upgrade::new_normal(
                 NORMAL_HONE_CHANCES[upgrade_index],
                 probability_distribution(
@@ -237,6 +314,8 @@ pub fn parser(
                 num_juice_avail,
                 this_progress,
                 this_state_given,
+                this_unlocked,
+                vec![relevant[0][upgrade_index], relevant[1][upgrade_index]],
             ));
             // web_sys::console::log_1(&format!("upgrade init done ").into());
             upgrade_index += 1;
@@ -300,6 +379,10 @@ pub fn parser(
                 piece_type,
                 relevant_data[0][0],
                 upgrade_index,
+                vec![
+                    adv_unlock_costs[0][col_index], // um idk if tihs is right i forgot how this worked will figure it out later
+                    adv_unlock_costs[1][col_index],
+                ],
             ));
             // current_counter += 1;
             upgrade_index += 1;

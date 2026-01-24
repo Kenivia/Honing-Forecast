@@ -19,6 +19,8 @@ type OptimizeSectionProps = {
     flatProgressArr: number[]
     setFlatProgressArr: React.Dispatch<React.SetStateAction<any>>
 
+    flatUnlockArr: boolean[]
+    setFlatUnlockArr: React.Dispatch<React.SetStateAction<any>>
 
     flatStateBundle: StatePair[][]
     setFlatStateBundle: React.Dispatch<React.SetStateAction<any>>
@@ -29,6 +31,18 @@ type OptimizeSectionProps = {
     // marquee: any
 }
 
+function my_alr_spent_map(already_spent: any, labels: string[], index: number) {
+    return already_spent
+        ?
+        Object.fromEntries(
+            labels.map((label, lab_index) => [
+                label,
+                String(already_spent[index][lab_index]),
+            ]),
+        )
+
+        : Object.fromEntries(labels.map((label) => [label, "Calculating..."]))
+}
 export default function OptimizeSection({
     inputsBundle,
     optimizeAvgBusy,
@@ -36,6 +50,8 @@ export default function OptimizeSection({
     setOptimizeButtonPress,
     flatProgressArr,
     setFlatProgressArr,
+    flatUnlockArr,
+    setFlatUnlockArr,
     flatStateBundle,
     setFlatStateBundle,
     allowUserChangeState,
@@ -48,43 +64,55 @@ export default function OptimizeSection({
     const { values, setters } = inputsBundle
     const { mats, juice } = values
     const { mats: matsSetters, juice: juiceSetters } = setters
+    const already_spent = evaluateAverageResult?.prep_output.already_spent
 
     return (
         <div style={{ ...styles.inputSection, flexDirection: "row", maxWidth: "1200px", width: "100%" }}>
-            {flatStateBundle && flatProgressArr && evaluateAverageResult && (<StateGridsManager
-                flatProgressArr={flatProgressArr}
-                setFlatProgressArr={setFlatProgressArr}
-                flatStateBundle={flatStateBundle}
-                setFlatStateBundle={setFlatStateBundle}
-                allowUserChangeState={allowUserChangeState}
-                upgradeArr={evaluateAverageResult.upgrade_arr}
-
-            />)}
+            {flatStateBundle && flatProgressArr && evaluateAverageResult && (
+                <StateGridsManager
+                    flatProgressArr={flatProgressArr}
+                    setFlatProgressArr={setFlatProgressArr}
+                    flatUnlockArr={flatUnlockArr}
+                    setFlatUnlockArr={setFlatUnlockArr}
+                    flatStateBundle={flatStateBundle}
+                    setFlatStateBundle={setFlatStateBundle}
+                    allowUserChangeState={allowUserChangeState}
+                    upgradeArr={evaluateAverageResult.upgrade_arr}
+                />
+            )}
             <div>
-                {evaluateAverageResult?.metric}
+                Already spent + more to come: {evaluateAverageResult?.metric}
+                <br />
+                Already spent: {evaluateAverageResult?.prep_output.already_spent[3]}
+                <br />
+                Average cost from now on: {evaluateAverageResult?.metric - evaluateAverageResult?.prep_output.already_spent[3]}
             </div>
-            <div style={{ display: "flex", flexDirection: "row", alignItems: "flex-start", gap: 0, minWidth: 200, flexShrink: 0, marginTop: -20 }}>
-                <SpreadsheetGrid
-                    columnDefs={wideMatsColumnDefs}
-                    labels={MATS_LABELS}
-                    sheetValuesArr={[mats.owned, mats.prices, mats.leftover]}
-                    setSheetValuesArr={[matsSetters.setOwned, matsSetters.setPrices, matsSetters.setLeftover]}
-                />
 
-                <SpreadsheetGrid
-                    columnDefs={wideMatsColumnDefs}
-                    labels={JUICE_LABELS.map((label_row) => label_row[0])}
-                    sheetValuesArr={[juice.weapon.owned, juice.weapon.prices, juice.weapon.leftover]}
-                    setSheetValuesArr={[juiceSetters.weapon.setOwned, juiceSetters.weapon.setPrices, juiceSetters.weapon.setLeftover]}
-                />
+            {(
 
-                <SpreadsheetGrid
-                    columnDefs={wideMatsColumnDefs}
-                    labels={JUICE_LABELS.map((label_row) => label_row[1])}
-                    sheetValuesArr={[juice.armor.owned, juice.armor.prices, juice.armor.leftover]}
-                    setSheetValuesArr={[juiceSetters.armor.setOwned, juiceSetters.armor.setPrices, juiceSetters.armor.setLeftover]}
-                />
-            </div>
+                <div style={{ display: "flex", flexDirection: "row", alignItems: "flex-start", gap: 0, minWidth: 200, flexShrink: 0, marginTop: 0 }}>
+                    <div>Already spent:</div>
+                    <SpreadsheetGrid
+                        columnDefs={wideMatsColumnDefs}
+                        labels={MATS_LABELS.slice(0, 7)}
+                        sheetValuesArr={[my_alr_spent_map(already_spent, MATS_LABELS.slice(0, 7), 0)]}
+                        setSheetValuesArr={[null]}
+                    />
+
+                    <SpreadsheetGrid
+                        columnDefs={wideMatsColumnDefs}
+                        labels={JUICE_LABELS.map((label_row) => label_row[0])}
+                        sheetValuesArr={[my_alr_spent_map(already_spent, JUICE_LABELS.map((label_row) => label_row[0]), 1)]}
+                        setSheetValuesArr={[null]}
+                    />
+
+                    <SpreadsheetGrid
+                        columnDefs={wideMatsColumnDefs}
+                        labels={JUICE_LABELS.map((label_row) => label_row[1])}
+                        sheetValuesArr={[my_alr_spent_map(already_spent, JUICE_LABELS.map((label_row) => label_row[1]), 1)]}
+                        setSheetValuesArr={[null]}
+                    />
+                </div>)}
         </div>
     )
 }

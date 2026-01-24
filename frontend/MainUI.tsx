@@ -166,6 +166,10 @@ export default function HoningForecastUI() {
     const [flatStateBundle, setFlatStateBundle] = useState<StatePair[][]>(null)
     const [stateBundleGrid, setStateBundleGrid] = useState<StatePair[][][]>(Array(6).fill(Array(25).fill([])))
 
+    const [flatUnlockArr, setFlatUnlockArr] = useState<boolean[]>([])
+    const [unlockGrid, setUnlockGrid] = useState<boolean[][]>(Array(6).fill(Array(25).fill(false)))
+
+
     const [specialState, setSpecialState] = useState<number[]>([])
 
     const [allowUserChangeState, setAllowUserChangeState] = useState<boolean>(true)
@@ -500,6 +504,7 @@ export default function HoningForecastUI() {
             dataSize,
             inputs: inputsValues,
             progressGrid,
+            unlockGrid,
             stateBundleGrid,
             specialState,
             // monteCarloResult,
@@ -509,13 +514,13 @@ export default function HoningForecastUI() {
 
     // ---------- Automatic triggers with debounce ----------
     // We'll watch serialized versions of the inputs to detect deep changes
-    const budgetKey = useMemo(() => JSON.stringify(userMatsOwned), [userMatsOwned])
+    // const budgetKey = useMemo(() => JSON.stringify(userMatsOwned), [userMatsOwned])
     // const desiredKey = useMemo(() => String(desired_chance), [desired_chance])
     const advStrategyKey = useMemo(() => String(adv_hone_strategy), [adv_hone_strategy])
     const expressEventKey = useMemo(() => String(express_event), [express_event])
     const graphBucketSizeKey = useMemo(() => String(bucketCount), [bucketCount])
     // const autoOptKey = useMemo(() => String(autoGoldValues), [autoGoldValues])
-    const userMatsKey = useMemo(() => JSON.stringify(userMatsPrices), [userMatsPrices])
+    // const userMatsKey = useMemo(() => JSON.stringify(userMatsPrices), [userMatsPrices])
     const dataSizeKey = useMemo(() => String(dataSize), [dataSize])
 
     const optimizeButtenPressKey = useMemo(() => String(optimizeButtonPress), [optimizeButtonPress])
@@ -524,6 +529,7 @@ export default function HoningForecastUI() {
     const ProgressGridKey = useMemo(() => String(progressGrid), [progressGrid])
 
     const StateBundleGridKey = useMemo(() => String(stateBundleGrid), [stateBundleGrid])
+    const UnlockGridKey = useMemo(() => String(unlockGrid), [unlockGrid])
 
     const inputBundleKey = useMemo(
         () =>
@@ -560,11 +566,22 @@ export default function HoningForecastUI() {
     )
     useEffect(() => {
         if (evaluateAverageResult) {
-            applyFlatToGrid(evaluateAverageResult, flatProgressArr, progressGrid, setProgressGrid, flatStateBundle, stateBundleGrid, setStateBundleGrid)
+            applyFlatToGrid(
+                evaluateAverageResult,
+                flatProgressArr,
+                progressGrid,
+                setProgressGrid,
+                flatUnlockArr,
+                unlockGrid,
+                setUnlockGrid,
+                flatStateBundle,
+                stateBundleGrid,
+                setStateBundleGrid,
+            )
         }
 
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [flatProgressArr, flatStateBundle])
+    }, [flatProgressArr, flatUnlockArr, flatStateBundle])
     // const monteCarloWorkerRef = useRef<Worker | null>(null)
     // const [_monteCarloBusy, setMonteCarloBusy] = useState(false)
     // const [monteCarloResult, setMonteCarloResult] = useState<any>(null)
@@ -609,14 +626,15 @@ export default function HoningForecastUI() {
             setResult: setEvaluateAverageResult,
             // setCachedGraphData: setCachedAverageGraphData,
             onSuccess: (res) => {
-                console.log(inputBundleKey)
+                // console.log(inputBundleKey)
                 setFlatStateBundle(res.upgrade_arr.map((upgrade) => upgrade.state))
                 setFlatProgressArr(res.upgrade_arr.map((_, index) => progressGrid[res.upgrade_arr[index].piece_type][res.upgrade_arr[index].upgrade_index]))
+                setFlatUnlockArr(res.upgrade_arr.map((_, index) => unlockGrid[res.upgrade_arr[index].piece_type][res.upgrade_arr[index].upgrade_index]))
             },
             debounceMs: 10,
         })
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [advStrategyKey, expressEventKey, graphBucketSizeKey, dataSizeKey, topGridKey, ProgressGridKey, StateBundleGridKey, inputBundleKey])
+    }, [advStrategyKey, expressEventKey, graphBucketSizeKey, dataSizeKey, topGridKey, ProgressGridKey, UnlockGridKey, StateBundleGridKey, inputBundleKey])
 
     const optimizeAvgWorkerRef = useRef<Worker | null>(null)
     const [optimizeAvgBusy, setOptimizeAvgBusy] = useState(false)
@@ -809,6 +827,8 @@ export default function HoningForecastUI() {
                             setOptimizeButtonPress={setOptimizeButtonPress}
                             flatProgressArr={flatProgressArr}
                             setFlatProgressArr={setFlatProgressArr}
+                            flatUnlockArr={flatUnlockArr}
+                            setFlatUnlockArr={setFlatUnlockArr}
                             flatStateBundle={flatStateBundle}
                             setFlatStateBundle={setFlatStateBundle}
                             allowUserChangeState={allowUserChangeState}
@@ -849,6 +869,7 @@ export default function HoningForecastUI() {
                             desired_chance={desired_chance}
                             bucketCount={bucketCount}
                             dataSize={dataSize}
+                            progressGrid={progressGrid}
                             tooltipHandlers={tooltipHandlers}
                             chance_result={evaluateAverageResult}
                             cachedChanceGraphData={null}
@@ -858,6 +879,9 @@ export default function HoningForecastUI() {
                             lockXAxis={lockXAxis}
                             lockedMins={lockedMins}
                             lockedMaxs={lockedMaxs}
+                            unlockGrid={unlockGrid}
+                            stateBundleGrid={stateBundleGrid}
+                            specialState={specialState}
                             upgradeArr={parserResult ? parserResult.upgradeArr : []}
                             ParserBusy={ParserBusy}
                         />

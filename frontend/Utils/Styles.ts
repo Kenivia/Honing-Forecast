@@ -239,7 +239,7 @@ export const createColumnDefs = () => {
         // },
 
         {
-            headerName: "Breakdown",
+            headerName: "Used so far",
             editable: false,
             flex: 1,
             width: "150px",

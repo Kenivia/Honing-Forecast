@@ -1,5 +1,6 @@
 use crate::constants::{FLOAT_TOL, NORMAL_JUICE_COST};
-use crate::normal_honing_utils::{generate_first_deltas, probability_distribution};
+use crate::normal_honing_utils::{generate_first_deltas, new_prob_dist, probability_distribution};
+use crate::parser::PreparationOutput;
 use itertools::izip;
 use serde::{Deserialize, Serialize};
 
@@ -40,6 +41,8 @@ pub struct Upgrade {
     pub name_string: String,
     pub piece_type: usize,
     pub alr_failed: usize,
+    pub unlocked: bool,
+    pub unlock_costs: Vec<i64>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -280,6 +283,8 @@ impl Upgrade {
         num_juice_avail: usize,
         alr_failed: Option<usize>,
         state_given: Option<Vec<(bool, usize)>>,
+        unlocked: bool,
+        unlock_costs: Vec<i64>,
     ) -> Self {
         let prob_dist_len: usize = prob_dist.len();
         // let base_chance: f64 = prob_dist[1];
@@ -334,6 +339,8 @@ impl Upgrade {
                 string
             },
             alr_failed: alr_failed.unwrap_or(0),
+            unlocked,
+            unlock_costs,
         }
     }
 
@@ -346,6 +353,7 @@ impl Upgrade {
         piece_type: usize,
         adv_cost_start: i64,
         upgrade_index: usize,
+        unlock_costs: Vec<i64>,
     ) -> Self {
         let prob_dist_len: usize = prob_dist.len();
         assert!(prob_dist_len == adv_juice_cost.len());
@@ -391,6 +399,87 @@ impl Upgrade {
                 string
             },
             alr_failed: 0,
+            unlocked: false,
+            unlock_costs,
         }
+    }
+
+    pub fn update_this_individual_support(&mut self, prep_output: &PreparationOutput) {
+        let l_len: usize = self.prob_dist.len();
+
+        for t_index in 0..7 {
+            let mut this_mats_costs: Vec<f64> = Vec::with_capacity(l_len);
+            let mut cost_so_far: f64 = 0.0;
+            let this_cost: f64 = self.costs[t_index] as f64;
+            for (index, _p) in self.prob_dist.iter().enumerate() {
+                this_mats_costs.push(cost_so_far);
+
+                if index >= l_len - 1 {
+                    break;
+                }
+
+                cost_so_far += this_cost;
+            }
+
+            self.cost_dist[t_index].update_payload(
+                this_mats_costs,
+                self.state.hash,
+                &self.prob_dist,
+                this_cost,
+                cost_so_far,
+            );
+        }
+
+        // ts so weird but idk if theres a better way, i think i just designed this special state poorly maybe
+
+        for id in 0..prep_output.juice_info.num_avail {
+            let mut weap_cost: f64 = 0.0;
+            let mut armor_cost: f64 = 0.0;
+            let mut weap_support: Vec<f64> = Vec::with_capacity(l_len);
+            let mut armor_support: Vec<f64> = Vec::with_capacity(l_len);
+            let amt = prep_output.juice_info.amt_used_id[id][self.upgrade_index] as f64;
+            for (index, (juice, book)) in self.state.iter().take(l_len).enumerate() {
+                weap_support.push(weap_cost);
+                armor_support.push(armor_cost);
+                if index >= l_len - 1 {
+                    break;
+                }
+                if *juice && id == 0 {
+                    if self.is_weapon {
+                        weap_cost += amt;
+                    } else {
+                        armor_cost += amt;
+                    }
+                }
+                if *book == id && id > 0 {
+                    if self.is_weapon {
+                        weap_cost += amt;
+                    } else {
+                        armor_cost += amt;
+                    }
+                }
+            }
+            self.weap_juice_costs[id].update_payload(
+                weap_support,
+                self.state.hash,
+                &self.prob_dist,
+                amt,
+                weap_cost,
+            );
+
+            self.armor_juice_costs[id].update_payload(
+                armor_support,
+                self.state.hash,
+                &self.prob_dist,
+                amt,
+                armor_cost,
+            );
+        }
+    }
+
+    pub fn update_this_prob_dist(&mut self, prep_output: &PreparationOutput) {
+        let prob_dist: Vec<f64> = new_prob_dist(&self.state, &prep_output.juice_info, self, 0.0);
+
+        self.prob_dist.update_payload(prob_dist, self.state.hash);
     }
 }
