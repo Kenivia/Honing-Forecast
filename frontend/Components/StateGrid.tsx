@@ -1,45 +1,34 @@
-import { CELL_H, CELL_W, JUICE_LABELS } from "@/Utils/Constants.ts";
-import React, { useMemo } from "react";
-import Icon from "./Icon.tsx";
+import { CELL_H, CELL_W, JUICE_LABELS } from "@/Utils/Constants.ts"
+import React, { useMemo } from "react"
+import Icon from "./Icon.tsx"
+import "./CheckboxGrid.css"
 
-
-export type StatePair = [boolean, number];
-
-
+export type StatePair = [boolean, number]
 
 interface RowBundleProps {
-    bundleIndex: number;
-    progress: number;
-    statePairs: StatePair[];
-    onUpdateProgress: (_: number) => void;
-    onUpdateStatePairs: (_: StatePair[]) => void;
-    allowUserChangeState: boolean;
+    bundleIndex: number
+    progress: number
+    statePairs: StatePair[]
+    onUpdateProgress: (_: number) => void
+    onUpdateStatePairs: (_: StatePair[]) => void
+    allowUserChangeState: boolean
     upgrade: any
 }
 
-const RowBundle = ({
-    bundleIndex,
-    progress,
-    statePairs,
-    onUpdateProgress,
-    onUpdateStatePairs,
-    allowUserChangeState,
-    upgrade,
-
-}: RowBundleProps) => {
+const RowBundle = ({ bundleIndex, progress, statePairs, onUpdateProgress, onUpdateStatePairs, allowUserChangeState, upgrade }: RowBundleProps) => {
     // 2.1 Find unique "book numbers" (excluding 0) and sort ascending
     const uniqueBookNumbers = useMemo(() => {
-        const numbers = new Set<number>();
+        const numbers = new Set<number>()
         statePairs.forEach((pair) => {
-            if (pair[1] !== 0) numbers.add(pair[1]);
-        });
-        return Array.from(numbers).sort((a, b) => a - b);
-    }, [statePairs]);
+            if (pair[1] !== 0) numbers.add(pair[1])
+        })
+        return Array.from(numbers).sort((a, b) => a - b)
+    }, [statePairs])
 
     // Determine Grid Dimensions
     // Rows: Unique Books + Juice (1) + Progress (1)
-    const totalRows = uniqueBookNumbers.length + 2;
-    const cols = statePairs.length;
+    const totalRows = uniqueBookNumbers.length + 2
+    const cols = statePairs.length
 
     // Helper to handle Book/Juice clicks
     const handleCellClick = (visualRowIndex: number, colIndex: number) => {
@@ -48,30 +37,30 @@ const RowBundle = ({
         // 2nd from Bottom (totalRows - 2) = Juice
         // Others = Books
 
-        const isProgressRow = visualRowIndex === totalRows - 1;
-        const isJuiceRow = visualRowIndex === totalRows - 2;
+        const isProgressRow = visualRowIndex === totalRows - 1
+        const isJuiceRow = visualRowIndex === totalRows - 2
 
         // 1. Progress Row Logic
         if (isProgressRow) {
             // If clicking column 2 (index 2), progress becomes 3.
             // If allowUserChangeState is false, only this works.
-            onUpdateProgress(colIndex + 1);
-            return;
+            onUpdateProgress(progress > colIndex ? colIndex : colIndex + 1)
+            return
         }
 
         // 5. Block other changes if not allowed
-        if (!allowUserChangeState) return;
+        if (!allowUserChangeState) return
 
         // Create a copy of the state for this bundle
-        const newPairs = [...statePairs];
-        const currentPair = newPairs[colIndex]; // [boolean, number]
+        const newPairs = [...statePairs]
+        const currentPair = newPairs[colIndex] // [boolean, number]
 
         // 2. Juice Row Logic
         if (isJuiceRow) {
             // Toggle boolean juice
-            newPairs[colIndex] = [!currentPair[0], currentPair[1]];
-            onUpdateStatePairs(newPairs);
-            return;
+            newPairs[colIndex] = [!currentPair[0], currentPair[1]]
+            onUpdateStatePairs(newPairs)
+            return
         }
 
         // 3. Book Row Logic
@@ -82,34 +71,34 @@ const RowBundle = ({
         // Index in uniqueBookNumbers array:
         // If visualRow is 0, we want uniqueBookNumbers[length - 1]
         // If visualRow is totalRows - 3, we want uniqueBookNumbers[0]
-        const bookArrayIndex = (totalRows - 3) - visualRowIndex;
-        const targetBookNum = uniqueBookNumbers[bookArrayIndex];
+        const bookArrayIndex = totalRows - 3 - visualRowIndex
+        const targetBookNum = uniqueBookNumbers[bookArrayIndex]
 
         // Logic:
         // If current state has this book num, set to 0 (untoggle)
         // If current state has diff book num or 0, set to this book num (toggle on, overwriting others)
         if (currentPair[1] === targetBookNum) {
-            newPairs[colIndex] = [currentPair[0], 0];
+            newPairs[colIndex] = [currentPair[0], 0]
         } else {
-            newPairs[colIndex] = [currentPair[0], targetBookNum];
+            newPairs[colIndex] = [currentPair[0], targetBookNum]
         }
 
-        onUpdateStatePairs(newPairs);
-    };
+        onUpdateStatePairs(newPairs)
+    }
 
     // Generate the renderable grid (2D array of cells)
     // We construct this Top-Down for rendering
-    const gridRows = [];
+    const gridRows = []
 
     // A. Book Rows (Top -> Down corresponds to High -> Low unique numbers)
     for (let i = uniqueBookNumbers.length - 1; i >= 0; i--) {
-        const bookNum = uniqueBookNumbers[i];
+        const bookNum = uniqueBookNumbers[i]
         const row = statePairs.map((pair) => ({
             active: pair[1] === bookNum,
             label: JUICE_LABELS[bookNum][upgrade.is_weapon ? 0 : 1],
             type: "book",
-        }));
-        gridRows.push(row);
+        }))
+        gridRows.push(row)
     }
 
     // B. Juice Row (2nd from bottom)
@@ -117,31 +106,29 @@ const RowBundle = ({
         active: pair[0] === true,
         label: JUICE_LABELS[0][upgrade.is_weapon ? 0 : 1],
         type: "juice",
-    }));
-    gridRows.push(juiceRow);
+    }))
+    gridRows.push(juiceRow)
 
     // C. Progress Row (Bottom)
     const progressRow = Array.from({ length: cols }).map((_, cIndex) => ({
         active: cIndex < progress,
         label: "",
         type: "progress",
-    }));
-    gridRows.push(progressRow);
+    }))
+    gridRows.push(progressRow)
 
     return (
         <div className="row-bundle-container" style={{ marginBottom: "20px" }}>
             <h4 style={{ margin: "0 0 0 0" }}>Row Bundle {bundleIndex + 1}</h4>
-            <div
-                style={{ display: "grid", gridTemplateColumns: `repeat(${cols}, ${CELL_W}px)`, gap: 0 }}
-            >
+            <div style={{ display: "grid", gridTemplateColumns: `repeat(${cols}, ${CELL_W}px)`, gap: 0 }}>
                 {gridRows.flatMap((row, rIndex) =>
                     row.map((cell, cIndex) => {
-                        const key = `${bundleIndex}-${rIndex}-${cIndex}`;
+                        const key = `${bundleIndex}-${rIndex}-${cIndex}`
 
                         return (
                             <div
                                 key={key}
-                                className="checkbox-grid-input"
+                                className="checkbox-grid-item"
                                 style={{
                                     width: CELL_W,
                                     height: CELL_H,
@@ -151,12 +138,12 @@ const RowBundle = ({
                                     justifyContent: "center",
                                     alignItems: "center",
                                     // backgroundColor: "#fff",
-                                    cursor: (!allowUserChangeState && cell.type !== 'progress') ? 'not-allowed' : 'pointer',
-                                    opacity: (!allowUserChangeState && cell.type !== 'progress') ? 0.8 : 1
+                                    cursor: !allowUserChangeState && cell.type !== "progress" ? "not-allowed" : "pointer",
+                                    opacity: !allowUserChangeState && cell.type !== "progress" ? 0.8 : 1,
                                 }}
                                 onMouseDown={(e) => {
-                                    e.preventDefault(); // Prevent text selection
-                                    handleCellClick(rIndex, cIndex);
+                                    e.preventDefault() // Prevent text selection
+                                    handleCellClick(rIndex, cIndex)
                                 }}
                             >
                                 {/* Requirements: 
@@ -169,16 +156,17 @@ const RowBundle = ({
                                     type="checkbox"
                                     readOnly
                                     checked={cell.active}
-                                    style={{
-                                        width: "24px",
-                                        height: "24px",
-                                        cursor: "inherit",
-                                        // Hide the default checkbox checkmark if we have an icon, 
-                                        // or keep it if you want the icon to *cover* it.
-                                        // Given the requirement "Icon goes over the checkbox visually",
-                                        // we can keep the input for the box border, but the Icon sits on top.
-                                        visibility: cell.active ? "hidden" : "visible"
-                                    }}
+                                    // style={{
+                                    //     width: "24px",
+                                    //     height: "24px",
+                                    //     cursor: "inherit",
+                                    //     // Hide the default checkbox checkmark if we have an icon,
+                                    //     // or keep it if you want the icon to *cover* it.
+                                    //     // Given the requirement "Icon goes over the checkbox visually",
+                                    //     // we can keep the input for the box border, but the Icon sits on top.
+                                    //     visibility: cell.active ? "hidden" : "visible",
+                                    // }}
+                                    className="checkbox-grid-input"
                                 />
 
                                 {/* The Overlay Icon for True State */}
@@ -194,46 +182,47 @@ const RowBundle = ({
                                             alignItems: "center",
                                             justifyContent: "center",
                                             pointerEvents: "none", // Let clicks pass to the div
-                                            backgroundColor: cell.type === 'progress' ? '#e6f7ff' : 'transparent' // Optional tint for progress
+                                            // backgroundColor: cell.type === "progress" ? "#e6f7ff" : "transparent", // Optional tint for progress
                                         }}
                                     >
                                         {cell.type === "progress" ? (
-                                            // Progress just shows a simple tick or fill, usually. 
-                                            // But prompt implies specific icons only for state/juice. 
+                                            // Progress just shows a simple tick or fill, usually.
+                                            // But prompt implies specific icons only for state/juice.
                                             // Prompt says: "The bottom row should represent progress... sequence of trues".
                                             // Prompt 6 says: "true values represented by an icon".
                                             // It doesn't specify an icon for progress, so we use a generic tick or fill.
-                                            <span style={{ fontSize: "18px", color: "blue" }}>✓</span>
+                                            <span>✓</span>
                                         ) : (
-                                            <div style={{ marginLeft: -6 }}> <Icon
-                                                iconName={cell.label}
-                                                size={Math.min(CELL_W, CELL_H) - 6}
-                                                // Hide text for the grid cells, only show image/symbol
-                                                display_text=""
-                                            />
+                                            <div style={{ marginLeft: -6 }}>
+                                                {" "}
+                                                <Icon
+                                                    iconName={cell.label}
+                                                    size={Math.min(CELL_W, CELL_H) - 6}
+                                                    // Hide text for the grid cells, only show image/symbol
+                                                    display_text=""
+                                                />
                                             </div>
                                         )}
                                     </div>
                                 )}
                             </div>
-                        );
-                    })
+                        )
+                    }),
                 )}
             </div>
         </div>
-    );
-};
+    )
+}
 
 // --- 3. Main Container Component ---
 interface ComplexGridProps {
-    flatProgressArr: number[];
-    setFlatProgressArr: React.Dispatch<React.SetStateAction<number[]>>;
-    flatStateBundle: StatePair[][];
-    setFlatStateBundle: React.Dispatch<React.SetStateAction<StatePair[][]>>;
-    allowUserChangeState: boolean;
-    upgradeArr: any[],
+    flatProgressArr: number[]
+    setFlatProgressArr: React.Dispatch<React.SetStateAction<number[]>>
+    flatStateBundle: StatePair[][]
+    setFlatStateBundle: React.Dispatch<React.SetStateAction<StatePair[][]>>
+    allowUserChangeState: boolean
+    upgradeArr: any[]
 }
-
 
 export default function StateGridsManager({
     flatProgressArr,
@@ -241,29 +230,28 @@ export default function StateGridsManager({
     flatStateBundle,
     setFlatStateBundle,
     allowUserChangeState,
-    upgradeArr
+    upgradeArr,
 }: ComplexGridProps) {
-
     // Requirement 7: overflow: auto to avoid going off edge
     // This container wraps all row bundles
 
     const handleUpdateProgress = (index: number, newValue: number) => {
-        const newArr = [...flatProgressArr];
-        newArr[index] = newValue;
-        setFlatProgressArr(newArr);
-    };
+        const newArr = [...flatProgressArr]
+        newArr[index] = newValue
+        setFlatProgressArr(newArr)
+    }
 
     const handleUpdateStateBundle = (index: number, newPairs: StatePair[]) => {
         // 4. Changes reflect in flatStateBundle
         // We need to deep copy the outer array or map it to trigger React state change
-        const newBundle = [...flatStateBundle];
-        newBundle[index] = newPairs;
-        setFlatStateBundle(newBundle);
-    };
+        const newBundle = [...flatStateBundle]
+        newBundle[index] = newPairs
+        setFlatStateBundle(newBundle)
+    }
 
     // Safe check to ensure lengths match
     if (flatProgressArr.length !== flatStateBundle.length) {
-        return <div>Error: Input arrays have mismatched lengths.</div>;
+        return <div>Error: Input arrays have mismatched lengths.</div>
     }
 
     return (
@@ -277,7 +265,6 @@ export default function StateGridsManager({
             }}
         >
             {flatProgressArr.map((progressVal, index) => (
-
                 <RowBundle
                     key={index}
                     bundleIndex={index}
@@ -286,10 +273,9 @@ export default function StateGridsManager({
                     allowUserChangeState={allowUserChangeState}
                     onUpdateProgress={(val) => handleUpdateProgress(index, val)}
                     onUpdateStatePairs={(pairs) => handleUpdateStateBundle(index, pairs)}
-                    upgrade={
-                        upgradeArr[index]}
+                    upgrade={upgradeArr[index]}
                 />
             ))}
         </div>
-    );
+    )
 }
