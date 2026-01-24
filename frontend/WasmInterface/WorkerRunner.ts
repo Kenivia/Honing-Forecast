@@ -4,7 +4,6 @@ import { JUICE_LABELS, MATS_LABELS } from "@/Utils/Constants.ts"
 import type { InputsValues } from "@/Utils/InputBundles.ts"
 // import { ticksToCounts } from "@/Utils/Helpers.ts"
 
-
 export function buildPayload({
     topGrid,
     bottomGrid,
@@ -13,7 +12,10 @@ export function buildPayload({
     bucketCount,
     // autoGoldValues,
     dataSize,
-    inputs,progressGrid, stateBundleGrid,specialState
+    inputs,
+    progressGrid,
+    stateBundleGrid,
+    specialState,
 }: {
     topGrid: boolean[][]
     bottomGrid: boolean[][]
@@ -23,7 +25,7 @@ export function buildPayload({
 
     dataSize: string
     inputs: InputsValues
-    progressGrid : number[][]
+    progressGrid: number[][]
     stateBundleGrid: StatePair[][][]
     specialState: number[]
 }) {
@@ -36,21 +38,23 @@ export function buildPayload({
         user_price_arr: MATS_LABELS.slice(0, 7).map((label) => parseFloat(mats.prices[label] || "0")),
         data_size: Math.max(1000, Math.floor(Number(dataSize) || 0)),
         inp_leftover_values: MATS_LABELS.slice(0, 7).map((label) => parseFloat(mats.leftover[label] || "0")),
-        juice_books_budget: JUICE_LABELS.map((label_row) => [parseFloat(juice.weapon.owned[label_row[0]] ) , parseFloat(juice.armor.owned[label_row[1]] )]),
+        juice_books_budget: JUICE_LABELS.map((label_row) => [parseFloat(juice.weapon.owned[label_row[0]]), parseFloat(juice.armor.owned[label_row[1]])]),
 
         juice_prices: JUICE_LABELS.map((label_row) => [parseFloat(juice.weapon.prices[label_row[0]]), parseFloat(juice.armor.prices[label_row[1]])]),
-        inp_leftover_juice_values: JUICE_LABELS.map((label_row) => [parseFloat(juice.weapon.leftover[label_row[0]]), parseFloat(juice.armor.leftover[label_row[1]])]),
+        inp_leftover_juice_values: JUICE_LABELS.map((label_row) => [
+            parseFloat(juice.weapon.leftover[label_row[0]]),
+            parseFloat(juice.armor.leftover[label_row[1]]),
+        ]),
 
         progress_grid: progressGrid,
-        state_grid:  stateBundleGrid,
+        state_grid: stateBundleGrid,
         special_state: specialState,
-
     }
 
     // Always use the traditional tick-based approach
     payload.normal_hone_ticks = topGrid
     payload.adv_hone_ticks = bottomGrid
-console.log(payload)
+    console.log(payload)
     return payload
 }
 
@@ -136,7 +140,7 @@ export function createCancelableWorkerRunner() {
             }
 
             // mark as busy, clear previous result (but let caller decide cached graph preservation)
-            setResult(null)
+            // setResult(null)
             if (!dependency) {
                 // console.log("tried", which_one, "but monte carlo wasn't ready")
                 return
@@ -199,7 +203,7 @@ export function createCancelableWorkerRunner() {
             if (existingTimer) {
                 clearTimeout(existingTimer)
             }
-            setResult(null)
+            // setResult(null)
             // schedule new timer (window.setTimeout returns number)
             const t = window.setTimeout(() => {
                 timers.delete(debounceKey)

@@ -160,16 +160,13 @@ export default function HoningForecastUI() {
     // State for optimized details
     const [showOptimizedDetails, setShowOptimizedDetails] = useState<boolean>(false)
 
-
     const [flatProgressArr, setFlatProgressArr] = useState<number[]>([])
     const [progressGrid, setProgressGrid] = useState<number[][]>(Array(6).fill(Array(25).fill(0)))
 
     const [flatStateBundle, setFlatStateBundle] = useState<StatePair[][]>(null)
     const [stateBundleGrid, setStateBundleGrid] = useState<StatePair[][][]>(Array(6).fill(Array(25).fill([])))
 
-
     const [specialState, setSpecialState] = useState<number[]>([])
-
 
     const [allowUserChangeState, setAllowUserChangeState] = useState<boolean>(true)
     // Lock x-axis state (shared across all graphs)
@@ -503,7 +500,7 @@ export default function HoningForecastUI() {
             inputs: inputsValues,
             progressGrid,
             stateBundleGrid,
-            specialState
+            specialState,
             // monteCarloResult,
         })
 
@@ -527,7 +524,39 @@ export default function HoningForecastUI() {
 
     const StateBundleGridKey = useMemo(() => String(stateBundleGrid), [stateBundleGrid])
 
-
+    const inputBundleKey = useMemo(
+        () =>
+            String({
+                mats: {
+                    owned: userMatsOwned,
+                    prices: userMatsPrices,
+                    leftover: userMatsLeftover,
+                },
+                juice: {
+                    weapon: {
+                        owned: userWeaponJuiceOwned,
+                        prices: userWeaponJuicePrices,
+                        leftover: userWeaponJuiceLeftover,
+                    },
+                    armor: {
+                        owned: userArmorJuiceOwned,
+                        prices: userArmorJuicePrices,
+                        leftover: userArmorJuiceLeftover,
+                    },
+                },
+            }),
+        [
+            userMatsOwned,
+            userMatsPrices,
+            userMatsLeftover,
+            userWeaponJuiceOwned,
+            userWeaponJuicePrices,
+            userWeaponJuiceLeftover,
+            userArmorJuiceOwned,
+            userArmorJuicePrices,
+            userArmorJuiceLeftover,
+        ],
+    )
     useEffect(() => {
         if (evaluateAverageResult) {
             applyFlatToGrid(evaluateAverageResult, flatProgressArr, progressGrid, setProgressGrid, flatStateBundle, stateBundleGrid, setStateBundleGrid)
@@ -581,13 +610,11 @@ export default function HoningForecastUI() {
             onSuccess: (res) => {
                 setFlatStateBundle(res.upgrade_arr.map((upgrade) => upgrade.state))
                 setFlatProgressArr(res.upgrade_arr.map((_, index) => progressGrid[res.upgrade_arr[index].piece_type][res.upgrade_arr[index].upgrade_index]))
-
-            }
+            },
+            debounceMs: 10,
         })
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [budgetKey, advStrategyKey, expressEventKey, graphBucketSizeKey, userMatsKey, dataSizeKey, topGridKey, ProgressGridKey, StateBundleGridKey])
-
-
+    }, [advStrategyKey, expressEventKey, graphBucketSizeKey, dataSizeKey, topGridKey, ProgressGridKey, StateBundleGridKey, inputBundleKey])
 
     const optimizeAvgWorkerRef = useRef<Worker | null>(null)
     const [optimizeAvgBusy, setOptimizeAvgBusy] = useState(false)

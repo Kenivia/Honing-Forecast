@@ -66,7 +66,7 @@ impl StateBundle {
                     .access_collapsed()
                     .iter()
                     .find(|(_, p)| *p > FLOAT_TOL)
-                    .unwrap()
+                    .unwrap_or(&(0.0, 0.0))
                     .0
             })
             .sum();
@@ -617,9 +617,12 @@ pub fn probability_distribution(
         }
     }
     let total = chances.iter().sum::<f64>();
-
-    for element in chances.iter_mut() {
-        *element /= total;
+    if total > FLOAT_TOL {
+        for element in chances.iter_mut() {
+            *element /= total;
+        }
+    } else {
+        *chances.iter_mut().last().unwrap() = 1.0;
     }
 
     // web_sys::console::log_1(&format!("{:?}", chances).into());

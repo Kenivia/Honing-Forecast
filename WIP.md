@@ -5,6 +5,10 @@
 
 ### Now
 
+- wire up the new budget / price keys
+- figureout already-spent cost and display these
+- cap displayed progress / statebundle to the pity length
+
 - rebuild stuff and re-wire things to the website
   - figure out a way to export state_bundle to js and be able to pass it to monte carlo appropriately
     - literally just state and special state
