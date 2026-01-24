@@ -473,13 +473,14 @@ export default function HoningForecastUI() {
     const onToggleLockXAxis = () => {
         setLockXAxis((prev) => {
             const newVal = !prev
-            if (!prev) {
-                // we're turning it ON: snapshot current mins/maxs from cached data
-                const currentMins = cachedAverageGraphData?.hist_mins || null
-                const currentMaxs = cachedAverageGraphData?.hist_maxs || null
-                setLockedMins(currentMins ? currentMins.slice() : null)
-                setLockedMaxs(currentMaxs ? currentMaxs.slice() : null)
-            } else {
+            // if (!prev) {
+            //     // we're turning it ON: snapshot current mins/maxs from cached data
+            //     // const currentMins = cachedAverageGraphData?.hist_mins || null
+            //     // const currentMaxs = cachedAverageGraphData?.hist_maxs || null
+            //     // setLockedMins(currentMins ? currentMins.slice() : null)
+            //     // setLockedMaxs(currentMaxs ? currentMaxs.slice() : null)
+            // } else
+            {
                 // turning it OFF: clear snapshots
                 setLockedMins(null)
                 setLockedMaxs(null)
@@ -526,7 +527,7 @@ export default function HoningForecastUI() {
 
     const inputBundleKey = useMemo(
         () =>
-            String({
+            JSON.stringify({
                 mats: {
                     owned: userMatsOwned,
                     prices: userMatsPrices,
@@ -598,7 +599,7 @@ export default function HoningForecastUI() {
     const evaluateAverageWorkerRef = useRef<Worker | null>(null)
     const [evaluateAverageBusy, setEvaluateAverageBusy] = useState(false)
     const [evaluateAverageResult, setEvaluateAverageResult] = useState<any>(null)
-    const [cachedAverageGraphData, setCachedAverageGraphData] = useState<{ hist_counts?: any; hist_mins?: any; hist_maxs?: any } | null>(null)
+    // const [cachedAverageGraphData, setCachedAverageGraphData] = useState<{ hist_counts?: any; hist_mins?: any; hist_maxs?: any } | null>(null)
     useEffect(() => {
         runner.start({
             which_one: "EvaluateAverage",
@@ -606,8 +607,9 @@ export default function HoningForecastUI() {
             workerRef: evaluateAverageWorkerRef,
             setBusy: setEvaluateAverageBusy,
             setResult: setEvaluateAverageResult,
-            setCachedGraphData: setCachedAverageGraphData,
+            // setCachedGraphData: setCachedAverageGraphData,
             onSuccess: (res) => {
+                console.log(inputBundleKey)
                 setFlatStateBundle(res.upgrade_arr.map((upgrade) => upgrade.state))
                 setFlatProgressArr(res.upgrade_arr.map((_, index) => progressGrid[res.upgrade_arr[index].piece_type][res.upgrade_arr[index].upgrade_index]))
             },
@@ -849,7 +851,7 @@ export default function HoningForecastUI() {
                             dataSize={dataSize}
                             tooltipHandlers={tooltipHandlers}
                             chance_result={evaluateAverageResult}
-                            cachedChanceGraphData={cachedAverageGraphData}
+                            cachedChanceGraphData={null}
                             AnythingTicked={AnythingTicked}
                             CostToChanceBusy={evaluateAverageBusy}
                             cumulativeGraph={cumulativeGraph}

@@ -5,6 +5,7 @@ interface IconProps {
     size?: number
     style?: React.CSSProperties
     display_text?: string | null
+    display_text_right?: string | null
 }
 
 const IconMap: Record<string, string> = {
@@ -27,7 +28,7 @@ const IconMap: Record<string, string> = {
     "Forecast Icon": "/Honing-Forecast/forecast icon.webp",
 }
 
-export default function Icon({ iconName: name, display_text: display_text = null, size = 20, style }: IconProps) {
+export default function Icon({ iconName: name, display_text: display_text = null, display_text_right = null, size = 20, style }: IconProps) {
     const iconPath = IconMap[name]
 
     if (!iconPath) {
@@ -56,6 +57,7 @@ export default function Icon({ iconName: name, display_text: display_text = null
                     }
                 }}
             />
+            <span>{display_text_right === null ? "" : display_text_right}</span>
         </div>
     )
 }

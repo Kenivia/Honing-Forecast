@@ -27,7 +27,7 @@ pub struct PreparationOutput {
     pub eqv_gold_budget: f64,
     pub juice_info: JuiceInfo,
     pub juice_books_owned: Vec<(i64, i64)>, // juice_books_owned[id].0 = weap owned
-    pub sellable_toggles: Vec<bool>,
+    // pub sellable_toggles: Vec<bool>,
     // pub upgrade_arr: Vec<Upgrade>,
     pub effective_budgets: Vec<i64>,
 }
@@ -90,10 +90,10 @@ impl PreparationOutput {
 
         let mut budgets_no_gold: Vec<i64> = budgets.clone();
         budgets_no_gold[5] = 0;
-        let sellable_toggles: Vec<bool> = vec![
-            true, true, true, true, true, true, true, false, false, false, false, false, false,
-            false,
-        ];
+        // let sellable_toggles: Vec<bool> = vec![
+        //     true, true, true, true, true, true, true, false, false, false, false, false, false,
+        //     false,
+        // ];
 
         let juice_info: JuiceInfo = get_avail_juice_combs(juice_prices, &leftover_juice_values);
 
@@ -147,7 +147,7 @@ impl PreparationOutput {
                 eqv_gold_budget,
                 juice_info,
                 juice_books_owned,
-                sellable_toggles, //TODO READ THIS FROM AN ACUTAL INPUT LATEr cant be bother rn
+                // sellable_toggles, //TODO READ THIS FROM AN ACUTAL INPUT LATEr cant be bother rn
                 leftover_values,
                 effective_budgets,
             },

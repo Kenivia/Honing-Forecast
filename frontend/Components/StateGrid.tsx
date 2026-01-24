@@ -1,4 +1,4 @@
-import { CELL_H, CELL_W, JUICE_LABELS } from "@/Utils/Constants.ts"
+import { CELL_H, CELL_W, JUICE_LABELS, PIECE_NAMES } from "@/Utils/Constants.ts"
 import React, { useMemo } from "react"
 import Icon from "./Icon.tsx"
 import "./CheckboxGrid.css"
@@ -119,8 +119,14 @@ const RowBundle = ({ bundleIndex, progress, statePairs, onUpdateProgress, onUpda
 
     return (
         <div className="row-bundle-container" style={{ marginBottom: "20px" }}>
-            <h4 style={{ margin: "0 0 0 0" }}>Row Bundle {bundleIndex + 1}</h4>
-            <div style={{ display: "grid", gridTemplateColumns: `repeat(${cols}, ${CELL_W}px)`, gap: 0 }}>
+            <h4 style={{ margin: "0 0 0 0" }}>
+                <Icon
+                    iconName={PIECE_NAMES[upgrade.piece_type]}
+                    display_text=""
+                    display_text_right={PIECE_NAMES[upgrade.piece_type] + " +" + String(upgrade.upgrade_index + 1)}
+                ></Icon>
+            </h4>
+            <div style={{ display: "grid", gridTemplateColumns: `repeat(${cols}, ${CELL_W}px)`, gap: 0, overflow: "auto" }}>
                 {gridRows.flatMap((row, rIndex) =>
                     row.map((cell, cIndex) => {
                         const key = `${bundleIndex}-${rIndex}-${cIndex}`
@@ -193,8 +199,7 @@ const RowBundle = ({ bundleIndex, progress, statePairs, onUpdateProgress, onUpda
                                             // It doesn't specify an icon for progress, so we use a generic tick or fill.
                                             <span>✓</span>
                                         ) : (
-                                            <div style={{ marginLeft: -6 }}>
-                                                {" "}
+                                            <div>
                                                 <Icon
                                                     iconName={cell.label}
                                                     size={Math.min(CELL_W, CELL_H) - 6}
@@ -259,7 +264,7 @@ export default function StateGridsManager({
             className="complex-grid-manager"
             style={{
                 width: "100%",
-                overflowX: "auto", // Requirement 7
+
                 padding: "10px",
                 boxSizing: "border-box",
             }}

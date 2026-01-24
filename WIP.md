@@ -5,9 +5,11 @@
 
 ### Now
 
-- wire up the new budget / price keys
+-~~ wire up the new budget / price keys~~
+
 - figureout already-spent cost and display these
 - cap displayed progress / statebundle to the pity length
+  - similarly disallow juice inputs to the left of progress
 
 - rebuild stuff and re-wire things to the website
   - figure out a way to export state_bundle to js and be able to pass it to monte carlo appropriately
