@@ -1,10 +1,12 @@
+use serde::{Deserialize, Serialize};
+
 use crate::constants::{
     ADV_DATA_10_20, ADV_DATA_10_20_JUICE, ADV_DATA_30_40, ADV_DATA_30_40_JUICE, ADV_HONE_COST,
     JuiceInfo, NORMAL_HONE_CHANCES, SPECIAL_LEAPS_COST, get_avail_juice_combs,
     get_event_modified_armor_costs, get_event_modified_artisan, get_event_modified_weapon_costs,
 };
 use crate::helpers::{calc_unlock, eqv_gold_per_tap};
-use crate::normal_honing_utils::{generate_first_deltas, probability_distribution};
+use crate::normal_honing_utils::probability_distribution;
 use crate::upgrade::Upgrade;
 // use crate::monte_carlo::monte_carlo_one;
 // use crate::value_estimation::{
@@ -12,7 +14,7 @@ use crate::upgrade::Upgrade;
 // };
 // use rand::prelude::*;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PreparationOutput {
     pub unlock_costs: Vec<i64>,
     pub budgets: Vec<i64>,
@@ -74,6 +76,8 @@ impl PreparationOutput {
         juice_prices: &[(f64, f64)],
         inp_leftover_values: &[f64],
         inp_leftover_juice_values: &[(f64, f64)],
+        progress_grid: Option<Vec<Vec<usize>>>,
+        state_grid: Option<Vec<Vec<Vec<(bool, usize)>>>>,
     ) -> (PreparationOutput, Vec<Upgrade>) {
         let price_arr: Vec<f64> = inp_price_arr.to_vec();
 
@@ -111,30 +115,14 @@ impl PreparationOutput {
             &adv_hone_strategy.to_string(),
             express_event,
             juice_info.num_avail,
+            progress_grid,
+            state_grid,
         );
 
         for upgrade in upgrade_arr.iter_mut() {
             // let mut rng: StdRng = StdRng::seed_from_u64(RNG_SEED);
 
             upgrade.eqv_gold_per_tap = eqv_gold_per_tap(upgrade, inp_price_arr);
-
-            // THIS IS JUST HERE TO KEEP COMPILER HAPPY RN
-            for i in 0..upgrade.full_juice_len {
-                // upgrade.support_lengths.push(vec![]); // this will contain different free taps eventually i think
-                upgrade.support_lengths.push(
-                    probability_distribution(
-                        upgrade.base_chance,
-                        upgrade.artisan_rate,
-                        &generate_first_deltas(
-                            upgrade.base_chance,
-                            upgrade.prob_dist_len, // this is excessive but its fine
-                            i,
-                        ),
-                        0.0,
-                    )
-                    .len(),
-                );
-            }
 
             // let juice_ind: usize = if upgrade.is_weapon { 7 } else { 8 };
             // upgrade.eqv_gold_per_juice = user_price_arr[juice_ind] * upgrade.one_juice_cost as f64;
@@ -184,8 +172,11 @@ pub fn parser(
     adv_hone_strategy: &String,
     express_event: bool,
     num_juice_avail: usize,
+    progress_arr_opt: Option<Vec<Vec<usize>>>,
+    state_given_opt: Option<Vec<Vec<Vec<(bool, usize)>>>>,
 ) -> Vec<Upgrade> {
     let mut out: Vec<Upgrade> = Vec::new();
+
     let artisan_rate_arr: [f64; 25] = get_event_modified_artisan(express_event);
     for piece_type in 0..normal_ticks.len() {
         let cur_cost: [[i64; 25]; 7] = if piece_type < 5 {
@@ -213,13 +204,26 @@ pub fn parser(
             let special_cost: i64 =
                 SPECIAL_LEAPS_COST[if piece_type == 5 { 0 } else { 1 }][upgrade_index];
             let event_artisan_rate: f64 = artisan_rate_arr[upgrade_index];
+            let this_progress: Option<usize> = if progress_arr_opt.is_none() {
+                None
+            } else {
+                Some(progress_arr_opt.as_ref().unwrap()[piece_type][upgrade_index])
+            };
 
+            let this_state_given: Option<Vec<(bool, usize)>> = if state_given_opt.is_none()
+                || state_given_opt.as_ref().unwrap()[piece_type][upgrade_index].len() == 0
+            {
+                None
+            } else {
+                Some(state_given_opt.as_ref().unwrap()[piece_type][upgrade_index].clone())
+            };
             out.push(Upgrade::new_normal(
                 probability_distribution(
                     NORMAL_HONE_CHANCES[upgrade_index],
                     event_artisan_rate,
                     &[],
                     0.0,
+                    this_progress.unwrap_or(0),
                 ),
                 std::array::from_fn(|cost_type: usize| cur_cost[cost_type][upgrade_index]),
                 special_cost,
@@ -228,6 +232,8 @@ pub fn parser(
                 event_artisan_rate,
                 upgrade_index,
                 num_juice_avail,
+                this_progress,
+                this_state_given,
             ));
             upgrade_index += 1;
             // current_counter += 1;

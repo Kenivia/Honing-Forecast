@@ -1,3 +1,5 @@
+use serde::{Deserialize, Serialize};
+
 pub static FLOAT_TOL: f64 = 1e-9; // it could prolly be lower? idk doesnt matter
 pub static SPECIAL_TOL: f64 = 1e-7;
 // +11 to +18 double artisan, +15 to 18 mats cost reduced by 10%, unlock cost reduced by 20%
@@ -77,7 +79,7 @@ pub static JUICE_BOOKS_AVAIL: &[&[(usize, f64, i64)]] = &[
     //19-20
     &[(18, 0.03, 1), (19, 0.015, 1)],
 ];
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct JuiceInfo {
     // pub chances: Vec<Vec<f64>>,
     // pub gold_costs: Vec<Vec<(f64, f64)>>,

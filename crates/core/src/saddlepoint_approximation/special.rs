@@ -191,94 +191,101 @@ mod tests {
     use crate::helpers::naive_count_to_ticks;
     use crate::parser::PreparationOutput;
 
+    use crate::state_bundle::default_state_arr;
     use crate::test_utils::*;
 
     use std::collections::HashMap;
     use std::time::Instant;
     static DEBUG: bool = true;
-    #[test]
-    fn special_sa_test() {
-        let start = Instant::now();
-        let test_name = format!("special_sa_test");
-        let hone_counts: Vec<Vec<i64>> = vec![
-            (0..25)
-                .map(|x| if x == 24 || x == 23 { 1 } else { 0 })
-                .collect(),
-            (0..25).map(|x| if x == 24 { 1 } else { 0 }).collect(),
-        ];
-        // let hone_counts: Vec<Vec<i64>> =
-        //     vec![(0..25).map(|_| 5).collect(), (0..25).map(|_| 1).collect()];
-        let adv_counts: Vec<Vec<i64>> =
-            vec![(0..4).map(|_| 0).collect(), (0..4).map(|_| 0).collect()];
+    // #[test]
+    // fn special_sa_test() {
+    //     let start = Instant::now();
+    //     let test_name = format!("special_sa_test");
+    //     let hone_counts: Vec<Vec<i64>> = vec![
+    //         (0..25)
+    //             .map(|x| if x == 24 || x == 23 { 1 } else { 0 })
+    //             .collect(),
+    //         (0..25).map(|x| if x == 24 { 1 } else { 0 }).collect(),
+    //     ];
 
-        let adv_hone_strategy: &str = "No juice";
-        let express_event: bool = true;
-        let budget = vec![0, 0, 0, 0, 0, 3333333, 0, 6767];
-        let juice_books_owned: Vec<(i64, i64)> = vec![(0, 0), (0, 0), (0, 0), (0, 0)];
-        let juice_prices: Vec<(f64, f64)> = vec![
-            (123.0, 123.0),
-            (123.0, 123.0),
-            (123.0, 123.0),
-            (123.0, 123.0),
-        ];
-        let prices = DEFAULT_GOLD_VALUES;
-        let hash: String = calculate_hash!(
-            &hone_counts,
-            &adv_counts,
-            adv_hone_strategy,
-            express_event,
-            &budget,
-            &prices,
-            RNG_SEED,
-            PROB_MODE
-        );
+    //     let alr_fail_arr: Vec<Vec<usize>> = vec![(0..25).map(|x| 0).collect(); 6];
 
-        let (prep_output, upgrade_arr) = PreparationOutput::initialize(
-            &naive_count_to_ticks(&hone_counts),
-            &budget,
-            &naive_count_to_ticks(&adv_counts),
-            express_event,
-            &prices,
-            &adv_hone_strategy,
-            &juice_books_owned,
-            &juice_prices,
-            &prices,
-            &juice_prices,
-        );
+    //     let state_grid: Vec<Vec<usize>> = vec![default_state_arr(upgrade_arr)];
+    //     // let hone_counts: Vec<Vec<i64>> =
+    //     //     vec![(0..25).map(|_| 5).collect(), (0..25).map(|_| 1).collect()];
+    //     let adv_counts: Vec<Vec<i64>> =
+    //         vec![(0..4).map(|_| 0).collect(), (0..4).map(|_| 0).collect()];
 
-        // let mut starting_special: Vec<usize> = Vec::with_capacity(upgrade_arr.len() * 2);
-        // for (index, _upgrade) in upgrade_arr.iter().enumerate() {
-        //     starting_special.push(index); //, (1.0 / upgrade.base_chance).round() as usize));
-        // }
-        let starting_special: Vec<usize> = vec![0, 1, 2];
+    //     let adv_hone_strategy: &str = "No juice";
+    //     let express_event: bool = true;
+    //     let budget = vec![0, 0, 0, 0, 0, 3333333, 0, 6767];
+    //     let juice_books_owned: Vec<(i64, i64)> = vec![(0, 0), (0, 0), (0, 0), (0, 0)];
+    //     let juice_prices: Vec<(f64, f64)> = vec![
+    //         (123.0, 123.0),
+    //         (123.0, 123.0),
+    //         (123.0, 123.0),
+    //         (123.0, 123.0),
+    //     ];
+    //     let prices = DEFAULT_GOLD_VALUES;
+    //     let hash: String = calculate_hash!(
+    //         &hone_counts,
+    //         &adv_counts,
+    //         adv_hone_strategy,
+    //         express_event,
+    //         &budget,
+    //         &prices,
+    //         RNG_SEED,
+    //         PROB_MODE
+    //     );
 
-        let mut state_bundle: StateBundle = StateBundle {
-            // state_index: vec![],
-            metric: -1.0,
-            special_state: starting_special,
-            prep_output,
-            special_cache: HashMap::new(),
-            upgrade_arr,
+    //     let (prep_output, upgrade_arr) = PreparationOutput::initialize(
+    //         &naive_count_to_ticks(&hone_counts),
+    //         &budget,
+    //         &naive_count_to_ticks(&adv_counts),
+    //         express_event,
+    //         &prices,
+    //         &adv_hone_strategy,
+    //         &juice_books_owned,
+    //         &juice_prices,
+    //         &prices,
+    //         &juice_prices,
+    //         &alr_fail_arr,
+    //         &state_grid,
+    //     );
 
-            metric_type: 0,
-        };
+    //     // let mut starting_special: Vec<usize> = Vec::with_capacity(upgrade_arr.len() * 2);
+    //     // for (index, _upgrade) in upgrade_arr.iter().enumerate() {
+    //     //     starting_special.push(index); //, (1.0 / upgrade.base_chance).round() as usize));
+    //     // }
+    //     let starting_special: Vec<usize> = vec![0, 1, 2];
 
-        // init_dist(&mut state_bundle, &mut prep_output);
+    //     let mut state_bundle: StateBundle = StateBundle {
+    //         // state_index: vec![],
+    //         metric: -1.0,
+    //         special_state: starting_special,
+    //         prep_output,
+    //         special_cache: HashMap::new(),
+    //         upgrade_arr,
 
-        // dbg!(&state_bundle, &upgrade_arr);
-        state_bundle.update_dist();
-        state_bundle.compute_special_probs();
-        let result: Vec<f64> = state_bundle.special_probs().clone();
+    //         metric_type: 0,
+    //     };
 
-        if DEBUG {
-            dbg!(&result);
-        }
-        if let Some(_cached_result) = read_cached_data::<Vec<f64>>(test_name.as_str(), &hash) {
-        } else {
-            write_cached_data(test_name.as_str(), &hash, &result);
-        }
-        if DEBUG {
-            dbg!(start.elapsed());
-        }
-    }
+    //     // init_dist(&mut state_bundle, &mut prep_output);
+
+    //     // dbg!(&state_bundle, &upgrade_arr);
+    //     state_bundle.update_dist();
+    //     state_bundle.compute_special_probs();
+    //     let result: Vec<f64> = state_bundle.special_probs().clone();
+
+    //     if DEBUG {
+    //         dbg!(&result);
+    //     }
+    //     if let Some(_cached_result) = read_cached_data::<Vec<f64>>(test_name.as_str(), &hash) {
+    //     } else {
+    //         write_cached_data(test_name.as_str(), &hash, &result);
+    //     }
+    //     if DEBUG {
+    //         dbg!(start.elapsed());
+    //     }
+    // }
 }

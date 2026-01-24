@@ -1,7 +1,17 @@
 import React, { useEffect, useRef, useState, useMemo } from "react"
 import "./Sections/UpgradeSelection/CheckboxRow.css"
 import { styles } from "./Utils/Styles.ts"
-import { MATS_LABELS, TOP_ROWS, TOP_COLS, BOTTOM_ROWS, BOTTOM_COLS, DEFAULT_MATS_PRICES, DEFAULT_JUICE_PRICES, JUICE_LABELS } from "./Utils/Constants.ts"
+import {
+    MATS_LABELS,
+    TOP_ROWS,
+    TOP_COLS,
+    BOTTOM_ROWS,
+    BOTTOM_COLS,
+    DEFAULT_MATS_PRICES,
+    DEFAULT_JUICE_PRICES,
+    JUICE_LABELS,
+    PIECE_NAMES,
+} from "./Utils/Constants.ts"
 import { readSettings, writeSettings } from "./Utils/Settings.ts"
 import ControlPanel from "./Sections/ControlPanel/ControlPanel.tsx"
 import NormalHoningPanel from "./Sections/UpgradeSelection/NormalHoningPanel.tsx"
@@ -24,6 +34,8 @@ import { createClearAll, createFillDemo, createFillDemoIncome } from "./Sections
 import { buildPayload, createCancelableWorkerRunner } from "./WasmInterface/WorkerRunner.ts"
 import type { InputsBundleWithSetters, InputsSetters, InputsValues } from "./Utils/InputBundles.ts"
 import OptimizeSection from "./Sections/Optimize/OptimizeSection.tsx"
+import { StatePair } from "./Components/StateGrid.tsx"
+import { applyFlatToGrid } from "./Utils/StateUtils.ts"
 
 const NUM_JUICE_AVAIL = 4
 export default function HoningForecastUI() {
@@ -144,10 +156,22 @@ export default function HoningForecastUI() {
     const [activePage, setActivePage] = useState<"optimize" | "cost-to-chance" | "gamba" | "forecast">("cost-to-chance") // "chance-to-cost" |
     const [mainScale, setMainScale] = useState<number>(1)
     const [zoomCompensation, setZoomCompensation] = useState<number>(1)
-
+    const [optimizeButtonPress, setOptimizeButtonPress] = useState<number>(0)
     // State for optimized details
     const [showOptimizedDetails, setShowOptimizedDetails] = useState<boolean>(false)
 
+
+    const [flatProgressArr, setFlatProgressArr] = useState<number[]>([])
+    const [progressGrid, setProgressGrid] = useState<number[][]>(Array(6).fill(Array(25).fill(0)))
+
+    const [flatStateBundle, setFlatStateBundle] = useState<StatePair[][]>(null)
+    const [stateBundleGrid, setStateBundleGrid] = useState<StatePair[][][]>(Array(6).fill(Array(25).fill([])))
+
+
+    const [specialState, setSpecialState] = useState<number[]>([])
+
+
+    const [allowUserChangeState, setAllowUserChangeState] = useState<boolean>(true)
     // Lock x-axis state (shared across all graphs)
     const [lockXAxis, setLockXAxis] = useState<boolean>(false)
     const [lockedMins, setLockedMins] = useState<number[] | null>(null)
@@ -454,8 +478,8 @@ export default function HoningForecastUI() {
             const newVal = !prev
             if (!prev) {
                 // we're turning it ON: snapshot current mins/maxs from cached data
-                const currentMins = cachedChanceGraphData?.hist_mins || null
-                const currentMaxs = cachedChanceGraphData?.hist_maxs || null
+                const currentMins = cachedAverageGraphData?.hist_mins || null
+                const currentMaxs = cachedAverageGraphData?.hist_maxs || null
                 setLockedMins(currentMins ? currentMins.slice() : null)
                 setLockedMaxs(currentMaxs ? currentMaxs.slice() : null)
             } else {
@@ -477,6 +501,9 @@ export default function HoningForecastUI() {
 
             dataSize,
             inputs: inputsValues,
+            progressGrid,
+            stateBundleGrid,
+            specialState
             // monteCarloResult,
         })
 
@@ -493,6 +520,21 @@ export default function HoningForecastUI() {
     const userMatsKey = useMemo(() => JSON.stringify(userMatsPrices), [userMatsPrices])
     const dataSizeKey = useMemo(() => String(dataSize), [dataSize])
 
+    const optimizeButtenPressKey = useMemo(() => String(optimizeButtonPress), [optimizeButtonPress])
+
+    const topGridKey = useMemo(() => String(topGrid), [topGrid])
+    const ProgressGridKey = useMemo(() => String(progressGrid), [progressGrid])
+
+    const StateBundleGridKey = useMemo(() => String(stateBundleGrid), [stateBundleGrid])
+
+
+    useEffect(() => {
+        if (evaluateAverageResult) {
+            applyFlatToGrid(evaluateAverageResult, flatProgressArr, progressGrid, setProgressGrid, flatStateBundle, stateBundleGrid, setStateBundleGrid)
+        }
+
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [flatProgressArr, flatStateBundle])
     // const monteCarloWorkerRef = useRef<Worker | null>(null)
     // const [_monteCarloBusy, setMonteCarloBusy] = useState(false)
     // const [monteCarloResult, setMonteCarloResult] = useState<any>(null)
@@ -524,35 +566,42 @@ export default function HoningForecastUI() {
     //     // eslint-disable-next-line react-hooks/exhaustive-deps
     // }, [advStrategyKey, expressEventKey, graphBucketSizeKey, dataSizeKey, normalCountsKey, advCountsKey])
 
-    const costToChanceWorkerRef = useRef<Worker | null>(null)
-    const [costToChanceBusy, setCostToChanceBusy] = useState(false)
-    const [costToChanceResult, setCostToChanceResult] = useState<any>(null)
-    const [cachedChanceGraphData, setCachedChanceGraphData] = useState<{ hist_counts?: any; hist_mins?: any; hist_maxs?: any } | null>(null)
+    const evaluateAverageWorkerRef = useRef<Worker | null>(null)
+    const [evaluateAverageBusy, setEvaluateAverageBusy] = useState(false)
+    const [evaluateAverageResult, setEvaluateAverageResult] = useState<any>(null)
+    const [cachedAverageGraphData, setCachedAverageGraphData] = useState<{ hist_counts?: any; hist_mins?: any; hist_maxs?: any } | null>(null)
     useEffect(() => {
         runner.start({
-            which_one: "CostToChance",
+            which_one: "EvaluateAverage",
             payloadBuilder,
-            workerRef: costToChanceWorkerRef,
-            setBusy: setCostToChanceBusy,
-            setResult: setCostToChanceResult,
-            setCachedGraphData: setCachedChanceGraphData,
+            workerRef: evaluateAverageWorkerRef,
+            setBusy: setEvaluateAverageBusy,
+            setResult: setEvaluateAverageResult,
+            setCachedGraphData: setCachedAverageGraphData,
+            onSuccess: (res) => {
+                setFlatStateBundle(res.upgrade_arr.map((upgrade) => upgrade.state))
+                setFlatProgressArr(res.upgrade_arr.map((_, index) => progressGrid[res.upgrade_arr[index].piece_type][res.upgrade_arr[index].upgrade_index]))
+
+            }
         })
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [budgetKey, advStrategyKey, expressEventKey, graphBucketSizeKey, userMatsKey, dataSizeKey])
+    }, [budgetKey, advStrategyKey, expressEventKey, graphBucketSizeKey, userMatsKey, dataSizeKey, topGridKey, ProgressGridKey, StateBundleGridKey])
 
-    // const averageCostWorkerRef = useRef<Worker | null>(null)
-    // const [averageCostBusy, setAverageCostBusy] = useState(false)
-    // const [averageCostsResult, setAverageCostsResult] = useState<{ average_costs?: any } | null>(null)
-    // useEffect(() => {
-    //     runner.start({
-    //         which_one: "AverageCost",
-    //         payloadBuilder,
-    //         workerRef: averageCostWorkerRef,
-    //         setBusy: setAverageCostBusy,
-    //         setResult: setAverageCostsResult,
-    //     })
-    //     // eslint-disable-next-line react-hooks/exhaustive-deps
-    // }, [advStrategyKey, expressEventKey, graphBucketSizeKey, dataSizeKey, normalCountsKey, advCountsKey])
+
+
+    const optimizeAvgWorkerRef = useRef<Worker | null>(null)
+    const [optimizeAvgBusy, setOptimizeAvgBusy] = useState(false)
+    const [optimizeAvgResult, setOptimizeAvgResult] = useState<{ average_costs?: any } | null>(null)
+    useEffect(() => {
+        runner.start({
+            which_one: "AverageCost",
+            payloadBuilder,
+            workerRef: optimizeAvgWorkerRef,
+            setBusy: setOptimizeAvgBusy,
+            setResult: setOptimizeAvgResult,
+        })
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [optimizeButtenPressKey])
 
     const parserWorkerRef = useRef<Worker | null>(null)
     const [parserResult, setparserResult] = useState<{ upgradeArr: any; unlocks: any; other_strategy_prob_dists: any } | null>(null)
@@ -724,17 +773,28 @@ export default function HoningForecastUI() {
                 </div> */}
                 {activePage === "optimize" && (
                     <div className={activePage === "optimize" ? "page" : "page page--hidden"}>
-                        <OptimizeSection inputsBundle={inputsBundle} />
+                        <OptimizeSection
+                            inputsBundle={inputsBundle}
+                            optimizeAvgBusy={optimizeAvgBusy}
+                            optimizeAvgResult={optimizeAvgResult}
+                            setOptimizeButtonPress={setOptimizeButtonPress}
+                            flatProgressArr={flatProgressArr}
+                            setFlatProgressArr={setFlatProgressArr}
+                            flatStateBundle={flatStateBundle}
+                            setFlatStateBundle={setFlatStateBundle}
+                            allowUserChangeState={allowUserChangeState}
+                            evaluateAverageResult={evaluateAverageResult}
+                        />
                     </div>
                 )}
-                {activePage === "cost-to-chance" && (
+                {/* {activePage === "cost-to-chance" && (
                     <div className={activePage === "cost-to-chance" ? "page" : "page page--hidden"}>
                         <CostToChanceSection
                             inputsBundle={inputsBundle}
-                            chance_result={costToChanceResult}
-                            cachedChanceGraphData={cachedChanceGraphData}
+                            chance_result={evaluateAverageResult}
+                            cachedChanceGraphData={cachedAverageGraphData}
                             AnythingTicked={AnythingTicked}
-                            CostToChanceBusy={costToChanceBusy}
+                            CostToChanceBusy={evaluateAverageBusy}
                             cumulativeGraph={cumulativeGraph}
                             lockXAxis={lockXAxis}
                             lockedMins={lockedMins}
@@ -748,7 +808,7 @@ export default function HoningForecastUI() {
                             monteCarloResult={null}
                         />
                     </div>
-                )}
+                )} */}
                 {activePage === "gamba" && (
                     <div className={activePage === "gamba" ? "page" : "page page--hidden"}>
                         <GambaSection
@@ -761,10 +821,10 @@ export default function HoningForecastUI() {
                             bucketCount={bucketCount}
                             dataSize={dataSize}
                             tooltipHandlers={tooltipHandlers}
-                            chance_result={costToChanceResult}
-                            cachedChanceGraphData={cachedChanceGraphData}
+                            chance_result={evaluateAverageResult}
+                            cachedChanceGraphData={cachedAverageGraphData}
                             AnythingTicked={AnythingTicked}
-                            CostToChanceBusy={costToChanceBusy}
+                            CostToChanceBusy={evaluateAverageBusy}
                             cumulativeGraph={cumulativeGraph}
                             lockXAxis={lockXAxis}
                             lockedMins={lockedMins}

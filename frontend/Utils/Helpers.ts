@@ -1,5 +1,4 @@
-// Equipment types for armor pieces
-export const EQUIPMENT_TYPES = ["Helmet", "Shoulder", "Chest", "Pants", "Gloves", "Weapon"]
+import { PIECE_NAMES } from "./Constants.ts"
 
 export function formatSig(n: number, place: number = 3): string {
     if (!isFinite(n)) return ""
@@ -88,7 +87,7 @@ export function sortedUpgrades(upgradeArr: Upgrade[]) {
             if (a.upgrade_index > b.upgrade_index) {
                 return 1
             }
-            return EQUIPMENT_TYPES.findIndex((value, _) => a.equipment_type == value) - EQUIPMENT_TYPES.findIndex((value, _) => b.equipment_type == value)
+            return PIECE_NAMES.findIndex((value, _) => a.equipment_type == value) - PIECE_NAMES.findIndex((value, _) => b.equipment_type == value)
         }
         return 0
     })

@@ -61,7 +61,14 @@ impl StateBundle {
     pub fn find_min_max(&self, support_index: i64, skip_count: usize) -> (f64, f64) {
         let min_value = self
             .extract_support_with_meta(support_index, skip_count)
-            .map(|support| support.gap_size) // TODO if i ever decide to make 0 probable again then this will be wrong
+            .map(|support| {
+                support
+                    .access_collapsed()
+                    .iter()
+                    .find(|(_, p)| *p > FLOAT_TOL)
+                    .unwrap()
+                    .0
+            })
             .sum();
         let max_value = self
             .extract_support_with_meta(support_index, skip_count)
@@ -527,7 +534,13 @@ pub fn new_prob_dist(
         }) //if *x > 0 { upgrade.base_chance } else { 0.0 }) //
         .collect();
 
-    let out = probability_distribution(upgrade.base_chance, upgrade.artisan_rate, &new_extra, zero);
+    let out = probability_distribution(
+        upgrade.base_chance,
+        upgrade.artisan_rate,
+        &new_extra,
+        zero,
+        upgrade.alr_failed,
+    );
     // for o in out.iter() {
     //     if !o.is_finite() || *o < 0.0 {
     //         dbg!(
@@ -550,6 +563,7 @@ pub fn probability_distribution(
     artisan_rate: f64,
     extra_arr: &[f64],
     zero: f64,
+    alr_failed: usize,
 ) -> Vec<f64> {
     let mut raw_chances: Vec<f64> = vec![zero];
     let mut artisan: f64 = 0.0_f64;
@@ -577,9 +591,20 @@ pub fn probability_distribution(
     // convert raw per-try chances into per-tap probability distribution
     let mut chances = vec![0.0_f64; raw_chances.len()];
     let mut cum_chance = 1.0_f64;
+
     for (idx, &element) in raw_chances.iter().enumerate() {
         chances[idx] = cum_chance * element;
         cum_chance *= 1.0 - element;
+    }
+    for (idx, element) in chances.iter_mut().enumerate() {
+        if idx <= alr_failed {
+            *element = 0.0;
+        }
+    }
+    let total = chances.iter().sum::<f64>();
+
+    for element in chances.iter_mut() {
+        *element /= total;
     }
 
     chances

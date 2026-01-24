@@ -167,7 +167,7 @@ fn neighbour<R: Rng>(state_bundle: &mut StateBundle, temp: f64, init_temp: f64, 
                         0.0
                     });
         }
-        state.update_hash();
+        // state.update_hash();
     }
 }
 fn new_temp(temp: f64, alpha: f64) -> f64 {

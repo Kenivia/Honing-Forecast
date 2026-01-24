@@ -2,7 +2,7 @@ import React from "react"
 import { styles } from "@/Utils/Styles.ts"
 import CheckboxGrid from "@/Components/CheckboxGrid.tsx"
 import Icon from "@/Components/Icon.tsx"
-import { TOP_ROWS, TOP_COLS, CELL_W, CELL_H } from "@/Utils/Constants.ts"
+import { TOP_ROWS, TOP_COLS, CELL_W, CELL_H, PIECE_NAMES } from "@/Utils/Constants.ts"
 
 type NormalHoningPanelProps = {
     topGrid: boolean[][]
@@ -29,7 +29,7 @@ export default function NormalHoningPanel({
             <div style={{ ...styles.gridSection, maxWidth: "851px" }}>
                 <div style={{ display: "flex", gap: 8 }}>
                     <div style={{ width: 100, display: "flex", flexDirection: "column", justifyContent: "flex-start", textWrap: "nowrap", gap: 0 }}>
-                        {["", "Helmet", "Shoulder", "Chest", "Pants", "Glove", "Weapon"].map((lab) => (
+                        {[""].concat(PIECE_NAMES).map((lab) => (
                             <div
                                 key={"Normal Honing label" + lab}
                                 style={{

@@ -268,6 +268,8 @@ pub fn parse_csv(path: &Path) -> Vec<(StateBundle, Vec<bool>)> {
                 &juice_prices,
                 &leftover_values,
                 &juice_leftover,
+                None,
+                None,
             );
 
         this.test_case = row.test_case;

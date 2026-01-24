@@ -2,10 +2,10 @@ import React, { useState, useEffect, useRef, useMemo, useCallback } from "react"
 import SpreadsheetGrid from "@/Components/SpreadsheetGrid.tsx"
 import Graph from "@/Components/Graph.tsx"
 import { styles, createColumnDefs, SMALL_GRAPH_WIDTH, SMALL_GRAPH_HEIGHT } from "@/Utils/Styles.ts"
-import { BOTTOM_COLS, MATS_LABELS, TOP_COLS, OUTPUT_LABELS } from "@/Utils/Constants.ts"
+import { BOTTOM_COLS, MATS_LABELS, TOP_COLS, OUTPUT_LABELS, PIECE_NAMES } from "@/Utils/Constants.ts"
 import { buildPayload } from "@/WasmInterface/WorkerRunner.ts"
 import type { InputsBundleWithSetters } from "@/Utils/InputBundles.ts"
-import { Upgrade, EQUIPMENT_TYPES } from "@/Utils/Helpers.ts"
+import { Upgrade } from "@/Utils/Helpers.ts"
 import GambaInfoBox from "./GambaInfoBox.tsx"
 import GambaSelection from "./GambaSelection.tsx"
 import { useGambaLogic } from "./GambaLogic.tsx"
@@ -183,7 +183,7 @@ export default function GambaSection({
                     return { ...upgrade, equipment_type: "Weapon" }
                 } else {
                     // For armor, find which equipment types are ticked in the grid
-                    const equipmentTypes = EQUIPMENT_TYPES.slice(0, 5) // Exclude Weapon
+                    const equipmentTypes = PIECE_NAMES.slice(0, 5) // Exclude Weapon
                     const assignedType = equipmentTypes.find((_, index) => {
                         if (upgrade.is_normal_honing) {
                             if (index < seen_ind_normal[upgrade.upgrade_index]) {
@@ -313,7 +313,7 @@ export default function GambaSection({
             if (!a.is_finished && !b.is_finished) {
                 if (a.upgrade_index < b.upgrade_index) return -1
                 if (a.upgrade_index > b.upgrade_index) return 1
-                return EQUIPMENT_TYPES.findIndex((v) => a.equipment_type == v) - EQUIPMENT_TYPES.findIndex((v) => b.equipment_type == v)
+                return PIECE_NAMES.findIndex((v) => a.equipment_type == v) - PIECE_NAMES.findIndex((v) => b.equipment_type == v)
             }
             return 0
         })

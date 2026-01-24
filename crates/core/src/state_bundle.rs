@@ -6,7 +6,7 @@ use std::collections::HashMap;
 
 use std::f64::NAN;
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct StateBundle {
     pub upgrade_arr: Vec<Upgrade>,
     pub special_state: Vec<usize>, // arbitrary length
@@ -15,26 +15,49 @@ pub struct StateBundle {
     pub metric: f64,
     // pub state_index: Vec<Vec<Vec<i64>>>, // i pre-added this for caching but havnt implemented anything
     pub prep_output: PreparationOutput,
+    #[serde(skip)]
     pub special_cache: HashMap<Vec<usize>, Vec<f64>>,
     // pub performance: Performance,
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
-pub struct StateBundleJs {
-    pub state_arr: Vec<Vec<(bool, usize)>>,
-    pub special_state: Vec<usize>,
-}
-impl StateBundle {
-    pub fn to_js(&self) -> StateBundleJs {
-        let mut state_arr: Vec<Vec<(bool, usize)>> = Vec::with_capacity(self.upgrade_arr.len());
-        for upgrade in self.upgrade_arr.iter() {
-            state_arr.push(upgrade.state.to_vec());
-        }
-        StateBundleJs {
-            state_arr,
-            special_state: self.special_state.clone(),
-        }
+pub fn default_special(length: usize) -> Vec<usize> {
+    let mut starting_special: Vec<usize> = Vec::with_capacity(length);
+    for index in 0..length {
+        starting_special.push(index); //, (1.0 / upgrade.base_chance).round() as usize));
     }
+    starting_special
+}
+pub fn default_state_arr(upgrade_arr: &Vec<Upgrade>) -> Vec<Vec<(bool, usize)>> {
+    let mut out: Vec<Vec<(bool, usize)>> = Vec::with_capacity(upgrade_arr.len());
+    for upgrade in upgrade_arr {
+        out.push(State::new(upgrade.prob_dist.len()).payload.clone()); //, (1.0 / upgrade.base_chance).round() as usize));
+    }
+    out
+}
+// #[derive(Debug, Serialize, Deserialize, Clone)]
+// pub struct StateBundleJs {
+//     pub state_arr: Vec<Vec<(bool, usize)>>,
+//     pub special_state: Vec<usize>,
+// }
+// impl StateBundleJs {
+//     fn my_default(upgrade_arr: &Vec<Upgrade>) -> Self {
+//         StateBundleJs {
+//             state_arr: default_state_arr(upgrade_arr),
+//             special_state: default_special(upgrade_arr.len()),
+//         }
+//     }
+// }
+impl StateBundle {
+    // pub fn to_js(&self) -> StateBundleJs {
+    //     let mut state_arr: Vec<Vec<(bool, usize)>> = Vec::with_capacity(self.upgrade_arr.len());
+    //     for upgrade in self.upgrade_arr.iter() {
+    //         state_arr.push(upgrade.state.to_vec());
+    //     }
+    //     StateBundleJs {
+    //         state_arr,
+    //         special_state: self.special_state.clone(),
+    //     }
+    // }
     pub fn metric_router(&mut self, metric_type: i64, performance: &mut Performance) -> f64 {
         match metric_type {
             0 => self.success_prob_metric(performance),
@@ -50,15 +73,10 @@ impl StateBundle {
     // }
 
     pub fn new(prep_output: PreparationOutput, upgrade_arr: Vec<Upgrade>) -> StateBundle {
-        let mut starting_special: Vec<usize> = Vec::with_capacity(upgrade_arr.len() * 2);
-        for (index, _upgrade) in upgrade_arr.iter().enumerate() {
-            starting_special.push(index); //, (1.0 / upgrade.base_chance).round() as usize));
-        }
-
         let state_bundle: StateBundle = StateBundle {
             // state_index: vec![],
             metric: -1.0,
-            special_state: starting_special,
+            special_state: default_special(upgrade_arr.len()),
             prep_output,
             special_cache: HashMap::new(),
             upgrade_arr,
@@ -78,9 +96,11 @@ impl StateBundle {
         juice_prices: &[(f64, f64)],
         inp_leftover_values: &[f64],
         inp_leftover_juice_values: &[(f64, f64)],
-        state_bundle_js: &StateBundleJs,
+        progress_grid: Option<Vec<Vec<usize>>>,
+        state_grid: Option<Vec<Vec<Vec<(bool, usize)>>>>,
+        special_state: Option<Vec<usize>>,
     ) -> StateBundle {
-        let (prep_output, mut upgrade_arr): (PreparationOutput, Vec<Upgrade>) =
+        let (prep_output, upgrade_arr): (PreparationOutput, Vec<Upgrade>) =
             PreparationOutput::initialize(
                 hone_ticks,
                 input_budgets,
@@ -92,15 +112,19 @@ impl StateBundle {
                 juice_prices,
                 inp_leftover_values,
                 inp_leftover_juice_values,
+                progress_grid,
+                state_grid,
             );
-        for (upgrade, state) in upgrade_arr.iter_mut().zip(state_bundle_js.state_arr.iter()) {
-            upgrade.state = State::new(upgrade.prob_dist_len);
-            upgrade.state.update_payload(state.clone());
-        }
-
+        let u_len = upgrade_arr.len();
         let mut out = StateBundle {
             upgrade_arr,
-            special_state: state_bundle_js.special_state.clone(),
+            special_state: if special_state.is_none()
+                || special_state.as_ref().unwrap().len() != u_len
+            {
+                default_special(u_len)
+            } else {
+                special_state.unwrap()
+            },
             metric_type: -1,
             metric: -1.0,
             prep_output,

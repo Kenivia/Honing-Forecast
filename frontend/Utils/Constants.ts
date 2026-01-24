@@ -26,3 +26,5 @@ export const DEFAULT_JUICE_PRICES = [
 ]
 
 export const DEFAULT_MATS_PRICES = ["1.65", "0.03", "13.0", "0.5", "95.0", "1.0", "0.0"]
+
+export const PIECE_NAMES = ["Helmet", "Shoulder", "Chest", "Pants", "Glove", "Weapon"]

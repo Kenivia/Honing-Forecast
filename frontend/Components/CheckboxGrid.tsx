@@ -1,4 +1,5 @@
 /*eslint no-unused-vars: 0*/
+import { createMouseEventFromTouch } from "@/Utils/CheckboxGridUtils.ts"
 import "./CheckboxGrid.css"
 
 type Props = {
@@ -14,19 +15,6 @@ type Props = {
 }
 
 // Helper function to convert touch event to mouse event
-function createMouseEventFromTouch(touchEvent: React.TouchEvent, type: "mousedown" | "mousemove" | "mouseup"): React.MouseEvent {
-    const touch = touchEvent.touches[0] || touchEvent.changedTouches[0]
-    return {
-        ...touchEvent,
-        type,
-        clientX: touch.clientX,
-        clientY: touch.clientY,
-        button: 0, // Left mouse button
-        buttons: type === "mousedown" ? 1 : type === "mouseup" ? 0 : 1,
-        preventDefault: touchEvent.preventDefault.bind(touchEvent),
-        stopPropagation: touchEvent.stopPropagation.bind(touchEvent),
-    } as unknown as React.MouseEvent
-}
 
 export default function CheckboxGrid({ grid, rows, cols, gridRef, onGridMouseDown, marquee, CELL_W, CELL_H, gridName }: Props) {
     const handleTouchStart = (e: React.TouchEvent) => {

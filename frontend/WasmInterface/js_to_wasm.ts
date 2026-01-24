@@ -1,5 +1,7 @@
 import init, {
-    cost_to_chance_wrapper,
+    evaluate_average_wrapper,
+    optimize_average_wrapper,
+
     // cost_to_chance_arr_wrapper,
     // parser_wrapper_unified,
     // average_cost_wrapper,
@@ -13,9 +15,14 @@ const LABELS = ["Red", "Blue", "Leaps", "Shards", "Oreha", "Gold", "Silver"]
 //     return (monte_carlo_wrapper as any)(payload)
 // }
 
-async function CostToChanceWasm(payload: any) {
+async function OptimizeAverageWasm(payload: any) {
     await init()
-    return (cost_to_chance_wrapper as any)(payload)
+    return (optimize_average_wrapper as any)(payload)
+}
+
+async function EvaluateAverageWasm(payload: any) {
+    await init()
+    return (evaluate_average_wrapper as any)(payload)
 }
 
 // async function CostToChanceArrWasm(payload: any) {
@@ -41,7 +48,7 @@ self.addEventListener("message", async (ev) => {
 
     if (
         !(
-            (which_one == "CostToChance") // ||
+            (which_one == "EvaluateAverage" || which_one == "OptimizeAverage")
             // which_one == "CostToChanceArr" ||
             // // which_one == "CostToChanceOptimized" ||
             // which_one == "ParserUnified" ||
@@ -61,38 +68,44 @@ self.addEventListener("message", async (ev) => {
     //     // console.log("monte carlo out", out)
     //     result = { cost_data: out }
     // } else
-    if (which_one == "CostToChance") {
+    if (which_one == "EvaluateAverage") {
         // always run optimized
-        let out = await CostToChanceWasm(payload)
+        result  =  await EvaluateAverageWasm(payload)
 
         // Convert f64 failure rates to formatted strings
-        const reasons = out.reasons.map((rate: number, index: number) => {
-            const percentage = (rate * 100).toFixed(2)
-            return `${LABELS[index]}: ${percentage}% chance to have enough ${LABELS[index]}`
-        })
+        // const reasons = out.reasons.map((rate: number, index: number) => {
+        //     const percentage = (rate * 100).toFixed(2)
+        //     return `${LABELS[index]}: ${percentage}% chance to have enough ${LABELS[index]}`
+        // })
 
         // const optimized_reasons = out.optimized_reasons.map((rate: number, index: number) => {
         //     const percentage = (rate * 100).toFixed(2)
         //     return `${percentage}% chance to have enough ${LABELS[index]}`
         // })
 
-        result = {
-            chance: (out.chance * 100).toFixed(2),
-            reasons: reasons,
-            hist_counts: out.hist_counts,
-            hist_mins: out.hist_mins,
-            hist_maxs: out.hist_maxs,
-            special_strings: out.special_strings || [],
-            juice_strings_armor: out.juice_strings_armor || [],
-            juice_strings_weapon: out.juice_strings_weapon || [],
-            budgets_red_remaining: out.budgets_red_remaining,
-            budgets_blue_remaining: out.budgets_blue_remaining,
-            hundred_gold_costs: out.hundred_gold_costs,
-            chance_if_buy: (out.chance_if_buy * 100).toFixed(2),
-            typical_costs: out.typical_costs,
-        }
+        // result = {
+        //     chance: (out.chance * 100).toFixed(2),
+        //     reasons: reasons,
+        //     hist_counts: out.hist_counts,
+        //     hist_mins: out.hist_mins,
+        //     hist_maxs: out.hist_maxs,
+        //     special_strings: out.special_strings || [],
+        //     juice_strings_armor: out.juice_strings_armor || [],
+        //     juice_strings_weapon: out.juice_strings_weapon || [],
+        //     budgets_red_remaining: out.budgets_red_remaining,
+        //     budgets_blue_remaining: out.budgets_blue_remaining,
+        //     hundred_gold_costs: out.hundred_gold_costs,
+        //     chance_if_buy: (out.chance_if_buy * 100).toFixed(2),
+        //     typical_costs: out.typical_costs,
+        // }
 
         // console.log(result.typical_costs)
+    } else if (which_one == "OptimizeAverage") {
+        let out = await OptimizeAverageWasm(payload)
+        result = {
+            state_bundle_js: out.state_bundle_js,
+            best: out.best,
+        }
     }
     // else if (which_one == "CostToChanceArr") {
     //     let out = await CostToChanceArrWasm(payload)

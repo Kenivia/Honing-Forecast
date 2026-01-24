@@ -28,7 +28,6 @@ pub struct Upgrade {
     pub upgrade_index: usize,
     pub special_value: f64,
     pub full_juice_len: usize,
-    pub support_lengths: Vec<usize>, //Vec<Vec<Vec<[i64; 10]>>>, // cost_data_arr[juice_count][special_count] = cost_data for that decision
     pub eqv_gold_per_tap: f64,
     pub juice_avail: bool,
     pub books_avail: i64,
@@ -40,11 +39,14 @@ pub struct Upgrade {
     pub combined_gold_costs: Support,
     pub name_string: String,
     pub piece_type: usize,
+    pub alr_failed: usize,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(transparent)]
 pub struct State {
-    payload: Vec<(bool, usize)>,
+    pub payload: Vec<(bool, usize)>,
+    #[serde(skip)]
     pub hash: u64,
 }
 impl State {
@@ -65,7 +67,7 @@ impl State {
 
     pub fn update_payload(&mut self, new_payload: Vec<(bool, usize)>) {
         self.payload = new_payload;
-        self.update_hash();
+        // self.update_hash();
     }
 }
 impl Deref for State {
@@ -81,8 +83,10 @@ impl DerefMut for State {
     }
 }
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(transparent)]
 pub struct ProbDist {
     pub payload: Vec<f64>,
+    #[serde(skip)]
     pub prob_state_hash: u64,
     // logged_payload: Vec<f64>, // force access through the function to do the check
     // pub log_state_hash: u64,
@@ -143,11 +147,13 @@ impl Deref for ProbDist {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Support {
     pub support: Vec<f64>,
+    #[serde(skip)]
     pub support_state_hash: u64, // i mean even this i dont think is that necessary but whatever
-    pub state_invariant: bool,   // only talking about the support, prob can always change
-    pub linear: bool,            // gap between 0 and 1 = gap between n and n+1
+    pub state_invariant: bool, // only talking about the support, prob can always change
+    pub linear: bool,          // gap between 0 and 1 = gap between n and n+1
 
     collapsed_pair: Vec<(f64, f64)>, // (support, prob, logged_prob)
+    #[serde(skip)]
     pub collapsed_state_hash: u64,
     pub ignore: bool,
     pub gap_size: f64,
@@ -271,6 +277,8 @@ impl Upgrade {
         artisan_rate: f64,
         upgrade_index: usize,
         num_juice_avail: usize,
+        alr_failed: Option<usize>,
+        state_given: Option<Vec<(bool, usize)>>,
     ) -> Self {
         let prob_dist_len: usize = prob_dist.len();
         let base_chance: f64 = prob_dist[1];
@@ -283,8 +291,15 @@ impl Upgrade {
                 prob_dist_len,
             ),
             0.0,
+            alr_failed.unwrap_or(0),
         )
         .len();
+        let mut state = State::new(prob_dist_len);
+        state.update_payload(
+            state_given
+                .unwrap_or(State::new(prob_dist_len).payload)
+                .to_owned(),
+        );
         Self {
             is_normal_honing: true,
             prob_dist: ProbDist::new(prob_dist),
@@ -302,7 +317,7 @@ impl Upgrade {
             upgrade_index,
             special_value: -1.0_f64,
             full_juice_len,
-            support_lengths: vec![], // to be filled
+
             // log_prob_dist: vec![], // will change with each arrangement, maybe use a hashmap later
             eqv_gold_per_tap: -1.0_f64, // dummy value
             // gold_cost_record: vec![],
@@ -311,7 +326,7 @@ impl Upgrade {
             juice_avail: upgrade_index > 2, // will overwrite this in prep initialization anyway
             books_avail: -1,                // will overwrite in prep
 
-            state: State::new(prob_dist_len), // initialize state with default values
+            state, // initialize state with default values
             cost_dist: vec![Support::default(); 7],
             weap_juice_costs: vec![Support::default(); num_juice_avail],
             armor_juice_costs: vec![Support::default(); num_juice_avail],
@@ -323,6 +338,7 @@ impl Upgrade {
                 string += &upgrade_index.to_string();
                 string
             },
+            alr_failed: alr_failed.unwrap_or(0),
         }
     }
 
@@ -356,7 +372,7 @@ impl Upgrade {
             upgrade_index,
             special_value: -1.0_f64,
             full_juice_len: 1, // need to sort this out
-            support_lengths: vec![],
+
             // log_prob_dist: vec![], // will change with each arrangement, maybe use a hashmap later
             eqv_gold_per_tap: -1.0_f64, // dummy value
             // gold_cost_record: vec![],
@@ -367,7 +383,7 @@ impl Upgrade {
             juice_avail: upgrade_index > 2, // will overwrite this in prep initialization anyway
             books_avail: -1,                // will overwrite in prep
 
-            state: State::new(prob_dist_len), // initialize state with default values
+            state: State::new(prob_dist_len), // this is bogus for now, later it'll be a choice between adv hone strategy ig
             cost_dist: vec![],
             weap_juice_costs: vec![],
             armor_juice_costs: vec![],
@@ -379,6 +395,7 @@ impl Upgrade {
                 string += &upgrade_index.to_string();
                 string
             },
+            alr_failed: 0,
         }
     }
 }

@@ -10,16 +10,22 @@ mod success_analysis;
 use crate::cost_to_chance::{CostToChanceOut, cost_to_chance};
 // use hf_core::helpers::{calc_unlock, get_count};
 
+use hf_core::performance::Performance;
+// use hf_core::state_bundle;
 // use hf_core::parser::parser;
-use hf_core::state_bundle::{StateBundle, StateBundleJs};
+use hf_core::state_bundle::StateBundle;
 // use hf_core::upgrade::Upgrade;
 // use rand::rngs::ThreadRng;
+use hf_arena::engine::solve;
+use rand::rngs::ThreadRng;
 use serde::Deserialize;
+
 use serde_wasm_bindgen::{from_value, to_value};
 use wasm_bindgen::JsValue;
 use wasm_bindgen::prelude::*;
 
 pub use wasm_bindgen_rayon::init_thread_pool;
+use web_sys::console;
 #[derive(Deserialize)]
 #[allow(dead_code)]
 pub struct Payload {
@@ -41,7 +47,9 @@ pub struct Payload {
     juice_prices: Vec<(f64, f64)>,
     inp_leftover_juice_values: Vec<(f64, f64)>,
 
-    state_bundle_js: StateBundleJs,
+    progress_grid: Option<Vec<Vec<usize>>>,
+    state_grid: Option<Vec<Vec<Vec<(bool, usize)>>>>,
+    special_state: Option<Vec<usize>>,
 }
 
 #[derive(Deserialize)]
@@ -103,7 +111,43 @@ pub struct PayloadArr {
 
 #[wasm_bindgen]
 #[must_use]
-pub fn cost_to_chance_wrapper(input: JsValue) -> JsValue {
+pub fn evaluate_average_wrapper(input: JsValue) -> JsValue {
+    console_error_panic_hook::set_once();
+
+    let payload: Payload = from_value(input).unwrap();
+
+    let mut state_bundle = StateBundle::init_from_inputs(
+        &payload.normal_hone_ticks,
+        &payload.mats_budget,
+        &payload.adv_hone_ticks,
+        payload.express_event,
+        &payload.user_price_arr,
+        &payload.adv_hone_strategy,
+        &payload.juice_books_budget,
+        &payload.juice_prices,
+        &payload.inp_leftover_values,
+        &payload.inp_leftover_juice_values,
+        payload.progress_grid,
+        payload.state_grid,
+        payload.special_state,
+    );
+    web_sys::console::log_1(&"b".into());
+    let mut dummy_performance = Performance::new();
+    let metric = state_bundle.average_gold_metric(&mut dummy_performance);
+    state_bundle.metric = metric;
+    // let out: CostToChanceOut = cost_to_chance(&state_bundle);
+    web_sys::console::log_1(&format!("{:?}", state_bundle).into());
+    to_value(&state_bundle).unwrap()
+}
+
+// #[derive(Serialize, Debug)]
+// pub struct OptimizeAverageOut {
+//     best: f64,
+//     state_bundle_js: StateBundleJs,
+// }
+#[wasm_bindgen]
+#[must_use]
+pub fn optimize_average_wrapper(input: JsValue) -> JsValue {
     console_error_panic_hook::set_once();
 
     let payload: Payload = from_value(input).unwrap();
@@ -119,20 +163,23 @@ pub fn cost_to_chance_wrapper(input: JsValue) -> JsValue {
         &payload.juice_prices,
         &payload.inp_leftover_values,
         &payload.inp_leftover_juice_values,
-        &payload.state_bundle_js,
+        payload.progress_grid,
+        payload.state_grid,
+        payload.special_state,
     );
-    let out: CostToChanceOut = cost_to_chance(&state_bundle);
-    to_value(&out).unwrap()
+
+    let mut rng: ThreadRng = rand::rng();
+    let mut dummy_performance = Performance::new();
+    let best_state: StateBundle = solve(&mut rng, 1, state_bundle.clone(), &mut dummy_performance);
+
+    to_value(&best_state).unwrap()
 }
 
 // #[wasm_bindgen]
 // #[must_use]
-// pub fn parser_wrapper_unified(input: JsValue) -> JsValue {
+// pub fn parser_wrapper(input: JsValue) -> JsValue {
 //     console_error_panic_hook::set_once();
 //     let payload: Payload = from_value(input).unwrap();
-
-//     let normal_counts: Vec<Vec<i64>> = get_count(payload.normal_counts, payload.normal_hone_ticks);
-//     let adv_counts: Vec<Vec<i64>> = get_count(payload.adv_counts, payload.adv_hone_ticks);
 
 //     let (upgrades, other_strategy_prob_dists): (Vec<Upgrade>, Vec<Vec<f64>>) =
 //         parser_with_other_strategy(

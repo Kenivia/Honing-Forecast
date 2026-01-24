@@ -31,6 +31,7 @@
         "crates/wasm/pkg/**/*",
         "vite.config.ts",
         "vitest.setup.ts",
+        "junkyard/Inputs",
     ],
     "types": [
         "vitest/globals",
