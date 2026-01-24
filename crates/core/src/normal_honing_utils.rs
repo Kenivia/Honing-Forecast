@@ -568,26 +568,39 @@ pub fn probability_distribution(
     let mut raw_chances: Vec<f64> = vec![zero];
     let mut artisan: f64 = 0.0_f64;
     let mut count: usize = 0;
+    // web_sys::console::log_1(&alr_failed.into());
 
+    // web_sys::console::log_1(&base.into());
+    // web_sys::console::log_1(&artisan_rate.into());
+    // web_sys::console::log_1(&format!("{:?}", extra_arr).into());
+    // web_sys::console::log_1(&format!("a").into());
     loop {
+        // web_sys::console::log_1(&format!("{:?}", count).into());
+
         let min_count: f64 = std::cmp::min(count, 10) as f64;
+        // web_sys::console::log_1(&format!("c").into());
         let mut current_chance: f64 =
             base + (min_count * base) * 0.1 + extra_arr.get(count).unwrap_or(&0.0);
 
+        // web_sys::console::log_1(&format!("{:?}", current_chance).into());
+        // web_sys::console::log_1(&format!("d").into());
         if artisan >= 1.0 {
             current_chance = 1.0;
             raw_chances.push(current_chance);
             break;
         }
-
+        // web_sys::console::log_1(&format!("e").into());
         raw_chances.push(current_chance);
         count += 1;
         artisan += (46.51_f64 / 100.0) * current_chance * artisan_rate;
         if current_chance == 1.0 {
             break; // for upgrades that have 100% passrate immediately
         }
+        // if count > 300 {
+        //     panic!();
+        // }
     }
-
+    // web_sys::console::log_1(&format!("c").into());
     // convert raw per-try chances into per-tap probability distribution
     let mut chances = vec![0.0_f64; raw_chances.len()];
     let mut cum_chance = 1.0_f64;
@@ -596,6 +609,8 @@ pub fn probability_distribution(
         chances[idx] = cum_chance * element;
         cum_chance *= 1.0 - element;
     }
+
+    // web_sys::console::log_1(&format!("{:?}", chances).into());
     for (idx, element) in chances.iter_mut().enumerate() {
         if idx <= alr_failed {
             *element = 0.0;
@@ -607,5 +622,6 @@ pub fn probability_distribution(
         *element /= total;
     }
 
+    // web_sys::console::log_1(&format!("{:?}", chances).into());
     chances
 }

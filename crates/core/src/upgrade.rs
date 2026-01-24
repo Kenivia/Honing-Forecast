@@ -27,7 +27,7 @@ pub struct Upgrade {
     pub tap_offset: i64,
     pub upgrade_index: usize,
     pub special_value: f64,
-    pub full_juice_len: usize,
+    pub original_prob_dist_len: usize,
     pub eqv_gold_per_tap: f64,
     pub juice_avail: bool,
     pub books_avail: i64,
@@ -269,6 +269,7 @@ impl Deref for Support {
 
 impl Upgrade {
     pub fn new_normal(
+        base_chance: f64,
         prob_dist: Vec<f64>,
         costs: [i64; 7],
         special_cost: i64,
@@ -281,25 +282,19 @@ impl Upgrade {
         state_given: Option<Vec<(bool, usize)>>,
     ) -> Self {
         let prob_dist_len: usize = prob_dist.len();
-        let base_chance: f64 = prob_dist[1];
-        let full_juice_len: usize = probability_distribution(
-            base_chance,
-            artisan_rate,
-            &generate_first_deltas(
-                base_chance,
-                prob_dist_len, // this is excessive but its fine
-                prob_dist_len,
-            ),
-            0.0,
-            alr_failed.unwrap_or(0),
-        )
-        .len();
+        // let base_chance: f64 = prob_dist[1];
+        // web_sys::console::log_1(&format!("{:?}", alr_failed).into());
+        let original_prob_dist_len: usize =
+            probability_distribution(base_chance, artisan_rate, &vec![], 0.0, 0).len();
+        // web_sys::console::log_1(&format!("a").into());
         let mut state = State::new(prob_dist_len);
+        // web_sys::console::log_1(&format!("a").into());
         state.update_payload(
             state_given
                 .unwrap_or(State::new(prob_dist_len).payload)
                 .to_owned(),
         );
+        // web_sys::console::log_1(&format!("{:?}", state).into());
         Self {
             is_normal_honing: true,
             prob_dist: ProbDist::new(prob_dist),
@@ -316,7 +311,7 @@ impl Upgrade {
             tap_offset: 0,
             upgrade_index,
             special_value: -1.0_f64,
-            full_juice_len,
+            original_prob_dist_len,
 
             // log_prob_dist: vec![], // will change with each arrangement, maybe use a hashmap later
             eqv_gold_per_tap: -1.0_f64, // dummy value
@@ -371,7 +366,7 @@ impl Upgrade {
             tap_offset: adv_cost_start,
             upgrade_index,
             special_value: -1.0_f64,
-            full_juice_len: 1, // need to sort this out
+            original_prob_dist_len: 1, // need to sort this out
 
             // log_prob_dist: vec![], // will change with each arrangement, maybe use a hashmap later
             eqv_gold_per_tap: -1.0_f64, // dummy value

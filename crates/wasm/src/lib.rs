@@ -131,7 +131,7 @@ pub fn evaluate_average_wrapper(input: JsValue) -> JsValue {
         payload.state_grid,
         payload.special_state,
     );
-    web_sys::console::log_1(&"b".into());
+
     let mut dummy_performance = Performance::new();
     let metric = state_bundle.average_gold_metric(&mut dummy_performance);
     state_bundle.metric = metric;

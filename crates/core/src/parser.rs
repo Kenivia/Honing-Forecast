@@ -108,7 +108,7 @@ impl PreparationOutput {
         let mut effective_budgets: Vec<i64> = budgets[0..7].to_vec();
         effective_budgets[3] -= unlock_costs[0];
         effective_budgets[6] -= unlock_costs[1];
-
+        // web_sys::console::log_1(&"4".into());
         let mut upgrade_arr: Vec<Upgrade> = parser(
             hone_ticks,
             adv_ticks,
@@ -217,7 +217,10 @@ pub fn parser(
             } else {
                 Some(state_given_opt.as_ref().unwrap()[piece_type][upgrade_index].clone())
             };
+            // web_sys::console::log_1(&this_progress.into());
+            // web_sys::console::log_1(&format!("{:?}", this_state_given).into());
             out.push(Upgrade::new_normal(
+                NORMAL_HONE_CHANCES[upgrade_index],
                 probability_distribution(
                     NORMAL_HONE_CHANCES[upgrade_index],
                     event_artisan_rate,
@@ -235,6 +238,7 @@ pub fn parser(
                 this_progress,
                 this_state_given,
             ));
+            // web_sys::console::log_1(&format!("upgrade init done ").into());
             upgrade_index += 1;
             // current_counter += 1;
         }

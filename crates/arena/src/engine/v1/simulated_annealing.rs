@@ -84,7 +84,7 @@ fn neighbour<R: Rng>(state_bundle: &mut StateBundle, temp: f64, init_temp: f64, 
             1,
             0.8,
             rng,
-        );
+        ); // TODO need to like disallow changing already succeeded pieces 
         for _ in 0..want_to_swap {
             let want_to_swap_indices: Vec<usize> =
                 (0..state_bundle.special_state.len()).choose_multiple(rng, 2);
@@ -100,9 +100,23 @@ fn neighbour<R: Rng>(state_bundle: &mut StateBundle, temp: f64, init_temp: f64, 
         let choice_len: usize = upgrade.books_avail as usize;
         let state = &mut upgrade.state;
 
-        let want_to_flip: usize = my_weighted_rand(state.len(), temp, init_temp, 1, 0.8, rng);
+        let want_to_flip: usize = my_weighted_rand(
+            state.len() - upgrade.alr_failed,
+            temp,
+            init_temp,
+            1,
+            0.8,
+            rng,
+        ) + upgrade.alr_failed;
 
-        let want_to_book: usize = my_weighted_rand(state.len(), temp, init_temp, 1, 0.8, rng);
+        let want_to_book: usize = my_weighted_rand(
+            state.len() - upgrade.alr_failed,
+            temp,
+            init_temp,
+            1,
+            0.8,
+            rng,
+        ) + upgrade.alr_failed;
 
         let flip_target = rng.random_bool(0.5);
 

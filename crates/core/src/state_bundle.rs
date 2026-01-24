@@ -100,6 +100,7 @@ impl StateBundle {
         state_grid: Option<Vec<Vec<Vec<(bool, usize)>>>>,
         special_state: Option<Vec<usize>>,
     ) -> StateBundle {
+        // web_sys::console::log_1(&"1".into());
         let (prep_output, upgrade_arr): (PreparationOutput, Vec<Upgrade>) =
             PreparationOutput::initialize(
                 hone_ticks,
@@ -116,6 +117,7 @@ impl StateBundle {
                 state_grid,
             );
         let u_len = upgrade_arr.len();
+        // web_sys::console::log_1(&"2".into());
         let mut out = StateBundle {
             upgrade_arr,
             special_state: if special_state.is_none()
@@ -130,6 +132,7 @@ impl StateBundle {
             prep_output,
             special_cache: HashMap::new(),
         };
+        // web_sys::console::log_1(&"3".into());
         out.update_dist();
         out.compute_special_probs();
         out.update_combined();

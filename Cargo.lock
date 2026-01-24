@@ -192,6 +192,7 @@ dependencies = [
  "serde",
  "serde_json",
  "statrs",
+ "web-sys",
 ]
 
 [[package]]
