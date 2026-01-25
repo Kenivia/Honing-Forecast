@@ -17,6 +17,9 @@ type ControlPanelProps = {
     setDataSize: (_v: string) => void
     lockXAxis: boolean
     onToggleLockXAxis: () => void
+    minResolution: number
+    setMinResolution: React.Dispatch<React.SetStateAction<number>>
+
 }
 
 export default function ControlPanel({
@@ -33,7 +36,26 @@ export default function ControlPanel({
     setDataSize,
     lockXAxis,
     onToggleLockXAxis,
+    minResolution,
+    setMinResolution,
 }: ControlPanelProps) {
+    const handleMinResolutionChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+        const rawValue = event.target.value.trim()
+        if (rawValue === "") {
+            return
+        }
+        if (!/^\d+$/.test(rawValue)) {
+            return
+        }
+        const parsed = Number.parseInt(rawValue, 10)
+        if (Number.isNaN(parsed)) {
+            return
+        }
+        const clamped = Math.max(1, Math.min(219, parsed))
+        setMinResolution(clamped)
+        console.log(rawValue, clamped);
+    }
+
     return (
         <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 0, minWidth: 200, flexShrink: 0 }}>
             <h3 style={{ ...styles.sectionTitle, marginTop: "-8px", alignSelf: "center" }}>Controls</h3>
@@ -90,7 +112,28 @@ export default function ControlPanel({
                             placeholder="100000"
                         />
                     </div>
+                    <label style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                        <span style={{ fontSize: 14, color: "var(--text-muted)" }}>Min Resolution</span>
+                        <input
+                            type="text"
+                            inputMode="numeric"
+                            pattern="[0-9]*"
+                            value={String(minResolution)}
+                            onChange={handleMinResolutionChange}
+                            style={{
+                                width: 70,
+                                padding: "4px 6px",
+                                borderRadius: 4,
+                                border: "1px solid var(--btn-border)",
+                                background: "var(--input-bg)",
+                                color: "var(--btn-primary-text)",
+                                fontSize: 14,
+                            }}
+                            aria-label="Minimum resolution"
+                        // placeholder="10"
 
+                        />
+                    </label>
                     <button
                         style={{
                             ...styles.demoButton,

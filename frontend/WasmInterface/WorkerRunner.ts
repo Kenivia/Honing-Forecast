@@ -18,6 +18,7 @@ export function buildPayload({
     succeededGrid,
     stateBundleGrid,
     specialState,
+    minResolution,
 }: {
     topGrid: boolean[][]
     bottomGrid: boolean[][]
@@ -32,6 +33,7 @@ export function buildPayload({
     succeededGrid: boolean[][]
     stateBundleGrid: StatePair[][][]
     specialState: number[]
+    minResolution: number
 }) {
     const { mats, juice } = inputs
     // console.log(mats)
@@ -56,6 +58,7 @@ export function buildPayload({
         succeeded_grid: succeededGrid,
         state_grid: stateBundleGrid,
         special_state: specialState,
+        min_resolution: Math.max(1, Math.min(219, Math.floor(minResolution || 1))),
     }
 
     // Always use the traditional tick-based approach

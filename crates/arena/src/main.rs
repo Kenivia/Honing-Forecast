@@ -144,6 +144,7 @@ fn main() {
                 let mut state_bundle: StateBundle = solve(
                     &mut rng,
                     *metric_type,
+                    1,
                     state_bundle.clone(),
                     &mut state_performance,
                 );

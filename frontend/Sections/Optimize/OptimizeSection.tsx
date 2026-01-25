@@ -59,6 +59,7 @@ export default function OptimizeSection({
     evaluateAverageResult,
     specialState,
     setSpecialState,
+
     // gridRefs,
     // onGridMouseDown,
     // marquee,
@@ -73,26 +74,29 @@ export default function OptimizeSection({
         }
         setOptimizeButtonPress((prev: number) => prev + 1)
     }
+
     // console.log("special", specialState)
     // console.log(flatSucceedArr)
 
     return (
         <div style={{ ...styles.inputSection, flexDirection: "row", maxWidth: "1200px", width: "100%" }}>
             <div>
-                <button
-                    onClick={handleOptimizeAverageClick}
-                    style={{
-                        background: optimizeAvgBusy ? "var(--btn-toggle-deselected)" : "var(--btn-toggle-optimize-selected)",
-                        color: optimizeAvgBusy ? "var(--text-muted)" : "var(--text)",
-                        padding: "6px 10px",
-                        borderRadius: 4,
-                        border: "1px solid var(--btn-border)",
-                        cursor: "pointer",
-                        marginBottom: 8,
-                    }}
-                >
-                    {optimizeAvgBusy ? "Cancel Optimize Average" : "Optimize Average"}
-                </button>
+                <div style={{ display: "flex", flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 8 }}>
+                    <button
+                        onClick={handleOptimizeAverageClick}
+                        style={{
+                            background: optimizeAvgBusy ? "var(--btn-toggle-deselected)" : "var(--btn-toggle-optimize-selected)",
+                            color: optimizeAvgBusy ? "var(--text-muted)" : "var(--text)",
+                            padding: "6px 10px",
+                            borderRadius: 4,
+                            border: "1px solid var(--btn-border)",
+                            cursor: "pointer",
+                        }}
+                    >
+                        {optimizeAvgBusy ? "Cancel Optimize Average" : "Optimize Average"}
+                    </button>
+
+                </div>
                 <br />
                 Already spent: {evaluateAverageResult?.prep_output.already_spent[3]}
                 <br />

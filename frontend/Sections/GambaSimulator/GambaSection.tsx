@@ -41,6 +41,7 @@ type GambaSectionProps = {
     specialState: number[]
     upgradeArr: any[]
     ParserBusy: boolean
+    minResolution: number
 }
 
 export default function GambaSection({
@@ -67,6 +68,7 @@ export default function GambaSection({
     succeededGrid,
     stateBundleGrid,
     specialState,
+    minResolution,
 }: GambaSectionProps) {
     const { matsColumnDef } = createColumnDefs()
     const { values, setters } = inputs
@@ -171,6 +173,7 @@ export default function GambaSection({
             succeededGrid,
             stateBundleGrid,
             specialState,
+            minResolution,
         })
 
         const id = Math.random().toString(36).substr(2, 9)
@@ -263,6 +266,7 @@ export default function GambaSection({
         bucketCount,
         // autoGoldValues,
         dataSize,
+        minResolution,
     ])
 
     // Debounce effect for parser calls when grids change

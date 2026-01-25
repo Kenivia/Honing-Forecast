@@ -297,7 +297,7 @@ pub fn parser(
             // web_sys::console::log_1(&succeeded_grid.into());
             // web_sys::console::log_1(&format!("{:?}", unlock_grid).into());
 
-            web_sys::console::log_1(&format!("{:?}", succeeded_grid).into());
+            // web_sys::console::log_1(&format!("{:?}", succeeded_grid).into());
             // web_sys::console::log_1(&format!("{:?}, {:?}", piece_type, upgrade_index).into());
 
             let relevant = if piece_type == 5 {

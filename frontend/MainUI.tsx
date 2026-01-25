@@ -173,6 +173,7 @@ export default function HoningForecastUI() {
     const [succeededGrid, setSucceededGrid] = useState<boolean[][]>(Array(6).fill(Array(25).fill(false)))
 
     const [specialState, setSpecialState] = useState<number[]>([])
+    const [minResolution, setMinResolution] = useState<number>(10)
 
     const [allowUserChangeState, setAllowUserChangeState] = useState<boolean>(true)
     // Lock x-axis state (shared across all graphs)
@@ -510,6 +511,7 @@ export default function HoningForecastUI() {
             succeededGrid,
             stateBundleGrid,
             specialState,
+            minResolution,
             // monteCarloResult,
         })
 
@@ -535,6 +537,7 @@ export default function HoningForecastUI() {
     const UnlockGridKey = useMemo(() => String(unlockGrid), [unlockGrid])
     const SucceededGridKey = useMemo(() => String(succeededGrid), [succeededGrid])
     const specialStateKey = useMemo(() => String(specialState), [specialState])
+    const minResolutionKey = useMemo(() => String(minResolution), [minResolution])
     const inputBundleKey = useMemo(
         () =>
             JSON.stringify({
@@ -656,6 +659,7 @@ export default function HoningForecastUI() {
         StateBundleGridKey,
         inputBundleKey,
         specialStateKey,
+        minResolutionKey,
     ])
 
     const optimizeAvgWorkerRef = useRef<Worker | null>(null)
@@ -696,7 +700,7 @@ export default function HoningForecastUI() {
             setResult: setparserResult,
         })
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [advStrategyKey, expressEventKey, graphBucketSizeKey, dataSizeKey])
+    }, [advStrategyKey, expressEventKey, graphBucketSizeKey, dataSizeKey, minResolutionKey])
 
     const clearAll = createClearAll({
         setTopGrid,
@@ -815,6 +819,8 @@ export default function HoningForecastUI() {
                             setDataSize={setDataSize}
                             lockXAxis={lockXAxis}
                             onToggleLockXAxis={onToggleLockXAxis}
+                            minResolution={minResolution}
+                            setMinResolution={setMinResolution}
                         />
                     </div>
                 </div>
@@ -871,6 +877,7 @@ export default function HoningForecastUI() {
                             evaluateAverageResult={evaluateAverageResult}
                             specialState={specialState}
                             setSpecialState={setSpecialState}
+
                         />
                     </div>
                 )}
