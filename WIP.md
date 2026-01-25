@@ -16,10 +16,11 @@
 
 - ~~add succeed button and handle it correctly~~
   - ~~succeededGrid, which causese it to render in js (greyed out) but~~ ~~rust ignores it(does not put it in upgrade_arr, but contributes to already-spent cost)~~ just change the prob dist
-- special state user input & passing into eval
-  - how to present this to user???
-  - store the "invalid index" from special probs so that js knows when to stop rendering the list
-  - also store the special probs of the active special state
+- ~~special state user input & passing into eval~~
+  - ~~how to present this to user???~~
+  -~~ store the "invalid index" from special probs so that js knows when to stop rendering the list~~
+  - ~~also store the special probs of the active special state~~
+  - ~~how to handle alr-succeeded upgrades in rust???~~
 
 - store & show show breakdown of average gold costs from here ~~ and already-spent costs~~
 - 10 at a time toggle, need to modify neighbour function & stategrid
@@ -27,7 +28,7 @@
 
 - marquee for state grid also?
 
-- add optimizer button
+- ~~add optimizer button~~
   - stream intermediate results that'd be so cool
 
 - slider instead of leftover value

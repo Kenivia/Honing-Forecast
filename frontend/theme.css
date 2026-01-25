@@ -34,7 +34,7 @@
     --checkbox-focus-ring: rgba(59, 130, 246, 0.35);
     --checkbox-checked-bg: #559bd8;
     --checkbox-checked-text: #ffffff;
-    --checkbox-checked-border: #5a5a5a00;
+    --checkbox-checked-border: #bbb;
     --checkbox-hover-bg: #5a5a5a;
 
     /* Control Checkbox Colors */

@@ -1,0 +1,80 @@
+/* Container Layout */
+.sequence-container {
+    display: grid;
+    /* Define column widths here. Adjust as needed. */
+    grid-template-columns: 1.5fr 0.7fr 1fr;
+    gap: 5px;
+    align-items: start;
+    width: 600px
+}
+
+/* Headers */
+.grid-header {
+    font-weight: bold;
+    padding-bottom: 8px;
+    border-bottom: 2px solid #ccc;
+    height: 30px;
+
+}
+
+/* Row Item styling to ensure alignment across columns */
+.row-item {
+    height: 40px;
+    /* Fixed height is crucial for alignment since columns are split */
+    display: flex;
+    align-items: center;
+
+
+    padding: 12px
+}
+
+/* Column Specifics */
+.col-sortable {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+
+.col-static {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+
+}
+
+/* Sortable Visual Feedback */
+.name-cell {
+    cursor: grab;
+    padding-right: 10px;
+    border: 1px solid #ccc;
+    background-color: var(--btn-toggle-optimize-selected);
+
+    border-radius: 2px;
+}
+
+.name-cell:active {
+    cursor: grabbing;
+}
+
+/* .prob-cell {
+    border-bottom: 1px solid #ccc;
+} */
+
+/* The "Ghost" is the empty space left behind while dragging */
+.sortable-ghost {
+    opacity: 0.4;
+    background-color: var(--btn-demo);
+    border: 1px dashed #999;
+}
+
+/* Button Styling */
+.toggle-btn {
+    border: none;
+    padding: 5px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+
+    transition: background 0.2s;
+    width: 100%;
+    text-wrap-mode: nowrap;
+}

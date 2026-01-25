@@ -141,6 +141,7 @@ pub fn evaluate_average_wrapper(input: JsValue) -> JsValue {
     let metric = state_bundle.average_gold_metric(&mut dummy_performance);
     state_bundle.metric = metric;
     state_bundle.clean_state();
+    state_bundle.set_latest_special_probs();
     // let out: CostToChanceOut = cost_to_chance(&state_bundle);
     web_sys::console::log_1(&format!("{:?}", state_bundle).into());
     to_value(&state_bundle).unwrap()
@@ -178,8 +179,17 @@ pub fn optimize_average_wrapper(input: JsValue) -> JsValue {
 
     let mut rng: ThreadRng = rand::rng();
     let mut dummy_performance = Performance::new();
-    let best_state: StateBundle = solve(&mut rng, 1, state_bundle.clone(), &mut dummy_performance);
-
+    let mut best_state: StateBundle =
+        solve(&mut rng, 1, state_bundle.clone(), &mut dummy_performance);
+    web_sys::console::log_1(&format!("{:?}", best_state).into());
+    best_state.update_dist();
+    best_state.update_individual_support();
+    best_state.update_combined();
+    best_state.clean_state();
+    best_state.compute_special_probs();
+    best_state.set_latest_special_probs();
+    // let out: CostToChanceOut = cost_to_chance(&state_bundle);
+    web_sys::console::log_1(&format!("{:?}", best_state).into());
     to_value(&best_state).unwrap()
 }
 

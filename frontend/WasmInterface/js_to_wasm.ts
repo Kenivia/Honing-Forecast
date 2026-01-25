@@ -101,11 +101,8 @@ self.addEventListener("message", async (ev) => {
 
         // console.log(result.typical_costs)
     } else if (which_one == "OptimizeAverage") {
-        let out = await OptimizeAverageWasm(payload)
-        result = {
-            state_bundle_js: out.state_bundle_js,
-            best: out.best,
-        }
+        result  = await OptimizeAverageWasm(payload)
+  
     }
     // else if (which_one == "CostToChanceArr") {
     //     let out = await CostToChanceArrWasm(payload)

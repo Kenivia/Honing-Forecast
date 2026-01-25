@@ -245,21 +245,23 @@ const RowBundle = ({
                                             style={{
                                                 width: CELL_W,
                                                 height: CELL_H,
-                                                // border: "1px solid #eee",
+
                                                 position: "relative",
                                                 display: "flex",
                                                 justifyContent: "center",
                                                 alignItems: "center",
 
                                                 // backgroundColor: "#fff",
+                                                background: cell.type === "progress" || !cell.active ? "inherit" : "var( --btn-toggle-optimize-selected)",
+
                                                 cursor:
                                                     ((!allowUserChangeState || cIndex < progress || cIndex >= pity_len - 1) && cell.type !== "progress") ||
-                                                    cIndex >= pity_len
+                                                        cIndex >= pity_len
                                                         ? "not-allowed"
                                                         : "pointer",
                                                 opacity:
                                                     ((!allowUserChangeState || cIndex < progress || cIndex >= pity_len - 1) && cell.type !== "progress") ||
-                                                    cIndex >= pity_len
+                                                        cIndex >= pity_len
                                                         ? 0.3
                                                         : 1,
                                             }}
@@ -286,6 +288,7 @@ const RowBundle = ({
                                                 className="checkbox-grid-input"
                                                 style={
                                                     {
+
                                                         "--checkbox-content": "um idk why an empty string doesn't over write the default",
                                                     } as React.CSSProperties
                                                 }
@@ -305,6 +308,7 @@ const RowBundle = ({
                                                         pointerEvents: "none", // Let clicks pass to the div
                                                         background: succeed && showSucceedMarker ? "var(--text-success)" : "inherit",
                                                         color: succeed && showSucceedMarker ? "var(--btn-success-text)" : "inherit",
+
                                                     }}
                                                 >
                                                     {cell.type === "progress" ? (

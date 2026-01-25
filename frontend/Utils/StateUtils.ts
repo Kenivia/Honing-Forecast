@@ -24,23 +24,22 @@ export function applyFlatToGrid(
     let newUnlockGrid = unlockGrid.map((row) => [...row])
     let newStateBundleGrid = stateBundleGrid.map((row) => [...row])
 
-    console.log("before")
-    console.log(newSucceededGrid)
-    console.log(flatSucceedArr)
+    // console.log("before")
+    // console.log(newSucceededGrid)
+    // console.log(flatSucceedArr)
     for (let index = 0; index < flatProgressArr.length; index++) {
         let row: number = evaluateAverageResult.upgrade_arr[index].piece_type
         let col: number = evaluateAverageResult.upgrade_arr[index].upgrade_index
-        console.log(row, col)
+        // console.log(row, col)
         // console.log(evaluateAverageResult)
         newProgressGrid[row][col] = flatProgressArr[index]
         newUnlockGrid[row][col] = flatUnlockArr[index]
         newSucceededGrid[row][col] = flatSucceedArr[index]
-
         newStateBundleGrid[row][col] = flatStateBundle[index]
     }
 
-    console.log("after")
-    console.log(newSucceededGrid)
+    // console.log("after")
+    // console.log(newSucceededGrid)
 
     setProgressGrid(newProgressGrid)
     setUnlockGrid(newUnlockGrid)

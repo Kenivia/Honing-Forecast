@@ -11,11 +11,13 @@ pub struct StateBundle {
     pub upgrade_arr: Vec<Upgrade>,
     pub special_state: Vec<usize>, // arbitrary length
 
+    pub special_invalid_index: Option<usize>,
+    pub latest_special_probs: Option<Vec<f64>>,
     pub metric_type: i64,
     pub metric: f64,
     // pub state_index: Vec<Vec<Vec<i64>>>, // i pre-added this for caching but havnt implemented anything
     pub prep_output: PreparationOutput,
-    // #[serde(skip)]
+    #[serde(skip)]
     pub special_cache: HashMap<Vec<usize>, Vec<f64>>,
     // pub performance: Performance,
 }
@@ -58,6 +60,14 @@ impl StateBundle {
     //         special_state: self.special_state.clone(),
     //     }
     // }
+    pub fn set_latest_special_probs(&mut self) {
+        let mut out = Vec::with_capacity(self.upgrade_arr.len());
+        self.clean_special_state();
+        for (index, _) in self.special_probs().iter().enumerate() {
+            out.push(self.special_probs().iter().skip(index + 1).sum::<f64>());
+        }
+        self.latest_special_probs = Some(out);
+    }
     pub fn clean_state(&mut self) {
         for upgrade in self.upgrade_arr.iter_mut() {
             let p_len = upgrade.prob_dist.len();
@@ -86,12 +96,14 @@ impl StateBundle {
     pub fn new(prep_output: PreparationOutput, upgrade_arr: Vec<Upgrade>) -> StateBundle {
         let state_bundle: StateBundle = StateBundle {
             // state_index: vec![],
+            special_invalid_index: None,
             metric: -1.0,
             special_state: default_special(upgrade_arr.len()),
             prep_output,
             special_cache: HashMap::new(),
             upgrade_arr,
             metric_type: -1,
+            latest_special_probs: None,
         };
 
         return state_bundle;
@@ -142,10 +154,12 @@ impl StateBundle {
             } else {
                 special_state.unwrap()
             },
+            special_invalid_index: None,
             metric_type: -1,
             metric: -1.0,
             prep_output,
             special_cache: HashMap::new(),
+            latest_special_probs: None,
         };
         // web_sys::console::log_1(&"3".into());
         out.update_dist();

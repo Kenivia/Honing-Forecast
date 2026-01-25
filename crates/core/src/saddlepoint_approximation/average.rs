@@ -112,7 +112,7 @@ impl StateBundle {
         if DEBUG_AVERAGE {
             dbg!(dbg_sa_avg);
         }
-
+        // web_sys::console::log_1(&total_gold.into());
         total_gold
     }
 

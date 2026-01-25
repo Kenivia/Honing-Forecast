@@ -34,7 +34,7 @@ export function buildPayload({
     specialState: number[]
 }) {
     const { mats, juice } = inputs
-    console.log(mats)
+    // console.log(mats)
     const payload: any = {
         mats_budget: MATS_LABELS.slice(0, 8).map((label) => parseFloat(mats.owned[label] || "0")),
         adv_hone_strategy: adv_hone_strategy,

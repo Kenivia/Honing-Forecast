@@ -5,12 +5,14 @@ import type { InputsBundleWithSetters } from "@/Utils/InputBundles.ts"
 import React from "react"
 import StateGrid, { StatePair } from "@/Sections/Optimize/StateGrid.tsx"
 import StateGridsManager from "@/Sections/Optimize/StateGrid.tsx"
+import { SpecialSortable } from "./SpecialSortable.tsx"
 
 type OptimizeSectionProps = {
     inputsBundle: InputsBundleWithSetters
 
     optimizeAvgBusy: boolean
-    optimizeAvgResult: any
+    optimizeAvgWorkerRef: React.MutableRefObject<Worker | null>
+    // optimizeAvgResult: any
     setOptimizeButtonPress: React.Dispatch<React.SetStateAction<any>>
     // onGridMouseDown: (_grid: "top" | "bottom", _e: React.MouseEvent) => void
 
@@ -42,7 +44,8 @@ function my_alr_spent_map(already_spent: any, labels: string[], index: number) {
 export default function OptimizeSection({
     inputsBundle,
     optimizeAvgBusy,
-    optimizeAvgResult,
+    // optimizeAvgResult,
+    optimizeAvgWorkerRef,
     setOptimizeButtonPress,
     flatProgressArr,
     setFlatProgressArr,
@@ -61,15 +64,51 @@ export default function OptimizeSection({
     // marquee,
 }: OptimizeSectionProps) {
     const { wideMatsColumnDefs } = createColumnDefs()
-    const { values, setters } = inputsBundle
-    const { mats, juice } = values
-    const { mats: matsSetters, juice: juiceSetters } = setters
     const already_spent = evaluateAverageResult?.prep_output.already_spent
+    const handleOptimizeAverageClick = () => {
+        if (optimizeAvgBusy) {
+            optimizeAvgWorkerRef.current?.terminate()
+            optimizeAvgWorkerRef.current = null
+            return
+        }
+        setOptimizeButtonPress((prev: number) => prev + 1)
+    }
     // console.log("special", specialState)
     // console.log(flatSucceedArr)
 
     return (
         <div style={{ ...styles.inputSection, flexDirection: "row", maxWidth: "1200px", width: "100%" }}>
+            <div>
+                <button
+                    onClick={handleOptimizeAverageClick}
+                    style={{
+                        background: optimizeAvgBusy ? "var(--btn-toggle-deselected)" : "var(--btn-toggle-optimize-selected)",
+                        color: optimizeAvgBusy ? "var(--text-muted)" : "var(--text)",
+                        padding: "6px 10px",
+                        borderRadius: 4,
+                        border: "1px solid var(--btn-border)",
+                        cursor: "pointer",
+                        marginBottom: 8,
+                    }}
+                >
+                    {optimizeAvgBusy ? "Cancel Optimize Average" : "Optimize Average"}
+                </button>
+                <br />
+                Already spent: {evaluateAverageResult?.prep_output.already_spent[3]}
+                <br />
+                Average cost from now on: {evaluateAverageResult?.metric - evaluateAverageResult?.prep_output.already_spent[3]}
+                <br />
+                Already spent + more to come: {evaluateAverageResult?.metric}
+            </div>
+            {flatStateBundle && flatProgressArr && evaluateAverageResult && specialState && (
+                <SpecialSortable
+                    evaluateAverageResult={evaluateAverageResult}
+                    specialState={specialState}
+                    setSpecialState={setSpecialState}
+                    flatSucceedArr={flatSucceedArr}
+                    setFlatSucceedArr={setFlatSucceedArr}
+                />
+            )}
             {flatStateBundle && flatProgressArr && evaluateAverageResult && specialState && (
                 <StateGridsManager
                     flatProgressArr={flatProgressArr}
@@ -86,13 +125,7 @@ export default function OptimizeSection({
                     setSpecialState={setSpecialState}
                 />
             )}
-            <div>
-                Already spent: {evaluateAverageResult?.prep_output.already_spent[3]}
-                <br />
-                Average cost from now on: {evaluateAverageResult?.metric - evaluateAverageResult?.prep_output.already_spent[3]}
-                <br />
-                Already spent + more to come: {evaluateAverageResult?.metric}
-            </div>
+
 
             {
                 <div style={{ display: "flex", flexDirection: "row", alignItems: "flex-start", gap: 0, minWidth: 200, flexShrink: 0, marginTop: 0 }}>

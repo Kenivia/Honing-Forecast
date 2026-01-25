@@ -24,7 +24,7 @@ impl StateBundle {
         out
     }
 
-    fn clean_special_state(&mut self) {
+    pub fn clean_special_state(&mut self) {
         let mut highest_upgrade_index_seen: Vec<i64> = vec![-1; 6];
         let mut valid_uindex: Vec<usize> = Vec::with_capacity(self.upgrade_arr.len());
         let mut invalid_uindex: Vec<usize> = Vec::with_capacity(self.upgrade_arr.len());
@@ -38,6 +38,7 @@ impl StateBundle {
             highest_upgrade_index_seen[upgrade.piece_type] = upgrade.upgrade_index as i64;
         }
         invalid_uindex.sort();
+        self.special_invalid_index = Some(valid_uindex.len());
         valid_uindex.extend_from_slice(&invalid_uindex);
         self.special_state = valid_uindex;
     }
@@ -76,12 +77,15 @@ impl StateBundle {
         let mut invalid_index: usize = m + 1;
         for (attempt_index, u_index) in self.special_state.iter().enumerate() {
             let upgrade = &self.upgrade_arr[*u_index];
+
             // dbg!(upgrade.upgrade_index, upgrade.is_weapon, upgrade.piece_type);
             if highest_upgrade_index_seen[upgrade.piece_type] > upgrade.upgrade_index as i64 {
                 invalid_index = attempt_index + 1;
                 break;
             }
-
+            if upgrade.succeeded {
+                continue;
+            }
             highest_upgrade_index_seen[upgrade.piece_type] = upgrade.upgrade_index as i64;
 
             let p = upgrade.base_chance;

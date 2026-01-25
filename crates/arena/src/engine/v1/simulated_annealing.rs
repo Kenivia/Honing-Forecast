@@ -90,13 +90,21 @@ fn neighbour<R: Rng>(state_bundle: &mut StateBundle, temp: f64, init_temp: f64, 
                 (0..state_bundle.special_state.len()).choose_multiple(rng, 2);
             let first = want_to_swap_indices[0];
             let second = want_to_swap_indices[1];
-            let temp = state_bundle.special_state[first];
-            state_bundle.special_state[first] = state_bundle.special_state[second];
-            state_bundle.special_state[second] = temp;
+
+            if !(state_bundle.upgrade_arr[first].succeeded
+                || state_bundle.upgrade_arr[second].succeeded)
+            {
+                let temp = state_bundle.special_state[first];
+                state_bundle.special_state[first] = state_bundle.special_state[second];
+                state_bundle.special_state[second] = temp;
+            }
         }
     }
 
     for upgrade in state_bundle.upgrade_arr.iter_mut() {
+        if upgrade.succeeded {
+            continue;
+        }
         let choice_len: usize = upgrade.books_avail as usize;
         let state = &mut upgrade.state;
 
@@ -107,7 +115,7 @@ fn neighbour<R: Rng>(state_bundle: &mut StateBundle, temp: f64, init_temp: f64, 
             1,
             0.8,
             rng,
-        ) + upgrade.alr_failed;
+        );
 
         let want_to_book: usize = my_weighted_rand(
             state.len() - upgrade.alr_failed,
@@ -116,13 +124,13 @@ fn neighbour<R: Rng>(state_bundle: &mut StateBundle, temp: f64, init_temp: f64, 
             1,
             0.8,
             rng,
-        ) + upgrade.alr_failed;
+        );
 
         let flip_target = rng.random_bool(0.5);
 
         // dbg!(want_to_flip);
         let mut want_to_flip_indices: Vec<usize> =
-            (0..state.len() - 1).choose_multiple(rng, want_to_flip);
+            (upgrade.alr_failed..state.len() - 1).choose_multiple(rng, want_to_flip);
         want_to_flip_indices.sort();
         let mut flipped_index: usize = 0;
 
@@ -130,7 +138,7 @@ fn neighbour<R: Rng>(state_bundle: &mut StateBundle, temp: f64, init_temp: f64, 
         let book_target_index: usize = rng.random_range(0..=choice_len);
         let book_target_id: usize = ids[book_target_index];
         let mut want_to_book_indices: Vec<usize> =
-            (0..state.len() - 1).choose_multiple(rng, want_to_book);
+            (upgrade.alr_failed..state.len() - 1).choose_multiple(rng, want_to_book);
         want_to_book_indices.sort();
         let mut booked_index: usize = 0;
 
@@ -216,15 +224,28 @@ pub fn solve<R: Rng>(
     let mut highest_seen: f64 = MIN;
     let mut lowest_seen: f64 = MAX;
     let mut best_state_so_far: StateBundle = state_bundle.clone();
-
+    // web_sys::console::log_1(&best_state_so_far.metric.into());
     let mut temps_without_improvement = 1;
     while temp >= 0.0 {
         neighbour(&mut state_bundle, temp, init_temp, rng);
         state_bundle.metric = state_bundle.metric_router(metric_type, performance);
+        let mut x = Vec::new();
+        let mut y = Vec::new();
+        for upgrade in state_bundle.upgrade_arr.iter() {
+            x.push(upgrade.state.clone());
+            y.push(upgrade.prob_dist.payload.clone());
+        }
+        // web_sys::console::log_1(&format!("{:?}", x).into());
+        // web_sys::console::log_1(&format!("{:?}", y).into());
+        // web_sys::console::log_2(
+        //     &best_state_so_far.metric.into(),
+        //     &state_bundle.metric.into(),
+        // );
         highest_seen = highest_seen.max(state_bundle.metric);
         lowest_seen = lowest_seen.min(state_bundle.metric);
         if state_bundle.metric > best_state_so_far.metric {
             best_state_so_far.my_clone_from(&state_bundle);
+            // web_sys::console::log_1(&best_state_so_far.metric.into());
             temps_without_improvement = 0;
             // println!(
             //     "Temp: {:.6} Best prob: {:.6} Best state: \n{}",
@@ -348,5 +369,7 @@ pub fn solve<R: Rng>(
     //     let mut file = File::create("results.json").unwrap();
     //     file.write_all(json_string.as_bytes()).unwrap();
     // }
+    // web_sys::console::log_1(&best_state_so_far.metric.into());
+    // web_sys::console::log_1(&best_state_so_far.into());
     best_state_so_far
 }

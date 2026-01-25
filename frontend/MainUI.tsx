@@ -534,7 +534,7 @@ export default function HoningForecastUI() {
     const StateBundleGridKey = useMemo(() => String(stateBundleGrid), [stateBundleGrid])
     const UnlockGridKey = useMemo(() => String(unlockGrid), [unlockGrid])
     const SucceededGridKey = useMemo(() => String(succeededGrid), [succeededGrid])
-
+    const specialStateKey = useMemo(() => String(specialState), [specialState])
     const inputBundleKey = useMemo(
         () =>
             JSON.stringify({
@@ -655,19 +655,32 @@ export default function HoningForecastUI() {
         SucceededGridKey,
         StateBundleGridKey,
         inputBundleKey,
+        specialStateKey,
     ])
 
     const optimizeAvgWorkerRef = useRef<Worker | null>(null)
     const [optimizeAvgBusy, setOptimizeAvgBusy] = useState(false)
-    const [optimizeAvgResult, setOptimizeAvgResult] = useState<{ average_costs?: any } | null>(null)
+    // const [optimizeAvgResult, setOptimizeAvgResult] = useState<{ average_costs?: any } | null>(null)
     useEffect(() => {
-        runner.start({
-            which_one: "AverageCost",
-            payloadBuilder,
-            workerRef: optimizeAvgWorkerRef,
-            setBusy: setOptimizeAvgBusy,
-            setResult: setOptimizeAvgResult,
-        })
+        if (optimizeButtonPress > 0) {
+            runner.start({
+                which_one: "OptimizeAverage",
+                payloadBuilder,
+                workerRef: optimizeAvgWorkerRef,
+                setBusy: setOptimizeAvgBusy,
+                setResult: setEvaluateAverageResult,
+                onSuccess: (res) => {
+                    // console.log(inputBundleKey)
+                    setFlatStateBundle(res.upgrade_arr.map((upgrade) => upgrade.state))
+                    setFlatProgressArr(res.upgrade_arr.map((_, index) => progressGrid[res.upgrade_arr[index].piece_type][res.upgrade_arr[index].upgrade_index]))
+                    setFlatUnlockArr(res.upgrade_arr.map((_, index) => unlockGrid[res.upgrade_arr[index].piece_type][res.upgrade_arr[index].upgrade_index]))
+                    setFlatSucceedArr(res.upgrade_arr.map((_, index) => succeededGrid[res.upgrade_arr[index].piece_type][res.upgrade_arr[index].upgrade_index]))
+                    setSpecialState(res.special_state)
+                    // console.log(specialState)
+                },
+            })
+        }
+
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [optimizeButtonPressKey])
 
@@ -844,7 +857,7 @@ export default function HoningForecastUI() {
                         <OptimizeSection
                             inputsBundle={inputsBundle}
                             optimizeAvgBusy={optimizeAvgBusy}
-                            optimizeAvgResult={optimizeAvgResult}
+                            optimizeAvgWorkerRef={optimizeAvgWorkerRef}
                             setOptimizeButtonPress={setOptimizeButtonPress}
                             flatProgressArr={flatProgressArr}
                             setFlatProgressArr={setFlatProgressArr}
