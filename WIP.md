@@ -19,8 +19,9 @@
 - special state user input & passing into eval
   - how to present this to user???
   - store the "invalid index" from special probs so that js knows when to stop rendering the list
+  - also store the special probs of the active special state
 
-- show breakdown of average gold costs and already-spent costs
+- store & show show breakdown of average gold costs from here ~~ and already-spent costs~~
 - 10 at a time toggle, need to modify neighbour function & stategrid
 - instead of counting unique elements in statebundle it should read from juiceinfo instead
 
@@ -28,6 +29,8 @@
 
 - add optimizer button
   - stream intermediate results that'd be so cool
+
+- slider instead of leftover value
 
   - ~~figure out a way to export state_bundle to js and be able to pass it to monte carlo appropriately~~
     - ~~literally just state and special state~~

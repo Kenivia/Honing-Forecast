@@ -527,7 +527,7 @@ export default function HoningForecastUI() {
     // const userMatsKey = useMemo(() => JSON.stringify(userMatsPrices), [userMatsPrices])
     const dataSizeKey = useMemo(() => String(dataSize), [dataSize])
 
-    const optimizeButtenPressKey = useMemo(() => String(optimizeButtonPress), [optimizeButtonPress])
+    const optimizeButtonPressKey = useMemo(() => String(optimizeButtonPress), [optimizeButtonPress])
 
     const topGridKey = useMemo(() => String(topGrid), [topGrid])
     const ProgressGridKey = useMemo(() => String(progressGrid), [progressGrid])
@@ -668,7 +668,7 @@ export default function HoningForecastUI() {
             setResult: setOptimizeAvgResult,
         })
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [optimizeButtenPressKey])
+    }, [optimizeButtonPressKey])
 
     const parserWorkerRef = useRef<Worker | null>(null)
     const [parserResult, setparserResult] = useState<{ upgradeArr: any; unlocks: any; other_strategy_prob_dists: any } | null>(null)

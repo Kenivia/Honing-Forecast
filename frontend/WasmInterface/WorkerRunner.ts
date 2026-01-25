@@ -33,9 +33,11 @@ export function buildPayload({
     stateBundleGrid: StatePair[][][]
     specialState: number[]
 }) {
-    const { mats, juice } = inputs
+    const { mats, juice } = inputs  
+     console.log(mats)
     const payload: any = {
-        mats_budget: ((input) => Object.entries(input).map(([, v]) => Math.round(Number(v))))(mats.owned),
+     
+        mats_budget: MATS_LABELS.slice(0, 8).map((label) => parseFloat(mats.owned[label] || "0")),
         adv_hone_strategy: adv_hone_strategy,
         express_event: express_event,
         bucket_count: Math.max(2, Math.min(1000, Math.floor(Number(bucketCount) || 2))),

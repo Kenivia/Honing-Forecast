@@ -50,7 +50,7 @@ const RowBundle = ({
     const pity_len = upgrade.prob_dist.length - 1;
     const max_len = upgrade.original_prob_dist_len - 1;
     const cols = max_len
-    console.log(max_len, pity_len)
+    // console.log(max_len, pity_len)
     // Helper to handle Book/Juice clicks
     const handleCellClick = (visualRowIndex: number, colIndex: number) => {
         // Determine what logic layer this row belongs to based on bottom-up logic
