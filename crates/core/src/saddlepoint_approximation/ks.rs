@@ -72,11 +72,8 @@ impl StateBundle {
                     let decay_factor = (-step * theta).exp();
                     let mut current_exp_val = 1.0;
 
-                    for (s, p) in meta_support
-                        .access_collapsed()
-                        .iter()
-                        .rev()
-                        .filter(|(_, p)| *p > FLOAT_TOL)
+                    for (s, p) in meta_support.access_collapsed().iter().rev()
+                    // .filter(|(_, p)| *p > FLOAT_TOL)
                     // shouldn't matter but whatever  {
                     {
                         let u = p * current_exp_val;
@@ -95,10 +92,8 @@ impl StateBundle {
                     let decay_factor = (step * theta).exp();
                     let mut current_exp_val = 1.0;
 
-                    for (s, p) in meta_support
-                        .access_collapsed()
-                        .iter()
-                        .filter(|(_, p)| *p > FLOAT_TOL)
+                    for (s, p) in meta_support.access_collapsed().iter()
+                    // .filter(|(_, p)| *p > FLOAT_TOL)
                     // dont multiply by decay factor if p is 0
                     {
                         let u = p * current_exp_val;
@@ -116,10 +111,8 @@ impl StateBundle {
                     }
                 }
             } else {
-                for (s, p) in meta_support
-                    .access_collapsed()
-                    .iter()
-                    .filter(|(_, p)| *p > FLOAT_TOL)
+                for (s, p) in meta_support.access_collapsed().iter()
+                // .filter(|(_, p)| *p > FLOAT_TOL)
                 // this avoids 0.0 * inf  which is NAN
                 {
                     let u: f64 = p * (s * theta - biggest_shift).exp();

@@ -14,9 +14,10 @@
 - ~~cap displayed progress / statebundle to the pity length~~
   - ~~similarly disallow juice inputs to the left of progress~~
 
-- add succeed button and handle it correctly
-  - succeededGrid, which causese it to render in js (greyed out) but rust ignores it(does not put it in upgrade_arr, but contributes to already-spent cost)
+- ~~add succeed button and handle it correctly~~
+  - ~~succeededGrid, which causese it to render in js (greyed out) but~~ ~~rust ignores it(does not put it in upgrade_arr, but contributes to already-spent cost)~~ just change the prob dist
 - special state user input & passing into eval
+  - how to present this to user???
   - store the "invalid index" from special probs so that js knows when to stop rendering the list
 
 - show breakdown of average gold costs and already-spent costs

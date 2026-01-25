@@ -492,7 +492,6 @@ pub fn probability_distribution(
     succeeded: bool,
 ) -> Vec<f64> {
     if succeeded {
-        assert!(alr_failed > 0);
         let mut v = vec![0.0; alr_failed + 1];
         v[alr_failed] = 1.0;
         // web_sys::console::log_1(&format!("{:?}", v).into());

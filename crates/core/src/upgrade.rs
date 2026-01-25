@@ -188,7 +188,10 @@ impl Support {
                     if new_s == cur_s {
                         cur_p += new_p;
                     } else {
-                        result.push((cur_s, cur_p));
+                        if cur_p > FLOAT_TOL {
+                            result.push((cur_s, cur_p));
+                        }
+
                         cur_s = new_s;
                         cur_p = new_p;
                     }

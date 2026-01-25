@@ -88,11 +88,13 @@ export default function OptimizeSection({
                 />
             )}
             <div>
-                {/* Already spent + more to come: {evaluateAverageResult?.metric}
-                <br /> */}
+
                 Already spent: {evaluateAverageResult?.prep_output.already_spent[3]}
                 <br />
                 Average cost from now on: {evaluateAverageResult?.metric - evaluateAverageResult?.prep_output.already_spent[3]}
+                <br />
+                Already spent + more to come: {evaluateAverageResult?.metric}
+
             </div>
 
             {(

@@ -287,38 +287,38 @@ const RowBundle = ({
 
                                             />
 
-                                            {/* The Overlay Icon for True State */}
-                                            {(cell.active || (succeed && showSucceedMarker)) && (
-                                                <div
-                                                    style={{
-                                                        position: "absolute",
-                                                        top: 0,
-                                                        left: 0,
-                                                        width: "100%",
-                                                        height: "100%",
-                                                        display: "flex",
-                                                        alignItems: "center",
-                                                        justifyContent: "center",
-                                                        pointerEvents: "none", // Let clicks pass to the div
-                                                        background: succeed && showSucceedMarker ? "var(--text-success)" : "undefined",
-                                                        color: succeed && showSucceedMarker ? "var(--btn-success-text)" : "undefined",
-                                                        // backgroundColor: cell.type === "progress" ? "#e6f7ff" : "transparent", // Optional tint for progress
-                                                    }}
-                                                >
-                                                    {cell.type === "progress" ? (
-                                                        <span>{cell.active ? cIndex + 1 : "✓"}</span>
-                                                    ) : (
-                                                        <div>
-                                                            <Icon
-                                                                iconName={cell.label}
-                                                                size={Math.min(CELL_W, CELL_H) - 6}
-                                                                // Hide text for the grid cells, only show image/symbol
-                                                                display_text=""
-                                                            />
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            )}
+
+                                            {(cell.type === "progress" || cell.active || (succeed && showSucceedMarker)) && <div
+                                                style={{
+                                                    position: "absolute",
+                                                    top: 0,
+                                                    left: 0,
+                                                    width: "100%",
+                                                    height: "100%",
+                                                    display: "flex",
+                                                    alignItems: "center",
+                                                    justifyContent: "center",
+                                                    pointerEvents: "none", // Let clicks pass to the div
+                                                    background: succeed && showSucceedMarker ? "var(--text-success)" : "inherit",
+                                                    color: succeed && showSucceedMarker ? "var(--btn-success-text)" : "inherit",
+
+                                                }}
+                                            >
+                                                {cell.type === "progress" ? (
+                                                    <span>{succeed && showSucceedMarker ? "✓" : cIndex + 1}</span>
+                                                ) : cell.active ?
+                                                    (<div>
+                                                        <Icon
+                                                            iconName={cell.label}
+                                                            size={Math.min(CELL_W, CELL_H) - 6}
+                                                            // Hide text for the grid cells, only show image/symbol
+                                                            display_text=""
+                                                        />
+                                                    </div>) : null
+                                                }
+                                            </div>
+                                            }
+
                                         </div>
                                     )
                                 }),
@@ -330,8 +330,8 @@ const RowBundle = ({
                 <button
                     style={{
                         ...styles.demoButton,
-                        background: succeed ? "var(--btn-success-cancel)" : "var(--btn-success)",
-                        color: succeed ? "var(--btn-success-cancel-text)" : "var(--btn-success-text)",
+                        background: "var(--btn-success)",
+                        color: "var(--btn-success-text)",
 
                         height: 28,
                         padding: "0 10px",
