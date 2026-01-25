@@ -43,6 +43,7 @@ pub struct Upgrade {
     pub alr_failed: usize,
     pub unlocked: bool,
     pub unlock_costs: Vec<i64>,
+    pub succeeded: bool,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -281,16 +282,17 @@ impl Upgrade {
         artisan_rate: f64,
         upgrade_index: usize,
         num_juice_avail: usize,
-        alr_failed: Option<usize>,
+        alr_failed: usize,
         state_given: Option<Vec<(bool, usize)>>,
         unlocked: bool,
         unlock_costs: Vec<i64>,
+        succeeded: bool,
     ) -> Self {
         let prob_dist_len: usize = prob_dist.len();
         // let base_chance: f64 = prob_dist[1];
         // web_sys::console::log_1(&format!("{:?}", alr_failed).into());
         let original_prob_dist_len: usize =
-            probability_distribution(base_chance, artisan_rate, &vec![], 0.0, 0).len();
+            probability_distribution(base_chance, artisan_rate, &vec![], 0.0, 0, false).len();
         // web_sys::console::log_1(&format!("a").into());
         let mut state = State::new(prob_dist_len);
         // web_sys::console::log_1(&format!("a").into());
@@ -338,9 +340,10 @@ impl Upgrade {
                 string += &upgrade_index.to_string();
                 string
             },
-            alr_failed: alr_failed.unwrap_or(0),
+            alr_failed: alr_failed,
             unlocked,
             unlock_costs,
+            succeeded,
         }
     }
 
@@ -354,6 +357,7 @@ impl Upgrade {
         adv_cost_start: i64,
         upgrade_index: usize,
         unlock_costs: Vec<i64>,
+        succeeded: bool,
     ) -> Self {
         let prob_dist_len: usize = prob_dist.len();
         assert!(prob_dist_len == adv_juice_cost.len());
@@ -401,6 +405,7 @@ impl Upgrade {
             alr_failed: 0,
             unlocked: false,
             unlock_costs,
+            succeeded,
         }
     }
 

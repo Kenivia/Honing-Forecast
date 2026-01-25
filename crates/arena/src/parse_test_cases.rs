@@ -271,6 +271,7 @@ pub fn parse_csv(path: &Path) -> Vec<(StateBundle, Vec<bool>)> {
                 None,
                 None,
                 None,
+                None,
             );
 
         this.test_case = row.test_case;

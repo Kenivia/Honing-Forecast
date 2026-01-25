@@ -111,6 +111,7 @@ impl StateBundle {
         state_grid: Option<Vec<Vec<Vec<(bool, usize)>>>>,
         special_state: Option<Vec<usize>>,
         unlock_grid: Option<Vec<Vec<bool>>>,
+        succeeded_grid: Option<Vec<Vec<bool>>>,
     ) -> StateBundle {
         // web_sys::console::log_1(&"1".into());
         let (prep_output, upgrade_arr): (PreparationOutput, Vec<Upgrade>) =
@@ -128,6 +129,7 @@ impl StateBundle {
                 progress_grid,
                 state_grid,
                 unlock_grid,
+                succeeded_grid,
             );
         let u_len = upgrade_arr.len();
         // web_sys::console::log_1(&"2".into());

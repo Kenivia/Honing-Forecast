@@ -464,6 +464,7 @@ pub fn new_prob_dist(
         &new_extra,
         zero,
         upgrade.alr_failed,
+        upgrade.succeeded,
     );
     // for o in out.iter() {
     //     if !o.is_finite() || *o < 0.0 {
@@ -488,7 +489,15 @@ pub fn probability_distribution(
     extra_arr: &[f64],
     zero: f64,
     alr_failed: usize,
+    succeeded: bool,
 ) -> Vec<f64> {
+    if succeeded {
+        assert!(alr_failed > 0);
+        let mut v = vec![0.0; alr_failed + 1];
+        v[alr_failed] = 1.0;
+        // web_sys::console::log_1(&format!("{:?}", v).into());
+        return v;
+    }
     let mut raw_chances: Vec<f64> = vec![zero];
     let mut artisan: f64 = 0.0_f64;
     let mut count: usize = 0;

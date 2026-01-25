@@ -52,24 +52,25 @@ pub struct Payload {
     state_grid: Option<Vec<Vec<Vec<(bool, usize)>>>>,
     special_state: Option<Vec<usize>>,
     unlocked_grid: Option<Vec<Vec<bool>>>,
+    succeeded_grid: Option<Vec<Vec<bool>>>,
 }
 
-#[derive(Deserialize)]
-#[allow(dead_code)]
-pub struct PayloadArr {
-    normal_hone_ticks: Option<Vec<Vec<bool>>>,
-    adv_hone_ticks: Option<Vec<Vec<bool>>>,
-    normal_counts: Option<Vec<Vec<i64>>>,
-    adv_counts: Option<Vec<Vec<i64>>>,
+// #[derive(Deserialize)]
+// #[allow(dead_code)]
+// pub struct PayloadArr {
+//     normal_hone_ticks: Option<Vec<Vec<bool>>>,
+//     adv_hone_ticks: Option<Vec<Vec<bool>>>,
+//     normal_counts: Option<Vec<Vec<i64>>>,
+//     adv_counts: Option<Vec<Vec<i64>>>,
 
-    adv_hone_strategy: String,
-    budget_arr: Vec<Vec<i64>>,
-    express_event: bool,
-    user_price_arr: Option<Vec<f64>>,
+//     adv_hone_strategy: String,
+//     budget_arr: Vec<Vec<i64>>,
+//     express_event: bool,
+//     user_price_arr: Option<Vec<f64>>,
 
-    data_size: Option<usize>,
-    // cost_data: Option<Vec<Vec<i64>>>,
-}
+//     data_size: Option<usize>,
+//     // cost_data: Option<Vec<Vec<i64>>>,
+// }
 
 // #[wasm_bindgen]
 // #[must_use]
@@ -133,6 +134,7 @@ pub fn evaluate_average_wrapper(input: JsValue) -> JsValue {
         payload.state_grid,
         payload.special_state,
         payload.unlocked_grid,
+        payload.succeeded_grid,
     );
 
     let mut dummy_performance = Performance::new();
@@ -171,6 +173,7 @@ pub fn optimize_average_wrapper(input: JsValue) -> JsValue {
         payload.state_grid,
         payload.special_state,
         payload.unlocked_grid,
+        payload.succeeded_grid,
     );
 
     let mut rng: ThreadRng = rand::rng();

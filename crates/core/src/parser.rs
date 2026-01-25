@@ -137,6 +137,7 @@ impl PreparationOutput {
         progress_grid: Option<Vec<Vec<usize>>>,
         state_grid: Option<Vec<Vec<Vec<(bool, usize)>>>>,
         unlock_grid: Option<Vec<Vec<bool>>>,
+        succeeded_grid: Option<Vec<Vec<bool>>>,
     ) -> (PreparationOutput, Vec<Upgrade>) {
         let price_arr: Vec<f64> = inp_price_arr.to_vec();
 
@@ -177,6 +178,7 @@ impl PreparationOutput {
             progress_grid,
             state_grid,
             unlock_grid,
+            succeeded_grid,
         );
 
         for upgrade in upgrade_arr.iter_mut() {
@@ -235,6 +237,7 @@ pub fn parser(
     progress_arr_opt: Option<Vec<Vec<usize>>>,
     state_given_opt: Option<Vec<Vec<Vec<(bool, usize)>>>>,
     unlock_grid: Option<Vec<Vec<bool>>>,
+    succeeded_grid: Option<Vec<Vec<bool>>>,
 ) -> Vec<Upgrade> {
     let mut out: Vec<Upgrade> = Vec::new();
     let weapon_unlock_costs: [[i64; 25]; 2] = get_event_modified_weapon_unlock_cost(express_event);
@@ -267,10 +270,10 @@ pub fn parser(
             let special_cost: i64 =
                 SPECIAL_LEAPS_COST[if piece_type == 5 { 0 } else { 1 }][upgrade_index];
             let event_artisan_rate: f64 = artisan_rate_arr[upgrade_index];
-            let this_progress: Option<usize> = if progress_arr_opt.is_none() {
-                None
+            let this_progress: usize = if progress_arr_opt.is_none() {
+                0
             } else {
-                Some(progress_arr_opt.as_ref().unwrap()[piece_type][upgrade_index])
+                progress_arr_opt.as_ref().unwrap()[piece_type][upgrade_index]
             };
 
             let this_state_given: Option<Vec<(bool, usize)>> = if state_given_opt.is_none()
@@ -284,6 +287,12 @@ pub fn parser(
                 false
             } else {
                 unlock_grid.as_ref().unwrap()[piece_type][upgrade_index]
+            };
+
+            let this_succeeded: bool = if succeeded_grid.is_none() {
+                false
+            } else {
+                succeeded_grid.as_ref().unwrap()[piece_type][upgrade_index]
             };
             // web_sys::console::log_1(&this_progress.into());
             // web_sys::console::log_1(&format!("{:?}", unlock_grid).into());
@@ -303,7 +312,8 @@ pub fn parser(
                     event_artisan_rate,
                     &[],
                     0.0,
-                    this_progress.unwrap_or(0),
+                    this_progress,
+                    this_succeeded,
                 ),
                 std::array::from_fn(|cost_type: usize| cur_cost[cost_type][upgrade_index]),
                 special_cost,
@@ -316,6 +326,7 @@ pub fn parser(
                 this_state_given,
                 this_unlocked,
                 vec![relevant[0][upgrade_index], relevant[1][upgrade_index]],
+                this_succeeded,
             ));
             // web_sys::console::log_1(&format!("upgrade init done ").into());
             upgrade_index += 1;
@@ -383,6 +394,7 @@ pub fn parser(
                     adv_unlock_costs[0][col_index], // um idk if tihs is right i forgot how this worked will figure it out later
                     adv_unlock_costs[1][col_index],
                 ],
+                false, //TODO
             ));
             // current_counter += 1;
             upgrade_index += 1;
