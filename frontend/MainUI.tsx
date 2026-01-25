@@ -34,7 +34,7 @@ import { createClearAll, createFillDemo, createFillDemoIncome } from "./Sections
 import { buildPayload, createCancelableWorkerRunner } from "./WasmInterface/WorkerRunner.ts"
 import type { InputsBundleWithSetters, InputsSetters, InputsValues } from "./Utils/InputBundles.ts"
 import OptimizeSection from "./Sections/Optimize/OptimizeSection.tsx"
-import { StatePair } from "./Components/StateGrid.tsx"
+import { StatePair } from "./Sections/Optimize/StateGrid.tsx"
 import { applyFlatToGrid } from "./Utils/StateUtils.ts"
 
 const NUM_JUICE_AVAIL = 4
@@ -171,7 +171,6 @@ export default function HoningForecastUI() {
 
     const [flatSucceedArr, setFlatSucceedArr] = useState<boolean[]>([])
     const [succeededGrid, setSucceededGrid] = useState<boolean[][]>(Array(6).fill(Array(25).fill(false)))
-
 
     const [specialState, setSpecialState] = useState<number[]>([])
 
@@ -639,6 +638,8 @@ export default function HoningForecastUI() {
                 setFlatProgressArr(res.upgrade_arr.map((_, index) => progressGrid[res.upgrade_arr[index].piece_type][res.upgrade_arr[index].upgrade_index]))
                 setFlatUnlockArr(res.upgrade_arr.map((_, index) => unlockGrid[res.upgrade_arr[index].piece_type][res.upgrade_arr[index].upgrade_index]))
                 setFlatSucceedArr(res.upgrade_arr.map((_, index) => succeededGrid[res.upgrade_arr[index].piece_type][res.upgrade_arr[index].upgrade_index]))
+                setSpecialState(res.special_state)
+                // console.log(specialState)
             },
             debounceMs: 10,
         })
@@ -855,6 +856,8 @@ export default function HoningForecastUI() {
                             setFlatStateBundle={setFlatStateBundle}
                             allowUserChangeState={allowUserChangeState}
                             evaluateAverageResult={evaluateAverageResult}
+                            specialState={specialState}
+                            setSpecialState={setSpecialState}
                         />
                     </div>
                 )}

@@ -1,4 +1,4 @@
-import { StatePair } from "@/Components/StateGrid.tsx"
+import { StatePair } from "@/Sections/Optimize/StateGrid.tsx"
 import { SpawnWorker } from "./worker_setup.ts"
 import { JUICE_LABELS, MATS_LABELS } from "@/Utils/Constants.ts"
 import type { InputsValues } from "@/Utils/InputBundles.ts"
@@ -33,10 +33,9 @@ export function buildPayload({
     stateBundleGrid: StatePair[][][]
     specialState: number[]
 }) {
-    const { mats, juice } = inputs  
-     console.log(mats)
+    const { mats, juice } = inputs
+    console.log(mats)
     const payload: any = {
-     
         mats_budget: MATS_LABELS.slice(0, 8).map((label) => parseFloat(mats.owned[label] || "0")),
         adv_hone_strategy: adv_hone_strategy,
         express_event: express_event,

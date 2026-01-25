@@ -3,8 +3,8 @@ import { CELL_H, CELL_W, JUICE_LABELS, MATS_LABELS } from "@/Utils/Constants.ts"
 import { createColumnDefs, styles } from "@/Utils/Styles.ts"
 import type { InputsBundleWithSetters } from "@/Utils/InputBundles.ts"
 import React from "react"
-import StateGrid, { StatePair } from "@/Components/StateGrid.tsx"
-import StateGridsManager from "@/Components/StateGrid.tsx"
+import StateGrid, { StatePair } from "@/Sections/Optimize/StateGrid.tsx"
+import StateGridsManager from "@/Sections/Optimize/StateGrid.tsx"
 
 type OptimizeSectionProps = {
     inputsBundle: InputsBundleWithSetters
@@ -13,8 +13,6 @@ type OptimizeSectionProps = {
     optimizeAvgResult: any
     setOptimizeButtonPress: React.Dispatch<React.SetStateAction<any>>
     // onGridMouseDown: (_grid: "top" | "bottom", _e: React.MouseEvent) => void
-
-
 
     flatProgressArr: number[]
     setFlatProgressArr: React.Dispatch<React.SetStateAction<any>>
@@ -27,23 +25,18 @@ type OptimizeSectionProps = {
 
     flatStateBundle: StatePair[][]
     setFlatStateBundle: React.Dispatch<React.SetStateAction<any>>
-    allowUserChangeState: boolean,
+    allowUserChangeState: boolean
 
-    evaluateAverageResult: any,
+    evaluateAverageResult: any
+    specialState: number[]
+    setSpecialState: React.Dispatch<React.SetStateAction<number[]>>
     // gridRefs: React.RefObject<HTMLDivElement>[]
     // marquee: any
 }
 
 function my_alr_spent_map(already_spent: any, labels: string[], index: number) {
     return already_spent
-        ?
-        Object.fromEntries(
-            labels.map((label, lab_index) => [
-                label,
-                String(already_spent[index][lab_index]),
-            ]),
-        )
-
+        ? Object.fromEntries(labels.map((label, lab_index) => [label, String(already_spent[index][lab_index])]))
         : Object.fromEntries(labels.map((label) => [label, "Calculating..."]))
 }
 export default function OptimizeSection({
@@ -60,7 +53,9 @@ export default function OptimizeSection({
     flatStateBundle,
     setFlatStateBundle,
     allowUserChangeState,
-    evaluateAverageResult
+    evaluateAverageResult,
+    specialState,
+    setSpecialState,
     // gridRefs,
     // onGridMouseDown,
     // marquee,
@@ -70,10 +65,12 @@ export default function OptimizeSection({
     const { mats, juice } = values
     const { mats: matsSetters, juice: juiceSetters } = setters
     const already_spent = evaluateAverageResult?.prep_output.already_spent
+    // console.log("special", specialState)
+    // console.log(flatSucceedArr)
 
     return (
         <div style={{ ...styles.inputSection, flexDirection: "row", maxWidth: "1200px", width: "100%" }}>
-            {flatStateBundle && flatProgressArr && evaluateAverageResult && (
+            {flatStateBundle && flatProgressArr && evaluateAverageResult && specialState && (
                 <StateGridsManager
                     flatProgressArr={flatProgressArr}
                     setFlatProgressArr={setFlatProgressArr}
@@ -85,20 +82,19 @@ export default function OptimizeSection({
                     setFlatStateBundle={setFlatStateBundle}
                     allowUserChangeState={allowUserChangeState}
                     upgradeArr={evaluateAverageResult.upgrade_arr}
+                    specialState={specialState}
+                    setSpecialState={setSpecialState}
                 />
             )}
             <div>
-
                 Already spent: {evaluateAverageResult?.prep_output.already_spent[3]}
                 <br />
                 Average cost from now on: {evaluateAverageResult?.metric - evaluateAverageResult?.prep_output.already_spent[3]}
                 <br />
                 Already spent + more to come: {evaluateAverageResult?.metric}
-
             </div>
 
-            {(
-
+            {
                 <div style={{ display: "flex", flexDirection: "row", alignItems: "flex-start", gap: 0, minWidth: 200, flexShrink: 0, marginTop: 0 }}>
                     <div>Already spent:</div>
                     <SpreadsheetGrid
@@ -111,17 +107,30 @@ export default function OptimizeSection({
                     <SpreadsheetGrid
                         columnDefs={wideMatsColumnDefs}
                         labels={JUICE_LABELS.map((label_row) => label_row[0])}
-                        sheetValuesArr={[my_alr_spent_map(already_spent, JUICE_LABELS.map((label_row) => label_row[0]), 1)]}
+                        sheetValuesArr={[
+                            my_alr_spent_map(
+                                already_spent,
+                                JUICE_LABELS.map((label_row) => label_row[0]),
+                                1,
+                            ),
+                        ]}
                         setSheetValuesArr={[null]}
                     />
 
                     <SpreadsheetGrid
                         columnDefs={wideMatsColumnDefs}
                         labels={JUICE_LABELS.map((label_row) => label_row[1])}
-                        sheetValuesArr={[my_alr_spent_map(already_spent, JUICE_LABELS.map((label_row) => label_row[1]), 1)]}
+                        sheetValuesArr={[
+                            my_alr_spent_map(
+                                already_spent,
+                                JUICE_LABELS.map((label_row) => label_row[1]),
+                                1,
+                            ),
+                        ]}
                         setSheetValuesArr={[null]}
                     />
-                </div>)}
+                </div>
+            }
         </div>
     )
 }

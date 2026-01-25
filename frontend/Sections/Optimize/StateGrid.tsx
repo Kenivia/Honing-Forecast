@@ -1,8 +1,8 @@
 import { CELL_H, CELL_W, JUICE_LABELS, PIECE_NAMES } from "@/Utils/Constants.ts"
 import { styles } from "@/Utils/Styles.ts"
 import React, { useMemo } from "react"
-import Icon from "./Icon.tsx"
-import "./CheckboxGrid.css"
+import Icon from "@/Components/Icon.tsx"
+import "@/Components/CheckboxGrid.css"
 import "./StateGrid.css"
 
 export type StatePair = [boolean, number]
@@ -47,8 +47,8 @@ const RowBundle = ({
     // Rows: Unique Books + Juice (1) + Progress (1)
     const totalRows = uniqueBookNumbers.length + 2
 
-    const pity_len = upgrade.prob_dist.length - 1;
-    const max_len = upgrade.original_prob_dist_len - 1;
+    const pity_len = upgrade.prob_dist.length - 1
+    const max_len = upgrade.original_prob_dist_len - 1
     const cols = max_len
     // console.log(max_len, pity_len)
     // Helper to handle Book/Juice clicks
@@ -61,7 +61,6 @@ const RowBundle = ({
         // console.log("aaa", newPairs)
         // onUpdateStatePairs(newPairs)
         if (colIndex >= pity_len) {
-
             return
         }
         const isProgressRow = visualRowIndex === totalRows - 1
@@ -71,7 +70,7 @@ const RowBundle = ({
         if (isProgressRow) {
             // If clicking column 2 (index 2), progress becomes 3.
             // If allowUserChangeState is false, only this works.
-            let new_progress = progress > colIndex ? colIndex : colIndex + 1;
+            let new_progress = progress > colIndex ? colIndex : colIndex + 1
             onUpdateProgress(new_progress)
             if (new_progress > 0) {
                 onUpdateUnlock(true)
@@ -89,7 +88,7 @@ const RowBundle = ({
         const newPairs = [...statePairs]
         const currentPair = newPairs[colIndex] // [boolean, number]
         for (let i = max_len - 1; i >= pity_len - 1; i--) {
-            console.log("index", i, pity_len, max_len)
+            // console.log("index", i, pity_len, max_len)
             newPairs[i] = [false, 0]
         }
         // 2. Juice Row Logic
@@ -160,7 +159,6 @@ const RowBundle = ({
             onUpdateProgress(0)
         }
         onUpdateUnlock(!unlock)
-
     }
 
     const handleSucceedClick = () => {
@@ -169,8 +167,7 @@ const RowBundle = ({
                 onUpdateUnlock(true)
             }
             onUpdateProgress(Math.min(progress + 1, pity_len))
-        }
-        else {
+        } else {
             onUpdateProgress(Math.max(progress - 1, 0))
         }
 
@@ -191,7 +188,7 @@ const RowBundle = ({
                         ></Icon>
                     </h4>
                     <div className="state-grid-scroll">
-                        <div style={{ position: "relative", width: CELL_W, height: totalRows * CELL_H, flex: "0 0 auto", marginRight: 5, }}>
+                        <div style={{ position: "relative", width: CELL_W, height: totalRows * CELL_H, flex: "0 0 auto", marginRight: 5 }}>
                             <div
                                 className="checkbox-grid-item"
                                 style={{
@@ -255,15 +252,22 @@ const RowBundle = ({
                                                 alignItems: "center",
 
                                                 // backgroundColor: "#fff",
-                                                cursor: (!allowUserChangeState || cIndex < progress || cIndex >= pity_len - 1) && cell.type !== "progress" || cIndex >= pity_len ? "not-allowed" : "pointer",
-                                                opacity: (!allowUserChangeState || cIndex < progress || cIndex >= pity_len - 1) && cell.type !== "progress" || cIndex >= pity_len ? 0.3 : 1,
+                                                cursor:
+                                                    ((!allowUserChangeState || cIndex < progress || cIndex >= pity_len - 1) && cell.type !== "progress") ||
+                                                    cIndex >= pity_len
+                                                        ? "not-allowed"
+                                                        : "pointer",
+                                                opacity:
+                                                    ((!allowUserChangeState || cIndex < progress || cIndex >= pity_len - 1) && cell.type !== "progress") ||
+                                                    cIndex >= pity_len
+                                                        ? 0.3
+                                                        : 1,
                                             }}
                                             onMouseDown={(e) => {
                                                 e.preventDefault() // Prevent text selection
                                                 handleCellClick(rIndex, cIndex)
                                             }}
                                         >
-
                                             {/* The Base Checkbox (Visual only, state controlled by parent div click) */}
                                             <input
                                                 type="checkbox"
@@ -280,45 +284,43 @@ const RowBundle = ({
                                                 //     visibility: cell.active ? "hidden" : "visible",
                                                 // }}
                                                 className="checkbox-grid-input"
-                                                style={{
-                                                    "--checkbox-content": "um idk why an empty string doesn't over write the default",
-
-                                                } as React.CSSProperties}
-
+                                                style={
+                                                    {
+                                                        "--checkbox-content": "um idk why an empty string doesn't over write the default",
+                                                    } as React.CSSProperties
+                                                }
                                             />
 
-
-                                            {(cell.type === "progress" || cell.active || (succeed && showSucceedMarker)) && <div
-                                                style={{
-                                                    position: "absolute",
-                                                    top: 0,
-                                                    left: 0,
-                                                    width: "100%",
-                                                    height: "100%",
-                                                    display: "flex",
-                                                    alignItems: "center",
-                                                    justifyContent: "center",
-                                                    pointerEvents: "none", // Let clicks pass to the div
-                                                    background: succeed && showSucceedMarker ? "var(--text-success)" : "inherit",
-                                                    color: succeed && showSucceedMarker ? "var(--btn-success-text)" : "inherit",
-
-                                                }}
-                                            >
-                                                {cell.type === "progress" ? (
-                                                    <span>{succeed && showSucceedMarker ? "✓" : cIndex + 1}</span>
-                                                ) : cell.active ?
-                                                    (<div>
-                                                        <Icon
-                                                            iconName={cell.label}
-                                                            size={Math.min(CELL_W, CELL_H) - 6}
-                                                            // Hide text for the grid cells, only show image/symbol
-                                                            display_text=""
-                                                        />
-                                                    </div>) : null
-                                                }
-                                            </div>
-                                            }
-
+                                            {(cell.type === "progress" || cell.active || (succeed && showSucceedMarker)) && (
+                                                <div
+                                                    style={{
+                                                        position: "absolute",
+                                                        top: 0,
+                                                        left: 0,
+                                                        width: "100%",
+                                                        height: "100%",
+                                                        display: "flex",
+                                                        alignItems: "center",
+                                                        justifyContent: "center",
+                                                        pointerEvents: "none", // Let clicks pass to the div
+                                                        background: succeed && showSucceedMarker ? "var(--text-success)" : "inherit",
+                                                        color: succeed && showSucceedMarker ? "var(--btn-success-text)" : "inherit",
+                                                    }}
+                                                >
+                                                    {cell.type === "progress" ? (
+                                                        <span>{succeed && showSucceedMarker ? "✓" : cIndex + 1}</span>
+                                                    ) : cell.active ? (
+                                                        <div>
+                                                            <Icon
+                                                                iconName={cell.label}
+                                                                size={Math.min(CELL_W, CELL_H) - 6}
+                                                                // Hide text for the grid cells, only show image/symbol
+                                                                display_text=""
+                                                            />
+                                                        </div>
+                                                    ) : null}
+                                                </div>
+                                            )}
                                         </div>
                                     )
                                 }),
@@ -330,18 +332,18 @@ const RowBundle = ({
                 <button
                     style={{
                         ...styles.demoButton,
-                        background: "var(--btn-success)",
-                        color: "var(--btn-success-text)",
+                        background: succeed ? "var(--btn-toggle-deselected)" : "var(--btn-success)",
+                        color: succeed ? "var(--muted-text)" : "var(--btn-success-text)",
 
                         height: 28,
                         padding: "0 10px",
                         alignSelf: "center",
                         marginTop: 4,
-                        width: 90
+                        width: 90,
                     }}
                     onClick={handleSucceedClick}
                 >
-                    {succeed ? "Succeeded" : "Succeed"}
+                    {succeed ? "Undo" : "Succeed"}
                 </button>
             </div>
         </div>
@@ -360,6 +362,8 @@ interface ComplexGridProps {
     setFlatStateBundle: React.Dispatch<React.SetStateAction<StatePair[][]>>
     allowUserChangeState: boolean
     upgradeArr: any[]
+    specialState: number[]
+    setSpecialState: React.Dispatch<React.SetStateAction<number[]>>
 }
 
 export default function StateGridsManager({
@@ -373,6 +377,8 @@ export default function StateGridsManager({
     setFlatStateBundle,
     allowUserChangeState,
     upgradeArr,
+    specialState,
+    setSpecialState,
 }: ComplexGridProps) {
     // Requirement 7: overflow: auto to avoid going off edge
     // This container wraps all row bundles
@@ -422,20 +428,20 @@ export default function StateGridsManager({
                 boxSizing: "border-box",
             }}
         >
-            {flatProgressArr.map((progressVal, index) => (
+            {specialState.map((u_index, index) => (
                 <RowBundle
-                    key={index}
-                    bundleIndex={index}
-                    progress={progressVal}
-                    unlock={flatUnlockArr[index]}
-                    succeed={flatSucceedArr[index]}
-                    statePairs={flatStateBundle[index]}
+                    key={u_index}
+                    bundleIndex={u_index}
+                    progress={flatProgressArr[u_index]}
+                    unlock={flatUnlockArr[u_index]}
+                    succeed={flatSucceedArr[u_index]}
+                    statePairs={flatStateBundle[u_index]}
                     allowUserChangeState={allowUserChangeState}
-                    onUpdateProgress={(val) => handleUpdateProgress(index, val)}
-                    onUpdateUnlock={(val) => handleUpdateUnlock(index, val)}
-                    onUpdateSucceed={(val) => handleUpdateSucceed(index, val)}
-                    onUpdateStatePairs={(pairs) => handleUpdateStateBundle(index, pairs)}
-                    upgrade={upgradeArr[index]}
+                    onUpdateProgress={(val) => handleUpdateProgress(u_index, val)}
+                    onUpdateUnlock={(val) => handleUpdateUnlock(u_index, val)}
+                    onUpdateSucceed={(val) => handleUpdateSucceed(u_index, val)}
+                    onUpdateStatePairs={(pairs) => handleUpdateStateBundle(u_index, pairs)}
+                    upgrade={upgradeArr[u_index]}
                 />
             ))}
         </div>

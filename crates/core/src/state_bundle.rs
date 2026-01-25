@@ -15,7 +15,7 @@ pub struct StateBundle {
     pub metric: f64,
     // pub state_index: Vec<Vec<Vec<i64>>>, // i pre-added this for caching but havnt implemented anything
     pub prep_output: PreparationOutput,
-    #[serde(skip)]
+    // #[serde(skip)]
     pub special_cache: HashMap<Vec<usize>, Vec<f64>>,
     // pub performance: Performance,
 }
