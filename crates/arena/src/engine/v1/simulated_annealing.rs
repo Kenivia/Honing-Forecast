@@ -233,7 +233,7 @@ pub fn solve<R: Rng>(
     // Start: 333.0, End: ~0.05.
     // Log(333) ≈ 5.8, Log(0.05) ≈ -3.0. Midpoint ≈ 1.4 -> Temp ≈ 4.0.
     let temp_schedule_start = 333.0_f64;
-    let temp_schedule_cutoff = 4.0_f64; // Below this temp, resolution is pinned to min
+    let temp_schedule_cutoff = 10.0_f64; // Below this temp, resolution is pinned to min
 
     state_bundle.metric = state_bundle.metric_router(metric_type, performance);
     let mut prev_state: StateBundle = state_bundle.clone();
@@ -248,19 +248,20 @@ pub fn solve<R: Rng>(
 
     while temp >= 0.0 {
         // --- Calculate Resolution ---
-        let current_resolution = 
-        // if temp > temp_schedule_cutoff {
-        //     // Logarithmic interpolation from Max Len -> Min Res
-        //     let log_curr = temp.ln();
-        //     let log_start = temp_schedule_start.ln();
-        //     let log_end = temp_schedule_cutoff.ln();
+        let current_resolution = if temp > temp_schedule_cutoff {
+            // Logarithmic interpolation from Max Len -> Min Res
+            let log_curr = temp.ln();
+            let log_start = temp_schedule_start.ln();
+            let log_end = temp_schedule_cutoff.ln();
 
-        //     // 0.0 at cutoff, 1.0 at start
-        //     let ratio = ((log_curr - log_end) / (log_start - log_end)).clamp(0.0, 1.0);
+            // 0.0 at cutoff, 1.0 at start
+            let ratio = ((log_curr - log_end) / (log_start - log_end)).clamp(0.0, 1.0);
 
-        //     (min_resolution as f64 + (max_len as f64 - min_resolution as f64) * ratio) as usize
-        // } else
-         {
+            ((min_resolution as f64 + (max_len as f64 - min_resolution as f64) * ratio)
+                / min_resolution as f64)
+                .round() as usize
+                * min_resolution
+        } else {
             // Hold at minimum for the tail end (roughly 50% of the run)
             min_resolution
         };

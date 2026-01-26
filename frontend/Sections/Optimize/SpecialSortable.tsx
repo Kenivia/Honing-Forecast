@@ -14,6 +14,8 @@ interface Props {
     setSpecialState: React.Dispatch<React.SetStateAction<number[]>>
     flatSucceedArr: boolean[]
     setFlatSucceedArr: React.Dispatch<React.SetStateAction<any>>
+    flatUnlockArr: boolean[]
+    setFlatUnlockArr: React.Dispatch<React.SetStateAction<any>>
 }
 
 interface SortableItem {
@@ -21,7 +23,15 @@ interface SortableItem {
     u_index: number
 }
 
-export function SpecialSortable({ evaluateAverageResult, specialState, setSpecialState, flatSucceedArr, setFlatSucceedArr }) {
+export function SpecialSortable({
+    evaluateAverageResult,
+    specialState,
+    setSpecialState,
+    flatSucceedArr,
+    setFlatSucceedArr,
+    flatUnlockArr,
+    setFlatUnlockArr,
+}: Props) {
     // 1. Map specialState (indices) to objects required by SortableJS
     // We use the value as the ID. *Assumes values in specialState are unique*
     const items: SortableItem[] = useMemo(() => specialState.map((val) => ({ id: String(val), u_index: val })), [specialState])
@@ -44,6 +54,15 @@ export function SpecialSortable({ evaluateAverageResult, specialState, setSpecia
             copy[index] = !copy[index]
             return copy
         })
+        if (!flatSucceedArr[index]) {
+            if (!flatUnlockArr[index]) {
+                setFlatUnlockArr((prev: boolean[]) => {
+                    const copy = [...prev]
+                    copy[index] = true
+                    return copy
+                })
+            }
+        }
     }
 
     return (
@@ -105,8 +124,8 @@ export function SpecialSortable({ evaluateAverageResult, specialState, setSpecia
                                         succeed && first_not_succeeded_index == index + 1
                                             ? "var(--btn-toggle-deselected)"
                                             : hasTransparentBg
-                                              ? "transparent"
-                                              : "var(--btn-success)",
+                                                ? "transparent"
+                                                : "var(--btn-success)",
                                     color: succeed || should_normal_tap || tap_previous_first ? "var(--muted-text)" : "var(--btn-success-text)",
                                     pointerEvents: hasTransparentBg ? "none" : "auto",
                                 }}
@@ -114,12 +133,12 @@ export function SpecialSortable({ evaluateAverageResult, specialState, setSpecia
                                 {should_normal_tap
                                     ? "Normal tap this "
                                     : succeed && first_not_succeeded_index == index + 1
-                                      ? "Undo"
-                                      : succeed && first_not_succeeded_index != index + 1
-                                        ? ""
-                                        : tap_previous_first
-                                          ? "Free tap above first"
-                                          : "Succeed free tap"}
+                                        ? "Undo"
+                                        : succeed && first_not_succeeded_index != index + 1
+                                            ? ""
+                                            : tap_previous_first
+                                                ? "Free tap above first"
+                                                : "Succeed free tap"}
                             </button>
                         </div>
                     )

@@ -111,6 +111,8 @@ export default function OptimizeSection({
                     setSpecialState={setSpecialState}
                     flatSucceedArr={flatSucceedArr}
                     setFlatSucceedArr={setFlatSucceedArr}
+                    flatUnlockArr={flatUnlockArr}
+                    setFlatUnlockArr={setFlatUnlockArr}
                 />
             )}
             {flatStateBundle && flatProgressArr && evaluateAverageResult && specialState && (

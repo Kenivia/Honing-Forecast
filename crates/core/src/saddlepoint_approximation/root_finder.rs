@@ -96,6 +96,7 @@ impl StateBundle {
         }
 
         // dbg!(debug_record);
+        // web_sys::console::log_1(&format!("{:?}", &debug_record).into());
         None
     }
 }
