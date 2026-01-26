@@ -23,7 +23,7 @@ import CostToChanceSection from "./Sections/BudgetMode/BudgetModeSection.tsx"
 import InputsSection from "./Sections/Inputs/InputsSection.tsx"
 
 import GambaSection from "./Sections/GambaSimulator/GambaSection.tsx"
-import LongTermSection from "./Sections/ForecastMode/ForecastModeSection.tsx"
+// import LongTermSection from "./Sections/ForecastMode/ForecastModeSection.tsx"
 // const GambaSection = React.lazy(() => import('./GambaSection.tsx'));
 import Separator from "./Sections/Separator/Separator.tsx"
 import { TooltipState, createTooltipHandlers, renderTooltip } from "./Utils/Tooltip.tsx"
@@ -231,11 +231,23 @@ export default function HoningForecastUI() {
                 set_prev_checked_arr_bottom,
                 set_desired_chance,
                 setUserMatsOwned,
-
                 setUserMatsPrices,
+                setUserMatsLeftover,
+                setUserWeaponJuiceOwned,
+                setUserArmorJuiceOwned,
+                setUserWeaponJuicePrices,
+                setUserArmorJuicePrices,
+                setUserWeaponJuiceLeftover,
+                setUserArmorJuiceLeftover,
                 setCumulativeGraph,
                 setDataSize,
                 setIncomeArr,
+                setMinResolution,
+                setSpecialState,
+                setSucceededGrid,
+                setUnlockGrid,
+                setStateBundleGrid,
+                setProgressGrid,
             )
         } catch (e) {
             // ignore corrupted storage
@@ -305,11 +317,23 @@ export default function HoningForecastUI() {
                     prev_checked_arr_bottom,
                     desired_chance,
                     userMatsOwned,
-
                     userMatsPrices,
+                    userMatsLeftover,
+                    userWeaponJuiceOwned,
+                    userArmorJuiceOwned,
+                    userWeaponJuicePrices,
+                    userArmorJuicePrices,
+                    userWeaponJuiceLeftover,
+                    userArmorJuiceLeftover,
                     cumulativeGraph,
                     dataSize,
                     incomeArr,
+                    minResolution,
+                    specialState,
+                    succeededGrid,
+                    unlockGrid,
+                    stateBundleGrid,
+                    progressGrid,
                 )
             } catch (e) {
                 // ignore quota or serialization errors
@@ -331,11 +355,22 @@ export default function HoningForecastUI() {
         prev_checked_arr_bottom,
         desired_chance,
         userMatsOwned,
-
         userMatsPrices,
+        userMatsLeftover,
+        userWeaponJuiceOwned,
+        userArmorJuiceOwned,
+        userWeaponJuicePrices,
+        userArmorJuicePrices,
+        userWeaponJuiceLeftover,
+        userArmorJuiceLeftover,
         cumulativeGraph,
         dataSize,
-
+        minResolution,
+        specialState,
+        succeededGrid,
+        unlockGrid,
+        stateBundleGrid,
+        progressGrid,
         incomeArr,
     ])
 
@@ -538,6 +573,7 @@ export default function HoningForecastUI() {
     const SucceededGridKey = useMemo(() => String(succeededGrid), [succeededGrid])
     const specialStateKey = useMemo(() => String(specialState), [specialState])
     const minResolutionKey = useMemo(() => String(minResolution), [minResolution])
+
     const inputBundleKey = useMemo(
         () =>
             JSON.stringify({
@@ -688,27 +724,34 @@ export default function HoningForecastUI() {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [optimizeButtonPressKey])
 
-    const parserWorkerRef = useRef<Worker | null>(null)
-    const [parserResult, setparserResult] = useState<{ upgradeArr: any; unlocks: any; other_strategy_prob_dists: any } | null>(null)
-    const [ParserBusy, setParserBusy] = useState(false)
-    useEffect(() => {
-        runner.start({
-            which_one: "ParserUnified",
-            payloadBuilder,
-            workerRef: parserWorkerRef,
-            setBusy: setParserBusy,
-            setResult: setparserResult,
-        })
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [advStrategyKey, expressEventKey, graphBucketSizeKey, dataSizeKey, minResolutionKey])
+    // const parserWorkerRef = useRef<Worker | null>(null)
+    // const [parserResult, setparserResult] = useState<{ upgradeArr: any; unlocks: any; other_strategy_prob_dists: any } | null>(null)
+    // const [ParserBusy, setParserBusy] = useState(false)
+    // useEffect(() => {
+    //     runner.start({
+    //         which_one: "ParserUnified",
+    //         payloadBuilder,
+    //         workerRef: parserWorkerRef,
+    //         setBusy: setParserBusy,
+    //         setResult: setparserResult,
+    //     })
+    //     // eslint-disable-next-line react-hooks/exhaustive-deps
+    // }, [advStrategyKey, expressEventKey, graphBucketSizeKey, dataSizeKey, minResolutionKey])
 
     const clearAll = createClearAll({
         setTopGrid,
         setBottomGrid,
         set_prev_checked_arr,
         set_prev_checked_arr_bottom,
-        set_budget_inputs: setUserMatsOwned,
+        setUserMatsOwned,
         setUserMatsPrices,
+        setUserMatsLeftover,
+        setUserWeaponJuiceOwned,
+        setUserArmorJuiceOwned,
+        setUserWeaponJuicePrices,
+        setUserArmorJuicePrices,
+        setUserWeaponJuiceLeftover,
+        setUserArmorJuiceLeftover,
         set_desired_chance,
         set_adv_hone_strategy_change,
         set_express_event,
@@ -721,16 +764,36 @@ export default function HoningForecastUI() {
         setLockedMaxs,
         // setShowAverage,
         setIncomeArr,
+        setMinResolution,
+        setSpecialState,
+        setSucceededGrid,
+        setUnlockGrid,
+        setStateBundleGrid,
+        setProgressGrid,
         // setMonteCarloResult,
     })
 
     const fillDemo = createFillDemo({
         setTopGrid,
         setBottomGrid,
-        set_budget_inputs: setUserMatsOwned,
+        setUserMatsOwned,
         set_desired_chance,
         set_prev_checked_arr,
+        set_prev_checked_arr_bottom,
         setUserMatsPrices,
+        setUserMatsLeftover,
+        setUserWeaponJuiceOwned,
+        setUserArmorJuiceOwned,
+        setUserWeaponJuicePrices,
+        setUserArmorJuicePrices,
+        setUserWeaponJuiceLeftover,
+        setUserArmorJuiceLeftover,
+        setMinResolution,
+        setSpecialState,
+        setSucceededGrid,
+        setUnlockGrid,
+        setStateBundleGrid,
+        setProgressGrid,
     })
 
     const fillDemoIncome = createFillDemoIncome({
@@ -809,7 +872,6 @@ export default function HoningForecastUI() {
                             mainScale={mainScale}
                             fillDemo={fillDemo}
                             fillDemoIncome={fillDemoIncome}
-                            // fillRandom={fillRandom}
                             clearAll={clearAll}
                             express_event={express_event}
                             set_express_event={set_express_event}

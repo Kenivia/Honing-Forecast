@@ -187,7 +187,7 @@ pub fn optimize_average_wrapper(input: JsValue) -> JsValue {
         state_bundle.clone(),
         &mut dummy_performance,
     );
-    web_sys::console::log_1(&format!("{:?}", best_state).into());
+    // web_sys::console::log_1(&format!("{:?}", best_state).into());
     best_state.update_dist();
     best_state.update_individual_support();
     best_state.update_combined();

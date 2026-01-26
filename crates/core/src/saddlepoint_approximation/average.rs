@@ -109,10 +109,11 @@ impl StateBundle {
             }
         }
 
-        if DEBUG_AVERAGE {
-            dbg!(dbg_sa_avg);
-        }
-        // web_sys::console::log_1(&total_gold.into());
+        // if DEBUG_AVERAGE {
+        //     dbg!(&dbg_sa_avg);
+        // }
+        // web_sys::console::log_1(&format!("{:?}", &dbg_sa_avg).into());
+        // web_sys::console::log_1(&format!("{:?}", &self.upgrade_arr).into());
         total_gold
     }
 
@@ -170,7 +171,25 @@ impl StateBundle {
                     out,
                 );
             }
+            // panic!();
         }
+        // web_sys::console::log_1(
+        //     &format!(
+        //         "support index {:?} simple mean {:?} effective budget {:?} biased_prob {:?} prob {:?} truncated mean {:?} left  {:?} right  {:?} price  {:?} leftover_value {:?} out {:?} ",
+        //         support_index,
+        //         simple_mean,
+        //         effective_budget,
+        //         biased_prob,
+        //         prob,
+        //         truncated_mean,
+        //         left,
+        //         right,
+        //         price,
+        //         leftover_value,
+        //         out,
+        //     )
+        //     .into(),
+        // );
 
         // }
         return out;

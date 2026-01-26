@@ -83,12 +83,14 @@ impl StateBundle {
                 invalid_index = attempt_index + 1;
                 break;
             }
-            if upgrade.succeeded {
-                continue;
-            }
+
             highest_upgrade_index_seen[upgrade.piece_type] = upgrade.upgrade_index as i64;
 
-            let p = upgrade.base_chance;
+            let p = if upgrade.succeeded {
+                1.0
+            } else {
+                upgrade.base_chance
+            };
             let one_minus_p = 1.0 - p;
 
             // Scale cost

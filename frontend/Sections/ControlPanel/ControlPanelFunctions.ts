@@ -1,13 +1,29 @@
 import React from "react"
-import { MATS_LABELS, TOP_ROWS, TOP_COLS, BOTTOM_ROWS, BOTTOM_COLS } from "@/Utils/Constants.ts"
+import {
+    DEMO_INCOME_1680_ROSTER_BOUND,
+    DEMO_INCOME_1720_CHAR_BOUND,
+    DEMO_UI_VALUES,
+    RESET_UI_DEFAULTS,
+} from "@/Utils/Constants.ts"
+
+const cloneGrid = <T,>(grid: T[][]) => grid.map((row) => row.map((cell) => cell))
+const cloneStateBundleGrid = (grid: [boolean, number][][][]) =>
+    grid.map((row) => row.map((cell) => cell.map((pair) => [pair[0], pair[1]] as [boolean, number])))
 
 export function createClearAll({
     setTopGrid,
     setBottomGrid,
     set_prev_checked_arr,
     set_prev_checked_arr_bottom,
-    set_budget_inputs,
+     setUserMatsOwned,
     setUserMatsPrices,
+    setUserMatsLeftover,
+    setUserWeaponJuiceOwned,
+    setUserArmorJuiceOwned,
+    setUserWeaponJuicePrices,
+    setUserArmorJuicePrices,
+    setUserWeaponJuiceLeftover,
+    setUserArmorJuiceLeftover,
     set_desired_chance,
     set_adv_hone_strategy_change,
     set_express_event,
@@ -20,14 +36,27 @@ export function createClearAll({
     setLockedMaxs,
     // setShowAverage,
     setIncomeArr,
+    setMinResolution,
+    setSpecialState,
+    setSucceededGrid,
+    setUnlockGrid,
+    setStateBundleGrid,
+    setProgressGrid,
     // setMonteCarloResult,
 }: {
     setTopGrid: React.Dispatch<React.SetStateAction<any>>
     setBottomGrid: React.Dispatch<React.SetStateAction<any>>
     set_prev_checked_arr: React.Dispatch<React.SetStateAction<boolean[]>>
     set_prev_checked_arr_bottom: React.Dispatch<React.SetStateAction<boolean[]>>
-    set_budget_inputs: React.Dispatch<React.SetStateAction<any>>
+    setUserMatsOwned: React.Dispatch<React.SetStateAction<any>>
     setUserMatsPrices: React.Dispatch<React.SetStateAction<any>>
+    setUserMatsLeftover: React.Dispatch<React.SetStateAction<any>>
+    setUserWeaponJuiceOwned: React.Dispatch<React.SetStateAction<any>>
+    setUserArmorJuiceOwned: React.Dispatch<React.SetStateAction<any>>
+    setUserWeaponJuicePrices: React.Dispatch<React.SetStateAction<any>>
+    setUserArmorJuicePrices: React.Dispatch<React.SetStateAction<any>>
+    setUserWeaponJuiceLeftover: React.Dispatch<React.SetStateAction<any>>
+    setUserArmorJuiceLeftover: React.Dispatch<React.SetStateAction<any>>
     set_desired_chance: React.Dispatch<React.SetStateAction<string>>
     set_adv_hone_strategy_change: React.Dispatch<React.SetStateAction<string>>
     set_express_event: React.Dispatch<React.SetStateAction<boolean>>
@@ -40,145 +69,134 @@ export function createClearAll({
     setLockedMaxs: React.Dispatch<React.SetStateAction<number[] | null>>
     // setShowAverage: React.Dispatch<React.SetStateAction<boolean>>
     setIncomeArr: React.Dispatch<React.SetStateAction<number[][]>>
+    setMinResolution: React.Dispatch<React.SetStateAction<number>>
+    setSpecialState: React.Dispatch<React.SetStateAction<number[]>>
+    setSucceededGrid: React.Dispatch<React.SetStateAction<boolean[][]>>
+    setUnlockGrid: React.Dispatch<React.SetStateAction<boolean[][]>>
+    setStateBundleGrid: React.Dispatch<React.SetStateAction<[boolean, number][][][]>>
+    setProgressGrid: React.Dispatch<React.SetStateAction<number[][]>>
     // setMonteCarloResult: React.Dispatch<React.SetStateAction<any>>
 }) {
     return () => {
         // Grids and their column header checkboxes
-        setTopGrid(Array.from({ length: TOP_ROWS }, () => Array(TOP_COLS).fill(false)))
-        setBottomGrid(Array.from({ length: BOTTOM_ROWS }, () => Array(BOTTOM_COLS).fill(false)))
-        set_prev_checked_arr(Array.from({ length: TOP_COLS }, () => false))
-        set_prev_checked_arr_bottom(Array.from({ length: BOTTOM_COLS }, () => false))
+        setTopGrid(cloneGrid(RESET_UI_DEFAULTS.topGrid))
+        setBottomGrid(cloneGrid(RESET_UI_DEFAULTS.bottomGrid))
+        set_prev_checked_arr([...RESET_UI_DEFAULTS.prev_checked_arr])
+        set_prev_checked_arr_bottom([...RESET_UI_DEFAULTS.prev_checked_arr_bottom])
 
         // Inputs and toggles to defaults
-        set_budget_inputs(Object.fromEntries(MATS_LABELS.map((l) => [l, "0"])))
-        setUserMatsPrices(
-            Object.fromEntries(
-                MATS_LABELS.slice(0, 7).map((l, index) => {
-                    const defaultValues = ["1.65", "0.03", "13.0", "0.5", "95.0", "1.0", "0.0"]
-                    return [l, defaultValues[index]]
-                }),
-            ),
-        )
-        set_desired_chance("50")
-        set_adv_hone_strategy_change("No juice")
-        set_express_event(true)
+        setUserMatsOwned({ ...RESET_UI_DEFAULTS.userMatsOwned })
+        setUserMatsPrices({ ...RESET_UI_DEFAULTS.userMatsPrices })
+        setUserMatsLeftover({ ...RESET_UI_DEFAULTS.userMatsLeftover })
+        setUserWeaponJuiceOwned({ ...RESET_UI_DEFAULTS.userWeaponJuiceOwned })
+        setUserArmorJuiceOwned({ ...RESET_UI_DEFAULTS.userArmorJuiceOwned })
+        setUserWeaponJuicePrices({ ...RESET_UI_DEFAULTS.userWeaponJuicePrices })
+        setUserArmorJuicePrices({ ...RESET_UI_DEFAULTS.userArmorJuicePrices })
+        setUserWeaponJuiceLeftover({ ...RESET_UI_DEFAULTS.userWeaponJuiceLeftover })
+        setUserArmorJuiceLeftover({ ...RESET_UI_DEFAULTS.userArmorJuiceLeftover })
+        set_desired_chance(RESET_UI_DEFAULTS.desired_chance)
+        set_adv_hone_strategy_change(RESET_UI_DEFAULTS.adv_hone_strategy)
+        set_express_event(RESET_UI_DEFAULTS.express_event)
         // setAutoGoldValues(false)
-        _setBucketCount("100")
-        setCumulativeGraph(false)
-        setDataSize("100000")
+        _setBucketCount(RESET_UI_DEFAULTS.bucketCount)
+        setCumulativeGraph(RESET_UI_DEFAULTS.cumulativeGraph)
+        setDataSize(RESET_UI_DEFAULTS.dataSize)
 
         // Reset lock x-axis state
-        setLockXAxis(false)
-        setLockedMins(null)
-        setLockedMaxs(null)
+        setLockXAxis(RESET_UI_DEFAULTS.lockXAxis)
+        setLockedMins(RESET_UI_DEFAULTS.lockedMins)
+        setLockedMaxs(RESET_UI_DEFAULTS.lockedMaxs)
 
         // Reset show average checkbox
         // setShowAverage(false)
 
         // Reset income array
-        setIncomeArr(Array.from({ length: 6 }, () => Array.from({ length: 7 }, () => 0)))
+        setIncomeArr(cloneGrid(RESET_UI_DEFAULTS.incomeArr))
+        setMinResolution(RESET_UI_DEFAULTS.minResolution)
+        setSpecialState([...RESET_UI_DEFAULTS.specialState])
+        setSucceededGrid(cloneGrid(RESET_UI_DEFAULTS.succeededGrid))
+        setUnlockGrid(cloneGrid(RESET_UI_DEFAULTS.unlockGrid))
+        setStateBundleGrid(cloneStateBundleGrid(RESET_UI_DEFAULTS.stateBundleGrid))
+        setProgressGrid(cloneGrid(RESET_UI_DEFAULTS.progressGrid))
         // setMonteCarloResult(null)
-    }
-}
-
-export function createFillRandom({
-    setTopGrid,
-    setBottomGrid,
-    set_desired_chance,
-    set_prev_checked_arr,
-    set_prev_checked_arr_bottom,
-}: {
-    setTopGrid: React.Dispatch<React.SetStateAction<any>>
-    setBottomGrid: React.Dispatch<React.SetStateAction<any>>
-    set_desired_chance: React.Dispatch<React.SetStateAction<string>>
-    set_prev_checked_arr: React.Dispatch<React.SetStateAction<boolean[]>>
-    set_prev_checked_arr_bottom: React.Dispatch<React.SetStateAction<boolean[]>>
-}) {
-    return () => {
-        // Generate random grids
-        const newTopGrid = Array.from({ length: TOP_ROWS }, () => Array.from({ length: TOP_COLS }, () => Math.random() > 0.7))
-        const newBottomGrid = Array.from({ length: BOTTOM_ROWS }, () => Array.from({ length: BOTTOM_COLS }, () => Math.random() > 0.7))
-
-        // Check for full columns in top grid and update prev_checked_arr accordingly
-        const newPrevCheckedArr = Array.from({ length: TOP_COLS }, (_, colIndex) => {
-            return newTopGrid.every((row) => row[colIndex] === true)
-        })
-
-        // Check for full columns in bottom grid and update prev_checked_arr_bottom accordingly
-        const newPrevCheckedArrBottom = Array.from({ length: BOTTOM_COLS }, (_, colIndex) => {
-            return newBottomGrid.every((row) => row[colIndex] === true)
-        })
-
-        setTopGrid(newTopGrid)
-        setBottomGrid(newBottomGrid)
-        set_prev_checked_arr(newPrevCheckedArr)
-        set_prev_checked_arr_bottom(newPrevCheckedArrBottom)
-        set_desired_chance((Math.random() * 100).toFixed(0).toString())
     }
 }
 
 export function createFillDemo({
     setTopGrid,
     setBottomGrid,
-    set_budget_inputs,
     set_desired_chance,
     set_prev_checked_arr,
+    set_prev_checked_arr_bottom,    
+    setUserMatsOwned,
     setUserMatsPrices,
+    setUserMatsLeftover,
+    setUserWeaponJuiceOwned,
+    setUserArmorJuiceOwned,
+    setUserWeaponJuicePrices,
+    setUserArmorJuicePrices,
+    setUserWeaponJuiceLeftover,
+    setUserArmorJuiceLeftover,
+    setMinResolution,
+    setSpecialState,
+    setSucceededGrid,
+    setUnlockGrid,
+    setStateBundleGrid,
+    setProgressGrid,
 }: {
     setTopGrid: React.Dispatch<React.SetStateAction<any>>
     setBottomGrid: React.Dispatch<React.SetStateAction<any>>
-    set_budget_inputs: React.Dispatch<React.SetStateAction<any>>
     set_desired_chance: React.Dispatch<React.SetStateAction<string>>
     set_prev_checked_arr: React.Dispatch<React.SetStateAction<boolean[]>>
+    set_prev_checked_arr_bottom: React.Dispatch<React.SetStateAction<boolean[]>>
+    setUserMatsOwned: React.Dispatch<React.SetStateAction<any>>
     setUserMatsPrices: React.Dispatch<React.SetStateAction<any>>
+    setUserMatsLeftover: React.Dispatch<React.SetStateAction<any>>
+    setUserWeaponJuiceOwned: React.Dispatch<React.SetStateAction<any>>
+    setUserArmorJuiceOwned: React.Dispatch<React.SetStateAction<any>>
+    setUserWeaponJuicePrices: React.Dispatch<React.SetStateAction<any>>
+    setUserArmorJuicePrices: React.Dispatch<React.SetStateAction<any>>
+    setUserWeaponJuiceLeftover: React.Dispatch<React.SetStateAction<any>>
+    setUserArmorJuiceLeftover: React.Dispatch<React.SetStateAction<any>>
+    setMinResolution: React.Dispatch<React.SetStateAction<number>>
+    setSpecialState: React.Dispatch<React.SetStateAction<number[]>>
+    setSucceededGrid: React.Dispatch<React.SetStateAction<boolean[][]>>
+    setUnlockGrid: React.Dispatch<React.SetStateAction<boolean[][]>>
+    setStateBundleGrid: React.Dispatch<React.SetStateAction<[boolean, number][][][]>>
+    setProgressGrid: React.Dispatch<React.SetStateAction<number[][]>>
 }) {
     return () => {
-        setTopGrid(
-            Array.from({ length: TOP_ROWS }, (_, row_id) =>
-                Array.from({ length: TOP_COLS }, (_, ind) => ind == 19 || ind == 20 || ind == 21 || (ind > 21 && row_id == 5)),
-            ),
-        )
-        setBottomGrid(Array.from({ length: BOTTOM_ROWS }, (_, piece) => Array.from({ length: BOTTOM_COLS }, (_, ind) => ind == 3 && piece < 3)))
-        set_budget_inputs({
-            Red: "631777",
-            Blue: "1064398",
-            Leaps: "33748",
-            Shards: "12010948",
-            Oreha: "25125",
-            Gold: "3803792",
-            Silver: "999999999",
-            "Red juice": "1420",
-            "Blue juice": "690",
-            "Special Leap": "6767",
-        })
-        set_desired_chance("50")
-        set_prev_checked_arr(Array.from({ length: TOP_COLS }, (_, ind) => ind == 19 || ind == 20 || ind == 21))
+        setTopGrid(cloneGrid(DEMO_UI_VALUES.topGrid))
+        setBottomGrid(cloneGrid(DEMO_UI_VALUES.bottomGrid))
 
-        // Set userMatsPrices to the specified values
-        setUserMatsPrices({
-            Red: "1.65",
-            Blue: "0.03",
-            Leaps: "13.0",
-            Shards: "0.5",
-            Oreha: "95.0",
-            Gold: "1.0",
-            Silver: "0.0",
-        })
+        set_desired_chance(DEMO_UI_VALUES.desired_chance)
+        set_prev_checked_arr([...DEMO_UI_VALUES.prev_checked_arr])
+        set_prev_checked_arr_bottom([...DEMO_UI_VALUES.prev_checked_arr_bottom])
+        setUserMatsOwned({ ...DEMO_UI_VALUES.userMatsOwned })
+        setUserMatsPrices({ ...DEMO_UI_VALUES.userMatsPrices })
+        setUserMatsLeftover({ ...DEMO_UI_VALUES.userMatsLeftover })
+        setUserWeaponJuiceOwned({ ...DEMO_UI_VALUES.userWeaponJuiceOwned })
+        setUserArmorJuiceOwned({ ...DEMO_UI_VALUES.userArmorJuiceOwned })
+        setUserWeaponJuicePrices({ ...DEMO_UI_VALUES.userWeaponJuicePrices })
+        setUserArmorJuicePrices({ ...DEMO_UI_VALUES.userArmorJuicePrices })
+        setUserWeaponJuiceLeftover({ ...DEMO_UI_VALUES.userWeaponJuiceLeftover })
+        setUserArmorJuiceLeftover({ ...DEMO_UI_VALUES.userArmorJuiceLeftover })
+        setMinResolution(DEMO_UI_VALUES.minResolution)
+        setSpecialState([...DEMO_UI_VALUES.specialState])
+        setSucceededGrid(cloneGrid(DEMO_UI_VALUES.succeededGrid))
+        setUnlockGrid(cloneGrid(DEMO_UI_VALUES.unlockGrid))
+        setStateBundleGrid(cloneStateBundleGrid(DEMO_UI_VALUES.stateBundleGrid))
+        setProgressGrid(cloneGrid(DEMO_UI_VALUES.progressGrid))
     }
 }
 
 export function createFillDemoIncome({ setIncomeArr }: { setIncomeArr: React.Dispatch<React.SetStateAction<number[][]>> }) {
     return () => {
-        // Set income array with specified values
-        const income_1680_roster_bound = [2606, 7751, 133, 0, 0, 90000, 69420]
-        const income_1720_char_bound = [13600, 28160, 594, 360279, 1500, 120000, 69420]
-
         const newIncomeArr = Array.from({ length: 6 }, (_, gridIndex) => {
             if (gridIndex === 0) {
-                return income_1720_char_bound
-            } else {
-                return income_1680_roster_bound
+                return [...DEMO_INCOME_1720_CHAR_BOUND]
             }
+            return [...DEMO_INCOME_1680_ROSTER_BOUND]
         })
         setIncomeArr(newIncomeArr)
     }

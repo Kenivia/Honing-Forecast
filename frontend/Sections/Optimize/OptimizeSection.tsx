@@ -71,8 +71,9 @@ export default function OptimizeSection({
             optimizeAvgWorkerRef.current?.terminate()
             optimizeAvgWorkerRef.current = null
             return
+        } else {
+            setOptimizeButtonPress((prev: number) => prev + 1)
         }
-        setOptimizeButtonPress((prev: number) => prev + 1)
     }
 
     // console.log("special", specialState)
@@ -95,7 +96,6 @@ export default function OptimizeSection({
                     >
                         {optimizeAvgBusy ? "Cancel Optimize Average" : "Optimize Average"}
                     </button>
-
                 </div>
                 <br />
                 Already spent: {evaluateAverageResult?.prep_output.already_spent[3]}
@@ -131,7 +131,6 @@ export default function OptimizeSection({
                     setSpecialState={setSpecialState}
                 />
             )}
-
 
             {
                 <div style={{ display: "flex", flexDirection: "row", alignItems: "flex-start", gap: 0, minWidth: 200, flexShrink: 0, marginTop: 0 }}>

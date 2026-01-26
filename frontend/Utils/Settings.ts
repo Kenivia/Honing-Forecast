@@ -1,4 +1,36 @@
-import { MATS_LABELS, OUTPUT_LABELS, STORAGE_KEY, TOP_ROWS, TOP_COLS, BOTTOM_ROWS, BOTTOM_COLS, CELL_W, CELL_H } from "./Constants.ts"
+import { MATS_LABELS, JUICE_LABELS, STORAGE_KEY, TOP_ROWS, TOP_COLS, BOTTOM_ROWS, BOTTOM_COLS } from "./Constants.ts"
+
+const hasKeySet = (value: unknown, keys: string[]) => {
+    if (!value || typeof value !== "object") return false
+    return keys.every((key) => Object.prototype.hasOwnProperty.call(value, key))
+}
+
+const isStringOrNumberRecord = (value: unknown, keys: string[]) => {
+    if (!hasKeySet(value, keys)) return false
+    return keys.every((key) => {
+        const entry = (value as Record<string, unknown>)[key]
+        return typeof entry === "string" || typeof entry === "number"
+    })
+}
+
+const isGrid = (value: unknown, rows: number, cols: number, cellCheck: (_cell: unknown) => boolean = () => true) => {
+    if (!Array.isArray(value) || value.length !== rows) return false
+    return value.every((row) => Array.isArray(row) && row.length === cols && row.every((cell) => cellCheck(cell)))
+}
+
+type StatePair = [boolean, number]
+const isStatePair = (value: unknown): value is StatePair => {
+    return Array.isArray(value) && value.length === 2 && typeof value[0] === "boolean" && typeof value[1] === "number"
+}
+
+const isStatePairGrid = (value: unknown, rows: number, cols: number) => {
+    if (!Array.isArray(value) || value.length !== rows) return false
+    return value.every((row) => Array.isArray(row) && row.length === cols && row.every((cell) => Array.isArray(cell) && cell.every(isStatePair)))
+}
+
+const MATS_PRICE_LABELS = MATS_LABELS.slice(0, 7)
+const JUICE_WEAPON_LABELS = JUICE_LABELS.map((labels) => labels[0])
+const JUICE_ARMOR_LABELS = JUICE_LABELS.map((labels) => labels[1])
 
 export function writeSettings(
     topGrid,
@@ -8,12 +40,24 @@ export function writeSettings(
     prev_checked_arr,
     prev_checked_arr_bottom,
     desired_chance,
-    budget_inputs,
-
+    userMatsOwned,
     userMatsPrices,
+    userMatsLeftover,
+    userWeaponJuiceOwned,
+    userArmorJuiceOwned,
+    userWeaponJuicePrices,
+    userArmorJuicePrices,
+    userWeaponJuiceLeftover,
+    userArmorJuiceLeftover,
     cumulativeGraph,
     dataSize,
     incomeArr,
+    minResolution,
+    specialState,
+    succeededGrid,
+    unlockGrid,
+    stateBundleGrid,
+    progressGrid,
 ) {
     const toSave = {
         topGrid,
@@ -23,12 +67,24 @@ export function writeSettings(
         prev_checked_arr,
         prev_checked_arr_bottom,
         desired_chance,
-        budget_inputs,
-
+        userMatsOwned,
         userMatsPrices,
+        userMatsLeftover,
+        userWeaponJuiceOwned,
+        userArmorJuiceOwned,
+        userWeaponJuicePrices,
+        userArmorJuicePrices,
+        userWeaponJuiceLeftover,
+        userArmorJuiceLeftover,
         cumulativeGraph,
         dataSize,
         incomeArr,
+        minResolution,
+        specialState,
+        succeededGrid,
+        unlockGrid,
+        stateBundleGrid,
+        progressGrid,
     }
     localStorage.setItem(STORAGE_KEY, JSON.stringify(toSave))
 }
@@ -40,12 +96,24 @@ export function readSettings(
     set_prev_checked_arr,
     set_prev_checked_arr_bottom,
     set_desired_chance,
-    set_budget_inputs,
-
+    setUserMatsOwned,
     setUserMatsPrices,
+    setUserMatsLeftover,
+    setUserWeaponJuiceOwned,
+    setUserArmorJuiceOwned,
+    setUserWeaponJuicePrices,
+    setUserArmorJuicePrices,
+    setUserWeaponJuiceLeftover,
+    setUserArmorJuiceLeftover,
     setCumulativeGraph,
     setDataSize,
     setIncomeArr,
+    setMinResolution,
+    setSpecialState,
+    setSucceededGrid,
+    setUnlockGrid,
+    setStateBundleGrid,
+    setProgressGrid,
 ) {
     const raw = localStorage.getItem(STORAGE_KEY)
     if (!raw) return
@@ -60,14 +128,25 @@ export function readSettings(
         if (Array.isArray(parsed.prev_checked_arr_bottom) && parsed.prev_checked_arr_bottom.length === BOTTOM_COLS)
             set_prev_checked_arr_bottom(parsed.prev_checked_arr_bottom)
         if (typeof parsed.desired_chance === "string") set_desired_chance(parsed.desired_chance)
-        if (parsed.budget_inputs && typeof parsed.budget_inputs === "object") set_budget_inputs(parsed.budget_inputs)
-        // if (typeof parsed.autoGoldValues === "boolean") setAutoGoldValues(parsed.autoGoldValues)
-
-        if (parsed.userMatsPrices && typeof parsed.userMatsPrices === "object") setUserMatsPrices(parsed.userMatsPrices)
+        if (isStringOrNumberRecord(parsed.userMatsOwned, MATS_LABELS)) setUserMatsOwned(parsed.userMatsOwned)
+        if (isStringOrNumberRecord(parsed.userMatsPrices, MATS_PRICE_LABELS)) setUserMatsPrices(parsed.userMatsPrices)
+        if (isStringOrNumberRecord(parsed.userMatsLeftover, MATS_LABELS)) setUserMatsLeftover(parsed.userMatsLeftover)
+        if (isStringOrNumberRecord(parsed.userWeaponJuiceOwned, JUICE_WEAPON_LABELS)) setUserWeaponJuiceOwned(parsed.userWeaponJuiceOwned)
+        if (isStringOrNumberRecord(parsed.userArmorJuiceOwned, JUICE_ARMOR_LABELS)) setUserArmorJuiceOwned(parsed.userArmorJuiceOwned)
+        if (isStringOrNumberRecord(parsed.userWeaponJuicePrices, JUICE_WEAPON_LABELS)) setUserWeaponJuicePrices(parsed.userWeaponJuicePrices)
+        if (isStringOrNumberRecord(parsed.userArmorJuicePrices, JUICE_ARMOR_LABELS)) setUserArmorJuicePrices(parsed.userArmorJuicePrices)
+        if (isStringOrNumberRecord(parsed.userWeaponJuiceLeftover, JUICE_WEAPON_LABELS)) setUserWeaponJuiceLeftover(parsed.userWeaponJuiceLeftover)
+        if (isStringOrNumberRecord(parsed.userArmorJuiceLeftover, JUICE_ARMOR_LABELS)) setUserArmorJuiceLeftover(parsed.userArmorJuiceLeftover)
         if (typeof parsed.cumulativeGraph === "boolean") setCumulativeGraph(parsed.cumulativeGraph)
         if (typeof parsed.dataSize === "string") setDataSize(parsed.dataSize)
 
-        if (Array.isArray(parsed.incomeArr) && parsed.incomeArr.length === 6 && parsed.every((row) => Array.isArray(row) && row.length === 7))
+        if (Array.isArray(parsed.incomeArr) && parsed.incomeArr.length === 6 && parsed.incomeArr.every((row) => Array.isArray(row) && row.length === 7))
             setIncomeArr(parsed.incomeArr)
+        if (typeof parsed.minResolution === "number") setMinResolution(parsed.minResolution)
+        if (Array.isArray(parsed.specialState) && parsed.specialState.every((value) => typeof value === "number")) setSpecialState(parsed.specialState)
+        if (isGrid(parsed.succeededGrid, TOP_ROWS, TOP_COLS, (cell) => typeof cell === "boolean")) setSucceededGrid(parsed.succeededGrid)
+        if (isGrid(parsed.unlockGrid, TOP_ROWS, TOP_COLS, (cell) => typeof cell === "boolean")) setUnlockGrid(parsed.unlockGrid)
+        if (isStatePairGrid(parsed.stateBundleGrid, TOP_ROWS, TOP_COLS)) setStateBundleGrid(parsed.stateBundleGrid)
+        if (isGrid(parsed.progressGrid, TOP_ROWS, TOP_COLS, (cell) => typeof cell === "number")) setProgressGrid(parsed.progressGrid)
     }
 }

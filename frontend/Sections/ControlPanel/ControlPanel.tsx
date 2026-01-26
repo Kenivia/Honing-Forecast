@@ -7,7 +7,6 @@ type ControlPanelProps = {
     mainScale: number
     fillDemo: () => void
     fillDemoIncome: () => void
-    // fillRandom: () => void
     clearAll: () => void
     express_event: boolean
     set_express_event: (_next: boolean) => void
@@ -67,7 +66,6 @@ export default function ControlPanel({
                     <button style={styles.demoButton} onClick={fillDemoIncome}>
                         Fill Demo Income
                     </button>
-                    {/* <button style={styles.demoButton} onClick={fillRandom}>Fill Random</button> */}
                     <button style={styles.demoButton} onClick={clearAll}>
                         Reset All
                     </button>

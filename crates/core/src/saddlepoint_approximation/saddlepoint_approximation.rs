@@ -120,7 +120,10 @@ impl StateBundle {
                 + span / 2.0;
             // UM this should be the size of the second gap so might not be accurate for combined cost ? CBB
 
-            if min_value + min_delta + 1.0 < budget && budget < max_value - min_delta - 1.0 {
+            if max_value - min_value > min_delta
+                && min_value + min_delta + 1.0 < budget
+                && budget < max_value - min_delta - 1.0
+            {
                 let res: (f64, f64, f64, f64, f64) = self.ks(
                     0.0,
                     compute_biased,
@@ -131,6 +134,10 @@ impl StateBundle {
                 );
                 let mean_var_skew: (f64, f64, f64) = (res.1, res.2, res.3);
 
+                if !(min_value < mean_var_skew.0 && mean_var_skew.0 < max_value) {
+                    web_sys::console::log_1(&format!("{:?}", &self).into());
+                    panic!();
+                }
                 let (soft_low_limit, guess, soft_high_limit) =
                     self.min_guess_max_triplet(budget, min_value, max_value, mean_var_skew);
                 return self.saddlepoint_approximation(

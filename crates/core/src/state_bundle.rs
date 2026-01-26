@@ -64,7 +64,11 @@ impl StateBundle {
         let mut out = Vec::with_capacity(self.upgrade_arr.len());
         self.clean_special_state();
         for (index, _) in self.special_probs().iter().enumerate() {
-            out.push(self.special_probs().iter().skip(index + 1).sum::<f64>());
+            out.push(if index < self.special_invalid_index.unwrap() {
+                self.special_probs().iter().skip(index + 1).sum::<f64>()
+            } else {
+                0.0
+            });
         }
         self.latest_special_probs = Some(out);
     }

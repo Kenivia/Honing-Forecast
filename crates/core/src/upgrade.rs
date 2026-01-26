@@ -71,7 +71,7 @@ impl State {
 
     pub fn update_payload(&mut self, new_payload: Vec<(bool, usize)>) {
         self.payload = new_payload;
-        // self.update_hash();
+        self.update_hash();
     }
 }
 impl Deref for State {
@@ -172,14 +172,14 @@ impl Support {
     }
 
     pub fn collapse_support(&mut self, prob_dist: &ProbDist) {
-        assert!(prob_dist.payload.len() == self.support.len());
+        // assert!(prob_dist.payload.len() == self.support.len());
         assert!(prob_dist.prob_state_hash == self.support_state_hash);
 
         // let valid_log = prob_dist.is_log_valid();
         let mut result: Vec<(f64, f64)> = Vec::with_capacity(self.support.len());
 
-        if self.collapsed_state_hash != self.support_state_hash {
-            let mut iter = izip!(self.support.iter(), prob_dist.iter(),);
+        if self.collapsed_state_hash != self.support_state_hash || true {
+            let mut iter = self.support.iter().zip(prob_dist.iter());
 
             if let Some((&s, &p)) = iter.next() {
                 let mut cur_s = s;
@@ -201,10 +201,11 @@ impl Support {
                 result.push((cur_s, cur_p));
             }
             self.ignore = result.len() == 1 && result[0].0.abs() < FLOAT_TOL;
-            self.first_non_zero_prob_index = result
-                .iter()
-                .take_while(|(_, p)| p.abs() < FLOAT_TOL)
-                .count();
+            // self.first_non_zero_prob_index = result
+            //     .iter()
+            //     .take_while(|(_, p)| p.abs() < FLOAT_TOL)
+            //     .count();
+            self.first_non_zero_prob_index = 0;
             self.collapsed_pair = result;
             self.collapsed_state_hash = self.support_state_hash;
         }
@@ -301,7 +302,7 @@ impl Upgrade {
         // web_sys::console::log_1(&format!("a").into());
         state.update_payload(
             state_given
-                .unwrap_or(State::new(prob_dist_len).payload)
+                .unwrap_or(State::new(original_prob_dist_len).payload)
                 .to_owned(),
         );
         // web_sys::console::log_1(&format!("{:?}", state).into());
@@ -437,8 +438,6 @@ impl Upgrade {
                 cost_so_far,
             );
         }
-
-        // ts so weird but idk if theres a better way, i think i just designed this special state poorly maybe
 
         for id in 0..prep_output.juice_info.num_avail {
             let mut weap_cost: f64 = 0.0;

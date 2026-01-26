@@ -22,10 +22,13 @@
   - ~~also store the special probs of the active special state~~
   - ~~how to handle alr-succeeded upgrades in rust???~~
 
+- ~~update parsing/payload building such that 00 doesn't break it what the actual fuck~~
 - store & show show breakdown of average gold costs from here ~~ and already-spent costs~~
-- 10 at a time toggle, need to modify neighbour function & stategrid
+-~~ 10 at a time toggle, need to modify neighbour function & stategrid~~
 - instead of counting unique elements in statebundle it should read from juiceinfo instead
 
+- add input box next to succeed free tap
+- adjust how the optimizer is ran (cancel when anything changes, and say so)
 - marquee for state grid also?
 
 - ~~add optimizer button~~
@@ -89,7 +92,9 @@
 
 - start working on visualizing this stuff
 
-- rework collapseed so that p = 0 are removed, need to update everything in core also
+- ~~rework collapseed so that p = 0 are removed, need to update everything in core also~~
+
+- initialize the hash properly or something idk
 
 ### Big
 

@@ -112,9 +112,23 @@ fn neighbour<R: Rng>(
         let num_blocks = (state_len + eff_resolution - 1) / eff_resolution;
 
         // Adjust weighted rand to pick number of BLOCKS to flip, not individual items
-        let want_to_flip: usize = my_weighted_rand(num_blocks, temp, init_temp, 1, 0.8, rng);
+        let want_to_flip: usize = my_weighted_rand(
+            num_blocks,
+            temp,
+            init_temp,
+            1,
+            0.8 / eff_resolution as f64,
+            rng,
+        );
 
-        let want_to_book: usize = my_weighted_rand(num_blocks, temp, init_temp, 1, 0.8, rng);
+        let want_to_book: usize = my_weighted_rand(
+            num_blocks,
+            temp,
+            init_temp,
+            1,
+            0.8 / eff_resolution as f64,
+            rng,
+        );
 
         let flip_target = rng.random_bool(0.5);
 
@@ -124,7 +138,7 @@ fn neighbour<R: Rng>(
         want_to_flip_blocks.sort();
 
         // Choose which blocks to book
-        let ids = &state_bundle.prep_output.juice_info.ids[upgrade.upgrade_index];
+        let ids: &Vec<usize> = &state_bundle.prep_output.juice_info.ids[upgrade.upgrade_index];
         let book_target_index: usize = rng.random_range(0..=choice_len);
         let book_target_id: usize = ids[book_target_index];
 
@@ -228,12 +242,8 @@ pub fn solve<R: Rng>(
         .unwrap_or(min_resolution)
         .max(min_resolution);
 
-    // Temp constants for schedule calculation
-    // We want the transition to min_resolution to finish roughly halfway through the log schedule.
-    // Start: 333.0, End: ~0.05.
-    // Log(333) ≈ 5.8, Log(0.05) ≈ -3.0. Midpoint ≈ 1.4 -> Temp ≈ 4.0.
     let temp_schedule_start = 333.0_f64;
-    let temp_schedule_cutoff = 10.0_f64; // Below this temp, resolution is pinned to min
+    let temp_schedule_cutoff = 33.0_f64; // Below this temp, resolution is pinned to min
 
     state_bundle.metric = state_bundle.metric_router(metric_type, performance);
     let mut prev_state: StateBundle = state_bundle.clone();
@@ -247,7 +257,6 @@ pub fn solve<R: Rng>(
     let mut temps_without_improvement = 1;
 
     while temp >= 0.0 {
-        // --- Calculate Resolution ---
         let current_resolution = if temp > temp_schedule_cutoff {
             // Logarithmic interpolation from Max Len -> Min Res
             let log_curr = temp.ln();
@@ -259,19 +268,15 @@ pub fn solve<R: Rng>(
 
             ((min_resolution as f64 + (max_len as f64 - min_resolution as f64) * ratio)
                 / min_resolution as f64)
-                .round() as usize
+                .floor() as usize
                 * min_resolution
         } else {
-            // Hold at minimum for the tail end (roughly 50% of the run)
             min_resolution
         };
 
         neighbour(&mut state_bundle, temp, init_temp, current_resolution, rng);
-
         state_bundle.metric = state_bundle.metric_router(metric_type, performance);
 
-        // Logging / Metric tracking (unchanged)
-        // ... (omitted purely to save space, logic is same as original)
         highest_seen = highest_seen.max(state_bundle.metric);
         lowest_seen = lowest_seen.min(state_bundle.metric);
 

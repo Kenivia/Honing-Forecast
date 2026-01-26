@@ -186,7 +186,15 @@ pub fn inverse_shifted_sigmoid(
     let beta = t0 * v1 / (z * (1.0 - z));
     let alpha = t0 * ((1.0 - z) / z).powf(beta.inv());
 
-    alpha * ((input_y - min_value) / (max_value - input_y)).powf(1.0 / beta) - t0
+    let out = alpha * ((input_y - min_value) / (max_value - input_y)).powf(1.0 / beta) - t0;
+
+    if !out.is_finite() {
+        panic!(
+            "min {:?} max {:?} mean {:?} var {:?} skew {:?} input_y {:?} z {:?} v1 {:?} v2 {:?} t0 {:?} beta {:?} alpha  {:?} ",
+            min_value, max_value, mean, var, skew, input_y, z, v1, v2, t0, beta, alpha
+        );
+    }
+    out
 
     // // if (var.powi(2) - mean * skew) < FLOAT_TOL {}
     // let denom: f64 = var.powi(2) - mean * skew;

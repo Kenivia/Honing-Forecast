@@ -26,7 +26,7 @@ impl StateBundle {
         // theta = theta.min(max_theta).max(min_theta);
 
         let mut init_y: f64 = NAN; // this is K'(0) = the mean 
-        // let mut debug_record: Vec<(f64, f64, f64, f64, f64)> = Vec::new();
+        let mut debug_record: Vec<(f64, f64, f64, f64, f64)> = Vec::new();
 
         for iter in 0..MAX_ROOT_FIND_ITER {
             // 2. Evaluate Function and Derivatives
@@ -43,8 +43,8 @@ impl StateBundle {
             }
 
             y -= budget;
-            // debug_record.push((theta, y, dy, dy2, dy3));
-
+            debug_record.push((theta, y, dy, dy2, dy3));
+            //
             if y < 0.0 {
                 lower = theta;
             } else {
@@ -76,19 +76,34 @@ impl StateBundle {
                     theta = 0.5 * (upper + lower);
                 } else if upper.is_finite() {
                     if (theta - upper).abs() < FLOAT_TOL {
-                        theta = 0.5 * theta;
+                        // implicitly y > 0.0
+                        if theta > 0.0 {
+                            theta = 0.5 * (theta);
+                        } else {
+                            theta = 2.0 * (theta);
+                        }
                     } else {
+                        // shouldnt really happen? idk
                         theta = 0.5 * (theta + upper);
                     }
                 } else if lower.is_finite() {
                     if (theta - lower).abs() < FLOAT_TOL {
-                        theta = 0.5 * theta;
+                        // implicitly y < 0.0
+                        if theta > 0.0 {
+                            theta = 2.0 * (theta);
+                        } else {
+                            theta = 0.5 * (theta);
+                        }
                     } else {
+                        // shouldnt really happen? idk
                         theta = 0.5 * (theta + lower);
                     }
                 } else {
-                    //  not possible
-                    panic!();
+                    //  not possible unless theta is nan or ks output was nan
+                    panic!(
+                        "theta {:?} lower {:?} upper {:?} y {:?} guess {:?} compute_biased {:?} budget {:?} iter {:?}",
+                        theta, lower, upper, y, guess, compute_biased, budget, iter
+                    );
                 }
 
                 performance.bisection_count += 1;
@@ -96,7 +111,15 @@ impl StateBundle {
         }
 
         // dbg!(debug_record);
-        // web_sys::console::log_1(&format!("{:?}", &debug_record).into());
+
+        web_sys::console::log_1(&format!("{:?}", &debug_record).into());
+        web_sys::console::log_1(
+            &format!(
+                "theta {:?} lower {:?} upper {:?} guess {:?} compute_biased {:?} budget {:?}",
+                theta, lower, upper, guess, compute_biased, budget,
+            )
+            .into(),
+        );
         None
     }
 }
