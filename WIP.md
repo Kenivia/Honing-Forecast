@@ -5,6 +5,24 @@
 
 ### Now
 
+- rework test case csv to json and take in js objects straight up
+  - add export button to copy to clipboard
+  - maybe take in a folder of test cases instead for ease of adding more test cases
+  
+- make solvers stream intermediate results at x1000 evaluations / second?
+  - postmessage & update in js
+    - need to ignore these such that changes don't cancel ( i mean its already greyed out so maybe this will be easy)
+  - add performance aggregation in preparation for multithreaded algorithms
+  
+- visualize these using perfplot
+  - take average of many test cases i think (many trials?)
+
+#### Analysis
+
+- elo or percentage deviation? idk need to do more research
+- how to visualize / interact with this data
+- how to evaluate adaptive policies???
+
 #### Optimizations
 
 - maybe its time to get rid of Box< iterator >
@@ -31,14 +49,9 @@
 
 #### Scale up compute
 
-- set up slurm on laptop
+- set up slurm on laptop(maybe not)
   - maybe write a dispatcher instead of naively running them in parallel
-
-#### Analysis
-
-- elo or percentage deviation? idk need to do more research
-- how to visualize / interact with this data
-- how to evaluate adaptive policies???
+    - wrap the current main function
 
 #### Advanced honing
 
@@ -72,9 +85,13 @@
 - limit neighbor function - 1 click 10 taps, limit amt of toggles maybe
   - start with VERY broad neighbors - all true, all false etc, then refine until limit reached (such as 10 taps), test how much the limit affects performance
 - keep a top 10 list and randomly restart to them instead of just the top 1
+  - maybe restart to
 - some kind of heatmap of which bits were the most impactful? but i feel like this wouldnt actually do much
   - can definitely think about which upgrades were the most impactful tho
 - maybe add some way to keep track of where bits are to make neighbor potentially more efficient
+
+- multi-thread and each worked tune one "dimension" like special, state of this one, state of other one etc
+  - do i need to allow multiple changes at high temperature or will the acceptance function take care of local one dimensional minima
 
 ## Next big step(s)
 

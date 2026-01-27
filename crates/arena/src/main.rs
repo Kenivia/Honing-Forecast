@@ -1,6 +1,6 @@
 use chrono::Local;
 use hf_arena::engine::{NOTES, solve};
-use hf_arena::parse_test_cases::parse_csv;
+use hf_arena::parse_test_cases::parse_payload_jsons;
 
 use hf_core::monte_carlo::monte_carlo_wrapper;
 
@@ -29,7 +29,7 @@ struct Header {
 }
 #[derive(Debug, Serialize, Deserialize)]
 struct Output {
-    test_case: i64,
+    test_case: String,
     metric_type: String,
     trial_num: i64,
     wall_time: f64,
@@ -84,7 +84,7 @@ fn main() {
         current_time_string().replace(":", "-"),
     );
 
-    let mut seen_tests: HashMap<(i64, String), i64> = HashMap::new();
+    let mut seen_tests: HashMap<(String, String), i64> = HashMap::new();
     let mut at_least_one_line: bool = false;
     if Path::new(&file_name).exists() {
         let file: File = File::open(&file_name).unwrap(); // this really shouldnt go wrong 
@@ -115,24 +115,18 @@ fn main() {
 
     let mut seed_rng: ThreadRng = rand::rng();
 
-    let test_cases: Vec<(StateBundle, Vec<bool>)> = parse_csv(Path::new(if DEBUG_AVERAGE {
-        "TEST_test_cases.csv"
-    } else {
-        "BENCH_test_cases.csv"
-    })); // bloated_
+    let test_cases: Vec<(String, StateBundle, Vec<bool>)> =
+        parse_payload_jsons(Path::new("test_payloads"));
 
     for _ in 0..NUM_TESTS_TO_RUN {
-        for (state_bundle, tests_to_run) in test_cases.iter() {
+        for (test_case_name, state_bundle, tests_to_run) in test_cases.iter() {
             for (index, (metric_type_str, metric_type)) in METRICS.iter().enumerate() {
                 if !tests_to_run[index] {
                     continue;
                 }
                 let metric_type_string = metric_type_str.to_string();
                 let mut instant: Instant = Instant::now();
-                let key = (
-                    state_bundle.prep_output.test_case,
-                    metric_type_string.clone(),
-                );
+                let key = (test_case_name.clone(), metric_type_string.clone());
                 if seen_tests.contains_key(&key) && seen_tests[&key] >= NUM_TESTS_TO_RUN {
                     continue;
                 }
@@ -158,7 +152,7 @@ fn main() {
                 let _ = state_bundle.metric_router(*metric_type, &mut best_state_performance);
 
                 let output: Output = Output {
-                    test_case: state_bundle.prep_output.test_case,
+                    test_case: test_case_name.clone(),
                     trial_num: *trial_num,
                     wall_time: instant.elapsed().as_secs_f64(),
 
@@ -178,7 +172,7 @@ fn main() {
                         monte_carlo_wrapper(MONTE_CARLO_COUNT, &mut state_bundle, &mut rng);
                     let dummy_performance = Performance::new();
                     let verification_output: Output = Output {
-                        test_case: state_bundle.prep_output.test_case,
+                        test_case: test_case_name.clone(),
                         trial_num: 0,
                         wall_time: instant.elapsed().as_secs_f64(),
 

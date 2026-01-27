@@ -178,7 +178,7 @@ impl Support {
         // let valid_log = prob_dist.is_log_valid();
         let mut result: Vec<(f64, f64)> = Vec::with_capacity(self.support.len());
 
-        if self.collapsed_state_hash != self.support_state_hash || true {
+        if self.collapsed_state_hash != self.support_state_hash {
             let mut iter = self.support.iter().zip(prob_dist.iter());
 
             if let Some((&s, &p)) = iter.next() {

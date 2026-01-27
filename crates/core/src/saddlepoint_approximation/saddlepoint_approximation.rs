@@ -113,13 +113,13 @@ impl StateBundle {
                     } else {
                         prev
                     }
-                });
+                }); // UM this should be the size of the second gap so might not be accurate for combined cost ? CBB
+
             let span = lattice_span(self.extract_support_with_meta(support_index, skip_count));
             let budget = ((inp_budget / span).floor() * span)
                 .min(max_value - span)
                 .max(min_value)
                 + span / 2.0;
-            // UM this should be the size of the second gap so might not be accurate for combined cost ? CBB
 
             if max_value - min_value > min_delta
                 && min_value + min_delta + 1.0 < budget

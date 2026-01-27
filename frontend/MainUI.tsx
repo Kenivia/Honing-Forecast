@@ -553,6 +553,33 @@ export default function HoningForecastUI() {
             // monteCarloResult,
         })
 
+    const onCopyPayload = async () => {
+        const payload = payloadBuilder()
+        const payloadJson = JSON.stringify(payload, null, 2)
+        try {
+            if (navigator.clipboard?.writeText) {
+                await navigator.clipboard.writeText(payloadJson)
+                return
+            }
+        } catch (err) {
+            // fallback to legacy path
+        }
+        try {
+            const textArea = document.createElement("textarea")
+            textArea.value = payloadJson
+            textArea.setAttribute("readonly", "")
+            textArea.style.position = "fixed"
+            textArea.style.opacity = "0"
+            textArea.style.pointerEvents = "none"
+            document.body.appendChild(textArea)
+            textArea.select()
+            document.execCommand("copy")
+            document.body.removeChild(textArea)
+        } catch (err) {
+            console.warn("Failed to copy payload", err)
+        }
+    }
+
     const runner = useMemo(() => createCancelableWorkerRunner(), [])
 
     // ---------- Automatic triggers with debounce ----------
@@ -980,6 +1007,7 @@ export default function HoningForecastUI() {
                             fillDemo={fillDemo}
                             fillDemoIncome={fillDemoIncome}
                             clearAll={clearAll}
+                            onCopyPayload={onCopyPayload}
                             express_event={express_event}
                             set_express_event={set_express_event}
                             cumulativeGraph={cumulativeGraph}

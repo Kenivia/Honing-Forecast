@@ -6,6 +6,7 @@ use hf_core::{
 use paste::paste;
 use seq_macro::seq;
 use serde::{Deserialize, Deserializer, Serialize};
+use std::fs;
 use std::path::Path;
 seq!(N in 1..=25 {
 #[derive(Debug, Deserialize, Serialize, Clone)]
@@ -131,6 +132,31 @@ seq!(N in 1..=25 {
     }
 
 });
+
+#[derive(Debug, Deserialize, Serialize, Clone)]
+pub struct Payload {
+    pub normal_hone_ticks: Vec<Vec<bool>>,
+    pub adv_hone_ticks: Vec<Vec<bool>>,
+    pub adv_hone_strategy: String,
+
+    pub express_event: bool,
+    pub bucket_count: usize,
+
+    pub data_size: usize,
+    pub mats_budget: Vec<i64>,
+    pub user_price_arr: Vec<f64>,
+    pub inp_leftover_values: Vec<f64>,
+    pub juice_books_budget: Vec<(i64, i64)>,
+    pub juice_prices: Vec<(f64, f64)>,
+    pub inp_leftover_juice_values: Vec<(f64, f64)>,
+
+    pub progress_grid: Option<Vec<Vec<usize>>>,
+    pub state_grid: Option<Vec<Vec<Vec<(bool, usize)>>>>,
+    pub special_state: Option<Vec<usize>>,
+    pub unlocked_grid: Option<Vec<Vec<bool>>>,
+    pub succeeded_grid: Option<Vec<Vec<bool>>>,
+    pub min_resolution: usize,
+}
 macro_rules! row_to_vec {
     ($instance:expr, $prefix:ident, $start:literal, $end:literal) => {
 
@@ -289,6 +315,67 @@ pub fn parse_csv(path: &Path) -> Vec<(StateBundle, Vec<bool>)> {
             assert!(minimum >= 0.0);
         }
         out.push((StateBundle::new(this, upgrade_arr), tests_to_run));
+    }
+    out
+}
+
+pub fn read_payload_jsons(path: &Path) -> Vec<(String, Payload)> {
+    if !path.exists() {
+        return Vec::new();
+    }
+    let mut entries: Vec<_> = fs::read_dir(path)
+        .unwrap()
+        .filter_map(|entry| entry.ok())
+        .collect();
+    entries.sort_by_key(|entry| entry.path());
+
+    let mut out: Vec<(String, Payload)> = Vec::new();
+    for entry in entries {
+        let file_path = entry.path();
+        if !file_path.is_file() {
+            continue;
+        }
+        if file_path
+            .extension()
+            .and_then(|ext| ext.to_str())
+            .map(|ext| ext.eq_ignore_ascii_case("json"))
+            != Some(true)
+        {
+            continue;
+        }
+        let test_case_name = file_path
+            .file_stem()
+            .map(|stem| stem.to_string_lossy().to_string())
+            .unwrap_or_else(|| "N/A".to_string());
+        let contents = fs::read_to_string(&file_path).unwrap();
+        let payload: Payload = serde_json::from_str(&contents).unwrap();
+        out.push((test_case_name, payload));
+    }
+    out
+}
+
+pub fn parse_payload_jsons(path: &Path) -> Vec<(String, StateBundle, Vec<bool>)> {
+    let mut out: Vec<(String, StateBundle, Vec<bool>)> = Vec::new();
+    for (test_case_name, payload) in read_payload_jsons(path) {
+        let state_bundle = StateBundle::init_from_inputs(
+            &payload.normal_hone_ticks,
+            &payload.mats_budget,
+            &payload.adv_hone_ticks,
+            payload.express_event,
+            &payload.user_price_arr,
+            &payload.adv_hone_strategy,
+            &payload.juice_books_budget,
+            &payload.juice_prices,
+            &payload.inp_leftover_values,
+            &payload.inp_leftover_juice_values,
+            payload.progress_grid,
+            payload.state_grid,
+            payload.special_state,
+            payload.unlocked_grid,
+            payload.succeeded_grid,
+        );
+        let tests_to_run: Vec<bool> = vec![true, true];
+        out.push((test_case_name, state_bundle, tests_to_run));
     }
     out
 }

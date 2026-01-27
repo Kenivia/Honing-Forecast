@@ -8,6 +8,7 @@ type ControlPanelProps = {
     fillDemo: () => void
     fillDemoIncome: () => void
     clearAll: () => void
+    onCopyPayload: () => void
     express_event: boolean
     set_express_event: (_next: boolean) => void
     cumulativeGraph: boolean
@@ -27,6 +28,7 @@ export default function ControlPanel({
     fillDemo,
     fillDemoIncome,
     clearAll,
+    onCopyPayload,
     express_event,
     set_express_event,
     cumulativeGraph,
@@ -68,6 +70,9 @@ export default function ControlPanel({
                     </button>
                     <button style={styles.demoButton} onClick={clearAll}>
                         Reset All
+                    </button>
+                    <button style={styles.demoButton} onClick={onCopyPayload}>
+                        Copy Current Payload
                     </button>
 
                     <div style={{ display: "flex", alignItems: "center", gap: "8px", marginTop: "8px" }}>
