@@ -5,73 +5,6 @@
 
 ### Now
 
--~~ wire up the new budget / price keys~~
-
--~~ figure out already-spent cost and display these~~
-
-- ~~add extra "unlocked" buttons and handle it accordingly in rust~~
-  -~~ parse this in rust via update_individual~~
-- ~~cap displayed progress / statebundle to the pity length~~
-  - ~~similarly disallow juice inputs to the left of progress~~
-
-- ~~add succeed button and handle it correctly~~
-  - ~~succeededGrid, which causese it to render in js (greyed out) but~~ ~~rust ignores it(does not put it in upgrade_arr, but contributes to already-spent cost)~~ just change the prob dist
-- ~~special state user input & passing into eval~~
-  - ~~how to present this to user???~~
-  -~~ store the "invalid index" from special probs so that js knows when to stop rendering the list~~
-  - ~~also store the special probs of the active special state~~
-  - ~~how to handle alr-succeeded upgrades in rust???~~
-
-- ~~update parsing/payload building such that 00 doesn't break it what the actual fuck~~
-- store & show show breakdown of average gold costs from here ~~ and already-spent costs~~
--~~ 10 at a time toggle, need to modify neighbour function & stategrid~~
-- instead of counting unique elements in statebundle it should read from juiceinfo instead
-
-- ~~add input box next to succeed free tap~~
-- ~~adjust how the optimizer is ran (cancel when anything changes, and say so)~~
-- marquee for state grid also?
-
-- ~~add optimizer button~~
-- update the best known solution so that only "better" states will be colored purple
--
-  - stream intermediate results that'd be so cool
-
-- slider instead of leftover value
-
-  - ~~figure out a way to export state_bundle to js and be able to pass it to monte carlo appropriately~~
-    - ~~literally just state and special state~~
-  - ~~this should also be uh editable in js by ui~~
-    - ~~add uh all the owned juice and stuff~~
-  -~~ all the existing functions now take in a statebundle instead (still initialize prep_output like before)~~
-  - make sure all existing things work, then start work on the new page(s)
-
-    -~~ ACTUALLY need to do the editable artisan thing first(which i mean shouldnt be that hard)~~
-
-    - Average mode / alt modee / efficiency mode:
-      - ~~input: market price + leftover "price"/ leftover value / care abt it or not toggle~~
-      - output: juice advice, new avg values(also show old/naive?)
-
-    - Prob maximizing mode / main mode:
-      - input: market price, owned budget
-      - output: juice advice, new prob(old prob)
-    - need to figure out how the ui is gonna look like
-
-    - (both: updatable clicks)
-
-    - should probably start from the user experience:
-    - Simple/average/alt/efficiency mode:
-        1. tick upgrades
-        2. adjust price / leftover and input owned budget
-        3. done (average optimizing algorithm gives a state & special state)
-        4. (optional) click taps as we go and update "mats used" and stuff and update the state
-
-    - Advanced/prob-of-success/main/play-it-safe mode:
-        1. warn if applicable, tell user to untick(set price to 0) mats that they have too much of
-        2. same thing as simple mode
-
-    - Forecast mode for both: just a convenience thing, add a column of "earned per week" and how many weeks to forecast
-    - (idk i'll figure out forecast later)
-
 #### Optimizations
 
 - maybe its time to get rid of Box< iterator >
@@ -83,8 +16,6 @@
 - multi-threading????
   - will prep by compling using all the right tools(i hope) and then figuring it out later
 
-- store simple averages and add them up when needed
-
 ### Misc
 
 - JUICE CHESTS AND MAYBE EVEN BOOKS CHESTS
@@ -93,8 +24,6 @@
 - add assertions to a lot of prepoutput stuff
 
 - start working on visualizing this stuff
-
-- ~~rework collapseed so that p = 0 are removed, need to update everything in core also~~
 
 - initialize the hash properly or something idk
 
@@ -117,12 +46,22 @@
   - no juice, full juice, no juice full scroll, full juice full scroll, FULL SCROLL etc
   - then the state just selects one of these distributions
 
-#### Editable artisan / progress
-
-- each upgrade will have a starting artisan value attached, state generation and stuff should work automatically
-
 #### Website
 
+- store & show show breakdown of average gold costs from here
+- instead of counting unique elements in statebundle it should read from juiceinfo instead
+
+- marquee for state grid also?
+
+- update the best known solution so that only "better" states will be colored purple
+- add "restore best known solution"?
+
+- stream intermediate results that'd be so cool
+
+  - slider instead of leftover value
+
+  - make sure all existing things work, then start work on the new page(s)
+    - Prob maximizing mode / main mode:
 - multiple selectable & editable express
   - rework constant.rs to take in a json or something so it can interface with the website
   - eventually T4.5 integration
@@ -180,6 +119,55 @@ graph
 - improve how the cost estimation works / verify that it actually works
 
 ## Done / cancelled
+
+~~ #### Editable artisan / progress~~
+
+- ~~each upgrade will have a starting artisan value attached, state generation and stuff should work automatically~~
+- ~~rework collapseed so that p = 0 are removed, need to update everything in core also~~
+
+- ~~store simple averages and add them up when needed~~ not worth, memory blows up
+- ~~input: market price + leftover "price"/ leftover value / care abt it or not toggle~~
+    -~~ ACTUALLY need to do the editable artisan thing first(which i mean shouldnt be that hard)~~
+
+- ~~ Average mode / alt modee / efficiency mode:~~
+
+- ~~output: juice advice, new avg values(also show old/naive?)~~
+- ~~need to figure out how the ui is gonna look like~~
+
+- ~~(both: updatable clicks)~~
+
+~~ 10 at a time toggle, need to modify neighbour function & stategrid~~
+
+- ~~figure out a way to export state_bundle to js and be able to pass it to monte carlo appropriately~~
+  - ~~literally just state and special state~~
+- ~~this should also be uh editable in js by ui~~
+  - ~~add uh all the owned juice and stuff~~
+  -~~ all the existing functions now take in a statebundle instead (still initialize prep_output like before)~~
+-~~ wire up the new budget / price keys~~
+
+-~~ figure out already-spent cost and display these~~
+
+- ~~add extra "unlocked" buttons and handle it accordingly in rust~~
+  -~~ parse this in rust via update_individual~~
+- ~~cap displayed progress / statebundle to the pity length~~
+  - ~~similarly disallow juice inputs to the left of progress~~
+
+- ~~add succeed button and handle it correctly~~
+  - ~~succeededGrid, which causese it to render in js (greyed out) but~~ ~~rust ignores it(does not put it in upgrade_arr, but contributes to already-spent cost)~~ just change the prob dist
+- ~~special state user input & passing into eval~~
+  - ~~how to present this to user???~~
+  -~~ store the "invalid index" from special probs so that js knows when to stop rendering the list~~
+  - ~~also store the special probs of the active special state~~
+  - ~~how to handle alr-succeeded upgrades in rust???~~
+
+- ~~update parsing/payload building such that 00 doesn't break it what the actual fuck~~
+
+- ~~add input box next to succeed free tap~~
+- ~~adjust how the optimizer is ran (cancel when anything changes, and say so)~~
+
+- ~~add optimizer button~~
+
+ ~~ and already-spent costs~~
 
 - ~~force special state to respect upgrade order~~
   - ~~just ignore invalid ones? or what~~

@@ -1,6 +1,9 @@
 use std::f64::{INFINITY, NAN, NEG_INFINITY};
 
-use crate::{constants::FLOAT_TOL, performance::Performance, state_bundle::StateBundle};
+use crate::{
+    constants::FLOAT_TOL, performance::Performance, saddlepoint_approximation::ks::KsTuple,
+    state_bundle::StateBundle,
+};
 pub static THETA_TOL: f64 = 1e-10;
 pub static MAX_ROOT_FIND_ITER: usize = 20;
 // pub static THETA_LIMIT: f64 = 1e2;
@@ -17,7 +20,7 @@ impl StateBundle {
         guess: f64,
         // high: f64,
         performance: &mut Performance,
-    ) -> Option<(f64, f64, usize)> {
+    ) -> Option<(f64, f64, usize, KsTuple)> {
         let mut lower = NEG_INFINITY;
         let mut upper = INFINITY;
 
@@ -25,12 +28,12 @@ impl StateBundle {
 
         // theta = theta.min(max_theta).max(min_theta);
 
-        let mut init_y: f64 = NAN; // this is K'(0) = the mean 
-        let mut debug_record: Vec<(f64, f64, f64, f64, f64)> = Vec::new();
+        let mut init_y: f64 = NAN; // this was here when guess = 0 which gave us the mean but now is just useless but cbb
+        let mut debug_record: Vec<KsTuple> = Vec::new();
 
         for iter in 0..MAX_ROOT_FIND_ITER {
             // 2. Evaluate Function and Derivatives
-            let (_, mut y, dy, dy2, dy3) = self.ks(
+            let this = self.ks(
                 theta,
                 compute_biased,
                 simple_mean_log,
@@ -38,12 +41,13 @@ impl StateBundle {
                 skip_count,
                 performance,
             );
+            let (_, mut y, dy, dy2, dy3) = this.access();
             if iter == 0 {
                 init_y = y;
             }
 
             y -= budget;
-            debug_record.push((theta, y, dy, dy2, dy3));
+            debug_record.push(KsTuple(theta, y, dy, dy2, dy3));
             //
             if y < 0.0 {
                 lower = theta;
@@ -52,7 +56,7 @@ impl StateBundle {
             }
 
             if (upper - lower) < THETA_TOL || y.abs() < FLOAT_TOL {
-                return Some((theta, init_y, iter));
+                return Some((theta, init_y, iter, this));
             }
 
             let delta = if compute_biased {

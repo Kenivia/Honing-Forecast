@@ -61,14 +61,7 @@ impl StateBundle {
     pub fn find_min_max(&self, support_index: i64, skip_count: usize) -> (f64, f64) {
         let min_value = self
             .extract_support_with_meta(support_index, skip_count)
-            .map(|support| {
-                support
-                    .access_collapsed()
-                    .iter()
-                    .find(|(_, p)| *p > FLOAT_TOL)
-                    .unwrap_or(&(0.0, 0.0))
-                    .0
-            })
+            .map(|support| support.gap_size)
             .sum();
         let max_value = self
             .extract_support_with_meta(support_index, skip_count)
@@ -114,6 +107,22 @@ impl StateBundle {
                 .skip(skip_count),
         )
     }
+
+    pub fn support_from_index(&self, u_index: usize, support_index: i64) -> &Support {
+        let upgrade = &self.upgrade_arr[u_index];
+        let num_avail = self.prep_output.juice_info.num_avail;
+
+        if support_index < 0 {
+            &upgrade.combined_gold_costs
+        } else if support_index < 7 {
+            &upgrade.cost_dist[support_index as usize]
+        } else if support_index < 7 + num_avail as i64 {
+            &upgrade.weap_juice_costs[support_index as usize - 7]
+        } else {
+            &upgrade.armor_juice_costs[support_index as usize - 7 - num_avail]
+        }
+    }
+
     pub fn extract_collapsed_pair(
         &self,
         support_index: i64,
@@ -156,9 +165,10 @@ impl StateBundle {
                 }
 
                 cost_so_far += upgrade.eqv_gold_per_tap;
+                let (juice, state_id) = upgrade.state[p_index];
                 if p_index < l_len - 2 {
                     // cannot juice pity
-                    let (juice, state_id) = upgrade.state[p_index];
+
                     if juice {
                         add_juice_gold_cost(&prep_output.juice_info, upgrade, &mut cost_so_far, 0);
                     }
@@ -170,6 +180,9 @@ impl StateBundle {
                             state_id,
                         );
                     }
+                } else {
+                    assert!(!juice);
+                    assert!(state_id == 0);
                 }
 
                 if first_gap.is_nan() {

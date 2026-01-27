@@ -85,6 +85,17 @@ fn juice_costs(upgrade: &Upgrade, state_bundle: &StateBundle) -> Vec<Vec<(i64, i
             } else {
                 *armor_used += juice_so_far[id];
             }
+            if p_index >= upgrade.prob_dist.len() - 1 {
+                if juice || state_id > 0 {
+                    dbg!(&upgrade.state);
+                    dbg!(&upgrade.prob_dist);
+                    dbg!(&upgrade.state.len());
+                    dbg!(&upgrade.prob_dist.len());
+                    dbg!(juice, state_id);
+                }
+                assert!(!juice);
+                assert!(state_id == 0);
+            }
             let juice_amt = prep_output.juice_info.amt_used_id[id][upgrade.upgrade_index];
             if id == 0 && juice {
                 juice_so_far[id] += juice_amt;
@@ -192,6 +203,7 @@ pub fn monte_carlo_data<R: Rng>(
         state_bundle.compute_special_probs();
         dbg!(actual_out);
         dbg!(state_bundle.special_probs());
+        dbg!(&state_bundle.prep_output.juice_info);
     }
 
     (mats_data, juice_data, skip_count_data)
@@ -213,6 +225,19 @@ pub fn monte_carlo_wrapper<R: Rng>(
         vec![vec![0.0; 7]; state_bundle.upgrade_arr.len() + 1];
     let mut debug_avg_gold_by_juices: Vec<(f64, f64)> =
         vec![(0.0, 0.0); state_bundle.prep_output.juice_info.one_gold_cost_id.len()];
+
+    let mut debug_avg_gold_by_weap_juice_by_skip: Vec<Vec<f64>> =
+        vec![
+            vec![0.0; state_bundle.prep_output.juice_info.one_gold_cost_id.len()];
+            state_bundle.upgrade_arr.len() + 1
+        ];
+
+    let mut debug_avg_gold_by_armor_juice_by_skip: Vec<Vec<f64>> =
+        vec![
+            vec![0.0; state_bundle.prep_output.juice_info.one_gold_cost_id.len()];
+            state_bundle.upgrade_arr.len() + 1
+        ];
+
     let mut debug_truncated_mean_by_skip: Vec<Vec<f64>> =
         vec![vec![0.0; 7]; state_bundle.upgrade_arr.len() + 1];
     for (r_index, row) in cost_data.iter().enumerate() {
@@ -244,6 +269,32 @@ pub fn monte_carlo_wrapper<R: Rng>(
                     state_bundle.prep_output.leftover_values[index]
                 } else {
                     state_bundle.prep_output.price_arr[index]
+                };
+        }
+
+        for (id, d) in debug_avg_gold_by_weap_juice_by_skip[skip_count_data[r_index]]
+            .iter_mut()
+            .enumerate()
+        {
+            let diff = state_bundle.prep_output.juice_books_owned[id].0 as f64 - float_juice[id].0;
+            *d += (diff)
+                * if diff > 0.0 {
+                    state_bundle.prep_output.juice_info.one_leftover_value_id[id].0
+                } else {
+                    state_bundle.prep_output.juice_info.one_gold_cost_id[id].0
+                };
+        }
+
+        for (id, d) in debug_avg_gold_by_armor_juice_by_skip[skip_count_data[r_index]]
+            .iter_mut()
+            .enumerate()
+        {
+            let diff = state_bundle.prep_output.juice_books_owned[id].1 as f64 - float_juice[id].1;
+            *d += (diff)
+                * if diff > 0.0 {
+                    state_bundle.prep_output.juice_info.one_leftover_value_id[id].1
+                } else {
+                    state_bundle.prep_output.juice_info.one_gold_cost_id[id].1
                 };
         }
         // dbg!(&debug_avg_juices);
@@ -311,6 +362,18 @@ pub fn monte_carlo_wrapper<R: Rng>(
             *d /= data_size as f64;
         }
     }
+
+    for row in debug_avg_gold_by_weap_juice_by_skip.iter_mut() {
+        for d in row.iter_mut() {
+            *d /= data_size as f64;
+        }
+    }
+
+    for row in debug_avg_gold_by_armor_juice_by_skip.iter_mut() {
+        for d in row.iter_mut() {
+            *d /= data_size as f64;
+        }
+    }
     for (_id, d) in debug_avg_gold_by_juices.iter_mut().enumerate() {
         d.0 /= data_size as f64;
 
@@ -319,10 +382,12 @@ pub fn monte_carlo_wrapper<R: Rng>(
 
     if DEBUG_AVERAGE {
         dbg!(
-            &debug_avg_gold_by_mats,
+            // &debug_avg_gold_by_mats,
             &debug_avg_gold_by_mats_by_skip,
-            &debug_avg_gold_by_juices,
-            &debug_truncated_mean_by_skip,
+            &debug_avg_gold_by_weap_juice_by_skip,
+            &debug_avg_gold_by_armor_juice_by_skip,
+            // &debug_avg_gold_by_juices,
+            // &debug_truncated_mean_by_skip,
             &state_bundle.prep_output.price_arr,
             &state_bundle.prep_output.leftover_values,
             average / data_size as f64

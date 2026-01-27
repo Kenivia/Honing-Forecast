@@ -198,7 +198,9 @@ impl Support {
                 }
 
                 // push the final run
-                result.push((cur_s, cur_p));
+                if cur_p > FLOAT_TOL {
+                    result.push((cur_s, cur_p));
+                }
             }
             self.ignore = result.len() == 1 && result[0].0.abs() < FLOAT_TOL;
             // self.first_non_zero_prob_index = result
@@ -298,7 +300,7 @@ impl Upgrade {
         let original_prob_dist_len: usize =
             probability_distribution(base_chance, artisan_rate, &vec![], 0.0, 0, false).len();
         // web_sys::console::log_1(&format!("a").into());
-        let mut state = State::new(prob_dist_len);
+        let mut state = State::new(original_prob_dist_len);
         // web_sys::console::log_1(&format!("a").into());
         state.update_payload(
             state_given
@@ -444,13 +446,14 @@ impl Upgrade {
             let mut armor_cost: f64 = 0.0;
             let mut weap_support: Vec<f64> = Vec::with_capacity(l_len);
             let mut armor_support: Vec<f64> = Vec::with_capacity(l_len);
+
             let amt = prep_output.juice_info.amt_used_id[id][self.upgrade_index] as f64;
             for (index, (juice, book)) in self.state.iter().take(l_len).enumerate() {
-                // -1 cos pity tap cannot juice
                 weap_support.push(weap_cost);
                 armor_support.push(armor_cost);
                 if index >= l_len - 2 {
-                    continue;
+                    assert!(!juice);
+                    assert!(*book == 0);
                 }
                 if *juice && id == 0 {
                     if self.is_weapon {

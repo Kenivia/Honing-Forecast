@@ -1,3 +1,5 @@
+use std::f64::NAN;
+
 use num::traits::Inv;
 
 use crate::state_bundle::StateBundle;
@@ -48,7 +50,7 @@ impl StateBundle {
         //     );
         // }
         (
-            inverse_shifted_sigmoid(min_value, max_value, mean_var_skew, min_value + 1.0),
+            NAN, // inverse_shifted_sigmoid(min_value, max_value, mean_var_skew, min_value + 1.0),
             // 1.0 * self.theta_guess_min_tail(
             //     support_index,
             //     skip_count,
@@ -56,7 +58,8 @@ impl StateBundle {
             //     // min_value,
             // ),
             inverse_shifted_sigmoid(min_value, max_value, mean_var_skew, budget),
-            inverse_shifted_sigmoid(min_value, max_value, mean_var_skew, max_value - 1.0),
+            NAN,
+            // inverse_shifted_sigmoid(min_value, max_value, mean_var_skew, max_value - 1.0),
             // 1.0 * self.theta_guess_max_tail(
             //     support_index,
             //     skip_count,

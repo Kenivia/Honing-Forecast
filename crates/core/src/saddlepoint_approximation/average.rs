@@ -13,7 +13,7 @@ use itertools::izip;
 use crate::state_bundle::StateBundle;
 
 pub static DEBUG_AVERAGE: bool = false;
-pub static DEBUG_AVG_INDEX: i64 = 0;
+pub static DEBUG_AVG_INDEX: i64 = 7;
 // use statrs::distribution::{Continuous, Normal};
 
 // fn simple_variance<'a, I>(prob_dist_arr: I, support_arr: I) -> f64
@@ -59,7 +59,7 @@ impl StateBundle {
 
         let mut total_gold: f64 = 0.0;
 
-        let mut dbg_sa_avg = vec![0.0; 15];
+        // let mut dbg_sa_avg = vec![0.0; 15];
 
         for (skip_count, &special_prob) in
             self.special_cache[&self.special_state].iter().enumerate()
@@ -70,7 +70,9 @@ impl StateBundle {
             // // dbg!(special_prob);
             // let zipped: Vec<(f64, f64)> =
             // .collect();
-
+            if DEBUG_AVERAGE {
+                dbg!("================================", skip_count,);
+            }
             for (support_index, (effective_budget, price, leftover)) in izip!(
                 self.flattened_effective_budgets(),
                 self.flattened_price(),
@@ -89,23 +91,21 @@ impl StateBundle {
                 // dbg!(this_avg);
 
                 if DEBUG_AVERAGE {
-                    if support_index == DEBUG_AVG_INDEX as usize {
-                        dbg!(
-                            skip_count,
-                            support_index,
-                            effective_budget,
-                            price,
-                            leftover,
-                            this_avg,
-                            special_prob,
-                            self.simple_avg(support_index as i64, skip_count),
-                            special_prob * this_avg,
-                            "================================"
-                        );
-                    }
+                    // if support_index == DEBUG_AVG_INDEX as usize {
+                    dbg!(
+                        // support_index,
+                        // effective_budget,
+                        // price,
+                        // leftover,
+                        // this_avg,
+                        // special_prob,
+                        // self.simple_avg(support_index as i64, skip_count),
+                        special_prob * this_avg,
+                    );
+                    // }
                 }
                 total_gold += special_prob * this_avg;
-                dbg_sa_avg[support_index] += special_prob * this_avg;
+                // dbg_sa_avg[support_index] += special_prob * this_avg;
             }
         }
 
@@ -160,6 +160,7 @@ impl StateBundle {
             if support_index == DEBUG_AVG_INDEX {
                 dbg!(
                     simple_mean,
+                    self.find_min_max(support_index, skip_count),
                     effective_budget,
                     biased_prob,
                     prob,

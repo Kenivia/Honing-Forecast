@@ -1,10 +1,11 @@
 use crate::constants::FLOAT_TOL;
 
+use crate::saddlepoint_approximation::average::{DEBUG_AVERAGE, DEBUG_AVG_INDEX};
 use crate::state_bundle::StateBundle;
 
 use std::collections::HashMap;
 use std::hash::{Hash, Hasher};
-pub static MAX_BRUTE_SIZE: usize = 50000;
+pub static MAX_BRUTE_SIZE: usize = 5000;
 
 // 1. Helper wrapper to use f64 as a HashMap key
 // (Rust floats don't implement Eq/Hash by default due to NaN)
@@ -159,7 +160,7 @@ impl StateBundle {
         support_index: i64,
         skip_count: usize,
         budget: f64,
-        middle: f64,
+        mean: f64,
     ) -> f64 {
         // 1. PRE-COMPUTE BOUNDS
         // We scan backwards to calculate the min/max cost possible from each depth.
@@ -182,7 +183,9 @@ impl StateBundle {
             max_suffix[index] = max_suffix[index + 1] + max_val;
             index -= 1;
         }
-
+        if DEBUG_AVERAGE && support_index == DEBUG_AVG_INDEX {
+            dbg!(&min_suffix, &max_suffix);
+        }
         let bounds = LookaheadBounds {
             min_suffix,
             max_suffix,
@@ -191,14 +194,14 @@ impl StateBundle {
         // 2. DECIDE DIRECTION
         // If budget is high (>= mean), it's faster to calculate the tail (X > Budget)
         // and subtract from total (1.0).
-        if budget >= middle {
+        if budget >= mean {
             let upper_tail_val =
-                self.recurse_upper(support_index, skip_count, &bounds, 0.0, budget, 0, middle);
+                self.recurse_upper(support_index, skip_count, &bounds, 0.0, budget, 0, mean);
             // Total probability mass for size-biased variable is 1.0.
             // Result = 1.0 - P(SizeBiased > Budget)
             1.0 - upper_tail_val
         } else {
-            self.recurse_lower(support_index, skip_count, &bounds, 0.0, budget, 0, middle)
+            self.recurse_lower(support_index, skip_count, &bounds, 0.0, budget, 0, mean)
         }
     }
 
@@ -235,7 +238,7 @@ impl StateBundle {
             // Tighter local pruning: check if next step + min future exceeds budget
             .take_while(|(new_cost, _)| *new_cost + bounds.min_suffix[depth + 1] <= budget)
             .fold(0.0, |acc, (new_cost, prob)| {
-                acc + if prob.abs() > FLOAT_TOL {
+                acc + if prob.abs() < FLOAT_TOL {
                     0.0
                 } else {
                     prob * self.recurse_lower(
@@ -291,7 +294,7 @@ impl StateBundle {
                 if new_cost + bounds.max_suffix[depth + 1] <= budget {
                     acc // Add 0.0
                 } else {
-                    acc + if prob.abs() > FLOAT_TOL {
+                    acc + if prob.abs() < FLOAT_TOL {
                         0.0
                     } else {
                         prob * self.recurse_upper(

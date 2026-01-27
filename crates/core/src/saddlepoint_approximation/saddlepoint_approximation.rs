@@ -8,6 +8,7 @@ use crate::constants::FLOAT_TOL;
 
 use crate::performance::Performance;
 use crate::saddlepoint_approximation::average::{DEBUG_AVERAGE, DEBUG_AVG_INDEX};
+use crate::saddlepoint_approximation::ks::KsTuple;
 // use crate::saddlepoint_approximation::core::THETA_TOL;
 // use crate::saddlepoint_approximation::bound::{self, inverse_sigmoid, scaled_sigmoid};
 use crate::state_bundle::StateBundle;
@@ -124,7 +125,7 @@ impl StateBundle {
                 && min_value + min_delta + 1.0 < budget
                 && budget < max_value - min_delta - 1.0
             {
-                let res: (f64, f64, f64, f64, f64) = self.ks(
+                let res: KsTuple = self.ks(
                     0.0,
                     compute_biased,
                     simple_mean_log,
@@ -157,15 +158,15 @@ impl StateBundle {
         }
         performance.brute_count += 1;
         if compute_biased {
-            // if support_index == DEBUG_AVG_INDEX && DEBUG_AVERAGE {
-            //     dbg!("brute");
-            // }
+            if support_index == DEBUG_AVG_INDEX && DEBUG_AVERAGE {
+                dbg!("brute", inp_budget, min_value, max_value);
+            }
 
             return self.brute_biased_recursive(
                 support_index,
                 skip_count,
                 inp_budget,
-                (min_value + max_value) * 0.5,
+                self.simple_avg(support_index, skip_count),
             );
         } else {
             return self.brute_success_prob(support_index, skip_count, inp_budget);
@@ -285,24 +286,16 @@ impl StateBundle {
             //         .collect::<Vec<&Support>>(),
             // );
         }
-        let result = result_opt.unwrap();
+        let result: (f64, f64, usize, KsTuple) = result_opt.unwrap();
 
         let theta_hat = result.0;
-
+        let ks_tuple: KsTuple = result.3;
         // // let theta_error = (theta_hat - last_theta).abs();
         // if DEBUG_SA {
         //     dbg!(theta_hat, theta_error);
         // }
         let normal_dist: Normal = Normal::new(0.0, 1.0).unwrap();
         // self.performance.ks_count += 1;
-        let ks_tuple = self.ks(
-            theta_hat,
-            compute_biased,
-            simple_mean_log,
-            support_index,
-            skip_count,
-            performance,
-        );
 
         let w = |t: f64, ks_inp: f64| t.signum() * (2.0 * (t * budget - ks_inp)).sqrt();
         let u = |t: f64, ks2_inp: f64| 2.0 / span * (span * t / 2.0).sinh() * ks2_inp.sqrt(); // second continuity correction 
@@ -416,6 +409,7 @@ impl StateBundle {
             || actual_out < -FLOAT_TOL
             || actual_out > 1.0 + FLOAT_TOL
             || !actual_out.is_finite()
+        // || (DEBUG_AVG_INDEX == support_index && DEBUG_AVERAGE)
         {
             // dbg!(
             //     f_df(THETA_LIMIT),
@@ -496,17 +490,17 @@ impl StateBundle {
                 )
             );
 
-            println!(
-                "high_limit {:?}",
-                self.ks(
-                    high_limit,
-                    compute_biased,
-                    simple_mean_log,
-                    support_index,
-                    skip_count,
-                    performance,
-                )
-            );
+            // println!(
+            //     "high_limit {:?}",
+            //     self.ks(
+            //         high_limit,
+            //         compute_biased,
+            //         simple_mean_log,
+            //         support_index,
+            //         skip_count,
+            //         performance,
+            //     )
+            // );
             web_sys::console::log_1(
                 &format!(
                     "{:?} {:?} {:?} {:?} {:?} {:?} {:?} {:?} {:?} {:?} {:?} {:?} {:?} {:?} {:?} {:?} {:?} {:?} ",

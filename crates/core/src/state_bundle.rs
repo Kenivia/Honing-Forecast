@@ -72,17 +72,18 @@ impl StateBundle {
         }
         self.latest_special_probs = Some(out);
     }
-    pub fn clean_state(&mut self) {
-        for upgrade in self.upgrade_arr.iter_mut() {
-            let p_len = upgrade.prob_dist.len();
-            for (index, s) in upgrade.state.iter_mut().enumerate() {
-                if index >= p_len - 2 {
-                    // 1 for pity(you cant juice the pity tap), 1 for 0th tap
-                    *s = (false, 0);
-                }
-            }
-        }
-    }
+    // this should be built into neighbour
+    // pub fn clean_state(&mut self) {
+    //     for upgrade in self.upgrade_arr.iter_mut() {
+    //         let p_len = upgrade.prob_dist.len();
+    //         for (index, s) in upgrade.state.iter_mut().enumerate() {
+    //             if index >= p_len - 2 {
+    //                 // 1 for pity(you cant juice the pity tap), 1 for 0th tap
+    //                 *s = (false, 0);
+    //             }
+    //         }
+    //     }
+    // }
     pub fn metric_router(&mut self, metric_type: i64, performance: &mut Performance) -> f64 {
         match metric_type {
             0 => self.success_prob_metric(performance),

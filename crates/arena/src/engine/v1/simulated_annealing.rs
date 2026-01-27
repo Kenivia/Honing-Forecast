@@ -147,6 +147,7 @@ fn neighbour<R: Rng>(
         want_to_book_blocks.sort();
 
         let mut artisan: f64 = 0.0;
+        let mut count: f64 = 0.1;
         let base_chance = upgrade.base_chance;
         let artisan_rate = upgrade.artisan_rate;
         let juice_chances = &state_bundle.prep_output.juice_info.chances_id;
@@ -197,7 +198,7 @@ fn neighbour<R: Rng>(
             // asrtisan before
             artisan += (46.51_f64 / 100.0)
                 * artisan_rate
-                * (base_chance
+                * (base_chance * (1.0 + count)
                     + if *juice {
                         juice_chances[0][upgrade.upgrade_index]
                     } else {
@@ -208,8 +209,13 @@ fn neighbour<R: Rng>(
                     } else {
                         0.0
                     });
+            if count < 1.0 {
+                count += 0.1;
+            }
+
             // artisan after
         }
+        state.update_hash();
     }
 }
 
@@ -246,6 +252,9 @@ pub fn solve<R: Rng>(
     let temp_schedule_start = 333.0_f64;
     let temp_schedule_cutoff = 33.0_f64; // Below this temp, resolution is pinned to min
 
+    if DEBUG_AVERAGE {
+        neighbour(&mut state_bundle, temp, init_temp, max_len, rng);
+    }
     state_bundle.metric = state_bundle.metric_router(metric_type, performance);
     let mut prev_state: StateBundle = state_bundle.clone();
 

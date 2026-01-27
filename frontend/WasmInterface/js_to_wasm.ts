@@ -1,4 +1,5 @@
 import init, {
+    initThreadPool,
     evaluate_average_wrapper,
     optimize_average_wrapper,
 
@@ -17,11 +18,13 @@ const LABELS = ["Red", "Blue", "Leaps", "Shards", "Oreha", "Gold", "Silver"]
 
 async function OptimizeAverageWasm(payload: any) {
     await init()
+    await initThreadPool(navigator.hardwareConcurrency)
     return (optimize_average_wrapper as any)(payload)
 }
 
 async function EvaluateAverageWasm(payload: any) {
     await init()
+    await initThreadPool(navigator.hardwareConcurrency)
     return (evaluate_average_wrapper as any)(payload)
 }
 
@@ -70,7 +73,7 @@ self.addEventListener("message", async (ev) => {
     // } else
     if (which_one == "EvaluateAverage") {
         // always run optimized
-        result  =  await EvaluateAverageWasm(payload)
+        result = await EvaluateAverageWasm(payload)
 
         // Convert f64 failure rates to formatted strings
         // const reasons = out.reasons.map((rate: number, index: number) => {
@@ -101,8 +104,7 @@ self.addEventListener("message", async (ev) => {
 
         // console.log(result.typical_costs)
     } else if (which_one == "OptimizeAverage") {
-        result  = await OptimizeAverageWasm(payload)
-  
+        result = await OptimizeAverageWasm(payload)
     }
     // else if (which_one == "CostToChanceArr") {
     //     let out = await CostToChanceArrWasm(payload)
