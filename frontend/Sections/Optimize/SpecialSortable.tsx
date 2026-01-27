@@ -6,10 +6,7 @@ import { PIECE_NAMES } from "@/Utils/Constants.ts"
 import Icon from "@/Components/Icon.tsx"
 
 interface Props {
-    evaluateAverageResult: {
-        upgrade_arr: { name_string: string }[]
-        latest_special_probs: (number | string)[]
-    }
+    evaluateAverageResult: any
     specialState: number[]
     setSpecialState: React.Dispatch<React.SetStateAction<number[]>>
     flatSucceedArr: boolean[]

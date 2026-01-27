@@ -435,9 +435,15 @@ impl StateBundle {
             //         .into_iter()
             //         .map(|x| x.iter().map(|y| y.1).collect())
             //         .collect::<Vec<Vec<f64>>>(),
-            //     self.extract_collapsed_pair(support_index, skip_count)
-            //         .into_iter()
-            //         .collect::<Vec<&Vec<(f64, f64)>>>(),
+            web_sys::console::log_1(
+                &format!(
+                    "{:?}",
+                    self.extract_collapsed_pair(support_index, skip_count)
+                        .into_iter()
+                        .collect::<Vec<&Vec<(f64, f64)>>>()
+                )
+                .into(),
+            );
             //     self.extract_collapsed_pair(support_index, skip_count)
             //         .try_len()
             //         .unwrap(),
@@ -501,26 +507,29 @@ impl StateBundle {
                     performance,
                 )
             );
-            dbg!(
-                compute_biased,
-                theta_hat,
-                ks_tuple,
-                ks_tuple.1,
-                ks_tuple.2,
-                ks_tuple.3,
-                2.0 * (theta_hat * budget - ks_tuple.0),
-                w_hat,
-                u_hat,
-                normal_dist.cdf(w_hat),
-                normal_dist.pdf(w_hat),
-                1.0 / w_hat - 1.0 / u_hat,
-                min_value,
-                budget,
-                self.simple_avg(support_index, skip_count),
-                max_value,
-                sa_out,
-                approx,
-                actual_out
+            web_sys::console::log_1(
+                &format!(
+                    "{:?} {:?} {:?} {:?} {:?} {:?} {:?} {:?} {:?} {:?} {:?} {:?} {:?} {:?} {:?} {:?} {:?} {:?} ",
+                    compute_biased,
+                    theta_hat,
+                    ks_tuple,
+                    k1_zero,
+                    support_index,
+                    2.0 * (theta_hat * budget - ks_tuple.0),
+                    w_hat,
+                    u_hat,
+                    normal_dist.cdf(w_hat),
+                    normal_dist.pdf(w_hat),
+                    1.0 / w_hat - 1.0 / u_hat,
+                    min_value,
+                    budget,
+                    self.simple_avg(support_index, skip_count),
+                    max_value,
+                    sa_out,
+                    approx,
+                    actual_out
+                )
+                .into(),
             );
             println!("==============================");
             panic!();

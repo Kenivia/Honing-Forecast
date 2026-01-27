@@ -367,7 +367,7 @@ interface ComplexGridProps {
     allowUserChangeState: boolean
     upgradeArr: any[]
     specialState: number[]
-    setSpecialState: React.Dispatch<React.SetStateAction<number[]>>
+    // setSpecialState: React.Dispatch<React.SetStateAction<number[]>>
 }
 
 export default function StateGridsManager({
@@ -382,7 +382,7 @@ export default function StateGridsManager({
     allowUserChangeState,
     upgradeArr,
     specialState,
-    setSpecialState,
+    // setSpecialState,
 }: ComplexGridProps) {
     // Requirement 7: overflow: auto to avoid going off edge
     // This container wraps all row bundles

@@ -156,18 +156,22 @@ impl StateBundle {
                 }
 
                 cost_so_far += upgrade.eqv_gold_per_tap;
-                let (juice, state_id) = upgrade.state[p_index];
-                if juice {
-                    add_juice_gold_cost(&prep_output.juice_info, upgrade, &mut cost_so_far, 0);
+                if p_index < l_len - 2 {
+                    // cannot juice pity
+                    let (juice, state_id) = upgrade.state[p_index];
+                    if juice {
+                        add_juice_gold_cost(&prep_output.juice_info, upgrade, &mut cost_so_far, 0);
+                    }
+                    if state_id > 0 {
+                        add_juice_gold_cost(
+                            &prep_output.juice_info,
+                            upgrade,
+                            &mut cost_so_far,
+                            state_id,
+                        );
+                    }
                 }
-                if state_id > 0 {
-                    add_juice_gold_cost(
-                        &prep_output.juice_info,
-                        upgrade,
-                        &mut cost_so_far,
-                        state_id,
-                    );
-                }
+
                 if first_gap.is_nan() {
                     first_gap = cost_so_far;
                 }

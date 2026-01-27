@@ -157,6 +157,9 @@ export default function HoningForecastUI() {
     const [mainScale, setMainScale] = useState<number>(1)
     const [zoomCompensation, setZoomCompensation] = useState<number>(1)
     const [optimizeButtonPress, setOptimizeButtonPress] = useState<number>(0)
+    const [autoRunOptimizer, setAutoRunOptimizer] = useState<boolean>(false)
+    const [optimizeAvgError, setOptimizeAvgError] = useState<string | null>(null)
+    const [optimizerMetric, setOptimizerMetric] = useState<number | null>(null)
     // State for optimized details
     const [showOptimizedDetails, setShowOptimizedDetails] = useState<boolean>(false)
 
@@ -550,7 +553,7 @@ export default function HoningForecastUI() {
             // monteCarloResult,
         })
 
-    const runner = createCancelableWorkerRunner()
+    const runner = useMemo(() => createCancelableWorkerRunner(), [])
 
     // ---------- Automatic triggers with debounce ----------
     // We'll watch serialized versions of the inputs to detect deep changes
@@ -607,6 +610,24 @@ export default function HoningForecastUI() {
             userArmorJuiceLeftover,
         ],
     )
+
+    useEffect(() => {
+        setOptimizerMetric(null)
+    }, [topGridKey, inputBundleKey])
+
+    const cancelOptimizeAverage = () => {
+        runner.cancel("OptimizeAverage")
+        if (optimizeAvgWorkerRef.current) {
+            try {
+                optimizeAvgWorkerRef.current.terminate()
+            } catch (e) {
+                /* ignore */
+            }
+            optimizeAvgWorkerRef.current = null
+        }
+        setOptimizeAvgBusy(false)
+        setOptimizeAvgError(null)
+    }
     useEffect(() => {
         if (evaluateAverageResult) {
             applyFlatToGrid(
@@ -678,6 +699,19 @@ export default function HoningForecastUI() {
                 setFlatUnlockArr(res.upgrade_arr.map((_, index) => unlockGrid[res.upgrade_arr[index].piece_type][res.upgrade_arr[index].upgrade_index]))
                 setFlatSucceedArr(res.upgrade_arr.map((_, index) => succeededGrid[res.upgrade_arr[index].piece_type][res.upgrade_arr[index].upgrade_index]))
                 setSpecialState(res.special_state)
+                applyFlatToGrid(evaluateAverageResult,
+                    flatProgressArr,
+                    progressGrid,
+                    setProgressGrid,
+                    flatUnlockArr,
+                    unlockGrid,
+                    setUnlockGrid,
+                    flatSucceedArr,
+                    succeededGrid,
+                    setSucceededGrid,
+                    flatStateBundle,
+                    stateBundleGrid,
+                    setStateBundleGrid,)
                 // console.log(specialState)
             },
             debounceMs: 10,
@@ -702,7 +736,64 @@ export default function HoningForecastUI() {
     const [optimizeAvgBusy, setOptimizeAvgBusy] = useState(false)
     // const [optimizeAvgResult, setOptimizeAvgResult] = useState<{ average_costs?: any } | null>(null)
     useEffect(() => {
+        cancelOptimizeAverage()
+        if (!autoRunOptimizer) {
+            return
+        }
+        setOptimizeAvgError(null)
+        runner.start({
+            which_one: "OptimizeAverage",
+            payloadBuilder,
+            workerRef: optimizeAvgWorkerRef,
+            setBusy: setOptimizeAvgBusy,
+            setResult: setEvaluateAverageResult,
+            onSuccess: (res) => {
+                // console.log(inputBundleKey)
+                setFlatStateBundle(res.upgrade_arr.map((upgrade) => upgrade.state))
+                setFlatProgressArr(res.upgrade_arr.map((_, index) => progressGrid[res.upgrade_arr[index].piece_type][res.upgrade_arr[index].upgrade_index]))
+                setFlatUnlockArr(res.upgrade_arr.map((_, index) => unlockGrid[res.upgrade_arr[index].piece_type][res.upgrade_arr[index].upgrade_index]))
+                setFlatSucceedArr(res.upgrade_arr.map((_, index) => succeededGrid[res.upgrade_arr[index].piece_type][res.upgrade_arr[index].upgrade_index]))
+                setSpecialState(res.special_state)
+                setOptimizerMetric(res.metric)
+                setOptimizeAvgError(null)
+                applyFlatToGrid(evaluateAverageResult,
+                    flatProgressArr,
+                    progressGrid,
+                    setProgressGrid,
+                    flatUnlockArr,
+                    unlockGrid,
+                    setUnlockGrid,
+                    flatSucceedArr,
+                    succeededGrid,
+                    setSucceededGrid,
+                    flatStateBundle,
+                    stateBundleGrid,
+                    setStateBundleGrid,)
+                // console.log(specialState)
+            },
+            onError: (err) => {
+                setOptimizeAvgError(String(err))
+            },
+        })
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [
+        autoRunOptimizer,
+        advStrategyKey,
+        expressEventKey,
+        graphBucketSizeKey,
+        dataSizeKey,
+        topGridKey,
+        ProgressGridKey,
+        UnlockGridKey,
+        SucceededGridKey,
+        StateBundleGridKey,
+        inputBundleKey,
+        specialStateKey,
+        minResolutionKey,
+    ])
+    useEffect(() => {
         if (optimizeButtonPress > 0) {
+            setOptimizeAvgError(null)
             runner.start({
                 which_one: "OptimizeAverage",
                 payloadBuilder,
@@ -716,7 +807,12 @@ export default function HoningForecastUI() {
                     setFlatUnlockArr(res.upgrade_arr.map((_, index) => unlockGrid[res.upgrade_arr[index].piece_type][res.upgrade_arr[index].upgrade_index]))
                     setFlatSucceedArr(res.upgrade_arr.map((_, index) => succeededGrid[res.upgrade_arr[index].piece_type][res.upgrade_arr[index].upgrade_index]))
                     setSpecialState(res.special_state)
+                    setOptimizerMetric(res.metric)
+                    setOptimizeAvgError(null)
                     // console.log(specialState)
+                },
+                onError: (err) => {
+                    setOptimizeAvgError(String(err))
                 },
             })
         }
@@ -809,6 +905,17 @@ export default function HoningForecastUI() {
 
     // styles and column defs moved to ./styles
     const AnythingTicked = useMemo(() => topGrid.some((row) => row.some((x) => x)) || bottomGrid.some((row) => row.some((x) => x)), [topGrid, bottomGrid])
+    const currentMetric = evaluateAverageResult?.metric
+    const optimizeAccentOverride =
+        optimizerMetric !== null && currentMetric !== undefined && currentMetric !== null
+            ? Math.round(currentMetric) > Math.round(optimizerMetric)
+                ? "var(--better-than-optimizer)"
+                : Math.round(currentMetric) < Math.round(optimizerMetric)
+                    ? "var(--sub-optimal)"
+                    : null
+            : "var(--sub-optimal)"
+
+    console.log(Math.round(currentMetric), Math.round(optimizerMetric), optimizerMetric)
     return (
         <div style={styles.pageContainer}>
             {marqueeRect ? (
@@ -921,11 +1028,19 @@ export default function HoningForecastUI() {
                     />
                 </div> */}
                 {activePage === "optimize" && (
-                    <div className={activePage === "optimize" ? "page" : "page page--hidden"}>
+                    <div
+                        className={activePage === "optimize" ? "page" : "page page--hidden"}
+                        style={optimizeAccentOverride ? ({ "--btn-toggle-optimize-selected": optimizeAccentOverride } as React.CSSProperties) : undefined}
+                    >
                         <OptimizeSection
                             inputsBundle={inputsBundle}
                             optimizeAvgBusy={optimizeAvgBusy}
                             optimizeAvgWorkerRef={optimizeAvgWorkerRef}
+                            setOptimizeAvgBusy={setOptimizeAvgBusy}
+                            onCancelOptimizeAverage={cancelOptimizeAverage}
+                            autoRunOptimizer={autoRunOptimizer}
+                            setAutoRunOptimizer={setAutoRunOptimizer}
+                            optimizeAvgError={optimizeAvgError}
                             setOptimizeButtonPress={setOptimizeButtonPress}
                             flatProgressArr={flatProgressArr}
                             setFlatProgressArr={setFlatProgressArr}

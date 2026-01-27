@@ -17,7 +17,14 @@
     --btn-demo: #374151;
     --btn-demo-text: #ffffff;
     --btn-toggle-deselected: #6b7280;
+    --sub-optimal: #aabbcc;
+    --better-than-optimizer: #cd50ff;
+
+    --cancel-optimizer-button: #b12626;
+    --optimizer-button: #bba355;
     --btn-toggle-optimize-selected: #bba355;
+
+
     --btn-toggle-chance-selected: #1c9164;
     --btn-toggle-budget-selected: #165ca3;
 

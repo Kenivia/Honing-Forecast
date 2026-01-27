@@ -12,6 +12,11 @@ type OptimizeSectionProps = {
 
     optimizeAvgBusy: boolean
     optimizeAvgWorkerRef: React.MutableRefObject<Worker | null>
+    setOptimizeAvgBusy: React.Dispatch<React.SetStateAction<boolean>>
+    onCancelOptimizeAverage: () => void
+    autoRunOptimizer: boolean
+    setAutoRunOptimizer: React.Dispatch<React.SetStateAction<boolean>>
+    optimizeAvgError: string | null
     // optimizeAvgResult: any
     setOptimizeButtonPress: React.Dispatch<React.SetStateAction<any>>
     // onGridMouseDown: (_grid: "top" | "bottom", _e: React.MouseEvent) => void
@@ -42,10 +47,15 @@ function my_alr_spent_map(already_spent: any, labels: string[], index: number) {
         : Object.fromEntries(labels.map((label) => [label, "Calculating..."]))
 }
 export default function OptimizeSection({
-    inputsBundle,
+    inputsBundle: _inputsBundle,
     optimizeAvgBusy,
     // optimizeAvgResult,
     optimizeAvgWorkerRef,
+    setOptimizeAvgBusy,
+    onCancelOptimizeAverage,
+    autoRunOptimizer,
+    setAutoRunOptimizer,
+    optimizeAvgError,
     setOptimizeButtonPress,
     flatProgressArr,
     setFlatProgressArr,
@@ -70,6 +80,9 @@ export default function OptimizeSection({
         if (optimizeAvgBusy) {
             optimizeAvgWorkerRef.current?.terminate()
             optimizeAvgWorkerRef.current = null
+            setOptimizeAvgBusy(false)
+            setAutoRunOptimizer(false)
+            onCancelOptimizeAverage()
             return
         } else {
             setOptimizeButtonPress((prev: number) => prev + 1)
@@ -86,7 +99,7 @@ export default function OptimizeSection({
                     <button
                         onClick={handleOptimizeAverageClick}
                         style={{
-                            background: optimizeAvgBusy ? "var(--btn-toggle-deselected)" : "var(--btn-toggle-optimize-selected)",
+                            background: optimizeAvgBusy ? "var(--cancel-optimizer-button)" : "var(--optimizer-button)",
                             color: optimizeAvgBusy ? "var(--text-muted)" : "var(--text)",
                             padding: "6px 10px",
                             borderRadius: 4,
@@ -96,6 +109,15 @@ export default function OptimizeSection({
                     >
                         {optimizeAvgBusy ? "Cancel Optimize Average" : "Optimize Average"}
                     </button>
+                    <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13 }}>
+                        <input
+                            type="checkbox"
+                            checked={autoRunOptimizer}
+                            onChange={(e) => setAutoRunOptimizer(e.target.checked)}
+                        />
+                        Auto run optimizer
+                    </label>
+                    {optimizeAvgError && <span style={{ fontSize: 12, color: "var(--text)" }}>{optimizeAvgError}</span>}
                 </div>
                 <br />
                 Already spent: {evaluateAverageResult?.prep_output.already_spent[3]}
@@ -104,71 +126,85 @@ export default function OptimizeSection({
                 <br />
                 Already spent + more to come: {evaluateAverageResult?.metric}
             </div>
-            {flatStateBundle && flatProgressArr && evaluateAverageResult && specialState && (
-                <SpecialSortable
-                    evaluateAverageResult={evaluateAverageResult}
-                    specialState={specialState}
-                    setSpecialState={setSpecialState}
-                    flatSucceedArr={flatSucceedArr}
-                    setFlatSucceedArr={setFlatSucceedArr}
-                    flatUnlockArr={flatUnlockArr}
-                    setFlatUnlockArr={setFlatUnlockArr}
-                />
-            )}
-            {flatStateBundle && flatProgressArr && evaluateAverageResult && specialState && (
-                <StateGridsManager
-                    flatProgressArr={flatProgressArr}
-                    setFlatProgressArr={setFlatProgressArr}
-                    flatUnlockArr={flatUnlockArr}
-                    setFlatUnlockArr={setFlatUnlockArr}
-                    flatSucceedArr={flatSucceedArr}
-                    setFlatSucceedArr={setFlatSucceedArr}
-                    flatStateBundle={flatStateBundle}
-                    setFlatStateBundle={setFlatStateBundle}
-                    allowUserChangeState={allowUserChangeState}
-                    upgradeArr={evaluateAverageResult.upgrade_arr}
-                    specialState={specialState}
-                    setSpecialState={setSpecialState}
-                />
-            )}
-
-            {
-                <div style={{ display: "flex", flexDirection: "row", alignItems: "flex-start", gap: 0, minWidth: 200, flexShrink: 0, marginTop: 0 }}>
-                    <div>Already spent:</div>
-                    <SpreadsheetGrid
-                        columnDefs={wideMatsColumnDefs}
-                        labels={MATS_LABELS.slice(0, 7)}
-                        sheetValuesArr={[my_alr_spent_map(already_spent, MATS_LABELS.slice(0, 7), 0)]}
-                        setSheetValuesArr={[null]}
+            <div style={{ position: "relative", flex: 1 }}>
+                {optimizeAvgBusy && (
+                    <div
+                        style={{
+                            position: "absolute",
+                            inset: 0,
+                            background: "rgba(0, 0, 0, 0.35)",
+                            zIndex: 2,
+                        }}
                     />
-
-                    <SpreadsheetGrid
-                        columnDefs={wideMatsColumnDefs}
-                        labels={JUICE_LABELS.map((label_row) => label_row[0])}
-                        sheetValuesArr={[
-                            my_alr_spent_map(
-                                already_spent,
-                                JUICE_LABELS.map((label_row) => label_row[0]),
-                                1,
-                            ),
-                        ]}
-                        setSheetValuesArr={[null]}
+                )}
+                {flatStateBundle && flatProgressArr && evaluateAverageResult && specialState && (
+                    <SpecialSortable
+                        evaluateAverageResult={evaluateAverageResult}
+                        specialState={specialState}
+                        setSpecialState={setSpecialState}
+                        flatSucceedArr={flatSucceedArr}
+                        setFlatSucceedArr={setFlatSucceedArr}
+                        flatUnlockArr={flatUnlockArr}
+                        setFlatUnlockArr={setFlatUnlockArr}
                     />
+                )}
+                {flatStateBundle && flatProgressArr && evaluateAverageResult && specialState && (
+                    <StateGridsManager
+                        flatProgressArr={flatProgressArr}
+                        setFlatProgressArr={setFlatProgressArr}
+                        flatUnlockArr={flatUnlockArr}
+                        setFlatUnlockArr={setFlatUnlockArr}
+                        flatSucceedArr={flatSucceedArr}
+                        setFlatSucceedArr={setFlatSucceedArr}
+                        flatStateBundle={flatStateBundle}
+                        setFlatStateBundle={setFlatStateBundle}
+                        allowUserChangeState={allowUserChangeState}
+                        upgradeArr={evaluateAverageResult.upgrade_arr}
+                        specialState={specialState}
 
-                    <SpreadsheetGrid
-                        columnDefs={wideMatsColumnDefs}
-                        labels={JUICE_LABELS.map((label_row) => label_row[1])}
-                        sheetValuesArr={[
-                            my_alr_spent_map(
-                                already_spent,
-                                JUICE_LABELS.map((label_row) => label_row[1]),
-                                1,
-                            ),
-                        ]}
-                        setSheetValuesArr={[null]}
                     />
-                </div>
-            }
+                )}
+
+                {
+                    <div
+                        style={{ display: "flex", flexDirection: "row", alignItems: "flex-start", gap: 0, minWidth: 200, flexShrink: 0, marginTop: 0 }}
+                    >
+                        <div>Already spent:</div>
+                        <SpreadsheetGrid
+                            columnDefs={wideMatsColumnDefs}
+                            labels={MATS_LABELS.slice(0, 7)}
+                            sheetValuesArr={[my_alr_spent_map(already_spent, MATS_LABELS.slice(0, 7), 0)]}
+                            setSheetValuesArr={[null]}
+                        />
+
+                        <SpreadsheetGrid
+                            columnDefs={wideMatsColumnDefs}
+                            labels={JUICE_LABELS.map((label_row) => label_row[0])}
+                            sheetValuesArr={[
+                                my_alr_spent_map(
+                                    already_spent,
+                                    JUICE_LABELS.map((label_row) => label_row[0]),
+                                    1,
+                                ),
+                            ]}
+                            setSheetValuesArr={[null]}
+                        />
+
+                        <SpreadsheetGrid
+                            columnDefs={wideMatsColumnDefs}
+                            labels={JUICE_LABELS.map((label_row) => label_row[1])}
+                            sheetValuesArr={[
+                                my_alr_spent_map(
+                                    already_spent,
+                                    JUICE_LABELS.map((label_row) => label_row[1]),
+                                    1,
+                                ),
+                            ]}
+                            setSheetValuesArr={[null]}
+                        />
+                    </div>
+                }
+            </div>
         </div>
     )
 }

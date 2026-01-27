@@ -172,7 +172,7 @@ impl Support {
     }
 
     pub fn collapse_support(&mut self, prob_dist: &ProbDist) {
-        // assert!(prob_dist.payload.len() == self.support.len());
+        assert!(prob_dist.payload.len() == self.support.len());
         assert!(prob_dist.prob_state_hash == self.support_state_hash);
 
         // let valid_log = prob_dist.is_log_valid();
@@ -446,10 +446,11 @@ impl Upgrade {
             let mut armor_support: Vec<f64> = Vec::with_capacity(l_len);
             let amt = prep_output.juice_info.amt_used_id[id][self.upgrade_index] as f64;
             for (index, (juice, book)) in self.state.iter().take(l_len).enumerate() {
+                // -1 cos pity tap cannot juice
                 weap_support.push(weap_cost);
                 armor_support.push(armor_cost);
-                if index >= l_len - 1 {
-                    break;
+                if index >= l_len - 2 {
+                    continue;
                 }
                 if *juice && id == 0 {
                     if self.is_weapon {

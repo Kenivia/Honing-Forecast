@@ -27,11 +27,13 @@
 -~~ 10 at a time toggle, need to modify neighbour function & stategrid~~
 - instead of counting unique elements in statebundle it should read from juiceinfo instead
 
-- add input box next to succeed free tap
-- adjust how the optimizer is ran (cancel when anything changes, and say so)
+- ~~add input box next to succeed free tap~~
+- ~~adjust how the optimizer is ran (cancel when anything changes, and say so)~~
 - marquee for state grid also?
 
 - ~~add optimizer button~~
+- update the best known solution so that only "better" states will be colored purple
+-
   - stream intermediate results that'd be so cool
 
 - slider instead of leftover value
