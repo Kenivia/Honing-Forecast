@@ -1,3 +1,5 @@
+use std::f64::NAN;
+
 use crate::constants::SPECIAL_TOL;
 
 use crate::performance::Performance;
@@ -44,7 +46,7 @@ impl StateBundle {
                 skip_count,
                 budget,
                 false,
-                self.simple_avg(support_index, skip_count),
+                NAN,
                 performance,
             );
 

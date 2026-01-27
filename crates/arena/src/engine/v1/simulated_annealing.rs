@@ -156,7 +156,7 @@ fn neighbour<R: Rng>(
         let mut book_ptr = 0;
 
         for (s_index, (juice, id)) in state.iter_mut().enumerate() {
-            // Standard artisan reset/skip
+            // artisan after last tap
             if artisan >= 1.0 {
                 (*juice, *id) = (false, 0);
                 continue;
@@ -194,7 +194,7 @@ fn neighbour<R: Rng>(
                 *id = book_target_id;
             }
 
-            // Calculate Artisan (using the potentially new values)
+            // asrtisan before
             artisan += (46.51_f64 / 100.0)
                 * artisan_rate
                 * (base_chance
@@ -208,6 +208,7 @@ fn neighbour<R: Rng>(
                     } else {
                         0.0
                     });
+            // artisan after
         }
     }
 }

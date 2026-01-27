@@ -77,7 +77,7 @@ impl StateBundle {
             let p_len = upgrade.prob_dist.len();
             for (index, s) in upgrade.state.iter_mut().enumerate() {
                 if index >= p_len - 2 {
-                    // 1 for pity, 1 for 0th tap
+                    // 1 for pity(you cant juice the pity tap), 1 for 0th tap
                     *s = (false, 0);
                 }
             }

@@ -166,7 +166,7 @@ const RowBundle = ({
             if (!unlock) {
                 onUpdateUnlock(true)
             }
-            onUpdateProgress(Math.min(progress + 1, pity_len))
+            onUpdateProgress(Math.min(progress, pity_len))
         } else {
             onUpdateProgress(Math.max(progress - 1, 0))
         }
