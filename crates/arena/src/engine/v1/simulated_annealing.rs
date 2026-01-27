@@ -1,4 +1,5 @@
 use hf_core::saddlepoint_approximation::average::DEBUG_AVERAGE;
+use hf_core::send_progress::send_progress;
 use hf_core::state_bundle::StateBundle;
 use rand::Rng;
 use rand::distr::Distribution;
@@ -265,7 +266,7 @@ pub fn solve<R: Rng>(
     let mut lowest_seen: f64 = MAX;
     let mut best_state_so_far: StateBundle = state_bundle.clone();
     let mut temps_without_improvement = 1;
-
+    let mut total_count: i64 = 0;
     while temp >= 0.0 {
         let current_resolution = if temp > temp_schedule_cutoff {
             // Logarithmic interpolation from Max Len -> Min Res
@@ -317,6 +318,20 @@ pub fn solve<R: Rng>(
             temps_without_improvement += 1;
             temp = new_temp(temp, alpha);
         }
+        if total_count % 1000 == 0 {
+            #[cfg(target_arch = "wasm32")]
+            {
+                send_progress(
+                    &best_state_so_far.clone(),
+                    (100.0
+                        * (total_count as f64
+                            / (iterations_per_temp as f64 * (0.05_f64 / init_temp).ln()
+                                / 0.99_f64.ln())))
+                    .min(100.0),
+                )
+            }
+        }
+        total_count += 1;
     }
 
     best_state_so_far

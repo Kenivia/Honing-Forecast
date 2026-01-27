@@ -8,9 +8,7 @@ use crate::constants::{
     get_event_modified_weapon_costs, get_event_modified_weapon_unlock_cost,
 };
 use crate::helpers::{calc_unlock, eqv_gold_per_tap};
-use crate::normal_honing_utils::{
-    add_up_golds, apply_price_generic, apply_price_leftovers, probability_distribution,
-};
+use crate::normal_honing_utils::{add_up_golds, apply_price_generic, probability_distribution};
 use crate::upgrade::Upgrade;
 // use crate::monte_carlo::monte_carlo_one;
 // use crate::value_estimation::{
@@ -314,6 +312,7 @@ pub fn parser(
                     0.0,
                     this_progress,
                     this_succeeded,
+                    None,
                 ),
                 std::array::from_fn(|cost_type: usize| cur_cost[cost_type][upgrade_index]),
                 special_cost,

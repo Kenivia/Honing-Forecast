@@ -178,6 +178,9 @@ export default function HoningForecastUI() {
     const [specialState, setSpecialState] = useState<number[]>([])
     const [minResolution, setMinResolution] = useState<number>(10)
 
+    const [optimizerProgress, setOptimizerProgress] = useState<number>(0)
+
+
     const [allowUserChangeState, setAllowUserChangeState] = useState<boolean>(true)
     // Lock x-axis state (shared across all graphs)
     const [lockXAxis, setLockXAxis] = useState<boolean>(false)
@@ -653,6 +656,7 @@ export default function HoningForecastUI() {
             optimizeAvgWorkerRef.current = null
         }
         setOptimizeAvgBusy(false)
+        setOptimizerProgress(0)
         setOptimizeAvgError(null)
     }
     useEffect(() => {
@@ -813,11 +817,12 @@ export default function HoningForecastUI() {
         ProgressGridKey,
         UnlockGridKey,
         SucceededGridKey,
-        StateBundleGridKey,
+        // StateBundleGridKey,
         inputBundleKey,
-        specialStateKey,
+        // specialStateKey,
         minResolutionKey,
     ])
+
     useEffect(() => {
         if (optimizeButtonPress > 0) {
             setOptimizeAvgError(null)
@@ -837,6 +842,20 @@ export default function HoningForecastUI() {
                     setOptimizerMetric(res.metric)
                     setOptimizeAvgError(null)
                     // console.log(specialState)
+                },
+                onIntermediateMessage: (res_bundle) => {
+                    setOptimizerProgress(res_bundle.est_progress_percentage)
+                    let res = res_bundle.state_bundle
+                    setFlatStateBundle(res.upgrade_arr.map((upgrade) => upgrade.state))
+                    setFlatProgressArr(res.upgrade_arr.map((_, index) => progressGrid[res.upgrade_arr[index].piece_type][res.upgrade_arr[index].upgrade_index]))
+                    setFlatUnlockArr(res.upgrade_arr.map((_, index) => unlockGrid[res.upgrade_arr[index].piece_type][res.upgrade_arr[index].upgrade_index]))
+                    setFlatSucceedArr(res.upgrade_arr.map((_, index) => succeededGrid[res.upgrade_arr[index].piece_type][res.upgrade_arr[index].upgrade_index]))
+                    setSpecialState(res.special_state)
+                    // setOptimizerMetric(res.metric)
+                    setEvaluateAverageResult(res)
+
+                    setOptimizeAvgError(null)
+
                 },
                 onError: (err) => {
                     setOptimizeAvgError(String(err))
@@ -893,6 +912,8 @@ export default function HoningForecastUI() {
         setUnlockGrid,
         setStateBundleGrid,
         setProgressGrid,
+        setEvaluateAverageResult,
+        setOptimizerMetric,
         // setMonteCarloResult,
     })
 
@@ -1082,6 +1103,7 @@ export default function HoningForecastUI() {
                             evaluateAverageResult={evaluateAverageResult}
                             specialState={specialState}
                             setSpecialState={setSpecialState}
+                            optimizerProgress={optimizerProgress}
 
                         />
                     </div>

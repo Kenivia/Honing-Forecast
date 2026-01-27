@@ -6,6 +6,7 @@ pub mod normal_honing_utils;
 pub mod parser;
 pub mod performance;
 pub mod saddlepoint_approximation;
+pub mod send_progress;
 pub mod state_bundle;
 pub mod test_utils;
 pub mod upgrade;

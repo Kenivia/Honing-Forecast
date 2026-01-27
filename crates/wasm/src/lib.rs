@@ -25,9 +25,10 @@ use wasm_bindgen::JsValue;
 use wasm_bindgen::prelude::*;
 
 pub use wasm_bindgen_rayon::init_thread_pool;
+#[allow(unused_imports)]
 use web_sys::console;
+
 #[derive(Deserialize)]
-#[allow(dead_code)]
 pub struct Payload {
     normal_hone_ticks: Vec<Vec<bool>>,
     adv_hone_ticks: Vec<Vec<bool>>,
@@ -36,9 +37,7 @@ pub struct Payload {
     adv_hone_strategy: String,
 
     express_event: bool,
-    bucket_count: usize,
 
-    data_size: usize,
     // cost_data: Option<Vec<Vec<i64>>>,
     mats_budget: Vec<i64>,
     user_price_arr: Vec<f64>,

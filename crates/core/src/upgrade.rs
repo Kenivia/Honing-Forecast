@@ -1,7 +1,7 @@
 use crate::constants::{FLOAT_TOL, NORMAL_JUICE_COST};
-use crate::normal_honing_utils::{generate_first_deltas, new_prob_dist, probability_distribution};
+use crate::normal_honing_utils::{new_prob_dist, probability_distribution};
 use crate::parser::PreparationOutput;
-use itertools::izip;
+// use itertools::izip;
 use serde::{Deserialize, Serialize};
 
 use std::collections::hash_map::DefaultHasher;
@@ -298,7 +298,7 @@ impl Upgrade {
         // let base_chance: f64 = prob_dist[1];
         // web_sys::console::log_1(&format!("{:?}", alr_failed).into());
         let original_prob_dist_len: usize =
-            probability_distribution(base_chance, artisan_rate, &vec![], 0.0, 0, false).len();
+            probability_distribution(base_chance, artisan_rate, &vec![], 0.0, 0, false, None).len();
         // web_sys::console::log_1(&format!("a").into());
         let mut state = State::new(original_prob_dist_len);
         // web_sys::console::log_1(&format!("a").into());

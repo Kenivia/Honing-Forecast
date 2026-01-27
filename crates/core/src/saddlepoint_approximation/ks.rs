@@ -3,7 +3,7 @@ use std::f64::NAN;
 use crate::performance::Performance;
 use crate::state_bundle::StateBundle;
 use crate::upgrade::Support;
-use rayon::prelude::*;
+// use rayon::prelude::*;
 #[derive(Debug, Clone, Copy)]
 pub struct KsTuple(pub f64, pub f64, pub f64, pub f64, pub f64);
 impl KsTuple {

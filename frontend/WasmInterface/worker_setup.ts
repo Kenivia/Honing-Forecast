@@ -3,7 +3,7 @@ function makeId() {
     return Math.random().toString(36).slice(2) + Date.now().toString(36)
 }
 
-export function SpawnWorker(payload, which_one) {
+export function SpawnWorker(payload : any, which_one : string,onIntermediateMessage? : (_)=>void ) {
     // adjust path if needed
     const worker = new Worker(new URL("./js_to_wasm.ts", import.meta.url), { type: "module" })
     const id = makeId()
@@ -19,6 +19,7 @@ export function SpawnWorker(payload, which_one) {
                 worker.removeEventListener("error", onError)
                 resolve(msg.result)
             } else {
+                onIntermediateMessage?.(msg)
                 // ignore unrelated messages (or you could expose them as events)
             }
         }

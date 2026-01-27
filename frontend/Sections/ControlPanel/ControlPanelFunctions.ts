@@ -42,6 +42,8 @@ export function createClearAll({
     setUnlockGrid,
     setStateBundleGrid,
     setProgressGrid,
+    setEvaluateAverageResult,
+    setOptimizerMetric,
     // setMonteCarloResult,
 }: {
     setTopGrid: React.Dispatch<React.SetStateAction<any>>
@@ -75,6 +77,8 @@ export function createClearAll({
     setUnlockGrid: React.Dispatch<React.SetStateAction<boolean[][]>>
     setStateBundleGrid: React.Dispatch<React.SetStateAction<[boolean, number][][][]>>
     setProgressGrid: React.Dispatch<React.SetStateAction<number[][]>>
+    setEvaluateAverageResult: React.Dispatch<React.SetStateAction<any>>
+    setOptimizerMetric: React.Dispatch<React.SetStateAction<number | null>>
     // setMonteCarloResult: React.Dispatch<React.SetStateAction<any>>
 }) {
     return () => {
@@ -118,6 +122,8 @@ export function createClearAll({
         setUnlockGrid(cloneGrid(RESET_UI_DEFAULTS.unlockGrid))
         setStateBundleGrid(cloneStateBundleGrid(RESET_UI_DEFAULTS.stateBundleGrid))
         setProgressGrid(cloneGrid(RESET_UI_DEFAULTS.progressGrid))
+        setEvaluateAverageResult(RESET_UI_DEFAULTS.evaluateAverageResult)
+        setOptimizerMetric(RESET_UI_DEFAULTS.optimizerMetric)
         // setMonteCarloResult(null)
     }
 }

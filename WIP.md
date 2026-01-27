@@ -5,10 +5,6 @@
 
 ### Now
 
-- rework test case csv to json and take in js objects straight up
-  - add export button to copy to clipboard
-  - maybe take in a folder of test cases instead for ease of adding more test cases
-  
 - make solvers stream intermediate results at x1000 evaluations / second?
   - postmessage & update in js
     - need to ignore these such that changes don't cancel ( i mean its already greyed out so maybe this will be easy)
@@ -29,7 +25,7 @@
 
 - cache the geom calculations  (special_prob seems fast enough so cbb rn)
 
-- can actually save 1 evaluation at the end of special_prob by setting the zero prob...
+- can actually save 1 evaluation at the end of special_prob by setting the zero prob... (only when special state allows all things to be skipped  but like itd be trivial anyway so prolly not)
 
 - multi-threading????
   - will prep by compling using all the right tools(i hope) and then figuring it out later
@@ -44,6 +40,7 @@
 - start working on visualizing this stuff
 
 - initialize the hash properly or something idk
+  - avoid updating dist & support based on this hash
 
 ### Big
 
@@ -137,6 +134,9 @@ graph
 
 ## Done / cancelled
 
+- ~~rework test case csv to json and take in js objects straight up~~
+  - ~~add export button to copy to clipboard~~
+  - ~~maybe take in a folder of test cases instead for ease of adding more test cases~~
 ~~ #### Editable artisan / progress~~
 
 - ~~each upgrade will have a starting artisan value attached, state generation and stuff should work automatically~~

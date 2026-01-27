@@ -1,31 +1,31 @@
-use core::f64;
+// use core::f64;
 // #[cfg(test)]
 // use std::time::Instant;
 
-use crate::histogram::{HistogramOutputs, prep_histogram};
-use crate::success_analysis::{
-    BuyAnalysisOutput, NoBuyAnalysisOutputs, buy_analysis, no_buy_analysis,
-};
-// use hf_core::upgrade::Upgrade;
-use hf_core::state_bundle::StateBundle;
-use serde::{Deserialize, Serialize};
+// use crate::histogram::{HistogramOutputs, prep_histogram};
+// use crate::success_analysis::{
+//     BuyAnalysisOutput, NoBuyAnalysisOutputs, buy_analysis, no_buy_analysis,
+// };
+// // use hf_core::upgrade::Upgrade;
+// use hf_core::state_bundle::StateBundle;
+// use serde::{Deserialize, Serialize};
 
-#[derive(Serialize, Deserialize, Debug)]
-pub struct CostToChanceOut {
-    pub chance: f64,       // no buy chance
-    pub reasons: Vec<f64>, // 7 failure rates for each cost type(no buy)
+// #[derive(Serialize, Deserialize, Debug)]
+// pub struct CostToChanceOut {
+//     pub chance: f64,       // no buy chance
+//     pub reasons: Vec<f64>, // 7 failure rates for each cost type(no buy)
 
-    pub hundred_gold_costs: Vec<i64>, // gold cost for each percentage
-    pub chance_if_buy: f64,
-    pub typical_costs: Vec<[i64; 9]>,
+//     pub hundred_gold_costs: Vec<i64>, // gold cost for each percentage
+//     pub chance_if_buy: f64,
+//     pub typical_costs: Vec<[i64; 9]>,
 
-    pub hist_counts: Vec<Vec<i64>>, // 7 x num_bins
-    pub hist_mins: Vec<i64>,        // 7
-    pub hist_maxs: Vec<i64>,        // 7
+//     pub hist_counts: Vec<Vec<i64>>, // 7 x num_bins
+//     pub hist_mins: Vec<i64>,        // 7
+//     pub hist_maxs: Vec<i64>,        // 7
 
-    pub budgets_red_remaining: i64, // budgets[7], these are just here to provide warning for when there's not enough juice for advanced honing
-    pub budgets_blue_remaining: i64, // budgets[8]
-}
+//     pub budgets_red_remaining: i64, // budgets[7], these are just here to provide warning for when there's not enough juice for advanced honing
+//     pub budgets_blue_remaining: i64, // budgets[8]
+// }
 // #[derive(Serialize, Deserialize, Debug)]
 // pub struct CostToChanceArrOut {
 //     pub buy_chance_arr: Vec<f64>,
@@ -37,30 +37,30 @@ pub struct CostToChanceOut {
 //     pub budgets_blue_remaining: i64,
 // }
 
-pub fn cost_to_chance(state_bundle: &StateBundle) -> CostToChanceOut {
-    let no_buy_failure_outputs: NoBuyAnalysisOutputs = no_buy_analysis(&state_bundle);
+// pub fn cost_to_chance(state_bundle: &StateBundle) -> CostToChanceOut {
+//     let no_buy_failure_outputs: NoBuyAnalysisOutputs = no_buy_analysis(&state_bundle);
 
-    let buy_failure_outputs: BuyAnalysisOutput = buy_analysis(&state_bundle);
+//     let buy_failure_outputs: BuyAnalysisOutput = buy_analysis(&state_bundle);
 
-    let typical_costs: Vec<[i64; 9]> = vec![[-67; 9]; 101]; // i dont think this is gonna work 
+//     let typical_costs: Vec<[i64; 9]> = vec![[-67; 9]; 101]; // i dont think this is gonna work
 
-    // Section 4: Histogram preparation
-    let histogram_outputs: HistogramOutputs = prep_histogram(&state_bundle, 100, 100_000);
+//     // Section 4: Histogram preparation
+//     let histogram_outputs: HistogramOutputs = prep_histogram(&state_bundle, 100, 100_000);
 
-    CostToChanceOut {
-        chance: no_buy_failure_outputs.no_buy_chance,
-        reasons: no_buy_failure_outputs.typed_fail_counter_final,
-        hist_counts: histogram_outputs.hist_counts,
-        hist_mins: histogram_outputs.hist_mins,
-        hist_maxs: histogram_outputs.hist_maxs,
+//     CostToChanceOut {
+//         chance: no_buy_failure_outputs.no_buy_chance,
+//         reasons: no_buy_failure_outputs.typed_fail_counter_final,
+//         hist_counts: histogram_outputs.hist_counts,
+//         hist_mins: histogram_outputs.hist_mins,
+//         hist_maxs: histogram_outputs.hist_maxs,
 
-        budgets_red_remaining: 0,
-        budgets_blue_remaining: 0,
-        hundred_gold_costs: buy_failure_outputs.hundred_gold_costs,
-        chance_if_buy: buy_failure_outputs.buy_chance,
-        typical_costs,
-    }
-}
+//         budgets_red_remaining: 0,
+//         budgets_blue_remaining: 0,
+//         hundred_gold_costs: buy_failure_outputs.hundred_gold_costs,
+//         chance_if_buy: buy_failure_outputs.buy_chance,
+//         typical_costs,
+//     }
+// }
 
 // /// Same as cost_to_chance, but repeats it over projected budgets
 // pub fn cost_to_chance_arr(

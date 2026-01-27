@@ -191,8 +191,10 @@ dependencies = [
  "rand",
  "rayon",
  "serde",
+ "serde-wasm-bindgen",
  "serde_json",
  "statrs",
+ "wasm-bindgen",
  "web-sys",
 ]
 

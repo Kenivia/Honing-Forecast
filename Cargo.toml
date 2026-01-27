@@ -7,5 +7,6 @@ members = [
 ]
 resolver="3"
 
-[profile.release]
+[profile.samply]
+inherits = "release"
 debug = true

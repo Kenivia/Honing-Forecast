@@ -18,7 +18,11 @@ export function applyFlatToGrid(
     flatStateBundle: StatePair[][],
     stateBundleGrid: StatePair[][][],
     setStateBundleGrid: React.Dispatch<React.SetStateAction<any>>,
-) {
+) { 
+
+    if (!evaluateAverageResult){
+        return
+    }
     let newSucceededGrid = succeededGrid.map((row) => [...row])
     let newProgressGrid = progressGrid.map((row) => [...row])
     let newUnlockGrid = unlockGrid.map((row) => [...row])

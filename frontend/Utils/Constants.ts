@@ -70,6 +70,8 @@ export const RESET_UI_DEFAULTS = {
     unlockGrid: Array.from({ length: TOP_ROWS }, () => Array.from({ length: TOP_COLS }, () => false)),
     stateBundleGrid: Array.from({ length: TOP_ROWS }, () => Array.from({ length: TOP_COLS }, () => [])),
     progressGrid: Array.from({ length: TOP_ROWS }, () => Array.from({ length: TOP_COLS }, () => 0)),
+    evaluateAverageResult: null as any,
+    optimizerMetric: null as number | null,
 }
 
 export const DEMO_UI_VALUES = {

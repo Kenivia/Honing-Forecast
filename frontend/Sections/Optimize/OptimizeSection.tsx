@@ -39,6 +39,7 @@ type OptimizeSectionProps = {
     setSpecialState: React.Dispatch<React.SetStateAction<number[]>>
     // gridRefs: React.RefObject<HTMLDivElement>[]
     // marquee: any
+    optimizerProgress: number
 }
 
 function my_alr_spent_map(already_spent: any, labels: string[], index: number) {
@@ -69,6 +70,7 @@ export default function OptimizeSection({
     evaluateAverageResult,
     specialState,
     setSpecialState,
+    optimizerProgress
 
     // gridRefs,
     // onGridMouseDown,
@@ -117,8 +119,10 @@ export default function OptimizeSection({
                         />
                         Auto run optimizer
                     </label>
+
                     {optimizeAvgError && <span style={{ fontSize: 12, color: "var(--text)" }}>{optimizeAvgError}</span>}
                 </div>
+                {optimizeAvgBusy && <span>Optimizer progress: {optimizerProgress.toFixed(2)}%</span>}
                 <br />
                 Already spent: {evaluateAverageResult?.prep_output.already_spent[3]}
                 <br />

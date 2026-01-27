@@ -88,6 +88,8 @@ export type StartOptions = {
     // optional: extra success handler
     onSuccess?: (_) => void
     // optional: extra error handler
+
+    onIntermediateMessage?: (_)=>void
     onError?: (_) => void
     // optional: extra finally handler
     onFinally?: () => void
@@ -131,6 +133,7 @@ export function createCancelableWorkerRunner() {
             setResult,
             setCachedGraphData,
             onSuccess,
+            onIntermediateMessage,
             onError,
             onFinally,
             debounceKey = which_one,
@@ -159,7 +162,7 @@ export function createCancelableWorkerRunner() {
             setBusy(true)
 
             // spawn the worker (uses your existing SpawnWorker)
-            const { worker, promise } = SpawnWorker(payloadBuilder(), which_one)
+            const { worker, promise } = SpawnWorker(payloadBuilder(), which_one,onIntermediateMessage )
 
             // store refs so cancel(key) can terminate this worker specifically
             workerRef.current = worker
