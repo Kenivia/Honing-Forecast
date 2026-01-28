@@ -168,7 +168,6 @@ impl StateBundle {
                 let (juice, state_id) = upgrade.state[p_index];
                 if p_index < l_len - 2 {
                     // cannot juice pity
-
                     if juice {
                         add_juice_gold_cost(&prep_output.juice_info, upgrade, &mut cost_so_far, 0);
                     }
@@ -181,7 +180,7 @@ impl StateBundle {
                         );
                     }
                 } else {
-                    continue;
+
                     // assert!(!juice);
                     // assert!(state_id == 0);
                 }

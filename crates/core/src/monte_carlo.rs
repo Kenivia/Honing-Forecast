@@ -85,17 +85,19 @@ fn juice_costs(upgrade: &Upgrade, state_bundle: &StateBundle) -> Vec<Vec<(i64, i
             } else {
                 *armor_used += juice_so_far[id];
             }
-            if p_index >= upgrade.prob_dist.len() - 1 {
-                if juice || state_id > 0 {
-                    dbg!(&upgrade.state);
-                    dbg!(&upgrade.prob_dist);
-                    dbg!(&upgrade.state.len());
-                    dbg!(&upgrade.prob_dist.len());
-                    dbg!(juice, state_id);
-                }
-                assert!(!juice);
-                assert!(state_id == 0);
+            if p_index >= upgrade.prob_dist.len() - 2 {
+                continue;
+                // if juice || state_id > 0 {
+                //     dbg!(&upgrade.state);
+                //     dbg!(&upgrade.prob_dist);
+                //     dbg!(&upgrade.state.len());
+                //     dbg!(&upgrade.prob_dist.len());
+                //     dbg!(juice, state_id);
+                // }
+                // assert!(!juice);
+                // assert!(state_id == 0);
             }
+
             let juice_amt = prep_output.juice_info.amt_used_id[id][upgrade.upgrade_index];
             if id == 0 && juice {
                 juice_so_far[id] += juice_amt;

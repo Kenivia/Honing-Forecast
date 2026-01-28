@@ -268,19 +268,13 @@ pub fn parser(
             let special_cost: i64 =
                 SPECIAL_LEAPS_COST[if piece_type == 5 { 0 } else { 1 }][upgrade_index];
             let event_artisan_rate: f64 = artisan_rate_arr[upgrade_index];
+
             let this_progress: usize = if progress_arr_opt.is_none() {
                 0
             } else {
                 progress_arr_opt.as_ref().unwrap()[piece_type][upgrade_index]
             };
 
-            let this_state_given: Option<Vec<(bool, usize)>> = if state_given_opt.is_none()
-                || state_given_opt.as_ref().unwrap()[piece_type][upgrade_index].len() == 0
-            {
-                None
-            } else {
-                Some(state_given_opt.as_ref().unwrap()[piece_type][upgrade_index].clone())
-            };
             let this_unlocked: bool = if unlock_grid.is_none() {
                 false
             } else {
@@ -291,6 +285,23 @@ pub fn parser(
                 false
             } else {
                 succeeded_grid.as_ref().unwrap()[piece_type][upgrade_index]
+            };
+            let clean_prob_dist = probability_distribution(
+                NORMAL_HONE_CHANCES[upgrade_index],
+                event_artisan_rate,
+                &[],
+                0.0,
+                this_progress,
+                this_succeeded,
+                None,
+            );
+            let this_state_given: Option<Vec<(bool, usize)>> = if state_given_opt.is_none()
+                || state_given_opt.as_ref().unwrap()[piece_type][upgrade_index].len()
+                    != clean_prob_dist.len()
+            {
+                None
+            } else {
+                Some(state_given_opt.as_ref().unwrap()[piece_type][upgrade_index].clone())
             };
             // web_sys::console::log_1(&succeeded_grid.into());
             // web_sys::console::log_1(&format!("{:?}", unlock_grid).into());
@@ -305,15 +316,7 @@ pub fn parser(
             };
             out.push(Upgrade::new_normal(
                 NORMAL_HONE_CHANCES[upgrade_index],
-                probability_distribution(
-                    NORMAL_HONE_CHANCES[upgrade_index],
-                    event_artisan_rate,
-                    &[],
-                    0.0,
-                    this_progress,
-                    this_succeeded,
-                    None,
-                ),
+                clean_prob_dist,
                 std::array::from_fn(|cost_type: usize| cur_cost[cost_type][upgrade_index]),
                 special_cost,
                 piece_type == 5,

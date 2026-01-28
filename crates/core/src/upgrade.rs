@@ -172,6 +172,10 @@ impl Support {
     }
 
     pub fn collapse_support(&mut self, prob_dist: &ProbDist) {
+        // if prob_dist.payload.len() != self.support.len() {
+        //     dbg!(&prob_dist, &self.support);
+        // }
+
         assert!(prob_dist.payload.len() == self.support.len());
         assert!(prob_dist.prob_state_hash == self.support_state_hash);
 
@@ -431,7 +435,7 @@ impl Upgrade {
 
                 cost_so_far += this_cost;
             }
-
+            // dbg!(t_index);
             self.cost_dist[t_index].update_payload(
                 this_mats_costs,
                 self.state.hash,
@@ -471,6 +475,7 @@ impl Upgrade {
                     }
                 }
             }
+            // dbg!(id, 0);
             self.weap_juice_costs[id].update_payload(
                 weap_support,
                 self.state.hash,
@@ -478,7 +483,7 @@ impl Upgrade {
                 amt,
                 weap_cost,
             );
-
+            // dbg!(id, 1);
             self.armor_juice_costs[id].update_payload(
                 armor_support,
                 self.state.hash,

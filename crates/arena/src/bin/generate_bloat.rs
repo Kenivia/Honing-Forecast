@@ -105,13 +105,15 @@ fn main() {
                     let this_multiplier: f64 = rng.random_range(0.0..1.0_f64);
                     this_payload.mats_budget[index] = (one_tap_costs[index] as f64
                         + this_multiplier * (pity_costs[index] - one_tap_costs[index]) as f64)
+                        .max(0.0)
                         .round() as i64;
                 }
                 this_payload.express_event = rng.random_bool(0.5);
 
                 if this_payload.mats_budget.len() > 7 {
                     this_payload.mats_budget[7] = (this_payload.mats_budget[7] as f64
-                        * random_multiplier(&mut rng))
+                        + 3000.0 * random_multiplier(&mut rng))
+                    .max(0.0)
                     .round() as i64;
                 }
                 for (weap_owned, armor_owned) in this_payload.juice_books_budget.iter_mut() {
@@ -125,7 +127,7 @@ fn main() {
             } else {
                 base_name.clone()
             };
-            let file_name = format!("{:05}_{}.json", count, safe_base);
+            let file_name = format!("{}_{:05}.json", safe_base, count,);
             out.push((file_name, this_payload));
         }
     }

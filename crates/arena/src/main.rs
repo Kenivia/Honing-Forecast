@@ -18,7 +18,7 @@ use std::io::{BufRead, BufReader, BufWriter, Error, Write};
 use std::path::Path;
 use std::time::Instant;
 
-static NUM_TESTS_TO_RUN: i64 = if DEBUG_AVERAGE { 1 } else { 1 }; // TODO this should be replaced by statistical tests like fishtest eventually
+static NUM_TESTS_TO_RUN: i64 = if DEBUG_AVERAGE { 1 } else { 5 }; // TODO this should be replaced by statistical tests like fishtest eventually
 static MONTE_CARLO_COUNT: usize = 1_000_000;
 static METRICS: [(&str, i64); 2] = [("SA", 0), ("Avg", 1)];
 #[derive(Debug, Serialize)]
@@ -116,7 +116,7 @@ fn main() {
     let mut seed_rng: ThreadRng = rand::rng();
 
     let test_cases: Vec<(String, StateBundle, Vec<bool>)> =
-        parse_payload_jsons(Path::new("test_payloads"));
+        parse_payload_jsons(Path::new("test_payloads_bloated"));
 
     for _ in 0..NUM_TESTS_TO_RUN {
         for (test_case_name, state_bundle, tests_to_run) in test_cases.iter() {
