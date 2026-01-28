@@ -91,7 +91,7 @@ impl StateBundle {
             } else {
                 performance.bisection_count += 1;
                 if upper.is_finite() && lower.is_finite() {
-                    theta = (lower * y_upper - upper * y_lower) / (y_upper - y_lower);
+                    theta = 0.5 * (upper + lower)
                 } else if upper.is_finite() {
                     if (theta - upper).abs() < FLOAT_TOL {
                         if theta > 0.0 {

@@ -121,7 +121,8 @@ impl StateBundle {
                 .max(min_value)
                 + span / 2.0;
 
-            if max_value - min_value > min_delta
+            if min_delta.is_finite()
+                && max_value - min_value > min_delta
                 && min_value + min_delta + 1.0 < budget
                 && budget < max_value - min_delta - 1.0
             {
