@@ -169,6 +169,7 @@ name = "hf-arena"
 version = "0.0.0"
 dependencies = [
  "built",
+ "cfg-if",
  "chrono",
  "csv",
  "hf-core",

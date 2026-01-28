@@ -31,6 +31,7 @@ impl StateBundle {
         let mut init_y: f64 = NAN; // this was here when guess = 0 which gave us the mean but now is just useless but cbb
         let mut debug_record: Vec<(f64, f64, f64, f64, f64, f64)> = Vec::new();
 
+        let mut last_y: f64 = NAN;
         for iter in 0..MAX_ROOT_FIND_ITER {
             // 2. Evaluate Function and Derivatives
             let this = self.ks(
@@ -59,8 +60,9 @@ impl StateBundle {
                 return Some((theta, init_y, iter, this));
             }
 
-            let delta = if dy.abs() < 1e-3 {
-                theta * 0.1
+            let delta = if !last_y.is_nan() && ((last_y - y) / y.min(last_y)).abs() < 0.1 {
+                // too flat
+                theta * 0.1 - theta
             } else if compute_biased {
                 (-2.0 * y * dy) / (-y * dy2 + 2.0 * dy.powi(2))
             } else {
@@ -71,9 +73,10 @@ impl StateBundle {
             };
 
             let mut proposed_theta = theta + delta;
-            proposed_theta =
-                proposed_theta.clamp(-10.0 * theta.abs().max(1e-8), 10.0 * theta.abs().max(1e-8));
             debug_record.push((theta, proposed_theta, y, dy, dy2, dy3));
+            proposed_theta =
+                proposed_theta.clamp(-3.0 * theta.abs().max(1e-8), 3.0 * theta.abs().max(1e-8));
+
             // last_theta = theta;
             performance.newton_iterations += 1;
             if proposed_theta > lower && proposed_theta < upper {
@@ -113,7 +116,7 @@ impl StateBundle {
                     );
                 }
             }
-
+            last_y = y;
             // }
         }
 

@@ -4,9 +4,9 @@ use hf_arena::parse_test_cases::parse_payload_jsons;
 
 use hf_core::monte_carlo::monte_carlo_wrapper;
 
+use hf_arena::engine::ACTIVE_FEATURE;
 use hf_core::performance::{Performance, PerformanceToWrite};
 use hf_core::saddlepoint_approximation::average::DEBUG_AVERAGE;
-
 use hf_core::state_bundle::StateBundle;
 
 use rand::prelude::*;
@@ -78,10 +78,7 @@ fn main() {
     let task_id: String = env::var("SLURM_ARRAY_TASK_ID").unwrap_or_else(|_| "0".to_string());
     let file_name: String = format!(
         "./Results/{}_{}_{}.jsonl",
-        built_info::FEATURES_LOWERCASE_STR
-            .to_string()
-            .replace("default, ", "")
-            .to_owned(),
+        ACTIVE_FEATURE.replace("default, ", "").to_owned(),
         job_id,
         task_id,
         // current_time_string().replace(":", "-"),
