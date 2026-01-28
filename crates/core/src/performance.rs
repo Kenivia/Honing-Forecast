@@ -12,6 +12,7 @@ pub struct Performance {
     pub trivial_count: i64,
     pub householder_count: i64,
     pub bisection_count: i64,
+    pub best_history: Vec<(f64, i64, f64)>, // time in seconds, states evaluated, metric
 }
 
 impl Performance {
@@ -27,6 +28,7 @@ impl Performance {
             trivial_count: 0,
             householder_count: 0,
             bisection_count: 0,
+            best_history: vec![],
         }
     }
 
@@ -53,6 +55,7 @@ impl Performance {
             edgeworth_ratio,
             bisection_ratio: (self.bisection_count as f64)
                 / (self.bisection_count as f64 + self.householder_count as f64),
+            best_history: self.best_history.clone(),
         }
     }
 }
@@ -89,4 +92,6 @@ pub struct PerformanceToWrite {
 
     #[serde(serialize_with = "serialize_nan_as_neg")]
     pub bisection_ratio: f64, // edgeworth / (edge + lugganani)
+
+    pub best_history: Vec<(f64, i64, f64)>,
 }

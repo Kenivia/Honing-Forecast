@@ -8,6 +8,8 @@ use rand::distr::weighted::WeightedIndex;
 use rand::seq::IteratorRandom;
 use std::f64::{MAX, MIN};
 
+use crate::timer::Timer;
+
 fn acceptance<R: Rng>(
     new: f64,
     old: f64,
@@ -239,6 +241,7 @@ pub fn solve<R: Rng>(
     mut state_bundle: StateBundle,
     performance: &mut hf_core::performance::Performance,
 ) -> StateBundle {
+    let timer = Timer::start();
     let init_temp: f64 = if DEBUG_AVERAGE { -1.0 } else { 333.0 };
     let mut temp: f64 = init_temp;
 
@@ -320,6 +323,11 @@ pub fn solve<R: Rng>(
             temp = new_temp(temp, alpha);
         }
         if total_count % 1000 == 0 {
+            performance.best_history.push((
+                timer.elapsed_sec(),
+                total_count,
+                best_state_so_far.metric,
+            ));
             #[cfg(target_arch = "wasm32")]
             {
                 send_progress(
