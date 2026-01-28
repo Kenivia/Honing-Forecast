@@ -36,6 +36,7 @@ fn main() {
             payload.special_state.clone(),
             payload.unlocked_grid.clone(),
             payload.succeeded_grid.clone(),
+            payload.min_resolution,
         );
         let (one_tap_costs, pity_costs) = state_bundle.get_one_tap_pity();
 

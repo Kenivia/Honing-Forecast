@@ -369,6 +369,7 @@ pub fn parse_payload_jsons(path: &Path) -> Vec<(String, StateBundle, Vec<bool>)>
             payload.special_state,
             payload.unlocked_grid,
             payload.succeeded_grid,
+            payload.min_resolution,
         );
         let tests_to_run: Vec<bool> = vec![true, true];
         out.push((test_case_name, state_bundle, tests_to_run));

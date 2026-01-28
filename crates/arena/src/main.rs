@@ -18,7 +18,7 @@ use std::io::{BufRead, BufReader, BufWriter, Error, Write};
 use std::path::Path;
 use std::time::Instant;
 
-static NUM_TESTS_TO_RUN: i64 = if DEBUG_AVERAGE { 1 } else { 5 }; // TODO this should be replaced by statistical tests like fishtest eventually
+static NUM_TESTS_TO_RUN: i64 = if DEBUG_AVERAGE { 1 } else { 5 };
 static MONTE_CARLO_COUNT: usize = 1_000_000;
 static METRICS: [(&str, i64); 2] = [("SA", 0), ("Avg", 1)];
 #[derive(Debug, Serialize)]
@@ -142,7 +142,6 @@ fn main() {
                 let mut state_bundle: StateBundle = solve(
                     &mut rng,
                     *metric_type,
-                    1,
                     state_bundle.clone(),
                     &mut state_performance,
                 );

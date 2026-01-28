@@ -15,6 +15,7 @@ pub struct StateBundle {
     pub latest_special_probs: Option<Vec<f64>>,
     pub metric_type: i64,
     pub metric: f64,
+    pub min_resolution: usize,
     // pub state_index: Vec<Vec<Vec<i64>>>, // i pre-added this for caching but havnt implemented anything
     pub prep_output: PreparationOutput,
     #[serde(skip)]
@@ -110,6 +111,7 @@ impl StateBundle {
             upgrade_arr,
             metric_type: -1,
             latest_special_probs: None,
+            min_resolution: 1,
         };
 
         return state_bundle;
@@ -130,6 +132,7 @@ impl StateBundle {
         special_state: Option<Vec<usize>>,
         unlock_grid: Option<Vec<Vec<bool>>>,
         succeeded_grid: Option<Vec<Vec<bool>>>,
+        min_resolution: usize,
     ) -> StateBundle {
         // web_sys::console::log_1(&"1".into());
         let (prep_output, upgrade_arr): (PreparationOutput, Vec<Upgrade>) =
@@ -166,6 +169,7 @@ impl StateBundle {
             prep_output,
             special_cache: HashMap::new(),
             latest_special_probs: None,
+            min_resolution,
         };
         // web_sys::console::log_1(&"3".into());
 

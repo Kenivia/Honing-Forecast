@@ -13,6 +13,11 @@
   
 - visualize these using perfplot
   - take average of many test cases i think (many trials?)
+  - store time, states evaluated and metric
+  - need to parse & aggregate this data then send to python(or just do it in python should be okay)
+    - as in keep a parsed file of data that python can read off of
+
+- add maximize success prob optimizer button at some point
 
 #### Analysis
 

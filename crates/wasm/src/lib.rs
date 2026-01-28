@@ -135,6 +135,7 @@ pub fn evaluate_average_wrapper(input: JsValue) -> JsValue {
         payload.special_state,
         payload.unlocked_grid,
         payload.succeeded_grid,
+        payload.min_resolution,
     );
 
     let mut dummy_performance = Performance::new();
@@ -178,17 +179,13 @@ pub fn optimize_average_wrapper(input: JsValue) -> JsValue {
         payload.special_state,
         payload.unlocked_grid,
         payload.succeeded_grid,
+        payload.min_resolution,
     );
 
     let mut rng: ThreadRng = rand::rng();
     let mut dummy_performance = Performance::new();
-    let mut best_state: StateBundle = solve(
-        &mut rng,
-        1,
-        payload.min_resolution,
-        state_bundle.clone(),
-        &mut dummy_performance,
-    );
+    let mut best_state: StateBundle =
+        solve(&mut rng, 1, state_bundle.clone(), &mut dummy_performance);
     // web_sys::console::log_1(&format!("{:?}", best_state).into());
 
     // doing all this cos the best state might not have ran this recently (my_clone doesn't copy these)

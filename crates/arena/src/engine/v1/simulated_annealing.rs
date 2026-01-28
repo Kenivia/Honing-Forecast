@@ -237,7 +237,6 @@ fn new_temp(temp: f64, alpha: f64) -> f64 {
 pub fn solve<R: Rng>(
     rng: &mut R,
     metric_type: i64,
-    min_resolution: usize, // New Input
     mut state_bundle: StateBundle,
     performance: &mut hf_core::performance::Performance,
 ) -> StateBundle {
@@ -251,8 +250,8 @@ pub fn solve<R: Rng>(
         .iter()
         .map(|u| u.state.len())
         .max()
-        .unwrap_or(min_resolution)
-        .max(min_resolution);
+        .unwrap_or(state_bundle.min_resolution)
+        .max(state_bundle.min_resolution);
 
     let temp_schedule_start = 333.0_f64;
     let temp_schedule_cutoff = 33.0_f64; // Below this temp, resolution is pinned to min
@@ -281,12 +280,13 @@ pub fn solve<R: Rng>(
             // 0.0 at cutoff, 1.0 at start
             let ratio = ((log_curr - log_end) / (log_start - log_end)).clamp(0.0, 1.0);
 
-            ((min_resolution as f64 + (max_len as f64 - min_resolution as f64) * ratio)
-                / min_resolution as f64)
+            ((state_bundle.min_resolution as f64
+                + (max_len as f64 - state_bundle.min_resolution as f64) * ratio)
+                / state_bundle.min_resolution as f64)
                 .floor() as usize
-                * min_resolution
+                * state_bundle.min_resolution
         } else {
-            min_resolution
+            state_bundle.min_resolution
         };
 
         neighbour(&mut state_bundle, temp, init_temp, current_resolution, rng);
