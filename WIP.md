@@ -5,10 +5,6 @@
 
 ### Now
 
--~~ make solvers stream intermediate results at x1000 evaluations / second?~~
-
-- ~~postmessage & update in js~~
-  - ~~need to ignore these such that changes don't cancel ( i mean its already greyed out so maybe this will be easy)~~
 - add performance aggregation in preparation for multithreaded algorithms
   
 - visualize these using perfplot
@@ -59,9 +55,9 @@
 #### Advanced honing
 
 - use monte carlo to generate the distribution, then allow for a few strategies
-  - no juice, full juice, no juice full scroll, full juice full scroll, FULL SCROLL etc
-  - then the state just selects one of these distributions
-
+  - ~~ no juice, full juice, no juice full scroll, full juice full scroll, FULL SCROLL etc~~ i cant be bothered, probably a waste anyway, just assume juice & scrool on grace is optimal
+  - selectable double um balls event thing
+  
 #### Website
 
 - store & show show breakdown of average gold costs from here
@@ -78,7 +74,7 @@
 
   - make sure all existing things work, then start work on the new page(s)
     - Prob maximizing mode / main mode:
-- multiple selectable & editable express
+- multiple selectable & editable express GET THIS DATA SOMEHOW???
   - rework constant.rs to take in a json or something so it can interface with the website
   - eventually T4.5 integration
 
@@ -140,6 +136,10 @@ graph
 
 ## Done / cancelled
 
+- ~~ make solvers stream intermediate results at x1000 evaluations / second?~~
+
+- ~~postmessage & update in js~~
+  - ~~need to ignore these such that changes don't cancel ( i mean its already greyed out so maybe this will be easy)~~
 - ~~rework test case csv to json and take in js objects straight up~~
   - ~~add export button to copy to clipboard~~
   - ~~maybe take in a folder of test cases instead for ease of adding more test cases~~

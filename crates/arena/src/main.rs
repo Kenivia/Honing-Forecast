@@ -77,11 +77,11 @@ fn main() {
     let job_id: String = env::var("SLURM_JOB_ID").unwrap_or_else(|_| "local".to_string());
     let task_id: String = env::var("SLURM_ARRAY_TASK_ID").unwrap_or_else(|_| "0".to_string());
     let file_name: String = format!(
-        "Result_{}_{}_{}_{}.jsonl",
+        "Result_{}_{}_{}.jsonl",
         built_info::FEATURES_LOWERCASE_STR.to_string(),
         job_id,
         task_id,
-        current_time_string().replace(":", "-"),
+        // current_time_string().replace(":", "-"),
     );
 
     let mut seen_tests: HashMap<(String, String), i64> = HashMap::new();
@@ -118,7 +118,7 @@ fn main() {
     let test_cases: Vec<(String, StateBundle, Vec<bool>)> =
         parse_payload_jsons(Path::new("test_payloads_bloated"));
 
-    for _ in 0..NUM_TESTS_TO_RUN {
+    for current_trial in 0..NUM_TESTS_TO_RUN {
         for (test_case_name, state_bundle, tests_to_run) in test_cases.iter() {
             for (index, (metric_type_str, metric_type)) in METRICS.iter().enumerate() {
                 if !tests_to_run[index] {
@@ -127,7 +127,7 @@ fn main() {
                 let metric_type_string = metric_type_str.to_string();
                 let mut instant: Instant = Instant::now();
                 let key = (test_case_name.clone(), metric_type_string.clone());
-                if seen_tests.contains_key(&key) && seen_tests[&key] >= NUM_TESTS_TO_RUN {
+                if seen_tests.contains_key(&key) && seen_tests[&key] >= current_trial {
                     continue;
                 }
                 let seed: u64 = seed_rng.next_u64();

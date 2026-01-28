@@ -29,7 +29,7 @@ impl StateBundle {
         // theta = theta.min(max_theta).max(min_theta);
 
         let mut init_y: f64 = NAN; // this was here when guess = 0 which gave us the mean but now is just useless but cbb
-        let mut debug_record: Vec<KsTuple> = Vec::new();
+        let mut debug_record: Vec<(f64, f64, f64, f64, f64, f64)> = Vec::new();
 
         for iter in 0..MAX_ROOT_FIND_ITER {
             // 2. Evaluate Function and Derivatives
@@ -47,7 +47,7 @@ impl StateBundle {
             }
 
             y -= budget;
-            debug_record.push(KsTuple(theta, y, dy, dy2, dy3));
+
             //
             if y < 0.0 {
                 lower = theta;
@@ -59,7 +59,9 @@ impl StateBundle {
                 return Some((theta, init_y, iter, this));
             }
 
-            let delta = if compute_biased {
+            let delta = if dy.abs() < 1e-3 {
+                theta * 0.1
+            } else if compute_biased {
                 (-2.0 * y * dy) / (-y * dy2 + 2.0 * dy.powi(2))
             } else {
                 let dy_sq = dy.powi(2);
@@ -68,16 +70,19 @@ impl StateBundle {
                     / (6.0 * dy_sq * dy - 6.0 * y * dy * dy2 + y_sq * dy3)
             };
 
-            let proposed_theta = theta + delta;
-
+            let mut proposed_theta = theta + delta;
+            proposed_theta =
+                proposed_theta.clamp(-10.0 * theta.abs().max(1e-8), 10.0 * theta.abs().max(1e-8));
+            debug_record.push((theta, proposed_theta, y, dy, dy2, dy3));
             // last_theta = theta;
             performance.newton_iterations += 1;
-            if proposed_theta > lower && proposed_theta < upper && dy.abs() > 0.1 {
+            if proposed_theta > lower && proposed_theta < upper {
                 theta = proposed_theta;
                 performance.householder_count += 1;
             } else {
+                performance.bisection_count += 1;
                 if upper.is_finite() && lower.is_finite() {
-                    theta = 0.5 * (upper + lower);
+                    theta = 0.5 * (lower + upper);
                 } else if upper.is_finite() {
                     if (theta - upper).abs() < FLOAT_TOL {
                         // implicitly y > 0.0
@@ -87,8 +92,7 @@ impl StateBundle {
                             theta = 2.0 * (theta);
                         }
                     } else {
-                        // shouldnt really happen? idk
-                        theta = 0.5 * (theta + upper);
+                        theta = 2.0 * (theta + upper);
                     }
                 } else if lower.is_finite() {
                     if (theta - lower).abs() < FLOAT_TOL {
@@ -99,8 +103,7 @@ impl StateBundle {
                             theta = 0.5 * (theta);
                         }
                     } else {
-                        // shouldnt really happen? idk
-                        theta = 0.5 * (theta + lower);
+                        theta = 2.0 * (theta + lower);
                     }
                 } else {
                     //  not possible unless theta is nan or ks output was nan
@@ -109,21 +112,13 @@ impl StateBundle {
                         theta, lower, upper, y, guess, compute_biased, budget, iter
                     );
                 }
-
-                performance.bisection_count += 1;
             }
+
+            // }
         }
 
-        // dbg!(debug_record);
-
-        web_sys::console::log_1(&format!("{:?}", &debug_record).into());
-        web_sys::console::log_1(
-            &format!(
-                "theta {:?} lower {:?} upper {:?} guess {:?} compute_biased {:?} budget {:?}",
-                theta, lower, upper, guess, compute_biased, budget,
-            )
-            .into(),
-        );
+        dbg!(theta, lower, upper, guess, compute_biased, budget,);
+        dbg!(debug_record);
         None
     }
 }

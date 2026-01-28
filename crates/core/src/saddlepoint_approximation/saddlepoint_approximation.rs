@@ -1,6 +1,6 @@
 // use std::f64::consts::PI;
 
-use std::f64::INFINITY;
+use std::f64::{INFINITY, NEG_INFINITY};
 
 use crate::brute::MAX_BRUTE_SIZE;
 use crate::constants::FLOAT_TOL;
@@ -107,7 +107,7 @@ impl StateBundle {
             let min_delta = self
                 .extract_support_with_meta(support_index, skip_count)
                 .map(|x| x.gap_size)
-                .fold(INFINITY, |prev, next| {
+                .fold(NEG_INFINITY, |prev, next| {
                     if next > FLOAT_TOL {
                         prev.min(next)
                     } else {
@@ -136,7 +136,10 @@ impl StateBundle {
                 let mean_var_skew: (f64, f64, f64) = (res.1, res.2, res.3);
 
                 if !(min_value < mean_var_skew.0 && mean_var_skew.0 < max_value) {
+                    #[cfg(target_arch = "wasm32")]
                     web_sys::console::log_1(&format!("{:?}", &self).into());
+
+                    dbg!(&self);
                     panic!();
                 }
                 let (soft_low_limit, guess, soft_high_limit) =
@@ -429,6 +432,7 @@ impl StateBundle {
             //         .into_iter()
             //         .map(|x| x.iter().map(|y| y.1).collect())
             //         .collect::<Vec<Vec<f64>>>(),
+            #[cfg(target_arch = "wasm32")]
             web_sys::console::log_1(
                 &format!(
                     "{:?}",
@@ -437,6 +441,12 @@ impl StateBundle {
                         .collect::<Vec<&Vec<(f64, f64)>>>()
                 )
                 .into(),
+            );
+
+            dbg!(
+                self.extract_collapsed_pair(support_index, skip_count)
+                    .into_iter()
+                    .collect::<Vec<&Vec<(f64, f64)>>>()
             );
             //     self.extract_collapsed_pair(support_index, skip_count)
             //         .try_len()
@@ -501,6 +511,7 @@ impl StateBundle {
             //         performance,
             //     )
             // );
+            #[cfg(target_arch = "wasm32")]
             web_sys::console::log_1(
                 &format!(
                     "{:?} {:?} {:?} {:?} {:?} {:?} {:?} {:?} {:?} {:?} {:?} {:?} {:?} {:?} {:?} {:?} {:?} {:?} ",
@@ -524,6 +535,27 @@ impl StateBundle {
                     actual_out
                 )
                 .into(),
+            );
+
+            dbg!(
+                compute_biased,
+                theta_hat,
+                ks_tuple,
+                k1_zero,
+                support_index,
+                2.0 * (theta_hat * budget - ks_tuple.0),
+                w_hat,
+                u_hat,
+                normal_dist.cdf(w_hat),
+                normal_dist.pdf(w_hat),
+                1.0 / w_hat - 1.0 / u_hat,
+                min_value,
+                budget,
+                self.simple_avg(support_index, skip_count),
+                max_value,
+                sa_out,
+                approx,
+                actual_out
             );
             println!("==============================");
             panic!();

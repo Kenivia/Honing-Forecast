@@ -49,6 +49,7 @@ fn compute_already_spent(
             out_mats_float[i] += upgrade.cost_dist[i].support[upgrade.alr_failed];
         }
         if upgrade.alr_failed > 0 {
+            #[cfg(target_arch = "wasm32")]
             if !upgrade.unlocked {
                 web_sys::console::log_1(&format!("{:?}", upgrade).into());
             }

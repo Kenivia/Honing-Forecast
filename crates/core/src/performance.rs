@@ -74,6 +74,8 @@ where
 #[derive(Debug, Deserialize, Serialize)]
 pub struct PerformanceToWrite {
     pub states_evaluated: i64,
+
+    #[serde(serialize_with = "serialize_nan_as_neg")]
     pub total_per_state: f64,
 
     #[serde(serialize_with = "serialize_nan_as_neg")]
