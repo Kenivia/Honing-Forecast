@@ -70,15 +70,18 @@ fn write_jsonl<T: Serialize>(data: &T, file_name: &String) -> Result<(), Error> 
     Ok(())
 }
 fn main() {
-    rayon::ThreadPoolBuilder::new()
-        .num_threads(16)
-        .build_global()
-        .unwrap();
+    // rayon::ThreadPoolBuilder::new()
+    //     .num_threads(16)
+    //     .build_global()
+    //     .unwrap();
     let job_id: String = env::var("SLURM_JOB_ID").unwrap_or_else(|_| "local".to_string());
     let task_id: String = env::var("SLURM_ARRAY_TASK_ID").unwrap_or_else(|_| "0".to_string());
     let file_name: String = format!(
-        "Result_{}_{}_{}.jsonl",
-        built_info::FEATURES_LOWERCASE_STR.to_string(),
+        "./Results/{}_{}_{}.jsonl",
+        built_info::FEATURES_LOWERCASE_STR
+            .to_string()
+            .replace("default, ", "")
+            .to_owned(),
         job_id,
         task_id,
         // current_time_string().replace(":", "-"),
@@ -106,11 +109,15 @@ fn main() {
             remove_file(&file_name).expect("Failed to delete empty file");
         }
         let header: Header = Header {
-            version: built_info::FEATURES_LOWERCASE_STR.to_string(),
+            version: built_info::FEATURES_LOWERCASE_STR
+                .to_string()
+                .replace("default, ", "")
+                .to_owned(),
             build_time: current_time_string(),
             notes: NOTES.to_string(),
         };
-        write_jsonl(&header, &file_name).expect("Failed to write to result file");
+        write_jsonl(&header, &file_name)
+            .expect(&format!("Failed to write to result file {}", file_name));
     }
 
     let mut seed_rng: ThreadRng = rand::rng();
