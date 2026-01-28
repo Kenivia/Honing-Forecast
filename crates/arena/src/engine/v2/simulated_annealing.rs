@@ -162,13 +162,6 @@ fn neighbour<R: Rng>(
         let mut book_ptr = 0;
 
         for (s_index, (juice, id)) in state.iter_mut().enumerate() {
-            // artisan after last tap
-            // if artisan >= 1.0 {
-            //     (*juice, *id) = (false, 0);
-            //     continue;
-            // }
-
-            // Determine which block this index belongs to
             let current_block = s_index / eff_resolution;
 
             // --- Mutate Juice (based on Block) ---

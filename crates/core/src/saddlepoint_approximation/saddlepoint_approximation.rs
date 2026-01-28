@@ -107,7 +107,7 @@ impl StateBundle {
             let min_delta = self
                 .extract_support_with_meta(support_index, skip_count)
                 .map(|x| x.gap_size)
-                .fold(NEG_INFINITY, |prev, next| {
+                .fold(INFINITY, |prev, next| {
                     if next > FLOAT_TOL {
                         prev.min(next)
                     } else {
@@ -156,6 +156,7 @@ impl StateBundle {
                     mean_var_skew,
                     performance,
                     (soft_low_limit, guess, soft_high_limit),
+                    min_delta,
                 );
             }
         }
@@ -190,6 +191,7 @@ impl StateBundle {
         mean_var: (f64, f64, f64),
         performance: &mut Performance,
         guess_triplet: (f64, f64, f64), // limit: f64,
+        min_delta: f64,
     ) -> f64 {
         performance.sa_count += 1;
         // let simple_mean_log = if compute_biased {
@@ -212,6 +214,9 @@ impl StateBundle {
             // low_limit,
             guess,
             // high_limit,
+            min_value,
+            max_value,
+            min_delta,
             performance,
         );
 
@@ -224,6 +229,7 @@ impl StateBundle {
                 support_index,
                 low_limit,
                 high_limit,
+                min_delta,
                 span,
             );
             // println!(

@@ -122,7 +122,7 @@ fn main() {
     let test_cases: Vec<(String, StateBundle, Vec<bool>)> =
         parse_payload_jsons(Path::new("test_payloads_bloated"));
 
-    for current_trial in 0..NUM_TESTS_TO_RUN {
+    for current_trial in 1..=NUM_TESTS_TO_RUN {
         for (test_case_name, state_bundle, tests_to_run) in test_cases.iter() {
             for (index, (metric_type_str, metric_type)) in METRICS.iter().enumerate() {
                 if !tests_to_run[index] {

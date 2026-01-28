@@ -81,16 +81,19 @@
 ### Algorithm ideas
 
 - stopping early if no improvements (an adaptive temperature / annealing schedule i guess )
-- limit neighbor function - 1 click 10 taps, limit amt of toggles maybe
-  - start with VERY broad neighbors - all true, all false etc, then refine until limit reached (such as 10 taps), test how much the limit affects performance
+- ~~limit neighbor function - 1 click 10 taps, limit amt of toggles maybe~~
+  - ~~start with VERY broad neighbors - all true, all false etc, then refine until limit reached (such as 10 taps), test how much the limit affects performance~~
 - keep a top 10 list and randomly restart to them instead of just the top 1
   - maybe restart to
 - some kind of heatmap of which bits were the most impactful? but i feel like this wouldnt actually do much
   - can definitely think about which upgrades were the most impactful tho
 - maybe add some way to keep track of where bits are to make neighbor potentially more efficient
 
-- multi-thread and each worked tune one "dimension" like special, state of this one, state of other one etc
+- multi-thread and each worker tune one "dimension" like special, state of this one, state of other one etc?
   - do i need to allow multiple changes at high temperature or will the acceptance function take care of local one dimensional minima
+  - maybe it would never discover like in-between optimums?
+
+- whatever happens it must consider the fact that sometimes we dont hvae special and changing the state wont do shit
 
 ## Next big step(s)
 

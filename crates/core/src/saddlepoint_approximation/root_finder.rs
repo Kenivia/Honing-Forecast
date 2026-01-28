@@ -6,6 +6,7 @@ use crate::{
 };
 pub static THETA_TOL: f64 = 1e-10;
 pub static MAX_ROOT_FIND_ITER: usize = 20;
+static Y_VALUE_TOL: f64 = 1e-7;
 // pub static THETA_LIMIT: f64 = 1e2;
 
 impl StateBundle {
@@ -19,21 +20,24 @@ impl StateBundle {
         // low: f64,
         guess: f64,
         // high: f64,
+        min_value: f64,
+        max_value: f64,
+        min_delta: f64,
         performance: &mut Performance,
     ) -> Option<(f64, f64, usize, KsTuple)> {
         let mut lower = NEG_INFINITY;
         let mut upper = INFINITY;
 
+        let mut y_lower = NEG_INFINITY;
+        let mut y_upper = INFINITY;
+
         let mut theta = guess;
 
-        // theta = theta.min(max_theta).max(min_theta);
-
-        let mut init_y: f64 = NAN; // this was here when guess = 0 which gave us the mean but now is just useless but cbb
+        let mut init_y: f64 = NAN;
         let mut debug_record: Vec<(f64, f64, f64, f64, f64, f64)> = Vec::new();
 
         let mut last_y: f64 = NAN;
         for iter in 0..MAX_ROOT_FIND_ITER {
-            // 2. Evaluate Function and Derivatives
             let this = self.ks(
                 theta,
                 compute_biased,
@@ -49,19 +53,21 @@ impl StateBundle {
 
             y -= budget;
 
-            //
             if y < 0.0 {
                 lower = theta;
+                y_lower = y_lower.max(y);
             } else {
                 upper = theta;
+                y_upper = y_upper.min(y);
             }
 
-            if (upper - lower) < THETA_TOL || y.abs() < FLOAT_TOL {
+            if y.abs() < Y_VALUE_TOL {
                 return Some((theta, init_y, iter, this));
             }
 
-            let delta = if !last_y.is_nan() && ((last_y - y) / y.min(last_y)).abs() < 0.1 {
-                // too flat
+            let delta = if (min_value - budget - y).abs() < min_delta
+                || (max_value - budget - y).abs() < min_delta
+            {
                 theta * 0.1 - theta
             } else if compute_biased {
                 (-2.0 * y * dy) / (-y * dy2 + 2.0 * dy.powi(2))
@@ -77,18 +83,17 @@ impl StateBundle {
             proposed_theta =
                 proposed_theta.clamp(-3.0 * theta.abs().max(1e-8), 3.0 * theta.abs().max(1e-8));
 
-            // last_theta = theta;
             performance.newton_iterations += 1;
-            if proposed_theta > lower && proposed_theta < upper {
+
+            if lower < proposed_theta && proposed_theta < upper && y_lower <= y && y <= y_upper {
                 theta = proposed_theta;
                 performance.householder_count += 1;
             } else {
                 performance.bisection_count += 1;
                 if upper.is_finite() && lower.is_finite() {
-                    theta = 0.5 * (lower + upper);
+                    theta = (lower * y_upper - upper * y_lower) / (y_upper - y_lower);
                 } else if upper.is_finite() {
                     if (theta - upper).abs() < FLOAT_TOL {
-                        // implicitly y > 0.0
                         if theta > 0.0 {
                             theta = 0.5 * (theta);
                         } else {
@@ -99,7 +104,6 @@ impl StateBundle {
                     }
                 } else if lower.is_finite() {
                     if (theta - lower).abs() < FLOAT_TOL {
-                        // implicitly y < 0.0
                         if theta > 0.0 {
                             theta = 2.0 * (theta);
                         } else {
@@ -109,7 +113,6 @@ impl StateBundle {
                         theta = 2.0 * (theta + lower);
                     }
                 } else {
-                    //  not possible unless theta is nan or ks output was nan
                     panic!(
                         "theta {:?} lower {:?} upper {:?} y {:?} guess {:?} compute_biased {:?} budget {:?} iter {:?}",
                         theta, lower, upper, y, guess, compute_biased, budget, iter
@@ -117,7 +120,6 @@ impl StateBundle {
                 }
             }
             last_y = y;
-            // }
         }
 
         dbg!(theta, lower, upper, guess, compute_biased, budget,);
