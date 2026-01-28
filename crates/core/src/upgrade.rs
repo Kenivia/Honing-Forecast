@@ -452,8 +452,9 @@ impl Upgrade {
                 weap_support.push(weap_cost);
                 armor_support.push(armor_cost);
                 if index >= l_len - 2 {
-                    assert!(!juice);
-                    assert!(*book == 0);
+                    continue;
+                    // assert!(!juice);
+                    // assert!(*book == 0);
                 }
                 if *juice && id == 0 {
                     if self.is_weapon {

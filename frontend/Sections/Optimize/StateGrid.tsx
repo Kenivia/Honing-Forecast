@@ -87,10 +87,10 @@ const RowBundle = ({
         // Create a copy of the state for this bundle
         const newPairs = [...statePairs]
         const currentPair = newPairs[colIndex] // [boolean, number]
-        for (let i = max_len - 1; i >= pity_len - 1; i--) {
-            // console.log("index", i, pity_len, max_len)
-            newPairs[i] = [false, 0]
-        }
+        // for (let i = max_len - 1; i >= pity_len - 1; i--) {
+        //     // console.log("index", i, pity_len, max_len)
+        //     newPairs[i] = [false, 0]
+        // }
         // 2. Juice Row Logic
         if (isJuiceRow) {
             // Toggle boolean juice
@@ -168,7 +168,7 @@ const RowBundle = ({
             }
             onUpdateProgress(Math.min(progress, pity_len))
         } else {
-            onUpdateProgress(Math.max(progress - 1, 0))
+            onUpdateProgress(Math.min(progress, pity_len - 1))
         }
 
         onUpdateSucceed(!succeed)
@@ -252,16 +252,21 @@ const RowBundle = ({
                                                 alignItems: "center",
 
                                                 // backgroundColor: "#fff",
-                                                background: cell.type === "progress" || !cell.active ? "inherit" : "var( --btn-toggle-optimize-selected)",
+                                                background:
+                                                    cIndex >= pity_len - 1
+                                                        ? "transparent"
+                                                        : cell.type === "progress" || !cell.active
+                                                          ? "inherit"
+                                                          : "var( --btn-toggle-optimize-selected)",
 
                                                 cursor:
                                                     ((!allowUserChangeState || cIndex < progress || cIndex >= pity_len - 1) && cell.type !== "progress") ||
-                                                        cIndex >= pity_len
+                                                    cIndex >= pity_len
                                                         ? "not-allowed"
                                                         : "pointer",
                                                 opacity:
                                                     ((!allowUserChangeState || cIndex < progress || cIndex >= pity_len - 1) && cell.type !== "progress") ||
-                                                        cIndex >= pity_len
+                                                    cIndex >= pity_len
                                                         ? 0.3
                                                         : 1,
                                             }}
@@ -288,8 +293,8 @@ const RowBundle = ({
                                                 className="checkbox-grid-input"
                                                 style={
                                                     {
-
                                                         "--checkbox-content": "um idk why an empty string doesn't over write the default",
+                                                        background: "transparent",
                                                     } as React.CSSProperties
                                                 }
                                             />
@@ -308,12 +313,11 @@ const RowBundle = ({
                                                         pointerEvents: "none", // Let clicks pass to the div
                                                         background: succeed && showSucceedMarker ? "var(--text-success)" : "inherit",
                                                         color: succeed && showSucceedMarker ? "var(--btn-success-text)" : "inherit",
-
                                                     }}
                                                 >
                                                     {cell.type === "progress" ? (
                                                         <span>{succeed && showSucceedMarker ? "✓" : cIndex + 1}</span>
-                                                    ) : cell.active ? (
+                                                    ) : cell.active && cIndex < pity_len - 1 ? (
                                                         <div>
                                                             <Icon
                                                                 iconName={cell.label}

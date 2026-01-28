@@ -140,6 +140,9 @@ pub fn evaluate_average_wrapper(input: JsValue) -> JsValue {
     let mut dummy_performance = Performance::new();
     let metric = state_bundle.average_gold_metric(&mut dummy_performance);
     state_bundle.metric = metric;
+    // state_bundle.update_dist();
+    // state_bundle.update_individual_support();
+    // state_bundle.update_combined();
     // state_bundle.clean_state();
     state_bundle.set_latest_special_probs();
     // let out: CostToChanceOut = cost_to_chance(&state_bundle);
@@ -187,6 +190,8 @@ pub fn optimize_average_wrapper(input: JsValue) -> JsValue {
         &mut dummy_performance,
     );
     // web_sys::console::log_1(&format!("{:?}", best_state).into());
+
+    // doing all this cos the best state might not have ran this recently (my_clone doesn't copy these)
     best_state.update_dist();
     best_state.update_individual_support();
     best_state.update_combined();

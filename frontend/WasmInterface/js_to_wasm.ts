@@ -18,13 +18,12 @@ const LABELS = ["Red", "Blue", "Leaps", "Shards", "Oreha", "Gold", "Silver"]
 
 async function OptimizeAverageWasm(payload: any) {
     await init()
-    await initThreadPool(navigator.hardwareConcurrency)
+    await initThreadPool(navigator.hardwareConcurrency) // i mean i should only run this once i make my function actually multi threaded cos apparently this takes like 0.5s but whatevre
     return (optimize_average_wrapper as any)(payload)
 }
 
 async function EvaluateAverageWasm(payload: any) {
     await init()
-    await initThreadPool(navigator.hardwareConcurrency)
     return (evaluate_average_wrapper as any)(payload)
 }
 

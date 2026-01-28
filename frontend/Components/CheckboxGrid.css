@@ -11,89 +11,89 @@
 /* Reset browser default checkbox styles and apply custom styling */
 .checkbox-grid-input {
     /* Reset browser defaults */
-    -webkit-appearance: none !important;
-    -moz-appearance: none !important;
-    appearance: none !important;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
 
     /* Custom styling */
-    width: 26px !important;
-    height: 26px !important;
-    margin: 0 !important;
-    padding: 0 !important;
-    border: 1px solid var(--checkbox-border) !important;
-    box-sizing: border-box !important;
-    cursor: pointer !important;
-    transition: background-color 0.12s ease, color 0.12s ease, border-color 0.12s ease !important;
-    border-radius: 2px !important;
+    width: 26px;
+    height: 26px;
+    margin: 0;
+    padding: 0;
+    border: 1px solid var(--checkbox-border);
+    box-sizing: border-box;
+    cursor: pointer;
+    transition: background-color 0.12s ease, color 0.12s ease, border-color 0.12s ease;
+    border-radius: 2px;
 
     /* Ensure background is transparent by default */
-    background: transparent !important;
-    color: inherit !important;
+    background: transparent;
+    color: inherit;
 }
 
 /* focus styling */
 .checkbox-grid-input:focus {
-    outline: 3px solid var(--checkbox-focus-ring) !important;
-    outline-offset: 2px !important;
+    outline: 3px solid var(--checkbox-focus-ring);
+    outline-offset: 2px;
 }
 
 /* checked state styling */
 .checkbox-grid-input:checked {
-    background: var(--checkbox-checked-bg) !important;
-    color: var(--checkbox-checked-text) !important;
-    border-color: var(--checkbox-checked-border) !important;
+    background: var(--checkbox-checked-bg);
+    color: var(--checkbox-checked-text);
+    border-color: var(--checkbox-checked-border);
 }
 
 /* unchecked hover state */
 .checkbox-grid-input:not(:checked):hover {
-    background: var(--checkbox-hover-bg) !important;
+    background: var(--checkbox-hover-bg);
 }
 
 /* checked hover state */
 .checkbox-grid-input:checked:hover {
-    background: var(--checkbox-checked-bg) !important;
-    opacity: 0.9 !important;
+    background: var(--checkbox-checked-bg);
+    opacity: 0.9;
 }
 
 /* Chrome/Safari specific overrides */
 .checkbox-grid-input::-webkit-checkbox {
-    -webkit-appearance: none !important;
+    -webkit-appearance: none;
 }
 
 /* Firefox specific overrides */
 .checkbox-grid-input::-moz-checkbox {
-    -moz-appearance: none !important;
+    -moz-appearance: none;
 }
 
 /* Ensure consistent checkmark styling across browsers */
 
 /* Numeric input styling */
 .numeric-grid-input {
-    -webkit-appearance: none !important;
-    -moz-appearance: none !important;
-    appearance: none !important;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
 
     /* Remove default number input spinners */
-    -moz-appearance: textfield !important;
+    -moz-appearance: textfield;
 }
 
 .numeric-grid-input::-webkit-outer-spin-button,
 .numeric-grid-input::-webkit-inner-spin-button {
-    -webkit-appearance: none !important;
-    margin: 0 !important;
+    -webkit-appearance: none;
+    margin: 0;
 }
 
 .numeric-grid-input:focus {
-    outline: none !important;
-    outline-offset: 0 !important;
+    outline: none;
+    outline-offset: 0;
 }
 
 .checkbox-grid-input:checked::before {
-    content: var(--checkbox-content, "✓") !important;
-    color: var(--checkbox-checked-text) !important;
-    font-size: 16px !important;
-    font-weight: bold !important;
-    display: block !important;
-    text-align: center !important;
-    line-height: 24px !important;
+    content: var(--checkbox-content, "✓");
+    color: var(--checkbox-checked-text);
+    font-size: 16px;
+    font-weight: bold;
+    display: block;
+    text-align: center;
+    line-height: 24px;
 }

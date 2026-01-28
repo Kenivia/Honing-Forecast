@@ -159,10 +159,10 @@ fn neighbour<R: Rng>(
 
         for (s_index, (juice, id)) in state.iter_mut().enumerate() {
             // artisan after last tap
-            if artisan >= 1.0 {
-                (*juice, *id) = (false, 0);
-                continue;
-            }
+            // if artisan >= 1.0 {
+            //     (*juice, *id) = (false, 0);
+            //     continue;
+            // }
 
             // Determine which block this index belongs to
             let current_block = s_index / eff_resolution;
@@ -197,22 +197,22 @@ fn neighbour<R: Rng>(
             }
 
             // asrtisan before
-            artisan += (46.51_f64 / 100.0)
-                * artisan_rate
-                * (base_chance * (1.0 + count)
-                    + if *juice {
-                        juice_chances[0][upgrade.upgrade_index]
-                    } else {
-                        0.0
-                    }
-                    + if *id > 0 {
-                        juice_chances[*id][upgrade.upgrade_index]
-                    } else {
-                        0.0
-                    });
-            if count < 1.0 {
-                count += 0.1;
-            }
+            // artisan += (46.51_f64 / 100.0)
+            //     * artisan_rate
+            //     * (base_chance * (1.0 + count)
+            //         + if *juice {
+            //             juice_chances[0][upgrade.upgrade_index]
+            //         } else {
+            //             0.0
+            //         }
+            //         + if *id > 0 {
+            //             juice_chances[*id][upgrade.upgrade_index]
+            //         } else {
+            //             0.0
+            //         });
+            // if count < 1.0 {
+            //     count += 0.1;
+            // }
 
             // artisan after
         }

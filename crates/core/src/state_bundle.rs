@@ -73,6 +73,7 @@ impl StateBundle {
         self.latest_special_probs = Some(out);
     }
     // this should be built into neighbour
+    // well actually maybe not
     // pub fn clean_state(&mut self) {
     //     for upgrade in self.upgrade_arr.iter_mut() {
     //         let p_len = upgrade.prob_dist.len();
@@ -150,7 +151,7 @@ impl StateBundle {
             );
         let u_len = upgrade_arr.len();
         // web_sys::console::log_1(&"2".into());
-        let mut out = StateBundle {
+        let out = StateBundle {
             upgrade_arr,
             special_state: if special_state.is_none()
                 || special_state.as_ref().unwrap().len() != u_len
@@ -167,10 +168,6 @@ impl StateBundle {
             latest_special_probs: None,
         };
         // web_sys::console::log_1(&"3".into());
-        out.update_dist();
-        out.compute_special_probs();
-        out.update_combined();
-        out.update_individual_support();
 
         out
     }

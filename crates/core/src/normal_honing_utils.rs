@@ -181,8 +181,9 @@ impl StateBundle {
                         );
                     }
                 } else {
-                    assert!(!juice);
-                    assert!(state_id == 0);
+                    continue;
+                    // assert!(!juice);
+                    // assert!(state_id == 0);
                 }
 
                 if first_gap.is_nan() {

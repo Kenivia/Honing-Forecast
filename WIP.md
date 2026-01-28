@@ -5,10 +5,11 @@
 
 ### Now
 
-- make solvers stream intermediate results at x1000 evaluations / second?
-  - postmessage & update in js
-    - need to ignore these such that changes don't cancel ( i mean its already greyed out so maybe this will be easy)
-  - add performance aggregation in preparation for multithreaded algorithms
+-~~ make solvers stream intermediate results at x1000 evaluations / second?~~
+
+- ~~postmessage & update in js~~
+  - ~~need to ignore these such that changes don't cancel ( i mean its already greyed out so maybe this will be easy)~~
+- add performance aggregation in preparation for multithreaded algorithms
   
 - visualize these using perfplot
   - take average of many test cases i think (many trials?)
