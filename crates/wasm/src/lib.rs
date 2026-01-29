@@ -53,6 +53,7 @@ pub struct Payload {
     unlocked_grid: Option<Vec<Vec<bool>>>,
     succeeded_grid: Option<Vec<Vec<bool>>>,
     min_resolution: usize,
+    num_threads: usize,
 }
 
 // #[derive(Deserialize)]
@@ -136,6 +137,7 @@ pub fn evaluate_average_wrapper(input: JsValue) -> JsValue {
         payload.unlocked_grid,
         payload.succeeded_grid,
         payload.min_resolution,
+        1,
     );
 
     let mut dummy_performance = Performance::new();
@@ -180,6 +182,7 @@ pub fn optimize_average_wrapper(input: JsValue) -> JsValue {
         payload.unlocked_grid,
         payload.succeeded_grid,
         payload.min_resolution,
+        payload.num_threads,
     );
 
     let mut rng: ThreadRng = rand::rng();

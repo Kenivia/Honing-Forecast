@@ -60,6 +60,7 @@
 - multiple selectable & editable express GET THIS DATA SOMEHOW???
   - rework constant.rs to take in a json or something so it can interface with the website
   - eventually T4.5 integration
+  - get the actual numbers from the korean website <https://icepeng.com/refining>
 
 ### Algorithm ideas
 

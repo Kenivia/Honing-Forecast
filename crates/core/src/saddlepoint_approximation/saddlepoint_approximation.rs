@@ -1,6 +1,6 @@
 // use std::f64::consts::PI;
 
-use std::f64::{INFINITY, NEG_INFINITY};
+use std::f64::INFINITY;
 
 use crate::brute::MAX_BRUTE_SIZE;
 use crate::constants::FLOAT_TOL;

@@ -59,6 +59,7 @@ export function buildPayload({
         state_grid: stateBundleGrid,
         special_state: specialState,
         min_resolution: Math.max(1, Math.min(219, Math.floor(minResolution || 1))),
+        num_threads: navigator.hardwareConcurrency,
     }
 
     // Always use the traditional tick-based approach
@@ -89,7 +90,7 @@ export type StartOptions = {
     onSuccess?: (_) => void
     // optional: extra error handler
 
-    onIntermediateMessage?: (_)=>void
+    onIntermediateMessage?: (_) => void
     onError?: (_) => void
     // optional: extra finally handler
     onFinally?: () => void
@@ -162,7 +163,7 @@ export function createCancelableWorkerRunner() {
             setBusy(true)
 
             // spawn the worker (uses your existing SpawnWorker)
-            const { worker, promise } = SpawnWorker(payloadBuilder(), which_one,onIntermediateMessage )
+            const { worker, promise } = SpawnWorker(payloadBuilder(), which_one, onIntermediateMessage)
 
             // store refs so cancel(key) can terminate this worker specifically
             workerRef.current = worker

@@ -10,6 +10,7 @@ use hf_core::saddlepoint_approximation::average::DEBUG_AVERAGE;
 use hf_core::state_bundle::StateBundle;
 
 use rand::prelude::*;
+use rayon::prelude::*;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::env;
@@ -17,7 +18,6 @@ use std::fs::{File, OpenOptions, remove_file};
 use std::io::{BufRead, BufReader, BufWriter, Error, Write};
 use std::path::Path;
 use std::time::Instant;
-
 static NUM_TESTS_TO_RUN: i64 = if DEBUG_AVERAGE { 1 } else { 5 };
 static MONTE_CARLO_COUNT: usize = 1_000_000;
 static METRICS: [(&str, i64); 2] = [("SA", 0), ("Avg", 1)];
@@ -114,13 +114,19 @@ fn main() {
             .expect(&format!("Failed to write to result file {}", file_name));
     }
 
-    let mut seed_rng: ThreadRng = rand::rng();
-
     let test_cases: Vec<(String, StateBundle, Vec<bool>)> =
         parse_payload_jsons(Path::new("test_payloads_bloated"));
 
-    for current_trial in 1..=NUM_TESTS_TO_RUN {
-        for (test_case_name, state_bundle, tests_to_run) in test_cases.iter() {
+    let mut zipped_test_cases: Vec<((String, StateBundle, Vec<bool>), i64)> = Vec::new();
+    for i in 1..=NUM_TESTS_TO_RUN {
+        for z in test_cases.iter() {
+            zipped_test_cases.push((z.clone(), i));
+        }
+    }
+    // for current_trial in{
+    zipped_test_cases.par_iter().for_each(
+        |((test_case_name, state_bundle, tests_to_run), current_trial)| {
+            let mut seed_rng: ThreadRng = rand::rng();
             for (index, (metric_type_str, metric_type)) in METRICS.iter().enumerate() {
                 if !tests_to_run[index] {
                     continue;
@@ -128,16 +134,16 @@ fn main() {
                 let metric_type_string = metric_type_str.to_string();
                 let mut instant: Instant = Instant::now();
                 let key = (test_case_name.clone(), metric_type_string.clone());
-                if seen_tests.contains_key(&key) && seen_tests[&key] >= current_trial {
+                if seen_tests.contains_key(&key) && seen_tests[&key] >= *current_trial {
                     continue;
                 }
                 let seed: u64 = seed_rng.next_u64();
                 // let seed: u64 = 886717209566745136;
                 let mut rng: StdRng = StdRng::seed_from_u64(seed);
 
-                let trial_num = seen_tests.entry(key.clone()).or_insert(0);
-                *trial_num += 1;
-                println!("Test case {:?} trial {}", key, trial_num);
+                // let trial_num = seen_tests.entry(key.clone()).or_insert(0);
+                // *trial_num += 1;
+                println!("Test case {:?} trial {}", key, current_trial);
 
                 let mut state_performance: Performance = Performance::new();
                 let mut state_bundle: StateBundle = solve(
@@ -153,7 +159,7 @@ fn main() {
 
                 let output: Output = Output {
                     test_case: test_case_name.clone(),
-                    trial_num: *trial_num,
+                    trial_num: *current_trial,
                     wall_time: instant.elapsed().as_secs_f64(),
 
                     best: state_bundle.metric,
@@ -167,7 +173,7 @@ fn main() {
                 };
 
                 instant = Instant::now();
-                if *trial_num == 1 {
+                if *current_trial == 1 {
                     let (prob_leftover, success_rate, average_rate) =
                         monte_carlo_wrapper(MONTE_CARLO_COUNT, &mut state_bundle, &mut rng);
                     let dummy_performance = Performance::new();
@@ -198,6 +204,7 @@ fn main() {
                 // otherwise, call solve, write results after each solve call
                 //
             }
-        }
-    }
+        },
+    );
+    // }
 }

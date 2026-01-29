@@ -4,7 +4,7 @@ use crate::{
     constants::FLOAT_TOL, performance::Performance, saddlepoint_approximation::ks::KsTuple,
     state_bundle::StateBundle,
 };
-pub static THETA_TOL: f64 = 1e-10;
+// pub static THETA_TOL: f64 = 1e-10;
 pub static MAX_ROOT_FIND_ITER: usize = 20;
 static Y_VALUE_TOL: f64 = 1e-7;
 // pub static THETA_LIMIT: f64 = 1e2;
@@ -36,7 +36,7 @@ impl StateBundle {
         let mut init_y: f64 = NAN;
         let mut debug_record: Vec<(f64, f64, f64, f64, f64, f64)> = Vec::new();
 
-        let mut last_y: f64 = NAN;
+        // let mut last_y: f64 = NAN;
         for iter in 0..MAX_ROOT_FIND_ITER {
             let this = self.ks(
                 theta,
@@ -119,7 +119,7 @@ impl StateBundle {
                     );
                 }
             }
-            last_y = y;
+            // last_y = y;
         }
 
         dbg!(theta, lower, upper, guess, compute_biased, budget,);

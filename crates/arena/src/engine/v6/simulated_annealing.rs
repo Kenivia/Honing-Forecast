@@ -5,21 +5,23 @@ use hf_core::saddlepoint_approximation::average::DEBUG_AVERAGE;
 use hf_core::send_progress::send_progress;
 use hf_core::state_bundle::StateBundle;
 use rand::Rng;
-use std::f64::{MAX, MIN};
 
 #[cfg(not(target_arch = "wasm32"))]
 use crate::timer::Timer;
 
+struct SolverStateBundle {
+    state_bundle: StateBundle,
+    scaler: AdaptiveScaler,
+    init_temp: f64,
+    temp: f64,
+}
 pub fn solve<R: Rng>(
     rng: &mut R,
     metric_type: i64,
     mut state_bundle: StateBundle,
     performance: &mut hf_core::performance::Performance,
 ) -> StateBundle {
-    // #[cfg(not(target_arch = "wasm32"))]
-    // {
     let timer = Timer::start();
-    // }
 
     let init_temp: f64 = if DEBUG_AVERAGE { -1.0 } else { 333.0 };
     let mut temp: f64 = init_temp;
@@ -45,8 +47,8 @@ pub fn solve<R: Rng>(
     let iterations_per_temp = 69;
     let mut count: i64 = 0;
     let alpha: f64 = 0.99;
-    let mut highest_seen: f64 = MIN;
-    let mut lowest_seen: f64 = MAX;
+    // let mut highest_seen: f64 = MIN;
+    // let mut lowest_seen: f64 = MAX;
     let mut best_state_so_far: StateBundle = state_bundle.clone();
     let mut temps_without_improvement = 1;
     let mut total_count: i64 = 0;

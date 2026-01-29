@@ -20,8 +20,8 @@ pub struct StateBundle {
     pub prep_output: PreparationOutput,
     #[serde(skip)]
     pub special_cache: HashMap<Vec<usize>, Vec<f64>>,
-    // #[serde(skip)]
-    // pub scaler: Adaptive, // pub performance: Performance,
+    pub num_threads: usize, // #[serde(skip)]
+                            // pub scaler: Adaptive, // pub performance: Performance,
 }
 
 pub fn default_special(length: usize) -> Vec<usize> {
@@ -113,6 +113,7 @@ impl StateBundle {
             metric_type: -1,
             latest_special_probs: None,
             min_resolution: 1,
+            num_threads: 1,
         };
 
         return state_bundle;
@@ -134,6 +135,7 @@ impl StateBundle {
         unlock_grid: Option<Vec<Vec<bool>>>,
         succeeded_grid: Option<Vec<Vec<bool>>>,
         min_resolution: usize,
+        num_threads: usize,
     ) -> StateBundle {
         // web_sys::console::log_1(&"1".into());
         let (prep_output, upgrade_arr): (PreparationOutput, Vec<Upgrade>) =
@@ -171,6 +173,7 @@ impl StateBundle {
             special_cache: HashMap::new(),
             latest_special_probs: None,
             min_resolution,
+            num_threads,
         };
         // web_sys::console::log_1(&"3".into());
 
