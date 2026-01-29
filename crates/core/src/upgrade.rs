@@ -53,6 +53,7 @@ pub struct State {
     #[serde(skip)]
     pub hash: u64,
 }
+
 impl State {
     pub fn new(length: usize) -> State {
         let mut out = State {

@@ -31,7 +31,18 @@ impl Performance {
             best_history: vec![],
         }
     }
-
+    pub fn aggregate_counts(&mut self, other: &Performance) {
+        self.states_evaluated += other.states_evaluated;
+        self.sa_count += other.sa_count;
+        self.ks_count += other.ks_count;
+        self.edgeworth_count += other.edgeworth_count;
+        self.lugganani_count += other.lugganani_count;
+        self.newton_iterations += other.newton_iterations;
+        self.brute_count += other.brute_count;
+        self.trivial_count += other.trivial_count;
+        self.householder_count += other.householder_count;
+        self.bisection_count += other.bisection_count;
+    }
     pub fn to_write(&self) -> PerformanceToWrite {
         let ks_per_state = self.ks_count as f64 / self.states_evaluated as f64;
 

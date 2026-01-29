@@ -67,12 +67,13 @@ pub fn solve<R: Rng>(
         DoublePriorityQueue::new();
     overall_best_n_states.push(state_bundle.to_essence(), OrderedFloat(state_bundle.metric));
 
-    let actual_thread_num = if state_bundle.num_threads == 0 {
-        16
-    } else {
-        state_bundle.num_threads
-    };
-    let mut solver_arr: Vec<SolverStateBundle> = Vec::with_capacity(actual_thread_num);
+    let actual_thread_num: i64 = 16;
+    // if state_bundle.num_threads == 0 {
+    //     16
+    // } else {
+    //     state_bundle.num_threads
+    // };
+    let mut solver_arr: Vec<SolverStateBundle> = Vec::with_capacity(actual_thread_num as usize);
     for _ in 0..actual_thread_num {
         let solver_state_bundle: SolverStateBundle = SolverStateBundle::initialize(
             &state_bundle,
@@ -89,7 +90,7 @@ pub fn solve<R: Rng>(
     {
         overall_performance.best_history.push((
             timer.elapsed_sec(),
-            eqv_wall_time_iters * actual_thread_num as i64,
+            eqv_wall_time_iters * actual_thread_num,
             f64::from(*overall_best_n_states.peek_max().unwrap().1),
         ));
     }
@@ -99,20 +100,21 @@ pub fn solve<R: Rng>(
             .par_iter_mut()
             .for_each(|x| x.one_batch(BATCH_SIZE));
 
+        let mut new_scale = 0.0;
         for solver in solver_arr.iter_mut() {
             overall_performance.aggregate_counts(&solver.performance);
             for (state, metric) in solver.best_n_states.drain() {
                 my_push(&mut overall_best_n_states, state, metric);
             }
+            new_scale += solver.scaler.current_scale;
         }
+        new_scale /= actual_thread_num as f64;
         for solver in solver_arr.iter_mut() {
             solver.best_n_states = overall_best_n_states.clone();
+            solver.scaler.current_scale = new_scale;
         }
 
-        if eqv_wall_time_iters * actual_thread_num as i64
-            - last_total_count * actual_thread_num as i64
-            >= 1000
-        {
+        if eqv_wall_time_iters * actual_thread_num - last_total_count * actual_thread_num >= 1000 {
             last_total_count = eqv_wall_time_iters;
             #[cfg(not(target_arch = "wasm32"))]
             {

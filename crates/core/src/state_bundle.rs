@@ -1,6 +1,7 @@
 use crate::parser::PreparationOutput;
 use crate::performance::Performance;
 use crate::upgrade::{State, Upgrade};
+use ordered_float::OrderedFloat;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
@@ -24,13 +25,13 @@ pub struct StateBundle {
                             // pub scaler: Adaptive, // pub performance: Performance,
 }
 
-pub fn default_special(length: usize) -> Vec<usize> {
-    let mut starting_special: Vec<usize> = Vec::with_capacity(length);
-    for index in 0..length {
-        starting_special.push(index); //, (1.0 / upgrade.base_chance).round() as usize));
-    }
-    starting_special
-}
+// pub fn default_special(length: usize) -> Vec<usize> {
+//     let mut starting_special: Vec<usize> = Vec::with_capacity(length);
+//     for index in 0..length {
+//         starting_special.push(index); //, (1.0 / upgrade.base_chance).round() as usize));
+//     }
+//     starting_special
+// }
 pub fn default_state_arr(upgrade_arr: &Vec<Upgrade>) -> Vec<Vec<(bool, usize)>> {
     let mut out: Vec<Vec<(bool, usize)>> = Vec::with_capacity(upgrade_arr.len());
     for upgrade in upgrade_arr {
@@ -106,7 +107,7 @@ impl StateBundle {
             // state_index: vec![],
             special_invalid_index: None,
             metric: -1.0,
-            special_state: default_special(upgrade_arr.len()),
+            special_state: (0..upgrade_arr.len()).collect(),
             prep_output,
             special_cache: HashMap::new(),
             upgrade_arr,
@@ -121,8 +122,8 @@ impl StateBundle {
 
     pub fn my_clone_from(&mut self, source: &StateBundle) {
         // update_special_cache: bool
-        for (source, upgrade) in source.upgrade_arr.iter().zip(self.upgrade_arr.iter_mut()) {
-            upgrade.state.clone_from(&source.state);
+        for (s, upgrade) in source.upgrade_arr.iter().zip(self.upgrade_arr.iter_mut()) {
+            upgrade.state.clone_from(&s.state);
         }
         self.special_state.clone_from(&source.special_state);
         self.metric = source.metric;
@@ -134,4 +135,39 @@ impl StateBundle {
 
         // metric type should be the same
     }
+
+    pub fn to_essence(&self) -> StateEssence {
+        StateEssence {
+            state_arr: self
+                .upgrade_arr
+                .iter()
+                .map(|x| x.state.payload.clone())
+                .collect(),
+            special_state: self.special_state.clone(),
+        }
+    }
+
+    pub fn clone_from_essence(&mut self, source: &StateEssence, input_metric: &OrderedFloat<f64>) {
+        // update_special_cache: bool
+        for (s, upgrade) in source.state_arr.iter().zip(self.upgrade_arr.iter_mut()) {
+            upgrade.state.payload.clone_from(&s);
+            upgrade.state.update_hash();
+        }
+        self.special_state.clone_from(&source.special_state);
+        self.metric = f64::from(*input_metric);
+
+        // if update_special_cache {
+        //     for (k, v) in source.special_cache.iter() {
+        //         self.special_cache.entry(k.clone()).or_insert(v.clone());
+        //     }
+        // }
+
+        // metric type should be the same
+    }
+}
+
+#[derive(Debug, Hash, Eq, PartialEq, Clone)]
+pub struct StateEssence {
+    state_arr: Vec<Vec<(bool, usize)>>,
+    special_state: Vec<usize>,
 }

@@ -70,10 +70,10 @@ fn write_jsonl<T: Serialize>(data: &T, file_name: &String) -> Result<(), Error> 
     Ok(())
 }
 fn main() {
-    // rayon::ThreadPoolBuilder::new()
-    //     .num_threads(16)
-    //     .build_global()
-    //     .unwrap();
+    rayon::ThreadPoolBuilder::new()
+        .num_threads(16)
+        .build_global()
+        .unwrap();
     let job_id: String = env::var("SLURM_JOB_ID").unwrap_or_else(|_| "local".to_string());
     let task_id: String = env::var("SLURM_ARRAY_TASK_ID").unwrap_or_else(|_| "0".to_string());
     let file_name: String = format!(

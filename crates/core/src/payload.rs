@@ -1,6 +1,6 @@
 use crate::parser::PreparationOutput;
 use crate::performance::Performance;
-use crate::state_bundle::{StateBundle, default_special};
+use crate::state_bundle::StateBundle;
 use crate::upgrade::{State, Upgrade};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -79,7 +79,7 @@ impl StateBundle {
             special_state: if special_state.is_none()
                 || special_state.as_ref().unwrap().len() != u_len
             {
-                default_special(u_len)
+                (0..u_len).collect()
             } else {
                 special_state.unwrap()
             },

@@ -24,3 +24,4 @@ rayon = "1.8"
 web-sys = { version = "0.3", features = ["console"] }
 serde-wasm-bindgen = "0.6"  
 wasm-bindgen = { version = "0.2", features = ["serde-serialize"] }
+ordered-float = "5.1.0"

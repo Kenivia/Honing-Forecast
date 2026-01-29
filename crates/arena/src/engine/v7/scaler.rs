@@ -23,9 +23,7 @@ impl AdaptiveScaler {
             learning_rate: 0.1,
         }
     }
-    fn overwrite_scale(&mut self, new_scale: f64) {
-        self.current_scale = new_scale;
-    }
+
     /// Call this AFTER you have decided whether to accept/reject.
     /// Returns: true if the scale was updated this step.
     pub fn update_stats(
