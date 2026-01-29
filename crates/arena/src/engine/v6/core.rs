@@ -1,4 +1,4 @@
-use hf_core::saddlepoint_approximation::average::DEBUG_AVERAGE;
+// use hf_core::saddlepoint_approximation::average::DEBUG_AVERAGE;
 #[cfg(target_arch = "wasm32")]
 use hf_core::send_progress::send_progress;
 use hf_core::state_bundle::StateBundle;
@@ -6,12 +6,9 @@ use rand::Rng;
 use rand::distr::Distribution;
 use rand::distr::weighted::WeightedIndex;
 use rand::seq::IteratorRandom;
-use std::f64::{MAX, MIN};
+// use std::f64::{MAX, MIN};
 
-#[cfg(not(target_arch = "wasm32"))]
-use crate::timer::Timer;
-
-fn acceptance<R: Rng>(
+pub fn acceptance<R: Rng>(
     new: f64,
     old: f64,
     temperature: f64,
@@ -46,19 +43,20 @@ pub fn my_pmf(max_len: usize, expected: f64, ratio: f64) -> Vec<f64> {
     v
 }
 
-fn my_weighted_rand<R: Rng>(
+pub fn my_weighted_rand<R: Rng>(
     length: usize,
     temp: f64,
     init_temp: f64,
     offset: usize,
     ratio: f64,
+    upgrade_len: usize,
     rng: &mut R,
 ) -> usize {
     let res = WeightedIndex::new(my_pmf(
         (length - 1).max(1),
-        ((temp / (init_temp)).cbrt() * length as f64 - 1.0)
-            .min(length as f64 - 1.0)
-            .max(0.0),
+        (temp / init_temp * length as f64 - 1.0)
+            .min(length as f64)
+            .max(1.0 / upgrade_len as f64),
         ratio,
     ));
     if res.is_err() {
@@ -68,21 +66,23 @@ fn my_weighted_rand<R: Rng>(
 }
 
 /// New signature: accepts `resolution` to control block size
-fn neighbour<R: Rng>(
+pub fn neighbour<R: Rng>(
     state_bundle: &mut StateBundle,
     temp: f64,
     init_temp: f64,
     resolution: usize,
     rng: &mut R,
 ) {
+    let u_len = state_bundle.upgrade_arr.len();
     // PART 1: Special State (Unchanged by resolution as requested)
     if state_bundle.special_state.len() > 1 {
         let want_to_swap: usize = my_weighted_rand(
             state_bundle.special_state.len(),
             temp / 2.0,
             init_temp,
-            1,
-            0.8,
+            0,
+            0.5,
+            u_len,
             rng,
         );
         for _ in 0..want_to_swap {
@@ -121,8 +121,9 @@ fn neighbour<R: Rng>(
             num_blocks,
             temp,
             init_temp,
-            1,
+            0,
             0.8 / eff_resolution as f64,
+            u_len,
             rng,
         );
 
@@ -132,6 +133,7 @@ fn neighbour<R: Rng>(
             init_temp,
             1,
             0.8 / eff_resolution as f64,
+            u_len,
             rng,
         );
 
@@ -218,7 +220,7 @@ fn neighbour<R: Rng>(
     }
 }
 
-fn new_temp(temp: f64, alpha: f64) -> f64 {
+pub fn new_temp(temp: f64, alpha: f64) -> f64 {
     if temp == 0.0 {
         return -6.9;
     }
@@ -227,124 +229,4 @@ fn new_temp(temp: f64, alpha: f64) -> f64 {
         return 0.0;
     }
     return new;
-}
-
-pub fn solve<R: Rng>(
-    rng: &mut R,
-    metric_type: i64,
-    mut state_bundle: StateBundle,
-    performance: &mut hf_core::performance::Performance,
-) -> StateBundle {
-    // #[cfg(not(target_arch = "wasm32"))]
-    // {
-    let timer = Timer::start();
-    // }
-
-    let init_temp: f64 = if DEBUG_AVERAGE { -1.0 } else { 333.0 };
-    let mut temp: f64 = init_temp;
-
-    // Calculate max state length to establish the starting "coarse" resolution
-    let max_len = state_bundle
-        .upgrade_arr
-        .iter()
-        .map(|u| u.state.len())
-        .max()
-        .unwrap_or(state_bundle.min_resolution)
-        .max(state_bundle.min_resolution);
-
-    let temp_schedule_start = 333.0_f64;
-    let temp_schedule_cutoff = 33.0_f64; // Below this temp, resolution is pinned to min
-
-    if DEBUG_AVERAGE {
-        neighbour(&mut state_bundle, temp, init_temp, max_len, rng);
-    }
-    state_bundle.metric = state_bundle.metric_router(metric_type, performance);
-    let mut prev_state: StateBundle = state_bundle.clone();
-
-    let iterations_per_temp = 69;
-    let mut count: i64 = 0;
-    let alpha: f64 = 0.99;
-    let mut highest_seen: f64 = MIN;
-    let mut lowest_seen: f64 = MAX;
-    let mut best_state_so_far: StateBundle = state_bundle.clone();
-    let mut temps_without_improvement = 1;
-    let mut total_count: i64 = 0;
-    while temp >= 0.0 {
-        let current_resolution = if temp > temp_schedule_cutoff {
-            // Logarithmic interpolation from Max Len -> Min Res
-            let log_curr = temp.ln();
-            let log_start = temp_schedule_start.ln();
-            let log_end = temp_schedule_cutoff.ln();
-
-            // 0.0 at cutoff, 1.0 at start
-            let ratio = ((log_curr - log_end) / (log_start - log_end)).clamp(0.0, 1.0);
-
-            ((state_bundle.min_resolution as f64
-                + (max_len as f64 - state_bundle.min_resolution as f64) * ratio)
-                / state_bundle.min_resolution as f64)
-                .floor() as usize
-                * state_bundle.min_resolution
-        } else {
-            state_bundle.min_resolution
-        };
-
-        neighbour(&mut state_bundle, temp, init_temp, current_resolution, rng);
-        state_bundle.metric = state_bundle.metric_router(metric_type, performance);
-
-        highest_seen = highest_seen.max(state_bundle.metric);
-        lowest_seen = lowest_seen.min(state_bundle.metric);
-
-        if state_bundle.metric > best_state_so_far.metric {
-            best_state_so_far.my_clone_from(&state_bundle);
-            temps_without_improvement = 0;
-        }
-
-        if acceptance(
-            state_bundle.metric,
-            prev_state.metric,
-            temp,
-            highest_seen - lowest_seen,
-            rng,
-        ) {
-            prev_state.my_clone_from(&state_bundle);
-        } else {
-            state_bundle.my_clone_from(&prev_state);
-        }
-
-        count += 1;
-        if count > iterations_per_temp {
-            count = 0;
-            if temps_without_improvement as f64 > (1.0 * temp).max(3.0) {
-                state_bundle.my_clone_from(&best_state_so_far);
-                temps_without_improvement = 0;
-            }
-            temps_without_improvement += 1;
-            temp = new_temp(temp, alpha);
-        }
-        if total_count % 1000 == 0 {
-            #[cfg(not(target_arch = "wasm32"))]
-            {
-                performance.best_history.push((
-                    timer.elapsed_sec(),
-                    total_count,
-                    best_state_so_far.metric,
-                ));
-            }
-
-            #[cfg(target_arch = "wasm32")]
-            {
-                send_progress(
-                    &best_state_so_far.clone(),
-                    (100.0
-                        * (total_count as f64
-                            / (iterations_per_temp as f64 * (0.05_f64 / init_temp).ln()
-                                / 0.99_f64.ln())))
-                    .min(100.0),
-                )
-            }
-        }
-        total_count += 1;
-    }
-
-    best_state_so_far
 }

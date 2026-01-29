@@ -4,6 +4,8 @@ mod v1;
 mod v2;
 mod v3;
 mod v4;
+mod v5;
+mod v6;
 cfg_if::cfg_if! {
     if #[cfg(feature = "v1")] {
         pub use v1::*;
@@ -17,6 +19,13 @@ cfg_if::cfg_if! {
     }else if #[cfg(feature = "v4")] {
         pub use v4::*;
         pub static ACTIVE_FEATURE :&str= "v4";
+    }else if #[cfg(feature = "v5")] {
+        pub use v5::*;
+        pub static ACTIVE_FEATURE :&str= "v5";
+    }
+    else if #[cfg(feature = "v6")] {
+        pub use v6::*;
+        pub static ACTIVE_FEATURE :&str= "v6";
     }
 }
 

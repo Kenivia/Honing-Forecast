@@ -21,9 +21,5 @@ cfg-if = "1.0"
 
 
 [features]
-v1=[]
-v2=[]
-v3=[]
-v4=[]
-default=[]
+default=["v1","v2","v3","v4","v5","v6"]
 

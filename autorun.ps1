@@ -8,6 +8,7 @@ for ($v = $Start; $v -le $End; $v++) {
     cargo run `
         --package hf-arena `
         --bin hf-arena `
+        --no-default-features `
         --features "v$v" `
         --profile release `
         -- --no-capture

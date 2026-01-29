@@ -20,7 +20,8 @@ pub struct StateBundle {
     pub prep_output: PreparationOutput,
     #[serde(skip)]
     pub special_cache: HashMap<Vec<usize>, Vec<f64>>,
-    // pub performance: Performance,
+    // #[serde(skip)]
+    // pub scaler: Adaptive, // pub performance: Performance,
 }
 
 pub fn default_special(length: usize) -> Vec<usize> {

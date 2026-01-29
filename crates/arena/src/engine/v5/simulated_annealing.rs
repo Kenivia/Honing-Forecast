@@ -2,10 +2,10 @@ use hf_core::saddlepoint_approximation::average::DEBUG_AVERAGE;
 #[cfg(target_arch = "wasm32")]
 use hf_core::send_progress::send_progress;
 use hf_core::state_bundle::StateBundle;
+use rand::Rng;
 use rand::distr::Distribution;
 use rand::distr::weighted::WeightedIndex;
 use rand::seq::IteratorRandom;
-use rand::{Rng, random_bool};
 // use std::f64::{MAX, MIN};
 
 #[cfg(not(target_arch = "wasm32"))]
@@ -72,6 +72,7 @@ impl AdaptiveScaler {
     ) {
         // We only care about "bad" (uphill) moves for tuning Boltzmann
         if !is_uphill_move {
+            return;
             // return false;
         }
 
@@ -86,6 +87,7 @@ impl AdaptiveScaler {
             // Reset counters
             self.uphill_count = 0;
             self.accepted_count = 0;
+
             // return true;
         }
         // false
@@ -161,30 +163,28 @@ fn neighbour<R: Rng>(
 ) {
     let u_len = state_bundle.upgrade_arr.len();
     // PART 1: Special State (Unchanged by resolution as requested)
-    if random_bool(temp / init_temp) {
-        if state_bundle.special_state.len() > 1 {
-            let want_to_swap: usize = my_weighted_rand(
-                state_bundle.special_state.len(),
-                temp / 2.0,
-                init_temp,
-                0,
-                0.5,
-                u_len,
-                rng,
-            );
-            for _ in 0..want_to_swap {
-                let want_to_swap_indices: Vec<usize> =
-                    (0..state_bundle.special_state.len()).choose_multiple(rng, 2);
-                let first = want_to_swap_indices[0];
-                let second = want_to_swap_indices[1];
+    if state_bundle.special_state.len() > 1 {
+        let want_to_swap: usize = my_weighted_rand(
+            state_bundle.special_state.len(),
+            temp / 2.0,
+            init_temp,
+            0,
+            0.5,
+            u_len,
+            rng,
+        );
+        for _ in 0..want_to_swap {
+            let want_to_swap_indices: Vec<usize> =
+                (0..state_bundle.special_state.len()).choose_multiple(rng, 2);
+            let first = want_to_swap_indices[0];
+            let second = want_to_swap_indices[1];
 
-                if !(state_bundle.upgrade_arr[first].succeeded
-                    || state_bundle.upgrade_arr[second].succeeded)
-                {
-                    let temp = state_bundle.special_state[first];
-                    state_bundle.special_state[first] = state_bundle.special_state[second];
-                    state_bundle.special_state[second] = temp;
-                }
+            if !(state_bundle.upgrade_arr[first].succeeded
+                || state_bundle.upgrade_arr[second].succeeded)
+            {
+                let temp = state_bundle.special_state[first];
+                state_bundle.special_state[first] = state_bundle.special_state[second];
+                state_bundle.special_state[second] = temp;
             }
         }
     }
@@ -404,7 +404,7 @@ pub fn solve<R: Rng>(
         } else {
             state_bundle.my_clone_from(&prev_state);
         }
-        scaler.update_stats(is_uphill, accepted, (temp / init_temp) * 0.8);
+        scaler.update_stats(is_uphill, accepted, (temp / init_temp) * 0.69);
         count += 1;
         if count > iterations_per_temp {
             count = 0;

@@ -6,7 +6,7 @@ use rand::Rng;
 use rand::distr::Distribution;
 use rand::distr::weighted::WeightedIndex;
 use rand::seq::IteratorRandom;
-use std::f64::{MAX, MIN};
+// use std::f64::{MAX, MIN};
 
 #[cfg(not(target_arch = "wasm32"))]
 use crate::timer::Timer;
@@ -239,11 +239,11 @@ fn neighbour<R: Rng>(
             (0..num_blocks).choose_multiple(rng, want_to_book);
         want_to_book_blocks.sort();
 
-        let mut artisan: f64 = 0.0;
-        let mut count: f64 = 0.1;
-        let base_chance = upgrade.base_chance;
-        let artisan_rate = upgrade.artisan_rate;
-        let juice_chances = &state_bundle.prep_output.juice_info.chances_id;
+        // let mut artisan: f64 = 0.0;
+        // let mut count: f64 = 0.1;
+        // let base_chance = upgrade.base_chance;
+        // let artisan_rate = upgrade.artisan_rate;
+        // let juice_chances = &state_bundle.prep_output.juice_info.chances_id;
 
         // Pointers for sorted block lists
         let mut flip_ptr = 0;
@@ -352,8 +352,8 @@ pub fn solve<R: Rng>(
     let iterations_per_temp = 169;
     let mut count: i64 = 0;
     let alpha: f64 = 0.99;
-    let mut highest_seen: f64 = MIN;
-    let mut lowest_seen: f64 = MAX;
+    // let mut highest_seen: f64 = MIN;
+    // let mut lowest_seen: f64 = MAX;
     let mut best_state_so_far: StateBundle = state_bundle.clone();
     let mut temps_without_improvement = 1;
     let mut total_count: i64 = 0;
