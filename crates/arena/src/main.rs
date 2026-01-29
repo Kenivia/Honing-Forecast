@@ -7,12 +7,12 @@ use hf_core::monte_carlo::monte_carlo_wrapper;
 use hf_arena::engine::ACTIVE_FEATURE;
 use hf_core::performance::{Performance, PerformanceToWrite};
 use hf_core::saddlepoint_approximation::average::DEBUG_AVERAGE;
-use hf_core::state_bundle::StateBundle;
+use hf_core::state_bundle::{self, StateBundle};
 
 use rand::prelude::*;
 use rayon::prelude::*;
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::env;
 use std::fs::{File, OpenOptions, remove_file};
 use std::io::{BufRead, BufReader, BufWriter, Error, Write};
@@ -84,7 +84,7 @@ fn main() {
         // current_time_string().replace(":", "-"),
     );
 
-    let mut seen_tests: HashMap<(String, String), i64> = HashMap::new();
+    let mut seen_tests: HashSet<(String, String, i64)> = HashSet::new();
     let mut at_least_one_line: bool = false;
     if Path::new(&file_name).exists() {
         let file: File = File::open(&file_name).unwrap(); // this really shouldnt go wrong 
@@ -95,9 +95,7 @@ fn main() {
                 &line.expect("Failed to parse existing result file"),
             )
             .expect("Failed to parse existing result file");
-            *seen_tests
-                .entry((out.test_case, out.metric_type))
-                .or_insert(0) += 1;
+            seen_tests.insert((out.test_case, out.metric_type, out.trial_num));
         }
     }
     // dbg!(&seen_tests);
@@ -113,97 +111,110 @@ fn main() {
         write_jsonl(&header, &file_name)
             .expect(&format!("Failed to write to result file {}", file_name));
     }
-
+    // dbg!(&seen_tests);
     let test_cases: Vec<(String, StateBundle, Vec<bool>)> =
         parse_payload_jsons(Path::new("test_payloads_bloated"));
 
-    let mut zipped_test_cases: Vec<((String, StateBundle, Vec<bool>), i64)> = Vec::new();
-    for i in 1..=NUM_TESTS_TO_RUN {
+    let mut zipped_test_cases: Vec<(String, StateBundle, String, i64, i64)> = Vec::new();
+    for trial_num in 1..=NUM_TESTS_TO_RUN {
         for z in test_cases.iter() {
-            zipped_test_cases.push((z.clone(), i));
+            let (test_case_name, state_bundle, tests_to_run) = z;
+            for (index, (metric_type_str, metric_type_num)) in METRICS.iter().enumerate() {
+                let key = (
+                    test_case_name.clone(),
+                    metric_type_str.to_string(),
+                    trial_num,
+                );
+                if !tests_to_run[index] || seen_tests.contains(&key) {
+                    continue;
+                }
+                // dbg!(key);
+                zipped_test_cases.push((
+                    test_case_name.clone(),
+                    state_bundle.clone(),
+                    metric_type_str.to_string(),
+                    *metric_type_num,
+                    trial_num,
+                ));
+            }
         }
     }
     // for current_trial in{
     zipped_test_cases.par_iter().for_each(
-        |((test_case_name, state_bundle, tests_to_run), current_trial)| {
+        |(test_case_name, state_bundle, metric_type_string, metric_type_num, trial_num)| {
             let mut seed_rng: ThreadRng = rand::rng();
-            for (index, (metric_type_str, metric_type)) in METRICS.iter().enumerate() {
-                if !tests_to_run[index] {
-                    continue;
-                }
-                let metric_type_string = metric_type_str.to_string();
-                let mut instant: Instant = Instant::now();
-                let key = (test_case_name.clone(), metric_type_string.clone());
-                if seen_tests.contains_key(&key) && seen_tests[&key] >= *current_trial {
-                    continue;
-                }
-                let seed: u64 = seed_rng.next_u64();
-                // let seed: u64 = 886717209566745136;
-                let mut rng: StdRng = StdRng::seed_from_u64(seed);
 
-                // let trial_num = seen_tests.entry(key.clone()).or_insert(0);
-                // *trial_num += 1;
-                println!("Test case {:?} trial {}", key, current_trial);
+            let mut instant: Instant = Instant::now();
+            let key = (test_case_name.clone(), metric_type_string.clone());
+            // if seen_tests.contains_key(&key) && seen_tests[&key] >= *current_trial {
+            //     continue;
+            // }
+            let seed: u64 = seed_rng.next_u64();
+            // let seed: u64 = 886717209566745136;
+            let mut rng: StdRng = StdRng::seed_from_u64(seed);
 
-                let mut state_performance: Performance = Performance::new();
-                let mut state_bundle: StateBundle = solve(
-                    &mut rng,
-                    *metric_type,
-                    state_bundle.clone(),
-                    &mut state_performance,
-                );
+            // let trial_num = seen_tests.entry(key.clone()).or_insert(0);
+            // *trial_num += 1;
+            println!("Test case {:?} trial {}", key, trial_num);
 
-                // Call metric on best state to get standalone performance metrics
-                let mut best_state_performance: Performance = Performance::new();
-                let _ = state_bundle.metric_router(*metric_type, &mut best_state_performance);
+            let mut state_performance: Performance = Performance::new();
+            let mut state_bundle: StateBundle = solve(
+                &mut rng,
+                *metric_type_num,
+                state_bundle.clone(),
+                &mut state_performance,
+            );
 
-                let output: Output = Output {
+            // Call metric on best state to get standalone performance metrics
+            let mut best_state_performance: Performance = Performance::new();
+            let _ = state_bundle.metric_router(*metric_type_num, &mut best_state_performance);
+
+            let output: Output = Output {
+                test_case: test_case_name.clone(),
+                trial_num: *trial_num,
+                wall_time: instant.elapsed().as_secs_f64(),
+
+                best: state_bundle.metric,
+                state: state_bundle.encode_all(),
+                seed,
+                time_finished: current_time_string(),
+                prob_leftover: state_bundle.compute_leftover_probs(),
+                metric_type: metric_type_string.clone(),
+                performance: state_performance.to_write(),
+                best_state_performance: best_state_performance.to_write(),
+            };
+
+            instant = Instant::now();
+            if *trial_num == 1 {
+                let (prob_leftover, success_rate, average_rate) =
+                    monte_carlo_wrapper(MONTE_CARLO_COUNT, &mut state_bundle, &mut rng);
+                let dummy_performance = Performance::new();
+                let verification_output: Output = Output {
                     test_case: test_case_name.clone(),
-                    trial_num: *current_trial,
+                    trial_num: 0,
                     wall_time: instant.elapsed().as_secs_f64(),
 
-                    best: state_bundle.metric,
+                    best: if metric_type_string == "SA" || metric_type_string == "brute" {
+                        success_rate
+                    } else {
+                        average_rate
+                    },
                     state: state_bundle.encode_all(),
                     seed,
                     time_finished: current_time_string(),
-                    prob_leftover: state_bundle.compute_leftover_probs(),
-                    metric_type: metric_type_string.clone(),
-                    performance: state_performance.to_write(),
-                    best_state_performance: best_state_performance.to_write(),
+                    prob_leftover,
+                    metric_type: "MC_".to_string() + &metric_type_string,
+                    performance: dummy_performance.to_write(),
+                    best_state_performance: dummy_performance.to_write(),
                 };
-
-                instant = Instant::now();
-                if *current_trial == 1 {
-                    let (prob_leftover, success_rate, average_rate) =
-                        monte_carlo_wrapper(MONTE_CARLO_COUNT, &mut state_bundle, &mut rng);
-                    let dummy_performance = Performance::new();
-                    let verification_output: Output = Output {
-                        test_case: test_case_name.clone(),
-                        trial_num: 0,
-                        wall_time: instant.elapsed().as_secs_f64(),
-
-                        best: if metric_type_string == "SA" || metric_type_string == "brute" {
-                            success_rate
-                        } else {
-                            average_rate
-                        },
-                        state: state_bundle.encode_all(),
-                        seed,
-                        time_finished: current_time_string(),
-                        prob_leftover,
-                        metric_type: "MC_".to_string() + &metric_type_string,
-                        performance: dummy_performance.to_write(),
-                        best_state_performance: dummy_performance.to_write(),
-                    };
-                    write_jsonl(&verification_output, &file_name)
-                        .expect("Failed to write to result file");
-                }
-                write_jsonl(&output, &file_name).expect("Failed to write to result file");
-
-                // if case already ran, skip it (maybe add a flag to rerun)
-                // otherwise, call solve, write results after each solve call
-                //
+                write_jsonl(&verification_output, &file_name)
+                    .expect("Failed to write to result file");
             }
+            write_jsonl(&output, &file_name).expect("Failed to write to result file");
+
+            // if case already ran, skip it (maybe add a flag to rerun)
+            // otherwise, call solve, write results after each solve call
+            //
         },
     );
     // }
