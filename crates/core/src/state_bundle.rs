@@ -113,72 +113,12 @@ impl StateBundle {
             metric_type: -1,
             latest_special_probs: None,
             min_resolution: 1,
-            num_threads: 1,
+            num_threads: 0,
         };
 
         return state_bundle;
     }
-    pub fn init_from_inputs(
-        hone_ticks: &[Vec<bool>],
-        input_budgets: &[i64],
-        adv_ticks: &[Vec<bool>],
-        express_event: bool,
-        inp_price_arr: &[f64],
-        adv_hone_strategy: &str,
-        juice_books_budget: &[(i64, i64)],
-        juice_prices: &[(f64, f64)],
-        inp_leftover_values: &[f64],
-        inp_leftover_juice_values: &[(f64, f64)],
-        progress_grid: Option<Vec<Vec<usize>>>,
-        state_grid: Option<Vec<Vec<Vec<(bool, usize)>>>>,
-        special_state: Option<Vec<usize>>,
-        unlock_grid: Option<Vec<Vec<bool>>>,
-        succeeded_grid: Option<Vec<Vec<bool>>>,
-        min_resolution: usize,
-        num_threads: usize,
-    ) -> StateBundle {
-        // web_sys::console::log_1(&"1".into());
-        let (prep_output, upgrade_arr): (PreparationOutput, Vec<Upgrade>) =
-            PreparationOutput::initialize(
-                hone_ticks,
-                input_budgets,
-                adv_ticks,
-                express_event,
-                inp_price_arr,
-                adv_hone_strategy,
-                juice_books_budget,
-                juice_prices,
-                inp_leftover_values,
-                inp_leftover_juice_values,
-                progress_grid,
-                state_grid,
-                unlock_grid,
-                succeeded_grid,
-            );
-        let u_len = upgrade_arr.len();
-        // web_sys::console::log_1(&"2".into());
-        let out = StateBundle {
-            upgrade_arr,
-            special_state: if special_state.is_none()
-                || special_state.as_ref().unwrap().len() != u_len
-            {
-                default_special(u_len)
-            } else {
-                special_state.unwrap()
-            },
-            special_invalid_index: None,
-            metric_type: -1,
-            metric: -1.0,
-            prep_output,
-            special_cache: HashMap::new(),
-            latest_special_probs: None,
-            min_resolution,
-            num_threads,
-        };
-        // web_sys::console::log_1(&"3".into());
 
-        out
-    }
     pub fn my_clone_from(&mut self, source: &StateBundle) {
         // update_special_cache: bool
         for (source, upgrade) in source.upgrade_arr.iter().zip(self.upgrade_arr.iter_mut()) {

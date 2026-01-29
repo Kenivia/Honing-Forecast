@@ -3,6 +3,7 @@ use hf_core::state_bundle::StateBundle;
 // use hf_core::{helpers::naive_count_to_ticks, parser::PreparationOutput, upgrade::Upgrade};
 // use paste::paste;
 // use seq_macro::seq;
+use hf_core::payload::Payload;
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::Path;
@@ -129,30 +130,30 @@ use std::path::Path;
 
 // });
 
-#[derive(Debug, Deserialize, Serialize, Clone)]
-pub struct Payload {
-    pub normal_hone_ticks: Vec<Vec<bool>>,
-    pub adv_hone_ticks: Vec<Vec<bool>>,
-    pub adv_hone_strategy: String,
+// #[derive(Debug, Deserialize, Serialize, Clone)]
+// pub struct Payload {
+//     pub normal_hone_ticks: Vec<Vec<bool>>,
+//     pub adv_hone_ticks: Vec<Vec<bool>>,
+//     pub adv_hone_strategy: String,
 
-    pub express_event: bool,
-    pub bucket_count: usize,
+//     pub express_event: bool,
+//     pub bucket_count: usize,
 
-    pub data_size: usize,
-    pub mats_budget: Vec<i64>,
-    pub user_price_arr: Vec<f64>,
-    pub inp_leftover_values: Vec<f64>,
-    pub juice_books_budget: Vec<(i64, i64)>,
-    pub juice_prices: Vec<(f64, f64)>,
-    pub inp_leftover_juice_values: Vec<(f64, f64)>,
+//     pub data_size: usize,
+//     pub mats_budget: Vec<i64>,
+//     pub user_price_arr: Vec<f64>,
+//     pub inp_leftover_values: Vec<f64>,
+//     pub juice_books_budget: Vec<(i64, i64)>,
+//     pub juice_prices: Vec<(f64, f64)>,
+//     pub inp_leftover_juice_values: Vec<(f64, f64)>,
 
-    pub progress_grid: Option<Vec<Vec<usize>>>,
-    pub state_grid: Option<Vec<Vec<Vec<(bool, usize)>>>>,
-    pub special_state: Option<Vec<usize>>,
-    pub unlocked_grid: Option<Vec<Vec<bool>>>,
-    pub succeeded_grid: Option<Vec<Vec<bool>>>,
-    pub min_resolution: usize,
-}
+//     pub progress_grid: Option<Vec<Vec<usize>>>,
+//     pub state_grid: Option<Vec<Vec<Vec<(bool, usize)>>>>,
+//     pub special_state: Option<Vec<usize>>,
+//     pub unlocked_grid: Option<Vec<Vec<bool>>>,
+//     pub succeeded_grid: Option<Vec<Vec<bool>>>,
+//     pub min_resolution: usize,
+// }
 // macro_rules! row_to_vec {
 //     ($instance:expr, $prefix:ident, $start:literal, $end:literal) => {
 
@@ -370,7 +371,7 @@ pub fn parse_payload_jsons(path: &Path) -> Vec<(String, StateBundle, Vec<bool>)>
             payload.unlocked_grid,
             payload.succeeded_grid,
             payload.min_resolution,
-            1,
+            payload.num_threads,
         );
         let tests_to_run: Vec<bool> = vec![true, true];
         out.push((test_case_name, state_bundle, tests_to_run));

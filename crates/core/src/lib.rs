@@ -4,6 +4,7 @@ pub mod helpers;
 pub mod monte_carlo;
 pub mod normal_honing_utils;
 pub mod parser;
+pub mod payload;
 pub mod performance;
 pub mod saddlepoint_approximation;
 pub mod send_progress;

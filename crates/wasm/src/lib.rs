@@ -17,8 +17,8 @@ use hf_core::state_bundle::StateBundle;
 // use hf_core::upgrade::Upgrade;
 // use rand::rngs::ThreadRng;
 use hf_arena::engine::solve;
+use hf_core::payload::Payload;
 use rand::rngs::ThreadRng;
-use serde::Deserialize;
 
 use serde_wasm_bindgen::{from_value, to_value};
 use wasm_bindgen::JsValue;
@@ -27,34 +27,6 @@ use wasm_bindgen::prelude::*;
 pub use wasm_bindgen_rayon::init_thread_pool;
 #[allow(unused_imports)]
 use web_sys::console;
-
-#[derive(Deserialize)]
-pub struct Payload {
-    normal_hone_ticks: Vec<Vec<bool>>,
-    adv_hone_ticks: Vec<Vec<bool>>,
-    // normal_counts: Option<Vec<Vec<i64>>>,
-    // adv_counts: Option<Vec<Vec<i64>>>,
-    adv_hone_strategy: String,
-
-    express_event: bool,
-
-    // cost_data: Option<Vec<Vec<i64>>>,
-    mats_budget: Vec<i64>,
-    user_price_arr: Vec<f64>,
-    inp_leftover_values: Vec<f64>,
-    juice_books_budget: Vec<(i64, i64)>,
-    juice_prices: Vec<(f64, f64)>,
-    inp_leftover_juice_values: Vec<(f64, f64)>,
-
-    // honestly in js i have to initialize these arrays anyway (instead of leaving as null) so theres not much point doing Option but whatever
-    progress_grid: Option<Vec<Vec<usize>>>,
-    state_grid: Option<Vec<Vec<Vec<(bool, usize)>>>>,
-    special_state: Option<Vec<usize>>,
-    unlocked_grid: Option<Vec<Vec<bool>>>,
-    succeeded_grid: Option<Vec<Vec<bool>>>,
-    min_resolution: usize,
-    num_threads: usize,
-}
 
 // #[derive(Deserialize)]
 // #[allow(dead_code)]
@@ -120,25 +92,7 @@ pub fn evaluate_average_wrapper(input: JsValue) -> JsValue {
 
     let payload: Payload = from_value(input).unwrap();
 
-    let mut state_bundle = StateBundle::init_from_inputs(
-        &payload.normal_hone_ticks,
-        &payload.mats_budget,
-        &payload.adv_hone_ticks,
-        payload.express_event,
-        &payload.user_price_arr,
-        &payload.adv_hone_strategy,
-        &payload.juice_books_budget,
-        &payload.juice_prices,
-        &payload.inp_leftover_values,
-        &payload.inp_leftover_juice_values,
-        payload.progress_grid,
-        payload.state_grid,
-        payload.special_state,
-        payload.unlocked_grid,
-        payload.succeeded_grid,
-        payload.min_resolution,
-        1,
-    );
+    let mut state_bundle = StateBundle::init_from_payload(payload);
 
     let mut dummy_performance = Performance::new();
     let metric = state_bundle.average_gold_metric(&mut dummy_performance);

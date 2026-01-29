@@ -1,4 +1,5 @@
-use hf_arena::parse_test_cases::{Payload, read_payload_jsons};
+use hf_arena::parse_test_cases::read_payload_jsons;
+use hf_core::payload::Payload;
 use hf_core::state_bundle::StateBundle;
 use rand::prelude::*;
 use std::fs;
