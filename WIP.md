@@ -6,20 +6,8 @@
 ### Now
 
 - add performance aggregation in preparation for multithreaded algorithms
-  
-- visualize these using perfplot
-  - take average of many test cases i think (many trials?)
-  - store time, states evaluated and metric
-  - need to parse & aggregate this data then send to python(or just do it in python should be okay)
-    - as in keep a parsed file of data that python can read off of
 
 - add maximize success prob optimizer button at some point
-
-#### Analysis
-
-- elo or percentage deviation? idk need to do more research
-- how to visualize / interact with this data
-- how to evaluate adaptive policies???
 
 #### Optimizations
 
@@ -40,17 +28,12 @@
 - add assertions to a lot of prepoutput stuff
 
 - start working on visualizing this stuff
+  - put all possible states on one axis (must be small support like 5? 10? ) and sort by number of juice used, then color/ 3d height?
 
 - initialize the hash properly or something idk
   - avoid updating dist & support based on this hash
 
 ### Big
-
-#### Scale up compute
-
-- set up slurm on laptop(maybe not)
-  - maybe write a dispatcher instead of naively running them in parallel
-    - wrap the current main function
 
 #### Advanced honing
 
@@ -81,10 +64,7 @@
 ### Algorithm ideas
 
 - stopping early if no improvements (an adaptive temperature / annealing schedule i guess )
-- ~~limit neighbor function - 1 click 10 taps, limit amt of toggles maybe~~
-  - ~~start with VERY broad neighbors - all true, all false etc, then refine until limit reached (such as 10 taps), test how much the limit affects performance~~
-- keep a top 10 list and randomly restart to them instead of just the top 1
-  - maybe restart to
+
 - some kind of heatmap of which bits were the most impactful? but i feel like this wouldnt actually do much
   - can definitely think about which upgrades were the most impactful tho
 - maybe add some way to keep track of where bits are to make neighbor potentially more efficient
@@ -92,6 +72,10 @@
 - multi-thread and each worker tune one "dimension" like special, state of this one, state of other one etc?
   - do i need to allow multiple changes at high temperature or will the acceptance function take care of local one dimensional minima
   - maybe it would never discover like in-between optimums?
+  - this definitely lends itself to some kind of genetic algorithm
+
+- keep a top 10 list and randomly restart to them instead of just the top 1
+  - ^^ this also sounds like genertic algorithm
 
 - whatever happens it must consider the fact that sometimes we dont hvae special and changing the state wont do shit
 
@@ -106,10 +90,6 @@
 ## Other features
 
 - Automatic Market price integration(via some kind of API, or just updating the site at a regular interval automatically)
-- Allow selling mats
-- Raw gold graph and overall gold(including used in buying mats) lines in the
-graph
-- juice chest openinig optimization
 
 ## UI
 
@@ -120,24 +100,46 @@ graph
 - Adjustable week number in raw / Gold graph
 - Achieved ilevel
 - Something seems to be broken in drag-to-select spreadsheetgrid
-- Artisan level editing
-
-## DEV
-
-- MUCH more tests, specifically:
-- Test countfailure non-naive version actually works
-- Test average tap and ~~truncated average tap~~
-- Test Tap map generator(and improve it maybe)
-
-- Matrix operation libraries to speed up monte carlo and what not?
-- Graph is off by 0.5 all the time, and the points of interest snap the the one below(i tihnk?) which isnt quite right idk, kinda scared to touch it
-- better input cleaning for spreadsheetgrids
-- make get_one_tap_pity take in seeded rng
-- cache using array buffer? dont know if it's worth the effort
-- fix the react stuff, i think there's way too much usememo(the website feels sluggish)
-- improve how the cost estimation works / verify that it actually works
 
 ## Done / cancelled
+
+~~## DEV~~ ALL CANCELED COS NO LONGER RELEAVNT
+
+- ~~MUCH more tests, specifically:~~
+- ~~Test countfailure non-naive version actually works~~
+- ~~Test average tap and~~ ~~truncated average tap~~
+- ~~Test Tap map generator(and improve it maybe)~~
+
+- ~~Matrix operation libraries to speed up monte carlo and what not?~~
+- ~~Graph is off by 0.5 all the time, and the points of interest snap the the one below(i tihnk?) which isnt quite right idk, kinda scared to touch it~~
+- ~~ better input cleaning for spreadsheetgrids~~
+- ~~make get_one_tap_pity take in seeded rng~~
+- ~~cache using array buffer? dont know if it's worth the effort~~
+- ~~ fix the react stuff, i think there's way too much usememo(the website feels sluggish)~~
+- ~~improve how the cost estimation works / verify that it actually works~~
+- ~~Allow selling mats~~
+- ~~Raw gold graph and overall gold(including used in buying mats) lines in thegraph~~
+-~~ Artisan level editing~~
+~~#### Scale up compute~~ no need because these things will be parallel already and i dont have multiple computers
+
+- ~~set up slurm on laptop~~(maybe not)
+  - ~~maybe write a dispatcher instead of naively running them in parallel~~
+    -~~ wrap the current main function~~
+
+~~#### Analysis~~
+
+- ~~elo or percentage deviation? idk need to do more research~~
+- ~~ how to visualize / interact with this data~~
+- ~~ how to evaluate adaptive policies???~~ no need actually but uh whatever
+- ~~limit neighbor function - 1 click 10 taps, limit amt of toggles maybe~~
+  - ~~start with VERY broad neighbors - all true, all false etc, then refine until limit reached (such as 10 taps), test how much the limit affects performance~~
+
+-~~ visualize these using perfplot~~ plotly instead
+
+- ~~take average of many test cases i think (many trials?)~~
+- ~~store time, states evaluated and metric~~
+- ~~need to parse & aggregate this data then send to python(or just do it in python should be okay)~~
+    -~~ as in keep a parsed file of data that python can read off of~~ maybe not
 
 - ~~ make solvers stream intermediate results at x1000 evaluations / second?~~
 

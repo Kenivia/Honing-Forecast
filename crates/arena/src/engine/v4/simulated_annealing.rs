@@ -2,10 +2,10 @@ use hf_core::saddlepoint_approximation::average::DEBUG_AVERAGE;
 #[cfg(target_arch = "wasm32")]
 use hf_core::send_progress::send_progress;
 use hf_core::state_bundle::StateBundle;
-use rand::Rng;
 use rand::distr::Distribution;
 use rand::distr::weighted::WeightedIndex;
 use rand::seq::IteratorRandom;
+use rand::{Rng, random_bool};
 use std::f64::{MAX, MIN};
 
 #[cfg(not(target_arch = "wasm32"))]
@@ -37,6 +37,89 @@ fn acceptance<R: Rng>(
     rng.random_bool(prob)
 }
 
+pub struct AdaptiveScaler {
+    /// The current scaling factor (starts at a reasonable guess, e.g., 1.0 or 100.0)
+    pub current_scale: f64,
+    /// How many uphill (bad) moves we've seen in this batch
+    uphill_count: usize,
+    /// How many of those uphill moves we actually accepted
+    accepted_count: usize,
+    /// How many moves to observe before updating the scale (e.g., 100)
+    batch_size: usize,
+    /// Damping factor (0.0 to 1.0). Lower = smoother, Higher = more responsive.
+    /// Recommended: 0.1 to 0.2
+    learning_rate: f64,
+}
+
+impl AdaptiveScaler {
+    pub fn new(initial_guess: f64, batch_size: usize) -> Self {
+        Self {
+            current_scale: initial_guess,
+            uphill_count: 0,
+            accepted_count: 0,
+            batch_size,
+            learning_rate: 0.1,
+        }
+    }
+
+    /// Call this AFTER you have decided whether to accept/reject.
+    /// Returns: true if the scale was updated this step.
+    pub fn update_stats(
+        &mut self,
+        is_uphill_move: bool,
+        is_accepted: bool,
+        progress: f64, // 0.0 (start) to 1.0 (end)
+    ) {
+        // We only care about "bad" (uphill) moves for tuning Boltzmann
+        if !is_uphill_move {
+            // return false;
+        }
+
+        self.uphill_count += 1;
+        if is_accepted {
+            self.accepted_count += 1;
+        }
+
+        // Only update scale once we have a full batch
+        if self.uphill_count >= self.batch_size {
+            self.recalibrate(progress);
+            // Reset counters
+            self.uphill_count = 0;
+            self.accepted_count = 0;
+            // return true;
+        }
+        // false
+    }
+
+    fn recalibrate(&mut self, target_rate: f64) {
+        // 1. Calculate Measured Rate
+        // Clamp to avoid log(0) or log(1) math errors
+        let measured_rate =
+            (self.accepted_count as f64 / self.uphill_count as f64).clamp(0.001, 0.999);
+
+        // 2. Calculate Target Rate
+        // Exponential decay: Start at 80% acceptance, end at 0.1%
+        // let start_rate: f64 = 0.80;
+        // let end_rate: f64 = 0.001;
+        // Interpolate target based on progress
+        // This is a simple log-linear decay for the target rate
+        // let decay = (end_rate / start_rate).ln();
+        // let target_rate = start_rate * (decay * progress).exp();
+
+        // 3. The Robust Update Formula
+        // S_new = S_old * (ln(measured) / ln(target))^learning_rate
+        let ratio: f64 = measured_rate.ln() / target_rate.ln();
+
+        // Safety clamp on the update ratio to prevent explosions
+        // (e.g. don't let it grow/shrink by more than 2x in a single update)
+        // let safe_ratio = ratio.clamp(0.5, 2.0);
+
+        // Apply damped update
+        let adjustment = ratio.powf(self.learning_rate);
+
+        self.current_scale *= adjustment;
+    }
+}
 pub fn my_pmf(max_len: usize, expected: f64, ratio: f64) -> Vec<f64> {
     // If NaN/inf, return a safe default: all mass at 0
     let mut v = vec![0.0; max_len + 1];
@@ -52,13 +135,14 @@ fn my_weighted_rand<R: Rng>(
     init_temp: f64,
     offset: usize,
     ratio: f64,
+    upgrade_len: usize,
     rng: &mut R,
 ) -> usize {
     let res = WeightedIndex::new(my_pmf(
         (length - 1).max(1),
-        ((temp / (init_temp)).cbrt() * length as f64 - 1.0)
-            .min(length as f64 - 1.0)
-            .max(0.0),
+        (temp / init_temp * length as f64 - 1.0)
+            .min(length as f64)
+            .max(1.0 / upgrade_len as f64),
         ratio,
     ));
     if res.is_err() {
@@ -75,28 +159,32 @@ fn neighbour<R: Rng>(
     resolution: usize,
     rng: &mut R,
 ) {
+    let u_len = state_bundle.upgrade_arr.len();
     // PART 1: Special State (Unchanged by resolution as requested)
-    if state_bundle.special_state.len() > 1 {
-        let want_to_swap: usize = my_weighted_rand(
-            state_bundle.special_state.len(),
-            temp / 2.0,
-            init_temp,
-            1,
-            0.8,
-            rng,
-        );
-        for _ in 0..want_to_swap {
-            let want_to_swap_indices: Vec<usize> =
-                (0..state_bundle.special_state.len()).choose_multiple(rng, 2);
-            let first = want_to_swap_indices[0];
-            let second = want_to_swap_indices[1];
+    if random_bool(temp / init_temp) {
+        if state_bundle.special_state.len() > 1 {
+            let want_to_swap: usize = my_weighted_rand(
+                state_bundle.special_state.len(),
+                temp / 2.0,
+                init_temp,
+                0,
+                0.5,
+                u_len,
+                rng,
+            );
+            for _ in 0..want_to_swap {
+                let want_to_swap_indices: Vec<usize> =
+                    (0..state_bundle.special_state.len()).choose_multiple(rng, 2);
+                let first = want_to_swap_indices[0];
+                let second = want_to_swap_indices[1];
 
-            if !(state_bundle.upgrade_arr[first].succeeded
-                || state_bundle.upgrade_arr[second].succeeded)
-            {
-                let temp = state_bundle.special_state[first];
-                state_bundle.special_state[first] = state_bundle.special_state[second];
-                state_bundle.special_state[second] = temp;
+                if !(state_bundle.upgrade_arr[first].succeeded
+                    || state_bundle.upgrade_arr[second].succeeded)
+                {
+                    let temp = state_bundle.special_state[first];
+                    state_bundle.special_state[first] = state_bundle.special_state[second];
+                    state_bundle.special_state[second] = temp;
+                }
             }
         }
     }
@@ -121,8 +209,9 @@ fn neighbour<R: Rng>(
             num_blocks,
             temp,
             init_temp,
-            1,
+            0,
             0.8 / eff_resolution as f64,
+            u_len,
             rng,
         );
 
@@ -132,6 +221,7 @@ fn neighbour<R: Rng>(
             init_temp,
             1,
             0.8 / eff_resolution as f64,
+            u_len,
             rng,
         );
 
@@ -269,6 +359,8 @@ pub fn solve<R: Rng>(
     let mut best_state_so_far: StateBundle = state_bundle.clone();
     let mut temps_without_improvement = 1;
     let mut total_count: i64 = 0;
+    let mut scaler = AdaptiveScaler::new(state_bundle.metric.abs(), 50);
+
     while temp >= 0.0 {
         let current_resolution = if temp > temp_schedule_cutoff {
             // Logarithmic interpolation from Max Len -> Min Res
@@ -291,26 +383,28 @@ pub fn solve<R: Rng>(
         neighbour(&mut state_bundle, temp, init_temp, current_resolution, rng);
         state_bundle.metric = state_bundle.metric_router(metric_type, performance);
 
-        highest_seen = highest_seen.max(state_bundle.metric);
-        lowest_seen = lowest_seen.min(state_bundle.metric);
+        // highest_seen = highest_seen.max(state_bundle.metric);
+        // lowest_seen = lowest_seen.min(state_bundle.metric);
 
         if state_bundle.metric > best_state_so_far.metric {
             best_state_so_far.my_clone_from(&state_bundle);
             temps_without_improvement = 0;
         }
 
-        if acceptance(
-            state_bundle.metric,
-            prev_state.metric,
-            temp,
-            highest_seen - lowest_seen,
-            rng,
-        ) {
+        let delta = (prev_state.metric - state_bundle.metric) / scaler.current_scale;
+        let is_uphill = delta < 0.0; // Assuming maximization? Adjust if minimization.
+        let accepted = if !is_uphill {
+            true
+        } else {
+            let prob = (-delta.abs()).exp();
+            rng.random_bool(prob)
+        };
+        if accepted {
             prev_state.my_clone_from(&state_bundle);
         } else {
             state_bundle.my_clone_from(&prev_state);
         }
-
+        scaler.update_stats(is_uphill, accepted, (temp / init_temp) * 0.8);
         count += 1;
         if count > iterations_per_temp {
             count = 0;

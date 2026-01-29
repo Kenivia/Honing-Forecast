@@ -42,10 +42,10 @@ struct Output {
     prob_leftover: Vec<f64>,
 }
 
-// Include the generated-file as a separate module
-pub mod built_info {
-    include!(concat!(env!("OUT_DIR"), "/built.rs"));
-}
+// // Include the generated-file as a separate module
+// pub mod built_info {
+//     include!(concat!(env!("OUT_DIR"), "/built.rs"));
+// }
 
 fn current_time_string() -> String {
     let now = Local::now();
@@ -106,10 +106,7 @@ fn main() {
             remove_file(&file_name).expect("Failed to delete empty file");
         }
         let header: Header = Header {
-            version: built_info::FEATURES_LOWERCASE_STR
-                .to_string()
-                .replace("default, ", "")
-                .to_owned(),
+            version: ACTIVE_FEATURE.replace("default, ", "").to_owned(),
             build_time: current_time_string(),
             notes: NOTES.to_string(),
         };

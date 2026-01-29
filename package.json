@@ -3,7 +3,7 @@
     "private": true,
     "type": "module",
     "scripts": {
-        "build": "wasm-pack build crates/wasm --release --target web && npm run test && vite build",
+        "build": "wasm-pack build crates/wasm --release  --target web && npm run test && vite build",
         "predeploy": "npm run build",
         "deploy": "gh-pages -d dist",
         "lint": "eslint .",
