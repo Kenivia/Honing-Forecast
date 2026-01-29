@@ -18,7 +18,7 @@ use super::core::BATCH_SIZE;
 use super::core::MAX_BEST_SIZE;
 use super::core::MAX_ITERS;
 use super::one_batch::SolverStateBundle;
-#[cfg(not(target_arch = "wasm32"))]
+// #[cfg(not(target_arch = "wasm32"))]
 use crate::timer::Timer;
 
 pub fn my_push(
@@ -103,6 +103,7 @@ pub fn solve<R: Rng>(
         let mut new_scale = 0.0;
         for solver in solver_arr.iter_mut() {
             overall_performance.aggregate_counts(&solver.performance);
+            solver.performance = Performance::new();
             for (state, metric) in solver.best_n_states.drain() {
                 my_push(&mut overall_best_n_states, state, metric);
             }
@@ -127,13 +128,15 @@ pub fn solve<R: Rng>(
 
             #[cfg(target_arch = "wasm32")]
             {
+                state_bundle.clone_from_essence(
+                    overall_best_n_states.peek_max().unwrap().0,
+                    overall_best_n_states.peek_max().unwrap().1,
+                );
+                let mut dummy_performance = Performance::new();
+                state_bundle.metric_router(metric_type, &mut dummy_performance);
                 send_progress(
-                    &best_state_so_far.clone(),
-                    (100.0
-                        * (eqv_wall_time_iters as f64
-                            / (iterations_per_temp as f64 * (0.05_f64 / init_temp).ln()
-                                / 0.99_f64.ln())))
-                    .min(100.0),
+                    &state_bundle.clone(),
+                    (100.0 * (eqv_wall_time_iters as f64 / MAX_ITERS as f64)).min(100.0),
                 )
             }
         }

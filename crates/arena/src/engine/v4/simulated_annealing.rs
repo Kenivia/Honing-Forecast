@@ -8,7 +8,7 @@ use rand::seq::IteratorRandom;
 use rand::{Rng, random_bool};
 // use std::f64::{MAX, MIN};
 
-#[cfg(not(target_arch = "wasm32"))]
+// #[cfg(not(target_arch = "wasm32"))]
 use crate::timer::Timer;
 
 fn acceptance<R: Rng>(
