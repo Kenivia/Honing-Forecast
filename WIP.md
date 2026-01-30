@@ -5,20 +5,25 @@
 
 ### Now
 
-- ~~add performance aggregation in preparation for multithreaded algorithms~~
+#### Website
 
-- add maximize success prob optimizer button at some point
+- store & show show breakdown of average gold costs from here
+- instead of counting unique elements in statebundle it should read from juiceinfo instead
+
+- marquee for state grid also?
+
+- update the best known solution so that only "better" states will be colored purple
+- add "restore best known solution"?
+
+- slider instead of leftover value?
+
+  - Prob maximizing mode / main mode:
+- multiple selectable & editable express GET THIS DATA SOMEHOW???
+  - rework constant.rs to take in a json or something so it can interface with the website
+  - eventually T4.5 integration
+  - get the actual numbers from the korean website <https://icepeng.com/refining>
 
 #### Optimizations
-
-- maybe its time to get rid of Box< iterator >
-
-- cache the geom calculations  (special_prob seems fast enough so cbb rn)
-
-- can actually save 1 evaluation at the end of special_prob by setting the zero prob... (only when special state allows all things to be skipped  but like itd be trivial anyway so prolly not)
-
-- multi-threading????
-  - will prep by compling using all the right tools(i hope) and then figuring it out later
 
 ### Misc
 
@@ -40,27 +45,6 @@
 - use monte carlo to generate the distribution, then allow for a few strategies
   - ~~ no juice, full juice, no juice full scroll, full juice full scroll, FULL SCROLL etc~~ i cant be bothered, probably a waste anyway, just assume juice & scrool on grace is optimal
   - selectable double um balls event thing
-  
-#### Website
-
-- store & show show breakdown of average gold costs from here
-- instead of counting unique elements in statebundle it should read from juiceinfo instead
-
-- marquee for state grid also?
-
-- update the best known solution so that only "better" states will be colored purple
-- add "restore best known solution"?
-
-- stream intermediate results that'd be so cool
-
-  - slider instead of leftover value
-
-  - make sure all existing things work, then start work on the new page(s)
-    - Prob maximizing mode / main mode:
-- multiple selectable & editable express GET THIS DATA SOMEHOW???
-  - rework constant.rs to take in a json or something so it can interface with the website
-  - eventually T4.5 integration
-  - get the actual numbers from the korean website <https://icepeng.com/refining>
 
 ### Algorithm ideas
 
@@ -107,6 +91,18 @@
 
 ## Done / cancelled
 
+- ~~add performance aggregation in preparation for multithreaded algorithms~~
+
+- ~~add maximize success prob optimizer button at some point~~
+- ~~stream intermediate results that'd be so cool~~
+  - ~~ make sure all existing things work, then start work on the new page(s)~~ nope
+- ~~ maybe its time to get rid of Box< iterator >~~ theres no performance impact other thant memory usage apparently
+
+- ~~cache the geom calculations  (special_prob seems fast enough so cbb rn)~~ this wont work well with multithreading
+
+- ~~ can actually save 1 evaluation at the end of special_prob by setting the zero prob... (only when special state allows all things to be skipped)~~  but like itd be trivial anyway so prolly not
+- ~~multi-threading????~~
+  - ~~will prep by compling using all the right tools(i hope) and then figuring it out later~~
 ~~## DEV~~ ALL CANCELED COS NO LONGER RELEAVNT
 
 - ~~MUCH more tests, specifically:~~

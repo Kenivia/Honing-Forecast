@@ -19,6 +19,7 @@ export function buildPayload({
     stateBundleGrid,
     specialState,
     minResolution,
+    metricType,
 }: {
     topGrid: boolean[][]
     bottomGrid: boolean[][]
@@ -34,6 +35,7 @@ export function buildPayload({
     stateBundleGrid: StatePair[][][]
     specialState: number[]
     minResolution: number
+    metricType: number
 }) {
     const { mats, juice } = inputs
     // console.log(mats)
@@ -60,6 +62,7 @@ export function buildPayload({
         special_state: specialState,
         min_resolution: Math.max(1, Math.min(219, Math.floor(minResolution || 1))),
         num_threads: navigator.hardwareConcurrency,
+        metric_type: metricType,
     }
 
     // Always use the traditional tick-based approach

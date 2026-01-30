@@ -27,7 +27,7 @@ pub struct SolverStateBundle {
 
     pub rng: SmallRng,
     pub max_state_len: usize,
-    pub metric_type: i64,
+
     pub performance: Performance,
     // pub best_state_so_far: StateBundle,
     pub best_n_states: DoublePriorityQueue<StateEssence, OrderedFloat<f64>>,
@@ -43,7 +43,7 @@ impl SolverStateBundle {
         max_state_len: usize,
         performance: Performance,
         seed: u64,
-        metric_type: i64,
+
         best_n_states: &DoublePriorityQueue<StateEssence, OrderedFloat<f64>>,
     ) -> Self {
         Self {
@@ -54,7 +54,6 @@ impl SolverStateBundle {
 
             rng: SmallRng::seed_from_u64(seed),
             max_state_len,
-            metric_type,
             performance,
             best_n_states: best_n_states.clone(),
             prev_state: state_bundle.clone(),
@@ -90,9 +89,7 @@ impl SolverStateBundle {
                 current_resolution,
                 &mut self.rng,
             );
-            self.state_bundle.metric = self
-                .state_bundle
-                .metric_router(self.metric_type, &mut self.performance);
+            self.state_bundle.metric = self.state_bundle.metric_router(&mut self.performance);
 
             // highest_seen = highest_seen.max(state_bundle.metric);
             // lowest_seen = lowest_seen.min(state_bundle.metric);

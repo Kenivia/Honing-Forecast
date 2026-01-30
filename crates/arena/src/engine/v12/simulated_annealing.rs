@@ -63,7 +63,7 @@ fn compute_upgrade_impact(state_bundle: &mut StateBundle) -> Vec<f64> {
 }
 pub fn solve<R: Rng>(
     rng: &mut R,
-    metric_type: i64,
+
     mut state_bundle: StateBundle,
     overall_performance: &mut hf_core::performance::Performance,
 ) -> StateBundle {
@@ -81,7 +81,7 @@ pub fn solve<R: Rng>(
         .unwrap_or(state_bundle.min_resolution)
         .max(state_bundle.min_resolution);
 
-    state_bundle.metric = state_bundle.metric_router(metric_type, overall_performance);
+    state_bundle.metric = state_bundle.metric_router( overall_performance);
 
     let mut eqv_wall_time_iters: i64 = 0;
     let mut last_total_count: i64 = 0;
@@ -107,7 +107,6 @@ pub fn solve<R: Rng>(
             max_state_len,
             Performance::new(),
             rng.next_u64(),
-            metric_type,
             &overall_best_n_states,
             &upgrade_impacts,
         );
@@ -166,7 +165,7 @@ pub fn solve<R: Rng>(
                     overall_best_n_states.peek_max().unwrap().1,
                 );
                 let mut dummy_performance = Performance::new();
-                state_bundle.metric_router(metric_type, &mut dummy_performance);
+                state_bundle.metric_router( &mut dummy_performance);
                 send_progress(
                     &state_bundle.clone(),
                     (100.0 * (eqv_wall_time_iters as f64 / MAX_ITERS as f64)).min(100.0),

@@ -2,6 +2,7 @@
 #[cfg(target_arch = "wasm32")]
 use hf_core::send_progress::send_progress;
 use hf_core::state_bundle::StateBundle;
+use ordered_float::Float;
 use rand::Rng;
 use rand::distr::Distribution;
 use rand::distr::weighted::WeightedIndex;
@@ -25,8 +26,6 @@ pub static JUICE_TEMP_FACTOR: f64 = 3.0;
 pub static SPECIAL_TEMP_FACTOR: f64 = 1.0;
 
 pub static BLOCK_SIZE_MULTIPLIER: f64 = 1.0;
-pub static SPECIAL_CROSSOVER_MULTIPLIER: f64 = 0.5;
-pub static JUICE_CROSSOVER_MULTIPLIER: f64 = 1.0;
 
 pub fn my_pmf(max_len: usize, expected: f64, ratio: f64) -> Vec<f64> {
     // If NaN/inf, return a safe default: all mass at 0
@@ -99,10 +98,10 @@ pub fn neighbour(
     } else {
         let num_upgrades = state_bundle.upgrade_arr.len();
         let max_mutations = (num_upgrades as f64 * juice_temp_factor).ceil() as usize;
-        let num_to_mutate = rng.random_range(1..=max_mutations.max(1));
+        // let num_to_mutate = rng.random_range(1..=max_mutations.max(1));
         let mut already_mutated: Vec<bool> = vec![false; state_bundle.upgrade_arr.len()];
 
-        for _ in 0..num_to_mutate {
+        for _ in 0..max_mutations.max(1) {
             let u_idx = WeightedIndex::new(upgrade_weights.iter().zip(already_mutated.iter()).map(
                 |(x, alr)| {
                     if *alr {
@@ -182,7 +181,7 @@ pub fn neighbour(
                     let ind = rng.random_range(0..ids.len());
                    let out =  ids[ind];
                 //    if out ==   upgrade.state[ind].1{ ids[(ind + 1) % ids.len()]} else 
-                    out
+                   { out}
                 // } else {
                 //     upgrade.state[rng.random_range(start_idx..end_idx)].1
                 };

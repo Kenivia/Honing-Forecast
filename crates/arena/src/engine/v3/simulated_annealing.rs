@@ -346,7 +346,7 @@ pub fn solve<R: Rng>(
     if DEBUG_AVERAGE {
         neighbour(&mut state_bundle, temp, init_temp, max_len, rng);
     }
-    state_bundle.metric = state_bundle.metric_router(metric_type, performance);
+    state_bundle.metric = state_bundle.metric_router( performance);
     let mut prev_state: StateBundle = state_bundle.clone();
 
     let iterations_per_temp = 169;
@@ -379,7 +379,7 @@ pub fn solve<R: Rng>(
         };
 
         neighbour(&mut state_bundle, temp, init_temp, current_resolution, rng);
-        state_bundle.metric = state_bundle.metric_router(metric_type, performance);
+        state_bundle.metric = state_bundle.metric_router( performance);
 
         // highest_seen = highest_seen.max(state_bundle.metric);
         // lowest_seen = lowest_seen.min(state_bundle.metric);

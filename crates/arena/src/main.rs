@@ -158,16 +158,14 @@ fn main() {
             println!("Test case {:?} trial {}", key, trial_num);
 
             let mut state_performance: Performance = Performance::new();
-            let mut state_bundle: StateBundle = solve(
-                &mut rng,
-                *metric_type_num,
-                state_bundle.clone(),
-                &mut state_performance,
-            );
+            let mut this_state_bundle = state_bundle.clone();
+            this_state_bundle.metric_type = *metric_type_num;
+            let mut state_bundle: StateBundle =
+                solve(&mut rng, this_state_bundle, &mut state_performance);
 
             // Call metric on best state to get standalone performance metrics
             let mut best_state_performance: Performance = Performance::new();
-            let _ = state_bundle.metric_router(*metric_type_num, &mut best_state_performance);
+            let _ = state_bundle.metric_router(&mut best_state_performance);
 
             let output: Output = Output {
                 test_case: test_case_name.clone(),

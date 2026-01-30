@@ -22,6 +22,7 @@ pub struct StateBundle {
     #[serde(skip)]
     pub special_cache: HashMap<Vec<usize>, Vec<f64>>,
     pub num_threads: usize, // #[serde(skip)]
+
                             // pub scaler: Adaptive, // pub performance: Performance,
 }
 
@@ -88,8 +89,8 @@ impl StateBundle {
     //         }
     //     }
     // }
-    pub fn metric_router(&mut self, metric_type: i64, performance: &mut Performance) -> f64 {
-        match metric_type {
+    pub fn metric_router(&mut self, performance: &mut Performance) -> f64 {
+        match self.metric_type {
             0 => self.success_prob_metric(performance),
             1 => self.average_gold_metric(performance),
             _ => NAN,

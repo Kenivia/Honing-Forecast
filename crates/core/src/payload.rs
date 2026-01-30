@@ -32,8 +32,12 @@ pub struct Payload {
     pub min_resolution: usize,
     #[serde(default)]
     pub num_threads: usize,
+    #[serde(default = "default_one")]
+    pub metric_type: i64,
 }
-
+fn default_one() -> i64 {
+    1
+}
 impl StateBundle {
     pub fn init_from_inputs(
         hone_ticks: &[Vec<bool>],
@@ -53,6 +57,7 @@ impl StateBundle {
         succeeded_grid: Option<Vec<Vec<bool>>>,
         min_resolution: usize,
         num_threads: usize,
+        metric_type: i64,
     ) -> StateBundle {
         // web_sys::console::log_1(&"1".into());
         let (prep_output, upgrade_arr): (PreparationOutput, Vec<Upgrade>) =
@@ -115,6 +120,7 @@ impl StateBundle {
             payload.succeeded_grid,
             payload.min_resolution,
             payload.num_threads,
+            payload.metric_type,
         )
     }
 }

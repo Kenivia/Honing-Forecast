@@ -22,7 +22,7 @@ import CostToChanceSection from "./Sections/BudgetMode/BudgetModeSection.tsx"
 
 import InputsSection from "./Sections/Inputs/InputsSection.tsx"
 
-import GambaSection from "./Sections/GambaSimulator/GambaSection.tsx"
+// import GambaSection from "./Sections/GambaSimulator/GambaSection.tsx"
 // import LongTermSection from "./Sections/ForecastMode/ForecastModeSection.tsx"
 // const GambaSection = React.lazy(() => import('./GambaSection.tsx'));
 import Separator from "./Sections/Separator/Separator.tsx"
@@ -180,7 +180,6 @@ export default function HoningForecastUI() {
 
     const [optimizerProgress, setOptimizerProgress] = useState<number>(0)
 
-
     const [allowUserChangeState, setAllowUserChangeState] = useState<boolean>(true)
     // Lock x-axis state (shared across all graphs)
     const [lockXAxis, setLockXAxis] = useState<boolean>(false)
@@ -190,6 +189,7 @@ export default function HoningForecastUI() {
     // Income array state (6 grids, 7 rows each)
     const [incomeArr, setIncomeArr] = useState<number[][]>(() => Array.from({ length: 6 }, () => Array.from({ length: 7 }, () => 0)))
 
+    const [metricType, setMetricType] = useState<number>(1)
     // marquee state & refs (kept here so grids stay presentational)
     const topGridRef = useRef<HTMLDivElement | null>(null)
     const bottomGridRef = useRef<HTMLDivElement | null>(null)
@@ -553,6 +553,7 @@ export default function HoningForecastUI() {
             stateBundleGrid,
             specialState,
             minResolution,
+            metricType,
             // monteCarloResult,
         })
 
@@ -730,7 +731,8 @@ export default function HoningForecastUI() {
                 setFlatUnlockArr(res.upgrade_arr.map((_, index) => unlockGrid[res.upgrade_arr[index].piece_type][res.upgrade_arr[index].upgrade_index]))
                 setFlatSucceedArr(res.upgrade_arr.map((_, index) => succeededGrid[res.upgrade_arr[index].piece_type][res.upgrade_arr[index].upgrade_index]))
                 setSpecialState(res.special_state)
-                applyFlatToGrid(evaluateAverageResult,
+                applyFlatToGrid(
+                    evaluateAverageResult,
                     flatProgressArr,
                     progressGrid,
                     setProgressGrid,
@@ -742,7 +744,8 @@ export default function HoningForecastUI() {
                     setSucceededGrid,
                     flatStateBundle,
                     stateBundleGrid,
-                    setStateBundleGrid,)
+                    setStateBundleGrid,
+                )
                 // console.log(specialState)
             },
             debounceMs: 10,
@@ -761,6 +764,7 @@ export default function HoningForecastUI() {
         inputBundleKey,
         specialStateKey,
         minResolutionKey,
+        metricType,
     ])
 
     const optimizeAvgWorkerRef = useRef<Worker | null>(null)
@@ -787,7 +791,8 @@ export default function HoningForecastUI() {
                 setSpecialState(res.special_state)
                 setOptimizerMetric(res.metric)
                 setOptimizeAvgError(null)
-                applyFlatToGrid(evaluateAverageResult,
+                applyFlatToGrid(
+                    evaluateAverageResult,
                     flatProgressArr,
                     progressGrid,
                     setProgressGrid,
@@ -799,7 +804,8 @@ export default function HoningForecastUI() {
                     setSucceededGrid,
                     flatStateBundle,
                     stateBundleGrid,
-                    setStateBundleGrid,)
+                    setStateBundleGrid,
+                )
                 // console.log(specialState)
             },
             onError: (err) => {
@@ -821,6 +827,7 @@ export default function HoningForecastUI() {
         inputBundleKey,
         // specialStateKey,
         minResolutionKey,
+        metricType,
     ])
 
     useEffect(() => {
@@ -855,7 +862,6 @@ export default function HoningForecastUI() {
                     setEvaluateAverageResult(res)
 
                     setOptimizeAvgError(null)
-
                 },
                 onError: (err) => {
                     setOptimizeAvgError(String(err))
@@ -959,8 +965,8 @@ export default function HoningForecastUI() {
             ? Math.round(currentMetric) > Math.round(optimizerMetric)
                 ? "var(--better-than-optimizer)"
                 : Math.round(currentMetric) < Math.round(optimizerMetric)
-                    ? "var(--sub-optimal)"
-                    : null
+                  ? "var(--sub-optimal)"
+                  : null
             : "var(--sub-optimal)"
 
     console.log(Math.round(currentMetric), Math.round(optimizerMetric), optimizerMetric)
@@ -1104,7 +1110,8 @@ export default function HoningForecastUI() {
                             specialState={specialState}
                             setSpecialState={setSpecialState}
                             optimizerProgress={optimizerProgress}
-
+                            metricType={metricType}
+                            setMetricType={setMetricType}
                         />
                     </div>
                 )}

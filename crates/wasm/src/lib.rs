@@ -95,7 +95,7 @@ pub fn evaluate_average_wrapper(input: JsValue) -> JsValue {
     let mut state_bundle = StateBundle::init_from_payload(payload);
 
     let mut dummy_performance = Performance::new();
-    let metric = state_bundle.average_gold_metric(&mut dummy_performance);
+    let metric = state_bundle.metric_router(&mut dummy_performance);
     state_bundle.metric = metric;
     // state_bundle.update_dist();
     // state_bundle.update_individual_support();
@@ -119,30 +119,11 @@ pub fn optimize_average_wrapper(input: JsValue) -> JsValue {
 
     let payload: Payload = from_value(input).unwrap();
 
-    let state_bundle = StateBundle::init_from_inputs(
-        &payload.normal_hone_ticks,
-        &payload.mats_budget,
-        &payload.adv_hone_ticks,
-        payload.express_event,
-        &payload.user_price_arr,
-        &payload.adv_hone_strategy,
-        &payload.juice_books_budget,
-        &payload.juice_prices,
-        &payload.inp_leftover_values,
-        &payload.inp_leftover_juice_values,
-        payload.progress_grid,
-        payload.state_grid,
-        payload.special_state,
-        payload.unlocked_grid,
-        payload.succeeded_grid,
-        payload.min_resolution,
-        payload.num_threads,
-    );
+    let state_bundle = StateBundle::init_from_payload(payload);
 
     let mut rng: ThreadRng = rand::rng();
     let mut dummy_performance = Performance::new();
-    let mut best_state: StateBundle =
-        solve(&mut rng, 1, state_bundle.clone(), &mut dummy_performance);
+    let mut best_state: StateBundle = solve(&mut rng, state_bundle.clone(), &mut dummy_performance);
     // web_sys::console::log_1(&format!("{:?}", best_state).into());
 
     // doing all this cos the best state might not have ran this recently (my_clone doesn't copy these)

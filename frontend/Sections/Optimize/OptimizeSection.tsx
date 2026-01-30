@@ -40,6 +40,8 @@ type OptimizeSectionProps = {
     // gridRefs: React.RefObject<HTMLDivElement>[]
     // marquee: any
     optimizerProgress: number
+    metricType: number
+    setMetricType: React.Dispatch<React.SetStateAction<number>>
 }
 
 function my_alr_spent_map(already_spent: any, labels: string[], index: number) {
@@ -70,7 +72,9 @@ export default function OptimizeSection({
     evaluateAverageResult,
     specialState,
     setSpecialState,
-    optimizerProgress
+    optimizerProgress,
+    metricType,
+    setMetricType,
 
     // gridRefs,
     // onGridMouseDown,
@@ -97,6 +101,32 @@ export default function OptimizeSection({
     return (
         <div style={{ ...styles.inputSection, flexDirection: "row", maxWidth: "1200px", width: "100%" }}>
             <div>
+                <label style={{ display: "inline-flex", alignItems: "center", cursor: "pointer" }}>
+                    <input type="checkbox" checked={metricType == 1} onChange={(e) => setMetricType(e.target.checked ? 1 : 0)} style={{ display: "none" }} />
+                    <span
+                        style={{
+                            width: 40,
+                            height: 20,
+                            background: metricType == 1 ? "#4ade80" : "#ccc",
+                            borderRadius: 999,
+                            position: "relative",
+                            transition: "background 0.2s",
+                        }}
+                    >
+                        <span
+                            style={{
+                                position: "absolute",
+                                top: 2,
+                                left: metricType == 1 ? 22 : 2,
+                                width: 16,
+                                height: 16,
+                                background: "white",
+                                borderRadius: "50%",
+                                transition: "left 0.2s",
+                            }}
+                        />
+                    </span>
+                </label>
                 <div style={{ display: "flex", flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 8 }}>
                     <button
                         onClick={handleOptimizeAverageClick}
@@ -112,11 +142,7 @@ export default function OptimizeSection({
                         {optimizeAvgBusy ? "Cancel Optimize Average" : "Optimize Average"}
                     </button>
                     <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13 }}>
-                        <input
-                            type="checkbox"
-                            checked={autoRunOptimizer}
-                            onChange={(e) => setAutoRunOptimizer(e.target.checked)}
-                        />
+                        <input type="checkbox" checked={autoRunOptimizer} onChange={(e) => setAutoRunOptimizer(e.target.checked)} />
                         Auto run optimizer
                     </label>
 
@@ -165,14 +191,11 @@ export default function OptimizeSection({
                         allowUserChangeState={allowUserChangeState}
                         upgradeArr={evaluateAverageResult.upgrade_arr}
                         specialState={specialState}
-
                     />
                 )}
 
                 {
-                    <div
-                        style={{ display: "flex", flexDirection: "row", alignItems: "flex-start", gap: 0, minWidth: 200, flexShrink: 0, marginTop: 0 }}
-                    >
+                    <div style={{ display: "flex", flexDirection: "row", alignItems: "flex-start", gap: 0, minWidth: 200, flexShrink: 0, marginTop: 0 }}>
                         <div>Already spent:</div>
                         <SpreadsheetGrid
                             columnDefs={wideMatsColumnDefs}

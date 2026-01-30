@@ -39,6 +39,7 @@ fn main() {
             payload.succeeded_grid.clone(),
             payload.min_resolution,
             1,
+            payload.metric_type,
         );
         let (one_tap_costs, pity_costs) = state_bundle.get_one_tap_pity();
 
