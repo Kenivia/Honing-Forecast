@@ -139,14 +139,7 @@ pub fn solve<R: Rng>(
         }
         eqv_wall_time_iters += BATCH_SIZE;
     }
-    #[cfg(not(target_arch = "wasm32"))]
-    {
-        overall_performance.best_history.push((
-            timer.elapsed_sec(),
-            eqv_wall_time_iters * actual_thread_num as i64,
-            f64::from(*overall_best_n_states.peek_max().unwrap().1),
-        ));
-    }
+
     let best_pair = overall_best_n_states.peek_max().unwrap();
     state_bundle.clone_from_essence(best_pair.0, best_pair.1);
     state_bundle

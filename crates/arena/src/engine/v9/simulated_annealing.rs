@@ -57,7 +57,7 @@ pub fn solve<R: Rng>(
         .unwrap_or(state_bundle.min_resolution)
         .max(state_bundle.min_resolution);
 
-    state_bundle.metric = state_bundle.metric_router( overall_performance);
+    state_bundle.metric = state_bundle.metric_router(overall_performance);
 
     let mut eqv_wall_time_iters: i64 = 0;
     let mut last_total_count: i64 = 0;
@@ -81,7 +81,6 @@ pub fn solve<R: Rng>(
             max_state_len,
             Performance::new(),
             rng.next_u64(),
-
             &overall_best_n_states,
         );
         solver_arr.push(solver_state_bundle);
@@ -115,7 +114,8 @@ pub fn solve<R: Rng>(
             solver.scaler.current_scale = new_scale;
         }
 
-        if eqv_wall_time_iters * actual_thread_num - last_total_count * actual_thread_num >= 1000 {
+               eqv_wall_time_iters += BATCH_SIZE;
+ if eqv_wall_time_iters * actual_thread_num - last_total_count * actual_thread_num >= 1000 {
             last_total_count = eqv_wall_time_iters;
             #[cfg(not(target_arch = "wasm32"))]
             {
@@ -133,23 +133,16 @@ pub fn solve<R: Rng>(
                     overall_best_n_states.peek_max().unwrap().1,
                 );
                 let mut dummy_performance = Performance::new();
-                state_bundle.metric_router( &mut dummy_performance);
+                state_bundle.metric_router(&mut dummy_performance);
                 send_progress(
                     &state_bundle.clone(),
                     (100.0 * (eqv_wall_time_iters as f64 / MAX_ITERS as f64)).min(100.0),
                 )
             }
         }
-        eqv_wall_time_iters += BATCH_SIZE;
+
     }
-    #[cfg(not(target_arch = "wasm32"))]
-    {
-        overall_performance.best_history.push((
-            timer.elapsed_sec(),
-            eqv_wall_time_iters * actual_thread_num as i64,
-            f64::from(*overall_best_n_states.peek_max().unwrap().1),
-        ));
-    }
+
     let best_pair = overall_best_n_states.peek_max().unwrap();
     state_bundle.clone_from_essence(best_pair.0, best_pair.1);
     state_bundle

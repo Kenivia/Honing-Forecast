@@ -114,6 +114,7 @@ pub fn solve<R: Rng>(
             solver.scaler.current_scale = new_scale;
         }
 
+        eqv_wall_time_iters += BATCH_SIZE;
         if eqv_wall_time_iters * actual_thread_num - last_total_count * actual_thread_num >= 1000 {
             last_total_count = eqv_wall_time_iters;
             #[cfg(not(target_arch = "wasm32"))]
@@ -139,16 +140,8 @@ pub fn solve<R: Rng>(
                 )
             }
         }
-        eqv_wall_time_iters += BATCH_SIZE;
     }
-    #[cfg(not(target_arch = "wasm32"))]
-    {
-        overall_performance.best_history.push((
-            timer.elapsed_sec(),
-            eqv_wall_time_iters * actual_thread_num as i64,
-            f64::from(*overall_best_n_states.peek_max().unwrap().1),
-        ));
-    }
+
     let best_pair = overall_best_n_states.peek_max().unwrap();
     state_bundle.clone_from_essence(best_pair.0, best_pair.1);
     state_bundle
