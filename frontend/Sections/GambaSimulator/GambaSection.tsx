@@ -130,29 +130,29 @@ export default function GambaSection({
         unlockCostsRef.current = unlockCosts
     }, [unlockCosts])
     // Initialize parser worker
-    useEffect(() => {
-        // Create a persistent worker for parser calls
-        parserWorkerRef.current = new Worker(new URL("@/WasmInterface/js_to_wasm.ts", import.meta.url), { type: "module" })
+    // useEffect(() => {
+    //     // Create a persistent worker for parser calls
+    //     parserWorkerRef.current = new Worker(new URL("@/WasmInterface/js_to_wasm.ts", import.meta.url), { type: "module" })
 
-        // Set up message handler once
-        parserWorkerRef.current.onmessage = (e) => {
-            const { id, type, result } = e.data
-            if (type === "result" && pendingRequests.current.has(id)) {
-                pendingRequests.current.get(id)!(result)
-                pendingRequests.current.delete(id)
-            }
-        }
+    //     // Set up message handler once
+    //     parserWorkerRef.current.onmessage = (e) => {
+    //         const { id, type, result } = e.data
+    //         if (type === "result" && pendingRequests.current.has(id)) {
+    //             pendingRequests.current.get(id)!(result)
+    //             pendingRequests.current.delete(id)
+    //         }
+    //     }
 
-        return () => {
-            if (parserWorkerRef.current) {
-                parserWorkerRef.current.terminate()
-            }
-            // Clean up auto-attempt interval
-            if (autoAttemptIntervalRef.current) {
-                clearTimeout(autoAttemptIntervalRef.current)
-            }
-        }
-    }, [])
+    //     return () => {
+    //         if (parserWorkerRef.current) {
+    //             parserWorkerRef.current.terminate()
+    //         }
+    //         // Clean up auto-attempt interval
+    //         if (autoAttemptIntervalRef.current) {
+    //             clearTimeout(autoAttemptIntervalRef.current)
+    //         }
+    //     }
+    // }, [])
 
     // Function to call parser and get upgrade array using unified payload format
     const callParser = useCallback(async () => {

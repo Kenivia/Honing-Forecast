@@ -100,19 +100,19 @@ pub fn solve<R: Rng>(
             .par_iter_mut()
             .for_each(|x| x.one_batch(BATCH_SIZE));
 
-        // let mut new_scale = 0.0;
+        let mut new_scale = 0.0;
         for solver in solver_arr.iter_mut() {
             overall_performance.aggregate_counts(&solver.performance);
             solver.performance = Performance::new();
             for (state, metric) in solver.best_n_states.drain() {
                 my_push(&mut overall_best_n_states, state, metric);
             }
-            // new_scale += solver.scaler.current_scale;
+            new_scale += solver.scaler.current_scale;
         }
-        // new_scale /= actual_thread_num as f64;
+        new_scale /= actual_thread_num as f64;
         for solver in solver_arr.iter_mut() {
             solver.best_n_states = overall_best_n_states.clone();
-            // solver.scaler.current_scale = new_scale;
+            solver.scaler.current_scale = new_scale;
         }
 
         if eqv_wall_time_iters * actual_thread_num - last_total_count * actual_thread_num >= 1000 {

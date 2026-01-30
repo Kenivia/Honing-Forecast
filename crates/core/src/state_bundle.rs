@@ -168,6 +168,6 @@ impl StateBundle {
 
 #[derive(Debug, Hash, Eq, PartialEq, Clone)]
 pub struct StateEssence {
-    state_arr: Vec<Vec<(bool, usize)>>,
-    special_state: Vec<usize>,
+    pub state_arr: Vec<Vec<(bool, usize)>>,
+    pub special_state: Vec<usize>,
 }

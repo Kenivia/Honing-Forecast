@@ -5,7 +5,7 @@
 
 ### Now
 
-- add performance aggregation in preparation for multithreaded algorithms
+- ~~add performance aggregation in preparation for multithreaded algorithms~~
 
 - add maximize success prob optimizer button at some point
 
@@ -68,17 +68,20 @@
 
 - some kind of heatmap of which bits were the most impactful? but i feel like this wouldnt actually do much
   - can definitely think about which upgrades were the most impactful tho
-- maybe add some way to keep track of where bits are to make neighbor potentially more efficient
-
+  - same with special
+- ~~maybe add some way to keep track of where bits are to make neighbor potentially more efficient~~
 - multi-thread and each worker tune one "dimension" like special, state of this one, state of other one etc?
   - do i need to allow multiple changes at high temperature or will the acceptance function take care of local one dimensional minima
   - maybe it would never discover like in-between optimums?
-  - this definitely lends itself to some kind of genetic algorithm
+  - this definitely lends itself to soome kind of genetic algorithm
 
-- keep a top 10 list and randomly restart to them instead of just the top 1
+- ~~ keep a top 10 list and randomly restart to them instead of just the top 1~~
   - ^^ this also sounds like genertic algorithm
 
+- ~~maybe do a 2 staged thing where it optimizes the special first?~~
+
 - whatever happens it must consider the fact that sometimes we dont hvae special and changing the state wont do shit
+  - this all lead to some kind of heat map of how likely special / an upgrade has room for optimization
 
 ## Next big step(s)
 

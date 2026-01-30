@@ -14,7 +14,7 @@ pub static RESOLUTION_CUTOFF_TEMP: f64 = 33.3;
 pub static MAX_BEST_SIZE: usize = 10;
 pub static ITERS_PER_TEMP: i64 = 7;
 pub static MAX_ITERS: i64 = 14000;
-pub static BATCH_SIZE: i64 = 500;
+pub static BATCH_SIZE: i64 = 2000;
 pub static ALPHA: f64 = 0.99;
 pub fn my_pmf(max_len: usize, expected: f64, ratio: f64) -> Vec<f64> {
     // If NaN/inf, return a safe default: all mass at 0

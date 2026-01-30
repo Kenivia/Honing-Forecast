@@ -1,4 +1,5 @@
 use super::scaler::AdaptiveScaler;
+use hf_core::constants::FLOAT_TOL;
 use hf_core::performance::Performance;
 use hf_core::saddlepoint_approximation::average::DEBUG_AVERAGE;
 #[cfg(target_arch = "wasm32")]
@@ -15,6 +16,7 @@ use priority_queue::DoublePriorityQueue;
 use rand::Rng;
 
 use super::core::BATCH_SIZE;
+use super::core::CONCURRENT_COUNT;
 use super::core::MAX_BEST_SIZE;
 use super::core::MAX_ITERS;
 use super::one_batch::SolverStateBundle;
@@ -37,6 +39,28 @@ pub fn my_push(
     }
 }
 
+fn compute_upgrade_impact(state_bundle: &mut StateBundle) -> Vec<f64> {
+    let probs = state_bundle.compute_leftover_probs();
+
+    let mut weights = Vec::with_capacity(state_bundle.upgrade_arr.len());
+
+    for upgrade in &state_bundle.upgrade_arr {
+        let mut magnitude: f64 = 0.01;
+        for (index, p) in probs.iter().take(7).enumerate() {
+            magnitude += (state_bundle.prep_output.leftover_values[index] * p
+                + state_bundle.prep_output.price_arr[index] * (1.0 - p))
+                * upgrade.cost_dist[index]
+                    .access_collapsed()
+                    .iter()
+                    .map(|(s, p)| s * p)
+                    .sum::<f64>(); // essentially avg with 0 budget, idk kinda makes sense to me
+        }
+        weights.push(magnitude);
+    }
+
+    let sum: f64 = weights.iter().sum::<f64>();
+    weights.iter_mut().map(|x| *x / sum).collect()
+}
 pub fn solve<R: Rng>(
     rng: &mut R,
     metric_type: i64,
@@ -67,13 +91,15 @@ pub fn solve<R: Rng>(
         DoublePriorityQueue::new();
     overall_best_n_states.push(state_bundle.to_essence(), OrderedFloat(state_bundle.metric));
 
-    let actual_thread_num: i64 = 16;
+    let actual_thread_num: i64 = CONCURRENT_COUNT;
     // if state_bundle.num_threads == 0 {
     //     16
     // } else {
     //     state_bundle.num_threads
     // };
+    let upgrade_impacts = compute_upgrade_impact(&mut state_bundle);
     let mut solver_arr: Vec<SolverStateBundle> = Vec::with_capacity(actual_thread_num as usize);
+
     for _ in 0..actual_thread_num {
         let solver_state_bundle: SolverStateBundle = SolverStateBundle::initialize(
             &state_bundle,
@@ -83,6 +109,7 @@ pub fn solve<R: Rng>(
             rng.next_u64(),
             metric_type,
             &overall_best_n_states,
+            &upgrade_impacts,
         );
         solver_arr.push(solver_state_bundle);
     }
@@ -100,19 +127,25 @@ pub fn solve<R: Rng>(
             .par_iter_mut()
             .for_each(|x| x.one_batch(BATCH_SIZE));
 
-        // let mut new_scale = 0.0;
-        for solver in solver_arr.iter_mut() {
+        let mut new_scale = 0.0;
+        let mut new_special_cache = solver_arr[0].state_bundle.special_cache.clone();
+        for (index, solver) in solver_arr.iter_mut().enumerate() {
             overall_performance.aggregate_counts(&solver.performance);
             solver.performance = Performance::new();
             for (state, metric) in solver.best_n_states.drain() {
                 my_push(&mut overall_best_n_states, state, metric);
             }
-            // new_scale += solver.scaler.current_scale;
+            new_scale += solver.scaler.current_scale;
+            if index > 0 {
+                new_special_cache.extend(solver.state_bundle.special_cache.clone());
+            }
         }
-        // new_scale /= actual_thread_num as f64;
+        new_scale /= actual_thread_num as f64;
         for solver in solver_arr.iter_mut() {
             solver.best_n_states = overall_best_n_states.clone();
-            // solver.scaler.current_scale = new_scale;
+            solver.scaler.current_scale = new_scale;
+            solver.state_bundle.special_cache = new_special_cache.clone();
+            solver.perform_crossover();
         }
 
         if eqv_wall_time_iters * actual_thread_num - last_total_count * actual_thread_num >= 1000 {

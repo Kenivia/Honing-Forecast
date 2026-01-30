@@ -1,3 +1,5 @@
+use super::core::my_weighted_rand;
+
 use super::core::ITERS_PER_TEMP;
 use super::core::new_temp;
 use super::simulated_annealing::my_push;
@@ -5,13 +7,15 @@ use super::simulated_annealing::my_push;
 use super::core::neighbour;
 use super::scaler::AdaptiveScaler;
 use hf_core::performance::Performance;
-// use hf_core::saddlepoint_approximation::average::DEBUG_AVERAGE;
+
 #[cfg(target_arch = "wasm32")]
 use hf_core::send_progress::send_progress;
 use hf_core::state_bundle::StateBundle;
 use hf_core::state_bundle::StateEssence;
-// use hf_core::upgrade::State;
+
+use ordered_float::Float;
 use ordered_float::OrderedFloat;
+use rand::seq::IteratorRandom;
 
 use super::core::{INIT_TEMP, RESOLUTION_CUTOFF_TEMP};
 use priority_queue::DoublePriorityQueue;
@@ -34,6 +38,7 @@ pub struct SolverStateBundle {
     pub prev_state: StateBundle,
     pub count: i64,
     pub temps_without_improvement: i64,
+    pub upgrade_impact: Vec<f64>,
 }
 
 impl SolverStateBundle {
@@ -45,6 +50,7 @@ impl SolverStateBundle {
         seed: u64,
         metric_type: i64,
         best_n_states: &DoublePriorityQueue<StateEssence, OrderedFloat<f64>>,
+        upgrade_impact: &Vec<f64>,
     ) -> Self {
         Self {
             state_bundle: state_bundle.clone(),
@@ -60,11 +66,40 @@ impl SolverStateBundle {
             prev_state: state_bundle.clone(),
             count: 0,
             temps_without_improvement: 0,
+            upgrade_impact: upgrade_impact.clone(),
         }
     }
+    pub fn perform_crossover(&mut self) {
+        if self.best_n_states.len() < 2 {
+            return;
+        }
+        let best = self.best_n_states.peek_max().unwrap();
+        self.state_bundle.clone_from_essence(best.0, best.1);
 
+        // let random_idx = self.rng.random_range(1..self.best_n_states.len());
+        // let partner_essence = self.best_n_states.iter().nth(random_idx).unwrap().0;
+
+        // if self.rng.random_bool(self.temp / INIT_TEMP) {
+        //     self.state_bundle
+        //         .special_state
+        //         .clone_from(&partner_essence.special_state);
+        // }
+
+        // let random_indices = (0..self.state_bundle.upgrade_arr.len()).choose_multiple(
+        //     &mut self.rng,
+        //     (self.temp / INIT_TEMP * (self.state_bundle.upgrade_arr.len() - 1) as f64).ceil()
+        //         as usize,
+        // );
+
+        // for index in random_indices {
+        //     let this = &mut self.state_bundle.upgrade_arr[index].state;
+        //     this.payload.clone_from(&partner_essence.state_arr[index]);
+        //     this.update_hash();
+        // }
+    }
     pub fn one_batch(&mut self, batch_iters: i64) {
-        for _ in 0..batch_iters {
+        self.prev_state.my_clone_from(&self.state_bundle);
+        for i in 0..batch_iters {
             let current_resolution = if self.temp > RESOLUTION_CUTOFF_TEMP {
                 // Logarithmic interpolation from Max Len -> Min Res
                 let log_curr = self.temp.ln();
@@ -83,13 +118,16 @@ impl SolverStateBundle {
             } else {
                 self.state_bundle.min_resolution
             };
+            if i >= 0 {
+                neighbour(
+                    &mut self.state_bundle,
+                    self.temp,
+                    current_resolution,
+                    &mut self.rng,
+                    &self.upgrade_impact,
+                );
+            }
 
-            neighbour(
-                &mut self.state_bundle,
-                self.temp,
-                current_resolution,
-                &mut self.rng,
-            );
             self.state_bundle.metric = self
                 .state_bundle
                 .metric_router(self.metric_type, &mut self.performance);
@@ -103,6 +141,7 @@ impl SolverStateBundle {
                     self.state_bundle.to_essence(),
                     OrderedFloat(self.state_bundle.metric),
                 );
+                self.temps_without_improvement = 0;
             }
 
             let delta =
@@ -126,15 +165,8 @@ impl SolverStateBundle {
             if self.count > ITERS_PER_TEMP {
                 self.count = 0;
                 if self.temps_without_improvement as f64 > (1.0 * self.temp).max(3.0) {
-                    let chosen_index: usize = self.rng.random_range(0..self.best_n_states.len());
-                    for (index, (chosen, metric)) in self.best_n_states.iter().enumerate() {
-                        if index < chosen_index {
-                            continue;
-                        }
-                        self.state_bundle.clone_from_essence(chosen, metric);
-                        self.temps_without_improvement = 0;
-                        break;
-                    }
+                    self.perform_crossover();
+                    self.temps_without_improvement = 0;
                 }
                 self.temps_without_improvement += 1;
                 self.temp = new_temp(self.temp);

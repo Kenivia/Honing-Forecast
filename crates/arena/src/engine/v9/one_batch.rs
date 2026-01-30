@@ -5,12 +5,12 @@ use super::simulated_annealing::my_push;
 use super::core::neighbour;
 use super::scaler::AdaptiveScaler;
 use hf_core::performance::Performance;
-// use hf_core::saddlepoint_approximation::average::DEBUG_AVERAGE;
+
 #[cfg(target_arch = "wasm32")]
 use hf_core::send_progress::send_progress;
 use hf_core::state_bundle::StateBundle;
 use hf_core::state_bundle::StateEssence;
-// use hf_core::upgrade::State;
+
 use ordered_float::OrderedFloat;
 
 use super::core::{INIT_TEMP, RESOLUTION_CUTOFF_TEMP};
@@ -103,6 +103,7 @@ impl SolverStateBundle {
                     self.state_bundle.to_essence(),
                     OrderedFloat(self.state_bundle.metric),
                 );
+                self.temps_without_improvement = 0;
             }
 
             let delta =

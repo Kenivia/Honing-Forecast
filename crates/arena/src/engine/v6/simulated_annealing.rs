@@ -45,7 +45,7 @@ pub fn solve<R: Rng>(
 ) -> StateBundle {
     let timer = Timer::start();
 
-    let init_temp: f64 = if DEBUG_AVERAGE { -1.0 } else { 333.0 };
+    // let init_temp: f64 = if DEBUG_AVERAGE { -1.0 } else { 333.0 };
     // let mut temp: f64 = init_temp;
 
     // Calculate max state length to establish the starting "coarse" resolution
