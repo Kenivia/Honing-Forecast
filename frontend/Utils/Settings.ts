@@ -53,12 +53,13 @@ export function writeSettings(
     dataSize,
     incomeArr,
     minResolution,
-    specialState,
-    succeededGrid,
-    unlockGrid,
-    stateBundleGrid,
-    progressGrid,
+    // specialState,
+    // succeededGrid,
+    // unlockGrid,
+    // stateBundleGrid,
+    // progressGrid,
 ) {
+    console.log("saving")
     const toSave = {
         topGrid,
         bottomGrid,
@@ -80,11 +81,11 @@ export function writeSettings(
         dataSize,
         incomeArr,
         minResolution,
-        specialState,
-        succeededGrid,
-        unlockGrid,
-        stateBundleGrid,
-        progressGrid,
+        // specialState,
+        // succeededGrid,
+        // unlockGrid,
+        // stateBundleGrid,
+        // progressGrid,
     }
     localStorage.setItem(STORAGE_KEY, JSON.stringify(toSave))
 }
@@ -109,11 +110,11 @@ export function readSettings(
     setDataSize,
     setIncomeArr,
     setMinResolution,
-    setSpecialState,
-    setSucceededGrid,
-    setUnlockGrid,
-    setStateBundleGrid,
-    setProgressGrid,
+    // setSpecialState,
+    // setSucceededGrid,
+    // setUnlockGrid,
+    // setStateBundleGrid,
+    // setProgressGrid,
 ) {
     const raw = localStorage.getItem(STORAGE_KEY)
     if (!raw) return
@@ -130,7 +131,7 @@ export function readSettings(
         if (typeof parsed.desired_chance === "string") set_desired_chance(parsed.desired_chance)
         if (isStringOrNumberRecord(parsed.userMatsOwned, MATS_LABELS)) setUserMatsOwned(parsed.userMatsOwned)
         if (isStringOrNumberRecord(parsed.userMatsPrices, MATS_PRICE_LABELS)) setUserMatsPrices(parsed.userMatsPrices)
-        if (isStringOrNumberRecord(parsed.userMatsLeftover, MATS_LABELS)) setUserMatsLeftover(parsed.userMatsLeftover)
+        if (isStringOrNumberRecord(parsed.userMatsLeftover, MATS_PRICE_LABELS)) setUserMatsLeftover(parsed.userMatsLeftover)
         if (isStringOrNumberRecord(parsed.userWeaponJuiceOwned, JUICE_WEAPON_LABELS)) setUserWeaponJuiceOwned(parsed.userWeaponJuiceOwned)
         if (isStringOrNumberRecord(parsed.userArmorJuiceOwned, JUICE_ARMOR_LABELS)) setUserArmorJuiceOwned(parsed.userArmorJuiceOwned)
         if (isStringOrNumberRecord(parsed.userWeaponJuicePrices, JUICE_WEAPON_LABELS)) setUserWeaponJuicePrices(parsed.userWeaponJuicePrices)
@@ -143,10 +144,10 @@ export function readSettings(
         if (Array.isArray(parsed.incomeArr) && parsed.incomeArr.length === 6 && parsed.incomeArr.every((row) => Array.isArray(row) && row.length === 7))
             setIncomeArr(parsed.incomeArr)
         if (typeof parsed.minResolution === "number") setMinResolution(parsed.minResolution)
-        if (Array.isArray(parsed.specialState) && parsed.specialState.every((value) => typeof value === "number")) setSpecialState(parsed.specialState)
-        if (isGrid(parsed.succeededGrid, TOP_ROWS, TOP_COLS, (cell) => typeof cell === "boolean")) setSucceededGrid(parsed.succeededGrid)
-        if (isGrid(parsed.unlockGrid, TOP_ROWS, TOP_COLS, (cell) => typeof cell === "boolean")) setUnlockGrid(parsed.unlockGrid)
-        if (isStatePairGrid(parsed.stateBundleGrid, TOP_ROWS, TOP_COLS)) setStateBundleGrid(parsed.stateBundleGrid)
-        if (isGrid(parsed.progressGrid, TOP_ROWS, TOP_COLS, (cell) => typeof cell === "number")) setProgressGrid(parsed.progressGrid)
+        // if (Array.isArray(parsed.specialState) && parsed.specialState.every((value) => typeof value === "number")) setSpecialState(parsed.specialState)
+        // if (isGrid(parsed.succeededGrid, TOP_ROWS, TOP_COLS, (cell) => typeof cell === "boolean")) setSucceededGrid(parsed.succeededGrid)
+        // if (isGrid(parsed.unlockGrid, TOP_ROWS, TOP_COLS, (cell) => typeof cell === "boolean")) setUnlockGrid(parsed.unlockGrid)
+        // if (isStatePairGrid(parsed.stateBundleGrid, TOP_ROWS, TOP_COLS)) setStateBundleGrid(parsed.stateBundleGrid)
+        // if (isGrid(parsed.progressGrid, TOP_ROWS, TOP_COLS, (cell) => typeof cell === "number")) setProgressGrid(parsed.progressGrid)
     }
 }

@@ -8,7 +8,7 @@ export const SMALL_GRAPH_WIDTH = 640
 export const SMALL_GRAPH_HEIGHT = 320
 // Styled Material UI Slider with custom colors
 export const StyledSlider = styled(Slider)(() => ({
-    width: 300,
+    width: 100,
     color: "var(--slider-track-active)",
     "& .MuiSlider-track": {
         border: "none",
@@ -35,10 +35,11 @@ export const StyledSlider = styled(Slider)(() => ({
         },
     },
     "& .MuiSlider-valueLabel": {
-        backgroundColor: "var(--slider-thumb-bg)",
-        color: "var(--text-primary)",
+        backgroundColor: "var(--accent-hover)",
+        color: "black",
         fontSize: "12px",
-        fontWeight: "bold",
+        // fontWeight: "bold",
+        border: "1px solid white",
     },
 }))
 
@@ -188,10 +189,10 @@ export const createColumnDefs = () => {
             color: "var(--grid-cell-text)",
         },
         {
-            headerName: "Leftover value",
+            headerName: "How much do you care about leftover mats?",
             editable: true,
             flex: 1,
-            width: "50px",
+            width: "100px",
             background: "var(--grid-cell-bg)",
             backgroundSelected: "var(--grid-cell-selected)",
             color: "var(--grid-cell-text)",
@@ -221,7 +222,7 @@ export const createColumnDefs = () => {
             headerName: "Leftover value",
             editable: true,
             flex: 1,
-            width: "50px",
+            width: "170px",
             background: "var(--grid-cell-bg)",
             backgroundSelected: "var(--grid-cell-selected)",
             color: "var(--grid-cell-text)",

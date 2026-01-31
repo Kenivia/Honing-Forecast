@@ -10,12 +10,12 @@
 #### Website
 
 - store & show show breakdown of average gold costs from here
-- instead of counting unique elements in statebundle it should read from juiceinfo instead
+- ~~instead of counting unique elements in statebundle it should read from juiceinfo instead~~
 
 - marquee for state grid also?
 
-- update the best known solution so that only "better" states will be colored purple
-- add "restore best known solution"?
+- ~~update the best known solution so that only "better" states will be colored purple~~ kind confusing gonna stick to 2 colors
+- ~~add "restore best known solution"?~~
 
 - slider instead of leftover value?
 

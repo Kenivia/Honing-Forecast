@@ -251,11 +251,11 @@ export default function HoningForecastUI() {
                 setDataSize,
                 setIncomeArr,
                 setMinResolution,
-                setSpecialState,
-                setSucceededGrid,
-                setUnlockGrid,
-                setStateBundleGrid,
-                setProgressGrid,
+                // setSpecialState,
+                // setSucceededGrid,
+                // setUnlockGrid,
+                // setStateBundleGrid,
+                // setProgressGrid,
             )
         } catch (e) {
             // ignore corrupted storage
@@ -337,11 +337,11 @@ export default function HoningForecastUI() {
                     dataSize,
                     incomeArr,
                     minResolution,
-                    specialState,
-                    succeededGrid,
-                    unlockGrid,
-                    stateBundleGrid,
-                    progressGrid,
+                    // specialState,
+                    // succeededGrid,
+                    // unlockGrid,
+                    // stateBundleGrid,
+                    // progressGrid,
                 )
             } catch (e) {
                 // ignore quota or serialization errors
@@ -374,11 +374,11 @@ export default function HoningForecastUI() {
         cumulativeGraph,
         dataSize,
         minResolution,
-        specialState,
-        succeededGrid,
-        unlockGrid,
-        stateBundleGrid,
-        progressGrid,
+        // specialState,
+        // succeededGrid,
+        // unlockGrid,
+        // stateBundleGrid,
+        // progressGrid,
         incomeArr,
     ])
 
@@ -744,27 +744,27 @@ export default function HoningForecastUI() {
             // setCachedGraphData: setCachedAverageGraphData,
             onSuccess: (res) => {
                 // console.log(inputBundleKey)
-                setFlatStateBundle(res.upgrade_arr.map((upgrade) => upgrade.state))
-                setFlatProgressArr(res.upgrade_arr.map((_, index) => progressGrid[res.upgrade_arr[index].piece_type][res.upgrade_arr[index].upgrade_index]))
-                setFlatUnlockArr(res.upgrade_arr.map((_, index) => unlockGrid[res.upgrade_arr[index].piece_type][res.upgrade_arr[index].upgrade_index]))
-                setFlatSucceedArr(res.upgrade_arr.map((_, index) => succeededGrid[res.upgrade_arr[index].piece_type][res.upgrade_arr[index].upgrade_index]))
-                setSpecialState(res.special_state)
+                // setFlatStateBundle(res.upgrade_arr.map((upgrade) => upgrade.state))
+                // setFlatProgressArr(res.upgrade_arr.map((_, index) => progressGrid[res.upgrade_arr[index].piece_type][res.upgrade_arr[index].upgrade_index]))
+                // setFlatUnlockArr(res.upgrade_arr.map((_, index) => unlockGrid[res.upgrade_arr[index].piece_type][res.upgrade_arr[index].upgrade_index]))
+                // setFlatSucceedArr(res.upgrade_arr.map((_, index) => succeededGrid[res.upgrade_arr[index].piece_type][res.upgrade_arr[index].upgrade_index]))
+                // setSpecialState(res.special_state)
                 updateBestSolution(res)
-                applyFlatToGrid(
-                    evaluateAverageResult,
-                    flatProgressArr,
-                    progressGrid,
-                    setProgressGrid,
-                    flatUnlockArr,
-                    unlockGrid,
-                    setUnlockGrid,
-                    flatSucceedArr,
-                    succeededGrid,
-                    setSucceededGrid,
-                    flatStateBundle,
-                    stateBundleGrid,
-                    setStateBundleGrid,
-                )
+                // applyFlatToGrid(
+                //     evaluateAverageResult,
+                //     flatProgressArr,
+                //     progressGrid,
+                //     setProgressGrid,
+                //     flatUnlockArr,
+                //     unlockGrid,
+                //     setUnlockGrid,
+                //     flatSucceedArr,
+                //     succeededGrid,
+                //     setSucceededGrid,
+                //     flatStateBundle,
+                //     stateBundleGrid,
+                //     setStateBundleGrid,
+                // )
                 // console.log(specialState)
             },
             debounceMs: 10,
@@ -804,9 +804,9 @@ export default function HoningForecastUI() {
             onSuccess: (res) => {
                 // console.log(inputBundleKey)
                 setFlatStateBundle(res.upgrade_arr.map((upgrade) => upgrade.state))
-                setFlatProgressArr(res.upgrade_arr.map((_, index) => progressGrid[res.upgrade_arr[index].piece_type][res.upgrade_arr[index].upgrade_index]))
-                setFlatUnlockArr(res.upgrade_arr.map((_, index) => unlockGrid[res.upgrade_arr[index].piece_type][res.upgrade_arr[index].upgrade_index]))
-                setFlatSucceedArr(res.upgrade_arr.map((_, index) => succeededGrid[res.upgrade_arr[index].piece_type][res.upgrade_arr[index].upgrade_index]))
+                // setFlatProgressArr(res.upgrade_arr.map((_, index) => progressGrid[res.upgrade_arr[index].piece_type][res.upgrade_arr[index].upgrade_index]))
+                // setFlatUnlockArr(res.upgrade_arr.map((_, index) => unlockGrid[res.upgrade_arr[index].piece_type][res.upgrade_arr[index].upgrade_index]))
+                // setFlatSucceedArr(res.upgrade_arr.map((_, index) => succeededGrid[res.upgrade_arr[index].piece_type][res.upgrade_arr[index].upgrade_index]))
                 setSpecialState(res.special_state)
                 updateBestSolution(res)
                 setOptimizeAvgError(null)

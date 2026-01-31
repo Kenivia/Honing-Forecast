@@ -120,12 +120,12 @@ export default function OptimizeSection({
         <div style={{ ...styles.inputSection, flexDirection: "row", maxWidth: "1200px", width: "100%" }}>
             <div>
                 <label style={{ display: "inline-flex", alignItems: "center", cursor: "pointer" }}>
-                    <input type="checkbox" checked={metricType == 1} onChange={(e) => setMetricType(e.target.checked ? 1 : 0)} style={{ display: "none" }} />
+                    <input type="checkbox" checked={metricType == 0} onChange={(e) => setMetricType(e.target.checked ? 0 : 1)} style={{ display: "none" }} />
                     <span
                         style={{
                             width: 40,
                             height: 20,
-                            background: metricType == 1 ? "#4ade80" : "#ccc",
+                            background: metricType == 0 ? "var(--prob-mode)" : "var(--average-mode)",
                             borderRadius: 999,
                             position: "relative",
                             transition: "background 0.2s",
@@ -135,7 +135,7 @@ export default function OptimizeSection({
                             style={{
                                 position: "absolute",
                                 top: 2,
-                                left: metricType == 1 ? 22 : 2,
+                                left: metricType == 0 ? 22 : 2,
                                 width: 16,
                                 height: 16,
                                 background: "white",
@@ -169,17 +169,17 @@ export default function OptimizeSection({
                             borderRadius: 4,
                             border: "1px solid var(--btn-border)",
                             cursor: canRestoreBest ? "pointer" : "not-allowed",
-                            opacity: canRestoreBest ? 1 : 0.6,
+                            opacity: canRestoreBest ? 1 : 0.3,
                         }}
                     >
                         Restore Best
                     </button>
                     <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13 }}>
                         <input type="checkbox" checked={autoRunOptimizer} onChange={(e) => setAutoRunOptimizer(e.target.checked)} />
-                        Auto run optimizer
+                        Auto start optimizer
                     </label>
 
-                    {optimizeAvgError && <span style={{ fontSize: 12, color: "var(--text)" }}>{optimizeAvgError}</span>}
+                    {optimizeAvgError && <span style={{ fontSize: 12, color: "red" }}>Error: {optimizeAvgError}</span>}
                 </div>
                 {optimizeAvgBusy && <span>Optimizer progress: {optimizerProgress.toFixed(2)}%</span>}
                 <br />
