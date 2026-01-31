@@ -1,13 +1,8 @@
-use super::core::JUICE_CROSSOVER_MULTIPLIER;
-use super::core::SPECIAL_CROSSOVER_MULTIPLIER;
+use std::f64::NAN;
 
-use super::core::my_weighted_rand;
-
-use super::core::ITERS_PER_TEMP;
-use super::core::new_temp;
+use super::constants::*;
 use super::simulated_annealing::my_push;
 
-use super::core::neighbour;
 use super::scaler::AdaptiveScaler;
 use hf_core::performance::Performance;
 
@@ -20,7 +15,6 @@ use ordered_float::Float;
 use ordered_float::OrderedFloat;
 use rand::seq::IteratorRandom;
 
-use super::core::{INIT_TEMP, RESOLUTION_CUTOFF_TEMP};
 use priority_queue::DoublePriorityQueue;
 use rand::Rng;
 use rand::SeedableRng;
@@ -58,7 +52,7 @@ impl SolverStateBundle {
             state_bundle: state_bundle.clone(),
             scaler,
 
-            temp: INIT_TEMP,
+            temp: NAN,
 
             rng: SmallRng::seed_from_u64(seed),
             max_state_len,
@@ -77,62 +71,65 @@ impl SolverStateBundle {
         }
         let best = self.best_n_states.peek_max().unwrap();
         self.state_bundle.clone_from_essence(best.0, best.1);
+        let progress = self.progress();
 
-        let random_idx = self.rng.random_range(1..self.best_n_states.len());
-        let partner_essence = self.best_n_states.iter().nth(random_idx).unwrap().0;
-
-        if self
-            .rng
-            .random_bool(self.temp / INIT_TEMP * SPECIAL_CROSSOVER_MULTIPLIER)
-        {
-            self.state_bundle
-                .special_state
-                .clone_from(&partner_essence.special_state);
-        }
-
-        let random_indices = (0..self.state_bundle.upgrade_arr.len()).choose_multiple(
+        let indices = (0..self.best_n_states.len()).choose_multiple(
             &mut self.rng,
-            (self.temp / INIT_TEMP
-                * JUICE_CROSSOVER_MULTIPLIER
-                * (self.state_bundle.upgrade_arr.len() - 1) as f64)
-                .ceil() as usize,
+            ((self.best_n_states.len() as f64 * (1.0 - progress) * 0.5)
+                .round()
+                .max(1.0)) as usize,
         );
+        for random_idx in indices {
+            let partner_essence = self.best_n_states.iter().nth(random_idx).unwrap().0;
 
-        for index in random_indices {
-            let this = &mut self.state_bundle.upgrade_arr[index].state;
-            this.payload.clone_from(&partner_essence.state_arr[index]);
-            this.update_hash();
+            if self.rng.random_bool(1.0 - self.progress()) {
+                self.state_bundle
+                    .special_state
+                    .clone_from(&partner_essence.special_state);
+            }
+            let progress = self.progress();
+            let random_indices = (0..self.state_bundle.upgrade_arr.len()).choose_multiple(
+                &mut self.rng,
+                ((1.0 - progress) * (self.state_bundle.upgrade_arr.len() - 1) as f64).ceil()
+                    as usize,
+            );
+
+            for index in random_indices {
+                let this = &mut self.state_bundle.upgrade_arr[index].state;
+                this.payload.clone_from(&partner_essence.state_arr[index]);
+                this.update_hash();
+            }
+        }
+    }
+    pub fn current_resolution(&self) -> usize {
+        if self.progress() > COOLING_PHASE_START {
+            (self.lam_rate() / MAGIC_NUMBER).round() as usize * DEFAULT_RESOLUTION
+        } else {
+            self.state_bundle.min_resolution
+        }
+    }
+    pub fn progress(&self) -> f64 {
+        self.count as f64 / MAX_ITERS as f64
+    }
+
+    pub fn lam_rate(&self) -> f64 {
+        if self.progress() < WARM_UP_PHASE_END {
+            MAGIC_NUMBER
+                + (1.0 - MAGIC_NUMBER)
+                    * (MAGIC_NUMBER * 1000.0).powf(-self.progress() / WARM_UP_PHASE_END)
+        } else if self.progress() < COOLING_PHASE_START {
+            MAGIC_NUMBER
+        } else {
+            MAGIC_NUMBER
+                * (MAGIC_NUMBER * 1000.0)
+                    .powf(-(self.progress() - COOLING_PHASE_START) / (1.0 - COOLING_PHASE_START)) // i mean this 1000 seems to work fine for all MAX_ITERS so whatever
         }
     }
     pub fn one_batch(&mut self, batch_iters: i64) {
         self.prev_state.my_clone_from(&self.state_bundle);
         for i in 0..batch_iters {
-            let current_resolution = if self.temp > RESOLUTION_CUTOFF_TEMP {
-                // Logarithmic interpolation from Max Len -> Min Res
-                let log_curr = self.temp.ln();
-                let log_start = INIT_TEMP.ln();
-                let log_end = RESOLUTION_CUTOFF_TEMP.ln();
-
-                // 0.0 at cutoff, 1.0 at start
-                let ratio = ((log_curr - log_end) / (log_start - log_end)).clamp(0.0, 1.0);
-
-                ((self.state_bundle.min_resolution as f64
-                    + (self.max_state_len as f64 - self.state_bundle.min_resolution as f64)
-                        * ratio)
-                    / self.state_bundle.min_resolution as f64)
-                    .floor() as usize
-                    * self.state_bundle.min_resolution
-            } else {
-                self.state_bundle.min_resolution
-            };
             if i >= 0 {
-                neighbour(
-                    &mut self.state_bundle,
-                    self.temp,
-                    current_resolution,
-                    &mut self.rng,
-                    &self.upgrade_impact,
-                );
+                self.neighbour();
             }
 
             self.state_bundle.metric = self.state_bundle.metric_router(&mut self.performance);
@@ -164,17 +161,17 @@ impl SolverStateBundle {
                 self.state_bundle.my_clone_from(&self.prev_state);
             }
             self.scaler
-                .update_stats(is_uphill, accepted, (self.temp / INIT_TEMP) * 0.69);
+                .update_stats(is_uphill, accepted, self.lam_rate());
             self.count += 1;
 
             if self.count > ITERS_PER_TEMP {
-                self.count = 0;
+                // self.count = 0;
                 if self.temps_without_improvement as f64 > (1.0 * self.temp).max(3.0) {
                     self.perform_crossover();
                     self.temps_without_improvement = 0;
                 }
                 self.temps_without_improvement += 1;
-                self.temp = new_temp(self.temp);
+                // self.temp = new_temp(self.temp);
             }
         }
     }

@@ -1,0 +1,197 @@
+use std::f64::NAN;
+
+use super::constants::*;
+
+use super::constants::ITERS_PER_TEMP;
+
+use super::simulated_annealing::my_push;
+
+use hf_core::performance::Performance;
+
+#[cfg(target_arch = "wasm32")]
+use hf_core::send_progress::send_progress;
+use hf_core::state_bundle::StateBundle;
+use hf_core::state_bundle::StateEssence;
+
+use ordered_float::OrderedFloat;
+use rand::seq::IteratorRandom;
+
+use priority_queue::DoublePriorityQueue;
+use rand::Rng;
+use rand::SeedableRng;
+use rand::rngs::SmallRng;
+pub struct SolverStateBundle {
+    pub state_bundle: StateBundle,
+
+    pub temp: f64,
+
+    pub rng: SmallRng,
+    pub max_state_len: usize,
+
+    pub performance: Performance,
+    // pub best_state_so_far: StateBundle,
+    pub best_n_states: DoublePriorityQueue<StateEssence, OrderedFloat<f64>>,
+    pub prev_state: StateBundle,
+    pub count: i64,
+    pub temps_without_improvement: i64,
+    pub upgrade_impact: Vec<f64>,
+    pub accept_rate: f64,
+}
+
+impl SolverStateBundle {
+    pub fn initialize(
+        state_bundle: &StateBundle,
+
+        max_state_len: usize,
+        performance: Performance,
+        seed: u64,
+        best_n_states: &DoublePriorityQueue<StateEssence, OrderedFloat<f64>>,
+        upgrade_impact: &Vec<f64>,
+    ) -> Self {
+        Self {
+            state_bundle: state_bundle.clone(),
+
+            temp: NAN,
+
+            rng: SmallRng::seed_from_u64(seed),
+            max_state_len,
+
+            performance,
+            best_n_states: best_n_states.clone(),
+            prev_state: state_bundle.clone(),
+            count: 0,
+            temps_without_improvement: 0,
+            upgrade_impact: upgrade_impact.clone(),
+            accept_rate: 0.5,
+        }
+    }
+    pub fn perform_crossover(&mut self) {
+        if self.best_n_states.len() < 2 {
+            return;
+        }
+        let best = self.best_n_states.peek_max().unwrap();
+        self.state_bundle.clone_from_essence(best.0, best.1);
+
+        // let random_idx = self.rng.random_range(1..self.best_n_states.len());
+        // let partner_essence = self.best_n_states.iter().nth(random_idx).unwrap().0;
+
+        // if self.rng.random_bool(1.0 - self.progress()) {
+        //     self.state_bundle
+        //         .special_state
+        //         .clone_from(&partner_essence.special_state);
+        // }
+
+        // let progress = self.progress();
+        // let random_indices = (0..self.state_bundle.upgrade_arr.len()).choose_multiple(
+        //     &mut self.rng,
+        //     ((1.0 - progress) * (self.state_bundle.upgrade_arr.len() - 1) as f64).ceil() as usize,
+        // );
+
+        // for index in random_indices {
+        //     let this = &mut self.state_bundle.upgrade_arr[index].state;
+        //     this.payload.clone_from(&partner_essence.state_arr[index]);
+        //     this.update_hash();
+        // }
+    }
+    pub fn progress(&self) -> f64 {
+        self.count as f64 / MAX_ITERS as f64
+    }
+
+    pub fn lam_rate(&self) -> f64 {
+        if self.progress() < WARM_UP_PHASE_END {
+            MAGIC_NUMBER
+                + (1.0 - MAGIC_NUMBER)
+                    * (MAGIC_NUMBER * 1000.0).powf(-self.progress() / WARM_UP_PHASE_END)
+        } else if self.progress() < COOLING_PHASE_START {
+            MAGIC_NUMBER
+        } else {
+            MAGIC_NUMBER
+                * (MAGIC_NUMBER * 1000.0)
+                    .powf(-(self.progress() - COOLING_PHASE_START) / (1.0 - COOLING_PHASE_START)) // i mean this 1000 seems to work fine for all MAX_ITERS so whatever
+        }
+    }
+    fn recalibrate(&mut self, accepted: bool, delta: f64) {
+        let learning_factor: f64 = if self.progress() < 0.15 {
+            WARM_UP_LEARNING_FACTOR
+        } else {
+            USUAL_LEARNING_FACTOR
+        };
+
+        if accepted {
+            self.accept_rate = ((learning_factor - 1.0) * self.accept_rate + 1.0) / learning_factor;
+        } else {
+            self.accept_rate = ((learning_factor - 1.0) * self.accept_rate) / learning_factor;
+        }
+        let desired_prob = self.lam_rate();
+
+        let proposed_temp = -delta.abs() / (desired_prob.max(0.99).ln());
+        if self.temp.is_nan() {
+            self.temp = proposed_temp;
+        } else if self.count < 100 {
+            let actual_learn = (self.count as f64).min(learning_factor).max(1.0).recip();
+            self.temp = (1.0 - actual_learn) * self.temp + actual_learn * proposed_temp;
+        }
+
+        if self.accept_rate > desired_prob {
+            self.temp *= 0.999;
+        } else {
+            self.temp /= 0.999;
+        }
+    }
+
+    pub fn current_resolution(&self) -> usize {
+        if self.progress() > COOLING_PHASE_START {
+            (self.lam_rate() / MAGIC_NUMBER).round() as usize * DEFAULT_RESOLUTION
+        } else {
+            self.state_bundle.min_resolution
+        }
+    }
+    pub fn one_batch(&mut self, batch_iters: i64) {
+        self.prev_state.my_clone_from(&self.state_bundle);
+        for i in 0..batch_iters {
+            if i >= 0 {
+                self.neighbour();
+            }
+
+            self.state_bundle.metric = self.state_bundle.metric_router(&mut self.performance);
+
+            // highest_seen = highest_seen.max(state_bundle.metric);
+            // lowest_seen = lowest_seen.min(state_bundle.metric);
+
+            if OrderedFloat(self.state_bundle.metric) > *self.best_n_states.peek_max().unwrap().1 {
+                my_push(
+                    &mut self.best_n_states,
+                    self.state_bundle.to_essence(),
+                    OrderedFloat(self.state_bundle.metric),
+                );
+                self.temps_without_improvement = 0;
+            }
+
+            let delta = self.prev_state.metric - self.state_bundle.metric;
+            let is_uphill = delta < 0.0;
+            let accepted = if !is_uphill || self.temp.is_nan() {
+                true
+            } else {
+                let prob = (delta / self.temp).exp();
+                self.rng.random_bool(prob)
+            };
+            self.recalibrate(accepted, delta);
+            if accepted {
+                self.prev_state.my_clone_from(&self.state_bundle);
+            } else {
+                self.state_bundle.my_clone_from(&self.prev_state);
+            }
+
+            self.count += 1;
+
+            // if self.progress() > COOLING_PHASE_START {
+            //     self.count = 0;
+            //     if self.temps_without_improvement > 100 {
+            //         self.perform_crossover();
+            //         self.temps_without_improvement = 0;
+            //     }
+            //     self.temps_without_improvement += 1;
+            // }
+        }
+    }
+}

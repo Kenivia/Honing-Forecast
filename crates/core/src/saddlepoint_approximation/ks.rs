@@ -169,11 +169,12 @@ impl Support {
         //     // panic!();
         //     return (NAN, NAN, NAN, NAN, NAN);
         // }
+        let inv_sum = sum.recip();
 
-        mean /= sum;
-        second /= sum;
-        third /= sum;
-        fourth /= sum;
+        mean *= inv_sum;
+        second *= inv_sum;
+        third *= inv_sum;
+        fourth *= inv_sum;
 
         let mu2 = (second - mean * mean).max(0.0);
         // total_k2 += mu2;

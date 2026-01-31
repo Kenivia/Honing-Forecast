@@ -89,7 +89,7 @@ impl StateBundle {
                 special_state.unwrap()
             },
             special_invalid_index: None,
-            metric_type: -1,
+            metric_type,
             metric: -1.0,
             prep_output,
             special_cache: HashMap::new(),

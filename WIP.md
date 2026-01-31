@@ -7,6 +7,8 @@
 
 - v10 seems to choke on cases where there's a lot of special availiable and do very well on low special, maybe adaptive annealing will help or maybe a more informed starting position via upgrade_impact?
 
+- implement the "naive" version that assumes no mats owned
+
 #### Website
 
 - store & show show breakdown of average gold costs from here
