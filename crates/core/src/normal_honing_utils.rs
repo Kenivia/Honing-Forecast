@@ -49,7 +49,7 @@ impl StateBundle {
         for (support_index, cost) in out.iter_mut().enumerate() {
             *cost += self
                 .extract_support_with_meta(support_index as i64, 0)
-                .map(|support| support.max_value.ceil() as i64)
+                .map(|support| support.access_collapsed().iter().last().unwrap().0.ceil() as i64)
                 .sum::<i64>();
         }
 
@@ -58,14 +58,19 @@ impl StateBundle {
     pub fn get_one_tap_pity(&self) -> (Vec<i64>, Vec<i64>) {
         (self.one_tap(), self.pity())
     }
-    pub fn find_min_max(&self, support_index: i64, skip_count: usize) -> (f64, f64) {
+    pub fn find_min_max(
+        &self,
+        support_index: i64,
+        skip_count: usize,
+        // compute_biased: bool,
+    ) -> (f64, f64) {
         let min_value = self
             .extract_support_with_meta(support_index, skip_count)
-            .map(|support| support.gap_size)
+            .map(|support| support.access_collapsed().iter().next().unwrap().0)
             .sum();
         let max_value = self
             .extract_support_with_meta(support_index, skip_count)
-            .map(|support| support.max_value)
+            .map(|support| support.access_collapsed().iter().last().unwrap().0)
             .sum();
         (min_value, max_value)
     }
@@ -194,7 +199,7 @@ impl StateBundle {
                 upgrade.state.hash,
                 &mut upgrade.prob_dist,
                 first_gap,
-                cost_so_far,
+                // cost_so_far,
             );
 
             // upgrade.combined_gold_costs.associated_state_hash

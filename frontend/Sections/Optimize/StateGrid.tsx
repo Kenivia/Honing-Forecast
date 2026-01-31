@@ -1,6 +1,6 @@
 import { CELL_H, CELL_W, JUICE_LABELS, PIECE_NAMES } from "@/Utils/Constants.ts"
 import { styles } from "@/Utils/Styles.ts"
-import React, { useMemo } from "react"
+
 import Icon from "@/Components/Icon.tsx"
 import "@/Components/CheckboxGrid.css"
 import "./StateGrid.css"
@@ -19,6 +19,7 @@ interface RowBundleProps {
     onUpdateStatePairs: (_: StatePair[]) => void
     allowUserChangeState: boolean
     upgrade: any
+    uniqueBookNumbers: number[]
 }
 
 const RowBundle = ({
@@ -33,15 +34,16 @@ const RowBundle = ({
     onUpdateStatePairs,
     allowUserChangeState,
     upgrade,
+    uniqueBookNumbers,
 }: RowBundleProps) => {
     // 2.1 Find unique "book numbers" (excluding 0) and sort ascending
-    const uniqueBookNumbers = useMemo(() => {
-        const numbers = new Set<number>()
-        statePairs.forEach((pair) => {
-            if (pair[1] !== 0) numbers.add(pair[1])
-        })
-        return Array.from(numbers).sort((a, b) => a - b)
-    }, [statePairs])
+    // const uniqueBookNumbers = useMemo(() => {
+    //     const numbers = new Set<number>()
+    //     statePairs.forEach((pair) => {
+    //         if (pair[1] !== 0) numbers.add(pair[1])
+    //     })
+    //     return Array.from(numbers).sort((a, b) => a - b)
+    // }, [statePairs])
 
     // Determine Grid Dimensions
     // Rows: Unique Books + Juice (1) + Progress (1)
@@ -294,7 +296,7 @@ const RowBundle = ({
                                                 style={
                                                     {
                                                         "--checkbox-content": "um idk why an empty string doesn't over write the default",
-                                                        background: "transparent",
+                                                        background: cell.type === "progress" && cell.active ? "var( --checkbox-checked-bg)" : "transparent",
                                                     } as React.CSSProperties
                                                 }
                                             />
@@ -371,6 +373,7 @@ interface ComplexGridProps {
     allowUserChangeState: boolean
     upgradeArr: any[]
     specialState: number[]
+    juiceInfo: any
     // setSpecialState: React.Dispatch<React.SetStateAction<number[]>>
 }
 
@@ -386,6 +389,7 @@ export default function StateGridsManager({
     allowUserChangeState,
     upgradeArr,
     specialState,
+    juiceInfo,
     // setSpecialState,
 }: ComplexGridProps) {
     // Requirement 7: overflow: auto to avoid going off edge
@@ -425,7 +429,7 @@ export default function StateGridsManager({
     ) {
         return <div>Error: Input arrays have mismatched lengths.</div>
     }
-
+    // console.log(juiceInfo)
     return (
         <div
             className="complex-grid-manager"
@@ -450,6 +454,7 @@ export default function StateGridsManager({
                     onUpdateSucceed={(val) => handleUpdateSucceed(index, val)}
                     onUpdateStatePairs={(pairs) => handleUpdateStateBundle(index, pairs)}
                     upgrade={upgradeArr[index]}
+                    uniqueBookNumbers={juiceInfo.ids[upgradeArr[index].upgrade_index].slice(1)}
                 />
             ))}
         </div>

@@ -89,14 +89,9 @@ impl Support {
 
         let biggest_shift = theta
             * if theta >= 0.0 {
-                self.max_value
+                self.access_collapsed().iter().last().unwrap().0
             } else {
-                self.access_collapsed()
-                    .iter()
-                    // .skip(meta_support.first_non_zero_prob_index) // i mean this should just always be 0 now
-                    .next()
-                    .unwrap()
-                    .0
+                self.access_collapsed().iter().next().unwrap().0
             };
 
         if self.linear {

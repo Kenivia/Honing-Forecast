@@ -5,8 +5,6 @@
 
 ### Now
 
-- v10 seems to choke on cases where there's a lot of special availiable and do very well on low special, maybe adaptive annealing will help or maybe a more informed starting position via upgrade_impact?
-
 - implement the "naive" version that assumes no mats owned
 
 #### Website
@@ -94,6 +92,8 @@
 - Something seems to be broken in drag-to-select spreadsheetgrid
 
 ## Done / cancelled
+
+- ~~v10 seems to choke on cases where there's a lot of special availiable and do very well on low special, maybe adaptive annealing will help or maybe a more informed starting position via upgrade_impact?~~
 
 - ~~add performance aggregation in preparation for multithreaded algorithms~~
 

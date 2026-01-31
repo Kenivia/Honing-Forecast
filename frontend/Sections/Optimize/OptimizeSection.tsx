@@ -191,6 +191,7 @@ export default function OptimizeSection({
                         allowUserChangeState={allowUserChangeState}
                         upgradeArr={evaluateAverageResult.upgrade_arr}
                         specialState={specialState}
+                        juiceInfo={evaluateAverageResult.prep_output.juice_info}
                     />
                 )}
 
