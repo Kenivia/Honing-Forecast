@@ -47,7 +47,7 @@ export const RESET_UI_DEFAULTS = {
     prev_checked_arr_bottom: Array.from({ length: BOTTOM_COLS }, () => false),
     userMatsOwned: Object.fromEntries(MATS_LABELS.map((label) => [label, "0"])),
     userMatsPrices: Object.fromEntries(MATS_LABELS.slice(0, 7).map((label, index) => [label, DEFAULT_MATS_PRICES[index]])),
-    userMatsLeftover: Object.fromEntries(MATS_LABELS.map((label, index) => [label, DEFAULT_MATS_LEFTOVER[index] ])),
+    userMatsLeftover: Object.fromEntries(MATS_LABELS.map((label, index) => [label, DEFAULT_MATS_LEFTOVER[index]])),
     userWeaponJuiceOwned: Object.fromEntries(JUICE_LABELS.map((labels) => [labels[0], "0"])),
     userArmorJuiceOwned: Object.fromEntries(JUICE_LABELS.map((labels) => [labels[1], "0"])),
     userWeaponJuicePrices: Object.fromEntries(JUICE_LABELS.map((labels, index) => [labels[0], DEFAULT_JUICE_PRICES[index]?.[0] ?? 0])),
@@ -71,16 +71,13 @@ export const RESET_UI_DEFAULTS = {
     stateBundleGrid: Array.from({ length: TOP_ROWS }, () => Array.from({ length: TOP_COLS }, () => [])),
     progressGrid: Array.from({ length: TOP_ROWS }, () => Array.from({ length: TOP_COLS }, () => 0)),
     evaluateAverageResult: null as any,
-    optimizerMetric: null as number | null,
 }
 
 export const DEMO_UI_VALUES = {
     topGrid: Array.from({ length: TOP_ROWS }, (_, rowIndex) =>
         Array.from({ length: TOP_COLS }, (_, colIndex) => colIndex === 19 || colIndex === 20 || colIndex === 21 || (colIndex > 21 && rowIndex === 5)),
     ),
-    bottomGrid: Array.from({ length: BOTTOM_ROWS }, (_, piece) =>
-        Array.from({ length: BOTTOM_COLS }, (_, colIndex) => colIndex === 3 && piece < 3),
-    ),
+    bottomGrid: Array.from({ length: BOTTOM_ROWS }, (_, piece) => Array.from({ length: BOTTOM_COLS }, (_, colIndex) => colIndex === 3 && piece < 3)),
     prev_checked_arr: Array.from({ length: TOP_COLS }, (_, colIndex) => colIndex === 19 || colIndex === 20 || colIndex === 21),
     prev_checked_arr_bottom: Array.from({ length: BOTTOM_COLS }, () => false),
 

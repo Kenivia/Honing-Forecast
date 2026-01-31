@@ -1,12 +1,7 @@
 import React from "react"
-import {
-    DEMO_INCOME_1680_ROSTER_BOUND,
-    DEMO_INCOME_1720_CHAR_BOUND,
-    DEMO_UI_VALUES,
-    RESET_UI_DEFAULTS,
-} from "@/Utils/Constants.ts"
+import { DEMO_INCOME_1680_ROSTER_BOUND, DEMO_INCOME_1720_CHAR_BOUND, DEMO_UI_VALUES, RESET_UI_DEFAULTS } from "@/Utils/Constants.ts"
 
-const cloneGrid = <T,>(grid: T[][]) => grid.map((row) => row.map((cell) => cell))
+const cloneGrid = <T>(grid: T[][]) => grid.map((row) => row.map((cell) => cell))
 const cloneStateBundleGrid = (grid: [boolean, number][][][]) =>
     grid.map((row) => row.map((cell) => cell.map((pair) => [pair[0], pair[1]] as [boolean, number])))
 
@@ -15,7 +10,7 @@ export function createClearAll({
     setBottomGrid,
     set_prev_checked_arr,
     set_prev_checked_arr_bottom,
-     setUserMatsOwned,
+    setUserMatsOwned,
     setUserMatsPrices,
     setUserMatsLeftover,
     setUserWeaponJuiceOwned,
@@ -43,9 +38,11 @@ export function createClearAll({
     setStateBundleGrid,
     setProgressGrid,
     setEvaluateAverageResult,
-    setOptimizerMetric,
-    // setMonteCarloResult,
-}: {
+    setBestMetric,
+    setBestFlatStateBundle,
+    setBestFlatSpecialState: setBestFlatSpecialGrid,
+}: // setMonteCarloResult,
+{
     setTopGrid: React.Dispatch<React.SetStateAction<any>>
     setBottomGrid: React.Dispatch<React.SetStateAction<any>>
     set_prev_checked_arr: React.Dispatch<React.SetStateAction<boolean[]>>
@@ -78,7 +75,9 @@ export function createClearAll({
     setStateBundleGrid: React.Dispatch<React.SetStateAction<[boolean, number][][][]>>
     setProgressGrid: React.Dispatch<React.SetStateAction<number[][]>>
     setEvaluateAverageResult: React.Dispatch<React.SetStateAction<any>>
-    setOptimizerMetric: React.Dispatch<React.SetStateAction<number | null>>
+    setBestMetric: React.Dispatch<React.SetStateAction<number | null>>
+    setBestFlatStateBundle: React.Dispatch<React.SetStateAction<[boolean, number][][] | null>>
+    setBestFlatSpecialState: React.Dispatch<React.SetStateAction<number[] | null>>
     // setMonteCarloResult: React.Dispatch<React.SetStateAction<any>>
 }) {
     return () => {
@@ -123,7 +122,9 @@ export function createClearAll({
         setStateBundleGrid(cloneStateBundleGrid(RESET_UI_DEFAULTS.stateBundleGrid))
         setProgressGrid(cloneGrid(RESET_UI_DEFAULTS.progressGrid))
         setEvaluateAverageResult(RESET_UI_DEFAULTS.evaluateAverageResult)
-        setOptimizerMetric(RESET_UI_DEFAULTS.optimizerMetric)
+        setBestMetric(null)
+        setBestFlatStateBundle(null)
+        setBestFlatSpecialGrid(null)
         // setMonteCarloResult(null)
     }
 }
@@ -133,7 +134,7 @@ export function createFillDemo({
     setBottomGrid,
     set_desired_chance,
     set_prev_checked_arr,
-    set_prev_checked_arr_bottom,    
+    set_prev_checked_arr_bottom,
     setUserMatsOwned,
     setUserMatsPrices,
     setUserMatsLeftover,

@@ -39,6 +39,7 @@ export default function ControlPanel({
     onToggleLockXAxis,
     minResolution,
     setMinResolution,
+
 }: ControlPanelProps) {
     const handleMinResolutionChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         const rawValue = event.target.value.trim()

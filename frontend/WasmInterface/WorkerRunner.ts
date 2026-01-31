@@ -68,7 +68,7 @@ export function buildPayload({
     // Always use the traditional tick-based approach
     payload.normal_hone_ticks = topGrid
     payload.adv_hone_ticks = bottomGrid
-    console.log("payload:", payload)
+    // console.log("payload:", payload)
     return payload
 }
 

@@ -41,6 +41,9 @@ type OptimizeSectionProps = {
     // marquee: any
     optimizerProgress: number
     metricType: number
+    bestMetric: number | null
+    bestFlatStateBundle: StatePair[][] | null
+    bestFlatSpecialState: number[] | null
     setMetricType: React.Dispatch<React.SetStateAction<number>>
 }
 
@@ -74,6 +77,9 @@ export default function OptimizeSection({
     setSpecialState,
     optimizerProgress,
     metricType,
+    bestMetric,
+    bestFlatStateBundle,
+    bestFlatSpecialState: bestFlatSpecialGrid,
     setMetricType,
 
     // gridRefs,
@@ -82,6 +88,18 @@ export default function OptimizeSection({
 }: OptimizeSectionProps) {
     const { wideMatsColumnDefs } = createColumnDefs()
     const already_spent = evaluateAverageResult?.prep_output.already_spent
+    const cloneFlatStateBundle = (bundle: StatePair[][]) => bundle.map((row) => row.map((pair) => [pair[0], pair[1]] as StatePair))
+    const canRestoreBest = bestMetric !== null && Boolean(bestFlatStateBundle) && Boolean(bestFlatSpecialGrid) && bestMetric > evaluateAverageResult?.metric
+
+    // console.log(bestMetric, evaluateAverageResult?.metric)
+    const handleRestoreBest = () => {
+        if (!canRestoreBest || !bestFlatStateBundle || !bestFlatSpecialGrid) {
+            return
+        }
+        setFlatStateBundle(cloneFlatStateBundle(bestFlatStateBundle))
+        setSpecialState([...bestFlatSpecialGrid])
+    }
+
     const handleOptimizeAverageClick = () => {
         if (optimizeAvgBusy) {
             optimizeAvgWorkerRef.current?.terminate()
@@ -140,6 +158,21 @@ export default function OptimizeSection({
                         }}
                     >
                         {optimizeAvgBusy ? "Cancel Optimize Average" : "Optimize Average"}
+                    </button>
+                    <button
+                        onClick={handleRestoreBest}
+                        disabled={!canRestoreBest}
+                        style={{
+                            background: canRestoreBest ? "var(--optimizer-button)" : "var(--btn-demo)",
+                            color: "var(--btn-demo-text)",
+                            padding: "6px 10px",
+                            borderRadius: 4,
+                            border: "1px solid var(--btn-border)",
+                            cursor: canRestoreBest ? "pointer" : "not-allowed",
+                            opacity: canRestoreBest ? 1 : 0.6,
+                        }}
+                    >
+                        Restore Best
                     </button>
                     <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13 }}>
                         <input type="checkbox" checked={autoRunOptimizer} onChange={(e) => setAutoRunOptimizer(e.target.checked)} />

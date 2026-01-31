@@ -103,7 +103,7 @@ pub fn evaluate_average_wrapper(input: JsValue) -> JsValue {
     // state_bundle.clean_state();
     state_bundle.set_latest_special_probs();
     // let out: CostToChanceOut = cost_to_chance(&state_bundle);
-    web_sys::console::log_1(&format!("{:?}", state_bundle).into());
+    // web_sys::console::log_1(&format!("{:?}", state_bundle).into());
     to_value(&state_bundle).unwrap()
 }
 
@@ -134,7 +134,7 @@ pub fn optimize_average_wrapper(input: JsValue) -> JsValue {
     best_state.compute_special_probs();
     best_state.set_latest_special_probs();
     // let out: CostToChanceOut = cost_to_chance(&state_bundle);
-    web_sys::console::log_1(&format!("{:?}", best_state).into());
+    // web_sys::console::log_1(&format!("{:?}", best_state).into());
     to_value(&best_state).unwrap()
 }
 
