@@ -14,6 +14,8 @@
   - eventually T4.5 integration
   - get the actual numbers from the korean website <https://icepeng.com/refining>
 
+- get all the graphs and shit back and working
+
 #### Optimizations
 
 ### Misc
@@ -43,6 +45,8 @@
 
 - this all lead to some kind of heat map of how likely special / an upgrade has room for optimization
   - maybe do upgrade affinity also?
+
+- a kind of self-crossover where the same upgrade type can copy each other?
 
 ## Next big step(s)
 
