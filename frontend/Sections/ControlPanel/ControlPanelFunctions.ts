@@ -129,6 +129,43 @@ export function createClearAll({
     }
 }
 
+export function createResetOptimizerState({
+    setMinResolution,
+    setSpecialState,
+    setSucceededGrid,
+    setUnlockGrid,
+    setStateBundleGrid,
+    setProgressGrid,
+    setEvaluateAverageResult,
+    setBestMetric,
+    setBestFlatStateBundle,
+    setBestFlatSpecialState: setBestFlatSpecialGrid,
+}: {
+    setMinResolution: React.Dispatch<React.SetStateAction<number>>
+    setSpecialState: React.Dispatch<React.SetStateAction<number[]>>
+    setSucceededGrid: React.Dispatch<React.SetStateAction<boolean[][]>>
+    setUnlockGrid: React.Dispatch<React.SetStateAction<boolean[][]>>
+    setStateBundleGrid: React.Dispatch<React.SetStateAction<[boolean, number][][][]>>
+    setProgressGrid: React.Dispatch<React.SetStateAction<number[][]>>
+    setEvaluateAverageResult: React.Dispatch<React.SetStateAction<any>>
+    setBestMetric: React.Dispatch<React.SetStateAction<number | null>>
+    setBestFlatStateBundle: React.Dispatch<React.SetStateAction<[boolean, number][][] | null>>
+    setBestFlatSpecialState: React.Dispatch<React.SetStateAction<number[] | null>>
+}) {
+    return () => {
+        setMinResolution(RESET_UI_DEFAULTS.minResolution)
+        setSpecialState([...RESET_UI_DEFAULTS.specialState])
+        setSucceededGrid(cloneGrid(RESET_UI_DEFAULTS.succeededGrid))
+        setUnlockGrid(cloneGrid(RESET_UI_DEFAULTS.unlockGrid))
+        setStateBundleGrid(cloneStateBundleGrid(RESET_UI_DEFAULTS.stateBundleGrid))
+        setProgressGrid(cloneGrid(RESET_UI_DEFAULTS.progressGrid))
+        setEvaluateAverageResult(RESET_UI_DEFAULTS.evaluateAverageResult)
+        setBestMetric(null)
+        setBestFlatStateBundle(null)
+        setBestFlatSpecialGrid(null)
+    }
+}
+
 export function createFillDemo({
     setTopGrid,
     setBottomGrid,

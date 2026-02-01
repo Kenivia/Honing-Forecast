@@ -8,6 +8,7 @@ type ControlPanelProps = {
     fillDemo: () => void
     fillDemoIncome: () => void
     clearAll: () => void
+    resetOptimizerState: () => void
     onCopyPayload: () => void
     express_event: boolean
     set_express_event: (_next: boolean) => void
@@ -28,6 +29,7 @@ export default function ControlPanel({
     fillDemo,
     fillDemoIncome,
     clearAll,
+    resetOptimizerState,
     onCopyPayload,
     express_event,
     set_express_event,
@@ -71,6 +73,9 @@ export default function ControlPanel({
                     </button>
                     <button style={styles.demoButton} onClick={clearAll}>
                         Reset All
+                    </button>
+                    <button style={styles.demoButton} onClick={resetOptimizerState}>
+                        Reset Optimizer State
                     </button>
                     <button style={styles.demoButton} onClick={onCopyPayload}>
                         Copy Current Payload

@@ -30,7 +30,7 @@ import { TooltipState, createTooltipHandlers, renderTooltip } from "./Utils/Tool
 import Icon from "./Components/Icon.tsx"
 
 import { GridMouseDownLogic, mouseMoveLogic, createMouseUpHandler } from "./Sections/UpgradeSelection/Marquee.ts"
-import { createClearAll, createFillDemo, createFillDemoIncome } from "./Sections/ControlPanel/ControlPanelFunctions.ts"
+import { createClearAll, createFillDemo, createFillDemoIncome, createResetOptimizerState } from "./Sections/ControlPanel/ControlPanelFunctions.ts"
 import { buildPayload, createCancelableWorkerRunner } from "./WasmInterface/WorkerRunner.ts"
 import type { InputsBundleWithSetters, InputsSetters, InputsValues } from "./Utils/InputBundles.ts"
 import OptimizeSection from "./Sections/Optimize/OptimizeSection.tsx"
@@ -963,6 +963,19 @@ export default function HoningForecastUI() {
         // setMonteCarloResult,
     })
 
+    const resetOptimizerState = createResetOptimizerState({
+        setMinResolution,
+        setSpecialState,
+        setSucceededGrid,
+        setUnlockGrid,
+        setStateBundleGrid,
+        setProgressGrid,
+        setEvaluateAverageResult,
+        setBestMetric,
+        setBestFlatStateBundle,
+        setBestFlatSpecialState
+    })
+
     const fillDemo = createFillDemo({
         setTopGrid,
         setBottomGrid,
@@ -1071,6 +1084,7 @@ export default function HoningForecastUI() {
                             fillDemo={fillDemo}
                             fillDemoIncome={fillDemoIncome}
                             clearAll={clearAll}
+                            resetOptimizerState={resetOptimizerState}
                             onCopyPayload={onCopyPayload}
                             express_event={express_event}
                             set_express_event={set_express_event}

@@ -5,21 +5,10 @@
 
 ### Now
 
-- implement the "naive" version that assumes no mats owned
-
 #### Website
-
-- store & show show breakdown of average gold costs from here
-- ~~instead of counting unique elements in statebundle it should read from juiceinfo instead~~
 
 - marquee for state grid also?
 
-- ~~update the best known solution so that only "better" states will be colored purple~~ kind confusing gonna stick to 2 colors
-- ~~add "restore best known solution"?~~
-
-- slider instead of leftover value?
-
-  - Prob maximizing mode / main mode:
 - multiple selectable & editable express GET THIS DATA SOMEHOW???
   - rework constant.rs to take in a json or something so it can interface with the website
   - eventually T4.5 integration
@@ -52,22 +41,8 @@
 
 - stopping early if no improvements (an adaptive temperature / annealing schedule i guess )
 
-- some kind of heatmap of which bits were the most impactful? but i feel like this wouldnt actually do much
-  - can definitely think about which upgrades were the most impactful tho
-  - same with special
-- ~~maybe add some way to keep track of where bits are to make neighbor potentially more efficient~~
-- multi-thread and each worker tune one "dimension" like special, state of this one, state of other one etc?
-  - do i need to allow multiple changes at high temperature or will the acceptance function take care of local one dimensional minima
-  - maybe it would never discover like in-between optimums?
-  - this definitely lends itself to soome kind of genetic algorithm
-
-- ~~ keep a top 10 list and randomly restart to them instead of just the top 1~~
-  - ^^ this also sounds like genertic algorithm
-
-- ~~maybe do a 2 staged thing where it optimizes the special first?~~
-
-- whatever happens it must consider the fact that sometimes we dont hvae special and changing the state wont do shit
-  - this all lead to some kind of heat map of how likely special / an upgrade has room for optimization
+- this all lead to some kind of heat map of how likely special / an upgrade has room for optimization
+  - maybe do upgrade affinity also?
 
 ## Next big step(s)
 
@@ -92,6 +67,32 @@
 - Something seems to be broken in drag-to-select spreadsheetgrid
 
 ## Done / cancelled
+
+- ~~slider instead of leftover value?~~
+
+- ~~some kind of heatmap of which bits were the most impactful? but i feel like this wouldnt actually do much~~ nah
+  - ~~can definitely think about which upgrades were the most impactful tho~~ done via upgrade impact, not sure how much it actually helped
+  - ~~same with special~~ done via special affinity
+- ~~maybe add some way to keep track of where bits are to make neighbor potentially more efficient~~
+- ~~multi-thread and each worker tune one "dimension" like special, state of this one, state of other one etc?~~ just tunes less dimensions as temperature goes down,
+  - maybe allow special + juice change at the same neighbour?
+  - ~~do i need to allow multiple changes at high temperature or will the acceptance function take care of local one dimensional minima~~
+  - ~~ maybe it would never discover like in-between optimums?~~
+  - ~~this definitely lends itself to soome kind of genetic algorithm~~ crossover seems to negatively affect performance whatever I do, think the landscape is globally smoother than I expected
+
+- ~~ keep a top 10 list and randomly restart to them instead of just the top 1~~
+  - ^^ this also sounds like genertic algorithm
+
+- ~~maybe do a 2 staged thing where it optimizes the special first?~~
+
+-~~ whatever happens it must consider the fact that sometimes we dont hvae special and changing the state wont do shit~~ done via special affinity
+
+- ~~Prob maximizing mode / main mode:~~
+- ~~implement the "naive" version that assumes no mats owned~~ nah the new heuristic should capture this
+- ~~store & show show breakdown of average gold costs from here~~
+- ~~instead of counting unique elements in statebundle it should read from juiceinfo instead~~
+- ~~update the best known solution so that only "better" states will be colored purple~~ kind confusing gonna stick to 2 colors
+- ~~add "restore best known solution"?~~
 
 - ~~v10 seems to choke on cases where there's a lot of special availiable and do very well on low special, maybe adaptive annealing will help or maybe a more informed starting position via upgrade_impact?~~
 

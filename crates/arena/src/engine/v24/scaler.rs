@@ -3,7 +3,7 @@ pub struct AdaptiveScaler {
     /// The current scaling factor (starts at a reasonable guess, e.g., 1.0 or 100.0)
     pub current_scale: f64,
     /// How many uphill (bad) moves we've seen in this batch
-    count: usize,
+    uphill_count: usize,
     /// How many of those uphill moves we actually accepted
     accepted_count: usize,
     /// How many moves to observe before updating the scale (e.g., 100)
@@ -17,7 +17,7 @@ impl AdaptiveScaler {
     pub fn new(initial_guess: f64, batch_size: usize) -> Self {
         Self {
             current_scale: initial_guess,
-            count: 0,
+            uphill_count: 0,
             accepted_count: 0,
             batch_size,
             learning_rate: 0.1,
@@ -28,7 +28,7 @@ impl AdaptiveScaler {
     /// Returns: true if the scale was updated this step.
     pub fn update_stats(
         &mut self,
-        _is_uphill_move: bool,
+        is_uphill_move: bool,
         is_accepted: bool,
         progress: f64, // 0.0 (start) to 1.0 (end)
     ) {
@@ -38,16 +38,16 @@ impl AdaptiveScaler {
         //     // return false;
         // }
 
-        self.count += 1;
+        self.uphill_count += 1;
         if is_accepted {
             self.accepted_count += 1;
         }
 
         // Only update scale once we have a full batch
-        if self.count >= self.batch_size {
+        if self.uphill_count >= self.batch_size {
             self.recalibrate(progress);
             // Reset counters
-            self.count = 0;
+            self.uphill_count = 0;
             self.accepted_count = 0;
 
             // return true;
@@ -58,7 +58,8 @@ impl AdaptiveScaler {
     fn recalibrate(&mut self, target_rate: f64) {
         // 1. Calculate Measured Rate
         // Clamp to avoid log(0) or log(1) math errors
-        let measured_rate = (self.accepted_count as f64 / self.count as f64).clamp(0.001, 0.999);
+        let measured_rate =
+            (self.accepted_count as f64 / self.uphill_count as f64).clamp(0.001, 0.999);
 
         // 2. Calculate Target Rate
         // Exponential decay: Start at 80% acceptance, end at 0.1%
