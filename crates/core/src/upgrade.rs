@@ -246,12 +246,13 @@ impl Support {
         new_state_hash: u64,
         prob_dist: &ProbDist,
         gap_size: f64,
-        // max: f64,
+        linear: bool, // max: f64,
     ) {
         self.support = new_payload;
         self.support_state_hash = new_state_hash;
         self.collapse_support(prob_dist);
         self.gap_size = gap_size;
+        self.linear = linear;
         // self.max_value = max;
     }
 }
@@ -274,13 +275,13 @@ impl Default for Support {
     }
 }
 
-impl Deref for Support {
-    type Target = Vec<f64>;
+// impl Deref for Support {
+//     type Target = Vec<f64>;
 
-    fn deref(&self) -> &Self::Target {
-        &self.support
-    }
-}
+//     fn deref(&self) -> &Self::Target {
+//         &self.support
+//     }
+// }
 
 impl Upgrade {
     pub fn new_normal(
@@ -442,6 +443,7 @@ impl Upgrade {
                 self.state.hash,
                 &self.prob_dist,
                 this_cost,
+                true,
             );
         }
 
@@ -481,6 +483,7 @@ impl Upgrade {
                 self.state.hash,
                 &self.prob_dist,
                 amt,
+                true,
             );
             // dbg!(id, 1);
             self.armor_juice_costs[id].update_payload(
@@ -488,6 +491,7 @@ impl Upgrade {
                 self.state.hash,
                 &self.prob_dist,
                 amt,
+                true,
             );
         }
     }

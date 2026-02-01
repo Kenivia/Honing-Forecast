@@ -6,7 +6,7 @@ use crate::{
 };
 // pub static THETA_TOL: f64 = 1e-10;
 pub static MAX_ROOT_FIND_ITER: usize = 20;
-static Y_VALUE_TOL: f64 = 1e-7;
+static Y_VALUE_TOL: f64 = 1e-6;
 // pub static THETA_LIMIT: f64 = 1e2;
 
 impl StateBundle {

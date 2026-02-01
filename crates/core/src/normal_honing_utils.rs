@@ -200,6 +200,7 @@ impl StateBundle {
                 &mut upgrade.prob_dist,
                 first_gap,
                 // cost_so_far,
+                false,
             );
 
             // upgrade.combined_gold_costs.associated_state_hash
