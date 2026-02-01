@@ -153,6 +153,7 @@ export type ColumnDef = {
     backgroundSelected: string
     color: string
     backgroundRanOut?: string
+    textAlign?: "left" | "center" | "right"
 }
 
 // Column definitions for spreadsheet grids
@@ -240,13 +241,14 @@ export const createColumnDefs = () => {
         // },
 
         {
-            headerName: "Used so far",
+            headerName: "Breakdown",
             editable: false,
             flex: 1,
-            width: "150px",
+            width: "200px",
             background: "var(--grid-cell-bg-readonly)",
             backgroundSelected: "var(--grid-cell-selected-readonly)",
             color: "var(--text-success)",
+            textAlign: "right",
         },
     ]
     return { chanceToCostColumnDefs, matsColumnDef, juiceColumnDef, wideMatsColumnDefs }

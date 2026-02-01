@@ -45,11 +45,34 @@ type OptimizeSectionProps = {
     bestFlatStateBundle: StatePair[][] | null
     bestFlatSpecialState: number[] | null
     setMetricType: React.Dispatch<React.SetStateAction<number>>
+    ranOutFreeTaps: boolean
+    onRanOutFreeTaps: () => void
 }
 
 function my_alr_spent_map(already_spent: any, labels: string[], index: number) {
     return already_spent
         ? Object.fromEntries(labels.map((label, lab_index) => [label, String(already_spent[index][lab_index])]))
+        : Object.fromEntries(labels.map((label) => [label, "Calculating..."]))
+}
+
+
+function add_comma(inp: number) {
+    return Math.round(inp).toLocaleString(
+        "en-US",
+        {
+            minimumFractionDigits: 0,
+            maximumFractionDigits: 0,
+        },
+    )
+}
+function breakdown_to_english(input: number) {
+    return String(
+        input <= 0 ? "Avg spend " + add_comma(input < 0.0 ? -input : input) + "g" : "Avg surplus of " + add_comma(input) + "g"
+    )
+}
+function avg_breakdown_map(avg_breakdown: any, labels: string[], offset: number) {
+    return avg_breakdown
+        ? Object.fromEntries(labels.map((label, lab_index) => [label, breakdown_to_english(avg_breakdown[offset + lab_index])]))
         : Object.fromEntries(labels.map((label) => [label, "Calculating..."]))
 }
 export default function OptimizeSection({
@@ -81,6 +104,8 @@ export default function OptimizeSection({
     bestFlatStateBundle,
     bestFlatSpecialState: bestFlatSpecialGrid,
     setMetricType,
+    ranOutFreeTaps,
+    onRanOutFreeTaps,
 
     // gridRefs,
     // onGridMouseDown,
@@ -88,8 +113,9 @@ export default function OptimizeSection({
 }: OptimizeSectionProps) {
     const { wideMatsColumnDefs } = createColumnDefs()
     const already_spent = evaluateAverageResult?.prep_output.already_spent
+    const avg_breakdown = evaluateAverageResult?.average_breakdown
     const cloneFlatStateBundle = (bundle: StatePair[][]) => bundle.map((row) => row.map((pair) => [pair[0], pair[1]] as StatePair))
-    const canRestoreBest = bestMetric !== null && Boolean(bestFlatStateBundle) && Boolean(bestFlatSpecialGrid) && bestMetric > evaluateAverageResult?.metric
+    const canRestoreBest = !optimizeAvgBusy && bestMetric !== null && Boolean(bestFlatStateBundle) && Boolean(bestFlatSpecialGrid) && bestMetric > evaluateAverageResult?.metric
 
     // console.log(bestMetric, evaluateAverageResult?.metric)
     const handleRestoreBest = () => {
@@ -189,6 +215,46 @@ export default function OptimizeSection({
                 <br />
                 Already spent + more to come: {evaluateAverageResult?.metric}
             </div>
+            {avg_breakdown && (
+                <div style={{ display: "flex", flexDirection: "row", alignItems: "flex-start", gap: 100, minWidth: 200, flexShrink: 0, marginTop: 0 }}>
+
+                    <SpreadsheetGrid
+                        columnDefs={wideMatsColumnDefs}
+                        labels={MATS_LABELS.slice(0, 7)}
+                        sheetValuesArr={[avg_breakdown_map(avg_breakdown, MATS_LABELS.slice(0, 7), 0)]}
+                        colorsArr={[avg_breakdown.slice(0, 7).map((x) => x > -0.5 ? "var(--text-success)" : "var(--deficit)")]}
+                        setSheetValuesArr={[null]}
+                    />
+
+                    <SpreadsheetGrid
+                        columnDefs={wideMatsColumnDefs}
+                        labels={JUICE_LABELS.map((label_row) => label_row[0])}
+                        sheetValuesArr={[
+                            avg_breakdown_map(
+                                avg_breakdown,
+                                JUICE_LABELS.map((label_row) => label_row[0]),
+                                7,
+                            ),
+                        ]}
+                        colorsArr={[avg_breakdown.slice(7, 7 + evaluateAverageResult?.prep_output.juice_info.num_avail,).map((x) => x > -0.5 ? "var(--text-success)" : "var(--deficit)")]}
+                        setSheetValuesArr={[null]}
+                    />
+
+                    <SpreadsheetGrid
+                        columnDefs={wideMatsColumnDefs}
+                        labels={JUICE_LABELS.map((label_row) => label_row[1])}
+                        sheetValuesArr={[
+                            avg_breakdown_map(
+                                avg_breakdown,
+                                JUICE_LABELS.map((label_row) => label_row[1]),
+                                7 + evaluateAverageResult?.prep_output.juice_info.num_avail,
+                            ),
+                        ]}
+                        colorsArr={[avg_breakdown.slice(7 + evaluateAverageResult?.prep_output.juice_info.num_avail, 7 + 2 * 7 + evaluateAverageResult?.prep_output.juice_info.num_avail).map((x) => x > -0.5 ? "var(--text-success)" : "var(--deficit)")]}
+                        setSheetValuesArr={[null]}
+                    />
+                </div>)
+            }
             <div style={{ position: "relative", flex: 1 }}>
                 {optimizeAvgBusy && (
                     <div
@@ -209,6 +275,8 @@ export default function OptimizeSection({
                         setFlatSucceedArr={setFlatSucceedArr}
                         flatUnlockArr={flatUnlockArr}
                         setFlatUnlockArr={setFlatUnlockArr}
+                        ranOutFreeTaps={ranOutFreeTaps}
+                        onRanOutFreeTaps={onRanOutFreeTaps}
                     />
                 )}
                 {flatStateBundle && flatProgressArr && evaluateAverageResult && specialState && (
@@ -228,43 +296,7 @@ export default function OptimizeSection({
                     />
                 )}
 
-                {
-                    <div style={{ display: "flex", flexDirection: "row", alignItems: "flex-start", gap: 0, minWidth: 200, flexShrink: 0, marginTop: 0 }}>
-                        <div>Already spent:</div>
-                        <SpreadsheetGrid
-                            columnDefs={wideMatsColumnDefs}
-                            labels={MATS_LABELS.slice(0, 7)}
-                            sheetValuesArr={[my_alr_spent_map(already_spent, MATS_LABELS.slice(0, 7), 0)]}
-                            setSheetValuesArr={[null]}
-                        />
 
-                        <SpreadsheetGrid
-                            columnDefs={wideMatsColumnDefs}
-                            labels={JUICE_LABELS.map((label_row) => label_row[0])}
-                            sheetValuesArr={[
-                                my_alr_spent_map(
-                                    already_spent,
-                                    JUICE_LABELS.map((label_row) => label_row[0]),
-                                    1,
-                                ),
-                            ]}
-                            setSheetValuesArr={[null]}
-                        />
-
-                        <SpreadsheetGrid
-                            columnDefs={wideMatsColumnDefs}
-                            labels={JUICE_LABELS.map((label_row) => label_row[1])}
-                            sheetValuesArr={[
-                                my_alr_spent_map(
-                                    already_spent,
-                                    JUICE_LABELS.map((label_row) => label_row[1]),
-                                    1,
-                                ),
-                            ]}
-                            setSheetValuesArr={[null]}
-                        />
-                    </div>
-                }
             </div>
         </div>
     )

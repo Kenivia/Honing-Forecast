@@ -23,7 +23,8 @@ pub struct StateBundle {
     pub special_cache: HashMap<Vec<usize>, Vec<f64>>,
     pub num_threads: usize, // #[serde(skip)]
 
-                            // pub scaler: Adaptive, // pub performance: Performance,
+    pub average_breakdown: Option<Vec<f64>>,
+    // pub scaler: Adaptive, // pub performance: Performance,
 }
 
 // pub fn default_special(length: usize) -> Vec<usize> {
@@ -116,6 +117,7 @@ impl StateBundle {
             latest_special_probs: None,
             min_resolution: 1,
             num_threads: 0,
+            average_breakdown: None,
         };
 
         return state_bundle;

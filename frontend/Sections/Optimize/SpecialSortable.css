@@ -2,10 +2,12 @@
 .sequence-container {
     display: grid;
     /* Define column widths here. Adjust as needed. */
-    grid-template-columns: 1.5fr 0.7fr 1fr;
+    grid-template-columns: 1.5fr 0.7fr 1fr 1fr;
     gap: 5px;
     align-items: start;
-    width: 600px
+    width: 760px;
+
+
 }
 
 /* Headers */
@@ -77,4 +79,10 @@
     transition: background 0.2s;
     width: 100%;
     text-wrap-mode: nowrap;
+}
+
+.ran-out-btn {
+    width: auto;
+    padding: 5px 10px;
+    font-size: 12px;
 }

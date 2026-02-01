@@ -96,6 +96,7 @@ impl StateBundle {
             latest_special_probs: None,
             min_resolution,
             num_threads,
+            average_breakdown: None,
         };
         // web_sys::console::log_1(&"3".into());
 

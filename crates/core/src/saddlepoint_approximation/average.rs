@@ -50,7 +50,7 @@ impl StateBundle {
         mean
         // (mean, var)
     }
-
+    #[cfg(not(target_arch = "wasm32"))]
     pub fn average_gold_metric(&mut self, performance: &mut Performance) -> f64 {
         self.update_dist();
         self.update_individual_support();
@@ -114,6 +114,68 @@ impl StateBundle {
         // }
         // web_sys::console::log_1(&format!("{:?}", &dbg_sa_avg).into());
         // web_sys::console::log_1(&format!("{:?}", &self.upgrade_arr).into());
+        total_gold
+    }
+    #[cfg(target_arch = "wasm32")]
+    pub fn average_gold_metric(&mut self, performance: &mut Performance) -> f64 {
+        self.update_dist();
+        self.update_individual_support();
+        self.compute_special_probs();
+        performance.states_evaluated += 1;
+        let mut breakdown: Vec<f64> = vec![0.0; 7 + self.prep_output.juice_info.num_avail * 2];
+        let mut total_gold: f64 = 0.0;
+        // let mut dbg_sa_avg = vec![0.0; 15];
+
+        for (skip_count, &special_prob) in
+            self.special_cache[&self.special_state].iter().enumerate()
+        {
+            if special_prob < SPECIAL_TOL {
+                continue;
+            }
+            // // dbg!(special_prob);
+            // let zipped: Vec<(f64, f64)> =
+            // .collect();
+            if DEBUG_AVERAGE {
+                dbg!("================================", skip_count,);
+            }
+            for (support_index, (effective_budget, price, leftover)) in izip!(
+                self.flattened_effective_budgets(),
+                self.flattened_price(),
+                self.flattened_leftover()
+            )
+            .enumerate()
+            {
+                let this_avg: f64 = self.saddlepoint_approximation_average_wrapper(
+                    support_index as i64,
+                    skip_count,
+                    effective_budget,
+                    price,
+                    leftover,
+                    performance,
+                );
+                // dbg!(this_avg);
+
+                if DEBUG_AVERAGE {
+                    // if support_index == DEBUG_AVG_INDEX as usize {
+                    dbg!(
+                        // support_index,
+                        // effective_budget,
+                        // price,
+                        // leftover,
+                        // this_avg,
+                        // special_prob,
+                        // self.simple_avg(support_index as i64, skip_count),
+                        special_prob * this_avg,
+                    );
+                    // }
+                }
+                let this = special_prob * this_avg;
+                breakdown[support_index] += this;
+                total_gold += this;
+                // dbg_sa_avg[support_index] += special_prob * this_avg;
+            }
+        }
+        self.average_breakdown = Some(breakdown);
         total_gold
     }
 

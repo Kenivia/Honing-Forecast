@@ -162,6 +162,8 @@ export default function HoningForecastUI() {
     const [bestMetric, setBestMetric] = useState<number | null>(null)
     const [bestFlatStateBundle, setBestFlatStateBundle] = useState<StatePair[][] | null>(null)
     const [bestFlatSpecialState, setBestFlatSpecialState] = useState<number[] | null>(null)
+    const [ranOutFreeTaps, setRanOutFreeTaps] = useState<boolean>(false)
+    const ranOutSkipResetRef = useRef<boolean>(false)
     // State for optimized details
     // const [showOptimizedDetails, setShowOptimizedDetails] = useState<boolean>(false)
 
@@ -347,7 +349,7 @@ export default function HoningForecastUI() {
                 // ignore quota or serialization errors
             }
             saveTimerRef.current = null
-        }, 250)
+        }, 670)
         return () => {
             if (saveTimerRef.current) {
                 window.clearTimeout(saveTimerRef.current)
@@ -658,9 +660,14 @@ export default function HoningForecastUI() {
     }
 
     useEffect(() => {
+        const skipRanOutReset = ranOutSkipResetRef.current
+        ranOutSkipResetRef.current = false
         setBestMetric(null)
         setBestFlatStateBundle(null)
         setBestFlatSpecialState(null)
+        if (!skipRanOutReset) {
+            setRanOutFreeTaps(false)
+        }
         // console.log("reest", topGridKey, inputBundleKey, metricType, progressGridKey, succeededGridKey, minResolutionKey, unlockGridKey)
     }, [topGridKey, inputBundleKey, metricType, progressGridKey, succeededGridKey, minResolutionKey, unlockGridKey])
 
@@ -699,6 +706,15 @@ export default function HoningForecastUI() {
 
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [flatProgressArr, flatUnlockArr, flatSucceedArr, flatStateBundle])
+
+    const handleRanOutFreeTaps = () => {
+        ranOutSkipResetRef.current = true
+        setUserMatsOwned((prev) => ({
+            ...prev,
+            [MATS_LABELS[7]]: "0",
+        }))
+        setRanOutFreeTaps(true)
+    }
     // const monteCarloWorkerRef = useRef<Worker | null>(null)
     // const [_monteCarloBusy, setMonteCarloBusy] = useState(false)
     // const [monteCarloResult, setMonteCarloResult] = useState<any>(null)
@@ -795,6 +811,7 @@ export default function HoningForecastUI() {
             return
         }
         setOptimizeAvgError(null)
+        setRanOutFreeTaps(false)
         runner.start({
             which_one: "OptimizeAverage",
             payloadBuilder,
@@ -852,6 +869,7 @@ export default function HoningForecastUI() {
     useEffect(() => {
         if (optimizeButtonPress > 0) {
             setOptimizeAvgError(null)
+            setRanOutFreeTaps(false)
             runner.start({
                 which_one: "OptimizeAverage",
                 payloadBuilder,
@@ -1135,6 +1153,8 @@ export default function HoningForecastUI() {
                             bestFlatStateBundle={bestFlatStateBundle}
                             bestFlatSpecialState={bestFlatSpecialState}
                             setMetricType={setMetricType}
+                            ranOutFreeTaps={ranOutFreeTaps}
+                            onRanOutFreeTaps={handleRanOutFreeTaps}
                         />
                     </div>
                 )}

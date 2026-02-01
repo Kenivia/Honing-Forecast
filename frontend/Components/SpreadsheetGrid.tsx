@@ -7,6 +7,8 @@ interface SpreadsheetGridProps {
     labels: string[]
     // sheet values per-column. index matches columnDefs index
     sheetValuesArr: Record<string, string>[]
+    // optional per-cell text colors [col][row]
+    colorsArr?: Array<Array<string | undefined>>
     // setters per-column. Optional for read-only columns; index matches columnDefs
     setSheetValuesArr: Array<((_next: Record<string, string>) => void) | undefined>
     hideIcons?: boolean
@@ -19,7 +21,7 @@ interface Selection {
     endCol: number
 }
 
-export default function SpreadsheetGrid({ columnDefs, labels, sheetValuesArr, setSheetValuesArr, hideIcons = false }: SpreadsheetGridProps) {
+export default function SpreadsheetGrid({ columnDefs, labels, sheetValuesArr, colorsArr, setSheetValuesArr, hideIcons = false }: SpreadsheetGridProps) {
     const [selection, setSelection] = useState<Selection | null>(null)
     const [isSelecting, setIsSelecting] = useState(false)
     const [_copiedData, setCopiedData] = useState<string[][] | null>(null)
@@ -470,8 +472,9 @@ export default function SpreadsheetGrid({ columnDefs, labels, sheetValuesArr, se
                                                 : isCellSelected(rowIndex, colIndex)
                                                   ? columnDefs[colIndex].backgroundSelected
                                                   : columnDefs[colIndex].background,
-                                        color: columnDefs[colIndex].color,
+                                        color: colorsArr?.[colIndex]?.[rowIndex] ?? columnDefs[colIndex].color,
                                         fontSize: "var(--font-size-sm)",
+                                        textAlign: colDef.textAlign ?? "left",
                                         outline: "none",
                                         boxSizing: "border-box",
                                         cursor: !columnDefs[colIndex].editable || (colIndex === 1 && rowIndex >= 7) ? "default" : "text",

@@ -258,17 +258,17 @@ const RowBundle = ({
                                                     cIndex >= pity_len - 1
                                                         ? "transparent"
                                                         : cell.type === "progress" || !cell.active
-                                                          ? "inherit"
-                                                          : "var( --btn-toggle-optimize-selected)",
+                                                            ? "inherit"
+                                                            : "var( --btn-toggle-optimize-selected)",
 
                                                 cursor:
                                                     ((!allowUserChangeState || cIndex < progress || cIndex >= pity_len - 1) && cell.type !== "progress") ||
-                                                    cIndex >= pity_len
+                                                        cIndex >= pity_len
                                                         ? "not-allowed"
                                                         : "pointer",
                                                 opacity:
                                                     ((!allowUserChangeState || cIndex < progress || cIndex >= pity_len - 1) && cell.type !== "progress") ||
-                                                    cIndex >= pity_len
+                                                        cIndex >= pity_len
                                                         ? 0.3
                                                         : 1,
                                             }}
@@ -440,21 +440,21 @@ export default function StateGridsManager({
                 boxSizing: "border-box",
             }}
         >
-            {specialState.map((_, index) => (
+            {specialState.map((u_index, index) => (
                 <RowBundle
-                    key={index}
-                    bundleIndex={index}
-                    progress={flatProgressArr[index]}
-                    unlock={flatUnlockArr[index]}
-                    succeed={flatSucceedArr[index]}
-                    statePairs={flatStateBundle[index]}
+                    key={u_index}
+                    bundleIndex={u_index}
+                    progress={flatProgressArr[u_index]}
+                    unlock={flatUnlockArr[u_index]}
+                    succeed={flatSucceedArr[u_index]}
+                    statePairs={flatStateBundle[u_index]}
                     allowUserChangeState={allowUserChangeState}
-                    onUpdateProgress={(val) => handleUpdateProgress(index, val)}
-                    onUpdateUnlock={(val) => handleUpdateUnlock(index, val)}
-                    onUpdateSucceed={(val) => handleUpdateSucceed(index, val)}
-                    onUpdateStatePairs={(pairs) => handleUpdateStateBundle(index, pairs)}
-                    upgrade={upgradeArr[index]}
-                    uniqueBookNumbers={juiceInfo.ids[upgradeArr[index].upgrade_index].slice(1)}
+                    onUpdateProgress={(val) => handleUpdateProgress(u_index, val)}
+                    onUpdateUnlock={(val) => handleUpdateUnlock(u_index, val)}
+                    onUpdateSucceed={(val) => handleUpdateSucceed(u_index, val)}
+                    onUpdateStatePairs={(pairs) => handleUpdateStateBundle(u_index, pairs)}
+                    upgrade={upgradeArr[u_index]}
+                    uniqueBookNumbers={juiceInfo.ids[upgradeArr[u_index].upgrade_index].slice(1)}
                 />
             ))}
         </div>

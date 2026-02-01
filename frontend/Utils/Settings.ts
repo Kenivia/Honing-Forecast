@@ -59,7 +59,7 @@ export function writeSettings(
     // stateBundleGrid,
     // progressGrid,
 ) {
-    console.log("saving")
+    // console.log("saving")
     const toSave = {
         topGrid,
         bottomGrid,

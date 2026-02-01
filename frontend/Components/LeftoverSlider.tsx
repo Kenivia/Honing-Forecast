@@ -29,6 +29,7 @@ export default function LeftoverSlider({ value, maxValue, label, onChange }: Lef
         }
     }, [numericValue, numericMax, clampedValue, onChange])
 
+    const factor = label == "Silver" ? 0.0001 : label == "Shards" ? 0.001 : label == "Red" || label == "Blue" ? 0.01 : 1;
     return (
         <div style={{ width: "100%", padding: "0 6px", boxSizing: "border-box" }}>
             <StyledSlider
@@ -36,14 +37,14 @@ export default function LeftoverSlider({ value, maxValue, label, onChange }: Lef
                 value={clampedValue}
                 onChange={(_, nextValue) => {
                     const valueNumber = Array.isArray(nextValue) ? nextValue[0] : nextValue
-                    const rounded = Math.round((valueNumber as number) * 100) / 100
-                    onChange(rounded.toString())
+                    // const rounded = Math.round((valueNumber as number) * 100) / 100
+                    onChange(valueNumber.toString())
                 }}
                 min={0}
                 max={numericMax}
-                step={0.01}
+                step={Math.max(Math.floor(numericMax * 0.05 / factor) * factor, factor)}
                 valueLabelDisplay="auto"
-                valueLabelFormat={() => `every leftover ${label} is counted as ${clampedValue} gold`}
+                valueLabelFormat={() => `Every leftover ${label} is counted as ${clampedValue} gold`}
             />
         </div>
     )

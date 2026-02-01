@@ -94,7 +94,7 @@ impl SolverStateBundle {
     }
     pub fn current_resolution(&self) -> usize {
         if self.progress() > COOLING_PHASE_START {
-            (self.lam_rate() / MAGIC_NUMBER).round() as usize * DEFAULT_RESOLUTION
+            (self.lam_rate() / MAGIC_NUMBER).ceil() as usize * DEFAULT_RESOLUTION
         } else {
             self.state_bundle.min_resolution
         }
