@@ -206,7 +206,7 @@ pub fn solve<R: Rng>(
                     overall_best_n_states.peek_max().unwrap().1,
                 );
                 let mut dummy_performance = Performance::new();
-                state_bundle.metric_router(&mut dummy_performance);
+                // state_bundle.metric_router(&mut dummy_performance);
                 send_progress(
                     &state_bundle.clone(),
                     (100.0 * (eqv_wall_time_iters as f64 / MAX_ITERS as f64)).min(100.0),

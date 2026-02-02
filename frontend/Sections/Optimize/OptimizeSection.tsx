@@ -126,6 +126,7 @@ export default function OptimizeSection({
     // onGridMouseDown,
     // marquee,
 }: OptimizeSectionProps) {
+    const [beforeMetric, setBeforeMetric] = React.useState<number | null>(null)
     const { wideMatsColumnDefs } = createColumnDefs()
     const already_spent = evaluateAverageResult?.prep_output.already_spent
     const avg_breakdown = evaluateAverageResult?.average_breakdown
@@ -149,9 +150,11 @@ export default function OptimizeSection({
             optimizeAvgWorkerRef.current = null
             setOptimizeAvgBusy(false)
             setAutoRunOptimizer(false)
+            // setBeforeMetric(null)
             onCancelOptimizeAverage()
             return
         } else {
+            setBeforeMetric(evaluateAverageResult?.metric ?? null)
             setOptimizeButtonPress((prev: number) => prev + 1)
         }
     }
@@ -182,6 +185,11 @@ export default function OptimizeSection({
                     <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
                         {metricType != 0 && optimizeAverageButton}
                         {optimizeAvgError && <span style={{ fontSize: 12, color: "red" }}>Error: {optimizeAvgError}</span>}
+                        {beforeMetric !== null && (
+                            <span style={{ fontSize: 12, color: "var(--text-success)" }}>
+                                Improvement: {breakdown_to_english(beforeMetric - (evaluateAverageResult?.metric ?? 0))}
+                            </span>
+                        )}
                     </div>
                     <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
                         <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13 }}>
@@ -249,6 +257,7 @@ export default function OptimizeSection({
                         upgradeArr={evaluateAverageResult.upgrade_arr}
                         specialState={specialState}
                         juiceInfo={evaluateAverageResult.prep_output.juice_info}
+                        special_invalid_index={evaluateAverageResult.special_invalid_index}
                     />
                 )}
             </div>

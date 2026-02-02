@@ -153,7 +153,7 @@ impl SolverStateBundle {
                     .state
                     .iter_mut()
                     .skip(upgrade.alr_failed)
-                    .take(effective_len - 1 - upgrade.alr_failed) // -1 cos cannot juice pity
+                    .take(effective_len - upgrade.alr_failed)
                     .rev()
                     .enumerate()
                 {

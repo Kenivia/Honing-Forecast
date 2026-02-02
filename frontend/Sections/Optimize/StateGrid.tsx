@@ -5,6 +5,7 @@ import Icon from "@/Components/Icon.tsx"
 import "@/Components/CheckboxGrid.css"
 import "./StateGrid.css"
 import { piece_display_name } from "@/Utils/Helpers.ts"
+import { useMemo } from "react"
 
 export type StatePair = [boolean, number]
 
@@ -376,6 +377,7 @@ interface ComplexGridProps {
     upgradeArr: any[]
     specialState: number[]
     juiceInfo: any
+    special_invalid_index: number
     // setSpecialState: React.Dispatch<React.SetStateAction<number[]>>
 }
 
@@ -393,6 +395,7 @@ export default function StateGridsManager({
     upgradeArr,
     specialState,
     juiceInfo,
+    special_invalid_index,
     // setSpecialState,
 }: ComplexGridProps) {
     // Requirement 7: overflow: auto to avoid going off edge
@@ -433,6 +436,16 @@ export default function StateGridsManager({
         return <div>Error: Input arrays have mismatched lengths.</div>
     }
     // console.log(juiceInfo)
+
+    let truncated_special_state = useMemo(
+        () => specialState.slice(0, special_invalid_index),
+
+        [specialState, special_invalid_index],
+    )
+
+    let invalid_tail = useMemo(() => specialState.slice(special_invalid_index, specialState.length), [specialState, special_invalid_index])
+
+    console.log(truncated_special_state, invalid_tail)
     return (
         <div
             className="complex-grid-manager"
@@ -443,7 +456,7 @@ export default function StateGridsManager({
                 boxSizing: "border-box",
             }}
         >
-            {specialState.map((u_index, index) => (
+            {invalid_tail.concat(truncated_special_state).map((u_index, index) => (
                 <RowBundle
                     key={u_index}
                     curIsBest={curIsBest}
