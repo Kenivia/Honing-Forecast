@@ -11,46 +11,30 @@ interface RowBundleProps {
     bundleIndex: number
     progress: number
     unlock: boolean
+    succeed: boolean
     statePairs: StatePair[]
     onUpdateProgress: (_: number) => void
     onUpdateUnlock: (_: boolean) => void
+    onUpdateSucceed: (_: boolean) => void
     onUpdateStatePairs: (_: StatePair[]) => void
     allowUserChangeState: boolean
     upgrade: any
     uniqueBookNumbers: number[]
-    topGrid: boolean[][]
-    setTopGrid: React.Dispatch<React.SetStateAction<boolean[][]>>
-    specialState: number[]
-    setSpecialState: React.Dispatch<React.SetStateAction<number[]>>
-    flatProgressArr: number[]
-    setFlatProgressArr: React.Dispatch<React.SetStateAction<number[]>>
-    flatUnlockArr: boolean[]
-    setFlatUnlockArr: React.Dispatch<React.SetStateAction<boolean[]>>
-    flatStateBundle: StatePair[][]
-    setFlatStateBundle: React.Dispatch<React.SetStateAction<StatePair[][]>>
 }
 
 const RowBundle = ({
     bundleIndex,
     progress,
     unlock,
+    succeed,
     statePairs,
     onUpdateProgress,
     onUpdateUnlock,
+    onUpdateSucceed,
     onUpdateStatePairs,
     allowUserChangeState,
     upgrade,
     uniqueBookNumbers,
-    topGrid: _topGrid,
-    setTopGrid,
-    specialState: _specialState,
-    setSpecialState,
-    flatProgressArr: _flatProgressArr,
-    setFlatProgressArr,
-    flatUnlockArr: _flatUnlockArr,
-    setFlatUnlockArr,
-    flatStateBundle: _flatStateBundle,
-    setFlatStateBundle,
 }: RowBundleProps) => {
     // 2.1 Find unique "book numbers" (excluding 0) and sort ascending
     // const uniqueBookNumbers = useMemo(() => {
@@ -92,6 +76,9 @@ const RowBundle = ({
             onUpdateProgress(new_progress)
             if (new_progress > 0) {
                 onUpdateUnlock(true)
+            }
+            if (new_progress >= pity_len) {
+                onUpdateSucceed(true)
             }
             return
         }
@@ -177,37 +164,16 @@ const RowBundle = ({
     }
 
     const handleSucceedClick = () => {
-        // Remove the tick from TopGrid
-        const row = upgrade.piece_type
-        const col = upgrade.upgrade_index
+        if (!succeed) {
+            if (!unlock) {
+                onUpdateUnlock(true)
+            }
+            onUpdateProgress(Math.min(progress, pity_len))
+        } else {
+            onUpdateProgress(Math.min(progress, pity_len - 1))
+        }
 
-        setTopGrid((prev) => {
-            const copy = prev.map((r) => [...r])
-            copy[row][col] = false
-            return copy
-        })
-
-        // Remove from specialState
-        setSpecialState((prev) => prev.filter((idx) => idx !== bundleIndex))
-
-        // Reset state arrays for this upgrade
-        setFlatProgressArr((prev) => {
-            const copy = [...prev]
-            copy[bundleIndex] = 0
-            return copy
-        })
-
-        setFlatUnlockArr((prev) => {
-            const copy = [...prev]
-            copy[bundleIndex] = false
-            return copy
-        })
-
-        setFlatStateBundle((prev) => {
-            const copy = [...prev]
-            copy[bundleIndex] = []
-            return copy
-        })
+        onUpdateSucceed(!succeed)
     }
 
     // const nextProgressIndex = progress < pity_len ? progress : -1
@@ -220,13 +186,7 @@ const RowBundle = ({
                         <Icon
                             iconName={PIECE_NAMES[upgrade.piece_type]}
                             display_text=""
-                            display_text_right={
-                                PIECE_NAMES[upgrade.piece_type] +
-                                (upgrade.is_normal_honing ? " +" : " AH") +
-                                "" +
-                                (upgrade.is_normal_honing ? "" : " " + String(upgrade.upgrade_index * 10 + 1) + "-") +
-                                String((upgrade.upgrade_index + 1) * (upgrade.is_normal_honing ? 1 : 10))
-                            }
+                            display_text_right={PIECE_NAMES[upgrade.piece_type] + " +" + String(upgrade.upgrade_index + 1)}
                         ></Icon>
                     </h4>
                     <div className="state-grid-scroll">
@@ -274,6 +234,7 @@ const RowBundle = ({
                             {gridRows.flatMap((row, rIndex) =>
                                 row.map((cell, cIndex) => {
                                     const key = `${bundleIndex}-${rIndex}-${cIndex}`
+                                    const showSucceedMarker = cell.type === "progress" && cIndex === progress - 1
                                     // console.log(cIndex)
                                     // if (cIndex > upgrade.prob_dist.length) {
                                     //     console.log(upgrade.prob_dist, cIndex)
@@ -297,17 +258,17 @@ const RowBundle = ({
                                                     cIndex >= pity_len - 1
                                                         ? "transparent"
                                                         : cell.type === "progress" || !cell.active
-                                                          ? "inherit"
-                                                          : "var( --btn-toggle-optimize-selected)",
+                                                            ? "inherit"
+                                                            : "var( --btn-toggle-optimize-selected)",
 
                                                 cursor:
                                                     ((!allowUserChangeState || cIndex < progress || cIndex >= pity_len - 1) && cell.type !== "progress") ||
-                                                    cIndex >= pity_len
+                                                        cIndex >= pity_len
                                                         ? "not-allowed"
                                                         : "pointer",
                                                 opacity:
                                                     ((!allowUserChangeState || cIndex < progress || cIndex >= pity_len - 1) && cell.type !== "progress") ||
-                                                    cIndex >= pity_len
+                                                        cIndex >= pity_len
                                                         ? 0.3
                                                         : 1,
                                             }}
@@ -340,7 +301,7 @@ const RowBundle = ({
                                                 }
                                             />
 
-                                            {(cell.type === "progress" || cell.active) && (
+                                            {(cell.type === "progress" || cell.active || (succeed && showSucceedMarker)) && (
                                                 <div
                                                     style={{
                                                         position: "absolute",
@@ -352,12 +313,12 @@ const RowBundle = ({
                                                         alignItems: "center",
                                                         justifyContent: "center",
                                                         pointerEvents: "none", // Let clicks pass to the div
-                                                        background: "inherit",
-                                                        color: "inherit",
+                                                        background: succeed && showSucceedMarker ? "var(--text-success)" : "inherit",
+                                                        color: succeed && showSucceedMarker ? "var(--btn-success-text)" : "inherit",
                                                     }}
                                                 >
                                                     {cell.type === "progress" ? (
-                                                        <span>{cIndex + 1}</span>
+                                                        <span>{succeed && showSucceedMarker ? "✓" : cIndex + 1}</span>
                                                     ) : cell.active && cIndex < pity_len - 1 ? (
                                                         <div>
                                                             <Icon
@@ -376,12 +337,13 @@ const RowBundle = ({
                             )}
                         </div>
                     </div>
+                    {succeed && <div className="state-grid-overlay" />}
                 </div>
                 <button
                     style={{
                         ...styles.demoButton,
-                        background: "var(--btn-success)",
-                        color: "var(--btn-success-text)",
+                        background: succeed ? "var(--btn-toggle-deselected)" : "var(--btn-success)",
+                        color: succeed ? "var(--muted-text)" : "var(--btn-success-text)",
 
                         height: 28,
                         padding: "0 10px",
@@ -391,7 +353,7 @@ const RowBundle = ({
                     }}
                     onClick={handleSucceedClick}
                 >
-                    Succeed
+                    {succeed ? "Undo" : "Succeed"}
                 </button>
             </div>
         </div>
@@ -411,10 +373,7 @@ interface ComplexGridProps {
     allowUserChangeState: boolean
     upgradeArr: any[]
     specialState: number[]
-    setSpecialState: React.Dispatch<React.SetStateAction<number[]>>
     juiceInfo: any
-    topGrid: boolean[][]
-    setTopGrid: React.Dispatch<React.SetStateAction<boolean[][]>>
     // setSpecialState: React.Dispatch<React.SetStateAction<number[]>>
 }
 
@@ -424,16 +383,13 @@ export default function StateGridsManager({
     flatUnlockArr,
     setFlatUnlockArr,
     flatSucceedArr,
-    setFlatSucceedArr: _setFlatSucceedArr,
+    setFlatSucceedArr,
     flatStateBundle,
     setFlatStateBundle,
     allowUserChangeState,
     upgradeArr,
     specialState,
-    setSpecialState,
     juiceInfo,
-    topGrid,
-    setTopGrid,
     // setSpecialState,
 }: ComplexGridProps) {
     // Requirement 7: overflow: auto to avoid going off edge
@@ -459,6 +415,12 @@ export default function StateGridsManager({
         setFlatUnlockArr(newArr)
     }
 
+    const handleUpdateSucceed = (index: number, newValue: boolean) => {
+        const newArr = [...flatSucceedArr]
+        newArr[index] = newValue
+        setFlatSucceedArr(newArr)
+    }
+
     // Safe check to ensure lengths match
     if (
         flatProgressArr.length !== flatStateBundle.length ||
@@ -478,29 +440,21 @@ export default function StateGridsManager({
                 boxSizing: "border-box",
             }}
         >
-            {specialState.map((u_index, _index) => (
+            {specialState.map((u_index, index) => (
                 <RowBundle
                     key={u_index}
                     bundleIndex={u_index}
                     progress={flatProgressArr[u_index]}
                     unlock={flatUnlockArr[u_index]}
+                    succeed={flatSucceedArr[u_index]}
                     statePairs={flatStateBundle[u_index]}
                     allowUserChangeState={allowUserChangeState}
                     onUpdateProgress={(val) => handleUpdateProgress(u_index, val)}
                     onUpdateUnlock={(val) => handleUpdateUnlock(u_index, val)}
+                    onUpdateSucceed={(val) => handleUpdateSucceed(u_index, val)}
                     onUpdateStatePairs={(pairs) => handleUpdateStateBundle(u_index, pairs)}
                     upgrade={upgradeArr[u_index]}
                     uniqueBookNumbers={juiceInfo.ids[upgradeArr[u_index].upgrade_index].slice(1)}
-                    topGrid={topGrid}
-                    setTopGrid={setTopGrid}
-                    specialState={specialState}
-                    setSpecialState={setSpecialState}
-                    flatProgressArr={flatProgressArr}
-                    setFlatProgressArr={setFlatProgressArr}
-                    flatUnlockArr={flatUnlockArr}
-                    setFlatUnlockArr={setFlatUnlockArr}
-                    flatStateBundle={flatStateBundle}
-                    setFlatStateBundle={setFlatStateBundle}
                 />
             ))}
         </div>

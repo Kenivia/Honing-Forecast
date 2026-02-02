@@ -13,12 +13,6 @@ interface Props {
     setFlatSucceedArr: React.Dispatch<React.SetStateAction<any>>
     flatUnlockArr: boolean[]
     setFlatUnlockArr: React.Dispatch<React.SetStateAction<any>>
-    flatProgressArr: number[]
-    setFlatProgressArr: React.Dispatch<React.SetStateAction<any>>
-    flatStateBundle: any[]
-    setFlatStateBundle: React.Dispatch<React.SetStateAction<any>>
-    topGrid: boolean[][]
-    setTopGrid: React.Dispatch<React.SetStateAction<boolean[][]>>
     ranOutFreeTaps: boolean
     onRanOutFreeTaps: () => void
 }
@@ -33,15 +27,9 @@ export function SpecialSortable({
     specialState,
     setSpecialState,
     flatSucceedArr,
-    setFlatSucceedArr: _setFlatSucceedArr,
-    flatUnlockArr: _flatUnlockArr,
+    setFlatSucceedArr,
+    flatUnlockArr,
     setFlatUnlockArr,
-    flatProgressArr: _flatProgressArr,
-    setFlatProgressArr,
-    flatStateBundle: _flatStateBundle,
-    setFlatStateBundle,
-    topGrid: _topGrid,
-    setTopGrid,
     ranOutFreeTaps,
     onRanOutFreeTaps,
 }: Props) {
@@ -60,40 +48,22 @@ export function SpecialSortable({
         }
     }
 
-    // Toggle logic for the button column - removes tick from TopGrid and removes from specialState
+    // Toggle logic for the button column
     const toggleSuccess = (index: number) => {
-        const upgrade = evaluateAverageResult.upgrade_arr[index]
-        const row = upgrade.piece_type
-        const col = upgrade.upgrade_index
-
-        // Remove the tick from TopGrid by setting it to false
-        setTopGrid((prev) => {
-            const copy = prev.map((r) => [...r])
-            copy[row][col] = false
-            return copy
-        })
-
-        // Remove from specialState
-        setSpecialState((prev) => prev.filter((idx) => idx !== index))
-
-        // Reset state arrays for this upgrade
-        setFlatProgressArr((prev) => {
+        setFlatSucceedArr((prev: boolean[]) => {
             const copy = [...prev]
-            copy[index] = 0
+            copy[index] = !copy[index]
             return copy
         })
-
-        setFlatUnlockArr((prev) => {
-            const copy = [...prev]
-            copy[index] = false
-            return copy
-        })
-
-        setFlatStateBundle((prev) => {
-            const copy = [...prev]
-            copy[index] = []
-            return copy
-        })
+        if (!flatSucceedArr[index]) {
+            if (!flatUnlockArr[index]) {
+                setFlatUnlockArr((prev: boolean[]) => {
+                    const copy = [...prev]
+                    copy[index] = true
+                    return copy
+                })
+            }
+        }
     }
 
     return (
@@ -103,7 +73,7 @@ export function SpecialSortable({
                 <div className="grid-header">Free tap order</div>
                 <div className="grid-header">Probability</div>
                 <div className="grid-header">{/* Empty for buttons */}</div>
-                <div className="grid-header">{}</div>
+                <div className="grid-header">{ }</div>
 
                 {/* Column 1: Sortable Names */}
                 <ReactSortable list={items} setList={handleSetList} animation={150} className="col-sortable" ghostClass="sortable-ghost">
@@ -140,7 +110,8 @@ export function SpecialSortable({
                         const first_not_succeeded_index = specialState.findIndex((i) => !flatSucceedArr[i])
                         const should_normal_tap = index >= evaluateAverageResult.special_invalid_index
                         const tap_previous_first = index > first_not_succeeded_index
-                        const hasTransparentBg = should_normal_tap || tap_previous_first || (succeed && first_not_succeeded_index != index + 1)
+                        const hasTransparentBg =
+                            should_normal_tap || tap_previous_first || (succeed && first_not_succeeded_index != index + 1)
                         return (
                             <div key={`btn-${u_index}`} className="row-item btn-cell">
                                 <button
@@ -156,8 +127,8 @@ export function SpecialSortable({
                                             succeed && first_not_succeeded_index == index + 1
                                                 ? "var(--btn-toggle-deselected)"
                                                 : hasTransparentBg
-                                                  ? "transparent"
-                                                  : "var(--btn-success)",
+                                                    ? "transparent"
+                                                    : "var(--btn-success)",
                                         color: succeed || should_normal_tap || tap_previous_first ? "var(--muted-text)" : "var(--btn-success-text)",
                                         pointerEvents: hasTransparentBg ? "none" : "auto",
                                     }}
@@ -165,12 +136,12 @@ export function SpecialSortable({
                                     {should_normal_tap
                                         ? "Normal tap this "
                                         : succeed && first_not_succeeded_index == index + 1
-                                          ? "Undo"
-                                          : succeed && first_not_succeeded_index != index + 1
-                                            ? ""
-                                            : tap_previous_first
-                                              ? "Free tap above first"
-                                              : "Succeed free tap"}
+                                            ? "Undo"
+                                            : succeed && first_not_succeeded_index != index + 1
+                                                ? ""
+                                                : tap_previous_first
+                                                    ? "Free tap above first"
+                                                    : "Succeed free tap"}
                                 </button>
                             </div>
                         )
@@ -184,7 +155,8 @@ export function SpecialSortable({
                         const first_not_succeeded_index = specialState.findIndex((i) => !flatSucceedArr[i])
                         const should_normal_tap = index >= evaluateAverageResult.special_invalid_index
                         const tap_previous_first = index > first_not_succeeded_index
-                        const hasTransparentBg = should_normal_tap || tap_previous_first || (succeed && first_not_succeeded_index != index + 1)
+                        const hasTransparentBg =
+                            should_normal_tap || tap_previous_first || (succeed && first_not_succeeded_index != index + 1)
                         const showRanOutButton = !hasTransparentBg && !succeed
                         return (
                             <div key={`out-${u_index}`} className="row-item btn-cell" style={{ gap: 6 }}>
@@ -204,7 +176,6 @@ export function SpecialSortable({
                         )
                     })}
                 </div>
-            </div>
-        </div>
+            </div></div>
     )
 }

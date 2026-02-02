@@ -18,8 +18,9 @@ export function applyFlatToGrid(
     flatStateBundle: StatePair[][],
     stateBundleGrid: StatePair[][][],
     setStateBundleGrid: React.Dispatch<React.SetStateAction<any>>,
-) {
-    if (!evaluateAverageResult) {
+) { 
+
+    if (!evaluateAverageResult){
         return
     }
     let newSucceededGrid = succeededGrid.map((row) => [...row])
@@ -37,7 +38,7 @@ export function applyFlatToGrid(
         // console.log(evaluateAverageResult)
         newProgressGrid[row][col] = flatProgressArr[index]
         newUnlockGrid[row][col] = flatUnlockArr[index]
-        newSucceededGrid[row][col] = false // Always false, never set to true
+        newSucceededGrid[row][col] = flatSucceedArr[index]
         newStateBundleGrid[row][col] = flatStateBundle[index]
     }
 

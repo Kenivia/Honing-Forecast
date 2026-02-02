@@ -21,9 +21,6 @@ type OptimizeSectionProps = {
     setOptimizeButtonPress: React.Dispatch<React.SetStateAction<any>>
     // onGridMouseDown: (_grid: "top" | "bottom", _e: React.MouseEvent) => void
 
-    topGrid: boolean[][]
-    setTopGrid: React.Dispatch<React.SetStateAction<boolean[][]>>
-
     flatProgressArr: number[]
     setFlatProgressArr: React.Dispatch<React.SetStateAction<any>>
 
@@ -58,27 +55,35 @@ function my_alr_spent_map(already_spent: any, labels: string[], index: number) {
         : Object.fromEntries(labels.map((label) => [label, "Calculating..."]))
 }
 
+
 function add_comma(inp: number) {
-    return Math.round(inp).toLocaleString("en-US", {
-        minimumFractionDigits: 0,
-        maximumFractionDigits: 0,
-    })
+    return Math.round(inp).toLocaleString(
+        "en-US",
+        {
+            minimumFractionDigits: 0,
+            maximumFractionDigits: 0,
+        },
+    )
 }
 function breakdown_to_english(input: number) {
-    return String(input <= 0 ? "Avg spend " + add_comma(input < 0.0 ? -input : input) + "g" : "Avg surplus of " + add_comma(input) + "g")
+    return String(
+        input <= 0 ? "Avg spend " + add_comma(input < 0.0 ? -input : input) + "g" : "Avg surplus of " + add_comma(input) + "g"
+    )
 }
 
 function combined_breakdown_to_english(input: number) {
-    return String(input <= 0 ? add_comma(input < 0.0 ? -input : input) + "g" : "Avg surplus of " + add_comma(input) + "g")
+    return String(
+        input <= 0 ? add_comma(input < 0.0 ? -input : input) + "g" : "Avg surplus of " + add_comma(input) + "g"
+    )
 }
 function avg_breakdown_map(avg_breakdown: any, labels: string[], offset: number) {
     return avg_breakdown
         ? Object.fromEntries(
-              labels.map((label, lab_index) => {
-                  const value = avg_breakdown[offset + lab_index]
-                  return [label, value === undefined ? "N/A" : breakdown_to_english(value)]
-              }),
-          )
+            labels.map((label, lab_index) => {
+                const value = avg_breakdown[offset + lab_index]
+                return [label, value === undefined ? "N/A" : breakdown_to_english(value)]
+            }),
+        )
         : Object.fromEntries(labels.map((label) => [label, "N/A"]))
 }
 
@@ -102,8 +107,6 @@ export default function OptimizeSection({
     setAutoRunOptimizer,
     optimizeAvgError,
     setOptimizeButtonPress,
-    topGrid,
-    setTopGrid,
     flatProgressArr,
     setFlatProgressArr,
     flatUnlockArr,
@@ -134,8 +137,7 @@ export default function OptimizeSection({
     const avg_breakdown = evaluateAverageResult?.average_breakdown
     const cloneFlatStateBundle = (bundle: StatePair[][]) => bundle.map((row) => row.map((pair) => [pair[0], pair[1]] as StatePair))
     const juiceAvail = evaluateAverageResult?.prep_output.juice_info.num_avail ?? 0
-    const canRestoreBest =
-        !optimizeAvgBusy && bestMetric !== null && Boolean(bestFlatStateBundle) && Boolean(bestFlatSpecialGrid) && bestMetric > evaluateAverageResult?.metric
+    const canRestoreBest = !optimizeAvgBusy && bestMetric !== null && Boolean(bestFlatStateBundle) && Boolean(bestFlatSpecialGrid) && bestMetric > evaluateAverageResult?.metric
 
     // console.log(bestMetric, evaluateAverageResult?.metric)
     const handleRestoreBest = () => {
@@ -181,19 +183,9 @@ export default function OptimizeSection({
     return (
         <div style={{ ...styles.inputSection, flexDirection: "column", maxWidth: "1200px", width: "100%", gap: 12 }}>
             <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+
                 <div style={{ background: "var(--focus-bg)", padding: "10px 12px", borderRadius: 6, display: "flex", flexDirection: "column", gap: 10 }}>
-                    <div
-                        style={{
-                            display: "flex",
-                            flexDirection: "row",
-                            alignItems: "flex-start",
-                            gap: 100,
-                            minWidth: 200,
-                            flexShrink: 0,
-                            marginTop: 0,
-                            flexWrap: "wrap",
-                        }}
-                    >
+                    <div style={{ display: "flex", flexDirection: "row", alignItems: "flex-start", gap: 100, minWidth: 200, flexShrink: 0, marginTop: 0, flexWrap: "wrap" }}>
                         <SpreadsheetGrid
                             columnDefs={wideMatsColumnDefs}
                             labels={MATS_LABELS.slice(0, 7)}
@@ -211,13 +203,7 @@ export default function OptimizeSection({
                                     7,
                                 ),
                             ]}
-                            colorsArr={[
-                                avg_breakdown_colors(
-                                    avg_breakdown,
-                                    JUICE_LABELS.map((label_row) => label_row[0]),
-                                    7,
-                                ),
-                            ]}
+                            colorsArr={[avg_breakdown_colors(avg_breakdown, JUICE_LABELS.map((label_row) => label_row[0]), 7)]}
                             setSheetValuesArr={[null]}
                         />
                         <SpreadsheetGrid
@@ -230,13 +216,7 @@ export default function OptimizeSection({
                                     7 + juiceAvail,
                                 ),
                             ]}
-                            colorsArr={[
-                                avg_breakdown_colors(
-                                    avg_breakdown,
-                                    JUICE_LABELS.map((label_row) => label_row[1]),
-                                    7 + juiceAvail,
-                                ),
-                            ]}
+                            colorsArr={[avg_breakdown_colors(avg_breakdown, JUICE_LABELS.map((label_row) => label_row[1]), 7 + juiceAvail)]}
                             setSheetValuesArr={[null]}
                         />
                     </div>
@@ -247,19 +227,13 @@ export default function OptimizeSection({
                     </div> */}
                     <div style={{ display: "grid", gridTemplateColumns: "1fr auto 1fr", alignItems: "center", gap: 12 }}>
                         <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 12 }}>
-                            <span style={{ fontSize: 12, color: "var(--text-muted)" }}>
-                                Combined average : {breakdown_to_english(evaluateAverageResult?.metric)}
-                            </span>
+
+                            <span style={{ fontSize: 12, color: "var(--text-muted)" }}>Combined average : {breakdown_to_english(evaluateAverageResult?.metric)}</span>
                             {metricType != 0 && optimizeAverageButton}
                         </div>
-                        {/* <div style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
+                        <div style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
                             <label style={{ display: "inline-flex", alignItems: "center", cursor: "pointer" }}>
-                                <input
-                                    type="checkbox"
-                                    checked={metricType == 0}
-                                    onChange={(e) => setMetricType(e.target.checked ? 0 : 1)}
-                                    style={{ display: "none" }}
-                                />
+                                <input type="checkbox" checked={metricType == 0} onChange={(e) => setMetricType(e.target.checked ? 0 : 1)} style={{ display: "none" }} />
                                 <span
                                     style={{
                                         width: 40,
@@ -284,11 +258,12 @@ export default function OptimizeSection({
                                     />
                                 </span>
                             </label>
-                        </div> */}
-                        {/* <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-start", gap: 12 }}>
+                        </div>
+                        <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-start", gap: 12 }}>
                             {metricType == 0 && optimizeAverageButton}
                             <span style={{ fontSize: 12, color: "var(--text-muted)" }}>Dummy help text for right mode.</span>
-                        </div> */}
+
+                        </div>
                     </div>
                     <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
                         <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13 }}>
@@ -337,12 +312,6 @@ export default function OptimizeSection({
                         setFlatSucceedArr={setFlatSucceedArr}
                         flatUnlockArr={flatUnlockArr}
                         setFlatUnlockArr={setFlatUnlockArr}
-                        flatProgressArr={flatProgressArr}
-                        setFlatProgressArr={setFlatProgressArr}
-                        flatStateBundle={flatStateBundle}
-                        setFlatStateBundle={setFlatStateBundle}
-                        topGrid={topGrid}
-                        setTopGrid={setTopGrid}
                         ranOutFreeTaps={ranOutFreeTaps}
                         onRanOutFreeTaps={onRanOutFreeTaps}
                     />
@@ -360,12 +329,11 @@ export default function OptimizeSection({
                         allowUserChangeState={allowUserChangeState}
                         upgradeArr={evaluateAverageResult.upgrade_arr}
                         specialState={specialState}
-                        setSpecialState={setSpecialState}
                         juiceInfo={evaluateAverageResult.prep_output.juice_info}
-                        topGrid={topGrid}
-                        setTopGrid={setTopGrid}
                     />
                 )}
+
+
             </div>
         </div>
     )
