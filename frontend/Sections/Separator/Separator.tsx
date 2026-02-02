@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react"
-import "./separator.css"
+import "./Separator.css"
 
 type Page = "optimize" | "cost-to-chance" | "gamba" | "forecast" //"chance-to-cost" |
 

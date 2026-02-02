@@ -7,7 +7,7 @@ import path from "path"
 
 // https://vite.dev/config/
 export default defineConfig({
-    // base: "/Honing-Forecast/",
+    base: "/",
     plugins: [
         react(),
         // visualizer({
