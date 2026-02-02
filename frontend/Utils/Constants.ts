@@ -6,7 +6,23 @@ export const JUICE_LABELS = [
     ["15-18 Weapon", "15-18 Armor"],
     ["19-20 Weapon", "19-20 Armor"],
 ]
-
+export const GRAPH_COLORS = [
+    "--series-red",
+    "--series-blue",
+    "--series-leaps",
+    "--series-shards",
+    "--series-oreha",
+    "--series-gold",
+    "--series-silver",
+    "--series-red",
+    "--series-books",
+    "--series-books",
+    "--series-books",
+    "--series-blue",
+    "--series-books",
+    "--series-books",
+    "--series-books",
+]
 export const OUTPUT_LABELS = ["Red", "Blue", "Leaps", "Shards", "Oreha", "Gold", "Silver", "Red juice", "Blue juice"]
 
 export const STORAGE_KEY = "HF_UI_STATE_V1"
@@ -31,6 +47,36 @@ export const DEFAULT_JUICE_LEFTOVER = [
     [0, 0],
     [0, 0],
 ]
+
+export const IconMap: Record<string, string> = {
+    Helmet: "/Honing-Forecast/Icons/Equipments/Helmet.webp",
+    Shoulder: "/Honing-Forecast/Icons/Equipments/Shoulder.webp",
+    Chest: "/Honing-Forecast/Icons/Equipments/Chest.webp",
+    Pants: "/Honing-Forecast/Icons/Equipments/Pants.webp",
+    Glove: "/Honing-Forecast/Icons/Equipments/Gloves.webp",
+    Weapon: "/Honing-Forecast/Icons/Equipments/Weapon.webp",
+    Red: "/Honing-Forecast/Icons/Materials/Red.webp",
+    Blue: "/Honing-Forecast/Icons/Materials/Blue.webp",
+    Leaps: "/Honing-Forecast/Icons/Materials/Leap.webp",
+    Shards: "/Honing-Forecast/Icons/Materials/Shard.webp",
+    Oreha: "/Honing-Forecast/Icons/Materials/Oreha.webp",
+    Gold: "/Honing-Forecast/Icons/Materials/Gold.webp",
+    Silver: "/Honing-Forecast/Icons/Materials/Silver.webp",
+    "Lava's Breath": "/Honing-Forecast/Icons/Materials/Lava's Breath.webp",
+    "Glacier's Breath": "/Honing-Forecast/Icons/Materials/Glacier's Breath.webp",
+    "Special Leap": "/Honing-Forecast/Icons/Materials/Special Leap.webp",
+
+    "11-14 Armor": "/Honing-Forecast/Icons/Materials/Armor Book.webp",
+    "11-14 Weapon": "/Honing-Forecast/Icons/Materials/Weapon Book.webp",
+
+    "15-18 Armor": "/Honing-Forecast/Icons/Materials/Armor Book.webp",
+    "15-18 Weapon": "/Honing-Forecast/Icons/Materials/Weapon Book.webp",
+
+    "19-20 Armor": "/Honing-Forecast/Icons/Materials/Armor Book.webp",
+    "19-20 Weapon": "/Honing-Forecast/Icons/Materials/Weapon Book.webp",
+
+    "Forecast Icon": "/Honing-Forecast/forecast icon.webp",
+}
 
 export const DEFAULT_MATS_PRICES = ["1.67", "0.04", "15.0", "0.5", "100", "1.0", "0.0"]
 
@@ -75,7 +121,7 @@ export const RESET_UI_DEFAULTS = {
 
 export const DEMO_UI_VALUES = {
     topGrid: Array.from({ length: TOP_ROWS }, (_, rowIndex) =>
-        Array.from({ length: TOP_COLS }, (_, colIndex) => colIndex === 19 || colIndex === 20 || colIndex === 21 || (colIndex > 21 && rowIndex === 5)),
+        Array.from({ length: TOP_COLS }, (_, colIndex) => colIndex === 19 || colIndex === 20 || colIndex === 21 || (colIndex > 21 && rowIndex === 5))
     ),
     bottomGrid: Array.from({ length: BOTTOM_ROWS }, (_, piece) => Array.from({ length: BOTTOM_COLS }, (_, colIndex) => colIndex === 3 && piece < 3)),
     prev_checked_arr: Array.from({ length: TOP_COLS }, (_, colIndex) => colIndex === 19 || colIndex === 20 || colIndex === 21),

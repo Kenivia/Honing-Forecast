@@ -7,7 +7,13 @@ import { localPoint } from "@visx/event"
 import { useTooltip, useTooltipInPortal, defaultStyles } from "@visx/tooltip"
 import { ParentSize } from "@visx/responsive"
 import { bisector } from "d3-array"
-
+import Icon from "./Icon.tsx"
+import { IconMap } from "@/Utils/Constants.ts"
+function getCssVar(name: string) {
+    return getComputedStyle(document.documentElement)
+        .getPropertyValue(name)
+        .trim()
+}
 // --- Types ---
 
 // Matches the JS output of Vec<(f64, f64)>
@@ -26,6 +32,7 @@ interface MaterialGraphProps {
     cumulative: boolean
     /** Height of the individual graph component */
     height?: number
+    label: string
 }
 
 // Accessors for our data tuples
@@ -35,13 +42,12 @@ const getY = (d: DataPoint) => d[1]
 // D3 bisector to find the closest index based on X
 const bisectDate = bisector<DataPoint, number>((d) => d[0]).left
 
-const GraphContent = ({ width, height, data, average, secondaryAnnotation, color, cumulative }: MaterialGraphProps & { width: number }) => {
+const GraphContent = ({ width, height, data, average, secondaryAnnotation, color, cumulative, label }: MaterialGraphProps & { width: number }) => {
     // 1. Data Processing
     // If data is null, we just render an empty container later
-
     // Compute the data to display (CDF or PDF)
     const displayData = useMemo(() => {
-        if (!data || data.length === 0) return null
+
         if (cumulative) return data
 
         // Calculate PDF: slope between points (dy/dx)
@@ -139,15 +145,21 @@ const GraphContent = ({ width, height, data, average, secondaryAnnotation, color
 
         return yScale(interpolatedY)
     }
+    const resolvedColor = getCssVar(color)
 
+    const inputColor = getCssVar("--grid-cell-bg")
+    const axisColor = getCssVar("--text-very-muted")
+    // if (!data || data.length === 0 || (data.map((x) => x[0]).reduce((prev, next) => Math.max(prev, next))) == 0) return null
+    const isEmpty = (data.map((x) => x[0]).reduce((prev, next) => Math.max(prev, next))) == 0;
+    // console.log(data.length, label)
     return (
         // ref for the tooltip portal
         <div ref={containerRef} style={{ position: "relative" }}>
             <svg width={width} height={height}>
                 <defs>
-                    <linearGradient id={`gradient-${color}`} x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor={color} stopOpacity={0.4} />
-                        <stop offset="100%" stopColor={color} stopOpacity={0.1} />
+                    <linearGradient id={`gradient-${resolvedColor}`} x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor={resolvedColor} stopOpacity={0.4} />
+                        <stop offset="100%" stopColor={resolvedColor} stopOpacity={0.1} />
                     </linearGradient>
                 </defs>
 
@@ -158,7 +170,7 @@ const GraphContent = ({ width, height, data, average, secondaryAnnotation, color
                         x={(d) => xScale(getX(d))}
                         y={(d) => yScale(getY(d))}
                         yScale={yScale}
-                        fill={`url(#gradient-${color})`}
+                        fill={`url(#gradient-${resolvedColor})`}
                         curve={curveMonotoneX}
                     />
 
@@ -167,7 +179,7 @@ const GraphContent = ({ width, height, data, average, secondaryAnnotation, color
                         data={displayData}
                         x={(d) => xScale(getX(d))}
                         y={(d) => yScale(getY(d))}
-                        stroke={color}
+                        stroke={resolvedColor}
                         strokeWidth={2}
                         curve={curveMonotoneX}
                     />
@@ -180,30 +192,34 @@ const GraphContent = ({ width, height, data, average, secondaryAnnotation, color
                                 x2={xScale(average)}
                                 y1={yMax}
                                 y2={getYForX(average)}
-                                stroke="black"
+                                stroke="white"
                                 strokeWidth={1}
                                 strokeDasharray="4,4"
                             />
-                            <circle cx={xScale(average)} cy={getYForX(average)} r={4} fill="black" />
-                            <text x={xScale(average)} y={-5} textAnchor="middle" fontSize={10} fill="black">
-                                Avg
+                            <circle cx={xScale(average)} cy={getYForX(average)} r={4} fill="white" />
+                            <image href={IconMap[label]}></image>
+                            <text x={xScale(average)} y={isEmpty ? -5 : 0} textAnchor="middle" fontSize={14} fill={resolvedColor}>
+                                Average  = {average.toLocaleString("en-US", { maximumFractionDigits: 0, minimumFractionDigits: 0 })}
                             </text>
                         </g>
                     )}
 
                     {/* Annotation 2: Secondary */}
-                    {secondaryAnnotation != null && (
+                    {secondaryAnnotation != null && !isEmpty && !isEmpty && (
                         <g>
                             <line
                                 x1={xScale(secondaryAnnotation)}
                                 x2={xScale(secondaryAnnotation)}
                                 y1={yMax}
                                 y2={getYForX(secondaryAnnotation)}
-                                stroke={color}
+                                stroke={inputColor}
                                 strokeWidth={1}
                                 strokeDasharray="2,2"
                             />
-                            <circle cx={xScale(secondaryAnnotation)} cy={getYForX(secondaryAnnotation)} r={4} fill="white" stroke={color} strokeWidth={2} />
+                            <circle cx={xScale(secondaryAnnotation)} cy={getYForX(secondaryAnnotation)} r={4} fill={inputColor} stroke={color} strokeWidth={2} />
+                            <text x={xScale(secondaryAnnotation)} y={yMax - 3} textAnchor="middle" fontSize={14} fill={inputColor}>
+                                You have: {secondaryAnnotation.toLocaleString("en-US", { maximumFractionDigits: 0, minimumFractionDigits: 0 })}
+                            </text>
                         </g>
                     )}
 
@@ -228,10 +244,10 @@ const GraphContent = ({ width, height, data, average, secondaryAnnotation, color
                         // Force ticks to specific interval logic if needed,
                         // or let Visx handle "approx 0.1" via numTicks
                         numTicks={width > 500 ? 10 : 5}
-                        stroke="#333"
-                        tickStroke="#333"
+                        stroke={axisColor}
+                        tickStroke={axisColor}
                         tickLabelProps={() => ({
-                            fill: "#333",
+                            fill: axisColor,
                             fontSize: 10,
                             textAnchor: "middle",
                         })}
@@ -241,16 +257,17 @@ const GraphContent = ({ width, height, data, average, secondaryAnnotation, color
 
             {/* Tooltip Content */}
             {tooltipOpen && tooltipData && (
-                <TooltipInPortal top={tooltipTop} left={tooltipLeft} style={{ ...defaultStyles, backgroundColor: "rgba(0,0,0,0.9)", color: "white" }}>
+                <TooltipInPortal top={tooltipTop} left={tooltipLeft} style={{ ...defaultStyles, backgroundColor: "rgba(0, 0, 0, 0.41)", color: "white" }}>
                     <div style={{ fontSize: 11 }}>
-                        <strong>x: {getX(tooltipData).toFixed(2)}</strong>
-                        <br />
+                        In a room of 100 people,
+                        <br /><strong>{(getY(tooltipData) * 100).toFixed(0)}</strong> used less than {getX(tooltipData).toLocaleString("en-US", { maximumFractionDigits: 0, minimumFractionDigits: 0 })} <span>{label}</span>
                         {/* Always showing cumulative value as requested */}
-                        Cum: {(getY(tooltipData) * 100).toFixed(1)}%
+                        {/* Cum: {(getY(tooltipData) * 100).toFixed(0)} */}
                     </div>
                 </TooltipInPortal>
-            )}
-        </div>
+            )
+            }
+        </div >
     )
 }
 

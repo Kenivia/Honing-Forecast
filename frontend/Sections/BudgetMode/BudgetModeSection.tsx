@@ -3,7 +3,7 @@ import SpreadsheetGrid from "@/Components/SpreadsheetGrid.tsx"
 import Graph from "@/Components/Graph.tsx"
 import LabeledCheckbox from "@/Components/LabeledCheckbox.tsx"
 import { styles, createColumnDefs, GRAPH_WIDTH, GRAPH_HEIGHT } from "@/Utils/Styles.ts"
-import { JUICE_LABELS, MATS_LABELS, OUTPUT_LABELS } from "@/Utils/Constants.ts"
+import { GRAPH_COLORS, JUICE_LABELS, MATS_LABELS, OUTPUT_LABELS } from "@/Utils/Constants.ts"
 import { SliderBundle } from "@/Components/SliderBundle.tsx"
 import { InputsBundle } from "@/Utils/InputBundles.ts"
 import { MaterialGraph } from "@/Components/MaterialGraph.tsx"
@@ -15,7 +15,7 @@ type DistributionSectionProps = {
 export default function DistributionSection({ cumulativeGraph, histogramResult }: DistributionSectionProps) {
     return (
         <div style={{ ...styles.inputSection, flexDirection: "row", maxWidth: "1200px", width: "100%" }}>
-            {MATS_LABELS.concat(JUICE_LABELS.map((l) => l[0]))
+            {MATS_LABELS.slice(0, 7).concat(JUICE_LABELS.map((l) => l[0]))
                 .concat(JUICE_LABELS.map((l) => l[1]))
                 .map((label, index) => (
                     <MaterialGraph
@@ -23,9 +23,10 @@ export default function DistributionSection({ cumulativeGraph, histogramResult }
                         data={histogramResult?.cum_percentiles[index]}
                         average={histogramResult?.average[index]}
                         secondaryAnnotation={histogramResult?.budgets[index]}
-                        color="#007bff" // Blue
+                        color={GRAPH_COLORS[index]}
                         cumulative={cumulativeGraph}
                         height={120}
+                        label={label}
                     />
                 ))}
         </div>
