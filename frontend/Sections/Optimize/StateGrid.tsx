@@ -260,7 +260,7 @@ const RowBundle = ({
                                                           ? "inherit"
                                                           : curIsBest
                                                             ? "var(--btn-toggle-optimize-selected)"
-                                                            : "inherit",
+                                                            : "var(--sub-optimal)",
 
                                                 cursor:
                                                     ((!allowUserChangeState || cIndex < progress || cIndex >= pity_len - 1) && cell.type !== "progress") ||

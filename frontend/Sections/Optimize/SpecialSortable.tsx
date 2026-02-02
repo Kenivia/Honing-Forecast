@@ -92,13 +92,25 @@ export function SpecialSortable({
                     <ReactSortable
                         list={items}
                         setList={handleSetList}
-                        animation={150}
+                        animation={10}
                         className="col-sortable"
                         ghostClass="sortable-ghost"
-                        style={curIsBest ? ({ background: "var(--btn-toggle-optimize-selected)" } as React.CSSProperties) : undefined}
+                        style={
+                            {
+                                background: curIsBest ? "var(--btn-toggle-optimize-selected)" : "var(--sub-optimal)",
+                            } as React.CSSProperties
+                        }
                     >
                         {items.map((item) => (
-                            <div key={item.id} className="row-item name-cell">
+                            <div
+                                key={item.id}
+                                className="row-item name-cell"
+                                style={
+                                    {
+                                        background: curIsBest ? "var(--btn-toggle-optimize-selected)" : "var(--sub-optimal)",
+                                    } as React.CSSProperties
+                                }
+                            >
                                 {/* Access Name via u_index */}
                                 <Icon
                                     iconName={PIECE_NAMES[evaluateAverageResult.upgrade_arr[item.u_index].piece_type]}
