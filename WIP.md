@@ -15,6 +15,8 @@
   - get the actual numbers from the korean website <https://icepeng.com/refining>
 
 - get all the graphs and shit back and working
+  - rework to be graphs for indivdual dimensions
+    - hoverable with a "you are here" arrow
 
 #### Optimizations
 

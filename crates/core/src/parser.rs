@@ -1,8 +1,10 @@
+use std::f64::NAN;
+
 use serde::{Deserialize, Serialize};
 
 use crate::constants::{
-    ADV_DATA_10_20, ADV_DATA_10_20_JUICE, ADV_DATA_30_40, ADV_DATA_30_40_JUICE, ADV_HONE_COST,
-    JuiceInfo, NORMAL_HONE_CHANCES, SPECIAL_LEAPS_COST, get_avail_juice_combs,
+    ADV_DATA_10_20_DOUBLE, ADV_DATA_10_20_JUICE, ADV_DATA_30_40, ADV_DATA_30_40_JUICE,
+    ADV_HONE_COST, JuiceInfo, NORMAL_HONE_CHANCES, SPECIAL_LEAPS_COST, get_avail_juice_combs,
     get_event_modified_adv_unlock_cost, get_event_modified_armor_costs,
     get_event_modified_armor_unlock_cost, get_event_modified_artisan,
     get_event_modified_weapon_costs, get_event_modified_weapon_unlock_cost,
@@ -184,6 +186,37 @@ impl PreparationOutput {
             // let mut rng: StdRng = StdRng::seed_from_u64(RNG_SEED);
 
             upgrade.eqv_gold_per_tap = eqv_gold_per_tap(upgrade, inp_price_arr);
+            if !upgrade.is_normal_honing {
+                let l_len = upgrade.prob_dist.len();
+                let mut this_combined = Vec::with_capacity(l_len);
+                let mut cost_so_far: f64 = 0.0;
+
+                for (p_index, _) in upgrade.prob_dist.iter().enumerate() {
+                    this_combined.push(
+                        cost_so_far
+                            + (upgrade.adv_juice_cost[p_index]
+                                * if upgrade.is_weapon {
+                                    juice_info.one_gold_cost_id[0].0
+                                } else {
+                                    juice_info.one_gold_cost_id[0].1
+                                }),
+                    );
+
+                    if p_index >= l_len - 1 {
+                        break;
+                    }
+
+                    cost_so_far += upgrade.eqv_gold_per_tap;
+                }
+                upgrade.combined_gold_costs.update_payload(
+                    this_combined,
+                    upgrade.state.hash,
+                    &mut upgrade.prob_dist,
+                    NAN,
+                    // cost_so_far,
+                    false,
+                );
+            }
 
             // let juice_ind: usize = if upgrade.is_weapon { 7 } else { 8 };
             // upgrade.eqv_gold_per_juice = user_price_arr[juice_ind] * upgrade.one_juice_cost as f64;
@@ -338,13 +371,14 @@ pub fn parser(
     }
 
     // Advanced hone
-    let mut this_juice_cost: Vec<f64>;
+    let mut juice_dist: Vec<f64>;
     let mut prob_dist: Vec<f64>;
-    for piece_type in 0..adv_ticks.len() {
-        let row_len: usize = adv_ticks[piece_type].len();
+    for row_ind in 0..adv_ticks.len() {
+        let piece_type = if row_ind == 5 { 0 } else { 1 };
+        let row_len: usize = adv_ticks[row_ind].len();
         let mut upgrade_index: usize = 0;
         while upgrade_index < row_len {
-            let needed: bool = adv_ticks[piece_type][upgrade_index];
+            let needed: bool = adv_ticks[row_ind][upgrade_index];
             if !needed {
                 upgrade_index += 1;
                 continue;
@@ -356,48 +390,61 @@ pub fn parser(
             // }
 
             // pick relevant_data based on strategy and level i (i <= 1 -> 10/20, else 30/40)
-            let relevant_data: &'static [[i64; 3]] = if adv_hone_strategy == "Juice on grace" {
+            let relevant_data: &'static [[i64; 3]] = if adv_hone_strategy == "No x2 balls" {
                 if upgrade_index <= 1 {
                     &ADV_DATA_10_20_JUICE
                 } else {
                     &ADV_DATA_30_40_JUICE
                 }
             } else if upgrade_index <= 1 {
-                &ADV_DATA_10_20
+                &ADV_DATA_10_20_DOUBLE
             } else {
                 &ADV_DATA_30_40
             };
 
-            let rows: usize = relevant_data.len();
+            let rows: usize = relevant_data.iter().last().unwrap()[0] as usize + 1;
             let sum_taps: i64 = relevant_data.iter().map(|row: &[i64; 3]| row[2]).sum(); // 2nd index is frequency
-            let col_index: usize = 2 * upgrade_index + (1 - piece_type);
+            let col_index: usize = 2 * upgrade_index + (piece_type);
 
             prob_dist = Vec::with_capacity(rows);
-            this_juice_cost = Vec::with_capacity(rows);
+            juice_dist = Vec::with_capacity(rows);
 
-            let cost_val: i64 = ADV_HONE_COST[7][col_index];
+            let one_juice_cost: i64 = ADV_HONE_COST[7][col_index];
             let sum_taps_f: f64 = if sum_taps == 0 { 1.0 } else { sum_taps as f64 };
 
-            for row in relevant_data {
-                let taps: i64 = row[2];
-                prob_dist.push((taps as f64) / sum_taps_f);
-                this_juice_cost.push(cost_val as f64 * row[1] as f64 / 1000.0_f64);
+            let start = relevant_data.iter().next().unwrap()[0] as usize;
+            for row in 0..rows {
+                if row < start {
+                    prob_dist.push(0.0);
+                    juice_dist.push(0.0);
+                    continue;
+                }
+                // web_sys::console::log_1(
+                //     &format!("{:?} {:?}", row, &relevant_data[row - start]).into(),
+                // );
+                assert!(row == relevant_data[row - start][0] as usize);
+                // let taps: i64 = row[2];
+                prob_dist.push((relevant_data[row - start][2] as f64) / sum_taps_f);
+                juice_dist.push(
+                    one_juice_cost as f64 * relevant_data[row - start][1] as f64 / 1000.0_f64,
+                );
             }
 
             out.push(Upgrade::new_adv(
                 prob_dist,
                 std::array::from_fn(|cost_type: usize| ADV_HONE_COST[cost_type][col_index]),
-                cost_val,
-                this_juice_cost,
-                piece_type == 5,
-                piece_type,
+                one_juice_cost,
+                juice_dist,
+                row_ind == 5,
+                row_ind,
                 relevant_data[0][0],
                 upgrade_index,
                 vec![
                     adv_unlock_costs[0][col_index], // um idk if tihs is right i forgot how this worked will figure it out later
                     adv_unlock_costs[1][col_index],
                 ],
-                false, //TODO
+                false,
+                num_juice_avail,
             ));
             // current_counter += 1;
             upgrade_index += 1;
@@ -419,10 +466,10 @@ pub fn parser(
 //     let main_upgrades: Vec<Upgrade> =
 //         parser(normal_counts, adv_counts, adv_hone_strategy, express_event);
 
-//     let other_strategy: String = if adv_hone_strategy == "Juice on grace" {
-//         "No juice".to_string()
+//     let other_strategy: String = if adv_hone_strategy == "No x2 balls" {
+//         "x2 balls".to_string()
 //     } else {
-//         "Juice on grace".to_string()
+//         "No x2 balls".to_string()
 //     };
 
 //     let other_upgrades: Vec<Upgrade> =

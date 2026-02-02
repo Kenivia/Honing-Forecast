@@ -1,5 +1,4 @@
 use crate::constants::FLOAT_TOL;
-
 use crate::normal_honing_utils::{add_up_golds, apply_price_leftovers, apply_price_naive};
 use crate::saddlepoint_approximation::average::DEBUG_AVERAGE;
 use crate::state_bundle::StateBundle;
@@ -48,64 +47,86 @@ fn tap_map_generator<R: Rng>(count_limit: usize, prob_dist: &[f64], rng: &mut R)
     tap_map
 }
 
-/// Sample from a geometric distribution with parameter `p = base_chance`
-/// producing k in `0..=max_taps` such that k == `max_taps` represents the tail.
-/// Uses the identity k = floor( ln(U) / ln(q) ) (q = 1-p) and truncates to `max_taps`.
-/// Handles edge cases p <= 0 and p >= 1.
-#[inline]
 fn sample_truncated_geometric<R: Rng + ?Sized>(p: f64, max_taps: i64, rng: &mut R) -> i64 {
     if max_taps <= 0 {
         panic!();
     }
     if p <= 0.0 {
-        return max_taps; // degenerate -> always tail
+        return max_taps;
     }
     if p >= 1.0 {
-        return 1; // succeed immediately
+        return 1;
     }
     let q: f64 = 1.0 - p;
     let u: f64 = rng.random_range(0.0..1.0);
-    // ln(u)/ln(q) >= 0 (both negative logs) gives k (0-based)
     let k: i64 = u.log(q).ceil() as i64;
     let k: i64 = if k <= 0 { 1 } else { k };
     if k > max_taps { max_taps + 1 } else { k }
 }
 
-fn juice_costs(upgrade: &Upgrade, state_bundle: &StateBundle) -> Vec<Vec<(i64, i64)>> {
+// btw this is a gross simplification of the actual distribution of juice/cost of advanced honing
+// to do it properly i'd have to store the actual distribution per tap count, which um idk how that's gonna fit into the saddlepoint approximation business
+// and i have elected to not think about it
+fn stochastic_rounding<R: Rng>(inp: f64, rng: &mut R) -> i64 {
+    let base = inp.floor();
+    let frac = inp - base;
+
+    let rounded = if rng.random_bool(frac) {
+        base + 1.0
+    } else {
+        base
+    };
+
+    rounded as i64
+}
+
+fn juice_costs<R: Rng>(
+    upgrade: &Upgrade,
+    state_bundle: &StateBundle,
+    rng: &mut R,
+) -> Vec<Vec<(i64, i64)>> {
     let prep_output = &state_bundle.prep_output;
     let mut juice_so_far: Vec<i64> = vec![0; prep_output.juice_info.amt_used_id.len()];
 
     let mut juice_used: Vec<Vec<(i64, i64)>> =
         vec![vec![(0, 0); prep_output.juice_info.amt_used_id.len()]; upgrade.prob_dist.len()];
-    for (p_index, _) in upgrade.prob_dist.iter().enumerate() {
-        let (juice, state_id) = upgrade.state[p_index];
-        for (id, (weap_used, armor_used)) in juice_used[p_index].iter_mut().enumerate() {
-            if upgrade.is_weapon {
-                *weap_used += juice_so_far[id];
-            } else {
-                *armor_used += juice_so_far[id];
-            }
-            if p_index >= upgrade.prob_dist.len() - 2 {
-                continue;
-                // if juice || state_id > 0 {
-                //     dbg!(&upgrade.state);
-                //     dbg!(&upgrade.prob_dist);
-                //     dbg!(&upgrade.state.len());
-                //     dbg!(&upgrade.prob_dist.len());
-                //     dbg!(juice, state_id);
-                // }
-                // assert!(!juice);
-                // assert!(state_id == 0);
-            }
+    if upgrade.is_normal_honing {
+        for (p_index, _) in upgrade.prob_dist.iter().enumerate() {
+            let (juice, state_id) = upgrade.state[p_index];
+            for (id, (weap_used, armor_used)) in juice_used[p_index].iter_mut().enumerate() {
+                if upgrade.is_weapon {
+                    *weap_used += juice_so_far[id];
+                } else {
+                    *armor_used += juice_so_far[id];
+                }
+                if p_index >= upgrade.prob_dist.len() - 2 {
+                    continue;
+                }
 
-            let juice_amt = prep_output.juice_info.amt_used_id[id][upgrade.upgrade_index];
-            if id == 0 && juice {
-                juice_so_far[id] += juice_amt;
-            } else if id > 0 && state_id == id {
-                juice_so_far[id] += juice_amt;
+                let juice_amt = prep_output.juice_info.amt_used_id[id][upgrade.upgrade_index];
+                if id == 0 && juice {
+                    juice_so_far[id] += juice_amt;
+                } else if id > 0 && state_id == id {
+                    juice_so_far[id] += juice_amt;
+                }
+            }
+        }
+    } else {
+        for (p_index, _) in upgrade.prob_dist.iter().enumerate() {
+            for (id, (weap_used, armor_used)) in juice_used[p_index].iter_mut().enumerate() {
+                if id == 0 {
+                    if upgrade.is_weapon {
+                        *weap_used = stochastic_rounding(upgrade.adv_juice_cost[p_index], rng);
+                    } else {
+                        *armor_used = stochastic_rounding(upgrade.adv_juice_cost[p_index], rng);
+                    }
+                } else {
+                    break;
+                }
             }
         }
     }
+
     juice_used
 }
 
@@ -130,7 +151,7 @@ pub fn monte_carlo_data<R: Rng>(
     for (attempt_index, u_index) in state_bundle.special_state.iter().enumerate() {
         let upgrade = &state_bundle.upgrade_arr[*u_index];
         let tap_map: Vec<usize> = tap_map_generator(data_size, &upgrade.prob_dist, rng);
-        let juice_costs: Vec<Vec<(i64, i64)>> = juice_costs(upgrade, state_bundle);
+        let juice_costs: Vec<Vec<(i64, i64)>> = juice_costs(upgrade, state_bundle, rng);
 
         // for (attempt_index, u_index) in self.special_state.iter().enumerate() {
         //     let upgrade = &self.upgrade_arr[*u_index];

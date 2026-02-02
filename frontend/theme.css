@@ -1,6 +1,8 @@
 /* Global CSS Variables for Theming - Colors Only */
 :root {
     --text-muted: #ffffff;
+
+    --text-very-muted: #c4c4c4;
     --text-success: #9ff7c7;
     --text-optimized: rgb(247, 219, 159);
     --text: var(--text-primary);

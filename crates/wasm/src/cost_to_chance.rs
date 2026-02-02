@@ -142,7 +142,7 @@
 //         let express_event: bool = false;
 //         let hist_bins: usize = 1000;
 //         let user_price_arr: [f64; 9] = DEFAULT_GOLD_VALUES;
-//         let adv_hone_strategy: &'static str = "No juice";
+//         let adv_hone_strategy: &'static str = "x2 balls";
 //         let data_size: usize = 100000;
 
 //         let hash: String = calculate_hash!(
@@ -211,7 +211,7 @@
 //         let express_event = false;
 //         let hist_bins: usize = 1000;
 //         let user_price_arr = DEFAULT_GOLD_VALUES;
-//         let adv_hone_strategy = "No juice";
+//         let adv_hone_strategy = "x2 balls";
 //         let data_size: usize = 100000;
 
 //         let hash = calculate_hash!(
@@ -272,7 +272,7 @@
 //         let express_event = false;
 //         let hist_bins: usize = 1000;
 //         let user_price_arr: [f64; 9] = DEFAULT_GOLD_VALUES;
-//         let adv_hone_strategy = "No juice";
+//         let adv_hone_strategy = "x2 balls";
 //         let data_size: usize = 100000;
 
 //         let hash = calculate_hash!(
@@ -333,7 +333,7 @@
 //         let express_event = false;
 //         let hist_bins: usize = 1000;
 //         let user_price_arr = DEFAULT_GOLD_VALUES;
-//         let adv_hone_strategy = "No juice";
+//         let adv_hone_strategy = "x2 balls";
 //         let data_size: usize = 100000;
 
 //         let hash = calculate_hash!(
@@ -399,7 +399,7 @@
 //         let adv_counts = vec![(0..4).map(|_| 5).collect(), (0..4).map(|_| 1).collect()];
 //         let express_event = false;
 //         let user_price_arr = DEFAULT_GOLD_VALUES;
-//         let adv_hone_strategy = "No juice";
+//         let adv_hone_strategy = "x2 balls";
 //         let data_size: usize = 100000;
 
 //         let hash = calculate_hash!(

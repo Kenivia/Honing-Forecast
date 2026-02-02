@@ -55,7 +55,7 @@ export const RESET_UI_DEFAULTS = {
     userWeaponJuiceLeftover: Object.fromEntries(JUICE_LABELS.map((labels, index) => [labels[0], DEFAULT_JUICE_LEFTOVER[index]?.[0] ?? 0])),
     userArmorJuiceLeftover: Object.fromEntries(JUICE_LABELS.map((labels, index) => [labels[1], DEFAULT_JUICE_LEFTOVER[index]?.[1] ?? 0])),
     desired_chance: "50",
-    adv_hone_strategy: "No juice",
+    adv_hone_strategy: "x2 balls",
     express_event: true,
     bucketCount: "100",
     cumulativeGraph: false,

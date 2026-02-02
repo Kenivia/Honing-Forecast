@@ -14,6 +14,9 @@ impl StateBundle {
     fn gcd_special(&self) -> i64 {
         let mut out: i64 = 1;
         for (index, upgrade) in self.upgrade_arr.iter().enumerate() {
+            if !upgrade.is_normal_honing {
+                continue;
+            }
             if index == 0 {
                 out = upgrade.special_cost;
             } else {
@@ -30,7 +33,9 @@ impl StateBundle {
         let mut invalid_uindex: Vec<usize> = Vec::with_capacity(self.upgrade_arr.len());
         for u_index in self.special_state.iter() {
             let upgrade = &self.upgrade_arr[*u_index];
-            if highest_upgrade_index_seen[upgrade.piece_type] > upgrade.upgrade_index as i64 {
+            if !upgrade.is_normal_honing
+                || highest_upgrade_index_seen[upgrade.piece_type] > upgrade.upgrade_index as i64
+            {
                 invalid_uindex.push(*u_index);
                 continue;
             }
@@ -50,7 +55,11 @@ impl StateBundle {
 
         let prep_output = &self.prep_output;
 
-        let m = self.upgrade_arr.len();
+        let m = self
+            .upgrade_arr
+            .iter()
+            .filter(|x| x.is_normal_honing && !x.succeeded)
+            .count();
         if m == 0 {
             self.special_cache
                 .insert(self.special_state.clone(), vec![1.0]);
@@ -79,7 +88,9 @@ impl StateBundle {
             let upgrade = &self.upgrade_arr[*u_index];
 
             // dbg!(upgrade.upgrade_index, upgrade.is_weapon, upgrade.piece_type);
-            if highest_upgrade_index_seen[upgrade.piece_type] > upgrade.upgrade_index as i64 {
+            if !upgrade.is_normal_honing
+                || highest_upgrade_index_seen[upgrade.piece_type] > upgrade.upgrade_index as i64
+            {
                 invalid_index = attempt_index + 1;
                 break;
             }
@@ -94,7 +105,11 @@ impl StateBundle {
             let one_minus_p = 1.0 - p;
 
             // Scale cost
-            let cost = (upgrade.special_cost as usize) / gcd;
+            let cost = if upgrade.succeeded {
+                0
+            } else {
+                (upgrade.special_cost as usize) / gcd
+            };
 
             // If cost is higher than total budget, we can't possibly succeed.
             // (Probability mass stays in 'active' and doesn't move to 'result')
@@ -226,7 +241,7 @@ impl StateBundle {
 //     //     let adv_counts: Vec<Vec<i64>> =
 //     //         vec![(0..4).map(|_| 0).collect(), (0..4).map(|_| 0).collect()];
 
-//     //     let adv_hone_strategy: &str = "No juice";
+//     //     let adv_hone_strategy: &str = "x2 balls";
 //     //     let express_event: bool = true;
 //     //     let budget = vec![0, 0, 0, 0, 0, 3333333, 0, 6767];
 //     //     let juice_books_owned: Vec<(i64, i64)> = vec![(0, 0), (0, 0), (0, 0), (0, 0)];

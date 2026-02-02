@@ -71,7 +71,7 @@ fn write_jsonl<T: Serialize>(data: &T, file_name: &String) -> Result<(), Error> 
 }
 fn main() {
     rayon::ThreadPoolBuilder::new()
-        .num_threads(16)
+        .num_threads(12)
         .build_global()
         .unwrap();
     let job_id: String = env::var("SLURM_JOB_ID").unwrap_or_else(|_| "local".to_string());

@@ -89,9 +89,9 @@ impl Support {
 
         let biggest_shift = theta
             * if theta >= 0.0 {
-                self.access_collapsed().iter().last().unwrap().0
+                self.max_value
             } else {
-                self.access_collapsed().iter().next().unwrap().0
+                self.min_value
             };
 
         if self.linear {

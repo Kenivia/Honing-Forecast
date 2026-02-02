@@ -4,6 +4,14 @@ import { JUICE_LABELS, MATS_LABELS } from "@/Utils/Constants.ts"
 import type { InputsValues } from "@/Utils/InputBundles.ts"
 // import { ticksToCounts } from "@/Utils/Helpers.ts"
 
+function myParseFloat(inp: string) {
+    let out = parseFloat(inp)
+    if (isNaN(out)) {
+        return 0
+    } else {
+        return out
+    }
+}
 export function buildPayload({
     topGrid,
     bottomGrid,
@@ -40,19 +48,19 @@ export function buildPayload({
     const { mats, juice } = inputs
     // console.log(mats)
     const payload: any = {
-        mats_budget: MATS_LABELS.slice(0, 8).map((label) => parseFloat(mats.owned[label] || "0")),
+        mats_budget: MATS_LABELS.slice(0, 8).map((label) => myParseFloat(mats.owned[label] || "0")),
         adv_hone_strategy: adv_hone_strategy,
         express_event: express_event,
         bucket_count: Math.max(2, Math.min(1000, Math.floor(Number(bucketCount) || 2))),
-        user_price_arr: MATS_LABELS.slice(0, 7).map((label) => parseFloat(mats.prices[label] || "0")),
+        user_price_arr: MATS_LABELS.slice(0, 7).map((label) => myParseFloat(mats.prices[label] || "0")),
         data_size: Math.max(1000, Math.floor(Number(dataSize) || 0)),
-        inp_leftover_values: MATS_LABELS.slice(0, 7).map((label) => parseFloat(mats.leftover[label] || "0")),
-        juice_books_budget: JUICE_LABELS.map((label_row) => [parseFloat(juice.weapon.owned[label_row[0]]), parseFloat(juice.armor.owned[label_row[1]])]),
+        inp_leftover_values: MATS_LABELS.slice(0, 7).map((label) => myParseFloat(mats.leftover[label] || "0")),
+        juice_books_budget: JUICE_LABELS.map((label_row) => [myParseFloat(juice.weapon.owned[label_row[0]]), myParseFloat(juice.armor.owned[label_row[1]])]),
 
-        juice_prices: JUICE_LABELS.map((label_row) => [parseFloat(juice.weapon.prices[label_row[0]]), parseFloat(juice.armor.prices[label_row[1]])]),
+        juice_prices: JUICE_LABELS.map((label_row) => [myParseFloat(juice.weapon.prices[label_row[0]]), myParseFloat(juice.armor.prices[label_row[1]])]),
         inp_leftover_juice_values: JUICE_LABELS.map((label_row) => [
-            parseFloat(juice.weapon.leftover[label_row[0]]),
-            parseFloat(juice.armor.leftover[label_row[1]]),
+            myParseFloat(juice.weapon.leftover[label_row[0]]),
+            myParseFloat(juice.armor.leftover[label_row[1]]),
         ]),
 
         progress_grid: progressGrid,
@@ -68,7 +76,7 @@ export function buildPayload({
     // Always use the traditional tick-based approach
     payload.normal_hone_ticks = topGrid
     payload.adv_hone_ticks = bottomGrid
-    // console.log("payload:", payload)
+    console.log("payload:", payload)
     return payload
 }
 

@@ -110,9 +110,13 @@ export default function AdvancedHoningPanel({
                             fontSize: "var(--font-size-sm)",
                         }}
                     >
-                        <option value="No juice">No juice</option>
-                        <option value="Juice on grace">Juice on grace</option>
+                        <option value="x2 balls">x2 balls</option>
+                        <option value="No x2 balls">No x2 balls</option>
                     </select>
+                </div>
+                <div style={{ fontSize: 12, color: "var( --text-very-muted)", display: "flex", justifyContent: "flex-end", marginBottom: -10 }}>
+                    {" "}
+                    (has no effect on 21-40)
                 </div>
             </div>
         </div>

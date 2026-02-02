@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 
 use std::collections::hash_map::DefaultHasher;
 
-use std::f64::NAN;
+use std::f64::{INFINITY, NAN, NEG_INFINITY};
 use std::ops::{Deref, DerefMut};
 
 use std::hash::{Hash, Hasher};
@@ -19,7 +19,7 @@ pub struct Upgrade {
     pub base_chance: f64,
     pub costs: [i64; 7],
     pub one_juice_cost: i64,
-    pub adv_juice_cost: Vec<f64>, // array corresponding to column 2 in the ADV_DATA
+    pub adv_juice_cost: Vec<f64>, // array corresponding to column 2 in the ADV_DATA * how much per grace
     pub special_cost: i64,
     pub juice_values: Vec<f64>, // juice values
     pub prob_dist_len: usize,
@@ -163,6 +163,7 @@ pub struct Support {
     pub ignore: bool,
     pub gap_size: f64,
     pub max_value: f64,
+    pub min_value: f64,
     pub first_non_zero_prob_index: usize,
 }
 
@@ -181,9 +182,11 @@ impl Support {
         assert!(prob_dist.prob_state_hash == self.support_state_hash);
 
         // let valid_log = prob_dist.is_log_valid();
-        let mut result: Vec<(f64, f64)> = Vec::with_capacity(self.support.len());
 
         if self.collapsed_state_hash != self.support_state_hash {
+            let mut result: Vec<(f64, f64)> = Vec::with_capacity(self.support.len());
+            let mut max_value: f64 = NEG_INFINITY;
+            let mut min_value: f64 = INFINITY;
             let mut iter = self.support.iter().zip(prob_dist.iter());
 
             if let Some((&s, &p)) = iter.next() {
@@ -194,6 +197,8 @@ impl Support {
                         cur_p += new_p;
                     } else {
                         if cur_p > FLOAT_TOL {
+                            max_value = cur_s.max(max_value);
+                            min_value = cur_s.min(min_value);
                             result.push((cur_s, cur_p));
                         }
 
@@ -212,6 +217,8 @@ impl Support {
             //     .iter()
             //     .take_while(|(_, p)| p.abs() < FLOAT_TOL)
             //     .count();
+            self.max_value = max_value;
+            self.min_value = min_value;
             self.first_non_zero_prob_index = 0;
             self.collapsed_pair = result;
             self.collapsed_state_hash = self.support_state_hash;
@@ -270,6 +277,7 @@ impl Default for Support {
             ignore: false,
             gap_size: NAN,
             max_value: NAN,
+            min_value: NAN,
             first_non_zero_prob_index: 0,
         }
     }
@@ -360,27 +368,80 @@ impl Upgrade {
     }
 
     pub fn new_adv(
-        prob_dist: Vec<f64>,
+        prob_dist_vec: Vec<f64>,
         costs: [i64; 7],
         one_juice_cost: i64,
-        adv_juice_cost: Vec<f64>,
+        juice_dist: Vec<f64>,
         is_weapon: bool,
         piece_type: usize,
         adv_cost_start: i64,
         upgrade_index: usize,
         unlock_costs: Vec<i64>,
         succeeded: bool,
+        num_juice_avail: usize,
     ) -> Self {
+        let prob_dist_len: usize = prob_dist_vec.len();
+        assert!(prob_dist_len == juice_dist.len());
+        let state: State = State::new(0);
+
+        let mut prob_dist = ProbDist::default();
+        prob_dist.update_payload(prob_dist_vec, state.hash);
         let prob_dist_len: usize = prob_dist.len();
-        assert!(prob_dist_len == adv_juice_cost.len());
+
+        let mut cost_dist = vec![Support::default(); 7];
+        for t_index in 0..7 {
+            let mut this_mats_costs: Vec<f64> = Vec::with_capacity(prob_dist_len);
+            let mut cost_so_far: f64 = 0.0;
+            let this_cost: f64 = costs[t_index] as f64;
+            for (index, _p) in prob_dist.iter().enumerate() {
+                this_mats_costs.push(cost_so_far);
+                if index >= prob_dist_len - 1 {
+                    break;
+                }
+                cost_so_far += this_cost;
+            }
+            // dbg!(t_index);
+            cost_dist[t_index].update_payload(
+                this_mats_costs,
+                state.hash,
+                &prob_dist,
+                this_cost,
+                true,
+            );
+        }
+        let mut weap_juice_costs = vec![Support::default(); num_juice_avail];
+        let mut armor_juice_costs = vec![Support::default(); num_juice_avail];
+        for id in 0..num_juice_avail {
+            let mut weap_cost: f64 = 0.0;
+            let mut armor_cost: f64 = 0.0;
+            let mut weap_support: Vec<f64> = Vec::with_capacity(prob_dist_len);
+            let mut armor_support: Vec<f64> = Vec::with_capacity(prob_dist_len);
+
+            for (index, this_juice) in juice_dist.iter().enumerate() {
+                weap_support.push(weap_cost);
+                armor_support.push(armor_cost);
+                if index >= prob_dist_len - 1 {
+                    continue;
+                }
+                if id == 0 {
+                    if is_weapon {
+                        weap_cost = *this_juice;
+                    } else {
+                        armor_cost = *this_juice;
+                    }
+                }
+            }
+            weap_juice_costs[id].update_payload(weap_support, state.hash, &prob_dist, NAN, false);
+            armor_juice_costs[id].update_payload(armor_support, state.hash, &prob_dist, NAN, false);
+        }
 
         Self {
             is_normal_honing: false,
-            prob_dist: ProbDist::default(),
-            base_chance: 0.0,
+            prob_dist,
+            base_chance: NAN,
             costs,
             one_juice_cost,
-            adv_juice_cost,
+            adv_juice_cost: juice_dist,
             special_cost: 0,
             juice_values: vec![],
             prob_dist_len,
@@ -390,7 +451,7 @@ impl Upgrade {
             tap_offset: adv_cost_start,
             upgrade_index,
             special_value: -1.0_f64,
-            original_prob_dist_len: 1, // need to sort this out
+            original_prob_dist_len: 0, // need to sort this out
 
             // log_prob_dist: vec![], // will change with each arrangement, maybe use a hashmap later
             eqv_gold_per_tap: -1.0_f64, // dummy value
@@ -399,13 +460,13 @@ impl Upgrade {
             // eqv_gold_per_juice: -1.0_f64,
             // failure_raw_delta: -1,
             // failure_delta_order: -1,
-            juice_avail: upgrade_index > 2, // will overwrite this in prep initialization anyway
-            books_avail: -1,                // will overwrite in prep
+            juice_avail: true, // will overwrite this in prep initialization anyway
+            books_avail: -1,   // will overwrite in prep
 
-            state: State::new(prob_dist_len), // this is bogus for now, later it'll be a choice between adv hone strategy ig
-            cost_dist: vec![],
-            weap_juice_costs: vec![],
-            armor_juice_costs: vec![],
+            state, // this is bogus for now, later it'll be a choice between adv hone strategy ig
+            cost_dist,
+            weap_juice_costs,
+            armor_juice_costs,
 
             combined_gold_costs: Support::default(),
             name_string: {
@@ -419,86 +480,5 @@ impl Upgrade {
             unlock_costs,
             succeeded,
         }
-    }
-
-    pub fn update_this_individual_support(&mut self, prep_output: &PreparationOutput) {
-        let l_len: usize = self.prob_dist.len();
-
-        for t_index in 0..7 {
-            let mut this_mats_costs: Vec<f64> = Vec::with_capacity(l_len);
-            let mut cost_so_far: f64 = 0.0;
-            let this_cost: f64 = self.costs[t_index] as f64;
-            for (index, _p) in self.prob_dist.iter().enumerate() {
-                this_mats_costs.push(cost_so_far);
-
-                if index >= l_len - 1 {
-                    break;
-                }
-
-                cost_so_far += this_cost;
-            }
-            // dbg!(t_index);
-            self.cost_dist[t_index].update_payload(
-                this_mats_costs,
-                self.state.hash,
-                &self.prob_dist,
-                this_cost,
-                true,
-            );
-        }
-
-        for id in 0..prep_output.juice_info.num_avail {
-            let mut weap_cost: f64 = 0.0;
-            let mut armor_cost: f64 = 0.0;
-            let mut weap_support: Vec<f64> = Vec::with_capacity(l_len);
-            let mut armor_support: Vec<f64> = Vec::with_capacity(l_len);
-
-            let amt = prep_output.juice_info.amt_used_id[id][self.upgrade_index] as f64;
-            for (index, (juice, book)) in self.state.iter().take(l_len).enumerate() {
-                weap_support.push(weap_cost);
-                armor_support.push(armor_cost);
-                if index >= l_len - 2 {
-                    continue;
-                    // assert!(!juice);
-                    // assert!(*book == 0);
-                }
-                if *juice && id == 0 {
-                    if self.is_weapon {
-                        weap_cost += amt;
-                    } else {
-                        armor_cost += amt;
-                    }
-                }
-                if *book == id && id > 0 {
-                    if self.is_weapon {
-                        weap_cost += amt;
-                    } else {
-                        armor_cost += amt;
-                    }
-                }
-            }
-            // dbg!(id, 0);
-            self.weap_juice_costs[id].update_payload(
-                weap_support,
-                self.state.hash,
-                &self.prob_dist,
-                amt,
-                true,
-            );
-            // dbg!(id, 1);
-            self.armor_juice_costs[id].update_payload(
-                armor_support,
-                self.state.hash,
-                &self.prob_dist,
-                amt,
-                true,
-            );
-        }
-    }
-
-    pub fn update_this_prob_dist(&mut self, prep_output: &PreparationOutput) {
-        let prob_dist: Vec<f64> = new_prob_dist(&self.state, &prep_output.juice_info, self, 0.0);
-
-        self.prob_dist.update_payload(prob_dist, self.state.hash);
     }
 }

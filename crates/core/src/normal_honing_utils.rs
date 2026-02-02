@@ -158,6 +158,9 @@ impl StateBundle {
         let prep_output: &mut PreparationOutput = &mut self.prep_output;
 
         for upgrade in self.upgrade_arr.iter_mut() {
+            if !upgrade.is_normal_honing {
+                continue;
+            }
             let l_len = upgrade.prob_dist.len();
             let mut this_combined = Vec::with_capacity(l_len);
             let mut cost_so_far: f64 = 0.0;
@@ -202,7 +205,6 @@ impl StateBundle {
                 // cost_so_far,
                 false,
             );
-
             // upgrade.combined_gold_costs.associated_state_hash
         }
     }
@@ -585,4 +587,93 @@ pub fn probability_distribution(
 
     // web_sys::console::log_1(&format!("{:?}", chances).into());
     chances
+}
+
+impl Upgrade {
+    pub fn update_this_individual_support(&mut self, prep_output: &PreparationOutput) {
+        if !self.is_normal_honing {
+            return;
+        }
+        let l_len: usize = self.prob_dist.len();
+
+        for t_index in 0..7 {
+            let mut this_mats_costs: Vec<f64> = Vec::with_capacity(l_len);
+            let mut cost_so_far: f64 = 0.0;
+            let this_cost: f64 = self.costs[t_index] as f64;
+            for (index, _p) in self.prob_dist.iter().enumerate() {
+                this_mats_costs.push(cost_so_far);
+
+                if index >= l_len - 1 {
+                    break;
+                }
+
+                cost_so_far += this_cost;
+            }
+            // dbg!(t_index);
+            self.cost_dist[t_index].update_payload(
+                this_mats_costs,
+                self.state.hash,
+                &self.prob_dist,
+                this_cost,
+                true,
+            );
+        }
+
+        for id in 0..prep_output.juice_info.num_avail {
+            let mut weap_cost: f64 = 0.0;
+            let mut armor_cost: f64 = 0.0;
+            let mut weap_support: Vec<f64> = Vec::with_capacity(l_len);
+            let mut armor_support: Vec<f64> = Vec::with_capacity(l_len);
+
+            let amt = prep_output.juice_info.amt_used_id[id][self.upgrade_index] as f64;
+            for (index, (juice, book)) in self.state.iter().take(l_len).enumerate() {
+                weap_support.push(weap_cost);
+                armor_support.push(armor_cost);
+                if index >= l_len - 2 {
+                    continue;
+                    // assert!(!juice);
+                    // assert!(*book == 0);
+                }
+                if *juice && id == 0 {
+                    if self.is_weapon {
+                        weap_cost += amt;
+                    } else {
+                        armor_cost += amt;
+                    }
+                }
+                if *book == id && id > 0 {
+                    if self.is_weapon {
+                        weap_cost += amt;
+                    } else {
+                        armor_cost += amt;
+                    }
+                }
+            }
+            // dbg!(id, 0);
+            self.weap_juice_costs[id].update_payload(
+                weap_support,
+                self.state.hash,
+                &self.prob_dist,
+                amt,
+                true,
+            );
+            // dbg!(id, 1);
+            self.armor_juice_costs[id].update_payload(
+                armor_support,
+                self.state.hash,
+                &self.prob_dist,
+                amt,
+                true,
+            );
+        }
+    }
+
+    pub fn update_this_prob_dist(&mut self, prep_output: &PreparationOutput) {
+        if !self.is_normal_honing {
+            return;
+        }
+        let prob_dist: Vec<f64> = new_prob_dist(&self.state, &prep_output.juice_info, self, 0.0);
+
+        self.prob_dist.update_payload(prob_dist, self.state.hash);
+    }
 }

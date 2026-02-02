@@ -46,8 +46,8 @@ export default function GambaInfoBox({
                 {upgradeArr[selectedUpgradeIndex] === undefined
                     ? ""
                     : upgradeArr[selectedUpgradeIndex].is_normal_honing
-                    ? upgradeArr[selectedUpgradeIndex].upgrade_index + 1
-                    : (upgradeArr[selectedUpgradeIndex].upgrade_index + 1) * 10}{" "}
+                        ? upgradeArr[selectedUpgradeIndex].upgrade_index + 1
+                        : (upgradeArr[selectedUpgradeIndex].upgrade_index + 1) * 10}{" "}
                 {upgradeArr[selectedUpgradeIndex] === undefined ? "" : upgradeArr[selectedUpgradeIndex].equipment_type}
             </h4>
             {selectedUpgradeIndex !== null && upgradeArr[selectedUpgradeIndex] ? (
@@ -106,7 +106,7 @@ export default function GambaInfoBox({
                         <div>
                             {" "}
                             {!upgradeArr[selectedUpgradeIndex]?.is_normal_honing &&
-                            upgradeArr[selectedUpgradeIndex]?.use_juice != (adv_hone_strategy === "Juice on grace")
+                                upgradeArr[selectedUpgradeIndex]?.use_juice != (adv_hone_strategy === "No x2 balls")
                                 ? "(Graph below is not updated by this tick)"
                                 : ""}
                         </div>

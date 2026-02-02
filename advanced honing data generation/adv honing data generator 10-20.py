@@ -50,7 +50,7 @@ def _single_sim(rng_random):
                 t1, t2 = ROLL_THRESH[(False, False)]
             else:
                 # Use (juice=True, scroll=True)
-                t1, t2 = ROLL_THRESH[(False, False)]
+                t1, t2 = ROLL_THRESH[(True, True)]
 
             r = rng_random()
             if r < t1:
@@ -90,7 +90,7 @@ def _single_sim(rng_random):
             else:
                 v = 40
             cur_xp += v
-            cur_balls += 1
+            cur_balls += 2
 
     return cost, juice_count
 
@@ -238,7 +238,7 @@ if __name__ == '__main__':
     items = sorted(out.items(), key=lambda kv: kv[0])
     tsv = dict_to_tsv(out, sort_by='cost_asc')
     for k, v in items:
-        print(k, v)
+        print([k, round(v[0]*1000),v[1]])
 
 
     import pickle

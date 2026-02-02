@@ -145,7 +145,7 @@ export default function HoningForecastUI() {
 
     const [desired_chance, set_desired_chance] = useState(() => "50")
     const [uncleaned_desired_chance, set_uncleaned_desired_chance] = useState(() => "50")
-    const [adv_hone_strategy, set_adv_hone_strategy_change] = useState(() => "No juice")
+    const [adv_hone_strategy, set_adv_hone_strategy_change] = useState(() => "x2 balls")
     const [express_event, set_express_event] = useState(() => true)
     const [bucketCount, _setBucketCount] = useState(() => "100") // leaving the door open for changing bucket count later
 
@@ -521,6 +521,11 @@ export default function HoningForecastUI() {
     }
     const adv_hone_strategy_change = (value: string) => set_adv_hone_strategy_change(value)
 
+    // Sync express_event toggle with adv_hone_strategy selector
+    useEffect(() => {
+        set_adv_hone_strategy_change(express_event ? "x2 balls" : "No x2 balls")
+    }, [express_event])
+
     // Lock x-axis handler
     const onToggleLockXAxis = () => {
         setLockXAxis((prev) => {
@@ -604,6 +609,7 @@ export default function HoningForecastUI() {
     const optimizeButtonPressKey = useMemo(() => String(optimizeButtonPress), [optimizeButtonPress])
 
     const topGridKey = useMemo(() => String(topGrid), [topGrid])
+    const bottomGridKey = useMemo(() => String(bottomGrid), [bottomGrid])
     const progressGridKey = useMemo(() => String(progressGrid), [progressGrid])
 
     const stateBundleGridKey = useMemo(() => String(stateBundleGrid), [stateBundleGrid])
@@ -669,7 +675,7 @@ export default function HoningForecastUI() {
             setRanOutFreeTaps(false)
         }
         // console.log("reest", topGridKey, inputBundleKey, metricType, progressGridKey, succeededGridKey, minResolutionKey, unlockGridKey)
-    }, [topGridKey, inputBundleKey, metricType, progressGridKey, succeededGridKey, minResolutionKey, unlockGridKey])
+    }, [topGridKey, bottomGridKey, inputBundleKey, metricType, progressGridKey, succeededGridKey, minResolutionKey, unlockGridKey])
 
     const cancelOptimizeAverage = () => {
         runner.cancel("OptimizeAverage")
@@ -792,6 +798,7 @@ export default function HoningForecastUI() {
         graphBucketSizeKey,
         dataSizeKey,
         topGridKey,
+        bottomGridKey,
         progressGridKey,
         unlockGridKey,
         succeededGridKey,
@@ -856,6 +863,7 @@ export default function HoningForecastUI() {
         graphBucketSizeKey,
         dataSizeKey,
         topGridKey,
+        bottomGridKey,
         progressGridKey,
         unlockGridKey,
         succeededGridKey,
@@ -958,7 +966,7 @@ export default function HoningForecastUI() {
         setEvaluateAverageResult,
         setBestMetric,
         setBestFlatStateBundle,
-        setBestFlatSpecialState
+        setBestFlatSpecialState,
         // setOptimizerMetric,
         // setMonteCarloResult,
     })
@@ -973,7 +981,7 @@ export default function HoningForecastUI() {
         setEvaluateAverageResult,
         setBestMetric,
         setBestFlatStateBundle,
-        setBestFlatSpecialState
+        setBestFlatSpecialState,
     })
 
     const fillDemo = createFillDemo({
@@ -1096,7 +1104,6 @@ export default function HoningForecastUI() {
                             onToggleLockXAxis={onToggleLockXAxis}
                             minResolution={minResolution}
                             setMinResolution={setMinResolution}
-
                         />
                     </div>
                 </div>
