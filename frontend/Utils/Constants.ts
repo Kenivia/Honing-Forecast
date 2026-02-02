@@ -49,33 +49,33 @@ export const DEFAULT_JUICE_LEFTOVER = [
 ]
 
 export const IconMap: Record<string, string> = {
-    Helmet: "/Honing-Forecast/Icons/Equipments/Helmet.webp",
-    Shoulder: "/Honing-Forecast/Icons/Equipments/Shoulder.webp",
-    Chest: "/Honing-Forecast/Icons/Equipments/Chest.webp",
-    Pants: "/Honing-Forecast/Icons/Equipments/Pants.webp",
-    Glove: "/Honing-Forecast/Icons/Equipments/Gloves.webp",
-    Weapon: "/Honing-Forecast/Icons/Equipments/Weapon.webp",
-    Red: "/Honing-Forecast/Icons/Materials/Red.webp",
-    Blue: "/Honing-Forecast/Icons/Materials/Blue.webp",
-    Leaps: "/Honing-Forecast/Icons/Materials/Leap.webp",
-    Shards: "/Honing-Forecast/Icons/Materials/Shard.webp",
-    Oreha: "/Honing-Forecast/Icons/Materials/Oreha.webp",
-    Gold: "/Honing-Forecast/Icons/Materials/Gold.webp",
-    Silver: "/Honing-Forecast/Icons/Materials/Silver.webp",
-    "Lava's Breath": "/Honing-Forecast/Icons/Materials/Lava's Breath.webp",
-    "Glacier's Breath": "/Honing-Forecast/Icons/Materials/Glacier's Breath.webp",
-    "Special Leap": "/Honing-Forecast/Icons/Materials/Special Leap.webp",
+    Helmet: "/Icons/Equipments/Helmet.webp",
+    Shoulder: "/Icons/Equipments/Shoulder.webp",
+    Chest: "/Icons/Equipments/Chest.webp",
+    Pants: "/Icons/Equipments/Pants.webp",
+    Glove: "/Icons/Equipments/Gloves.webp",
+    Weapon: "/Icons/Equipments/Weapon.webp",
+    Red: "/Icons/Materials/Red.webp",
+    Blue: "/Icons/Materials/Blue.webp",
+    Leaps: "/Icons/Materials/Leap.webp",
+    Shards: "/Icons/Materials/Shard.webp",
+    Oreha: "/Icons/Materials/Oreha.webp",
+    Gold: "/Icons/Materials/Gold.webp",
+    Silver: "/Icons/Materials/Silver.webp",
+    "Lava's Breath": "/Icons/Materials/Lava's Breath.webp",
+    "Glacier's Breath": "/Icons/Materials/Glacier's Breath.webp",
+    "Special Leap": "/Icons/Materials/Special Leap.webp",
 
-    "11-14 Armor": "/Honing-Forecast/Icons/Materials/Armor Book.webp",
-    "11-14 Weapon": "/Honing-Forecast/Icons/Materials/Weapon Book.webp",
+    "11-14 Armor": "/Icons/Materials/Armor Book.webp",
+    "11-14 Weapon": "/Icons/Materials/Weapon Book.webp",
 
-    "15-18 Armor": "/Honing-Forecast/Icons/Materials/Armor Book.webp",
-    "15-18 Weapon": "/Honing-Forecast/Icons/Materials/Weapon Book.webp",
+    "15-18 Armor": "/Icons/Materials/Armor Book.webp",
+    "15-18 Weapon": "/Icons/Materials/Weapon Book.webp",
 
-    "19-20 Armor": "/Honing-Forecast/Icons/Materials/Armor Book.webp",
-    "19-20 Weapon": "/Honing-Forecast/Icons/Materials/Weapon Book.webp",
+    "19-20 Armor": "/Icons/Materials/Armor Book.webp",
+    "19-20 Weapon": "/Icons/Materials/Weapon Book.webp",
 
-    "Forecast Icon": "/Honing-Forecast/forecast icon.webp",
+    "Forecast Icon": "/forecast icon.webp",
 }
 
 export const DEFAULT_MATS_PRICES = ["1.67", "0.04", "15.0", "0.5", "100", "1.0", "0.0"]
