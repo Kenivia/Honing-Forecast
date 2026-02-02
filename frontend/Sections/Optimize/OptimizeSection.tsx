@@ -8,6 +8,7 @@ import StateGridsManager from "@/Sections/Optimize/StateGrid.tsx"
 import { SpecialSortable } from "./SpecialSortable.tsx"
 
 type OptimizeSectionProps = {
+    curIsBest: boolean
     inputsBundle: InputsBundleWithSetters
 
     optimizeAvgBusy: boolean
@@ -55,35 +56,27 @@ function my_alr_spent_map(already_spent: any, labels: string[], index: number) {
         : Object.fromEntries(labels.map((label) => [label, "Calculating..."]))
 }
 
-
 function add_comma(inp: number) {
-    return Math.round(inp).toLocaleString(
-        "en-US",
-        {
-            minimumFractionDigits: 0,
-            maximumFractionDigits: 0,
-        },
-    )
+    return Math.round(inp).toLocaleString("en-US", {
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 0,
+    })
 }
 function breakdown_to_english(input: number) {
-    return String(
-        input <= 0 ? "Avg spend " + add_comma(input < 0.0 ? -input : input) + "g" : "Avg surplus of " + add_comma(input) + "g"
-    )
+    return String(input <= 0 ? "Avg spend " + add_comma(input < 0.0 ? -input : input) + "g" : "Avg surplus of " + add_comma(input) + "g")
 }
 
 function combined_breakdown_to_english(input: number) {
-    return String(
-        input <= 0 ? add_comma(input < 0.0 ? -input : input) + "g" : "Avg surplus of " + add_comma(input) + "g"
-    )
+    return String(input <= 0 ? add_comma(input < 0.0 ? -input : input) + "g" : "Avg surplus of " + add_comma(input) + "g")
 }
 function avg_breakdown_map(avg_breakdown: any, labels: string[], offset: number) {
     return avg_breakdown
         ? Object.fromEntries(
-            labels.map((label, lab_index) => {
-                const value = avg_breakdown[offset + lab_index]
-                return [label, value === undefined ? "N/A" : breakdown_to_english(value)]
-            }),
-        )
+              labels.map((label, lab_index) => {
+                  const value = avg_breakdown[offset + lab_index]
+                  return [label, value === undefined ? "N/A" : breakdown_to_english(value)]
+              }),
+          )
         : Object.fromEntries(labels.map((label) => [label, "N/A"]))
 }
 
@@ -97,6 +90,7 @@ function avg_breakdown_colors(avg_breakdown: any, labels: string[], offset: numb
     })
 }
 export default function OptimizeSection({
+    curIsBest,
     inputsBundle: _inputsBundle,
     optimizeAvgBusy,
     // optimizeAvgResult,
@@ -137,7 +131,8 @@ export default function OptimizeSection({
     const avg_breakdown = evaluateAverageResult?.average_breakdown
     const cloneFlatStateBundle = (bundle: StatePair[][]) => bundle.map((row) => row.map((pair) => [pair[0], pair[1]] as StatePair))
     const juiceAvail = evaluateAverageResult?.prep_output.juice_info.num_avail ?? 0
-    const canRestoreBest = !optimizeAvgBusy && bestMetric !== null && Boolean(bestFlatStateBundle) && Boolean(bestFlatSpecialGrid) && bestMetric > evaluateAverageResult?.metric
+    const canRestoreBest =
+        !optimizeAvgBusy && bestMetric !== null && Boolean(bestFlatStateBundle) && Boolean(bestFlatSpecialGrid) && bestMetric > evaluateAverageResult?.metric
 
     // console.log(bestMetric, evaluateAverageResult?.metric)
     const handleRestoreBest = () => {
@@ -173,7 +168,7 @@ export default function OptimizeSection({
                 cursor: "pointer",
             }}
         >
-            {optimizeAvgBusy ? "Cancel Optimize Average" : "<<< Optimize this Average"}
+            {optimizeAvgBusy ? "Cancel Optimize Average" : " >>> Optimize <<< "}
         </button>
     )
 
@@ -182,95 +177,17 @@ export default function OptimizeSection({
 
     return (
         <div style={{ ...styles.inputSection, flexDirection: "column", maxWidth: "1200px", width: "100%", gap: 12 }}>
-            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-
-                <div style={{ background: "var(--focus-bg)", padding: "10px 12px", borderRadius: 6, display: "flex", flexDirection: "column", gap: 10 }}>
-                    <div style={{ display: "flex", flexDirection: "row", alignItems: "flex-start", gap: 100, minWidth: 200, flexShrink: 0, marginTop: 0, flexWrap: "wrap" }}>
-                        <SpreadsheetGrid
-                            columnDefs={wideMatsColumnDefs}
-                            labels={MATS_LABELS.slice(0, 7)}
-                            sheetValuesArr={[avg_breakdown_map(avg_breakdown, MATS_LABELS.slice(0, 7), 0)]}
-                            colorsArr={[avg_breakdown_colors(avg_breakdown, MATS_LABELS.slice(0, 7), 0)]}
-                            setSheetValuesArr={[null]}
-                        />
-                        <SpreadsheetGrid
-                            columnDefs={wideMatsColumnDefs}
-                            labels={JUICE_LABELS.map((label_row) => label_row[0])}
-                            sheetValuesArr={[
-                                avg_breakdown_map(
-                                    avg_breakdown,
-                                    JUICE_LABELS.map((label_row) => label_row[0]),
-                                    7,
-                                ),
-                            ]}
-                            colorsArr={[avg_breakdown_colors(avg_breakdown, JUICE_LABELS.map((label_row) => label_row[0]), 7)]}
-                            setSheetValuesArr={[null]}
-                        />
-                        <SpreadsheetGrid
-                            columnDefs={wideMatsColumnDefs}
-                            labels={JUICE_LABELS.map((label_row) => label_row[1])}
-                            sheetValuesArr={[
-                                avg_breakdown_map(
-                                    avg_breakdown,
-                                    JUICE_LABELS.map((label_row) => label_row[1]),
-                                    7 + juiceAvail,
-                                ),
-                            ]}
-                            colorsArr={[avg_breakdown_colors(avg_breakdown, JUICE_LABELS.map((label_row) => label_row[1]), 7 + juiceAvail)]}
-                            setSheetValuesArr={[null]}
-                        />
-                    </div>
-                    {/* <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                        <div>Already spent: {evaluateAverageResult?.prep_output.already_spent[3]}</div>
-                        <div>Average cost from now on: {evaluateAverageResult?.metric - evaluateAverageResult?.prep_output.already_spent[3]}</div>
-                        <div>Already spent + more to come: {evaluateAverageResult?.metric}</div>
-                    </div> */}
-                    <div style={{ display: "grid", gridTemplateColumns: "1fr auto 1fr", alignItems: "center", gap: 12 }}>
-                        <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 12 }}>
-
-                            <span style={{ fontSize: 12, color: "var(--text-muted)" }}>Combined average : {breakdown_to_english(evaluateAverageResult?.metric)}</span>
-                            {metricType != 0 && optimizeAverageButton}
-                        </div>
-                        <div style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
-                            <label style={{ display: "inline-flex", alignItems: "center", cursor: "pointer" }}>
-                                <input type="checkbox" checked={metricType == 0} onChange={(e) => setMetricType(e.target.checked ? 0 : 1)} style={{ display: "none" }} />
-                                <span
-                                    style={{
-                                        width: 40,
-                                        height: 20,
-                                        background: metricType == 0 ? "var(--prob-mode)" : "var(--average-mode)",
-                                        borderRadius: 999,
-                                        position: "relative",
-                                        transition: "background 0.2s",
-                                    }}
-                                >
-                                    <span
-                                        style={{
-                                            position: "absolute",
-                                            top: 2,
-                                            left: metricType == 0 ? 22 : 2,
-                                            width: 16,
-                                            height: 16,
-                                            background: "white",
-                                            borderRadius: "50%",
-                                            transition: "left 0.2s",
-                                        }}
-                                    />
-                                </span>
-                            </label>
-                        </div>
-                        <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-start", gap: 12 }}>
-                            {metricType == 0 && optimizeAverageButton}
-                            <span style={{ fontSize: 12, color: "var(--text-muted)" }}>Dummy help text for right mode.</span>
-
-                        </div>
+            <div style={{ background: "var(--focus-bg)", padding: "10px 12px", borderRadius: 6, display: "flex", flexDirection: "column", gap: 10 }}>
+                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                        {metricType != 0 && optimizeAverageButton}
+                        {optimizeAvgError && <span style={{ fontSize: 12, color: "red" }}>Error: {optimizeAvgError}</span>}
                     </div>
                     <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
                         <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13 }}>
                             <input type="checkbox" checked={autoRunOptimizer} onChange={(e) => setAutoRunOptimizer(e.target.checked)} />
                             Auto start optimizer
                         </label>
-                        {optimizeAvgError && <span style={{ fontSize: 12, color: "red" }}>Error: {optimizeAvgError}</span>}
                     </div>
                     <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                         <button
@@ -305,6 +222,7 @@ export default function OptimizeSection({
                 )}
                 {flatStateBundle && flatProgressArr && evaluateAverageResult && specialState && (
                     <SpecialSortable
+                        curIsBest={curIsBest}
                         evaluateAverageResult={evaluateAverageResult}
                         specialState={specialState}
                         setSpecialState={setSpecialState}
@@ -318,6 +236,7 @@ export default function OptimizeSection({
                 )}
                 {flatStateBundle && flatProgressArr && evaluateAverageResult && specialState && (
                     <StateGridsManager
+                        curIsBest={curIsBest}
                         flatProgressArr={flatProgressArr}
                         setFlatProgressArr={setFlatProgressArr}
                         flatUnlockArr={flatUnlockArr}
@@ -332,8 +251,80 @@ export default function OptimizeSection({
                         juiceInfo={evaluateAverageResult.prep_output.juice_info}
                     />
                 )}
-
-
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                <div style={{ background: "var(--focus-bg)", padding: "10px 12px", borderRadius: 6, display: "flex", flexDirection: "column", gap: 10 }}>
+                    <div
+                        style={{
+                            display: "flex",
+                            flexDirection: "row",
+                            alignItems: "flex-start",
+                            gap: 100,
+                            minWidth: 200,
+                            flexShrink: 0,
+                            marginTop: 0,
+                            flexWrap: "wrap",
+                        }}
+                    >
+                        <SpreadsheetGrid
+                            columnDefs={wideMatsColumnDefs}
+                            labels={MATS_LABELS.slice(0, 7)}
+                            sheetValuesArr={[avg_breakdown_map(avg_breakdown, MATS_LABELS.slice(0, 7), 0)]}
+                            colorsArr={[avg_breakdown_colors(avg_breakdown, MATS_LABELS.slice(0, 7), 0)]}
+                            setSheetValuesArr={[null]}
+                        />
+                        <SpreadsheetGrid
+                            columnDefs={wideMatsColumnDefs}
+                            labels={JUICE_LABELS.map((label_row) => label_row[0])}
+                            sheetValuesArr={[
+                                avg_breakdown_map(
+                                    avg_breakdown,
+                                    JUICE_LABELS.map((label_row) => label_row[0]),
+                                    7,
+                                ),
+                            ]}
+                            colorsArr={[
+                                avg_breakdown_colors(
+                                    avg_breakdown,
+                                    JUICE_LABELS.map((label_row) => label_row[0]),
+                                    7,
+                                ),
+                            ]}
+                            setSheetValuesArr={[null]}
+                        />
+                        <SpreadsheetGrid
+                            columnDefs={wideMatsColumnDefs}
+                            labels={JUICE_LABELS.map((label_row) => label_row[1])}
+                            sheetValuesArr={[
+                                avg_breakdown_map(
+                                    avg_breakdown,
+                                    JUICE_LABELS.map((label_row) => label_row[1]),
+                                    7 + juiceAvail,
+                                ),
+                            ]}
+                            colorsArr={[
+                                avg_breakdown_colors(
+                                    avg_breakdown,
+                                    JUICE_LABELS.map((label_row) => label_row[1]),
+                                    7 + juiceAvail,
+                                ),
+                            ]}
+                            setSheetValuesArr={[null]}
+                        />
+                    </div>
+                    {/* <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                        <div>Already spent: {evaluateAverageResult?.prep_output.already_spent[3]}</div>
+                        <div>Average cost from now on: {evaluateAverageResult?.metric - evaluateAverageResult?.prep_output.already_spent[3]}</div>
+                        <div>Already spent + more to come: {evaluateAverageResult?.metric}</div>
+                    </div> */}
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr auto 1fr", alignItems: "center", gap: 12 }}>
+                        <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 12 }}>
+                            <span style={{ fontSize: 12, color: "var(--text-muted)" }}>
+                                Combined average : {breakdown_to_english(evaluateAverageResult?.metric)}
+                            </span>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     )

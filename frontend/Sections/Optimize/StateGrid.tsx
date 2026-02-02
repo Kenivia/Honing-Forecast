@@ -8,6 +8,7 @@ import "./StateGrid.css"
 export type StatePair = [boolean, number]
 
 interface RowBundleProps {
+    curIsBest: boolean
     bundleIndex: number
     progress: number
     unlock: boolean
@@ -23,6 +24,7 @@ interface RowBundleProps {
 }
 
 const RowBundle = ({
+    curIsBest,
     bundleIndex,
     progress,
     unlock,
@@ -258,17 +260,19 @@ const RowBundle = ({
                                                     cIndex >= pity_len - 1
                                                         ? "transparent"
                                                         : cell.type === "progress" || !cell.active
-                                                            ? "inherit"
-                                                            : "var( --btn-toggle-optimize-selected)",
+                                                          ? "inherit"
+                                                          : curIsBest
+                                                            ? "var(--btn-toggle-optimize-selected)"
+                                                            : "inherit",
 
                                                 cursor:
                                                     ((!allowUserChangeState || cIndex < progress || cIndex >= pity_len - 1) && cell.type !== "progress") ||
-                                                        cIndex >= pity_len
+                                                    cIndex >= pity_len
                                                         ? "not-allowed"
                                                         : "pointer",
                                                 opacity:
                                                     ((!allowUserChangeState || cIndex < progress || cIndex >= pity_len - 1) && cell.type !== "progress") ||
-                                                        cIndex >= pity_len
+                                                    cIndex >= pity_len
                                                         ? 0.3
                                                         : 1,
                                             }}
@@ -362,6 +366,7 @@ const RowBundle = ({
 
 // --- 3. Main Container Component ---
 interface ComplexGridProps {
+    curIsBest: boolean
     flatProgressArr: number[]
     setFlatProgressArr: React.Dispatch<React.SetStateAction<number[]>>
     flatUnlockArr: boolean[]
@@ -378,6 +383,7 @@ interface ComplexGridProps {
 }
 
 export default function StateGridsManager({
+    curIsBest,
     flatProgressArr,
     setFlatProgressArr,
     flatUnlockArr,
@@ -443,6 +449,7 @@ export default function StateGridsManager({
             {specialState.map((u_index, index) => (
                 <RowBundle
                     key={u_index}
+                    curIsBest={curIsBest}
                     bundleIndex={u_index}
                     progress={flatProgressArr[u_index]}
                     unlock={flatUnlockArr[u_index]}

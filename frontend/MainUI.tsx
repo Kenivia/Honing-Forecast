@@ -766,11 +766,11 @@ export default function HoningForecastUI() {
             // setCachedGraphData: setCachedAverageGraphData,
             onSuccess: (res) => {
                 // console.log(inputBundleKey)
-                // setFlatStateBundle(res.upgrade_arr.map((upgrade) => upgrade.state))
-                // setFlatProgressArr(res.upgrade_arr.map((_, index) => progressGrid[res.upgrade_arr[index].piece_type][res.upgrade_arr[index].upgrade_index]))
-                // setFlatUnlockArr(res.upgrade_arr.map((_, index) => unlockGrid[res.upgrade_arr[index].piece_type][res.upgrade_arr[index].upgrade_index]))
-                // setFlatSucceedArr(res.upgrade_arr.map((_, index) => succeededGrid[res.upgrade_arr[index].piece_type][res.upgrade_arr[index].upgrade_index]))
-                // setSpecialState(res.special_state)
+                setFlatStateBundle(res.upgrade_arr.map((upgrade) => upgrade.state))
+                setFlatProgressArr(res.upgrade_arr.map((_, index) => progressGrid[res.upgrade_arr[index].piece_type][res.upgrade_arr[index].upgrade_index]))
+                setFlatUnlockArr(res.upgrade_arr.map((_, index) => unlockGrid[res.upgrade_arr[index].piece_type][res.upgrade_arr[index].upgrade_index]))
+                setFlatSucceedArr(res.upgrade_arr.map((_, index) => succeededGrid[res.upgrade_arr[index].piece_type][res.upgrade_arr[index].upgrade_index]))
+                setSpecialState(res.special_state)
                 updateBestSolution(res)
                 // applyFlatToGrid(
                 //     evaluateAverageResult,
@@ -1021,12 +1021,7 @@ export default function HoningForecastUI() {
     // styles and column defs moved to ./styles
     const AnythingTicked = useMemo(() => topGrid.some((row) => row.some((x) => x)) || bottomGrid.some((row) => row.some((x) => x)), [topGrid, bottomGrid])
     const currentMetric = evaluateAverageResult?.metric
-    const optimizeAccentOverride =
-        bestMetric !== null && currentMetric !== undefined && currentMetric !== null
-            ? Math.round(currentMetric) < Math.round(bestMetric)
-                ? "var(--sub-optimal)"
-                : null
-            : "var(--sub-optimal)"
+    const curIsBest = bestMetric !== null && currentMetric !== undefined && currentMetric !== null ? Math.round(currentMetric) >= Math.round(bestMetric) : false
 
     return (
         <div style={styles.pageContainer}>
@@ -1142,11 +1137,9 @@ export default function HoningForecastUI() {
                     />
                 </div> */}
                 {activePage === "optimize" && (
-                    <div
-                        className={activePage === "optimize" ? "page" : "page page--hidden"}
-                        style={optimizeAccentOverride ? ({ "--btn-toggle-optimize-selected": optimizeAccentOverride } as React.CSSProperties) : undefined}
-                    >
+                    <div className={activePage === "optimize" ? "page" : "page page--hidden"}>
                         <OptimizeSection
+                            curIsBest={curIsBest}
                             inputsBundle={inputsBundle}
                             optimizeAvgBusy={optimizeAvgBusy}
                             optimizeAvgWorkerRef={optimizeAvgWorkerRef}

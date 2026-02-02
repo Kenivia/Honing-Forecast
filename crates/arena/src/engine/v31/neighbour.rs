@@ -62,7 +62,7 @@ impl SolverStateBundle {
                 already_mutated[u_idx] = true;
                 let upgrade = &mut self.state_bundle.upgrade_arr[u_idx];
 
-                if upgrade.succeeded {
+                if upgrade.succeeded || !upgrade.is_normal_honing {
                     continue;
                 }
 
