@@ -17,7 +17,10 @@ impl SolverStateBundle {
                 * self.special_affinity,
         );
         if mutate_special {
-            let u_len = self.state_bundle.special_state.len();
+            let u_len = self
+                .state_bundle
+                .special_invalid_index
+                .unwrap_or(self.state_bundle.special_state.len());
             let max_dist = u_len; //((u_len as f64) * 0.5).round().max(1.0) as usize;
 
             // for _ in 0..(0.5 * u_len as f64).ceil() as usize {
@@ -71,11 +74,13 @@ impl SolverStateBundle {
                 let artisan_rate = upgrade.artisan_rate;
                 let juice_chances = &self.state_bundle.prep_output.juice_info.chances_id;
 
-                let max_change_len =
-                    ((1.0 - progress).powi(2) * upgrade.state.len() as f64).ceil() as i64;
+                let max_change_len = ((1.0 - progress).powi(2) * upgrade.state.len() as f64)
+                    .ceil()
+                    .max(4.0) as i64;
                 let new_juice_count = upgrade
                     .state
                     .iter()
+                    .skip(upgrade.alr_failed)
                     .filter(|(j, _)| *j)
                     .count()
                     .saturating_add_signed(random_range(-max_change_len..max_change_len) as isize);
@@ -83,6 +88,7 @@ impl SolverStateBundle {
                 let new_juice_streak_len = upgrade
                     .state
                     .iter()
+                    .skip(upgrade.alr_failed)
                     .take_while(|(j, _)| *j)
                     .count()
                     .saturating_add_signed(random_range(-max_change_len..max_change_len) as isize)
@@ -90,6 +96,7 @@ impl SolverStateBundle {
                 let new_book_count = upgrade
                     .state
                     .iter()
+                    .skip(upgrade.alr_failed)
                     .filter(|(_, b)| *b > 0)
                     .count()
                     .saturating_add_signed(random_range(-max_change_len..max_change_len) as isize);
@@ -97,6 +104,7 @@ impl SolverStateBundle {
                 let new_book_streak_len = upgrade
                     .state
                     .iter()
+                    .skip(upgrade.alr_failed)
                     .take_while(|(_, b)| *b > 0)
                     .count()
                     .saturating_add_signed(random_range(-max_change_len..max_change_len) as isize)
@@ -105,7 +113,12 @@ impl SolverStateBundle {
                 let book_id = *self.state_bundle.prep_output.juice_info.ids[upgrade.upgrade_index]
                     .last()
                     .unwrap();
-                for (i, (juice, book)) in upgrade.state.iter_mut().enumerate() {
+                for (i, (juice, book)) in upgrade
+                    .state
+                    .iter_mut()
+                    .skip(upgrade.alr_failed)
+                    .enumerate()
+                {
                     if artisan >= 1.0 {
                         effective_len = i + 1;
                         break;
@@ -142,7 +155,8 @@ impl SolverStateBundle {
                 for (i, (juice, book)) in upgrade
                     .state
                     .iter_mut()
-                    .take(effective_len - 1) //cannot juice pity
+                    .skip(upgrade.alr_failed)
+                    .take(effective_len - 1 - upgrade.alr_failed) // -1 cos cannot juice pity
                     .rev()
                     .enumerate()
                 {
