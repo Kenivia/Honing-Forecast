@@ -95,20 +95,20 @@ pub fn solve<R: Rng>(
     //     state_bundle.num_threads
     // };
     let upgrade_impacts = compute_upgrade_impact(&mut state_bundle);
-    let mut solver_arr: Vec<SolverStateBundle> = Vec::with_capacity(actual_thread_num as usize);
+    // let mut solver_arr: Vec<SolverStateBundle> = Vec::with_capacity(actual_thread_num as usize);
 
-    for _ in 0..actual_thread_num {
-        let solver_state_bundle: SolverStateBundle = SolverStateBundle::initialize(
-            &state_bundle,
-            scaler.clone(),
-            max_state_len,
-            Performance::new(),
-            rng.next_u64(),
-            &overall_best_n_states,
-            &upgrade_impacts,
-        );
-        solver_arr.push(solver_state_bundle);
-    }
+    // for _ in 0..actual_thread_num {
+    let mut solver_bundle: SolverStateBundle = SolverStateBundle::initialize(
+        &state_bundle,
+        scaler.clone(),
+        max_state_len,
+        Performance::new(),
+        rng.next_u64(),
+        &overall_best_n_states,
+        &upgrade_impacts,
+    );
+    // solver_arr.push(solver_state_bundle);
+    // }
     #[cfg(not(target_arch = "wasm32"))]
     {
         overall_performance.best_history.push((
@@ -119,30 +119,74 @@ pub fn solve<R: Rng>(
     }
     // vec![state_bundle.clone(); state_bundle.num_threads];
     while eqv_wall_time_iters < MAX_ITERS {
-        solver_arr.iter_mut().for_each(|x| x.one_batch(BATCH_SIZE));
+        // solver_arr.iter_mut().for_each(|x| x.one_batch(BATCH_SIZE));
 
-        let mut new_scale = 0.0;
-        let mut new_special_cache = solver_arr[0].state_bundle.special_cache.clone();
-        for (index, solver) in solver_arr.iter_mut().enumerate() {
-            overall_performance.aggregate_counts(&solver.performance);
-            solver.performance = Performance::new();
-            for (state, metric) in solver.best_n_states.drain() {
-                my_push(&mut overall_best_n_states, state, metric);
+        let mutate_special: bool = solver_bundle.neighbour();
+
+        solver_bundle.state_bundle.metric = solver_bundle
+            .state_bundle
+            .metric_router(&mut solver_bundle.performance);
+        // if solver_bundle.state_bundle.metric_type == 1 {
+        //     dbg!(solver_bundle.state_bundle.metric, mutate_special);
+        // }
+
+        // highest_seen = highest_seen.max(state_bundle.metric);
+        // lowest_seen = lowest_seen.min(state_bundle.metric);
+
+        if OrderedFloat(solver_bundle.state_bundle.metric)
+            > *solver_bundle.best_n_states.peek_max().unwrap().1
+        {
+            if mutate_special {
+                solver_bundle.special_affinity *= SPECIAL_AFFINITY_GROWTH;
+                solver_bundle.special_affinity = solver_bundle.special_affinity.min(1.0);
             }
-            new_scale += solver.scaler.current_scale;
-            if index > 0 {
-                new_special_cache.extend(solver.state_bundle.special_cache.clone());
+            my_push(
+                &mut solver_bundle.best_n_states,
+                solver_bundle.state_bundle.to_essence(),
+                OrderedFloat(solver_bundle.state_bundle.metric),
+            );
+            solver_bundle.temps_without_improvement = 0;
+            // dbg!(
+            //     solver_bundle.state_bundle.metric,
+            //     &solver_bundle.best_n_states
+            // );
+        } else {
+            if mutate_special {
+                solver_bundle.special_affinity *= SPECIAL_AFFINITY_DECAY;
             }
         }
-        new_scale /= actual_thread_num as f64;
-        for solver in solver_arr.iter_mut() {
-            solver.best_n_states = overall_best_n_states.clone();
-            solver.scaler.current_scale = new_scale;
-            solver.state_bundle.special_cache = new_special_cache.clone();
-            solver.perform_crossover();
+        let delta = (solver_bundle.prev_state.metric - solver_bundle.state_bundle.metric)
+            / solver_bundle.scaler.current_scale;
+        let is_uphill = delta > 0.0;
+        let accepted = if !is_uphill {
+            true
+        } else {
+            let prob = (-delta.abs()).exp();
+            solver_bundle.rng.random_bool(prob)
+        };
+        if accepted {
+            solver_bundle
+                .prev_state
+                .my_clone_from(&solver_bundle.state_bundle);
+        } else {
+            solver_bundle
+                .state_bundle
+                .my_clone_from(&solver_bundle.prev_state);
         }
+        solver_bundle
+            .scaler
+            .update_stats(is_uphill, accepted, solver_bundle.lam_rate());
+        solver_bundle.count += 1;
 
-        eqv_wall_time_iters += BATCH_SIZE;
+        if solver_bundle.temps_without_improvement as f64
+            > (10.0 * solver_bundle.progress()).max(3.0)
+        {
+            solver_bundle.perform_crossover();
+            solver_bundle.temps_without_improvement = 0;
+        }
+        solver_bundle.temps_without_improvement += 1;
+
+        eqv_wall_time_iters += 1;
 
         if eqv_wall_time_iters * actual_thread_num - last_total_count * actual_thread_num >= 1000 {
             last_total_count = eqv_wall_time_iters;
@@ -151,7 +195,7 @@ pub fn solve<R: Rng>(
                 overall_performance.best_history.push((
                     timer.elapsed_sec(),
                     eqv_wall_time_iters * actual_thread_num as i64,
-                    f64::from(*overall_best_n_states.peek_max().unwrap().1),
+                    f64::from(*solver_bundle.best_n_states.peek_max().unwrap().1),
                 ));
             }
 
@@ -171,7 +215,9 @@ pub fn solve<R: Rng>(
         }
     }
 
-    let best_pair = overall_best_n_states.peek_max().unwrap();
-    state_bundle.clone_from_essence(best_pair.0, best_pair.1);
-    state_bundle
+    let best_pair = solver_bundle.best_n_states.peek_max().unwrap();
+    solver_bundle
+        .state_bundle
+        .clone_from_essence(best_pair.0, best_pair.1);
+    solver_bundle.state_bundle
 }

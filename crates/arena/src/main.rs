@@ -71,7 +71,7 @@ fn write_jsonl<T: Serialize>(data: &T, file_name: &String) -> Result<(), Error> 
 }
 fn main() {
     rayon::ThreadPoolBuilder::new()
-        .num_threads(12)
+        .num_threads(15)
         .build_global()
         .unwrap();
     let job_id: String = env::var("SLURM_JOB_ID").unwrap_or_else(|_| "local".to_string());
@@ -140,7 +140,7 @@ fn main() {
         }
     }
     // for current_trial in{
-    zipped_test_cases.iter().for_each(
+    zipped_test_cases.par_iter().for_each(
         |(test_case_name, state_bundle, metric_type_string, metric_type_num, trial_num)| {
             let mut seed_rng: ThreadRng = rand::rng();
 

@@ -17,14 +17,11 @@ impl SolverStateBundle {
                 * self.special_affinity,
         );
         if mutate_special {
-            let u_len = self
-                .state_bundle
-                .special_invalid_index
-                .unwrap_or(self.state_bundle.special_state.len());
+            let u_len = self.state_bundle.special_state.len();
             let max_dist = u_len; //((u_len as f64) * 0.5).round().max(1.0) as usize;
 
             // for _ in 0..(0.5 * u_len as f64).ceil() as usize {
-            let idx1 = self.rng.random_range(0..u_len - 1);
+            let idx1 = self.rng.random_range(0..u_len);
             let offset = self.rng.random_range(1..=max_dist);
             let mut idx2 = if self.rng.random_bool(0.5) {
                 (idx1 + offset).min(u_len - 1)
@@ -40,7 +37,7 @@ impl SolverStateBundle {
             // }
         } else {
             let progress = self.progress();
-            let resolution = self.current_resolution();
+            // let resolution = self.current_resolution();
             let num_upgrades = self.state_bundle.upgrade_arr.len();
             let max_mutations = (num_upgrades as f64 * progress).ceil().min(1.0) as usize;
             // let num_to_mutate = rng.random_range(1..=max_mutations.max(1));

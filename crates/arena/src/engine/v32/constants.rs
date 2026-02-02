@@ -2,13 +2,13 @@
 pub const RESOLUTION_CUTOFF_TEMP: f64 = 33.3;
 pub const MAX_BEST_SIZE: usize = 10;
 pub const ITERS_PER_TEMP: i64 = 7;
-pub const MAX_ITERS: i64 = 7000;
+pub const MAX_ITERS: i64 = 23456;
 pub const BATCH_SIZE: i64 = 500;
 pub const ALPHA: f64 = 0.99;
 pub const NON_IMPACT_WEIGHT: f64 = 3.0;
 pub const SPECIAL_START_CHANCE: f64 = 1.0;
 pub const MIN_SPECIAL_CHANCE: f64 = 0.05;
-pub const CONCURRENT_COUNT: i64 = 16;
+pub const CONCURRENT_COUNT: i64 = 1;
 
 pub const JUICE_TEMP_FACTOR: f64 = 3.0;
 pub const SPECIAL_TEMP_FACTOR: f64 = 1.0;

@@ -117,62 +117,7 @@ impl SolverStateBundle {
                     .powf(-(self.progress() - COOLING_PHASE_START) / (1.0 - COOLING_PHASE_START)) // i mean this 1000 seems to work fine for all MAX_ITERS so whatever
         }
     }
-    pub fn one_batch(&mut self, batch_iters: i64) {
-        self.prev_state.my_clone_from(&self.state_bundle);
-        for i in 0..batch_iters {
-            let mut mutate_special: bool = false;
-            if i >= 0 {
-                mutate_special = self.neighbour();
-            }
+    // pub fn one_batch(&mut self, batch_iters: i64) {
 
-            self.state_bundle.metric = self.state_bundle.metric_router(&mut self.performance);
-
-            // highest_seen = highest_seen.max(state_bundle.metric);
-            // lowest_seen = lowest_seen.min(state_bundle.metric);
-
-            if OrderedFloat(self.state_bundle.metric) > *self.best_n_states.peek_max().unwrap().1 {
-                if mutate_special {
-                    self.special_affinity *= SPECIAL_AFFINITY_GROWTH;
-                    self.special_affinity = self.special_affinity.min(1.0);
-                }
-                my_push(
-                    &mut self.best_n_states,
-                    self.state_bundle.to_essence(),
-                    OrderedFloat(self.state_bundle.metric),
-                );
-                self.temps_without_improvement = 0;
-            } else {
-                if mutate_special {
-                    self.special_affinity *= SPECIAL_AFFINITY_DECAY;
-                }
-            }
-            let delta =
-                (self.prev_state.metric - self.state_bundle.metric) / self.scaler.current_scale;
-            let is_uphill = delta < 0.0; // Assuming maximization? Adjust if minimization.
-            let accepted = if !is_uphill {
-                true
-            } else {
-                let prob = (-delta.abs()).exp();
-                self.rng.random_bool(prob)
-            };
-            if accepted {
-                self.prev_state.my_clone_from(&self.state_bundle);
-            } else {
-                self.state_bundle.my_clone_from(&self.prev_state);
-            }
-            self.scaler
-                .update_stats(is_uphill, accepted, self.lam_rate());
-            self.count += 1;
-
-            if self.count > ITERS_PER_TEMP {
-                // self.count = 0;
-                if self.temps_without_improvement as f64 > (1.0 * self.temp).max(3.0) {
-                    self.perform_crossover();
-                    self.temps_without_improvement = 0;
-                }
-                self.temps_without_improvement += 1;
-                // self.temp = new_temp(self.temp);
-            }
-        }
-    }
+    // }
 }
