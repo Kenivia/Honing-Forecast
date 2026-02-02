@@ -1156,6 +1156,8 @@ export default function HoningForecastUI() {
                             setAutoRunOptimizer={setAutoRunOptimizer}
                             optimizeAvgError={optimizeAvgError}
                             setOptimizeButtonPress={setOptimizeButtonPress}
+                            topGrid={topGrid}
+                            setTopGrid={setTopGrid}
                             flatProgressArr={flatProgressArr}
                             setFlatProgressArr={setFlatProgressArr}
                             flatUnlockArr={flatUnlockArr}
