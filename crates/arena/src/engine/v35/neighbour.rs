@@ -109,7 +109,7 @@ impl SolverStateBundle {
                 // ASSUME THAT ONLY ONE TYPE OF BOOK IS AVAILIABLE FOR NOW
                 let book_id = *self.state_bundle.prep_output.juice_info.ids[upgrade.upgrade_index]
                     .last()
-                    .unwrap();
+                    .unwrap_or(&0);
                 for (i, (juice, book)) in upgrade
                     .state
                     .iter_mut()

@@ -23,12 +23,9 @@ use rand::rngs::SmallRng;
 pub struct SolverStateBundle {
     pub state_bundle: StateBundle,
     pub scaler: AdaptiveScaler,
-
     pub temp: f64,
-
     pub rng: SmallRng,
     pub max_state_len: usize,
-
     pub performance: Performance,
     // pub best_state_so_far: StateBundle,
     pub best_n_states: DoublePriorityQueue<StateEssence, OrderedFloat<f64>>,
@@ -37,6 +34,7 @@ pub struct SolverStateBundle {
     pub temps_without_improvement: i64,
     pub upgrade_impact: Vec<f64>,
     pub special_affinity: f64,
+
 }
 
 impl SolverStateBundle {
@@ -64,6 +62,7 @@ impl SolverStateBundle {
             count: 0,
             temps_without_improvement: 0,
             upgrade_impact: upgrade_impact.clone(),
+
         }
     }
     pub fn perform_crossover(&mut self) {
@@ -72,26 +71,6 @@ impl SolverStateBundle {
         }
         let best = self.best_n_states.peek_max().unwrap();
         self.state_bundle.clone_from_essence(best.0, best.1);
-
-        // let random_idx = self.rng.random_range(1..self.best_n_states.len());
-        // let partner_essence = self.best_n_states.iter().nth(random_idx).unwrap().0;
-
-        // if self.rng.random_bool(1.0 - self.progress()) {
-        //     self.state_bundle
-        //         .special_state
-        //         .clone_from(&partner_essence.special_state);
-        // }
-        // let progress = self.progress();
-        // let random_indices = (0..self.state_bundle.upgrade_arr.len()).choose_multiple(
-        //     &mut self.rng,
-        //     ((1.0 - progress) * (self.state_bundle.upgrade_arr.len() - 1) as f64).ceil() as usize,
-        // );
-
-        // for index in random_indices {
-        //     let this = &mut self.state_bundle.upgrade_arr[index].state;
-        //     this.payload.clone_from(&partner_essence.state_arr[index]);
-        //     this.update_hash();
-        // }
     }
     pub fn current_resolution(&self) -> usize {
         if self.progress() > COOLING_PHASE_START {
