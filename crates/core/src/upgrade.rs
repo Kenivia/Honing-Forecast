@@ -209,6 +209,8 @@ impl Support {
 
                 // push the final run
                 if cur_p > FLOAT_TOL {
+                    max_value = cur_s.max(max_value);
+                    min_value = cur_s.min(min_value);
                     result.push((cur_s, cur_p));
                 }
             }
@@ -382,7 +384,7 @@ impl Upgrade {
     ) -> Self {
         let prob_dist_len: usize = prob_dist_vec.len();
         assert!(prob_dist_len == juice_dist.len());
-        let state: State = State::new(0);
+        let state: State = State::new(1);
 
         let mut prob_dist = ProbDist::default();
         prob_dist.update_payload(prob_dist_vec, state.hash);
@@ -418,11 +420,6 @@ impl Upgrade {
             let mut armor_support: Vec<f64> = Vec::with_capacity(prob_dist_len);
 
             for (index, this_juice) in juice_dist.iter().enumerate() {
-                weap_support.push(weap_cost);
-                armor_support.push(armor_cost);
-                if index >= prob_dist_len - 1 {
-                    continue;
-                }
                 if id == 0 {
                     if is_weapon {
                         weap_cost = *this_juice;
@@ -430,6 +427,8 @@ impl Upgrade {
                         armor_cost = *this_juice;
                     }
                 }
+                weap_support.push(weap_cost);
+                armor_support.push(armor_cost);
             }
             weap_juice_costs[id].update_payload(weap_support, state.hash, &prob_dist, NAN, false);
             armor_juice_costs[id].update_payload(armor_support, state.hash, &prob_dist, NAN, false);
@@ -448,7 +447,7 @@ impl Upgrade {
             is_weapon,
             piece_type,
             artisan_rate: 0.0,
-            tap_offset: adv_cost_start,
+            tap_offset: 0,
             upgrade_index,
             special_value: -1.0_f64,
             original_prob_dist_len: 0, // need to sort this out

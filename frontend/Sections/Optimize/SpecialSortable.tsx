@@ -1,7 +1,7 @@
 import React, { useMemo } from "react"
 import { ReactSortable } from "react-sortablejs"
 import "./SpecialSortable.css" // Assuming you put the CSS below in this file
-import { formatSig } from "@/Utils/Helpers.ts"
+import { formatSig, piece_display_name } from "@/Utils/Helpers.ts"
 import { PIECE_NAMES } from "@/Utils/Constants.ts"
 import Icon from "@/Components/Icon.tsx"
 
@@ -37,7 +37,17 @@ export function SpecialSortable({
 }: Props) {
     // 1. Map specialState (indices) to objects required by SortableJS
     // We use the value as the ID. *Assumes values in specialState are unique*
-    const items: SortableItem[] = useMemo(() => specialState.map((val) => ({ id: String(val), u_index: val })), [specialState])
+    let truncated_special_state = useMemo(
+        () => specialState.slice(0, evaluateAverageResult?.special_invalid_index),
+
+        [specialState, evaluateAverageResult?.special_invalid_index],
+    )
+
+    let invalid_tail = useMemo(
+        () => specialState.slice(evaluateAverageResult?.special_invalid_index, specialState.length),
+        [specialState, evaluateAverageResult?.special_invalid_index],
+    )
+    const items: SortableItem[] = useMemo(() => truncated_special_state.map((val) => ({ id: String(val), u_index: val })), [truncated_special_state])
 
     // Handle reordering
     const handleSetList = (newItems: SortableItem[]) => {
@@ -45,8 +55,8 @@ export function SpecialSortable({
         const newIndices = newItems.map((item) => item.u_index)
 
         // Only update if the order actually changed to prevent infinite loops
-        if (JSON.stringify(newIndices) !== JSON.stringify(specialState)) {
-            setSpecialState(newIndices)
+        if (JSON.stringify(newIndices) !== JSON.stringify(truncated_special_state)) {
+            setSpecialState(newIndices.concat(invalid_tail))
         }
     }
 
@@ -70,120 +80,118 @@ export function SpecialSortable({
 
     return (
         <div style={{ justifyContent: "center", width: "100%", display: "flex", marginTop: 20 }}>
-            <div className="sequence-container">
-                {/* Headers */}
-                <div className="grid-header">Free tap order</div>
-                <div className="grid-header">Probability</div>
-                <div className="grid-header">{/* Empty for buttons */}</div>
-                <div className="grid-header">{}</div>
+            {truncated_special_state.length > 0 && (
+                <div className="sequence-container">
+                    {/* Headers */}
+                    <div className="grid-header">Free tap order</div>
+                    <div className="grid-header">Probability</div>
+                    <div className="grid-header">{/* Empty for buttons */}</div>
+                    <div className="grid-header">{}</div>
 
-                {/* Column 1: Sortable Names */}
-                <ReactSortable
-                    list={items}
-                    setList={handleSetList}
-                    animation={150}
-                    className="col-sortable"
-                    ghostClass="sortable-ghost"
-                    style={curIsBest ? ({ background: "var(--btn-toggle-optimize-selected)" } as React.CSSProperties) : undefined}
-                >
-                    {items.map((item) => (
-                        <div key={item.id} className="row-item name-cell">
-                            {/* Access Name via u_index */}
-                            <Icon
-                                iconName={PIECE_NAMES[evaluateAverageResult.upgrade_arr[item.u_index].piece_type]}
-                                display_text=""
-                                display_text_right={
-                                    PIECE_NAMES[evaluateAverageResult.upgrade_arr[item.u_index].piece_type] +
-                                    " +" +
-                                    String(evaluateAverageResult.upgrade_arr[item.u_index].upgrade_index + 1)
-                                }
-                            ></Icon>
-                        </div>
-                    ))}
-                </ReactSortable>
-
-                {/* Column 2: Static Probabilities (Based on Index) */}
-                <div className="col-static">
-                    {specialState.map((_, index) => (
-                        <div key={`prob-${index}`} className="row-item prob-cell">
-                            {/* Access Prob via current Index */}
-                            {formatSig(evaluateAverageResult?.latest_special_probs?.[index] * 100.0, 3).concat("%") ?? "-"}
-                        </div>
-                    ))}
-                </div>
-
-                {/* Column 3: Static Buttons (Based on Index) */}
-                <div className="col-static">
-                    {specialState.map((u_index, index) => {
-                        const succeed = flatSucceedArr[u_index]
-                        const first_not_succeeded_index = specialState.findIndex((i) => !flatSucceedArr[i])
-                        const should_normal_tap = index >= evaluateAverageResult.special_invalid_index
-                        const tap_previous_first = index > first_not_succeeded_index
-                        const hasTransparentBg = should_normal_tap || tap_previous_first || (succeed && first_not_succeeded_index != index + 1)
-                        return (
-                            <div key={`btn-${u_index}`} className="row-item btn-cell">
-                                <button
-                                    onClick={() => {
-                                        if (!hasTransparentBg) {
-                                            toggleSuccess(u_index)
-                                        }
-                                    }}
-                                    className="toggle-btn"
-                                    disabled={hasTransparentBg}
-                                    style={{
-                                        background:
-                                            succeed && first_not_succeeded_index == index + 1
-                                                ? "var(--btn-toggle-deselected)"
-                                                : hasTransparentBg
-                                                  ? "transparent"
-                                                  : "var(--btn-success)",
-                                        color: succeed || should_normal_tap || tap_previous_first ? "var(--muted-text)" : "var(--btn-success-text)",
-                                        pointerEvents: hasTransparentBg ? "none" : "auto",
-                                    }}
-                                >
-                                    {should_normal_tap
-                                        ? "Normal tap this "
-                                        : succeed && first_not_succeeded_index == index + 1
-                                          ? "Undo"
-                                          : succeed && first_not_succeeded_index != index + 1
-                                            ? ""
-                                            : tap_previous_first
-                                              ? "Free tap above first"
-                                              : "Succeed free tap"}
-                                </button>
+                    {/* Column 1: Sortable Names */}
+                    <ReactSortable
+                        list={items}
+                        setList={handleSetList}
+                        animation={150}
+                        className="col-sortable"
+                        ghostClass="sortable-ghost"
+                        style={curIsBest ? ({ background: "var(--btn-toggle-optimize-selected)" } as React.CSSProperties) : undefined}
+                    >
+                        {items.map((item) => (
+                            <div key={item.id} className="row-item name-cell">
+                                {/* Access Name via u_index */}
+                                <Icon
+                                    iconName={PIECE_NAMES[evaluateAverageResult.upgrade_arr[item.u_index].piece_type]}
+                                    display_text=""
+                                    display_text_right={piece_display_name(evaluateAverageResult.upgrade_arr[item.u_index])}
+                                ></Icon>
                             </div>
-                        )
-                    })}
-                </div>
+                        ))}
+                    </ReactSortable>
 
-                {/* Column 4: Ran out button (next to active succeed) */}
-                <div className="col-static">
-                    {specialState.map((u_index, index) => {
-                        const succeed = flatSucceedArr[u_index]
-                        const first_not_succeeded_index = specialState.findIndex((i) => !flatSucceedArr[i])
-                        const should_normal_tap = index >= evaluateAverageResult.special_invalid_index
-                        const tap_previous_first = index > first_not_succeeded_index
-                        const hasTransparentBg = should_normal_tap || tap_previous_first || (succeed && first_not_succeeded_index != index + 1)
-                        const showRanOutButton = !hasTransparentBg && !succeed
-                        return (
-                            <div key={`out-${u_index}`} className="row-item btn-cell" style={{ gap: 6 }}>
-                                {showRanOutButton && (
-                                    <>
-                                        <button
-                                            onClick={onRanOutFreeTaps}
-                                            className="toggle-btn ran-out-btn"
-                                            style={{ background: "var(--btn-demo)", color: "var(--text)" }}
-                                        >
-                                            I've ran out of free taps
-                                        </button>
-                                        {ranOutFreeTaps && <span style={{ fontSize: 12, color: "var(--muted-text)" }}>Consider re-optimizing</span>}
-                                    </>
-                                )}
+                    {/* Column 2: Static Probabilities (Based on Index) */}
+                    <div className="col-static">
+                        {truncated_special_state.map((_, index) => (
+                            <div key={`prob-${index}`} className="row-item prob-cell">
+                                {/* Access Prob via current Index */}
+                                {formatSig(evaluateAverageResult?.latest_special_probs?.[index] * 100.0, 3).concat("%") ?? "-"}
                             </div>
-                        )
-                    })}
+                        ))}
+                    </div>
+
+                    {/* Column 3: Static Buttons (Based on Index) */}
+                    <div className="col-static">
+                        {truncated_special_state.map((u_index, index) => {
+                            const succeed = flatSucceedArr[u_index]
+                            const first_not_succeeded_index = truncated_special_state.findIndex((i) => !flatSucceedArr[i])
+                            const should_normal_tap = index >= evaluateAverageResult.special_invalid_index
+                            const tap_previous_first = index > first_not_succeeded_index
+                            const hasTransparentBg = should_normal_tap || tap_previous_first || (succeed && first_not_succeeded_index != index + 1)
+                            return (
+                                <div key={`btn-${u_index}`} className="row-item btn-cell">
+                                    <button
+                                        onClick={() => {
+                                            if (!hasTransparentBg) {
+                                                toggleSuccess(u_index)
+                                            }
+                                        }}
+                                        className="toggle-btn"
+                                        disabled={hasTransparentBg}
+                                        style={{
+                                            background:
+                                                succeed && first_not_succeeded_index == index + 1
+                                                    ? "var(--btn-toggle-deselected)"
+                                                    : hasTransparentBg
+                                                      ? "transparent"
+                                                      : "var(--btn-success)",
+                                            color: succeed || should_normal_tap || tap_previous_first ? "var(--muted-text)" : "var(--btn-success-text)",
+                                            pointerEvents: hasTransparentBg ? "none" : "auto",
+                                        }}
+                                    >
+                                        {should_normal_tap
+                                            ? "Normal tap this "
+                                            : succeed && first_not_succeeded_index == index + 1
+                                              ? "Undo"
+                                              : succeed && first_not_succeeded_index != index + 1
+                                                ? ""
+                                                : tap_previous_first
+                                                  ? "Free tap above first"
+                                                  : "Succeed free tap"}
+                                    </button>
+                                </div>
+                            )
+                        })}
+                    </div>
+
+                    {/* Column 4: Ran out button (next to active succeed) */}
+                    <div className="col-static">
+                        {truncated_special_state.map((u_index, index) => {
+                            const succeed = flatSucceedArr[u_index]
+                            const first_not_succeeded_index = truncated_special_state.findIndex((i) => !flatSucceedArr[i])
+                            const should_normal_tap = index >= evaluateAverageResult.special_invalid_index
+                            const tap_previous_first = index > first_not_succeeded_index
+                            const hasTransparentBg = should_normal_tap || tap_previous_first || (succeed && first_not_succeeded_index != index + 1)
+                            const showRanOutButton = !hasTransparentBg && !succeed
+                            return (
+                                <div key={`out-${u_index}`} className="row-item btn-cell" style={{ gap: 6 }}>
+                                    {showRanOutButton && (
+                                        <>
+                                            <button
+                                                onClick={onRanOutFreeTaps}
+                                                className="toggle-btn ran-out-btn"
+                                                style={{ background: "var(--btn-demo)", color: "var(--text)" }}
+                                            >
+                                                I've ran out of free taps
+                                            </button>
+                                            {ranOutFreeTaps && <span style={{ fontSize: 12, color: "var(--muted-text)" }}>Consider re-optimizing</span>}
+                                        </>
+                                    )}
+                                </div>
+                            )
+                        })}
+                    </div>
                 </div>
-            </div>
+            )}
         </div>
     )
 }

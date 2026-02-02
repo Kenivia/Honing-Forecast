@@ -23,6 +23,7 @@ mod v29;
 mod v3;
 mod v30;
 mod v31;
+mod v32;
 mod v4;
 mod v5;
 mod v6;
@@ -151,5 +152,9 @@ cfg_if::cfg_if! {
         else if #[cfg(feature = "v31")] {
         pub use v31::*;
         pub static ACTIVE_FEATURE :&str= "v31";
+    }
+            else if #[cfg(feature = "v32")] {
+        pub use v32::*;
+        pub static ACTIVE_FEATURE :&str= "v32";
     }
 }

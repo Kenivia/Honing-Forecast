@@ -58,7 +58,11 @@ impl StateBundle {
         budget: f64,
     ) -> f64 {
         let n = self.upgrade_arr.len() - skip_count;
-
+        // dbg!(
+        //     &self.upgrade_arr.len(),
+        //     self.special_state.len(),
+        //     skip_count
+        // );
         // --- STEP 1: Pre-calculate Look-Ahead Bounds ---
         // min_suffix[i] = sum of minimum costs from layer i to end
         // max_suffix[i] = sum of maximum costs from layer i to end
@@ -82,7 +86,9 @@ impl StateBundle {
 
             min_suffix[u_index] = min_suffix[u_index + 1] + local_min;
             max_suffix[u_index] = max_suffix[u_index + 1] + local_max;
-            u_index -= 1;
+            if u_index > 0 {
+                u_index -= 1;
+            }
         }
 
         // --- STEP 2: Iterative DP with Pruning ---
@@ -181,7 +187,9 @@ impl StateBundle {
 
             min_suffix[index] = min_suffix[index + 1] + min_val;
             max_suffix[index] = max_suffix[index + 1] + max_val;
-            index -= 1;
+            if index > 0 {
+                index -= 1;
+            }
         }
         if DEBUG_AVERAGE && support_index == DEBUG_AVG_INDEX {
             dbg!(&min_suffix, &max_suffix);

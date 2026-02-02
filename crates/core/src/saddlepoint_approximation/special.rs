@@ -58,11 +58,13 @@ impl StateBundle {
         let m = self
             .upgrade_arr
             .iter()
-            .filter(|x| x.is_normal_honing && !x.succeeded)
+            .take(self.special_invalid_index.unwrap())
+            .filter(|x| !x.succeeded)
             .count();
         if m == 0 {
-            self.special_cache
-                .insert(self.special_state.clone(), vec![1.0]);
+            let mut out = vec![0.0; self.special_state.len()];
+            out[0] = 1.0;
+            self.special_cache.insert(self.special_state.clone(), out);
             return;
         }
         // 1. GCD Optimization: Scale the world down

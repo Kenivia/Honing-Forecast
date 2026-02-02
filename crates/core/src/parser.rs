@@ -222,6 +222,9 @@ impl PreparationOutput {
             // upgrade.eqv_gold_per_juice = user_price_arr[juice_ind] * upgrade.one_juice_cost as f64;
         }
         for upgrade in upgrade_arr.iter_mut() {
+            if !upgrade.is_normal_honing {
+                continue;
+            }
             // JUST GONNA ASSUME THAT not have juice => not have book or book => juice or first element is always juice (if there's a first element)
             let both_avail: usize = juice_info.ids[upgrade.upgrade_index].len();
             if both_avail > 0 {

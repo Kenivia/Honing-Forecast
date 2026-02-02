@@ -1,5 +1,14 @@
 import { PIECE_NAMES } from "./Constants.ts"
 
+export function piece_display_name(upgrade: any): string {
+    return (
+        PIECE_NAMES[upgrade.piece_type] +
+        (upgrade.is_normal_honing ? " +" : " AH") +
+        "" +
+        (upgrade.is_normal_honing ? "" : " " + String(upgrade.upgrade_index * 10 + 1) + "-") +
+        String((upgrade.upgrade_index + 1) * (upgrade.is_normal_honing ? 1 : 10))
+    )
+}
 export function formatSig(n: number, place: number = 3): string {
     if (!isFinite(n)) return ""
     place = Math.max(1, Math.min(100, place))

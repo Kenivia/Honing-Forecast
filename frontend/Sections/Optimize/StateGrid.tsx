@@ -4,6 +4,7 @@ import { styles } from "@/Utils/Styles.ts"
 import Icon from "@/Components/Icon.tsx"
 import "@/Components/CheckboxGrid.css"
 import "./StateGrid.css"
+import { piece_display_name } from "@/Utils/Helpers.ts"
 
 export type StatePair = [boolean, number]
 
@@ -185,11 +186,7 @@ const RowBundle = ({
             <div className="state-grid-row">
                 <div className="state-grid-wrapper">
                     <h4 style={{ margin: "0 0 0 0" }}>
-                        <Icon
-                            iconName={PIECE_NAMES[upgrade.piece_type]}
-                            display_text=""
-                            display_text_right={PIECE_NAMES[upgrade.piece_type] + " +" + String(upgrade.upgrade_index + 1)}
-                        ></Icon>
+                        <Icon iconName={PIECE_NAMES[upgrade.piece_type]} display_text="" display_text_right={piece_display_name(upgrade)}></Icon>
                     </h4>
                     <div className="state-grid-scroll">
                         <div style={{ position: "relative", width: CELL_W, height: totalRows * CELL_H, flex: "0 0 auto", marginRight: 5 }}>

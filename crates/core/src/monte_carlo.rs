@@ -3,6 +3,7 @@ use crate::normal_honing_utils::{add_up_golds, apply_price_leftovers, apply_pric
 use crate::saddlepoint_approximation::average::DEBUG_AVERAGE;
 use crate::state_bundle::StateBundle;
 use crate::upgrade::Upgrade;
+use itertools::izip;
 use rand::Rng;
 use rand::prelude::*;
 use std::cmp::min;
@@ -95,9 +96,9 @@ fn juice_costs<R: Rng>(
             let (juice, state_id) = upgrade.state[p_index];
             for (id, (weap_used, armor_used)) in juice_used[p_index].iter_mut().enumerate() {
                 if upgrade.is_weapon {
-                    *weap_used += juice_so_far[id];
+                    *weap_used = juice_so_far[id];
                 } else {
-                    *armor_used += juice_so_far[id];
+                    *armor_used = juice_so_far[id];
                 }
                 if p_index >= upgrade.prob_dist.len() - 2 {
                     continue;
@@ -162,9 +163,15 @@ pub fn monte_carlo_data<R: Rng>(
             special_valid = true;
         }
 
-        for trial_num in 0..data_size {
+        for (this_mat, this_juice, rolled_tap, this_special_left, this_skip_data) in izip!(
+            mats_data.iter_mut(),
+            juice_data.iter_mut(),
+            tap_map,
+            special_left.iter_mut(),
+            skip_count_data.iter_mut()
+        ) {
             if special_valid {
-                let this_special_left: &mut i64 = &mut special_left[trial_num];
+                // let this_special_left: &mut i64 = &mut special_left[trial_num];
 
                 let max_affordable_attempts = (*this_special_left / upgrade.special_cost).max(0);
                 if max_affordable_attempts > 0 {
@@ -177,7 +184,7 @@ pub fn monte_carlo_data<R: Rng>(
                     *this_special_left -= special_taps_needed * upgrade.special_cost;
 
                     if *this_special_left >= 0 {
-                        skip_count_data[trial_num] += 1;
+                        *this_skip_data += 1;
                         continue;
                     }
                 }
@@ -185,15 +192,15 @@ pub fn monte_carlo_data<R: Rng>(
 
             actually_paid[attempt_index + 1] += 1;
 
-            let rolled_tap: usize = tap_map[trial_num];
+            // let rolled_tap: usize = tap_map[trial_num];
             assert!(rolled_tap > 0); // we simulate special directly above instead of relying on special_sa(to test if its working), init_dist should've been called with 0 special owned 
             for cost_type in 0..7 {
-                mats_data[trial_num][cost_type] +=
+                this_mat[cost_type] +=
                     upgrade.costs[cost_type] * (rolled_tap as i64 + upgrade.tap_offset);
             }
             for id in 0..state_bundle.prep_output.juice_info.amt_used_id.len() {
-                juice_data[trial_num][id].0 += juice_costs[rolled_tap][id].0;
-                juice_data[trial_num][id].1 += juice_costs[rolled_tap][id].1;
+                this_juice[id].0 += juice_costs[rolled_tap][id].0;
+                this_juice[id].1 += juice_costs[rolled_tap][id].1;
             }
         }
     }

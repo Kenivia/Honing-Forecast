@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState, useMemo } from "react"
+import React, { useEffect, useRef, useState, useMemo, useCallback } from "react"
 import "./Sections/UpgradeSelection/CheckboxRow.css"
 import { styles } from "./Utils/Styles.ts"
 import {
@@ -812,13 +812,7 @@ export default function HoningForecastUI() {
     const optimizeAvgWorkerRef = useRef<Worker | null>(null)
     const [optimizeAvgBusy, setOptimizeAvgBusy] = useState(false)
     // const [optimizeAvgResult, setOptimizeAvgResult] = useState<{ average_costs?: any } | null>(null)
-    useEffect(() => {
-        cancelOptimizeAverage()
-        if (!autoRunOptimizer) {
-            return
-        }
-        setOptimizeAvgError(null)
-        setRanOutFreeTaps(false)
+    const startOptimizeAverage = useCallback(() => {
         runner.start({
             which_one: "OptimizeAverage",
             payloadBuilder,
@@ -828,33 +822,40 @@ export default function HoningForecastUI() {
             onSuccess: (res) => {
                 // console.log(inputBundleKey)
                 setFlatStateBundle(res.upgrade_arr.map((upgrade) => upgrade.state))
-                // setFlatProgressArr(res.upgrade_arr.map((_, index) => progressGrid[res.upgrade_arr[index].piece_type][res.upgrade_arr[index].upgrade_index]))
-                // setFlatUnlockArr(res.upgrade_arr.map((_, index) => unlockGrid[res.upgrade_arr[index].piece_type][res.upgrade_arr[index].upgrade_index]))
-                // setFlatSucceedArr(res.upgrade_arr.map((_, index) => succeededGrid[res.upgrade_arr[index].piece_type][res.upgrade_arr[index].upgrade_index]))
+                setFlatProgressArr(res.upgrade_arr.map((_, index) => progressGrid[res.upgrade_arr[index].piece_type][res.upgrade_arr[index].upgrade_index]))
+                setFlatUnlockArr(res.upgrade_arr.map((_, index) => unlockGrid[res.upgrade_arr[index].piece_type][res.upgrade_arr[index].upgrade_index]))
+                setFlatSucceedArr(res.upgrade_arr.map((_, index) => succeededGrid[res.upgrade_arr[index].piece_type][res.upgrade_arr[index].upgrade_index]))
                 setSpecialState(res.special_state)
                 updateBestSolution(res)
                 setOptimizeAvgError(null)
-                applyFlatToGrid(
-                    evaluateAverageResult,
-                    flatProgressArr,
-                    progressGrid,
-                    setProgressGrid,
-                    flatUnlockArr,
-                    unlockGrid,
-                    setUnlockGrid,
-                    flatSucceedArr,
-                    succeededGrid,
-                    setSucceededGrid,
-                    flatStateBundle,
-                    stateBundleGrid,
-                    setStateBundleGrid,
-                )
                 // console.log(specialState)
+            },
+            onIntermediateMessage: (res_bundle) => {
+                setOptimizerProgress(res_bundle.est_progress_percentage)
+                let res = res_bundle.state_bundle
+                setFlatStateBundle(res.upgrade_arr.map((upgrade) => upgrade.state))
+                setFlatProgressArr(res.upgrade_arr.map((_, index) => progressGrid[res.upgrade_arr[index].piece_type][res.upgrade_arr[index].upgrade_index]))
+                setFlatUnlockArr(res.upgrade_arr.map((_, index) => unlockGrid[res.upgrade_arr[index].piece_type][res.upgrade_arr[index].upgrade_index]))
+                setFlatSucceedArr(res.upgrade_arr.map((_, index) => succeededGrid[res.upgrade_arr[index].piece_type][res.upgrade_arr[index].upgrade_index]))
+                setSpecialState(res.special_state)
+                updateBestSolution(res)
+                setEvaluateAverageResult(res)
+
+                setOptimizeAvgError(null)
             },
             onError: (err) => {
                 setOptimizeAvgError(String(err))
             },
         })
+    })
+    useEffect(() => {
+        cancelOptimizeAverage()
+        if (!autoRunOptimizer) {
+            return
+        }
+        setOptimizeAvgError(null)
+        setRanOutFreeTaps(false)
+        startOptimizeAverage()
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [
         autoRunOptimizer,
@@ -878,40 +879,7 @@ export default function HoningForecastUI() {
         if (optimizeButtonPress > 0) {
             setOptimizeAvgError(null)
             setRanOutFreeTaps(false)
-            runner.start({
-                which_one: "OptimizeAverage",
-                payloadBuilder,
-                workerRef: optimizeAvgWorkerRef,
-                setBusy: setOptimizeAvgBusy,
-                setResult: setEvaluateAverageResult,
-                onSuccess: (res) => {
-                    // console.log(inputBundleKey)
-                    setFlatStateBundle(res.upgrade_arr.map((upgrade) => upgrade.state))
-                    setFlatProgressArr(res.upgrade_arr.map((_, index) => progressGrid[res.upgrade_arr[index].piece_type][res.upgrade_arr[index].upgrade_index]))
-                    setFlatUnlockArr(res.upgrade_arr.map((_, index) => unlockGrid[res.upgrade_arr[index].piece_type][res.upgrade_arr[index].upgrade_index]))
-                    setFlatSucceedArr(res.upgrade_arr.map((_, index) => succeededGrid[res.upgrade_arr[index].piece_type][res.upgrade_arr[index].upgrade_index]))
-                    setSpecialState(res.special_state)
-                    updateBestSolution(res)
-                    setOptimizeAvgError(null)
-                    // console.log(specialState)
-                },
-                onIntermediateMessage: (res_bundle) => {
-                    setOptimizerProgress(res_bundle.est_progress_percentage)
-                    let res = res_bundle.state_bundle
-                    setFlatStateBundle(res.upgrade_arr.map((upgrade) => upgrade.state))
-                    setFlatProgressArr(res.upgrade_arr.map((_, index) => progressGrid[res.upgrade_arr[index].piece_type][res.upgrade_arr[index].upgrade_index]))
-                    setFlatUnlockArr(res.upgrade_arr.map((_, index) => unlockGrid[res.upgrade_arr[index].piece_type][res.upgrade_arr[index].upgrade_index]))
-                    setFlatSucceedArr(res.upgrade_arr.map((_, index) => succeededGrid[res.upgrade_arr[index].piece_type][res.upgrade_arr[index].upgrade_index]))
-                    setSpecialState(res.special_state)
-                    updateBestSolution(res)
-                    setEvaluateAverageResult(res)
-
-                    setOptimizeAvgError(null)
-                },
-                onError: (err) => {
-                    setOptimizeAvgError(String(err))
-                },
-            })
+            startOptimizeAverage()
         }
 
         // eslint-disable-next-line react-hooks/exhaustive-deps

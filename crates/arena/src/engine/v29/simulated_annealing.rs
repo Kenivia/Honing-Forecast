@@ -119,9 +119,7 @@ pub fn solve<R: Rng>(
     }
     // vec![state_bundle.clone(); state_bundle.num_threads];
     while eqv_wall_time_iters < MAX_ITERS {
-        solver_arr
-            .par_iter_mut()
-            .for_each(|x| x.one_batch(BATCH_SIZE));
+        solver_arr.iter_mut().for_each(|x| x.one_batch(BATCH_SIZE));
 
         let mut new_scale = 0.0;
         let mut new_special_cache = solver_arr[0].state_bundle.special_cache.clone();
