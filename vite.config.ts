@@ -54,7 +54,7 @@ export default defineConfig({
 
         //                 // Feature sections chunks
         //                 "chance-to-cost": ["./frontend/features/honing_forecast/ChanceToCostSection.tsx"],
-        //                 "cost-to-chance": ["./frontend/features/honing_forecast/CostToChanceSection.tsx"],
+        //                 "cost-to-chance": ["./frontend/features/honing_forecast/DistributionSection.tsx"],
         //                 gamba: [
         //                     "./frontend/features/honing_forecast/GambaSection.tsx",
         //                     "./frontend/features/honing_forecast/GambaLogic.tsx",

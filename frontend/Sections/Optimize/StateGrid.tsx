@@ -428,14 +428,6 @@ export default function StateGridsManager({
     }
 
     // Safe check to ensure lengths match
-    if (
-        flatProgressArr.length !== flatStateBundle.length ||
-        flatUnlockArr.length !== flatStateBundle.length ||
-        flatSucceedArr.length !== flatStateBundle.length
-    ) {
-        return <div>Error: Input arrays have mismatched lengths.</div>
-    }
-    // console.log(juiceInfo)
 
     let truncated_special_state = useMemo(
         () => specialState.slice(0, special_invalid_index),
@@ -444,7 +436,14 @@ export default function StateGridsManager({
     )
 
     let invalid_tail = useMemo(() => specialState.slice(special_invalid_index, specialState.length), [specialState, special_invalid_index])
-
+    if (
+        flatProgressArr.length !== flatStateBundle.length ||
+        flatUnlockArr.length !== flatStateBundle.length ||
+        flatSucceedArr.length !== flatStateBundle.length
+    ) {
+        return <div>Error: Input arrays have mismatched lengths.</div>
+    }
+    // console.log(juiceInfo)
     console.log(truncated_special_state, invalid_tail)
     return (
         <div
@@ -456,7 +455,7 @@ export default function StateGridsManager({
                 boxSizing: "border-box",
             }}
         >
-            {invalid_tail.concat(truncated_special_state).map((u_index, index) => (
+            {invalid_tail.concat(truncated_special_state).map((u_index, _) => (
                 <RowBundle
                     key={u_index}
                     curIsBest={curIsBest}

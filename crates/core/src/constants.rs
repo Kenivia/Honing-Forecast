@@ -34,7 +34,7 @@ pub static SPECIAL_LEAPS_COST: [[i64; 25]; 2] = [
 ];
 
 // Histogram bucket count
-pub const BUCKET_COUNT: usize = 1000;
+pub const BUCKET_COUNT: usize = 50;
 
 // RNG seed for deterministic testing
 #[allow(dead_code)]

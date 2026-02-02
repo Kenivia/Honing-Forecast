@@ -1,7 +1,8 @@
 import init, {
-    initThreadPool,
+    // initThreadPool,
     evaluate_average_wrapper,
     optimize_average_wrapper,
+    histogram_wrapper,
 
     // cost_to_chance_arr_wrapper,
     // parser_wrapper_unified,
@@ -20,13 +21,17 @@ const LABELS = ["Red", "Blue", "Leaps", "Shards", "Oreha", "Gold", "Silver"]
 // console.log("done")
 async function OptimizeAverageWasm(payload: any) {
     await init()
-    await initThreadPool(navigator.hardwareConcurrency)
+    // await initThreadPool(navigator.hardwareConcurrency)
     return (optimize_average_wrapper as any)(payload)
 }
 
 async function EvaluateAverageWasm(payload: any) {
     await init()
     return (evaluate_average_wrapper as any)(payload)
+}
+async function HistogramWasm(payload: any) {
+    await init()
+    return (histogram_wrapper as any)(payload)
 }
 
 // async function CostToChanceArrWasm(payload: any) {
@@ -52,7 +57,7 @@ self.addEventListener("message", async (ev) => {
 
     if (
         !(
-            (which_one == "EvaluateAverage" || which_one == "OptimizeAverage")
+            (which_one == "EvaluateAverage" || which_one == "OptimizeAverage" || which_one == "Histogram")
             // which_one == "CostToChanceArr" ||
             // // which_one == "CostToChanceOptimized" ||
             // which_one == "ParserUnified" ||
@@ -106,6 +111,8 @@ self.addEventListener("message", async (ev) => {
         // console.log(result.typical_costs)
     } else if (which_one == "OptimizeAverage") {
         result = await OptimizeAverageWasm(payload)
+    } else if (which_one == "Histogram") {
+        result = await HistogramWasm(payload)
     }
     // else if (which_one == "CostToChanceArr") {
     //     let out = await CostToChanceArrWasm(payload)

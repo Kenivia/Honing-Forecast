@@ -128,6 +128,7 @@ export default function OptimizeSection({
 }: OptimizeSectionProps) {
     const [beforeMetric, setBeforeMetric] = React.useState<number | null>(null)
     const { wideMatsColumnDefs } = createColumnDefs()
+    // console.log(evaluateAverageResult)
     const already_spent = evaluateAverageResult?.prep_output.already_spent
     const avg_breakdown = evaluateAverageResult?.average_breakdown
     const cloneFlatStateBundle = (bundle: StatePair[][]) => bundle.map((row) => row.map((pair) => [pair[0], pair[1]] as StatePair))

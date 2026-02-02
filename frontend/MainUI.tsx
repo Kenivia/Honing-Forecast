@@ -17,8 +17,8 @@ import ControlPanel from "./Sections/ControlPanel/ControlPanel.tsx"
 import NormalHoningPanel from "./Sections/UpgradeSelection/NormalHoningPanel.tsx"
 import AdvancedHoningPanel from "./Sections/UpgradeSelection/AdvancedHoningPanel.tsx"
 // import ChanceToCostSection from "./Sections/ChanceMode/ChanceModeSection.tsx"
-import CostToChanceSection from "./Sections/BudgetMode/BudgetModeSection.tsx"
-// const CostToChanceSection = React.lazy(() => import('./CostToChanceSection.tsx'));
+import DistributionSection from "./Sections/BudgetMode/BudgetModeSection.tsx"
+// const DistributionSection = React.lazy(() => import('./DistributionSection.tsx'));
 
 import InputsSection from "./Sections/Inputs/InputsSection.tsx"
 
@@ -809,6 +809,42 @@ export default function HoningForecastUI() {
         metricType,
     ])
 
+    const histogramWorkerRef = useRef<Worker | null>(null)
+    const [histogramBusy, setHistogramBusy] = useState(false)
+    const [histogramResult, setHistogramResult] = useState<any>(null)
+    // const [cachedAverageGraphData, setCachedAverageGraphData] = useState<{ hist_counts?: any; hist_mins?: any; hist_maxs?: any } | null>(null)
+    useEffect(() => {
+        runner.start({
+            which_one: "Histogram",
+            payloadBuilder,
+            workerRef: histogramWorkerRef,
+            setBusy: setHistogramBusy,
+            setResult: setHistogramResult,
+            // setCachedGraphData: setCachedAverageGraphData,
+            onSuccess: (res) => {
+                console.log(res)
+                setHistogramResult(res)
+            },
+            debounceMs: 10,
+        })
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [
+        advStrategyKey,
+        expressEventKey,
+        graphBucketSizeKey,
+        dataSizeKey,
+        topGridKey,
+        bottomGridKey,
+        progressGridKey,
+        unlockGridKey,
+        succeededGridKey,
+        stateBundleGridKey,
+        inputBundleKey,
+        specialStateKey,
+        minResolutionKey,
+        metricType,
+    ])
+
     const optimizeAvgWorkerRef = useRef<Worker | null>(null)
     const [optimizeAvgBusy, setOptimizeAvgBusy] = useState(false)
     // const [optimizeAvgResult, setOptimizeAvgResult] = useState<{ average_costs?: any } | null>(null)
@@ -1077,33 +1113,6 @@ export default function HoningForecastUI() {
                 </div>
                 <Separator activePage={activePage} onPageChange={setActivePage} />
 
-                {/* Always-rendered pages with display toggle */}
-                {/* <div className={activePage === "chance-to-cost" ? "page" : "page page--hidden"} aria-hidden={activePage !== "chance-to-cost"}>
-                    <ChanceToCostSection
-                        desired_chance={desired_chance}
-                        uncleaned_desired_chance={uncleaned_desired_chance}
-                        onDesiredChange={onDesiredChange}
-                        onDesiredBlur={onDesiredBlur}
-                        cost_result={chanceToCostResult}
-                        cachedCostGraphData={cachedCostGraphData}
-                        AnythingTicked={AnythingTicked}
-                        ChanceToCostBusy={chanceToCostBusy}
-                        cumulativeGraph={cumulativeGraph}
-                        lockXAxis={lockXAxis}
-                        lockedMins={lockedMins}
-                        lockedMaxs={lockedMaxs}
-                        showAverage={showAverage}
-                        setShowAverage={setShowAverage}
-                        averageCosts={averageCostsResult?.average_costs}
-                        AverageCostBusy={averageCostBusy}
-                        dataSize={dataSize}
-                        budget_inputs={budget_inputs}
-                        set_budget_inputs={set_budget_inputs}
-                        userMatsPrices={userMatsPrices}
-                        setUserMatsPrices={setUserMatsPrices}
-                        monteCarloResult={monteCarloResult}
-                    />
-                </div> */}
                 {activePage === "optimize" && (
                     <div className={activePage === "optimize" ? "page" : "page page--hidden"}>
                         <OptimizeSection
@@ -1140,28 +1149,11 @@ export default function HoningForecastUI() {
                         />
                     </div>
                 )}
-                {/* {activePage === "cost-to-chance" && (
+                {activePage === "cost-to-chance" && (
                     <div className={activePage === "cost-to-chance" ? "page" : "page page--hidden"}>
-                        <CostToChanceSection
-                            inputsBundle={inputsBundle}
-                            chance_result={evaluateAverageResult}
-                            cachedChanceGraphData={cachedAverageGraphData}
-                            AnythingTicked={AnythingTicked}
-                            CostToChanceBusy={evaluateAverageBusy}
-                            cumulativeGraph={cumulativeGraph}
-                            lockXAxis={lockXAxis}
-                            lockedMins={lockedMins}
-                            lockedMaxs={lockedMaxs}
-                            desired_chance={desired_chance}
-                            uncleaned_desired_chance={uncleaned_desired_chance}
-                            onDesiredChange={onDesiredChange}
-                            onDesiredBlur={onDesiredBlur}
-                            showOptimizedDetails={showOptimizedDetails}
-                            setShowOptimizedDetails={setShowOptimizedDetails}
-                            monteCarloResult={null}
-                        />
+                        <DistributionSection cumulativeGraph={cumulativeGraph} histogramResult={histogramResult} />
                     </div>
-                )} */}
+                )}
                 {/* {activePage === "gamba" && (
                     <div className={activePage === "gamba" ? "page" : "page page--hidden"}>
                         <GambaSection

@@ -24,7 +24,7 @@ use serde_wasm_bindgen::{from_value, to_value};
 use wasm_bindgen::JsValue;
 use wasm_bindgen::prelude::*;
 
-pub use wasm_bindgen_rayon::init_thread_pool;
+// pub use wasm_bindgen_rayon::init_thread_pool;
 #[allow(unused_imports)]
 use web_sys::console;
 
@@ -126,7 +126,7 @@ pub fn optimize_average_wrapper(input: JsValue) -> JsValue {
     let mut best_state: StateBundle = solve(&mut rng, state_bundle.clone(), &mut dummy_performance);
     // web_sys::console::log_1(&format!("{:?}", best_state).into());
 
-    // doing all this cos the best state might not have ran this recently (my_clone doesn't copy these)
+    // doing all this cos the best state might not have ran this recently (my_clone doesn't copy these) and MAYBE WE"LL NEED IT I DONT HINK SO BUT IDK DONT MATTER
     best_state.update_dist();
     best_state.update_individual_support();
     best_state.update_combined();
@@ -138,6 +138,18 @@ pub fn optimize_average_wrapper(input: JsValue) -> JsValue {
     to_value(&best_state).unwrap()
 }
 
+#[wasm_bindgen]
+#[must_use]
+pub fn histogram_wrapper(input: JsValue) -> JsValue {
+    console_error_panic_hook::set_once();
+
+    let payload: Payload = from_value(input).unwrap();
+
+    let mut state_bundle = StateBundle::init_from_payload(payload);
+
+    let out = state_bundle.histogram();
+    to_value(&out).unwrap()
+}
 // #[wasm_bindgen]
 // #[must_use]
 // pub fn parser_wrapper(input: JsValue) -> JsValue {
