@@ -4,4 +4,4 @@ mod constants;
 mod neighbour;
 mod one_batch;
 mod scaler;
-pub static NOTES: &str = "v30, v28 but 1.02 special pr ";
+pub const NOTES: &str = "v30, v28 but 1.02 special pr ";

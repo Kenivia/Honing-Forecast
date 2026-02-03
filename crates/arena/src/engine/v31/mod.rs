@@ -4,4 +4,4 @@ mod constants;
 mod neighbour;
 mod one_batch;
 mod scaler;
-pub static NOTES: &str = "v31, testbed based on v28 ";
+pub const NOTES: &str = "v31, testbed based on v28 ";

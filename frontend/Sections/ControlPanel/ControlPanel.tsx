@@ -20,6 +20,8 @@ type ControlPanelProps = {
     onToggleLockXAxis: () => void
     minResolution: number
     setMinResolution: React.Dispatch<React.SetStateAction<number>>
+    allowUserChangeState: boolean
+    setAllowUserChangeState: React.Dispatch<React.SetStateAction<boolean>>
 
 }
 
@@ -41,6 +43,8 @@ export default function ControlPanel({
     onToggleLockXAxis,
     minResolution,
     setMinResolution,
+    allowUserChangeState,
+    setAllowUserChangeState,
 
 }: ControlPanelProps) {
     const handleMinResolutionChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -88,6 +92,12 @@ export default function ControlPanel({
                     <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                         <LabeledCheckbox label="Cumulative Graph" checked={cumulativeGraph} setChecked={setCumulativeGraph} />
                     </div>
+
+
+                    <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                        <LabeledCheckbox label="Allow changing progress" checked={allowUserChangeState} setChecked={setAllowUserChangeState} />
+                    </div>
+                    <span>Note that </span>
 
                     {/* <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                         <label

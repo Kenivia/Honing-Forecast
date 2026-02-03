@@ -1,28 +1,28 @@
 use serde::{Deserialize, Serialize};
 
-pub static FLOAT_TOL: f64 = 1e-9; // it could prolly be lower? idk doesnt matter
-pub static SPECIAL_TOL: f64 = 1e-7;
+pub const FLOAT_TOL: f64 = 1e-9; // it could prolly be lower? idk doesnt matter
+pub const SPECIAL_TOL: f64 = 1e-7;
 // +11 to +18 double artisan, +15 to 18 mats cost reduced by 10%, unlock cost reduced by 20%
-pub static EVENT_ARTISAN_MULTIPLIER: [f64; 25] = [
+pub const EVENT_ARTISAN_MULTIPLIER: [f64; 25] = [
     1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 1.0,
     1.0, 1.0, 1.0, 1.0, 1.0, 1.0,
 ];
 
-pub static EVENT_COST_REDUCTION: [[f64; 25]; 7] = [[
+pub const EVENT_COST_REDUCTION: [[f64; 25]; 7] = [[
     1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.9, 0.9, 0.9, 0.9, 1.0,
     1.0, 1.0, 1.0, 1.0, 1.0, 1.0,
 ]; 7];
 
-pub static EVENT_UNLOCK_REDUCTION: [[f64; 25]; 2] = [[
+pub const EVENT_UNLOCK_REDUCTION: [[f64; 25]; 2] = [[
     1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.8, 0.8, 0.8, 0.8, 1.0,
     1.0, 1.0, 1.0, 1.0, 1.0, 1.0,
 ]; 2];
 
-pub static NORMAL_JUICE_COST: [i64; 25] = [
+pub const NORMAL_JUICE_COST: [i64; 25] = [
     0, 0, 0, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 25, 25, 25, 25, 50, 50,
 ];
 
-pub static SPECIAL_LEAPS_COST: [[i64; 25]; 2] = [
+pub const SPECIAL_LEAPS_COST: [[i64; 25]; 2] = [
     [
         30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 40, 40, 40, 40, 50, 50, 50, 50, 50, 50, 50,
         50, 50,
@@ -40,14 +40,14 @@ pub const BUCKET_COUNT: usize = 50;
 #[allow(dead_code)]
 pub const RNG_SEED: u64 = 123456;
 
-pub static NORMAL_HONE_CHANCES: [f64; 25] = [
+pub const NORMAL_HONE_CHANCES: [f64; 25] = [
     1.0, 1.0, 1.0, 0.45, 0.45, 0.45, 0.3, 0.3, 0.15, 0.15, 0.1, 0.1, 0.05, 0.05, 0.04, 0.04, 0.03,
     0.03, 0.03, 0.015, 0.015, 0.01, 0.01, 0.005, 0.005,
 ];
 
 //  [  ( [ (upgrade_index, % amt, cost per juice(books = 1)  )] , gold_value of the juice/book wep version, armor version) ]
 // add new entries from the bottom, order matters
-pub static JUICE_BOOKS_AVAIL: &[&[(usize, f64, i64)]] = &[
+pub const JUICE_BOOKS_AVAIL: &[&[(usize, f64, i64)]] = &[
     &[
         (3, 0.45, 20),
         (4, 0.45, 20),
@@ -144,7 +144,7 @@ pub fn get_avail_juice_combs(
     }
 }
 // these costs are manually copied from lost ark codex, dont bet on it being 100% correct
-pub static DEFAULT_NORMAL_HONE_WEAPON_COST: [[i64; 25]; 7] = [
+pub const DEFAULT_NORMAL_HONE_WEAPON_COST: [[i64; 25]; 7] = [
     [
         350, 450, 550, 650, 750, 800, 900, 1000, 1050, 1150, 1250, 1300, 1400, 1550, 1700, 1950,
         2200, 2450, 2700, 2950, 3200, 3700, 4000, 4200, 4500,
@@ -173,7 +173,7 @@ pub static DEFAULT_NORMAL_HONE_WEAPON_COST: [[i64; 25]; 7] = [
     ],
 ];
 
-pub static DEFAULT_NORMAL_HONE_ARMOR_COST: [[i64; 25]; 7] = [
+pub const DEFAULT_NORMAL_HONE_ARMOR_COST: [[i64; 25]; 7] = [
     [
         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     ],
@@ -203,7 +203,7 @@ pub static DEFAULT_NORMAL_HONE_ARMOR_COST: [[i64; 25]; 7] = [
 ];
 
 // these are from Maxroll
-pub static NORMAL_HONE_WEAPON_UNLOCK: [[i64; 25]; 2] = [
+pub const NORMAL_HONE_WEAPON_UNLOCK: [[i64; 25]; 2] = [
     [
         15000, 15000, 15000, 15000, 15000, 16000, 17000, 17000, 18000, 20000, 21000, 23000, 33000,
         38000, 43000, 49000, 66000, 75000, 85000, 106000, 120000, 135000, 152000, 170000, 190000,
@@ -215,7 +215,7 @@ pub static NORMAL_HONE_WEAPON_UNLOCK: [[i64; 25]; 2] = [
     ],
 ];
 
-pub static NORMAL_HONE_ARMOR_UNLOCK: [[i64; 25]; 2] = [
+pub const NORMAL_HONE_ARMOR_UNLOCK: [[i64; 25]; 2] = [
     [
         9000, 9000, 9000, 9000, 9000, 9000, 10000, 10000, 10000, 12000, 12000, 13000, 19000, 22000,
         25000, 29000, 39000, 45000, 51000, 63000, 72000, 81000, 91000, 102000, 114000,
@@ -227,7 +227,7 @@ pub static NORMAL_HONE_ARMOR_UNLOCK: [[i64; 25]; 2] = [
     ],
 ];
 
-pub static ADV_HONE_COST: [[i64; 8]; 8] = [
+pub const ADV_HONE_COST: [[i64; 8]; 8] = [
     [300, 0, 550, 0, 1200, 0, 1400, 0],
     [0, 250, 0, 450, 0, 1000, 0, 1200],
     [8, 6, 11, 8, 25, 18, 32, 23],
@@ -238,7 +238,7 @@ pub static ADV_HONE_COST: [[i64; 8]; 8] = [
     [6, 6, 9, 9, 20, 20, 24, 24],
 ];
 
-pub static ADV_HONE_UNLOCK: [[i64; 8]; 2] = [
+pub const ADV_HONE_UNLOCK: [[i64; 8]; 2] = [
     [40000, 24000, 80000, 48000, 115000, 70000, 230000, 140000],
     [
         1440000, 1120000, 1600000, 1280000, 2300000, 1850000, 2530000, 2035000,
@@ -247,7 +247,7 @@ pub static ADV_HONE_UNLOCK: [[i64; 8]; 2] = [
 
 // columns:
 // tap count, average juice used * 1000(so it's i64), frequency(out of 10 mil)
-pub static ADV_DATA_10_20_JUICE: [[i64; 3]; 42] = [
+pub const ADV_DATA_10_20_JUICE: [[i64; 3]; 42] = [
     [22, 4000, 2],
     [23, 4795, 39],
     [24, 5643, 98],
@@ -291,7 +291,7 @@ pub static ADV_DATA_10_20_JUICE: [[i64; 3]; 42] = [
     [62, 9615, 26],
     [63, 9818, 11],
 ];
-pub static ADV_DATA_30_40_JUICE: [[i64; 3]; 52] = [
+pub const ADV_DATA_30_40_JUICE: [[i64; 3]; 52] = [
     [21, 8500, 4],
     [22, 7222, 9],
     [23, 5193, 88],
@@ -346,7 +346,7 @@ pub static ADV_DATA_30_40_JUICE: [[i64; 3]; 52] = [
     [72, 10500, 2],
 ];
 
-pub static ADV_DATA_10_20_DOUBLE: [[i64; 3]; 33] = [
+pub const ADV_DATA_10_20_DOUBLE: [[i64; 3]; 33] = [
     [16, 4583, 12],
     [17, 5058, 86],
     [18, 5857, 322],
@@ -382,7 +382,7 @@ pub static ADV_DATA_10_20_DOUBLE: [[i64; 3]; 33] = [
     [48, 14000, 1],
 ];
 
-pub static ADV_DATA_30_40: [[i64; 3]; 52] = [
+pub const ADV_DATA_30_40: [[i64; 3]; 52] = [
     [21, 8500, 4],
     [22, 7222, 9],
     [23, 5193, 88],

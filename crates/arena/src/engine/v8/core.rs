@@ -9,13 +9,13 @@ use rand::rngs::SmallRng;
 use rand::seq::IteratorRandom;
 // use std::f64::{MAX, MIN};
 
-pub static INIT_TEMP: f64 = 333.3;
-pub static RESOLUTION_CUTOFF_TEMP: f64 = 33.3;
-pub static MAX_BEST_SIZE: usize = 10;
-pub static ITERS_PER_TEMP: i64 = 7;
-pub static MAX_ITERS: i64 = 14000;
-pub static BATCH_SIZE: i64 = 500;
-pub static ALPHA: f64 = 0.99;
+pub const INIT_TEMP: f64 = 333.3;
+pub const RESOLUTION_CUTOFF_TEMP: f64 = 33.3;
+pub const MAX_BEST_SIZE: usize = 10;
+pub const ITERS_PER_TEMP: i64 = 7;
+pub const MAX_ITERS: i64 = 14000;
+pub const BATCH_SIZE: i64 = 500;
+pub const ALPHA: f64 = 0.99;
 pub fn my_pmf(max_len: usize, expected: f64, ratio: f64) -> Vec<f64> {
     // If NaN/inf, return a safe default: all mass at 0
     let mut v = vec![0.0; max_len + 1];

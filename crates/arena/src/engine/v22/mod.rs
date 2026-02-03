@@ -4,4 +4,4 @@ mod constants;
 mod neighbour;
 mod one_batch;
 mod scaler;
-pub static NOTES: &str = "v22, v18 but with restarts scaling with progress";
+pub const NOTES: &str = "v22, v18 but with restarts scaling with progress";

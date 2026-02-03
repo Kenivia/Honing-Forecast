@@ -16,9 +16,9 @@ use crate::upgrade::Support;
 // use crate::upgrade::Support;
 use statrs::distribution::{Continuous, ContinuousCDF, Normal};
 
-pub static DEBUG_SA: bool = false;
+pub const DEBUG_SA: bool = false;
 
-pub static MIN_LATTICE_SPAN: f64 = 1.0;
+pub const MIN_LATTICE_SPAN: f64 = 1.0;
 
 fn float_gcd(inp_a: f64, inp_b: f64) -> f64 {
     let mut a = inp_a;
@@ -105,7 +105,13 @@ impl StateBundle {
         if self.support_size_too_big(support_index, skip_count) {
             let min_delta = self
                 .extract_support_with_meta(support_index, skip_count)
-                .map(|x| x.gap_size)
+                .map(|x| {
+                    if x.gap_size.is_finite() {
+                        x.gap_size
+                    } else {
+                        panic!("non finite gap size")
+                    }
+                })
                 .fold(INFINITY, |prev, next| {
                     if next > FLOAT_TOL {
                         prev.min(next)
@@ -145,7 +151,7 @@ impl StateBundle {
                         .into(),
                     );
 
-                    dbg!(&self);
+                    // dbg!(&self);
                     panic!();
                 }
                 let (soft_low_limit, guess, soft_high_limit) =
@@ -171,7 +177,9 @@ impl StateBundle {
             if support_index == DEBUG_AVG_INDEX && DEBUG_AVERAGE {
                 dbg!("brute", inp_budget, min_value, max_value);
             }
-
+            // web_sys::console::log_1(
+            //     &format!(" brute {:?} {:?} {:?}", inp_budget, min_value, max_value).into(),
+            // );
             return self.brute_biased_recursive(
                 support_index,
                 skip_count,
@@ -179,7 +187,16 @@ impl StateBundle {
                 self.simple_avg(support_index, skip_count),
             );
         } else {
-            return self.brute_success_prob(support_index, skip_count, inp_budget);
+            web_sys::console::log_1(
+                &format!(
+                    " brute no bias {:?} {:?} {:?}",
+                    inp_budget, min_value, max_value,
+                )
+                .into(),
+            );
+            let out: f64 = self.brute_success_prob(support_index, skip_count, inp_budget);
+            web_sys::console::log_1(&format!(" brute no bias done {:?} ", out).into());
+            return out;
         }
     }
 

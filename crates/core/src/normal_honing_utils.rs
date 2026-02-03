@@ -70,11 +70,11 @@ impl StateBundle {
     ) -> (f64, f64) {
         let min_value = self
             .extract_support_with_meta(support_index, skip_count)
-            .map(|support| support.access_collapsed().iter().next().unwrap().0)
+            .map(|support| support.min_value)
             .sum();
         let max_value = self
             .extract_support_with_meta(support_index, skip_count)
-            .map(|support| support.access_collapsed().iter().last().unwrap().0)
+            .map(|support| support.max_value)
             .sum();
         (min_value, max_value)
     }
@@ -96,7 +96,7 @@ impl StateBundle {
         &self,
         support_index: i64,
         skip_count: usize,
-    ) -> Box<dyn Iterator<Item = &Support> + '_> {
+    ) -> Box<dyn DoubleEndedIterator<Item = &Support> + '_> {
         let num_avail = self.prep_output.juice_info.num_avail;
         Box::new(
             self.special_state

@@ -2,10 +2,12 @@ use crate::constants::FLOAT_TOL;
 
 use crate::saddlepoint_approximation::average::{DEBUG_AVERAGE, DEBUG_AVG_INDEX};
 use crate::state_bundle::StateBundle;
+use crate::upgrade::Support;
 
 use std::collections::HashMap;
+use std::f64::{INFINITY, NEG_INFINITY};
 use std::hash::{Hash, Hasher};
-pub static MAX_BRUTE_SIZE: usize = 5000;
+pub const MAX_BRUTE_SIZE: usize = 5000;
 
 // 1. Helper wrapper to use f64 as a HashMap key
 // (Rust floats don't implement Eq/Hash by default due to NaN)
@@ -71,26 +73,20 @@ impl StateBundle {
 
         let mut u_index = n - 1; // cant use enumerate for some reason
 
-        for pairs in self.extract_collapsed_pair(support_index, skip_count).rev() {
+        for support in self
+            .extract_support_with_meta(support_index, skip_count)
+            .rev()
+        {
             // Find min and max cost for this specific layer
             // We use fold because f64 doesn't implement Ord
-            let (local_min, local_max) =
-                pairs
-                    .iter()
-                    .fold((f64::INFINITY, f64::NEG_INFINITY), |(min, max), &(s, p)| {
-                        (
-                            if p.abs() > FLOAT_TOL { min.min(s) } else { min },
-                            if p.abs() > FLOAT_TOL { max.max(s) } else { max },
-                        )
-                    });
 
-            min_suffix[u_index] = min_suffix[u_index + 1] + local_min;
-            max_suffix[u_index] = max_suffix[u_index + 1] + local_max;
+            min_suffix[u_index] = min_suffix[u_index + 1] + support.min_value;
+            max_suffix[u_index] = max_suffix[u_index + 1] + support.max_value;
             if u_index > 0 {
                 u_index -= 1;
             }
         }
-
+        web_sys::console::log_1(&format!(" min {:?} max {:?} ", min_suffix, max_suffix).into());
         // --- STEP 2: Iterative DP with Pruning ---
 
         // Stores currently active uncertain states
@@ -176,17 +172,14 @@ impl StateBundle {
         let mut max_suffix = vec![0.0; n + 1];
 
         let mut index = n - 1;
-        for pairs in self.extract_collapsed_pair(support_index, skip_count).rev() {
+        for support in self
+            .extract_support_with_meta(support_index, skip_count)
+            .rev()
+        {
             // Assumes support_arr is sorted. If not, replace first()/last() with min()/max()
-            let min_val = pairs
-                .iter()
-                .find(|(_s, p)| *p > FLOAT_TOL)
-                .unwrap_or(&(0.0, 0.0))
-                .0;
-            let max_val = pairs.last().cloned().unwrap_or((0.0, 0.0)).0;
 
-            min_suffix[index] = min_suffix[index + 1] + min_val;
-            max_suffix[index] = max_suffix[index + 1] + max_val;
+            min_suffix[index] = min_suffix[index + 1] + support.min_value;
+            max_suffix[index] = max_suffix[index + 1] + support.max_value;
             if index > 0 {
                 index -= 1;
             }
@@ -244,7 +237,7 @@ impl StateBundle {
             .iter()
             .map(|(cost, prob)| (cost_so_far + *cost, *prob))
             // Tighter local pruning: check if next step + min future exceeds budget
-            .take_while(|(new_cost, _)| *new_cost + bounds.min_suffix[depth + 1] <= budget)
+            .filter(|(new_cost, _)| *new_cost + bounds.min_suffix[depth + 1] <= budget)
             .fold(0.0, |acc, (new_cost, prob)| {
                 acc + if prob.abs() < FLOAT_TOL {
                     0.0

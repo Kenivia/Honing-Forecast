@@ -7,6 +7,7 @@ import StateGrid, { StatePair } from "@/Sections/Optimize/StateGrid.tsx"
 import StateGridsManager from "@/Sections/Optimize/StateGrid.tsx"
 import { SpecialSortable } from "./SpecialSortable.tsx"
 import "./OptimizerSection.css"
+import InputsSection from "../Inputs/InputsSection.tsx"
 
 type OptimizeSectionProps = {
     curIsBest: boolean
@@ -52,6 +53,7 @@ type OptimizeSectionProps = {
 
     beforeMetric: number
     setBeforeMetric: React.Dispatch<React.SetStateAction<number>>
+    hasRunOptimizer: boolean
 }
 
 function _my_alr_spent_map(already_spent: any, labels: string[], index: number) {
@@ -76,11 +78,11 @@ function _combined_breakdown_to_english(input: number) {
 function avg_breakdown_map(avg_breakdown: any, labels: string[], offset: number) {
     return avg_breakdown
         ? Object.fromEntries(
-            labels.map((label, lab_index) => {
-                const value = avg_breakdown[offset + lab_index]
-                return [label, value === undefined ? "N/A" : breakdown_to_english(value)]
-            }),
-        )
+              labels.map((label, lab_index) => {
+                  const value = avg_breakdown[offset + lab_index]
+                  return [label, value === undefined ? "N/A" : breakdown_to_english(value)]
+              }),
+          )
         : Object.fromEntries(labels.map((label) => [label, "N/A"]))
 }
 
@@ -94,11 +96,9 @@ function avg_breakdown_colors(avg_breakdown: any, labels: string[], offset: numb
     })
 }
 
-
-
 export default function OptimizeSection({
     curIsBest,
-    inputsBundle: _inputsBundle,
+    inputsBundle,
     optimizeAvgBusy,
     // optimizeAvgResult,
     optimizeAvgWorkerRef,
@@ -129,13 +129,12 @@ export default function OptimizeSection({
     ranOutFreeTaps,
     onRanOutFreeTaps,
     beforeMetric,
-    setBeforeMetric
-
+    setBeforeMetric,
+    hasRunOptimizer,
     // gridRefs,
     // onGridMouseDown,
     // marquee,
 }: OptimizeSectionProps) {
-
     const [isFreeTapCollapsed, setIsFreeTapCollapsed] = React.useState(true)
     const { wideMatsColumnDefs } = createColumnDefs()
     // console.log(evaluateAverageResult)
@@ -192,6 +191,12 @@ export default function OptimizeSection({
     return (
         <div style={{ ...styles.inputSection, flexDirection: "column", maxWidth: "1200px", width: "100%", gap: 12 }}>
             <section className="optimizer-section">
+                <div className="optimizer-section-title">Inputs</div>
+                <div className="optimizer-section-body">
+                    <InputsSection inputsBundle={inputsBundle} />
+                </div>
+            </section>
+            <section className="optimizer-section">
                 <div className="optimizer-section-title">Optimizer controls</div>
                 <div className="optimizer-section-body">
                     <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
@@ -199,18 +204,8 @@ export default function OptimizeSection({
                             {metricType != 0 && optimizeAverageButton}
                             {optimizeAvgError && <span style={{ fontSize: 12, color: "red" }}>Error: {optimizeAvgError}</span>}
                             {beforeMetric !== null && (
-                                <span style={{ fontSize: 12, color: "var(--text-success)" }}>
-                                    Saved {add_comma((evaluateAverageResult?.metric ?? 0) - beforeMetric)} gold compared to before this optimizer run
-                                </span>
-                            )}
-                        </div>
-                        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                            <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13 }}>
-                                <input type="checkbox" checked={autoRunOptimizer} onChange={(e) => setAutoRunOptimizer(e.target.checked)} />
-                                Auto start optimizer whenever something changes
-                            </label>
-                        </div>
-                        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                                <span style={{ fontSize: 12, color: "var(--text-success)" }}>{add_comma(evaluateAverageResult?.metric) ?? "N/A"} gold</span>
+                            )}{" "}
                             <button
                                 onClick={handleRestoreBest}
                                 disabled={!canRestoreBest}
@@ -224,9 +219,23 @@ export default function OptimizeSection({
                                     opacity: canRestoreBest ? 1 : 0.3,
                                 }}
                             >
-                                Restore Best
+                                {canRestoreBest ? "Restore Best" : "Current configuration is the best known configuration"}
                             </button>
-                            {optimizeAvgBusy && <span>Optimizer progress: {optimizerProgress.toFixed(2)}%</span>}
+                        </div>
+                        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                            <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13 }}>
+                                <input type="checkbox" checked={autoRunOptimizer} onChange={(e) => setAutoRunOptimizer(e.target.checked)} />
+                                Auto start optimizer whenever something changes
+                            </label>
+                        </div>
+                        <span style={{ fontSize: "0.9em", color: "var(--text-secondary, #666)" }}>
+                            Optimizer: {hasRunOptimizer ? "✓ Ran" : "Not run"} | Best Metric:{" "}
+                            {hasRunOptimizer && bestMetric !== null ? bestMetric.toFixed(2) : "Unknown"}
+                        </span>
+                        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                            {optimizeAvgBusy && (
+                                <span>Optimizer progress: {optimizerProgress.toFixed(2)}% (this can take a while if you have a lot of upgrades)</span>
+                            )}
                         </div>
                     </div>
                 </div>
@@ -242,9 +251,8 @@ export default function OptimizeSection({
                         }}
                     />
                 )}
-
                 <section className="optimizer-section">
-                    <div className="optimizer-section-title">Best configuration found</div>
+                    <div className="optimizer-section-title">Results</div>
                     <div className="optimizer-section-body">
                         {flatStateBundle && flatProgressArr && evaluateAverageResult && specialState && (
                             <StateGridsManager
@@ -262,7 +270,8 @@ export default function OptimizeSection({
                             />
                         )}
                     </div>
-                </section>  <section className="optimizer-section">
+                </section>{" "}
+                <section className="optimizer-section">
                     <button
                         type="button"
                         className="optimizer-section-title optimizer-section-title-button"
@@ -270,7 +279,6 @@ export default function OptimizeSection({
                         aria-controls="free-tap-order-section"
                         onClick={() => setIsFreeTapCollapsed((prev) => !prev)}
                     >
-
                         <span>More free tap info </span>
                         <span className={`optimizer-section-title-arrow ${isFreeTapCollapsed ? "collapsed" : ""}`}>{">"}</span>
                     </button>
@@ -309,7 +317,7 @@ export default function OptimizeSection({
                             flexShrink: 0,
                             marginTop: 0,
                             flexWrap: "wrap",
-                            marginLeft: 100
+                            marginLeft: 100,
                         }}
                     >
                         <SpreadsheetGrid
@@ -366,16 +374,12 @@ export default function OptimizeSection({
                     {/* <div style={{ display: "grid", gridTemplateColumns: "1fr auto 1fr", alignItems: "center", gap: 12 }}>
                         <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 12 }}> */}
                     <h3>What do the numbers mean?</h3>
-                    <span>
-
-                    </span>
-                    <span style={{ fontSize: 24, color: "var(--optimizer-button)" }}>
-                        Combined : {breakdown_to_english(evaluateAverageResult?.metric)}
-                    </span>
+                    <span></span>
+                    <span style={{ fontSize: 24, color: "var(--optimizer-button)" }}>Combined : {breakdown_to_english(evaluateAverageResult?.metric)}</span>
                     {/* </div>
                     </div> */}
                 </div>
-            </section >
-        </div >
+            </section>
+        </div>
     )
 }

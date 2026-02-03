@@ -4,4 +4,4 @@ mod constants;
 mod neighbour;
 mod one_batch;
 mod scaler;
-pub static NOTES: &str = "v27, v24 but 2x the batch size";
+pub const NOTES: &str = "v27, v24 but 2x the batch size";

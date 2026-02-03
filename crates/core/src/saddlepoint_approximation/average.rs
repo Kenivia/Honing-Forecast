@@ -12,8 +12,8 @@ use itertools::izip;
 
 use crate::state_bundle::StateBundle;
 
-pub static DEBUG_AVERAGE: bool = false;
-pub static DEBUG_AVG_INDEX: i64 = 7;
+pub const DEBUG_AVERAGE: bool = false;
+pub const DEBUG_AVG_INDEX: i64 = 7;
 // use statrs::distribution::{Continuous, Normal};
 
 // fn simple_variance<'a, I>(prob_dist_arr: I, support_arr: I) -> f64

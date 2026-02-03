@@ -4,4 +4,4 @@ mod constants;
 mod neighbour;
 mod one_batch;
 mod scaler;
-pub static NOTES: &str = "v33, v31 but with 1.01 special affinity ";
+pub const NOTES: &str = "v33, v31 but with 1.01 special affinity ";

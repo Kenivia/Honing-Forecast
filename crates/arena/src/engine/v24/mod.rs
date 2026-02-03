@@ -4,4 +4,4 @@ mod constants;
 mod neighbour;
 mod one_batch;
 mod scaler;
-pub static NOTES: &str = "v24, v23 with adaptive special affinity";
+pub const NOTES: &str = "v24, v23 with adaptive special affinity";

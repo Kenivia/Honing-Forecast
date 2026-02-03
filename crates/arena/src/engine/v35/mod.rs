@@ -4,4 +4,4 @@ mod constants;
 mod neighbour;
 mod one_batch;
 mod scaler;
-pub static NOTES: &str = "v35, v34 but with self crossover ";
+pub const NOTES: &str = "v35, v34 but with self crossover ";

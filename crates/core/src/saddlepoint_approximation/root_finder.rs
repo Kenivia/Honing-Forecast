@@ -4,10 +4,10 @@ use crate::{
     constants::FLOAT_TOL, performance::Performance, saddlepoint_approximation::ks::KsTuple,
     state_bundle::StateBundle,
 };
-// pub static THETA_TOL: f64 = 1e-10;
-pub static MAX_ROOT_FIND_ITER: usize = 20;
+// pub const THETA_TOL: f64 = 1e-10;
+pub const MAX_ROOT_FIND_ITER: usize = 20;
 static Y_VALUE_TOL: f64 = 1e-6;
-// pub static THETA_LIMIT: f64 = 1e2;
+// pub const THETA_LIMIT: f64 = 1e2;
 
 impl StateBundle {
     pub fn householder(

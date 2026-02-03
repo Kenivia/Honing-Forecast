@@ -4,4 +4,4 @@ mod constants;
 mod neighbour;
 mod one_batch;
 mod scaler;
-pub static NOTES: &str = "v17, v16 with scaler added back but with the new prob schedule";
+pub const NOTES: &str = "v17, v16 with scaler added back but with the new prob schedule";

@@ -190,7 +190,7 @@ export const createColumnDefs = () => {
             color: "var(--grid-cell-text)",
         },
         {
-            headerName: "",
+            headerName: "How much can you sell this for?*",
             editable: true,
             flex: 1,
             width: "100px",
@@ -220,7 +220,7 @@ export const createColumnDefs = () => {
             color: "var(--grid-cell-text)",
         },
         {
-            headerName: "Leftover value",
+            headerName: "How much can you sell this for?*",
             editable: true,
             flex: 1,
             width: "170px",

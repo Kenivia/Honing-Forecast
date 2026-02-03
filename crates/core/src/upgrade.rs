@@ -430,8 +430,8 @@ impl Upgrade {
                 weap_support.push(weap_cost);
                 armor_support.push(armor_cost);
             }
-            weap_juice_costs[id].update_payload(weap_support, state.hash, &prob_dist, NAN, false);
-            armor_juice_costs[id].update_payload(armor_support, state.hash, &prob_dist, NAN, false);
+            weap_juice_costs[id].update_payload(weap_support, state.hash, &prob_dist, 1.0, false);
+            armor_juice_costs[id].update_payload(armor_support, state.hash, &prob_dist, 1.0, false);
         }
 
         Self {

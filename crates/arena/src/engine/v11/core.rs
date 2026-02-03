@@ -9,24 +9,24 @@ use rand::rngs::SmallRng;
 use rand::seq::IteratorRandom;
 // use std::f64::{MAX, MIN};
 
-pub static INIT_TEMP: f64 = 333.3;
-pub static RESOLUTION_CUTOFF_TEMP: f64 = 33.3;
-pub static MAX_BEST_SIZE: usize = 10;
-pub static ITERS_PER_TEMP: i64 = 7;
-pub static MAX_ITERS: i64 = 7000;
-pub static BATCH_SIZE: i64 = 500;
-pub static ALPHA: f64 = 0.99;
-pub static NON_IMPACT_WEIGHT: f64 = 3.0 / 333.3;
-pub static SPECIAL_START_CHANCE: f64 = 1.0;
-pub static MIN_SPECIAL_CHANCE: f64 = 0.05;
-pub static CONCURRENT_COUNT: i64 = 16;
+pub const INIT_TEMP: f64 = 333.3;
+pub const RESOLUTION_CUTOFF_TEMP: f64 = 33.3;
+pub const MAX_BEST_SIZE: usize = 10;
+pub const ITERS_PER_TEMP: i64 = 7;
+pub const MAX_ITERS: i64 = 7000;
+pub const BATCH_SIZE: i64 = 500;
+pub const ALPHA: f64 = 0.99;
+pub const NON_IMPACT_WEIGHT: f64 = 3.0 / 333.3;
+pub const SPECIAL_START_CHANCE: f64 = 1.0;
+pub const MIN_SPECIAL_CHANCE: f64 = 0.05;
+pub const CONCURRENT_COUNT: i64 = 16;
 
-pub static JUICE_TEMP_FACTOR: f64 = 3.0;
-pub static SPECIAL_TEMP_FACTOR: f64 = 1.0;
+pub const JUICE_TEMP_FACTOR: f64 = 3.0;
+pub const SPECIAL_TEMP_FACTOR: f64 = 1.0;
 
-pub static BLOCK_SIZE_MULTIPLIER: f64 = 1.0;
-pub static SPECIAL_CROSSOVER_MULTIPLIER: f64 = 0.5;
-pub static JUICE_CROSSOVER_MULTIPLIER: f64 = 1.0;
+pub const BLOCK_SIZE_MULTIPLIER: f64 = 1.0;
+pub const SPECIAL_CROSSOVER_MULTIPLIER: f64 = 0.5;
+pub const JUICE_CROSSOVER_MULTIPLIER: f64 = 1.0;
 
 pub fn my_pmf(max_len: usize, expected: f64, ratio: f64) -> Vec<f64> {
     // If NaN/inf, return a safe default: all mass at 0

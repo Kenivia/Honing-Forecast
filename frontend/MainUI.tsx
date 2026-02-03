@@ -163,11 +163,11 @@ export default function HoningForecastUI() {
     const [bestMetric, setBestMetric] = useState<number | null>(null)
     const [beforeMetric, setBeforeMetric] = React.useState<number | null>(null)
 
-
     const [bestFlatStateBundle, setBestFlatStateBundle] = useState<StatePair[][] | null>(null)
     const [bestFlatSpecialState, setBestFlatSpecialState] = useState<number[] | null>(null)
     const [ranOutFreeTaps, setRanOutFreeTaps] = useState<boolean>(false)
     const ranOutSkipResetRef = useRef<boolean>(false)
+    const hasRunOptimizerRef = useRef<boolean>(false)
     // State for optimized details
     // const [showOptimizedDetails, setShowOptimizedDetails] = useState<boolean>(false)
 
@@ -677,6 +677,7 @@ export default function HoningForecastUI() {
     useEffect(() => {
         const skipRanOutReset = ranOutSkipResetRef.current
         ranOutSkipResetRef.current = false
+        hasRunOptimizerRef.current = false
         setBestMetric(null)
         setBeforeMetric(null)
         setBestFlatStateBundle(null)
@@ -685,7 +686,7 @@ export default function HoningForecastUI() {
             setRanOutFreeTaps(false)
         }
         // console.log("reest", topGridKey, inputBundleKey, metricType, progressGridKey, succeededGridKey, minResolutionKey, unlockGridKey)
-    }, [topGridKey, bottomGridKey, inputBundleKey, metricType, progressGridKey, succeededGridKey, minResolutionKey, unlockGridKey])
+    }, [topGridKey, bottomGridKey, inputBundleKey, metricType, minResolutionKey])
 
     const cancelOptimizeAverage = () => {
         runner.cancel("OptimizeAverage")
@@ -856,14 +857,13 @@ export default function HoningForecastUI() {
         specialStateKey,
         minResolutionKey,
         metricType,
-        activePage
+        activePage,
     ])
 
     const optimizeAvgWorkerRef = useRef<Worker | null>(null)
     const [optimizeAvgBusy, setOptimizeAvgBusy] = useState(false)
     // const [optimizeAvgResult, setOptimizeAvgResult] = useState<{ average_costs?: any } | null>(null)
     const startOptimizeAverage = useCallback((debounce) => {
-
         runner.start({
             which_one: "OptimizeAverage",
             payloadBuilder,
@@ -872,6 +872,7 @@ export default function HoningForecastUI() {
             setResult: setEvaluateAverageResult,
             onSuccess: (res) => {
                 // console.log(inputBundleKey)
+                hasRunOptimizerRef.current = true
                 setFlatStateBundle(res.upgrade_arr.map((upgrade) => upgrade.state))
                 setFlatProgressArr(res.upgrade_arr.map((_, index) => progressGrid[res.upgrade_arr[index].piece_type][res.upgrade_arr[index].upgrade_index]))
                 setFlatUnlockArr(res.upgrade_arr.map((_, index) => unlockGrid[res.upgrade_arr[index].piece_type][res.upgrade_arr[index].upgrade_index]))
@@ -882,6 +883,7 @@ export default function HoningForecastUI() {
                 // console.log(specialState)
             },
             onIntermediateMessage: (res_bundle) => {
+                // hasRunOptimizerRef.current = true
                 setOptimizerProgress(res_bundle.est_progress_percentage)
                 let res = res_bundle.state_bundle
                 updateBestSolution(res)
@@ -932,9 +934,9 @@ export default function HoningForecastUI() {
         dataSizeKey,
         topGridKey,
         bottomGridKey,
-        progressGridKey,
-        unlockGridKey,
-        succeededGridKey,
+        // progressGridKey,
+        // unlockGridKey,
+        // succeededGridKey,
         // StateBundleGridKey,
         inputBundleKey,
         // specialStateKey,
@@ -1002,7 +1004,7 @@ export default function HoningForecastUI() {
         setBestMetric,
         setBestFlatStateBundle,
         setBestFlatSpecialState,
-        setBeforeMetric
+        setBeforeMetric,
         // setOptimizerMetric,
         // setMonteCarloResult,
     })
@@ -1018,7 +1020,7 @@ export default function HoningForecastUI() {
         setBestMetric,
         setBestFlatStateBundle,
         setBestFlatSpecialState,
-        setBeforeMetric
+        setBeforeMetric,
     })
 
     const fillDemo = createFillDemo({
@@ -1058,7 +1060,11 @@ export default function HoningForecastUI() {
     // styles and column defs moved to ./styles
     const AnythingTicked = useMemo(() => topGrid.some((row) => row.some((x) => x)) || bottomGrid.some((row) => row.some((x) => x)), [topGrid, bottomGrid])
     const currentMetric = evaluateAverageResult?.metric
-    const curIsBest = bestMetric !== null && currentMetric !== undefined && currentMetric !== null ? Math.round(currentMetric) >= Math.round(bestMetric) : false
+    const hasRunOptimizer = hasRunOptimizerRef.current
+    const curIsBest =
+        hasRunOptimizer && bestMetric !== null && currentMetric !== undefined && currentMetric !== null
+            ? Math.round(currentMetric) >= Math.round(bestMetric)
+            : false
 
     return (
         <div style={styles.pageContainer}>
@@ -1087,9 +1093,11 @@ export default function HoningForecastUI() {
                     transformOrigin: "top center",
                 }}
             >
-                <div style={{ display: "flex", flexDirection: "row", gap: 6 }}>
-                    <Icon iconName="Forecast Icon" size={64} style={{ display: "flex", alignItems: "center", gap: "12px" }} display_text="" />
-                    <h1 style={styles.heading}>Honing Forecast</h1>
+                <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                    <div style={{ display: "flex", flexDirection: "row", gap: 6 }}>
+                        <Icon iconName="Forecast Icon" size={64} style={{ display: "flex", alignItems: "center", gap: "12px" }} display_text="" />
+                        <h1 style={styles.heading}>Honing Forecast</h1>
+                    </div>
                 </div>
 
                 {/* Three panels in a responsive flex layout */}
@@ -1136,14 +1144,16 @@ export default function HoningForecastUI() {
                             onToggleLockXAxis={onToggleLockXAxis}
                             minResolution={minResolution}
                             setMinResolution={setMinResolution}
+                            allowUserChangeState={allowUserChangeState}
+                            setAllowUserChangeState={setAllowUserChangeState}
                         />
                     </div>
                 </div>
 
                 {/* Page Separator */}
-                <div>
-                    <InputsSection inputsBundle={inputsBundle} />
-                </div>
+                {/* <div>
+                 
+                </div> */}
                 <Separator activePage={activePage} onPageChange={setActivePage} setAutoRunOptimizer={setAutoRunOptimizer} />
 
                 {activePage === "optimize" && (
@@ -1181,6 +1191,7 @@ export default function HoningForecastUI() {
                             onRanOutFreeTaps={handleRanOutFreeTaps}
                             beforeMetric={beforeMetric}
                             setBeforeMetric={setBeforeMetric}
+                            hasRunOptimizer={hasRunOptimizer}
                         />
                     </div>
                 )}

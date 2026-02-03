@@ -80,21 +80,22 @@ const RowBundle = ({
 
         // 1. Progress Row Logic
         if (isProgressRow) {
-            // If clicking column 2 (index 2), progress becomes 3.
-            // If allowUserChangeState is false, only this works.
-            // let new_progress = progress > colIndex ? colIndex : colIndex + 1
-            // onUpdateProgress(new_progress)
-            // if (new_progress > 0) {
-            //     onUpdateUnlock(true)
-            // }
-            // if (new_progress >= pity_len) {
-            //     onUpdateSucceed(true)
-            // }
+            if (allowUserChangeState) {
+                let new_progress = progress > colIndex ? colIndex : colIndex + 1
+                onUpdateProgress(new_progress)
+                if (new_progress > 0) {
+                    onUpdateUnlock(true)
+                }
+                if (new_progress >= pity_len) {
+                    onUpdateSucceed(true)
+                }
+            }
+
             return
         }
 
         // 5. Block other changes if not allowed
-        if (!allowUserChangeState || colIndex < progress || colIndex >= pity_len - 1) return
+        if (colIndex < progress || colIndex >= pity_len - 1) return
 
         // Create a copy of the state for this bundle
         const newPairs = [...statePairs]
@@ -167,12 +168,12 @@ const RowBundle = ({
     }))
     gridRows.push(progressRow)
 
-    // const handleUnlockClick = () => {
-    //     if (unlock) {
-    //         onUpdateProgress(0)
-    //     }
-    //     onUpdateUnlock(!unlock)
-    // }
+    const handleUnlockClick = () => {
+        if (unlock) {
+            onUpdateProgress(0)
+        }
+        onUpdateUnlock(!unlock)
+    }
 
     // const handleSucceedClick = () => {
     //     if (!succeed) {
@@ -212,7 +213,7 @@ const RowBundle = ({
                                     </div>))
                             )}
 
-                            {/* <div
+                            {upgrade.is_normal_honing && allowUserChangeState && (<div
                                 className="checkbox-grid-item"
                                 style={{
                                     width: CELL_W,
@@ -220,11 +221,12 @@ const RowBundle = ({
                                     position: "absolute",
                                     bottom: 0,
                                     left: 0,
-
+                                    top: CELL_H * 2,
                                     display: "flex",
                                     justifyContent: "center",
                                     alignItems: "center",
                                     cursor: "pointer",
+                                    paddingTop: 0
                                 }}
                                 onMouseDown={(e) => {
                                     e.preventDefault() // Prevent text selection
@@ -249,7 +251,7 @@ const RowBundle = ({
                                         <span>✓</span>
                                     </div>
                                 )}
-                            </div> */}
+                            </div>)}
                         </div>
                         <div style={{ display: "grid", gridTemplateColumns: `repeat(${cols}, ${CELL_W}px)`, gap: 0, marginBottom: "15px" }}>
                             {gridRows.flatMap((row, rIndex) =>
@@ -285,12 +287,12 @@ const RowBundle = ({
                                                                 : "var(--sub-optimal)",
 
                                                 cursor:
-                                                    ((!allowUserChangeState || cIndex < progress || cIndex >= pity_len - 1) && cell.type !== "progress") ||
+                                                    ((cIndex < progress || cIndex >= pity_len - 1) && cell.type !== "progress") ||
                                                         cIndex >= pity_len
                                                         ? "not-allowed"
                                                         : "pointer",
                                                 opacity:
-                                                    ((!allowUserChangeState || cIndex < progress || cIndex >= pity_len - 1) && cell.type !== "progress") ||
+                                                    ((cIndex < progress || cIndex >= pity_len - 1) && cell.type !== "progress") ||
                                                         cIndex >= pity_len
                                                         ? 0.3
                                                         : 1,
@@ -320,7 +322,7 @@ const RowBundle = ({
                                                     {
                                                         "--checkbox-content": "um idk why an empty string doesn't over write the default",
                                                         background: cell.type === "progress" && cell.active ? "var( --checkbox-checked-bg)" : "transparent",
-                                                        border: cell.type === "progress" ? "none" : "1px solid var(--checkbox-border)",
+                                                        border: cell.type === "progress" && !allowUserChangeState ? "none" : "1px solid var(--checkbox-border)",
                                                     } as React.CSSProperties
                                                 }
                                             />

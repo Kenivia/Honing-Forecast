@@ -2,7 +2,7 @@ import React from "react"
 import SpreadsheetGrid from "@/Components/SpreadsheetGrid.tsx"
 import Graph from "@/Components/Graph.tsx"
 import LabeledCheckbox from "@/Components/LabeledCheckbox.tsx"
-import { styles, createColumnDefs, GRAPH_WIDTH, GRAPH_HEIGHT } from "@/Utils/Styles.ts"
+import { styles, GRAPH_WIDTH, GRAPH_HEIGHT } from "@/Utils/Styles.ts"
 import { GRAPH_COLORS, JUICE_LABELS, MATS_LABELS, OUTPUT_LABELS } from "@/Utils/Constants.ts"
 import { SliderBundle } from "@/Components/SliderBundle.tsx"
 import { InputsBundle } from "@/Utils/InputBundles.ts"
@@ -15,7 +15,9 @@ type DistributionSectionProps = {
 export default function DistributionSection({ cumulativeGraph, histogramResult }: DistributionSectionProps) {
     return (
         <div style={{ ...styles.inputSection, flexDirection: "row", maxWidth: "1200px", width: "100%" }}>
-            {MATS_LABELS.slice(0, 7).concat(JUICE_LABELS.map((l) => l[0]))
+            <div>Distribution of costs, these graphs reflect the free taps & juice usage as specified in Optimizer.</div>
+            {MATS_LABELS.slice(0, 7)
+                .concat(JUICE_LABELS.map((l) => l[0]))
                 .concat(JUICE_LABELS.map((l) => l[1]))
                 .map((label, index) => (
                     <MaterialGraph

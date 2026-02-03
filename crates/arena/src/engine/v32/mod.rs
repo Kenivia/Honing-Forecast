@@ -4,4 +4,4 @@ mod constants;
 mod neighbour;
 mod one_batch;
 mod scaler;
-pub static NOTES: &str = "v32, based on v31 ";
+pub const NOTES: &str = "v32, based on v31 ";

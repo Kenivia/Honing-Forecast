@@ -4,4 +4,4 @@ mod constants;
 mod neighbour;
 mod one_batch;
 mod scaler;
-pub static NOTES: &str = "v21, v18 but with 5000 max iter";
+pub const NOTES: &str = "v21, v18 but with 5000 max iter";
