@@ -75,7 +75,7 @@ export const IconMap: Record<string, string> = {
     "19-20 Armor": "/Icons/Materials/Armor Book.webp",
     "19-20 Weapon": "/Icons/Materials/Weapon Book.webp",
 
-    "Forecast Icon": "/forecast icon.webp",
+    "Forecast Icon": "/Icons/Forecast Icon.webp",
 }
 
 export const DEFAULT_MATS_PRICES = ["1.67", "0.04", "15.0", "0.5", "100", "1.0", "0.0"]

@@ -1,5 +1,18 @@
 import { PIECE_NAMES } from "./Constants.ts"
+const ordinalRules = new Intl.PluralRules("en", { type: "ordinal" })
 
+export function toOrdinal(n: number): string {
+    const suffixes: Record<Intl.LDMLPluralRule, string> = {
+        zero: "th",
+        one: "st",
+        two: "nd",
+        few: "rd",
+        many: "th",
+        other: "th",
+    }
+
+    return `${n}${suffixes[ordinalRules.select(n)]}`
+}
 export function piece_display_name(upgrade: any): string {
     return (
         PIECE_NAMES[upgrade.piece_type] +

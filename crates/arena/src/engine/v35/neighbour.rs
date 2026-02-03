@@ -74,7 +74,7 @@ impl SolverStateBundle {
                 let max_change_len = ((1.0 - progress).powi(2) * upgrade.state.len() as f64)
                     .ceil()
                     .max(4.0) as i64;
-                let new_juice_count = upgrade
+                let mut new_juice_count = upgrade
                     .state
                     .iter()
                     .skip(upgrade.alr_failed)
@@ -82,7 +82,7 @@ impl SolverStateBundle {
                     .count()
                     .saturating_add_signed(random_range(-max_change_len..max_change_len) as isize);
 
-                let new_juice_streak_len = upgrade
+                let mut new_juice_streak_len = upgrade
                     .state
                     .iter()
                     .skip(upgrade.alr_failed)
@@ -90,7 +90,7 @@ impl SolverStateBundle {
                     .count()
                     .saturating_add_signed(random_range(-max_change_len..max_change_len) as isize)
                     .min(new_juice_count);
-                let new_book_count = upgrade
+                let mut new_book_count = upgrade
                     .state
                     .iter()
                     .skip(upgrade.alr_failed)
@@ -98,7 +98,7 @@ impl SolverStateBundle {
                     .count()
                     .saturating_add_signed(random_range(-max_change_len..max_change_len) as isize);
 
-                let new_book_streak_len = upgrade
+                let mut new_book_streak_len = upgrade
                     .state
                     .iter()
                     .skip(upgrade.alr_failed)
@@ -149,11 +149,13 @@ impl SolverStateBundle {
                         count += 0.1;
                     }
                 }
+
+                let state_len = upgrade.state.len();
                 for (i, (juice, book)) in upgrade
                     .state
                     .iter_mut()
                     .skip(upgrade.alr_failed)
-                    .take(effective_len - upgrade.alr_failed)
+                    .take(state_len - upgrade.alr_failed)
                     .rev()
                     .enumerate()
                 {

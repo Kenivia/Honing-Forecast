@@ -6,6 +6,7 @@ import React from "react"
 import StateGrid, { StatePair } from "@/Sections/Optimize/StateGrid.tsx"
 import StateGridsManager from "@/Sections/Optimize/StateGrid.tsx"
 import { SpecialSortable } from "./SpecialSortable.tsx"
+import "./OptimizerSection.css"
 
 type OptimizeSectionProps = {
     curIsBest: boolean
@@ -50,7 +51,7 @@ type OptimizeSectionProps = {
     onRanOutFreeTaps: () => void
 }
 
-function my_alr_spent_map(already_spent: any, labels: string[], index: number) {
+function _my_alr_spent_map(already_spent: any, labels: string[], index: number) {
     return already_spent
         ? Object.fromEntries(labels.map((label, lab_index) => [label, String(already_spent[index][lab_index])]))
         : Object.fromEntries(labels.map((label) => [label, "Calculating..."]))
@@ -66,17 +67,17 @@ function breakdown_to_english(input: number) {
     return String(input <= 0 ? "Avg spend " + add_comma(input < 0.0 ? -input : input) + "g" : "Avg surplus of " + add_comma(input) + "g")
 }
 
-function combined_breakdown_to_english(input: number) {
+function _combined_breakdown_to_english(input: number) {
     return String(input <= 0 ? add_comma(input < 0.0 ? -input : input) + "g" : "Avg surplus of " + add_comma(input) + "g")
 }
 function avg_breakdown_map(avg_breakdown: any, labels: string[], offset: number) {
     return avg_breakdown
         ? Object.fromEntries(
-              labels.map((label, lab_index) => {
-                  const value = avg_breakdown[offset + lab_index]
-                  return [label, value === undefined ? "N/A" : breakdown_to_english(value)]
-              }),
-          )
+            labels.map((label, lab_index) => {
+                const value = avg_breakdown[offset + lab_index]
+                return [label, value === undefined ? "N/A" : breakdown_to_english(value)]
+            }),
+        )
         : Object.fromEntries(labels.map((label) => [label, "N/A"]))
 }
 
@@ -118,7 +119,7 @@ export default function OptimizeSection({
     bestMetric,
     bestFlatStateBundle,
     bestFlatSpecialState: bestFlatSpecialGrid,
-    setMetricType,
+    setMetricType: _setMetricType,
     ranOutFreeTaps,
     onRanOutFreeTaps,
 
@@ -127,9 +128,10 @@ export default function OptimizeSection({
     // marquee,
 }: OptimizeSectionProps) {
     const [beforeMetric, setBeforeMetric] = React.useState<number | null>(null)
+    const [isFreeTapCollapsed, setIsFreeTapCollapsed] = React.useState(true)
     const { wideMatsColumnDefs } = createColumnDefs()
     // console.log(evaluateAverageResult)
-    const already_spent = evaluateAverageResult?.prep_output.already_spent
+    const _already_spent = evaluateAverageResult?.prep_output.already_spent
     const avg_breakdown = evaluateAverageResult?.average_breakdown
     const cloneFlatStateBundle = (bundle: StatePair[][]) => bundle.map((row) => row.map((pair) => [pair[0], pair[1]] as StatePair))
     const juiceAvail = evaluateAverageResult?.prep_output.juice_info.num_avail ?? 0
@@ -181,89 +183,114 @@ export default function OptimizeSection({
 
     return (
         <div style={{ ...styles.inputSection, flexDirection: "column", maxWidth: "1200px", width: "100%", gap: 12 }}>
-            <div style={{ background: "var(--focus-bg)", padding: "10px 12px", borderRadius: 6, display: "flex", flexDirection: "column", gap: 10 }}>
-                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                        {metricType != 0 && optimizeAverageButton}
-                        {optimizeAvgError && <span style={{ fontSize: 12, color: "red" }}>Error: {optimizeAvgError}</span>}
-                        {beforeMetric !== null && (
-                            <span style={{ fontSize: 12, color: "var(--text-success)" }}>
-                                Improvement: {breakdown_to_english(beforeMetric - (evaluateAverageResult?.metric ?? 0))}
-                            </span>
-                        )}
-                    </div>
-                    <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                        <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13 }}>
-                            <input type="checkbox" checked={autoRunOptimizer} onChange={(e) => setAutoRunOptimizer(e.target.checked)} />
-                            Auto start optimizer
-                        </label>
-                    </div>
-                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                        <button
-                            onClick={handleRestoreBest}
-                            disabled={!canRestoreBest}
-                            style={{
-                                background: canRestoreBest ? "var(--optimizer-button)" : "var(--btn-demo)",
-                                color: "var(--btn-demo-text)",
-                                padding: "6px 10px",
-                                borderRadius: 4,
-                                border: "1px solid var(--btn-border)",
-                                cursor: canRestoreBest ? "pointer" : "not-allowed",
-                                opacity: canRestoreBest ? 1 : 0.3,
-                            }}
-                        >
-                            Restore Best
-                        </button>
-                        {optimizeAvgBusy && <span>Optimizer progress: {optimizerProgress.toFixed(2)}%</span>}
+            <section className="optimizer-section">
+                <div className="optimizer-section-title">Optimizer controls</div>
+                <div className="optimizer-section-body">
+                    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                            {metricType != 0 && optimizeAverageButton}
+                            {optimizeAvgError && <span style={{ fontSize: 12, color: "red" }}>Error: {optimizeAvgError}</span>}
+                            {beforeMetric !== null && (
+                                <span style={{ fontSize: 12, color: "var(--text-success)" }}>
+                                    Improvement: {breakdown_to_english(beforeMetric - (evaluateAverageResult?.metric ?? 0))}
+                                </span>
+                            )}
+                        </div>
+                        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                            <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13 }}>
+                                <input type="checkbox" checked={autoRunOptimizer} onChange={(e) => setAutoRunOptimizer(e.target.checked)} />
+                                Auto start optimizer
+                            </label>
+                        </div>
+                        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                            <button
+                                onClick={handleRestoreBest}
+                                disabled={!canRestoreBest}
+                                style={{
+                                    background: canRestoreBest ? "var(--optimizer-button)" : "var(--btn-demo)",
+                                    color: "var(--btn-demo-text)",
+                                    padding: "6px 10px",
+                                    borderRadius: 4,
+                                    border: "1px solid var(--btn-border)",
+                                    cursor: canRestoreBest ? "pointer" : "not-allowed",
+                                    opacity: canRestoreBest ? 1 : 0.3,
+                                }}
+                            >
+                                Restore Best
+                            </button>
+                            {optimizeAvgBusy && <span>Optimizer progress: {optimizerProgress.toFixed(2)}%</span>}
+                        </div>
                     </div>
                 </div>
-            </div>
-            <div style={{ position: "relative", flex: 1 }}>
+            </section>
+            <div style={{ position: "relative", flex: 1, display: "flex", flexDirection: "column", gap: 12 }}>
                 {optimizeAvgBusy && (
                     <div
                         style={{
                             position: "absolute",
                             inset: 0,
-                            background: "rgba(0, 0, 0, 0.35)",
+                            background: "rgba(0, 0, 0, 0.25)",
                             zIndex: 2,
                         }}
                     />
                 )}
-                {flatStateBundle && flatProgressArr && evaluateAverageResult && specialState && (
-                    <SpecialSortable
-                        curIsBest={curIsBest}
-                        evaluateAverageResult={evaluateAverageResult}
-                        specialState={specialState}
-                        setSpecialState={setSpecialState}
-                        flatSucceedArr={flatSucceedArr}
-                        setFlatSucceedArr={setFlatSucceedArr}
-                        flatUnlockArr={flatUnlockArr}
-                        setFlatUnlockArr={setFlatUnlockArr}
-                        ranOutFreeTaps={ranOutFreeTaps}
-                        onRanOutFreeTaps={onRanOutFreeTaps}
-                    />
-                )}
-                {flatStateBundle && flatProgressArr && evaluateAverageResult && specialState && (
-                    <StateGridsManager
-                        curIsBest={curIsBest}
-                        flatProgressArr={flatProgressArr}
-                        setFlatProgressArr={setFlatProgressArr}
-                        flatUnlockArr={flatUnlockArr}
-                        setFlatUnlockArr={setFlatUnlockArr}
-                        flatSucceedArr={flatSucceedArr}
-                        setFlatSucceedArr={setFlatSucceedArr}
-                        flatStateBundle={flatStateBundle}
-                        setFlatStateBundle={setFlatStateBundle}
-                        allowUserChangeState={allowUserChangeState}
-                        upgradeArr={evaluateAverageResult.upgrade_arr}
-                        specialState={specialState}
-                        juiceInfo={evaluateAverageResult.prep_output.juice_info}
-                        special_invalid_index={evaluateAverageResult.special_invalid_index}
-                    />
-                )}
+
+                <section className="optimizer-section">
+                    <div className="optimizer-section-title">Instructions</div>
+                    <div className="optimizer-section-body">
+                        {flatStateBundle && flatProgressArr && evaluateAverageResult && specialState && (
+                            <StateGridsManager
+                                curIsBest={curIsBest}
+                                flatProgressArr={flatProgressArr}
+                                setFlatProgressArr={setFlatProgressArr}
+                                flatUnlockArr={flatUnlockArr}
+                                setFlatUnlockArr={setFlatUnlockArr}
+                                flatSucceedArr={flatSucceedArr}
+                                setFlatSucceedArr={setFlatSucceedArr}
+                                flatStateBundle={flatStateBundle}
+                                setFlatStateBundle={setFlatStateBundle}
+                                allowUserChangeState={allowUserChangeState}
+                                upgradeArr={evaluateAverageResult.upgrade_arr}
+                                specialState={specialState}
+                                juiceInfo={evaluateAverageResult.prep_output.juice_info}
+                                special_invalid_index={evaluateAverageResult.special_invalid_index}
+                            />
+                        )}
+                    </div>
+                </section>  <section className="optimizer-section">
+                    <button
+                        type="button"
+                        className="optimizer-section-title optimizer-section-title-button"
+                        aria-expanded={!isFreeTapCollapsed}
+                        aria-controls="free-tap-order-section"
+                        onClick={() => setIsFreeTapCollapsed((prev) => !prev)}
+                    >
+                        <span className={`optimizer-section-title-arrow ${isFreeTapCollapsed ? "collapsed" : ""}`}>{">"}</span>
+                        <span>More free tap info</span>
+                    </button>
+                    {!isFreeTapCollapsed && (
+                        <div id="free-tap-order-section" className="optimizer-section-body">
+                            {flatStateBundle && flatProgressArr && evaluateAverageResult && specialState && (
+                                <SpecialSortable
+                                    curIsBest={curIsBest}
+                                    evaluateAverageResult={evaluateAverageResult}
+                                    specialState={specialState}
+                                    setSpecialState={setSpecialState}
+                                    flatSucceedArr={flatSucceedArr}
+                                    setFlatSucceedArr={setFlatSucceedArr}
+                                    flatUnlockArr={flatUnlockArr}
+                                    setFlatUnlockArr={setFlatUnlockArr}
+                                    ranOutFreeTaps={ranOutFreeTaps}
+                                    onRanOutFreeTaps={onRanOutFreeTaps}
+                                />
+                            )}
+                        </div>
+                    )}
+                </section>
             </div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-                <div style={{ background: "var(--focus-bg)", padding: "10px 12px", borderRadius: 6, display: "flex", flexDirection: "column", gap: 10 }}>
+            <section className="optimizer-section">
+                <div className="optimizer-section-title">Average breakdown</div>
+                <div className="optimizer-section-body">
                     <div
                         style={{
                             display: "flex",
@@ -335,7 +362,7 @@ export default function OptimizeSection({
                         </div>
                     </div>
                 </div>
-            </div>
+            </section>
         </div>
     )
 }

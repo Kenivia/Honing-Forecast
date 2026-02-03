@@ -120,8 +120,16 @@ pub fn solve<R: Rng>(
     // vec![state_bundle.clone(); state_bundle.num_threads];
     while eqv_wall_time_iters < MAX_ITERS {
         // solver_arr.iter_mut().for_each(|x| x.one_batch(BATCH_SIZE));
-
-        let mutate_special: bool = solver_bundle.neighbour();
+        let mutate_special: bool;
+        if solver_bundle.temps_without_improvement as f64
+            > (10.0 * solver_bundle.progress()).max(3.0)
+        {
+            solver_bundle.perform_crossover();
+            solver_bundle.temps_without_improvement = 0;
+            mutate_special = false;
+        } else {
+            mutate_special = solver_bundle.neighbour();
+        }
 
         solver_bundle.state_bundle.metric = solver_bundle
             .state_bundle
@@ -178,12 +186,6 @@ pub fn solve<R: Rng>(
             .update_stats(is_uphill, accepted, solver_bundle.lam_rate());
         solver_bundle.count += 1;
 
-        if solver_bundle.temps_without_improvement as f64
-            > (10.0 * solver_bundle.progress()).max(3.0)
-        {
-            solver_bundle.perform_crossover();
-            solver_bundle.temps_without_improvement = 0;
-        }
         solver_bundle.temps_without_improvement += 1;
 
         eqv_wall_time_iters += 1;
@@ -201,14 +203,16 @@ pub fn solve<R: Rng>(
 
             #[cfg(target_arch = "wasm32")]
             {
-                state_bundle.clone_from_essence(
-                    overall_best_n_states.peek_max().unwrap().0,
-                    overall_best_n_states.peek_max().unwrap().1,
+                solver_bundle.state_bundle.clone_from_essence(
+                    solver_bundle.best_n_states.peek_max().unwrap().0,
+                    solver_bundle.best_n_states.peek_max().unwrap().1,
                 );
-                let mut dummy_performance = Performance::new();
-                state_bundle.metric_router(&mut dummy_performance);
+                solver_bundle.state_bundle.set_latest_special_probs();
+                solver_bundle
+                    .state_bundle
+                    .metric_router(overall_performance);
                 send_progress(
-                    &state_bundle.clone(),
+                    &solver_bundle.state_bundle.clone(),
                     (100.0 * (eqv_wall_time_iters as f64 / MAX_ITERS as f64)).min(100.0),
                 )
             }

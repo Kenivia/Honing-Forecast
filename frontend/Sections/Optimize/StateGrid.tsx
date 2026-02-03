@@ -4,10 +4,11 @@ import { styles } from "@/Utils/Styles.ts"
 import Icon from "@/Components/Icon.tsx"
 import "@/Components/CheckboxGrid.css"
 import "./StateGrid.css"
-import { piece_display_name } from "@/Utils/Helpers.ts"
+import { piece_display_name, toOrdinal } from "@/Utils/Helpers.ts"
 import { useMemo } from "react"
 
 export type StatePair = [boolean, number]
+
 
 interface RowBundleProps {
     curIsBest: boolean
@@ -23,6 +24,8 @@ interface RowBundleProps {
     allowUserChangeState: boolean
     upgrade: any
     uniqueBookNumbers: number[]
+    freeTap: boolean
+    freeTapOrder: number
 }
 
 const RowBundle = ({
@@ -39,6 +42,8 @@ const RowBundle = ({
     allowUserChangeState,
     upgrade,
     uniqueBookNumbers,
+    freeTap,
+    freeTapOrder
 }: RowBundleProps) => {
     // 2.1 Find unique "book numbers" (excluding 0) and sort ascending
     // const uniqueBookNumbers = useMemo(() => {
@@ -153,32 +158,32 @@ const RowBundle = ({
     gridRows.push(juiceRow)
 
     // C. Progress Row (Bottom)
-    const progressRow = Array.from({ length: cols }).map((_, cIndex) => ({
-        active: cIndex < progress && cIndex < pity_len,
-        label: "",
-        type: "progress",
-    }))
-    gridRows.push(progressRow)
+    // const progressRow = Array.from({ length: cols }).map((_, cIndex) => ({
+    //     active: cIndex < progress && cIndex < pity_len,
+    //     label: "",
+    //     type: "progress",
+    // }))
+    // gridRows.push(progressRow)
 
-    const handleUnlockClick = () => {
-        if (unlock) {
-            onUpdateProgress(0)
-        }
-        onUpdateUnlock(!unlock)
-    }
+    // const handleUnlockClick = () => {
+    //     if (unlock) {
+    //         onUpdateProgress(0)
+    //     }
+    //     onUpdateUnlock(!unlock)
+    // }
 
-    const handleSucceedClick = () => {
-        if (!succeed) {
-            if (!unlock) {
-                onUpdateUnlock(true)
-            }
-            onUpdateProgress(Math.min(progress, pity_len))
-        } else {
-            onUpdateProgress(Math.min(progress, pity_len - 1))
-        }
+    // const handleSucceedClick = () => {
+    //     if (!succeed) {
+    //         if (!unlock) {
+    //             onUpdateUnlock(true)
+    //         }
+    //         onUpdateProgress(Math.min(progress, pity_len))
+    //     } else {
+    //         onUpdateProgress(Math.min(progress, pity_len - 1))
+    //     }
 
-        onUpdateSucceed(!succeed)
-    }
+    //     onUpdateSucceed(!succeed)
+    // }
 
     // const nextProgressIndex = progress < pity_len ? progress : -1
 
@@ -186,12 +191,22 @@ const RowBundle = ({
         <div className="row-bundle-container" style={{ marginBottom: "5px" }}>
             <div className="state-grid-row">
                 <div className="state-grid-wrapper">
-                    <h4 style={{ margin: "0 0 0 0" }}>
+                    <div style={{ display: "flex", flexDirection: "row", margin: "0 0 0 0", textWrap: "nowrap", gap: 30 }}>
                         <Icon iconName={PIECE_NAMES[upgrade.piece_type]} display_text="" display_text_right={piece_display_name(upgrade)}></Icon>
-                    </h4>
+                        <span>{(freeTap ? "  [Use special leaps on this until you run out, " : " [Normal tap this (no special)") + (freeTap ? toOrdinal(freeTapOrder) : "") + "]"}</span>
+                    </div>
                     <div className="state-grid-scroll">
-                        <div style={{ position: "relative", width: CELL_W, height: totalRows * CELL_H, flex: "0 0 auto", marginRight: 5 }}>
-                            <div
+                        <div style={{ position: "relative", }}>
+
+                            {
+                                gridRows.map((row, index) => (
+
+                                    <div key={"row_bundle_label_" + String(index)} style={{}}>
+                                        <Icon iconName={row[0].label} key={row[0].label + " left label"} display_text="" size={28}></Icon>
+                                    </div>))
+                            }
+
+                            {/* <div
                                 className="checkbox-grid-item"
                                 style={{
                                     width: CELL_W,
@@ -228,7 +243,7 @@ const RowBundle = ({
                                         <span>✓</span>
                                     </div>
                                 )}
-                            </div>
+                            </div> */}
                         </div>
                         <div style={{ display: "grid", gridTemplateColumns: `repeat(${cols}, ${CELL_W}px)`, gap: 0, marginBottom: "15px" }}>
                             {gridRows.flatMap((row, rIndex) =>
@@ -258,19 +273,19 @@ const RowBundle = ({
                                                     cIndex >= pity_len - 1
                                                         ? "transparent"
                                                         : cell.type === "progress" || !cell.active
-                                                          ? "inherit"
-                                                          : curIsBest
-                                                            ? "var(--btn-toggle-optimize-selected)"
-                                                            : "var(--sub-optimal)",
+                                                            ? "inherit"
+                                                            : curIsBest
+                                                                ? "var(--btn-toggle-optimize-selected)"
+                                                                : "var(--sub-optimal)",
 
                                                 cursor:
                                                     ((!allowUserChangeState || cIndex < progress || cIndex >= pity_len - 1) && cell.type !== "progress") ||
-                                                    cIndex >= pity_len
+                                                        cIndex >= pity_len
                                                         ? "not-allowed"
                                                         : "pointer",
                                                 opacity:
                                                     ((!allowUserChangeState || cIndex < progress || cIndex >= pity_len - 1) && cell.type !== "progress") ||
-                                                    cIndex >= pity_len
+                                                        cIndex >= pity_len
                                                         ? 0.3
                                                         : 1,
                                             }}
@@ -341,7 +356,7 @@ const RowBundle = ({
                     </div>
                     {succeed && <div className="state-grid-overlay" />}
                 </div>
-                <button
+                {/* <button
                     style={{
                         ...styles.demoButton,
                         background: succeed ? "var(--btn-toggle-deselected)" : "var(--btn-success)",
@@ -356,7 +371,7 @@ const RowBundle = ({
                     onClick={handleSucceedClick}
                 >
                     {succeed ? "Undo" : "Succeed"}
-                </button>
+                </button> */}
             </div>
         </div>
     )
@@ -455,7 +470,7 @@ export default function StateGridsManager({
                 boxSizing: "border-box",
             }}
         >
-            {invalid_tail.concat(truncated_special_state).map((u_index, _) => (
+            {invalid_tail.concat(truncated_special_state).map((u_index, index) => (
                 <RowBundle
                     key={u_index}
                     curIsBest={curIsBest}
@@ -471,6 +486,8 @@ export default function StateGridsManager({
                     onUpdateStatePairs={(pairs) => handleUpdateStateBundle(u_index, pairs)}
                     upgrade={upgradeArr[u_index]}
                     uniqueBookNumbers={juiceInfo.ids[upgradeArr[u_index].upgrade_index].slice(1)}
+                    freeTap={index >= invalid_tail.length}
+                    freeTapOrder={index - invalid_tail.length + 1}
                 />
             ))}
         </div>

@@ -68,18 +68,18 @@ export default function ControlPanel({
                     <button style={styles.demoButton} onClick={fillDemo}>
                         Fill Demo
                     </button>
-                    <button style={styles.demoButton} onClick={fillDemoIncome}>
+                    {/* <button style={styles.demoButton} onClick={fillDemoIncome}>
                         Fill Demo Income
-                    </button>
+                    </button> */}
                     <button style={styles.demoButton} onClick={clearAll}>
                         Reset All
                     </button>
                     <button style={styles.demoButton} onClick={resetOptimizerState}>
                         Reset Optimizer State
                     </button>
-                    <button style={styles.demoButton} onClick={onCopyPayload}>
+                    {/* <button style={styles.demoButton} onClick={onCopyPayload}>
                         Copy Current Payload
-                    </button>
+                    </button> */}
 
                     <div style={{ display: "flex", alignItems: "center", gap: "8px", marginTop: "8px" }}>
                         <LabeledCheckbox label="Express event" checked={express_event} setChecked={set_express_event} />
@@ -89,7 +89,7 @@ export default function ControlPanel({
                         <LabeledCheckbox label="Cumulative Graph" checked={cumulativeGraph} setChecked={setCumulativeGraph} />
                     </div>
 
-                    <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                    {/* <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                         <label
                             htmlFor="data_size"
                             style={{ color: "var(--text-primary)", fontSize: "var(--font-size-sm)", cursor: "pointer", textWrap: "nowrap" }}
@@ -120,8 +120,8 @@ export default function ControlPanel({
                             }}
                             placeholder="100000"
                         />
-                    </div>
-                    <label style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                    </div> */}
+                    {/* <label style={{ display: "flex", alignItems: "center", gap: 6 }}>
                         <span style={{ fontSize: 14, color: "var(--text-muted)" }}>Min Resolution</span>
                         <input
                             type="text"
@@ -142,8 +142,8 @@ export default function ControlPanel({
                         // placeholder="10"
 
                         />
-                    </label>
-                    <button
+                    </label> */}
+                    {/* <button
                         style={{
                             ...styles.demoButton,
                             background: lockXAxis ? "var(--btn-toggle-lock-selected)" : "var(--btn-demo)",
@@ -154,7 +154,7 @@ export default function ControlPanel({
                         title="Lock the x-axis to compare the costs of 2 selections"
                     >
                         {lockXAxis ? "x-axis Locked" : "Lock x-axis"}
-                    </button>
+                    </button> */}
                 </div>
             </div>
         </div>

@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::f64::NAN;
 
 use super::constants::*;
@@ -11,8 +12,12 @@ use hf_core::send_progress::send_progress;
 use hf_core::state_bundle::StateBundle;
 use hf_core::state_bundle::StateEssence;
 
+use hf_core::upgrade::State;
+use hf_core::upgrade::Upgrade;
 use ordered_float::Float;
 use ordered_float::OrderedFloat;
+use rand::random_bool;
+use rand::random_range;
 use rand::seq::IteratorRandom;
 
 use priority_queue::DoublePriorityQueue;
@@ -34,7 +39,6 @@ pub struct SolverStateBundle {
     pub temps_without_improvement: i64,
     pub upgrade_impact: Vec<f64>,
     pub special_affinity: f64,
-
 }
 
 impl SolverStateBundle {
@@ -62,7 +66,6 @@ impl SolverStateBundle {
             count: 0,
             temps_without_improvement: 0,
             upgrade_impact: upgrade_impact.clone(),
-
         }
     }
     pub fn perform_crossover(&mut self) {
@@ -71,6 +74,41 @@ impl SolverStateBundle {
         }
         let best = self.best_n_states.peek_max().unwrap();
         self.state_bundle.clone_from_essence(best.0, best.1);
+        if random_bool(self.progress()) {
+            let u_len = self.state_bundle.upgrade_arr.len();
+            let target_idx = random_range(0..u_len);
+            let target = &self.state_bundle.upgrade_arr[target_idx];
+
+            if !target.is_normal_honing || target.is_weapon {
+                return;
+            }
+
+            let identical: Vec<usize> = self
+                .state_bundle
+                .upgrade_arr
+                .iter()
+                .enumerate()
+                .filter(|(i, upgrade)| {
+                    *i != target_idx
+                        && upgrade.upgrade_index == target.upgrade_index
+                        && upgrade.piece_type != target.piece_type
+                })
+                .map(|(i, _)| i)
+                .collect();
+
+            if identical.len() > 0
+                && let Some(&chosen_idx) = identical.get(random_range(0..identical.len()))
+            {
+                let payload = self.state_bundle.upgrade_arr[chosen_idx]
+                    .state
+                    .payload
+                    .clone();
+
+                self.state_bundle.upgrade_arr[target_idx]
+                    .state
+                    .update_payload(payload);
+            }
+        }
     }
     pub fn current_resolution(&self) -> usize {
         if self.progress() > COOLING_PHASE_START {

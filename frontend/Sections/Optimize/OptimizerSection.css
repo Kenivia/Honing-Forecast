@@ -1,0 +1,42 @@
+.optimizer-section {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    background: transparent;
+}
+
+.optimizer-section-body {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    background: transparent;
+}
+
+.optimizer-section-title {
+    font-size: 24px;
+    font-weight: 400;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    padding-bottom: 4px;
+    border-bottom: 2px dashed var(--text-very-muted);
+
+    .optimizer-section-title-button {
+        background: none;
+        border: none;
+        padding: 0;
+        color: inherit;
+        cursor: pointer;
+        text-align: left;
+    }
+
+    .optimizer-section-title-arrow {
+        display: inline-block;
+        transform: rotate(90deg);
+        transition: transform 0.15s ease-in-out;
+    }
+
+    .optimizer-section-title-arrow.collapsed {
+        transform: rotate(0deg);
+    }

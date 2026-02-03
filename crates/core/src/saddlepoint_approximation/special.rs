@@ -63,7 +63,9 @@ impl StateBundle {
             .count();
         if m == 0 {
             let mut out = vec![0.0; self.special_state.len()];
-            out[0] = 1.0;
+            if out.len() > 0 {
+                out[0] = 1.0;
+            }
             self.special_cache.insert(self.special_state.clone(), out);
             return;
         }
@@ -142,10 +144,14 @@ impl StateBundle {
                     continue;
                 }
 
-                let max_attempts = b / cost;
                 // fail_all = (1-p) ^ max_attempts
                 // We read from our cache instead of calling powi
-                let fail_all = fail_probs[max_attempts];
+                let fail_all = if cost > 0 {
+                    let max_attempts = b / cost;
+                    fail_probs[max_attempts]
+                } else {
+                    0.0
+                };
 
                 // Add the mass that successfully moved to the next stage
                 result[attempt_index + 1] += mass * (1.0 - fail_all);

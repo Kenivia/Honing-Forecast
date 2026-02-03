@@ -11,6 +11,7 @@ import {
     DEFAULT_JUICE_PRICES,
     JUICE_LABELS,
     PIECE_NAMES,
+    RESET_UI_DEFAULTS,
 } from "./Utils/Constants.ts"
 import { readSettings, writeSettings } from "./Utils/Settings.ts"
 import ControlPanel from "./Sections/ControlPanel/ControlPanel.tsx"
@@ -151,9 +152,9 @@ export default function HoningForecastUI() {
 
     const [prev_checked_arr, set_prev_checked_arr] = useState(() => Array.from({ length: TOP_COLS }, () => false)) // the extra rows on top of the grids
     const [prev_checked_arr_bottom, set_prev_checked_arr_bottom] = useState(() => Array.from({ length: BOTTOM_COLS }, () => false))
-    const [cumulativeGraph, setCumulativeGraph] = useState<boolean>(true)
-    const [dataSize, setDataSize] = useState<string>(() => "100000")
-    const [activePage, setActivePage] = useState<"optimize" | "cost-to-chance" | "gamba" | "forecast">("optimize") // "chance-to-cost" |
+    const [cumulativeGraph, setCumulativeGraph] = useState<boolean>(RESET_UI_DEFAULTS["cumulativeGraph"])
+    const [dataSize, setDataSize] = useState<string>(() => RESET_UI_DEFAULTS["dataSize"])
+    const [activePage, setActivePage] = useState<"optimize" | "distribution" | "gamba" | "forecast">("distribution") // "chance-to-cost" |
     const [mainScale, setMainScale] = useState<number>(1)
     const [zoomCompensation, setZoomCompensation] = useState<number>(1)
     const [optimizeButtonPress, setOptimizeButtonPress] = useState<number>(0)
@@ -656,6 +657,11 @@ export default function HoningForecastUI() {
 
     const updateBestSolution = (res: { metric: number; upgrade_arr: { state: StatePair[] }[]; special_state: number[] }) => {
         setBestMetric((prev) => {
+            if (res === null) {
+                setBestFlatStateBundle(null)
+                setBestFlatSpecialState(null)
+                return null
+            }
             const nextMetric = prev === null ? res.metric : Math.max(res.metric, prev)
             if (prev === null || nextMetric !== prev) {
                 setBestFlatStateBundle(cloneFlatStateBundle(res.upgrade_arr.map((upgrade) => upgrade.state)))
@@ -814,19 +820,22 @@ export default function HoningForecastUI() {
     const [histogramResult, setHistogramResult] = useState<any>(null)
     // const [cachedAverageGraphData, setCachedAverageGraphData] = useState<{ hist_counts?: any; hist_mins?: any; hist_maxs?: any } | null>(null)
     useEffect(() => {
-        runner.start({
-            which_one: "Histogram",
-            payloadBuilder,
-            workerRef: histogramWorkerRef,
-            setBusy: setHistogramBusy,
-            setResult: setHistogramResult,
-            // setCachedGraphData: setCachedAverageGraphData,
-            onSuccess: (res) => {
-                console.log(res)
-                setHistogramResult(res)
-            },
-            debounceMs: 10,
-        })
+        if (activePage === "distribution") {
+            runner.start({
+                which_one: "Histogram",
+                payloadBuilder,
+                workerRef: histogramWorkerRef,
+                setBusy: setHistogramBusy,
+                setResult: setHistogramResult,
+                // setCachedGraphData: setCachedAverageGraphData,
+                onSuccess: (res) => {
+                    console.log(res)
+                    setHistogramResult(res)
+                },
+                debounceMs: 100,
+            })
+        }
+
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [
         advStrategyKey,
@@ -843,6 +852,7 @@ export default function HoningForecastUI() {
         specialStateKey,
         minResolutionKey,
         metricType,
+        activePage
     ])
 
     const optimizeAvgWorkerRef = useRef<Worker | null>(null)
@@ -869,14 +879,28 @@ export default function HoningForecastUI() {
             onIntermediateMessage: (res_bundle) => {
                 setOptimizerProgress(res_bundle.est_progress_percentage)
                 let res = res_bundle.state_bundle
-                setFlatStateBundle(res.upgrade_arr.map((upgrade) => upgrade.state))
-                setFlatProgressArr(res.upgrade_arr.map((_, index) => progressGrid[res.upgrade_arr[index].piece_type][res.upgrade_arr[index].upgrade_index]))
-                setFlatUnlockArr(res.upgrade_arr.map((_, index) => unlockGrid[res.upgrade_arr[index].piece_type][res.upgrade_arr[index].upgrade_index]))
-                setFlatSucceedArr(res.upgrade_arr.map((_, index) => succeededGrid[res.upgrade_arr[index].piece_type][res.upgrade_arr[index].upgrade_index]))
-                setSpecialState(res.special_state)
                 updateBestSolution(res)
+                setFlatStateBundle(res.upgrade_arr.map((upgrade) => upgrade.state))
+                // setFlatProgressArr(res.upgrade_arr.map((_, index) => progressGrid[res.upgrade_arr[index].piece_type][res.upgrade_arr[index].upgrade_index]))
+                // setFlatUnlockArr(res.upgrade_arr.map((_, index) => unlockGrid[res.upgrade_arr[index].piece_type][res.upgrade_arr[index].upgrade_index]))
+                // setFlatSucceedArr(res.upgrade_arr.map((_, index) => succeededGrid[res.upgrade_arr[index].piece_type][res.upgrade_arr[index].upgrade_index]))
+                setSpecialState(res.special_state)
                 setEvaluateAverageResult(res)
-
+                applyFlatToGrid(
+                    evaluateAverageResult,
+                    flatProgressArr,
+                    progressGrid,
+                    setProgressGrid,
+                    flatUnlockArr,
+                    unlockGrid,
+                    setUnlockGrid,
+                    flatSucceedArr,
+                    succeededGrid,
+                    setSucceededGrid,
+                    flatStateBundle,
+                    stateBundleGrid,
+                    setStateBundleGrid,
+                )
                 setOptimizeAvgError(null)
             },
             onError: (err) => {
@@ -1111,7 +1135,7 @@ export default function HoningForecastUI() {
                 <div>
                     <InputsSection inputsBundle={inputsBundle} />
                 </div>
-                <Separator activePage={activePage} onPageChange={setActivePage} />
+                <Separator activePage={activePage} onPageChange={setActivePage} setAutoRunOptimizer={setAutoRunOptimizer} />
 
                 {activePage === "optimize" && (
                     <div className={activePage === "optimize" ? "page" : "page page--hidden"}>
@@ -1149,8 +1173,8 @@ export default function HoningForecastUI() {
                         />
                     </div>
                 )}
-                {activePage === "cost-to-chance" && (
-                    <div className={activePage === "cost-to-chance" ? "page" : "page page--hidden"}>
+                {activePage === "distribution" && (
+                    <div className={activePage === "distribution" ? "page" : "page page--hidden"}>
                         <DistributionSection cumulativeGraph={cumulativeGraph} histogramResult={histogramResult} />
                     </div>
                 )}
