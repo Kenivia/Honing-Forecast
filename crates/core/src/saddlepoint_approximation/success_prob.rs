@@ -150,6 +150,7 @@ impl StateBundle {
                 .prep_output
                 .budgets
                 .iter()
+                .take(7)
                 .map(|x| *x as f64)
                 .chain(
                     self.prep_output

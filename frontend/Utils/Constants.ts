@@ -35,10 +35,10 @@ export const BOTTOM_COLS = 4
 export const CELL_W = 28
 export const CELL_H = 28
 export const DEFAULT_JUICE_PRICES = [
-    [400, 300],
-    [20, 10],
+    [400, 250],
     [200, 100],
-    [4000, 2000],
+    [1200, 600],
+    [7000, 4000],
 ]
 
 export const DEFAULT_JUICE_LEFTOVER = [
@@ -78,7 +78,7 @@ export const IconMap: Record<string, string> = {
     "Forecast Icon": "/Icons/Forecast Icon.webp",
 }
 
-export const DEFAULT_MATS_PRICES = ["1.67", "0.04", "15.0", "0.5", "100", "1.0", "0.0"]
+export const DEFAULT_MATS_PRICES = ["1.84", "0.04", "20.0", "0.6", "128", "1.0", "0.0"]
 
 export const DEFAULT_MATS_LEFTOVER = ["0", "0", "0", "0", "0", "0", "0"]
 

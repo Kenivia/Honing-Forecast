@@ -25,9 +25,17 @@ export default function InputsSection({ inputsBundle: inputs }: InputsSectionPro
     matsLeftoverDef.headerName = advancedMode ? "Value of leftovers" : "Mat type*"
     juiceLeftoverDef.headerName = advancedMode ? "Value of leftovers" : "Mat type*"
 
-    matsColumnDef[0].headerName = advancedMode ? "Owned mats" : "BOUND owned"
-    juiceColumnDef[0].headerName = advancedMode ? "Owned mats" : "BOUND owned"
+    matsColumnDef[0].headerName = advancedMode ? "Owned mats" : "BOUND mats"
+    juiceColumnDef[0].headerName = advancedMode ? "Owned mats" : "BOUND mats"
+    const toggleAdvMode = (new_mode) => {
+        setAdvancedMode(new_mode)
 
+        if (!new_mode) {
+            matsSetters.setLeftover(Array(mats.leftover.length).fill(0)) // its supposed to be an object here but cbb
+            juiceSetters.weapon.setLeftover(Array(juice.weapon.leftover.length).fill(0))
+            juiceSetters.armor.setLeftover(Array(juice.armor.leftover.length).fill(0))
+        }
+    }
     return (
         <div style={{ ...styles.inputSection, flexDirection: "row", maxWidth: "1200px" }}>
             <div
@@ -151,24 +159,18 @@ export default function InputsSection({ inputsBundle: inputs }: InputsSectionPro
                 </div>
             </div>
             <div style={{ position: "relative", marginLeft: 450, top: -130, display: "flex", alignItems: "flex-start", gap: 16, flexDirection: "column" }}>
-                {!advancedMode && (
+                {
                     <span>
-                        The optimizer considers all possible outcomes. In some scenarios, you succeed everything without using up your bound mats. In
-                        non-advanced mode, we consider these leftover mats as worthless (0 gold).
+                        The optimizer tries to minimize the average gold spent. In some scenarios, you succeed everything with some bound mats to spare. By
+                        default, we consider leftover mats as worthless (0 gold).
                     </span>
-                )}{" "}
-                <LabeledCheckbox label="Advanced Mode" checked={advancedMode} setChecked={setAdvancedMode} />
+                }{" "}
+                <LabeledCheckbox label="Custom leftover values" checked={advancedMode} setChecked={toggleAdvMode} />
                 {advancedMode && (
                     <span>
-                        Here, you can specify how the leftover mats should be valued. If you think you will use your leftover bound mats later to save you gold,
-                        then you can put them at a higher value.
-                        <br></br> <br></br>
-                        Furthermore, if one of your mat type is almost all tradable and you want to consider the leftover as slightly less than market price(due
-                        to 5% tax), you can do so by changing the leftover values. Unfortunately we are unable to consider more than 1 price threshold, so if
-                        you have a mix of tradable and bound mats, you should just put your bound mats.
-                        <br></br> <br></br>
-                        These values influence how the optimizer behaves, most notably your juice & books. If you have bound juice (so holding onto leftover is
-                        worthless), the optimizer will try and use them up.
+                        Specify how much you think your leftover mats are worth.
+                        <br></br> <br></br> For example, if you say leftover abidos are worth 100g each, then having 200 abidos leftover is considered the same
+                        as having 20000 gold. This influences how the optimizer might try to save abidos, potentially by buying more juice. <br></br> <br></br>
                     </span>
                 )}
             </div>

@@ -90,7 +90,6 @@ export default function ControlPanel({
                     <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                         <LabeledCheckbox label="Allow changing progress" checked={allowUserChangeState} setChecked={setAllowUserChangeState} />
                     </div>
-                    <span>Note that </span>
 
                     {/* <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                         <label

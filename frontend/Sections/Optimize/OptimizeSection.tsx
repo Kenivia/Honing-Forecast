@@ -219,7 +219,7 @@ export default function OptimizeSection({
                                 }}
                             >
                                 <div className={`result-value ${curIsBest ? "best" : "not-best"}`}>
-                                    Score: {add_comma(-evaluateAverageResult?.metric) ?? "N/A"}{" "}
+                                    Avg gold used: {add_comma(-evaluateAverageResult?.metric) ?? "N/A"}{" "}
                                 </div>
                                 <span
                                     style={{
@@ -268,7 +268,7 @@ export default function OptimizeSection({
                     {/* Progress */}
                     {optimizeAvgBusy && (
                         <div className="optimizer-progress">
-                            <span>Optimizer progress: {optimizerProgress.toFixed(2)}%</span>
+                            <span>Optimizer progress: {optimizerProgress.toFixed(2)}</span>
 
                             <div className="progress-bar">
                                 <div className="progress-fill" style={{ width: `${optimizerProgress}%` }} />
@@ -344,7 +344,7 @@ export default function OptimizeSection({
             <section className="optimizer-section">
                 <div className="optimizer-section-title">Optimizer score breakdown</div>
                 <div className="optimizer-section-body">
-                    <span>The "Score" is the sum of the "Average eqv gold spent" for each mat. Without advanced mode, this is calculated as:</span>
+                    {/* <span>The Score is the sum of the "Average equivalent gold spent" for each mat. Without advanced mode, this is calculated as:</span>
                     <span style={{ marginLeft: 50, fontSize: 24, fontFamily: "Times new roman" }}>
                         Average of [(Non-bound mat consumed, if any, otherwise 0) * market price] = Average eqv gold spent.
                     </span>
@@ -358,7 +358,7 @@ export default function OptimizeSection({
                     <span>
                         because the cases where we use less than BOUND OWNED drags down the Average of (Mat consumed), but we don't actually gain any gold from
                         having leftover bound mats. More formally this is because Expecation is not commutative with non-linear functions.
-                    </span>
+                    </span> */}
                     <div
                         style={{
                             display: "flex",
