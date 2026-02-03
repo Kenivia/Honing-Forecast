@@ -1,5 +1,7 @@
 import React, { useEffect, useMemo } from "react"
 import { StyledSlider } from "@/Utils/Styles.ts"
+import { taxRound } from "@/Utils/Helpers.ts"
+import SpreadsheetGrid from "./SpreadsheetGrid.tsx"
 
 type LeftoverSliderProps = {
     value: string
@@ -29,7 +31,6 @@ export default function LeftoverSlider({ value, maxValue, label, onChange }: Lef
         }
     }, [numericValue, numericMax, clampedValue, onChange])
 
-    const factor = label == "Silver" ? 0.0001 : label == "Shards" ? 0.001 : label == "Red" || label == "Blue" ? 0.01 : 1
     return (
         <div style={{ width: "100%", padding: "0 6px", boxSizing: "border-box", marginTop: "4px" }}>
             <StyledSlider
@@ -42,7 +43,7 @@ export default function LeftoverSlider({ value, maxValue, label, onChange }: Lef
                 }}
                 min={0}
                 max={numericMax}
-                step={Math.max(Math.floor((numericMax * 0.05) / factor) * factor, factor)}
+                step={taxRound(label, numericMax)}
                 valueLabelDisplay="auto"
                 valueLabelFormat={() => `Every leftover ${label} is considered ${clampedValue} gold`}
             />

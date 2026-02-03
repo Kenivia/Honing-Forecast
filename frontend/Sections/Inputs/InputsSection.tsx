@@ -21,9 +21,15 @@ export default function InputsSection({ inputsBundle: inputs }: InputsSectionPro
     const matsLeftoverDef = matsColumnDef[2]
     const juiceBaseColumnDefs = juiceColumnDef.slice(0, 2)
     const juiceLeftoverDef = juiceColumnDef[2]
-    console.log(mats, juice)
+    // console.log(mats, juice)
+    matsLeftoverDef.headerName = advancedMode ? "Value of leftovers" : "Mat type*"
+    juiceLeftoverDef.headerName = advancedMode ? "Value of leftovers" : "Mat type*"
+
+    matsColumnDef[0].headerName = advancedMode ? "Owned mats" : "CHAR-BOUND owned"
+    juiceColumnDef[0].headerName = advancedMode ? "Owned mats" : "CHAR-BOUND owned"
+
     return (
-        <div style={{ ...styles.inputSection, flexDirection: "row", maxWidth: "1200px" }}>
+        <div style={{ ...styles.inputSection, flexDirection: "row", maxWidth: "1200px", marginBottom: -100 }}>
             <div
                 style={{
                     display: "flex",
@@ -45,23 +51,32 @@ export default function InputsSection({ inputsBundle: inputs }: InputsSectionPro
                         setSheetValuesArr={[matsSetters.setOwned, matsSetters.setPrices]}
                     />
                     {advancedMode ? (
-                        <SliderColumn
-                            headerName={matsLeftoverDef.headerName}
-                            labels={MATS_LABELS}
-                            values={mats.leftover}
-                            prices={mats.prices}
-                            onValuesChange={matsSetters.setLeftover}
-                            hideRowsFrom={7}
-                        />
+                        // <SliderColumn
+                        //     headerName={matsLeftoverDef.headerName}
+                        //     labels={MATS_LABELS}
+                        //     values={mats.leftover}
+                        //     prices={mats.prices}
+                        //     onValuesChange={matsSetters.setLeftover}
+                        //     hideRowsFrom={7}
+                        // />
+                        <SpreadsheetGrid
+                            columnDefs={[matsLeftoverDef]}
+                            labels={MATS_LABELS.slice(0, 7)}
+                            sheetValuesArr={[mats.leftover]}
+                            setSheetValuesArr={[matsSetters.setLeftover]}
+                            hideIcons={true}
+                            fontSizeOverride={"var(--font-size-xs)"}
+                        ></SpreadsheetGrid>
                     ) : (
-                        <ButtonColumn
-                            headerName={matsLeftoverDef.headerName}
-                            labels={MATS_LABELS}
-                            prices={mats.prices}
-                            onValuesChange={matsSetters.setLeftover}
-                            hideRowsFrom={7}
-                            leftover={mats.leftover}
-                        />
+                        // <ButtonColumn
+                        //     headerName={matsLeftoverDef.headerName}
+                        //     labels={MATS_LABELS}
+                        //     prices={mats.prices}
+                        //     onValuesChange={matsSetters.setLeftover}
+                        //     hideRowsFrom={7}
+                        //     leftover={mats.leftover}
+                        // />
+                        <div style={{ width: 112 }}></div>
                     )}
                 </div>
 
@@ -73,21 +88,30 @@ export default function InputsSection({ inputsBundle: inputs }: InputsSectionPro
                         setSheetValuesArr={[juiceSetters.weapon.setOwned, juiceSetters.weapon.setPrices]}
                     />
                     {advancedMode ? (
-                        <SliderColumn
-                            headerName={juiceLeftoverDef.headerName}
+                        <SpreadsheetGrid
+                            columnDefs={[juiceLeftoverDef]}
                             labels={JUICE_LABELS.map((label_row) => label_row[0])}
-                            values={juice.weapon.leftover}
-                            prices={juice.weapon.prices}
-                            onValuesChange={juiceSetters.weapon.setLeftover}
-                        />
+                            sheetValuesArr={[juice.weapon.leftover]}
+                            setSheetValuesArr={[juiceSetters.weapon.setLeftover]}
+                            hideIcons={true}
+                            fontSizeOverride={"var(--font-size-xs)"}
+                        ></SpreadsheetGrid>
                     ) : (
-                        <ButtonColumn
-                            headerName={juiceLeftoverDef.headerName}
-                            labels={JUICE_LABELS.map((label_row) => label_row[0])}
-                            prices={juice.weapon.prices}
-                            onValuesChange={juiceSetters.weapon.setLeftover}
-                            leftover={juice.weapon.leftover}
-                        />
+                        // <SliderColumn
+                        //     headerName={juiceLeftoverDef.headerName}
+                        //     labels={JUICE_LABELS.map((label_row) => label_row[0])}
+                        //     values={juice.weapon.leftover}
+                        //     prices={juice.weapon.prices}
+                        //     onValuesChange={juiceSetters.weapon.setLeftover}
+                        // />
+                        // <ButtonColumn
+                        //     headerName={juiceLeftoverDef.headerName}
+                        //     labels={JUICE_LABELS.map((label_row) => label_row[0])}
+                        //     prices={juice.weapon.prices}
+                        //     onValuesChange={juiceSetters.weapon.setLeftover}
+                        //     leftover={juice.weapon.leftover}
+                        // />
+                        <div style={{ width: 112 }}></div>
                     )}
                 </div>
 
@@ -99,27 +123,54 @@ export default function InputsSection({ inputsBundle: inputs }: InputsSectionPro
                         setSheetValuesArr={[juiceSetters.armor.setOwned, juiceSetters.armor.setPrices]}
                     />
                     {advancedMode ? (
-                        <SliderColumn
-                            headerName={juiceLeftoverDef.headerName}
-                            labels={JUICE_LABELS.map((label_row) => label_row[1])}
-                            values={juice.armor.leftover}
-                            prices={juice.armor.prices}
-                            onValuesChange={juiceSetters.armor.setLeftover}
-                        />
+                        // <SliderColumn
+                        //     headerName={juiceLeftoverDef.headerName}
+                        //     labels={JUICE_LABELS.map((label_row) => label_row[1])}
+                        //     values={juice.armor.leftover}
+                        //     prices={juice.armor.prices}
+                        //     onValuesChange={juiceSetters.armor.setLeftover}
+                        // />
+                        <SpreadsheetGrid
+                            columnDefs={[juiceLeftoverDef]}
+                            labels={JUICE_LABELS.map((label_row) => label_row[0])}
+                            sheetValuesArr={[juice.armor.leftover]}
+                            setSheetValuesArr={[juiceSetters.armor.setLeftover]}
+                            hideIcons={true}
+                            fontSizeOverride={"var(--font-size-xs)"}
+                        ></SpreadsheetGrid>
                     ) : (
-                        <ButtonColumn
-                            headerName={juiceLeftoverDef.headerName}
-                            labels={JUICE_LABELS.map((label_row) => label_row[1])}
-                            prices={juice.armor.prices}
-                            onValuesChange={juiceSetters.armor.setLeftover}
-                            leftover={juice.armor.leftover}
-                        />
+                        // <ButtonColumn
+                        //     headerName={juiceLeftoverDef.headerName}
+                        //     labels={JUICE_LABELS.map((label_row) => label_row[1])}
+                        //     prices={juice.armor.prices}
+                        //     onValuesChange={juiceSetters.armor.setLeftover}
+                        //     leftover={juice.armor.leftover}
+                        // />
+                        <div style={{ width: 112 }}></div>
                     )}
                 </div>
             </div>
-            <div style={{ position: "relative", marginLeft: 500, top: -100, display: "flex", alignItems: "center", gap: 16 }}>
-                <span>*dummy help text</span>
+            <div style={{ position: "relative", marginLeft: 450, top: -130, display: "flex", alignItems: "flex-start", gap: 16, flexDirection: "column" }}>
+                {!advancedMode && (
+                    <span>
+                        The optimizer considers all possible outcomes. In some scenarios, you succeed everything without using up your bound mats. In
+                        non-advanced mode, we consider these leftover mats as worthless (0 gold).
+                    </span>
+                )}{" "}
                 <LabeledCheckbox label="Advanced Mode" checked={advancedMode} setChecked={setAdvancedMode} />
+                {advancedMode && (
+                    <span>
+                        Here, you can specify how the leftover mats should be valued. If you think you will use your leftover bound mats later to save you gold,
+                        then you can put them at a higher value.
+                        <br></br> <br></br>
+                        Furthermore, if one of your mat type is all tradable and you want to consider the leftover as slightly less than market price(due to 5%
+                        tax), you can do so by changing the leftover values. Unfortunately we are unable to consider more than 1 price threshold, so if you have
+                        a mix of tradable and bound mats you should put your bound mats.
+                        <br></br> <br></br>
+                        These values influence how the optimizer behaves, most notably your juice & books. If you have bound juice (so holding onto leftover is
+                        worthless), the optimizer will try and use them up.
+                    </span>
+                )}
             </div>
         </div>
     )

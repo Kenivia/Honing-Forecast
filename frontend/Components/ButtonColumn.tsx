@@ -1,3 +1,4 @@
+import { taxRound } from "@/Utils/Helpers.ts"
 import React, { useCallback } from "react"
 
 type ButtonColumnProps = {
@@ -22,7 +23,8 @@ export default function ButtonColumn({ headerName, labels, prices, onValuesChang
     const handleTradable = useCallback(
         (label: string) => {
             const next = { ...leftover }
-            next[label] = prices[label]
+            let this_price = parseFloat(prices[label])
+            next[label] = String(this_price - taxRound(label, this_price))
             onValuesChange(next)
         },
         [onValuesChange, prices, leftover],
@@ -62,7 +64,7 @@ export default function ButtonColumn({ headerName, labels, prices, onValuesChang
             <div style={{ display: "grid", gridTemplateColumns: 100, gap: 0 }}>
                 {labels.map((label, rowIndex) => {
                     const shouldHide = typeof hideRowsFrom === "number" && rowIndex >= hideRowsFrom
-                    console.log(leftover)
+                    // console.log(leftover)
                     const isBound = leftover[label] === "0"
 
                     return (

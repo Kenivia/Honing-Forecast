@@ -80,7 +80,7 @@ export const IconMap: Record<string, string> = {
 
 export const DEFAULT_MATS_PRICES = ["1.67", "0.04", "15.0", "0.5", "100", "1.0", "0.0"]
 
-export const DEFAULT_MATS_LEFTOVER = ["1.23", "0.03", "13.0", "0", "95", "1.0", "0.0"]
+export const DEFAULT_MATS_LEFTOVER = ["0", "0", "0", "0", "0", "0", "0"]
 
 export const PIECE_NAMES = ["Helmet", "Shoulder", "Chest", "Pants", "Glove", "Weapon"]
 
@@ -121,7 +121,7 @@ export const RESET_UI_DEFAULTS = {
 
 export const DEMO_UI_VALUES = {
     topGrid: Array.from({ length: TOP_ROWS }, (_, rowIndex) =>
-        Array.from({ length: TOP_COLS }, (_, colIndex) => colIndex === 19 || colIndex === 20 || colIndex === 21 || (colIndex > 21 && rowIndex === 5))
+        Array.from({ length: TOP_COLS }, (_, colIndex) => colIndex === 19 || colIndex === 20 || colIndex === 21 || (colIndex > 21 && rowIndex === 5)),
     ),
     bottomGrid: Array.from({ length: BOTTOM_ROWS }, (_, piece) => Array.from({ length: BOTTOM_COLS }, (_, colIndex) => colIndex === 3 && piece < 3)),
     prev_checked_arr: Array.from({ length: TOP_COLS }, (_, colIndex) => colIndex === 19 || colIndex === 20 || colIndex === 21),

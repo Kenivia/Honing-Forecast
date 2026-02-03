@@ -187,15 +187,15 @@ impl StateBundle {
                 self.simple_avg(support_index, skip_count),
             );
         } else {
-            web_sys::console::log_1(
-                &format!(
-                    " brute no bias {:?} {:?} {:?}",
-                    inp_budget, min_value, max_value,
-                )
-                .into(),
-            );
+            // web_sys::console::log_1(
+            //     &format!(
+            //         " brute no bias {:?} {:?} {:?}",
+            //         inp_budget, min_value, max_value,
+            //     )
+            //     .into(),
+            // );
             let out: f64 = self.brute_success_prob(support_index, skip_count, inp_budget);
-            web_sys::console::log_1(&format!(" brute no bias done {:?} ", out).into());
+            // web_sys::console::log_1(&format!(" brute no bias done {:?} ", out).into());
             return out;
         }
     }

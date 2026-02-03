@@ -12,6 +12,7 @@ interface SpreadsheetGridProps {
     // setters per-column. Optional for read-only columns; index matches columnDefs
     setSheetValuesArr: Array<((_next: Record<string, string>) => void) | undefined>
     hideIcons?: boolean
+    fontSizeOverride?: string | null
 }
 
 interface Selection {
@@ -21,7 +22,15 @@ interface Selection {
     endCol: number
 }
 
-export default function SpreadsheetGrid({ columnDefs, labels, sheetValuesArr, colorsArr, setSheetValuesArr, hideIcons = false }: SpreadsheetGridProps) {
+export default function SpreadsheetGrid({
+    columnDefs,
+    labels,
+    sheetValuesArr,
+    colorsArr,
+    setSheetValuesArr,
+    hideIcons = false,
+    fontSizeOverride = null,
+}: SpreadsheetGridProps) {
     const [selection, setSelection] = useState<Selection | null>(null)
     const [isSelecting, setIsSelecting] = useState(false)
     const [_copiedData, setCopiedData] = useState<string[][] | null>(null)
@@ -409,7 +418,7 @@ export default function SpreadsheetGrid({ columnDefs, labels, sheetValuesArr, co
                                 height: 15,
                                 textAlign: "center",
                                 fontWeight: 500,
-                                fontSize: colIndex == 0 ? "var(--font-size-md)" : "var(--font-size-xs)",
+                                fontSize: fontSizeOverride ?? (colIndex == 0 ? "var(--font-size-md)" : "var(--font-size-xs)"),
                                 lineHeight: 0.8,
                                 marginTop: 18,
                                 width: colDef.width,

@@ -86,7 +86,7 @@ impl StateBundle {
                 u_index -= 1;
             }
         }
-        web_sys::console::log_1(&format!(" min {:?} max {:?} ", min_suffix, max_suffix).into());
+        // web_sys::console::log_1(&format!(" min {:?} max {:?} ", min_suffix, max_suffix).into());
         // --- STEP 2: Iterative DP with Pruning ---
 
         // Stores currently active uncertain states

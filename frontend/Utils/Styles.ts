@@ -172,10 +172,10 @@ export const createColumnDefs = () => {
 
     const matsColumnDef: ColumnDef[] = [
         {
-            headerName: "Owned",
+            headerName: "",
             editable: true,
             flex: 1,
-            width: "80px",
+            width: "120px",
             background: "var(--grid-cell-bg)",
             backgroundSelected: "var(--grid-cell-selected)",
             color: "var(--grid-cell-text)",
@@ -190,7 +190,7 @@ export const createColumnDefs = () => {
             color: "var(--grid-cell-text)",
         },
         {
-            headerName: "How much can you sell this for?*",
+            headerName: "Sell price",
             editable: true,
             flex: 1,
             width: "100px",
@@ -202,10 +202,10 @@ export const createColumnDefs = () => {
 
     const juiceColumnDef: ColumnDef[] = [
         {
-            headerName: "Owned",
+            headerName: "",
             editable: true,
             flex: 1,
-            width: "80px",
+            width: "120px",
             background: "var(--grid-cell-bg)",
             backgroundSelected: "var(--grid-cell-selected)",
             color: "var(--grid-cell-text)",
@@ -220,10 +220,10 @@ export const createColumnDefs = () => {
             color: "var(--grid-cell-text)",
         },
         {
-            headerName: "How much can you sell this for?*",
+            headerName: "",
             editable: true,
             flex: 1,
-            width: "170px",
+            width: "100px",
             background: "var(--grid-cell-bg)",
             backgroundSelected: "var(--grid-cell-selected)",
             color: "var(--grid-cell-text)",

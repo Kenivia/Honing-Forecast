@@ -1,6 +1,11 @@
 import { PIECE_NAMES } from "./Constants.ts"
 const ordinalRules = new Intl.PluralRules("en", { type: "ordinal" })
 
+export function taxRound(label: string, numericMax: number) {
+    const factor = label == "Silver" ? 0.0001 : label == "Shards" ? 0.001 : label == "Red" || label == "Blue" ? 0.01 : 1
+
+    return Math.max(Math.floor((numericMax * 0.05) / factor) * factor, factor)
+}
 export function toOrdinal(n: number): string {
     const suffixes: Record<Intl.LDMLPluralRule, string> = {
         zero: "th",
