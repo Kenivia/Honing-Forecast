@@ -286,7 +286,7 @@ use std::path::Path;
 //                 &naive_count_to_ticks(&adv_counts),
 //                 row.express,
 //                 &prices,
-//                 "x2 balls",
+//                 "x2 grace",
 //                 &juice_books_owned,
 //                 &juice_prices,
 //                 &leftover_values,

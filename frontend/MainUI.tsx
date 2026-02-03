@@ -146,7 +146,7 @@ export default function HoningForecastUI() {
 
     const [desired_chance, set_desired_chance] = useState(() => "50")
     const [uncleaned_desired_chance, set_uncleaned_desired_chance] = useState(() => "50")
-    const [adv_hone_strategy, set_adv_hone_strategy_change] = useState(() => "x2 balls")
+    const [adv_hone_strategy, set_adv_hone_strategy_change] = useState(() => "x2 grace")
     const [express_event, set_express_event] = useState(() => true)
     const [bucketCount, _setBucketCount] = useState(() => "100") // leaving the door open for changing bucket count later
 
@@ -161,6 +161,9 @@ export default function HoningForecastUI() {
     const [autoRunOptimizer, setAutoRunOptimizer] = useState<boolean>(false)
     const [optimizeAvgError, setOptimizeAvgError] = useState<string | null>(null)
     const [bestMetric, setBestMetric] = useState<number | null>(null)
+    const [beforeMetric, setBeforeMetric] = React.useState<number | null>(null)
+
+
     const [bestFlatStateBundle, setBestFlatStateBundle] = useState<StatePair[][] | null>(null)
     const [bestFlatSpecialState, setBestFlatSpecialState] = useState<number[] | null>(null)
     const [ranOutFreeTaps, setRanOutFreeTaps] = useState<boolean>(false)
@@ -524,7 +527,7 @@ export default function HoningForecastUI() {
 
     // Sync express_event toggle with adv_hone_strategy selector
     useEffect(() => {
-        set_adv_hone_strategy_change(express_event ? "x2 balls" : "No x2 balls")
+        set_adv_hone_strategy_change(express_event ? "x2 grace" : "No x2 grace")
     }, [express_event])
 
     // Lock x-axis handler
@@ -657,11 +660,11 @@ export default function HoningForecastUI() {
 
     const updateBestSolution = (res: { metric: number; upgrade_arr: { state: StatePair[] }[]; special_state: number[] }) => {
         setBestMetric((prev) => {
-            if (res === null) {
-                setBestFlatStateBundle(null)
-                setBestFlatSpecialState(null)
-                return null
-            }
+            // if (res === null) {
+            //     setBestFlatStateBundle(null)
+            //     setBestFlatSpecialState(null)
+            //     return null
+            // }
             const nextMetric = prev === null ? res.metric : Math.max(res.metric, prev)
             if (prev === null || nextMetric !== prev) {
                 setBestFlatStateBundle(cloneFlatStateBundle(res.upgrade_arr.map((upgrade) => upgrade.state)))
@@ -675,6 +678,7 @@ export default function HoningForecastUI() {
         const skipRanOutReset = ranOutSkipResetRef.current
         ranOutSkipResetRef.current = false
         setBestMetric(null)
+        setBeforeMetric(null)
         setBestFlatStateBundle(null)
         setBestFlatSpecialState(null)
         if (!skipRanOutReset) {
@@ -859,6 +863,7 @@ export default function HoningForecastUI() {
     const [optimizeAvgBusy, setOptimizeAvgBusy] = useState(false)
     // const [optimizeAvgResult, setOptimizeAvgResult] = useState<{ average_costs?: any } | null>(null)
     const startOptimizeAverage = useCallback(() => {
+
         runner.start({
             which_one: "OptimizeAverage",
             payloadBuilder,
@@ -915,6 +920,7 @@ export default function HoningForecastUI() {
         }
         setOptimizeAvgError(null)
         setRanOutFreeTaps(false)
+        setBeforeMetric(bestMetric)
         startOptimizeAverage()
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [
@@ -995,6 +1001,7 @@ export default function HoningForecastUI() {
         setBestMetric,
         setBestFlatStateBundle,
         setBestFlatSpecialState,
+        setBeforeMetric
         // setOptimizerMetric,
         // setMonteCarloResult,
     })
@@ -1010,6 +1017,7 @@ export default function HoningForecastUI() {
         setBestMetric,
         setBestFlatStateBundle,
         setBestFlatSpecialState,
+        setBeforeMetric
     })
 
     const fillDemo = createFillDemo({
@@ -1170,6 +1178,8 @@ export default function HoningForecastUI() {
                             setMetricType={setMetricType}
                             ranOutFreeTaps={ranOutFreeTaps}
                             onRanOutFreeTaps={handleRanOutFreeTaps}
+                            beforeMetric={beforeMetric}
+                            setBeforeMetric={setBeforeMetric}
                         />
                     </div>
                 )}

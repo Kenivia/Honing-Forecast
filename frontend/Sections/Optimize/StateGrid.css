@@ -18,9 +18,7 @@
     display: flex;
     gap: 0;
     overflow: auto;
-    max-width: 1000px;
-
-
+    max-width: 1100px;
 }
 
 .state-grid-overlay {

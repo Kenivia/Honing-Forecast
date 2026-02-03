@@ -41,6 +41,7 @@ export function createClearAll({
     setBestMetric,
     setBestFlatStateBundle,
     setBestFlatSpecialState: setBestFlatSpecialGrid,
+    setBeforeMetric,
 }: // setMonteCarloResult,
 {
     setTopGrid: React.Dispatch<React.SetStateAction<any>>
@@ -79,6 +80,7 @@ export function createClearAll({
     setBestFlatStateBundle: React.Dispatch<React.SetStateAction<[boolean, number][][] | null>>
     setBestFlatSpecialState: React.Dispatch<React.SetStateAction<number[] | null>>
     // setMonteCarloResult: React.Dispatch<React.SetStateAction<any>>
+    setBeforeMetric: React.Dispatch<React.SetStateAction<number | null>>
 }) {
     return () => {
         // Grids and their column header checkboxes
@@ -125,6 +127,7 @@ export function createClearAll({
         setBestMetric(null)
         setBestFlatStateBundle(null)
         setBestFlatSpecialGrid(null)
+        setBeforeMetric(null)
         // setMonteCarloResult(null)
     }
 }
@@ -139,7 +142,8 @@ export function createResetOptimizerState({
     setEvaluateAverageResult,
     setBestMetric,
     setBestFlatStateBundle,
-    setBestFlatSpecialState: setBestFlatSpecialGrid,
+    setBestFlatSpecialState,
+    setBeforeMetric,
 }: {
     setMinResolution: React.Dispatch<React.SetStateAction<number>>
     setSpecialState: React.Dispatch<React.SetStateAction<number[]>>
@@ -151,6 +155,7 @@ export function createResetOptimizerState({
     setBestMetric: React.Dispatch<React.SetStateAction<number | null>>
     setBestFlatStateBundle: React.Dispatch<React.SetStateAction<[boolean, number][][] | null>>
     setBestFlatSpecialState: React.Dispatch<React.SetStateAction<number[] | null>>
+    setBeforeMetric: React.Dispatch<React.SetStateAction<number | null>>
 }) {
     return () => {
         setMinResolution(RESET_UI_DEFAULTS.minResolution)
@@ -162,7 +167,8 @@ export function createResetOptimizerState({
         setEvaluateAverageResult(RESET_UI_DEFAULTS.evaluateAverageResult)
         setBestMetric(null)
         setBestFlatStateBundle(null)
-        setBestFlatSpecialGrid(null)
+        setBestFlatSpecialState(null)
+        setBeforeMetric(null)
     }
 }
 

@@ -49,6 +49,9 @@ type OptimizeSectionProps = {
     setMetricType: React.Dispatch<React.SetStateAction<number>>
     ranOutFreeTaps: boolean
     onRanOutFreeTaps: () => void
+
+    beforeMetric: number
+    setBeforeMetric: React.Dispatch<React.SetStateAction<number>>
 }
 
 function _my_alr_spent_map(already_spent: any, labels: string[], index: number) {
@@ -122,12 +125,14 @@ export default function OptimizeSection({
     setMetricType: _setMetricType,
     ranOutFreeTaps,
     onRanOutFreeTaps,
+    beforeMetric,
+    setBeforeMetric
 
     // gridRefs,
     // onGridMouseDown,
     // marquee,
 }: OptimizeSectionProps) {
-    const [beforeMetric, setBeforeMetric] = React.useState<number | null>(null)
+
     const [isFreeTapCollapsed, setIsFreeTapCollapsed] = React.useState(true)
     const { wideMatsColumnDefs } = createColumnDefs()
     // console.log(evaluateAverageResult)
@@ -192,7 +197,7 @@ export default function OptimizeSection({
                             {optimizeAvgError && <span style={{ fontSize: 12, color: "red" }}>Error: {optimizeAvgError}</span>}
                             {beforeMetric !== null && (
                                 <span style={{ fontSize: 12, color: "var(--text-success)" }}>
-                                    Improvement: {breakdown_to_english(beforeMetric - (evaluateAverageResult?.metric ?? 0))}
+                                    Saved {add_comma((evaluateAverageResult?.metric ?? 0) - beforeMetric)} gold compared to before this optimizer run
                                 </span>
                             )}
                         </div>
@@ -236,7 +241,7 @@ export default function OptimizeSection({
                 )}
 
                 <section className="optimizer-section">
-                    <div className="optimizer-section-title">Instructions</div>
+                    <div className="optimizer-section-title">Best configuration found</div>
                     <div className="optimizer-section-body">
                         {flatStateBundle && flatProgressArr && evaluateAverageResult && specialState && (
                             <StateGridsManager
@@ -250,10 +255,7 @@ export default function OptimizeSection({
                                 flatStateBundle={flatStateBundle}
                                 setFlatStateBundle={setFlatStateBundle}
                                 allowUserChangeState={allowUserChangeState}
-                                upgradeArr={evaluateAverageResult.upgrade_arr}
-                                specialState={specialState}
-                                juiceInfo={evaluateAverageResult.prep_output.juice_info}
-                                special_invalid_index={evaluateAverageResult.special_invalid_index}
+                                evaluateAverageResult={evaluateAverageResult}
                             />
                         )}
                     </div>
@@ -265,11 +267,14 @@ export default function OptimizeSection({
                         aria-controls="free-tap-order-section"
                         onClick={() => setIsFreeTapCollapsed((prev) => !prev)}
                     >
+
+                        <span>More free tap info </span>
                         <span className={`optimizer-section-title-arrow ${isFreeTapCollapsed ? "collapsed" : ""}`}>{">"}</span>
-                        <span>More free tap info</span>
                     </button>
                     {!isFreeTapCollapsed && (
                         <div id="free-tap-order-section" className="optimizer-section-body">
+                            Keep attempting free taps on an upgrade until you run out, then move on to the next. <br></br>
+                            This is the best order that the algorithm found, you can drag & drop the upgrades to see if you can find a better one.
                             {flatStateBundle && flatProgressArr && evaluateAverageResult && specialState && (
                                 <SpecialSortable
                                     curIsBest={curIsBest}
@@ -289,7 +294,7 @@ export default function OptimizeSection({
                 </section>
             </div>
             <section className="optimizer-section">
-                <div className="optimizer-section-title">Average breakdown</div>
+                <div className="optimizer-section-title">Optimizer breakdown</div>
                 <div className="optimizer-section-body">
                     <div
                         style={{
@@ -301,6 +306,7 @@ export default function OptimizeSection({
                             flexShrink: 0,
                             marginTop: 0,
                             flexWrap: "wrap",
+                            marginLeft: 100
                         }}
                     >
                         <SpreadsheetGrid
@@ -354,13 +360,13 @@ export default function OptimizeSection({
                         <div>Average cost from now on: {evaluateAverageResult?.metric - evaluateAverageResult?.prep_output.already_spent[3]}</div>
                         <div>Already spent + more to come: {evaluateAverageResult?.metric}</div>
                     </div> */}
-                    <div style={{ display: "grid", gridTemplateColumns: "1fr auto 1fr", alignItems: "center", gap: 12 }}>
-                        <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 12 }}>
-                            <span style={{ fontSize: 12, color: "var(--text-muted)" }}>
-                                Combined average : {breakdown_to_english(evaluateAverageResult?.metric)}
-                            </span>
-                        </div>
-                    </div>
+                    {/* <div style={{ display: "grid", gridTemplateColumns: "1fr auto 1fr", alignItems: "center", gap: 12 }}>
+                        <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 12 }}> */}
+                    <span style={{ fontSize: 24, color: "var(--optimizer-button)" }}>
+                        Combined : {breakdown_to_english(evaluateAverageResult?.metric)}
+                    </span>
+                    {/* </div>
+                    </div> */}
                 </div>
             </section>
         </div>

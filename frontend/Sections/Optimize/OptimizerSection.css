@@ -21,22 +21,27 @@
     width: 100%;
     padding-bottom: 4px;
     border-bottom: 2px dashed var(--text-very-muted);
+    margin-top: 8px;
+}
 
-    .optimizer-section-title-button {
-        background: none;
-        border: none;
-        padding: 0;
-        color: inherit;
-        cursor: pointer;
-        text-align: left;
-    }
+.optimizer-section-title-button {
+    background: none;
+    border: none;
+    padding: 0;
+    color: inherit;
+    cursor: pointer;
+    text-align: left;
+    border-bottom: 2px dashed var(--text-very-muted);
+}
 
-    .optimizer-section-title-arrow {
-        display: inline-block;
-        transform: rotate(90deg);
-        transition: transform 0.15s ease-in-out;
-    }
+.optimizer-section-title-arrow {
+    display: inline-block;
+    transform: rotate(0deg);
+    transition: transform 0.15s ease-in-out;
+    margin-left: 10px;
 
-    .optimizer-section-title-arrow.collapsed {
-        transform: rotate(0deg);
-    }
+}
+
+.optimizer-section-title-arrow.collapsed {
+    transform: rotate(90deg);
+}

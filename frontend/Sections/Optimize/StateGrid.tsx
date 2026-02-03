@@ -26,6 +26,7 @@ interface RowBundleProps {
     uniqueBookNumbers: number[]
     freeTap: boolean
     freeTapOrder: number
+
 }
 
 const RowBundle = ({
@@ -81,14 +82,14 @@ const RowBundle = ({
         if (isProgressRow) {
             // If clicking column 2 (index 2), progress becomes 3.
             // If allowUserChangeState is false, only this works.
-            let new_progress = progress > colIndex ? colIndex : colIndex + 1
-            onUpdateProgress(new_progress)
-            if (new_progress > 0) {
-                onUpdateUnlock(true)
-            }
-            if (new_progress >= pity_len) {
-                onUpdateSucceed(true)
-            }
+            // let new_progress = progress > colIndex ? colIndex : colIndex + 1
+            // onUpdateProgress(new_progress)
+            // if (new_progress > 0) {
+            //     onUpdateUnlock(true)
+            // }
+            // if (new_progress >= pity_len) {
+            //     onUpdateSucceed(true)
+            // }
             return
         }
 
@@ -157,13 +158,14 @@ const RowBundle = ({
     }))
     gridRows.push(juiceRow)
 
+
     // C. Progress Row (Bottom)
-    // const progressRow = Array.from({ length: cols }).map((_, cIndex) => ({
-    //     active: cIndex < progress && cIndex < pity_len,
-    //     label: "",
-    //     type: "progress",
-    // }))
-    // gridRows.push(progressRow)
+    const progressRow = Array.from({ length: cols }).map((_, cIndex) => ({
+        active: cIndex < progress && cIndex < pity_len,
+        label: "",
+        type: "progress",
+    }))
+    gridRows.push(progressRow)
 
     // const handleUnlockClick = () => {
     //     if (unlock) {
@@ -186,25 +188,29 @@ const RowBundle = ({
     // }
 
     // const nextProgressIndex = progress < pity_len ? progress : -1
-
+    // console.log("grid rows", gridRows)
     return (
-        <div className="row-bundle-container" style={{ marginBottom: "5px" }}>
+        <div className="row-bundle-container" style={{ marginBottom: "10px", }}>
             <div className="state-grid-row">
                 <div className="state-grid-wrapper">
-                    <div style={{ display: "flex", flexDirection: "row", margin: "0 0 0 0", textWrap: "nowrap", gap: 30 }}>
+
+                    <div style={{ display: "flex", flexDirection: "row", margin: "0 0 0 0", textWrap: "nowrap", gap: 30, borderBottom: "2px solid var(--text-very-muted)" }}>
                         <Icon iconName={PIECE_NAMES[upgrade.piece_type]} display_text="" display_text_right={piece_display_name(upgrade)}></Icon>
-                        <span>{(freeTap ? "  [Use special leaps on this until you run out, " : " [Normal tap this (no special)") + (freeTap ? toOrdinal(freeTapOrder) : "") + "]"}</span>
+                        <span>{(upgrade.is_normal_honing ?
+                            (freeTap ? "  Use special leaps on this until you run out, " + toOrdinal(freeTapOrder) : " Normal tap this (no special)")
+                            : "Use juice (and scroll) on ancestor's grace")}</span>
                     </div>
+
                     <div className="state-grid-scroll">
                         <div style={{ position: "relative", }}>
 
-                            {
+                            {upgrade.is_normal_honing && (
                                 gridRows.map((row, index) => (
 
                                     <div key={"row_bundle_label_" + String(index)} style={{}}>
                                         <Icon iconName={row[0].label} key={row[0].label + " left label"} display_text="" size={28}></Icon>
                                     </div>))
-                            }
+                            )}
 
                             {/* <div
                                 className="checkbox-grid-item"
@@ -314,6 +320,7 @@ const RowBundle = ({
                                                     {
                                                         "--checkbox-content": "um idk why an empty string doesn't over write the default",
                                                         background: cell.type === "progress" && cell.active ? "var( --checkbox-checked-bg)" : "transparent",
+                                                        border: cell.type === "progress" ? "none" : "1px solid var(--checkbox-border)",
                                                     } as React.CSSProperties
                                                 }
                                             />
@@ -389,10 +396,12 @@ interface ComplexGridProps {
     flatStateBundle: StatePair[][]
     setFlatStateBundle: React.Dispatch<React.SetStateAction<StatePair[][]>>
     allowUserChangeState: boolean
-    upgradeArr: any[]
-    specialState: number[]
-    juiceInfo: any
-    special_invalid_index: number
+    evaluateAverageResult: any
+    // upgradeArr: any[]
+    // specialState: number[]
+    // juiceInfo: any
+    // special_invalid_index: number
+    // special_probs: number[]
     // setSpecialState: React.Dispatch<React.SetStateAction<number[]>>
 }
 
@@ -407,15 +416,16 @@ export default function StateGridsManager({
     flatStateBundle,
     setFlatStateBundle,
     allowUserChangeState,
-    upgradeArr,
-    specialState,
-    juiceInfo,
-    special_invalid_index,
+    evaluateAverageResult
     // setSpecialState,
 }: ComplexGridProps) {
     // Requirement 7: overflow: auto to avoid going off edge
     // This container wraps all row bundles
-
+    const upgradeArr = evaluateAverageResult.upgrade_arr
+    const specialState = evaluateAverageResult.special_state
+    const juiceInfo = evaluateAverageResult.prep_output.juice_info
+    const special_invalid_index = evaluateAverageResult.special_invalid_index
+    const special_probs = evaluateAverageResult.latest_special_probs
     const handleUpdateProgress = (index: number, newValue: number) => {
         const newArr = [...flatProgressArr]
         newArr[index] = newValue
@@ -459,7 +469,7 @@ export default function StateGridsManager({
         return <div>Error: Input arrays have mismatched lengths.</div>
     }
     // console.log(juiceInfo)
-    console.log(truncated_special_state, invalid_tail)
+    // console.log(truncated_special_state, invalid_tail)
     return (
         <div
             className="complex-grid-manager"
@@ -486,8 +496,9 @@ export default function StateGridsManager({
                     onUpdateStatePairs={(pairs) => handleUpdateStateBundle(u_index, pairs)}
                     upgrade={upgradeArr[u_index]}
                     uniqueBookNumbers={juiceInfo.ids[upgradeArr[u_index].upgrade_index].slice(1)}
-                    freeTap={index >= invalid_tail.length}
+                    freeTap={index >= invalid_tail.length && special_probs[index - invalid_tail.length] > 0}
                     freeTapOrder={index - invalid_tail.length + 1}
+
                 />
             ))}
         </div>

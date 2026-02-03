@@ -52,11 +52,11 @@ export default function Separator({ activePage, onPageChange, setAutoRunOptimize
 
             <button className={getButtonClass("distribution")} onClick={() => handleButtonClick("distribution")}>
                 <span className="hf-label">Cool graphs</span>
-                <div className="hf-help">aaaa</div>
+                <div className="hf-help">How much will the upgrades cost?</div>
             </button>
             <button className={getButtonClass("optimize")} onClick={() => handleButtonClick("optimize")}>
-                <span className="hf-label">Optimize</span>
-                <div className="hf-help">bbbb</div>
+                <span className="hf-label">Optimizer</span>
+                <div className="hf-help">How should I use my free taps & juice?</div>
             </button>
             <button className={getButtonClass("forecast")} onClick={() => handleButtonClick("forecast")}>
                 <span className="hf-label">Forecast mode</span>

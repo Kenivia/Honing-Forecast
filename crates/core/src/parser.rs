@@ -393,7 +393,7 @@ pub fn parser(
             // }
 
             // pick relevant_data based on strategy and level i (i <= 1 -> 10/20, else 30/40)
-            let relevant_data: &'static [[i64; 3]] = if adv_hone_strategy == "No x2 balls" {
+            let relevant_data: &'static [[i64; 3]] = if adv_hone_strategy == "No x2 grace" {
                 if upgrade_index <= 1 {
                     &ADV_DATA_10_20_JUICE
                 } else {
@@ -469,10 +469,10 @@ pub fn parser(
 //     let main_upgrades: Vec<Upgrade> =
 //         parser(normal_counts, adv_counts, adv_hone_strategy, express_event);
 
-//     let other_strategy: String = if adv_hone_strategy == "No x2 balls" {
-//         "x2 balls".to_string()
+//     let other_strategy: String = if adv_hone_strategy == "No x2 grace" {
+//         "x2 grace".to_string()
 //     } else {
-//         "No x2 balls".to_string()
+//         "No x2 grace".to_string()
 //     };
 
 //     let other_upgrades: Vec<Upgrade> =

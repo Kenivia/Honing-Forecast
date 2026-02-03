@@ -89,7 +89,7 @@ export function SpecialSortable({
                 <div>
                     <div className="sequence-container">
                         {/* Headers */}
-                        <div className="grid-header">Free tap order(interactable)</div>
+                        <div className="grid-header">Free tap order</div>
                         <div className="grid-header">Probability</div>
                         <div className="grid-header">{/* Empty for buttons */}</div>
                         <div className="grid-header">{ }</div>
@@ -179,7 +179,7 @@ export function SpecialSortable({
                         })}
                     </div> */}
                     </div>
-                    <div key={`out`} className="row-item btn-cell" style={{ marginTop: 20, marginBottom: 30 }}>
+                    {/* <div key={`out`} className="row-item btn-cell" style={{ marginTop: 20, marginBottom: 30 }}>
                         {(
                             <>
                                 <button
@@ -189,10 +189,10 @@ export function SpecialSortable({
                                 >
                                     I've ran out of free taps (this just sets your special leaps owned to 0)
                                 </button>
-                                {/* {ranOutFreeTaps && <span style={{ fontSize: 12, color: "var(--muted-text)" }}>Consider re-optimizing</span>} */}
+                             
                             </>
                         )}
-                    </div>
+                    </div> */}
                 </div>
 
             )}{non_zeros_count == 0 && (<div>You have no availiable free taps</div>

@@ -201,7 +201,7 @@
             false
         ]
     ],
-    "adv_hone_strategy": "x2 balls",
+    "adv_hone_strategy": "x2 grace",
     "express_event": false,
     "bucket_count": 100,
     "data_size": 100000,

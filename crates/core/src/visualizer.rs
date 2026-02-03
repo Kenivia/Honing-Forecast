@@ -472,7 +472,7 @@
 //         let adv_counts: Vec<Vec<i64>> =
 //             vec![(0..4).map(|_| 0).collect(), (0..4).map(|_| 0).collect()];
 
-//         let adv_hone_strategy: &str = "x2 balls";
+//         let adv_hone_strategy: &str = "x2 grace";
 //         let express_event: bool = false;
 //         let input_budgets = vec![0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
 //         let user_price_arr = DEFAULT_GOLD_VALUES;
@@ -519,7 +519,7 @@
 //         let adv_counts: Vec<Vec<i64>> =
 //             vec![(0..4).map(|_| 0).collect(), (0..4).map(|_| 0).collect()];
 
-//         let adv_hone_strategy: &str = "x2 balls";
+//         let adv_hone_strategy: &str = "x2 grace";
 //         let express_event: bool = false;
 //         let input_budgets = vec![
 //             // 3240, 9240, 46, 17740, 36, 0, 108000, 90, 90, 0,

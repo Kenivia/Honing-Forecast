@@ -250,7 +250,7 @@
 //                     taps_so_far: 0,
 //                     juice_taps_so_far: 0,
 //                     free_taps_so_far: 0,
-//                     use_juice: adv_hone_strategy === "No x2 balls" && !upgrade.is_normal_honing,
+//                     use_juice: adv_hone_strategy === "No x2 grace" && !upgrade.is_normal_honing,
 //                     cumulative_chance: 0,
 //                 })),
 //             )

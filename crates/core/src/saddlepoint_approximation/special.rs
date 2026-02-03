@@ -249,7 +249,7 @@ impl StateBundle {
 //     //     let adv_counts: Vec<Vec<i64>> =
 //     //         vec![(0..4).map(|_| 0).collect(), (0..4).map(|_| 0).collect()];
 
-//     //     let adv_hone_strategy: &str = "x2 balls";
+//     //     let adv_hone_strategy: &str = "x2 grace";
 //     //     let express_event: bool = true;
 //     //     let budget = vec![0, 0, 0, 0, 0, 3333333, 0, 6767];
 //     //     let juice_books_owned: Vec<(i64, i64)> = vec![(0, 0), (0, 0), (0, 0), (0, 0)];

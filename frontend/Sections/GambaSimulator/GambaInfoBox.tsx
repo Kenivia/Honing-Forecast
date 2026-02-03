@@ -106,7 +106,7 @@ export default function GambaInfoBox({
                         <div>
                             {" "}
                             {!upgradeArr[selectedUpgradeIndex]?.is_normal_honing &&
-                                upgradeArr[selectedUpgradeIndex]?.use_juice != (adv_hone_strategy === "No x2 balls")
+                                upgradeArr[selectedUpgradeIndex]?.use_juice != (adv_hone_strategy === "No x2 grace")
                                 ? "(Graph below is not updated by this tick)"
                                 : ""}
                         </div>
