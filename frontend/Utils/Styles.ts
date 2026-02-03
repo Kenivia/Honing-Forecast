@@ -89,9 +89,9 @@ export const styles: any = {
     },
     inputSection: {
         background: "var(--bg-secondary)",
-        borderRadius: "var(--border-radius)",
+        // borderRadius: "var(--border-radius)",
         padding: "var(--spacing-xl)",
-        border: "1px solid var(--border-primary)",
+        // border: "1px solid var(--border-primary)",
     },
     inputLabelCell: {
         textAlign: "left",
@@ -193,7 +193,7 @@ export const createColumnDefs = () => {
             headerName: "Sell price",
             editable: true,
             flex: 1,
-            width: "100px",
+            width: "60px",
             background: "var(--grid-cell-bg)",
             backgroundSelected: "var(--grid-cell-selected)",
             color: "var(--grid-cell-text)",
@@ -223,7 +223,7 @@ export const createColumnDefs = () => {
             headerName: "",
             editable: true,
             flex: 1,
-            width: "100px",
+            width: "60px",
             background: "var(--grid-cell-bg)",
             backgroundSelected: "var(--grid-cell-selected)",
             color: "var(--grid-cell-text)",
@@ -241,7 +241,7 @@ export const createColumnDefs = () => {
         // },
 
         {
-            headerName: "Breakdown",
+            headerName: "",
             editable: false,
             flex: 1,
             width: "200px",

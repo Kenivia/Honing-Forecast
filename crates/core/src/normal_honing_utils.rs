@@ -544,7 +544,7 @@ pub fn probability_distribution(
         let min_count: f64 = std::cmp::min(count, 10) as f64;
         // web_sys::console::log_1(&format!("c").into());
         let mut current_chance: f64 =
-            base + (min_count * base) * 0.1 + extra_arr.get(count).unwrap_or(&0.0);
+            (base + (min_count * base) * 0.1 + extra_arr.get(count).unwrap_or(&0.0)).min(1.0);
 
         // web_sys::console::log_1(&format!("{:?}", current_chance).into());
         // web_sys::console::log_1(&format!("d").into());
@@ -556,7 +556,7 @@ pub fn probability_distribution(
         // web_sys::console::log_1(&format!("e").into());
         raw_chances.push(current_chance);
         count += 1;
-        artisan += (46.51_f64 / 100.0) * current_chance * artisan_rate;
+        artisan += 0.4651_f64 * current_chance * artisan_rate;
         if current_chance == 1.0 {
             break; // for upgrades that have 100% passrate immediately
         }

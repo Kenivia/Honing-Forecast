@@ -167,7 +167,8 @@ export default function HoningForecastUI() {
     const [bestFlatSpecialState, setBestFlatSpecialState] = useState<number[] | null>(null)
     const [ranOutFreeTaps, setRanOutFreeTaps] = useState<boolean>(false)
     const ranOutSkipResetRef = useRef<boolean>(false)
-    const hasRunOptimizerRef = useRef<boolean>(false)
+    // const hasRunOptimizerRef = useRef<boolean>(false)
+    const [hasRunOptimizer, setHasRunOptimizer] = useState<boolean>(false)
     // State for optimized details
     // const [showOptimizedDetails, setShowOptimizedDetails] = useState<boolean>(false)
 
@@ -677,16 +678,18 @@ export default function HoningForecastUI() {
     useEffect(() => {
         const skipRanOutReset = ranOutSkipResetRef.current
         ranOutSkipResetRef.current = false
-        hasRunOptimizerRef.current = false
+        // hasRunOptimizerRef.current = false
+        setHasRunOptimizer(false)
         setBestMetric(null)
         setBeforeMetric(null)
         setBestFlatStateBundle(null)
         setBestFlatSpecialState(null)
+
         if (!skipRanOutReset) {
             setRanOutFreeTaps(false)
         }
         // console.log("reest", topGridKey, inputBundleKey, metricType, progressGridKey, succeededGridKey, minResolutionKey, unlockGridKey)
-    }, [topGridKey, bottomGridKey, inputBundleKey, metricType, minResolutionKey])
+    }, [topGridKey, bottomGridKey, inputBundleKey, metricType, minResolutionKey, progressGridKey, succeededGridKey, unlockGridKey])
 
     const cancelOptimizeAverage = () => {
         runner.cancel("OptimizeAverage")
@@ -864,6 +867,7 @@ export default function HoningForecastUI() {
     const [optimizeAvgBusy, setOptimizeAvgBusy] = useState(false)
     // const [optimizeAvgResult, setOptimizeAvgResult] = useState<{ average_costs?: any } | null>(null)
     const startOptimizeAverage = useCallback((debounce) => {
+        setOptimizerProgress(0)
         runner.start({
             which_one: "OptimizeAverage",
             payloadBuilder,
@@ -872,7 +876,7 @@ export default function HoningForecastUI() {
             setResult: setEvaluateAverageResult,
             onSuccess: (res) => {
                 // console.log(inputBundleKey)
-                hasRunOptimizerRef.current = true
+                setHasRunOptimizer(true)
                 setFlatStateBundle(res.upgrade_arr.map((upgrade) => upgrade.state))
                 setFlatProgressArr(res.upgrade_arr.map((_, index) => progressGrid[res.upgrade_arr[index].piece_type][res.upgrade_arr[index].upgrade_index]))
                 setFlatUnlockArr(res.upgrade_arr.map((_, index) => unlockGrid[res.upgrade_arr[index].piece_type][res.upgrade_arr[index].upgrade_index]))
@@ -1060,7 +1064,7 @@ export default function HoningForecastUI() {
     // styles and column defs moved to ./styles
     const AnythingTicked = useMemo(() => topGrid.some((row) => row.some((x) => x)) || bottomGrid.some((row) => row.some((x) => x)), [topGrid, bottomGrid])
     const currentMetric = evaluateAverageResult?.metric
-    const hasRunOptimizer = hasRunOptimizerRef.current
+    // const hasRunOptimizer = hasRunOptimizerRef.current
     const curIsBest =
         hasRunOptimizer && bestMetric !== null && currentMetric !== undefined && currentMetric !== null
             ? Math.round(currentMetric) >= Math.round(bestMetric)
@@ -1197,7 +1201,7 @@ export default function HoningForecastUI() {
                 )}
                 {activePage === "distribution" && (
                     <div className={activePage === "distribution" ? "page" : "page page--hidden"}>
-                        <DistributionSection cumulativeGraph={cumulativeGraph} histogramResult={histogramResult} />
+                        <DistributionSection cumulativeGraph={cumulativeGraph} histogramResult={histogramResult} setCumulativeGraph={setCumulativeGraph} />
                     </div>
                 )}
                 {/* {activePage === "gamba" && (

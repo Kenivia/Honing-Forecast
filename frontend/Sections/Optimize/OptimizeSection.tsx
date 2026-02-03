@@ -69,7 +69,7 @@ function add_comma(inp: number) {
     })
 }
 function breakdown_to_english(input: number) {
-    return String(input <= 0 ? "Avg spend " + add_comma(input < 0.0 ? -input : input) + "g" : "Avg surplus of " + add_comma(input) + "g")
+    return String(input <= 0 ? "Avg Eqv Spend " + add_comma(input < 0.0 ? -input : input) + "g" : "Avg Eqv surplus of " + add_comma(input) + "g")
 }
 
 function _combined_breakdown_to_english(input: number) {
@@ -179,6 +179,9 @@ export default function OptimizeSection({
                 borderRadius: 4,
                 border: "1px solid var(--btn-border)",
                 cursor: "pointer",
+                height: "50px",
+                width: "300px",
+                fontSize: "24px",
             }}
         >
             {optimizeAvgBusy ? "Cancel Optimize Average" : " >>> Optimize <<< "}
@@ -198,48 +201,83 @@ export default function OptimizeSection({
             </section>
             <section className="optimizer-section">
                 <div className="optimizer-section-title">Optimizer controls</div>
-                <div className="optimizer-section-body">
-                    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                            {metricType != 0 && optimizeAverageButton}
-                            {optimizeAvgError && <span style={{ fontSize: 12, color: "red" }}>Error: {optimizeAvgError}</span>}
-                            {beforeMetric !== null && (
-                                <span style={{ fontSize: 12, color: "var(--text-success)" }}>{add_comma(evaluateAverageResult?.metric) ?? "N/A"} gold</span>
-                            )}{" "}
-                            <button
-                                onClick={handleRestoreBest}
-                                disabled={!canRestoreBest}
+
+                <div className="optimizer-card" style={{ margin: "0 auto" }}>
+                    {/* Actions */}
+                    {/* Hero area */}
+                    <div className="optimizer-hero">
+                        {metricType !== 0 && optimizeAverageButton}
+
+                        <div className="optimizer-result-centered">
+                            <div
                                 style={{
-                                    background: canRestoreBest ? "var(--optimizer-button)" : "var(--btn-demo)",
-                                    color: "var(--btn-demo-text)",
-                                    padding: "6px 10px",
-                                    borderRadius: 4,
-                                    border: "1px solid var(--btn-border)",
-                                    cursor: canRestoreBest ? "pointer" : "not-allowed",
-                                    opacity: canRestoreBest ? 1 : 0.3,
+                                    display: "flex",
+                                    flexDirection: "row",
+                                    alignItems: "center",
+                                    position: "relative",
+                                    // justifyContent: "flex-end",
                                 }}
                             >
-                                {canRestoreBest ? "Restore Best" : "Current configuration is the best known configuration"}
-                            </button>
-                        </div>
-                        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                            <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13 }}>
-                                <input type="checkbox" checked={autoRunOptimizer} onChange={(e) => setAutoRunOptimizer(e.target.checked)} />
-                                Auto start optimizer whenever something changes
-                            </label>
-                        </div>
-                        <span style={{ fontSize: "0.9em", color: "var(--text-secondary, #666)" }}>
-                            Optimizer: {hasRunOptimizer ? "✓ Ran" : "Not run"} | Best Metric:{" "}
-                            {hasRunOptimizer && bestMetric !== null ? bestMetric.toFixed(2) : "Unknown"}
-                        </span>
-                        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                            {optimizeAvgBusy && (
-                                <span>Optimizer progress: {optimizerProgress.toFixed(2)}% (this can take a while if you have a lot of upgrades)</span>
-                            )}
+                                <div className={`result-value ${curIsBest ? "best" : "not-best"}`}>
+                                    Score: {add_comma(-evaluateAverageResult?.metric) ?? "N/A"}{" "}
+                                </div>
+                                <span
+                                    style={{
+                                        position: "absolute",
+                                        left: "100%",
+                                        marginLeft: "8px",
+                                        whiteSpace: "nowrap",
+                                        fontSize: "14px",
+                                    }}
+                                >
+                                    (lower is better)
+                                </span>
+                            </div>
+                            <div className="result-status">
+                                {curIsBest && hasRunOptimizer
+                                    ? "(Result below is the best known result)"
+                                    : hasRunOptimizer
+                                      ? "(Current config is not best known result)"
+                                      : optimizeAvgBusy
+                                        ? "(Optimizer in progress…)"
+                                        : "(Optimizer not run yet)"}
+                                {!curIsBest && hasRunOptimizer && (
+                                    <button onClick={handleRestoreBest} disabled={!canRestoreBest} className="restore-btn">
+                                        {hasRunOptimizer
+                                            ? canRestoreBest
+                                                ? "Restore Best"
+                                                : "Current configuration is the best known one"
+                                            : "Optimizer not run"}
+                                    </button>
+                                )}
+                            </div>
                         </div>
                     </div>
+
+                    {/* Meta + restore */}
+                    {/* <div className="optimizer-row optimizer-meta">
+                        <span className="meta-text">
+                            Optimizer: {hasRunOptimizer ? "✓ Ran" : "Not run"} | Best known result:{" "}
+                            {hasRunOptimizer && bestMetric !== null ? bestMetric.toFixed(2) : "Unknown"}
+                        </span>
+                    </div> */}
+
+                    {/* Error */}
+                    {optimizeAvgError && <div className="optimizer-error">Error: {optimizeAvgError}</div>}
+
+                    {/* Progress */}
+                    {optimizeAvgBusy && (
+                        <div className="optimizer-progress">
+                            <span>Optimizer progress: {optimizerProgress.toFixed(2)}%</span>
+
+                            <div className="progress-bar">
+                                <div className="progress-fill" style={{ width: `${optimizerProgress}%` }} />
+                            </div>
+                        </div>
+                    )}
                 </div>
             </section>
+
             <div style={{ position: "relative", flex: 1, display: "flex", flexDirection: "column", gap: 12 }}>
                 {optimizeAvgBusy && (
                     <div
@@ -272,17 +310,16 @@ export default function OptimizeSection({
                     </div>
                 </section>{" "}
                 <section className="optimizer-section">
-                    <button
-                        type="button"
-                        className="optimizer-section-title optimizer-section-title-button"
-                        aria-expanded={!isFreeTapCollapsed}
+                    <span
+                        className="optimizer-section-title "
+                        aria-expanded={true}
                         aria-controls="free-tap-order-section"
-                        onClick={() => setIsFreeTapCollapsed((prev) => !prev)}
+                        // onClick={() => setIsFreeTapCollapsed((prev) => !prev)}
                     >
                         <span>More free tap info </span>
-                        <span className={`optimizer-section-title-arrow ${isFreeTapCollapsed ? "collapsed" : ""}`}>{">"}</span>
-                    </button>
-                    {!isFreeTapCollapsed && (
+                        {/* <span className={`optimizer-section-title-arrow ${isFreeTapCollapsed ? "collapsed" : ""}`}>{">"}</span> */}
+                    </span>
+                    {
                         <div id="free-tap-order-section" className="optimizer-section-body">
                             Keep attempting free taps on an upgrade until you run out, then move on to the next. <br></br>
                             This is the best order that the algorithm found, you can drag & drop the upgrades to see if you can find a better one.
@@ -301,12 +338,27 @@ export default function OptimizeSection({
                                 />
                             )}
                         </div>
-                    )}
+                    }
                 </section>
             </div>
             <section className="optimizer-section">
-                <div className="optimizer-section-title">Optimizer breakdown</div>
+                <div className="optimizer-section-title">Optimizer score breakdown</div>
                 <div className="optimizer-section-body">
+                    <span>The "Score" is the sum of the "Average eqv gold spent" for each mat. Without advanced mode, this is calculated as:</span>
+                    <span style={{ marginLeft: 50, fontSize: 24, fontFamily: "Times new roman" }}>
+                        Average of [(Non-bound mat consumed, if any, otherwise 0) * market price] = Average eqv gold spent.
+                    </span>
+                    <span>
+                        As such, if you have tradable mats, this will not be how much gold you actually spend on buying. This is just a way to convert all the
+                        different material types into one metric, so that the optimizer can minimize it.{" "}
+                    </span>
+                    <br></br>
+                    <span>Critically, this is not the same as:</span>
+                    <span style={{ marginLeft: 50, fontSize: 24, fontFamily: "Times new roman" }}>[Average of (Mat consumed) - mat owned] * market price,</span>
+                    <span>
+                        because the cases where we use less than BOUND OWNED drags down the Average of (Mat consumed), but we don't actually gain any gold from
+                        having leftover bound mats. More formally this is because Expecation is not commutative with non-linear functions.
+                    </span>
                     <div
                         style={{
                             display: "flex",
@@ -373,9 +425,9 @@ export default function OptimizeSection({
                     </div> */}
                     {/* <div style={{ display: "grid", gridTemplateColumns: "1fr auto 1fr", alignItems: "center", gap: 12 }}>
                         <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 12 }}> */}
-                    <h3>What do the numbers mean?</h3>
+
                     <span></span>
-                    <span style={{ fontSize: 24, color: "var(--optimizer-button)" }}>Combined : {breakdown_to_english(evaluateAverageResult?.metric)}</span>
+                    <span style={{ fontSize: 24, color: "var(--brighter-optimizer)" }}>Combined: {breakdown_to_english(evaluateAverageResult?.metric)}</span>
                     {/* </div>
                     </div> */}
                 </div>

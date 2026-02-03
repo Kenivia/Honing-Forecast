@@ -42,6 +42,7 @@ export function createClearAll({
     setBestFlatStateBundle,
     setBestFlatSpecialState: setBestFlatSpecialGrid,
     setBeforeMetric,
+    setHasRunOptimizer,
 }: // setMonteCarloResult,
 {
     setTopGrid: React.Dispatch<React.SetStateAction<any>>
@@ -81,6 +82,8 @@ export function createClearAll({
     setBestFlatSpecialState: React.Dispatch<React.SetStateAction<number[] | null>>
     // setMonteCarloResult: React.Dispatch<React.SetStateAction<any>>
     setBeforeMetric: React.Dispatch<React.SetStateAction<number | null>>
+
+    setHasRunOptimizer: React.Dispatch<React.SetStateAction<boolean | null>>
 }) {
     return () => {
         // Grids and their column header checkboxes
@@ -128,6 +131,7 @@ export function createClearAll({
         setBestFlatStateBundle(null)
         setBestFlatSpecialGrid(null)
         setBeforeMetric(null)
+        setHasRunOptimizer(false)
         // setMonteCarloResult(null)
     }
 }
@@ -144,6 +148,7 @@ export function createResetOptimizerState({
     setBestFlatStateBundle,
     setBestFlatSpecialState,
     setBeforeMetric,
+    setHasRunOptimizer,
 }: {
     setMinResolution: React.Dispatch<React.SetStateAction<number>>
     setSpecialState: React.Dispatch<React.SetStateAction<number[]>>
@@ -156,6 +161,7 @@ export function createResetOptimizerState({
     setBestFlatStateBundle: React.Dispatch<React.SetStateAction<[boolean, number][][] | null>>
     setBestFlatSpecialState: React.Dispatch<React.SetStateAction<number[] | null>>
     setBeforeMetric: React.Dispatch<React.SetStateAction<number | null>>
+    setHasRunOptimizer: React.Dispatch<React.SetStateAction<boolean | null>>
 }) {
     return () => {
         setMinResolution(RESET_UI_DEFAULTS.minResolution)
@@ -169,6 +175,7 @@ export function createResetOptimizerState({
         setBestFlatStateBundle(null)
         setBestFlatSpecialState(null)
         setBeforeMetric(null)
+        setHasRunOptimizer(false)
     }
 }
 

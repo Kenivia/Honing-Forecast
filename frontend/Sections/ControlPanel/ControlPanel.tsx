@@ -22,7 +22,6 @@ type ControlPanelProps = {
     setMinResolution: React.Dispatch<React.SetStateAction<number>>
     allowUserChangeState: boolean
     setAllowUserChangeState: React.Dispatch<React.SetStateAction<boolean>>
-
 }
 
 export default function ControlPanel({
@@ -45,7 +44,6 @@ export default function ControlPanel({
     setMinResolution,
     allowUserChangeState,
     setAllowUserChangeState,
-
 }: ControlPanelProps) {
     const handleMinResolutionChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         const rawValue = event.target.value.trim()
@@ -61,7 +59,7 @@ export default function ControlPanel({
         }
         const clamped = Math.max(1, Math.min(219, parsed))
         setMinResolution(clamped)
-        console.log(rawValue, clamped);
+        console.log(rawValue, clamped)
     }
 
     return (
@@ -88,11 +86,6 @@ export default function ControlPanel({
                     <div style={{ display: "flex", alignItems: "center", gap: "8px", marginTop: "8px" }}>
                         <LabeledCheckbox label="Express event" checked={express_event} setChecked={set_express_event} />
                     </div>
-
-                    <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                        <LabeledCheckbox label="Cumulative Graph" checked={cumulativeGraph} setChecked={setCumulativeGraph} />
-                    </div>
-
 
                     <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                         <LabeledCheckbox label="Allow changing progress" checked={allowUserChangeState} setChecked={setAllowUserChangeState} />

@@ -10,9 +10,7 @@ import { bisector } from "d3-array"
 import Icon from "./Icon.tsx"
 import { IconMap } from "@/Utils/Constants.ts"
 function getCssVar(name: string) {
-    return getComputedStyle(document.documentElement)
-        .getPropertyValue(name)
-        .trim()
+    return getComputedStyle(document.documentElement).getPropertyValue(name).trim()
 }
 // --- Types ---
 
@@ -47,13 +45,12 @@ const GraphContent = ({ width, height, data, average, secondaryAnnotation, color
     // If data is null, we just render an empty container later
     // Compute the data to display (CDF or PDF)
     const displayData = useMemo(() => {
-
         if (cumulative) return data
 
         // Calculate PDF: slope between points (dy/dx)
         // Assuming uniform x-steps usually, but this formula handles variable steps
         return data.map((point, i) => {
-            if (i === 0) return [point[0], 0] as DataPoint
+            if (i === 0) return [point[0], point[1]] as DataPoint
             const prev = data[i - 1]
             const dx = point[0] - prev[0]
             const dy = point[1] - prev[1]
@@ -150,7 +147,7 @@ const GraphContent = ({ width, height, data, average, secondaryAnnotation, color
     const inputColor = getCssVar("--grid-cell-bg")
     const axisColor = getCssVar("--text-very-muted")
     // if (!data || data.length === 0 || (data.map((x) => x[0]).reduce((prev, next) => Math.max(prev, next))) == 0) return null
-    const isEmpty = (data.map((x) => x[0]).reduce((prev, next) => Math.max(prev, next))) == 0;
+    const isEmpty = data.map((x) => x[0]).reduce((prev, next) => Math.max(prev, next)) == 0
     // console.log(data.length, label)
     // console.log(secondaryAnnotation, xScale(secondaryAnnotation))
     return (
@@ -200,7 +197,7 @@ const GraphContent = ({ width, height, data, average, secondaryAnnotation, color
                             <circle cx={xScale(average)} cy={getYForX(average)} r={4} fill="white" />
                             <image href={IconMap[label]}></image>
                             <text x={xScale(average)} y={isEmpty ? -5 : 0} textAnchor="middle" fontSize={14} fill={resolvedColor}>
-                                Average  = {average.toLocaleString("en-US", { maximumFractionDigits: 0, minimumFractionDigits: 0 })}
+                                Average = {average.toLocaleString("en-US", { maximumFractionDigits: 0, minimumFractionDigits: 0 })}
                             </text>
                         </g>
                     )}
@@ -217,8 +214,21 @@ const GraphContent = ({ width, height, data, average, secondaryAnnotation, color
                                 strokeWidth={1}
                                 strokeDasharray="2,2"
                             />
-                            <circle cx={xScale(secondaryAnnotation)} cy={getYForX(secondaryAnnotation)} r={4} fill={inputColor} stroke={color} strokeWidth={2} />
-                            <text x={Math.max(Math.min(xScale(secondaryAnnotation), xMax - 40), 40)} y={yMax - 3} textAnchor="middle" fontSize={14} fill={inputColor}>
+                            <circle
+                                cx={xScale(secondaryAnnotation)}
+                                cy={getYForX(secondaryAnnotation)}
+                                r={4}
+                                fill={inputColor}
+                                stroke={color}
+                                strokeWidth={2}
+                            />
+                            <text
+                                x={Math.max(Math.min(xScale(secondaryAnnotation), xMax - 40), 40)}
+                                y={yMax - 3}
+                                textAnchor="middle"
+                                fontSize={14}
+                                fill={inputColor}
+                            >
                                 You have: {secondaryAnnotation.toLocaleString("en-US", { maximumFractionDigits: 0, minimumFractionDigits: 0 })}
                             </text>
                         </g>
@@ -261,14 +271,15 @@ const GraphContent = ({ width, height, data, average, secondaryAnnotation, color
                 <TooltipInPortal top={tooltipTop} left={tooltipLeft} style={{ ...defaultStyles, backgroundColor: "rgba(0, 0, 0, 0.41)", color: "white" }}>
                     <div style={{ fontSize: 11 }}>
                         In a room of 100 people,
-                        <br /><strong>{(getY(tooltipData) * 100).toFixed(0)}</strong> used less than {getX(tooltipData).toLocaleString("en-US", { maximumFractionDigits: 0, minimumFractionDigits: 0 })} <span>{label}</span>
+                        <br />
+                        <strong>{(getY(tooltipData) * 100).toFixed(0)}</strong> used less than{" "}
+                        {getX(tooltipData).toLocaleString("en-US", { maximumFractionDigits: 0, minimumFractionDigits: 0 })} <span>{label}</span>
                         {/* Always showing cumulative value as requested */}
                         {/* Cum: {(getY(tooltipData) * 100).toFixed(0)} */}
                     </div>
                 </TooltipInPortal>
-            )
-            }
-        </div >
+            )}
+        </div>
     )
 }
 

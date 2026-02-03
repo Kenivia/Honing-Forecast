@@ -12,7 +12,7 @@ type InputsSectionProps = {
 }
 
 export default function InputsSection({ inputsBundle: inputs }: InputsSectionProps) {
-    const [advancedMode, setAdvancedMode] = useState(true)
+    const [advancedMode, setAdvancedMode] = useState(false)
     const { matsColumnDef, juiceColumnDef } = createColumnDefs()
     const { values, setters } = inputs
     const { mats, juice } = values
@@ -25,11 +25,11 @@ export default function InputsSection({ inputsBundle: inputs }: InputsSectionPro
     matsLeftoverDef.headerName = advancedMode ? "Value of leftovers" : "Mat type*"
     juiceLeftoverDef.headerName = advancedMode ? "Value of leftovers" : "Mat type*"
 
-    matsColumnDef[0].headerName = advancedMode ? "Owned mats" : "CHAR-BOUND owned"
-    juiceColumnDef[0].headerName = advancedMode ? "Owned mats" : "CHAR-BOUND owned"
+    matsColumnDef[0].headerName = advancedMode ? "Owned mats" : "BOUND owned"
+    juiceColumnDef[0].headerName = advancedMode ? "Owned mats" : "BOUND owned"
 
     return (
-        <div style={{ ...styles.inputSection, flexDirection: "row", maxWidth: "1200px", marginBottom: -100 }}>
+        <div style={{ ...styles.inputSection, flexDirection: "row", maxWidth: "1200px" }}>
             <div
                 style={{
                     display: "flex",
@@ -76,7 +76,7 @@ export default function InputsSection({ inputsBundle: inputs }: InputsSectionPro
                         //     hideRowsFrom={7}
                         //     leftover={mats.leftover}
                         // />
-                        <div style={{ width: 112 }}></div>
+                        <div style={{ width: 72 }}></div>
                     )}
                 </div>
 
@@ -111,7 +111,7 @@ export default function InputsSection({ inputsBundle: inputs }: InputsSectionPro
                         //     onValuesChange={juiceSetters.weapon.setLeftover}
                         //     leftover={juice.weapon.leftover}
                         // />
-                        <div style={{ width: 112 }}></div>
+                        <div style={{ width: 72 }}></div>
                     )}
                 </div>
 
@@ -146,7 +146,7 @@ export default function InputsSection({ inputsBundle: inputs }: InputsSectionPro
                         //     onValuesChange={juiceSetters.armor.setLeftover}
                         //     leftover={juice.armor.leftover}
                         // />
-                        <div style={{ width: 112 }}></div>
+                        <div style={{ width: 72 }}></div>
                     )}
                 </div>
             </div>
@@ -163,9 +163,9 @@ export default function InputsSection({ inputsBundle: inputs }: InputsSectionPro
                         Here, you can specify how the leftover mats should be valued. If you think you will use your leftover bound mats later to save you gold,
                         then you can put them at a higher value.
                         <br></br> <br></br>
-                        Furthermore, if one of your mat type is all tradable and you want to consider the leftover as slightly less than market price(due to 5%
-                        tax), you can do so by changing the leftover values. Unfortunately we are unable to consider more than 1 price threshold, so if you have
-                        a mix of tradable and bound mats you should put your bound mats.
+                        Furthermore, if one of your mat type is almost all tradable and you want to consider the leftover as slightly less than market price(due
+                        to 5% tax), you can do so by changing the leftover values. Unfortunately we are unable to consider more than 1 price threshold, so if
+                        you have a mix of tradable and bound mats, you should just put your bound mats.
                         <br></br> <br></br>
                         These values influence how the optimizer behaves, most notably your juice & books. If you have bound juice (so holding onto leftover is
                         worthless), the optimizer will try and use them up.

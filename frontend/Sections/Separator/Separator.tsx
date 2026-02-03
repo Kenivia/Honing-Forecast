@@ -21,7 +21,7 @@ export default function Separator({ activePage, onPageChange, setAutoRunOptimize
         if (page !== "optimize") {
             setAutoRunOptimizer(false)
         } else if (!hasAutoStartedOptimizer) {
-            setAutoRunOptimizer(true)
+            // setAutoRunOptimizer(true)
             setHasAutoStartedOptimizer(true)
         }
         onPageChange(page)
@@ -49,7 +49,6 @@ export default function Separator({ activePage, onPageChange, setAutoRunOptimize
 
     return (
         <div className={getSeparatorClass()}>
-
             <button className={getButtonClass("distribution")} onClick={() => handleButtonClick("distribution")}>
                 <span className="hf-label">Cool graphs</span>
                 <div className="hf-help">How much will the upgrades cost?</div>
