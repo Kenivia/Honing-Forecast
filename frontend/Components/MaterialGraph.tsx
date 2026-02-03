@@ -152,6 +152,7 @@ const GraphContent = ({ width, height, data, average, secondaryAnnotation, color
     // if (!data || data.length === 0 || (data.map((x) => x[0]).reduce((prev, next) => Math.max(prev, next))) == 0) return null
     const isEmpty = (data.map((x) => x[0]).reduce((prev, next) => Math.max(prev, next))) == 0;
     // console.log(data.length, label)
+    // console.log(secondaryAnnotation, xScale(secondaryAnnotation))
     return (
         // ref for the tooltip portal
         <div ref={containerRef} style={{ position: "relative" }}>
@@ -217,7 +218,7 @@ const GraphContent = ({ width, height, data, average, secondaryAnnotation, color
                                 strokeDasharray="2,2"
                             />
                             <circle cx={xScale(secondaryAnnotation)} cy={getYForX(secondaryAnnotation)} r={4} fill={inputColor} stroke={color} strokeWidth={2} />
-                            <text x={xScale(secondaryAnnotation)} y={yMax - 3} textAnchor="middle" fontSize={14} fill={inputColor}>
+                            <text x={Math.max(Math.min(xScale(secondaryAnnotation), xMax - 40), 40)} y={yMax - 3} textAnchor="middle" fontSize={14} fill={inputColor}>
                                 You have: {secondaryAnnotation.toLocaleString("en-US", { maximumFractionDigits: 0, minimumFractionDigits: 0 })}
                             </text>
                         </g>

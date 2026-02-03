@@ -44,7 +44,7 @@ export default function LeftoverSlider({ value, maxValue, label, onChange }: Lef
                 max={numericMax}
                 step={Math.max(Math.floor(numericMax * 0.05 / factor) * factor, factor)}
                 valueLabelDisplay="auto"
-                valueLabelFormat={() => `Every leftover ${label} is counted as ${clampedValue} gold`}
+                valueLabelFormat={() => `Every leftover ${label} is considered ${clampedValue} gold`}
             />
         </div>
     )

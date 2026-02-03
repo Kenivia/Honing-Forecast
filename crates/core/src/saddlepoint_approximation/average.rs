@@ -138,6 +138,7 @@ impl StateBundle {
             if DEBUG_AVERAGE {
                 dbg!("================================", skip_count,);
             }
+
             for (support_index, (effective_budget, price, leftover)) in izip!(
                 self.flattened_effective_budgets(),
                 self.flattened_price(),
@@ -175,6 +176,7 @@ impl StateBundle {
                 // dbg_sa_avg[support_index] += special_prob * this_avg;
             }
         }
+        breakdown.iter_mut().map(|x| x.ceil());
         self.average_breakdown = Some(breakdown);
         total_gold
     }

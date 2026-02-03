@@ -93,6 +93,9 @@ function avg_breakdown_colors(avg_breakdown: any, labels: string[], offset: numb
         return value > -0.5 ? "var(--text-success)" : "var(--deficit)"
     })
 }
+
+
+
 export default function OptimizeSection({
     curIsBest,
     inputsBundle: _inputsBundle,
@@ -204,7 +207,7 @@ export default function OptimizeSection({
                         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
                             <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13 }}>
                                 <input type="checkbox" checked={autoRunOptimizer} onChange={(e) => setAutoRunOptimizer(e.target.checked)} />
-                                Auto start optimizer
+                                Auto start optimizer whenever something changes
                             </label>
                         </div>
                         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
@@ -362,13 +365,17 @@ export default function OptimizeSection({
                     </div> */}
                     {/* <div style={{ display: "grid", gridTemplateColumns: "1fr auto 1fr", alignItems: "center", gap: 12 }}>
                         <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 12 }}> */}
+                    <h3>What do the numbers mean?</h3>
+                    <span>
+
+                    </span>
                     <span style={{ fontSize: 24, color: "var(--optimizer-button)" }}>
                         Combined : {breakdown_to_english(evaluateAverageResult?.metric)}
                     </span>
                     {/* </div>
                     </div> */}
                 </div>
-            </section>
-        </div>
+            </section >
+        </div >
     )
 }

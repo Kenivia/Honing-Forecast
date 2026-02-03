@@ -110,7 +110,14 @@ impl StateBundle {
                     this_budget,
                     self.honing_sa_wrapper(
                         support_index as i64,
-                        this_budget,
+                        this_budget
+                            - if support_index == 3 {
+                                self.prep_output.unlock_costs[0] as f64
+                            } else if support_index == 6 {
+                                self.prep_output.unlock_costs[1] as f64
+                            } else {
+                                0.0
+                            },
                         &mut dummy_performance,
                     ),
                 );
@@ -124,7 +131,16 @@ impl StateBundle {
                 }
                 out += special_prob * self.simple_avg(support_index as i64, skip_count);
             }
-            average.push(out - flattened_spent[support_index])
+            average.push(
+                (out + if support_index == 3 {
+                    self.prep_output.unlock_costs[0] as f64
+                } else if support_index == 6 {
+                    self.prep_output.unlock_costs[1] as f64
+                } else {
+                    0.0
+                })
+                .ceil(),
+            )
         }
 
         HistogramOutputs {

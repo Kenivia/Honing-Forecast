@@ -862,7 +862,7 @@ export default function HoningForecastUI() {
     const optimizeAvgWorkerRef = useRef<Worker | null>(null)
     const [optimizeAvgBusy, setOptimizeAvgBusy] = useState(false)
     // const [optimizeAvgResult, setOptimizeAvgResult] = useState<{ average_costs?: any } | null>(null)
-    const startOptimizeAverage = useCallback(() => {
+    const startOptimizeAverage = useCallback((debounce) => {
 
         runner.start({
             which_one: "OptimizeAverage",
@@ -911,6 +911,7 @@ export default function HoningForecastUI() {
             onError: (err) => {
                 setOptimizeAvgError(String(err))
             },
+            debounceMs: debounce,
         })
     })
     useEffect(() => {
@@ -920,8 +921,8 @@ export default function HoningForecastUI() {
         }
         setOptimizeAvgError(null)
         setRanOutFreeTaps(false)
-        setBeforeMetric(bestMetric)
-        startOptimizeAverage()
+        setBeforeMetric(currentMetric)
+        startOptimizeAverage(200)
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [
         autoRunOptimizer,
@@ -945,7 +946,7 @@ export default function HoningForecastUI() {
         if (optimizeButtonPress > 0) {
             setOptimizeAvgError(null)
             setRanOutFreeTaps(false)
-            startOptimizeAverage()
+            startOptimizeAverage(0)
         }
 
         // eslint-disable-next-line react-hooks/exhaustive-deps

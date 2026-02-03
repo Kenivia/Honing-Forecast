@@ -42,6 +42,8 @@ impl StateBundle {
                 .sum::<i64>();
         }
         // }
+        out[3] += self.prep_output.unlock_costs[0];
+        out[6] += self.prep_output.unlock_costs[1];
         out
     }
     pub fn pity(&self) -> Vec<i64> {
@@ -52,6 +54,8 @@ impl StateBundle {
                 .map(|support| support.access_collapsed().iter().last().unwrap().0.ceil() as i64)
                 .sum::<i64>();
         }
+        out[3] += self.prep_output.unlock_costs[0];
+        out[6] += self.prep_output.unlock_costs[1];
 
         out
     }

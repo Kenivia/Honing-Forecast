@@ -79,6 +79,9 @@ pub fn solve<R: Rng>(
         .max(state_bundle.min_resolution);
 
     state_bundle.metric = state_bundle.metric_router(overall_performance);
+    if state_bundle.upgrade_arr.len() == 0 {
+        return state_bundle;
+    }
 
     let mut eqv_wall_time_iters: i64 = 0;
     let mut last_total_count: i64 = 0;

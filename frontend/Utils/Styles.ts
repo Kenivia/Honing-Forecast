@@ -190,7 +190,7 @@ export const createColumnDefs = () => {
             color: "var(--grid-cell-text)",
         },
         {
-            headerName: "How much do you care about leftover mats?",
+            headerName: "",
             editable: true,
             flex: 1,
             width: "100px",
