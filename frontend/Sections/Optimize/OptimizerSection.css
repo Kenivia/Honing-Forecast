@@ -167,6 +167,19 @@
     border-radius: 2px;
 }
 
+.optimizer-section-title-no-hover {
+    font-size: 24px;
+    font-weight: 400;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    padding-bottom: 4px;
+    border-bottom: 2px dashed var(--text-very-muted);
+    margin-top: 8px;
+    border-radius: 2px;
+}
+
 .optimizer-section-title:hover {
     background-color: var(--focus-bg);
 }

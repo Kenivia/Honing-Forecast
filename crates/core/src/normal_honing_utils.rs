@@ -27,7 +27,7 @@ impl StateBundle {
     pub fn one_tap(&self) -> Vec<i64> {
         let mut out = vec![0i64; 7 + self.prep_output.juice_info.num_avail * 2];
         // for upgrade in self.upgrade_arr.iter() {
-        let flat = self.prep_output.flat_alr_spent.clone().unwrap();
+        // let flat = self.prep_output.flat_alr_spent.clone().unwrap();
         for (support_index, cost) in out.iter_mut().enumerate() {
             *cost += (self
                 .extract_support_with_meta(support_index as i64, 0)
@@ -36,13 +36,13 @@ impl StateBundle {
             .ceil() as i64;
         }
         // }
-        out[3] += self.prep_output.unlock_costs[0];
-        out[6] += self.prep_output.unlock_costs[1];
+        // out[3] += self.prep_output.unlock_costs[0];
+        // out[6] += self.prep_output.unlock_costs[1];
         out
     }
     pub fn pity(&self) -> Vec<i64> {
         let mut out = vec![0i64; 7 + self.prep_output.juice_info.num_avail * 2];
-        let flat = self.prep_output.flat_alr_spent.clone().unwrap();
+        // let flat = self.prep_output.flat_alr_spent.clone().unwrap();
         for (support_index, cost) in out.iter_mut().enumerate() {
             *cost += (self
                 .extract_support_with_meta(support_index as i64, 0)
@@ -50,8 +50,8 @@ impl StateBundle {
                 .sum::<f64>())
             .ceil() as i64;
         }
-        out[3] += self.prep_output.unlock_costs[0];
-        out[6] += self.prep_output.unlock_costs[1];
+        // out[3] += self.prep_output.unlock_costs[0];
+        // out[6] += self.prep_output.unlock_costs[1];
 
         out
     }
@@ -601,7 +601,13 @@ impl Upgrade {
 
         for t_index in 0..7 {
             let mut this_mats_costs: Vec<f64> = Vec::with_capacity(l_len);
-            let mut cost_so_far: f64 = 0.0;
+            let mut cost_so_far: f64 = if t_index == 3 {
+                self.unlock_costs[0] as f64
+            } else if t_index == 6 {
+                self.unlock_costs[1] as f64
+            } else {
+                0.0
+            };
             let this_cost: f64 = self.costs[t_index] as f64;
             for (index, _p) in self.prob_dist.iter().enumerate() {
                 // if index == self.alr_failed && ignore_already_spent {

@@ -249,7 +249,7 @@ export default function OptimizeSection({
                                     Go from top to bottom, empty squares mean no book / no juice.<br></br>
                                 </span>
                                 <div style={{ display: "flex", alignItems: "center", gap: "8px", textWrap: "wrap", lineHeight: "1.0" }}>
-                                    <LabeledCheckbox label="Allow updating progress" checked={allowUserChangeState} setChecked={setAllowUserChangeState} />
+                                    <LabeledCheckbox label="Enable updating progress" checked={allowUserChangeState} setChecked={setAllowUserChangeState} />
                                 </div>
                                 {allowUserChangeState && (
                                     <div>

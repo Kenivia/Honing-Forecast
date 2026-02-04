@@ -95,7 +95,7 @@ impl StateBundle {
 
         // let already_spent: (Vec<i64>, Vec<i64>, Vec<i64>, f64) =
         //     self.prep_output.already_spent.clone().unwrap();
-        let flattened_spent: Vec<f64> = self.prep_output.flat_alr_spent.clone().unwrap();
+        // let flattened_spent: Vec<f64> = self.prep_output.flat_alr_spent.clone().unwrap();
         for support_index in 0..num_sup {
             for (index, this_prob) in cum_percentiles[support_index].iter_mut().enumerate() {
                 let this_budget =
@@ -104,14 +104,14 @@ impl StateBundle {
                     this_budget,
                     self.honing_sa_wrapper(
                         support_index as i64,
-                        this_budget
-                            - if support_index == 3 {
-                                self.prep_output.unlock_costs[0]
-                            } else if support_index == 6 {
-                                self.prep_output.unlock_costs[1]
-                            } else {
-                                0
-                            } as f64,
+                        this_budget,
+                        // - if support_index == 3 {
+                        //     self.prep_output.unlock_costs[0]
+                        // } else if support_index == 6 {
+                        //     self.prep_output.unlock_costs[1]
+                        // } else {
+                        //     0
+                        // } as f64,
                         &mut dummy_performance,
                     ),
                 );
@@ -126,14 +126,15 @@ impl StateBundle {
                 out += special_prob * self.simple_avg(support_index as i64, skip_count);
             }
             average.push(
-                (out + if support_index == 3 {
-                    self.prep_output.unlock_costs[0] as f64
-                } else if support_index == 6 {
-                    self.prep_output.unlock_costs[1] as f64
-                } else {
-                    0.0
-                })
-                .ceil(),
+                out
+                    //     + if support_index == 3 {
+                    //     self.prep_output.unlock_costs[0] as f64
+                    // } else if support_index == 6 {
+                    //     self.prep_output.unlock_costs[1] as f64
+                    // } else {
+                    //     0.0
+                    // })
+                    .ceil(),
             )
         }
 
@@ -148,13 +149,13 @@ impl StateBundle {
                 .take(7)
                 .map(|(index, x)| {
                     *x as f64
-                        + if index == 3 {
-                            self.prep_output.unlock_costs[0] as f64
-                        } else if index == 6 {
-                            self.prep_output.unlock_costs[1] as f64
-                        } else {
-                            0.0
-                        }
+                    // + if index == 3 {
+                    //     self.prep_output.unlock_costs[0] as f64
+                    // } else if index == 6 {
+                    //     self.prep_output.unlock_costs[1] as f64
+                    // } else {
+                    //     0.0
+                    // }
                 })
                 .chain(
                     self.prep_output
@@ -168,8 +169,8 @@ impl StateBundle {
                         .iter()
                         .map(|x| x.1 as f64),
                 )
-                .zip(self.prep_output.flat_alr_spent.clone().unwrap().iter())
-                .map(|(b, f)| b + f)
+                // .zip(self.prep_output.flat_alr_spent.clone().unwrap().iter())
+                // .map(|(b, f)| b + f)
                 .collect(),
         }
     }

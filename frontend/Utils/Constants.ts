@@ -82,6 +82,12 @@ export const DEFAULT_MATS_PRICES = ["1.84", "0.04", "20", "0.6", "128", "1.0", "
 
 export const DEFAULT_MATS_LEFTOVER = ["0", "0", "0", "0", "0", "0", "0"]
 
+export const DEFAULT_TOGGLES = {
+    mats: Array.from({ length: MATS_LABELS.length }, () => true),
+    weapon: Array.from({ length: JUICE_LABELS.length }, () => true),
+    juice: Array.from({ length: JUICE_LABELS.length }, () => true),
+}
+
 export const PIECE_NAMES = ["Helmet", "Shoulder", "Chest", "Pants", "Glove", "Weapon"]
 
 const DEFAULT_STATE_PAIR: [boolean, number] = [false, 0]

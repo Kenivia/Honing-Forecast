@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useCallback } from "react"
+import React, { useRef } from "react"
 import Icon from "./Icon.tsx"
 import { ColumnDef } from "../Utils/Styles.ts"
 
@@ -14,6 +14,8 @@ interface SpreadsheetGridProps {
     hideIcons?: boolean
     fontSizeOverride?: string | null
     noHeader?: boolean
+    // Optional prop for checkbox column with per-row boolean values
+    rowCheckboxes?: { value: boolean[]; onChange: (_: boolean[]) => void }
 }
 
 interface Selection {
@@ -32,8 +34,35 @@ export default function SpreadsheetGrid({
     hideIcons = false,
     fontSizeOverride = null,
     noHeader = false,
+    rowCheckboxes,
 }: SpreadsheetGridProps) {
     const gridRef = useRef<HTMLDivElement | null>(null)
+
+    // Determine if we should render checkboxes
+    const showCheckboxes = rowCheckboxes !== undefined
+
+    const handleCheckboxChange = (rowIndex: number, newValue: boolean) => {
+        if (!rowCheckboxes) return
+
+        // 1. Update the checkbox value at this row index
+        const newValues = [...rowCheckboxes.value]
+        newValues[rowIndex] = newValue
+        rowCheckboxes.onChange(newValues)
+
+        // 2. If checking (true), overwrite second column (index 1) to "0"
+        if (!newValue) {
+            const label = labels[rowIndex]
+            const col1Setter = setSheetValuesArr[1]
+            const col1Values = sheetValuesArr[1]
+
+            // Ensure column 1 exists and is editable
+            if (col1Setter && col1Values) {
+                const next = { ...col1Values }
+                next[label] = "0"
+                col1Setter(next)
+            }
+        }
+    }
 
     const handleCellChange = (rowIndex: number, colIndex: number, value: string) => {
         if (!columnDefs[colIndex].editable) return
@@ -114,21 +143,19 @@ export default function SpreadsheetGrid({
     return (
         <div
             ref={gridRef}
-            // onKeyDown={handleKeyDown}
             tabIndex={0}
             style={{
                 display: "flex",
                 padding: 6,
                 outline: "none",
-
-                // minHeight: "200px",
             }}
         >
+            {/* 1. Icon Column */}
             {!hideIcons && (
                 <div style={{ flex: 1, width: 50 }}>
-                    {(noHeader ? [] : [""]).concat(labels).map((lab) => (
+                    {(noHeader ? [] : [""]).concat(labels).map((lab, i) => (
                         <div
-                            key={lab}
+                            key={i} // using index because header is "" and might duplicate
                             style={{
                                 height: 36,
                                 color: "var(--text-secondary)",
@@ -144,16 +171,52 @@ export default function SpreadsheetGrid({
                                 textAlign: "right",
                             }}
                         >
-                            <Icon iconName={lab} size={28} />
+                            {lab && <Icon iconName={lab} size={28} />}
                         </div>
                     ))}
                 </div>
             )}
 
+            {/* 2. New Checkbox Column */}
+            {showCheckboxes && (
+                <div style={{ width: 30, display: "flex", flexDirection: "column" }}>
+                    {/* Fake Header Spacer */}
+                    {!noHeader && <div style={{ height: 40 }} />}
+
+                    {labels.map((_, rowIndex) => (
+                        <div
+                            key={`chk-${rowIndex}`}
+                            style={{
+                                height: 36,
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                            }}
+                        >
+                            <input
+                                type="checkbox"
+                                checked={rowCheckboxes!.value[rowIndex] ?? false}
+                                onChange={(e) => handleCheckboxChange(rowIndex, e.target.checked)}
+                                style={{ cursor: "pointer" }}
+                            />
+                        </div>
+                    ))}
+                </div>
+            )}
+
+            {/* 3. Data Grid */}
             <div style={{ flex: 1 }}>
                 {/* Column headers (plain text, aligned) */}
                 {!noHeader && (
-                    <div style={{ display: "grid", gridTemplateColumns: columnDefs.map((col) => col.width).join(" "), gap: 0, marginBottom: 4, height: 36 }}>
+                    <div
+                        style={{
+                            display: "grid",
+                            gridTemplateColumns: columnDefs.map((col) => col.width).join(" "),
+                            gap: 0,
+                            marginBottom: 4,
+                            height: 36,
+                        }}
+                    >
                         {columnDefs.map((colDef, colIndex) => (
                             <div
                                 key={`hdr-${colIndex}`}
@@ -178,17 +241,33 @@ export default function SpreadsheetGrid({
                     </div>
                 )}
 
-                <div style={{ display: "grid", gridTemplateColumns: columnDefs.map((col) => col.width).join(" "), gap: 0 }}>
-                    {labels.map((label, rowIndex) =>
-                        columnDefs.map((colDef, colIndex) => (
+                <div
+                    style={{
+                        display: "grid",
+                        gridTemplateColumns: columnDefs.map((col) => col.width).join(" "),
+                        gap: 0,
+                    }}
+                >
+                    {labels.map((label, rowIndex) => {
+                        // Check if this row is "checked" / faded
+                        const isRowChecked = showCheckboxes ? (rowCheckboxes!.value[rowIndex] ?? false) : false
+
+                        return columnDefs.map((colDef, colIndex) => (
                             <div
                                 key={`${label}-${colIndex}`}
                                 data-row={rowIndex}
                                 data-col={colIndex}
-                                style={{ height: 36, display: "flex", alignItems: "center" }}
+                                style={{
+                                    height: 36,
+                                    display: "flex",
+                                    alignItems: "center",
+                                    position: "relative", // Needed for the overlay
+                                }}
                             >
                                 <input
                                     type="text"
+                                    // Disable input if row is checked
+                                    disabled={isRowChecked}
                                     readOnly={!columnDefs[colIndex].editable || (colIndex === 1 && rowIndex >= 7)}
                                     value={sheetValuesArr[colIndex]?.[label] ?? ""}
                                     onChange={(e) => handleCellChange(rowIndex, colIndex, e.target.value)}
@@ -198,16 +277,13 @@ export default function SpreadsheetGrid({
                                     onBlur={() => handleCellBlur(rowIndex, colIndex)}
                                     style={{
                                         width: colDef.width,
-
                                         height: "100%",
                                         padding: "6px 8px",
                                         border: "1px solid var(--border-accent)",
                                         background:
                                             columnDefs[colIndex].backgroundRanOut && parseInt(sheetValuesArr[colIndex][label]) < 0
                                                 ? columnDefs[colIndex].backgroundRanOut
-                                                : // : isCellSelected(rowIndex, colIndex)
-                                                  //   ? columnDefs[colIndex].backgroundSelected
-                                                  columnDefs[colIndex].background,
+                                                : columnDefs[colIndex].background,
                                         color: colorsArr?.[colIndex]?.[rowIndex] ?? columnDefs[colIndex].color,
                                         fontSize: "var(--font-size-sm)",
                                         textAlign: colDef.textAlign ?? "left",
@@ -218,9 +294,25 @@ export default function SpreadsheetGrid({
                                     }}
                                     placeholder="0"
                                 />
+
+                                {/* The Overlay: Renders only if checked, covers the cell */}
+                                {showCheckboxes && !isRowChecked && (
+                                    <div
+                                        style={{
+                                            position: "absolute",
+                                            top: 0,
+                                            left: 0,
+                                            right: 0,
+                                            bottom: 0,
+                                            backgroundColor: "rgba(0, 0, 0, 0.5)", // Semi-transparent black
+                                            zIndex: 10,
+                                            cursor: "not-allowed",
+                                        }}
+                                    />
+                                )}
                             </div>
-                        )),
-                    )}
+                        ))
+                    })}
                 </div>
             </div>
         </div>

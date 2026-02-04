@@ -9,9 +9,11 @@ import React, { useState } from "react"
 
 type InputsSectionProps = {
     inputsBundle: InputsBundleWithSetters
+    inputToggles: { mats: boolean[]; weapon: boolean[]; juice: boolean[] }
+    setInputToggles: (_toggles: { mats: boolean[]; weapon: boolean[]; juice: boolean[] }) => void
 }
 
-export default function InputsSection({ inputsBundle: inputs }: InputsSectionProps) {
+export default function InputsSection({ inputsBundle: inputs, inputToggles, setInputToggles }: InputsSectionProps) {
     const [advancedMode, setAdvancedMode] = useState(false)
     const { matsColumnDef, juiceColumnDef } = createColumnDefs()
     const { values, setters } = inputs
@@ -60,6 +62,10 @@ export default function InputsSection({ inputsBundle: inputs }: InputsSectionPro
                         labels={MATS_LABELS}
                         sheetValuesArr={[mats.owned, mats.prices]}
                         setSheetValuesArr={[matsSetters.setOwned, matsSetters.setPrices]}
+                        rowCheckboxes={{
+                            value: inputToggles.mats,
+                            onChange: (newValues) => setInputToggles({ ...inputToggles, mats: newValues }),
+                        }}
                     />
                     {advancedMode ? (
                         // <SliderColumn
@@ -97,6 +103,10 @@ export default function InputsSection({ inputsBundle: inputs }: InputsSectionPro
                         labels={JUICE_LABELS.map((label_row) => label_row[0])}
                         sheetValuesArr={[juice.weapon.owned, juice.weapon.prices]}
                         setSheetValuesArr={[juiceSetters.weapon.setOwned, juiceSetters.weapon.setPrices]}
+                        rowCheckboxes={{
+                            value: inputToggles.weapon,
+                            onChange: (newValues) => setInputToggles({ ...inputToggles, weapon: newValues }),
+                        }}
                     />
                     {advancedMode ? (
                         <SpreadsheetGrid
@@ -132,6 +142,10 @@ export default function InputsSection({ inputsBundle: inputs }: InputsSectionPro
                         labels={JUICE_LABELS.map((label_row) => label_row[1])}
                         sheetValuesArr={[juice.armor.owned, juice.armor.prices]}
                         setSheetValuesArr={[juiceSetters.armor.setOwned, juiceSetters.armor.setPrices]}
+                        rowCheckboxes={{
+                            value: inputToggles.juice,
+                            onChange: (newValues) => setInputToggles({ ...inputToggles, juice: newValues }),
+                        }}
                     />
                     {advancedMode ? (
                         // <SliderColumn

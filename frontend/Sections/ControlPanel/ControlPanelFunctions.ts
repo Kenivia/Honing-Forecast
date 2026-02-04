@@ -1,5 +1,5 @@
 import React from "react"
-import { DEMO_INCOME_1680_ROSTER_BOUND, DEMO_INCOME_1720_CHAR_BOUND, DEMO_UI_VALUES, RESET_UI_DEFAULTS } from "@/Utils/Constants.ts"
+import { DEMO_INCOME_1680_ROSTER_BOUND, DEMO_INCOME_1720_CHAR_BOUND, DEMO_UI_VALUES, RESET_UI_DEFAULTS, DEFAULT_TOGGLES } from "@/Utils/Constants.ts"
 
 const cloneGrid = <T>(grid: T[][]) => grid.map((row) => row.map((cell) => cell))
 const cloneStateBundleGrid = (grid: [boolean, number][][][]) =>
@@ -42,6 +42,7 @@ export function createClearAll({
     setBestFlatSpecialState: setBestFlatSpecialGrid,
     setBeforeMetric,
     setHasRunOptimizer,
+    setInputToggles,
 }: // setMonteCarloResult,
 {
     setTopGrid: React.Dispatch<React.SetStateAction<any>>
@@ -82,6 +83,7 @@ export function createClearAll({
     setBeforeMetric: React.Dispatch<React.SetStateAction<number | null>>
 
     setHasRunOptimizer: React.Dispatch<React.SetStateAction<boolean | null>>
+    setInputToggles: React.Dispatch<React.SetStateAction<{ mats: boolean[]; weapon: boolean[]; juice: boolean[] }>>
 }) {
     return () => {
         // Grids and their column header checkboxes
@@ -130,6 +132,11 @@ export function createClearAll({
         setBestFlatSpecialGrid(null)
         setBeforeMetric(null)
         setHasRunOptimizer(false)
+        setInputToggles({
+            mats: [...DEFAULT_TOGGLES.mats],
+            weapon: [...DEFAULT_TOGGLES.weapon],
+            juice: [...DEFAULT_TOGGLES.juice],
+        })
         // setMonteCarloResult(null)
     }
 }

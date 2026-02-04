@@ -63,6 +63,7 @@ export function writeSettings(
     dataSize,
     incomeArr,
     minResolution,
+    inputToggles,
     // specialState,
     // succeededGrid,
     // unlockGrid,
@@ -91,6 +92,7 @@ export function writeSettings(
         dataSize,
         incomeArr,
         minResolution,
+        inputToggles,
         // specialState,
         // succeededGrid,
         // unlockGrid,
@@ -120,6 +122,7 @@ export function readSettings(
     setDataSize,
     setIncomeArr,
     setMinResolution,
+    setInputToggles,
     // setSpecialState,
     // setSucceededGrid,
     // setUnlockGrid,
@@ -158,6 +161,15 @@ export function readSettings(
         if (Array.isArray(parsed.incomeArr) && parsed.incomeArr.length === 6 && parsed.incomeArr.every((row) => Array.isArray(row) && row.length === 7))
             setIncomeArr(parsed.incomeArr)
         if (typeof parsed.minResolution === "number") setMinResolution(parsed.minResolution)
+        if (
+            parsed.inputToggles &&
+            typeof parsed.inputToggles === "object" &&
+            Array.isArray(parsed.inputToggles.mats) &&
+            Array.isArray(parsed.inputToggles.weapon) &&
+            Array.isArray(parsed.inputToggles.juice)
+        ) {
+            setInputToggles(parsed.inputToggles)
+        }
         // if (Array.isArray(parsed.specialState) && parsed.specialState.every((value) => typeof value === "number")) setSpecialState(parsed.specialState)
         // if (isGrid(parsed.succeededGrid, TOP_ROWS, TOP_COLS, (cell) => typeof cell === "boolean")) setSucceededGrid(parsed.succeededGrid)
         // if (isGrid(parsed.unlockGrid, TOP_ROWS, TOP_COLS, (cell) => typeof cell === "boolean")) setUnlockGrid(parsed.unlockGrid)

@@ -63,12 +63,12 @@ fn compute_already_spent(
             }
             assert!(upgrade.unlocked)
         }
-        if upgrade.unlocked {
-            out_mats_float[3] += upgrade.unlock_costs[0] as f64;
-            out_mats_float[6] += upgrade.unlock_costs[1] as f64;
-            unlock_offset[0] += upgrade.unlock_costs[0] as f64;
-            unlock_offset[1] += upgrade.unlock_costs[1] as f64;
-        }
+        // if upgrade.unlocked {
+        //     out_mats_float[3] += upgrade.unlock_costs[0] as f64;
+        //     out_mats_float[6] += upgrade.unlock_costs[1] as f64;
+        //     unlock_offset[0] += upgrade.unlock_costs[0] as f64;
+        //     unlock_offset[1] += upgrade.unlock_costs[1] as f64;
+        // }
 
         for i in 0..prep_output.juice_info.num_avail {
             out_weapon_float[i] += upgrade.weap_juice_costs[i].support[upgrade.alr_failed];
@@ -122,8 +122,8 @@ pub fn actual_eqv_gold(
         total += i.0 as f64 * juice_info.one_gold_cost_id[id].0;
         total += i.1 as f64 * juice_info.one_gold_cost_id[id].1;
     }
-    total -= unlock_costs[0] as f64 * price_arr[3];
-    total -= unlock_costs[1] as f64 * price_arr[6];
+    // total -= unlock_costs[0] as f64 * price_arr[3];
+    // total -= unlock_costs[1] as f64 * price_arr[6];
 
     total
 }
@@ -253,8 +253,8 @@ impl PreparationOutput {
             upgrade.books_avail = (both_avail - 1).max(0) as i64;
         }
         let mut effective_budgets: Vec<f64> = budgets[0..7].iter().map(|x| *x as f64).collect();
-        effective_budgets[3] -= unlock_costs[0] as f64;
-        effective_budgets[6] -= unlock_costs[1] as f64;
+        // effective_budgets[3] -= unlock_costs[0] as f64;
+        // effective_budgets[6] -= unlock_costs[1] as f64;
 
         let mut out: PreparationOutput = Self {
             // upgrade_arr,
@@ -272,45 +272,45 @@ impl PreparationOutput {
             already_spent: None,
             flat_alr_spent: None,
         };
-        let (alr, flat_alr_spent, unlock_offset) = compute_already_spent(&mut upgrade_arr, &out);
-        out.already_spent = Some(alr.clone());
-        out.flat_alr_spent = Some(flat_alr_spent.clone());
-        for (index, e_budget) in out
-            .effective_budgets
-            .iter_mut()
-            .chain(
-                out.juice_books_owned
-                    .iter_mut()
-                    .flat_map(|x| iter::once(&mut x.0).chain(iter::once(&mut x.1))),
-            )
-            .enumerate()
-        {
-            *e_budget -= flat_alr_spent[index];
-            if index == 3 {
-                *e_budget += unlock_offset[0]; // don't double count unlock
-            }
-            if index == 6 {
-                *e_budget += unlock_offset[1];
-            }
-        }
-        // web_sys::console::log_1(
-        //     &format!(
-        //         "{:?} {:?} {:?}",
-        //         out.juice_books_owned, out.flat_alr_spent, out.already_spent
+        // let (alr, flat_alr_spent, unlock_offset) = compute_already_spent(&mut upgrade_arr, &out);
+        // out.already_spent = Some(alr.clone());
+        // out.flat_alr_spent = Some(flat_alr_spent.clone());
+        // for (index, e_budget) in out
+        //     .effective_budgets
+        //     .iter_mut()
+        //     .chain(
+        //         out.juice_books_owned
+        //             .iter_mut()
+        //             .flat_map(|x| iter::once(&mut x.0).chain(iter::once(&mut x.1))),
         //     )
-        //     .into(),
-        // );
+        //     .enumerate()
+        // {
+        //     *e_budget -= flat_alr_spent[index];
+        //     if index == 3 {
+        //         *e_budget += unlock_offset[0]; // don't double count unlock
+        //     }
+        //     if index == 6 {
+        //         *e_budget += unlock_offset[1];
+        //     }
+        // }
+        // // web_sys::console::log_1(
+        // //     &format!(
+        // //         "{:?} {:?} {:?}",
+        // //         out.juice_books_owned, out.flat_alr_spent, out.already_spent
+        // //     )
+        // //     .into(),
+        // // );
         (out, upgrade_arr)
     }
-    pub fn eqv_gold_unlock(&self) -> f64 {
-        // a bit redundent but whatever
-        let mut c: f64 = 0.0;
+    // pub fn eqv_gold_unlock(&self) -> f64 {
+    //     // a bit redundent but whatever
+    //     let mut c: f64 = 0.0;
 
-        c += self.unlock_costs[0] as f64 * self.price_arr[3];
-        c += self.unlock_costs[1] as f64 * self.price_arr[6];
+    //     // c += self.unlock_costs[0] as f64 * self.price_arr[3];
+    //     // c += self.unlock_costs[1] as f64 * self.price_arr[6];
 
-        c
-    }
+    //     c
+    // }
 }
 
 // Constructs vector of Upgrade objects according to what upgrades were selected and the appropriate juice applieid

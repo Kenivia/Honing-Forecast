@@ -14,6 +14,7 @@ import {
     RESET_UI_DEFAULTS,
     DEFAULT_JUICE_LEFTOVER,
     DEFAULT_MATS_LEFTOVER,
+    DEFAULT_TOGGLES,
 } from "./Utils/Constants.ts"
 import { readSettings, writeSettings } from "./Utils/Settings.ts"
 import ControlPanel from "./Sections/ControlPanel/ControlPanel.tsx"
@@ -78,6 +79,12 @@ export default function HoningForecastUI() {
     const [userArmorJuiceLeftover, setUserArmorJuiceLeftover] = useState(() => {
         return Object.fromEntries(JUICE_LABELS.map((label_row, row_index) => [label_row[1], DEFAULT_JUICE_LEFTOVER[row_index][1]]))
     })
+
+    const [inputToggles, setInputToggles] = useState(() => ({
+        mats: [...DEFAULT_TOGGLES.mats],
+        weapon: [...DEFAULT_TOGGLES.weapon],
+        juice: [...DEFAULT_TOGGLES.juice],
+    }))
 
     const inputsValues = useMemo<InputsValues>(
         () => ({
@@ -262,6 +269,7 @@ export default function HoningForecastUI() {
                 setDataSize,
                 setIncomeArr,
                 setMinResolution,
+                setInputToggles,
                 // setSpecialState,
                 // setSucceededGrid,
                 // setUnlockGrid,
@@ -284,7 +292,7 @@ export default function HoningForecastUI() {
             const width = window.innerWidth
             if (width < 1200) {
                 const scale = Math.max(0, width / 1200)
-                setMainScale(scale)
+                setMainScale(1)
             } else {
                 setMainScale(1)
             }
@@ -348,6 +356,7 @@ export default function HoningForecastUI() {
                     dataSize,
                     incomeArr,
                     minResolution,
+                    inputToggles,
                     // specialState,
                     // succeededGrid,
                     // unlockGrid,
@@ -385,6 +394,7 @@ export default function HoningForecastUI() {
         cumulativeGraph,
         dataSize,
         minResolution,
+        inputToggles,
         // specialState,
         // succeededGrid,
         // unlockGrid,
@@ -1052,6 +1062,7 @@ export default function HoningForecastUI() {
         // setOptimizerMetric,
         // setMonteCarloResult,
         setHasRunOptimizer,
+        setInputToggles,
     })
 
     const resetOptimizerState = createResetOptimizerState({
@@ -1279,16 +1290,17 @@ export default function HoningForecastUI() {
                  
                 </div> */}
                 <section className="optimizer-section">
-                    <div className="optimizer-section-title">Inputs</div>
+                    <div className="optimizer-section-title-no-hover ">Inputs</div>
                     <div className="optimizer-section-body">
-                        <InputsSection inputsBundle={inputsBundle} />
+                        <InputsSection inputsBundle={inputsBundle} inputToggles={inputToggles} setInputToggles={setInputToggles} />
                     </div>
                 </section>
-                <section className="optimizer-section" style={{ height: 300 }}>
-                    <div className="optimizer-section-title">Optimizer controls</div>
-
+                <section className="optimizer-section" style={{ height: 350 }}>
+                    <div className="optimizer-section-title-no-hover">Optimizer controls</div>
+                    <span>Press the big yellow button once you're done inputting above.</span>
                     <div className="optimizer-card" style={{ margin: "0 auto" }}>
                         {/* Actions */}
+
                         {/* Hero area */}
                         <div className="optimizer-hero">
                             {metricType !== 0 && optimizeAverageButton}
