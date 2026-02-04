@@ -87,9 +87,9 @@ export default function ControlPanel({
                         <LabeledCheckbox label="Express event" checked={express_event} setChecked={set_express_event} />
                     </div>
                     <span style={{ fontSize: 12, marginLeft: 30, marginTop: -10 }}>(updated Feb 3rd)</span>
-                    <div style={{ display: "flex", alignItems: "center", gap: "8px", textWrap: "wrap", lineHeight: "1.0" }}>
+                    {/* <div style={{ display: "flex", alignItems: "center", gap: "8px", textWrap: "wrap", lineHeight: "1.0" }}>
                         <LabeledCheckbox label="Allow changing starting position" checked={allowUserChangeState} setChecked={setAllowUserChangeState} />
-                    </div>
+                    </div> */}
 
                     {/* <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                         <label

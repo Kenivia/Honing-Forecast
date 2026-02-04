@@ -1,4 +1,14 @@
-import { MATS_LABELS, JUICE_LABELS, STORAGE_KEY, TOP_ROWS, TOP_COLS, BOTTOM_ROWS, BOTTOM_COLS } from "./Constants.ts"
+import {
+    MATS_LABELS,
+    JUICE_LABELS,
+    STORAGE_KEY,
+    TOP_ROWS,
+    TOP_COLS,
+    BOTTOM_ROWS,
+    BOTTOM_COLS,
+    DEFAULT_MATS_LEFTOVER,
+    DEFAULT_JUICE_LEFTOVER,
+} from "./Constants.ts"
 
 const hasKeySet = (value: unknown, keys: string[]) => {
     if (!value || typeof value !== "object") return false
@@ -131,14 +141,17 @@ export function readSettings(
         if (typeof parsed.desired_chance === "string") set_desired_chance(parsed.desired_chance)
         if (isStringOrNumberRecord(parsed.userMatsOwned, MATS_LABELS)) setUserMatsOwned(parsed.userMatsOwned)
         if (isStringOrNumberRecord(parsed.userMatsPrices, MATS_PRICE_LABELS)) setUserMatsPrices(parsed.userMatsPrices)
-        console.log(parsed.userMatsLeftover)
-        if (isStringOrNumberRecord(parsed.userMatsLeftover, MATS_PRICE_LABELS)) setUserMatsLeftover(parsed.userMatsLeftover)
+        // console.log(parsed.userMatsLeftover)
+        // if (isStringOrNumberRecord(parsed.userMatsLeftover, MATS_PRICE_LABELS))
+        setUserMatsLeftover(Object.fromEntries(MATS_LABELS.map((label) => [label, DEFAULT_MATS_LEFTOVER[label]])))
         if (isStringOrNumberRecord(parsed.userWeaponJuiceOwned, JUICE_WEAPON_LABELS)) setUserWeaponJuiceOwned(parsed.userWeaponJuiceOwned)
         if (isStringOrNumberRecord(parsed.userArmorJuiceOwned, JUICE_ARMOR_LABELS)) setUserArmorJuiceOwned(parsed.userArmorJuiceOwned)
         if (isStringOrNumberRecord(parsed.userWeaponJuicePrices, JUICE_WEAPON_LABELS)) setUserWeaponJuicePrices(parsed.userWeaponJuicePrices)
         if (isStringOrNumberRecord(parsed.userArmorJuicePrices, JUICE_ARMOR_LABELS)) setUserArmorJuicePrices(parsed.userArmorJuicePrices)
-        if (isStringOrNumberRecord(parsed.userWeaponJuiceLeftover, JUICE_WEAPON_LABELS)) setUserWeaponJuiceLeftover(parsed.userWeaponJuiceLeftover)
-        if (isStringOrNumberRecord(parsed.userArmorJuiceLeftover, JUICE_ARMOR_LABELS)) setUserArmorJuiceLeftover(parsed.userArmorJuiceLeftover)
+        // if (isStringOrNumberRecord(parsed.userWeaponJuiceLeftover, JUICE_WEAPON_LABELS))
+        setUserWeaponJuiceLeftover(Object.fromEntries(JUICE_WEAPON_LABELS.map((row) => [row[0], DEFAULT_JUICE_LEFTOVER[0][row[0]]])))
+        // if (isStringOrNumberRecord(parsed.userArmorJuiceLeftover, JUICE_ARMOR_LABELS))
+        setUserArmorJuiceLeftover(Object.fromEntries(JUICE_WEAPON_LABELS.map((row) => [row[0], DEFAULT_JUICE_LEFTOVER[1][row[1]]])))
         if (typeof parsed.cumulativeGraph === "boolean") setCumulativeGraph(parsed.cumulativeGraph)
         if (typeof parsed.dataSize === "string") setDataSize(parsed.dataSize)
 

@@ -372,7 +372,7 @@ const RowBundle = ({
                     </div>
                     {succeed && <div className="state-grid-overlay" />}
                 </div>
-                {/* {upgrade.is_normal_honing && (
+                {
                     <button
                         style={{
                             ...styles.demoButton,
@@ -389,7 +389,7 @@ const RowBundle = ({
                     >
                         {succeed ? "Undo" : "Succeed"}
                     </button>
-                )} */}
+                }
             </div>
         </div>
     )

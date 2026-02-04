@@ -85,6 +85,9 @@ export default function SpreadsheetGrid({
             if (cleanValue.length > 10) {
                 cleanValue = "999999999"
             }
+            if (rowIndex == 7 && cleanValue.length > 4) {
+                cleanValue = String(Math.min(parseFloat(cleanValue), 33333))
+            }
             const next = { ...colValues }
             next[label] = cleanValue
             setter(next)

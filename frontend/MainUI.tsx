@@ -189,7 +189,7 @@ export default function HoningForecastUI() {
 
     const [optimizerProgress, setOptimizerProgress] = useState<number>(0)
 
-    const [allowUserChangeState, setAllowUserChangeState] = useState<boolean>(false)
+    const [allowUserChangeState, setAllowUserChangeState] = useState<boolean>(true)
     // Lock x-axis state (shared across all graphs)
     // const [lockXAxis, setLockXAxis] = useState<boolean>(false)
     // const [lockedMins, setLockedMins] = useState<number[] | null>(null)
@@ -938,9 +938,9 @@ export default function HoningForecastUI() {
         dataSizeKey,
         topGridKey,
         bottomGridKey,
-        // progressGridKey,
-        // unlockGridKey,
-        // succeededGridKey,
+        progressGridKey,
+        unlockGridKey,
+        succeededGridKey,
         // StateBundleGridKey,
         inputBundleKey,
         // specialStateKey,

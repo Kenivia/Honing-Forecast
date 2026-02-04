@@ -8,6 +8,7 @@ import StateGridsManager from "@/Sections/Optimize/StateGrid.tsx"
 import { SpecialSortable } from "./SpecialSortable.tsx"
 import "./OptimizerSection.css"
 import InputsSection from "../Inputs/InputsSection.tsx"
+import LabeledCheckbox from "@/Components/LabeledCheckbox.tsx"
 
 type OptimizeSectionProps = {
     curIsBest: boolean
@@ -69,7 +70,7 @@ function add_comma(inp: number) {
     })
 }
 function breakdown_to_english(input: number) {
-    return String(input <= 0 ? "Avg Eqv Spend " + add_comma(input < 0.0 ? -input : input) + "g" : "Avg Eqv surplus of " + add_comma(input) + "g")
+    return String(input <= 0 ? "Avg Eqv Cost " + add_comma(input < 0.0 ? -input : input) + "g" : "Avg Eqv Surplus of " + add_comma(input) + "g")
 }
 
 function _combined_breakdown_to_english(input: number) {
@@ -238,7 +239,7 @@ export default function OptimizeSection({
                     {/* Hero area */}
                     <div className="optimizer-hero">
                         {metricType !== 0 && optimizeAverageButton}
-
+                        <LabeledCheckbox label="Auto start optimizer" checked={autoRunOptimizer} setChecked={setAutoRunOptimizer}></LabeledCheckbox>
                         <div className="optimizer-result-centered">
                             <div
                                 style={{
@@ -250,7 +251,7 @@ export default function OptimizeSection({
                                 }}
                             >
                                 <div className={`result-value ${curIsBest ? "best" : "not-best"}`}>
-                                    Avg eqv gold used: {add_comma(-evaluateAverageResult?.metric) ?? "N/A"}{" "}
+                                    Avg eqv gold cost: {add_comma(-evaluateAverageResult?.metric) ?? "N/A"}{" "}
                                 </div>
                                 <span
                                     style={{
@@ -318,6 +319,7 @@ export default function OptimizeSection({
                                     setFlatUnlockArr={setFlatUnlockArr}
                                     ranOutFreeTaps={ranOutFreeTaps}
                                     onRanOutFreeTaps={onRanOutFreeTaps}
+                                    inputsBundle={inputsBundle}
                                 />
                             )}
                         </div>
@@ -337,6 +339,7 @@ export default function OptimizeSection({
                         </span>
                         {!isJuiceInfoCollapsed && (
                             <div id="juice-info-section" className="optimizer-section-body">
+                                <span></span>
                                 {flatStateBundle && flatProgressArr && evaluateAverageResult && specialState && (
                                     <StateGridsManager
                                         curIsBest={curIsBest}
