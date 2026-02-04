@@ -31,6 +31,7 @@ import InputsSection from "./Sections/Inputs/InputsSection.tsx"
 import Separator from "./Sections/Separator/Separator.tsx"
 import { TooltipState } from "./Utils/Tooltip.tsx"
 import Icon from "./Components/Icon.tsx"
+import LabeledCheckbox from "./Components/LabeledCheckbox.tsx"
 
 import { GridMouseDownLogic, mouseMoveLogic, createMouseUpHandler } from "./Sections/UpgradeSelection/Marquee.ts"
 import { createClearAll, createResetOptimizerState } from "./Sections/ControlPanel/ControlPanelFunctions.ts"
@@ -868,60 +869,76 @@ export default function HoningForecastUI() {
     const optimizeAvgWorkerRef = useRef<Worker | null>(null)
     const [optimizeAvgBusy, setOptimizeAvgBusy] = useState(false)
     // const [optimizeAvgResult, setOptimizeAvgResult] = useState<{ average_costs?: any } | null>(null)
-    const startOptimizeAverage = useCallback((debounce) => {
-        setOptimizerProgress(0)
-        runner.start({
-            which_one: "OptimizeAverage",
+    const startOptimizeAverage = useCallback(
+        (debounce: number) => {
+            setOptimizerProgress(0)
+            runner.start({
+                which_one: "OptimizeAverage",
+                payloadBuilder,
+                workerRef: optimizeAvgWorkerRef,
+                setBusy: setOptimizeAvgBusy,
+                setResult: setEvaluateAverageResult,
+                onSuccess: (res) => {
+                    // console.log(inputBundleKey)
+                    setHasRunOptimizer(true)
+                    setFlatStateBundle(res.upgrade_arr.map((upgrade) => upgrade.state))
+                    setFlatProgressArr(res.upgrade_arr.map((_, index) => progressGrid[res.upgrade_arr[index].piece_type][res.upgrade_arr[index].upgrade_index]))
+                    setFlatUnlockArr(res.upgrade_arr.map((_, index) => unlockGrid[res.upgrade_arr[index].piece_type][res.upgrade_arr[index].upgrade_index]))
+                    setFlatSucceedArr(res.upgrade_arr.map((_, index) => succeededGrid[res.upgrade_arr[index].piece_type][res.upgrade_arr[index].upgrade_index]))
+                    setSpecialState(res.special_state)
+                    updateBestSolution(res)
+                    setOptimizeAvgError(null)
+                    // console.log(specialState)
+                },
+                onIntermediateMessage: (res_bundle) => {
+                    // hasRunOptimizerRef.current = true
+                    setOptimizerProgress(res_bundle.est_progress_percentage)
+                    let res = res_bundle.state_bundle
+                    updateBestSolution(res)
+                    setFlatStateBundle(res.upgrade_arr.map((upgrade) => upgrade.state))
+                    // setFlatProgressArr(res.upgrade_arr.map((_, index) => progressGrid[res.upgrade_arr[index].piece_type][res.upgrade_arr[index].upgrade_index]))
+                    // setFlatUnlockArr(res.upgrade_arr.map((_, index) => unlockGrid[res.upgrade_arr[index].piece_type][res.upgrade_arr[index].upgrade_index]))
+                    // setFlatSucceedArr(res.upgrade_arr.map((_, index) => succeededGrid[res.upgrade_arr[index].piece_type][res.upgrade_arr[index].upgrade_index]))
+                    setSpecialState(res.special_state)
+                    setEvaluateAverageResult(res)
+                    applyFlatToGrid(
+                        evaluateAverageResult,
+                        flatProgressArr,
+                        progressGrid,
+                        setProgressGrid,
+                        flatUnlockArr,
+                        unlockGrid,
+                        setUnlockGrid,
+                        flatSucceedArr,
+                        succeededGrid,
+                        setSucceededGrid,
+                        flatStateBundle,
+                        stateBundleGrid,
+                        setStateBundleGrid,
+                    )
+                    setOptimizeAvgError(null)
+                },
+                onError: (err) => {
+                    setOptimizeAvgError(String(err))
+                },
+                debounceMs: debounce,
+            })
+        },
+        [
+            runner,
+            progressGrid,
+            unlockGrid,
+            succeededGrid,
+            flatProgressArr,
+            flatUnlockArr,
+            flatSucceedArr,
+            flatStateBundle,
+            stateBundleGrid,
             payloadBuilder,
-            workerRef: optimizeAvgWorkerRef,
-            setBusy: setOptimizeAvgBusy,
-            setResult: setEvaluateAverageResult,
-            onSuccess: (res) => {
-                // console.log(inputBundleKey)
-                setHasRunOptimizer(true)
-                setFlatStateBundle(res.upgrade_arr.map((upgrade) => upgrade.state))
-                setFlatProgressArr(res.upgrade_arr.map((_, index) => progressGrid[res.upgrade_arr[index].piece_type][res.upgrade_arr[index].upgrade_index]))
-                setFlatUnlockArr(res.upgrade_arr.map((_, index) => unlockGrid[res.upgrade_arr[index].piece_type][res.upgrade_arr[index].upgrade_index]))
-                setFlatSucceedArr(res.upgrade_arr.map((_, index) => succeededGrid[res.upgrade_arr[index].piece_type][res.upgrade_arr[index].upgrade_index]))
-                setSpecialState(res.special_state)
-                updateBestSolution(res)
-                setOptimizeAvgError(null)
-                // console.log(specialState)
-            },
-            onIntermediateMessage: (res_bundle) => {
-                // hasRunOptimizerRef.current = true
-                setOptimizerProgress(res_bundle.est_progress_percentage)
-                let res = res_bundle.state_bundle
-                updateBestSolution(res)
-                setFlatStateBundle(res.upgrade_arr.map((upgrade) => upgrade.state))
-                // setFlatProgressArr(res.upgrade_arr.map((_, index) => progressGrid[res.upgrade_arr[index].piece_type][res.upgrade_arr[index].upgrade_index]))
-                // setFlatUnlockArr(res.upgrade_arr.map((_, index) => unlockGrid[res.upgrade_arr[index].piece_type][res.upgrade_arr[index].upgrade_index]))
-                // setFlatSucceedArr(res.upgrade_arr.map((_, index) => succeededGrid[res.upgrade_arr[index].piece_type][res.upgrade_arr[index].upgrade_index]))
-                setSpecialState(res.special_state)
-                setEvaluateAverageResult(res)
-                applyFlatToGrid(
-                    evaluateAverageResult,
-                    flatProgressArr,
-                    progressGrid,
-                    setProgressGrid,
-                    flatUnlockArr,
-                    unlockGrid,
-                    setUnlockGrid,
-                    flatSucceedArr,
-                    succeededGrid,
-                    setSucceededGrid,
-                    flatStateBundle,
-                    stateBundleGrid,
-                    setStateBundleGrid,
-                )
-                setOptimizeAvgError(null)
-            },
-            onError: (err) => {
-                setOptimizeAvgError(String(err))
-            },
-            debounceMs: debounce,
-        })
-    })
+            updateBestSolution,
+            evaluateAverageResult,
+        ],
+    )
     useEffect(() => {
         cancelOptimizeAverage()
         if (!autoRunOptimizer) {
@@ -1074,6 +1091,89 @@ export default function HoningForecastUI() {
             ? Math.round(currentMetric) >= Math.round(bestMetric)
             : false
 
+    // Helper functions for moved sections
+    const add_comma = (inp: number) => {
+        return Math.round(inp).toLocaleString("en-US", {
+            minimumFractionDigits: 0,
+            maximumFractionDigits: 0,
+        })
+    }
+
+    const canRestoreBest =
+        !optimizeAvgBusy && bestMetric !== null && Boolean(bestFlatStateBundle) && Boolean(bestFlatSpecialState) && bestMetric > evaluateAverageResult?.metric
+
+    const handleRestoreBest = () => {
+        if (!canRestoreBest || !bestFlatStateBundle || !bestFlatSpecialState) {
+            return
+        }
+        setFlatStateBundle(cloneFlatStateBundle(bestFlatStateBundle))
+        setSpecialState([...bestFlatSpecialState])
+    }
+
+    const handleOptimizeAverageClick = () => {
+        if (optimizeAvgBusy) {
+            optimizeAvgWorkerRef.current?.terminate()
+            optimizeAvgWorkerRef.current = null
+            setOptimizeAvgBusy(false)
+            setAutoRunOptimizer(false)
+            cancelOptimizeAverage()
+            return
+        } else {
+            setBeforeMetric(evaluateAverageResult?.metric ?? null)
+            setOptimizeButtonPress((prev: number) => prev + 1)
+        }
+    }
+
+    const result_status = (
+        <div
+            className="result-status"
+            style={{
+                color:
+                    curIsBest && hasRunOptimizer
+                        ? "var(--brighter-optimizer)"
+                        : hasRunOptimizer
+                          ? "var(--sub-optimal)"
+                          : optimizeAvgBusy
+                            ? "var(--sub-optimal)"
+                            : "red",
+            }}
+        >
+            {curIsBest && hasRunOptimizer
+                ? "(Result below is the best known result)"
+                : hasRunOptimizer
+                  ? "(Current config is not best known result)"
+                  : optimizeAvgBusy
+                    ? "(Optimizer in progress…)"
+                    : "(Optimizer not run yet)"}
+            {!curIsBest && hasRunOptimizer && (
+                <button onClick={handleRestoreBest} disabled={!canRestoreBest} className="restore-btn">
+                    {hasRunOptimizer ? (canRestoreBest ? "Restore Best" : "Current configuration is the best known one") : "Optimizer not run"}
+                </button>
+            )}
+        </div>
+    )
+
+    const optimizeAverageButton = (
+        <button
+            onClick={handleOptimizeAverageClick}
+            style={{
+                background: optimizeAvgBusy ? "var(--cancel-optimizer-button)" : "var(--optimizer-button)",
+                color: optimizeAvgBusy ? "var(--text-muted)" : "var(--text)",
+                padding: "6px 10px",
+                borderRadius: 4,
+                border: "1px solid var(--btn-border)",
+                cursor: "pointer",
+                height: "50px",
+                width: "300px",
+                fontSize: optimizeAvgBusy ? "24px" : "30px",
+                textWrap: "nowrap",
+                textAlign: "center",
+            }}
+        >
+            {optimizeAvgBusy ? "Cancel Optimize Average" : " >>> Optimize <<< "}
+        </button>
+    )
+
     return (
         <div style={styles.pageContainer}>
             {marqueeRect ? (
@@ -1162,6 +1262,74 @@ export default function HoningForecastUI() {
                 {/* <div>
                  
                 </div> */}
+                <section className="optimizer-section">
+                    <div className="optimizer-section-title">Inputs</div>
+                    <div className="optimizer-section-body">
+                        <InputsSection inputsBundle={inputsBundle} />
+                    </div>
+                </section>
+                <section className="optimizer-section">
+                    <div className="optimizer-section-title">Optimizer controls</div>
+
+                    <div className="optimizer-card" style={{ margin: "0 auto" }}>
+                        {/* Actions */}
+                        {/* Hero area */}
+                        <div className="optimizer-hero">
+                            {metricType !== 0 && optimizeAverageButton}
+                            <LabeledCheckbox label="Auto start optimizer" checked={autoRunOptimizer} setChecked={setAutoRunOptimizer}></LabeledCheckbox>
+                            <div className="optimizer-result-centered">
+                                <div
+                                    style={{
+                                        display: "flex",
+                                        flexDirection: "row",
+                                        alignItems: "center",
+                                        position: "relative",
+                                        // justifyContent: "flex-end",
+                                    }}
+                                >
+                                    <div className={`result-value ${curIsBest ? "best" : "not-best"}`}>
+                                        Avg eqv gold cost: {add_comma(-evaluateAverageResult?.metric) ?? "N/A"}{" "}
+                                    </div>
+                                    <span
+                                        style={{
+                                            position: "absolute",
+                                            left: "100%",
+                                            marginLeft: "8px",
+                                            whiteSpace: "nowrap",
+                                            fontSize: "14px",
+                                            color: "var(--very-muted-text)",
+                                        }}
+                                    >
+                                        {/* (See bottom of the page for more info) */}
+                                    </span>
+                                </div>
+                                {result_status}
+                            </div>
+                        </div>
+
+                        {/* Meta + restore */}
+                        {/* <div className="optimizer-row optimizer-meta">
+                                        <span className="meta-text">
+                                            Optimizer: {hasRunOptimizer ? "✓ Ran" : "Not run"} | Best known result:{" "}
+                                            {hasRunOptimizer && bestMetric !== null ? bestMetric.toFixed(2) : "Unknown"}
+                                        </span>
+                                    </div> */}
+
+                        {/* Error */}
+                        {optimizeAvgError && <div className="optimizer-error">Error: {optimizeAvgError}</div>}
+
+                        {/* Progress */}
+                        {optimizeAvgBusy && (
+                            <div className="optimizer-progress">
+                                <span>Optimizer progress: {optimizerProgress.toFixed(2)}% (this can take a lil while)</span>
+
+                                <div className="progress-bar">
+                                    <div className="progress-fill" style={{ width: `${optimizerProgress}%` }} />
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </section>
                 <Separator activePage={activePage} onPageChange={setActivePage} setAutoRunOptimizer={setAutoRunOptimizer} />
 
                 {activePage === "optimize" && (
