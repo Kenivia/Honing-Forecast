@@ -12,6 +12,8 @@ import {
     JUICE_LABELS,
     PIECE_NAMES,
     RESET_UI_DEFAULTS,
+    DEFAULT_JUICE_LEFTOVER,
+    DEFAULT_MATS_LEFTOVER,
 } from "./Utils/Constants.ts"
 import { readSettings, writeSettings } from "./Utils/Settings.ts"
 import ControlPanel from "./Sections/ControlPanel/ControlPanel.tsx"
@@ -49,7 +51,7 @@ export default function HoningForecastUI() {
     })
 
     const [userMatsLeftover, setUserMatsLeftover] = useState(() => {
-        return Object.fromEntries(MATS_LABELS.map((label, index) => [label, DEFAULT_MATS_PRICES[index]]))
+        return Object.fromEntries(MATS_LABELS.map((label, index) => [label, DEFAULT_MATS_LEFTOVER[index]]))
     })
 
     const [userWeaponJuiceOwned, setUserWeaponJuiceOwned] = useState(() => {
@@ -69,11 +71,11 @@ export default function HoningForecastUI() {
     })
 
     const [userWeaponJuiceLeftover, setUserWeaponJuiceLeftover] = useState(() => {
-        return Object.fromEntries(JUICE_LABELS.map((label_row, row_index) => [label_row[0], DEFAULT_JUICE_PRICES[row_index][0]]))
+        return Object.fromEntries(JUICE_LABELS.map((label_row, row_index) => [label_row[0], DEFAULT_JUICE_LEFTOVER[row_index][0]]))
     })
 
     const [userArmorJuiceLeftover, setUserArmorJuiceLeftover] = useState(() => {
-        return Object.fromEntries(JUICE_LABELS.map((label_row, row_index) => [label_row[1], DEFAULT_JUICE_PRICES[row_index][1]]))
+        return Object.fromEntries(JUICE_LABELS.map((label_row, row_index) => [label_row[1], DEFAULT_JUICE_LEFTOVER[row_index][1]]))
     })
 
     const inputsValues = useMemo<InputsValues>(
