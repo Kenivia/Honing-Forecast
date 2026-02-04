@@ -49,13 +49,21 @@ const GraphContent = ({ width, height, data, average, secondaryAnnotation, color
 
         // Calculate PDF: slope between points (dy/dx)
         // Assuming uniform x-steps usually, but this formula handles variable steps
+        let prev_slope = 0
         return data.map((point, i) => {
-            if (i === 0) return [point[0], point[1]] as DataPoint
+            if (i === 0) return [point[0], 0] as DataPoint
             const prev = data[i - 1]
+
             const dx = point[0] - prev[0]
             const dy = point[1] - prev[1]
             // Avoid division by zero
             const slope = dx === 0 ? 0 : dy / dx
+            if (slope == 0) {
+                let out = [point[0], prev_slope] as DataPoint
+                prev_slope = 0
+                return out
+            }
+            prev_slope = slope
             return [point[0], slope] as DataPoint
         })
     }, [data, cumulative])
@@ -196,7 +204,13 @@ const GraphContent = ({ width, height, data, average, secondaryAnnotation, color
                             />
                             <circle cx={xScale(average)} cy={getYForX(average)} r={4} fill="white" />
                             <image href={IconMap[label]}></image>
-                            <text x={xScale(average)} y={isEmpty ? -5 : 0} textAnchor="middle" fontSize={14} fill={resolvedColor}>
+                            <text
+                                x={Math.max(Math.min(xScale(average), xMax - 40), 40)}
+                                y={isEmpty ? -5 : 0}
+                                textAnchor="middle"
+                                fontSize={14}
+                                fill={resolvedColor}
+                            >
                                 Average = {average.toLocaleString("en-US", { maximumFractionDigits: 0, minimumFractionDigits: 0 })}
                             </text>
                         </g>

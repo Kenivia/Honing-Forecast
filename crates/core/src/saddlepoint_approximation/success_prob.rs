@@ -93,15 +93,9 @@ impl StateBundle {
         let num_sup = self.flattened_effective_budgets().count();
         let mut average: Vec<f64> = Vec::with_capacity(num_sup);
 
-        let already_spent: (Vec<i64>, Vec<i64>, Vec<i64>, f64) =
-            self.prep_output.already_spent.clone().unwrap();
-        let flattened_spent: Vec<f64> = already_spent
-            .0
-            .iter()
-            .chain(already_spent.1.iter())
-            .chain(already_spent.2.iter())
-            .map(|x| *x as f64)
-            .collect();
+        // let already_spent: (Vec<i64>, Vec<i64>, Vec<i64>, f64) =
+        //     self.prep_output.already_spent.clone().unwrap();
+        let flattened_spent: Vec<f64> = self.prep_output.flat_alr_spent.clone().unwrap();
         for support_index in 0..num_sup {
             for (index, this_prob) in cum_percentiles[support_index].iter_mut().enumerate() {
                 let this_budget =
@@ -112,12 +106,12 @@ impl StateBundle {
                         support_index as i64,
                         this_budget
                             - if support_index == 3 {
-                                self.prep_output.unlock_costs[0] as f64
+                                self.prep_output.unlock_costs[0]
                             } else if support_index == 6 {
-                                self.prep_output.unlock_costs[1] as f64
+                                self.prep_output.unlock_costs[1]
                             } else {
-                                0.0
-                            },
+                                0
+                            } as f64,
                         &mut dummy_performance,
                     ),
                 );
@@ -148,10 +142,20 @@ impl StateBundle {
             average,
             budgets: self
                 .prep_output
-                .budgets
+                .effective_budgets
                 .iter()
+                .enumerate()
                 .take(7)
-                .map(|x| *x as f64)
+                .map(|(index, x)| {
+                    *x as f64
+                        + if index == 3 {
+                            self.prep_output.unlock_costs[0] as f64
+                        } else if index == 6 {
+                            self.prep_output.unlock_costs[1] as f64
+                        } else {
+                            0.0
+                        }
+                })
                 .chain(
                     self.prep_output
                         .juice_books_owned
@@ -164,6 +168,8 @@ impl StateBundle {
                         .iter()
                         .map(|x| x.1 as f64),
                 )
+                .zip(self.prep_output.flat_alr_spent.clone().unwrap().iter())
+                .map(|(b, f)| b + f)
                 .collect(),
         }
     }

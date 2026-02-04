@@ -367,13 +367,13 @@ pub fn monte_carlo_wrapper<R: Rng>(
             leftover_index += 1;
         }
         for (index, juice) in juice_data[r_index].iter().enumerate() {
-            if juice.0 <= state_bundle.prep_output.juice_books_owned[index].0 {
+            if juice.0 as f64 <= state_bundle.prep_output.juice_books_owned[index].0 + FLOAT_TOL {
                 leftover_counts[leftover_index] += 1;
             }
             leftover_index += 1;
         }
         for (index, juice) in juice_data[r_index].iter().enumerate() {
-            if juice.1 <= state_bundle.prep_output.juice_books_owned[index].1 {
+            if juice.1 as f64 <= state_bundle.prep_output.juice_books_owned[index].1 + FLOAT_TOL {
                 leftover_counts[leftover_index] += 1;
             }
             leftover_index += 1;

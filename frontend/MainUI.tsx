@@ -27,11 +27,11 @@ import InputsSection from "./Sections/Inputs/InputsSection.tsx"
 // import LongTermSection from "./Sections/ForecastMode/ForecastModeSection.tsx"
 // const GambaSection = React.lazy(() => import('./GambaSection.tsx'));
 import Separator from "./Sections/Separator/Separator.tsx"
-import { TooltipState, createTooltipHandlers, renderTooltip } from "./Utils/Tooltip.tsx"
+import { TooltipState } from "./Utils/Tooltip.tsx"
 import Icon from "./Components/Icon.tsx"
 
 import { GridMouseDownLogic, mouseMoveLogic, createMouseUpHandler } from "./Sections/UpgradeSelection/Marquee.ts"
-import { createClearAll, createFillDemo, createFillDemoIncome, createResetOptimizerState } from "./Sections/ControlPanel/ControlPanelFunctions.ts"
+import { createClearAll, createResetOptimizerState } from "./Sections/ControlPanel/ControlPanelFunctions.ts"
 import { buildPayload, createCancelableWorkerRunner } from "./WasmInterface/WorkerRunner.ts"
 import type { InputsBundleWithSetters, InputsSetters, InputsValues } from "./Utils/InputBundles.ts"
 import OptimizeSection from "./Sections/Optimize/OptimizeSection.tsx"
@@ -145,7 +145,7 @@ export default function HoningForecastUI() {
     const inputsBundle = useMemo<InputsBundleWithSetters>(() => ({ values: inputsValues, setters: inputsSetters }), [inputsValues, inputsSetters])
 
     const [desired_chance, set_desired_chance] = useState(() => "50")
-    const [uncleaned_desired_chance, set_uncleaned_desired_chance] = useState(() => "50")
+    // const [uncleaned_desired_chance, set_uncleaned_desired_chance] = useState(() => "50")
     const [adv_hone_strategy, set_adv_hone_strategy_change] = useState(() => "x2 grace")
     const [express_event, set_express_event] = useState(() => true)
     const [bucketCount, _setBucketCount] = useState(() => "100") // leaving the door open for changing bucket count later
@@ -156,7 +156,7 @@ export default function HoningForecastUI() {
     const [dataSize, setDataSize] = useState<string>(() => RESET_UI_DEFAULTS["dataSize"])
     const [activePage, setActivePage] = useState<"optimize" | "distribution" | "gamba" | "forecast">("distribution") // "chance-to-cost" |
     const [mainScale, setMainScale] = useState<number>(1)
-    const [zoomCompensation, setZoomCompensation] = useState<number>(1)
+    // const [zoomCompensation, setZoomCompensation] = useState<number>(1)
     const [optimizeButtonPress, setOptimizeButtonPress] = useState<number>(0)
     const [autoRunOptimizer, setAutoRunOptimizer] = useState<boolean>(false)
     const [optimizeAvgError, setOptimizeAvgError] = useState<string | null>(null)
@@ -189,11 +189,11 @@ export default function HoningForecastUI() {
 
     const [optimizerProgress, setOptimizerProgress] = useState<number>(0)
 
-    const [allowUserChangeState, setAllowUserChangeState] = useState<boolean>(true)
+    const [allowUserChangeState, setAllowUserChangeState] = useState<boolean>(false)
     // Lock x-axis state (shared across all graphs)
-    const [lockXAxis, setLockXAxis] = useState<boolean>(false)
-    const [lockedMins, setLockedMins] = useState<number[] | null>(null)
-    const [lockedMaxs, setLockedMaxs] = useState<number[] | null>(null)
+    // const [lockXAxis, setLockXAxis] = useState<boolean>(false)
+    // const [lockedMins, setLockedMins] = useState<number[] | null>(null)
+    // const [lockedMaxs, setLockedMaxs] = useState<number[] | null>(null)
 
     // Income array state (6 grids, 7 rows each)
     const [incomeArr, setIncomeArr] = useState<number[][]>(() => Array.from({ length: 6 }, () => Array.from({ length: 7 }, () => 0)))
@@ -223,16 +223,16 @@ export default function HoningForecastUI() {
         marqueeRef.current = marquee
     }, [marquee])
 
-    // tooltip state & handlers
-    const [tooltip, setTooltip] = useState<TooltipState>({
-        visible: false,
-        type: null,
-        x: 0,
-        y: 0,
-        content: null,
-        upgradeData: null,
-    })
-    const tooltipHandlers = createTooltipHandlers(setTooltip)
+    // // tooltip state & handlers
+    // const [tooltip, setTooltip] = useState<TooltipState>({
+    //     visible: false,
+    //     type: null,
+    //     x: 0,
+    //     y: 0,
+    //     content: null,
+    //     upgradeData: null,
+    // })
+    // const tooltipHandlers = createTooltipHandlers(setTooltip)
 
     // ----- Load saved UI state on mount -----
     useEffect(() => {
@@ -270,9 +270,9 @@ export default function HoningForecastUI() {
     }, [])
 
     // Initialize uncleaned_desired_chance from desired_chance after settings load
-    useEffect(() => {
-        set_uncleaned_desired_chance(desired_chance)
-    }, [desired_chance])
+    // useEffect(() => {
+    //     set_uncleaned_desired_chance(desired_chance)
+    // }, [desired_chance])
 
     // ----- Responsive scaling based on window width -----
     useEffect(() => {
@@ -302,11 +302,11 @@ export default function HoningForecastUI() {
                 previousPixelRatio = currentPixelRatio
                 // Calculate compensation factor to keep tooltips constant size
                 // When zoom increases (devicePixelRatio > 1), we scale down tooltips
-                const compensation = 1 / currentPixelRatio
-                setZoomCompensation(compensation)
+                // const compensation = 1 / currentPixelRatio
+                // setZoomCompensation(compensation)
             }
         }
-        setZoomCompensation(1 / window.devicePixelRatio)
+        // setZoomCompensation(1 / window.devicePixelRatio)
         window.addEventListener("resize", checkZoom)
 
         return () => {
@@ -495,35 +495,35 @@ export default function HoningForecastUI() {
         setMarqueeRect({ left, top, width, height })
     }, [marquee])
 
-    const onDesiredChange = (value: string) => {
-        set_uncleaned_desired_chance(value)
+    // const onDesiredChange = (value: string) => {
+    //     set_uncleaned_desired_chance(value)
 
-        // Check if the input is immediately valid (integer 0-100 inclusive)
-        const cleanValue = value.replace(/[^0-9]/g, "")
-        const numValue = parseInt(cleanValue)
+    //     // Check if the input is immediately valid (integer 0-100 inclusive)
+    //     const cleanValue = value.replace(/[^0-9]/g, "")
+    //     const numValue = parseInt(cleanValue)
 
-        if (cleanValue === value && !isNaN(numValue) && numValue >= 0 && numValue <= 100) {
-            set_desired_chance(cleanValue)
-        }
-    }
+    //     if (cleanValue === value && !isNaN(numValue) && numValue >= 0 && numValue <= 100) {
+    //         set_desired_chance(cleanValue)
+    //     }
+    // }
 
-    const onDesiredBlur = () => {
-        const cleanValue = uncleaned_desired_chance.replace(/[^0-9]/g, "")
-        const numValue = parseInt(cleanValue)
+    // const onDesiredBlur = () => {
+    //     const cleanValue = uncleaned_desired_chance.replace(/[^0-9]/g, "")
+    //     const numValue = parseInt(cleanValue)
 
-        if (cleanValue === "" || isNaN(numValue)) {
-            set_uncleaned_desired_chance(desired_chance)
-        } else if (numValue > 100) {
-            set_desired_chance("100")
-            set_uncleaned_desired_chance("100")
-        } else if (numValue < 0) {
-            set_desired_chance("0")
-            set_uncleaned_desired_chance("0")
-        } else {
-            set_desired_chance(cleanValue)
-            set_uncleaned_desired_chance(cleanValue)
-        }
-    }
+    //     if (cleanValue === "" || isNaN(numValue)) {
+    //         set_uncleaned_desired_chance(desired_chance)
+    //     } else if (numValue > 100) {
+    //         set_desired_chance("100")
+    //         set_uncleaned_desired_chance("100")
+    //     } else if (numValue < 0) {
+    //         set_desired_chance("0")
+    //         set_uncleaned_desired_chance("0")
+    //     } else {
+    //         set_desired_chance(cleanValue)
+    //         set_uncleaned_desired_chance(cleanValue)
+    //     }
+    // }
     const adv_hone_strategy_change = (value: string) => set_adv_hone_strategy_change(value)
 
     // Sync express_event toggle with adv_hone_strategy selector
@@ -532,24 +532,24 @@ export default function HoningForecastUI() {
     }, [express_event])
 
     // Lock x-axis handler
-    const onToggleLockXAxis = () => {
-        setLockXAxis((prev) => {
-            const newVal = !prev
-            // if (!prev) {
-            //     // we're turning it ON: snapshot current mins/maxs from cached data
-            //     // const currentMins = cachedAverageGraphData?.hist_mins || null
-            //     // const currentMaxs = cachedAverageGraphData?.hist_maxs || null
-            //     // setLockedMins(currentMins ? currentMins.slice() : null)
-            //     // setLockedMaxs(currentMaxs ? currentMaxs.slice() : null)
-            // } else
-            {
-                // turning it OFF: clear snapshots
-                setLockedMins(null)
-                setLockedMaxs(null)
-            }
-            return newVal
-        })
-    }
+    // const onToggleLockXAxis = () => {
+    //     setLockXAxis((prev) => {
+    //         const newVal = !prev
+    //         // if (!prev) {
+    //         //     // we're turning it ON: snapshot current mins/maxs from cached data
+    //         //     // const currentMins = cachedAverageGraphData?.hist_mins || null
+    //         //     // const currentMaxs = cachedAverageGraphData?.hist_maxs || null
+    //         //     // setLockedMins(currentMins ? currentMins.slice() : null)
+    //         //     // setLockedMaxs(currentMaxs ? currentMaxs.slice() : null)
+    //         // } else
+    //         {
+    //             // turning it OFF: clear snapshots
+    //             setLockedMins(null)
+    //             setLockedMaxs(null)
+    //         }
+    //         return newVal
+    //     })
+    // }
 
     const payloadBuilder = () =>
         buildPayload({
@@ -767,7 +767,7 @@ export default function HoningForecastUI() {
     // }, [advStrategyKey, expressEventKey, graphBucketSizeKey, dataSizeKey, normalCountsKey, advCountsKey])
 
     const evaluateAverageWorkerRef = useRef<Worker | null>(null)
-    const [evaluateAverageBusy, setEvaluateAverageBusy] = useState(false)
+    const [_evaluateAverageBusy, setEvaluateAverageBusy] = useState(false)
     const [evaluateAverageResult, setEvaluateAverageResult] = useState<any>(null)
     // const [cachedAverageGraphData, setCachedAverageGraphData] = useState<{ hist_counts?: any; hist_mins?: any; hist_maxs?: any } | null>(null)
     useEffect(() => {
@@ -824,7 +824,7 @@ export default function HoningForecastUI() {
     ])
 
     const histogramWorkerRef = useRef<Worker | null>(null)
-    const [histogramBusy, setHistogramBusy] = useState(false)
+    const [_histogramBusy, setHistogramBusy] = useState(false)
     const [histogramResult, setHistogramResult] = useState<any>(null)
     // const [cachedAverageGraphData, setCachedAverageGraphData] = useState<{ hist_counts?: any; hist_mins?: any; hist_maxs?: any } | null>(null)
     useEffect(() => {
@@ -993,9 +993,9 @@ export default function HoningForecastUI() {
         _setBucketCount,
         setCumulativeGraph,
         setDataSize,
-        setLockXAxis,
-        setLockedMins,
-        setLockedMaxs,
+        // setLockXAxis,
+        // setLockedMins,
+        // setLockedMaxs,
         // setShowAverage,
         setIncomeArr,
         setMinResolution,
@@ -1011,6 +1011,7 @@ export default function HoningForecastUI() {
         setBeforeMetric,
         // setOptimizerMetric,
         // setMonteCarloResult,
+        setHasRunOptimizer,
     })
 
     const resetOptimizerState = createResetOptimizerState({
@@ -1025,41 +1026,42 @@ export default function HoningForecastUI() {
         setBestFlatStateBundle,
         setBestFlatSpecialState,
         setBeforeMetric,
+        setHasRunOptimizer,
     })
 
-    const fillDemo = createFillDemo({
-        setTopGrid,
-        setBottomGrid,
-        setUserMatsOwned,
-        set_desired_chance,
-        set_prev_checked_arr,
-        set_prev_checked_arr_bottom,
-        setUserMatsPrices,
-        setUserMatsLeftover,
-        setUserWeaponJuiceOwned,
-        setUserArmorJuiceOwned,
-        setUserWeaponJuicePrices,
-        setUserArmorJuicePrices,
-        setUserWeaponJuiceLeftover,
-        setUserArmorJuiceLeftover,
-        setMinResolution,
-        setSpecialState,
-        setSucceededGrid,
-        setUnlockGrid,
-        setStateBundleGrid,
-        setProgressGrid,
-    })
+    // const fillDemo = createFillDemo({
+    //     setTopGrid,
+    //     setBottomGrid,
+    //     setUserMatsOwned,
+    //     set_desired_chance,
+    //     set_prev_checked_arr,
+    //     set_prev_checked_arr_bottom,
+    //     setUserMatsPrices,
+    //     setUserMatsLeftover,
+    //     setUserWeaponJuiceOwned,
+    //     setUserArmorJuiceOwned,
+    //     setUserWeaponJuicePrices,
+    //     setUserArmorJuicePrices,
+    //     setUserWeaponJuiceLeftover,
+    //     setUserArmorJuiceLeftover,
+    //     setMinResolution,
+    //     setSpecialState,
+    //     setSucceededGrid,
+    //     setUnlockGrid,
+    //     setStateBundleGrid,
+    //     setProgressGrid,
+    // })
 
-    const fillDemoIncome = createFillDemoIncome({
-        setIncomeArr,
-    })
-    // Cleanup on unmount: terminate any running workers and clear timers
-    useEffect(() => {
-        return () => {
-            runner.cancel()
-        }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [])
+    // const fillDemoIncome = createFillDemoIncome({
+    //     setIncomeArr,
+    // })
+    // // Cleanup on unmount: terminate any running workers and clear timers
+    // useEffect(() => {
+    //     return () => {
+    //         runner.cancel()
+    //     }
+    //     // eslint-disable-next-line react-hooks/exhaustive-deps
+    // }, [])
 
     // styles and column defs moved to ./styles
     const AnythingTicked = useMemo(() => topGrid.some((row) => row.some((x) => x)) || bottomGrid.some((row) => row.some((x) => x)), [topGrid, bottomGrid])
@@ -1087,7 +1089,7 @@ export default function HoningForecastUI() {
                     }}
                 />
             ) : null}
-            {renderTooltip(tooltip, mainScale, zoomCompensation)}
+            {/* {renderTooltip(tooltip, mainScale, zoomCompensation)} */}
 
             <div
                 ref={mainRef}
@@ -1133,8 +1135,8 @@ export default function HoningForecastUI() {
                         <ControlPanel
                             controlsLeft={null}
                             mainScale={mainScale}
-                            fillDemo={fillDemo}
-                            fillDemoIncome={fillDemoIncome}
+                            // fillDemo={fillDemo}
+                            // fillDemoIncome={fillDemoIncome}
                             clearAll={clearAll}
                             resetOptimizerState={resetOptimizerState}
                             onCopyPayload={onCopyPayload}
@@ -1144,8 +1146,8 @@ export default function HoningForecastUI() {
                             setCumulativeGraph={setCumulativeGraph}
                             dataSize={dataSize}
                             setDataSize={setDataSize}
-                            lockXAxis={lockXAxis}
-                            onToggleLockXAxis={onToggleLockXAxis}
+                            // lockXAxis={lockXAxis}
+                            // onToggleLockXAxis={onToggleLockXAxis}
                             minResolution={minResolution}
                             setMinResolution={setMinResolution}
                             allowUserChangeState={allowUserChangeState}

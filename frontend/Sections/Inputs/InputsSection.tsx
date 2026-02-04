@@ -25,8 +25,8 @@ export default function InputsSection({ inputsBundle: inputs }: InputsSectionPro
     matsLeftoverDef.headerName = advancedMode ? "Value of leftovers" : "Mat type*"
     juiceLeftoverDef.headerName = advancedMode ? "Value of leftovers" : "Mat type*"
 
-    matsColumnDef[0].headerName = advancedMode ? "Owned mats" : "BOUND mats"
-    juiceColumnDef[0].headerName = advancedMode ? "Owned mats" : "BOUND mats"
+    matsColumnDef[0].headerName = advancedMode ? "Owned mats" : "Untradable mats"
+    juiceColumnDef[0].headerName = advancedMode ? "Owned mats" : "Untradable mats"
     const toggleAdvMode = (new_mode) => {
         setAdvancedMode(new_mode)
 
@@ -162,13 +162,13 @@ export default function InputsSection({ inputsBundle: inputs }: InputsSectionPro
                 {
                     <span>
                         The optimizer tries to minimize the average gold spent. In some scenarios, you succeed everything with some bound mats to spare. By
-                        default, we consider leftover mats as worthless (0 gold).
+                        default, we consider leftover mats as 0 gold.
                     </span>
                 }{" "}
                 <LabeledCheckbox label="Custom leftover values" checked={advancedMode} setChecked={toggleAdvMode} />
                 {advancedMode && (
                     <span>
-                        Specify how much you think your leftover mats are worth.
+                        Specify how much your leftover mats are worth.
                         <br></br> <br></br> For example, if you say leftover abidos are worth 100g each, then having 200 abidos leftover is considered the same
                         as having 20000 gold. This influences how the optimizer might try to save abidos, potentially by buying more juice. <br></br> <br></br>
                     </span>

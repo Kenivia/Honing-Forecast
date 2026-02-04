@@ -44,6 +44,7 @@ pub struct Upgrade {
     pub unlocked: bool,
     pub unlock_costs: Vec<i64>,
     pub succeeded: bool,
+    pub extra_chance: f64,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -309,12 +310,22 @@ impl Upgrade {
         unlocked: bool,
         unlock_costs: Vec<i64>,
         succeeded: bool,
+        extra_chance: f64,
     ) -> Self {
         let prob_dist_len: usize = prob_dist.len();
         // let base_chance: f64 = prob_dist[1];
         // web_sys::console::log_1(&format!("{:?}", alr_failed).into());
-        let original_prob_dist_len: usize =
-            probability_distribution(base_chance, artisan_rate, &vec![], 0.0, 0, false, None).len();
+        let original_prob_dist_len: usize = probability_distribution(
+            base_chance,
+            artisan_rate,
+            &vec![],
+            0.0,
+            0,
+            false,
+            None,
+            extra_chance,
+        )
+        .len();
         // web_sys::console::log_1(&format!("a").into());
         let mut state = State::new(original_prob_dist_len);
         // web_sys::console::log_1(&format!("a").into());
@@ -362,10 +373,11 @@ impl Upgrade {
                 string += &upgrade_index.to_string();
                 string
             },
-            alr_failed: alr_failed,
+            alr_failed,
             unlocked,
             unlock_costs,
             succeeded,
+            extra_chance,
         }
     }
 
@@ -381,6 +393,7 @@ impl Upgrade {
         unlock_costs: Vec<i64>,
         succeeded: bool,
         num_juice_avail: usize,
+        unlocked: bool,
     ) -> Self {
         let prob_dist_len: usize = prob_dist_vec.len();
         assert!(prob_dist_len == juice_dist.len());
@@ -450,7 +463,7 @@ impl Upgrade {
             tap_offset: 0,
             upgrade_index,
             special_value: -1.0_f64,
-            original_prob_dist_len: 0, // need to sort this out
+            original_prob_dist_len: prob_dist_len,
 
             // log_prob_dist: vec![], // will change with each arrangement, maybe use a hashmap later
             eqv_gold_per_tap: -1.0_f64, // dummy value
@@ -475,9 +488,10 @@ impl Upgrade {
                 string
             },
             alr_failed: 0,
-            unlocked: false,
+            unlocked,
             unlock_costs,
             succeeded,
+            extra_chance: NAN,
         }
     }
 }

@@ -219,9 +219,9 @@ export default function OptimizeSection({
                                 }}
                             >
                                 <div className={`result-value ${curIsBest ? "best" : "not-best"}`}>
-                                    Avg gold used: {add_comma(-evaluateAverageResult?.metric) ?? "N/A"}{" "}
+                                    Avg eqv gold used: {add_comma(-evaluateAverageResult?.metric) ?? "N/A"}{" "}
                                 </div>
-                                <span
+                                {/* <span
                                     style={{
                                         position: "absolute",
                                         left: "100%",
@@ -231,7 +231,7 @@ export default function OptimizeSection({
                                     }}
                                 >
                                     (lower is better)
-                                </span>
+                                </span> */}
                             </div>
                             <div className="result-status">
                                 {curIsBest && hasRunOptimizer
@@ -268,7 +268,7 @@ export default function OptimizeSection({
                     {/* Progress */}
                     {optimizeAvgBusy && (
                         <div className="optimizer-progress">
-                            <span>Optimizer progress: {optimizerProgress.toFixed(2)}</span>
+                            <span>Optimizer progress: {optimizerProgress.toFixed(2)}%</span>
 
                             <div className="progress-bar">
                                 <div className="progress-fill" style={{ width: `${optimizerProgress}%` }} />
@@ -277,52 +277,19 @@ export default function OptimizeSection({
                     )}
                 </div>
             </section>
-
-            <div style={{ position: "relative", flex: 1, display: "flex", flexDirection: "column", gap: 12 }}>
-                {optimizeAvgBusy && (
-                    <div
-                        style={{
-                            position: "absolute",
-                            inset: 0,
-                            background: "rgba(0, 0, 0, 0.25)",
-                            zIndex: 2,
-                        }}
-                    />
-                )}
-                <section className="optimizer-section">
-                    <div className="optimizer-section-title">Results</div>
-                    <div className="optimizer-section-body">
-                        {flatStateBundle && flatProgressArr && evaluateAverageResult && specialState && (
-                            <StateGridsManager
-                                curIsBest={curIsBest}
-                                flatProgressArr={flatProgressArr}
-                                setFlatProgressArr={setFlatProgressArr}
-                                flatUnlockArr={flatUnlockArr}
-                                setFlatUnlockArr={setFlatUnlockArr}
-                                flatSucceedArr={flatSucceedArr}
-                                setFlatSucceedArr={setFlatSucceedArr}
-                                flatStateBundle={flatStateBundle}
-                                setFlatStateBundle={setFlatStateBundle}
-                                allowUserChangeState={allowUserChangeState}
-                                evaluateAverageResult={evaluateAverageResult}
-                            />
-                        )}
-                    </div>
-                </section>{" "}
+            <div>
                 <section className="optimizer-section">
                     <span
                         className="optimizer-section-title "
-                        aria-expanded={true}
+                        aria-expanded={!isFreeTapCollapsed}
                         aria-controls="free-tap-order-section"
-                        // onClick={() => setIsFreeTapCollapsed((prev) => !prev)}
+                        onClick={() => setIsFreeTapCollapsed((prev) => !prev)}
                     >
-                        <span>More free tap info </span>
-                        {/* <span className={`optimizer-section-title-arrow ${isFreeTapCollapsed ? "collapsed" : ""}`}>{">"}</span> */}
-                    </span>
-                    {
+                        <span>Free tap info </span>
+                        <span className={`optimizer-section-title-arrow ${isFreeTapCollapsed ? "collapsed" : ""}`}>{">"}</span>
+                    </span>{" "}
+                    {!isFreeTapCollapsed && (
                         <div id="free-tap-order-section" className="optimizer-section-body">
-                            Keep attempting free taps on an upgrade until you run out, then move on to the next. <br></br>
-                            This is the best order that the algorithm found, you can drag & drop the upgrades to see if you can find a better one.
                             {flatStateBundle && flatProgressArr && evaluateAverageResult && specialState && (
                                 <SpecialSortable
                                     curIsBest={curIsBest}
@@ -338,13 +305,34 @@ export default function OptimizeSection({
                                 />
                             )}
                         </div>
-                    }
+                    )}
                 </section>
-            </div>
-            <section className="optimizer-section">
-                <div className="optimizer-section-title">Optimizer score breakdown</div>
-                <div className="optimizer-section-body">
-                    {/* <span>The Score is the sum of the "Average equivalent gold spent" for each mat. Without advanced mode, this is calculated as:</span>
+                <div style={{ position: "relative", flex: 1, display: "flex", flexDirection: "column", gap: 12 }}>
+                    <section className="optimizer-section">
+                        <div className="optimizer-section-title">Juice info</div>
+                        <div className="optimizer-section-body">
+                            {flatStateBundle && flatProgressArr && evaluateAverageResult && specialState && (
+                                <StateGridsManager
+                                    curIsBest={curIsBest}
+                                    flatProgressArr={flatProgressArr}
+                                    setFlatProgressArr={setFlatProgressArr}
+                                    flatUnlockArr={flatUnlockArr}
+                                    setFlatUnlockArr={setFlatUnlockArr}
+                                    flatSucceedArr={flatSucceedArr}
+                                    setFlatSucceedArr={setFlatSucceedArr}
+                                    flatStateBundle={flatStateBundle}
+                                    setFlatStateBundle={setFlatStateBundle}
+                                    allowUserChangeState={allowUserChangeState}
+                                    evaluateAverageResult={evaluateAverageResult}
+                                />
+                            )}
+                        </div>
+                    </section>{" "}
+                </div>{" "}
+                <section className="optimizer-section">
+                    <div className="optimizer-section-title">Optimizer score breakdown</div>
+                    <div className="optimizer-section-body">
+                        {/* <span>The Score is the sum of the "Average equivalent gold spent" for each mat. Without advanced mode, this is calculated as:</span>
                     <span style={{ marginLeft: 50, fontSize: 24, fontFamily: "Times new roman" }}>
                         Average of [(Non-bound mat consumed, if any, otherwise 0) * market price] = Average eqv gold spent.
                     </span>
@@ -359,79 +347,82 @@ export default function OptimizeSection({
                         because the cases where we use less than BOUND OWNED drags down the Average of (Mat consumed), but we don't actually gain any gold from
                         having leftover bound mats. More formally this is because Expecation is not commutative with non-linear functions.
                     </span> */}
-                    <div
-                        style={{
-                            display: "flex",
-                            flexDirection: "row",
-                            alignItems: "flex-start",
-                            gap: 100,
-                            minWidth: 200,
-                            flexShrink: 0,
-                            marginTop: 0,
-                            flexWrap: "wrap",
-                            marginLeft: 100,
-                        }}
-                    >
-                        <SpreadsheetGrid
-                            columnDefs={wideMatsColumnDefs}
-                            labels={MATS_LABELS.slice(0, 7)}
-                            sheetValuesArr={[avg_breakdown_map(avg_breakdown, MATS_LABELS.slice(0, 7), 0)]}
-                            colorsArr={[avg_breakdown_colors(avg_breakdown, MATS_LABELS.slice(0, 7), 0)]}
-                            setSheetValuesArr={[null]}
-                        />
-                        <SpreadsheetGrid
-                            columnDefs={wideMatsColumnDefs}
-                            labels={JUICE_LABELS.map((label_row) => label_row[0])}
-                            sheetValuesArr={[
-                                avg_breakdown_map(
-                                    avg_breakdown,
-                                    JUICE_LABELS.map((label_row) => label_row[0]),
-                                    7,
-                                ),
-                            ]}
-                            colorsArr={[
-                                avg_breakdown_colors(
-                                    avg_breakdown,
-                                    JUICE_LABELS.map((label_row) => label_row[0]),
-                                    7,
-                                ),
-                            ]}
-                            setSheetValuesArr={[null]}
-                        />
-                        <SpreadsheetGrid
-                            columnDefs={wideMatsColumnDefs}
-                            labels={JUICE_LABELS.map((label_row) => label_row[1])}
-                            sheetValuesArr={[
-                                avg_breakdown_map(
-                                    avg_breakdown,
-                                    JUICE_LABELS.map((label_row) => label_row[1]),
-                                    7 + juiceAvail,
-                                ),
-                            ]}
-                            colorsArr={[
-                                avg_breakdown_colors(
-                                    avg_breakdown,
-                                    JUICE_LABELS.map((label_row) => label_row[1]),
-                                    7 + juiceAvail,
-                                ),
-                            ]}
-                            setSheetValuesArr={[null]}
-                        />
-                    </div>
-                    {/* <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                        <div
+                            style={{
+                                display: "flex",
+                                flexDirection: "row",
+                                alignItems: "flex-start",
+                                gap: 100,
+                                minWidth: 200,
+                                flexShrink: 0,
+                                marginTop: 0,
+                                flexWrap: "wrap",
+                                marginLeft: 100,
+                            }}
+                        >
+                            <SpreadsheetGrid
+                                columnDefs={wideMatsColumnDefs}
+                                labels={MATS_LABELS.slice(0, 7)}
+                                sheetValuesArr={[avg_breakdown_map(avg_breakdown, MATS_LABELS.slice(0, 7), 0)]}
+                                colorsArr={[avg_breakdown_colors(avg_breakdown, MATS_LABELS.slice(0, 7), 0)]}
+                                setSheetValuesArr={[null]}
+                            />
+                            <SpreadsheetGrid
+                                columnDefs={wideMatsColumnDefs}
+                                labels={JUICE_LABELS.map((label_row) => label_row[0])}
+                                sheetValuesArr={[
+                                    avg_breakdown_map(
+                                        avg_breakdown,
+                                        JUICE_LABELS.map((label_row) => label_row[0]),
+                                        7,
+                                    ),
+                                ]}
+                                colorsArr={[
+                                    avg_breakdown_colors(
+                                        avg_breakdown,
+                                        JUICE_LABELS.map((label_row) => label_row[0]),
+                                        7,
+                                    ),
+                                ]}
+                                setSheetValuesArr={[null]}
+                            />
+                            <SpreadsheetGrid
+                                columnDefs={wideMatsColumnDefs}
+                                labels={JUICE_LABELS.map((label_row) => label_row[1])}
+                                sheetValuesArr={[
+                                    avg_breakdown_map(
+                                        avg_breakdown,
+                                        JUICE_LABELS.map((label_row) => label_row[1]),
+                                        7 + juiceAvail,
+                                    ),
+                                ]}
+                                colorsArr={[
+                                    avg_breakdown_colors(
+                                        avg_breakdown,
+                                        JUICE_LABELS.map((label_row) => label_row[1]),
+                                        7 + juiceAvail,
+                                    ),
+                                ]}
+                                setSheetValuesArr={[null]}
+                            />
+                        </div>
+                        {/* <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
                         <div>Already spent: {evaluateAverageResult?.prep_output.already_spent[3]}</div>
                         <div>Average cost from now on: {evaluateAverageResult?.metric - evaluateAverageResult?.prep_output.already_spent[3]}</div>
                         <div>Already spent + more to come: {evaluateAverageResult?.metric}</div>
                     </div> */}
-                    {/* <div style={{ display: "grid", gridTemplateColumns: "1fr auto 1fr", alignItems: "center", gap: 12 }}>
+                        {/* <div style={{ display: "grid", gridTemplateColumns: "1fr auto 1fr", alignItems: "center", gap: 12 }}>
                         <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 12 }}> */}
 
-                    <span></span>
-                    <span style={{ fontSize: 24, color: "var(--brighter-optimizer)" }}>Combined: {breakdown_to_english(evaluateAverageResult?.metric)}</span>
-                    {/* </div>
+                        <span></span>
+                        <span style={{ fontSize: 24, color: "var(--brighter-optimizer)" }}>
+                            Combined: {breakdown_to_english(evaluateAverageResult?.metric)}
+                        </span>
+                        {/* </div>
                     </div> */}
-                </div>
-            </section>
+                    </div>
+                </section>
+            </div>
         </div>
     )
 }

@@ -2,21 +2,62 @@ use serde::{Deserialize, Serialize};
 
 pub const FLOAT_TOL: f64 = 1e-9; // it could prolly be lower? idk doesnt matter
 pub const SPECIAL_TOL: f64 = 1e-7;
+
 // +11 to +18 double artisan, +15 to 18 mats cost reduced by 10%, unlock cost reduced by 20%
 pub const EVENT_ARTISAN_MULTIPLIER: [f64; 25] = [
-    1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 1.0,
+    1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0,
     1.0, 1.0, 1.0, 1.0, 1.0, 1.0,
 ];
 
-pub const EVENT_COST_REDUCTION: [[f64; 25]; 7] = [[
-    1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.9, 0.9, 0.9, 0.9, 1.0,
-    1.0, 1.0, 1.0, 1.0, 1.0, 1.0,
-]; 7];
+pub const EVENT_COST_MULTIPLIER: [[f64; 25]; 7] = [
+    [
+        1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6,
+        1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0,
+    ],
+    [
+        1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6,
+        1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0,
+    ],
+    [
+        1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6,
+        1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0,
+    ],
+    [
+        1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6,
+        1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0,
+    ],
+    [
+        1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6,
+        1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0,
+    ],
+    [
+        1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.4, 0.4, 0.4, 0.4, 0.6, 0.6, 0.6, 0.6,
+        1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0,
+    ],
+    [
+        1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6,
+        1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0,
+    ],
+];
 
-pub const EVENT_UNLOCK_REDUCTION: [[f64; 25]; 2] = [[
-    1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.8, 0.8, 0.8, 0.8, 1.0,
+pub const EVENT_UNLOCK_MULTIPLIER: [[f64; 25]; 2] = [[
+    1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6, 1.0,
     1.0, 1.0, 1.0, 1.0, 1.0, 1.0,
 ]; 2];
+
+pub const ADV_EVENT_UNLOCK_MULTIPLIER: [[f64; 8]; 2] =
+    [[0.1, 0.1, 0.1, 0.1, 1.0, 1.0, 1.0, 1.0]; 2];
+
+pub const ADV_EVENT_COST_MULTIPLIER: [[f64; 8]; 8] = [
+    [0.1, 0.1, 0.1, 0.1, 1.0, 1.0, 1.0, 1.0],
+    [0.1, 0.1, 0.1, 0.1, 1.0, 1.0, 1.0, 1.0],
+    [0.1, 0.1, 0.1, 0.1, 1.0, 1.0, 1.0, 1.0],
+    [0.1, 0.1, 0.1, 0.1, 1.0, 1.0, 1.0, 1.0],
+    [0.1, 0.1, 0.1, 0.1, 1.0, 1.0, 1.0, 1.0],
+    [0.5, 0.5, 0.5, 0.5, 1.0, 1.0, 1.0, 1.0],
+    [0.1, 0.1, 0.1, 0.1, 1.0, 1.0, 1.0, 1.0],
+    [0.1, 0.1, 0.1, 0.1, 1.0, 1.0, 1.0, 1.0], // juice cost
+];
 
 pub const NORMAL_JUICE_COST: [i64; 25] = [
     0, 0, 0, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 25, 25, 25, 25, 50, 50,
@@ -40,6 +81,10 @@ pub const BUCKET_COUNT: usize = 50;
 #[allow(dead_code)]
 pub const RNG_SEED: u64 = 123456;
 
+pub const EVENT_EXTRA_CHANCE: [f64; 25] = [
+    0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.1, 0.1, 0.05, 0.05, 0.04, 0.04, 0.03, 0.03,
+    0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+];
 pub const NORMAL_HONE_CHANCES: [f64; 25] = [
     1.0, 1.0, 1.0, 0.45, 0.45, 0.45, 0.3, 0.3, 0.15, 0.15, 0.1, 0.1, 0.05, 0.05, 0.04, 0.04, 0.03,
     0.03, 0.03, 0.015, 0.015, 0.01, 0.01, 0.005, 0.005,
@@ -227,7 +272,7 @@ pub const NORMAL_HONE_ARMOR_UNLOCK: [[i64; 25]; 2] = [
     ],
 ];
 
-pub const ADV_HONE_COST: [[i64; 8]; 8] = [
+pub const DEFAULT_ADV_HONE_COST: [[i64; 8]; 8] = [
     [300, 0, 550, 0, 1200, 0, 1400, 0],
     [0, 250, 0, 450, 0, 1000, 0, 1200],
     [8, 6, 11, 8, 25, 18, 32, 23],
@@ -464,8 +509,8 @@ pub fn get_event_modified_armor_unlock_cost(express_event: bool) -> [[i64; 25]; 
     for cost_type in 0..2 {
         for level in 0..25 {
             let base_cost = NORMAL_HONE_ARMOR_UNLOCK[cost_type][level] as f64;
-            let reduction = EVENT_UNLOCK_REDUCTION[cost_type][level];
-            result[cost_type][level] = (base_cost * reduction).ceil() as i64;
+            let multiplier = EVENT_UNLOCK_MULTIPLIER[cost_type][level];
+            result[cost_type][level] = (base_cost * multiplier).ceil() as i64;
         }
     }
     result
@@ -480,13 +525,34 @@ pub fn get_event_modified_adv_unlock_cost(express_event: bool) -> [[i64; 8]; 2] 
     for cost_type in 0..2 {
         for level in 0..8 {
             let base_cost = ADV_HONE_UNLOCK[cost_type][level] as f64;
-            let reduction = EVENT_UNLOCK_REDUCTION[cost_type][level];
-            result[cost_type][level] = (base_cost * reduction).ceil() as i64;
+            let multiplier = ADV_EVENT_UNLOCK_MULTIPLIER[cost_type][level];
+            result[cost_type][level] = (base_cost * multiplier).ceil() as i64;
         }
     }
     result
 }
 
+pub fn get_event_modified_adv_costs(express_event: bool) -> [[i64; 8]; 8] {
+    if !express_event {
+        return DEFAULT_ADV_HONE_COST;
+    }
+
+    let mut result = [[0i64; 8]; 8];
+    for cost_type in 0..8 {
+        for level in 0..8 {
+            let base_cost = DEFAULT_ADV_HONE_COST[cost_type][level] as f64;
+            let multiplier = ADV_EVENT_COST_MULTIPLIER[cost_type][level];
+            result[cost_type][level] = (base_cost * multiplier).ceil() as i64;
+        }
+    }
+    result
+}
+pub fn get_event_extra_chance(express_event: bool) -> [f64; 25] {
+    if !express_event {
+        return [0.0; 25];
+    }
+    EVENT_EXTRA_CHANCE
+}
 pub fn get_event_modified_weapon_costs(express_event: bool) -> [[i64; 25]; 7] {
     if !express_event {
         return DEFAULT_NORMAL_HONE_WEAPON_COST;
@@ -496,8 +562,8 @@ pub fn get_event_modified_weapon_costs(express_event: bool) -> [[i64; 25]; 7] {
     for cost_type in 0..7 {
         for level in 0..25 {
             let base_cost = DEFAULT_NORMAL_HONE_WEAPON_COST[cost_type][level] as f64;
-            let reduction = EVENT_COST_REDUCTION[cost_type][level];
-            result[cost_type][level] = (base_cost * reduction).ceil() as i64;
+            let multiplier = EVENT_COST_MULTIPLIER[cost_type][level];
+            result[cost_type][level] = (base_cost * multiplier).ceil() as i64;
         }
     }
     result
@@ -512,8 +578,8 @@ pub fn get_event_modified_armor_costs(express_event: bool) -> [[i64; 25]; 7] {
     for cost_type in 0..7 {
         for level in 0..25 {
             let base_cost = DEFAULT_NORMAL_HONE_ARMOR_COST[cost_type][level] as f64;
-            let reduction = EVENT_COST_REDUCTION[cost_type][level];
-            result[cost_type][level] = (base_cost * reduction).ceil() as i64;
+            let multiplier = EVENT_COST_MULTIPLIER[cost_type][level];
+            result[cost_type][level] = (base_cost * multiplier).ceil() as i64;
         }
     }
     result
@@ -528,8 +594,8 @@ pub fn get_event_modified_weapon_unlock_cost(express_event: bool) -> [[i64; 25];
     for cost_type in 0..2 {
         for level in 0..25 {
             let base_cost = NORMAL_HONE_WEAPON_UNLOCK[cost_type][level] as f64;
-            let reduction = EVENT_UNLOCK_REDUCTION[cost_type][level];
-            result[cost_type][level] = (base_cost * reduction).ceil() as i64;
+            let multiplier = EVENT_UNLOCK_MULTIPLIER[cost_type][level];
+            result[cost_type][level] = (base_cost * multiplier).ceil() as i64;
         }
     }
     result

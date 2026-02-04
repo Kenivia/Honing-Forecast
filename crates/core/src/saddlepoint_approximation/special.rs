@@ -59,7 +59,7 @@ impl StateBundle {
             .upgrade_arr
             .iter()
             .take(self.special_invalid_index.unwrap())
-            .filter(|x| !x.succeeded)
+            // .filter(|x| !x.succeeded)
             .count();
         if m == 0 {
             let mut out = vec![0.0; self.special_state.len()];

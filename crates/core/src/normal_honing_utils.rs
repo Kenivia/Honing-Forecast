@@ -27,19 +27,13 @@ impl StateBundle {
     pub fn one_tap(&self) -> Vec<i64> {
         let mut out = vec![0i64; 7 + self.prep_output.juice_info.num_avail * 2];
         // for upgrade in self.upgrade_arr.iter() {
+        let flat = self.prep_output.flat_alr_spent.clone().unwrap();
         for (support_index, cost) in out.iter_mut().enumerate() {
-            *cost += self
+            *cost += (self
                 .extract_support_with_meta(support_index as i64, 0)
-                .map(|support| {
-                    support
-                        .access_collapsed()
-                        .iter()
-                        .find(|(_, p)| *p > FLOAT_TOL)
-                        .unwrap()
-                        .0
-                        .ceil() as i64
-                })
-                .sum::<i64>();
+                .map(|support| support.min_value)
+                .sum::<f64>())
+            .ceil() as i64;
         }
         // }
         out[3] += self.prep_output.unlock_costs[0];
@@ -48,11 +42,13 @@ impl StateBundle {
     }
     pub fn pity(&self) -> Vec<i64> {
         let mut out = vec![0i64; 7 + self.prep_output.juice_info.num_avail * 2];
+        let flat = self.prep_output.flat_alr_spent.clone().unwrap();
         for (support_index, cost) in out.iter_mut().enumerate() {
-            *cost += self
+            *cost += (self
                 .extract_support_with_meta(support_index as i64, 0)
-                .map(|support| support.access_collapsed().iter().last().unwrap().0.ceil() as i64)
-                .sum::<i64>();
+                .map(|support| support.max_value)
+                .sum::<f64>())
+            .ceil() as i64;
         }
         out[3] += self.prep_output.unlock_costs[0];
         out[6] += self.prep_output.unlock_costs[1];
@@ -495,6 +491,7 @@ pub fn new_prob_dist(
         upgrade.alr_failed,
         upgrade.succeeded,
         Some(upgrade.original_prob_dist_len),
+        upgrade.extra_chance,
     );
     // for o in out.iter() {
     //     if !o.is_finite() || *o < 0.0 {
@@ -521,6 +518,7 @@ pub fn probability_distribution(
     alr_failed: usize,
     succeeded: bool,
     size: Option<usize>,
+    event_extra: f64,
 ) -> Vec<f64> {
     if succeeded {
         let mut v = vec![0.0; alr_failed + 1];
@@ -544,7 +542,8 @@ pub fn probability_distribution(
         let min_count: f64 = std::cmp::min(count, 10) as f64;
         // web_sys::console::log_1(&format!("c").into());
         let mut current_chance: f64 =
-            (base + (min_count * base) * 0.1 + extra_arr.get(count).unwrap_or(&0.0)).min(1.0);
+            (base + event_extra + (min_count * base) * 0.1 + extra_arr.get(count).unwrap_or(&0.0))
+                .min(1.0);
 
         // web_sys::console::log_1(&format!("{:?}", current_chance).into());
         // web_sys::console::log_1(&format!("d").into());

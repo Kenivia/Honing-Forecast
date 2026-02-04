@@ -65,11 +65,11 @@ impl SolverStateBundle {
 
                 let mut effective_len = 0;
 
-                let mut artisan: f64 = 0.0;
-                let mut count: f64 = 0.1;
-                let base_chance = upgrade.base_chance;
-                let artisan_rate = upgrade.artisan_rate;
-                let juice_chances = &self.state_bundle.prep_output.juice_info.chances_id;
+                // let mut artisan: f64 = 0.0;
+                // let mut count: f64 = 0.1;
+                // let base_chance = upgrade.base_chance;
+                // let artisan_rate = upgrade.artisan_rate;
+                // let juice_chances = &self.state_bundle.prep_output.juice_info.chances_id;
 
                 let max_change_len = ((1.0 - progress).powi(2) * upgrade.state.len() as f64)
                     .ceil()
@@ -116,38 +116,34 @@ impl SolverStateBundle {
                     .skip(upgrade.alr_failed)
                     .enumerate()
                 {
-                    if artisan >= 1.0 {
-                        effective_len = i + 1;
-                        break;
+                    // if artisan >= 1.0 {
+                    //     effective_len = i + 1;
+                    //     break;
+                    // }
+                    // artisan += (46.51_f64 / 100.0)
+                    //     * artisan_rate
+                    //     * (base_chance * (1.0 + count)
+                    if i < new_juice_count {
+                        if i < new_juice_streak_len {
+                            *juice = true;
+                        } else {
+                            *juice = false;
+                        }
+                    } else {
+                        *juice = false;
                     }
-                    artisan += (46.51_f64 / 100.0)
-                        * artisan_rate
-                        * (base_chance * (1.0 + count)
-                            + if i < new_juice_count {
-                                if i < new_juice_streak_len {
-                                    *juice = true;
-                                } else {
-                                    *juice = false;
-                                }
-                                juice_chances[0][upgrade.upgrade_index]
-                            } else {
-                                *juice = false;
-                                0.0
-                            }
-                            + if book_id != 0 && i < new_book_count {
-                                if i < new_book_streak_len {
-                                    *book = book_id;
-                                } else {
-                                    *book = 0;
-                                }
-                                juice_chances[book_id][upgrade.upgrade_index]
-                            } else {
-                                *book = 0;
-                                0.0
-                            });
-                    if count < 1.0 {
-                        count += 0.1;
+                    if book_id != 0 && i < new_book_count {
+                        if i < new_book_streak_len {
+                            *book = book_id;
+                        } else {
+                            *book = 0;
+                        }
+                    } else {
+                        *book = 0;
                     }
+                    // if count < 1.0 {
+                    //     count += 0.1;
+                    // }
                 }
 
                 let state_len = upgrade.state.len();

@@ -26,9 +26,8 @@ export function createClearAll({
     _setBucketCount,
     setCumulativeGraph,
     setDataSize,
-    setLockXAxis,
-    setLockedMins,
-    setLockedMaxs,
+    // setLockXAxis,
+
     // setShowAverage,
     setIncomeArr,
     setMinResolution,
@@ -65,9 +64,8 @@ export function createClearAll({
     _setBucketCount: React.Dispatch<React.SetStateAction<string>>
     setCumulativeGraph: React.Dispatch<React.SetStateAction<boolean>>
     setDataSize: React.Dispatch<React.SetStateAction<string>>
-    setLockXAxis: React.Dispatch<React.SetStateAction<boolean>>
-    setLockedMins: React.Dispatch<React.SetStateAction<number[] | null>>
-    setLockedMaxs: React.Dispatch<React.SetStateAction<number[] | null>>
+    // setLockXAxis: React.Dispatch<React.SetStateAction<boolean>>
+
     // setShowAverage: React.Dispatch<React.SetStateAction<boolean>>
     setIncomeArr: React.Dispatch<React.SetStateAction<number[][]>>
     setMinResolution: React.Dispatch<React.SetStateAction<number>>
@@ -111,9 +109,9 @@ export function createClearAll({
         setDataSize(RESET_UI_DEFAULTS.dataSize)
 
         // Reset lock x-axis state
-        setLockXAxis(RESET_UI_DEFAULTS.lockXAxis)
-        setLockedMins(RESET_UI_DEFAULTS.lockedMins)
-        setLockedMaxs(RESET_UI_DEFAULTS.lockedMaxs)
+        // setLockXAxis(RESET_UI_DEFAULTS.lockXAxis)
+        // setLockedMins(RESET_UI_DEFAULTS.lockedMins)
+        // setLockedMaxs(RESET_UI_DEFAULTS.lockedMaxs)
 
         // Reset show average checkbox
         // setShowAverage(false)
@@ -179,82 +177,82 @@ export function createResetOptimizerState({
     }
 }
 
-export function createFillDemo({
-    setTopGrid,
-    setBottomGrid,
-    set_desired_chance,
-    set_prev_checked_arr,
-    set_prev_checked_arr_bottom,
-    setUserMatsOwned,
-    setUserMatsPrices,
-    setUserMatsLeftover,
-    setUserWeaponJuiceOwned,
-    setUserArmorJuiceOwned,
-    setUserWeaponJuicePrices,
-    setUserArmorJuicePrices,
-    setUserWeaponJuiceLeftover,
-    setUserArmorJuiceLeftover,
-    setMinResolution,
-    setSpecialState,
-    setSucceededGrid,
-    setUnlockGrid,
-    setStateBundleGrid,
-    setProgressGrid,
-}: {
-    setTopGrid: React.Dispatch<React.SetStateAction<any>>
-    setBottomGrid: React.Dispatch<React.SetStateAction<any>>
-    set_desired_chance: React.Dispatch<React.SetStateAction<string>>
-    set_prev_checked_arr: React.Dispatch<React.SetStateAction<boolean[]>>
-    set_prev_checked_arr_bottom: React.Dispatch<React.SetStateAction<boolean[]>>
-    setUserMatsOwned: React.Dispatch<React.SetStateAction<any>>
-    setUserMatsPrices: React.Dispatch<React.SetStateAction<any>>
-    setUserMatsLeftover: React.Dispatch<React.SetStateAction<any>>
-    setUserWeaponJuiceOwned: React.Dispatch<React.SetStateAction<any>>
-    setUserArmorJuiceOwned: React.Dispatch<React.SetStateAction<any>>
-    setUserWeaponJuicePrices: React.Dispatch<React.SetStateAction<any>>
-    setUserArmorJuicePrices: React.Dispatch<React.SetStateAction<any>>
-    setUserWeaponJuiceLeftover: React.Dispatch<React.SetStateAction<any>>
-    setUserArmorJuiceLeftover: React.Dispatch<React.SetStateAction<any>>
-    setMinResolution: React.Dispatch<React.SetStateAction<number>>
-    setSpecialState: React.Dispatch<React.SetStateAction<number[]>>
-    setSucceededGrid: React.Dispatch<React.SetStateAction<boolean[][]>>
-    setUnlockGrid: React.Dispatch<React.SetStateAction<boolean[][]>>
-    setStateBundleGrid: React.Dispatch<React.SetStateAction<[boolean, number][][][]>>
-    setProgressGrid: React.Dispatch<React.SetStateAction<number[][]>>
-}) {
-    return () => {
-        setTopGrid(cloneGrid(DEMO_UI_VALUES.topGrid))
-        setBottomGrid(cloneGrid(DEMO_UI_VALUES.bottomGrid))
+// export function createFillDemo({
+//     setTopGrid,
+//     setBottomGrid,
+//     set_desired_chance,
+//     set_prev_checked_arr,
+//     set_prev_checked_arr_bottom,
+//     setUserMatsOwned,
+//     setUserMatsPrices,
+//     setUserMatsLeftover,
+//     setUserWeaponJuiceOwned,
+//     setUserArmorJuiceOwned,
+//     setUserWeaponJuicePrices,
+//     setUserArmorJuicePrices,
+//     setUserWeaponJuiceLeftover,
+//     setUserArmorJuiceLeftover,
+//     setMinResolution,
+//     setSpecialState,
+//     setSucceededGrid,
+//     setUnlockGrid,
+//     setStateBundleGrid,
+//     setProgressGrid,
+// }: {
+//     setTopGrid: React.Dispatch<React.SetStateAction<any>>
+//     setBottomGrid: React.Dispatch<React.SetStateAction<any>>
+//     set_desired_chance: React.Dispatch<React.SetStateAction<string>>
+//     set_prev_checked_arr: React.Dispatch<React.SetStateAction<boolean[]>>
+//     set_prev_checked_arr_bottom: React.Dispatch<React.SetStateAction<boolean[]>>
+//     setUserMatsOwned: React.Dispatch<React.SetStateAction<any>>
+//     setUserMatsPrices: React.Dispatch<React.SetStateAction<any>>
+//     setUserMatsLeftover: React.Dispatch<React.SetStateAction<any>>
+//     setUserWeaponJuiceOwned: React.Dispatch<React.SetStateAction<any>>
+//     setUserArmorJuiceOwned: React.Dispatch<React.SetStateAction<any>>
+//     setUserWeaponJuicePrices: React.Dispatch<React.SetStateAction<any>>
+//     setUserArmorJuicePrices: React.Dispatch<React.SetStateAction<any>>
+//     setUserWeaponJuiceLeftover: React.Dispatch<React.SetStateAction<any>>
+//     setUserArmorJuiceLeftover: React.Dispatch<React.SetStateAction<any>>
+//     setMinResolution: React.Dispatch<React.SetStateAction<number>>
+//     setSpecialState: React.Dispatch<React.SetStateAction<number[]>>
+//     setSucceededGrid: React.Dispatch<React.SetStateAction<boolean[][]>>
+//     setUnlockGrid: React.Dispatch<React.SetStateAction<boolean[][]>>
+//     setStateBundleGrid: React.Dispatch<React.SetStateAction<[boolean, number][][][]>>
+//     setProgressGrid: React.Dispatch<React.SetStateAction<number[][]>>
+// }) {
+//     return () => {
+//         setTopGrid(cloneGrid(DEMO_UI_VALUES.topGrid))
+//         setBottomGrid(cloneGrid(DEMO_UI_VALUES.bottomGrid))
 
-        set_desired_chance(DEMO_UI_VALUES.desired_chance)
-        set_prev_checked_arr([...DEMO_UI_VALUES.prev_checked_arr])
-        set_prev_checked_arr_bottom([...DEMO_UI_VALUES.prev_checked_arr_bottom])
-        setUserMatsOwned({ ...DEMO_UI_VALUES.userMatsOwned })
-        setUserMatsPrices({ ...DEMO_UI_VALUES.userMatsPrices })
-        setUserMatsLeftover({ ...DEMO_UI_VALUES.userMatsLeftover })
-        setUserWeaponJuiceOwned({ ...DEMO_UI_VALUES.userWeaponJuiceOwned })
-        setUserArmorJuiceOwned({ ...DEMO_UI_VALUES.userArmorJuiceOwned })
-        setUserWeaponJuicePrices({ ...DEMO_UI_VALUES.userWeaponJuicePrices })
-        setUserArmorJuicePrices({ ...DEMO_UI_VALUES.userArmorJuicePrices })
-        setUserWeaponJuiceLeftover({ ...DEMO_UI_VALUES.userWeaponJuiceLeftover })
-        setUserArmorJuiceLeftover({ ...DEMO_UI_VALUES.userArmorJuiceLeftover })
-        setMinResolution(DEMO_UI_VALUES.minResolution)
-        setSpecialState([...DEMO_UI_VALUES.specialState])
-        setSucceededGrid(cloneGrid(DEMO_UI_VALUES.succeededGrid))
-        setUnlockGrid(cloneGrid(DEMO_UI_VALUES.unlockGrid))
-        setStateBundleGrid(cloneStateBundleGrid(DEMO_UI_VALUES.stateBundleGrid))
-        setProgressGrid(cloneGrid(DEMO_UI_VALUES.progressGrid))
-    }
-}
+//         set_desired_chance(DEMO_UI_VALUES.desired_chance)
+//         set_prev_checked_arr([...DEMO_UI_VALUES.prev_checked_arr])
+//         set_prev_checked_arr_bottom([...DEMO_UI_VALUES.prev_checked_arr_bottom])
+//         setUserMatsOwned({ ...DEMO_UI_VALUES.userMatsOwned })
+//         setUserMatsPrices({ ...DEMO_UI_VALUES.userMatsPrices })
+//         setUserMatsLeftover({ ...DEMO_UI_VALUES.userMatsLeftover })
+//         setUserWeaponJuiceOwned({ ...DEMO_UI_VALUES.userWeaponJuiceOwned })
+//         setUserArmorJuiceOwned({ ...DEMO_UI_VALUES.userArmorJuiceOwned })
+//         setUserWeaponJuicePrices({ ...DEMO_UI_VALUES.userWeaponJuicePrices })
+//         setUserArmorJuicePrices({ ...DEMO_UI_VALUES.userArmorJuicePrices })
+//         setUserWeaponJuiceLeftover({ ...DEMO_UI_VALUES.userWeaponJuiceLeftover })
+//         setUserArmorJuiceLeftover({ ...DEMO_UI_VALUES.userArmorJuiceLeftover })
+//         setMinResolution(DEMO_UI_VALUES.minResolution)
+//         setSpecialState([...DEMO_UI_VALUES.specialState])
+//         setSucceededGrid(cloneGrid(DEMO_UI_VALUES.succeededGrid))
+//         setUnlockGrid(cloneGrid(DEMO_UI_VALUES.unlockGrid))
+//         setStateBundleGrid(cloneStateBundleGrid(DEMO_UI_VALUES.stateBundleGrid))
+//         setProgressGrid(cloneGrid(DEMO_UI_VALUES.progressGrid))
+//     }
+// }
 
-export function createFillDemoIncome({ setIncomeArr }: { setIncomeArr: React.Dispatch<React.SetStateAction<number[][]>> }) {
-    return () => {
-        const newIncomeArr = Array.from({ length: 6 }, (_, gridIndex) => {
-            if (gridIndex === 0) {
-                return [...DEMO_INCOME_1720_CHAR_BOUND]
-            }
-            return [...DEMO_INCOME_1680_ROSTER_BOUND]
-        })
-        setIncomeArr(newIncomeArr)
-    }
-}
+// export function createFillDemoIncome({ setIncomeArr }: { setIncomeArr: React.Dispatch<React.SetStateAction<number[][]>> }) {
+//     return () => {
+//         const newIncomeArr = Array.from({ length: 6 }, (_, gridIndex) => {
+//             if (gridIndex === 0) {
+//                 return [...DEMO_INCOME_1720_CHAR_BOUND]
+//             }
+//             return [...DEMO_INCOME_1680_ROSTER_BOUND]
+//         })
+//         setIncomeArr(newIncomeArr)
+//     }
+// }

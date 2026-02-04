@@ -9,7 +9,6 @@ import { useMemo } from "react"
 
 export type StatePair = [boolean, number]
 
-
 interface RowBundleProps {
     curIsBest: boolean
     bundleIndex: number
@@ -26,7 +25,6 @@ interface RowBundleProps {
     uniqueBookNumbers: number[]
     freeTap: boolean
     freeTapOrder: number
-
 }
 
 const RowBundle = ({
@@ -44,7 +42,7 @@ const RowBundle = ({
     upgrade,
     uniqueBookNumbers,
     freeTap,
-    freeTapOrder
+    freeTapOrder,
 }: RowBundleProps) => {
     // 2.1 Find unique "book numbers" (excluding 0) and sort ascending
     // const uniqueBookNumbers = useMemo(() => {
@@ -57,7 +55,7 @@ const RowBundle = ({
 
     // Determine Grid Dimensions
     // Rows: Unique Books + Juice (1) + Progress (1)
-    const totalRows = uniqueBookNumbers.length + 2
+    const totalRows = upgrade.is_normal_honing ? uniqueBookNumbers.length + 2 : 1
 
     const pity_len = upgrade.prob_dist.length - 1
     const max_len = upgrade.original_prob_dist_len - 1
@@ -139,34 +137,34 @@ const RowBundle = ({
     // Generate the renderable grid (2D array of cells)
     // We construct this Top-Down for rendering
     const gridRows = []
+    if (upgrade.is_normal_honing) {
+        // A. Book Rows (Top -> Down corresponds to High -> Low unique numbers)
+        for (let i = uniqueBookNumbers.length - 1; i >= 0; i--) {
+            const bookNum = uniqueBookNumbers[i]
+            const row = statePairs.slice(0, max_len).map((pair) => ({
+                active: pair[1] === bookNum,
+                label: JUICE_LABELS[bookNum][upgrade.is_weapon ? 0 : 1],
+                type: "book",
+            }))
+            gridRows.push(row)
+        }
 
-    // A. Book Rows (Top -> Down corresponds to High -> Low unique numbers)
-    for (let i = uniqueBookNumbers.length - 1; i >= 0; i--) {
-        const bookNum = uniqueBookNumbers[i]
-        const row = statePairs.slice(0, max_len).map((pair) => ({
-            active: pair[1] === bookNum,
-            label: JUICE_LABELS[bookNum][upgrade.is_weapon ? 0 : 1],
-            type: "book",
+        // B. Juice Row (2nd from bottom)
+        const juiceRow = statePairs.slice(0, max_len).map((pair) => ({
+            active: pair[0] === true,
+            label: JUICE_LABELS[0][upgrade.is_weapon ? 0 : 1],
+            type: "juice",
         }))
-        gridRows.push(row)
+        gridRows.push(juiceRow)
+
+        // C. Progress Row (Bottom)
+        const progressRow = Array.from({ length: cols }).map((_, cIndex) => ({
+            active: cIndex < progress && cIndex < pity_len,
+            label: "",
+            type: "progress",
+        }))
+        gridRows.push(progressRow)
     }
-
-    // B. Juice Row (2nd from bottom)
-    const juiceRow = statePairs.slice(0, max_len).map((pair) => ({
-        active: pair[0] === true,
-        label: JUICE_LABELS[0][upgrade.is_weapon ? 0 : 1],
-        type: "juice",
-    }))
-    gridRows.push(juiceRow)
-
-
-    // C. Progress Row (Bottom)
-    const progressRow = Array.from({ length: cols }).map((_, cIndex) => ({
-        active: cIndex < progress && cIndex < pity_len,
-        label: "",
-        type: "progress",
-    }))
-    gridRows.push(progressRow)
 
     const handleUnlockClick = () => {
         if (unlock) {
@@ -175,83 +173,96 @@ const RowBundle = ({
         onUpdateUnlock(!unlock)
     }
 
-    // const handleSucceedClick = () => {
-    //     if (!succeed) {
-    //         if (!unlock) {
-    //             onUpdateUnlock(true)
-    //         }
-    //         onUpdateProgress(Math.min(progress, pity_len))
-    //     } else {
-    //         onUpdateProgress(Math.min(progress, pity_len - 1))
-    //     }
+    const handleSucceedClick = () => {
+        if (!succeed) {
+            if (!unlock) {
+                onUpdateUnlock(true)
+            }
+            onUpdateProgress(Math.min(progress, pity_len))
+        } else {
+            onUpdateProgress(Math.min(progress, pity_len - 1))
+        }
 
-    //     onUpdateSucceed(!succeed)
-    // }
+        onUpdateSucceed(!succeed)
+    }
 
     // const nextProgressIndex = progress < pity_len ? progress : -1
     // console.log("grid rows", gridRows)
     return (
-        <div className="row-bundle-container" style={{ marginBottom: "10px", }}>
+        <div className="row-bundle-container" style={{ marginBottom: "10px" }}>
             <div className="state-grid-row">
                 <div className="state-grid-wrapper">
-
-                    <div style={{ display: "flex", flexDirection: "row", margin: "0 0 0 0", textWrap: "nowrap", gap: 30, borderBottom: "2px solid var(--text-very-muted)" }}>
+                    <div
+                        style={{
+                            display: "flex",
+                            flexDirection: "row",
+                            margin: "0 0 0 0",
+                            textWrap: "nowrap",
+                            gap: 30,
+                            borderBottom: "2px solid var(--text-very-muted)",
+                        }}
+                    >
                         <Icon iconName={PIECE_NAMES[upgrade.piece_type]} display_text="" display_text_right={piece_display_name(upgrade)}></Icon>
-                        <span>{(upgrade.is_normal_honing ?
-                            (freeTap ? "  Use special leaps on this until you run out, " + toOrdinal(freeTapOrder) : " Normal tap this (no special)")
-                            : "Use juice (and scroll) on ancestor's grace")}</span>
+                        <span>
+                            {upgrade.is_normal_honing
+                                ? freeTap
+                                    ? "  Use special leaps on this until you run out, " + toOrdinal(freeTapOrder)
+                                    : " Normal tap this (no special)"
+                                : "Use juice (and scroll) on ancestor's grace"}
+                        </span>
                     </div>
 
                     <div className="state-grid-scroll">
-                        <div style={{ position: "relative", }}>
-
-                            {upgrade.is_normal_honing && (
+                        <div style={{ position: "relative" }}>
+                            {upgrade.is_normal_honing &&
                                 gridRows.map((row, index) => (
-
                                     <div key={"row_bundle_label_" + String(index)} style={{}}>
                                         <Icon iconName={row[0].label} key={row[0].label + " left label"} display_text="" size={28}></Icon>
-                                    </div>))
-                            )}
-
-                            {upgrade.is_normal_honing && allowUserChangeState && (<div
-                                className="checkbox-grid-item"
-                                style={{
-                                    width: CELL_W,
-                                    height: CELL_H,
-                                    position: "absolute",
-                                    bottom: 0,
-                                    left: 0,
-                                    top: CELL_H * 2,
-                                    display: "flex",
-                                    justifyContent: "center",
-                                    alignItems: "center",
-                                    cursor: "pointer",
-                                    paddingTop: 0
-                                }}
-                                onMouseDown={(e) => {
-                                    e.preventDefault() // Prevent text selection
-                                    handleUnlockClick()
-                                }}
-                            >
-                                <input type="checkbox" readOnly checked={unlock} className="checkbox-grid-input" />
-                                {unlock && (
-                                    <div
-                                        style={{
-                                            position: "absolute",
-                                            top: 0,
-                                            left: 0,
-                                            width: "100%",
-                                            height: "100%",
-                                            display: "flex",
-                                            alignItems: "center",
-                                            justifyContent: "center",
-                                            pointerEvents: "none",
-                                        }}
-                                    >
-                                        <span>✓</span>
                                     </div>
-                                )}
-                            </div>)}
+                                ))}
+
+                            {upgrade.is_normal_honing && allowUserChangeState && (
+                                <div
+                                    className="checkbox-grid-item"
+                                    style={{
+                                        width: CELL_W,
+                                        height: CELL_H,
+                                        position: upgrade.is_normal_honing ? "absolute" : "relative",
+                                        bottom: 0,
+                                        left: 0,
+                                        top: upgrade.is_normal_honing ? CELL_H * 2 : 0,
+                                        display: "flex",
+                                        justifyContent: "center",
+                                        alignItems: "center",
+                                        cursor: "pointer",
+                                        paddingTop: 0,
+                                        marginRight: 14,
+                                    }}
+                                    onMouseDown={(e) => {
+                                        e.preventDefault() // Prevent text selection
+                                        handleUnlockClick()
+                                    }}
+                                >
+                                    <input type="checkbox" readOnly checked={unlock} className="checkbox-grid-input" />
+                                    {unlock && (
+                                        <div
+                                            style={{
+                                                position: "absolute",
+                                                top: 0,
+                                                left: 0,
+                                                width: "100%",
+                                                height: "100%",
+                                                display: "flex",
+                                                alignItems: "center",
+                                                justifyContent: "center",
+                                                pointerEvents: "none",
+                                            }}
+                                        >
+                                            <span>✓</span>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
                         </div>
                         <div style={{ display: "grid", gridTemplateColumns: `repeat(${cols}, ${CELL_W}px)`, gap: 0, marginBottom: "15px" }}>
                             {gridRows.flatMap((row, rIndex) =>
@@ -281,21 +292,17 @@ const RowBundle = ({
                                                     cIndex >= pity_len - 1
                                                         ? "transparent"
                                                         : cell.type === "progress" || !cell.active
-                                                            ? "inherit"
-                                                            : curIsBest
-                                                                ? "var(--btn-toggle-optimize-selected)"
-                                                                : "var(--sub-optimal)",
+                                                          ? "inherit"
+                                                          : curIsBest
+                                                            ? "var(--btn-toggle-optimize-selected)"
+                                                            : "var(--sub-optimal)",
 
                                                 cursor:
-                                                    ((cIndex < progress || cIndex >= pity_len - 1) && cell.type !== "progress") ||
-                                                        cIndex >= pity_len
+                                                    ((cIndex < progress || cIndex >= pity_len - 1) && cell.type !== "progress") || cIndex >= pity_len
                                                         ? "not-allowed"
                                                         : "pointer",
                                                 opacity:
-                                                    ((cIndex < progress || cIndex >= pity_len - 1) && cell.type !== "progress") ||
-                                                        cIndex >= pity_len
-                                                        ? 0.3
-                                                        : 1,
+                                                    ((cIndex < progress || cIndex >= pity_len - 1) && cell.type !== "progress") || cIndex >= pity_len ? 0.3 : 1,
                                             }}
                                             onMouseDown={(e) => {
                                                 e.preventDefault() // Prevent text selection
@@ -365,22 +372,24 @@ const RowBundle = ({
                     </div>
                     {succeed && <div className="state-grid-overlay" />}
                 </div>
-                {/* <button
-                    style={{
-                        ...styles.demoButton,
-                        background: succeed ? "var(--btn-toggle-deselected)" : "var(--btn-success)",
-                        color: succeed ? "var(--muted-text)" : "var(--btn-success-text)",
+                {/* {upgrade.is_normal_honing && (
+                    <button
+                        style={{
+                            ...styles.demoButton,
+                            background: succeed ? "var(--btn-toggle-deselected)" : "var(--btn-success)",
+                            color: succeed ? "var(--muted-text)" : "var(--btn-success-text)",
 
-                        height: 28,
-                        padding: "0 10px",
-                        alignSelf: "center",
-                        marginTop: 4,
-                        width: 90,
-                    }}
-                    onClick={handleSucceedClick}
-                >
-                    {succeed ? "Undo" : "Succeed"}
-                </button> */}
+                            height: 28,
+                            padding: "0 10px",
+                            alignSelf: "center",
+                            marginTop: 4,
+                            width: 90,
+                        }}
+                        onClick={handleSucceedClick}
+                    >
+                        {succeed ? "Undo" : "Succeed"}
+                    </button>
+                )} */}
             </div>
         </div>
     )
@@ -418,7 +427,7 @@ export default function StateGridsManager({
     flatStateBundle,
     setFlatStateBundle,
     allowUserChangeState,
-    evaluateAverageResult
+    evaluateAverageResult,
     // setSpecialState,
 }: ComplexGridProps) {
     // Requirement 7: overflow: auto to avoid going off edge
@@ -500,7 +509,6 @@ export default function StateGridsManager({
                     uniqueBookNumbers={juiceInfo.ids[upgradeArr[u_index].upgrade_index].slice(1)}
                     freeTap={index >= invalid_tail.length && special_probs[index - invalid_tail.length] > 0}
                     freeTapOrder={index - invalid_tail.length + 1}
-
                 />
             ))}
         </div>

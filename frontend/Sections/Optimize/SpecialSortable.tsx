@@ -49,8 +49,10 @@ export function SpecialSortable({
     // )
     // console.log(evaluateAverageResult)
     let non_zeros_count = useMemo(
-        () => specialState.slice(0, evaluateAverageResult?.special_invalid_index).filter((x, index) => evaluateAverageResult?.latest_special_probs[index] > 0).length,
-        [specialState, evaluateAverageResult?.latest_special_probs, evaluateAverageResult?.special_invalid_index,],
+        () =>
+            specialState.slice(0, evaluateAverageResult?.special_invalid_index).filter((x, index) => evaluateAverageResult?.latest_special_probs[index] > 0)
+                .length,
+        [specialState, evaluateAverageResult?.latest_special_probs, evaluateAverageResult?.special_invalid_index],
     )
     const items: SortableItem[] = useMemo(() => specialState.map((val) => ({ id: String(val), u_index: val })), [specialState])
 
@@ -87,12 +89,17 @@ export function SpecialSortable({
         <div style={{ justifyContent: "center", width: "100%", display: "flex", marginTop: 20 }}>
             {non_zeros_count > 0 && (
                 <div>
+                    <span>
+                        {" "}
+                        Keep attempting free taps on an upgrade until you run out, then move on to the next. <br></br>
+                        This is the best order that the algorithm found, you can drag & drop the upgrades to see if you can find a better one.
+                    </span>
                     <div className="sequence-container">
                         {/* Headers */}
                         <div className="grid-header">Free tap order</div>
                         <div className="grid-header">Probability</div>
                         <div className="grid-header">{/* Empty for buttons */}</div>
-                        <div className="grid-header">{ }</div>
+                        <div className="grid-header">{}</div>
 
                         {/* Column 1: Sortable Names */}
                         <ReactSortable
@@ -101,11 +108,11 @@ export function SpecialSortable({
                             animation={10}
                             className="col-sortable"
                             ghostClass="sortable-ghost"
-                        // style={
-                        //     {
-                        //         background: curIsBest ? "var(--btn-toggle-optimize-selected)" : "var(--sub-optimal)",
-                        //     } as React.CSSProperties
-                        // }
+                            // style={
+                            //     {
+                            //         background: curIsBest ? "var(--btn-toggle-optimize-selected)" : "var(--sub-optimal)",
+                            //     } as React.CSSProperties
+                            // }
                         >
                             {items.map((item) => (
                                 <div
@@ -147,18 +154,35 @@ export function SpecialSortable({
                                 const hasTransparentBg = should_normal_tap || tap_previous_first || (succeed && first_not_succeeded_index != index + 1)
                                 return (
                                     <div key={`btn-${u_index}`} className="row-item btn-cell">
-                                        <span
+                                        <button
+                                            onClick={() => {
+                                                if (!hasTransparentBg) {
+                                                    toggleSuccess(u_index)
+                                                }
+                                            }}
+                                            className="toggle-btn"
+                                            disabled={hasTransparentBg}
+                                            style={{
+                                                background:
+                                                    succeed && first_not_succeeded_index == index + 1
+                                                        ? "var(--btn-toggle-deselected)"
+                                                        : hasTransparentBg
+                                                          ? "transparent"
+                                                          : "var(--btn-success)",
+                                                color: succeed || should_normal_tap || tap_previous_first ? "var(--muted-text)" : "var(--btn-success-text)",
+                                                pointerEvents: hasTransparentBg ? "none" : "auto",
+                                            }}
                                         >
                                             {should_normal_tap
                                                 ? "Normal tap this "
                                                 : succeed && first_not_succeeded_index == index + 1
-                                                    ? "Undo"
-                                                    : succeed && first_not_succeeded_index != index + 1
-                                                        ? ""
-                                                        : tap_previous_first
-                                                            ? "Free tap this"
-                                                            : "Free tap this"}
-                                        </span>
+                                                  ? "Undo"
+                                                  : succeed && first_not_succeeded_index != index + 1
+                                                    ? ""
+                                                    : tap_previous_first
+                                                      ? "Free tap above first"
+                                                      : "Succeed free tap"}
+                                        </button>
                                     </div>
                                 )
                             })}
@@ -194,9 +218,8 @@ export function SpecialSortable({
                         )}
                     </div> */}
                 </div>
-
-            )}{non_zeros_count == 0 && (<div>You have no availiable free taps</div>
             )}
+            {non_zeros_count == 0 && <div>You have no availiable free taps</div>}
         </div>
     )
 }

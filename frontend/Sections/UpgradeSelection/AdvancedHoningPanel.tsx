@@ -96,11 +96,11 @@ export default function AdvancedHoningPanel({
                         />
                     </div>
                 </div>
-                <div style={{ textWrap: "wrap", width: 180, marginTop: 10, justifyContent: "flex-end", textAlign: "right", fontSize: 12, right: -30 }}>
+                <div style={{ textWrap: "wrap", width: 180, marginTop: 10, justifyContent: "flex-end", textAlign: "left", fontSize: 12, right: -30 }}>
                     {" "}
-                    Always juice & scroll on Grace
+                    Assuming that we always juice & scroll on Grace
                 </div>
-                <div style={{ marginTop: 4, display: "flex", justifyContent: "flex-end" }}>
+                {/* <div style={{ marginTop: 4, display: "flex", justifyContent: "flex-end" }}>
                     <select
                         value={adv_hone_strategy}
                         onChange={(e) => adv_hone_strategy_change(e.target.value)}
@@ -120,7 +120,7 @@ export default function AdvancedHoningPanel({
                 <div style={{ fontSize: 12, color: "var( --text-very-muted)", display: "flex", justifyContent: "flex-end", marginBottom: -10 }}>
                     {" "}
                     (has no effect on 21-40.)
-                </div>
+                </div> */}
             </div>
         </div>
     )

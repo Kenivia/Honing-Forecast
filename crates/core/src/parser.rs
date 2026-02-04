@@ -1,10 +1,12 @@
 use std::f64::NAN;
+use std::iter;
 
 use serde::{Deserialize, Serialize};
 
 use crate::constants::{
     ADV_DATA_10_20_DOUBLE, ADV_DATA_10_20_JUICE, ADV_DATA_30_40, ADV_DATA_30_40_JUICE,
-    ADV_HONE_COST, JuiceInfo, NORMAL_HONE_CHANCES, SPECIAL_LEAPS_COST, get_avail_juice_combs,
+    DEFAULT_ADV_HONE_COST, JuiceInfo, NORMAL_HONE_CHANCES, SPECIAL_LEAPS_COST,
+    get_avail_juice_combs, get_event_extra_chance, get_event_modified_adv_costs,
     get_event_modified_adv_unlock_cost, get_event_modified_armor_costs,
     get_event_modified_armor_unlock_cost, get_event_modified_artisan,
     get_event_modified_weapon_costs, get_event_modified_weapon_unlock_cost,
@@ -30,25 +32,28 @@ pub struct PreparationOutput {
     pub test_case: i64,
     pub eqv_gold_budget: f64,
     pub juice_info: JuiceInfo,
-    pub juice_books_owned: Vec<(i64, i64)>, // juice_books_owned[id].0 = weap owned
+    pub juice_books_owned: Vec<(f64, f64)>, // juice_books_owned[id].0 = weap owned
     // pub sellable_toggles: Vec<bool>,
     // pub upgrade_arr: Vec<Upgrade>,
-    pub effective_budgets: Vec<i64>,
+    pub effective_budgets: Vec<f64>,
     pub already_spent: Option<(Vec<i64>, Vec<i64>, Vec<i64>, f64)>,
+    pub flat_alr_spent: Option<Vec<f64>>,
 }
 
 fn compute_already_spent(
     upgrade_arr: &mut Vec<Upgrade>,
     prep_output: &PreparationOutput,
-) -> (Vec<i64>, Vec<i64>, Vec<i64>, f64) {
+) -> ((Vec<i64>, Vec<i64>, Vec<i64>, f64), Vec<f64>, Vec<f64>) {
     let mut out_mats_float: Vec<f64> = vec![0.0; 7];
     let mut out_weapon_float: Vec<f64> = vec![0.0; prep_output.juice_info.num_avail];
     let mut out_armor_float: Vec<f64> = vec![0.0; prep_output.juice_info.num_avail];
+
+    let mut unlock_offset: Vec<f64> = vec![0.0; 2];
     for upgrade in upgrade_arr.iter_mut() {
         upgrade.update_this_prob_dist(prep_output);
         upgrade.update_this_individual_support(prep_output);
         for i in 0..7 {
-            out_mats_float[i] += upgrade.cost_dist[i].support[upgrade.alr_failed];
+            // out_mats_float[i] += upgrade.cost_dist[i].support[upgrade.alr_failed];
         }
         if upgrade.alr_failed > 0 {
             #[cfg(target_arch = "wasm32")]
@@ -57,14 +62,16 @@ fn compute_already_spent(
             }
             assert!(upgrade.unlocked)
         }
-        if upgrade.unlocked {
-            out_mats_float[3] += upgrade.unlock_costs[0] as f64;
-            out_mats_float[6] += upgrade.unlock_costs[1] as f64;
-        }
+        // if upgrade.unlocked {
+        //     out_mats_float[3] += upgrade.unlock_costs[0] as f64;
+        //     out_mats_float[6] += upgrade.unlock_costs[1] as f64;
+        //     unlock_offset[0] += upgrade.unlock_costs[0] as f64;
+        //     unlock_offset[1] += upgrade.unlock_costs[1] as f64;
+        // }
 
         for i in 0..prep_output.juice_info.num_avail {
-            out_weapon_float[i] += upgrade.weap_juice_costs[i].support[upgrade.alr_failed];
-            out_armor_float[i] += upgrade.armor_juice_costs[i].support[upgrade.alr_failed];
+            // out_weapon_float[i] += upgrade.weap_juice_costs[i].support[upgrade.alr_failed];
+            // out_armor_float[i] += upgrade.armor_juice_costs[i].support[upgrade.alr_failed];
         }
     }
     let zipped = out_weapon_float
@@ -74,20 +81,30 @@ fn compute_already_spent(
         .collect::<Vec<(f64, f64)>>();
     let applied: (Vec<f64>, Vec<(f64, f64)>) =
         apply_price_generic(&out_mats_float, &zipped, &prep_output, false);
+    let out_flat: Vec<f64> = out_mats_float
+        .iter()
+        .chain(out_weapon_float.iter())
+        .chain(out_armor_float.iter())
+        .cloned()
+        .collect();
     (
-        out_mats_float
-            .iter()
-            .map(|x| x.round() as i64)
-            .collect::<Vec<i64>>(),
-        out_weapon_float
-            .iter()
-            .map(|x| x.round() as i64)
-            .collect::<Vec<i64>>(),
-        out_armor_float
-            .iter()
-            .map(|x| x.round() as i64)
-            .collect::<Vec<i64>>(),
-        add_up_golds(&applied.0, &applied.1),
+        (
+            out_mats_float
+                .iter()
+                .map(|x| x.round() as i64)
+                .collect::<Vec<i64>>(),
+            out_weapon_float
+                .iter()
+                .map(|x| x.round() as i64)
+                .collect::<Vec<i64>>(),
+            out_armor_float
+                .iter()
+                .map(|x| x.round() as i64)
+                .collect::<Vec<i64>>(),
+            add_up_golds(&applied.0, &applied.1),
+        ),
+        out_flat,
+        unlock_offset,
     )
 }
 pub fn actual_eqv_gold(
@@ -95,15 +112,15 @@ pub fn actual_eqv_gold(
     budgets: &[i64],
     juice_info: &JuiceInfo,
     unlock_costs: &[i64],
-    juice_books_owned: &[(i64, i64)],
+    juice_books_owned: &[(f64, f64)],
 ) -> f64 {
     let mut total = 0.0;
     for i in 0..7 {
         total += price_arr[i] * budgets[i] as f64;
     }
     for (id, i) in juice_books_owned.iter().enumerate() {
-        total += i.0 as f64 * juice_info.one_gold_cost_id[id].0 as f64;
-        total += i.1 as f64 * juice_info.one_gold_cost_id[id].1 as f64;
+        total += i.0 as f64 * juice_info.one_gold_cost_id[id].0;
+        total += i.1 as f64 * juice_info.one_gold_cost_id[id].1;
     }
     total -= unlock_costs[0] as f64 * price_arr[3];
     total -= unlock_costs[1] as f64 * price_arr[6];
@@ -158,7 +175,10 @@ impl PreparationOutput {
 
         let juice_info: JuiceInfo = get_avail_juice_combs(juice_prices, &leftover_juice_values);
 
-        let juice_books_owned: Vec<(i64, i64)> = juice_books_budget.to_vec();
+        let juice_books_owned: Vec<(f64, f64)> = juice_books_budget
+            .iter()
+            .map(|(a, b)| (*a as f64, *b as f64))
+            .collect();
         let eqv_gold_budget: f64 = actual_eqv_gold(
             &price_arr,
             &budgets,
@@ -166,9 +186,7 @@ impl PreparationOutput {
             &unlock_costs,
             &juice_books_owned,
         );
-        let mut effective_budgets: Vec<i64> = budgets[0..7].to_vec();
-        effective_budgets[3] -= unlock_costs[0];
-        effective_budgets[6] -= unlock_costs[1];
+
         // web_sys::console::log_1(&"4".into());
         let mut upgrade_arr: Vec<Upgrade> = parser(
             hone_ticks,
@@ -232,6 +250,9 @@ impl PreparationOutput {
             }
             upgrade.books_avail = (both_avail - 1).max(0) as i64;
         }
+        let mut effective_budgets: Vec<f64> = budgets[0..7].iter().map(|x| *x as f64).collect();
+        effective_budgets[3] -= unlock_costs[0] as f64;
+        effective_budgets[6] -= unlock_costs[1] as f64;
 
         let mut out: PreparationOutput = Self {
             // upgrade_arr,
@@ -247,8 +268,29 @@ impl PreparationOutput {
             leftover_values,
             effective_budgets,
             already_spent: None,
+            flat_alr_spent: None,
         };
-        out.already_spent = Some(compute_already_spent(&mut upgrade_arr, &out));
+        let (alr, flat_alr_spent, unlock_offset) = compute_already_spent(&mut upgrade_arr, &out);
+        out.already_spent = Some(alr.clone());
+        out.flat_alr_spent = Some(flat_alr_spent.clone());
+        for (index, e_budget) in out
+            .effective_budgets
+            .iter_mut()
+            .chain(
+                out.juice_books_owned
+                    .iter_mut()
+                    .flat_map(|x| iter::once(&mut x.0).chain(iter::once(&mut x.1))),
+            )
+            .enumerate()
+        {
+            // *e_budget -= flat_alr_spent[index];
+            // if index == 3 {
+            //     *e_budget += unlock_offset[0]; // don't double count unlock
+            // }
+            // if index == 6 {
+            //     *e_budget += unlock_offset[1];
+            // }
+        }
         (out, upgrade_arr)
     }
     pub fn eqv_gold_unlock(&self) -> f64 {
@@ -278,7 +320,9 @@ pub fn parser(
     let weapon_unlock_costs: [[i64; 25]; 2] = get_event_modified_weapon_unlock_cost(express_event);
     let armor_unlock_costs: [[i64; 25]; 2] = get_event_modified_armor_unlock_cost(express_event);
     let adv_unlock_costs: [[i64; 8]; 2] = get_event_modified_adv_unlock_cost(express_event);
+    let adv_tap_costs: [[i64; 8]; 8] = get_event_modified_adv_costs(express_event);
     let artisan_rate_arr: [f64; 25] = get_event_modified_artisan(express_event);
+    let event_extra_arr: [f64; 25] = get_event_extra_chance(express_event);
     for piece_type in 0..normal_ticks.len() {
         let cur_cost: [[i64; 25]; 7] = if piece_type < 5 {
             get_event_modified_armor_costs(express_event)
@@ -331,6 +375,7 @@ pub fn parser(
                 this_progress,
                 this_succeeded,
                 None,
+                event_extra_arr[upgrade_index],
             );
             let this_state_given: Option<Vec<(bool, usize)>> = if state_given_opt.is_none()
                 || state_given_opt.as_ref().unwrap()[piece_type][upgrade_index].len()
@@ -366,6 +411,7 @@ pub fn parser(
                 this_unlocked,
                 vec![relevant[0][upgrade_index], relevant[1][upgrade_index]],
                 this_succeeded,
+                event_extra_arr[upgrade_index],
             ));
             // web_sys::console::log_1(&format!("upgrade init done ").into());
             upgrade_index += 1;
@@ -412,30 +458,54 @@ pub fn parser(
             prob_dist = Vec::with_capacity(rows);
             juice_dist = Vec::with_capacity(rows);
 
-            let one_juice_cost: i64 = ADV_HONE_COST[7][col_index];
-            let sum_taps_f: f64 = if sum_taps == 0 { 1.0 } else { sum_taps as f64 };
+            let one_juice_cost: i64 = adv_tap_costs[7][col_index];
+            let mut sum_taps_f: f64 = if sum_taps == 0 { 1.0 } else { sum_taps as f64 };
+            let this_progress: usize = if progress_arr_opt.is_none() {
+                0
+            } else {
+                progress_arr_opt.as_ref().unwrap()[piece_type][upgrade_index]
+            };
 
+            let this_unlocked: bool = if unlock_grid.is_none() {
+                false
+            } else {
+                unlock_grid.as_ref().unwrap()[piece_type][upgrade_index]
+            };
+
+            let this_succeeded: bool = if succeeded_grid.is_none() {
+                false
+            } else {
+                succeeded_grid.as_ref().unwrap()[piece_type][upgrade_index]
+            };
             let start = relevant_data.iter().next().unwrap()[0] as usize;
             for row in 0..rows {
-                if row < start {
+                if row < start || row <= this_progress || (row > this_progress && this_succeeded) {
                     prob_dist.push(0.0);
                     juice_dist.push(0.0);
+                    if row >= start {
+                        sum_taps_f -= relevant_data[row - start][2] as f64;
+                    }
                     continue;
                 }
+
                 // web_sys::console::log_1(
                 //     &format!("{:?} {:?}", row, &relevant_data[row - start]).into(),
                 // );
                 assert!(row == relevant_data[row - start][0] as usize);
                 // let taps: i64 = row[2];
-                prob_dist.push((relevant_data[row - start][2] as f64) / sum_taps_f);
                 juice_dist.push(
                     one_juice_cost as f64 * relevant_data[row - start][1] as f64 / 1000.0_f64,
                 );
+                if this_succeeded {
+                    prob_dist.push(1.0);
+                } else {
+                    prob_dist.push((relevant_data[row - start][2] as f64) / sum_taps_f);
+                }
             }
 
             out.push(Upgrade::new_adv(
                 prob_dist,
-                std::array::from_fn(|cost_type: usize| ADV_HONE_COST[cost_type][col_index]),
+                std::array::from_fn(|cost_type: usize| adv_tap_costs[cost_type][col_index]),
                 one_juice_cost,
                 juice_dist,
                 row_ind == 5,
@@ -448,6 +518,7 @@ pub fn parser(
                 ],
                 false,
                 num_juice_avail,
+                this_unlocked,
             ));
             // current_counter += 1;
             upgrade_index += 1;

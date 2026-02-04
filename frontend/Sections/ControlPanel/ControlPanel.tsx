@@ -5,8 +5,8 @@ import LabeledCheckbox from "@/Components/LabeledCheckbox.tsx"
 type ControlPanelProps = {
     controlsLeft: number | null
     mainScale: number
-    fillDemo: () => void
-    fillDemoIncome: () => void
+    // fillDemo: () => void
+    // fillDemoIncome: () => void
     clearAll: () => void
     resetOptimizerState: () => void
     onCopyPayload: () => void
@@ -16,8 +16,8 @@ type ControlPanelProps = {
     setCumulativeGraph: (_next: boolean) => void
     dataSize: string
     setDataSize: (_v: string) => void
-    lockXAxis: boolean
-    onToggleLockXAxis: () => void
+    // lockXAxis: boolean
+    // onToggleLockXAxis: () => void
     minResolution: number
     setMinResolution: React.Dispatch<React.SetStateAction<number>>
     allowUserChangeState: boolean
@@ -27,8 +27,8 @@ type ControlPanelProps = {
 export default function ControlPanel({
     controlsLeft: _controlsLeft,
     mainScale: _mainScale,
-    fillDemo,
-    fillDemoIncome,
+    // fillDemo,
+    // fillDemoIncome,
     clearAll,
     resetOptimizerState,
     onCopyPayload,
@@ -38,8 +38,8 @@ export default function ControlPanel({
     setCumulativeGraph,
     dataSize,
     setDataSize,
-    lockXAxis,
-    onToggleLockXAxis,
+    // lockXAxis,
+    // onToggleLockXAxis,
     minResolution,
     setMinResolution,
     allowUserChangeState,
@@ -67,9 +67,9 @@ export default function ControlPanel({
             <h3 style={{ ...styles.sectionTitle, marginTop: "-8px", alignSelf: "center" }}>Controls</h3>
             <div style={{ ...styles.buttonSection, marginTop: "-8px", width: "200px" }}>
                 <div style={{ display: "flex", flexDirection: "column", gap: "var(--spacing-sm)", width: "100%" }}>
-                    <button style={styles.demoButton} onClick={fillDemo}>
+                    {/* <button style={styles.demoButton} onClick={fillDemo}>
                         Fill Demo
-                    </button>
+                    </button> */}
                     {/* <button style={styles.demoButton} onClick={fillDemoIncome}>
                         Fill Demo Income
                     </button> */}
@@ -86,9 +86,9 @@ export default function ControlPanel({
                     <div style={{ display: "flex", alignItems: "center", gap: "8px", marginTop: "8px" }}>
                         <LabeledCheckbox label="Express event" checked={express_event} setChecked={set_express_event} />
                     </div>
-
-                    <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                        <LabeledCheckbox label="Allow changing progress" checked={allowUserChangeState} setChecked={setAllowUserChangeState} />
+                    <span style={{ fontSize: 12, marginLeft: 30, marginTop: -10 }}>(updated Feb 3rd)</span>
+                    <div style={{ display: "flex", alignItems: "center", gap: "8px", textWrap: "wrap", lineHeight: "1.0" }}>
+                        <LabeledCheckbox label="Allow changing starting position" checked={allowUserChangeState} setChecked={setAllowUserChangeState} />
                     </div>
 
                     {/* <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
