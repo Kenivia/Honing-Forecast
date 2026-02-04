@@ -8,7 +8,36 @@ import { piece_display_name, toOrdinal } from "@/Utils/Helpers.ts"
 import { useMemo } from "react"
 
 export type StatePair = [boolean, number]
-
+function sortUpgrades(list, upgradeArr, special_invalid_index) {
+    let output = []
+    let copy = upgradeArr.slice()
+    // console.log(list.slice(), special_invalid_index)
+    for (const [original_index, u_index] of list.entries()) {
+        // console.log(original_index, u_index, output)
+        if (original_index >= special_invalid_index) {
+            // console.log(output.slice(), u_index, u_index in output)
+            if (!output.includes(u_index)) {
+                output.push(u_index)
+            }
+        } else {
+            let this_upgrade = upgradeArr[u_index]
+            for (const [index, element] of copy.entries()) {
+                if (
+                    element.upgrade_index <= this_upgrade.upgrade_index &&
+                    element.is_normal_honing &&
+                    element.piece_type == this_upgrade.piece_type &&
+                    !element.succeeded &&
+                    !output.includes(index)
+                ) {
+                    output.push(index)
+                    // console.log(u_index, index, this_upgrade.upgrade_index)
+                }
+            }
+        }
+    }
+    // console.log(output)
+    return output
+}
 interface RowBundleProps {
     curIsBest: boolean
     bundleIndex: number
@@ -56,8 +85,8 @@ const RowBundle = ({
     // Determine Grid Dimensions
     // Rows: Unique Books + Juice (1) + Progress (1)
     const totalRows = upgrade.is_normal_honing ? uniqueBookNumbers.length + 2 : 1
-
-    const pity_len = upgrade.prob_dist.length - 1
+    // console.log(upgrade.prob_dist.length, upgrade.upgrade_index, upgrade.piece_type)
+    const pity_len = Math.max(upgrade.prob_dist.length - 1, 1)
     const max_len = upgrade.original_prob_dist_len - 1
     const cols = max_len
     // console.log(max_len, pity_len)
@@ -174,6 +203,7 @@ const RowBundle = ({
     }
 
     const handleSucceedClick = () => {
+        // console.log(progress, pity_len, upgrade.prob_dist, upgrade.upgrade_index, upgrade.piece_type)
         if (!succeed) {
             if (!unlock) {
                 onUpdateUnlock(true)
@@ -207,7 +237,7 @@ const RowBundle = ({
                             {upgrade.is_normal_honing
                                 ? freeTap
                                     ? "  Use special leaps on this until you run out, " + toOrdinal(freeTapOrder)
-                                    : " Normal tap this (no special)"
+                                    : " Normal tap this (no special), " + toOrdinal(freeTapOrder)
                                 : "Use juice (and scroll) on ancestor's grace"}
                         </span>
                     </div>
@@ -372,7 +402,7 @@ const RowBundle = ({
                     </div>
                     {succeed && <div className="state-grid-overlay" />}
                 </div>
-                {
+                {(allowUserChangeState || succeed) && (
                     <button
                         style={{
                             ...styles.demoButton,
@@ -389,7 +419,7 @@ const RowBundle = ({
                     >
                         {succeed ? "Undo" : "Succeed"}
                     </button>
-                }
+                )}
             </div>
         </div>
     )
@@ -481,24 +511,8 @@ export default function StateGridsManager({
     }
     // console.log(juiceInfo)
     // console.log(truncated_special_state, invalid_tail)
-    let temp = specialState.slice()
-    temp.sort((a, b) => {
-        const A = upgradeArr[a]
-        const B = upgradeArr[b]
-
-        // 1) true before false
-        if (A.is_normal_honing !== B.is_normal_honing) {
-            return Number(B.is_normal_honing === true) - Number(A.is_normal_honing === true)
-        }
-
-        // 2) upgrade_index ascending
-        if (A.upgrade_index !== B.upgrade_index) {
-            return A.upgrade_index - B.upgrade_index
-        }
-
-        // 3) piece_type ascending
-        return A.piece_type - B.piece_type
-    })
+    // let temp = specialState.slice()
+    let temp = sortUpgrades(specialState, upgradeArr, special_invalid_index)
 
     return (
         <div
@@ -510,7 +524,7 @@ export default function StateGridsManager({
                 boxSizing: "border-box",
             }}
         >
-            {temp.map((u_index, _) => (
+            {temp.map((u_index, index) => (
                 <RowBundle
                     key={u_index}
                     curIsBest={curIsBest}
@@ -519,7 +533,7 @@ export default function StateGridsManager({
                     unlock={flatUnlockArr[u_index]}
                     succeed={flatSucceedArr[u_index]}
                     statePairs={flatStateBundle[u_index]}
-                    allowUserChangeState={allowUserChangeState}
+                    allowUserChangeState={allowUserChangeState && index == 0}
                     onUpdateProgress={(val) => handleUpdateProgress(u_index, val)}
                     onUpdateUnlock={(val) => handleUpdateUnlock(u_index, val)}
                     onUpdateSucceed={(val) => handleUpdateSucceed(u_index, val)}
@@ -530,7 +544,7 @@ export default function StateGridsManager({
                         specialState.findIndex((x) => x == u_index) < truncated_special_state.length &&
                         special_probs[specialState.findIndex((x) => x == u_index)] > 0
                     }
-                    freeTapOrder={specialState.findIndex((x) => x == u_index) + 1}
+                    freeTapOrder={index + 1}
                 />
             ))}
         </div>

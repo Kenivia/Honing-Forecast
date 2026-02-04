@@ -38,7 +38,9 @@ export default function InputsSection({ inputsBundle: inputs }: InputsSectionPro
     }
     return (
         <div style={{ ...styles.inputSection, flexDirection: "row", maxWidth: "1200px" }}>
-            <div style={{ marginTop: -10, marginBottom: 10 }}>Our goal is to minimize the Average gold used, both in tapping and in buying extra mats.</div>
+            <div style={{ marginTop: -10, marginBottom: 10 }}>
+                Our goal is to minimize the Average gold used, both in tapping, buying extra mats and equivalently consuming any tradable mats you may have.
+            </div>
             <div
                 style={{
                     display: "flex",
@@ -163,7 +165,7 @@ export default function InputsSection({ inputsBundle: inputs }: InputsSectionPro
                 {<span></span>} <LabeledCheckbox label="Custom leftover values" checked={advancedMode} setChecked={toggleAdvMode} />
                 {advancedMode && (
                     <span>
-                        Specify how much your leftover mats are worth.
+                        Specify how much your leftover mats are worth. By default, this is 0 for all mats.
                         <br></br> <br></br> For example, if you say leftover abidos are worth 100g each, then having 200 abidos leftover is considered the same
                         as having 20000 gold. This influences how the optimizer might try to save abidos, potentially by buying more juice. <br></br> <br></br>
                     </span>

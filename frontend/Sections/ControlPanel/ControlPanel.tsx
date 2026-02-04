@@ -88,7 +88,7 @@ export default function ControlPanel({
                     </div>
                     <span style={{ fontSize: 12, marginLeft: 30, marginTop: -10 }}>(updated Feb 3rd)</span>
                     {/* <div style={{ display: "flex", alignItems: "center", gap: "8px", textWrap: "wrap", lineHeight: "1.0" }}>
-                        <LabeledCheckbox label="Allow changing starting position" checked={allowUserChangeState} setChecked={setAllowUserChangeState} />
+                        <LabeledCheckbox label="Allow updating progress" checked={allowUserChangeState} setChecked={setAllowUserChangeState} />
                     </div> */}
 
                     {/* <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>

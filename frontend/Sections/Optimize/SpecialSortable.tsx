@@ -19,6 +19,7 @@ interface Props {
     ranOutFreeTaps: boolean
     onRanOutFreeTaps: () => void
     inputsBundle: InputsBundleWithSetters
+    allowUserChangeState: boolean
 }
 
 interface SortableItem {
@@ -38,6 +39,7 @@ export function SpecialSortable({
     ranOutFreeTaps,
     onRanOutFreeTaps,
     inputsBundle,
+    allowUserChangeState,
 }: Props) {
     // 1. Map specialState (indices) to objects required by SortableJS
     // We use the value as the ID. *Assumes values in specialState are unique*
@@ -88,10 +90,10 @@ export function SpecialSortable({
     const handleSetList = (newItems: SortableItem[]) => {
         // Extract the indices back into a number array
         const newIndices = newItems.filter((val) => evaluateAverageResult.upgrade_arr[val.u_index].is_normal_honing).map((item) => item.u_index)
-
+        // console.log("new", newIndices)
         // Only update if the order actually changed to prevent infinite loops
         if (JSON.stringify(newIndices) !== JSON.stringify(specialState.filter((val) => evaluateAverageResult.upgrade_arr[val].is_normal_honing))) {
-            setSpecialState(newIndices)
+            setSpecialState(newIndices.concat(specialState.filter((val) => !evaluateAverageResult.upgrade_arr[val].is_normal_honing)))
         }
     }
     // console.log(items, handleSetList)
@@ -119,16 +121,17 @@ export function SpecialSortable({
                 <div>
                     <span>
                         {" "}
-                        Keep attempting free taps until you run out, then move on to the next. <br></br>You may need to do normal taps before or in-between free
-                        taps
+                        Keep attempting free taps until you run out, then move on to the next. <br></br>The instructions above takes into account the normal
+                        taps you may need to do before or in-between free taps.
                     </span>
                     <div className="sequence-container">
                         {/* Headers */}
                         <div className="grid-header">Free tap order</div>
                         <div className="grid-header">Probability</div>
                         <div className="grid-header">{/* Empty for buttons */}</div>
+
                         <div className="grid-header" style={{ textWrap: "nowrap", width: 120 }}>
-                            Update your special leaps here
+                            {allowUserChangeState ? "Update your special leaps here" : ""}
                         </div>
 
                         {/* Column 1: Sortable Names */}
@@ -176,84 +179,86 @@ export function SpecialSortable({
 
                         {/* Column 3: Static Buttons (Based on Index) */}
                         <div className="col-static">
-                            {items.map((val, index) => {
-                                const succeed = flatSucceedArr[val.u_index]
-                                const first_not_succeeded_index = specialState.findIndex((i) => !flatSucceedArr[i])
-                                const should_normal_tap = index >= evaluateAverageResult.special_invalid_index && !succeed
-                                const tap_previous_first = index > first_not_succeeded_index && !succeed
-                                const hasTransparentBg = should_normal_tap || tap_previous_first || (succeed && first_not_succeeded_index != index + 1)
-                                return (
-                                    <div key={`btn-${val.u_index}`} className="row-item btn-cell">
-                                        <button
-                                            onClick={() => {
-                                                if (!hasTransparentBg) {
-                                                    toggleSuccess(val.u_index)
-                                                }
-                                            }}
-                                            className="toggle-btn"
-                                            disabled={hasTransparentBg}
-                                            style={{
-                                                background:
-                                                    succeed && first_not_succeeded_index == index + 1
-                                                        ? "var(--btn-toggle-deselected)"
-                                                        : hasTransparentBg
-                                                          ? "transparent"
-                                                          : "var(--btn-success)",
-                                                color: succeed || should_normal_tap || tap_previous_first ? "var(--muted-text)" : "var(--btn-success-text)",
-                                                pointerEvents: hasTransparentBg ? "none" : "auto",
-                                            }}
-                                        >
-                                            {should_normal_tap
-                                                ? "Normal tap this "
-                                                : succeed && first_not_succeeded_index == index + 1
-                                                  ? "Undo"
-                                                  : succeed && first_not_succeeded_index != index + 1
-                                                    ? ""
-                                                    : tap_previous_first
-                                                      ? "Free tap above first"
-                                                      : "Succeed free tap"}
-                                        </button>
-                                    </div>
-                                )
-                            })}
+                            {allowUserChangeState &&
+                                items.map((val, index) => {
+                                    const succeed = flatSucceedArr[val.u_index]
+                                    const first_not_succeeded_index = specialState.findIndex((i) => !flatSucceedArr[i])
+                                    const should_normal_tap = index >= evaluateAverageResult.special_invalid_index && !succeed
+                                    const tap_previous_first = index > first_not_succeeded_index && !succeed
+                                    const hasTransparentBg = should_normal_tap || tap_previous_first || (succeed && first_not_succeeded_index != index + 1)
+                                    return (
+                                        <div key={`btn-${val.u_index}`} className="row-item btn-cell">
+                                            <button
+                                                onClick={() => {
+                                                    if (!hasTransparentBg) {
+                                                        toggleSuccess(val.u_index)
+                                                    }
+                                                }}
+                                                className="toggle-btn"
+                                                disabled={hasTransparentBg}
+                                                style={{
+                                                    background:
+                                                        succeed && first_not_succeeded_index == index + 1
+                                                            ? "var(--btn-toggle-deselected)"
+                                                            : hasTransparentBg
+                                                              ? "transparent"
+                                                              : "var(--btn-success)",
+                                                    color: succeed || should_normal_tap || tap_previous_first ? "var(--muted-text)" : "var(--btn-success-text)",
+                                                    pointerEvents: hasTransparentBg ? "none" : "auto",
+                                                }}
+                                            >
+                                                {should_normal_tap
+                                                    ? "Normal tap this "
+                                                    : succeed && first_not_succeeded_index == index + 1
+                                                      ? ""
+                                                      : succeed && first_not_succeeded_index != index + 1
+                                                        ? ""
+                                                        : tap_previous_first
+                                                          ? "Free tap above first"
+                                                          : "Succeed free tap"}
+                                            </button>
+                                        </div>
+                                    )
+                                })}
                         </div>
 
                         {/* Column 4: Special Leap material grid */}
                         <div className="col-static" style={{ width: "100px" }}>
-                            {items.map((val, index) => {
-                                const succeed = flatSucceedArr[val.u_index]
-                                const first_not_succeeded_index = specialState.findIndex((i) => !flatSucceedArr[i])
-                                const should_normal_tap = index >= evaluateAverageResult.special_invalid_index
-                                const tap_previous_first = index > first_not_succeeded_index
-                                // const hasTransparentBg = should_normal_tap || tap_previous_first || (succeed && first_not_succeeded_index != index + 1)
-                                return (
-                                    !should_normal_tap &&
-                                    !succeed &&
-                                    !tap_previous_first && (
-                                        <div key={`spec-${val.u_index}`} className="row-item btn-cell" style={{ marginTop: 36 }}>
-                                            <SpreadsheetGrid
-                                                columnDefs={[specialLeapColumnDef]}
-                                                labels={["Special Leap"]}
-                                                sheetValuesArr={[{ "Special Leap": inputsBundle.values.mats.owned["Special Leap"] ?? "0" }]}
-                                                setSheetValuesArr={[
-                                                    (value) => {
-                                                        let cleanValue = value["Special Leap"].replace(/[^0-9]/g, "")
-                                                        cleanValue = cleanValue.replace(/^0+(?=\d)/, "")
+                            {allowUserChangeState &&
+                                items.map((val, index) => {
+                                    const succeed = flatSucceedArr[val.u_index]
+                                    const first_not_succeeded_index = specialState.findIndex((i) => !flatSucceedArr[i])
+                                    const should_normal_tap = index >= evaluateAverageResult.special_invalid_index
+                                    const tap_previous_first = index > first_not_succeeded_index
+                                    // const hasTransparentBg = should_normal_tap || tap_previous_first || (succeed && first_not_succeeded_index != index + 1)
+                                    return (
+                                        !should_normal_tap &&
+                                        !succeed &&
+                                        !tap_previous_first && (
+                                            <div key={`spec-${val.u_index}`} className="row-item btn-cell" style={{ marginTop: 36 }}>
+                                                <SpreadsheetGrid
+                                                    columnDefs={[specialLeapColumnDef]}
+                                                    labels={["Special Leap"]}
+                                                    sheetValuesArr={[{ "Special Leap": inputsBundle.values.mats.owned["Special Leap"] ?? "0" }]}
+                                                    setSheetValuesArr={[
+                                                        (value) => {
+                                                            let cleanValue = value["Special Leap"].replace(/[^0-9]/g, "")
+                                                            cleanValue = cleanValue.replace(/^0+(?=\d)/, "")
 
-                                                        cleanValue = String(Math.min(parseFloat(cleanValue), 33333))
+                                                            cleanValue = String(Math.min(parseFloat(cleanValue), 33333))
 
-                                                        const next = { ...inputsBundle.values.mats.owned }
-                                                        next["Special Leap"] = cleanValue
-                                                        inputsBundle.setters.mats.setOwned(next)
-                                                    },
-                                                ]}
-                                                hideIcons={true}
-                                                fontSizeOverride={"var(--font-size-xs)"}
-                                            />
-                                        </div>
+                                                            const next = { ...inputsBundle.values.mats.owned }
+                                                            next["Special Leap"] = cleanValue
+                                                            inputsBundle.setters.mats.setOwned(next)
+                                                        },
+                                                    ]}
+                                                    hideIcons={false}
+                                                    fontSizeOverride={"var(--font-size-xs)"}
+                                                />
+                                            </div>
+                                        )
                                     )
-                                )
-                            })}
+                                })}
                         </div>
                     </div>
                     {/* <div key={`out`} className="row-item btn-cell" style={{ marginTop: 20, marginBottom: 30 }}>

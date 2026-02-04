@@ -1,4 +1,4 @@
-use crate::constants::{FLOAT_TOL, NORMAL_JUICE_COST};
+use crate::constants::{FLOAT_TOL, JuiceInfo, NORMAL_JUICE_COST};
 use crate::normal_honing_utils::{new_prob_dist, probability_distribution};
 use crate::parser::PreparationOutput;
 // use itertools::izip;
@@ -297,14 +297,14 @@ impl Default for Support {
 impl Upgrade {
     pub fn new_normal(
         base_chance: f64,
-        prob_dist: Vec<f64>,
+        // prob_dist: Vec<f64>,
         costs: [i64; 7],
         special_cost: i64,
         is_weapon: bool,
         piece_type: usize,
         artisan_rate: f64,
         upgrade_index: usize,
-        num_juice_avail: usize,
+        juice_info: &JuiceInfo,
         alr_failed: usize,
         state_given: Option<Vec<(bool, usize)>>,
         unlocked: bool,
@@ -312,9 +312,6 @@ impl Upgrade {
         succeeded: bool,
         extra_chance: f64,
     ) -> Self {
-        let prob_dist_len: usize = prob_dist.len();
-        // let base_chance: f64 = prob_dist[1];
-        // web_sys::console::log_1(&format!("{:?}", alr_failed).into());
         let original_prob_dist_len: usize = probability_distribution(
             base_chance,
             artisan_rate,
@@ -326,14 +323,39 @@ impl Upgrade {
             extra_chance,
         )
         .len();
+        let state_payload = state_given.unwrap_or(State::new(original_prob_dist_len).payload);
+        let new_extra: Vec<f64> = state_payload
+            .iter()
+            .map(|(juice, id)| {
+                let mut chance: f64 = 0.0;
+                if *juice {
+                    chance += juice_info.chances_id[0][upgrade_index];
+                }
+                if *id > 0 {
+                    chance += juice_info.chances_id[*id][upgrade_index];
+                }
+                chance
+            }) //if *x > 0 { upgrade.base_chance } else { 0.0 }) //
+            .collect();
+
+        let prob_dist = probability_distribution(
+            base_chance,
+            artisan_rate,
+            &new_extra,
+            0.0,
+            alr_failed,
+            succeeded,
+            Some(original_prob_dist_len),
+            extra_chance,
+        );
+        let prob_dist_len: usize = prob_dist.len();
+        // let base_chance: f64 = prob_dist[1];
+        // web_sys::console::log_1(&format!("{:?}", alr_failed).into());
+
         // web_sys::console::log_1(&format!("a").into());
         let mut state = State::new(original_prob_dist_len);
         // web_sys::console::log_1(&format!("a").into());
-        state.update_payload(
-            state_given
-                .unwrap_or(State::new(original_prob_dist_len).payload)
-                .to_owned(),
-        );
+        state.update_payload(state_payload.to_owned());
         // web_sys::console::log_1(&format!("{:?}", state).into());
         Self {
             is_normal_honing: true,
@@ -363,8 +385,8 @@ impl Upgrade {
 
             state, // initialize state with default values
             cost_dist: vec![Support::default(); 7],
-            weap_juice_costs: vec![Support::default(); num_juice_avail],
-            armor_juice_costs: vec![Support::default(); num_juice_avail],
+            weap_juice_costs: vec![Support::default(); juice_info.num_avail],
+            armor_juice_costs: vec![Support::default(); juice_info.num_avail],
 
             combined_gold_costs: Support::default(),
             name_string: {

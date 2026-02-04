@@ -16,7 +16,7 @@ type DistributionSectionProps = {
 export default function DistributionSection({ cumulativeGraph, histogramResult, setCumulativeGraph }: DistributionSectionProps) {
     return (
         <div style={{ ...styles.inputSection, flexDirection: "row", maxWidth: "1200px", width: "100%" }}>
-            <div>Distribution of costs, these graphs reflect the free taps & juice usage as specified in Optimizer.</div>
+            <div style={{ marginBottom: 30 }}>Distribution of costs, these graphs reflect the free taps & juice usage as specified in the next tab. </div>
             <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                 <LabeledCheckbox label="Cumulative Graph" checked={cumulativeGraph} setChecked={setCumulativeGraph} />
             </div>

@@ -54,7 +54,7 @@ export default function Separator({ activePage, onPageChange, setAutoRunOptimize
                 <div className="hf-help">How much will the upgrades cost?</div>
             </button>
             <button className={getButtonClass("optimize")} onClick={() => handleButtonClick("optimize")}>
-                <span className="hf-label">Optimizer</span>
+                <span className="hf-label">Free taps & juice instructions</span>
                 <div className="hf-help">How should I use my free taps & juice?</div>
             </button>
             {/* <button className={getButtonClass("forecast")} onClick={() => handleButtonClick("forecast")}>

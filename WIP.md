@@ -9,15 +9,6 @@
 
 - marquee for state grid also?
 
-- multiple selectable & editable express GET THIS DATA SOMEHOW???
-  - rework constant.rs to take in a json or something so it can interface with the website
-  - eventually T4.5 integration
-  - get the actual numbers from the korean website <https://icepeng.com/refining>
-
-- get all the graphs and shit back and working
-  - rework to be graphs for indivdual dimensions
-    - hoverable with a "you are here" arrow
-
 #### Optimizations
 
 ### Misc
@@ -29,9 +20,6 @@
 
 - start working on visualizing this stuff
   - put all possible states on one axis (must be small support like 5? 10? ) and sort by number of juice used, then color/ 3d height?
-
-- initialize the hash properly or something idk
-  - avoid updating dist & support based on this hash
 
 ### Big
 
@@ -50,14 +38,6 @@
 
 - a kind of self-crossover where the same upgrade type can copy each other?
 
-## Next big step(s)
-
-- Juice(and Book / Scroll) purchase suggestion
-- Books & scroll calculations
-- True juice optimization for success chance
-
-^ this is arena
-
 ## Other features
 
 - Automatic Market price integration(via some kind of API, or just updating the site at a regular interval automatically)
@@ -74,6 +54,24 @@
 
 ## Done / cancelled
 
+~~## Next big step(s)~~
+
+- ~~Juice(and Book / Scroll) purchase suggestion~~
+- ~~ Books & scroll calculations~~
+- ~~True juice optimization for success chance~~
+
+~~^ this is arena~~
+
+- ~~initialize the hash properly or something idk~~
+  - ~~avoid updating dist & support based on this hash~~
+- ~~multiple selectable & editable express GET THIS DATA SOMEHOW???~~
+  - ~~rework constant.rs to take in a json or something so it can interface with the website ~~ nah
+  - eventually T4.5 integration
+  - ~~get the actual numbers from the korean website <https://icepeng.com/refining>~~
+
+- ~~get all the graphs and shit back and working~~
+  - ~~ rework to be graphs for indivdual dimensions~~
+    - ~~ hoverable with a "you are here" arrow~~
 - ~~slider instead of leftover value?~~
 
 - ~~some kind of heatmap of which bits were the most impactful? but i feel like this wouldnt actually do much~~ nah

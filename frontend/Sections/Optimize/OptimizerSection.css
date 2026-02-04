@@ -49,6 +49,7 @@
     font-size: 0.9em;
     display: flex;
     flex-direction: row;
+    align-items: center;
 }
 
 .optimizer-row {
@@ -99,11 +100,12 @@
 }
 
 .restore-btn {
-    padding: 6px 10px;
+    padding: 0px 0px 0px 0px;
     border-radius: 4px;
     border: 1px solid var(--btn-border);
     background: var(--optimizer-button);
     color: var(--btn-demo-text);
+    position: absolute;
 }
 
 .restore-btn:disabled {
@@ -162,6 +164,11 @@
     padding-bottom: 4px;
     border-bottom: 2px dashed var(--text-very-muted);
     margin-top: 8px;
+    border-radius: 2px;
+}
+
+.optimizer-section-title:hover {
+    background-color: var(--focus-bg);
 }
 
 .optimizer-section-title-button {
@@ -172,7 +179,9 @@
     cursor: pointer;
     text-align: left;
     border-bottom: 2px dashed var(--text-very-muted);
+    transition: background-color 0.15s ease;
 }
+
 
 .optimizer-section-title-arrow {
     display: inline-block;

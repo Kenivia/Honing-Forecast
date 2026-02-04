@@ -78,7 +78,7 @@ export const IconMap: Record<string, string> = {
     "Forecast Icon": "/Icons/Forecast Icon.webp",
 }
 
-export const DEFAULT_MATS_PRICES = ["1.84", "0.04", "20.0", "0.6", "128", "1.0", "0.0"]
+export const DEFAULT_MATS_PRICES = ["1.84", "0.04", "20", "0.6", "128", "1.0", "0.0"]
 
 export const DEFAULT_MATS_LEFTOVER = ["0", "0", "0", "0", "0", "0", "0"]
 
@@ -104,7 +104,7 @@ export const RESET_UI_DEFAULTS = {
     adv_hone_strategy: "x2 grace",
     express_event: true,
     bucketCount: "100",
-    cumulativeGraph: false,
+    cumulativeGraph: true,
     dataSize: "100000",
     lockXAxis: false,
     lockedMins: null as number[] | null,

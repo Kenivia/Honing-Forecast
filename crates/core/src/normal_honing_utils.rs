@@ -521,7 +521,7 @@ pub fn probability_distribution(
     event_extra: f64,
 ) -> Vec<f64> {
     if succeeded {
-        let mut v = vec![0.0; alr_failed + 1];
+        let mut v = vec![0.0; size.unwrap()];
         v[alr_failed] = 1.0;
         // web_sys::console::log_1(&format!("{:?}", v).into());
         return v;
@@ -604,9 +604,9 @@ impl Upgrade {
             let mut cost_so_far: f64 = 0.0;
             let this_cost: f64 = self.costs[t_index] as f64;
             for (index, _p) in self.prob_dist.iter().enumerate() {
-                if index == self.alr_failed {
-                    cost_so_far = 0.0;
-                }
+                // if index == self.alr_failed && ignore_already_spent {
+                //     cost_so_far = 0.0;
+                // }
                 this_mats_costs.push(cost_so_far);
 
                 if index >= l_len - 1 {
@@ -633,10 +633,10 @@ impl Upgrade {
 
             let amt = prep_output.juice_info.amt_used_id[id][self.upgrade_index] as f64;
             for (index, (juice, book)) in self.state.iter().take(l_len).enumerate() {
-                if index == self.alr_failed {
-                    weap_cost = 0.0;
-                    armor_cost = 0.0;
-                }
+                // if index == self.alr_failed && ignore_already_spent {
+                //     weap_cost = 0.0;
+                //     armor_cost = 0.0;
+                // }
                 weap_support.push(weap_cost);
                 armor_support.push(armor_cost);
                 if index >= l_len - 2 {

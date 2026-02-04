@@ -191,8 +191,9 @@ export default function HoningForecastUI() {
     const [minResolution, setMinResolution] = useState<number>(10)
 
     const [optimizerProgress, setOptimizerProgress] = useState<number>(0)
+    const [isJuiceInfoCollapsed, setIsJuiceInfoCollapsed] = useState<boolean>(true)
 
-    const [allowUserChangeState, setAllowUserChangeState] = useState<boolean>(true)
+    const [allowUserChangeState, setAllowUserChangeState] = useState<boolean>(false)
     // Lock x-axis state (shared across all graphs)
     // const [lockXAxis, setLockXAxis] = useState<boolean>(false)
     // const [lockedMins, setLockedMins] = useState<number[] | null>(null)
@@ -554,8 +555,27 @@ export default function HoningForecastUI() {
     //     })
     // }
 
-    const payloadBuilder = () =>
-        buildPayload({
+    const payloadBuilder = useCallback(
+        () =>
+            buildPayload({
+                topGrid,
+                bottomGrid,
+                adv_hone_strategy,
+                express_event,
+                bucketCount,
+
+                dataSize,
+                inputs: inputsValues,
+                progressGrid,
+                unlockGrid,
+                succeededGrid,
+                stateBundleGrid,
+                specialState,
+                minResolution,
+                metricType,
+                // monteCarloResult,
+            }),
+        [
             topGrid,
             bottomGrid,
             adv_hone_strategy,
@@ -563,7 +583,7 @@ export default function HoningForecastUI() {
             bucketCount,
 
             dataSize,
-            inputs: inputsValues,
+            inputsValues,
             progressGrid,
             unlockGrid,
             succeededGrid,
@@ -571,8 +591,8 @@ export default function HoningForecastUI() {
             specialState,
             minResolution,
             metricType,
-            // monteCarloResult,
-        })
+        ],
+    )
 
     const onCopyPayload = async () => {
         const payload = payloadBuilder()
@@ -662,21 +682,20 @@ export default function HoningForecastUI() {
 
     const cloneFlatStateBundle = (bundle: StatePair[][]) => bundle.map((row) => row.map((pair) => [pair[0], pair[1]] as StatePair))
 
-    const updateBestSolution = (res: { metric: number; upgrade_arr: { state: StatePair[] }[]; special_state: number[] }) => {
-        setBestMetric((prev) => {
-            // if (res === null) {
-            //     setBestFlatStateBundle(null)
-            //     setBestFlatSpecialState(null)
-            //     return null
-            // }
-            const nextMetric = prev === null ? res.metric : Math.max(res.metric, prev)
-            if (prev === null || nextMetric !== prev) {
-                setBestFlatStateBundle(cloneFlatStateBundle(res.upgrade_arr.map((upgrade) => upgrade.state)))
-                setBestFlatSpecialState(res.special_state ? [...res.special_state] : null)
-            }
-            return nextMetric
-        })
-    }
+    const updateBestSolution = useCallback(
+        (res: { metric: number; upgrade_arr: { state: StatePair[] }[]; special_state: number[] }) => {
+            setBestMetric((prev) => {
+                const nextMetric = prev === null ? res.metric : Math.max(res.metric, prev)
+                if (prev === null || nextMetric !== prev) {
+                    setBestFlatStateBundle(cloneFlatStateBundle(res.upgrade_arr.map((upgrade) => upgrade.state)))
+                    setBestFlatSpecialState(res.special_state ? [...res.special_state] : null)
+                }
+                return nextMetric
+            })
+        },
+
+        [],
+    )
 
     useEffect(() => {
         const skipRanOutReset = ranOutSkipResetRef.current
@@ -805,6 +824,7 @@ export default function HoningForecastUI() {
                 //     setStateBundleGrid,
                 // )
                 // console.log(specialState)
+                console.log(res)
             },
             debounceMs: 10,
         })
@@ -872,6 +892,7 @@ export default function HoningForecastUI() {
     const startOptimizeAverage = useCallback(
         (debounce: number) => {
             setOptimizerProgress(0)
+            setIsJuiceInfoCollapsed(false)
             runner.start({
                 which_one: "OptimizeAverage",
                 payloadBuilder,
@@ -1144,12 +1165,7 @@ export default function HoningForecastUI() {
                   ? "(Current config is not best known result)"
                   : optimizeAvgBusy
                     ? "(Optimizer in progress…)"
-                    : "(Optimizer not run yet)"}
-            {!curIsBest && hasRunOptimizer && (
-                <button onClick={handleRestoreBest} disabled={!canRestoreBest} className="restore-btn">
-                    {hasRunOptimizer ? (canRestoreBest ? "Restore Best" : "Current configuration is the best known one") : "Optimizer not run"}
-                </button>
-            )}
+                    : "(Optimizer not run yet!!! press optimizer button above)"}
         </div>
     )
 
@@ -1157,7 +1173,7 @@ export default function HoningForecastUI() {
         <button
             onClick={handleOptimizeAverageClick}
             style={{
-                background: optimizeAvgBusy ? "var(--cancel-optimizer-button)" : "var(--optimizer-button)",
+                background: optimizeAvgBusy ? "var(--cancel-optimizer-button)" : hasRunOptimizer ? "var(--sub-optimal)" : "var(--optimizer-button)",
                 color: optimizeAvgBusy ? "var(--text-muted)" : "var(--text)",
                 padding: "6px 10px",
                 borderRadius: 4,
@@ -1170,7 +1186,7 @@ export default function HoningForecastUI() {
                 textAlign: "center",
             }}
         >
-            {optimizeAvgBusy ? "Cancel Optimize Average" : " >>> Optimize <<< "}
+            {optimizeAvgBusy ? "Cancel Optimize Average" : hasRunOptimizer ? "Re-run Optimizer" : " >>> Optimize <<< "}
         </button>
     )
 
@@ -1268,7 +1284,7 @@ export default function HoningForecastUI() {
                         <InputsSection inputsBundle={inputsBundle} />
                     </div>
                 </section>
-                <section className="optimizer-section">
+                <section className="optimizer-section" style={{ height: 300 }}>
                     <div className="optimizer-section-title">Optimizer controls</div>
 
                     <div className="optimizer-card" style={{ margin: "0 auto" }}>
@@ -1303,7 +1319,16 @@ export default function HoningForecastUI() {
                                         {/* (See bottom of the page for more info) */}
                                     </span>
                                 </div>
-                                {result_status}
+                                {result_status}{" "}
+                                {!curIsBest && hasRunOptimizer && !optimizeAvgBusy && (
+                                    <button onClick={handleRestoreBest} disabled={!canRestoreBest} className="restore-btn" style={{ marginTop: 70 }}>
+                                        {hasRunOptimizer
+                                            ? canRestoreBest
+                                                ? "Restore Best"
+                                                : "Current configuration is the best known one"
+                                            : "Optimizer not run"}
+                                    </button>
+                                )}
                             </div>
                         </div>
 
@@ -1368,6 +1393,9 @@ export default function HoningForecastUI() {
                             beforeMetric={beforeMetric}
                             setBeforeMetric={setBeforeMetric}
                             hasRunOptimizer={hasRunOptimizer}
+                            setAllowUserChangeState={setAllowUserChangeState}
+                            isJuiceInfoCollapsed={isJuiceInfoCollapsed}
+                            setIsJuiceInfoCollapsed={setIsJuiceInfoCollapsed}
                         />
                     </div>
                 )}

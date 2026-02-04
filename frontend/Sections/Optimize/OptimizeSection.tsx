@@ -55,6 +55,9 @@ type OptimizeSectionProps = {
     beforeMetric: number
     setBeforeMetric: React.Dispatch<React.SetStateAction<number>>
     hasRunOptimizer: boolean
+    setAllowUserChangeState: React.Dispatch<React.SetStateAction<boolean>>
+    isJuiceInfoCollapsed: boolean
+    setIsJuiceInfoCollapsed: React.Dispatch<React.SetStateAction<boolean>>
 }
 
 function _my_alr_spent_map(already_spent: any, labels: string[], index: number) {
@@ -132,12 +135,14 @@ export default function OptimizeSection({
     beforeMetric,
     setBeforeMetric,
     hasRunOptimizer,
+    setAllowUserChangeState,
+    isJuiceInfoCollapsed,
+    setIsJuiceInfoCollapsed,
     // gridRefs,
     // onGridMouseDown,
     // marquee,
 }: OptimizeSectionProps) {
     const [isFreeTapCollapsed, setIsFreeTapCollapsed] = React.useState(true)
-    const [isJuiceInfoCollapsed, setIsJuiceInfoCollapsed] = React.useState(true)
     const [isGoldBreakdownCollapsed, setIsGoldBreakdownCollapsed] = React.useState(true)
     const { wideMatsColumnDefs } = createColumnDefs()
     // console.log(evaluateAverageResult)
@@ -157,20 +162,20 @@ export default function OptimizeSection({
         setSpecialState([...bestFlatSpecialGrid])
     }
 
-    const handleOptimizeAverageClick = () => {
-        if (optimizeAvgBusy) {
-            optimizeAvgWorkerRef.current?.terminate()
-            optimizeAvgWorkerRef.current = null
-            setOptimizeAvgBusy(false)
-            setAutoRunOptimizer(false)
-            // setBeforeMetric(null)
-            onCancelOptimizeAverage()
-            return
-        } else {
-            setBeforeMetric(evaluateAverageResult?.metric ?? null)
-            setOptimizeButtonPress((prev: number) => prev + 1)
-        }
-    }
+    // const handleOptimizeAverageClick = () => {
+    //     if (optimizeAvgBusy) {
+    //         optimizeAvgWorkerRef.current?.terminate()
+    //         optimizeAvgWorkerRef.current = null
+    //         setOptimizeAvgBusy(false)
+    //         setAutoRunOptimizer(false)
+    //         // setBeforeMetric(null)
+    //         onCancelOptimizeAverage()
+    //         return
+    //     } else {
+    //         setBeforeMetric(evaluateAverageResult?.metric ?? null)
+    //         setOptimizeButtonPress((prev: number) => prev + 1)
+    //     }
+    // }
     const result_status = (
         <div
             className="result-status"
@@ -191,34 +196,34 @@ export default function OptimizeSection({
                   ? "(Current config is not best known result)"
                   : optimizeAvgBusy
                     ? "(Optimizer in progress…)"
-                    : "(Optimizer not run yet)"}
-            {!curIsBest && hasRunOptimizer && (
+                    : "(Optimizer not run yet!!! press optimizer button above)"}
+            {/* {!curIsBest && hasRunOptimizer && (
                 <button onClick={handleRestoreBest} disabled={!canRestoreBest} className="restore-btn">
                     {hasRunOptimizer ? (canRestoreBest ? "Restore Best" : "Current configuration is the best known one") : "Optimizer not run"}
                 </button>
-            )}
+            )} */}
         </div>
     )
-    const optimizeAverageButton = (
-        <button
-            onClick={handleOptimizeAverageClick}
-            style={{
-                background: optimizeAvgBusy ? "var(--cancel-optimizer-button)" : "var(--optimizer-button)",
-                color: optimizeAvgBusy ? "var(--text-muted)" : "var(--text)",
-                padding: "6px 10px",
-                borderRadius: 4,
-                border: "1px solid var(--btn-border)",
-                cursor: "pointer",
-                height: "50px",
-                width: "300px",
-                fontSize: optimizeAvgBusy ? "24px" : "30px",
-                textWrap: "nowrap",
-                textAlign: "center",
-            }}
-        >
-            {optimizeAvgBusy ? "Cancel Optimize Average" : " >>> Optimize <<< "}
-        </button>
-    )
+    // const optimizeAverageButton = (
+    //     <button
+    //         onClick={handleOptimizeAverageClick}
+    //         style={{
+    //             background: optimizeAvgBusy ? "var(--cancel-optimizer-button)" : "var(--optimizer-button)",
+    //             color: optimizeAvgBusy ? "var(--text-muted)" : "var(--text)",
+    //             padding: "6px 10px",
+    //             borderRadius: 4,
+    //             border: "1px solid var(--btn-border)",
+    //             cursor: "pointer",
+    //             height: "50px",
+    //             width: "300px",
+    //             fontSize: optimizeAvgBusy ? "24px" : "30px",
+    //             textWrap: "nowrap",
+    //             textAlign: "center",
+    //         }}
+    //     >
+    //         {optimizeAvgBusy ? "Cancel Optimize Average" : " >>> Optimize <<< "}
+    //     </button>
+    // )
 
     // console.log("special", specialState)
     // console.log(flatSucceedArr)
@@ -226,6 +231,92 @@ export default function OptimizeSection({
     return (
         <div style={{ ...styles.inputSection, flexDirection: "column", maxWidth: "1200px", width: "100%", gap: 12 }}>
             <div>
+                <div style={{ position: "relative", flex: 1, display: "flex", flexDirection: "column", gap: 12 }}>
+                    <section className="optimizer-section">
+                        <span
+                            className="optimizer-section-title "
+                            aria-expanded={!isJuiceInfoCollapsed}
+                            aria-controls="juice-info-section"
+                            onClick={() => setIsJuiceInfoCollapsed((prev) => !prev)}
+                        >
+                            <span>Instructions</span>
+                            <span className={`optimizer-section-title-arrow ${isJuiceInfoCollapsed ? "collapsed" : ""}`}>{">"}</span>
+                            {result_status}
+                        </span>
+                        {!isJuiceInfoCollapsed && (
+                            <div id="juice-info-section" className="optimizer-section-body">
+                                <span>
+                                    Go from top to bottom, empty squares mean no book / no juice.<br></br>
+                                </span>
+                                <div style={{ display: "flex", alignItems: "center", gap: "8px", textWrap: "wrap", lineHeight: "1.0" }}>
+                                    <LabeledCheckbox label="Allow updating progress" checked={allowUserChangeState} setChecked={setAllowUserChangeState} />
+                                </div>
+                                {allowUserChangeState && (
+                                    <div>
+                                        <span>
+                                            {" "}
+                                            You can update your progress for even more optimization. Click the number of taps it took to succeed, and press
+                                            success. For free taps, just press succeed.
+                                            <br></br> Remember to re-run the optimizer, or toggle "Auto start optimizer"<br></br>
+                                            Mats & juice costs are automatically deducted in the background, but free tap needs you to manually update.
+                                        </span>
+                                        <div style={{ width: 200 }}>
+                                            <SpreadsheetGrid
+                                                columnDefs={[
+                                                    {
+                                                        headerName: "",
+                                                        editable: true,
+                                                        flex: 1,
+                                                        width: "80px",
+                                                        background: "var(--grid-cell-bg)",
+                                                        backgroundSelected: "var(--grid-cell-selected)",
+                                                        color: "var(--grid-cell-text)",
+                                                    },
+                                                ]}
+                                                labels={["Special Leap"]}
+                                                sheetValuesArr={[{ "Special Leap": inputsBundle.values.mats.owned["Special Leap"] ?? "0" }]}
+                                                setSheetValuesArr={[
+                                                    (value) => {
+                                                        let cleanValue = value["Special Leap"].replace(/[^0-9]/g, "")
+                                                        cleanValue = cleanValue.replace(/^0+(?=\d)/, "")
+
+                                                        cleanValue = String(Math.min(parseFloat(cleanValue), 33333))
+
+                                                        const next = { ...inputsBundle.values.mats.owned }
+                                                        next["Special Leap"] = cleanValue
+                                                        inputsBundle.setters.mats.setOwned(next)
+                                                    },
+                                                ]}
+                                                hideIcons={false}
+                                                fontSizeOverride={"var(--font-size-xs)"}
+                                                noHeader={true}
+                                            />
+                                        </div>
+                                    </div>
+                                )}
+                                {flatStateBundle && flatProgressArr && evaluateAverageResult && specialState && (
+                                    <div>
+                                        {" "}
+                                        {result_status}
+                                        <StateGridsManager
+                                            curIsBest={curIsBest}
+                                            flatProgressArr={flatProgressArr}
+                                            setFlatProgressArr={setFlatProgressArr}
+                                            flatUnlockArr={flatUnlockArr}
+                                            setFlatUnlockArr={setFlatUnlockArr}
+                                            flatSucceedArr={flatSucceedArr}
+                                            setFlatSucceedArr={setFlatSucceedArr}
+                                            flatStateBundle={flatStateBundle}
+                                            setFlatStateBundle={setFlatStateBundle}
+                                            allowUserChangeState={allowUserChangeState}
+                                            evaluateAverageResult={evaluateAverageResult}
+                                        />
+                                    </div>
+                                )}
+                            </div>
+                        )}
+                    </section>{" "}
+                </div>{" "}
                 <section className="optimizer-section">
                     <span
                         className="optimizer-section-title "
@@ -233,12 +324,15 @@ export default function OptimizeSection({
                         aria-controls="free-tap-order-section"
                         onClick={() => setIsFreeTapCollapsed((prev) => !prev)}
                     >
-                        <span>Free tap instructions </span>
+                        <span>More Free tap info </span>
                         <span className={`optimizer-section-title-arrow ${isFreeTapCollapsed ? "collapsed" : ""}`}>{">"}</span>
                         {result_status}
                     </span>{" "}
                     {!isFreeTapCollapsed && (
                         <div id="free-tap-order-section" className="optimizer-section-body">
+                            <div style={{ display: "flex", alignItems: "center", gap: "8px", textWrap: "wrap", lineHeight: "1.0" }}>
+                                <LabeledCheckbox label="Allow updating progress" checked={allowUserChangeState} setChecked={setAllowUserChangeState} />
+                            </div>
                             {flatStateBundle && flatProgressArr && evaluateAverageResult && specialState && (
                                 <SpecialSortable
                                     curIsBest={curIsBest}
@@ -252,45 +346,12 @@ export default function OptimizeSection({
                                     ranOutFreeTaps={ranOutFreeTaps}
                                     onRanOutFreeTaps={onRanOutFreeTaps}
                                     inputsBundle={inputsBundle}
+                                    allowUserChangeState={allowUserChangeState}
                                 />
                             )}
                         </div>
                     )}
                 </section>
-                <div style={{ position: "relative", flex: 1, display: "flex", flexDirection: "column", gap: 12 }}>
-                    <section className="optimizer-section">
-                        <span
-                            className="optimizer-section-title "
-                            aria-expanded={!isJuiceInfoCollapsed}
-                            aria-controls="juice-info-section"
-                            onClick={() => setIsJuiceInfoCollapsed((prev) => !prev)}
-                        >
-                            <span>Juice instructions</span>
-                            <span className={`optimizer-section-title-arrow ${isJuiceInfoCollapsed ? "collapsed" : ""}`}>{">"}</span>
-                            {result_status}
-                        </span>
-                        {!isJuiceInfoCollapsed && (
-                            <div id="juice-info-section" className="optimizer-section-body">
-                                <span></span>
-                                {flatStateBundle && flatProgressArr && evaluateAverageResult && specialState && (
-                                    <StateGridsManager
-                                        curIsBest={curIsBest}
-                                        flatProgressArr={flatProgressArr}
-                                        setFlatProgressArr={setFlatProgressArr}
-                                        flatUnlockArr={flatUnlockArr}
-                                        setFlatUnlockArr={setFlatUnlockArr}
-                                        flatSucceedArr={flatSucceedArr}
-                                        setFlatSucceedArr={setFlatSucceedArr}
-                                        flatStateBundle={flatStateBundle}
-                                        setFlatStateBundle={setFlatStateBundle}
-                                        allowUserChangeState={allowUserChangeState}
-                                        evaluateAverageResult={evaluateAverageResult}
-                                    />
-                                )}
-                            </div>
-                        )}
-                    </section>{" "}
-                </div>{" "}
                 <section className="optimizer-section">
                     <span
                         className="optimizer-section-title "
