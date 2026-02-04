@@ -23,8 +23,8 @@
     --better-than-optimizer: #cd50ff;
 
     --cancel-optimizer-button: #b12626;
-    --optimizer-button: #c7a555;
-    --btn-toggle-optimize-selected: #c7a555;
+    --optimizer-button: rgb(198, 155, 55);
+    --btn-toggle-optimize-selected: rgb(198, 155, 55);
     --brighter-optimizer: #f7d688;
 
     --btn-toggle-chance-selected: #1c9164;

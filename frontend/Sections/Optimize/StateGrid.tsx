@@ -481,6 +481,25 @@ export default function StateGridsManager({
     }
     // console.log(juiceInfo)
     // console.log(truncated_special_state, invalid_tail)
+    let temp = specialState.slice()
+    temp.sort((a, b) => {
+        const A = upgradeArr[a]
+        const B = upgradeArr[b]
+
+        // 1) true before false
+        if (A.is_normal_honing !== B.is_normal_honing) {
+            return Number(B.is_normal_honing === true) - Number(A.is_normal_honing === true)
+        }
+
+        // 2) upgrade_index ascending
+        if (A.upgrade_index !== B.upgrade_index) {
+            return A.upgrade_index - B.upgrade_index
+        }
+
+        // 3) piece_type ascending
+        return A.piece_type - B.piece_type
+    })
+
     return (
         <div
             className="complex-grid-manager"
@@ -491,7 +510,7 @@ export default function StateGridsManager({
                 boxSizing: "border-box",
             }}
         >
-            {invalid_tail.concat(truncated_special_state).map((u_index, index) => (
+            {temp.map((u_index, _) => (
                 <RowBundle
                     key={u_index}
                     curIsBest={curIsBest}
@@ -507,8 +526,11 @@ export default function StateGridsManager({
                     onUpdateStatePairs={(pairs) => handleUpdateStateBundle(u_index, pairs)}
                     upgrade={upgradeArr[u_index]}
                     uniqueBookNumbers={juiceInfo.ids[upgradeArr[u_index].upgrade_index].slice(1)}
-                    freeTap={index >= invalid_tail.length && special_probs[index - invalid_tail.length] > 0}
-                    freeTapOrder={index - invalid_tail.length + 1}
+                    freeTap={
+                        specialState.findIndex((x) => x == u_index) < truncated_special_state.length &&
+                        special_probs[specialState.findIndex((x) => x == u_index)] > 0
+                    }
+                    freeTapOrder={specialState.findIndex((x) => x == u_index) + 1}
                 />
             ))}
         </div>

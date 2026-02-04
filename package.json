@@ -5,7 +5,8 @@
     "scripts": {
         "build": "wasm-pack build crates/wasm --release  --target web && vite build",
         "cloud-build": "vite build",
-        "lint": "eslint .",
+        "predeploy": "npm run build",
+        "deploy": "gh-pages -d dist",
         "preview": "vite preview",
         "typecheck": "tsc --noEmit",
         "dev": "wasm-pack build crates/wasm --release --target web && vite",

@@ -47,9 +47,8 @@
 
 .result-status {
     font-size: 0.9em;
-    color: var(--text-secondary, #666);
     display: flex;
-    flex-direction: column;
+    flex-direction: row;
 }
 
 .optimizer-row {

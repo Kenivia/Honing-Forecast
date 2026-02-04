@@ -131,6 +131,7 @@ export function readSettings(
         if (typeof parsed.desired_chance === "string") set_desired_chance(parsed.desired_chance)
         if (isStringOrNumberRecord(parsed.userMatsOwned, MATS_LABELS)) setUserMatsOwned(parsed.userMatsOwned)
         if (isStringOrNumberRecord(parsed.userMatsPrices, MATS_PRICE_LABELS)) setUserMatsPrices(parsed.userMatsPrices)
+        console.log(parsed.userMatsLeftover)
         if (isStringOrNumberRecord(parsed.userMatsLeftover, MATS_PRICE_LABELS)) setUserMatsLeftover(parsed.userMatsLeftover)
         if (isStringOrNumberRecord(parsed.userWeaponJuiceOwned, JUICE_WEAPON_LABELS)) setUserWeaponJuiceOwned(parsed.userWeaponJuiceOwned)
         if (isStringOrNumberRecord(parsed.userArmorJuiceOwned, JUICE_ARMOR_LABELS)) setUserArmorJuiceOwned(parsed.userArmorJuiceOwned)

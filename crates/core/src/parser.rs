@@ -323,50 +323,38 @@ pub fn parser(
     let adv_tap_costs: [[i64; 8]; 8] = get_event_modified_adv_costs(express_event);
     let artisan_rate_arr: [f64; 25] = get_event_modified_artisan(express_event);
     let event_extra_arr: [f64; 25] = get_event_extra_chance(express_event);
-    for piece_type in 0..normal_ticks.len() {
-        let cur_cost: [[i64; 25]; 7] = if piece_type < 5 {
-            get_event_modified_armor_costs(express_event)
-        } else {
-            get_event_modified_weapon_costs(express_event)
-        };
+    let row_len = normal_ticks[0].len(); // 25
 
-        // let mut current_counter: i64 = 0;
-        let row_len: usize = normal_ticks[piece_type].len(); // 25
-        let mut upgrade_index: usize = 0;
-
-        while upgrade_index < row_len {
-            let needed: bool = normal_ticks[piece_type][upgrade_index];
+    for upgrade_index in 0..row_len {
+        for piece_type in 0..normal_ticks.len() {
+            let needed = normal_ticks[piece_type][upgrade_index];
             if !needed {
-                upgrade_index += 1;
                 continue;
             }
-            // if current_counter >= needed {
-            //     upgrade_index += 1;
-            //     current_counter = 0;
-            //     continue;
-            // }
+
+            let cur_cost: [[i64; 25]; 7] = if piece_type < 5 {
+                get_event_modified_armor_costs(express_event)
+            } else {
+                get_event_modified_weapon_costs(express_event)
+            };
 
             let special_cost: i64 =
                 SPECIAL_LEAPS_COST[if piece_type == 5 { 0 } else { 1 }][upgrade_index];
+
             let event_artisan_rate: f64 = artisan_rate_arr[upgrade_index];
 
-            let this_progress: usize = if progress_arr_opt.is_none() {
-                0
-            } else {
-                progress_arr_opt.as_ref().unwrap()[piece_type][upgrade_index]
-            };
+            let this_progress: usize = progress_arr_opt
+                .as_ref()
+                .map_or(0, |arr| arr[piece_type][upgrade_index]);
 
-            let this_unlocked: bool = if unlock_grid.is_none() {
-                false
-            } else {
-                unlock_grid.as_ref().unwrap()[piece_type][upgrade_index]
-            };
+            let this_unlocked: bool = unlock_grid
+                .as_ref()
+                .map_or(false, |arr| arr[piece_type][upgrade_index]);
 
-            let this_succeeded: bool = if succeeded_grid.is_none() {
-                false
-            } else {
-                succeeded_grid.as_ref().unwrap()[piece_type][upgrade_index]
-            };
+            let this_succeeded: bool = succeeded_grid
+                .as_ref()
+                .map_or(false, |arr| arr[piece_type][upgrade_index]);
+
             let clean_prob_dist = probability_distribution(
                 NORMAL_HONE_CHANCES[upgrade_index],
                 event_artisan_rate,
@@ -377,29 +365,27 @@ pub fn parser(
                 None,
                 event_extra_arr[upgrade_index],
             );
-            let this_state_given: Option<Vec<(bool, usize)>> = if state_given_opt.is_none()
-                || state_given_opt.as_ref().unwrap()[piece_type][upgrade_index].len()
-                    != clean_prob_dist.len()
-            {
-                None
-            } else {
-                Some(state_given_opt.as_ref().unwrap()[piece_type][upgrade_index].clone())
-            };
-            // web_sys::console::log_1(&succeeded_grid.into());
-            // web_sys::console::log_1(&format!("{:?}", unlock_grid).into());
 
-            // web_sys::console::log_1(&format!("{:?}", succeeded_grid).into());
-            // web_sys::console::log_1(&format!("{:?}, {:?}", piece_type, upgrade_index).into());
+            let this_state_given: Option<Vec<(bool, usize)>> =
+                state_given_opt.as_ref().and_then(|sg| {
+                    let v = &sg[piece_type][upgrade_index];
+                    if v.len() == clean_prob_dist.len() {
+                        Some(v.clone())
+                    } else {
+                        None
+                    }
+                });
 
             let relevant = if piece_type == 5 {
                 weapon_unlock_costs
             } else {
                 armor_unlock_costs
             };
+
             out.push(Upgrade::new_normal(
                 NORMAL_HONE_CHANCES[upgrade_index],
                 clean_prob_dist,
-                std::array::from_fn(|cost_type: usize| cur_cost[cost_type][upgrade_index]),
+                std::array::from_fn(|cost_type| cur_cost[cost_type][upgrade_index]),
                 special_cost,
                 piece_type == 5,
                 piece_type,
@@ -413,32 +399,19 @@ pub fn parser(
                 this_succeeded,
                 event_extra_arr[upgrade_index],
             ));
-            // web_sys::console::log_1(&format!("upgrade init done ").into());
-            upgrade_index += 1;
-            // current_counter += 1;
         }
     }
+    let row_len = adv_ticks[0].len();
 
-    // Advanced hone
-    let mut juice_dist: Vec<f64>;
-    let mut prob_dist: Vec<f64>;
-    for row_ind in 0..adv_ticks.len() {
-        let piece_type = if row_ind == 5 { 0 } else { 1 };
-        let row_len: usize = adv_ticks[row_ind].len();
-        let mut upgrade_index: usize = 0;
-        while upgrade_index < row_len {
-            let needed: bool = adv_ticks[row_ind][upgrade_index];
+    for upgrade_index in 0..row_len {
+        for row_ind in 0..adv_ticks.len() {
+            let needed = adv_ticks[row_ind][upgrade_index];
             if !needed {
-                upgrade_index += 1;
                 continue;
             }
-            // if current_counter >= needed {
 
-            //     current_counter = 0;
-            //     continue;
-            // }
+            let piece_type = if row_ind == 5 { 0 } else { 1 };
 
-            // pick relevant_data based on strategy and level i (i <= 1 -> 10/20, else 30/40)
             let relevant_data: &'static [[i64; 3]] = if adv_hone_strategy == "No x2 grace" {
                 if upgrade_index <= 1 {
                     &ADV_DATA_10_20_JUICE
@@ -451,33 +424,30 @@ pub fn parser(
                 &ADV_DATA_30_40
             };
 
-            let rows: usize = relevant_data.iter().last().unwrap()[0] as usize + 1;
-            let sum_taps: i64 = relevant_data.iter().map(|row: &[i64; 3]| row[2]).sum(); // 2nd index is frequency
-            let col_index: usize = 2 * upgrade_index + (piece_type);
-
-            prob_dist = Vec::with_capacity(rows);
-            juice_dist = Vec::with_capacity(rows);
+            let rows = relevant_data.last().unwrap()[0] as usize + 1;
+            let sum_taps: i64 = relevant_data.iter().map(|row| row[2]).sum();
+            let col_index: usize = 2 * upgrade_index + piece_type;
 
             let one_juice_cost: i64 = adv_tap_costs[7][col_index];
             let mut sum_taps_f: f64 = if sum_taps == 0 { 1.0 } else { sum_taps as f64 };
-            let this_progress: usize = if progress_arr_opt.is_none() {
-                0
-            } else {
-                progress_arr_opt.as_ref().unwrap()[piece_type][upgrade_index]
-            };
 
-            let this_unlocked: bool = if unlock_grid.is_none() {
-                false
-            } else {
-                unlock_grid.as_ref().unwrap()[piece_type][upgrade_index]
-            };
+            let this_progress: usize = progress_arr_opt
+                .as_ref()
+                .map_or(0, |arr| arr[piece_type][upgrade_index]);
 
-            let this_succeeded: bool = if succeeded_grid.is_none() {
-                false
-            } else {
-                succeeded_grid.as_ref().unwrap()[piece_type][upgrade_index]
-            };
-            let start = relevant_data.iter().next().unwrap()[0] as usize;
+            let this_unlocked: bool = unlock_grid
+                .as_ref()
+                .map_or(false, |arr| arr[piece_type][upgrade_index]);
+
+            let this_succeeded: bool = succeeded_grid
+                .as_ref()
+                .map_or(false, |arr| arr[piece_type][upgrade_index]);
+
+            let start = relevant_data[0][0] as usize;
+
+            let mut prob_dist = Vec::with_capacity(rows);
+            let mut juice_dist = Vec::with_capacity(rows);
+
             for row in 0..rows {
                 if row < start || row <= this_progress || (row > this_progress && this_succeeded) {
                     prob_dist.push(0.0);
@@ -488,24 +458,19 @@ pub fn parser(
                     continue;
                 }
 
-                // web_sys::console::log_1(
-                //     &format!("{:?} {:?}", row, &relevant_data[row - start]).into(),
-                // );
-                assert!(row == relevant_data[row - start][0] as usize);
-                // let taps: i64 = row[2];
-                juice_dist.push(
-                    one_juice_cost as f64 * relevant_data[row - start][1] as f64 / 1000.0_f64,
-                );
+                juice_dist
+                    .push(one_juice_cost as f64 * relevant_data[row - start][1] as f64 / 1000.0);
+
                 if this_succeeded {
                     prob_dist.push(1.0);
                 } else {
-                    prob_dist.push((relevant_data[row - start][2] as f64) / sum_taps_f);
+                    prob_dist.push(relevant_data[row - start][2] as f64 / sum_taps_f);
                 }
             }
 
             out.push(Upgrade::new_adv(
                 prob_dist,
-                std::array::from_fn(|cost_type: usize| adv_tap_costs[cost_type][col_index]),
+                std::array::from_fn(|cost_type| adv_tap_costs[cost_type][col_index]),
                 one_juice_cost,
                 juice_dist,
                 row_ind == 5,
@@ -513,15 +478,13 @@ pub fn parser(
                 relevant_data[0][0],
                 upgrade_index,
                 vec![
-                    adv_unlock_costs[0][col_index], // um idk if tihs is right i forgot how this worked will figure it out later
+                    adv_unlock_costs[0][col_index],
                     adv_unlock_costs[1][col_index],
                 ],
                 false,
                 num_juice_avail,
                 this_unlocked,
             ));
-            // current_counter += 1;
-            upgrade_index += 1;
         }
     }
 

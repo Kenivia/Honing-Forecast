@@ -54,7 +54,11 @@ export function SpecialSortable({
                 .length,
         [specialState, evaluateAverageResult?.latest_special_probs, evaluateAverageResult?.special_invalid_index],
     )
-    const items: SortableItem[] = useMemo(() => specialState.map((val) => ({ id: String(val), u_index: val })), [specialState])
+
+    const items: SortableItem[] = useMemo(
+        () => specialState.filter((val) => evaluateAverageResult.upgrade_arr[val].is_normal_honing).map((val) => ({ id: String(val), u_index: val })),
+        [specialState, evaluateAverageResult.upgrade_arr],
+    )
 
     // Handle reordering
     const handleSetList = (newItems: SortableItem[]) => {
@@ -91,8 +95,8 @@ export function SpecialSortable({
                 <div>
                     <span>
                         {" "}
-                        Keep attempting free taps on an upgrade until you run out, then move on to the next. <br></br>
-                        This is the best order that the algorithm found, you can drag & drop the upgrades to see if you can find a better one.
+                        Keep attempting free taps until you run out, then move on to the next. <br></br>You may need to do normal taps before or in-between free
+                        taps
                     </span>
                     <div className="sequence-container">
                         {/* Headers */}
@@ -145,7 +149,7 @@ export function SpecialSortable({
                         </div>
 
                         {/* Column 3: Static Buttons (Based on Index) */}
-                        <div className="col-static">
+                        {/* <div className="col-static">
                             {specialState.map((u_index, index) => {
                                 const succeed = flatSucceedArr[u_index]
                                 const first_not_succeeded_index = specialState.findIndex((i) => !flatSucceedArr[i])
@@ -186,7 +190,7 @@ export function SpecialSortable({
                                     </div>
                                 )
                             })}
-                        </div>
+                        </div> */}
 
                         {/* Column 4: Ran out button (next to active succeed) */}
                         {/* <div className="col-static">

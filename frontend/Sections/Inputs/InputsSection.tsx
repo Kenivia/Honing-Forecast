@@ -31,13 +31,14 @@ export default function InputsSection({ inputsBundle: inputs }: InputsSectionPro
         setAdvancedMode(new_mode)
 
         if (!new_mode) {
-            matsSetters.setLeftover(Array(mats.leftover.length).fill(0)) // its supposed to be an object here but cbb
-            juiceSetters.weapon.setLeftover(Array(juice.weapon.leftover.length).fill(0))
-            juiceSetters.armor.setLeftover(Array(juice.armor.leftover.length).fill(0))
+            matsSetters.setLeftover(Object.fromEntries(Array.from(MATS_LABELS.map((label) => [label, "0"])))) // its supposed to be an object here but cbb
+            juiceSetters.weapon.setLeftover(Object.fromEntries(Array.from(JUICE_LABELS.map((row) => [row[0], "0"]))))
+            juiceSetters.armor.setLeftover(Object.fromEntries(Array.from(JUICE_LABELS.map((row) => [row[1], "0"]))))
         }
     }
     return (
         <div style={{ ...styles.inputSection, flexDirection: "row", maxWidth: "1200px" }}>
+            <div style={{ marginTop: -10, marginBottom: 10 }}>Our goal is to minimize the Average gold used, both in tapping and in buying extra mats.</div>
             <div
                 style={{
                     display: "flex",
@@ -159,13 +160,7 @@ export default function InputsSection({ inputsBundle: inputs }: InputsSectionPro
                 </div>
             </div>
             <div style={{ position: "relative", marginLeft: 450, top: -130, display: "flex", alignItems: "flex-start", gap: 16, flexDirection: "column" }}>
-                {
-                    <span>
-                        The optimizer tries to minimize the average gold spent. In some scenarios, you succeed everything with some bound mats to spare. By
-                        default, we consider leftover mats as 0 gold.
-                    </span>
-                }{" "}
-                <LabeledCheckbox label="Custom leftover values" checked={advancedMode} setChecked={toggleAdvMode} />
+                {<span></span>} <LabeledCheckbox label="Custom leftover values" checked={advancedMode} setChecked={toggleAdvMode} />
                 {advancedMode && (
                     <span>
                         Specify how much your leftover mats are worth.

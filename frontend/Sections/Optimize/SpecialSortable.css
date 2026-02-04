@@ -2,10 +2,10 @@
 .sequence-container {
     display: grid;
     /* Define column widths here. Adjust as needed. */
-    grid-template-columns: 1.5fr 0.7fr 1fr 1fr;
+    grid-template-columns: 0.6fr 0.4fr;
     gap: 5px;
     align-items: start;
-    width: 760px;
+    width: 560px;
 
 
 }

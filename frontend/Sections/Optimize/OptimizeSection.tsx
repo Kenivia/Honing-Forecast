@@ -136,6 +136,8 @@ export default function OptimizeSection({
     // marquee,
 }: OptimizeSectionProps) {
     const [isFreeTapCollapsed, setIsFreeTapCollapsed] = React.useState(true)
+    const [isJuiceInfoCollapsed, setIsJuiceInfoCollapsed] = React.useState(true)
+    const [isGoldBreakdownCollapsed, setIsGoldBreakdownCollapsed] = React.useState(true)
     const { wideMatsColumnDefs } = createColumnDefs()
     // console.log(evaluateAverageResult)
     const _already_spent = evaluateAverageResult?.prep_output.already_spent
@@ -168,7 +170,34 @@ export default function OptimizeSection({
             setOptimizeButtonPress((prev: number) => prev + 1)
         }
     }
-
+    const result_status = (
+        <div
+            className="result-status"
+            style={{
+                color:
+                    curIsBest && hasRunOptimizer
+                        ? "var(--brighter-optimizer)"
+                        : hasRunOptimizer
+                          ? "var(--sub-optimal)"
+                          : optimizeAvgBusy
+                            ? "var(--sub-optimal)"
+                            : "red",
+            }}
+        >
+            {curIsBest && hasRunOptimizer
+                ? "(Result below is the best known result)"
+                : hasRunOptimizer
+                  ? "(Current config is not best known result)"
+                  : optimizeAvgBusy
+                    ? "(Optimizer in progress…)"
+                    : "(Optimizer not run yet)"}
+            {!curIsBest && hasRunOptimizer && (
+                <button onClick={handleRestoreBest} disabled={!canRestoreBest} className="restore-btn">
+                    {hasRunOptimizer ? (canRestoreBest ? "Restore Best" : "Current configuration is the best known one") : "Optimizer not run"}
+                </button>
+            )}
+        </div>
+    )
     const optimizeAverageButton = (
         <button
             onClick={handleOptimizeAverageClick}
@@ -181,7 +210,9 @@ export default function OptimizeSection({
                 cursor: "pointer",
                 height: "50px",
                 width: "300px",
-                fontSize: "24px",
+                fontSize: optimizeAvgBusy ? "24px" : "30px",
+                textWrap: "nowrap",
+                textAlign: "center",
             }}
         >
             {optimizeAvgBusy ? "Cancel Optimize Average" : " >>> Optimize <<< "}
@@ -221,36 +252,20 @@ export default function OptimizeSection({
                                 <div className={`result-value ${curIsBest ? "best" : "not-best"}`}>
                                     Avg eqv gold used: {add_comma(-evaluateAverageResult?.metric) ?? "N/A"}{" "}
                                 </div>
-                                {/* <span
+                                <span
                                     style={{
                                         position: "absolute",
                                         left: "100%",
                                         marginLeft: "8px",
                                         whiteSpace: "nowrap",
                                         fontSize: "14px",
+                                        color: "var(--very-muted-text)",
                                     }}
                                 >
-                                    (lower is better)
-                                </span> */}
+                                    (See bottom of the page for more info)
+                                </span>
                             </div>
-                            <div className="result-status">
-                                {curIsBest && hasRunOptimizer
-                                    ? "(Result below is the best known result)"
-                                    : hasRunOptimizer
-                                      ? "(Current config is not best known result)"
-                                      : optimizeAvgBusy
-                                        ? "(Optimizer in progress…)"
-                                        : "(Optimizer not run yet)"}
-                                {!curIsBest && hasRunOptimizer && (
-                                    <button onClick={handleRestoreBest} disabled={!canRestoreBest} className="restore-btn">
-                                        {hasRunOptimizer
-                                            ? canRestoreBest
-                                                ? "Restore Best"
-                                                : "Current configuration is the best known one"
-                                            : "Optimizer not run"}
-                                    </button>
-                                )}
-                            </div>
+                            {result_status}
                         </div>
                     </div>
 
@@ -268,7 +283,7 @@ export default function OptimizeSection({
                     {/* Progress */}
                     {optimizeAvgBusy && (
                         <div className="optimizer-progress">
-                            <span>Optimizer progress: {optimizerProgress.toFixed(2)}%</span>
+                            <span>Optimizer progress: {optimizerProgress.toFixed(2)}% (this can take a lil while)</span>
 
                             <div className="progress-bar">
                                 <div className="progress-fill" style={{ width: `${optimizerProgress}%` }} />
@@ -285,8 +300,9 @@ export default function OptimizeSection({
                         aria-controls="free-tap-order-section"
                         onClick={() => setIsFreeTapCollapsed((prev) => !prev)}
                     >
-                        <span>Free tap info </span>
+                        <span>Free tap instructions </span>
                         <span className={`optimizer-section-title-arrow ${isFreeTapCollapsed ? "collapsed" : ""}`}>{">"}</span>
+                        {result_status}
                     </span>{" "}
                     {!isFreeTapCollapsed && (
                         <div id="free-tap-order-section" className="optimizer-section-body">
@@ -309,30 +325,51 @@ export default function OptimizeSection({
                 </section>
                 <div style={{ position: "relative", flex: 1, display: "flex", flexDirection: "column", gap: 12 }}>
                     <section className="optimizer-section">
-                        <div className="optimizer-section-title">Juice info</div>
-                        <div className="optimizer-section-body">
-                            {flatStateBundle && flatProgressArr && evaluateAverageResult && specialState && (
-                                <StateGridsManager
-                                    curIsBest={curIsBest}
-                                    flatProgressArr={flatProgressArr}
-                                    setFlatProgressArr={setFlatProgressArr}
-                                    flatUnlockArr={flatUnlockArr}
-                                    setFlatUnlockArr={setFlatUnlockArr}
-                                    flatSucceedArr={flatSucceedArr}
-                                    setFlatSucceedArr={setFlatSucceedArr}
-                                    flatStateBundle={flatStateBundle}
-                                    setFlatStateBundle={setFlatStateBundle}
-                                    allowUserChangeState={allowUserChangeState}
-                                    evaluateAverageResult={evaluateAverageResult}
-                                />
-                            )}
-                        </div>
+                        <span
+                            className="optimizer-section-title "
+                            aria-expanded={!isJuiceInfoCollapsed}
+                            aria-controls="juice-info-section"
+                            onClick={() => setIsJuiceInfoCollapsed((prev) => !prev)}
+                        >
+                            <span>Juice instructions</span>
+                            <span className={`optimizer-section-title-arrow ${isJuiceInfoCollapsed ? "collapsed" : ""}`}>{">"}</span>
+                            {result_status}
+                        </span>
+                        {!isJuiceInfoCollapsed && (
+                            <div id="juice-info-section" className="optimizer-section-body">
+                                {flatStateBundle && flatProgressArr && evaluateAverageResult && specialState && (
+                                    <StateGridsManager
+                                        curIsBest={curIsBest}
+                                        flatProgressArr={flatProgressArr}
+                                        setFlatProgressArr={setFlatProgressArr}
+                                        flatUnlockArr={flatUnlockArr}
+                                        setFlatUnlockArr={setFlatUnlockArr}
+                                        flatSucceedArr={flatSucceedArr}
+                                        setFlatSucceedArr={setFlatSucceedArr}
+                                        flatStateBundle={flatStateBundle}
+                                        setFlatStateBundle={setFlatStateBundle}
+                                        allowUserChangeState={allowUserChangeState}
+                                        evaluateAverageResult={evaluateAverageResult}
+                                    />
+                                )}
+                            </div>
+                        )}
                     </section>{" "}
                 </div>{" "}
                 <section className="optimizer-section">
-                    <div className="optimizer-section-title">Optimizer score breakdown</div>
-                    <div className="optimizer-section-body">
-                        {/* <span>The Score is the sum of the "Average equivalent gold spent" for each mat. Without advanced mode, this is calculated as:</span>
+                    <span
+                        className="optimizer-section-title "
+                        aria-expanded={!isGoldBreakdownCollapsed}
+                        aria-controls="gold-breakdown-section"
+                        onClick={() => setIsGoldBreakdownCollapsed((prev) => !prev)}
+                    >
+                        <span>Gold breakdown</span>
+                        <span className={`optimizer-section-title-arrow ${isGoldBreakdownCollapsed ? "collapsed" : ""}`}>{">"}</span>
+                        {result_status}
+                    </span>
+                    {!isGoldBreakdownCollapsed && (
+                        <div id="gold-breakdown-section" className="optimizer-section-body">
+                            {/* <span>The Score is the sum of the "Average equivalent gold spent" for each mat. Without advanced mode, this is calculated as:</span>
                     <span style={{ marginLeft: 50, fontSize: 24, fontFamily: "Times new roman" }}>
                         Average of [(Non-bound mat consumed, if any, otherwise 0) * market price] = Average eqv gold spent.
                     </span>
@@ -347,80 +384,81 @@ export default function OptimizeSection({
                         because the cases where we use less than BOUND OWNED drags down the Average of (Mat consumed), but we don't actually gain any gold from
                         having leftover bound mats. More formally this is because Expecation is not commutative with non-linear functions.
                     </span> */}
-                        <div
-                            style={{
-                                display: "flex",
-                                flexDirection: "row",
-                                alignItems: "flex-start",
-                                gap: 100,
-                                minWidth: 200,
-                                flexShrink: 0,
-                                marginTop: 0,
-                                flexWrap: "wrap",
-                                marginLeft: 100,
-                            }}
-                        >
-                            <SpreadsheetGrid
-                                columnDefs={wideMatsColumnDefs}
-                                labels={MATS_LABELS.slice(0, 7)}
-                                sheetValuesArr={[avg_breakdown_map(avg_breakdown, MATS_LABELS.slice(0, 7), 0)]}
-                                colorsArr={[avg_breakdown_colors(avg_breakdown, MATS_LABELS.slice(0, 7), 0)]}
-                                setSheetValuesArr={[null]}
-                            />
-                            <SpreadsheetGrid
-                                columnDefs={wideMatsColumnDefs}
-                                labels={JUICE_LABELS.map((label_row) => label_row[0])}
-                                sheetValuesArr={[
-                                    avg_breakdown_map(
-                                        avg_breakdown,
-                                        JUICE_LABELS.map((label_row) => label_row[0]),
-                                        7,
-                                    ),
-                                ]}
-                                colorsArr={[
-                                    avg_breakdown_colors(
-                                        avg_breakdown,
-                                        JUICE_LABELS.map((label_row) => label_row[0]),
-                                        7,
-                                    ),
-                                ]}
-                                setSheetValuesArr={[null]}
-                            />
-                            <SpreadsheetGrid
-                                columnDefs={wideMatsColumnDefs}
-                                labels={JUICE_LABELS.map((label_row) => label_row[1])}
-                                sheetValuesArr={[
-                                    avg_breakdown_map(
-                                        avg_breakdown,
-                                        JUICE_LABELS.map((label_row) => label_row[1]),
-                                        7 + juiceAvail,
-                                    ),
-                                ]}
-                                colorsArr={[
-                                    avg_breakdown_colors(
-                                        avg_breakdown,
-                                        JUICE_LABELS.map((label_row) => label_row[1]),
-                                        7 + juiceAvail,
-                                    ),
-                                ]}
-                                setSheetValuesArr={[null]}
-                            />
-                        </div>
-                        {/* <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                            <div
+                                style={{
+                                    display: "flex",
+                                    flexDirection: "row",
+                                    alignItems: "flex-start",
+                                    gap: 100,
+                                    minWidth: 200,
+                                    flexShrink: 0,
+                                    marginTop: 0,
+                                    flexWrap: "wrap",
+                                    marginLeft: 100,
+                                }}
+                            >
+                                <SpreadsheetGrid
+                                    columnDefs={wideMatsColumnDefs}
+                                    labels={MATS_LABELS.slice(0, 7)}
+                                    sheetValuesArr={[avg_breakdown_map(avg_breakdown, MATS_LABELS.slice(0, 7), 0)]}
+                                    colorsArr={[avg_breakdown_colors(avg_breakdown, MATS_LABELS.slice(0, 7), 0)]}
+                                    setSheetValuesArr={[null]}
+                                />
+                                <SpreadsheetGrid
+                                    columnDefs={wideMatsColumnDefs}
+                                    labels={JUICE_LABELS.map((label_row) => label_row[0])}
+                                    sheetValuesArr={[
+                                        avg_breakdown_map(
+                                            avg_breakdown,
+                                            JUICE_LABELS.map((label_row) => label_row[0]),
+                                            7,
+                                        ),
+                                    ]}
+                                    colorsArr={[
+                                        avg_breakdown_colors(
+                                            avg_breakdown,
+                                            JUICE_LABELS.map((label_row) => label_row[0]),
+                                            7,
+                                        ),
+                                    ]}
+                                    setSheetValuesArr={[null]}
+                                />
+                                <SpreadsheetGrid
+                                    columnDefs={wideMatsColumnDefs}
+                                    labels={JUICE_LABELS.map((label_row) => label_row[1])}
+                                    sheetValuesArr={[
+                                        avg_breakdown_map(
+                                            avg_breakdown,
+                                            JUICE_LABELS.map((label_row) => label_row[1]),
+                                            7 + juiceAvail,
+                                        ),
+                                    ]}
+                                    colorsArr={[
+                                        avg_breakdown_colors(
+                                            avg_breakdown,
+                                            JUICE_LABELS.map((label_row) => label_row[1]),
+                                            7 + juiceAvail,
+                                        ),
+                                    ]}
+                                    setSheetValuesArr={[null]}
+                                />
+                            </div>
+                            {/* <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
                         <div>Already spent: {evaluateAverageResult?.prep_output.already_spent[3]}</div>
                         <div>Average cost from now on: {evaluateAverageResult?.metric - evaluateAverageResult?.prep_output.already_spent[3]}</div>
                         <div>Already spent + more to come: {evaluateAverageResult?.metric}</div>
                     </div> */}
-                        {/* <div style={{ display: "grid", gridTemplateColumns: "1fr auto 1fr", alignItems: "center", gap: 12 }}>
+                            {/* <div style={{ display: "grid", gridTemplateColumns: "1fr auto 1fr", alignItems: "center", gap: 12 }}>
                         <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 12 }}> */}
 
-                        <span></span>
-                        <span style={{ fontSize: 24, color: "var(--brighter-optimizer)" }}>
-                            Combined: {breakdown_to_english(evaluateAverageResult?.metric)}
-                        </span>
-                        {/* </div>
+                            <span></span>
+                            <span style={{ fontSize: 24, color: "var(--brighter-optimizer)" }}>
+                                Combined: {breakdown_to_english(evaluateAverageResult?.metric)}
+                            </span>
+                            {/* </div>
                     </div> */}
-                    </div>
+                        </div>
+                    )}
                 </section>
             </div>
         </div>

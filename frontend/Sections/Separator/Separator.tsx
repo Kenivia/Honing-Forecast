@@ -50,14 +50,14 @@ export default function Separator({ activePage, onPageChange, setAutoRunOptimize
     return (
         <div className={getSeparatorClass()}>
             <button className={getButtonClass("distribution")} onClick={() => handleButtonClick("distribution")}>
-                <span className="hf-label">Cool graphs</span>
+                <span className="hf-label">Cost distributions</span>
                 <div className="hf-help">How much will the upgrades cost?</div>
             </button>
             <button className={getButtonClass("optimize")} onClick={() => handleButtonClick("optimize")}>
                 <span className="hf-label">Optimizer</span>
                 <div className="hf-help">How should I use my free taps & juice?</div>
             </button>
-            <button className={getButtonClass("forecast")} onClick={() => handleButtonClick("forecast")}>
+            {/* <button className={getButtonClass("forecast")} onClick={() => handleButtonClick("forecast")}>
                 <span className="hf-label">Forecast mode</span>
                 <div className="hf-help">If I earn this much per week, what are my odds of success in x weeks?</div>
             </button>
@@ -65,7 +65,7 @@ export default function Separator({ activePage, onPageChange, setAutoRunOptimize
             <button className={getButtonClass("gamba")} onClick={() => handleButtonClick("gamba")}>
                 <span className="hf-label">Gamba simulator</span>
                 <div className="hf-help">Simulate a honing session without hurting your wallet or your soul</div>
-            </button>
+            </button> */}
         </div>
     )
 }
