@@ -47,7 +47,7 @@ fn compute_upgrade_impact(state_bundle: &mut StateBundle) -> Vec<f64> {
             magnitude += (state_bundle.prep_output.leftover_values[index] * p
                 + state_bundle.prep_output.price_arr[index] * (1.0 - p))
                 * upgrade.cost_dist[index]
-                    .access_collapsed()
+                    .access_collapsed(false)
                     .iter()
                     .map(|(s, p)| s * p)
                     .sum::<f64>(); // essentially avg with 0 budget, idk kinda makes sense to me

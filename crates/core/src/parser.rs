@@ -209,7 +209,8 @@ impl PreparationOutput {
             if !upgrade.is_normal_honing {
                 let l_len = upgrade.prob_dist.len();
                 let mut this_combined = Vec::with_capacity(l_len);
-                let mut cost_so_far: f64 = 0.0;
+                let mut cost_so_far: f64 = upgrade.unlock_costs[0] as f64 * price_arr[3]
+                    + upgrade.unlock_costs[1] as f64 * price_arr[6];
 
                 for (p_index, _) in upgrade.prob_dist.iter().enumerate() {
                     this_combined.push(
@@ -235,6 +236,7 @@ impl PreparationOutput {
                     NAN,
                     // cost_so_far,
                     false,
+                    upgrade.alr_failed,
                 );
             }
 
@@ -302,15 +304,15 @@ impl PreparationOutput {
         // // );
         (out, upgrade_arr)
     }
-    // pub fn eqv_gold_unlock(&self) -> f64 {
-    //     // a bit redundent but whatever
-    //     let mut c: f64 = 0.0;
+    pub fn eqv_gold_unlock(&self) -> f64 {
+        // a bit redundent but whatever
+        let mut c: f64 = 0.0;
 
-    //     // c += self.unlock_costs[0] as f64 * self.price_arr[3];
-    //     // c += self.unlock_costs[1] as f64 * self.price_arr[6];
+        c += self.unlock_costs[0] as f64 * self.price_arr[3];
+        c += self.unlock_costs[1] as f64 * self.price_arr[6];
 
-    //     c
-    // }
+        c
+    }
 }
 
 // Constructs vector of Upgrade objects according to what upgrades were selected and the appropriate juice applieid

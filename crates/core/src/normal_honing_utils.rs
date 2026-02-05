@@ -1,4 +1,4 @@
-use std::f64::NAN;
+use std::f64::{INFINITY, NAN, NEG_INFINITY};
 
 use crate::constants::{FLOAT_TOL, JuiceInfo};
 use crate::parser::PreparationOutput;
@@ -30,7 +30,7 @@ impl StateBundle {
         // let flat = self.prep_output.flat_alr_spent.clone().unwrap();
         for (support_index, cost) in out.iter_mut().enumerate() {
             *cost += (self
-                .extract_support_with_meta(support_index as i64, 0)
+                .extract_all_support_with_meta(support_index as i64)
                 .map(|support| support.min_value)
                 .sum::<f64>())
             .ceil() as i64;
@@ -45,8 +45,13 @@ impl StateBundle {
         // let flat = self.prep_output.flat_alr_spent.clone().unwrap();
         for (support_index, cost) in out.iter_mut().enumerate() {
             *cost += (self
-                .extract_support_with_meta(support_index as i64, 0)
-                .map(|support| support.max_value)
+                .extract_all_support_with_meta(support_index as i64)
+                .map(|support| {
+                    support
+                        .support
+                        .iter()
+                        .fold(NEG_INFINITY, |prev, next| prev.max(*next))
+                })
                 .sum::<f64>())
             .ceil() as i64;
         }
@@ -65,12 +70,12 @@ impl StateBundle {
         // compute_biased: bool,
     ) -> (f64, f64) {
         let min_value = self
-            .extract_support_with_meta(support_index, skip_count)
-            .map(|support| support.min_value)
+            .extract_collapsed_pair(support_index, skip_count)
+            .map(|x| x.iter().fold(INFINITY, |prev, new| prev.min(new.0)))
             .sum();
         let max_value = self
-            .extract_support_with_meta(support_index, skip_count)
-            .map(|support| support.max_value)
+            .extract_collapsed_pair(support_index, skip_count)
+            .map(|x| x.iter().fold(NEG_INFINITY, |prev, new| prev.max(new.0)))
             .sum();
         (min_value, max_value)
     }
@@ -88,29 +93,23 @@ impl StateBundle {
         strings.join("\n")
     }
 
-    pub fn extract_support_with_meta(
+    pub fn extract_all_support_with_meta(
         &self,
         support_index: i64,
-        skip_count: usize,
     ) -> Box<dyn DoubleEndedIterator<Item = &Support> + '_> {
         let num_avail = self.prep_output.juice_info.num_avail;
-        Box::new(
-            self.special_state
-                .iter()
-                .map(move |&u_index| {
-                    let upgrade = &self.upgrade_arr[u_index];
-                    if support_index < 0 {
-                        &upgrade.combined_gold_costs
-                    } else if support_index < 7 {
-                        &upgrade.cost_dist[support_index as usize]
-                    } else if support_index < 7 + num_avail as i64 {
-                        &upgrade.weap_juice_costs[support_index as usize - 7]
-                    } else {
-                        &upgrade.armor_juice_costs[support_index as usize - 7 - num_avail]
-                    }
-                })
-                .skip(skip_count),
-        )
+        Box::new(self.special_state.iter().map(move |&u_index| {
+            let upgrade = &self.upgrade_arr[u_index];
+            if support_index < 0 {
+                &upgrade.combined_gold_costs
+            } else if support_index < 7 {
+                &upgrade.cost_dist[support_index as usize]
+            } else if support_index < 7 + num_avail as i64 {
+                &upgrade.weap_juice_costs[support_index as usize - 7]
+            } else {
+                &upgrade.armor_juice_costs[support_index as usize - 7 - num_avail]
+            }
+        }))
     }
 
     pub fn support_from_index(&self, u_index: usize, support_index: i64) -> &Support {
@@ -137,20 +136,24 @@ impl StateBundle {
         Box::new(
             self.special_state
                 .iter()
-                .map(move |&u_index| {
+                .enumerate()
+                .map(move |(index, &u_index)| {
                     let upgrade = &self.upgrade_arr[u_index];
                     if support_index < 0 {
-                        upgrade.combined_gold_costs.access_collapsed()
+                        upgrade
+                            .combined_gold_costs
+                            .access_collapsed(skip_count > index)
                     } else if support_index < 7 {
-                        upgrade.cost_dist[support_index as usize].access_collapsed()
+                        upgrade.cost_dist[support_index as usize]
+                            .access_collapsed(skip_count > index)
                     } else if support_index < 7 + num_avail as i64 {
-                        upgrade.weap_juice_costs[support_index as usize - 7].access_collapsed()
+                        upgrade.weap_juice_costs[support_index as usize - 7]
+                            .access_collapsed(skip_count > index)
                     } else {
                         upgrade.armor_juice_costs[support_index as usize - 7 - num_avail]
-                            .access_collapsed()
+                            .access_collapsed(skip_count > index)
                     }
-                })
-                .skip(skip_count),
+                }),
         )
     }
 
@@ -163,7 +166,8 @@ impl StateBundle {
             }
             let l_len = upgrade.prob_dist.len();
             let mut this_combined = Vec::with_capacity(l_len);
-            let mut cost_so_far: f64 = 0.0;
+            let mut cost_so_far: f64 = upgrade.unlock_costs[0] as f64 * prep_output.price_arr[3]
+                + upgrade.unlock_costs[1] as f64 * prep_output.price_arr[6];
             let mut first_gap: f64 = NAN;
             for (p_index, _) in upgrade.prob_dist.iter().enumerate() {
                 this_combined.push(cost_so_far);
@@ -204,6 +208,7 @@ impl StateBundle {
                 first_gap,
                 // cost_so_far,
                 false,
+                upgrade.alr_failed,
             );
             // upgrade.combined_gold_costs.associated_state_hash
         }
@@ -315,10 +320,11 @@ impl StateBundle {
         skip_count: usize,
         field: usize,
     ) -> Vec<Vec<f64>> {
-        self.extract_support_with_meta(support_index, skip_count)
-            .map(|support| {
+        self.extract_all_support_with_meta(support_index)
+            .enumerate()
+            .map(|(index, support)| {
                 support
-                    .access_collapsed()
+                    .access_collapsed(skip_count > index)
                     .iter()
                     .map(|(x, y)| match field {
                         0 => *x,
@@ -628,6 +634,7 @@ impl Upgrade {
                 &self.prob_dist,
                 this_cost,
                 true,
+                self.alr_failed,
             );
         }
 
@@ -672,6 +679,7 @@ impl Upgrade {
                 &self.prob_dist,
                 amt,
                 true,
+                self.alr_failed,
             );
             // dbg!(id, 1);
             self.armor_juice_costs[id].update_payload(
@@ -680,6 +688,7 @@ impl Upgrade {
                 &self.prob_dist,
                 amt,
                 true,
+                self.alr_failed,
             );
         }
     }

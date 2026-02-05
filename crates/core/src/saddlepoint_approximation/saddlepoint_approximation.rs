@@ -104,7 +104,8 @@ impl StateBundle {
         };
         if self.support_size_too_big(support_index, skip_count) {
             let min_delta = self
-                .extract_support_with_meta(support_index, skip_count)
+                .extract_all_support_with_meta(support_index)
+                .skip(skip_count) // this one genuinely can skip
                 .map(|x| {
                     if x.gap_size.is_finite() {
                         x.gap_size
@@ -120,7 +121,10 @@ impl StateBundle {
                     }
                 }); // UM this should be the size of the second gap so might not be accurate for combined cost ? CBB
 
-            let span = lattice_span(self.extract_support_with_meta(support_index, skip_count));
+            let span = lattice_span(
+                self.extract_all_support_with_meta(support_index)
+                    .skip(skip_count),
+            ); // this one also
             let budget = ((inp_budget / span).floor() * span)
                 .min(max_value - span)
                 .max(min_value)

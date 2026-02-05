@@ -166,15 +166,20 @@ pub struct Support {
     pub max_value: f64,
     pub min_value: f64,
     pub first_non_zero_prob_index: usize,
+    skipped_pair: Vec<(f64, f64)>,
 }
 
 impl Support {
-    pub fn access_collapsed(&self) -> &Vec<(f64, f64)> {
+    pub fn access_collapsed(&self, skipped: bool) -> &Vec<(f64, f64)> {
         assert!(self.collapsed_state_hash == self.support_state_hash);
-        &self.collapsed_pair
+        if skipped {
+            &self.skipped_pair
+        } else {
+            &self.collapsed_pair
+        }
     }
 
-    pub fn collapse_support(&mut self, prob_dist: &ProbDist) {
+    pub fn collapse_support(&mut self, prob_dist: &ProbDist, alr_failed: usize) {
         // if prob_dist.payload.len() != self.support.len() {
         //     dbg!(&prob_dist, &self.support);
         // }
@@ -188,12 +193,18 @@ impl Support {
             let mut result: Vec<(f64, f64)> = Vec::with_capacity(self.support.len());
             let mut max_value: f64 = NEG_INFINITY;
             let mut min_value: f64 = INFINITY;
-            let mut iter = self.support.iter().zip(prob_dist.iter());
+            let mut iter = self.support.iter().zip(prob_dist.iter()).enumerate();
 
-            if let Some((&s, &p)) = iter.next() {
+            if let Some((index, (&s, &p))) = iter.next() {
                 let mut cur_s = s;
                 let mut cur_p = p;
-                for (&new_s, &new_p) in iter {
+                if index == alr_failed {
+                    self.skipped_pair[0].0 = cur_s;
+                }
+                for (index, (&new_s, &new_p)) in iter {
+                    if index == alr_failed {
+                        self.skipped_pair[0].0 = cur_s;
+                    }
                     if new_s == cur_s {
                         cur_p += new_p;
                     } else {
@@ -257,10 +268,11 @@ impl Support {
         prob_dist: &ProbDist,
         gap_size: f64,
         linear: bool, // max: f64,
+        alr_failed: usize,
     ) {
         self.support = new_payload;
         self.support_state_hash = new_state_hash;
-        self.collapse_support(prob_dist);
+        self.collapse_support(prob_dist, alr_failed);
         self.gap_size = gap_size;
         self.linear = linear;
         // self.max_value = max;
@@ -282,6 +294,7 @@ impl Default for Support {
             max_value: NAN,
             min_value: NAN,
             first_non_zero_prob_index: 0,
+            skipped_pair: vec![(NAN, 1.0)],
         }
     }
 }
@@ -428,7 +441,13 @@ impl Upgrade {
         let mut cost_dist = vec![Support::default(); 7];
         for t_index in 0..7 {
             let mut this_mats_costs: Vec<f64> = Vec::with_capacity(prob_dist_len);
-            let mut cost_so_far: f64 = 0.0;
+            let mut cost_so_far: f64 = if t_index == 3 {
+                unlock_costs[0] as f64
+            } else if t_index == 6 {
+                unlock_costs[1] as f64
+            } else {
+                0.0
+            };
             let this_cost: f64 = costs[t_index] as f64;
             for (index, _p) in prob_dist.iter().enumerate() {
                 this_mats_costs.push(cost_so_far);
@@ -444,6 +463,7 @@ impl Upgrade {
                 &prob_dist,
                 this_cost,
                 true,
+                0,
             );
         }
         let mut weap_juice_costs = vec![Support::default(); num_juice_avail];
@@ -465,8 +485,22 @@ impl Upgrade {
                 weap_support.push(weap_cost);
                 armor_support.push(armor_cost);
             }
-            weap_juice_costs[id].update_payload(weap_support, state.hash, &prob_dist, 1.0, false);
-            armor_juice_costs[id].update_payload(armor_support, state.hash, &prob_dist, 1.0, false);
+            weap_juice_costs[id].update_payload(
+                weap_support,
+                state.hash,
+                &prob_dist,
+                1.0,
+                false,
+                0,
+            );
+            armor_juice_costs[id].update_payload(
+                armor_support,
+                state.hash,
+                &prob_dist,
+                1.0,
+                false,
+                0,
+            );
         }
 
         Self {

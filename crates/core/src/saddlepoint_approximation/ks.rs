@@ -71,22 +71,25 @@ impl StateBundle {
 
         self.special_state
             .iter()
-            .skip(skip_count)
-            .map(|&u_index| self.support_from_index(u_index, support_index))
-            .filter(|support| !support.ignore)
-            .fold(KsTuple::default(), |prev, meta_support| {
-                prev.add(meta_support.one_ks(theta))
+            .enumerate()
+            .map(|(index, &u_index)| (index, self.support_from_index(u_index, support_index)))
+            .filter(|(_, support)| !support.ignore)
+            .fold(KsTuple::default(), |prev, (index, meta_support)| {
+                prev.add(meta_support.one_ks(theta, index < skip_count))
             })
     }
 }
 impl Support {
-    fn one_ks(&self, theta: f64) -> KsTuple {
+    fn one_ks(&self, theta: f64, skipped: bool) -> KsTuple {
         let mut sum: f64 = 0.0;
         let mut mean: f64 = 0.0;
         let mut second: f64 = 0.0;
         let mut third: f64 = 0.0;
         let mut fourth: f64 = 0.0;
-
+        if skipped {
+            let s = self.access_collapsed(skipped).iter().next().unwrap().0;
+            return KsTuple(s * theta, s, 0.0, 0.0, 0.0);
+        }
         let biggest_shift = theta
             * if theta >= 0.0 {
                 self.max_value
@@ -100,7 +103,7 @@ impl Support {
                 let decay_factor = (-step * theta).exp();
                 let mut current_exp_val = 1.0;
 
-                for (s, p) in self.access_collapsed().iter().rev()
+                for (s, p) in self.access_collapsed(skipped).iter().rev()
                 // .filter(|(_, p)| *p > FLOAT_TOL)
                 // shouldn't matter but whatever  {
                 {
@@ -120,7 +123,7 @@ impl Support {
                 let decay_factor = (step * theta).exp();
                 let mut current_exp_val = 1.0;
 
-                for (s, p) in self.access_collapsed().iter()
+                for (s, p) in self.access_collapsed(skipped).iter()
                 // .filter(|(_, p)| *p > FLOAT_TOL)
                 // dont multiply by decay factor if p is 0
                 {
@@ -139,7 +142,7 @@ impl Support {
                 }
             }
         } else {
-            for (s, p) in self.access_collapsed().iter()
+            for (s, p) in self.access_collapsed(skipped).iter()
             // .filter(|(_, p)| *p > FLOAT_TOL)
             // this avoids 0.0 * inf  which is NAN
             {

@@ -59,7 +59,7 @@ impl StateBundle {
         skip_count: usize,
         budget: f64,
     ) -> f64 {
-        let n = self.upgrade_arr.len() - skip_count;
+        let n = self.upgrade_arr.len();
         // dbg!(
         //     &self.upgrade_arr.len(),
         //     self.special_state.len(),
@@ -73,15 +73,16 @@ impl StateBundle {
 
         let mut u_index = n - 1; // cant use enumerate for some reason
 
-        for support in self
-            .extract_support_with_meta(support_index, skip_count)
-            .rev()
-        {
+        for support in self.extract_collapsed_pair(support_index, skip_count).rev() {
             // Find min and max cost for this specific layer
             // We use fold because f64 doesn't implement Ord
 
-            min_suffix[u_index] = min_suffix[u_index + 1] + support.min_value;
-            max_suffix[u_index] = max_suffix[u_index + 1] + support.max_value;
+            min_suffix[u_index] = min_suffix[u_index + 1]
+                + support.iter().fold(INFINITY, |prev, new| prev.min(new.0));
+            max_suffix[u_index] = max_suffix[u_index + 1]
+                + support
+                    .iter()
+                    .fold(NEG_INFINITY, |prev, new| prev.max(new.0));
             if u_index > 0 {
                 u_index -= 1;
             }
@@ -167,21 +168,24 @@ impl StateBundle {
         // 1. PRE-COMPUTE BOUNDS
         // We scan backwards to calculate the min/max cost possible from each depth.
         // min_suffix[i] = sum(min(support[j])) for j in i..len
-        let n = self.upgrade_arr.len() - skip_count;
+        let n = self.upgrade_arr.len();
         let mut min_suffix = vec![0.0; n + 1];
         let mut max_suffix = vec![0.0; n + 1];
 
-        let mut index = n - 1;
-        for support in self
-            .extract_support_with_meta(support_index, skip_count)
-            .rev()
-        {
-            // Assumes support_arr is sorted. If not, replace first()/last() with min()/max()
+        let mut u_index = n - 1; // cant use enumerate for some reason
 
-            min_suffix[index] = min_suffix[index + 1] + support.min_value;
-            max_suffix[index] = max_suffix[index + 1] + support.max_value;
-            if index > 0 {
-                index -= 1;
+        for support in self.extract_collapsed_pair(support_index, skip_count).rev() {
+            // Find min and max cost for this specific layer
+            // We use fold because f64 doesn't implement Ord
+
+            min_suffix[u_index] = min_suffix[u_index + 1]
+                + support.iter().fold(INFINITY, |prev, new| prev.min(new.0));
+            max_suffix[u_index] = max_suffix[u_index + 1]
+                + support
+                    .iter()
+                    .fold(NEG_INFINITY, |prev, new| prev.max(new.0));
+            if u_index > 0 {
+                u_index -= 1;
             }
         }
         if DEBUG_AVERAGE && support_index == DEBUG_AVG_INDEX {
@@ -226,7 +230,7 @@ impl StateBundle {
         }
 
         // BASE CASE
-        if depth == self.upgrade_arr.len() - skip_count {
+        if depth == self.upgrade_arr.len() {
             return cost_so_far / mean;
         }
 
@@ -275,7 +279,7 @@ impl StateBundle {
         }
 
         // BASE CASE: We are summing the "bad" cases (where Cost > Budget)
-        if depth == self.upgrade_arr.len() - skip_count {
+        if depth == self.upgrade_arr.len() {
             // We only return value if we exceeded budget (which is implicit due to pruning logic,
             // but strictly safe to check or just return).
             // Since we prune if <= budget, if we are here, we are > budget.

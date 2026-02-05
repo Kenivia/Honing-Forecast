@@ -51,7 +51,7 @@ const GraphContent = ({ width, height, data, average, secondaryAnnotation, color
         // Assuming uniform x-steps usually, but this formula handles variable steps
         let prev_slope = 0
         return data.map((point, i) => {
-            if (i === 0) return [point[0], point[1] / 100] as DataPoint
+            if (i === 0) return [point[0], point[1] / (data[1][0] - data[0][0])] as DataPoint
             const prev = data[i - 1]
 
             const dx = point[0] - prev[0]
