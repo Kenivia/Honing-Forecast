@@ -58,16 +58,16 @@ export default function InputsSection({ inputsBundle: inputs, inputToggles, setI
             >
                 <div style={{ display: "flex", flexDirection: "row", gap: 0 }}>
                     <SpreadsheetGrid
-                        columnDefs={matsBaseColumnDefs}
+                        columnDefs={matsBaseColumnDefs.concat(advancedMode ? [matsLeftoverDef] : [])}
                         labels={MATS_LABELS}
-                        sheetValuesArr={[mats.owned, mats.prices]}
-                        setSheetValuesArr={[matsSetters.setOwned, matsSetters.setPrices]}
+                        sheetValuesArr={[mats.owned, mats.prices, mats.leftover]}
+                        setSheetValuesArr={[matsSetters.setOwned, matsSetters.setPrices, matsSetters.setLeftover]}
                         rowCheckboxes={{
                             value: inputToggles.mats,
                             onChange: (newValues) => setInputToggles({ ...inputToggles, mats: newValues }),
                         }}
                     />
-                    {advancedMode ? (
+                    {/* {advancedMode ? (
                         // <SliderColumn
                         //     headerName={matsLeftoverDef.headerName}
                         //     labels={MATS_LABELS}
@@ -93,22 +93,23 @@ export default function InputsSection({ inputsBundle: inputs, inputToggles, setI
                         //     hideRowsFrom={7}
                         //     leftover={mats.leftover}
                         // />
-                        <div style={{ width: 72 }}></div>
-                    )}
+                        <div style={{ width: 60 }}></div>
+                    )} */}
+                    {!advancedMode && <div style={{ width: 60 }}></div>}
                 </div>
 
                 <div style={{ display: "flex", flexDirection: "row", gap: 0 }}>
                     <SpreadsheetGrid
-                        columnDefs={juiceBaseColumnDefs}
+                        columnDefs={juiceBaseColumnDefs.concat(advancedMode ? [juiceLeftoverDef] : [])}
                         labels={JUICE_LABELS.map((label_row) => label_row[0])}
-                        sheetValuesArr={[juice.weapon.owned, juice.weapon.prices]}
-                        setSheetValuesArr={[juiceSetters.weapon.setOwned, juiceSetters.weapon.setPrices]}
-                        rowCheckboxes={{
-                            value: inputToggles.weapon,
-                            onChange: (newValues) => setInputToggles({ ...inputToggles, weapon: newValues }),
-                        }}
+                        sheetValuesArr={[juice.weapon.owned, juice.weapon.prices, juice.weapon.leftover]}
+                        setSheetValuesArr={[juiceSetters.weapon.setOwned, juiceSetters.weapon.setPrices, juiceSetters.weapon.setLeftover]}
+                        // rowCheckboxes={{
+                        //     value: inputToggles.juice,
+                        //     onChange: (newValues) => setInputToggles({ ...inputToggles, juice: newValues }),
+                        // }}
                     />
-                    {advancedMode ? (
+                    {/* {advancedMode ? (
                         <SpreadsheetGrid
                             columnDefs={[juiceLeftoverDef]}
                             labels={JUICE_LABELS.map((label_row) => label_row[0])}
@@ -132,38 +133,23 @@ export default function InputsSection({ inputsBundle: inputs, inputToggles, setI
                         //     onValuesChange={juiceSetters.weapon.setLeftover}
                         //     leftover={juice.weapon.leftover}
                         // />
-                        <div style={{ width: 72 }}></div>
-                    )}
+                        <div style={{ width: 60 }}></div>
+                    )} */}
+                    {!advancedMode && <div style={{ width: 60 }}></div>}
                 </div>
 
                 <div style={{ display: "flex", flexDirection: "row", gap: 0 }}>
                     <SpreadsheetGrid
-                        columnDefs={juiceBaseColumnDefs}
+                        columnDefs={juiceBaseColumnDefs.concat(advancedMode ? [juiceLeftoverDef] : [])}
                         labels={JUICE_LABELS.map((label_row) => label_row[1])}
-                        sheetValuesArr={[juice.armor.owned, juice.armor.prices]}
-                        setSheetValuesArr={[juiceSetters.armor.setOwned, juiceSetters.armor.setPrices]}
-                        rowCheckboxes={{
-                            value: inputToggles.juice,
-                            onChange: (newValues) => setInputToggles({ ...inputToggles, juice: newValues }),
-                        }}
+                        sheetValuesArr={[juice.armor.owned, juice.armor.prices, juice.armor.leftover]}
+                        setSheetValuesArr={[juiceSetters.armor.setOwned, juiceSetters.armor.setPrices, juiceSetters.armor.setLeftover]}
+                        // rowCheckboxes={{
+                        //     value: inputToggles.juice,
+                        //     onChange: (newValues) => setInputToggles({ ...inputToggles, juice: newValues }),
+                        // }}
                     />
-                    {advancedMode ? (
-                        // <SliderColumn
-                        //     headerName={juiceLeftoverDef.headerName}
-                        //     labels={JUICE_LABELS.map((label_row) => label_row[1])}
-                        //     values={juice.armor.leftover}
-                        //     prices={juice.armor.prices}
-                        //     onValuesChange={juiceSetters.armor.setLeftover}
-                        // />
-                        <SpreadsheetGrid
-                            columnDefs={[juiceLeftoverDef]}
-                            labels={JUICE_LABELS.map((label_row) => label_row[0])}
-                            sheetValuesArr={[juice.armor.leftover]}
-                            setSheetValuesArr={[juiceSetters.armor.setLeftover]}
-                            hideIcons={true}
-                            fontSizeOverride={"var(--font-size-xs)"}
-                        ></SpreadsheetGrid>
-                    ) : (
+                    {!advancedMode && (
                         // <ButtonColumn
                         //     headerName={juiceLeftoverDef.headerName}
                         //     labels={JUICE_LABELS.map((label_row) => label_row[1])}
@@ -171,10 +157,10 @@ export default function InputsSection({ inputsBundle: inputs, inputToggles, setI
                         //     onValuesChange={juiceSetters.armor.setLeftover}
                         //     leftover={juice.armor.leftover}
                         // />
-                        <div style={{ width: 72 }}></div>
+                        <div style={{ width: 60 }}></div>
                     )}
                 </div>
-            </div>
+            </div>{" "}
             <div style={{ position: "relative", marginLeft: 450, top: -130, display: "flex", alignItems: "flex-start", gap: 16, flexDirection: "column" }}>
                 {<span></span>} <LabeledCheckbox label="Custom leftover values" checked={advancedMode} setChecked={toggleAdvMode} />
                 {advancedMode && (

@@ -1318,18 +1318,20 @@ export default function HoningForecastUI() {
                                     <div className={`result-value ${curIsBest ? "best" : "not-best"}`}>
                                         Avg eqv gold cost: {add_comma(-evaluateAverageResult?.metric) ?? "N/A"}{" "}
                                     </div>
-                                    <span
-                                        style={{
-                                            position: "absolute",
-                                            left: "100%",
-                                            marginLeft: "8px",
-                                            whiteSpace: "nowrap",
-                                            fontSize: "14px",
-                                            color: "var(--very-muted-text)",
-                                        }}
-                                    >
-                                        {/* (See bottom of the page for more info) */}
-                                    </span>
+                                    {allowUserChangeState && (
+                                        <span
+                                            style={{
+                                                position: "absolute",
+                                                left: "100%",
+                                                marginLeft: "8px",
+                                                whiteSpace: "nowrap",
+                                                fontSize: "14px",
+                                                color: "var(--very-muted-text)",
+                                            }}
+                                        >
+                                            (This is cost so far + Avg cost in the future)
+                                        </span>
+                                    )}
                                 </div>
                                 {result_status}{" "}
                                 {!curIsBest && hasRunOptimizer && !optimizeAvgBusy && (
@@ -1358,7 +1360,7 @@ export default function HoningForecastUI() {
                         {/* Progress */}
                         {optimizeAvgBusy && (
                             <div className="optimizer-progress">
-                                <span>Optimizer progress: {optimizerProgress.toFixed(2)}% (this can take a lil while)</span>
+                                <span>Optimizer progress: {Math.max(optimizerProgress, 0.001).toFixed(2)}% (this can take a lil while)</span>
 
                                 <div className="progress-bar">
                                     <div className="progress-fill" style={{ width: `${optimizerProgress}%` }} />

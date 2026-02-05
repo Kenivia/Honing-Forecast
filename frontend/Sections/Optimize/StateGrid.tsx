@@ -233,11 +233,11 @@ const RowBundle = ({
                         }}
                     >
                         <Icon iconName={PIECE_NAMES[upgrade.piece_type]} display_text="" display_text_right={piece_display_name(upgrade)}></Icon>
-                        <span>
+                        <span style={freeTap && upgrade.is_normal_honing ? { color: "var(--free-tap)" } : undefined}>
                             {upgrade.is_normal_honing
                                 ? freeTap
-                                    ? "  Use special leaps on this until you run out, " + toOrdinal(freeTapOrder)
-                                    : " Normal tap this (no special), " + toOrdinal(freeTapOrder)
+                                    ? "  Use special leaps on this until you run out"
+                                    : " Normal tap this (no special) "
                                 : "Use juice (and scroll) on ancestor's grace"}
                         </span>
                     </div>
@@ -402,7 +402,7 @@ const RowBundle = ({
                     </div>
                     {succeed && <div className="state-grid-overlay" />}
                 </div>
-                {(allowUserChangeState || succeed) && (
+                {(allowUserChangeState || succeed) && upgrade.is_normal_honing && (
                     <button
                         style={{
                             ...styles.demoButton,

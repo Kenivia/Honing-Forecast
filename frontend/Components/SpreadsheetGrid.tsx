@@ -61,6 +61,16 @@ export default function SpreadsheetGrid({
                 next[label] = "0"
                 col1Setter(next)
             }
+
+            const col2Setter = setSheetValuesArr[2]
+            const col2Values = sheetValuesArr[2]
+
+            // Ensure column 1 exists and is editable
+            if (col2Setter && col2Values) {
+                const next = { ...col2Values }
+                next[label] = "0"
+                col2Setter(next)
+            }
         }
     }
 
@@ -89,7 +99,7 @@ export default function SpreadsheetGrid({
             const next = { ...colValues }
             next[label] = cleanValue
             setter(next)
-        } else if (colIndex === 1) {
+        } else if (colIndex === 1 || colIndex === 2) {
             // Gold value-like column - allow non-negative decimals while typing
             let clean = value.replace(/[^0-9.]/g, "")
             const firstDot = clean.indexOf(".")
@@ -112,9 +122,9 @@ export default function SpreadsheetGrid({
         const label = labels[rowIndex]
         if (!label) return
         // Only normalize decimal-like second column
-        if (colIndex === 1) {
-            const colValues = sheetValuesArr[1] ?? {}
-            const setter = setSheetValuesArr[1]
+        if (colIndex === 1 || colIndex === 2) {
+            const colValues = sheetValuesArr[colIndex] ?? {}
+            const setter = setSheetValuesArr[colIndex]
             if (!setter) return
             let val = colValues[label] ?? ""
             // normalize on blur: strip leading zeros in int part, trailing zeros in frac; drop dot if needed
@@ -139,7 +149,7 @@ export default function SpreadsheetGrid({
             }
         }
     }
-
+    // console.log(rowCheckboxes)
     return (
         <div
             ref={gridRef}
@@ -183,7 +193,7 @@ export default function SpreadsheetGrid({
                     {/* Fake Header Spacer */}
                     {!noHeader && <div style={{ height: 40 }} />}
 
-                    {labels.map((_, rowIndex) => (
+                    {rowCheckboxes.value.map((_, rowIndex) => (
                         <div
                             key={`chk-${rowIndex}`}
                             style={{
@@ -197,7 +207,7 @@ export default function SpreadsheetGrid({
                                 type="checkbox"
                                 checked={rowCheckboxes!.value[rowIndex] ?? false}
                                 onChange={(e) => handleCheckboxChange(rowIndex, e.target.checked)}
-                                style={{ cursor: "pointer" }}
+                                style={{ width: 16, height: 16, accentColor: "var(--control-checked-bg)" }}
                             />
                         </div>
                     ))}
@@ -249,8 +259,7 @@ export default function SpreadsheetGrid({
                     }}
                 >
                     {labels.map((label, rowIndex) => {
-                        // Check if this row is "checked" / faded
-                        const isRowChecked = showCheckboxes ? (rowCheckboxes!.value[rowIndex] ?? false) : false
+                        const isRowChecked = showCheckboxes ? (rowCheckboxes!.value[rowIndex] ?? true) : true
 
                         return columnDefs.map((colDef, colIndex) => (
                             <div
@@ -267,7 +276,7 @@ export default function SpreadsheetGrid({
                                 <input
                                     type="text"
                                     // Disable input if row is checked
-                                    disabled={isRowChecked}
+                                    disabled={!isRowChecked}
                                     readOnly={!columnDefs[colIndex].editable || (colIndex === 1 && rowIndex >= 7)}
                                     value={sheetValuesArr[colIndex]?.[label] ?? ""}
                                     onChange={(e) => handleCellChange(rowIndex, colIndex, e.target.value)}

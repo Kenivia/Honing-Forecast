@@ -249,16 +249,25 @@ export default function OptimizeSection({
                                     Go from top to bottom, empty squares mean no book / no juice.<br></br>
                                 </span>
                                 <div style={{ display: "flex", alignItems: "center", gap: "8px", textWrap: "wrap", lineHeight: "1.0" }}>
-                                    <LabeledCheckbox label="Enable updating progress" checked={allowUserChangeState} setChecked={setAllowUserChangeState} />
+                                    <LabeledCheckbox
+                                        label="Enable updating progress for even better optimization"
+                                        checked={allowUserChangeState}
+                                        setChecked={setAllowUserChangeState}
+                                    />
                                 </div>
                                 {allowUserChangeState && (
                                     <div>
                                         <span>
                                             {" "}
-                                            You can update your progress for even more optimization. Click the number of taps it took to succeed, and press
-                                            success. For free taps, just press succeed.
-                                            <br></br> Remember to re-run the optimizer, or toggle "Auto start optimizer"<br></br>
-                                            Mats & juice costs are automatically deducted in the background, but free tap needs you to manually update.
+                                            - Click the number of taps it took to succeed, and press success. For free taps, just press succeed. How often you
+                                            want to update is up to you, you can do it after every fail if you want.
+                                            <br></br>- Remember to re-run the optimizer, or toggle "Auto start optimizer"<br></br> - Mats & juice costs are
+                                            automatically deducted in the background, but you need to manually update how many special leaps you have left.
+                                            <br></br>- Advanced honing progress update is unavailable, you'll have to update your mats manually after succeeding
+                                            all 10 levels. As such, you should probably do your advanced honing before all normal honing or after all normal
+                                            honing.
+                                            <br></br>- Note that the "Avg eqv gold cost" is the costs so far + average cost to come. As such, when you've
+                                            succeeded everything, that's how much you spent.
                                         </span>
                                         <div style={{ width: 200 }}>
                                             <SpreadsheetGrid

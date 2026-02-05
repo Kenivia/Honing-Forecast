@@ -491,7 +491,7 @@ pub fn parser(
                     adv_unlock_costs[1][col_index],
                 ],
                 false,
-                0,
+                juice_info.num_avail,
                 this_unlocked,
             ));
         }

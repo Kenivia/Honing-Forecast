@@ -83,7 +83,7 @@ export const DEFAULT_MATS_PRICES = ["1.84", "0.04", "20", "0.6", "128", "1.0", "
 export const DEFAULT_MATS_LEFTOVER = ["0", "0", "0", "0", "0", "0", "0"]
 
 export const DEFAULT_TOGGLES = {
-    mats: Array.from({ length: MATS_LABELS.length }, () => true),
+    mats: Array.from({ length: MATS_LABELS.length - 1 }, () => true),
     weapon: Array.from({ length: JUICE_LABELS.length }, () => true),
     juice: Array.from({ length: JUICE_LABELS.length }, () => true),
 }
@@ -110,7 +110,7 @@ export const RESET_UI_DEFAULTS = {
     adv_hone_strategy: "x2 grace",
     express_event: true,
     bucketCount: "100",
-    cumulativeGraph: true,
+    cumulativeGraph: false,
     dataSize: "100000",
     lockXAxis: false,
     lockedMins: null as number[] | null,
