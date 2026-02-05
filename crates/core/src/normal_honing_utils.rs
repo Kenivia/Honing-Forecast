@@ -691,6 +691,8 @@ impl Upgrade {
                 self.alr_failed,
             );
         }
+        // dbg!(&self.cost_dist,);
+        // panic!()
     }
 
     pub fn update_this_prob_dist(&mut self, prep_output: &PreparationOutput) {

@@ -2,7 +2,7 @@
 pub const RESOLUTION_CUTOFF_TEMP: f64 = 33.3;
 pub const MAX_BEST_SIZE: usize = 10;
 pub const ITERS_PER_TEMP: i64 = 7;
-pub const MAX_ITERS: i64 = 20000;
+pub const MAX_ITERS: i64 = 24000;
 pub const BATCH_SIZE: i64 = 500;
 pub const ALPHA: f64 = 0.99;
 pub const NON_IMPACT_WEIGHT: f64 = 3.0;
