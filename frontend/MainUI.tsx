@@ -289,14 +289,14 @@ export default function HoningForecastUI() {
     // ----- Responsive scaling based on window width -----
     useEffect(() => {
         const updateScale = () => {
-            const isPortrait = window.matchMedia("(orientation: portrait)").matches
-            const isMobile = window.innerWidth < 900
+            // const isPortrait = window.matchMedia("(orientation: portrait)").matches
+            // const isMobile = window.innerWidth < 900
 
             // When rotated, height becomes the effective width
-            const effectiveWidth = isMobile && isPortrait ? window.innerHeight : window.innerWidth
+            const effectiveWidth = window.innerWidth
 
             if (effectiveWidth < 1100) {
-                setMainScale(effectiveWidth / 1100)
+                setMainScale(Math.max(0.7, effectiveWidth / 1100))
             } else {
                 setMainScale(1)
             }
