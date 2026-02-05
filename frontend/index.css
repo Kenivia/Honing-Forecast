@@ -58,9 +58,9 @@ html {
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     /* Prevent horizontal scrolling and control zoom behavior */
-    overflow-x: hidden;
-    width: 100%;
-    max-width: 100vw;
+    /* overflow-x: hidden; */
+    /* width: 100%;
+    max-width: 100vw; */
 }
 
 /* Page layout — use flex centering if you want the whole app centered.
@@ -79,9 +79,9 @@ body {
     color: var(--text);
     font-family: 'system-ui', Arial, sans-serif;
     /* Prevent horizontal scrolling and ensure content fits within viewport */
-    overflow-x: hidden;
-    width: 100%;
-    max-width: 100vw;
+    /* overflow-x: hidden; */
+    /* width: 100%; */
+    /* max-width: 100vw; */
 }
 
 /* Ensure controls are selectable and interactable */
@@ -148,19 +148,18 @@ textarea {
 /* Mobile-specific styles to prevent zooming beyond natural width */
 @media (max-width: 1200px) {
     html {
-        overflow-x: hidden;
+        /* overflow-x: hidden; */
         width: 100%;
-        max-width: 100vw;
-        touch-action: pan-x pan-y;
+        /* max-width: 100vw; */
+        /* touch-action: pan-x pan-y; */
 
     }
 
     body {
-        overflow-x: hidden;
+        /* overflow-x: hidden; */
         width: 100%;
-        max-width: 100vw;
-        /* Prevent horizontal scrolling on mobile */
-        position: relative;
+        /* max-width: 100vw; */
+
     }
 
 
@@ -168,6 +167,10 @@ textarea {
 
 }
 
+
+
+/* Prevent horizontal scrolling on mobile */
+/* position: relative; */
 /* Utility Classes */
 .text-primary {
     color: var(--text-primary);
@@ -319,5 +322,54 @@ button {
 
     button {
         background-color: var(--button-bg);
+    }
+} */
+/* 
+@media screen and (max-width: 900px) and (orientation: portrait) {
+    #container {
+        position: absolute;
+        top: 0;
+        left: 0;
+
+        width: 100vh;
+        height: 100vw;
+
+        transform: rotate(90deg) translateY(-100%);
+        transform-origin: top left;
+
+        overflow-y: auto;
+
+        overflow-x: hidden;
+    }
+
+    body {
+        overflow: hidden;
+
+    }
+} */
+
+@media screen and (max-width: 900px) {
+    #container {
+        position: static;
+        width: auto;
+        height: auto;
+        transform: auto;
+        overflow: auto;
+    }
+}
+
+/* @media screen and (max-width: 900px) and (orientation: portrait) {
+    body::before {
+        content: "Sorry this site only works in landscape / desktop";
+        position: fixed;
+        top: 12px;
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 99999;
+        background: rgba(169, 0, 0, 0.8);
+        color: white;
+        padding: 6px 12px;
+        border-radius: 6px;
+        font-size: 14px;
     }
 } */
