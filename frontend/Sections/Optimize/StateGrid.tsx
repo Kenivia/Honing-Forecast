@@ -236,8 +236,8 @@ const RowBundle = ({
                         <span style={freeTap && upgrade.is_normal_honing ? { color: "var(--free-tap)" } : undefined}>
                             {upgrade.is_normal_honing
                                 ? freeTap
-                                    ? "  Use special leaps on this until you run out"
-                                    : " Normal tap this (no special) "
+                                    ? "  Use special leaps on this until you run out " + toOrdinal(freeTapOrder)
+                                    : " Normal tap this (no special) " + toOrdinal(freeTapOrder)
                                 : "Use juice (and scroll) on ancestor's grace"}
                         </span>
                     </div>
