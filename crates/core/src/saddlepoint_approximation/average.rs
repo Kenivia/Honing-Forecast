@@ -194,6 +194,7 @@ impl StateBundle {
         let simple_mean: f64 = self.simple_avg(support_index, skip_count);
 
         if (price - leftover_value).abs() < FLOAT_TOL {
+            // this also includes price = 0 (unless leftover is high for some reason)
             return price * (effective_budget - simple_mean);
         }
 

@@ -1,42 +1,33 @@
 
 # Work in Progress
 
-## Arena WIP
+## Big
 
-### Now
+### Forecast mode
 
-#### Website
+- idk this will have to come after having individual character pages i think
 
-- marquee for state grid also?
+### Advanced honing
 
-#### Optimizations
+- use monte carlo to generate the distribution, then allow for a few strategies
+  - ~~ no juice, full juice, no juice full scroll, full juice full scroll, FULL SCROLL etc~~ i cant be bothered, probably a waste anyway, just assume juice & scrool on grace is optimal
+  - selectable double um balls event thing
+  - maybe pre-generate a bunch of scenarios?
+    - can allow for different states also eventually
+    - scrolls calculations
 
-### Misc
+### Serca
+
+- how to consider 1-to-5 conversion??? prolly just 2 sets of grids and 2 sets of prices
+
+## Misc
 
 - JUICE CHESTS AND MAYBE EVEN BOOKS CHESTS
-  - ~~just a greedy algorithm based on the prices~~ ~~um might be more complicated than i think, maybe need to add it to the decision space but that sounds incredibly uh wasteful, maybe just do it naively~~ actually can just tell user to open as they run out?
 
 - add assertions to a lot of prepoutput stuff
 
 - start working on visualizing this stuff
   - put all possible states on one axis (must be small support like 5? 10? ) and sort by number of juice used, then color/ 3d height?
-
-### Big
-
-#### Advanced honing
-
-- use monte carlo to generate the distribution, then allow for a few strategies
-  - ~~ no juice, full juice, no juice full scroll, full juice full scroll, FULL SCROLL etc~~ i cant be bothered, probably a waste anyway, just assume juice & scrool on grace is optimal
-  - selectable double um balls event thing
-
-### Algorithm ideas
-
-- stopping early if no improvements (an adaptive temperature / annealing schedule i guess )
-
-- this all lead to some kind of heat map of how likely special / an upgrade has room for optimization
-  - maybe do upgrade affinity also?
-
-- a kind of self-crossover where the same upgrade type can copy each other?
 
 ## Other features
 
@@ -51,8 +42,21 @@
 - Adjustable week number in raw / Gold graph
 - Achieved ilevel
 - Something seems to be broken in drag-to-select spreadsheetgrid
+- marquee for state grid also?
+- rearrange where the gold cost is
+  - maybe make a toggle of includign tradable budget & showing actual gold spent instead?
 
 ## Done / cancelled
+
+~~## Algorithm ideas~~
+
+- ~~stopping early if no improvements (an adaptive temperature / annealing schedule i guess )~~ nah trivial ones will finish fast any way
+
+- ~~this all lead to some kind of heat map of how likely special / an upgrade has room for optimization~~
+  - ~~maybe do upgrade affinity also?~~
+
+- ~~a kind of self-crossover where the same upgrade type can copy each other?~~
+- ~~just a greedy algorithm based on the prices~~ ~~um might be more complicated than i think, maybe need to add it to the decision space but that sounds incredibly uh wasteful, maybe just do it naively~~ actually can just tell user to open as they run out?
 
 ~~## Next big step(s)~~
 
