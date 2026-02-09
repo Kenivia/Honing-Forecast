@@ -62,7 +62,7 @@ Then we take a weighted average(**multiply 2nd row and 3rd row**) to arrive at t
 
 Suppose we have 2 upgrades, A and B, then we have a lot more cases to consider:
 
-||One tap A |...|Pity-1 A|Pity A|
+||One tap A|...|Pity-1 A|Pity A|
 |:-|:-|:-|:-|:-|
 |One tap B|(A=1, B=1)|...|(A=pity-1, B=1)|(A=pity, B=1)|
 |...|...|...|...|...|
