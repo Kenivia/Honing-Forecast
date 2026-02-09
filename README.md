@@ -185,7 +185,7 @@ I hope that this will be useful for some of you, unfortunately I couldn't get th
 
 Again the website is here: [https://honing-forecast.pages.dev/](https://honing-forecast.pages.dev/) and you can check out the [GitHub](https://github.com/Kenivia/Honing-Forecast) (plz gib star)
 
-I'd like to give my thanks to my tutor Tobias, who introduced me to simulated annealing, all my friends who have took the time to listen to me rant and gave me valuable feedback, and thank you for using my website!
+I'd like to give my thanks to my tutor Tobias, who introduced me to simulated annealing, all my friends who took the time to listen to me rant and gave me valuable feedback, and thank you for using my website!
 
 [(This was a reddit post)](http://reddit.com/r/lostarkgame/comments/1qwskt2/optimize_your_free_tap_juice_usage_with_the_new/)
 
@@ -199,4 +199,4 @@ You'll need the following:
 
 Then, run `npm install` for the dependencies, then `npm run dev` for the dev server.
 
-You can take a look at [WIP](/WIP.md) to see what you can help with, but any help will be greatly appreciated!
+You can take a look at [WIP](/WIP.md), but any help will be greatly appreciated!
