@@ -7,7 +7,6 @@ import { localPoint } from "@visx/event"
 import { useTooltip, useTooltipInPortal, defaultStyles } from "@visx/tooltip"
 import { ParentSize } from "@visx/responsive"
 import { bisector } from "d3-array"
-import Icon from "./Icon.tsx"
 import { IconMap } from "@/Utils/Constants.ts"
 function getCssVar(name: string) {
     return getComputedStyle(document.documentElement).getPropertyValue(name).trim()

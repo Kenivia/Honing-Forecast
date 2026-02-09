@@ -1,9 +1,6 @@
-use std::collections::HashMap;
-use std::f64::NAN;
+// use std::f64::NAN;
 
 use super::constants::*;
-use super::simulated_annealing::my_push;
-
 use super::scaler::AdaptiveScaler;
 use hf_core::performance::Performance;
 
@@ -12,25 +9,22 @@ use hf_core::send_progress::send_progress;
 use hf_core::state_bundle::StateBundle;
 use hf_core::state_bundle::StateEssence;
 
-use hf_core::upgrade::State;
-use hf_core::upgrade::Upgrade;
-use ordered_float::Float;
 use ordered_float::OrderedFloat;
 use rand::random_bool;
 use rand::random_range;
-use rand::seq::IteratorRandom;
+// use rand::seq::IteratorRandom;
 
 use priority_queue::DoublePriorityQueue;
-use rand::Rng;
+// use rand::Rng;
 use rand::SeedableRng;
 use rand::rngs::SmallRng;
 
 pub struct SolverStateBundle {
     pub state_bundle: StateBundle,
     pub scaler: AdaptiveScaler,
-    pub temp: f64,
+    // pub temp: f64,
     pub rng: SmallRng,
-    pub max_state_len: usize,
+    // pub max_state_len: usize,
     pub performance: Performance,
     // pub best_state_so_far: StateBundle,
     pub best_n_states: DoublePriorityQueue<StateEssence, OrderedFloat<f64>>,
@@ -45,7 +39,7 @@ impl SolverStateBundle {
     pub fn initialize(
         state_bundle: &StateBundle,
         scaler: AdaptiveScaler,
-        max_state_len: usize,
+        _max_state_len: usize,
         performance: Performance,
         seed: u64,
         best_n_states: &DoublePriorityQueue<StateEssence, OrderedFloat<f64>>,
@@ -55,11 +49,10 @@ impl SolverStateBundle {
             state_bundle: state_bundle.clone(),
             scaler,
 
-            temp: NAN,
+            // temp: NAN,
             special_affinity: 0.9,
             rng: SmallRng::seed_from_u64(seed),
-            max_state_len,
-
+            // max_state_len,
             performance,
             best_n_states: best_n_states.clone(),
             prev_state: state_bundle.clone(),
@@ -96,7 +89,7 @@ impl SolverStateBundle {
                 .map(|(i, _)| i)
                 .collect();
 
-            if identical.len() > 0
+            if !identical.is_empty()
                 && let Some(&chosen_idx) = identical.get(random_range(0..identical.len()))
             {
                 let payload = self.state_bundle.upgrade_arr[chosen_idx]
@@ -110,13 +103,13 @@ impl SolverStateBundle {
             }
         }
     }
-    pub fn current_resolution(&self) -> usize {
-        if self.progress() > COOLING_PHASE_START {
-            (self.lam_rate() / MAGIC_NUMBER).ceil() as usize * DEFAULT_RESOLUTION
-        } else {
-            self.state_bundle.min_resolution
-        }
-    }
+    // pub fn current_resolution(&self) -> usize {
+    //     if self.progress() > COOLING_PHASE_START {
+    //         (self.lam_rate() / MAGIC_NUMBER).ceil() as usize * DEFAULT_RESOLUTION
+    //     } else {
+    //         self.state_bundle.min_resolution
+    //     }
+    // }
     pub fn progress(&self) -> f64 {
         self.count as f64 / MAX_ITERS as f64
     }

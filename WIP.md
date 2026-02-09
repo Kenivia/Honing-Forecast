@@ -1,22 +1,34 @@
 
 # Work in Progress
 
-## Big
+## UI
 
-### Forecast mode
+- Better roster tracking & income estimation(I don't think automatic game-to-website input is possible, but something like a generic 1680 income would be nice, need information/data on this)
+  - char-selection page for budget
+- Input arithmetic parsing(e.g. allow inputs like 25*1234 for easier boxes calculation)
+- Ctrl z, delete
+- Hover question mark tooltips for various systems, but still aim to be intuitive
+- Adjustable week number in raw / Gold graph
+- Achieved ilevel
+- Something seems to be broken in drag-to-select spreadsheetgrid
+- marquee for state grid also?
+- rearrange where the gold cost is
+  - maybe make a toggle of includign tradable budget & showing actual gold spent instead?
+- button to deduct costs?
+
+## Forecast mode
 
 - idk this will have to come after having individual character pages i think
 
-### Advanced honing
+## Advanced honing
 
 - use monte carlo to generate the distribution, then allow for a few strategies
-  - ~~ no juice, full juice, no juice full scroll, full juice full scroll, FULL SCROLL etc~~ i cant be bothered, probably a waste anyway, just assume juice & scrool on grace is optimal
-  - selectable double um balls event thing
+
   - maybe pre-generate a bunch of scenarios?
     - can allow for different states also eventually
     - scrolls calculations
 
-### Serca
+## Serca
 
 - how to consider 1-to-5 conversion??? prolly just 2 sets of grids and 2 sets of prices
 
@@ -29,25 +41,16 @@
 - start working on visualizing this stuff
   - put all possible states on one axis (must be small support like 5? 10? ) and sort by number of juice used, then color/ 3d height?
 
+- add the test framework back, it should honestly be a lot easier now with payload
+
 ## Other features
 
 - Automatic Market price integration(via some kind of API, or just updating the site at a regular interval automatically)
 
-## UI
-
-- Better roster tracking & income estimation(I don't think automatic game-to-website input is possible, but something like a generic 1680 income would be nice, need information/data on this)
-- Input arithmetic parsing(e.g. allow inputs like 25*1234 for easier boxes calculation)
-- Ctrl z, delete
-- Hover question mark tooltips for various systems, but still aim to be intuitive
-- Adjustable week number in raw / Gold graph
-- Achieved ilevel
-- Something seems to be broken in drag-to-select spreadsheetgrid
-- marquee for state grid also?
-- rearrange where the gold cost is
-  - maybe make a toggle of includign tradable budget & showing actual gold spent instead?
-
 ## Done / cancelled
 
+- ~~selectable double um balls event thing~~
+- ~~no juice, full juice, no juice full scroll, full juice full scroll, FULL SCROLL etc~~ ~~i cant be bothered, probably a waste anyway, just assume juice & scrool on grace is optimal~~
 ~~## Algorithm ideas~~
 
 - ~~stopping early if no improvements (an adaptive temperature / annealing schedule i guess )~~ nah trivial ones will finish fast any way
@@ -61,7 +64,7 @@
 ~~## Next big step(s)~~
 
 - ~~Juice(and Book / Scroll) purchase suggestion~~
-- ~~ Books & scroll calculations~~
+- ~~Books & scroll calculations~~
 - ~~True juice optimization for success chance~~
 
 ~~^ this is arena~~
@@ -69,13 +72,13 @@
 - ~~initialize the hash properly or something idk~~
   - ~~avoid updating dist & support based on this hash~~
 - ~~multiple selectable & editable express GET THIS DATA SOMEHOW???~~
-  - ~~rework constant.rs to take in a json or something so it can interface with the website ~~ nah
+  - ~~rework constant.rs to take in a json or something so it can interface with the website~~ nah
   - eventually T4.5 integration
   - ~~get the actual numbers from the korean website <https://icepeng.com/refining>~~
 
 - ~~get all the graphs and shit back and working~~
-  - ~~ rework to be graphs for indivdual dimensions~~
-    - ~~ hoverable with a "you are here" arrow~~
+  - ~~rework to be graphs for indivdual dimensions~~
+    - ~~hoverable with a "you are here" arrow~~
 - ~~slider instead of leftover value?~~
 
 - ~~some kind of heatmap of which bits were the most impactful? but i feel like this wouldnt actually do much~~ nah
@@ -85,10 +88,10 @@
 - ~~multi-thread and each worker tune one "dimension" like special, state of this one, state of other one etc?~~ just tunes less dimensions as temperature goes down,
   - maybe allow special + juice change at the same neighbour?
   - ~~do i need to allow multiple changes at high temperature or will the acceptance function take care of local one dimensional minima~~
-  - ~~ maybe it would never discover like in-between optimums?~~
+  - ~~maybe it would never discover like in-between optimums?~~
   - ~~this definitely lends itself to soome kind of genetic algorithm~~ crossover seems to negatively affect performance whatever I do, think the landscape is globally smoother than I expected
 
-- ~~ keep a top 10 list and randomly restart to them instead of just the top 1~~
+- ~~keep a top 10 list and randomly restart to them instead of just the top 1~~
   - ^^ this also sounds like genertic algorithm
 
 - ~~maybe do a 2 staged thing where it optimizes the special first?~~
@@ -108,12 +111,12 @@
 
 - ~~add maximize success prob optimizer button at some point~~
 - ~~stream intermediate results that'd be so cool~~
-  - ~~ make sure all existing things work, then start work on the new page(s)~~ nope
-- ~~ maybe its time to get rid of Box< iterator >~~ theres no performance impact other thant memory usage apparently
+  - ~~make sure all existing things work, then start work on the new page(s)~~ nope
+- ~~maybe its time to get rid of Box< iterator >~~ theres no performance impact other thant memory usage apparently
 
 - ~~cache the geom calculations  (special_prob seems fast enough so cbb rn)~~ this wont work well with multithreading
 
-- ~~ can actually save 1 evaluation at the end of special_prob by setting the zero prob... (only when special state allows all things to be skipped)~~  but like itd be trivial anyway so prolly not
+- ~~can actually save 1 evaluation at the end of special_prob by setting the zero prob... (only when special state allows all things to be skipped)~~  but like itd be trivial anyway so prolly not
 - ~~multi-threading????~~
   - ~~will prep by compling using all the right tools(i hope) and then figuring it out later~~
 ~~## DEV~~ ALL CANCELED COS NO LONGER RELEAVNT
@@ -125,10 +128,10 @@
 
 - ~~Matrix operation libraries to speed up monte carlo and what not?~~
 - ~~Graph is off by 0.5 all the time, and the points of interest snap the the one below(i tihnk?) which isnt quite right idk, kinda scared to touch it~~
-- ~~ better input cleaning for spreadsheetgrids~~
+- ~~better input cleaning for spreadsheetgrids~~
 - ~~make get_one_tap_pity take in seeded rng~~
 - ~~cache using array buffer? dont know if it's worth the effort~~
-- ~~ fix the react stuff, i think there's way too much usememo(the website feels sluggish)~~
+- ~~fix the react stuff, i think there's way too much usememo(the website feels sluggish)~~
 - ~~improve how the cost estimation works / verify that it actually works~~
 - ~~Allow selling mats~~
 - ~~Raw gold graph and overall gold(including used in buying mats) lines in thegraph~~
@@ -142,8 +145,8 @@
 ~~#### Analysis~~
 
 - ~~elo or percentage deviation? idk need to do more research~~
-- ~~ how to visualize / interact with this data~~
-- ~~ how to evaluate adaptive policies???~~ no need actually but uh whatever
+- ~~how to visualize / interact with this data~~
+- ~~how to evaluate adaptive policies???~~ no need actually but uh whatever
 - ~~limit neighbor function - 1 click 10 taps, limit amt of toggles maybe~~
   - ~~start with VERY broad neighbors - all true, all false etc, then refine until limit reached (such as 10 taps), test how much the limit affects performance~~
 
@@ -154,7 +157,7 @@
 - ~~need to parse & aggregate this data then send to python(or just do it in python should be okay)~~
     -~~ as in keep a parsed file of data that python can read off of~~ maybe not
 
-- ~~ make solvers stream intermediate results at x1000 evaluations / second?~~
+- ~~make solvers stream intermediate results at x1000 evaluations / second?~~
 
 - ~~postmessage & update in js~~
   - ~~need to ignore these such that changes don't cancel ( i mean its already greyed out so maybe this will be easy)~~
@@ -170,7 +173,7 @@
 - ~~input: market price + leftover "price"/ leftover value / care abt it or not toggle~~
     -~~ ACTUALLY need to do the editable artisan thing first(which i mean shouldnt be that hard)~~
 
-- ~~ Average mode / alt modee / efficiency mode:~~
+- ~~Average mode / alt modee / efficiency mode:~~
 
 - ~~output: juice advice, new avg values(also show old/naive?)~~
 - ~~need to figure out how the ui is gonna look like~~
@@ -208,7 +211,7 @@
 
 - ~~add optimizer button~~
 
- ~~ and already-spent costs~~
+ ~~and already-spent costs~~
 
 - ~~force special state to respect upgrade order~~
   - ~~just ignore invalid ones? or what~~
@@ -283,7 +286,7 @@
     - ~~whatever we do with special also~~
     - ~~states evaluated with brute~~
     - ~~then also repeat all these for the "best" state~~
-- ~~ optimize special?~~
+- ~~optimize special?~~
 - ~~bundle the streaks together see if theres any optimization there~~
 - ~~also maybe get rid of the count in special state? just the order? (and maybe incorporate normal honing order?)~~
 - ~~figure out why special stuff is still slightly off(or is it just how SA be)~~
@@ -295,12 +298,12 @@
   - ~~theta can be VERY small because budget can be VERY big -> almost all edgeworth~~
 - ~~implement fft or something for medium sized complexity because lr kinda very bad~~
 - ~~(also use (and optimize) exact convolution for single piece(maybe 2))~~
-- ~~ add upgrade name to states when saving them,~~
-- ~~ monte carlo at the end to verify / sanity check / just to look at it (also can compute confidence interval with variance etc)~~
+- ~~add upgrade name to states when saving them,~~
+- ~~monte carlo at the end to verify / sanity check / just to look at it (also can compute confidence interval with variance etc)~~
 - ~~implement brute~~
 - ~~actually simulate special with monte carlo~~
 - ~~debug saddleponit approximation why does it tweak out some time~~
-- ~~ adjust theta bounds cos like sometimes its actually bigger than 1 i think~~
+- ~~adjust theta bounds cos like sometimes its actually bigger than 1 i think~~
 - ~~implement average-optimizing evaluation(tiebreak with this when prob = 100 also maybe?),~~
   - ~~more precisely this minimizes what the "buy mats with gold" option is doing currently, as in the average gold needed (raw + spent on buying mats)~~
     - ~~plus the value of leftovers as specified~~
@@ -320,7 +323,7 @@
 - ~~procedually generate test cases~~
   - ~~figure out how to fit the juice prices into the csv~~
 - ~~adjust special such that the probabilities add up to 1 ~~
-- ~~ perform a final saddlepoint for P(Y1 < H1), P(Y2 < H2) ... P(Yn < Hn) warn if any is high~~
+- ~~perform a final saddlepoint for P(Y1 < H1), P(Y2 < H2) ... P(Yn < Hn) warn if any is high~~
 - ~~rewrite the saddlepoint stuff to actually be used in other situations~~
   - ~~initialize the stratch pads in state bundle somewhere?~~
 - ~~special honing~~
@@ -329,7 +332,7 @@
   - ~~state = order of which ones to attempt first~~
     - ~~p = 1 - PRODUCT (1 - p_i *P(got special leaps left)* P(this upgrade hasn't succeeded yet))~~
     - ~~estimate this P(got special leaps left) with saddlepoint(wow this thing is tas)~~
-- ~~Adjust for owned juice only for prob maximizing mode, don't ~~care abt~~ allow books because it should only be used for mains~~
+- ~~Adjust for owned juice only for prob maximizing mode, don't care abt allow books because it should only be used for mains~~
   - ~~because evaluating P(Y < H) and P(X + Y < H + B) which need saddlepoint and is quite expensive~~
   - ~~probably roughly x2 for 1 type, x6? = P(Y1 < H1), P(Y2 < H2), P(X < B), P(X < B+H1), P(X < B + H2), P(X < B + H1 + H2), and this is assuming Y1 Y2 are independent which they arent...  way more for 3+ types~~
 - ~~The punishment for not using juice is incorrect rn~~
@@ -341,7 +344,7 @@
 - ~~Make a ks_012 and only call ks_01234 function when needed~~
 - ~~need to add more columns to test cases, book count storage etc, add easy book adding system (specify amt of % array, which upgrades they can be on etc)~~
 - ~~modify the current too-many-juice checker to accomodate books~~
-- ~~ set up books support so state will be~~ integers ~~instead of bools~~
+- ~~set up books support so state will be~~ integers ~~instead of bools~~
 - ~~need to use lists of bools instead, integers doesn't quite work i think because need to keep track of costs~~
 - ~~fix either the neighbor function or the prob_to_maximize function to force use owned juice/punish unused juice~~
 - ~~Pre-compute prob_dist of groups of upgrades(such as +n all 5 armours etc)~~ not possible with juice being a thing i think

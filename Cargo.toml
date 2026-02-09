@@ -1,6 +1,3 @@
-
-cargo-features = ["profile-rustflags"]
-
 [workspace]
 members = [
     "crates/core",
@@ -13,5 +10,3 @@ resolver="3"
 inherits = "release"
 debug = true
 
-[profile.release]
-rustflags = ["-Awarnings"]

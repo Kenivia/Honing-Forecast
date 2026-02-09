@@ -1,3 +1,7 @@
+//! Performance / analytics for the purpose of arena, but i dont want to write two versions of every functions so just pass dummy for non-arena usage
+//!
+//! It tracks what method each P(X<B) evaluation actually uses, and how often the limiting case for SA occurs (answer: not very, like 1e-6)
+//! It also produces a history of the best metric for the purpose of visualization
 use serde::{Deserialize, Serialize, Serializer};
 
 #[derive(Debug, Clone)]
@@ -13,6 +17,12 @@ pub struct Performance {
     pub householder_count: i64,
     pub bisection_count: i64,
     pub best_history: Vec<(f64, i64, f64)>, // time in seconds, states evaluated, metric
+}
+
+impl Default for Performance {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl Performance {

@@ -28,7 +28,7 @@ impl AdaptiveScaler {
     /// Returns: true if the scale was updated this step.
     pub fn update_stats(
         &mut self,
-        is_uphill_move: bool,
+        _is_uphill_move: bool,
         is_accepted: bool,
         progress: f64, // 0.0 (start) to 1.0 (end)
     ) {

@@ -493,8 +493,8 @@ pub fn get_adv_data_juice(segment: i64) -> f64 {
         .iter()
         .map(|row| row.get(2).copied().unwrap_or(0))
         .sum();
-    for i in 0..data.len() {
-        out += data[i][1] as f64 * data[i][2] as f64 / sum_taps as f64;
+    for i in data {
+        out += i[1] as f64 * i[2] as f64 / sum_taps as f64;
     }
     out /= 1000.0_f64;
     out

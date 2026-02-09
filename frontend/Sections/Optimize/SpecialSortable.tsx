@@ -36,8 +36,8 @@ export function SpecialSortable({
     setFlatSucceedArr,
     flatUnlockArr,
     setFlatUnlockArr,
-    ranOutFreeTaps,
-    onRanOutFreeTaps,
+    ranOutFreeTaps: _ranOutFreeTaps,
+    onRanOutFreeTaps: _onRanOutFreeTaps,
     inputsBundle,
     allowUserChangeState,
 }: Props) {

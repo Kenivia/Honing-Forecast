@@ -31,8 +31,6 @@
         "crates/wasm/pkg/**/*",
         "vite.config.ts",
         "vitest.setup.ts",
-        "junkyard/Inputs",
-        "coi-serviceworker.js",
     ],
     "types": [
         "vitest/globals",

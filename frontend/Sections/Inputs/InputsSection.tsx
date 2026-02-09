@@ -1,6 +1,4 @@
 import SpreadsheetGrid from "@/Components/SpreadsheetGrid.tsx"
-import SliderColumn from "@/Components/SliderColumn.tsx"
-import ButtonColumn from "@/Components/ButtonColumn.tsx"
 import LabeledCheckbox from "@/Components/LabeledCheckbox.tsx"
 import { JUICE_LABELS, MATS_LABELS } from "@/Utils/Constants.ts"
 import { createColumnDefs, styles } from "@/Utils/Styles.ts"

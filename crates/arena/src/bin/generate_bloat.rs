@@ -1,3 +1,7 @@
+//! This generates bogus test cases from my manually set test cases by modifying owned mats & prices with a random multiplier
+//! This doesn't really capture typical use case but can sometimes tell me things about the algorithm behaviour
+//! e.g. an engine performs significantly worse with more special = probably not enough special changes from neighbour
+
 use hf_arena::parse_test_cases::read_payload_jsons;
 use hf_core::payload::Payload;
 use hf_core::state_bundle::StateBundle;

@@ -23,20 +23,20 @@ const isStringOrNumberRecord = (value: unknown, keys: string[]) => {
     })
 }
 
-const isGrid = (value: unknown, rows: number, cols: number, cellCheck: (_cell: unknown) => boolean = () => true) => {
-    if (!Array.isArray(value) || value.length !== rows) return false
-    return value.every((row) => Array.isArray(row) && row.length === cols && row.every((cell) => cellCheck(cell)))
-}
+// const isGrid = (value: unknown, rows: number, cols: number, cellCheck: (_cell: unknown) => boolean = () => true) => {
+//     if (!Array.isArray(value) || value.length !== rows) return false
+//     return value.every((row) => Array.isArray(row) && row.length === cols && row.every((cell) => cellCheck(cell)))
+// }
 
-type StatePair = [boolean, number]
-const isStatePair = (value: unknown): value is StatePair => {
-    return Array.isArray(value) && value.length === 2 && typeof value[0] === "boolean" && typeof value[1] === "number"
-}
+// type StatePair = [boolean, number]
+// const isStatePair = (value: unknown): value is StatePair => {
+//     return Array.isArray(value) && value.length === 2 && typeof value[0] === "boolean" && typeof value[1] === "number"
+// }
 
-const isStatePairGrid = (value: unknown, rows: number, cols: number) => {
-    if (!Array.isArray(value) || value.length !== rows) return false
-    return value.every((row) => Array.isArray(row) && row.length === cols && row.every((cell) => Array.isArray(cell) && cell.every(isStatePair)))
-}
+// const isStatePairGrid = (value: unknown, rows: number, cols: number) => {
+//     if (!Array.isArray(value) || value.length !== rows) return false
+//     return value.every((row) => Array.isArray(row) && row.length === cols && row.every((cell) => Array.isArray(cell) && cell.every(isStatePair)))
+// }
 
 const MATS_PRICE_LABELS = MATS_LABELS.slice(0, 7)
 const JUICE_WEAPON_LABELS = JUICE_LABELS.map((labels) => labels[0])

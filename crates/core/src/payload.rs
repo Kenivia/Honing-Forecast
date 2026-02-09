@@ -1,5 +1,6 @@
+//! Payload is how js and rust communicates, we also use payload as our test cases in arena
+
 use crate::parser::PreparationOutput;
-// use crate::performance::Performance;
 use crate::state_bundle::StateBundle;
 use crate::upgrade::Upgrade;
 use serde::{Deserialize, Serialize};
@@ -9,13 +10,8 @@ use std::collections::HashMap;
 pub struct Payload {
     pub normal_hone_ticks: Vec<Vec<bool>>,
     pub adv_hone_ticks: Vec<Vec<bool>>,
-    // normal_counts: Option<Vec<Vec<i64>>>,
-    // adv_counts: Option<Vec<Vec<i64>>>,
     pub adv_hone_strategy: String,
-
     pub express_event: bool,
-
-    // cost_data: Option<Vec<Vec<i64>>>,
     pub mats_budget: Vec<i64>,
     pub user_price_arr: Vec<f64>,
     pub inp_leftover_values: Vec<f64>,
@@ -59,7 +55,6 @@ impl StateBundle {
         num_threads: usize,
         metric_type: i64,
     ) -> StateBundle {
-        // web_sys::console::log_1(&"1".into());
         let (prep_output, upgrade_arr): (PreparationOutput, Vec<Upgrade>) =
             PreparationOutput::initialize(
                 hone_ticks,
@@ -79,7 +74,9 @@ impl StateBundle {
             );
         let u_len = upgrade_arr.len();
         // web_sys::console::log_1(&"2".into());
-        let out = StateBundle {
+        
+
+        StateBundle {
             upgrade_arr,
             special_state: if special_state.is_none()
                 || special_state.as_ref().unwrap().len() != u_len
@@ -97,10 +94,7 @@ impl StateBundle {
             min_resolution,
             num_threads,
             average_breakdown: None,
-        };
-        // web_sys::console::log_1(&"3".into());
-
-        out
+        }
     }
     pub fn init_from_payload(payload: Payload) -> Self {
         StateBundle::init_from_inputs(

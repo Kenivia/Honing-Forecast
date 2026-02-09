@@ -9,8 +9,8 @@ use hf_core::state_bundle::StateEssence;
 
 use ordered_float::OrderedFloat;
 
-use rayon::iter::IntoParallelRefMutIterator;
-use rayon::iter::ParallelIterator;
+// use rayon::iter::IntoParallelRefMutIterator;
+// use rayon::iter::ParallelIterator;
 
 use priority_queue::DoublePriorityQueue;
 use rand::Rng;
@@ -79,7 +79,7 @@ pub fn solve<R: Rng>(
         .max(state_bundle.min_resolution);
 
     state_bundle.metric = state_bundle.metric_router(overall_performance);
-    if state_bundle.upgrade_arr.len() == 0 {
+    if state_bundle.upgrade_arr.is_empty() {
         return state_bundle;
     }
 
@@ -161,10 +161,8 @@ pub fn solve<R: Rng>(
             //     solver_bundle.state_bundle.metric,
             //     &solver_bundle.best_n_states
             // );
-        } else {
-            if mutate_special {
-                solver_bundle.special_affinity *= SPECIAL_AFFINITY_DECAY;
-            }
+        } else if mutate_special {
+            solver_bundle.special_affinity *= SPECIAL_AFFINITY_DECAY;
         }
         let delta = (solver_bundle.prev_state.metric - solver_bundle.state_bundle.metric)
             / solver_bundle.scaler.current_scale;
@@ -199,7 +197,7 @@ pub fn solve<R: Rng>(
             {
                 overall_performance.best_history.push((
                     timer.elapsed_sec(),
-                    eqv_wall_time_iters * actual_thread_num as i64,
+                    eqv_wall_time_iters * actual_thread_num,
                     f64::from(*solver_bundle.best_n_states.peek_max().unwrap().1),
                 ));
             }
@@ -210,6 +208,10 @@ pub fn solve<R: Rng>(
                     solver_bundle.best_n_states.peek_max().unwrap().0,
                     solver_bundle.best_n_states.peek_max().unwrap().1,
                 );
+                let mut dummy_performance = Performance::new();
+                solver_bundle
+                    .state_bundle
+                    .average_gold_metric_with_breakdown(&mut dummy_performance);
                 solver_bundle.state_bundle.set_latest_special_probs();
                 solver_bundle
                     .state_bundle

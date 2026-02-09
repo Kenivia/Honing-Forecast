@@ -8,7 +8,7 @@ pub mod payload;
 pub mod performance;
 pub mod saddlepoint_approximation;
 pub mod send_progress;
+pub mod special;
 pub mod state_bundle;
 pub mod test_utils;
 pub mod upgrade;
-pub mod visualizer;

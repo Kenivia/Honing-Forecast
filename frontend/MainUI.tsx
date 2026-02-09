@@ -20,17 +20,10 @@ import { readSettings, writeSettings } from "./Utils/Settings.ts"
 import ControlPanel from "./Sections/ControlPanel/ControlPanel.tsx"
 import NormalHoningPanel from "./Sections/UpgradeSelection/NormalHoningPanel.tsx"
 import AdvancedHoningPanel from "./Sections/UpgradeSelection/AdvancedHoningPanel.tsx"
-// import ChanceToCostSection from "./Sections/ChanceMode/ChanceModeSection.tsx"
-import DistributionSection from "./Sections/BudgetMode/BudgetModeSection.tsx"
-// const DistributionSection = React.lazy(() => import('./DistributionSection.tsx'));
-
+import DistributionSection from "./Sections/DistributionSection/DistributionSection.tsx"
 import InputsSection from "./Sections/Inputs/InputsSection.tsx"
 
-// import GambaSection from "./Sections/GambaSimulator/GambaSection.tsx"
-// import LongTermSection from "./Sections/ForecastMode/ForecastModeSection.tsx"
-// const GambaSection = React.lazy(() => import('./GambaSection.tsx'));
 import Separator from "./Sections/Separator/Separator.tsx"
-import { TooltipState } from "./Utils/Tooltip.tsx"
 import Icon from "./Components/Icon.tsx"
 import LabeledCheckbox from "./Components/LabeledCheckbox.tsx"
 
@@ -201,12 +194,7 @@ export default function HoningForecastUI() {
     const [isJuiceInfoCollapsed, setIsJuiceInfoCollapsed] = useState<boolean>(true)
 
     const [allowUserChangeState, setAllowUserChangeState] = useState<boolean>(false)
-    // Lock x-axis state (shared across all graphs)
-    // const [lockXAxis, setLockXAxis] = useState<boolean>(false)
-    // const [lockedMins, setLockedMins] = useState<number[] | null>(null)
-    // const [lockedMaxs, setLockedMaxs] = useState<number[] | null>(null)
 
-    // Income array state (6 grids, 7 rows each)
     const [incomeArr, setIncomeArr] = useState<number[][]>(() => Array.from({ length: 6 }, () => Array.from({ length: 7 }, () => 0)))
 
     const [metricType, setMetricType] = useState<number>(1)
@@ -233,17 +221,6 @@ export default function HoningForecastUI() {
     useEffect(() => {
         marqueeRef.current = marquee
     }, [marquee])
-
-    // // tooltip state & handlers
-    // const [tooltip, setTooltip] = useState<TooltipState>({
-    //     visible: false,
-    //     type: null,
-    //     x: 0,
-    //     y: 0,
-    //     content: null,
-    //     upgradeData: null,
-    // })
-    // const tooltipHandlers = createTooltipHandlers(setTooltip)
 
     // ----- Load saved UI state on mount -----
     useEffect(() => {
@@ -280,11 +257,6 @@ export default function HoningForecastUI() {
             // ignore corrupted storage
         }
     }, [])
-
-    // Initialize uncleaned_desired_chance from desired_chance after settings load
-    // useEffect(() => {
-    //     set_uncleaned_desired_chance(desired_chance)
-    // }, [desired_chance])
 
     // ----- Responsive scaling based on window width -----
     useEffect(() => {
@@ -365,11 +337,6 @@ export default function HoningForecastUI() {
                     incomeArr,
                     minResolution,
                     inputToggles,
-                    // specialState,
-                    // succeededGrid,
-                    // unlockGrid,
-                    // stateBundleGrid,
-                    // progressGrid,
                 )
             } catch (e) {
                 // ignore quota or serialization errors
@@ -403,11 +370,6 @@ export default function HoningForecastUI() {
         dataSize,
         minResolution,
         inputToggles,
-        // specialState,
-        // succeededGrid,
-        // unlockGrid,
-        // stateBundleGrid,
-        // progressGrid,
         incomeArr,
     ])
 
@@ -517,61 +479,12 @@ export default function HoningForecastUI() {
         setMarqueeRect({ left, top, width, height })
     }, [marquee])
 
-    // const onDesiredChange = (value: string) => {
-    //     set_uncleaned_desired_chance(value)
-
-    //     // Check if the input is immediately valid (integer 0-100 inclusive)
-    //     const cleanValue = value.replace(/[^0-9]/g, "")
-    //     const numValue = parseInt(cleanValue)
-
-    //     if (cleanValue === value && !isNaN(numValue) && numValue >= 0 && numValue <= 100) {
-    //         set_desired_chance(cleanValue)
-    //     }
-    // }
-
-    // const onDesiredBlur = () => {
-    //     const cleanValue = uncleaned_desired_chance.replace(/[^0-9]/g, "")
-    //     const numValue = parseInt(cleanValue)
-
-    //     if (cleanValue === "" || isNaN(numValue)) {
-    //         set_uncleaned_desired_chance(desired_chance)
-    //     } else if (numValue > 100) {
-    //         set_desired_chance("100")
-    //         set_uncleaned_desired_chance("100")
-    //     } else if (numValue < 0) {
-    //         set_desired_chance("0")
-    //         set_uncleaned_desired_chance("0")
-    //     } else {
-    //         set_desired_chance(cleanValue)
-    //         set_uncleaned_desired_chance(cleanValue)
-    //     }
-    // }
     const adv_hone_strategy_change = (value: string) => set_adv_hone_strategy_change(value)
 
     // Sync express_event toggle with adv_hone_strategy selector
     useEffect(() => {
         set_adv_hone_strategy_change(express_event ? "x2 grace" : "No x2 grace")
     }, [express_event])
-
-    // Lock x-axis handler
-    // const onToggleLockXAxis = () => {
-    //     setLockXAxis((prev) => {
-    //         const newVal = !prev
-    //         // if (!prev) {
-    //         //     // we're turning it ON: snapshot current mins/maxs from cached data
-    //         //     // const currentMins = cachedAverageGraphData?.hist_mins || null
-    //         //     // const currentMaxs = cachedAverageGraphData?.hist_maxs || null
-    //         //     // setLockedMins(currentMins ? currentMins.slice() : null)
-    //         //     // setLockedMaxs(currentMaxs ? currentMaxs.slice() : null)
-    //         // } else
-    //         {
-    //             // turning it OFF: clear snapshots
-    //             setLockedMins(null)
-    //             setLockedMaxs(null)
-    //         }
-    //         return newVal
-    //     })
-    // }
 
     const payloadBuilder = useCallback(
         () =>
@@ -775,36 +688,6 @@ export default function HoningForecastUI() {
         }))
         setRanOutFreeTaps(true)
     }
-    // const monteCarloWorkerRef = useRef<Worker | null>(null)
-    // const [_monteCarloBusy, setMonteCarloBusy] = useState(false)
-    // const [monteCarloResult, setMonteCarloResult] = useState<any>(null)
-    // useEffect(() => {
-    //     runner.start({
-    //         which_one: "MonteCarlo",
-    //         payloadBuilder,
-    //         workerRef: monteCarloWorkerRef,
-    //         setBusy: setMonteCarloBusy,
-    //         setResult: setMonteCarloResult,
-    //     })
-    //     // eslint-disable-next-line react-hooks/exhaustive-deps
-    // }, [advStrategyKey, expressEventKey, dataSizeKey, normalCountsKey, advCountsKey, budgetKey, userMatsKey])
-
-    // const chanceToCostWorkerRef = useRef<Worker | null>(null)
-    // const [chanceToCostBusy, setChanceToCostBusy] = useState(false)
-    // const [chanceToCostResult, setChanceToCostResult] = useState<any>(null)
-    // const [cachedCostGraphData, setCachedCostGraphData] = useState<{ hist_counts?: any; hist_mins?: any; hist_maxs?: any } | null>(null)
-
-    // useEffect(() => {
-    //     runner.start({
-    //         which_one: "ChanceToCost",
-    //         payloadBuilder,
-    //         workerRef: chanceToCostWorkerRef,
-    //         setBusy: setChanceToCostBusy,
-    //         setResult: setChanceToCostResult,
-    //         setCachedGraphData: setCachedCostGraphData,
-    //     })
-    //     // eslint-disable-next-line react-hooks/exhaustive-deps
-    // }, [advStrategyKey, expressEventKey, graphBucketSizeKey, dataSizeKey, normalCountsKey, advCountsKey])
 
     const evaluateAverageWorkerRef = useRef<Worker | null>(null)
     const [_evaluateAverageBusy, setEvaluateAverageBusy] = useState(false)
@@ -1016,20 +899,6 @@ export default function HoningForecastUI() {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [optimizeButtonPressKey])
 
-    // const parserWorkerRef = useRef<Worker | null>(null)
-    // const [parserResult, setparserResult] = useState<{ upgradeArr: any; unlocks: any; other_strategy_prob_dists: any } | null>(null)
-    // const [ParserBusy, setParserBusy] = useState(false)
-    // useEffect(() => {
-    //     runner.start({
-    //         which_one: "ParserUnified",
-    //         payloadBuilder,
-    //         workerRef: parserWorkerRef,
-    //         setBusy: setParserBusy,
-    //         setResult: setparserResult,
-    //     })
-    //     // eslint-disable-next-line react-hooks/exhaustive-deps
-    // }, [advStrategyKey, expressEventKey, graphBucketSizeKey, dataSizeKey, minResolutionKey])
-
     const clearAll = createClearAll({
         setTopGrid,
         setBottomGrid,
@@ -1051,10 +920,6 @@ export default function HoningForecastUI() {
         _setBucketCount,
         setCumulativeGraph,
         setDataSize,
-        // setLockXAxis,
-        // setLockedMins,
-        // setLockedMaxs,
-        // setShowAverage,
         setIncomeArr,
         setMinResolution,
         setSpecialState,
@@ -1087,40 +952,6 @@ export default function HoningForecastUI() {
         setBeforeMetric,
         setHasRunOptimizer,
     })
-
-    // const fillDemo = createFillDemo({
-    //     setTopGrid,
-    //     setBottomGrid,
-    //     setUserMatsOwned,
-    //     set_desired_chance,
-    //     set_prev_checked_arr,
-    //     set_prev_checked_arr_bottom,
-    //     setUserMatsPrices,
-    //     setUserMatsLeftover,
-    //     setUserWeaponJuiceOwned,
-    //     setUserArmorJuiceOwned,
-    //     setUserWeaponJuicePrices,
-    //     setUserArmorJuicePrices,
-    //     setUserWeaponJuiceLeftover,
-    //     setUserArmorJuiceLeftover,
-    //     setMinResolution,
-    //     setSpecialState,
-    //     setSucceededGrid,
-    //     setUnlockGrid,
-    //     setStateBundleGrid,
-    //     setProgressGrid,
-    // })
-
-    // const fillDemoIncome = createFillDemoIncome({
-    //     setIncomeArr,
-    // })
-    // // Cleanup on unmount: terminate any running workers and clear timers
-    // useEffect(() => {
-    //     return () => {
-    //         runner.cancel()
-    //     }
-    //     // eslint-disable-next-line react-hooks/exhaustive-deps
-    // }, [])
 
     // styles and column defs moved to ./styles
     const AnythingTicked = useMemo(() => topGrid.some((row) => row.some((x) => x)) || bottomGrid.some((row) => row.some((x) => x)), [topGrid, bottomGrid])
@@ -1354,15 +1185,6 @@ export default function HoningForecastUI() {
                             </div>
                         </div>
 
-                        {/* Meta + restore */}
-                        {/* <div className="optimizer-row optimizer-meta">
-                                        <span className="meta-text">
-                                            Optimizer: {hasRunOptimizer ? "✓ Ran" : "Not run"} | Best known result:{" "}
-                                            {hasRunOptimizer && bestMetric !== null ? bestMetric.toFixed(2) : "Unknown"}
-                                        </span>
-                                    </div> */}
-
-                        {/* Error */}
                         {optimizeAvgError && <div className="optimizer-error">Error: {optimizeAvgError}</div>}
 
                         {/* Progress */}

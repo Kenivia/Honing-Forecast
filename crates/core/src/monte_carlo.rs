@@ -1,3 +1,5 @@
+//! Monte carlo to experimentally verify our results, not used in the website (anymore)
+
 use crate::constants::FLOAT_TOL;
 use crate::normal_honing_utils::{add_up_golds, apply_price_leftovers, apply_price_naive};
 use crate::saddlepoint_approximation::average::DEBUG_AVERAGE;
@@ -154,8 +156,6 @@ pub fn monte_carlo_data<R: Rng>(
         let tap_map: Vec<usize> = tap_map_generator(data_size, &upgrade.prob_dist, rng);
         let juice_costs: Vec<Vec<(i64, i64)>> = juice_costs(upgrade, state_bundle, rng);
 
-        // for (attempt_index, u_index) in self.special_state.iter().enumerate() {
-        //     let upgrade = &self.upgrade_arr[*u_index];
         if highest_upgrade_index_seen[upgrade.piece_type] > upgrade.upgrade_index as i64 {
             special_valid = false;
         } else {
@@ -171,8 +171,6 @@ pub fn monte_carlo_data<R: Rng>(
             skip_count_data.iter_mut()
         ) {
             if special_valid {
-                // let this_special_left: &mut i64 = &mut special_left[trial_num];
-
                 let max_affordable_attempts = (*this_special_left / upgrade.special_cost).max(0);
                 if max_affordable_attempts > 0 {
                     let special_taps_needed = sample_truncated_geometric(
@@ -306,7 +304,7 @@ pub fn monte_carlo_wrapper<R: Rng>(
             .iter_mut()
             .enumerate()
         {
-            let diff = state_bundle.prep_output.juice_books_owned[id].0 as f64 - float_juice[id].0;
+            let diff = state_bundle.prep_output.juice_books_owned[id].0 - float_juice[id].0;
             *d += (diff)
                 * if diff > 0.0 {
                     state_bundle.prep_output.juice_info.one_leftover_value_id[id].0
@@ -319,7 +317,7 @@ pub fn monte_carlo_wrapper<R: Rng>(
             .iter_mut()
             .enumerate()
         {
-            let diff = state_bundle.prep_output.juice_books_owned[id].1 as f64 - float_juice[id].1;
+            let diff = state_bundle.prep_output.juice_books_owned[id].1 - float_juice[id].1;
             *d += (diff)
                 * if diff > 0.0 {
                     state_bundle.prep_output.juice_info.one_leftover_value_id[id].1
@@ -330,7 +328,7 @@ pub fn monte_carlo_wrapper<R: Rng>(
         // dbg!(&debug_avg_juices);
         for (id, d) in debug_avg_gold_by_juices.iter_mut().enumerate() {
             let diff_weap =
-                state_bundle.prep_output.juice_books_owned[id].0 as f64 - float_juice[id].0;
+                state_bundle.prep_output.juice_books_owned[id].0 - float_juice[id].0;
             d.0 += (diff_weap)
                 * if diff_weap > 0.0 {
                     state_bundle.prep_output.juice_info.one_leftover_value_id[id].0
@@ -338,7 +336,7 @@ pub fn monte_carlo_wrapper<R: Rng>(
                     state_bundle.prep_output.juice_info.one_gold_cost_id[id].0
                 };
             let diff_armor =
-                state_bundle.prep_output.juice_books_owned[id].1 as f64 - float_juice[id].1;
+                state_bundle.prep_output.juice_books_owned[id].1 - float_juice[id].1;
             d.1 += (diff_armor)
                 * if diff_armor > 0.0 {
                     state_bundle.prep_output.juice_info.one_leftover_value_id[id].1
@@ -379,7 +377,7 @@ pub fn monte_carlo_wrapper<R: Rng>(
             leftover_index += 1;
         }
     }
-    for (_index, d) in debug_avg_gold_by_mats.iter_mut().enumerate() {
+    for d in debug_avg_gold_by_mats.iter_mut() {
         *d /= data_size as f64;
     }
     for (index, row) in debug_truncated_mean_by_skip.iter_mut().enumerate() {
@@ -404,7 +402,7 @@ pub fn monte_carlo_wrapper<R: Rng>(
             *d /= data_size as f64;
         }
     }
-    for (_id, d) in debug_avg_gold_by_juices.iter_mut().enumerate() {
+    for d in debug_avg_gold_by_juices.iter_mut() {
         d.0 /= data_size as f64;
 
         d.1 /= data_size as f64;
@@ -434,92 +432,3 @@ pub fn monte_carlo_wrapper<R: Rng>(
         average / data_size as f64,
     )
 }
-
-// pub fn monte_carlo_one<R: Rng>(
-//     data_size: usize,
-//     upgrade: &Upgrade,
-//     avail_special: i64,
-//     juice_count: i64,
-//     mut rng: &mut R,
-// ) -> Vec<[i64; 10]> {
-//     let mut cost_data: Vec<[i64; 10]> = vec![[0i64; 10]; data_size];
-//     // let mut special_budgets: Vec<i64> = vec![avail_special; data_size];
-//     // let mut special_pass_arr: Vec<usize> = vec![0usize; data_size];
-
-//     // TODO
-//     // if avail_special > 0 {
-//     //     // TODO ignore when later passed ->
-//     //     for (upgrade_index, upgrade) in upgrade_arr.iter().enumerate() {
-//     //         if upgrade.is_normal_honing {
-//     //             let limit: i64 = calc_failure_lim(avail_special, upgrade.special_cost);
-//     //             for trial in 0..data_size {
-//     //                 if special_budgets[trial] <= 0 {
-//     //                     continue;
-//     //                 }
-//     //                 let taps_used: usize =
-//     //                     sample_truncated_geometric(upgrade.base_chance, limit, &mut rng);
-//     //                 let rolled_special_cost: i64 = (taps_used as i64 + 1) * upgrade.special_cost;
-//     //                 special_budgets[trial] -= rolled_special_cost;
-//     //                 if special_budgets[trial] > 0 {
-//     //                     special_pass_arr[trial] += 1;
-//     //                     debug_assert!(special_pass_arr[trial] == upgrade_index + 1);
-//     //                     // this assertion is triggered when there's an advanced honing upgrade sorted before normal honing upgrade in upgrade_arr
-//     //                     // which shouldnt happen
-//     //                 }
-//     //             }
-//     //         }
-//     //     }
-//     // }
-
-//     let tap_map: Vec<usize> = tap_map_generator(data_size, &upgrade.prob_dist, rng);
-//     for trial_num in 0..data_size {
-//         let rolled_tap: usize = tap_map[trial_num];
-//         for cost_type in 0..7 {
-//             cost_data[trial_num][cost_type] +=
-//                 upgrade.costs[cost_type] * (rolled_tap as i64 + upgrade.tap_offset);
-//         }
-
-//         if upgrade.is_normal_honing {
-//             let juice_ind: usize = if upgrade.is_weapon { 7 } else { 8 };
-//             cost_data[trial_num][juice_ind] +=
-//                 (rolled_tap as i64).min(juice_count) * upgrade.one_juice_cost;
-//         }
-//     }
-
-//     cost_data
-// }
-
-// let mut special_budgets: Vec<i64> = vec![avail_special; data_size];
-// let mut special_pass_arr: Vec<usize> = vec![0usize; data_size];
-
-// // pre-generate an array of how many pieces were free tapped, mostly because it just makes things easier
-// // i doubt it's actually faster
-// if avail_special > 0 {
-//     // TODO ignore when later passed ->
-//     for (upgrade_index, upgrade) in upgrade_arr.iter().enumerate() {
-//         if upgrade.is_normal_honing {
-//             let limit: i64 = calc_failure_lim(avail_special, upgrade.special_cost);
-//             for trial in 0..data_size {
-//                 if special_budgets[trial] <= 0 {
-//                     continue;
-//                 }
-//                 let taps_used: usize =
-//                     sample_truncated_geometric(upgrade.base_chance, limit, &mut rng);
-//                 let rolled_special_cost: i64 = (taps_used as i64 + 1) * upgrade.special_cost;
-//                 special_budgets[trial] -= rolled_special_cost;
-//                 if special_budgets[trial] > 0 {
-//                     special_pass_arr[trial] += 1;
-//                     debug_assert!(special_pass_arr[trial] == upgrade_index + 1);
-//                     // this assertion is triggered when there's an advanced honing upgrade sorted before normal honing upgrade in upgrade_arr
-//                     // which shouldnt happen
-//                 }
-//             }
-//         }
-//     }
-// }
-
-// juicy part, we use tap_map_generator to get the excpected distribution and just multiply it by data_size
-// e.g. if the distribution is 0.2,0.1,0.7 and data size is 100, we generate [20 zeros, 10 ones, 70 twos] etc
-// it is then shuffled before being added to cost_data
-// This supposedly reduces variance by quite a big amount
-// we COULD also do this for free taps but um WIP ig

@@ -1,15 +1,14 @@
-use std::f64::{INFINITY, NAN, NEG_INFINITY};
-
 use crate::constants::{FLOAT_TOL, JuiceInfo};
 use crate::parser::PreparationOutput;
 use crate::state_bundle::StateBundle;
 use crate::upgrade::{Support, Upgrade};
+use std::f64::{INFINITY, NAN, NEG_INFINITY};
 
 pub fn encode_one_positions(v1: &[(bool, usize)]) -> String {
     v1.iter()
         .map(|(uppercase, num)| {
             let letter: char = if *num == 0 {
-                'x' as char
+                'x'
             } else {
                 (b'a' + (*num as u8 - 1)) as char
             };
@@ -24,10 +23,10 @@ pub fn encode_one_positions(v1: &[(bool, usize)]) -> String {
 }
 
 impl StateBundle {
+    /// These are only used for generating the histogram
+    /// note that for the purpose of making consistent & comparable x-axises (or whatever the plural is) I should evaluate the same state every time, but then juice won't agree with that so maybe i should just write a special case for that? idk cbb
     pub fn one_tap(&self) -> Vec<i64> {
         let mut out = vec![0i64; 7 + self.prep_output.juice_info.num_avail * 2];
-        // for upgrade in self.upgrade_arr.iter() {
-        // let flat = self.prep_output.flat_alr_spent.clone().unwrap();
         for (support_index, cost) in out.iter_mut().enumerate() {
             *cost += (self
                 .extract_all_support_with_meta(support_index as i64)
@@ -35,14 +34,11 @@ impl StateBundle {
                 .sum::<f64>())
             .ceil() as i64;
         }
-        // }
-        // out[3] += self.prep_output.unlock_costs[0];
-        // out[6] += self.prep_output.unlock_costs[1];
+
         out
     }
     pub fn pity(&self) -> Vec<i64> {
         let mut out = vec![0i64; 7 + self.prep_output.juice_info.num_avail * 2];
-        // let flat = self.prep_output.flat_alr_spent.clone().unwrap();
         for (support_index, cost) in out.iter_mut().enumerate() {
             *cost += (self
                 .extract_all_support_with_meta(support_index as i64)
@@ -55,20 +51,15 @@ impl StateBundle {
                 .sum::<f64>())
             .ceil() as i64;
         }
-        // out[3] += self.prep_output.unlock_costs[0];
-        // out[6] += self.prep_output.unlock_costs[1];
 
         out
     }
     pub fn get_one_tap_pity(&self) -> (Vec<i64>, Vec<i64>) {
         (self.one_tap(), self.pity())
     }
-    pub fn find_min_max(
-        &self,
-        support_index: i64,
-        skip_count: usize,
-        // compute_biased: bool,
-    ) -> (f64, f64) {
+
+    /// This does not conisder the biased version (i.e. cost 0 with p > 0) cos I think it messed things up somehow at some point
+    pub fn find_min_max(&self, support_index: i64, skip_count: usize) -> (f64, f64) {
         let min_value = self
             .extract_collapsed_pair(support_index, skip_count)
             .map(|x| x.iter().fold(INFINITY, |prev, new| prev.min(new.0)))
@@ -157,6 +148,7 @@ impl StateBundle {
         )
     }
 
+    // this is for the success_prob metric, which is unused rn
     pub fn update_combined(&mut self) {
         let prep_output: &mut PreparationOutput = &mut self.prep_output;
 
@@ -191,10 +183,6 @@ impl StateBundle {
                             state_id,
                         );
                     }
-                } else {
-
-                    // assert!(!juice);
-                    // assert!(state_id == 0);
                 }
 
                 if first_gap.is_nan() {
@@ -204,115 +192,83 @@ impl StateBundle {
             upgrade.combined_gold_costs.update_payload(
                 this_combined,
                 upgrade.state.hash,
-                &mut upgrade.prob_dist,
+                &upgrade.prob_dist,
                 first_gap,
-                // cost_so_far,
                 false,
                 upgrade.alr_failed,
             );
-            // upgrade.combined_gold_costs.associated_state_hash
         }
     }
 
     pub fn update_individual_support(&mut self) {
         let prep_output = &mut self.prep_output;
-
         for upgrade in self.upgrade_arr.iter_mut() {
             upgrade.update_this_individual_support(prep_output);
         }
     }
 
     pub fn update_dist(&mut self) {
-        // TODO add a toggle for computing log or not
-        // dbg!(&prep_output, &state_bundle);
-        // let zero_probs: Vec<f64> = special_probs(prep_output, state_bundle);
-        // dbg!(&zero_probs);
         for upgrade in self.upgrade_arr.iter_mut() {
             upgrade.update_this_prob_dist(&self.prep_output);
-            // if compute_log {
-            //     upgrade.prob_dist.compute_log();
-            // }
-
-            // gold_costs_arr.push(gold_cost_record);
         }
     }
     pub fn flattened_effective_budgets(&self) -> impl Iterator<Item = f64> {
         self.prep_output
             .effective_budgets
-            .iter()
-            .map(|x| *x as f64)
+            .iter().copied()
             .chain(
                 self.prep_output
                     .juice_books_owned
                     .iter()
-                    .map(|x| x.0 as f64),
+                    .map(|x| x.0),
             )
             .chain(
                 self.prep_output
                     .juice_books_owned
                     .iter()
-                    .map(|x| x.1 as f64),
+                    .map(|x| x.1),
             )
     }
 
     pub fn flattened_price(&self) -> impl Iterator<Item = f64> {
         self.prep_output
             .price_arr
-            .iter()
-            .map(|x| *x as f64)
+            .iter().copied()
             .chain(
                 self.prep_output
                     .juice_info
                     .one_gold_cost_id
                     .iter()
-                    .map(|x| x.0 as f64),
+                    .map(|x| x.0),
             )
             .chain(
                 self.prep_output
                     .juice_info
                     .one_gold_cost_id
                     .iter()
-                    .map(|x| x.1 as f64),
+                    .map(|x| x.1),
             )
     }
 
     pub fn flattened_leftover(&self) -> impl Iterator<Item = f64> {
         self.prep_output
             .leftover_values
-            .iter()
-            .map(|x| *x as f64)
+            .iter().copied()
             .chain(
                 self.prep_output
                     .juice_info
                     .one_leftover_value_id
                     .iter()
-                    .map(|x| x.0 as f64),
+                    .map(|x| x.0),
             )
             .chain(
                 self.prep_output
                     .juice_info
                     .one_leftover_value_id
                     .iter()
-                    .map(|x| x.1 as f64),
+                    .map(|x| x.1),
             )
     }
-
-    // these are for brute force stuff that expect to be able to index into the array that uh i can't be bothered to rewrite (it's 100% possible)
-    // actaully can probably just store a vector of references?
-    pub fn gather_prob_dist(&self) -> Vec<Vec<f64>> {
-        let mut arr = Vec::with_capacity(self.upgrade_arr.len());
-        for upgrade in self.upgrade_arr.iter() {
-            arr.push(upgrade.prob_dist.payload.clone());
-        }
-        arr
-    }
-    // pub fn gather_log_prob_dist(&self) -> Vec<Vec<f64>> {
-    //     let mut arr = Vec::with_capacity(self.upgrade_arr.len());
-    //     for upgrade in self.upgrade_arr.iter() {
-    //         arr.push(upgrade.prob_dist.log_prob_dist().clone());
-    //     }
-    //     arr
-    // }
 
     pub fn gather_collapsed(
         &self,
@@ -342,41 +298,12 @@ impl StateBundle {
         }
         arr
     }
-
-    // pub fn get_one_tap_pity(&self) -> (Vec<i64>, Vec<i64>) {
-    //     debug_assert!(self.prep_output.unlock_costs.len() == 2);
-    //     const DATA_SIZE: usize = 2;
-    //     let mut cost_data: Vec<Vec<i64>> =
-    //         vec![vec![0i64; 7 + self.prep_output.juice_info.num_avail * 2]; 2];
-
-    //     for upgrade in self.upgrade_arr.iter() {
-    //         cost_data[0]
-    //         // let pd_len: f64 = upgrade.prob_dist.len().saturating_sub(1) as f64;
-    //         // for trial_num in 0..DATA_SIZE {
-    //         //     let rolled_tap =
-    //         //         ((pd_len * (trial_num) as f64) / (DATA_SIZE as f64 - 1.0)).floor() as usize;
-    //         //     for cost_type in 0..7 {
-    //         //         cost_data[trial_num][cost_type] +=
-    //         //             upgrade.costs[cost_type] * (rolled_tap as i64 + upgrade.tap_offset);
-    //         //     }
-    //         //     if !upgrade.is_normal_honing {
-    //         //         cost_data[trial_num][if upgrade.is_weapon { 7 } else { 8 }] +=
-    //         //             upgrade.adv_juice_cost[rolled_tap].ceil() as i64;
-    //         //     }
-    //         // }
-    //     }
-    //     for row in &mut cost_data {
-    //         row[3] += self.prep_output.unlock_costs[0];
-    //         row[6] += self.prep_output.unlock_costs[1];
-    //     }
-    //     (cost_data[0].clone(), cost_data[1].clone())
-    // }
 }
 
 pub fn generate_first_deltas(delta: f64, length: usize, non_zeros: usize) -> Vec<f64> {
     [vec![delta; non_zeros], vec![0.0; length - non_zeros]].concat()
 }
-/// Sums up gold values from materials and juices
+
 pub fn add_up_golds(mats_gold: &Vec<f64>, juice_gold: &Vec<(f64, f64)>) -> f64 {
     mats_gold.iter().fold(0.0, |last, new| last + *new)
         + juice_gold
@@ -384,6 +311,7 @@ pub fn add_up_golds(mats_gold: &Vec<f64>, juice_gold: &Vec<(f64, f64)>) -> f64 {
             .fold(0.0, |last, new| last + new.0 + new.1)
 }
 
+// these three functions below were vibe coded
 /// Applies price/leftover pricing to concrete consumption values.
 /// Used by Monte Carlo simulation where we have actual consumption, not expectations.
 /// positive diff = leftover (use leftover_value), negative diff = shortage (use price)
@@ -430,8 +358,8 @@ pub fn apply_price_generic(
     }
 
     for (id, (weap, armor)) in juice_gold.iter_mut().enumerate() {
-        let weap_diff: f64 = prep_output.juice_books_owned[id].0 as f64 - juice[id].0;
-        let armor_diff: f64 = prep_output.juice_books_owned[id].1 as f64 - juice[id].1;
+        let weap_diff: f64 = prep_output.juice_books_owned[id].0 - juice[id].0;
+        let armor_diff: f64 = prep_output.juice_books_owned[id].1 - juice[id].1;
 
         *weap = weap_diff
             * if naive {
@@ -486,10 +414,12 @@ pub fn new_prob_dist(
                 chance += juice_info.chances_id[*id][upgrade.upgrade_index];
             }
             chance
-        }) //if *x > 0 { upgrade.base_chance } else { 0.0 }) //
+        })
         .collect();
 
-    let out = probability_distribution(
+    
+
+    probability_distribution(
         upgrade.base_chance,
         upgrade.artisan_rate,
         &new_extra,
@@ -498,21 +428,7 @@ pub fn new_prob_dist(
         upgrade.succeeded,
         Some(upgrade.original_prob_dist_len),
         upgrade.extra_chance,
-    );
-    // for o in out.iter() {
-    //     if !o.is_finite() || *o < 0.0 {
-    //         dbg!(
-    //             &out,
-    //             &upgrade,
-    //             &juice_info.chances[upgrade.upgrade_index],
-    //             &new_extra,
-    //             zero
-    //         );
-    //         panic!();
-    //     }
-    // }
-
-    out
+    )
 }
 
 // prob distribution of normal honing, adjusting for any juice usage
@@ -529,48 +445,32 @@ pub fn probability_distribution(
     if succeeded {
         let mut v = vec![0.0; size.unwrap()];
         v[alr_failed] = 1.0;
-        // web_sys::console::log_1(&format!("{:?}", v).into());
         return v;
     }
     let mut raw_chances: Vec<f64> = Vec::with_capacity(size.unwrap_or(220));
     raw_chances.push(zero);
     let mut artisan: f64 = 0.0_f64;
     let mut count: usize = 0;
-    // web_sys::console::log_1(&alr_failed.into());
 
-    // web_sys::console::log_1(&base.into());
-    // web_sys::console::log_1(&artisan_rate.into());
-    // web_sys::console::log_1(&format!("{:?}", extra_arr).into());
-    // web_sys::console::log_1(&format!("a").into());
     loop {
-        // web_sys::console::log_1(&format!("{:?}", count).into());
-
         let min_count: f64 = std::cmp::min(count, 10) as f64;
-        // web_sys::console::log_1(&format!("c").into());
+
         let mut current_chance: f64 =
             (base + event_extra + (min_count * base) * 0.1 + extra_arr.get(count).unwrap_or(&0.0))
                 .min(1.0);
-
-        // web_sys::console::log_1(&format!("{:?}", current_chance).into());
-        // web_sys::console::log_1(&format!("d").into());
         if artisan >= 1.0 {
             current_chance = 1.0;
             raw_chances.push(current_chance);
             break;
         }
-        // web_sys::console::log_1(&format!("e").into());
         raw_chances.push(current_chance);
         count += 1;
         artisan += 0.4651_f64 * current_chance * artisan_rate;
         if current_chance == 1.0 {
-            break; // for upgrades that have 100% passrate immediately
+            break; // for upgrades that have 100% passrate immediately or upgrades that have above 100% success rate (juicing last few taps of like +4 or something)
         }
-        // if count > 300 {
-        //     panic!();
-        // }
     }
-    // web_sys::console::log_1(&format!("c").into());
-    // convert raw per-try chances into per-tap probability distribution
+
     let mut chances = vec![0.0_f64; raw_chances.len()];
     let mut cum_chance = 1.0_f64;
 
@@ -579,7 +479,6 @@ pub fn probability_distribution(
         cum_chance *= 1.0 - element;
     }
 
-    // web_sys::console::log_1(&format!("{:?}", chances).into());
     for (idx, element) in chances.iter_mut().enumerate() {
         if idx <= alr_failed {
             *element = 0.0;
@@ -594,7 +493,6 @@ pub fn probability_distribution(
         *chances.iter_mut().last().unwrap() = 1.0;
     }
 
-    // web_sys::console::log_1(&format!("{:?}", chances).into());
     chances
 }
 
@@ -616,9 +514,6 @@ impl Upgrade {
             };
             let this_cost: f64 = self.costs[t_index] as f64;
             for (index, _p) in self.prob_dist.iter().enumerate() {
-                // if index == self.alr_failed && ignore_already_spent {
-                //     cost_so_far = 0.0;
-                // }
                 this_mats_costs.push(cost_so_far);
 
                 if index >= l_len - 1 {
@@ -627,7 +522,7 @@ impl Upgrade {
 
                 cost_so_far += this_cost;
             }
-            // dbg!(t_index);
+
             self.cost_dist[t_index].update_payload(
                 this_mats_costs,
                 self.state.hash,
@@ -646,16 +541,10 @@ impl Upgrade {
 
             let amt = prep_output.juice_info.amt_used_id[id][self.upgrade_index] as f64;
             for (index, (juice, book)) in self.state.iter().take(l_len).enumerate() {
-                // if index == self.alr_failed && ignore_already_spent {
-                //     weap_cost = 0.0;
-                //     armor_cost = 0.0;
-                // }
                 weap_support.push(weap_cost);
                 armor_support.push(armor_cost);
                 if index >= l_len - 2 {
                     continue;
-                    // assert!(!juice);
-                    // assert!(*book == 0);
                 }
                 if *juice && id == 0 {
                     if self.is_weapon {
@@ -672,7 +561,7 @@ impl Upgrade {
                     }
                 }
             }
-            // dbg!(id, 0);
+
             self.weap_juice_costs[id].update_payload(
                 weap_support,
                 self.state.hash,
@@ -681,7 +570,7 @@ impl Upgrade {
                 true,
                 self.alr_failed,
             );
-            // dbg!(id, 1);
+
             self.armor_juice_costs[id].update_payload(
                 armor_support,
                 self.state.hash,
@@ -691,8 +580,6 @@ impl Upgrade {
                 self.alr_failed,
             );
         }
-        // dbg!(&self.cost_dist,);
-        // panic!()
     }
 
     pub fn update_this_prob_dist(&mut self, prep_output: &PreparationOutput) {

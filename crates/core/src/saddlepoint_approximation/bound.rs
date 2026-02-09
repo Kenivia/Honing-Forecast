@@ -1,8 +1,9 @@
-use std::f64::NAN;
-
-use num::traits::Inv;
+//! There was an attempt at bounding theta, failed miserably
+//! Currently it only generates a guess, so the triplet is more like a single child
 
 use crate::state_bundle::StateBundle;
+use num::traits::Inv;
+use std::f64::NAN;
 
 impl StateBundle {
     pub fn min_guess_max_triplet(
@@ -10,171 +11,30 @@ impl StateBundle {
         budget: f64,
         min_value: f64,
         max_value: f64,
-        // support_index: i64,
-        // skip_count: usize,
         mean_var_skew: (f64, f64, f64),
-        // compute_biased: bool,
     ) -> (f64, f64, f64) {
-        // let x = (budget - min_value) / (max_value - min_value);
-        // // let guess = self.theta_guess_mean(budget, mean_var);
-        // let guess = 0.0;
-
-        // let biggest_s: f64 = self
-        //     .extract_support_with_meta(support_index, skip_count)
-        //     .filter(|x| !x.ignore)
-        //     .map(|pair_arr| {
-        //         pair_arr
-        //             .access_collapsed()
-        //             .iter()
-        //             .find(|x| x.0 > FLOAT_TOL)
-        //             .unwrap()
-        //             .0
-        //     })
-        //     .fold(NEG_INFINITY, |a, b| a.max(b));
-        // let limit: f64 = 10.0_f64 / biggest_s;
-
-        // if compute_biased {
-        //     return (-limit, guess, limit);
-        // }
-        // if x < EDGE_PERCENTAGES {
-        //     return (
-        //         1.0 * self.theta_guess_min_tail(support_index, skip_count, budget, min_value),
-        //         guess,
-        //         0.0,
-        //     );
-        // } else if x > 1.0 - EDGE_PERCENTAGES {
-        //     return (
-        //         0.0,
-        //         guess,
-        //         1.0 * self.theta_guess_max_tail(support_index, skip_count, budget, max_value),
-        //     );
-        // }
         (
-            NAN, // inverse_shifted_sigmoid(min_value, max_value, mean_var_skew, min_value + 1.0),
-            // 1.0 * self.theta_guess_min_tail(
-            //     support_index,
-            //     skip_count,
-            //     // EDGE_PERCENTAGES * (max_value - min_value) + min_value,
-            //     // min_value,
-            // ),
+            NAN,
             inverse_shifted_sigmoid(min_value, max_value, mean_var_skew, budget),
             NAN,
-            // inverse_shifted_sigmoid(min_value, max_value, mean_var_skew, max_value - 1.0),
-            // 1.0 * self.theta_guess_max_tail(
-            //     support_index,
-            //     skip_count,
-            //     // (1.0 - EDGE_PERCENTAGES) * (max_value - min_value) + min_value,
-            //     max_value,
-            // ),
         )
     }
-    // pub fn theta_guess_sigmoid(
-    //     &self,
-    //     min_value: f64,
-    //     max_value: f64,
-    //     budget: f64,
-    //     mean_var_skew: (f64, f64, f64),
-    // ) -> f64 {
-    //     inverse_sigmoid(min_value, max_value, mean_var_skew, budget)
-    // }
-
-    // pub fn theta_guess_max_tail(
-    //     &self,
-    //     support_index: i64,
-    //     skip_count: usize,
-    //     // budget: f64,
-    //     // max_value: f64,
-    // ) -> f64 {
-    //     let mut min_delta: f64 = INFINITY;
-    //     let mut sum_c: f64 = 0.0;
-    //     for support in self.extract_support_with_meta(support_index, skip_count) {
-    //         if support.ignore {
-    //             continue;
-    //         }
-
-    //         let mut last_two: [(f64, f64); 2] = [(NAN, NAN); 2];
-    //         for (index, pair) in support.access_collapsed().iter().rev().take(2).enumerate() {
-    //             last_two[index] = *pair;
-    //             // if index > 1 {
-    //             //     break;
-    //             // }
-    //         }
-    //         //               s_next           s_max
-    //         let delta: f64 = last_two[1].0 - last_two[0].0;
-    //         min_delta = min_delta.min(delta); // these should be negative
-    //         sum_c += last_two[1].0 * last_two[0].1 / last_two[1].1;
-    //     }
-    //     assert!(min_delta < 0.0);
-    //     let max = ((min_delta.abs()) / sum_c).ln() / min_delta;
-    //     // dbg!(max, sum_c, min_delta, budget, max_value);
-    //     max
-    //     // 999.9
-    // }
-
-    // pub fn theta_guess_min_tail(
-    //     &self,
-    //     support_index: i64,
-    //     skip_count: usize,
-    //     // budget: f64,
-    //     // min_value: f64,
-    // ) -> f64 {
-    //     let mut max_delta: f64 = NEG_INFINITY;
-    //     let mut min_delta: f64 = INFINITY;
-    //     let mut sum_c: f64 = 0.0;
-    //     for support in self.extract_support_with_meta(support_index, skip_count) {
-    //         if support.ignore {
-    //             continue;
-    //         }
-
-    //         let mut first_two: [(f64, f64); 2] = [(NAN, NAN); 2];
-    //         let mut index: usize = 0;
-    //         for pair in support.access_collapsed().iter() {
-    //             if pair.1 < FLOAT_TOL {
-    //                 continue;
-    //             }
-
-    //             first_two[index] = *pair;
-    //             index += 1;
-    //             if index > 1 {
-    //                 break;
-    //             }
-    //         }
-    //         let delta: f64 = first_two[1].0 - first_two[0].0;
-    //         max_delta = max_delta.max(delta);
-    //         min_delta = min_delta.min(delta);
-    //         sum_c += first_two[1].0 * first_two[1].1 / first_two[0].1;
-    //     }
-
-    //     let min = ((min_delta.abs()) / sum_c).ln() / min_delta;
-    //     // dbg!(min_delta);
-    //     min
-    //     // -999.9
-    // }
 }
-// pub fn scaled_sigmoid(
-//     min_value: f64,
-//     max_value: f64,
-//     (mean, var, skew): (f64, f64, f64),
-//     theta: f64,
-// ) -> f64 {
-//     let a = min_value;
-//     let k: f64 = max_value;
 
-//     v = LOG2_E / ((k - a) / (budget - a)).ln();
-//     b = 2.0.powf(1.0 + 1.0 / v) / (k - a) * var;
-//     // let denom: f64 = var.powi(2) - mean * skew;
-
-//     // let v: f64 = if denom < FLOAT_TOL {
-//     //     1.0
-//     // } else {
-//     //     var.powi(2) / denom
-//     // };
-
-//     // let a: f64 = mean * 2.0_f64.powf(v);
-//     // let b: f64 = 2.0 * var / (mean * v);
-
-//     // a / (1.0 + (-b * theta).exp()).powf(v)
-// }
+/// Assumes that the cumulant generating function is of the form
+/// min_value +  (max_value - min_value) / (1 + [(t + t0)/alpha] ^ -beta)
+///
+/// which is a sigmoid-shaped curve (shifted logistic) where we can match the following:
+/// - top
+/// - bottom
+/// - 1st derivative
+/// - 2nd derivative
+/// - (NOT y intercept)
+///
+/// We invert this to get an initial-guess theta
+///
+/// The original purpose of this was to prevent input_y close to min/max from diverging/stalling during rootfinding
+/// but it's not very good at that but like it makes a decent guess so whatever
 pub fn inverse_shifted_sigmoid(
     min_value: f64,
     max_value: f64,
@@ -198,17 +58,4 @@ pub fn inverse_shifted_sigmoid(
         );
     }
     out
-
-    // // if (var.powi(2) - mean * skew) < FLOAT_TOL {}
-    // let denom: f64 = var.powi(2) - mean * skew;
-    // let v: f64 = if denom < 1.0 {
-    //     1.0
-    // } else {
-    //     var.powi(2) / denom
-    // };
-
-    // let a: f64 = mean * 2.0_f64.powf(v);
-    // let b: f64 = 2.0 * var / (mean * v);
-    // dbg!(a, b, v, input_y);
-    // ((a / input_y).powf(1.0 / v) - 1.0).ln() / -b
 }

@@ -5,8 +5,6 @@ use crate::constants::{
 
 use crate::upgrade::Upgrade;
 
-// use crate::value_estimation::average_tap;
-
 use rand::Rng;
 
 pub fn naive_count_to_ticks(counts: &[Vec<i64>]) -> Vec<Vec<bool>> {

@@ -1,13 +1,13 @@
+//! Serves in place of saddlepoint_approximation when the complexity isn't too bad
+//! Mostly vibe coded
+
 use crate::constants::FLOAT_TOL;
-
-use crate::saddlepoint_approximation::average::{DEBUG_AVERAGE, DEBUG_AVG_INDEX};
 use crate::state_bundle::StateBundle;
-use crate::upgrade::Support;
-
 use std::collections::HashMap;
 use std::f64::{INFINITY, NEG_INFINITY};
 use std::hash::{Hash, Hasher};
-pub const MAX_BRUTE_SIZE: usize = 5000;
+
+pub const MAX_BRUTE_SIZE: usize = 50000;
 
 // 1. Helper wrapper to use f64 as a HashMap key
 // (Rust floats don't implement Eq/Hash by default due to NaN)
@@ -27,51 +27,28 @@ impl Hash for FloatKey {
     }
 }
 
-/// Helper struct to hold lookahead bounds
-struct LookaheadBounds {
-    min_suffix: Vec<f64>,
-    max_suffix: Vec<f64>,
-}
-
-// this is actually just another wrapper
-
 impl StateBundle {
-    // // it doesn't take into account leftover prices
-    // pub fn brute_success_prob_metric(&mut self) -> f64 {
-    //     self.update_dist();
-
-    //     self.update_combined();
-    //     // brute_naive(&prob_dist_arr, &combined_costs, prep_output.eqv_gold_budget)
-
-    //     self.brute_success_prob(
-    //         // &self.gather_prob_dist(),
-    //         // &self.gather_combined_gold_cost(),
-    //         sup
-    //         self.prep_output.eqv_gold_budget,
-    //     )
-    // }
-
     pub fn brute_success_prob(
-        // prob_dist_arr: &[Vec<f64>],
-        // support_arr: &[Vec<f64>],
         &self,
         support_index: i64,
         skip_count: usize,
         budget: f64,
+        mean: f64,
+        biased: bool,
     ) -> f64 {
         let n = self.upgrade_arr.len();
-        // dbg!(
-        //     &self.upgrade_arr.len(),
-        //     self.special_state.len(),
-        //     skip_count
-        // );
+        let inv_mean = if mean.abs() < FLOAT_TOL {
+            0.0
+        } else {
+            mean.recip()
+        };
         // --- STEP 1: Pre-calculate Look-Ahead Bounds ---
         // min_suffix[i] = sum of minimum costs from layer i to end
         // max_suffix[i] = sum of maximum costs from layer i to end
         let mut min_suffix = vec![0.0; n + 1];
         let mut max_suffix = vec![0.0; n + 1];
 
-        let mut u_index = n - 1; // cant use enumerate for some reason
+        let mut u_index = n - 1;
 
         for support in self.extract_collapsed_pair(support_index, skip_count).rev() {
             // Find min and max cost for this specific layer
@@ -83,11 +60,8 @@ impl StateBundle {
                 + support
                     .iter()
                     .fold(NEG_INFINITY, |prev, new| prev.max(new.0));
-            if u_index > 0 {
-                u_index -= 1;
-            }
+            u_index = u_index.saturating_sub(1);
         }
-        // web_sys::console::log_1(&format!(" min {:?} max {:?} ", min_suffix, max_suffix).into());
         // --- STEP 2: Iterative DP with Pruning ---
 
         // Stores currently active uncertain states
@@ -111,7 +85,7 @@ impl StateBundle {
 
                 for (s, p) in pairs {
                     let new_cost = current_cost + s;
-                    let step_prob = current_prob * p;
+                    let step_prob = current_prob * p * if biased { s * inv_mean } else { 1.0 };
 
                     // PRUNE 1: Guaranteed Success
                     // If even the most expensive future choices fit in the budget,
@@ -145,174 +119,7 @@ impl StateBundle {
 
         // The answer is the sum of paths that were "Guaranteed Early"
         // + paths that survived to the very end validly.
-        let out = total_guaranteed_prob + current_states.values().sum::<f64>();
-        // if !out.is_finite() {
-        //     dbg!(
-        //         prob_dist_arr,
-        //         support_arr,
-        //         total_guaranteed_prob,
-        //         current_states.values().sum::<f64>()
-        //     );
-        //     panic!();
-        // }
-        out
-    }
-
-    pub fn brute_biased_recursive(
-        &self,
-        support_index: i64,
-        skip_count: usize,
-        budget: f64,
-        mean: f64,
-    ) -> f64 {
-        // 1. PRE-COMPUTE BOUNDS
-        // We scan backwards to calculate the min/max cost possible from each depth.
-        // min_suffix[i] = sum(min(support[j])) for j in i..len
-        let n = self.upgrade_arr.len();
-        let mut min_suffix = vec![0.0; n + 1];
-        let mut max_suffix = vec![0.0; n + 1];
-
-        let mut u_index = n - 1; // cant use enumerate for some reason
-
-        for support in self.extract_collapsed_pair(support_index, skip_count).rev() {
-            // Find min and max cost for this specific layer
-            // We use fold because f64 doesn't implement Ord
-
-            min_suffix[u_index] = min_suffix[u_index + 1]
-                + support.iter().fold(INFINITY, |prev, new| prev.min(new.0));
-            max_suffix[u_index] = max_suffix[u_index + 1]
-                + support
-                    .iter()
-                    .fold(NEG_INFINITY, |prev, new| prev.max(new.0));
-            if u_index > 0 {
-                u_index -= 1;
-            }
-        }
-        if DEBUG_AVERAGE && support_index == DEBUG_AVG_INDEX {
-            dbg!(&min_suffix, &max_suffix);
-        }
-        let bounds = LookaheadBounds {
-            min_suffix,
-            max_suffix,
-        };
-
-        // 2. DECIDE DIRECTION
-        // If budget is high (>= mean), it's faster to calculate the tail (X > Budget)
-        // and subtract from total (1.0).
-        if budget >= mean {
-            let upper_tail_val =
-                self.recurse_upper(support_index, skip_count, &bounds, 0.0, budget, 0, mean);
-            // Total probability mass for size-biased variable is 1.0.
-            // Result = 1.0 - P(SizeBiased > Budget)
-            1.0 - upper_tail_val
-        } else {
-            self.recurse_lower(support_index, skip_count, &bounds, 0.0, budget, 0, mean)
-        }
-    }
-
-    // ---------------------------------------------------------
-    // DIRECTION 1: Standard (Summing paths <= Budget)
-    // ---------------------------------------------------------
-    fn recurse_lower(
-        &self,
-        support_index: i64,
-        skip_count: usize,
-        bounds: &LookaheadBounds,
-        cost_so_far: f64,
-        budget: f64,
-        depth: usize,
-        mean: f64,
-    ) -> f64 {
-        // PRUNING: If current cost + minimum possible future cost > budget,
-        // this whole subtree is invalid. Return 0.
-        if cost_so_far + bounds.min_suffix[depth] > budget {
-            return 0.0;
-        }
-
-        // BASE CASE
-        if depth == self.upgrade_arr.len() {
-            return cost_so_far / mean;
-        }
-
-        self.extract_collapsed_pair(support_index, skip_count)
-            .skip(depth)
-            .next()
-            .unwrap()
-            .iter()
-            .map(|(cost, prob)| (cost_so_far + *cost, *prob))
-            // Tighter local pruning: check if next step + min future exceeds budget
-            .filter(|(new_cost, _)| *new_cost + bounds.min_suffix[depth + 1] <= budget)
-            .fold(0.0, |acc, (new_cost, prob)| {
-                acc + if prob.abs() < FLOAT_TOL {
-                    0.0
-                } else {
-                    prob * self.recurse_lower(
-                        support_index,
-                        skip_count,
-                        bounds,
-                        new_cost,
-                        budget,
-                        depth + 1,
-                        mean,
-                    )
-                }
-            })
-    }
-
-    // ---------------------------------------------------------
-    // DIRECTION 2: Complement (Summing paths > Budget)
-    // ---------------------------------------------------------
-    fn recurse_upper(
-        &self,
-        support_index: i64,
-        skip_count: usize,
-        bounds: &LookaheadBounds,
-        cost_so_far: f64,
-        budget: f64,
-        depth: usize,
-        mean: f64,
-    ) -> f64 {
-        // PRUNING: If current cost + maximum possible future cost <= budget,
-        // then NO path in this subtree can ever exceed the budget. Return 0.
-        if cost_so_far + bounds.max_suffix[depth] <= budget {
-            return 0.0;
-        }
-
-        // BASE CASE: We are summing the "bad" cases (where Cost > Budget)
-        if depth == self.upgrade_arr.len() {
-            // We only return value if we exceeded budget (which is implicit due to pruning logic,
-            // but strictly safe to check or just return).
-            // Since we prune if <= budget, if we are here, we are > budget.
-            return cost_so_far / mean;
-        }
-
-        // Note: We cannot use take_while here easily because we are looking for the "tail".
-        // Low costs might fail the check (and be skipped), high costs will pass.
-        self.extract_collapsed_pair(support_index, skip_count)
-            .skip(depth)
-            .next()
-            .unwrap()
-            .iter()
-            .map(|(cost, prob)| (cost_so_far + *cost, *prob))
-            .fold(0.0, |acc, (new_cost, prob)| {
-                // Local Pruning: Skip this specific child if it can't possibly exceed budget
-                if new_cost + bounds.max_suffix[depth + 1] <= budget {
-                    acc // Add 0.0
-                } else {
-                    acc + if prob.abs() < FLOAT_TOL {
-                        0.0
-                    } else {
-                        prob * self.recurse_upper(
-                            support_index,
-                            skip_count,
-                            bounds,
-                            new_cost,
-                            budget,
-                            depth + 1,
-                            mean,
-                        )
-                    }
-                }
-            })
+        
+        total_guaranteed_prob + current_states.values().sum::<f64>()
     }
 }

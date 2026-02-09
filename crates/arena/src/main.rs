@@ -1,26 +1,27 @@
+//! Rudimentary runner for testing the engines on test cases
+
 use chrono::Local;
+use hf_arena::engine::ACTIVE_FEATURE;
 use hf_arena::engine::{NOTES, solve};
 use hf_arena::parse_test_cases::parse_payload_jsons;
-
 use hf_core::monte_carlo::monte_carlo_wrapper;
-
-use hf_arena::engine::ACTIVE_FEATURE;
 use hf_core::performance::{Performance, PerformanceToWrite};
 use hf_core::saddlepoint_approximation::average::DEBUG_AVERAGE;
-use hf_core::state_bundle::{self, StateBundle};
-
+use hf_core::state_bundle::StateBundle;
 use rand::prelude::*;
 use rayon::prelude::*;
 use serde::{Deserialize, Serialize};
-use std::collections::{HashMap, HashSet};
+use std::collections::HashSet;
 use std::env;
 use std::fs::{File, OpenOptions, remove_file};
 use std::io::{BufRead, BufReader, BufWriter, Error, Write};
 use std::path::Path;
 use std::time::Instant;
-static NUM_TESTS_TO_RUN: i64 = if DEBUG_AVERAGE { 1 } else { 5 };
-static MONTE_CARLO_COUNT: usize = 1_000_000;
-static METRICS: [(&str, i64); 2] = [("SA", 0), ("Avg", 1)];
+
+const NUM_TESTS_TO_RUN: i64 = if DEBUG_AVERAGE { 1 } else { 5 };
+const MONTE_CARLO_COUNT: usize = 1_000_000;
+const METRICS: [(&str, i64); 2] = [("SA", 0), ("Avg", 1)];
+
 #[derive(Debug, Serialize)]
 struct Header {
     version: String,
@@ -77,7 +78,7 @@ fn main() {
     let job_id: String = env::var("SLURM_JOB_ID").unwrap_or_else(|_| "local".to_string());
     let task_id: String = env::var("SLURM_ARRAY_TASK_ID").unwrap_or_else(|_| "0".to_string());
     let file_name: String = format!(
-        "./Results/{}_{}_{}.jsonl",
+        "./crates/arena/Results/{}_{}_{}.jsonl",
         ACTIVE_FEATURE.replace("default, ", "").to_owned(),
         job_id,
         task_id,
@@ -109,11 +110,11 @@ fn main() {
             notes: NOTES.to_string(),
         };
         write_jsonl(&header, &file_name)
-            .expect(&format!("Failed to write to result file {}", file_name));
+            .unwrap_or_else(|_| panic!("Failed to write to result file {}", file_name));
     }
     // dbg!(&seen_tests);
     let test_cases: Vec<(String, StateBundle, Vec<bool>)> =
-        parse_payload_jsons(Path::new("test_payloads_bloated"));
+        parse_payload_jsons(Path::new("./crates/arena/test_payloads_bloated"));
 
     let mut zipped_test_cases: Vec<(String, StateBundle, String, i64, i64)> = Vec::new();
     for trial_num in 1..=NUM_TESTS_TO_RUN {
@@ -201,7 +202,7 @@ fn main() {
                     seed,
                     time_finished: current_time_string(),
                     prob_leftover,
-                    metric_type: "MC_".to_string() + &metric_type_string,
+                    metric_type: "MC_".to_string() + metric_type_string,
                     performance: dummy_performance.to_write(),
                     best_state_performance: dummy_performance.to_write(),
                 };

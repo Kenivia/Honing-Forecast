@@ -105,13 +105,13 @@ export default function OptimizeSection({
     inputsBundle,
     optimizeAvgBusy,
     // optimizeAvgResult,
-    optimizeAvgWorkerRef,
-    setOptimizeAvgBusy,
-    onCancelOptimizeAverage,
-    autoRunOptimizer,
-    setAutoRunOptimizer,
-    optimizeAvgError,
-    setOptimizeButtonPress,
+    optimizeAvgWorkerRef: _optimizeAvgWorkerRef,
+    setOptimizeAvgBusy: _setOptimizeAvgBusy,
+    onCancelOptimizeAverage: _onCancelOptimizeAverage,
+    autoRunOptimizer: _autoRunOptimizer,
+    setAutoRunOptimizer: _setAutoRunOptimizer,
+    optimizeAvgError: _optimizeAvgError,
+    setOptimizeButtonPress: _setOptimizeButtonPress,
     flatProgressArr,
     setFlatProgressArr,
     flatUnlockArr,
@@ -124,16 +124,16 @@ export default function OptimizeSection({
     evaluateAverageResult,
     specialState,
     setSpecialState,
-    optimizerProgress,
-    metricType,
-    bestMetric,
-    bestFlatStateBundle,
-    bestFlatSpecialState: bestFlatSpecialGrid,
+    optimizerProgress: _optimizerProgress,
+    metricType: _metricType,
+    bestMetric: _bestMetric,
+    bestFlatStateBundle: _bestFlatStateBundle,
+    bestFlatSpecialState: _bestFlatSpecialState,
     setMetricType: _setMetricType,
     ranOutFreeTaps,
     onRanOutFreeTaps,
-    beforeMetric,
-    setBeforeMetric,
+    beforeMetric: _beforeMetric,
+    setBeforeMetric: _setBeforeMetric,
     hasRunOptimizer,
     setAllowUserChangeState,
     isJuiceInfoCollapsed,
@@ -148,19 +148,19 @@ export default function OptimizeSection({
     // console.log(evaluateAverageResult)
     const _already_spent = evaluateAverageResult?.prep_output.already_spent
     const avg_breakdown = evaluateAverageResult?.average_breakdown
-    const cloneFlatStateBundle = (bundle: StatePair[][]) => bundle.map((row) => row.map((pair) => [pair[0], pair[1]] as StatePair))
+    // const cloneFlatStateBundle = (bundle: StatePair[][]) => bundle.map((row) => row.map((pair) => [pair[0], pair[1]] as StatePair))
     const juiceAvail = evaluateAverageResult?.prep_output.juice_info.num_avail ?? 0
-    const canRestoreBest =
-        !optimizeAvgBusy && bestMetric !== null && Boolean(bestFlatStateBundle) && Boolean(bestFlatSpecialGrid) && bestMetric > evaluateAverageResult?.metric
+    // const canRestoreBest =
+    //     !optimizeAvgBusy && bestMetric !== null && Boolean(bestFlatStateBundle) && Boolean(bestFlatSpecialGrid) && bestMetric > evaluateAverageResult?.metric
 
     // console.log(bestMetric, evaluateAverageResult?.metric)
-    const handleRestoreBest = () => {
-        if (!canRestoreBest || !bestFlatStateBundle || !bestFlatSpecialGrid) {
-            return
-        }
-        setFlatStateBundle(cloneFlatStateBundle(bestFlatStateBundle))
-        setSpecialState([...bestFlatSpecialGrid])
-    }
+    // const handleRestoreBest = () => {
+    //     if (!canRestoreBest || !bestFlatStateBundle || !bestFlatSpecialGrid) {
+    //         return
+    //     }
+    //     setFlatStateBundle(cloneFlatStateBundle(bestFlatStateBundle))
+    //     setSpecialState([...bestFlatSpecialGrid])
+    // }
 
     // const handleOptimizeAverageClick = () => {
     //     if (optimizeAvgBusy) {

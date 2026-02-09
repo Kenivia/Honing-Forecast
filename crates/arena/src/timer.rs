@@ -1,3 +1,5 @@
+//! I was gonna make the timer work for wasm also but like theer's no point
+
 #[cfg(not(target_arch = "wasm32"))]
 use std::time::Instant;
 

@@ -501,7 +501,7 @@ export default function StateGridsManager({
         [specialState, special_invalid_index],
     )
 
-    let invalid_tail = useMemo(() => specialState.slice(special_invalid_index, specialState.length), [specialState, special_invalid_index])
+    // let invalid_tail = useMemo(() => specialState.slice(special_invalid_index, specialState.length), [specialState, special_invalid_index])
     if (
         flatProgressArr.length !== flatStateBundle.length ||
         flatUnlockArr.length !== flatStateBundle.length ||

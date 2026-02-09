@@ -1,17 +1,12 @@
 use crate::constants::{FLOAT_TOL, JuiceInfo, NORMAL_JUICE_COST};
-use crate::normal_honing_utils::{new_prob_dist, probability_distribution};
-use crate::parser::PreparationOutput;
-// use itertools::izip;
+use crate::normal_honing_utils::probability_distribution;
 use serde::{Deserialize, Serialize};
-
 use std::collections::hash_map::DefaultHasher;
-
 use std::f64::{INFINITY, NAN, NEG_INFINITY};
 use std::ops::{Deref, DerefMut};
 
 use std::hash::{Hash, Hasher};
 
-// the parser function turns a selection of upgrades into an array of Upgrade objects
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Upgrade {
     pub is_normal_honing: bool,
@@ -90,24 +85,13 @@ impl DerefMut for State {
 }
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(transparent)]
+#[derive(Default)]
 pub struct ProbDist {
     pub payload: Vec<f64>,
     #[serde(skip)]
     pub prob_state_hash: u64,
-    // logged_payload: Vec<f64>, // force access through the function to do the check
-    // pub log_state_hash: u64,
 }
 
-impl Default for ProbDist {
-    fn default() -> Self {
-        Self {
-            payload: vec![],
-            prob_state_hash: 0,
-            // logged_payload: vec![],
-            // log_state_hash: 0,
-        }
-    }
-}
 
 impl ProbDist {
     pub fn new(new_payload: Vec<f64>) -> ProbDist {
@@ -122,25 +106,6 @@ impl ProbDist {
         self.payload = new_payload;
         self.prob_state_hash = new_state_hash;
     }
-    // pub fn logged_iter(&self) -> impl Iterator<Item = &f64> {
-    //     assert!(self.log_state_hash == self.prob_state_hash);
-    //     self.logged_payload.iter()
-    // }
-
-    // pub fn log_prob_dist(&self) -> &Vec<f64> {
-    //     assert!(self.log_state_hash == self.prob_state_hash);
-    //     &self.logged_payload
-    // }
-
-    // pub fn compute_log(&mut self) {
-    //     if self.log_state_hash != self.prob_state_hash {
-    //         self.logged_payload = self.payload.iter().map(|x| x.ln()).collect();
-    //         self.log_state_hash = self.prob_state_hash;
-    //     }
-    // }
-    // pub fn is_log_valid(&self) -> bool {
-    //     self.log_state_hash == self.prob_state_hash
-    // }
 }
 
 impl Deref for ProbDist {
@@ -154,7 +119,7 @@ impl Deref for ProbDist {
 pub struct Support {
     pub support: Vec<f64>,
     #[serde(skip)]
-    pub support_state_hash: u64, // i mean even this i dont think is that necessary but whatever
+    pub support_state_hash: u64,
     pub state_invariant: bool, // only talking about the support, prob can always change
     pub linear: bool,          // gap between 0 and 1 = gap between n and n+1
 
@@ -179,15 +144,13 @@ impl Support {
         }
     }
 
+    /// Incredibly crucial pre-processing, collapses identical values into 1 thing, and removes values with p = 0.
+    /// cumulant.rs makes the assumption that nothing has p = 0
     pub fn collapse_support(&mut self, prob_dist: &ProbDist, alr_failed: usize) {
-        // if prob_dist.payload.len() != self.support.len() {
-        //     dbg!(&prob_dist, &self.support);
-        // }
-
+        // these hash checks are mostly just for preventing me from doing stupid stuff and saving me from debugging
+        // it has the added benefit that we don't update if the state didn't change but is like negligible
         assert!(prob_dist.payload.len() == self.support.len());
         assert!(prob_dist.prob_state_hash == self.support_state_hash);
-
-        // let valid_log = prob_dist.is_log_valid();
 
         if self.collapsed_state_hash != self.support_state_hash {
             let mut result: Vec<(f64, f64)> = Vec::with_capacity(self.support.len());
@@ -227,10 +190,6 @@ impl Support {
                 }
             }
             self.ignore = result.len() == 1 && result[0].0.abs() < FLOAT_TOL;
-            // self.first_non_zero_prob_index = result
-            //     .iter()
-            //     .take_while(|(_, p)| p.abs() < FLOAT_TOL)
-            //     .count();
             self.max_value = max_value;
             self.min_value = min_value;
             self.first_non_zero_prob_index = 0;
@@ -238,28 +197,6 @@ impl Support {
             self.collapsed_state_hash = self.support_state_hash;
         }
     }
-
-    // pub fn new(
-    //     payload: Vec<f64>,
-    //     state_hash: u64,
-    //     state_invariant: bool,
-    //     linear: bool,
-    //     gap_size: f64,
-    // ) -> Self {
-    //     Self {
-    //         support: payload.clone(),
-    //         support_state_hash: state_hash,
-    //         state_invariant,
-    //         linear: linear,
-    //         collapsed_pair: payload
-    //             .iter()
-    //             .map(|&x| (x, NAN))
-    //             .collect::<Vec<(f64, f64)>>(),
-    //         collapsed_state_hash: 0,
-    //         ignore: false,
-    //         gap_size,
-    //     }
-    // }
 
     pub fn update_payload(
         &mut self,
@@ -275,7 +212,6 @@ impl Support {
         self.collapse_support(prob_dist, alr_failed);
         self.gap_size = gap_size;
         self.linear = linear;
-        // self.max_value = max;
     }
 }
 
@@ -285,7 +221,6 @@ impl Default for Support {
             support: vec![],
             support_state_hash: 0,
             state_invariant: false,
-            // initialized: false,
             linear: false,
             collapsed_state_hash: 0,
             collapsed_pair: vec![],
@@ -299,18 +234,9 @@ impl Default for Support {
     }
 }
 
-// impl Deref for Support {
-//     type Target = Vec<f64>;
-
-//     fn deref(&self) -> &Self::Target {
-//         &self.support
-//     }
-// }
-
 impl Upgrade {
     pub fn new_normal(
         base_chance: f64,
-        // prob_dist: Vec<f64>,
         costs: [i64; 7],
         special_cost: i64,
         is_weapon: bool,
@@ -328,7 +254,7 @@ impl Upgrade {
         let original_prob_dist_len: usize = probability_distribution(
             base_chance,
             artisan_rate,
-            &vec![],
+            &[],
             0.0,
             0,
             false,
@@ -348,7 +274,7 @@ impl Upgrade {
                     chance += juice_info.chances_id[*id][upgrade_index];
                 }
                 chance
-            }) //if *x > 0 { upgrade.base_chance } else { 0.0 }) //
+            })
             .collect();
 
         let prob_dist = probability_distribution(
@@ -362,14 +288,8 @@ impl Upgrade {
             extra_chance,
         );
         let prob_dist_len: usize = prob_dist.len();
-        // let base_chance: f64 = prob_dist[1];
-        // web_sys::console::log_1(&format!("{:?}", alr_failed).into());
-
-        // web_sys::console::log_1(&format!("a").into());
         let mut state = State::new(original_prob_dist_len);
-        // web_sys::console::log_1(&format!("a").into());
         state.update_payload(state_payload.to_owned());
-        // web_sys::console::log_1(&format!("{:?}", state).into());
         Self {
             is_normal_honing: true,
             prob_dist: ProbDist::new(prob_dist),
@@ -387,16 +307,10 @@ impl Upgrade {
             upgrade_index,
             special_value: -1.0_f64,
             original_prob_dist_len,
-
-            // log_prob_dist: vec![], // will change with each arrangement, maybe use a hashmap later
-            eqv_gold_per_tap: -1.0_f64, // dummy value
-            // gold_cost_record: vec![],
-            // juice_arr: vec![],
-            // eqv_gold_per_juice: -1.0_f64,
+            eqv_gold_per_tap: -1.0_f64,     // dummy value
             juice_avail: upgrade_index > 2, // will overwrite this in prep initialization anyway
             books_avail: -1,                // will overwrite in prep
-
-            state, // initialize state with default values
+            state,                          // initialize state with default values
             cost_dist: vec![Support::default(); 7],
             weap_juice_costs: vec![Support::default(); juice_info.num_avail],
             armor_juice_costs: vec![Support::default(); juice_info.num_avail],
@@ -416,6 +330,7 @@ impl Upgrade {
         }
     }
 
+    /// we initialize the support of adv here, and don't update it further (because we aren't doing optimizaiton for adv rn), but that will change in the future
     pub fn new_adv(
         prob_dist_vec: Vec<f64>,
         costs: [i64; 7],
@@ -423,7 +338,6 @@ impl Upgrade {
         juice_dist: Vec<f64>,
         is_weapon: bool,
         piece_type: usize,
-        adv_cost_start: i64,
         upgrade_index: usize,
         unlock_costs: Vec<i64>,
         succeeded: bool,
@@ -456,7 +370,6 @@ impl Upgrade {
                 }
                 cost_so_far += this_cost;
             }
-            // dbg!(t_index);
             cost_dist[t_index].update_payload(
                 this_mats_costs,
                 state.hash,
@@ -474,7 +387,7 @@ impl Upgrade {
             let mut weap_support: Vec<f64> = Vec::with_capacity(prob_dist_len);
             let mut armor_support: Vec<f64> = Vec::with_capacity(prob_dist_len);
 
-            for (index, this_juice) in juice_dist.iter().enumerate() {
+            for this_juice in juice_dist.iter() {
                 if id == 0 {
                     if is_weapon {
                         weap_cost = *this_juice;
@@ -520,22 +433,13 @@ impl Upgrade {
             upgrade_index,
             special_value: -1.0_f64,
             original_prob_dist_len: prob_dist_len,
-
-            // log_prob_dist: vec![], // will change with each arrangement, maybe use a hashmap later
             eqv_gold_per_tap: -1.0_f64, // dummy value
-            // gold_cost_record: vec![],
-            // juice_arr: vec![],
-            // eqv_gold_per_juice: -1.0_f64,
-            // failure_raw_delta: -1,
-            // failure_delta_order: -1,
-            juice_avail: true, // will overwrite this in prep initialization anyway
-            books_avail: -1,   // will overwrite in prep
-
-            state, // this is bogus for now, later it'll be a choice between adv hone strategy ig
+            juice_avail: true,          // will overwrite this in prep initialization anyway
+            books_avail: -1,            // will overwrite in prep
+            state, // this is bogus for now, later it'll be a choice between adv hone strategies ig
             cost_dist,
             weap_juice_costs,
             armor_juice_costs,
-
             combined_gold_costs: Support::default(),
             name_string: {
                 let mut string: String = "adv_".to_owned();

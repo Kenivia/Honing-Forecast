@@ -1,10 +1,10 @@
 // use hf_core::saddlepoint_approximation::average::DEBUG_AVERAGE;
 use super::one_batch::SolverStateBundle;
 
-use ordered_float::Float;
+// use ordered_float::Float;
 use rand::distr::Distribution;
 use rand::distr::weighted::WeightedIndex;
-use rand::seq::IteratorRandom;
+// use rand::seq::IteratorRandom;
 use rand::{Rng, random_bool, random_range};
 
 // use std::f64::{MAX, MIN};
@@ -63,7 +63,7 @@ impl SolverStateBundle {
                     continue;
                 }
 
-                let mut effective_len = 0;
+                // let  effective_len = 0;
 
                 // let mut artisan: f64 = 0.0;
                 // let mut count: f64 = 0.1;
@@ -74,7 +74,7 @@ impl SolverStateBundle {
                 let max_change_len = ((1.0 - progress).powi(2) * upgrade.state.len() as f64)
                     .ceil()
                     .max(4.0) as i64;
-                let mut new_juice_count = upgrade
+                let new_juice_count = upgrade
                     .state
                     .iter()
                     .skip(upgrade.alr_failed)
@@ -82,7 +82,7 @@ impl SolverStateBundle {
                     .count()
                     .saturating_add_signed(random_range(-max_change_len..max_change_len) as isize);
 
-                let mut new_juice_streak_len = upgrade
+                let new_juice_streak_len = upgrade
                     .state
                     .iter()
                     .skip(upgrade.alr_failed)
@@ -90,7 +90,7 @@ impl SolverStateBundle {
                     .count()
                     .saturating_add_signed(random_range(-max_change_len..max_change_len) as isize)
                     .min(new_juice_count);
-                let mut new_book_count = upgrade
+                let new_book_count = upgrade
                     .state
                     .iter()
                     .skip(upgrade.alr_failed)
@@ -98,7 +98,7 @@ impl SolverStateBundle {
                     .count()
                     .saturating_add_signed(random_range(-max_change_len..max_change_len) as isize);
 
-                let mut new_book_streak_len = upgrade
+                let new_book_streak_len = upgrade
                     .state
                     .iter()
                     .skip(upgrade.alr_failed)
@@ -124,11 +124,7 @@ impl SolverStateBundle {
                     //     * artisan_rate
                     //     * (base_chance * (1.0 + count)
                     if i < new_juice_count {
-                        if i < new_juice_streak_len {
-                            *juice = true;
-                        } else {
-                            *juice = false;
-                        }
+                        *juice = i < new_juice_streak_len;
                     } else {
                         *juice = false;
                     }

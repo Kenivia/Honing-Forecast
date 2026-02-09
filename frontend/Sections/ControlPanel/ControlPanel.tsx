@@ -31,36 +31,36 @@ export default function ControlPanel({
     // fillDemoIncome,
     clearAll,
     resetOptimizerState,
-    onCopyPayload,
+    onCopyPayload: _onCopyPayload,
     express_event,
     set_express_event,
-    cumulativeGraph,
-    setCumulativeGraph,
-    dataSize,
-    setDataSize,
+    cumulativeGraph: _cumulativeGraph,
+    setCumulativeGraph: _setCumulativeGraph,
+    dataSize: _dataSize,
+    setDataSize: _setDataSize,
     // lockXAxis,
     // onToggleLockXAxis,
-    minResolution,
-    setMinResolution,
-    allowUserChangeState,
-    setAllowUserChangeState,
+    minResolution: _minResolution,
+    setMinResolution: _setMinResolution,
+    allowUserChangeState: _allowUserChangeState,
+    setAllowUserChangeState: _setAllowUserChangeState,
 }: ControlPanelProps) {
-    const handleMinResolutionChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-        const rawValue = event.target.value.trim()
-        if (rawValue === "") {
-            return
-        }
-        if (!/^\d+$/.test(rawValue)) {
-            return
-        }
-        const parsed = Number.parseInt(rawValue, 10)
-        if (Number.isNaN(parsed)) {
-            return
-        }
-        const clamped = Math.max(1, Math.min(219, parsed))
-        setMinResolution(clamped)
-        console.log(rawValue, clamped)
-    }
+    // const handleMinResolutionChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    //     const rawValue = event.target.value.trim()
+    //     if (rawValue === "") {
+    //         return
+    //     }
+    //     if (!/^\d+$/.test(rawValue)) {
+    //         return
+    //     }
+    //     const parsed = Number.parseInt(rawValue, 10)
+    //     if (Number.isNaN(parsed)) {
+    //         return
+    //     }
+    //     const clamped = Math.max(1, Math.min(219, parsed))
+    //     setMinResolution(clamped)
+    //     console.log(rawValue, clamped)
+    // }
 
     return (
         <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 0, minWidth: 200, flexShrink: 0 }}>

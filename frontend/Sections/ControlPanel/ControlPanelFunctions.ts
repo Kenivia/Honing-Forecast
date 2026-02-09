@@ -1,5 +1,5 @@
 import React from "react"
-import { DEMO_INCOME_1680_ROSTER_BOUND, DEMO_INCOME_1720_CHAR_BOUND, DEMO_UI_VALUES, RESET_UI_DEFAULTS, DEFAULT_TOGGLES } from "@/Utils/Constants.ts"
+import { RESET_UI_DEFAULTS, DEFAULT_TOGGLES } from "@/Utils/Constants.ts"
 
 const cloneGrid = <T>(grid: T[][]) => grid.map((row) => row.map((cell) => cell))
 const cloneStateBundleGrid = (grid: [boolean, number][][][]) =>
