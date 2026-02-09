@@ -5,21 +5,22 @@
 use hf_arena::parse_test_cases::read_payload_jsons;
 use hf_core::payload::Payload;
 use hf_core::state_bundle::StateBundle;
+use rand::SeedableRng;
 use rand::prelude::*;
 use std::fs;
 use std::path::Path;
 
 static BLOAT_FACTOR: i64 = 10;
 static MULTIPLIER_RANGE: f64 = 5.0;
-static INPUT_DIR: &str = "test_payloads";
-static OUTPUT_DIR: &str = "test_payloads_bloated";
+static INPUT_DIR: &str = "crates/arena/test_payloads";
+static OUTPUT_DIR: &str = "crates/arena/test_payloads_bloated";
 
-fn random_multiplier(rng: &mut ThreadRng) -> f64 {
+fn random_multiplier(rng: &mut StdRng) -> f64 {
     MULTIPLIER_RANGE.powf(rng.random_range(-1.0..1.0_f64))
 }
 
 fn main() {
-    let mut rng: ThreadRng = rand::rng();
+    let mut rng: StdRng = StdRng::seed_from_u64(6942067);
     let payloads: Vec<(String, Payload)> = read_payload_jsons(Path::new(INPUT_DIR));
     let mut out: Vec<(String, Payload)> = Vec::new();
     let mut count: i64 = 0;

@@ -91,7 +91,7 @@ Hopefully at this point it's clear that we cannot assign a single gold value to 
 
 Here's a plot I made a while ago, the height / color is the cost, and the x and y axis denote how many juice to use for upgrade 1 and upgrade 2. I think they were like +23 and +25 or something.
 
-<https://i.redd.it/ha3atjrm9mhg1.png?width=836&format=png&auto=webp&s=d335ea8893420410fb30295da704b22255baaf4f>
+![Example plot of cost vs strategy](https://i.redd.it/ha3atjrm9mhg1.png?width=836&format=png&auto=webp&s=d335ea8893420410fb30295da704b22255baaf4f)
 
 We can imagine that this only gets more complex with more upgrades & free taps in the mix. Luckily, again, turns out a lot of people have ran into problems like this in the past.
 
@@ -171,7 +171,7 @@ There's no neural networks involved (everything has to run locally on your machi
 
 **3. What happened to the previous graphs and stuff?**
 
-The previous graphs did not consider the fact that some leftover mats are un-sellable. Ironically there's no more forecast more for now because I made a lot of changes that broke how it worked, and I have way too much uni work to catch up on.
+The previous graphs did not consider the fact that some leftover mats are un-sellable. Ironically there's no more forecast more for now because I made a lot of changes that broke how it worked.
 
 **4. What about advanced honing?**
 

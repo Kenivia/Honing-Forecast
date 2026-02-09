@@ -16,6 +16,7 @@ use std::env;
 use std::fs::{File, OpenOptions, remove_file};
 use std::io::{BufRead, BufReader, BufWriter, Error, Write};
 use std::path::Path;
+use std::thread::available_parallelism;
 use std::time::Instant;
 
 const NUM_TESTS_TO_RUN: i64 = if DEBUG_AVERAGE { 1 } else { 5 };
@@ -43,11 +44,6 @@ struct Output {
     prob_leftover: Vec<f64>,
 }
 
-// // Include the generated-file as a separate module
-// pub mod built_info {
-//     include!(concat!(env!("OUT_DIR"), "/built.rs"));
-// }
-
 fn current_time_string() -> String {
     let now = Local::now();
     now.format("%Y-%m-%d %H:%M:%S %Z").to_string()
@@ -71,18 +67,34 @@ fn write_jsonl<T: Serialize>(data: &T, file_name: &String) -> Result<(), Error> 
     Ok(())
 }
 fn main() {
+    let args: Vec<String> = env::args().collect();
+    let payload_path_string = if args.len() > 1 {
+        args[1].clone()
+    } else {
+        eprintln!("Usage: {} <path_to_payloads>", args[0]);
+        std::process::exit(1);
+    };
+    let payload_path = Path::new(&payload_path_string);
+    let payload_name = payload_path.file_name().unwrap().to_str().unwrap();
+
+    let thread_num = available_parallelism()
+        .unwrap()
+        .get()
+        .saturating_sub(2)
+        .max(1);
     rayon::ThreadPoolBuilder::new()
-        .num_threads(15)
+        .num_threads(thread_num)
         .build_global()
         .unwrap();
+    println!("Using {} threads", thread_num);
     let job_id: String = env::var("SLURM_JOB_ID").unwrap_or_else(|_| "local".to_string());
     let task_id: String = env::var("SLURM_ARRAY_TASK_ID").unwrap_or_else(|_| "0".to_string());
     let file_name: String = format!(
-        "./crates/arena/Results/{}_{}_{}.jsonl",
+        "./crates/arena/Results/{}_{}_{}_{}.jsonl",
         ACTIVE_FEATURE.replace("default, ", "").to_owned(),
         job_id,
         task_id,
-        // current_time_string().replace(":", "-"),
+        payload_name // current_time_string().replace(":", "-"),
     );
 
     let mut seen_tests: HashSet<(String, String, i64)> = HashSet::new();
@@ -113,9 +125,17 @@ fn main() {
             .unwrap_or_else(|_| panic!("Failed to write to result file {}", file_name));
     }
     // dbg!(&seen_tests);
-    let test_cases: Vec<(String, StateBundle, Vec<bool>)> =
-        parse_payload_jsons(Path::new("./crates/arena/test_payloads_bloated"));
 
+    let test_cases: Vec<(String, StateBundle, Vec<bool>)> =
+        parse_payload_jsons(Path::new(&payload_path_string));
+
+    if test_cases.len() == 0 {
+        panic!(
+            "No payload jsons found in {:?}, does the folder exist? {:?} ",
+            args[1],
+            Path::new(&payload_path_string)
+        )
+    }
     let mut zipped_test_cases: Vec<(String, StateBundle, String, i64, i64)> = Vec::new();
     for trial_num in 1..=NUM_TESTS_TO_RUN {
         for z in test_cases.iter() {
@@ -156,7 +176,10 @@ fn main() {
 
             // let trial_num = seen_tests.entry(key.clone()).or_insert(0);
             // *trial_num += 1;
-            println!("Test case {:?} trial {}", key, trial_num);
+            println!(
+                "Version {} Test case {:?} trial {}",
+                ACTIVE_FEATURE, key, trial_num
+            );
 
             let mut state_performance: Performance = Performance::new();
             let mut this_state_bundle = state_bundle.clone();

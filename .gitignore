@@ -9,6 +9,8 @@ lerna-debug.log*
 
 node_modules
 profile.json.gz
+test_payload_bloated
+
 dist-ssr
 *.local
 

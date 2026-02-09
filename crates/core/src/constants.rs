@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 pub const FLOAT_TOL: f64 = 1e-9; // it could prolly be lower? idk doesnt matter
 pub const SPECIAL_TOL: f64 = 1e-7;
 
-// +11 to +18 double artisan, +15 to 18 mats cost reduced by 10%, unlock cost reduced by 20%
+// no artisan multipliers this time
 pub const EVENT_ARTISAN_MULTIPLIER: [f64; 25] = [
     1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0,
     1.0, 1.0, 1.0, 1.0, 1.0, 1.0,

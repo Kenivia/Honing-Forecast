@@ -11,7 +11,7 @@ for ($v = $Start; $v -le $End; $v++) {
         --no-default-features `
         --features "v$v" `
         --profile release `
-        -- --no-capture
+        -- ./crates/arena/test_payloads_bloated `
 
     if ($LASTEXITCODE -ne 0) {
         Write-Host "Command failed for v$v, stopping."
