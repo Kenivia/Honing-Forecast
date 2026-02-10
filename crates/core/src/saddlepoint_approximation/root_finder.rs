@@ -1,4 +1,4 @@
-//! Finds theta such that K'(theta) = 0, or close enough
+//! Finds theta such that K'(theta) = budget, or close enough
 //! This is necessary as part of saddlepoint approximation
 
 use crate::constants::FLOAT_TOL;

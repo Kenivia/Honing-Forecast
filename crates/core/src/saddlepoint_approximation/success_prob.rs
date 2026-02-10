@@ -2,7 +2,7 @@
 //! which is the proabability of "succeeding".
 //! However this metric would need the additional assumption that all mats are sellable, you have no mats or you can afford pity (f is linear)
 //!
-//! Luckly this also doubles as the graph generator(histogram.rs)
+//! Luckily this also doubles as the graph generator(histogram.rs)
 
 use crate::constants::SPECIAL_TOL;
 use crate::performance::Performance;
