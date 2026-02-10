@@ -89,7 +89,7 @@ fn main() {
     let job_id: String = env::var("SLURM_JOB_ID").unwrap_or_else(|_| "local".to_string());
     let task_id: String = env::var("SLURM_ARRAY_TASK_ID").unwrap_or_else(|_| "0".to_string());
     let file_name: String = format!(
-        "./crates/arena/Results/{}_{}_{}_{}.jsonl",
+        "./crates/arena/results/{}_{}_{}_{}.jsonl",
         ACTIVE_FEATURE.replace("default, ", "").to_owned(),
         job_id,
         task_id,

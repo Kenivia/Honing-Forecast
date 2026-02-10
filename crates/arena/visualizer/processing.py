@@ -86,7 +86,7 @@ def build_trial_figure(
     x_axis: str,
 ) -> go.Figure:
     if history_df.empty:
-        return empty_figure("No data found in Results folder.")
+        return empty_figure("No data found in results folder.")
 
     if trial_selection == "mc":
         metric_type = f"MC_{base_metric}"
@@ -184,7 +184,7 @@ def build_aggregate_figure(
     base_metric: str,
 ) -> go.Figure:
     if history_df.empty:
-        return empty_figure("No data found in Results folder.")
+        return empty_figure("No data found in results folder.")
 
     family_df = history_df[
         (history_df["family"] == family)

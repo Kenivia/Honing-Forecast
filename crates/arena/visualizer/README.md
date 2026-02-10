@@ -1,6 +1,6 @@
 # Results data explorer
 
-EXTREMELY VIBE CODED thing to help me visualize what algorithms the best
+EXTREMELY VIBE CODED thing to help visualize which engine's the best
 
 ## Setup
 

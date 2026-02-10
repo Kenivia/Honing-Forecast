@@ -1,4 +1,4 @@
-//! Performance / analytics for the purpose of arena, but i dont want to write two versions of every functions so just pass dummy for non-arena usage
+//! Performance / analytics of both the engine & saddlepoint approximation, but i dont want to write two versions of every functions so just pass dummy for non-arena usage
 //!
 //! It tracks what method each P(X<B) evaluation actually uses, and how often the limiting case for SA occurs (answer: not very, like 1e-6)
 //! It also produces a history of the best metric for the purpose of visualization

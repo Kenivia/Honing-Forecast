@@ -9,7 +9,7 @@ from processing import build_trial_options, build_trial_figure, build_aggregate_
 
 
 ROOT = Path(__file__).resolve().parents[1]
-RESULTS_DIR = ROOT / "Results"
+RESULTS_DIR = ROOT / "results"
 DATA = load_results(RESULTS_DIR)
 
 
@@ -20,7 +20,7 @@ def _first_or_none(items: list[str]) -> str | None:
 DEFAULT_METRIC = "SA" if "SA" in DATA.base_metrics else _first_or_none(DATA.base_metrics)
 
 app = Dash(__name__)
-app.title = "Honing Results Explorer"
+app.title = "Honing results Explorer"
 
 app.layout = html.Div(
     style={"display": "flex", "flexDirection": "row", "gap": "16px"},
