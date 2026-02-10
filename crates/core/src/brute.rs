@@ -85,24 +85,17 @@ impl StateBundle {
 
                 for (s, p) in pairs {
                     let new_cost = current_cost + s;
-                    let step_prob = current_prob * p * if biased { s * inv_mean } else { 1.0 };
-
-                    // PRUNE 1: Guaranteed Success
-                    // If even the most expensive future choices fit in the budget,
-                    // we don't need to simulate them. We just bank the probability.
-                    if new_cost + next_max_rem <= budget - FLOAT_TOL {
-                        total_guaranteed_prob += step_prob;
-                        continue;
-                    }
-
-                    // PRUNE 2: Guaranteed Failure
-                    // If even the cheapest future choices exceed the budget,
-                    // drop this path immediately.
+                    let step_prob = current_prob * p;
                     if new_cost + next_min_rem > budget + FLOAT_TOL {
                         continue;
                     }
+                    if !biased {
+                        if new_cost + next_max_rem <= budget - FLOAT_TOL {
+                            total_guaranteed_prob += step_prob;
+                            continue;
+                        }
+                    }
 
-                    // UNCERTAIN: Must keep calculating
                     let new_key = FloatKey(new_cost);
                     *next_states.entry(new_key).or_insert(0.0) += step_prob;
                 }
@@ -119,7 +112,17 @@ impl StateBundle {
 
         // The answer is the sum of paths that were "Guaranteed Early"
         // + paths that survived to the very end validly.
-        
-        total_guaranteed_prob + current_states.values().sum::<f64>()
+
+        total_guaranteed_prob
+            + current_states
+                .iter()
+                .map(|(cost, prob)| {
+                    if biased {
+                        cost.0 * inv_mean * prob
+                    } else {
+                        *prob
+                    }
+                })
+                .sum::<f64>()
     }
 }

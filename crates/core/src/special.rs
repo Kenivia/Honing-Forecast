@@ -20,7 +20,7 @@ impl StateBundle {
     fn gcd_special(&self) -> i64 {
         let mut out: i64 = 1;
         for (index, upgrade) in self.upgrade_arr.iter().enumerate() {
-            if !upgrade.is_normal_honing {
+            if !upgrade.is_normal_honing || upgrade.succeeded {
                 continue;
             }
             if index == 0 {
