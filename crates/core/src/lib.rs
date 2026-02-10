@@ -1,5 +1,6 @@
 pub mod brute;
 pub mod constants;
+pub mod engine;
 pub mod helpers;
 pub mod monte_carlo;
 pub mod normal_honing_utils;

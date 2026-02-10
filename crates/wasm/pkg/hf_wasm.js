@@ -185,8 +185,8 @@ function debugString(val) {
  * @param {any} input
  * @returns {any}
  */
-export function evaluate_average_wrapper(input) {
-    const ret = wasm.evaluate_average_wrapper(input);
+export function histogram_wrapper(input) {
+    const ret = wasm.histogram_wrapper(input);
     return ret;
 }
 
@@ -203,8 +203,8 @@ export function optimize_average_wrapper(input) {
  * @param {any} input
  * @returns {any}
  */
-export function histogram_wrapper(input) {
-    const ret = wasm.histogram_wrapper(input);
+export function evaluate_average_wrapper(input) {
+    const ret = wasm.evaluate_average_wrapper(input);
     return ret;
 }
 

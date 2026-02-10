@@ -6,7 +6,7 @@
 /// (imported via import init, {evaluate_average_wrapper} from "@/../crates/wasm/pkg/honing_forecast.js"
 mod histogram;
 use crate::histogram::histogram;
-use hf_arena::engine::solve;
+use hf_core::engine::solve;
 use hf_core::payload::Payload;
 use hf_core::performance::Performance;
 use hf_core::state_bundle::StateBundle;

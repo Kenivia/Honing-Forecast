@@ -1,6 +1,6 @@
 # Arena
 
-This is where the optimizer engine is defined and tested. You can add another version in engines, add it in `lib.rs` and `Cargo.toml`, then test it via `cargo run --package hf-arena --bin hf-arena --no-default-features --features YOUR_VERSION  --profile release -- ./crates/arena/test_payloads` (This should be ran from the project root).
+This is where the optimizer engine is tested. You can add another version in the engine folder in core, add it in `mod.rs` and `Cargo.toml` (alongside all the others), then test it via `cargo run --package hf-arena --bin hf-arena --no-default-features --features YOUR_VERSION  --profile release -- ./crates/arena/test_payloads` (This should be ran from the project root).
 
 I don't think too many assumptions are made about the behaviour of the neighbour function, as long as it outputs valid states it should be okay. Specifically:
 

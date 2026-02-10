@@ -10,7 +10,6 @@ crate-type = ["cdylib"]
 
 [dependencies]
 hf-core = { path = "../core"}
-hf-arena={ path = "../arena" }
 wasm-bindgen = { version = "0.2", features = ["serde-serialize"] }
 serde = { version = "1.0", features = ["derive"] }
 rand = "0.9"

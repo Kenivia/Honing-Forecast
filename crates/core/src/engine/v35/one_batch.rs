@@ -2,12 +2,12 @@
 
 use super::constants::*;
 use super::scaler::AdaptiveScaler;
-use hf_core::performance::Performance;
+use crate::performance::Performance;
 
 #[cfg(target_arch = "wasm32")]
-use hf_core::send_progress::send_progress;
-use hf_core::state_bundle::StateBundle;
-use hf_core::state_bundle::StateEssence;
+use crate::send_progress::send_progress;
+use crate::state_bundle::StateBundle;
+use crate::state_bundle::StateEssence;
 
 use ordered_float::OrderedFloat;
 use rand::random_bool;

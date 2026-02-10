@@ -1,11 +1,11 @@
 use super::scaler::AdaptiveScaler;
 
-use hf_core::performance::Performance;
+use crate::performance::Performance;
 
 #[cfg(target_arch = "wasm32")]
-use hf_core::send_progress::send_progress;
-use hf_core::state_bundle::StateBundle;
-use hf_core::state_bundle::StateEssence;
+use crate::send_progress::send_progress;
+use crate::state_bundle::StateBundle;
+use crate::state_bundle::StateEssence;
 
 use ordered_float::OrderedFloat;
 
@@ -17,8 +17,8 @@ use rand::Rng;
 
 use super::constants::*;
 use super::one_batch::SolverStateBundle;
-// #[cfg(not(target_arch = "wasm32"))]
-use crate::timer::Timer;
+#[cfg(not(target_arch = "wasm32"))]
+use crate::helpers::Timer;
 
 pub fn my_push(
     queue: &mut DoublePriorityQueue<StateEssence, OrderedFloat<f64>>,
@@ -62,8 +62,9 @@ pub fn solve<R: Rng>(
     rng: &mut R,
 
     mut state_bundle: StateBundle,
-    overall_performance: &mut hf_core::performance::Performance,
+    overall_performance: &mut Performance,
 ) -> StateBundle {
+    #[cfg(not(target_arch = "wasm32"))]
     let timer = Timer::start();
 
     // let init_temp: f64 = if DEBUG_AVERAGE { -1.0 } else { 333.0 };

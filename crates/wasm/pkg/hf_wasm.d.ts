@@ -1,8 +1,8 @@
 /* tslint:disable */
 /* eslint-disable */
-export function evaluate_average_wrapper(input: any): any;
-export function optimize_average_wrapper(input: any): any;
 export function histogram_wrapper(input: any): any;
+export function optimize_average_wrapper(input: any): any;
+export function evaluate_average_wrapper(input: any): any;
 
 export type InitInput = RequestInfo | URL | Response | BufferSource | WebAssembly.Module;
 

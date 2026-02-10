@@ -21,7 +21,7 @@ impl SolverStateBundle {
             let max_dist = u_len; //((u_len as f64) * 0.5).round().max(1.0) as usize;
 
             // for _ in 0..(0.5 * u_len as f64).ceil() as usize {
-            let idx1 = self.rng.random_range(0..u_len);
+            let idx1: usize = self.rng.random_range(0..u_len);
             let offset = self.rng.random_range(1..=max_dist);
             let mut idx2 = if self.rng.random_bool(0.5) {
                 (idx1 + offset).min(u_len - 1)
