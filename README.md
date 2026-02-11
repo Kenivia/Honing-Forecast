@@ -197,6 +197,6 @@ You'll need the following:
 2. [wasm-pack](https://drager.github.io/wasm-pack/installer/)
 3. [Node.js](https://nodejs.org/en/download)
 
-Then, run `npm install` for the dependencies, then `npm run dev` for the dev server.
+Run `npm install` for the dependencies, then `npm run dev` for the dev server.
 
 You can take a look at [WIP](/WIP.md), but any help will be greatly appreciated!

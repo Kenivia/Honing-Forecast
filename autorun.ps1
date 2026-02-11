@@ -9,6 +9,8 @@ for ($v = $Start; $v -le $End; $v++) {
         --package hf-arena `
         --bin hf-arena `
         --profile release `
+        --no-default-features `
+        --features v$v  `
         -- ./crates/arena/test_payloads `
 
     if ($LASTEXITCODE -ne 0) {
