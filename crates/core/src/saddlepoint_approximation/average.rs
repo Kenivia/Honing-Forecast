@@ -21,9 +21,12 @@ impl StateBundle {
         mean
     }
 
-    /// Computes E[ f_1(X) + f_2(X) + ... ]
-    /// where f_i = gold incurred due to a mat type
-    /// and X = number of taps for each upgrade
+    /// Computes E[ f_1(X_1) + f_2(X_2) + ... ]
+    /// where f_i = gold incurred due to a mat type (described in one_dimension_average_gold)
+    /// and X_i is the amount of a particular mat type used
+    ///
+    /// Note that X_1, X_2 are not independent (in fact for non-juice they are multiples of each other), but that doesn't matter
+    ///
     /// We exploit the distributivity of expectation to reduce our multi-dimensional problem into many 1-D ones
     ///
     /// Well actually it calculates this for each outcome for special and takes the weighted average, see special.rs for more info about that  
@@ -103,18 +106,22 @@ impl StateBundle {
         total_gold
     }
 
-    /// let needed = cost - budget, then f_i = { needed * price if needed > 0, otherwise needed * leftover value (default 0)
+    /// For the sake of notations we focus on mat type i (every varaible here should have a subscript i but I cbb)
+    /// let b = budget of mat type i,
+    /// then f = { (X - b) * price if (X - b) > 0, otherwise (X - b) * leftover value (leftover default 0)
     ///
-    /// So E[f_i(X)] = price * E[X  * I(X > needed) ] + leftover value * E[X * I(X < needed)]
-    /// where I is the indicator function, and we evaluate
+    /// So E[f(X)] = price * E[(X - b)  * I(X > b) ] + leftover value * E[(X - b) * I(X < b)]
+    /// where I is the indicator function,
     ///
-    /// E[X * I(X < needed)] = E[X] * P( X' < needed), where X' has the probability distribution p' = p * s / mean at value s
+    /// and we define the biased distribution X' which has the probability distribution p' = p * s / mean at value s,
+    /// such that P(X' < b) = SUM (p * s / mean where s < b) = 1/mean * E[X * I(X<b)]
+    ///
+    /// which, after some algebra to avoid calling SA 4 times is the form you see below
     pub fn one_dimension_average_gold(
         &self,
         support_index: i64,
         skip_count: usize,
-        effective_budget: f64,
-
+        budget: f64,
         price: f64,
         leftover_value: f64,
         performance: &mut Performance,
@@ -123,13 +130,13 @@ impl StateBundle {
 
         if (price - leftover_value).abs() < FLOAT_TOL {
             // this also includes price = 0 (unless leftover is high for some reason)
-            return price * (effective_budget - simple_mean);
+            return price * (budget - simple_mean);
         }
 
         let biased_prob: f64 = self.saddlepoint_approximation_wrapper(
             support_index,
             skip_count,
-            effective_budget,
+            budget,
             true,
             simple_mean.ln(),
             performance,
@@ -137,34 +144,33 @@ impl StateBundle {
         let prob = self.saddlepoint_approximation_wrapper(
             support_index,
             skip_count,
-            effective_budget,
+            budget,
             false,
             NAN,
             performance,
         );
 
-        let out: f64 = price * (effective_budget - simple_mean)
-            + (leftover_value - price) * (effective_budget * prob - biased_prob * simple_mean);
+        let out: f64 = price * (budget - simple_mean)
+            + (leftover_value - price) * (budget * prob - biased_prob * simple_mean);
 
-        let left = effective_budget - simple_mean;
-        let right = effective_budget * prob - biased_prob * (simple_mean);
-        let truncated_mean = biased_prob * (simple_mean);
-        if (!out.is_finite() || DEBUG_AVERAGE)
-            && support_index == DEBUG_AVG_INDEX {
-                dbg!(
-                    simple_mean,
-                    self.find_min_max(support_index, skip_count),
-                    effective_budget,
-                    biased_prob,
-                    prob,
-                    truncated_mean,
-                    left,
-                    right,
-                    price,
-                    leftover_value,
-                    out,
-                );
-            }
+        if (!out.is_finite() || DEBUG_AVERAGE) && support_index == DEBUG_AVG_INDEX {
+            let left = budget - simple_mean;
+            let right = budget * prob - biased_prob * (simple_mean);
+            let truncated_mean = biased_prob * (simple_mean);
+            dbg!(
+                simple_mean,
+                self.find_min_max(support_index, skip_count),
+                budget,
+                biased_prob,
+                prob,
+                truncated_mean,
+                left,
+                right,
+                price,
+                leftover_value,
+                out,
+            );
+        }
         out
     }
 }

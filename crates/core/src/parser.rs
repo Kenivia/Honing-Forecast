@@ -15,7 +15,7 @@ pub struct PreparationOutput {
     pub eqv_gold_budget: f64,
     pub juice_info: JuiceInfo,
     pub juice_books_owned: Vec<(f64, f64)>,
-    pub effective_budgets: Vec<f64>,
+    pub effective_budgets: Vec<f64>, // this is just equal to budget now, I used to subtract unlock cost but now it's baked into the random variables
     pub already_spent: Option<(Vec<i64>, Vec<i64>, Vec<i64>, f64)>,
     pub flat_alr_spent: Option<Vec<f64>>,
 }

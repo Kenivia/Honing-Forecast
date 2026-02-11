@@ -90,8 +90,15 @@ pub const NORMAL_HONE_CHANCES: [f64; 25] = [
     0.03, 0.03, 0.015, 0.015, 0.01, 0.01, 0.005, 0.005,
 ];
 
-//  [  ( [ (upgrade_index, % amt, cost per juice(books = 1)  )] , gold_value of the juice/book wep version, armor version) ]
+//  [
+//      [
+//          ( [ (upgrade_index, % amt, cost per juice(books = 1)  )
+//          ...
+//      ]
+//  ]
 // add new entries from the bottom, order matters
+// does not currently support multiple books (non-juice) being availiable for one upgrade,
+// I couldn't figure out how to make the neighbor function work with that but otherwise should be fine
 pub const JUICE_BOOKS_AVAIL: &[&[(usize, f64, i64)]] = &[
     &[
         (3, 0.45, 20),

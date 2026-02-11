@@ -212,28 +212,21 @@ impl StateBundle {
             upgrade.update_this_prob_dist(&self.prep_output);
         }
     }
+
     pub fn flattened_effective_budgets(&self) -> impl Iterator<Item = f64> {
         self.prep_output
             .effective_budgets
-            .iter().copied()
-            .chain(
-                self.prep_output
-                    .juice_books_owned
-                    .iter()
-                    .map(|x| x.0),
-            )
-            .chain(
-                self.prep_output
-                    .juice_books_owned
-                    .iter()
-                    .map(|x| x.1),
-            )
+            .iter()
+            .copied()
+            .chain(self.prep_output.juice_books_owned.iter().map(|x| x.0))
+            .chain(self.prep_output.juice_books_owned.iter().map(|x| x.1))
     }
 
     pub fn flattened_price(&self) -> impl Iterator<Item = f64> {
         self.prep_output
             .price_arr
-            .iter().copied()
+            .iter()
+            .copied()
             .chain(
                 self.prep_output
                     .juice_info
@@ -253,7 +246,8 @@ impl StateBundle {
     pub fn flattened_leftover(&self) -> impl Iterator<Item = f64> {
         self.prep_output
             .leftover_values
-            .iter().copied()
+            .iter()
+            .copied()
             .chain(
                 self.prep_output
                     .juice_info
@@ -416,8 +410,6 @@ pub fn new_prob_dist(
             chance
         })
         .collect();
-
-    
 
     probability_distribution(
         upgrade.base_chance,

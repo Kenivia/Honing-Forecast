@@ -10,6 +10,10 @@ use rand::Rng;
 use rand::prelude::*;
 use std::cmp::min;
 
+/// Instead of actually sampling the distribution, we guarantee that every value has exactly the expected number of occurances
+/// I'm pre sure this doesn't work when the data size is too small (when a sample spans more than 2 buckets) but it's whatever
+///
+/// this (I think) is called latin hypercube sampling and tbh it didn't deserve such a cool name
 fn tap_map_generator<R: Rng>(count_limit: usize, prob_dist: &[f64], rng: &mut R) -> Vec<usize> {
     let mut tap_map: Vec<usize> = vec![0usize; count_limit];
 
@@ -327,16 +331,14 @@ pub fn monte_carlo_wrapper<R: Rng>(
         }
         // dbg!(&debug_avg_juices);
         for (id, d) in debug_avg_gold_by_juices.iter_mut().enumerate() {
-            let diff_weap =
-                state_bundle.prep_output.juice_books_owned[id].0 - float_juice[id].0;
+            let diff_weap = state_bundle.prep_output.juice_books_owned[id].0 - float_juice[id].0;
             d.0 += (diff_weap)
                 * if diff_weap > 0.0 {
                     state_bundle.prep_output.juice_info.one_leftover_value_id[id].0
                 } else {
                     state_bundle.prep_output.juice_info.one_gold_cost_id[id].0
                 };
-            let diff_armor =
-                state_bundle.prep_output.juice_books_owned[id].1 - float_juice[id].1;
+            let diff_armor = state_bundle.prep_output.juice_books_owned[id].1 - float_juice[id].1;
             d.1 += (diff_armor)
                 * if diff_armor > 0.0 {
                     state_bundle.prep_output.juice_info.one_leftover_value_id[id].1
