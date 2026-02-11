@@ -124,6 +124,7 @@ pub fn solve<R: Rng>(
     // vec![state_bundle.clone(); state_bundle.num_threads];
     while eqv_wall_time_iters < MAX_ITERS {
         // solver_arr.iter_mut().for_each(|x| x.one_batch(BATCH_SIZE));
+        // web_sys::console::log_1(&format!("{:?}", eqv_wall_time_iters).into());
         let mutate_special: bool;
         if solver_bundle.temps_without_improvement as f64
             > (10.0 * solver_bundle.progress()).max(3.0)

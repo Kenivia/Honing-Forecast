@@ -42,6 +42,8 @@ impl StateBundle {
         } else {
             mean.recip()
         };
+
+        let prune_top = budget > mean;
         // --- STEP 1: Pre-calculate Look-Ahead Bounds ---
         // min_suffix[i] = sum of minimum costs from layer i to end
         // max_suffix[i] = sum of maximum costs from layer i to end
@@ -86,13 +88,26 @@ impl StateBundle {
                 for (s, p) in pairs {
                     let new_cost = current_cost + s;
                     let step_prob = current_prob * p;
-                    if new_cost + next_min_rem > budget + FLOAT_TOL {
-                        continue;
-                    }
-                    if !biased {
-                        if new_cost + next_max_rem <= budget - FLOAT_TOL {
-                            total_guaranteed_prob += step_prob;
+
+                    if prune_top {
+                        if new_cost + next_max_rem < budget - FLOAT_TOL {
                             continue;
+                        }
+                        if !biased {
+                            if new_cost + next_min_rem > budget - FLOAT_TOL {
+                                total_guaranteed_prob += step_prob;
+                                continue;
+                            }
+                        }
+                    } else {
+                        if new_cost + next_min_rem > budget + FLOAT_TOL {
+                            continue;
+                        }
+                        if !biased {
+                            if new_cost + next_max_rem <= budget - FLOAT_TOL {
+                                total_guaranteed_prob += step_prob;
+                                continue;
+                            }
                         }
                     }
 
@@ -112,8 +127,7 @@ impl StateBundle {
 
         // The answer is the sum of paths that were "Guaranteed Early"
         // + paths that survived to the very end validly.
-
-        total_guaranteed_prob
+        let sum: f64 = total_guaranteed_prob
             + current_states
                 .iter()
                 .map(|(cost, prob)| {
@@ -123,6 +137,11 @@ impl StateBundle {
                         *prob
                     }
                 })
-                .sum::<f64>()
+                .sum::<f64>();
+        if prune_top {
+            1.0 - total_guaranteed_prob - sum
+        } else {
+            sum
+        }
     }
 }
