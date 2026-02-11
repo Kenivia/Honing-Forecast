@@ -148,11 +148,7 @@ impl StateBundle {
             support_index,
             skip_count,
             inp_budget,
-            if compute_biased {
-                self.simple_avg(support_index, skip_count)
-            } else {
-                NAN
-            },
+            self.simple_avg(support_index, skip_count),
             compute_biased,
         )
     }
