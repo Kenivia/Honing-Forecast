@@ -1,5 +1,5 @@
 //! Serves in place of saddlepoint_approximation when the complexity isn't too bad
-//! Mostly vibe coded
+//! The key stuff was vibe coded
 
 use crate::constants::FLOAT_TOL;
 use crate::state_bundle::StateBundle;
@@ -43,7 +43,7 @@ impl StateBundle {
             mean.recip()
         };
 
-        let prune_top = budget > mean;
+        let prune_top: bool = budget > mean;
         // --- STEP 1: Pre-calculate Look-Ahead Bounds ---
         // min_suffix[i] = sum of minimum costs from layer i to end
         // max_suffix[i] = sum of maximum costs from layer i to end
@@ -125,8 +125,6 @@ impl StateBundle {
             index += 1;
         }
 
-        // The answer is the sum of paths that were "Guaranteed Early"
-        // + paths that survived to the very end validly.
         let sum: f64 = total_guaranteed_prob
             + current_states
                 .iter()
@@ -138,10 +136,6 @@ impl StateBundle {
                     }
                 })
                 .sum::<f64>();
-        if prune_top {
-            1.0 - total_guaranteed_prob - sum
-        } else {
-            sum
-        }
+        if prune_top { 1.0 - sum } else { sum }
     }
 }

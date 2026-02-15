@@ -5,7 +5,7 @@ use crate::saddlepoint_approximation::cumulants::KsTuple;
 use crate::state_bundle::StateBundle;
 use crate::upgrade::Support;
 use statrs::distribution::{Continuous, ContinuousCDF, Normal};
-use std::f64::{INFINITY, NAN};
+use std::f64::INFINITY;
 
 pub const DEBUG_SA: bool = false;
 pub const MIN_LATTICE_SPAN: f64 = 1.0;

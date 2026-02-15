@@ -146,7 +146,6 @@ export default function OptimizeSection({
     const [isGoldBreakdownCollapsed, setIsGoldBreakdownCollapsed] = React.useState(true)
     const { wideMatsColumnDefs } = createColumnDefs()
     // console.log(evaluateAverageResult)
-    const _already_spent = evaluateAverageResult?.prep_output.already_spent
     const avg_breakdown = evaluateAverageResult?.average_breakdown
     // const cloneFlatStateBundle = (bundle: StatePair[][]) => bundle.map((row) => row.map((pair) => [pair[0], pair[1]] as StatePair))
     const juiceAvail = evaluateAverageResult?.prep_output.juice_info.num_avail ?? 0

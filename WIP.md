@@ -47,6 +47,10 @@
 
 - Automatic Market price integration(via some kind of API, or just updating the site at a regular interval automatically)
 
+## Algorithm ideas
+
+- default to brute force when decision space < 24000 (with restriction of streaks)
+
 ## Done / cancelled
 
 - ~~selectable double um balls event thing~~
