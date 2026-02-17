@@ -14,6 +14,9 @@ test_payload_bloated
 dist-ssr
 *.local
 
+crates/wasm/pkg/*
+!crates/wasm/pkg/LICENSE
+
 CONOUT$
 # Editor directories and files, pushing .vscode
 !.vscode/extensions.json

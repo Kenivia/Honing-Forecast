@@ -1,10 +1,24 @@
 
 # Work in Progress
 
+## NOW
+
+- add the test framework back, it should honestly be a lot easier now with payload
+
 ## UI
 
-- Better roster tracking & income estimation(I don't think automatic game-to-website input is possible, but something like a generic 1680 income would be nice, need information/data on this)
-  - char-selection page for budget
+- i swear something big needs to change, this UI aint it
+
+## Char selection page
+
+- roster tracking & income estimation
+- copy paste from uwuowo
+- toggle "done" upgrades
+- some better way to input mats?
+  - screenshot upload? screen share recording? need OCR
+  
+## Misc UI
+
 - Input arithmetic parsing(e.g. allow inputs like 25*1234 for easier boxes calculation)
 - Ctrl z, delete
 - Hover question mark tooltips for various systems, but still aim to be intuitive
@@ -26,12 +40,14 @@
 
   - maybe pre-generate a bunch of scenarios?
     - can allow for different states also eventually
+      - need to systematically do this (full juice strategies & also like 1 scroll 2 scroll type beat), maybe rewrite this in rust
     - scrolls calculations
+      - need to generalize juice info to accomodate this
 
 ## Serca
 
 - how to consider 1-to-5 conversion??? prolly just 2 sets of grids and 2 sets of prices
-
+  
 ## Misc
 
 - JUICE CHESTS AND MAYBE EVEN BOOKS CHESTS
@@ -40,8 +56,6 @@
 
 - start working on visualizing this stuff
   - put all possible states on one axis (must be small support like 5? 10? ) and sort by number of juice used, then color/ 3d height?
-
-- add the test framework back, it should honestly be a lot easier now with payload
 
 ## Other features
 
