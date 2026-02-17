@@ -1,5 +1,5 @@
 use crate::saddlepoint_approximation::average::DEBUG_AVERAGE;
-#[cfg(target_arch = "wasm32")]
+#[cfg(feature = "wasm")]
 use crate::send_progress::send_progress;
 use crate::state_bundle::StateBundle;
 use rand::Rng;
@@ -8,7 +8,7 @@ use rand::distr::weighted::WeightedIndex;
 use rand::seq::IteratorRandom;
 // use std::f64::{MAX, MIN};
 
-// #[cfg(not(target_arch = "wasm32"))]
+// #[cfg(not(feature = "wasm"))]
 use crate::helpers::Timer;
 
 fn acceptance<R: Rng>(
@@ -146,7 +146,7 @@ fn my_weighted_rand<R: Rng>(
         ratio,
     ));
     if res.is_err() {
-        dbg!(length, temp, init_temp, offset, ratio);
+        my_dbg!(length, temp, init_temp, offset, ratio);
     }
     res.unwrap().sample(rng) + offset
 }
@@ -322,7 +322,7 @@ pub fn solve<R: Rng>(
     mut state_bundle: StateBundle,
     performance: &mut crate::performance::Performance,
 ) -> StateBundle {
-    // #[cfg(not(target_arch = "wasm32"))]
+    // #[cfg(not(feature = "wasm"))]
     // {
     let timer = Timer::start();
     // }
@@ -413,7 +413,7 @@ pub fn solve<R: Rng>(
             temp = new_temp(temp, alpha);
         }
         if total_count % 1000 == 0 {
-            #[cfg(not(target_arch = "wasm32"))]
+            #[cfg(not(feature = "wasm"))]
             {
                 performance.best_history.push((
                     timer.elapsed_sec(),
@@ -422,7 +422,7 @@ pub fn solve<R: Rng>(
                 ));
             }
 
-            #[cfg(target_arch = "wasm32")]
+            #[cfg(feature = "wasm")]
             {
                 send_progress(
                     &best_state_so_far.clone(),

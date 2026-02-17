@@ -4,7 +4,7 @@
     "type": "module",
     "scripts": {
         "deploy": "npm run test && npm run build && vite build",
-        "test": "cargo test --profile release -- --no-capture",
+        "test": "cargo test -p hf-core --profile release --no-default-features --features active_version,run_tests -- --no-capture",
         "dev": "npm run build && vite",
         "build": "wasm-pack build crates/wasm --release --target web"
     },

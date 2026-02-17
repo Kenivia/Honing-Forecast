@@ -1,4 +1,5 @@
 use crate::constants::{FLOAT_TOL, SPECIAL_TOL};
+use crate::my_dbg;
 use crate::performance::Performance;
 use crate::state_bundle::StateBundle;
 use itertools::izip;
@@ -157,7 +158,7 @@ impl StateBundle {
             let left = budget - simple_mean;
             let right = budget * prob - biased_prob * (simple_mean);
             let truncated_mean = biased_prob * (simple_mean);
-            dbg!(
+            my_dbg!(
                 simple_mean,
                 self.find_min_max(support_index, skip_count),
                 budget,

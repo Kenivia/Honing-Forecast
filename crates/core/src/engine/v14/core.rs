@@ -1,5 +1,5 @@
 // use crate::saddlepoint_approximation::average::DEBUG_AVERAGE;
-#[cfg(target_arch = "wasm32")]
+#[cfg(feature = "wasm")]
 use crate::send_progress::send_progress;
 use crate::state_bundle::StateBundle;
 use rand::Rng;
@@ -52,7 +52,7 @@ pub fn my_weighted_rand(
         ratio,
     ));
     if res.is_err() {
-        dbg!(length, temp, INIT_TEMP, offset, ratio);
+        my_dbg!(length, temp, INIT_TEMP, offset, ratio);
     }
     res.unwrap().sample(rng) + offset
 }

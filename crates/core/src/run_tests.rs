@@ -110,7 +110,7 @@ pub fn run_tests(payload_path_string: String, is_test: bool) {
             seen_tests.insert((out.test_case, out.metric_type, out.trial_num), out.best);
         }
     }
-    // dbg!(&seen_tests);
+    // my_dbg!(&seen_tests);
     if !at_least_one_line {
         if Path::new(&file_name).exists() {
             remove_file(&file_name).expect("Failed to delete empty file");
@@ -123,7 +123,7 @@ pub fn run_tests(payload_path_string: String, is_test: bool) {
         write_jsonl(&header, &file_name)
             .unwrap_or_else(|_| panic!("Failed to write to result file {}", file_name));
     }
-    // dbg!(&seen_tests);
+    // my_dbg!(&seen_tests);
 
     let test_cases: Vec<(String, StateBundle)> = parse_to_state_bundles(Path::new(
         &(if is_test {
@@ -162,7 +162,7 @@ pub fn run_tests(payload_path_string: String, is_test: bool) {
                 {
                     continue;
                 }
-                // dbg!(key);
+                // my_dbg!(key);
                 zipped_test_cases.push((
                     test_case_name.clone(),
                     state_bundle.clone(),

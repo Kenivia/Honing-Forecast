@@ -8,7 +8,7 @@ use super::core::neighbour;
 use super::scaler::AdaptiveScaler;
 use crate::performance::Performance;
 
-#[cfg(target_arch = "wasm32")]
+#[cfg(feature = "wasm")]
 use crate::send_progress::send_progress;
 use crate::state_bundle::StateBundle;
 use crate::state_bundle::StateEssence;

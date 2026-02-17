@@ -1,6 +1,7 @@
 //! Monte carlo to experimentally verify our results, not used in the website (anymore)
 
 use crate::constants::FLOAT_TOL;
+use crate::my_dbg;
 use crate::normal_honing_utils::{add_up_golds, apply_price_leftovers, apply_price_naive};
 use crate::saddlepoint_approximation::average::DEBUG_AVERAGE;
 use crate::state_bundle::StateBundle;
@@ -154,7 +155,7 @@ pub fn monte_carlo_data<R: Rng>(
 
     let mut highest_upgrade_index_seen: Vec<i64> = vec![-1; 6];
     let mut special_valid: bool;
-    // dbg!(&state_bundle, &prep_output);
+    // my_dbg!(&state_bundle, &prep_output);
     for (attempt_index, u_index) in state_bundle.special_state.iter().enumerate() {
         let upgrade = &state_bundle.upgrade_arr[*u_index];
         let tap_map: Vec<usize> = tap_map_generator(data_size, &upgrade.prob_dist, rng);
@@ -216,7 +217,7 @@ pub fn monte_carlo_data<R: Rng>(
         .iter()
         .map(|&x| 1.0 - x as f64 / data_size as f64)
         .collect::<Vec<f64>>();
-    // dbg!(&result);
+    // my_dbg!(&result);
     result[0] = 1.0 - result[1]; // nothing free tapped
     let mut actual_out = Vec::with_capacity(result.len());
 
@@ -233,9 +234,9 @@ pub fn monte_carlo_data<R: Rng>(
 
     if DEBUG_AVERAGE {
         state_bundle.compute_special_probs();
-        dbg!(actual_out);
-        dbg!(state_bundle.special_probs());
-        dbg!(&state_bundle.prep_output.juice_info);
+        my_dbg!(actual_out);
+        my_dbg!(state_bundle.special_probs());
+        my_dbg!(&state_bundle.prep_output.juice_info);
     }
 
     (mats_data, juice_data, skip_count_data)
@@ -329,7 +330,7 @@ pub fn monte_carlo_wrapper<R: Rng>(
                     state_bundle.prep_output.juice_info.one_gold_cost_id[id].1
                 };
         }
-        // dbg!(&debug_avg_juices);
+        // my_dbg!(&debug_avg_juices);
         for (id, d) in debug_avg_gold_by_juices.iter_mut().enumerate() {
             let diff_weap = state_bundle.prep_output.juice_books_owned[id].0 - float_juice[id].0;
             d.0 += (diff_weap)
@@ -351,7 +352,7 @@ pub fn monte_carlo_wrapper<R: Rng>(
             apply_price_leftovers(&float_row, &float_juice, state_bundle);
         let this: f64 = add_up_golds(&mats_gold_leftover, &juice_gold_leftover);
         average += this;
-        // dbg!(this);
+        // my_dbg!(this);
         let (mats_gold_naive, juice_gold_naive) =
             apply_price_naive(&float_row, &float_juice, state_bundle);
         let gold_eqv_naive: f64 = add_up_golds(&mats_gold_naive, &juice_gold_naive);
@@ -411,7 +412,7 @@ pub fn monte_carlo_wrapper<R: Rng>(
     }
 
     if DEBUG_AVERAGE {
-        dbg!(
+        my_dbg!(
             // &debug_avg_gold_by_mats,
             &debug_avg_gold_by_mats_by_skip,
             &debug_avg_gold_by_weap_juice_by_skip,

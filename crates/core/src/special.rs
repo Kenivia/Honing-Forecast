@@ -96,7 +96,7 @@ impl StateBundle {
         for (attempt_index, u_index) in self.special_state.iter().enumerate() {
             let upgrade = &self.upgrade_arr[*u_index];
 
-            // dbg!(upgrade.upgrade_index, upgrade.is_weapon, upgrade.piece_type);
+            // my_dbg!(upgrade.upgrade_index, upgrade.is_weapon, upgrade.piece_type);
             if !upgrade.is_normal_honing
                 || upgrade.succeeded
                 || highest_upgrade_index_seen[upgrade.piece_type] > upgrade.upgrade_index as i64

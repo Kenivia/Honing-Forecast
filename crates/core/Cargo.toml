@@ -4,7 +4,7 @@ edition = "2024"
 description = "Honing calculator for Lost Ark"
 repository = "https://github.com/Kenivia/Honing-Forecast"
 license = "AGPL-3.0-or-later"
-
+version = "0.1.0"
 
 [lib]
 crate-type = ["cdylib", "rlib"]
@@ -67,4 +67,5 @@ v34=[]
 v35=[]
 run_tests=["rayon", "chrono"]
 wasm=["web-sys","serde-wasm-bindgen", "wasm-bindgen", "getrandom/wasm_js" ]
-default=["v35","wasm"]
+active_version=["v35"]
+default=["active_version", "wasm"]  

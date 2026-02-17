@@ -2,7 +2,7 @@ use super::scaler::AdaptiveScaler;
 use crate::constants::FLOAT_TOL;
 use crate::performance::Performance;
 use crate::saddlepoint_approximation::average::DEBUG_AVERAGE;
-#[cfg(target_arch = "wasm32")]
+#[cfg(feature = "wasm")]
 use crate::send_progress::send_progress;
 use crate::state_bundle::StateBundle;
 use crate::state_bundle::StateEssence;
@@ -20,7 +20,7 @@ use super::core::CONCURRENT_COUNT;
 use super::core::MAX_BEST_SIZE;
 use super::core::MAX_ITERS;
 use super::one_batch::SolverStateBundle;
-// #[cfg(not(target_arch = "wasm32"))]
+// #[cfg(not(feature = "wasm"))]
 use crate::helpers::Timer;
 
 pub fn my_push(
@@ -112,7 +112,7 @@ pub fn solve<R: Rng>(
         );
         solver_arr.push(solver_state_bundle);
     }
-    #[cfg(not(target_arch = "wasm32"))]
+    #[cfg(not(feature = "wasm"))]
     {
         overall_performance.best_history.push((
             timer.elapsed_sec(),
@@ -122,9 +122,7 @@ pub fn solve<R: Rng>(
     }
     // vec![state_bundle.clone(); state_bundle.num_threads];
     while eqv_wall_time_iters < MAX_ITERS {
-        solver_arr
-            .iter_mut()
-            .for_each(|x| x.one_batch(BATCH_SIZE));
+        solver_arr.iter_mut().for_each(|x| x.one_batch(BATCH_SIZE));
 
         let mut new_scale = 0.0;
         let mut new_special_cache = solver_arr[0].state_bundle.special_cache.clone();
@@ -147,10 +145,10 @@ pub fn solve<R: Rng>(
             solver.perform_crossover();
         }
 
-               eqv_wall_time_iters += BATCH_SIZE;
- if eqv_wall_time_iters * actual_thread_num - last_total_count * actual_thread_num >= 1000 {
+        eqv_wall_time_iters += BATCH_SIZE;
+        if eqv_wall_time_iters * actual_thread_num - last_total_count * actual_thread_num >= 1000 {
             last_total_count = eqv_wall_time_iters;
-            #[cfg(not(target_arch = "wasm32"))]
+            #[cfg(not(feature = "wasm"))]
             {
                 overall_performance.best_history.push((
                     timer.elapsed_sec(),
@@ -159,7 +157,7 @@ pub fn solve<R: Rng>(
                 ));
             }
 
-            #[cfg(target_arch = "wasm32")]
+            #[cfg(feature = "wasm")]
             {
                 state_bundle.clone_from_essence(
                     overall_best_n_states.peek_max().unwrap().0,
@@ -173,7 +171,6 @@ pub fn solve<R: Rng>(
                 )
             }
         }
-
     }
 
     let best_pair = overall_best_n_states.peek_max().unwrap();

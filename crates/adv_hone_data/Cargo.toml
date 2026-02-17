@@ -4,7 +4,7 @@ edition = "2024"
 description = "Honing calculator for Lost Ark"
 repository = "https://github.com/Kenivia/Honing-Forecast"
 license = "AGPL-3.0-or-later"
-
+version = "0.1.0"
 
 [dependencies]
 serde = "1.0.228"

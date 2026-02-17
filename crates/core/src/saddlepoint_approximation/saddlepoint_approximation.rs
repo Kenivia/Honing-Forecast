@@ -1,5 +1,6 @@
 use crate::brute::MAX_BRUTE_SIZE;
 use crate::constants::FLOAT_TOL;
+use crate::my_dbg;
 use crate::performance::Performance;
 use crate::saddlepoint_approximation::cumulants::KsTuple;
 use crate::state_bundle::StateBundle;
@@ -233,10 +234,10 @@ impl StateBundle {
             || !(-FLOAT_TOL..=1.0 + FLOAT_TOL).contains(&actual_out)
             || !actual_out.is_finite()
         {
-            dbg!(theta_hat, k1_zero);
-            dbg!(w_hat, u_hat, sa_out);
+            my_dbg!(theta_hat, k1_zero);
+            my_dbg!(w_hat, u_hat, sa_out);
 
-            #[cfg(target_arch = "wasm32")]
+            #[cfg(feature = "wasm")]
             web_sys::console::log_1(
                 &format!(
                     "{:?}",
@@ -247,12 +248,12 @@ impl StateBundle {
                 .into(),
             );
 
-            dbg!(
+            my_dbg!(
                 self.extract_collapsed_pair(support_index, skip_count)
                     .collect::<Vec<&Vec<(f64, f64)>>>()
             );
 
-            dbg!(
+            my_dbg!(
                 budget,
                 min_value,
                 max_value,
@@ -288,7 +289,7 @@ impl StateBundle {
                 )
             );
 
-            #[cfg(target_arch = "wasm32")]
+            #[cfg(feature = "wasm")]
             web_sys::console::log_1(
                 &format!(
                     "{:?} {:?} {:?} {:?} {:?} {:?} {:?} {:?} {:?} {:?} {:?} {:?} {:?} {:?} {:?} {:?} {:?} {:?} ",
@@ -314,7 +315,7 @@ impl StateBundle {
                 .into(),
             );
 
-            dbg!(
+            my_dbg!(
                 compute_biased,
                 theta_hat,
                 ks_tuple,

@@ -142,7 +142,7 @@ checksum = "841d1cc9bed7f9236f321df977030373f4a4163ae1a7dbfe1a51a2c1a51d9100"
 
 [[package]]
 name = "hf-arena"
-version = "0.0.0"
+version = "0.1.0"
 dependencies = [
  "hf-core",
  "rand",
@@ -151,7 +151,7 @@ dependencies = [
 
 [[package]]
 name = "hf-core"
-version = "0.0.0"
+version = "0.1.0"
 dependencies = [
  "cfg-if",
  "chrono",
@@ -172,7 +172,7 @@ dependencies = [
 
 [[package]]
 name = "hf-wasm"
-version = "0.0.0"
+version = "0.1.0"
 dependencies = [
  "console_error_panic_hook",
  "getrandom",

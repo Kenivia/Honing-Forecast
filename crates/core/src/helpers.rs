@@ -7,27 +7,64 @@ use crate::upgrade::Upgrade;
 
 use rand::Rng;
 
-#[cfg(not(target_arch = "wasm32"))]
+#[cfg(not(feature = "wasm"))]
 use std::time::Instant;
+#[macro_export]
+macro_rules! my_dbg {
+    // Match 0 arguments
+    () => {
+        #[cfg(feature = "wasm")]
+        web_sys::console::log_1(&format!("[{}:{}]", file!(), line!()).into());
+
+        #[cfg(not(feature = "wasm"))]
+        std::eprintln!("[{}:{}]", file!(), line!());
+    };
+    // Match 1 or more arguments
+    ($($val:expr),+ $(,)?) => {
+        {
+            #[cfg(feature = "wasm")]
+            {
+                $(
+                    // Mimic dbg! output format: [file:line] expr = value
+                    let msg = format!(
+                        "[{}:{}] {} = {:?}",
+                        file!(),
+                        line!(),
+                        stringify!($val),
+                        $val
+                    );
+                    web_sys::console::log_1(&msg.into());
+                )+
+            }
+
+            #[cfg(not(feature = "wasm"))]
+            {
+                $(
+                    std::dbg!($val);
+                )+
+            }
+        }
+    };
+}
 
 pub fn my_diff(a: f64, b: f64) -> f64 {
     (a - b).abs() / a.abs().max(b.abs()).max(1.0)
 }
 pub struct Timer {
-    #[cfg(not(target_arch = "wasm32"))]
+    #[cfg(not(feature = "wasm"))]
     start: Instant,
 }
 
 impl Timer {
     pub fn start() -> Self {
-        #[cfg(not(target_arch = "wasm32"))]
+        #[cfg(not(feature = "wasm"))]
         {
             Self {
                 start: Instant::now(),
             }
         }
 
-        #[cfg(target_arch = "wasm32")]
+        #[cfg(feature = "wasm")]
         {
             Self {}
         }
@@ -35,12 +72,12 @@ impl Timer {
 
     /// elapsed time in milliseconds
     pub fn elapsed_sec(&self) -> f64 {
-        #[cfg(not(target_arch = "wasm32"))]
+        #[cfg(not(feature = "wasm"))]
         {
             self.start.elapsed().as_secs_f64()
         }
 
-        #[cfg(target_arch = "wasm32")]
+        #[cfg(feature = "wasm")]
         {
             -6.9
         }
