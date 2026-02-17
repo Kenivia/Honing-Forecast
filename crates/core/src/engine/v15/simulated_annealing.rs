@@ -1,16 +1,16 @@
 use super::scaler::AdaptiveScaler;
-use hf_core::constants::FLOAT_TOL;
-use hf_core::performance::Performance;
-use hf_core::saddlepoint_approximation::average::DEBUG_AVERAGE;
+use crate::constants::FLOAT_TOL;
+use crate::performance::Performance;
+use crate::saddlepoint_approximation::average::DEBUG_AVERAGE;
 #[cfg(target_arch = "wasm32")]
-use hf_core::send_progress::send_progress;
-use hf_core::state_bundle::StateBundle;
-use hf_core::state_bundle::StateEssence;
+use crate::send_progress::send_progress;
+use crate::state_bundle::StateBundle;
+use crate::state_bundle::StateEssence;
 
 use ordered_float::OrderedFloat;
 
-use rayon::iter::IntoParallelRefMutIterator;
-use rayon::iter::ParallelIterator;
+// use rayon::iter::IntoParallelRefMutIterator;
+// use rayon::iter::ParallelIterator;
 
 use priority_queue::DoublePriorityQueue;
 use rand::Rng;
@@ -21,7 +21,7 @@ use super::core::MAX_BEST_SIZE;
 use super::core::MAX_ITERS;
 use super::one_batch::SolverStateBundle;
 // #[cfg(not(target_arch = "wasm32"))]
-use crate::timer::Timer;
+use crate::helpers::Timer;
 
 pub fn my_push(
     queue: &mut DoublePriorityQueue<StateEssence, OrderedFloat<f64>>,
@@ -65,7 +65,7 @@ pub fn solve<R: Rng>(
     rng: &mut R,
 
     mut state_bundle: StateBundle,
-    overall_performance: &mut hf_core::performance::Performance,
+    overall_performance: &mut crate::performance::Performance,
 ) -> StateBundle {
     let timer = Timer::start();
 
@@ -123,7 +123,7 @@ pub fn solve<R: Rng>(
     // vec![state_bundle.clone(); state_bundle.num_threads];
     while eqv_wall_time_iters < MAX_ITERS {
         solver_arr
-            .par_iter_mut()
+            .iter_mut()
             .for_each(|x| x.one_batch(BATCH_SIZE));
 
         let mut new_scale = 0.0;
@@ -147,8 +147,8 @@ pub fn solve<R: Rng>(
             solver.perform_crossover();
         }
 
-               eqv_wall_time_iters += BATCH_SIZE;
- if eqv_wall_time_iters * actual_thread_num - last_total_count * actual_thread_num >= 1000 {
+        eqv_wall_time_iters += BATCH_SIZE;
+        if eqv_wall_time_iters * actual_thread_num - last_total_count * actual_thread_num >= 1000 {
             last_total_count = eqv_wall_time_iters;
             #[cfg(not(target_arch = "wasm32"))]
             {
@@ -173,7 +173,6 @@ pub fn solve<R: Rng>(
                 )
             }
         }
-
     }
 
     let best_pair = overall_best_n_states.peek_max().unwrap();

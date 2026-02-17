@@ -20,7 +20,7 @@ use std::time::Instant;
 
 const NUM_TESTS_TO_RUN: i64 = if DEBUG_AVERAGE { 1 } else { 5 };
 const MONTE_CARLO_COUNT: usize = 1_000_000;
-const METRICS: [(&str, i64); 2] = [("SA", 0), ("Avg", 1)];
+const METRICS: [(&str, i64); 1] = [("Avg", 1)];
 
 #[derive(Debug, Serialize)]
 struct Header {
@@ -79,7 +79,7 @@ fn main() {
     let thread_num = available_parallelism()
         .unwrap()
         .get()
-        .saturating_sub(2)
+        .saturating_sub(1)
         .max(1);
     rayon::ThreadPoolBuilder::new()
         .num_threads(thread_num)

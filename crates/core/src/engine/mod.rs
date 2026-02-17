@@ -167,7 +167,6 @@ else if #[cfg(feature = "v33")] {
     }
     else if #[cfg(feature = "v34")] {
          mod v34;
-        mod v34;
 pub use v34::*;
 pub const ACTIVE_FEATURE :&str= "v34";
 }

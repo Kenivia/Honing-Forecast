@@ -29,9 +29,10 @@ class DataBundle:
 
 
 def model_from_filename(filename: str) -> str:
-    if "_" in filename:
-        return filename.split("_", 1)[0]
-    return filename
+
+    out = filename.split("_", 1)[0] if "_" in filename else filename 
+    
+    return out if len(out) > 2 else "v0"+ out[1:]
 
 
 def test_case_family(test_case: str) -> str:

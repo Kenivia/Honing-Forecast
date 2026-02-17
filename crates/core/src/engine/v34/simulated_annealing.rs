@@ -1,16 +1,16 @@
 use super::scaler::AdaptiveScaler;
 
-use hf_core::performance::Performance;
+use crate::performance::Performance;
 
 #[cfg(target_arch = "wasm32")]
-use hf_core::send_progress::send_progress;
-use hf_core::state_bundle::StateBundle;
-use hf_core::state_bundle::StateEssence;
+use crate::send_progress::send_progress;
+use crate::state_bundle::StateBundle;
+use crate::state_bundle::StateEssence;
 
 use ordered_float::OrderedFloat;
 
-use rayon::iter::IntoParallelRefMutIterator;
-use rayon::iter::ParallelIterator;
+// use rayon::iter::IntoParallelRefMutIterator;
+// use rayon::iter::ParallelIterator;
 
 use priority_queue::DoublePriorityQueue;
 use rand::Rng;
@@ -18,7 +18,7 @@ use rand::Rng;
 use super::constants::*;
 use super::one_batch::SolverStateBundle;
 // #[cfg(not(target_arch = "wasm32"))]
-use crate::timer::Timer;
+use crate::helpers::Timer;
 
 pub fn my_push(
     queue: &mut DoublePriorityQueue<StateEssence, OrderedFloat<f64>>,
@@ -62,7 +62,7 @@ pub fn solve<R: Rng>(
     rng: &mut R,
 
     mut state_bundle: StateBundle,
-    overall_performance: &mut hf_core::performance::Performance,
+    overall_performance: &mut crate::performance::Performance,
 ) -> StateBundle {
     let timer = Timer::start();
 

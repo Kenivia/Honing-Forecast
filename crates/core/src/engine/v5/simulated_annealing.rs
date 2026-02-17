@@ -1,7 +1,7 @@
-use hf_core::saddlepoint_approximation::average::DEBUG_AVERAGE;
+use crate::saddlepoint_approximation::average::DEBUG_AVERAGE;
 #[cfg(target_arch = "wasm32")]
-use hf_core::send_progress::send_progress;
-use hf_core::state_bundle::StateBundle;
+use crate::send_progress::send_progress;
+use crate::state_bundle::StateBundle;
 use rand::Rng;
 use rand::distr::Distribution;
 use rand::distr::weighted::WeightedIndex;
@@ -9,7 +9,7 @@ use rand::seq::IteratorRandom;
 // use std::f64::{MAX, MIN};
 
 // #[cfg(not(target_arch = "wasm32"))]
-use crate::timer::Timer;
+use crate::helpers::Timer;
 
 fn acceptance<R: Rng>(
     new: f64,
@@ -321,9 +321,8 @@ fn new_temp(temp: f64, alpha: f64) -> f64 {
 
 pub fn solve<R: Rng>(
     rng: &mut R,
-    metric_type: i64,
     mut state_bundle: StateBundle,
-    performance: &mut hf_core::performance::Performance,
+    performance: &mut crate::performance::Performance,
 ) -> StateBundle {
     // #[cfg(not(target_arch = "wasm32"))]
     // {

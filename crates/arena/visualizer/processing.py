@@ -128,7 +128,6 @@ def build_trial_figure(
     x_range = _axis_range(all_for_range[x_column])
     y_range = _axis_range(all_for_range["metric"])
     best_known = all_for_range["metric"].max() if not all_for_range.empty else None
-
     fig = go.Figure()
     for model in sorted(filtered["model"].unique()):
         model_df = filtered[filtered["model"] == model]

@@ -9,7 +9,7 @@ from processing import build_trial_options, build_trial_figure, build_aggregate_
 
 
 ROOT = Path(__file__).resolve().parents[1]
-RESULTS_DIR = ROOT / "results"
+RESULTS_DIR = ROOT / "Results"
 DATA = load_results(RESULTS_DIR)
 
 
@@ -17,7 +17,7 @@ def _first_or_none(items: list[str]) -> str | None:
     return items[0] if items else None
 
 
-DEFAULT_METRIC = "SA" if "SA" in DATA.base_metrics else _first_or_none(DATA.base_metrics)
+DEFAULT_METRIC = "Avg" if "Avg" in DATA.base_metrics else _first_or_none(DATA.base_metrics)
 
 app = Dash(__name__)
 app.title = "Honing results Explorer"
@@ -117,8 +117,8 @@ app.layout = html.Div(
         ),
     ],
 )
-
-
+\
+    
 @app.callback(
     Output("trial-dropdown", "options"),
     Output("trial-dropdown", "value"),
@@ -178,7 +178,7 @@ def update_graph(
     is_aggregate = "aggregate" in (aggregate_toggle or [])
     if is_aggregate:
         family_value = family or _first_or_none(DATA.families)
-        fig = build_aggregate_figure(DATA.history_df, family_value, base_metric)
+        fig = build_aggregate_figure(DATA.history_df, family_value if family_value is not None else "", base_metric)
         return fig, "iter", True, True
 
     if not test_case or not base_metric:

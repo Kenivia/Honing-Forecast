@@ -4,13 +4,13 @@ use super::simulated_annealing::my_push;
 
 use super::core::neighbour;
 use super::scaler::AdaptiveScaler;
-use hf_core::performance::Performance;
-// use hf_core::saddlepoint_approximation::average::DEBUG_AVERAGE;
+use crate::performance::Performance;
+// use crate::saddlepoint_approximation::average::DEBUG_AVERAGE;
 #[cfg(target_arch = "wasm32")]
-use hf_core::send_progress::send_progress;
-use hf_core::state_bundle::StateBundle;
-use hf_core::state_bundle::StateEssence;
-// use hf_core::upgrade::State;
+use crate::send_progress::send_progress;
+use crate::state_bundle::StateBundle;
+use crate::state_bundle::StateEssence;
+// use crate::upgrade::State;
 use ordered_float::OrderedFloat;
 
 use super::core::{INIT_TEMP, RESOLUTION_CUTOFF_TEMP};

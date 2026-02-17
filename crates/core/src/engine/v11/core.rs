@@ -1,7 +1,7 @@
-// use hf_core::saddlepoint_approximation::average::DEBUG_AVERAGE;
+// use crate::saddlepoint_approximation::average::DEBUG_AVERAGE;
 #[cfg(target_arch = "wasm32")]
-use hf_core::send_progress::send_progress;
-use hf_core::state_bundle::StateBundle;
+use crate::send_progress::send_progress;
+use crate::state_bundle::StateBundle;
 use rand::Rng;
 use rand::distr::Distribution;
 use rand::distr::weighted::WeightedIndex;
