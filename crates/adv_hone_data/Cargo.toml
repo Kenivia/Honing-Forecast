@@ -1,0 +1,12 @@
+[package]
+name = "hf-adv-hone-data"
+edition = "2024"
+description = "Honing calculator for Lost Ark"
+repository = "https://github.com/Kenivia/Honing-Forecast"
+license = "AGPL-3.0-or-later"
+
+
+[dependencies]
+serde = "1.0.228"
+serde_json = "1.0.145"
+rayon = "1.11.0"

@@ -10,6 +10,9 @@ use rand::Rng;
 #[cfg(not(target_arch = "wasm32"))]
 use std::time::Instant;
 
+pub fn my_diff(a: f64, b: f64) -> f64 {
+    (a - b).abs() / a.abs().max(b.abs()).max(1.0)
+}
 pub struct Timer {
     #[cfg(not(target_arch = "wasm32"))]
     start: Instant,

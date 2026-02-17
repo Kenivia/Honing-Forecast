@@ -3,20 +3,13 @@
 use super::constants::*;
 use super::scaler::AdaptiveScaler;
 use crate::performance::Performance;
-
-#[cfg(target_arch = "wasm32")]
-use crate::send_progress::send_progress;
 use crate::state_bundle::StateBundle;
 use crate::state_bundle::StateEssence;
-
 use ordered_float::OrderedFloat;
+use priority_queue::DoublePriorityQueue;
+use rand::SeedableRng;
 use rand::random_bool;
 use rand::random_range;
-// use rand::seq::IteratorRandom;
-
-use priority_queue::DoublePriorityQueue;
-// use rand::Rng;
-use rand::SeedableRng;
 use rand::rngs::SmallRng;
 
 pub struct SolverStateBundle {

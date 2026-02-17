@@ -34,9 +34,9 @@ checksum = "46c5e41b57b8bba42a04676d81cb89e9ee8e859a1a66f80a5a72e1cb76b34d43"
 
 [[package]]
 name = "cc"
-version = "1.2.55"
+version = "1.2.56"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "47b26a0954ae34af09b50f0de26458fa95369a0d478d8236d3f93082b219bd29"
+checksum = "aebf35691d1bfb0ac386a69bac2fde4dd276fb618cf8bf4f5318fe285e821bb2"
 dependencies = [
  "find-msvc-tools",
  "shlex",
@@ -144,13 +144,9 @@ checksum = "841d1cc9bed7f9236f321df977030373f4a4163ae1a7dbfe1a51a2c1a51d9100"
 name = "hf-arena"
 version = "0.0.0"
 dependencies = [
- "chrono",
  "hf-core",
  "rand",
- "rayon",
- "serde",
  "serde_json",
- "web-sys",
 ]
 
 [[package]]
@@ -158,12 +154,14 @@ name = "hf-core"
 version = "0.0.0"
 dependencies = [
  "cfg-if",
+ "chrono",
  "getrandom",
  "itertools",
  "num",
  "ordered-float",
  "priority-queue",
  "rand",
+ "rayon",
  "serde",
  "serde-wasm-bindgen",
  "serde_json",

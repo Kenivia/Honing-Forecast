@@ -3,8 +3,10 @@
     "private": true,
     "type": "module",
     "scripts": {
-        "build": "wasm-pack build crates/wasm --release  --target web && vite build",
-        "dev": "wasm-pack build crates/wasm --release --target web && vite"
+        "deploy": "npm run test && npm run build && vite build",
+        "test": "cargo test --profile release -- --no-capture",
+        "dev": "npm run build && vite",
+        "build": "wasm-pack build crates/wasm --release --target web"
     },
     "dependencies": {
         "@emotion/react": "^11.14.0",

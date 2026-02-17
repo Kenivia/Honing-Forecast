@@ -79,9 +79,9 @@ export default function ControlPanel({
                     <button style={styles.demoButton} onClick={resetOptimizerState}>
                         Reset Optimizer State
                     </button>
-                    {/* <button style={styles.demoButton} onClick={onCopyPayload}>
+                <button style={styles.demoButton} onClick={_onCopyPayload}>
                         Copy Current Payload
-                    </button> */}
+                    </button>
 
                     <div style={{ display: "flex", alignItems: "center", gap: "8px", marginTop: "8px" }}>
                         <LabeledCheckbox label="Express event" checked={express_event} setChecked={set_express_event} />
