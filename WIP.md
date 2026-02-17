@@ -3,13 +3,29 @@
 
 ## NOW
 
-- add the test framework back, it should honestly be a lot easier now with payload
+## Advanced honing
+
+1. generate distribution for each element in decision space
+    - what should the decision space be????
+        - must be easy to follow
+        - artisan breakpoint or fixed count? prolly fixed count
+            - juice the first n grace, juice the first m non-graces
+              - n < like 12, cut off n = inf somewhere
+              - m can prolly go up like 1,2,3,4,5,10,20,30,40 etc up to like 80, also with inf or something
+        - prolly one for juice one for scroll so it'll be a big square
+        - force m = 0 for n < inf, so total is like (13 grace possibilities + 15 juice possibilities)^2 that's not too bad
+2. figure out how to bundle this data into the binary
+3. accomodate switching between states
+4. accomodate scrolls in juice_info
+    - probably need to rework this
+5. accomodate progress & state adjustments in UI
+6. voila?
 
 ## UI
 
 - i swear something big needs to change, this UI aint it
 
-## Char selection page
+### Char selection page
 
 - roster tracking & income estimation
 - copy paste from uwuowo
@@ -17,7 +33,7 @@
 - some better way to input mats?
   - screenshot upload? screen share recording? need OCR
   
-## Misc UI
+### Misc UI
 
 - Input arithmetic parsing(e.g. allow inputs like 25*1234 for easier boxes calculation)
 - Ctrl z, delete
@@ -27,26 +43,18 @@
 - Something seems to be broken in drag-to-select spreadsheetgrid
 - marquee for state grid also?
 - rearrange where the gold cost is
-  - maybe make a toggle of includign tradable budget & showing actual gold spent instead?
+  - maybe make a toggle of including tradable budget & showing actual gold spent instead?
 - button to deduct costs?
 
 ## Forecast mode
 
 - idk this will have to come after having individual character pages i think
-
-## Advanced honing
-
-- use monte carlo to generate the distribution, then allow for a few strategies
-
-  - maybe pre-generate a bunch of scenarios?
-    - can allow for different states also eventually
-      - need to systematically do this (full juice strategies & also like 1 scroll 2 scroll type beat), maybe rewrite this in rust
-    - scrolls calculations
-      - need to generalize juice info to accomodate this
+- can definitely do chances (the cool graph) for individual mats, might have to use MC for the overall success rate?
 
 ## Serca
 
 - how to consider 1-to-5 conversion??? prolly just 2 sets of grids and 2 sets of prices
+  - convert serca mats to t4 mats, then use the lower price of the two when running out?
   
 ## Misc
 
@@ -63,9 +71,12 @@
 
 ## Algorithm ideas
 
-- default to brute force when decision space < 24000 (with restriction of streaks)
+- figure out if the restarts are carrying the algorithm and maybe do SA properly
 
 ## Done / cancelled
+
+- ~~default to brute force when decision space < 24000 (with restriction of streaks)~~ this is prolly not worth the effort
+- ~~add the test framework back, it should honestly be a lot easier now with payload~~
 
 - ~~selectable double um balls event thing~~
 - ~~no juice, full juice, no juice full scroll, full juice full scroll, FULL SCROLL etc~~ ~~i cant be bothered, probably a waste anyway, just assume juice & scrool on grace is optimal~~
