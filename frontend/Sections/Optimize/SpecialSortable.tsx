@@ -172,7 +172,10 @@ export function SpecialSortable({
                             {items.map((_, index) => (
                                 <div key={`prob-${index}`} className="row-item prob-cell">
                                     {/* Access Prob via current Index */}
-                                    {formatSig(evaluateAverageResult?.latest_special_probs?.[index] * 100.0, 3).concat("%") ?? "-"}
+
+                                    {(evaluateAverageResult?.latest_special_probs?.[index] > 0
+                                        ? formatSig(evaluateAverageResult?.latest_special_probs?.[index] * 100.0, 3).concat("%")
+                                        : "-") ?? "-"}
                                 </div>
                             ))}
                         </div>

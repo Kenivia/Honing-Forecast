@@ -157,6 +157,13 @@ const GraphContent = ({ width, height, data, average, secondaryAnnotation, color
     const isEmpty = data.map((x) => x[0]).reduce((prev, next) => Math.max(prev, next)) == 0
     // console.log(data.length, label)
     // console.log(secondaryAnnotation, xScale(secondaryAnnotation))
+
+    const y_value = tooltipData ? getY(tooltipData) : null
+    const place = Math.max(Math.ceil(y_value < 0.5 ? Math.abs(Math.log10(y_value)) : Math.abs(Math.log10(1 - y_value))), 1) + 1
+    const base = Math.pow(10, place)
+    const rounded = tooltipData ? Math.round(isFinite(base) ? getY(tooltipData) * base : y_value < 0.5 ? 0.0 : Infinity) : null
+    // console.log(y_value, place, base)
+
     return (
         // ref for the tooltip portal
         <div ref={containerRef} style={{ position: "relative" }}>
@@ -283,9 +290,9 @@ const GraphContent = ({ width, height, data, average, secondaryAnnotation, color
             {tooltipOpen && tooltipData && (
                 <TooltipInPortal top={tooltipTop} left={tooltipLeft} style={{ ...defaultStyles, backgroundColor: "rgba(0, 0, 0, 0.41)", color: "white" }}>
                     <div style={{ fontSize: 11 }}>
-                        In a room of 100 people,
+                        In a room of {base.toLocaleString("en-US", { maximumFractionDigits: 0, minimumFractionDigits: 0 })} people,
                         <br />
-                        <strong>{(getY(tooltipData) * 100).toFixed(0)}</strong> used less than{" "}
+                        <strong>{rounded.toLocaleString("en-US", { maximumFractionDigits: 0, minimumFractionDigits: 0 })}</strong> used less than{" "}
                         {getX(tooltipData).toLocaleString("en-US", { maximumFractionDigits: 0, minimumFractionDigits: 0 })} <span>{label}</span>
                         {/* Always showing cumulative value as requested */}
                         {/* Cum: {(getY(tooltipData) * 100).toFixed(0)} */}
