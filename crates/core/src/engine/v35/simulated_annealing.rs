@@ -1,7 +1,6 @@
 use super::scaler::AdaptiveScaler;
 
 use crate::performance::Performance;
-
 #[cfg(feature = "wasm")]
 use crate::send_progress::send_progress;
 use crate::state_bundle::StateBundle;

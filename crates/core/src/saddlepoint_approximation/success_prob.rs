@@ -4,7 +4,6 @@
 //!
 //! Luckily this also doubles as the graph generator(histogram.rs)
 
-use crate::constants::SPECIAL_TOL;
 use crate::performance::Performance;
 use crate::state_bundle::StateBundle;
 use itertools::Itertools;
@@ -16,7 +15,7 @@ impl StateBundle {
 
         self.update_dist();
         self.update_combined();
-        self.compute_special_probs();
+        self.compute_special_probs(false);
         let budget = self.prep_output.eqv_gold_budget;
         self.one_dimension_prob(-1, budget, performance)
     }
@@ -30,7 +29,7 @@ impl StateBundle {
         let mut out: f64 = 0.0;
         let special_probs = self.special_cache[&self.special_state].clone();
         for (skip_count, &special_prob) in special_probs.iter().enumerate() {
-            if special_prob < SPECIAL_TOL {
+            if special_prob == 0.0 {
                 continue;
             }
             let this_prob: f64 = self.saddlepoint_approximation_wrapper(
@@ -52,7 +51,7 @@ impl StateBundle {
     pub fn compute_leftover_probs(&mut self) -> Vec<f64> {
         self.update_dist();
         self.update_individual_support();
-        self.compute_special_probs();
+        self.compute_special_probs(false);
         let mut prob_leftover: Vec<f64> =
             Vec::with_capacity(self.flattened_effective_budgets().try_len().unwrap());
 

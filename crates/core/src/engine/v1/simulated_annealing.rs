@@ -1,3 +1,4 @@
+use crate::my_dbg;
 use crate::saddlepoint_approximation::average::DEBUG_AVERAGE;
 #[cfg(feature = "wasm")]
 use crate::send_progress::send_progress;
@@ -7,7 +8,6 @@ use rand::distr::Distribution;
 use rand::distr::weighted::WeightedIndex;
 use rand::seq::IteratorRandom;
 use std::f64::{MAX, MIN};
-
 // #[cfg(not(feature = "wasm"))]
 use crate::helpers::Timer;
 fn acceptance<R: Rng>(

@@ -10,7 +10,7 @@ version = "0.1.0"
 crate-type = ["cdylib"]
 
 [dependencies]
-hf-core = { path = "../core", default-features = false, features=["wasm", "active_version"]}
+hf-core = { path = "../core", default-features = false, features=["wasm", "active_version"]}  
 wasm-bindgen = { version = "0.2", features = ["serde-serialize"] }
 serde = { version = "1.0", features = ["derive"] }
 rand = "0.9"

@@ -7,10 +7,12 @@
 //!
 //! Admittedly dynamic programming is one of these things that I never really understood so this is mostly vibe coded
 //! but this matches experimental result so at least it's working
+use crate::constants::SPECIAL_TOL;
 use crate::state_bundle::StateBundle;
 use num::Integer;
 use std::f64;
 use std::mem::swap;
+use std::ops::Range;
 
 impl StateBundle {
     pub fn special_probs(&self) -> &Vec<f64> {
@@ -53,10 +55,12 @@ impl StateBundle {
         valid_uindex.extend_from_slice(&invalid_uindex);
         self.special_state = valid_uindex;
     }
-    pub fn compute_special_probs(&mut self) {
+
+    /// The preserve tail option is exclusively for UI purpose and does not write to special_cache
+    pub fn compute_special_probs(&mut self, preserve_tail: bool) -> Option<Vec<f64>> {
         self.clean_special_state();
-        if self.special_cache.contains_key(&self.special_state) {
-            return;
+        if self.special_cache.contains_key(&self.special_state) && !preserve_tail {
+            return None;
         }
 
         let prep_output = &self.prep_output;
@@ -71,8 +75,13 @@ impl StateBundle {
             if !out.is_empty() {
                 out[0] = 1.0;
             }
-            self.special_cache.insert(self.special_state.clone(), out);
-            return;
+
+            if preserve_tail {
+                return Some(out);
+            } else {
+                self.special_cache.insert(self.special_state.clone(), out);
+                return None;
+            }
         }
         // 1. GCD Optimization: Scale the world down
         let gcd = self.gcd_special() as usize; // Ensure this returns 1 if no upgrades
@@ -211,7 +220,54 @@ impl StateBundle {
         let sum: f64 = actual_out.iter().sum();
         let length = actual_out.len();
         actual_out[length - 1] += 1.0 - sum; // the prob that we fail everything is not included, we add it to the last entry
-        self.special_cache
-            .insert(self.special_state.clone(), actual_out);
+        // my_dbg!(&actual_out);
+        if !preserve_tail {
+            eliminate_tail(0..actual_out.len(), &mut actual_out);
+            eliminate_tail(actual_out.len()..0, &mut actual_out);
+        }
+
+        // my_dbg!(&actual_out);
+
+        if preserve_tail {
+            return Some(actual_out);
+        } else {
+            self.special_cache
+                .insert(self.special_state.clone(), actual_out);
+            return None;
+        }
+    }
+}
+
+/// Incredibly crude thingy to try and mitigate the effect of ignoring small chances
+/// idk how mathematically sound this is but let's just hope its fine (at least it should be better than just plain ignoring them)
+///
+/// empirically this allows us to drop special tol to 1e-4
+/// BUT that's evaluated on optimized states which often don't have small tails anyway
+/// so all we know is that a tol of 1e-4 is good enough to make the optimizer find the same non-small tailed optima
+///
+/// the optimizer is often incentivized to NOT have trailing small tails because higher upgrades are often more efficient
+/// so this is kinda completely useless (hence why special tol is left at 1e-7) but whatever
+fn eliminate_tail(range: Range<usize>, actual_out: &mut Vec<f64>) {
+    let mut cur_weighted_index: f64 = 0.0;
+    let mut cur_sum: f64 = 0.0;
+    for index in range {
+        let this = actual_out[index];
+        if this > SPECIAL_TOL {
+            if cur_sum > 0.0 {
+                let actual_index = (cur_weighted_index / cur_sum as f64).round() as usize;
+                actual_out[actual_index] = cur_sum;
+            }
+
+            break;
+        }
+        cur_weighted_index += this * index as f64;
+        cur_sum += this;
+
+        if cur_sum > SPECIAL_TOL {
+            let actual_index = (cur_weighted_index / cur_sum as f64).round() as usize;
+            actual_out[actual_index] = cur_sum;
+            break; // i mean we don't HAVE to break here but this guarantees that we're never fucking with more than SPECIAL_TOL of the distribution
+        }
+        actual_out[index] = 0.0;
     }
 }

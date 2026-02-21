@@ -47,7 +47,7 @@ macro_rules! my_dbg {
     };
 }
 
-pub fn my_diff(a: f64, b: f64) -> f64 {
+pub fn my_pct_diff(a: f64, b: f64) -> f64 {
     (a - b).abs() / a.abs().max(b.abs()).max(1.0)
 }
 pub struct Timer {

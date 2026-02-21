@@ -8,11 +8,11 @@ pub mod parser;
 pub mod payload;
 pub mod performance;
 
-#[cfg(any(test, feature = "run_tests"))]
+#[cfg(feature = "run_tests")] // this module is not in arena because it is also needed for tests
 pub mod run_tests;
 pub mod saddlepoint_approximation;
 
-#[cfg(feature = "wasm")]
+#[cfg(feature = "wasm")] // and this module is not in wasm because it is needed in the engine
 pub mod send_progress;
 pub mod special;
 pub mod state_bundle;

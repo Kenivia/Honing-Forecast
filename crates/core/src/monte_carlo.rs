@@ -9,8 +9,8 @@ use crate::upgrade::Upgrade;
 use itertools::izip;
 use rand::Rng;
 use rand::prelude::*;
+use statrs::distribution::{ContinuousCDF, Normal};
 use std::cmp::min;
-
 /// Instead of actually sampling the distribution, we guarantee that every value has exactly the expected number of occurances
 /// I'm pre sure this doesn't work when the data size is too small (when a sample spans more than 2 buckets) but it's whatever
 ///
@@ -233,7 +233,7 @@ pub fn monte_carlo_data<R: Rng>(
     }
 
     if DEBUG_AVERAGE {
-        state_bundle.compute_special_probs();
+        state_bundle.compute_special_probs(false);
         my_dbg!(actual_out);
         my_dbg!(state_bundle.special_probs());
         my_dbg!(&state_bundle.prep_output.juice_info);
@@ -246,10 +246,12 @@ pub fn monte_carlo_wrapper<R: Rng>(
     data_size: usize,
     state_bundle: &mut StateBundle,
     rng: &mut R,
-) -> (Vec<f64>, f64, f64) {
+) -> (Vec<f64>, f64, f64, f64, f64) {
     let (cost_data, juice_data, skip_count_data) = monte_carlo_data(data_size, state_bundle, rng);
     let mut success_count: i64 = 0;
-    let mut average: f64 = 0.0;
+    let mut sum: f64 = 0.0;
+
+    let mut average_sq: f64 = 0.0;
     let mut leftover_counts: Vec<i64> =
         vec![0; 7 + state_bundle.prep_output.juice_info.one_gold_cost_id.len() * 2];
 
@@ -351,7 +353,8 @@ pub fn monte_carlo_wrapper<R: Rng>(
         let (mats_gold_leftover, juice_gold_leftover) =
             apply_price_leftovers(&float_row, &float_juice, state_bundle);
         let this: f64 = add_up_golds(&mats_gold_leftover, &juice_gold_leftover);
-        average += this;
+        sum += this;
+        average_sq += this * this;
         // my_dbg!(this);
         let (mats_gold_naive, juice_gold_naive) =
             apply_price_naive(&float_row, &float_juice, state_bundle);
@@ -421,17 +424,106 @@ pub fn monte_carlo_wrapper<R: Rng>(
             // &debug_truncated_mean_by_skip,
             &state_bundle.prep_output.price_arr,
             &state_bundle.prep_output.leftover_values,
-            average / data_size as f64
+            sum / data_size as f64
         );
     }
     let prob_leftover: Vec<f64> = leftover_counts
         .into_iter()
         .map(|x| x as f64 / data_size as f64)
         .collect();
-
+    let success = success_count as f64 / data_size as f64;
+    let average = sum / data_size as f64;
     (
         prob_leftover,
-        success_count as f64 / data_size as f64,
-        average / data_size as f64,
+        success,
+        average,
+        success * (1.0 - success) * (data_size as f64) / (data_size - 1) as f64,
+        (average_sq - sum * average) / (data_size - 1) as f64,
     )
+}
+
+pub struct MCResult {
+    pub is_match: bool,
+    pub mean: f64,
+    pub lower: f64,
+    pub upper: f64,
+    pub samples: usize,
+    pub prob_leftover: Vec<f64>,
+}
+
+pub fn verify_result_with_monte_carlo<R: Rng>(
+    sa_result: f64,        // The value we are testing
+    confidence: f64,       // e.g., 0.95 for 95% confidence
+    target_precision: f64, // The tightest interval width we demand before accepting it
+    batch_size: usize,
+    state_bundle: &mut StateBundle,
+    rng: &mut R,
+) -> MCResult {
+    let alpha = 1.0 - confidence;
+    let normal = Normal::new(0.0, 1.0).unwrap();
+    let z = normal.inverse_cdf(1.0 - alpha / 2.0);
+
+    let mut total_n: usize = 0;
+    let mut mean = 0.0;
+    let mut m2 = 0.0;
+
+    loop {
+        let (prob_leftover, _, batch_mean, _, batch_var) =
+            monte_carlo_wrapper(batch_size, state_bundle, rng);
+
+        let batch_n = batch_size;
+        let batch_m2 = batch_var * (batch_n as f64 - 1.0);
+
+        if total_n == 0 {
+            mean = batch_mean;
+            m2 = batch_m2;
+            total_n = batch_n;
+        } else {
+            let delta = batch_mean - mean;
+            let new_n = total_n + batch_n;
+
+            mean += delta * (batch_n as f64 / new_n as f64);
+            m2 += batch_m2 + delta * delta * (total_n as f64 * batch_n as f64 / new_n as f64);
+
+            total_n = new_n;
+        }
+
+        if total_n > 1 {
+            let variance = m2 / (total_n as f64 - 1.0);
+            let std_err = variance.sqrt() / (total_n as f64).sqrt();
+
+            // This is the radius of our confidence interval
+            let half_width = z * std_err;
+            let distance_from_mean = (mean - sa_result).abs();
+
+            // CONDITION 1: REJECTION
+            // The sa_result is outside our confidence interval.
+            // We are confident it is WRONG.
+            if distance_from_mean > half_width {
+                return MCResult {
+                    is_match: false,
+                    mean,
+                    lower: mean - half_width,
+                    upper: mean + half_width,
+                    samples: total_n,
+                    prob_leftover,
+                };
+            }
+
+            // CONDITION 2: ACCEPTANCE
+            // The sa_result is inside the interval, AND the interval
+            // is finally narrow enough to satisfy our precision requirements.
+            // We are confident it is RIGHT.
+            if half_width <= target_precision {
+                return MCResult {
+                    is_match: true,
+                    mean,
+                    lower: mean - half_width,
+                    upper: mean + half_width,
+                    samples: total_n,
+                    prob_leftover,
+                };
+            }
+        }
+    }
 }

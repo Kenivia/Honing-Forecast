@@ -34,7 +34,7 @@ impl StateBundle {
     pub fn average_gold_metric(&mut self, performance: &mut Performance) -> f64 {
         self.update_dist();
         self.update_individual_support();
-        self.compute_special_probs();
+        self.compute_special_probs(false);
         performance.states_evaluated += 1;
 
         let mut total_gold: f64 = 0.0;
@@ -70,7 +70,7 @@ impl StateBundle {
     pub fn average_gold_metric_with_breakdown(&mut self, performance: &mut Performance) -> f64 {
         self.update_dist();
         self.update_individual_support();
-        self.compute_special_probs();
+        self.compute_special_probs(false);
         performance.states_evaluated += 1;
         let mut breakdown: Vec<f64> = vec![0.0; 7 + self.prep_output.juice_info.num_avail * 2];
         let mut total_gold: f64 = 0.0;

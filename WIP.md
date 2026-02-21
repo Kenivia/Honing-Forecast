@@ -3,6 +3,8 @@
 
 ## NOW
 
+- stat test using monte carlo to make sure the results are actually correct (or at least self-consistent)
+
 ## Advanced honing
 
 1. generate distribution for each element in decision space
@@ -24,6 +26,8 @@
 ## UI
 
 - i swear something big needs to change, this UI aint it
+- need to figureout how to lay everything out
+  - roster bound mats toggle / selection? should only allow one char to use roster bound (boxes) mats
 
 ### Char selection page
 
@@ -59,9 +63,7 @@
 ## Misc
 
 - JUICE CHESTS AND MAYBE EVEN BOOKS CHESTS
-
 - add assertions to a lot of prepoutput stuff
-
 - start working on visualizing this stuff
   - put all possible states on one axis (must be small support like 5? 10? ) and sort by number of juice used, then color/ 3d height?
 
@@ -72,6 +74,8 @@
 ## Algorithm ideas
 
 - figure out if the restarts are carrying the algorithm and maybe do SA properly
+- somehow make the pity length more explicit cos right now a lot of moves don't do anything
+- ~~force special state to have a non-small tail~~ actually that might discard optimal choices, just make sure that special neighbour moves actually has an effect
 
 ## Done / cancelled
 

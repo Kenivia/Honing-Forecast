@@ -2,7 +2,9 @@ use serde::{Deserialize, Serialize};
 pub const TEST_PAYLOAD_PATH: &str = "/test_payloads";
 pub const FLOAT_TOL: f64 = 1e-9; // it could prolly be lower? idk doesnt matter
 pub const SPECIAL_TOL: f64 = 1e-7;
-pub const MONTE_CARLO_ERROR_TOL: f64 = 1e-3;
+pub const MONTE_CARLO_CONFIDENCE: f64 = 0.999;
+pub const MONTE_CARLO_PRECISION: f64 = 0.001; // percentage error
+pub const SIMULATED_ANNEALING_DIFF_TOL: f64 = 1e-2;
 pub const MONTE_CARLO_COUNT: usize = 1_000_000;
 // no artisan multipliers this time
 pub const EVENT_ARTISAN_MULTIPLIER: [f64; 25] = [

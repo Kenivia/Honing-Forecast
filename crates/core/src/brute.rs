@@ -43,7 +43,7 @@ impl StateBundle {
             mean.recip()
         };
 
-        let prune_top: bool = budget > mean;
+        let prune_flipped: bool = budget > mean;
         // --- STEP 1: Pre-calculate Look-Ahead Bounds ---
         // min_suffix[i] = sum of minimum costs from layer i to end
         // max_suffix[i] = sum of maximum costs from layer i to end
@@ -89,13 +89,14 @@ impl StateBundle {
                     let new_cost = current_cost + s;
                     let step_prob = current_prob * p;
 
-                    if prune_top {
+                    if prune_flipped {
                         if new_cost + next_max_rem < budget - FLOAT_TOL {
                             continue;
                         }
                         if !biased {
                             if new_cost + next_min_rem > budget - FLOAT_TOL {
                                 total_guaranteed_prob += step_prob;
+
                                 continue;
                             }
                         }
@@ -128,14 +129,9 @@ impl StateBundle {
         let sum: f64 = total_guaranteed_prob
             + current_states
                 .iter()
-                .map(|(cost, prob)| {
-                    if biased {
-                        cost.0 * inv_mean * prob
-                    } else {
-                        *prob
-                    }
-                })
-                .sum::<f64>();
-        if prune_top { 1.0 - sum } else { sum }
+                .map(|(cost, prob)| if biased { cost.0 * prob } else { *prob })
+                .sum::<f64>()
+                * if biased { inv_mean } else { 1.0 };
+        if prune_flipped { 1.0 - sum } else { sum }
     }
 }

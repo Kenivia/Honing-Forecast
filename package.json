@@ -3,10 +3,11 @@
     "private": true,
     "type": "module",
     "scripts": {
-        "deploy": "npm run test && npm run build && vite build",
+        "dev": "npm run wasm && vite",
+        "wasm": "wasm-pack build crates/wasm --release --target web",
         "test": "cargo test -p hf-core --profile release --no-default-features --features active_version,run_tests -- --no-capture",
-        "dev": "npm run build && vite",
-        "build": "wasm-pack build crates/wasm --release --target web"
+        "build": "npm run test && npm run wasm && vite build && cargo +nightly udeps",
+        "deploy": "pwsh -File ./pre_deploy_check.ps1 && git push origin main:production --force-with-lease"
     },
     "dependencies": {
         "@emotion/react": "^11.14.0",
