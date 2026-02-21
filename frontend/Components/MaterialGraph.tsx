@@ -8,6 +8,7 @@ import { useTooltip, useTooltipInPortal, defaultStyles } from "@visx/tooltip"
 import { ParentSize } from "@visx/responsive"
 import { bisector } from "d3-array"
 import { IconMap } from "@/Utils/Constants.ts"
+import { powerOfTenToWords } from "@/Utils/Helpers.ts"
 function getCssVar(name: string) {
     return getComputedStyle(document.documentElement).getPropertyValue(name).trim()
 }
@@ -159,10 +160,12 @@ const GraphContent = ({ width, height, data, average, secondaryAnnotation, color
     // console.log(secondaryAnnotation, xScale(secondaryAnnotation))
 
     const y_value = tooltipData ? getY(tooltipData) : null
-    const place = Math.max(Math.ceil(y_value < 0.5 ? Math.abs(Math.log10(y_value)) : Math.abs(Math.log10(1 - y_value))), 1) + 1
+    let place = Math.max(Math.ceil(y_value < 0.5 ? Math.abs(Math.log10(y_value)) : Math.abs(Math.log10(1 - y_value))), 2)
+
+    const too_big = place > 40
+    place = Math.min(place, 40)
     const base = Math.pow(10, place)
-    const rounded = tooltipData ? Math.round(isFinite(base) ? getY(tooltipData) * base : y_value < 0.5 ? 0.0 : Infinity) : null
-    // console.log(y_value, place, base)
+    const rounded = tooltipData ? Math.round(getY(tooltipData) * base) : null
 
     return (
         // ref for the tooltip portal
@@ -290,11 +293,22 @@ const GraphContent = ({ width, height, data, average, secondaryAnnotation, color
             {tooltipOpen && tooltipData && (
                 <TooltipInPortal top={tooltipTop} left={tooltipLeft} style={{ ...defaultStyles, backgroundColor: "rgba(0, 0, 0, 0.41)", color: "white" }}>
                     <div style={{ fontSize: 11 }}>
-                        In a room of {base.toLocaleString("en-US", { maximumFractionDigits: 0, minimumFractionDigits: 0 })} people,
+                        In a room of {too_big ? "over " : ""}
+                        {powerOfTenToWords(place)} people (10^{place}),
                         <br />
-                        <strong>{rounded.toLocaleString("en-US", { maximumFractionDigits: 0, minimumFractionDigits: 0 })}</strong> used less than{" "}
-                        {getX(tooltipData).toLocaleString("en-US", { maximumFractionDigits: 0, minimumFractionDigits: 0 })} <span>{label}</span>
-                        {/* Always showing cumulative value as requested */}
+                        <strong>
+                            {too_big
+                                ? y_value < 0.5
+                                    ? "0"
+                                    : "None of them will use more "
+                                : y_value < 0.5 || place < 3
+                                  ? rounded.toLocaleString("en-US", { maximumFractionDigits: 0, minimumFractionDigits: 0 }) + " will use less "
+                                  : "Only " +
+                                    (Math.pow(10, place) - rounded).toLocaleString("en-US", { maximumFractionDigits: 0, minimumFractionDigits: 0 }) +
+                                    " will use MORE "}
+                        </strong>{" "}
+                        than {getX(tooltipData).toLocaleString("en-US", { maximumFractionDigits: 0, minimumFractionDigits: 0 })} <span>{label}</span> (
+                        {y_value < 0.5 || place < 3 ? (y_value * 100).toPrecision(3) : too_big ? "100" : ((1 - y_value) * 100).toPrecision(3)}% )
                         {/* Cum: {(getY(tooltipData) * 100).toFixed(0)} */}
                     </div>
                 </TooltipInPortal>

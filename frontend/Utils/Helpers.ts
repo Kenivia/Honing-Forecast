@@ -1,6 +1,48 @@
 import { PIECE_NAMES } from "./Constants.ts"
 const ordinalRules = new Intl.PluralRules("en", { type: "ordinal" })
 
+const SCALE_NAMES = {
+    3: "thousand",
+    6: "million",
+    9: "billion",
+    12: "trillion",
+    15: "quadrillion",
+    18: "quintillion",
+    21: "sextillion",
+    24: "septillion",
+    27: "octillion",
+    30: "nonillion",
+    33: "decillion",
+    36: "undecillion",
+    39: "duodecillion",
+}
+
+export function powerOfTenToWords(exponent) {
+    if (exponent < 5) {
+        // handle small ones explicitly
+        if (exponent === 0) return "1"
+        if (exponent === 1) return "10"
+        if (exponent === 2) return "100"
+        if (exponent === 3) return (1000).toLocaleString("en-US", { maximumFractionDigits: 0, minimumFractionDigits: 0 })
+        if (exponent === 4) return (10000).toLocaleString("en-US", { maximumFractionDigits: 0, minimumFractionDigits: 0 })
+        return `10^${exponent}`
+    }
+
+    const remainder = exponent % 3
+    const baseExponent = exponent - remainder
+    const scaleName = SCALE_NAMES[baseExponent]
+
+    if (!scaleName) {
+        return `10^${exponent}` // fallback if scale not defined
+    }
+
+    let prefix = "1"
+    if (remainder === 1) prefix = "10"
+    if (remainder === 2) prefix = "100"
+
+    return `${prefix} ${scaleName}`
+}
+
 export function taxRound(label: string, numericMax: number) {
     const factor = label == "Silver" ? 0.0001 : label == "Shards" ? 0.001 : label == "Red" || label == "Blue" ? 0.01 : 1
 

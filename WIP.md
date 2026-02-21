@@ -3,8 +3,6 @@
 
 ## NOW
 
-- stat test using monte carlo to make sure the results are actually correct (or at least self-consistent)
-
 ## Advanced honing
 
 1. generate distribution for each element in decision space
@@ -28,14 +26,18 @@
 - i swear something big needs to change, this UI aint it
 - need to figureout how to lay everything out
   - roster bound mats toggle / selection? should only allow one char to use roster bound (boxes) mats
+  - need to accomodate serca and shit
+  - need to rework all the variables and everything
+    - also need to accomodate forecast mode somehow? like there'll be multiple calls to optimizer ig?
 
 ### Char selection page
 
 - roster tracking & income estimation
-- copy paste from uwuowo
+- copy paste from uwuowo (maybe just fetch?)
 - toggle "done" upgrades
 - some better way to input mats?
   - screenshot upload? screen share recording? need OCR
+  - also actually deduct from the mats
   
 ### Misc UI
 
@@ -49,6 +51,7 @@
 - rearrange where the gold cost is
   - maybe make a toggle of including tradable budget & showing actual gold spent instead?
 - button to deduct costs?
+- default to cumulative and add 10 percentile points maybe
 
 ## Forecast mode
 
@@ -75,10 +78,11 @@
 
 - figure out if the restarts are carrying the algorithm and maybe do SA properly
 - somehow make the pity length more explicit cos right now a lot of moves don't do anything
-- ~~force special state to have a non-small tail~~ actually that might discard optimal choices, just make sure that special neighbour moves actually has an effect
+- ~~force special state to have a non-small tail~~ actually that ~~might~~ in fact does discard optimal choices, just make sure that special neighbour moves actually has an effect
 
 ## Done / cancelled
 
+- ~~stat test using monte carlo to make sure the results are actually correct (or at least self-consistent)~~
 - ~~default to brute force when decision space < 24000 (with restriction of streaks)~~ this is prolly not worth the effort
 - ~~add the test framework back, it should honestly be a lot easier now with payload~~
 
