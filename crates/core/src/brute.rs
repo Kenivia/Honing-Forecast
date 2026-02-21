@@ -97,11 +97,11 @@ impl StateBundle {
                     let step_prob = current_prob * p;
 
                     if prune_flipped {
-                        if new_cost + next_max_rem < budget - FLOAT_TOL {
+                        if new_cost + next_max_rem < budget + FLOAT_TOL {
                             break;
                         }
 
-                        if new_cost + next_min_rem > budget + FLOAT_TOL {
+                        if new_cost + next_min_rem > budget - FLOAT_TOL {
                             if biased {
                                 total_guaranteed_prob +=
                                     step_prob * (new_cost + future_avg[index + 1]) * inv_mean;
@@ -112,10 +112,10 @@ impl StateBundle {
                             continue;
                         }
                     } else {
-                        if new_cost + next_min_rem > budget + FLOAT_TOL {
+                        if new_cost + next_min_rem > budget - FLOAT_TOL {
                             break;
                         }
-                        if new_cost + next_max_rem <= budget - FLOAT_TOL {
+                        if new_cost + next_max_rem <= budget + FLOAT_TOL {
                             if biased {
                                 total_guaranteed_prob +=
                                     step_prob * (new_cost + future_avg[index + 1]) * inv_mean;

@@ -297,18 +297,14 @@ const GraphContent = ({ width, height, data, average, secondaryAnnotation, color
                         {powerOfTenToWords(place)} people (10^{place}),
                         <br />
                         <strong>
-                            {too_big
-                                ? y_value < 0.5
-                                    ? "0 will use less "
-                                    : "None of them will use more "
-                                : y_value < 0.5 || place < 3
-                                  ? rounded.toLocaleString("en-US", { maximumFractionDigits: 0, minimumFractionDigits: 0 }) + " will use less "
-                                  : "Only " +
-                                    (Math.pow(10, place) - rounded).toLocaleString("en-US", { maximumFractionDigits: 0, minimumFractionDigits: 0 }) +
-                                    " will use MORE "}
+                            {y_value < 0.5 || place < 3
+                                ? rounded.toLocaleString("en-US", { maximumFractionDigits: 0, minimumFractionDigits: 0 }) + " will use less "
+                                : "Only " +
+                                  (Math.pow(10, place) - rounded).toLocaleString("en-US", { maximumFractionDigits: 0, minimumFractionDigits: 0 }) +
+                                  " will use MORE "}
                         </strong>{" "}
                         than {getX(tooltipData).toLocaleString("en-US", { maximumFractionDigits: 0, minimumFractionDigits: 0 })} <span>{label}</span> (
-                        {y_value < 0.5 || place < 3 ? (y_value * 100).toPrecision(3) : too_big ? "100" : ((1 - y_value) * 100).toPrecision(3)}% )
+                        {y_value < 0.5 || place < 3 ? (y_value * 100).toPrecision(3) : ((1 - y_value) * 100).toPrecision(3)}% )
                         {/* Cum: {(getY(tooltipData) * 100).toFixed(0)} */}
                     </div>
                 </TooltipInPortal>
