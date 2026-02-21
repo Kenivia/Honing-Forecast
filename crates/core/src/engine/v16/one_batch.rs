@@ -8,10 +8,10 @@ use super::simulated_annealing::my_push;
 
 use crate::performance::Performance;
 
+use crate::my_dbg;
 #[cfg(feature = "wasm")]
 use crate::send_progress::send_progress;
 use crate::state_bundle::StateBundle;
-use crate::my_dbg;
 use crate::state_bundle::StateEssence;
 
 use ordered_float::OrderedFloat;

@@ -8,8 +8,8 @@ use rand::distr::Distribution;
 use rand::distr::weighted::WeightedIndex;
 use rand::seq::IteratorRandom;
 use std::f64::{MAX, MIN};
-// #[cfg(not(feature = "wasm"))]
-use crate::helpers::Timer;
+// #[cfg(feature = "run_tests")]
+use crate::timer::Timer;
 fn acceptance<R: Rng>(
     new: f64,
     old: f64,
@@ -233,8 +233,8 @@ pub fn solve<R: Rng>(
     mut state_bundle: StateBundle,
     performance: &mut crate::performance::Performance,
 ) -> StateBundle {
-    // #[cfg(not(feature = "wasm"))]
     // {
+    #[cfg(feature = "run_tests")]
     let timer = Timer::start();
     // }
 
@@ -320,7 +320,7 @@ pub fn solve<R: Rng>(
             temp = new_temp(temp, alpha);
         }
         if total_count % 1000 == 0 {
-            #[cfg(not(feature = "wasm"))]
+            #[cfg(feature = "run_tests")]
             {
                 performance.best_history.push((
                     timer.elapsed_sec(),

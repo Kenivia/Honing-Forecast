@@ -1,10 +1,10 @@
 use super::scaler::AdaptiveScaler;
+use crate::my_dbg;
 use crate::performance::Performance;
 use crate::saddlepoint_approximation::average::DEBUG_AVERAGE;
 #[cfg(feature = "wasm")]
 use crate::send_progress::send_progress;
 use crate::state_bundle::StateBundle;
-use crate::my_dbg;
 use crate::state_bundle::StateEssence;
 
 use ordered_float::OrderedFloat;
@@ -19,8 +19,8 @@ use super::core::BATCH_SIZE;
 use super::core::MAX_BEST_SIZE;
 use super::core::MAX_ITERS;
 use super::one_batch::SolverStateBundle;
-// #[cfg(not(feature = "wasm"))]
-use crate::helpers::Timer;
+// #[cfg(feature = "run_tests")]
+use crate::timer::Timer;
 
 pub fn my_push(
     queue: &mut DoublePriorityQueue<StateEssence, OrderedFloat<f64>>,
@@ -86,7 +86,7 @@ pub fn solve<R: Rng>(
         );
         solver_arr.push(solver_state_bundle);
     }
-    #[cfg(not(feature = "wasm"))]
+    #[cfg(feature = "run_tests")]
     {
         overall_performance.best_history.push((
             timer.elapsed_sec(),
@@ -116,7 +116,7 @@ pub fn solve<R: Rng>(
         eqv_wall_time_iters += BATCH_SIZE;
         if eqv_wall_time_iters * actual_thread_num - last_total_count * actual_thread_num >= 1000 {
             last_total_count = eqv_wall_time_iters;
-            #[cfg(not(feature = "wasm"))]
+            #[cfg(feature = "run_tests")]
             {
                 overall_performance.best_history.push((
                     timer.elapsed_sec(),

@@ -7,8 +7,6 @@ use crate::upgrade::Upgrade;
 
 use rand::Rng;
 
-#[cfg(not(feature = "wasm"))]
-use std::time::Instant;
 #[macro_export]
 macro_rules! my_dbg {
     // Match 0 arguments
@@ -16,7 +14,7 @@ macro_rules! my_dbg {
         #[cfg(feature = "wasm")]
         web_sys::console::log_1(&format!("[{}:{}]", file!(), line!()).into());
 
-        #[cfg(not(feature = "wasm"))]
+        #[cfg(feature = "run_tests")]
         std::eprintln!("[{}:{}]", file!(), line!());
     };
     // Match 1 or more arguments
@@ -37,7 +35,7 @@ macro_rules! my_dbg {
                 )+
             }
 
-            #[cfg(not(feature = "wasm"))]
+            #[cfg(feature = "run_tests")]
             {
                 $(
                     std::dbg!($val);
@@ -49,39 +47,6 @@ macro_rules! my_dbg {
 
 pub fn my_pct_diff(a: f64, b: f64) -> f64 {
     (a - b).abs() / a.abs().max(b.abs()).max(1.0)
-}
-pub struct Timer {
-    #[cfg(not(feature = "wasm"))]
-    start: Instant,
-}
-
-impl Timer {
-    pub fn start() -> Self {
-        #[cfg(not(feature = "wasm"))]
-        {
-            Self {
-                start: Instant::now(),
-            }
-        }
-
-        #[cfg(feature = "wasm")]
-        {
-            Self {}
-        }
-    }
-
-    /// elapsed time in milliseconds
-    pub fn elapsed_sec(&self) -> f64 {
-        #[cfg(not(feature = "wasm"))]
-        {
-            self.start.elapsed().as_secs_f64()
-        }
-
-        #[cfg(feature = "wasm")]
-        {
-            -6.9
-        }
-    }
 }
 
 pub fn naive_count_to_ticks(counts: &[Vec<i64>]) -> Vec<Vec<bool>> {

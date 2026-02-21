@@ -2,10 +2,10 @@ use super::scaler::AdaptiveScaler;
 
 use crate::performance::Performance;
 
+use crate::my_dbg;
 #[cfg(feature = "wasm")]
 use crate::send_progress::send_progress;
 use crate::state_bundle::StateBundle;
-use crate::my_dbg;
 use crate::state_bundle::StateEssence;
 
 use ordered_float::OrderedFloat;
@@ -18,8 +18,8 @@ use rand::Rng;
 
 use super::constants::*;
 use super::one_batch::SolverStateBundle;
-// #[cfg(not(feature = "wasm"))]
-use crate::helpers::Timer;
+// #[cfg(feature = "run_tests")]
+use crate::timer::Timer;
 
 pub fn my_push(
     queue: &mut DoublePriorityQueue<StateEssence, OrderedFloat<f64>>,
@@ -110,7 +110,7 @@ pub fn solve<R: Rng>(
         );
         solver_arr.push(solver_state_bundle);
     }
-    #[cfg(not(feature = "wasm"))]
+    #[cfg(feature = "run_tests")]
     {
         overall_performance.best_history.push((
             timer.elapsed_sec(),
@@ -120,9 +120,7 @@ pub fn solve<R: Rng>(
     }
     // vec![state_bundle.clone(); state_bundle.num_threads];
     while eqv_wall_time_iters < MAX_ITERS {
-        solver_arr
-            .iter_mut()
-            .for_each(|x| x.one_batch(BATCH_SIZE));
+        solver_arr.iter_mut().for_each(|x| x.one_batch(BATCH_SIZE));
 
         let mut new_scale = 0.0;
         let mut new_special_cache = solver_arr[0].state_bundle.special_cache.clone();
@@ -148,7 +146,7 @@ pub fn solve<R: Rng>(
         eqv_wall_time_iters += BATCH_SIZE;
         if eqv_wall_time_iters * actual_thread_num - last_total_count * actual_thread_num >= 1000 {
             last_total_count = eqv_wall_time_iters;
-            #[cfg(not(feature = "wasm"))]
+            #[cfg(feature = "run_tests")]
             {
                 overall_performance.best_history.push((
                     timer.elapsed_sec(),
