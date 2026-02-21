@@ -162,8 +162,8 @@ const GraphContent = ({ width, height, data, average, secondaryAnnotation, color
     const y_value = tooltipData ? getY(tooltipData) : null
     let place = Math.max(Math.ceil(y_value < 0.5 ? Math.abs(Math.log10(y_value)) : Math.abs(Math.log10(1 - y_value))), 2)
 
-    const too_big = place > 40
-    place = Math.min(place, 40)
+    const too_big = place > 10
+    place = Math.min(place, 10)
     const base = Math.pow(10, place)
     const rounded = tooltipData ? Math.round(getY(tooltipData) * base) : null
 
@@ -293,13 +293,13 @@ const GraphContent = ({ width, height, data, average, secondaryAnnotation, color
             {tooltipOpen && tooltipData && (
                 <TooltipInPortal top={tooltipTop} left={tooltipLeft} style={{ ...defaultStyles, backgroundColor: "rgba(0, 0, 0, 0.41)", color: "white" }}>
                     <div style={{ fontSize: 11 }}>
-                        In a room of {too_big ? "over " : ""}
+                        In a room of {too_big ? "" : ""}
                         {powerOfTenToWords(place)} people (10^{place}),
                         <br />
                         <strong>
                             {too_big
                                 ? y_value < 0.5
-                                    ? "0"
+                                    ? "0 will use less "
                                     : "None of them will use more "
                                 : y_value < 0.5 || place < 3
                                   ? rounded.toLocaleString("en-US", { maximumFractionDigits: 0, minimumFractionDigits: 0 }) + " will use less "
