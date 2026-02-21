@@ -1,2 +1,6 @@
 [target.wasm32-unknown-unknown]
 rustflags = ["--cfg", "getrandom_backend=\"wasm_js\"", ]
+
+[profile.profiling]
+inherits = "release"
+debug = true

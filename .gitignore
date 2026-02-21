@@ -9,6 +9,9 @@ lerna-debug.log*
 
 node_modules
 profile.json.gz
+profile.kernel.etl
+
+
 test_payload_bloated
 *__pycache__*
 dist-ssr

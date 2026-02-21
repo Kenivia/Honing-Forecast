@@ -2,7 +2,7 @@ use crate::constants::{FLOAT_TOL, JuiceInfo};
 use crate::parser::PreparationOutput;
 use crate::state_bundle::StateBundle;
 use crate::upgrade::{Support, Upgrade};
-use std::f64::{INFINITY, NAN, NEG_INFINITY};
+use std::f64::NAN;
 
 pub fn encode_one_positions(v1: &[(bool, usize)]) -> String {
     v1.iter()
@@ -30,7 +30,7 @@ impl StateBundle {
         for (support_index, cost) in out.iter_mut().enumerate() {
             *cost += (self
                 .extract_all_support_with_meta(support_index as i64)
-                .map(|support| support.min_value)
+                .map(|support| support.access_min(false)) // does not consider skipped to make a better graph
                 .sum::<f64>())
             .ceil() as i64;
         }
@@ -42,12 +42,7 @@ impl StateBundle {
         for (support_index, cost) in out.iter_mut().enumerate() {
             *cost += (self
                 .extract_all_support_with_meta(support_index as i64)
-                .map(|support| {
-                    support
-                        .support
-                        .iter()
-                        .fold(NEG_INFINITY, |prev, next| prev.max(*next))
-                })
+                .map(|support| support.access_max(false))
                 .sum::<f64>())
             .ceil() as i64;
         }
@@ -61,12 +56,14 @@ impl StateBundle {
     /// This does not conisder the biased version (i.e. cost 0 with p > 0) cos I think it messed things up somehow at some point
     pub fn find_min_max(&self, support_index: i64, skip_count: usize) -> (f64, f64) {
         let min_value = self
-            .extract_collapsed_pair(support_index, skip_count)
-            .map(|x| x.iter().fold(INFINITY, |prev, new| prev.min(new.0)))
+            .extract_all_support_with_meta(support_index)
+            .enumerate()
+            .map(|(index, x)| x.access_min(skip_count > index))
             .sum();
         let max_value = self
-            .extract_collapsed_pair(support_index, skip_count)
-            .map(|x| x.iter().fold(NEG_INFINITY, |prev, new| prev.max(new.0)))
+            .extract_all_support_with_meta(support_index)
+            .enumerate()
+            .map(|(index, x)| x.access_max(skip_count > index))
             .sum();
         (min_value, max_value)
     }
@@ -84,6 +81,9 @@ impl StateBundle {
         strings.join("\n")
     }
 
+    /// Returns an iterator of Support instances, in the order specified by special_state
+    ///
+    /// We don't use a &Vec to avoid re-ordering / allocating, currently I think it only needs to allocate for the iterator (due to box)
     pub fn extract_all_support_with_meta(
         &self,
         support_index: i64,

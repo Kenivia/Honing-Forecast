@@ -13,7 +13,8 @@
               - n < like 12, cut off n = inf somewhere
               - m can prolly go up like 1,2,3,4,5,10,20,30,40 etc up to like 80, also with inf or something
         - prolly one for juice one for scroll so it'll be a big square
-        - force m = 0 for n < inf, so total is like (13 grace possibilities + 15 juice possibilities)^2 that's not too bad
+        - force m = 0 for n < inf, so total is like (13 grace possibilities + 15 juice possibilities)^2 * 10 (starting level) that's not too bad
+    - so state should be a tuple of 4 usize -> index into array, with alr_failed changing the starting level
 2. figure out how to bundle this data into the binary
 3. accomodate switching between states
 4. accomodate scrolls in juice_info

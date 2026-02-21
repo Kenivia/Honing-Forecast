@@ -92,7 +92,6 @@ pub struct ProbDist {
     pub prob_state_hash: u64,
 }
 
-
 impl ProbDist {
     pub fn new(new_payload: Vec<f64>) -> ProbDist {
         ProbDist {
@@ -128,8 +127,8 @@ pub struct Support {
     pub collapsed_state_hash: u64,
     pub ignore: bool,
     pub gap_size: f64,
-    pub max_value: f64,
-    pub min_value: f64,
+    max_value: f64,
+    min_value: f64,
     pub first_non_zero_prob_index: usize,
     skipped_pair: Vec<(f64, f64)>,
 }
@@ -143,7 +142,21 @@ impl Support {
             &self.collapsed_pair
         }
     }
+    pub fn access_max(&self, skipped: bool) -> f64 {
+        if skipped {
+            self.access_collapsed(true)[0].0
+        } else {
+            self.max_value
+        }
+    }
 
+    pub fn access_min(&self, skipped: bool) -> f64 {
+        if skipped {
+            self.access_collapsed(true)[0].0
+        } else {
+            self.min_value
+        }
+    }
     /// Incredibly crucial pre-processing, collapses identical values into 1 thing, and removes values with p = 0.
     /// cumulant.rs makes the assumption that nothing has p = 0
     pub fn collapse_support(&mut self, prob_dist: &ProbDist, alr_failed: usize) {

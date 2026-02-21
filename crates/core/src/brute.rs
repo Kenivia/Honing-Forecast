@@ -1,29 +1,30 @@
 //! Serves in place of saddlepoint_approximation when the complexity isn't too bad
-//! The key stuff was vibe coded
 
 use crate::constants::FLOAT_TOL;
 use crate::state_bundle::StateBundle;
-use std::collections::HashMap;
-use std::f64::{INFINITY, NEG_INFINITY};
+use ahash::AHashMap;
+use either::Either;
 use std::hash::{Hash, Hasher};
-
 pub const MAX_BRUTE_SIZE: usize = 50000;
 
-// 1. Helper wrapper to use f64 as a HashMap key
-// (Rust floats don't implement Eq/Hash by default due to NaN)
 #[derive(Clone, Copy, Debug)]
-pub struct FloatKey(f64);
+pub struct FloatKey(f64, u64);
 
+impl From<f64> for FloatKey {
+    fn from(x: f64) -> Self {
+        let rounded = (x * 1.0e6) as u64; // cost should be positive anyway
+        FloatKey(x, rounded)
+    }
+}
 impl PartialEq for FloatKey {
     fn eq(&self, other: &Self) -> bool {
-        ((self.0 * 1.0e6).round() / 1.0e6).to_bits()
-            == ((other.0 * 1.0e6).round() / 1.0e6).to_bits()
+        self.1 == other.1
     }
 }
 impl Eq for FloatKey {}
 impl Hash for FloatKey {
     fn hash<H: Hasher>(&self, state: &mut H) {
-        ((self.0 * 1.0e6).round() / 1.0e6).to_bits().hash(state);
+        self.1.hash(state);
     }
 }
 
@@ -44,82 +45,91 @@ impl StateBundle {
         };
 
         let prune_flipped: bool = budget > mean;
-        // --- STEP 1: Pre-calculate Look-Ahead Bounds ---
+
         // min_suffix[i] = sum of minimum costs from layer i to end
         // max_suffix[i] = sum of maximum costs from layer i to end
         let mut min_suffix = vec![0.0; n + 1];
         let mut max_suffix = vec![0.0; n + 1];
+        let mut future_avg = vec![0.0; n + 1];
+        let mut u_index = n - 1; // cant use enumerate for whatever reason and i cant be bothered to find out why 
 
-        let mut u_index = n - 1;
+        for support in self.extract_all_support_with_meta(support_index).rev() {
+            min_suffix[u_index] =
+                min_suffix[u_index + 1] + support.access_min(skip_count > u_index);
+            max_suffix[u_index] =
+                max_suffix[u_index + 1] + support.access_max(skip_count > u_index);
 
-        for support in self.extract_collapsed_pair(support_index, skip_count).rev() {
-            // Find min and max cost for this specific layer
-            // We use fold because f64 doesn't implement Ord
-
-            min_suffix[u_index] = min_suffix[u_index + 1]
-                + support.iter().fold(INFINITY, |prev, new| prev.min(new.0));
-            max_suffix[u_index] = max_suffix[u_index + 1]
+            future_avg[u_index] = future_avg[u_index + 1]
                 + support
+                    .access_collapsed(skip_count > u_index)
                     .iter()
-                    .fold(NEG_INFINITY, |prev, new| prev.max(new.0));
+                    .fold(0.0, |prev, (s, p)| prev + s * p);
             u_index = u_index.saturating_sub(1);
         }
-        // --- STEP 2: Iterative DP with Pruning ---
 
         // Stores currently active uncertain states
-        let mut current_states: HashMap<FloatKey, f64> = HashMap::with_capacity(16);
-        current_states.insert(FloatKey(0.0), 1.0);
+        let mut current_states: AHashMap<FloatKey, f64> = AHashMap::with_capacity(1);
+        let mut next_states: AHashMap<FloatKey, f64> = AHashMap::with_capacity(256);
+        current_states.insert(FloatKey::from(0.0), 1.0);
 
-        // Accumulator for paths that are guaranteed to stay under budget
         let mut total_guaranteed_prob = 0.0;
 
+        // my_dbg!(&future_avg);
         let mut index = 0;
         for pairs in self.extract_collapsed_pair(support_index, skip_count) {
             let next_min_rem = min_suffix[index + 1];
             let next_max_rem = max_suffix[index + 1];
+            let cur_cap = next_states.capacity();
+            next_states.reserve(
+                (current_states.len() * pairs.len())
+                    .min(MAX_BRUTE_SIZE)
+                    .saturating_sub(cur_cap),
+            );
 
-            // Prepare next layer map
-            let mut next_states: HashMap<FloatKey, f64> =
-                HashMap::with_capacity(current_states.len() * pairs.len());
-
-            for (key, current_prob) in current_states.drain() {
-                let current_cost = key.0;
-
-                for (s, p) in pairs {
-                    let new_cost = current_cost + s;
+            for (current_cost, current_prob) in current_states.drain() {
+                let iter = if prune_flipped {
+                    Either::Left(pairs.into_iter().rev())
+                } else {
+                    Either::Right(pairs.into_iter())
+                };
+                for (s, p) in iter {
+                    let new_cost = current_cost.0 + s;
                     let step_prob = current_prob * p;
 
                     if prune_flipped {
                         if new_cost + next_max_rem < budget - FLOAT_TOL {
-                            continue;
+                            break;
                         }
-                        if !biased {
-                            if new_cost + next_min_rem > budget - FLOAT_TOL {
-                                total_guaranteed_prob += step_prob;
 
-                                continue;
+                        if new_cost + next_min_rem > budget + FLOAT_TOL {
+                            if biased {
+                                total_guaranteed_prob +=
+                                    step_prob * (new_cost + future_avg[index + 1]) * inv_mean;
+                            } else {
+                                total_guaranteed_prob += step_prob;
                             }
+
+                            continue;
                         }
                     } else {
                         if new_cost + next_min_rem > budget + FLOAT_TOL {
-                            continue;
+                            break;
                         }
-                        if !biased {
-                            if new_cost + next_max_rem <= budget - FLOAT_TOL {
+                        if new_cost + next_max_rem <= budget - FLOAT_TOL {
+                            if biased {
+                                total_guaranteed_prob +=
+                                    step_prob * (new_cost + future_avg[index + 1]) * inv_mean;
+                            } else {
                                 total_guaranteed_prob += step_prob;
-                                continue;
                             }
+                            continue;
                         }
                     }
 
-                    let new_key = FloatKey(new_cost);
-                    *next_states.entry(new_key).or_insert(0.0) += step_prob;
+                    *next_states.entry(FloatKey::from(new_cost)).or_insert(0.0) += step_prob;
                 }
             }
-
-            current_states = next_states;
-
-            // Optimization: If we have no uncertain states left, we are done
+            std::mem::swap(&mut current_states, &mut next_states);
             if current_states.is_empty() {
                 break;
             }
@@ -127,11 +137,13 @@ impl StateBundle {
         }
 
         let sum: f64 = total_guaranteed_prob
-            + current_states
-                .iter()
-                .map(|(cost, prob)| if biased { cost.0 * prob } else { *prob })
-                .sum::<f64>()
-                * if biased { inv_mean } else { 1.0 };
+            + if biased {
+                current_states
+                    .iter()
+                    .fold(0.0, |prev, (cost, p)| prev + cost.0 * p * inv_mean)
+            } else {
+                current_states.iter().fold(0.0, |prev, (_, p)| prev + p)
+            };
         if prune_flipped { 1.0 - sum } else { sum }
     }
 }
