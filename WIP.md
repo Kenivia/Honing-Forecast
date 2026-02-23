@@ -3,19 +3,33 @@
 
 ## NOW
 
+- change serde big arrays to just be vectors
+- wire up the data to the website so i can look at the data with my eyeballs to see if it's like correct
+
+- graph label is still off by 1
+
 ## Advanced honing
 
 1. generate distribution for each element in decision space
     - what should the decision space be????
         - must be easy to follow
-        - artisan breakpoint or fixed count? prolly fixed count
+        - ~~artisan breakpoint or fixed count?~~ fixed count
             - juice the first n grace, juice the first m non-graces
               - n < like 12, cut off n = inf somewhere
               - m can prolly go up like 1,2,3,4,5,10,20,30,40 etc up to like 80, also with inf or something
         - prolly one for juice one for scroll so it'll be a big square
         - force m = 0 for n < inf, so total is like (13 grace possibilities + 15 juice possibilities)^2 * 10 (starting level) that's not too bad
     - so state should be a tuple of ~~4~~ 2 (cos can merge n and m) usize -> index into array, with alr_failed changing the starting level
-2. figure out how to bundle this data into the binary
+2. figure out how to bundle this data into ~~the~~ binary files
+    - definitely have separate files for each non-strategy configuration
+        - so should be 2 (double balls) x 7 (cur_balls, 0 to 6, forbid chisel or maybe not) x  100 (starting xp) = 1400 files
+        - each file has 31 x 31 strategies, each is 100 x 3 x 8 bytes (f64) so each file is ~2.3 MB ish which is fine i think
+    - will need to fetch the file at the parser step and store it in prep output?
+    - need to pivot the data to be in this form
+        - for each store (avg juice, avg scroll, chance)
+
+    - need to fetch and parse(just copy) this data in wasm
+
 3. accomodate switching between states
 4. accomodate scrolls in juice_info
     - probably need to rework this
@@ -36,10 +50,13 @@
 - roster tracking & income estimation
 - copy paste from uwuowo (maybe just fetch?)
 - toggle "done" upgrades
-- some better way to input mats?
-  - screenshot upload? screen share recording? need OCR
-  - also actually deduct from the mats
-  
+- ~~some better way to input mats?~~
+  - ~~screenshot upload? screen share recording? need OCR~~
+- also actually deduct from the mats
+- toggle using roster bound / tradable mats or not
+- maybe can do 2 breakpoints?
+- actually huge inspiration from here <https://next-gen.materialsproject.org/materials/mp-48>
+
 ### Misc UI
 
 - Input arithmetic parsing(e.g. allow inputs like 25*1234 for easier boxes calculation)
@@ -58,11 +75,24 @@
 
 - idk this will have to come after having individual character pages i think
 - can definitely do chances (the cool graph) for individual mats, might have to use MC for the overall success rate?
+  - Recommended pushing dates for main / rat alt
 
+- seletable income choices
+  - gold earning raids
+  - mat earning raids, boxes etc
+  - paradise (get the average from one of the reddit posts or generate my own? will need to data mine?)
+  - configurable dailies
+  - guild
+  - unas thing
+  - daily login
+  - solo shop
+  
 ## Serca
 
-- how to consider 1-to-5 conversion??? prolly just 2 sets of grids and 2 sets of prices
-  - convert serca mats to t4 mats, then use the lower price of the two when running out?
+- how to consider 1-to-5 conversion??? ~~prolly just 2 sets of grids and 2 sets of prices~~
+  - ~~convert serca mats to t4 mats, then use the lower price of the two when running out?~~
+  - pre sure just cannot have mixed upgrades, but can have 2 sets of mats owned grid
+    - will need to handle 2 types of incomes gg
   
 ## Misc
 

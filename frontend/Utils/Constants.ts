@@ -110,7 +110,7 @@ export const RESET_UI_DEFAULTS = {
     adv_hone_strategy: "x2 grace",
     express_event: true,
     bucketCount: "100",
-    cumulativeGraph: false,
+    cumulativeGraph: true,
     dataSize: "100000",
     lockXAxis: false,
     lockedMins: null as number[] | null,

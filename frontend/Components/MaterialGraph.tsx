@@ -75,11 +75,13 @@ const GraphContent = ({ width, height, data, average, secondaryAnnotation, color
     const xMax = width - margin.left - margin.right
     const yMax = height - margin.top - margin.bottom
 
+    const min_cost = Math.min(...displayData.map(getX).filter((x) => x > 0))
+    const max_cost = Math.max(...displayData.map(getX))
     const xScale = useMemo(
         () =>
             scaleLinear({
                 range: [0, xMax],
-                domain: [Math.min(...displayData.map(getX)), Math.max(...displayData.map(getX))],
+                domain: [0, max_cost],
             }),
         [xMax, displayData],
     )
@@ -153,6 +155,7 @@ const GraphContent = ({ width, height, data, average, secondaryAnnotation, color
     const resolvedColor = getCssVar(color)
 
     const inputColor = getCssVar("--grid-cell-bg")
+    const hoverColor = getCssVar("--bright-green")
     const axisColor = getCssVar("--text-very-muted")
     // if (!data || data.length === 0 || (data.map((x) => x[0]).reduce((prev, next) => Math.max(prev, next))) == 0) return null
     const isEmpty = data.map((x) => x[0]).reduce((prev, next) => Math.max(prev, next)) == 0
@@ -165,7 +168,16 @@ const GraphContent = ({ width, height, data, average, secondaryAnnotation, color
     const too_big = place > 10
     place = Math.min(place, 10)
     const base = Math.pow(10, place)
-    const rounded = tooltipData ? Math.round(getY(tooltipData) * base) : null
+    const rounded = tooltipData ? (too_big ? (y_value < 0.5 ? 0 : base) : Math.round(getY(tooltipData) * base)) : null
+
+    const is_edge = tooltipData && ((getX(tooltipData) < min_cost && y_value <= 0) || getX(tooltipData) == max_cost)
+
+    const numberFormat = { maximumFractionDigits: 0, minimumFractionDigits: 0 }
+    const formattedX = tooltipData !== undefined ? getX(tooltipData).toLocaleString("en-US", numberFormat) : null
+    const formattedRounded = rounded !== null ? rounded.toLocaleString("en-US", numberFormat) : null
+    const formattedFailCount = (base - rounded).toLocaleString("en-US", numberFormat)
+
+    const isSmallProb = y_value < 0.5 || place < 4
 
     return (
         // ref for the tooltip portal
@@ -226,7 +238,7 @@ const GraphContent = ({ width, height, data, average, secondaryAnnotation, color
                     )}
 
                     {/* Annotation 2: Secondary */}
-                    {secondaryAnnotation != null && !isEmpty && !isEmpty && (
+                    {secondaryAnnotation != null && !isEmpty && (
                         <g>
                             <line
                                 x1={xScale(secondaryAnnotation)}
@@ -254,6 +266,21 @@ const GraphContent = ({ width, height, data, average, secondaryAnnotation, color
                             >
                                 You have: {secondaryAnnotation.toLocaleString("en-US", { maximumFractionDigits: 0, minimumFractionDigits: 0 })}
                             </text>
+                        </g>
+                    )}
+
+                    {tooltipOpen && tooltipData != undefined && !isEmpty && (
+                        <g>
+                            <line
+                                x1={xScale(getX(tooltipData))}
+                                x2={xScale(getX(tooltipData))}
+                                y1={yMax}
+                                y2={0}
+                                stroke={hoverColor}
+                                strokeWidth={1}
+                                strokeDasharray="2,2"
+                            />
+                            <circle cx={xScale(getX(tooltipData))} cy={getYForX(getX(tooltipData))} r={4} fill={hoverColor} stroke={color} strokeWidth={2} />
                         </g>
                     )}
 
@@ -291,21 +318,47 @@ const GraphContent = ({ width, height, data, average, secondaryAnnotation, color
 
             {/* Tooltip Content */}
             {tooltipOpen && tooltipData && (
-                <TooltipInPortal top={tooltipTop} left={tooltipLeft} style={{ ...defaultStyles, backgroundColor: "rgba(0, 0, 0, 0.41)", color: "white" }}>
+                <TooltipInPortal
+                    top={tooltipTop}
+                    left={Math.min(tooltipLeft, xMax * (is_edge ? 0.99 : 0.8))}
+                    style={{ ...defaultStyles, backgroundColor: "rgba(0, 0, 0, 0.41)", color: "white" }}
+                >
                     <div style={{ fontSize: 11 }}>
-                        In a room of {too_big ? "" : ""}
-                        {powerOfTenToWords(place)} people (10^{place}),
-                        <br />
-                        <strong>
-                            {y_value < 0.5 || place < 3
-                                ? rounded.toLocaleString("en-US", { maximumFractionDigits: 0, minimumFractionDigits: 0 }) + " will use less "
-                                : "Only " +
-                                  (Math.pow(10, place) - rounded).toLocaleString("en-US", { maximumFractionDigits: 0, minimumFractionDigits: 0 }) +
-                                  " will use MORE "}
-                        </strong>{" "}
-                        than {getX(tooltipData).toLocaleString("en-US", { maximumFractionDigits: 0, minimumFractionDigits: 0 })} <span>{label}</span> (
-                        {y_value < 0.5 || place < 3 ? (y_value * 100).toPrecision(3) : ((1 - y_value) * 100).toPrecision(3)}% )
-                        {/* Cum: {(getY(tooltipData) * 100).toFixed(0)} */}
+                        {is_edge ? (
+                            <>
+                                <strong>{(isSmallProb ? "Impossible to succeed within " : "Impossible to fail after ") + formattedX + " "}</strong>
+                                <span>{label}</span>
+                            </>
+                        ) : (
+                            <>
+                                {isSmallProb ? (
+                                    <>
+                                        <span style={{ fontWeight: "bold", color: hoverColor }}>{(y_value * 100).toPrecision(3)}%</span> chance to succeed
+                                        within{" "}
+                                    </>
+                                ) : (
+                                    <>
+                                        <span style={{ fontWeight: "bold", color: hoverColor }}>{((1 - y_value) * 100).toPrecision(3)}%</span> chance to fail
+                                        after{" "}
+                                    </>
+                                )}
+                                {formattedX} <span>{label}</span>
+                                <br />
+                                {/* Room description */}
+                                In a room of <strong>{powerOfTenToWords(place)} </strong>people,
+                                <strong>
+                                    {isSmallProb ? (
+                                        ` ${formattedRounded}`
+                                    ) : (
+                                        <>
+                                            {formattedFailCount !== "0" && " Only "}
+                                            {" " + formattedFailCount + " "}
+                                        </>
+                                    )}
+                                </strong>
+                                {isSmallProb ? " will succeed" : " will fail"}
+                            </>
+                        )}
                     </div>
                 </TooltipInPortal>
             )}
