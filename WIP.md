@@ -80,7 +80,9 @@
 - rearrange where the gold cost is
   - maybe make a toggle of including tradable budget & showing actual gold spent instead?
 - button to deduct costs?
-- default to cumulative and add 10 percentile points maybe
+- ~~default to cumulative and ~~add 10 percentile points maybe
+- "which one should i pick"
+- success update based on one or a few mat types
 
 ## Forecast mode
 
