@@ -6,6 +6,7 @@
 - ~~change serde big arrays to just be vectors~~
 - wire up the data to the website so i can look at the data with my eyeballs to see if it's like correct before getting more samples
   - skip actually making sure there's enough sample size for all cases
+    - will need to change configuration to include the starting xp and cur balls again, do an inner loop in main.rs to check through each of these
   - skip optimizer changing stuff
     - will need state -> prob dist setup anyway tho, index -> tuple -> read dist from the big array
     - maybe pre-emptively collapse?
@@ -104,6 +105,8 @@
   - pre sure just cannot have mixed upgrades, but can have 2 sets of mats owned grid
     - will need to handle 2 types of incomes gg
     - that means we won't need multiple grids and can just toggle something?
+
+- will definitely need to rework constants.rs, maybe take it in as a binary blob just like adv honing data?
 
 ## Misc
 
