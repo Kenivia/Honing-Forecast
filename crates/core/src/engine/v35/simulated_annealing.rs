@@ -1,8 +1,8 @@
 use super::scaler::AdaptiveScaler;
 
-use crate::performance::Performance;
 #[cfg(feature = "wasm")]
-use crate::send_progress::send_progress;
+use crate::js_interface::send_progress;
+use crate::performance::Performance;
 use crate::state_bundle::StateBundle;
 use crate::state_bundle::StateEssence;
 

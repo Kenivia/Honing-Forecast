@@ -3,10 +3,18 @@
 
 ## NOW
 
-- change serde big arrays to just be vectors
-- wire up the data to the website so i can look at the data with my eyeballs to see if it's like correct
+- ~~change serde big arrays to just be vectors~~
+- wire up the data to the website so i can look at the data with my eyeballs to see if it's like correct before getting more samples
+  - skip actually making sure there's enough sample size for all cases
+  - skip optimizer changing stuff
+    - will need state -> prob dist setup anyway tho, index -> tuple -> read dist from the big array
+    - maybe pre-emptively collapse?
+  - set up the fetch stuff in js (pre-fetch at ui selection)
+  - pass the file into wasm? will need a grid of this i think? worst case 24 * 2.25 mb = 54 Mb? (this will be smaller with postcard)
+    - like pass a grid of ids and a id -> data dictionary or something
+  - wire up all the stuff to allow this to happen (step 4 and 5 ig)
 
-- graph label is still off by 1
+- ~~graph label is still off by 1~~
 
 ## Advanced honing
 
@@ -22,13 +30,14 @@
     - so state should be a tuple of ~~4~~ 2 (cos can merge n and m) usize -> index into array, with alr_failed changing the starting level
 2. figure out how to bundle this data into ~~the~~ binary files
     - definitely have separate files for each non-strategy configuration
-        - so should be 2 (double balls) x 7 (cur_balls, 0 to 6, forbid chisel or maybe not) x  100 (starting xp) = 1400 files
+        - so should be 2 (double balls) x 7 (cur_balls, 0 to 6, forbid chisel or maybe not) x 100 (starting xp) x 2 (10_20 or 30_40) = 2800 files
         - each file has 31 x 31 strategies, each is 100 x 3 x 8 bytes (f64) so each file is ~2.3 MB ish which is fine i think
     - will need to fetch the file at the parser step and store it in prep output?
     - need to pivot the data to be in this form
         - for each store (avg juice, avg scroll, chance)
-
     - need to fetch and parse(just copy) this data in wasm
+    - there's kinda 6.3 + gigs of data so uh how to put this on github and serve on cloudflare?
+        - can definitely reduce the file size a lot, maybe binary isn't the best idea (probably postcard)
 
 3. accomodate switching between states
 4. accomodate scrolls in juice_info
@@ -56,6 +65,7 @@
 - toggle using roster bound / tradable mats or not
 - maybe can do 2 breakpoints?
 - actually huge inspiration from here <https://next-gen.materialsproject.org/materials/mp-48>
+- will need to figure out how to have this grid system for multiple characters
 
 ### Misc UI
 
@@ -93,13 +103,18 @@
   - ~~convert serca mats to t4 mats, then use the lower price of the two when running out?~~
   - pre sure just cannot have mixed upgrades, but can have 2 sets of mats owned grid
     - will need to handle 2 types of incomes gg
-  
+    - that means we won't need multiple grids and can just toggle something?
+
 ## Misc
 
 - JUICE CHESTS AND MAYBE EVEN BOOKS CHESTS
 - add assertions to a lot of prepoutput stuff
 - start working on visualizing this stuff
   - put all possible states on one axis (must be small support like 5? 10? ) and sort by number of juice used, then color/ 3d height?
+
+## Optimizations
+
+- find_min_max can probably do with some kind of caching but i can't figure it out rn
 
 ## Other features
 

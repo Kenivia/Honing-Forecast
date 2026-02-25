@@ -200,6 +200,7 @@ impl StateBundle {
         let sa_out: f64 =
             normal_dist.cdf(w_hat) + normal_dist.pdf(w_hat) * (1.0 / w_hat - 1.0 / u_hat);
 
+        #[allow(unused)]
         let mut approx: f64 = -6.9;
         let mut actual_out = sa_out;
 

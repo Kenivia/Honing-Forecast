@@ -4,8 +4,10 @@ use crate::constants::{
 };
 
 use crate::upgrade::Upgrade;
-
 use rand::Rng;
+use serde::Serialize;
+use std::fs::{File, OpenOptions};
+use std::io::{BufWriter, Error, Write};
 
 #[macro_export]
 macro_rules! my_dbg {
@@ -43,6 +45,23 @@ macro_rules! my_dbg {
             }
         }
     };
+}
+pub fn write_jsonl<T: Serialize>(data: &T, file_name: &String) -> Result<(), Error> {
+    let file: File = OpenOptions::new()
+        .create(true)
+        .append(true)
+        .open(file_name)?;
+    let mut line = serde_json::to_string(data).expect("Serialization failed");
+    line.push('\n');
+    // 3. Write and Force Sync
+    let mut writer = BufWriter::new(file);
+    writer.write_all(line.as_bytes())?;
+    writer.flush()?; // Clears the internal Rust buffer
+
+    // 4. Critical for SLURM: Sync to physical storage
+    writer.into_inner()?.sync_all()?;
+
+    Ok(())
 }
 
 pub fn my_pct_diff(a: f64, b: f64) -> f64 {

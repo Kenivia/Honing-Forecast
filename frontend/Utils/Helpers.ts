@@ -15,6 +15,14 @@ const SCALE_NAMES = {
     33: "decillion",
     36: "undecillion",
     39: "duodecillion",
+    42: "tredecillion",
+    45: "quattuordecillion",
+    48: "quindecillion",
+    51: "sexdecillion",
+    54: "septendecillion",
+    57: "octodecillion",
+    60: "novemdecillion",
+    63: "vigintillion",
 }
 
 export function powerOfTenToWords(exponent) {
@@ -40,7 +48,7 @@ export function powerOfTenToWords(exponent) {
     if (remainder === 1) prefix = "10"
     if (remainder === 2) prefix = "100"
 
-    return `${prefix} ${scaleName}`
+    return `${prefix} ${scaleName}` + (exponent > 10 ? ` (10^${exponent})` : "")
 }
 
 export function taxRound(label: string, numericMax: number) {

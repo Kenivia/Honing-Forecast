@@ -154,6 +154,7 @@ impl StateBundle {
         let out: f64 = price * (budget - simple_mean)
             + (leftover_value - price) * (budget * prob - biased_prob * simple_mean);
 
+        #[allow(unused)] // idk why rust analyzer tweaks out here and i cbb
         if (!out.is_finite() || DEBUG_AVERAGE) && support_index == DEBUG_AVG_INDEX {
             let left = budget - simple_mean;
             let right = budget * prob - biased_prob * (simple_mean);

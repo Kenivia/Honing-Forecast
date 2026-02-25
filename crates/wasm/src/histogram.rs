@@ -41,7 +41,7 @@ pub fn histogram(state_bundle: &mut StateBundle) -> HistogramOutputs {
     for support_index in 0..num_sup {
         let mut out: f64 = 0.0;
         for (skip_count, &special_prob) in special_probs.iter().enumerate() {
-            if special_prob < SPECIAL_TOL {
+            if special_prob == 0.0 {
                 continue;
             }
             out += special_prob * state_bundle.simple_avg(support_index as i64, skip_count);

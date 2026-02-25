@@ -14,7 +14,7 @@ pub mod state_bundle;
 pub mod upgrade;
 
 #[cfg(feature = "wasm")] // and this module is not in wasm because it is needed in the engine
-pub mod send_progress;
+pub mod js_interface;
 
 #[cfg(feature = "run_tests")] // this module is not in arena because it is also needed for tests
 pub mod run_tests;

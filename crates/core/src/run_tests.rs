@@ -3,7 +3,7 @@ use crate::constants::{
 };
 use crate::engine::ACTIVE_FEATURE;
 use crate::engine::{NOTES, solve};
-use crate::helpers::my_pct_diff;
+use crate::helpers::{my_pct_diff, write_jsonl};
 use crate::monte_carlo::verify_result_with_monte_carlo;
 use crate::payload::parse_to_state_bundles;
 use crate::performance::{Performance, PerformanceToWrite};
@@ -15,8 +15,8 @@ use rayon::prelude::*;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::f64::NAN;
-use std::fs::{File, OpenOptions, remove_file};
-use std::io::{BufRead, BufReader, BufWriter, Error, Write};
+use std::fs::{File, remove_file};
+use std::io::{BufRead, BufReader};
 use std::path::Path;
 use std::thread::available_parallelism;
 use std::time::Instant;
@@ -48,24 +48,6 @@ struct Output {
 fn current_time_string() -> String {
     let now = Local::now();
     now.format("%Y-%m-%d %H:%M:%S %Z").to_string()
-}
-
-fn write_jsonl<T: Serialize>(data: &T, file_name: &String) -> Result<(), Error> {
-    let file: File = OpenOptions::new()
-        .create(true)
-        .append(true)
-        .open(file_name)?;
-    let mut line = serde_json::to_string(data).expect("Serialization failed");
-    line.push('\n');
-    // 3. Write and Force Sync
-    let mut writer = BufWriter::new(file);
-    writer.write_all(line.as_bytes())?;
-    writer.flush()?; // Clears the internal Rust buffer
-
-    // 4. Critical for SLURM: Sync to physical storage
-    writer.into_inner()?.sync_all()?;
-
-    Ok(())
 }
 
 pub fn run_tests(payload_path_string: String, is_test: bool) {

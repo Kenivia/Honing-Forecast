@@ -53,7 +53,8 @@ impl StateBundle {
         (self.one_tap(), self.pity())
     }
 
-    /// This does not conisder the biased version (i.e. cost 0 with p > 0) cos I think it messed things up somehow at some point
+    /// This thing is called insanely often and it's kinda takes longer than i'd like (like +10% overall its kinda crazy)
+    /// TODO ig
     pub fn find_min_max(&self, support_index: i64, skip_count: usize) -> (f64, f64) {
         let min_value = self
             .extract_all_support_with_meta(support_index)
@@ -84,6 +85,7 @@ impl StateBundle {
     /// Returns an iterator of Support instances, in the order specified by special_state
     ///
     /// We don't use a &Vec to avoid re-ordering / allocating, currently I think it only needs to allocate for the iterator (due to box)
+    /// Can probably turn this into a macro or something
     pub fn extract_all_support_with_meta(
         &self,
         support_index: i64,

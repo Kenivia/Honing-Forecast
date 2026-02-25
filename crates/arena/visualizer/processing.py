@@ -165,15 +165,15 @@ def build_trial_figure(
             annotation_position="top right",
         )
 
-    fig.update_xaxes(title=x_column)
-    fig.update_yaxes(title=f"{base_metric} metric")
+    fig.update_xaxes(title="Iterations" if x_column =="iter" else x_column)
+    fig.update_yaxes(title=f"Metric")
 
     if x_range:
         fig.update_xaxes(range=x_range)
     if y_range:
         fig.update_yaxes(range=y_range)
 
-    title = f"{test_case} - {metric_type}"
+    title = f"{test_case} - Metric: {metric_type}, higher is better"
     return _build_common_layout(fig, title)
 
 

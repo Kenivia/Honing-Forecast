@@ -6,6 +6,7 @@ pub const MONTE_CARLO_CONFIDENCE: f64 = 0.999;
 pub const MONTE_CARLO_PRECISION: f64 = 0.001; // percentage error
 pub const SIMULATED_ANNEALING_DIFF_TOL: f64 = 1e-2;
 pub const MONTE_CARLO_COUNT: usize = 1_000_000;
+
 // no artisan multipliers this time
 pub const EVENT_ARTISAN_MULTIPLIER: [f64; 25] = [
     1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0,

@@ -162,11 +162,15 @@ const GraphContent = ({ width, height, data, average, secondaryAnnotation, color
     // console.log(data.length, label)
     // console.log(secondaryAnnotation, xScale(secondaryAnnotation))
 
-    const y_value = tooltipData ? getY(tooltipData) : null
+    let y_value = tooltipData ? getY(tooltipData) : null
     let place = Math.max(Math.ceil(y_value < 0.5 ? Math.abs(Math.log10(y_value)) : Math.abs(Math.log10(1 - y_value))), 2)
 
-    const too_big = place > 10
-    place = Math.min(place, 10)
+    const cutoff = y_value < 0.5 ? 65 : 15 // f64 precision shinanigans, near 0 should be able to go lower? but gonna stop there cos that's where english runs out of names
+    const too_big = place > cutoff
+    if (too_big) {
+        y_value = y_value < 0.5 ? 0 : 1
+    }
+    place = Math.min(place, cutoff)
     const base = Math.pow(10, place)
     const rounded = tooltipData ? (too_big ? (y_value < 0.5 ? 0 : base) : Math.round(getY(tooltipData) * base)) : null
 
@@ -178,7 +182,7 @@ const GraphContent = ({ width, height, data, average, secondaryAnnotation, color
     const formattedFailCount = (base - rounded).toLocaleString("en-US", numberFormat)
 
     const isSmallProb = y_value < 0.5 || place < 4
-
+    // console.log(tooltipData, displayData)
     return (
         // ref for the tooltip portal
         <div ref={containerRef} style={{ position: "relative" }}>
@@ -320,7 +324,7 @@ const GraphContent = ({ width, height, data, average, secondaryAnnotation, color
             {tooltipOpen && tooltipData && (
                 <TooltipInPortal
                     top={tooltipTop}
-                    left={Math.min(tooltipLeft, xMax * (is_edge ? 0.99 : 0.8))}
+                    left={Math.min(tooltipLeft, xMax * (is_edge ? 0.85 : 0.8))}
                     style={{ ...defaultStyles, backgroundColor: "rgba(0, 0, 0, 0.41)", color: "white" }}
                 >
                     <div style={{ fontSize: 11 }}>
@@ -333,30 +337,41 @@ const GraphContent = ({ width, height, data, average, secondaryAnnotation, color
                             <>
                                 {isSmallProb ? (
                                     <>
-                                        <span style={{ fontWeight: "bold", color: hoverColor }}>{(y_value * 100).toPrecision(3)}%</span> chance to succeed
-                                        within{" "}
+                                        <span style={{ fontWeight: "bold", color: hoverColor }}>
+                                            {too_big && "~"}
+                                            {(y_value * 100).toPrecision(3)}%
+                                        </span>{" "}
+                                        chance to succeed within{" "}
                                     </>
                                 ) : (
                                     <>
-                                        <span style={{ fontWeight: "bold", color: hoverColor }}>{((1 - y_value) * 100).toPrecision(3)}%</span> chance to fail
-                                        after{" "}
+                                        {}
+                                        <span style={{ fontWeight: "bold", color: hoverColor }}>
+                                            {too_big && "~"}
+                                            {((1 - y_value) * 100).toPrecision(too_big ? 1 : 3)}%
+                                        </span>{" "}
+                                        chance to fail after{" "}
                                     </>
                                 )}
                                 {formattedX} <span>{label}</span>
                                 <br />
                                 {/* Room description */}
-                                In a room of <strong>{powerOfTenToWords(place)} </strong>people,
-                                <strong>
-                                    {isSmallProb ? (
-                                        ` ${formattedRounded}`
-                                    ) : (
-                                        <>
-                                            {formattedFailCount !== "0" && " Only "}
-                                            {" " + formattedFailCount + " "}
-                                        </>
-                                    )}
-                                </strong>
-                                {isSmallProb ? " will succeed" : " will fail"}
+                                {place > 3 && (
+                                    <>
+                                        In a room of <strong>{powerOfTenToWords(place)} </strong>people,
+                                        <strong>
+                                            {isSmallProb ? (
+                                                ` ${formattedRounded}`
+                                            ) : (
+                                                <>
+                                                    {formattedFailCount !== "0" && " Only "}
+                                                    {" " + formattedFailCount + " "}
+                                                </>
+                                            )}
+                                        </strong>
+                                        {isSmallProb ? " will succeed" : " will fail"}{" "}
+                                    </>
+                                )}
                             </>
                         )}
                     </div>

@@ -11,12 +11,14 @@ node_modules
 profile.json.gz
 profile.kernel.etl
 
+Advanced_Honing_Data.jsonl
 
+Advanced_Honing_Data
 test_payload_bloated
 *__pycache__*
 dist-ssr
 *.local
-
+*.tmp
 crates/wasm/pkg/*
 !crates/wasm/pkg/LICENSE
 
