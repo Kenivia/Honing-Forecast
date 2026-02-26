@@ -1,6 +1,8 @@
 # About
 
-**Existing calculators don't (or incorrectly) take into account your bound mats, especially bound juice & books. This calculator tells you how to best use free taps and juice. It saves anywhere from 1% to 20%+ gold, depending on your use case and what you compare it to.**
+Honing Forecast is a Lost Ark honing calculator that computes your average gold spent based on your owned mats, and suggests a free tap & juice usage plan that minimizes this average.
+
+Existing calculators don't (or incorrectly) take into account your bound mats, especially bound juice & books. This calculator tells you how to best use free taps and juice. It saves anywhere from 1% to 20%+ gold, depending on your use case and what you compare it to.
 
 Try it here! <https://honing-forecast.pages.dev/>  *(It works better on desktop)*  
 
@@ -35,3 +37,7 @@ You'll need the following:
 Run `npm install` for the dependencies, then `npm run dev` for the dev server.
 
 You can take a look at [WIP](/WIP.md), but any help will be greatly appreciated!
+
+## Bug report
+
+If you spot a bug or an error, please submit an issue!

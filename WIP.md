@@ -3,19 +3,15 @@
 
 ## NOW
 
-- ~~change serde big arrays to just be vectors~~
 - wire up the data to the website so i can look at the data with my eyeballs to see if it's like correct before getting more samples
   - skip actually making sure there's enough sample size for all cases
     - will need to change configuration to include the starting xp and cur balls again, do an inner loop in main.rs to check through each of these
   - skip optimizer changing stuff
     - will need state -> prob dist setup anyway tho, index -> tuple -> read dist from the big array
-    - maybe pre-emptively collapse?
+    - ~~maybe pre-emptively collapse?~~ yes
   - set up the fetch stuff in js (pre-fetch at ui selection)
   - pass the file into wasm? will need a grid of this i think? worst case 24 * 2.25 mb = 54 Mb? (this will be smaller with postcard)
-    - like pass a grid of ids and a id -> data dictionary or something
-  - wire up all the stuff to allow this to happen (step 4 and 5 ig)
-
-- ~~graph label is still off by 1~~
+  - like pass a grid of ids and a id -> data dictionary or something
 
 ## Advanced honing
 
@@ -61,11 +57,13 @@
 - copy paste from uwuowo (maybe just fetch?)
 - toggle "done" upgrades
 - ~~some better way to input mats?~~
-  - ~~screenshot upload? screen share recording? need OCR~~
+  - ~~screenshot upload? screen share recording? need OCR~~ no way
 - also actually deduct from the mats
 - toggle using roster bound / tradable mats or not
 - maybe can do 2 breakpoints?
-- actually huge inspiration from here <https://next-gen.materialsproject.org/materials/mp-48>
+- actually can draw some huge inspirations from here <https://next-gen.materialsproject.org/materials/mp-48>
+  - as in side-by-side boxes, this would work much better for mobile
+  - and a toolbar on the left to select mode / char and what not
 - will need to figure out how to have this grid system for multiple characters
 
 ### Misc UI
@@ -130,8 +128,12 @@
 - figure out if the restarts are carrying the algorithm and maybe do SA properly
 - somehow make the pity length more explicit cos right now a lot of moves don't do anything
 - ~~force special state to have a non-small tail~~ actually that ~~might~~ in fact does discard optimal choices, just make sure that special neighbour moves actually has an effect
+- some way to estimate how close we are to optimal because re-running this for every week is going to be a bit insane
 
 ## Done / cancelled
+
+- ~~change serde big arrays to just be vectors~~
+- ~~graph label is still off by 1~~
 
 - ~~stat test using monte carlo to make sure the results are actually correct (or at least self-consistent)~~
 - ~~default to brute force when decision space < 24000 (with restriction of streaks)~~ this is prolly not worth the effort
@@ -238,7 +240,7 @@
 - ~~limit neighbor function - 1 click 10 taps, limit amt of toggles maybe~~
   - ~~start with VERY broad neighbors - all true, all false etc, then refine until limit reached (such as 10 taps), test how much the limit affects performance~~
 
--~~ visualize these using perfplot~~ plotly instead
+- ~~visualize these using perfplot~~ plotly instead
 
 - ~~take average of many test cases i think (many trials?)~~
 - ~~store time, states evaluated and metric~~
@@ -275,9 +277,9 @@
 - ~~this should also be uh editable in js by ui~~
   - ~~add uh all the owned juice and stuff~~
   -~~ all the existing functions now take in a statebundle instead (still initialize prep_output like before)~~
--~~ wire up the new budget / price keys~~
+- ~~wire up the new budget / price keys~~
 
--~~ figure out already-spent cost and display these~~
+- ~~figure out already-spent cost and display these~~
 
 - ~~add extra "unlocked" buttons and handle it accordingly in rust~~
   -~~ parse this in rust via update_individual~~
@@ -308,7 +310,7 @@
 - ~~crawling back to performance~~
 - ~~pre-allocate scratch space maybe?~~ dont need u_arr at all
 
--~~ cache min max values with pair~~
+- ~~cache min max values with pair~~
 
 - ~~aka step size & max size~~
   -~~ also min_delta of both top side and bottom side~~
