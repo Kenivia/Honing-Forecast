@@ -1,63 +1,73 @@
 
 # Work in Progress
 
-## NOW
+## Roadmap
 
-- wire up the data to the website so i can look at the data with my eyeballs to see if it's like correct before getting more samples
-  - skip actually making sure there's enough sample size for all cases
-    - will need to change configuration to include the starting xp and cur balls again, do an inner loop in main.rs to check through each of these
-  - skip optimizer changing stuff
-    - will need state -> prob dist setup anyway tho, index -> tuple -> read dist from the big array
-    - ~~maybe pre-emptively collapse?~~ yes
-  - set up the fetch stuff in js (pre-fetch at ui selection)
-  - pass the file into wasm? will need a grid of this i think? worst case 24 * 2.25 mb = 54 Mb? (this will be smaller with postcard)
-  - like pass a grid of ids and a id -> data dictionary or something
+### 1st: re-write the frontend
 
-## Advanced honing
+The frontend currently constists of useState spam because I have no clue what I'm doing. Will re-write how states are managed to use Zustand instead, the structure must allow for:
 
-1. generate distribution for each element in decision space
-    - what should the decision space be????
-        - must be easy to follow
-        - ~~artisan breakpoint or fixed count?~~ fixed count
-            - juice the first n grace, juice the first m non-graces
-              - n < like 12, cut off n = inf somewhere
-              - m can prolly go up like 1,2,3,4,5,10,20,30,40 etc up to like 80, also with inf or something
-        - prolly one for juice one for scroll so it'll be a big square
-        - force m = 0 for n < inf, so total is like (13 grace possibilities + 15 juice possibilities)^2 * 10 (starting level) that's not too bad
-    - so state should be a tuple of ~~4~~ 2 (cos can merge n and m) usize -> index into array, with alr_failed changing the starting level
-2. figure out how to bundle this data into ~~the~~ binary files
-    - definitely have separate files for each non-strategy configuration
-        - so should be 2 (double balls) x 7 (cur_balls, 0 to 6, forbid chisel or maybe not) x 100 (starting xp) x 2 (10_20 or 30_40) = 2800 files
-        - each file has 31 x 31 strategies, each is 100 x 3 x 8 bytes (f64) so each file is ~2.3 MB ish which is fine i think
-    - will need to fetch the file at the parser step and store it in prep output?
-    - need to pivot the data to be in this form
-        - for each store (avg juice, avg scroll, chance)
-    - need to fetch and parse(just copy) this data in wasm
-    - there's kinda 6.3 + gigs of data so uh how to put this on github and serve on cloudflare?
-        - can definitely reduce the file size a lot, maybe binary isn't the best idea (probably postcard)
+- Global stuff (Adv honing data cache)
+- Char-specific stuff (budget, grid, special grid etc, basically everything that's a useState right now)
+- Serca? this might be handled in rust instead:
+  - As in, frontend gives a "tier" and rust routes hard-coded constants
+- Forecast mode will probably be handled in rust as well with a specialized rust function instead of js conjuring up a bunch of optimizer calls. Might need rayon again for this
 
-3. accomodate switching between states
-4. accomodate scrolls in juice_info
-    - probably need to rework this
-5. accomodate progress & state adjustments in UI
-6. voila?
+Theres infinite things to do but these are what needs to happen before I can work on Serca:
 
-## UI
+1. Strip out EVERYTHING that currently exists to use a single "store"
+2. Reorganize the UI to be:
+    - left side hotbar with a button for roster setup (which is its own "page"), hotbar will contain selectable characters later
+    - main page reflects currently selected character, which will include"inputs", "cost distribution", "optimizer", "forecast" etc, need to figure out how to lay this out
 
-- i swear something big needs to change, this UI aint it
+### 2nd: Serca
+
+Mixing serca and t4 is lowkey possible if we make the assumption that Serca mats -> t4 mats conversion is possible (so we just convert serca mats to x5 t4 mats and call it a day) but this assumption is kinda dumb and probably won't be very useful anyway, THEREFORE:
+
+1. Implement / rework something about constant.rs, maybe split up tier-invariants and things that change. Get the data from icepeng.
+2. Modify parser to know what tier is happening
+3. User can select tier, and if anything is already owned, present option to convert t4 to serca. Also add a button to divide by 5
+
+### 3rd: Advanced honing optimization
+
+I started on this but uh this is much harder than I thought and Serca is much closer so it'll have to wait on the backburner for now, but here's some steps:
+
+1. Make an adapter thingy to go from (id list) -> (partially (but sufficiently) initialized cache array of array buffers), which will need to:
+    1. check if its in cache
+    2. if not, fetch (everything needed at the same time) -> put into cache
+    3. pass this array into rust (I hope this work? it honestly might not idk)
+2. Handle this on the rust side, specifically:
+    1. Make parser accept this data
+    2. Write this data into prep_output (definitely serde skip on this one)
+    3. Make "update individual dist" and stuff update for advanced honing upgrades, which is just reading from this array
+    4. Make sure that state and everything works with this
+    5. Make neighbour function perturb this state correctly
+3. Display and allow for edit all the necessary information in js:
+    1. Current progress (xp and balls, should be text inputs and dropdown?)
+    2. suggested strategy (state)
+
+### 4th: Forecast mode
+
+Haven't thought enough about the specifics but shouldn't be that hard once everything else is in place.
+
+##
+
+Below are some rambling / brainstorming / Misc stuff
+
+### UI
+
 - need to figureout how to lay everything out
   - roster bound mats toggle / selection? should only allow one char to use roster bound (boxes) mats
   - need to accomodate serca and shit
   - need to rework all the variables and everything
     - also need to accomodate forecast mode somehow? like there'll be multiple calls to optimizer ig?
+  - actually deduct from budget? will need to re-work how things work (probably deduct when success button press and skip all succeeded upgrades completely)
 
 ### Char selection page
 
 - roster tracking & income estimation
 - copy paste from uwuowo (maybe just fetch?)
 - toggle "done" upgrades
-- ~~some better way to input mats?~~
-  - ~~screenshot upload? screen share recording? need OCR~~ no way
 - also actually deduct from the mats
 - toggle using roster bound / tradable mats or not
 - maybe can do 2 breakpoints?
@@ -80,9 +90,10 @@
 - button to deduct costs?
 - ~~default to cumulative and ~~add 10 percentile points maybe
 - "which one should i pick"
+  - pre-set selections such as red vs blue, red juice vs blue juice, scroll boxes etc
 - success update based on one or a few mat types
 
-## Forecast mode
+### Forecast mode
 
 - idk this will have to come after having individual character pages i think
 - can definitely do chances (the cool graph) for individual mats, might have to use MC for the overall success rate?
@@ -98,39 +109,65 @@
   - daily login
   - solo shop
   
-## Serca
-
-- how to consider 1-to-5 conversion??? ~~prolly just 2 sets of grids and 2 sets of prices~~
-  - ~~convert serca mats to t4 mats, then use the lower price of the two when running out?~~
-  - pre sure just cannot have mixed upgrades, but can have 2 sets of mats owned grid
-    - will need to handle 2 types of incomes gg
-    - that means we won't need multiple grids and can just toggle something?
-
-- will definitely need to rework constants.rs, maybe take it in as a binary blob just like adv honing data?
-
-## Misc
+### Misc
 
 - JUICE CHESTS AND MAYBE EVEN BOOKS CHESTS
 - add assertions to a lot of prepoutput stuff
 - start working on visualizing this stuff
   - put all possible states on one axis (must be small support like 5? 10? ) and sort by number of juice used, then color/ 3d height?
 
-## Optimizations
+### Optimizations
 
 - find_min_max can probably do with some kind of caching but i can't figure it out rn
 
-## Other features
+### Other features
 
 - Automatic Market price integration(via some kind of API, or just updating the site at a regular interval automatically)
 
-## Algorithm ideas
+### Algorithm ideas
 
 - figure out if the restarts are carrying the algorithm and maybe do SA properly
 - somehow make the pity length more explicit cos right now a lot of moves don't do anything
 - ~~force special state to have a non-small tail~~ actually that ~~might~~ in fact does discard optimal choices, just make sure that special neighbour moves actually has an effect
 - some way to estimate how close we are to optimal because re-running this for every week is going to be a bit insane
 
+==========================================================================================
+
 ## Done / cancelled
+
+- ~~some better way to input mats?~~
+  - ~~screenshot upload? screen share recording? need OCR~~ no way
+
+1. ~~generate distribution for each element in decision space~~
+    - ~~what should the decision space be????~~
+        - ~~must be easy to follow~~
+        - ~~artisan breakpoint or fixed count?~~ fixed count
+            - ~~juice the first n grace, juice the first m non-graces~~
+              - ~~n < like 12, cut off n = inf somewhere~~
+              - ~~m can prolly go up like 1,2,3,4,5,10,20,30,40 etc up to like 80, also with inf or something~~
+        - ~~prolly one for juice one for scroll so it'll be a big square~~
+        - ~~force m = 0 for n < inf, so total is like (13 grace possibilities + 15 juice possibilities)^2 * 10 (starting level) that's not too bad~~
+    - ~~so state should be a tuple of ~~4~~ 2 (cos can merge n and m) usize -> index into array, with alr_failed changing the starting level~~
+2. ~~figure out how to bundle this data into the binary files~~
+    - ~~definitely have separate files for each non-strategy configuration~~
+        - ~~so should be 2 (double balls) x 7 (cur_balls, 0 to 6, forbid chisel or maybe not) x 100 (starting xp) x 2 (10_20 or 30_40) = 2800 files~~
+        - ~~each file has 31 x 31 strategies, each is 100 x 3 x 8 bytes (f64) so each file is ~2.3 MB ish which is fine i think~~
+    - ~~will need to fetch the file at the parser step and store it in prep output?~~
+    - ~~need to pivot the data to be in this form~~
+        - ~~for each store (avg juice, avg scroll, chance)~~
+    - ~~need to fetch and parse(just copy) this data in wasm~~
+    - ~~there's kinda 6.3 + gigs of data so uh how to put this on github and serve on cloudflare?~~
+        - ~~can definitely reduce the file size a lot, maybe binary isn't the best idea (probably postcard)~~
+
+- ~~wire up the data to the website so i can look at the data with my eyeballs to see if it's like correct before getting more samples~~
+  - ~~skip actually making sure there's enough sample size for all cases~~
+    - ~~will need to change configuration to include the starting xp and cur balls again, do an inner loop in main.rs to check through each of these~~
+  - ~~skip optimizer changing stuff~~
+    - ~~will need state -> prob dist setup anyway tho, index -> tuple -> read dist from the big array~~
+    - ~~maybe pre-emptively collapse?~~ yes
+  - ~~set up the fetch stuff in js (pre-fetch at ui selection)~~
+  - ~~pass the file into wasm? will need a grid of this i think? worst case 24 * 2.25 mb = 54 Mb? (this will be smaller with postcard)~~
+  - ~~like pass a grid of ids and a id -> data dictionary or something~~
 
 - ~~change serde big arrays to just be vectors~~
 - ~~graph label is still off by 1~~
