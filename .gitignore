@@ -11,8 +11,11 @@ node_modules
 profile.json.gz
 profile.kernel.etl
 
+crates/core/src/saddlepoint_approximation/Latex/*
+!crates/core/src/saddlepoint_approximation/Latex/Bibliography.bib
+!crates/core/src/saddlepoint_approximation/Latex/saddlepoint_approximation.tex
 Advanced_Honing_Data.jsonl
-
+Advanced_Honing_Data_json
 Advanced_Honing_Data
 test_payload_bloated
 *__pycache__*
