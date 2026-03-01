@@ -1,5 +1,7 @@
 use crate::upgrade::Upgrade;
-
+use serde::{Deserialize, Serialize};
+use std::ops::{Deref, DerefMut};
+use std::usize::MAX;
 pub const GRACE_FIRST_N: [usize; 16] = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 999];
 pub const NON_GRACE_FIRST_N: [usize; 15] = [1, 2, 3, 4, 5, 8, 10, 12, 15, 20, 30, 40, 50, 60, 999];
 // there's an overlap so (999,0) gets included in grace_first_n)
@@ -24,3 +26,27 @@ impl Upgrade {
 }
 // let mut grid = [[Vec3::zeroed(); NY]; NX];
 // file.read_exact(bytemuck::bytes_of_mut(&mut grid))?;
+#[derive(Serialize, Deserialize, Debug)]
+pub struct AdvHoneData {
+    data: Vec<Vec<(usize, Vec<[f64; 3]>)>>,
+}
+
+impl Default for AdvHoneData {
+    fn default() -> Self {
+        Self {
+            data: vec![vec![(MAX, Vec::new()); MAX_NUM_STATE]; MAX_NUM_STATE],
+        }
+    }
+}
+
+impl Deref for AdvHoneData {
+    type Target = Vec<Vec<(usize, Vec<[f64; 3]>)>>;
+    fn deref(&self) -> &Self::Target {
+        &self.data
+    }
+}
+impl DerefMut for AdvHoneData {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.data
+    }
+}
