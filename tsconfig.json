@@ -6,7 +6,7 @@
             "DOM",
             "ES2020"
         ],
-        "jsx": "react-jsx",
+        "jsx": "preserve",
         "allowJs": true,
         "checkJs": false,
         "outDir": "dist",

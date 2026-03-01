@@ -68,16 +68,12 @@ html {
 body {
     margin: 0;
     padding: 0;
-    display: flex;
-    align-items: center;
-    /* vertical centering for flex */
-    justify-content: center;
-    /* horizontal centering for flex */
+    display: block;
     min-width: 320px;
     min-height: 100vh;
     background-color: var(--bg);
     color: var(--text);
-    font-family: 'system-ui', Arial, sans-serif;
+    font-family: var(--hf-font-mono, "system-ui"), Arial, sans-serif;
     /* Prevent horizontal scrolling and ensure content fits within viewport */
     /* overflow-x: hidden; */
     /* width: 100%; */
