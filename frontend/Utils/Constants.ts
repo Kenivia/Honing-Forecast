@@ -64,7 +64,7 @@ export const IconMap: Record<string, string> = {
     Silver: "/Icons/Materials/Silver.webp",
     "Lava's Breath": "/Icons/Materials/Lava's Breath.webp",
     "Glacier's Breath": "/Icons/Materials/Glacier's Breath.webp",
-    "Special Leap": "/Icons/Materials/Special Leap.webp",
+    "Special Leap": "/Icons/Materials/Special leap.webp",
 
     "11-14 Armor": "/Icons/Materials/Armor Book.webp",
     "11-14 Weapon": "/Icons/Materials/Weapon Book.webp",

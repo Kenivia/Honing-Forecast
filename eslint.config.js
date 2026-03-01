@@ -1,61 +1,39 @@
-
-import js from '@eslint/js'
-import globals from 'globals'
-import reactHooks from 'eslint-plugin-react-hooks'
-import reactRefresh from 'eslint-plugin-react-refresh'
-import tsParser from '@typescript-eslint/parser'
-import tsPlugin from '@typescript-eslint/eslint-plugin'
-import { defineConfig, globalIgnores } from 'eslint/config'
-
+import js from "@eslint/js"
+import globals from "globals"
+import tsParser from "@typescript-eslint/parser"
+import tsPlugin from "@typescript-eslint/eslint-plugin"
+import { defineConfig, globalIgnores } from "eslint/config"
 
 export default defineConfig([
-    globalIgnores(['dist', 'junkyard', "vitest.setup.ts", "/src/types/vitest.d.ts"]),
-    // Base config for JS/JSX files
+    globalIgnores(["dist", "junkyard", "vitest.setup.ts", "/src/types/vitest.d.ts"]),
     {
-        files: ['**/*.{js,jsx}'],
-        extends: [
-            js.configs.recommended,
-            reactHooks.configs['recommended-latest'],
-            reactRefresh.configs.vite,
-        ],
-        plugins: { '@typescript-eslint': tsPlugin },
+        files: ["**/*.{js,mjs,cjs}"],
+        extends: [js.configs.recommended],
         languageOptions: {
-            ecmaVersion: 2020,
+            ecmaVersion: "latest",
+            sourceType: "module",
             globals: globals.browser,
-            parserOptions: {
-                ecmaVersion: 'latest',
-                ecmaFeatures: { jsx: true },
-                sourceType: 'module',
-            },
         },
         rules: {
-            // disable base rule and use TypeScript-aware rule
-            'no-unused-vars': 'off',
-            '@typescript-eslint/no-unused-vars': ['error', { varsIgnorePattern: '^[A-Z_]', "argsIgnorePattern": "^_" }],
+            "no-unused-vars": ["error", { varsIgnorePattern: "^[A-Z_]", argsIgnorePattern: "^_", caughtErrors: "none" }],
         },
     },
-    // TS/TSX-specific overrides
     {
-        files: ['**/*.{ts,tsx}'],
-        extends: [
-            js.configs.recommended,
-            reactHooks.configs['recommended-latest'],
-            reactRefresh.configs.vite,
-        ],
+        files: ["**/*.{ts,mts,cts}"],
+        extends: [js.configs.recommended],
+        plugins: { "@typescript-eslint": tsPlugin },
         languageOptions: {
-            ecmaVersion: 2020,
-            globals: { ...globals.browser, React: 'readonly' },
+            ecmaVersion: "latest",
+            sourceType: "module",
+            globals: globals.browser,
             parser: tsParser,
             parserOptions: {
-                ecmaVersion: 'latest',
-                ecmaFeatures: { jsx: true },
-                sourceType: 'module',
-                project: './tsconfig.json',
+                project: "./tsconfig.json",
             },
         },
         rules: {
-            'no-unused-vars': ['error', { varsIgnorePattern: '^[A-Z_]', "argsIgnorePattern": "^_", "caughtErrors": "none", }]
+            "no-unused-vars": "off",
+            "@typescript-eslint/no-unused-vars": ["error", { varsIgnorePattern: "^[A-Z_]", argsIgnorePattern: "^_", caughtErrors: "none" }],
         },
     },
-
 ])
