@@ -15,7 +15,7 @@ pub fn histogram(state_bundle: &mut StateBundle) -> HistogramOutputs {
     state_bundle.compute_special_probs(false);
     let special_probs = state_bundle.special_cache[&state_bundle.special_state].clone();
     let mut dummy_performance = Performance::new();
-    let num_sup = state_bundle.flattened_effective_budgets().count();
+    let num_sup = state_bundle.flattened_budgets().count();
 
     let mut cum_percentiles: Vec<Vec<(f64, f64)>> = vec![Vec::with_capacity(BUCKET_COUNT); num_sup];
 
@@ -54,10 +54,9 @@ pub fn histogram(state_bundle: &mut StateBundle) -> HistogramOutputs {
         average,
         budgets: state_bundle
             .prep_output
-            .effective_budgets
+            .budgets
             .iter()
             .enumerate()
-            .take(7)
             .map(|(_, x)| *x)
             .chain(
                 state_bundle

@@ -1,7 +1,4 @@
-use crate::constants::{
-    FLOAT_TOL, get_event_modified_adv_unlock_cost, get_event_modified_armor_unlock_cost,
-    get_event_modified_weapon_unlock_cost,
-};
+use crate::constants::FLOAT_TOL;
 
 use crate::upgrade::Upgrade;
 use rand::Rng;
@@ -229,77 +226,6 @@ pub fn ticks_to_counts(ticks: &[Vec<bool>]) -> Vec<Vec<i64>> {
     }
 
     out
-}
-
-/// Compute shard and silver unlock costs.
-///
-/// Parameters:
-/// - `hone_counts`: &[Vec<i64>] (expected shape: [armor/weapon][index])
-/// - `adv_counts`: &[Vec<i64>] (advanced counts)
-/// - `express_event`: bool (whether express event is active)
-///
-/// Returns: (`shard_unlock`, `silver_unlock`)
-pub fn calc_unlock(
-    hone_ticks: &[Vec<bool>],
-    adv_ticks: &[Vec<bool>],
-    express_event: bool,
-) -> Vec<i64> {
-    let mut shard_unlock: i64 = 0;
-    let mut silver_unlock: i64 = 0;
-    let hone_counts = ticks_to_counts(hone_ticks);
-    let adv_counts = ticks_to_counts(adv_ticks);
-
-    // Get event-modified unlock costs
-    let weapon_unlock_costs: [[i64; 25]; 2] = get_event_modified_weapon_unlock_cost(express_event);
-    let armor_unlock_costs: [[i64; 25]; 2] = get_event_modified_armor_unlock_cost(express_event);
-    let adv_unlock_costs: [[i64; 8]; 2] = get_event_modified_adv_unlock_cost(express_event);
-
-    // Weapon unlocks: hone_counts[1][index]
-    for (cost_type, element) in weapon_unlock_costs.iter().enumerate() {
-        for (index, &cost) in element.iter().enumerate() {
-            match cost_type {
-                0 => shard_unlock += hone_counts[1][index] * cost,
-                1 => silver_unlock += hone_counts[1][index] * cost,
-                _ => {}
-            }
-        }
-    }
-
-    // Armor unlocks: hone_counts[0][index]
-    for (cost_type, element) in armor_unlock_costs.iter().enumerate() {
-        for (index, &cost) in element.iter().enumerate() {
-            match cost_type {
-                0 => shard_unlock += hone_counts[0][index] * cost,
-                1 => silver_unlock += hone_counts[0][index] * cost,
-                _ => {}
-            }
-        }
-    }
-
-    // Advanced unlocks: indexing alternates between adv_counts[0] and adv_counts[1]
-    for (cost_type, element) in adv_unlock_costs.iter().enumerate() {
-        for (index, &cost) in element.iter().enumerate() {
-            if index % 2 == 1 {
-                // odd index -> use adv_counts[0][(index-1)/2]
-                let idx: usize = (index - 1) / 2;
-                match cost_type {
-                    0 => shard_unlock += adv_counts[0][idx] * cost,
-                    1 => silver_unlock += adv_counts[0][idx] * cost,
-                    _ => {}
-                }
-            } else {
-                // even index -> use adv_counts[1][index/2]
-                let idx: usize = index / 2;
-                match cost_type {
-                    0 => shard_unlock += adv_counts[1][idx] * cost,
-                    1 => silver_unlock += adv_counts[1][idx] * cost,
-                    _ => {}
-                }
-            }
-        }
-    }
-
-    vec![shard_unlock, silver_unlock]
 }
 
 // // (maxroll) average, without the unlock costs

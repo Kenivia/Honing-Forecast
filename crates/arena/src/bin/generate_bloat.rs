@@ -26,27 +26,9 @@ fn main() {
     let mut count: i64 = 0;
 
     for (base_name, payload) in payloads {
-        let state_bundle = StateBundle::init_from_inputs(
-            &payload.normal_hone_ticks,
-            &payload.mats_budget,
-            &payload.adv_hone_ticks,
-            payload.express_event,
-            &payload.user_price_arr,
-            &payload.adv_hone_strategy,
-            &payload.juice_books_budget,
-            &payload.juice_prices,
-            &payload.inp_leftover_values,
-            &payload.inp_leftover_juice_values,
-            payload.progress_grid.clone(),
-            payload.state_grid.clone(),
-            payload.special_state.clone(),
-            payload.unlocked_grid.clone(),
-            payload.succeeded_grid.clone(),
-            payload.min_resolution,
-            1,
-            payload.metric_type,
-        );
-        let (one_tap_costs, pity_costs) = state_bundle.get_one_tap_pity();
+        let state_bundle = StateBundle::init_from_payload(payload.clone());
+        let one_tap_costs = state_bundle.one_tap();
+        let pity_costs = state_bundle.pity();
 
         for i in 0..BLOAT_FACTOR {
             let mut this_payload = payload.clone();

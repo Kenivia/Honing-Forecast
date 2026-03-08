@@ -81,5 +81,6 @@ export function buildPayload({
         metric_type: metricType,
         normal_hone_ticks: topGrid,
         adv_hone_ticks: bottomGrid,
+        tier: 0,
     }
 }

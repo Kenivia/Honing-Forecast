@@ -3,7 +3,6 @@ members = [
     "crates/core",
     "crates/wasm",
     "crates/arena",
-    "crates/adv_hone_data"
 ]
 resolver="3"
 

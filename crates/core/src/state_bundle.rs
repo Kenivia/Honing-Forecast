@@ -1,9 +1,12 @@
+use crate::advanced_honing::compute::PMF;
+use crate::advanced_honing::utils::{AdvConfig, AdvDistTriplet, InvariantAdvConfig, SmallAdvState};
 use crate::parser::PreparationOutput;
 use crate::performance::Performance;
 use crate::upgrade::{State, Upgrade};
+use ahash::AHashMap;
 use ordered_float::OrderedFloat;
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
+
 use std::f64::NAN;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -17,15 +20,20 @@ pub struct StateBundle {
     pub min_resolution: usize,
     pub prep_output: PreparationOutput,
     #[serde(skip)]
-    pub special_cache: HashMap<Vec<usize>, Vec<f64>>,
+    pub special_cache: AHashMap<Vec<usize>, Vec<f64>>,
     pub num_threads: usize,
     pub average_breakdown: Option<Vec<f64>>,
+
+    #[serde(skip)]
+    pub adv_cache: AHashMap<AdvConfig, AdvDistTriplet>,
+    #[serde(skip)]
+    pub adv_memo_cache: AHashMap<InvariantAdvConfig, AHashMap<SmallAdvState, (PMF, PMF, PMF)>>, // can prolly wrap these as custom structs at some point
 }
 
 pub fn default_state_arr(upgrade_arr: &Vec<Upgrade>) -> Vec<Vec<(bool, usize)>> {
     let mut out: Vec<Vec<(bool, usize)>> = Vec::with_capacity(upgrade_arr.len());
     for upgrade in upgrade_arr {
-        out.push(State::new(upgrade.prob_dist.len()).payload.clone());
+        out.push(State::new_empty(upgrade.normal_dist.len()).payload.clone());
     }
     out
 }
@@ -46,7 +54,7 @@ impl StateBundle {
 
     pub fn metric_router(&mut self, performance: &mut Performance) -> f64 {
         match self.metric_type {
-            0 => self.success_prob_metric(performance),
+            0 => unreachable!(), //self.success_prob_metric(performance),
             1 => self.average_gold_metric(performance),
             _ => NAN,
         }
@@ -58,13 +66,15 @@ impl StateBundle {
             metric: -1.0,
             special_state: (0..upgrade_arr.len()).collect(),
             prep_output,
-            special_cache: HashMap::new(),
+            special_cache: AHashMap::new(),
             upgrade_arr,
             metric_type: -1,
             latest_special_probs: None,
             min_resolution: 1,
             num_threads: 0,
             average_breakdown: None,
+            adv_cache: AHashMap::new(),
+            adv_memo_cache: AHashMap::new(),
         };
 
         state_bundle

@@ -11,9 +11,9 @@ node_modules
 profile.json.gz
 profile.kernel.etl
 
-crates/core/src/saddlepoint_approximation/Latex/*
-!crates/core/src/saddlepoint_approximation/Latex/Bibliography.bib
-!crates/core/src/saddlepoint_approximation/Latex/saddlepoint_approximation.tex
+crates/core/src/compute/Latex/*
+!crates/core/src/compute/Latex/Bibliography.bib
+!crates/core/src/compute/Latex/saddlepoint_approximation.tex
 Advanced_Honing_Data.jsonl
 Advanced_Honing_Data_json
 Advanced_Honing_Data
@@ -25,6 +25,8 @@ dist-ssr
 crates/wasm/pkg/*
 !crates/wasm/pkg/LICENSE
 
+
+data_fetcher
 CONOUT$
 # Editor directories and files, pushing .vscode
 !.vscode/extensions.json

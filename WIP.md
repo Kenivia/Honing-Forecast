@@ -5,17 +5,7 @@
 
 ### 1st: re-write the frontend
 
-The frontend currently constists of useState spam because I have no clue what I'm doing. Will re-write how states are managed to use Zustand instead, the structure must allow for:
-
-- Global stuff (Adv honing data cache)
-- Char-specific stuff (budget, grid, special grid etc, basically everything that's a useState right now)
-- Serca? this might be handled in rust instead:
-  - As in, frontend gives a "tier" and rust routes hard-coded constants
-- Forecast mode will probably be handled in rust as well with a specialized rust function instead of js conjuring up a bunch of optimizer calls. Might need rayon again for this
-
-Theres infinite things to do but these are what needs to happen before I can work on Serca:
-
-1. Strip out EVERYTHING that currently exists to use a single "store"
+1. Strip out EVERYTHING that currently exists to use a single "store" (every char needs its own "store")
 2. Reorganize the UI to be:
     - left side hotbar with a button for roster setup (which is its own "page"), hotbar will contain selectable characters later
     - main page reflects currently selected character, which will include"inputs", "cost distribution", "optimizer", "forecast" etc, need to figure out how to lay this out
@@ -24,31 +14,42 @@ Theres infinite things to do but these are what needs to happen before I can wor
 
 Mixing serca and t4 is lowkey possible if we make the assumption that Serca mats -> t4 mats conversion is possible (so we just convert serca mats to x5 t4 mats and call it a day) but this assumption is kinda dumb and probably won't be very useful anyway, THEREFORE:
 
-1. Implement / rework something about constant.rs, maybe split up tier-invariants and things that change. Get the data from icepeng.
-2. Modify parser to know what tier is happening
+1. ~~Implement / rework something about constant.rs, maybe split up tier-invariants and things that change. Get the data from icepeng.~~
+2. ~~Modify parser to know what tier is happening~~
 3. User can select tier, and if anything is already owned, present option to convert t4 to serca. Also add a button to divide by 5
 
 ### 3rd: Advanced honing optimization
 
 I started on this but uh this is much harder than I thought and Serca is much closer so it'll have to wait on the backburner for now, but here's some steps:
 
-1. Make an adapter thingy to go from (id list) -> (partially (but sufficiently) initialized cache array of array buffers), which will need to:
-    1. check if its in cache
-    2. if not, fetch (everything needed at the same time) -> put into cache
-    3. pass this array into rust (I hope this work? it honestly might not idk)
-2. Handle this on the rust side, specifically:
-    1. Make parser accept this data
-    2. Write this data into prep_output (definitely serde skip on this one)
-    3. Make "update individual dist" and stuff update for advanced honing upgrades, which is just reading from this array
-    4. Make sure that state and everything works with this
-    5. Make neighbour function perturb this state correctly
+NONE OF THIS DATA STUFF TURNED OUT TO BE NECESSARY because DP is op and we can just compute the adv honing distribution on the fly.
+
+1. ~~Make an adapter thingy to go from (id list) -> (partially (but sufficiently) initialized cache array of array buffers), which will need to:~~
+    1. ~~check if its in cache~~
+    2. ~~if not, fetch (everything needed at the same time) -> put into cache~~
+    3. ~~pass this array into rust (I hope this work? it honestly might not idk)~~
+2. ~~Handle this on the rust side, specifically:~~
+    1. ~~Make parser accept this data~~
+    2 .~~ Write this data into prep_output (definitely serde skip on this one)~~
+    2. ~~Make "update individual dist" and stuff update for advanced honing upgrades, which is just reading from this array~~
+    3. ~~Make sure that state and everything works with this~~
+    4. ~~Make neighbour function perturb this state correctly~~
 3. Display and allow for edit all the necessary information in js:
     1. Current progress (xp and balls, should be text inputs and dropdown?)
     2. suggested strategy (state)
+4. Maybe hard-code the most common setup
 
 ### 4th: Forecast mode
 
 Haven't thought enough about the specifics but shouldn't be that hard once everything else is in place.
+
+### 5th: Price trend viewer
+
+need to pull as much historical data as possible from loa-buddy -> store & pull from my own data base -> keep updating this
+
+This will be the first step towards an actual hosted non-serverless website
+
+Maybe discord integration after this / uwuowo import / cross-device storage stuff like that but that's kinda far (can maybe do some cool stats analysis with uwuowo char ilevel population data)
 
 ##
 
@@ -115,6 +116,7 @@ Below are some rambling / brainstorming / Misc stuff
 - add assertions to a lot of prepoutput stuff
 - start working on visualizing this stuff
   - put all possible states on one axis (must be small support like 5? 10? ) and sort by number of juice used, then color/ 3d height?
+- verify advanced honing using Monte Carlo
 
 ### Optimizations
 
@@ -130,6 +132,7 @@ Below are some rambling / brainstorming / Misc stuff
 - somehow make the pity length more explicit cos right now a lot of moves don't do anything
 - ~~force special state to have a non-small tail~~ actually that ~~might~~ in fact does discard optimal choices, just make sure that special neighbour moves actually has an effect
 - some way to estimate how close we are to optimal because re-running this for every week is going to be a bit insane
+- maybe a neural network for an (or few) initial guesses -> optimizer?
 
 ==========================================================================================
 

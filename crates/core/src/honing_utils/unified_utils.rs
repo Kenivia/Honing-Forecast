@@ -1,0 +1,211 @@
+use ahash::AHashMap;
+
+use crate::support::Support;
+use crate::{
+    advanced_honing::{
+        compute::PMF,
+        utils::{AdvConfig, AdvDistTriplet, InvariantAdvConfig, SmallAdvState},
+    },
+    constants::juice_info::JuiceInfo,
+    state_bundle::StateBundle,
+    upgrade::Upgrade,
+};
+impl Upgrade {
+    pub fn update_this_prob_dist(
+        &mut self,
+        adv_cache: &mut AHashMap<AdvConfig, AdvDistTriplet>,
+        adv_memo_cache: &mut AHashMap<InvariantAdvConfig, AHashMap<SmallAdvState, (PMF, PMF, PMF)>>,
+        juice_info: &JuiceInfo,
+    ) {
+        if self.is_normal_honing {
+            self.update_dist_normal(juice_info);
+        } else {
+            self.update_dist_adv(adv_cache, adv_memo_cache);
+        }
+    }
+
+    pub fn update_this_support(&mut self, juice_info: &JuiceInfo) {
+        if self.is_normal_honing {
+            self.update_support_normal(juice_info);
+        } else {
+            self.update_support_adv(juice_info);
+        }
+    }
+}
+
+impl StateBundle {
+    /// These are only used for generating the histogram
+    /// note that for the purpose of making consistent & comparable x-axises (or whatever the plural is) I should evaluate the same state every time, but then juice won't agree with that so maybe i should just write a special case for that? idk cbb
+    pub fn one_tap(&self) -> Vec<i64> {
+        let mut out = vec![0i64; self.prep_output.juice_info.total_num_avail];
+        for (support_index, cost) in out.iter_mut().enumerate() {
+            *cost += (self
+                .extract_all_support_with_meta(support_index as i64)
+                .map(|support| support.access_min(false)) // does not consider skipped to make a better graph
+                .sum::<f64>())
+            .ceil() as i64;
+        }
+
+        out
+    }
+    pub fn pity(&self) -> Vec<i64> {
+        let mut out = vec![0i64; self.prep_output.juice_info.total_num_avail];
+        for (support_index, cost) in out.iter_mut().enumerate() {
+            *cost += (self
+                .extract_all_support_with_meta(support_index as i64)
+                .map(|support| support.access_max(false))
+                .sum::<f64>())
+            .ceil() as i64;
+        }
+
+        out
+    }
+    /// This thing is called insanely often and it's kinda takes longer than i'd like (like +10% overall its kinda crazy)
+    /// TODO ig
+    pub fn find_min_max(&self, support_index: i64, skip_count: usize) -> (f64, f64) {
+        let min_value = self
+            .extract_all_support_with_meta(support_index)
+            .enumerate()
+            .map(|(index, x)| x.access_min(skip_count > index))
+            .sum();
+        let max_value = self
+            .extract_all_support_with_meta(support_index)
+            .enumerate()
+            .map(|(index, x)| x.access_max(skip_count > index))
+            .sum();
+        (min_value, max_value)
+    }
+
+    /// Returns an iterator of Support instances, in the order specified by special_state
+    ///
+    /// We don't use a &Vec to avoid re-ordering / allocating, currently I think it only needs to allocate for the iterator (due to box)
+    /// Can probably turn this into a macro or something
+    pub fn extract_all_support_with_meta(
+        &self,
+        support_index: i64,
+    ) -> Box<dyn DoubleEndedIterator<Item = &Support> + '_> {
+        let num_juice_avail = self.prep_output.juice_info.num_juice_avail;
+        Box::new(self.special_state.iter().map(move |&u_index| {
+            let upgrade = &self.upgrade_arr[u_index];
+            if support_index < 0 {
+                unreachable!()
+            } else if support_index < 7 {
+                &upgrade.cost_dist[support_index as usize]
+            } else if support_index < 7 + num_juice_avail as i64 {
+                &upgrade.weap_juice_costs[support_index as usize - 7]
+            } else {
+                &upgrade.armor_juice_costs[support_index as usize - 7 - num_juice_avail]
+            }
+        }))
+    }
+
+    pub fn support_from_index(&self, u_index: usize, support_index: i64) -> &Support {
+        let upgrade = &self.upgrade_arr[u_index];
+        let num_juice_avail = self.prep_output.juice_info.num_juice_avail;
+
+        if support_index < 0 {
+            unreachable!()
+        } else if support_index < 7 {
+            &upgrade.cost_dist[support_index as usize]
+        } else if support_index < 7 + num_juice_avail as i64 {
+            &upgrade.weap_juice_costs[support_index as usize - 7]
+        } else {
+            &upgrade.armor_juice_costs[support_index as usize - 7 - num_juice_avail]
+        }
+    }
+
+    pub fn extract_collapsed_pair(
+        &self,
+        support_index: i64,
+        skip_count: usize,
+    ) -> Box<dyn DoubleEndedIterator<Item = &Vec<(f64, f64)>> + '_> {
+        let num_juice_avail = self.prep_output.juice_info.num_juice_avail;
+        Box::new(
+            self.special_state
+                .iter()
+                .enumerate()
+                .map(move |(index, &u_index)| {
+                    let upgrade = &self.upgrade_arr[u_index];
+                    if support_index < 0 {
+                        unreachable!()
+                    } else if support_index < 7 {
+                        upgrade.cost_dist[support_index as usize]
+                            .access_collapsed(skip_count > index)
+                    } else if support_index < 7 + num_juice_avail as i64 {
+                        upgrade.weap_juice_costs[support_index as usize - 7]
+                            .access_collapsed(skip_count > index)
+                    } else {
+                        upgrade.armor_juice_costs[support_index as usize - 7 - num_juice_avail]
+                            .access_collapsed(skip_count > index)
+                    }
+                }),
+        )
+    }
+
+    pub fn update_individual_support(&mut self) {
+        for upgrade in self.upgrade_arr.iter_mut() {
+            upgrade.update_this_support(&self.prep_output.juice_info);
+        }
+    }
+
+    pub fn update_dist(&mut self) {
+        for upgrade in self.upgrade_arr.iter_mut() {
+            upgrade.update_this_prob_dist(
+                &mut self.adv_cache,
+                &mut self.adv_memo_cache,
+                &self.prep_output.juice_info,
+            );
+        }
+    }
+
+    pub fn flattened_budgets(&self) -> impl Iterator<Item = f64> {
+        self.prep_output
+            .budgets
+            .iter()
+            .copied()
+            .chain(self.prep_output.juice_books_owned.iter().map(|x| x.0))
+            .chain(self.prep_output.juice_books_owned.iter().map(|x| x.1))
+    }
+
+    pub fn flattened_price(&self) -> impl Iterator<Item = f64> {
+        self.prep_output
+            .price_arr
+            .iter()
+            .copied()
+            .chain(
+                self.prep_output
+                    .juice_info
+                    .all_juices
+                    .iter()
+                    .map(|x| x.prices.0),
+            )
+            .chain(
+                self.prep_output
+                    .juice_info
+                    .all_juices
+                    .iter()
+                    .map(|x| x.prices.1),
+            )
+    }
+
+    pub fn flattened_leftover(&self) -> impl Iterator<Item = f64> {
+        self.prep_output
+            .leftover_values
+            .iter()
+            .copied()
+            .chain(
+                self.prep_output
+                    .juice_info
+                    .all_juices
+                    .iter()
+                    .map(|x| x.leftover_values.0),
+            )
+            .chain(
+                self.prep_output
+                    .juice_info
+                    .all_juices
+                    .iter()
+                    .map(|x| x.leftover_values.1),
+            )
+    }
+}

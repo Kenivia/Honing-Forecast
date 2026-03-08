@@ -5,6 +5,10 @@ export const JUICE_LABELS = [
     ["11-14 Weapon", "11-14 Armor"],
     ["15-18 Weapon", "15-18 Armor"],
     ["19-20 Weapon", "19-20 Armor"],
+    ["Scroll 1 Weapon", "Scroll 1 Armor"],
+    ["Scroll 2 Weapon", "Scroll 2 Armor"],
+    ["Scroll 3 Weapon", "Scroll 3 Armor"],
+    ["Scroll 4 Weapon", "Scroll 4 Armor"],
 ]
 export const GRAPH_COLORS = [
     "--series-red",
@@ -22,6 +26,14 @@ export const GRAPH_COLORS = [
     "--series-books",
     "--series-books",
     "--series-books",
+    "--series-red",
+    "--series-red",
+    "--series-red",
+    "--series-red",
+    "--series-blue",
+    "--series-blue",
+    "--series-blue",
+    "--series-blue",
 ]
 export const OUTPUT_LABELS = ["Red", "Blue", "Leaps", "Shards", "Oreha", "Gold", "Silver", "Red juice", "Blue juice"]
 
@@ -39,9 +51,17 @@ export const DEFAULT_JUICE_PRICES = [
     [200, 100],
     [1200, 600],
     [7000, 4000],
+    [400, 250],
+    [200, 100],
+    [1200, 600],
+    [7000, 4000],
 ]
 
 export const DEFAULT_JUICE_LEFTOVER = [
+    [0, 0],
+    [0, 0],
+    [0, 0],
+    [0, 0],
     [0, 0],
     [0, 0],
     [0, 0],
@@ -64,7 +84,7 @@ export const IconMap: Record<string, string> = {
     Silver: "/Icons/Materials/Silver.webp",
     "Lava's Breath": "/Icons/Materials/Lava's Breath.webp",
     "Glacier's Breath": "/Icons/Materials/Glacier's Breath.webp",
-    "Special Leap": "/Icons/Materials/Special leap.webp",
+    "Special Leap": "/Icons/Materials/Special Leap.webp",
 
     "11-14 Armor": "/Icons/Materials/Armor Book.webp",
     "11-14 Weapon": "/Icons/Materials/Weapon Book.webp",

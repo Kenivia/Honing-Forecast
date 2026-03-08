@@ -28,7 +28,7 @@ Try it here! <https://honing-forecast.pages.dev/>  *(It works better on desktop)
 
 For an intuitive overview of what's being calculated & how things work, check out the [reddit post](http://reddit.com/r/lostarkgame/comments/1qwskt2/optimize_your_free_tap_juice_usage_with_the_new/).
 
-For details on how we compute the average, see [here](/crates/core/src/saddlepoint_approximation/README.md).
+If you are interested in the math behind how we compute the average, check out the "[white paper](/crates/core/src/saddlepoint_approximation/README.pdf)" I wrote.
 
 For anything else, you can ask me in the [Discord server](https://discord.com/invite/QFbs75RmRN)!
 

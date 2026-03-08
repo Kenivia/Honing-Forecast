@@ -1,4 +1,4 @@
-use hf_core::run_tests::run_tests;
+use hf_core::verification::run_tests::run_tests;
 use std::env;
 fn main() {
     let args: Vec<String> = env::args().collect();
