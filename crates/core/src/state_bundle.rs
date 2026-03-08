@@ -1,5 +1,4 @@
-use crate::advanced_honing::compute::PMF;
-use crate::advanced_honing::utils::{AdvConfig, AdvDistTriplet, InvariantAdvConfig, SmallAdvState};
+use crate::advanced_honing::utils::{AdvConfig, AdvDistTriplet};
 use crate::parser::PreparationOutput;
 use crate::performance::Performance;
 use crate::upgrade::{State, Upgrade};
@@ -26,8 +25,6 @@ pub struct StateBundle {
 
     #[serde(skip)]
     pub adv_cache: AHashMap<AdvConfig, AdvDistTriplet>,
-    #[serde(skip)]
-    pub adv_memo_cache: AHashMap<InvariantAdvConfig, AHashMap<SmallAdvState, (PMF, PMF, PMF)>>, // can prolly wrap these as custom structs at some point
 }
 
 pub fn default_state_arr(upgrade_arr: &Vec<Upgrade>) -> Vec<Vec<(bool, usize)>> {
@@ -74,7 +71,6 @@ impl StateBundle {
             num_threads: 0,
             average_breakdown: None,
             adv_cache: AHashMap::new(),
-            adv_memo_cache: AHashMap::new(),
         };
 
         state_bundle

@@ -91,7 +91,6 @@ pub fn solve<R: Rng>(
         DoublePriorityQueue::new();
     overall_best_n_states.push(state_bundle.to_essence(), OrderedFloat(state_bundle.metric));
 
-    let actual_thread_num: i64 = CONCURRENT_COUNT;
     // if state_bundle.num_threads == 0 {
     //     16
     // } else {
@@ -116,7 +115,7 @@ pub fn solve<R: Rng>(
     {
         overall_performance.best_history.push((
             timer.elapsed_sec(),
-            eqv_wall_time_iters * actual_thread_num,
+            eqv_wall_time_iters,
             f64::from(*overall_best_n_states.peek_max().unwrap().1),
         ));
     }
@@ -192,13 +191,15 @@ pub fn solve<R: Rng>(
 
         eqv_wall_time_iters += 1;
 
-        if eqv_wall_time_iters * actual_thread_num - last_total_count * actual_thread_num >= 1000 {
+        if eqv_wall_time_iters - last_total_count >= 1000
+            || (eqv_wall_time_iters < 1000 && eqv_wall_time_iters - last_total_count >= 67)
+        {
             last_total_count = eqv_wall_time_iters;
             #[cfg(feature = "run_tests")]
             {
                 overall_performance.best_history.push((
                     timer.elapsed_sec(),
-                    eqv_wall_time_iters * actual_thread_num,
+                    eqv_wall_time_iters,
                     f64::from(*solver_bundle.best_n_states.peek_max().unwrap().1),
                 ));
             }

@@ -8,7 +8,6 @@ pub const MAX_ITERS: i64 = 24000;
 pub const NON_IMPACT_WEIGHT: f64 = 3.0;
 // pub const SPECIAL_START_CHANCE: f64 = 1.0;
 // pub const MIN_SPECIAL_CHANCE: f64 = 0.05;
-pub const CONCURRENT_COUNT: i64 = 1;
 
 // pub const JUICE_TEMP_FACTOR: f64 = 3.0;
 // pub const SPECIAL_TEMP_FACTOR: f64 = 1.0;

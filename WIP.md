@@ -9,6 +9,7 @@
 2. Reorganize the UI to be:
     - left side hotbar with a button for roster setup (which is its own "page"), hotbar will contain selectable characters later
     - main page reflects currently selected character, which will include"inputs", "cost distribution", "optimizer", "forecast" etc, need to figure out how to lay this out
+    - maybe some kind of summary page -> detailed page? this way can fit more graphs in?
 
 ### 2nd: Serca
 
@@ -38,6 +39,9 @@ NONE OF THIS DATA STUFF TURNED OUT TO BE NECESSARY because DP is op and we can j
     1. Current progress (xp and balls, should be text inputs and dropdown?)
     2. suggested strategy (state)
 4. Maybe hard-code the most common setup
+
+- This kinda uses an egregious amt of memory rn, need to benchmark how much the cache actually helps and how to reduce it
+- it's also kinda just slow, will prolly benefit from hard-coding known stuff
 
 ### 4th: Forecast mode
 

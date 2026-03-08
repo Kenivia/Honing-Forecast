@@ -1,7 +1,5 @@
 //! Payload is how js and rust communicates, we also use payload as our test cases in arena
-
-use crate::advanced_honing::compute::PMF;
-use crate::advanced_honing::utils::{AdvConfig, AdvDistTriplet, InvariantAdvConfig, SmallAdvState};
+use crate::advanced_honing::utils::{AdvConfig, AdvDistTriplet};
 use crate::parser::PreparationOutput;
 use crate::state_bundle::StateBundle;
 use crate::upgrade::Upgrade;
@@ -63,11 +61,10 @@ impl StateBundle {
         adv_progress_grid: Option<Vec<Vec<(usize, usize, bool, bool)>>>,
         tier: usize,
     ) -> StateBundle {
-        let (prep_output, upgrade_arr, adv_cache, adv_memo_cache): (
+        let (prep_output, upgrade_arr, adv_cache): (
             PreparationOutput,
             Vec<Upgrade>,
             AHashMap<AdvConfig, AdvDistTriplet>,
-            AHashMap<InvariantAdvConfig, AHashMap<SmallAdvState, (PMF, PMF, PMF)>>,
         ) = PreparationOutput::initialize(
             hone_ticks,
             input_budgets,
@@ -107,7 +104,6 @@ impl StateBundle {
             num_threads,
             average_breakdown: None,
             adv_cache,
-            adv_memo_cache,
         }
     }
     pub fn init_from_payload(payload: Payload) -> Self {

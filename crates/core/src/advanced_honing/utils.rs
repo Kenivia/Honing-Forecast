@@ -4,13 +4,13 @@ use crate::upgrade::Upgrade;
 
 pub const GRACE_FIRST_N: [usize; 16] = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 255];
 pub const NON_GRACE_FIRST_N: [usize; 15] = [1, 2, 3, 4, 5, 8, 10, 12, 15, 20, 30, 40, 50, 60, 255];
-// there's an overlap so (999,0) gets included in grace_first_n)
+// there's an overlap so (255,0) gets included in grace_first_n)
 
 pub const MAX_ADV_STATE: usize = GRACE_FIRST_N.len() + NON_GRACE_FIRST_N.len() - 1;
 
 /// theres only 31 possible options so this outpus 0 to 30
 pub fn tuple_to_index((a, b): (usize, usize)) -> usize {
-    if a < 999 {
+    if a < 255 {
         return a;
     } else if b == 0 {
         return 15;
@@ -21,11 +21,11 @@ pub fn tuple_to_index((a, b): (usize, usize)) -> usize {
 }
 pub fn index_to_tuple(index: usize) -> (usize, usize) {
     if index <= 15 {
-        // Indices 0–14: a = index, b = 0
+        // Indices 0–15: a = index, b = 0
         (GRACE_FIRST_N[index], 0)
     } else {
-        // Indices 16–30: a = 999, b = NON_GRACE_FIRST_N[index - 16]
-        (999, NON_GRACE_FIRST_N[index - 16])
+        // Indices 16–30: a = 255, b = NON_GRACE_FIRST_N[index - 16]
+        (255, NON_GRACE_FIRST_N[index - 16])
     }
 }
 #[derive(Debug, Serialize, Deserialize, Clone, Hash, PartialEq, Eq, Copy)]
@@ -88,7 +88,6 @@ impl Upgrade {
     pub fn update_adv_config(&mut self) {
         let juice = index_to_tuple(self.state[0].1);
         let scroll = index_to_tuple(self.state[1].1);
-
         self.adv_config.grace_juice_target = juice.0 as u8;
         self.adv_config.non_grace_juice_target = juice.1 as u8;
         self.adv_config.grace_scroll_target = scroll.0 as u8;

@@ -1,5 +1,4 @@
-use crate::advanced_honing::compute::PMF;
-use crate::advanced_honing::utils::{AdvConfig, AdvDistTriplet, InvariantAdvConfig, SmallAdvState};
+use crate::advanced_honing::utils::{AdvConfig, AdvDistTriplet};
 use crate::constants::juice_info::JuiceInfo;
 use crate::support::{ProbDist, Support};
 use ahash::AHashMap;
@@ -170,7 +169,6 @@ impl Upgrade {
         double_balls: bool,
         juice_info: &JuiceInfo,
         adv_cache: &mut AHashMap<AdvConfig, AdvDistTriplet>,
-        adv_memo_cache: &mut AHashMap<InvariantAdvConfig, AHashMap<SmallAdvState, (PMF, PMF, PMF)>>,
     ) -> Self {
         let mut out = Self {
             is_normal_honing: false,
@@ -209,7 +207,7 @@ impl Upgrade {
             ),
             adv_dists: vec![ProbDist::default(); 3],
         };
-        out.update_dist_adv(adv_cache, adv_memo_cache);
+        out.update_dist_adv(adv_cache);
         out.update_support_adv(juice_info);
         out
     }

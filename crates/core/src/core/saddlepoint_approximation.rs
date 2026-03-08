@@ -205,7 +205,7 @@ impl StateBundle {
         let mut actual_out = sa_out;
 
         // the threshold is complete trial-and-error heuristic
-        if (k1_zero - budget).abs() / (k1_zero.max(budget).max(1.0)) < 1e-5 {
+        if (k1_zero - budget).abs() / (k1_zero.max(budget).max(1.0)) < 1e-4 {
             performance.edgeworth_count += 1;
             let std = ks_tuple.2.sqrt();
             let z = (budget - ks_tuple.1) / std;

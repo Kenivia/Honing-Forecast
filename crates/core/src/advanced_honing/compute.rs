@@ -1,8 +1,6 @@
-use std::ops::IndexMut;
-
 use ahash::AHashMap;
 
-use crate::advanced_honing::utils::{AdvConfig, AdvDistTriplet, InvariantAdvConfig, SmallAdvState};
+use crate::advanced_honing::utils::{AdvConfig, AdvDistTriplet, SmallAdvState};
 
 #[derive(Clone, Default, Debug)]
 pub struct PMF {
@@ -126,18 +124,32 @@ fn compute_adv_dist(
         for (prob_sub, mut next_state) in sub_branches {
             // Apply the predefined targets we determined before rolling
             if is_grace_juice {
-                next_state.grace_juice_count = next_state.grace_juice_count.saturating_sub(1);
+                next_state.grace_juice_count = if next_state.grace_juice_count == 255 {
+                    255
+                } else {
+                    next_state.grace_juice_count.saturating_sub(1)
+                };
             }
             if is_grace_scroll {
-                next_state.grace_scroll_count = next_state.grace_scroll_count.saturating_sub(1);
+                next_state.grace_scroll_count = if next_state.grace_scroll_count == 255 {
+                    255
+                } else {
+                    next_state.grace_scroll_count.saturating_sub(1)
+                };
             }
             if is_non_grace_juice {
-                next_state.non_grace_juice_count =
-                    next_state.non_grace_juice_count.saturating_sub(1);
+                next_state.non_grace_juice_count = if next_state.non_grace_juice_count == 255 {
+                    255
+                } else {
+                    next_state.non_grace_juice_count.saturating_sub(1)
+                };
             }
             if is_non_grace_scroll {
-                next_state.non_grace_scroll_count =
-                    next_state.non_grace_scroll_count.saturating_sub(1);
+                next_state.non_grace_scroll_count = if next_state.non_grace_scroll_count == 255 {
+                    255
+                } else {
+                    next_state.non_grace_scroll_count.saturating_sub(1)
+                };
             }
 
             let combined_prob = prob_base * prob_sub;
@@ -258,10 +270,7 @@ fn get_grace_sub_branches(
 }
 
 /// Call this function to get your absolute distributions for a given configuration.
-pub fn compute_adv_dist_wrapper(
-    config: &AdvConfig,
-    adv_memo_cache: &mut AHashMap<InvariantAdvConfig, AHashMap<SmallAdvState, (PMF, PMF, PMF)>>,
-) -> AdvDistTriplet {
+pub fn compute_adv_dist_wrapper(config: &AdvConfig) -> AdvDistTriplet {
     let initial_state = SmallAdvState {
         cur_xp: config.start_xp as u8,
         cur_balls: config.start_balls as u8,
@@ -272,26 +281,16 @@ pub fn compute_adv_dist_wrapper(
         grace_juice_count: config.grace_juice_target,
         grace_scroll_count: config.grace_scroll_target,
     };
-    let invariant_key = InvariantAdvConfig {
-        double_balls: config.double_balls,
-        is_30_40: config.is_30_40,
-    };
-    let result = compute_adv_dist(initial_state, config, &mut adv_memo_cache[&invariant_key]);
+
+    let result = compute_adv_dist(
+        initial_state,
+        config,
+        &mut AHashMap::new(), //adv_memo_cache.get_mut(&invariant_key).unwrap(),
+    );
 
     AdvDistTriplet {
         cost: result.0.data,
         juice: result.1.data,
         scroll: result.2.data,
-    }
-}
-
-impl IndexMut<&InvariantAdvConfig>
-    for AHashMap<InvariantAdvConfig, AHashMap<SmallAdvState, (PMF, PMF, PMF)>>
-{
-    fn index_mut(&mut self, index: &InvariantAdvConfig) -> &mut Self::Output {
-        if !self.contains_key(index) {
-            self.insert(*index, AHashMap::new());
-        }
-        self.get_mut(index).expect("key not found in cache")
     }
 }

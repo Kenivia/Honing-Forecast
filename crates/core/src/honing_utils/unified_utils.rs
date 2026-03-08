@@ -2,10 +2,7 @@ use ahash::AHashMap;
 
 use crate::support::Support;
 use crate::{
-    advanced_honing::{
-        compute::PMF,
-        utils::{AdvConfig, AdvDistTriplet, InvariantAdvConfig, SmallAdvState},
-    },
+    advanced_honing::utils::{AdvConfig, AdvDistTriplet},
     constants::juice_info::JuiceInfo,
     state_bundle::StateBundle,
     upgrade::Upgrade,
@@ -14,13 +11,12 @@ impl Upgrade {
     pub fn update_this_prob_dist(
         &mut self,
         adv_cache: &mut AHashMap<AdvConfig, AdvDistTriplet>,
-        adv_memo_cache: &mut AHashMap<InvariantAdvConfig, AHashMap<SmallAdvState, (PMF, PMF, PMF)>>,
         juice_info: &JuiceInfo,
     ) {
         if self.is_normal_honing {
             self.update_dist_normal(juice_info);
         } else {
-            self.update_dist_adv(adv_cache, adv_memo_cache);
+            self.update_dist_adv(adv_cache);
         }
     }
 
@@ -150,11 +146,7 @@ impl StateBundle {
 
     pub fn update_dist(&mut self) {
         for upgrade in self.upgrade_arr.iter_mut() {
-            upgrade.update_this_prob_dist(
-                &mut self.adv_cache,
-                &mut self.adv_memo_cache,
-                &self.prep_output.juice_info,
-            );
+            upgrade.update_this_prob_dist(&mut self.adv_cache, &self.prep_output.juice_info);
         }
     }
 

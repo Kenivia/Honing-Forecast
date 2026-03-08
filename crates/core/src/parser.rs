@@ -1,5 +1,4 @@
-use crate::advanced_honing::compute::PMF;
-use crate::advanced_honing::utils::{AdvConfig, AdvDistTriplet, InvariantAdvConfig, SmallAdvState};
+use crate::advanced_honing::utils::{AdvConfig, AdvDistTriplet};
 use crate::constants::accessor::{
     get_artisan, get_data, get_event_extra_chance, get_normal_hone_chances, get_special_leap_cost,
 };
@@ -57,7 +56,6 @@ impl PreparationOutput {
         PreparationOutput,
         Vec<Upgrade>,
         AHashMap<AdvConfig, AdvDistTriplet>,
-        AHashMap<InvariantAdvConfig, AHashMap<SmallAdvState, (PMF, PMF, PMF)>>,
     ) {
         let price_arr: Vec<f64> = inp_price_arr.to_vec();
         let leftover_values = copy_leftover(inp_leftover_values, inp_price_arr);
@@ -77,11 +75,6 @@ impl PreparationOutput {
             .collect();
         let mut adv_cache: AHashMap<AdvConfig, AdvDistTriplet> = AHashMap::new();
 
-        let mut adv_memo_cache: AHashMap<
-            InvariantAdvConfig,
-            AHashMap<SmallAdvState, (PMF, PMF, PMF)>,
-        > = AHashMap::new();
-
         let upgrade_arr: Vec<Upgrade> = parser(
             hone_ticks,
             adv_ticks,
@@ -94,7 +87,6 @@ impl PreparationOutput {
             adv_progress_grid,
             tier,
             &mut adv_cache,
-            &mut adv_memo_cache,
         );
 
         let out: PreparationOutput = Self {
@@ -113,7 +105,7 @@ impl PreparationOutput {
             flat_alr_spent: None,
         };
 
-        (out, upgrade_arr, adv_cache, adv_memo_cache)
+        (out, upgrade_arr, adv_cache)
     }
 }
 
@@ -131,7 +123,6 @@ pub fn parser(
     adv_progress_grid: Option<Vec<Vec<(usize, usize, bool, bool)>>>,
     tier: usize,
     adv_cache: &mut AHashMap<AdvConfig, AdvDistTriplet>,
-    adv_memo_cache: &mut AHashMap<InvariantAdvConfig, AHashMap<SmallAdvState, (PMF, PMF, PMF)>>,
 ) -> Vec<Upgrade> {
     let mut out: Vec<Upgrade> = Vec::new();
 
@@ -232,7 +223,6 @@ pub fn parser(
                 express_event,
                 juice_info,
                 adv_cache,
-                adv_memo_cache,
             ));
         }
     }
