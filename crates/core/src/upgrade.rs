@@ -202,7 +202,7 @@ impl Upgrade {
                 start_balls,
                 next_free,
                 next_big,
-                double_balls,
+                double_balls && upgrade_index < 2, // i supposed this needs to be part of the json also TODO
                 upgrade_index >= 2,
             ),
             adv_dists: vec![ProbDist::default(); 3],
