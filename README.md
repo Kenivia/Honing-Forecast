@@ -30,7 +30,7 @@ For an intuitive overview of what's being calculated & how things work, check ou
 
 If you are interested in the math behind how we compute the average, check out the [white paper](/docs/Saddlepoint%20Approximation.pdf).
 
-For details on the implementation, see the other files in [docs](/docs/)
+For details on the implementation, see the other files in [docs](/docs/), such as the [optimizer engine](/docs/Optimizer.md)
 
 For anything else, you can ask me in the [Discord server](https://discord.com/invite/QFbs75RmRN)!
 
@@ -38,7 +38,7 @@ For anything else, you can ask me in the [Discord server](https://discord.com/in
 
 You'll need the following:
 
-1. [Rust](https://rust-lang.org/tools/install/) (this should be all you need if you just want to improve the [optimizer engine](/crates/arena/README.md))
+1. [Rust](https://rust-lang.org/tools/install/) (this should be all you need if you just want to improve the [optimizer engine](/docs/Optimizer.md))
 2. [wasm-pack](https://drager.github.io/wasm-pack/installer/)
 3. [Node.js](https://nodejs.org/en/download)
 
