@@ -14,8 +14,8 @@ Repeat[Add up gold averages, take weighted average over special outcomes];
 
 ```
 
-The reality is a bit more convoluted:
+Some points to note:
 
-- the probability dist update is different from normal and advanced honing, adv honing has 3 different distributions for cost, juice and scroll
-- we "collapse" the probability distribution by removing duplicates and ~0 probability events.
+- The probability dist update is different from normal and advanced honing, adv honing has 3 different distributions for cost, juice and scroll
+- We "collapse" the probability distribution by removing duplicates and 0 probability events.
 - All of these distributions are considered "linear", as in the gap size between each non-zero prob support is constant.
