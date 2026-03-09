@@ -11,13 +11,7 @@ node_modules
 profile.json.gz
 profile.kernel.etl
 
-crates/core/src/compute/Latex/*
-!crates/core/src/compute/Latex/Bibliography.bib
-!crates/core/src/compute/Latex/saddlepoint_approximation.tex
-Advanced_Honing_Data.jsonl
-Advanced_Honing_Data_json
-Advanced_Honing_Data
-test_payload_bloated
+
 *__pycache__*
 dist-ssr
 *.local

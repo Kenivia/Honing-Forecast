@@ -13,7 +13,7 @@ use std::path::Path;
 static BLOAT_FACTOR: i64 = 10;
 static MULTIPLIER_RANGE: f64 = 5.0;
 static INPUT_DIR: &str = TEST_PAYLOAD_PATH;
-static OUTPUT_DIR: &str = "/test_payloads_bloated";
+static OUTPUT_DIR: &str = "/test_cases/payloads_bloated";
 
 fn random_multiplier(rng: &mut StdRng) -> f64 {
     MULTIPLIER_RANGE.powf(rng.random_range(-1.0..1.0_f64))

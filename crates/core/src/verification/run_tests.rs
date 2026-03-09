@@ -1,10 +1,10 @@
-use crate::core::average::DEBUG_AVERAGE;
 use crate::constants::{
     MONTE_CARLO_CONFIDENCE, MONTE_CARLO_COUNT, MONTE_CARLO_PRECISION, SIMULATED_ANNEALING_DIFF_TOL,
 };
+use crate::core::average::DEBUG_AVERAGE;
 use crate::helpers::{my_pct_diff, write_jsonl};
 use crate::optimizer::ACTIVE_FEATURE;
-use crate::optimizer::{NOTES, solve};
+use crate::optimizer::solve;
 use crate::payload::parse_to_state_bundles;
 use crate::performance::{Performance, PerformanceToWrite};
 use crate::state_bundle::StateBundle;
@@ -28,7 +28,6 @@ const METRICS: [(&str, i64); 1] = [("Avg", 1)];
 struct Header {
     version: String,
     build_time: String,
-    notes: String,
 }
 #[derive(Debug, Serialize, Deserialize)]
 struct Output {
@@ -50,7 +49,7 @@ fn current_time_string() -> String {
     now.format("%Y-%m-%d %H:%M:%S %Z").to_string()
 }
 
-pub fn run_tests(payload_path_string: String, is_test: bool) {
+pub fn run_tests(payload_path_string: String, is_verify: bool) {
     let payload_path = Path::new(&payload_path_string);
     let payload_name = payload_path.file_name().unwrap().to_str().unwrap();
 
@@ -65,15 +64,15 @@ pub fn run_tests(payload_path_string: String, is_test: bool) {
         .unwrap();
     println!("Using {} threads", thread_num);
 
-    let file_name: String = if is_test {
+    let file_name: String = if is_verify {
         format!(
-            "../../test_results/{}_{}.jsonl",
+            "../../test_cases/verification_results/{}_{}.jsonl",
             ACTIVE_FEATURE.replace("default, ", "").to_owned(),
             payload_name
         )
     } else {
         format!(
-            "./crates/arena/results/{}_{}.jsonl",
+            "./test_cases/optimizer_results/{}_{}.jsonl",
             ACTIVE_FEATURE.replace("default, ", "").to_owned(),
             payload_name // current_time_string().replace(":", "-"),
         )
@@ -101,7 +100,6 @@ pub fn run_tests(payload_path_string: String, is_test: bool) {
         let header: Header = Header {
             version: ACTIVE_FEATURE.replace("default, ", "").to_owned(),
             build_time: current_time_string(),
-            notes: NOTES.to_string(),
         };
         write_jsonl(&header, &file_name)
             .unwrap_or_else(|_| panic!("Failed to write to result file {}", file_name));
@@ -109,8 +107,8 @@ pub fn run_tests(payload_path_string: String, is_test: bool) {
     // my_dbg!(&seen_tests);
 
     let test_cases: Vec<(String, StateBundle)> = parse_to_state_bundles(Path::new(
-        &(if is_test {
-            "../../test_payloads".to_string()
+        &(if is_verify {
+            "../../test_cases/payloads".to_string()
         } else {
             payload_path_string.clone()
         }),
@@ -124,7 +122,7 @@ pub fn run_tests(payload_path_string: String, is_test: bool) {
         )
     }
     let mut zipped_test_cases: Vec<(String, StateBundle, String, i64, i64)> = Vec::new();
-    let total_trials = if is_test { 1 } else { NUM_TESTS_TO_RUN };
+    let total_trials = if is_verify { 1 } else { NUM_TESTS_TO_RUN };
     for trial_num in 1..=total_trials {
         for z in test_cases.iter() {
             let (test_case_name, state_bundle) = z;
@@ -134,7 +132,7 @@ pub fn run_tests(payload_path_string: String, is_test: bool) {
                     metric_type_str.to_string(),
                     trial_num,
                 );
-                if !is_test
+                if !is_verify
                     && (seen_tests.contains_key(&key)
                         || (test_case_name.contains("adv")
                             && ACTIVE_FEATURE
@@ -167,7 +165,7 @@ pub fn run_tests(payload_path_string: String, is_test: bool) {
                 *trial_num,
             );
 
-            let seed = if is_test {
+            let seed = if is_verify {
                 6942067
             } else {
                 let mut seed_rng: ThreadRng = rand::rng();
@@ -252,7 +250,7 @@ pub fn run_tests(payload_path_string: String, is_test: bool) {
                 } else {
                     NAN
                 };
-                if is_test && seen_tests.contains_key(&key) {
+                if is_verify && seen_tests.contains_key(&key) {
                     if my_pct_diff(seen, state_bundle.metric) > SIMULATED_ANNEALING_DIFF_TOL {
                         dbg!(&mc_result.prob_leftover);
                         panic!(
@@ -294,7 +292,7 @@ pub fn run_tests(payload_path_string: String, is_test: bool) {
                     ACTIVE_FEATURE, test_case_name, metric_type_string, trial_num
                 );
             }
-            if !(is_test && seen_tests.contains_key(&key)) {
+            if !(is_verify && seen_tests.contains_key(&key)) {
                 write_jsonl(&output, &file_name).expect("Failed to write to result file");
             }
         },

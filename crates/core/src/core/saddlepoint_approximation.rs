@@ -14,9 +14,9 @@ pub const MIN_LATTICE_SPAN: f64 = 1.0;
 fn float_gcd(inp_a: f64, inp_b: f64) -> f64 {
     let mut a = inp_a;
     let mut b = inp_b;
-    while b > FLOAT_TOL {
+    while b > MIN_LATTICE_SPAN {
         (a, b) = (b, a % b);
-        if (b - a).abs() < FLOAT_TOL {
+        if (b - a).abs() < MIN_LATTICE_SPAN {
             b = 0.0;
         }
     }
@@ -205,7 +205,7 @@ impl StateBundle {
         let mut actual_out = sa_out;
 
         // the threshold is complete trial-and-error heuristic
-        if (k1_zero - budget).abs() / (k1_zero.max(budget).max(1.0)) < 1e-4 {
+        if (k1_zero - budget).abs() / (k1_zero.max(budget).max(1.0)) < 1e-5 {
             performance.edgeworth_count += 1;
             let std = ks_tuple.2.sqrt();
             let z = (budget - ks_tuple.1) / std;
@@ -266,7 +266,7 @@ impl StateBundle {
                 // high_limit
             );
 
-            println!(
+            my_dbg!(
                 "zero {:?}",
                 self.ks(
                     0.0,
@@ -278,7 +278,7 @@ impl StateBundle {
                 )
             );
 
-            println!(
+            my_dbg!(
                 "guess {:?}",
                 self.ks(
                     guess,
@@ -290,31 +290,7 @@ impl StateBundle {
                 )
             );
 
-            #[cfg(feature = "wasm")]
-            web_sys::console::log_1(
-                &format!(
-                    "{:?} {:?} {:?} {:?} {:?} {:?} {:?} {:?} {:?} {:?} {:?} {:?} {:?} {:?} {:?} {:?} {:?} {:?} ",
-                    compute_biased,
-                    theta_hat,
-                    ks_tuple,
-                    k1_zero,
-                    support_index,
-                    2.0 * (theta_hat * budget - ks_tuple.0),
-                    w_hat,
-                    u_hat,
-                    normal_dist.cdf(w_hat),
-                    normal_dist.pdf(w_hat),
-                    1.0 / w_hat - 1.0 / u_hat,
-                    min_value,
-                    budget,
-                    self.simple_avg(support_index, skip_count),
-                    max_value,
-                    sa_out,
-                    approx,
-                    actual_out
-                )
-                .into(),
-            );
+            my_dbg!("final {:?}", ks_tuple);
 
             my_dbg!(
                 compute_biased,

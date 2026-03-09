@@ -31,23 +31,52 @@ NONE OF THIS DATA STUFF TURNED OUT TO BE NECESSARY because DP is op and we can j
     3. ~~pass this array into rust (I hope this work? it honestly might not idk)~~
 2. ~~Handle this on the rust side, specifically:~~
     1. ~~Make parser accept this data~~
-    2 .~~ Write this data into prep_output (definitely serde skip on this one)~~
-    2. ~~Make "update individual dist" and stuff update for advanced honing upgrades, which is just reading from this array~~
-    3. ~~Make sure that state and everything works with this~~
-    4. ~~Make neighbour function perturb this state correctly~~
+    2. ~~ Write this data into prep_output (definitely serde skip on this one)~~
+    3. ~~Make "update individual dist" and stuff update for advanced honing upgrades, which is just reading from this array~~
+    4. ~~Make sure that state and everything works with this~~
+    5. ~~Make neighbour function perturb this state correctly~~
 3. Display and allow for edit all the necessary information in js:
     1. Current progress (xp and balls, should be text inputs and dropdown?)
     2. suggested strategy (state)
 4. Maybe hard-code the most common setup
 
-- This kinda uses an egregious amt of memory rn, need to benchmark how much the cache actually helps and how to reduce it
-- it's also kinda just slow, will prolly benefit from hard-coding known stuff
+- ~~This kinda uses an egregious amt of memory rn, need to benchmark how much the cache actually helps and how to reduce it~~
+- ~~it's also kinda just slow, will prolly benefit from hard-coding known stuff~~
 
-### 4th: Forecast mode
+### 3rd: OCR
+
+the ark grid ocr is so goated, it should be possible with mats too
+
+- ocr might be too slow / not necessary? Maybe template matching is better? (but do i really have to carve pictures out pixel by pixel)
+  - maybe can store ss of detected hoverbox and do ocr later?
+
+- will need an intermediate detected mats manifest -> actual mats
+
+- this is probably a lot more complicated than I realize esp with boxes and shit
+
+### 4th : Tradable / bound mats distinction
+
+- Treat roster bound as tradable? maybe make this a toggle
+- update the SA computation to allow for 2 breakpoints
+
+### 5th : Box opening recommendation
+
+- This will have to be rather rudimentary
+- Maybe just ignore the fact that we have boxes until we deduct costs? this way we treat boxes as tradables
+
+- actually this can just be another state kinda like special state that we can optimize? a lot of work tho
+
+### 5.5th : Hard limit on juice usages
+
+- disallow states that can use more than a certain amount of juice / scroll / books
+  - this kinda falls apart with normal honing cos we can finish early, but can just make a pessimistic assumption
+  - this also kinda falls apart with boxes if we ignore them until deduction
+
+### 6th: Forecast mode
 
 Haven't thought enough about the specifics but shouldn't be that hard once everything else is in place.
 
-### 5th: Price trend viewer
+### 7th: Price trend viewer
 
 need to pull as much historical data as possible from loa-buddy -> store & pull from my own data base -> keep updating this
 
@@ -137,8 +166,6 @@ Below are some rambling / brainstorming / Misc stuff
 - ~~force special state to have a non-small tail~~ actually that ~~might~~ in fact does discard optimal choices, just make sure that special neighbour moves actually has an effect
 - some way to estimate how close we are to optimal because re-running this for every week is going to be a bit insane
 - maybe a neural network for an (or few) initial guesses -> optimizer?
-
-==========================================================================================
 
 ## Done / cancelled
 

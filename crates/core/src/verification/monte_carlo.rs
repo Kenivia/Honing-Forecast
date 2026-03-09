@@ -1,7 +1,7 @@
 //! Monte carlo to experimentally verify our results, not used in the website (anymore)
 
-use crate::core::average::DEBUG_AVERAGE;
 use crate::constants::FLOAT_TOL;
+use crate::core::average::DEBUG_AVERAGE;
 use crate::my_dbg;
 use crate::state_bundle::StateBundle;
 use crate::upgrade::Upgrade;
@@ -10,45 +10,31 @@ use itertools::izip;
 use rand::Rng;
 use rand::prelude::*;
 use statrs::distribution::{ContinuousCDF, Normal};
-use std::cmp::min;
-/// Instead of actually sampling the distribution, we guarantee that every value has exactly the expected number of occurances
-/// I'm pre sure this doesn't work when the data size is too small (when a sample spans more than 2 buckets) but it's whatever
-///
-/// this (I think) is called latin hypercube sampling and tbh it didn't deserve such a cool name
-fn tap_map_generator<R: Rng>(count_limit: usize, prob_dist: &[f64], rng: &mut R) -> Vec<usize> {
-    let mut tap_map: Vec<usize> = vec![0usize; count_limit];
 
-    let mut assigned: usize = 0;
-    let mut cum: f64 = 0.0;
+/// Instead of actually sampling the distribution, we guarantee that every value has exactly the expected number of occurances
+fn tap_map_generator<R: Rng>(count_limit: usize, prob_dist: &[f64], rng: &mut R) -> Vec<usize> {
+    let mut tap_map: Vec<usize> = Vec::with_capacity(count_limit);
+
+    let mut current_point: f64 = rng.random::<f64>();
+    let mut cum_prob: f64 = 0.0;
+
     for (i, &p) in prob_dist.iter().enumerate() {
-        cum += p;
-        if cum > 1.0 {
-            cum = 1.0;
-        }
-        let exact_target: f64 = cum * (count_limit as f64);
-        let target: f64 = exact_target.max(assigned as f64);
-        let frac: f64 = target - target.floor();
-        let mut cur_samples = target.floor() as usize;
-        if frac > 0.0 && rng.random_bool(frac) {
-            cur_samples += 1;
-        }
-        if cur_samples > assigned {
-            let to_assign: usize = min(cur_samples - assigned, count_limit - assigned);
-            let end: usize = assigned + to_assign;
-            for dest in assigned..end {
-                tap_map[dest] = i;
-            }
-            assigned = end;
-            if assigned >= count_limit {
-                break;
-            }
+        cum_prob += p;
+        let target_boundary: f64 = cum_prob * (count_limit as f64);
+
+        // Advance our "comb" of points. Every time a point falls within
+        // the current cumulative boundary, we assign a sample to this bucket.
+        while current_point < target_boundary && tap_map.len() < count_limit {
+            tap_map.push(i);
+            current_point += 1.0;
         }
     }
-    if assigned < count_limit {
-        let fill_idx: usize = prob_dist.len().saturating_sub(1);
-        for dest in assigned..count_limit {
-            tap_map[dest] = fill_idx;
-        }
+
+    // Handle floating-point imprecision where the sum of `prob_dist` might be
+    // slightly less than 1.0, leaving us a few elements short of `count_limit`.
+    let fill_idx: usize = prob_dist.len().saturating_sub(1);
+    while tap_map.len() < count_limit {
+        tap_map.push(fill_idx);
     }
 
     tap_map.shuffle(rng);

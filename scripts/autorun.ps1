@@ -36,7 +36,7 @@ $versions | ForEach-Object -Parallel {
 
     $exePath = Join-Path $targetDir "release/hf-arena.exe"
 
-    & $exePath ./test_payloads 
+    & $exePath ./test_cases/payloads 
 
     if ($LASTEXITCODE -ne 0) {
         throw "Run failed for v$_"

@@ -9,7 +9,7 @@ from processing import build_trial_options, build_trial_figure, build_aggregate_
 
 
 ROOT = Path(__file__).resolve().parents[1]
-RESULTS_DIR = ROOT / "Results"
+RESULTS_DIR = ROOT / "../test_cases/optimizer_results"
 DATA = load_results(RESULTS_DIR)
 
 

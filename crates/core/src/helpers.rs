@@ -1,5 +1,3 @@
-use crate::constants::FLOAT_TOL;
-
 use crate::upgrade::Upgrade;
 use rand::Rng;
 use serde::Serialize;
@@ -82,20 +80,6 @@ pub fn naive_count_to_ticks(counts: &[Vec<i64>]) -> Vec<Vec<bool>> {
 }
 pub trait PairIterator<'a>: Iterator<Item = &'a Vec<(f64, f64)>> {}
 impl<'a, T> PairIterator<'a> for T where T: Iterator<Item = &'a Vec<(f64, f64)>> {}
-
-pub fn find_non_zero_min_vec(support_arr: &[Vec<f64>], prob_dist_arr: &[Vec<f64>]) -> f64 {
-    support_arr
-        .iter()
-        .enumerate()
-        .map(|(u_index, x)| {
-            x.iter()
-                .enumerate()
-                .find(|(index, _)| prob_dist_arr[u_index][*index] > FLOAT_TOL)
-                .unwrap_or((0, &0.0))
-                .1
-        })
-        .sum()
-}
 
 pub fn eqv_gold_per_tap(upgrade: &Upgrade, price_arr: &[f64]) -> f64 {
     // a bit redundent but whatever

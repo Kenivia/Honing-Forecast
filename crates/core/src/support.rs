@@ -80,6 +80,10 @@ impl Support {
     }
     /// Incredibly crucial pre-processing, collapses identical values into 1 thing, and removes values with p = 0.
     /// cumulant.rs makes the assumption that nothing has p = 0
+    ///
+    /// we assume that the support is increasing, but p may be 0 in-between (probably exceptionally rare but possible in advanced honing?)
+    ///
+    /// also right now everything is linear so some logic is a bit redundant, but keeping them just in case
     pub fn collapse_support(&mut self, prob_dist: &ProbDist, alr_failed: usize) {
         // these hash checks are mostly just for preventing me from doing stupid stuff and saving me from debugging
         // it has the added benefit that we don't update if the state didn't change but is like negligible
@@ -90,40 +94,32 @@ impl Support {
             let mut result: Vec<(f64, f64)> = Vec::with_capacity(self.support.len());
             let mut max_value: f64 = NEG_INFINITY;
             let mut min_value: f64 = INFINITY;
+
+            let mut cur_p = 0.0;
+            let front = prob_dist.iter().take_while(|p| **p == 0.0).count();
+            let back = prob_dist.iter().rev().take_while(|p| **p == 0.0).count();
+
+            assert!(front != prob_dist.len());
             let mut iter = self
                 .support
                 .iter()
                 .zip(prob_dist.iter())
-                .enumerate()
+                .skip(front)
+                .take(prob_dist.len() - back - front)
                 .peekable();
-
-            let mut cur_s = f64::NAN;
-            let mut cur_p = 0.0_f64;
-
-            while let Some((index, (&new_s, &new_p))) = iter.next() {
-                if index == alr_failed {
-                    self.skipped_pair[0].0 = new_s;
-                }
-
-                if new_s == cur_s {
-                    cur_p += new_p;
-                } else {
+            while let Some((&s, &p)) = iter.next() {
+                cur_p += p;
+                if iter.peek().is_none() || s != *iter.peek().unwrap().0 {
                     if cur_p > FLOAT_TOL {
-                        max_value = cur_s.max(max_value);
-                        min_value = cur_s.min(min_value);
-                        result.push((cur_s, cur_p));
+                        max_value = max_value.max(s);
+                        min_value = min_value.min(s);
+                        result.push((s, cur_p));
                     }
-                    cur_s = new_s;
-                    cur_p = new_p;
-                }
 
-                // flush the final run when there's no next element
-                if iter.peek().is_none() && cur_p > FLOAT_TOL {
-                    max_value = cur_s.max(max_value);
-                    min_value = cur_s.min(min_value);
-                    result.push((cur_s, cur_p));
+                    cur_p = 0.0;
                 }
             }
+            self.skipped_pair[0].0 = self.support[alr_failed];
             self.ignore = result.len() == 1 && result[0].0.abs() < FLOAT_TOL;
             self.max_value = max_value;
             self.min_value = min_value;
@@ -144,9 +140,9 @@ impl Support {
     ) {
         self.support = new_payload;
         self.support_state_hash = new_state_hash;
-        self.collapse_support(prob_dist, alr_failed);
         self.gap_size = gap_size;
         self.linear = linear;
+        self.collapse_support(prob_dist, alr_failed);
     }
 }
 
