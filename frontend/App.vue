@@ -19,22 +19,9 @@ import {
 import { formatSig, piece_display_name } from "@/Utils/Helpers.ts"
 import { buildPayload, type InputsValues } from "@/WasmInterface/payload.ts"
 import { SpawnWorker } from "./WasmInterface/worker_setup.ts"
+import { BoolGrid, NumGrid, Upgrade } from "./Utils/Interfaces.ts"
 
 const STORAGE_KEY = "HF_VUE_UI_STATE_V2"
-
-type BoolGrid = boolean[][]
-type NumGrid = number[][]
-type UpgradeLike = {
-    piece_type: number
-    upgrade_index: number
-    is_normal_honing?: boolean
-    is_weapon?: boolean
-    prob_dist?: number[]
-    state?: [boolean, number][]
-    succeeded?: boolean
-    unlocked?: boolean
-    current_ind?: number
-}
 
 function createBoolGrid(rows: number, cols: number, value = false): BoolGrid {
     return Array.from({ length: rows }, () => Array.from({ length: cols }, () => value))
@@ -142,7 +129,7 @@ function breakdownClass(value: number | undefined) {
     return value > -0.5 ? "surplus" : "cost"
 }
 
-function sortUpgradeIndices(list: number[], upgradeArr: UpgradeLike[], specialInvalidIndex: number) {
+function sortUpgradeIndices(list: number[], upgradeArr: Upgrade[], specialInvalidIndex: number) {
     const output: number[] = []
     const copy = upgradeArr.slice()
 
@@ -273,7 +260,7 @@ const distributionLabels = computed(() =>
         JUICE_LABELS.map((pair) => pair[1]),
     ),
 )
-const upgradeArr = computed<UpgradeLike[]>(() => (Array.isArray(evaluateResult.value?.upgrade_arr) ? evaluateResult.value.upgrade_arr : []))
+const upgradeArr = computed<Upgrade[]>(() => (Array.isArray(evaluateResult.value?.upgrade_arr) ? evaluateResult.value.upgrade_arr : []))
 const specialInvalidIndex = computed(() => clampInt(evaluateResult.value?.special_invalid_index ?? 0, 0, 9999))
 const latestSpecialProbs = computed<number[]>(() =>
     Array.isArray(evaluateResult.value?.latest_special_probs) ? evaluateResult.value.latest_special_probs.map((value: unknown) => Number(value) || 0) : [],
@@ -353,7 +340,7 @@ function iconPath(name: string) {
     return IconMap[name] ?? ""
 }
 
-function pieceName(upgrade: UpgradeLike | undefined) {
+function pieceName(upgrade: Upgrade | undefined) {
     if (!upgrade) return "Unknown"
     return piece_display_name(upgrade)
 }
@@ -420,11 +407,11 @@ function replaceStateFromResult(res: any) {
     const nextSucceeded = cloneGrid(succeededGrid.value)
     const nextStateGrid = createStateGrid()
 
-    for (const upgrade of res.upgrade_arr as UpgradeLike[]) {
+    for (const upgrade of res.upgrade_arr as Upgrade[]) {
         const row = clampInt(upgrade.piece_type, 0, TOP_ROWS - 1)
         const col = clampInt(upgrade.upgrade_index, 0, TOP_COLS - 1)
-        if (typeof upgrade.current_ind === "number" && Number.isFinite(upgrade.current_ind)) {
-            nextProgress[row][col] = Math.max(0, Math.floor(upgrade.current_ind))
+        if (typeof upgrade.alr_failed === "number" && Number.isFinite(upgrade.alr_failed)) {
+            nextProgress[row][col] = Math.max(0, Math.floor(upgrade.alr_failed))
         }
         if (typeof upgrade.unlocked === "boolean") {
             nextUnlock[row][col] = upgrade.unlocked
@@ -855,7 +842,7 @@ function getUpgradeSucceeded(upgradeIndex: number) {
     return Boolean(succeededGrid.value[cell.row]?.[cell.col])
 }
 
-function getPityLength(upgrade: UpgradeLike | undefined) {
+function getPityLength(upgrade: Upgrade | undefined) {
     if (!upgrade || !Array.isArray(upgrade.prob_dist)) return 1
     return Math.max(1, upgrade.prob_dist.length - 1)
 }
@@ -945,7 +932,7 @@ function getUpgradeStatePairs(upgradeIndex: number) {
     })
 }
 
-function getJuiceLabelForUpgrade(upgrade: UpgradeLike | undefined, tierIndex: number) {
+function getJuiceLabelForUpgrade(upgrade: Upgrade | undefined, tierIndex: number) {
     if (!upgrade) return ""
     const col = upgrade.is_weapon ? 0 : 1
     return JUICE_LABELS[tierIndex]?.[col] ?? ""

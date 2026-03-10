@@ -5,7 +5,6 @@ use crate::upgrade::{State, Upgrade};
 use ahash::AHashMap;
 use ordered_float::OrderedFloat;
 use serde::{Deserialize, Serialize};
-
 use std::f64::NAN;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]

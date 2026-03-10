@@ -24,16 +24,6 @@ Try it here! <https://honing-forecast.pages.dev/>  *(It works better on desktop)
 
 **4. (Optional) As you fail/succeed taps, you can update your progress and the optimizer will consider your new situation.**
 
-## Resources
-
-For an intuitive overview of what's being calculated & how things work, check out the [reddit post](http://reddit.com/r/lostarkgame/comments/1qwskt2/optimize_your_free_tap_juice_usage_with_the_new/).
-
-If you are interested in the math behind how we compute the average, check out the [white paper](/docs/Saddlepoint%20Approximation.pdf).
-
-For details on the implementation, see the other files in [docs](/docs/), such as the [optimizer engine](/docs/Optimizer.md)
-
-For anything else, you can ask me in the [Discord server](https://discord.com/invite/QFbs75RmRN)!
-
 ## Contributing
 
 You'll need the following:
@@ -45,6 +35,16 @@ You'll need the following:
 Run `npm install` for the dependencies, then `npm run dev` for the dev server.
 
 You can take a look at [WIP](/docs/WIP.md), but any help will be greatly appreciated! Again feel free to discuss with me on [Discord](https://discord.com/invite/QFbs75RmRN).
+
+## Resources
+
+For an intuitive overview of what's being calculated & how things work, check out the [reddit post](http://reddit.com/r/lostarkgame/comments/1qwskt2/optimize_your_free_tap_juice_usage_with_the_new/).
+
+For details on the implementation, see the other files in [docs](/docs/), such as the [optimizer engine](/docs/Optimizer.md).
+
+If you are interested in the math behind how we compute the average, check out the [white paper](/docs/Saddlepoint%20Approximation.pdf).
+
+For anything else, you can ask me in the [Discord server](https://discord.com/invite/QFbs75RmRN)!
 
 ## Bug report / feedback
 
