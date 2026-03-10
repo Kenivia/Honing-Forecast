@@ -17,8 +17,8 @@ import {
     TOP_ROWS,
 } from "@/Utils/Constants.ts"
 import { formatSig, piece_display_name } from "@/Utils/Helpers.ts"
-import { buildPayload, type InputsValues } from "@/core/payload.ts"
-import { runWasmOperation } from "@/core/wasmWorkerClient.ts"
+import { buildPayload, type InputsValues } from "@/WasmInterface/payload.ts"
+import { SpawnWorker } from "./WasmInterface/worker_setup.ts"
 
 const STORAGE_KEY = "HF_VUE_UI_STATE_V2"
 
@@ -195,8 +195,12 @@ const weaponOwned = reactive<Record<string, string>>(Object.fromEntries(JUICE_LA
 const armorOwned = reactive<Record<string, string>>(Object.fromEntries(JUICE_LABELS.map((labels) => [labels[1], "0"])))
 const weaponPrices = reactive<Record<string, string>>(Object.fromEntries(JUICE_LABELS.map((labels, idx) => [labels[0], String(DEFAULT_JUICE_PRICES[idx][0])])))
 const armorPrices = reactive<Record<string, string>>(Object.fromEntries(JUICE_LABELS.map((labels, idx) => [labels[1], String(DEFAULT_JUICE_PRICES[idx][1])])))
-const weaponLeftover = reactive<Record<string, string>>(Object.fromEntries(JUICE_LABELS.map((labels, idx) => [labels[0], String(DEFAULT_JUICE_LEFTOVER[idx][0])])))
-const armorLeftover = reactive<Record<string, string>>(Object.fromEntries(JUICE_LABELS.map((labels, idx) => [labels[1], String(DEFAULT_JUICE_LEFTOVER[idx][1])])))
+const weaponLeftover = reactive<Record<string, string>>(
+    Object.fromEntries(JUICE_LABELS.map((labels, idx) => [labels[0], String(DEFAULT_JUICE_LEFTOVER[idx][0])])),
+)
+const armorLeftover = reactive<Record<string, string>>(
+    Object.fromEntries(JUICE_LABELS.map((labels, idx) => [labels[1], String(DEFAULT_JUICE_LEFTOVER[idx][1])])),
+)
 
 const expressEvent = ref(true)
 const cumulativeGraph = ref(true)
@@ -263,7 +267,12 @@ const resultStatusClass = computed(() => {
     return curIsBest.value ? "best" : "muted"
 })
 
-const distributionLabels = computed(() => MATS_LABELS.slice(0, 7).concat(JUICE_LABELS.map((pair) => pair[0]), JUICE_LABELS.map((pair) => pair[1])))
+const distributionLabels = computed(() =>
+    MATS_LABELS.slice(0, 7).concat(
+        JUICE_LABELS.map((pair) => pair[0]),
+        JUICE_LABELS.map((pair) => pair[1]),
+    ),
+)
 const upgradeArr = computed<UpgradeLike[]>(() => (Array.isArray(evaluateResult.value?.upgrade_arr) ? evaluateResult.value.upgrade_arr : []))
 const specialInvalidIndex = computed(() => clampInt(evaluateResult.value?.special_invalid_index ?? 0, 0, 9999))
 const latestSpecialProbs = computed<number[]>(() =>
@@ -464,7 +473,7 @@ function applyResult(res: any) {
 function runEvaluate() {
     if (optimizeBusy.value) return
     terminateWorker(evaluateWorker)
-    const { worker, promise } = runWasmOperation(makePayload(), "EvaluateAverage")
+    const { worker, promise } = SpawnWorker(makePayload(), "EvaluateAverage")
     evaluateWorker.value = worker
     promise
         .then((res) => {
@@ -484,7 +493,7 @@ function runEvaluate() {
 function runHistogram() {
     if (analysisTab.value !== "distribution") return
     terminateWorker(histogramWorker)
-    const { worker, promise } = runWasmOperation(makePayload(), "Histogram")
+    const { worker, promise } = SpawnWorker(makePayload(), "Histogram")
     histogramWorker.value = worker
     promise
         .then((res) => {
@@ -506,7 +515,7 @@ function runOptimize() {
     optimizerProgress.value = 0
     optimizeError.value = null
 
-    const { worker, promise } = runWasmOperation(makePayload(), "OptimizeAverage", (message: any) => {
+    const { worker, promise } = SpawnWorker(makePayload(), "OptimizeAverage", (message: any) => {
         if (typeof message?.est_progress_percentage === "number") {
             optimizerProgress.value = message.est_progress_percentage
         }
@@ -1351,7 +1360,9 @@ onBeforeUnmount(() => {
                                 </div>
                                 <div class="hf-card-body">
                                     <p class="hf-copy">Empty state means no book and no breath on that tap.</p>
-                                    <p class="hf-copy" v-if="allowManualState">Progress updates enabled: update progress and success after each relevant outcome.</p>
+                                    <p class="hf-copy" v-if="allowManualState">
+                                        Progress updates enabled: update progress and success after each relevant outcome.
+                                    </p>
                                     <p class="hf-copy" v-else>Enable progress updates in Controls for better optimization and live progression tracking.</p>
 
                                     <div v-if="orderedUpgradeIndices.length" class="hf-upgrade-editor">
@@ -1370,20 +1381,14 @@ onBeforeUnmount(() => {
                                                     <span class="hf-action-chip tap">
                                                         Tap {{ getNextTapPlan(upgradeIndex)?.tapIndex }}/{{ getNextTapPlan(upgradeIndex)?.pityLength }}
                                                     </span>
-                                                    <span
-                                                        v-if="getNextTapPlan(upgradeIndex)?.useJuice"
-                                                        class="hf-action-chip juice"
-                                                    >
+                                                    <span v-if="getNextTapPlan(upgradeIndex)?.useJuice" class="hf-action-chip juice">
                                                         <img
                                                             :src="iconPath(getNextTapPlan(upgradeIndex)?.juiceLabel ?? '')"
                                                             :alt="getNextTapPlan(upgradeIndex)?.juiceLabel ?? ''"
                                                         />
                                                         {{ getNextTapPlan(upgradeIndex)?.juiceLabel }}
                                                     </span>
-                                                    <span
-                                                        v-if="(getNextTapPlan(upgradeIndex)?.bookTier ?? 0) > 0"
-                                                        class="hf-action-chip book"
-                                                    >
+                                                    <span v-if="(getNextTapPlan(upgradeIndex)?.bookTier ?? 0) > 0" class="hf-action-chip book">
                                                         <img
                                                             :src="iconPath(getNextTapPlan(upgradeIndex)?.bookLabel ?? '')"
                                                             :alt="getNextTapPlan(upgradeIndex)?.bookLabel ?? ''"
@@ -1391,7 +1396,7 @@ onBeforeUnmount(() => {
                                                         {{ getNextTapPlan(upgradeIndex)?.bookLabel }}
                                                     </span>
                                                     <span
-                                                        v-if="!(getNextTapPlan(upgradeIndex)?.useJuice) && (getNextTapPlan(upgradeIndex)?.bookTier ?? 0) === 0"
+                                                        v-if="!getNextTapPlan(upgradeIndex)?.useJuice && (getNextTapPlan(upgradeIndex)?.bookTier ?? 0) === 0"
                                                         class="hf-action-chip muted"
                                                     >
                                                         No juice / no book
@@ -1429,8 +1434,8 @@ onBeforeUnmount(() => {
                                 </div>
                                 <div class="hf-card-body">
                                     <p class="hf-copy">
-                                        Keep attempting free taps until you run out, then move on to the next.
-                                        The instructions for tapping takes into account the normal taps you may need to do before or in-between free taps.
+                                        Keep attempting free taps until you run out, then move on to the next. The instructions for tapping takes into account
+                                        the normal taps you may need to do before or in-between free taps.
                                     </p>
                                     <div v-if="freeTapRows.length" class="hf-freetap-table">
                                         <div class="hf-freetap-head">
@@ -1446,7 +1451,8 @@ onBeforeUnmount(() => {
                                             :class="{
                                                 draggable: true,
                                                 dragging: draggingFreeTapIndex === index,
-                                                'drop-target': dragOverFreeTapIndex === index && draggingFreeTapIndex !== null && draggingFreeTapIndex !== index,
+                                                'drop-target':
+                                                    dragOverFreeTapIndex === index && draggingFreeTapIndex !== null && draggingFreeTapIndex !== index,
                                             }"
                                             draggable="true"
                                             @dragstart="onFreeTapDragStart(index, $event)"
@@ -1502,7 +1508,12 @@ onBeforeUnmount(() => {
                                                 @input="setRecordValue(matsPrices, label, $event)"
                                             />
                                             <div v-else class="hf-input-placeholder" />
-                                            <input v-if="customLeftovers" type="text" :value="matsLeftover[label]" @input="setRecordValue(matsLeftover, label, $event)" />
+                                            <input
+                                                v-if="customLeftovers"
+                                                type="text"
+                                                :value="matsLeftover[label]"
+                                                @input="setRecordValue(matsLeftover, label, $event)"
+                                            />
                                         </div>
                                     </div>
 
@@ -1513,7 +1524,12 @@ onBeforeUnmount(() => {
                                             <span>Price</span>
                                             <span v-if="customLeftovers">Left</span>
                                         </div>
-                                        <div v-for="labels in JUICE_LABELS" :key="`weapon-${labels[0]}`" class="hf-table-row" :class="{ leftovers: customLeftovers }">
+                                        <div
+                                            v-for="labels in JUICE_LABELS"
+                                            :key="`weapon-${labels[0]}`"
+                                            class="hf-table-row"
+                                            :class="{ leftovers: customLeftovers }"
+                                        >
                                             <label class="hf-row-label hf-row-label-books">
                                                 <span>{{ labels[0] }}</span>
                                                 <img :src="iconPath(labels[0])" :alt="labels[0]" />
@@ -1536,7 +1552,12 @@ onBeforeUnmount(() => {
                                             <span>Price</span>
                                             <span v-if="customLeftovers">Left</span>
                                         </div>
-                                        <div v-for="labels in JUICE_LABELS" :key="`armor-${labels[1]}`" class="hf-table-row" :class="{ leftovers: customLeftovers }">
+                                        <div
+                                            v-for="labels in JUICE_LABELS"
+                                            :key="`armor-${labels[1]}`"
+                                            class="hf-table-row"
+                                            :class="{ leftovers: customLeftovers }"
+                                        >
                                             <label class="hf-row-label hf-row-label-books">
                                                 <span>{{ labels[1] }}</span>
                                                 <img :src="iconPath(labels[1])" :alt="labels[1]" />
@@ -1566,8 +1587,12 @@ onBeforeUnmount(() => {
                     <div class="hf-card-header">
                         <div class="hf-card-title"><span class="hf-card-title-dot" />Analysis</div>
                         <div class="hf-analysis-tabs">
-                            <button :class="['hf-analysis-tab', { active: analysisTab === 'distribution' }]" @click="analysisTab = 'distribution'">Distribution</button>
-                            <button :class="['hf-analysis-tab', { active: analysisTab === 'breakdown' }]" @click="analysisTab = 'breakdown'">Gold Breakdown</button>
+                            <button :class="['hf-analysis-tab', { active: analysisTab === 'distribution' }]" @click="analysisTab = 'distribution'">
+                                Distribution
+                            </button>
+                            <button :class="['hf-analysis-tab', { active: analysisTab === 'breakdown' }]" @click="analysisTab = 'breakdown'">
+                                Gold Breakdown
+                            </button>
                         </div>
                     </div>
                     <div class="hf-card-body">
@@ -1602,7 +1627,11 @@ onBeforeUnmount(() => {
                                 </div>
 
                                 <div class="hf-breakdown-table">
-                                    <div v-for="(label, index) in JUICE_LABELS.map((pair) => pair[0])" :key="`weapon-breakdown-${label}`" class="hf-breakdown-row">
+                                    <div
+                                        v-for="(label, index) in JUICE_LABELS.map((pair) => pair[0])"
+                                        :key="`weapon-breakdown-${label}`"
+                                        class="hf-breakdown-row"
+                                    >
                                         <span class="hf-breakdown-label">{{ label }}</span>
                                         <span :class="['hf-breakdown-value', breakdownClass(goldBreakdownValue(7 + index))]">
                                             {{ breakdownText(goldBreakdownValue(7 + index)) }}

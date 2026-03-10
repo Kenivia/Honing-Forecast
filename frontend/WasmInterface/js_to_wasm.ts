@@ -12,6 +12,8 @@ import init, {
 
 const LABELS = ["Red", "Blue", "Leaps", "Shards", "Oreha", "Gold", "Silver"]
 
+export type WasmOp = "EvaluateAverage" | "OptimizeAverage" | "Histogram"
+
 // async function MonteCarloWasm(payload: any) {
 //     await init()
 //     return (monte_carlo_wrapper as any)(payload)

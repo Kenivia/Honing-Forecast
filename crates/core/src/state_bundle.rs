@@ -18,12 +18,9 @@ pub struct StateBundle {
     pub metric: f64,
     pub min_resolution: usize,
     pub prep_output: PreparationOutput,
-    #[serde(skip)]
     pub special_cache: AHashMap<Vec<usize>, Vec<f64>>,
     pub num_threads: usize,
     pub average_breakdown: Option<Vec<f64>>,
-
-    #[serde(skip)]
     pub adv_cache: AHashMap<AdvConfig, AdvDistTriplet>,
 }
 

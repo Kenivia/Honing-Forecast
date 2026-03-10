@@ -11,6 +11,15 @@
     - main page reflects currently selected character, which will include"inputs", "cost distribution", "optimizer", "forecast" etc, need to figure out how to lay this out
     - maybe some kind of summary page -> detailed page? this way can fit more graphs in?
 
+Specifically:
+
+- include statebundle in the "store" and only update when some thing changes, make parser its own wasm binding for that
+  - non-state changes (like price, owned) should trigger parser + eval(like the current behaviour), state changes should trigger eval only, though that's not really a huge deal cos parser call not that expensive
+- this opens the door for persistent special & adv caches? this would make it easy to put pre-computed table in (just write it in js on intializaiton)
+  - this also opens the door for when we know the current state is good already on optimizer calls
+- need to figure out the layout still but by default the first thing a user see should be a ready-to-go checkbox grid -> costs thing, inputs should be next to the graphs and optimizer instructions should be its own page
+  - where to select chars? maybe tool selection on the side and char selection on the top?
+
 ### 2nd: Serca
 
 Mixing serca and t4 is lowkey possible if we make the assumption that Serca mats -> t4 mats conversion is possible (so we just convert serca mats to x5 t4 mats and call it a day) but this assumption is kinda dumb and probably won't be very useful anyway, THEREFORE:
@@ -43,7 +52,26 @@ NONE OF THIS DATA STUFF TURNED OUT TO BE NECESSARY because DP is op and we can j
 - ~~This kinda uses an egregious amt of memory rn, need to benchmark how much the cache actually helps and how to reduce it~~
 - ~~it's also kinda just slow, will prolly benefit from hard-coding known stuff~~
 
-### 3rd: OCR
+### 3th : Tradable / bound mats distinction
+
+- Treat roster bound as ~~tradable? maybe make this a toggle~~ bound, because that makes no sense
+  - Toggle should be "treat tradable as roster bound", which should be on by default because people are more worried about how much gold tehy will actually spend
+- update the SA computation to allow for 2 breakpoints
+  - will need to have 2 different budgets and another set of prices but shouldn't be that hard
+
+### 4th : Box opening recommendation
+
+- This will have to be rather rudimentary
+- Maybe just ignore the fact that we have boxes until we deduct costs? this way we treat boxes as tradables
+
+- actually this can just be another state kinda like special state that we can optimize? a lot of work tho
+
+### 4.5th : Hard limit on juice usages
+
+- disallow states that can use more than a certain amount of juice / scroll / books
+  - this kinda falls apart with normal honing cos we can finish early, but can just make a pessimistic assumption
+
+### 5th: OCR
 
 the ark grid ocr is so goated, it should be possible with mats too
 
@@ -52,31 +80,21 @@ the ark grid ocr is so goated, it should be possible with mats too
 
 - will need an intermediate detected mats manifest -> actual mats
 
-- this is probably a lot more complicated than I realize esp with boxes and shit
-
-### 4th : Tradable / bound mats distinction
-
-- Treat roster bound as tradable? maybe make this a toggle
-- update the SA computation to allow for 2 breakpoints
-
-### 5th : Box opening recommendation
-
-- This will have to be rather rudimentary
-- Maybe just ignore the fact that we have boxes until we deduct costs? this way we treat boxes as tradables
-
-- actually this can just be another state kinda like special state that we can optimize? a lot of work tho
-
-### 5.5th : Hard limit on juice usages
-
-- disallow states that can use more than a certain amount of juice / scroll / books
-  - this kinda falls apart with normal honing cos we can finish early, but can just make a pessimistic assumption
-  - this also kinda falls apart with boxes if we ignore them until deduction
+- this is probably a lot more complicated than I realize esp with boxes and shit but will make the world of difference
 
 ### 6th: Forecast mode
 
 Haven't thought enough about the specifics but shouldn't be that hard once everything else is in place.
 
-### 7th: Price trend viewer
+### 7th: Optimizer Improvements
+
+- figure out if the restarts are carrying the algorithm and maybe do SA properly
+- somehow make the pity length more explicit cos right now a lot of moves don't do anything
+- ~~force special state to have a non-small tail~~ actually that ~~might~~ in fact does discard optimal choices, just make sure that special neighbour moves actually has an effect
+- some way to estimate how close we are to optimal because re-running this for every week is going to be a bit insane
+- maybe a neural network for an (or few) initial guesses -> optimizer?
+
+### 8th: Price trend viewer
 
 need to pull as much historical data as possible from loa-buddy -> store & pull from my own data base -> keep updating this
 
@@ -158,14 +176,6 @@ Below are some rambling / brainstorming / Misc stuff
 ### Other features
 
 - Automatic Market price integration(via some kind of API, or just updating the site at a regular interval automatically)
-
-### Algorithm ideas
-
-- figure out if the restarts are carrying the algorithm and maybe do SA properly
-- somehow make the pity length more explicit cos right now a lot of moves don't do anything
-- ~~force special state to have a non-small tail~~ actually that ~~might~~ in fact does discard optimal choices, just make sure that special neighbour moves actually has an effect
-- some way to estimate how close we are to optimal because re-running this for every week is going to be a bit insane
-- maybe a neural network for an (or few) initial guesses -> optimizer?
 
 ## Done / cancelled
 

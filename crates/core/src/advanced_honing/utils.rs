@@ -28,11 +28,6 @@ pub fn index_to_tuple(index: usize) -> (usize, usize) {
         (255, NON_GRACE_FIRST_N[index - 16])
     }
 }
-#[derive(Debug, Serialize, Deserialize, Clone, Hash, PartialEq, Eq, Copy)]
-pub struct InvariantAdvConfig {
-    pub double_balls: bool,
-    pub is_30_40: bool,
-}
 
 #[derive(Debug, Serialize, Deserialize, Clone, Hash, PartialEq, Eq, Copy, Default)]
 pub struct AdvConfig {
@@ -94,7 +89,7 @@ impl Upgrade {
         self.adv_config.non_grace_scroll_target = scroll.1 as u8;
     }
 }
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct AdvDistTriplet {
     pub cost: Vec<f64>,
     pub juice: Vec<f64>,
