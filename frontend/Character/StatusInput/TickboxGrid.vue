@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { useProfilesStore } from "@/stores/CharacterProfile"
+import { CharProfile, useProfilesStore } from "@/stores/CharacterProfile"
 import { PIECE_NAMES } from "@/Utils/Constants"
 import { iconPath } from "@/Utils/Helpers"
 import { UpgradeStatus } from "@/Utils/Interfaces"
@@ -15,10 +15,10 @@ const props = defineProps<{
 const relevant_grid = props.grid_type == "normal" ? active_profile.normal_grid : active_profile.adv_grid
 
 function check_all_same(col: number) {
-    if (relevant_grid.every((row: UpgradeStatus[]) => row[col] == UpgradeStatus.Done)) {
+    if (relevant_grid.data.every((row: UpgradeStatus[]) => row[col] == UpgradeStatus.Done)) {
         return UpgradeStatus.Done
     }
-    if (relevant_grid.every((row: UpgradeStatus[]) => row[col] == UpgradeStatus.Want)) {
+    if (relevant_grid.data.every((row: UpgradeStatus[]) => row[col] == UpgradeStatus.Want)) {
         return UpgradeStatus.Want
     }
     return UpgradeStatus.NotYet

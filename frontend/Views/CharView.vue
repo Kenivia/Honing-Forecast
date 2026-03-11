@@ -1,3 +1,20 @@
+<script setup lang="ts">
+import { CharProfile, useProfilesStore } from "@/stores/CharacterProfile"
+import { uesRosterStore } from "@/stores/RosterConfig"
+import { PIECE_NAMES } from "@/Utils/Constants"
+import { iconPath } from "@/Utils/Helpers"
+import { UpgradeStatus } from "@/Utils/Interfaces"
+import { storeToRefs } from "pinia"
+
+const profile_store = useProfilesStore()
+const active_profile: CharProfile = profile_store.activeProfile()
+
+const roster_store = uesRosterStore()
+
+const optimizer_worker = active_profile.optimizer_worker
+
+const hasRunOptimizer = active_profile.has_run_optimizer
+</script>
 <template>
     <div class="hf-shell">
         <div class="hf-app-wrapper">

@@ -70,6 +70,7 @@ NONE OF THIS DATA STUFF TURNED OUT TO BE NECESSARY because DP is op and we can j
     1. Current progress (xp and balls, should be text inputs and dropdown?)
     2. suggested strategy (state)
 4. Maybe hard-code the most common setup
+5. Remember to corroborate the new dp results with old mc results
 
 - ~~This kinda uses an egregious amt of memory rn, need to benchmark how much the cache actually helps and how to reduce it~~
 - ~~it's also kinda just slow, will prolly benefit from hard-coding known stuff~~
