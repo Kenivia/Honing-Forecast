@@ -1,6 +1,10 @@
-import { PIECE_NAMES } from "./Constants.ts"
+import { IconMap, PIECE_NAMES } from "./Constants.ts"
 import { Upgrade } from "./Interfaces.ts"
 const ordinalRules = new Intl.PluralRules("en", { type: "ordinal" })
+
+function iconPath(name: string) {
+    return IconMap[name] ?? ""
+}
 
 const SCALE_NAMES = {
     3: "thousand",

@@ -1,6 +1,5 @@
 import { defineStore } from "pinia"
 import { InputsColumn, StateBundle, StatusGrid } from "@/Utils/Interfaces.ts"
-import { ref } from "vue"
 
 export const useProfilesStore = defineStore("profiles", {
     state: () => ({
@@ -21,6 +20,8 @@ export const useProfilesStore = defineStore("profiles", {
 })
 
 export interface CharProfile {
+    char_name: string
+
     state_bundle?: StateBundle
     normal_grid: StatusGrid
     adv_grid: StatusGrid
@@ -33,23 +34,4 @@ export interface CharProfile {
 
     bound_armor_juice_owned: InputsColumn
     armor_juice_leftover: InputsColumn
-}
-export interface RosterConfig {
-    mats_prices: InputsColumn
-    weap_juice_prices: InputsColumn
-    armor_juice_prices: InputsColumn
-
-    roster_mats_owned: InputsColumn
-    roster_weap_juice_owned: InputsColumn
-    roster_armor_juice_owned: InputsColumn
-    // roster bound leftover will inherit the character's bound leftover values
-
-    tradable_mats_owned: InputsColumn
-    tradable_weap_juice_owned: InputsColumn
-    tradable_armor_juice_owned: InputsColumn
-
-    // these are just price with tax applied
-    tradable_mats_leftover: InputsColumn
-    tradable_weap_juice_leftover: InputsColumn
-    tradable_armor_juice_leftover: InputsColumn
 }
