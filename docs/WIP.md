@@ -18,7 +18,28 @@ Specifically:
 - this opens the door for persistent special & adv caches? this would make it easy to put pre-computed table in (just write it in js on intializaiton)
   - this also opens the door for when we know the current state is good already on optimizer calls
 - need to figure out the layout still but by default the first thing a user see should be a ready-to-go checkbox grid -> costs thing, inputs should be next to the graphs and optimizer instructions should be its own page
-  - where to select chars? maybe tool selection on the side and char selection on the top?
+
+#### Char page - Upgrade status inputs
+
+- How to intuitively toggle between the 3 states - maybe slider with 2 heads?
+
+#### Char page - Gold breakdown
+
+- This needs to show both "actual gold spent on market/raw" and "eqv gold you wouldve made from selling tradables"
+
+#### Char page - Material cost distribution
+
+- 3 columns,
+    1. user bound mats input, starts at 0 by default
+    2. Avg cost / top x% bottom x%, allow custom inputs in the header
+    3. The corresponding graphs
+- This can get quite long so need to hide useless / irrelevant graphs and a show all button or something
+
+#### Char page - Optimizer instructions
+
+- text instructions instaed of boxes, no longer allow custom states input cos the UI is too cluttered
+- 2 rows for juice & book, e.g. juice x10, no juice until x% artisan, juice after that
+- similar text instructions for advanced honing
 
 ### 2nd: Serca
 

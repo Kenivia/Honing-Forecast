@@ -1,5 +1,5 @@
 import { defineStore } from "pinia"
-import { InputsColumn, StateBundle, StatusGrid } from "@/Utils/Interfaces.ts"
+import { InputsColumn, StateBundle, StatusGrid } from "@/Utils/Interfaces"
 
 export const useProfilesStore = defineStore("profiles", {
     state: () => ({

@@ -27,7 +27,7 @@ export type NumGrid = number[][]
 export type StateGrid = [boolean, number][][][]
 // ^ these types go directly to wasm and should not become an interface with multiple fields
 
-enum UpgradeStatus {
+export enum UpgradeStatus {
     Done,
     Want,
     NotYet,

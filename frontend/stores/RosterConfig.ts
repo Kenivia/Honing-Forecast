@@ -1,4 +1,4 @@
-import { InputsColumn } from "@/Utils/Interfaces.ts"
+import { InputsColumn } from "@/Utils/Interfaces"
 import { defineStore } from "pinia"
 
 export interface RosterConfig {
