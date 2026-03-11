@@ -20,6 +20,7 @@ export interface StateBundle {
     prep_output: any
     special_cache: any
     adv_cache: any
+    metric?: number
 }
 
 export type BoolGrid = boolean[][]

@@ -1,7 +1,10 @@
 import { IconMap, PIECE_NAMES } from "./Constants"
 import { Upgrade } from "./Interfaces"
 const ordinalRules = new Intl.PluralRules("en", { type: "ordinal" })
-
+function metricToText(metric: number | null | undefined) {
+    if (metric === null || metric === undefined || !Number.isFinite(metric)) return "N/A"
+    return `${Math.round(-metric).toLocaleString("en-US")}g`
+}
 export function iconPath(name: string) {
     return IconMap[name] ?? ""
 }

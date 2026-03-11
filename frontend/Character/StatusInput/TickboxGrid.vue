@@ -7,8 +7,7 @@ import { storeToRefs } from "pinia"
 
 const profile_store = useProfilesStore()
 
-const { profiles } = storeToRefs(profile_store)
-const active_profile = profile_store.activeProfile()
+const active_profile: CharProfile = profile_store.activeProfile()
 const props = defineProps<{
     grid_type: "normal" | "adv"
 }>()

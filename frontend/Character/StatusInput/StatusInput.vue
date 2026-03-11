@@ -1,3 +1,7 @@
+<script setup lang="ts">
+import TickboxGrid from "./TickboxGrid.vue"
+</script>
+
 <template>
     <div class="hf-honing-row">
         <section class="hf-card hf-normal-card">
@@ -5,7 +9,9 @@
                 <div class="hf-card-title"><span class="hf-card-title-dot" />Normal Honing</div>
                 <span class="hf-card-hint">Build target grid</span>
             </div>
-            <div class="hf-card-body"></div>
+            <div class="hf-card-body">
+                <TickboxGrid grid_type="normal"></TickboxGrid>
+            </div>
         </section>
 
         <section class="hf-card hf-advanced-card">
@@ -14,7 +20,8 @@
                 <span class="hf-card-hint">Juice on Grace assumed</span>
             </div>
             <div class="hf-card-body">
-                <div class="hf-grid-content hf-grid-content-compact">
+                <TickboxGrid grid_type="normal"></TickboxGrid>
+                <!-- <div class="hf-grid-content hf-grid-content-compact">
                     <div class="hf-label-col hf-label-col-compact">
                         <div class="hf-label-row" />
                         <div v-for="piece in PIECE_NAMES" :key="`adv-${piece}`" class="hf-label-row">
@@ -52,7 +59,7 @@
                             />
                         </div>
                     </div>
-                </div>
+                </div> -->
             </div>
         </section>
     </div>

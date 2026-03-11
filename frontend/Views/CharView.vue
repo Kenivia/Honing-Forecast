@@ -341,47 +341,6 @@
                                 </div>
                             </div>
                         </section>
-
-                        <section v-else>
-                            <div class="hf-breakdown-grid">
-                                <div class="hf-breakdown-table">
-                                    <div v-for="(label, index) in MATS_LABELS.slice(0, 7)" :key="`mats-breakdown-${label}`" class="hf-breakdown-row">
-                                        <span class="hf-breakdown-label">{{ label }}</span>
-                                        <span :class="['hf-breakdown-value', breakdownClass(goldBreakdownValue(index))]">
-                                            {{ breakdownText(goldBreakdownValue(index)) }}
-                                        </span>
-                                    </div>
-                                </div>
-
-                                <div class="hf-breakdown-table">
-                                    <div
-                                        v-for="(label, index) in JUICE_LABELS.map((pair) => pair[0])"
-                                        :key="`weapon-breakdown-${label}`"
-                                        class="hf-breakdown-row"
-                                    >
-                                        <span class="hf-breakdown-label">{{ label }}</span>
-                                        <span :class="['hf-breakdown-value', breakdownClass(goldBreakdownValue(7 + index))]">
-                                            {{ breakdownText(goldBreakdownValue(7 + index)) }}
-                                        </span>
-                                    </div>
-                                </div>
-
-                                <div class="hf-breakdown-table">
-                                    <div
-                                        v-for="(label, index) in JUICE_LABELS.map((pair) => pair[1])"
-                                        :key="`armor-breakdown-${label}`"
-                                        class="hf-breakdown-row"
-                                    >
-                                        <span class="hf-breakdown-label">{{ label }}</span>
-                                        <span :class="['hf-breakdown-value', breakdownClass(goldBreakdownValue(7 + juiceAvail + index))]">
-                                            {{ breakdownText(goldBreakdownValue(7 + juiceAvail + index)) }}
-                                        </span>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="hf-combined-cost">Combined: {{ metricToText(currentMetric) }}</div>
-                        </section>
                     </div>
                 </section>
             </div>

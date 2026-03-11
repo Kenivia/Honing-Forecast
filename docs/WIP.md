@@ -31,7 +31,7 @@ Specifically:
 
 - 3 columns,
     1. user bound mats input, starts at 0 by default
-    2. Avg cost / top x% bottom x%, allow custom inputs in the header
+    2. Avg cost ~~/ top x% bottom x%,~ allow custom inputs in the header~~ i think just making hover more obvious is good enough, the interpolation / whatever problem is gonna be aids
     3. The corresponding graphs
 - This can get quite long so need to hide useless / irrelevant graphs and a show all button or something
 
@@ -40,6 +40,7 @@ Specifically:
 - text instructions instaed of boxes, no longer allow custom states input cos the UI is too cluttered
 - 2 rows for juice & book, e.g. juice x10, no juice until x% artisan, juice after that
 - similar text instructions for advanced honing
+- "succeed and deduct costs" button, which prompts for either number of taps via a slider, which should show artisan & material costs / predicted material remaining
 
 ### 2nd: Serca
 
