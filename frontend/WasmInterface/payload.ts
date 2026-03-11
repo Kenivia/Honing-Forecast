@@ -1,4 +1,5 @@
-import { JUICE_LABELS, MATS_LABELS } from "@/Utils/Constants.ts"
+import { JUICE_LABELS, MATS_LABELS } from "@/Utils/Constants"
+import { WasmOp } from "./js_to_wasm"
 
 export type InputsValues = {
     mats: {
@@ -42,24 +43,7 @@ function parseNum(input: string) {
     return Number.isFinite(out) ? out : 0
 }
 
-export function buildPayload({
-    topGrid,
-    bottomGrid,
-    advHoneStrategy,
-    expressEvent,
-    bucketCount,
-    dataSize,
-    inputs,
-    progressGrid,
-    unlockGrid,
-    succeededGrid,
-    stateBundleGrid,
-    specialState,
-    minResolution,
-    metricType,
-}: BuildPayloadOptions) {
-    const { mats, juice } = inputs
-
+export function buildPayload(wasm_op: WasmOp) {
     return {
         mats_budget: MATS_LABELS.slice(0, 8).map((label) => parseNum(mats.owned[label] || "0")),
         adv_hone_strategy: advHoneStrategy,

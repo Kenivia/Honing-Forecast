@@ -20,7 +20,7 @@ import TickboxGrid from "./TickboxGrid.vue"
                 <span class="hf-card-hint">Juice on Grace assumed</span>
             </div>
             <div class="hf-card-body">
-                <TickboxGrid grid_type="normal"></TickboxGrid>
+                <TickboxGrid grid_type="normal" />
                 <!-- <div class="hf-grid-content hf-grid-content-compact">
                     <div class="hf-label-col hf-label-col-compact">
                         <div class="hf-label-row" />

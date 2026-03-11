@@ -20,11 +20,13 @@ export const useProfilesStore = defineStore("profiles", {
 })
 
 export interface CharProfile {
-    optimizer_worker: any
-    evaluate_worker: any
-
-    has_run_optimizer: boolean
+    express_event: boolean
     char_name: string
+
+    auto_start_optimizer: boolean
+    has_run_optimizer: boolean
+    optimizer_worker_bundle: any
+    evaluate_worker_bundle: any
 
     state_bundle?: StateBundle
     normal_grid: StatusGrid

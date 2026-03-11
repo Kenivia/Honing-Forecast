@@ -1,79 +1,63 @@
-function makeId() {
-    // simple unique id
-    return Math.random().toString(36).slice(2) + Date.now().toString(36)
-}
+import { ref, onUnmounted } from "vue"
+import { WasmOp } from "./js_to_wasm"
+import { buildPayload } from "./payload"
+const createWorker = (op: WasmOp) => new Worker(new URL("./js_to_wasm.ts", import.meta.url), { type: "module", which_one: op })
 
-export function SpawnWorker(payload: any, which_one: string, onIntermediateMessage?: (_) => void) {
-    // adjust path if needed
-    const worker = new Worker(new URL("./js_to_wasm.ts", import.meta.url), { type: "module" })
-    const id = makeId()
+export function createWorkerBundle() {
+    let worker = null
+    const status = ref("idle")
+    const result = ref(null)
+    const error = ref(null)
+    let debounceTimer = null
 
-    let settled = false
-    const promise = new Promise((resolve, reject) => {
-        const onMessage = (ev) => {
-            // only accept messages that are result messages with the same id
-            const msg = ev.data
-            if (msg && msg.type === "result" && msg.id === id) {
-                settled = true
-                worker.removeEventListener("message", onMessage)
-                worker.removeEventListener("error", onError)
-                resolve(msg.result)
-            } else {
-                onIntermediateMessage?.(msg)
-                // ignore unrelated messages (or you could expose them as events)
-            }
-        }
-        const onError = (err) => {
-            if (!settled) {
-                settled = true
-                worker.removeEventListener("message", onMessage)
-                worker.removeEventListener("error", onError)
-                reject(err)
+    function _launch(wasm_op: WasmOp) {
+        cancel()
+
+        status.value = "running"
+        result.value = null
+        error.value = null
+
+        worker = createWorker(wasm_op)
+
+        worker.onmessage = (e) => {
+            result.value = e.data
+            if (e.type === "result") {
+                status.value = "done"
+                worker = null
+                worker.terminate()
             }
         }
 
-        worker.addEventListener("message", onMessage)
-        worker.addEventListener("error", onError)
-
-        // send the message including the id so worker can attach it to the response
-        try {
-            worker.postMessage({ id, payload, which_one })
-        } catch (e) {
-            // posting failed — clean up
-            worker.removeEventListener("message", onMessage)
-            worker.removeEventListener("error", onError)
-            reject(e)
+        worker.onerror = (e) => {
+            error.value = e.message
+            status.value = "error"
+            worker = null
         }
-    })
 
-    // When the promise settles we'll terminate the worker for safety
-    const wrapped = promise.finally(() => {
-        try {
-            worker.terminate()
-        } catch (e) {
-            //
-        }
-    })
-
-    return { worker, promise: wrapped }
-}
-
-export async function CallWorker(payload, which_one) {
-    const { worker, promise } = SpawnWorker(payload, which_one)
-    try {
-        const res = await promise
-        try {
-            worker.terminate()
-        } catch (e) {
-            //
-        }
-        return res
-    } catch (err) {
-        try {
-            worker.terminate()
-        } catch (e) {
-            //
-        }
-        throw err
+        worker.postMessage(buildPayload(wasm_op))
     }
+
+    function start(wasm_op: WasmOp, debounce?: number) {
+        if (debounce > 0) {
+            clearTimeout(debounceTimer)
+            status.value = "debouncing"
+            debounceTimer = setTimeout(() => _launch(wasm_op), debounce)
+        } else {
+            _launch(wasm_op)
+        }
+    }
+
+    function cancel() {
+        clearTimeout(debounceTimer)
+        debounceTimer = null
+        if (worker) {
+            worker.terminate()
+            worker = null
+            status.value = "cancelled"
+        }
+    }
+
+    onUnmounted(cancel)
+
+    return { status, result, error, start, cancel }
 }
