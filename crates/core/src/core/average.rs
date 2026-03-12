@@ -54,22 +54,22 @@ impl StateBundle {
                 support_index,
                 (bound_budget, price, leftover, tradable_budget, tradable_leftover),
             ) in izip!(
-                self.flattened_bound_budgets(),
-                self.flattened_full_price(),
-                self.flattened_leftover(),
-                self.flattened_tradable_budgets(),
-                self.flattened_tradable_leftover(),
+                self.prep_output.bound_budgets.iter(),
+                self.prep_output.market_price.iter(),
+                self.prep_output.leftover_price.iter(),
+                self.prep_output.trade_budgets.iter(),
+                self.prep_output.tradable_price.iter(),
             )
             .enumerate()
             {
                 let this_avg: f64 = self.one_dimension_average_gold(
                     support_index as i64,
                     skip_count,
-                    bound_budget,
-                    tradable_budget,
-                    price,
-                    tradable_leftover,
-                    leftover,
+                    *bound_budget,
+                    *bound_budget + *tradable_budget,
+                    *price,
+                    *tradable_leftover,
+                    *leftover,
                     performance,
                 );
                 let this = special_prob * this_avg;

@@ -42,9 +42,9 @@ fn compute_upgrade_impact(state_bundle: &mut StateBundle) -> Vec<f64> {
 
     for upgrade in &state_bundle.upgrade_arr {
         let mut magnitude: f64 = 0.01;
-        for (index, p) in probs.iter().take(7).enumerate() {
-            magnitude += (state_bundle.prep_output.left_mats_price[index] * p
-                + state_bundle.prep_output.market_mats_price[index] * (1.0 - p))
+        for (index, p) in probs.iter().enumerate() {
+            magnitude += (state_bundle.prep_output.leftover_price[index] * p
+                + state_bundle.prep_output.market_price[index] * (1.0 - p))
                 * upgrade.cost_dist[index]
                     .access_collapsed(false)
                     .iter()

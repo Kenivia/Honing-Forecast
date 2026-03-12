@@ -126,20 +126,28 @@ impl JuiceInfo {
 }
 pub fn get_priced_juice_info(
     base: &JuiceInfo,
-    market_price: &[(f64, f64)],
-    trade_price: &[(f64, f64)],
-    left_price: &[(f64, f64)],
-
+    left_price: &[f64],
+    trade_price: &[f64],
+    market_price: &[f64],
     event: bool,
 ) -> JuiceInfo {
-    assert!(base.num_juice_avail == market_price.len());
-    assert!(base.num_juice_avail == trade_price.len());
-    assert!(base.num_juice_avail == left_price.len());
+    assert!(base.total_num_avail == market_price.len());
+    assert!(base.total_num_avail == trade_price.len());
+    assert!(base.total_num_avail == left_price.len());
     let mut out: JuiceInfo = base.clone();
     for (id, juice_type) in out.all_juices.iter_mut().enumerate() {
-        juice_type.market_price = market_price[id];
-        juice_type.trade_price = trade_price[id];
-        juice_type.left_price = left_price[id];
+        juice_type.market_price = (
+            market_price[7 + id],
+            market_price[7 + base.num_juice_avail + id],
+        );
+        juice_type.trade_price = (
+            trade_price[7 + id],
+            trade_price[7 + base.num_juice_avail + id],
+        );
+        juice_type.left_price = (
+            left_price[7 + id],
+            left_price[7 + base.num_juice_avail + id],
+        );
         for (_, this) in juice_type.data.iter_mut() {
             this.normal_amt_used = if event {
                 this.normal_event_amt_used

@@ -7,21 +7,17 @@ use crate::constants::*;
 use crate::upgrade::Upgrade;
 use ahash::AHashMap;
 use serde::{Deserialize, Serialize};
-use std::array;
+use std::collections::HashMap;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PreparationOutput {
     pub special_budget: i64,
 
-    pub bound_mats: [f64; 7],
-    pub trade_mats: [f64; 7],
-
-    pub market_mats_price: Vec<f64>,
-    pub trade_mats_price: Vec<f64>,
-    pub left_mats_price: Vec<f64>,
-
-    pub bound_juice: Vec<(f64, f64)>,
-    pub trade_juice: Vec<(f64, f64)>,
+    pub bound_budgets: Vec<f64>,
+    pub trade_budgets: Vec<f64>,
+    pub leftover_price: Vec<f64>,
+    pub tradable_price: Vec<f64>,
+    pub market_price: Vec<f64>,
 
     pub test_case: i64,
     pub juice_info: JuiceInfo,
@@ -29,19 +25,23 @@ pub struct PreparationOutput {
     pub flat_alr_spent: Option<Vec<f64>>,
 }
 
+pub type MaterialInput = Vec<(f64, f64, f64, f64, f64)>; // bound, trade, leftover, trade price, market price
+pub type UpgradeInput = HashMap<
+    (usize, usize, bool), // piece type, upgrade_index, is_adv
+    (
+        Option<usize>,                      // normal_progress
+        Vec<(bool, usize)>,                 // state
+        bool,                               // unlock
+        bool,                               // succeeeded
+        Option<(usize, usize, bool, bool)>, // adv_progress
+    ),
+>;
+
 impl PreparationOutput {
     pub fn initialize(
-        material_info: Vec<(i64, i64, f64, f64, f64)>, // bound, trade, leftover, trade price, market price
-        upgrade_info: HashMap<
-            (usize, usize, bool), // piece type, upgrade_index, is_adv
-            (
-                Option<usize>,                      // normal_progress
-                Vec<(bool, usize)>,                 // state
-                bool,                               // unlock
-                bool,                               // succeeeded
-                Option<(usize, usize, bool, bool)>, // adv_progress
-            ),
-        >,
+        material_info: MaterialInput,
+        upgrade_info: UpgradeInput,
+        special_budget: i64,
         express_event: bool,
         tier: usize,
     ) -> (
@@ -49,63 +49,51 @@ impl PreparationOutput {
         Vec<Upgrade>,
         AHashMap<AdvConfig, AdvDistTriplet>,
     ) {
-        let price_arr: Vec<f64> = inp_market_mats_price.to_vec();
-        let tradable_leftover_arr: Vec<f64> = inp_trade_mats_price.to_vec();
-        let bound_budgets: [f64; 7] = array::from_fn(|index| inp_bound_mats[index] as f64);
+        let mut bound_budgets: Vec<f64> = Vec::with_capacity(material_info.len());
+        let mut trade_budgets: Vec<f64> = Vec::with_capacity(material_info.len());
+        let mut leftover_price: Vec<f64> = Vec::with_capacity(material_info.len());
+        let mut tradable_price: Vec<f64> = Vec::with_capacity(material_info.len());
+        let mut market_price: Vec<f64> = Vec::with_capacity(material_info.len());
 
-        let trade_budgets: [f64; 7] = array::from_fn(|index| inp_trade_mats[index] as f64);
-
+        for (bound_owned, trade_owned, leftover, trade, market) in material_info {
+            bound_budgets.push(bound_owned);
+            trade_budgets.push(trade_owned);
+            leftover_price.push(leftover);
+            tradable_price.push(trade);
+            market_price.push(market);
+        }
         let juice_info: JuiceInfo = get_priced_juice_info(
             &BASE_JUICE_INFOS[tier],
-            inp_juice_market_price,
-            inp_juice_trade_price,
-            inp_juice_left_price,
+            &leftover_price,
+            &tradable_price,
+            &market_price,
             express_event,
         );
-        let bound_trade_juice: Vec<(f64, f64)> = inp_bound_juice
-            .iter()
-            .map(|(a, b)| (*a as f64, *b as f64))
-            .collect();
-
-        let tradable_juice_budgets: Vec<(f64, f64)> = inp_trade_juice
-            .iter()
-            .map(|(a, b)| (*a as f64, *b as f64))
-            .collect();
         let mut adv_cache: AHashMap<AdvConfig, AdvDistTriplet> = AHashMap::new();
 
         let upgrade_arr: Vec<Upgrade> = parser(
-            normal_hone_ticks,
-            adv_ticks,
+            upgrade_info,
             express_event,
             &juice_info,
-            normal_progress_grid,
-            normal_state_grid,
-            normal_unlock_grid,
-            succeeded_grid,
-            adv_progress_grid,
             tier,
             &mut adv_cache,
         );
 
         let out: PreparationOutput = Self {
             // upgrade_arr,
-            bound_mats: bound_budgets.try_into().unwrap(),
-            trade_mats: trade_budgets.try_into().unwrap(),
-            special_budget: inp_bound_mats[7],
-            market_mats_price: price_arr,
+            bound_budgets,
+            trade_budgets,
+            leftover_price,
+            tradable_price,
+            market_price,
+            special_budget,
 
             test_case: -1, // arena will overwrite this
 
             juice_info,
-            bound_juice: bound_trade_juice,
-            // sellable_toggles, //TODO READ THIS FROM AN ACUTAL INPUT LATEr cant be bother rn
-            left_mats_price: inp_left_mats_price.to_vec(),
+
             already_spent: None,
             flat_alr_spent: None,
-
-            trade_mats_price: tradable_leftover_arr,
-
-            trade_juice: tradable_juice_budgets,
         };
 
         (out, upgrade_arr, adv_cache)
@@ -113,17 +101,10 @@ impl PreparationOutput {
 }
 
 /// Constructs vector of Upgrade objects according to what upgrades were selected and the appropriate juice applied
-/// just an absolute shitshow of a parser but it works so
 pub fn parser(
-    normal_ticks: &[Vec<bool>],
-    adv_ticks: &[Vec<bool>],
+    upgrade_info: UpgradeInput,
     express_event: bool,
     juice_info: &JuiceInfo,
-    progress_arr_opt: Option<Vec<Vec<usize>>>,
-    state_given_opt: Option<Vec<Vec<Vec<(bool, usize)>>>>,
-    normal_unlock_grid: Option<Vec<Vec<bool>>>,
-    succeeded_grid: Option<Vec<Vec<bool>>>,
-    adv_progress_grid: Option<Vec<Vec<(usize, usize, bool, bool)>>>,
     tier: usize,
     adv_cache: &mut AHashMap<AdvConfig, AdvDistTriplet>,
 ) -> Vec<Upgrade> {
@@ -133,48 +114,33 @@ pub fn parser(
     let event_extra_arr = get_event_extra_chance(express_event, tier);
     let special_leap_cost = get_special_leap_cost(tier);
     let normal_hone_chances = get_normal_hone_chances(tier);
-    let row_len = normal_ticks[0].len(); // 25
 
-    for upgrade_index in 0..row_len {
-        for row_ind in 0..normal_ticks.len() {
-            let needed = normal_ticks[row_ind][upgrade_index];
-            if !needed {
-                continue;
-            }
-            let relevant_cost = get_data(express_event, tier, false, row_ind == 5, false);
-            let relevant_unlock = get_data(express_event, tier, false, row_ind == 5, true);
+    for (
+        (piece_type, upgrade_index, is_adv),
+        (normal_progress, state, unlock, success, adv_progress),
+    ) in upgrade_info
+    {
+        let relevant_cost = get_data(express_event, tier, false, piece_type == 5, false);
+        let relevant_unlock = get_data(express_event, tier, false, piece_type == 5, true);
+        let this_cost =
+            &Vec::from_iter((0..7).map(|cost_type| relevant_cost[cost_type][upgrade_index]));
+        let this_unlock =
+            &Vec::from_iter((0..7).map(|cost_type| relevant_unlock[cost_type][upgrade_index]));
+        let this_unlocked: bool = unlock;
+        let this_succeeded: bool = success;
+        let this_state_given: Vec<(bool, usize)> = state;
 
+        if !is_adv {
             let special_cost: i64 =
-                special_leap_cost[if row_ind == 5 { 1 } else { 0 }][upgrade_index];
-
+                special_leap_cost[if piece_type == 5 { 1 } else { 0 }][upgrade_index];
             let event_artisan_rate: f64 = artisan_rate_arr[upgrade_index];
-
-            let this_progress: usize = progress_arr_opt
-                .as_ref()
-                .map_or(0, |arr| arr[row_ind][upgrade_index]);
-
-            let this_unlocked: bool = normal_unlock_grid
-                .as_ref()
-                .is_some_and(|arr| arr[row_ind][upgrade_index]);
-
-            let this_succeeded: bool = succeeded_grid
-                .as_ref()
-                .is_some_and(|arr| arr[row_ind][upgrade_index]);
-
-            let this_state_given: Option<Vec<(bool, usize)>> = state_given_opt
-                .as_ref()
-                .and_then(|sg| Some(sg[row_ind][upgrade_index].clone()));
-
-            let this_cost =
-                &Vec::from_iter((0..7).map(|cost_type| relevant_cost[cost_type][upgrade_index]));
-            let this_unlock =
-                &Vec::from_iter((0..7).map(|cost_type| relevant_unlock[cost_type][upgrade_index]));
+            let this_progress: usize = normal_progress.unwrap();
             out.push(Upgrade::new_normal(
                 normal_hone_chances[upgrade_index],
                 this_cost,
                 special_cost,
-                row_ind == 5,
-                row_ind,
+                piece_type == 5,
+                piece_type,
                 event_artisan_rate,
                 upgrade_index,
                 juice_info,
@@ -185,39 +151,13 @@ pub fn parser(
                 this_succeeded,
                 event_extra_arr[upgrade_index],
             ));
-        }
-    }
-    let row_len = adv_ticks[0].len();
-
-    for upgrade_index in 0..row_len {
-        for row_ind in 0..adv_ticks.len() {
-            if !adv_ticks[row_ind][upgrade_index] {
-                continue;
-            }
-
-            let relevant_cost = get_data(express_event, tier, true, row_ind == 5, false);
-            let relevant_unlock = get_data(express_event, tier, true, row_ind == 5, true);
-
-            let this_adv_progress: (usize, usize, bool, bool) = adv_progress_grid
-                .as_ref()
-                .map_or((0, 0, false, false), |arr| arr[row_ind][upgrade_index]);
-
-            let this_unlocked: bool = normal_unlock_grid
-                .as_ref()
-                .is_some_and(|arr| arr[row_ind][upgrade_index]);
-
-            let this_succeeded: bool = succeeded_grid
-                .as_ref()
-                .is_some_and(|arr| arr[row_ind][upgrade_index]);
-            let this_cost =
-                &Vec::from_iter((0..7).map(|cost_type| relevant_cost[cost_type][upgrade_index]));
-            let this_unlock =
-                &Vec::from_iter((0..7).map(|cost_type| relevant_unlock[cost_type][upgrade_index]));
+        } else {
+            let this_adv_progress: (usize, usize, bool, bool) = adv_progress.unwrap();
 
             out.push(Upgrade::new_adv(
                 this_cost,
-                row_ind == 5,
-                row_ind,
+                piece_type == 5,
+                piece_type,
                 upgrade_index,
                 this_unlock,
                 this_succeeded,

@@ -5,7 +5,9 @@ use crate::core::average::DEBUG_AVERAGE;
 use crate::my_dbg;
 use crate::state_bundle::StateBundle;
 use crate::upgrade::Upgrade;
-use crate::verification::utils::{add_up_golds, apply_price_leftovers, apply_price_naive};
+use crate::verification::utils::{
+    add_up_golds, apply_price_generic, apply_price_leftovers, apply_price_naive,
+};
 use itertools::izip;
 use rand::Rng;
 use rand::prelude::*;
@@ -138,10 +140,11 @@ pub fn monte_carlo_data<R: Rng>(
     data_size: usize,
     state_bundle: &mut StateBundle,
     rng: &mut R,
-) -> (Vec<[i64; 7]>, Vec<Vec<(i64, i64)>>, Vec<usize>) {
+) -> (Vec<Vec<i64>>, Vec<usize>) {
     let mut special_left: Vec<i64> = vec![state_bundle.prep_output.special_budget; data_size];
     state_bundle.update_dist();
-    let mut mats_data: Vec<[i64; 7]> = vec![[0; 7]; data_size];
+    let mut mats_data: Vec<Vec<i64>> =
+        vec![vec![0; state_bundle.prep_output.juice_info.total_num_avail]; data_size];
 
     let mut juice_data: Vec<Vec<(i64, i64)>> =
         vec![vec![(0, 0); state_bundle.prep_output.juice_info.num_juice_avail]; data_size];
@@ -276,7 +279,7 @@ pub fn monte_carlo_data<R: Rng>(
         my_dbg!(&state_bundle.prep_output.juice_info);
     }
 
-    (mats_data, juice_data, skip_count_data)
+    (mats_data, skip_count_data)
 }
 
 pub fn monte_carlo_wrapper<R: Rng>(
@@ -284,7 +287,7 @@ pub fn monte_carlo_wrapper<R: Rng>(
     state_bundle: &mut StateBundle,
     rng: &mut R,
 ) -> (Vec<f64>, f64, f64, f64, f64) {
-    let (cost_data, juice_data, skip_count_data) = monte_carlo_data(data_size, state_bundle, rng);
+    let (cost_data, skip_count_data) = monte_carlo_data(data_size, state_bundle, rng);
     let mut success_count: i64 = 0;
     let mut sum: f64 = 0.0;
 
@@ -292,145 +295,46 @@ pub fn monte_carlo_wrapper<R: Rng>(
     let mut leftover_counts: Vec<i64> =
         vec![0; state_bundle.prep_output.juice_info.total_num_avail];
 
-    let mut debug_avg_gold_by_mats: Vec<f64> = vec![0.0; 7];
+    let mut debug_avg_gold_by_mats: Vec<f64> =
+        vec![0.0; state_bundle.prep_output.juice_info.total_num_avail];
     let mut debug_avg_gold_by_mats_by_skip: Vec<Vec<f64>> =
-        vec![vec![0.0; 7]; state_bundle.upgrade_arr.len() + 1];
-    let mut debug_avg_gold_by_juices: Vec<(f64, f64)> =
-        vec![(0.0, 0.0); state_bundle.prep_output.juice_info.num_juice_avail];
-
-    let mut debug_avg_gold_by_weap_juice_by_skip: Vec<Vec<f64>> =
         vec![
-            vec![0.0; state_bundle.prep_output.juice_info.num_juice_avail];
+            vec![0.0; state_bundle.prep_output.juice_info.total_num_avail];
             state_bundle.upgrade_arr.len() + 1
         ];
-
-    let mut debug_avg_gold_by_armor_juice_by_skip: Vec<Vec<f64>> =
-        vec![
-            vec![0.0; state_bundle.prep_output.juice_info.num_juice_avail];
-            state_bundle.upgrade_arr.len() + 1
-        ];
-
     let mut debug_truncated_mean_by_skip: Vec<Vec<f64>> =
-        vec![vec![0.0; 7]; state_bundle.upgrade_arr.len() + 1];
+        vec![
+            vec![0.0; state_bundle.prep_output.juice_info.total_num_avail];
+            state_bundle.upgrade_arr.len() + 1
+        ];
     for (r_index, row) in cost_data.iter().enumerate() {
         let float_row: Vec<f64> = row.iter().map(|x| *x as f64).collect();
-        let float_juice: Vec<(f64, f64)> = juice_data[r_index]
-            .iter()
-            .map(|x| (x.0 as f64, x.1 as f64))
-            .collect();
 
         for (index, d) in debug_avg_gold_by_mats.iter_mut().enumerate() {
-            let diff = state_bundle.prep_output.bound_mats[index] as f64 - float_row[index];
-            if diff > 0.0 {
-                debug_truncated_mean_by_skip[skip_count_data[r_index]][index] += diff;
-            }
-            *d += (diff)
-                * if diff > 0.0 {
-                    state_bundle.prep_output.left_mats_price[index]
-                } else {
-                    state_bundle.prep_output.market_mats_price[index]
-                };
+            *d += apply_price_generic(float_row[index], &state_bundle.prep_output, index)
         }
         for (index, d) in debug_avg_gold_by_mats_by_skip[skip_count_data[r_index]]
             .iter_mut()
             .enumerate()
         {
-            let diff = state_bundle.prep_output.bound_mats[index] as f64 - float_row[index];
-            *d += (diff)
-                * if diff > 0.0 {
-                    state_bundle.prep_output.left_mats_price[index]
-                } else {
-                    state_bundle.prep_output.market_mats_price[index]
-                };
+            *d += apply_price_generic(float_row[index], &state_bundle.prep_output, index)
         }
 
-        for (id, d) in debug_avg_gold_by_weap_juice_by_skip[skip_count_data[r_index]]
-            .iter_mut()
+        let this: f64 = float_row
+            .iter()
             .enumerate()
-        {
-            let diff = state_bundle.prep_output.bound_juice[id].0 - float_juice[id].0;
-            *d += (diff)
-                * if diff > 0.0 {
-                    state_bundle.prep_output.juice_info.all_juices[id]
-                        .left_price
-                        .0
-                } else {
-                    state_bundle.prep_output.juice_info.all_juices[id]
-                        .market_price
-                        .0
-                };
-        }
-
-        for (id, d) in debug_avg_gold_by_armor_juice_by_skip[skip_count_data[r_index]]
-            .iter_mut()
-            .enumerate()
-        {
-            let diff = state_bundle.prep_output.bound_juice[id].1 - float_juice[id].1;
-            *d += (diff)
-                * if diff > 0.0 {
-                    state_bundle.prep_output.juice_info.all_juices[id]
-                        .left_price
-                        .1
-                } else {
-                    state_bundle.prep_output.juice_info.all_juices[id]
-                        .market_price
-                        .1
-                };
-        }
-        // my_dbg!(&debug_avg_juices);
-        for (id, d) in debug_avg_gold_by_juices.iter_mut().enumerate() {
-            let diff_weap = state_bundle.prep_output.bound_juice[id].0 - float_juice[id].0;
-            d.0 += (diff_weap)
-                * if diff_weap > 0.0 {
-                    state_bundle.prep_output.juice_info.all_juices[id]
-                        .left_price
-                        .0
-                } else {
-                    state_bundle.prep_output.juice_info.all_juices[id]
-                        .market_price
-                        .0
-                };
-            let diff_armor = state_bundle.prep_output.bound_juice[id].1 - float_juice[id].1;
-            d.1 += (diff_armor)
-                * if diff_armor > 0.0 {
-                    state_bundle.prep_output.juice_info.all_juices[id]
-                        .left_price
-                        .1
-                } else {
-                    state_bundle.prep_output.juice_info.all_juices[id]
-                        .market_price
-                        .1
-                };
-        }
-
-        let (mats_gold_leftover, juice_gold_leftover) =
-            apply_price_leftovers(&float_row, &float_juice, state_bundle);
-        let this: f64 = add_up_golds(&mats_gold_leftover, &juice_gold_leftover);
+            .map(|(index, used)| apply_price_generic(*used, &state_bundle.prep_output, index))
+            .sum();
         sum += this;
         average_sq += this * this;
-        // my_dbg!(this);
-        let (mats_gold_naive, juice_gold_naive) =
-            apply_price_naive(&float_row, &float_juice, state_bundle);
-        let gold_eqv_naive: f64 = add_up_golds(&mats_gold_naive, &juice_gold_naive);
-        if gold_eqv_naive > -FLOAT_TOL {
+
+        if this > -FLOAT_TOL {
             success_count += 1;
         }
 
         let mut leftover_index: usize = 0;
         for (index, mat) in row.iter().enumerate() {
-            if *mat as f64 <= state_bundle.prep_output.bound_mats[index] {
-                leftover_counts[leftover_index] += 1;
-            }
-            leftover_index += 1;
-        }
-        for (index, juice) in juice_data[r_index].iter().enumerate() {
-            if juice.0 as f64 <= state_bundle.prep_output.bound_juice[index].0 + FLOAT_TOL {
-                leftover_counts[leftover_index] += 1;
-            }
-            leftover_index += 1;
-        }
-        for (index, juice) in juice_data[r_index].iter().enumerate() {
-            if juice.1 as f64 <= state_bundle.prep_output.bound_juice[index].1 + FLOAT_TOL {
+            if *mat as f64 <= state_bundle.prep_output.bound_budgets[index] {
                 leftover_counts[leftover_index] += 1;
             }
             leftover_index += 1;
@@ -450,33 +354,14 @@ pub fn monte_carlo_wrapper<R: Rng>(
         }
     }
 
-    for row in debug_avg_gold_by_weap_juice_by_skip.iter_mut() {
-        for d in row.iter_mut() {
-            *d /= data_size as f64;
-        }
-    }
-
-    for row in debug_avg_gold_by_armor_juice_by_skip.iter_mut() {
-        for d in row.iter_mut() {
-            *d /= data_size as f64;
-        }
-    }
-    for d in debug_avg_gold_by_juices.iter_mut() {
-        d.0 /= data_size as f64;
-
-        d.1 /= data_size as f64;
-    }
-
     if DEBUG_AVERAGE {
         my_dbg!(
             // &debug_avg_gold_by_mats,
             &debug_avg_gold_by_mats_by_skip,
-            &debug_avg_gold_by_weap_juice_by_skip,
-            &debug_avg_gold_by_armor_juice_by_skip,
-            // &debug_avg_gold_by_juices,
-            // &debug_truncated_mean_by_skip,
-            &state_bundle.prep_output.market_mats_price,
-            &state_bundle.prep_output.left_mats_price,
+            &debug_truncated_mean_by_skip,
+            &state_bundle.prep_output.leftover_price,
+            &state_bundle.prep_output.tradable_price,
+            &state_bundle.prep_output.market_price,
             sum / data_size as f64
         );
     }

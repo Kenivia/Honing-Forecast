@@ -98,17 +98,13 @@ impl Upgrade {
         upgrade_index: usize,
         juice_info: &JuiceInfo,
         alr_failed: usize,
-        state_given: Option<Vec<(bool, usize)>>,
+        state_given: Vec<(bool, usize)>,
         unlocked: bool,
         unlock_costs: &[f64],
         succeeded: bool,
         extra_chance: f64,
     ) -> Self {
-        let state = if state_given.is_none() {
-            State::new_empty(0)
-        } else {
-            State::new(state_given.unwrap())
-        };
+        let state = State::new(state_given);
 
         let mut out = Self {
             is_normal_honing: true,

@@ -1,27 +1,18 @@
 //! Payload is how js and rust communicates, we also use payload as our test cases in arena
 use crate::advanced_honing::utils::{AdvConfig, AdvDistTriplet};
-use crate::parser::PreparationOutput;
+use crate::parser::{MaterialInput, PreparationOutput, UpgradeInput};
 use crate::state_bundle::StateBundle;
 use crate::upgrade::Upgrade;
 use ahash::AHashMap;
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
 use std::fs;
 use std::path::Path;
 
 #[derive(Deserialize, Clone, Serialize)]
 pub struct Payload {
-    pub material_info: Vec<(i64, i64, f64, f64, f64)>, // bound, trade, leftover, trade price, market price
-    pub upgrade_info: HashMap<
-        (usize, usize, bool), // piece type, upgrade_index, is_adv
-        (
-            Option<usize>,                      // normal_progress
-            Vec<(bool, usize)>,                 // state
-            bool,                               // unlock
-            bool,                               // succeeeded
-            Option<(usize, usize, bool, bool)>, // adv_progress
-        ),
-    >,
+    pub material_info: MaterialInput,
+    pub upgrade_info: UpgradeInput,
+    pub special_budget: i64,
     pub special_state: Option<Vec<usize>>,
     pub tier: usize,
     pub express_event: bool,
@@ -37,17 +28,9 @@ fn default_one() -> i64 {
 }
 impl StateBundle {
     pub fn init_from_inputs(
-        material_info: Vec<(i64, i64, f64, f64, f64)>, // bound, trade, leftover, trade price, market price
-        upgrade_info: HashMap<
-            (usize, usize, bool), // piece type, upgrade_index, is_adv
-            (
-                Option<usize>,                      // normal_progress
-                Vec<(bool, usize)>,                 // state
-                bool,                               // unlock
-                bool,                               // succeeeded
-                Option<(usize, usize, bool, bool)>, // adv_progress
-            ),
-        >,
+        material_info: MaterialInput,
+        upgrade_info: UpgradeInput,
+        special_budget: i64,
         express_event: bool,
         tier: usize,
         special_state: Option<Vec<usize>>,
@@ -59,7 +42,13 @@ impl StateBundle {
             PreparationOutput,
             Vec<Upgrade>,
             AHashMap<AdvConfig, AdvDistTriplet>,
-        ) = PreparationOutput::initialize(material_info, upgrade_info, express_event, tier);
+        ) = PreparationOutput::initialize(
+            material_info,
+            upgrade_info,
+            special_budget,
+            express_event,
+            tier,
+        );
         let u_len = upgrade_arr.len();
         // web_sys::console::log_1(&"2".into());
 
@@ -86,7 +75,10 @@ impl StateBundle {
     }
     pub fn init_from_payload(payload: Payload) -> Self {
         StateBundle::init_from_inputs(
-            &payload.material_info,
+            payload.material_info,
+            payload.upgrade_info,
+            payload.special_budget,
+            payload.express_event,
             payload.tier,
             payload.special_state,
             payload.min_resolution,
