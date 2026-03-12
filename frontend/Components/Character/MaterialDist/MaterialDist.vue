@@ -9,20 +9,18 @@ import MaterialGraph from "./MaterialGraph.vue"
 
 const profile_store = useProfilesStore()
 
-const active_profile: CharProfile = profile_store.activeProfile()
+const active_profile: CharProfile = profile_store.getActiveProfile()
 
 const unfiltered_materials = MATS_LABELS.slice(0, 7)
     .concat(JUICE_LABELS.map((x) => x[0]))
     .concat(JUICE_LABELS.map((x) => x[1]))
 
-const flattened_bound_budgets = active_profile.bound_mats_owned
-    .concat(active_profile.bound_weap_juice_owned)
-    .concat(active_profile.bound_armor_juice_owned)
-const average_breakdown = active_profile.state_bundle?.average_breakdown ?? new Array(unfiltered_materials.length).fill(0)
-const filtered_materials = unfiltered_materials.filter((x, index) => average_breakdown[index] > 0)
+
+const average_breakdown : number[] = active_profile.state_bundle?.average_breakdown ?? new Array(unfiltered_materials.length).fill(0)
+// const filtered_materials = unfiltered_materials.filter((x, index) => average_breakdown[index] > 0)
 
 const histogram_result = active_profile.histogram_worker_bundle.result
-const keyed_average :Record<string,number> = Object.fromEntries(unfiltered_materials.map((x,index) => [x, flattened_bound_budgets[index]]));
+// const keyed_average :Record<string,number> = Object.fromEntries(unfiltered_materials.map((x,index) => [x, flattened_bound_budgets[index]]));
 </script>
 <!-- function toInputValue(event: Event) {
     return (event.target as HTMLInputElement).value
@@ -51,8 +49,8 @@ function setRecordValue(record: Record<string, string>, key: string, event: Even
                         <img :src="iconPath(label)" :alt="label" />
                     </div>
                     <MaterialCell 
-                    :input_columns="[flattened_bound_budgets, keyed_average ]"
-                    :label = label
+                    :input_columns="[active_profile.bound_budgets, average_breakdown ]"
+                    :index="index"
                     ></MaterialCell>
                     <MaterialGraph
                         :data="histogram_result?.cum_percentiles?.[index] ?? null"

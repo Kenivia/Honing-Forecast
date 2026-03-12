@@ -1,12 +1,7 @@
 <script setup>
 import { RouterLink, RouterView } from "vue-router"
-import router from "./routers"
-import { storeToRefs } from "pinia"
-import { uesRosterStore } from "./stores/RosterConfig"
-
-const rosterStore = uesRosterStore()
-
-const profileStore = uesProfileStore()
+import router from "./router"
+import { iconPath } from "./Utils/Helpers"
 </script>
 
 <template>
@@ -24,11 +19,6 @@ const profileStore = uesProfileStore()
                 </div>
                 <div class="hf-header-links">
                     <a href="https://github.com/Kenivia/Honing-Forecast">GitHub</a>
-                </div>
-
-                <div>
-                    <RouterLink to="/">Home</RouterLink>
-                    <RouterLink to="/about">About</RouterLink>
                 </div>
             </nav>
         </div>

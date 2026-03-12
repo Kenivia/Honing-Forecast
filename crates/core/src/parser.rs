@@ -7,7 +7,6 @@ use crate::constants::*;
 use crate::upgrade::Upgrade;
 use ahash::AHashMap;
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PreparationOutput {
@@ -26,16 +25,16 @@ pub struct PreparationOutput {
 }
 
 pub type MaterialInput = Vec<(f64, f64, f64, f64, f64)>; // bound, trade, leftover, trade price, market price
-pub type UpgradeInput = HashMap<
-    (usize, usize, bool), // piece type, upgrade_index, is_adv
-    (
-        Option<usize>,                      // normal_progress
-        Vec<(bool, usize)>,                 // state
-        bool,                               // unlock
-        bool,                               // succeeeded
-        Option<(usize, usize, bool, bool)>, // adv_progress
-    ),
->;
+pub type UpgradeInput = Vec<(
+    usize,                              // piece type,
+    usize,                              // upgrade_index
+    bool,                               // is_adv
+    Option<usize>,                      // normal_progress
+    Vec<(bool, usize)>,                 // state
+    bool,                               // unlock
+    bool,                               // succeeeded
+    Option<(usize, usize, bool, bool)>, // adv_progress
+)>;
 
 impl PreparationOutput {
     pub fn initialize(
@@ -116,8 +115,14 @@ pub fn parser(
     let normal_hone_chances = get_normal_hone_chances(tier);
 
     for (
-        (piece_type, upgrade_index, is_adv),
-        (normal_progress, state, unlock, success, adv_progress),
+        piece_type,
+        upgrade_index,
+        is_adv,
+        normal_progress,
+        state,
+        unlock,
+        success,
+        adv_progress,
     ) in upgrade_info
     {
         let relevant_cost = get_data(express_event, tier, false, piece_type == 5, false);

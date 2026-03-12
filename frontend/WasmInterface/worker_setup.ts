@@ -1,19 +1,19 @@
-import { ref, onUnmounted } from "vue"
+import { ref, onUnmounted, Ref } from "vue"
 import { WasmOp } from "./js_to_wasm"
-import { buildPayload } from "./payload"
+import { EvalPayload } from "./payload"
 const createWorker = () => new Worker(new URL("./js_to_wasm.ts", import.meta.url), { type: "module" })
 
 export function createWorkerBundle() {
     let worker = null
-    const status = ref("idle")
+    const status: Ref<"idle" | "success" | "busy" | "error"> = ref("idle")
     const result = ref(null)
     const error = ref(null)
     let debounceTimer = null
 
-    function _launch(wasm_op: WasmOp) {
+    function _launch(wasm_op: WasmOp, payload: EvalPayload) {
         cancel()
 
-        status.value = "running"
+        status.value = "busy"
         result.value = null
         error.value = null
 
@@ -22,7 +22,7 @@ export function createWorkerBundle() {
         worker.onmessage = (e) => {
             result.value = e.result
             if (e.type === "result") {
-                status.value = "done"
+                status.value = "success"
                 worker = null
                 worker.terminate()
             }
@@ -34,16 +34,16 @@ export function createWorkerBundle() {
             worker = null
         }
 
-        worker.postMessage({ type: "message", wasm_op, payload: buildPayload(wasm_op) })
+        worker.postMessage({ type: "message", wasm_op, payload })
     }
 
-    function start(wasm_op: WasmOp, debounce?: number) {
+    function start(wasm_op: WasmOp, payload: EvalPayload, debounce?: number) {
         if (debounce > 0) {
             clearTimeout(debounceTimer)
-            status.value = "debouncing"
-            debounceTimer = setTimeout(() => _launch(wasm_op), debounce)
+            status.value = "busy"
+            debounceTimer = setTimeout(() => _launch(wasm_op, payload), debounce)
         } else {
-            _launch(wasm_op)
+            _launch(wasm_op, payload)
         }
     }
 
@@ -53,7 +53,7 @@ export function createWorkerBundle() {
         if (worker) {
             worker.terminate()
             worker = null
-            status.value = "cancelled"
+            status.value = "idle"
         }
     }
 

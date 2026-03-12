@@ -1,3 +1,39 @@
+<script setup lang="ts">
+import { GRAPH_COLORS, JUICE_LABELS, MATS_LABELS } from "@/Utils/Constants"
+import GoldBreakdown from "./GoldBreakdown.vue"
+import { CharProfile, DEFAULT_CHAR_PROFILE, useProfilesStore } from "@/stores/CharacterProfile"
+import { iconPath } from "@/Utils/Helpers"
+import MaterialCell from "@/Components/MaterialCell.vue"
+import { createInputColumn, DEFAULT_ONE_UPGRADE, InputType } from "@/Utils/Interfaces"
+import MaterialGraph from "./MaterialGraph.vue"
+import { buildPayload } from "@/WasmInterface/payload"
+import { WasmOp } from "@/WasmInterface/js_to_wasm"
+import { RosterConfig, uesRosterStore } from "@/stores/RosterConfig"
+
+const active_profile: CharProfile = useProfilesStore().getActiveProfile()
+const roster_config: RosterConfig = uesRosterStore().getRoster()
+
+function resetActive() {
+    Object.assign(active_profile, DEFAULT_CHAR_PROFILE)
+}
+
+function resetOptimizerState() {
+    Object.entries(active_profile.KeyedUpgradeInput).forEach(([key, one_upgrade]) =>
+        Object.assign(one_upgrade, [one_upgrade[0], one_upgrade[1], one_upgrade[2], ...DEFAULT_ONE_UPGRADE]),
+    )
+}
+function copyPayload() {
+    const payload = JSON.stringify(buildPayload(WasmOp.EvaluateAverage), null, 2)
+    navigator.clipboard?.writeText(payload).catch(() => undefined)
+}
+
+const optimizer_worker = active_profile.optimizer_worker_bundle
+
+const optimizer_busy = optimizer_worker.status === "busy"
+const has_run_optimizer = active_profile.has_run_optimizer
+const auto_start_optimizer = active_profile.auto_start_optimizer
+const optimizer_progress = optimizer_worker.est_progress_percentage
+</script>
 <template>
     <div class="hf-ops-row">
         <section class="hf-card">
@@ -6,18 +42,18 @@
             </div>
             <div class="hf-card-body hf-options-body">
                 <div class="hf-options-row">
-                    <button class="hf-header-link-btn" @click="resetAll">Reset All</button>
+                    <button class="hf-header-link-btn" @click="resetActive">Reset All</button>
                     <button class="hf-header-link-btn" @click="resetOptimizerState">Reset Optimizer</button>
                 </div>
                 <button class="hf-header-link-btn" @click="copyPayload">Copy Payload</button>
 
                 <div class="hf-divider" />
                 <label class="hf-inline-check">
-                    <input v-model="expressEvent" type="checkbox" />
+                    <input v-model="active_profile.express_event" type="checkbox" />
                     <span>Express event</span>
                 </label>
                 <label class="hf-inline-check">
-                    <input v-model="cumulativeGraph" type="checkbox" />
+                    <input v-model="active_profile.cumulative_graph" type="checkbox" />
                     <span>Cumulative graph</span>
                 </label>
                 <!-- <label class="hf-inline-check">
@@ -43,19 +79,19 @@
                           : 'linear-gradient(180deg, #e6c86f 0%, #cfaf52 100%)',
                     color: optimizer_busy ? 'var(--text-muted)' : has_run_optimizer ? 'var(--hf-text-bright)' : '#1b1f25',
                 }"
-                @click="optimizer_worker.start()"
+                @click="optimizer_worker.start(WasmOp.OptimizeAverage, buildPayload(WasmOp.OptimizeAverage))"
             >
                 {{ optimizer_busy ? "Cancel Optimize" : has_run_optimizer ? "Re-run Optimizer" : ">>> Optimize <<<" }}
             </button>
 
             <label class="hf-inline-check">
-                <input v-model="auto_start_optimizer" type="checkbox" />
+                <input v-model="active_profile.auto_start_optimizer" type="checkbox" />
                 <span>Auto start optimizer</span>
             </label>
 
             <div class="hf-metric-card">
                 <div class="hf-metric-label">Avg eqv gold cost</div>
-                <div class="hf-metric-status">{{ optimizer_worker.result.metric ?? "No Result yet" }}</div>
+                <div class="hf-metric-status">{{ optimizer_worker?.result.metric ?? "No Result yet" }}</div>
             </div>
 
             <div v-if="optimizer_worker.status === 'error'" class="optimizer-error">Error: {{ optimizer_worker.error }}</div>

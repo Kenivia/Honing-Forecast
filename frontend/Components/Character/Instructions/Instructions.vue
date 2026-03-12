@@ -9,15 +9,9 @@ import { computed } from "vue"
 import InstructionRow from "./InstructionRow.vue"
 
 const profile_store = useProfilesStore()
-const active_profile: CharProfile = profile_store.activeProfile()
+const active_profile: CharProfile = profile_store.getActiveProfile()
 
 const roster_store = uesRosterStore()
-
-const optimizer_worker = active_profile.optimizer_worker_bundle
-const optimizer_busy = optimizer_worker.status === "running" || optimizer_worker.status === "pending"
-const has_run_optimizer = active_profile.has_run_optimizer
-const auto_start_optimizer = active_profile.auto_start_optimizer
-const optimizer_progress = optimizer_worker.est_progress_percentage
 
 function sortUpgradeIndices(list: number[], upgradeArr: Upgrade[], specialInvalidIndex: number) {
     const output: number[] = []

@@ -1,4 +1,6 @@
 import { assert } from "console"
+import { ALL_LABELS } from "./Constants"
+import { CharProfile, useProfilesStore } from "@/stores/CharacterProfile"
 
 export interface Upgrade {
     piece_type: number
@@ -52,59 +54,36 @@ export enum UpgradeStatus {
 }
 
 export interface InputColumn {
-    data: Record<string, string>
-    keys: string[]
+    data: string[]
     type: InputType
-    upper_bound: Record<string, number>
-    enabled: Record<string, boolean>
-    toNumArray(): number[]
-    concat(_: InputColumn): InputColumn
-    toNumObj(): Record<string, number>
+    upper_bound: number[]
+    enabled: boolean[]
+    toNum(): number[]
 }
 export enum InputType {
     Int,
     Float,
 }
-export function createInputColumn(
-    keys: string[],
-    type: InputType,
-
-    data?: Record<string, string>,
-    upper_bound?: Record<string, number>,
-    enabled?: Record<string, boolean>,
-): InputColumn {
+export function createInputColumn(type: InputType, data?: string[], upper_bound?: number[], enabled?: boolean[]): InputColumn {
     return {
-        keys,
         type,
-        data: Object.fromEntries(keys.map((k: string) => [k, data[k] ?? "0"])),
-        upper_bound: Object.fromEntries(keys.map((k: string) => [k, upper_bound[k] ?? Infinity])),
-        enabled: Object.fromEntries(keys.map((k: string) => [k, enabled[k] ?? false])),
-        toNumArray() {
-            return this.keys.map((k: string) => parseInput(this, k, this.data[k]))
-        },
-        toNumObj() {
-            return Object.fromEntries(this.keys.map((k: string) => [k, parseInput(this, k, this.data[k])]))
-        },
-        concat(other: InputColumn) {
-            assert(this.keys.intersection(other.keys).length == 0)
-            assert(this.type == other.type)
-            this.data = { ...this.data, ...other.data }
-            this.keys = this.keys.concat(other.keys)
-            this.upper_bound = { ...this.upper_bound, ...other.upper_bound }
-            this.enabled = { ...this.enabled, ...other.enabled }
-            return this
+        data: data ?? ALL_LABELS.map((_) => "0"),
+        upper_bound: upper_bound ?? ALL_LABELS.map((_) => Infinity),
+        enabled: enabled ?? ALL_LABELS.map((_) => false),
+        toNum() {
+            return this.data.map((x: string, index: number) => parseInput(this, index, x))
         },
     }
 }
-export function modifyInputColumn(input_column: InputColumn, label: string, event: Event) {
-    input_column[label] = parseInput(input_column, label, (event.target as HTMLInputElement).value)
+export function modifyInputColumn(input_column: InputColumn, index: number, event: Event) {
+    input_column[index] = parseInput(input_column, index, (event.target as HTMLInputElement).value)
 }
-function parseInput(input_column: InputColumn, label: string, input: string): number {
-    if (!input_column.enabled[label]) {
+function parseInput(input_column: InputColumn, index: number, input: string): number {
+    if (!input_column.enabled[index]) {
         return 0
     }
     let out = input_column.type == InputType.Int ? parseInt(input) : parseFloat(input)
-    return isFinite(out) ? Math.min(input_column.upper_bound[label], out) : 0
+    return isFinite(out) ? Math.min(input_column.upper_bound[index], out) : 0
 }
 export interface StatusGrid {
     data: UpgradeStatus[][]
@@ -119,4 +98,38 @@ export function createStatusGrid(rows: number, cols: number): StatusGrid {
             return this.data.map((row: UpgradeStatus[]) => row.map((cell) => cell == UpgradeStatus.NotYet))
         },
     }
+}
+export type OneMaterial = [number, number, number, number, number]
+export type MaterialInput = OneMaterial[]
+
+//                 piece type, upgrade index, is_adv, normal_progress, state, unlock, succeeded, adv_progress
+export type OneUpgrade = [number, number, boolean, number | null, State[], boolean, boolean, AdvProgress | null]
+export const DEFAULT_ONE_UPGRADE = [0, [], false, false, [0, 0, false, false]] // excluding the first 3
+export type UpgradeInput = OneUpgrade[]
+export type KeyedUpgradeInput = Record<OneUpgradeKey, OneUpgrade>
+type OneUpgradeKey = `${number},${number},${"true" | "false"}`
+export function to_upgrade_key(piece_type: number, upgrade_index: number, is_adv: boolean): OneUpgradeKey {
+    return `${piece_type},${upgrade_index},${is_adv}`
+}
+export function keyed_to_array(KeyedUpgradeInput: KeyedUpgradeInput): UpgradeInput {
+    return Object.entries(KeyedUpgradeInput).map(([_, one_upgrade]) => one_upgrade)
+}
+export function grids_to_keyed(normal_grid: StatusGrid, adv_grid: StatusGrid, existing_keyed_upgrade_input: KeyedUpgradeInput) {
+    for (const [piece_type, row] of normal_grid.toBool().entries()) {
+        for (const [upgrade_index, _] of row.entries()) {
+            let key = to_upgrade_key(piece_type, upgrade_index, false)
+            if (!existing_keyed_upgrade_input.hasOwnProperty(key)) {
+                existing_keyed_upgrade_input[key] = [piece_type, upgrade_index, false, 0, [], false, false, null]
+            }
+        }
+    }
+    for (const [piece_type, row] of adv_grid.toBool().entries()) {
+        for (const [upgrade_index, _] of row.entries()) {
+            let key = to_upgrade_key(piece_type, upgrade_index, true)
+            if (!existing_keyed_upgrade_input.hasOwnProperty(key)) {
+                existing_keyed_upgrade_input[key] = [piece_type, upgrade_index, true, null, [], false, false, [0, 0, false, false]]
+            }
+        }
+    }
+    return existing_keyed_upgrade_input
 }

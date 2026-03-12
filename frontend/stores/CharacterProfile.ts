@@ -1,15 +1,27 @@
 import { defineStore } from "pinia"
-import { AdvProgress, AdvProgressGrid, BoolGrid, createInputColumn, createStatusGrid, InputColumn, InputType, makeDefaultBoolGrid, makeDefaultNumGrid, NumGrid, StateBundle, StateGrid, StatusGrid } from "@/Utils/Interfaces"
+import {
+    AdvProgress,
+    AdvProgressGrid,
+    BoolGrid,
+    createInputColumn,
+    createStatusGrid,
+    InputColumn,
+    InputType,
+    KeyedUpgradeInput,
+    makeDefaultBoolGrid,
+    makeDefaultNumGrid,
+    NumGrid,
+    StateBundle,
+    StateGrid,
+    StatusGrid,
+} from "@/Utils/Interfaces"
 import { createWorkerBundle } from "@/WasmInterface/worker_setup"
-import { ADV_COLS, JUICE_LABELS, MATS_LABELS, NORMAL_COLS, NUM_PIECES } from "@/Utils/Constants"
+import { ADV_COLS, JUICE_LABELS, MATS_LABELS, NORMAL_COLS, NUM_PIECES, STORAGE_KEY } from "@/Utils/Constants"
 
 export const useProfilesStore = defineStore("profiles", {
-    state: () => ({
-        profiles: [],
-        activeProfileId: null,
-    }),
+    state: () => DEFAULT_PROFILES_STATE,
     getters: {
-        activeProfile: (state) => state.profiles.find((p) => p.id === state.activeProfileId) ?? null,
+        getActiveProfile: (state) => state.profiles[state.activeProfileId],
     },
     actions: {
         switchProfile(id: string) {
@@ -18,8 +30,23 @@ export const useProfilesStore = defineStore("profiles", {
         addProfile(profile: CharProfile) {
             this.profiles.push(profile)
         },
+        setProfiles(profiles: CharProfile[]) {
+            this.profiles = profiles
+        },
     },
 })
+export function loadCharProfiles(): { profiles: CharProfile[]; activeProfileId: number } {
+    const raw = localStorage.getItem(STORAGE_KEY + "_char_profiles")
+    if (!raw) return DEFAULT_PROFILES_STATE
+
+    const parsed = JSON.parse(raw)
+
+    return parsed
+}
+const DEFAULT_PROFILES_STATE = {
+    profiles: [],
+    activeProfileId: null,
+}
 
 export enum TreatmentPlan {
     TreatRosterAsTradable, // rat alt
@@ -42,31 +69,24 @@ export interface CharProfile {
     normal_grid: StatusGrid
     adv_grid: StatusGrid
 
-    special_owned: InputColumn
-    bound_mats_owned: InputColumn
-    mats_leftover: InputColumn
+    KeyedUpgradeInput: KeyedUpgradeInput
 
-    bound_weap_juice_owned: InputColumn
-    weap_juice_leftover: InputColumn
+    special_budget: number
 
-    bound_armor_juice_owned: InputColumn
-    armor_juice_leftover: InputColumn
+    bound_budgets: InputColumn
+    leftover_price: InputColumn
 
-    normal_progress_grid: NumGrid
-    normal_state_grid: StateGrid
     special_state: number[]
-    normal_unlock_grid: BoolGrid
-    succeeded_grid: BoolGrid
-    adv_progress_grid: AdvProgressGrid
 
     tier: number
     min_resolution: number
     num_threads: number
     metric_type: number
+    cumulative_graph: boolean
 }
 
 export const DEFAULT_CHAR_PROFILE: CharProfile = {
-     treatment_plan: TreatmentPlan.TreatRosterAsBound,
+    treatment_plan: TreatmentPlan.TreatRosterAsBound,
 
     express_event: false,
     char_name: "YourChar",
@@ -77,30 +97,22 @@ export const DEFAULT_CHAR_PROFILE: CharProfile = {
     evaluate_worker_bundle: createWorkerBundle(),
     histogram_worker_bundle: createWorkerBundle(),
 
-    state_bundle : null,
+    state_bundle: null,
     normal_grid: createStatusGrid(NUM_PIECES, NORMAL_COLS),
-    adv_grid:createStatusGrid(NUM_PIECES, ADV_COLS),
+    adv_grid: createStatusGrid(NUM_PIECES, ADV_COLS),
 
-    special_owned: createInputColumn([MATS_LABELS[7]],InputType.Int,null, Object.fromEntries([[MATS_LABELS[7], 33333]])),
-    bound_mats_owned: createInputColumn(MATS_LABELS.slice(0,7),InputType.Int),
-    mats_leftover: createInputColumn(MATS_LABELS.slice(0,7),InputType.Float), // implicit 0 leftover here
+    KeyedUpgradeInput: {},
 
-    bound_weap_juice_owned: createInputColumn(JUICE_LABELS.map((x) => x[0]),InputType.Int),
-    weap_juice_leftover:  createInputColumn(JUICE_LABELS.map((x) => x[0]),InputType.Float),
+    special_budget: 0,
 
-    bound_armor_juice_owned:createInputColumn(JUICE_LABELS.map((x) => x[1]),InputType.Int),
-    armor_juice_leftover:  createInputColumn(JUICE_LABELS.map((x) => x[1]),InputType.Float),
+    bound_budgets: createInputColumn(InputType.Int),
+    leftover_price: createInputColumn(InputType.Float), // implicit 0 leftover here
 
-    normal_progress_grid: makeDefaultNumGrid(NUM_PIECES,NORMAL_COLS),
-    normal_state_grid:makeDefaultNumGrid(NUM_PIECES,NORMAL_COLS),
-    special_state: number[]
-    normal_unlock_grid: BoolGrid
-    succeeded_grid: BoolGrid
-    adv_progress_grid: AdvProgressGrid
+    special_state: [],
+    tier: 0,
+    min_resolution: 1,
+    num_threads: 1,
+    metric_type: 1,
 
-    tier: number
-    min_resolution: number
-    num_threads: number
-    metric_type: number
-
+    cumulative_graph: true,
 }
