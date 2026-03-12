@@ -6,7 +6,6 @@ use serde::Serialize;
 pub struct HistogramOutputs {
     cum_percentiles: Vec<Vec<(f64, f64)>>,
     average: Vec<f64>,
-    budgets: Vec<f64>, // just for convenience
 }
 
 pub fn histogram(state_bundle: &mut StateBundle) -> HistogramOutputs {
@@ -15,7 +14,7 @@ pub fn histogram(state_bundle: &mut StateBundle) -> HistogramOutputs {
     state_bundle.compute_special_probs(false);
     let special_probs = state_bundle.special_cache[&state_bundle.special_state].clone();
     let mut dummy_performance = Performance::new();
-    let num_sup = state_bundle.flattened_bound_budgets().count();
+    let num_sup = state_bundle.prep_output.bound_budgets.len();
 
     let mut cum_percentiles: Vec<Vec<(f64, f64)>> = vec![Vec::with_capacity(BUCKET_COUNT); num_sup];
 
@@ -25,9 +24,42 @@ pub fn histogram(state_bundle: &mut StateBundle) -> HistogramOutputs {
         let this_pity = state_bundle.pity()[support_index] as f64;
         let this_one_tap = state_bundle.one_tap()[support_index] as f64;
 
+        let bound_budget = state_bundle.prep_output.bound_budgets[support_index];
+        let trade_budget = state_bundle.prep_output.trade_budgets[support_index];
+        let mut bound_done: bool = false;
+        let mut trade_done: bool = (bound_budget - trade_budget).abs() < FLOAT_TOL; // dont bother if they're the same
+
         for index in 0..(BUCKET_COUNT + 1) {
             let this_budget =
                 this_one_tap + index as f64 * (this_pity - this_one_tap) / (BUCKET_COUNT) as f64;
+            if this_budget > bound_budget
+                && (this_budget - bound_budget).abs() > FLOAT_TOL
+                && !bound_done
+            {
+                item.push((
+                    bound_budget,
+                    state_bundle.one_dimension_prob(
+                        support_index as i64,
+                        bound_budget,
+                        &mut dummy_performance,
+                    ),
+                ));
+                bound_done = true;
+            }
+            if this_budget > bound_budget + trade_budget
+                && (this_budget - bound_budget - trade_budget).abs() > FLOAT_TOL
+                && !trade_done
+            {
+                item.push((
+                    bound_budget + trade_budget,
+                    state_bundle.one_dimension_prob(
+                        support_index as i64,
+                        bound_budget + trade_budget,
+                        &mut dummy_performance,
+                    ),
+                ));
+                trade_done = true;
+            }
             item.push((
                 this_budget,
                 state_bundle.one_dimension_prob(
@@ -52,14 +84,5 @@ pub fn histogram(state_bundle: &mut StateBundle) -> HistogramOutputs {
     HistogramOutputs {
         cum_percentiles,
         average,
-        budgets: state_bundle
-            .prep_output
-            .bound_mats
-            .iter()
-            .enumerate()
-            .map(|(_, x)| *x)
-            .chain(state_bundle.prep_output.bound_juice.iter().map(|x| x.0))
-            .chain(state_bundle.prep_output.bound_juice.iter().map(|x| x.1))
-            .collect(),
     }
 }

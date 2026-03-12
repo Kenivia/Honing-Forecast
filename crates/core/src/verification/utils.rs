@@ -1,13 +1,6 @@
 use crate::{parser::PreparationOutput, state_bundle::StateBundle};
 
-pub fn add_up_golds(mats_gold: &Vec<f64>, juice_gold: &Vec<(f64, f64)>) -> f64 {
-    mats_gold.iter().fold(0.0, |last, new| last + *new)
-        + juice_gold
-            .iter()
-            .fold(0.0, |last, new| last + new.0 + new.1)
-}
-
-pub fn apply_price_generic(used: f64, prep_output: &PreparationOutput, index: usize) -> f64 {
+pub fn apply_prices(used: f64, prep_output: &PreparationOutput, index: usize) -> f64 {
     let bound_thresh = prep_output.bound_budgets[index];
     let trade_thresh = prep_output.trade_budgets[index] + bound_thresh;
     if used > trade_thresh {

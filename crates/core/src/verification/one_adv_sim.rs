@@ -97,31 +97,11 @@ fn grace_10_20<R: Rng>(
         *next_free = true;
     }
 }
-#[derive(Copy, Clone, Default)]
-pub struct Snapshot {
-    cost: usize,
-    juice: usize,
-    scroll: usize,
-    cur_balls: usize,
-}
 
-pub struct SimTracker {
-    history: [Snapshot; 100],
-    visited_indices: [usize; 100],
-}
-
-impl SimTracker {
-    pub fn new() -> Self {
-        Self {
-            history: [Snapshot::default(); 100],
-            visited_indices: [0; 100],
-        }
-    }
-}
-pub fn one_sim<R: Rng>(rng: &mut R, config: &AdvConfig, tracker: &mut SimTracker) {
+pub fn one_sim<R: Rng>(rng: &mut R, config: &AdvConfig) -> (u8, u8, u8) {
     let mut cur_xp: usize = 0;
     let mut cur_balls: usize = 0;
-    let mut cost: usize = 0;
+    let mut cost: u8 = 0;
 
     let mut non_grace_juice_count: u8 = 0;
     let mut non_grace_scroll_count: u8 = 0;
@@ -133,19 +113,11 @@ pub fn one_sim<R: Rng>(rng: &mut R, config: &AdvConfig, tracker: &mut SimTracker
 
     let double_balls_inc = if config.double_balls { 2 } else { 1 };
 
-    // Reset our visit count for this run.
-    // We DO NOT need to clear the history array! The count handles the bounds.
-    let mut visit_count = 0;
-
     while cur_xp < 1000 {
         // --- SNAPSHOT LOGIC ---
 
-        // Record the current state before anything increments
-        if !next_free {
-            let idx = cur_xp / 10;
-        }
         let gracing = cur_balls >= 6;
-        cost += (!next_free) as usize;
+        cost += (!next_free) as u8;
         next_free = false;
 
         let (t1, t2) = if 1000 - cur_xp <= 30 {
@@ -212,24 +184,7 @@ pub fn one_sim<R: Rng>(rng: &mut R, config: &AdvConfig, tracker: &mut SimTracker
         cur_xp += rolled_xp;
     }
 
-    // --- DISTRIBUTION PROCESSING ---
-    // The simulation is complete. Calculate totals.
     let total_juice = grace_juice_count + non_grace_juice_count;
     let total_scroll = grace_scroll_count + non_grace_scroll_count;
-
-    // Work backwards using our visited indices to calculate the delta
-    for i in 0..visit_count {
-        let idx = tracker.visited_indices[i];
-        let snap = tracker.history[idx]; // Copy out the snapshot
-
-        // Final minus Snapshot = Cost to go
-        let delta_cost = cost.saturating_sub(snap.cost);
-        let delta_juice = total_juice.saturating_sub(snap.juice);
-        let delta_scroll = total_scroll.saturating_sub(snap.scroll);
-        let balls_back_then = snap.cur_balls;
-        // Replace 100 with MAX_COUNT if accessible
-        output.cost_dist[balls_back_then][idx][delta_cost] += 1;
-        output.juice_dist[balls_back_then][idx][delta_cost] += delta_juice;
-        output.scroll_dist[balls_back_then][idx][delta_cost] += delta_scroll;
-    }
+    (cost, total_juice, total_scroll)
 }
