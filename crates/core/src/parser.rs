@@ -31,29 +31,18 @@ pub struct PreparationOutput {
 
 impl PreparationOutput {
     pub fn initialize(
-        normal_hone_ticks: &[Vec<bool>],
-        adv_ticks: &[Vec<bool>],
+        material_info: Vec<(i64, i64, f64, f64, f64)>, // bound, trade, leftover, trade price, market price
+        upgrade_info: HashMap<
+            (usize, usize, bool), // piece type, upgrade_index, is_adv
+            (
+                Option<usize>,                      // normal_progress
+                Vec<(bool, usize)>,                 // state
+                bool,                               // unlock
+                bool,                               // succeeeded
+                Option<(usize, usize, bool, bool)>, // adv_progress
+            ),
+        >,
         express_event: bool,
-
-        inp_bound_mats: &[i64],
-        inp_trade_mats: &[i64],
-
-        inp_market_mats_price: &[f64],
-        inp_trade_mats_price: &[f64],
-        inp_left_mats_price: &[f64],
-
-        inp_bound_juice: &[(i64, i64)],
-        inp_trade_juice: &[(i64, i64)],
-
-        inp_juice_market_price: &[(f64, f64)],
-        inp_juice_trade_price: &[(f64, f64)],
-        inp_juice_left_price: &[(f64, f64)],
-
-        normal_progress_grid: Option<Vec<Vec<usize>>>,
-        state_grid: Option<Vec<Vec<Vec<(bool, usize)>>>>,
-        unlock_grid: Option<Vec<Vec<bool>>>,
-        succeeded_grid: Option<Vec<Vec<bool>>>,
-        adv_progress_grid: Option<Vec<Vec<(usize, usize, bool, bool)>>>,
         tier: usize,
     ) -> (
         PreparationOutput,
@@ -90,8 +79,8 @@ impl PreparationOutput {
             express_event,
             &juice_info,
             normal_progress_grid,
-            state_grid,
-            unlock_grid,
+            normal_state_grid,
+            normal_unlock_grid,
             succeeded_grid,
             adv_progress_grid,
             tier,
@@ -132,7 +121,7 @@ pub fn parser(
     juice_info: &JuiceInfo,
     progress_arr_opt: Option<Vec<Vec<usize>>>,
     state_given_opt: Option<Vec<Vec<Vec<(bool, usize)>>>>,
-    unlock_grid: Option<Vec<Vec<bool>>>,
+    normal_unlock_grid: Option<Vec<Vec<bool>>>,
     succeeded_grid: Option<Vec<Vec<bool>>>,
     adv_progress_grid: Option<Vec<Vec<(usize, usize, bool, bool)>>>,
     tier: usize,
@@ -164,7 +153,7 @@ pub fn parser(
                 .as_ref()
                 .map_or(0, |arr| arr[row_ind][upgrade_index]);
 
-            let this_unlocked: bool = unlock_grid
+            let this_unlocked: bool = normal_unlock_grid
                 .as_ref()
                 .is_some_and(|arr| arr[row_ind][upgrade_index]);
 
@@ -213,7 +202,7 @@ pub fn parser(
                 .as_ref()
                 .map_or((0, 0, false, false), |arr| arr[row_ind][upgrade_index]);
 
-            let this_unlocked: bool = unlock_grid
+            let this_unlocked: bool = normal_unlock_grid
                 .as_ref()
                 .is_some_and(|arr| arr[row_ind][upgrade_index]);
 

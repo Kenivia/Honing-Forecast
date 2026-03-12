@@ -5,37 +5,26 @@ use crate::state_bundle::StateBundle;
 use crate::upgrade::Upgrade;
 use ahash::AHashMap;
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 use std::fs;
 use std::path::Path;
 
 #[derive(Deserialize, Clone, Serialize)]
 pub struct Payload {
-    pub normal_hone_ticks: Vec<Vec<bool>>,
-    pub adv_hone_ticks: Vec<Vec<bool>>,
-    pub express_event: bool,
-
-    pub inp_bound_mats: Vec<i64>,
-    pub inp_trade_mats: Vec<i64>,
-
-    pub inp_market_mats_price: Vec<f64>,
-    pub inp_trade_mats_price: Vec<f64>,
-    pub inp_left_mats_price: Vec<f64>,
-
-    pub inp_bound_juice: Vec<(i64, i64)>,
-    pub inp_trade_juice: Vec<(i64, i64)>,
-
-    pub inp_juice_market_price: Vec<(f64, f64)>,
-    pub inp_juice_trade_price: Vec<(f64, f64)>,
-    pub inp_juice_left_price: Vec<(f64, f64)>,
-    // i have to initialize these arrays in JS anyway (instead of leaving as null)
-    // but this allows me to easily use default values ig (but I'd plug payloads in when testing anyway so ig theres not much point having Option at all)
-    pub normal_progress_grid: Option<Vec<Vec<usize>>>,
-    pub state_grid: Option<Vec<Vec<Vec<(bool, usize)>>>>,
+    pub material_info: Vec<(i64, i64, f64, f64, f64)>, // bound, trade, leftover, trade price, market price
+    pub upgrade_info: HashMap<
+        (usize, usize, bool), // piece type, upgrade_index, is_adv
+        (
+            Option<usize>,                      // normal_progress
+            Vec<(bool, usize)>,                 // state
+            bool,                               // unlock
+            bool,                               // succeeeded
+            Option<(usize, usize, bool, bool)>, // adv_progress
+        ),
+    >,
     pub special_state: Option<Vec<usize>>,
-    pub unlock_grid: Option<Vec<Vec<bool>>>,
-    pub succeeded_grid: Option<Vec<Vec<bool>>>,
-    pub adv_progress_grid: Option<Vec<Vec<(usize, usize, bool, bool)>>>,
     pub tier: usize,
+    pub express_event: bool,
 
     pub min_resolution: usize,
     #[serde(default)]
@@ -48,31 +37,19 @@ fn default_one() -> i64 {
 }
 impl StateBundle {
     pub fn init_from_inputs(
-        normal_hone_ticks: &[Vec<bool>],
-        adv_ticks: &[Vec<bool>],
+        material_info: Vec<(i64, i64, f64, f64, f64)>, // bound, trade, leftover, trade price, market price
+        upgrade_info: HashMap<
+            (usize, usize, bool), // piece type, upgrade_index, is_adv
+            (
+                Option<usize>,                      // normal_progress
+                Vec<(bool, usize)>,                 // state
+                bool,                               // unlock
+                bool,                               // succeeeded
+                Option<(usize, usize, bool, bool)>, // adv_progress
+            ),
+        >,
         express_event: bool,
-
-        inp_bound_mats: &[i64],
-        inp_trade_mats: &[i64],
-
-        inp_market_mats_price: &[f64],
-        inp_trade_mats_price: &[f64],
-        inp_left_mats_price: &[f64],
-
-        inp_bound_juice: &[(i64, i64)],
-        inp_trade_juice: &[(i64, i64)],
-
-        inp_juice_market_price: &[(f64, f64)],
-        inp_juice_trade_price: &[(f64, f64)],
-        inp_juice_left_price: &[(f64, f64)],
-
-        normal_progress_grid: Option<Vec<Vec<usize>>>,
-        state_grid: Option<Vec<Vec<Vec<(bool, usize)>>>>,
-        unlock_grid: Option<Vec<Vec<bool>>>,
-        succeeded_grid: Option<Vec<Vec<bool>>>,
-        adv_progress_grid: Option<Vec<Vec<(usize, usize, bool, bool)>>>,
         tier: usize,
-
         special_state: Option<Vec<usize>>,
         min_resolution: usize,
         num_threads: usize,
@@ -82,27 +59,7 @@ impl StateBundle {
             PreparationOutput,
             Vec<Upgrade>,
             AHashMap<AdvConfig, AdvDistTriplet>,
-        ) = PreparationOutput::initialize(
-            normal_hone_ticks,
-            adv_ticks,
-            express_event,
-            inp_bound_mats,
-            inp_trade_mats,
-            inp_market_mats_price,
-            inp_trade_mats_price,
-            inp_left_mats_price,
-            inp_bound_juice,
-            inp_trade_juice,
-            inp_juice_market_price,
-            inp_juice_trade_price,
-            inp_juice_left_price,
-            normal_progress_grid,
-            state_grid,
-            unlock_grid,
-            succeeded_grid,
-            adv_progress_grid,
-            tier,
-        );
+        ) = PreparationOutput::initialize(material_info, upgrade_info, express_event, tier);
         let u_len = upgrade_arr.len();
         // web_sys::console::log_1(&"2".into());
 
@@ -129,24 +86,7 @@ impl StateBundle {
     }
     pub fn init_from_payload(payload: Payload) -> Self {
         StateBundle::init_from_inputs(
-            &payload.normal_hone_ticks,
-            &payload.adv_hone_ticks,
-            payload.express_event,
-            &payload.inp_bound_mats,
-            &payload.inp_trade_mats,
-            &payload.inp_market_mats_price,
-            &payload.inp_trade_mats_price,
-            &payload.inp_left_mats_price,
-            &payload.inp_bound_juice,
-            &payload.inp_trade_juice,
-            &payload.inp_juice_market_price,
-            &payload.inp_juice_trade_price,
-            &payload.inp_juice_left_price,
-            payload.normal_progress_grid,
-            payload.state_grid,
-            payload.unlock_grid,
-            payload.succeeded_grid,
-            payload.adv_progress_grid,
+            &payload.material_info,
             payload.tier,
             payload.special_state,
             payload.min_resolution,

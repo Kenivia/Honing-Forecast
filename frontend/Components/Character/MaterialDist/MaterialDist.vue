@@ -1,117 +1,71 @@
 <script setup lang="ts">
+import { GRAPH_COLORS, JUICE_LABELS, MATS_LABELS } from "@/Utils/Constants"
 import GoldBreakdown from "./GoldBreakdown.vue"
+import { CharProfile, useProfilesStore } from "@/stores/CharacterProfile"
+import { iconPath } from "@/Utils/Helpers"
+import MaterialCell from "@/Components/MaterialCell.vue"
+import { createInputColumn, InputType } from "@/Utils/Interfaces"
+import MaterialGraph from "./MaterialGraph.vue"
+
+const profile_store = useProfilesStore()
+
+const active_profile: CharProfile = profile_store.activeProfile()
+
+const unfiltered_materials = MATS_LABELS.slice(0, 7)
+    .concat(JUICE_LABELS.map((x) => x[0]))
+    .concat(JUICE_LABELS.map((x) => x[1]))
+
+const flattened_bound_budgets = active_profile.bound_mats_owned
+    .concat(active_profile.bound_weap_juice_owned)
+    .concat(active_profile.bound_armor_juice_owned)
+const average_breakdown = active_profile.state_bundle?.average_breakdown ?? new Array(unfiltered_materials.length).fill(0)
+const filtered_materials = unfiltered_materials.filter((x, index) => average_breakdown[index] > 0)
+
+const histogram_result = active_profile.histogram_worker_bundle.result
+const keyed_average :Record<string,number> = Object.fromEntries(unfiltered_materials.map((x,index) => [x, flattened_bound_budgets[index]]));
 </script>
+<!-- function toInputValue(event: Event) {
+    return (event.target as HTMLInputElement).value
+}
+
+function setRecordValue(record: Record<string, string>, key: string, event: Event) {
+    record[key] = toInputValue(event)
+} -->
 
 <template>
     <section class="hf-card hf-analysis-pane">
         <div class="hf-card-header">
             <div class="hf-card-title"><span class="hf-card-title-dot" />Analysis</div>
-            <div class="hf-analysis-tabs">
-                <button :class="['hf-analysis-tab', { active: analysisTab === 'distribution' }]" @click="analysisTab = 'distribution'">Distribution</button>
-                <button :class="['hf-analysis-tab', { active: analysisTab === 'breakdown' }]" @click="analysisTab = 'breakdown'">Gold Breakdown</button>
-            </div>
         </div>
         <div class="hf-card-body">
-            <section v-if="analysisTab === 'distribution'">
-                <div class="hf-dist-desc">Distribution reflects free-tap and juice usage from your current optimizer output.</div>
-                <div class="hf-dist-graphs">
-                    <div v-for="(label, index) in distributionLabels" :key="`graph-${label}`" class="hf-graph-row">
-                        <div class="hf-graph-icon">
-                            <img :src="iconPath(label)" :alt="label" />
-                        </div>
-                        <MaterialGraph
-                            :data="histogramResult?.cum_percentiles?.[index] ?? null"
-                            :average="histogramResult?.average?.[index] ?? null"
-                            :secondary-annotation="histogramResult?.budgets?.[index] ?? null"
-                            :color-var="GRAPH_COLORS[index]"
-                            :cumulative="cumulativeGraph"
-                            :height="120"
-                        />
-                    </div>
+            <div class="hf-dist-desc">Distribution reflects free-tap and juice usage from your current optimizer output.</div>
+            <div class="hf-dist-graphs">
+                <div class="hf-table-title-row"">
+                    <span />
+                    <span>Owned</span>
+                    <span>Price</span>
+                    <!-- <span v-if="customLeftovers">Left</span> -->
                 </div>
-            </section>
-        </div>
-    </section>
-    <section class="hf-card">
-        <div class="hf-card-header">
-            <div class="hf-card-title"><span class="hf-card-title-dot" />Materials and Prices</div>
-            <span class="hf-card-hint">Owned + market</span>
-        </div>
-        <div class="hf-card-body">
-            <p class="hf-copy">Optimizer minimizes equivalent gold across spent and consumed tradable value.</p>
-
-            <div class="hf-material-stack">
-                <div class="hf-table-wrap">
-                    <div class="hf-table-title-row" :class="{ leftovers: customLeftovers }">
-                        <span />
-                        <span>Owned</span>
-                        <span>Price</span>
-                        <span v-if="customLeftovers">Left</span>
+                <div v-for="(label, index) in unfiltered_materials" :key="`graph-${label}`" class="hf-graph-row">
+                    <div class="hf-graph-icon">
+                        <img :src="iconPath(label)" :alt="label" />
                     </div>
-                    <div v-for="label in MATS_LABELS" :key="`mats-${label}`" class="hf-table-row" :class="{ leftovers: customLeftovers }">
-                        <label class="hf-row-label">
-                            <span>{{ label }}</span>
-                            <img :src="iconPath(label)" :alt="label" />
-                        </label>
-                        <input type="text" :value="matsOwned[label]" @input="setRecordValue(matsOwned, label, $event)" />
-                        <input
-                            v-if="label !== 'Special Leap'"
-                            type="text"
-                            :value="matsPrices[label] ?? ''"
-                            @input="setRecordValue(matsPrices, label, $event)"
-                        />
-                        <div v-else class="hf-input-placeholder" />
-                        <input v-if="customLeftovers" type="text" :value="matsLeftover[label]" @input="setRecordValue(matsLeftover, label, $event)" />
-                    </div>
-                </div>
-
-                <div class="hf-table-wrap">
-                    <div class="hf-table-title-row" :class="{ leftovers: customLeftovers }">
-                        <span />
-                        <span>Owned</span>
-                        <span>Price</span>
-                        <span v-if="customLeftovers">Left</span>
-                    </div>
-                    <div v-for="labels in JUICE_LABELS" :key="`weapon-${labels[0]}`" class="hf-table-row" :class="{ leftovers: customLeftovers }">
-                        <label class="hf-row-label hf-row-label-books">
-                            <span>{{ labels[0] }}</span>
-                            <img :src="iconPath(labels[0])" :alt="labels[0]" />
-                        </label>
-                        <input type="text" :value="weaponOwned[labels[0]]" @input="setRecordValue(weaponOwned, labels[0], $event)" />
-                        <input type="text" :value="weaponPrices[labels[0]]" @input="setRecordValue(weaponPrices, labels[0], $event)" />
-                        <input
-                            v-if="customLeftovers"
-                            type="text"
-                            :value="weaponLeftover[labels[0]]"
-                            @input="setRecordValue(weaponLeftover, labels[0], $event)"
-                        />
-                    </div>
-                </div>
-
-                <div class="hf-table-wrap">
-                    <div class="hf-table-title-row" :class="{ leftovers: customLeftovers }">
-                        <span />
-                        <span>Owned</span>
-                        <span>Price</span>
-                        <span v-if="customLeftovers">Left</span>
-                    </div>
-                    <div v-for="labels in JUICE_LABELS" :key="`armor-${labels[1]}`" class="hf-table-row" :class="{ leftovers: customLeftovers }">
-                        <label class="hf-row-label hf-row-label-books">
-                            <span>{{ labels[1] }}</span>
-                            <img :src="iconPath(labels[1])" :alt="labels[1]" />
-                        </label>
-                        <input type="text" :value="armorOwned[labels[1]]" @input="setRecordValue(armorOwned, labels[1], $event)" />
-                        <input type="text" :value="armorPrices[labels[1]]" @input="setRecordValue(armorPrices, labels[1], $event)" />
-                        <input v-if="customLeftovers" type="text" :value="armorLeftover[labels[1]]" @input="setRecordValue(armorLeftover, labels[1], $event)" />
-                    </div>
+                    <MaterialCell 
+                    :input_columns="[flattened_bound_budgets, keyed_average ]"
+                    :label = label
+                    ></MaterialCell>
+                    <MaterialGraph
+                        :data="histogram_result?.cum_percentiles?.[index] ?? null"
+                        :average="histogram_result?.average?.[index] ?? null"
+                        :secondary-annotation="histogram_result?.budgets?.[index] ?? null"
+                        :color-var="GRAPH_COLORS[index]"
+                        :cumulative="histogram_result"
+                        :height="120"
+                    />
                 </div>
             </div>
-
-            <label class="hf-inline-check" style="margin-top: 10px">
-                <input v-model="customLeftovers" type="checkbox" />
-                <span>Custom leftover values</span>
-            </label>
         </div>
     </section>
+   
     <GoldBreakdown />
 </template>

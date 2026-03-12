@@ -1,7 +1,7 @@
 import { ref, onUnmounted } from "vue"
 import { WasmOp } from "./js_to_wasm"
 import { buildPayload } from "./payload"
-const createWorker = (op: WasmOp) => new Worker(new URL("./js_to_wasm.ts", import.meta.url), { type: "module", which_one: op })
+const createWorker = () => new Worker(new URL("./js_to_wasm.ts", import.meta.url), { type: "module" })
 
 export function createWorkerBundle() {
     let worker = null
@@ -17,10 +17,10 @@ export function createWorkerBundle() {
         result.value = null
         error.value = null
 
-        worker = createWorker(wasm_op)
+        worker = createWorker()
 
         worker.onmessage = (e) => {
-            result.value = e.data
+            result.value = e.result
             if (e.type === "result") {
                 status.value = "done"
                 worker = null
@@ -34,7 +34,7 @@ export function createWorkerBundle() {
             worker = null
         }
 
-        worker.postMessage(buildPayload(wasm_op))
+        worker.postMessage({ type: "message", wasm_op, payload: buildPayload(wasm_op) })
     }
 
     function start(wasm_op: WasmOp, debounce?: number) {

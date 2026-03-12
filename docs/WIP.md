@@ -32,6 +32,12 @@ Specifically:
 - add a lil key to explain the colors
 - maybe import via uwuowo?
 
+#### Char page - Detailed status inputs?
+
+- artisan, adv xp etc on a separate page?
+  - separate page => no more hand-holding optimization which i mean it's not designed to do anyway
+    - can still do piece-after-piece optimization
+
 #### Char page - Gold breakdown
 
 - This needs to show both "actual gold spent on market/raw" and "eqv gold you wouldve made from selling tradables"

@@ -12,7 +12,11 @@ import init, {
 
 const LABELS = ["Red", "Blue", "Leaps", "Shards", "Oreha", "Gold", "Silver"]
 
-export type WasmOp = "EvaluateAverage" | "OptimizeAverage" | "Histogram"
+export enum WasmOp {
+    EvaluateAverage,
+    OptimizeAverage,
+    Histogram,
+}
 
 // async function MonteCarloWasm(payload: any) {
 //     await init()
@@ -55,11 +59,11 @@ self.addEventListener("message", async (ev) => {
     const msg = ev.data
     let start_time = Date.now()
 
-    const { id, payload, which_one } = msg
+    const { id, payload, which_one: wasm_op } = msg
 
     if (
         !(
-            (which_one == "EvaluateAverage" || which_one == "OptimizeAverage" || which_one == "Histogram")
+            (wasm_op == "EvaluateAverage" || wasm_op == "OptimizeAverage" || wasm_op == "Histogram")
             // which_one == "CostToChanceArr" ||
             // // which_one == "CostToChanceOptimized" ||
             // which_one == "ParserUnified" ||
@@ -68,7 +72,7 @@ self.addEventListener("message", async (ev) => {
             // which_one == "ChanceToCostOptimized"
         )
     ) {
-        throw "Invalid js_to_wasm operation type: " + which_one
+        throw "Invalid js_to_wasm operation type: " + wasm_op
     }
     // console.log(which_one, "Began")
 
@@ -79,7 +83,7 @@ self.addEventListener("message", async (ev) => {
     //     // console.log("monte carlo out", out)
     //     result = { cost_data: out }
     // } else
-    if (which_one == "EvaluateAverage") {
+    if (wasm_op == "EvaluateAverage") {
         // always run optimized
         result = await EvaluateAverageWasm(payload)
 
@@ -111,9 +115,9 @@ self.addEventListener("message", async (ev) => {
         // }
 
         // console.log(result.typical_costs)
-    } else if (which_one == "OptimizeAverage") {
+    } else if (wasm_op == "OptimizeAverage") {
         result = await OptimizeAverageWasm(payload)
-    } else if (which_one == "Histogram") {
+    } else if (wasm_op == "Histogram") {
         result = await HistogramWasm(payload)
     }
     // else if (which_one == "CostToChanceArr") {
@@ -148,6 +152,6 @@ self.addEventListener("message", async (ev) => {
     // }
 
     result.run_time = ((Date.now() - start_time) / 1000).toFixed(2)
-    console.log(which_one + " finished after " + String(result.run_time))
+    console.log(wasm_op + " finished after " + String(result.run_time))
     self.postMessage({ type: "result", id, result: result })
 })

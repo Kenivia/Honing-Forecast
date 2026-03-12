@@ -13,8 +13,7 @@ const state_bundle: StateBundle = active_profile.state_bundle
 
 const num_juice_avail: number = state_bundle.prep_output.juice_info.num_juice_avail
 function goldBreakdownValue(offset: number) {
-    const source = state_bundle?.average_breakdown
-    if (!Array.isArray(source)) return undefined
+    const source = state_bundle?.average_breakdown ?? new Array(state_bundle.prep_output.juice_info.total_num_avail).fill(0)
     const value = Number(source[offset])
     return Number.isFinite(value) ? value : undefined
 }
@@ -30,6 +29,10 @@ function breakdownText(value: number | undefined) {
 function breakdownClass(value: number | undefined) {
     if (value === undefined || !Number.isFinite(value)) return "muted"
     return value > -0.5 ? "surplus" : "cost"
+}
+function metricToText(metric: number | null | undefined) {
+    if (metric === null || metric === undefined || !Number.isFinite(metric)) return "N/A"
+    return `${Math.round(-metric).toLocaleString("en-US")}g`
 }
 </script>
 <template>

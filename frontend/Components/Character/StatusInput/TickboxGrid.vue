@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { CharProfile, useProfilesStore } from "@/stores/CharacterProfile"
-import { PIECE_NAMES, TOP_COLS as NORMAL_COLS, TOP_ROWS as NORMAL_ROWS } from "@/Utils/Constants"
+import { PIECE_NAMES, NORMAL_COLS as NORMAL_COLS, NUM_PIECES as NORMAL_ROWS } from "@/Utils/Constants"
 import { iconPath } from "@/Utils/Helpers"
 import { UpgradeStatus } from "@/Utils/Interfaces"
 import { storeToRefs } from "pinia"

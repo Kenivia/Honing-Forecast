@@ -39,10 +39,9 @@ export const OUTPUT_LABELS = ["Red", "Blue", "Leaps", "Shards", "Oreha", "Gold",
 
 export const STORAGE_KEY = "HF_UI_STATE_V1"
 
-export const TOP_ROWS = 6
-export const TOP_COLS = 25
-export const BOTTOM_ROWS = 6
-export const BOTTOM_COLS = 4
+export const NUM_PIECES = 6
+export const NORMAL_COLS = 25
+export const ADV_COLS = 4
 
 export const CELL_W = 28
 export const CELL_H = 28
@@ -113,10 +112,10 @@ export const PIECE_NAMES = ["Helmet", "Shoulder", "Chest", "Pants", "Glove", "We
 const DEFAULT_STATE_PAIR: [boolean, number] = [false, 0]
 
 export const RESET_UI_DEFAULTS = {
-    topGrid: Array.from({ length: TOP_ROWS }, () => Array.from({ length: TOP_COLS }, () => false)),
-    bottomGrid: Array.from({ length: BOTTOM_ROWS }, () => Array.from({ length: BOTTOM_COLS }, () => false)),
-    prev_checked_arr: Array.from({ length: TOP_COLS }, () => false),
-    prev_checked_arr_bottom: Array.from({ length: BOTTOM_COLS }, () => false),
+    topGrid: Array.from({ length: NUM_PIECES }, () => Array.from({ length: NORMAL_COLS }, () => false)),
+    bottomGrid: Array.from({ length: BOTTOM_ROWS }, () => Array.from({ length: ADV_COLS }, () => false)),
+    prev_checked_arr: Array.from({ length: NORMAL_COLS }, () => false),
+    prev_checked_arr_bottom: Array.from({ length: ADV_COLS }, () => false),
     userMatsOwned: Object.fromEntries(MATS_LABELS.map((label) => [label, "0"])),
     userMatsPrices: Object.fromEntries(MATS_LABELS.slice(0, 7).map((label, index) => [label, DEFAULT_MATS_PRICES[index]])),
     userMatsLeftover: Object.fromEntries(MATS_LABELS.map((label, index) => [label, DEFAULT_MATS_LEFTOVER[index]])),
@@ -138,20 +137,20 @@ export const RESET_UI_DEFAULTS = {
     incomeArr: Array.from({ length: 6 }, () => Array.from({ length: 7 }, () => 0)),
     minResolution: 10,
     specialState: [] as number[],
-    succeededGrid: Array.from({ length: TOP_ROWS }, () => Array.from({ length: TOP_COLS }, () => false)),
-    unlockGrid: Array.from({ length: TOP_ROWS }, () => Array.from({ length: TOP_COLS }, () => false)),
-    stateBundleGrid: Array.from({ length: TOP_ROWS }, () => Array.from({ length: TOP_COLS }, () => [])),
-    progressGrid: Array.from({ length: TOP_ROWS }, () => Array.from({ length: TOP_COLS }, () => 0)),
+    succeededGrid: Array.from({ length: NUM_PIECES }, () => Array.from({ length: NORMAL_COLS }, () => false)),
+    unlockGrid: Array.from({ length: NUM_PIECES }, () => Array.from({ length: NORMAL_COLS }, () => false)),
+    stateBundleGrid: Array.from({ length: NUM_PIECES }, () => Array.from({ length: NORMAL_COLS }, () => [])),
+    progressGrid: Array.from({ length: NUM_PIECES }, () => Array.from({ length: NORMAL_COLS }, () => 0)),
     evaluateAverageResult: null as any,
 }
 
 export const DEMO_UI_VALUES = {
-    topGrid: Array.from({ length: TOP_ROWS }, (_, rowIndex) =>
-        Array.from({ length: TOP_COLS }, (_, colIndex) => colIndex === 19 || colIndex === 20 || colIndex === 21 || (colIndex > 21 && rowIndex === 5)),
+    topGrid: Array.from({ length: NUM_PIECES }, (_, rowIndex) =>
+        Array.from({ length: NORMAL_COLS }, (_, colIndex) => colIndex === 19 || colIndex === 20 || colIndex === 21 || (colIndex > 21 && rowIndex === 5)),
     ),
-    bottomGrid: Array.from({ length: BOTTOM_ROWS }, (_, piece) => Array.from({ length: BOTTOM_COLS }, (_, colIndex) => colIndex === 3 && piece < 3)),
-    prev_checked_arr: Array.from({ length: TOP_COLS }, (_, colIndex) => colIndex === 19 || colIndex === 20 || colIndex === 21),
-    prev_checked_arr_bottom: Array.from({ length: BOTTOM_COLS }, () => false),
+    bottomGrid: Array.from({ length: BOTTOM_ROWS }, (_, piece) => Array.from({ length: ADV_COLS }, (_, colIndex) => colIndex === 3 && piece < 3)),
+    prev_checked_arr: Array.from({ length: NORMAL_COLS }, (_, colIndex) => colIndex === 19 || colIndex === 20 || colIndex === 21),
+    prev_checked_arr_bottom: Array.from({ length: ADV_COLS }, () => false),
 
     userMatsOwned: {
         Red: "631777",
@@ -176,10 +175,10 @@ export const DEMO_UI_VALUES = {
     desired_chance: "50",
     minResolution: 0,
     specialState: [] as number[],
-    succeededGrid: Array.from({ length: TOP_ROWS }, () => Array.from({ length: TOP_COLS }, () => false)),
-    unlockGrid: Array.from({ length: TOP_ROWS }, () => Array.from({ length: TOP_COLS }, () => false)),
-    stateBundleGrid: Array.from({ length: TOP_ROWS }, () => Array.from({ length: TOP_COLS }, () => [DEFAULT_STATE_PAIR])),
-    progressGrid: Array.from({ length: TOP_ROWS }, () => Array.from({ length: TOP_COLS }, () => 0)),
+    succeededGrid: Array.from({ length: NUM_PIECES }, () => Array.from({ length: NORMAL_COLS }, () => false)),
+    unlockGrid: Array.from({ length: NUM_PIECES }, () => Array.from({ length: NORMAL_COLS }, () => false)),
+    stateBundleGrid: Array.from({ length: NUM_PIECES }, () => Array.from({ length: NORMAL_COLS }, () => [DEFAULT_STATE_PAIR])),
+    progressGrid: Array.from({ length: NUM_PIECES }, () => Array.from({ length: NORMAL_COLS }, () => 0)),
 }
 
 export const DEMO_INCOME_1680_ROSTER_BOUND = [2606, 7751, 133, 0, 0, 90000, 69420]

@@ -5,6 +5,7 @@ import { storeToRefs } from "pinia"
 import { uesRosterStore } from "./stores/RosterConfig"
 
 const rosterStore = uesRosterStore()
+
 const profileStore = uesProfileStore()
 </script>
 
