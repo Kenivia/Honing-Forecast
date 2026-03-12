@@ -320,27 +320,27 @@ pub fn monte_carlo_wrapper<R: Rng>(
             .collect();
 
         for (index, d) in debug_avg_gold_by_mats.iter_mut().enumerate() {
-            let diff = state_bundle.prep_output.budgets[index] as f64 - float_row[index];
+            let diff = state_bundle.prep_output.bound_mats[index] as f64 - float_row[index];
             if diff > 0.0 {
                 debug_truncated_mean_by_skip[skip_count_data[r_index]][index] += diff;
             }
             *d += (diff)
                 * if diff > 0.0 {
-                    state_bundle.prep_output.leftover_values[index]
+                    state_bundle.prep_output.left_mats_price[index]
                 } else {
-                    state_bundle.prep_output.price_arr[index]
+                    state_bundle.prep_output.market_mats_price[index]
                 };
         }
         for (index, d) in debug_avg_gold_by_mats_by_skip[skip_count_data[r_index]]
             .iter_mut()
             .enumerate()
         {
-            let diff = state_bundle.prep_output.budgets[index] as f64 - float_row[index];
+            let diff = state_bundle.prep_output.bound_mats[index] as f64 - float_row[index];
             *d += (diff)
                 * if diff > 0.0 {
-                    state_bundle.prep_output.leftover_values[index]
+                    state_bundle.prep_output.left_mats_price[index]
                 } else {
-                    state_bundle.prep_output.price_arr[index]
+                    state_bundle.prep_output.market_mats_price[index]
                 };
         }
 
@@ -348,14 +348,16 @@ pub fn monte_carlo_wrapper<R: Rng>(
             .iter_mut()
             .enumerate()
         {
-            let diff = state_bundle.prep_output.juice_books_owned[id].0 - float_juice[id].0;
+            let diff = state_bundle.prep_output.bound_juice[id].0 - float_juice[id].0;
             *d += (diff)
                 * if diff > 0.0 {
                     state_bundle.prep_output.juice_info.all_juices[id]
-                        .leftover_values
+                        .left_price
                         .0
                 } else {
-                    state_bundle.prep_output.juice_info.all_juices[id].prices.0
+                    state_bundle.prep_output.juice_info.all_juices[id]
+                        .market_price
+                        .0
                 };
         }
 
@@ -363,35 +365,41 @@ pub fn monte_carlo_wrapper<R: Rng>(
             .iter_mut()
             .enumerate()
         {
-            let diff = state_bundle.prep_output.juice_books_owned[id].1 - float_juice[id].1;
+            let diff = state_bundle.prep_output.bound_juice[id].1 - float_juice[id].1;
             *d += (diff)
                 * if diff > 0.0 {
                     state_bundle.prep_output.juice_info.all_juices[id]
-                        .leftover_values
+                        .left_price
                         .1
                 } else {
-                    state_bundle.prep_output.juice_info.all_juices[id].prices.1
+                    state_bundle.prep_output.juice_info.all_juices[id]
+                        .market_price
+                        .1
                 };
         }
         // my_dbg!(&debug_avg_juices);
         for (id, d) in debug_avg_gold_by_juices.iter_mut().enumerate() {
-            let diff_weap = state_bundle.prep_output.juice_books_owned[id].0 - float_juice[id].0;
+            let diff_weap = state_bundle.prep_output.bound_juice[id].0 - float_juice[id].0;
             d.0 += (diff_weap)
                 * if diff_weap > 0.0 {
                     state_bundle.prep_output.juice_info.all_juices[id]
-                        .leftover_values
+                        .left_price
                         .0
                 } else {
-                    state_bundle.prep_output.juice_info.all_juices[id].prices.0
+                    state_bundle.prep_output.juice_info.all_juices[id]
+                        .market_price
+                        .0
                 };
-            let diff_armor = state_bundle.prep_output.juice_books_owned[id].1 - float_juice[id].1;
+            let diff_armor = state_bundle.prep_output.bound_juice[id].1 - float_juice[id].1;
             d.1 += (diff_armor)
                 * if diff_armor > 0.0 {
                     state_bundle.prep_output.juice_info.all_juices[id]
-                        .leftover_values
+                        .left_price
                         .1
                 } else {
-                    state_bundle.prep_output.juice_info.all_juices[id].prices.1
+                    state_bundle.prep_output.juice_info.all_juices[id]
+                        .market_price
+                        .1
                 };
         }
 
@@ -410,19 +418,19 @@ pub fn monte_carlo_wrapper<R: Rng>(
 
         let mut leftover_index: usize = 0;
         for (index, mat) in row.iter().enumerate() {
-            if *mat as f64 <= state_bundle.prep_output.budgets[index] {
+            if *mat as f64 <= state_bundle.prep_output.bound_mats[index] {
                 leftover_counts[leftover_index] += 1;
             }
             leftover_index += 1;
         }
         for (index, juice) in juice_data[r_index].iter().enumerate() {
-            if juice.0 as f64 <= state_bundle.prep_output.juice_books_owned[index].0 + FLOAT_TOL {
+            if juice.0 as f64 <= state_bundle.prep_output.bound_juice[index].0 + FLOAT_TOL {
                 leftover_counts[leftover_index] += 1;
             }
             leftover_index += 1;
         }
         for (index, juice) in juice_data[r_index].iter().enumerate() {
-            if juice.1 as f64 <= state_bundle.prep_output.juice_books_owned[index].1 + FLOAT_TOL {
+            if juice.1 as f64 <= state_bundle.prep_output.bound_juice[index].1 + FLOAT_TOL {
                 leftover_counts[leftover_index] += 1;
             }
             leftover_index += 1;
@@ -467,8 +475,8 @@ pub fn monte_carlo_wrapper<R: Rng>(
             &debug_avg_gold_by_armor_juice_by_skip,
             // &debug_avg_gold_by_juices,
             // &debug_truncated_mean_by_skip,
-            &state_bundle.prep_output.price_arr,
-            &state_bundle.prep_output.leftover_values,
+            &state_bundle.prep_output.market_mats_price,
+            &state_bundle.prep_output.left_mats_price,
             sum / data_size as f64
         );
     }

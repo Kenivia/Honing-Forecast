@@ -1,5 +1,4 @@
 use crate::constants::{FLOAT_TOL, SPECIAL_TOL};
-use crate::my_dbg;
 use crate::performance::Performance;
 use crate::state_bundle::StateBundle;
 use itertools::izip;
@@ -31,48 +30,19 @@ impl StateBundle {
     /// We exploit the distributivity of expectation to reduce our multi-dimensional problem into many 1-D ones
     ///
     /// Well actually it calculates this for each outcome for special and takes the weighted average, see special.rs for more info about that  
-    pub fn average_gold_metric(&mut self, performance: &mut Performance) -> f64 {
+    pub fn average_gold_metric(
+        &mut self,
+        compute_breakdown: bool,
+        performance: &mut Performance,
+    ) -> f64 {
         self.update_dist();
         self.update_individual_support();
         self.compute_special_probs(false);
         performance.states_evaluated += 1;
 
-        let mut total_gold: f64 = 0.0;
-        for (skip_count, &special_prob) in
-            self.special_cache[&self.special_state].iter().enumerate()
-        {
-            if special_prob < SPECIAL_TOL {
-                continue;
-            }
-            for (support_index, (effective_budget, price, leftover)) in izip!(
-                self.flattened_budgets(),
-                self.flattened_price(),
-                self.flattened_leftover()
-            )
-            .enumerate()
-            {
-                let this_avg: f64 = self.one_dimension_average_gold(
-                    support_index as i64,
-                    skip_count,
-                    effective_budget,
-                    price,
-                    leftover,
-                    performance,
-                );
-
-                total_gold += special_prob * this_avg;
-            }
-        }
-        total_gold
-    }
-
-    /// I initially had two versions of average_gold_metric but um ig this makes more sense, cbb to merge them now
-    pub fn average_gold_metric_with_breakdown(&mut self, performance: &mut Performance) -> f64 {
-        self.update_dist();
-        self.update_individual_support();
-        self.compute_special_probs(false);
-        performance.states_evaluated += 1;
+        #[cfg(feature = "wasm")]
         let mut breakdown: Vec<f64> = vec![0.0; self.prep_output.juice_info.total_num_avail];
+
         let mut total_gold: f64 = 0.0;
         for (skip_count, &special_prob) in
             self.special_cache[&self.special_state].iter().enumerate()
@@ -80,30 +50,43 @@ impl StateBundle {
             if special_prob < SPECIAL_TOL {
                 continue;
             }
-            for (support_index, (effective_budget, price, leftover)) in izip!(
-                self.flattened_budgets(),
-                self.flattened_price(),
-                self.flattened_leftover()
+            for (
+                support_index,
+                (bound_budget, price, leftover, tradable_budget, tradable_leftover),
+            ) in izip!(
+                self.flattened_bound_budgets(),
+                self.flattened_full_price(),
+                self.flattened_leftover(),
+                self.flattened_tradable_budgets(),
+                self.flattened_tradable_leftover(),
             )
             .enumerate()
             {
                 let this_avg: f64 = self.one_dimension_average_gold(
                     support_index as i64,
                     skip_count,
-                    effective_budget,
+                    bound_budget,
+                    tradable_budget,
                     price,
+                    tradable_leftover,
                     leftover,
                     performance,
                 );
                 let this = special_prob * this_avg;
-                breakdown[support_index] += this;
-                total_gold += this;
+                total_gold += special_prob * this_avg;
+                #[cfg(feature = "wasm")]
+                if compute_breakdown {
+                    breakdown[support_index] += this;
+                }
             }
         }
-        for x in breakdown.iter_mut() {
-            *x = x.ceil()
+        #[cfg(feature = "wasm")]
+        if compute_breakdown {
+            for x in breakdown.iter_mut() {
+                *x = x.ceil()
+            }
+            self.average_breakdown = Some(breakdown);
         }
-        self.average_breakdown = Some(breakdown);
         total_gold
     }
 
@@ -122,8 +105,10 @@ impl StateBundle {
         &self,
         support_index: i64,
         skip_count: usize,
-        budget: f64,
+        mut budget: f64,
+        tradable_threshold: f64,
         price: f64,
+        tradable_leftover: f64,
         leftover_value: f64,
         performance: &mut Performance,
     ) -> f64 {
@@ -133,46 +118,74 @@ impl StateBundle {
             // this also includes price = 0 (unless leftover is high for some reason)
             return price * (budget - simple_mean);
         }
-
-        let biased_prob: f64 = self.saddlepoint_approximation_wrapper(
-            support_index,
-            skip_count,
-            budget,
-            true,
-            simple_mean.ln(),
-            performance,
-        );
-        let prob = self.saddlepoint_approximation_wrapper(
-            support_index,
-            skip_count,
-            budget,
-            false,
-            NAN,
-            performance,
-        );
-        // the signs are backwards compared to the UI / documentation
-        let out: f64 = price * (budget - simple_mean)
-            + (leftover_value - price) * (budget * prob - biased_prob * simple_mean);
-
-        #[allow(unused)] // idk why rust analyzer tweaks out here and i cbb
-        if (!out.is_finite() || DEBUG_AVERAGE) && support_index == DEBUG_AVG_INDEX {
-            let left = budget - simple_mean;
-            let right = budget * prob - biased_prob * (simple_mean);
-            let truncated_mean = biased_prob * (simple_mean);
-            my_dbg!(
-                simple_mean,
-                self.find_min_max(support_index, skip_count),
-                budget,
-                biased_prob,
-                prob,
-                truncated_mean,
-                left,
-                right,
-                price,
-                leftover_value,
-                out,
-            );
+        let trade_same_value: bool = (tradable_leftover - leftover_value).abs() < FLOAT_TOL; // ig this only happens for 1g cost or user specifies
+        if trade_same_value {
+            budget = tradable_threshold;
         }
-        out
+        let simple_mean_log = simple_mean.ln();
+        if trade_same_value || (budget - tradable_threshold).abs() < FLOAT_TOL {
+            let biased_prob: f64 = self.saddlepoint_approximation_wrapper(
+                support_index,
+                skip_count,
+                budget,
+                true,
+                simple_mean_log,
+                performance,
+            );
+            let prob = self.saddlepoint_approximation_wrapper(
+                support_index,
+                skip_count,
+                budget,
+                false,
+                NAN,
+                performance,
+            );
+            // the signs are backwards compared to the UI / documentation
+            let out: f64 = price * (budget - simple_mean)
+                + (leftover_value - price) * (budget * prob - biased_prob * simple_mean);
+
+            return out;
+        } else {
+            let trade_biased_prob: f64 = self.saddlepoint_approximation_wrapper(
+                support_index,
+                skip_count,
+                tradable_threshold,
+                true,
+                simple_mean_log,
+                performance,
+            );
+            let trade_prob = self.saddlepoint_approximation_wrapper(
+                support_index,
+                skip_count,
+                tradable_threshold,
+                false,
+                NAN,
+                performance,
+            );
+            let biased_prob: f64 = self.saddlepoint_approximation_wrapper(
+                support_index,
+                skip_count,
+                budget,
+                true,
+                simple_mean_log,
+                performance,
+            );
+            let prob = self.saddlepoint_approximation_wrapper(
+                support_index,
+                skip_count,
+                budget,
+                false,
+                NAN,
+                performance,
+            );
+            // leaving it in this form for now
+            let out: f64 = price * (simple_mean - tradable_threshold)
+                - price * (trade_biased_prob * simple_mean - trade_prob * tradable_threshold)
+                + tradable_leftover * (trade_biased_prob * simple_mean - trade_prob * budget)
+                - tradable_leftover * (biased_prob * simple_mean - prob * budget)
+                + leftover_value * (biased_prob * simple_mean - prob * budget);
+
+            return -out; // note the negative here (i wrote this part after the white paper)
+        }
     }
 }

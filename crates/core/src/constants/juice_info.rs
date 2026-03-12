@@ -20,16 +20,18 @@ pub struct OneUindexJuice {
 }
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct JuiceType {
-    pub prices: (f64, f64),
-    pub leftover_values: (f64, f64),
+    pub market_price: (f64, f64),
+    pub trade_price: (f64, f64),
+    pub left_price: (f64, f64),
     pub id: usize,
     pub data: HashMap<usize, OneUindexJuice>,
 }
 impl Default for JuiceType {
     fn default() -> Self {
         Self {
-            prices: (NAN, NAN),
-            leftover_values: (NAN, NAN),
+            market_price: (NAN, NAN),
+            left_price: (NAN, NAN),
+            trade_price: (NAN, NAN),
             id: 0,
             data: HashMap::new(),
         }
@@ -124,16 +126,20 @@ impl JuiceInfo {
 }
 pub fn get_priced_juice_info(
     base: &JuiceInfo,
-    juice_prices: &[(f64, f64)],
-    leftover_prices: &[(f64, f64)],
+    market_price: &[(f64, f64)],
+    trade_price: &[(f64, f64)],
+    left_price: &[(f64, f64)],
+
     event: bool,
 ) -> JuiceInfo {
-    assert!(base.num_juice_avail == juice_prices.len());
-    assert!(base.num_juice_avail == leftover_prices.len());
+    assert!(base.num_juice_avail == market_price.len());
+    assert!(base.num_juice_avail == trade_price.len());
+    assert!(base.num_juice_avail == left_price.len());
     let mut out: JuiceInfo = base.clone();
     for (id, juice_type) in out.all_juices.iter_mut().enumerate() {
-        juice_type.prices = juice_prices[id];
-        juice_type.leftover_values = leftover_prices[id];
+        juice_type.market_price = market_price[id];
+        juice_type.trade_price = trade_price[id];
+        juice_type.left_price = left_price[id];
         for (_, this) in juice_type.data.iter_mut() {
             this.normal_amt_used = if event {
                 this.normal_event_amt_used

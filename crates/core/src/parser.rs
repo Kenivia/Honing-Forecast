@@ -11,41 +11,44 @@ use std::array;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PreparationOutput {
-    pub budgets: [f64; 7],
     pub special_budget: i64,
-    pub price_arr: Vec<f64>,
-    pub leftover_values: Vec<f64>,
+
+    pub bound_mats: [f64; 7],
+    pub trade_mats: [f64; 7],
+
+    pub market_mats_price: Vec<f64>,
+    pub trade_mats_price: Vec<f64>,
+    pub left_mats_price: Vec<f64>,
+
+    pub bound_juice: Vec<(f64, f64)>,
+    pub trade_juice: Vec<(f64, f64)>,
+
     pub test_case: i64,
     pub juice_info: JuiceInfo,
-    pub juice_books_owned: Vec<(f64, f64)>,
     pub already_spent: Option<(Vec<i64>, Vec<i64>, Vec<i64>, f64)>,
     pub flat_alr_spent: Option<Vec<f64>>,
 }
 
-/// this mustve been vibe coded
-fn copy_leftover<T: Clone>(inp_leftover_values: &[T], original: &[T]) -> Vec<T> {
-    let out: Vec<T>;
-    if inp_leftover_values.is_empty() {
-        out = original.to_vec();
-    } else if inp_leftover_values.len() == original.len() {
-        out = inp_leftover_values.to_vec();
-    } else {
-        panic!("bad leftover input");
-    }
-    out
-}
-
 impl PreparationOutput {
     pub fn initialize(
-        hone_ticks: &[Vec<bool>],
-        input_budgets: &[i64],
+        normal_hone_ticks: &[Vec<bool>],
         adv_ticks: &[Vec<bool>],
         express_event: bool,
-        inp_price_arr: &[f64],
-        juice_books_budget: &[(i64, i64)],
-        juice_prices: &[(f64, f64)],
-        inp_leftover_values: &[f64],
-        inp_leftover_juice_values: &[(f64, f64)],
+
+        inp_bound_mats: &[i64],
+        inp_trade_mats: &[i64],
+
+        inp_market_mats_price: &[f64],
+        inp_trade_mats_price: &[f64],
+        inp_left_mats_price: &[f64],
+
+        inp_bound_juice: &[(i64, i64)],
+        inp_trade_juice: &[(i64, i64)],
+
+        inp_juice_market_price: &[(f64, f64)],
+        inp_juice_trade_price: &[(f64, f64)],
+        inp_juice_left_price: &[(f64, f64)],
+
         normal_progress_grid: Option<Vec<Vec<usize>>>,
         state_grid: Option<Vec<Vec<Vec<(bool, usize)>>>>,
         unlock_grid: Option<Vec<Vec<bool>>>,
@@ -57,26 +60,32 @@ impl PreparationOutput {
         Vec<Upgrade>,
         AHashMap<AdvConfig, AdvDistTriplet>,
     ) {
-        let price_arr: Vec<f64> = inp_price_arr.to_vec();
-        let leftover_values = copy_leftover(inp_leftover_values, inp_price_arr);
-        let leftover_juice_values = copy_leftover(inp_leftover_juice_values, juice_prices);
+        let price_arr: Vec<f64> = inp_market_mats_price.to_vec();
+        let tradable_leftover_arr: Vec<f64> = inp_trade_mats_price.to_vec();
+        let bound_budgets: [f64; 7] = array::from_fn(|index| inp_bound_mats[index] as f64);
 
-        let budgets: [f64; 7] = array::from_fn(|index| input_budgets[index] as f64);
+        let trade_budgets: [f64; 7] = array::from_fn(|index| inp_trade_mats[index] as f64);
 
         let juice_info: JuiceInfo = get_priced_juice_info(
             &BASE_JUICE_INFOS[tier],
-            juice_prices,
-            &leftover_juice_values,
+            inp_juice_market_price,
+            inp_juice_trade_price,
+            inp_juice_left_price,
             express_event,
         );
-        let juice_books_owned: Vec<(f64, f64)> = juice_books_budget
+        let bound_trade_juice: Vec<(f64, f64)> = inp_bound_juice
+            .iter()
+            .map(|(a, b)| (*a as f64, *b as f64))
+            .collect();
+
+        let tradable_juice_budgets: Vec<(f64, f64)> = inp_trade_juice
             .iter()
             .map(|(a, b)| (*a as f64, *b as f64))
             .collect();
         let mut adv_cache: AHashMap<AdvConfig, AdvDistTriplet> = AHashMap::new();
 
         let upgrade_arr: Vec<Upgrade> = parser(
-            hone_ticks,
+            normal_hone_ticks,
             adv_ticks,
             express_event,
             &juice_info,
@@ -91,18 +100,23 @@ impl PreparationOutput {
 
         let out: PreparationOutput = Self {
             // upgrade_arr,
-            budgets: budgets.try_into().unwrap(),
-            special_budget: input_budgets[7],
-            price_arr,
+            bound_mats: bound_budgets.try_into().unwrap(),
+            trade_mats: trade_budgets.try_into().unwrap(),
+            special_budget: inp_bound_mats[7],
+            market_mats_price: price_arr,
 
             test_case: -1, // arena will overwrite this
 
             juice_info,
-            juice_books_owned,
+            bound_juice: bound_trade_juice,
             // sellable_toggles, //TODO READ THIS FROM AN ACUTAL INPUT LATEr cant be bother rn
-            leftover_values,
+            left_mats_price: inp_left_mats_price.to_vec(),
             already_spent: None,
             flat_alr_spent: None,
+
+            trade_mats_price: tradable_leftover_arr,
+
+            trade_juice: tradable_juice_budgets,
         };
 
         (out, upgrade_arr, adv_cache)

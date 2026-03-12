@@ -96,8 +96,9 @@ NONE OF THIS DATA STUFF TURNED OUT TO BE NECESSARY because DP is op and we can j
 
 - Treat roster bound as ~~tradable? maybe make this a toggle~~ bound, because that makes no sense
   - Toggle should be "treat tradable as roster bound", which should be on by default because people are more worried about how much gold tehy will actually spend
-- update the SA computation to allow for 2 breakpoints
-  - will need to have 2 different budgets and another set of prices but shouldn't be that hard
+- ~~update the SA computation to allow for 2 breakpoints~~
+  - ~~will need to have 2 different budgets and another set of prices but shouldn't be that hard~~
+- Re-do test payloads because i changed like every field name
 
 ### 4th : Box opening recommendation
 

@@ -45,37 +45,37 @@ pub fn apply_price_generic(
     let mut juice_gold = vec![(0.0, 0.0); juice.len()];
 
     for (index, gold) in mats_gold.iter_mut().enumerate() {
-        let diff: f64 = prep_output.budgets[index] as f64 - mats[index];
+        let diff: f64 = prep_output.bound_mats[index] as f64 - mats[index];
         *gold = diff
             * if naive {
-                prep_output.price_arr[index]
+                prep_output.market_mats_price[index]
             } else if diff > 0.0 {
-                prep_output.leftover_values[index]
+                prep_output.left_mats_price[index]
             } else {
-                prep_output.price_arr[index]
+                prep_output.market_mats_price[index]
             };
     }
 
     for (id, (weap, armor)) in juice_gold.iter_mut().enumerate() {
-        let weap_diff: f64 = prep_output.juice_books_owned[id].0 - juice[id].0;
-        let armor_diff: f64 = prep_output.juice_books_owned[id].1 - juice[id].1;
+        let weap_diff: f64 = prep_output.bound_juice[id].0 - juice[id].0;
+        let armor_diff: f64 = prep_output.bound_juice[id].1 - juice[id].1;
 
         *weap = weap_diff
             * if naive {
-                prep_output.juice_info.all_juices[id].prices.0
+                prep_output.juice_info.all_juices[id].market_price.0
             } else if weap_diff > 0.0 {
-                prep_output.juice_info.all_juices[id].leftover_values.0
+                prep_output.juice_info.all_juices[id].left_price.0
             } else {
-                prep_output.juice_info.all_juices[id].prices.0
+                prep_output.juice_info.all_juices[id].market_price.0
             };
 
         *armor = armor_diff
             * if naive {
-                prep_output.juice_info.all_juices[id].prices.1
+                prep_output.juice_info.all_juices[id].market_price.1
             } else if armor_diff > 0.0 {
-                prep_output.juice_info.all_juices[id].leftover_values.1
+                prep_output.juice_info.all_juices[id].left_price.1
             } else {
-                prep_output.juice_info.all_juices[id].prices.1
+                prep_output.juice_info.all_juices[id].market_price.1
             };
     }
 
@@ -90,9 +90,9 @@ pub fn add_juice_gold_cost(
 ) {
     *cost_so_far += juice_info.all_juices[id][&upgrade.upgrade_index].normal_amt_used as f64
         * if upgrade.is_weapon {
-            juice_info.all_juices[id].prices.0
+            juice_info.all_juices[id].market_price.0
         } else {
-            juice_info.all_juices[id].prices.1
+            juice_info.all_juices[id].market_price.1
         };
 }
 

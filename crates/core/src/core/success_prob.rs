@@ -43,9 +43,9 @@ impl StateBundle {
         self.update_individual_support();
         self.compute_special_probs(false);
         let mut prob_leftover: Vec<f64> =
-            Vec::with_capacity(self.flattened_budgets().try_len().unwrap());
+            Vec::with_capacity(self.flattened_bound_budgets().try_len().unwrap());
 
-        let items: Vec<_> = self.flattened_budgets().enumerate().collect();
+        let items: Vec<_> = self.flattened_bound_budgets().enumerate().collect();
         let mut dummy_performance = Performance::new();
         for (support_index, effective_budget) in items {
             prob_leftover.push(self.one_dimension_prob(

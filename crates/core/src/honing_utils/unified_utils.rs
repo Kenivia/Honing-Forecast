@@ -150,18 +150,36 @@ impl StateBundle {
         }
     }
 
-    pub fn flattened_budgets(&self) -> impl Iterator<Item = f64> {
+    pub fn flattened_bound_budgets(&self) -> impl Iterator<Item = f64> {
         self.prep_output
-            .budgets
+            .bound_mats
             .iter()
             .copied()
-            .chain(self.prep_output.juice_books_owned.iter().map(|x| x.0))
-            .chain(self.prep_output.juice_books_owned.iter().map(|x| x.1))
+            .chain(self.prep_output.bound_juice.iter().map(|x| x.0))
+            .chain(self.prep_output.bound_juice.iter().map(|x| x.1))
     }
 
-    pub fn flattened_price(&self) -> impl Iterator<Item = f64> {
+    pub fn flattened_tradable_budgets(&self) -> impl Iterator<Item = f64> {
         self.prep_output
-            .price_arr
+            .bound_mats
+            .iter()
+            .copied()
+            .chain(self.prep_output.bound_juice.iter().map(|x| x.0))
+            .chain(self.prep_output.bound_juice.iter().map(|x| x.1))
+            .zip(
+                self.prep_output
+                    .trade_mats
+                    .iter()
+                    .copied()
+                    .chain(self.prep_output.trade_juice.iter().map(|x| x.0))
+                    .chain(self.prep_output.trade_juice.iter().map(|x| x.1)),
+            )
+            .map(|(bound, tradable)| bound + tradable)
+    }
+
+    pub fn flattened_full_price(&self) -> impl Iterator<Item = f64> {
+        self.prep_output
+            .market_mats_price
             .iter()
             .copied()
             .chain(
@@ -169,20 +187,41 @@ impl StateBundle {
                     .juice_info
                     .all_juices
                     .iter()
-                    .map(|x| x.prices.0),
+                    .map(|x| x.market_price.0),
             )
             .chain(
                 self.prep_output
                     .juice_info
                     .all_juices
                     .iter()
-                    .map(|x| x.prices.1),
+                    .map(|x| x.market_price.1),
+            )
+    }
+
+    pub fn flattened_tradable_leftover(&self) -> impl Iterator<Item = f64> {
+        self.prep_output
+            .trade_mats_price
+            .iter()
+            .copied()
+            .chain(
+                self.prep_output
+                    .juice_info
+                    .all_juices
+                    .iter()
+                    .map(|x| x.trade_price.0),
+            )
+            .chain(
+                self.prep_output
+                    .juice_info
+                    .all_juices
+                    .iter()
+                    .map(|x| x.trade_price.1),
             )
     }
 
     pub fn flattened_leftover(&self) -> impl Iterator<Item = f64> {
         self.prep_output
-            .leftover_values
+            .left_mats_price
             .iter()
             .copied()
             .chain(
@@ -190,14 +229,14 @@ impl StateBundle {
                     .juice_info
                     .all_juices
                     .iter()
-                    .map(|x| x.leftover_values.0),
+                    .map(|x| x.left_price.0),
             )
             .chain(
                 self.prep_output
                     .juice_info
                     .all_juices
                     .iter()
-                    .map(|x| x.leftover_values.1),
+                    .map(|x| x.left_price.1),
             )
     }
 }

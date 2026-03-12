@@ -26,7 +26,7 @@ pub fn evaluate_average_wrapper(input: JsValue) -> JsValue {
     let payload: Payload = from_value(input).unwrap();
     let mut state_bundle = StateBundle::init_from_payload(payload);
     let mut dummy_performance = Performance::new();
-    let metric = state_bundle.average_gold_metric_with_breakdown(&mut dummy_performance); // doesn't allow prob evaluation right now, even if metric_type is set 
+    let metric = state_bundle.average_gold_metric(true, &mut dummy_performance); // doesn't allow prob evaluation right now, even if metric_type is set 
     state_bundle.metric = metric;
     state_bundle.set_latest_special_probs();
     to_value(&state_bundle).unwrap()
@@ -45,7 +45,7 @@ pub fn optimize_average_wrapper(input: JsValue) -> JsValue {
     let mut dummy_performance = Performance::new();
     let mut best_state: StateBundle = solve(&mut rng, state_bundle.clone(), &mut dummy_performance);
 
-    best_state.average_gold_metric_with_breakdown(&mut dummy_performance);
+    best_state.average_gold_metric(true, &mut dummy_performance);
     best_state.set_latest_special_probs();
 
     to_value(&best_state).unwrap()

@@ -48,7 +48,7 @@ impl StateBundle {
     pub fn metric_router(&mut self, performance: &mut Performance) -> f64 {
         match self.metric_type {
             0 => unreachable!(), //self.success_prob_metric(performance),
-            1 => self.average_gold_metric(performance),
+            1 => self.average_gold_metric(false, performance),
             _ => NAN,
         }
     }
