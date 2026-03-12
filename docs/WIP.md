@@ -21,7 +21,16 @@ Specifically:
 
 #### Char page - Upgrade status inputs
 
-- How to intuitively toggle between the 3 states - maybe slider with 2 heads?
+- How to intuitively toggle between the 3 states  ~~ -maybe slider with 2 heads?~~
+  - If current is empty(everything starts here):  
+    - if left of current is NotYet, toggle everything to the left to done
+    - othewise, toggle current to Want
+  - If current is Want:
+    - Toggle self and everything to the left to Done
+  - If current is Done:
+    - Toggle current and everything to the right to NotYet
+- add a lil key to explain the colors
+- maybe import via uwuowo?
 
 #### Char page - Gold breakdown
 
@@ -41,6 +50,14 @@ Specifically:
 - 2 rows for juice & book, e.g. juice x10, no juice until x% artisan, juice after that
 - similar text instructions for advanced honing
 - "succeed and deduct costs" button, which prompts for either number of taps via a slider, which should show artisan & material costs / predicted material remaining
+
+#### Roster page - main
+
+- add char, delete char, duplicate that kind of stuff
+
+### Roster page - prices
+
+- Tradable, rosterbound, price inputs
 
 ### 2nd: Serca
 

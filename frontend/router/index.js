@@ -1,6 +1,6 @@
 import { createRouter, createWebHistory } from "vue-router"
-import CharView from "../Views/CharView.vue"
-import RosterView from "../Views/RosterView.vue"
+import CharView from "../Character/CharView.vue"
+import RosterView from "../Roster/RosterView.vue"
 
 const router = createRouter({
     history: createWebHistory(),

@@ -8,6 +8,9 @@ function metricToText(metric: number | null | undefined) {
 export function iconPath(name: string) {
     return IconMap[name] ?? ""
 }
+export function get_piece_name(upgrade: Upgrade) {
+    return PIECE_NAMES[upgrade.piece_type]
+}
 
 const SCALE_NAMES = {
     3: "thousand",
