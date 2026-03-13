@@ -1,10 +1,14 @@
 <script setup lang="ts">
 import { CharProfile, useProfilesStore } from "@/stores/CharacterProfile"
-import { PIECE_NAMES, NORMAL_COLS as NORMAL_COLS, NUM_PIECES as NORMAL_ROWS } from "@/Utils/Constants"
+import { PIECE_NAMES, NORMAL_COLS as NORMAL_COLS, NUM_PIECES as NORMAL_ROWS, ADV_COLS } from "@/Utils/Constants"
 import { iconPath } from "@/Utils/Helpers"
-import { UpgradeStatus } from "@/Utils/Interfaces"
+import { grids_to_keyed, UpgradeStatus } from "@/Utils/Interfaces"
 import { storeToRefs } from "pinia"
-import { toRaw } from "vue"
+import { eventNames } from "process"
+import { computed, toRaw, watch, watchEffect } from "vue"
+import StatusInput from "./StatusInput.vue"
+import { buildPayload } from "@/WasmInterface/payload"
+import { WasmOp } from "@/WasmInterface/js_to_wasm"
 
 const profile_store = useProfilesStore()
 
@@ -14,38 +18,82 @@ const props = defineProps<{
     grid_type: "normal" | "adv"
 }>()
 
-const relevant_grid = props.grid_type == "normal" ? active_profile.value.normal_grid : active_profile.value.adv_grid
-
+const COLS = props.grid_type == "normal" ? NORMAL_COLS : ADV_COLS
+const relevant_grid = computed(() => (props.grid_type === "normal" ? active_profile.value.normal_grid : active_profile.value.adv_grid))
 function check_all_same(col: number) {
-    if (relevant_grid.data.every((row: UpgradeStatus[]) => row[col] == UpgradeStatus.Done)) {
+    if (relevant_grid.value.data.every((row: UpgradeStatus[]) => row[col] == UpgradeStatus.Done)) {
         return UpgradeStatus.Done
     }
-    if (relevant_grid.data.every((row: UpgradeStatus[]) => row[col] == UpgradeStatus.Want)) {
+    if (relevant_grid.value.data.every((row: UpgradeStatus[]) => row[col] == UpgradeStatus.Want)) {
         return UpgradeStatus.Want
     }
     return UpgradeStatus.NotYet
 }
+function change_col(col: number) {
+    let current = check_all_same(col)
+    for (const [row] of relevant_grid.value.data.entries()) {
+        change_one(row, col, current)
+    }
+}
 
-function change_one(row: number, col: number) {
-    let current = relevant_grid.data[row][col]
+function change_one(row: number, col: number, current = relevant_grid.value.data[row][col]) {
     if (current == UpgradeStatus.NotYet) {
-        if (col > 0 && relevant_grid.data[row][col - 1] == UpgradeStatus.NotYet) {
-            for (let c = 0; c <= col; c++) {
-                relevant_grid.data[row][c] = UpgradeStatus.Done
+        let left_is_not_yet = true
+        for (const [index, cell] of relevant_grid.value.data[row].entries()) {
+            if (index > col) {
+                break
             }
-        } else {
-            relevant_grid.data[row][col] = UpgradeStatus.Want
+            if (cell == UpgradeStatus.Want) {
+                left_is_not_yet = false
+            }
+            if (!left_is_not_yet) {
+                relevant_grid.value.data[row][index] = UpgradeStatus.Want
+            }
         }
+        if (left_is_not_yet) {
+            for (const [index, cell] of relevant_grid.value.data[row].entries()) {
+                if (index > col) {
+                    break
+                }
+                relevant_grid.value.data[row][index] = UpgradeStatus.Done
+            }
+        }
+        relevant_grid.value.data[row][col] = UpgradeStatus.Want
     } else if (current == UpgradeStatus.Want) {
         for (let c = 0; c <= col; c++) {
-            relevant_grid.data[row][c] = UpgradeStatus.Done
+            relevant_grid.value.data[row][c] = UpgradeStatus.Done
         }
     } else if (current == UpgradeStatus.Done) {
-        for (let c = col; c < relevant_grid.data[row].length; c++) {
-            relevant_grid.data[row][c] = UpgradeStatus.NotYet
+        let right_is_not_yet = true
+        for (let index = relevant_grid.value.data[row].length; index >= 0; index--) {
+            if (index < col) {
+                break
+            }
+            let cell = relevant_grid.value.data[row][index]
+            if (!right_is_not_yet) {
+                relevant_grid.value.data[row][index] = UpgradeStatus.Want
+            }
+        }
+        if (right_is_not_yet) {
+            for (let index = relevant_grid.value.data[row].length; index >= 0; index--) {
+                if (index < col) {
+                    break
+                }
+                relevant_grid.value.data[row][index] = UpgradeStatus.NotYet
+            }
+            relevant_grid.value.data[row][col] = UpgradeStatus.NotYet
+        } else {
+            relevant_grid.value.data[row][col] = UpgradeStatus.Want
         }
     }
 }
+
+watchEffect(() => {
+    active_profile.value.KeyedUpgradeInput = grids_to_keyed(active_profile.value.normal_grid, active_profile.value.adv_grid)
+})
+watchEffect(() => {
+    active_profile.value.optimizer_worker_bundle.start(WasmOp.Parser)
+})
 </script>
 <template>
     <div class="hf-grid-content">
@@ -58,14 +106,34 @@ function change_one(row: number, col: number) {
                 </div>
             </div>
         </div>
-        <div ref="normalGridScrollRef" class="hf-grid-scroll">
+        <div ref="`${grid_type}_GridScrollRef`" class="hf-grid-scroll">
             <div class="hf-cell-grid hf-cell-grid-head" :style="{ gridTemplateColumns: `repeat(${NORMAL_COLS}, 26px)` }">
-                <button v-for="col in NORMAL_COLS" :key="`top-col-${col}`" class="hf-cell hf-cell-header" :class="{ selected: check_all_same(col - 1) }">
-                    +{{ col }}
+                <button
+                    v-for="col in COLS"
+                    :key="`${grid_type}-header-${col}`"
+                    class="hf-cell"
+                    :class="{ Done: check_all_same(col - 1) == UpgradeStatus.Done, Want: check_all_same(col - 1) == UpgradeStatus.Want }"
+                    @click="change_col(col - 1)"
+                >
+                    +{{ col * (grid_type == "normal" ? 1 : 10) }}
                 </button>
             </div>
-            <div v-for="row in NORMAL_ROWS" :key="`top-row-${row}`" class="hf-cell-grid" :style="{ gridTemplateColumns: `repeat(${NORMAL_COLS}, 26px)` }">
-                <button v-for="col in NORMAL_COLS" :key="`top-${row}-${col}`" class="hf-cell" :class="{ selected: relevant_grid.data[row - 1][col - 1] }" />
+            <div
+                v-for="row in NORMAL_ROWS"
+                :key="`${grid_type}-row-${row}`"
+                class="hf-cell-grid"
+                :style="{ gridTemplateColumns: `repeat(${NORMAL_COLS}, 26px)` }"
+            >
+                <button
+                    v-for="col in COLS"
+                    :key="`${grid_type}-${row}-${col}`"
+                    class="hf-cell"
+                    :class="{
+                        Done: relevant_grid.data[row - 1][col - 1] == UpgradeStatus.Done,
+                        Want: relevant_grid.data[row - 1][col - 1] == UpgradeStatus.Want,
+                    }"
+                    @click="change_one(row - 1, col - 1)"
+                />
                 <!-- @pointerdown.prevent="startTopDrag(row - 1, col - 1, $event)"
                     @pointerenter="dragTopCell(row - 1, col - 1)"
                     @click.prevent="onTopCellClick(row - 1, col - 1, $event)" -->
@@ -73,3 +141,76 @@ function change_one(row: number, col: number) {
         </div>
     </div>
 </template>
+<style>
+.hf-label-row {
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+}
+
+.hf-equip-label {
+    width: 100%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 6px;
+    color: var(--text-secondary);
+    font-size: 14px;
+    text-align: right;
+}
+.hf-equip-label img {
+    width: 27px;
+    height: 27px;
+    object-fit: contain;
+}
+
+.hf-grid-scroll {
+    overflow-x: auto;
+    min-width: 0;
+}
+.hf-grid-content {
+    display: flex;
+    gap: 4px;
+    min-width: 0;
+}
+
+.hf-cell-grid {
+    display: grid;
+    gap: 0;
+    margin-bottom: 2px;
+}
+
+.hf-cell-grid-head {
+    margin-bottom: 4px;
+}
+
+.hf-cell {
+    width: 26px;
+    height: 26px;
+    border: 1px solid var(--checkbox-border);
+    border-radius: 2px;
+    background: transparent;
+    color: var(--text-muted);
+    font-size: 11px;
+    cursor: pointer;
+    line-height: 1;
+    user-select: none;
+}
+
+.hf-cell.Done {
+    background: var(--checkbox-done-bg);
+    color: var(--checkbox-checked-text);
+    border-color: var(--checkbox-checked-border);
+}
+
+.hf-cell.Want {
+    background: var(--checkbox-checked-bg);
+    color: var(--checkbox-checked-text);
+    border-color: var(--checkbox-checked-border);
+}
+
+.hf-cell-header {
+    font-size: 10px;
+}
+</style>

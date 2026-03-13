@@ -1,4 +1,5 @@
 use serde::{Deserialize, Serialize};
+use serde_with::{DisplayFromStr, serde_as};
 use std::{
     collections::{HashMap, HashSet},
     f64::NAN,
@@ -18,12 +19,14 @@ pub struct OneUindexJuice {
     adv_base_amt_used: i64,
     adv_event_amt_used: i64,
 }
+#[serde_as]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct JuiceType {
     pub market_price: (f64, f64),
     pub trade_price: (f64, f64),
     pub left_price: (f64, f64),
     pub id: usize,
+    #[serde_as(as = "HashMap<DisplayFromStr, _>")]
     pub data: HashMap<usize, OneUindexJuice>,
 }
 impl Default for JuiceType {

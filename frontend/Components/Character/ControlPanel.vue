@@ -15,7 +15,7 @@ const store = useProfilesStore()
 const { active_profile, active_profile_index } = storeToRefs(store)
 
 function resetActive() {
-    store.profiles[active_profile_index.value] = createDefaultCharProfile()
+    store.resetActiveProfile()
 }
 
 // function resetOptimizerState() {
@@ -80,7 +80,7 @@ const optimizer_progress = optimizer_worker.est_progress_percentage
                           : 'linear-gradient(180deg, #e6c86f 0%, #cfaf52 100%)',
                     color: optimizer_busy ? 'var(--text-muted)' : has_run_optimizer ? 'var(--hf-text-bright)' : '#1b1f25',
                 }"
-                @click="optimizer_worker.start(WasmOp.OptimizeAverage, buildPayload(WasmOp.OptimizeAverage))"
+                @click="optimizer_worker.start(WasmOp.OptimizeAverage)"
             >
                 {{ optimizer_busy ? "Cancel Optimize" : has_run_optimizer ? "Re-run Optimizer" : ">>> Optimize <<<" }}
             </button>

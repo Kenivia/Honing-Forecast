@@ -36,11 +36,9 @@ const histogram_result: Ref<HistogramOutputs | null> = toRef(() => active_profil
                         <img :src="iconPath(label)" :alt="label" />
                     </div>
                     <MaterialCell :input_columns="[active_profile.bound_budgets, average_breakdown]" :index="index"></MaterialCell>
-
-                    {{ console.log(label, index, GRAPH_COLORS.length, GRAPH_COLORS[index]) }}
                     <MaterialGraph
-                        :data="histogram_result?.cum_percentiles[index] ?? null"
-                        :average="histogram_result?.average[index] ?? null"
+                        :data="histogram_result?.cum_percentiles?.[index] ?? null"
+                        :average="histogram_result?.average?.[index] ?? null"
                         :color-var="GRAPH_COLORS[index]"
                         :cumulative="active_profile.cumulative_graph"
                         :height="120"

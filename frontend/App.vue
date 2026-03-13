@@ -8,12 +8,11 @@ import { CharProfile } from "./stores/CharacterProfile"
 import { storeToRefs } from "pinia"
 import { toRaw } from "vue"
 
+const roster_store = uesRosterStore()
+roster_store.init()
 const profile_store = useProfilesStore()
 profile_store.init()
 const { all_profiles } = storeToRefs(profile_store)
-
-const roster_store = uesRosterStore()
-roster_store.init()
 </script>
 
 <template>

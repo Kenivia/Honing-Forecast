@@ -50,8 +50,11 @@ pub fn evaluate_average_wrapper(input_state_bundle: JsValue) -> JsValue {
 #[must_use]
 pub fn optimize_average_wrapper(input_state_bundle: JsValue) -> JsValue {
     console_error_panic_hook::set_once();
-
-    let state_bundle: StateBundle = from_value(input_state_bundle).unwrap();
+    let json_string = js_sys::JSON::stringify(&input_state_bundle).unwrap();
+    let json_str: String = json_string.into();
+    let result: Result<StateBundle, _> = serde_json::from_str(&json_str);
+    let state_bundle: StateBundle = result.unwrap();
+    // let state_bundle: StateBundle = from_value(input_state_bundle).unwrap();
 
     let mut rng: ThreadRng = rand::rng();
     let mut dummy_performance = Performance::new();

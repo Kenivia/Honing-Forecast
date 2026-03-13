@@ -19,4 +19,10 @@ js-sys = "0.3"
 console_error_panic_hook = "0.1"
 web-sys = { version = "0.3", features = ["console"] }
 getrandom = { version = "0.3", features = ["wasm_js"] }
+serde_json = "1.0"
 
+
+[features]
+# wasm feature here to make my_dbg macro happy  
+wasm=[]  
+default=["wasm"]

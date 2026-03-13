@@ -59,7 +59,7 @@ impl Upgrade {
                 }
             }
 
-            self.weap_juice_costs[id].update_payload(
+            self.cost_dist[id + 7].update_payload(
                 weap_support,
                 self.state.hash,
                 this_dist,
@@ -68,7 +68,7 @@ impl Upgrade {
                 self.alr_failed,
             );
 
-            self.armor_juice_costs[id].update_payload(
+            self.cost_dist[id + 7 + juice_info.num_juice_avail].update_payload(
                 armor_support,
                 self.state.hash,
                 this_dist,

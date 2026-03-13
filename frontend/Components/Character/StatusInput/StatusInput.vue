@@ -10,7 +10,7 @@ import TickboxGrid from "./TickboxGrid.vue"
                 <span class="hf-card-hint">Build target grid</span>
             </div>
             <div class="hf-card-body">
-                <TickboxGrid grid_type="normal"></TickboxGrid>
+                <TickboxGrid grid_type="normal" />
             </div>
         </section>
 
@@ -20,46 +20,7 @@ import TickboxGrid from "./TickboxGrid.vue"
                 <span class="hf-card-hint">Juice on Grace assumed</span>
             </div>
             <div class="hf-card-body">
-                <TickboxGrid grid_type="normal" />
-                <!-- <div class="hf-grid-content hf-grid-content-compact">
-                    <div class="hf-label-col hf-label-col-compact">
-                        <div class="hf-label-row" />
-                        <div v-for="piece in PIECE_NAMES" :key="`adv-${piece}`" class="hf-label-row">
-                            <div class="hf-equip-label hf-equip-label-compact">
-                                <img :src="iconPath(piece)" :alt="piece" />
-                            </div>
-                        </div>
-                    </div>
-                    <div>
-                        <div class="hf-cell-grid hf-cell-grid-head" :style="{ gridTemplateColumns: `repeat(${BOTTOM_COLS}, 26px)` }">
-                            <button
-                                v-for="(bonus, idx) in [10, 20, 30, 40]"
-                                :key="`bottom-col-${bonus}`"
-                                class="hf-cell hf-cell-header"
-                                :class="{ selected: isBottomColChecked(idx) }"
-                                @click="toggleBottomCol(idx)"
-                            >
-                                +{{ bonus }}
-                            </button>
-                        </div>
-                        <div
-                            v-for="row in BOTTOM_ROWS"
-                            :key="`bottom-row-${row}`"
-                            class="hf-cell-grid"
-                            :style="{ gridTemplateColumns: `repeat(${BOTTOM_COLS}, 26px)` }"
-                        >
-                            <button
-                                v-for="col in BOTTOM_COLS"
-                                :key="`bottom-${row}-${col}`"
-                                class="hf-cell"
-                                :class="{ selected: bottomGrid[row - 1][col - 1] }"
-                                @pointerdown.prevent="startBottomDrag(row - 1, col - 1, $event)"
-                                @pointerenter="dragBottomCell(row - 1, col - 1)"
-                                @click.prevent="onBottomCellClick(row - 1, col - 1, $event)"
-                            />
-                        </div>
-                    </div>
-                </div> -->
+                <TickboxGrid grid_type="adv" />
             </div>
         </section>
     </div>

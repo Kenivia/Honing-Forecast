@@ -63,6 +63,7 @@
     --checkbox-border: var(--hf-border-subtle);
     --checkbox-focus-ring: rgba(201, 168, 76, 0.25);
     --checkbox-checked-bg: rgba(201, 168, 76, 0.95);
+    --checkbox-done-bg: rgba(133, 219, 116, 0.95);
     --checkbox-checked-text: #0b1016;
     --checkbox-checked-border: var(--hf-gold);
     --checkbox-hover-bg: var(--hf-bg-hover);
@@ -480,7 +481,7 @@ body::before {
     justify-content: stretch;
 }
 
-.hf-page-pane .page > * {
+.hf-page-pane .page>* {
     width: 100%;
 }
 

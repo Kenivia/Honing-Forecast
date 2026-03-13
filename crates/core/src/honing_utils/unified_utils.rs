@@ -80,33 +80,23 @@ impl StateBundle {
         &self,
         support_index: i64,
     ) -> Box<dyn DoubleEndedIterator<Item = &Support> + '_> {
-        let num_juice_avail = self.prep_output.juice_info.num_juice_avail;
         Box::new(self.special_state.iter().map(move |&u_index| {
             let upgrade = &self.upgrade_arr[u_index];
             if support_index < 0 {
                 unreachable!()
-            } else if support_index < 7 {
-                &upgrade.cost_dist[support_index as usize]
-            } else if support_index < 7 + num_juice_avail as i64 {
-                &upgrade.weap_juice_costs[support_index as usize - 7]
             } else {
-                &upgrade.armor_juice_costs[support_index as usize - 7 - num_juice_avail]
+                &upgrade.cost_dist[support_index as usize]
             }
         }))
     }
 
     pub fn support_from_index(&self, u_index: usize, support_index: i64) -> &Support {
         let upgrade = &self.upgrade_arr[u_index];
-        let num_juice_avail = self.prep_output.juice_info.num_juice_avail;
 
         if support_index < 0 {
             unreachable!()
-        } else if support_index < 7 {
-            &upgrade.cost_dist[support_index as usize]
-        } else if support_index < 7 + num_juice_avail as i64 {
-            &upgrade.weap_juice_costs[support_index as usize - 7]
         } else {
-            &upgrade.armor_juice_costs[support_index as usize - 7 - num_juice_avail]
+            &upgrade.cost_dist[support_index as usize]
         }
     }
 
@@ -115,7 +105,6 @@ impl StateBundle {
         support_index: i64,
         skip_count: usize,
     ) -> Box<dyn DoubleEndedIterator<Item = &Vec<(f64, f64)>> + '_> {
-        let num_juice_avail = self.prep_output.juice_info.num_juice_avail;
         Box::new(
             self.special_state
                 .iter()
@@ -124,14 +113,8 @@ impl StateBundle {
                     let upgrade = &self.upgrade_arr[u_index];
                     if support_index < 0 {
                         unreachable!()
-                    } else if support_index < 7 {
-                        upgrade.cost_dist[support_index as usize]
-                            .access_collapsed(skip_count > index)
-                    } else if support_index < 7 + num_juice_avail as i64 {
-                        upgrade.weap_juice_costs[support_index as usize - 7]
-                            .access_collapsed(skip_count > index)
                     } else {
-                        upgrade.armor_juice_costs[support_index as usize - 7 - num_juice_avail]
+                        upgrade.cost_dist[support_index as usize]
                             .access_collapsed(skip_count > index)
                     }
                 }),

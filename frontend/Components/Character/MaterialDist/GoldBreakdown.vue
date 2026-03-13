@@ -10,7 +10,7 @@ const profile_store = useProfilesStore()
 
 const { active_profile } = storeToRefs(useProfilesStore())
 
-const state_bundle: Ref<null | StateBundle> = toRef(active_profile.value.optimizer_worker_bundle, "result")
+const state_bundle: Ref<null | StateBundle> = toRef(active_profile.value, "state_bundle")
 const num_juice_avail: number = (ALL_LABELS.length - 7) / 2
 
 function goldBreakdownValue(offset: number) {

@@ -1,7 +1,21 @@
 import { IconMap, PIECE_NAMES } from "./Constants"
 import { Upgrade } from "./Interfaces"
 const ordinalRules = new Intl.PluralRules("en", { type: "ordinal" })
-function metricToText(metric: number | null | undefined) {
+
+export function mapToObject(map) {
+    const obj = {}
+    console.log(map, typeof map)
+    try {
+        for (const [key, value] of map.entries()) {
+            obj[key] = value
+        }
+    } catch {
+        return map
+    }
+
+    return obj
+}
+export function metricToText(metric: number | null | undefined) {
     if (metric === null || metric === undefined || !Number.isFinite(metric)) return "N/A"
     return `${Math.round(-metric).toLocaleString("en-US")}g`
 }

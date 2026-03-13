@@ -70,7 +70,7 @@ export function createInputColumn(type: InputType, data?: string[], upper_bound?
         data: data ?? ALL_LABELS.map((_) => "0"),
         upper_bound: upper_bound ?? ALL_LABELS.map((_) => Infinity),
         enabled: enabled ?? ALL_LABELS.map((_) => false),
-        toNum() {
+        toNum(): number[] {
             return this.data.map((x: string, index: number) => parseInput(this, index, x))
         },
     }
@@ -95,7 +95,7 @@ export function createStatusGrid(rows: number, cols: number): StatusGrid {
         data: Array.from({ length: rows }, () => Array(cols).fill(UpgradeStatus.NotYet)),
 
         toBool(): BoolGrid {
-            return this.data.map((row: UpgradeStatus[]) => row.map((cell) => cell == UpgradeStatus.NotYet))
+            return this.data.map((row: UpgradeStatus[]) => row.map((cell) => cell == UpgradeStatus.Want))
         },
     }
 }
@@ -104,8 +104,9 @@ export type MaterialInput = OneMaterial[]
 
 //                 piece type, upgrade index, is_adv, normal_progress, state, unlock, succeeded, adv_progress
 export type OneUpgrade = [number, number, boolean, number | null, State[], boolean, boolean, AdvProgress | null]
-export const DEFAULT_ONE_UPGRADE = [0, [], false, false, [0, 0, false, false]] // excluding the first 3
 export type UpgradeInput = OneUpgrade[]
+export const DEFAULT_ONE_UPGRADE = [0, [], false, false, [0, 0, false, false]] // excluding the first 3
+
 export type KeyedUpgradeInput = Record<OneUpgradeKey, OneUpgrade>
 type OneUpgradeKey = `${number},${number},${"true" | "false"}`
 export function to_upgrade_key(piece_type: number, upgrade_index: number, is_adv: boolean): OneUpgradeKey {
@@ -114,24 +115,26 @@ export function to_upgrade_key(piece_type: number, upgrade_index: number, is_adv
 export function keyed_to_array(KeyedUpgradeInput: KeyedUpgradeInput): UpgradeInput {
     return Object.entries(KeyedUpgradeInput).map(([_, one_upgrade]) => one_upgrade)
 }
-export function grids_to_keyed(normal_grid: StatusGrid, adv_grid: StatusGrid, existing_keyed_upgrade_input: KeyedUpgradeInput) {
+export function grids_to_keyed(normal_grid: StatusGrid, adv_grid: StatusGrid) {
+    let out: KeyedUpgradeInput = {}
     for (const [piece_type, row] of normal_grid.toBool().entries()) {
-        for (const [upgrade_index, _] of row.entries()) {
-            let key = to_upgrade_key(piece_type, upgrade_index, false)
-            if (!existing_keyed_upgrade_input.hasOwnProperty(key)) {
-                existing_keyed_upgrade_input[key] = [piece_type, upgrade_index, false, 0, [], false, false, null]
+        for (const [upgrade_index, cell] of row.entries()) {
+            if (cell) {
+                let key = to_upgrade_key(piece_type, upgrade_index, false)
+                out[key] = [piece_type, upgrade_index, false, 0, [], false, false, null]
             }
         }
     }
     for (const [piece_type, row] of adv_grid.toBool().entries()) {
-        for (const [upgrade_index, _] of row.entries()) {
-            let key = to_upgrade_key(piece_type, upgrade_index, true)
-            if (!existing_keyed_upgrade_input.hasOwnProperty(key)) {
-                existing_keyed_upgrade_input[key] = [piece_type, upgrade_index, true, null, [], false, false, [0, 0, false, false]]
+        for (const [upgrade_index, cell] of row.entries()) {
+            if (cell) {
+                let key = to_upgrade_key(piece_type, upgrade_index, true)
+
+                out[key] = [piece_type, upgrade_index, true, null, [], false, false, [0, 0, false, false]]
             }
         }
     }
-    return existing_keyed_upgrade_input
+    return out
 }
 
 export type HistogramPair = [number, number]
