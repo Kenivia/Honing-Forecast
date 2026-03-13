@@ -1,19 +1,20 @@
 <script setup lang="ts">
 import { CharProfile, useProfilesStore } from "@/stores/CharacterProfile"
-import { JUICE_LABELS, MATS_LABELS, PIECE_NAMES } from "@/Utils/Constants"
+import { ALL_LABELS, JUICE_LABELS, MATS_LABELS, PIECE_NAMES } from "@/Utils/Constants"
 import { iconPath } from "@/Utils/Helpers"
 import { StateBundle, UpgradeStatus } from "@/Utils/Interfaces"
 import { storeToRefs } from "pinia"
-import { Ref } from "vue"
+import { Ref, toRef } from "vue"
 
 const profile_store = useProfilesStore()
 
 const { active_profile } = storeToRefs(useProfilesStore())
 
-const state_bundle = active_profile.value.state_bundle
-const num_juice_avail: number = state_bundle?.prep_output.juice_info.num_juice_avail ?? NaN
+const state_bundle: Ref<null | StateBundle> = toRef(active_profile.value.optimizer_worker_bundle, "result")
+const num_juice_avail: number = (ALL_LABELS.length - 7) / 2
+
 function goldBreakdownValue(offset: number) {
-    const source = state_bundle?.average_breakdown ?? new Array(state_bundle.prep_output.juice_info.total_num_avail).fill(0)
+    const source = state_bundle.value?.average_breakdown ?? new Array(ALL_LABELS.length - 7).fill(0)
     const value = Number(source[offset])
     return Number.isFinite(value) ? value : undefined
 }
@@ -65,5 +66,5 @@ function metricToText(metric: number | null | undefined) {
         </div>
     </div>
 
-    <div class="hf-combined-cost">Combined: {{ metricToText(state_bundle.metric) }}</div>
+    <div class="hf-combined-cost">Combined: {{ metricToText(state_bundle?.metric) }}</div>
 </template>

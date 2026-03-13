@@ -1,17 +1,17 @@
 import { ref, onUnmounted, Ref } from "vue"
 import { WasmOp } from "./js_to_wasm"
-import { EvalPayload } from "./payload"
 import { StateBundle } from "@/Utils/Interfaces"
+import { buildPayload } from "./payload"
 const createWorker = () => new Worker(new URL("./js_to_wasm.ts", import.meta.url), { type: "module" })
 
-export function createWorkerBundle(resultRef?: Ref<null | StateBundle>) {
+export function createWorkerBundle(given_result?: null | StateBundle) {
     let worker = null
     const status: Ref<"idle" | "success" | "busy" | "error"> = ref("idle")
     const error = ref(null)
-    const result = resultRef ?? ref(null)
+    const result = ref(given_result)
     let debounceTimer = null
 
-    function _launch(wasm_op: WasmOp, payload: EvalPayload) {
+    function _launch(wasm_op: WasmOp) {
         cancel()
 
         status.value = "busy"
@@ -35,16 +35,16 @@ export function createWorkerBundle(resultRef?: Ref<null | StateBundle>) {
             worker = null
         }
 
-        worker.postMessage({ type: "message", wasm_op, payload })
+        worker.postMessage({ type: "message", wasm_op, payload: buildPayload(wasm_op) })
     }
 
-    function start(wasm_op: WasmOp, payload: EvalPayload, debounce?: number) {
+    function start(wasm_op: WasmOp, debounce?: number) {
         if (debounce > 0) {
             clearTimeout(debounceTimer)
             status.value = "busy"
-            debounceTimer = setTimeout(() => _launch(wasm_op, payload), debounce)
+            debounceTimer = setTimeout(() => _launch(wasm_op), debounce)
         } else {
-            _launch(wasm_op, payload)
+            _launch(wasm_op)
         }
     }
 

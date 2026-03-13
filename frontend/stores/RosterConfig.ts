@@ -17,7 +17,7 @@ export const uesRosterStore = defineStore("roster", {
     },
     actions: {
         init() {
-            this.roster_config = loadRosterConfig()
+            this.data = loadRosterConfig()
         },
     },
 })

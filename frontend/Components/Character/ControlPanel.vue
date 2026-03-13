@@ -44,7 +44,7 @@ const optimizer_progress = optimizer_worker.est_progress_percentage
             <div class="hf-card-body hf-options-body">
                 <div class="hf-options-row">
                     <button class="hf-header-link-btn" @click="resetActive">Reset All</button>
-                    <button class="hf-header-link-btn" @click="resetOptimizerState">Reset Optimizer</button>
+                    <!-- <button class="hf-header-link-btn" @click="resetOptimizerState">Reset Optimizer</button> -->
                 </div>
                 <button class="hf-header-link-btn" @click="copyPayload">Copy Payload</button>
 

@@ -1,5 +1,5 @@
-export const MATS_LABELS = ["Red", "Blue", "Leaps", "Shards", "Oreha", "Gold", "Silver", "Special Leap"]
-
+export const MATS_LABELS = ["Red", "Blue", "Leaps", "Shards", "Oreha", "Gold", "Silver"]
+export const SPECIAL_LEAP_LABEL = "Special Leap"
 export const JUICE_LABELS = [
     ["Lava's Breath", "Glacier's Breath"],
     ["11-14 Weapon", "11-14 Armor"],
@@ -23,14 +23,14 @@ export const GRAPH_COLORS = [
     "--series-books",
     "--series-books",
     "--series-books",
+    "--series-red",
+    "--series-red",
+    "--series-red",
+    "--series-red",
     "--series-blue",
     "--series-books",
     "--series-books",
     "--series-books",
-    "--series-red",
-    "--series-red",
-    "--series-red",
-    "--series-red",
     "--series-blue",
     "--series-blue",
     "--series-blue",

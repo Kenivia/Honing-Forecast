@@ -54,9 +54,14 @@ export function loadCharProfiles(): { profiles: CharProfile[]; active_profile_in
     if (!raw) return DEFAULT_PROFILES_STATE
 
     const parsed = JSON.parse(raw)
+    for (const profile of parsed.profiles) {
+        profile.optimizer_worker_bundle = createWorkerBundle(profile.optimizer_worker_result)
+        profile.histogram_worker_bundle = createWorkerBundle(profile.histogram_worker_result)
+    }
 
     return parsed
 }
+export function writeCharProfiles() {}
 const DEFAULT_PROFILES_STATE = {
     profiles: new Array(createDefaultCharProfile()),
     active_profile_index: 0,
@@ -76,10 +81,8 @@ export interface CharProfile {
     auto_start_optimizer: boolean
     has_run_optimizer: boolean
     optimizer_worker_bundle: any
-    evaluate_worker_bundle: any
     histogram_worker_bundle: any
 
-    state_bundle: Ref<null | StateBundle>
     normal_grid: StatusGrid
     adv_grid: StatusGrid
 
@@ -100,8 +103,6 @@ export interface CharProfile {
 }
 
 export function createDefaultCharProfile(): CharProfile {
-    const state_bundle: Ref<null | StateBundle> = ref(null) // one ref, shared across all three workers
-
     return {
         treatment_plan: TreatmentPlan.TreatRosterAsBound,
 
@@ -110,11 +111,9 @@ export function createDefaultCharProfile(): CharProfile {
 
         auto_start_optimizer: false,
         has_run_optimizer: false,
-        optimizer_worker_bundle: createWorkerBundle(state_bundle),
-        evaluate_worker_bundle: createWorkerBundle(state_bundle),
+        optimizer_worker_bundle: createWorkerBundle(),
         histogram_worker_bundle: createWorkerBundle(),
 
-        state_bundle: state_bundle,
         normal_grid: createStatusGrid(NUM_PIECES, NORMAL_COLS),
         adv_grid: createStatusGrid(NUM_PIECES, ADV_COLS),
 

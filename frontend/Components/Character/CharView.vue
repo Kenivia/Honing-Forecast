@@ -10,6 +10,6 @@ import StatusInput from "@/Components/Character/StatusInput/StatusInput.vue"
         <StatusInput />
         <ControlPanel />
         <MaterialDist />
-        <Instructions />
+        <!-- <Instructions /> -->
     </div>
 </template>

@@ -133,3 +133,9 @@ export function grids_to_keyed(normal_grid: StatusGrid, adv_grid: StatusGrid, ex
     }
     return existing_keyed_upgrade_input
 }
+
+export type HistogramPair = [number, number]
+export interface HistogramOutputs {
+    cum_percentiles: HistogramPair[][]
+    average: number[]
+}
