@@ -148,6 +148,7 @@ NONE OF THIS DATA STUFF TURNED OUT TO BE NECESSARY because DP is op and we can j
     2. suggested strategy (state)
 4. Maybe hard-code the most common setup
 5. Remember to corroborate the new dp results with old mc results
+6. Allow arbitrary juice / scroll effectiveness (currently it uses hardcoded values and ignore the inputted ones)
 
 - ~~This kinda uses an egregious amt of memory rn, need to benchmark how much the cache actually helps and how to reduce it~~
 - ~~it's also kinda just slow, will prolly benefit from hard-coding known stuff~~

@@ -5,7 +5,7 @@ use crate::constants::{
 use once_cell::sync::Lazy;
 
 pub const TEST_PAYLOAD_PATH: &str = "/test_cases/payloads";
-pub const FLOAT_TOL: f64 = 1e-12;
+pub const FLOAT_TOL: f64 = 1e-9; // -12 is known to cause problems with brute 
 pub const SPECIAL_TOL: f64 = 1e-7;
 pub const MONTE_CARLO_CONFIDENCE: f64 = 0.999;
 pub const MONTE_CARLO_PRECISION: f64 = 0.001; // percentage error

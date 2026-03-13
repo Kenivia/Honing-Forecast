@@ -64,7 +64,7 @@ export function buildPayload(wasm_op: WasmOp): EvalPayload | StateBundle {
             metric_type: 1,
         }
     } else {
-        // console.log(toRaw(active_profile.value.state_bundle))
+        console.log(toRaw(active_profile.value.state_bundle))
         let out = toRaw(active_profile.value.state_bundle)
         for (let index = 0; index < out.prep_output.juice_info.all_juices.length; index++) {
             out.prep_output.juice_info.all_juices[index].data = mapToObject(out.prep_output.juice_info.all_juices[index].data)

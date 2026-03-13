@@ -76,7 +76,7 @@ export function createInputColumn(type: InputType, data?: string[], upper_bound?
     }
 }
 export function modifyInputColumn(input_column: InputColumn, index: number, event: Event) {
-    input_column[index] = parseInput(input_column, index, (event.target as HTMLInputElement).value)
+    input_column[index] = String(parseInput(input_column, index, (event.target as HTMLInputElement).value))
 }
 function parseInput(input_column: InputColumn, index: number, input: string): number {
     if (!input_column.enabled[index]) {

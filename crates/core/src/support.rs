@@ -110,7 +110,7 @@ impl Support {
             while let Some((&s, &p)) = iter.next() {
                 cur_p += p;
                 if iter.peek().is_none() || s != *iter.peek().unwrap().0 {
-                    if cur_p > FLOAT_TOL {
+                    if cur_p != 0.0 {
                         max_value = max_value.max(s);
                         min_value = min_value.min(s);
                         result.push((s, cur_p));

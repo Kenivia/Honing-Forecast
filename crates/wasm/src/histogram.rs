@@ -32,32 +32,33 @@ pub fn histogram(state_bundle: &mut StateBundle) -> HistogramOutputs {
         for index in 0..(BUCKET_COUNT + 1) {
             let this_budget =
                 this_one_tap + index as f64 * (this_pity - this_one_tap) / (BUCKET_COUNT) as f64;
-            if this_budget > bound_budget
-                && (this_budget - bound_budget).abs() > FLOAT_TOL
-                && !bound_done
-            {
-                item.push((
-                    bound_budget,
-                    state_bundle.one_dimension_prob(
-                        support_index as i64,
+            if this_budget > bound_budget && !bound_done {
+                if (this_budget - bound_budget).abs() > FLOAT_TOL {
+                    // dont bother if budget happends to land on the a percentile already
+                    item.push((
                         bound_budget,
-                        &mut dummy_performance,
-                    ),
-                ));
+                        state_bundle.one_dimension_prob(
+                            support_index as i64,
+                            bound_budget,
+                            &mut dummy_performance,
+                        ),
+                    ));
+                }
+
                 bound_done = true;
             }
-            if this_budget > bound_budget + trade_budget
-                && (this_budget - bound_budget - trade_budget).abs() > FLOAT_TOL
-                && !trade_done
-            {
-                item.push((
-                    bound_budget + trade_budget,
-                    state_bundle.one_dimension_prob(
-                        support_index as i64,
+            if this_budget > bound_budget + trade_budget && !trade_done {
+                if (this_budget - bound_budget - trade_budget).abs() > FLOAT_TOL {
+                    item.push((
                         bound_budget + trade_budget,
-                        &mut dummy_performance,
-                    ),
-                ));
+                        state_bundle.one_dimension_prob(
+                            support_index as i64,
+                            bound_budget + trade_budget,
+                            &mut dummy_performance,
+                        ),
+                    ));
+                }
+
                 trade_done = true;
             }
             item.push((

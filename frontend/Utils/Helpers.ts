@@ -4,7 +4,6 @@ const ordinalRules = new Intl.PluralRules("en", { type: "ordinal" })
 
 export function mapToObject(map) {
     const obj = {}
-    console.log(map, typeof map)
     try {
         for (const [key, value] of map.entries()) {
             obj[key] = value

@@ -1,14 +1,14 @@
 import { ref, onUnmounted, Ref, toRaw } from "vue"
 import { WasmOp } from "./js_to_wasm"
-import { StateBundle } from "@/Utils/Interfaces"
+import { HistogramOutputs, StateBundle } from "@/Utils/Interfaces"
 import { buildPayload } from "./payload"
 const createWorker = () => new Worker(new URL("./js_to_wasm.ts", import.meta.url), { type: "module" })
 
-export function createWorkerBundle(state_bundle: Ref<null | StateBundle>) {
+export function createWorkerBundle(inp: Ref<null | StateBundle | HistogramOutputs>) {
     let worker = null
     const status: Ref<"idle" | "success" | "busy" | "error"> = ref("idle")
     const error = ref(null)
-    const result = state_bundle
+    const result = inp
     let debounceTimer = null
 
     function _launch(wasm_op: WasmOp) {
@@ -20,6 +20,7 @@ export function createWorkerBundle(state_bundle: Ref<null | StateBundle>) {
         worker = createWorker()
 
         worker.onmessage = (e) => {
+            console.log(e)
             result.value = e.data.result
 
             if (e.type === "result") {

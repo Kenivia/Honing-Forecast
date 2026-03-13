@@ -5,6 +5,7 @@ import {
     BoolGrid,
     createInputColumn,
     createStatusGrid,
+    HistogramOutputs,
     InputColumn,
     InputType,
     KeyedUpgradeInput,
@@ -96,7 +97,7 @@ export interface CharProfile {
     optimizer_worker_bundle: any
     histogram_worker_bundle: any
     state_bundle: Ref<null | StateBundle>
-
+    histogram_result: Ref<null | HistogramOutputs>
     normal_grid: StatusGrid
     adv_grid: StatusGrid
 
@@ -118,6 +119,7 @@ export interface CharProfile {
 
 export function createDefaultCharProfile(): CharProfile {
     let state_bundle: Ref<null | StateBundle> = ref(null)
+    let histogram_result: Ref<null | HistogramOutputs> = ref(null)
     return {
         treatment_plan: TreatmentPlan.TreatRosterAsBound,
 
@@ -127,8 +129,9 @@ export function createDefaultCharProfile(): CharProfile {
         auto_start_optimizer: false,
         has_run_optimizer: false,
         optimizer_worker_bundle: createWorkerBundle(state_bundle),
-        histogram_worker_bundle: createWorkerBundle(state_bundle),
+        histogram_worker_bundle: createWorkerBundle(histogram_result),
         state_bundle,
+        histogram_result,
         normal_grid: createStatusGrid(NUM_PIECES, NORMAL_COLS),
         adv_grid: createStatusGrid(NUM_PIECES, ADV_COLS),
 

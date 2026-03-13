@@ -107,6 +107,12 @@ watchEffect(() => {
 watchEffect(() => {
     active_profile.value.optimizer_worker_bundle.start(WasmOp.Parser)
 })
+
+watchEffect(() => {
+    if (active_profile.value.state_bundle !== null) {
+        active_profile.value.histogram_worker_bundle.start(WasmOp.Histogram)
+    }
+})
 </script>
 <template>
     <div class="hf-grid-content">
