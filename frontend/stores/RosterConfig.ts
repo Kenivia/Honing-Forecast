@@ -10,14 +10,14 @@ export interface RosterConfig {
 }
 export const uesRosterStore = defineStore("roster", {
     state: () => ({
-        roster_config: null,
+        data: null,
     }),
     getters: {
-        getRoster: (state) => state.roster_config,
+        roster_config: (state) => state.data,
     },
     actions: {
-        initRoster(roster: RosterConfig) {
-            this.roster_config = roster
+        init() {
+            this.roster_config = loadRosterConfig()
         },
     },
 })

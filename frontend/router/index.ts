@@ -11,12 +11,11 @@ const router = createRouter({
             component: RosterView,
         },
         {
-            path: "/:CharName",
+            path: "/YourChar",
             name: "char",
             component: CharView,
-            props: true,
         },
-        { path: "/:pathMatch(.*)*", redirect: "/" },
+        // { path: "/:pathMatch(.*)*", redirect: "/" },
     ],
 })
 

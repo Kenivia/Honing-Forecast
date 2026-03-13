@@ -5,6 +5,7 @@ import { CharProfile, TreatmentPlan, useProfilesStore } from "@/stores/Character
 import { RosterConfig, uesRosterStore } from "@/stores/RosterConfig"
 
 import { AdvProgress, keyed_to_array, MaterialInput, State, Upgrade, UpgradeInput, UpgradeStatus } from "@/Utils/Interfaces"
+import { storeToRefs } from "pinia"
 
 function parseFloatZero(input: string) {
     const out = Number.parseFloat(input)
@@ -38,23 +39,23 @@ function apply_treatement(treatment: TreatmentPlan, bound: number, roster: numbe
     }
 }
 export function buildPayload(wasm_op: WasmOp): EvalPayload {
-    const active_profile: CharProfile = useProfilesStore().getActiveProfile()
-    const roster_config: RosterConfig = uesRosterStore().getRoster()
+    const { active_profile } = storeToRefs(useProfilesStore())
+    const { roster_config } = storeToRefs(uesRosterStore())
 
     if (wasm_op == WasmOp.EvaluateAverage || wasm_op == WasmOp.OptimizeAverage || wasm_op == WasmOp.Histogram) {
         return {
             material_info: ALL_LABELS.map((_, index) => [
-                active_profile.bound_budgets.toNum()[index],
-                roster_config.tradable_mats_owned.toNum()[index],
-                active_profile.leftover_price.toNum()[index],
-                roster_config.tradable_mats_price.toNum()[index],
-                roster_config.mats_prices.toNum()[index],
+                active_profile.value.bound_budgets.toNum()[index],
+                roster_config.value.tradable_mats_owned.toNum()[index],
+                active_profile.value.leftover_price.toNum()[index],
+                roster_config.value.tradable_mats_price.toNum()[index],
+                roster_config.value.mats_prices.toNum()[index],
             ]),
-            upgrade_info: keyed_to_array(active_profile.KeyedUpgradeInput),
-            special_budget: active_profile.special_budget,
-            express_event: active_profile.express_event,
-            tier: active_profile.tier,
-            min_resolution: active_profile.min_resolution,
+            upgrade_info: keyed_to_array(active_profile.value.KeyedUpgradeInput),
+            special_budget: active_profile.value.special_budget,
+            express_event: active_profile.value.express_event,
+            tier: active_profile.value.tier,
+            min_resolution: active_profile.value.min_resolution,
             num_threads: 1,
             metric_type: 1,
         }

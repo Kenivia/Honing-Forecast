@@ -17,25 +17,39 @@ import {
 } from "@/Utils/Interfaces"
 import { createWorkerBundle } from "@/WasmInterface/worker_setup"
 import { ADV_COLS, JUICE_LABELS, MATS_LABELS, NORMAL_COLS, NUM_PIECES, STORAGE_KEY } from "@/Utils/Constants"
+import { Ref, ref } from "vue"
 
 export const useProfilesStore = defineStore("profiles", {
     state: () => DEFAULT_PROFILES_STATE,
     getters: {
-        getActiveProfile: (state) => state.profiles[state.activeProfileId],
+        active_profile: (state) => {
+            return state.profiles[state.active_profile_index]
+        },
+        all_profiles: (state) => {
+            console.log(state.profiles)
+            return state.profiles
+        },
     },
     actions: {
-        switchProfile(id: string) {
-            this.activeProfileId = id
+        switchProfile(id: number) {
+            this.active_profile_index = id
         },
         addProfile(profile: CharProfile) {
             this.profiles.push(profile)
         },
-        setProfiles(profiles: CharProfile[]) {
-            this.profiles = profiles
+        init() {
+            const loaded = loadCharProfiles()
+            this.profiles = loaded.profiles
+            this.active_profile_index = loaded.active_profile_index
+        },
+        actions: {
+            updateActiveProfile(updates: Partial<CharProfile>) {
+                Object.assign(this.profiles[this.active_profile_index], updates)
+            },
         },
     },
 })
-export function loadCharProfiles(): { profiles: CharProfile[]; activeProfileId: number } {
+export function loadCharProfiles(): { profiles: CharProfile[]; active_profile_index: number } {
     const raw = localStorage.getItem(STORAGE_KEY + "_char_profiles")
     if (!raw) return DEFAULT_PROFILES_STATE
 
@@ -44,8 +58,8 @@ export function loadCharProfiles(): { profiles: CharProfile[]; activeProfileId: 
     return parsed
 }
 const DEFAULT_PROFILES_STATE = {
-    profiles: [],
-    activeProfileId: null,
+    profiles: new Array(createDefaultCharProfile()),
+    active_profile_index: 0,
 }
 
 export enum TreatmentPlan {
@@ -65,7 +79,7 @@ export interface CharProfile {
     evaluate_worker_bundle: any
     histogram_worker_bundle: any
 
-    state_bundle?: StateBundle
+    state_bundle: Ref<null | StateBundle>
     normal_grid: StatusGrid
     adv_grid: StatusGrid
 
@@ -85,34 +99,38 @@ export interface CharProfile {
     cumulative_graph: boolean
 }
 
-export const DEFAULT_CHAR_PROFILE: CharProfile = {
-    treatment_plan: TreatmentPlan.TreatRosterAsBound,
+export function createDefaultCharProfile(): CharProfile {
+    const state_bundle: Ref<null | StateBundle> = ref(null) // one ref, shared across all three workers
 
-    express_event: false,
-    char_name: "YourChar",
+    return {
+        treatment_plan: TreatmentPlan.TreatRosterAsBound,
 
-    auto_start_optimizer: false,
-    has_run_optimizer: false,
-    optimizer_worker_bundle: createWorkerBundle(),
-    evaluate_worker_bundle: createWorkerBundle(),
-    histogram_worker_bundle: createWorkerBundle(),
+        express_event: false,
+        char_name: "YourChar",
 
-    state_bundle: null,
-    normal_grid: createStatusGrid(NUM_PIECES, NORMAL_COLS),
-    adv_grid: createStatusGrid(NUM_PIECES, ADV_COLS),
+        auto_start_optimizer: false,
+        has_run_optimizer: false,
+        optimizer_worker_bundle: createWorkerBundle(state_bundle),
+        evaluate_worker_bundle: createWorkerBundle(state_bundle),
+        histogram_worker_bundle: createWorkerBundle(),
 
-    KeyedUpgradeInput: {},
+        state_bundle: state_bundle,
+        normal_grid: createStatusGrid(NUM_PIECES, NORMAL_COLS),
+        adv_grid: createStatusGrid(NUM_PIECES, ADV_COLS),
 
-    special_budget: 0,
+        KeyedUpgradeInput: {},
 
-    bound_budgets: createInputColumn(InputType.Int),
-    leftover_price: createInputColumn(InputType.Float), // implicit 0 leftover here
+        special_budget: 0,
 
-    special_state: [],
-    tier: 0,
-    min_resolution: 1,
-    num_threads: 1,
-    metric_type: 1,
+        bound_budgets: createInputColumn(InputType.Int),
+        leftover_price: createInputColumn(InputType.Float), // implicit 0 leftover here
 
-    cumulative_graph: true,
+        special_state: [],
+        tier: 0,
+        min_resolution: 1,
+        num_threads: 1,
+        metric_type: 1,
+
+        cumulative_graph: true,
+    }
 }

@@ -4,14 +4,14 @@ import { JUICE_LABELS, MATS_LABELS, PIECE_NAMES } from "@/Utils/Constants"
 import { iconPath } from "@/Utils/Helpers"
 import { StateBundle, UpgradeStatus } from "@/Utils/Interfaces"
 import { storeToRefs } from "pinia"
+import { Ref } from "vue"
 
 const profile_store = useProfilesStore()
 
-const active_profile: CharProfile = profile_store.getActiveProfile()
+const { active_profile } = storeToRefs(useProfilesStore())
 
-const state_bundle: StateBundle = active_profile.state_bundle
-
-const num_juice_avail: number = state_bundle.prep_output.juice_info.num_juice_avail
+const state_bundle = active_profile.value.state_bundle
+const num_juice_avail: number = state_bundle?.prep_output.juice_info.num_juice_avail ?? NaN
 function goldBreakdownValue(offset: number) {
     const source = state_bundle?.average_breakdown ?? new Array(state_bundle.prep_output.juice_info.total_num_avail).fill(0)
     const value = Number(source[offset])

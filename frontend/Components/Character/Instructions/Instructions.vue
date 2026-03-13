@@ -9,9 +9,8 @@ import { computed } from "vue"
 import InstructionRow from "./InstructionRow.vue"
 
 const profile_store = useProfilesStore()
-const active_profile: CharProfile = profile_store.getActiveProfile()
-
-const roster_store = uesRosterStore()
+const { active_profile } = storeToRefs(useProfilesStore())
+const { roster_config } = storeToRefs(uesRosterStore())
 
 function sortUpgradeIndices(list: number[], upgradeArr: Upgrade[], specialInvalidIndex: number) {
     const output: number[] = []

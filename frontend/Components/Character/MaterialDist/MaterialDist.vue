@@ -1,25 +1,22 @@
 <script setup lang="ts">
-import { GRAPH_COLORS, JUICE_LABELS, MATS_LABELS } from "@/Utils/Constants"
+import { ALL_LABELS, GRAPH_COLORS, JUICE_LABELS, MATS_LABELS } from "@/Utils/Constants"
 import GoldBreakdown from "./GoldBreakdown.vue"
 import { CharProfile, useProfilesStore } from "@/stores/CharacterProfile"
 import { iconPath } from "@/Utils/Helpers"
 import MaterialCell from "@/Components/MaterialCell.vue"
 import { createInputColumn, InputType } from "@/Utils/Interfaces"
 import MaterialGraph from "./MaterialGraph.vue"
-
-const profile_store = useProfilesStore()
-
-const active_profile: CharProfile = profile_store.getActiveProfile()
-
-const unfiltered_materials = MATS_LABELS.slice(0, 7)
-    .concat(JUICE_LABELS.map((x) => x[0]))
-    .concat(JUICE_LABELS.map((x) => x[1]))
+import { storeToRefs } from "pinia"
+import { uesRosterStore } from "@/stores/RosterConfig"
 
 
-const average_breakdown : number[] = active_profile.state_bundle?.average_breakdown ?? new Array(unfiltered_materials.length).fill(0)
+    const { active_profile } = storeToRefs(useProfilesStore())
+
+
+const average_breakdown : number[] = active_profile.value?.state_bundle?.average_breakdown ?? new Array(ALL_LABELS.length).fill(0)
 // const filtered_materials = unfiltered_materials.filter((x, index) => average_breakdown[index] > 0)
 
-const histogram_result = active_profile.histogram_worker_bundle.result
+const histogram_result = active_profile.value.histogram_worker_bundle.result
 // const keyed_average :Record<string,number> = Object.fromEntries(unfiltered_materials.map((x,index) => [x, flattened_bound_budgets[index]]));
 </script>
 <!-- function toInputValue(event: Event) {
@@ -44,7 +41,7 @@ function setRecordValue(record: Record<string, string>, key: string, event: Even
                     <span>Price</span>
                     <!-- <span v-if="customLeftovers">Left</span> -->
                 </div>
-                <div v-for="(label, index) in unfiltered_materials" :key="`graph-${label}`" class="hf-graph-row">
+                <div v-for="(label, index) in ALL_LABELS" :key="`graph-${label}`" class="hf-graph-row">
                     <div class="hf-graph-icon">
                         <img :src="iconPath(label)" :alt="label" />
                     </div>

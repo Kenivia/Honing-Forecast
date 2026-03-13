@@ -4,15 +4,17 @@ import { PIECE_NAMES, NORMAL_COLS as NORMAL_COLS, NUM_PIECES as NORMAL_ROWS } fr
 import { iconPath } from "@/Utils/Helpers"
 import { UpgradeStatus } from "@/Utils/Interfaces"
 import { storeToRefs } from "pinia"
+import { toRaw } from "vue"
 
 const profile_store = useProfilesStore()
 
-const active_profile: CharProfile = profile_store.getActiveProfile()
+const { active_profile } = storeToRefs(useProfilesStore())
+
 const props = defineProps<{
     grid_type: "normal" | "adv"
 }>()
 
-const relevant_grid = props.grid_type == "normal" ? active_profile.normal_grid : active_profile.adv_grid
+const relevant_grid = props.grid_type == "normal" ? active_profile.value.normal_grid : active_profile.value.adv_grid
 
 function check_all_same(col: number) {
     if (relevant_grid.data.every((row: UpgradeStatus[]) => row[col] == UpgradeStatus.Done)) {
@@ -25,22 +27,22 @@ function check_all_same(col: number) {
 }
 
 function change_one(row: number, col: number) {
-    let current = relevant_grid[row][col]
+    let current = relevant_grid.data[row][col]
     if (current == UpgradeStatus.NotYet) {
-        if (col > 0 && relevant_grid[row][col - 1] == UpgradeStatus.NotYet) {
+        if (col > 0 && relevant_grid.data[row][col - 1] == UpgradeStatus.NotYet) {
             for (let c = 0; c <= col; c++) {
-                relevant_grid[row][c] = UpgradeStatus.Done
+                relevant_grid.data[row][c] = UpgradeStatus.Done
             }
         } else {
-            relevant_grid[row][col] = UpgradeStatus.Want
+            relevant_grid.data[row][col] = UpgradeStatus.Want
         }
     } else if (current == UpgradeStatus.Want) {
         for (let c = 0; c <= col; c++) {
-            relevant_grid[row][c] = UpgradeStatus.Done
+            relevant_grid.data[row][c] = UpgradeStatus.Done
         }
     } else if (current == UpgradeStatus.Done) {
-        for (let c = col; c < relevant_grid[row].length; c++) {
-            relevant_grid[row][c] = UpgradeStatus.NotYet
+        for (let c = col; c < relevant_grid.data[row].length; c++) {
+            relevant_grid.data[row][c] = UpgradeStatus.NotYet
         }
     }
 }
@@ -63,7 +65,7 @@ function change_one(row: number, col: number) {
                 </button>
             </div>
             <div v-for="row in NORMAL_ROWS" :key="`top-row-${row}`" class="hf-cell-grid" :style="{ gridTemplateColumns: `repeat(${NORMAL_COLS}, 26px)` }">
-                <button v-for="col in NORMAL_COLS" :key="`top-${row}-${col}`" class="hf-cell" :class="{ selected: relevant_grid[row - 1][col - 1] }" />
+                <button v-for="col in NORMAL_COLS" :key="`top-${row}-${col}`" class="hf-cell" :class="{ selected: relevant_grid.data[row - 1][col - 1] }" />
                 <!-- @pointerdown.prevent="startTopDrag(row - 1, col - 1, $event)"
                     @pointerenter="dragTopCell(row - 1, col - 1)"
                     @click.prevent="onTopCellClick(row - 1, col - 1, $event)" -->
