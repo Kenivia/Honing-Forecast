@@ -39,6 +39,7 @@ function change_col(col: number) {
 function change_one(row: number, col: number, current = relevant_grid.value.data[row][col]) {
     if (current == UpgradeStatus.NotYet) {
         let left_is_not_yet = true
+        let no_done = true
         for (const [index, cell] of relevant_grid.value.data[row].entries()) {
             if (index > col) {
                 break
@@ -46,16 +47,28 @@ function change_one(row: number, col: number, current = relevant_grid.value.data
             if (cell == UpgradeStatus.Want) {
                 left_is_not_yet = false
             }
+            if (cell == UpgradeStatus.Done) {
+                no_done = false
+            }
             if (!left_is_not_yet) {
                 relevant_grid.value.data[row][index] = UpgradeStatus.Want
             }
         }
-        if (left_is_not_yet) {
+        if (no_done) {
             for (const [index, cell] of relevant_grid.value.data[row].entries()) {
                 if (index > col) {
                     break
                 }
                 relevant_grid.value.data[row][index] = UpgradeStatus.Done
+            }
+        } else {
+            for (const [index, cell] of relevant_grid.value.data[row].entries()) {
+                if (index > col) {
+                    break
+                }
+                if (relevant_grid.value.data[row][index] == UpgradeStatus.NotYet) {
+                    relevant_grid.value.data[row][index] = UpgradeStatus.Want
+                }
             }
         }
         relevant_grid.value.data[row][col] = UpgradeStatus.Want

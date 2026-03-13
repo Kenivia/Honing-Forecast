@@ -162,12 +162,12 @@ $$
 Recall that we want to compute the following:
 \begin{align*}
 S &= \sum^N_{k=0} (p_k  \cdot \sum^M_{i=1}  \mathbb{E}[  G_i(X'_k)  ]) \\
-&=  \sum^N_{k=0} (p_k  \cdot \sum^M_{i=1}  \mathbb{E}[Y_{ik}  ]).
+&=  \sum^N_{k=0} (p_k  \cdot \sum^M_{i=1}  \mathbb{E}[g_i(Y_{ik})  ]).
 \end{align*}
 
-With the rearrangements we did above, the inner RV $Y_{ik}$ has been reduced it is of the following form: 
+With the rearrangements we did above, the inner expectation has been reduced to the following form: 
 $$
-Y_{ik} =  m \cdot \mathbb{E}[Y_{ik}-b] + (m-l) \cdot (\mathbb{P}(Y^*_{ik} < b) \cdot \mathbb{E}[Y_{ik}] -  \mathbb{P}(Y_{ik} < b) \cdot b). \\ 
+\mathbb{E}[g_i(Y_{ik})] =  m \cdot \mathbb{E}[Y_{ik}-b] + (m-l) \cdot (\mathbb{P}(Y^*_{ik} < b) \cdot \mathbb{E}[Y_{ik}] -  \mathbb{P}(Y_{ik} < b) \cdot b). \\ 
 $$
 
 

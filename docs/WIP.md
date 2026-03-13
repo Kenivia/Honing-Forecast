@@ -1,38 +1,71 @@
 
 # Work in Progress
 
+## Immediate WIP
+
+- fix the mat distribution row such that the inputs work correctly
+  - hopefully just involves copy pasting the styles back again
+- make the roster page
+  - just the prices inputs for now is fine
+- input & copy payload to re-make the test cases
+  - verify & fix whatever is wrong
+
 ## Roadmap
 
 ### 1st: re-write the frontend
 
-1. Strip out EVERYTHING that currently exists to use a single "store" (every char needs its own "store")
+1. ~~Strip out EVERYTHING that currently exists to use a single "store" (every char needs its own "store")~~
 2. Reorganize the UI to be:
-    - left side hotbar with a button for roster setup (which is its own "page"), hotbar will contain selectable characters later
-    - main page reflects currently selected character, which will include"inputs", "cost distribution", "optimizer", "forecast" etc, need to figure out how to lay this out
-    - maybe some kind of summary page -> detailed page? this way can fit more graphs in?
+    - ~~left side hotbar with a button for roster setup (which is its own "page"), hotbar will contain selectable characters later~~ char & roster setup on the top probably, left sidebar for different pages including:
+        - Main (simple status input, cost distribuiton / input, simple optimizer instructions)
+        - detailed status input
+        - Advanced optimizer insturctions (allow user inputting here also)
+
+        - LONG TERM chest opening optimizaiton
+        - maybe put control panel on the sidebar here also
+        - LONG TERM Importing (uwuowo, ocr)
+        - Forecast mode
+
+    - ~~roster page reflects currently selected character, which will include"inputs", "cost distribution", "optimizer", "forecast" etc, need to figure out how to lay this out~~
+    - Similarly roster page will need:
+        - all the roster budget & prices input in a big table
+            - tradable owned, roster owned, market price, trendline maybe?
+        - character selection / a lil summary
+
+    - Header
+        - Logo
+        - Roster set up
+        - Characters
+        - button for making new chars
+        - LONGTERM Price trend viewer, or maybe bake this into the prices?
+
+    - Footer
 
 Specifically:
 
-- include statebundle in the "store" and only update when some thing changes, make parser its own wasm binding for that
-  - non-state changes (like price, owned) should trigger parser + eval(like the current behaviour), state changes should trigger eval only, though that's not really a huge deal cos parser call not that expensive
+- ~~include statebundle in the "store" and only update when some thing changes, make parser its own wasm binding for that~~
+  - ~~non-state changes (like price, owned) should trigger parser + eval(like the current behaviour), state changes should trigger eval only, though that's not really a huge deal cos parser call not that expensive~~
 - this opens the door for persistent special & adv caches? this would make it easy to put pre-computed table in (just write it in js on intializaiton)
-  - this also opens the door for when we know the current state is good already on optimizer calls
+  - figure out how to serialize & deserialize ahashmap, right now its as if there's no caching
+- this also opens the door for when we know the current state is good already on optimizer calls
 - need to figure out the layout still but by default the first thing a user see should be a ready-to-go checkbox grid -> costs thing, inputs should be next to the graphs and optimizer instructions should be its own page
 
 #### Char page - Upgrade status inputs
 
-- How to intuitively toggle between the 3 states  ~~ -maybe slider with 2 heads?~~
-  - If current is empty(everything starts here):  
-    - if left of current is NotYet, toggle everything to the left to done
-    - othewise, toggle current to Want
-  - If current is Want:
-    - Toggle self and everything to the left to Done
-  - If current is Done:
-    - Toggle current and everything to the right to NotYet
+- ~~How to intuitively toggle between the 3 states~~  ~~ -maybe slider with 2 heads?~~
+  - ~~If current is empty(everything starts here):  ~~
+    - ~~if left of current is NotYet, toggle everything to the left to done~~
+    - ~~othewise, toggle current to Want~~
+  - ~~ If current is Want:~~
+    - ~~Toggle self and everything to the left to Done~~
+  - ~~If current is Done:~~
+    - ~~Toggle current and everything to the right to NotYet~~
 - add a lil key to explain the colors
 - maybe import via uwuowo?
+- achived ilevel & desired ilevel display
+- tier selector should be around here, show a popup / tooltip?
 
-#### Char page - Detailed status inputs?
+#### Char page - Detailed status inputs
 
 - artisan, adv xp etc on a separate page?
   - separate page => no more hand-holding optimization which i mean it's not designed to do anyway
@@ -49,6 +82,9 @@ Specifically:
     2. Avg cost ~~/ top x% bottom x%,~ allow custom inputs in the header~~ i think just making hover more obvious is good enough, the interpolation / whatever problem is gonna be aids
     3. The corresponding graphs
 - This can get quite long so need to hide useless / irrelevant graphs and a show all button or something
+  - maybe do 3 tabs, main mats
+
+- Maybe make a row for free taps num success vs chances
 
 #### Char page - Optimizer instructions
 
@@ -56,6 +92,12 @@ Specifically:
 - 2 rows for juice & book, e.g. juice x10, no juice until x% artisan, juice after that
 - similar text instructions for advanced honing
 - "succeed and deduct costs" button, which prompts for either number of taps via a slider, which should show artisan & material costs / predicted material remaining
+  - just ignore <0?
+
+#### Char page - Chest opening optimization
+
+- Each chest type is like another state, [how_many_option_1, howmany option_2] etc, should work readily with the optimizer
+  - need to conver these states into the budgetse shouldn't be that hard
 
 #### Roster page - main
 
@@ -64,6 +106,18 @@ Specifically:
 ### Roster page - prices
 
 - Tradable, rosterbound, price inputs
+- set up api & auto importing form loa buddy
+
+### Tooltip / popup
+
+- Kinda need a popup in some places, maybe make this reusable but maybe not possible
+  - switching tiers warning
+  - succeeding & decuting warning / selection
+  - footer / changelog maybe
+  
+### Footer
+
+- add footer for discord github links and whatnot
 
 ### 2nd: Serca
 
@@ -71,7 +125,7 @@ Mixing serca and t4 is lowkey possible if we make the assumption that Serca mats
 
 1. ~~Implement / rework something about constant.rs, maybe split up tier-invariants and things that change. Get the data from icepeng.~~
 2. ~~Modify parser to know what tier is happening~~
-3. User can select tier, and if anything is already owned, present option to convert t4 to serca. Also add a button to divide by 5
+3. User can select tier, and if anything is already owned, present option to convert t4 to serca. ~~Also add a button to divide by 5~~
 
 ### 3rd: Advanced honing optimization
 
@@ -100,16 +154,16 @@ NONE OF THIS DATA STUFF TURNED OUT TO BE NECESSARY because DP is op and we can j
 
 ### 3th : Tradable / bound mats distinction
 
-- Treat roster bound as ~~tradable? maybe make this a toggle~~ bound, because that makes no sense
-  - Toggle should be "treat tradable as roster bound", which should be on by default because people are more worried about how much gold tehy will actually spend
+- Treat roster bound as ~~tradable? maybe make this a toggle~~ ~~bound, because that makes no sense~~ allow user to select via a radio selector or something
+  - ~~Toggle should be "treat tradable as roster bound", which should be on by default because people are more worried about how much gold tehy will actually spend~~
 - ~~update the SA computation to allow for 2 breakpoints~~
   - ~~will need to have 2 different budgets and another set of prices but shouldn't be that hard~~
 - Re-do test payloads because i changed like every field name
 
 ### 4th : Box opening recommendation
 
-- This will have to be rather rudimentary
-- Maybe just ignore the fact that we have boxes until we deduct costs? this way we treat boxes as tradables
+- ~~This will have to be rather rudimentary~~
+- ~~Maybe just ignore the fact that we have boxes until we deduct costs? this way we treat boxes as tradables~~
 
 - actually this can just be another state kinda like special state that we can optimize? a lot of work tho
 
@@ -140,6 +194,9 @@ Haven't thought enough about the specifics but shouldn't be that hard once every
 - ~~force special state to have a non-small tail~~ actually that ~~might~~ in fact does discard optimal choices, just make sure that special neighbour moves actually has an effect
 - some way to estimate how close we are to optimal because re-running this for every week is going to be a bit insane
 - maybe a neural network for an (or few) initial guesses -> optimizer?
+
+- will probably need to set up an actual elo system, i think the test cases should just be a BIG curated list of likely scenarios - maybe collect this from users but that's kinda hard to set up
+  - this is definitely a very much long term goal
 
 ### 8th: Price trend viewer
 
@@ -172,7 +229,7 @@ Below are some rambling / brainstorming / Misc stuff
 - maybe can do 2 breakpoints?
 - actually can draw some huge inspirations from here <https://next-gen.materialsproject.org/materials/mp-48>
   - as in side-by-side boxes, this would work much better for mobile
-  - and a toolbar on the left to select mode / char and what not
+  -~ and a toolbar on the left to select mode / char and what not~
 - will need to figure out how to have this grid system for multiple characters
 
 ### Misc UI
