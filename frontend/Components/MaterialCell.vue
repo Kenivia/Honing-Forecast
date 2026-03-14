@@ -12,6 +12,7 @@ const props = defineProps<{
     row: number
     show_label: boolean
     setter?: (val: string) => void // optional so read-only columns don't need it
+    suffix?: string
 }>()
 
 const label: string = ALL_LABELS[props.row]
@@ -36,6 +37,7 @@ const label: string = ALL_LABELS[props.row]
                 maximumFractionDigits: 0,
             })
         }}</label>
+        <label class="hf-material-cell-suffix" v-if="suffix">{{ suffix }}</label>
     </div>
     <!-- <input v-if="customLeftovers" type="text" :value="matsLeftover[label]" @input="setRecordValue(matsLeftover, label, $event)" /> -->
 </template>
@@ -76,6 +78,14 @@ const label: string = ALL_LABELS[props.row]
     text-align: left;
     padding-right: 8px;
     width: 100px;
+}
+
+.hf-material-cell-suffix {
+    color: var(--text-very-muted);
+    font-size: 12px;
+    min-width: 0;
+    text-align: left;
+    padding-right: 8px;
 }
 .hf-row-label {
     display: inline-flex;

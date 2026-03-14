@@ -2,7 +2,7 @@
 import { GRAPH_COLORS, JUICE_LABELS, MATS_LABELS } from "@/Utils/Constants"
 import GoldBreakdown from "./GoldBreakdown.vue"
 import { CharProfile, createDefaultCharProfile, useProfilesStore } from "@/stores/CharacterProfile"
-import { iconPath } from "@/Utils/Helpers"
+import { iconPath, metricToText } from "@/Utils/Helpers"
 import MaterialCell from "@/Components/MaterialCell.vue"
 import { createInputColumn, DEFAULT_ONE_UPGRADE, InputType } from "@/Utils/Interfaces"
 import MaterialGraph from "./MaterialGraph.vue"
@@ -24,7 +24,7 @@ function resetActive() {
 //     )
 // }
 function copyPayload() {
-    const payload = JSON.stringify(buildPayload(WasmOp.EvaluateAverage), null, 2)
+    const payload = JSON.stringify(buildPayload(WasmOp.Parser), null, 2)
     navigator.clipboard?.writeText(payload).catch(() => undefined)
 }
 
@@ -92,7 +92,7 @@ const optimizer_progress = optimizer_worker.est_progress_percentage
 
             <div class="hf-metric-card">
                 <div class="hf-metric-label">Avg eqv gold cost</div>
-                <div class="hf-metric-status">{{ optimizer_worker.result?.metric ?? "No Result yet" }}</div>
+                <div class="hf-metric-status">{{ metricToText(active_profile.state_bundle?.metric) ?? "No Result yet" }}</div>
             </div>
 
             <div v-if="optimizer_worker.status === 'error'" class="optimizer-error">Error: {{ optimizer_worker.error }}</div>

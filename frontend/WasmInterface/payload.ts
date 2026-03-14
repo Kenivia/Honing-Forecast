@@ -1,4 +1,4 @@
-import { ALL_LABELS, JUICE_LABELS, MATS_LABELS } from "@/Utils/Constants"
+import { ALL_LABELS, BUNDLE_SIZE, JUICE_LABELS, MATS_LABELS } from "@/Utils/Constants"
 import { WasmOp } from "./js_to_wasm"
 
 import { CharProfile, TreatmentPlan, useProfilesStore } from "@/stores/CharacterProfile"
@@ -46,8 +46,10 @@ export function buildPayload(wasm_op: WasmOp): EvalPayload | StateBundle {
         const roster_mats_owned = roster_config.value.roster_mats_owned.toNum()
         const tradable_mats_owned = roster_config.value.tradable_mats_owned.toNum()
         const leftover_price = active_profile.value.leftover_price.toNum()
-        const tradable_mats_price = roster_config.value.tradable_mats_price.toNum()
-        const mats_prices = roster_config.value.mats_prices.toNum()
+        const tradable_mats_price = roster_config.value.mats_prices
+            .toNum()
+            .map((x: number, index: number) => Math.max(Math.min(1, x), Math.floor(x * 0.95)) / BUNDLE_SIZE[index])
+        const mats_prices = roster_config.value.mats_prices.toNum().map((x: number, index: number) => x / BUNDLE_SIZE[index])
         return {
             material_info: ALL_LABELS.map((_, index) => [
                 ...apply_treatement(active_profile.value.treatment_plan, bound_budgets[index], roster_mats_owned[index], tradable_mats_owned[index]),

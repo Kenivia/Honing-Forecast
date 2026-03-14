@@ -30,14 +30,14 @@ const histogram_result: Ref<HistogramOutputs | null> = toRef(() => active_profil
                     <span style="text-align: center">Hover over the graph to see more!</span>
                     <!-- <span v-if="customLeftovers">Left</span> -->
                 </div>
-                <div v-for="(label, index) in ALL_LABELS" :key="`graph-${label}`" class="hf-graph-row">
+                <div v-for="(label, index) in ALL_LABELS" :key="`graph-${label}`" class="hf-mats-row">
                     <MaterialCell
                         :input_column="active_profile.bound_budgets"
                         :row="index"
                         :show_label="true"
                         :setter="
                             (val) => {
-                                active_profile.bound_budgets[index] = val
+                                active_profile.bound_budgets.data[index] = val
                             }
                         "
                     />
@@ -65,13 +65,5 @@ const histogram_result: Ref<HistogramOutputs | null> = toRef(() => active_profil
 
 .hf-table-title-row {
     display: contents;
-}
-.hf-graph-row {
-    display: contents;
-    gap: 8px;
-    align-items: center;
-    min-width: 0;
-    width: 100%;
-    height: 48px;
 }
 </style>

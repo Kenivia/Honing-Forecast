@@ -5,10 +5,31 @@
 
 - ~~fix the mat distribution row such that the inputs work correctly~~
    -~~ hopefully just involves copy pasting the styles back again~~
-- make the roster page
-  - just the prices inputs for now is fine
+- ~~make the roster page~~
+  - ~~just the prices inputs for now is fine~~
+- Set up writing to setting
 - input & copy payload to re-make the test cases
   - verify & fix whatever is wrong
+
+- Set up serca
+  - get the json
+    - get data from icepeng
+  - add tier conversion button in control panel
+    - get the ilevel mapping somehow? is this on icepeng?
+    - add undo button?
+  - add allow converting roster t4 mats to serca
+    - shouldnt be that hard?
+    - need to auto-select market price
+
+  - get the icons and route appropriately
+  
+- add "treatment" toggle in control panel via radio selector
+
+- wire up the 2 annotations on material graph(need to add another annotation)
+  - add hover annotation
+
+- Add the two new columns in material distribution
+  - will need to modify the backend to do this - maybe a special evaluateAverage function?
 
 ## Roadmap
 
@@ -77,14 +98,16 @@ Specifically:
 
 #### Char page - Material cost distribution
 
-- 3 columns,
+- ~~3 columns,~~
     1. user bound mats input, starts at 0 by default
     2. Avg cost ~~/ top x% bottom x%,~ allow custom inputs in the header~~ i think just making hover more obvious is good enough, the interpolation / whatever problem is gonna be aids
-    3. The corresponding graphs
+    3. Gold spent buying this mat
+    4. Gold you would've made selling this mat + Gold spent buying this mat
+    5. The corresponding graphs
 - This can get quite long so need to hide useless / irrelevant graphs and a show all button or something
-  - maybe do 3 tabs, main mats
 
 - Maybe make a row for free taps num success vs chances
+    -maybe make it its own section with the special budget input?
 
 #### Char page - Optimizer instructions
 
@@ -126,6 +149,9 @@ Mixing serca and t4 is lowkey possible if we make the assumption that Serca mats
 1. ~~Implement / rework something about constant.rs, maybe split up tier-invariants and things that change. Get the data from icepeng.~~
 2. ~~Modify parser to know what tier is happening~~
 3. User can select tier, and if anything is already owned, present option to convert t4 to serca. ~~Also add a button to divide by 5~~
+4. Add a toggle for "allow converting t4 mats to serca mats" for each char
+    - roster_config needs 2 sets of everything ig
+    - pass the converted / unconverted mats to wasm, also auto pick the better deal out of the two
 
 ### 3rd: Advanced honing optimization
 

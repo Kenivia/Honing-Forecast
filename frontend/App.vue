@@ -6,7 +6,7 @@ import { useProfilesStore } from "./stores/CharacterProfile"
 import { uesRosterStore } from "./stores/RosterConfig"
 import { CharProfile } from "./stores/CharacterProfile"
 import { storeToRefs } from "pinia"
-import { toRaw } from "vue"
+import { toRaw, watchEffect } from "vue"
 
 const roster_store = uesRosterStore()
 roster_store.init()
@@ -35,7 +35,7 @@ const { all_profiles } = storeToRefs(profile_store)
         </div>
     </header>
     <div>
-        <router-link to="/"> </router-link>
+        <router-link to="/"> Roster setup </router-link>
         <div v-for="(profile, index) in all_profiles">
             <router-link :to="'/' + profile.char_name" @click="profile_store.active_profile_index = index"> {{ profile.char_name }} </router-link>
         </div>
