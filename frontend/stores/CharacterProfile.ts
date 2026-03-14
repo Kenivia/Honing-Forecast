@@ -18,7 +18,7 @@ import {
     UpgradeStatus,
 } from "@/Utils/Interfaces"
 import { createWorkerBundle } from "@/WasmInterface/worker_setup"
-import { ADV_COLS, JUICE_LABELS, MATS_LABELS, NORMAL_COLS, NUM_PIECES, STORAGE_KEY } from "@/Utils/Constants"
+import { ADV_COLS, ALL_LABELS, JUICE_LABELS, MATS_LABELS, NORMAL_COLS, NUM_PIECES, SPECIAL_LEAP_LABEL, STORAGE_KEY } from "@/Utils/Constants"
 import { Ref, ref } from "vue"
 import { WasmOp } from "@/WasmInterface/js_to_wasm"
 import { debounce } from "@/Utils/Helpers"
@@ -115,7 +115,7 @@ export interface CharProfile {
 
     keyed_upgrades: keyed_upgrades
 
-    special_budget: number
+    special_budget: InputColumn
 
     bound_budgets: InputColumn
     leftover_price: InputColumn
@@ -146,10 +146,10 @@ export function create_default_char_profile(): CharProfile {
 
         keyed_upgrades: {},
 
-        special_budget: 0,
+        special_budget: create_input_column(InputType.Int, [SPECIAL_LEAP_LABEL]),
 
-        bound_budgets: create_input_column(InputType.Int),
-        leftover_price: create_input_column(InputType.Int), // implicit 0 leftover here
+        bound_budgets: create_input_column(InputType.Int, ALL_LABELS),
+        leftover_price: create_input_column(InputType.Int, ALL_LABELS), // implicit 0 leftover here
 
         special_state: [],
         tier: 0,

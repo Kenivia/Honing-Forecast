@@ -1,5 +1,5 @@
 import { assert } from "console"
-import { ALL_LABELS } from "./Constants"
+
 import { CharProfile, useProfilesStore } from "@/stores/CharacterProfile"
 
 export interface Upgrade {
@@ -55,6 +55,7 @@ export enum UpgradeStatus {
 
 export interface InputColumn {
     data: string[]
+    keys: string[]
     type: InputType
     upper_bound: number[]
     enabled: boolean[]
@@ -63,12 +64,13 @@ export enum InputType {
     Int,
     Float,
 }
-export function create_input_column(type: InputType, data?: string[], upper_bound?: number[], enabled?: boolean[]): InputColumn {
+export function create_input_column(type: InputType, keys: string[], data?: string[], upper_bound?: number[], enabled?: boolean[]): InputColumn {
     return {
         type,
-        data: data ?? ALL_LABELS.map((_) => "0"),
-        upper_bound: upper_bound ?? ALL_LABELS.map((_) => 999999999),
-        enabled: enabled ?? ALL_LABELS.map((_) => true),
+        keys,
+        data: data ?? keys.map((_) => "0"),
+        upper_bound: upper_bound ?? keys.map((_) => 999999999),
+        enabled: enabled ?? keys.map((_) => true),
     }
 }
 
@@ -99,7 +101,6 @@ function parse_input(input_column: InputColumn, index: number, input: string): n
 export type StatusGrid = UpgradeStatus[][]
 
 export function status_to_bool_grid(status_grid: StatusGrid): BoolGrid {
-    console.log(status_grid)
     return status_grid.map((row: UpgradeStatus[]) => row.map((cell) => cell == UpgradeStatus.Want))
 }
 export function createStatusGrid(

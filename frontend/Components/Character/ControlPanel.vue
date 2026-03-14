@@ -85,15 +85,22 @@ const auto_start_optimizer = computed(() => active_profile.value.auto_start_opti
                 {{ optimizer_busy ? "Cancel Optimize" : has_run_optimizer ? "Re-run Optimizer" : ">>> Optimize <<<" }}
             </button>
 
-            <label class="hf-inline-check">
+            <!-- <label class="hf-inline-check">
                 <input v-model="store.profiles[active_profile_index].auto_start_optimizer" type="checkbox" />
                 <span>Auto start optimizer</span>
-            </label>
+            </label> -->
 
             <div class="hf-metric-card">
                 <div class="hf-metric-label">Avg eqv gold cost</div>
                 <div class="hf-metric-status">{{ metricToText(active_profile.optimizer_worker_bundle.result?.metric) ?? "No Result yet" }}</div>
             </div>
+
+            <MaterialCell
+                :input_column="active_profile.special_budget"
+                :row="0"
+                :setter="(val) => (active_profile.special_budget.data[0] = val)"
+                :show_label="true"
+            ></MaterialCell>
 
             <div v-if="optimizer_worker.status === 'error'" class="optimizer-error">Error: {{ optimizer_worker.error }}</div>
 

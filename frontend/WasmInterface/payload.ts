@@ -70,7 +70,7 @@ export function buildPayload(wasm_op: WasmOp): EvalPayload | StateBundle {
             mats_prices[index],
         ]),
         upgrade_info: keyed_to_array(active_profile.value.keyed_upgrades),
-        special_budget: active_profile.value.special_budget,
+        special_budget: input_column_to_num(active_profile.value.special_budget)[0],
         express_event: active_profile.value.express_event,
         tier: active_profile.value.tier,
         min_resolution: active_profile.value.min_resolution,

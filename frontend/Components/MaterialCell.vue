@@ -15,7 +15,7 @@ const props = defineProps<{
     suffix?: string
 }>()
 
-const label: string = ALL_LABELS[props.row]
+const label: string = props.input_column.keys[props.row]
 </script>
 
 <template>

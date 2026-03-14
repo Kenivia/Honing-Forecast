@@ -1,4 +1,4 @@
-import { STORAGE_KEY } from "@/Utils/Constants"
+import { ALL_LABELS, STORAGE_KEY } from "@/Utils/Constants"
 import { debounce } from "@/Utils/Helpers"
 import { create_input_column, InputColumn, InputType } from "@/Utils/Interfaces"
 import { defineStore } from "pinia"
@@ -24,9 +24,9 @@ export const uesRosterStore = defineStore("roster", {
 })
 
 export const DEFAULT_ROSTER_CONFIG: RosterConfig = {
-    mats_prices: create_input_column(InputType.Int), // was gonna use Float here but ig it makes more sense to do int, leaving float in place cos why not
-    roster_mats_owned: create_input_column(InputType.Int),
-    tradable_mats_owned: create_input_column(InputType.Int),
+    mats_prices: create_input_column(InputType.Int, ALL_LABELS), // was gonna use Float here but ig it makes more sense to do int, leaving float in place cos why not
+    roster_mats_owned: create_input_column(InputType.Int, ALL_LABELS),
+    tradable_mats_owned: create_input_column(InputType.Int, ALL_LABELS),
     // tradable_mats_price: createInputColumn(InputType.Float),
 }
 
