@@ -10,6 +10,7 @@ import { buildPayload } from "@/WasmInterface/payload"
 import { WasmOp } from "@/WasmInterface/js_to_wasm"
 import { RosterConfig, uesRosterStore } from "@/stores/RosterConfig"
 import { storeToRefs } from "pinia"
+import { computed } from "vue"
 
 const store = useProfilesStore()
 const { active_profile, active_profile_index } = storeToRefs(store)
@@ -30,10 +31,9 @@ function copyPayload() {
 
 const optimizer_worker = active_profile.value.optimizer_worker_bundle
 
-const optimizer_busy = optimizer_worker.status === "busy"
-const has_run_optimizer = active_profile.value.has_run_optimizer
-const auto_start_optimizer = active_profile.value.auto_start_optimizer
-const optimizer_progress = optimizer_worker.est_progress_percentage
+const optimizer_busy = computed(() => optimizer_worker.status === "busy")
+const has_run_optimizer = computed(() => active_profile.value.has_run_optimizer)
+const auto_start_optimizer = computed(() => active_profile.value.auto_start_optimizer)
 </script>
 <template>
     <div class="hf-ops-row">
@@ -98,11 +98,31 @@ const optimizer_progress = optimizer_worker.est_progress_percentage
             <div v-if="optimizer_worker.status === 'error'" class="optimizer-error">Error: {{ optimizer_worker.error }}</div>
 
             <div v-if="optimizer_busy" class="optimizer-progress">
-                <span>Optimizer progress: {{ Math.max(optimizer_progress, 0.01).toFixed(2) }}%</span>
+                <span>Optimizer progress: {{ Math.max(optimizer_worker.est_progress_percentage, 0.01).toFixed(2) }}%</span>
                 <div class="progress-bar">
-                    <div class="progress-fill" :style="{ width: `${optimizer_progress}%` }" />
+                    <div class="progress-fill" :style="{ width: `${optimizer_worker.est_progress_percentage}%` }" />
                 </div>
             </div>
         </div>
     </div>
 </template>
+<style>
+.progress-bar {
+    width: 100%;
+    height: 8px;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 4px;
+    overflow: hidden;
+}
+.progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--hf-gold-dim), var(--hf-gold));
+    transition: width 0.2s ease;
+}
+.optimizer-progress {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    font-size: 12px;
+}
+</style>

@@ -9,6 +9,7 @@ export function createWorkerBundle() {
     const status: Ref<"idle" | "success" | "busy" | "error"> = ref("idle")
     const error = ref(null)
     const result = ref(null)
+    const est_progress_percentage = ref(0)
     let debounceTimer = null
 
     function _launch(wasm_op: WasmOp) {
@@ -16,7 +17,7 @@ export function createWorkerBundle() {
 
         status.value = "busy"
         error.value = null
-
+        est_progress_percentage.value = 0
         worker = createWorker()
 
         worker.onmessage = (e) => {
@@ -29,6 +30,7 @@ export function createWorkerBundle() {
                 worker = null
             } else {
                 result.value = e.data.state_bundle
+                est_progress_percentage.value = e.data.est_progress_percentage
             }
         }
 
@@ -65,5 +67,5 @@ export function createWorkerBundle() {
 
     onUnmounted(cancel)
 
-    return { status, result, error, start, cancel }
+    return { status, result, error, est_progress_percentage, start, cancel }
 }

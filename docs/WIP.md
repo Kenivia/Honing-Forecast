@@ -8,6 +8,7 @@
 - ~~make the roster page~~
   - ~~just the prices inputs for now is fine~~
 - ~~Set up writing to setting~~
+- Set up special budget (just the input for now)
 - input & copy payload to re-make the test cases
   - verify & fix whatever is wrong
 
