@@ -10,11 +10,10 @@ const profile_store = useProfilesStore()
 
 const { active_profile } = storeToRefs(useProfilesStore())
 
-const state_bundle: Ref<null | StateBundle> = toRef(active_profile.value, "state_bundle")
 const num_juice_avail: number = (ALL_LABELS.length - 7) / 2
 
 function goldBreakdownValue(offset: number) {
-    const source = state_bundle.value?.average_breakdown ?? new Array(ALL_LABELS.length - 7).fill(0)
+    const source = active_profile.value.evaluation_worker_bundle.result?.average_breakdown ?? new Array(ALL_LABELS.length - 7).fill(0)
     const value = Number(source[offset])
     return Number.isFinite(value) ? value : undefined
 }
@@ -66,5 +65,5 @@ function metricToText(metric: number | null | undefined) {
         </div>
     </div>
 
-    <div class="hf-combined-cost">Combined: {{ metricToText(state_bundle?.metric) }}</div>
+    <div class="hf-combined-cost">Combined: {{ metricToText(active_profile.evaluation_worker_bundle.result?.metric) }}</div>
 </template>

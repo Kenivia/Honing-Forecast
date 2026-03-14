@@ -36,7 +36,7 @@ export const GRAPH_COLORS = [
     "--series-blue",
     "--series-blue",
 ]
-export const BUNDLE_SIZE = [100, 100, 1, 1000].concat(new Array(ALL_LABELS.length - 4).fill(1))
+export const BUNDLE_SIZE = [100, 100, 1, 1000, 1, 1, 1000000].concat(new Array(ALL_LABELS.length - 4).fill(1))
 export const OUTPUT_LABELS = ["Red", "Blue", "Leaps", "Shards", "Oreha", "Gold", "Silver", "Red juice", "Blue juice"]
 
 export const STORAGE_KEY = "HF_UI_STATE_V3"

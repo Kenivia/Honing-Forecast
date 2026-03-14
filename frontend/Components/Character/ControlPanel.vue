@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { GRAPH_COLORS, JUICE_LABELS, MATS_LABELS } from "@/Utils/Constants"
 import GoldBreakdown from "./GoldBreakdown.vue"
-import { CharProfile, createDefaultCharProfile, useProfilesStore } from "@/stores/CharacterProfile"
+import { CharProfile, create_default_char_profile, useProfilesStore } from "@/stores/CharacterProfile"
 import { iconPath, metricToText } from "@/Utils/Helpers"
 import MaterialCell from "@/Components/MaterialCell.vue"
-import { createInputColumn, DEFAULT_ONE_UPGRADE, InputType } from "@/Utils/Interfaces"
+import { create_input_column, DEFAULT_ONE_UPGRADE, InputType } from "@/Utils/Interfaces"
 import MaterialGraph from "./MaterialGraph.vue"
 import { buildPayload } from "@/WasmInterface/payload"
 import { WasmOp } from "@/WasmInterface/js_to_wasm"
@@ -19,7 +19,7 @@ function resetActive() {
 }
 
 // function resetOptimizerState() {
-//     Object.entries(active_profile.value.KeyedUpgradeInput).forEach(([_, one_upgrade]) =>
+//     Object.entries(active_profile.value.keyed_upgrades).forEach(([_, one_upgrade]) =>
 //         Object.assign(one_upgrade, [one_upgrade[0], one_upgrade[1], one_upgrade[2], ...DEFAULT_ONE_UPGRADE]),
 //     )
 // }
@@ -92,7 +92,7 @@ const optimizer_progress = optimizer_worker.est_progress_percentage
 
             <div class="hf-metric-card">
                 <div class="hf-metric-label">Avg eqv gold cost</div>
-                <div class="hf-metric-status">{{ metricToText(active_profile.state_bundle?.metric) ?? "No Result yet" }}</div>
+                <div class="hf-metric-status">{{ metricToText(active_profile.optimizer_worker_bundle.result?.metric) ?? "No Result yet" }}</div>
             </div>
 
             <div v-if="optimizer_worker.status === 'error'" class="optimizer-error">Error: {{ optimizer_worker.error }}</div>

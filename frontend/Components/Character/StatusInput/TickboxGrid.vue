@@ -5,15 +5,17 @@ import { iconPath } from "@/Utils/Helpers"
 import { grids_to_keyed, UpgradeStatus } from "@/Utils/Interfaces"
 import { storeToRefs } from "pinia"
 import { eventNames } from "process"
-import { computed, toRaw, watch, watchEffect } from "vue"
+import { computed, onWatcherCleanup, toRaw, watch, watchEffect } from "vue"
 import StatusInput from "./StatusInput.vue"
 import { buildPayload } from "@/WasmInterface/payload"
 import { WasmOp } from "@/WasmInterface/js_to_wasm"
+import { uesRosterStore } from "@/stores/RosterConfig"
 
 const profile_store = useProfilesStore()
 
 const { active_profile } = storeToRefs(useProfilesStore())
 
+const { roster_config } = storeToRefs(uesRosterStore())
 const props = defineProps<{
     grid_type: "normal" | "adv"
 }>()
@@ -21,26 +23,26 @@ const props = defineProps<{
 const COLS = props.grid_type == "normal" ? NORMAL_COLS : ADV_COLS
 const relevant_grid = computed(() => (props.grid_type === "normal" ? active_profile.value.normal_grid : active_profile.value.adv_grid))
 function check_all_same(col: number) {
-    if (relevant_grid.value.data.every((row: UpgradeStatus[]) => row[col] == UpgradeStatus.Done)) {
+    if (relevant_grid.value.every((row: UpgradeStatus[]) => row[col] == UpgradeStatus.Done)) {
         return UpgradeStatus.Done
     }
-    if (relevant_grid.value.data.every((row: UpgradeStatus[]) => row[col] == UpgradeStatus.Want)) {
+    if (relevant_grid.value.every((row: UpgradeStatus[]) => row[col] == UpgradeStatus.Want)) {
         return UpgradeStatus.Want
     }
     return UpgradeStatus.NotYet
 }
 function change_col(col: number) {
     let current = check_all_same(col)
-    for (const [row] of relevant_grid.value.data.entries()) {
+    for (const [row] of relevant_grid.value.entries()) {
         change_one(row, col, current)
     }
 }
 
-function change_one(row: number, col: number, current = relevant_grid.value.data[row][col]) {
+function change_one(row: number, col: number, current = relevant_grid.value[row][col]) {
     if (current == UpgradeStatus.NotYet) {
         let left_is_not_yet = true
         let no_done = true
-        for (const [index, cell] of relevant_grid.value.data[row].entries()) {
+        for (const [index, cell] of relevant_grid.value[row].entries()) {
             if (index > col) {
                 break
             }
@@ -51,68 +53,119 @@ function change_one(row: number, col: number, current = relevant_grid.value.data
                 no_done = false
             }
             if (!left_is_not_yet) {
-                relevant_grid.value.data[row][index] = UpgradeStatus.Want
+                relevant_grid.value[row][index] = UpgradeStatus.Want
             }
         }
         if (no_done) {
-            for (const [index, cell] of relevant_grid.value.data[row].entries()) {
+            for (const [index, cell] of relevant_grid.value[row].entries()) {
                 if (index > col) {
                     break
                 }
-                relevant_grid.value.data[row][index] = UpgradeStatus.Done
+                relevant_grid.value[row][index] = UpgradeStatus.Done
             }
         } else {
-            for (const [index, cell] of relevant_grid.value.data[row].entries()) {
+            for (const [index, cell] of relevant_grid.value[row].entries()) {
                 if (index > col) {
                     break
                 }
-                if (relevant_grid.value.data[row][index] == UpgradeStatus.NotYet) {
-                    relevant_grid.value.data[row][index] = UpgradeStatus.Want
+                if (relevant_grid.value[row][index] == UpgradeStatus.NotYet) {
+                    relevant_grid.value[row][index] = UpgradeStatus.Want
                 }
             }
         }
-        relevant_grid.value.data[row][col] = UpgradeStatus.Want
+        relevant_grid.value[row][col] = UpgradeStatus.Want
     } else if (current == UpgradeStatus.Want) {
         for (let c = 0; c <= col; c++) {
-            relevant_grid.value.data[row][c] = UpgradeStatus.Done
+            relevant_grid.value[row][c] = UpgradeStatus.Done
         }
     } else if (current == UpgradeStatus.Done) {
         let right_is_not_yet = true
-        for (let index = relevant_grid.value.data[row].length; index >= 0; index--) {
+        for (let index = relevant_grid.value[row].length; index >= 0; index--) {
             if (index < col) {
                 break
             }
-            let cell = relevant_grid.value.data[row][index]
+            let cell = relevant_grid.value[row][index]
             if (!right_is_not_yet) {
-                relevant_grid.value.data[row][index] = UpgradeStatus.Want
+                relevant_grid.value[row][index] = UpgradeStatus.Want
             }
         }
         if (right_is_not_yet) {
-            for (let index = relevant_grid.value.data[row].length; index >= 0; index--) {
+            for (let index = relevant_grid.value[row].length; index >= 0; index--) {
                 if (index < col) {
                     break
                 }
-                relevant_grid.value.data[row][index] = UpgradeStatus.NotYet
+                relevant_grid.value[row][index] = UpgradeStatus.NotYet
             }
-            relevant_grid.value.data[row][col] = UpgradeStatus.NotYet
+            relevant_grid.value[row][col] = UpgradeStatus.NotYet
         } else {
-            relevant_grid.value.data[row][col] = UpgradeStatus.Want
+            relevant_grid.value[row][col] = UpgradeStatus.Want
         }
     }
 }
 
-watchEffect(() => {
-    active_profile.value.KeyedUpgradeInput = grids_to_keyed(active_profile.value.normal_grid, active_profile.value.adv_grid)
-})
-watchEffect(() => {
-    active_profile.value.optimizer_worker_bundle.start(WasmOp.Parser)
+watch([() => active_profile.value.adv_grid, () => active_profile.value.normal_grid], (_) => {
+    active_profile.value.keyed_upgrades = grids_to_keyed(active_profile.value.normal_grid, active_profile.value.adv_grid, active_profile.value.keyed_upgrades)
 })
 
-watchEffect(() => {
-    if (active_profile.value.state_bundle !== null) {
+watch(
+    [
+        () => active_profile.value.adv_grid,
+        () => active_profile.value.normal_grid,
+        () => active_profile.value.bound_budgets,
+        () => active_profile.value.leftover_price,
+        () => roster_config.value.mats_prices,
+        () => roster_config.value.tradable_mats_owned,
+        () => roster_config.value.roster_mats_owned,
+    ],
+    (_) => {
+        onWatcherCleanup(() => {
+            active_profile.value.optimizer_worker_bundle.cancel()
+        })
+
+        active_profile.value.optimizer_worker_bundle.start(WasmOp.OptimizeAverage)
+    },
+)
+
+watch(
+    [
+        () => active_profile.value.adv_grid,
+        () => active_profile.value.normal_grid,
+        () => active_profile.value.bound_budgets,
+        () => active_profile.value.leftover_price,
+        () => roster_config.value.mats_prices,
+        () => roster_config.value.tradable_mats_owned,
+        () => roster_config.value.roster_mats_owned,
+        () => active_profile.value.keyed_upgrades,
+    ],
+    (_) => {
+        onWatcherCleanup(() => {
+            active_profile.value.evaluation_worker_bundle.cancel()
+        })
+
+        active_profile.value.evaluation_worker_bundle.start(WasmOp.EvaluateAverage)
+    },
+)
+
+watch(
+    [
+        () => active_profile.value.adv_grid,
+        () => active_profile.value.normal_grid,
+        () => active_profile.value.bound_budgets,
+        () => active_profile.value.leftover_price,
+        () => roster_config.value.mats_prices,
+        () => roster_config.value.tradable_mats_owned,
+        () => roster_config.value.roster_mats_owned,
+        () => active_profile.value.keyed_upgrades,
+    ],
+    (_) => {
+        onWatcherCleanup(() => {
+            active_profile.value.histogram_worker_bundle.cancel()
+        })
+
         active_profile.value.histogram_worker_bundle.start(WasmOp.Histogram)
-    }
-})
+    },
+    { immediate: true },
+)
 </script>
 <template>
     <div class="hf-grid-content">
@@ -148,8 +201,8 @@ watchEffect(() => {
                     :key="`${grid_type}-${row}-${col}`"
                     class="hf-cell"
                     :class="{
-                        Done: relevant_grid.data[row - 1][col - 1] == UpgradeStatus.Done,
-                        Want: relevant_grid.data[row - 1][col - 1] == UpgradeStatus.Want,
+                        Done: relevant_grid[row - 1][col - 1] == UpgradeStatus.Done,
+                        Want: relevant_grid[row - 1][col - 1] == UpgradeStatus.Want,
                     }"
                     @click="change_one(row - 1, col - 1)"
                 />

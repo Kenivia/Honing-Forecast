@@ -7,7 +7,7 @@
    -~~ hopefully just involves copy pasting the styles back again~~
 - ~~make the roster page~~
   - ~~just the prices inputs for now is fine~~
-- Set up writing to setting
+- ~~Set up writing to setting~~
 - input & copy payload to re-make the test cases
   - verify & fix whatever is wrong
 
@@ -30,6 +30,8 @@
 
 - Add the two new columns in material distribution
   - will need to modify the backend to do this - maybe a special evaluateAverage function?
+  
+- make bundle size suffix not take up horizontal space
 
 ## Roadmap
 
@@ -98,16 +100,18 @@ Specifically:
 
 #### Char page - Material cost distribution
 
-- ~~3 columns,~~
-    1. user bound mats input, starts at 0 by default
-    2. Avg cost ~~/ top x% bottom x%,~ allow custom inputs in the header~~ i think just making hover more obvious is good enough, the interpolation / whatever problem is gonna be aids
+- ~~3 columns,~~ 6 columns
+    0. enable/disable checkbox
+    1. ~~user bound mats input, starts at 0 by default~~
+    2. ~~Avg cost~~ ~~/ top x% bottom x%,~ allow custom inputs in the header~~ ~~i think just making hover more obvious is good enough, the interpolation / whatever problem is gonna be aids~~
     3. Gold spent buying this mat
-    4. Gold you would've made selling this mat + Gold spent buying this mat
-    5. The corresponding graphs
-- This can get quite long so need to hide useless / irrelevant graphs and a show all button or something
+    4. Gold you would've made selling this mat + Gold spent buying this mat (maybe make this col optional)
+    5. ~~The corresponding graphs~~
 
+- This can get quite long so ~~need to hide useless / irrelevant graphs and a show all button or something~~ 3 buttons to toggle between the 3 categories
 - Maybe make a row for free taps num success vs chances
-    -maybe make it its own section with the special budget input?
+  - maybe make it its own section with the special budget input?
+- Add grid lines?
 
 #### Char page - Optimizer instructions
 
@@ -137,6 +141,7 @@ Specifically:
   - switching tiers warning
   - succeeding & decuting warning / selection
   - footer / changelog maybe
+  - hints / explanations
   
 ### Footer
 
@@ -198,6 +203,8 @@ NONE OF THIS DATA STUFF TURNED OUT TO BE NECESSARY because DP is op and we can j
 
 - disallow states that can use more than a certain amount of juice / scroll / books
   - this kinda falls apart with normal honing cos we can finish early, but can just make a pessimistic assumption
+    - will prolly need to add an extra column in material_info for the hard limit
+    - keep track of how many juices are used, sample appropriately in neighbour function
 
 ### 5th: OCR
 
@@ -223,6 +230,7 @@ Haven't thought enough about the specifics but shouldn't be that hard once every
 - maybe a neural network for an (or few) initial guesses -> optimizer?
 
 - will probably need to set up an actual elo system, i think the test cases should just be a BIG curated list of likely scenarios - maybe collect this from users but that's kinda hard to set up
+  - like there can't really be "overfitting" cos we have like 2 parameters
   - this is definitely a very much long term goal
 
 ### 8th: Price trend viewer

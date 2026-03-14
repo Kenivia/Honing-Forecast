@@ -3,23 +3,25 @@ import {
     AdvProgress,
     AdvProgressGrid,
     BoolGrid,
-    createInputColumn,
+    create_input_column,
     createStatusGrid,
     HistogramOutputs,
     InputColumn,
     InputType,
-    KeyedUpgradeInput,
+    keyed_upgrades,
     makeDefaultBoolGrid,
     makeDefaultNumGrid,
     NumGrid,
     StateBundle,
     StateGrid,
     StatusGrid,
+    UpgradeStatus,
 } from "@/Utils/Interfaces"
 import { createWorkerBundle } from "@/WasmInterface/worker_setup"
 import { ADV_COLS, JUICE_LABELS, MATS_LABELS, NORMAL_COLS, NUM_PIECES, STORAGE_KEY } from "@/Utils/Constants"
 import { Ref, ref } from "vue"
 import { WasmOp } from "@/WasmInterface/js_to_wasm"
+import { debounce } from "@/Utils/Helpers"
 
 export const useProfilesStore = defineStore("profiles", {
     state: () => DEFAULT_PROFILES_STATE,
@@ -39,7 +41,7 @@ export const useProfilesStore = defineStore("profiles", {
             this.profiles.push(profile)
         },
         init() {
-            const loaded = loadCharProfiles()
+            const loaded = load_char_profiles()
             this.profiles = loaded.profiles
             this.active_profile_index = loaded.active_profile_index
 
@@ -55,29 +57,40 @@ export const useProfilesStore = defineStore("profiles", {
         },
 
         resetActiveProfile() {
-            this.profiles[this.active_profile_index] = createDefaultCharProfile()
+            this.profiles[this.active_profile_index] = create_default_char_profile()
             this.profiles[this.active_profile_index].optimizer_worker_bundle.start(WasmOp.Parser)
         },
     },
 })
-export function loadCharProfiles(): { profiles: CharProfile[]; active_profile_index: number } {
+
+export const debounced_write_char_profiles = debounce(write_char_profiles, 500)
+export function load_char_profiles(): { profiles: CharProfile[]; active_profile_index: number } {
     const raw = localStorage.getItem(STORAGE_KEY + "_char_profiles")
     if (!raw) return DEFAULT_PROFILES_STATE
 
     const parsed = JSON.parse(raw)
-    for (const profile of parsed.profiles) {
-        profile.state_bundle = ref(parsed.state_bundle_raw)
-        profile.optimizer_worker_bundle = createWorkerBundle(profile.state_bundle)
-        profile.histogram_worker_bundle = createWorkerBundle(profile.state_bundle)
+    for (let i = 0; i < parsed.profiles.length; i++) {
+        let this_parsed = parsed.profiles[i]
+        let this_profile = recreate_char_profile(this_parsed)
+        parsed.profiles[i] = {
+            ...parsed.profiles[i],
+            ...this_profile,
+        }
+        console.log(parsed.profiles[i])
     }
 
     return parsed
 }
-export function writeCharProfiles() {
-    //WIP
+export function write_char_profiles(profiles, active_profile_index: number) {
+    const serializable = {
+        active_profile_index,
+        profiles: profiles,
+    }
+
+    localStorage.setItem(STORAGE_KEY + "_char_profiles", JSON.stringify(serializable))
 }
 const DEFAULT_PROFILES_STATE = {
-    profiles: new Array(createDefaultCharProfile()),
+    profiles: new Array(create_default_char_profile()),
     active_profile_index: 0,
 }
 
@@ -94,14 +107,13 @@ export interface CharProfile {
 
     auto_start_optimizer: boolean
     has_run_optimizer: boolean
+    evaluation_worker_bundle: any
     optimizer_worker_bundle: any
     histogram_worker_bundle: any
-    state_bundle: Ref<null | StateBundle>
-    histogram_result: Ref<null | HistogramOutputs>
     normal_grid: StatusGrid
     adv_grid: StatusGrid
 
-    KeyedUpgradeInput: KeyedUpgradeInput
+    keyed_upgrades: keyed_upgrades
 
     special_budget: number
 
@@ -116,9 +128,7 @@ export interface CharProfile {
     metric_type: number
 }
 
-export function createDefaultCharProfile(): CharProfile {
-    let state_bundle: Ref<null | StateBundle> = ref(null)
-    let histogram_result: Ref<null | HistogramOutputs> = ref(null)
+export function create_default_char_profile(): CharProfile {
     return {
         treatment_plan: TreatmentPlan.TreatRosterAsBound,
 
@@ -127,24 +137,33 @@ export function createDefaultCharProfile(): CharProfile {
 
         auto_start_optimizer: false,
         has_run_optimizer: false,
-        optimizer_worker_bundle: createWorkerBundle(state_bundle),
-        histogram_worker_bundle: createWorkerBundle(histogram_result),
-        state_bundle,
-        histogram_result,
+        evaluation_worker_bundle: createWorkerBundle(),
+        optimizer_worker_bundle: createWorkerBundle(),
+        histogram_worker_bundle: createWorkerBundle(),
+
         normal_grid: createStatusGrid(NUM_PIECES, NORMAL_COLS),
         adv_grid: createStatusGrid(NUM_PIECES, ADV_COLS),
 
-        KeyedUpgradeInput: {},
+        keyed_upgrades: {},
 
         special_budget: 0,
 
-        bound_budgets: createInputColumn(InputType.Int),
-        leftover_price: createInputColumn(InputType.Float), // implicit 0 leftover here
+        bound_budgets: create_input_column(InputType.Int),
+        leftover_price: create_input_column(InputType.Int), // implicit 0 leftover here
 
         special_state: [],
         tier: 0,
         min_resolution: 1,
         num_threads: 1,
         metric_type: 1,
+    }
+}
+
+export function recreate_char_profile(parsed): CharProfile {
+    return {
+        ...parsed,
+        evaluation_worker_bundle: createWorkerBundle(),
+        optimizer_worker_bundle: createWorkerBundle(),
+        histogram_worker_bundle: createWorkerBundle(),
     }
 }

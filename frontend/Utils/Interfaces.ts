@@ -58,88 +58,126 @@ export interface InputColumn {
     type: InputType
     upper_bound: number[]
     enabled: boolean[]
-    toNum(): number[]
 }
 export enum InputType {
     Int,
     Float,
 }
-export function createInputColumn(type: InputType, data?: string[], upper_bound?: number[], enabled?: boolean[]): InputColumn {
+export function create_input_column(type: InputType, data?: string[], upper_bound?: number[], enabled?: boolean[]): InputColumn {
     return {
         type,
         data: data ?? ALL_LABELS.map((_) => "0"),
         upper_bound: upper_bound ?? ALL_LABELS.map((_) => 999999999),
         enabled: enabled ?? ALL_LABELS.map((_) => true),
-        toNum(): number[] {
-            return this.data.map((x: string, index: number) => parseInput(this, index, x))
-        },
     }
 }
-export function getModifiedCell(input_column: InputColumn, index: number, event: Event) {
-    let out = String(parseInput(input_column, index, (event.target as HTMLInputElement).value))
-    return out
+
+export function input_column_to_num(input_column: InputColumn): number[] {
+    return input_column.data.map((x: string, index: number) => parse_input(input_column, index, x))
 }
-function parseInput(input_column: InputColumn, index: number, input: string): number {
+export function forbid_non_numeric(input_column: InputColumn, index: number, event: Event) {
+    const el = event.target as HTMLInputElement
+    if (!input_column.enabled[index]) {
+        el.value = ""
+        return ""
+    }
+    const filtered = String(el.value).replace(/[^\d,]/g, "")
+    el.value = filtered
+    return filtered
+}
+export function get_modified_cell(input_column: InputColumn, index: number, event: Event) {
+    return parse_input(input_column, index, (event.target as HTMLInputElement).value).toLocaleString()
+}
+function parse_input(input_column: InputColumn, index: number, input: string): number {
     if (!input_column.enabled[index]) {
         return 0
     }
-    let out = input_column.type == InputType.Int ? parseInt(input) : parseFloat(input)
+    let out = input_column.type === InputType.Int ? parseInt(input.replace(/,/g, "")) : parseFloat(input.replace(/,/g, ""))
     return isFinite(out) ? Math.min(input_column.upper_bound[index], out) : 0
 }
-export interface StatusGrid {
-    data: UpgradeStatus[][]
-    toBool(): BoolGrid
+
+export type StatusGrid = UpgradeStatus[][]
+
+export function status_to_bool_grid(status_grid: StatusGrid): BoolGrid {
+    console.log(status_grid)
+    return status_grid.map((row: UpgradeStatus[]) => row.map((cell) => cell == UpgradeStatus.Want))
 }
-
-export function createStatusGrid(rows: number, cols: number): StatusGrid {
-    return {
-        data: Array.from({ length: rows }, () => Array(cols).fill(UpgradeStatus.NotYet)),
-
-        toBool(): BoolGrid {
-            return this.data.map((row: UpgradeStatus[]) => row.map((cell) => cell == UpgradeStatus.Want))
-        },
+export function createStatusGrid(
+    rows: number,
+    cols: number,
+    data: UpgradeStatus[][] = Array.from({ length: rows }, () => Array(cols).fill(UpgradeStatus.NotYet)),
+): StatusGrid {
+    if (!data) {
+        data = Array.from({ length: rows }, () => Array(cols).fill(UpgradeStatus.NotYet))
     }
+    return data
 }
 export type OneMaterial = [number, number, number, number, number]
 export type MaterialInput = OneMaterial[]
 
-//                 piece type, upgrade index, is_adv, normal_progress, state, unlock, succeeded, adv_progress
+//               enabled,  piece type, upgrade index, is_adv, normal_progress, state, unlock, succeeded, adv_progress
 export type OneUpgrade = [number, number, boolean, number | null, State[], boolean, boolean, AdvProgress | null]
 export type UpgradeInput = OneUpgrade[]
 export const DEFAULT_ONE_UPGRADE = [0, [], false, false, [0, 0, false, false]] // excluding the first 3
 
-export type KeyedUpgradeInput = Record<OneUpgradeKey, OneUpgrade>
+export type keyed_upgrades = Record<OneUpgradeKey, [boolean, OneUpgrade]>
 type OneUpgradeKey = `${number},${number},${"true" | "false"}`
 export function to_upgrade_key(piece_type: number, upgrade_index: number, is_adv: boolean): OneUpgradeKey {
     return `${piece_type},${upgrade_index},${is_adv}`
 }
-export function keyed_to_array(KeyedUpgradeInput: KeyedUpgradeInput): UpgradeInput {
-    return Object.entries(KeyedUpgradeInput).map(([_, one_upgrade]) => one_upgrade)
+export function keyed_to_array(keyed_upgrades: keyed_upgrades) {
+    return Object.entries(keyed_upgrades)
+        .map(([_, pair]) => pair)
+        .filter((x) => x[0])
+        .map((x) => x[1])
 }
-export function grids_to_keyed(normal_grid: StatusGrid, adv_grid: StatusGrid) {
-    let out: KeyedUpgradeInput = {}
-    for (const [piece_type, row] of normal_grid.toBool().entries()) {
+export function grids_to_keyed(normal_grid: StatusGrid, adv_grid: StatusGrid, all_keyed: keyed_upgrades) {
+    console.log(all_keyed)
+    for (const [piece_type, row] of status_to_bool_grid(normal_grid).entries()) {
         for (const [upgrade_index, cell] of row.entries()) {
+            let key = to_upgrade_key(piece_type, upgrade_index, false)
             if (cell) {
-                let key = to_upgrade_key(piece_type, upgrade_index, false)
-                out[key] = [piece_type, upgrade_index, false, 0, [], false, false, null]
+                if (key in all_keyed) {
+                    all_keyed[key] = all_keyed[key]
+                    all_keyed[key][0] = true
+                } else {
+                    all_keyed[key] = [true, [piece_type, upgrade_index, false, 0, [], false, false, null]]
+                }
+            } else {
+                if (key in all_keyed) {
+                    all_keyed[key] = all_keyed[key]
+                    all_keyed[key][0] = false
+                }
             }
         }
     }
-    for (const [piece_type, row] of adv_grid.toBool().entries()) {
+    for (const [piece_type, row] of status_to_bool_grid(adv_grid).entries()) {
         for (const [upgrade_index, cell] of row.entries()) {
+            let key = to_upgrade_key(piece_type, upgrade_index, false)
             if (cell) {
-                let key = to_upgrade_key(piece_type, upgrade_index, true)
-
-                out[key] = [piece_type, upgrade_index, true, null, [], false, false, [0, 0, false, false]]
+                if (key in all_keyed) {
+                    all_keyed[key] = all_keyed[key]
+                    all_keyed[key][0] = true
+                } else {
+                    all_keyed[key] = [true, [piece_type, upgrade_index, true, null, [], false, false, [0, 0, false, false]]]
+                }
+            } else {
+                if (key in all_keyed) {
+                    all_keyed[key] = all_keyed[key]
+                    all_keyed[key][0] = false
+                }
             }
         }
     }
-    return out
+    return all_keyed
 }
 
 export type HistogramPair = [number, number]
 export interface HistogramOutputs {
     cum_percentiles: HistogramPair[][]
     average: number[]
+}
+
+export interface EvalAverageOutput {
+    average_gold_per_treatement: number[]
 }

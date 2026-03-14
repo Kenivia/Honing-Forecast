@@ -14,17 +14,17 @@ async function ParserWasm(payload: EvalPayload): Promise<StateBundle> {
     await init()
     return parser_wrapper(payload)
 }
-async function OptimizeAverageWasm(state_bundle: StateBundle): Promise<StateBundle> {
+async function OptimizeAverageWasm(payload: EvalPayload): Promise<StateBundle> {
     await init()
-    return optimize_average_wrapper(state_bundle)
+    return optimize_average_wrapper(payload)
 }
-async function EvaluateAverageWasm(state_bundle: StateBundle): Promise<StateBundle> {
+async function EvaluateAverageWasm(payload: EvalPayload): Promise<StateBundle> {
     await init()
-    return evaluate_average_wrapper(state_bundle)
+    return evaluate_average_wrapper(payload)
 }
-async function HistogramWasm(state_bundle: StateBundle): Promise<HistogramOutputs> {
+async function HistogramWasm(payload: EvalPayload): Promise<HistogramOutputs> {
     await init()
-    return histogram_wrapper(state_bundle)
+    return histogram_wrapper(payload)
 }
 
 self.addEventListener("message", async (ev) => {

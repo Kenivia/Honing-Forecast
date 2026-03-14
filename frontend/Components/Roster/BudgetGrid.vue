@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { uesRosterStore } from "@/stores/RosterConfig"
-import { ALL_LABELS } from "@/Utils/Constants"
+import { ALL_LABELS, BUNDLE_SIZE } from "@/Utils/Constants"
 import { storeToRefs } from "pinia"
 import MaterialCell from "../MaterialCell.vue"
 
@@ -45,7 +45,7 @@ const { roster_config } = storeToRefs(uesRosterStore())
                         roster_config.mats_prices.data[index] = val
                     }
                 "
-                :suffix="index == 0 || index == 1 ? 'x100' : index == 3 ? 'x1000' : ''"
+                :suffix="BUNDLE_SIZE[index] > 1 ? 'x' + BUNDLE_SIZE[index].toLocaleString('en-US') : ''"
             />
         </div>
     </div>

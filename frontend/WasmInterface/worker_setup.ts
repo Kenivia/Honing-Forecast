@@ -4,11 +4,11 @@ import { HistogramOutputs, StateBundle } from "@/Utils/Interfaces"
 import { buildPayload } from "./payload"
 const createWorker = () => new Worker(new URL("./js_to_wasm.ts", import.meta.url), { type: "module" })
 
-export function createWorkerBundle(inp: Ref<null | StateBundle | HistogramOutputs>) {
+export function createWorkerBundle() {
     let worker = null
     const status: Ref<"idle" | "success" | "busy" | "error"> = ref("idle")
     const error = ref(null)
-    const result = inp
+    const result = ref(null)
     let debounceTimer = null
 
     function _launch(wasm_op: WasmOp) {

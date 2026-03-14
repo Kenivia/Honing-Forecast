@@ -3,7 +3,7 @@ import { CharProfile, useProfilesStore } from "@/stores/CharacterProfile"
 import { uesRosterStore } from "@/stores/RosterConfig"
 import { PIECE_NAMES, NORMAL_COLS as NORMAL_COLS, NUM_PIECES as NORMAL_ROWS, ALL_LABELS } from "@/Utils/Constants"
 import { iconPath } from "@/Utils/Helpers"
-import { InputColumn, getModifiedCell, UpgradeStatus } from "@/Utils/Interfaces"
+import { InputColumn, get_modified_cell, UpgradeStatus, forbid_non_numeric } from "@/Utils/Interfaces"
 import { storeToRefs } from "pinia"
 import { Ref } from "vue"
 
@@ -28,11 +28,12 @@ const label: string = ALL_LABELS[props.row]
             v-if="!Array.isArray(input_column)"
             type="text"
             class="hf-material-cell-input"
-            :value="input_column[row] ?? ''"
-            @change="setter ? setter(getModifiedCell(input_column, row, $event)) : null"
+            :value="input_column.data[row]"
+            @change="setter(get_modified_cell(input_column, row, $event))"
+            @input="setter(forbid_non_numeric(input_column, row, $event))"
         />
         <label v-else-if="label !== 'Special Leap'" class="hf-material-cell-result" type="text">{{
-            (input_column[row] ?? "").toLocaleString("en-US", {
+            input_column[row].toLocaleString("en-US", {
                 minimumFractionDigits: 0, // show decimals for small K/M/B
                 maximumFractionDigits: 0,
             })

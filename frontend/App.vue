@@ -2,8 +2,8 @@
 import { RouterLink, RouterView } from "vue-router"
 import router from "./router"
 import { iconPath } from "./Utils/Helpers"
-import { useProfilesStore } from "./stores/CharacterProfile"
-import { uesRosterStore } from "./stores/RosterConfig"
+import { debounced_write_char_profiles, useProfilesStore } from "./stores/CharacterProfile"
+import { debounced_write_roster_config, uesRosterStore } from "./stores/RosterConfig"
 import { CharProfile } from "./stores/CharacterProfile"
 import { storeToRefs } from "pinia"
 import { toRaw, watchEffect } from "vue"
@@ -13,6 +13,13 @@ roster_store.init()
 const profile_store = useProfilesStore()
 profile_store.init()
 const { all_profiles } = storeToRefs(profile_store)
+
+profile_store.$subscribe((_mutation, state) => {
+    debounced_write_char_profiles(state.profiles, state.active_profile_index)
+})
+roster_store.$subscribe((_mutation, state) => {
+    debounced_write_roster_config(state.data)
+})
 </script>
 
 <template>

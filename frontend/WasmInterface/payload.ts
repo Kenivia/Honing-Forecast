@@ -4,7 +4,18 @@ import { WasmOp } from "./js_to_wasm"
 import { CharProfile, TreatmentPlan, useProfilesStore } from "@/stores/CharacterProfile"
 import { RosterConfig, uesRosterStore } from "@/stores/RosterConfig"
 
-import { AdvProgress, keyed_to_array, MaterialInput, State, StateBundle, Upgrade, UpgradeInput, UpgradeStatus } from "@/Utils/Interfaces"
+import {
+    AdvProgress,
+    grids_to_keyed,
+    input_column_to_num,
+    keyed_to_array,
+    MaterialInput,
+    State,
+    StateBundle,
+    Upgrade,
+    UpgradeInput,
+    UpgradeStatus,
+} from "@/Utils/Interfaces"
 import { storeToRefs } from "pinia"
 import { toRaw } from "vue"
 import { mapToObject } from "@/Utils/Helpers"
@@ -41,36 +52,38 @@ export function buildPayload(wasm_op: WasmOp): EvalPayload | StateBundle {
     const { active_profile } = storeToRefs(useProfilesStore())
     const { roster_config } = storeToRefs(uesRosterStore())
 
-    if (wasm_op == WasmOp.Parser) {
-        const bound_budgets = active_profile.value.bound_budgets.toNum()
-        const roster_mats_owned = roster_config.value.roster_mats_owned.toNum()
-        const tradable_mats_owned = roster_config.value.tradable_mats_owned.toNum()
-        const leftover_price = active_profile.value.leftover_price.toNum()
-        const tradable_mats_price = roster_config.value.mats_prices
-            .toNum()
-            .map((x: number, index: number) => Math.max(Math.min(1, x), Math.floor(x * 0.95)) / BUNDLE_SIZE[index])
-        const mats_prices = roster_config.value.mats_prices.toNum().map((x: number, index: number) => x / BUNDLE_SIZE[index])
-        return {
-            material_info: ALL_LABELS.map((_, index) => [
-                ...apply_treatement(active_profile.value.treatment_plan, bound_budgets[index], roster_mats_owned[index], tradable_mats_owned[index]),
-                leftover_price[index],
-                tradable_mats_price[index],
-                mats_prices[index],
-            ]),
-            upgrade_info: keyed_to_array(active_profile.value.KeyedUpgradeInput),
-            special_budget: active_profile.value.special_budget,
-            express_event: active_profile.value.express_event,
-            tier: active_profile.value.tier,
-            min_resolution: active_profile.value.min_resolution,
-            num_threads: 1,
-            metric_type: 1,
-        }
-    } else {
-        // console.log(toRaw(active_profile.value.state_bundle))
-        let out = toRaw(active_profile.value.state_bundle)
-        for (let index = 0; index < out.prep_output.juice_info.all_juices.length; index++) {
-            out.prep_output.juice_info.all_juices[index].data = mapToObject(out.prep_output.juice_info.all_juices[index].data)
-        }
-        return out
+    const bound_budgets = input_column_to_num(active_profile.value.bound_budgets)
+    const roster_mats_owned = input_column_to_num(roster_config.value.roster_mats_owned)
+    const tradable_mats_owned = input_column_to_num(roster_config.value.tradable_mats_owned)
+    const leftover_price = input_column_to_num(active_profile.value.leftover_price)
+    const tradable_mats_price = input_column_to_num(roster_config.value.mats_prices).map(
+        (x: number, index: number) => Math.max(Math.min(1, x), Math.floor(x * 0.95)) / BUNDLE_SIZE[index],
+    )
+    const mats_prices = input_column_to_num(roster_config.value.mats_prices).map((x: number, index: number) => x / BUNDLE_SIZE[index])
+
+    active_profile.value.keyed_upgrades = grids_to_keyed(active_profile.value.normal_grid, active_profile.value.adv_grid, active_profile.value.keyed_upgrades)
+    return {
+        material_info: ALL_LABELS.map((_, index) => [
+            ...apply_treatement(active_profile.value.treatment_plan, bound_budgets[index], roster_mats_owned[index], tradable_mats_owned[index]),
+            leftover_price[index],
+            tradable_mats_price[index],
+            mats_prices[index],
+        ]),
+        upgrade_info: keyed_to_array(active_profile.value.keyed_upgrades),
+        special_budget: active_profile.value.special_budget,
+        express_event: active_profile.value.express_event,
+        tier: active_profile.value.tier,
+        min_resolution: active_profile.value.min_resolution,
+        num_threads: 1,
+        metric_type: 1,
     }
+
+    //     else {
+    //     // console.log(toRaw(active_profile.value.state_bundle))
+    //     let out = toRaw(active_profile.value.state_bundle)
+    //     for (let index = 0; index < out.prep_output.juice_info.all_juices.length; index++) {
+    //         out.prep_output.juice_info.all_juices[index].data = mapToObject(out.prep_output.juice_info.all_juices[index].data)
+    //     }
+    //     return out
+    // }
 }
