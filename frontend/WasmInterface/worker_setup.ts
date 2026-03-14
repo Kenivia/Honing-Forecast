@@ -20,13 +20,15 @@ export function createWorkerBundle(inp: Ref<null | StateBundle | HistogramOutput
         worker = createWorker()
 
         worker.onmessage = (e) => {
-            console.log(e)
-            result.value = e.data.result
+            // console.log(e)
 
-            if (e.type === "result") {
+            if (e.data.type === "result") {
+                result.value = e.data.result
                 status.value = "success"
                 worker.terminate()
                 worker = null
+            } else {
+                result.value = e.data.state_bundle
             }
         }
 
@@ -36,7 +38,7 @@ export function createWorkerBundle(inp: Ref<null | StateBundle | HistogramOutput
             worker = null
         }
 
-        console.log(WasmOp[wasm_op], toRaw(buildPayload(wasm_op)))
+        // console.log(WasmOp[wasm_op], toRaw(buildPayload(wasm_op)))
         // console.log(JSON.parse(JSON.stringify(toRaw(buildPayload(wasm_op)))))
         worker.postMessage({ type: "message", wasm_op, payload: JSON.parse(JSON.stringify(toRaw(buildPayload(wasm_op)))) })
     }

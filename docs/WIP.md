@@ -3,8 +3,8 @@
 
 ## Immediate WIP
 
-- fix the mat distribution row such that the inputs work correctly
-  - hopefully just involves copy pasting the styles back again
+- ~~fix the mat distribution row such that the inputs work correctly~~
+   -~~ hopefully just involves copy pasting the styles back again~~
 - make the roster page
   - just the prices inputs for now is fine
 - input & copy payload to re-make the test cases

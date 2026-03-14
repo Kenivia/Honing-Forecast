@@ -3,30 +3,96 @@ import { CharProfile, useProfilesStore } from "@/stores/CharacterProfile"
 import { uesRosterStore } from "@/stores/RosterConfig"
 import { PIECE_NAMES, NORMAL_COLS as NORMAL_COLS, NUM_PIECES as NORMAL_ROWS, ALL_LABELS } from "@/Utils/Constants"
 import { iconPath } from "@/Utils/Helpers"
-import { InputColumn, modifyInputColumn, UpgradeStatus } from "@/Utils/Interfaces"
+import { InputColumn, getModifiedCell, UpgradeStatus } from "@/Utils/Interfaces"
 import { storeToRefs } from "pinia"
+import { Ref } from "vue"
 
 const props = defineProps<{
-    input_columns: (InputColumn | number[])[]
-    index: number
+    input_column: InputColumn | number[]
+    row: number
+    show_label: boolean
+    setter?: (val: string) => void // optional so read-only columns don't need it
 }>()
-const label: string = ALL_LABELS[props.index]
+
+const label: string = ALL_LABELS[props.row]
 </script>
 
 <template>
-    <label class="hf-row-label">
-        <span>{{ label }}</span>
-        <img :src="iconPath(label)" :alt="label" />
-    </label>
-    <div v-for="col in input_columns">
+    <div class="hf-material-cell">
+        <label v-if="show_label" class="hf-row-label">
+            <span>{{ label }}</span>
+            <img :src="iconPath(label)" :alt="label" />
+        </label>
         <input
-            v-if="label !== 'Special Leap' && !Array.isArray(col)"
+            v-if="!Array.isArray(input_column)"
             type="text"
-            :value="col[index] ?? ''"
-            @change="modifyInputColumn(col as InputColumn, index, $event)"
+            class="hf-material-cell-input"
+            :value="input_column[row] ?? ''"
+            @change="setter ? setter(getModifiedCell(input_column, row, $event)) : null"
         />
-        <text v-else-if="label !== 'Special Leap'" type="text" :value="col[index] ?? ''" />
-        <div v-else class="hf-input-placeholder" />
+        <label v-else-if="label !== 'Special Leap'" class="hf-material-cell-result" type="text">{{
+            (input_column[row] ?? "").toLocaleString("en-US", {
+                minimumFractionDigits: 0, // show decimals for small K/M/B
+                maximumFractionDigits: 0,
+            })
+        }}</label>
     </div>
     <!-- <input v-if="customLeftovers" type="text" :value="matsLeftover[label]" @input="setRecordValue(matsLeftover, label, $event)" /> -->
 </template>
+<style>
+.hf-material-cell {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 6px;
+    color: var(--text-secondary);
+    font-size: 16px;
+    min-width: 0;
+    text-align: right;
+    padding-right: 8px;
+}
+
+.hf-material-cell-input {
+    display: flex;
+    align-items: flex-start;
+    justify-content: flex-start;
+    gap: 6px;
+    color: var(--text-secondary);
+    font-size: 18px;
+    min-width: 0;
+    text-align: left;
+    padding-right: 8px;
+    width: 100px;
+}
+
+.hf-material-cell-result {
+    display: flex;
+    align-items: flex-start;
+    justify-content: flex-start;
+    gap: 6px;
+    color: white;
+    font-size: 18px;
+    min-width: 0;
+    text-align: left;
+    padding-right: 8px;
+    width: 100px;
+}
+.hf-row-label {
+    display: inline-flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 6px;
+    color: var(--text-secondary);
+    font-size: 13px;
+    min-width: 0;
+    text-align: right;
+    padding-right: 8px;
+    width: 150px;
+}
+
+.hf-row-label img {
+    width: 32px;
+    height: 32px;
+    object-fit: contain;
+}
+</style>

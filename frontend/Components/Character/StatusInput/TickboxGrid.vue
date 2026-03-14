@@ -185,9 +185,15 @@ watchEffect(() => {
 }
 
 .hf-grid-scroll {
+    align-items: start;
     overflow-x: auto;
     min-width: 0;
 }
+.hf-label-col {
+    width: 110px;
+    min-width: 110px;
+}
+
 .hf-grid-content {
     display: flex;
     gap: 4px;

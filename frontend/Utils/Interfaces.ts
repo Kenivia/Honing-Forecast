@@ -68,15 +68,16 @@ export function createInputColumn(type: InputType, data?: string[], upper_bound?
     return {
         type,
         data: data ?? ALL_LABELS.map((_) => "0"),
-        upper_bound: upper_bound ?? ALL_LABELS.map((_) => Infinity),
-        enabled: enabled ?? ALL_LABELS.map((_) => false),
+        upper_bound: upper_bound ?? ALL_LABELS.map((_) => 999999999),
+        enabled: enabled ?? ALL_LABELS.map((_) => true),
         toNum(): number[] {
             return this.data.map((x: string, index: number) => parseInput(this, index, x))
         },
     }
 }
-export function modifyInputColumn(input_column: InputColumn, index: number, event: Event) {
-    input_column[index] = String(parseInput(input_column, index, (event.target as HTMLInputElement).value))
+export function getModifiedCell(input_column: InputColumn, index: number, event: Event) {
+    let out = String(parseInput(input_column, index, (event.target as HTMLInputElement).value))
+    return out
 }
 function parseInput(input_column: InputColumn, index: number, input: string): number {
     if (!input_column.enabled[index]) {

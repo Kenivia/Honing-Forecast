@@ -13,3 +13,15 @@ import StatusInput from "@/Components/Character/StatusInput/StatusInput.vue"
         <!-- <Instructions /> -->
     </div>
 </template>
+<style>
+.hf-main-stage {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 8px;
+    min-width: 0;
+    width: 100%;
+    justify-content: center;
+    align-items: center;
+}
+</style>

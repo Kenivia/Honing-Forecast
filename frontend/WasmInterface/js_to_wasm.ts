@@ -34,7 +34,7 @@ self.addEventListener("message", async (ev) => {
     const { id, payload, wasm_op } = msg
 
     console.log(WasmOp[wasm_op], "Began")
-    console.log(payload)
+    // console.log(payload)
     let result
 
     if (wasm_op == WasmOp.EvaluateAverage) {

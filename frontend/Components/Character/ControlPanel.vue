@@ -53,10 +53,10 @@ const optimizer_progress = optimizer_worker.est_progress_percentage
                     <input v-model="active_profile.express_event" type="checkbox" />
                     <span>Express event</span>
                 </label>
-                <label class="hf-inline-check">
+                <!-- <label class="hf-inline-check">
                     <input v-model="active_profile.cumulative_graph" type="checkbox" />
                     <span>Cumulative graph</span>
-                </label>
+                </label> -->
                 <!-- <label class="hf-inline-check">
                     <input v-model="allowManualState" type="checkbox" />
                     <span>Enable progress updates for better optimization</span>

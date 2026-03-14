@@ -4,20 +4,18 @@ import TickboxGrid from "./TickboxGrid.vue"
 
 <template>
     <div class="hf-honing-row">
-        <section class="hf-card hf-normal-card">
+        <section class="hf-normal-card">
             <div class="hf-card-header">
                 <div class="hf-card-title"><span class="hf-card-title-dot" />Normal Honing</div>
-                <span class="hf-card-hint">Build target grid</span>
             </div>
             <div class="hf-card-body">
                 <TickboxGrid grid_type="normal" />
             </div>
         </section>
 
-        <section class="hf-card hf-advanced-card">
+        <section class="hf-advanced-card">
             <div class="hf-card-header">
                 <div class="hf-card-title"><span class="hf-card-title-dot" />Advanced Honing</div>
-                <span class="hf-card-hint">Juice on Grace assumed</span>
             </div>
             <div class="hf-card-body">
                 <TickboxGrid grid_type="adv" />
@@ -25,3 +23,18 @@ import TickboxGrid from "./TickboxGrid.vue"
         </section>
     </div>
 </template>
+<style>
+.hf-normal-card {
+    min-width: 0;
+    width: min(100%, 800px);
+}
+.hf-advanced-card {
+    width: min(100%, 262px);
+    min-width: 0;
+}
+.hf-honing-row {
+    gap: 12px;
+    align-items: center;
+    min-width: 0;
+}
+</style>

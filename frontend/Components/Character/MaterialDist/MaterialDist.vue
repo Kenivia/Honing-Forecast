@@ -4,16 +4,15 @@ import GoldBreakdown from "./GoldBreakdown.vue"
 import { CharProfile, useProfilesStore } from "@/stores/CharacterProfile"
 import { iconPath } from "@/Utils/Helpers"
 import MaterialCell from "@/Components/MaterialCell.vue"
-import { createInputColumn, HistogramOutputs, InputType } from "@/Utils/Interfaces"
+import { createInputColumn, HistogramOutputs, InputColumn, InputType } from "@/Utils/Interfaces"
 import MaterialGraph from "./MaterialGraph.vue"
 import { storeToRefs } from "pinia"
 import { uesRosterStore } from "@/stores/RosterConfig"
 import { Ref, toRef } from "vue"
 
 const { active_profile } = storeToRefs(useProfilesStore())
-const average_breakdown: Ref<number[]> = toRef(
-    () => active_profile.value.optimizer_worker_bundle.result?.average_breakdown ?? new Array(ALL_LABELS.length).fill(0),
-)
+const averages: Ref<number[]> = toRef(() => histogram_result.value?.average ?? new Array(ALL_LABELS.length).fill(0))
+
 const histogram_result: Ref<HistogramOutputs | null> = toRef(() => active_profile.value.histogram_worker_bundle.result)
 </script>
 
@@ -26,22 +25,28 @@ const histogram_result: Ref<HistogramOutputs | null> = toRef(() => active_profil
             <div class="hf-dist-desc">Distribution reflects free-tap and juice usage from your current optimizer output.</div>
             <div class="hf-dist-graphs">
                 <div class="hf-table-title-row">
-                    <span />
-                    <span>Owned</span>
-                    <span>Price</span>
+                    <span style="text-align: right; padding-right: 15px">Character Bound Mats</span>
+                    <span>Average Cost</span>
+                    <span style="text-align: center">Hover over the graph to see more!</span>
                     <!-- <span v-if="customLeftovers">Left</span> -->
                 </div>
                 <div v-for="(label, index) in ALL_LABELS" :key="`graph-${label}`" class="hf-graph-row">
-                    <div class="hf-graph-icon">
-                        <img :src="iconPath(label)" :alt="label" />
-                    </div>
-                    <MaterialCell :input_columns="[active_profile.bound_budgets, average_breakdown]" :index="index"></MaterialCell>
+                    <MaterialCell
+                        :input_column="active_profile.bound_budgets"
+                        :row="index"
+                        :show_label="true"
+                        :setter="
+                            (val) => {
+                                active_profile.bound_budgets[index] = val
+                            }
+                        "
+                    />
+
+                    <MaterialCell :input_column="averages" :row="index" :show_label="false" />
                     <MaterialGraph
                         :data="histogram_result?.cum_percentiles?.[index] ?? null"
                         :average="histogram_result?.average?.[index] ?? null"
                         :color-var="GRAPH_COLORS[index]"
-                        :cumulative="active_profile.cumulative_graph"
-                        :height="120"
                     />
                 </div>
             </div>
@@ -50,3 +55,23 @@ const histogram_result: Ref<HistogramOutputs | null> = toRef(() => active_profil
 
     <GoldBreakdown />
 </template>
+<style>
+.hf-dist-graphs {
+    display: grid;
+    grid-template-columns: 250px 120px minmax(0, 1fr);
+    align-items: center; /* optional: vertically center each cell */
+    gap: 8px; /* optional: spacing between cells */
+}
+
+.hf-table-title-row {
+    display: contents;
+}
+.hf-graph-row {
+    display: contents;
+    gap: 8px;
+    align-items: center;
+    min-width: 0;
+    width: 100%;
+    height: 48px;
+}
+</style>

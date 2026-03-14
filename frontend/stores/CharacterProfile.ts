@@ -114,7 +114,6 @@ export interface CharProfile {
     min_resolution: number
     num_threads: number
     metric_type: number
-    cumulative_graph: boolean
 }
 
 export function createDefaultCharProfile(): CharProfile {
@@ -147,7 +146,5 @@ export function createDefaultCharProfile(): CharProfile {
         min_resolution: 1,
         num_threads: 1,
         metric_type: 1,
-
-        cumulative_graph: true,
     }
 }
