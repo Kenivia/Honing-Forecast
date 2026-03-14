@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 use std::f64::{INFINITY, NEG_INFINITY};
 use std::ops::Deref;
 
-use crate::constants::FLOAT_TOL;
+use crate::constants::{FLOAT_TOL, IGNORE_PROB_TOL};
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 #[serde(transparent)]
@@ -96,8 +96,15 @@ impl Support {
             let mut min_value: f64 = INFINITY;
 
             let mut cur_p = 0.0;
-            let front = prob_dist.iter().take_while(|p| **p == 0.0).count();
-            let back = prob_dist.iter().rev().take_while(|p| **p == 0.0).count();
+            let front = prob_dist
+                .iter()
+                .take_while(|p| p.abs() < IGNORE_PROB_TOL)
+                .count();
+            let back = prob_dist
+                .iter()
+                .rev()
+                .take_while(|p| p.abs() < IGNORE_PROB_TOL)
+                .count();
 
             assert!(front != prob_dist.len());
             let mut iter = self
@@ -110,7 +117,7 @@ impl Support {
             while let Some((&s, &p)) = iter.next() {
                 cur_p += p;
                 if iter.peek().is_none() || s != *iter.peek().unwrap().0 {
-                    if cur_p != 0.0 {
+                    if cur_p.abs() > IGNORE_PROB_TOL {
                         max_value = max_value.max(s);
                         min_value = min_value.min(s);
                         result.push((s, cur_p));

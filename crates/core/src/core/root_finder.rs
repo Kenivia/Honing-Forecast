@@ -2,9 +2,9 @@
 //! This is necessary as part of saddlepoint approximation
 
 use super::cumulants::KsTuple;
-use crate::constants::FLOAT_TOL;
 use crate::performance::Performance;
 use crate::state_bundle::StateBundle;
+use crate::{constants::FLOAT_TOL, my_dbg};
 use std::f64::{INFINITY, NAN, NEG_INFINITY};
 pub const MAX_ROOT_FIND_ITER: usize = 20;
 static Y_VALUE_TOL: f64 = 1e-6;
@@ -34,7 +34,7 @@ impl StateBundle {
         let mut y_upper = INFINITY;
         let mut theta = guess;
         let mut init_y: f64 = NAN;
-        // let mut debug_record: Vec<(f64, f64, f64, f64, f64, f64)> = Vec::new();
+        let mut debug_record: Vec<(f64, f64, f64, f64, f64, f64)> = Vec::new();
 
         for iter in 0..MAX_ROOT_FIND_ITER {
             let this = self.ks(
@@ -78,7 +78,7 @@ impl StateBundle {
             };
 
             let mut proposed_theta = theta + delta;
-            // debug_record.push((theta, proposed_theta, y, dy, dy2, dy3));
+            debug_record.push((theta, proposed_theta, y, dy, dy2, dy3));
             proposed_theta =
                 proposed_theta.clamp(-3.0 * theta.abs().max(1e-8), 3.0 * theta.abs().max(1e-8));
 
@@ -122,8 +122,8 @@ impl StateBundle {
             // last_y = y;
         }
 
-        // my_dbg!(theta, lower, upper, guess, compute_biased, budget,);
-        // my_dbg!(debug_record);
+        my_dbg!(theta, lower, upper, guess, compute_biased, budget,);
+        my_dbg!(debug_record);
         None
     }
 }

@@ -9,8 +9,8 @@ pub struct HistogramOutputs {
 }
 
 pub fn histogram(state_bundle: &mut StateBundle) -> HistogramOutputs {
-    state_bundle.update_dist();
-    state_bundle.update_individual_support();
+    state_bundle.update_prob_dist();
+    state_bundle.update_cost_dist();
     state_bundle.compute_special_probs(false);
     let special_probs = state_bundle.special_cache[&state_bundle.special_state].clone();
     let mut dummy_performance = Performance::new();

@@ -10,7 +10,7 @@ import StatusInput from "./StatusInput.vue"
 import { buildPayload } from "@/WasmInterface/payload"
 import { WasmOp } from "@/WasmInterface/js_to_wasm"
 import { uesRosterStore } from "@/stores/RosterConfig"
-
+import { watchDebounced } from "@vueuse/core"
 const profile_store = useProfilesStore()
 
 const { active_profile } = storeToRefs(useProfilesStore())
@@ -48,6 +48,7 @@ function change_one(row: number, col: number, current = relevant_grid.value[row]
             }
             if (cell == UpgradeStatus.Want) {
                 left_is_not_yet = false
+                no_done = false
             }
             if (cell == UpgradeStatus.Done) {
                 no_done = false
@@ -107,7 +108,7 @@ watch([() => active_profile.value.adv_grid, () => active_profile.value.normal_gr
     active_profile.value.keyed_upgrades = grids_to_keyed(active_profile.value.normal_grid, active_profile.value.adv_grid, active_profile.value.keyed_upgrades)
 })
 
-watch(
+watchDebounced(
     [
         () => active_profile.value.adv_grid,
         () => active_profile.value.normal_grid,
@@ -116,8 +117,9 @@ watch(
         () => input_column_to_num(roster_config.value.mats_prices),
         () => input_column_to_num(roster_config.value.tradable_mats_owned),
         () => input_column_to_num(roster_config.value.roster_mats_owned),
-        () => active_profile.value.keyed_upgrades,
+        // () => active_profile.value.keyed_upgrades,
         () => input_column_to_num(active_profile.value.special_budget),
+        () => active_profile.value.express_event,
     ],
     (_) => {
         onWatcherCleanup(() => {
@@ -126,10 +128,31 @@ watch(
         console.log("optimizer triggered")
         active_profile.value.optimizer_worker_bundle.start(WasmOp.OptimizeAverage)
     },
-    { immediate: true, deep: true },
+    { immediate: true, deep: true, debounce: 500 },
 )
 
-watch(
+// watch(
+//     [
+//         () => active_profile.value.adv_grid,
+//         () => active_profile.value.normal_grid,
+//         () => input_column_to_num(active_profile.value.bound_budgets),
+//         () => input_column_to_num(active_profile.value.leftover_price),
+//         () => input_column_to_num(roster_config.value.mats_prices),
+//         () => input_column_to_num(roster_config.value.tradable_mats_owned),
+//         () => input_column_to_num(roster_config.value.roster_mats_owned),
+//         () => active_profile.value.keyed_upgrades,
+//         () => input_column_to_num(active_profile.value.special_budget),
+//     ],
+//     (_) => {
+//         onWatcherCleanup(() => {
+//             active_profile.value.evaluation_worker_bundle.cancel()
+//         })
+//         console.log("eval triggered")
+//         active_profile.value.evaluation_worker_bundle.start(WasmOp.EvaluateAverage)
+//     },
+// )
+
+watchDebounced(
     [
         () => active_profile.value.adv_grid,
         () => active_profile.value.normal_grid,
@@ -138,29 +161,9 @@ watch(
         () => input_column_to_num(roster_config.value.mats_prices),
         () => input_column_to_num(roster_config.value.tradable_mats_owned),
         () => input_column_to_num(roster_config.value.roster_mats_owned),
-        () => active_profile.value.keyed_upgrades,
+        // () => active_profile.value.keyed_upgrades,
         () => input_column_to_num(active_profile.value.special_budget),
-    ],
-    (_) => {
-        onWatcherCleanup(() => {
-            active_profile.value.evaluation_worker_bundle.cancel()
-        })
-        console.log("eval triggered")
-        active_profile.value.evaluation_worker_bundle.start(WasmOp.EvaluateAverage)
-    },
-)
-
-watch(
-    [
-        () => active_profile.value.adv_grid,
-        () => active_profile.value.normal_grid,
-        () => input_column_to_num(active_profile.value.bound_budgets),
-        () => input_column_to_num(active_profile.value.leftover_price),
-        () => input_column_to_num(roster_config.value.mats_prices),
-        () => input_column_to_num(roster_config.value.tradable_mats_owned),
-        () => input_column_to_num(roster_config.value.roster_mats_owned),
-        () => active_profile.value.keyed_upgrades,
-        () => input_column_to_num(active_profile.value.special_budget),
+        () => active_profile.value.express_event,
     ],
     (_) => {
         onWatcherCleanup(() => {
@@ -169,7 +172,7 @@ watch(
         console.log("histogram triggered")
         active_profile.value.histogram_worker_bundle.start(WasmOp.Histogram)
     },
-    { immediate: true, deep: true },
+    { immediate: true, deep: true, debounce: 100 },
 )
 </script>
 <template>

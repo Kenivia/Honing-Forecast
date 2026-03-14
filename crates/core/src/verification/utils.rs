@@ -3,13 +3,15 @@ use crate::{parser::PreparationOutput, state_bundle::StateBundle};
 pub fn apply_prices(used: f64, prep_output: &PreparationOutput, index: usize) -> f64 {
     let bound_thresh = prep_output.bound_budgets[index];
     let trade_thresh = prep_output.trade_budgets[index] + bound_thresh;
-    if used > trade_thresh {
+    let out = if used > trade_thresh {
         prep_output.market_price[index] * -(used - trade_thresh)
-    } else if bound_thresh < used && used < trade_thresh {
-        prep_output.tradable_price[index] * -(used - bound_thresh)
+    } else if bound_thresh <= used && used <= trade_thresh {
+        prep_output.tradable_price[index] * (trade_thresh - used)
     } else {
-        prep_output.leftover_price[index] * -(used - bound_thresh)
-    }
+        prep_output.leftover_price[index] * (bound_thresh - used)
+            + prep_output.trade_budgets[index] * prep_output.tradable_price[index]
+    };
+    out
 }
 
 pub fn encode_one_positions(v1: &[(bool, usize)]) -> String {

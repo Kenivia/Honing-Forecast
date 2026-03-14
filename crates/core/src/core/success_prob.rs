@@ -38,8 +38,8 @@ impl StateBundle {
 
     // this is also one of the things i was gonna display but this is implicitly displayed in the graph
     pub fn compute_leftover_probs(&mut self) -> Vec<f64> {
-        self.update_dist();
-        self.update_individual_support();
+        self.update_prob_dist();
+        self.update_cost_dist();
         self.compute_special_probs(false);
         let mut prob_leftover: Vec<f64> = Vec::with_capacity(self.prep_output.bound_budgets.len());
 

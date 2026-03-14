@@ -74,7 +74,7 @@ impl StateBundle {
         performance: &mut Performance,
     ) -> f64 {
         let (min_value, max_value) = self.find_min_max(support_index, skip_count);
-        if inp_budget > max_value + FLOAT_TOL {
+        if inp_budget > max_value - FLOAT_TOL {
             performance.trivial_count += 1;
             return 1.0;
         }

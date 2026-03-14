@@ -35,12 +35,11 @@ impl StateBundle {
         compute_breakdown: bool,
         performance: &mut Performance,
     ) -> f64 {
-        self.update_dist();
-        self.update_individual_support();
+        self.update_prob_dist();
+        self.update_cost_dist();
         self.compute_special_probs(false);
         performance.states_evaluated += 1;
 
-        #[cfg(feature = "wasm")]
         let mut breakdown: Vec<f64> = vec![0.0; self.prep_output.juice_info.total_num_avail];
 
         let mut total_gold: f64 = 0.0;
@@ -74,13 +73,13 @@ impl StateBundle {
                 );
                 let this = special_prob * this_avg;
                 total_gold += special_prob * this_avg;
-                #[cfg(feature = "wasm")]
+
                 if compute_breakdown {
                     breakdown[support_index] += this;
                 }
             }
         }
-        #[cfg(feature = "wasm")]
+
         if compute_breakdown {
             for x in breakdown.iter_mut() {
                 *x = x.ceil()
@@ -107,23 +106,28 @@ impl StateBundle {
         skip_count: usize,
         mut budget: f64,
         tradable_threshold: f64,
-        price: f64,
-        tradable_leftover: f64,
-        leftover_value: f64,
+        market_price: f64,
+        trade_price: f64,
+        leftover_price: f64,
         performance: &mut Performance,
     ) -> f64 {
         let simple_mean: f64 = self.simple_avg(support_index, skip_count);
 
-        if (price - leftover_value).abs() < FLOAT_TOL {
+        if (market_price - leftover_price).abs() < FLOAT_TOL
+            && (market_price - trade_price).abs() < FLOAT_TOL
+        {
             // this also includes price = 0 (unless leftover is high for some reason)
-            return price * (budget - simple_mean);
+            return market_price * (budget - simple_mean);
         }
-        let trade_same_value: bool = (tradable_leftover - leftover_value).abs() < FLOAT_TOL; // ig this only happens for 1g cost or user specifies
+        let trade_same_value: bool = (trade_price - leftover_price).abs() < FLOAT_TOL; // ig this only happens for 1g cost or user specifies
         if trade_same_value {
             budget = tradable_threshold;
         }
         let simple_mean_log = simple_mean.ln();
-        if trade_same_value || (budget - tradable_threshold).abs() < FLOAT_TOL {
+        if trade_same_value
+            || (budget - tradable_threshold).abs() < FLOAT_TOL
+            || (market_price - trade_price).abs() < FLOAT_TOL
+        {
             let biased_prob: f64 = self.saddlepoint_approximation_wrapper(
                 support_index,
                 skip_count,
@@ -141,8 +145,8 @@ impl StateBundle {
                 performance,
             );
             // the signs are backwards compared to the UI / documentation
-            let out: f64 = price * (budget - simple_mean)
-                + (leftover_value - price) * (budget * prob - biased_prob * simple_mean);
+            let out: f64 = market_price * (budget - simple_mean)
+                + (leftover_price - market_price) * (budget * prob - biased_prob * simple_mean);
 
             return out;
         } else {
@@ -178,14 +182,13 @@ impl StateBundle {
                 NAN,
                 performance,
             );
-            // leaving it in this form for now
-            let out: f64 = price * (simple_mean - tradable_threshold)
-                - price * (trade_biased_prob * simple_mean - trade_prob * tradable_threshold)
-                + tradable_leftover * (trade_biased_prob * simple_mean - trade_prob * budget)
-                - tradable_leftover * (biased_prob * simple_mean - prob * budget)
-                + leftover_value * (biased_prob * simple_mean - prob * budget);
 
-            return -out; // note the negative here (i wrote this part after the white paper)
+            let out: f64 = market_price * (tradable_threshold - simple_mean)
+                + (trade_price - market_price)
+                    * (tradable_threshold * trade_prob - trade_biased_prob * simple_mean)
+                + (leftover_price - trade_price) * (budget * prob - biased_prob * simple_mean);
+
+            return out;
         }
     }
 }

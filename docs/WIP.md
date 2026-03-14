@@ -8,9 +8,9 @@
 - ~~make the roster page~~
   - ~~just the prices inputs for now is fine~~
 - ~~Set up writing to setting~~
-- Set up special budget (just the input for now)
-- input & copy payload to re-make the test cases
-  - verify & fix whatever is wrong
+- ~~Set up special budget (just the input for now)~~
+- ~~input & copy payload to re-make the test cases~~
+  - ~~verify & fix whatever is wrong~~
 
 - Set up serca
   - get the json
@@ -29,6 +29,8 @@
 - wire up the 2 annotations on material graph(need to add another annotation)
   - add hover annotation
 
+- wire up the rersult of optimizer to keyed upgrades
+  - let histogram watch the keyed upgrades
 - Add the two new columns in material distribution
   - will need to modify the backend to do this - maybe a special evaluateAverage function?
   

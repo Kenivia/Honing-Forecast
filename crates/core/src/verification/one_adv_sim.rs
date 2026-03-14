@@ -99,8 +99,8 @@ fn grace_10_20<R: Rng>(
 }
 
 pub fn one_sim<R: Rng>(rng: &mut R, config: &AdvConfig) -> (u8, u8, u8) {
-    let mut cur_xp: usize = 0;
-    let mut cur_balls: usize = 0;
+    let mut cur_xp: usize = config.start_xp * 10;
+    let mut cur_balls: usize = config.start_balls;
     let mut cost: u8 = 0;
 
     let mut non_grace_juice_count: u8 = 0;
@@ -108,21 +108,17 @@ pub fn one_sim<R: Rng>(rng: &mut R, config: &AdvConfig) -> (u8, u8, u8) {
     let mut grace_juice_count: u8 = 0;
     let mut grace_scroll_count: u8 = 0;
 
-    let mut next_free = false;
-    let mut next_big = false;
+    let mut next_free = config.next_free;
+    let mut next_big = config.next_big;
 
     let double_balls_inc = if config.double_balls { 2 } else { 1 };
 
     while cur_xp < 1000 {
-        // --- SNAPSHOT LOGIC ---
-
         let gracing = cur_balls >= 6;
         cost += (!next_free) as u8;
         next_free = false;
 
-        let (t1, t2) = if 1000 - cur_xp <= 30 {
-            ROLL_THRESH[0]
-        } else {
+        let (t1, t2) = {
             let should_juice = non_grace_juice_count < config.non_grace_juice_target
                 || (gracing && grace_juice_count < config.grace_juice_target);
             let should_scroll = non_grace_scroll_count < config.non_grace_scroll_target

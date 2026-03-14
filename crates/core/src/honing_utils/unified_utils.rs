@@ -121,13 +121,13 @@ impl StateBundle {
         )
     }
 
-    pub fn update_individual_support(&mut self) {
+    pub fn update_cost_dist(&mut self) {
         for upgrade in self.upgrade_arr.iter_mut() {
             upgrade.update_this_support(&self.prep_output.juice_info);
         }
     }
 
-    pub fn update_dist(&mut self) {
+    pub fn update_prob_dist(&mut self) {
         for upgrade in self.upgrade_arr.iter_mut() {
             upgrade.update_this_prob_dist(&mut self.adv_cache, &self.prep_output.juice_info);
         }
