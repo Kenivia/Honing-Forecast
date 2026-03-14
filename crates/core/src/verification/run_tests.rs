@@ -274,7 +274,7 @@ pub fn run_tests(payload_path_string: String, is_verify: bool) {
                         .expect("Failed to write to result file");
                 }
                 println!(
-                    "Done {} Test: {} Trial: {} MC: {} +-{}%  n={} SA: {} diff from experiment: {}% \
+                    "Done {} Test: {} Trial: {} MC: {} +-{}%  n={} SA: {} diff w/ MC: {}% \
                           prev: {} diff w/ prev: {}%",
                     ACTIVE_FEATURE,
                     test_case_name,

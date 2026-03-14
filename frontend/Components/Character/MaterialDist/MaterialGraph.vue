@@ -27,7 +27,7 @@ const props = withDefaults(
     {
         average: null,
         secondaryAnnotation: null,
-        height: 48,
+        height: 44,
     },
 )
 
@@ -38,7 +38,7 @@ let observer: ResizeObserver | null = null
 const margin = {
     top: 0,
     right: 0,
-    bottom: 0,
+    bottom: 4,
     left: 0,
 }
 
@@ -150,7 +150,7 @@ function clamp(value: number, min: number, max: number) {
 }
 
 // Badges sit just to the left of the curve dot
-const BADGE_W = 112
+
 const BADGE_H = 18
 
 const averageBadge = computed(() => {
@@ -254,13 +254,19 @@ onBeforeUnmount(() => {
                     <rect
                         :x="secondaryCurveX - ownedBadge.text.length * 7"
                         :y="ownedBadge.centerY - (ownedBadge.text.length * 7) / 2"
-                        :width="BADGE_W"
+                        :width="ownedBadge.text.length * 7"
                         :height="BADGE_H"
                         rx="4"
                         :fill="badgeFill"
                         fill-opacity="0.5"
                     />
-                    <text :x="secondaryCurveX - BADGE_W / 2 - 6" :y="ownedBadge.centerY + 4" text-anchor="middle" font-size="12" :fill="surfaceTextColor">
+                    <text
+                        :x="secondaryCurveX - (ownedBadge.text.length * 7) / 2 - 6"
+                        :y="ownedBadge.centerY + 4"
+                        text-anchor="middle"
+                        font-size="12"
+                        :fill="surfaceTextColor"
+                    >
                         {{ ownedBadge.text }}
                     </text>
                 </g>
@@ -276,6 +282,6 @@ onBeforeUnmount(() => {
 
 <style scoped>
 .hf-material-graph {
-    height: 42px;
+    height: 48px;
 }
 </style>

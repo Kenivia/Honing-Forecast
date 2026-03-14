@@ -133,7 +133,7 @@ export function keyed_to_array(keyed_upgrades: keyed_upgrades) {
         .map((x) => x[1])
 }
 export function grids_to_keyed(normal_grid: StatusGrid, adv_grid: StatusGrid, all_keyed: keyed_upgrades) {
-    console.log(all_keyed)
+    // console.log(all_keyed)
     for (const [piece_type, row] of status_to_bool_grid(normal_grid).entries()) {
         for (const [upgrade_index, cell] of row.entries()) {
             let key = to_upgrade_key(piece_type, upgrade_index, false)

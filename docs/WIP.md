@@ -13,18 +13,21 @@
   - ~~verify & fix whatever is wrong~~
 
 - Set up serca
-  - get the json
-    - get data from icepeng
+  - ~~get the json~~
+    - ~~get data from icepeng~~
   - add tier conversion button in control panel
-    - get the ilevel mapping somehow? is this on icepeng?
+    - get the ilevel mapping ~~somehow? is this on icepeng?~~ memo video
     - add undo button?
   - add allow converting roster t4 mats to serca
     - shouldnt be that hard?
+
+  - Add Serca mats prices page
     - need to auto-select market price
+      - light up the one that's active
 
   - get the icons and route appropriately
   
-- add "treatment" toggle in control panel via radio selector
+- add "treatment" toggle in control panel via radio selector or something
 
 - wire up the 2 annotations on material graph(need to add another annotation)
   - add hover annotation
@@ -66,6 +69,7 @@
         - LONGTERM Price trend viewer, or maybe bake this into the prices?
 
     - Footer
+ actually really need to figure out how to lay these out, maybe it'll be easier once I can look at everything wth my eyeballs
 
 Specifically:
 
@@ -74,7 +78,6 @@ Specifically:
 - this opens the door for persistent special & adv caches? this would make it easy to put pre-computed table in (just write it in js on intializaiton)
   - figure out how to serialize & deserialize ahashmap, right now its as if there's no caching
 - this also opens the door for when we know the current state is good already on optimizer calls
-- need to figure out the layout still but by default the first thing a user see should be a ready-to-go checkbox grid -> costs thing, inputs should be next to the graphs and optimizer instructions should be its own page
 
 #### Char page - Upgrade status inputs
 
@@ -160,6 +163,13 @@ Mixing serca and t4 is lowkey possible if we make the assumption that Serca mats
 4. Add a toggle for "allow converting t4 mats to serca mats" for each char
     - roster_config needs 2 sets of everything ig
     - pass the converted / unconverted mats to wasm, also auto pick the better deal out of the two
+
+MISSING DATA:
+
+1. Unlock costs
+2. Silver costs
+3. Cost, chance, juice information below +11
+4. Special leaps
 
 ### 3rd: Advanced honing optimization
 

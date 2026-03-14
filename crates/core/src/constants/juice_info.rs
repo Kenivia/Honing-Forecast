@@ -75,7 +75,7 @@ impl JuiceInfo {
         for (id, is_adv, upgrade_index, mult) in event_multiplier {
             event_multipliers.insert((*id, *is_adv, *upgrade_index), *mult);
         }
-        for &(id, is_adv, upgrade_index, normal_chance, amt_used, gs_chance, gsx2_chance) in
+        for &(id, is_adv, upgrade_plus, normal_chance, amt_used, gs_chance, gsx2_chance) in
             juice_books_avail.iter()
         {
             if !seen_ids.contains(&id) {
@@ -90,17 +90,17 @@ impl JuiceInfo {
             } else {
                 &mut adv_uindex_to_id
             };
-            relevant[upgrade_index].push(id);
-            let this_event_mult = event_multipliers.get(&(id, is_adv, upgrade_index));
+            relevant[upgrade_plus - 1].push(id);
+            let this_event_mult = event_multipliers.get(&(id, is_adv, upgrade_plus));
             let this_event_amt = if this_event_mult.is_none() {
                 amt_used
             } else {
                 (amt_used as f64 * this_event_mult.unwrap()).ceil() as i64
             };
-            if !all_data[id].contains_key(&upgrade_index) {
-                all_data[id].insert(upgrade_index, OneUindexJuice::default());
+            if !all_data[id].contains_key(&upgrade_plus) {
+                all_data[id].insert(upgrade_plus, OneUindexJuice::default());
             }
-            let this = all_data[id].get_mut(&upgrade_index).unwrap();
+            let this = all_data[id].get_mut(&upgrade_plus).unwrap();
             if is_adv == 1 {
                 this.adv_amt_used = amt_used;
                 this.adv_base_amt_used = amt_used;

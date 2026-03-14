@@ -17,9 +17,13 @@ pub const BUCKET_COUNT: usize = 50;
 pub const DATA: Lazy<Vec<Data>> = Lazy::new(|| {
     let mut out = Vec::new();
 
-    let json = include_str!("./T4 Feb 2026.json");
-    let raw_data: RawData = serde_json::from_str(json).unwrap();
-    out.push(Data::from(raw_data));
+    out.push(Data::from(
+        serde_json::from_str::<RawData>(include_str!("./T4 Feb 2026.json")).unwrap(),
+    ));
+
+    out.push(Data::from(
+        serde_json::from_str::<RawData>(include_str!("./Serca March 2026.json")).unwrap(),
+    ));
 
     out
 });
