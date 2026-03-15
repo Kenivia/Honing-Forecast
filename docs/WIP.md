@@ -193,6 +193,7 @@ NONE OF THIS DATA STUFF TURNED OUT TO BE NECESSARY because DP is op and we can j
 4. Maybe hard-code the most common setup
 5. Remember to corroborate the new dp results with old mc results
 6. Allow arbitrary juice / scroll effectiveness (currently it uses hardcoded values and ignore the inputted ones)
+7. The way the states are curerntly implemented it doesn't actually allow different types of scrolls? idk we'll cross that bridge when we get there ig
 
 - ~~This kinda uses an egregious amt of memory rn, need to benchmark how much the cache actually helps and how to reduce it~~
 - ~~it's also kinda just slow, will prolly benefit from hard-coding known stuff~~
@@ -218,6 +219,8 @@ NONE OF THIS DATA STUFF TURNED OUT TO BE NECESSARY because DP is op and we can j
   - this kinda falls apart with normal honing cos we can finish early, but can just make a pessimistic assumption
     - will prolly need to add an extra column in material_info for the hard limit
     - keep track of how many juices are used, sample appropriately in neighbour function
+
+- I mean it's kinda redundant cos we can just set the price to like 9999999?
 
 ### 5th: OCR
 
