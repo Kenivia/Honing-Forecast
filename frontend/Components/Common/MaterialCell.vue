@@ -24,6 +24,7 @@ const label: string = props.input_column.keys[props.row]
             <span>{{ label }}</span>
             <img :src="iconPath(label)" :alt="label" />
         </label>
+
         <input
             v-if="!Array.isArray(input_column)"
             type="text"

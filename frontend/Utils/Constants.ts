@@ -1,6 +1,12 @@
+export const TIER_LABELS = ["Tier 4", "T4.5 Serca"]
+export const TIER_OPTIONS = TIER_LABELS.map((label, index) => ({
+    label,
+    value: index,
+}))
+export const DEFAULT_TIER = 0
 export const MATS_LABELS = ["Red", "Blue", "Leaps", "Shards", "Oreha", "Gold", "Silver"]
 export const SPECIAL_LEAP_LABEL = "Special Leap"
-export const JUICE_LABELS = [
+export const T4_JUICE_LABELS = [
     ["Lava's Breath", "Glacier's Breath"],
     ["11-14 Weapon", "11-14 Armor"],
     ["15-18 Weapon", "15-18 Armor"],
@@ -10,7 +16,13 @@ export const JUICE_LABELS = [
     ["Scroll 3 Weapon", "Scroll 3 Armor"],
     ["Scroll 4 Weapon", "Scroll 4 Armor"],
 ]
-export const ALL_LABELS = MATS_LABELS.concat(JUICE_LABELS.map((x) => x[0])).concat(JUICE_LABELS.map((x) => x[1]))
+
+export const Serca_JUICE_LABELS = [["Lava's Breath", "Glacier's Breath"]]
+export const ALL_LABELS = [
+    MATS_LABELS.concat(T4_JUICE_LABELS.map((x) => x[0])).concat(T4_JUICE_LABELS.map((x) => x[1])),
+    MATS_LABELS.concat(Serca_JUICE_LABELS.map((x) => x[0])).concat(Serca_JUICE_LABELS.map((x) => x[1])),
+]
+
 export const GRAPH_COLORS = [
     "--series-red",
     "--series-blue",
@@ -36,7 +48,10 @@ export const GRAPH_COLORS = [
     "--series-blue",
     "--series-blue",
 ]
-export const BUNDLE_SIZE = [100, 100, 1, 1000, 1, 1, 1000000].concat(new Array(ALL_LABELS.length - 4).fill(1))
+export const BUNDLE_SIZE = [100, 100, 1, 1000, 1, 1, 1000000].concat(
+    new Array(ALL_LABELS.map((labels) => labels.length).reduce((prev, next) => Math.max(prev, next)) - 7).fill(1),
+) // this is like really hacked together rn, but i doubt it'll need to be fixed
+
 export const OUTPUT_LABELS = ["Red", "Blue", "Leaps", "Shards", "Oreha", "Gold", "Silver", "Red juice", "Blue juice"]
 
 export const STORAGE_KEY = "HF_UI_STATE_V3"
@@ -105,8 +120,8 @@ export const DEFAULT_MATS_LEFTOVER = ["0", "0", "0", "0", "0", "0", "0"]
 
 export const DEFAULT_TOGGLES = {
     mats: Array.from({ length: MATS_LABELS.length - 1 }, () => true),
-    weapon: Array.from({ length: JUICE_LABELS.length }, () => true),
-    juice: Array.from({ length: JUICE_LABELS.length }, () => true),
+    weapon: Array.from({ length: T4_JUICE_LABELS.length }, () => true),
+    juice: Array.from({ length: T4_JUICE_LABELS.length }, () => true),
 }
 
 export const PIECE_NAMES = ["Helmet", "Shoulder", "Chest", "Pants", "Glove", "Weapon"]

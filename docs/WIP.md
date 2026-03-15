@@ -15,14 +15,14 @@
 - Set up serca
   - ~~get the json~~
     - ~~get data from icepeng~~
-  - add tier conversion button in control panel
+  - ~~add tier conversion button in control panel~~
     - get the ilevel mapping ~~somehow? is this on icepeng?~~ memo video
-    - add undo button?
-  - add allow converting roster t4 mats to serca
+    - ~~add undo button?~~
+  - add allow converting roster t4 mats to serca (should be a separate button)
     - ~~shouldnt be that hard?~~
     - Add Serca mats prices page
       - need to auto-select market price
-      - light up the one that's active
+      - ~~light up the one that's active~~
 
   - get the icons and route appropriately
   
@@ -37,8 +37,6 @@
 - Add the two new columns in material distribution
   - will need to modify the backend to do this - maybe a special evaluateAverage function?
   
-- make bundle size suffix not take up horizontal space
-
 ## Roadmap
 
 ### 1st: re-write the frontend
@@ -138,8 +136,9 @@ Specifically:
 
 ### Roster page - prices
 
-- Tradable, rosterbound, price inputs
+- ~~Tradable, rosterbound, price inputs~~
 - set up api & auto importing form loa buddy
+- make bundle size suffix not take up horizontal space
 
 ### Tooltip / popup
 

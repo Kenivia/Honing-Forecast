@@ -6,6 +6,8 @@ use std::{
     ops::Deref,
 };
 
+// use crate::my_dbg;
+
 #[derive(Debug, Copy, Clone, Serialize, Deserialize, Default)]
 pub struct OneUindexJuice {
     pub normal_amt_used: i64,
@@ -135,6 +137,7 @@ pub fn get_priced_juice_info(
     market_price: &[f64],
     event: bool,
 ) -> JuiceInfo {
+    // my_dbg!(base.total_num_avail, &market_price);
     assert!(base.total_num_avail == market_price.len());
     assert!(base.total_num_avail == trade_price.len());
     assert!(base.total_num_avail == left_price.len());

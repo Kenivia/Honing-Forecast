@@ -1,6 +1,7 @@
 import { assert } from "console"
 
 import { CharProfile, useProfilesStore } from "@/stores/CharacterProfile"
+import { ALL_LABELS, TIER_LABELS } from "./Constants"
 
 export interface Upgrade {
     piece_type: number
@@ -88,16 +89,23 @@ export function forbid_non_numeric(input_column: InputColumn, index: number, eve
     return filtered
 }
 export function get_modified_cell(input_column: InputColumn, index: number, event: Event) {
+    if (!input_column.enabled[index]) {
+        return input_column.data[index]
+    }
     return parse_input(input_column, index, (event.target as HTMLInputElement).value).toLocaleString()
 }
-function parse_input(input_column: InputColumn, index: number, input: string): number {
+export function parse_input(input_column: InputColumn, index: number, input: string): number {
     if (!input_column.enabled[index]) {
         return 0
     }
     let out = input_column.type === InputType.Int ? parseInt(input.replace(/,/g, "")) : parseFloat(input.replace(/,/g, ""))
     return isFinite(out) ? Math.min(input_column.upper_bound[index], out) : 0
 }
-
+export function fill_new_tiers_with_default(old: InputColumn[]) {
+    while (old.length < TIER_LABELS.length) {
+        old.push(create_input_column(InputType.Int, ALL_LABELS[old.length]))
+    }
+}
 export type StatusGrid = UpgradeStatus[][]
 
 export function status_to_bool_grid(status_grid: StatusGrid): BoolGrid {

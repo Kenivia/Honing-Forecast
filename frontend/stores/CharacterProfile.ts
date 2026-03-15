@@ -5,6 +5,7 @@ import {
     BoolGrid,
     create_input_column,
     createStatusGrid,
+    fill_new_tiers_with_default,
     HistogramOutputs,
     InputColumn,
     InputType,
@@ -18,7 +19,7 @@ import {
     UpgradeStatus,
 } from "@/Utils/Interfaces"
 import { createWorkerBundle } from "@/WasmInterface/worker_setup"
-import { ADV_COLS, ALL_LABELS, JUICE_LABELS, MATS_LABELS, NORMAL_COLS, NUM_PIECES, SPECIAL_LEAP_LABEL, STORAGE_KEY } from "@/Utils/Constants"
+import { ADV_COLS, ALL_LABELS, T4_JUICE_LABELS, MATS_LABELS, NORMAL_COLS, NUM_PIECES, SPECIAL_LEAP_LABEL, STORAGE_KEY } from "@/Utils/Constants"
 import { Ref, ref } from "vue"
 import { WasmOp } from "@/WasmInterface/js_to_wasm"
 import { debounce } from "@/Utils/Helpers"
@@ -50,6 +51,7 @@ export const useProfilesStore = defineStore("profiles", {
                     this.profiles[index].optimizer_worker_bundle.start(WasmOp.Parser)
                 }
             }
+            console.log(this)
         },
 
         updateActiveProfile(updates: Partial<CharProfile>) {
@@ -71,15 +73,17 @@ export function load_char_profiles(): { profiles: CharProfile[]; active_profile_
     const parsed = JSON.parse(raw)
     for (let i = 0; i < parsed.profiles.length; i++) {
         let this_parsed = parsed.profiles[i]
+        fill_new_tiers_with_default(this_parsed.bound_budgets)
+        fill_new_tiers_with_default(this_parsed.leftover_price)
         let this_profile = recreate_char_profile(this_parsed)
         parsed.profiles[i] = {
             ...parsed.profiles[i],
             ...this_profile,
         }
-        console.log(parsed.profiles[i])
+        console.log(parsed.profiles[i], parsed.profiles[i].tier)
     }
 
-    return parsed
+    return { ...DEFAULT_PROFILES_STATE, ...parsed }
 }
 export function write_char_profiles(profiles, active_profile_index: number) {
     const serializable = {
@@ -90,7 +94,7 @@ export function write_char_profiles(profiles, active_profile_index: number) {
     localStorage.setItem(STORAGE_KEY + "_char_profiles", JSON.stringify(serializable))
 }
 const DEFAULT_PROFILES_STATE = {
-    profiles: new Array(create_default_char_profile()),
+    profiles: [create_default_char_profile()],
     active_profile_index: 0,
 }
 
@@ -117,8 +121,8 @@ export interface CharProfile {
 
     special_budget: InputColumn
 
-    bound_budgets: InputColumn
-    leftover_price: InputColumn
+    bound_budgets: InputColumn[]
+    leftover_price: InputColumn[]
 
     special_state: number[]
 
@@ -148,8 +152,8 @@ export function create_default_char_profile(): CharProfile {
 
         special_budget: create_input_column(InputType.Int, [SPECIAL_LEAP_LABEL]),
 
-        bound_budgets: create_input_column(InputType.Int, ALL_LABELS),
-        leftover_price: create_input_column(InputType.Int, ALL_LABELS), // implicit 0 leftover here
+        bound_budgets: ALL_LABELS.map((this_labels) => create_input_column(InputType.Int, this_labels)),
+        leftover_price: ALL_LABELS.map((this_labels) => create_input_column(InputType.Int, this_labels)), // implicit 0 leftover here
 
         special_state: [],
         tier: 0,

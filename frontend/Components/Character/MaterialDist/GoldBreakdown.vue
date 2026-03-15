@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { CharProfile, useProfilesStore } from "@/stores/CharacterProfile"
-import { ALL_LABELS, JUICE_LABELS, MATS_LABELS, PIECE_NAMES } from "@/Utils/Constants"
+import { ALL_LABELS, T4_JUICE_LABELS, MATS_LABELS, PIECE_NAMES } from "@/Utils/Constants"
 import { iconPath } from "@/Utils/Helpers"
 import { StateBundle, UpgradeStatus } from "@/Utils/Interfaces"
 import { storeToRefs } from "pinia"
@@ -13,7 +13,8 @@ const { active_profile } = storeToRefs(useProfilesStore())
 const num_juice_avail: number = (ALL_LABELS.length - 7) / 2
 
 function goldBreakdownValue(offset: number) {
-    const source = active_profile.value.evaluation_worker_bundle.result?.average_breakdown ?? new Array(ALL_LABELS.length - 7).fill(0)
+    const source =
+        active_profile.value.evaluation_worker_bundle.result?.average_breakdown ?? new Array(ALL_LABELS[active_profile.value.tier].length - 7).fill(0)
     const value = Number(source[offset])
     return Number.isFinite(value) ? value : undefined
 }
@@ -47,7 +48,7 @@ function metricToText(metric: number | null | undefined) {
         </div>
 
         <div class="hf-breakdown-table">
-            <div v-for="(label, index) in JUICE_LABELS.map((pair) => pair[0])" :key="`weapon-breakdown-${label}`" class="hf-breakdown-row">
+            <div v-for="(label, index) in T4_JUICE_LABELS.map((pair) => pair[0])" :key="`weapon-breakdown-${label}`" class="hf-breakdown-row">
                 <span class="hf-breakdown-label">{{ label }}</span>
                 <span :class="['hf-breakdown-value', breakdownClass(goldBreakdownValue(7 + index))]">
                     {{ breakdownText(goldBreakdownValue(7 + index)) }}
@@ -56,7 +57,7 @@ function metricToText(metric: number | null | undefined) {
         </div>
 
         <div class="hf-breakdown-table">
-            <div v-for="(label, index) in JUICE_LABELS.map((pair) => pair[1])" :key="`armor-breakdown-${label}`" class="hf-breakdown-row">
+            <div v-for="(label, index) in T4_JUICE_LABELS.map((pair) => pair[1])" :key="`armor-breakdown-${label}`" class="hf-breakdown-row">
                 <span class="hf-breakdown-label">{{ label }}</span>
                 <span :class="['hf-breakdown-value', breakdownClass(goldBreakdownValue(7 + num_juice_avail + index))]">
                     {{ breakdownText(goldBreakdownValue(7 + num_juice_avail + index)) }}

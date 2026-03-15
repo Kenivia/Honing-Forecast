@@ -112,14 +112,15 @@ watchDebounced(
     [
         () => active_profile.value.adv_grid,
         () => active_profile.value.normal_grid,
-        () => input_column_to_num(active_profile.value.bound_budgets),
-        () => input_column_to_num(active_profile.value.leftover_price),
-        () => input_column_to_num(roster_config.value.mats_prices),
-        () => input_column_to_num(roster_config.value.tradable_mats_owned),
-        () => input_column_to_num(roster_config.value.roster_mats_owned),
+        () => input_column_to_num(active_profile.value.bound_budgets[active_profile.value.tier]),
+        () => input_column_to_num(active_profile.value.leftover_price[active_profile.value.tier]),
+        () => input_column_to_num(roster_config.value.mats_prices[active_profile.value.tier]),
+        () => input_column_to_num(roster_config.value.tradable_mats_owned[active_profile.value.tier]),
+        () => input_column_to_num(roster_config.value.roster_mats_owned[active_profile.value.tier]),
         // () => active_profile.value.keyed_upgrades,
         () => input_column_to_num(active_profile.value.special_budget),
         () => active_profile.value.express_event,
+        () => active_profile.value.tier,
     ],
     (_) => {
         onWatcherCleanup(() => {
@@ -156,14 +157,15 @@ watchDebounced(
     [
         () => active_profile.value.adv_grid,
         () => active_profile.value.normal_grid,
-        () => input_column_to_num(active_profile.value.bound_budgets),
-        () => input_column_to_num(active_profile.value.leftover_price),
-        () => input_column_to_num(roster_config.value.mats_prices),
-        () => input_column_to_num(roster_config.value.tradable_mats_owned),
-        () => input_column_to_num(roster_config.value.roster_mats_owned),
+        () => input_column_to_num(active_profile.value.bound_budgets[active_profile.value.tier]),
+        () => input_column_to_num(active_profile.value.leftover_price[active_profile.value.tier]),
+        () => input_column_to_num(roster_config.value.mats_prices[active_profile.value.tier]),
+        () => input_column_to_num(roster_config.value.tradable_mats_owned[active_profile.value.tier]),
+        () => input_column_to_num(roster_config.value.roster_mats_owned[active_profile.value.tier]),
         // () => active_profile.value.keyed_upgrades,
         () => input_column_to_num(active_profile.value.special_budget),
         () => active_profile.value.express_event,
+        () => active_profile.value.tier,
     ],
     (_) => {
         onWatcherCleanup(() => {

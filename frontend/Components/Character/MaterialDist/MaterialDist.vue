@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import { ALL_LABELS, GRAPH_COLORS, JUICE_LABELS, MATS_LABELS } from "@/Utils/Constants"
+import { ALL_LABELS, GRAPH_COLORS, T4_JUICE_LABELS, MATS_LABELS } from "@/Utils/Constants"
 import GoldBreakdown from "./GoldBreakdown.vue"
 import { CharProfile, useProfilesStore } from "@/stores/CharacterProfile"
 import { iconPath } from "@/Utils/Helpers"
-import MaterialCell from "@/Components/MaterialCell.vue"
+import MaterialCell from "@/Components/Common/MaterialCell.vue"
 import { create_input_column, HistogramOutputs, InputColumn, InputType } from "@/Utils/Interfaces"
 import MaterialGraph from "./MaterialGraph.vue"
 import { storeToRefs } from "pinia"
@@ -13,7 +13,7 @@ import { Ref, toRef } from "vue"
 const { active_profile } = storeToRefs(useProfilesStore())
 
 const histogram_result: Ref<HistogramOutputs | null> = toRef(() => active_profile.value.histogram_worker_bundle.result)
-const averages: Ref<number[]> = toRef(() => histogram_result.value?.average ?? new Array(ALL_LABELS.length).fill(0))
+const averages: Ref<number[]> = toRef(() => histogram_result.value?.average ?? new Array(ALL_LABELS[active_profile.value.tier].length).fill(0))
 </script>
 
 <template>
@@ -30,14 +30,14 @@ const averages: Ref<number[]> = toRef(() => histogram_result.value?.average ?? n
                     <span style="text-align: center">Hover over the graph to see more!</span>
                     <!-- <span v-if="customLeftovers">Left</span> -->
                 </div>
-                <div v-for="(label, row) in ALL_LABELS" :key="`graph-${label}`" class="hf-mats-row">
+                <div v-for="(label, row) in ALL_LABELS[active_profile.tier]" :key="`graph-${label}`" class="hf-mats-row">
                     <MaterialCell
-                        :input_column="active_profile.bound_budgets"
+                        :input_column="active_profile.bound_budgets[active_profile.tier]"
                         :row="row"
                         :show_label="true"
                         :setter="
                             (val) => {
-                                active_profile.bound_budgets.data[row] = val
+                                active_profile.bound_budgets[active_profile.tier].data[row] = val
                             }
                         "
                     />
