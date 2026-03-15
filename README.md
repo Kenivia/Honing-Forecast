@@ -10,15 +10,9 @@ Try it here! <https://honing-forecast.pages.dev/>  *(It works better on desktop)
 
 ## Table of Contents
 
-- [What's different about this calculator?](#what-were-calculating)
+- [What we're calculating](#what-were-calculating)
 - [How to use](#how-to-use)
 - [Resources](#resources)
-  - [Overview(reddit post)](http://reddit.com/r/lostarkgame/comments/1qwskt2/optimize_your_free_tap_juice_usage_with_the_new/)
-  - [Implementation details of the average evaluation](/docs/Average%20Evaluation.md)
-  - [Math behond the average evaluation (How we utilize Saddlepoint Approximation)](/docs/Saddlepoint%20Approximation.pdf)
-  - [Optimizer (Simulated Annealing)](/docs/Optimizer.md)
-  - [Work in progress](/docs/WIP.md)
-
 - [Contributing](#contributing)
 - [Feedback](#bug-report--feedback)
 
@@ -28,12 +22,12 @@ The question we want to ask is simple:
 
 ### **How much gold will the upgrades cost, on average?**
 
-In a vacuum, the answer is also simple - we multiply the average cost of each mat with their prices and call it a day. However, in Lost Ark we have **bound mats**, which has the following implications:
+In a vacuum, the answer is also simple - we multiply the average cost of each mat with their prices and call it a day. As far as I know this is what other calculators do. However, in Lost Ark we have **bound mats**, which has the following implications:
 
 1. We only need to pay gold if we run out of bound mats,
 2. Any bound mats leftover after the upgrade cannot be converted to gold.
 
-This means that we have a non-linear function relating material used -> gold cost incurred.As such, Overall Average gold cost of upgrades =/= gold cost of average material used. There's an intuitive explanation for this, namely that lucky scenarios pull down average gold cost incorrectly. Allow me to demonstrate:
+This means that we have a non-linear function relating material used -> gold cost incurred.As such, **Overall Average gold cost of upgrades** =/= **Gold cost of average material used**. There's an intuitive explanation for this, namely that lucky scenarios pull down average gold cost incorrectly. Allow me to demonstrate:
 
 ### Why we can't just calculate Average cost minus bound mats
 
@@ -49,13 +43,13 @@ Suppose we have a standard dice, that tells us the amount of material consumed, 
 |                       | 6                 | 3               |
 | Average               | 3.5               | 1               |
 
-Notice that 3.5 -3 = 0.5 (naive calculation) =/= 1, which is the correct answer. The discrepency comes from the 1st and 2nd cases - we used less than our budget, but the naive calculation includes it in the average, which pulls down the average incorrectly.
+Notice that 3.5 -3 = 0.5 (naive calculation) =/= 1 (correct answer). The discrepency comes from the 1st and 2nd cases - we used less than our budget, but the naive calculation includes it in the average, which pulls down the average incorrectly.
 
 As such, let us rephrase the question we set out to answer:
 
 ### **What's the average gold cost inccurred due to exceeding bound budget?**
 
-This seemingly innoculous descrepency causes the computation to be significantly more difficult and thus the solution more sophisticated. For a more precise (and complete) definition of the problem and how we tackled it, see the [white paper](/docs/Saddlepoint%20Approximation.pdf).
+This seemingly innoculous descrepency causes the computation to be significantly more difficult and thus the solution more sophisticated. For a more precise (and complete) definition of the problem and how we tackle it, see the [white paper](/docs/Saddlepoint%20Approximation.pdf).
 
 ## How to use
 
@@ -75,11 +69,11 @@ This seemingly innoculous descrepency causes the computation to be significantly
 
 ## Resources
 
-For an intuitive overview of what's being calculated & how things work, check out the [reddit post](http://reddit.com/r/lostarkgame/comments/1qwskt2/optimize_your_free_tap_juice_usage_with_the_new/).
-
-For details on the implementation, see the other files in [docs](/docs/), such as the [optimizer engine](/docs/Optimizer.md).
-
-If you are interested in the math behind how we compute the average, check out the [white paper](/docs/Saddlepoint%20Approximation.pdf).
+- [Overview (reddit post)](http://reddit.com/r/lostarkgame/comments/1qwskt2/optimize_your_free_tap_juice_usage_with_the_new/)
+- [Implementation details of the average evaluation](/docs/Average%20Evaluation.md)
+- [Math behind the average evaluation (How we utilize saddlepoint approximation)](/docs/Saddlepoint%20Approximation.pdf)
+- [Optimizer (simulated annealing)](/docs/Optimizer.md)
+- [Work in progress](/docs/WIP.md)
 
 For anything else, you can ask me in the [Discord server](https://discord.com/invite/QFbs75RmRN)!
 
@@ -101,4 +95,4 @@ If you find a bug or spot an error, please submit an issue on GitHub or send a m
 
 ## Disclaimer
 
-I am not affiliated with Smilegate and Amazon Games Studio. Copyrights for game-related images and names belong to SG / AGS. The rest is open source and [licensed](/LICENSE) under AGPLv3.
+Honing Forecast not affiliated with Smilegate and Amazon Games Studio. Copyrights for game-related images and names belong to SG / AGS. The rest is open source and [licensed](/LICENSE) under AGPLv3.

@@ -1,8 +1,8 @@
 # Average Evaluation
 
-The naive computation of E[f(Y)] requires us to compute every possible outcome and their possibilities. For example, for two dice, we need to consider (1,1), (1,2) ... (1,6) ... (2,1) ... (6,6) , for a total of 36. This grows exponentially with the number of upgrades and is infeasible in general, hence the trouble we go through to employ [saddlepoint approximation](/docs/Saddlepoint%20Approximation.pdf).
+The naive computation of E[f(Y)] requires us to compute every possible outcome and their possibilities. For example, for two dice, we need to consider (1,1), (1,2) ... (1,6) ... (2,1) ... (6,6) , for a total of 36. This grows exponentially with the number of upgrades and is infeasible in general, hence why we go through the trouble to employ [saddlepoint approximation](/docs/Saddlepoint%20Approximation.pdf).
 
-When [naive brute force](/crates/core/src/core/brute.rs) is feasible (less than 50k total possibilities to consider, which might be too high). Otherwise, we do saddlepoint approximation.
+When [naive brute force](/crates/core/src/core/brute.rs) is feasible (less than 50k total possibilities to consider, which might be too high - we also use brute force when the budget is very close to the minimum or the maximum, which allows us to prune aggressively). Otherwise, we do saddlepoint approximation.
 
 ## Implementation overview
 
@@ -19,7 +19,7 @@ Wrapper --> |less than 50k possibilities| Brute[brute.rs]--> one_dimension_avera
 Wrapper --> |more than 50k possibilities| SA 
 
 subgraph SA[Saddlepoint Approximation]
-RF[root_finder.rs] --> Magic[Magic Formula] ; 
+RF[root_finder.rs] --> Magic["Lugganani-Rice Formula"] ; 
 
 RF --> cumulants.rs --> RF
 end
@@ -39,4 +39,4 @@ Some points to note:
 
 - The probability dist update is different from normal and advanced honing, adv honing has 3 different distributions for cost, juice and scroll
 - We "collapse" the probability distribution by removing duplicates and 0 probability events.
-- All of these distributions are considered "linear", as in the gap size between each non-zero prob support is constant.
+- All of these distributions are "linear", as in the gap size between each non-zero prob support is constant. This allows us to evaluate the cumulants faster.

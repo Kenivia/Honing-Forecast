@@ -19,10 +19,9 @@
     - get the ilevel mapping ~~somehow? is this on icepeng?~~ memo video
     - add undo button?
   - add allow converting roster t4 mats to serca
-    - shouldnt be that hard?
-
-  - Add Serca mats prices page
-    - need to auto-select market price
+    - ~~shouldnt be that hard?~~
+    - Add Serca mats prices page
+      - need to auto-select market price
       - light up the one that's active
 
   - get the icons and route appropriately
@@ -32,7 +31,8 @@
 - wire up the 2 annotations on material graph(need to add another annotation)
   - add hover annotation
 
-- wire up the rersult of optimizer to keyed upgrades
+- wire up the result of optimizer to keyed upgrades
+  - will need to set up some kind of callback on optimizer results (to write to the keyed upgrades)
   - let histogram watch the keyed upgrades
 - Add the two new columns in material distribution
   - will need to modify the backend to do this - maybe a special evaluateAverage function?
