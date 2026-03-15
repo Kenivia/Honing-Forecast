@@ -11,7 +11,7 @@ import { uesRosterStore } from "@/stores/RosterConfig"
 import { Ref, toRef } from "vue"
 
 const { active_profile } = storeToRefs(useProfilesStore())
-
+const { roster_config } = storeToRefs(uesRosterStore())
 const histogram_result: Ref<HistogramOutputs | null> = toRef(() => active_profile.value.histogram_worker_bundle.result)
 const averages: Ref<number[]> = toRef(() => histogram_result.value?.average ?? new Array(ALL_LABELS[active_profile.value.tier].length).fill(0))
 </script>
@@ -47,6 +47,7 @@ const averages: Ref<number[]> = toRef(() => histogram_result.value?.average ?? n
                         :data="histogram_result?.cum_percentiles?.[row] ?? null"
                         :average="histogram_result?.average?.[row] ?? null"
                         :color-var="GRAPH_COLORS[row]"
+                        :cumulative="roster_config.cumulative_graph"
                     />
                 </div>
             </div>
@@ -60,7 +61,7 @@ const averages: Ref<number[]> = toRef(() => histogram_result.value?.average ?? n
     display: grid;
     grid-template-columns: 250px 120px minmax(0, 1fr);
     align-items: center; /* optional: vertically center each cell */
-    gap: 8px; /* optional: spacing between cells */
+    gap: 0; /* optional: spacing between cells */
 }
 
 .hf-table-title-row {

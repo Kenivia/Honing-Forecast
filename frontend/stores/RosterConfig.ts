@@ -8,6 +8,7 @@ export interface RosterConfig {
     roster_mats_owned: InputColumn[] // roster bound leftover will inherit the character's bound leftover values
     tradable_mats_owned: InputColumn[]
     tier: number
+    cumulative_graph: boolean
     // tradable_mats_price: InputColumn // these are just price with tax applied
 }
 export const uesRosterStore = defineStore("roster", {
@@ -29,6 +30,7 @@ export const DEFAULT_ROSTER_CONFIG: RosterConfig = {
     roster_mats_owned: ALL_LABELS.map((this_labels) => create_input_column(InputType.Int, this_labels)),
     tradable_mats_owned: ALL_LABELS.map((this_labels) => create_input_column(InputType.Int, this_labels)),
     tier: DEFAULT_TIER,
+    cumulative_graph: true,
     // tradable_mats_price: createInputColumn(InputType.Float),
 }
 
@@ -39,7 +41,7 @@ export function load_roster_config(): RosterConfig {
     fill_new_tiers_with_default(out.mats_prices)
     fill_new_tiers_with_default(out.roster_mats_owned)
     fill_new_tiers_with_default(out.tradable_mats_owned)
-    console.log(out)
+
     return { ...DEFAULT_ROSTER_CONFIG, ...out }
 }
 export function write_roster_config(roster_config: RosterConfig) {

@@ -16,6 +16,7 @@ import SelectButton from "primevue/selectbutton"
 const store = useProfilesStore()
 const { active_profile } = storeToRefs(store)
 
+const { roster_config } = storeToRefs(uesRosterStore())
 function resetActive() {
     store.resetActiveProfile()
 }
@@ -93,6 +94,12 @@ const auto_start_optimizer = computed(() => active_profile.value.auto_start_opti
                     <input v-model="active_profile.express_event" type="checkbox" />
                     <span>Express event</span>
                 </label>
+
+                <div class="hf-divider" />
+                <label class="hf-inline-check">
+                    <input v-model="roster_config.cumulative_graph" type="checkbox" />
+                    <span>Cumulative graph</span>
+                </label>
                 <div class="hf-divider" />
                 <label class="hf-inline-check">
                     <SelectButton v-model="active_profile.tier" :options="TIER_OPTIONS" option-label="label" option-value="value" class="hf-selector" />
@@ -144,7 +151,7 @@ const auto_start_optimizer = computed(() => active_profile.value.auto_start_opti
 
             <div v-if="optimizer_worker.status === 'error'" class="optimizer-error">Error: {{ optimizer_worker.error }}</div>
 
-            <div v-if="optimizer_busy" class="optimizer-progress">
+            <div class="optimizer-progress">
                 <span>Optimizer progress: {{ Math.max(optimizer_worker.est_progress_percentage, 0.01).toFixed(2) }}%</span>
                 <div class="progress-bar">
                     <div class="progress-fill" :style="{ width: `${optimizer_worker.est_progress_percentage}%` }" />
