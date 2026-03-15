@@ -1,6 +1,10 @@
 @import url("https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Source+Sans+3:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap");
 
 :root {
+
+    --hf-graph-average-color: #acfffe;
+    --hf-graph-tradable-color: #adff3a;
+    --hf-graph-bound-color: #ffffff;
     --hf-bg-void: #08090b;
     --hf-bg-deep: #111216;
     --hf-bg-panel: #212327;
@@ -122,11 +126,12 @@ body::before {
 
 .hf-mats-row {
     display: contents;
-    gap: 8px;
+    gap: 0px;
     align-items: center;
     min-width: 0;
     width: 100%;
-    height: 48px;
+    height: 42px;
+
 }
 
 

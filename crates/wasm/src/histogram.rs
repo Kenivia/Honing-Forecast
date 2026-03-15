@@ -32,7 +32,19 @@ pub fn histogram(state_bundle: &mut StateBundle) -> HistogramOutputs {
         for index in 0..(BUCKET_COUNT + 1) {
             let this_budget =
                 this_one_tap + index as f64 * (this_pity - this_one_tap) / (BUCKET_COUNT) as f64;
-            if this_budget > bound_budget && !bound_done {
+            let next_budget = this_one_tap
+                + (index + 1).max(BUCKET_COUNT) as f64 * (this_pity - this_one_tap)
+                    / (BUCKET_COUNT) as f64;
+            item.push((
+                this_budget,
+                state_bundle.one_dimension_prob(
+                    support_index as i64,
+                    this_budget,
+                    &mut dummy_performance,
+                ),
+            ));
+
+            if this_budget < bound_budget && bound_budget < next_budget && !bound_done {
                 if (this_budget - bound_budget).abs() > FLOAT_TOL {
                     // dont bother if budget happends to land on the a percentile already
                     item.push((
@@ -47,7 +59,10 @@ pub fn histogram(state_bundle: &mut StateBundle) -> HistogramOutputs {
 
                 bound_done = true;
             }
-            if this_budget > bound_budget + trade_budget && !trade_done {
+            if this_budget < bound_budget + trade_budget
+                && bound_budget + trade_budget < next_budget
+                && !trade_done
+            {
                 if (this_budget - bound_budget - trade_budget).abs() > FLOAT_TOL {
                     item.push((
                         bound_budget + trade_budget,
@@ -61,14 +76,6 @@ pub fn histogram(state_bundle: &mut StateBundle) -> HistogramOutputs {
 
                 trade_done = true;
             }
-            item.push((
-                this_budget,
-                state_bundle.one_dimension_prob(
-                    support_index as i64,
-                    this_budget,
-                    &mut dummy_performance,
-                ),
-            ));
         }
     }
     for support_index in 0..num_sup {

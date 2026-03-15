@@ -4,7 +4,7 @@ import GoldBreakdown from "./GoldBreakdown.vue"
 import { CharProfile, useProfilesStore } from "@/stores/CharacterProfile"
 import { iconPath } from "@/Utils/Helpers"
 import MaterialCell from "@/Components/Common/MaterialCell.vue"
-import { create_input_column, HistogramOutputs, InputColumn, InputType } from "@/Utils/Interfaces"
+import { create_input_column, HistogramOutputs, input_column_to_num, InputColumn, InputType } from "@/Utils/Interfaces"
 import MaterialGraph from "./MaterialGraph.vue"
 import { storeToRefs } from "pinia"
 import { uesRosterStore } from "@/stores/RosterConfig"
@@ -25,8 +25,8 @@ const averages: Ref<number[]> = toRef(() => histogram_result.value?.average ?? n
             <div class="hf-dist-desc">Distribution reflects free-tap and juice usage from your current optimizer output.</div>
             <div class="hf-dist-graphs">
                 <div class="hf-table-title-row">
-                    <span style="text-align: right; padding-right: 15px">Char-Bound Mats</span>
-                    <span>Average Cost</span>
+                    <span style="text-align: right; padding-right: 15px; color: var(--hf-graph-bound-color)">Char-Bound Mats</span>
+                    <span style="color: var(--hf-graph-average-color)">Average Cost</span>
                     <span style="text-align: center">Hover over the graph to see more!</span>
                     <!-- <span v-if="customLeftovers">Left</span> -->
                 </div>
@@ -35,6 +35,7 @@ const averages: Ref<number[]> = toRef(() => histogram_result.value?.average ?? n
                         :input_column="active_profile.bound_budgets[active_profile.tier]"
                         :row="row"
                         :show_label="true"
+                        :input_color="'var(--hf-graph-bound-color)'"
                         :setter="
                             (val) => {
                                 active_profile.bound_budgets[active_profile.tier].data[row] = val
@@ -48,6 +49,7 @@ const averages: Ref<number[]> = toRef(() => histogram_result.value?.average ?? n
                         :average="histogram_result?.average?.[row] ?? null"
                         :color-var="GRAPH_COLORS[row]"
                         :cumulative="roster_config.cumulative_graph"
+                        :secondary-annotation="input_column_to_num(active_profile.bound_budgets[active_profile.tier])[row]"
                     />
                 </div>
             </div>
@@ -60,11 +62,16 @@ const averages: Ref<number[]> = toRef(() => histogram_result.value?.average ?? n
 .hf-dist-graphs {
     display: grid;
     grid-template-columns: 250px 120px minmax(0, 1fr);
-    align-items: center; /* optional: vertically center each cell */
-    gap: 0; /* optional: spacing between cells */
+    align-items: start;
+    row-gap: 0;
 }
 
-.hf-table-title-row {
-    display: contents;
+.hf-table-title-row,
+.hf-mats-row {
+    display: grid;
+    grid-column: 1 / -1; /* span all 3 columns */
+    grid-template-columns: subgrid; /* inherit parent column definitions */
+    align-items: center;
+    border-bottom: 1px solid var(--separator-color);
 }
 </style>

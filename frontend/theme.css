@@ -3,6 +3,7 @@
     --text-muted: #ffffff;
 
     --text-very-muted: #888888;
+    --separator-color: rgba(102, 102, 102, 0.507);
     --text-success: #9ff7c7;
     --text-optimized: rgb(247, 219, 159);
     --text: var(--text-primary);
@@ -14,6 +15,7 @@
     --btn-success-cancel: #2e6944;
     --btn-success-cancel-text: #ffffff;
     --success-overlay: rgba(39, 71, 39, 0.5);
+
 
 
     --btn-demo: #374151;

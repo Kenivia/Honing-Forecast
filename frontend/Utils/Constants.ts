@@ -48,6 +48,8 @@ export const GRAPH_COLORS = [
     "--series-blue",
     "--series-blue",
 ]
+export const GRAPH_FONT_SIZE = 10
+export const GRAPH_HEIGHT = 40
 export const BUNDLE_SIZE = [100, 100, 1, 1000, 1, 1, 1000000].concat(
     new Array(ALL_LABELS.map((labels) => labels.length).reduce((prev, next) => Math.max(prev, next)) - 7).fill(1),
 ) // this is like really hacked together rn, but i doubt it'll need to be fixed

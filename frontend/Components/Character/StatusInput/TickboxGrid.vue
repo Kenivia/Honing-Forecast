@@ -26,7 +26,7 @@ function check_all_same(col: number) {
     if (relevant_grid.value.every((row: UpgradeStatus[]) => row[col] == UpgradeStatus.Done)) {
         return UpgradeStatus.Done
     }
-    if (relevant_grid.value.every((row: UpgradeStatus[]) => row[col] == UpgradeStatus.Want)) {
+    if (relevant_grid.value.every((row: UpgradeStatus[]) => row[col] == UpgradeStatus.Want || row[col] == UpgradeStatus.Done)) {
         return UpgradeStatus.Want
     }
     return UpgradeStatus.NotYet

@@ -2,6 +2,12 @@ import { IconMap, PIECE_NAMES } from "./Constants"
 import { Upgrade } from "./Interfaces"
 const ordinalRules = new Intl.PluralRules("en", { type: "ordinal" })
 
+export function cssVar(name: string, fallback: string) {
+    if (typeof window === "undefined") return fallback
+    const value = getComputedStyle(document.documentElement).getPropertyValue(name).trim()
+    return value || fallback
+}
+
 export function debounce<T extends (...args: any[]) => void>(fn: T, delay: number): T {
     let timer: ReturnType<typeof setTimeout>
     return ((...args: any[]) => {

@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { GRAPH_FONT_SIZE, GRAPH_HEIGHT } from "@/Utils/Constants"
+import { cssVar } from "@/Utils/Helpers"
 import { computed, onBeforeUnmount, onMounted, ref } from "vue"
 
 type DataPoint = [number, number]
@@ -28,15 +30,7 @@ const rootRef = ref<HTMLElement | null>(null)
 const width = ref(0)
 let observer: ResizeObserver | null = null
 
-const margin = {
-    top: 0,
-    right: 0,
-    bottom: 0,
-    left: 0,
-}
-
-const plotWidth = computed(() => Math.max(100, width.value - margin.left - margin.right))
-const plotHeight = computed(() => Math.max(40, props.height - margin.top - margin.bottom))
+const plotWidth = computed(() => Math.max(100, width.value))
 
 const points = computed<Point[]>(() => {
     if (!Array.isArray(props.data) || props.data.length === 0) {
@@ -95,14 +89,14 @@ function scaleX(x: number) {
 }
 
 function scaleY(y: number) {
-    if (maxY.value <= 0) return plotHeight.value
+    if (maxY.value <= 0) return GRAPH_HEIGHT
     const normalized = y / (maxY.value * 1.1)
-    return Math.max(0, Math.min(plotHeight.value, plotHeight.value - normalized * plotHeight.value))
+    return Math.max(0, Math.min(GRAPH_HEIGHT, GRAPH_HEIGHT - normalized * GRAPH_HEIGHT))
 }
 
 function interpolateY(targetX: number) {
     const list = points.value
-    if (!list.length) return plotHeight.value
+    if (!list.length) return GRAPH_HEIGHT
 
     if (targetX <= list[0].x) {
         return scaleY(list[0].y)
@@ -132,7 +126,7 @@ const areaPath = computed(() => {
     if (!points.value.length) return ""
     const firstX = scaleX(points.value[0].x)
     const lastX = scaleX(points.value[points.value.length - 1].x)
-    return `${linePath.value} L ${lastX} ${plotHeight.value} L ${firstX} ${plotHeight.value} Z`
+    return `${linePath.value} L ${lastX} ${GRAPH_HEIGHT} L ${firstX} ${GRAPH_HEIGHT} Z`
 })
 
 const averageY = computed(() => {
@@ -157,14 +151,19 @@ const xTicks = computed(() => {
     })
 })
 
-function cssVar(name: string, fallback: string) {
-    if (typeof window === "undefined") return fallback
-    const value = getComputedStyle(document.documentElement).getPropertyValue(name).trim()
-    return value || fallback
-}
-
 const resolvedColor = computed(() => {
     return cssVar(props.colorVar, props.colorVar)
+})
+
+const resolvedBoundColor = computed(() => {
+    return cssVar("--hf-graph-bound-color", "--input-bg")
+})
+const resolvedAvgColor = computed(() => {
+    return cssVar("--hf-graph-average-color", "white")
+})
+
+const resolvedTradableColor = computed(() => {
+    return cssVar("--hf-graph-tradable-color", "--input-bg")
 })
 
 function formatWhole(value: number) {
@@ -174,12 +173,12 @@ function clamp(value: number, min: number, max: number) {
     return Math.max(min, Math.min(max, value))
 }
 function badgeWidth(text: string) {
-    return Math.min(220, text.length * 6)
+    return Math.min(220, text.length * 7)
 }
 
 const averageLabel = computed(() => {
     if (props.average === null || props.average === undefined) return null
-    return `Avg: ${formatWhole(props.average)}`
+    return `Avg`
 })
 
 const averageBadge = computed(() => {
@@ -189,21 +188,21 @@ const averageBadge = computed(() => {
     return {
         text: averageLabel.value,
         width: widthPx,
-        endX,
-        textY: clamp(averageY.value - 10, 18, plotHeight.value - 10),
+        endX: endX + widthPx / 2,
+        textY: GRAPH_FONT_SIZE,
     }
 })
 
 const ownedLabel = computed(() => {
     if (props.secondaryAnnotation === null || props.secondaryAnnotation === undefined) return null
-    return `You have: ${formatWhole(props.secondaryAnnotation)}`
+    return `Bound`
 })
 
 const ownedBadge = computed(() => {
     if (!ownedLabel.value || props.secondaryAnnotation === null || props.secondaryAnnotation === undefined || secondaryY.value === null) return null
     const widthPx = badgeWidth(ownedLabel.value)
-    const endX = clamp(scaleX(props.secondaryAnnotation), widthPx / 2 + 4, plotWidth.value - widthPx / 2 - 4)
-    const textY = clamp(secondaryY.value - 10, 18, plotHeight.value - 10)
+    const endX = clamp(scaleX(props.secondaryAnnotation), widthPx, plotWidth.value - widthPx)
+    const textY = clamp(secondaryY.value, 18, GRAPH_HEIGHT - GRAPH_FONT_SIZE - 2)
     return {
         text: ownedLabel.value,
         width: widthPx,
@@ -245,8 +244,8 @@ onBeforeUnmount(() => {
                 </linearGradient>
             </defs>
 
-            <g :transform="`translate(${margin.left}, ${margin.top})`">
-                <line x1="0" :x2="plotWidth" :y1="plotHeight" :y2="plotHeight" :stroke="axisColor" stroke-width="1" />
+            <g>
+                <line x1="0" :x2="plotWidth" :y1="GRAPH_HEIGHT" :y2="GRAPH_HEIGHT" :stroke="axisColor" stroke-width="1" />
 
                 <path v-if="!isEmpty" :d="areaPath" :fill="`url(#hf-graph-fill-${colorVar.replace(/[^a-z0-9]/gi, '')})`" stroke="none" />
                 <path v-if="!isEmpty" :d="linePath" fill="none" :stroke="resolvedColor" stroke-width="2.1" />
@@ -255,65 +254,49 @@ onBeforeUnmount(() => {
                     <line
                         :x1="scaleX(average)"
                         :x2="scaleX(average)"
-                        :y1="plotHeight"
+                        :y1="GRAPH_HEIGHT"
                         :y2="averageY"
-                        stroke="#ffffff"
+                        :stroke="resolvedAvgColor"
                         stroke-width="1"
                         stroke-dasharray="4 4"
                     />
-                    <circle :cx="scaleX(average)" :cy="averageY" r="3.5" fill="#ffffff" />
-                    <rect
-                        :x="averageBadge.endX - averageBadge.width + 2"
-                        :y="averageBadge.textY - 13"
-                        :width="averageBadge.width"
-                        height="18"
-                        rx="4"
-                        :fill="badgeFill"
-                        fill-opacity="0.84"
-                        :stroke="resolvedColor"
-                        stroke-opacity="0.5"
-                        stroke-width="1"
-                    />
-                    <text :x="averageBadge.endX" :y="averageBadge.textY" text-anchor="end" font-size="12" font-weight="600" :fill="'white'">
+                    <circle :cx="scaleX(average)" :cy="averageY" r="3.5" :fill="resolvedAvgColor" />
+
+                    <text :x="averageBadge.endX" :y="averageBadge.textY" text-anchor="end" font-size="GRAPH_FONT_SIZE" :fill="resolvedAvgColor">
                         {{ averageBadge.text }}
                     </text>
                 </g>
 
-                <g v-if="secondaryAnnotation !== null && secondaryAnnotation !== undefined && secondaryY !== null && !isEmpty && ownedBadge">
+                <!-- <g v-if="secondaryAnnotation !== null && secondaryAnnotation !== undefined && secondaryY !== null && !isEmpty && ownedBadge">
                     <line
                         :x1="scaleX(secondaryAnnotation)"
                         :x2="scaleX(secondaryAnnotation)"
-                        :y1="plotHeight"
+                        :y1="GRAPH_HEIGHT"
                         :y2="secondaryY"
-                        :stroke="surfaceTextColor"
+                        :stroke="resolvedBoundColor"
                         stroke-width="1"
                         stroke-dasharray="2 2"
                     />
-                    <circle :cx="scaleX(secondaryAnnotation)" :cy="secondaryY" r="3.5" :fill="surfaceTextColor" :stroke="resolvedColor" stroke-width="1" />
-                    <rect
-                        :x="ownedBadge.endX - ownedBadge.width / 2"
-                        :y="ownedBadge.textY - 13"
-                        :width="ownedBadge.width"
-                        height="18"
-                        rx="4"
-                        :fill="badgeFill"
-                        fill-opacity="0.84"
-                        :stroke="surfaceTextColor"
-                        stroke-opacity="0.5"
-                        stroke-width="1"
-                    />
-                    <text :x="ownedBadge.endX" :y="ownedBadge.textY" text-anchor="middle" font-size="12" :fill="surfaceTextColor">
+                    <circle :cx="scaleX(secondaryAnnotation)" :cy="secondaryY" r="3.5" :fill="surfaceTextColor" :stroke="resolvedBoundColor" stroke-width="1" />
+
+                    <text
+                        :x="ownedBadge.endX"
+                        :y="ownedBadge.textY + GRAPH_FONT_SIZE + 2"
+                        text-anchor="start"
+                        font-size="GRAPH_FONT_SIZE"
+                        :fill="resolvedBoundColor"
+                    >
                         {{ ownedBadge.text }}
                     </text>
-                </g>
+                </g> -->
 
-                <text v-if="isEmpty" x="4" :y="Math.max(16, plotHeight * 0.55)" font-size="12" :fill="surfaceTextColor" opacity="0.85">
+                <text v-if="isEmpty" x="4" :y="Math.max(16, GRAPH_HEIGHT * 0.55)" font-size="12" :fill="surfaceTextColor" opacity="0.85">
                     No distribution data for this material yet.
                 </text>
 
                 <g v-for="tick in xTicks" :key="`tick-${tick.value}`">
-                    <line :x1="tick.x" :x2="tick.x" :y1="plotHeight" :y2="plotHeight + 4" :stroke="axisColor" stroke-width="1" />
-                    <text :x="tick.x" :y="plotHeight + 16" text-anchor="middle" font-size="10" :fill="axisColor">
+                    <line :x1="tick.x" :x2="tick.x" :y1="GRAPH_HEIGHT" :y2="GRAPH_HEIGHT + 4" :stroke="axisColor" stroke-width="1" />
+                    <text :x="tick.x" :y="GRAPH_HEIGHT + 16" text-anchor="middle" font-size="10" :fill="axisColor">
                         {{ formatWhole(tick.value) }}
                     </text>
                 </g>
@@ -325,6 +308,5 @@ onBeforeUnmount(() => {
 <style scoped>
 .hf-material-graph {
     width: 100%;
-    min-height: 42px;
 }
 </style>

@@ -26,7 +26,7 @@ export function createWorkerBundle() {
             if (e.data.type === "result") {
                 result.value = e.data.result
                 status.value = "success"
-                est_progress_percentage.value = 1
+                est_progress_percentage.value = 100
                 worker.terminate()
                 worker = null
             } else {
