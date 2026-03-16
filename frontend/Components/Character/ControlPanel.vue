@@ -175,7 +175,7 @@ const auto_start_optimizer = computed(() => active_profile.value.auto_start_opti
                 :input_column="active_profile.special_budget"
                 :row="0"
                 :setter="(val) => (active_profile.special_budget.data[0] = val)"
-                :show_label="true"
+                :label="active_profile.special_budget.keys[0]"
             ></MaterialCell>
 
             <div v-if="optimizer_worker.status === 'error'" class="optimizer-error">Error: {{ optimizer_worker.error }}</div>

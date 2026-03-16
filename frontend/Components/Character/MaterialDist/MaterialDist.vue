@@ -64,7 +64,7 @@ const computed_breakdown = computed(() => active_profile.value.optimizer_worker_
                     <MaterialCell
                         :input_column="active_profile.bound_budgets[active_profile.tier]"
                         :row="row"
-                        :show_label="true"
+                        :label="label"
                         :input_color="'--hf-graph-bound-color'"
                         :setter="
                             (val) => {
@@ -73,8 +73,8 @@ const computed_breakdown = computed(() => active_profile.value.optimizer_worker_
                         "
                     />
 
-                    <MaterialCell :input_column="averages" :row="row" :show_label="false" :input_color="'--hf-graph-average-color'" />
-                    <MaterialCell :input_column="computed_breakdown" :row="row" :show_label="false" :input_color="'--hf-gold'" />
+                    <MaterialCell :input_column="averages" :row="row" :input_color="'--hf-graph-average-color'" />
+                    <MaterialCell :input_column="computed_breakdown" :row="row" :input_color="'--hf-gold'" />
                     <MaterialGraph
                         :data="histogram_result?.cum_percentiles?.[row] ?? null"
                         :average="histogram_result?.average?.[row] ?? null"

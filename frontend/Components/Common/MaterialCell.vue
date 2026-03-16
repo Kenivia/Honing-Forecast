@@ -10,7 +10,7 @@ import { computed, Ref } from "vue"
 const props = defineProps<{
     input_column: InputColumn | number[]
     row: number
-    show_label: boolean
+    label?: string
     setter?: (val: string) => void // optional so read-only columns don't need it
     suffix?: string
     input_color?: string
@@ -20,12 +20,11 @@ const resolved_color = computed(() => {
     // console.log(cssVar(props.input_color, props.input_color))
     return cssVar(props.input_color, props.input_color)
 })
-const label: string = props.input_column.keys[props.row]
 </script>
 
 <template>
     <div class="hf-material-cell">
-        <label v-if="show_label" class="hf-row-label">
+        <label v-if="label" class="hf-row-label">
             <span>{{ label }}</span>
             <img :src="iconPath(label)" :alt="label" />
         </label>
@@ -55,7 +54,7 @@ const label: string = props.input_column.keys[props.row]
     align-items: center;
     justify-content: flex-start;
     gap: 6px;
-    font-size: 16px;
+    font-size: 18px;
     min-width: 0;
     text-align: right;
     padding-right: 8px;

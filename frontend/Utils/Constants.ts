@@ -1,3 +1,5 @@
+export const SYNCED_LABELS = ["Shards", "Gold", "Silver", "Lava's Breath", "Glacier's Breath"]
+
 export const NARROW_WIDTH = 800
 export const BUDGET_NARROW_WIDTH = 1300
 export const PLUS_TIER_CONVERSION = [

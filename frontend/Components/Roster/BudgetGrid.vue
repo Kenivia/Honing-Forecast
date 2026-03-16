@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { uesRosterStore as useRosterStore } from "@/stores/RosterConfig"
-import { ALL_LABELS, BUDGET_NARROW_WIDTH, BUNDLE_SIZE, NARROW_WIDTH, TIER_OPTIONS } from "@/Utils/Constants"
+import { ALL_LABELS, BUDGET_NARROW_WIDTH, BUNDLE_SIZE, NARROW_WIDTH, SYNCED_LABELS, TIER_OPTIONS } from "@/Utils/Constants"
 import { storeToRefs } from "pinia"
 import MaterialCell from "@/Components/Common/MaterialCell.vue"
-import { computed } from "vue"
+import { computed, watchEffect } from "vue"
 import { SelectButton } from "primevue"
 import { useMediaIsNarrow } from "@/Utils/WindowSize"
 
@@ -13,6 +13,17 @@ const tier = computed(() => roster_config.value.tier)
 const { isNarrow } = useMediaIsNarrow(BUDGET_NARROW_WIDTH)
 
 const column_template = computed(() => (isNarrow ? "1fr" : "1fr 1fr"))
+watchEffect(() => {
+    // one way sync from T4 to Serca, the uui modifies the T4 copy
+    for (let serca_index = 0; serca_index < ALL_LABELS[1].length; serca_index++) {
+        if (SYNCED_LABELS.includes(ALL_LABELS[1][serca_index])) {
+            let T4_index = ALL_LABELS[0].findIndex((x) => x == ALL_LABELS[1][serca_index])
+            roster_config.value.mats_prices[1].data[serca_index] = roster_config.value.mats_prices[0].data[T4_index]
+            roster_config.value.tradable_mats_owned[1].data[serca_index] = roster_config.value.tradable_mats_owned[0].data[T4_index]
+            roster_config.value.roster_mats_owned[1].data[serca_index] = roster_config.value.roster_mats_owned[0].data[T4_index]
+        }
+    }
+})
 </script>
 
 <template>
@@ -38,7 +49,7 @@ const column_template = computed(() => (isNarrow ? "1fr" : "1fr 1fr"))
                 <MaterialCell
                     :input_column="roster_config.roster_mats_owned[0]"
                     :row="row"
-                    :show_label="true"
+                    :label="label"
                     :setter="
                         (val) => {
                             roster_config.roster_mats_owned[0].data[row] = val
@@ -48,7 +59,6 @@ const column_template = computed(() => (isNarrow ? "1fr" : "1fr 1fr"))
                 <MaterialCell
                     :input_column="roster_config.tradable_mats_owned[0]"
                     :row="row"
-                    :show_label="false"
                     :setter="
                         (val) => {
                             roster_config.tradable_mats_owned[0].data[row] = val
@@ -58,7 +68,6 @@ const column_template = computed(() => (isNarrow ? "1fr" : "1fr 1fr"))
                 <MaterialCell
                     :input_column="roster_config.mats_prices[0]"
                     :row="row"
-                    :show_label="false"
                     :setter="
                         (val) => {
                             roster_config.mats_prices[0].data[row] = val
@@ -79,32 +88,30 @@ const column_template = computed(() => (isNarrow ? "1fr" : "1fr 1fr"))
             </div>
             <div v-for="(label, row) in ALL_LABELS[1]" :key="`roster-input-${label}`" class="hf-mats-row">
                 <MaterialCell
-                    :input_column="roster_config.roster_mats_owned[1]"
+                    :input_column="roster_config.roster_mats_owned[SYNCED_LABELS.includes(label) ? 0 : 1]"
                     :row="row"
-                    :show_label="true"
+                    :label="label"
                     :setter="
                         (val) => {
-                            roster_config.roster_mats_owned[1].data[row] = val
+                            roster_config.roster_mats_owned[SYNCED_LABELS.includes(label) ? 0 : 1].data[row] = val
                         }
                     "
                 />
                 <MaterialCell
-                    :input_column="roster_config.tradable_mats_owned[1]"
+                    :input_column="roster_config.tradable_mats_owned[SYNCED_LABELS.includes(label) ? 0 : 1]"
                     :row="row"
-                    :show_label="false"
                     :setter="
                         (val) => {
-                            roster_config.tradable_mats_owned[1].data[row] = val
+                            roster_config.tradable_mats_owned[SYNCED_LABELS.includes(label) ? 0 : 1].data[row] = val
                         }
                     "
                 />
                 <MaterialCell
-                    :input_column="roster_config.mats_prices[1]"
+                    :input_column="roster_config.mats_prices[SYNCED_LABELS.includes(label) ? 0 : 1]"
                     :row="row"
-                    :show_label="false"
                     :setter="
                         (val) => {
-                            roster_config.mats_prices[1].data[row] = val
+                            roster_config.mats_prices[SYNCED_LABELS.includes(label) ? 0 : 1].data[row] = val
                         }
                     "
                     :suffix="BUNDLE_SIZE[row] > 1 ? 'x' + BUNDLE_SIZE[row].toLocaleString('en-US') : ''"
