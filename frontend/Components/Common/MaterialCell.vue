@@ -54,7 +54,7 @@ const resolved_color = computed(() => {
     align-items: center;
     justify-content: flex-start;
     gap: 6px;
-    font-size: 18px;
+    font-size: 16px;
     min-width: 0;
     text-align: right;
     padding-right: 8px;
@@ -65,7 +65,7 @@ input.hf-material-cell-input {
     align-items: flex-start;
     justify-content: flex-start;
     gap: 6px;
-    font-size: 18px;
+    font-size: 16px;
     min-width: 0;
     text-align: left;
     padding-right: 8px;
@@ -77,7 +77,7 @@ input.hf-material-cell-input {
     align-items: flex-start;
     justify-content: flex-start;
     gap: 6px;
-    font-size: 18px;
+    font-size: 16px;
     min-width: 0;
     text-align: left;
     padding-right: 8px;

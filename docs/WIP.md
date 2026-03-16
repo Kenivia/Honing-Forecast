@@ -20,7 +20,7 @@
     - ~~also achieved ilevel stuff~~
     - ~~add undo button?~~
   - ~~Add Serca mats prices page~~
-  - add allow converting roster t4 mats to serca (should be a separate button)
+  - ~~add allow converting roster t4 mats to serca (should be a separate button)~~
     - ~~shouldnt be that hard?~~
       - need to auto-select market price
       - ~~light up the one that's active~~

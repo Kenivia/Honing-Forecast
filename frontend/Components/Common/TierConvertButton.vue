@@ -1,11 +1,12 @@
-<script setup>
+<script setup lang="ts">
 import { computed, ref } from "vue"
 
-const props = defineProps({
-    labelText: String,
-    tooltipText: String,
-    checkEligibility: Function,
-})
+const props = defineProps<{
+    labelText: string
+    tooltipText?: string | null
+    checkEligibility?: () => boolean | null
+    showTooltipOnlyOnDisabled?: boolean | null
+}>()
 
 const emit = defineEmits(["change-tier"])
 
@@ -34,7 +35,7 @@ function handleClick() {
             {{ labelText }}
         </button>
 
-        <div v-if="showTooltip && !eligible" class="tooltip">
+        <div v-if="showTooltip && (!showTooltipOnlyOnDisabled || !eligible)" class="tooltip">
             {{ tooltipText }}
         </div>
     </div>

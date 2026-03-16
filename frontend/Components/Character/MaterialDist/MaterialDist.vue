@@ -12,7 +12,7 @@ import { computed, ref, Ref, toRef } from "vue"
 
 const { active_profile } = storeToRefs(useProfilesStore())
 const { roster_config } = storeToRefs(uesRosterStore())
-const histogram_result: Ref<HistogramOutputs | null> = toRef(() => active_profile.value.histogram_worker_bundle.result)
+const histogram_result = computed(() => active_profile.value.histogram_worker_bundle.result)
 const averages: Ref<number[]> = toRef(() => histogram_result.value?.average ?? new Array(ALL_LABELS[active_profile.value.tier].length).fill(0))
 
 const analysisTab = ref<"mats" | "juice">("mats")

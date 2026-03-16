@@ -2,6 +2,7 @@ import { ref, onUnmounted, Ref, toRaw } from "vue"
 import { WasmOp } from "./js_to_wasm"
 import { HistogramOutputs, StateBundle } from "@/Utils/Interfaces"
 import { buildPayload } from "./payload"
+import { mapToObject } from "@/Utils/Helpers"
 const createWorker = () => new Worker(new URL("./js_to_wasm.ts", import.meta.url), { type: "module" })
 
 export function createWorkerBundle() {
@@ -27,6 +28,7 @@ export function createWorkerBundle() {
                 result.value = e.data.result
                 status.value = "success"
                 est_progress_percentage.value = 100
+                console.log(mapToObject(toRaw(result.value)?.adv_cache) ?? null)
                 worker.terminate()
                 worker = null
             } else {

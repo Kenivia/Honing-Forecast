@@ -3,11 +3,12 @@ import { useProfilesStore } from "@/stores/CharacterProfile"
 import TickboxGrid from "./TickboxGrid.vue"
 import { storeToRefs } from "pinia"
 import { achieved_ilevel, check_adv_all_done, check_eligibility, check_ilevel_all_good, pending_ilevel } from "@/Utils/Helpers"
-import { computed } from "vue"
-import { TIER_OPTIONS } from "@/Utils/Constants"
+import { computed, watch } from "vue"
+import { ALL_LABELS, NORMAL_COLS, NUM_PIECES, PLUS_TIER_CONVERSION, TIER_OPTIONS } from "@/Utils/Constants"
 import { SelectButton } from "primevue"
 import HoverTooltip from "@/Components/Common/HoverTooltip.vue"
-import TierSelectButton from "@/Components/Common/TierSelectButton.vue"
+import TierConvertButton from "@/Components/Common/TierConvertButton.vue"
+import { input_column_to_num, parse_input, UpgradeStatus } from "@/Utils/Interfaces"
 
 const { active_profile } = storeToRefs(useProfilesStore())
 const tooltip_text = computed(() => {
@@ -20,7 +21,7 @@ const tooltip_text = computed(() => {
                   .join(", \n")
         : check_eligibility()
           ? "Can go back to T4"
-          : "Cannot convert back to T4 because +" + String(check_ilevel_all_good()) + " did not come directly from T4 transfer"
+          : "Cannot convert back to T4 because +" + String(check_ilevel_all_good()) + " cannot be mapped directly to a T4 upgrade"
 })
 const tier_label_text = computed(() => {
     return active_profile.value.tier == 0 ? "Convert to T4.5 Serca" : "Revert back to T4"
@@ -30,6 +31,66 @@ function change_tier() {
         active_profile.value.tier = active_profile.value.tier == 0 ? 1 : 0
     }
 }
+watch(
+    () => active_profile.value.tier,
+
+    (new_tier, old_tier) => {
+        if (new_tier === null || old_tier === null || new_tier == old_tier) return
+        if (ALL_LABELS.length != 2) {
+            // This doesn't work for more tiers and should be updated when more tiers comes eventually
+            throw new Error("conversion between more than 2 tiers not implemented yet")
+        }
+
+        active_profile.value.optimizer_worker_bundle?.cancel_and_clear_prev_result()
+        active_profile.value.histogram_worker_bundle?.cancel_and_clear_prev_result()
+        active_profile.value.evaluation_worker_bundle?.cancel_and_clear_prev_result()
+
+        let num_array_old = input_column_to_num(active_profile.value.bound_budgets[old_tier])
+
+        let multiplied_indices = [0, 1, 2, 4] // red, blue, leaps, fusion
+        let multiplier = new_tier == 1 ? 0.2 : 5
+        multiplied_indices.forEach(
+            (index) =>
+                (active_profile.value.bound_budgets[new_tier].data[index] = String(
+                    parse_input(active_profile.value.bound_budgets[old_tier], index, String(num_array_old[index] * multiplier)),
+                )),
+        )
+        // Special leaps also multiplied
+        active_profile.value.special_budget.data[0] = String(
+            parse_input(active_profile.value.special_budget, 0, String(input_column_to_num(active_profile.value.special_budget)[0] * multiplier)),
+        )
+
+        let stay_same_indices = [3, 5, 6, 7] // shards, gold, silver, red juice
+        stay_same_indices.forEach(
+            (index) => (active_profile.value.bound_budgets[new_tier].data[index] = active_profile.value.bound_budgets[old_tier].data[index]),
+        )
+
+        // special case for blue juice
+        let new_num_juice_avail = (ALL_LABELS[new_tier].length - 7) / 2
+        let new_index = 7 + new_num_juice_avail
+        let old_num_juice_avail = (ALL_LABELS[old_tier].length - 7) / 2
+        let old_index = 7 + old_num_juice_avail
+        active_profile.value.bound_budgets[new_tier].data[new_index] = active_profile.value.bound_budgets[old_tier].data[old_index]
+
+        // the rest have separate values between tiers
+
+        for (let row = 0; row < NUM_PIECES; row++) {
+            let highest_done = active_profile.value.normal_grid[row].findLastIndex((value) => value == UpgradeStatus.Done) + 1
+            let highest_want = active_profile.value.normal_grid[row].findLastIndex((value) => value == UpgradeStatus.Want || value == UpgradeStatus.Done) + 1
+            let converted_done = PLUS_TIER_CONVERSION[old_tier][String(highest_done)]
+            let converted_want = highest_want > 0 ? PLUS_TIER_CONVERSION[old_tier][String(highest_want)] : converted_done
+            for (let col = 0; col < NORMAL_COLS; col++) {
+                if (col < converted_done) {
+                    active_profile.value.normal_grid[row][col] = UpgradeStatus.Done
+                } else if (col < converted_want) {
+                    active_profile.value.normal_grid[row][col] = UpgradeStatus.Want
+                } else {
+                    active_profile.value.normal_grid[row][col] = UpgradeStatus.NotYet
+                }
+            }
+        }
+    },
+)
 </script>
 
 <template>
@@ -40,7 +101,13 @@ function change_tier() {
                 <label class="hf-achieved-ilevel">Achieved ilevel: {{ achieved_ilevel() }}</label>
                 <label class="hf-pending-ilevel">Pending ilevel: {{ pending_ilevel() }}</label>
 
-                <TierSelectButton :labelText="tier_label_text" :tooltipText="tooltip_text" :checkEligibility="check_eligibility" @change-tier="change_tier" />
+                <TierConvertButton
+                    :labelText="tier_label_text"
+                    :tooltipText="tooltip_text"
+                    :checkEligibility="check_eligibility"
+                    @change-tier="change_tier"
+                    :show-tooltip-only-on-disabled="true"
+                />
             </div>
             <div class="hf-card-body">
                 <TickboxGrid grid_type="normal" />

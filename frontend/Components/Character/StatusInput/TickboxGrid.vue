@@ -137,7 +137,7 @@ watchDebounced(
         console.log("optimizer triggered")
         active_profile.value.optimizer_worker_bundle.start(WasmOp.OptimizeAverage)
     },
-    { immediate: true, deep: true, debounce: 500 },
+    { immediate: active_profile.value.optimizer_worker_bundle.result === null, deep: true, debounce: 500 },
 )
 
 // watch(
@@ -174,6 +174,7 @@ watchDebounced(
         () => input_column_to_num(active_profile.value.special_budget),
         () => active_profile.value.express_event,
         () => active_profile.value.tier,
+
     ],
     (_) => {
         onWatcherCleanup(() => {

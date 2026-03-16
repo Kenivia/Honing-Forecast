@@ -17,10 +17,15 @@ export function check_adv_all_done() {
 export function check_ilevel_all_good(): number | boolean {
     const { active_profile } = storeToRefs(useProfilesStore())
     for (let row = 0; row < NUM_PIECES; row++) {
-        let highest_plus = active_profile.value.normal_grid[row].findLastIndex((value) => value == UpgradeStatus.Done) + 1
+        let highest_done = active_profile.value.normal_grid[row].findLastIndex((value) => value == UpgradeStatus.Done) + 1
 
-        if (!PLUS_TIER_CONVERSION[active_profile.value.tier].hasOwnProperty(String(highest_plus))) {
-            return highest_plus
+        if (!PLUS_TIER_CONVERSION[active_profile.value.tier].hasOwnProperty(String(highest_done))) {
+            return highest_done
+        }
+        let highest_want = active_profile.value.normal_grid[row].findLastIndex((value) => value == UpgradeStatus.Done || value == UpgradeStatus.Want) + 1
+
+        if (!PLUS_TIER_CONVERSION[active_profile.value.tier].hasOwnProperty(String(highest_want))) {
+            return highest_want
         }
     }
     return true
@@ -92,7 +97,7 @@ export function mapToObject(map) {
     const obj = {}
     try {
         for (const [key, value] of map.entries()) {
-            obj[key] = value
+            obj[JSON.stringify(key)] = value
         }
     } catch {
         return map

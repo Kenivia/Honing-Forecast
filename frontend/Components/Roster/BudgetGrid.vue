@@ -6,13 +6,14 @@ import MaterialCell from "@/Components/Common/MaterialCell.vue"
 import { computed, watchEffect } from "vue"
 import { SelectButton } from "primevue"
 import { useMediaIsNarrow } from "@/Utils/WindowSize"
+import { input_column_to_num, parse_input } from "@/Utils/Interfaces"
+import TierConvertButton from "../Common/TierConvertButton.vue"
 
 const { roster_config } = storeToRefs(useRosterStore())
 
 const tier = computed(() => roster_config.value.tier)
 const { isNarrow } = useMediaIsNarrow(BUDGET_NARROW_WIDTH)
 
-const column_template = computed(() => (isNarrow ? "1fr" : "1fr 1fr"))
 watchEffect(() => {
     // one way sync from T4 to Serca, the uui modifies the T4 copy
     for (let serca_index = 0; serca_index < ALL_LABELS[1].length; serca_index++) {
@@ -24,9 +25,39 @@ watchEffect(() => {
         }
     }
 })
+function convert_roster_mats_to_serca() {
+    for (let serca_index = 0; serca_index < ALL_LABELS[1].length; serca_index++) {
+        if (!SYNCED_LABELS.includes(ALL_LABELS[1][serca_index])) {
+            let T4_index = ALL_LABELS[0].findIndex((x) => x == ALL_LABELS[1][serca_index])
+            roster_config.value.tradable_mats_owned[1].data[serca_index] = String(
+                input_column_to_num(roster_config.value.tradable_mats_owned[1])[T4_index] +
+                    parse_input(
+                        roster_config.value.tradable_mats_owned[0],
+                        T4_index,
+                        String(input_column_to_num(roster_config.value.tradable_mats_owned[0])[T4_index] * 0.2),
+                    ),
+            )
+            roster_config.value.tradable_mats_owned[0].data[T4_index] = "0"
+            roster_config.value.roster_mats_owned[1].data[serca_index] = String(
+                input_column_to_num(roster_config.value.roster_mats_owned[1])[T4_index] +
+                    parse_input(
+                        roster_config.value.roster_mats_owned[0],
+                        T4_index,
+                        String(input_column_to_num(roster_config.value.roster_mats_owned[0])[T4_index] * 0.2),
+                    ),
+            )
+            roster_config.value.roster_mats_owned[0].data[T4_index] = "0"
+        }
+    }
+}
 </script>
 
 <template>
+    <TierConvertButton
+        label-text="Convert T4 mats to T4.5 Serca mats"
+        tooltip-text="Converts Red, Blue, and Leaps (not abidos) to Serca (5:1 ratio)"
+        @change-tier="convert_roster_mats_to_serca"
+    ></TierConvertButton>
     <SelectButton
         v-if="isNarrow"
         v-model="roster_config.tier"
