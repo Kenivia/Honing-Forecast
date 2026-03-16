@@ -2,9 +2,13 @@
 :root {
 
 
+    --tooltip-bg: #181818;
+    --disabled-tier-convert: #cfcfcf;
+    --serca-blue: #2806b1;
+    --serca-blue-hover: #4520d8;
     --hf-header-text: #c0c0c0;
     --hf-header-text-hovered: #ffffff;
-    --text-muted: #ffffff;
+
 
     --text-very-muted: #888888;
     --separator-color: rgba(102, 102, 102, 0.507);

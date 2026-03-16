@@ -53,19 +53,19 @@ function handleClick() {
     border-radius: 8px;
     border: none;
     cursor: pointer;
-    background: #2806b1;
+    background: var(--serca-blue);
     color: white;
     transition: all 0.2s ease;
 }
 
 .tier-button:hover {
-    background: #4520d8;
+    background: var(--serca-blue-hover);
 }
 
 /* DISABLED STYLE */
 .tier-button.disabled {
-    background: #cfcfcf;
-    color: #777;
+    background: var(--disabled-tier-convert);
+    color: var(--text-very-muted);
     cursor: not-allowed;
 }
 
@@ -75,13 +75,12 @@ function handleClick() {
     bottom: 120%;
     left: 50%;
     transform: translateX(-50%);
-    background: #222;
-    color: white;
+    background: var(--tooltip-bg);
+    color: var(--text-bright);
     padding: 6px 10px;
     border-radius: 6px;
     font-size: 12px;
     white-space: nowrap;
-    opacity: 0.95;
     pointer-events: none;
 }
 </style>

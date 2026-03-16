@@ -17,7 +17,6 @@ const props = defineProps<{
 }>()
 
 const resolved_color = computed(() => {
-    // console.log(cssVar(props.input_color, props.input_color))
     return cssVar(props.input_color, props.input_color)
 })
 </script>
