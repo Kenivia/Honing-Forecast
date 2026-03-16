@@ -28,14 +28,15 @@
 
 - add "treatment" toggle in control panel via radio selector or something
 
+- add back graph hover tooltip
 - wire up the 2 annotations on material graph(need to add another annotation)
   - add hover annotation
 
 - wire up the result of optimizer to keyed upgrades
   - will need to set up some kind of callback on optimizer results (to write to the keyed upgrades)
   - let histogram watch the keyed upgrades
-- Add the two new columns in material distribution
-  - will need to modify the backend to do this - maybe a special evaluateAverage function?
+- ~~Add the two new columns in material distribution~~
+  - ~~ will need to modify the backend to do this - maybe a special evaluateAverage function?~~ no need
   
 ## Roadmap
 

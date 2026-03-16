@@ -33,7 +33,7 @@ pub fn histogram(state_bundle: &mut StateBundle) -> HistogramOutputs {
             let this_budget =
                 this_one_tap + index as f64 * (this_pity - this_one_tap) / (BUCKET_COUNT) as f64;
             let next_budget = this_one_tap
-                + (index + 1).max(BUCKET_COUNT) as f64 * (this_pity - this_one_tap)
+                + (index + 1).min(BUCKET_COUNT) as f64 * (this_pity - this_one_tap)
                     / (BUCKET_COUNT) as f64;
             item.push((
                 this_budget,

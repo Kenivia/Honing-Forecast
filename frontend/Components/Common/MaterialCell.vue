@@ -17,6 +17,7 @@ const props = defineProps<{
 }>()
 
 const resolved_color = computed(() => {
+    // console.log(cssVar(props.input_color, props.input_color))
     return cssVar(props.input_color, props.input_color)
 })
 const label: string = props.input_column.keys[props.row]
@@ -33,12 +34,12 @@ const label: string = props.input_column.keys[props.row]
             v-if="!Array.isArray(input_column)"
             type="text"
             class="hf-material-cell-input"
-            :color="input_color"
+            :style="{ color: resolved_color }"
             :value="input_column.data[row]"
             @change="setter(get_modified_cell(input_column, row, $event))"
             @input="setter(forbid_non_numeric(input_column, row, $event))"
         />
-        <label v-else-if="label !== 'Special Leap'" class="hf-material-cell-result" type="text">{{
+        <label v-else-if="label !== 'Special Leap'" class="hf-material-cell-result" :style="{ color: resolved_color }" type="text">{{
             input_column[row].toLocaleString("en-US", {
                 minimumFractionDigits: 0, // show decimals for small K/M/B
                 maximumFractionDigits: 0,
@@ -54,7 +55,6 @@ const label: string = props.input_column.keys[props.row]
     align-items: center;
     justify-content: flex-start;
     gap: 6px;
-    color: var(--text-secondary);
     font-size: 16px;
     min-width: 0;
     text-align: right;
@@ -78,7 +78,6 @@ input.hf-material-cell-input {
     align-items: flex-start;
     justify-content: flex-start;
     gap: 6px;
-    color: var(--hf-graph-average-color);
     font-size: 18px;
     min-width: 0;
     text-align: left;

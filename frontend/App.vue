@@ -51,7 +51,7 @@ const isNarrow = computed(() => width.value < 800)
                 </div>
                 <div class="hf-page-header-row">
                     <router-link to="/">
-                        <div class="hf-header-button">Roster setup</div>
+                        <div class="hf-header-button">Roster & market setup</div>
                     </router-link>
                     <div v-for="(profile, index) in all_profiles">
                         <router-link :to="'/' + profile.char_name" @click="profile_store.active_profile_index = index">
