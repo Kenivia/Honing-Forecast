@@ -2,7 +2,7 @@ import init, { evaluate_average_wrapper, optimize_average_wrapper, histogram_wra
 import { EvalPayload } from "./payload"
 import { HistogramOutputs, StateBundle } from "@/Utils/Interfaces"
 
-const LABELS = ["Red", "Blue", "Leaps", "Shards", "Oreha", "Gold", "Silver"]
+const LABELS = ["Red", "Blue", "Leaps", "Shards", "Fusion", "Gold", "Silver"]
 
 export enum WasmOp {
     EvaluateAverage,
@@ -34,7 +34,7 @@ self.addEventListener("message", async (ev) => {
     const { id, payload, wasm_op } = msg
 
     console.log(WasmOp[wasm_op], "Began")
-    console.log(payload)
+    // console.log(payload)
     let result
 
     if (wasm_op == WasmOp.EvaluateAverage) {

@@ -305,7 +305,7 @@ onBeforeUnmount(() => {
     </div>
 </template>
 
-<style scoped>
+<style>
 .hf-material-graph {
     width: 100%;
 }

@@ -6,7 +6,7 @@ import { achieved_ilevel, check_adv_all_done, check_eligibility, check_ilevel_al
 import { computed, watch } from "vue"
 import { ALL_LABELS, NORMAL_COLS, NUM_PIECES, PLUS_TIER_CONVERSION, TIER_OPTIONS } from "@/Utils/Constants"
 import { SelectButton } from "primevue"
-import HoverTooltip from "@/Components/Common/HoverTooltip.vue"
+
 import TierConvertButton from "@/Components/Common/TierConvertButton.vue"
 import { input_column_to_num, parse_input, UpgradeStatus } from "@/Utils/Interfaces"
 
@@ -95,7 +95,7 @@ watch(
 
 <template>
     <div class="hf-honing-row">
-        <section class="hf-normal-card">
+        <section class="hf-card-normal">
             <div class="hf-card-header">
                 <div class="hf-card-title"><span class="hf-card-title-dot" />Normal Honing</div>
                 <label class="hf-achieved-ilevel">Achieved ilevel: {{ achieved_ilevel() }}</label>
@@ -114,7 +114,7 @@ watch(
             </div>
         </section>
 
-        <section v-if="active_profile.tier == 0" class="hf-advanced-card">
+        <section v-if="active_profile.tier == 0" class="hf-card-adv">
             <div class="hf-card-header">
                 <div class="hf-card-title"><span class="hf-card-title-dot" />Advanced Honing</div>
             </div>
@@ -125,6 +125,33 @@ watch(
     </div>
 </template>
 <style>
+.hf-card-normal {
+    background: var(--hf-bg-panel);
+    border: 1px solid var(--hf-border-subtle);
+    border-radius: 8px;
+    overflow: visible;
+    width: fit-content;
+    max-width: 100%;
+    padding: 4px;
+}
+
+.hf-card-adv {
+    background: var(--hf-bg-panel);
+    border: 1px solid var(--hf-border-subtle);
+    border-radius: 8px;
+    overflow: visible;
+    width: 262px;
+    min-width: 262px;
+}
+
+.hf-honing-row {
+    display: grid;
+    grid-template-columns: max-content 340px;
+    gap: 10px;
+    align-items: start;
+    width: 100%;
+    justify-content: center;
+}
 .hf-pending-ilevel {
     color: var(--checkbox-checked-bg);
 }

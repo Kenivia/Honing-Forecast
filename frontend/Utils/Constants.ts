@@ -29,7 +29,7 @@ export const TIER_OPTIONS = TIER_LABELS.map((label, index) => ({
     value: index,
 }))
 export const DEFAULT_TIER = 0
-export const MATS_LABELS = ["Red", "Blue", "Leaps", "Shards", "Oreha", "Gold", "Silver"]
+export const MATS_LABELS = ["Red", "Blue", "Leaps", "Shards", "Fusion", "Gold", "Silver"]
 export const SPECIAL_LEAP_LABEL = "Special Leap"
 export const T4_JUICE_LABELS = [
     ["Lava's Breath", "Glacier's Breath"],
@@ -53,7 +53,7 @@ export const GRAPH_COLORS = [
     "--series-blue",
     "--series-leaps",
     "--series-shards",
-    "--series-oreha",
+    "--series-fusion",
     "--series-gold",
     "--series-silver",
     "--series-red",
@@ -79,7 +79,7 @@ export const BUNDLE_SIZE = [100, 100, 1, 1000, 1, 1, 1000000].concat(
     new Array(ALL_LABELS.map((labels) => labels.length).reduce((prev, next) => Math.max(prev, next)) - 7).fill(1),
 ) // this is like really hacked together rn, but i doubt it'll need to be fixed
 
-export const OUTPUT_LABELS = ["Red", "Blue", "Leaps", "Shards", "Oreha", "Gold", "Silver", "Red juice", "Blue juice"]
+export const OUTPUT_LABELS = ["Red", "Blue", "Leaps", "Shards", "Fusion", "Gold", "Silver", "Red juice", "Blue juice"]
 
 export const STORAGE_KEY = "HF_UI_STATE_V3"
 
@@ -111,7 +111,7 @@ export const DEFAULT_JUICE_LEFTOVER = [
     [0, 0],
 ]
 
-export const IconMap: Record<string, string> = {
+export const base_icon_map: Record<string, string> = {
     Helmet: "/Icons/Equipments/Helmet.webp",
     Shoulder: "/Icons/Equipments/Shoulder.webp",
     Chest: "/Icons/Equipments/Chest.webp",
@@ -122,24 +122,43 @@ export const IconMap: Record<string, string> = {
     Blue: "/Icons/Materials/Blue.webp",
     Leaps: "/Icons/Materials/Leap.webp",
     Shards: "/Icons/Materials/Shard.webp",
-    Oreha: "/Icons/Materials/Oreha.webp",
+    Fusion: "/Icons/Materials/Fusion.webp",
     Gold: "/Icons/Materials/Gold.webp",
     Silver: "/Icons/Materials/Silver.webp",
     "Lava's Breath": "/Icons/Materials/Lava's Breath.webp",
     "Glacier's Breath": "/Icons/Materials/Glacier's Breath.webp",
     "Special Leap": "/Icons/Materials/Special Leap.webp",
-
     "11-14 Armor": "/Icons/Materials/Armor Book.webp",
     "11-14 Weapon": "/Icons/Materials/Weapon Book.webp",
-
     "15-18 Armor": "/Icons/Materials/Armor Book.webp",
     "15-18 Weapon": "/Icons/Materials/Weapon Book.webp",
-
     "19-20 Armor": "/Icons/Materials/Armor Book.webp",
     "19-20 Weapon": "/Icons/Materials/Weapon Book.webp",
 
+    "Scroll 1 Weapon": "/Icons/Materials/Scroll 1 Weapon.png",
+    "Scroll 1 Armor": "/Icons/Materials/Scroll 1 Armor.png",
+    "Scroll 2 Weapon": "/Icons/Materials/Scroll 2 Weapon.png",
+    "Scroll 2 Armor": "/Icons/Materials/Scroll 2 Armor.png",
+    "Scroll 3 Weapon": "/Icons/Materials/Scroll 3 Weapon.png",
+    "Scroll 3 Armor": "/Icons/Materials/Scroll 3 Armor.png",
+    "Scroll 4 Weapon": "/Icons/Materials/Scroll 4 Weapon.png",
+    "Scroll 4 Armor": "/Icons/Materials/Scroll 4 Armor.png",
+
+    "Serca Red": "/Icons/Materials/Serca unique/Serca Red.png",
+    "Serca Blue": "/Icons/Materials/Serca unique/Serca Blue.png",
+    "Serca Leaps": "/Icons/Materials/Serca unique/Serca Leaps.png",
+    "Serca Fusion": "/Icons/Materials/Serca unique/Serca Fusion.png",
+    "Serca Special Leap": "/Icons/Materials/Serca unique/Serca Special.png",
+
     "Forecast Icon": "/Icons/Forecast Icon.webp",
 }
+let temp = {}
+for (const [label, path] of Object.entries(base_icon_map)) {
+    if (!base_icon_map.hasOwnProperty("Serca " + label)) {
+        temp["Serca " + label] = path
+    }
+}
+export const IconMap = { ...temp, ...base_icon_map } as Record<string, string>
 
 export const DEFAULT_MATS_PRICES = ["1.84", "0.04", "20", "0.6", "128", "1.0", "0.0"]
 
@@ -201,7 +220,7 @@ const DEFAULT_STATE_PAIR: [boolean, number] = [false, 0]
 //         Blue: "1064398",
 //         Leaps: "33748",
 //         Shards: "12010948",
-//         Oreha: "25125",
+//         Fusion: "25125",
 //         Gold: "3803792",
 //         Silver: "999999999",
 //         "Red juice": "1420",

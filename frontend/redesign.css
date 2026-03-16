@@ -134,13 +134,10 @@ body::before {
     min-width: 0;
     width: 100%;
     height: 42px;
+    min-height: 0px;
 
 }
 
-
-.hf-table-title-row {
-    display: contents;
-}
 
 .hf-shell {
     width: 100%;
@@ -213,24 +210,7 @@ body::before {
     align-items: start;
 }
 
-.hf-honing-row {
-    display: grid;
-    grid-template-columns: max-content 340px;
-    gap: 10px;
-    align-items: start;
-    width: 100%;
-    justify-content: start;
-}
 
-.hf-normal-card {
-    width: fit-content;
-    max-width: 100%;
-}
-
-.hf-advanced-card {
-    width: 340px;
-    min-width: 340px;
-}
 
 .hf-advanced-card .hf-card-title,
 .hf-advanced-card .hf-card-hint {
@@ -281,7 +261,6 @@ body::before {
     background: var(--hf-bg-panel);
     border: 1px solid var(--hf-border-subtle);
     border-radius: 8px;
-    overflow: visible;
 }
 
 .hf-card-header {
@@ -289,7 +268,7 @@ body::before {
     align-items: center;
     justify-content: space-between;
     gap: 12px;
-    padding: 8px 12px;
+    padding: 4px 4px;
     border-bottom: 1px solid var(--hf-border-subtle);
     background: linear-gradient(180deg, var(--hf-bg-card), transparent);
 }
@@ -392,10 +371,6 @@ body::before {
     content: none;
 }
 
-.hf-optimizer-card .hf-card-body {
-    flex: 1 1 auto;
-    display: flex;
-}
 
 .hf-optimizer-card .optimizer-card {
     flex: 1 1 auto;

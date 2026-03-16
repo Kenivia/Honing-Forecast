@@ -8,8 +8,8 @@ import StatusInput from "@/Components/Character/StatusInput/StatusInput.vue"
 <template>
     <div class="hf-main-stage">
         <StatusInput />
-        <ControlPanel />
-        <MaterialDist />
+
+        <MaterialDist /> <ControlPanel />
         <!-- <Instructions /> -->
     </div>
 </template>

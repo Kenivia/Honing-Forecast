@@ -2,30 +2,29 @@ use serde::{Deserialize, Serialize};
 
 use crate::upgrade::Upgrade;
 
-pub const GRACE_FIRST_N: [usize; 16] = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 255];
-pub const NON_GRACE_FIRST_N: [usize; 15] = [1, 2, 3, 4, 5, 8, 10, 12, 15, 20, 30, 40, 50, 60, 255];
+pub const GRACE_FIRST_N: [usize; 9] = [0, 1, 2, 3, 5, 7, 10, 13, 255];
+pub const NON_GRACE_FIRST_N: [usize; 11] = [1, 2, 3, 4, 5, 8, 10, 15, 20, 40, 255];
 // there's an overlap so (255,0) gets included in grace_first_n)
 
-pub const MAX_ADV_STATE: usize = GRACE_FIRST_N.len() + NON_GRACE_FIRST_N.len() - 1;
+pub const MAX_ADV_STATE: usize = GRACE_FIRST_N.len() + NON_GRACE_FIRST_N.len() - 1; // -1 here because this is meant to be the max index available
 
-/// theres only 31 possible options so this outpus 0 to 30
 pub fn tuple_to_index((a, b): (usize, usize)) -> usize {
     if a < 255 {
         return a;
     } else if b == 0 {
-        return 15;
+        return GRACE_FIRST_N.len() - 1;
     }
     {
-        return 16 + NON_GRACE_FIRST_N.iter().position(|x| *x == b).unwrap();
+        return GRACE_FIRST_N.len() + NON_GRACE_FIRST_N.iter().position(|x| *x == b).unwrap();
     }
 }
 pub fn index_to_tuple(index: usize) -> (usize, usize) {
-    if index <= 15 {
-        // Indices 0–15: a = index, b = 0
+    if index < GRACE_FIRST_N.len() {
+        // Indices 0–GRACE_FIRST_N.len()-1: a = index, b = 0
         (GRACE_FIRST_N[index], 0)
     } else {
-        // Indices 16–30: a = 255, b = NON_GRACE_FIRST_N[index - 16]
-        (255, NON_GRACE_FIRST_N[index - 16])
+        // Indices GRACE_FIRST_N.len() and onwards: a = 255, b = NON_GRACE_FIRST_N[index - 16]
+        (255, NON_GRACE_FIRST_N[index - GRACE_FIRST_N.len()])
     }
 }
 

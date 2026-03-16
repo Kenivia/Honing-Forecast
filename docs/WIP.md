@@ -3,41 +3,13 @@
 
 ## Immediate WIP
 
-- ~~fix the mat distribution row such that the inputs work correctly~~
-   -~~ hopefully just involves copy pasting the styles back again~~
-- ~~make the roster page~~
-  - ~~just the prices inputs for now is fine~~
-- ~~Set up writing to setting~~
-- ~~Set up special budget (just the input for now)~~
-- ~~input & copy payload to re-make the test cases~~
-  - ~~verify & fix whatever is wrong~~
-
-- Set up serca
-  - ~~get the json~~
-    - ~~get data from icepeng~~
-  - ~~add tier conversion button in control panel~~
-    - ~~get the ilevel mapping~~ ~~somehow? is this on icepeng?~~ memo video
-    - ~~also achieved ilevel stuff~~
-    - ~~add undo button?~~
-  - ~~Add Serca mats prices page~~
-  - ~~add allow converting roster t4 mats to serca (should be a separate button)~~
-    - ~~shouldnt be that hard?~~
-      - need to auto-select market price
-      - ~~light up the one that's active~~
-  - get the icons and route appropriately
-
-- add "treatment" toggle in control panel via radio selector or something
-
 - add back graph hover tooltip
-- wire up the 2 annotations on material graph(need to add another annotation)
-  - add hover annotation
+- ~~wire up the 2 annotations on material graph(need to add another annotation)~~ maybe too cluttered
 
 - wire up the result of optimizer to keyed upgrades
   - will need to set up some kind of callback on optimizer results (to write to the keyed upgrades)
   - let histogram watch the keyed upgrades
-- ~~Add the two new columns in material distribution~~
-  - ~~ will need to modify the backend to do this - maybe a special evaluateAverage function?~~ no need
-  
+
 ## Roadmap
 
 ### 1st: re-write the frontend
@@ -72,26 +44,13 @@
 
 Specifically:
 
-- ~~include statebundle in the "store" and only update when some thing changes, make parser its own wasm binding for that~~
-  - ~~non-state changes (like price, owned) should trigger parser + eval(like the current behaviour), state changes should trigger eval only, though that's not really a huge deal cos parser call not that expensive~~
 - this opens the door for persistent special & adv caches? this would make it easy to put pre-computed table in (just write it in js on intializaiton)
   - figure out how to serialize & deserialize ahashmap, right now its as if there's no caching
 - this also opens the door for when we know the current state is good already on optimizer calls
 
 #### Char page - Upgrade status inputs
 
-- ~~How to intuitively toggle between the 3 states~~  ~~ -maybe slider with 2 heads?~~
-  - ~~If current is empty(everything starts here):  ~~
-    - ~~if left of current is NotYet, toggle everything to the left to done~~
-    - ~~othewise, toggle current to Want~~
-  - ~~ If current is Want:~~
-    - ~~Toggle self and everything to the left to Done~~
-  - ~~If current is Done:~~
-    - ~~Toggle current and everything to the right to NotYet~~
-- add a lil key to explain the colors
-- maybe import via uwuowo?
-- achived ilevel & desired ilevel display
-- tier selector should be around here, show a popup / tooltip?
+- ~~maybe import via uwuowo?~~ prolly not, even if i decide to add it it'll have to be on the roster setup page where we create a character
 
 #### Char page - Detailed status inputs
 
@@ -99,24 +58,24 @@ Specifically:
   - separate page => no more hand-holding optimization which i mean it's not designed to do anyway
     - can still do piece-after-piece optimization
 
-#### Char page - Gold breakdown
-
-- This needs to show both "actual gold spent on market/raw" and "eqv gold you wouldve made from selling tradables"
-
 #### Char page - Material cost distribution
 
-- ~~3 columns,~~ 6 columns
+- ~~3 columns,~~ ~~6~~ 5 columns
     0. enable/disable checkbox
     1. ~~user bound mats input, starts at 0 by default~~
     2. ~~Avg cost~~ ~~/ top x% bottom x%,~ allow custom inputs in the header~~ ~~i think just making hover more obvious is good enough, the interpolation / whatever problem is gonna be aids~~
-    3. Gold spent buying this mat
-    4. Gold you would've made selling this mat + Gold spent buying this mat (maybe make this col optional)
-    5. ~~The corresponding graphs~~
+    3. ~~Gold spent buying this mat / Gold you would've made selling this mat + Gold spent buying this mat ~~~~(maybe make this col optional)~~ selectable
+    4. ~~The corresponding graphs~~
 
-- This can get quite long so ~~need to hide useless / irrelevant graphs and a show all button or something~~ 3 buttons to toggle between the 3 categories
+- This can get quite long so ~~need to hide useless / irrelevant graphs and a show all button or something~~ ~~3 buttons to toggle between the 3 categories~~ dropdown
+
+- ~~Add grid lines?~~
+- single piece hoverable artisan
+
+### Char page - Special
+
 - Maybe make a row for free taps num success vs chances
-  - maybe make it its own section with the special budget input?
-- Add grid lines?
+- where the special budget input should go
 
 #### Char page - Optimizer instructions
 
@@ -333,6 +292,51 @@ Below are some rambling / brainstorming / Misc stuff
 - Automatic Market price integration(via some kind of API, or just updating the site at a regular interval automatically)
 
 ## Done / cancelled
+
+ ~~Char page - Gold breakdown~~
+
+- ~~This needs to show both "actual gold spent on market/raw" and "eqv gold you wouldve made from selling tradables"~~
+
+- ~~achived ilevel & desired ilevel display~~
+-~~ tier selector should be around here, show a popup / tooltip?~~
+
+- ~~include statebundle in the "store" and only update when some thing changes, make parser its own wasm binding for that~~
+  - ~~non-state changes (like price, owned) should trigger parser + eval(like the current behaviour), state changes should trigger eval only, though that's not really a huge deal cos parser call not that expensive~~
+- ~~Add the two new columns in material distribution~~
+  - ~~ will need to modify the backend to do this - maybe a special evaluateAverage function?~~ no needs
+- ~~How to intuitively toggle between the 3 states~~  ~~ -maybe slider with 2 heads?~~
+  - ~~If current is empty(everything starts here):  ~~
+    - ~~if left of current is NotYet, toggle everything to the left to done~~
+    - ~~othewise, toggle current to Want~~
+  - ~~ If current is Want:~~
+    - ~~Toggle self and everything to the left to Done~~
+  - ~~If current is Done:~~
+    - ~~Toggle current and everything to the right to NotYet~~
+- ~~add a lil key to explain the colors~~
+- ~~fix the mat distribution row such that the inputs work correctly~~
+   -~~ hopefully just involves copy pasting the styles back again~~
+- ~~make the roster page~~
+  - ~~just the prices inputs for now is fine~~
+- ~~Set up writing to setting~~
+- ~~Set up special budget (just the input for now)~~
+- ~~input & copy payload to re-make the test cases~~
+  - ~~verify & fix whatever is wrong~~
+
+- Set up serca
+  - ~~get the json~~
+    - ~~get data from icepeng~~
+  - ~~add tier conversion button in control panel~~
+    - ~~get the ilevel mapping~~ ~~somehow? is this on icepeng?~~ memo video
+    - ~~also achieved ilevel stuff~~
+    - ~~add undo button?~~
+  - ~~Add Serca mats prices page~~
+  - ~~add allow converting roster t4 mats to serca (should be a separate button)~~
+    - ~~shouldnt be that hard?~~
+      - ~~need to auto-select market price~~
+      - ~~light up the one that's active~~
+  - ~~get the icons and route appropriately~~
+
+- ~~add "treatment" toggle in control panel via radio selector or something~~
 
 - ~~some better way to input mats?~~
   - ~~screenshot upload? screen share recording? need OCR~~ no way

@@ -29,8 +29,10 @@ function convert_roster_mats_to_serca() {
     for (let serca_index = 0; serca_index < ALL_LABELS[1].length; serca_index++) {
         if (!SYNCED_LABELS.includes(ALL_LABELS[1][serca_index])) {
             let T4_index = ALL_LABELS[0].findIndex((x) => x == ALL_LABELS[1][serca_index])
-            roster_config.value.tradable_mats_owned[1].data[serca_index] = String(
-                input_column_to_num(roster_config.value.tradable_mats_owned[1])[T4_index] +
+
+            // all become roster bound
+            roster_config.value.roster_mats_owned[1].data[serca_index] = String(
+                input_column_to_num(roster_config.value.roster_mats_owned[1])[T4_index] +
                     parse_input(
                         roster_config.value.tradable_mats_owned[0],
                         T4_index,
@@ -50,6 +52,15 @@ function convert_roster_mats_to_serca() {
         }
     }
 }
+
+const t4_serca_prices = computed(() => {
+    let t4_price = input_column_to_num(roster_config.value.mats_prices[0])
+    let serca_price = input_column_to_num(roster_config.value.mats_prices[1])
+    return {
+        effective_prices: ALL_LABELS[1].map((_, index) => Math.min(t4_price[index] * 5, serca_price[index])),
+        t4_better: ALL_LABELS[1].map((_, index) => t4_price[index] * 5 < serca_price[index]),
+    }
+})
 </script>
 
 <template>
@@ -114,6 +125,7 @@ function convert_roster_mats_to_serca() {
                 <span style="text-align: right; padding-right: 15px">Roster Bound Mats</span>
                 <span>Tradable Mats</span>
                 <span>Market price</span>
+                <span>Effective price</span>
 
                 <!-- <span v-if="customLeftovers">Left</span> -->
             </div>
@@ -121,7 +133,7 @@ function convert_roster_mats_to_serca() {
                 <MaterialCell
                     :input_column="roster_config.roster_mats_owned[SYNCED_LABELS.includes(label) ? 0 : 1]"
                     :row="row"
-                    :label="label"
+                    :label="'Serca ' + label"
                     :setter="
                         (val) => {
                             roster_config.roster_mats_owned[SYNCED_LABELS.includes(label) ? 0 : 1].data[row] = val
@@ -147,11 +159,20 @@ function convert_roster_mats_to_serca() {
                     "
                     :suffix="BUNDLE_SIZE[row] > 1 ? 'x' + BUNDLE_SIZE[row].toLocaleString('en-US') : ''"
                 />
+                <MaterialCell
+                    v-if="!SYNCED_LABELS.includes(label)"
+                    :input_column="t4_serca_prices.effective_prices"
+                    :row="row"
+                    :suffix="t4_serca_prices.t4_better[row] ? 'Convert T4' : 'Buy Serca '"
+                />
             </div>
         </div>
     </div>
 </template>
 <style>
+.hf-table-title-row {
+    display: contents;
+}
 .hf-outer-budget-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -169,7 +190,7 @@ function convert_roster_mats_to_serca() {
 }
 .hf-roster-inputs-serca {
     display: grid;
-    grid-template-columns: 250px 120px 120px;
+    grid-template-columns: 250px 120px 120px 120px;
     align-items: center; /* optional: vertically center each cell */
     gap: 8px; /* optional: spacing between cells */
     grid-template-rows: subgrid;

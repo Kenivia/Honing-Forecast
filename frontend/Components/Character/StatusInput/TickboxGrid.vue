@@ -129,6 +129,7 @@ watchDebounced(
         () => input_column_to_num(active_profile.value.special_budget),
         () => active_profile.value.express_event,
         () => active_profile.value.tier,
+        () => active_profile.value.treatment_plan,
     ],
     (_) => {
         onWatcherCleanup(() => {
@@ -174,7 +175,7 @@ watchDebounced(
         () => input_column_to_num(active_profile.value.special_budget),
         () => active_profile.value.express_event,
         () => active_profile.value.tier,
-
+        () => active_profile.value.treatment_plan,
     ],
     (_) => {
         onWatcherCleanup(() => {

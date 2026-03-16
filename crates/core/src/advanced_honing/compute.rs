@@ -291,7 +291,7 @@ pub fn compute_adv_dist_wrapper(config: &AdvConfig) -> AdvDistTriplet {
     let result = compute_adv_dist(
         initial_state,
         config,
-        &mut AHashMap::new(), //adv_memo_cache.get_mut(&invariant_key).unwrap(),
+        &mut AHashMap::with_capacity(256), //adv_memo_cache.get_mut(&invariant_key).unwrap(),
     );
 
     AdvDistTriplet {

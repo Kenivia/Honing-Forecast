@@ -28,7 +28,7 @@ export function createWorkerBundle() {
                 result.value = e.data.result
                 status.value = "success"
                 est_progress_percentage.value = 100
-                console.log(mapToObject(toRaw(result.value)?.adv_cache) ?? null)
+                // console.log(mapToObject(toRaw(result.value)?.adv_cache) ?? null)
                 worker.terminate()
                 worker = null
             } else {

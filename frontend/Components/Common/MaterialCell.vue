@@ -38,7 +38,7 @@ const resolved_color = computed(() => {
             @change="setter(get_modified_cell(input_column, row, $event))"
             @input="setter(forbid_non_numeric(input_column, row, $event))"
         />
-        <label v-else-if="label !== 'Special Leap'" class="hf-material-cell-result" :style="{ color: resolved_color }" type="text">{{
+        <label v-else class="hf-material-cell-result" :style="{ color: resolved_color }" type="text">{{
             input_column[row].toLocaleString("en-US", {
                 minimumFractionDigits: 0, // show decimals for small K/M/B
                 maximumFractionDigits: 0,
@@ -62,7 +62,7 @@ const resolved_color = computed(() => {
 
 input.hf-material-cell-input {
     display: flex;
-    align-items: flex-start;
+    align-items: center;
     justify-content: flex-start;
     gap: 6px;
     font-size: 16px;
@@ -74,8 +74,8 @@ input.hf-material-cell-input {
 
 .hf-material-cell-result {
     display: flex;
-    align-items: flex-start;
-    justify-content: flex-start;
+    align-items: center;
+    justify-content: flex-end;
     gap: 6px;
     font-size: 16px;
     min-width: 0;

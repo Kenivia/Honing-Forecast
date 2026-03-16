@@ -1,14 +1,13 @@
 <script setup lang="ts">
 import { ALL_LABELS, GRAPH_COLORS, T4_JUICE_LABELS, MATS_LABELS } from "@/Utils/Constants"
-import GoldBreakdown from "./GoldBreakdown.vue"
-import { CharProfile, useProfilesStore } from "@/stores/CharacterProfile"
+import { CharProfile, TreatmentPlan, useProfilesStore } from "@/stores/CharacterProfile"
 import { iconPath } from "@/Utils/Helpers"
 import MaterialCell from "@/Components/Common/MaterialCell.vue"
 import { create_input_column, HistogramOutputs, input_column_to_num, InputColumn, InputType } from "@/Utils/Interfaces"
 import MaterialGraph from "./MaterialGraph.vue"
 import { storeToRefs } from "pinia"
 import { uesRosterStore } from "@/stores/RosterConfig"
-import { computed, ref, Ref, toRef } from "vue"
+import { computed, ref, Ref, toRef, watchEffect } from "vue"
 
 const { active_profile } = storeToRefs(useProfilesStore())
 const { roster_config } = storeToRefs(uesRosterStore())
@@ -31,6 +30,27 @@ const visibleRows = computed(() => {
         })
 })
 const computed_breakdown = computed(() => active_profile.value.optimizer_worker_bundle.result.average_breakdown.map((x) => (x == 0 ? x : -x)))
+
+const market_gold_text = "Avg gold spent buying from market"
+const tradable_gold_text = "Avg gold spent buying minus gold from selling tradables"
+const all_bound_text = "Treat roster bound as tradable" // i dont think i'll show this tho cos its kinda confusing
+const selected_treatement = ref(
+    active_profile.value.treatment_plan == TreatmentPlan.TreatTradableAsBound
+        ? market_gold_text
+        : active_profile.value.treatment_plan == TreatmentPlan.TreatRosterAsBound
+          ? tradable_gold_text
+          : all_bound_text,
+)
+
+watchEffect(() => {
+    if (selected_treatement.value == market_gold_text) {
+        active_profile.value.treatment_plan = TreatmentPlan.TreatTradableAsBound
+    } else if (selected_treatement.value == tradable_gold_text) {
+        active_profile.value.treatment_plan = TreatmentPlan.TreatRosterAsBound
+    } else if (selected_treatement.value == all_bound_text) {
+        active_profile.value.treatment_plan = TreatmentPlan.TreatRosterAsTradable
+    }
+})
 </script>
 
 <template>
@@ -43,12 +63,14 @@ const computed_breakdown = computed(() => active_profile.value.optimizer_worker_
             </div>
         </div>
         <div class="hf-card-body">
-            <div class="hf-dist-desc">Distribution reflects free-tap and juice usage from your current optimizer output.</div>
             <div class="hf-dist-graphs">
                 <div class="hf-table-title-row">
                     <span style="text-align: right; padding-right: 15px; color: var(--hf-graph-bound-color)">Char-Bound Mats</span>
                     <span style="color: var(--hf-graph-average-color)">Average Cost</span>
-                    <span style="color: var(--hf-gold)">Avg gold spent </span>
+                    <select v-model="selected_treatement" style="color: var(--hf-gold)">
+                        <option>{{ market_gold_text }}</option>
+                        <option>{{ tradable_gold_text }}</option>
+                    </select>
                     <span style="text-align: center">Hover over the graph to see more!</span>
                     <!-- <span v-if="customLeftovers">Left</span> -->
                 </div>
@@ -64,7 +86,7 @@ const computed_breakdown = computed(() => active_profile.value.optimizer_worker_
                     <MaterialCell
                         :input_column="active_profile.bound_budgets[active_profile.tier]"
                         :row="row"
-                        :label="label"
+                        :label="(active_profile.tier == 1 ? 'Serca ' : '') + label"
                         :input_color="'--hf-graph-bound-color'"
                         :setter="
                             (val) => {
@@ -86,10 +108,13 @@ const computed_breakdown = computed(() => active_profile.value.optimizer_worker_
             </div>
         </div>
     </section>
-
-    <GoldBreakdown />
 </template>
 <style>
+.hf-analysis-pane {
+    width: min(100%, 872px);
+    overflow-x: auto;
+    overflow-y: visible;
+}
 .hf-analysis-tab {
     border: 1px solid var(--hf-border-subtle);
     border-radius: 999px;
@@ -109,8 +134,9 @@ const computed_breakdown = computed(() => active_profile.value.optimizer_worker_
 }
 .hf-dist-graphs {
     display: grid;
-    grid-template-columns: 250px 120px 120px minmax(0, 1fr);
-    align-items: start;
+    grid-template-columns: 250px 120px 120px 320px;
+    align-items: center;
+    justify-content: start;
     row-gap: 0;
 }
 
@@ -121,5 +147,6 @@ const computed_breakdown = computed(() => active_profile.value.optimizer_worker_
     grid-template-columns: subgrid; /* inherit parent column definitions */
     align-items: center;
     border-bottom: 1px solid var(--separator-color);
+    min-height: 0px;
 }
 </style>
