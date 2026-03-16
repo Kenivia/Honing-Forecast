@@ -1,6 +1,78 @@
-import { IconMap, PIECE_NAMES } from "./Constants"
-import { Upgrade } from "./Interfaces"
+import { useProfilesStore } from "@/stores/CharacterProfile"
+import { ADV_COLS, IconMap, NUM_PIECES, PIECE_NAMES, PLUS_TIER_CONVERSION } from "./Constants"
+import { Upgrade, UpgradeStatus } from "./Interfaces"
+import { storeToRefs } from "pinia"
 const ordinalRules = new Intl.PluralRules("en", { type: "ordinal" })
+export function check_adv_all_done() {
+    const { active_profile } = storeToRefs(useProfilesStore())
+    for (let row = 0; row < NUM_PIECES; row++) {
+        for (let col = 0; col < ADV_COLS; col++) {
+            if (active_profile.value.adv_grid[row][col] != UpgradeStatus.Done) {
+                return false
+            }
+        }
+    }
+    return true
+}
+export function check_ilevel_all_good(): number | boolean {
+    const { active_profile } = storeToRefs(useProfilesStore())
+    for (let row = 0; row < NUM_PIECES; row++) {
+        let highest_plus = active_profile.value.normal_grid[row].findLastIndex((value) => value == UpgradeStatus.Done) + 1
+
+        if (!PLUS_TIER_CONVERSION[active_profile.value.tier].hasOwnProperty(String(highest_plus))) {
+            return highest_plus
+        }
+    }
+    return true
+}
+export function check_eligibility(): boolean {
+    return check_adv_all_done() && check_ilevel_all_good() === true
+}
+export function achieved_ilevel(): string {
+    const { active_profile } = storeToRefs(useProfilesStore())
+    let out = active_profile.value.tier == 0 ? 1590 : 1635
+    if (active_profile.value.tier == 0) {
+        for (let row = 0; row < NUM_PIECES; row++) {
+            let highest_plus = active_profile.value.adv_grid[row].findLastIndex((value) => value == UpgradeStatus.Done) + 1
+            out += (highest_plus * 10) / 6
+        }
+    } else {
+        out += 40
+    }
+    for (let row = 0; row < NUM_PIECES; row++) {
+        let highest_plus = active_profile.value.normal_grid[row].findLastIndex((value) => value == UpgradeStatus.Done) + 1
+        // find last index = -1 if nothing is done
+        if (highest_plus == 0) {
+            return "?"
+        } else {
+            out += (highest_plus * 5) / 6
+        }
+    }
+    return out.toFixed(2)
+}
+
+export function pending_ilevel(): string {
+    const { active_profile } = storeToRefs(useProfilesStore())
+    let out = active_profile.value.tier == 0 ? 1590 : 1635
+    if (active_profile.value.tier == 0) {
+        for (let row = 0; row < NUM_PIECES; row++) {
+            let highest_plus = active_profile.value.adv_grid[row].findLastIndex((value) => value == UpgradeStatus.Done || value == UpgradeStatus.Want) + 1
+            out += (highest_plus * 10) / 6
+        }
+    } else {
+        out += 40
+    }
+    for (let row = 0; row < NUM_PIECES; row++) {
+        let highest_plus = active_profile.value.normal_grid[row].findLastIndex((value) => value == UpgradeStatus.Done || value == UpgradeStatus.Want) + 1
+        // find last index = -1 if nothing is done
+        if (highest_plus == 0) {
+            return "?"
+        } else {
+            out += (highest_plus * 5) / 6
+        }
+    }
+    return out.toFixed(2)
+}
 
 export function cssVar(name: string, fallback: string) {
     if (typeof window === "undefined") return fallback

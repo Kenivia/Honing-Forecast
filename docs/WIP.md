@@ -16,14 +16,14 @@
   - ~~get the json~~
     - ~~get data from icepeng~~
   - ~~add tier conversion button in control panel~~
-    - get the ilevel mapping ~~somehow? is this on icepeng?~~ memo video
+    - ~~get the ilevel mapping~~ ~~somehow? is this on icepeng?~~ memo video
+    - ~~also achieved ilevel stuff~~
     - ~~add undo button?~~
   - add allow converting roster t4 mats to serca (should be a separate button)
     - ~~shouldnt be that hard?~~
     - Add Serca mats prices page
       - need to auto-select market price
       - ~~light up the one that's active~~
-
   - get the icons and route appropriately
   
 - add "treatment" toggle in control panel via radio selector or something

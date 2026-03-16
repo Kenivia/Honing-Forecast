@@ -1,3 +1,24 @@
+export const PLUS_TIER_CONVERSION = [
+    // index corresponds to the old tier
+    // this only really works for 2 tiers
+    {
+        // note this is the +n number not the upgrade index (= upgrade_index + 1)
+        "20": 11,
+        "21": 12,
+        "22": 13,
+        "23": 14,
+        "24": 16,
+        "25": 18,
+    },
+    {
+        "11": 20,
+        "12": 21,
+        "13": 22,
+        "14": 23,
+        "16": 24,
+        "18": 25,
+    },
+]
 export const TIER_LABELS = ["Tier 4", "T4.5 Serca"]
 export const TIER_OPTIONS = TIER_LABELS.map((label, index) => ({
     label,

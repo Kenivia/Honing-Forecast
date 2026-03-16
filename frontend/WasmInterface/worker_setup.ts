@@ -65,8 +65,13 @@ export function createWorkerBundle() {
             status.value = "idle"
         }
     }
+    function cancel_and_clear_prev_result() {
+        cancel()
+        result.value = null
+        est_progress_percentage.value = 0
+    }
 
     onUnmounted(cancel)
 
-    return { status, result, error, est_progress_percentage, start, cancel }
+    return { status, result, error, est_progress_percentage, start, cancel, cancel_and_clear_prev_result }
 }

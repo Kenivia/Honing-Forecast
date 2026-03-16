@@ -65,7 +65,6 @@ export const useProfilesStore = defineStore("profiles", {
     },
 })
 
-export const debounced_write_char_profiles = debounce(write_char_profiles, 500)
 export function load_char_profiles(): { profiles: CharProfile[]; active_profile_index: number } {
     const raw = localStorage.getItem(STORAGE_KEY + "_char_profiles")
     if (!raw) return DEFAULT_PROFILES_STATE
@@ -85,13 +84,11 @@ export function load_char_profiles(): { profiles: CharProfile[]; active_profile_
 
     return { ...DEFAULT_PROFILES_STATE, ...parsed }
 }
-export function write_char_profiles(profiles, active_profile_index: number) {
-    const serializable = {
-        active_profile_index,
-        profiles: profiles,
-    }
 
-    localStorage.setItem(STORAGE_KEY + "_char_profiles", JSON.stringify(serializable))
+export const debounced_write_char_profiles = debounce(write_char_profiles, 500)
+
+export function write_char_profiles(state) {
+    localStorage.setItem(STORAGE_KEY + "_char_profiles", JSON.stringify(state))
 }
 const DEFAULT_PROFILES_STATE = {
     profiles: [create_default_char_profile()],

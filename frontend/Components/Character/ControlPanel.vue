@@ -1,17 +1,27 @@
 <script setup lang="ts">
-import { GRAPH_COLORS, T4_JUICE_LABELS, MATS_LABELS, TIER_LABELS, TIER_OPTIONS, ALL_LABELS } from "@/Utils/Constants"
+import {
+    GRAPH_COLORS,
+    T4_JUICE_LABELS,
+    MATS_LABELS,
+    TIER_LABELS,
+    TIER_OPTIONS,
+    ALL_LABELS,
+    ADV_COLS,
+    NUM_PIECES,
+    NORMAL_COLS,
+    PLUS_TIER_CONVERSION,
+} from "@/Utils/Constants"
 import GoldBreakdown from "./GoldBreakdown.vue"
 import { CharProfile, create_default_char_profile, useProfilesStore } from "@/stores/CharacterProfile"
-import { iconPath, metricToText } from "@/Utils/Helpers"
+import { check_eligibility, iconPath, metricToText } from "@/Utils/Helpers"
 import MaterialCell from "@/Components/Common/MaterialCell.vue"
-import { create_input_column, DEFAULT_ONE_UPGRADE, input_column_to_num, InputType, parse_input } from "@/Utils/Interfaces"
+import { create_input_column, DEFAULT_ONE_UPGRADE, input_column_to_num, InputType, parse_input, UpgradeStatus } from "@/Utils/Interfaces"
 import MaterialGraph from "./MaterialGraph.vue"
 import { buildPayload } from "@/WasmInterface/payload"
 import { WasmOp } from "@/WasmInterface/js_to_wasm"
 import { RosterConfig, uesRosterStore } from "@/stores/RosterConfig"
 import { storeToRefs } from "pinia"
 import { computed, watch } from "vue"
-import SelectButton from "primevue/selectbutton"
 
 const store = useProfilesStore()
 const { active_profile } = storeToRefs(store)
@@ -33,11 +43,17 @@ function copyPayload() {
 
 watch(
     () => active_profile.value.tier,
+
     (new_tier, old_tier) => {
+        if (new_tier === null || old_tier === null || new_tier == old_tier) return
         if (ALL_LABELS.length != 2) {
             // This doesn't work for more tiers and should be updated when more tiers comes eventually
             throw new Error("conversion between more than 2 tiers not implemented yet")
         }
+
+        active_profile.value.optimizer_worker_bundle?.cancel_and_clear_prev_result()
+        active_profile.value.histogram_worker_bundle?.cancel_and_clear_prev_result()
+        active_profile.value.evaluation_worker_bundle?.cancel_and_clear_prev_result()
 
         let num_array_old = input_column_to_num(active_profile.value.bound_budgets[old_tier])
 
@@ -67,9 +83,24 @@ watch(
         active_profile.value.bound_budgets[new_tier].data[new_index] = active_profile.value.bound_budgets[old_tier].data[old_index]
 
         // the rest have separate values between tiers
+
+        for (let row = 0; row < NUM_PIECES; row++) {
+            let highest_done = active_profile.value.normal_grid[row].findLastIndex((value) => value == UpgradeStatus.Done) + 1
+            let highest_want = active_profile.value.normal_grid[row].findLastIndex((value) => value == UpgradeStatus.Want || value == UpgradeStatus.Done) + 1
+            let converted_done = PLUS_TIER_CONVERSION[old_tier][String(highest_done)]
+            let converted_want = PLUS_TIER_CONVERSION[old_tier]?.[String(highest_want)] ?? 25
+            for (let col = 0; col < NORMAL_COLS; col++) {
+                if (col < converted_done) {
+                    active_profile.value.normal_grid[row][col] = UpgradeStatus.Done
+                } else if (col < converted_want) {
+                    active_profile.value.normal_grid[row][col] = UpgradeStatus.Want
+                } else {
+                    active_profile.value.normal_grid[row][col] = UpgradeStatus.NotYet
+                }
+            }
+        }
     },
 )
-
 const optimizer_worker = active_profile.value.optimizer_worker_bundle
 
 const optimizer_busy = computed(() => optimizer_worker.status === "busy")
@@ -101,9 +132,7 @@ const auto_start_optimizer = computed(() => active_profile.value.auto_start_opti
                     <span>Cumulative graph</span>
                 </label>
                 <div class="hf-divider" />
-                <label class="hf-inline-check">
-                    <SelectButton v-model="active_profile.tier" :options="TIER_OPTIONS" option-label="label" option-value="value" class="hf-selector" />
-                </label>
+
                 <!-- <label class="hf-inline-check">
                     <input v-model="allowManualState" type="checkbox" />
                     <span>Enable progress updates for better optimization</span>

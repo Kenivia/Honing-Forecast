@@ -30,7 +30,12 @@ const averages: Ref<number[]> = toRef(() => histogram_result.value?.average ?? n
                     <span style="text-align: center">Hover over the graph to see more!</span>
                     <!-- <span v-if="customLeftovers">Left</span> -->
                 </div>
-                <div v-for="(label, row) in ALL_LABELS[active_profile.tier]" :key="`graph-${label}`" class="hf-mats-row">
+                <div
+                    v-if="ALL_LABELS[active_profile.tier].length == active_profile.bound_budgets[active_profile.tier].data.length"
+                    v-for="(label, row) in ALL_LABELS[active_profile.tier]"
+                    :key="`graph-${label}`"
+                    class="hf-mats-row"
+                >
                     <MaterialCell
                         :input_column="active_profile.bound_budgets[active_profile.tier]"
                         :row="row"

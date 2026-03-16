@@ -68,8 +68,11 @@
     --checkbox-focus-ring: rgba(201, 168, 76, 0.25);
     --checkbox-checked-bg: rgba(201, 168, 76, 0.95);
     --checkbox-done-bg: rgba(133, 219, 116, 0.95);
+    --checkbox-done-text: #0b1016;
     --checkbox-checked-text: #0b1016;
-    --checkbox-checked-border: var(--hf-gold);
+    --checkbox-checked-bg: var(--hf-gold);
+    --checkbox-checked-border: #d4b35a39;
+    --checkbox-done-border: rgba(133, 219, 116, 0.23);
     --checkbox-hover-bg: var(--hf-bg-hover);
     --control-checked-bg: var(--hf-gold);
 
@@ -317,7 +320,7 @@ body::before {
 .hf-card-header {
     display: flex;
     align-items: center;
-    justify-content: space-between;
+    /* justify-content: space-between; */
     gap: 12px;
     padding: 8px 12px;
     border-bottom: 1px solid var(--hf-border-subtle);
@@ -331,7 +334,7 @@ body::before {
     font-family: var(--hf-font-display);
     letter-spacing: 0.13em;
     text-transform: uppercase;
-    color: var(--hf-gold);
+    color: white;
     font-size: 10px;
 }
 
@@ -339,7 +342,7 @@ body::before {
     width: 6px;
     height: 6px;
     border-radius: 50%;
-    background: var(--hf-gold);
+    background: white;
     box-shadow: 0 0 8px var(--hf-gold);
 }
 

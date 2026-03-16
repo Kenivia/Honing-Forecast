@@ -73,6 +73,11 @@ function change_one(row: number, col: number, current = relevant_grid.value[row]
                     relevant_grid.value[row][index] = UpgradeStatus.Want
                 }
             }
+            for (let index = col + 1; index < relevant_grid.value[0].length; index += 1) {
+                if (relevant_grid.value[row][index] == UpgradeStatus.Done) {
+                    relevant_grid.value[row][index] = UpgradeStatus.Want
+                }
+            }
         }
         relevant_grid.value[row][col] = UpgradeStatus.Want
     } else if (current == UpgradeStatus.Want) {
@@ -112,7 +117,10 @@ watchDebounced(
     [
         () => active_profile.value.adv_grid,
         () => active_profile.value.normal_grid,
-        () => input_column_to_num(active_profile.value.bound_budgets[active_profile.value.tier]),
+        () => {
+            console.log(active_profile.value.bound_budgets, active_profile.value.tier, active_profile.value)
+            input_column_to_num(active_profile.value.bound_budgets[active_profile.value.tier])
+        },
         () => input_column_to_num(active_profile.value.leftover_price[active_profile.value.tier]),
         () => input_column_to_num(roster_config.value.mats_prices[active_profile.value.tier]),
         () => input_column_to_num(roster_config.value.tradable_mats_owned[active_profile.value.tier]),
@@ -288,8 +296,8 @@ watchDebounced(
 
 .hf-cell.Done {
     background: var(--checkbox-done-bg);
-    color: var(--checkbox-checked-text);
-    border-color: var(--checkbox-checked-border);
+    color: var(--checkbox-done-text);
+    border-color: var(--checkbox-done-border);
 }
 
 .hf-cell.Want {

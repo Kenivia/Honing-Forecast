@@ -15,10 +15,10 @@ profile_store.init()
 const { all_profiles } = storeToRefs(profile_store)
 
 profile_store.$subscribe((_mutation, state) => {
-    debounced_write_char_profiles(state.profiles, state.active_profile_index)
+    debounced_write_char_profiles(state)
 })
 roster_store.$subscribe((_mutation, state) => {
-    debounced_write_roster_config(state.data)
+    debounced_write_roster_config(state)
 })
 </script>
 
@@ -47,7 +47,7 @@ roster_store.$subscribe((_mutation, state) => {
             <router-link :to="'/' + profile.char_name" @click="profile_store.active_profile_index = index"> {{ profile.char_name }} </router-link>
         </div>
     </div>
-    <main class="bg-white">
+    <main>
         <RouterView />
     </main>
 </template>

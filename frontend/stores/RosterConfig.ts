@@ -20,7 +20,7 @@ export const uesRosterStore = defineStore("roster", {
     },
     actions: {
         init() {
-            this.data = load_roster_config()
+            this.data = load_roster_config() // we have to use a data field instead of just doing this = load_roster_config() cos that's how vue works ig
         },
     },
 })
@@ -44,8 +44,8 @@ export function load_roster_config(): RosterConfig {
 
     return { ...DEFAULT_ROSTER_CONFIG, ...out }
 }
-export function write_roster_config(roster_config: RosterConfig) {
-    localStorage.setItem(STORAGE_KEY + "_roster", JSON.stringify(roster_config))
+export function write_roster_config(state) {
+    localStorage.setItem(STORAGE_KEY + "_roster", JSON.stringify(state.data))
 }
 
 export const debounced_write_roster_config = debounce(write_roster_config, 500)

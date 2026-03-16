@@ -12,7 +12,14 @@ const tier = computed(() => roster_config.value.tier)
 </script>
 
 <template>
-    <SelectButton v-model="roster_config.tier" :options="TIER_OPTIONS" option-label="label" option-value="value" class="hf-header-link-btn" />
+    <SelectButton
+        v-model="roster_config.tier"
+        :options="TIER_OPTIONS"
+        option-label="label"
+        option-value="value"
+        class="hf-header-link-btn"
+        :option-disabled="(data) => (data.value === roster_config.tier ? true : false)"
+    />
     <div class="hf-roster-inputs">
         <div class="hf-table-title-row">
             <span style="text-align: right; padding-right: 15px">Roster Bound Mats</span>
