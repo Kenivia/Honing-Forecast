@@ -19,13 +19,13 @@
     - ~~get the ilevel mapping~~ ~~somehow? is this on icepeng?~~ memo video
     - ~~also achieved ilevel stuff~~
     - ~~add undo button?~~
+  - Add Serca mats prices page
   - add allow converting roster t4 mats to serca (should be a separate button)
     - ~~shouldnt be that hard?~~
-    - Add Serca mats prices page
       - need to auto-select market price
       - ~~light up the one that's active~~
   - get the icons and route appropriately
-  
+
 - add "treatment" toggle in control panel via radio selector or something
 
 - wire up the 2 annotations on material graph(need to add another annotation)

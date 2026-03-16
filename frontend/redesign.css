@@ -149,7 +149,7 @@ body::before {
     padding: 10px 16px;
 }
 
-
+/* 
 .hf-header {
     display: flex;
     align-items: flex-end;
@@ -167,42 +167,9 @@ body::before {
     width: 180px;
     height: 2px;
     background: linear-gradient(90deg, var(--hf-gold), transparent);
-}
+} */
 
-.hf-brand {
-    display: flex;
-    align-items: center;
-    gap: 14px;
-}
 
-.hf-brand-icon {
-    width: 48px;
-    height: 48px;
-    display: grid;
-    place-items: center;
-    border: 1px solid var(--hf-gold-dim);
-    border-radius: var(--hf-radius);
-    background: linear-gradient(135deg, var(--hf-bg-card), var(--hf-bg-panel));
-    box-shadow: none;
-}
-
-.hf-title {
-    margin: 0;
-    font-family: var(--hf-font-display);
-    color: var(--hf-text-bright);
-    letter-spacing: 0.03em;
-    font-size: 45px;
-    line-height: 1;
-    font-weight: 700;
-}
-
-.hf-subtitle {
-    margin-top: 2px;
-    font-size: 9px;
-    letter-spacing: 0.14em;
-    text-transform: uppercase;
-    color: var(--hf-gold-dim);
-}
 
 .hf-header-links {
     display: flex;
@@ -246,14 +213,14 @@ body::before {
     align-items: start;
 }
 
-/* .hf-honing-row {
+.hf-honing-row {
     display: grid;
     grid-template-columns: max-content 340px;
     gap: 10px;
     align-items: start;
     width: 100%;
     justify-content: start;
-} */
+}
 
 .hf-normal-card {
     width: fit-content;
@@ -320,7 +287,7 @@ body::before {
 .hf-card-header {
     display: flex;
     align-items: center;
-    /* justify-content: space-between; */
+    justify-content: space-between;
     gap: 12px;
     padding: 8px 12px;
     border-bottom: 1px solid var(--hf-border-subtle);

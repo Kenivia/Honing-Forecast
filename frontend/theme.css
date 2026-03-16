@@ -1,5 +1,9 @@
 /* Global CSS Variables for Theming - Colors Only */
 :root {
+
+
+    --hf-header-text: #c0c0c0;
+    --hf-header-text-hovered: #ffffff;
     --text-muted: #ffffff;
 
     --text-very-muted: #888888;

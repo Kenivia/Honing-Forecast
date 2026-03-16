@@ -39,9 +39,6 @@ function change_tier() {
                 <div class="hf-card-title"><span class="hf-card-title-dot" />Normal Honing</div>
                 <label class="hf-achieved-ilevel">Achieved ilevel: {{ achieved_ilevel() }}</label>
                 <label class="hf-pending-ilevel">Pending ilevel: {{ pending_ilevel() }}</label>
-                <label class="hf-achieved-ilevel" v-if="active_profile.tier == 0">
-                    {{ check_eligibility() ? "Eligible for conversion to T4.5 Serca gear" : "" }}</label
-                >
 
                 <TierSelectButton :labelText="tier_label_text" :tooltipText="tooltip_text" :checkEligibility="check_eligibility" @change-tier="change_tier" />
             </div>
@@ -77,8 +74,11 @@ function change_tier() {
     min-width: 0;
 }
 .hf-honing-row {
+    width: min(100%, 1074px);
+    display: flex;
     gap: 12px;
     align-items: center;
     min-width: 0;
+    flex-wrap: wrap;
 }
 </style>
