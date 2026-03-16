@@ -4,7 +4,7 @@ import CharSelection from "./CharSelection.vue"
 </script>
 
 <template>
-    <div>
+    <div class="hf-main-stage">
         <CharSelection />
         <BudgetGrid />
     </div>

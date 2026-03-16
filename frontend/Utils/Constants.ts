@@ -1,3 +1,5 @@
+export const NARROW_WIDTH = 800
+export const BUDGET_NARROW_WIDTH = 1300
 export const PLUS_TIER_CONVERSION = [
     // index corresponds to the old tier
     // this only really works for 2 tiers

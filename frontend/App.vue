@@ -8,6 +8,7 @@ import { CharProfile } from "./stores/CharacterProfile"
 import { storeToRefs } from "pinia"
 import { computed, onMounted, onUnmounted, toRaw, watchEffect } from "vue"
 import { ref } from "vue"
+import { useMediaIsNarrow } from "./Utils/WindowSize"
 
 const roster_store = uesRosterStore()
 roster_store.init()
@@ -22,19 +23,7 @@ roster_store.$subscribe((_mutation, state) => {
     debounced_write_roster_config(state)
 })
 
-const width = ref(window.innerWidth)
-
-function updateWidth() {
-    width.value = window.innerWidth
-}
-
-onMounted(() => {
-    window.addEventListener("resize", updateWidth)
-})
-onUnmounted(() => {
-    window.removeEventListener("resize", updateWidth)
-})
-const isNarrow = computed(() => width.value < 800)
+const { isNarrow } = useMediaIsNarrow()
 </script>
 
 <template>
