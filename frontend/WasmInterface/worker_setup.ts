@@ -3,8 +3,6 @@ import { WasmOp } from "./js_to_wasm"
 import { HistogramOutputs, StateBundle } from "@/Utils/Interfaces"
 import { buildPayload } from "./payload"
 import { mapToObject } from "@/Utils/Helpers"
-import equal from "fast-deep-equal"
-
 const createWorker = () => new Worker(new URL("./js_to_wasm.ts", import.meta.url), { type: "module" })
 
 export function createWorkerBundle() {
@@ -13,7 +11,6 @@ export function createWorkerBundle() {
     const error = ref(null)
     const result = ref(null)
     const est_progress_percentage = ref(0)
-    const last_payload = ref(null)
     let debounceTimer = null
 
     function _launch(wasm_op: WasmOp, callback?: (result) => void) {
@@ -47,14 +44,11 @@ export function createWorkerBundle() {
             error.value = e.message
             status.value = "error"
             worker = null
-            last_payload.value = null
         }
-        let payload = structuredClone(toRaw(buildPayload(wasm_op)))
-        if (last_payload.value == null || !equal(payload, structuredClone(toRaw(last_payload.value)))) {
-            console.log(WasmOp[wasm_op], payload, structuredClone(toRaw(last_payload.value)))
-            worker.postMessage({ type: "message", wasm_op, payload })
-            last_payload.value = payload
-        }
+
+        console.log(WasmOp[wasm_op], toRaw(buildPayload(wasm_op)))
+        // console.log(JSON.parse(JSON.stringify(toRaw(buildPayload(wasm_op)))))
+        worker.postMessage({ type: "message", wasm_op, payload: JSON.parse(JSON.stringify(toRaw(buildPayload(wasm_op)))) })
     }
 
     function start(wasm_op: WasmOp, callback?: (result) => void, debounce?: number) {
