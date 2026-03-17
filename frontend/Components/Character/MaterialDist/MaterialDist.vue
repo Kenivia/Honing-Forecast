@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ALL_LABELS, GRAPH_COLORS, T4_JUICE_LABELS, MATS_LABELS } from "@/Utils/Constants"
+import { ALL_LABELS, GRAPH_COLORS, T4_JUICE_LABELS, MATS_LABELS, ANNOTATION_COLORS, ANNOTATION_POSITIONS, ANNOTATION_LABELS } from "@/Utils/Constants"
 import { CharProfile, TreatmentPlan, useProfilesStore } from "@/stores/CharacterProfile"
 import { iconPath } from "@/Utils/Helpers"
 import MaterialCell from "@/Components/Common/MaterialCell.vue"
@@ -51,15 +51,38 @@ watchEffect(() => {
         active_profile.value.treatment_plan = TreatmentPlan.TreatRosterAsTradable
     }
 })
+
+const enabled_annotations = ref([true, false, false, false])
+const annotation_values = computed(() => {
+    let bound = input_column_to_num(active_profile.value.bound_budgets[active_profile.value.tier])
+    let roster = input_column_to_num(roster_config.value.roster_mats_owned[active_profile.value.tier])
+    let trade = input_column_to_num(roster_config.value.tradable_mats_owned[active_profile.value.tier])
+    return bound.map((_, i) =>
+        [averages.value[i], bound[i], roster[i] + bound[i], roster[i] + bound[i] + trade[i]].filter((_, i) => enabled_annotations.value[i]),
+    )
+})
+
+function hover_annotation(x, _y, cy, material_type, color): string {
+    return `<b style="color: white;">${cy * 100}% </b> chance to use <br> <b style="color: ${color};">${x.toLocaleString("en-US")} </b> ${material_type} `
+}
 </script>
 
 <template>
     <section class="hf-card hf-analysis-pane">
         <div class="hf-card-header">
             <div class="hf-card-title"><span class="hf-card-title-dot" />Costs</div>
-            <div class="hf-analysis-tabs">
+            <div>
                 <button :class="['hf-analysis-tab', { active: analysisTab === 'mats' }]" @click="analysisTab = 'mats'">Materials</button>
                 <button :class="['hf-analysis-tab', { active: analysisTab === 'juice' }]" @click="analysisTab = 'juice'">Juice, Books & Scrolls</button>
+            </div>
+            <div>
+                <button
+                    v-for="(label, index) in ANNOTATION_LABELS"
+                    :class="[`hf-graph-tab-${label.toLowerCase()}`, { active: enabled_annotations[index] }]"
+                    @click="enabled_annotations[index] = !enabled_annotations[index]"
+                >
+                    {{ label }}
+                </button>
             </div>
         </div>
         <div class="hf-card-body">
@@ -99,10 +122,14 @@ watchEffect(() => {
                     <MaterialCell :input_column="computed_breakdown" :row="row" :input_color="'--hf-gold'" />
                     <MaterialGraph
                         :data="histogram_result?.cum_percentiles?.[row] ?? null"
-                        :average="histogram_result?.average?.[row] ?? null"
-                        :color-var="GRAPH_COLORS[row]"
+                        :material-label="label"
+                        :graph-color="GRAPH_COLORS[row]"
                         :cumulative="roster_config.cumulative_graph"
-                        :secondary-annotation="input_column_to_num(active_profile.bound_budgets[active_profile.tier])[row]"
+                        :annotations="annotation_values[row]"
+                        :annotationColors="ANNOTATION_COLORS.filter((_, i) => enabled_annotations[i])"
+                        :annotation-positions="ANNOTATION_POSITIONS.filter((_, i) => enabled_annotations[i])"
+                        :annotationLabels="ANNOTATION_LABELS.filter((_, i) => enabled_annotations[i])"
+                        :tooltip-text-fn="hover_annotation"
                     />
                 </div>
             </div>
@@ -115,6 +142,45 @@ watchEffect(() => {
     overflow-x: auto;
     overflow-y: visible;
 }
+
+.hf-graph-tab-avg,
+.hf-graph-tab-bound,
+.hf-graph-tab-roster-bound,
+.hf-graph-tab-tradable {
+    border: 1px solid var(--hf-border-subtle);
+    border-radius: 999px;
+    background: rgba(10, 13, 19, 0.48);
+    color: var(--hf-text-main);
+    padding: 6px 12px;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    cursor: pointer;
+}
+.hf-graph-tab-avg.active {
+    background: var(--hf-graph-average-color);
+    border-color: var(--separator-color);
+    color: var(--hf-bg-deep);
+}
+
+.hf-graph-tab-bound.active {
+    background: var(--hf-graph-bound-color);
+    border-color: var(--separator-color);
+    color: var(--hf-bg-deep);
+}
+
+.hf-graph-tab-roster-bound.active {
+    background: var(--hf-graph-roster-color);
+    border-color: var(--separator-color);
+    color: var(--hf-bg-deep);
+}
+
+.hf-graph-tab-tradable.active {
+    background: var(--hf-graph-tradable-color);
+    border-color: var(--separator-color);
+    color: var(--hf-bg-deep);
+}
+
 .hf-analysis-tab {
     border: 1px solid var(--hf-border-subtle);
     border-radius: 999px;

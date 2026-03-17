@@ -118,7 +118,7 @@ watchDebounced(
         () => active_profile.value.adv_grid,
         () => active_profile.value.normal_grid,
         () => {
-            console.log(active_profile.value.bound_budgets, active_profile.value.tier, active_profile.value)
+            // console.log(active_profile.value.bound_budgets, active_profile.value.tier, active_profile.value)
             input_column_to_num(active_profile.value.bound_budgets[active_profile.value.tier])
         },
         () => input_column_to_num(active_profile.value.leftover_price[active_profile.value.tier]),
@@ -135,7 +135,7 @@ watchDebounced(
         onWatcherCleanup(() => {
             active_profile.value.optimizer_worker_bundle.cancel()
         })
-        console.log("optimizer triggered")
+        // console.log("optimizer triggered")
         active_profile.value.optimizer_worker_bundle.start(WasmOp.OptimizeAverage)
     },
     { immediate: active_profile.value.optimizer_worker_bundle.result === null, deep: true, debounce: 500 },
@@ -181,7 +181,7 @@ watchDebounced(
         onWatcherCleanup(() => {
             active_profile.value.histogram_worker_bundle.cancel()
         })
-        console.log("histogram triggered")
+        // console.log("histogram triggered")
         active_profile.value.histogram_worker_bundle.start(WasmOp.Histogram)
     },
     { immediate: true, deep: true, debounce: 100 },

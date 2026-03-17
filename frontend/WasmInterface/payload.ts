@@ -64,6 +64,9 @@ export function buildPayload(wasm_op: WasmOp): EvalPayload | StateBundle {
     const mats_prices = input_column_to_num(roster_config.value.mats_prices[tier]).map((x: number, index: number) => x / BUNDLE_SIZE[index])
 
     active_profile.value.keyed_upgrades = grids_to_keyed(active_profile.value.normal_grid, active_profile.value.adv_grid, active_profile.value.keyed_upgrades)
+
+    // console.log(active_profile.value.keyed_upgrades)
+    // console.log(keyed_to_array(active_profile.value.keyed_upgrades))
     return {
         material_info: ALL_LABELS[tier].map((_, index) => [
             ...apply_treatement(active_profile.value.treatment_plan, bound_budgets[index], roster_mats_owned[index], tradable_mats_owned[index]),

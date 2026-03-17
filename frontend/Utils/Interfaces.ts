@@ -162,7 +162,7 @@ export function grids_to_keyed(normal_grid: StatusGrid, adv_grid: StatusGrid, al
     }
     for (const [piece_type, row] of status_to_bool_grid(adv_grid).entries()) {
         for (const [upgrade_index, cell] of row.entries()) {
-            let key = to_upgrade_key(piece_type, upgrade_index, false)
+            let key = to_upgrade_key(piece_type, upgrade_index, true)
             if (cell) {
                 if (key in all_keyed) {
                     all_keyed[key] = all_keyed[key]

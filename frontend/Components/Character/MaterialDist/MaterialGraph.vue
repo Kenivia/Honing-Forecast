@@ -8,26 +8,40 @@ type DataPoint = [number, number]
 type Point = {
     x: number
     y: number
+    cumulativeY: number // Always stores the raw cumulative Y regardless of slope calculation
 }
 
 const props = withDefaults(
     defineProps<{
         data: DataPoint[] | null | undefined
-        average?: number | null
-        secondaryAnnotation?: number | null
-        colorVar: string
+        graphColor?: string
         cumulative: boolean
         height?: number
+        materialLabel: string
+        // Generalized Annotations
+        annotations?: number[]
+        annotationColors?: string[]
+        annotationPositions?: ("top" | "middle" | "bottom" | "graph")[]
+        annotationLabels?: string[]
+
+        // Tooltip Function
+        tooltipTextFn?: (x: number, y: number, cumulativeY: number, material: string, color: string) => string
     }>(),
     {
-        average: null,
-        secondaryAnnotation: null,
+        graphColor: "--hf-graph-default-color",
         height: 40,
+        annotations: () => [],
+        annotationColors: () => [],
+        annotationPositions: () => [],
+        annotationLabels: () => [],
+        // Default tooltip just displays values
+        tooltipTextFn: (x, y, cy, material, color) => `<b>X:</b> ${x} <br/> <b>Y:</b> ${cy}`,
     },
 )
 
 const rootRef = ref<HTMLElement | null>(null)
 const width = ref(0)
+const mouseX = ref<number | null>(null)
 let observer: ResizeObserver | null = null
 
 const plotWidth = computed(() => Math.max(100, width.value))
@@ -42,11 +56,11 @@ const points = computed<Point[]>(() => {
         .filter((pair) => Number.isFinite(pair[0]) && Number.isFinite(pair[1]))
 
     if (normalized.length < 2) {
-        return normalized.map(([x, y]) => ({ x, y }))
+        return normalized.map(([x, y]) => ({ x, y, cumulativeY: y }))
     }
 
     if (props.cumulative) {
-        return normalized.map(([x, y]) => ({ x, y }))
+        return normalized.map(([x, y]) => ({ x, y, cumulativeY: y }))
     }
 
     let prevSlope = 0
@@ -56,18 +70,18 @@ const points = computed<Point[]>(() => {
             const dx = nextX - x
             const slope = dx === 0 ? 0 : y / dx
             prevSlope = slope
-            return { x, y: slope }
+            return { x, y: slope, cumulativeY: y }
         }
         const [prevX, prevY] = normalized[index - 1]
         const dx = x - prevX
         const slope = dx === 0 ? 0 : (y - prevY) / dx
         if (slope === 0) {
-            const out = { x, y: prevSlope }
+            const out = { x, y: prevSlope, cumulativeY: y }
             prevSlope = 0
             return out
         }
         prevSlope = slope
-        return { x, y: slope }
+        return { x, y: slope, cumulativeY: y }
     })
 })
 
@@ -98,9 +112,7 @@ function interpolateY(targetX: number) {
     const list = points.value
     if (!list.length) return GRAPH_HEIGHT
 
-    if (targetX <= list[0].x) {
-        return scaleY(list[0].y)
-    }
+    if (targetX <= list[0].x) return scaleY(list[0].y)
 
     for (let index = 1; index < list.length; index++) {
         const prev = list[index - 1]
@@ -118,8 +130,7 @@ function interpolateY(targetX: number) {
 
 const linePath = computed(() => {
     if (!points.value.length) return ""
-    const commands = points.value.map((point, index) => `${index === 0 ? "M" : "L"}${scaleX(point.x)} ${scaleY(point.y)}`)
-    return commands.join(" ")
+    return points.value.map((point, index) => `${index === 0 ? "M" : "L"}${scaleX(point.x)} ${scaleY(point.y)}`).join(" ")
 })
 
 const areaPath = computed(() => {
@@ -129,91 +140,80 @@ const areaPath = computed(() => {
     return `${linePath.value} L ${lastX} ${GRAPH_HEIGHT} L ${firstX} ${GRAPH_HEIGHT} Z`
 })
 
-const averageY = computed(() => {
-    if (props.average === null || props.average === undefined) return null
-    return interpolateY(props.average)
-})
-
-const secondaryY = computed(() => {
-    if (props.secondaryAnnotation === null || props.secondaryAnnotation === undefined) return null
-    return interpolateY(props.secondaryAnnotation)
-})
-
-const xTicks = computed(() => {
-    if (maxX.value <= 0) return []
-    const count = 6
-    return Array.from({ length: count + 1 }, (_, index) => {
-        const value = (maxX.value * index) / count
-        return {
-            value,
-            x: scaleX(value),
-        }
-    })
-})
-
-const resolvedColor = computed(() => {
-    return cssVar(props.colorVar, props.colorVar)
-})
-
-const resolvedBoundColor = computed(() => {
-    return cssVar("--hf-graph-bound-color", "--input-bg")
-})
-const resolvedAvgColor = computed(() => {
-    return cssVar("--hf-graph-average-color", "white")
-})
-
-const resolvedTradableColor = computed(() => {
-    return cssVar("--hf-graph-tradable-color", "--input-bg")
-})
-
-function formatWhole(value: number) {
-    return Math.round(value).toLocaleString("en-US")
+// Mouse and Hover Logic
+function onMouseMove(event: MouseEvent) {
+    if (!rootRef.value) return
+    const rect = rootRef.value.getBoundingClientRect()
+    mouseX.value = event.clientX - rect.left
 }
+
+function onMouseLeave() {
+    mouseX.value = null
+}
+
+const hoveredPoint = computed(() => {
+    if (mouseX.value === null || !points.value.length) return null
+
+    // Snap to the closest point along the X axis
+    let closest = points.value[0]
+    let minDistance = Math.abs(scaleX(closest.x) - mouseX.value)
+
+    for (const point of points.value) {
+        const dist = Math.abs(scaleX(point.x) - mouseX.value)
+        if (dist < minDistance) {
+            minDistance = dist
+            closest = point
+        }
+    }
+    return closest
+})
+
+// Generalize Annotations Output
 function clamp(value: number, min: number, max: number) {
     return Math.max(min, Math.min(max, value))
 }
+
 function badgeWidth(text: string) {
-    return Math.min(220, text.length * 7)
+    return Math.min(220, (text.length * GRAPH_FONT_SIZE) / 2) // why / 2 ? idk
 }
 
-const averageLabel = computed(() => {
-    if (props.average === null || props.average === undefined) return null
-    return `Avg`
+const processedAnnotations = computed(() => {
+    if (isEmpty.value) return []
+
+    return props.annotations
+        .filter((xVal) => xVal !== null)
+        .map((xVal, i) => {
+            const color = cssVar(props.annotationColors[i] || "white", "white")
+            const positionStr = props.annotationPositions[i] || "top"
+            const label = props.annotationLabels[i] || ""
+
+            const svgX = scaleX(xVal)
+            const svgY = interpolateY(xVal)
+            const textW = badgeWidth(label)
+
+            // Clamp text X so it never falls off the chart left/right
+            // console.log(label, xVal, svgX, textW, textW / 2)
+            const clampedX = clamp(svgX, textW / 2, plotWidth.value - textW / 2 - GRAPH_FONT_SIZE / 2)
+
+            let textY = GRAPH_FONT_SIZE + 4
+            if (positionStr === "bottom") textY = GRAPH_HEIGHT
+            if (positionStr === "middle") textY = (GRAPH_HEIGHT + GRAPH_FONT_SIZE + 4) / 2
+            if (positionStr === "graph") textY = clamp(svgY - GRAPH_FONT_SIZE, GRAPH_FONT_SIZE + 4, GRAPH_HEIGHT - GRAPH_FONT_SIZE)
+            return {
+                xVal,
+                svgX,
+                svgY,
+                color,
+                label,
+                textY,
+                clampedX,
+            }
+        })
 })
 
-const averageBadge = computed(() => {
-    if (!averageLabel.value || props.average === null || props.average === undefined || averageY.value === null) return null
-    const widthPx = badgeWidth(averageLabel.value)
-    const endX = clamp(scaleX(props.average), widthPx, plotWidth.value - widthPx)
-    return {
-        text: averageLabel.value,
-        width: widthPx,
-        endX: endX + widthPx / 2,
-        textY: GRAPH_FONT_SIZE,
-    }
-})
-
-const ownedLabel = computed(() => {
-    if (props.secondaryAnnotation === null || props.secondaryAnnotation === undefined) return null
-    return `Bound`
-})
-
-const ownedBadge = computed(() => {
-    if (!ownedLabel.value || props.secondaryAnnotation === null || props.secondaryAnnotation === undefined || secondaryY.value === null) return null
-    const widthPx = badgeWidth(ownedLabel.value)
-    const endX = clamp(scaleX(props.secondaryAnnotation), widthPx, plotWidth.value - widthPx)
-    const textY = clamp(secondaryY.value, 18, GRAPH_HEIGHT - GRAPH_FONT_SIZE - 2)
-    return {
-        text: ownedLabel.value,
-        width: widthPx,
-        endX,
-        textY,
-    }
-})
-
+const resolvedColor = computed(() => cssVar(props.graphColor, props.graphColor))
 const axisColor = computed(() => cssVar("--text-very-muted", "#9aa3b2"))
 const surfaceTextColor = computed(() => cssVar("--hf-text-main", "#c9d0da"))
-const badgeFill = computed(() => cssVar("--hf-bg-void", "#08090b"))
 
 onMounted(() => {
     const updateWidth = () => {
@@ -235,10 +235,10 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-    <div ref="rootRef" class="hf-material-graph">
+    <div ref="rootRef" class="hf-material-graph" @mousemove="onMouseMove" @mouseleave="onMouseLeave">
         <svg :width="Math.max(width, 320)" :height="height" role="img" aria-label="Material graph">
             <defs>
-                <linearGradient :id="`hf-graph-fill-${colorVar.replace(/[^a-z0-9]/gi, '')}`" x1="0" y1="0" x2="0" y2="1">
+                <linearGradient :id="`hf-graph-fill-${graphColor.replace(/[^a-z0-9]/gi, '')}`" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="0%" :stop-color="resolvedColor" stop-opacity="0.38" />
                     <stop offset="100%" :stop-color="resolvedColor" stop-opacity="0.08" />
                 </linearGradient>
@@ -247,66 +247,73 @@ onBeforeUnmount(() => {
             <g>
                 <line x1="0" :x2="plotWidth" :y1="GRAPH_HEIGHT" :y2="GRAPH_HEIGHT" :stroke="axisColor" stroke-width="1" />
 
-                <path v-if="!isEmpty" :d="areaPath" :fill="`url(#hf-graph-fill-${colorVar.replace(/[^a-z0-9]/gi, '')})`" stroke="none" />
+                <path v-if="!isEmpty" :d="areaPath" :fill="`url(#hf-graph-fill-${graphColor.replace(/[^a-z0-9]/gi, '')})`" stroke="none" />
                 <path v-if="!isEmpty" :d="linePath" fill="none" :stroke="resolvedColor" stroke-width="2.1" />
 
-                <g v-if="average !== null && average !== undefined && averageY !== null && averageBadge">
+                <g v-for="(annotation, index) in processedAnnotations" :key="index">
                     <line
-                        :x1="scaleX(average)"
-                        :x2="scaleX(average)"
+                        :x1="annotation.svgX"
+                        :x2="annotation.svgX"
                         :y1="GRAPH_HEIGHT"
-                        :y2="averageY"
-                        :stroke="resolvedAvgColor"
+                        :y2="annotation.svgY"
+                        :stroke="annotation.color"
                         stroke-width="1"
                         stroke-dasharray="4 4"
                     />
-                    <circle :cx="scaleX(average)" :cy="averageY" r="3.5" :fill="resolvedAvgColor" />
+                    <circle :cx="annotation.svgX" :cy="annotation.svgY" r="3.5" :fill="annotation.color" />
 
-                    <text :x="averageBadge.endX" :y="averageBadge.textY" text-anchor="end" font-size="GRAPH_FONT_SIZE" :fill="resolvedAvgColor">
-                        {{ averageBadge.text }}
+                    <text :x="annotation.clampedX" :y="annotation.textY" text-anchor="middle" :font-size="GRAPH_FONT_SIZE" :fill="annotation.color">
+                        {{ annotation.label }}
                     </text>
                 </g>
 
-                <!-- <g v-if="secondaryAnnotation !== null && secondaryAnnotation !== undefined && secondaryY !== null && !isEmpty && ownedBadge">
+                <g v-if="hoveredPoint">
                     <line
-                        :x1="scaleX(secondaryAnnotation)"
-                        :x2="scaleX(secondaryAnnotation)"
+                        :x1="scaleX(hoveredPoint.x)"
+                        :x2="scaleX(hoveredPoint.x)"
                         :y1="GRAPH_HEIGHT"
-                        :y2="secondaryY"
-                        :stroke="resolvedBoundColor"
+                        :y2="scaleY(hoveredPoint.y)"
+                        stroke="var(--hf-graph-hover-color, #ffffff)"
                         stroke-width="1"
-                        stroke-dasharray="2 2"
                     />
-                    <circle :cx="scaleX(secondaryAnnotation)" :cy="secondaryY" r="3.5" :fill="surfaceTextColor" :stroke="resolvedBoundColor" stroke-width="1" />
-
-                    <text
-                        :x="ownedBadge.endX"
-                        :y="ownedBadge.textY + GRAPH_FONT_SIZE + 2"
-                        text-anchor="start"
-                        font-size="GRAPH_FONT_SIZE"
-                        :fill="resolvedBoundColor"
-                    >
-                        {{ ownedBadge.text }}
-                    </text>
-                </g> -->
+                    <circle :cx="scaleX(hoveredPoint.x)" :cy="scaleY(hoveredPoint.y)" r="4" fill="var(--hf-graph-hover-color, #ffffff)" />
+                </g>
 
                 <text v-if="isEmpty" x="4" :y="Math.max(16, GRAPH_HEIGHT * 0.55)" font-size="12" :fill="surfaceTextColor" opacity="0.85">
-                    No distribution data for this material yet.
+                    This material is never used.
                 </text>
-
-                <g v-for="tick in xTicks" :key="`tick-${tick.value}`">
-                    <line :x1="tick.x" :x2="tick.x" :y1="GRAPH_HEIGHT" :y2="GRAPH_HEIGHT + 4" :stroke="axisColor" stroke-width="1" />
-                    <text :x="tick.x" :y="GRAPH_HEIGHT + 16" text-anchor="middle" font-size="10" :fill="axisColor">
-                        {{ formatWhole(tick.value) }}
-                    </text>
-                </g>
             </g>
         </svg>
+
+        <div
+            v-if="hoveredPoint"
+            class="hf-graph-tooltip"
+            :style="{ left: scaleX(hoveredPoint.x) + 'px' }"
+            v-html="props.tooltipTextFn!(hoveredPoint.x, hoveredPoint.y, hoveredPoint.cumulativeY, materialLabel, resolvedColor)"
+        ></div>
     </div>
 </template>
 
 <style>
 .hf-material-graph {
     width: 100%;
+    position: relative; /* Essential for tooltip positioning */
+    cursor: crosshair; /* Helps signal it's interactive */
+}
+
+/* Tooltip container styling */
+.hf-graph-tooltip {
+    position: absolute;
+    transform: translateX(-100%); /* Centers perfectly on the X coordinate */
+    background: var(--tooltip-bg);
+    color: var(--hf-text-main);
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 13px;
+    pointer-events: none; /* Prevents tooltip from interfering with mousemove events */
+    white-space: nowrap;
+    border: 1px solid var(--text-very-muted);
+    box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.2);
+    z-index: 100;
 }
 </style>

@@ -1,10 +1,19 @@
 @import url("https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Source+Sans+3:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap");
 
 :root {
+    --separator-color: rgba(102, 102, 102, 0.507);
+    --tooltip-bg: #181818;
+    --disabled-tier-convert: #cfcfcf;
+    --serca-blue: #2806b1;
+    --serca-blue-hover: #4520d8;
+    --hf-header-text: #c0c0c0;
+    --hf-header-text-hovered: #ffffff;
+
 
     --hf-graph-average-color: #acfffe;
     --hf-graph-tradable-color: #adff3a;
     --hf-graph-bound-color: #c9bbe7;
+    --hf-graph-roster-color: #a57dfd;
     --hf-bg-void: #08090b;
     --hf-bg-deep: #111216;
     --hf-bg-panel: #212327;

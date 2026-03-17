@@ -51,7 +51,7 @@ export const useProfilesStore = defineStore("profiles", {
                     this.profiles[index].optimizer_worker_bundle.start(WasmOp.Parser)
                 }
             }
-            console.log(this)
+            // console.log(this)
         },
 
         updateActiveProfile(updates: Partial<CharProfile>) {
