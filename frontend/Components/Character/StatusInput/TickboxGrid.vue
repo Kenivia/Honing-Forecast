@@ -121,7 +121,7 @@ watchDebounced(
         () => input_column_to_num(roster_config.value.mats_prices[active_profile.value.tier]),
         () => input_column_to_num(roster_config.value.tradable_mats_owned[active_profile.value.tier]),
         () => input_column_to_num(roster_config.value.roster_mats_owned[active_profile.value.tier]),
-        // () => active_profile.value.keyed_upgrades,
+        () => active_profile.value.keyed_upgrades,
         () => input_column_to_num(active_profile.value.special_budget),
         () => active_profile.value.express_event,
         () => active_profile.value.tier,
@@ -188,6 +188,7 @@ watchDebounced(
         () => active_profile.value.express_event,
         () => active_profile.value.tier,
         () => active_profile.value.treatment_plan,
+        () => active_profile.value.optimizer_worker_bundle.result,
     ],
     (_) => {
         onWatcherCleanup(() => {

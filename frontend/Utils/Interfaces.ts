@@ -2,6 +2,7 @@ import { assert } from "console"
 
 import { CharProfile, useProfilesStore } from "@/stores/CharacterProfile"
 import { ALL_LABELS, TIER_LABELS } from "./Constants"
+import { toRaw } from "vue"
 
 export interface Upgrade {
     piece_type: number
@@ -146,7 +147,7 @@ export function keyed_to_array(keyed_upgrades: KeyedUpgrades) {
     return Object.entries(keyed_upgrades)
         .map(([_, pair]) => pair)
         .filter((x) => x[0])
-        .map((x) => x[1])
+        .map((x) => toRaw(x[1]))
 }
 export function grids_to_keyed(normal_grid: StatusGrid, adv_grid: StatusGrid, all_keyed: KeyedUpgrades) {
     // console.log(all_keyed)
