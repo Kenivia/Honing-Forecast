@@ -2,7 +2,7 @@
 import {
     GRAPH_COLORS,
     T4_JUICE_LABELS,
-    MATS_LABELS,
+    T4_MATS_LABELS,
     TIER_LABELS,
     TIER_OPTIONS,
     ALL_LABELS,

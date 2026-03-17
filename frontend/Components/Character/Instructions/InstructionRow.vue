@@ -64,14 +64,16 @@ function streakHtml(streak: Streak): string {
 const final_html_arr = computed(() => streaks.value.map((x) => streakHtml(x)))
 </script>
 <template>
-    <div class="hf-upgrade-order">{{ props.perform_order + 1 }}</div>
-    <div class="hf-upgrade-meta">
-        <div class="hf-upgrade-topline">
-            <span class="hf-upgrade-name">{{ get_piece_name(upgrade) + " +" + String(upgrade.upgrade_index + 1) }}</span>
-            <span v-if="free_tap_this_upgrade" class="hf-upgrade-free"> Free tap {{ formatSig(upgrade.this_special_chance * 100, 3) }}% </span>
-        </div>
-        <div class="streak-display">
-            <span v-for="(_, i) in streaks" :key="i" class="streak-label" v-html="final_html_arr[i]" />
+    <div class="hf-upgrade-row">
+        <div class="hf-upgrade-order">{{ props.perform_order + 1 }}</div>
+        <div class="hf-upgrade-meta">
+            <div class="hf-upgrade-topline">
+                <span class="hf-upgrade-name">{{ get_piece_name(upgrade) + " +" + String(upgrade.upgrade_index + 1) }}</span>
+                <span v-if="free_tap_this_upgrade" class="hf-upgrade-free"> Free tap {{ formatSig(upgrade.this_special_chance * 100, 3) }}% </span>
+            </div>
+            <div class="streak-display">
+                <span v-for="(_, i) in streaks" :key="i" class="streak-label" v-html="final_html_arr[i]" />
+            </div>
         </div>
     </div>
 </template>

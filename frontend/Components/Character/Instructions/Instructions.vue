@@ -12,35 +12,6 @@ const profile_store = useProfilesStore()
 const { active_profile } = storeToRefs(useProfilesStore())
 const { roster_config } = storeToRefs(uesRosterStore())
 
-// function sortUpgradeIndices(list: number[], upgradeArr: Upgrade[], specialInvalidIndex: number) {
-//     const output: number[] = []
-//     const copy = upgradeArr.slice()
-
-//     for (const [originalIndex, upgradeIndex] of list.entries()) {
-//         if (!upgradeArr[upgradeIndex]) continue
-//         if (originalIndex >= specialInvalidIndex) {
-//             if (!output.includes(upgradeIndex)) {
-//                 output.push(upgradeIndex)
-//             }
-//             continue
-//         }
-
-//         const currentUpgrade = upgradeArr[upgradeIndex]
-//         for (const [index, candidate] of copy.entries()) {
-//             if (!candidate) continue
-//             const candidateSucceeded = Boolean(candidate.succeeded)
-//             const samePiece = candidate.piece_type === currentUpgrade.piece_type
-//             const sameType = Boolean(candidate.is_normal_honing) === Boolean(currentUpgrade.is_normal_honing)
-//             const ordered = candidate.upgrade_index <= currentUpgrade.upgrade_index
-//             if (sameType && samePiece && ordered && !candidateSucceeded && !output.includes(index)) {
-//                 output.push(index)
-//             }
-//         }
-//     }
-
-//     return output
-// }
-
 function sort_upgrades(): Upgrade[] {
     if (!active_profile.value.optimizer_worker_bundle.result) {
         return []
@@ -74,8 +45,6 @@ function sort_upgrades(): Upgrade[] {
                     !output.includes(upgrade)
                 ) {
                     output.push(this_upgrade)
-
-                    // console.log(u_index, index, this_upgrade.upgrade_index)
                 }
             }
         }
@@ -88,25 +57,21 @@ function sort_upgrades(): Upgrade[] {
 let sorted_upgrade_arr = computed(sort_upgrades)
 </script>
 <template>
-    <section class="hf-card hf-optimizer-card">
-        <div class="hf-compact-row">
-            <section class="hf-card hf-tap-card">
-                <div class="hf-card-header">
-                    <div class="hf-card-title"><span class="hf-card-title-dot" />Tap Instructions</div>
-                    <span class="hf-card-hint">Top to bottom execution</span>
+    <section class="hf-card">
+        <div class="hf-card-header">
+            <div class="hf-card-title"><span class="hf-card-title-dot" />Tap Instructions</div>
+            <span class="hf-card-hint">Top to bottom execution</span>
+        </div>
+        <div class="hf-card-body">
+            <div v-if="active_profile.optimizer_worker_bundle.result">
+                <div v-for="(upgrade, perform_order) in sorted_upgrade_arr" :key="`instructions-${sorted_upgrade_arr}`">
+                    <InstructionRow
+                        :upgrade="upgrade"
+                        :perform_order="perform_order"
+                        :special_invalid_index="active_profile.optimizer_worker_bundle.result.special_invalid_index"
+                    />
                 </div>
-                <div class="hf-card-body">
-                    <div v-if="active_profile.optimizer_worker_bundle.result" class="hf-upgrade-instruction">
-                        <div v-for="(upgrade, perform_order) in sorted_upgrade_arr" :key="`instructions-${sorted_upgrade_arr}`" class="hf-upgrade-row">
-                            <InstructionRow
-                                :upgrade="upgrade"
-                                :perform_order="perform_order"
-                                :special_invalid_index="active_profile.optimizer_worker_bundle.result.special_invalid_index"
-                            />
-                        </div>
-                    </div>
-                </div>
-            </section>
+            </div>
         </div>
     </section>
 </template>

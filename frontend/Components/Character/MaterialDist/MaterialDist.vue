@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ALL_LABELS, GRAPH_COLORS, T4_JUICE_LABELS, MATS_LABELS, ANNOTATION_COLORS, ANNOTATION_POSITIONS, ANNOTATION_LABELS } from "@/Utils/Constants"
+import { ALL_LABELS, GRAPH_COLORS, T4_JUICE_LABELS, T4_MATS_LABELS, ANNOTATION_COLORS, ANNOTATION_POSITIONS, ANNOTATION_LABELS } from "@/Utils/Constants"
 import { CharProfile, TreatmentPlan, useProfilesStore } from "@/stores/CharacterProfile"
 import { iconPath } from "@/Utils/Helpers"
 import MaterialCell from "@/Components/Common/MaterialCell.vue"
@@ -17,7 +17,7 @@ const averages: Ref<number[]> = toRef(() => histogram_result.value?.average ?? n
 const analysisTab = ref<"mats" | "juice">("mats")
 
 const visibleRows = computed(() => {
-    const matsIndices = MATS_LABELS.map((_, i) => i)
+    const matsIndices = T4_MATS_LABELS.map((_, i) => i)
 
     return ALL_LABELS[active_profile.value.tier]
         .map((label, row) => ({ label, row })) // keep original index
@@ -110,7 +110,7 @@ function hover_annotation(x, _y, cy, material_type, color): string {
                     <MaterialCell
                         :input_column="active_profile.bound_budgets[active_profile.tier]"
                         :row="row"
-                        :label="(active_profile.tier == 1 ? 'Serca ' : '') + label"
+                        :label="label"
                         :input_color="'--hf-graph-bound-color'"
                         :setter="
                             (val) => {

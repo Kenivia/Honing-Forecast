@@ -35,7 +35,8 @@ export const TIER_OPTIONS = TIER_LABELS.map((label, index) => ({
     value: index,
 }))
 export const DEFAULT_TIER = 0
-export const MATS_LABELS = ["Red", "Blue", "Leaps", "Shards", "Fusion", "Gold", "Silver"]
+export const T4_MATS_LABELS = ["Red", "Blue", "Leaps", "Shards", "Fusion", "Gold", "Silver"]
+export const SERCA_MATS_LABELS = ["Serca Red", "Serca Blue", "Serca Leaps", "Shards", "Serca Fusion", "Gold", "Silver"]
 export const SPECIAL_LEAP_LABEL = "Special Leap"
 export const T4_JUICE_LABELS = [
     ["Lava's Breath", "Glacier's Breath"],
@@ -50,8 +51,8 @@ export const T4_JUICE_LABELS = [
 
 export const Serca_JUICE_LABELS = [["Lava's Breath", "Glacier's Breath"]]
 export const ALL_LABELS = [
-    MATS_LABELS.concat(T4_JUICE_LABELS.map((x) => x[0])).concat(T4_JUICE_LABELS.map((x) => x[1])),
-    MATS_LABELS.concat(Serca_JUICE_LABELS.map((x) => x[0])).concat(Serca_JUICE_LABELS.map((x) => x[1])),
+    T4_MATS_LABELS.concat(T4_JUICE_LABELS.map((x) => x[0])).concat(T4_JUICE_LABELS.map((x) => x[1])),
+    SERCA_MATS_LABELS.concat(Serca_JUICE_LABELS.map((x) => x[0])).concat(Serca_JUICE_LABELS.map((x) => x[1])),
 ]
 
 export const GRAPH_COLORS = [
@@ -171,7 +172,7 @@ export const DEFAULT_MATS_PRICES = ["1.84", "0.04", "20", "0.6", "128", "1.0", "
 export const DEFAULT_MATS_LEFTOVER = ["0", "0", "0", "0", "0", "0", "0"]
 
 export const DEFAULT_TOGGLES = {
-    mats: Array.from({ length: MATS_LABELS.length - 1 }, () => true),
+    mats: Array.from({ length: T4_MATS_LABELS.length - 1 }, () => true),
     weapon: Array.from({ length: T4_JUICE_LABELS.length }, () => true),
     juice: Array.from({ length: T4_JUICE_LABELS.length }, () => true),
 }

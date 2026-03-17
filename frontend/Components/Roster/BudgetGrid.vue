@@ -133,7 +133,7 @@ const t4_serca_prices = computed(() => {
                 <MaterialCell
                     :input_column="roster_config.roster_mats_owned[SYNCED_LABELS.includes(label) ? 0 : 1]"
                     :row="row"
-                    :label="'Serca ' + label"
+                    :label="label"
                     :setter="
                         (val) => {
                             roster_config.roster_mats_owned[SYNCED_LABELS.includes(label) ? 0 : 1].data[row] = val

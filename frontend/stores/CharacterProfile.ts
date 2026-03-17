@@ -19,7 +19,7 @@ import {
     UpgradeStatus,
 } from "@/Utils/Interfaces"
 import { createWorkerBundle } from "@/WasmInterface/worker_setup"
-import { ADV_COLS, ALL_LABELS, T4_JUICE_LABELS, MATS_LABELS, NORMAL_COLS, NUM_PIECES, SPECIAL_LEAP_LABEL, STORAGE_KEY } from "@/Utils/Constants"
+import { ADV_COLS, ALL_LABELS, T4_JUICE_LABELS, T4_MATS_LABELS, NORMAL_COLS, NUM_PIECES, SPECIAL_LEAP_LABEL, STORAGE_KEY } from "@/Utils/Constants"
 import { Ref, ref } from "vue"
 import { WasmOp } from "@/WasmInterface/js_to_wasm"
 import { debounce } from "@/Utils/Helpers"

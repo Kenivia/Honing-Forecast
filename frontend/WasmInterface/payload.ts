@@ -1,4 +1,4 @@
-import { ALL_LABELS, BUNDLE_SIZE, T4_JUICE_LABELS, MATS_LABELS } from "@/Utils/Constants"
+import { ALL_LABELS, BUNDLE_SIZE, T4_JUICE_LABELS, T4_MATS_LABELS } from "@/Utils/Constants"
 import { WasmOp } from "./js_to_wasm"
 
 import { CharProfile, TreatmentPlan, useProfilesStore } from "@/stores/CharacterProfile"
