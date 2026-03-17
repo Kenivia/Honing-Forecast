@@ -308,7 +308,7 @@ onBeforeUnmount(() => {
 /* Tooltip container styling */
 .hf-graph-tooltip {
     position: absolute;
-    transform: translateX(-100%); /* Centers perfectly on the X coordinate */
+    transform: translateX(-110%) translateY(-100%);
     background: var(--tooltip-bg);
     color: var(--hf-text-main);
     padding: 6px 12px;
