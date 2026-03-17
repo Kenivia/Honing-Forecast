@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { GRAPH_FONT_SIZE, GRAPH_HEIGHT } from "@/Utils/Constants"
+import { BUCKET_COUNT, FLOAT_TOL, GRAPH_FONT_SIZE, GRAPH_HEIGHT } from "@/Utils/Constants"
 import { cssVar } from "@/Utils/Helpers"
 import { computed, onBeforeUnmount, onMounted, ref } from "vue"
 
@@ -50,7 +50,7 @@ const points = computed<Point[]>(() => {
     if (!Array.isArray(props.data) || props.data.length === 0) {
         return []
     }
-
+    console.log(props.data)
     const normalized = props.data
         .map((pair) => [Number(pair?.[0] ?? 0), Number(pair?.[1] ?? 0)] as DataPoint)
         .filter((pair) => Number.isFinite(pair[0]) && Number.isFinite(pair[1]))
@@ -62,7 +62,7 @@ const points = computed<Point[]>(() => {
     if (props.cumulative) {
         return normalized.map(([x, y]) => ({ x, y, cumulativeY: y }))
     }
-
+    let gap_size = (normalized[normalized.length - 1][0] - normalized[0][0]) / BUCKET_COUNT
     let prevSlope = 0
     return normalized.map(([x, y], index) => {
         if (index === 0) {
@@ -72,12 +72,16 @@ const points = computed<Point[]>(() => {
             prevSlope = slope
             return { x, y: slope, cumulativeY: y }
         }
+
         const [prevX, prevY] = normalized[index - 1]
+        let this_gap = x - prevX
+        if (Math.abs(this_gap - gap_size) > FLOAT_TOL) {
+            return { x, y: prevSlope, cumulativeY: y }
+        }
         const dx = x - prevX
         const slope = dx === 0 ? 0 : (y - prevY) / dx
         if (slope === 0) {
             const out = { x, y: prevSlope, cumulativeY: y }
-            prevSlope = 0
             return out
         }
         prevSlope = slope

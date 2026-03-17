@@ -63,7 +63,9 @@ pub fn histogram(state_bundle: &mut StateBundle) -> HistogramOutputs {
                 && bound_budget + trade_budget < next_budget
                 && !trade_done
             {
-                if (this_budget - bound_budget - trade_budget).abs() > FLOAT_TOL {
+                if (this_budget - bound_budget - trade_budget).abs() > FLOAT_TOL
+                    && (trade_budget).abs() > FLOAT_TOL
+                {
                     item.push((
                         bound_budget + trade_budget,
                         state_bundle.one_dimension_prob(

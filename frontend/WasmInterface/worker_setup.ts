@@ -13,7 +13,7 @@ export function createWorkerBundle() {
     const est_progress_percentage = ref(0)
     let debounceTimer = null
 
-    function _launch(wasm_op: WasmOp) {
+    function _launch(wasm_op: WasmOp, callback?: (result) => void) {
         cancel()
 
         status.value = "busy"
@@ -48,13 +48,13 @@ export function createWorkerBundle() {
         worker.postMessage({ type: "message", wasm_op, payload: JSON.parse(JSON.stringify(toRaw(buildPayload(wasm_op)))) })
     }
 
-    function start(wasm_op: WasmOp, debounce?: number) {
+    function start(wasm_op: WasmOp, callback?: (result) => void, debounce?: number) {
         if (debounce > 0) {
             clearTimeout(debounceTimer)
             status.value = "busy"
             debounceTimer = setTimeout(() => _launch(wasm_op), debounce)
         } else {
-            _launch(wasm_op)
+            _launch(wasm_op, callback)
         }
     }
 

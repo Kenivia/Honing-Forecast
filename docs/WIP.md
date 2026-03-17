@@ -8,6 +8,7 @@
   - let histogram watch the keyed upgrades
 - make the mat distribution read from a separate worker
 
+- resolution
 - Optimizer instruction
 - Sidebar
 - market price import

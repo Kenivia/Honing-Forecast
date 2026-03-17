@@ -29,7 +29,7 @@ const visibleRows = computed(() => {
             }
         })
 })
-const gold_breakdown = computed(() => active_profile.value.optimizer_worker_bundle.result.average_breakdown.map((x) => Math.ceil(x == 0 ? x : -x)))
+const gold_breakdown = computed(() => active_profile.value.optimizer_worker_bundle.result.average_breakdown.map((x: number) => Math.ceil(x == 0 ? x : -x)))
 
 const market_gold_text = "Avg gold spent buying from market"
 const tradable_gold_text = "Avg gold spent buying minus gold from selling tradables"

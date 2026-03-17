@@ -1,3 +1,6 @@
+export const FLOAT_TOL = 1e-9
+
+export const BUCKET_COUNT = 50
 export const ANNOTATION_COLORS = ["--hf-graph-average-color", "--hf-graph-bound-color", "--hf-graph-roster-color", "--hf-graph-tradable-color"]
 export const ANNOTATION_POSITIONS: ("top" | "middle" | "bottom" | "graph")[] = ["graph", "bottom", "middle", "top"]
 export const ANNOTATION_LABELS = ["Avg", "Bound", "Roster-Bound", "Tradable"] // these names are tied with their css class names
