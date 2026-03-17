@@ -6,11 +6,11 @@ import MaterialCell from "@/Components/Common/MaterialCell.vue"
 import { create_input_column, HistogramOutputs, input_column_to_num, InputColumn, InputType } from "@/Utils/Interfaces"
 import MaterialGraph from "./MaterialGraph.vue"
 import { storeToRefs } from "pinia"
-import { uesRosterStore } from "@/stores/RosterConfig"
+import { useRosterStore } from "@/stores/RosterConfig"
 import { computed, ref, Ref, toRef, watchEffect } from "vue"
 
 const { active_profile } = storeToRefs(useProfilesStore())
-const { roster_config } = storeToRefs(uesRosterStore())
+const { roster_config } = storeToRefs(useRosterStore())
 const histogram_result = computed(() => active_profile.value.histogram_worker_bundle.result)
 const averages: Ref<number[]> = toRef(() => histogram_result.value?.average ?? new Array(ALL_LABELS[active_profile.value.tier].length).fill(0))
 
@@ -103,35 +103,35 @@ function hover_annotation(x, _y, cy, material_type, color): string {
                         ALL_LABELS[active_profile.tier].length == active_profile.bound_budgets[active_profile.tier].data.length &&
                         active_profile.optimizer_worker_bundle.result
                     "
-                    v-for="{ label, row } in visibleRows"
-                    :key="`graph-${label}`"
-                    class="hf-mats-row"
+                    style="display: contents"
                 >
-                    <MaterialCell
-                        :input_column="active_profile.bound_budgets[active_profile.tier]"
-                        :row="row"
-                        :label="label"
-                        :input_color="'--hf-graph-bound-color'"
-                        :setter="
-                            (val) => {
-                                active_profile.bound_budgets[active_profile.tier].data[row] = val
-                            }
-                        "
-                    />
+                    <div v-for="{ label, row } in visibleRows" :key="`graph-${label}`" class="hf-mats-row">
+                        <MaterialCell
+                            :input_column="active_profile.bound_budgets[active_profile.tier]"
+                            :row="row"
+                            :label="label"
+                            :input_color="'--hf-graph-bound-color'"
+                            :setter="
+                                (val) => {
+                                    active_profile.bound_budgets[active_profile.tier].data[row] = val
+                                }
+                            "
+                        />
 
-                    <MaterialCell :input_column="averages" :row="row" :input_color="'--hf-graph-average-color'" />
-                    <MaterialCell :input_column="gold_breakdown" :row="row" :input_color="'--hf-gold'" />
-                    <MaterialGraph
-                        :data="histogram_result?.cum_percentiles?.[row] ?? null"
-                        :material-label="label"
-                        :graph-color="GRAPH_COLORS[row]"
-                        :cumulative="roster_config.cumulative_graph"
-                        :annotations="annotation_values[row]"
-                        :annotationColors="ANNOTATION_COLORS.filter((_, i) => enabled_annotations[i])"
-                        :annotation-positions="ANNOTATION_POSITIONS.filter((_, i) => enabled_annotations[i])"
-                        :annotationLabels="ANNOTATION_LABELS.filter((_, i) => enabled_annotations[i])"
-                        :tooltip-text-fn="hover_annotation"
-                    />
+                        <MaterialCell :input_column="averages" :row="row" :input_color="'--hf-graph-average-color'" />
+                        <MaterialCell :input_column="gold_breakdown" :row="row" :input_color="'--hf-gold'" />
+                        <MaterialGraph
+                            :data="histogram_result?.cum_percentiles?.[row] ?? null"
+                            :material-label="label"
+                            :graph-color="GRAPH_COLORS[row]"
+                            :cumulative="roster_config.cumulative_graph"
+                            :annotations="annotation_values[row]"
+                            :annotationColors="ANNOTATION_COLORS.filter((_, i) => enabled_annotations[i])"
+                            :annotation-positions="ANNOTATION_POSITIONS.filter((_, i) => enabled_annotations[i])"
+                            :annotationLabels="ANNOTATION_LABELS.filter((_, i) => enabled_annotations[i])"
+                            :tooltip-text-fn="hover_annotation"
+                        />
+                    </div>
                 </div>
             </div>
         </div>

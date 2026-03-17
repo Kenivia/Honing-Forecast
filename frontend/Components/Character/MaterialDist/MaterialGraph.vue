@@ -50,7 +50,7 @@ const points = computed<Point[]>(() => {
     if (!Array.isArray(props.data) || props.data.length === 0) {
         return []
     }
-    console.log(props.data)
+    // console.log(props.   data)
     const normalized = props.data
         .map((pair) => [Number(pair?.[0] ?? 0), Number(pair?.[1] ?? 0)] as DataPoint)
         .filter((pair) => Number.isFinite(pair[0]) && Number.isFinite(pair[1]))
@@ -197,7 +197,7 @@ const processedAnnotations = computed(() => {
 
             // Clamp text X so it never falls off the chart left/right
             // console.log(label, xVal, svgX, textW, textW / 2)
-            const clampedX = clamp(svgX, textW / 2, plotWidth.value - textW / 2 - GRAPH_FONT_SIZE / 2)
+            const clampedX = clamp(svgX, textW / 2, plotWidth.value - textW / 2)
 
             let textY = GRAPH_FONT_SIZE + 4
             if (positionStr === "bottom") textY = GRAPH_HEIGHT

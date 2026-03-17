@@ -1,3 +1,4 @@
+export const DEFAULT_ARTISAN_MULTIPLIER = 0.4651
 export const FLOAT_TOL = 1e-9
 
 export const BUCKET_COUNT = 50
@@ -5,6 +6,11 @@ export const ANNOTATION_COLORS = ["--hf-graph-average-color", "--hf-graph-bound-
 export const ANNOTATION_POSITIONS: ("top" | "middle" | "bottom" | "graph")[] = ["graph", "bottom", "middle", "top"]
 export const ANNOTATION_LABELS = ["Avg", "Bound", "Roster-Bound", "Tradable"] // these names are tied with their css class names
 export const SYNCED_LABELS = ["Shards", "Gold", "Silver", "Lava's Breath", "Glacier's Breath"]
+
+export const GRACE_FIRST_N = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 15, 255]
+export const NON_GRACE_FIRST_N = [5, 10, 20, 40, 255]
+
+export const JOINED_ADV_JUICE = GRACE_FIRST_N.map((x) => [x, 0]).concat(NON_GRACE_FIRST_N.map((x) => [255, x]))
 
 export const NARROW_WIDTH = 800
 export const BUDGET_NARROW_WIDTH = 1300

@@ -1,9 +1,11 @@
 @import url("https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Source+Sans+3:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap");
 
 :root {
+    --hf-cancel: #a92727;
+    --hf-free-tap: #ed7bff;
     --separator-color: rgba(102, 102, 102, 0.507);
     --tooltip-bg: #181818;
-    --disabled-tier-convert: #cfcfcf;
+    --disabled-tier-convert: #e2e2e2;
     --serca-blue: #2806b1;
     --serca-blue-hover: #4520d8;
     --hf-header-text: #c0c0c0;

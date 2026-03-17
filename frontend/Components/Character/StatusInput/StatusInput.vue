@@ -97,9 +97,12 @@ watch(
     <div class="hf-honing-row">
         <section class="hf-card-normal">
             <div class="hf-card-header">
-                <div class="hf-card-title"><span class="hf-card-title-dot" />Normal Honing</div>
                 <label class="hf-achieved-ilevel">Achieved ilevel: {{ achieved_ilevel() }}</label>
                 <label class="hf-pending-ilevel">Pending ilevel: {{ pending_ilevel() }}</label>
+                <label class="hf-inline-check">
+                    <input v-model="active_profile.express_event" type="checkbox" />
+                    <span>Express event</span>
+                </label>
 
                 <TierConvertButton
                     :labelText="tier_label_text"

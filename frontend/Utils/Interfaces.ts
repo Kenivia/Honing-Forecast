@@ -14,11 +14,31 @@ export interface Upgrade {
     succeeded?: boolean
     unlocked?: boolean
     alr_failed?: number
+    adv_config: AdvConfig
+    cost_dist: Support[]
+    artisan_rate: number
+    base_chance: number
+    extra_chance: number
 
     // added for UI purpose, not in rust
     this_special_chance?: number
 }
+export interface Support {
+    support: number[]
+}
+export interface AdvConfig {
+    start_xp: number
+    start_balls: number
+    next_free: boolean
+    next_big: boolean
+    double_balls: boolean
+    is_30_40: boolean
 
+    grace_juice_target: number
+    non_grace_juice_target: number
+    grace_scroll_target: number
+    non_grace_scroll_target: number
+}
 export interface StateBundle {
     upgrade_arr: Upgrade[]
     special_state: number[]
@@ -129,7 +149,7 @@ export type OneMaterial = [number, number, number, number, number]
 export type MaterialInput = OneMaterial[]
 
 // idk why i used is_adv here but whatever
-//            enabled,  piece type, upgrade index, is_adv, normal_progress, state, unlock, succeeded, adv_progress
+//          (enabled),  piece type, upgrade index, is_adv, normal_progress, state, unlock, succeeded, adv_progress
 export type OneUpgrade = [number, number, boolean, number | null, State[], boolean, boolean, AdvProgress | null]
 export type UpgradeInput = OneUpgrade[]
 export const DEFAULT_ONE_UPGRADE = [0, [], false, false, [0, 0, false, false]] // excluding the first 3
@@ -143,18 +163,18 @@ export function to_upgrade_key(piece_type: number, upgrade_index: number, is_adv
     return `${piece_type},${upgrade_index},${is_adv}`
 }
 
-function apply_forced_juice_books(state_bundle: StateBundle, one_upgrade: OneUpgrade, juice: number, book: number): OneUpgrade {
-    for (let index = 0; index < one_upgrade[4].length; index++) {
-        one_upgrade[4][index][0] = index < juice
-        one_upgrade[4][index][1] = index < book ? state_bundle.prep_output.juice_info.normal_uindex_to_id[one_upgrade[1]] : 0
-    }
-    return one_upgrade
-}
+// function apply_forced_juice_books(state_bundle: StateBundle, one_upgrade: OneUpgrade, juice: number, book: number): OneUpgrade {
+//     for (let index = 0; index < one_upgrade[4].length; index++) {
+//         one_upgrade[4][index][0] = index < juice
+//         one_upgrade[4][index][1] = index < book ? state_bundle.prep_output.juice_info.normal_uindex_to_id[one_upgrade[1]] : 0
+//     }
+//     return one_upgrade
+// }
 export function keyed_to_array(keyed_upgrades: KeyedUpgrades, state_bundle: StateBundle | null): OneUpgrade[] {
     return Object.entries(keyed_upgrades)
         .map(([_, pair]) => pair)
         .filter((x) => x[0])
-        .map((x) => (x[1][2] || state_bundle === null ? x[1] : apply_forced_juice_books(state_bundle, x[1], x[2], x[3])))
+        .map((x) => x[1])
 }
 export function grids_to_keyed(normal_grid: StatusGrid, adv_grid: StatusGrid, all_keyed: KeyedUpgrades) {
     // console.log(all_keyed)

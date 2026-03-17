@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { CharProfile, useProfilesStore } from "@/stores/CharacterProfile"
-import { uesRosterStore } from "@/stores/RosterConfig"
+import { useRosterStore } from "@/stores/RosterConfig"
 import { PIECE_NAMES } from "@/Utils/Constants"
 import { iconPath } from "@/Utils/Helpers"
 import { Upgrade, UpgradeStatus } from "@/Utils/Interfaces"
@@ -10,7 +10,7 @@ import InstructionRow from "./InstructionRow.vue"
 
 const profile_store = useProfilesStore()
 const { active_profile } = storeToRefs(useProfilesStore())
-const { roster_config } = storeToRefs(uesRosterStore())
+const { roster_config } = storeToRefs(useRosterStore())
 
 function sort_upgrades(): Upgrade[] {
     if (!active_profile.value.optimizer_worker_bundle.result) {
@@ -20,6 +20,7 @@ function sort_upgrades(): Upgrade[] {
     let output: Upgrade[] = []
     let upgrade_arr: Upgrade[] = active_profile.value.optimizer_worker_bundle.result.upgrade_arr
     for (let index = 0; index < output.length; index++) {
+        console.log(active_profile.value.optimizer_worker_bundle.result.latest_special_probs[index])
         upgrade_arr[index].this_special_chance = active_profile.value.optimizer_worker_bundle.result.latest_special_probs[index]
     }
     let copy = upgrade_arr.slice()

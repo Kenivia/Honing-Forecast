@@ -19,14 +19,14 @@ import { create_input_column, DEFAULT_ONE_UPGRADE, input_column_to_num, InputTyp
 import MaterialGraph from "./MaterialGraph.vue"
 import { buildPayload } from "@/WasmInterface/payload"
 import { WasmOp } from "@/WasmInterface/js_to_wasm"
-import { RosterConfig, uesRosterStore } from "@/stores/RosterConfig"
+import { RosterConfig, useRosterStore } from "@/stores/RosterConfig"
 import { storeToRefs } from "pinia"
 import { computed, watch } from "vue"
 
 const store = useProfilesStore()
 const { active_profile } = storeToRefs(store)
 
-const { roster_config } = storeToRefs(uesRosterStore())
+const { roster_config } = storeToRefs(useRosterStore())
 function resetActive() {
     store.resetActiveProfile()
 }
@@ -60,11 +60,7 @@ const auto_start_optimizer = computed(() => active_profile.value.auto_start_opti
                 </div>
                 <button class="hf-header-link-btn" @click="copyPayload">Copy Payload</button>
 
-                <div class="hf-divider" />
-                <label class="hf-inline-check">
-                    <input v-model="active_profile.express_event" type="checkbox" />
-                    <span>Express event</span>
-                </label>
+                <!-- <div class="hf-divider" /> -->
 
                 <div class="hf-divider" />
                 <label class="hf-inline-check">

@@ -3,14 +3,14 @@ import { RouterLink, RouterView } from "vue-router"
 import router from "./router"
 import { iconPath } from "./Utils/Helpers"
 import { debounced_write_char_profiles, useProfilesStore } from "./stores/CharacterProfile"
-import { debounced_write_roster_config, uesRosterStore } from "./stores/RosterConfig"
+import { debounced_write_roster_config, useRosterStore } from "./stores/RosterConfig"
 import { CharProfile } from "./stores/CharacterProfile"
 import { storeToRefs } from "pinia"
 import { computed, onMounted, onUnmounted, toRaw, watchEffect } from "vue"
 import { ref } from "vue"
 import { useMediaIsNarrow } from "./Utils/WindowSize"
 
-const roster_store = uesRosterStore()
+const roster_store = useRosterStore()
 roster_store.init()
 const profile_store = useProfilesStore()
 profile_store.init()

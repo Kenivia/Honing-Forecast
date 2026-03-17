@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { CharProfile, useProfilesStore } from "@/stores/CharacterProfile"
-import { uesRosterStore } from "@/stores/RosterConfig"
+import { useRosterStore } from "@/stores/RosterConfig"
 import { PIECE_NAMES, NORMAL_COLS as NORMAL_COLS, NUM_PIECES as NORMAL_ROWS, ALL_LABELS } from "@/Utils/Constants"
 import { cssVar, iconPath } from "@/Utils/Helpers"
 import { InputColumn, get_modified_cell, UpgradeStatus, forbid_non_numeric } from "@/Utils/Interfaces"

@@ -11,7 +11,7 @@ export interface RosterConfig {
     cumulative_graph: boolean
     // tradable_mats_price: InputColumn // these are just price with tax applied
 }
-export const uesRosterStore = defineStore("roster", {
+export const useRosterStore = defineStore("roster", {
     state: () => ({
         data: null as RosterConfig | null,
     }),

@@ -9,13 +9,13 @@ import { computed, onWatcherCleanup, toRaw, watch, watchEffect } from "vue"
 import StatusInput from "./StatusInput.vue"
 import { buildPayload } from "@/WasmInterface/payload"
 import { WasmOp } from "@/WasmInterface/js_to_wasm"
-import { uesRosterStore } from "@/stores/RosterConfig"
+import { useRosterStore } from "@/stores/RosterConfig"
 import { watchDebounced } from "@vueuse/core"
 const profile_store = useProfilesStore()
 
 const { active_profile } = storeToRefs(useProfilesStore())
 
-const { roster_config } = storeToRefs(uesRosterStore())
+const { roster_config } = storeToRefs(useRosterStore())
 const props = defineProps<{
     grid_type: "normal" | "adv"
 }>()

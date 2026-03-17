@@ -84,7 +84,7 @@ pub fn solve<R: Rng>(
     }
 
     let mut eqv_wall_time_iters: i64 = 0;
-    let mut last_total_count: i64 = 0;
+    let mut last_total_count: i64 = -9999; // immediately send a result 
     let scaler = AdaptiveScaler::new(state_bundle.metric.abs(), 50);
 
     let mut overall_best_n_states: DoublePriorityQueue<StateEssence, OrderedFloat<f64>> =

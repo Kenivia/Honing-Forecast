@@ -2,7 +2,7 @@ import { ALL_LABELS, BUNDLE_SIZE, T4_JUICE_LABELS, T4_MATS_LABELS } from "@/Util
 import { WasmOp } from "./js_to_wasm"
 
 import { CharProfile, TreatmentPlan, useProfilesStore } from "@/stores/CharacterProfile"
-import { RosterConfig, uesRosterStore } from "@/stores/RosterConfig"
+import { RosterConfig, useRosterStore } from "@/stores/RosterConfig"
 
 import {
     AdvProgress,
@@ -50,7 +50,7 @@ function apply_treatement(treatment: TreatmentPlan, bound: number, roster: numbe
 }
 export function buildPayload(wasm_op: WasmOp): EvalPayload | StateBundle {
     const { active_profile } = storeToRefs(useProfilesStore())
-    const { roster_config } = storeToRefs(uesRosterStore())
+    const { roster_config } = storeToRefs(useRosterStore())
 
     const tier = active_profile.value.tier
 

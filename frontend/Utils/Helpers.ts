@@ -109,8 +109,8 @@ export function metricToText(metric: number | null | undefined) {
     if (metric === null || metric === undefined || !Number.isFinite(metric)) return "N/A"
     return `${Math.round(-metric).toLocaleString("en-US")}g`
 }
-export function iconPath(name: string, serca: boolean = false) {
-    return IconMap[serca ? "Serca " + name : name] ?? ""
+export function iconPath(name: string) {
+    return IconMap[name] ?? ""
 }
 export function get_piece_name(upgrade: Upgrade) {
     return PIECE_NAMES[upgrade.piece_type]
