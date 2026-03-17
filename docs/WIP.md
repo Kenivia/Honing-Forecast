@@ -3,12 +3,14 @@
 
 ## Immediate WIP
 
-- add back graph hover tooltip
-- ~~wire up the 2 annotations on material graph(need to add another annotation)~~ maybe too cluttered
-
 - wire up the result of optimizer to keyed upgrades
   - will need to set up some kind of callback on optimizer results (to write to the keyed upgrades)
   - let histogram watch the keyed upgrades
+- make the mat distribution read from a separate worker
+
+- Optimizer instruction
+- Sidebar
+- market price import
 
 ## Roadmap
 
@@ -293,7 +295,10 @@ Below are some rambling / brainstorming / Misc stuff
 
 ## Done / cancelled
 
- ~~Char page - Gold breakdown~~
+- ~~add back graph hover tooltip~~
+- ~~wire up the 2 annotations on material graph(need to add another annotation)~~ ~~maybe too cluttered~~ togglable
+
+~~ #### Char page - Gold breakdown~~
 
 - ~~This needs to show both "actual gold spent on market/raw" and "eqv gold you wouldve made from selling tradables"~~
 

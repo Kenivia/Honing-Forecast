@@ -29,7 +29,7 @@ const visibleRows = computed(() => {
             }
         })
 })
-const computed_breakdown = computed(() => active_profile.value.optimizer_worker_bundle.result.average_breakdown.map((x) => (x == 0 ? x : -x)))
+const gold_breakdown = computed(() => active_profile.value.optimizer_worker_bundle.result.average_breakdown.map((x) => Math.ceil(x == 0 ? x : -x)))
 
 const market_gold_text = "Avg gold spent buying from market"
 const tradable_gold_text = "Avg gold spent buying minus gold from selling tradables"
@@ -63,7 +63,8 @@ const annotation_values = computed(() => {
 })
 
 function hover_annotation(x, _y, cy, material_type, color): string {
-    return `<b style="color: white;">${cy * 100}% </b> chance to use <br> <b style="color: ${color};">${x.toLocaleString("en-US")} </b> ${material_type} `
+    let place = Math.min(10, Math.max(Math.ceil(cy < 0.5 ? Math.min(3, Math.abs(Math.log10(cy))) : Math.abs(Math.log10(1 - cy))), 3))
+    return `<b style="color: white;">${(cy * 100).toPrecision(place)}% </b> chance to use <br> &#8804;<b style="color: ${color};"> ${x.toLocaleString("en-US")} </b> ${material_type} `
 }
 </script>
 
@@ -119,7 +120,7 @@ function hover_annotation(x, _y, cy, material_type, color): string {
                     />
 
                     <MaterialCell :input_column="averages" :row="row" :input_color="'--hf-graph-average-color'" />
-                    <MaterialCell :input_column="computed_breakdown" :row="row" :input_color="'--hf-gold'" />
+                    <MaterialCell :input_column="gold_breakdown" :row="row" :input_color="'--hf-gold'" />
                     <MaterialGraph
                         :data="histogram_result?.cum_percentiles?.[row] ?? null"
                         :material-label="label"

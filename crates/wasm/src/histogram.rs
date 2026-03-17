@@ -86,7 +86,7 @@ pub fn histogram(state_bundle: &mut StateBundle) -> HistogramOutputs {
             }
             out += special_prob * state_bundle.simple_avg(support_index as i64, skip_count);
         }
-        average.push(out.ceil())
+        average.push(out)
     }
 
     HistogramOutputs {
