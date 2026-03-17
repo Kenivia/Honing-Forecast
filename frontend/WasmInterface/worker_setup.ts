@@ -35,6 +35,9 @@ export function createWorkerBundle() {
                 result.value = e.data.state_bundle
                 est_progress_percentage.value = e.data.est_progress_percentage
             }
+            if (callback) {
+                callback(result.value)
+            }
         }
 
         worker.onerror = (e) => {

@@ -8,11 +8,15 @@ export interface Upgrade {
     upgrade_index: number
     is_normal_honing?: boolean
     is_weapon?: boolean
-    prob_dist?: number[]
-    state?: [boolean, number][]
+    normal_dist?: number[]
+    adv_dists?: number[][]
+    state?: State[]
     succeeded?: boolean
     unlocked?: boolean
     alr_failed?: number
+
+    // added for UI purpose, not in rust
+    this_special_chance?: number
 }
 
 export interface StateBundle {
@@ -124,23 +128,27 @@ export function createStatusGrid(
 export type OneMaterial = [number, number, number, number, number]
 export type MaterialInput = OneMaterial[]
 
+// idk why i used is_adv here but whatever
 //               enabled,  piece type, upgrade index, is_adv, normal_progress, state, unlock, succeeded, adv_progress
 export type OneUpgrade = [number, number, boolean, number | null, State[], boolean, boolean, AdvProgress | null]
 export type UpgradeInput = OneUpgrade[]
 export const DEFAULT_ONE_UPGRADE = [0, [], false, false, [0, 0, false, false]] // excluding the first 3
 
-export type keyed_upgrades = Record<OneUpgradeKey, [boolean, OneUpgrade]>
+// THE ONLY purpose of this is to store the last good state s.t. we can pass it to the next optimizer call to warmstart the optimizer
+// and to force starting states for already failed taps
+// we do not use this KeyedUpgrades type in the UI
+export type KeyedUpgrades = Record<OneUpgradeKey, [boolean, OneUpgrade]>
 type OneUpgradeKey = `${number},${number},${"true" | "false"}`
 export function to_upgrade_key(piece_type: number, upgrade_index: number, is_adv: boolean): OneUpgradeKey {
     return `${piece_type},${upgrade_index},${is_adv}`
 }
-export function keyed_to_array(keyed_upgrades: keyed_upgrades) {
+export function keyed_to_array(keyed_upgrades: KeyedUpgrades) {
     return Object.entries(keyed_upgrades)
         .map(([_, pair]) => pair)
         .filter((x) => x[0])
         .map((x) => x[1])
 }
-export function grids_to_keyed(normal_grid: StatusGrid, adv_grid: StatusGrid, all_keyed: keyed_upgrades) {
+export function grids_to_keyed(normal_grid: StatusGrid, adv_grid: StatusGrid, all_keyed: KeyedUpgrades) {
     // console.log(all_keyed)
     for (const [piece_type, row] of status_to_bool_grid(normal_grid).entries()) {
         for (const [upgrade_index, cell] of row.entries()) {

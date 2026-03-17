@@ -193,6 +193,7 @@ export function piece_display_name(upgrade: any): string {
     )
 }
 export function formatSig(x: number, place: number = 3): string {
+    console.log(x, place)
     if (!isFinite(x)) return ""
     if (x > 1) {
         place = Math.max(1, Math.min(100, place))

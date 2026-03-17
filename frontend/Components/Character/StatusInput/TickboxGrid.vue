@@ -2,7 +2,7 @@
 import { CharProfile, useProfilesStore } from "@/stores/CharacterProfile"
 import { PIECE_NAMES, NORMAL_COLS as NORMAL_COLS, NUM_PIECES as NORMAL_ROWS, ADV_COLS } from "@/Utils/Constants"
 import { iconPath } from "@/Utils/Helpers"
-import { grids_to_keyed, input_column_to_num, UpgradeStatus } from "@/Utils/Interfaces"
+import { grids_to_keyed, input_column_to_num, StateBundle, to_upgrade_key, Upgrade, UpgradeStatus } from "@/Utils/Interfaces"
 import { storeToRefs } from "pinia"
 import { eventNames } from "process"
 import { computed, onWatcherCleanup, toRaw, watch, watchEffect } from "vue"
@@ -109,10 +109,6 @@ function change_one(row: number, col: number, current = relevant_grid.value[row]
     }
 }
 
-watch([() => active_profile.value.adv_grid, () => active_profile.value.normal_grid], (_) => {
-    active_profile.value.keyed_upgrades = grids_to_keyed(active_profile.value.normal_grid, active_profile.value.adv_grid, active_profile.value.keyed_upgrades)
-})
-
 watchDebounced(
     [
         () => active_profile.value.adv_grid,
@@ -136,11 +132,27 @@ watchDebounced(
             active_profile.value.optimizer_worker_bundle.cancel()
         })
         // console.log("optimizer triggered")
-        active_profile.value.optimizer_worker_bundle.start(WasmOp.OptimizeAverage)
+        active_profile.value.optimizer_worker_bundle.start(WasmOp.OptimizeAverage, set_keyed_upgrade)
     },
-    { immediate: active_profile.value.optimizer_worker_bundle.result === null, deep: true, debounce: 500 },
+    { immediate: true, deep: true, debounce: 500 },
 )
 
+function set_keyed_upgrade(result: StateBundle) {
+    if (result === null) {
+        return
+    }
+    for (let index = 0; index < result.upgrade_arr.length; index++) {
+        let upgrade: Upgrade = result.upgrade_arr[index]
+        let key = to_upgrade_key(upgrade.piece_type, upgrade.upgrade_index, !upgrade.is_normal_honing)
+
+        if (!(key in active_profile.value.keyed_upgrades)) {
+            active_profile.value.keyed_upgrades[key] = upgrade.is_normal_honing
+                ? [true, [upgrade.piece_type, upgrade.upgrade_index, !upgrade.is_normal_honing, 0, [], false, false, null]]
+                : [true, [upgrade.piece_type, upgrade.upgrade_index, !upgrade.is_normal_honing, null, [], false, false, [0, 0, false, false]]]
+        }
+        active_profile.value.keyed_upgrades[key][1][4] = upgrade.state
+    }
+}
 // watch(
 //     [
 //         () => active_profile.value.adv_grid,

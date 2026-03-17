@@ -9,7 +9,7 @@ import {
     HistogramOutputs,
     InputColumn,
     InputType,
-    keyed_upgrades,
+    KeyedUpgrades,
     makeDefaultBoolGrid,
     makeDefaultNumGrid,
     NumGrid,
@@ -114,7 +114,7 @@ export interface CharProfile {
     normal_grid: StatusGrid
     adv_grid: StatusGrid
 
-    keyed_upgrades: keyed_upgrades
+    keyed_upgrades: KeyedUpgrades
 
     special_budget: InputColumn
 

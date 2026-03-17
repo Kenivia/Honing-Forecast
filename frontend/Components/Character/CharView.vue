@@ -11,7 +11,7 @@ import StatusInput from "@/Components/Character/StatusInput/StatusInput.vue"
 
         <MaterialDist />
         <ControlPanel />
-        <!-- <Instructions /> -->
+        <Instructions />
     </div>
 </template>
 <style>
