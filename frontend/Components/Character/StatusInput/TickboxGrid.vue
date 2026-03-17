@@ -147,8 +147,8 @@ function set_keyed_upgrade(result: StateBundle) {
 
         if (!(key in active_profile.value.keyed_upgrades)) {
             active_profile.value.keyed_upgrades[key] = upgrade.is_normal_honing
-                ? [true, [upgrade.piece_type, upgrade.upgrade_index, !upgrade.is_normal_honing, 0, [], false, false, null]]
-                : [true, [upgrade.piece_type, upgrade.upgrade_index, !upgrade.is_normal_honing, null, [], false, false, [0, 0, false, false]]]
+                ? [true, [upgrade.piece_type, upgrade.upgrade_index, !upgrade.is_normal_honing, 0, [], false, false, null], 0, 0]
+                : [true, [upgrade.piece_type, upgrade.upgrade_index, !upgrade.is_normal_honing, null, [], false, false, [0, 0, false, false]], null, null]
         }
         active_profile.value.keyed_upgrades[key][1][4] = upgrade.state
     }
@@ -183,7 +183,6 @@ watchDebounced(
         () => input_column_to_num(roster_config.value.mats_prices[active_profile.value.tier]),
         () => input_column_to_num(roster_config.value.tradable_mats_owned[active_profile.value.tier]),
         () => input_column_to_num(roster_config.value.roster_mats_owned[active_profile.value.tier]),
-        // () => active_profile.value.keyed_upgrades,
         () => input_column_to_num(active_profile.value.special_budget),
         () => active_profile.value.express_event,
         () => active_profile.value.tier,

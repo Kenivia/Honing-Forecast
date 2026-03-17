@@ -129,7 +129,7 @@ export type OneMaterial = [number, number, number, number, number]
 export type MaterialInput = OneMaterial[]
 
 // idk why i used is_adv here but whatever
-//               enabled,  piece type, upgrade index, is_adv, normal_progress, state, unlock, succeeded, adv_progress
+//            enabled,  piece type, upgrade index, is_adv, normal_progress, state, unlock, succeeded, adv_progress
 export type OneUpgrade = [number, number, boolean, number | null, State[], boolean, boolean, AdvProgress | null]
 export type UpgradeInput = OneUpgrade[]
 export const DEFAULT_ONE_UPGRADE = [0, [], false, false, [0, 0, false, false]] // excluding the first 3
@@ -137,16 +137,24 @@ export const DEFAULT_ONE_UPGRADE = [0, [], false, false, [0, 0, false, false]] /
 // THE ONLY purpose of this is to store the last good state s.t. we can pass it to the next optimizer call to warmstart the optimizer
 // and to force starting states for already failed taps
 // we do not use this KeyedUpgrades type in the UI
-export type KeyedUpgrades = Record<OneUpgradeKey, [boolean, OneUpgrade]>
+export type KeyedUpgrades = Record<OneUpgradeKey, [boolean, OneUpgrade, number | null, number | null]>
 type OneUpgradeKey = `${number},${number},${"true" | "false"}`
 export function to_upgrade_key(piece_type: number, upgrade_index: number, is_adv: boolean): OneUpgradeKey {
     return `${piece_type},${upgrade_index},${is_adv}`
 }
-export function keyed_to_array(keyed_upgrades: KeyedUpgrades) {
+
+function apply_forced_juice_books(state_bundle: StateBundle, one_upgrade: OneUpgrade, juice: number, book: number): OneUpgrade {
+    for (let index = 0; index < one_upgrade[4].length; index++) {
+        one_upgrade[4][index][0] = index < juice
+        one_upgrade[4][index][1] = index < book ? state_bundle.prep_output.juice_info.normal_uindex_to_id[one_upgrade[1]] : 0
+    }
+    return one_upgrade
+}
+export function keyed_to_array(keyed_upgrades: KeyedUpgrades, state_bundle: StateBundle | null): OneUpgrade[] {
     return Object.entries(keyed_upgrades)
         .map(([_, pair]) => pair)
         .filter((x) => x[0])
-        .map((x) => x[1])
+        .map((x) => (x[1][2] || state_bundle === null ? x[1] : apply_forced_juice_books(state_bundle, x[1], x[2], x[3])))
 }
 export function grids_to_keyed(normal_grid: StatusGrid, adv_grid: StatusGrid, all_keyed: KeyedUpgrades) {
     // console.log(all_keyed)
@@ -158,7 +166,7 @@ export function grids_to_keyed(normal_grid: StatusGrid, adv_grid: StatusGrid, al
                     all_keyed[key] = all_keyed[key]
                     all_keyed[key][0] = true
                 } else {
-                    all_keyed[key] = [true, [piece_type, upgrade_index, false, 0, [], false, false, null]]
+                    all_keyed[key] = [true, [piece_type, upgrade_index, false, 0, [], false, false, null], 0, 0]
                 }
             } else {
                 if (key in all_keyed) {
@@ -176,7 +184,7 @@ export function grids_to_keyed(normal_grid: StatusGrid, adv_grid: StatusGrid, al
                     all_keyed[key] = all_keyed[key]
                     all_keyed[key][0] = true
                 } else {
-                    all_keyed[key] = [true, [piece_type, upgrade_index, true, null, [], false, false, [0, 0, false, false]]]
+                    all_keyed[key] = [true, [piece_type, upgrade_index, true, null, [], false, false, [0, 0, false, false]], null, null]
                 }
             } else {
                 if (key in all_keyed) {

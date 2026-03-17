@@ -29,7 +29,7 @@ function aggregateStreaks(): Streak[] | null {
     const streaks: Streak[] = []
     let current: Streak | null = null
     if (props.upgrade.is_normal_honing) {
-        for (const [juice, book] of props.upgrade.state.slice(0, props.upgrade.normal_dist.length)) {
+        for (const [juice, book] of props.upgrade.state.slice(props.upgrade.alr_failed, props.upgrade.normal_dist.length)) {
             const hasBook = book > 0
             if (current && current.juice === juice && current.book === hasBook) {
                 current.count++
