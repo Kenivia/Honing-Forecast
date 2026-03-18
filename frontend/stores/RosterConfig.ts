@@ -9,6 +9,8 @@ export interface RosterConfig {
     tradable_mats_owned: InputColumn[]
     tier: number
     cumulative_graph: boolean
+    selected_shard_bag_size: number
+    region: string
     // tradable_mats_price: InputColumn // these are just price with tax applied
 }
 export const useRosterStore = defineStore("roster", {
@@ -31,6 +33,8 @@ export const DEFAULT_ROSTER_CONFIG: RosterConfig = {
     tradable_mats_owned: ALL_LABELS.map((this_labels) => create_input_column(InputType.Int, this_labels)),
     tier: DEFAULT_TIER,
     cumulative_graph: true,
+    selected_shard_bag_size: 3000,
+    region: "NAE",
     // tradable_mats_price: createInputColumn(InputType.Float),
 }
 

@@ -64,7 +64,7 @@ function handleClick() {
 
 /* DISABLED STYLE */
 .tier-button.disabled {
-    background: var(--hf-bg-raised);
+    background: var(--hf-bg-hover);
     color: var(--text-muted);
     cursor: not-allowed;
 }

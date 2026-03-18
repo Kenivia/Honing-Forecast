@@ -60,9 +60,14 @@ export function buildPayload(wasm_op: WasmOp): EvalPayload | StateBundle {
     const tradable_mats_owned = input_column_to_num(roster_config.value.tradable_mats_owned[tier])
     const leftover_price = input_column_to_num(active_profile.value.leftover_price[tier])
     const tradable_mats_price = input_column_to_num(roster_config.value.mats_prices[tier]).map(
-        (x: number, index: number) => Math.max(Math.min(1, x), Math.floor(x * 0.95)) / BUNDLE_SIZE[index],
+        (x: number, index: number) =>
+            Math.max(Math.min(1, x), Math.floor(x * 0.95)) /
+            (ALL_LABELS[active_profile.value.tier][index] == "Shards" ? roster_config.value.selected_shard_bag_size : BUNDLE_SIZE[index]),
     )
-    const mats_prices = input_column_to_num(roster_config.value.mats_prices[tier]).map((x: number, index: number) => x / BUNDLE_SIZE[index])
+    const mats_prices = input_column_to_num(roster_config.value.mats_prices[tier]).map(
+        (x: number, index: number) =>
+            x / (ALL_LABELS[active_profile.value.tier][index] == "Shards" ? roster_config.value.selected_shard_bag_size : BUNDLE_SIZE[index]),
+    )
 
     return {
         material_info: ALL_LABELS[tier].map((_, index) => [

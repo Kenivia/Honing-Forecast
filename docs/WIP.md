@@ -5,7 +5,7 @@
 
 - Sidebars
   - ~~logo -> burger on mobile~~ prolly only for roster setup
-- market price import
+- ~~market price import~~
 - resolution
   - need to re-add this to neighbor
 - enable/disable checkbox

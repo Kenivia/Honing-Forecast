@@ -3,16 +3,29 @@ import { useRosterStore as useRosterStore } from "@/stores/RosterConfig"
 import { ALL_LABELS, BUDGET_NARROW_WIDTH, BUNDLE_SIZE, NARROW_WIDTH, SYNCED_LABELS, TIER_OPTIONS } from "@/Utils/Constants"
 import { storeToRefs } from "pinia"
 import MaterialCell from "@/Components/Common/MaterialCell.vue"
-import { computed, watchEffect } from "vue"
+import { computed, ref, watchEffect } from "vue"
 import { SelectButton } from "primevue"
 import { useMediaIsNarrow } from "@/Utils/WindowSize"
 import { input_column_to_num, parse_input } from "@/Utils/Interfaces"
 import TierConvertButton from "../Common/TierConvertButton.vue"
+import { useTimedFetch } from "@/Utils/MarketDataFetcher"
 
 const { roster_config } = storeToRefs(useRosterStore())
 
 const tier = computed(() => roster_config.value.tier)
 const { isNarrow } = useMediaIsNarrow(BUDGET_NARROW_WIDTH)
+
+const { disabled, start_fetch } = useTimedFetch((result: number[][], selectedShardSize: number, shard_price: number) => {
+    roster_config.value.selected_shard_bag_size = selectedShardSize
+    for (let tier = 0; tier < ALL_LABELS.length; tier++) {
+        for (let index = 0; index < ALL_LABELS[tier].length; index++) {
+            roster_config.value.mats_prices[tier].data[index] = result[tier][index].toLocaleString()
+            if (ALL_LABELS[tier][index] == "Shards") {
+                roster_config.value.mats_prices[tier].data[index] = shard_price.toLocaleString()
+            }
+        }
+    }
+})
 
 watchEffect(() => {
     // one way sync from T4 to Serca, the uui modifies the T4 copy
@@ -76,8 +89,26 @@ const t4_serca_prices = computed(() => {
         option-label="label"
         option-value="value"
         class="hf-roster-tier-select"
-        :option-disabled="(data) => (data.value === roster_config.tier ? true : false)"
+        :option-disabled="(data) => data.value === roster_config.tier"
     />
+    <div>
+        <select v-model="roster_config.region">
+            <option>NAE</option>
+            <option>EUC</option>
+        </select>
+        <button :disabled="disabled" @click="() => start_fetch(roster_config.region)">
+            {{ disabled ? "Please wait..." : "Fetch Market Data" }}
+        </button>
+    </div>
+
+    <div class="hf-shard-size-selector">
+        <label>Shard Bag Size:</label>
+        <select v-model.number="roster_config.selected_shard_bag_size" class="hf-shard-size-select">
+            <option value="1000">x1000</option>
+            <option value="2000">x2000</option>
+            <option value="3000">x3000</option>
+        </select>
+    </div>
     <div class="hf-outer-budget-grid" :class="{ narrow: isNarrow }">
         <div v-if="!isNarrow || tier == 0" class="hf-roster-inputs-tier-4" :style="{ gridRow: `span ${String(ALL_LABELS[0].length + 1)}` }">
             <div class="hf-table-title-row">
@@ -115,7 +146,13 @@ const t4_serca_prices = computed(() => {
                             roster_config.mats_prices[0].data[row] = val
                         }
                     "
-                    :suffix="BUNDLE_SIZE[row] > 1 ? 'x' + BUNDLE_SIZE[row].toLocaleString('en-US') : ''"
+                    :suffix="
+                        label === 'Shards'
+                            ? 'x' + roster_config.selected_shard_bag_size.toString()
+                            : BUNDLE_SIZE[row] > 1
+                              ? 'x' + BUNDLE_SIZE[row].toLocaleString('en-US')
+                              : ''
+                    "
                 />
             </div>
         </div>
@@ -157,7 +194,13 @@ const t4_serca_prices = computed(() => {
                             roster_config.mats_prices[SYNCED_LABELS.includes(label) ? 0 : 1].data[row] = val
                         }
                     "
-                    :suffix="BUNDLE_SIZE[row] > 1 ? 'x' + BUNDLE_SIZE[row].toLocaleString('en-US') : ''"
+                    :suffix="
+                        label === 'Shards'
+                            ? 'x' + roster_config.selected_shard_bag_size.toString()
+                            : BUNDLE_SIZE[row] > 1
+                              ? 'x' + BUNDLE_SIZE[row].toLocaleString('en-US')
+                              : ''
+                    "
                 />
                 <MaterialCell
                     v-if="!SYNCED_LABELS.includes(label)"
@@ -170,6 +213,40 @@ const t4_serca_prices = computed(() => {
     </div>
 </template>
 <style>
+.hf-shard-size-selector {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 16px;
+    font: 500 12px/1 var(--hf-font-body);
+    color: var(--hf-text-muted);
+}
+
+.hf-shard-size-select {
+    padding: 6px 10px;
+    background: transparent;
+    border: 1px solid var(--hf-border-subtle);
+    color: var(--hf-text-muted);
+    font: 500 12px/1 var(--hf-font-body);
+    cursor: pointer;
+    transition:
+        border-color 0.2s ease,
+        color 0.2s ease,
+        background-color 0.2s ease;
+    outline: none;
+}
+
+.hf-shard-size-select:hover {
+    border-color: var(--hf-gold-dim);
+    color: var(--hf-gold);
+}
+
+.hf-shard-size-select:focus-visible {
+    outline: 2px solid var(--hf-gold-dim);
+    outline-offset: 2px;
+    border-color: var(--hf-gold-dim);
+}
+
 .hf-table-title-row {
     display: contents;
 }
