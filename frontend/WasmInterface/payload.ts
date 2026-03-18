@@ -55,7 +55,6 @@ export function buildPayload(wasm_op: WasmOp): EvalPayload | StateBundle {
     const { roster_config } = storeToRefs(useRosterStore())
 
     const tier = active_profile.value.tier
-
     const bound_budgets = input_column_to_num(active_profile.value.bound_budgets[tier])
     const roster_mats_owned = input_column_to_num(roster_config.value.roster_mats_owned[tier])
     const tradable_mats_owned = input_column_to_num(roster_config.value.tradable_mats_owned[tier])
@@ -72,7 +71,7 @@ export function buildPayload(wasm_op: WasmOp): EvalPayload | StateBundle {
             tradable_mats_price[index],
             mats_prices[index],
         ]),
-        upgrade_info: keyed_to_array(active_profile.value.keyed_upgrades),
+        upgrade_info: keyed_to_array(active_profile.value.keyed_upgrades, active_profile.value.keyed_states),
         special_budget: input_column_to_num(active_profile.value.special_budget)[0],
         express_event: active_profile.value.express_event,
         tier,

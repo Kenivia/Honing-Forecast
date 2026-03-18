@@ -42,7 +42,7 @@ function aggregateStreaks(): NormalStreak[] | AdvStreak[] {
     if (props.upgrade.is_normal_honing) {
         const streaks: NormalStreak[] = []
         let current: NormalStreak | null = null
-        for (const [juice, book] of props.upgrade.state.slice(0, props.upgrade.normal_dist.length)) {
+        for (const [juice, book] of props.upgrade.state.slice(0, props.upgrade.normal_dist.length - 2)) {
             const hasBook = book > 0
             if (current && current.juice === juice && current.book === hasBook) {
                 current.count++
@@ -173,6 +173,7 @@ const visualStreaks = computed(() => {
                 line1 = "Nothing"
                 line2 = `on ${graceText}`
             } else {
+                // console.log(props.upgrade.adv_dists)
                 line1 = streak.count < 255 ? `First ${streak.count}` : "All"
                 line2 = graceText
             }
@@ -192,6 +193,12 @@ function zeroSpecialLeaps() {
 
 // --- Req 5: Interactive Inputs & Watchers ---
 const taps_so_far = ref(props.upgrade.alr_failed || 0)
+watch(
+    () => props.upgrade.alr_failed,
+    () => {
+        taps_so_far.value = props.upgrade.alr_failed
+    },
+)
 watch(taps_so_far, (newVal) => {
     // console.log("tap so far trigger")
     active_profile.value.keyed_upgrades[to_upgrade_key(props.upgrade.piece_type, props.upgrade.upgrade_index, !props.upgrade.is_normal_honing)][1][3] = newVal
@@ -199,10 +206,27 @@ watch(taps_so_far, (newVal) => {
 
 const current_adv_upgrade = ref(props.upgrade.adv_config ? Math.floor(props.upgrade.adv_config.start_xp / 10) + props.upgrade.upgrade_index * 10 : 0)
 const current_adv_xp = ref(props.upgrade.adv_config ? (props.upgrade.adv_config.start_xp - Math.floor(props.upgrade.adv_config.start_xp / 10) * 10) * 10 : 0)
-const current_grace_progress = ref(0) // Defaulted to 0, adjust as needed from your config
+const current_grace_progress = ref(props.upgrade.adv_config.start_balls) // Defaulted to 0, adjust as needed from your config
 const next_free = ref(props.upgrade.adv_config?.next_free ?? false)
 const next_big = ref(props.upgrade.adv_config?.next_big ?? false)
 
+watch(
+    [
+        () => props.upgrade.adv_config.start_xp,
+        () => props.upgrade.adv_config.start_balls,
+        () => props.upgrade.adv_config.next_big,
+        () => props.upgrade.adv_config.next_free,
+    ],
+    () => {
+        current_adv_upgrade.value = props.upgrade.adv_config ? Math.floor(props.upgrade.adv_config.start_xp / 10) + props.upgrade.upgrade_index * 10 : 0
+        ;((current_adv_xp.value = props.upgrade.adv_config
+            ? (props.upgrade.adv_config.start_xp - Math.floor(props.upgrade.adv_config.start_xp / 10) * 10) * 10
+            : 0),
+            (current_grace_progress.value = props.upgrade.adv_config.start_balls)) // Defaulted to 0, adjust as needed from your config
+        next_free.value = props.upgrade.adv_config?.next_free ?? false
+        next_big.value = props.upgrade.adv_config?.next_big ?? false
+    },
+)
 watch([current_adv_upgrade, current_adv_xp, current_grace_progress, next_free, next_big], ([new_upgrade, new_xp, new_balls, new_free, new_big]) => {
     active_profile.value.keyed_upgrades[to_upgrade_key(props.upgrade.piece_type, props.upgrade.upgrade_index, !props.upgrade.is_normal_honing)][1][7] = [
         (new_upgrade - props.upgrade.upgrade_index * 10) * 10 + new_xp / 10,
@@ -309,6 +333,8 @@ function juice_icon_path(upgrade: Upgrade, juice: boolean) {
     let relevant_upgrade = relevant_id_map[upgrade.upgrade_index]
     return iconPath(T4_JUICE_LABELS[relevant_upgrade[juice ? 0 : relevant_upgrade.length - 1]][upgrade.is_weapon ? 0 : 1])
 }
+
+const progress_expanded = ref(props.upgrade.alr_failed > 0)
 </script>
 
 <template>
@@ -324,13 +350,13 @@ function juice_icon_path(upgrade: Upgrade, juice: boolean) {
                         {{ props.perform_order + 1 }}
                     </div>
                     <div class="order-text">
-                        {{ free_tap_this_upgrade ? "Free tap this " + toOrdinal(props.perform_order + 1) : "Normal tap this" }}
+                        {{ free_tap_this_upgrade ? "Free tap this " + toOrdinal(props.index_in_special_state + 1) : "Normal tap this" }}
                     </div>
                 </div>
 
                 <div v-if="free_tap_this_upgrade" class="free-tap-actions">
                     <button class="btn-all-failed" @click="zeroSpecialLeaps">I've used all Special leaps</button>
-                    <span class="action-desc">Use free taps before proceeding</span>
+                    <!-- <span class="action-desc">Use free taps before proceeding</span> -->
                 </div>
             </div>
 
@@ -351,7 +377,10 @@ function juice_icon_path(upgrade: Upgrade, juice: boolean) {
                 </div>
             </div>
 
-            <div class="hf-right-section">
+            <div v-if="!progress_expanded">
+                <button class="btn-expand" @click="progress_expanded = true">Show more</button>
+            </div>
+            <div v-if="progress_expanded" class="hf-right-section">
                 <div class="inputs-container">
                     <div v-if="upgrade.is_normal_honing" style="display: contents">
                         <div class="input-row text-left">Current Artisan energy: {{ artisan_function(upgrade, taps_so_far) }}%</div>
@@ -518,7 +547,7 @@ function juice_icon_path(upgrade: Upgrade, juice: boolean) {
 }
 
 .btn-all-failed {
-    height: calc(var(--icon-size) * 2 + 0.25rem);
+    height: calc(var(--icon-size) * 3 + 0.25rem);
     background-color: var(--hf-free-tap);
     color: var(--hf-bg-deep, #000);
     border: none;
@@ -527,11 +556,28 @@ function juice_icon_path(upgrade: Upgrade, juice: boolean) {
     font-weight: bold;
     cursor: pointer;
     transition: filter 0.2s;
+    text-wrap-mode: wrap;
+    max-width: 100px;
 }
 .btn-all-failed:hover {
     filter: brightness(1.2);
 }
 
+.btn-expand {
+    height: calc(var(--icon-size) * 2 + 0.25rem);
+    background-color: var(--hf-text-muted);
+    color: var(--hf-bg-deep, #000);
+    border: none;
+    border-radius: 8px;
+    padding: 0 1rem;
+    font-weight: bold;
+    cursor: pointer;
+    transition: filter 0.2s;
+    justify-self: left;
+}
+.btn-expand:hover {
+    filter: brightness(1.2);
+}
 /* --- Scrollable Instructions --- */
 .hf-scrollable-instructions {
     display: flex;
@@ -539,8 +585,8 @@ function juice_icon_path(upgrade: Upgrade, juice: boolean) {
     overflow-x: auto;
     padding-bottom: 0.5rem;
     flex: 1;
-    min-width: 300px;
-    max-width: 600px;
+    min-width: 200px;
+    max-width: 300px;
     transition: opacity 0.3s;
 }
 

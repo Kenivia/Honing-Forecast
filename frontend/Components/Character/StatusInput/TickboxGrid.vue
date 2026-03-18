@@ -109,7 +109,7 @@ function change_one(row: number, col: number, current = relevant_grid.value[row]
         }
     }
 }
-const preped_payload = ref(buildPayload(WasmOp.OptimizeAverage))
+const preped_payload = ref(null)
 
 watch(
     [() => active_profile.value.adv_grid, () => active_profile.value.normal_grid],
@@ -134,73 +134,72 @@ watch(
         () => roster_config.value.tradable_mats_owned,
         () => roster_config.value.mats_prices,
         () => active_profile.value.keyed_upgrades,
+        () => active_profile.value.keyed_states,
         () => active_profile.value.special_budget,
     ],
     () => {
         console.log("payload update")
-        // active_profile.value.keyed_upgrades = grids_to_keyed(active_profile.value.normal_grid, active_profile.value.adv_grid, active_profile.value.keyed_upgrades)
-        const tier = active_profile.value.tier
-
-        const bound_budgets = input_column_to_num(active_profile.value.bound_budgets[tier])
-        const roster_mats_owned = input_column_to_num(roster_config.value.roster_mats_owned[tier])
-        const tradable_mats_owned = input_column_to_num(roster_config.value.tradable_mats_owned[tier])
-        const leftover_price = input_column_to_num(active_profile.value.leftover_price[tier])
-        const tradable_mats_price = input_column_to_num(roster_config.value.mats_prices[tier]).map(
-            (x: number, index: number) => Math.max(Math.min(1, x), Math.floor(x * 0.95)) / BUNDLE_SIZE[index],
-        )
-        const mats_prices = input_column_to_num(roster_config.value.mats_prices[tier]).map((x: number, index: number) => x / BUNDLE_SIZE[index])
-
-        preped_payload.value = {
-            material_info: ALL_LABELS[tier].map((_, index) => [
-                ...apply_treatement(active_profile.value.treatment_plan, bound_budgets[index], roster_mats_owned[index], tradable_mats_owned[index]),
-                leftover_price[index],
-                tradable_mats_price[index],
-                mats_prices[index],
-            ]),
-            upgrade_info: keyed_to_array(active_profile.value.keyed_upgrades),
-            special_budget: input_column_to_num(active_profile.value.special_budget)[0],
-            express_event: active_profile.value.express_event,
-            tier,
-            min_resolution: active_profile.value.min_resolution,
-            num_threads: 1,
-            metric_type: 1,
-        }
+        // active_profile.value.keyed_upgrades = grids_to_keyed(
+        //     active_profile.value.normal_grid,
+        //     active_profile.value.adv_grid,
+        //     active_profile.value.keyed_upgrades,
+        // )
+        preped_payload.value = buildPayload(WasmOp.OptimizeAverage)
     },
-    { deep: true },
+    { deep: true, immediate: true },
 )
 watchDebounced(
-    () => toRaw(preped_payload.value),
+    [
+        () => active_profile.value.bound_budgets,
+        () => active_profile.value.leftover_price,
+        () => active_profile.value.tier,
+        () => active_profile.value.express_event,
+        () => active_profile.value.min_resolution,
+        () => roster_config.value.roster_mats_owned,
+        () => roster_config.value.tradable_mats_owned,
+        () => roster_config.value.mats_prices,
+        () => active_profile.value.keyed_upgrades,
+        () => active_profile.value.special_budget,
+    ],
     (_) => {
+        if (preped_payload.value === null) {
+            return
+        }
         onWatcherCleanup(() => {
             active_profile.value.optimizer_worker_bundle.cancel()
         })
-        active_profile.value.optimizer_worker_bundle.start(WasmOp.OptimizeAverage, structuredClone(toRaw(preped_payload.value)))
+        active_profile.value.optimizer_worker_bundle.start(WasmOp.OptimizeAverage, structuredClone(toRaw(preped_payload.value)), set_keyed_states)
     },
     { immediate: true, deep: true, debounce: 500 },
 )
 
 // I cant seem to stop this from infinitely looping optimizer,
 // The purpose of this is to give the previous state (hopefully a good state) back to the optimizer but its fine ig
-// function set_keyed_upgrade(result: StateBundle) {
-//     if (result === null) return
-//     for (let index = 0; index < result.upgrade_arr.length; index++) {
-//         const upgrade: Upgrade = result.upgrade_arr[index]
-//         const key = to_upgrade_key(upgrade.piece_type, upgrade.upgrade_index, !upgrade.is_normal_honing)
-//         if (!(key in active_profile.value.keyed_upgrades)) {
-//             active_profile.value.keyed_upgrades[key] = upgrade.is_normal_honing
-//                 ? [true, [upgrade.piece_type, upgrade.upgrade_index, !upgrade.is_normal_honing, 0, [], false, false, null], 0, 0]
-//                 : [true, [upgrade.piece_type, upgrade.upgrade_index, !upgrade.is_normal_honing, null, [], false, false, [0, 0, false, false]], null, null]
-//         }
+function set_keyed_states(result: StateBundle) {
+    if (result === null) return
+    for (let index = 0; index < result.upgrade_arr.length; index++) {
+        const upgrade: Upgrade = result.upgrade_arr[index]
+        const key = to_upgrade_key(upgrade.piece_type, upgrade.upgrade_index, !upgrade.is_normal_honing)
+        if (!(key in active_profile.value.keyed_upgrades)) {
+            active_profile.value.keyed_upgrades[key] = upgrade.is_normal_honing
+                ? [true, [upgrade.piece_type, upgrade.upgrade_index, !upgrade.is_normal_honing, 0, [], false, false, null], 0, 0]
+                : [true, [upgrade.piece_type, upgrade.upgrade_index, !upgrade.is_normal_honing, null, [], false, false, [0, 0, false, false]], null, null]
+        }
 
-//         const current = active_profile.value.keyed_upgrades[key][1][4]
-//         if (!equal(current, upgrade.state)) {
-//             active_profile.value.keyed_upgrades[key][1][4] = upgrade.state
-//         }
-//     }
-// }
+        const current = active_profile.value.keyed_states[key]
+        if (!equal(current, upgrade.state)) {
+            for (let index = 0; index < upgrade.state.length; index++) {
+                active_profile.value.keyed_states[key] = upgrade.state
+            }
+        }
+    }
+}
 watchDebounced(
     () => toRaw(preped_payload.value),
     () => {
+        if (preped_payload.value === null) {
+            return
+        }
         onWatcherCleanup(() => {
             active_profile.value.histogram_worker_bundle.cancel()
         })

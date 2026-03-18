@@ -4,6 +4,8 @@ import { CharProfile, useProfilesStore } from "@/stores/CharacterProfile"
 import { ALL_LABELS, TIER_LABELS } from "./Constants"
 import { toRaw } from "vue"
 
+export type KeyedStates = Record<OneUpgradeKey, OneState[]>
+
 export interface Upgrade {
     piece_type: number
     upgrade_index: number
@@ -164,11 +166,18 @@ export function to_upgrade_key(piece_type: number, upgrade_index: number, is_adv
     return `${piece_type},${upgrade_index},${is_adv}`
 }
 
-export function keyed_to_array(keyed_upgrades: KeyedUpgrades): OneUpgrade[] {
-    return Object.entries(keyed_upgrades)
-        .map(([_, pair]) => pair)
-        .filter((x) => x[0])
-        .map((x) => toRaw(x[1]))
+export function keyed_to_array(keyed_upgrades: KeyedUpgrades, keyed_states: KeyedStates): OneUpgrade[] {
+    return (
+        Object.entries(keyed_upgrades)
+            // .map(([key, pair]) => pair)
+            .filter(([_, x]) => x[0])
+            .map(([key, arr]) => {
+                const out = toRaw(arr[1])
+                console.log(keyed_states)
+                out[4] = toRaw(keyed_states[key]) ?? []
+                return out
+            })
+    )
 }
 export function grids_to_keyed(normal_grid: StatusGrid, adv_grid: StatusGrid, all_keyed: KeyedUpgrades) {
     // console.log(all_keyed)

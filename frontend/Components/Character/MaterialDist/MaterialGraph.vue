@@ -50,7 +50,7 @@ const points = computed<Point[]>(() => {
     if (!Array.isArray(props.data) || props.data.length === 0) {
         return []
     }
-    // console.log(props.data)
+    console.log(props.data)
     const normalized = props.data
         .map((pair) => [Number(pair?.[0] ?? 0), Number(pair?.[1] ?? 0)] as DataPoint)
         .filter((pair) => Number.isFinite(pair[0]) && Number.isFinite(pair[1]))

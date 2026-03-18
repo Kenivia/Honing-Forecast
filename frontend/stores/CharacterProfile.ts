@@ -9,6 +9,7 @@ import {
     HistogramOutputs,
     InputColumn,
     InputType,
+    KeyedStates,
     KeyedUpgrades,
     makeDefaultBoolGrid,
     makeDefaultNumGrid,
@@ -116,6 +117,7 @@ export interface CharProfile {
     adv_grid: StatusGrid
 
     keyed_upgrades: KeyedUpgrades
+    keyed_states: KeyedStates
 
     special_budget: InputColumn
 
@@ -147,7 +149,7 @@ export function create_default_char_profile(): CharProfile {
         adv_grid: createStatusGrid(NUM_PIECES, ADV_COLS),
 
         keyed_upgrades: {},
-
+        keyed_states: {},
         special_budget: create_input_column(InputType.Int, [SPECIAL_LEAP_LABEL]),
 
         bound_budgets: ALL_LABELS.map((this_labels) => create_input_column(InputType.Int, this_labels)),

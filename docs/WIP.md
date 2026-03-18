@@ -4,7 +4,7 @@
 ## Immediate WIP
 
 - Sidebars
-  - logo -> burger on mobile
+  - ~~logo -> burger on mobile~~ prolly only for roster setup
 - market price import
 - resolution
   - need to re-add this to neighbor

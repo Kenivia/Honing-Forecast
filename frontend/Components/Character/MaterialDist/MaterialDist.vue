@@ -12,7 +12,7 @@ import { computed, ref, Ref, toRef, watchEffect } from "vue"
 const { active_profile } = storeToRefs(useProfilesStore())
 const { roster_config } = storeToRefs(useRosterStore())
 const histogram_result = computed(() => active_profile.value.histogram_worker_bundle.result)
-const averages: Ref<number[]> = toRef(() => histogram_result.value?.average ?? new Array(ALL_LABELS[active_profile.value.tier].length).fill(0))
+const averages = computed(() => histogram_result.value?.average ?? new Array(ALL_LABELS[active_profile.value.tier].length).fill(0))
 
 const analysisTab = ref<"mats" | "juice">("mats")
 
@@ -121,7 +121,7 @@ function hover_annotation(x, _y, cy, material_type, color): string {
                                 }
                             "
                         />
-
+                        <!-- {{ console.log(averages) }} -->
                         <MaterialCell :input_column="averages" :row="row" :input_color="'--hf-graph-average-color'" />
                         <MaterialCell :input_column="gold_breakdown" :row="row" :input_color="'--hf-gold'" />
                         <MaterialGraph
