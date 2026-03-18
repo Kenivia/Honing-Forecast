@@ -23,6 +23,7 @@ import { ADV_COLS, ALL_LABELS, T4_JUICE_LABELS, T4_MATS_LABELS, NORMAL_COLS, NUM
 import { Ref, ref } from "vue"
 import { WasmOp } from "@/WasmInterface/js_to_wasm"
 import { debounce } from "@/Utils/Helpers"
+import { buildPayload } from "@/WasmInterface/payload"
 
 export const useProfilesStore = defineStore("profiles", {
     state: () => DEFAULT_PROFILES_STATE,
@@ -48,7 +49,7 @@ export const useProfilesStore = defineStore("profiles", {
 
             for (let index = 0; index < this.profiles.length; index++) {
                 if (this.profiles[index].state_bundle === null) {
-                    this.profiles[index].optimizer_worker_bundle.start(WasmOp.Parser)
+                    this.profiles[index].optimizer_worker_bundle.start(WasmOp.Parser, buildPayload(WasmOp.Parser))
                 }
             }
             // console.log(this)
@@ -60,7 +61,7 @@ export const useProfilesStore = defineStore("profiles", {
 
         resetActiveProfile() {
             this.profiles[this.active_profile_index] = create_default_char_profile()
-            this.profiles[this.active_profile_index].optimizer_worker_bundle.start(WasmOp.Parser)
+            this.profiles[this.active_profile_index].optimizer_worker_bundle.start(WasmOp.Parser, buildPayload(WasmOp.Parser))
         },
     },
 })

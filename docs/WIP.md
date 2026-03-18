@@ -3,15 +3,13 @@
 
 ## Immediate WIP
 
-- wire up the result of optimizer to keyed upgrades
-  - will need to set up some kind of callback on optimizer results (to write to the keyed upgrades)
-  - let histogram watch the keyed upgrades
-- make the mat distribution read from a separate worker
-
-- resolution
-- Optimizer instruction
-- Sidebar
+- Sidebars
 - market price import
+- resolution
+  - need to re-add this to neighbor
+- enable/disable checkbox
+- move treatment selection to sidebar, accomodate the text somehow
+- special budget & graph
 
 ## Roadmap
 
@@ -20,9 +18,9 @@
 1. ~~Strip out EVERYTHING that currently exists to use a single "store" (every char needs its own "store")~~
 2. Reorganize the UI to be:
     - ~~left side hotbar with a button for roster setup (which is its own "page"), hotbar will contain selectable characters later~~ char & roster setup on the top probably, left sidebar for different pages including:
-        - Main (simple status input, cost distribuiton / input, simple optimizer instructions)
-        - detailed status input
-        - Advanced optimizer insturctions (allow user inputting here also)
+        - ~~ Main (simple status input, cost distribuiton / input, simple optimizer instructions)~~
+        - ~~detailed status input~~
+        - ~~Advanced optimizer insturctions (allow user inputting here also)~~
 
         - LONG TERM chest opening optimizaiton
         - maybe put control panel on the sidebar here also
@@ -55,12 +53,6 @@ Specifically:
 
 - ~~maybe import via uwuowo?~~ prolly not, even if i decide to add it it'll have to be on the roster setup page where we create a character
 
-#### Char page - Detailed status inputs
-
-- artisan, adv xp etc on a separate page?
-  - separate page => no more hand-holding optimization which i mean it's not designed to do anyway
-    - can still do piece-after-piece optimization
-
 #### Char page - Material cost distribution
 
 - ~~3 columns,~~ ~~6~~ 5 columns
@@ -82,8 +74,8 @@ Specifically:
 
 #### Char page - Optimizer instructions
 
-- text instructions instaed of boxes, no longer allow custom states input cos the UI is too cluttered
-- 2 rows for juice & book, e.g. juice x10, no juice until x% artisan, juice after that
+- ~~text instructions instaed of boxes, no longer allow custom states input cos the UI is too cluttered~~
+- ~~2 rows for juice & book, e.g. juice x10, no juice until x% artisan, juice after that~~
 - similar text instructions for advanced honing
 - "succeed and deduct costs" button, which prompts for either number of taps via a slider, which should show artisan & material costs / predicted material remaining
   - just ignore <0?
@@ -296,6 +288,17 @@ Below are some rambling / brainstorming / Misc stuff
 
 ## Done / cancelled
 
+~~#### Char page - Detailed status inputs~~
+
+- ~~artisan, adv xp etc on a separate page?~~
+  - ~~separate page => no more hand-holding optimization which i mean it's not designed to do anyway~~
+    - ~~can still do piece-after-piece optimization~~
+
+- ~~wire up the result of optimizer to keyed upgrades~~
+  - ~~will need to set up some kind of callback on optimizer results (to write to the keyed upgrades)~~
+  - ~~let histogram watch the keyed upgrades~~
+- ~~make the mat distribution read from a separate worker~~
+- ~~Optimizer instruction~~
 - ~~add back graph hover tooltip~~
 - ~~wire up the 2 annotations on material graph(need to add another annotation)~~ ~~maybe too cluttered~~ togglable
 

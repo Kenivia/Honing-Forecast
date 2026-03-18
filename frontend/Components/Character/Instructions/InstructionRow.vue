@@ -3,7 +3,7 @@ import MaterialCell from "@/Components/Common/MaterialCell.vue"
 import { CharProfile, useProfilesStore } from "@/stores/CharacterProfile"
 import { useRosterStore } from "@/stores/RosterConfig"
 import { JOINED_ADV_JUICE, PIECE_NAMES, ALL_LABELS, DEFAULT_ARTISAN_MULTIPLIER, T4_JUICE_LABELS } from "@/Utils/Constants"
-import { formatSig, get_piece_name, iconPath } from "@/Utils/Helpers"
+import { formatSig, get_piece_name, iconPath, toOrdinal } from "@/Utils/Helpers"
 import { input_column_to_num, State, to_upgrade_key, Upgrade, UpgradeStatus } from "@/Utils/Interfaces"
 import { storeToRefs } from "pinia"
 import { computed, ref, watch } from "vue"
@@ -191,11 +191,12 @@ function zeroSpecialLeaps() {
 // --- Req 5: Interactive Inputs & Watchers ---
 const taps_so_far = ref(props.upgrade.alr_failed || 0)
 watch(taps_so_far, (newVal) => {
+    console.log("tap so far trigger")
     active_profile.value.keyed_upgrades[to_upgrade_key(props.upgrade.piece_type, props.upgrade.upgrade_index, !props.upgrade.is_normal_honing)][1][3] = newVal
 })
 
 const current_adv_upgrade = ref(props.upgrade.adv_config ? Math.floor(props.upgrade.adv_config.start_xp / 10) + props.upgrade.upgrade_index * 10 : 0)
-const current_adv_xp = ref(props.upgrade.adv_config ? (props.upgrade.adv_config.start_xp - Math.floor(props.upgrade.adv_config.start_xp / 10)) * 10 : 0)
+const current_adv_xp = ref(props.upgrade.adv_config ? (props.upgrade.adv_config.start_xp - Math.floor(props.upgrade.adv_config.start_xp / 10) * 10) * 10 : 0)
 const current_grace_progress = ref(0) // Defaulted to 0, adjust as needed from your config
 const next_free = ref(props.upgrade.adv_config?.next_free ?? false)
 const next_big = ref(props.upgrade.adv_config?.next_big ?? false)
@@ -299,6 +300,13 @@ function confirmSuccess() {
     show_success_modal.value = false
     succeed_without_deduct.value = false // reset
 }
+
+function juice_icon_path(upgrade: Upgrade, juice: boolean) {
+    let juice_info = active_profile.value.optimizer_worker_bundle.result.prep_output.juice_info
+    let relevant_id_map = upgrade.is_normal_honing ? juice_info.normal_uindex_to_id : juice_info.adv_uindex_to_id
+    let relevant_upgrade = relevant_id_map[upgrade.upgrade_index]
+    return iconPath(T4_JUICE_LABELS[relevant_upgrade[juice ? 0 : relevant_upgrade.length - 1]][upgrade.is_weapon ? 0 : 1])
+}
 </script>
 
 <template>
@@ -314,34 +322,24 @@ function confirmSuccess() {
                         {{ props.perform_order + 1 }}
                     </div>
                     <div class="order-text">
-                        {{ free_tap_this_upgrade ? "Free tap this" : "Normal tap this" }}
+                        {{ free_tap_this_upgrade ? "Free tap this " + toOrdinal(props.perform_order + 1) : "Normal tap this" }}
                     </div>
                 </div>
 
                 <div v-if="free_tap_this_upgrade" class="free-tap-actions">
-                    <button class="btn-all-failed" @click="zeroSpecialLeaps">All free taps failed</button>
-                    <span class="action-desc">set Special leaps to 0.</span>
+                    <button class="btn-all-failed" @click="zeroSpecialLeaps">I've used all Special leaps</button>
+                    <span class="action-desc">Use free taps before proceeding</span>
                 </div>
             </div>
 
             <div class="hf-scrollable-instructions" :class="{ 'is-dimmed': free_tap_this_upgrade }">
                 <div v-for="(vStreak, i) in visualStreaks" :key="i" class="instruction-stack">
                     <div class="icon-slot">
-                        <img v-if="vStreak.topIconActive" :src="iconPath(T4_JUICE_LABELS[0][upgrade.is_weapon ? 0 : 1])" alt="Top Mat" />
+                        <img v-if="vStreak.topIconActive" :src="juice_icon_path(upgrade, true)" alt="Top Mat" />
                         <div v-else class="empty-cross"></div>
                     </div>
                     <div class="icon-slot">
-                        <img
-                            v-if="vStreak.bottomIconActive"
-                            :src="
-                                iconPath(
-                                    T4_JUICE_LABELS[
-                                        active_profile.optimizer_worker_bundle.result.prep_output.juice_info.normal_uindex_to_id[upgrade.upgrade_index][-1]
-                                    ][upgrade.is_weapon ? 0 : 1],
-                                )
-                            "
-                            alt="Bottom Mat"
-                        />
+                        <img v-if="vStreak.bottomIconActive" :src="juice_icon_path(upgrade, false)" alt="Bottom Mat" />
                         <div v-else class="empty-cross"></div>
                     </div>
                     <div class="text-slot">
@@ -373,20 +371,32 @@ function confirmSuccess() {
                             <input
                                 type="number"
                                 v-model.number="current_adv_upgrade"
-                                :min="(upgrade.upgrade_index - 1) * 10 + 1"
-                                :max="upgrade.upgrade_index * 10"
+                                :min="upgrade.upgrade_index * 10"
+                                :max="(upgrade.upgrade_index + 1) * 10 - 1"
+                                @change="
+                                    current_adv_upgrade = isNaN(current_adv_upgrade)
+                                        ? upgrade.upgrade_index * 10
+                                        : Math.min(Math.max(current_adv_upgrade, upgrade.upgrade_index * 10), (upgrade.upgrade_index + 1) * 10 - 1)
+                                "
                             />
                         </div>
                         <div class="input-row">
                             <label>Current xp</label>
-                            <input type="number" v-model.number="current_adv_xp" min="0" max="90" step="10" />
+                            <input
+                                type="number"
+                                v-model.number="current_adv_xp"
+                                min="0"
+                                max="90"
+                                step="10"
+                                style="justify-self: flex-start"
+                                @change="current_adv_xp = isNaN(current_adv_xp) ? 0 : Math.min(Math.max(current_adv_xp, 0), 90)"
+                            />
                         </div>
                         <div class="input-row grid-4">
                             <label>Grace progress</label>
                             <input type="number" v-model.number="current_grace_progress" min="0" max="6" />
 
                             <label v-if="current_grace_progress === 0" class="check-label"> <input type="checkbox" v-model="next_free" /> Next free </label>
-
                             <label v-if="current_grace_progress === 6" class="check-label"> <input type="checkbox" v-model="next_big" /> Next big </label>
                         </div>
                     </div>
@@ -507,7 +517,7 @@ function confirmSuccess() {
 
 .btn-all-failed {
     height: calc(var(--icon-size) * 2 + 0.25rem);
-    background-color: var(--hf-text-muted, #555);
+    background-color: var(--hf-free-tap);
     color: var(--hf-bg-deep, #000);
     border: none;
     border-radius: 8px;
@@ -618,7 +628,7 @@ function confirmSuccess() {
 .input-row {
     display: flex;
     align-items: center;
-    justify-content: space-between;
+    justify-content: flex-start;
     gap: 0.5rem;
     height: 33%;
 }

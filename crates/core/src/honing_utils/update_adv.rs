@@ -13,7 +13,11 @@ impl Upgrade {
 
         for t_index in 0..7 {
             let mut this_mats_costs: Vec<f64> = Vec::with_capacity(c_len);
-            let mut cost_so_far: f64 = self.unlock_costs[t_index];
+            let mut cost_so_far: f64 = if self.adv_config.start_xp > 0 {
+                0.0
+            } else {
+                self.unlock_costs[t_index]
+            };
             let this_cost: f64 = self.costs[t_index];
             for (index, _p) in self.adv_dists[0].iter().enumerate() {
                 this_mats_costs.push(cost_so_far);

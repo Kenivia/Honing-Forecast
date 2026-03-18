@@ -29,7 +29,11 @@ const visibleRows = computed(() => {
             }
         })
 })
-const gold_breakdown = computed(() => active_profile.value.optimizer_worker_bundle.result.average_breakdown.map((x: number) => Math.ceil(x == 0 ? x : -x)))
+const gold_breakdown = computed(
+    () =>
+        active_profile.value.histogram_worker_bundle.value?.state_bundle.average_breakdown.map((x: number) => Math.ceil(x == 0 ? x : -x)) ??
+        new Array(ALL_LABELS[active_profile.value.tier].length).fill(0),
+)
 
 const market_gold_text = "Avg gold spent buying from market"
 const tradable_gold_text = "Avg gold spent buying minus gold from selling tradables"
@@ -64,7 +68,7 @@ const annotation_values = computed(() => {
 
 function hover_annotation(x, _y, cy, material_type, color): string {
     let place = Math.min(10, Math.max(Math.ceil(cy < 0.5 ? Math.min(3, Math.abs(Math.log10(cy))) : Math.abs(Math.log10(1 - cy))), 3))
-    return `<b style="color: white;">${(cy * 100).toPrecision(place)}% </b> chance to use <br> &#8804;<b style="color: ${color};"> ${x.toLocaleString("en-US")} </b> ${material_type} `
+    return `<b style="color: white;">${(cy * 100).toPrecision(place)}% </b> chance to use <br> &#8804;<b style="color: ${color};"> ${Math.ceil(x).toLocaleString("en-US")} </b> ${material_type} `
 }
 </script>
 

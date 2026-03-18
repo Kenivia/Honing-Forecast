@@ -6,6 +6,7 @@ use serde::Serialize;
 pub struct HistogramOutputs {
     cum_percentiles: Vec<Vec<(f64, f64)>>,
     average: Vec<f64>,
+    state_bundle: StateBundle,
 }
 
 pub fn histogram(state_bundle: &mut StateBundle) -> HistogramOutputs {
@@ -91,8 +92,10 @@ pub fn histogram(state_bundle: &mut StateBundle) -> HistogramOutputs {
         average.push(out)
     }
 
+    state_bundle.average_gold_metric(true, &mut Performance::new());
     HistogramOutputs {
         cum_percentiles,
         average,
+        state_bundle: state_bundle.clone(),
     }
 }

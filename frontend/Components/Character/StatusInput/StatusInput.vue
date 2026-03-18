@@ -16,7 +16,7 @@ const tooltip_text = computed(() => {
         ? check_eligibility()
             ? "Eligible for conversion to T4.5 Serca gear"
             : "Cannot convert to Serca because: " +
-              [!check_adv_all_done() ? "Adv honing not all +40" : null, !(check_ilevel_all_good() === true) ? "Gear not all at least + 20" : null]
+              [!check_adv_all_done() ? "All Adv honing must be +40" : null, !(check_ilevel_all_good() === true) ? "All Gear must be at least +20" : null]
                   .filter((x) => x !== null)
                   .join(", \n")
         : check_eligibility()

@@ -38,7 +38,7 @@ export interface EvalPayload {
     num_threads: number
     metric_type: number
 }
-function apply_treatement(treatment: TreatmentPlan, bound: number, roster: number, tradable: number): [number, number] {
+export function apply_treatement(treatment: TreatmentPlan, bound: number, roster: number, tradable: number): [number, number] {
     switch (treatment) {
         case TreatmentPlan.TreatTradableAsBound:
             return [bound + roster + tradable, 0]
@@ -49,6 +49,8 @@ function apply_treatement(treatment: TreatmentPlan, bound: number, roster: numbe
     }
 }
 export function buildPayload(wasm_op: WasmOp): EvalPayload | StateBundle {
+    // OPTIMIZER_WORKEBUNDLE DEPENDENCE ANYWHERE HERE IS A BIG NO NO BECAUSE IT WILL KEEP RE-TRIGGERING
+    // if some constant is really is needed then should run a separate parser worker and store the parser result
     const { active_profile } = storeToRefs(useProfilesStore())
     const { roster_config } = storeToRefs(useRosterStore())
 
@@ -63,10 +65,6 @@ export function buildPayload(wasm_op: WasmOp): EvalPayload | StateBundle {
     )
     const mats_prices = input_column_to_num(roster_config.value.mats_prices[tier]).map((x: number, index: number) => x / BUNDLE_SIZE[index])
 
-    active_profile.value.keyed_upgrades = grids_to_keyed(active_profile.value.normal_grid, active_profile.value.adv_grid, active_profile.value.keyed_upgrades)
-
-    // console.log(active_profile.value.keyed_upgrades)
-    // console.log(keyed_to_array(active_profile.value.keyed_upgrades))
     return {
         material_info: ALL_LABELS[tier].map((_, index) => [
             ...apply_treatement(active_profile.value.treatment_plan, bound_budgets[index], roster_mats_owned[index], tradable_mats_owned[index]),
@@ -74,7 +72,7 @@ export function buildPayload(wasm_op: WasmOp): EvalPayload | StateBundle {
             tradable_mats_price[index],
             mats_prices[index],
         ]),
-        upgrade_info: keyed_to_array(active_profile.value.keyed_upgrades, active_profile.value.optimizer_worker_bundle.result),
+        upgrade_info: keyed_to_array(active_profile.value.keyed_upgrades),
         special_budget: input_column_to_num(active_profile.value.special_budget)[0],
         express_event: active_profile.value.express_event,
         tier,
@@ -82,13 +80,4 @@ export function buildPayload(wasm_op: WasmOp): EvalPayload | StateBundle {
         num_threads: 1,
         metric_type: 1,
     }
-
-    //     else {
-    //     // console.log(toRaw(active_profile.value.state_bundle))
-    //     let out = toRaw(active_profile.value.state_bundle)
-    //     for (let index = 0; index < out.prep_output.juice_info.all_juices.length; index++) {
-    //         out.prep_output.juice_info.all_juices[index].data = mapToObject(out.prep_output.juice_info.all_juices[index].data)
-    //     }
-    //     return out
-    // }
 }

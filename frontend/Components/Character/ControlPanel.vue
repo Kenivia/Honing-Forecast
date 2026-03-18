@@ -82,7 +82,7 @@ const auto_start_optimizer = computed(() => active_profile.value.auto_start_opti
     </div>
     <div class="hf-card-body">
         <div class="optimizer-card">
-            <button
+            <!-- <button
                 class="hf-optimize-btn"
                 :style="{
                     background: optimizer_busy
@@ -92,10 +92,10 @@ const auto_start_optimizer = computed(() => active_profile.value.auto_start_opti
                           : 'linear-gradient(180deg, #e6c86f 0%, #cfaf52 100%)',
                     color: optimizer_busy ? 'var(--text-muted)' : has_run_optimizer ? 'var(--hf-text-bright)' : '#1b1f25',
                 }"
-                @click="optimizer_worker.start(WasmOp.OptimizeAverage)"
+                @click="optimizer_worker.start(WasmOp.OptimizeAverage, structuredClone(toRaw(preped_payload)))"
             >
                 {{ optimizer_busy ? "Cancel Optimize" : has_run_optimizer ? "Re-run Optimizer" : ">>> Optimize <<<" }}
-            </button>
+            </button> -->
 
             <!-- <label class="hf-inline-check">
                 <input v-model="store.profiles[active_profile_index].auto_start_optimizer" type="checkbox" />

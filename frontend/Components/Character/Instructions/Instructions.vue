@@ -19,11 +19,13 @@ function sort_upgrades(): Upgrade[] {
 
     let output: Upgrade[] = []
     let upgrade_arr: Upgrade[] = active_profile.value.optimizer_worker_bundle.result.upgrade_arr
-    for (let index = 0; index < output.length; index++) {
-        console.log(active_profile.value.optimizer_worker_bundle.result.latest_special_probs[index])
+    let copy = upgrade_arr.slice()
+    for (let index = 0; index < upgrade_arr.length; index++) {
+        // console.log(active_profile.value.optimizer_worker_bundle.result.latest_special_probs)
+        copy[index].this_special_chance = active_profile.value.optimizer_worker_bundle.result.latest_special_probs[index]
         upgrade_arr[index].this_special_chance = active_profile.value.optimizer_worker_bundle.result.latest_special_probs[index]
     }
-    let copy = upgrade_arr.slice()
+
     let special_state = active_profile.value.optimizer_worker_bundle.result.special_state
     let special_invalid_index = active_profile.value.optimizer_worker_bundle.result.special_invalid_index
     // console.log(list.slice(), special_invalid_index)              this_upgrade.this_special_chance = active_profile.value.optimizer_worker_bundle.result.

@@ -2,6 +2,7 @@ import { assert } from "console"
 
 import { CharProfile, useProfilesStore } from "@/stores/CharacterProfile"
 import { ALL_LABELS, TIER_LABELS } from "./Constants"
+import { toRaw } from "vue"
 
 export interface Upgrade {
     piece_type: number
@@ -163,18 +164,11 @@ export function to_upgrade_key(piece_type: number, upgrade_index: number, is_adv
     return `${piece_type},${upgrade_index},${is_adv}`
 }
 
-// function apply_forced_juice_books(state_bundle: StateBundle, one_upgrade: OneUpgrade, juice: number, book: number): OneUpgrade {
-//     for (let index = 0; index < one_upgrade[4].length; index++) {
-//         one_upgrade[4][index][0] = index < juice
-//         one_upgrade[4][index][1] = index < book ? state_bundle.prep_output.juice_info.normal_uindex_to_id[one_upgrade[1]] : 0
-//     }
-//     return one_upgrade
-// }
-export function keyed_to_array(keyed_upgrades: KeyedUpgrades, state_bundle: StateBundle | null): OneUpgrade[] {
+export function keyed_to_array(keyed_upgrades: KeyedUpgrades): OneUpgrade[] {
     return Object.entries(keyed_upgrades)
         .map(([_, pair]) => pair)
         .filter((x) => x[0])
-        .map((x) => x[1])
+        .map((x) => toRaw(x[1]))
 }
 export function grids_to_keyed(normal_grid: StatusGrid, adv_grid: StatusGrid, all_keyed: KeyedUpgrades) {
     // console.log(all_keyed)
@@ -221,6 +215,7 @@ export type HistogramPair = [number, number]
 export interface HistogramOutputs {
     cum_percentiles: HistogramPair[][]
     average: number[]
+    state_bundle: StateBundle
 }
 
 export interface EvalAverageOutput {

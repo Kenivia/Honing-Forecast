@@ -106,7 +106,11 @@ impl Upgrade {
 
         for t_index in 0..7 {
             let mut this_mats_costs: Vec<f64> = Vec::with_capacity(l_len);
-            let mut cost_so_far: f64 = self.unlock_costs[t_index];
+            let mut cost_so_far: f64 = if self.alr_failed > 0 {
+                0.0
+            } else {
+                self.unlock_costs[t_index]
+            };
             let this_cost: f64 = self.costs[t_index];
             for (index, _p) in self.normal_dist.iter().enumerate() {
                 this_mats_costs.push(cost_so_far);
@@ -114,8 +118,9 @@ impl Upgrade {
                 if index >= l_len - 1 {
                     break;
                 }
-
-                cost_so_far += this_cost;
+                if index >= self.alr_failed {
+                    cost_so_far += this_cost;
+                }
             }
 
             self.cost_dist[t_index].update_payload(
@@ -140,6 +145,9 @@ impl Upgrade {
                 weap_support.push(weap_cost);
                 armor_support.push(armor_cost);
                 if index >= l_len - 2 {
+                    continue;
+                }
+                if index < self.alr_failed {
                     continue;
                 }
                 if *juice && id == 0 {

@@ -1,16 +1,17 @@
 <script setup lang="ts">
 import { CharProfile, useProfilesStore } from "@/stores/CharacterProfile"
-import { PIECE_NAMES, NORMAL_COLS as NORMAL_COLS, NUM_PIECES as NORMAL_ROWS, ADV_COLS } from "@/Utils/Constants"
+import { PIECE_NAMES, NORMAL_COLS as NORMAL_COLS, NUM_PIECES as NORMAL_ROWS, ADV_COLS, ALL_LABELS, BUNDLE_SIZE } from "@/Utils/Constants"
 import { iconPath } from "@/Utils/Helpers"
-import { grids_to_keyed, input_column_to_num, StateBundle, to_upgrade_key, Upgrade, UpgradeStatus } from "@/Utils/Interfaces"
+import { grids_to_keyed, input_column_to_num, keyed_to_array, StateBundle, to_upgrade_key, Upgrade, UpgradeStatus } from "@/Utils/Interfaces"
 import { storeToRefs } from "pinia"
 import { eventNames } from "process"
-import { computed, onWatcherCleanup, toRaw, watch, watchEffect } from "vue"
+import { computed, onWatcherCleanup, ref, toRaw, watch, watchEffect } from "vue"
 import StatusInput from "./StatusInput.vue"
-import { buildPayload } from "@/WasmInterface/payload"
+import { apply_treatement, buildPayload, EvalPayload } from "@/WasmInterface/payload"
 import { WasmOp } from "@/WasmInterface/js_to_wasm"
 import { useRosterStore } from "@/stores/RosterConfig"
 import { watchDebounced } from "@vueuse/core"
+import equal from "fast-deep-equal"
 const profile_store = useProfilesStore()
 
 const { active_profile } = storeToRefs(useProfilesStore())
@@ -108,92 +109,102 @@ function change_one(row: number, col: number, current = relevant_grid.value[row]
         }
     }
 }
+const preped_payload = ref(buildPayload(WasmOp.OptimizeAverage))
 
-watchDebounced(
+watch(
+    [() => active_profile.value.adv_grid, () => active_profile.value.normal_grid],
+    () => {
+        console.log("keyed update")
+        active_profile.value.keyed_upgrades = grids_to_keyed(
+            active_profile.value.normal_grid,
+            active_profile.value.adv_grid,
+            active_profile.value.keyed_upgrades,
+        )
+    },
+    { deep: true },
+)
+watch(
     [
-        () => active_profile.value.adv_grid,
-        () => active_profile.value.normal_grid,
-        () => {
-            // console.log(active_profile.value.bound_budgets, active_profile.value.tier, active_profile.value)
-            input_column_to_num(active_profile.value.bound_budgets[active_profile.value.tier])
-        },
-        () => input_column_to_num(active_profile.value.leftover_price[active_profile.value.tier]),
-        () => input_column_to_num(roster_config.value.mats_prices[active_profile.value.tier]),
-        () => input_column_to_num(roster_config.value.tradable_mats_owned[active_profile.value.tier]),
-        () => input_column_to_num(roster_config.value.roster_mats_owned[active_profile.value.tier]),
-        // () => active_profile.value.keyed_upgrades,
-        () => input_column_to_num(active_profile.value.special_budget),
-        () => active_profile.value.express_event,
+        () => active_profile.value.bound_budgets,
+        () => active_profile.value.leftover_price,
         () => active_profile.value.tier,
-        () => active_profile.value.treatment_plan,
+        () => active_profile.value.express_event,
+        () => active_profile.value.min_resolution,
+        () => roster_config.value.roster_mats_owned,
+        () => roster_config.value.tradable_mats_owned,
+        () => roster_config.value.mats_prices,
+        () => active_profile.value.keyed_upgrades,
     ],
+    () => {
+        console.log("payload update")
+        // active_profile.value.keyed_upgrades = grids_to_keyed(active_profile.value.normal_grid, active_profile.value.adv_grid, active_profile.value.keyed_upgrades)
+        const tier = active_profile.value.tier
+
+        const bound_budgets = input_column_to_num(active_profile.value.bound_budgets[tier])
+        const roster_mats_owned = input_column_to_num(roster_config.value.roster_mats_owned[tier])
+        const tradable_mats_owned = input_column_to_num(roster_config.value.tradable_mats_owned[tier])
+        const leftover_price = input_column_to_num(active_profile.value.leftover_price[tier])
+        const tradable_mats_price = input_column_to_num(roster_config.value.mats_prices[tier]).map(
+            (x: number, index: number) => Math.max(Math.min(1, x), Math.floor(x * 0.95)) / BUNDLE_SIZE[index],
+        )
+        const mats_prices = input_column_to_num(roster_config.value.mats_prices[tier]).map((x: number, index: number) => x / BUNDLE_SIZE[index])
+
+        preped_payload.value = {
+            material_info: ALL_LABELS[tier].map((_, index) => [
+                ...apply_treatement(active_profile.value.treatment_plan, bound_budgets[index], roster_mats_owned[index], tradable_mats_owned[index]),
+                leftover_price[index],
+                tradable_mats_price[index],
+                mats_prices[index],
+            ]),
+            upgrade_info: keyed_to_array(active_profile.value.keyed_upgrades),
+            special_budget: input_column_to_num(active_profile.value.special_budget)[0],
+            express_event: active_profile.value.express_event,
+            tier,
+            min_resolution: active_profile.value.min_resolution,
+            num_threads: 1,
+            metric_type: 1,
+        }
+    },
+    { deep: true },
+)
+watchDebounced(
+    () => toRaw(preped_payload.value),
     (_) => {
         onWatcherCleanup(() => {
             active_profile.value.optimizer_worker_bundle.cancel()
         })
-        // console.log("optimizer triggered")
-        active_profile.value.optimizer_worker_bundle.start(WasmOp.OptimizeAverage, set_keyed_upgrade)
+        active_profile.value.optimizer_worker_bundle.start(WasmOp.OptimizeAverage, structuredClone(toRaw(preped_payload.value)))
     },
     { immediate: true, deep: true, debounce: 500 },
 )
 
-function set_keyed_upgrade(result: StateBundle) {
-    if (result === null) {
-        return
-    }
-    for (let index = 0; index < result.upgrade_arr.length; index++) {
-        let upgrade: Upgrade = result.upgrade_arr[index]
-        let key = to_upgrade_key(upgrade.piece_type, upgrade.upgrade_index, !upgrade.is_normal_honing)
+// I cant seem to stop this from infinitely looping optimizer,
+// The purpose of this is to give the previous state (hopefully a good state) back to the optimizer but its fine ig
+// function set_keyed_upgrade(result: StateBundle) {
+//     if (result === null) return
+//     for (let index = 0; index < result.upgrade_arr.length; index++) {
+//         const upgrade: Upgrade = result.upgrade_arr[index]
+//         const key = to_upgrade_key(upgrade.piece_type, upgrade.upgrade_index, !upgrade.is_normal_honing)
+//         if (!(key in active_profile.value.keyed_upgrades)) {
+//             active_profile.value.keyed_upgrades[key] = upgrade.is_normal_honing
+//                 ? [true, [upgrade.piece_type, upgrade.upgrade_index, !upgrade.is_normal_honing, 0, [], false, false, null], 0, 0]
+//                 : [true, [upgrade.piece_type, upgrade.upgrade_index, !upgrade.is_normal_honing, null, [], false, false, [0, 0, false, false]], null, null]
+//         }
 
-        if (!(key in active_profile.value.keyed_upgrades)) {
-            active_profile.value.keyed_upgrades[key] = upgrade.is_normal_honing
-                ? [true, [upgrade.piece_type, upgrade.upgrade_index, !upgrade.is_normal_honing, 0, [], false, false, null], 0, 0]
-                : [true, [upgrade.piece_type, upgrade.upgrade_index, !upgrade.is_normal_honing, null, [], false, false, [0, 0, false, false]], null, null]
-        }
-        active_profile.value.keyed_upgrades[key][1][4] = upgrade.state
-    }
-}
-// watch(
-//     [
-//         () => active_profile.value.adv_grid,
-//         () => active_profile.value.normal_grid,
-//         () => input_column_to_num(active_profile.value.bound_budgets),
-//         () => input_column_to_num(active_profile.value.leftover_price),
-//         () => input_column_to_num(roster_config.value.mats_prices),
-//         () => input_column_to_num(roster_config.value.tradable_mats_owned),
-//         () => input_column_to_num(roster_config.value.roster_mats_owned),
-//         () => active_profile.value.keyed_upgrades,
-//         () => input_column_to_num(active_profile.value.special_budget),
-//     ],
-//     (_) => {
-//         onWatcherCleanup(() => {
-//             active_profile.value.evaluation_worker_bundle.cancel()
-//         })
-//         console.log("eval triggered")
-//         active_profile.value.evaluation_worker_bundle.start(WasmOp.EvaluateAverage)
-//     },
-// )
-
+//         const current = active_profile.value.keyed_upgrades[key][1][4]
+//         if (!equal(current, upgrade.state)) {
+//             active_profile.value.keyed_upgrades[key][1][4] = upgrade.state
+//         }
+//     }
+// }
 watchDebounced(
-    [
-        () => active_profile.value.adv_grid,
-        () => active_profile.value.normal_grid,
-        () => input_column_to_num(active_profile.value.bound_budgets[active_profile.value.tier]),
-        () => input_column_to_num(active_profile.value.leftover_price[active_profile.value.tier]),
-        () => input_column_to_num(roster_config.value.mats_prices[active_profile.value.tier]),
-        () => input_column_to_num(roster_config.value.tradable_mats_owned[active_profile.value.tier]),
-        () => input_column_to_num(roster_config.value.roster_mats_owned[active_profile.value.tier]),
-        () => input_column_to_num(active_profile.value.special_budget),
-        () => active_profile.value.express_event,
-        () => active_profile.value.tier,
-        () => active_profile.value.treatment_plan,
-    ],
-    (_) => {
+    () => toRaw(preped_payload.value),
+    () => {
         onWatcherCleanup(() => {
             active_profile.value.histogram_worker_bundle.cancel()
         })
-        // console.log("histogram triggered")
-        active_profile.value.histogram_worker_bundle.start(WasmOp.Histogram)
+
+        active_profile.value.histogram_worker_bundle.start(WasmOp.Histogram, structuredClone(toRaw(preped_payload.value)))
     },
     { immediate: true, deep: true, debounce: 100 },
 )

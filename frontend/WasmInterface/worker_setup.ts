@@ -1,7 +1,7 @@
 import { ref, onUnmounted, Ref, toRaw } from "vue"
 import { WasmOp } from "./js_to_wasm"
 import { HistogramOutputs, StateBundle } from "@/Utils/Interfaces"
-import { buildPayload } from "./payload"
+import { buildPayload, EvalPayload } from "./payload"
 import { mapToObject } from "@/Utils/Helpers"
 const createWorker = () => new Worker(new URL("./js_to_wasm.ts", import.meta.url), { type: "module" })
 
@@ -13,7 +13,7 @@ export function createWorkerBundle() {
     const est_progress_percentage = ref(0)
     let debounceTimer = null
 
-    function _launch(wasm_op: WasmOp, callback?: (result) => void) {
+    function _launch(wasm_op: WasmOp, payload: EvalPayload, callback?: (result) => void) {
         cancel()
 
         status.value = "busy"
@@ -46,18 +46,18 @@ export function createWorkerBundle() {
             worker = null
         }
 
-        console.log(WasmOp[wasm_op], toRaw(buildPayload(wasm_op)))
+        console.log(WasmOp[wasm_op], payload)
         // console.log(JSON.parse(JSON.stringify(toRaw(buildPayload(wasm_op)))))
-        worker.postMessage({ type: "message", wasm_op, payload: JSON.parse(JSON.stringify(toRaw(buildPayload(wasm_op)))) })
+        worker.postMessage({ type: "message", wasm_op, payload })
     }
 
-    function start(wasm_op: WasmOp, callback?: (result) => void, debounce?: number) {
+    function start(wasm_op: WasmOp, payload: EvalPayload, callback?: (result) => void, debounce?: number) {
         if (debounce > 0) {
             clearTimeout(debounceTimer)
             status.value = "busy"
-            debounceTimer = setTimeout(() => _launch(wasm_op), debounce)
+            debounceTimer = setTimeout(() => _launch(wasm_op, payload, callback), debounce)
         } else {
-            _launch(wasm_op, callback)
+            _launch(wasm_op, payload, callback)
         }
     }
 

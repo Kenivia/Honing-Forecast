@@ -125,7 +125,7 @@ impl Upgrade {
                 string
             },
             alr_failed,
-            unlocked,
+            unlocked, // THIS IS IGNORED RN just assuming alr_failed > 0 <==> ulocked
             unlock_costs: unlock_costs.try_into().unwrap(),
             succeeded,
             extra_chance,
