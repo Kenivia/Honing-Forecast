@@ -6,12 +6,13 @@
 - Sidebars
   - ~~logo -> burger on mobile~~ prolly only for roster setup
 - ~~market price import~~
-- resolution
+- resolution (is it really necessary actually)
   - need to re-add this to neighbor
 - enable/disable checkbox
 - move treatment selection to sidebar, accomodate the text somehow
 - special budget & graph
 - total gold row
+- char creation
 
 ## Roadmap
 

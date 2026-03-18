@@ -56,13 +56,16 @@ function convert_roster_mats_to_serca() {
     }
 }
 
-const t4_serca_prices = computed(() => {
+const t4_better = computed(() => {
     let t4_price = input_column_to_num(roster_config.value.mats_prices[0])
     let serca_price = input_column_to_num(roster_config.value.mats_prices[1])
-    return {
-        effective_prices: ALL_LABELS[1].map((_, index) => Math.min(t4_price[index] * 5, serca_price[index])),
-        t4_better: ALL_LABELS[1].map((_, index) => t4_price[index] * 5 < serca_price[index]),
-    }
+    return ALL_LABELS[1].map((_, index) => t4_price[index] * 5 < serca_price[index])
+})
+
+watchEffect(() => {
+    let t4_price = input_column_to_num(roster_config.value.mats_prices[0])
+    let serca_price = input_column_to_num(roster_config.value.mats_prices[1])
+    roster_config.value.effective_serca_price = ALL_LABELS[1].map((_, index) => Math.min(t4_price[index] * 5, serca_price[index]))
 })
 </script>
 
@@ -195,9 +198,9 @@ const t4_serca_prices = computed(() => {
                 />
                 <MaterialCell
                     v-if="!SYNCED_LABELS.includes(label)"
-                    :input_column="t4_serca_prices.effective_prices"
+                    :input_column="roster_config.effective_serca_price"
                     :row="row"
-                    :suffix="t4_serca_prices.t4_better[row] ? 'Convert T4' : 'Buy Serca '"
+                    :suffix="t4_better[row] ? 'Convert T4' : 'Buy Serca '"
                 />
             </div>
         </div>

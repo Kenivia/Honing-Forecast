@@ -7,13 +7,13 @@ const router = createRouter({
     routes: [
         {
             path: "/",
-            name: "roster",
-            component: RosterView,
-        },
-        {
-            path: "/YourChar",
             name: "char",
             component: CharView,
+        },
+        {
+            path: "/roster",
+            name: "roster",
+            component: RosterView,
         },
         // { path: "/:pathMatch(.*)*", redirect: "/" },
     ],
