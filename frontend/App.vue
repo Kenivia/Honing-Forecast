@@ -9,12 +9,15 @@ import { storeToRefs } from "pinia"
 import { computed, onMounted, onUnmounted, toRaw, watchEffect } from "vue"
 import { ref } from "vue"
 import { useMediaIsNarrow } from "./Utils/WindowSize"
+import { fetch_callback, useTimedFetch } from "./Utils/MarketDataFetcher"
 
 const roster_store = useRosterStore()
 roster_store.init()
 const profile_store = useProfilesStore()
 profile_store.init()
 const { all_profiles } = storeToRefs(profile_store)
+const { start_fetch } = useTimedFetch(fetch_callback)
+start_fetch(roster_store.roster_config.region)
 
 profile_store.$subscribe((_mutation, state) => {
     debounced_write_char_profiles(state)

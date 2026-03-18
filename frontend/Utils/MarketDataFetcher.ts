@@ -1,5 +1,7 @@
 import { ref } from "vue"
 import { ALL_LABELS } from "./Constants"
+import { storeToRefs } from "pinia"
+import { useRosterStore } from "@/stores/RosterConfig"
 
 const BODY = {
     region_slug: "nae",
@@ -143,4 +145,17 @@ export function useTimedFetch(callback: (data: number[][], selectedShardSize: nu
     }
 
     return { disabled, start_fetch }
+}
+export function fetch_callback(result: number[][], selectedShardSize: number, shard_price: number) {
+    const { roster_config } = storeToRefs(useRosterStore())
+
+    roster_config.value.selected_shard_bag_size = selectedShardSize
+    for (let tier = 0; tier < ALL_LABELS.length; tier++) {
+        for (let index = 0; index < ALL_LABELS[tier].length; index++) {
+            roster_config.value.mats_prices[tier].data[index] = result[tier][index].toLocaleString()
+            if (ALL_LABELS[tier][index] == "Shards") {
+                roster_config.value.mats_prices[tier].data[index] = shard_price.toLocaleString()
+            }
+        }
+    }
 }

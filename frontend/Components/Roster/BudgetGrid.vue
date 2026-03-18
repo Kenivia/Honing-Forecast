@@ -8,24 +8,14 @@ import { SelectButton } from "primevue"
 import { useMediaIsNarrow } from "@/Utils/WindowSize"
 import { input_column_to_num, parse_input } from "@/Utils/Interfaces"
 import TierConvertButton from "../Common/TierConvertButton.vue"
-import { useTimedFetch } from "@/Utils/MarketDataFetcher"
+import { fetch_callback, useTimedFetch } from "@/Utils/MarketDataFetcher"
 
 const { roster_config } = storeToRefs(useRosterStore())
 
 const tier = computed(() => roster_config.value.tier)
 const { isNarrow } = useMediaIsNarrow(BUDGET_NARROW_WIDTH)
 
-const { disabled, start_fetch } = useTimedFetch((result: number[][], selectedShardSize: number, shard_price: number) => {
-    roster_config.value.selected_shard_bag_size = selectedShardSize
-    for (let tier = 0; tier < ALL_LABELS.length; tier++) {
-        for (let index = 0; index < ALL_LABELS[tier].length; index++) {
-            roster_config.value.mats_prices[tier].data[index] = result[tier][index].toLocaleString()
-            if (ALL_LABELS[tier][index] == "Shards") {
-                roster_config.value.mats_prices[tier].data[index] = shard_price.toLocaleString()
-            }
-        }
-    }
-})
+const { disabled, start_fetch } = useTimedFetch(fetch_callback)
 
 watchEffect(() => {
     // one way sync from T4 to Serca, the uui modifies the T4 copy
@@ -102,12 +92,13 @@ const t4_serca_prices = computed(() => {
     </div>
 
     <div class="hf-shard-size-selector">
-        <label>Shard Bag Size:</label>
+        <label>Shard bag size:</label>
         <select v-model.number="roster_config.selected_shard_bag_size" class="hf-shard-size-select">
             <option value="1000">x1000</option>
             <option value="2000">x2000</option>
             <option value="3000">x3000</option>
         </select>
+        <label>(Best one will be auto selected)</label>
     </div>
     <div class="hf-outer-budget-grid" :class="{ narrow: isNarrow }">
         <div v-if="!isNarrow || tier == 0" class="hf-roster-inputs-tier-4" :style="{ gridRow: `span ${String(ALL_LABELS[0].length + 1)}` }">
