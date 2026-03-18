@@ -12,21 +12,23 @@ const profile_store = useProfilesStore()
 const { active_profile } = storeToRefs(useProfilesStore())
 const { roster_config } = storeToRefs(useRosterStore())
 
-function sort_upgrades(): Upgrade[] {
+// this
+function sort_upgrades(): [Upgrade, number][] {
     if (!active_profile.value.optimizer_worker_bundle.result) {
         return []
     }
 
-    let output: Upgrade[] = []
+    let output: number[] = []
+    let indices_in_special_state: number[] = []
     let upgrade_arr: Upgrade[] = active_profile.value.optimizer_worker_bundle.result.upgrade_arr
-    let copy = upgrade_arr.slice()
+    // let copy = upgrade_arr.slice()
+    let special_state: number[] = active_profile.value.optimizer_worker_bundle.result.special_state
     for (let index = 0; index < upgrade_arr.length; index++) {
         // console.log(active_profile.value.optimizer_worker_bundle.result.latest_special_probs)
-        copy[index].this_special_chance = active_profile.value.optimizer_worker_bundle.result.latest_special_probs[index]
-        upgrade_arr[index].this_special_chance = active_profile.value.optimizer_worker_bundle.result.latest_special_probs[index]
+        // copy[index].this_special_chance = active_profile.value.optimizer_worker_bundle.result.latest_special_probs[index]
+        upgrade_arr[special_state[index]].this_special_chance = active_profile.value.optimizer_worker_bundle.result.latest_special_probs[index]
     }
 
-    let special_state = active_profile.value.optimizer_worker_bundle.result.special_state
     let special_invalid_index = active_profile.value.optimizer_worker_bundle.result.special_invalid_index
     // console.log(list.slice(), special_invalid_index)              this_upgrade.this_special_chance = active_profile.value.optimizer_worker_bundle.result.
 
@@ -35,26 +37,30 @@ function sort_upgrades(): Upgrade[] {
         if (index_in_special_state >= special_invalid_index) {
             // console.log(output.slice(), u_index, u_index in output)
             if (!output.includes(index_in_upgrade_arr)) {
-                output.push(upgrade_arr[index_in_upgrade_arr])
+                output.push(index_in_upgrade_arr)
             }
         } else {
             let this_upgrade = upgrade_arr[index_in_upgrade_arr]
-            for (const [index, upgrade] of copy.entries()) {
+            for (const [index, upgrade] of upgrade_arr.entries()) {
                 if (
                     upgrade.upgrade_index <= this_upgrade.upgrade_index &&
                     upgrade.is_normal_honing &&
                     upgrade.piece_type == this_upgrade.piece_type &&
                     !upgrade.succeeded &&
-                    !output.includes(upgrade)
+                    !output.includes(index)
                 ) {
-                    output.push(this_upgrade)
+                    output.push(index)
+                    indices_in_special_state.push(special_state.findIndex((x) => x == index))
                 }
             }
         }
     }
 
-    // console.log(output)
-    return output
+    // console.log(
+    //     output.map((x) => [x, special_state.findIndex((y) => y == x)]),
+    //     special_state,
+    // )
+    return output.map((x) => [upgrade_arr[x], special_state.findIndex((y) => y == x)])
 }
 
 let sorted_upgrade_arr = computed(sort_upgrades)
@@ -67,11 +73,12 @@ let sorted_upgrade_arr = computed(sort_upgrades)
         </div>
         <div class="hf-card-body">
             <div v-if="active_profile.optimizer_worker_bundle.result">
-                <div v-for="(upgrade, perform_order) in sorted_upgrade_arr" :key="`instructions-${sorted_upgrade_arr}`">
+                <div v-for="([upgrade, index_in_special_state], perform_order) in sorted_upgrade_arr" :key="`instructions-${sorted_upgrade_arr}`">
                     <InstructionRow
                         :upgrade="upgrade"
                         :perform_order="perform_order"
                         :special_invalid_index="active_profile.optimizer_worker_bundle.result.special_invalid_index"
+                        :index_in_special_state="index_in_special_state"
                     />
                 </div>
             </div>

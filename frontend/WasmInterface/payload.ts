@@ -10,7 +10,7 @@ import {
     input_column_to_num,
     keyed_to_array,
     MaterialInput,
-    State,
+    OneState,
     StateBundle,
     Upgrade,
     UpgradeInput,

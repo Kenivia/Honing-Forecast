@@ -134,6 +134,7 @@ watch(
         () => roster_config.value.tradable_mats_owned,
         () => roster_config.value.mats_prices,
         () => active_profile.value.keyed_upgrades,
+        () => active_profile.value.special_budget,
     ],
     () => {
         console.log("payload update")

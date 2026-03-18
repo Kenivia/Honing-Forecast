@@ -4,7 +4,7 @@ import { CharProfile, useProfilesStore } from "@/stores/CharacterProfile"
 import { useRosterStore } from "@/stores/RosterConfig"
 import { JOINED_ADV_JUICE, PIECE_NAMES, ALL_LABELS, DEFAULT_ARTISAN_MULTIPLIER, T4_JUICE_LABELS } from "@/Utils/Constants"
 import { formatSig, get_piece_name, iconPath, toOrdinal } from "@/Utils/Helpers"
-import { input_column_to_num, State, to_upgrade_key, Upgrade, UpgradeStatus } from "@/Utils/Interfaces"
+import { input_column_to_num, OneState, to_upgrade_key, Upgrade, UpgradeStatus } from "@/Utils/Interfaces"
 import { storeToRefs } from "pinia"
 import { computed, ref, watch } from "vue"
 
@@ -14,11 +14,13 @@ const { roster_config } = storeToRefs(useRosterStore())
 const props = defineProps<{
     upgrade: Upgrade
     perform_order: number
+    index_in_special_state: number
     special_invalid_index: number
 }>()
 
 const free_tap_this_upgrade = computed(() => {
-    return props.perform_order < props.special_invalid_index && props.upgrade.this_special_chance > 0
+    // console.log(props.index_in_special_state, props.special_invalid_index, props.upgrade.this_special_chance)
+    return props.index_in_special_state < props.special_invalid_index && props.upgrade.this_special_chance > 0
 })
 
 // --- Req 1: Scrollable Instructions Logic ---
@@ -191,7 +193,7 @@ function zeroSpecialLeaps() {
 // --- Req 5: Interactive Inputs & Watchers ---
 const taps_so_far = ref(props.upgrade.alr_failed || 0)
 watch(taps_so_far, (newVal) => {
-    console.log("tap so far trigger")
+    // console.log("tap so far trigger")
     active_profile.value.keyed_upgrades[to_upgrade_key(props.upgrade.piece_type, props.upgrade.upgrade_index, !props.upgrade.is_normal_honing)][1][3] = newVal
 })
 

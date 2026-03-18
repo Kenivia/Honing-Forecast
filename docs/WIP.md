@@ -4,12 +4,14 @@
 ## Immediate WIP
 
 - Sidebars
+  - logo -> burger on mobile
 - market price import
 - resolution
   - need to re-add this to neighbor
 - enable/disable checkbox
 - move treatment selection to sidebar, accomodate the text somehow
 - special budget & graph
+- total gold row
 
 ## Roadmap
 

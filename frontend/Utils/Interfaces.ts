@@ -11,7 +11,7 @@ export interface Upgrade {
     is_weapon?: boolean
     normal_dist?: number[]
     adv_dists?: number[][]
-    state?: State[]
+    state?: OneState[]
     succeeded?: boolean
     unlocked?: boolean
     alr_failed?: number
@@ -55,8 +55,8 @@ export interface StateBundle {
 
 export type BoolGrid = boolean[][]
 export type NumGrid = number[][]
-export type State = [boolean, number] // juice, bookid
-export type StateGrid = State[][][]
+export type OneState = [boolean, number] // juice, bookid
+export type StateGrid = OneState[][][]
 export type AdvProgress = [number, number, boolean, boolean] // current xp(0 to 100 or 99 ig), current balls ( 0 to 6), next_free, next_big
 export type AdvProgressGrid = AdvProgress[][]
 // ^ these types go directly to wasm and should not become an interface with multiple fields
@@ -151,7 +151,7 @@ export type MaterialInput = OneMaterial[]
 
 // idk why i used is_adv here but whatever
 //          (enabled),  piece type, upgrade index, is_adv, normal_progress, state, unlock, succeeded, adv_progress
-export type OneUpgrade = [number, number, boolean, number | null, State[], boolean, boolean, AdvProgress | null]
+export type OneUpgrade = [number, number, boolean, number | null, OneState[], boolean, boolean, AdvProgress | null]
 export type UpgradeInput = OneUpgrade[]
 export const DEFAULT_ONE_UPGRADE = [0, [], false, false, [0, 0, false, false]] // excluding the first 3
 
