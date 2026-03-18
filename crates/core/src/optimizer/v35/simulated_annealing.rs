@@ -42,9 +42,9 @@ fn compute_upgrade_impact(state_bundle: &mut StateBundle) -> Vec<f64> {
 
     for upgrade in &state_bundle.upgrade_arr {
         let mut magnitude: f64 = 0.01;
-        for (index, p) in probs.iter().take(7).enumerate() {
-            magnitude += (state_bundle.prep_output.leftover_values[index] * p
-                + state_bundle.prep_output.price_arr[index] * (1.0 - p))
+        for (index, p) in probs.iter().enumerate() {
+            magnitude += (state_bundle.prep_output.leftover_price[index] * p
+                + state_bundle.prep_output.market_price[index] * (1.0 - p))
                 * upgrade.cost_dist[index]
                     .access_collapsed(false)
                     .iter()
@@ -84,7 +84,7 @@ pub fn solve<R: Rng>(
     }
 
     let mut eqv_wall_time_iters: i64 = 0;
-    let mut last_total_count: i64 = 0;
+    let mut last_total_count: i64 = -9999; // immediately send a result 
     let scaler = AdaptiveScaler::new(state_bundle.metric.abs(), 50);
 
     let mut overall_best_n_states: DoublePriorityQueue<StateEssence, OrderedFloat<f64>> =
@@ -213,11 +213,9 @@ pub fn solve<R: Rng>(
                 let mut dummy_performance = Performance::new();
                 solver_bundle
                     .state_bundle
-                    .average_gold_metric_with_breakdown(&mut dummy_performance);
+                    .average_gold_metric(true, &mut dummy_performance);
                 solver_bundle.state_bundle.set_latest_special_probs();
-                solver_bundle
-                    .state_bundle
-                    .metric_router(overall_performance);
+
                 send_progress(
                     &solver_bundle.state_bundle.clone(),
                     (100.0 * (eqv_wall_time_iters as f64 / MAX_ITERS as f64)).min(100.0),

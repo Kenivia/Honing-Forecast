@@ -13,7 +13,11 @@ impl Upgrade {
 
         for t_index in 0..7 {
             let mut this_mats_costs: Vec<f64> = Vec::with_capacity(c_len);
-            let mut cost_so_far: f64 = self.unlock_costs[t_index];
+            let mut cost_so_far: f64 = if self.adv_config.start_xp > 0 {
+                0.0
+            } else {
+                self.unlock_costs[t_index]
+            };
             let this_cost: f64 = self.costs[t_index];
             for (index, _p) in self.adv_dists[0].iter().enumerate() {
                 this_mats_costs.push(cost_so_far);
@@ -59,7 +63,7 @@ impl Upgrade {
                 }
             }
 
-            self.weap_juice_costs[id].update_payload(
+            self.cost_dist[id + 7].update_payload(
                 weap_support,
                 self.state.hash,
                 this_dist,
@@ -68,7 +72,7 @@ impl Upgrade {
                 self.alr_failed,
             );
 
-            self.armor_juice_costs[id].update_payload(
+            self.cost_dist[id + 7 + juice_info.num_juice_avail].update_payload(
                 armor_support,
                 self.state.hash,
                 this_dist,

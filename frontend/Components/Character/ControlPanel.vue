@@ -1,0 +1,147 @@
+<script setup lang="ts">
+import {
+    GRAPH_COLORS,
+    T4_JUICE_LABELS,
+    T4_MATS_LABELS,
+    TIER_LABELS,
+    TIER_OPTIONS,
+    ALL_LABELS,
+    ADV_COLS,
+    NUM_PIECES,
+    NORMAL_COLS,
+    PLUS_TIER_CONVERSION,
+} from "@/Utils/Constants"
+import GoldBreakdown from "./GoldBreakdown.vue"
+import { CharProfile, create_default_char_profile, useProfilesStore } from "@/stores/CharacterProfile"
+import { check_eligibility, iconPath, metricToText } from "@/Utils/Helpers"
+import MaterialCell from "@/Components/Common/MaterialCell.vue"
+import { create_input_column, DEFAULT_ONE_UPGRADE, input_column_to_num, InputType, parse_input, UpgradeStatus } from "@/Utils/Interfaces"
+import MaterialGraph from "./MaterialGraph.vue"
+import { buildPayload } from "@/WasmInterface/payload"
+import { WasmOp } from "@/WasmInterface/js_to_wasm"
+import { RosterConfig, useRosterStore } from "@/stores/RosterConfig"
+import { storeToRefs } from "pinia"
+import { computed, watch } from "vue"
+
+const store = useProfilesStore()
+const { active_profile } = storeToRefs(store)
+
+const { roster_config } = storeToRefs(useRosterStore())
+function resetActive() {
+    store.resetActiveProfile()
+}
+
+// function resetOptimizerState() {
+//     Object.entries(active_profile.value.keyed_upgrades).forEach(([_, one_upgrade]) =>
+//         Object.assign(one_upgrade, [one_upgrade[0], one_upgrade[1], one_upgrade[2], ...DEFAULT_ONE_UPGRADE]),
+//     )
+// }
+function copyPayload() {
+    const payload = JSON.stringify(buildPayload(WasmOp.Parser), null, 2)
+    navigator.clipboard?.writeText(payload).catch(() => undefined)
+}
+
+const optimizer_worker = active_profile.value.optimizer_worker_bundle
+
+const optimizer_busy = computed(() => optimizer_worker.status === "busy")
+const has_run_optimizer = computed(() => active_profile.value.has_run_optimizer)
+const auto_start_optimizer = computed(() => active_profile.value.auto_start_optimizer)
+</script>
+<template>
+    <div class="hf-ops-row">
+        <section class="hf-card">
+            <div class="hf-card-header">
+                <div class="hf-card-title"><span class="hf-card-title-dot" />Controls</div>
+            </div>
+            <div class="hf-card-body hf-options-body">
+                <div class="hf-options-row">
+                    <button class="hf-header-link-btn" @click="resetActive">Reset All</button>
+                    <!-- <button class="hf-header-link-btn" @click="resetOptimizerState">Reset Optimizer</button> -->
+                </div>
+                <button class="hf-header-link-btn" @click="copyPayload">Copy Payload</button>
+
+                <!-- <div class="hf-divider" /> -->
+
+                <div class="hf-divider" />
+                <label class="hf-inline-check">
+                    <input v-model="roster_config.cumulative_graph" type="checkbox" />
+                    <span>Cumulative graph</span>
+                </label>
+                <div class="hf-divider" />
+
+                <!-- <label class="hf-inline-check">
+                    <input v-model="allowManualState" type="checkbox" />
+                    <span>Enable progress updates for better optimization</span>
+                </label> -->
+            </div>
+        </section>
+    </div>
+    <div class="hf-card-header">
+        <div class="hf-card-title"><span class="hf-card-title-dot" />Action Queue</div>
+        <span class="hf-card-hint">Optimize, then follow next steps</span>
+    </div>
+    <div class="hf-card-body">
+        <div class="optimizer-card">
+            <!-- <button
+                class="hf-optimize-btn"
+                :style="{
+                    background: optimizer_busy
+                        ? 'var(--cancel-optimizer-button)'
+                        : has_run_optimizer
+                          ? 'linear-gradient(180deg, #60656f 0%, #4f545f 100%)'
+                          : 'linear-gradient(180deg, #e6c86f 0%, #cfaf52 100%)',
+                    color: optimizer_busy ? 'var(--text-muted)' : has_run_optimizer ? 'var(--hf-text-bright)' : '#1b1f25',
+                }"
+                @click="optimizer_worker.start(WasmOp.OptimizeAverage, structuredClone(toRaw(preped_payload)))"
+            >
+                {{ optimizer_busy ? "Cancel Optimize" : has_run_optimizer ? "Re-run Optimizer" : ">>> Optimize <<<" }}
+            </button> -->
+
+            <!-- <label class="hf-inline-check">
+                <input v-model="store.profiles[active_profile_index].auto_start_optimizer" type="checkbox" />
+                <span>Auto start optimizer</span>
+            </label> -->
+
+            <div class="hf-metric-card">
+                <div class="hf-metric-label">Avg eqv gold cost</div>
+                <div class="hf-metric-status">{{ metricToText(active_profile.optimizer_worker_bundle.result?.metric) ?? "No Result yet" }}</div>
+            </div>
+
+            <MaterialCell
+                :input_column="active_profile.special_budget"
+                :row="0"
+                :setter="(val) => (active_profile.special_budget.data[0] = val)"
+                :label="active_profile.special_budget.keys[0]"
+            ></MaterialCell>
+
+            <div v-if="optimizer_worker.status === 'error'" class="optimizer-error">Error: {{ optimizer_worker.error }}</div>
+
+            <div class="optimizer-progress">
+                <span>Optimizer progress: {{ Math.max(optimizer_worker.est_progress_percentage, 0.01).toFixed(2) }}%</span>
+                <div class="progress-bar">
+                    <div class="progress-fill" :style="{ width: `${optimizer_worker.est_progress_percentage}%` }" />
+                </div>
+            </div>
+        </div>
+    </div>
+</template>
+<style>
+.progress-bar {
+    width: 100%;
+    height: 8px;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 4px;
+    overflow: hidden;
+}
+.progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--hf-gold-dim), var(--hf-gold));
+    transition: width 0.2s ease;
+}
+.optimizer-progress {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    font-size: 12px;
+}
+</style>

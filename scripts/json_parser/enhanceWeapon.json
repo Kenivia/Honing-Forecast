@@ -1,0 +1,855 @@
+{
+    "name": "운명의 전율 대검",
+    "enhance": [
+        {
+            "currentLevel": 0,
+            "nextLevel": 1,
+            "feedShard": 35000,
+            "feedSilver": 350000,
+            "successRate": 6000,
+            "bonusSuccessRate": 600,
+            "additives": [
+                {
+                    "itemName": "red juice",
+                    "rate": 250,
+                    "maxCount": 16
+                }
+            ],
+            "materials": [
+                {
+                    "itemName": "red",
+                    "count": 440
+                },
+                {
+                    "itemName": "leaps",
+                    "count": 8
+                },
+                {
+                    "itemName": "fusion",
+                    "count": 7
+                }
+            ],
+            "shard": 8990,
+            "silver": 20000,
+            "gold": 1550,
+            "specialEnhanceItem": "특수 재련 : 전이 돌파석",
+            "specialEnhanceNeed": 30
+        },
+        {
+            "currentLevel": 1,
+            "nextLevel": 2,
+            "feedShard": 35000,
+            "feedSilver": 350000,
+            "successRate": 6000,
+            "bonusSuccessRate": 600,
+            "additives": [
+                {
+                    "itemName": "red juice",
+                    "rate": 250,
+                    "maxCount": 16
+                }
+            ],
+            "materials": [
+                {
+                    "itemName": "red",
+                    "count": 570
+                },
+                {
+                    "itemName": "leaps",
+                    "count": 9
+                },
+                {
+                    "itemName": "fusion",
+                    "count": 7
+                }
+            ],
+            "shard": 9290,
+            "silver": 20000,
+            "gold": 1600,
+            "specialEnhanceItem": "특수 재련 : 전이 돌파석",
+            "specialEnhanceNeed": 30
+        },
+        {
+            "currentLevel": 2,
+            "nextLevel": 3,
+            "feedShard": 35000,
+            "feedSilver": 350000,
+            "successRate": 6000,
+            "bonusSuccessRate": 600,
+            "additives": [
+                {
+                    "itemName": "red juice",
+                    "rate": 250,
+                    "maxCount": 16
+                }
+            ],
+            "materials": [
+                {
+                    "itemName": "red",
+                    "count": 700
+                },
+                {
+                    "itemName": "leaps",
+                    "count": 10
+                },
+                {
+                    "itemName": "fusion",
+                    "count": 7
+                }
+            ],
+            "shard": 9590,
+            "silver": 20000,
+            "gold": 1650,
+            "specialEnhanceItem": "특수 재련 : 전이 돌파석",
+            "specialEnhanceNeed": 30
+        },
+        {
+            "currentLevel": 3,
+            "nextLevel": 4,
+            "feedShard": 35000,
+            "feedSilver": 350000,
+            "successRate": 4500,
+            "bonusSuccessRate": 450,
+            "additives": [
+                {
+                    "itemName": "red juice",
+                    "rate": 225,
+                    "maxCount": 20
+                }
+            ],
+            "materials": [
+                {
+                    "itemName": "red",
+                    "count": 830
+                },
+                {
+                    "itemName": "leaps",
+                    "count": 11
+                },
+                {
+                    "itemName": "fusion",
+                    "count": 9
+                }
+            ],
+            "shard": 9890,
+            "silver": 20000,
+            "gold": 1800,
+            "specialEnhanceItem": "특수 재련 : 전이 돌파석",
+            "specialEnhanceNeed": 30
+        },
+        {
+            "currentLevel": 4,
+            "nextLevel": 5,
+            "feedShard": 35000,
+            "feedSilver": 350000,
+            "successRate": 4500,
+            "bonusSuccessRate": 450,
+            "additives": [
+                {
+                    "itemName": "red juice",
+                    "rate": 225,
+                    "maxCount": 20
+                }
+            ],
+            "materials": [
+                {
+                    "itemName": "red",
+                    "count": 960
+                },
+                {
+                    "itemName": "leaps",
+                    "count": 11
+                },
+                {
+                    "itemName": "fusion",
+                    "count": 9
+                }
+            ],
+            "shard": 10490,
+            "silver": 20000,
+            "gold": 1950,
+            "specialEnhanceItem": "특수 재련 : 전이 돌파석",
+            "specialEnhanceNeed": 30
+        },
+        {
+            "currentLevel": 5,
+            "nextLevel": 6,
+            "feedShard": 38000,
+            "feedSilver": 380000,
+            "successRate": 3000,
+            "bonusSuccessRate": 300,
+            "additives": [
+                {
+                    "itemName": "red juice",
+                    "rate": 150,
+                    "maxCount": 20
+                }
+            ],
+            "materials": [
+                {
+                    "itemName": "red",
+                    "count": 1030
+                },
+                {
+                    "itemName": "leaps",
+                    "count": 11
+                },
+                {
+                    "itemName": "fusion",
+                    "count": 9
+                }
+            ],
+            "shard": 11090,
+            "silver": 20000,
+            "gold": 2150,
+            "specialEnhanceItem": "특수 재련 : 전이 돌파석",
+            "specialEnhanceNeed": 30
+        },
+        {
+            "currentLevel": 6,
+            "nextLevel": 7,
+            "feedShard": 41000,
+            "feedSilver": 410000,
+            "successRate": 3000,
+            "bonusSuccessRate": 300,
+            "additives": [
+                {
+                    "itemName": "red juice",
+                    "rate": 150,
+                    "maxCount": 20
+                }
+            ],
+            "materials": [
+                {
+                    "itemName": "red",
+                    "count": 1160
+                },
+                {
+                    "itemName": "leaps",
+                    "count": 12
+                },
+                {
+                    "itemName": "fusion",
+                    "count": 12
+                }
+            ],
+            "shard": 11690,
+            "silver": 22000,
+            "gold": 2350,
+            "specialEnhanceItem": "특수 재련 : 전이 돌파석",
+            "specialEnhanceNeed": 30
+        },
+        {
+            "currentLevel": 7,
+            "nextLevel": 8,
+            "feedShard": 41000,
+            "feedSilver": 410000,
+            "successRate": 1500,
+            "bonusSuccessRate": 150,
+            "additives": [
+                {
+                    "itemName": "red juice",
+                    "rate": 75,
+                    "maxCount": 20
+                }
+            ],
+            "materials": [
+                {
+                    "itemName": "red",
+                    "count": 1290
+                },
+                {
+                    "itemName": "leaps",
+                    "count": 12
+                },
+                {
+                    "itemName": "fusion",
+                    "count": 12
+                }
+            ],
+            "shard": 12590,
+            "silver": 22000,
+            "gold": 2600,
+            "specialEnhanceItem": "특수 재련 : 전이 돌파석",
+            "specialEnhanceNeed": 30
+        },
+        {
+            "currentLevel": 8,
+            "nextLevel": 9,
+            "feedShard": 44000,
+            "feedSilver": 440000,
+            "successRate": 1500,
+            "bonusSuccessRate": 150,
+            "additives": [
+                {
+                    "itemName": "red juice",
+                    "rate": 75,
+                    "maxCount": 20
+                }
+            ],
+            "materials": [
+                {
+                    "itemName": "red",
+                    "count": 1360
+                },
+                {
+                    "itemName": "leaps",
+                    "count": 14
+                },
+                {
+                    "itemName": "fusion",
+                    "count": 15
+                }
+            ],
+            "shard": 13190,
+            "silver": 22000,
+            "gold": 2900,
+            "specialEnhanceItem": "특수 재련 : 전이 돌파석",
+            "specialEnhanceNeed": 30
+        },
+        {
+            "currentLevel": 9,
+            "nextLevel": 10,
+            "feedShard": 49000,
+            "feedSilver": 490000,
+            "successRate": 1000,
+            "bonusSuccessRate": 100,
+            "additives": [
+                {
+                    "itemName": "red juice",
+                    "rate": 50,
+                    "maxCount": 20
+                }
+            ],
+            "materials": [
+                {
+                    "itemName": "red",
+                    "count": 1490
+                },
+                {
+                    "itemName": "leaps",
+                    "count": 14
+                },
+                {
+                    "itemName": "fusion",
+                    "count": 15
+                }
+            ],
+            "shard": 14090,
+            "silver": 22000,
+            "gold": 3250,
+            "specialEnhanceItem": "특수 재련 : 전이 돌파석",
+            "specialEnhanceNeed": 30
+        },
+        {
+            "currentLevel": 10,
+            "nextLevel": 11,
+            "feedShard": 52000,
+            "feedSilver": 520000,
+            "successRate": 1000,
+            "bonusSuccessRate": 100,
+            "additives": [
+                {
+                    "itemName": "red juice",
+                    "rate": 50,
+                    "maxCount": 20
+                }
+            ],
+            "materials": [
+                {
+                    "itemName": "red",
+                    "count": 1630
+                },
+                {
+                    "itemName": "leaps",
+                    "count": 14
+                },
+                {
+                    "itemName": "fusion",
+                    "count": 18
+                }
+            ],
+            "shard": 14990,
+            "silver": 22000,
+            "gold": 3650,
+            "specialEnhanceItem": "특수 재련 : 전이 돌파석",
+            "specialEnhanceNeed": 30
+        },
+        {
+            "currentLevel": 11,
+            "nextLevel": 12,
+            "feedShard": 57000,
+            "feedSilver": 570000,
+            "successRate": 500,
+            "bonusSuccessRate": 50,
+            "additives": [
+                {
+                    "itemName": "red juice",
+                    "rate": 25,
+                    "maxCount": 20
+                }
+            ],
+            "materials": [
+                {
+                    "itemName": "red",
+                    "count": 1700
+                },
+                {
+                    "itemName": "leaps",
+                    "count": 17
+                },
+                {
+                    "itemName": "fusion",
+                    "count": 18
+                }
+            ],
+            "shard": 15890,
+            "silver": 22000,
+            "gold": 4050,
+            "specialEnhanceItem": "특수 재련 : 전이 돌파석",
+            "specialEnhanceNeed": 30
+        },
+        {
+            "currentLevel": 12,
+            "nextLevel": 13,
+            "feedShard": 63000,
+            "feedSilver": 630000,
+            "successRate": 500,
+            "bonusSuccessRate": 50,
+            "additives": [
+                {
+                    "itemName": "red juice",
+                    "rate": 25,
+                    "maxCount": 20
+                }
+            ],
+            "materials": [
+                {
+                    "itemName": "red",
+                    "count": 1890
+                },
+                {
+                    "itemName": "leaps",
+                    "count": 19
+                },
+                {
+                    "itemName": "fusion",
+                    "count": 21
+                }
+            ],
+            "shard": 17660,
+            "silver": 22000,
+            "gold": 4500,
+            "specialEnhanceItem": "특수 재련 : 전이 돌파석",
+            "specialEnhanceNeed": 30
+        },
+        {
+            "currentLevel": 13,
+            "nextLevel": 14,
+            "feedShard": 70000,
+            "feedSilver": 700000,
+            "successRate": 400,
+            "bonusSuccessRate": 40,
+            "additives": [
+                {
+                    "itemName": "red juice",
+                    "rate": 20,
+                    "maxCount": 20
+                }
+            ],
+            "materials": [
+                {
+                    "itemName": "red",
+                    "count": 2080
+                },
+                {
+                    "itemName": "leaps",
+                    "count": 21
+                },
+                {
+                    "itemName": "fusion",
+                    "count": 23
+                }
+            ],
+            "shard": 19420,
+            "silver": 22000,
+            "gold": 4950,
+            "specialEnhanceItem": "특수 재련 : 전이 돌파석",
+            "specialEnhanceNeed": 35
+        },
+        {
+            "currentLevel": 14,
+            "nextLevel": 15,
+            "feedShard": 76000,
+            "feedSilver": 760000,
+            "successRate": 400,
+            "bonusSuccessRate": 40,
+            "additives": [
+                {
+                    "itemName": "red juice",
+                    "rate": 20,
+                    "maxCount": 20
+                }
+            ],
+            "materials": [
+                {
+                    "itemName": "red",
+                    "count": 2270
+                },
+                {
+                    "itemName": "leaps",
+                    "count": 23
+                },
+                {
+                    "itemName": "fusion",
+                    "count": 25
+                }
+            ],
+            "shard": 21190,
+            "silver": 22000,
+            "gold": 5400,
+            "specialEnhanceItem": "특수 재련 : 전이 돌파석",
+            "specialEnhanceNeed": 35
+        },
+        {
+            "currentLevel": 15,
+            "nextLevel": 16,
+            "feedShard": 83000,
+            "feedSilver": 830000,
+            "successRate": 400,
+            "bonusSuccessRate": 40,
+            "additives": [
+                {
+                    "itemName": "red juice",
+                    "rate": 20,
+                    "maxCount": 20
+                }
+            ],
+            "materials": [
+                {
+                    "itemName": "red",
+                    "count": 2460
+                },
+                {
+                    "itemName": "leaps",
+                    "count": 25
+                },
+                {
+                    "itemName": "fusion",
+                    "count": 27
+                }
+            ],
+            "shard": 22960,
+            "silver": 22000,
+            "gold": 5850,
+            "specialEnhanceItem": "특수 재련 : 전이 돌파석",
+            "specialEnhanceNeed": 35
+        },
+        {
+            "currentLevel": 16,
+            "nextLevel": 17,
+            "feedShard": 90000,
+            "feedSilver": 900000,
+            "successRate": 300,
+            "bonusSuccessRate": 30,
+            "additives": [
+                {
+                    "itemName": "red juice",
+                    "rate": 12,
+                    "maxCount": 25
+                }
+            ],
+            "materials": [
+                {
+                    "itemName": "red",
+                    "count": 2690
+                },
+                {
+                    "itemName": "leaps",
+                    "count": 28
+                },
+                {
+                    "itemName": "fusion",
+                    "count": 29
+                }
+            ],
+            "shard": 25120,
+            "silver": 26000,
+            "gold": 6400,
+            "specialEnhanceItem": "특수 재련 : 전이 돌파석",
+            "specialEnhanceNeed": 40
+        },
+        {
+            "currentLevel": 17,
+            "nextLevel": 18,
+            "feedShard": 98000,
+            "feedSilver": 980000,
+            "successRate": 300,
+            "bonusSuccessRate": 30,
+            "additives": [
+                {
+                    "itemName": "red juice",
+                    "rate": 12,
+                    "maxCount": 25
+                }
+            ],
+            "materials": [
+                {
+                    "itemName": "red",
+                    "count": 2900
+                },
+                {
+                    "itemName": "leaps",
+                    "count": 30
+                },
+                {
+                    "itemName": "fusion",
+                    "count": 32
+                }
+            ],
+            "shard": 27080,
+            "silver": 26000,
+            "gold": 6900,
+            "specialEnhanceItem": "특수 재련 : 전이 돌파석",
+            "specialEnhanceNeed": 40
+        },
+        {
+            "currentLevel": 18,
+            "nextLevel": 19,
+            "feedShard": 105000,
+            "feedSilver": 1050000,
+            "successRate": 300,
+            "bonusSuccessRate": 30,
+            "additives": [
+                {
+                    "itemName": "red juice",
+                    "rate": 12,
+                    "maxCount": 25
+                }
+            ],
+            "materials": [
+                {
+                    "itemName": "red",
+                    "count": 3110
+                },
+                {
+                    "itemName": "leaps",
+                    "count": 32
+                },
+                {
+                    "itemName": "fusion",
+                    "count": 34
+                }
+            ],
+            "shard": 29040,
+            "silver": 26000,
+            "gold": 7400,
+            "specialEnhanceItem": "특수 재련 : 전이 돌파석",
+            "specialEnhanceNeed": 40
+        },
+        {
+            "currentLevel": 19,
+            "nextLevel": 20,
+            "feedShard": 112000,
+            "feedSilver": 1120000,
+            "successRate": 150,
+            "bonusSuccessRate": 15,
+            "additives": [
+                {
+                    "itemName": "red juice",
+                    "rate": 6,
+                    "maxCount": 25
+                }
+            ],
+            "materials": [
+                {
+                    "itemName": "red",
+                    "count": 3340
+                },
+                {
+                    "itemName": "leaps",
+                    "count": 34
+                },
+                {
+                    "itemName": "fusion",
+                    "count": 37
+                }
+            ],
+            "shard": 31200,
+            "silver": 36000,
+            "gold": 7950,
+            "specialEnhanceItem": "특수 재련 : 전이 돌파석",
+            "specialEnhanceNeed": 45
+        },
+        {
+            "currentLevel": 20,
+            "nextLevel": 21,
+            "feedShard": 120000,
+            "feedSilver": 1200000,
+            "successRate": 150,
+            "bonusSuccessRate": 15,
+            "additives": [
+                {
+                    "itemName": "red juice",
+                    "rate": 6,
+                    "maxCount": 25
+                }
+            ],
+            "materials": [
+                {
+                    "itemName": "red",
+                    "count": 3570
+                },
+                {
+                    "itemName": "leaps",
+                    "count": 37
+                },
+                {
+                    "itemName": "fusion",
+                    "count": 39
+                }
+            ],
+            "shard": 33360,
+            "silver": 36000,
+            "gold": 8500,
+            "specialEnhanceItem": "특수 재련 : 전이 돌파석",
+            "specialEnhanceNeed": 45
+        },
+        {
+            "currentLevel": 21,
+            "nextLevel": 22,
+            "feedShard": 128000,
+            "feedSilver": 1280000,
+            "successRate": 100,
+            "bonusSuccessRate": 10,
+            "additives": [
+                {
+                    "itemName": "red juice",
+                    "rate": 4,
+                    "maxCount": 25
+                }
+            ],
+            "materials": [
+                {
+                    "itemName": "red",
+                    "count": 3800
+                },
+                {
+                    "itemName": "leaps",
+                    "count": 39
+                },
+                {
+                    "itemName": "fusion",
+                    "count": 42
+                }
+            ],
+            "shard": 35520,
+            "silver": 48000,
+            "gold": 9050,
+            "specialEnhanceItem": "특수 재련 : 전이 돌파석",
+            "specialEnhanceNeed": 50
+        },
+        {
+            "currentLevel": 22,
+            "nextLevel": 23,
+            "feedShard": 136000,
+            "feedSilver": 1360000,
+            "successRate": 100,
+            "bonusSuccessRate": 10,
+            "additives": [
+                {
+                    "itemName": "red juice",
+                    "rate": 4,
+                    "maxCount": 25
+                }
+            ],
+            "materials": [
+                {
+                    "itemName": "red",
+                    "count": 4030
+                },
+                {
+                    "itemName": "leaps",
+                    "count": 42
+                },
+                {
+                    "itemName": "fusion",
+                    "count": 44
+                }
+            ],
+            "shard": 37680,
+            "silver": 48000,
+            "gold": 9600,
+            "specialEnhanceItem": "특수 재련 : 전이 돌파석",
+            "specialEnhanceNeed": 50
+        },
+        {
+            "currentLevel": 23,
+            "nextLevel": 24,
+            "feedShard": 144000,
+            "feedSilver": 1440000,
+            "successRate": 50,
+            "bonusSuccessRate": 5,
+            "additives": [
+                {
+                    "itemName": "red juice",
+                    "rate": 2,
+                    "maxCount": 50
+                }
+            ],
+            "materials": [
+                {
+                    "itemName": "red",
+                    "count": 4260
+                },
+                {
+                    "itemName": "leaps",
+                    "count": 44
+                },
+                {
+                    "itemName": "fusion",
+                    "count": 47
+                }
+            ],
+            "shard": 39840,
+            "silver": 60000,
+            "gold": 10150,
+            "specialEnhanceItem": "특수 재련 : 전이 돌파석",
+            "specialEnhanceNeed": 60
+        },
+        {
+            "currentLevel": 24,
+            "nextLevel": 25,
+            "feedShard": 152000,
+            "feedSilver": 1520000,
+            "successRate": 50,
+            "bonusSuccessRate": 5,
+            "additives": [
+                {
+                    "itemName": "red juice",
+                    "rate": 2,
+                    "maxCount": 50
+                }
+            ],
+            "materials": [
+                {
+                    "itemName": "red",
+                    "count": 4500
+                },
+                {
+                    "itemName": "leaps",
+                    "count": 47
+                },
+                {
+                    "itemName": "fusion",
+                    "count": 50
+                }
+            ],
+            "shard": 42000,
+            "silver": 60000,
+            "gold": 10700,
+            "specialEnhanceItem": "특수 재련 : 전이 돌파석",
+            "specialEnhanceNeed": 60
+        }
+    ]
+}

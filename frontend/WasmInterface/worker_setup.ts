@@ -1,79 +1,82 @@
-function makeId() {
-    // simple unique id
-    return Math.random().toString(36).slice(2) + Date.now().toString(36)
-}
+import { ref, onUnmounted, Ref, toRaw } from "vue"
+import { WasmOp } from "./js_to_wasm"
+import { HistogramOutputs, StateBundle } from "@/Utils/Interfaces"
+import { buildPayload, EvalPayload } from "./payload"
+import { mapToObject } from "@/Utils/Helpers"
+const createWorker = () => new Worker(new URL("./js_to_wasm.ts", import.meta.url), { type: "module" })
 
-export function SpawnWorker(payload : any, which_one : string,onIntermediateMessage? : (_)=>void ) {
-    // adjust path if needed
-    const worker = new Worker(new URL("./js_to_wasm.ts", import.meta.url), { type: "module" })
-    const id = makeId()
+export function createWorkerBundle() {
+    let worker = null
+    const status: Ref<"idle" | "success" | "busy" | "error"> = ref("idle")
+    const error = ref(null)
+    const result = ref(null)
+    const est_progress_percentage = ref(0)
+    let debounceTimer = null
 
-    let settled = false
-    const promise = new Promise((resolve, reject) => {
-        const onMessage = (ev) => {
-            // only accept messages that are result messages with the same id
-            const msg = ev.data
-            if (msg && msg.type === "result" && msg.id === id) {
-                settled = true
-                worker.removeEventListener("message", onMessage)
-                worker.removeEventListener("error", onError)
-                resolve(msg.result)
+    function _launch(wasm_op: WasmOp, payload: EvalPayload, callback?: (result) => void) {
+        cancel()
+
+        status.value = "busy"
+        error.value = null
+        est_progress_percentage.value = 0
+        worker = createWorker()
+
+        worker.onmessage = (e) => {
+            // console.log(e)
+
+            if (e.data.type === "result") {
+                result.value = e.data.result
+                status.value = "success"
+                est_progress_percentage.value = 100
+                // console.log(mapToObject(toRaw(result.value)?.adv_cache) ?? null)
+                worker.terminate()
+                worker = null
             } else {
-                onIntermediateMessage?.(msg)
-                // ignore unrelated messages (or you could expose them as events)
+                result.value = e.data.state_bundle
+                est_progress_percentage.value = e.data.est_progress_percentage
             }
-        }
-        const onError = (err) => {
-            if (!settled) {
-                settled = true
-                worker.removeEventListener("message", onMessage)
-                worker.removeEventListener("error", onError)
-                reject(err)
+            if (callback) {
+                callback(result.value)
             }
         }
 
-        worker.addEventListener("message", onMessage)
-        worker.addEventListener("error", onError)
-
-        // send the message including the id so worker can attach it to the response
-        try {
-            worker.postMessage({ id, payload, which_one })
-        } catch (e) {
-            // posting failed — clean up
-            worker.removeEventListener("message", onMessage)
-            worker.removeEventListener("error", onError)
-            reject(e)
+        worker.onerror = (e) => {
+            error.value = e.message
+            status.value = "error"
+            worker = null
         }
-    })
 
-    // When the promise settles we'll terminate the worker for safety
-    const wrapped = promise.finally(() => {
-        try {
-            worker.terminate()
-        } catch (e) {
-            //
-        }
-    })
-
-    return { worker, promise: wrapped }
-}
-
-export async function CallWorker(payload, which_one) {
-    const { worker, promise } = SpawnWorker(payload, which_one)
-    try {
-        const res = await promise
-        try {
-            worker.terminate()
-        } catch (e) {
-            //
-        }
-        return res
-    } catch (err) {
-        try {
-            worker.terminate()
-        } catch (e) {
-            //
-        }
-        throw err
+        console.log(WasmOp[wasm_op], payload)
+        // console.log(JSON.parse(JSON.stringify(toRaw(buildPayload(wasm_op)))))
+        worker.postMessage({ type: "message", wasm_op, payload })
     }
+
+    function start(wasm_op: WasmOp, payload: EvalPayload, callback?: (result) => void, debounce?: number) {
+        if (debounce > 0) {
+            clearTimeout(debounceTimer)
+            status.value = "busy"
+            debounceTimer = setTimeout(() => _launch(wasm_op, payload, callback), debounce)
+        } else {
+            _launch(wasm_op, payload, callback)
+        }
+    }
+
+    function cancel() {
+        clearTimeout(debounceTimer)
+        debounceTimer = null
+        if (worker) {
+            worker.terminate()
+            worker = null
+            status.value = "idle"
+        }
+    }
+    function cancel_and_clear_prev_result() {
+        cancel()
+        result.value = null
+        est_progress_percentage.value = 0
+    }
+
+    onUnmounted(cancel)
+
+    return { status, result, error, est_progress_percentage, start, cancel, cancel_and_clear_prev_result }
 }

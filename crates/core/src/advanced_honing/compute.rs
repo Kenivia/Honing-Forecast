@@ -1,6 +1,9 @@
 use ahash::AHashMap;
 
-use crate::advanced_honing::utils::{AdvConfig, AdvDistTriplet, SmallAdvState};
+use crate::{
+    advanced_honing::utils::{AdvConfig, AdvDistTriplet, SmallAdvState},
+    constants::IGNORE_PROB_TOL,
+};
 
 #[derive(Clone, Default, Debug)]
 pub struct PMF {
@@ -153,13 +156,16 @@ fn compute_adv_dist(
             }
 
             let combined_prob = prob_base * prob_sub;
+            if combined_prob > IGNORE_PROB_TOL {
+                // Recurse down the tree
+                let (cost_dist, juice_dist, scroll_dist) =
+                    compute_adv_dist(next_state, config, memo);
 
-            // Recurse down the tree
-            let (cost_dist, juice_dist, scroll_dist) = compute_adv_dist(next_state, config, memo);
-
-            expected_cost.add_in_place(&cost_dist.shift_and_scale(cost_inc, combined_prob));
-            expected_juice.add_in_place(&juice_dist.shift_and_scale(juice_inc, combined_prob));
-            expected_scroll.add_in_place(&scroll_dist.shift_and_scale(scroll_inc, combined_prob));
+                expected_cost.add_in_place(&cost_dist.shift_and_scale(cost_inc, combined_prob));
+                expected_juice.add_in_place(&juice_dist.shift_and_scale(juice_inc, combined_prob));
+                expected_scroll
+                    .add_in_place(&scroll_dist.shift_and_scale(scroll_inc, combined_prob));
+            }
         }
     }
 
@@ -285,7 +291,7 @@ pub fn compute_adv_dist_wrapper(config: &AdvConfig) -> AdvDistTriplet {
     let result = compute_adv_dist(
         initial_state,
         config,
-        &mut AHashMap::new(), //adv_memo_cache.get_mut(&invariant_key).unwrap(),
+        &mut AHashMap::with_capacity(256), //adv_memo_cache.get_mut(&invariant_key).unwrap(),
     );
 
     AdvDistTriplet {

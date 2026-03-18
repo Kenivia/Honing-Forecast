@@ -1,0 +1,855 @@
+{
+    "name": "helmet",
+    "enhance": [
+        {
+            "currentLevel": 0,
+            "nextLevel": 1,
+            "feedShard": 22000,
+            "feedSilver": 220000,
+            "successRate": 6000,
+            "bonusSuccessRate": 600,
+            "additives": [
+                {
+                    "itemName": "Blue juice",
+                    "rate": 250,
+                    "maxCount": 16
+                }
+            ],
+            "materials": [
+                {
+                    "itemName": "Blue",
+                    "count": 230
+                },
+                {
+                    "itemName": "leaps",
+                    "count": 5
+                },
+                {
+                    "itemName": "fusion",
+                    "count": 3
+                }
+            ],
+            "shard": 5400,
+            "silver": 12000,
+            "gold": 850,
+            "specialEnhanceItem": "special",
+            "specialEnhanceNeed": 12
+        },
+        {
+            "currentLevel": 1,
+            "nextLevel": 2,
+            "feedShard": 22000,
+            "feedSilver": 220000,
+            "successRate": 6000,
+            "bonusSuccessRate": 600,
+            "additives": [
+                {
+                    "itemName": "Blue juice",
+                    "rate": 250,
+                    "maxCount": 16
+                }
+            ],
+            "materials": [
+                {
+                    "itemName": "Blue",
+                    "count": 300
+                },
+                {
+                    "itemName": "leaps",
+                    "count": 6
+                },
+                {
+                    "itemName": "fusion",
+                    "count": 3
+                }
+            ],
+            "shard": 5580,
+            "silver": 12000,
+            "gold": 900,
+            "specialEnhanceItem": "special",
+            "specialEnhanceNeed": 12
+        },
+        {
+            "currentLevel": 2,
+            "nextLevel": 3,
+            "feedShard": 22000,
+            "feedSilver": 220000,
+            "successRate": 6000,
+            "bonusSuccessRate": 600,
+            "additives": [
+                {
+                    "itemName": "Blue juice",
+                    "rate": 250,
+                    "maxCount": 16
+                }
+            ],
+            "materials": [
+                {
+                    "itemName": "Blue",
+                    "count": 370
+                },
+                {
+                    "itemName": "leaps",
+                    "count": 6
+                },
+                {
+                    "itemName": "fusion",
+                    "count": 3
+                }
+            ],
+            "shard": 5760,
+            "silver": 12000,
+            "gold": 950,
+            "specialEnhanceItem": "special",
+            "specialEnhanceNeed": 12
+        },
+        {
+            "currentLevel": 3,
+            "nextLevel": 4,
+            "feedShard": 22000,
+            "feedSilver": 220000,
+            "successRate": 4500,
+            "bonusSuccessRate": 450,
+            "additives": [
+                {
+                    "itemName": "Blue juice",
+                    "rate": 225,
+                    "maxCount": 20
+                }
+            ],
+            "materials": [
+                {
+                    "itemName": "Blue",
+                    "count": 440
+                },
+                {
+                    "itemName": "leaps",
+                    "count": 7
+                },
+                {
+                    "itemName": "fusion",
+                    "count": 5
+                }
+            ],
+            "shard": 5940,
+            "silver": 12000,
+            "gold": 1050,
+            "specialEnhanceItem": "special",
+            "specialEnhanceNeed": 12
+        },
+        {
+            "currentLevel": 4,
+            "nextLevel": 5,
+            "feedShard": 22000,
+            "feedSilver": 220000,
+            "successRate": 4500,
+            "bonusSuccessRate": 450,
+            "additives": [
+                {
+                    "itemName": "Blue juice",
+                    "rate": 225,
+                    "maxCount": 20
+                }
+            ],
+            "materials": [
+                {
+                    "itemName": "Blue",
+                    "count": 510
+                },
+                {
+                    "itemName": "leaps",
+                    "count": 7
+                },
+                {
+                    "itemName": "fusion",
+                    "count": 5
+                }
+            ],
+            "shard": 6300,
+            "silver": 12000,
+            "gold": 1150,
+            "specialEnhanceItem": "special",
+            "specialEnhanceNeed": 12
+        },
+        {
+            "currentLevel": 5,
+            "nextLevel": 6,
+            "feedShard": 22000,
+            "feedSilver": 220000,
+            "successRate": 3000,
+            "bonusSuccessRate": 300,
+            "additives": [
+                {
+                    "itemName": "Blue juice",
+                    "rate": 150,
+                    "maxCount": 20
+                }
+            ],
+            "materials": [
+                {
+                    "itemName": "Blue",
+                    "count": 550
+                },
+                {
+                    "itemName": "leaps",
+                    "count": 7
+                },
+                {
+                    "itemName": "fusion",
+                    "count": 5
+                }
+            ],
+            "shard": 6660,
+            "silver": 12000,
+            "gold": 1250,
+            "specialEnhanceItem": "special",
+            "specialEnhanceNeed": 12
+        },
+        {
+            "currentLevel": 6,
+            "nextLevel": 7,
+            "feedShard": 25000,
+            "feedSilver": 250000,
+            "successRate": 3000,
+            "bonusSuccessRate": 300,
+            "additives": [
+                {
+                    "itemName": "Blue juice",
+                    "rate": 150,
+                    "maxCount": 20
+                }
+            ],
+            "materials": [
+                {
+                    "itemName": "Blue",
+                    "count": 620
+                },
+                {
+                    "itemName": "leaps",
+                    "count": 8
+                },
+                {
+                    "itemName": "fusion",
+                    "count": 7
+                }
+            ],
+            "shard": 7020,
+            "silver": 13200,
+            "gold": 1400,
+            "specialEnhanceItem": "special",
+            "specialEnhanceNeed": 12
+        },
+        {
+            "currentLevel": 7,
+            "nextLevel": 8,
+            "feedShard": 25000,
+            "feedSilver": 250000,
+            "successRate": 1500,
+            "bonusSuccessRate": 150,
+            "additives": [
+                {
+                    "itemName": "Blue juice",
+                    "rate": 75,
+                    "maxCount": 20
+                }
+            ],
+            "materials": [
+                {
+                    "itemName": "Blue",
+                    "count": 690
+                },
+                {
+                    "itemName": "leaps",
+                    "count": 8
+                },
+                {
+                    "itemName": "fusion",
+                    "count": 7
+                }
+            ],
+            "shard": 7560,
+            "silver": 13200,
+            "gold": 1550,
+            "specialEnhanceItem": "special",
+            "specialEnhanceNeed": 12
+        },
+        {
+            "currentLevel": 8,
+            "nextLevel": 9,
+            "feedShard": 25000,
+            "feedSilver": 250000,
+            "successRate": 1500,
+            "bonusSuccessRate": 150,
+            "additives": [
+                {
+                    "itemName": "Blue juice",
+                    "rate": 75,
+                    "maxCount": 20
+                }
+            ],
+            "materials": [
+                {
+                    "itemName": "Blue",
+                    "count": 730
+                },
+                {
+                    "itemName": "leaps",
+                    "count": 9
+                },
+                {
+                    "itemName": "fusion",
+                    "count": 9
+                }
+            ],
+            "shard": 7920,
+            "silver": 13200,
+            "gold": 1750,
+            "specialEnhanceItem": "special",
+            "specialEnhanceNeed": 12
+        },
+        {
+            "currentLevel": 9,
+            "nextLevel": 10,
+            "feedShard": 31000,
+            "feedSilver": 310000,
+            "successRate": 1000,
+            "bonusSuccessRate": 100,
+            "additives": [
+                {
+                    "itemName": "Blue juice",
+                    "rate": 50,
+                    "maxCount": 20
+                }
+            ],
+            "materials": [
+                {
+                    "itemName": "Blue",
+                    "count": 810
+                },
+                {
+                    "itemName": "leaps",
+                    "count": 9
+                },
+                {
+                    "itemName": "fusion",
+                    "count": 9
+                }
+            ],
+            "shard": 8470,
+            "silver": 13200,
+            "gold": 1950,
+            "specialEnhanceItem": "special",
+            "specialEnhanceNeed": 12
+        },
+        {
+            "currentLevel": 10,
+            "nextLevel": 11,
+            "feedShard": 31000,
+            "feedSilver": 310000,
+            "successRate": 1000,
+            "bonusSuccessRate": 100,
+            "additives": [
+                {
+                    "itemName": "Blue juice",
+                    "rate": 50,
+                    "maxCount": 20
+                }
+            ],
+            "materials": [
+                {
+                    "itemName": "Blue",
+                    "count": 890
+                },
+                {
+                    "itemName": "leaps",
+                    "count": 9
+                },
+                {
+                    "itemName": "fusion",
+                    "count": 11
+                }
+            ],
+            "shard": 9020,
+            "silver": 13200,
+            "gold": 2200,
+            "specialEnhanceItem": "special",
+            "specialEnhanceNeed": 12
+        },
+        {
+            "currentLevel": 11,
+            "nextLevel": 12,
+            "feedShard": 34000,
+            "feedSilver": 340000,
+            "successRate": 500,
+            "bonusSuccessRate": 50,
+            "additives": [
+                {
+                    "itemName": "Blue juice",
+                    "rate": 25,
+                    "maxCount": 20
+                }
+            ],
+            "materials": [
+                {
+                    "itemName": "Blue",
+                    "count": 930
+                },
+                {
+                    "itemName": "leaps",
+                    "count": 11
+                },
+                {
+                    "itemName": "fusion",
+                    "count": 11
+                }
+            ],
+            "shard": 9570,
+            "silver": 13200,
+            "gold": 2450,
+            "specialEnhanceItem": "special",
+            "specialEnhanceNeed": 12
+        },
+        {
+            "currentLevel": 12,
+            "nextLevel": 13,
+            "feedShard": 38000,
+            "feedSilver": 380000,
+            "successRate": 500,
+            "bonusSuccessRate": 50,
+            "additives": [
+                {
+                    "itemName": "Blue juice",
+                    "rate": 25,
+                    "maxCount": 20
+                }
+            ],
+            "materials": [
+                {
+                    "itemName": "Blue",
+                    "count": 1030
+                },
+                {
+                    "itemName": "leaps",
+                    "count": 12
+                },
+                {
+                    "itemName": "fusion",
+                    "count": 12
+                }
+            ],
+            "shard": 10540,
+            "silver": 13200,
+            "gold": 2700,
+            "specialEnhanceItem": "special",
+            "specialEnhanceNeed": 12
+        },
+        {
+            "currentLevel": 13,
+            "nextLevel": 14,
+            "feedShard": 41000,
+            "feedSilver": 410000,
+            "successRate": 400,
+            "bonusSuccessRate": 40,
+            "additives": [
+                {
+                    "itemName": "Blue juice",
+                    "rate": 20,
+                    "maxCount": 20
+                }
+            ],
+            "materials": [
+                {
+                    "itemName": "Blue",
+                    "count": 1120
+                },
+                {
+                    "itemName": "leaps",
+                    "count": 13
+                },
+                {
+                    "itemName": "fusion",
+                    "count": 13
+                }
+            ],
+            "shard": 11520,
+            "silver": 13200,
+            "gold": 2950,
+            "specialEnhanceItem": "special",
+            "specialEnhanceNeed": 14
+        },
+        {
+            "currentLevel": 14,
+            "nextLevel": 15,
+            "feedShard": 46000,
+            "feedSilver": 460000,
+            "successRate": 400,
+            "bonusSuccessRate": 40,
+            "additives": [
+                {
+                    "itemName": "Blue juice",
+                    "rate": 20,
+                    "maxCount": 20
+                }
+            ],
+            "materials": [
+                {
+                    "itemName": "Blue",
+                    "count": 1240
+                },
+                {
+                    "itemName": "leaps",
+                    "count": 14
+                },
+                {
+                    "itemName": "fusion",
+                    "count": 15
+                }
+            ],
+            "shard": 12690,
+            "silver": 13200,
+            "gold": 3250,
+            "specialEnhanceItem": "special",
+            "specialEnhanceNeed": 14
+        },
+        {
+            "currentLevel": 15,
+            "nextLevel": 16,
+            "feedShard": 49000,
+            "feedSilver": 490000,
+            "successRate": 400,
+            "bonusSuccessRate": 40,
+            "additives": [
+                {
+                    "itemName": "Blue juice",
+                    "rate": 20,
+                    "maxCount": 20
+                }
+            ],
+            "materials": [
+                {
+                    "itemName": "Blue",
+                    "count": 1330
+                },
+                {
+                    "itemName": "leaps",
+                    "count": 15
+                },
+                {
+                    "itemName": "fusion",
+                    "count": 16
+                }
+            ],
+            "shard": 13670,
+            "silver": 13200,
+            "gold": 3500,
+            "specialEnhanceItem": "special",
+            "specialEnhanceNeed": 14
+        },
+        {
+            "currentLevel": 16,
+            "nextLevel": 17,
+            "feedShard": 54000,
+            "feedSilver": 540000,
+            "successRate": 300,
+            "bonusSuccessRate": 30,
+            "additives": [
+                {
+                    "itemName": "Blue juice",
+                    "rate": 12,
+                    "maxCount": 25
+                }
+            ],
+            "materials": [
+                {
+                    "itemName": "Blue",
+                    "count": 1450
+                },
+                {
+                    "itemName": "leaps",
+                    "count": 17
+                },
+                {
+                    "itemName": "fusion",
+                    "count": 17
+                }
+            ],
+            "shard": 14840,
+            "silver": 15600,
+            "gold": 3800,
+            "specialEnhanceItem": "special",
+            "specialEnhanceNeed": 16
+        },
+        {
+            "currentLevel": 17,
+            "nextLevel": 18,
+            "feedShard": 58000,
+            "feedSilver": 580000,
+            "successRate": 300,
+            "bonusSuccessRate": 30,
+            "additives": [
+                {
+                    "itemName": "Blue juice",
+                    "rate": 12,
+                    "maxCount": 25
+                }
+            ],
+            "materials": [
+                {
+                    "itemName": "Blue",
+                    "count": 1560
+                },
+                {
+                    "itemName": "leaps",
+                    "count": 18
+                },
+                {
+                    "itemName": "fusion",
+                    "count": 19
+                }
+            ],
+            "shard": 16010,
+            "silver": 15600,
+            "gold": 4100,
+            "specialEnhanceItem": "special",
+            "specialEnhanceNeed": 16
+        },
+        {
+            "currentLevel": 18,
+            "nextLevel": 19,
+            "feedShard": 63000,
+            "feedSilver": 630000,
+            "successRate": 300,
+            "bonusSuccessRate": 30,
+            "additives": [
+                {
+                    "itemName": "Blue juice",
+                    "rate": 12,
+                    "maxCount": 25
+                }
+            ],
+            "materials": [
+                {
+                    "itemName": "Blue",
+                    "count": 1700
+                },
+                {
+                    "itemName": "leaps",
+                    "count": 20
+                },
+                {
+                    "itemName": "fusion",
+                    "count": 20
+                }
+            ],
+            "shard": 17380,
+            "silver": 15600,
+            "gold": 4450,
+            "specialEnhanceItem": "special",
+            "specialEnhanceNeed": 16
+        },
+        {
+            "currentLevel": 19,
+            "nextLevel": 20,
+            "feedShard": 67000,
+            "feedSilver": 670000,
+            "successRate": 150,
+            "bonusSuccessRate": 15,
+            "additives": [
+                {
+                    "itemName": "Blue juice",
+                    "rate": 6,
+                    "maxCount": 25
+                }
+            ],
+            "materials": [
+                {
+                    "itemName": "Blue",
+                    "count": 1810
+                },
+                {
+                    "itemName": "leaps",
+                    "count": 21
+                },
+                {
+                    "itemName": "fusion",
+                    "count": 22
+                }
+            ],
+            "shard": 18550,
+            "silver": 21600,
+            "gold": 4750,
+            "specialEnhanceItem": "special",
+            "specialEnhanceNeed": 18
+        },
+        {
+            "currentLevel": 20,
+            "nextLevel": 21,
+            "feedShard": 72000,
+            "feedSilver": 720000,
+            "successRate": 150,
+            "bonusSuccessRate": 15,
+            "additives": [
+                {
+                    "itemName": "Blue juice",
+                    "rate": 6,
+                    "maxCount": 25
+                }
+            ],
+            "materials": [
+                {
+                    "itemName": "Blue",
+                    "count": 1950
+                },
+                {
+                    "itemName": "leaps",
+                    "count": 23
+                },
+                {
+                    "itemName": "fusion",
+                    "count": 23
+                }
+            ],
+            "shard": 19920,
+            "silver": 21600,
+            "gold": 5100,
+            "specialEnhanceItem": "special",
+            "specialEnhanceNeed": 18
+        },
+        {
+            "currentLevel": 21,
+            "nextLevel": 22,
+            "feedShard": 77000,
+            "feedSilver": 770000,
+            "successRate": 100,
+            "bonusSuccessRate": 10,
+            "additives": [
+                {
+                    "itemName": "Blue juice",
+                    "rate": 4,
+                    "maxCount": 25
+                }
+            ],
+            "materials": [
+                {
+                    "itemName": "Blue",
+                    "count": 2080
+                },
+                {
+                    "itemName": "leaps",
+                    "count": 24
+                },
+                {
+                    "itemName": "fusion",
+                    "count": 25
+                }
+            ],
+            "shard": 21280,
+            "silver": 28800,
+            "gold": 5450,
+            "specialEnhanceItem": "special",
+            "specialEnhanceNeed": 20
+        },
+        {
+            "currentLevel": 22,
+            "nextLevel": 23,
+            "feedShard": 81000,
+            "feedSilver": 810000,
+            "successRate": 100,
+            "bonusSuccessRate": 10,
+            "additives": [
+                {
+                    "itemName": "Blue juice",
+                    "rate": 4,
+                    "maxCount": 25
+                }
+            ],
+            "materials": [
+                {
+                    "itemName": "Blue",
+                    "count": 2200
+                },
+                {
+                    "itemName": "leaps",
+                    "count": 26
+                },
+                {
+                    "itemName": "fusion",
+                    "count": 26
+                }
+            ],
+            "shard": 22460,
+            "silver": 28800,
+            "gold": 5750,
+            "specialEnhanceItem": "special",
+            "specialEnhanceNeed": 20
+        },
+        {
+            "currentLevel": 23,
+            "nextLevel": 24,
+            "feedShard": 86000,
+            "feedSilver": 860000,
+            "successRate": 50,
+            "bonusSuccessRate": 5,
+            "additives": [
+                {
+                    "itemName": "Blue juice",
+                    "rate": 2,
+                    "maxCount": 50
+                }
+            ],
+            "materials": [
+                {
+                    "itemName": "Blue",
+                    "count": 2330
+                },
+                {
+                    "itemName": "leaps",
+                    "count": 27
+                },
+                {
+                    "itemName": "fusion",
+                    "count": 28
+                }
+            ],
+            "shard": 23820,
+            "silver": 36000,
+            "gold": 6100,
+            "specialEnhanceItem": "special",
+            "specialEnhanceNeed": 24
+        },
+        {
+            "currentLevel": 24,
+            "nextLevel": 25,
+            "feedShard": 91000,
+            "feedSilver": 910000,
+            "successRate": 50,
+            "bonusSuccessRate": 5,
+            "additives": [
+                {
+                    "itemName": "Blue juice",
+                    "rate": 2,
+                    "maxCount": 50
+                }
+            ],
+            "materials": [
+                {
+                    "itemName": "Blue",
+                    "count": 2450
+                },
+                {
+                    "itemName": "leaps",
+                    "count": 29
+                },
+                {
+                    "itemName": "fusion",
+                    "count": 30
+                }
+            ],
+            "shard": 25000,
+            "silver": 36000,
+            "gold": 6400,
+            "specialEnhanceItem": "special",
+            "specialEnhanceNeed": 24
+        }
+    ]
+}

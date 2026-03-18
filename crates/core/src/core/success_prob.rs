@@ -6,7 +6,6 @@
 
 use crate::performance::Performance;
 use crate::state_bundle::StateBundle;
-use itertools::Itertools;
 use std::f64::NAN;
 
 impl StateBundle {
@@ -39,18 +38,16 @@ impl StateBundle {
 
     // this is also one of the things i was gonna display but this is implicitly displayed in the graph
     pub fn compute_leftover_probs(&mut self) -> Vec<f64> {
-        self.update_dist();
-        self.update_individual_support();
+        self.update_prob_dist();
+        self.update_cost_dist();
         self.compute_special_probs(false);
-        let mut prob_leftover: Vec<f64> =
-            Vec::with_capacity(self.flattened_budgets().try_len().unwrap());
+        let mut prob_leftover: Vec<f64> = Vec::with_capacity(self.prep_output.bound_budgets.len());
 
-        let items: Vec<_> = self.flattened_budgets().enumerate().collect();
         let mut dummy_performance = Performance::new();
-        for (support_index, effective_budget) in items {
+        for (support_index, effective_budget) in self.prep_output.bound_budgets.iter().enumerate() {
             prob_leftover.push(self.one_dimension_prob(
                 support_index as i64,
-                effective_budget,
+                *effective_budget,
                 &mut dummy_performance,
             ));
         }

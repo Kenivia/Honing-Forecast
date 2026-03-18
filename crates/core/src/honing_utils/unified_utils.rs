@@ -80,33 +80,23 @@ impl StateBundle {
         &self,
         support_index: i64,
     ) -> Box<dyn DoubleEndedIterator<Item = &Support> + '_> {
-        let num_juice_avail = self.prep_output.juice_info.num_juice_avail;
         Box::new(self.special_state.iter().map(move |&u_index| {
             let upgrade = &self.upgrade_arr[u_index];
             if support_index < 0 {
                 unreachable!()
-            } else if support_index < 7 {
-                &upgrade.cost_dist[support_index as usize]
-            } else if support_index < 7 + num_juice_avail as i64 {
-                &upgrade.weap_juice_costs[support_index as usize - 7]
             } else {
-                &upgrade.armor_juice_costs[support_index as usize - 7 - num_juice_avail]
+                &upgrade.cost_dist[support_index as usize]
             }
         }))
     }
 
     pub fn support_from_index(&self, u_index: usize, support_index: i64) -> &Support {
         let upgrade = &self.upgrade_arr[u_index];
-        let num_juice_avail = self.prep_output.juice_info.num_juice_avail;
 
         if support_index < 0 {
             unreachable!()
-        } else if support_index < 7 {
-            &upgrade.cost_dist[support_index as usize]
-        } else if support_index < 7 + num_juice_avail as i64 {
-            &upgrade.weap_juice_costs[support_index as usize - 7]
         } else {
-            &upgrade.armor_juice_costs[support_index as usize - 7 - num_juice_avail]
+            &upgrade.cost_dist[support_index as usize]
         }
     }
 
@@ -115,7 +105,6 @@ impl StateBundle {
         support_index: i64,
         skip_count: usize,
     ) -> Box<dyn DoubleEndedIterator<Item = &Vec<(f64, f64)>> + '_> {
-        let num_juice_avail = self.prep_output.juice_info.num_juice_avail;
         Box::new(
             self.special_state
                 .iter()
@@ -124,80 +113,23 @@ impl StateBundle {
                     let upgrade = &self.upgrade_arr[u_index];
                     if support_index < 0 {
                         unreachable!()
-                    } else if support_index < 7 {
-                        upgrade.cost_dist[support_index as usize]
-                            .access_collapsed(skip_count > index)
-                    } else if support_index < 7 + num_juice_avail as i64 {
-                        upgrade.weap_juice_costs[support_index as usize - 7]
-                            .access_collapsed(skip_count > index)
                     } else {
-                        upgrade.armor_juice_costs[support_index as usize - 7 - num_juice_avail]
+                        upgrade.cost_dist[support_index as usize]
                             .access_collapsed(skip_count > index)
                     }
                 }),
         )
     }
 
-    pub fn update_individual_support(&mut self) {
+    pub fn update_cost_dist(&mut self) {
         for upgrade in self.upgrade_arr.iter_mut() {
             upgrade.update_this_support(&self.prep_output.juice_info);
         }
     }
 
-    pub fn update_dist(&mut self) {
+    pub fn update_prob_dist(&mut self) {
         for upgrade in self.upgrade_arr.iter_mut() {
             upgrade.update_this_prob_dist(&mut self.adv_cache, &self.prep_output.juice_info);
         }
-    }
-
-    pub fn flattened_budgets(&self) -> impl Iterator<Item = f64> {
-        self.prep_output
-            .budgets
-            .iter()
-            .copied()
-            .chain(self.prep_output.juice_books_owned.iter().map(|x| x.0))
-            .chain(self.prep_output.juice_books_owned.iter().map(|x| x.1))
-    }
-
-    pub fn flattened_price(&self) -> impl Iterator<Item = f64> {
-        self.prep_output
-            .price_arr
-            .iter()
-            .copied()
-            .chain(
-                self.prep_output
-                    .juice_info
-                    .all_juices
-                    .iter()
-                    .map(|x| x.prices.0),
-            )
-            .chain(
-                self.prep_output
-                    .juice_info
-                    .all_juices
-                    .iter()
-                    .map(|x| x.prices.1),
-            )
-    }
-
-    pub fn flattened_leftover(&self) -> impl Iterator<Item = f64> {
-        self.prep_output
-            .leftover_values
-            .iter()
-            .copied()
-            .chain(
-                self.prep_output
-                    .juice_info
-                    .all_juices
-                    .iter()
-                    .map(|x| x.leftover_values.0),
-            )
-            .chain(
-                self.prep_output
-                    .juice_info
-                    .all_juices
-                    .iter()
-                    .map(|x| x.leftover_values.1),
-            )
     }
 }

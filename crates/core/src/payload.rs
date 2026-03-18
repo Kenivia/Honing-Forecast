@@ -1,33 +1,21 @@
 //! Payload is how js and rust communicates, we also use payload as our test cases in arena
 use crate::advanced_honing::utils::{AdvConfig, AdvDistTriplet};
-use crate::parser::PreparationOutput;
+use crate::parser::{MaterialInput, PreparationOutput, UpgradeInput};
 use crate::state_bundle::StateBundle;
 use crate::upgrade::Upgrade;
 use ahash::AHashMap;
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::Path;
+
 #[derive(Deserialize, Clone, Serialize)]
 pub struct Payload {
-    pub normal_hone_ticks: Vec<Vec<bool>>,
-    pub adv_hone_ticks: Vec<Vec<bool>>,
-    pub express_event: bool,
-    pub mats_budget: Vec<i64>,
-    pub user_price_arr: Vec<f64>,
-    pub inp_leftover_values: Vec<f64>,
-    pub juice_books_budget: Vec<(i64, i64)>,
-    pub juice_prices: Vec<(f64, f64)>,
-    pub inp_leftover_juice_values: Vec<(f64, f64)>,
-
-    // i have to initialize these arrays in JS anyway (instead of leaving as null)
-    // but this allows me to easily use default values ig (but I'd plug payloads in when testing anyway so ig theres not much point having Option at all)
-    pub progress_grid: Option<Vec<Vec<usize>>>,
-    pub state_grid: Option<Vec<Vec<Vec<(bool, usize)>>>>,
+    pub material_info: MaterialInput,
+    pub upgrade_info: UpgradeInput,
+    pub special_budget: i64,
     pub special_state: Option<Vec<usize>>,
-    pub unlocked_grid: Option<Vec<Vec<bool>>>,
-    pub succeeded_grid: Option<Vec<Vec<bool>>>,
-    pub adv_progress_grid: Option<Vec<Vec<(usize, usize, bool, bool)>>>,
     pub tier: usize,
+    pub express_event: bool,
 
     pub min_resolution: usize,
     #[serde(default)]
@@ -40,46 +28,25 @@ fn default_one() -> i64 {
 }
 impl StateBundle {
     pub fn init_from_inputs(
-        hone_ticks: &[Vec<bool>],
-        input_budgets: &[i64],
-        adv_ticks: &[Vec<bool>],
+        material_info: MaterialInput,
+        upgrade_info: UpgradeInput,
+        special_budget: i64,
         express_event: bool,
-        inp_price_arr: &[f64],
-
-        juice_books_budget: &[(i64, i64)],
-        juice_prices: &[(f64, f64)],
-        inp_leftover_values: &[f64],
-        inp_leftover_juice_values: &[(f64, f64)],
-        progress_grid: Option<Vec<Vec<usize>>>,
-        state_grid: Option<Vec<Vec<Vec<(bool, usize)>>>>,
+        tier: usize,
         special_state: Option<Vec<usize>>,
-        unlock_grid: Option<Vec<Vec<bool>>>,
-        succeeded_grid: Option<Vec<Vec<bool>>>,
         min_resolution: usize,
         num_threads: usize,
         metric_type: i64,
-        adv_progress_grid: Option<Vec<Vec<(usize, usize, bool, bool)>>>,
-        tier: usize,
     ) -> StateBundle {
         let (prep_output, upgrade_arr, adv_cache): (
             PreparationOutput,
             Vec<Upgrade>,
             AHashMap<AdvConfig, AdvDistTriplet>,
         ) = PreparationOutput::initialize(
-            hone_ticks,
-            input_budgets,
-            adv_ticks,
+            material_info,
+            upgrade_info,
+            special_budget,
             express_event,
-            inp_price_arr,
-            juice_books_budget,
-            juice_prices,
-            inp_leftover_values,
-            inp_leftover_juice_values,
-            progress_grid,
-            state_grid,
-            unlock_grid,
-            succeeded_grid,
-            adv_progress_grid,
             tier,
         );
         let u_len = upgrade_arr.len();
@@ -108,25 +75,15 @@ impl StateBundle {
     }
     pub fn init_from_payload(payload: Payload) -> Self {
         StateBundle::init_from_inputs(
-            &payload.normal_hone_ticks,
-            &payload.mats_budget,
-            &payload.adv_hone_ticks,
+            payload.material_info,
+            payload.upgrade_info,
+            payload.special_budget,
             payload.express_event,
-            &payload.user_price_arr,
-            &payload.juice_books_budget,
-            &payload.juice_prices,
-            &payload.inp_leftover_values,
-            &payload.inp_leftover_juice_values,
-            payload.progress_grid,
-            payload.state_grid,
+            payload.tier,
             payload.special_state,
-            payload.unlocked_grid,
-            payload.succeeded_grid,
             payload.min_resolution,
             payload.num_threads,
             payload.metric_type,
-            payload.adv_progress_grid,
-            payload.tier,
         )
     }
 }

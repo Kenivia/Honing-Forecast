@@ -41,7 +41,7 @@ impl StateBundle {
         performance.ks_count += 1;
         if compute_biased {
             // This is for E(X'). See one_dimension_average_gold
-            let ksx = self.ks_01234(support_index, skip_count, theta);
+            let ksx = self.cumulant_01234(support_index, skip_count, theta);
             KsTuple(
                 ksx.0 + ksx.1.ln() - simple_mean_log,
                 ksx.1 + ksx.2 / ksx.1,
@@ -52,11 +52,11 @@ impl StateBundle {
                 NAN,
             )
         } else {
-            self.ks_01234(support_index, skip_count, theta)
+            self.cumulant_01234(support_index, skip_count, theta)
         }
     }
 
-    fn ks_01234(&self, support_index: i64, skip_count: usize, theta: f64) -> KsTuple {
+    fn cumulant_01234(&self, support_index: i64, skip_count: usize, theta: f64) -> KsTuple {
         // self.special_state
         //     .par_iter()
         //     .skip(skip_count)
@@ -73,7 +73,7 @@ impl StateBundle {
             .map(|(index, &u_index)| (index, self.support_from_index(u_index, support_index)))
             .filter(|(_, support)| !support.ignore)
             .fold(KsTuple::default(), |prev, (index, meta_support)| {
-                prev.add(meta_support.one_ks(theta, index < skip_count))
+                prev.add(meta_support.one_cumulant(theta, index < skip_count))
             })
     }
 }
@@ -81,16 +81,16 @@ impl Support {
     /// Computes K(s) and its cumulants here, with some optimizations when the support increases linearly
     ///
     /// It also shifts everything such that the biggest power we're raising to is 1, which corresponds to dividing all the support by the biggest value
-    /// Otherwise if our thing costs 1 mil we'll be computing e^(1 mil) and that won't end well
-    fn one_ks(&self, theta: f64, skipped: bool) -> KsTuple {
+    /// Otherwise if our thing costs 1 mil and theta = 1 we'll be computing e^(1 mil) and that won't end well
+    fn one_cumulant(&self, theta: f64, skipped: bool) -> KsTuple {
         let mut sum: f64 = 0.0;
         let mut mean: f64 = 0.0;
         let mut second: f64 = 0.0;
         let mut third: f64 = 0.0;
         let mut fourth: f64 = 0.0;
         if skipped {
-            let s = self.access_collapsed(skipped).iter().next().unwrap().0;
-            return KsTuple(s * theta, s, 0.0, 0.0, 0.0);
+            let skipped_val = self.access_collapsed(skipped)[0].0;
+            return KsTuple(skipped_val * theta, skipped_val, 0.0, 0.0, 0.0);
         }
         let biggest_shift = theta
             * if theta >= 0.0 {

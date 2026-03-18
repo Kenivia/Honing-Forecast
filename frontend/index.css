@@ -344,7 +344,7 @@ button {
     }
 } */
 
-@media screen and (max-width: 900px) {
+/* @media screen and (max-width: 900px) {
     #container {
         position: static;
         width: auto;
@@ -352,7 +352,7 @@ button {
         transform: auto;
         overflow: auto;
     }
-}
+} */
 
 /* @media screen and (max-width: 900px) and (orientation: portrait) {
     body::before {

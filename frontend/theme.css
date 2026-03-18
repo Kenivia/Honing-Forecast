@@ -1,8 +1,8 @@
 /* Global CSS Variables for Theming - Colors Only */
 :root {
-    --text-muted: #ffffff;
 
-    --text-very-muted: #c4c4c4;
+
+    --text-very-muted: #888888;
     --text-success: #9ff7c7;
     --text-optimized: rgb(247, 219, 159);
     --text: var(--text-primary);
@@ -14,6 +14,7 @@
     --btn-success-cancel: #2e6944;
     --btn-success-cancel-text: #ffffff;
     --success-overlay: rgba(39, 71, 39, 0.5);
+
 
 
     --btn-demo: #374151;
@@ -42,7 +43,7 @@
     --checkbox-border: #bbb;
     --checkbox-focus-ring: rgba(59, 130, 246, 0.35);
     --checkbox-checked-bg: #559bd8;
-    --checkbox-checked-text: #ffffff;
+
     --checkbox-checked-border: #bbb;
     --checkbox-hover-bg: #5a5a5a;
 
@@ -57,7 +58,7 @@
     --series-blue: #6666ff;
     --series-leaps: #b300ff;
     --series-shards: #f13b9f;
-    --series-oreha: #ff7824;
+    --series-fusion: #ff7824;
     --series-gold: #facc15;
     --series-silver: #9ca3af;
     --series-overall: #9ff7c7;

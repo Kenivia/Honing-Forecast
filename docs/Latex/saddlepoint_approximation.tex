@@ -67,7 +67,9 @@ Note that $g_i$ is applied to the sum, not the cost of the individual upgrades.
 
 There's an additional layer of complexity we must define:
 
-Let $U'_k$ be the ``skipped'' version of the random variable. This is just a deterministic constant equal to the number of normal honing attempts the user did before doing special hones, usually equal to 0 (but does not necessarily mean $C_i(U'_k) = 0$).
+Let $U^*_k$ be the ``skipped'' version of the random variable\footnote{This is just a deterministic constant equal to the number of normal honing attempts the user did before doing special hones, usually equal to 0 (but does not necessarily mean $C_i(U'_k) = 0$).}. 
+
+Let $U'_j = U^*_j$ if $j \leq k$, otherwise $U'_j = U_j$ .
 
 Let $X'_k = (U'_1,\cdots , U'_k, U_{k+1}, \cdots, U_N)$, the overall outcome with $k$ skipped upgrades.
 
@@ -75,10 +77,12 @@ Let $p_k$ be the chance that we skip exactly $k$ upgrades, where $k \in 0,$ $1,$
 
 \subsection{What we're computing}
 
-To describe this in English, this would be ``Average gold cost incurred due to needed mats''. Making use of the notations we've built up, this is
-$$
-\sum^N_{k=0} (p_k  \cdot \sum^M_{i=1}  \mathbb{E}[  G_i(X'_k)  ]).
-$$
+To describe this in plain English, this would be ``Average overall gold cost incurred due to needed mats''. Making use of the notations we've built up, this is:
+\begin{align*}
+S &= \sum^N_{k=0} (p_k  \cdot \sum^M_{i=1}  \mathbb{E}[ g_i ( \sum^N_{j=1}C_i(U'_j))  ]) \\
+&= \sum^N_{k=0} (p_k  \cdot \sum^M_{i=1}  \mathbb{E}[  G_i(X'_k)  ]) \\
+\end{align*}
+
 
  The word ``Average'' is doing a lot of heavy lifting here. Note that since expectation is distributive over sums\footnote{This holds even for non-independent random variables, which the cost dimensions, $G_i(X'_k)$, are not (because they depend on the same underlying RV). }, we are allowed to add up the contributions of each material dimension (index $i$ in the sum above). 
  
@@ -109,7 +113,7 @@ $$
 G_i(X) = g_i ( \sum^N_{j=1}C_i(U_j))
 $$
 
-where $g_i$ is non-linear. If this was a general function, this would require either a (brute force) convolution of random variable or something like Fast Fourier Transform(I think). However, we know that our $g_i$ is piecewise linear:
+where $g_i$ is non-linear. If this was an arbitrary function, evaluating this would require either a (brute force) convolution of random variable or something like Fast Fourier Transform(I think). However, we know that our $g_i$ is piecewise linear:
 
 $$
 g_i(x) =  \begin{cases}
@@ -121,20 +125,20 @@ $$
 and so we can do something more clever. For convenience define
 $$
 Y_i=\sum^N_{j=1}C_i(U_j),\\
- \text{so } G_i(X) = g_i(Y_i).
+ \text{so } G_i(X) = g_i(Y_i). \\
 $$
-We can notice that :
+So $Y_i$ is the random variable representing the cost of material type $i$. We can notice that :
 $$
 \mathbb{E}[g_i(Y_i)] = m_i \cdot \mathbb{E}[(Y_i-b_i) \cdot I( Y_i > b_i)] + l_i \cdot  \mathbb{E}[(Y_i-b_i) \cdot I( Y_i < b_i)],
 $$
 where $I$ is the indicator function. From here, we will drop the subscripts $_i$ as we're focusing on one material type dimension. We can split this into three parts:
 
 \begin{align*}
-\mathbb{E}[g(Y)] &= m \cdot \mathbb{E}[Y-b] + (m-l) \cdot E[(Y-b) \cdot I(Y<B)] \nonumber\\
+\mathbb{E}[g(Y)] &= m \cdot \mathbb{E}[Y-b] + (m-l) \cdot E[(Y-b) \cdot I(Y<B)] \\
 &= m \cdot \underbrace{\mathbb{E}[Y-b]}_{\text{part a}} + (m-l) \cdot (\underbrace{E[Y \cdot I(Y<B)]}_{\text{part b}} - \underbrace{E[b \cdot I(Y<B)]}_{\text{part c}})
 \end{align*}
 
-Where part $a)$ is thankfully trivial to calculate because $Y$ is a simple sum of RVs, making $\mathbb{E}$ distributive.
+Where part $a)$ is trivial to calculate because $Y$ is a simple sum of RVs, making $\mathbb{E}$ distributive.
 
 For part $b)$, we define the biased distribution $Y^*$, which has the probabily distribution $p^* = p \cdot y$ for each $y$ in the support of $Y$. In other words:
 
@@ -153,28 +157,43 @@ $$
  \mathbb{E}[b \cdot I( Y < b)] = \mathbb{P}(Y < b) \cdot b.
 $$
 
-As such, all we need is some way to compute $\mathbb{P}(Y^* < b)$ and $\mathbb{P}(Y < b)$!
+\subsection{Recap}
+
+Recall that we want to compute the following:
+\begin{align*}
+S &= \sum^N_{k=0} (p_k  \cdot \sum^M_{i=1}  \mathbb{E}[  G_i(X'_k)  ]) \\
+&=  \sum^N_{k=0} (p_k  \cdot \sum^M_{i=1}  \mathbb{E}[g_i(Y_{ik})  ]).
+\end{align*}
+
+With the rearrangements we did above, the inner expectation has been reduced to the following form: 
+$$
+\mathbb{E}[g_i(Y_{ik})] =  m \cdot \mathbb{E}[Y_{ik}-b] + (m-l) \cdot (\mathbb{P}(Y^*_{ik} < b) \cdot \mathbb{E}[Y_{ik}] -  \mathbb{P}(Y_{ik} < b) \cdot b). \\ 
+$$
+
+
+As such, we have set up our problem such that all we need is some way to compute $\mathbb{P}(Y^* < b)$ and $\mathbb{P}(Y < b)$.
 
 \section{Probability that we stay below budget: $\mathbb{P}(Y < b)$}\label{prob_section}
 
 We use a procedure known as saddleppoint approximation to perform this computation. I will describe the steps below:
 
-\subsection{Cumulant generating function $K(s)$}
+\subsection{Cumulant generating function $K(\theta)$}
 
-We compute $K(s)$, where $K$ is different for a particular $Y$ but we will spare the subscripts. $K(s)$ is defined as follows:
+We compute $K(\theta)$, where $K$ is different for a particular $Y$ but we will spare the subscripts. $K(\theta)$ is defined as follows:
 $$
-K(s) = \log(\mathbb{E}[ e^{sY}]).
+K(\theta) = \log(\mathbb{E}[ e^{\theta Y}]).
 $$
 $K$ has the property that it is distributive over addition. Recall that $Y_i = \sum^N_{j=1}C(U_j)$, so we have:
 $$
-K(s) = \sum^N_{j=1}{\log(\mathbb{E}[ e^{s C(U_j)}])}.
+K(\theta) = \sum^N_{j=1}{\log(\mathbb{E}[ e^{\theta C(U_j)}])}.
 $$
-This property allows us to compute the individual summands and add them up at the end to obtain $K(s)$. Furthermore, it is also easy to compute its derivatives $K'(s)$, $K''(s)$, $K'''(s)$, $K^{(4)}(s)$ (we stop at the 4th cumulant for floating point reasons).
+This property allows us to compute the individual summands and add them up at the end to obtain $K(\theta)$. Furthermore, it is also easy to compute its derivatives $K'(\theta)$, $K''(\theta)$, $K'''(\theta)$, $K^{(4)}(\theta)$ (we stop at the 4th cumulant for floating point reasons).
 
-\subsection{Find $s$ such that $K'(s) \approx b$}
+\subsection{Find $\theta$ such that $K'(\theta) \approx b$}
 
-Since we have access to higher derivatives of $K'(s)$, we can use a generalized version of newton's algorithm for root finding, known as Householder's method. My particular implementation uses a bunch of heuristics to avoid non-convergence that are complete trial and error, so there may be faster implementations.
+Since we have access to higher derivatives of $K'(\theta)$, we can use a generalized version of newton's algorithm for root finding, known as Householder's method. My particular implementation uses a bunch of heuristics to avoid non-convergence that are complete trial and error, so there may be faster implementations.
 
+\newpage
 \subsection{$\mathbb{P}(Y<b) = $ magic formula}
 
 The specific version of Saddlepoint approximation implemented is as follows:
@@ -186,9 +205,9 @@ $$
 $$
 \begin{align*}
 \text{where } 
-s&  \text{ satisfies }K'(s) \approx b^+, \\
-w &=  \text{sgn}(s)\sqrt{2 (sb^+-K(s))}, \\
- u &= 2  \delta^{-1}\sinh(s\delta/2)\sqrt{K''(s)}, \\
+\theta &  \text{ satisfies }K'(\theta) \approx b^+, \\
+w &=  \text{sgn}(\theta)\sqrt{2 (sb^+-K(\theta))}, \\
+ u &= 2  \delta^{-1}\sinh(s\delta/2)\sqrt{K''(\theta)}, \\
  z &= (b^+ - \mu)/\sigma,\\
  \kappa_n &= K^{(n)}(0)/\sigma^n, \\
   \delta &= \text{minimum gap size in the support of Y}, \\
@@ -199,17 +218,18 @@ w &=  \text{sgn}(s)\sqrt{2 (sb^+-K(s))}, \\
  \text{and } \Phi, \phi \text{ are the cdf} & \text{ and pdf of Normal distribution.} 
 \end{align*}
 
-The derivation of this formula can be found in Chapter 1 and 2 of Saddlepoint Approximations with Applications \cite{butler2007saddlepoint}. Specifically, the base form is stated in Section 1.2.1, the continuity corrected version in Section 2.4.4, and the limiting case in Section 5.2.3.
+The derivation of this formula can be found in Saddlepoint Approximations with Applications \cite{butler2007saddlepoint}. Specifically, the base form is stated in Section 1.2.1, the continuity corrected version in Section 2.4.4, and the limiting case in Section 5.2.3.
 
-\subsection{What about $Y^*$?}
+\subsection{Cumulants of $Y^*$}
 Since $Y^*$ is not a sum of random variables, $K$ is not distributive over its summands, so naively computing the cumulant generating function of $Y^*$ would require a direct convolution. Fortunately, It turns out the cumulant of $Y^*$ and $Y$ can be related by the following:
 
 $$
-K_{Y^*}(s) = K_Y(s) + \log(K'_Y(s)) - \log(\mu).
+K_{Y^*}(\theta) = K_Y(\theta) + \log(K'_Y(\theta)) - \log(\mu).
 $$
 Higher cumulants can be found similarly via closed form formulae. 
 
 
+\newpage
 \section{Conclusion}
 
 To recap, we did the following:

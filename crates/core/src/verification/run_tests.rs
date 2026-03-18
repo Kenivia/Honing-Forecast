@@ -229,10 +229,11 @@ pub fn run_tests(payload_path_string: String, is_verify: bool) {
                     best_state_performance: dummy_performance.to_write(),
                 };
                 if !mc_result.is_match {
-                    dbg!(&mc_result.prob_leftover);
+                    state_bundle.average_gold_metric(true,&mut dummy_performance);
+                    dbg!(&state_bundle.average_breakdown.unwrap(), &mc_result.prob_leftover, &output.prob_leftover, );
                     panic!(
                         "Monte Carlo and SA didn't fall within +-{}%, confidence {}%, n = {}.
-                         {} Test: {} Trial: {} MC: {} +-{}% SA: {}% My diff: {}%",
+                         {} Test: {} Trial: {} MC: {} +-{}% SA: {} My diff: {}%",
                         MONTE_CARLO_PRECISION * 100.0,
                         MONTE_CARLO_CONFIDENCE * 100.0,
                         mc_result.samples,

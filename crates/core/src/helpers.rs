@@ -31,7 +31,6 @@ macro_rules! my_dbg {
                     web_sys::console::log_1(&msg.into());
                 )+
             }
-
             #[cfg(feature = "run_tests")]
             {
                 $(

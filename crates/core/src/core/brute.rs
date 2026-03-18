@@ -98,10 +98,12 @@ impl StateBundle {
 
                     if prune_flipped {
                         if new_cost + next_max_rem < budget + FLOAT_TOL {
+                            //  will always succeed (excatly enough => success => don't add to failure prob => break early)
                             break;
                         }
 
-                        if new_cost + next_min_rem > budget - FLOAT_TOL {
+                        if new_cost + next_min_rem > budget + FLOAT_TOL {
+                            //  can never succeed  (exactly enough => success => dont add to failure prob => exclude from here
                             if biased {
                                 total_guaranteed_prob +=
                                     step_prob * (new_cost + future_avg[index + 1]) * inv_mean;
@@ -112,10 +114,12 @@ impl StateBundle {
                             continue;
                         }
                     } else {
-                        if new_cost + next_min_rem > budget - FLOAT_TOL {
+                        if new_cost + next_min_rem > budget + FLOAT_TOL {
+                            // can never succeed (DONT break on equal because having exactly enough should be success)
                             break;
                         }
-                        if new_cost + next_max_rem <= budget + FLOAT_TOL {
+                        if new_cost + next_max_rem < budget + FLOAT_TOL {
+                            // will always succeed (count equal case)
                             if biased {
                                 total_guaranteed_prob +=
                                     step_prob * (new_cost + future_avg[index + 1]) * inv_mean;

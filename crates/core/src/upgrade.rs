@@ -4,7 +4,6 @@ use crate::support::{ProbDist, Support};
 use ahash::AHashMap;
 use serde::{Deserialize, Serialize};
 use std::collections::hash_map::DefaultHasher;
-use std::f64::NAN;
 use std::ops::{Deref, DerefMut};
 
 use std::hash::{Hash, Hasher};
@@ -14,7 +13,7 @@ pub struct Upgrade {
     pub is_normal_honing: bool,
     pub normal_dist: ProbDist,
     pub base_chance: f64,
-    pub costs: [f64; 7],
+    pub costs: Vec<f64>,
 
     pub special_cost: i64,
     pub is_weapon: bool,
@@ -26,8 +25,6 @@ pub struct Upgrade {
     // pub juice_arr: Vec<f64>,
     pub state: State, // state for this upgrade - (juice_used? , id) per tap
     pub cost_dist: Vec<Support>,
-    pub weap_juice_costs: Vec<Support>,
-    pub armor_juice_costs: Vec<Support>,
 
     pub name_string: String,
     pub piece_type: usize,
@@ -98,17 +95,13 @@ impl Upgrade {
         upgrade_index: usize,
         juice_info: &JuiceInfo,
         alr_failed: usize,
-        state_given: Option<Vec<(bool, usize)>>,
+        state_given: Vec<(bool, usize)>,
         unlocked: bool,
         unlock_costs: &[f64],
         succeeded: bool,
         extra_chance: f64,
     ) -> Self {
-        let state = if state_given.is_none() {
-            State::new_empty(0)
-        } else {
-            State::new(state_given.unwrap())
-        };
+        let state = State::new(state_given);
 
         let mut out = Self {
             is_normal_honing: true,
@@ -122,10 +115,9 @@ impl Upgrade {
             artisan_rate,
             upgrade_index,
             state, // initialize state with default values
-            cost_dist: vec![Support::default(); 7],
-            weap_juice_costs: vec![Support::default(); juice_info.num_juice_avail],
-            armor_juice_costs: vec![Support::default(); juice_info.num_juice_avail],
-
+            cost_dist: vec![Support::default(); juice_info.total_num_avail],
+            // weap_juice_costs: vec![Support::default(); juice_info.num_juice_avail],
+            // armor_juice_costs: vec![Support::default(); juice_info.num_juice_avail],
             name_string: {
                 let mut string: String = "".to_owned();
                 string += if is_weapon { "weap_" } else { "armor_" };
@@ -133,7 +125,7 @@ impl Upgrade {
                 string
             },
             alr_failed,
-            unlocked,
+            unlocked, // THIS IS IGNORED RN just assuming alr_failed > 0 <==> ulocked
             unlock_costs: unlock_costs.try_into().unwrap(),
             succeeded,
             extra_chance,
@@ -173,7 +165,7 @@ impl Upgrade {
         let mut out = Self {
             is_normal_honing: false,
             normal_dist: ProbDist::new(Vec::new()),
-            base_chance: NAN,
+            base_chance: 0.0,
             costs: costs.try_into().unwrap(),
             special_cost: 0,
             is_weapon,
@@ -182,9 +174,7 @@ impl Upgrade {
             upgrade_index,
             clean_prob_dist_len: 0,
             state: State::new_empty(juice_info.adv_uindex_to_id[upgrade_index].len()),
-            cost_dist: vec![Support::default(); 7],
-            weap_juice_costs: vec![Support::default(); juice_info.num_juice_avail],
-            armor_juice_costs: vec![Support::default(); juice_info.num_juice_avail],
+            cost_dist: vec![Support::default(); juice_info.total_num_avail],
 
             name_string: {
                 let mut string: String = "adv_".to_owned();
@@ -196,7 +186,7 @@ impl Upgrade {
             unlocked,
             unlock_costs: unlock_costs.try_into().unwrap(),
             succeeded,
-            extra_chance: NAN,
+            extra_chance: 0.0,
             adv_config: AdvConfig::new(
                 start_xp,
                 start_balls,

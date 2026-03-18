@@ -5,7 +5,6 @@ use crate::upgrade::{State, Upgrade};
 use ahash::AHashMap;
 use ordered_float::OrderedFloat;
 use serde::{Deserialize, Serialize};
-
 use std::f64::NAN;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -22,7 +21,6 @@ pub struct StateBundle {
     pub special_cache: AHashMap<Vec<usize>, Vec<f64>>,
     pub num_threads: usize,
     pub average_breakdown: Option<Vec<f64>>,
-
     #[serde(skip)]
     pub adv_cache: AHashMap<AdvConfig, AdvDistTriplet>,
 }
@@ -52,7 +50,7 @@ impl StateBundle {
     pub fn metric_router(&mut self, performance: &mut Performance) -> f64 {
         match self.metric_type {
             0 => unreachable!(), //self.success_prob_metric(performance),
-            1 => self.average_gold_metric(performance),
+            1 => self.average_gold_metric(false, performance),
             _ => NAN,
         }
     }
