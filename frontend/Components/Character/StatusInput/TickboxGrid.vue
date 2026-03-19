@@ -135,7 +135,7 @@ watch(
         () => roster_config.value.tradable_mats_owned,
         () => roster_config.value.mats_prices,
         () => active_profile.value.keyed_upgrades,
-        () => active_profile.value.keyed_states,
+        // () => active_profile.value.keyed_states,
         () => active_profile.value.special_budget,
     ],
     () => {
@@ -185,44 +185,18 @@ function set_keyed_states(result: StateBundle) {
     }
     // console.log("new keyed states", new_keyed_state, result.upgrade_arr)
     active_profile.value.keyed_states = new_keyed_state
-}
-let throttle_timer: ReturnType<typeof setTimeout> | null = null
-let pending_payload: EvalPayload | null = null
-let throttle_ready = true
-
-function tryStart() {
-    // Nothing to do
-    if (pending_payload === null) return
-    // Worker is still running — it will call tryStart when done
-    if (active_profile.value.histogram_worker_bundle.status == "busy") return
-    // Still in throttle cooldown — timer will call tryStart when it fires
-    if (!throttle_ready) return
-
-    // Consume the pending payload and start
-    const payload = pending_payload
-    pending_payload = null
-
-    throttle_ready = false
-    throttle_timer = setTimeout(() => {
-        throttle_ready = true
-        tryStart() // catch-up: check if new payload arrived during cooldown
-    }, 100)
-
-    active_profile.value.histogram_worker_bundle.start(
-        WasmOp.Histogram,
-        payload,
-        () => tryStart(), // on-complete callback — catches "worker was busy" case
-    )
+    console.log("payload update")
+    preped_payload.value = buildPayload(WasmOp.OptimizeAverage)
+    active_profile.value.histogram_worker_bundle.throttled_start(WasmOp.Histogram, structuredClone(toRaw(preped_payload.value)))
+    active_profile.value.evaluation_worker_bundle.throttled_start(WasmOp.EvaluateAverage, structuredClone(toRaw(preped_payload.value)))
 }
 
 watch(
     () => toRaw(preped_payload.value),
     () => {
-        if (preped_payload.value === null) {
-            return
-        }
-        pending_payload = structuredClone(toRaw(preped_payload.value))
-        tryStart()
+        if (preped_payload.value === null) return
+        active_profile.value.histogram_worker_bundle.throttled_start(WasmOp.Histogram, structuredClone(toRaw(preped_payload.value)))
+        active_profile.value.evaluation_worker_bundle.throttled_start(WasmOp.EvaluateAverage, structuredClone(toRaw(preped_payload.value)))
     },
     { immediate: true, deep: true },
 )

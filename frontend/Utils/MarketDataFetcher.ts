@@ -1,5 +1,5 @@
 import { ref } from "vue"
-import { ALL_LABELS } from "./Constants"
+import { ALL_LABELS, SYNCED_LABELS } from "./Constants"
 import { storeToRefs } from "pinia"
 import { useRosterStore } from "@/stores/RosterConfig"
 
@@ -152,9 +152,10 @@ export function fetch_callback(result: number[][], selectedShardSize: number, sh
     roster_config.value.selected_shard_bag_size = selectedShardSize
     for (let tier = 0; tier < ALL_LABELS.length; tier++) {
         for (let index = 0; index < ALL_LABELS[tier].length; index++) {
-            roster_config.value.mats_prices[tier].data[index] = result[tier][index].toLocaleString()
+            let actual_tier_to_modify = tier == 0 ? tier : SYNCED_LABELS.includes(ALL_LABELS[1][index]) ? 0 : 1
+            roster_config.value.mats_prices[actual_tier_to_modify].data[index] = result[tier][index].toLocaleString()
             if (ALL_LABELS[tier][index] == "Shards") {
-                roster_config.value.mats_prices[tier].data[index] = shard_price.toLocaleString()
+                roster_config.value.mats_prices[actual_tier_to_modify].data[index] = shard_price.toLocaleString()
             }
         }
     }

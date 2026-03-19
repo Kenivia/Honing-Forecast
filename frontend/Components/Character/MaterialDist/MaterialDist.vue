@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ALL_LABELS, GRAPH_COLORS, T4_JUICE_LABELS, T4_MATS_LABELS, ANNOTATION_COLORS, ANNOTATION_POSITIONS, ANNOTATION_LABELS } from "@/Utils/Constants"
 import { CharProfile, TreatmentPlan, useProfilesStore } from "@/stores/CharacterProfile"
-import { iconPath } from "@/Utils/Helpers"
+import { iconPath, metricToText } from "@/Utils/Helpers"
 import MaterialCell from "@/Components/Common/MaterialCell.vue"
 import { create_input_column, HistogramOutputs, input_column_to_num, InputColumn, InputType } from "@/Utils/Interfaces"
 import MaterialGraph from "./MaterialGraph.vue"
@@ -150,6 +150,19 @@ function special_hover_annotation(x, _y, cy, material_type, color): string {
                             :tooltip-text-fn="hover_annotation"
                         />
                     </div>
+
+                    <div class="hf-mats-row">
+                        <div class="hf-metric-label" style="grid-column: span 3">Avg eqv gold cosshsssssssssst</div>
+                        <div class="hf-metric-status" style="grid-column: span 2">
+                            {{ metricToText(active_profile.optimizer_worker_bundle.result?.metric) ?? "No Result yet" }}
+                        </div>
+                    </div>
+                    <div class="hf-mats-row">
+                        <div class="hf-metric-label" style="grid-column: span 3">Avg eqv gold cosshsssssssssst</div>
+                        <div class="hf-metric-status" style="grid-column: span 2">
+                            {{ metricToText(active_profile.evaluation_worker_bundle.result?.metric) ?? "No Result yet" }}
+                        </div>
+                    </div>
                     <div class="hf-mats-row">
                         <MaterialCell
                             :input_column="active_profile.special_budget"
@@ -188,6 +201,16 @@ function special_hover_annotation(x, _y, cy, material_type, color): string {
     </section>
 </template>
 <style>
+.hf-metric-label {
+    width: 100%;
+    gap: 30px;
+    color: var(--hf-gold);
+    font-size: 30px;
+    text-align: right;
+    padding-right: 8px;
+    justify-content: center;
+}
+
 .hf-analysis-pane {
     width: min(100%, 992px);
     overflow-x: auto;

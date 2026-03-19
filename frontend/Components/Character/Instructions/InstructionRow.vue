@@ -163,7 +163,11 @@ const visualStreaks = computed(() => {
         let isNormal = props.upgrade.is_normal_honing
         let topIconActive = streak.juice
         let bottomIconActive = isNormal ? streak.book : streak.scroll
-
+        let name_line =
+            (streak.juice ? "Juice" : "") +
+            ((streak.juice && streak.book) || (streak.juice && streak.scroll) ? " & " : "") +
+            (streak.book ? "Book" : streak.scroll ? "Scroll" : "") +
+            (!streak.juice && !streak.juice && !streak.book && !streak.scroll ? "Raw tap" : "")
         let line1 = ""
         let line2 = ""
 
@@ -178,12 +182,12 @@ const visualStreaks = computed(() => {
                 line2 = `on ${graceText}`
             } else {
                 // console.log(props.upgrade.adv_dists)
-                line1 = streak.count < 255 ? `First ${streak.count}` : streaks.value.length == 1 ? "All" : "Remaining"
+                line1 = streak.count < 255 ? `First ${streak.count}` : streaks.value.length == 1 ? "All" : "All"
                 line2 = graceText
             }
         }
 
-        out.push({ topIconActive, bottomIconActive, line1, line2 })
+        out.push({ topIconActive, bottomIconActive, line1, line2, name_line })
     }
     return out
 })
@@ -393,6 +397,7 @@ const progress_expanded = ref(props.upgrade.alr_failed > 0)
                         <!-- <div v-if="!vStreak.bottomIconActive" class="empty-cross"></div> -->
                     </div>
                     <div class="text-slot">
+                        <div class="line-primary" v-html="vStreak.name_line"></div>
                         <div class="line-primary" v-html="vStreak.line1"></div>
                         <div :class="upgrade.is_normal_honing ? 'line-muted' : 'line-primary'" v-html="vStreak.line2"></div>
                     </div>
@@ -608,7 +613,7 @@ const progress_expanded = ref(props.upgrade.alr_failed > 0)
     font-weight: bold;
     cursor: pointer;
     transition: filter 0.2s;
-    justify-self: left;
+    justify-self: center;
 }
 .btn-expand:hover {
     filter: brightness(1.2);
@@ -621,7 +626,7 @@ const progress_expanded = ref(props.upgrade.alr_failed > 0)
     padding-bottom: 0.5rem;
     flex: 1;
     min-width: 200px;
-    max-width: 300px;
+    max-width: 400px;
     transition: opacity 0.3s;
 }
 
@@ -676,9 +681,11 @@ const progress_expanded = ref(props.upgrade.alr_failed > 0)
     flex-wrap: wrap;
     gap: 1rem;
     flex: 1;
-    min-width: 300px;
+    min-width: 150px;
     max-width: 600px;
     flex-direction: row;
+    align-items: center;
+    justify-content: center;
 }
 
 .inputs-container {

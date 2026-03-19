@@ -12,6 +12,31 @@ export function createWorkerBundle() {
     const result = ref(null)
     const est_progress_percentage = ref(0)
     let debounceTimer = null
+    let throttle_timer: ReturnType<typeof setTimeout> | null = null
+    let throttle_pending: { wasm_op: WasmOp; payload: EvalPayload } | null = null
+    let throttle_ready = true
+
+    function _try_flush_throttle() {
+        if (throttle_pending === null) return
+        if (status.value === "busy") return
+        if (!throttle_ready) return
+
+        const { wasm_op, payload } = throttle_pending
+        throttle_pending = null
+        throttle_ready = false
+
+        throttle_timer = setTimeout(() => {
+            throttle_ready = true
+            _try_flush_throttle() // catch-up: new payload may have arrived during cooldown
+        }, 100)
+
+        _launch(wasm_op, payload, () => _try_flush_throttle())
+    }
+
+    function throttled_start(wasm_op: WasmOp, payload: EvalPayload) {
+        throttle_pending = { wasm_op, payload }
+        _try_flush_throttle()
+    }
 
     function _launch(wasm_op: WasmOp, payload: EvalPayload, callback?: (result) => void) {
         cancel()
@@ -63,7 +88,11 @@ export function createWorkerBundle() {
 
     function cancel() {
         clearTimeout(debounceTimer)
+        clearTimeout(throttle_timer)
         debounceTimer = null
+        throttle_timer = null
+        throttle_pending = null
+        throttle_ready = true
         if (worker) {
             worker.terminate()
             worker = null
@@ -78,5 +107,5 @@ export function createWorkerBundle() {
 
     onUnmounted(cancel)
 
-    return { status, result, error, est_progress_percentage, start, cancel, cancel_and_clear_prev_result }
+    return { status, result, error, est_progress_percentage, start, throttled_start, cancel, cancel_and_clear_prev_result }
 }

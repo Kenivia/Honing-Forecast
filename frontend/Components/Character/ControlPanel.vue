@@ -102,11 +102,6 @@ const auto_start_optimizer = computed(() => active_profile.value.auto_start_opti
                 <span>Auto start optimizer</span>
             </label> -->
 
-            <div class="hf-metric-card">
-                <div class="hf-metric-label">Avg eqv gold cost</div>
-                <div class="hf-metric-status">{{ metricToText(active_profile.optimizer_worker_bundle.result?.metric) ?? "No Result yet" }}</div>
-            </div>
-
             <MaterialCell
                 :input_column="active_profile.special_budget"
                 :row="0"
