@@ -7,7 +7,7 @@ pub struct HistogramOutputs {
     cum_percentiles: Vec<Vec<(f64, f64)>>,
     state_bundle: StateBundle,
     bound_chance: Vec<f64>,
-    tradable_chance: Vec<f64>,
+    // tradable_chance: Vec<f64>,
 }
 
 pub fn histogram(state_bundle: &mut StateBundle) -> HistogramOutputs {
@@ -23,14 +23,12 @@ pub fn histogram(state_bundle: &mut StateBundle) -> HistogramOutputs {
 
     // let mut average: Vec<f64> = Vec::with_capacity(num_sup);
     let mut bound_chance: Vec<f64> = Vec::with_capacity(num_sup);
-    let mut tradable_chance: Vec<f64> = Vec::with_capacity(num_sup);
 
     for (support_index, item) in cum_percentiles.iter_mut().enumerate().take(num_sup) {
         let this_pity = state_bundle.pity()[support_index] as f64;
         let this_one_tap = state_bundle.luckiest_mf()[support_index] as f64;
 
         let bound_budget = state_bundle.prep_output.bound_budgets[support_index];
-        let trade_budget = state_bundle.prep_output.trade_budgets[support_index];
         for index in 0..(BUCKET_COUNT + 1) {
             let this_budget =
                 this_one_tap + index as f64 * (this_pity - this_one_tap) / (BUCKET_COUNT) as f64;
@@ -49,12 +47,6 @@ pub fn histogram(state_bundle: &mut StateBundle) -> HistogramOutputs {
             bound_budget,
             &mut dummy_performance,
         ));
-
-        tradable_chance.push(state_bundle.one_dimension_prob(
-            support_index as i64,
-            bound_budget + trade_budget,
-            &mut dummy_performance,
-        ));
     }
 
     // state_bundle.average_gold_metric(true, &mut Performance::new());
@@ -62,6 +54,5 @@ pub fn histogram(state_bundle: &mut StateBundle) -> HistogramOutputs {
         cum_percentiles,
         state_bundle: state_bundle.clone(),
         bound_chance,
-        tradable_chance,
     }
 }

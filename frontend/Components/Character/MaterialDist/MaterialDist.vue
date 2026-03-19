@@ -19,7 +19,6 @@ const analysisTab = ref<"mats" | "juice">("mats")
 
 const visibleRows = computed(() => {
     const matsIndices = T4_MATS_LABELS.map((_, i) => i)
-
     return ALL_LABELS[active_profile.value.tier]
         .map((label, row) => ({ label, row })) // keep original index
         .filter(({ row }) => {
@@ -31,33 +30,63 @@ const visibleRows = computed(() => {
         })
 })
 
+// this is should always be treat tradable as bound
 const gold_breakdown = computed(
     () =>
-        active_profile.value.optimizer_worker_bundle.result?.gold_breakdown.map((x: number) => Math.ceil(x == 0 ? x : -x)) ??
+        active_profile.value.evaluation_worker_bundle.result?.gold_breakdown.map((x: number) => Math.ceil(x == 0 ? x : -x)) ??
         new Array(ALL_LABELS[active_profile.value.tier].length).fill(0),
 )
 
 const market_gold_text = "Avg gold spent buying from market"
 const tradable_gold_text = "Avg gold spent buying minus gold from selling tradables"
+const total_market_gold_text = "Avg total gold spent (raw + buying from market)"
+const total_tradable_gold_text = "Avg total gold spent - the 'worth' of leftover tradable mats"
 const all_bound_text = "Treat roster bound as tradable" // i dont think i'll show this tho cos its kinda confusing
-const selected_treatement = ref(
-    active_profile.value.treatment_plan == TreatmentPlan.TreatTradableAsBound
+const selected_optimizer_treatement = ref(
+    active_profile.value.optimizer_treatment_plan == TreatmentPlan.TreatTradableAsBound
         ? market_gold_text
-        : active_profile.value.treatment_plan == TreatmentPlan.TreatRosterAsBound
+        : active_profile.value.optimizer_treatment_plan == TreatmentPlan.TreatRosterAsBound
           ? tradable_gold_text
           : all_bound_text,
 )
 
 watchEffect(() => {
-    if (selected_treatement.value == market_gold_text) {
-        active_profile.value.treatment_plan = TreatmentPlan.TreatTradableAsBound
-    } else if (selected_treatement.value == tradable_gold_text) {
-        active_profile.value.treatment_plan = TreatmentPlan.TreatRosterAsBound
-    } else if (selected_treatement.value == all_bound_text) {
-        active_profile.value.treatment_plan = TreatmentPlan.TreatRosterAsTradable
+    if (selected_optimizer_treatement.value == market_gold_text) {
+        active_profile.value.optimizer_treatment_plan = TreatmentPlan.TreatTradableAsBound
+    } else if (selected_optimizer_treatement.value == tradable_gold_text) {
+        active_profile.value.optimizer_treatment_plan = TreatmentPlan.TreatRosterAsBound
+    } else if (selected_optimizer_treatement.value == all_bound_text) {
+        active_profile.value.optimizer_treatment_plan = TreatmentPlan.TreatRosterAsTradable
     }
 })
 
+const bound_chance_text = "Chance to succeed with bound"
+const roster_chance_text = "Chance to succeed with bound + Roster bound"
+const tradable_chance_text = "Chance to succeed with bound + Roster bound + Tradable"
+const selected_histogram_treatment = ref(
+    active_profile.value.histogram_treatment_plan == TreatmentPlan.TreatTradableAsBound
+        ? tradable_chance_text
+        : active_profile.value.histogram_treatment_plan == TreatmentPlan.TreatRosterAsBound
+          ? roster_chance_text
+          : bound_chance_text,
+)
+
+const selected_histogram_color = ref(null)
+watchEffect(() => {
+    if (selected_histogram_treatment.value == bound_chance_text) {
+        active_profile.value.histogram_treatment_plan = TreatmentPlan.TreatRosterAsTradable
+    } else if (selected_histogram_treatment.value == roster_chance_text) {
+        active_profile.value.histogram_treatment_plan = TreatmentPlan.TreatRosterAsBound
+    } else if (selected_histogram_treatment.value == tradable_chance_text) {
+        active_profile.value.histogram_treatment_plan = TreatmentPlan.TreatTradableAsBound
+    }
+    selected_histogram_color.value =
+        active_profile.value.histogram_treatment_plan == TreatmentPlan.TreatRosterAsTradable
+            ? "var(--hf-graph-bound-color)"
+            : active_profile.value.histogram_treatment_plan == TreatmentPlan.TreatRosterAsBound
+              ? "var(--hf-graph-roster-color)"
+              : "var(--hf-graph-tradable-color)"
+})
 const enabled_annotations = ref([true, false, false, false])
 const annotation_values = computed(() => {
     let bound = input_column_to_num(active_profile.value.bound_budgets[active_profile.value.tier])
@@ -100,12 +129,23 @@ function special_hover_annotation(x, _y, cy, material_type, color): string {
             <div class="hf-dist-graphs">
                 <div class="hf-table-title-row">
                     <span style="text-align: right; padding-right: 15px; color: var(--hf-graph-bound-color)">Char-Bound Mats</span>
-                    <span style="color: var(--hf-graph-bound-color)">Chance to succeed with bound</span>
+
+                    <select
+                        v-model="selected_histogram_treatment"
+                        :style="{
+                            color: selected_histogram_color,
+                        }"
+                    >
+                        <option>{{ bound_chance_text }}</option>
+                        <option>{{ roster_chance_text }}</option>
+                        <option>{{ tradable_chance_text }}</option>
+                    </select>
                     <span style="color: var(--hf-graph-average-color)">Average Cost</span>
-                    <select v-model="selected_treatement" style="color: var(--hf-gold)">
+                    <span style="color: var(--hf-gold)">Avg gold used</span>
+                    <!-- <select v-model="selected_treatement" style="color: var(--hf-gold)">
                         <option>{{ market_gold_text }}</option>
                         <option>{{ tradable_gold_text }}</option>
-                    </select>
+                    </select> -->
                     <span style="text-align: center">Hover over the graph to see more!</span>
                     <!-- <span v-if="customLeftovers">Left</span> -->
                 </div>
@@ -117,7 +157,12 @@ function special_hover_annotation(x, _y, cy, material_type, color): string {
                     "
                     style="display: contents"
                 >
-                    <div v-for="{ label, row } in visibleRows" :key="`graph-${label}`" class="hf-mats-row">
+                    <div
+                        v-for="{ label, row } in visibleRows"
+                        :key="`graph-${label}`"
+                        class="hf-mats-row"
+                        :class="{ disabled: !active_profile.bound_budgets[active_profile.tier].enabled[row] }"
+                    >
                         <MaterialCell
                             :input_column="active_profile.bound_budgets[active_profile.tier]"
                             :row="row"
@@ -133,7 +178,7 @@ function special_hover_annotation(x, _y, cy, material_type, color): string {
                         <MaterialCell
                             :input_column="active_profile.histogram_worker_bundle.result.bound_chance"
                             :row="row"
-                            :input_color="'--hf-graph-bound-color'"
+                            :input_color="selected_histogram_color"
                             :is_percentage="true"
                         />
                         <MaterialCell :input_column="average_breakdown" :row="row" :input_color="'--hf-graph-average-color'" />
@@ -151,18 +196,6 @@ function special_hover_annotation(x, _y, cy, material_type, color): string {
                         />
                     </div>
 
-                    <div class="hf-mats-row">
-                        <div class="hf-metric-label" style="grid-column: span 3">Avg eqv gold cosshsssssssssst</div>
-                        <div class="hf-metric-status" style="grid-column: span 2">
-                            {{ metricToText(active_profile.optimizer_worker_bundle.result?.metric) ?? "No Result yet" }}
-                        </div>
-                    </div>
-                    <div class="hf-mats-row">
-                        <div class="hf-metric-label" style="grid-column: span 3">Avg eqv gold cosshsssssssssst</div>
-                        <div class="hf-metric-status" style="grid-column: span 2">
-                            {{ metricToText(active_profile.evaluation_worker_bundle.result?.metric) ?? "No Result yet" }}
-                        </div>
-                    </div>
                     <div class="hf-mats-row">
                         <MaterialCell
                             :input_column="active_profile.special_budget"
@@ -197,6 +230,16 @@ function special_hover_annotation(x, _y, cy, material_type, color): string {
                     </div>
                 </div>
             </div>
+            <div class="hf-dist-graphs">
+                <div class="hf-mats-row">
+                    <div class="hf-metric-label" style="grid-column: span 3">
+                        {{ total_market_gold_text }}
+                    </div>
+                    <div class="hf-metric-status" style="grid-column: span 2">
+                        {{ metricToText(active_profile.evaluation_worker_bundle.result?.metric) ?? "No Result yet" }}
+                    </div>
+                </div>
+            </div>
         </div>
     </section>
 </template>
@@ -205,8 +248,18 @@ function special_hover_annotation(x, _y, cy, material_type, color): string {
     width: 100%;
     gap: 30px;
     color: var(--hf-gold);
-    font-size: 30px;
+    font-size: 20px;
     text-align: right;
+    padding-right: 8px;
+    justify-content: center;
+}
+
+.hf-metric-status {
+    width: 100%;
+    gap: 30px;
+    color: var(--hf-gold);
+    font-size: 30px;
+    text-align: left;
     padding-right: 8px;
     justify-content: center;
 }
@@ -288,5 +341,9 @@ function special_hover_annotation(x, _y, cy, material_type, color): string {
     align-items: center;
     border-bottom: 1px solid var(--separator-color);
     min-height: 0px;
+}
+
+.hf-mats-row.disabled {
+    opacity: 0.5;
 }
 </style>

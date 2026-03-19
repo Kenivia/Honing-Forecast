@@ -2,7 +2,11 @@ import { ref } from "vue"
 import { ALL_LABELS, SYNCED_LABELS } from "./Constants"
 import { storeToRefs } from "pinia"
 import { useRosterStore } from "@/stores/RosterConfig"
-
+const OVERRIDE_DEFAULT = {
+    Gold: 1,
+    Silver: 0,
+    "Serca Fusion": 300,
+}
 const BODY = {
     region_slug: "nae",
     item_slugs: [
@@ -52,10 +56,7 @@ export async function fetchMarketData(region: string) {
 }
 
 const default_prices: number[][] = ALL_LABELS.map((x) => new Array(x.length).fill(999999999))
-const OVERRIDE_DEFAULT = {
-    Gold: 1,
-    Silver: 0,
-}
+
 export function parse_response(response: any): [number[][], number, number] {
     let out = default_prices
     for (let tier = 0; tier < ALL_LABELS.length; tier++) {

@@ -73,7 +73,7 @@ export function load_char_profiles(): { profiles: CharProfile[]; active_profile_
 
     const parsed = JSON.parse(raw)
     for (let i = 0; i < parsed.profiles.length; i++) {
-        let this_parsed = parsed.profiles[i]
+        let this_parsed = { ...create_default_char_profile(), ...parsed.profiles[i] }
         fill_new_tiers_with_default(this_parsed.bound_budgets)
         fill_new_tiers_with_default(this_parsed.leftover_price)
         let this_profile = recreate_char_profile(this_parsed)
@@ -103,8 +103,8 @@ export enum TreatmentPlan {
     TreatTradableAsBound, // main
 }
 export interface CharProfile {
-    treatment_plan: TreatmentPlan
-
+    optimizer_treatment_plan: TreatmentPlan
+    histogram_treatment_plan: TreatmentPlan
     express_event: boolean
     char_name: string
 
@@ -134,12 +134,12 @@ export interface CharProfile {
 
 export function create_default_char_profile(): CharProfile {
     return {
-        treatment_plan: TreatmentPlan.TreatTradableAsBound,
-
+        optimizer_treatment_plan: TreatmentPlan.TreatTradableAsBound,
+        histogram_treatment_plan: TreatmentPlan.TreatRosterAsTradable,
         express_event: false,
         char_name: "YourChar",
 
-        auto_start_optimizer: false,
+        auto_start_optimizer: true,
         has_run_optimizer: false,
         evaluation_worker_bundle: createWorkerBundle(),
         optimizer_worker_bundle: createWorkerBundle(),

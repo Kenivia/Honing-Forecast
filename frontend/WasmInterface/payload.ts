@@ -71,7 +71,16 @@ export function buildPayload(wasm_op: WasmOp): EvalPayload | StateBundle {
 
     return {
         material_info: ALL_LABELS[tier].map((_, index) => [
-            ...apply_treatement(active_profile.value.treatment_plan, bound_budgets[index], roster_mats_owned[index], tradable_mats_owned[index]),
+            ...apply_treatement(
+                wasm_op == WasmOp.OptimizeAverage
+                    ? active_profile.value.optimizer_treatment_plan
+                    : wasm_op == WasmOp.Histogram
+                      ? active_profile.value.histogram_treatment_plan
+                      : TreatmentPlan.TreatTradableAsBound, // EvalAverage
+                bound_budgets[index],
+                roster_mats_owned[index],
+                tradable_mats_owned[index],
+            ),
             leftover_price[index],
             tradable_mats_price[index],
             mats_prices[index],

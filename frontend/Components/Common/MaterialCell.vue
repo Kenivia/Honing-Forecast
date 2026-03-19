@@ -5,7 +5,7 @@ import { PIECE_NAMES, NORMAL_COLS as NORMAL_COLS, NUM_PIECES as NORMAL_ROWS, ALL
 import { cssVar, iconPath } from "@/Utils/Helpers"
 import { InputColumn, get_modified_cell, UpgradeStatus } from "@/Utils/Interfaces"
 import { storeToRefs } from "pinia"
-import { computed, ref, Ref } from "vue"
+import { computed, ref, Ref, watchEffect } from "vue"
 
 const props = defineProps<{
     input_column: InputColumn | number[]
@@ -25,18 +25,22 @@ const this_data = ref(String(!Array.isArray(props.input_column) ? (props.input_c
 
 <template>
     <div class="hf-material-cell">
+        <input       v-if="label " type="checkbox" v-model="(input_column as InputColumn).enabled[row]">
         <label v-if="label" class="hf-row-label">
             <span>{{ label }}</span>
             <img :src="iconPath(label)" :alt="label" />
         </label>
 
+</input>
         <input
             v-if="!Array.isArray(input_column)"
             type="text"
             class="hf-material-cell-input"
             :style="{ color: resolved_color }"
-            :value="this_data"
-            @change="((this_data = get_modified_cell(input_column, row, $event)), setter(get_modified_cell(input_column, row, $event)))"
+            v-model="this_data"
+            @change="
+                ((console.log('change'), (this_data = get_modified_cell(input_column, row, $event))), setter(get_modified_cell(input_column, row, $event)))
+            "
         />
         <label v-else class="hf-material-cell-result" :style="{ color: resolved_color }" type="text">{{
             is_percentage

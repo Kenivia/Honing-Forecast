@@ -3,7 +3,7 @@ import { useRosterStore as useRosterStore } from "@/stores/RosterConfig"
 import { ALL_LABELS, BUDGET_NARROW_WIDTH, BUNDLE_SIZE, NARROW_WIDTH, SYNCED_LABELS, TIER_OPTIONS } from "@/Utils/Constants"
 import { storeToRefs } from "pinia"
 import MaterialCell from "@/Components/Common/MaterialCell.vue"
-import { computed, ref, watchEffect } from "vue"
+import { computed, nextTick, ref, watchEffect } from "vue"
 import { SelectButton } from "primevue"
 import { useMediaIsNarrow } from "@/Utils/WindowSize"
 import { input_column_to_num, parse_input } from "@/Utils/Interfaces"
@@ -15,8 +15,16 @@ const { roster_config } = storeToRefs(useRosterStore())
 const tier = computed(() => roster_config.value.tier)
 const { isNarrow } = useMediaIsNarrow(BUDGET_NARROW_WIDTH)
 
-const { disabled, start_fetch } = useTimedFetch(fetch_callback)
-
+const { disabled, start_fetch } = useTimedFetch((result, selected, price) => {
+    fetch_callback(result, selected, price)
+    forceRerender()
+})
+const re_render_trigger = ref(true)
+const forceRerender = async () => {
+    re_render_trigger.value = false
+    await nextTick()
+    re_render_trigger.value = true
+}
 watchEffect(() => {
     // one way sync from T4 to Serca, the uui modifies the T4 copy
     for (let serca_index = 0; serca_index < ALL_LABELS[1].length; serca_index++) {
@@ -103,7 +111,7 @@ watchEffect(() => {
         </select>
         <label>(Best one will be auto selected)</label>
     </div>
-    <div class="hf-outer-budget-grid" :class="{ narrow: isNarrow }">
+    <div v-if="re_render_trigger" class="hf-outer-budget-grid" :class="{ narrow: isNarrow }">
         <div v-if="!isNarrow || tier == 0" class="hf-roster-inputs-tier-4" :style="{ gridRow: `span ${String(ALL_LABELS[0].length + 1)}` }">
             <div class="hf-table-title-row">
                 <span style="text-align: right; padding-right: 15px">Roster Bound Mats</span>
@@ -241,8 +249,14 @@ watchEffect(() => {
     border-color: var(--hf-gold-dim);
 }
 
-.hf-table-title-row {
-    display: contents;
+.hf-table-title-row,
+.hf-mats-row {
+    display: grid;
+    grid-column: 1 / -1; /* span all 3 columns */
+    grid-template-columns: subgrid; /* inherit parent column definitions */
+    align-items: center;
+    border-bottom: 1px solid var(--separator-color);
+    min-height: 0px;
 }
 .hf-outer-budget-grid {
     display: grid;

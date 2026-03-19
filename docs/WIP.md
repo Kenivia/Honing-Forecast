@@ -8,12 +8,13 @@
 - ~~market price import~~
 - resolution (is it really necessary actually)
   - need to re-add this to neighbor
-- enable/disable checkbox
+- ~~enable/disable checkbox~~
 - move treatment selection to sidebar, accomodate the text somehow
 - ~~special budget & graph~~
-- total gold row
+- ~~total gold row~~
 - char creation
 - timestamp & dont re-pull
+- rework the use special leaps butotn
 
 ## Roadmap
 

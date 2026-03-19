@@ -11,7 +11,7 @@ import { apply_treatement, buildPayload, EvalPayload } from "@/WasmInterface/pay
 import { WasmOp } from "@/WasmInterface/js_to_wasm"
 import { useRosterStore } from "@/stores/RosterConfig"
 import { watchDebounced } from "@vueuse/core"
-import equal from "fast-deep-equal"
+
 const profile_store = useProfilesStore()
 
 const { active_profile } = storeToRefs(useProfilesStore())
@@ -156,9 +156,10 @@ watchDebounced(
         () => roster_config.value.mats_prices,
         () => active_profile.value.keyed_upgrades,
         () => active_profile.value.special_budget,
+        () => active_profile.value.optimizer_treatment_plan,
     ],
     (_) => {
-        if (preped_payload.value === null) {
+        if (preped_payload.value === null || !active_profile.value.auto_start_optimizer) {
             return
         }
         onWatcherCleanup(() => {
@@ -187,16 +188,25 @@ function set_keyed_states(result: StateBundle) {
     active_profile.value.keyed_states = new_keyed_state
     console.log("payload update")
     preped_payload.value = buildPayload(WasmOp.OptimizeAverage)
-    active_profile.value.histogram_worker_bundle.throttled_start(WasmOp.Histogram, structuredClone(toRaw(preped_payload.value)))
-    active_profile.value.evaluation_worker_bundle.throttled_start(WasmOp.EvaluateAverage, structuredClone(toRaw(preped_payload.value)))
+
+    active_profile.value.histogram_worker_bundle.throttled_start(WasmOp.Histogram, buildPayload(WasmOp.Histogram))
+    active_profile.value.evaluation_worker_bundle.throttled_start(WasmOp.EvaluateAverage, buildPayload(WasmOp.EvaluateAverage))
 }
+
+watch(
+    [() => toRaw(preped_payload.value), () => active_profile.value.histogram_treatment_plan],
+    () => {
+        if (preped_payload.value === null) return
+        active_profile.value.histogram_worker_bundle.throttled_start(WasmOp.Histogram, buildPayload(WasmOp.Histogram))
+    },
+    { immediate: true, deep: true },
+)
 
 watch(
     () => toRaw(preped_payload.value),
     () => {
         if (preped_payload.value === null) return
-        active_profile.value.histogram_worker_bundle.throttled_start(WasmOp.Histogram, structuredClone(toRaw(preped_payload.value)))
-        active_profile.value.evaluation_worker_bundle.throttled_start(WasmOp.EvaluateAverage, structuredClone(toRaw(preped_payload.value)))
+        active_profile.value.evaluation_worker_bundle.throttled_start(WasmOp.EvaluateAverage, buildPayload(WasmOp.EvaluateAverage))
     },
     { immediate: true, deep: true },
 )

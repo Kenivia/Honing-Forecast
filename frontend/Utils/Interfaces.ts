@@ -123,7 +123,7 @@ export function get_modified_cell(input_column: InputColumn, index: number, even
 }
 export function parse_input(input_column: InputColumn, index: number, input: string): number {
     if (!input_column.enabled[index]) {
-        return 0
+        return 999999999
     }
     let out = input_column.type === InputType.Int ? parseInt(input.replace(/,/g, "")) : parseFloat(input.replace(/,/g, ""))
     return isFinite(out) ? Math.min(input_column.upper_bound[index], out) : 0

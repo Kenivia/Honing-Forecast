@@ -9,6 +9,7 @@ import { SelectButton } from "primevue"
 
 import TierConvertButton from "@/Components/Common/TierConvertButton.vue"
 import { input_column_to_num, parse_input, UpgradeStatus } from "@/Utils/Interfaces"
+import ControlPanel from "../ControlPanel.vue"
 
 const { active_profile } = storeToRefs(useProfilesStore())
 const tooltip_text = computed(() => {
@@ -116,15 +117,17 @@ watch(
                 <TickboxGrid grid_type="normal" />
             </div>
         </section>
-
-        <section v-if="active_profile.tier == 0" class="hf-card-adv">
-            <div class="hf-card-header">
-                <div class="hf-card-title"><span class="hf-card-title-dot" />Advanced Honing</div>
-            </div>
-            <div class="hf-card-body">
-                <TickboxGrid grid_type="adv" />
-            </div>
-        </section>
+        <div style="display: flex; flex-direction: row; gap: 10px">
+            <section v-if="active_profile.tier == 0" class="hf-card-adv">
+                <div class="hf-card-header">
+                    <div class="hf-card-title"><span class="hf-card-title-dot" />Advanced Honing</div>
+                </div>
+                <div class="hf-card-body">
+                    <TickboxGrid grid_type="adv" />
+                </div>
+            </section>
+            <ControlPanel />
+        </div>
     </div>
 </template>
 <style>
