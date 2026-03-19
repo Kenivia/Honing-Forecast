@@ -126,7 +126,7 @@ export function parse_input(input_column: InputColumn, index: number, input: str
         return 999999999
     }
     let out = input_column.type === InputType.Int ? parseInt(input.replace(/,/g, "")) : parseFloat(input.replace(/,/g, ""))
-    console.log(input_column.upper_bound)
+    // console.log(input_column.upper_bound)
     return isFinite(out) ? Math.min(input_column.upper_bound[index], out) : 0
 }
 export function fill_new_tiers_with_default(old: InputColumn[]) {

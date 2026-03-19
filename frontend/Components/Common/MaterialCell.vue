@@ -25,7 +25,7 @@ const this_data = ref(String(!Array.isArray(props.input_column) ? (props.input_c
 
 <template>
     <div class="hf-material-cell">
-        <input       v-if="label " type="checkbox" v-model="(input_column as InputColumn).enabled[row]">
+        <input       v-if="label && !Array.isArray(input_column) && label !== 'Special Leap' && label !== 'Serca Special Leap' " type="checkbox" v-model="(input_column as InputColumn).enabled[row]">
         <label v-if="label" class="hf-row-label">
             <span>{{ label }}</span>
             <img :src="iconPath(label)" :alt="label" />

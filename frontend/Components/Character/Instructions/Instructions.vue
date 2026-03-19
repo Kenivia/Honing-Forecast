@@ -69,7 +69,7 @@ let sorted_upgrade_arr = computed(sort_upgrades)
     <section class="hf-instructions-pane">
         <div class="hf-card-header">
             <div class="hf-card-title"><span class="hf-card-title-dot" />Tap Instructions</div>
-            <span class="hf-card-hint">Top to bottom execution</span>
+            <span class="hf-card-hint">Go from top to bottom</span>
         </div>
         <div class="hf-card-body">
             <div v-if="active_profile.optimizer_worker_bundle.result">

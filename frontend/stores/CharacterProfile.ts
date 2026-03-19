@@ -130,6 +130,7 @@ export interface CharProfile {
     min_resolution: number
     num_threads: number
     metric_type: number
+    special_re_render_trigger: boolean
 }
 
 export function create_default_char_profile(): CharProfile {
@@ -160,6 +161,7 @@ export function create_default_char_profile(): CharProfile {
         min_resolution: 1,
         num_threads: 1,
         metric_type: 1,
+        special_re_render_trigger: true,
     }
 }
 

@@ -14,7 +14,7 @@
 - ~~total gold row~~
 - char creation
 - timestamp & dont re-pull
-- rework the use special leaps butotn
+- ~~rework the use special leaps butotn~~
 
 ## Roadmap
 

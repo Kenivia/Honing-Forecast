@@ -7,7 +7,7 @@ import { create_input_column, HistogramOutputs, input_column_to_num, InputColumn
 import MaterialGraph from "./MaterialGraph.vue"
 import { storeToRefs } from "pinia"
 import { useRosterStore } from "@/stores/RosterConfig"
-import { computed, ref, Ref, toRef, watch, watchEffect } from "vue"
+import { computed, nextTick, ref, Ref, toRef, watch, watchEffect } from "vue"
 
 const { active_profile } = storeToRefs(useProfilesStore())
 const { roster_config } = storeToRefs(useRosterStore())
@@ -104,6 +104,13 @@ function hover_annotation(x, _y, cy, material_type, color): string {
 function special_hover_annotation(x, _y, cy, material_type, color): string {
     let place = Math.min(10, Math.max(Math.ceil(cy < 0.5 ? Math.min(3, Math.abs(Math.log10(cy))) : Math.abs(Math.log10(1 - cy))), 3))
     return `<b style="color: white;">${(cy * 100).toPrecision(place)}% </b> chance to free tap <br> at least <b style="color: ${color};"> ${x + 1} </b> piece`
+}
+
+const re_render_trigger = ref(true)
+const forceRerender = async () => {
+    re_render_trigger.value = false
+    await nextTick()
+    re_render_trigger.value = true
 }
 </script>
 
@@ -202,6 +209,7 @@ function special_hover_annotation(x, _y, cy, material_type, color): string {
                             :row="0"
                             :setter="(val) => (active_profile.special_budget.data[0] = val)"
                             :label="(active_profile.tier == 1 ? 'Serca ' : '') + active_profile.special_budget.keys[0]"
+                            v-if="active_profile.special_re_render_trigger"
                         ></MaterialCell>
                         <!-- {{ console.log(active_profile.optimizer_worker_bundle.result?.latest_special_probs) }} -->
                         <MaterialGraph

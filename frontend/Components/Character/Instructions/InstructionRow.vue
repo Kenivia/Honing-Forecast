@@ -6,7 +6,7 @@ import { JOINED_ADV_JUICE, PIECE_NAMES, ALL_LABELS, DEFAULT_ARTISAN_MULTIPLIER, 
 import { formatSig, get_piece_name, iconPath, toOrdinal } from "@/Utils/Helpers"
 import { input_column_to_num, OneState, to_upgrade_key, Upgrade, UpgradeStatus } from "@/Utils/Interfaces"
 import { storeToRefs } from "pinia"
-import { computed, InputHTMLAttributes, ref, watch } from "vue"
+import { computed, InputHTMLAttributes, nextTick, ref, watch } from "vue"
 
 const { active_profile } = storeToRefs(useProfilesStore())
 const { roster_config } = storeToRefs(useRosterStore())
@@ -192,13 +192,6 @@ const visualStreaks = computed(() => {
     return out
 })
 
-// --- Req 3: Free Taps Failed Action ---
-function zeroSpecialLeaps() {
-    if (active_profile.value.special_budget?.data) {
-        active_profile.value.special_budget.data[0] = "0"
-    }
-}
-
 // --- Req 5: Interactive Inputs & Watchers ---
 const taps_so_far = ref(props.upgrade.alr_failed || 0)
 watch(
@@ -321,7 +314,7 @@ function onSucceedClick() {
     show_success_modal.value = true
 }
 
-function confirmSuccess() {
+async function confirmSuccess() {
     if (!succeed_without_deduct.value) {
         const tier = active_profile.value.tier
 
@@ -342,6 +335,9 @@ function confirmSuccess() {
 
     show_success_modal.value = false
     succeed_without_deduct.value = false // reset
+    active_profile.value.special_re_render_trigger = false
+    await nextTick()
+    active_profile.value.special_re_render_trigger = true
 }
 
 function juice_icon_path(upgrade: Upgrade, juice: boolean) {
@@ -372,17 +368,13 @@ const progress_expanded = ref(props.upgrade.alr_failed > 0)
                         {{ props.perform_order + 1 }}
                     </div>
                     <div class="order-text">
-                        {{ free_tap_this_upgrade ? "Free tap this " + toOrdinal(props.index_in_special_state + 1) : "Normal tap this" }}
+                        {{ free_tap_this_upgrade ? "Free tap this" : "Normal tap this" }}
                     </div>
-                </div>
-
-                <div v-if="free_tap_this_upgrade && props.index_in_special_state == 0" class="free-tap-actions">
-                    <button class="btn-all-failed" @click="zeroSpecialLeaps">Use Special leaps</button>
-                    <!-- <span class="action-desc">Use free taps before proceeding</span> -->
+                    <div v-if="free_tap_this_upgrade" class="order-text">until you run out</div>
                 </div>
             </div>
 
-            <div class="hf-scrollable-instructions" :class="{ 'is-dimmed': free_tap_this_upgrade }">
+            <div class="hf-scrollable-instructions" :class="{ 'is-dimmed': false }">
                 <div v-for="(vStreak, i) in visualStreaks" :key="i" class="instruction-stack">
                     <div class="icon-slot" :class="{ 'should-not-use': !vStreak.topIconActive }">
                         <img :src="juice_icon_path(upgrade, true)" alt="Top Mat" :style="{ opacity: vStreak.topIconActive ? 1 : 0.1 }" />
@@ -506,6 +498,15 @@ const progress_expanded = ref(props.upgrade.alr_failed > 0)
                         <MaterialCell :input_column="remaining_materials.roster_mats" :row="row" :input_color="'--hf-graph-roster-color'" />
                         <MaterialCell :input_column="remaining_materials.tradable_mats" :row="row" :input_color="'--hf-graph-tradable-color'" />
                     </div>
+                    <div v-if="upgrade.is_normal_honing && taps_so_far == 0" class="hf-mats-row">
+                        <MaterialCell
+                            :input_column="active_profile.special_budget"
+                            :row="0"
+                            :setter="(val) => (console.log('sat'), (active_profile.special_budget.data[0] = val))"
+                            :label="(active_profile.tier == 1 ? 'Serca ' : '') + active_profile.special_budget.keys[0]"
+                        ></MaterialCell>
+                        <span style="justify-self: left">(after)</span>
+                    </div>
                 </div>
 
                 <div class="popup-actions">
@@ -584,6 +585,7 @@ const progress_expanded = ref(props.upgrade.alr_failed > 0)
     font-size: var(--font-small);
     color: var(--hf-text-muted, #aaa);
     text-align: center;
+    text-wrap-mode: wrap;
 }
 
 .btn-all-failed {
