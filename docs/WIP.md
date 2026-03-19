@@ -13,12 +13,12 @@
 
 ### 4th: ~~ Tradable / bound mats distinction~~
 
-### 4th : Box opening recommendation
+### 5th : Box opening recommendation
 
 - Each chest type is like another state, [how_many_option_1, howmany option_2] etc, should work readily with the optimizer
-  - need to conver these states into the budgetse shouldn't be that hard
+  - need to convert these states into the budgets shouldn't be that hard
 
-### 4.5th : Hard limit on juice usages
+### 5.5th : Hard limit on juice usages
 
 - disallow states that can use more than a certain amount of juice / scroll / books
   - this kinda falls apart with normal honing cos we can finish early, but can just make a pessimistic assumption
@@ -27,7 +27,7 @@
 
 - I mean it's kinda redundant cos we can just set the price to like 9999999?
 
-### 5th: OCR
+### 6th: OCR
 
 the ark grid ocr is so goated, it should be possible with mats too
 
@@ -38,7 +38,7 @@ the ark grid ocr is so goated, it should be possible with mats too
 
 - this is probably a lot more complicated than I realize esp with boxes and shit but will make the world of difference
 
-### 6th: Forecast mode
+### 7th: Forecast mode
 
 Haven't thought enough about the specifics but shouldn't be that hard once everything else is in place.
 
@@ -53,7 +53,7 @@ Haven't thought enough about the specifics but shouldn't be that hard once every
   - daily login
   - solo shop
 
-### 7th: Optimizer Improvements
+### 8th: Optimizer Improvements
 
 - figure out if the restarts are carrying the algorithm and maybe do SA properly
 - somehow make the pity length more explicit cos right now a lot of moves don't do anything
@@ -65,7 +65,7 @@ Haven't thought enough about the specifics but shouldn't be that hard once every
   - like there can't really be "overfitting" cos we have like 2 parameters
   - this is definitely a very much long term goal
 
-### 8th: Price trend viewer
+### 9th: Price trend viewer
 
 need to pull as much historical data as possible from loa-buddy -> store & pull from my own data base -> keep updating this
 
