@@ -126,6 +126,7 @@ export function parse_input(input_column: InputColumn, index: number, input: str
         return 999999999
     }
     let out = input_column.type === InputType.Int ? parseInt(input.replace(/,/g, "")) : parseFloat(input.replace(/,/g, ""))
+    console.log(input_column.upper_bound)
     return isFinite(out) ? Math.min(input_column.upper_bound[index], out) : 0
 }
 export function fill_new_tiers_with_default(old: InputColumn[]) {
@@ -153,7 +154,7 @@ export type MaterialInput = OneMaterial[]
 
 // idk why i used is_adv here but whatever
 //          (enabled),  piece type, upgrade index, is_adv, normal_progress, state, unlock, succeeded, adv_progress
-export type OneUpgrade = [number, number, boolean, number | null, OneState[], boolean, boolean, AdvProgress | null]
+export type OneUpgrade = [number, number, boolean, number | null, null, boolean, boolean, AdvProgress | null]
 export type UpgradeInput = OneUpgrade[]
 export const DEFAULT_ONE_UPGRADE = [0, [], false, false, [0, 0, false, false]] // excluding the first 3
 
@@ -193,7 +194,7 @@ export function grids_to_keyed(normal_grid: StatusGrid, adv_grid: StatusGrid, al
                     new_keyed[key] = all_keyed[key]
                     new_keyed[key][0] = true
                 } else {
-                    new_keyed[key] = [true, [piece_type, upgrade_index, false, 0, [], false, false, null], 0, 0]
+                    new_keyed[key] = [true, [piece_type, upgrade_index, false, 0, null, false, false, null], 0, 0]
                 }
             }
         }
@@ -206,12 +207,12 @@ export function grids_to_keyed(normal_grid: StatusGrid, adv_grid: StatusGrid, al
                     new_keyed[key] = all_keyed[key]
                     new_keyed[key][0] = true
                 } else {
-                    new_keyed[key] = [true, [piece_type, upgrade_index, true, null, [], false, false, [0, 0, false, false]], null, null]
+                    new_keyed[key] = [true, [piece_type, upgrade_index, true, null, null, false, false, [0, 0, false, false]], null, null]
                 }
             }
         }
     }
-    // console.log("after", new_keyed)
+    console.log("after", new_keyed)
     return new_keyed
 }
 

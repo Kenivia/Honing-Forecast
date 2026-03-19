@@ -135,7 +135,6 @@ watch(
         () => roster_config.value.tradable_mats_owned,
         () => roster_config.value.mats_prices,
         () => active_profile.value.keyed_upgrades,
-        // () => active_profile.value.keyed_states,
         () => active_profile.value.special_budget,
     ],
     () => {
@@ -194,7 +193,20 @@ function set_keyed_states(result: StateBundle) {
 }
 
 watch(
-    [() => toRaw(preped_payload.value), () => active_profile.value.histogram_treatment_plan],
+    [
+        () => active_profile.value.bound_budgets,
+        () => active_profile.value.leftover_price,
+        () => active_profile.value.tier,
+        () => active_profile.value.express_event,
+        () => active_profile.value.min_resolution,
+        () => roster_config.value.roster_mats_owned,
+        () => roster_config.value.tradable_mats_owned,
+        () => roster_config.value.mats_prices,
+        () => active_profile.value.keyed_upgrades,
+        () => active_profile.value.special_budget,
+
+        () => active_profile.value.histogram_treatment_plan,
+    ],
     () => {
         if (preped_payload.value === null) return
         active_profile.value.histogram_worker_bundle.throttled_start(WasmOp.Histogram, buildPayload(WasmOp.Histogram))
@@ -203,7 +215,18 @@ watch(
 )
 
 watch(
-    () => toRaw(preped_payload.value),
+    [
+        () => active_profile.value.bound_budgets,
+        () => active_profile.value.leftover_price,
+        () => active_profile.value.tier,
+        () => active_profile.value.express_event,
+        () => active_profile.value.min_resolution,
+        () => roster_config.value.roster_mats_owned,
+        () => roster_config.value.tradable_mats_owned,
+        () => roster_config.value.mats_prices,
+        () => active_profile.value.keyed_upgrades,
+        () => active_profile.value.special_budget,
+    ],
     () => {
         if (preped_payload.value === null) return
         active_profile.value.evaluation_worker_bundle.throttled_start(WasmOp.EvaluateAverage, buildPayload(WasmOp.EvaluateAverage))

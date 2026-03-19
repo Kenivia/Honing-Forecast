@@ -150,7 +150,7 @@ export function create_default_char_profile(): CharProfile {
 
         keyed_upgrades: {},
         keyed_states: {},
-        special_budget: create_input_column(InputType.Int, [SPECIAL_LEAP_LABEL]),
+        special_budget: create_input_column(InputType.Int, [SPECIAL_LEAP_LABEL], ["0"], [33333]),
 
         bound_budgets: ALL_LABELS.map((this_labels) => create_input_column(InputType.Int, this_labels)),
         leftover_price: ALL_LABELS.map((this_labels) => create_input_column(InputType.Int, this_labels)), // implicit 0 leftover here

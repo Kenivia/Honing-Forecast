@@ -28,7 +28,7 @@ export function createWorkerBundle() {
         throttle_timer = setTimeout(() => {
             throttle_ready = true
             _try_flush_throttle() // catch-up: new payload may have arrived during cooldown
-        }, 300)
+        }, 600)
 
         _launch(wasm_op, payload, () => _try_flush_throttle())
     }
