@@ -66,7 +66,7 @@ function sort_upgrades(): [Upgrade, number][] {
 let sorted_upgrade_arr = computed(sort_upgrades)
 </script>
 <template>
-    <section class="hf-instructions-pane">
+    <section class="hf-card hf-instructions-pane">
         <div class="hf-card-header">
             <div class="hf-card-title"><span class="hf-card-title-dot" />Tap Instructions</div>
             <span class="hf-card-hint">Go from top to bottom</span>
@@ -89,6 +89,7 @@ let sorted_upgrade_arr = computed(sort_upgrades)
 .hf-instructions-pane {
     width: min(100%, 700px);
     overflow-x: auto;
-    overflow-y: visible;
+    overflow-y: scroll;
+    max-height: 1500px;
 }
 </style>

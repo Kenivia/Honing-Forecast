@@ -12,6 +12,7 @@ export interface RosterConfig {
     selected_shard_bag_size: number
     region: string
     effective_serca_price: number[]
+    last_market_timestamp: Record<string, number>
     // tradable_mats_price: InputColumn // these are just price with tax applied
 }
 export const useRosterStore = defineStore("roster", {
@@ -37,6 +38,7 @@ export const DEFAULT_ROSTER_CONFIG: RosterConfig = {
     selected_shard_bag_size: 3000,
     region: "NAE",
     effective_serca_price: ALL_LABELS[1].map(() => 0),
+    last_market_timestamp: {},
     // tradable_mats_price: createInputColumn(InputType.Float),
 }
 

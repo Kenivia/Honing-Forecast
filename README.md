@@ -1,6 +1,6 @@
 # Honing Forecast
 
-[![discord](https://img.shields.io/discord/1477278907655786611?logo=discord)](https://discord.gg/QFbs75RmRN)
+[![discord](https://img.shields.io/discord/1477278907655786611?logo=discord)](https://discord.gg/KWDpQyvgzc)
 
 Honing Forecast is a Lost Ark honing calculator that computes your average gold spent based on your owned mats, and suggests a free tap & juice usage plan that minimizes this average.
 
@@ -75,7 +75,7 @@ This seemingly innoculous descrepency causes the computation to be significantly
 - [Optimizer (simulated annealing)](/docs/Optimizer.md)
 - [Work in progress](/docs/WIP.md)
 
-For anything else, you can ask me in the [Discord server](https://discord.com/invite/QFbs75RmRN)!
+For anything else, you can ask me in the [Discord server](https://discord.gg/KWDpQyvgzc)!
 
 ## Contributing
 
@@ -87,11 +87,11 @@ You'll need the following:
 
 Run `npm install` for the dependencies, then `npm run dev` for the dev server.
 
-You can take a look at [WIP](/docs/WIP.md), but any help will be greatly appreciated! Again feel free to discuss with me on [Discord](https://discord.com/invite/QFbs75RmRN).
+You can take a look at [WIP](/docs/WIP.md), but any help will be greatly appreciated!
 
 ## Bug report / feedback
 
-If you find a bug or spot an error, please submit an issue on GitHub or send a message on [Discord](https://discord.com/invite/QFbs75RmRN)!
+If you find a bug or spot an error, please submit an issue on GitHub or send a message on [Discord](https://discord.gg/KWDpQyvgzc)!
 
 ## Disclaimer
 

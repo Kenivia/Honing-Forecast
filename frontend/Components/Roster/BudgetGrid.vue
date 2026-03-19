@@ -3,7 +3,7 @@ import { useRosterStore as useRosterStore } from "@/stores/RosterConfig"
 import { ALL_LABELS, BUDGET_NARROW_WIDTH, BUNDLE_SIZE, NARROW_WIDTH, SYNCED_LABELS, TIER_OPTIONS } from "@/Utils/Constants"
 import { storeToRefs } from "pinia"
 import MaterialCell from "@/Components/Common/MaterialCell.vue"
-import { computed, nextTick, ref, watchEffect } from "vue"
+import { computed, nextTick, onUnmounted, ref, watch, watchEffect } from "vue"
 import { SelectButton } from "primevue"
 import { useMediaIsNarrow } from "@/Utils/WindowSize"
 import { input_column_to_num, parse_input } from "@/Utils/Interfaces"
@@ -15,7 +15,7 @@ const { roster_config } = storeToRefs(useRosterStore())
 const tier = computed(() => roster_config.value.tier)
 const { isNarrow } = useMediaIsNarrow(BUDGET_NARROW_WIDTH)
 
-const { disabled, start_fetch } = useTimedFetch((result, selected, price) => {
+const { disabled, start_fetch, time_to_wait } = useTimedFetch((result, selected, price) => {
     fetch_callback(result, selected, price)
     forceRerender()
 })
@@ -25,6 +25,13 @@ const forceRerender = async () => {
     await nextTick()
     re_render_trigger.value = true
 }
+const ttw = ref(time_to_wait(roster_config.value.region))
+
+const interval = setInterval(() => {
+    ttw.value = time_to_wait(roster_config.value.region)
+}, 1000) // or whatever granularity you need
+
+onUnmounted(() => clearInterval(interval))
 watchEffect(() => {
     // one way sync from T4 to Serca, the uui modifies the T4 copy
     for (let serca_index = 0; serca_index < ALL_LABELS[1].length; serca_index++) {
@@ -98,7 +105,7 @@ watchEffect(() => {
             <option>EUC</option>
         </select>
         <button :disabled="disabled" @click="() => start_fetch(roster_config.region)">
-            {{ disabled ? "Please wait..." : "Fetch Market Data" }}
+            {{ disabled ? (ttw > 0 ? "Wait " + Math.ceil(ttw / 1000) + "s before fetching again" : "Fetching...") : "Fetch Market Data" }}
         </button>
     </div>
 
@@ -130,6 +137,7 @@ watchEffect(() => {
                             roster_config.roster_mats_owned[0].data[row] = val
                         }
                     "
+                    :hide_tick="true"
                 />
                 <MaterialCell
                     :input_column="roster_config.tradable_mats_owned[0]"
@@ -178,6 +186,7 @@ watchEffect(() => {
                             roster_config.roster_mats_owned[SYNCED_LABELS.includes(label) ? 0 : 1].data[row] = val
                         }
                     "
+                    :hide_tick="true"
                 />
                 <MaterialCell
                     :input_column="roster_config.tradable_mats_owned[SYNCED_LABELS.includes(label) ? 0 : 1]"
@@ -272,6 +281,10 @@ watchEffect(() => {
     align-items: center; /* optional: vertically center each cell */
     gap: 8px; /* optional: spacing between cells */
     grid-template-rows: subgrid;
+    background: var(--hf-bg-panel);
+    border: 1px solid var(--hf-border-subtle);
+    border-radius: 8px;
+    width: max-content;
 }
 .hf-roster-inputs-serca {
     display: grid;
@@ -279,6 +292,9 @@ watchEffect(() => {
     align-items: center; /* optional: vertically center each cell */
     gap: 8px; /* optional: spacing between cells */
     grid-template-rows: subgrid;
+    background: var(--hf-bg-panel);
+    border: 1px solid var(--hf-border-subtle);
+    border-radius: 8px;
 }
 /* Container */
 .hf-roster-tier-select.hf-roster-tier-select {

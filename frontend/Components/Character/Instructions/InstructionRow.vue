@@ -504,6 +504,7 @@ const progress_expanded = ref(props.upgrade.alr_failed > 0)
                             :row="0"
                             :setter="(val) => (console.log('sat'), (active_profile.special_budget.data[0] = val))"
                             :label="(active_profile.tier == 1 ? 'Serca ' : '') + active_profile.special_budget.keys[0]"
+                            :hide_tick="true"
                         ></MaterialCell>
                         <span style="justify-self: left">(after)</span>
                     </div>

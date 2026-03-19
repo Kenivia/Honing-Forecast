@@ -210,6 +210,7 @@ const forceRerender = async () => {
                             :setter="(val) => (active_profile.special_budget.data[0] = val)"
                             :label="(active_profile.tier == 1 ? 'Serca ' : '') + active_profile.special_budget.keys[0]"
                             v-if="active_profile.special_re_render_trigger"
+                            :hide_tick="true"
                         ></MaterialCell>
                         <!-- {{ console.log(active_profile.optimizer_worker_bundle.result?.latest_special_probs) }} -->
                         <MaterialGraph

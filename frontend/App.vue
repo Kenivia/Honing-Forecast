@@ -15,7 +15,7 @@ const roster_store = useRosterStore()
 roster_store.init()
 const profile_store = useProfilesStore()
 profile_store.init()
-const { all_profiles } = storeToRefs(profile_store)
+// const { all_profiles } = storeToRefs(profile_store)
 const { start_fetch } = useTimedFetch(fetch_callback)
 start_fetch(roster_store.roster_config.region)
 
@@ -30,47 +30,84 @@ const { isNarrow } = useMediaIsNarrow()
 </script>
 
 <template>
-    <header>
-        <div class="wrapper">
-            <nav class="flex justify-between mb-10 pt-10">
+    <div style="display: flex; flex-direction: column; min-height: 100vh; justify-items: flex-end">
+        <header>
+            <nav
+                style="
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    border-bottom: 1px solid var(--separator-color);
+                    padding: 0px;
+                    margin: 0px;
+                "
+            >
                 <div class="hf-brand">
-                    <div class="hf-brand-icon">
-                        <img :src="iconPath('Forecast Icon')" alt="Forecast icon" style="width: 34px; height: 34px" />
-                    </div>
+                    <router-link to="/">
+                        <div class="hf-brand-icon">
+                            <img :src="iconPath('Forecast Icon')" alt="Forecast icon" style="width: 34px; height: 34px" /></div
+                    ></router-link>
                     <div v-if="!isNarrow">
                         <h1 class="hf-title">Honing Forecast</h1>
                     </div>
                 </div>
                 <div class="hf-page-header-row">
-                    <router-link to="/roster">
-                        <div class="hf-header-button">Roster & market setup</div>
+                    <router-link to="/roster-setup">
+                        <div class="hf-header-button">Roster setup</div>
                     </router-link>
-                    <div v-for="(profile, index) in all_profiles">
-                        <router-link :to="'/'" @click="profile_store.active_profile_index = index">
-                            <div class="hf-header-button">{{ profile.char_name }}</div>
-                        </router-link>
-                    </div>
-                </div>
-                <div class="hf-header-links">
-                    <a href="https://github.com/Kenivia/Honing-Forecast">GitHub</a>
+                    <router-link to="/market-mats">
+                        <div class="hf-header-button">Market & Mats</div>
+                    </router-link>
+                    <div style="width: 10px"></div>
+                    <RouterLink
+                        v-for="(profile, index) in profile_store.profiles"
+                        :key="index"
+                        :to="{ name: 'char', params: { characterName: profile.char_name } }"
+                        class="hf-header-button"
+                        :class="{ selected: index == profile_store.active_profile_index }"
+                    >
+                        {{ profile.char_name }}
+                    </RouterLink>
                 </div>
             </nav>
-        </div>
-    </header>
-
-    <main>
-        <RouterView />
-    </main>
+        </header>
+        <main style="flex: 1">
+            <RouterView />
+        </main>
+        <footer style="display: flex; flex-direction: row-reverse; align-items: center">
+            <a v-if="!isNarrow" href="https://ko-fi.com/kenivia" class="hf-header-links">
+                <img src="/Icons/kofi.png" alt="Ko-fi" />
+                <span>Donate</span>
+            </a>
+            <a v-if="!isNarrow" href="https://discord.gg/KWDpQyvgzc" class="hf-header-links">
+                <img src="/Icons/Discord.png" alt="Discord" />
+                <span>Discord</span>
+            </a>
+            <a v-if="!isNarrow" href="https://github.com/Kenivia/Honing-Forecast" class="hf-header-links">
+                <img src="/Icons/GitHub.png" alt="GitHub" />
+                <span>GitHub</span>
+            </a>
+            <span style="color: var(--text-very-muted)">Made with love by Kenivia with help from many awesome people.</span>
+        </footer>
+    </div>
 </template>
 
 <style>
 .hf-header-button {
-    margin: 12px;
     color: var(--hf-header-button);
     border-radius: 6px;
+    border: 1px solid var(--separator-color);
+    background-color: var(--hf-bg-header);
+    margin: 0px 2px 0px 2px;
+    text-wrap-mode: nowrap;
 }
 .hf-header-button:hover {
-    color: var(--hf-header-button-hovered);
+    color: var(--accent-hover);
+    background-color: var(--hf-bg-hover);
+}
+.hf-header-button.selected {
+    color: var(--accent-hover);
+    background-color: var(--hf-bg-hover);
 }
 .hf-header-button {
     padding: 12px;
@@ -80,8 +117,10 @@ const { isNarrow } = useMediaIsNarrow()
     flex-direction: row;
     width: 100%;
     gap: 0px;
-    padding: 4px;
+    /* padding: 4px; */
     align-items: center;
+    overflow-x: auto;
+    overflow-y: hidden;
 }
 .hf-brand {
     display: flex;
@@ -91,7 +130,7 @@ const { isNarrow } = useMediaIsNarrow()
     /* border-radius: var(--hf-radius); */
     /* background: linear-gradient(135deg, var(--hf-bg-card), var(--hf-bg-panel));
     box-shadow: none; */
-    padding: 4px;
+    /* padding: 4px; */
     padding-right: 8px;
 }
 

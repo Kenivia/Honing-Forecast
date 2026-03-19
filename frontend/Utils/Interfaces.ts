@@ -212,7 +212,7 @@ export function grids_to_keyed(normal_grid: StatusGrid, adv_grid: StatusGrid, al
             }
         }
     }
-    console.log("after", new_keyed)
+    // console.log("after", new_keyed)
     return new_keyed
 }
 

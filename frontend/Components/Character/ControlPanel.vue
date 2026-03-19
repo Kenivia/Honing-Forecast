@@ -59,11 +59,11 @@ watchEffect(() => {
             <div class="hf-card-title"><span class="hf-card-title-dot" />Controls</div>
         </div>
         <div class="hf-card-body hf-options-body">
-            <div class="hf-options-row">
-                <button class="hf-header-link-btn" @click="resetActive">Reset All</button>
-                <!-- <button class="hf-header-link-btn" @click="resetOptimizerState">Reset Optimizer</button> -->
-            </div>
-            <button class="hf-header-link-btn" @click="copyPayload">Copy Payload</button>
+            <button class="hf-control-panel-btn" @click="resetActive">Reset this char</button>
+            <div style="font-size: x-small; color: var(--text-very-muted); text-wrap-mode: wrap">You may need to reload after</div>
+            <!-- <button class="hf-header-link-btn" @click="resetOptimizerState">Reset Optimizer</button> -->
+
+            <!-- <button class="hf-control-panel-btn" @click="copyPayload">Copy Payload</button> -->
 
             <!-- <div class="hf-divider" /> -->
 
@@ -75,7 +75,7 @@ watchEffect(() => {
             <div class="hf-divider" />
             <label class="hf-inline-check">
                 <input v-model="treatment_tick" type="checkbox" />
-                <span>Optimizer accounts for sell value of tradable mats (Recommended)</span>
+                <span>Optimizer account for sell value of tradable mats (Recommended)</span>
             </label>
 
             <div class="hf-divider" />
@@ -98,6 +98,9 @@ watchEffect(() => {
     </section>
 </template>
 <style>
+.hf-control-panel-btn {
+    color: var(--text-muted);
+}
 .hf-control-panel {
     width: 200px;
 }

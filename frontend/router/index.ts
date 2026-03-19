@@ -1,21 +1,35 @@
 import { createRouter, createWebHistory } from "vue-router"
 import CharView from "../Components/Character/CharView.vue"
-import RosterView from "../Components/Roster/RosterView.vue"
+import { useProfilesStore } from "@/stores/CharacterProfile"
+import MarketView from "@/Components/Roster/MarketView.vue"
+import RosterView from "@/Components/RosterView.vue"
 
 const router = createRouter({
     history: createWebHistory(),
     routes: [
         {
             path: "/",
+            redirect: () => {
+                const profile_store = useProfilesStore()
+                const first = profile_store.profiles[0]
+                return first ? `/${first.char_name}` : "/roster"
+            },
+        },
+        {
+            path: "/:characterName",
             name: "char",
             component: CharView,
         },
         {
-            path: "/roster",
+            path: "/market-mats",
+            name: "market",
+            component: MarketView,
+        },
+        {
+            path: "/roster-setup",
             name: "roster",
             component: RosterView,
         },
-        // { path: "/:pathMatch(.*)*", redirect: "/" },
     ],
 })
 

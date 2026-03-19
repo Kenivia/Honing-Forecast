@@ -49,9 +49,7 @@ export const useProfilesStore = defineStore("profiles", {
             this.active_profile_index = loaded.active_profile_index
 
             for (let index = 0; index < this.profiles.length; index++) {
-                if (this.profiles[index].state_bundle === null) {
-                    this.profiles[index].optimizer_worker_bundle.start(WasmOp.Parser, buildPayload(WasmOp.Parser))
-                }
+                this.profiles[index].optimizer_worker_bundle.start(WasmOp.Parser, buildPayload(WasmOp.Parser))
             }
             // console.log(this)
         },
@@ -81,7 +79,7 @@ export function load_char_profiles(): { profiles: CharProfile[]; active_profile_
             ...parsed.profiles[i],
             ...this_profile,
         }
-        console.log(parsed.profiles[i], parsed.profiles[i].tier)
+        // console.log(parsed.profiles[i], parsed.profiles[i].tier)
     }
 
     return { ...DEFAULT_PROFILES_STATE, ...parsed }
@@ -135,7 +133,7 @@ export interface CharProfile {
 
 export function create_default_char_profile(): CharProfile {
     return {
-        optimizer_treatment_plan: TreatmentPlan.TreatTradableAsBound,
+        optimizer_treatment_plan: TreatmentPlan.TreatRosterAsBound,
         histogram_treatment_plan: TreatmentPlan.TreatRosterAsTradable,
         express_event: false,
         char_name: "YourChar",

@@ -98,8 +98,8 @@ watch(
     <div class="hf-honing-row">
         <section class="hf-card-normal">
             <div class="hf-card-header">
-                <label class="hf-achieved-ilevel">Achieved ilevel: {{ achieved_ilevel() }}</label>
-                <label class="hf-pending-ilevel">Pending ilevel: {{ pending_ilevel() }}</label>
+                <label class="hf-achieved-ilevel">Achieved ilevel: {{ achieved_ilevel(active_profile) }}</label>
+                <label class="hf-pending-ilevel">Pending ilevel: {{ pending_ilevel(active_profile) }}</label>
                 <label class="hf-inline-check">
                     <input v-model="active_profile.express_event" type="checkbox" />
                     <span>Express event</span>

@@ -156,6 +156,7 @@ watchDebounced(
         () => active_profile.value.keyed_upgrades,
         () => active_profile.value.special_budget,
         () => active_profile.value.optimizer_treatment_plan,
+        () => active_profile.value.auto_start_optimizer,
     ],
     (_) => {
         if (preped_payload.value === null || !active_profile.value.auto_start_optimizer) {
