@@ -40,8 +40,9 @@ impl StateBundle {
         self.compute_special_probs(false);
         performance.states_evaluated += 1;
 
-        let mut breakdown: Vec<f64> = vec![0.0; self.prep_output.juice_info.total_num_avail];
-
+        let mut gold_breakdown: Vec<f64> = vec![0.0; self.prep_output.juice_info.total_num_avail];
+        let mut average_breakdown: Vec<f64> =
+            vec![0.0; self.prep_output.juice_info.total_num_avail];
         let mut total_gold: f64 = 0.0;
         for (skip_count, &special_prob) in
             self.special_cache[&self.special_state].iter().enumerate()
@@ -75,16 +76,22 @@ impl StateBundle {
                 total_gold += special_prob * this_avg;
 
                 if compute_breakdown {
-                    breakdown[support_index] += this;
+                    gold_breakdown[support_index] += this;
+                    average_breakdown[support_index] +=
+                        special_prob * self.simple_avg(support_index as i64, skip_count)
                 }
             }
         }
 
         if compute_breakdown {
-            for x in breakdown.iter_mut() {
+            for x in gold_breakdown.iter_mut() {
                 *x = x.ceil()
             }
-            self.average_breakdown = Some(breakdown);
+            for x in average_breakdown.iter_mut() {
+                *x = x.round() // rounding is more uh correct here 
+            }
+            self.gold_breakdown = Some(gold_breakdown);
+            self.average_breakdown = Some(average_breakdown);
         }
         total_gold
     }

@@ -8,7 +8,6 @@ import StatusInput from "@/Components/Character/StatusInput/StatusInput.vue"
 <template>
     <div class="hf-main-stage">
         <StatusInput />
-
         <MaterialDist />
         <ControlPanel />
         <Instructions />

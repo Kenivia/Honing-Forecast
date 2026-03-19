@@ -10,9 +10,10 @@
   - need to re-add this to neighbor
 - enable/disable checkbox
 - move treatment selection to sidebar, accomodate the text somehow
-- special budget & graph
+- ~~special budget & graph~~
 - total gold row
 - char creation
+- timestamp & dont re-pull
 
 ## Roadmap
 

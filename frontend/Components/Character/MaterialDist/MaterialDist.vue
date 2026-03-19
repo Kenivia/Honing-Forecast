@@ -7,13 +7,14 @@ import { create_input_column, HistogramOutputs, input_column_to_num, InputColumn
 import MaterialGraph from "./MaterialGraph.vue"
 import { storeToRefs } from "pinia"
 import { useRosterStore } from "@/stores/RosterConfig"
-import { computed, ref, Ref, toRef, watchEffect } from "vue"
+import { computed, ref, Ref, toRef, watch, watchEffect } from "vue"
 
 const { active_profile } = storeToRefs(useProfilesStore())
 const { roster_config } = storeToRefs(useRosterStore())
 const histogram_result = computed(() => active_profile.value.histogram_worker_bundle.result)
-const averages = computed(() => histogram_result.value?.average ?? new Array(ALL_LABELS[active_profile.value.tier].length).fill(0))
-
+const average_breakdown = computed(
+    () => active_profile.value.optimizer_worker_bundle.result?.average_breakdown ?? new Array(ALL_LABELS[active_profile.value.tier].length).fill(0),
+)
 const analysisTab = ref<"mats" | "juice">("mats")
 
 const visibleRows = computed(() => {
@@ -29,9 +30,10 @@ const visibleRows = computed(() => {
             }
         })
 })
+
 const gold_breakdown = computed(
     () =>
-        active_profile.value.histogram_worker_bundle.value?.state_bundle.average_breakdown.map((x: number) => Math.ceil(x == 0 ? x : -x)) ??
+        active_profile.value.optimizer_worker_bundle.result?.gold_breakdown.map((x: number) => Math.ceil(x == 0 ? x : -x)) ??
         new Array(ALL_LABELS[active_profile.value.tier].length).fill(0),
 )
 
@@ -62,13 +64,17 @@ const annotation_values = computed(() => {
     let roster = input_column_to_num(roster_config.value.roster_mats_owned[active_profile.value.tier])
     let trade = input_column_to_num(roster_config.value.tradable_mats_owned[active_profile.value.tier])
     return bound.map((_, i) =>
-        [averages.value[i], bound[i], roster[i] + bound[i], roster[i] + bound[i] + trade[i]].filter((_, i) => enabled_annotations.value[i]),
+        [average_breakdown.value[i], bound[i], roster[i] + bound[i], roster[i] + bound[i] + trade[i]].filter((_, i) => enabled_annotations.value[i]),
     )
 })
 
 function hover_annotation(x, _y, cy, material_type, color): string {
     let place = Math.min(10, Math.max(Math.ceil(cy < 0.5 ? Math.min(3, Math.abs(Math.log10(cy))) : Math.abs(Math.log10(1 - cy))), 3))
     return `<b style="color: white;">${(cy * 100).toPrecision(place)}% </b> chance to use <br> &#8804;<b style="color: ${color};"> ${Math.ceil(x).toLocaleString("en-US")} </b> ${material_type} `
+}
+function special_hover_annotation(x, _y, cy, material_type, color): string {
+    let place = Math.min(10, Math.max(Math.ceil(cy < 0.5 ? Math.min(3, Math.abs(Math.log10(cy))) : Math.abs(Math.log10(1 - cy))), 3))
+    return `<b style="color: white;">${(cy * 100).toPrecision(place)}% </b> chance to free tap <br> at least <b style="color: ${color};"> ${x + 1} </b> piece`
 }
 </script>
 
@@ -83,7 +89,7 @@ function hover_annotation(x, _y, cy, material_type, color): string {
             <div>
                 <button
                     v-for="(label, index) in ANNOTATION_LABELS"
-                    :class="[`hf-graph-tab-${label.toLowerCase()}`, { active: enabled_annotations[index] }]"
+                    :class="[`hf-graph-tab-${label.replace('+', '').toLowerCase()}`, { active: enabled_annotations[index] }]"
                     @click="enabled_annotations[index] = !enabled_annotations[index]"
                 >
                     {{ label }}
@@ -94,6 +100,7 @@ function hover_annotation(x, _y, cy, material_type, color): string {
             <div class="hf-dist-graphs">
                 <div class="hf-table-title-row">
                     <span style="text-align: right; padding-right: 15px; color: var(--hf-graph-bound-color)">Char-Bound Mats</span>
+                    <span style="color: var(--hf-graph-bound-color)">Chance to succeed with bound</span>
                     <span style="color: var(--hf-graph-average-color)">Average Cost</span>
                     <select v-model="selected_treatement" style="color: var(--hf-gold)">
                         <option>{{ market_gold_text }}</option>
@@ -105,7 +112,8 @@ function hover_annotation(x, _y, cy, material_type, color): string {
                 <div
                     v-if="
                         ALL_LABELS[active_profile.tier].length == active_profile.bound_budgets[active_profile.tier].data.length &&
-                        active_profile.optimizer_worker_bundle.result
+                        active_profile.optimizer_worker_bundle.result &&
+                        active_profile.histogram_worker_bundle.result
                     "
                     style="display: contents"
                 >
@@ -122,7 +130,13 @@ function hover_annotation(x, _y, cy, material_type, color): string {
                             "
                         />
                         <!-- {{ console.log(averages) }} -->
-                        <MaterialCell :input_column="averages" :row="row" :input_color="'--hf-graph-average-color'" />
+                        <MaterialCell
+                            :input_column="active_profile.histogram_worker_bundle.result.bound_chance"
+                            :row="row"
+                            :input_color="'--hf-graph-bound-color'"
+                            :is_percentage="true"
+                        />
+                        <MaterialCell :input_column="average_breakdown" :row="row" :input_color="'--hf-graph-average-color'" />
                         <MaterialCell :input_column="gold_breakdown" :row="row" :input_color="'--hf-gold'" />
                         <MaterialGraph
                             :data="histogram_result?.cum_percentiles?.[row] ?? null"
@@ -136,6 +150,38 @@ function hover_annotation(x, _y, cy, material_type, color): string {
                             :tooltip-text-fn="hover_annotation"
                         />
                     </div>
+                    <div class="hf-mats-row">
+                        <MaterialCell
+                            :input_column="active_profile.special_budget"
+                            :row="0"
+                            :setter="(val) => (active_profile.special_budget.data[0] = val)"
+                            :label="(active_profile.tier == 1 ? 'Serca ' : '') + active_profile.special_budget.keys[0]"
+                        ></MaterialCell>
+                        <!-- {{ console.log(active_profile.optimizer_worker_bundle.result?.latest_special_probs) }} -->
+                        <MaterialGraph
+                            :data="
+                                active_profile.optimizer_worker_bundle.result?.latest_special_probs
+                                    .concat(
+                                        new Array(
+                                            Math.max(
+                                                0,
+                                                active_profile.optimizer_worker_bundle.result.upgrade_arr.filter((x) => x.is_normal_honing).length -
+                                                    active_profile.optimizer_worker_bundle.result?.latest_special_probs.length,
+                                            ),
+                                        ).fill(0),
+                                    )
+                                    .slice(0, active_profile.optimizer_worker_bundle.result.upgrade_arr.filter((x) => x.is_normal_honing).length)
+                                    .map((x, index) => [index, x]) ?? null
+                            "
+                            :material-label="'Special'"
+                            :graph-color="'--hf-free-tap'"
+                            :cumulative="roster_config.cumulative_graph"
+                            :tooltip-text-fn="special_hover_annotation"
+                            :max-yoverride="1"
+                            style="grid-column: span 4"
+                            :empty_message="'No free taps possible'"
+                        />
+                    </div>
                 </div>
             </div>
         </div>
@@ -143,7 +189,7 @@ function hover_annotation(x, _y, cy, material_type, color): string {
 </template>
 <style>
 .hf-analysis-pane {
-    width: min(100%, 872px);
+    width: min(100%, 992px);
     overflow-x: auto;
     overflow-y: visible;
 }
@@ -205,7 +251,7 @@ function hover_annotation(x, _y, cy, material_type, color): string {
 }
 .hf-dist-graphs {
     display: grid;
-    grid-template-columns: 250px 120px 120px 320px;
+    grid-template-columns: 250px 120px 120px 120px 320px;
     align-items: center;
     justify-content: start;
     row-gap: 0;

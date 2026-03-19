@@ -49,8 +49,6 @@ export function apply_treatement(treatment: TreatmentPlan, bound: number, roster
     }
 }
 export function buildPayload(wasm_op: WasmOp): EvalPayload | StateBundle {
-    // OPTIMIZER_WORKEBUNDLE DEPENDENCE ANYWHERE HERE IS A BIG NO NO BECAUSE IT WILL KEEP RE-TRIGGERING
-    // if some constant is really is needed then should run a separate parser worker and store the parser result
     const { active_profile } = storeToRefs(useProfilesStore())
     const { roster_config } = storeToRefs(useRosterStore())
 
@@ -85,5 +83,6 @@ export function buildPayload(wasm_op: WasmOp): EvalPayload | StateBundle {
         min_resolution: active_profile.value.min_resolution,
         num_threads: 1,
         metric_type: 1,
+        special_state: toRaw(active_profile.value.optimizer_worker_bundle.result?.special_state),
     }
 }

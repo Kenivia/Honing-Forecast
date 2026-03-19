@@ -4,7 +4,7 @@ export const FLOAT_TOL = 1e-9
 export const BUCKET_COUNT = 50
 export const ANNOTATION_COLORS = ["--hf-graph-average-color", "--hf-graph-bound-color", "--hf-graph-roster-color", "--hf-graph-tradable-color"]
 export const ANNOTATION_POSITIONS: ("top" | "middle" | "bottom" | "graph")[] = ["graph", "bottom", "middle", "top"]
-export const ANNOTATION_LABELS = ["Avg", "Bound", "Roster-Bound", "Tradable"] // these names are tied with their css class names
+export const ANNOTATION_LABELS = ["Avg", "Bound", "+Roster-Bound", "+Tradable"] // these names are tied with their css class names
 export const SYNCED_LABELS = ["Shards", "Gold", "Silver", "Lava's Breath", "Glacier's Breath"]
 
 export const GRACE_FIRST_N = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 15, 255]
@@ -161,7 +161,7 @@ export const base_icon_map: Record<string, string> = {
     "Serca Blue": "/Icons/Materials/Serca unique/Serca Blue.png",
     "Serca Leaps": "/Icons/Materials/Serca unique/Serca Leaps.png",
     "Serca Fusion": "/Icons/Materials/Serca unique/Serca Fusion.png",
-    "Serca Special Leap": "/Icons/Materials/Serca unique/Serca Special.png",
+    "Serca Special Leap": "/Icons/Materials/Serca unique/Serca Special Leap.png",
 
     "Forecast Icon": "/Icons/Forecast Icon.webp",
 }

@@ -3,9 +3,9 @@ import { CharProfile, useProfilesStore } from "@/stores/CharacterProfile"
 import { useRosterStore } from "@/stores/RosterConfig"
 import { PIECE_NAMES, NORMAL_COLS as NORMAL_COLS, NUM_PIECES as NORMAL_ROWS, ALL_LABELS } from "@/Utils/Constants"
 import { cssVar, iconPath } from "@/Utils/Helpers"
-import { InputColumn, get_modified_cell, UpgradeStatus, forbid_non_numeric } from "@/Utils/Interfaces"
+import { InputColumn, get_modified_cell, UpgradeStatus } from "@/Utils/Interfaces"
 import { storeToRefs } from "pinia"
-import { computed, Ref } from "vue"
+import { computed, ref, Ref } from "vue"
 
 const props = defineProps<{
     input_column: InputColumn | number[]
@@ -14,11 +14,13 @@ const props = defineProps<{
     setter?: (val: string) => void // optional so read-only columns don't need it
     suffix?: string
     input_color?: string
+    is_percentage?: boolean
 }>()
 
 const resolved_color = computed(() => {
     return cssVar(props.input_color, props.input_color)
 })
+const this_data = ref(String(!Array.isArray(props.input_column) ? (props.input_column as InputColumn).data[props.row] : props.input_column[props.row]))
 </script>
 
 <template>
@@ -33,15 +35,16 @@ const resolved_color = computed(() => {
             type="text"
             class="hf-material-cell-input"
             :style="{ color: resolved_color }"
-            :value="input_column.data[row]"
-            @change="setter(get_modified_cell(input_column, row, $event))"
-            @input="setter(forbid_non_numeric(input_column, row, $event))"
+            :value="this_data"
+            @change="((this_data = get_modified_cell(input_column, row, $event)), setter(get_modified_cell(input_column, row, $event)))"
         />
         <label v-else class="hf-material-cell-result" :style="{ color: resolved_color }" type="text">{{
-            input_column[row].toLocaleString("en-US", {
-                minimumFractionDigits: 0, // show decimals for small K/M/B
-                maximumFractionDigits: 0,
-            })
+            is_percentage
+                ? (input_column[row] * 100).toFixed(2) + "%"
+                : input_column[row].toLocaleString("en-US", {
+                      minimumFractionDigits: 0, // show decimals for small K/M/B
+                      maximumFractionDigits: 0,
+                  })
         }}</label>
         <label class="hf-material-cell-suffix" v-if="suffix">{{ suffix }}</label>
     </div>

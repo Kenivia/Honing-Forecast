@@ -134,7 +134,7 @@ export interface CharProfile {
 
 export function create_default_char_profile(): CharProfile {
     return {
-        treatment_plan: TreatmentPlan.TreatRosterAsBound,
+        treatment_plan: TreatmentPlan.TreatTradableAsBound,
 
         express_event: false,
         char_name: "YourChar",

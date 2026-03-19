@@ -6,7 +6,7 @@ import { JOINED_ADV_JUICE, PIECE_NAMES, ALL_LABELS, DEFAULT_ARTISAN_MULTIPLIER, 
 import { formatSig, get_piece_name, iconPath, toOrdinal } from "@/Utils/Helpers"
 import { input_column_to_num, OneState, to_upgrade_key, Upgrade, UpgradeStatus } from "@/Utils/Interfaces"
 import { storeToRefs } from "pinia"
-import { computed, ref, watch } from "vue"
+import { computed, InputHTMLAttributes, ref, watch } from "vue"
 
 const { active_profile } = storeToRefs(useProfilesStore())
 const { roster_config } = storeToRefs(useRosterStore())
@@ -55,21 +55,25 @@ function aggregateStreaks(): NormalStreak[] | AdvStreak[] {
     } else {
         const streaks: AdvStreak[] = []
         let [juice_grace, juice_non_grace] = JOINED_ADV_JUICE[props.upgrade.state[0][1]]
-        let [scroll_grace, scroll_non_grace] = JOINED_ADV_JUICE[props.upgrade.state[0][1]]
+        let [scroll_grace, scroll_non_grace] = JOINED_ADV_JUICE[props.upgrade.state[1][1]]
 
         let both_grace = Math.min(juice_grace, scroll_grace)
         if (both_grace > 0) streaks.push({ juice: true, scroll: true, grace: true, count: both_grace })
 
-        let one_grace = Math.max(juice_grace, scroll_grace) - both_grace
+        let one_grace = Math.max(juice_grace, scroll_grace) == 255 ? 255 : Math.max(juice_grace, scroll_grace) - both_grace
         if (one_grace > 0) streaks.push({ juice: juice_grace > scroll_grace, scroll: scroll_grace > juice_grace, grace: true, count: one_grace })
 
         let both_non_grace = Math.min(juice_non_grace, scroll_non_grace)
         if (both_non_grace > 0) streaks.push({ juice: true, scroll: true, grace: false, count: both_non_grace })
 
-        let one_non_grace = Math.max(juice_non_grace, scroll_non_grace) - both_non_grace
+        let one_non_grace = Math.max(juice_non_grace, scroll_non_grace) == 255 ? 255 : Math.max(juice_non_grace, scroll_non_grace) - both_non_grace
         if (one_non_grace > 0)
             streaks.push({ juice: juice_non_grace > scroll_non_grace, scroll: scroll_non_grace > juice_non_grace, grace: false, count: one_non_grace })
 
+        if (streaks.length == 0) {
+            streaks.push({ juice: false, scroll: false, grace: true, count: 255 })
+        }
+        console.log(juice_grace, juice_non_grace, scroll_grace, scroll_non_grace, props.upgrade.state)
         return streaks
     }
 }
@@ -174,7 +178,7 @@ const visualStreaks = computed(() => {
                 line2 = `on ${graceText}`
             } else {
                 // console.log(props.upgrade.adv_dists)
-                line1 = streak.count < 255 ? `First ${streak.count}` : "All"
+                line1 = streak.count < 255 ? `First ${streak.count}` : streaks.value.length == 1 ? "All" : "Remaining"
                 line2 = graceText
             }
         }
@@ -199,10 +203,6 @@ watch(
         taps_so_far.value = props.upgrade.alr_failed
     },
 )
-watch(taps_so_far, (newVal) => {
-    // console.log("tap so far trigger")
-    active_profile.value.keyed_upgrades[to_upgrade_key(props.upgrade.piece_type, props.upgrade.upgrade_index, !props.upgrade.is_normal_honing)][1][3] = newVal
-})
 
 const current_adv_upgrade = ref(props.upgrade.adv_config ? Math.floor(props.upgrade.adv_config.start_xp / 10) + props.upgrade.upgrade_index * 10 : 0)
 const current_adv_xp = ref(props.upgrade.adv_config ? (props.upgrade.adv_config.start_xp - Math.floor(props.upgrade.adv_config.start_xp / 10) * 10) * 10 : 0)
@@ -227,15 +227,28 @@ watch(
         next_big.value = props.upgrade.adv_config?.next_big ?? false
     },
 )
-watch([current_adv_upgrade, current_adv_xp, current_grace_progress, next_free, next_big], ([new_upgrade, new_xp, new_balls, new_free, new_big]) => {
-    active_profile.value.keyed_upgrades[to_upgrade_key(props.upgrade.piece_type, props.upgrade.upgrade_index, !props.upgrade.is_normal_honing)][1][7] = [
-        (new_upgrade - props.upgrade.upgrade_index * 10) * 10 + new_xp / 10,
-        new_balls,
-        new_free,
-        new_big,
-    ]
-})
 
+function write_normal_progress() {
+    taps_so_far.value = Math.max(0, Math.min(props.upgrade.normal_dist.length - 1, taps_so_far.value))
+    active_profile.value.keyed_upgrades[
+        to_upgrade_key(props.upgrade.piece_type, props.upgrade.upgrade_index, !props.upgrade.is_normal_honing, active_profile.value.tier)
+    ][1][3] = taps_so_far.value
+}
+
+function write_adv_progress() {
+    current_adv_upgrade.value = Math.max(props.upgrade.upgrade_index * 10, Math.min((props.upgrade.upgrade_index + 1) * 10 - 1, current_adv_upgrade.value))
+    current_adv_xp.value = Math.floor(Math.max(0, Math.min(90, current_adv_xp.value)) / 10) * 10
+    current_grace_progress.value = Math.max(0, 6, current_grace_progress.value)
+
+    active_profile.value.keyed_upgrades[
+        to_upgrade_key(props.upgrade.piece_type, props.upgrade.upgrade_index, !props.upgrade.is_normal_honing, active_profile.value.tier)
+    ][1][7] = [
+        (current_adv_upgrade.value - props.upgrade.upgrade_index * 10) * 10 + current_adv_xp.value / 10,
+        current_grace_progress.value,
+        next_free.value,
+        next_big.value,
+    ]
+}
 // --- Req 6: Modal & Cost Deduction Logic ---
 const show_success_modal = ref(false)
 const succeed_without_deduct = ref(false)
@@ -340,7 +353,12 @@ const progress_expanded = ref(props.upgrade.alr_failed > 0)
 <template>
     <div class="hf-upgrade-row">
         <div class="hf-upgrade-topline">
-            <span class="hf-upgrade-name">{{ get_piece_name(upgrade) + " +" + String(upgrade.upgrade_index + 1) }}</span>
+            <span class="hf-upgrade-name">{{
+                (upgrade.is_normal_honing ? "" : "Advanced ") +
+                get_piece_name(upgrade) +
+                " +" +
+                String((upgrade.upgrade_index + 1) * (upgrade.is_normal_honing ? 1 : 10))
+            }}</span>
         </div>
 
         <div class="hf-upgrade-content">
@@ -354,30 +372,35 @@ const progress_expanded = ref(props.upgrade.alr_failed > 0)
                     </div>
                 </div>
 
-                <div v-if="free_tap_this_upgrade" class="free-tap-actions">
-                    <button class="btn-all-failed" @click="zeroSpecialLeaps">I've used all Special leaps</button>
+                <div v-if="free_tap_this_upgrade && props.index_in_special_state == 0" class="free-tap-actions">
+                    <button class="btn-all-failed" @click="zeroSpecialLeaps">Use Special leaps</button>
                     <!-- <span class="action-desc">Use free taps before proceeding</span> -->
                 </div>
             </div>
 
             <div class="hf-scrollable-instructions" :class="{ 'is-dimmed': free_tap_this_upgrade }">
                 <div v-for="(vStreak, i) in visualStreaks" :key="i" class="instruction-stack">
-                    <div class="icon-slot">
-                        <img v-if="vStreak.topIconActive" :src="juice_icon_path(upgrade, true)" alt="Top Mat" />
-                        <div v-else class="empty-cross"></div>
+                    <div class="icon-slot" :class="{ 'should-not-use': !vStreak.topIconActive }">
+                        <img :src="juice_icon_path(upgrade, true)" alt="Top Mat" :style="{ opacity: vStreak.topIconActive ? 1 : 0.1 }" />
+                        <!-- <div v-if="!vStreak.topIconActive" class="empty-cross"></div> -->
                     </div>
-                    <div class="icon-slot">
-                        <img v-if="vStreak.bottomIconActive" :src="juice_icon_path(upgrade, false)" alt="Bottom Mat" />
-                        <div v-else class="empty-cross"></div>
+                    <div
+                        v-if="juice_icon_path(upgrade, false) !== juice_icon_path(upgrade, true)"
+                        class="icon-slot"
+                        :class="{ 'should-not-use': !vStreak.bottomIconActive }"
+                    >
+                        <img :src="juice_icon_path(upgrade, false)" alt="Bottom Mat" :style="{ opacity: vStreak.bottomIconActive ? 1 : 0.1 }" />
+                        <!-- <div v-if="!vStreak.bottomIconActive" class="empty-cross"></div> -->
                     </div>
                     <div class="text-slot">
                         <div class="line-primary" v-html="vStreak.line1"></div>
-                        <div class="line-muted" v-html="vStreak.line2"></div>
+                        <div :class="upgrade.is_normal_honing ? 'line-muted' : 'line-primary'" v-html="vStreak.line2"></div>
                     </div>
                 </div>
             </div>
 
-            <div v-if="!progress_expanded">
+            <div v-if="!progress_expanded" class="hf-right-section">
+                <!-- <button class="btn-succeed" @click="onSucceedClick">Succeed & deduct costs</button> -->
                 <button class="btn-expand" @click="progress_expanded = true">Show more</button>
             </div>
             <div v-if="progress_expanded" class="hf-right-section">
@@ -388,11 +411,24 @@ const progress_expanded = ref(props.upgrade.alr_failed > 0)
 
                         <div class="input-row">
                             <label>Taps so far</label>
-                            <input type="number" v-model.number="taps_so_far" min="0" :max="upgrade.normal_dist?.length - 1 || 100" />
+                            <input
+                                type="number"
+                                v-model.number="taps_so_far"
+                                min="0"
+                                :max="upgrade.normal_dist?.length - 1 || 100"
+                                @change="write_normal_progress"
+                            />
                         </div>
                         <div class="input-row">
                             <!-- {{ console.log(upgrade.normal_dist) }} -->
-                            <input type="range" v-model.number="taps_so_far" min="0" :max="upgrade.normal_dist?.length - 1 || 100" class="hf-slider" />
+                            <input
+                                type="range"
+                                v-model.number="taps_so_far"
+                                min="0"
+                                :max="upgrade.normal_dist?.length - 1 || 100"
+                                class="hf-slider"
+                                @change="write_normal_progress"
+                            />
                         </div>
                     </div>
 
@@ -404,11 +440,7 @@ const progress_expanded = ref(props.upgrade.alr_failed > 0)
                                 v-model.number="current_adv_upgrade"
                                 :min="upgrade.upgrade_index * 10"
                                 :max="(upgrade.upgrade_index + 1) * 10 - 1"
-                                @change="
-                                    current_adv_upgrade = isNaN(current_adv_upgrade)
-                                        ? upgrade.upgrade_index * 10
-                                        : Math.min(Math.max(current_adv_upgrade, upgrade.upgrade_index * 10), (upgrade.upgrade_index + 1) * 10 - 1)
-                                "
+                                @change="write_adv_progress"
                             />
                         </div>
                         <div class="input-row">
@@ -420,18 +452,21 @@ const progress_expanded = ref(props.upgrade.alr_failed > 0)
                                 max="90"
                                 step="10"
                                 style="justify-self: flex-start"
-                                @change="current_adv_xp = isNaN(current_adv_xp) ? 0 : Math.min(Math.max(current_adv_xp, 0), 90)"
+                                @change="write_adv_progress"
                             />
                         </div>
                         <div class="input-row grid-4">
                             <label>Grace progress</label>
-                            <input type="number" v-model.number="current_grace_progress" min="0" max="6" />
+                            <input type="number" v-model.number="current_grace_progress" min="0" max="6" @change="write_adv_progress" />
 
-                            <label v-if="current_grace_progress === 0" class="check-label"> <input type="checkbox" v-model="next_free" /> Next free </label>
-                            <label v-if="current_grace_progress === 6" class="check-label"> <input type="checkbox" v-model="next_big" /> Next big </label>
+                            <label v-if="current_grace_progress === 0" class="check-label">
+                                <input type="checkbox" v-model="next_free" @change="write_adv_progress" /> Next free
+                            </label>
+                            <label v-if="current_grace_progress === 6 && upgrade.upgrade_index >= 2" class="check-label">
+                                <input type="checkbox" v-model="next_big" @change="write_adv_progress" /> Naber's Awl
+                            </label>
                         </div>
                     </div>
-
                     <button class="btn-succeed" @click="onSucceedClick">Succeed & deduct costs</button>
                 </div>
             </div>
@@ -564,7 +599,7 @@ const progress_expanded = ref(props.upgrade.alr_failed > 0)
 }
 
 .btn-expand {
-    height: calc(var(--icon-size) * 2 + 0.25rem);
+    height: calc(var(--icon-size) * 1 + 0.25rem);
     background-color: var(--hf-text-muted);
     color: var(--hf-bg-deep, #000);
     border: none;
@@ -605,38 +640,19 @@ const progress_expanded = ref(props.upgrade.alr_failed > 0)
 .icon-slot {
     width: var(--icon-size);
     height: var(--icon-size);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    background-color: var(--hf-bg-raised);
+}
+.icon-slot.should-not-use {
+    width: var(--icon-size);
+    height: var(--icon-size);
+    border: none;
 }
 
 .icon-slot img {
     width: 100%;
     height: 100%;
     object-fit: contain;
-}
-
-.empty-cross {
-    width: 100%;
-    height: 100%;
-    border: 1px solid rgba(255, 255, 255, 0.3);
-    background: rgba(255, 255, 255, 0.1);
-    position: relative;
-    box-sizing: border-box;
-}
-
-.empty-cross::before,
-.empty-cross::after {
-    content: "";
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    width: 60%;
-    height: 2px;
-    background: rgba(255, 255, 255, 0.5);
-}
-.empty-cross::before {
-    transform: translate(-50%, -50%) rotate(45deg);
-}
-.empty-cross::after {
-    transform: translate(-50%, -50%) rotate(-45deg);
 }
 
 .text-slot {

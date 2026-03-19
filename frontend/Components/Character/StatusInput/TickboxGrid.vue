@@ -2,7 +2,7 @@
 import { CharProfile, useProfilesStore } from "@/stores/CharacterProfile"
 import { PIECE_NAMES, NORMAL_COLS as NORMAL_COLS, NUM_PIECES as NORMAL_ROWS, ADV_COLS, ALL_LABELS, BUNDLE_SIZE } from "@/Utils/Constants"
 import { iconPath } from "@/Utils/Helpers"
-import { grids_to_keyed, input_column_to_num, keyed_to_array, StateBundle, to_upgrade_key, Upgrade, UpgradeStatus } from "@/Utils/Interfaces"
+import { grids_to_keyed, input_column_to_num, keyed_to_array, KeyedStates, StateBundle, to_upgrade_key, Upgrade, UpgradeStatus } from "@/Utils/Interfaces"
 import { storeToRefs } from "pinia"
 import { eventNames } from "process"
 import { computed, onWatcherCleanup, ref, toRaw, watch, watchEffect } from "vue"
@@ -112,13 +112,14 @@ function change_one(row: number, col: number, current = relevant_grid.value[row]
 const preped_payload = ref(null)
 
 watch(
-    [() => active_profile.value.adv_grid, () => active_profile.value.normal_grid],
+    [() => active_profile.value.adv_grid, () => active_profile.value.normal_grid, () => active_profile.value.tier],
     () => {
         console.log("keyed update")
         active_profile.value.keyed_upgrades = grids_to_keyed(
             active_profile.value.normal_grid,
             active_profile.value.adv_grid,
             active_profile.value.keyed_upgrades,
+            active_profile.value.tier,
         )
     },
     { deep: true },
@@ -139,11 +140,6 @@ watch(
     ],
     () => {
         console.log("payload update")
-        // active_profile.value.keyed_upgrades = grids_to_keyed(
-        //     active_profile.value.normal_grid,
-        //     active_profile.value.adv_grid,
-        //     active_profile.value.keyed_upgrades,
-        // )
         preped_payload.value = buildPayload(WasmOp.OptimizeAverage)
     },
     { deep: true, immediate: true },
@@ -173,46 +169,68 @@ watchDebounced(
     { immediate: true, deep: true, debounce: 500 },
 )
 
-// I cant seem to stop this from infinitely looping optimizer,
 // The purpose of this is to give the previous state (hopefully a good state) back to the optimizer but its fine ig
+// It's separate from the keyed upgrades because optimizer can modify this
 function set_keyed_states(result: StateBundle) {
     if (result === null) return
+    let new_keyed_state: KeyedStates = {}
     for (let index = 0; index < result.upgrade_arr.length; index++) {
         const upgrade: Upgrade = result.upgrade_arr[index]
-        const key = to_upgrade_key(upgrade.piece_type, upgrade.upgrade_index, !upgrade.is_normal_honing)
-        if (!(key in active_profile.value.keyed_upgrades)) {
-            active_profile.value.keyed_upgrades[key] = upgrade.is_normal_honing
-                ? [true, [upgrade.piece_type, upgrade.upgrade_index, !upgrade.is_normal_honing, 0, [], false, false, null], 0, 0]
-                : [true, [upgrade.piece_type, upgrade.upgrade_index, !upgrade.is_normal_honing, null, [], false, false, [0, 0, false, false]], null, null]
-        }
+        const key = to_upgrade_key(upgrade.piece_type, upgrade.upgrade_index, !upgrade.is_normal_honing, active_profile.value.tier)
 
-        const current = active_profile.value.keyed_states[key]
-        if (!equal(current, upgrade.state)) {
-            for (let index = 0; index < upgrade.state.length; index++) {
-                active_profile.value.keyed_states[key] = upgrade.state
-            }
-        }
+        // const current = active_profile.value.keyed_states[key]
+        // if (!current || !equal(current, upgrade.state)) {
+        new_keyed_state[key] = upgrade.state
+        // }
     }
+    // console.log("new keyed states", new_keyed_state, result.upgrade_arr)
+    active_profile.value.keyed_states = new_keyed_state
 }
-watchDebounced(
+let throttle_timer: ReturnType<typeof setTimeout> | null = null
+let pending_payload: EvalPayload | null = null
+let throttle_ready = true
+
+function tryStart() {
+    // Nothing to do
+    if (pending_payload === null) return
+    // Worker is still running — it will call tryStart when done
+    if (active_profile.value.histogram_worker_bundle.status == "busy") return
+    // Still in throttle cooldown — timer will call tryStart when it fires
+    if (!throttle_ready) return
+
+    // Consume the pending payload and start
+    const payload = pending_payload
+    pending_payload = null
+
+    throttle_ready = false
+    throttle_timer = setTimeout(() => {
+        throttle_ready = true
+        tryStart() // catch-up: check if new payload arrived during cooldown
+    }, 100)
+
+    active_profile.value.histogram_worker_bundle.start(
+        WasmOp.Histogram,
+        payload,
+        () => tryStart(), // on-complete callback — catches "worker was busy" case
+    )
+}
+
+watch(
     () => toRaw(preped_payload.value),
     () => {
         if (preped_payload.value === null) {
             return
         }
-        onWatcherCleanup(() => {
-            active_profile.value.histogram_worker_bundle.cancel()
-        })
-
-        active_profile.value.histogram_worker_bundle.start(WasmOp.Histogram, structuredClone(toRaw(preped_payload.value)))
+        pending_payload = structuredClone(toRaw(preped_payload.value))
+        tryStart()
     },
-    { immediate: true, deep: true, debounce: 100 },
+    { immediate: true, deep: true },
 )
 </script>
 <template>
     <div class="hf-grid-content">
         <div class="hf-label-col">
-            <div class="hf-label-row" />
+            <div class="hf-label-row" style="font-size: x-small">Toggle whole column -></div>
             <div v-for="piece in PIECE_NAMES" :key="piece" class="hf-label-row">
                 <div class="hf-equip-label">
                     <span>{{ piece }}</span>
