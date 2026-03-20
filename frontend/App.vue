@@ -30,18 +30,9 @@ const { isNarrow } = useMediaIsNarrow()
 </script>
 
 <template>
-    <div style="display: flex; flex-direction: column; min-height: 100vh; justify-items: flex-end">
+    <div class="hf-app-shell">
         <header>
-            <nav
-                style="
-                    display: flex;
-                    justify-content: space-between;
-                    align-items: center;
-                    border-bottom: 1px solid var(--separator-color);
-                    padding: 0px;
-                    margin: 0px;
-                "
-            >
+            <nav class="hf-top-nav">
                 <div class="hf-brand">
                     <router-link to="/">
                         <div class="hf-brand-icon">
@@ -58,7 +49,7 @@ const { isNarrow } = useMediaIsNarrow()
                     <router-link to="/market-mats">
                         <div class="hf-header-button">Market & Mats</div>
                     </router-link>
-                    <div style="width: 10px"></div>
+                    <div class="hf-header-spacer" />
                     <RouterLink
                         v-for="(profile, index) in profile_store.profiles"
                         :key="index"
@@ -71,10 +62,10 @@ const { isNarrow } = useMediaIsNarrow()
                 </div>
             </nav>
         </header>
-        <main style="flex: 1">
+        <main class="hf-main-slot">
             <RouterView />
         </main>
-        <footer style="display: flex; flex-direction: row-reverse; align-items: center">
+        <footer class="hf-footer-bar">
             <a v-if="!isNarrow" href="https://ko-fi.com/kenivia" class="hf-header-links">
                 <img src="/Icons/kofi.png" alt="Ko-fi" />
                 <span>Donate</span>
@@ -87,50 +78,76 @@ const { isNarrow } = useMediaIsNarrow()
                 <img src="/Icons/GitHub.png" alt="GitHub" />
                 <span>GitHub</span>
             </a>
-            <span style="color: var(--text-very-muted)">Made with love by Kenivia with help from many awesome people.</span>
+            <span class="hf-footer-note">Made with love by Kenivia with help from many awesome people.</span>
         </footer>
     </div>
 </template>
 
 <style>
+.hf-app-shell {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+}
+
+.hf-top-nav {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid var(--separator-color);
+    padding: 0;
+    margin: 0;
+    gap: 8px;
+}
+
+.hf-main-slot {
+    flex: 1;
+    min-width: 0;
+}
+
 .hf-header-button {
+    display: inline-flex;
+    align-items: center;
     color: var(--hf-header-button);
     border-radius: 6px;
     border: 1px solid var(--separator-color);
     background-color: var(--hf-bg-header);
-    margin: 0px 2px 0px 2px;
+    margin: 0 2px;
     text-wrap-mode: nowrap;
+    padding: 12px;
 }
+
 .hf-header-button:hover {
     color: var(--accent-hover);
     background-color: var(--hf-bg-hover);
 }
+
 .hf-header-button.selected {
     color: var(--accent-hover);
     background-color: var(--hf-bg-hover);
 }
-.hf-header-button {
-    padding: 12px;
+
+.hf-header-spacer {
+    width: 10px;
+    min-width: 10px;
 }
+
 .hf-page-header-row {
     display: flex;
     flex-direction: row;
     width: 100%;
-    gap: 0px;
-    /* padding: 4px; */
+    gap: 0;
     align-items: center;
     overflow-x: auto;
     overflow-y: hidden;
+    white-space: nowrap;
+    scrollbar-width: thin;
 }
+
 .hf-brand {
     display: flex;
     align-items: center;
-    gap: 0px;
-    /* border: 1px solid var(--hf-gold-dim); */
-    /* border-radius: var(--hf-radius); */
-    /* background: linear-gradient(135deg, var(--hf-bg-card), var(--hf-bg-panel));
-    box-shadow: none; */
-    /* padding: 4px; */
+    gap: 0;
     padding-right: 8px;
 }
 
@@ -150,5 +167,51 @@ const { isNarrow } = useMediaIsNarrow()
     line-height: 1;
     font-weight: 700;
     width: min-content;
+}
+
+.hf-footer-bar {
+    display: flex;
+    flex-direction: row-reverse;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    padding: 8px 10px;
+}
+
+.hf-footer-note {
+    color: var(--text-very-muted);
+    font-size: 12px;
+    text-align: center;
+}
+
+@media (max-width: 900px) {
+    .hf-top-nav {
+        flex-direction: column;
+        align-items: stretch;
+        padding-bottom: 8px;
+    }
+
+    .hf-brand {
+        padding-right: 0;
+        padding-left: 8px;
+    }
+
+    .hf-page-header-row {
+        padding: 0 8px;
+        gap: 4px;
+    }
+
+    .hf-header-button {
+        padding: 10px 9px;
+        font-size: 13px;
+    }
+
+    .hf-footer-bar {
+        justify-content: center;
+    }
+
+    .hf-footer-note {
+        width: 100%;
+    }
 }
 </style>
