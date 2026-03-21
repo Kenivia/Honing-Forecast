@@ -98,11 +98,6 @@ watch(
             <div class="hf-card-header">
                 <label class="hf-achieved-ilevel">Achieved ilevel: {{ achieved_ilevel(active_profile) }}</label>
                 <label class="hf-pending-ilevel">Pending ilevel: {{ pending_ilevel(active_profile) }}</label>
-                <label class="hf-inline-check">
-                    <input v-model="active_profile.express_event" type="checkbox" />
-                    <span>Express event</span>
-                </label>
-
                 <TierConvertButton
                     :labelText="tier_label_text"
                     :tooltipText="tooltip_text"
@@ -165,13 +160,6 @@ watch(
     align-items: stretch;
 }
 
-.hf-pending-ilevel {
-    color: var(--checkbox-checked-bg);
-}
-
-.hf-achieved-ilevel {
-    color: var(--checkbox-done-bg);
-}
 .hf-normal-card {
     min-width: 0;
     width: min(100%, 800px);

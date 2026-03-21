@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { RouterLink, RouterView } from "vue-router"
+import { RouterLink, RouterView, useRoute } from "vue-router"
 import { iconPath } from "./Utils/Helpers"
 import { debounced_write_char_profiles, useProfilesStore } from "./Stores/CharacterProfile"
 import { debounced_write_roster_config, useRosterStore } from "./Stores/RosterConfig"
@@ -23,6 +23,8 @@ roster_store.$subscribe((_mutation, state) => {
 })
 
 const { isNarrow } = useMediaIsNarrow()
+
+const route = useRoute()
 </script>
 
 <template>
@@ -40,10 +42,10 @@ const { isNarrow } = useMediaIsNarrow()
                 </div>
                 <div class="hf-page-header-row">
                     <router-link to="/roster-setup">
-                        <div class="hf-header-button">Roster setup</div>
+                        <div class="hf-header-button" :class="{ selected: route.path == '/roster-setup' }">Roster setup</div>
                     </router-link>
                     <router-link to="/market-mats">
-                        <div class="hf-header-button">Market & Mats</div>
+                        <div class="hf-header-button" :class="{ selected: route.path == '/market-mats' }">Market & Mats</div>
                     </router-link>
                     <div class="hf-header-spacer" />
                     <RouterLink
@@ -51,7 +53,7 @@ const { isNarrow } = useMediaIsNarrow()
                         :key="index"
                         :to="{ name: 'char', params: { characterName: profile.char_name } }"
                         class="hf-header-button"
-                        :class="{ selected: index == profile_store.active_profile_index }"
+                        :class="{ selected: route.path == '/' + profile.char_name }"
                     >
                         {{ profile.char_name }}
                     </RouterLink>

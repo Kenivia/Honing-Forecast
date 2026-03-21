@@ -138,6 +138,13 @@ body::before {
     z-index: 1;
 }
 
+.hf-pending-ilevel {
+    color: var(--checkbox-checked-bg);
+}
+
+.hf-achieved-ilevel {
+    color: var(--checkbox-done-bg);
+}
 
 .hf-mats-row {
     display: contents;
@@ -157,27 +164,6 @@ body::before {
     justify-content: center;
     padding: 10px 16px;
 }
-
-/* 
-.hf-header {
-    display: flex;
-    align-items: flex-end;
-    justify-content: space-between;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-    padding-bottom: 10px;
-    position: relative;
-}
-
-.hf-header::after {
-    content: "";
-    position: absolute;
-    left: 0;
-    bottom: -1px;
-    width: 180px;
-    height: 2px;
-    background: linear-gradient(90deg, var(--hf-gold), transparent);
-} */
-
 
 
 .hf-header-links {

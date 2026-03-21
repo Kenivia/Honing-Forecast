@@ -39,8 +39,10 @@ watchEffect(() => {
             <div class="hf-card-title"><span class="hf-card-title-dot" />Controls</div>
         </div>
         <div class="hf-card-body hf-options-body">
-            <button class="hf-control-panel-btn" @click="resetActive">Reset this char</button>
-            <div style="font-size: x-small; color: var(--text-very-muted); text-wrap-mode: wrap">You may need to reload after</div>
+            <label class="hf-inline-check">
+                <input v-model="active_profile.express_event" type="checkbox" />
+                <span>Express event</span>
+            </label>
 
             <!-- This is for producing paylodas to feed into Rust -->
             <!-- <button class="hf-control-panel-btn" @click="copyPayload">Copy Payload</button> -->
@@ -62,12 +64,7 @@ watchEffect(() => {
                 <span>Auto start optimizer</span>
             </label>
             <div class="hf-divider" />
-            <div class="optimizer-progress">
-                <span>Optimizer progress: {{ Math.max(optimizer_worker.est_progress_percentage, 0.01).toFixed(2) }}%</span>
-                <div class="progress-bar">
-                    <div class="progress-fill" :style="{ width: `${optimizer_worker.est_progress_percentage}%` }" />
-                </div>
-            </div>
+            <button class="hf-control-panel-btn" @click="resetActive">Reset this char</button>
         </div>
     </section>
 </template>
@@ -78,24 +75,6 @@ watchEffect(() => {
 .hf-control-panel {
     width: 200px;
     min-width: 0;
-}
-.progress-bar {
-    width: 100%;
-    height: 8px;
-    background: rgba(255, 255, 255, 0.2);
-    border-radius: 4px;
-    overflow: hidden;
-}
-.progress-fill {
-    height: 100%;
-    background: linear-gradient(90deg, var(--hf-gold-dim), var(--hf-gold));
-    transition: width 0.2s ease;
-}
-.optimizer-progress {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-    font-size: 12px;
 }
 
 @media (max-width: 1000px) {

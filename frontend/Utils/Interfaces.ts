@@ -98,8 +98,8 @@ export function get_modified_cell(input_column: InputColumn, index: number, even
     }
     return parse_input(input_column, index, (event.target as HTMLInputElement).value.replace(/[^\d,]/g, "")).toLocaleString()
 }
-export function parse_input(input_column: InputColumn, index: number, input: string): number {
-    if (!input_column.enabled[index]) {
+export function parse_input(input_column: InputColumn, index: number, input: string, pretend_enabled?: boolean): number {
+    if (!input_column.enabled[index] && !pretend_enabled) {
         return 999999999
     }
     let out = input_column.type === InputType.Int ? parseInt(input.replace(/,/g, "")) : parseFloat(input.replace(/,/g, ""))
@@ -117,7 +117,7 @@ export function validate_input_column(old: InputColumn, default_example: InputCo
         ) {
             old = structuredClone(default_example)
         } else {
-            old.data[row] = parse_input(old, row, old.data[row]).toLocaleString()
+            old.data[row] = parse_input(old, row, old.data[row], true).toLocaleString()
         }
     }
 }

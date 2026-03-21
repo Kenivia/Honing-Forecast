@@ -7,7 +7,7 @@
 //!
 //! Admittedly dynamic programming is one of these things that I never really understood so this is algorithm is vibe coded
 //! but this matches experimental result so at least it's working
-use crate::constants::SPECIAL_TOL;
+use crate::constants::{IGNORE_PROB_TOL, SPECIAL_TOL};
 use crate::state_bundle::StateBundle;
 use num::Integer;
 use std::f64;
@@ -229,7 +229,13 @@ impl StateBundle {
         // my_dbg!(&actual_out);
 
         if preserve_tail {
-            return Some(actual_out);
+            return Some(
+                actual_out
+                    .iter()
+                    .filter(|x| **x > IGNORE_PROB_TOL)
+                    .copied()
+                    .collect::<Vec<f64>>(),
+            );
         } else {
             self.special_cache
                 .insert(self.special_state.clone(), actual_out);

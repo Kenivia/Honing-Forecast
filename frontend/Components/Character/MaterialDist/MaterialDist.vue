@@ -8,6 +8,8 @@ import MaterialGraph from "./MaterialGraph.vue"
 import { storeToRefs } from "pinia"
 import { useRosterStore } from "@/Stores/RosterConfig"
 import { computed, ref, watchEffect } from "vue"
+import { WasmOp } from "@/WasmInterface/js_to_wasm"
+import { build_payload } from "@/WasmInterface/payload"
 
 const { active_profile } = storeToRefs(useProfilesStore())
 const { roster_config } = storeToRefs(useRosterStore())
@@ -72,13 +74,23 @@ const selected_histogram_treatment = ref(
           : bound_chance_text,
 )
 
-const selected_histogram_color = ref(null)
-watchEffect(() => {
-    if (selected_histogram_treatment.value == bound_chance_text) {
+const selected_histogram_color = ref(
+    active_profile.value.histogram_treatment_plan == TreatmentPlan.TreatRosterAsTradable
+        ? "var(--hf-graph-bound-color)"
+        : active_profile.value.histogram_treatment_plan == TreatmentPlan.TreatRosterAsBound
+          ? "var(--hf-graph-roster-color)"
+          : "var(--hf-graph-tradable-color)",
+) // initialize here otherwise it'll be null until we change it
+function change_histogram_treatment(event) {
+    let new_val = event.target.value
+    if (new_val === null) {
+        return
+    }
+    if (new_val == bound_chance_text) {
         active_profile.value.histogram_treatment_plan = TreatmentPlan.TreatRosterAsTradable
-    } else if (selected_histogram_treatment.value == roster_chance_text) {
+    } else if (new_val == roster_chance_text) {
         active_profile.value.histogram_treatment_plan = TreatmentPlan.TreatRosterAsBound
-    } else if (selected_histogram_treatment.value == tradable_chance_text) {
+    } else if (new_val == tradable_chance_text) {
         active_profile.value.histogram_treatment_plan = TreatmentPlan.TreatTradableAsBound
     }
     selected_histogram_color.value =
@@ -87,7 +99,9 @@ watchEffect(() => {
             : active_profile.value.histogram_treatment_plan == TreatmentPlan.TreatRosterAsBound
               ? "var(--hf-graph-roster-color)"
               : "var(--hf-graph-tradable-color)"
-})
+    // console.log(new_val, active_profile.value.histogram_treatment_plan)
+    active_profile.value.histogram_worker_bundle.throttled_start(WasmOp.Histogram, build_payload(WasmOp.Histogram, active_profile.value, roster_config.value))
+}
 
 const enabled_annotations = ref([true, false, false, false])
 const annotation_values = computed(() => {
@@ -140,6 +154,7 @@ function special_hover_annotation(x, _y, cy, material_type, color): string {
                                 :style="{
                                     color: selected_histogram_color,
                                 }"
+                                @change="change_histogram_treatment"
                             >
                                 <option>{{ bound_chance_text }}</option>
                                 <option>{{ roster_chance_text }}</option>
@@ -147,10 +162,6 @@ function special_hover_annotation(x, _y, cy, material_type, color): string {
                             </select>
                             <span class="hf-average-header">Average</span>
                             <span class="hf-gold-header">Gold Used</span>
-                            <!-- <select v-model="selected_treatement" style="color: var(--hf-gold)">
-                                <option>{{ market_gold_text }}</option>
-                                <option>{{ tradable_gold_text }}</option>
-                            </select> -->
                             <span class="hf-hover-hint">Hover graph for details</span>
                             <!-- <span v-if="customLeftovers">Left</span> -->
                         </div>
@@ -234,7 +245,7 @@ function special_hover_annotation(x, _y, cy, material_type, color): string {
                                     :tooltip-text-fn="special_hover_annotation"
                                     :max-yoverride="1"
                                     style="grid-column: span 4"
-                                    :empty_message="'No free taps possible'"
+                                    :empty_message="'No normal honing available'"
                                 />
                             </div>
                         </div>
@@ -248,6 +259,14 @@ function special_hover_annotation(x, _y, cy, material_type, color): string {
                                 {{ metricToText(active_profile.evaluation_worker_bundle.result?.metric) ?? "No Result yet" }}
                             </div>
                         </div>
+                        <div class="hf-mats-row">
+                            <span class="optimizer-progress"
+                                >Optimizer progress: {{ Math.max(active_profile.optimizer_worker_bundle.est_progress_percentage, 0.01).toFixed(2) }}%
+                            </span>
+                            <div class="progress-bar">
+                                <div class="progress-fill" :style="{ width: `${active_profile.optimizer_worker_bundle.est_progress_percentage}%` }" />
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -255,6 +274,28 @@ function special_hover_annotation(x, _y, cy, material_type, color): string {
     </section>
 </template>
 <style scoped>
+.progress-bar {
+    width: 100%;
+    height: 8px;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 4px;
+    overflow: hidden;
+    grid-column: 2 / span 4;
+}
+.progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--hf-gold-dim), var(--hf-gold));
+    transition: width 0.1s ease;
+}
+.optimizer-progress {
+    display: flex;
+    flex-direction: column;
+
+    font-size: 12px;
+    grid-column: 1 / span 1;
+    text-align: right;
+    padding: 6px;
+}
 .hf-metric-label {
     grid-column: 1 / span 3;
     width: 100%;
@@ -279,16 +320,18 @@ function special_hover_annotation(x, _y, cy, material_type, color): string {
 
 .hf-bound-header {
     color: var(--hf-graph-bound-color);
-    text-align: left;
+    text-align: right;
     padding-right: 8px;
 }
 
 .hf-average-header {
     color: var(--hf-graph-average-color);
+    text-align: center;
 }
 
 .hf-gold-header {
     color: var(--hf-gold);
+    text-align: center;
 }
 
 .hf-hover-hint {
@@ -309,7 +352,7 @@ function special_hover_annotation(x, _y, cy, material_type, color): string {
 
 .hf-dist-scroll {
     width: 100%;
-    overflow-x: auto;
+    /* overflow-x: auto; */
     overflow-y: visible;
     -webkit-overflow-scrolling: touch;
 }
@@ -323,7 +366,7 @@ function special_hover_annotation(x, _y, cy, material_type, color): string {
 
 .hf-analysis-pane :deep(.hf-card-header) {
     flex-wrap: wrap;
-    align-items: flex-start;
+    align-items: center;
     gap: 8px;
 }
 
