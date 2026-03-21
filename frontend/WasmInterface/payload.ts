@@ -20,24 +20,21 @@ export interface EvalPayload {
 }
 
 function keyed_to_array(keyed_upgrades: KeyedUpgrades, upgrade_arr: Upgrade[] | null, tier: number): OneUpgrade[] {
-    return Object.entries(keyed_upgrades)
-        .filter(([_, x]) => x[0])
-        .map(([key, arr], index) => {
-            const out = toRaw(arr)
-
-            let candidate = upgrade_arr?.[index]?.state ?? null
-            if (candidate === null) {
-                out[4] = []
+    return Object.entries(keyed_upgrades).map(([key, arr], index) => {
+        const out = toRaw(arr)
+        let candidate = upgrade_arr?.[index]?.state ?? null
+        if (candidate === null) {
+            out[4] = []
+        } else {
+            let upgrade: Upgrade = upgrade_arr[index]
+            if (to_upgrade_key(upgrade.piece_type, upgrade.upgrade_index, upgrade.is_normal_honing, tier) == key) {
+                out[4] = candidate
             } else {
-                let upgrade: Upgrade = upgrade_arr[index]
-                if (to_upgrade_key(upgrade.piece_type, upgrade.upgrade_index, upgrade.is_normal_honing, tier) == key) {
-                    out[4] = candidate
-                } else {
-                    out[4] = []
-                }
+                out[4] = []
             }
-            return out
-        })
+        }
+        return out
+    })
 }
 export function apply_treatement(treatment: TreatmentPlan, bound: number, roster: number, tradable: number): [number, number] {
     switch (treatment) {

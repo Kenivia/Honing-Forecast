@@ -42,7 +42,16 @@ function aggregateStreaks(): NormalStreak[] | AdvStreak[] {
     if (props.upgrade.is_normal_honing) {
         const streaks: NormalStreak[] = []
         let current: NormalStreak | null = null
-        for (const [juice, book] of props.upgrade.state.slice(0, props.upgrade.normal_dist.length - 2)) {
+        let index = 0
+        for (const [juice, book] of props.upgrade.state.slice(0, props.upgrade.normal_dist.length - 1)) {
+            if (index == props.upgrade.normal_dist.length - 2 && artisan_function(props.upgrade, index) === "100.00") {
+                // this corresponds to not showing the pity tap
+                // Rust side does not enforce that the pity tap is unjuiced (it just ignores the state after that index)
+                // so we need to hide it from teh user
+                // however for upgrades that naturally has a 100% success rate (below like +5) we don't want to skip
+                // just a weird edge case
+                continue
+            }
             const hasBook = book > 0
             if (current && current.juice === juice && current.book === hasBook) {
                 current.count++
@@ -50,6 +59,7 @@ function aggregateStreaks(): NormalStreak[] | AdvStreak[] {
                 current = { juice, book: hasBook, count: 1 }
                 streaks.push(current)
             }
+            index += 1
         }
         return streaks
     } else {
@@ -234,7 +244,7 @@ function write_normal_progress() {
     taps_so_far.value = Math.max(0, Math.min(props.upgrade.normal_dist.length - 1, taps_so_far.value))
     active_profile.value.keyed_upgrades[
         to_upgrade_key(props.upgrade.piece_type, props.upgrade.upgrade_index, props.upgrade.is_normal_honing, active_profile.value.tier)
-    ][1][3] = taps_so_far.value
+    ][3] = taps_so_far.value
 }
 
 function write_adv_progress() {
@@ -244,7 +254,7 @@ function write_adv_progress() {
 
     active_profile.value.keyed_upgrades[
         to_upgrade_key(props.upgrade.piece_type, props.upgrade.upgrade_index, props.upgrade.is_normal_honing, active_profile.value.tier)
-    ][1][7] = [
+    ][7] = [
         (current_adv_upgrade.value - props.upgrade.upgrade_index * 10) * 10 + current_adv_xp.value / 10,
         current_grace_progress.value,
         next_free.value,
@@ -320,8 +330,8 @@ async function confirmSuccess() {
             if (cost <= 0) return
 
             active_profile.value.bound_budgets[tier].data[index] = remaining_materials.value.bound_budgets[index].toLocaleString()
-            roster_config.value.roster_mats_owned[active_profile.value.tier].data[index] = remaining_materials.value.roster_mats[index].toLocaleString()
-            roster_config.value.tradable_mats_owned[active_profile.value.tier].data[index] = remaining_materials.value.tradable_mats.toLocaleString()
+            roster_config.value.roster_mats_owned[tier].data[index] = remaining_materials.value.roster_mats[index].toLocaleString()
+            roster_config.value.tradable_mats_owned[tier].data[index] = remaining_materials.value.tradable_mats[index].toLocaleString()
             // Just set to 0 if we run out, per instructions
         })
     }
