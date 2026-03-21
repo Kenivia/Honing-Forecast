@@ -150,6 +150,9 @@ export function useTimedFetch(callback: (data: number[][], selectedShardSize: nu
         // Check if we have fresh cached data
         const cached = roster_config.value.latest_market_data[region]
         if (cached !== undefined && !isDataStale(region)) {
+            isFetching.value = true
+            await new Promise((r) => setTimeout(r, 500))
+            isFetching.value = false
             const [_, result] = cached
             const [parsed, selectedShardSize, shard_price] = parse_response(result)
             callback(parsed, selectedShardSize, shard_price)

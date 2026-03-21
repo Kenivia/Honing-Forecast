@@ -78,11 +78,6 @@ watchEffect(() => {
 </script>
 
 <template>
-    <TierConvertButton
-        label-text="Convert owned T4 Roster & Tradable to T4.5 Serca mats"
-        tooltip-text="Converts Red, Blue, and Leaps (not abidos) to Serca (5:1 ratio)"
-        @change-tier="convert_roster_mats_to_serca"
-    ></TierConvertButton>
     <SelectButton
         v-if="isNarrow"
         v-model="roster_config.tier"
@@ -92,12 +87,17 @@ watchEffect(() => {
         class="hf-roster-tier-select"
         :option-disabled="(data) => data.value === roster_config.tier"
     />
-    <div>
+    <div style="display: flex; flex-direction: row; align-items: center">
         <select v-model="roster_config.region">
             <option>NAE</option>
             <option>EUC</option>
         </select>
-        <button :disabled="disabled" @click="() => start_fetch(roster_config.region)">Fetch Market Data</button>
+        <button :disabled="disabled" @click="() => start_fetch(roster_config.region)" style="width: 140px">
+            {{ !disabled ? "Fetch Market Data" : "Fetching..." }}
+        </button>
+        <span style="width: 20px; text-wrap-mode: nowrap">
+            {{ !disabled && roster_config.latest_market_data ? "✅" : disabled ? "" : "Failed" }}
+        </span>
     </div>
 
     <div class="hf-shard-size-selector">
@@ -113,8 +113,8 @@ watchEffect(() => {
         <div v-if="!isNarrow || tier == 0" class="hf-tier-grid-scroll">
             <div class="hf-roster-inputs-tier-4" :style="{ gridRow: `span ${String(ALL_LABELS[0].length + 1)}` }">
                 <div class="hf-table-title-row">
-                    <span style="text-align: right; padding-right: 15px">Roster Bound Mats</span>
-                    <span>Tradable Mats</span>
+                    <span style="text-align: right; padding-right: 15px; color: var(--hf-graph-roster-color)">Roster Bound Mats</span>
+                    <span style="color: var(--hf-graph-tradable-color)">Tradable Mats</span>
                     <span>Market price</span>
 
                     <!-- <span v-if="customLeftovers">Left</span> -->
@@ -129,6 +129,7 @@ watchEffect(() => {
                                 roster_config.roster_mats_owned[0].data[row] = val
                             }
                         "
+                        input_color="var(--hf-graph-roster-color)"
                         :hide_tick="true"
                     />
                     <MaterialCell
@@ -139,6 +140,7 @@ watchEffect(() => {
                                 roster_config.tradable_mats_owned[0].data[row] = val
                             }
                         "
+                        input_color="var(--hf-graph-tradable-color)"
                     />
                     <MaterialCell
                         :input_column="roster_config.mats_prices[0]"
@@ -163,10 +165,10 @@ watchEffect(() => {
         <div v-if="!isNarrow || tier == 1" class="hf-tier-grid-scroll">
             <div class="hf-roster-inputs-serca" :style="{ gridRow: `span ${String(ALL_LABELS[1].length + 1)}` }">
                 <div class="hf-table-title-row">
-                    <span style="text-align: right; padding-right: 15px">Roster Bound Mats</span>
-                    <span>Tradable Mats</span>
+                    <span style="text-align: right; padding-right: 15px; color: var(--hf-graph-roster-color)">Roster Bound Mats</span>
+                    <span style="color: var(--hf-graph-tradable-color)">Tradable Mats</span>
                     <span>Market price</span>
-                    <span>Effective price</span>
+                    <span style="color: var(--hf-gold)">Effective price</span>
 
                     <!-- <span v-if="customLeftovers">Left</span> -->
                 </div>
@@ -180,6 +182,7 @@ watchEffect(() => {
                                 roster_config.roster_mats_owned[SYNCED_LABELS.includes(label) ? 0 : 1].data[row] = val
                             }
                         "
+                        input_color="var(--hf-graph-roster-color)"
                         :hide_tick="true"
                     />
                     <MaterialCell
@@ -190,6 +193,7 @@ watchEffect(() => {
                                 roster_config.tradable_mats_owned[SYNCED_LABELS.includes(label) ? 0 : 1].data[row] = val
                             }
                         "
+                        input_color="var(--hf-graph-tradable-color)"
                     />
                     <MaterialCell
                         :input_column="roster_config.mats_prices[SYNCED_LABELS.includes(label) ? 0 : 1]"
@@ -212,11 +216,17 @@ watchEffect(() => {
                         :input_column="roster_config.effective_serca_price"
                         :row="row"
                         :suffix="t4_better[row] ? 'Convert T4' : 'Buy Serca '"
+                        input_color="var(--hf-gold)"
                     />
                 </div>
             </div>
         </div>
     </div>
+    <TierConvertButton
+        label-text="Convert owned T4 Roster & Tradable to T4.5 Serca mats (5:1 ratio)"
+        tooltip-text="Converts Red, Blue, and Leaps (not abidos) to Serca"
+        @change-tier="convert_roster_mats_to_serca"
+    ></TierConvertButton>
 </template>
 <style>
 .hf-shard-size-selector {
@@ -396,7 +406,7 @@ watchEffect(() => {
 @media (max-width: 900px) {
     .hf-shard-size-selector {
         flex-wrap: wrap;
-        align-items: flex-start;
+        align-items: center;
         gap: 8px;
     }
 

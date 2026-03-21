@@ -12,7 +12,7 @@ const router = createRouter({
             redirect: () => {
                 const profile_store = useProfilesStore()
                 const first = profile_store.profiles[0]
-                return first ? `/${first.char_name}` : "/roster"
+                return first ? `/${first.char_name}` : "/roster-setup" // there should always be at least one tho
             },
         },
         {

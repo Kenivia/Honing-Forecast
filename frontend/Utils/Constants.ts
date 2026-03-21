@@ -13,7 +13,7 @@ export const GRACE_FIRST_N = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 15, 255]
 export const NON_GRACE_FIRST_N = [5, 10, 20, 40, 255]
 export const JOINED_ADV_JUICE = GRACE_FIRST_N.map((x) => [x, 0]).concat(NON_GRACE_FIRST_N.map((x) => [255, x]))
 
-export const NARROW_WIDTH = 800
+export const NARROW_WIDTH = 900
 export const BUDGET_NARROW_WIDTH = 1300
 export const PLUS_TIER_CONVERSION = [
     // index corresponds to the old tier

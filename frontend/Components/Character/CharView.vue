@@ -68,6 +68,7 @@ watch(
         // () => roster_config.value.mats_prices,
         () => active_profile.value.keyed_upgrades,
         () => active_profile.value.special_budget,
+        () => active_profile.value.optimizer_treatment_plan,
     ],
     () => {
         onWatcherCleanup(() => {

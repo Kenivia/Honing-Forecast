@@ -1,11 +1,12 @@
 <script setup lang="ts">
-import { RouterLink, RouterView, useRoute } from "vue-router"
+import { RouterLink, RouterView, useRoute, useRouter } from "vue-router"
 import { iconPath } from "./Utils/Helpers"
 import { debounced_write_char_profiles, useProfilesStore } from "./Stores/CharacterProfile"
 import { debounced_write_roster_config, useRosterStore } from "./Stores/RosterConfig"
 
 import { useMediaIsNarrow } from "./Utils/WindowSize"
 import { fetch_callback, useTimedFetch } from "./Utils/MarketDataFetcher"
+import { computed } from "vue"
 
 const roster_store = useRosterStore()
 roster_store.init()
@@ -21,34 +22,45 @@ profile_store.$subscribe((_mutation, state) => {
 roster_store.$subscribe((_mutation, state) => {
     debounced_write_roster_config(state)
 })
-
-const { isNarrow } = useMediaIsNarrow()
+const { isNarrow: is500Narrow } = useMediaIsNarrow(500)
+const { isNarrow: is600Narrow } = useMediaIsNarrow(600)
+const { isNarrow: is800Narrow } = useMediaIsNarrow()
 
 const route = useRoute()
+const router = useRouter()
+
+const active_char_name = computed(() => profile_store.profiles.find((p) => route.path === "/" + p.char_name)?.char_name ?? "")
+
+function onCharSelect(e: Event) {
+    const name = (e.target as HTMLSelectElement).value
+    if (name) router.push({ name: "char", params: { characterName: name } })
+}
 </script>
 
 <template>
     <div class="hf-app-shell">
         <header>
             <nav class="hf-top-nav">
-                <div class="hf-brand">
-                    <router-link to="/">
-                        <div class="hf-brand-icon">
-                            <img :src="iconPath('Forecast Icon')" alt="Forecast icon" style="width: 34px; height: 34px" /></div
-                    ></router-link>
-                    <div v-if="!isNarrow">
-                        <h1 class="hf-title">Honing Forecast</h1>
+                <div class="hf-page-header-row" style="width: 100%">
+                    <div v-if="!is500Narrow" class="hf-brand">
+                        <router-link to="/">
+                            <div class="hf-brand-icon">
+                                <img :src="iconPath('Forecast Icon')" alt="Forecast icon" style="width: 34px; height: 34px" /></div
+                        ></router-link>
+                        <div v-if="!is800Narrow">
+                            <h1 class="hf-title">Honing Forecast</h1>
+                        </div>
                     </div>
-                </div>
-                <div class="hf-page-header-row">
                     <router-link to="/roster-setup">
                         <div class="hf-header-button" :class="{ selected: route.path == '/roster-setup' }">Roster setup</div>
                     </router-link>
                     <router-link to="/market-mats">
                         <div class="hf-header-button" :class="{ selected: route.path == '/market-mats' }">Market & Mats</div>
                     </router-link>
+
                     <div class="hf-header-spacer" />
                     <RouterLink
+                        v-if="!is600Narrow || profile_store.profiles.length <= 1"
                         v-for="(profile, index) in profile_store.profiles"
                         :key="index"
                         :to="{ name: 'char', params: { characterName: profile.char_name } }"
@@ -57,6 +69,14 @@ const route = useRoute()
                     >
                         {{ profile.char_name }}
                     </RouterLink>
+
+                    <!-- Mobile: dropdown -->
+                    <select v-else class="hf-char-select" :value="active_char_name" @change="onCharSelect">
+                        <option value="" disabled>Character</option>
+                        <option v-for="(profile, index) in profile_store.profiles" :key="index" :value="profile.char_name">
+                            {{ profile.char_name }}
+                        </option>
+                    </select>
                 </div>
             </nav>
         </header>
@@ -64,15 +84,15 @@ const route = useRoute()
             <RouterView />
         </main>
         <footer class="hf-footer-bar">
-            <a v-if="!isNarrow" href="https://ko-fi.com/kenivia" class="hf-header-links">
+            <a href="https://ko-fi.com/kenivia" class="hf-header-links">
                 <img src="/Icons/kofi.png" alt="Ko-fi" />
                 <span>Donate</span>
             </a>
-            <a v-if="!isNarrow" href="https://discord.gg/KWDpQyvgzc" class="hf-header-links">
+            <a href="https://discord.gg/KWDpQyvgzc" class="hf-header-links">
                 <img src="/Icons/Discord.png" alt="Discord" />
                 <span>Discord</span>
             </a>
-            <a v-if="!isNarrow" href="https://github.com/Kenivia/Honing-Forecast" class="hf-header-links">
+            <a href="https://github.com/Kenivia/Honing-Forecast" class="hf-header-links">
                 <img src="/Icons/GitHub.png" alt="GitHub" />
                 <span>GitHub</span>
             </a>
@@ -90,7 +110,7 @@ const route = useRoute()
 
 .hf-top-nav {
     display: flex;
-    justify-content: space-between;
+    justify-content: flex-start;
     align-items: center;
     border-bottom: 1px solid var(--separator-color);
     padding: 0;
@@ -133,7 +153,7 @@ const route = useRoute()
 .hf-page-header-row {
     display: flex;
     flex-direction: row;
-    width: 100%;
+    width: fit-content;
     gap: 0;
     align-items: center;
     overflow-x: auto;
@@ -183,27 +203,6 @@ const route = useRoute()
 }
 
 @media (max-width: 900px) {
-    .hf-top-nav {
-        flex-direction: column;
-        align-items: stretch;
-        padding-bottom: 8px;
-    }
-
-    .hf-brand {
-        padding-right: 0;
-        padding-left: 8px;
-    }
-
-    .hf-page-header-row {
-        padding: 0 8px;
-        gap: 4px;
-    }
-
-    .hf-header-button {
-        padding: 10px 9px;
-        font-size: 13px;
-    }
-
     .hf-footer-bar {
         justify-content: center;
     }

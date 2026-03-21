@@ -55,7 +55,7 @@ watchEffect(() => {
             <div class="hf-divider" />
             <label class="hf-inline-check">
                 <input v-model="treatment_tick" type="checkbox" />
-                <span>Optimizer account for sell value of tradable mats (Recommended)</span>
+                <span>Account for sell value of tradable mats (Recommended)</span>
             </label>
 
             <div class="hf-divider" />

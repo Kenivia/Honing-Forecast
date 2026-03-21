@@ -297,6 +297,7 @@ const remaining_materials = computed(() => {
             tradable_mats.push(tradable_owned)
         }
     })
+    console.log("computed")
     return { bound_budgets, roster_mats, tradable_mats }
 })
 const visibleRows = computed(() => {

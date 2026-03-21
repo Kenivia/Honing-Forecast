@@ -42,8 +42,10 @@ const visibleRows = computed(() => {
 
 const market_gold_text = "Avg gold spent buying from market"
 const tradable_gold_text = "Avg gold spent buying minus gold from selling tradables"
-const total_market_gold_text = "Avg total gold spent (raw + buying from market)"
-const total_tradable_gold_text = "Avg total gold spent - the 'worth' of leftover tradable mats"
+const total_market_gold_text = "Average total gold used"
+const total_market_gold_suffix = "(raw + buying from market)"
+const total_tradable_gold_text = "Avg sell value of leftover tradable mats"
+const total_tradable_gold_suffix = "(taxed)"
 const all_bound_text = "Treat roster bound as tradable" // i dont think i'll show this tho cos its kinda confusing
 const selected_optimizer_treatement = ref(
     active_profile.value.optimizer_treatment_plan == TreatmentPlan.TreatTradableAsBound
@@ -257,10 +259,31 @@ function special_hover_annotation(x, _y, cy, material_type, color): string {
                             </div>
                             <div class="hf-metric-status">
                                 {{ metricToText(active_profile.evaluation_worker_bundle.result?.metric) ?? "No Result yet" }}
+
+                                <span style="font-size: 16px">
+                                    {{ total_market_gold_suffix }}
+                                </span>
                             </div>
                         </div>
-                        <div class="hf-mats-row">
-                            <span class="optimizer-progress"
+
+                        <div v-if="active_profile.optimizer_treatment_plan == TreatmentPlan.TreatRosterAsBound" class="hf-mats-row">
+                            <div class="hf-metric-label" style="font-size: 16px; color: var(--hf-text-muted)">
+                                {{ total_tradable_gold_text }}
+                            </div>
+                            <div class="hf-metric-status" style="color: var(--hf-text-muted)">
+                                {{
+                                    metricToText(
+                                        active_profile.evaluation_worker_bundle.result?.metric - active_profile.optimizer_worker_bundle.result?.metric,
+                                    ) ?? "No Result yet"
+                                }}
+
+                                <span style="font-size: 16px">
+                                    {{ total_tradable_gold_suffix }}
+                                </span>
+                            </div>
+                        </div>
+                        <div style="display: flex; flex-direction: row; grid-column: 1 / span 5; align-items: center">
+                            <span class="optimizer-progress-label"
                                 >Optimizer progress: {{ Math.max(active_profile.optimizer_worker_bundle.est_progress_percentage, 0.01).toFixed(2) }}%
                             </span>
                             <div class="progress-bar">
@@ -280,24 +303,25 @@ function special_hover_annotation(x, _y, cy, material_type, color): string {
     background: rgba(255, 255, 255, 0.2);
     border-radius: 4px;
     overflow: hidden;
-    grid-column: 2 / span 4;
+    /* grid-column: 3 / span 3; */
 }
 .progress-fill {
     height: 100%;
     background: linear-gradient(90deg, var(--hf-gold-dim), var(--hf-gold));
     transition: width 0.1s ease;
 }
-.optimizer-progress {
+.optimizer-progress-label {
     display: flex;
     flex-direction: column;
-
-    font-size: 12px;
-    grid-column: 1 / span 1;
+    font-size: 16px;
+    /* grid-column: 1 / span 2; */
     text-align: right;
     padding: 6px;
+    text-wrap-mode: nowrap;
 }
+
 .hf-metric-label {
-    grid-column: 1 / span 3;
+    grid-column: span 3;
     width: 100%;
     gap: 30px;
     color: var(--hf-gold);
@@ -305,6 +329,11 @@ function special_hover_annotation(x, _y, cy, material_type, color): string {
     text-align: right;
     padding-right: 8px;
     justify-content: center;
+}
+
+.smaller-label {
+    font-size: 12px;
+    color: var(--hf-text-muted);
 }
 
 .hf-metric-status {
@@ -316,6 +345,7 @@ function special_hover_annotation(x, _y, cy, material_type, color): string {
     text-align: left;
     padding-right: 8px;
     justify-content: center;
+    text-wrap-mode: nowrap;
 }
 
 .hf-bound-header {
@@ -352,9 +382,10 @@ function special_hover_annotation(x, _y, cy, material_type, color): string {
 
 .hf-dist-scroll {
     width: 100%;
-    /* overflow-x: auto; */
-    overflow-y: visible;
+    overflow-x: auto;
+    overflow-y: hidden;
     -webkit-overflow-scrolling: touch;
+    /* scrollbar-gutter: stable; */
 }
 
 .hf-dist-stack {
