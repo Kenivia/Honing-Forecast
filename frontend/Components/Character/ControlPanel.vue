@@ -41,7 +41,7 @@ watchEffect(() => {
         <div class="hf-card-body hf-options-body">
             <label class="hf-inline-check">
                 <input v-model="active_profile.express_event" type="checkbox" />
-                <span>Express event</span>
+                <span>Express event (March)</span>
             </label>
 
             <!-- This is for producing paylodas to feed into Rust -->

@@ -3,8 +3,6 @@
 
 ## Immediate WIP
 
-add more settings validations
-
 ## Roadmap
 
 ### 1st: ~~re-write the frontend~~
@@ -95,7 +93,7 @@ Below are some rambling / brainstorming / Misc stuff
 ### Optimizations
 
 - find_min_max can probably do with some kind of caching but i can't figure it out rn
-- i know front end is hideous but idrk how to do better
+- advanced hoinging caching / pre-calculating, maybe also special
 
 ### Other features
 
@@ -103,6 +101,9 @@ Below are some rambling / brainstorming / Misc stuff
 
 ## Done / cancelled
 
+~~add more settings validations~~
+
+- ~~i know front end is hideous but idrk how to do better~~
 - ~~Treat roster bound as~~ ~~tradable? maybe make this a toggle~~ ~~bound, because that makes no sense~~ allow user to select via a radio selector or something
   - ~~Toggle should be "treat tradable as roster bound", which should be on by default because people are more worried about how much gold tehy will actually spend~~
 - ~~update the SA computation to allow for 2 breakpoints~~

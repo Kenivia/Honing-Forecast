@@ -96,8 +96,10 @@ watch(
     <div class="hf-honing-row">
         <section class="hf-card-normal">
             <div class="hf-card-header">
-                <label class="hf-achieved-ilevel">Achieved ilevel: {{ achieved_ilevel(active_profile) }}</label>
-                <label class="hf-pending-ilevel">Pending ilevel: {{ pending_ilevel(active_profile) }}</label>
+                <div style="display: flex; gap: 20px">
+                    <label class="hf-achieved-ilevel">Achieved ilevel: {{ achieved_ilevel(active_profile) }}</label>
+                    <label class="hf-pending-ilevel">Pending ilevel: {{ pending_ilevel(active_profile) }}</label>
+                </div>
                 <TierConvertButton
                     :labelText="tier_label_text"
                     :tooltipText="tooltip_text"
@@ -171,7 +173,7 @@ watch(
 
 .hf-card-normal :deep(.hf-card-header) {
     flex-wrap: wrap;
-    justify-content: flex-start;
+    justify-content: space-between;
     gap: 8px;
 }
 
