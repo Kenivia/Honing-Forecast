@@ -12,7 +12,7 @@ import {
     PLUS_TIER_CONVERSION,
 } from "@/Utils/Constants"
 import GoldBreakdown from "./GoldBreakdown.vue"
-import { CharProfile, create_default_char_profile, useProfilesStore } from "@/stores/CharacterProfile"
+import { CharProfile, create_default_char_profile, TreatmentPlan, useProfilesStore } from "@/stores/CharacterProfile"
 import { check_eligibility, iconPath, metricToText } from "@/Utils/Helpers"
 import MaterialCell from "@/Components/Common/MaterialCell.vue"
 import { create_input_column, DEFAULT_ONE_UPGRADE, input_column_to_num, InputType, parse_input, UpgradeStatus } from "@/Utils/Interfaces"
@@ -21,7 +21,7 @@ import { buildPayload } from "@/WasmInterface/payload"
 import { WasmOp } from "@/WasmInterface/js_to_wasm"
 import { RosterConfig, useRosterStore } from "@/stores/RosterConfig"
 import { storeToRefs } from "pinia"
-import { computed, watch } from "vue"
+import { computed, ref, watch, watchEffect } from "vue"
 
 const store = useProfilesStore()
 const { active_profile } = storeToRefs(store)
@@ -43,89 +43,68 @@ function copyPayload() {
 
 const optimizer_worker = active_profile.value.optimizer_worker_bundle
 
-const optimizer_busy = computed(() => optimizer_worker.status === "busy")
-const has_run_optimizer = computed(() => active_profile.value.has_run_optimizer)
-const auto_start_optimizer = computed(() => active_profile.value.auto_start_optimizer)
+const treatment_tick = ref(active_profile.value.optimizer_treatment_plan == TreatmentPlan.TreatRosterAsBound)
+watchEffect(() => {
+    console.log("changed")
+    if (treatment_tick.value) {
+        active_profile.value.optimizer_treatment_plan = TreatmentPlan.TreatRosterAsBound
+    } else {
+        active_profile.value.optimizer_treatment_plan = TreatmentPlan.TreatTradableAsBound
+    }
+})
 </script>
 <template>
-    <div class="hf-ops-row">
-        <section class="hf-card">
-            <div class="hf-card-header">
-                <div class="hf-card-title"><span class="hf-card-title-dot" />Controls</div>
-            </div>
-            <div class="hf-card-body hf-options-body">
-                <div class="hf-options-row">
-                    <button class="hf-header-link-btn" @click="resetActive">Reset All</button>
-                    <!-- <button class="hf-header-link-btn" @click="resetOptimizerState">Reset Optimizer</button> -->
-                </div>
-                <button class="hf-header-link-btn" @click="copyPayload">Copy Payload</button>
+    <section class="hf-card hf-control-panel">
+        <div class="hf-card-header">
+            <div class="hf-card-title"><span class="hf-card-title-dot" />Controls</div>
+        </div>
+        <div class="hf-card-body hf-options-body">
+            <button class="hf-control-panel-btn" @click="resetActive">Reset this char</button>
+            <div style="font-size: x-small; color: var(--text-very-muted); text-wrap-mode: wrap">You may need to reload after</div>
+            <!-- <button class="hf-header-link-btn" @click="resetOptimizerState">Reset Optimizer</button> -->
 
-                <!-- <div class="hf-divider" /> -->
+            <!-- <button class="hf-control-panel-btn" @click="copyPayload">Copy Payload</button> -->
 
-                <div class="hf-divider" />
-                <label class="hf-inline-check">
-                    <input v-model="roster_config.cumulative_graph" type="checkbox" />
-                    <span>Cumulative graph</span>
-                </label>
-                <div class="hf-divider" />
+            <!-- <div class="hf-divider" /> -->
 
-                <!-- <label class="hf-inline-check">
-                    <input v-model="allowManualState" type="checkbox" />
-                    <span>Enable progress updates for better optimization</span>
-                </label> -->
-            </div>
-        </section>
-    </div>
-    <div class="hf-card-header">
-        <div class="hf-card-title"><span class="hf-card-title-dot" />Action Queue</div>
-        <span class="hf-card-hint">Optimize, then follow next steps</span>
-    </div>
-    <div class="hf-card-body">
-        <div class="optimizer-card">
-            <!-- <button
-                class="hf-optimize-btn"
-                :style="{
-                    background: optimizer_busy
-                        ? 'var(--cancel-optimizer-button)'
-                        : has_run_optimizer
-                          ? 'linear-gradient(180deg, #60656f 0%, #4f545f 100%)'
-                          : 'linear-gradient(180deg, #e6c86f 0%, #cfaf52 100%)',
-                    color: optimizer_busy ? 'var(--text-muted)' : has_run_optimizer ? 'var(--hf-text-bright)' : '#1b1f25',
-                }"
-                @click="optimizer_worker.start(WasmOp.OptimizeAverage, structuredClone(toRaw(preped_payload)))"
-            >
-                {{ optimizer_busy ? "Cancel Optimize" : has_run_optimizer ? "Re-run Optimizer" : ">>> Optimize <<<" }}
-            </button> -->
+            <div class="hf-divider" />
+            <label class="hf-inline-check">
+                <input v-model="roster_config.cumulative_graph" type="checkbox" />
+                <span>Cumulative graph</span>
+            </label>
+            <div class="hf-divider" />
+            <label class="hf-inline-check">
+                <input v-model="treatment_tick" type="checkbox" />
+                <span>Optimizer account for sell value of tradable mats (Recommended)</span>
+            </label>
 
-            <!-- <label class="hf-inline-check">
-                <input v-model="store.profiles[active_profile_index].auto_start_optimizer" type="checkbox" />
+            <div class="hf-divider" />
+            <label class="hf-inline-check">
+                <input v-model="active_profile.auto_start_optimizer" type="checkbox" />
                 <span>Auto start optimizer</span>
-            </label> -->
-
-            <div class="hf-metric-card">
-                <div class="hf-metric-label">Avg eqv gold cost</div>
-                <div class="hf-metric-status">{{ metricToText(active_profile.optimizer_worker_bundle.result?.metric) ?? "No Result yet" }}</div>
-            </div>
-
-            <MaterialCell
-                :input_column="active_profile.special_budget"
-                :row="0"
-                :setter="(val) => (active_profile.special_budget.data[0] = val)"
-                :label="active_profile.special_budget.keys[0]"
-            ></MaterialCell>
-
-            <div v-if="optimizer_worker.status === 'error'" class="optimizer-error">Error: {{ optimizer_worker.error }}</div>
-
+            </label>
+            <div class="hf-divider" />
             <div class="optimizer-progress">
                 <span>Optimizer progress: {{ Math.max(optimizer_worker.est_progress_percentage, 0.01).toFixed(2) }}%</span>
                 <div class="progress-bar">
                     <div class="progress-fill" :style="{ width: `${optimizer_worker.est_progress_percentage}%` }" />
                 </div>
             </div>
+            <!-- <label class="hf-inline-check">
+                    <input v-model="allowManualState" type="checkbox" />
+                    <span>Enable progress updates for better optimization</span>
+                </label> -->
         </div>
-    </div>
+    </section>
 </template>
-<style>
+<style scoped>
+.hf-control-panel-btn {
+    color: var(--text-muted);
+}
+.hf-control-panel {
+    width: 200px;
+    min-width: 0;
+}
 .progress-bar {
     width: 100%;
     height: 8px;
@@ -143,5 +122,11 @@ const auto_start_optimizer = computed(() => active_profile.value.auto_start_opti
     flex-direction: column;
     gap: 6px;
     font-size: 12px;
+}
+
+@media (max-width: 1000px) {
+    .hf-control-panel {
+        width: 100%;
+    }
 }
 </style>

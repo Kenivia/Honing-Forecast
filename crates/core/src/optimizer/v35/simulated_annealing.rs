@@ -191,8 +191,8 @@ pub fn solve<R: Rng>(
 
         eqv_wall_time_iters += 1;
 
-        if eqv_wall_time_iters - last_total_count >= 1000
-            || (eqv_wall_time_iters < 1000 && eqv_wall_time_iters - last_total_count >= 67)
+        if eqv_wall_time_iters - last_total_count >= 2000
+        // || (eqv_wall_time_iters < 1000 && eqv_wall_time_iters - last_total_count >= 67)
         {
             last_total_count = eqv_wall_time_iters;
             #[cfg(feature = "run_tests")]
@@ -218,7 +218,9 @@ pub fn solve<R: Rng>(
 
                 send_progress(
                     &solver_bundle.state_bundle.clone(),
-                    (100.0 * (eqv_wall_time_iters as f64 / MAX_ITERS as f64)).min(100.0),
+                    (100.0 * (eqv_wall_time_iters as f64 / MAX_ITERS as f64))
+                        .min(100.0)
+                        .max(0.01),
                 )
             }
         }

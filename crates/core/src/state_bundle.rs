@@ -20,6 +20,7 @@ pub struct StateBundle {
     #[serde(skip)]
     pub special_cache: AHashMap<Vec<usize>, Vec<f64>>,
     pub num_threads: usize,
+    pub gold_breakdown: Option<Vec<f64>>,
     pub average_breakdown: Option<Vec<f64>>,
     #[serde(skip)]
     pub adv_cache: AHashMap<AdvConfig, AdvDistTriplet>,
@@ -67,8 +68,9 @@ impl StateBundle {
             latest_special_probs: None,
             min_resolution: 1,
             num_threads: 0,
-            average_breakdown: None,
+            gold_breakdown: None,
             adv_cache: AHashMap::new(),
+            average_breakdown: None,
         };
 
         state_bundle

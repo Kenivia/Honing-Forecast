@@ -1,6 +1,12 @@
-import { ref } from "vue"
-import { ALL_LABELS } from "./Constants"
-
+import { ref, computed } from "vue"
+import { ALL_LABELS, SYNCED_LABELS } from "./Constants"
+import { storeToRefs } from "pinia"
+import { useRosterStore } from "@/stores/RosterConfig"
+const OVERRIDE_DEFAULT = {
+    Gold: 1,
+    Silver: 0,
+    "Serca Fusion": 200,
+}
 const BODY = {
     region_slug: "nae",
     item_slugs: [
@@ -50,10 +56,7 @@ export async function fetchMarketData(region: string) {
 }
 
 const default_prices: number[][] = ALL_LABELS.map((x) => new Array(x.length).fill(999999999))
-const OVERRIDE_DEFAULT = {
-    Gold: 1,
-    Silver: 0,
-}
+
 export function parse_response(response: any): [number[][], number, number] {
     let out = default_prices
     for (let tier = 0; tier < ALL_LABELS.length; tier++) {
@@ -126,21 +129,56 @@ const ITEM_SLUG_TO_LABEL = {
     "metallurgy-hellfire-19-20": "19-20 Weapon",
     "tailoring-hellfire-19-20": "19-20 Armor",
 }
-export function useTimedFetch(callback: (data: number[][], selectedShardSize: number, shard_price: number) => void, disableDuration = 10_000) {
-    const disabled = ref(false)
+export function useTimedFetch(callback: (data: number[][], selectedShardSize: number, shard_price: number) => void) {
+    const roster_store = useRosterStore()
+    const { roster_config } = storeToRefs(roster_store)
+
+    const isFetching = ref(false)
+    const COOLDOWN_MS = 60 * 1000
+
+    function time_to_wait(region: string): number {
+        const lastTimestamp = roster_config.value.last_market_timestamp[region]
+        if (lastTimestamp === undefined) return 0
+        return COOLDOWN_MS - (Date.now() - lastTimestamp)
+    }
+
+    const disabled = computed(() => {
+        // Check the current region from roster_config
+        const region = roster_config.value.region
+        return isFetching.value || time_to_wait(region) > 0
+    })
 
     async function start_fetch(region: string) {
-        if (disabled.value) return
-        disabled.value = true
+        if (time_to_wait(region) > 0 || isFetching.value) return
+
+        isFetching.value = true
 
         // Start both the fetch and the timer concurrently
         const result = await fetchMarketData(region)
         // console.log(result)
         const [parsed, selectedShardSize, shard_price] = parse_response(result)
-        disabled.value = false
+
+        // Update the timestamp
+        roster_config.value.last_market_timestamp[region] = Date.now()
+
+        isFetching.value = false
 
         callback(parsed, selectedShardSize, shard_price)
     }
 
-    return { disabled, start_fetch }
+    return { disabled, start_fetch, time_to_wait }
+}
+export function fetch_callback(result: number[][], selectedShardSize: number, shard_price: number) {
+    const { roster_config } = storeToRefs(useRosterStore())
+
+    roster_config.value.selected_shard_bag_size = selectedShardSize
+    for (let tier = 0; tier < ALL_LABELS.length; tier++) {
+        for (let index = 0; index < ALL_LABELS[tier].length; index++) {
+            let actual_tier_to_modify = tier == 0 ? tier : SYNCED_LABELS.includes(ALL_LABELS[1][index]) ? 0 : 1
+            roster_config.value.mats_prices[actual_tier_to_modify].data[index] = result[tier][index].toLocaleString()
+            if (ALL_LABELS[tier][index] == "Shards") {
+                roster_config.value.mats_prices[actual_tier_to_modify].data[index] = shard_price.toLocaleString()
+            }
+        }
+    }
 }

@@ -1,6 +1,8 @@
 @import url("https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Source+Sans+3:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap");
 
 :root {
+    --hf-bg-header: #17181d;
+    --hf-header-button: var(--hf-gold);
     --hf-cancel: #a92727;
     --hf-free-tap: #ed7bff;
     --separator-color: rgba(102, 102, 102, 0.507);
@@ -10,7 +12,6 @@
     --serca-blue-hover: #4520d8;
     --hf-header-text: #c0c0c0;
     --hf-header-text-hovered: #ffffff;
-
 
     --hf-graph-average-color: #acfffe;
     --hf-graph-tradable-color: #adff3a;
@@ -183,16 +184,33 @@ body::before {
     display: flex;
     gap: 12px;
     align-items: center;
+    color: var(--hf-header-button);
+    border-radius: 9px;
+    font: 500 11px/1 var(--hf-font-body);
+    padding: 8px 12px;
+    text-decoration: none;
+    border: 1px solid var(--hf-border-subtle);
+    height: fit-content
 }
 
+.hf-header-links:hover {
+    color: var(--hf-header-button-hovered);
+    background-color: var(--hf-bg-hover);
+}
+
+.hf-header-links img {
+
+    height: 20px;
+}
+
+
 .hf-header-link-btn,
-.hf-header-links a {
+.hf-header-links {
     color: var(--hf-text-muted);
     text-decoration: none;
     background: transparent;
-    border: 1px solid var(--hf-border-subtle);
-    border-radius: 999px;
-    font: 500 11px/1 var(--hf-font-body);
+
+
     letter-spacing: 0.08em;
     text-transform: uppercase;
     padding: 7px 12px;

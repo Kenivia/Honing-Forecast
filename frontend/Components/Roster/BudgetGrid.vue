@@ -3,30 +3,35 @@ import { useRosterStore as useRosterStore } from "@/stores/RosterConfig"
 import { ALL_LABELS, BUDGET_NARROW_WIDTH, BUNDLE_SIZE, NARROW_WIDTH, SYNCED_LABELS, TIER_OPTIONS } from "@/Utils/Constants"
 import { storeToRefs } from "pinia"
 import MaterialCell from "@/Components/Common/MaterialCell.vue"
-import { computed, ref, watchEffect } from "vue"
+import { computed, nextTick, onUnmounted, ref, watch, watchEffect } from "vue"
 import { SelectButton } from "primevue"
 import { useMediaIsNarrow } from "@/Utils/WindowSize"
 import { input_column_to_num, parse_input } from "@/Utils/Interfaces"
 import TierConvertButton from "../Common/TierConvertButton.vue"
-import { useTimedFetch } from "@/Utils/MarketDataFetcher"
+import { fetch_callback, useTimedFetch } from "@/Utils/MarketDataFetcher"
 
 const { roster_config } = storeToRefs(useRosterStore())
 
 const tier = computed(() => roster_config.value.tier)
 const { isNarrow } = useMediaIsNarrow(BUDGET_NARROW_WIDTH)
 
-const { disabled, start_fetch } = useTimedFetch((result: number[][], selectedShardSize: number, shard_price: number) => {
-    roster_config.value.selected_shard_bag_size = selectedShardSize
-    for (let tier = 0; tier < ALL_LABELS.length; tier++) {
-        for (let index = 0; index < ALL_LABELS[tier].length; index++) {
-            roster_config.value.mats_prices[tier].data[index] = result[tier][index].toLocaleString()
-            if (ALL_LABELS[tier][index] == "Shards") {
-                roster_config.value.mats_prices[tier].data[index] = shard_price.toLocaleString()
-            }
-        }
-    }
+const { disabled, start_fetch, time_to_wait } = useTimedFetch((result, selected, price) => {
+    fetch_callback(result, selected, price)
+    forceRerender()
 })
+const re_render_trigger = ref(true)
+const forceRerender = async () => {
+    re_render_trigger.value = false
+    await nextTick()
+    re_render_trigger.value = true
+}
+const ttw = ref(time_to_wait(roster_config.value.region))
 
+const interval = setInterval(() => {
+    ttw.value = time_to_wait(roster_config.value.region)
+}, 1000) // or whatever granularity you need
+
+onUnmounted(() => clearInterval(interval))
 watchEffect(() => {
     // one way sync from T4 to Serca, the uui modifies the T4 copy
     for (let serca_index = 0; serca_index < ALL_LABELS[1].length; serca_index++) {
@@ -66,13 +71,16 @@ function convert_roster_mats_to_serca() {
     }
 }
 
-const t4_serca_prices = computed(() => {
+const t4_better = computed(() => {
     let t4_price = input_column_to_num(roster_config.value.mats_prices[0])
     let serca_price = input_column_to_num(roster_config.value.mats_prices[1])
-    return {
-        effective_prices: ALL_LABELS[1].map((_, index) => Math.min(t4_price[index] * 5, serca_price[index])),
-        t4_better: ALL_LABELS[1].map((_, index) => t4_price[index] * 5 < serca_price[index]),
-    }
+    return ALL_LABELS[1].map((_, index) => t4_price[index] * 5 < serca_price[index])
+})
+
+watchEffect(() => {
+    let t4_price = input_column_to_num(roster_config.value.mats_prices[0])
+    let serca_price = input_column_to_num(roster_config.value.mats_prices[1])
+    roster_config.value.effective_serca_price = ALL_LABELS[1].map((_, index) => Math.min(t4_price[index] * 5, serca_price[index]))
 })
 </script>
 
@@ -97,117 +105,124 @@ const t4_serca_prices = computed(() => {
             <option>EUC</option>
         </select>
         <button :disabled="disabled" @click="() => start_fetch(roster_config.region)">
-            {{ disabled ? "Please wait..." : "Fetch Market Data" }}
+            {{ disabled ? (ttw > 0 ? "Wait " + Math.ceil(ttw / 1000) + "s before fetching again" : "Fetching...") : "Fetch Market Data" }}
         </button>
     </div>
 
     <div class="hf-shard-size-selector">
-        <label>Shard Bag Size:</label>
+        <label>Shard bag size:</label>
         <select v-model.number="roster_config.selected_shard_bag_size" class="hf-shard-size-select">
             <option value="1000">x1000</option>
             <option value="2000">x2000</option>
             <option value="3000">x3000</option>
         </select>
+        <label>(Best one will be auto selected)</label>
     </div>
-    <div class="hf-outer-budget-grid" :class="{ narrow: isNarrow }">
-        <div v-if="!isNarrow || tier == 0" class="hf-roster-inputs-tier-4" :style="{ gridRow: `span ${String(ALL_LABELS[0].length + 1)}` }">
-            <div class="hf-table-title-row">
-                <span style="text-align: right; padding-right: 15px">Roster Bound Mats</span>
-                <span>Tradable Mats</span>
-                <span>Market price</span>
+    <div v-if="re_render_trigger" class="hf-outer-budget-grid" :class="{ narrow: isNarrow }">
+        <div v-if="!isNarrow || tier == 0" class="hf-tier-grid-scroll">
+            <div class="hf-roster-inputs-tier-4" :style="{ gridRow: `span ${String(ALL_LABELS[0].length + 1)}` }">
+                <div class="hf-table-title-row">
+                    <span style="text-align: right; padding-right: 15px">Roster Bound Mats</span>
+                    <span>Tradable Mats</span>
+                    <span>Market price</span>
 
-                <!-- <span v-if="customLeftovers">Left</span> -->
-            </div>
-            <div v-for="(label, row) in ALL_LABELS[0]" :key="`roster-input-${label}`" class="hf-mats-row">
-                <MaterialCell
-                    :input_column="roster_config.roster_mats_owned[0]"
-                    :row="row"
-                    :label="label"
-                    :setter="
-                        (val) => {
-                            roster_config.roster_mats_owned[0].data[row] = val
-                        }
-                    "
-                />
-                <MaterialCell
-                    :input_column="roster_config.tradable_mats_owned[0]"
-                    :row="row"
-                    :setter="
-                        (val) => {
-                            roster_config.tradable_mats_owned[0].data[row] = val
-                        }
-                    "
-                />
-                <MaterialCell
-                    :input_column="roster_config.mats_prices[0]"
-                    :row="row"
-                    :setter="
-                        (val) => {
-                            roster_config.mats_prices[0].data[row] = val
-                        }
-                    "
-                    :suffix="
-                        label === 'Shards'
-                            ? 'x' + roster_config.selected_shard_bag_size.toString()
-                            : BUNDLE_SIZE[row] > 1
-                              ? 'x' + BUNDLE_SIZE[row].toLocaleString('en-US')
-                              : ''
-                    "
-                />
+                    <!-- <span v-if="customLeftovers">Left</span> -->
+                </div>
+                <div v-for="(label, row) in ALL_LABELS[0]" :key="`roster-input-${label}`" class="hf-mats-row">
+                    <MaterialCell
+                        :input_column="roster_config.roster_mats_owned[0]"
+                        :row="row"
+                        :label="label"
+                        :setter="
+                            (val) => {
+                                roster_config.roster_mats_owned[0].data[row] = val
+                            }
+                        "
+                        :hide_tick="true"
+                    />
+                    <MaterialCell
+                        :input_column="roster_config.tradable_mats_owned[0]"
+                        :row="row"
+                        :setter="
+                            (val) => {
+                                roster_config.tradable_mats_owned[0].data[row] = val
+                            }
+                        "
+                    />
+                    <MaterialCell
+                        :input_column="roster_config.mats_prices[0]"
+                        :row="row"
+                        :setter="
+                            (val) => {
+                                roster_config.mats_prices[0].data[row] = val
+                            }
+                        "
+                        :suffix="
+                            label === 'Shards'
+                                ? 'x' + roster_config.selected_shard_bag_size.toString()
+                                : BUNDLE_SIZE[row] > 1
+                                  ? 'x' + BUNDLE_SIZE[row].toLocaleString('en-US')
+                                  : ''
+                        "
+                    />
+                </div>
             </div>
         </div>
 
-        <div v-if="!isNarrow || tier == 1" class="hf-roster-inputs-serca" :style="{ gridRow: `span ${String(ALL_LABELS[1].length + 1)}` }">
-            <div class="hf-table-title-row">
-                <span style="text-align: right; padding-right: 15px">Roster Bound Mats</span>
-                <span>Tradable Mats</span>
-                <span>Market price</span>
-                <span>Effective price</span>
+        <div v-if="!isNarrow || tier == 1" class="hf-tier-grid-scroll">
+            <div class="hf-roster-inputs-serca" :style="{ gridRow: `span ${String(ALL_LABELS[1].length + 1)}` }">
+                <div class="hf-table-title-row">
+                    <span style="text-align: right; padding-right: 15px">Roster Bound Mats</span>
+                    <span>Tradable Mats</span>
+                    <span>Market price</span>
+                    <span>Effective price</span>
 
-                <!-- <span v-if="customLeftovers">Left</span> -->
-            </div>
-            <div v-for="(label, row) in ALL_LABELS[1]" :key="`roster-input-${label}`" class="hf-mats-row">
-                <MaterialCell
-                    :input_column="roster_config.roster_mats_owned[SYNCED_LABELS.includes(label) ? 0 : 1]"
-                    :row="row"
-                    :label="label"
-                    :setter="
-                        (val) => {
-                            roster_config.roster_mats_owned[SYNCED_LABELS.includes(label) ? 0 : 1].data[row] = val
-                        }
-                    "
-                />
-                <MaterialCell
-                    :input_column="roster_config.tradable_mats_owned[SYNCED_LABELS.includes(label) ? 0 : 1]"
-                    :row="row"
-                    :setter="
-                        (val) => {
-                            roster_config.tradable_mats_owned[SYNCED_LABELS.includes(label) ? 0 : 1].data[row] = val
-                        }
-                    "
-                />
-                <MaterialCell
-                    :input_column="roster_config.mats_prices[SYNCED_LABELS.includes(label) ? 0 : 1]"
-                    :row="row"
-                    :setter="
-                        (val) => {
-                            roster_config.mats_prices[SYNCED_LABELS.includes(label) ? 0 : 1].data[row] = val
-                        }
-                    "
-                    :suffix="
-                        label === 'Shards'
-                            ? 'x' + roster_config.selected_shard_bag_size.toString()
-                            : BUNDLE_SIZE[row] > 1
-                              ? 'x' + BUNDLE_SIZE[row].toLocaleString('en-US')
-                              : ''
-                    "
-                />
-                <MaterialCell
-                    v-if="!SYNCED_LABELS.includes(label)"
-                    :input_column="t4_serca_prices.effective_prices"
-                    :row="row"
-                    :suffix="t4_serca_prices.t4_better[row] ? 'Convert T4' : 'Buy Serca '"
-                />
+                    <!-- <span v-if="customLeftovers">Left</span> -->
+                </div>
+                <div v-for="(label, row) in ALL_LABELS[1]" :key="`roster-input-${label}`" class="hf-mats-row">
+                    <MaterialCell
+                        :input_column="roster_config.roster_mats_owned[SYNCED_LABELS.includes(label) ? 0 : 1]"
+                        :row="row"
+                        :label="label"
+                        :setter="
+                            (val) => {
+                                roster_config.roster_mats_owned[SYNCED_LABELS.includes(label) ? 0 : 1].data[row] = val
+                            }
+                        "
+                        :hide_tick="true"
+                    />
+                    <MaterialCell
+                        :input_column="roster_config.tradable_mats_owned[SYNCED_LABELS.includes(label) ? 0 : 1]"
+                        :row="row"
+                        :setter="
+                            (val) => {
+                                roster_config.tradable_mats_owned[SYNCED_LABELS.includes(label) ? 0 : 1].data[row] = val
+                            }
+                        "
+                    />
+                    <MaterialCell
+                        :input_column="roster_config.mats_prices[SYNCED_LABELS.includes(label) ? 0 : 1]"
+                        :row="row"
+                        :setter="
+                            (val) => {
+                                roster_config.mats_prices[SYNCED_LABELS.includes(label) ? 0 : 1].data[row] = val
+                            }
+                        "
+                        :suffix="
+                            label === 'Shards'
+                                ? 'x' + roster_config.selected_shard_bag_size.toString()
+                                : BUNDLE_SIZE[row] > 1
+                                  ? 'x' + BUNDLE_SIZE[row].toLocaleString('en-US')
+                                  : ''
+                        "
+                    />
+                    <MaterialCell
+                        v-if="!SYNCED_LABELS.includes(label)"
+                        :input_column="roster_config.effective_serca_price"
+                        :row="row"
+                        :suffix="t4_better[row] ? 'Convert T4' : 'Buy Serca '"
+                    />
+                </div>
             </div>
         </div>
     </div>
@@ -247,30 +262,75 @@ const t4_serca_prices = computed(() => {
     border-color: var(--hf-gold-dim);
 }
 
-.hf-table-title-row {
-    display: contents;
-}
 .hf-outer-budget-grid {
     display: grid;
-    grid-template-columns: 1fr 1fr;
-    grid-template-rows: subgrid; /* rows are shared */
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+    align-items: start;
 }
+
 .hf-outer-budget-grid.narrow {
     grid-template-columns: 1fr;
 }
+
+.hf-tier-grid-scroll {
+    min-width: 0;
+    width: 100%;
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding-bottom: 4px;
+    -webkit-overflow-scrolling: touch;
+}
+
 .hf-roster-inputs-tier-4 {
     display: grid;
     grid-template-columns: 250px 120px 120px;
-    align-items: center; /* optional: vertically center each cell */
-    gap: 8px; /* optional: spacing between cells */
-    grid-template-rows: subgrid;
+    align-items: center;
+    gap: 8px;
+    background: var(--hf-bg-panel);
+    border: 1px solid var(--hf-border-subtle);
+    border-radius: 8px;
+    width: max-content;
+    min-width: 100%;
 }
+
 .hf-roster-inputs-serca {
     display: grid;
     grid-template-columns: 250px 120px 120px 120px;
-    align-items: center; /* optional: vertically center each cell */
-    gap: 8px; /* optional: spacing between cells */
-    grid-template-rows: subgrid;
+    align-items: center;
+    gap: 8px;
+    background: var(--hf-bg-panel);
+    border: 1px solid var(--hf-border-subtle);
+    border-radius: 8px;
+    width: max-content;
+    min-width: 100%;
+}
+
+.hf-roster-inputs-tier-4 .hf-material-cell,
+.hf-roster-inputs-serca .hf-material-cell {
+    --hf-cell-input-width: 86px;
+    --hf-cell-label-width: 136px;
+    --hf-cell-icon-size: 28px;
+}
+
+.hf-roster-inputs-tier-4 .hf-table-title-row,
+.hf-roster-inputs-tier-4 .hf-mats-row {
+    display: grid;
+    grid-column: 1 / -1;
+    grid-template-columns: 250px 120px 120px;
+    align-items: center;
+    border-bottom: 1px solid var(--separator-color);
+    min-height: 0;
+}
+
+.hf-roster-inputs-serca .hf-table-title-row,
+.hf-roster-inputs-serca .hf-mats-row {
+    display: grid;
+    grid-column: 1 / -1;
+    grid-template-columns: 250px 120px 120px 120px;
+    align-items: center;
+    border-bottom: 1px solid var(--separator-color);
+    min-height: 0;
 }
 /* Container */
 .hf-roster-tier-select.hf-roster-tier-select {
@@ -340,5 +400,44 @@ const t4_serca_prices = computed(() => {
 .hf-roster-tier-select .p-togglebutton.p-togglebutton:focus-visible {
     outline: 2px solid var(--hf-gold-dim);
     outline-offset: 2px;
+}
+
+@media (max-width: 900px) {
+    .hf-shard-size-selector {
+        flex-wrap: wrap;
+        align-items: flex-start;
+        gap: 8px;
+    }
+
+    .hf-roster-inputs-tier-4 {
+        grid-template-columns: 170px 90px 90px;
+        gap: 4px;
+    }
+
+    .hf-roster-inputs-tier-4 .hf-table-title-row,
+    .hf-roster-inputs-tier-4 .hf-mats-row {
+        grid-template-columns: 170px 90px 90px;
+    }
+
+    .hf-roster-inputs-serca {
+        grid-template-columns: 150px 76px 76px 76px;
+        gap: 4px;
+    }
+
+    .hf-roster-inputs-serca .hf-table-title-row,
+    .hf-roster-inputs-serca .hf-mats-row {
+        grid-template-columns: 150px 76px 76px 76px;
+    }
+
+    .hf-roster-inputs-tier-4 .hf-material-cell,
+    .hf-roster-inputs-serca .hf-material-cell {
+        --hf-cell-input-width: 64px;
+        --hf-cell-label-width: 88px;
+        --hf-cell-icon-size: 20px;
+    }
+
+    .hf-table-title-row {
+        font-size: 11px;
+    }
 }
 </style>

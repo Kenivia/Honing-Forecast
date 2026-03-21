@@ -49,9 +49,7 @@ export const useProfilesStore = defineStore("profiles", {
             this.active_profile_index = loaded.active_profile_index
 
             for (let index = 0; index < this.profiles.length; index++) {
-                if (this.profiles[index].state_bundle === null) {
-                    this.profiles[index].optimizer_worker_bundle.start(WasmOp.Parser, buildPayload(WasmOp.Parser))
-                }
+                this.profiles[index].optimizer_worker_bundle.start(WasmOp.Parser, buildPayload(WasmOp.Parser))
             }
             // console.log(this)
         },
@@ -73,7 +71,7 @@ export function load_char_profiles(): { profiles: CharProfile[]; active_profile_
 
     const parsed = JSON.parse(raw)
     for (let i = 0; i < parsed.profiles.length; i++) {
-        let this_parsed = parsed.profiles[i]
+        let this_parsed = { ...create_default_char_profile(), ...parsed.profiles[i] }
         fill_new_tiers_with_default(this_parsed.bound_budgets)
         fill_new_tiers_with_default(this_parsed.leftover_price)
         let this_profile = recreate_char_profile(this_parsed)
@@ -81,7 +79,7 @@ export function load_char_profiles(): { profiles: CharProfile[]; active_profile_
             ...parsed.profiles[i],
             ...this_profile,
         }
-        console.log(parsed.profiles[i], parsed.profiles[i].tier)
+        // console.log(parsed.profiles[i], parsed.profiles[i].tier)
     }
 
     return { ...DEFAULT_PROFILES_STATE, ...parsed }
@@ -103,8 +101,8 @@ export enum TreatmentPlan {
     TreatTradableAsBound, // main
 }
 export interface CharProfile {
-    treatment_plan: TreatmentPlan
-
+    optimizer_treatment_plan: TreatmentPlan
+    histogram_treatment_plan: TreatmentPlan
     express_event: boolean
     char_name: string
 
@@ -130,16 +128,17 @@ export interface CharProfile {
     min_resolution: number
     num_threads: number
     metric_type: number
+    special_re_render_trigger: boolean
 }
 
 export function create_default_char_profile(): CharProfile {
     return {
-        treatment_plan: TreatmentPlan.TreatRosterAsBound,
-
+        optimizer_treatment_plan: TreatmentPlan.TreatRosterAsBound,
+        histogram_treatment_plan: TreatmentPlan.TreatRosterAsTradable,
         express_event: false,
         char_name: "YourChar",
 
-        auto_start_optimizer: false,
+        auto_start_optimizer: true,
         has_run_optimizer: false,
         evaluation_worker_bundle: createWorkerBundle(),
         optimizer_worker_bundle: createWorkerBundle(),
@@ -150,7 +149,7 @@ export function create_default_char_profile(): CharProfile {
 
         keyed_upgrades: {},
         keyed_states: {},
-        special_budget: create_input_column(InputType.Int, [SPECIAL_LEAP_LABEL]),
+        special_budget: create_input_column(InputType.Int, [SPECIAL_LEAP_LABEL], ["0"], [33333]),
 
         bound_budgets: ALL_LABELS.map((this_labels) => create_input_column(InputType.Int, this_labels)),
         leftover_price: ALL_LABELS.map((this_labels) => create_input_column(InputType.Int, this_labels)), // implicit 0 leftover here
@@ -160,6 +159,7 @@ export function create_default_char_profile(): CharProfile {
         min_resolution: 1,
         num_threads: 1,
         metric_type: 1,
+        special_re_render_trigger: true,
     }
 }
 

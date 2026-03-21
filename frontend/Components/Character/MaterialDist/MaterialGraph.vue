@@ -23,9 +23,10 @@ const props = withDefaults(
         annotationColors?: string[]
         annotationPositions?: ("top" | "middle" | "bottom" | "graph")[]
         annotationLabels?: string[]
-
+        maxYoverride?: number
         // Tooltip Function
         tooltipTextFn?: (x: number, y: number, cumulativeY: number, material: string, color: string) => string
+        empty_message?: string
     }>(),
     {
         graphColor: "--hf-graph-default-color",
@@ -36,6 +37,7 @@ const props = withDefaults(
         annotationLabels: () => [],
         // Default tooltip just displays values
         tooltipTextFn: (x, y, cy, material, color) => `<b>X:</b> ${x} <br/> <b>Y:</b> ${cy}`,
+        empty_message: "This material is never used",
     },
 )
 
@@ -43,14 +45,15 @@ const rootRef = ref<HTMLElement | null>(null)
 const width = ref(0)
 const mouseX = ref<number | null>(null)
 let observer: ResizeObserver | null = null
+const MIN_GRAPH_WIDTH = 180
 
-const plotWidth = computed(() => Math.max(100, width.value))
+const plotWidth = computed(() => Math.max(MIN_GRAPH_WIDTH, width.value))
 
 const points = computed<Point[]>(() => {
     if (!Array.isArray(props.data) || props.data.length === 0) {
         return []
     }
-    console.log(props.data)
+    // console.log(props.data)
     const normalized = props.data
         .map((pair) => [Number(pair?.[0] ?? 0), Number(pair?.[1] ?? 0)] as DataPoint)
         .filter((pair) => Number.isFinite(pair[0]) && Number.isFinite(pair[1]))
@@ -74,10 +77,11 @@ const points = computed<Point[]>(() => {
         }
 
         const [prevX, prevY] = normalized[index - 1]
-        let this_gap = x - prevX
-        if (Math.abs(this_gap - gap_size) > FLOAT_TOL) {
-            return { x, y: prevSlope, cumulativeY: y }
-        }
+        // let this_gap = x - prevX
+        // if (Math.abs(this_gap - gap_size) > FLOAT_TOL) {
+        //     return { x, y: prevSlope, cumulativeY: y }
+        // }
+        // we will just assume gap is constant, (non-cumulative graph looks weird otherwise), which is the current behaviour of histogram
         const dx = x - prevX
         const slope = dx === 0 ? 0 : (y - prevY) / dx
         if (slope < FLOAT_TOL) {
@@ -96,10 +100,13 @@ const maxX = computed(() => {
 
 const maxY = computed(() => {
     if (!points.value.length) return 1
+    if (props.maxYoverride) {
+        return props.maxYoverride
+    }
     return Math.max(1e-9, ...points.value.map((point) => point.y))
 })
 
-const isEmpty = computed(() => points.value.length === 0 || maxX.value <= 0)
+const isEmpty = computed(() => points.value.length === 0 && maxX.value <= 0)
 
 function scaleX(x: number) {
     if (maxX.value <= 0) return 0
@@ -222,7 +229,7 @@ const surfaceTextColor = computed(() => cssVar("--hf-text-main", "#c9d0da"))
 onMounted(() => {
     const updateWidth = () => {
         if (!rootRef.value) return
-        width.value = Math.max(320, Math.floor(rootRef.value.getBoundingClientRect().width))
+        width.value = Math.max(MIN_GRAPH_WIDTH, Math.floor(rootRef.value.getBoundingClientRect().width))
     }
 
     updateWidth()
@@ -240,7 +247,7 @@ onBeforeUnmount(() => {
 
 <template>
     <div ref="rootRef" class="hf-material-graph" @mousemove="onMouseMove" @mouseleave="onMouseLeave">
-        <svg :width="Math.max(width, 320)" :height="height" role="img" aria-label="Material graph">
+        <svg :width="Math.max(width, MIN_GRAPH_WIDTH)" :height="height" role="img" aria-label="Material graph">
             <defs>
                 <linearGradient :id="`hf-graph-fill-${graphColor.replace(/[^a-z0-9]/gi, '')}`" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="0%" :stop-color="resolvedColor" stop-opacity="0.38" />
@@ -284,7 +291,7 @@ onBeforeUnmount(() => {
                 </g>
 
                 <text v-if="isEmpty" x="4" :y="Math.max(16, GRAPH_HEIGHT * 0.55)" font-size="12" :fill="surfaceTextColor" opacity="0.85">
-                    This material is never used.
+                    {{ empty_message }}
                 </text>
             </g>
         </svg>

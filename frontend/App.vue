@@ -9,12 +9,15 @@ import { storeToRefs } from "pinia"
 import { computed, onMounted, onUnmounted, toRaw, watchEffect } from "vue"
 import { ref } from "vue"
 import { useMediaIsNarrow } from "./Utils/WindowSize"
+import { fetch_callback, useTimedFetch } from "./Utils/MarketDataFetcher"
 
 const roster_store = useRosterStore()
 roster_store.init()
 const profile_store = useProfilesStore()
 profile_store.init()
-const { all_profiles } = storeToRefs(profile_store)
+// const { all_profiles } = storeToRefs(profile_store)
+const { start_fetch } = useTimedFetch(fetch_callback)
+start_fetch(roster_store.roster_config.region)
 
 profile_store.$subscribe((_mutation, state) => {
     debounced_write_char_profiles(state)
@@ -27,68 +30,124 @@ const { isNarrow } = useMediaIsNarrow()
 </script>
 
 <template>
-    <header>
-        <div class="wrapper">
-            <nav class="flex justify-between mb-10 pt-10">
+    <div class="hf-app-shell">
+        <header>
+            <nav class="hf-top-nav">
                 <div class="hf-brand">
-                    <div class="hf-brand-icon">
-                        <img :src="iconPath('Forecast Icon')" alt="Forecast icon" style="width: 34px; height: 34px" />
-                    </div>
+                    <router-link to="/">
+                        <div class="hf-brand-icon">
+                            <img :src="iconPath('Forecast Icon')" alt="Forecast icon" style="width: 34px; height: 34px" /></div
+                    ></router-link>
                     <div v-if="!isNarrow">
                         <h1 class="hf-title">Honing Forecast</h1>
                     </div>
                 </div>
                 <div class="hf-page-header-row">
-                    <router-link to="/">
-                        <div class="hf-header-button">Roster & market setup</div>
+                    <router-link to="/roster-setup">
+                        <div class="hf-header-button">Roster setup</div>
                     </router-link>
-                    <div v-for="(profile, index) in all_profiles">
-                        <router-link :to="'/' + profile.char_name" @click="profile_store.active_profile_index = index">
-                            <div class="hf-header-button">{{ profile.char_name }}</div>
-                        </router-link>
-                    </div>
-                </div>
-                <div class="hf-header-links">
-                    <a href="https://github.com/Kenivia/Honing-Forecast">GitHub</a>
+                    <router-link to="/market-mats">
+                        <div class="hf-header-button">Market & Mats</div>
+                    </router-link>
+                    <div class="hf-header-spacer" />
+                    <RouterLink
+                        v-for="(profile, index) in profile_store.profiles"
+                        :key="index"
+                        :to="{ name: 'char', params: { characterName: profile.char_name } }"
+                        class="hf-header-button"
+                        :class="{ selected: index == profile_store.active_profile_index }"
+                    >
+                        {{ profile.char_name }}
+                    </RouterLink>
                 </div>
             </nav>
-        </div>
-    </header>
-
-    <main>
-        <RouterView />
-    </main>
+        </header>
+        <main class="hf-main-slot">
+            <RouterView />
+        </main>
+        <footer class="hf-footer-bar">
+            <a v-if="!isNarrow" href="https://ko-fi.com/kenivia" class="hf-header-links">
+                <img src="/Icons/kofi.png" alt="Ko-fi" />
+                <span>Donate</span>
+            </a>
+            <a v-if="!isNarrow" href="https://discord.gg/KWDpQyvgzc" class="hf-header-links">
+                <img src="/Icons/Discord.png" alt="Discord" />
+                <span>Discord</span>
+            </a>
+            <a v-if="!isNarrow" href="https://github.com/Kenivia/Honing-Forecast" class="hf-header-links">
+                <img src="/Icons/GitHub.png" alt="GitHub" />
+                <span>GitHub</span>
+            </a>
+            <span class="hf-footer-note">Made with love by Kenivia with help from many awesome people.</span>
+        </footer>
+    </div>
 </template>
 
 <style>
+.hf-app-shell {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+}
+
+.hf-top-nav {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid var(--separator-color);
+    padding: 0;
+    margin: 0;
+    gap: 8px;
+}
+
+.hf-main-slot {
+    flex: 1;
+    min-width: 0;
+}
+
 .hf-header-button {
-    margin: 12px;
+    display: inline-flex;
+    align-items: center;
     color: var(--hf-header-button);
     border-radius: 6px;
-}
-.hf-header-button:hover {
-    color: var(--hf-header-button-hovered);
-}
-.hf-header-button {
+    border: 1px solid var(--separator-color);
+    background-color: var(--hf-bg-header);
+    margin: 0 2px;
+    text-wrap-mode: nowrap;
     padding: 12px;
 }
+
+.hf-header-button:hover {
+    color: var(--accent-hover);
+    background-color: var(--hf-bg-hover);
+}
+
+.hf-header-button.selected {
+    color: var(--accent-hover);
+    background-color: var(--hf-bg-hover);
+}
+
+.hf-header-spacer {
+    width: 10px;
+    min-width: 10px;
+}
+
 .hf-page-header-row {
     display: flex;
     flex-direction: row;
     width: 100%;
-    gap: 0px;
-    padding: 4px;
+    gap: 0;
     align-items: center;
+    overflow-x: auto;
+    overflow-y: hidden;
+    white-space: nowrap;
+    scrollbar-width: thin;
 }
+
 .hf-brand {
     display: flex;
     align-items: center;
-    gap: 0px;
-    /* border: 1px solid var(--hf-gold-dim); */
-    /* border-radius: var(--hf-radius); */
-    /* background: linear-gradient(135deg, var(--hf-bg-card), var(--hf-bg-panel));
-    box-shadow: none; */
-    padding: 4px;
+    gap: 0;
     padding-right: 8px;
 }
 
@@ -108,5 +167,51 @@ const { isNarrow } = useMediaIsNarrow()
     line-height: 1;
     font-weight: 700;
     width: min-content;
+}
+
+.hf-footer-bar {
+    display: flex;
+    flex-direction: row-reverse;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    padding: 8px 10px;
+}
+
+.hf-footer-note {
+    color: var(--text-very-muted);
+    font-size: 12px;
+    text-align: center;
+}
+
+@media (max-width: 900px) {
+    .hf-top-nav {
+        flex-direction: column;
+        align-items: stretch;
+        padding-bottom: 8px;
+    }
+
+    .hf-brand {
+        padding-right: 0;
+        padding-left: 8px;
+    }
+
+    .hf-page-header-row {
+        padding: 0 8px;
+        gap: 4px;
+    }
+
+    .hf-header-button {
+        padding: 10px 9px;
+        font-size: 13px;
+    }
+
+    .hf-footer-bar {
+        justify-content: center;
+    }
+
+    .hf-footer-note {
+        width: 100%;
+    }
 }
 </style>

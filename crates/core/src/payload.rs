@@ -69,8 +69,9 @@ impl StateBundle {
             latest_special_probs: None,
             min_resolution,
             num_threads,
-            average_breakdown: None,
+            gold_breakdown: None,
             adv_cache,
+            average_breakdown: None,
         }
     }
     pub fn init_from_payload(payload: Payload) -> Self {

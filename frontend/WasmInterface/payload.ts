@@ -49,8 +49,6 @@ export function apply_treatement(treatment: TreatmentPlan, bound: number, roster
     }
 }
 export function buildPayload(wasm_op: WasmOp): EvalPayload | StateBundle {
-    // OPTIMIZER_WORKEBUNDLE DEPENDENCE ANYWHERE HERE IS A BIG NO NO BECAUSE IT WILL KEEP RE-TRIGGERING
-    // if some constant is really is needed then should run a separate parser worker and store the parser result
     const { active_profile } = storeToRefs(useProfilesStore())
     const { roster_config } = storeToRefs(useRosterStore())
 
@@ -59,19 +57,30 @@ export function buildPayload(wasm_op: WasmOp): EvalPayload | StateBundle {
     const roster_mats_owned = input_column_to_num(roster_config.value.roster_mats_owned[tier])
     const tradable_mats_owned = input_column_to_num(roster_config.value.tradable_mats_owned[tier])
     const leftover_price = input_column_to_num(active_profile.value.leftover_price[tier])
-    const tradable_mats_price = input_column_to_num(roster_config.value.mats_prices[tier]).map(
+
+    const actual_price = tier == 0 ? input_column_to_num(roster_config.value.mats_prices[tier]) : roster_config.value.effective_serca_price
+    const tradable_mats_price = actual_price.map(
         (x: number, index: number) =>
             Math.max(Math.min(1, x), Math.floor(x * 0.95)) /
             (ALL_LABELS[active_profile.value.tier][index] == "Shards" ? roster_config.value.selected_shard_bag_size : BUNDLE_SIZE[index]),
     )
-    const mats_prices = input_column_to_num(roster_config.value.mats_prices[tier]).map(
+    const mats_prices = actual_price.map(
         (x: number, index: number) =>
             x / (ALL_LABELS[active_profile.value.tier][index] == "Shards" ? roster_config.value.selected_shard_bag_size : BUNDLE_SIZE[index]),
     )
 
     return {
         material_info: ALL_LABELS[tier].map((_, index) => [
-            ...apply_treatement(active_profile.value.treatment_plan, bound_budgets[index], roster_mats_owned[index], tradable_mats_owned[index]),
+            ...apply_treatement(
+                wasm_op == WasmOp.OptimizeAverage
+                    ? active_profile.value.optimizer_treatment_plan
+                    : wasm_op == WasmOp.Histogram
+                      ? active_profile.value.histogram_treatment_plan
+                      : TreatmentPlan.TreatTradableAsBound, // EvalAverage
+                bound_budgets[index],
+                roster_mats_owned[index],
+                tradable_mats_owned[index],
+            ),
             leftover_price[index],
             tradable_mats_price[index],
             mats_prices[index],
@@ -83,5 +92,6 @@ export function buildPayload(wasm_op: WasmOp): EvalPayload | StateBundle {
         min_resolution: active_profile.value.min_resolution,
         num_threads: 1,
         metric_type: 1,
+        special_state: toRaw(active_profile.value.optimizer_worker_bundle.result?.special_state),
     }
 }

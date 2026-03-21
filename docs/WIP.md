@@ -3,173 +3,22 @@
 
 ## Immediate WIP
 
-- Sidebars
-  - ~~logo -> burger on mobile~~ prolly only for roster setup
-- ~~market price import~~
-- resolution
-  - need to re-add this to neighbor
-- enable/disable checkbox
-- move treatment selection to sidebar, accomodate the text somehow
-- special budget & graph
-- total gold row
-
 ## Roadmap
 
-### 1st: re-write the frontend
+### 1st: ~~re-write the frontend~~
 
-1. ~~Strip out EVERYTHING that currently exists to use a single "store" (every char needs its own "store")~~
-2. Reorganize the UI to be:
-    - ~~left side hotbar with a button for roster setup (which is its own "page"), hotbar will contain selectable characters later~~ char & roster setup on the top probably, left sidebar for different pages including:
-        - ~~ Main (simple status input, cost distribuiton / input, simple optimizer instructions)~~
-        - ~~detailed status input~~
-        - ~~Advanced optimizer insturctions (allow user inputting here also)~~
+### 2nd: ~~Serca~~
 
-        - LONG TERM chest opening optimizaiton
-        - maybe put control panel on the sidebar here also
-        - LONG TERM Importing (uwuowo, ocr)
-        - Forecast mode
+### 3rd: ~~Advanced honing optimization~~
 
-    - ~~roster page reflects currently selected character, which will include"inputs", "cost distribution", "optimizer", "forecast" etc, need to figure out how to lay this out~~
-    - Similarly roster page will need:
-        - all the roster budget & prices input in a big table
-            - tradable owned, roster owned, market price, trendline maybe?
-        - character selection / a lil summary
+### 4th: ~~ Tradable / bound mats distinction~~
 
-    - Header
-        - Logo
-        - Roster set up
-        - Characters
-        - button for making new chars
-        - LONGTERM Price trend viewer, or maybe bake this into the prices?
-
-    - Footer
- actually really need to figure out how to lay these out, maybe it'll be easier once I can look at everything wth my eyeballs
-
-Specifically:
-
-- this opens the door for persistent special & adv caches? this would make it easy to put pre-computed table in (just write it in js on intializaiton)
-  - figure out how to serialize & deserialize ahashmap, right now its as if there's no caching
-- this also opens the door for when we know the current state is good already on optimizer calls
-
-#### Char page - Upgrade status inputs
-
-- ~~maybe import via uwuowo?~~ prolly not, even if i decide to add it it'll have to be on the roster setup page where we create a character
-
-#### Char page - Material cost distribution
-
-- ~~3 columns,~~ ~~6~~ 5 columns
-    0. enable/disable checkbox
-    1. ~~user bound mats input, starts at 0 by default~~
-    2. ~~Avg cost~~ ~~/ top x% bottom x%,~ allow custom inputs in the header~~ ~~i think just making hover more obvious is good enough, the interpolation / whatever problem is gonna be aids~~
-    3. ~~Gold spent buying this mat / Gold you would've made selling this mat + Gold spent buying this mat ~~~~(maybe make this col optional)~~ selectable
-    4. ~~The corresponding graphs~~
-
-- This can get quite long so ~~need to hide useless / irrelevant graphs and a show all button or something~~ ~~3 buttons to toggle between the 3 categories~~ dropdown
-
-- ~~Add grid lines?~~
-- single piece hoverable artisan
-
-### Char page - Special
-
-- Maybe make a row for free taps num success vs chances
-- where the special budget input should go
-
-#### Char page - Optimizer instructions
-
-- ~~text instructions instaed of boxes, no longer allow custom states input cos the UI is too cluttered~~
-- ~~2 rows for juice & book, e.g. juice x10, no juice until x% artisan, juice after that~~
-- similar text instructions for advanced honing
-- "succeed and deduct costs" button, which prompts for either number of taps via a slider, which should show artisan & material costs / predicted material remaining
-  - just ignore <0?
-
-#### Char page - Chest opening optimization
+### 5th : Box opening recommendation
 
 - Each chest type is like another state, [how_many_option_1, howmany option_2] etc, should work readily with the optimizer
-  - need to conver these states into the budgetse shouldn't be that hard
+  - need to convert these states into the budgets shouldn't be that hard
 
-#### Roster page - main
-
-- add char, delete char, duplicate that kind of stuff
-
-### Roster page - prices
-
-- ~~Tradable, rosterbound, price inputs~~
-- set up api & auto importing form loa buddy
-- make bundle size suffix not take up horizontal space
-
-### Tooltip / popup
-
-- Kinda need a popup in some places, maybe make this reusable but maybe not possible
-  - switching tiers warning
-  - succeeding & decuting warning / selection
-  - footer / changelog maybe
-  - hints / explanations
-  
-### Footer
-
-- add footer for discord github links and whatnot
-
-### 2nd: Serca
-
-Mixing serca and t4 is lowkey possible if we make the assumption that Serca mats -> t4 mats conversion is possible (so we just convert serca mats to x5 t4 mats and call it a day) but this assumption is kinda dumb and probably won't be very useful anyway, THEREFORE:
-
-1. ~~Implement / rework something about constant.rs, maybe split up tier-invariants and things that change. Get the data from icepeng.~~
-2. ~~Modify parser to know what tier is happening~~
-3. User can select tier, and if anything is already owned, present option to convert t4 to serca. ~~Also add a button to divide by 5~~
-4. Add a toggle for "allow converting t4 mats to serca mats" for each char
-    - roster_config needs 2 sets of everything ig
-    - pass the converted / unconverted mats to wasm, also auto pick the better deal out of the two
-
-MISSING DATA:
-
-1. Unlock costs
-2. Silver costs
-3. Cost, chance, juice information below +11
-4. Special leaps
-
-### 3rd: Advanced honing optimization
-
-I started on this but uh this is much harder than I thought and Serca is much closer so it'll have to wait on the backburner for now, but here's some steps:
-
-NONE OF THIS DATA STUFF TURNED OUT TO BE NECESSARY because DP is op and we can just compute the adv honing distribution on the fly.
-
-1. ~~Make an adapter thingy to go from (id list) -> (partially (but sufficiently) initialized cache array of array buffers), which will need to:~~
-    1. ~~check if its in cache~~
-    2. ~~if not, fetch (everything needed at the same time) -> put into cache~~
-    3. ~~pass this array into rust (I hope this work? it honestly might not idk)~~
-2. ~~Handle this on the rust side, specifically:~~
-    1. ~~Make parser accept this data~~
-    2. ~~ Write this data into prep_output (definitely serde skip on this one)~~
-    3. ~~Make "update individual dist" and stuff update for advanced honing upgrades, which is just reading from this array~~
-    4. ~~Make sure that state and everything works with this~~
-    5. ~~Make neighbour function perturb this state correctly~~
-3. Display and allow for edit all the necessary information in js:
-    1. Current progress (xp and balls, should be text inputs and dropdown?)
-    2. suggested strategy (state)
-4. Maybe hard-code the most common setup
-5. Remember to corroborate the new dp results with old mc results
-6. Allow arbitrary juice / scroll effectiveness (currently it uses hardcoded values and ignore the inputted ones)
-7. The way the states are curerntly implemented it doesn't actually allow different types of scrolls? idk we'll cross that bridge when we get there ig
-
-- ~~This kinda uses an egregious amt of memory rn, need to benchmark how much the cache actually helps and how to reduce it~~
-- ~~it's also kinda just slow, will prolly benefit from hard-coding known stuff~~
-
-### 3th : Tradable / bound mats distinction
-
-- Treat roster bound as ~~tradable? maybe make this a toggle~~ ~~bound, because that makes no sense~~ allow user to select via a radio selector or something
-  - ~~Toggle should be "treat tradable as roster bound", which should be on by default because people are more worried about how much gold tehy will actually spend~~
-- ~~update the SA computation to allow for 2 breakpoints~~
-  - ~~will need to have 2 different budgets and another set of prices but shouldn't be that hard~~
-- Re-do test payloads because i changed like every field name
-
-### 4th : Box opening recommendation
-
-- ~~This will have to be rather rudimentary~~
-- ~~Maybe just ignore the fact that we have boxes until we deduct costs? this way we treat boxes as tradables~~
-
-- actually this can just be another state kinda like special state that we can optimize? a lot of work tho
-
-### 4.5th : Hard limit on juice usages
+### 5.5th : Hard limit on juice usages
 
 - disallow states that can use more than a certain amount of juice / scroll / books
   - this kinda falls apart with normal honing cos we can finish early, but can just make a pessimistic assumption
@@ -178,7 +27,7 @@ NONE OF THIS DATA STUFF TURNED OUT TO BE NECESSARY because DP is op and we can j
 
 - I mean it's kinda redundant cos we can just set the price to like 9999999?
 
-### 5th: OCR
+### 6th: OCR
 
 the ark grid ocr is so goated, it should be possible with mats too
 
@@ -189,11 +38,22 @@ the ark grid ocr is so goated, it should be possible with mats too
 
 - this is probably a lot more complicated than I realize esp with boxes and shit but will make the world of difference
 
-### 6th: Forecast mode
+### 7th: Forecast mode
 
 Haven't thought enough about the specifics but shouldn't be that hard once everything else is in place.
 
-### 7th: Optimizer Improvements
+- Recommended pushing dates for main / rat alt
+- seletable income choices
+  - gold earning raids
+  - mat earning raids, boxes etc
+  - paradise (get the average from one of the reddit posts or generate my own? will need to data mine?)
+  - configurable dailies
+  - guild
+  - unas thing
+  - daily login
+  - solo shop
+
+### 8th: Optimizer Improvements
 
 - figure out if the restarts are carrying the algorithm and maybe do SA properly
 - somehow make the pity length more explicit cos right now a lot of moves don't do anything
@@ -205,7 +65,7 @@ Haven't thought enough about the specifics but shouldn't be that hard once every
   - like there can't really be "overfitting" cos we have like 2 parameters
   - this is definitely a very much long term goal
 
-### 8th: Price trend viewer
+### 9th: Price trend viewer
 
 need to pull as much historical data as possible from loa-buddy -> store & pull from my own data base -> keep updating this
 
@@ -217,72 +77,24 @@ Maybe discord integration after this / uwuowo import / cross-device storage stuf
 
 Below are some rambling / brainstorming / Misc stuff
 
-### UI
-
-- need to figureout how to lay everything out
-  - roster bound mats toggle / selection? should only allow one char to use roster bound (boxes) mats
-  - need to accomodate serca and shit
-  - need to rework all the variables and everything
-    - also need to accomodate forecast mode somehow? like there'll be multiple calls to optimizer ig?
-  - actually deduct from budget? will need to re-work how things work (probably deduct when success button press and skip all succeeded upgrades completely)
-
-### Char selection page
-
-- roster tracking & income estimation
-- copy paste from uwuowo (maybe just fetch?)
-- toggle "done" upgrades
-- also actually deduct from the mats
-- toggle using roster bound / tradable mats or not
-- maybe can do 2 breakpoints?
-- actually can draw some huge inspirations from here <https://next-gen.materialsproject.org/materials/mp-48>
-  - as in side-by-side boxes, this would work much better for mobile
-  -~ and a toolbar on the left to select mode / char and what not~
-- will need to figure out how to have this grid system for multiple characters
-
 ### Misc UI
 
+- single piece hoverable artisan (if only 1 piece selected, show % chance and artisan on graph)
 - Input arithmetic parsing(e.g. allow inputs like 25*1234 for easier boxes calculation)
 - Ctrl z, delete
-- Hover question mark tooltips for various systems, but still aim to be intuitive
-- Adjustable week number in raw / Gold graph
-- Achieved ilevel
-- Something seems to be broken in drag-to-select spreadsheetgrid
-- marquee for state grid also?
-- rearrange where the gold cost is
-  - maybe make a toggle of including tradable budget & showing actual gold spent instead?
-- button to deduct costs?
-- ~~default to cumulative and ~~add 10 percentile points maybe
-- "which one should i pick"
-  - pre-set selections such as red vs blue, red juice vs blue juice, scroll boxes etc
-- success update based on one or a few mat types
+- drag to select
+- make bundle size suffix not take up horizontal space
 
-### Forecast mode
-
-- idk this will have to come after having individual character pages i think
-- can definitely do chances (the cool graph) for individual mats, might have to use MC for the overall success rate?
-  - Recommended pushing dates for main / rat alt
-
-- seletable income choices
-  - gold earning raids
-  - mat earning raids, boxes etc
-  - paradise (get the average from one of the reddit posts or generate my own? will need to data mine?)
-  - configurable dailies
-  - guild
-  - unas thing
-  - daily login
-  - solo shop
-  
 ### Misc
 
-- JUICE CHESTS AND MAYBE EVEN BOOKS CHESTS
 - add assertions to a lot of prepoutput stuff
 - start working on visualizing this stuff
   - put all possible states on one axis (must be small support like 5? 10? ) and sort by number of juice used, then color/ 3d height?
-- verify advanced honing using Monte Carlo
 
 ### Optimizations
 
 - find_min_max can probably do with some kind of caching but i can't figure it out rn
+- i know front end is hideous but idrk how to do better
 
 ### Other features
 
@@ -290,6 +102,187 @@ Below are some rambling / brainstorming / Misc stuff
 
 ## Done / cancelled
 
+- ~~Treat roster bound as~~ ~~tradable? maybe make this a toggle~~ ~~bound, because that makes no sense~~ allow user to select via a radio selector or something
+  - ~~Toggle should be "treat tradable as roster bound", which should be on by default because people are more worried about how much gold tehy will actually spend~~
+- ~~update the SA computation to allow for 2 breakpoints~~
+  - ~~will need to have 2 different budgets and another set of prices but shouldn't be that hard~~
+- ~~Re-do test payloads because i changed like every field name~~
+~~I started on this but uh this is much harder than I thought and Serca is much closer so it'll have to wait on the backburner for now, but here's some steps:~~
+
+~~NONE OF THIS DATA STUFF TURNED OUT TO BE NECESSARY because DP is op and we can just compute the adv honing distribution on the fly.~~
+
+1. ~~Make an adapter thingy to go from (id list) -> (partially (but sufficiently) initialized cache array of array buffers), which will need to:~~
+    1. ~~check if its in cache~~
+    2. ~~if not, fetch (everything needed at the same time) -> put into cache~~
+    3. ~~pass this array into rust (I hope this work? it honestly might not idk)~~
+2. ~~Handle this on the rust side, specifically:~~
+    1. ~~Make parser accept this data~~
+    2. ~~ Write this data into prep_output (definitely serde skip on this one)~~
+    3. ~~Make "update individual dist" and stuff update for advanced honing upgrades, which is just reading from this array~~
+    4. ~~Make sure that state and everything works with this~~
+    5. ~~Make neighbour function perturb this state correctly~~
+3. ~~Display and allow for edit all the necessary information in js:~~
+    1. ~~Current progress (xp and balls, should be text inputs and dropdown?)~~
+    2. ~~suggested strategy (state)~~
+4. ~~Maybe hard-code the most common setup~~
+5. ~~Remember to corroborate the new dp results with old mc results~~
+6. ~~Allow arbitrary juice / scroll effectiveness (currently it uses hardcoded values and ignore the inputted ones)~~
+7. ~~The way the states are curerntly implemented it doesn't actually allow different types of scrolls? idk we'll cross that bridge when we get there ig~~
+
+- ~~This kinda uses an egregious amt of memory rn, need to benchmark how much the cache actually helps and how to reduce it~~
+- ~~it's also kinda just slow, will prolly benefit from hard-coding known stuff~~
+
+1. ~~Strip out EVERYTHING that currently exists to use a single "store" (every char needs its own "store")~~
+2. ~~Reorganize the UI to be:~~
+    - ~~left side hotbar with a button for roster setup (which is its own "page"), hotbar will contain selectable characters later~~ ~~char & roster setup on the top probably, left sidebar for different pages including:~~
+        - ~~ Main (simple status input, cost distribuiton / input, simple optimizer instructions)~~
+        - ~~detailed status input~~
+        - ~~Advanced optimizer insturctions (allow user inputting here also)~~
+
+        - ~~LONG TERM chest opening optimizaiton~~
+        - ~~maybe put control panel on the sidebar here also~~
+        - ~~LONG TERM Importing (uwuowo, ocr)~~
+        - ~~Forecast mode~~
+
+    - ~~roster page reflects currently selected character, which will include"inputs", "cost distribution", "optimizer", "forecast" etc, need to figure out how to lay this out~~
+    - ~~Similarly roster page will need:~~
+        - ~~all the roster budget & prices input in a big table~~
+            - ~~tradable owned, roster owned, market price, trendline maybe?~~
+        - ~~character selection / a lil summary~~
+
+    - ~~Header~~
+        - ~~Logo~~
+        - ~~Roster set up~~
+        - ~~Characters~~
+        - ~~button for making new chars~~
+        - ~~LONGTERM Price trend viewer, or maybe bake this into the prices?~~
+
+    - ~~Footer~~
+~~ actually really need to figure out how to lay these out, maybe it'll be easier once I can look at everything wth my eyeballs~~
+
+~~Specifically:~~
+
+- ~~this opens the door for persistent special & adv caches? this would make it easy to put pre-computed table in (just write it in js on intializaiton)~~
+  - ~~figure out how to serialize & deserialize ahashmap, right now its as if there's no caching~~
+- ~~this also opens the door for when we know the current state is good already on optimizer calls~~
+
+~~#### Char page - Upgrade status inputs~~
+
+- ~~maybe import via uwuowo?~~ prolly not, even if i decide to add it it'll have to be on the roster setup page where we create a character
+
+~~#### Char page - Material cost distribution~~
+
+- ~~3 columns,~~ ~~6~~ ~~5 columns~~
+    0.~~ enable/disable checkbox~~
+    1. ~~user bound mats input, starts at 0 by default~~
+    2. ~~Avg cost~~ ~~/ top x% bottom x%,~ allow custom inputs in the header~~ ~~i think just making hover more obvious is good enough, the interpolation / whatever problem is gonna be aids~~
+    3. ~~Gold spent buying this mat / Gold you would've made selling this mat + Gold spent buying this mat ~~~~(maybe make this col optional)~~ selectable
+    4. ~~The corresponding graphs~~
+
+- This can get quite long so ~~need to hide useless / irrelevant graphs and a show all button or something~~ ~~3 buttons to toggle between the 3 categories~~ dropdown
+
+~~#### Char page - Chest opening optimization~~
+
+~~### Roster page - prices~~
+
+- ~~Tradable, rosterbound, price inputs~~
+- ~~set up api & auto importing form loa buddy~~
+- ~~make bundle size suffix not take up horizontal space~~
+
+~~### Tooltip / popup~~
+
+- ~~Kinda need a popup in some places, maybe make this reusable but maybe not possible~~
+  - ~~switching tiers warning~~
+  - ~~succeeding & decuting warning / selection~~
+  - ~~footer / changelog maybe~~
+  - ~~hints / explanations~~
+  
+~~### Footer~~
+
+- ~~add footer for discord github links and whatnot~~
+
+~~Mixing serca and t4 is lowkey possible if we make the assumption that Serca mats -> t4 mats conversion is possible (so we just convert serca mats to x5 t4 mats and call it a day) but this assumption is kinda dumb and probably won't be very useful anyway, THEREFORE:~~
+
+1. ~~Implement / rework something about constant.rs, maybe split up tier-invariants and things that change. Get the data from icepeng.~~
+2. ~~Modify parser to know what tier is happening~~
+3. ~~User can select tier, and if anything is already owned, present option to convert t4 to serca.~~ ~~Also add a button to divide by 5~~
+4. ~~Add a toggle for "allow converting t4 mats to serca mats" for each char~~
+    - ~~roster_config needs 2 sets of everything ig~~
+    - ~~pass the converted / unconverted mats to wasm, also auto pick the better deal out of the two~~
+
+~~MISSING DATA:~~
+
+1. ~~Unlock costs~~
+2. ~~Silver costs~~
+3. ~~Cost, chance, juice information below +11~~
+4. ~~Special leaps~~
+
+- ~~Add grid lines?~~
+
+~~### Char page - Special~~
+
+- ~~Maybe make a row for free taps num success vs chances~~
+- ~~where the special budget input should go~~
+
+~~#### Char page - Optimizer instructions~~
+
+- ~~text instructions instaed of boxes, no longer allow custom states input cos the UI is too cluttered~~
+- ~~2 rows for juice & book, e.g. juice x10, no juice until x% artisan, juice after that~~
+- ~~similar text instructions for advanced honing~~
+- ~~"succeed and deduct costs" button, which prompts for either number of taps via a slider, which should show artisan & material costs / predicted material remaining~~
+  - ~~just ignore <0?~~
+- ~~Hover question mark tooltips for various systems, but still aim to be intuitive~~
+
+- ~~~~Adjustable week number in raw / Gold graph~~
+- ~~Achieved ilevel~~
+
+- ~~Something seems to be broken in drag-to-select spreadsheetgrid~~
+- ~~marquee for state grid also?~~
+- ~~rearrange where the gold cost is~~
+  - ~~maybe make a toggle of including tradable budget & showing actual gold spent instead?~~
+- ~~button to deduct costs?~~
+- ~~default to cumulative and ~~add 10 percentile points maybe
+- "which on~~e should i pick"~~
+  - ~~pre-set selections such as red vs blue, red juice vs blue juice, scroll boxes etc~~
+- ~~success update based on one or a few mat types~~
+
+~~### Char selection page~~
+
+- ~~roster tracking & income estimation~~
+- ~~copy paste from uwuowo (maybe just fetch?)~~
+- ~~toggle "done" upgrades~~
+- ~~also actually deduct from the mats~~
+- ~~toggle using roster bound / tradable mats or not~~
+- ~~maybe can do 2 breakpoints?~~
+- ~~actually can draw some huge inspirations from here <https://next-gen.materialsproject.org/materials/mp-48>~~
+  - ~~as in side-by-side boxes, this would work much better for mobile~~
+  - ~~and a toolbar on the left to select mode / char and what not~~
+- ~~will need to figure out how to have this grid system for multiple characters~~
+- ~~verify advanced honing using Monte Carlo~~
+
+- ~~JUICE CHESTS AND MAYBE EVEN BOOKS CHESTS~~
+~~#### Roster page - main~~
+
+- ~~add char, delete char, duplicate that kind of stuff~~
+- ~~need to figureout how to lay everything out~~
+  - ~~roster bound mats toggle / selection? should only allow one char to use roster bound (boxes) mats~~
+  - ~~need to accomodate serca and shit~~
+  - ~~need to rework all the variables and everything~~
+    - ~~also need to accomodate forecast mode somehow? like there'll be multiple calls to optimizer ig?~~
+  - ~~actually deduct from budget? will need to re-work how things work (probably deduct when success button press and skip all succeeded upgrades completely)~~
+
+- ~~Sidebars~~
+  - ~~logo -> burger on mobile~~ ~~prolly only for roster setup~~
+- ~~market price import~~
+- ~~resolution (is it really necessary actually)~~
+  - need to re-add this to neighbor
+- ~~enable/disable checkbox~~
+- ~~move treatment selection to sidebar, accomodate the text somehow~~
+- ~~special budget & graph~~
+- ~~total gold row~~
+- ~~char creation~~
+- ~~timestamp & dont re-pull~~
+- ~~rework the use special leaps butotn~~
 ~~#### Char page - Detailed status inputs~~
 
 - ~~artisan, adv xp etc on a separate page?~~

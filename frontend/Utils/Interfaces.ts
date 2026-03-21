@@ -48,7 +48,7 @@ export interface StateBundle {
     special_invalid_index?: number
     latest_special_probs?: number[]
     min_resolution: number
-    average_breakdown?: number[]
+    gold_breakdown?: number[]
     prep_output: any
     special_cache: any
     adv_cache: any
@@ -105,27 +105,28 @@ export function create_input_column(type: InputType, keys: string[], data?: stri
 export function input_column_to_num(input_column: InputColumn): number[] {
     return input_column.data.map((x: string, index: number) => parse_input(input_column, index, x))
 }
-export function forbid_non_numeric(input_column: InputColumn, index: number, event: Event) {
-    const el = event.target as HTMLInputElement
-    if (!input_column.enabled[index]) {
-        el.value = ""
-        return ""
-    }
-    const filtered = String(el.value).replace(/[^\d,]/g, "")
-    el.value = filtered
-    return filtered
-}
+// export function forbid_non_numeric(input_column: InputColumn, index: number, event: Event) {
+//     const el = event.target as HTMLInputElement
+//     if (!input_column.enabled[index]) {
+//         el.value = ""
+//         return ""
+//     }
+//     const filtered = String(el.value).replace(/[^\d,]/g, "")
+//     el.value = filtered
+//     return filtered
+// }
 export function get_modified_cell(input_column: InputColumn, index: number, event: Event) {
     if (!input_column.enabled[index]) {
         return input_column.data[index]
     }
-    return parse_input(input_column, index, (event.target as HTMLInputElement).value).toLocaleString()
+    return parse_input(input_column, index, (event.target as HTMLInputElement).value.replace(/[^\d,]/g, "")).toLocaleString()
 }
 export function parse_input(input_column: InputColumn, index: number, input: string): number {
     if (!input_column.enabled[index]) {
-        return 0
+        return 999999999
     }
     let out = input_column.type === InputType.Int ? parseInt(input.replace(/,/g, "")) : parseFloat(input.replace(/,/g, ""))
+    // console.log(input_column.upper_bound)
     return isFinite(out) ? Math.min(input_column.upper_bound[index], out) : 0
 }
 export function fill_new_tiers_with_default(old: InputColumn[]) {
@@ -153,7 +154,7 @@ export type MaterialInput = OneMaterial[]
 
 // idk why i used is_adv here but whatever
 //          (enabled),  piece type, upgrade index, is_adv, normal_progress, state, unlock, succeeded, adv_progress
-export type OneUpgrade = [number, number, boolean, number | null, OneState[], boolean, boolean, AdvProgress | null]
+export type OneUpgrade = [number, number, boolean, number | null, null, boolean, boolean, AdvProgress | null]
 export type UpgradeInput = OneUpgrade[]
 export const DEFAULT_ONE_UPGRADE = [0, [], false, false, [0, 0, false, false]] // excluding the first 3
 
@@ -161,9 +162,12 @@ export const DEFAULT_ONE_UPGRADE = [0, [], false, false, [0, 0, false, false]] /
 // and to force starting states for already failed taps
 // we do not use this KeyedUpgrades type in the UI
 export type KeyedUpgrades = Record<OneUpgradeKey, [boolean, OneUpgrade, number | null, number | null]>
-type OneUpgradeKey = `${number},${number},${"true" | "false"}`
-export function to_upgrade_key(piece_type: number, upgrade_index: number, is_adv: boolean): OneUpgradeKey {
-    return `${piece_type},${upgrade_index},${is_adv}`
+// the boolean was meant to indicate whether or not it's ticked, but now we just delete the entry if its not so its redundant
+// the other 2 numbers were meant to be used to override the number of juice & books but i gave up on that (too confusing UI wise i think)
+
+type OneUpgradeKey = `${number},${number},${"true" | "false"},${number}`
+export function to_upgrade_key(piece_type: number, upgrade_index: number, is_adv: boolean, tier: number): OneUpgradeKey {
+    return `${piece_type},${upgrade_index},${is_adv},${tier}`
 }
 
 export function keyed_to_array(keyed_upgrades: KeyedUpgrades, keyed_states: KeyedStates): OneUpgrade[] {
@@ -173,51 +177,43 @@ export function keyed_to_array(keyed_upgrades: KeyedUpgrades, keyed_states: Keye
             .filter(([_, x]) => x[0])
             .map(([key, arr]) => {
                 const out = toRaw(arr[1])
-                console.log(keyed_states)
+                // console.log(keyed_states)
                 out[4] = toRaw(keyed_states[key]) ?? []
                 return out
             })
     )
 }
-export function grids_to_keyed(normal_grid: StatusGrid, adv_grid: StatusGrid, all_keyed: KeyedUpgrades) {
-    // console.log(all_keyed)
+export function grids_to_keyed(normal_grid: StatusGrid, adv_grid: StatusGrid, all_keyed: KeyedUpgrades, tier: number) {
+    // console.log("begin", all_keyed)
+    let new_keyed: KeyedUpgrades = {}
     for (const [piece_type, row] of status_to_bool_grid(normal_grid).entries()) {
         for (const [upgrade_index, cell] of row.entries()) {
-            let key = to_upgrade_key(piece_type, upgrade_index, false)
+            let key = to_upgrade_key(piece_type, upgrade_index, false, tier)
             if (cell) {
                 if (key in all_keyed) {
-                    all_keyed[key] = all_keyed[key]
-                    all_keyed[key][0] = true
+                    new_keyed[key] = all_keyed[key]
+                    new_keyed[key][0] = true
                 } else {
-                    all_keyed[key] = [true, [piece_type, upgrade_index, false, 0, [], false, false, null], 0, 0]
-                }
-            } else {
-                if (key in all_keyed) {
-                    all_keyed[key] = all_keyed[key]
-                    all_keyed[key][0] = false
+                    new_keyed[key] = [true, [piece_type, upgrade_index, false, 0, null, false, false, null], 0, 0]
                 }
             }
         }
     }
     for (const [piece_type, row] of status_to_bool_grid(adv_grid).entries()) {
         for (const [upgrade_index, cell] of row.entries()) {
-            let key = to_upgrade_key(piece_type, upgrade_index, true)
+            let key = to_upgrade_key(piece_type, upgrade_index, true, tier)
             if (cell) {
                 if (key in all_keyed) {
-                    all_keyed[key] = all_keyed[key]
-                    all_keyed[key][0] = true
+                    new_keyed[key] = all_keyed[key]
+                    new_keyed[key][0] = true
                 } else {
-                    all_keyed[key] = [true, [piece_type, upgrade_index, true, null, [], false, false, [0, 0, false, false]], null, null]
-                }
-            } else {
-                if (key in all_keyed) {
-                    all_keyed[key] = all_keyed[key]
-                    all_keyed[key][0] = false
+                    new_keyed[key] = [true, [piece_type, upgrade_index, true, null, null, false, false, [0, 0, false, false]], null, null]
                 }
             }
         }
     }
-    return all_keyed
+    // console.log("after", new_keyed)
+    return new_keyed
 }
 
 export type HistogramPair = [number, number]
@@ -225,6 +221,8 @@ export interface HistogramOutputs {
     cum_percentiles: HistogramPair[][]
     average: number[]
     state_bundle: StateBundle
+    bound_chance: number[]
+    tradable_chance: number[]
 }
 
 export interface EvalAverageOutput {

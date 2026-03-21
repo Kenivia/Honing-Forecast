@@ -66,10 +66,10 @@ function sort_upgrades(): [Upgrade, number][] {
 let sorted_upgrade_arr = computed(sort_upgrades)
 </script>
 <template>
-    <section class="hf-card">
+    <section class="hf-card hf-instructions-pane">
         <div class="hf-card-header">
             <div class="hf-card-title"><span class="hf-card-title-dot" />Tap Instructions</div>
-            <span class="hf-card-hint">Top to bottom execution</span>
+            <span class="hf-card-hint">Go from top to bottom</span>
         </div>
         <div class="hf-card-body">
             <div v-if="active_profile.optimizer_worker_bundle.result">
@@ -85,3 +85,11 @@ let sorted_upgrade_arr = computed(sort_upgrades)
         </div>
     </section>
 </template>
+<style>
+.hf-instructions-pane {
+    width: min(100%, 700px);
+    overflow-x: auto;
+    overflow-y: scroll;
+    max-height: 1500px;
+}
+</style>

@@ -1,5 +1,6 @@
 use ahash::AHashMap;
 
+use crate::constants::SPECIAL_TOL;
 use crate::support::Support;
 use crate::{
     advanced_honing::utils::{AdvConfig, AdvDistTriplet},
@@ -31,13 +32,17 @@ impl Upgrade {
 
 impl StateBundle {
     /// These are only used for generating the histogram
-    /// note that for the purpose of making consistent & comparable x-axises (or whatever the plural is) I should evaluate the same state every time, but then juice won't agree with that so maybe i should just write a special case for that? idk cbb
-    pub fn one_tap(&self) -> Vec<i64> {
+    /// free tap all possible free taps, one tap othewise
+    pub fn luckiest_mf(&self) -> Vec<i64> {
         let mut out = vec![0i64; self.prep_output.juice_info.total_num_avail];
+        let latest = self.latest_special_probs.as_ref().unwrap();
         for (support_index, cost) in out.iter_mut().enumerate() {
             *cost += (self
                 .extract_all_support_with_meta(support_index as i64)
-                .map(|support| support.access_min(false)) // does not consider skipped to make a better graph
+                .enumerate()
+                .map(|(index, support)| {
+                    support.access_min(*latest.get(index).unwrap_or(&0.0) > SPECIAL_TOL)
+                }) // does not consider skipped to make a better graph
                 .sum::<f64>())
             .ceil() as i64;
         }
