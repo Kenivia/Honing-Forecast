@@ -25,7 +25,7 @@ const optimizer_worker = active_profile.value.optimizer_worker_bundle
 // Currently TreatRosterAsTradable is not selectable
 const treatment_tick = ref(active_profile.value.optimizer_treatment_plan == TreatmentPlan.TreatRosterAsBound)
 watchEffect(() => {
-    console.log("changed")
+    // console.log("changed")
     if (treatment_tick.value) {
         active_profile.value.optimizer_treatment_plan = TreatmentPlan.TreatRosterAsBound
     } else {

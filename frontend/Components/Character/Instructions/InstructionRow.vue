@@ -250,7 +250,8 @@ function write_normal_progress() {
 function write_adv_progress() {
     current_adv_upgrade.value = Math.max(props.upgrade.upgrade_index * 10, Math.min((props.upgrade.upgrade_index + 1) * 10 - 1, current_adv_upgrade.value))
     current_adv_xp.value = Math.floor(Math.max(0, Math.min(90, current_adv_xp.value)) / 10) * 10
-    current_grace_progress.value = Math.max(0, 6, current_grace_progress.value)
+    // console.log(current_grace_progress.value)
+    current_grace_progress.value = Math.min(6, Math.max(0, current_grace_progress.value))
 
     active_profile.value.keyed_upgrades[
         to_upgrade_key(props.upgrade.piece_type, props.upgrade.upgrade_index, props.upgrade.is_normal_honing, active_profile.value.tier)
@@ -464,8 +465,11 @@ const progress_expanded = ref(props.upgrade.alr_failed > 0)
                             <label>Grace progress</label>
                             <input type="number" v-model.number="current_grace_progress" min="0" max="6" @change="write_adv_progress" />
 
-                            <label v-if="current_grace_progress === 0" class="check-label">
-                                <input type="checkbox" v-model="next_free" @change="write_adv_progress" /> Next free
+                            <label
+                                v-if="current_grace_progress === 0 && (current_adv_xp > 0 || current_adv_upgrade > upgrade.upgrade_index * 10)"
+                                class="check-label"
+                            >
+                                <input type="checkbox" v-model="next_free" @change="write_adv_progress" /> Next free (Chisel)
                             </label>
                             <label v-if="current_grace_progress === 6 && upgrade.upgrade_index >= 2" class="check-label">
                                 <input type="checkbox" v-model="next_big" @change="write_adv_progress" /> Naber's Awl

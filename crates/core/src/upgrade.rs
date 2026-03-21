@@ -161,7 +161,14 @@ impl Upgrade {
         double_balls: bool,
         juice_info: &JuiceInfo,
         adv_cache: &mut AHashMap<AdvConfig, AdvDistTriplet>,
+        state_given: Vec<(bool, usize)>,
     ) -> Self {
+        let state = if state_given.len() == juice_info.adv_uindex_to_id[upgrade_index].len() {
+            State::new(state_given)
+        } else {
+            State::new_empty(juice_info.adv_uindex_to_id[upgrade_index].len())
+        };
+
         let mut out = Self {
             is_normal_honing: false,
             normal_dist: ProbDist::new(Vec::new()),
@@ -173,7 +180,7 @@ impl Upgrade {
             artisan_rate: 0.0,
             upgrade_index,
             clean_prob_dist_len: 0,
-            state: State::new_empty(juice_info.adv_uindex_to_id[upgrade_index].len()),
+            state,
             cost_dist: vec![Support::default(); juice_info.total_num_avail],
 
             name_string: {

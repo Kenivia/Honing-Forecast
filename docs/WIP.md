@@ -87,6 +87,7 @@ Below are some rambling / brainstorming / Misc stuff
 ### Misc
 
 - add assertions to a lot of prepoutput stuff
+  - also make a lot more test_payload that actually cover edge cases
 - start working on visualizing this stuff
   - put all possible states on one axis (must be small support like 5? 10? ) and sort by number of juice used, then color/ 3d height?
 
