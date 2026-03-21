@@ -11,25 +11,11 @@
 
 ### 3rd: ~~Advanced honing optimization~~
 
-### 4th: ~~ Tradable / bound mats distinction~~
+### 4th: ~~Tradable / bound mats distinction~~
 
-### 5th : Box opening recommendation
+### 5th: OCR
 
-- Each chest type is like another state, [how_many_option_1, howmany option_2] etc, should work readily with the optimizer
-  - need to convert these states into the budgets shouldn't be that hard
-
-### 5.5th : Hard limit on juice usages
-
-- disallow states that can use more than a certain amount of juice / scroll / books
-  - this kinda falls apart with normal honing cos we can finish early, but can just make a pessimistic assumption
-    - will prolly need to add an extra column in material_info for the hard limit
-    - keep track of how many juices are used, sample appropriately in neighbour function
-
-- I mean it's kinda redundant cos we can just set the price to like 9999999?
-
-### 6th: OCR
-
-the ark grid ocr is so goated, it should be possible with mats too
+the ark grid ocr (<https://airplaner.github.io/lostark-arkgrid-gem-locator-v2/>) is so goated, it should be possible with mats too
 
 - ocr might be too slow / not necessary? Maybe template matching is better? (but do i really have to carve pictures out pixel by pixel)
   - maybe can store ss of detected hoverbox and do ocr later?
@@ -37,6 +23,20 @@ the ark grid ocr is so goated, it should be possible with mats too
 - will need an intermediate detected mats manifest -> actual mats
 
 - this is probably a lot more complicated than I realize esp with boxes and shit but will make the world of difference
+
+### 6th : Box opening recommendation
+
+- Each chest type is like another state, [how_many_option_1, howmany option_2] etc, should work readily with the optimizer
+  - need to convert these states into the budgets shouldn't be that hard
+
+### 6.5th : Hard limit on juice usages
+
+- disallow states that can use more than a certain amount of juice / scroll / books
+  - this kinda falls apart with normal honing cos we can finish early, but can just make a pessimistic assumption
+    - will prolly need to add an extra column in material_info for the hard limit
+    - keep track of how many juices are used, sample appropriately in neighbour function
+
+- I mean it's kinda redundant cos we can just set the price to like 9999999?
 
 ### 7th: Forecast mode
 
@@ -61,7 +61,7 @@ Haven't thought enough about the specifics but shouldn't be that hard once every
 - some way to estimate how close we are to optimal because re-running this for every week is going to be a bit insane
 - maybe a neural network for an (or few) initial guesses -> optimizer?
 
-- will probably need to set up an actual elo system, i think the test cases should just be a BIG curated list of likely scenarios - maybe collect this from users but that's kinda hard to set up
+- will probably need to set up an actual elo / some kind of evaluation system, i think the test cases should just be a BIG curated list of likely scenarios - maybe collect this from users but that's kinda hard to set up
   - like there can't really be "overfitting" cos we have like 2 parameters
   - this is definitely a very much long term goal
 
@@ -81,7 +81,6 @@ Below are some rambling / brainstorming / Misc stuff
 
 - single piece hoverable artisan (if only 1 piece selected, show % chance and artisan on graph)
 - Input arithmetic parsing(e.g. allow inputs like 25*1234 for easier boxes calculation)
-- Ctrl z, delete
 - drag to select
 - make bundle size suffix not take up horizontal space
 
