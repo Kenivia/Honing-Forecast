@@ -3,6 +3,20 @@ import { ADV_COLS, IconMap, NUM_PIECES, PIECE_NAMES, PLUS_TIER_CONVERSION } from
 import { Upgrade, UpgradeStatus } from "./Interfaces"
 import { storeToRefs } from "pinia"
 
+export function formatCharName(raw: string, index: number, profiles: CharProfile[]): string {
+    let result = raw.replace(/ /g, "") //
+    // 2. Remove non-alphanumeric (keep underscores)
+    result = result.replace(/[^a-zA-Z0-9_]/g, "")
+    // 3. Lowercase every letter after the first
+    result = result.replace(/(?<=.)[A-Z]/g, (c) => c.toLowerCase()).slice(0, 16)
+    // 4. If empty, or already taken by another profile, append index
+    const otherNames = profiles.filter((_, i) => i !== index).map((x) => x.char_name)
+    if (!result || otherNames.includes(result)) {
+        result += String(index)
+    }
+    return result
+}
+
 export function check_adv_all_done() {
     const { active_profile } = storeToRefs(useProfilesStore())
     for (let row = 0; row < NUM_PIECES; row++) {

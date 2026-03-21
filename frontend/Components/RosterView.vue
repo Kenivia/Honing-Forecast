@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { create_default_char_profile, recreate_char_profile, useProfilesStore } from "@/Stores/CharacterProfile"
 import { useRosterStore } from "@/Stores/RosterConfig"
-import { achieved_ilevel, pending_ilevel } from "@/Utils/Helpers"
+import { achieved_ilevel, formatCharName, pending_ilevel } from "@/Utils/Helpers"
 import { WasmOp } from "@/WasmInterface/js_to_wasm"
 import { build_payload } from "@/WasmInterface/payload"
 import { storeToRefs } from "pinia"
@@ -12,20 +12,6 @@ const profile_store = useProfilesStore()
 const { roster_config } = storeToRefs(useRosterStore())
 
 const names = ref(profile_store.profiles.map((x) => x.char_name))
-
-function formatCharName(raw: string, index: number): string {
-    let result = raw.replace(/ /g, "") //
-    // 2. Remove non-alphanumeric (keep underscores)
-    result = result.replace(/[^a-zA-Z0-9_]/g, "")
-    // 3. Lowercase every letter after the first
-    result = result.replace(/(?<=.)[A-Z]/g, (c) => c.toLowerCase()).slice(0, 16)
-    // 4. If empty, or already taken by another profile, append index
-    const otherNames = profile_store.profiles.filter((_, i) => i !== index).map((x) => x.char_name)
-    if (!result || otherNames.includes(result)) {
-        result += String(index)
-    }
-    return result
-}
 
 function add_new_char() {
     let new_char = create_default_char_profile()
@@ -56,7 +42,10 @@ function delete_profile(index) {
     <div class="hf-main-stage">
         <section class="hf-card">
             <div v-for="(profile, index) in profile_store.profiles" class="hf-char-row" :key="index">
-                <input v-model="names[index]" @change="((names[index] = formatCharName(names[index], index)), (profile.char_name = names[index]))" />
+                <input
+                    v-model="names[index]"
+                    @change="((names[index] = formatCharName(names[index], index, profile_store.profiles)), (profile.char_name = names[index]))"
+                />
                 <div class="hf-char-meta">
                     <label class="hf-achieved-ilevel">Achieved ilevel: {{ achieved_ilevel(profile) }}</label>
                     <label class="hf-pending-ilevel">Pending ilevel: {{ pending_ilevel(profile) }}</label>

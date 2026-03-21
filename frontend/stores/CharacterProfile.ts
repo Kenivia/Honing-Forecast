@@ -1,11 +1,24 @@
 import { defineStore, storeToRefs } from "pinia"
-import { create_input_column, createStatusGrid, fill_new_tiers_with_default, InputColumn, InputType, KeyedUpgrades, StatusGrid } from "@/Utils/Interfaces"
+import {
+    create_input_column,
+    createStatusGrid,
+    validate_input_column,
+    InputColumn,
+    InputType,
+    KeyedUpgrades,
+    StatusGrid,
+    get_valid_status_grid,
+    grids_to_keyed,
+    validate_input_column_array,
+    is_enum,
+} from "@/Utils/Interfaces"
 import { createWorkerBundle } from "@/WasmInterface/worker_setup"
 import { ADV_COLS, ALL_LABELS, NORMAL_COLS, NUM_PIECES, SPECIAL_LEAP_LABEL, STORAGE_KEY } from "@/Utils/Constants"
 import { WasmOp } from "@/WasmInterface/js_to_wasm"
-import { debounce } from "@/Utils/Helpers"
+import { debounce, formatCharName } from "@/Utils/Helpers"
 import { build_payload } from "@/WasmInterface/payload"
 import { useRosterStore } from "./RosterConfig"
+import { parse } from "path"
 
 export const useProfilesStore = defineStore("profiles", {
     state: () => DEFAULT_PROFILES_STATE,
@@ -45,43 +58,6 @@ export const useProfilesStore = defineStore("profiles", {
     },
 })
 
-export function load_char_profiles(): { profiles: CharProfile[]; active_profile_index: number } {
-    const raw = localStorage.getItem(STORAGE_KEY + "_char_profiles")
-    if (!raw) return DEFAULT_PROFILES_STATE
-
-    const parsed = JSON.parse(raw)
-    for (let i = 0; i < parsed.profiles.length; i++) {
-        let this_parsed = { ...create_default_char_profile(), ...parsed.profiles[i] }
-        fill_new_tiers_with_default(this_parsed.bound_budgets) // in case new tiers are added...
-        fill_new_tiers_with_default(this_parsed.leftover_price)
-
-        // TODO ADD MORE VALIDATION HERE
-        let this_profile = recreate_char_profile(this_parsed)
-        parsed.profiles[i] = {
-            ...parsed.profiles[i],
-            ...this_profile,
-        }
-        // console.log(parsed.profiles[i], parsed.profiles[i].tier)
-    }
-
-    return { ...DEFAULT_PROFILES_STATE, ...parsed }
-}
-
-export const debounced_write_char_profiles = debounce(write_char_profiles, 500)
-
-export function write_char_profiles(state) {
-    localStorage.setItem(STORAGE_KEY + "_char_profiles", JSON.stringify(state))
-}
-const DEFAULT_PROFILES_STATE = {
-    profiles: [create_default_char_profile()],
-    active_profile_index: 0,
-}
-
-export enum TreatmentPlan {
-    TreatRosterAsTradable, // rat alt, treat roster as if we could've sold them
-    TreatRosterAsBound, // alt, treat char & roster bound as 0 if there's any leftover, taxed market price if any tradable leftover
-    TreatTradableAsBound, // main, treat everything as 0 if any leftover
-}
 export interface CharProfile {
     optimizer_treatment_plan: TreatmentPlan
     histogram_treatment_plan: TreatmentPlan
@@ -107,6 +83,58 @@ export interface CharProfile {
     num_threads: number // currently not used (always 1)
     metric_type: number // currently not used (always 1)
     special_re_render_trigger: boolean // This is here to trigger an update in the special cell in MaterialDist from the change in the confirmation popup in InstructionRow
+}
+
+export function load_char_profiles(): { profiles: CharProfile[]; active_profile_index: number } {
+    const raw = localStorage.getItem(STORAGE_KEY + "_char_profiles")
+    if (!raw) return DEFAULT_PROFILES_STATE
+
+    const parsed = JSON.parse(raw)
+    const default_profile = create_default_char_profile()
+    for (let i = 0; i < parsed.profiles.length; i++) {
+        let this_parsed: CharProfile = { ...create_default_char_profile(), ...parsed.profiles[i] }
+
+        this_parsed.char_name = formatCharName(this_parsed.char_name, i, parsed.profiles.slice(0, i))
+        validate_input_column_array(this_parsed.bound_budgets, default_profile.bound_budgets)
+        validate_input_column_array(this_parsed.leftover_price, default_profile.leftover_price)
+        validate_input_column(this_parsed.special_budget, default_profile.special_budget)
+
+        this_parsed.normal_grid = get_valid_status_grid(this_parsed.normal_grid, default_profile.normal_grid)
+        this_parsed.adv_grid = get_valid_status_grid(this_parsed.adv_grid, default_profile.adv_grid)
+
+        this_parsed.keyed_upgrades = grids_to_keyed(this_parsed.normal_grid, this_parsed.adv_grid, this_parsed.keyed_upgrades, this_parsed.tier)
+
+        this_parsed.tier = this_parsed.tier === 0 || this_parsed.tier === 1 ? this_parsed.tier : 0
+        this_parsed.special_re_render_trigger = true
+        this_parsed.min_resolution = default_profile.min_resolution
+        this_parsed.num_threads = default_profile.num_threads
+        this_parsed.metric_type = default_profile.metric_type
+
+        let this_profile = recreate_char_profile(this_parsed)
+        parsed.profiles[i] = {
+            ...parsed.profiles[i],
+            ...this_profile,
+        }
+        // console.log(parsed.profiles[i], parsed.profiles[i].tier)
+    }
+
+    return { ...DEFAULT_PROFILES_STATE, ...parsed }
+}
+
+export const debounced_write_char_profiles = debounce(write_char_profiles, 500)
+
+export function write_char_profiles(state) {
+    localStorage.setItem(STORAGE_KEY + "_char_profiles", JSON.stringify(state))
+}
+const DEFAULT_PROFILES_STATE = {
+    profiles: [create_default_char_profile()],
+    active_profile_index: 0,
+}
+
+export enum TreatmentPlan {
+    TreatRosterAsTradable, // rat alt, treat roster as if we could've sold them
+    TreatRosterAsBound, // alt, treat char & roster bound as 0 if there's any leftover, taxed market price if any tradable leftover
+    TreatTradableAsBound, // main, treat everything as 0 if any leftover
 }
 
 export function create_default_char_profile(): CharProfile {

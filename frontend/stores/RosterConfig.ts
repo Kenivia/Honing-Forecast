@@ -1,6 +1,6 @@
 import { ALL_LABELS, DEFAULT_TIER, STORAGE_KEY, TIER_LABELS } from "@/Utils/Constants"
 import { debounce } from "@/Utils/Helpers"
-import { create_input_column, fill_new_tiers_with_default, InputColumn, InputType } from "@/Utils/Interfaces"
+import { create_input_column, validate_input_column, InputColumn, InputType, validate_input_column_array } from "@/Utils/Interfaces"
 import { defineStore } from "pinia"
 
 export interface RosterConfig {
@@ -44,9 +44,9 @@ export function load_roster_config(): RosterConfig {
     const raw = localStorage.getItem(STORAGE_KEY + "_roster")
     if (!raw) return DEFAULT_ROSTER_CONFIG
     let out = JSON.parse(raw)
-    fill_new_tiers_with_default(out.mats_prices)
-    fill_new_tiers_with_default(out.roster_mats_owned)
-    fill_new_tiers_with_default(out.tradable_mats_owned)
+    validate_input_column_array(out.mats_prices, DEFAULT_ROSTER_CONFIG.mats_prices)
+    validate_input_column_array(out.roster_mats_owned, DEFAULT_ROSTER_CONFIG.roster_mats_owned)
+    validate_input_column_array(out.tradable_mats_owned, DEFAULT_ROSTER_CONFIG.tradable_mats_owned)
 
     return { ...DEFAULT_ROSTER_CONFIG, ...out }
 }

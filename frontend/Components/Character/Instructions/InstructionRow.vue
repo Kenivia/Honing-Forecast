@@ -233,7 +233,7 @@ watch(
 function write_normal_progress() {
     taps_so_far.value = Math.max(0, Math.min(props.upgrade.normal_dist.length - 1, taps_so_far.value))
     active_profile.value.keyed_upgrades[
-        to_upgrade_key(props.upgrade.piece_type, props.upgrade.upgrade_index, !props.upgrade.is_normal_honing, active_profile.value.tier)
+        to_upgrade_key(props.upgrade.piece_type, props.upgrade.upgrade_index, props.upgrade.is_normal_honing, active_profile.value.tier)
     ][1][3] = taps_so_far.value
 }
 
@@ -243,7 +243,7 @@ function write_adv_progress() {
     current_grace_progress.value = Math.max(0, 6, current_grace_progress.value)
 
     active_profile.value.keyed_upgrades[
-        to_upgrade_key(props.upgrade.piece_type, props.upgrade.upgrade_index, !props.upgrade.is_normal_honing, active_profile.value.tier)
+        to_upgrade_key(props.upgrade.piece_type, props.upgrade.upgrade_index, props.upgrade.is_normal_honing, active_profile.value.tier)
     ][1][7] = [
         (current_adv_upgrade.value - props.upgrade.upgrade_index * 10) * 10 + current_adv_xp.value / 10,
         current_grace_progress.value,

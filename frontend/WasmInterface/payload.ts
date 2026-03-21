@@ -2,7 +2,7 @@ import { ALL_LABELS, BUNDLE_SIZE } from "@/Utils/Constants"
 import { WasmOp } from "./js_to_wasm"
 import { CharProfile, TreatmentPlan } from "@/Stores/CharacterProfile"
 import { RosterConfig } from "@/Stores/RosterConfig"
-import { input_column_to_num, KeyedUpgrades, OneMaterial, OneUpgrade, to_upgrade_key, Upgrade } from "@/Utils/Interfaces"
+import { input_column_to_num, KeyedUpgrades, OneMaterial, OneUpgrade, OneUpgradeKey, to_upgrade_key, Upgrade } from "@/Utils/Interfaces"
 import { toRaw } from "vue"
 
 // I don't think it's possible to directly export this struct from rust to javascript because of all the vectors,
@@ -23,13 +23,14 @@ function keyed_to_array(keyed_upgrades: KeyedUpgrades, upgrade_arr: Upgrade[] | 
     return Object.entries(keyed_upgrades)
         .filter(([_, x]) => x[0])
         .map(([key, arr], index) => {
-            const out = arr
+            const out = toRaw(arr)
+
             let candidate = upgrade_arr?.[index]?.state ?? null
             if (candidate === null) {
                 out[4] = []
             } else {
                 let upgrade: Upgrade = upgrade_arr[index]
-                if (to_upgrade_key(upgrade.piece_type, upgrade.upgrade_index, !upgrade.is_normal_honing, tier) == key) {
+                if (to_upgrade_key(upgrade.piece_type, upgrade.upgrade_index, upgrade.is_normal_honing, tier) == key) {
                     out[4] = candidate
                 } else {
                     out[4] = []
@@ -85,7 +86,6 @@ export function build_material_info(wasm_op: WasmOp, active_profile: CharProfile
 
 export function build_payload(wasm_op: WasmOp, active_profile: CharProfile, roster_config: RosterConfig): EvalPayload {
     const tier = active_profile.tier
-
     return {
         material_info: build_material_info(wasm_op, active_profile, roster_config),
         upgrade_info: keyed_to_array(active_profile.keyed_upgrades, active_profile.optimizer_worker_bundle.result?.upgrade_arr, tier),

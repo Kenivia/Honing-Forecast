@@ -106,7 +106,25 @@ export function parse_input(input_column: InputColumn, index: number, input: str
     // console.log(input_column.upper_bound)
     return isFinite(out) ? Math.min(input_column.upper_bound[index], out) : 0
 }
-export function fill_new_tiers_with_default(old: InputColumn[]) {
+export function validate_input_column(old: InputColumn, default_example: InputColumn) {
+    for (let row = 0; row < old.data.length; row++) {
+        let correct_len = default_example.data.length
+        if (
+            old.data.length !== correct_len ||
+            old.keys.length !== correct_len ||
+            old.upper_bound.length !== correct_len ||
+            old.enabled.length !== correct_len
+        ) {
+            old = structuredClone(default_example)
+        } else {
+            old.data[row] = parse_input(old, row, old.data[row]).toLocaleString()
+        }
+    }
+}
+export function validate_input_column_array(old: InputColumn[], example: InputColumn[]) {
+    for (let index = 0; index < old.length; index++) {
+        validate_input_column(old[index], example[index])
+    }
     while (old.length < TIER_LABELS.length) {
         old.push(create_input_column(InputType.Int, ALL_LABELS[old.length]))
     }
@@ -137,6 +155,19 @@ export function createStatusGrid(
     return data
 }
 
+export function is_enum<T extends object>(targetEnum: T, inp: unknown): inp is T[keyof T] {
+    return Object.values(targetEnum)
+        .filter((v) => typeof v === "number")
+        .includes(inp as number)
+}
+
+// returning instead of mutating in place because javascript
+export function get_valid_status_grid(status_grid: StatusGrid, example: StatusGrid) {
+    const isValid =
+        status_grid.length === example.length &&
+        example.every((row, i) => row.length === status_grid[i].length && status_grid[i].every((cell) => is_enum(UpgradeStatus, cell)))
+    return isValid ? status_grid : example.slice()
+}
 // ========================================================================================
 // These are to interface between UI and rust
 
@@ -147,7 +178,7 @@ export type OneMaterial = [number, number, number, number, number] // an array o
 export type OneUpgrade = [number, number, boolean, number | null, OneState[], boolean, boolean, AdvProgress | null]
 // an array of this is passed into rust
 
-type OneUpgradeKey = `${number},${number},${"true" | "false"},${number}`
+export type OneUpgradeKey = `${number},${number},${"true" | "false"},${number}`
 export type KeyedUpgrades = Record<OneUpgradeKey, OneUpgrade> // This is modified by UI
 
 export function to_upgrade_key(piece_type: number, upgrade_index: number, is_normal: boolean, tier: number): OneUpgradeKey {
@@ -158,9 +189,9 @@ export function grids_to_keyed(normal_grid: StatusGrid, adv_grid: StatusGrid, al
     let new_keyed: KeyedUpgrades = {}
     for (const [piece_type, row] of status_to_bool_grid(normal_grid).entries()) {
         for (const [upgrade_index, cell] of row.entries()) {
-            let key = to_upgrade_key(piece_type, upgrade_index, false, tier)
+            let key = to_upgrade_key(piece_type, upgrade_index, true, tier)
             if (cell) {
-                if (key in all_keyed) {
+                if (key in all_keyed && isOneUpgrade(all_keyed[key])) {
                     new_keyed[key] = all_keyed[key]
                 } else {
                     new_keyed[key] = [piece_type, upgrade_index, true, 0, null, false, false, null]
@@ -170,9 +201,9 @@ export function grids_to_keyed(normal_grid: StatusGrid, adv_grid: StatusGrid, al
     }
     for (const [piece_type, row] of status_to_bool_grid(adv_grid).entries()) {
         for (const [upgrade_index, cell] of row.entries()) {
-            let key = to_upgrade_key(piece_type, upgrade_index, true, tier)
+            let key = to_upgrade_key(piece_type, upgrade_index, false, tier)
             if (cell) {
-                if (key in all_keyed) {
+                if (key in all_keyed && isOneUpgrade(all_keyed[key])) {
                     new_keyed[key] = all_keyed[key]
                 } else {
                     new_keyed[key] = [piece_type, upgrade_index, false, null, null, false, false, [0, 0, false, false]]
@@ -181,4 +212,22 @@ export function grids_to_keyed(normal_grid: StatusGrid, adv_grid: StatusGrid, al
         }
     }
     return new_keyed
+}
+
+function isOneUpgrade(foo: unknown): foo is OneUpgrade {
+    if (!Array.isArray(foo) || foo.length !== 8) return false
+
+    const [f0, f1, f2, f3, f4, f5, f6, f7] = foo
+
+    return (
+        typeof f0 === "number" &&
+        typeof f1 === "number" &&
+        typeof f2 === "boolean" &&
+        (f3 === null || typeof f3 === "number") &&
+        Array.isArray(f4) &&
+        f4.every((x) => x.length == 2 && typeof x[0] === "boolean" && typeof x[1] === "number") &&
+        typeof f5 === "boolean" &&
+        typeof f6 === "boolean" &&
+        (f7 === null || (typeof f7[0] === "number" && typeof f7[1] === "number" && typeof f7[2] === "boolean" && typeof f7[3] === "boolean"))
+    )
 }
