@@ -25,17 +25,6 @@ const forceRerender = async () => {
     re_render_trigger.value = true
 }
 
-watchEffect(() => {
-    // one way sync from T4 to Serca, the ui modifies the T4 copy
-    for (let serca_index = 0; serca_index < ALL_LABELS[1].length; serca_index++) {
-        if (SYNCED_LABELS.includes(ALL_LABELS[1][serca_index])) {
-            let T4_index = ALL_LABELS[0].findIndex((x) => x == ALL_LABELS[1][serca_index].replace("Serca ", ""))
-            roster_config.value.mats_prices[1].data[serca_index] = roster_config.value.mats_prices[0].data[T4_index]
-            roster_config.value.tradable_mats_owned[1].data[serca_index] = roster_config.value.tradable_mats_owned[0].data[T4_index]
-            roster_config.value.roster_mats_owned[1].data[serca_index] = roster_config.value.roster_mats_owned[0].data[T4_index]
-        }
-    }
-})
 function convert_roster_mats_to_serca() {
     for (let serca_index = 0; serca_index < ALL_LABELS[1].length; serca_index++) {
         if (!SYNCED_LABELS.includes(ALL_LABELS[1][serca_index])) {
@@ -68,12 +57,6 @@ const t4_better = computed(() => {
     let t4_price = input_column_to_num(roster_config.value.mats_prices[0])
     let serca_price = input_column_to_num(roster_config.value.mats_prices[1])
     return ALL_LABELS[1].map((_, index) => t4_price[index] * 5 < serca_price[index])
-})
-
-watchEffect(() => {
-    let t4_price = input_column_to_num(roster_config.value.mats_prices[0])
-    let serca_price = input_column_to_num(roster_config.value.mats_prices[1])
-    roster_config.value.effective_serca_price = ALL_LABELS[1].map((_, index) => Math.min(t4_price[index] * 5, serca_price[index]))
 })
 </script>
 
