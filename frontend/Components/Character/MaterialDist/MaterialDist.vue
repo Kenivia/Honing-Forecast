@@ -22,7 +22,7 @@ const average_breakdown = computed(
 // this is should always be treat tradable as bound (so it's actual gold spent)
 const gold_breakdown = computed(
     () =>
-        active_profile.value.evaluation_worker_bundle.result?.gold_breakdown.map((x: number) => Math.ceil(x == 0 ? x : -x)) ??
+        active_profile.value.evaluation_worker_bundle.result?.gold_breakdown.map((x: number) => Math.round(x == 0 ? x : -x)) ??
         new Array(ALL_LABELS[active_profile.value.tier].length).fill(0),
 )
 
@@ -163,7 +163,7 @@ function special_hover_annotation(x, _y, cy, material_type, color): string {
                                 <option>{{ tradable_chance_text }}</option>
                             </select>
                             <span class="hf-average-header">Average</span>
-                            <span class="hf-gold-header">Gold Used</span>
+                            <span class="hf-gold-header">Avg Gold Used</span>
                             <span class="hf-hover-hint">Hover graph for details</span>
                             <!-- <span v-if="customLeftovers">Left</span> -->
                         </div>

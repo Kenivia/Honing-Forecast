@@ -31,7 +31,9 @@ This means that we have a non-linear function relating material used -> gold cos
 
 ### Why we can't just calculate Average cost minus bound mats
 
-Suppose we have a standard dice, that tells us the amount of material consumed, and that we have *3* bound mat. Then we have the following:
+Perhaps the most intuitive reason is to imagine you have exactly the average amount of mats. In the lucky cases you have mats leftover (in which case it costs 0g), and in the unlucky cases you need to buy (so it costs some amount of gold). However in this case if we take Average cost - Bound mats we get 0, which is clearly not right.
+
+Let us inspect a simple example. Suppose we have a standard dice, that tells us the amount of material consumed, and that we have *3* bound mat. Then we have the following:
 
 | (Bound mat owned = 3) | Material consumed | Actually needed |
 |-----------------------|-------------------|-----------------|
