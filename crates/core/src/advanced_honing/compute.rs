@@ -300,3 +300,65 @@ pub fn compute_adv_dist_wrapper(config: &AdvConfig) -> AdvDistTriplet {
         scroll: result.2.data,
     }
 }
+#[cfg(test)]
+mod tests {
+    use crate::{
+        advanced_honing::utils::{GRACE_FIRST_N, NON_GRACE_FIRST_N},
+        helpers::write_jsonl,
+    };
+    use itertools::iproduct;
+
+    use super::*;
+
+    // Made a start, but here's what needs to happen:
+    // 1. figure out a way to embed this data into the binary as binary (not json), via build.rs or otherwise
+    // 2. Check in optimize_wrapper if any adv upgrades are of the default settings
+    // 3. if so, load state_bundle.adv_cache with this data
+    // All this to save like  ~3s? per unique starting position across the whole run
+    //
+    // ALTERNATIVE
+    // embed nothing, pass cache to js on optimizer finish, store in js
+    // (maybe also start with the default settings already cached)
+    //
+    // Either way its pretty marginal gains so cbb right now
+    #[test]
+    fn compute_cache() {
+        let mut grace = GRACE_FIRST_N.to_vec();
+        grace.extend_from_slice(&[GRACE_FIRST_N[GRACE_FIRST_N.len() - 1]; NON_GRACE_FIRST_N.len()]);
+        let mut non_grace = vec![0; GRACE_FIRST_N.len()];
+        non_grace.extend_from_slice(&NON_GRACE_FIRST_N);
+        let permitted_strategy_one = grace.into_iter().zip(non_grace.into_iter());
+        let all_perms: Vec<((u8, u8), (u8, u8))> = iproduct!(
+            permitted_strategy_one
+                .clone()
+                .into_iter()
+                .map(|(x, y)| (x as u8, y as u8)),
+            permitted_strategy_one
+                .into_iter()
+                .map(|(x, y)| (x as u8, y as u8))
+        )
+        .collect();
+        let mut out: Vec<AdvDistTriplet> = Vec::with_capacity(all_perms.len());
+        for (
+            (grace_juice_target, non_grace_juice_target),
+            (grace_scroll_target, non_grace_scroll_target),
+        ) in all_perms
+        {
+            let this_adv_config = AdvConfig {
+                start_balls: 0,
+                start_xp: 0,
+                next_free: false,
+                next_big: false,
+                double_balls: false,
+                is_30_40: false,
+                grace_juice_target,
+                non_grace_juice_target,
+                grace_scroll_target,
+                non_grace_scroll_target,
+            };
+            out.push(compute_adv_dist_wrapper(&this_adv_config));
+        }
+        let file_name: String = format!("./adv_cache_data.json",);
+        write_jsonl(&out, &file_name).unwrap();
+    }
+}
