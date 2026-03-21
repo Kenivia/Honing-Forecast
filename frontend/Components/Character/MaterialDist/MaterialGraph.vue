@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { BUCKET_COUNT, FLOAT_TOL, GRAPH_FONT_SIZE, GRAPH_HEIGHT } from "@/Utils/Constants"
+import { FLOAT_TOL, GRAPH_FONT_SIZE, GRAPH_HEIGHT } from "@/Utils/Constants"
 import { cssVar } from "@/Utils/Helpers"
 import { computed, onBeforeUnmount, onMounted, ref } from "vue"
 
@@ -65,7 +65,7 @@ const points = computed<Point[]>(() => {
     if (props.cumulative) {
         return normalized.map(([x, y]) => ({ x, y, cumulativeY: y }))
     }
-    let gap_size = (normalized[normalized.length - 1][0] - normalized[0][0]) / BUCKET_COUNT
+    // let gap_size = (normalized[normalized.length - 1][0] - normalized[0][0]) / BUCKET_COUNT
     let prevSlope = 0
     return normalized.map(([x, y], index) => {
         if (index === 0) {

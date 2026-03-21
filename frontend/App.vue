@@ -1,13 +1,9 @@
 <script setup lang="ts">
 import { RouterLink, RouterView } from "vue-router"
-import router from "./router"
 import { iconPath } from "./Utils/Helpers"
-import { debounced_write_char_profiles, useProfilesStore } from "./stores/CharacterProfile"
-import { debounced_write_roster_config, useRosterStore } from "./stores/RosterConfig"
-import { CharProfile } from "./stores/CharacterProfile"
-import { storeToRefs } from "pinia"
-import { computed, onMounted, onUnmounted, toRaw, watchEffect } from "vue"
-import { ref } from "vue"
+import { debounced_write_char_profiles, useProfilesStore } from "./Stores/CharacterProfile"
+import { debounced_write_roster_config, useRosterStore } from "./Stores/RosterConfig"
+
 import { useMediaIsNarrow } from "./Utils/WindowSize"
 import { fetch_callback, useTimedFetch } from "./Utils/MarketDataFetcher"
 
@@ -15,7 +11,7 @@ const roster_store = useRosterStore()
 roster_store.init()
 const profile_store = useProfilesStore()
 profile_store.init()
-// const { all_profiles } = storeToRefs(profile_store)
+
 const { start_fetch } = useTimedFetch(fetch_callback)
 start_fetch(roster_store.roster_config.region)
 

@@ -1,15 +1,16 @@
+export const FETCH_MARKET_COOLDOWN_MS = 60 * 60 * 1000
 export const DEFAULT_ARTISAN_MULTIPLIER = 0.4651
 export const FLOAT_TOL = 1e-9
 
-export const BUCKET_COUNT = 50
+// export const BUCKET_COUNT = 50 // number of x values to evaluate when drawing the graphs
 export const ANNOTATION_COLORS = ["--hf-graph-average-color", "--hf-graph-bound-color", "--hf-graph-roster-color", "--hf-graph-tradable-color"]
 export const ANNOTATION_POSITIONS: ("top" | "middle" | "bottom" | "graph")[] = ["graph", "bottom", "middle", "top"]
 export const ANNOTATION_LABELS = ["Avg", "Bound", "+Roster-Bound", "+Tradable"] // these names are tied with their css class names
 export const SYNCED_LABELS = ["Shards", "Gold", "Silver", "Lava's Breath", "Glacier's Breath"]
 
+// These must be the same as the rust side (advanced_honing/utils), will need to manually update if these change
 export const GRACE_FIRST_N = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 15, 255]
 export const NON_GRACE_FIRST_N = [5, 10, 20, 40, 255]
-
 export const JOINED_ADV_JUICE = GRACE_FIRST_N.map((x) => [x, 0]).concat(NON_GRACE_FIRST_N.map((x) => [255, x]))
 
 export const NARROW_WIDTH = 800
@@ -100,30 +101,6 @@ export const NUM_PIECES = 6
 export const NORMAL_COLS = 25
 export const ADV_COLS = 4
 
-export const CELL_W = 28
-export const CELL_H = 28
-export const DEFAULT_JUICE_PRICES = [
-    [400, 250],
-    [200, 100],
-    [1200, 600],
-    [7000, 4000],
-    [400, 250],
-    [200, 100],
-    [1200, 600],
-    [7000, 4000],
-]
-
-export const DEFAULT_JUICE_LEFTOVER = [
-    [0, 0],
-    [0, 0],
-    [0, 0],
-    [0, 0],
-    [0, 0],
-    [0, 0],
-    [0, 0],
-    [0, 0],
-]
-
 export const base_icon_map: Record<string, string> = {
     Helmet: "/Icons/Equipments/Helmet.webp",
     Shoulder: "/Icons/Equipments/Shoulder.webp",
@@ -173,89 +150,4 @@ for (const [label, path] of Object.entries(base_icon_map)) {
 }
 export const IconMap = { ...temp, ...base_icon_map } as Record<string, string>
 
-export const DEFAULT_MATS_PRICES = ["1.84", "0.04", "20", "0.6", "128", "1.0", "0.0"]
-
-export const DEFAULT_MATS_LEFTOVER = ["0", "0", "0", "0", "0", "0", "0"]
-
-export const DEFAULT_TOGGLES = {
-    mats: Array.from({ length: T4_MATS_LABELS.length - 1 }, () => true),
-    weapon: Array.from({ length: T4_JUICE_LABELS.length }, () => true),
-    juice: Array.from({ length: T4_JUICE_LABELS.length }, () => true),
-}
-
 export const PIECE_NAMES = ["Helmet", "Shoulder", "Chest", "Pants", "Glove", "Weapon"]
-
-const DEFAULT_STATE_PAIR: [boolean, number] = [false, 0]
-
-// export const RESET_UI_DEFAULTS = {
-//     topGrid: Array.from({ length: NUM_PIECES }, () => Array.from({ length: NORMAL_COLS }, () => false)),
-//     bottomGrid: Array.from({ length: NUM_PIECES }, () => Array.from({ length: ADV_COLS }, () => false)),
-//     prev_checked_arr: Array.from({ length: NORMAL_COLS }, () => false),
-//     prev_checked_arr_bottom: Array.from({ length: ADV_COLS }, () => false),
-//     userMatsOwned: Object.fromEntries(MATS_LABELS.map((label) => [label, "0"])),
-//     userMatsPrices: Object.fromEntries(MATS_LABELS.slice(0, 7).map((label, index) => [label, DEFAULT_MATS_PRICES[index]])),
-//     userMatsLeftover: Object.fromEntries(MATS_LABELS.map((label, index) => [label, DEFAULT_MATS_LEFTOVER[index]])),
-//     userWeaponJuiceOwned: Object.fromEntries(JUICE_LABELS.map((labels) => [labels[0], "0"])),
-//     userArmorJuiceOwned: Object.fromEntries(JUICE_LABELS.map((labels) => [labels[1], "0"])),
-//     userWeaponJuicePrices: Object.fromEntries(JUICE_LABELS.map((labels, index) => [labels[0], DEFAULT_JUICE_PRICES[index]?.[0] ?? 0])),
-//     userArmorJuicePrices: Object.fromEntries(JUICE_LABELS.map((labels, index) => [labels[1], DEFAULT_JUICE_PRICES[index]?.[1] ?? 0])),
-//     userWeaponJuiceLeftover: Object.fromEntries(JUICE_LABELS.map((labels, index) => [labels[0], DEFAULT_JUICE_LEFTOVER[index]?.[0] ?? 0])),
-//     userArmorJuiceLeftover: Object.fromEntries(JUICE_LABELS.map((labels, index) => [labels[1], DEFAULT_JUICE_LEFTOVER[index]?.[1] ?? 0])),
-//     desired_chance: "50",
-//     adv_hone_strategy: "x2 grace",
-//     express_event: true,
-//     bucketCount: "100",
-//     cumulativeGraph: true,
-//     dataSize: "100000",
-//     lockXAxis: false,
-//     lockedMins: null as number[] | null,
-//     lockedMaxs: null as number[] | null,
-//     incomeArr: Array.from({ length: 6 }, () => Array.from({ length: 7 }, () => 0)),
-//     minResolution: 10,
-//     specialState: [] as number[],
-//     succeededGrid: Array.from({ length: NUM_PIECES }, () => Array.from({ length: NORMAL_COLS }, () => false)),
-//     unlockGrid: Array.from({ length: NUM_PIECES }, () => Array.from({ length: NORMAL_COLS }, () => false)),
-//     stateBundleGrid: Array.from({ length: NUM_PIECES }, () => Array.from({ length: NORMAL_COLS }, () => [])),
-//     progressGrid: Array.from({ length: NUM_PIECES }, () => Array.from({ length: NORMAL_COLS }, () => 0)),
-//     evaluateAverageResult: null as any,
-// }
-
-// export const DEMO_UI_VALUES = {
-//     topGrid: Array.from({ length: NUM_PIECES }, (_, rowIndex) =>
-//         Array.from({ length: NORMAL_COLS }, (_, colIndex) => colIndex === 19 || colIndex === 20 || colIndex === 21 || (colIndex > 21 && rowIndex === 5)),
-//     ),
-//     bottomGrid: Array.from({ length: NUM_PIECES }, (_, piece) => Array.from({ length: ADV_COLS }, (_, colIndex) => colIndex === 3 && piece < 3)),
-//     prev_checked_arr: Array.from({ length: NORMAL_COLS }, (_, colIndex) => colIndex === 19 || colIndex === 20 || colIndex === 21),
-//     prev_checked_arr_bottom: Array.from({ length: ADV_COLS }, () => false),
-
-//     userMatsOwned: {
-//         Red: "631777",
-//         Blue: "1064398",
-//         Leaps: "33748",
-//         Shards: "12010948",
-//         Fusion: "25125",
-//         Gold: "3803792",
-//         Silver: "999999999",
-//         "Red juice": "1420",
-//         "Blue juice": "690",
-//         "Special Leap": "6767",
-//     },
-//     userMatsPrices: Object.fromEntries(MATS_LABELS.slice(0, 7).map((label, index) => [label, DEFAULT_MATS_PRICES[index]])),
-//     userMatsLeftover: Object.fromEntries(MATS_LABELS.map((label) => [label, "0"])),
-//     userWeaponJuiceOwned: Object.fromEntries(JUICE_LABELS.map((labels) => [labels[0], "0"])),
-//     userArmorJuiceOwned: Object.fromEntries(JUICE_LABELS.map((labels) => [labels[1], "0"])),
-//     userWeaponJuicePrices: Object.fromEntries(JUICE_LABELS.map((labels, index) => [labels[0], DEFAULT_JUICE_PRICES[index]?.[0] ?? 0])),
-//     userArmorJuicePrices: Object.fromEntries(JUICE_LABELS.map((labels, index) => [labels[1], DEFAULT_JUICE_PRICES[index]?.[1] ?? 0])),
-//     userWeaponJuiceLeftover: Object.fromEntries(JUICE_LABELS.map((labels) => [labels[0], 0])),
-//     userArmorJuiceLeftover: Object.fromEntries(JUICE_LABELS.map((labels) => [labels[1], 0])),
-//     desired_chance: "50",
-//     minResolution: 0,
-//     specialState: [] as number[],
-//     succeededGrid: Array.from({ length: NUM_PIECES }, () => Array.from({ length: NORMAL_COLS }, () => false)),
-//     unlockGrid: Array.from({ length: NUM_PIECES }, () => Array.from({ length: NORMAL_COLS }, () => false)),
-//     stateBundleGrid: Array.from({ length: NUM_PIECES }, () => Array.from({ length: NORMAL_COLS }, () => [DEFAULT_STATE_PAIR])),
-//     progressGrid: Array.from({ length: NUM_PIECES }, () => Array.from({ length: NORMAL_COLS }, () => 0)),
-// }
-
-// export const DEMO_INCOME_1680_ROSTER_BOUND = [2606, 7751, 133, 0, 0, 90000, 69420]
-// export const DEMO_INCOME_1720_CHAR_BOUND = [13600, 28160, 594, 360279, 1500, 120000, 69420]

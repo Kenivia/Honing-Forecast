@@ -1,12 +1,12 @@
 <script setup lang="ts">
 import MaterialCell from "@/Components/Common/MaterialCell.vue"
-import { CharProfile, useProfilesStore } from "@/stores/CharacterProfile"
-import { useRosterStore } from "@/stores/RosterConfig"
-import { JOINED_ADV_JUICE, PIECE_NAMES, ALL_LABELS, DEFAULT_ARTISAN_MULTIPLIER, T4_JUICE_LABELS } from "@/Utils/Constants"
-import { formatSig, get_piece_name, iconPath, toOrdinal } from "@/Utils/Helpers"
-import { input_column_to_num, OneState, to_upgrade_key, Upgrade, UpgradeStatus } from "@/Utils/Interfaces"
+import { useProfilesStore } from "@/Stores/CharacterProfile"
+import { useRosterStore } from "@/Stores/RosterConfig"
+import { JOINED_ADV_JUICE, ALL_LABELS, T4_JUICE_LABELS, DEFAULT_ARTISAN_MULTIPLIER } from "@/Utils/Constants"
+import { get_piece_name, iconPath } from "@/Utils/Helpers"
+import { input_column_to_num, to_upgrade_key, Upgrade, UpgradeStatus } from "@/Utils/Interfaces"
 import { storeToRefs } from "pinia"
-import { computed, InputHTMLAttributes, nextTick, ref, watch } from "vue"
+import { computed, nextTick, ref, watch } from "vue"
 
 const { active_profile } = storeToRefs(useProfilesStore())
 const { roster_config } = storeToRefs(useRosterStore())
@@ -56,6 +56,8 @@ function aggregateStreaks(): NormalStreak[] | AdvStreak[] {
         const streaks: AdvStreak[] = []
         let [juice_grace, juice_non_grace] = JOINED_ADV_JUICE[props.upgrade.state[0][1]]
         let [scroll_grace, scroll_non_grace] = JOINED_ADV_JUICE[props.upgrade.state[1][1]]
+        // These 4 numbers correspond to how many taps to perform on the respective conditions
+        // They range from 0 to 255, with 255 considered infinite, see rust advanced_honing/utils for what numbers they can actually take
 
         let both_grace = Math.min(juice_grace, scroll_grace)
         if (both_grace > 0) streaks.push({ juice: true, scroll: true, grace: true, count: both_grace })
@@ -107,7 +109,7 @@ function artisan_function(upgrade: Upgrade, total_count: number): string {
             break
         }
 
-        artisan += 0.4651 * current_chance * upgrade.artisan_rate
+        artisan += DEFAULT_ARTISAN_MULTIPLIER * current_chance * upgrade.artisan_rate
         if (current_chance == 1.0) {
             break // for upgrades that have 100% passrate immediately or upgrades that have above 100% success rate (juicing last few taps of like +4 or something)
         }
@@ -144,7 +146,7 @@ function cumulative_chance(upgrade: Upgrade, total_count: number): string {
             return (100.0).toFixed(2)
         }
         cum_chance *= 1 - current_chance
-        artisan += 0.4651 * current_chance * upgrade.artisan_rate
+        artisan += DEFAULT_ARTISAN_MULTIPLIER * current_chance * upgrade.artisan_rate
         if (current_chance == 1.0) {
             return (100.0).toFixed(2)
         }
@@ -200,7 +202,10 @@ watch(
         taps_so_far.value = props.upgrade.alr_failed
     },
 )
+// This watch is here to watch for when we tick / untick, in which case props.upgrade changes
+// This only updates when props.upgrade.alr_failed changes, so we can update taps_so_far without being overwritten immediately
 
+// In Rust start_xp ranges from 0 to 100 (each bar = 10 xp instead of 100 in game)
 const current_adv_upgrade = ref(props.upgrade.adv_config ? Math.floor(props.upgrade.adv_config.start_xp / 10) + props.upgrade.upgrade_index * 10 : 0)
 const current_adv_xp = ref(props.upgrade.adv_config ? (props.upgrade.adv_config.start_xp - Math.floor(props.upgrade.adv_config.start_xp / 10) * 10) * 10 : 0)
 const current_grace_progress = ref(props.upgrade.adv_config.start_balls) // Defaulted to 0, adjust as needed from your config
@@ -255,14 +260,6 @@ const used_materials = computed(() => {
     const tier = active_profile.value.tier
     return props.upgrade.cost_dist.map((x, index) => (active_profile.value.bound_budgets[tier].enabled[index] ? x.support[taps_so_far.value] : 0))
 })
-
-// const remaining_materials = computed(() => {
-//     const tier = active_profile.value.tier
-//     return used_materials.value.map((cost, index) => {
-//         const owned = input_column_to_num(active_profile.value.bound_budgets[tier])[index] || 0
-//         return owned - cost
-//     })
-// })
 
 const remaining_materials = computed(() => {
     const bound_budgets: number[] = []

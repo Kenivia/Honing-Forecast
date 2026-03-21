@@ -1,11 +1,11 @@
 <script setup lang="ts">
-import { create_default_char_profile, recreate_char_profile, useProfilesStore } from "@/stores/CharacterProfile"
-import { useRosterStore } from "@/stores/RosterConfig"
+import { create_default_char_profile, recreate_char_profile, useProfilesStore } from "@/Stores/CharacterProfile"
+import { useRosterStore } from "@/Stores/RosterConfig"
 import { achieved_ilevel, pending_ilevel } from "@/Utils/Helpers"
 import { WasmOp } from "@/WasmInterface/js_to_wasm"
 import { build_payload } from "@/WasmInterface/payload"
 import { storeToRefs } from "pinia"
-import { ref, toRaw } from "vue"
+import { ref } from "vue"
 import { RouterLink } from "vue-router"
 
 const profile_store = useProfilesStore()

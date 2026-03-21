@@ -2,7 +2,7 @@ import { ref, onUnmounted, Ref, toRaw, shallowRef } from "vue"
 import { WasmOp } from "./js_to_wasm"
 import { HistogramOutputs, StateBundle } from "@/Utils/Interfaces"
 import { build_payload, EvalPayload } from "./payload"
-import { mapToObject } from "@/Utils/Helpers"
+
 const createWorker = () => new Worker(new URL("./js_to_wasm.ts", import.meta.url), { type: "module" })
 
 export function createWorkerBundle() {

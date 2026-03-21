@@ -2,8 +2,6 @@ import init, { evaluate_average_wrapper, optimize_average_wrapper, histogram_wra
 import { EvalPayload } from "./payload"
 import { HistogramOutputs, StateBundle } from "@/Utils/Interfaces"
 
-const LABELS = ["Red", "Blue", "Leaps", "Shards", "Fusion", "Gold", "Silver"]
-
 export enum WasmOp {
     EvaluateAverage,
     OptimizeAverage,

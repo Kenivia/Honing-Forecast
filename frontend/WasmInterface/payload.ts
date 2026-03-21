@@ -1,38 +1,15 @@
-import { ALL_LABELS, BUNDLE_SIZE, T4_JUICE_LABELS, T4_MATS_LABELS } from "@/Utils/Constants"
+import { ALL_LABELS, BUNDLE_SIZE } from "@/Utils/Constants"
 import { WasmOp } from "./js_to_wasm"
-
-import { CharProfile, TreatmentPlan, useProfilesStore } from "@/stores/CharacterProfile"
-import { RosterConfig, useRosterStore } from "@/stores/RosterConfig"
-
-import {
-    AdvProgress,
-    grids_to_keyed,
-    input_column_to_num,
-    KeyedUpgrades,
-    MaterialInput,
-    OneMaterial,
-    OneState,
-    OneUpgrade,
-    StateBundle,
-    to_upgrade_key,
-    Upgrade,
-    UpgradeInput,
-    UpgradeStatus,
-} from "@/Utils/Interfaces"
-import { storeToRefs } from "pinia"
+import { CharProfile, TreatmentPlan } from "@/Stores/CharacterProfile"
+import { RosterConfig } from "@/Stores/RosterConfig"
+import { input_column_to_num, KeyedUpgrades, OneMaterial, OneUpgrade, to_upgrade_key, Upgrade } from "@/Utils/Interfaces"
 import { toRaw } from "vue"
-import { mapToObject } from "@/Utils/Helpers"
-
-function parseFloatZero(input: string) {
-    const out = Number.parseFloat(input)
-    return Number.isFinite(out) ? out : 0
-}
 
 // I don't think it's possible to directly export this struct from rust to javascript because of all the vectors,
 // so it's copied & pasted here
 export interface EvalPayload {
-    material_info: MaterialInput
-    upgrade_info: UpgradeInput
+    material_info: OneMaterial[]
+    upgrade_info: OneUpgrade[]
     special_budget: number
     special_state?: number[]
     tier: number
@@ -41,28 +18,25 @@ export interface EvalPayload {
     num_threads: number
     metric_type: number
 }
-function keyed_to_array(keyed_upgrades: KeyedUpgrades, upgrade_arr: Upgrade[] | null, tier: number): OneUpgrade[] {
-    return (
-        Object.entries(keyed_upgrades)
-            // .map(([key, pair]) => pair)
-            .filter(([_, x]) => x[0])
-            .map(([key, arr], index) => {
-                const out = toRaw(arr[1])
-                let candidate = upgrade_arr?.[index]?.state ?? null
-                if (candidate === null) {
-                    out[4] = []
-                } else {
-                    let upgrade: Upgrade = upgrade_arr[index]
-                    if (to_upgrade_key(upgrade.piece_type, upgrade.upgrade_index, !upgrade.is_normal_honing, tier) == key) {
-                        out[4] = candidate
-                    } else {
-                        out[4] = []
-                    }
-                }
 
-                return out
-            })
-    )
+function keyed_to_array(keyed_upgrades: KeyedUpgrades, upgrade_arr: Upgrade[] | null, tier: number): OneUpgrade[] {
+    return Object.entries(keyed_upgrades)
+        .filter(([_, x]) => x[0])
+        .map(([key, arr], index) => {
+            const out = arr
+            let candidate = upgrade_arr?.[index]?.state ?? null
+            if (candidate === null) {
+                out[4] = []
+            } else {
+                let upgrade: Upgrade = upgrade_arr[index]
+                if (to_upgrade_key(upgrade.piece_type, upgrade.upgrade_index, !upgrade.is_normal_honing, tier) == key) {
+                    out[4] = candidate
+                } else {
+                    out[4] = []
+                }
+            }
+            return out
+        })
 }
 export function apply_treatement(treatment: TreatmentPlan, bound: number, roster: number, tradable: number): [number, number] {
     switch (treatment) {
@@ -82,7 +56,6 @@ export function build_material_info(wasm_op: WasmOp, active_profile: CharProfile
     const tradable_mats_owned = input_column_to_num(roster_config.tradable_mats_owned[tier])
 
     const leftover_price = input_column_to_num(active_profile.leftover_price[tier])
-
     const actual_price = tier == 0 ? input_column_to_num(roster_config.mats_prices[tier]) : roster_config.effective_serca_price
 
     const tradable_mats_price = actual_price.map(

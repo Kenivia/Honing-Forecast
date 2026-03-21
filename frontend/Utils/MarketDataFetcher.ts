@@ -1,7 +1,7 @@
 import { ref, computed } from "vue"
-import { ALL_LABELS, SYNCED_LABELS } from "./Constants"
+import { ALL_LABELS, FETCH_MARKET_COOLDOWN_MS, SYNCED_LABELS } from "./Constants"
 import { storeToRefs } from "pinia"
-import { useRosterStore } from "@/stores/RosterConfig"
+import { useRosterStore } from "@/Stores/RosterConfig"
 const OVERRIDE_DEFAULT = {
     Gold: 1,
     Silver: 0,
@@ -42,9 +42,6 @@ export async function fetchMarketData(region: string) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
     })
-
-    // This will now correctly print HIT or MISS!
-    // console.log("Cache status:", response.headers.get("X-Cache"))
 
     // Await the parsing of the stream to get the actual payload
     const data = await response.json()
@@ -134,39 +131,47 @@ export function useTimedFetch(callback: (data: number[][], selectedShardSize: nu
     const { roster_config } = storeToRefs(roster_store)
 
     const isFetching = ref(false)
-    const COOLDOWN_MS = 60 * 1000
 
-    function time_to_wait(region: string): number {
-        const lastTimestamp = roster_config.value.last_market_timestamp[region]
-        if (lastTimestamp === undefined) return 0
-        return COOLDOWN_MS - (Date.now() - lastTimestamp)
+    function isDataStale(region: string): boolean {
+        const cached = roster_config.value.latest_market_data[region]
+        if (cached === undefined) return true
+        const [timestamp, _] = cached
+        return Date.now() - timestamp >= FETCH_MARKET_COOLDOWN_MS
     }
 
     const disabled = computed(() => {
-        // Check the current region from roster_config
-        const region = roster_config.value.region
-        return isFetching.value || time_to_wait(region) > 0
+        // Only disabled if there's an actual pending fetch
+        return isFetching.value
     })
 
     async function start_fetch(region: string) {
-        if (time_to_wait(region) > 0 || isFetching.value) return
+        if (isFetching.value) return
+
+        // Check if we have fresh cached data
+        const cached = roster_config.value.latest_market_data[region]
+        if (cached !== undefined && !isDataStale(region)) {
+            const [_, result] = cached
+            const [parsed, selectedShardSize, shard_price] = parse_response(result)
+            callback(parsed, selectedShardSize, shard_price)
+            return
+        }
 
         isFetching.value = true
 
-        // Start both the fetch and the timer concurrently
+        // Fetch new data
         const result = await fetchMarketData(region)
         // console.log(result)
         const [parsed, selectedShardSize, shard_price] = parse_response(result)
 
-        // Update the timestamp
-        roster_config.value.last_market_timestamp[region] = Date.now()
+        // Store the raw response data with timestamp
+        roster_config.value.latest_market_data[region] = [Date.now(), result]
 
         isFetching.value = false
 
         callback(parsed, selectedShardSize, shard_price)
     }
 
-    return { disabled, start_fetch, time_to_wait }
+    return { disabled, start_fetch }
 }
 export function fetch_callback(result: number[][], selectedShardSize: number, shard_price: number) {
     const { roster_config } = storeToRefs(useRosterStore())

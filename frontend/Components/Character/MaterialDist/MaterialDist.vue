@@ -1,22 +1,30 @@
 <script setup lang="ts">
-import { ALL_LABELS, GRAPH_COLORS, T4_JUICE_LABELS, T4_MATS_LABELS, ANNOTATION_COLORS, ANNOTATION_POSITIONS, ANNOTATION_LABELS } from "@/Utils/Constants"
-import { CharProfile, TreatmentPlan, useProfilesStore } from "@/stores/CharacterProfile"
-import { iconPath, metricToText } from "@/Utils/Helpers"
+import { ALL_LABELS, GRAPH_COLORS, T4_MATS_LABELS, ANNOTATION_COLORS, ANNOTATION_POSITIONS, ANNOTATION_LABELS } from "@/Utils/Constants"
+import { TreatmentPlan, useProfilesStore } from "@/Stores/CharacterProfile"
+import { metricToText } from "@/Utils/Helpers"
 import MaterialCell from "@/Components/Common/MaterialCell.vue"
-import { create_input_column, HistogramOutputs, input_column_to_num, InputColumn, InputType } from "@/Utils/Interfaces"
+import { input_column_to_num } from "@/Utils/Interfaces"
 import MaterialGraph from "./MaterialGraph.vue"
 import { storeToRefs } from "pinia"
-import { useRosterStore } from "@/stores/RosterConfig"
-import { computed, nextTick, ref, Ref, toRef, watch, watchEffect } from "vue"
+import { useRosterStore } from "@/Stores/RosterConfig"
+import { computed, ref, watchEffect } from "vue"
 
 const { active_profile } = storeToRefs(useProfilesStore())
 const { roster_config } = storeToRefs(useRosterStore())
 const histogram_result = computed(() => active_profile.value.histogram_worker_bundle.result)
+
+// This is average mats cost (not gold)
 const average_breakdown = computed(
     () => active_profile.value.optimizer_worker_bundle.result?.average_breakdown ?? new Array(ALL_LABELS[active_profile.value.tier].length).fill(0),
 )
-const analysisTab = ref<"mats" | "juice">("mats")
+// this is should always be treat tradable as bound (so it's actual gold spent)
+const gold_breakdown = computed(
+    () =>
+        active_profile.value.evaluation_worker_bundle.result?.gold_breakdown.map((x: number) => Math.ceil(x == 0 ? x : -x)) ??
+        new Array(ALL_LABELS[active_profile.value.tier].length).fill(0),
+)
 
+const analysisTab = ref<"mats" | "juice">("mats")
 const visibleRows = computed(() => {
     const matsIndices = T4_MATS_LABELS.map((_, i) => i)
     return ALL_LABELS[active_profile.value.tier]
@@ -29,13 +37,6 @@ const visibleRows = computed(() => {
             }
         })
 })
-
-// this is should always be treat tradable as bound
-const gold_breakdown = computed(
-    () =>
-        active_profile.value.evaluation_worker_bundle.result?.gold_breakdown.map((x: number) => Math.ceil(x == 0 ? x : -x)) ??
-        new Array(ALL_LABELS[active_profile.value.tier].length).fill(0),
-)
 
 const market_gold_text = "Avg gold spent buying from market"
 const tradable_gold_text = "Avg gold spent buying minus gold from selling tradables"
@@ -87,6 +88,7 @@ watchEffect(() => {
               ? "var(--hf-graph-roster-color)"
               : "var(--hf-graph-tradable-color)"
 })
+
 const enabled_annotations = ref([true, false, false, false])
 const annotation_values = computed(() => {
     let bound = input_column_to_num(active_profile.value.bound_budgets[active_profile.value.tier])
@@ -104,13 +106,6 @@ function hover_annotation(x, _y, cy, material_type, color): string {
 function special_hover_annotation(x, _y, cy, material_type, color): string {
     let place = Math.min(10, Math.max(Math.ceil(cy < 0.5 ? Math.min(3, Math.abs(Math.log10(cy))) : Math.abs(Math.log10(1 - cy))), 3))
     return `<b style="color: white;">${(cy * 100).toPrecision(place)}% </b> chance to free tap <br> at least <b style="color: ${color};"> ${x + 1} </b> piece`
-}
-
-const re_render_trigger = ref(true)
-const forceRerender = async () => {
-    re_render_trigger.value = false
-    await nextTick()
-    re_render_trigger.value = true
 }
 </script>
 
@@ -183,6 +178,7 @@ const forceRerender = async () => {
                                             active_profile.bound_budgets[active_profile.tier].data[row] = val
                                         }
                                     "
+                                    :hide_tick="analysisTab == 'juice'"
                                 />
                                 <!-- {{ console.log(averages) }} -->
                                 <MaterialCell
@@ -206,7 +202,8 @@ const forceRerender = async () => {
                                 />
                             </div>
 
-                            <div class="hf-mats-row">
+                            <!-- Special Re-render is trigger by the confirm button in instruction row because otherwise it wouldn't update -->
+                            <div v-if="active_profile.special_re_render_trigger" class="hf-mats-row">
                                 <MaterialCell
                                     :input_column="active_profile.special_budget"
                                     :row="0"

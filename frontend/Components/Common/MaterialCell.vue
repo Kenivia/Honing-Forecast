@@ -1,21 +1,17 @@
 <script setup lang="ts">
-import { CharProfile, useProfilesStore } from "@/stores/CharacterProfile"
-import { useRosterStore } from "@/stores/RosterConfig"
-import { PIECE_NAMES, NORMAL_COLS as NORMAL_COLS, NUM_PIECES as NORMAL_ROWS, ALL_LABELS } from "@/Utils/Constants"
 import { cssVar, iconPath } from "@/Utils/Helpers"
-import { InputColumn, get_modified_cell, UpgradeStatus } from "@/Utils/Interfaces"
-import { storeToRefs } from "pinia"
-import { computed, ref, Ref, watchEffect } from "vue"
+import { InputColumn, get_modified_cell } from "@/Utils/Interfaces"
+import { computed, ref } from "vue"
 
 const props = defineProps<{
     input_column: InputColumn | number[]
     row: number
     label?: string
-    setter?: (val: string) => void // optional so read-only columns don't need it
+    setter?: (val: string) => void
     suffix?: string
     input_color?: string
     is_percentage?: boolean
-    hide_tick?:boolean
+    hide_tick?: boolean
 }>()
 
 const resolved_color = computed(() => {

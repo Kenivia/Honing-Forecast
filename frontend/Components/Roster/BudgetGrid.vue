@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import { useRosterStore as useRosterStore } from "@/stores/RosterConfig"
-import { ALL_LABELS, BUDGET_NARROW_WIDTH, BUNDLE_SIZE, NARROW_WIDTH, SYNCED_LABELS, TIER_OPTIONS } from "@/Utils/Constants"
+import { useRosterStore as useRosterStore } from "@/Stores/RosterConfig"
+import { ALL_LABELS, BUDGET_NARROW_WIDTH, BUNDLE_SIZE, SYNCED_LABELS, TIER_OPTIONS } from "@/Utils/Constants"
 import { storeToRefs } from "pinia"
 import MaterialCell from "@/Components/Common/MaterialCell.vue"
-import { computed, nextTick, onUnmounted, ref, watch, watchEffect } from "vue"
+import { computed, nextTick, ref, watchEffect } from "vue"
 import { SelectButton } from "primevue"
 import { useMediaIsNarrow } from "@/Utils/WindowSize"
 import { input_column_to_num, parse_input } from "@/Utils/Interfaces"
@@ -11,11 +11,10 @@ import TierConvertButton from "../Common/TierConvertButton.vue"
 import { fetch_callback, useTimedFetch } from "@/Utils/MarketDataFetcher"
 
 const { roster_config } = storeToRefs(useRosterStore())
-
 const tier = computed(() => roster_config.value.tier)
 const { isNarrow } = useMediaIsNarrow(BUDGET_NARROW_WIDTH)
 
-const { disabled, start_fetch, time_to_wait } = useTimedFetch((result, selected, price) => {
+const { disabled, start_fetch } = useTimedFetch((result, selected, price) => {
     fetch_callback(result, selected, price)
     forceRerender()
 })
@@ -25,15 +24,9 @@ const forceRerender = async () => {
     await nextTick()
     re_render_trigger.value = true
 }
-const ttw = ref(time_to_wait(roster_config.value.region))
 
-const interval = setInterval(() => {
-    ttw.value = time_to_wait(roster_config.value.region)
-}, 1000) // or whatever granularity you need
-
-onUnmounted(() => clearInterval(interval))
 watchEffect(() => {
-    // one way sync from T4 to Serca, the uui modifies the T4 copy
+    // one way sync from T4 to Serca, the ui modifies the T4 copy
     for (let serca_index = 0; serca_index < ALL_LABELS[1].length; serca_index++) {
         if (SYNCED_LABELS.includes(ALL_LABELS[1][serca_index])) {
             let T4_index = ALL_LABELS[0].findIndex((x) => x == ALL_LABELS[1][serca_index].replace("Serca ", ""))
@@ -104,9 +97,7 @@ watchEffect(() => {
             <option>NAE</option>
             <option>EUC</option>
         </select>
-        <button :disabled="disabled" @click="() => start_fetch(roster_config.region)">
-            {{ disabled ? (ttw > 0 ? "Wait " + Math.ceil(ttw / 1000) + "s before fetching again" : "Fetching...") : "Fetch Market Data" }}
-        </button>
+        <button :disabled="disabled" @click="() => start_fetch(roster_config.region)">Fetch Market Data</button>
     </div>
 
     <div class="hf-shard-size-selector">

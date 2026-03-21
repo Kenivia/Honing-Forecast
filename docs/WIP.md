@@ -3,6 +3,8 @@
 
 ## Immediate WIP
 
+add more settings validations
+
 ## Roadmap
 
 ### 1st: ~~re-write the frontend~~

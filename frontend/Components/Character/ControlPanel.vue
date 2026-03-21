@@ -1,27 +1,10 @@
 <script setup lang="ts">
-import {
-    GRAPH_COLORS,
-    T4_JUICE_LABELS,
-    T4_MATS_LABELS,
-    TIER_LABELS,
-    TIER_OPTIONS,
-    ALL_LABELS,
-    ADV_COLS,
-    NUM_PIECES,
-    NORMAL_COLS,
-    PLUS_TIER_CONVERSION,
-} from "@/Utils/Constants"
-import GoldBreakdown from "./GoldBreakdown.vue"
-import { CharProfile, create_default_char_profile, TreatmentPlan, useProfilesStore } from "@/stores/CharacterProfile"
-import { check_eligibility, iconPath, metricToText } from "@/Utils/Helpers"
-import MaterialCell from "@/Components/Common/MaterialCell.vue"
-import { create_input_column, DEFAULT_ONE_UPGRADE, input_column_to_num, InputType, parse_input, UpgradeStatus } from "@/Utils/Interfaces"
-import MaterialGraph from "./MaterialGraph.vue"
+import { TreatmentPlan, useProfilesStore } from "@/Stores/CharacterProfile"
 import { build_payload } from "@/WasmInterface/payload"
 import { WasmOp } from "@/WasmInterface/js_to_wasm"
-import { RosterConfig, useRosterStore } from "@/stores/RosterConfig"
+import { useRosterStore } from "@/Stores/RosterConfig"
 import { storeToRefs } from "pinia"
-import { computed, ref, watch, watchEffect } from "vue"
+import { ref, watchEffect } from "vue"
 
 const store = useProfilesStore()
 const { active_profile } = storeToRefs(store)
@@ -31,11 +14,7 @@ function resetActive() {
     store.resetActiveProfile()
 }
 
-// function resetOptimizerState() {
-//     Object.entries(active_profile.value.keyed_upgrades).forEach(([_, one_upgrade]) =>
-//         Object.assign(one_upgrade, [one_upgrade[0], one_upgrade[1], one_upgrade[2], ...DEFAULT_ONE_UPGRADE]),
-//     )
-// }
+// This is useful for producing payloads to test the rust side
 function copyPayload() {
     const payload = JSON.stringify(build_payload(WasmOp.Parser, active_profile.value, roster_config.value), null, 2)
     navigator.clipboard?.writeText(payload).catch(() => undefined)
@@ -43,6 +22,7 @@ function copyPayload() {
 
 const optimizer_worker = active_profile.value.optimizer_worker_bundle
 
+// Currently TreatRosterAsTradable is not selectable
 const treatment_tick = ref(active_profile.value.optimizer_treatment_plan == TreatmentPlan.TreatRosterAsBound)
 watchEffect(() => {
     console.log("changed")
@@ -61,11 +41,9 @@ watchEffect(() => {
         <div class="hf-card-body hf-options-body">
             <button class="hf-control-panel-btn" @click="resetActive">Reset this char</button>
             <div style="font-size: x-small; color: var(--text-very-muted); text-wrap-mode: wrap">You may need to reload after</div>
-            <!-- <button class="hf-header-link-btn" @click="resetOptimizerState">Reset Optimizer</button> -->
 
+            <!-- This is for producing paylodas to feed into Rust -->
             <!-- <button class="hf-control-panel-btn" @click="copyPayload">Copy Payload</button> -->
-
-            <!-- <div class="hf-divider" /> -->
 
             <div class="hf-divider" />
             <label class="hf-inline-check">
@@ -90,10 +68,6 @@ watchEffect(() => {
                     <div class="progress-fill" :style="{ width: `${optimizer_worker.est_progress_percentage}%` }" />
                 </div>
             </div>
-            <!-- <label class="hf-inline-check">
-                    <input v-model="allowManualState" type="checkbox" />
-                    <span>Enable progress updates for better optimization</span>
-                </label> -->
         </div>
     </section>
 </template>

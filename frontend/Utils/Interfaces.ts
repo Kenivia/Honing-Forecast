@@ -1,10 +1,15 @@
-import { assert } from "console"
-
-import { CharProfile, useProfilesStore } from "@/stores/CharacterProfile"
 import { ALL_LABELS, TIER_LABELS } from "./Constants"
-import { toRaw } from "vue"
 
-export type KeyedStates = Record<OneUpgradeKey, OneState[]>
+// THESE BELOW DIRECTLY CORRESPOND TO A RUST STRUCT
+
+export type HistogramPair = [number, number]
+export interface HistogramOutputs {
+    cum_percentiles: HistogramPair[][]
+    average: number[]
+    state_bundle: StateBundle
+    bound_chance: number[]
+    tradable_chance: number[]
+}
 
 export interface Upgrade {
     piece_type: number
@@ -55,31 +60,12 @@ export interface StateBundle {
     metric?: number
 }
 
-export type BoolGrid = boolean[][]
-export type NumGrid = number[][]
 export type OneState = [boolean, number] // juice, bookid
-export type StateGrid = OneState[][][]
 export type AdvProgress = [number, number, boolean, boolean] // current xp(0 to 100 or 99 ig), current balls ( 0 to 6), next_free, next_big
-export type AdvProgressGrid = AdvProgress[][]
-// ^ these types go directly to wasm and should not become an interface with multiple fields
-export function makeDefaultBoolGrid(rows: number, cols: number): BoolGrid {
-    return new Array(rows).fill(new Array(cols).fill(false))
-}
-export function makeDefaultNumGrid(rows: number, cols: number): NumGrid {
-    return new Array(rows).fill(new Array(cols).fill(0))
-}
-export function makeDefaultStateGrid(rows: number, cols: number): StateGrid {
-    return new Array(rows).fill(new Array(cols).fill([]))
-}
-export function makeDefaultAdvProgressGrid(rows: number, cols: number): AdvProgressGrid {
-    return new Array(rows).fill(new Array(cols).fill([0, 0, false, false]))
-}
 
-export enum UpgradeStatus {
-    Done,
-    Want,
-    NotYet,
-}
+// ========================================================================================
+
+// This section is for the InputColumn
 
 export interface InputColumn {
     data: string[]
@@ -105,16 +91,7 @@ export function create_input_column(type: InputType, keys: string[], data?: stri
 export function input_column_to_num(input_column: InputColumn): number[] {
     return input_column.data.map((x: string, index: number) => parse_input(input_column, index, x))
 }
-// export function forbid_non_numeric(input_column: InputColumn, index: number, event: Event) {
-//     const el = event.target as HTMLInputElement
-//     if (!input_column.enabled[index]) {
-//         el.value = ""
-//         return ""
-//     }
-//     const filtered = String(el.value).replace(/[^\d,]/g, "")
-//     el.value = filtered
-//     return filtered
-// }
+
 export function get_modified_cell(input_column: InputColumn, index: number, event: Event) {
     if (!input_column.enabled[index]) {
         return input_column.data[index]
@@ -134,6 +111,16 @@ export function fill_new_tiers_with_default(old: InputColumn[]) {
         old.push(create_input_column(InputType.Int, ALL_LABELS[old.length]))
     }
 }
+
+// ========================================================================================
+// Status grid (TickboxGrid) stuff
+export enum UpgradeStatus {
+    Done,
+    Want,
+    NotYet,
+}
+
+export type BoolGrid = boolean[][]
 export type StatusGrid = UpgradeStatus[][]
 
 export function status_to_bool_grid(status_grid: StatusGrid): BoolGrid {
@@ -149,39 +136,34 @@ export function createStatusGrid(
     }
     return data
 }
-export type OneMaterial = [number, number, number, number, number]
-export type MaterialInput = OneMaterial[]
 
-// idk why i used is_adv here but whatever
-//          (enabled),  piece type, upgrade index, is_adv, normal_progress, state, unlock, succeeded, adv_progress
+// ========================================================================================
+// These are to interface between UI and rust
+
+//                    'bound','tradable', leftover(bound), tradable sell price, market price
+export type OneMaterial = [number, number, number, number, number] // an array of this is passed into rust
+
+//                        piece type, upgrade index, is_normal, normal_progress, state, unlock, succeeded, adv_progress
 export type OneUpgrade = [number, number, boolean, number | null, OneState[], boolean, boolean, AdvProgress | null]
-export type UpgradeInput = OneUpgrade[]
-export const DEFAULT_ONE_UPGRADE = [0, [], false, false, [0, 0, false, false]] // excluding the first 3
-
-// THE ONLY purpose of this is to store the last good state s.t. we can pass it to the next optimizer call to warmstart the optimizer
-// and to force starting states for already failed taps
-// we do not use this KeyedUpgrades type in the UI
-export type KeyedUpgrades = Record<OneUpgradeKey, [boolean, OneUpgrade, number | null, number | null]>
-// the boolean was meant to indicate whether or not it's ticked, but now we just delete the entry if its not so its redundant
-// the other 2 numbers were meant to be used to override the number of juice & books but i gave up on that (too confusing UI wise i think)
+// an array of this is passed into rust
 
 type OneUpgradeKey = `${number},${number},${"true" | "false"},${number}`
-export function to_upgrade_key(piece_type: number, upgrade_index: number, is_adv: boolean, tier: number): OneUpgradeKey {
-    return `${piece_type},${upgrade_index},${is_adv},${tier}`
+export type KeyedUpgrades = Record<OneUpgradeKey, OneUpgrade> // This is modified by UI
+
+export function to_upgrade_key(piece_type: number, upgrade_index: number, is_normal: boolean, tier: number): OneUpgradeKey {
+    return `${piece_type},${upgrade_index},${is_normal},${tier}`
 }
 
 export function grids_to_keyed(normal_grid: StatusGrid, adv_grid: StatusGrid, all_keyed: KeyedUpgrades, tier: number) {
-    // console.log("begin", all_keyed)
     let new_keyed: KeyedUpgrades = {}
     for (const [piece_type, row] of status_to_bool_grid(normal_grid).entries()) {
         for (const [upgrade_index, cell] of row.entries()) {
             let key = to_upgrade_key(piece_type, upgrade_index, false, tier)
             if (cell) {
                 if (key in all_keyed) {
-                    new_keyed[key] = all_keyed[key].slice() as [boolean, OneUpgrade, number | null, number | null]
-                    new_keyed[key][0] = true
+                    new_keyed[key] = all_keyed[key]
                 } else {
-                    new_keyed[key] = [true, [piece_type, upgrade_index, false, 0, null, false, false, null], 0, 0]
+                    new_keyed[key] = [piece_type, upgrade_index, true, 0, null, false, false, null]
                 }
             }
         }
@@ -191,27 +173,12 @@ export function grids_to_keyed(normal_grid: StatusGrid, adv_grid: StatusGrid, al
             let key = to_upgrade_key(piece_type, upgrade_index, true, tier)
             if (cell) {
                 if (key in all_keyed) {
-                    new_keyed[key] = all_keyed[key].slice() as [boolean, OneUpgrade, number | null, number | null]
-                    new_keyed[key][0] = true
+                    new_keyed[key] = all_keyed[key]
                 } else {
-                    new_keyed[key] = [true, [piece_type, upgrade_index, true, null, null, false, false, [0, 0, false, false]], null, null]
+                    new_keyed[key] = [piece_type, upgrade_index, false, null, null, false, false, [0, 0, false, false]]
                 }
             }
         }
     }
-    // console.log("after", new_keyed)
     return new_keyed
-}
-
-export type HistogramPair = [number, number]
-export interface HistogramOutputs {
-    cum_percentiles: HistogramPair[][]
-    average: number[]
-    state_bundle: StateBundle
-    bound_chance: number[]
-    tradable_chance: number[]
-}
-
-export interface EvalAverageOutput {
-    average_gold_per_treatement: number[]
 }

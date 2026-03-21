@@ -28,7 +28,7 @@ pub type MaterialInput = Vec<(f64, f64, f64, f64, f64)>; // bound, trade, leftov
 pub type UpgradeInput = Vec<(
     usize,                              // piece type,
     usize,                              // upgrade_index
-    bool,                               // is_adv
+    bool,                               // is_normal_honing
     Option<usize>,                      // normal_progress
     Vec<(bool, usize)>,                 // state
     bool,                               // unlock
@@ -117,7 +117,7 @@ pub fn parser(
     for (
         piece_type,
         upgrade_index,
-        is_adv,
+        is_normal_honing,
         normal_progress,
         state,
         unlock,
@@ -135,7 +135,7 @@ pub fn parser(
         let this_succeeded: bool = success;
         let this_state_given: Vec<(bool, usize)> = state;
 
-        if !is_adv {
+        if is_normal_honing {
             let special_cost: i64 =
                 special_leap_cost[if piece_type == 5 { 1 } else { 0 }][upgrade_index];
             let event_artisan_rate: f64 = artisan_rate_arr[upgrade_index];

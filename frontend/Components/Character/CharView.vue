@@ -1,10 +1,9 @@
 <script setup lang="ts">
-import ControlPanel from "@/Components/Character/ControlPanel.vue"
 import Instructions from "@/Components/Character/Instructions/Instructions.vue"
 import MaterialDist from "@/Components/Character/MaterialDist/MaterialDist.vue"
 import StatusInput from "@/Components/Character/StatusInput/StatusInput.vue"
-import { useProfilesStore } from "@/stores/CharacterProfile"
-import { useRosterStore } from "@/stores/RosterConfig"
+import { useProfilesStore } from "@/Stores/CharacterProfile"
+import { useRosterStore } from "@/Stores/RosterConfig"
 import { grids_to_keyed, StateBundle } from "@/Utils/Interfaces"
 import { WasmOp } from "@/WasmInterface/js_to_wasm"
 import { build_material_info, build_payload } from "@/WasmInterface/payload"
@@ -18,7 +17,6 @@ const router = useRouter()
 
 const profile_store = useProfilesStore()
 const { active_profile } = storeToRefs(profile_store)
-
 const { roster_config } = storeToRefs(useRosterStore())
 // Route param → active character
 watch(
@@ -56,6 +54,8 @@ function start_eval_hist(result: StateBundle) {
         build_payload(WasmOp.EvaluateAverage, active_profile.value, roster_config.value),
     )
 }
+
+// Don't watch state changes betcause that's handled by start_eval_hist
 watch(
     [
         () => active_profile.value.bound_budgets,

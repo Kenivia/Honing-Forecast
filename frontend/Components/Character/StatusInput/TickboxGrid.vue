@@ -1,22 +1,13 @@
 <script setup lang="ts">
-import { CharProfile, useProfilesStore } from "@/stores/CharacterProfile"
-import { PIECE_NAMES, NORMAL_COLS as NORMAL_COLS, NUM_PIECES as NORMAL_ROWS, ADV_COLS, ALL_LABELS, BUNDLE_SIZE } from "@/Utils/Constants"
+import { useProfilesStore } from "@/Stores/CharacterProfile"
+import { PIECE_NAMES, NORMAL_COLS as NORMAL_COLS, NUM_PIECES as NORMAL_ROWS, ADV_COLS } from "@/Utils/Constants"
 import { iconPath } from "@/Utils/Helpers"
-import { grids_to_keyed, input_column_to_num, KeyedStates, StateBundle, to_upgrade_key, Upgrade, UpgradeStatus } from "@/Utils/Interfaces"
+import { UpgradeStatus } from "@/Utils/Interfaces"
 import { storeToRefs } from "pinia"
-import { eventNames } from "process"
-import { computed, onWatcherCleanup, ref, toRaw, watch, watchEffect } from "vue"
-import StatusInput from "./StatusInput.vue"
-import { apply_treatement, build_material_info, build_payload as build_payload, EvalPayload } from "@/WasmInterface/payload"
-import { WasmOp } from "@/WasmInterface/js_to_wasm"
-import { useRosterStore } from "@/stores/RosterConfig"
-import { watchDebounced } from "@vueuse/core"
-
-const profile_store = useProfilesStore()
+import { computed } from "vue"
 
 const { active_profile } = storeToRefs(useProfilesStore())
 
-const { roster_config } = storeToRefs(useRosterStore())
 const props = defineProps<{
     grid_type: "normal" | "adv"
 }>()
@@ -39,6 +30,9 @@ function change_col(col: number) {
     }
 }
 
+// The idea is that on the box that the user ticks, the it will always cycle:
+// NotYet -> Want -> Done -> NotYet
+// The rest is convenienc / making things make sense
 function change_one(row: number, col: number, current = relevant_grid.value[row][col]) {
     if (current == UpgradeStatus.NotYet) {
         let left_is_not_yet = true
@@ -91,7 +85,6 @@ function change_one(row: number, col: number, current = relevant_grid.value[row]
             if (index < col) {
                 break
             }
-            let cell = relevant_grid.value[row][index]
             if (!right_is_not_yet) {
                 relevant_grid.value[row][index] = UpgradeStatus.Want
             }

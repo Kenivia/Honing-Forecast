@@ -4,16 +4,15 @@ import { create_input_column, fill_new_tiers_with_default, InputColumn, InputTyp
 import { defineStore } from "pinia"
 
 export interface RosterConfig {
-    mats_prices: InputColumn[]
-    roster_mats_owned: InputColumn[] // roster bound leftover will inherit the character's bound leftover values
+    mats_prices: InputColumn[] // mats_prices[tier].data[row] = "123"
+    roster_mats_owned: InputColumn[] // Same as in char profile, the tier distinction is because there's different number of mats (rows) for each tier
     tradable_mats_owned: InputColumn[]
     tier: number
     cumulative_graph: boolean
     selected_shard_bag_size: number
     region: string
-    effective_serca_price: number[]
-    last_market_timestamp: Record<string, number>
-    // tradable_mats_price: InputColumn // these are just price with tax applied
+    effective_serca_price: number[] // This is the one that's actually used (instead of mats_prices) for serca mats in build_material_info
+    latest_market_data: Record<string, [number, any]> // [timestamp, raw_response_data]
 }
 export const useRosterStore = defineStore("roster", {
     state: () => ({
@@ -38,8 +37,7 @@ export const DEFAULT_ROSTER_CONFIG: RosterConfig = {
     selected_shard_bag_size: 3000,
     region: "NAE",
     effective_serca_price: ALL_LABELS[1].map(() => 0),
-    last_market_timestamp: {},
-    // tradable_mats_price: createInputColumn(InputType.Float),
+    latest_market_data: {},
 }
 
 export function load_roster_config(): RosterConfig {

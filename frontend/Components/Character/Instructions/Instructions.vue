@@ -1,18 +1,15 @@
 <script setup lang="ts">
-import { CharProfile, useProfilesStore } from "@/stores/CharacterProfile"
-import { useRosterStore } from "@/stores/RosterConfig"
-import { PIECE_NAMES } from "@/Utils/Constants"
-import { iconPath } from "@/Utils/Helpers"
-import { Upgrade, UpgradeStatus } from "@/Utils/Interfaces"
+import { useProfilesStore } from "@/Stores/CharacterProfile"
+import { Upgrade } from "@/Utils/Interfaces"
 import { storeToRefs } from "pinia"
 import { computed } from "vue"
 import InstructionRow from "./InstructionRow.vue"
 
-const profile_store = useProfilesStore()
 const { active_profile } = storeToRefs(useProfilesStore())
-const { roster_config } = storeToRefs(useRosterStore())
 
-// this
+// This sorts the upgrades into an order that can actually be performed in game
+// special_state is already guaranteed to be valid on the rust side, but it doesn't tell us how to do the non-special taps
+// this gives a suggestion
 function sort_upgrades(): [Upgrade, number][] {
     if (!active_profile.value.optimizer_worker_bundle.result) {
         return []
@@ -29,8 +26,6 @@ function sort_upgrades(): [Upgrade, number][] {
     }
 
     let special_invalid_index = active_profile.value.optimizer_worker_bundle.result.special_invalid_index
-    // console.log(list.slice(), special_invalid_index)              this_upgrade.this_special_chance = active_profile.value.optimizer_worker_bundle.result.
-
     for (const [index_in_special_state, index_in_upgrade_arr] of special_state.entries()) {
         // console.log(original_index, u_index, output)
         if (index_in_special_state >= special_invalid_index) {

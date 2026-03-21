@@ -1,6 +1,6 @@
 import { createRouter, createWebHistory } from "vue-router"
 import CharView from "../Components/Character/CharView.vue"
-import { useProfilesStore } from "@/stores/CharacterProfile"
+import { useProfilesStore } from "@/Stores/CharacterProfile"
 import MarketView from "@/Components/Roster/MarketView.vue"
 import RosterView from "@/Components/RosterView.vue"
 

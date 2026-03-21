@@ -1,12 +1,10 @@
 <script setup lang="ts">
-import { useProfilesStore } from "@/stores/CharacterProfile"
+import { useProfilesStore } from "@/Stores/CharacterProfile"
 import TickboxGrid from "./TickboxGrid.vue"
 import { storeToRefs } from "pinia"
 import { achieved_ilevel, check_adv_all_done, check_eligibility, check_ilevel_all_good, pending_ilevel } from "@/Utils/Helpers"
 import { computed, watch } from "vue"
-import { ALL_LABELS, NORMAL_COLS, NUM_PIECES, PLUS_TIER_CONVERSION, TIER_OPTIONS } from "@/Utils/Constants"
-import { SelectButton } from "primevue"
-
+import { ALL_LABELS, NORMAL_COLS, NUM_PIECES, PLUS_TIER_CONVERSION } from "@/Utils/Constants"
 import TierConvertButton from "@/Components/Common/TierConvertButton.vue"
 import { input_column_to_num, parse_input, UpgradeStatus } from "@/Utils/Interfaces"
 import ControlPanel from "../ControlPanel.vue"
