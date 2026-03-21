@@ -2,12 +2,12 @@
 import { CharProfile, useProfilesStore } from "@/stores/CharacterProfile"
 import { PIECE_NAMES, NORMAL_COLS as NORMAL_COLS, NUM_PIECES as NORMAL_ROWS, ADV_COLS, ALL_LABELS, BUNDLE_SIZE } from "@/Utils/Constants"
 import { iconPath } from "@/Utils/Helpers"
-import { grids_to_keyed, input_column_to_num, keyed_to_array, KeyedStates, StateBundle, to_upgrade_key, Upgrade, UpgradeStatus } from "@/Utils/Interfaces"
+import { grids_to_keyed, input_column_to_num, KeyedStates, StateBundle, to_upgrade_key, Upgrade, UpgradeStatus } from "@/Utils/Interfaces"
 import { storeToRefs } from "pinia"
 import { eventNames } from "process"
 import { computed, onWatcherCleanup, ref, toRaw, watch, watchEffect } from "vue"
 import StatusInput from "./StatusInput.vue"
-import { apply_treatement, buildPayload, EvalPayload } from "@/WasmInterface/payload"
+import { apply_treatement, build_material_info, build_payload as build_payload, EvalPayload } from "@/WasmInterface/payload"
 import { WasmOp } from "@/WasmInterface/js_to_wasm"
 import { useRosterStore } from "@/stores/RosterConfig"
 import { watchDebounced } from "@vueuse/core"
@@ -109,131 +109,6 @@ function change_one(row: number, col: number, current = relevant_grid.value[row]
         }
     }
 }
-const preped_payload = ref(null)
-
-watch(
-    [() => active_profile.value.adv_grid, () => active_profile.value.normal_grid, () => active_profile.value.tier],
-    () => {
-        console.log("keyed update")
-        active_profile.value.keyed_upgrades = grids_to_keyed(
-            active_profile.value.normal_grid,
-            active_profile.value.adv_grid,
-            active_profile.value.keyed_upgrades,
-            active_profile.value.tier,
-        )
-    },
-    { deep: true },
-)
-watch(
-    [
-        () => active_profile.value.bound_budgets,
-        () => active_profile.value.leftover_price,
-        () => active_profile.value.tier,
-        () => active_profile.value.express_event,
-        () => active_profile.value.min_resolution,
-        () => roster_config.value.roster_mats_owned,
-        () => roster_config.value.tradable_mats_owned,
-        () => roster_config.value.mats_prices,
-        () => active_profile.value.keyed_upgrades,
-        () => active_profile.value.special_budget,
-    ],
-    () => {
-        console.log("payload update")
-        preped_payload.value = buildPayload(WasmOp.OptimizeAverage)
-    },
-    { deep: true, immediate: true },
-)
-watchDebounced(
-    [
-        () => active_profile.value.bound_budgets,
-        () => active_profile.value.leftover_price,
-        () => active_profile.value.tier,
-        () => active_profile.value.express_event,
-        () => active_profile.value.min_resolution,
-        () => roster_config.value.roster_mats_owned,
-        () => roster_config.value.tradable_mats_owned,
-        () => roster_config.value.mats_prices,
-        () => active_profile.value.keyed_upgrades,
-        () => active_profile.value.special_budget,
-        () => active_profile.value.optimizer_treatment_plan,
-        () => active_profile.value.auto_start_optimizer,
-    ],
-    (_) => {
-        if (preped_payload.value === null || !active_profile.value.auto_start_optimizer) {
-            return
-        }
-        onWatcherCleanup(() => {
-            active_profile.value.optimizer_worker_bundle.cancel()
-        })
-        active_profile.value.optimizer_worker_bundle.start(WasmOp.OptimizeAverage, structuredClone(toRaw(preped_payload.value)), set_keyed_states)
-    },
-    { immediate: true, deep: true, debounce: 500 },
-)
-
-// The purpose of this is to give the previous state (hopefully a good state) back to the optimizer but its fine ig
-// It's separate from the keyed upgrades because optimizer can modify this
-function set_keyed_states(result: StateBundle) {
-    if (result === null) return
-    let new_keyed_state: KeyedStates = {}
-    for (let index = 0; index < result.upgrade_arr.length; index++) {
-        const upgrade: Upgrade = result.upgrade_arr[index]
-        const key = to_upgrade_key(upgrade.piece_type, upgrade.upgrade_index, !upgrade.is_normal_honing, active_profile.value.tier)
-
-        // const current = active_profile.value.keyed_states[key]
-        // if (!current || !equal(current, upgrade.state)) {
-        new_keyed_state[key] = upgrade.state
-        // }
-    }
-    // console.log("new keyed states", new_keyed_state, result.upgrade_arr)
-    active_profile.value.keyed_states = new_keyed_state
-    console.log("payload update")
-    preped_payload.value = buildPayload(WasmOp.OptimizeAverage)
-
-    active_profile.value.histogram_worker_bundle.throttled_start(WasmOp.Histogram, buildPayload(WasmOp.Histogram))
-    active_profile.value.evaluation_worker_bundle.throttled_start(WasmOp.EvaluateAverage, buildPayload(WasmOp.EvaluateAverage))
-}
-
-watch(
-    [
-        () => active_profile.value.bound_budgets,
-        () => active_profile.value.leftover_price,
-        () => active_profile.value.tier,
-        () => active_profile.value.express_event,
-        () => active_profile.value.min_resolution,
-        () => roster_config.value.roster_mats_owned,
-        () => roster_config.value.tradable_mats_owned,
-        () => roster_config.value.mats_prices,
-        () => active_profile.value.keyed_upgrades,
-        () => active_profile.value.special_budget,
-
-        () => active_profile.value.histogram_treatment_plan,
-    ],
-    () => {
-        if (preped_payload.value === null) return
-        active_profile.value.histogram_worker_bundle.throttled_start(WasmOp.Histogram, buildPayload(WasmOp.Histogram))
-    },
-    { immediate: true, deep: true },
-)
-
-watch(
-    [
-        () => active_profile.value.bound_budgets,
-        () => active_profile.value.leftover_price,
-        () => active_profile.value.tier,
-        () => active_profile.value.express_event,
-        () => active_profile.value.min_resolution,
-        () => roster_config.value.roster_mats_owned,
-        () => roster_config.value.tradable_mats_owned,
-        () => roster_config.value.mats_prices,
-        () => active_profile.value.keyed_upgrades,
-        () => active_profile.value.special_budget,
-    ],
-    () => {
-        if (preped_payload.value === null) return
-        active_profile.value.evaluation_worker_bundle.throttled_start(WasmOp.EvaluateAverage, buildPayload(WasmOp.EvaluateAverage))
-    },
-    { immediate: true, deep: true },
-)
 </script>
 <template>
     <div class="hf-grid-content">

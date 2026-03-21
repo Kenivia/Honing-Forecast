@@ -3,7 +3,7 @@ import { create_default_char_profile, recreate_char_profile, useProfilesStore } 
 import { useRosterStore } from "@/stores/RosterConfig"
 import { achieved_ilevel, pending_ilevel } from "@/Utils/Helpers"
 import { WasmOp } from "@/WasmInterface/js_to_wasm"
-import { buildPayload } from "@/WasmInterface/payload"
+import { build_payload } from "@/WasmInterface/payload"
 import { storeToRefs } from "pinia"
 import { ref, toRaw } from "vue"
 import { RouterLink } from "vue-router"
@@ -41,7 +41,7 @@ function duplicate(index) {
     new_char.char_name = "NewChar" + String(profile_store.profiles.length + 1)
     names.value.push(new_char.char_name)
     profile_store.profiles.push(new_char)
-    new_char.optimizer_worker_bundle.start(WasmOp.Parser, buildPayload(WasmOp.Parser))
+    new_char.optimizer_worker_bundle.start(WasmOp.Parser, build_payload(WasmOp.Parser, new_char, roster_config.value))
 }
 
 function delete_profile(index) {

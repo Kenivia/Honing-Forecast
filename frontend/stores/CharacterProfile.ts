@@ -1,4 +1,4 @@
-import { defineStore } from "pinia"
+import { defineStore, storeToRefs } from "pinia"
 import {
     AdvProgress,
     AdvProgressGrid,
@@ -24,7 +24,8 @@ import { ADV_COLS, ALL_LABELS, T4_JUICE_LABELS, T4_MATS_LABELS, NORMAL_COLS, NUM
 import { Ref, ref } from "vue"
 import { WasmOp } from "@/WasmInterface/js_to_wasm"
 import { debounce } from "@/Utils/Helpers"
-import { buildPayload } from "@/WasmInterface/payload"
+import { build_payload } from "@/WasmInterface/payload"
+import { useRosterStore } from "./RosterConfig"
 
 export const useProfilesStore = defineStore("profiles", {
     state: () => DEFAULT_PROFILES_STATE,
@@ -44,12 +45,13 @@ export const useProfilesStore = defineStore("profiles", {
             this.profiles.push(profile)
         },
         init() {
+            const { roster_config } = storeToRefs(useRosterStore())
             const loaded = load_char_profiles()
             this.profiles = loaded.profiles
             this.active_profile_index = loaded.active_profile_index
 
             for (let index = 0; index < this.profiles.length; index++) {
-                this.profiles[index].optimizer_worker_bundle.start(WasmOp.Parser, buildPayload(WasmOp.Parser))
+                this.profiles[index].optimizer_worker_bundle.start(WasmOp.Parser, build_payload(WasmOp.Parser, this.profiles[index], roster_config.value))
             }
             // console.log(this)
         },
@@ -59,8 +61,12 @@ export const useProfilesStore = defineStore("profiles", {
         },
 
         resetActiveProfile() {
+            const { roster_config } = storeToRefs(useRosterStore())
             this.profiles[this.active_profile_index] = create_default_char_profile()
-            this.profiles[this.active_profile_index].optimizer_worker_bundle.start(WasmOp.Parser, buildPayload(WasmOp.Parser))
+            this.profiles[this.active_profile_index].optimizer_worker_bundle.start(
+                WasmOp.Parser,
+                build_payload(WasmOp.Parser, this.profiles[this.active_profile_index], roster_config.value),
+            )
         },
     },
 })

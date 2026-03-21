@@ -1,7 +1,7 @@
-import { ref, onUnmounted, Ref, toRaw } from "vue"
+import { ref, onUnmounted, Ref, toRaw, shallowRef } from "vue"
 import { WasmOp } from "./js_to_wasm"
 import { HistogramOutputs, StateBundle } from "@/Utils/Interfaces"
-import { buildPayload, EvalPayload } from "./payload"
+import { build_payload, EvalPayload } from "./payload"
 import { mapToObject } from "@/Utils/Helpers"
 const createWorker = () => new Worker(new URL("./js_to_wasm.ts", import.meta.url), { type: "module" })
 
@@ -9,7 +9,7 @@ export function createWorkerBundle() {
     let worker = null
     const status: Ref<"idle" | "success" | "busy" | "error"> = ref("idle")
     const error = ref(null)
-    const result = ref(null)
+    const result = shallowRef(null)
     const est_progress_percentage = ref(0)
     let debounceTimer = null
     let throttle_timer: ReturnType<typeof setTimeout> | null = null

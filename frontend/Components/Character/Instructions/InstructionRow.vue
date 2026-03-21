@@ -73,7 +73,7 @@ function aggregateStreaks(): NormalStreak[] | AdvStreak[] {
         if (streaks.length == 0) {
             streaks.push({ juice: false, scroll: false, grace: true, count: 255 })
         }
-        console.log(juice_grace, juice_non_grace, scroll_grace, scroll_non_grace, props.upgrade.state)
+        // console.log(juice_grace, juice_non_grace, scroll_grace, scroll_non_grace, props.upgrade.state)
         return streaks
     }
 }

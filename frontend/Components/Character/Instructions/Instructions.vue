@@ -23,10 +23,9 @@ function sort_upgrades(): [Upgrade, number][] {
     let upgrade_arr: Upgrade[] = active_profile.value.optimizer_worker_bundle.result.upgrade_arr
     // let copy = upgrade_arr.slice()
     let special_state: number[] = active_profile.value.optimizer_worker_bundle.result.special_state
-    for (let index = 0; index < upgrade_arr.length; index++) {
-        // console.log(active_profile.value.optimizer_worker_bundle.result.latest_special_probs)
-        // copy[index].this_special_chance = active_profile.value.optimizer_worker_bundle.result.latest_special_probs[index]
-        upgrade_arr[special_state[index]].this_special_chance = active_profile.value.optimizer_worker_bundle.result.latest_special_probs[index]
+    const special_chance_map = new Map()
+    for (let index = 0; index < special_state.length; index++) {
+        special_chance_map.set(special_state[index], active_profile.value.optimizer_worker_bundle.result.latest_special_probs[index])
     }
 
     let special_invalid_index = active_profile.value.optimizer_worker_bundle.result.special_invalid_index
@@ -60,7 +59,14 @@ function sort_upgrades(): [Upgrade, number][] {
     //     output.map((x) => [x, special_state.findIndex((y) => y == x)]),
     //     special_state,
     // )
-    return output.map((x) => [upgrade_arr[x], special_state.findIndex((y) => y == x)])
+    return output.map((x) => {
+        const upgrade = upgrade_arr[x]
+        const index_in_special = special_state.findIndex((y) => y == x)
+        return [
+            { ...upgrade, this_special_chance: special_chance_map.get(x) }, // Shallow clone
+            index_in_special,
+        ]
+    })
 }
 
 let sorted_upgrade_arr = computed(sort_upgrades)
@@ -73,7 +79,7 @@ let sorted_upgrade_arr = computed(sort_upgrades)
         </div>
         <div class="hf-card-body">
             <div v-if="active_profile.optimizer_worker_bundle.result">
-                <div v-for="([upgrade, index_in_special_state], perform_order) in sorted_upgrade_arr" :key="`instructions-${sorted_upgrade_arr}`">
+                <div v-for="([upgrade, index_in_special_state], perform_order) in sorted_upgrade_arr" :key="`instructions-${perform_order}`">
                     <InstructionRow
                         :upgrade="upgrade"
                         :perform_order="perform_order"

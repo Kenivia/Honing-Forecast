@@ -17,7 +17,7 @@ import { check_eligibility, iconPath, metricToText } from "@/Utils/Helpers"
 import MaterialCell from "@/Components/Common/MaterialCell.vue"
 import { create_input_column, DEFAULT_ONE_UPGRADE, input_column_to_num, InputType, parse_input, UpgradeStatus } from "@/Utils/Interfaces"
 import MaterialGraph from "./MaterialGraph.vue"
-import { buildPayload } from "@/WasmInterface/payload"
+import { build_payload } from "@/WasmInterface/payload"
 import { WasmOp } from "@/WasmInterface/js_to_wasm"
 import { RosterConfig, useRosterStore } from "@/stores/RosterConfig"
 import { storeToRefs } from "pinia"
@@ -37,7 +37,7 @@ function resetActive() {
 //     )
 // }
 function copyPayload() {
-    const payload = JSON.stringify(buildPayload(WasmOp.Parser), null, 2)
+    const payload = JSON.stringify(build_payload(WasmOp.Parser, active_profile.value, roster_config.value), null, 2)
     navigator.clipboard?.writeText(payload).catch(() => undefined)
 }
 

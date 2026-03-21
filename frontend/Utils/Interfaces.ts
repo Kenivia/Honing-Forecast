@@ -154,7 +154,7 @@ export type MaterialInput = OneMaterial[]
 
 // idk why i used is_adv here but whatever
 //          (enabled),  piece type, upgrade index, is_adv, normal_progress, state, unlock, succeeded, adv_progress
-export type OneUpgrade = [number, number, boolean, number | null, null, boolean, boolean, AdvProgress | null]
+export type OneUpgrade = [number, number, boolean, number | null, OneState[], boolean, boolean, AdvProgress | null]
 export type UpgradeInput = OneUpgrade[]
 export const DEFAULT_ONE_UPGRADE = [0, [], false, false, [0, 0, false, false]] // excluding the first 3
 
@@ -170,19 +170,6 @@ export function to_upgrade_key(piece_type: number, upgrade_index: number, is_adv
     return `${piece_type},${upgrade_index},${is_adv},${tier}`
 }
 
-export function keyed_to_array(keyed_upgrades: KeyedUpgrades, keyed_states: KeyedStates): OneUpgrade[] {
-    return (
-        Object.entries(keyed_upgrades)
-            // .map(([key, pair]) => pair)
-            .filter(([_, x]) => x[0])
-            .map(([key, arr]) => {
-                const out = toRaw(arr[1])
-                // console.log(keyed_states)
-                out[4] = toRaw(keyed_states[key]) ?? []
-                return out
-            })
-    )
-}
 export function grids_to_keyed(normal_grid: StatusGrid, adv_grid: StatusGrid, all_keyed: KeyedUpgrades, tier: number) {
     // console.log("begin", all_keyed)
     let new_keyed: KeyedUpgrades = {}
@@ -191,7 +178,7 @@ export function grids_to_keyed(normal_grid: StatusGrid, adv_grid: StatusGrid, al
             let key = to_upgrade_key(piece_type, upgrade_index, false, tier)
             if (cell) {
                 if (key in all_keyed) {
-                    new_keyed[key] = all_keyed[key]
+                    new_keyed[key] = all_keyed[key].slice() as [boolean, OneUpgrade, number | null, number | null]
                     new_keyed[key][0] = true
                 } else {
                     new_keyed[key] = [true, [piece_type, upgrade_index, false, 0, null, false, false, null], 0, 0]
@@ -204,7 +191,7 @@ export function grids_to_keyed(normal_grid: StatusGrid, adv_grid: StatusGrid, al
             let key = to_upgrade_key(piece_type, upgrade_index, true, tier)
             if (cell) {
                 if (key in all_keyed) {
-                    new_keyed[key] = all_keyed[key]
+                    new_keyed[key] = all_keyed[key].slice() as [boolean, OneUpgrade, number | null, number | null]
                     new_keyed[key][0] = true
                 } else {
                     new_keyed[key] = [true, [piece_type, upgrade_index, true, null, null, false, false, [0, 0, false, false]], null, null]
