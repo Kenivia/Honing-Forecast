@@ -28,8 +28,22 @@ export function check_adv_all_done() {
     }
     return true
 }
-export function check_ilevel_all_good(): number | boolean {
+export function check_all_plus_20(): number | boolean {
     const { active_profile } = storeToRefs(useProfilesStore())
+    for (let row = 0; row < NUM_PIECES; row++) {
+        let highest_done = active_profile.value.normal_grid[row].findLastIndex((value) => value == UpgradeStatus.Done) + 1
+
+        if (!(highest_done >= 20)) {
+            return false
+        }
+    }
+    return true
+}
+export function check_revert_ilevel_ok(): number | boolean {
+    const { active_profile } = storeToRefs(useProfilesStore())
+    if (active_profile.value.tier == 0) {
+        return true
+    }
     for (let row = 0; row < NUM_PIECES; row++) {
         let highest_done = active_profile.value.normal_grid[row].findLastIndex((value) => value == UpgradeStatus.Done) + 1
 
@@ -44,9 +58,9 @@ export function check_ilevel_all_good(): number | boolean {
     }
     return true
 }
-export function check_eligibility(): boolean {
-    return check_adv_all_done() && check_ilevel_all_good() === true
-}
+// export function check_revert_eligibility(): boolean {
+//     return check_adv_all_done() && check_revert_ilevel_ok() === true
+// }
 export function achieved_ilevel(profile: CharProfile): string {
     let out = profile.tier == 0 ? 1590 : 1635
     if (profile.tier == 0) {

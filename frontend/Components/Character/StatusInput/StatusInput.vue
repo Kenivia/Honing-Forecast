@@ -2,9 +2,9 @@
 import { useProfilesStore } from "@/Stores/CharacterProfile"
 import TickboxGrid from "./TickboxGrid.vue"
 import { storeToRefs } from "pinia"
-import { achieved_ilevel, check_adv_all_done, check_eligibility, check_ilevel_all_good, pending_ilevel } from "@/Utils/Helpers"
+import { achieved_ilevel, check_adv_all_done, check_all_plus_20, check_revert_ilevel_ok, pending_ilevel } from "@/Utils/Helpers"
 import { computed, watch } from "vue"
-import { ALL_LABELS, NORMAL_COLS, NUM_PIECES, PLUS_TIER_CONVERSION } from "@/Utils/Constants"
+import { ADV_COLS, ALL_LABELS, NORMAL_COLS, NUM_PIECES, PLUS_TIER_CONVERSION } from "@/Utils/Constants"
 import TierConvertButton from "@/Components/Common/TierConvertButton.vue"
 import { input_column_to_num, parse_input, UpgradeStatus } from "@/Utils/Interfaces"
 import ControlPanel from "../ControlPanel.vue"
@@ -12,21 +12,21 @@ import ControlPanel from "../ControlPanel.vue"
 const { active_profile } = storeToRefs(useProfilesStore())
 const tooltip_text = computed(() => {
     return active_profile.value.tier == 0
-        ? check_eligibility()
+        ? check_all_plus_20() && check_adv_all_done()
             ? "Eligible for conversion to T4.5 Serca gear"
-            : "Cannot convert to Serca because: " +
-              [!check_adv_all_done() ? "All Adv honing must be +40" : null, !(check_ilevel_all_good() === true) ? "All Gear must be at least +20" : null]
+            : "Warning! " +
+              [!check_adv_all_done() ? "All Adv honing will be set to +40" : null, !check_all_plus_20() ? "All Gear will be set to +20 (T4)" : null]
                   .filter((x) => x !== null)
                   .join(", \n")
-        : check_eligibility()
+        : check_revert_ilevel_ok()
           ? "Can go back to T4"
-          : "Cannot convert back to T4 because +" + String(check_ilevel_all_good()) + " cannot be mapped directly to a T4 upgrade"
+          : "Cannot convert back to T4 because +" + String(check_revert_ilevel_ok()) + " cannot be mapped directly to a T4 upgrade"
 })
 const tier_label_text = computed(() => {
     return active_profile.value.tier == 0 ? "Convert to T4.5 Serca" : "Revert back to T4"
 })
 function change_tier() {
-    if (check_eligibility()) {
+    if (check_revert_ilevel_ok()) {
         active_profile.value.tier = active_profile.value.tier == 0 ? 1 : 0
     }
 }
@@ -50,14 +50,18 @@ watch(
         let multiplier = new_tier == 1 ? 0.2 : 5
         multiplied_indices.forEach(
             (index) =>
-                (active_profile.value.bound_budgets[new_tier].data[index] = String(
-                    parse_input(active_profile.value.bound_budgets[old_tier], index, String(num_array_old[index] * multiplier)),
-                )),
+                (active_profile.value.bound_budgets[new_tier].data[index] = parse_input(
+                    active_profile.value.bound_budgets[old_tier],
+                    index,
+                    String(num_array_old[index] * multiplier),
+                ).toLocaleString()),
         )
         // Special leaps also multiplied
-        active_profile.value.special_budget.data[0] = String(
-            parse_input(active_profile.value.special_budget, 0, String(input_column_to_num(active_profile.value.special_budget)[0] * multiplier)),
-        )
+        active_profile.value.special_budget.data[0] = parse_input(
+            active_profile.value.special_budget,
+            0,
+            String(input_column_to_num(active_profile.value.special_budget)[0] * multiplier),
+        ).toLocaleString()
 
         let stay_same_indices = [3, 5, 6, 7] // shards, gold, silver, red juice
         stay_same_indices.forEach(
@@ -74,8 +78,14 @@ watch(
         // the rest have separate values between tiers
 
         for (let row = 0; row < NUM_PIECES; row++) {
-            let highest_done = active_profile.value.normal_grid[row].findLastIndex((value) => value == UpgradeStatus.Done) + 1
-            let highest_want = active_profile.value.normal_grid[row].findLastIndex((value) => value == UpgradeStatus.Want || value == UpgradeStatus.Done) + 1
+            let highest_done = Math.max(
+                new_tier == 1 ? 20 : 11,
+                active_profile.value.normal_grid[row].findLastIndex((value) => value == UpgradeStatus.Done) + 1,
+            )
+            let highest_want = Math.max(
+                new_tier == 1 ? 20 : 11,
+                active_profile.value.normal_grid[row].findLastIndex((value) => value == UpgradeStatus.Want || value == UpgradeStatus.Done) + 1,
+            )
             let converted_done = PLUS_TIER_CONVERSION[old_tier][String(highest_done)]
             let converted_want = highest_want > 0 ? PLUS_TIER_CONVERSION[old_tier][String(highest_want)] : converted_done
             for (let col = 0; col < NORMAL_COLS; col++) {
@@ -85,6 +95,13 @@ watch(
                     active_profile.value.normal_grid[row][col] = UpgradeStatus.Want
                 } else {
                     active_profile.value.normal_grid[row][col] = UpgradeStatus.NotYet
+                }
+            }
+        }
+        if (new_tier == 1) {
+            for (let row = 0; row < NUM_PIECES; row++) {
+                for (let col = 0; col < ADV_COLS; col++) {
+                    active_profile.value.adv_grid[row][col] = UpgradeStatus.Done
                 }
             }
         }
@@ -103,9 +120,10 @@ watch(
                 <TierConvertButton
                     :labelText="tier_label_text"
                     :tooltipText="tooltip_text"
-                    :checkEligibility="check_eligibility"
+                    :checkEligibility="() => check_revert_ilevel_ok() === true"
                     @change-tier="change_tier"
-                    :show-tooltip-only-on-disabled="true"
+                    :show-tooltip-only-on-disabled="false"
+                    :warning="active_profile.tier == 0 && !(check_all_plus_20() && check_adv_all_done())"
                 />
             </div>
             <div class="hf-card-body">

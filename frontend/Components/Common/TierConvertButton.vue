@@ -6,6 +6,7 @@ const props = defineProps<{
     tooltipText?: string | null
     checkEligibility?: () => boolean | null
     showTooltipOnlyOnDisabled?: boolean | null
+    warning?: boolean
 }>()
 
 const emit = defineEmits(["change-tier"])
@@ -26,7 +27,7 @@ function handleClick() {
     <div class="tier-button-wrapper">
         <button
             class="tier-button"
-            :class="{ disabled: !eligible }"
+            :class="{ disabled: !eligible, warning }"
             :disabled="!eligible"
             @click="handleClick"
             @mouseenter="showTooltip = true"
@@ -56,6 +57,9 @@ function handleClick() {
     background: var(--serca-blue);
     color: white;
     transition: all 0.2s ease;
+}
+.tier-button.warning {
+    color: rgb(255, 114, 114);
 }
 
 .tier-button:hover {
