@@ -57,7 +57,7 @@ function delete_profile(index) {
         <section class="hf-card">
             <div v-for="(profile, index) in profile_store.profiles" class="hf-char-row" :key="index">
                 <input v-model="names[index]" @change="((names[index] = formatCharName(names[index], index)), (profile.char_name = names[index]))" />
-                <div style="display: flex; flex-direction: column; width: 200px">
+                <div class="hf-char-meta">
                     <label class="hf-achieved-ilevel">Achieved ilevel: {{ achieved_ilevel(profile) }}</label>
                     <label class="hf-pending-ilevel">Pending ilevel: {{ pending_ilevel(profile) }}</label>
                 </div>
@@ -85,6 +85,14 @@ function delete_profile(index) {
 .hf-new-char {
     width: 100%;
 }
+
+.hf-char-meta {
+    display: flex;
+    flex-direction: column;
+    width: 200px;
+    min-width: 180px;
+}
+
 .hf-char-row {
     --icon-size: 36px;
     --font-primary: 1rem;
@@ -242,5 +250,28 @@ function delete_profile(index) {
 .line-muted {
     color: var(--hf-text-muted, #aaa);
     font-size: var(--font-small);
+}
+
+@media (max-width: 900px) {
+    .hf-char-row {
+        flex-wrap: wrap;
+        gap: 8px;
+        align-items: flex-start;
+    }
+
+    .hf-char-row > input {
+        width: 100%;
+    }
+
+    .hf-char-meta {
+        width: 100%;
+        min-width: 0;
+    }
+
+    .hf-char-row .hf-header-button,
+    .hf-char-row .btn-cancel {
+        flex: 1 1 auto;
+        text-align: center;
+    }
 }
 </style>

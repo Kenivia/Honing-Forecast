@@ -117,7 +117,7 @@ watch(
                 <TickboxGrid grid_type="normal" />
             </div>
         </section>
-        <div style="display: flex; flex-direction: row; gap: 10px">
+        <div class="hf-side-cards">
             <section v-if="active_profile.tier == 0" class="hf-card-adv">
                 <div class="hf-card-header">
                     <div class="hf-card-title"><span class="hf-card-title-dot" />Advanced Honing</div>
@@ -130,7 +130,7 @@ watch(
         </div>
     </div>
 </template>
-<style>
+<style scoped>
 .hf-card-normal {
     background: var(--hf-bg-panel);
     border: 1px solid var(--hf-border-subtle);
@@ -151,13 +151,22 @@ watch(
 }
 
 .hf-honing-row {
-    display: grid;
-    grid-template-columns: max-content 340px;
+    width: min(100%, 1074px);
+    display: flex;
     gap: 10px;
     align-items: start;
-    width: 100%;
+    min-width: 0;
+    flex-wrap: wrap;
     justify-content: center;
 }
+
+.hf-side-cards {
+    display: flex;
+    flex-direction: row;
+    gap: 10px;
+    align-items: stretch;
+}
+
 .hf-pending-ilevel {
     color: var(--checkbox-checked-bg);
 }
@@ -173,12 +182,33 @@ watch(
     width: min(100%, 262px);
     min-width: 0;
 }
-.hf-honing-row {
-    width: min(100%, 1074px);
-    display: flex;
-    gap: 12px;
-    align-items: center;
-    min-width: 0;
+
+.hf-card-normal :deep(.hf-card-header) {
     flex-wrap: wrap;
+    justify-content: flex-start;
+    gap: 8px;
+}
+
+@media (max-width: 1000px) {
+    .hf-honing-row {
+        width: 100%;
+        align-items: stretch;
+        justify-content: stretch;
+        flex-direction: column;
+    }
+
+    .hf-card-normal {
+        width: 100%;
+    }
+
+    .hf-side-cards {
+        width: 100%;
+        flex-direction: column;
+    }
+
+    .hf-card-adv {
+        width: 100%;
+        min-width: 0;
+    }
 }
 </style>

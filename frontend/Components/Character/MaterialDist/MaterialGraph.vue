@@ -45,8 +45,9 @@ const rootRef = ref<HTMLElement | null>(null)
 const width = ref(0)
 const mouseX = ref<number | null>(null)
 let observer: ResizeObserver | null = null
+const MIN_GRAPH_WIDTH = 180
 
-const plotWidth = computed(() => Math.max(100, width.value))
+const plotWidth = computed(() => Math.max(MIN_GRAPH_WIDTH, width.value))
 
 const points = computed<Point[]>(() => {
     if (!Array.isArray(props.data) || props.data.length === 0) {
@@ -228,7 +229,7 @@ const surfaceTextColor = computed(() => cssVar("--hf-text-main", "#c9d0da"))
 onMounted(() => {
     const updateWidth = () => {
         if (!rootRef.value) return
-        width.value = Math.max(320, Math.floor(rootRef.value.getBoundingClientRect().width))
+        width.value = Math.max(MIN_GRAPH_WIDTH, Math.floor(rootRef.value.getBoundingClientRect().width))
     }
 
     updateWidth()
@@ -246,7 +247,7 @@ onBeforeUnmount(() => {
 
 <template>
     <div ref="rootRef" class="hf-material-graph" @mousemove="onMouseMove" @mouseleave="onMouseLeave">
-        <svg :width="Math.max(width, 320)" :height="height" role="img" aria-label="Material graph">
+        <svg :width="Math.max(width, MIN_GRAPH_WIDTH)" :height="height" role="img" aria-label="Material graph">
             <defs>
                 <linearGradient :id="`hf-graph-fill-${graphColor.replace(/[^a-z0-9]/gi, '')}`" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="0%" :stop-color="resolvedColor" stop-opacity="0.38" />

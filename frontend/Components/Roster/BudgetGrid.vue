@@ -119,106 +119,110 @@ watchEffect(() => {
         <label>(Best one will be auto selected)</label>
     </div>
     <div v-if="re_render_trigger" class="hf-outer-budget-grid" :class="{ narrow: isNarrow }">
-        <div v-if="!isNarrow || tier == 0" class="hf-roster-inputs-tier-4" :style="{ gridRow: `span ${String(ALL_LABELS[0].length + 1)}` }">
-            <div class="hf-table-title-row">
-                <span style="text-align: right; padding-right: 15px">Roster Bound Mats</span>
-                <span>Tradable Mats</span>
-                <span>Market price</span>
+        <div v-if="!isNarrow || tier == 0" class="hf-tier-grid-scroll">
+            <div class="hf-roster-inputs-tier-4" :style="{ gridRow: `span ${String(ALL_LABELS[0].length + 1)}` }">
+                <div class="hf-table-title-row">
+                    <span style="text-align: right; padding-right: 15px">Roster Bound Mats</span>
+                    <span>Tradable Mats</span>
+                    <span>Market price</span>
 
-                <!-- <span v-if="customLeftovers">Left</span> -->
-            </div>
-            <div v-for="(label, row) in ALL_LABELS[0]" :key="`roster-input-${label}`" class="hf-mats-row">
-                <MaterialCell
-                    :input_column="roster_config.roster_mats_owned[0]"
-                    :row="row"
-                    :label="label"
-                    :setter="
-                        (val) => {
-                            roster_config.roster_mats_owned[0].data[row] = val
-                        }
-                    "
-                    :hide_tick="true"
-                />
-                <MaterialCell
-                    :input_column="roster_config.tradable_mats_owned[0]"
-                    :row="row"
-                    :setter="
-                        (val) => {
-                            roster_config.tradable_mats_owned[0].data[row] = val
-                        }
-                    "
-                />
-                <MaterialCell
-                    :input_column="roster_config.mats_prices[0]"
-                    :row="row"
-                    :setter="
-                        (val) => {
-                            roster_config.mats_prices[0].data[row] = val
-                        }
-                    "
-                    :suffix="
-                        label === 'Shards'
-                            ? 'x' + roster_config.selected_shard_bag_size.toString()
-                            : BUNDLE_SIZE[row] > 1
-                              ? 'x' + BUNDLE_SIZE[row].toLocaleString('en-US')
-                              : ''
-                    "
-                />
+                    <!-- <span v-if="customLeftovers">Left</span> -->
+                </div>
+                <div v-for="(label, row) in ALL_LABELS[0]" :key="`roster-input-${label}`" class="hf-mats-row">
+                    <MaterialCell
+                        :input_column="roster_config.roster_mats_owned[0]"
+                        :row="row"
+                        :label="label"
+                        :setter="
+                            (val) => {
+                                roster_config.roster_mats_owned[0].data[row] = val
+                            }
+                        "
+                        :hide_tick="true"
+                    />
+                    <MaterialCell
+                        :input_column="roster_config.tradable_mats_owned[0]"
+                        :row="row"
+                        :setter="
+                            (val) => {
+                                roster_config.tradable_mats_owned[0].data[row] = val
+                            }
+                        "
+                    />
+                    <MaterialCell
+                        :input_column="roster_config.mats_prices[0]"
+                        :row="row"
+                        :setter="
+                            (val) => {
+                                roster_config.mats_prices[0].data[row] = val
+                            }
+                        "
+                        :suffix="
+                            label === 'Shards'
+                                ? 'x' + roster_config.selected_shard_bag_size.toString()
+                                : BUNDLE_SIZE[row] > 1
+                                  ? 'x' + BUNDLE_SIZE[row].toLocaleString('en-US')
+                                  : ''
+                        "
+                    />
+                </div>
             </div>
         </div>
 
-        <div v-if="!isNarrow || tier == 1" class="hf-roster-inputs-serca" :style="{ gridRow: `span ${String(ALL_LABELS[1].length + 1)}` }">
-            <div class="hf-table-title-row">
-                <span style="text-align: right; padding-right: 15px">Roster Bound Mats</span>
-                <span>Tradable Mats</span>
-                <span>Market price</span>
-                <span>Effective price</span>
+        <div v-if="!isNarrow || tier == 1" class="hf-tier-grid-scroll">
+            <div class="hf-roster-inputs-serca" :style="{ gridRow: `span ${String(ALL_LABELS[1].length + 1)}` }">
+                <div class="hf-table-title-row">
+                    <span style="text-align: right; padding-right: 15px">Roster Bound Mats</span>
+                    <span>Tradable Mats</span>
+                    <span>Market price</span>
+                    <span>Effective price</span>
 
-                <!-- <span v-if="customLeftovers">Left</span> -->
-            </div>
-            <div v-for="(label, row) in ALL_LABELS[1]" :key="`roster-input-${label}`" class="hf-mats-row">
-                <MaterialCell
-                    :input_column="roster_config.roster_mats_owned[SYNCED_LABELS.includes(label) ? 0 : 1]"
-                    :row="row"
-                    :label="label"
-                    :setter="
-                        (val) => {
-                            roster_config.roster_mats_owned[SYNCED_LABELS.includes(label) ? 0 : 1].data[row] = val
-                        }
-                    "
-                    :hide_tick="true"
-                />
-                <MaterialCell
-                    :input_column="roster_config.tradable_mats_owned[SYNCED_LABELS.includes(label) ? 0 : 1]"
-                    :row="row"
-                    :setter="
-                        (val) => {
-                            roster_config.tradable_mats_owned[SYNCED_LABELS.includes(label) ? 0 : 1].data[row] = val
-                        }
-                    "
-                />
-                <MaterialCell
-                    :input_column="roster_config.mats_prices[SYNCED_LABELS.includes(label) ? 0 : 1]"
-                    :row="row"
-                    :setter="
-                        (val) => {
-                            roster_config.mats_prices[SYNCED_LABELS.includes(label) ? 0 : 1].data[row] = val
-                        }
-                    "
-                    :suffix="
-                        label === 'Shards'
-                            ? 'x' + roster_config.selected_shard_bag_size.toString()
-                            : BUNDLE_SIZE[row] > 1
-                              ? 'x' + BUNDLE_SIZE[row].toLocaleString('en-US')
-                              : ''
-                    "
-                />
-                <MaterialCell
-                    v-if="!SYNCED_LABELS.includes(label)"
-                    :input_column="roster_config.effective_serca_price"
-                    :row="row"
-                    :suffix="t4_better[row] ? 'Convert T4' : 'Buy Serca '"
-                />
+                    <!-- <span v-if="customLeftovers">Left</span> -->
+                </div>
+                <div v-for="(label, row) in ALL_LABELS[1]" :key="`roster-input-${label}`" class="hf-mats-row">
+                    <MaterialCell
+                        :input_column="roster_config.roster_mats_owned[SYNCED_LABELS.includes(label) ? 0 : 1]"
+                        :row="row"
+                        :label="label"
+                        :setter="
+                            (val) => {
+                                roster_config.roster_mats_owned[SYNCED_LABELS.includes(label) ? 0 : 1].data[row] = val
+                            }
+                        "
+                        :hide_tick="true"
+                    />
+                    <MaterialCell
+                        :input_column="roster_config.tradable_mats_owned[SYNCED_LABELS.includes(label) ? 0 : 1]"
+                        :row="row"
+                        :setter="
+                            (val) => {
+                                roster_config.tradable_mats_owned[SYNCED_LABELS.includes(label) ? 0 : 1].data[row] = val
+                            }
+                        "
+                    />
+                    <MaterialCell
+                        :input_column="roster_config.mats_prices[SYNCED_LABELS.includes(label) ? 0 : 1]"
+                        :row="row"
+                        :setter="
+                            (val) => {
+                                roster_config.mats_prices[SYNCED_LABELS.includes(label) ? 0 : 1].data[row] = val
+                            }
+                        "
+                        :suffix="
+                            label === 'Shards'
+                                ? 'x' + roster_config.selected_shard_bag_size.toString()
+                                : BUNDLE_SIZE[row] > 1
+                                  ? 'x' + BUNDLE_SIZE[row].toLocaleString('en-US')
+                                  : ''
+                        "
+                    />
+                    <MaterialCell
+                        v-if="!SYNCED_LABELS.includes(label)"
+                        :input_column="roster_config.effective_serca_price"
+                        :row="row"
+                        :suffix="t4_better[row] ? 'Convert T4' : 'Buy Serca '"
+                    />
+                </div>
             </div>
         </div>
     </div>
@@ -258,43 +262,75 @@ watchEffect(() => {
     border-color: var(--hf-gold-dim);
 }
 
-.hf-table-title-row,
-.hf-mats-row {
-    display: grid;
-    grid-column: 1 / -1; /* span all 3 columns */
-    grid-template-columns: subgrid; /* inherit parent column definitions */
-    align-items: center;
-    border-bottom: 1px solid var(--separator-color);
-    min-height: 0px;
-}
 .hf-outer-budget-grid {
     display: grid;
-    grid-template-columns: 1fr 1fr;
-    grid-template-rows: subgrid; /* rows are shared */
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+    align-items: start;
 }
+
 .hf-outer-budget-grid.narrow {
     grid-template-columns: 1fr;
 }
+
+.hf-tier-grid-scroll {
+    min-width: 0;
+    width: 100%;
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding-bottom: 4px;
+    -webkit-overflow-scrolling: touch;
+}
+
 .hf-roster-inputs-tier-4 {
     display: grid;
     grid-template-columns: 250px 120px 120px;
-    align-items: center; /* optional: vertically center each cell */
-    gap: 8px; /* optional: spacing between cells */
-    grid-template-rows: subgrid;
+    align-items: center;
+    gap: 8px;
     background: var(--hf-bg-panel);
     border: 1px solid var(--hf-border-subtle);
     border-radius: 8px;
     width: max-content;
+    min-width: 100%;
 }
+
 .hf-roster-inputs-serca {
     display: grid;
     grid-template-columns: 250px 120px 120px 120px;
-    align-items: center; /* optional: vertically center each cell */
-    gap: 8px; /* optional: spacing between cells */
-    grid-template-rows: subgrid;
+    align-items: center;
+    gap: 8px;
     background: var(--hf-bg-panel);
     border: 1px solid var(--hf-border-subtle);
     border-radius: 8px;
+    width: max-content;
+    min-width: 100%;
+}
+
+.hf-roster-inputs-tier-4 .hf-material-cell,
+.hf-roster-inputs-serca .hf-material-cell {
+    --hf-cell-input-width: 86px;
+    --hf-cell-label-width: 136px;
+    --hf-cell-icon-size: 28px;
+}
+
+.hf-roster-inputs-tier-4 .hf-table-title-row,
+.hf-roster-inputs-tier-4 .hf-mats-row {
+    display: grid;
+    grid-column: 1 / -1;
+    grid-template-columns: 250px 120px 120px;
+    align-items: center;
+    border-bottom: 1px solid var(--separator-color);
+    min-height: 0;
+}
+
+.hf-roster-inputs-serca .hf-table-title-row,
+.hf-roster-inputs-serca .hf-mats-row {
+    display: grid;
+    grid-column: 1 / -1;
+    grid-template-columns: 250px 120px 120px 120px;
+    align-items: center;
+    border-bottom: 1px solid var(--separator-color);
+    min-height: 0;
 }
 /* Container */
 .hf-roster-tier-select.hf-roster-tier-select {
@@ -364,5 +400,44 @@ watchEffect(() => {
 .hf-roster-tier-select .p-togglebutton.p-togglebutton:focus-visible {
     outline: 2px solid var(--hf-gold-dim);
     outline-offset: 2px;
+}
+
+@media (max-width: 900px) {
+    .hf-shard-size-selector {
+        flex-wrap: wrap;
+        align-items: flex-start;
+        gap: 8px;
+    }
+
+    .hf-roster-inputs-tier-4 {
+        grid-template-columns: 170px 90px 90px;
+        gap: 4px;
+    }
+
+    .hf-roster-inputs-tier-4 .hf-table-title-row,
+    .hf-roster-inputs-tier-4 .hf-mats-row {
+        grid-template-columns: 170px 90px 90px;
+    }
+
+    .hf-roster-inputs-serca {
+        grid-template-columns: 150px 76px 76px 76px;
+        gap: 4px;
+    }
+
+    .hf-roster-inputs-serca .hf-table-title-row,
+    .hf-roster-inputs-serca .hf-mats-row {
+        grid-template-columns: 150px 76px 76px 76px;
+    }
+
+    .hf-roster-inputs-tier-4 .hf-material-cell,
+    .hf-roster-inputs-serca .hf-material-cell {
+        --hf-cell-input-width: 64px;
+        --hf-cell-label-width: 88px;
+        --hf-cell-icon-size: 20px;
+    }
+
+    .hf-table-title-row {
+        font-size: 11px;
+    }
 }
 </style>

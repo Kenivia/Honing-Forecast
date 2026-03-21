@@ -26,13 +26,11 @@ const this_data = ref(String(!Array.isArray(props.input_column) ? (props.input_c
 
 <template>
     <div class="hf-material-cell">
-        <input       v-if="!hide_tick && label && !Array.isArray(input_column)  " type="checkbox" v-model="(input_column as InputColumn).enabled[row]">
+        <input v-if="!hide_tick && label && !Array.isArray(input_column)" type="checkbox" v-model="(input_column as InputColumn).enabled[row]" />
         <label v-if="label" class="hf-row-label">
             <span>{{ label }}</span>
             <img :src="iconPath(label)" :alt="label" />
         </label>
-
-</input>
         <input
             v-if="!Array.isArray(input_column)"
             type="text"
@@ -57,6 +55,9 @@ const this_data = ref(String(!Array.isArray(props.input_column) ? (props.input_c
 </template>
 <style>
 .hf-material-cell {
+    --hf-cell-input-width: 100px;
+    --hf-cell-label-width: 150px;
+    --hf-cell-icon-size: 32px;
     display: flex;
     align-items: center;
     justify-content: flex-start;
@@ -76,7 +77,7 @@ input.hf-material-cell-input {
     min-width: 0;
     text-align: left;
     padding-right: 8px;
-    width: 100px;
+    width: var(--hf-cell-input-width);
 }
 
 .hf-material-cell-result {
@@ -88,7 +89,7 @@ input.hf-material-cell-input {
     min-width: 0;
     text-align: left;
     padding-right: 8px;
-    width: 100px;
+    width: var(--hf-cell-input-width);
 }
 
 .hf-material-cell-suffix {
@@ -108,12 +109,39 @@ input.hf-material-cell-input {
     min-width: 0;
     text-align: right;
     padding-right: 8px;
-    width: 150px;
+    width: var(--hf-cell-label-width);
 }
 
 .hf-row-label img {
-    width: 32px;
-    height: 32px;
+    width: var(--hf-cell-icon-size);
+    height: var(--hf-cell-icon-size);
     object-fit: contain;
+}
+
+@media (max-width: 900px) {
+    .hf-material-cell {
+        --hf-cell-input-width: 74px;
+        --hf-cell-label-width: 104px;
+        --hf-cell-icon-size: 24px;
+        gap: 4px;
+        font-size: 14px;
+        padding-right: 4px;
+    }
+
+    input.hf-material-cell-input,
+    .hf-material-cell-result {
+        font-size: 14px;
+        padding-right: 4px;
+    }
+
+    .hf-row-label {
+        font-size: 12px;
+        padding-right: 4px;
+    }
+
+    .hf-material-cell-suffix {
+        font-size: 10px;
+        padding-right: 4px;
+    }
 }
 </style>

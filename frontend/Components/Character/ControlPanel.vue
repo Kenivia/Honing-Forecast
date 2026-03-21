@@ -97,12 +97,13 @@ watchEffect(() => {
         </div>
     </section>
 </template>
-<style>
+<style scoped>
 .hf-control-panel-btn {
     color: var(--text-muted);
 }
 .hf-control-panel {
     width: 200px;
+    min-width: 0;
 }
 .progress-bar {
     width: 100%;
@@ -121,5 +122,11 @@ watchEffect(() => {
     flex-direction: column;
     gap: 6px;
     font-size: 12px;
+}
+
+@media (max-width: 1000px) {
+    .hf-control-panel {
+        width: 100%;
+    }
 }
 </style>
