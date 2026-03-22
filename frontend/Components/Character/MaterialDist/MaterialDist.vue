@@ -22,7 +22,7 @@ const average_breakdown = computed(
 // this is should always be treat tradable as bound (so it's actual gold spent)
 const gold_breakdown = computed(
     () =>
-        active_profile.value.evaluation_worker_bundle.result?.gold_breakdown.map((x: number) => Math.round(x == 0 ? x : -x)) ??
+        active_profile.value.evaluation_worker_bundle.result?.gold_breakdown.map((x: number) => Math.round(x >= 0 ? 0 : -x)) ??
         new Array(ALL_LABELS[active_profile.value.tier].length).fill(0),
 )
 

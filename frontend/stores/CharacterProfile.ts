@@ -124,6 +124,7 @@ export function load_char_profiles(): { profiles: CharProfile[]; active_profile_
 export const debounced_write_char_profiles = debounce(write_char_profiles, 500)
 
 export function write_char_profiles(state) {
+    console.log(state.profiles[0].normal_grid, state.profiles[1].normal_grid)
     localStorage.setItem(STORAGE_KEY + "_char_profiles", JSON.stringify(state))
 }
 const DEFAULT_PROFILES_STATE = {
