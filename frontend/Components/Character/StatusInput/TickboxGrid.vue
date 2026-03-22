@@ -109,7 +109,7 @@ function change_one(row: number, col: number, current = relevant_grid.value[row]
 watch(
     [() => active_profile.value.adv_grid, () => active_profile.value.normal_grid, () => active_profile.value.tier],
     () => {
-        console.log("keyed update")
+        // console.log("keyed update")
         active_profile.value.keyed_upgrades = grids_to_keyed(
             active_profile.value.normal_grid,
             active_profile.value.adv_grid,
@@ -117,7 +117,7 @@ watch(
             active_profile.value.tier,
         )
     },
-    { deep: true },
+    { deep: true, immediate: true },
 )
 const { roster_config } = storeToRefs(useRosterStore())
 function start_eval_hist(result: StateBundle) {

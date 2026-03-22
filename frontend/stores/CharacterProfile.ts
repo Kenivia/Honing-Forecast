@@ -50,6 +50,11 @@ export const useProfilesStore = defineStore("profiles", {
         resetActiveProfile() {
             const { roster_config } = storeToRefs(useRosterStore())
             this.profiles[this.active_profile_index] = create_default_char_profile()
+            this.profiles[this.active_profile_index].char_name = formatCharName(
+                this.profiles[this.active_profile_index].char_name,
+                this.active_profile_index,
+                this.profiles,
+            )
             this.profiles[this.active_profile_index].optimizer_worker_bundle.start(
                 WasmOp.Parser,
                 build_payload(WasmOp.Parser, this.profiles[this.active_profile_index], roster_config.value),

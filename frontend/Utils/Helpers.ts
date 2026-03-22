@@ -3,6 +3,31 @@ import { ADV_COLS, IconMap, NUM_PIECES, PIECE_NAMES, PLUS_TIER_CONVERSION } from
 import { Upgrade, UpgradeStatus } from "./Interfaces"
 import { storeToRefs } from "pinia"
 
+export function parse_locale_int(str: string, locale?: string): number {
+    const parts = new Intl.NumberFormat(locale).formatToParts(1234567.89)
+
+    const group = parts.find((p) => p.type === "group")?.value ?? ","
+    const decimal = parts.find((p) => p.type === "decimal")?.value ?? "."
+
+    const normalized = str
+        .replaceAll(group, "") // remove thousands separators
+        .replace(decimal, ".") // normalize decimal separator to '.'
+
+    return parseInt(normalized)
+}
+
+export function parse_locale_float(str: string, locale?: string): number {
+    const parts = new Intl.NumberFormat(locale).formatToParts(1234567.89)
+
+    const group = parts.find((p) => p.type === "group")?.value ?? ","
+    const decimal = parts.find((p) => p.type === "decimal")?.value ?? "."
+
+    const normalized = str
+        .replaceAll(group, "") // remove thousands separators
+        .replace(decimal, ".") // normalize decimal separator to '.'
+
+    return parseFloat(normalized)
+}
 export function formatCharName(raw: string, index: number, profiles: CharProfile[]): string {
     let result = raw.replace(/ /g, "") //
     // 2. Remove non-alphanumeric (keep underscores)
@@ -11,8 +36,8 @@ export function formatCharName(raw: string, index: number, profiles: CharProfile
     result = result.replace(/(?<=.)[A-Z]/g, (c) => c.toLowerCase()).slice(0, 16)
     // 4. If empty, or already taken by another profile, append index
     const otherNames = profiles.filter((_, i) => i !== index).map((x) => x.char_name)
-    if (!result || otherNames.includes(result)) {
-        result += String(index)
+    while (!result || otherNames.includes(result)) {
+        result += String(index + 1)
     }
     return result
 }
