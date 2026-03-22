@@ -125,8 +125,20 @@ pub fn parser(
         adv_progress,
     ) in upgrade_info
     {
-        let relevant_cost = get_data(express_event, tier, false, piece_type == 5, false);
-        let relevant_unlock = get_data(express_event, tier, false, piece_type == 5, true);
+        let relevant_cost = get_data(
+            express_event,
+            tier,
+            !is_normal_honing,
+            piece_type == 5,
+            false,
+        );
+        let relevant_unlock = get_data(
+            express_event,
+            tier,
+            !is_normal_honing,
+            piece_type == 5,
+            true,
+        );
         let this_cost =
             &Vec::from_iter((0..7).map(|cost_type| relevant_cost[cost_type][upgrade_index]));
         let this_unlock =
