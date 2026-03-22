@@ -70,7 +70,7 @@ export function createWorkerBundle() {
             worker = null
         }
 
-        // console.log(WasmOp[wasm_op], payload)
+        console.log(WasmOp[wasm_op], payload)
         // console.log(JSON.parse(JSON.stringify(toRaw(buildPayload(wasm_op)))))
         worker.postMessage({ type: "message", wasm_op, payload })
     }

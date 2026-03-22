@@ -27,6 +27,8 @@ export interface Upgrade {
     artisan_rate: number
     base_chance: number
     extra_chance: number
+    unlock_costs: number[]
+    costs: number[]
 
     // added for UI purpose, not in rust
     this_special_chance?: number

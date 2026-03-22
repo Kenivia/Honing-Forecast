@@ -6,7 +6,7 @@ import { JOINED_ADV_JUICE, ALL_LABELS, T4_JUICE_LABELS, DEFAULT_ARTISAN_MULTIPLI
 import { get_piece_name, iconPath } from "@/Utils/Helpers"
 import { input_column_to_num, to_upgrade_key, Upgrade, UpgradeStatus } from "@/Utils/Interfaces"
 import { storeToRefs } from "pinia"
-import { computed, nextTick, ref, watch } from "vue"
+import { computed, nextTick, ref, watch, watchEffect } from "vue"
 
 const { active_profile } = storeToRefs(useProfilesStore())
 const { roster_config } = storeToRefs(useRosterStore())
@@ -93,6 +93,7 @@ function aggregateStreaks(): NormalStreak[] | AdvStreak[] {
 const streaks = computed(aggregateStreaks)
 
 function artisan_function(upgrade: Upgrade, total_count: number): string {
+
     let extra_arr = upgrade.state.slice(0, total_count).map(([juice, id]) => {
         let chance = 0.0
         // console.log(juice, id, active_profile.value.optimizer_worker_bundle.result.prep_output.juice_info.all_juices[0].data.get(String(upgrade.upgrade_index)))
@@ -266,23 +267,58 @@ function write_adv_progress() {
 const show_success_modal = ref(false)
 const succeed_without_deduct = ref(false)
 
+const adv_juice_used = ref(0)
+const adv_scroll_used = ref(0)
 const used_materials = computed(() => {
     if (!props.upgrade.cost_dist || !active_profile.value.bound_budgets) return []
     const tier = active_profile.value.tier
-    return props.upgrade.cost_dist.map((x, index) => (active_profile.value.bound_budgets[tier].enabled[index] ? x.support[taps_so_far.value] : 0))
+    let out = new Array(props.upgrade.cost_dist.length).fill(0)
+
+    for (let cost_type = 0; cost_type < 7; cost_type++) {
+        out[cost_type] = props.upgrade.unlock_costs[cost_type] + props.upgrade.costs[cost_type] * taps_so_far.value
+    }
+    let juice_info = active_profile.value.optimizer_worker_bundle.result.prep_output.juice_info
+    let relevant_id_map = props.upgrade.is_normal_honing ? juice_info.normal_uindex_to_id : juice_info.adv_uindex_to_id
+    console.log(relevant_id_map[props.upgrade.upgrade_index])
+    for (const id of relevant_id_map[props.upgrade.upgrade_index]) {
+        let juice_cost = 0
+
+        let juice_type = juice_info.all_juices[id].data.get(String(props.upgrade.upgrade_index))
+        let amt = props.upgrade.is_normal_honing ? juice_type.normal_amt_used : juice_type.adv_amt_used
+
+        if (props.upgrade.is_normal_honing) {
+            for (let index = 0; index < Math.min(taps_so_far.value, props.upgrade.normal_dist.length - 1); index++) {
+                if (!props.upgrade.is_normal_honing) {
+                    juice_cost += amt
+                } else if ((props.upgrade.state[index][0] === true && id == 0) || (props.upgrade.state[index][1] === id && id !== 0)) {
+                    juice_cost += amt
+                }
+                // console.log(juice_cost)
+            }
+        } else {
+            if (id ===0){
+                juice_cost = adv_juice_used.value * amt
+            }
+            else{
+                juice_cost = adv_scroll_used.value * amt
+            }
+        }
+
+        out[7 + id + (props.upgrade.is_weapon ? 0 : juice_info.num_juice_avail)] = juice_cost
+    }
+    return out
 })
 
 const remaining_materials = computed(() => {
     const bound_budgets: number[] = []
     const roster_mats: number[] = []
     const tradable_mats: number[] = []
-
     used_materials.value.forEach((cost, index) => {
         if (cost <= 0) {
             bound_budgets.push(input_column_to_num(active_profile.value.bound_budgets[active_profile.value.tier])[index])
             roster_mats.push(input_column_to_num(roster_config.value.roster_mats_owned[active_profile.value.tier])[index])
             tradable_mats.push(input_column_to_num(roster_config.value.tradable_mats_owned[active_profile.value.tier])[index])
-            return
+            // return
         }
         let remaining_cost = cost
         // 1. Bound
@@ -314,6 +350,7 @@ const remaining_materials = computed(() => {
 const visibleRows = computed(() => {
     const tier = active_profile.value.tier
     if (!ALL_LABELS || !ALL_LABELS[tier]) return []
+    console.log(used_materials.value)
     return ALL_LABELS[tier]
         .map((label, index) => ({ label, index, row: index }))
         .filter((item) => used_materials.value[item.index] > 0 && active_profile.value.bound_budgets[tier].enabled[item.index])
@@ -357,6 +394,7 @@ function juice_icon_path(upgrade: Upgrade, juice: boolean) {
 }
 
 const progress_expanded = ref(props.upgrade.alr_failed > 0)
+watchEffect(() => (progress_expanded.value = props.upgrade.alr_failed > 0))
 </script>
 
 <template>
@@ -485,7 +523,7 @@ const progress_expanded = ref(props.upgrade.alr_failed > 0)
     <Teleport to="body">
         <div v-if="show_success_modal" class="hf-modal-overlay">
             <div class="hf-popup">
-                <div class="popup-header">
+                <div  v-if="upgrade.is_normal_honing" class="popup-header">
                     <h3>Confirm Success</h3>
                     <div class="input-row text-left">Current Artisan energy: {{ artisan_function(upgrade, taps_so_far) }}%</div>
                     <div class="input-row text-left">Cumulative chance: {{ cumulative_chance(upgrade, taps_so_far) }}%</div>
@@ -494,6 +532,14 @@ const progress_expanded = ref(props.upgrade.alr_failed > 0)
                         <input type="checkbox" v-model="succeed_without_deduct" />
                         Succeed without deducting cost
                     </label>
+                </div>
+                <div v-if="!upgrade.is_normal_honing" class="popup-header">
+                         <h3>Confirm Success</h3>
+                                      <label class="input-row"> Total taps used <input v-model="taps_so_far" :min="0" :max="100"></input>
+                    </label>
+                  <label class="input-row">  Juiced taps used <input v-model="adv_juice_used" :min="0" :max="100"></input>
+                    </label>
+                                <label class="input-row">  Scroll taps used    <input v-model="adv_scroll_used" :min="0" :max="100"></input>         </label>
                 </div>
 
                 <div class="hf-popup-grid">
