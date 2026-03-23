@@ -150,7 +150,7 @@ watch(
             active_profile.value.histogram_worker_bundle.cancel()
             active_profile.value.evaluation_worker_bundle.cancel()
         })
-        console.log("payload update")
+        // console.log("payload update")
         let payload = build_payload(WasmOp.OptimizeAverage, active_profile.value, roster_config.value)
 
         if (active_profile.value.auto_start_optimizer) {

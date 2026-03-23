@@ -31,10 +31,10 @@ function duplicate(index) {
 }
 
 function delete_profile(index) {
-    console.log(profile_store.profiles.length)
+    // console.log(profile_store.profiles.length)
     profile_store.profiles.splice(index, 1)
     names.value.splice(index, 1)
-    console.log(profile_store.profiles.length)
+    // console.log(profile_store.profiles.length)
 }
 </script>
 

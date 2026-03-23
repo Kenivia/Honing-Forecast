@@ -36,7 +36,7 @@ const MY_WORKER_URL = "https://snowy-base-1817.kenivia-fan.workers.dev/"
 export async function fetchMarketData(region: string) {
     let body = structuredClone(BODY)
     body["region_slug"] = region.toLowerCase()
-    console.log(body)
+    // console.log(body)
     const response = await fetch(MY_WORKER_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -47,7 +47,7 @@ export async function fetchMarketData(region: string) {
     const data = await response.json()
 
     // Log the actual payload, not the Response object
-    console.log("Market Data Payload:", data)
+    // console.log("Market Data Payload:", data)
 
     return data
 }

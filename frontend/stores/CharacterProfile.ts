@@ -19,6 +19,7 @@ import { debounce, formatCharName } from "@/Utils/Helpers"
 import { build_payload } from "@/WasmInterface/payload"
 import { useRosterStore } from "./RosterConfig"
 import { parse } from "path"
+import { toRaw } from "vue"
 
 export const useProfilesStore = defineStore("profiles", {
     state: () => DEFAULT_PROFILES_STATE,
@@ -129,8 +130,14 @@ export function load_char_profiles(): { profiles: CharProfile[]; active_profile_
 export const debounced_write_char_profiles = debounce(write_char_profiles, 500)
 
 export function write_char_profiles(state) {
-    console.log(state.profiles[0].normal_grid, state.profiles[1].normal_grid)
-    localStorage.setItem(STORAGE_KEY + "_char_profiles", JSON.stringify(state))
+    let copy = JSON.parse(JSON.stringify(state))
+    for (let i = 0; i < copy.profiles.length; i++) {
+        delete copy.profiles[i].evaluation_worker_bundle
+        delete copy.profiles[i].optimizer_worker_bundle
+        delete copy.profiles[i].histogram_worker_bundle
+    }
+    // console.log("writing ", copy)
+    localStorage.setItem(STORAGE_KEY + "_char_profiles", JSON.stringify(copy))
 }
 const DEFAULT_PROFILES_STATE = {
     profiles: [create_default_char_profile()],

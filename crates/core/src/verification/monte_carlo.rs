@@ -83,10 +83,14 @@ fn juice_costs(upgrade: &Upgrade, state_bundle: &StateBundle) -> Vec<Vec<(i64, i
                     continue;
                 }
 
-                let juice_amt = prep_output
-                    .juice_info
-                    .access(id, upgrade.upgrade_index)
-                    .normal_amt_used;
+                let juice_amt = if upgrade.upgrade_index < 3 {
+                    0
+                } else {
+                    prep_output
+                        .juice_info
+                        .access(id, upgrade.upgrade_index)
+                        .normal_amt_used
+                };
                 if id == 0 && juice {
                     juice_so_far[id] += juice_amt;
                 } else if id > 0 && book_id == id {

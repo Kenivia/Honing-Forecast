@@ -13,6 +13,9 @@ pub fn new_prob_dist(
         .iter()
         .map(|(juice, id)| {
             let mut chance: f64 = 0.0;
+            if upgrade.upgrade_index < 3 {
+                return chance;
+            }
             if *juice {
                 chance += juice_info.access(0, upgrade.upgrade_index).normal_chance;
             }
@@ -139,7 +142,11 @@ impl Upgrade {
             let mut weap_support: Vec<f64> = Vec::with_capacity(l_len);
             let mut armor_support: Vec<f64> = Vec::with_capacity(l_len);
 
-            let amt = juice_info.access(id, self.upgrade_index).normal_amt_used as f64;
+            let amt = if self.upgrade_index < 3 {
+                0.0
+            } else {
+                juice_info.access(id, self.upgrade_index).normal_amt_used as f64
+            };
             for (index, _) in self.normal_dist.iter().enumerate() {
                 let (juice, book) = self.state.get(index).unwrap_or(&(false, 0));
                 weap_support.push(weap_cost);

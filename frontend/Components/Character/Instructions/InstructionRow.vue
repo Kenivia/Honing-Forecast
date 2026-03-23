@@ -279,7 +279,7 @@ const used_materials = computed(() => {
     }
     let juice_info = active_profile.value.optimizer_worker_bundle.result.prep_output.juice_info
     let relevant_id_map = props.upgrade.is_normal_honing ? juice_info.normal_uindex_to_id : juice_info.adv_uindex_to_id
-    console.log(relevant_id_map[props.upgrade.upgrade_index])
+    // console.log(relevant_id_map[props.upgrade.upgrade_index])
     for (const id of relevant_id_map[props.upgrade.upgrade_index]) {
         let juice_cost = 0
 
@@ -387,9 +387,15 @@ async function confirmSuccess() {
 }
 
 function juice_icon_path(upgrade: Upgrade, juice: boolean) {
+
     let juice_info = active_profile.value.optimizer_worker_bundle.result.prep_output.juice_info
     let relevant_id_map = upgrade.is_normal_honing ? juice_info.normal_uindex_to_id : juice_info.adv_uindex_to_id
+
     let relevant_upgrade = relevant_id_map[upgrade.upgrade_index]
+       if (relevant_upgrade.length ===0){
+        return "no juice avail"
+    }
+    // console.log(relevant_id_map,relevant_upgrade)
     return iconPath(T4_JUICE_LABELS[relevant_upgrade[juice ? 0 : relevant_upgrade.length - 1]][upgrade.is_weapon ? 0 : 1])
 }
 

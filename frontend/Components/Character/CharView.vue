@@ -24,7 +24,7 @@ const re_render_char_view_trigger = ref(true)
 watch(
     () => profile_store.active_profile_index,
     async () => {
-        console.log("charview rerendered")
+        // console.log("charview rerendered")
         re_render_char_view_trigger.value = false
         await nextTick()
         re_render_char_view_trigger.value = true
@@ -42,8 +42,6 @@ watch(
     },
     { immediate: true },
 )
-
-
 </script>
 
 <template>

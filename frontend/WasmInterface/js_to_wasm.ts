@@ -31,7 +31,7 @@ self.addEventListener("message", async (ev) => {
 
     const { id, payload, wasm_op } = msg
 
-    console.log(WasmOp[wasm_op], "Began")
+    // console.log(WasmOp[wasm_op], "Began")
     // console.log(payload)
     let result
 
@@ -45,6 +45,6 @@ self.addEventListener("message", async (ev) => {
         result = await ParserWasm(payload)
     }
 
-    console.log(WasmOp[wasm_op] + " finished after " + String(((Date.now() - start_time) / 1000).toFixed(2)) + "s")
+    // console.log(WasmOp[wasm_op] + " finished after " + String(((Date.now() - start_time) / 1000).toFixed(2)) + "s")
     self.postMessage({ type: "result", id, result })
 })
