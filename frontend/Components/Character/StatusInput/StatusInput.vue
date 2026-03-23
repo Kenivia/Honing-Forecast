@@ -102,7 +102,7 @@ function change_tier() {
             }
         }
     }
-    console.log("callbacked")
+    // console.log("callbacked")
     grid_change_callback(active_profile.value, roster_config.value)
 }
 </script>

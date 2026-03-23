@@ -46,7 +46,7 @@ Let $b_i$ be the ``budget'', or the amount of material $i$ that we own.
 
 Let $m_i$ and $l_i$ be the market price and leftover value of material $i$.
 
-Let $g_i(x)$ be our gold cost function, defined as follows:
+Let $g_i(x)$ be our gold cost function, defined as follows\footnote{With the introduction of tradable mats, this is has 2 breakpoints. The math is the same, except section \ref{one_dimension_section} would be a bit messier.}:
 
 $$
 g_i(x) =  \begin{cases}
@@ -140,7 +140,7 @@ where $I$ is the indicator function. From here, we will drop the subscripts $_i$
 
 Where part $a)$ is trivial to calculate because $Y$ is a simple sum of RVs, making $\mathbb{E}$ distributive.
 
-For part $b)$, we define the biased distribution $Y^*$, which has the probabily distribution $p^* = p \cdot y$ for each $y$ in the support of $Y$. In other words:
+For part $b)$, we define the biased distribution $Y^*$, which has the probabily distribution $p^* = p \cdot \frac{y}{\mathbb{E}[Y]}$ for each $y$ in the support of $Y$. In other words:
 
 $$
 \mathbb{P}(Y^* = y) = \frac{y \mathbb{P} (Y=y)}{\mathbb{E}[Y]},
@@ -179,7 +179,7 @@ We use a procedure known as saddleppoint approximation to perform this computati
 
 \subsection{Cumulant generating function $K(\theta)$}
 
-We compute $K(\theta)$, where $K$ is different for a particular $Y$ but we will spare the subscripts. $K(\theta)$ is defined as follows:
+We compute the cumulant generating function $K(\theta)$, where $K$ is different for a particular $Y_{ik}$ but we will spare the subscripts. $K(\theta)$ is defined as follows:
 $$
 K(\theta) = \log(\mathbb{E}[ e^{\theta Y}]).
 $$
