@@ -321,7 +321,7 @@ const remaining_materials = computed(() => {
             bound_budgets.push(input_column_to_num(active_profile.value.bound_budgets[active_profile.value.tier])[index])
             roster_mats.push(input_column_to_num(roster_config.value.roster_mats_owned[active_profile.value.tier])[index])
             tradable_mats.push(input_column_to_num(roster_config.value.tradable_mats_owned[active_profile.value.tier])[index])
-            // return
+            return
         }
         let remaining_cost = cost
         // 1. Bound
@@ -347,7 +347,7 @@ const remaining_materials = computed(() => {
             tradable_mats.push(tradable_owned)
         }
     })
-    console.log("computed")
+    // console.log("computed")
     return { bound_budgets, roster_mats, tradable_mats }
 })
 const visibleRows = computed(() => {
@@ -384,9 +384,9 @@ async function confirmSuccess() {
 
     show_success_modal.value = false
     succeed_without_deduct.value = false // reset
-    active_profile.value.special_re_render_trigger = false
+    active_profile.value.material_re_render_trigger = false
     await nextTick()
-    active_profile.value.special_re_render_trigger = true
+    active_profile.value.material_re_render_trigger = true
 }
 
 function juice_icon_path(upgrade: Upgrade, juice: boolean) {
@@ -534,10 +534,36 @@ watchEffect(() => (progress_expanded.value = props.upgrade.alr_failed > 0))
             <div class="hf-popup">
                 <div  v-if="upgrade.is_normal_honing" class="popup-header">
                     <h3>Confirm Success</h3>
-                    <div class="input-row text-left">Current Artisan energy: {{ artisan_function(upgrade, taps_so_far) }}%</div>
+                    <div class="input-row text-left">Final Artisan energy: {{ artisan_function(upgrade, Math.max(0,taps_so_far-1)) }}%</div>
                     <div class="input-row text-left">Cumulative chance: {{ cumulative_chance(upgrade, taps_so_far) }}%</div>
 
-                    <label class="check-label">
+            
+                   
+                </div>
+                <div v-if="upgrade.is_normal_honing"  style="display:flex; align-items:center;justify-content: flex-end;flex-direction: row;">
+                    
+                        <div class="input-row">
+                            <label>Taps to succeed</label>
+                            <input
+                                type="number"
+                                v-model.number="taps_so_far"
+                                min="0"
+                                :max="upgrade.normal_dist?.length - 1 || 100"
+                                @change="write_normal_progress"
+                            />
+                        </div>
+                        <div class="input-row">
+                            <!-- {{ console.log(upgrade.normal_dist) }} -->
+                            <input
+                                type="range"
+                                v-model.number="taps_so_far"
+                                min="0"
+                                :max="upgrade.normal_dist?.length - 1 || 100"
+                                class="hf-slider"
+                                @change="write_normal_progress"
+                            />
+                        </div>
+                            <label class="check-label">
                         <input type="checkbox" v-model="succeed_without_deduct" />
                         Succeed without deducting cost
                     </label>

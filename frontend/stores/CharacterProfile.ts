@@ -88,7 +88,7 @@ export interface CharProfile {
     min_resolution: number // currently not used (always 1)
     num_threads: number // currently not used (always 1)
     metric_type: number // currently not used (always 1)
-    special_re_render_trigger: boolean // This is here to trigger an update in the special cell in MaterialDist from the change in the confirmation popup in InstructionRow
+    material_re_render_trigger: boolean // This is here to trigger an update in the special cell in MaterialDist from the change in the confirmation popup in InstructionRow
 }
 
 export function load_char_profiles(): { profiles: CharProfile[]; active_profile_index: number } {
@@ -111,7 +111,7 @@ export function load_char_profiles(): { profiles: CharProfile[]; active_profile_
         this_parsed.keyed_upgrades = grids_to_keyed(this_parsed.normal_grid, this_parsed.adv_grid, this_parsed.keyed_upgrades, this_parsed.tier)
 
         this_parsed.tier = this_parsed.tier === 0 || this_parsed.tier === 1 ? this_parsed.tier : 0
-        this_parsed.special_re_render_trigger = true
+        this_parsed.material_re_render_trigger = true
         this_parsed.min_resolution = default_profile.min_resolution
         this_parsed.num_threads = default_profile.num_threads
         this_parsed.metric_type = default_profile.metric_type
@@ -175,7 +175,7 @@ export function create_default_char_profile(): CharProfile {
         min_resolution: 1,
         num_threads: 1,
         metric_type: 1,
-        special_re_render_trigger: true,
+        material_re_render_trigger: true,
     }
 }
 

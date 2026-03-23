@@ -171,7 +171,8 @@ function special_hover_annotation(x, _y, cy, material_type, color): string {
                             v-if="
                                 ALL_LABELS[active_profile.tier].length == active_profile.bound_budgets[active_profile.tier].data.length &&
                                 active_profile.optimizer_worker_bundle.result &&
-                                active_profile.histogram_worker_bundle.result
+                                active_profile.histogram_worker_bundle.result &&
+                                active_profile.material_re_render_trigger
                             "
                             style="display: contents"
                         >
@@ -216,13 +217,13 @@ function special_hover_annotation(x, _y, cy, material_type, color): string {
                             </div>
 
                             <!-- Special Re-render is trigger by the confirm button in instruction row because otherwise it wouldn't update -->
-                            <div v-if="active_profile.special_re_render_trigger" class="hf-mats-row">
+                            <div v-if="active_profile.material_re_render_trigger" class="hf-mats-row">
                                 <MaterialCell
                                     :input_column="active_profile.special_budget"
                                     :row="0"
                                     :setter="(val) => (active_profile.special_budget.data[0] = val)"
                                     :label="(active_profile.tier == 1 ? 'Serca ' : '') + active_profile.special_budget.keys[0]"
-                                    v-if="active_profile.special_re_render_trigger"
+                                    v-if="active_profile.material_re_render_trigger"
                                     :hide_tick="true"
                                 ></MaterialCell>
                                 <!-- {{ console.log(active_profile.optimizer_worker_bundle.result?.latest_special_probs) }} -->
