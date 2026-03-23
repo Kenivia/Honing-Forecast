@@ -135,6 +135,9 @@ export function write_char_profiles(state) {
         delete copy.profiles[i].evaluation_worker_bundle
         delete copy.profiles[i].optimizer_worker_bundle
         delete copy.profiles[i].histogram_worker_bundle
+        Object.entries(copy.profiles[i].keyed_upgrades).forEach(([_key, arr]) => {
+            arr[4] = null
+        })
     }
     // console.log("writing ", copy)
     localStorage.setItem(STORAGE_KEY + "_char_profiles", JSON.stringify(copy))

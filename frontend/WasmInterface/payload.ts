@@ -21,7 +21,8 @@ export interface EvalPayload {
 
 function keyed_to_array(keyed_upgrades: KeyedUpgrades, upgrade_arr: Upgrade[] | null, tier: number): OneUpgrade[] {
     return Object.entries(keyed_upgrades).map(([key, arr], index) => {
-        const out = toRaw(arr)
+        arr[4] = null
+        const out = structuredClone(toRaw(arr)) // cloning here so we don't write the state into keyed_upgrades
         let candidate = upgrade_arr?.[index]?.state ?? null
         if (candidate === null) {
             out[4] = []

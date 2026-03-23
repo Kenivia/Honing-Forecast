@@ -18,6 +18,7 @@ export function createWorkerBundle() {
     let throttle_ready = true
 
     function _try_flush_throttle() {
+        // console.log("try", throttle_pending, throttle_ready, status.value)
         if (throttle_pending === null) return
         if (status.value === "busy") return
         if (!throttle_ready) return
@@ -29,7 +30,7 @@ export function createWorkerBundle() {
         throttle_timer = setTimeout(() => {
             throttle_ready = true
             _try_flush_throttle() // catch-up: new payload may have arrived during cooldown
-        }, 600)
+        }, 1000)
 
         _launch(wasm_op, payload, () => _try_flush_throttle())
     }
@@ -40,7 +41,7 @@ export function createWorkerBundle() {
     }
 
     function _launch(wasm_op: WasmOp, payload: EvalPayload, callback?: (result) => void) {
-        cancel()
+        cancel_worker()
 
         status.value = "busy"
         error.value = null
@@ -90,6 +91,14 @@ export function createWorkerBundle() {
         }
     }
 
+    function cancel_worker() {
+        if (worker) {
+            worker.terminate()
+            worker = null
+            status.value = "idle"
+        }
+    }
+
     function cancel() {
         clearTimeout(debounceTimer)
         clearTimeout(throttle_timer)
@@ -97,11 +106,7 @@ export function createWorkerBundle() {
         throttle_timer = null
         throttle_pending = null
         throttle_ready = true
-        if (worker) {
-            worker.terminate()
-            worker = null
-            status.value = "idle"
-        }
+        cancel_worker()
     }
     function cancel_and_clear_prev_result() {
         cancel()

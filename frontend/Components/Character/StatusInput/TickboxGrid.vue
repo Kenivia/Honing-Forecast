@@ -7,7 +7,7 @@ import { grids_to_keyed, StateBundle, UpgradeStatus } from "@/Utils/Interfaces"
 import { WasmOp } from "@/WasmInterface/js_to_wasm"
 import { build_material_info, build_payload } from "@/WasmInterface/payload"
 import { storeToRefs } from "pinia"
-import { computed, onWatcherCleanup, watch } from "vue"
+import { computed, onUnmounted, onWatcherCleanup, watch } from "vue"
 import { grid_change_callback, start_all_workers } from "../CharWorkerUtils"
 
 const { active_profile } = storeToRefs(useProfilesStore())
@@ -147,15 +147,11 @@ watch(
         () => active_profile.value.auto_start_optimizer,
     ],
     () => {
-        onWatcherCleanup(() => {
-            active_profile.value.optimizer_worker_bundle.cancel()
-            active_profile.value.histogram_worker_bundle.cancel()
-            active_profile.value.evaluation_worker_bundle.cancel()
-        })
         start_all_workers(active_profile.value, roster_config.value)
     },
     { deep: true, immediate: true },
 )
+
 </script>
 <template>
     <div class="hf-grid-content">

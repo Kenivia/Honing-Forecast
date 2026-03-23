@@ -19,7 +19,7 @@ const { start_fetch } = useTimedFetch(fetch_callback)
 start_fetch(roster_store.roster_config.region)
 
 profile_store.$subscribe((_mutation, state) => {
-    debounced_write_char_profiles(state)
+    debounced_write_char_profiles(state) // TODO make this ignore worker bundle changes, idk how to do that tho
 })
 roster_store.$subscribe((_mutation, state) => {
     debounced_write_roster_config(state)

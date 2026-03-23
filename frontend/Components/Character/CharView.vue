@@ -9,7 +9,7 @@ import { WasmOp } from "@/WasmInterface/js_to_wasm"
 import { build_material_info, build_payload } from "@/WasmInterface/payload"
 import { storeToRefs } from "pinia"
 
-import { nextTick, onWatcherCleanup, ref, watch } from "vue"
+import { nextTick, onUnmounted, onWatcherCleanup, ref, watch } from "vue"
 import { useRoute, useRouter } from "vue-router"
 
 const route = useRoute()
@@ -42,6 +42,12 @@ watch(
     },
     { immediate: true },
 )
+
+onUnmounted(() => {
+    active_profile.value.optimizer_worker_bundle.cancel()
+    active_profile.value.histogram_worker_bundle.cancel()
+    active_profile.value.evaluation_worker_bundle.cancel()
+})
 </script>
 
 <template>

@@ -180,7 +180,7 @@ export function get_valid_status_grid(status_grid: StatusGrid, example: StatusGr
 export type OneMaterial = [number, number, number, number, number] // an array of this is passed into rust
 
 //                        piece type, upgrade index, is_normal, normal_progress, state, unlock, succeeded, adv_progress
-export type OneUpgrade = [number, number, boolean, number | null, OneState[], boolean, boolean, AdvProgress | null]
+export type OneUpgrade = [number, number, boolean, number | null, OneState[] | null, boolean, boolean, AdvProgress | null]
 // an array of this is passed into rust
 
 export type OneUpgradeKey = `${number},${number},${"true" | "false"},${number}`
