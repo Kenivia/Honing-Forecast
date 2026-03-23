@@ -99,7 +99,7 @@ export function get_modified_cell(input_column: InputColumn, index: number, even
     if (!input_column.enabled[index]) {
         return input_column.data[index]
     }
-    return parse_input(input_column, index, (event.target as HTMLInputElement).value.replace(/[^\d,.]/g, "")).toLocaleString()
+    return parse_input(input_column, index, (event.target as HTMLInputElement).value.replace(/[^\d,.]/g, ""), true).toLocaleString()
 }
 export function parse_input(input_column: InputColumn, index: number, input: string, pretend_enabled?: boolean): number {
     if (!input_column.enabled[index] && !pretend_enabled) {

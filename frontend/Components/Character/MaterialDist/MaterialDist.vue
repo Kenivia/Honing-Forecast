@@ -305,9 +305,10 @@ const show_special_guide = ref(false)
         <Teleport to="body">
             <div v-if="show_special_guide" class="hf-modal-overlay" @click="show_special_guide = false">
                 <div class="hf-popup" @click.stop>
-                    <span style="font-size: 30px; color: var(--text-bright)">
+                    <span style="font-size: 30px; color: var(--hf-text-bright)">
                         Short answer: Save Special Leaps and convert to Serca, unless you are tapping +25
                     </span>
+                    <span style="font-size: 16px; color: var(--hf-text-muted)"> If you're not +20 yet, use it in T4. </span>
                     <img src="/Special convert chart.png" alt="Special convert chart" />
                 </div>
             </div>

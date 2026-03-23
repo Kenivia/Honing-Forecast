@@ -132,6 +132,7 @@ function change_one_and_update_keyed(row: number, col: number, current = relevan
 watch(
     [
         () => active_profile.value.bound_budgets[active_profile.value.tier].data,
+        () => active_profile.value.bound_budgets[active_profile.value.tier].enabled,
         // () => active_profile.value.leftover_price, not used rn
         // () => active_profile.value.tier, dedicated callback
         () => active_profile.value.express_event,

@@ -10,64 +10,46 @@ Try it here! <https://honing-forecast.pages.dev/>  *(It works better on desktop)
 
 ## Table of Contents
 
-- [What we're calculating](#what-were-calculating)
+- [What's different about this calculator](#whats-different-about-this-calculator)
 - [How to use](#how-to-use)
 - [Resources](#resources)
 - [Contributing](#contributing)
 - [Feedback](#bug-report--feedback)
 
-## What we're calculating
+## What's different about this calculator
 
-The question we want to ask is simple:
+We want to calculate **Average gold used**. Naively (and I believe this is what other calculators do), you might think to do the following:
 
-### **How much gold will the upgrades cost, on average?**
+1. *Find the average mat cost*
+2. *Subtract how much we have*
+3. *Multiply by the price.*
 
-In a vacuum, the answer is also simple - we multiply the average cost of each mat with their prices and call it a day. As far as I know this is what other calculators do. However, in Lost Ark we have **bound mats**, which has the following implications:
+- *^ (This is incorrect) ^*
 
-1. We only need to pay gold if we run out of bound mats,
-2. Any bound mats leftover after the upgrade cannot be converted to gold.
+For example, for a +25 weapon, it costs ~2.15m shards on average. However, this breaks down very quickly if you think about it - suppose we have 2.15m bound shards on hand. If we get lucky, we have bound shards leftover, netting us no gold; If we get unlucky, we have to buy shards, costing us gold. Clearly the average gold used should be some positive number, but the above would tell us that the average cost is 0.
 
-This means that we have a non-linear function relating material used -> gold cost incurred.As such, **Overall Average gold cost of upgrades** =/= **Gold cost of average material used**. There's an intuitive explanation for this, namely that lucky scenarios pull down average gold cost incorrectly. Allow me to demonstrate:
+### What we calculate instead
 
-### Why we can't just calculate Average cost minus bound mats
+1. For all outcomes, find the material cost (e.g. 1 tap, 2 tap ... pity)
+2. (For each outcome) Subtract how much we have, then turn any negatives to 0.
+3. Multiply by the price
+4. Take the weighted average
 
-Perhaps the most intuitive reason is to imagine you have exactly the average amount of mats. In the lucky cases you have mats leftover (in which case it costs 0g), and in the unlucky cases you need to buy (so it costs some amount of gold). However in this case if we take Average cost - Bound mats we get 0, which is clearly not right.
+So the difference is that we do the subtraction prior to averaging, and that we consider leftover bound mats as 0. This makes the average significantly more difficult to compute, and we use some [very clever maths](/docs/Saddlepoint%20Approximation.pdf) to do so in a reasonable amount of time.
 
-Let us inspect a simple example. Suppose we have a standard dice, that tells us the amount of material consumed, and that we have *3* bound mat. Then we have the following:
-
-| (Bound mat owned = 3) | Material consumed | Actually needed |
-|-----------------------|-------------------|-----------------|
-|                       | 1                 | 0               |
-|                       | 2                 | 0               |
-|                       | 3                 | 0               |
-|                       | 4                 | 1               |
-|                       | 5                 | 2               |
-|                       | 6                 | 3               |
-| Average               | 3.5               | 1               |
-
-Notice that 3.5 -3 = 0.5 (naive calculation) =/= 1 (correct answer). The discrepency comes from the 1st and 2nd cases - we used less than our budget, but the naive calculation includes it in the average, which pulls down the average incorrectly.
-
-As such, let us rephrase the question we set out to answer:
-
-### **What's the average gold cost inccurred due to exceeding bound budget?**
-
-This seemingly innoculous descrepency causes the computation to be significantly more difficult and thus the solution more sophisticated. For a more precise (and complete) definition of the problem and how we tackle it, see the [white paper](/docs/Saddlepoint%20Approximation.pdf).
+This allows us to consider the bound mats and juices that the player owns and make a much better suggestion as to how to spend them.
 
 ## How to use
 
-**1. Tick your upgrades, and input how much **untradable** mats you have.**
+**1. Tick your upgrades, and input how much char-bound mats you have.** (you may optionally also input you roster bound & tradable mats on a separate page)
 
-![Inputs](<https://i.redd.it/hyv473ghlphg1.png?width=1117&format=png&auto=webp&s=21d1ad94740acfbbd258f772281df2b692942e1c>)
+![Inputs](/docs/Images/Main.png)
 
-**2. Press the big yellow button. Once it's done, it'll tell you how much things will cost.**
+**2. Follow the instruction for juice usage.** If you run out, you should buy from market.
 
-![Cost distribution](https://i.redd.it/mqu1pelvlphg1.png?width=1207&format=png&auto=webp&s=2252f4b4086c582dbc8f31e59ad72f0fb6821eb8)
+![Instructions](/docs/Images/Instructions.png)
 
-**3. And here's how to use your free taps & juices:**
-
-![Juice instructions](https://i.redd.it/nmgydnrylphg1.png?width=1009&format=png&auto=webp&s=f5856fe8367b2f3f9c14f8f4a0f96f7dcb9e9c5e)
-
-**4. (Optional) As you fail/succeed taps, you can update your progress and the optimizer will consider your new situation.**
+Note: Before following the instructions, make sure you have inputted your bound mats or unticked mats you don't plan on buying! For example, if you say you have 0 shards and leave it ticked, the optimizer will assume you're buying all the shards.
 
 ## Resources
 
