@@ -6,7 +6,9 @@ use crate::performance::Performance;
 use crate::state_bundle::StateBundle;
 use crate::{constants::FLOAT_TOL, my_dbg};
 use std::f64::{INFINITY, NAN, NEG_INFINITY};
-pub const MAX_ROOT_FIND_ITER: usize = 20;
+pub const MAX_ROOT_FIND_ITER: usize = 30; // was 20 before, but crashed 1 time so just gonna bite the bullet for now
+// there's definitely some fishy business going on with advanced honing
+
 static Y_VALUE_TOL: f64 = 1e-6;
 
 impl StateBundle {

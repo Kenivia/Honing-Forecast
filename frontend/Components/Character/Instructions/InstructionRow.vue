@@ -7,6 +7,7 @@ import { get_piece_name, iconPath } from "@/Utils/Helpers"
 import { input_column_to_num, to_upgrade_key, Upgrade, UpgradeStatus } from "@/Utils/Interfaces"
 import { storeToRefs } from "pinia"
 import { computed, nextTick, ref, watch, watchEffect } from "vue"
+import { grid_change_callback } from "../CharWorkerUtils"
 
 const { active_profile } = storeToRefs(useProfilesStore())
 const { roster_config } = storeToRefs(useRosterStore())
@@ -246,6 +247,7 @@ function write_normal_progress() {
     active_profile.value.keyed_upgrades[
         to_upgrade_key(props.upgrade.piece_type, props.upgrade.upgrade_index, props.upgrade.is_normal_honing, active_profile.value.tier)
     ][3] = taps_so_far.value
+        grid_change_callback(active_profile.value, roster_config.value)
 }
 
 function write_adv_progress() {
@@ -262,6 +264,7 @@ function write_adv_progress() {
         next_free.value,
         next_big.value,
     ]
+    grid_change_callback(active_profile.value, roster_config.value)
 }
 // --- Req 6: Modal & Cost Deduction Logic ---
 const show_success_modal = ref(false)

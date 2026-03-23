@@ -6,10 +6,14 @@ import { achieved_ilevel, check_adv_all_done, check_all_plus_20, check_revert_il
 import { computed, watch } from "vue"
 import { ADV_COLS, ALL_LABELS, NORMAL_COLS, NUM_PIECES, PLUS_TIER_CONVERSION } from "@/Utils/Constants"
 import TierConvertButton from "@/Components/Common/TierConvertButton.vue"
-import { input_column_to_num, parse_input, UpgradeStatus } from "@/Utils/Interfaces"
+import { grids_to_keyed, input_column_to_num, parse_input, UpgradeStatus } from "@/Utils/Interfaces"
 import ControlPanel from "../ControlPanel.vue"
+import { grid_change_callback } from "../CharWorkerUtils"
+import { useRosterStore } from "@/Stores/RosterConfig"
 
 const { active_profile } = storeToRefs(useProfilesStore())
+const { roster_config } = storeToRefs(useRosterStore())
+
 const tooltip_text = computed(() => {
     return active_profile.value.tier == 0
         ? check_all_plus_20() && check_adv_all_done()
@@ -98,6 +102,7 @@ function change_tier() {
             }
         }
     }
+    grid_change_callback(active_profile.value, roster_config.value)
 }
 </script>
 
