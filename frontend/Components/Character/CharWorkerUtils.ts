@@ -12,11 +12,6 @@ export function grid_change_callback(active_profile: CharProfile, roster_config:
 }
 
 export function start_all_workers(active_profile: CharProfile, roster_config: RosterConfig) {
-    onWatcherCleanup(() => {
-        active_profile.optimizer_worker_bundle.cancel()
-        active_profile.histogram_worker_bundle.cancel()
-        active_profile.evaluation_worker_bundle.cancel()
-    })
     // console.log("payload update")
     let payload = build_payload(WasmOp.OptimizeAverage, active_profile, roster_config)
     function start_eval_hist(result: StateBundle) {
@@ -24,6 +19,7 @@ export function start_all_workers(active_profile: CharProfile, roster_config: Ro
         active_profile.histogram_worker_bundle.throttled_start(WasmOp.Histogram, build_payload(WasmOp.Histogram, active_profile, roster_config))
         active_profile.evaluation_worker_bundle.throttled_start(WasmOp.EvaluateAverage, build_payload(WasmOp.EvaluateAverage, active_profile, roster_config))
     }
+    active_profile.optimizer_worker_bundle.est_progress_percentage = 0
     if (active_profile.auto_start_optimizer) {
         active_profile.optimizer_worker_bundle.start(WasmOp.OptimizeAverage, payload, start_eval_hist)
     }

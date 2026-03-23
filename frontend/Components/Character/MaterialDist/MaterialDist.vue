@@ -17,7 +17,7 @@ const histogram_result = computed(() => active_profile.value.histogram_worker_bu
 
 // This is average mats cost (not gold)
 const average_breakdown = computed(
-    () => active_profile.value.optimizer_worker_bundle.result?.average_breakdown ?? new Array(ALL_LABELS[active_profile.value.tier].length).fill(0),
+    () => active_profile.value.evaluation_worker_bundle.result?.average_breakdown ?? new Array(ALL_LABELS[active_profile.value.tier].length).fill(0),
 )
 // this is should always be treat tradable as bound (so it's actual gold spent)
 const gold_breakdown = computed(
@@ -170,8 +170,9 @@ function special_hover_annotation(x, _y, cy, material_type, color): string {
                         <div
                             v-if="
                                 ALL_LABELS[active_profile.tier].length == active_profile.bound_budgets[active_profile.tier].data.length &&
-                                active_profile.optimizer_worker_bundle.result &&
+                                // active_profile.optimizer_worker_bundle.result &&
                                 active_profile.histogram_worker_bundle.result &&
+                                active_profile.evaluation_worker_bundle.result &&
                                 active_profile.material_re_render_trigger
                             "
                             style="display: contents"
@@ -267,7 +268,10 @@ function special_hover_annotation(x, _y, cy, material_type, color): string {
                             </div>
                         </div>
 
-                        <div v-if="active_profile.optimizer_treatment_plan == TreatmentPlan.TreatRosterAsBound" class="hf-mats-row">
+                        <div
+                            v-if="active_profile.optimizer_treatment_plan == TreatmentPlan.TreatRosterAsBound && active_profile.auto_start_optimizer"
+                            class="hf-mats-row"
+                        >
                             <div class="hf-metric-label" style="font-size: 16px; color: var(--hf-text-muted)">
                                 {{ total_tradable_gold_text }}
                             </div>
@@ -285,7 +289,7 @@ function special_hover_annotation(x, _y, cy, material_type, color): string {
                         </div>
                         <div style="display: flex; flex-direction: row; grid-column: 1 / span 5; align-items: center">
                             <span class="optimizer-progress-label"
-                                >Optimizer progress: {{ Math.max(active_profile.optimizer_worker_bundle.est_progress_percentage, 0.01).toFixed(2) }}%
+                                >Optimizer progress: {{ active_profile.optimizer_worker_bundle.est_progress_percentage.toFixed(2) }}%
                             </span>
                             <div class="progress-bar">
                                 <div class="progress-fill" :style="{ width: `${active_profile.optimizer_worker_bundle.est_progress_percentage}%` }" />

@@ -143,8 +143,16 @@ watch(
         // () => active_profile.value.keyed_upgrades,  dedicated callback
         () => active_profile.value.special_budget.data,
         () => active_profile.value.optimizer_treatment_plan,
+        () => active_profile.value.auto_start_optimizer,
     ],
-    () => start_all_workers(active_profile.value, roster_config.value),
+    () => {
+        onWatcherCleanup(() => {
+            active_profile.value.optimizer_worker_bundle.cancel()
+            active_profile.value.histogram_worker_bundle.cancel()
+            active_profile.value.evaluation_worker_bundle.cancel()
+        })
+        start_all_workers(active_profile.value, roster_config.value)
+    },
     { deep: true, immediate: true },
 )
 </script>

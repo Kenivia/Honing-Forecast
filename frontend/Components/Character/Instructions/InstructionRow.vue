@@ -536,9 +536,7 @@ watchEffect(() => (progress_expanded.value = props.upgrade.alr_failed > 0))
                     <h3>Confirm Success</h3>
                     <div class="input-row text-left">Final Artisan energy: {{ artisan_function(upgrade, Math.max(0,taps_so_far-1)) }}%</div>
                     <div class="input-row text-left">Cumulative chance: {{ cumulative_chance(upgrade, taps_so_far) }}%</div>
-
-            
-                   
+       
                 </div>
                 <div v-if="upgrade.is_normal_honing"  style="display:flex; align-items:center;justify-content: flex-end;flex-direction: row;">
                     

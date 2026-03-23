@@ -10,6 +10,8 @@ export function createWorkerBundle() {
     const error = ref(null)
     const result = shallowRef(null)
     const est_progress_percentage = ref(0)
+    const last_intermediate_time = ref(0)
+
     let debounceTimer = null
     let throttle_timer: ReturnType<typeof setTimeout> | null = null
     let throttle_pending: { wasm_op: WasmOp; payload: EvalPayload } | null = null
@@ -56,8 +58,11 @@ export function createWorkerBundle() {
                 worker.terminate()
                 worker = null
             } else {
-                result.value = e.data.state_bundle
-                est_progress_percentage.value = e.data.est_progress_percentage
+                if (performance.now() - last_intermediate_time.value > 1000) {
+                    result.value = e.data.state_bundle
+                    est_progress_percentage.value = e.data.est_progress_percentage
+                    last_intermediate_time.value = performance.now()
+                }
             }
             if (callback) {
                 callback(result.value)

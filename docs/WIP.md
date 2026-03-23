@@ -3,6 +3,13 @@
 
 ## Immediate WIP
 
+BIG PROBLEM THE WEBSITE IS CRASHING ON CHROME???
+
+pretty sure it's just a performance issue:
+
+- ~~move grid & keyed_upgrade watch to actually trigger on change instead of relying on watcher ~~
+- move the bound / roster / tradable allocation logic to rust, let histogram worker handle everything (average, gold, tradable gold) so we're starting less workers
+
 ## Roadmap
 
 ### 1st: ~~re-write the frontend~~
