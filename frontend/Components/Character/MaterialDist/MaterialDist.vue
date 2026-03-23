@@ -123,6 +123,8 @@ function special_hover_annotation(x, _y, cy, material_type, color): string {
     let place = Math.min(10, Math.max(Math.ceil(cy < 0.5 ? Math.min(3, Math.abs(Math.log10(cy))) : Math.abs(Math.log10(1 - cy))), 3))
     return `<b style="color: white;">${(cy * 100).toPrecision(place)}% </b> chance to free tap <br> at least <b style="color: ${color};"> ${x + 1} </b> piece`
 }
+
+const show_special_guide = ref(false)
 </script>
 
 <template>
@@ -228,6 +230,7 @@ function special_hover_annotation(x, _y, cy, material_type, color): string {
                                     :hide_tick="true"
                                 ></MaterialCell>
                                 <!-- {{ console.log(active_profile.optimizer_worker_bundle.result?.latest_special_probs) }} -->
+                                <span class="special-convert-guide" @click="() => (show_special_guide = true)">Should I use in T4 or convert?</span>
                                 <MaterialGraph
                                     :data="
                                         active_profile.optimizer_worker_bundle.result?.latest_special_probs
@@ -248,7 +251,7 @@ function special_hover_annotation(x, _y, cy, material_type, color): string {
                                     :cumulative="roster_config.cumulative_graph"
                                     :tooltip-text-fn="special_hover_annotation"
                                     :max-yoverride="1"
-                                    style="grid-column: span 4"
+                                    style="grid-column: span 3"
                                     :empty_message="'No normal honing available'"
                                 />
                             </div>
@@ -299,9 +302,29 @@ function special_hover_annotation(x, _y, cy, material_type, color): string {
                 </div>
             </div>
         </div>
+        <Teleport to="body">
+            <div v-if="show_special_guide" class="hf-modal-overlay" @click="show_special_guide = false">
+                <div class="hf-popup" @click.stop>
+                    <span style="font-size: 30px; color: var(--text-bright)">
+                        Short answer: Save Special Leaps and convert to Serca, unless you are tapping +25
+                    </span>
+                    <img src="/Special convert chart.png" alt="Special convert chart" />
+                </div>
+            </div>
+        </Teleport>
     </section>
 </template>
 <style scoped>
+.special-convert-guide {
+    color: var(--hf-free-tap);
+    font-size: 12px;
+    text-decoration-line: underline;
+}
+
+.special-convert-guide:hover {
+    color: var(--hf-free-tap-faded);
+    font-size: 12px;
+}
 .progress-bar {
     width: 100%;
     height: 8px;

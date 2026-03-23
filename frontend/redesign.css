@@ -1,6 +1,8 @@
 @import url("https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Source+Sans+3:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap");
 
 :root {
+
+    --hf-free-tap-faded: hsl(293, 100%, 92%);
     --hf-bg-header: #17181d;
     --hf-header-button: var(--hf-gold);
     --hf-cancel: #a92727;
@@ -136,6 +138,42 @@ body::before {
     width: 100%;
     position: relative;
     z-index: 1;
+}
+
+/* --- Modal Popup --- */
+.hf-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+}
+
+.hf-popup {
+    background: var(--hf-bg-surface, #1e1e1e);
+    border: 1px solid var(--separator-color, #333);
+    border-radius: 8px;
+    padding: 1.5rem;
+    width: 100%;
+    max-width: 900px;
+    max-height: 90vh;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+}
+
+.popup-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+    border-bottom: 1px solid var(--separator-color, #333);
+    padding-bottom: 0.5rem;
 }
 
 .hf-pending-ilevel {

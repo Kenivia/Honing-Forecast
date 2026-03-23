@@ -530,8 +530,8 @@ watchEffect(() => (progress_expanded.value = props.upgrade.alr_failed > 0))
     </div>
 
     <Teleport to="body">
-        <div v-if="show_success_modal" class="hf-modal-overlay">
-            <div class="hf-popup">
+        <div v-if="show_success_modal" class="hf-modal-overlay"  @click="show_success_modal = false">
+            <div class="hf-popup" @click.stop>
                 <div  v-if="upgrade.is_normal_honing" class="popup-header">
                     <h3>Confirm Success</h3>
                     <div class="input-row text-left">Final Artisan energy: {{ artisan_function(upgrade, Math.max(0,taps_so_far-1)) }}%</div>
@@ -837,41 +837,7 @@ watchEffect(() => (progress_expanded.value = props.upgrade.alr_failed > 0))
     filter: brightness(1.2);
 }
 
-/* --- Modal Popup --- */
-.hf-modal-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100vw;
-    height: 100vh;
-    background: rgba(0, 0, 0, 0.7);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 9999;
-}
 
-.hf-popup {
-    background: var(--hf-bg-surface, #1e1e1e);
-    border: 1px solid var(--separator-color, #333);
-    border-radius: 8px;
-    padding: 1.5rem;
-    width: 100%;
-    max-width: 900px;
-    max-height: 90vh;
-    display: flex;
-    flex-direction: column;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
-}
-
-.popup-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 1rem;
-    border-bottom: 1px solid var(--separator-color, #333);
-    padding-bottom: 0.5rem;
-}
 
 .hf-popup-grid {
     display: grid;
