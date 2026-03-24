@@ -32,7 +32,7 @@ export function createWorkerBundle() {
             _try_flush_throttle() // catch-up: new payload may have arrived during cooldown
         }, 1000)
 
-        _launch(wasm_op, payload, () => _try_flush_throttle())
+        _launch(wasm_op, payload, false, () => _try_flush_throttle())
     }
 
     function throttled_start(wasm_op: WasmOp, payload: EvalPayload) {
@@ -40,13 +40,17 @@ export function createWorkerBundle() {
         _try_flush_throttle()
     }
 
-    function _launch(wasm_op: WasmOp, payload: EvalPayload, callback?: (result) => void) {
-        cancel_worker()
+    function _launch(wasm_op: WasmOp, payload: EvalPayload, cancel: boolean, callback?: (result) => void) {
+        if (cancel) {
+            cancel_worker()
+        }
 
         status.value = "busy"
         error.value = null
         est_progress_percentage.value = 0
-        worker = createWorker()
+        if (!worker) {
+            worker = createWorker()
+        }
 
         worker.onmessage = (e) => {
             // console.log(e)
@@ -56,8 +60,10 @@ export function createWorkerBundle() {
                 status.value = "success"
                 est_progress_percentage.value = 100
                 // console.log(mapToObject(toRaw(result.value)?.adv_cache) ?? null)
-                worker.terminate()
-                worker = null
+                if (cancel) {
+                    worker.terminate()
+                    worker = null
+                }
             } else {
                 if (performance.now() - last_intermediate_time.value > 1000) {
                     result.value = e.data.state_bundle
@@ -81,14 +87,14 @@ export function createWorkerBundle() {
         worker.postMessage({ type: "message", wasm_op, payload })
     }
 
-    function start(wasm_op: WasmOp, payload: EvalPayload, callback?: (result) => void, debounce?: number) {
-        if (debounce > 0) {
-            clearTimeout(debounceTimer)
-            status.value = "busy"
-            debounceTimer = setTimeout(() => _launch(wasm_op, payload, callback), debounce)
-        } else {
-            _launch(wasm_op, payload, callback)
-        }
+    function start(wasm_op: WasmOp, payload: EvalPayload, callback?: (result) => void) {
+        // if (debounce > 0) {
+        clearTimeout(debounceTimer)
+        status.value = "busy"
+        debounceTimer = setTimeout(() => _launch(wasm_op, payload, true, callback), 250)
+        // } else {
+        // _launch(wasm_op, payload, true, callback)
+        // }
     }
 
     function cancel_worker() {
