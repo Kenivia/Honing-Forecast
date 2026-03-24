@@ -1,10 +1,11 @@
 # Frontend
 
-I will try my best to describe the general flow of information here. By no mean is this exhaustive and does not differentiate between watch dependency and direct callbacks. This is subject to change and I will try my best to update when it does.
+I will try my best to describe the general flow of information here. By no mean is this exhaustive and it does not differentiate between watch dependency and direct callbacks (although I'm pre sure everything here are direct callbacks).
+
+This is very much subject to change and I will try my best to update when it does.
 
 ```mermaid
 flowchart TB
-
 
 subgraph UI
 
@@ -23,7 +24,7 @@ Instructions --> |normal_progress, adv_progress| keyed_upgrades;
 MaterialDist --> bound_budgets;
 RosterPage --> roster_config
 
-subgraph Stores
+subgraph Stores[Pinia stores]
 
     roster_config
     subgraph active_profile;
