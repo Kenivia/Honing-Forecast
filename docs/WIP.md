@@ -14,6 +14,8 @@ pretty sure it's just a performance issue:
 - make serca conversion add to the existing serca budget instead of overwriting
   - need to think abt how to decouple tier conversion and mats conversion cos there'll be cases where people are in serca gear but are still earning T4 mats and want to add them that way
 
+- lock progress change UI when the optimizer is still working (because special will change the position of the upgrade and its all over from there)
+
 ## Roadmap
 
 ### 1st: ~~re-write the frontend~~
@@ -107,11 +109,11 @@ Below are some rambling / brainstorming / Misc stuff
 - find_min_max can probably do with some kind of caching but i can't figure it out rn
 - advanced hoinging caching / pre-calculating, maybe also special
 
-### Other features
-
-- Automatic Market price integration(via some kind of API, or just updating the site at a regular interval automatically)
-
 ## Done / cancelled
+
+~~### Other features~~
+
+- ~~Automatic Market price integration(via some kind of API, or just updating the site at a regular interval automatically)~~
 
 ~~add more settings validations~~
 
