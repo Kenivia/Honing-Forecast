@@ -7,8 +7,12 @@ BIG PROBLEM THE WEBSITE IS CRASHING ON CHROME???
 
 pretty sure it's just a performance issue:
 
-- ~~move grid & keyed_upgrade watch to actually trigger on change instead of relying on watcher ~~
+- ~~move grid & keyed_upgrade watch to actually trigger on change instead of relying on watcher~~
 - move the bound / roster / tradable allocation logic to rust, let histogram worker handle everything (average, gold, tradable gold) so we're starting less workers
+- potentially keep the workers alive instead of starting a new one every call?
+
+- make serca conversion add to the existing serca budget instead of overwriting
+  - need to think abt how to decouple tier conversion and mats conversion cos there'll be cases where people are in serca gear but are still earning T4 mats and want to add them that way
 
 ## Roadmap
 
