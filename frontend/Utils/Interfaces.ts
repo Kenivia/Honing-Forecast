@@ -91,8 +91,8 @@ export function create_input_column(type: InputType, keys: string[], data?: stri
     }
 }
 
-export function input_column_to_num(input_column: InputColumn): number[] {
-    return input_column.data.map((x: string, index: number) => parse_input(input_column, index, x))
+export function input_column_to_num(input_column: InputColumn, pretend_enabled?: boolean): number[] {
+    return input_column.data.map((x: string, index: number) => parse_input(input_column, index, x, pretend_enabled))
 }
 
 export function get_modified_cell(input_column: InputColumn, index: number, event: Event) {

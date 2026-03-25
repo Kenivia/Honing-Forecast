@@ -46,7 +46,7 @@ function change_tier() {
     active_profile.value.histogram_worker_bundle?.cancel_and_clear_prev_result()
     active_profile.value.evaluation_worker_bundle?.cancel_and_clear_prev_result()
 
-    let num_array_old = input_column_to_num(active_profile.value.bound_budgets[old_tier])
+    let num_array_old = input_column_to_num(active_profile.value.bound_budgets[old_tier], true)
 
     let multiplied_indices = [0, 1, 2, 4] // red, blue, leaps, fusion
     let multiplier = new_tier == 1 ? 0.2 : 5
@@ -56,13 +56,15 @@ function change_tier() {
                 active_profile.value.bound_budgets[old_tier],
                 index,
                 String(num_array_old[index] * multiplier),
+                true,
             ).toLocaleString()),
     )
     // Special leaps also multiplied
     active_profile.value.special_budget.data[0] = parse_input(
         active_profile.value.special_budget,
         0,
-        String(input_column_to_num(active_profile.value.special_budget)[0] * multiplier),
+        String(input_column_to_num(active_profile.value.special_budget, true)[0] * multiplier),
+        true,
     ).toLocaleString()
 
     let stay_same_indices = [3, 5, 6, 7] // shards, gold, silver, red juice
