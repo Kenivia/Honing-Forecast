@@ -24,7 +24,34 @@ const forceRerender = async () => {
     await nextTick()
     re_render_trigger.value = true
 }
+<div>
+  <label>Small</label>
+  <input
+    type="number"
+    value={shardPrices.small}
+    onChange={(e) =>
+      setShardPrices({ ...shardPrices, small: Number(e.target.value) })
+    }
+  />
 
+  <label>Medium</label>
+  <input
+    type="number"
+    value={shardPrices.medium}
+    onChange={(e) =>
+      setShardPrices({ ...shardPrices, medium: Number(e.target.value) })
+    }
+  />
+
+  <label>Large</label>
+  <input
+    type="number"
+    value={shardPrices.large}
+    onChange={(e) =>
+      setShardPrices({ ...shardPrices, large: Number(e.target.value) })
+    }
+  />
+</div>
 function convert_roster_mats_to_serca() {
     for (let serca_index = 0; serca_index < ALL_LABELS[1].length; serca_index++) {
         if (!SYNCED_LABELS.includes(ALL_LABELS[1][serca_index])) {
