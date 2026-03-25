@@ -11,10 +11,7 @@ pretty sure it's just a performance issue:
 - move the bound / roster / tradable allocation logic to rust, let histogram worker handle everything (average, gold, tradable gold) so we're starting less workers
 - ~~potentially keep the workers alive instead of starting a new one every call?~~
 
-- make serca conversion add to the existing serca budget instead of overwriting
-  - need to think abt how to decouple tier conversion and mats conversion cos there'll be cases where people are in serca gear but are still earning T4 mats and want to add them that way
-
-- lock progress change UI when the optimizer is still working (because special will change the position of the upgrade and its all over from there)
+- ~~lock progress change UI when the optimizer is still working (because special will change the position of the upgrade and its all over from there)~~
 
 ## Roadmap
 
@@ -25,6 +22,10 @@ pretty sure it's just a performance issue:
 ### 3rd: ~~Advanced honing optimization~~
 
 ### 4th: ~~Tradable / bound mats distinction~~
+
+### 4.9th : Rework header bar
+
+There's more tabs that need to be accomodated, (OCR UI & manifest, box optimization, forecast mode etc), change everything in the header to a (collapsable) side bar with collapsable subfields
 
 ### 5th: OCR
 
@@ -96,6 +97,11 @@ Below are some rambling / brainstorming / Misc stuff
 - Input arithmetic parsing(e.g. allow inputs like 25*1234 for easier boxes calculation)
 - drag to select
 - make bundle size suffix not take up horizontal space
+- Make shard bag size change actually change to the other price (and manual overwrite that one bag size)
+
+- make serca conversion add to the existing serca budget instead of overwriting
+  - need to think abt how to decouple tier conversion and mats conversion cos there'll be cases where people are in serca gear but are still earning T4 mats and want to add them that way
+  - I THINK this will just be replaced by OCR because it'll be too confusing - we need both the current 5 to 1 straight up conversion (to compare the cost of T4 vs Serca) and this adding behaviour
 
 ### Misc
 

@@ -94,7 +94,6 @@ function aggregateStreaks(): NormalStreak[] | AdvStreak[] {
 const streaks = computed(aggregateStreaks)
 
 function artisan_function(upgrade: Upgrade, total_count: number): string {
-
     let extra_arr = upgrade.state.slice(0, total_count).map(([juice, id]) => {
         let chance = 0.0
         // console.log(juice, id, active_profile.value.optimizer_worker_bundle.result.prep_output.juice_info.all_juices[0].data.get(String(upgrade.upgrade_index)))
@@ -247,7 +246,7 @@ function write_normal_progress() {
     active_profile.value.keyed_upgrades[
         to_upgrade_key(props.upgrade.piece_type, props.upgrade.upgrade_index, props.upgrade.is_normal_honing, active_profile.value.tier)
     ][3] = taps_so_far.value
-        grid_change_callback(active_profile.value, roster_config.value)
+    grid_change_callback(active_profile.value, roster_config.value)
 }
 
 function write_adv_progress() {
@@ -299,10 +298,9 @@ const used_materials = computed(() => {
                 // console.log(juice_cost)
             }
         } else {
-            if (id ===0){
+            if (id === 0) {
                 juice_cost = adv_juice_used.value * amt
-            }
-            else{
+            } else {
                 juice_cost = adv_scroll_used.value * amt
             }
         }
@@ -353,7 +351,7 @@ const remaining_materials = computed(() => {
 const visibleRows = computed(() => {
     const tier = active_profile.value.tier
     if (!ALL_LABELS || !ALL_LABELS[tier]) return []
-    console.log(used_materials.value)
+    // console.log(used_materials.value)
     return ALL_LABELS[tier]
         .map((label, index) => ({ label, index, row: index }))
         .filter((item) => used_materials.value[item.index] > 0 && active_profile.value.bound_budgets[tier].enabled[item.index])
@@ -390,20 +388,47 @@ async function confirmSuccess() {
 }
 
 function juice_icon_path(upgrade: Upgrade, juice: boolean) {
-
     let juice_info = active_profile.value.optimizer_worker_bundle.result.prep_output.juice_info
     let relevant_id_map = upgrade.is_normal_honing ? juice_info.normal_uindex_to_id : juice_info.adv_uindex_to_id
 
     let relevant_upgrade = relevant_id_map[upgrade.upgrade_index]
-       if (relevant_upgrade.length ===0){
+    if (relevant_upgrade.length === 0) {
         return "no juice avail"
     }
     // console.log(relevant_id_map,relevant_upgrade)
     return iconPath(T4_JUICE_LABELS[relevant_upgrade[juice ? 0 : relevant_upgrade.length - 1]][upgrade.is_weapon ? 0 : 1])
 }
 
-const progress_expanded = ref(props.upgrade.alr_failed > 0)
-watchEffect(() => (progress_expanded.value = props.upgrade.alr_failed > 0))
+const progress_expanded = ref(false)
+const must_show = ref(false)
+
+watch(
+    [
+        () => props.upgrade.alr_failed,
+        () => props.upgrade.is_normal_honing,
+        () => props.upgrade.adv_config.start_balls,
+        () => props.upgrade.adv_config.start_xp,
+        () => props.upgrade.adv_config.next_big,
+        () => props.upgrade.adv_config.next_free,
+    ],
+    () => {
+        // console.log("triggered")
+        if (props.upgrade.is_normal_honing) {
+            must_show.value = props.upgrade.alr_failed > 0
+        } else {
+            must_show.value =
+                props.upgrade.adv_config.start_balls > 0 ||
+                props.upgrade.adv_config.start_xp > 0 ||
+                props.upgrade.adv_config.next_big ||
+                props.upgrade.adv_config.next_free
+        }
+    },
+    { immediate: true },
+)
+// watchEffect(
+//
+
+// })
 </script>
 
 <template>
@@ -452,11 +477,16 @@ watchEffect(() => (progress_expanded.value = props.upgrade.alr_failed > 0))
                 </div>
             </div>
 
-            <div v-if="!progress_expanded" class="hf-right-section">
+            <div v-if="!progress_expanded || must_show" class="hf-right-section">
                 <!-- <button class="btn-succeed" @click="onSucceedClick">Succeed & deduct costs</button> -->
                 <button class="btn-expand" @click="progress_expanded = true">Show more</button>
             </div>
-            <div v-if="progress_expanded" class="hf-right-section">
+            <div v-if="progress_expanded && active_profile.optimizer_worker_bundle.status === 'busy'" class="hf-right-section">
+                <!-- <button class="btn-succeed" @click="onSucceedClick">Succeed & deduct costs</button> -->
+                <span> Optimizer working...</span>
+            </div>
+
+            <div v-if="(progress_expanded || must_show) && active_profile.optimizer_worker_bundle.status !== 'busy'" class="hf-right-section">
                 <div class="inputs-container">
                     <div v-if="upgrade.is_normal_honing" style="display: contents">
                         <div class="input-row text-left">Current Artisan energy: {{ artisan_function(upgrade, taps_so_far) }}%</div>
@@ -530,49 +560,45 @@ watchEffect(() => (progress_expanded.value = props.upgrade.alr_failed > 0))
     </div>
 
     <Teleport to="body">
-        <div v-if="show_success_modal" class="hf-modal-overlay"  @click="show_success_modal = false">
+        <div v-if="show_success_modal" class="hf-modal-overlay" @click="show_success_modal = false">
             <div class="hf-popup" @click.stop>
-                <div  v-if="upgrade.is_normal_honing" class="popup-header">
+                <div v-if="upgrade.is_normal_honing" class="popup-header">
                     <h3>Confirm Success</h3>
-                    <div class="input-row text-left">Final Artisan energy: {{ artisan_function(upgrade, Math.max(0,taps_so_far-1)) }}%</div>
+                    <div class="input-row text-left">Final Artisan energy: {{ artisan_function(upgrade, Math.max(0, taps_so_far - 1)) }}%</div>
                     <div class="input-row text-left">Cumulative chance: {{ cumulative_chance(upgrade, taps_so_far) }}%</div>
-       
                 </div>
-                <div v-if="upgrade.is_normal_honing"  style="display:flex; align-items:center;justify-content: flex-end;flex-direction: row;">
-                    
-                        <div class="input-row">
-                            <label>Taps to succeed</label>
-                            <input
-                                type="number"
-                                v-model.number="taps_so_far"
-                                min="0"
-                                :max="upgrade.normal_dist?.length - 1 || 100"
-                                @change="write_normal_progress"
-                            />
-                        </div>
-                        <div class="input-row">
-                            <!-- {{ console.log(upgrade.normal_dist) }} -->
-                            <input
-                                type="range"
-                                v-model.number="taps_so_far"
-                                min="0"
-                                :max="upgrade.normal_dist?.length - 1 || 100"
-                                class="hf-slider"
-                                @change="write_normal_progress"
-                            />
-                        </div>
-                            <label class="check-label">
+                <div v-if="upgrade.is_normal_honing" style="display: flex; align-items: center; justify-content: flex-end; flex-direction: row">
+                    <div class="input-row">
+                        <label>Taps to succeed</label>
+                        <input
+                            type="number"
+                            v-model.number="taps_so_far"
+                            min="0"
+                            :max="upgrade.normal_dist?.length - 1 || 100"
+                            @change="write_normal_progress"
+                        />
+                    </div>
+                    <div class="input-row">
+                        <!-- {{ console.log(upgrade.normal_dist) }} -->
+                        <input
+                            type="range"
+                            v-model.number="taps_so_far"
+                            min="0"
+                            :max="upgrade.normal_dist?.length - 1 || 100"
+                            class="hf-slider"
+                            @change="write_normal_progress"
+                        />
+                    </div>
+                    <label class="check-label">
                         <input type="checkbox" v-model="succeed_without_deduct" />
                         Succeed without deducting cost
                     </label>
                 </div>
                 <div v-if="!upgrade.is_normal_honing" class="popup-header">
-                         <h3>Confirm Success</h3>
-                                      <label class="input-row"> Total taps used <input v-model="taps_so_far" :min="0" :max="100"></input>
-                    </label>
-                  <label class="input-row">  Juiced taps used <input v-model="adv_juice_used" :min="0" :max="100"></input>
-                    </label>
-                                <label class="input-row">  Scroll taps used    <input v-model="adv_scroll_used" :min="0" :max="100"></input>         </label>
+                    <h3>Confirm Success</h3>
+                    <label class="input-row"> Total taps used <input v-model="taps_so_far" :min="0" :max="100" /> </label>
+                    <label class="input-row"> Juiced taps used <input v-model="adv_juice_used" :min="0" :max="100" /> </label>
+                    <label class="input-row"> Scroll taps used <input v-model="adv_scroll_used" :min="0" :max="100" /> </label>
                 </div>
 
                 <div class="hf-popup-grid">
@@ -593,7 +619,7 @@ watchEffect(() => (progress_expanded.value = props.upgrade.alr_failed > 0))
                         <MaterialCell
                             :input_column="active_profile.special_budget"
                             :row="0"
-                            :setter="(val) => (console.log('sat'), (active_profile.special_budget.data[0] = val))"
+                            :setter="(val) => (active_profile.special_budget.data[0] = val)"
                             :label="(active_profile.tier == 1 ? 'Serca ' : '') + active_profile.special_budget.keys[0]"
                             :hide_tick="true"
                         ></MaterialCell>
@@ -836,8 +862,6 @@ watchEffect(() => (progress_expanded.value = props.upgrade.alr_failed > 0))
 .btn-succeed:hover {
     filter: brightness(1.2);
 }
-
-
 
 .hf-popup-grid {
     display: grid;

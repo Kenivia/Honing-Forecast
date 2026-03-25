@@ -2,11 +2,9 @@
 
 [![discord](https://img.shields.io/discord/1477278907655786611?logo=discord)](https://discord.gg/KWDpQyvgzc)
 
-Honing Forecast is a Lost Ark honing calculator that computes your average gold spent based on your owned mats, and suggests a free tap & juice usage plan that minimizes this average.
+Honing Forecast is a Lost Ark honing calculator that takes into account owned mats and generates free tap & juice usage instructions that minimizes average gold used.
 
-Existing calculators don't (or incorrectly) take into account your bound mats, especially bound juice & books. This calculator tells you how to best use free taps and juice. It saves anywhere from 1% to 20%+ gold, depending on your use case and what you compare it to.
-
-Try it here! <https://honing-forecast.pages.dev/>  *(It works better on desktop)*  
+Try it here! <https://honing-forecast.pages.dev/>  
 
 ## Table of Contents
 
@@ -58,6 +56,7 @@ Note: Before following the instructions, make sure you have inputted your bound 
 - [Math behind the average evaluation (How we utilize saddlepoint approximation)](/docs/Saddlepoint%20Approximation.pdf)
 - [Optimizer (simulated annealing)](/docs/Optimizer.md)
 - [Work in progress](/docs/WIP.md)
+- [Various docs](/docs/)
 
 For anything else, you can ask me in the [Discord server](https://discord.gg/KWDpQyvgzc)!
 
