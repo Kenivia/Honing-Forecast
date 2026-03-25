@@ -18,7 +18,11 @@ export interface EvalPayload {
     num_threads: number
     metric_type: number
 }
-
+shard_prices?: {
+  small: number;
+  medium: number;
+  large: number;
+};
 function keyed_to_array(keyed_upgrades: KeyedUpgrades, upgrade_arr: Upgrade[] | null, tier: number): OneUpgrade[] {
     return Object.entries(keyed_upgrades).map(([key, arr], index) => {
         arr[4] = null
