@@ -29,14 +29,56 @@ There's more tabs that need to be accomodated, (OCR UI & manifest, box optimizat
 
 ### 5th: OCR
 
-the ark grid ocr (<https://airplaner.github.io/lostark-arkgrid-gem-locator-v2/>) is so goated, it should be possible with mats too
+Similar to the[Ark grid OCR](<https://airplaner.github.io/lostark-arkgrid-gem-locator-v2/>). They've used template matching and I think is probably best for me too (with exception of numbers recognition, might need some OCR model for that).
 
-- ocr might be too slow / not necessary? Maybe template matching is better? (but do i really have to carve pictures out pixel by pixel)
-  - maybe can store ss of detected hoverbox and do ocr later?
+## GOALS
 
-- will need an intermediate detected mats manifest -> actual mats
+1. screenshare -> nothing hovered -> detect everything that can be detected, aka:
+    - < 9999 mats (and boxes)
+    - non-ambiguous boxes, which is pretty much just the dailies boxes
+2. Things that are missing and needs hovering:
+    - bound / roster bound / tradable
+    - boxes
+    - 9999+ mats amount
 
-- this is probably a lot more complicated than I realize esp with boxes and shit but will make the world of difference
+## Specifics
+
+Just my current rough mental image of what needs to be done
+
+### Initial scan (step 1)
+
+This will probably take longer than 33ms which is okay, but should still be as fast as possible
+
+- [ ] Anchoring (can also detect resolution here)
+- [ ] Grids position detection
+- [ ] Individual item ~~template matching~~ I mean it's not even template matching its just checking if the pictures match
+- ^ There's got to be an automated way of setting this up
+- [ ] Number reading (Hopefully template matching works for this otherwise we're cooked)
+
+### Hover tooltip scan (step 2)
+
+This step must happen FAST, like 33ms fast so that the user can skim through the mats
+
+- [ ] Find the tooltip bounding box somehow?
+- [ ] Will probably have to find the mouse? Need to template match the mouse? This way we know what's being hovered. (7 types of cursors, 5 sizes, hopefully outline doesn't matter)
+- [ ] Template match for keywords inside the tooltip (tradable, etc) and probably icons also
+- ^ There's got to be an automated way of setting this up
+
+^ These 2 steps will need an intermediate debug step for sure, as in saving the image & running rust standalone so I can debug it without having to use the UI.
+
+### UI
+
+- [ ] Set up passing the data to WASM
+- [ ] Somehow get a picture (maybe first successful initial scan gets sent back?) to js, along with grid information
+- [ ] Set up some kind of system to add shading to the picture (and hover tooltip)
+- [ ] Set up a manifest (list of stuff saying whether or not they've been successfully detected, need hover an whatnot)
+
+### Decisions that I'll need to make at some point
+
+- Support more resolutions / aspect ratios or not? This will probably depend on how "automated" my process of setting up the template matching is. I doubt it will be very tho
+- How many threads? I'm thinking one thread for step1 and one thread for step 2 (which needs initial grid position info from step 1).
+
+Needless to say this will be a LONG term endeavour
 
 ### 6th : Box opening recommendation
 
@@ -99,10 +141,6 @@ Below are some rambling / brainstorming / Misc stuff
 - make bundle size suffix not take up horizontal space
 - Make shard bag size change actually change to the other price (and manual overwrite that one bag size)
 
-- make serca conversion add to the existing serca budget instead of overwriting
-  - need to think abt how to decouple tier conversion and mats conversion cos there'll be cases where people are in serca gear but are still earning T4 mats and want to add them that way
-  - I THINK this will just be replaced by OCR because it'll be too confusing - we need both the current 5 to 1 straight up conversion (to compare the cost of T4 vs Serca) and this adding behaviour
-
 ### Misc
 
 - add assertions to a lot of prepoutput stuff
@@ -117,6 +155,9 @@ Below are some rambling / brainstorming / Misc stuff
 
 ## Done / cancelled
 
+- ~~make serca conversion add to the existing serca budget instead of overwriting~~
+  - ~~need to think abt how to decouple tier conversion and mats conversion cos there'll be cases where people are in serca gear but are still earning T4 mats and want to add them that way~~
+  - ~~I THINK this will just be replaced by OCR because it'll be too confusing - we need both the current 5 to 1 straight up conversion (to compare the cost of T4 vs Serca) and this adding behaviour~~
 ~~### Other features~~
 
 - ~~Automatic Market price integration(via some kind of API, or just updating the site at a regular interval automatically)~~
