@@ -43,8 +43,9 @@ self.addEventListener("message", async (ev) => {
         result = await HistogramWasm(payload)
     } else if (wasm_op == WasmOp.Parser) {
         result = await ParserWasm(payload)
+    } else {
+        return // react dev tool shenanigans
     }
-
     // console.log(WasmOp[wasm_op] + " finished after " + String(((Date.now() - start_time) / 1000).toFixed(2)) + "s")
     self.postMessage({ type: "result", result })
 })
