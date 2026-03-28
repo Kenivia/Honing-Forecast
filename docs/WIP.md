@@ -3,35 +3,31 @@
 
 ## Immediate WIP
 
-BIG PROBLEM THE WEBSITE IS CRASHING ON CHROME???
-
-pretty sure it's just a performance issue:
-
-- ~~move grid & keyed_upgrade watch to actually trigger on change instead of relying on watcher~~
-- move the bound / roster / tradable allocation logic to rust, let histogram worker handle everything (average, gold, tradable gold) so we're starting less workers
-- ~~potentially keep the workers alive instead of starting a new one every call?~~
-
-- ~~lock progress change UI when the optimizer is still working (because special will change the position of the upgrade and its all over from there)~~
+- move the bound / roster / tradable allocation logic to rust, let histogram worker handle everything (average, gold, tradable gold) so ~~we're starting less workers~~ we can do everything UI related in one worker (and makes life easier later)
 
 ## Roadmap
 
-### 1st: ~~re-write the frontend~~
+## 1st: ~~re-write the frontend~~
 
-### 2nd: ~~Serca~~
+## 2nd: ~~Serca~~
 
-### 3rd: ~~Advanced honing optimization~~
+## 3rd: ~~Advanced honing optimization~~
 
-### 4th: ~~Tradable / bound mats distinction~~
+## 4th: ~~Tradable / bound mats distinction~~
 
-### 4.9th : Rework header bar
+## 4.9th : Rework header bar
 
 There's more tabs that need to be accomodated, (OCR UI & manifest, box optimization, forecast mode etc), change everything in the header to a (collapsable) side bar with collapsable subfields
 
-### 5th: OCR
+## 4.99th: Changelog tracking
+
+Set up some kind of changelog (with conventional commits and whatnot), add a changelog page (accomodated by the sidebar)
+
+## 5th: OCR
 
 Similar to the[Ark grid OCR](<https://airplaner.github.io/lostark-arkgrid-gem-locator-v2/>). They've used template matching and I think is probably best for me too (with exception of numbers recognition, might need some OCR model for that).
 
-## GOALS
+### GOALS
 
 1. screenshare -> nothing hovered -> detect everything that can be detected, aka:
     - < 9999 mats (and boxes)
@@ -41,7 +37,7 @@ Similar to the[Ark grid OCR](<https://airplaner.github.io/lostark-arkgrid-gem-lo
     - boxes
     - 9999+ mats amount
 
-## Specifics
+### Specifics
 
 Just my current rough mental image of what needs to be done
 
@@ -80,54 +76,88 @@ This step must happen FAST, like 33ms fast so that the user can skim through the
 
 Needless to say this will be a LONG term endeavour
 
-### 6th : Box opening recommendation
+## 6th : Box opening recommendation
 
-- Each chest type is like another state, [how_many_option_1, howmany option_2] etc, should work readily with the optimizer
-  - need to convert these states into the budgets shouldn't be that hard
+This needs [#6](https://github.com/Kenivia/Honing-Forecast/issues/6) to be complete (just because no user is gonna input these manually I think) to be usable, but ig the infrastructure doesn't need to wait.
 
-### 6.5th : Hard limit on juice usages
+This legit only matters for weap / armor juices, but ig it'll also work for shard / leap chests and red / blue chests
 
-- disallow states that can use more than a certain amount of juice / scroll / books
-  - this kinda falls apart with normal honing cos we can finish early, but can just make a pessimistic assumption
-    - will prolly need to add an extra column in material_info for the hard limit
-    - keep track of how many juices are used, sample appropriately in neighbour function
+Oh it also works for paradise hell chest selection (specifically special vs juice vs gold vs mats ig)
 
-- I mean it's kinda redundant cos we can just set the price to like 9999999?
+### Specifics
 
-### 7th: Forecast mode
+1. Need to think about how to represent all this properly ( need to accomodate more than 2 mat types, different ratios etc)
+2. Set up stores & interface in js side to accomodate these things, set up payload to pass this
+3. Set up parser & Rust state_bundle
+4. Set up a box_state for each box
+5. Set up neighbour to perturb these states
+6. Add these to the appropriate budgets at SA call
+7. Display these in UI
 
-Haven't thought enough about the specifics but shouldn't be that hard once everything else is in place.
+## 7th: Optimizer Improvements
 
-- Recommended pushing dates for main / rat alt
-- seletable income choices
-  - gold earning raids
-  - mat earning raids, boxes etc
-  - paradise (get the average from one of the reddit posts or generate my own? will need to data mine?)
-  - configurable dailies
-  - guild
-  - unas thing
-  - daily login
-  - solo shop
+There's a lot that can be improved about the [optimizer](https://github.com/Kenivia/Honing-Forecast/blob/main/docs/Optimizer.md). However it's hard to know when a change is actually good without a way to evaluate them fairly.
 
-### 8th: Optimizer Improvements
+## Arena
 
-- figure out if the restarts are carrying the algorithm and maybe do SA properly
-- somehow make the pity length more explicit cos right now a lot of moves don't do anything
-- ~~force special state to have a non-small tail~~ actually that ~~might~~ in fact does discard optimal choices, just make sure that special neighbour moves actually has an effect
-- some way to estimate how close we are to optimal because re-running this for every week is going to be a bit insane
-- maybe a neural network for an (or few) initial guesses -> optimizer?
+There's a tradeoff to be balanced here: "accuracy" and speed (number of iterations). By accuracy I mean how close it is to the best known answer. How we quantify these is very important and kinda hard to decide. Here's some things I'm considering:
 
-- will probably need to set up an actual elo / some kind of evaluation system, i think the test cases should just be a BIG curated list of likely scenarios - maybe collect this from users but that's kinda hard to set up
-  - like there can't really be "overfitting" cos we have like 2 parameters
-  - this is definitely a very much long term goal
+1. Percentage difference from best known solution is not comparable between different payloads (and we cannot set a static threshold) because it can be skewed by tradable mats
+2. Neither is the number of iterations because saving 1000 iters on a "hard" payload is more difficult and impactful than saving 1000 iters on a trivial one
+3. The algorithm must not have too much run-to-run variance (we need to punish these)
+
+I don't think there's a one-size-fit-all way to do this. Here's some options I've come up with:
+
+1. We can elect to ignore problem 1 and 2 and just calculate something like "Average percentage difference reduced per iter"
+2. We can have an elo system that just compares the percentage differences (or the raw value), and tiebreaks (within some kind of tolerance, which, by the way, if the threshold is static, will contradict problem 1) with iters used.
+
+^ both of these can kinda address problem 3 by comparing the worst run out of a batch
+
+(actually problem 1 can be solved by comparing to TreatTradableAsBound case instead?)
+
+### Specifically
+
+I really dont know what it takes to set up this arena thing. I've tried previously with the visualizer, but I think something that scales better is needed. Perhaps some kind of database.
+
+## Algorithm Ideas
+
+Once we have a way of evaluating them, here's some things I want to implement / try out:
+
+1. A better neighbour function that always makes impactful moves (how? idk)
+2. The optimal move should be relatively trivial to compute (how ever maxroll does the gold stuff) for small owned juice numbers ( and for small owned special). Surely this can be considered somehow?
+3. Some kind of adaptive thing that controls the number of iterations done. This will be very important for forecast mode when we need to run the optimizer on multiple weeks.
+
+This is VERY long term goal (before forecast mode tho)
+
+## 8th: Forecast mode
+
+Calculate (Forecast!) what things will be like in x number of weeks.
+
+### Projection
+
+We need to estimate income. This is probably done by a lot of spreadsheets but we need to find them and implement them. Specifically, I'm thinking of the following:
+
+- gold earning raids
+- mat earning raids, boxes etc
+- paradise (get the average from one of the reddit posts or generate my own? will need to data mine?)
+- configurable dailies
+- guild
+- unas thing
+- daily login
+- solo shop
+- chaos dungeon, guardians, cube and whatnot
+
+This will give us a week-on week budget.  We plot an average gold used vs week graph (and suggest a "best time to push (rat alt)", where the different per week is less than the gold income increase. This graph will need the optimizer to be able to run faster on already-good states #8.
+
+Also, we can compare this with the actual mats owned obtained by auto scan [#6](https://github.com/Kenivia/Honing-Forecast/issues/6), think that'd be cool
+
+There's a LOT of details I'm kinda ignoring but this thing will be ULTRA long term so we'll cross that bridge when we get there
 
 ### 9th: Price trend viewer
 
 need to pull as much historical data as possible from loa-buddy -> store & pull from my own data base -> keep updating this
 
-This will be the first step towards an actual hosted non-serverless website
-
-Maybe discord integration after this / uwuowo import / cross-device storage stuff like that but that's kinda far (can maybe do some cool stats analysis with uwuowo char ilevel population data)
+I think training some market prediction thing on this could be fun? Otherwise just showing the trend could be useful. Havn't thought enough about this.
 
 ##
 
@@ -156,6 +186,22 @@ Below are some rambling / brainstorming / Misc stuff
 
 ## Done / cancelled
 
+### ~~6.5th : Hard limit on juice usages~~
+
+- ~~disallow states that can use more than a certain amount of juice / scroll / books~~
+  - ~~this kinda falls apart with normal honing cos we can finish early, but can just make a pessimistic assumption~~
+    - ~~will prolly need to add an extra column in material_info for the hard limit~~
+    - ~~keep track of how many juices are used, sample appropriately in neighbour function~~
+- I mean it's kinda redundant cos we can just set the price to like 9999999? yes it is
+
+~~BIG PROBLEM THE WEBSITE IS CRASHING ON CHROME???~~ see <https://github.com/facebook/react/issues/36162>
+
+~~pretty sure it's just a performance issue:~~
+
+- ~~move grid & keyed_upgrade watch to actually trigger on change instead of relying on watcher~~
+- ~~potentially keep the workers alive instead of starting a new one every call?~~
+
+- ~~lock progress change UI when the optimizer is still working (because special will change the position of the upgrade and its all over from there)~~
 - ~~make serca conversion add to the existing serca budget instead of overwriting~~
   - ~~need to think abt how to decouple tier conversion and mats conversion cos there'll be cases where people are in serca gear but are still earning T4 mats and want to add them that way~~
   - ~~I THINK this will just be replaced by OCR because it'll be too confusing - we need both the current 5 to 1 straight up conversion (to compare the cost of T4 vs Serca) and this adding behaviour~~
