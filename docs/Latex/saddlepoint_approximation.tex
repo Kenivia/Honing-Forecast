@@ -28,7 +28,7 @@
 
 In this document, we will first define what we want to compute, then go through how we do it. This is aimed at an audience who fall in the intersection of Lost Ark players and aspiring mathematicians. As such, we will use rigorous notations to make our statements and logic clear without losing track of our greedy goblin goal of saving gold. 
 
-
+\newpage
 \section{Setup}
 
 We must first endure some boring definitions, after which we will find that the math is rather simple up until the very last part.
@@ -40,12 +40,16 @@ Let $U_j = U_1, U_2,$ $\ldots , U_N$ be the upgrades we want to perform, which w
 \noindent
 Let $X = (U_1, U_2,$ $\ldots , U_N)$ be the random vector representing the overall outcome.
 
-Let $C_i(x)$ be the material cost function for material $i$, where $i \in 1,2,$ $\ldots, M$. For ordinary mats, this is of the form $C_i(x) = u_i + c_i \cdot x$ for some constants $u_i$ and $c_i$. However, this is arbitrary for juices.
+\noindent
+Let $C_i(x)$ be the material cost function for material $i$, where $i \in 1,2,$ $\ldots, M$. For ordinary mats, this is of the form $C_i(x) = u_i + c_i \cdot x$ for some constants $u_i$ and $c_i$. However, this is arbitrary for juices (but always increasing).
 
-Let $b_i$ be the ``budget'', or the amount of material $i$ that we own.
+\noindent
+Let $b_i$ be the ``budget'', the amount of bound material $i$ that we own.
 
+\noindent
 Let $m_i$ and $l_i$ be the market price and leftover value of material $i$.
 
+\noindent
 Let $g_i(x)$ be our gold cost function, defined as follows\footnote{With the introduction of tradable mats, this is has 2 breakpoints. The math is the same, except section \ref{one_dimension_section} would be a bit messier.}:
 
 $$
@@ -54,7 +58,7 @@ g_i(x) =  \begin{cases}
      (x - b_i) \cdot   l_i& \text{otherwise }
 \end{cases}
 $$
-As in, every unit of material $i$ that we consume beyond our budget incurrs $m_i$ gold cost, and every unit of $i$ that we have leftover is worth $l_i$ gold.  By default, $l$ is 0 (our budget is untradable). 
+As in, every unit of material $i$ that we consume beyond our budget incurrs $m_i$ gold cost, and every unit of $i$ that we have leftover is worth $l_i$ gold.  By default, $l$ is 0. 
 
 As such, we can consider the gold cost due to material $i$:
 $$
@@ -62,17 +66,22 @@ G_i(X) = g_i ( \sum^N_{j=1}C_i(U_j))
 $$
 
 Note that $g_i$ is applied to the sum, not the cost of the individual upgrades.
-
+\newpage
 \subsection{Special honing}
 
 There's an additional layer of complexity we must define:
 
+\noindent
 Let $U^*_k$ be the ``skipped'' version of the random variable\footnote{This is just a deterministic constant equal to the number of normal honing attempts the user did before doing special hones, usually equal to 0 (but does not necessarily mean $C_i(U'_k) = 0$).}. 
 
-Let $U'_j = U^*_j$ if $j \leq k$, otherwise $U'_j = U_j$ .
 
-Let $X'_k = (U'_1,\cdots , U'_k, U_{k+1}, \cdots, U_N)$, the overall outcome with $k$ skipped upgrades.
+\noindent
+Let $X'_k = (U^*_1,\cdots , U^*_k, U_{k+1}, \cdots, U_N)$, the overall outcome with $k$ skipped upgrades.
 
+\noindent
+Let $U'_j = U^*_j$ if $j \leq k$, otherwise $U'_j = U_j$. As such $X'_k = (U'_1,\cdots, U'_N)$.
+
+\noindent
 Let $p_k$ be the chance that we skip exactly $k$ upgrades, where $k \in 0,$ $1,$ $\ldots, N$
 
 \subsection{What we're computing}
@@ -97,7 +106,7 @@ There are 3 layers of multi-dimension-ness at work here: Special honing, differe
 This assumption has a few motives / implications:
 \begin{enumerate}
 
-\item The decision space of special hones is just the permutations of $ U_1, U_2,$ $\ldots , U_N$. This makes the optimizer's job a lot easier, even if this might forbid some better configurations.
+\item The decision space of special hones is just the permutations of $ U_1, U_2,$ $\ldots , U_N$. This makes the optimizer's job a lot easier, even if this might forbid some better strategies.
 \item Succeeding $k$ implies that we succeeeded $k-1$, which has 2 effects:
 \begin{enumerate}
   \item This drastically reduces the number of possibilities we need to consider, and therefore the number of times we need to evaluate the inner sum. As in, we only need to consider $(fail, f, f)$, $(success, f, f )$, $(s, s, f)$, $(s, s, s)$ etc, as opposed to the cartesian product $\{s,f\}^n$. This reduces the complexity from $2^n$ to $(n+1)$. This is by far the biggest concern\footnote{Although if we limit our decision space to allow for a limited number of switches, this COULD be viable. However even allowing for 1 switch doubles the amount of SA evaluations, so this would only be vaguely viable for a small number of upgrades.}.
@@ -108,7 +117,7 @@ This assumption has a few motives / implications:
 \end{enumerate}
 \section{Contribution from one cost dimension: $\mathbb{E}[  G_i(X'_k) ]$}\label{one_dimension_section}
 
-Unfortunately, for a non-linear $f$,  $ \mathbb{E}[f(X)] \neq  f(\mathbb{E}[X])$, which is the whole reason why we're here. Recall that:
+Unfortunately, for a non-linear function $f$,  $ \mathbb{E}[f(X)] \neq  f(\mathbb{E}[X])$, which is the whole reason why we're here. Recall that:
 $$
 G_i(X) = g_i ( \sum^N_{j=1}C_i(U_j))
 $$
@@ -118,29 +127,31 @@ where $g_i$ is non-linear. If this was an arbitrary function, evaluating this wo
 $$
 g_i(x) =  \begin{cases}
   (x - b_i) \cdot   m_i  & \text{if } x > b_i \\
-     (x - b_i) \cdot   l_i& \text{otherwise }
+     (x - b_i) \cdot   l_i& \text{otherwise, }
 \end{cases}
 $$
 
 and so we can do something more clever. For convenience define
 $$
-Y_i=\sum^N_{j=1}C_i(U_j),\\
- \text{so } G_i(X) = g_i(Y_i). \\
+Y_{ik}=\sum^N_{j=1}C_i(U'_j),\\
+ \text{ so } G_i(X'_k) = g_i(Y_{ik}). \\
 $$
-So $Y_i$ is the random variable representing the cost of material type $i$. We can notice that :
+So $Y_{ik}$ is the random variable representing the cost of material type $i$ with $k$ skipped upgrades. We can notice that :
 $$
-\mathbb{E}[g_i(Y_i)] = m_i \cdot \mathbb{E}[(Y_i-b_i) \cdot I( Y_i > b_i)] + l_i \cdot  \mathbb{E}[(Y_i-b_i) \cdot I( Y_i < b_i)],
+\mathbb{E}[g_i(Y_{ik})] = m_i \cdot \mathbb{E}[(Y_{ik}-b_i) \cdot I( Y_{ik} > b_i)] + l_i \cdot  \mathbb{E}[(Y_{ik}-b_i) \cdot I( Y_{ik} < b_i)],
 $$
-where $I$ is the indicator function. From here, we will drop the subscripts $_i$ as we're focusing on one material type dimension. We can split this into three parts:
+where $I$ is the indicator function. From here, we will drop the subscripts $_i$ and $_k$ as we're focusing on one material type dimension and one special outcome. We can split this into three parts:
 
 \begin{align*}
 \mathbb{E}[g(Y)] &= m \cdot \mathbb{E}[Y-b] + (m-l) \cdot E[(Y-b) \cdot I(Y<B)] \\
 &= m \cdot \underbrace{\mathbb{E}[Y-b]}_{\text{part a}} + (m-l) \cdot (\underbrace{E[Y \cdot I(Y<B)]}_{\text{part b}} - \underbrace{E[b \cdot I(Y<B)]}_{\text{part c}})
 \end{align*}
 
-Where part $a)$ is trivial to calculate because $Y$ is a simple sum of RVs, making $\mathbb{E}$ distributive.
+\noindent
+Part $a)$ is trivial to calculate because $Y$ is a simple sum of random variables, making $\mathbb{E}$ distributive.
 
-For part $b)$, we define the biased distribution $Y^*$, which has the probabily distribution $p^* = p \cdot \frac{y}{\mathbb{E}[Y]}$ for each $y$ in the support of $Y$. In other words:
+\noindent
+For part $b)$ and $c)$, we will write the expectation in a form that can leverage saddlepoint approximation. We define the biased distribution $Y^*$, which has the probabily distribution $p^* = p \cdot \frac{y}{\mathbb{E}[Y]}$ for each $y$ in the support of $Y$. In other words:
 
 $$
 \mathbb{P}(Y^* = y) = \frac{y \mathbb{P} (Y=y)}{\mathbb{E}[Y]},
@@ -151,6 +162,7 @@ $$
  \mathbb{E}[Y \cdot I( Y < b)] = \mathbb{P}(Y^* < b) \cdot \mathbb{E}[Y].
 $$,
 
+\noindent
 Part $c)$ is a simpler version of part $b)$, we have:
 
 $$
@@ -189,14 +201,14 @@ K(\theta) = \sum^N_{j=1}{\log(\mathbb{E}[ e^{\theta C(U_j)}])}.
 $$
 This property allows us to compute the individual summands and add them up at the end to obtain $K(\theta)$. Furthermore, it is also easy to compute its derivatives $K'(\theta)$, $K''(\theta)$, $K'''(\theta)$, $K^{(4)}(\theta)$ (we stop at the 4th cumulant for floating point reasons).
 
-\subsection{Find $\theta$ such that $K'(\theta) \approx b$}
+\subsection{Find $\theta$ such that $K'(\theta) \approx b^+$}
 
 Since we have access to higher derivatives of $K'(\theta)$, we can use a generalized version of newton's algorithm for root finding, known as Householder's method. My particular implementation uses a bunch of heuristics to avoid non-convergence that are complete trial and error, so there may be faster implementations.
 
 \newpage
 \subsection{$\mathbb{P}(Y<b) = $ magic formula}
 
-The specific version of Saddlepoint approximation implemented is as follows:
+The specific version of saddlepoint approximation implemented is as follows:
 $$
 \mathbb{P}(Y<b) = \begin{cases}\Phi(w) + \phi( w) (\frac{1}{w} - \frac{1}{ u})& \text{if } x \neq \mu  \\
 
@@ -205,28 +217,29 @@ $$
 $$
 \begin{align*}
 \text{where } 
-\theta &  \text{ satisfies }K'(\theta) \approx b^+, \\
-w &=  \text{sgn}(\theta)\sqrt{2 (sb^+-K(\theta))}, \\
- u &= 2  \delta^{-1}\sinh(s\delta/2)\sqrt{K''(\theta)}, \\
- z &= (b^+ - \mu)/\sigma,\\
- \kappa_n &= K^{(n)}(0)/\sigma^n, \\
   \delta &= \text{minimum gap size in the support of Y}, \\
   b^+ &= b + \delta/2, \\
+\theta &  \text{ satisfies }K'(\theta) \approx b^+, \\
+w &=  \text{sgn}(\theta)\sqrt{2 (\theta b^+-K(\theta))}, \\
+ u &= 2  \delta^{-1}\sinh(\theta\delta/2)\sqrt{K''(\theta)}, \\
+ z &= (b^+ - \mu)/\sigma,\\
+ \kappa_n &= K^{(n)}(0)/\sigma^n, \\
   H_2(z) &= z^2-1, \\
   H_3(z) &= z^3-3, \\
   H_5(z) &= z^5-10z^3+15z, \\
  \text{and } \Phi, \phi \text{ are the cdf} & \text{ and pdf of Normal distribution.} 
 \end{align*}
 
-The derivation of this formula can be found in Saddlepoint Approximations with Applications \cite{butler2007saddlepoint}. Specifically, the base form is stated in Section 1.2.1, the continuity corrected version in Section 2.4.4, and the limiting case in Section 5.2.3.
+\noindent
+The derivation of this formula can be found in Saddlepoint Approximations with Applications by Butler \cite{butler2007saddlepoint}. Specifically, the base form (Lugannani-Rice formula) is stated in Section 1.2.1, the continuity corrected version in Section 2.4.4, and the limiting case in Section 5.2.3.
 
 \subsection{Cumulants of $Y^*$}
-Since $Y^*$ is not a sum of random variables, $K$ is not distributive over its summands, so naively computing the cumulant generating function of $Y^*$ would require a direct convolution. Fortunately, It turns out the cumulant of $Y^*$ and $Y$ can be related by the following:
+Since $Y^*$ is not a sum of random variables, $K$ is not distributive over its summands, so naively computing the cumulant generating function of $Y^*$ would again require a direct convolution. Fortunately, It turns out the cumulant of $Y^*$ and $Y$ are related by the following:
 
 $$
-K_{Y^*}(\theta) = K_Y(\theta) + \log(K'_Y(\theta)) - \log(\mu).
+K_{Y^*}(\theta) = K_Y(\theta) + \log(K'_Y(\theta)) - \log(\mu),
 $$
-Higher cumulants can be found similarly via closed form formulae. 
+where higher cumulants can similarly be found via simple formulae. 
 
 
 \newpage
