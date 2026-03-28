@@ -58,9 +58,9 @@ watchEffect(() => {
 <template>
     <div class="hf-app-shell">
         <header>
-            <div class="hf-page-header-row" style="width: 100%">
-                <span>WARNING! The site is known to crash with the </span> <span style="color: aquamarine">&nbsp;React Developer Tools extension</span>. Disable
-                the extension, close the site and re-open! (Reloading is insufficient) See the bug report&nbsp;
+            <div v-if="!is500Narrow" class="hf-page-header-row" style="width: 100%">
+                <span>!!! The site is known to crash with the </span> <span style="color: aquamarine">&nbsp;React Developer Tools extension&nbsp;</span> on
+                Chromium. Disable the extension, close the site and re-open! (Reloading is insufficient) See the bug report&nbsp;
                 <a style="text-decoration: underline" href="https://github.com/facebook/react/issues/36162">here</a>.
             </div>
             <nav class="hf-top-nav">
