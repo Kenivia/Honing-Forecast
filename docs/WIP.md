@@ -140,6 +140,7 @@ Below are some rambling / brainstorming / Misc stuff
 - drag to select
 - make bundle size suffix not take up horizontal space
 - Make shard bag size change actually change to the other price (and manual overwrite that one bag size)
+- Show gold used for naive strategies (no juice, all juice, maybe "maxroll"(need to reverse engineer their calculations, which i should do to help the optimizer anyway) etc)
 
 ### Misc
 
