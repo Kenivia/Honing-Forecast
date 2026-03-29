@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { TreatmentPlan, useProfilesStore } from "@/Stores/CharacterProfile"
 import { build_payload } from "@/WasmInterface/payload"
-import { WasmOp } from "@/WasmInterface/js_to_wasm"
 import { useRosterStore } from "@/Stores/RosterConfig"
 import { storeToRefs } from "pinia"
 import { ref, watchEffect } from "vue"
+import { WasmOp } from "@/Utils/Interfaces"
 
 const store = useProfilesStore()
 const { active_profile } = storeToRefs(store)

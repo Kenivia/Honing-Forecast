@@ -6,10 +6,11 @@ import { achieved_ilevel, check_adv_all_done, check_all_plus_20, check_revert_il
 import { computed, watch } from "vue"
 import { ADV_COLS, ALL_LABELS, NORMAL_COLS, NUM_PIECES, PLUS_TIER_CONVERSION } from "@/Utils/Constants"
 import TierConvertButton from "@/Components/Common/TierConvertButton.vue"
-import { grids_to_keyed, input_column_to_num, parse_input, UpgradeStatus } from "@/Utils/Interfaces"
+import { UpgradeStatus } from "@/Utils/Interfaces"
 import ControlPanel from "../ControlPanel.vue"
 import { grid_change_callback } from "../CharWorkerUtils"
 import { useRosterStore } from "@/Stores/RosterConfig"
+import { input_column_to_num, parse_input } from "@/Utils/InputColumn"
 
 const { active_profile } = storeToRefs(useProfilesStore())
 const { roster_config } = storeToRefs(useRosterStore())

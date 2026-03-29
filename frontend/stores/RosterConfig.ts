@@ -1,6 +1,7 @@
-import { ALL_LABELS, DEFAULT_TIER, STORAGE_KEY, TIER_LABELS } from "@/Utils/Constants"
+import { ALL_LABELS, DEFAULT_TIER, STORAGE_KEY } from "@/Utils/Constants"
 import { debounce } from "@/Utils/Helpers"
-import { create_input_column, validate_input_column, InputColumn, InputType, validate_input_column_array } from "@/Utils/Interfaces"
+import { create_input_column, validate_input_column_array } from "@/Utils/InputColumn"
+import { InputColumn, InputType } from "@/Utils/Interfaces"
 import { defineStore } from "pinia"
 
 export interface RosterConfig {

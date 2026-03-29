@@ -1,6 +1,9 @@
 <script setup lang="ts">
+import { CharProfile } from "@/Stores/CharacterProfile"
+import { RosterConfig } from "@/Stores/RosterConfig"
 import { cssVar, iconPath } from "@/Utils/Helpers"
-import { InputColumn, get_modified_cell } from "@/Utils/Interfaces"
+import { get_modified_cell } from "@/Utils/InputColumn"
+import { InputColumn } from "@/Utils/Interfaces"
 import { computed, ref } from "vue"
 
 const props = defineProps<{
@@ -12,6 +15,7 @@ const props = defineProps<{
     input_color?: string
     is_percentage?: boolean
     hide_tick?: boolean
+    callback?: () => void
 }>()
 
 const resolved_color = computed(() => {
@@ -22,7 +26,12 @@ const this_data = ref(String(!Array.isArray(props.input_column) ? (props.input_c
 
 <template>
     <div class="hf-material-cell">
-        <input v-if="!hide_tick && label && !Array.isArray(input_column)" type="checkbox" v-model="(input_column as InputColumn).enabled[row]" />
+        <input
+            v-if="!hide_tick && label && !Array.isArray(input_column)"
+            type="checkbox"
+            v-model="(input_column as InputColumn).enabled[row]"
+            @change="callback"
+        />
         <label v-if="label" class="hf-row-label">
             <span>{{ label }}</span>
             <img :src="iconPath(label)" :alt="label" />
@@ -33,7 +42,7 @@ const this_data = ref(String(!Array.isArray(props.input_column) ? (props.input_c
             class="hf-material-cell-input"
             :style="{ color: resolved_color }"
             v-model="this_data"
-            @change="((this_data = get_modified_cell(input_column, row, $event)), setter(get_modified_cell(input_column, row, $event)))"
+            @change="((this_data = get_modified_cell(input_column, row, $event)), setter(get_modified_cell(input_column, row, $event)), callback())"
         />
         <label v-else class="hf-material-cell-result" :style="{ color: resolved_color }" type="text">{{
             is_percentage

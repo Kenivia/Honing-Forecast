@@ -3,13 +3,14 @@ import { ALL_LABELS, GRAPH_COLORS, T4_MATS_LABELS, ANNOTATION_COLORS, ANNOTATION
 import { TreatmentPlan, useProfilesStore } from "@/Stores/CharacterProfile"
 import { metricToText } from "@/Utils/Helpers"
 import MaterialCell from "@/Components/Common/MaterialCell.vue"
-import { input_column_to_num } from "@/Utils/Interfaces"
+import { WasmOp } from "@/Utils/Interfaces"
 import MaterialGraph from "./MaterialGraph.vue"
 import { storeToRefs } from "pinia"
 import { useRosterStore } from "@/Stores/RosterConfig"
 import { computed, ref, watchEffect } from "vue"
-import { WasmOp } from "@/WasmInterface/js_to_wasm"
 import { build_payload } from "@/WasmInterface/payload"
+import { input_column_to_num } from "@/Utils/InputColumn"
+import { start_all_workers } from "../CharWorkerUtils"
 
 const { active_profile } = storeToRefs(useProfilesStore())
 const { roster_config } = storeToRefs(useRosterStore())
@@ -196,6 +197,7 @@ const show_special_guide = ref(false)
                                         }
                                     "
                                     :hide_tick="analysisTab == 'juice'"
+                                    :callback="() => start_all_workers(active_profile, roster_config)"
                                 />
                                 <!-- {{ console.log(averages) }} -->
                                 <MaterialCell
@@ -219,7 +221,6 @@ const show_special_guide = ref(false)
                                 />
                             </div>
 
-                            <!-- Special Re-render is trigger by the confirm button in instruction row because otherwise it wouldn't update -->
                             <div v-if="active_profile.material_re_render_trigger" class="hf-mats-row">
                                 <MaterialCell
                                     :input_column="active_profile.special_budget"
@@ -228,8 +229,8 @@ const show_special_guide = ref(false)
                                     :label="(active_profile.tier == 1 ? 'Serca ' : '') + active_profile.special_budget.keys[0]"
                                     v-if="active_profile.material_re_render_trigger"
                                     :hide_tick="true"
+                                    :callback="() => start_all_workers(active_profile, roster_config)"
                                 ></MaterialCell>
-                                <!-- {{ console.log(active_profile.optimizer_worker_bundle.result?.latest_special_probs) }} -->
                                 <span class="special-convert-guide" @click="() => (show_special_guide = true)">Should I use in T4 or convert?</span>
                                 <MaterialGraph
                                     :data="

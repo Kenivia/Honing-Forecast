@@ -1,9 +1,10 @@
 import { ALL_LABELS, BUNDLE_SIZE } from "@/Utils/Constants"
-import { WasmOp } from "./js_to_wasm"
 import { CharProfile, TreatmentPlan } from "@/Stores/CharacterProfile"
-import { RosterConfig } from "@/Stores/RosterConfig"
-import { input_column_to_num, KeyedUpgrades, OneMaterial, OneUpgrade, OneUpgradeKey, to_upgrade_key, Upgrade } from "@/Utils/Interfaces"
+import { KeyedUpgrades, OneMaterial, OneUpgrade, Upgrade, WasmOp } from "@/Utils/Interfaces"
 import { toRaw } from "vue"
+import { RosterConfig } from "@/Stores/RosterConfig"
+import { to_upgrade_key } from "@/Utils/KeyedUpgrades"
+import { input_column_to_num } from "@/Utils/InputColumn"
 
 // I don't think it's possible to directly export this struct from rust to javascript because of all the vectors,
 // so it's copied & pasted here

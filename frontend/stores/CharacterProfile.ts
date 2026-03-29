@@ -1,25 +1,13 @@
 import { defineStore, storeToRefs } from "pinia"
-import {
-    create_input_column,
-    createStatusGrid,
-    validate_input_column,
-    InputColumn,
-    InputType,
-    KeyedUpgrades,
-    StatusGrid,
-    get_valid_status_grid,
-    grids_to_keyed,
-    validate_input_column_array,
-    is_enum,
-} from "@/Utils/Interfaces"
+import { InputColumn, InputType, KeyedUpgrades, StatusGrid, WasmOp } from "@/Utils/Interfaces"
 import { createWorkerBundle } from "@/WasmInterface/worker_setup"
 import { ADV_COLS, ALL_LABELS, NORMAL_COLS, NUM_PIECES, SPECIAL_LEAP_LABEL, STORAGE_KEY } from "@/Utils/Constants"
-import { WasmOp } from "@/WasmInterface/js_to_wasm"
 import { debounce, formatCharName } from "@/Utils/Helpers"
 import { build_payload } from "@/WasmInterface/payload"
 import { useRosterStore } from "./RosterConfig"
-import { parse } from "path"
-import { toRaw } from "vue"
+import { create_input_column, validate_input_column, validate_input_column_array } from "@/Utils/InputColumn"
+import { createStatusGrid, get_valid_status_grid } from "@/Utils/StatusGrid"
+import { grids_to_keyed } from "@/Utils/KeyedUpgrades"
 
 export const useProfilesStore = defineStore("profiles", {
     state: () => DEFAULT_PROFILES_STATE,

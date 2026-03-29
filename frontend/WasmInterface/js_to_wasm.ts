@@ -1,13 +1,7 @@
 import init, { evaluate_average_wrapper, optimize_average_wrapper, histogram_wrapper, parser_wrapper } from "@/../crates/wasm/pkg/hf_wasm.js"
 import { EvalPayload } from "./payload"
-import { HistogramOutputs, StateBundle } from "@/Utils/Interfaces"
+import { HistogramOutputs, StateBundle, WasmOp } from "@/Utils/Interfaces"
 
-export enum WasmOp {
-    EvaluateAverage,
-    OptimizeAverage,
-    Histogram,
-    Parser,
-}
 async function ParserWasm(payload: EvalPayload): Promise<StateBundle> {
     await init()
     return parser_wrapper(payload)
@@ -31,8 +25,8 @@ self.addEventListener("message", async (ev) => {
 
     const { payload, wasm_op } = msg
 
-    // console.log(WasmOp[wasm_op], "Began")
-    // console.log(payload)
+    console.log(WasmOp[wasm_op], "Began")
+    console.log(payload)
     let result
 
     if (wasm_op == WasmOp.EvaluateAverage) {

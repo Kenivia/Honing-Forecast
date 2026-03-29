@@ -147,7 +147,7 @@ We need to estimate income. This is probably done by a lot of spreadsheets but w
 - solo shop
 - chaos dungeon, guardians, cube and whatnot
 
-This will give us a week-on week budget.  We plot an average gold used vs week graph (and suggest a "best time to push (rat alt)", where the different per week is less than the gold income increase. This graph will need the optimizer to be able to run faster on already-good states #8.
+This will give us a week-on week budget.  We plot an average gold used vs week graph (and suggest a "best time to push (rat alt)", where the different per week is less than the gold income increase. This graph will need the optimizer to be able to run faster on already-good states [#8](https://github.com/Kenivia/Honing-Forecast/issues/8).
 
 Also, we can compare this with the actual mats owned obtained by auto scan [#6](https://github.com/Kenivia/Honing-Forecast/issues/6), think that'd be cool
 
@@ -192,7 +192,7 @@ Below are some rambling / brainstorming / Misc stuff
   - ~~this kinda falls apart with normal honing cos we can finish early, but can just make a pessimistic assumption~~
     - ~~will prolly need to add an extra column in material_info for the hard limit~~
     - ~~keep track of how many juices are used, sample appropriately in neighbour function~~
-- I mean it's kinda redundant cos we can just set the price to like 9999999? yes it is
+- ~~I mean it's kinda redundant cos we can just set the price to like 9999999?~~ yes it is
 
 ~~BIG PROBLEM THE WEBSITE IS CRASHING ON CHROME???~~ see <https://github.com/facebook/react/issues/36162>
 

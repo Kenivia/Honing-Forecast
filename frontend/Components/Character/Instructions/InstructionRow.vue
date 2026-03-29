@@ -1,13 +1,22 @@
 <script setup lang="ts">
-import MaterialCell from "@/Components/Common/MaterialCell.vue"
 import { useProfilesStore } from "@/Stores/CharacterProfile"
 import { useRosterStore } from "@/Stores/RosterConfig"
-import { JOINED_ADV_JUICE, ALL_LABELS, T4_JUICE_LABELS, DEFAULT_ARTISAN_MULTIPLIER } from "@/Utils/Constants"
+import { ALL_LABELS, T4_JUICE_LABELS } from "@/Utils/Constants"
 import { get_piece_name, iconPath } from "@/Utils/Helpers"
-import { input_column_to_num, to_upgrade_key, Upgrade, UpgradeStatus } from "@/Utils/Interfaces"
+import { Upgrade, UpgradeStatus } from "@/Utils/Interfaces"
 import { storeToRefs } from "pinia"
-import { computed, nextTick, ref, watch, watchEffect } from "vue"
-import { grid_change_callback } from "../CharWorkerUtils"
+import { computed, nextTick, ref, watch } from "vue"
+import { grid_change_callback, start_all_workers } from "../CharWorkerUtils"
+import { to_upgrade_key } from "@/Utils/KeyedUpgrades"
+import {
+    aggregate_streaks,
+    artisan_function,
+    compute_remaininig_materials,
+    compute_used_materials,
+    cumulative_chance,
+    streaks_to_text,
+} from "./InstructionsUtil"
+import MaterialCell from "@/Components/Common/MaterialCell.vue"
 
 const { active_profile } = storeToRefs(useProfilesStore())
 const { roster_config } = storeToRefs(useRosterStore())
@@ -20,201 +29,23 @@ const props = defineProps<{
 }>()
 
 const free_tap_this_upgrade = computed(() => {
-    // console.log(props.index_in_special_state, props.special_invalid_index, props.upgrade.this_special_chance)
     return props.index_in_special_state < props.special_invalid_index && props.upgrade.this_special_chance > 0
 })
 
-// --- Req 1: Scrollable Instructions Logic ---
-interface NormalStreak {
-    juice: boolean
-    book: boolean
-    count: number
-}
-interface AdvStreak {
-    juice: boolean
-    scroll: boolean
-    grace: boolean
-    count: number
-}
-
-function aggregateStreaks(): NormalStreak[] | AdvStreak[] {
-    if (props.upgrade.state.length === 0) return []
-
-    if (props.upgrade.is_normal_honing) {
-        const streaks: NormalStreak[] = []
-        let current: NormalStreak | null = null
-        let index = 0
-        for (const [juice, book] of props.upgrade.state.slice(0, props.upgrade.normal_dist.length - 1)) {
-            if (index == props.upgrade.normal_dist.length - 2 && artisan_function(props.upgrade, index) === "100.00") {
-                // this corresponds to not showing the pity tap
-                // Rust side does not enforce that the pity tap is unjuiced (it just ignores the state after that index)
-                // so we need to hide it from teh user
-                // however for upgrades that naturally has a 100% success rate (below like +5) we don't want to skip
-                // just a weird edge case
-                continue
-            }
-            const hasBook = book > 0
-            if (current && current.juice === juice && current.book === hasBook) {
-                current.count++
-            } else {
-                current = { juice, book: hasBook, count: 1 }
-                streaks.push(current)
-            }
-            index += 1
-        }
-        return streaks
-    } else {
-        const streaks: AdvStreak[] = []
-        let [juice_grace, juice_non_grace] = JOINED_ADV_JUICE[props.upgrade.state[0][1]]
-        let [scroll_grace, scroll_non_grace] = JOINED_ADV_JUICE[props.upgrade.state[1][1]]
-        // These 4 numbers correspond to how many taps to perform on the respective conditions
-        // They range from 0 to 255, with 255 considered infinite, see rust advanced_honing/utils for what numbers they can actually take
-
-        let both_grace = Math.min(juice_grace, scroll_grace)
-        if (both_grace > 0) streaks.push({ juice: true, scroll: true, grace: true, count: both_grace })
-
-        let one_grace = Math.max(juice_grace, scroll_grace) == 255 ? 255 : Math.max(juice_grace, scroll_grace) - both_grace
-        if (one_grace > 0) streaks.push({ juice: juice_grace > scroll_grace, scroll: scroll_grace > juice_grace, grace: true, count: one_grace })
-
-        let both_non_grace = Math.min(juice_non_grace, scroll_non_grace)
-        if (both_non_grace > 0) streaks.push({ juice: true, scroll: true, grace: false, count: both_non_grace })
-
-        let one_non_grace = Math.max(juice_non_grace, scroll_non_grace) == 255 ? 255 : Math.max(juice_non_grace, scroll_non_grace) - both_non_grace
-        if (one_non_grace > 0)
-            streaks.push({ juice: juice_non_grace > scroll_non_grace, scroll: scroll_non_grace > juice_non_grace, grace: false, count: one_non_grace })
-
-        if (streaks.length == 0) {
-            streaks.push({ juice: false, scroll: false, grace: true, count: 255 })
-        }
-        // console.log(juice_grace, juice_non_grace, scroll_grace, scroll_non_grace, props.upgrade.state)
-        return streaks
-    }
-}
-
-const streaks = computed(aggregateStreaks)
-
-function artisan_function(upgrade: Upgrade, total_count: number): string {
-    let extra_arr = upgrade.state.slice(0, total_count).map(([juice, id]) => {
-        let chance = 0.0
-        // console.log(juice, id, active_profile.value.optimizer_worker_bundle.result.prep_output.juice_info.all_juices[0].data.get(String(upgrade.upgrade_index)))
-        if (juice) {
-            chance += active_profile.value.optimizer_worker_bundle.result.prep_output.juice_info.all_juices[0].data.get(
-                String(upgrade.upgrade_index),
-            ).normal_chance
-        }
-        if (id > 0) {
-            chance += active_profile.value.optimizer_worker_bundle.result.prep_output.juice_info.all_juices[id].data.get(
-                String(upgrade.upgrade_index),
-            ).normal_chance
-        }
-        return chance
-    })
-    let artisan = 0
-    // console.log(upgrade.normal_dist, extra_arr, upgrade.state)
-
-    for (let count = 0; count < total_count; count++) {
-        let min_count = Math.min(count, 10)
-
-        let current_chance = Math.min(1, upgrade.base_chance + upgrade.extra_chance + min_count * upgrade.base_chance * 0.1 + extra_arr[count])
-        if (artisan >= 1.0) {
-            break
-        }
-
-        artisan += DEFAULT_ARTISAN_MULTIPLIER * current_chance * upgrade.artisan_rate
-        if (current_chance == 1.0) {
-            break // for upgrades that have 100% passrate immediately or upgrades that have above 100% success rate (juicing last few taps of like +4 or something)
-        }
-    }
-
-    return (Math.min(artisan, 1) * 100).toFixed(2)
-}
-
-function cumulative_chance(upgrade: Upgrade, total_count: number): string {
-    let extra_arr = upgrade.state.slice(0, total_count).map(([juice, id]) => {
-        let chance = 0.0
-        // console.log(juice, id, active_profile.value.optimizer_worker_bundle.result.prep_output.juice_info.all_juices[0].data.get(String(upgrade.upgrade_index)))
-        if (juice) {
-            chance += active_profile.value.optimizer_worker_bundle.result.prep_output.juice_info.all_juices[0].data.get(
-                String(upgrade.upgrade_index),
-            ).normal_chance
-        }
-        if (id > 0) {
-            chance += active_profile.value.optimizer_worker_bundle.result.prep_output.juice_info.all_juices[id].data.get(
-                String(upgrade.upgrade_index),
-            ).normal_chance
-        }
-        return chance
-    })
-    let artisan = 0
-    let cum_chance = 1.0
-    // console.log(upgrade.normal_dist, extra_arr, upgrade.state)
-
-    for (let count = 0; count < total_count; count++) {
-        let min_count = Math.min(count, 10)
-
-        let current_chance = Math.min(1, upgrade.base_chance + upgrade.extra_chance + min_count * upgrade.base_chance * 0.1 + extra_arr[count])
-        if (artisan >= 1.0) {
-            return (100.0).toFixed(2)
-        }
-        cum_chance *= 1 - current_chance
-        artisan += DEFAULT_ARTISAN_MULTIPLIER * current_chance * upgrade.artisan_rate
-        if (current_chance == 1.0) {
-            return (100.0).toFixed(2)
-        }
-    }
-
-    return (Math.max(1 - cum_chance, 0) * 100).toFixed(2)
-}
-
-// Unified mapping for the template to digest easily
-const visualStreaks = computed(() => {
-    let out = []
-    let taps = 0
-    for (let index = 0; index < streaks.value.length; index++) {
-        let streak: any = streaks.value[index]
-
-        let isNormal = props.upgrade.is_normal_honing
-        let topIconActive = streak.juice
-        let bottomIconActive = isNormal ? streak.book : streak.scroll
-        let name_line =
-            (streak.juice ? "Juice" : "") +
-            ((streak.juice && streak.book) || (streak.juice && streak.scroll) ? " & " : "") +
-            (streak.book ? "Book" : streak.scroll ? "Scroll" : "") +
-            (!streak.juice && !streak.juice && !streak.book && !streak.scroll ? "Raw tap" : "")
-        let line1 = ""
-        let line2 = ""
-
-        if (isNormal) {
-            line1 = `x${streak.count}`
-            taps += streak.count
-            line2 = `until ${artisan_function(props.upgrade, taps)}%<br>artisan`
-        } else {
-            let graceText = streak.grace ? "Grace" : "non-Grace"
-            if (!streak.juice && !streak.scroll) {
-                line1 = "Nothing"
-                line2 = `on ${graceText}`
-            } else {
-                // console.log(props.upgrade.adv_dists)
-                line1 = streak.count < 255 ? `First ${streak.count}` : streaks.value.length == 1 ? "All" : "All"
-                line2 = graceText
-            }
-        }
-
-        out.push({ topIconActive, bottomIconActive, line1, line2, name_line })
-    }
-    return out
+const juice_info = computed(() => {
+    return active_profile.value.optimizer_worker_bundle.result.prep_output.juice_info
 })
 
-// --- Req 5: Interactive Inputs & Watchers ---
+const streaks = computed(() => aggregate_streaks(props.upgrade, juice_info.value))
+const streak_texts = computed(() => streaks_to_text(props.upgrade, streaks.value, juice_info.value))
+
 const taps_so_far = ref(props.upgrade.alr_failed || 0)
 watch(
     () => props.upgrade.alr_failed,
     () => {
         taps_so_far.value = props.upgrade.alr_failed
-    },
+    }, // This watch is here to watch for when upgrade changes (optimizer shuffled order or tick /untick), in which case props.upgrade changes
 )
-// This watch is here to watch for when we tick / untick, in which case props.upgrade changes
-// This only updates when props.upgrade.alr_failed changes, so we can update taps_so_far without being overwritten immediately
 
 // In Rust start_xp ranges from 0 to 100 (each bar = 10 xp instead of 100 in game)
 const current_adv_upgrade = ref(props.upgrade.adv_config ? Math.floor(props.upgrade.adv_config.start_xp / 10) + props.upgrade.upgrade_index * 10 : 0)
@@ -246,7 +77,7 @@ function write_normal_progress() {
     active_profile.value.keyed_upgrades[
         to_upgrade_key(props.upgrade.piece_type, props.upgrade.upgrade_index, props.upgrade.is_normal_honing, active_profile.value.tier)
     ][3] = taps_so_far.value
-    grid_change_callback(active_profile.value, roster_config.value)
+    start_all_workers(active_profile.value, roster_config.value)
 }
 
 function write_adv_progress() {
@@ -263,128 +94,7 @@ function write_adv_progress() {
         next_free.value,
         next_big.value,
     ]
-    grid_change_callback(active_profile.value, roster_config.value)
-}
-// --- Req 6: Modal & Cost Deduction Logic ---
-const show_success_modal = ref(false)
-const succeed_without_deduct = ref(false)
-
-const adv_juice_used = ref(0)
-const adv_scroll_used = ref(0)
-const used_materials = computed(() => {
-    if (!props.upgrade.cost_dist || !active_profile.value.bound_budgets) return []
-    const tier = active_profile.value.tier
-    let out = new Array(props.upgrade.cost_dist.length).fill(0)
-
-    for (let cost_type = 0; cost_type < 7; cost_type++) {
-        out[cost_type] = props.upgrade.unlock_costs[cost_type] + props.upgrade.costs[cost_type] * taps_so_far.value
-    }
-    let juice_info = active_profile.value.optimizer_worker_bundle.result.prep_output.juice_info
-    let relevant_id_map = props.upgrade.is_normal_honing ? juice_info.normal_uindex_to_id : juice_info.adv_uindex_to_id
-    // console.log(relevant_id_map[props.upgrade.upgrade_index])
-    for (const id of relevant_id_map[props.upgrade.upgrade_index]) {
-        let juice_cost = 0
-
-        let juice_type = juice_info.all_juices[id].data.get(String(props.upgrade.upgrade_index))
-        let amt = props.upgrade.is_normal_honing ? juice_type.normal_amt_used : juice_type.adv_amt_used
-
-        if (props.upgrade.is_normal_honing) {
-            for (let index = 0; index < Math.min(taps_so_far.value, props.upgrade.normal_dist.length - 1); index++) {
-                if (!props.upgrade.is_normal_honing) {
-                    juice_cost += amt
-                } else if ((props.upgrade.state[index][0] === true && id == 0) || (props.upgrade.state[index][1] === id && id !== 0)) {
-                    juice_cost += amt
-                }
-                // console.log(juice_cost)
-            }
-        } else {
-            if (id === 0) {
-                juice_cost = adv_juice_used.value * amt
-            } else {
-                juice_cost = adv_scroll_used.value * amt
-            }
-        }
-
-        out[7 + id + (props.upgrade.is_weapon ? 0 : juice_info.num_juice_avail)] = juice_cost
-    }
-    return out
-})
-
-const remaining_materials = computed(() => {
-    const bound_budgets: number[] = []
-    const roster_mats: number[] = []
-    const tradable_mats: number[] = []
-    used_materials.value.forEach((cost, index) => {
-        if (cost <= 0) {
-            bound_budgets.push(input_column_to_num(active_profile.value.bound_budgets[active_profile.value.tier])[index])
-            roster_mats.push(input_column_to_num(roster_config.value.roster_mats_owned[active_profile.value.tier])[index])
-            tradable_mats.push(input_column_to_num(roster_config.value.tradable_mats_owned[active_profile.value.tier])[index])
-            return
-        }
-        let remaining_cost = cost
-        // 1. Bound
-        let bound_owned = input_column_to_num(active_profile.value.bound_budgets[active_profile.value.tier])[index]
-        let deduct_bound = Math.min(bound_owned, remaining_cost)
-        bound_budgets.push(Math.max(0, bound_owned - deduct_bound))
-        remaining_cost -= deduct_bound
-        // 2. Roster
-        let roster_owned = input_column_to_num(roster_config.value.roster_mats_owned[active_profile.value.tier])[index]
-        if (remaining_cost > 0 && roster_config.value.roster_mats_owned[index] !== undefined) {
-            let deduct_roster = Math.min(roster_owned, remaining_cost)
-            roster_mats.push(Math.max(0, roster_owned - deduct_roster))
-            remaining_cost -= deduct_roster
-        } else {
-            roster_mats.push(roster_owned)
-        }
-        // 3. Tradable
-        let tradable_owned = input_column_to_num(roster_config.value.tradable_mats_owned[active_profile.value.tier])[index]
-        if (remaining_cost > 0 && roster_config.value.tradable_mats_owned[index] !== undefined) {
-            let deduct_tradable = Math.min(tradable_owned, remaining_cost)
-            tradable_mats.push(Math.max(0, tradable_owned - deduct_tradable))
-        } else {
-            tradable_mats.push(tradable_owned)
-        }
-    })
-    // console.log("computed")
-    return { bound_budgets, roster_mats, tradable_mats }
-})
-const visibleRows = computed(() => {
-    const tier = active_profile.value.tier
-    if (!ALL_LABELS || !ALL_LABELS[tier]) return []
-    // console.log(used_materials.value)
-    return ALL_LABELS[tier]
-        .map((label, index) => ({ label, index, row: index }))
-        .filter((item) => used_materials.value[item.index] > 0 && active_profile.value.bound_budgets[tier].enabled[item.index])
-})
-
-function onSucceedClick() {
-    show_success_modal.value = true
-}
-
-async function confirmSuccess() {
-    if (!succeed_without_deduct.value) {
-        const tier = active_profile.value.tier
-
-        used_materials.value.forEach((cost, index) => {
-            if (cost <= 0) return
-
-            active_profile.value.bound_budgets[tier].data[index] = remaining_materials.value.bound_budgets[index].toLocaleString()
-            roster_config.value.roster_mats_owned[tier].data[index] = remaining_materials.value.roster_mats[index].toLocaleString()
-            roster_config.value.tradable_mats_owned[tier].data[index] = remaining_materials.value.tradable_mats[index].toLocaleString()
-            // Just set to 0 if we run out, per instructions
-        })
-    }
-    if (props.upgrade.is_normal_honing) {
-        active_profile.value.normal_grid[props.upgrade.piece_type][props.upgrade.upgrade_index] = UpgradeStatus.Done
-    } else {
-        active_profile.value.adv_grid[props.upgrade.piece_type][props.upgrade.upgrade_index] = UpgradeStatus.Done
-    }
-
-    show_success_modal.value = false
-    succeed_without_deduct.value = false // reset
-    active_profile.value.material_re_render_trigger = false
-    await nextTick()
-    active_profile.value.material_re_render_trigger = true
+    start_all_workers(active_profile.value, roster_config.value)
 }
 
 function juice_icon_path(upgrade: Upgrade, juice: boolean) {
@@ -395,7 +105,6 @@ function juice_icon_path(upgrade: Upgrade, juice: boolean) {
     if (relevant_upgrade.length === 0) {
         return "no juice avail"
     }
-    // console.log(relevant_id_map,relevant_upgrade)
     return iconPath(T4_JUICE_LABELS[relevant_upgrade[juice ? 0 : relevant_upgrade.length - 1]][upgrade.is_weapon ? 0 : 1])
 }
 
@@ -412,7 +121,6 @@ watch(
         () => props.upgrade.adv_config.next_free,
     ],
     () => {
-        // console.log("triggered")
         if (props.upgrade.is_normal_honing) {
             must_show.value = props.upgrade.alr_failed > 0
         } else {
@@ -425,10 +133,51 @@ watch(
     },
     { immediate: true },
 )
-// watchEffect(
-//
+const show_success_modal = ref(false)
+function onSucceedClick() {
+    show_success_modal.value = true
+}
 
-// })
+// ============================================== Popup related stuff =============================================
+
+const succeed_without_deduct = ref(false)
+const adv_juice_used = ref(0)
+const adv_scroll_used = ref(0)
+
+const used_materials = computed(() => compute_used_materials(props.upgrade, taps_so_far.value, juice_info.value, adv_juice_used.value, adv_scroll_used.value))
+const remaining_materials = computed(() => compute_remaininig_materials(used_materials.value, active_profile.value, roster_config.value))
+const visibleRows = computed(() => {
+    const tier = active_profile.value.tier
+    if (!ALL_LABELS || !ALL_LABELS[tier]) return []
+    return ALL_LABELS[tier]
+        .map((label, index) => ({ label, index, row: index }))
+        .filter((item) => used_materials.value[item.index] > 0 && active_profile.value.bound_budgets[tier].enabled[item.index])
+})
+
+async function confirmSuccess() {
+    if (!succeed_without_deduct.value) {
+        const tier = active_profile.value.tier
+
+        used_materials.value.forEach((cost, index) => {
+            if (cost <= 0) return
+            active_profile.value.bound_budgets[tier].data[index] = remaining_materials.value.bound_budgets[index].toLocaleString()
+            roster_config.value.roster_mats_owned[tier].data[index] = remaining_materials.value.roster_mats[index].toLocaleString()
+            roster_config.value.tradable_mats_owned[tier].data[index] = remaining_materials.value.tradable_mats[index].toLocaleString()
+        })
+    }
+    if (props.upgrade.is_normal_honing) {
+        active_profile.value.normal_grid[props.upgrade.piece_type][props.upgrade.upgrade_index] = UpgradeStatus.Done
+    } else {
+        active_profile.value.adv_grid[props.upgrade.piece_type][props.upgrade.upgrade_index] = UpgradeStatus.Done
+    }
+    grid_change_callback(active_profile.value, roster_config.value)
+
+    show_success_modal.value = false
+    succeed_without_deduct.value = false // reset
+    active_profile.value.material_re_render_trigger = false
+    await nextTick()
+    active_profile.value.material_re_render_trigger = true
+}
 </script>
 
 <template>
@@ -456,28 +205,28 @@ watch(
             </div>
 
             <div class="hf-scrollable-instructions" :class="{ 'is-dimmed': false }">
-                <div v-for="(vStreak, i) in visualStreaks" :key="i" class="instruction-stack">
-                    <div class="icon-slot" :class="{ 'should-not-use': !vStreak.topIconActive }">
-                        <img :src="juice_icon_path(upgrade, true)" alt="Top Mat" :style="{ opacity: vStreak.topIconActive ? 1 : 0.1 }" />
+                <div v-for="(streak_text, i) in streak_texts" :key="i" class="instruction-stack">
+                    <div class="icon-slot" :class="{ 'should-not-use': !streak_text.topIconActive }">
+                        <img :src="juice_icon_path(upgrade, true)" alt="Top Mat" :style="{ opacity: streak_text.topIconActive ? 1 : 0.1 }" />
                         <!-- <div v-if="!vStreak.topIconActive" class="empty-cross"></div> -->
                     </div>
                     <div
                         v-if="juice_icon_path(upgrade, false) !== juice_icon_path(upgrade, true)"
                         class="icon-slot"
-                        :class="{ 'should-not-use': !vStreak.bottomIconActive }"
+                        :class="{ 'should-not-use': !streak_text.bottomIconActive }"
                     >
-                        <img :src="juice_icon_path(upgrade, false)" alt="Bottom Mat" :style="{ opacity: vStreak.bottomIconActive ? 1 : 0.1 }" />
+                        <img :src="juice_icon_path(upgrade, false)" alt="Bottom Mat" :style="{ opacity: streak_text.bottomIconActive ? 1 : 0.1 }" />
                         <!-- <div v-if="!vStreak.bottomIconActive" class="empty-cross"></div> -->
                     </div>
                     <div class="text-slot">
-                        <div class="line-primary" v-html="vStreak.name_line"></div>
-                        <div class="line-primary" v-html="vStreak.line1"></div>
-                        <div :class="upgrade.is_normal_honing ? 'line-muted' : 'line-primary'" v-html="vStreak.line2"></div>
+                        <div class="line-primary" v-html="streak_text.name_line"></div>
+                        <div class="line-primary" v-html="streak_text.line1"></div>
+                        <div :class="upgrade.is_normal_honing ? 'line-muted' : 'line-primary'" v-html="streak_text.line2"></div>
                     </div>
                 </div>
             </div>
 
-            <div v-if="!progress_expanded || must_show" class="hf-right-section">
+            <div v-if="!progress_expanded && !must_show" class="hf-right-section">
                 <!-- <button class="btn-succeed" @click="onSucceedClick">Succeed & deduct costs</button> -->
                 <button class="btn-expand" @click="progress_expanded = true">Show more</button>
             </div>
@@ -489,8 +238,8 @@ watch(
             <div v-if="(progress_expanded || must_show) && active_profile.optimizer_worker_bundle.status !== 'busy'" class="hf-right-section">
                 <div class="inputs-container">
                     <div v-if="upgrade.is_normal_honing" style="display: contents">
-                        <div class="input-row text-left">Current Artisan energy: {{ artisan_function(upgrade, taps_so_far) }}%</div>
-                        <div class="input-row text-left">Cumulative chance: {{ cumulative_chance(upgrade, taps_so_far) }}%</div>
+                        <div class="input-row text-left">Current Artisan energy: {{ artisan_function(upgrade, taps_so_far, juice_info) }}%</div>
+                        <div class="input-row text-left">Cumulative chance: {{ cumulative_chance(upgrade, taps_so_far, juice_info) }}%</div>
 
                         <div class="input-row">
                             <label>Taps so far</label>
@@ -564,8 +313,8 @@ watch(
             <div class="hf-popup" @click.stop>
                 <div v-if="upgrade.is_normal_honing" class="popup-header">
                     <h3>Confirm Success</h3>
-                    <div class="input-row text-left">Final Artisan energy: {{ artisan_function(upgrade, Math.max(0, taps_so_far - 1)) }}%</div>
-                    <div class="input-row text-left">Cumulative chance: {{ cumulative_chance(upgrade, taps_so_far) }}%</div>
+                    <div class="input-row text-left">Final Artisan energy: {{ artisan_function(upgrade, Math.max(0, taps_so_far - 1), juice_info) }}%</div>
+                    <div class="input-row text-left">Cumulative chance: {{ cumulative_chance(upgrade, taps_so_far, juice_info) }}%</div>
                 </div>
                 <div v-if="upgrade.is_normal_honing" style="display: flex; align-items: center; justify-content: flex-end; flex-direction: row">
                     <div class="input-row">
@@ -862,7 +611,6 @@ watch(
 .btn-succeed:hover {
     filter: brightness(1.2);
 }
-
 .hf-popup-grid {
     display: grid;
     grid-template-columns: 250px 140px 140px 140px;

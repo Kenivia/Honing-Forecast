@@ -2,7 +2,7 @@
 import { create_default_char_profile, recreate_char_profile, useProfilesStore } from "@/Stores/CharacterProfile"
 import { useRosterStore } from "@/Stores/RosterConfig"
 import { achieved_ilevel, formatCharName, pending_ilevel } from "@/Utils/Helpers"
-import { WasmOp } from "@/WasmInterface/js_to_wasm"
+import { WasmOp } from "@/Utils/Interfaces"
 import { build_payload } from "@/WasmInterface/payload"
 import { storeToRefs } from "pinia"
 import { ref } from "vue"

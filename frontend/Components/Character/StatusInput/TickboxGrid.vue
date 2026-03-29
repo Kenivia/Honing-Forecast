@@ -3,9 +3,7 @@ import { useProfilesStore } from "@/Stores/CharacterProfile"
 import { useRosterStore } from "@/Stores/RosterConfig"
 import { PIECE_NAMES, NORMAL_COLS as NORMAL_COLS, NUM_PIECES as NORMAL_ROWS, ADV_COLS } from "@/Utils/Constants"
 import { iconPath } from "@/Utils/Helpers"
-import { grids_to_keyed, StateBundle, UpgradeStatus } from "@/Utils/Interfaces"
-import { WasmOp } from "@/WasmInterface/js_to_wasm"
-import { build_material_info, build_payload } from "@/WasmInterface/payload"
+import { UpgradeStatus } from "@/Utils/Interfaces"
 import { storeToRefs } from "pinia"
 import { computed, onUnmounted, onWatcherCleanup, watch } from "vue"
 import { grid_change_callback, start_all_workers } from "../CharWorkerUtils"
@@ -131,18 +129,18 @@ function change_one_and_update_keyed(row: number, col: number, current = relevan
 // Don't watch state changes betcause that's handled by start_eval_hist
 watch(
     [
-        () => active_profile.value.bound_budgets[active_profile.value.tier].data,
-        () => active_profile.value.bound_budgets[active_profile.value.tier].enabled,
-        // () => active_profile.value.leftover_price, not used rn
-        // () => active_profile.value.tier, dedicated callback
+        // () => active_profile.value.bound_budgets[active_profile.value.tier].data,
+        // () => active_profile.value.bound_budgets[active_profile.value.tier].enabled, now has direct callback in their materialCell
+
         () => active_profile.value.express_event,
         // () => active_profile.value.min_resolution, not used rn
+
         // () => roster_config.value.roster_mats_owned,  // shouldn't be able to change on charview
         // () => roster_config.value.tradable_mats_owned,
         // () => roster_config.value.mats_prices,
 
         // () => active_profile.value.keyed_upgrades,  dedicated callback
-        () => active_profile.value.special_budget.data,
+        // () => active_profile.value.special_budget.data,
         () => active_profile.value.optimizer_treatment_plan,
         () => active_profile.value.auto_start_optimizer,
     ],
@@ -151,7 +149,6 @@ watch(
     },
     { deep: true, immediate: true },
 )
-
 </script>
 <template>
     <div class="hf-grid-content">

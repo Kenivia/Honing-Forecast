@@ -1,6 +1,6 @@
 import { ref, onUnmounted, Ref, shallowRef } from "vue"
-import { WasmOp } from "./js_to_wasm"
 import { EvalPayload } from "./payload"
+import { WasmOp } from "@/Utils/Interfaces"
 
 const createWorker = () => new Worker(new URL("./js_to_wasm.ts", import.meta.url), { type: "module" })
 

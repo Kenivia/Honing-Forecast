@@ -3,12 +3,11 @@ import { RouterLink, RouterView, useRoute, useRouter } from "vue-router"
 import { iconPath } from "./Utils/Helpers"
 import { debounced_write_char_profiles, useProfilesStore } from "./Stores/CharacterProfile"
 import { debounced_write_roster_config, useRosterStore } from "./Stores/RosterConfig"
-
 import { useMediaIsNarrow } from "./Utils/WindowSize"
 import { fetch_callback, useTimedFetch } from "./Utils/MarketDataFetcher"
 import { computed, watchEffect } from "vue"
-import { input_column_to_num } from "./Utils/Interfaces"
 import { ALL_LABELS, SYNCED_LABELS } from "./Utils/Constants"
+import { input_column_to_num } from "./Utils/InputColumn"
 
 const roster_store = useRosterStore()
 roster_store.init()

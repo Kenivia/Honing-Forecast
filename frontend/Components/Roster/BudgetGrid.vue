@@ -6,9 +6,9 @@ import MaterialCell from "@/Components/Common/MaterialCell.vue"
 import { computed, nextTick, ref, watchEffect } from "vue"
 import { SelectButton } from "primevue"
 import { useMediaIsNarrow } from "@/Utils/WindowSize"
-import { input_column_to_num, parse_input } from "@/Utils/Interfaces"
 import TierConvertButton from "../Common/TierConvertButton.vue"
 import { fetch_callback, useTimedFetch } from "@/Utils/MarketDataFetcher"
+import { input_column_to_num, parse_input } from "@/Utils/InputColumn"
 
 const { roster_config } = storeToRefs(useRosterStore())
 const tier = computed(() => roster_config.value.tier)

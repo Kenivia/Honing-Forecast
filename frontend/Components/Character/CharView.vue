@@ -4,12 +4,8 @@ import MaterialDist from "@/Components/Character/MaterialDist/MaterialDist.vue"
 import StatusInput from "@/Components/Character/StatusInput/StatusInput.vue"
 import { useProfilesStore } from "@/Stores/CharacterProfile"
 import { useRosterStore } from "@/Stores/RosterConfig"
-import { grids_to_keyed, StateBundle } from "@/Utils/Interfaces"
-import { WasmOp } from "@/WasmInterface/js_to_wasm"
-import { build_material_info, build_payload } from "@/WasmInterface/payload"
 import { storeToRefs } from "pinia"
-
-import { nextTick, onUnmounted, onWatcherCleanup, ref, watch } from "vue"
+import { nextTick, onUnmounted, ref, watch } from "vue"
 import { useRoute, useRouter } from "vue-router"
 
 const route = useRoute()

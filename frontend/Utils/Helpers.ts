@@ -1,33 +1,8 @@
 import { CharProfile, useProfilesStore } from "@/Stores/CharacterProfile"
 import { ADV_COLS, IconMap, NUM_PIECES, PIECE_NAMES, PLUS_TIER_CONVERSION } from "./Constants"
-import { Upgrade, UpgradeStatus } from "./Interfaces"
+import { InputColumn, InputType, Upgrade, UpgradeStatus } from "./Interfaces"
 import { storeToRefs } from "pinia"
 
-export function parse_locale_int(str: string, locale?: string): number {
-    const parts = new Intl.NumberFormat(locale).formatToParts(1234567.89)
-
-    const group = parts.find((p) => p.type === "group")?.value ?? ","
-    const decimal = parts.find((p) => p.type === "decimal")?.value ?? "."
-
-    const normalized = str
-        .replaceAll(group, "") // remove thousands separators
-        .replace(decimal, ".") // normalize decimal separator to '.'
-
-    return parseInt(normalized)
-}
-
-export function parse_locale_float(str: string, locale?: string): number {
-    const parts = new Intl.NumberFormat(locale).formatToParts(1234567.89)
-
-    const group = parts.find((p) => p.type === "group")?.value ?? ","
-    const decimal = parts.find((p) => p.type === "decimal")?.value ?? "."
-
-    const normalized = str
-        .replaceAll(group, "") // remove thousands separators
-        .replace(decimal, ".") // normalize decimal separator to '.'
-
-    return parseFloat(normalized)
-}
 export function formatCharName(raw: string, index: number, profiles: CharProfile[]): string {
     let result = raw.replace(/ /g, "") //
     // 2. Remove non-alphanumeric (keep underscores)

@@ -2,7 +2,7 @@
 import { useProfilesStore } from "@/Stores/CharacterProfile"
 import { Upgrade } from "@/Utils/Interfaces"
 import { storeToRefs } from "pinia"
-import { computed } from "vue"
+import { computed, ref, watch } from "vue"
 import InstructionRow from "./InstructionRow.vue"
 
 const { active_profile } = storeToRefs(useProfilesStore())
@@ -50,10 +50,6 @@ function sort_upgrades(): [Upgrade, number][] {
         }
     }
 
-    // console.log(
-    //     output.map((x) => [x, special_state.findIndex((y) => y == x)]),
-    //     special_state,
-    // )
     return output.map((x) => {
         const upgrade = upgrade_arr[x]
         const index_in_special = special_state.findIndex((y) => y == x)
@@ -64,7 +60,15 @@ function sort_upgrades(): [Upgrade, number][] {
     })
 }
 
-let sorted_upgrade_arr = computed(sort_upgrades)
+const sorted_upgrade_arr = ref(sort_upgrades())
+watch(
+    () => active_profile.value.optimizer_worker_bundle.result?.upgrade_arr,
+    () => {
+        sorted_upgrade_arr.value = sort_upgrades()
+        console.log("resorted", sorted_upgrade_arr.value.length)
+    },
+    { deep: true },
+)
 </script>
 <template>
     <section class="hf-card hf-instructions-pane">
