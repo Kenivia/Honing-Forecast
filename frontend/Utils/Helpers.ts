@@ -3,7 +3,7 @@ import { ADV_COLS, IconMap, NUM_PIECES, PIECE_NAMES, PLUS_TIER_CONVERSION } from
 import { InputColumn, InputType, Upgrade, UpgradeStatus } from "./Interfaces"
 import { storeToRefs } from "pinia"
 
-export function formatCharName(raw: string, index: number, profiles: CharProfile[]): string {
+export function format_char_name(raw: string, index: number, profiles: CharProfile[]): string {
     let result = raw.replace(/ /g, "") //
     // 2. Remove non-alphanumeric (keep underscores)
     result = result.replace(/[^a-zA-Z0-9_]/g, "")
@@ -119,11 +119,11 @@ export function debounce<T extends (...args: any[]) => void>(fn: T, delay: numbe
     }) as T
 }
 
-export function metricToText(metric: number | null | undefined) {
+export function metric_to_text(metric: number | null | undefined) {
     if (metric === null || metric === undefined || !Number.isFinite(metric)) return "N/A"
     return `${Math.round(metric == 0 ? metric : -metric).toLocaleString("en-US")}g`
 }
-export function iconPath(name: string) {
+export function get_icon_path(name: string) {
     return IconMap[name] ?? ""
 }
 export function get_piece_name(upgrade: Upgrade) {

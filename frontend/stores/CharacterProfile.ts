@@ -1,9 +1,9 @@
 import { defineStore, storeToRefs } from "pinia"
 import { InputColumn, InputType, KeyedUpgrades, StatusGrid, WasmOp } from "@/Utils/Interfaces"
-import { createWorkerBundle } from "@/WasmInterface/worker_setup"
+import { createWorkerBundle } from "@/WasmInterface/WorkerBundle"
 import { ADV_COLS, ALL_LABELS, NORMAL_COLS, NUM_PIECES, SPECIAL_LEAP_LABEL, STORAGE_KEY } from "@/Utils/Constants"
-import { debounce, formatCharName } from "@/Utils/Helpers"
-import { build_payload } from "@/WasmInterface/payload"
+import { debounce, format_char_name } from "@/Utils/Helpers"
+import { build_payload } from "@/WasmInterface/PayloadBuilder"
 import { useRosterStore } from "./RosterConfig"
 import { create_input_column, validate_input_column, validate_input_column_array } from "@/Utils/InputColumn"
 import { createStatusGrid, get_valid_status_grid } from "@/Utils/StatusGrid"
@@ -39,7 +39,7 @@ export const useProfilesStore = defineStore("profiles", {
         resetActiveProfile() {
             const { roster_config } = storeToRefs(useRosterStore())
             this.profiles[this.active_profile_index] = create_default_char_profile()
-            this.profiles[this.active_profile_index].char_name = formatCharName(
+            this.profiles[this.active_profile_index].char_name = format_char_name(
                 this.profiles[this.active_profile_index].char_name,
                 this.active_profile_index,
                 this.profiles,
@@ -88,7 +88,7 @@ export function load_char_profiles(): { profiles: CharProfile[]; active_profile_
     for (let i = 0; i < parsed.profiles.length; i++) {
         let this_parsed: CharProfile = { ...create_default_char_profile(), ...parsed.profiles[i] }
 
-        this_parsed.char_name = formatCharName(this_parsed.char_name, i, parsed.profiles.slice(0, i))
+        this_parsed.char_name = format_char_name(this_parsed.char_name, i, parsed.profiles.slice(0, i))
         validate_input_column_array(this_parsed.bound_budgets, default_profile.bound_budgets)
         validate_input_column_array(this_parsed.leftover_price, default_profile.leftover_price)
         validate_input_column(this_parsed.special_budget, default_profile.special_budget)

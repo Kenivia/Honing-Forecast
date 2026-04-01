@@ -1,14 +1,14 @@
 <script setup lang="ts">
 import { ALL_LABELS, GRAPH_COLORS, T4_MATS_LABELS, ANNOTATION_COLORS, ANNOTATION_POSITIONS, ANNOTATION_LABELS } from "@/Utils/Constants"
 import { TreatmentPlan, useProfilesStore } from "@/Stores/CharacterProfile"
-import { metricToText } from "@/Utils/Helpers"
+import { metric_to_text } from "@/Utils/Helpers"
 import MaterialCell from "@/Components/Common/MaterialCell.vue"
 import { WasmOp } from "@/Utils/Interfaces"
 import MaterialGraph from "./MaterialGraph.vue"
 import { storeToRefs } from "pinia"
 import { useRosterStore } from "@/Stores/RosterConfig"
 import { computed, ref, watchEffect } from "vue"
-import { build_payload } from "@/WasmInterface/payload"
+import { build_payload } from "@/WasmInterface/PayloadBuilder"
 import { input_column_to_num } from "@/Utils/InputColumn"
 import { start_all_workers } from "../CharWorkerUtils"
 
@@ -221,13 +221,12 @@ const show_special_guide = ref(false)
                                 />
                             </div>
 
-                            <div v-if="active_profile.material_re_render_trigger" class="hf-mats-row">
+                            <div class="hf-mats-row">
                                 <MaterialCell
                                     :input_column="active_profile.special_budget"
                                     :row="0"
                                     :setter="(val) => (active_profile.special_budget.data[0] = val)"
                                     :label="(active_profile.tier == 1 ? 'Serca ' : '') + active_profile.special_budget.keys[0]"
-                                    v-if="active_profile.material_re_render_trigger"
                                     :hide_tick="true"
                                     :callback="() => start_all_workers(active_profile, roster_config)"
                                 ></MaterialCell>
@@ -264,7 +263,7 @@ const show_special_guide = ref(false)
                                 {{ total_market_gold_text }}
                             </div>
                             <div class="hf-metric-status">
-                                {{ metricToText(active_profile.evaluation_worker_bundle.result?.metric) ?? "No Result yet" }}
+                                {{ metric_to_text(active_profile.evaluation_worker_bundle.result?.metric) ?? "No Result yet" }}
 
                                 <span style="font-size: 16px">
                                     {{ total_market_gold_suffix }}
@@ -281,7 +280,7 @@ const show_special_guide = ref(false)
                             </div>
                             <div class="hf-metric-status" style="color: var(--hf-text-muted)">
                                 {{
-                                    metricToText(
+                                    metric_to_text(
                                         active_profile.evaluation_worker_bundle.result?.metric - active_profile.optimizer_worker_bundle.result?.metric,
                                     ) ?? "No Result yet"
                                 }}

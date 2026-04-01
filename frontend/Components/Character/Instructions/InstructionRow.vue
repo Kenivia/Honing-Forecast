@@ -2,7 +2,7 @@
 import { useProfilesStore } from "@/Stores/CharacterProfile"
 import { useRosterStore } from "@/Stores/RosterConfig"
 import { ALL_LABELS, T4_JUICE_LABELS } from "@/Utils/Constants"
-import { get_piece_name, iconPath } from "@/Utils/Helpers"
+import { get_piece_name, get_icon_path } from "@/Utils/Helpers"
 import { Upgrade, UpgradeStatus } from "@/Utils/Interfaces"
 import { storeToRefs } from "pinia"
 import { computed, nextTick, ref, watch } from "vue"
@@ -50,7 +50,7 @@ watch(
 // In Rust start_xp ranges from 0 to 100 (each bar = 10 xp instead of 100 in game)
 const current_adv_upgrade = ref(props.upgrade.adv_config ? Math.floor(props.upgrade.adv_config.start_xp / 10) + props.upgrade.upgrade_index * 10 : 0)
 const current_adv_xp = ref(props.upgrade.adv_config ? (props.upgrade.adv_config.start_xp - Math.floor(props.upgrade.adv_config.start_xp / 10) * 10) * 10 : 0)
-const current_grace_progress = ref(props.upgrade.adv_config.start_balls) // Defaulted to 0, adjust as needed from your config
+const current_grace_progress = ref(props.upgrade.adv_config.start_balls)
 const next_free = ref(props.upgrade.adv_config?.next_free ?? false)
 const next_big = ref(props.upgrade.adv_config?.next_big ?? false)
 
@@ -66,7 +66,7 @@ watch(
         ;((current_adv_xp.value = props.upgrade.adv_config
             ? (props.upgrade.adv_config.start_xp - Math.floor(props.upgrade.adv_config.start_xp / 10) * 10) * 10
             : 0),
-            (current_grace_progress.value = props.upgrade.adv_config.start_balls)) // Defaulted to 0, adjust as needed from your config
+            (current_grace_progress.value = props.upgrade.adv_config.start_balls))
         next_free.value = props.upgrade.adv_config?.next_free ?? false
         next_big.value = props.upgrade.adv_config?.next_big ?? false
     },
@@ -105,7 +105,7 @@ function juice_icon_path(upgrade: Upgrade, juice: boolean) {
     if (relevant_upgrade.length === 0) {
         return "no juice avail"
     }
-    return iconPath(T4_JUICE_LABELS[relevant_upgrade[juice ? 0 : relevant_upgrade.length - 1]][upgrade.is_weapon ? 0 : 1])
+    return get_icon_path(T4_JUICE_LABELS[relevant_upgrade[juice ? 0 : relevant_upgrade.length - 1]][upgrade.is_weapon ? 0 : 1])
 }
 
 const progress_expanded = ref(false)
@@ -173,7 +173,7 @@ async function confirmSuccess() {
     grid_change_callback(active_profile.value, roster_config.value)
 
     show_success_modal.value = false
-    succeed_without_deduct.value = false // reset
+    succeed_without_deduct.value = false
     active_profile.value.material_re_render_trigger = false
     await nextTick()
     active_profile.value.material_re_render_trigger = true

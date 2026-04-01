@@ -110,14 +110,14 @@ export const base_icon_map: Record<string, string> = {
     Weapon: "/Icons/Equipments/Weapon.webp",
     Red: "/Icons/Materials/Red.webp",
     Blue: "/Icons/Materials/Blue.webp",
-    Leaps: "/Icons/Materials/Leap.webp",
+    Leaps: "/Icons/Materials/Leapstone.webp",
     Shards: "/Icons/Materials/Shard.webp",
     Fusion: "/Icons/Materials/Fusion.webp",
     Gold: "/Icons/Materials/Gold.webp",
     Silver: "/Icons/Materials/Silver.webp",
     "Lava's Breath": "/Icons/Materials/Lava's Breath.webp",
     "Glacier's Breath": "/Icons/Materials/Glacier's Breath.webp",
-    "Special Leap": "/Icons/Materials/Special Leap.webp",
+    "Special Leap": "/Icons/Materials/Special Leapstone.webp",
     "11-14 Armor": "/Icons/Materials/Armor Book.webp",
     "11-14 Weapon": "/Icons/Materials/Weapon Book.webp",
     "15-18 Armor": "/Icons/Materials/Armor Book.webp",
@@ -136,9 +136,9 @@ export const base_icon_map: Record<string, string> = {
 
     "Serca Red": "/Icons/Materials/Serca unique/Serca Red.png",
     "Serca Blue": "/Icons/Materials/Serca unique/Serca Blue.png",
-    "Serca Leaps": "/Icons/Materials/Serca unique/Serca Leaps.png",
+    "Serca Leaps": "/Icons/Materials/Serca unique/Serca Leapstone.png",
     "Serca Fusion": "/Icons/Materials/Serca unique/Serca Fusion.png",
-    "Serca Special Leap": "/Icons/Materials/Serca unique/Serca Special Leap.png",
+    "Serca Special Leap": "/Icons/Materials/Serca unique/Serca Special Leapstone.png",
 
     "Forecast Icon": "/Icons/Forecast Icon.webp",
 }

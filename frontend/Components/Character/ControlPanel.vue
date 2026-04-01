@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { TreatmentPlan, useProfilesStore } from "@/Stores/CharacterProfile"
-import { build_payload } from "@/WasmInterface/payload"
+import { build_payload } from "@/WasmInterface/PayloadBuilder"
 import { useRosterStore } from "@/Stores/RosterConfig"
 import { storeToRefs } from "pinia"
 import { ref, watchEffect } from "vue"
@@ -19,8 +19,6 @@ function copyPayload() {
     const payload = JSON.stringify(build_payload(WasmOp.Parser, active_profile.value, roster_config.value), null, 2)
     navigator.clipboard?.writeText(payload).catch(() => undefined)
 }
-
-const optimizer_worker = active_profile.value.optimizer_worker_bundle
 
 // Currently TreatRosterAsTradable is not selectable
 const treatment_tick = ref(active_profile.value.optimizer_treatment_plan == TreatmentPlan.TreatRosterAsBound)
@@ -44,7 +42,7 @@ watchEffect(() => {
                 <span>Express event (March)</span>
             </label>
 
-            <!-- This is for producing paylodas to feed into Rust -->
+            <!-- This is for producing payloads to feed into Rust -->
             <!-- <button class="hf-control-panel-btn" @click="copyPayload">Copy Payload</button> -->
 
             <div class="hf-divider" />

@@ -2,7 +2,7 @@
 import { useProfilesStore } from "@/Stores/CharacterProfile"
 import { useRosterStore } from "@/Stores/RosterConfig"
 import { PIECE_NAMES, NORMAL_COLS as NORMAL_COLS, NUM_PIECES as NORMAL_ROWS, ADV_COLS } from "@/Utils/Constants"
-import { iconPath } from "@/Utils/Helpers"
+import { get_icon_path } from "@/Utils/Helpers"
 import { UpgradeStatus } from "@/Utils/Interfaces"
 import { storeToRefs } from "pinia"
 import { computed, onUnmounted, onWatcherCleanup, watch } from "vue"
@@ -157,7 +157,7 @@ watch(
             <div v-for="piece in PIECE_NAMES" :key="piece" class="hf-label-row">
                 <div class="hf-equip-label">
                     <span>{{ piece }}</span>
-                    <img :src="iconPath(piece)" :alt="piece" />
+                    <img :src="get_icon_path(piece)" :alt="piece" />
                 </div>
             </div>
         </div>

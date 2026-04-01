@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { create_default_char_profile, recreate_char_profile, useProfilesStore } from "@/Stores/CharacterProfile"
 import { useRosterStore } from "@/Stores/RosterConfig"
-import { achieved_ilevel, formatCharName, pending_ilevel } from "@/Utils/Helpers"
+import { achieved_ilevel, format_char_name, pending_ilevel } from "@/Utils/Helpers"
 import { WasmOp } from "@/Utils/Interfaces"
-import { build_payload } from "@/WasmInterface/payload"
+import { build_payload } from "@/WasmInterface/PayloadBuilder"
 import { storeToRefs } from "pinia"
 import { ref } from "vue"
 import { RouterLink } from "vue-router"
@@ -44,7 +44,7 @@ function delete_profile(index) {
             <div v-for="(profile, index) in profile_store.profiles" class="hf-char-row" :key="index">
                 <input
                     v-model="names[index]"
-                    @change="((names[index] = formatCharName(names[index], index, profile_store.profiles)), (profile.char_name = names[index]))"
+                    @change="((names[index] = format_char_name(names[index], index, profile_store.profiles)), (profile.char_name = names[index]))"
                 />
                 <div class="hf-char-meta">
                     <label class="hf-achieved-ilevel">Achieved ilevel: {{ achieved_ilevel(profile) }}</label>

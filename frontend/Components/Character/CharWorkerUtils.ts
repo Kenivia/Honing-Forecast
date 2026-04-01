@@ -2,7 +2,7 @@ import { CharProfile } from "@/Stores/CharacterProfile"
 import { RosterConfig } from "@/Stores/RosterConfig"
 import { StateBundle, WasmOp } from "@/Utils/Interfaces"
 import { grids_to_keyed } from "@/Utils/KeyedUpgrades"
-import { build_material_info, build_payload } from "@/WasmInterface/payload"
+import { build_material_info, build_payload } from "@/WasmInterface/PayloadBuilder"
 
 export function grid_change_callback(active_profile: CharProfile, roster_config: RosterConfig) {
     active_profile.keyed_upgrades = grids_to_keyed(active_profile.normal_grid, active_profile.adv_grid, active_profile.keyed_upgrades, active_profile.tier)

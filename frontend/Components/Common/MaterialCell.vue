@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { CharProfile } from "@/Stores/CharacterProfile"
 import { RosterConfig } from "@/Stores/RosterConfig"
-import { cssVar, iconPath } from "@/Utils/Helpers"
+import { cssVar, get_icon_path } from "@/Utils/Helpers"
 import { get_modified_cell } from "@/Utils/InputColumn"
 import { InputColumn } from "@/Utils/Interfaces"
 import { computed, ref } from "vue"
@@ -34,7 +34,7 @@ const this_data = ref(String(!Array.isArray(props.input_column) ? (props.input_c
         />
         <label v-if="label" class="hf-row-label">
             <span>{{ label }}</span>
-            <img :src="iconPath(label)" :alt="label" />
+            <img :src="get_icon_path(label)" :alt="label" />
         </label>
         <input
             v-if="!Array.isArray(input_column)"

@@ -186,6 +186,8 @@ Below are some rambling / brainstorming / Misc stuff
 
 ## Done / cancelled
 
+- ~~make it so that there's not threads kept alive for every char at the same time (no real need to reuse the same set of worker_bundles for different chars (so that results are not wiped), just )~~
+
 ### ~~6.5th : Hard limit on juice usages~~
 
 - ~~disallow states that can use more than a certain amount of juice / scroll / books~~

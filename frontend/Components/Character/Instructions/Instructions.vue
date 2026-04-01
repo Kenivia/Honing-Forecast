@@ -65,7 +65,7 @@ watch(
     () => active_profile.value.optimizer_worker_bundle.result?.upgrade_arr,
     () => {
         sorted_upgrade_arr.value = sort_upgrades()
-        console.log("resorted", sorted_upgrade_arr.value.length)
+        // console.log("resorted", sorted_upgrade_arr.value.length)
     },
     { deep: true },
 )

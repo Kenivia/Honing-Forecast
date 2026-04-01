@@ -13,14 +13,13 @@ const router = useRouter()
 
 const profile_store = useProfilesStore()
 const { active_profile } = storeToRefs(profile_store)
-const { roster_config } = storeToRefs(useRosterStore())
-// Route param → active character
 
 const re_render_char_view_trigger = ref(true)
 watch(
     () => profile_store.active_profile_index,
     async () => {
         // console.log("charview rerendered")
+
         re_render_char_view_trigger.value = false
         await nextTick()
         re_render_char_view_trigger.value = true
@@ -31,6 +30,11 @@ watch(
     (name) => {
         const match = profile_store.profiles.findIndex((c) => c.char_name === name)
         if (match >= 0) {
+            // Kill the workers for the inactive profiles (but not wipe results)
+            active_profile.value.optimizer_worker_bundle.cancel()
+            active_profile.value.histogram_worker_bundle.cancel()
+            active_profile.value.evaluation_worker_bundle.cancel()
+
             profile_store.active_profile_index = match
         } else {
             router.replace({ name: "char", params: { characterName: profile_store.profiles[0].char_name } })
@@ -40,6 +44,7 @@ watch(
 )
 
 onUnmounted(() => {
+    // kill workers when going to market / roster view
     active_profile.value.optimizer_worker_bundle.cancel()
     active_profile.value.histogram_worker_bundle.cancel()
     active_profile.value.evaluation_worker_bundle.cancel()

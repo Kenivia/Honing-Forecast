@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { RouterLink, RouterView, useRoute, useRouter } from "vue-router"
-import { iconPath } from "./Utils/Helpers"
+import { get_icon_path } from "./Utils/Helpers"
 import { debounced_write_char_profiles, useProfilesStore } from "./Stores/CharacterProfile"
 import { debounced_write_roster_config, useRosterStore } from "./Stores/RosterConfig"
 import { useMediaIsNarrow } from "./Utils/WindowSize"
@@ -67,7 +67,7 @@ watchEffect(() => {
                     <div v-if="!is500Narrow" class="hf-brand">
                         <router-link to="/">
                             <div class="hf-brand-icon">
-                                <img :src="iconPath('Forecast Icon')" alt="Forecast icon" style="width: 34px; height: 34px" /></div
+                                <img :src="get_icon_path('Forecast Icon')" alt="Forecast icon" style="width: 34px; height: 34px" /></div
                         ></router-link>
                         <div v-if="!is800Narrow">
                             <h1 class="hf-title">Honing Forecast</h1>
