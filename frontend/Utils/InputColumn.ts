@@ -11,12 +11,11 @@ export function create_input_column(type: InputType, keys: string[], data?: stri
     }
 }
 
-export function parse_locale_int(str: string, locale?: string): number {
-    const parts = new Intl.NumberFormat(locale).formatToParts(1234567.89)
+const parts = new Intl.NumberFormat().formatToParts(1234567.89)
+const group = parts.find((p) => p.type === "group")?.value ?? ","
+const decimal = parts.find((p) => p.type === "decimal")?.value ?? "."
 
-    const group = parts.find((p) => p.type === "group")?.value ?? ","
-    const decimal = parts.find((p) => p.type === "decimal")?.value ?? "."
-
+export function parse_locale_int(str: string): number {
     const normalized = str
         .replaceAll(group, "") // remove thousands separators
         .replace(decimal, ".") // normalize decimal separator to '.'
@@ -25,14 +24,7 @@ export function parse_locale_int(str: string, locale?: string): number {
 }
 
 export function parse_locale_float(str: string, locale?: string): number {
-    const parts = new Intl.NumberFormat(locale).formatToParts(1234567.89)
-
-    const group = parts.find((p) => p.type === "group")?.value ?? ","
-    const decimal = parts.find((p) => p.type === "decimal")?.value ?? "."
-
-    const normalized = str
-        .replaceAll(group, "") // remove thousands separators
-        .replace(decimal, ".") // normalize decimal separator to '.'
+    const normalized = str.replaceAll(group, "").replace(decimal, ".")
 
     return parseFloat(normalized)
 }
