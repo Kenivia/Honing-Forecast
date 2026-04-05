@@ -191,10 +191,8 @@ export function compute_used_materials(upgrade: Upgrade, taps_so_far: number, ju
         let amt = upgrade.is_normal_honing ? juice_type.normal_amt_used : juice_type.adv_amt_used
 
         if (upgrade.is_normal_honing) {
-            for (let index = 0; index < Math.min(taps_so_far, upgrade.normal_dist.length - 1); index++) {
-                if (!upgrade.is_normal_honing) {
-                    juice_cost += amt
-                } else if ((upgrade.state[index][0] === true && id == 0) || (upgrade.state[index][1] === id && id !== 0)) {
+            for (let index = 0; index < Math.min(taps_so_far, upgrade.normal_dist.length - 2); index++) {
+                if ((upgrade.state[index][0] === true && id == 0) || (upgrade.state[index][1] === id && id !== 0)) {
                     juice_cost += amt
                 }
                 // console.log(juice_cost)
