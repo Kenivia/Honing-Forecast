@@ -19,11 +19,11 @@
         "noImplicitAny": false,
         "resolveJsonModule": true,
         "isolatedModules": true,
-        "baseUrl": "frontend",
         "paths": {
             "@/*": [
-                "*"
-            ]
+                "./frontend/*"
+            ],
+            "*":["./frontend/*"]
         },
     },
     "include": [

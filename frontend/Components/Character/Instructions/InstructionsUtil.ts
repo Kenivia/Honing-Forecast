@@ -17,14 +17,14 @@ export interface AdvStreak {
     count: number
 }
 
-export function aggregate_streaks(upgrade: Upgrade, juice_info: any): NormalStreak[] | AdvStreak[] {
+export function aggregate_streaks(upgrade: Upgrade, juice_info: any, alr_done: number): NormalStreak[] | AdvStreak[] {
     if (upgrade.state.length === 0) return []
 
     if (upgrade.is_normal_honing) {
         const streaks: NormalStreak[] = []
         let current: NormalStreak | null = null
-        let index = 0
-        for (const [juice, book] of upgrade.state.slice(0, upgrade.normal_dist.length - 1)) {
+        let index = alr_done
+        for (const [juice, book] of upgrade.state.slice(alr_done, upgrade.normal_dist.length - 1)) {
             if (index == upgrade.normal_dist.length - 2 && artisan_function(upgrade, index, juice_info) === "100.00") {
                 // this corresponds to not showing the pity tap
                 // Rust side does not enforce that the pity tap is unjuiced (it just ignores the state after that index)
@@ -71,9 +71,9 @@ export function aggregate_streaks(upgrade: Upgrade, juice_info: any): NormalStre
     }
 }
 
-export function streaks_to_text(upgrade: Upgrade, streaks: NormalStreak[] | AdvStreak[], juice_info: any) {
+export function streaks_to_text(upgrade: Upgrade, streaks: NormalStreak[] | AdvStreak[], juice_info: any, alr_done: number) {
     let out = []
-    let taps = 0
+    let taps = alr_done
     for (let index = 0; index < streaks.length; index++) {
         let streak: any = streaks[index]
 

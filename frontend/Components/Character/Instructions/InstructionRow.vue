@@ -36,8 +36,8 @@ const juice_info = computed(() => {
     return active_profile.value.optimizer_worker_bundle.result.prep_output.juice_info
 })
 
-const streaks = computed(() => aggregate_streaks(props.upgrade, juice_info.value))
-const streak_texts = computed(() => streaks_to_text(props.upgrade, streaks.value, juice_info.value))
+const streaks = computed(() => aggregate_streaks(props.upgrade, juice_info.value, taps_so_far.value))
+const streak_texts = computed(() => streaks_to_text(props.upgrade, streaks.value, juice_info.value, taps_so_far.value))
 
 const taps_so_far = ref(props.upgrade.alr_failed || 0)
 watch(
