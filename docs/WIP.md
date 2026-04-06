@@ -1,6 +1,8 @@
 
 # Work in Progress
 
+I have to focus on my exams (until like mid June) so I'm trying not to spend too much time on this. Small issues will be fixed but big projects are on hold
+
 ## Immediate WIP
 
 - move the bound / roster / tradable allocation logic to rust, let histogram worker handle everything (average, gold, tradable gold) so ~~we're starting less workers~~ we can do everything UI related in one worker (and makes life easier later)
@@ -153,11 +155,13 @@ Also, we can compare this with the actual mats owned obtained by auto scan [#6](
 
 There's a LOT of details I'm kinda ignoring but this thing will be ULTRA long term so we'll cross that bridge when we get there
 
-### 9th: Price trend viewer
+### More: Price trend viewer & stuff
 
-need to pull as much historical data as possible from loa-buddy -> store & pull from my own data base -> keep updating this
+need to pull as much historical data as possible from loa-buddy -> store & pull from my own data base -> keep updating this. I think training some market prediction thing on this could be fun? Otherwise just showing the trend could be useful.
 
-I think training some market prediction thing on this could be fun? Otherwise just showing the trend could be useful. Havn't thought enough about this.
+Potentially making multi-player like price guessing game? Will need discord login and whatnot (uwuowo integration also) and an actual server
+
+Also tracking piece luck / material owned over time, potentially sharable?
 
 ##
 

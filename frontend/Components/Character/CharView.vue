@@ -34,7 +34,16 @@ watch(
             active_profile.value.optimizer_worker_bundle.cancel()
             active_profile.value.histogram_worker_bundle.cancel()
             active_profile.value.evaluation_worker_bundle.cancel()
+        }
+    },
+)
 
+watch(
+    () => route.params.characterName as string,
+    (name) => {
+        const match = profile_store.profiles.findIndex((c) => c.char_name === name)
+        if (match >= 0) {
+            // Kill the workers for the inactive profiles (but not wipe results)
             profile_store.active_profile_index = match
         } else {
             router.replace({ name: "char", params: { characterName: profile_store.profiles[0].char_name } })
