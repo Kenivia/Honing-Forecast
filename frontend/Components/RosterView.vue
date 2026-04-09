@@ -23,7 +23,7 @@ function add_new_char() {
 function duplicate(index) {
     let this_parsed = { ...create_default_char_profile(), ...profile_store.profiles[index] }
 
-    let new_char = recreate_char_profile(this_parsed)
+    let new_char = recreate_char_profile(JSON.parse(JSON.stringify(this_parsed)))
     new_char.char_name = "Newchar" + String(profile_store.profiles.length + 1)
     names.value.push(new_char.char_name)
     profile_store.profiles.push(new_char)
