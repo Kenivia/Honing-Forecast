@@ -90,8 +90,8 @@ export function createWorkerBundle() {
     function start(wasm_op: WasmOp, payload: EvalPayload, callback?: (result) => void) {
         // if (debounce > 0) {
         clearTimeout(debounceTimer)
-        status.value = "busy"
-        debounceTimer = setTimeout(() => _launch(wasm_op, payload, true, callback), 250)
+
+        debounceTimer = setTimeout(() => _launch(wasm_op, payload, true, callback), 1000)
         // } else {
         // _launch(wasm_op, payload, true, callback)
         // }
@@ -101,8 +101,8 @@ export function createWorkerBundle() {
         if (worker) {
             worker.terminate()
             worker = null
-            status.value = "idle"
         }
+        status.value = "idle"
     }
 
     function cancel() {

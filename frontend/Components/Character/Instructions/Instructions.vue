@@ -78,7 +78,10 @@ watch(
         </div>
         <div class="hf-card-body">
             <div v-if="active_profile.optimizer_worker_bundle.result">
-                <div v-for="([upgrade, index_in_special_state], perform_order) in sorted_upgrade_arr" :key="`instructions-${perform_order}`">
+                <div
+                    v-for="([upgrade, index_in_special_state], perform_order) in sorted_upgrade_arr"
+                    :key="`instructions-${upgrade.upgrade_index}-${upgrade.piece_type}-${upgrade.is_normal_honing}`"
+                >
                     <InstructionRow
                         :upgrade="upgrade"
                         :perform_order="perform_order"

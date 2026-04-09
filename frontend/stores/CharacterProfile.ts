@@ -146,7 +146,7 @@ export function create_default_char_profile(): CharProfile {
         optimizer_treatment_plan: TreatmentPlan.TreatRosterAsBound,
         histogram_treatment_plan: TreatmentPlan.TreatRosterAsTradable,
         express_event: false,
-        char_name: "NewChar",
+        char_name: "Newchar",
 
         auto_start_optimizer: true,
         evaluation_worker_bundle: createWorkerBundle(),

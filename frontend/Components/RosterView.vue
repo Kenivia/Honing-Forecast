@@ -15,7 +15,7 @@ const names = ref(profile_store.profiles.map((x) => x.char_name))
 
 function add_new_char() {
     let new_char = create_default_char_profile()
-    new_char.char_name = "NewChar" + String(profile_store.profiles.length + 1)
+    new_char.char_name = "Newchar" + String(profile_store.profiles.length + 1)
     names.value.push(new_char.char_name)
     profile_store.profiles.push(new_char)
 }
@@ -24,7 +24,7 @@ function duplicate(index) {
     let this_parsed = { ...create_default_char_profile(), ...profile_store.profiles[index] }
 
     let new_char = recreate_char_profile(this_parsed)
-    new_char.char_name = "NewChar" + String(profile_store.profiles.length + 1)
+    new_char.char_name = "Newchar" + String(profile_store.profiles.length + 1)
     names.value.push(new_char.char_name)
     profile_store.profiles.push(new_char)
     new_char.optimizer_worker_bundle.start(WasmOp.Parser, build_payload(WasmOp.Parser, new_char, roster_config.value))

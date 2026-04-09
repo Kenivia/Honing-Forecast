@@ -45,8 +45,8 @@ function isOneUpgrade(foo: unknown): foo is OneUpgrade {
         typeof f1 === "number" &&
         typeof f2 === "boolean" &&
         (f3 === null || typeof f3 === "number") &&
-        Array.isArray(f4) &&
-        f4.every((x) => x.length == 2 && typeof x[0] === "boolean" && typeof x[1] === "number") &&
+        (f4 === null || Array.isArray(f4)) &&
+        (f4 === null || f4.every((x) => x.length == 2 && typeof x[0] === "boolean" && typeof x[1] === "number")) &&
         typeof f5 === "boolean" &&
         typeof f6 === "boolean" &&
         (f7 === null || (typeof f7[0] === "number" && typeof f7[1] === "number" && typeof f7[2] === "boolean" && typeof f7[3] === "boolean"))

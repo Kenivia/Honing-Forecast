@@ -145,6 +145,7 @@ watch(
         () => active_profile.value.auto_start_optimizer,
     ],
     () => {
+        // console.log("start", active_profile.value, roster_config.value)
         start_all_workers(active_profile.value, roster_config.value)
     },
     { deep: true, immediate: true },
