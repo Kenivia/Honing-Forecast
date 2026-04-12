@@ -5,7 +5,7 @@ import { useRosterStore } from "@/Stores/RosterConfig"
 const OVERRIDE_DEFAULT = {
     Gold: 1,
     Silver: 0,
-    "Serca Fusion": 200,
+    "Serca Fusion": 300,
 }
 const BODY = {
     region_slug: "nae",
