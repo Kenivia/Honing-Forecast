@@ -188,8 +188,11 @@ watch(
                         Done: relevant_grid[row - 1][col - 1] == UpgradeStatus.Done,
                         Want: relevant_grid[row - 1][col - 1] == UpgradeStatus.Want,
                     }"
+                    :style="{ color: 'white' }"
                     @click="change_one_and_update_keyed(row - 1, col - 1)"
-                />
+                >
+                    {{ relevant_grid[row - 1][col - 1] == UpgradeStatus.Done ? "✓" : "" }}
+                </button>
                 <!-- @pointerdown.prevent="startTopDrag(row - 1, col - 1, $event)"
                     @pointerenter="dragTopCell(row - 1, col - 1)"
                     @click.prevent="onTopCellClick(row - 1, col - 1, $event)" -->
