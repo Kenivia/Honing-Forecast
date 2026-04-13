@@ -4,7 +4,7 @@ import MaterialDist from "@/Components/Character/MaterialDist/MaterialDist.vue"
 import StatusInput from "@/Components/Character/StatusInput/StatusInput.vue"
 import { useProfilesStore } from "@/Stores/CharacterProfile"
 import { storeToRefs } from "pinia"
-import { onUnmounted, watch } from "vue"
+import { nextTick, onUnmounted, watch } from "vue"
 import { useRoute, useRouter } from "vue-router"
 
 const route = useRoute()
@@ -15,10 +15,10 @@ const { active_profile } = storeToRefs(profile_store)
 
 const match = profile_store.profiles.findIndex((c) => c.char_name === (route.params.characterName as string))
 if (match >= 0) {
-    profile_store.active_profile_index = match
+    profile_store.switchProfile(match)
 } else {
     router.replace({ name: "char", params: { characterName: profile_store.profiles[0].char_name } })
-    profile_store.active_profile_index = 0
+    profile_store.switchProfile(0)
 }
 watch(
     () => route.params.characterName as string,
@@ -31,11 +31,11 @@ watch(
                 active_profile.value.histogram_worker_bundle.cancel()
                 active_profile.value.evaluation_worker_bundle.cancel()
 
-                profile_store.active_profile_index = match
+                profile_store.switchProfile(match)
             }
         } else {
             router.replace({ name: "char", params: { characterName: profile_store.profiles[0].char_name } })
-            profile_store.active_profile_index = 0
+            profile_store.switchProfile(0)
         }
     },
 )
@@ -49,7 +49,7 @@ onUnmounted(() => {
 </script>
 
 <template>
-    <div class="hf-main-stage">
+    <div class="hf-main-stage" :key="active_profile.char_name">
         <StatusInput />
         <MaterialDist />
         <Instructions />
