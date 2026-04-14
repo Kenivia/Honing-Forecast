@@ -2,7 +2,7 @@
 import { useProfilesStore } from "@/Stores/CharacterProfile"
 import TickboxGrid from "./TickboxGrid.vue"
 import { storeToRefs } from "pinia"
-import { achieved_ilevel, check_adv_all_done, check_all_plus_20, check_revert_ilevel_ok, pending_ilevel } from "@/Utils/Helpers"
+import { achieved_ilevel, check_adv_all_done, check_1730, check_revert_ilevel_ok, pending_ilevel } from "@/Utils/Helpers"
 import { computed, watch } from "vue"
 import { ADV_COLS, ALL_LABELS, NORMAL_COLS, NUM_PIECES, PLUS_TIER_CONVERSION } from "@/Utils/Constants"
 import TierConvertButton from "@/Components/Common/TierConvertButton.vue"
@@ -17,21 +17,27 @@ const { roster_config } = storeToRefs(useRosterStore())
 
 const tooltip_text = computed(() => {
     return active_profile.value.tier == 0
-        ? check_all_plus_20() && check_adv_all_done()
-            ? "Eligible for conversion to T4.5 Serca gear"
+        ? check_1730() && check_adv_all_done()
+            ? "Eligible for conversion  (you are 1730+ overall and all advanced honing are +40)"
             : "Warning! " +
-              [!check_adv_all_done() ? "All Adv honing will be set to +40" : null, !check_all_plus_20() ? "All Gear will be set to +20 (T4)" : null]
+              [
+                  !check_1730() ? "You need to be 1730+ overall (all gear will be set to +20)" : null,
+                  !check_adv_all_done() ? "All Adv honing will be set to +40" : null,
+              ]
                   .filter((x) => x !== null)
-                  .join(", \n")
+                  .join(", ")
         : check_revert_ilevel_ok() === true
           ? "Can go back to T4"
-          : "Cannot convert back to T4 because +" + String(check_revert_ilevel_ok()) + " cannot be mapped directly to a T4 upgrade"
+          : check_revert_ilevel_ok() === false
+            ? "Cannot convert back to T4 because you wouldn't be 1730+ ()"
+            : "Cannot convert back to T4 because +" + String(check_revert_ilevel_ok()) + " cannot be mapped directly to a T4 upgrade"
 })
 const tier_label_text = computed(() => {
     return active_profile.value.tier == 0 ? "Convert to T4.5 Serca" : "Revert back to T4"
 })
 function change_tier() {
     let old_tier = active_profile.value.tier
+    let was_1730 = check_1730()
     if (check_revert_ilevel_ok() === true) {
         active_profile.value.tier = active_profile.value.tier == 0 ? 1 : 0
     }
@@ -79,13 +85,14 @@ function change_tier() {
     active_profile.value.bound_budgets[new_tier].data[new_index] = active_profile.value.bound_budgets[old_tier].data[old_index]
 
     // the rest have separate values between tiers
-
+    console.log(was_1730, achieved_ilevel(active_profile.value), new_tier)
     for (let row = 0; row < NUM_PIECES; row++) {
-        let highest_done = Math.max(new_tier == 1 ? 20 : 11, active_profile.value.normal_grid[row].findLastIndex((value) => value == UpgradeStatus.Done) + 1)
-        let highest_want = Math.max(
-            new_tier == 1 ? 20 : 11,
-            active_profile.value.normal_grid[row].findLastIndex((value) => value == UpgradeStatus.Want || value == UpgradeStatus.Done) + 1,
-        )
+        let highest_done = !was_1730 && new_tier == 1 ? 20 : active_profile.value.normal_grid[row].findLastIndex((value) => value == UpgradeStatus.Done) + 1
+        let highest_want =
+            !was_1730 && new_tier == 1
+                ? 20
+                : active_profile.value.normal_grid[row].findLastIndex((value) => value == UpgradeStatus.Want || value == UpgradeStatus.Done) + 1
+
         let converted_done = PLUS_TIER_CONVERSION[old_tier][String(highest_done)]
         let converted_want = highest_want > 0 ? PLUS_TIER_CONVERSION[old_tier][String(highest_want)] : converted_done
         for (let col = 0; col < NORMAL_COLS; col++) {
@@ -124,7 +131,7 @@ function change_tier() {
                     :checkEligibility="() => check_revert_ilevel_ok() === true"
                     @change-tier="change_tier"
                     :show-tooltip-only-on-disabled="false"
-                    :warning="active_profile.tier == 0 && !(check_all_plus_20() && check_adv_all_done())"
+                    :warning="active_profile.tier == 0 && !(check_1730() && check_adv_all_done())"
                 />
             </div>
             <div class="hf-card-body">
