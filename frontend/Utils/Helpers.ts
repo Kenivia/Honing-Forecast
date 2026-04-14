@@ -28,40 +28,35 @@ export function check_adv_all_done() {
     }
     return true
 }
-export function check_1730(): boolean {
+export function check_all_plus_20(): number | boolean {
     const { active_profile } = storeToRefs(useProfilesStore())
-    // for (let row = 0; row < NUM_PIECES; row++) {
-    //     let highest_done = active_profile.value.normal_grid[row].findLastIndex((value) => value == UpgradeStatus.Done) + 1
+    for (let row = 0; row < NUM_PIECES; row++) {
+        let highest_done = active_profile.value.normal_grid[row].findLastIndex((value) => value == UpgradeStatus.Done) + 1
 
-    //     if (!(highest_done >= 20)) {
-    //         return false
-    //     }
-    // }
-    const achieved_str = achieved_ilevel(active_profile.value)
-    return parseFloat(achieved_str) > 1730 - 1e-9
+        if (!(highest_done >= 20)) {
+            return false
+        }
+    }
+    return true
 }
 export function check_revert_ilevel_ok(): number | boolean {
     const { active_profile } = storeToRefs(useProfilesStore())
     if (active_profile.value.tier == 0) {
         return true
     }
-
-    let ilevel = 1590 + 40
     for (let row = 0; row < NUM_PIECES; row++) {
         let highest_done = active_profile.value.normal_grid[row].findLastIndex((value) => value == UpgradeStatus.Done) + 1
 
         if (!PLUS_TIER_CONVERSION[active_profile.value.tier].hasOwnProperty(String(highest_done))) {
             return highest_done
         }
-        ilevel += (PLUS_TIER_CONVERSION[active_profile.value.tier][highest_done] * 5) / 6
         let highest_want = active_profile.value.normal_grid[row].findLastIndex((value) => value == UpgradeStatus.Done || value == UpgradeStatus.Want) + 1
 
         if (!PLUS_TIER_CONVERSION[active_profile.value.tier].hasOwnProperty(String(highest_want))) {
             return highest_want
         }
     }
-
-    return ilevel > 1730
+    return true
 }
 // export function check_revert_eligibility(): boolean {
 //     return check_adv_all_done() && check_revert_ilevel_ok() === true
