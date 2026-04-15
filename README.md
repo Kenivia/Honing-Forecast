@@ -74,7 +74,7 @@ You can take a look at [good first issues](<https://github.com/Kenivia/Honing-Fo
 
 ## Bug report / feedback
 
-If you find a bug or spot an error, please submit an issue on GitHub or send a message on [Discord](https://discord.gg/KWDpQyvgzc)!
+If you find a bug or spot an error, please [submit an issue](https://github.com/Kenivia/Honing-Forecast/issues) on GitHub or send a message on [Discord](https://discord.gg/KWDpQyvgzc)!
 
 ## Disclaimer
 

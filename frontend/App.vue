@@ -57,11 +57,20 @@ watchEffect(() => {
 <template>
     <div class="hf-app-shell">
         <header>
-            <!-- <div v-if="!is500Narrow" class="hf-page-header-row" style="width: 100%">
-                <span>!!! The site is known to crash with the </span> <span style="color: aquamarine">&nbsp;React Developer Tools extension&nbsp;</span> on
-                Chromium. Disable the extension, close the site and re-open! (Reloading is insufficient) See the bug report&nbsp;
-                <a style="text-decoration: underline" href="https://github.com/facebook/react/issues/36162">here</a>.
-            </div> -->
+            <div v-if="!is500Narrow" class="hf-page-header-row" style="width: 100%; justify-content: space-around">
+                <span>
+                    <span style="font-weight: 600">Happy Serca porg!&nbsp;</span>
+                    <a
+                        style="text-decoration: underline"
+                        href="https://docs.google.com/spreadsheets/d/1UWJ5TCNZ2kIZxXQwR839c-P1rlivkwdW3fOCMDMXZZo/edit?usp=sharing"
+                        >Data on this site</a
+                    >
+                    came from Korean API, if something is different in-game, plz let me know via
+                    <a style="text-decoration: underline" href="https://github.com/Kenivia/Honing-Forecast/issues">a GitHub issue</a>
+                    or
+                    <a style="text-decoration: underline" href="https://discord.gg/KWDpQyvgzc">on Discord</a>!
+                </span>
+            </div>
             <nav class="hf-top-nav">
                 <div class="hf-page-header-row" style="width: 100%">
                     <div v-if="!is500Narrow" class="hf-brand">
