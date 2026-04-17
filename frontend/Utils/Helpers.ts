@@ -4,20 +4,21 @@ import { InputColumn, InputType, Upgrade, UpgradeStatus } from "./Interfaces"
 import { storeToRefs } from "pinia"
 import { useRosterStore } from "@/Stores/RosterConfig"
 
-export function format_char_name(raw: string, char_index: number, roster_index: number): string {
-    const { all_profiles, roster_config } = storeToRefs(useRosterStore())
-    let result = raw.replace(/ /g, "") //
+export function format_char_name(raw: string, char_index: number, profiles?: CharProfile[]): string {
+    const all_profiles = profiles === null || profiles === undefined ? storeToRefs(useRosterStore()).all_profiles.value : profiles
+
+    let original = raw.replace(/ /g, "") //
     // 2. Remove non-alphanumeric (keep underscores)
-    result = result.replace(/[^a-zA-Z0-9_]/g, "")
+    original = original.replace(/[^a-zA-Z0-9_]/g, "")
     // 3. Lowercase every letter after the first
-    result = result.replace(/(?<=.)[A-Z]/g, (c) => c.toLowerCase()).slice(0, 16)
+    original = original.replace(/(?<=.)[A-Z]/g, (c) => c.toLowerCase()).slice(0, 16)
     // 4. If empty, or already taken by another profile, append index
-    const otherNames = all_profiles.value.filter((_, i) => i !== char_index).map((x) => x.char_name)
+    const otherNames = all_profiles.filter((_, i) => i !== char_index).map((x) => x.char_name)
+    let dup_count = 1
+    let result = original
     while (!result || otherNames.includes(result)) {
-        result += String(char_index + 1)
-        if (roster_index > 0) {
-            result += roster_config.value.roster_names[roster_index]
-        }
+        result = original + String(dup_count)
+        dup_count += 1
     }
     return result
 }

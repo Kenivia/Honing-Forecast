@@ -10,7 +10,8 @@ import TierConvertButton from "../Common/TierConvertButton.vue"
 import { fetch_callback, useTimedFetch } from "@/Utils/MarketDataFetcher"
 import { input_column_to_num, parse_input } from "@/Utils/InputColumn"
 
-const { roster_config, active_roster_mats_owned, active_tradable_mats_owned } = storeToRefs(useRosterStore())
+const roster_store = useRosterStore()
+const { roster_config, active_roster_mats_owned, active_tradable_mats_owned, all_profiles, roster_ids } = storeToRefs(roster_store)
 const tier = computed(() => roster_config.value.tier)
 const { isNarrow } = useMediaIsNarrow(BUDGET_NARROW_WIDTH)
 
@@ -50,6 +51,28 @@ const t4_better = computed(() => {
     let serca_price = input_column_to_num(roster_config.value.mats_prices[1])
     return ALL_LABELS[1].map((_, index) => t4_price[index] * 5 < serca_price[index])
 })
+
+function find_representative(): Record<string, number> {
+    let out = {}
+    let seen = {}
+    let roster_index = 1
+    for (const [profile_index, profile] of all_profiles.value.entries()) {
+        if (!seen.hasOwnProperty(profile.roster_id)) {
+            seen[profile.roster_id] = roster_index
+            let name = "Roster " + String(roster_index)
+            out[name] = profile_index
+            roster_index += 1
+        }
+    }
+    return out
+}
+const representative_profile_indices = computed(find_representative)
+
+function change_roster(event) {
+    console.log(event.target.value)
+    roster_store.switchProfile(Number(event.target.value))
+    forceRerender()
+}
 </script>
 
 <template>
@@ -83,6 +106,11 @@ const t4_better = computed(() => {
             <option value="3000">x3000</option>
         </select>
         <label>(Best one will be auto selected)</label>
+    </div>
+    <div v-if="roster_ids.length > 1">
+        <select class="hf-shard-size-select" @change="change_roster">
+            <option v-for="(profile_index, name) in representative_profile_indices" :value="profile_index">{{ name }}</option>
+        </select>
     </div>
     <div v-if="re_render_trigger" class="hf-outer-budget-grid" :class="{ narrow: isNarrow }">
         <div v-if="!isNarrow || tier == 0" class="hf-tier-grid-scroll">

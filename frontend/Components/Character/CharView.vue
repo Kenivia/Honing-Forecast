@@ -12,21 +12,21 @@ const route = useRoute()
 const router = useRouter()
 
 const roster_store = useRosterStore()
-const { active_profile, this_roster_profiles } = storeToRefs(roster_store)
+const { active_profile, all_profiles } = storeToRefs(roster_store)
 
-const match = this_roster_profiles.value.findIndex((c) => c.char_name === (route.params.characterName as string))
+const match = all_profiles.value.findIndex((c) => c.char_name === (route.params.characterName as string))
 if (match >= 0) {
     roster_store.switchProfile(match)
 } else {
-    router.replace({ name: "char", params: { characterName: this_roster_profiles.value[0].char_name } })
+    router.replace({ name: "char", params: { characterName: all_profiles.value[0].char_name } })
     roster_store.switchProfile(0)
 }
 watch(
     () => route.params.characterName as string,
     (name) => {
-        const match = this_roster_profiles.value.findIndex((c) => c.char_name === name)
+        const match = all_profiles.value.findIndex((c) => c.char_name === name)
         if (match >= 0) {
-            if (roster_store.active_profile_index !== match) {
+            if (roster_store.roster_config.active_profile_index !== match) {
                 // this happens one invalid names (routre param written to by the one-off code, triggering the watcher) i believe, idk how to prevent that but this works
                 active_profile.value.optimizer_worker_bundle.cancel()
                 active_profile.value.histogram_worker_bundle.cancel()
@@ -35,7 +35,7 @@ watch(
                 roster_store.switchProfile(match)
             }
         } else {
-            router.replace({ name: "char", params: { characterName: this_roster_profiles.value[0].char_name } })
+            router.replace({ name: "char", params: { characterName: all_profiles.value[0].char_name } })
             roster_store.switchProfile(0)
         }
     },

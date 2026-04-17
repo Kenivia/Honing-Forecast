@@ -95,7 +95,7 @@ export const BUNDLE_SIZE = [100, 100, 1, 1000, 1, 1, 1000000].concat(
 
 export const OUTPUT_LABELS = ["Red", "Blue", "Leaps", "Shards", "Fusion", "Gold", "Silver", "Red juice", "Blue juice"]
 
-export const STORAGE_KEY = "HF_UI_STATE_V3"
+export const STORAGE_KEY = "HF_UI_STATE_V4"
 
 export const NUM_PIECES = 6
 export const NORMAL_COLS = 25

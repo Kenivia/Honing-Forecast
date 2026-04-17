@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { RouterLink, RouterView, useRoute, useRouter } from "vue-router"
 import { get_icon_path } from "./Utils/Helpers"
-import { debounced_write_char_profiles } from "./Stores/CharacterProfile"
+import { CharProfile } from "./Stores/CharacterProfile"
 import { debounced_write_roster_config, useRosterStore } from "./Stores/RosterConfig"
 import { useMediaIsNarrow } from "./Utils/WindowSize"
 import { fetch_callback, useTimedFetch } from "./Utils/MarketDataFetcher"
@@ -13,7 +13,7 @@ import { storeToRefs } from "pinia"
 const roster_store = useRosterStore()
 roster_store.init()
 
-const { this_roster_profiles } = storeToRefs(roster_store)
+const { all_profiles, roster_ids, roster_config } = storeToRefs(roster_store)
 
 const { start_fetch } = useTimedFetch(fetch_callback)
 start_fetch(roster_store.roster_config.region)
@@ -28,7 +28,7 @@ const { isNarrow: is800Narrow } = useMediaIsNarrow()
 const route = useRoute()
 const router = useRouter()
 
-const active_char_name = computed(() => this_roster_profiles.value.find((p) => route.path === "/" + p.char_name)?.char_name ?? "")
+const active_char_name = computed(() => all_profiles.value.find((p) => route.path === "/" + p.char_name)?.char_name ?? "")
 
 function onCharSelect(e: Event) {
     const name = (e.target as HTMLSelectElement).value
@@ -88,21 +88,37 @@ watchEffect(() => {
                     </router-link>
 
                     <div class="hf-header-spacer" />
-                    <RouterLink
-                        v-if="!is600Narrow || this_roster_profiles.length <= 1"
-                        v-for="(profile, index) in this_roster_profiles"
-                        :key="index"
-                        :to="{ name: 'char', params: { characterName: profile.char_name } }"
-                        class="hf-header-button"
-                        :class="{ selected: route.path == '/' + profile.char_name }"
+
+                    <div
+                        v-if="!is600Narrow || all_profiles.length <= 1"
+                        v-for="roster_id in roster_ids"
+                        class="hf-char-row"
+                        style="display: flex; flex-direction: row"
+                        :key="'roster-${roster_id}'"
                     >
-                        {{ profile.char_name }}
-                    </RouterLink>
+                        <div
+                            v-for="[profile, profile_index] in all_profiles
+                                .map((x, index): [CharProfile, number] => [x, index])
+                                .filter((y) => y[0].roster_id === roster_id)"
+                            class="hf-char-row"
+                            :key="'profile-${profile_index}'"
+                        >
+                            <!-- {{ console.log(roster_id, profile.roster_id) }} -->
+                            <RouterLink
+                                :to="{ name: 'char', params: { characterName: profile.char_name } }"
+                                class="hf-header-button"
+                                :class="{ selected: route.path == '/' + profile.char_name }"
+                            >
+                                {{ profile.char_name }}
+                            </RouterLink>
+                        </div>
+                        <span style="width: 16px"></span>
+                    </div>
 
                     <!-- Mobile: dropdown -->
                     <select v-else class="hf-char-select" :value="active_char_name" @change="onCharSelect">
                         <option value="" disabled>Character</option>
-                        <option v-for="(profile, index) in this_roster_profiles" :key="index" :value="profile.char_name">
+                        <option v-for="(profile, index) in all_profiles" :key="index" :value="profile.char_name">
                             {{ profile.char_name }}
                         </option>
                     </select>

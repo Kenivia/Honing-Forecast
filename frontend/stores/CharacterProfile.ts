@@ -10,7 +10,7 @@ import { createStatusGrid, get_valid_status_grid } from "@/Utils/StatusGrid"
 import { grids_to_keyed } from "@/Utils/KeyedUpgrades"
 
 export interface CharProfile {
-    roster_number: number
+    roster_id: number
 
     optimizer_treatment_plan: TreatmentPlan
     histogram_treatment_plan: TreatmentPlan
@@ -74,26 +74,6 @@ export interface CharProfile {
 //     return { ...DEFAULT_PROFILES_STATE, ...parsed }
 // }
 
-export const debounced_write_char_profiles = debounce(write_char_profiles, 500)
-
-export function write_char_profiles(state) {
-    let copy = JSON.parse(JSON.stringify(state))
-    for (let i = 0; i < copy.profiles.length; i++) {
-        delete copy.profiles[i].evaluation_worker_bundle
-        delete copy.profiles[i].optimizer_worker_bundle
-        delete copy.profiles[i].histogram_worker_bundle
-        Object.entries(copy.profiles[i].keyed_upgrades).forEach(([_key, arr]) => {
-            arr[4] = null
-        })
-    }
-    // console.log("writing ", copy)
-    localStorage.setItem(STORAGE_KEY + "_char_profiles", JSON.stringify(copy))
-}
-const DEFAULT_PROFILES_STATE = {
-    profiles: [create_default_char_profile()],
-    active_profile_index: 0,
-}
-
 export enum TreatmentPlan {
     TreatRosterAsTradable, // rat alt, treat roster as if we could've sold them
     TreatRosterAsBound, // alt, treat char & roster bound as 0 if there's any leftover, taxed market price if any tradable leftover
@@ -126,7 +106,7 @@ export function create_default_char_profile(): CharProfile {
         num_threads: 1,
         metric_type: 1,
         material_re_render_trigger: true,
-        roster_number: 0,
+        roster_id: 0,
     }
 }
 

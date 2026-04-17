@@ -1,67 +1,116 @@
 <script setup lang="ts">
-import { create_default_char_profile, recreate_char_profile } from "@/Stores/CharacterProfile"
-import { useRosterStore } from "@/Stores/RosterConfig"
+import { CharProfile, create_default_char_profile, recreate_char_profile } from "@/Stores/CharacterProfile"
+import { create_default_owned_input_column, useRosterStore } from "@/Stores/RosterConfig"
 import { achieved_ilevel, format_char_name, pending_ilevel } from "@/Utils/Helpers"
 import { WasmOp } from "@/Utils/Interfaces"
 import { build_payload } from "@/WasmInterface/PayloadBuilder"
 import { storeToRefs } from "pinia"
-import { ref } from "vue"
+import { computed, ref } from "vue"
 import { RouterLink } from "vue-router"
 
 const roster_store = useRosterStore()
-const { this_roster_profiles, roster_config } = storeToRefs(roster_store)
+const { roster_config, roster_ids, all_profiles } = storeToRefs(roster_store)
 
-const names = ref(this_roster_profiles.value.map((x) => x.char_name))
+const names = ref(roster_config.value.profiles.map((y) => y.char_name))
 
-function add_new_char() {
+function add_new_char(roster_id: number) {
     let new_char = create_default_char_profile()
-    new_char.char_name = "Newchar" + String(this_roster_profiles.value.length + 1)
+    new_char.char_name = format_char_name("Newchar", roster_config.value.profiles.length)
+    new_char.roster_id = roster_id
     names.value.push(new_char.char_name)
     roster_store.addProfile(new_char)
 }
+function add_new_roster(roster_id: number) {
+    let new_char = create_default_char_profile()
+    new_char.char_name = format_char_name("Newchar", roster_config.value.profiles.length)
+    new_char.roster_id = roster_id
+    names.value.push(new_char.char_name)
+    roster_config.value.profiles.push(new_char)
 
-function duplicate(index) {
-    let this_parsed = { ...create_default_char_profile(), ...this_roster_profiles[index] }
+    roster_config.value.roster_mats_owned[roster_id] = create_default_owned_input_column()
+    roster_config.value.tradable_mats_owned[roster_id] = create_default_owned_input_column()
+}
+
+function duplicate(index, roster_id: number) {
+    let this_parsed = { ...create_default_char_profile(), ...roster_config.value.profiles[index] }
 
     let new_char = recreate_char_profile(JSON.parse(JSON.stringify(this_parsed)))
-    new_char.char_name = "Newchar" + String(this_roster_profiles.value.length + 1)
+    new_char.char_name = format_char_name("Newchar", roster_config.value.profiles.length)
     names.value.push(new_char.char_name)
     roster_store.addProfile(new_char)
-    new_char.optimizer_worker_bundle.start(WasmOp.Parser, build_payload(WasmOp.Parser))
 }
 
-function delete_profile(index) {
+function delete_profile(index, roster_id) {
     // console.log(this_roster_profiles.length)
-    this_roster_profiles.value.splice(index, 1)
+    if (roster_config.value.active_profile_index >= index) {
+        roster_store.switchProfile(Math.max(index - 1, 0))
+    }
+    roster_config.value.profiles.splice(index, 1)
     names.value.splice(index, 1)
+
+    if (roster_config.value.profiles.filter((x) => x.roster_id == roster_id).length === 0) {
+        delete roster_config.value.roster_mats_owned[roster_id]
+        delete roster_config.value.tradable_mats_owned[roster_id]
+    }
+
     // console.log(this_roster_profiles.length)
 }
 </script>
 
 <template>
     <div class="hf-main-stage">
-        <section class="hf-card">
-            <div v-for="(profile, index) in this_roster_profiles" class="hf-char-row" :key="index">
-                <input
-                    v-model="names[index]"
-                    @change="((names[index] = format_char_name(names[index], index, roster_config.active_roster)), (profile.char_name = names[index]))"
-                />
-                <div class="hf-char-meta">
-                    <label class="hf-achieved-ilevel">Achieved ilevel: {{ achieved_ilevel(profile) }}</label>
-                    <label class="hf-pending-ilevel">Pending ilevel: {{ pending_ilevel(profile) }}</label>
+        <div :class="roster_ids.length > 1 ? 'hf-outer-budget-grid' : 'hf-only-one-roster'">
+            <section v-for="(roster_id, roster_index) in roster_ids" class="hf-card" :key="'roster-${roster_id}'">
+                <div v-if="roster_config.profiles.length > 1" class="hf-card-header">
+                    <div class="hf-card-title">
+                        <span class="hf-card-title-dot" />
+                        <span class="hf-card-title" /> Roster {{ roster_index + 1 }}
+                    </div>
                 </div>
-                <RouterLink :to="{ name: 'char', params: { characterName: profile.char_name } }" class="hf-header-button"> Go to character </RouterLink>
 
-                <button class="hf-header-button" @click="() => duplicate(index)">Make a copy</button>
-                <button v-if="this_roster_profiles.length > 1" class="btn-cancel" @click="() => delete_profile(index)">Delete</button>
-            </div>
-            <button class="hf-new-char" @click="add_new_char">Add new character</button>
-        </section>
+                <div
+                    v-for="[profile, profile_index] in roster_config.profiles
+                        .map((x, index): [CharProfile, number] => [x, index])
+                        .filter((y) => y[0].roster_id === roster_id)"
+                    class="hf-char-row"
+                    :key="'profile-${profile_index}'"
+                >
+                    <input
+                        v-model="names[profile_index]"
+                        @change="((names[profile_index] = format_char_name(names[profile_index], profile_index)), (profile.char_name = names[profile_index]))"
+                    />
+                    <div class="hf-char-meta">
+                        <label class="hf-achieved-ilevel">Achieved ilevel: {{ achieved_ilevel(profile) }}</label>
+                        <label class="hf-pending-ilevel">Pending ilevel: {{ pending_ilevel(profile) }}</label>
+                    </div>
+                    <RouterLink :to="{ name: 'char', params: { characterName: profile.char_name } }" class="hf-header-button"> Go to character </RouterLink>
+
+                    <button class="hf-header-button" @click="() => duplicate(profile_index, roster_id)">Make a copy</button>
+                    <button v-if="roster_config.profiles.length > 1" class="btn-cancel" @click="() => delete_profile(profile_index, roster_id)">Delete</button>
+                </div>
+                <button class="hf-new-char" @click="() => add_new_char(roster_id)">Add new character</button>
+            </section>
+            <button
+                class="hf-card,hf-new-char"
+                style="align-self: center"
+                @click="() => add_new_roster(Math.max(...roster_config.profiles.map((x) => x.roster_id)) + 1)"
+            >
+                Add new roster
+            </button>
+        </div>
     </div>
 </template>
 <style scoped>
 /* Base Variables & Structural Setup */
-
+.hf-outer-budget-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+    align-items: start;
+}
+.hf-only-one-roster {
+    display: contents;
+}
 .btn-cancel {
     background: var(--hf-cancel, #d32f2f);
     color: var(--hf-text-bright,);
