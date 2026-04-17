@@ -10,7 +10,7 @@ import TierConvertButton from "../Common/TierConvertButton.vue"
 import { fetch_callback, useTimedFetch } from "@/Utils/MarketDataFetcher"
 import { input_column_to_num, parse_input } from "@/Utils/InputColumn"
 
-const { roster_config, active_mats_prices, active_roster_mats_owned, active_tradable_mats_owned } = storeToRefs(useRosterStore())
+const { roster_config, active_roster_mats_owned, active_tradable_mats_owned } = storeToRefs(useRosterStore())
 const tier = computed(() => roster_config.value.tier)
 const { isNarrow } = useMediaIsNarrow(BUDGET_NARROW_WIDTH)
 
@@ -46,8 +46,8 @@ function convert_roster_mats_to_serca() {
 }
 
 const t4_better = computed(() => {
-    let t4_price = input_column_to_num(active_mats_prices[0])
-    let serca_price = input_column_to_num(active_mats_prices[1])
+    let t4_price = input_column_to_num(roster_config.value.mats_prices[0])
+    let serca_price = input_column_to_num(roster_config.value.mats_prices[1])
     return ALL_LABELS[1].map((_, index) => t4_price[index] * 5 < serca_price[index])
 })
 </script>
@@ -96,33 +96,33 @@ const t4_better = computed(() => {
                 </div>
                 <div v-for="(label, row) in ALL_LABELS[0]" :key="`roster-input-${label}`" class="hf-mats-row">
                     <MaterialCell
-                        :input_column="active_roster_mats_owned.value[0]"
+                        :input_column="active_roster_mats_owned[0]"
                         :row="row"
                         :label="label"
                         :setter="
                             (val) => {
-                                active_roster_mats_owned.value[0].data[row] = val
+                                active_roster_mats_owned[0].data[row] = val
                             }
                         "
                         input_color="var(--hf-graph-roster-color)"
                         :hide_tick="true"
                     />
                     <MaterialCell
-                        :input_column="active_tradable_mats_owned.value[0]"
+                        :input_column="active_tradable_mats_owned[0]"
                         :row="row"
                         :setter="
                             (val) => {
-                                active_tradable_mats_owned.value[0].data[row] = val
+                                active_tradable_mats_owned[0].data[row] = val
                             }
                         "
                         input_color="var(--hf-graph-tradable-color)"
                     />
                     <MaterialCell
-                        :input_column="active_mats_prices[0]"
+                        :input_column="roster_config.mats_prices[0]"
                         :row="row"
                         :setter="
                             (val) => {
-                                active_mats_prices[0].data[row] = val
+                                roster_config.mats_prices[0].data[row] = val
                             }
                         "
                         :suffix="
@@ -149,33 +149,33 @@ const t4_better = computed(() => {
                 </div>
                 <div v-for="(label, row) in ALL_LABELS[1]" :key="`roster-input-${label}`" class="hf-mats-row">
                     <MaterialCell
-                        :input_column="active_roster_mats_owned.value[SYNCED_LABELS.includes(label) ? 0 : 1]"
+                        :input_column="active_roster_mats_owned[SYNCED_LABELS.includes(label) ? 0 : 1]"
                         :row="row"
                         :label="label"
                         :setter="
                             (val) => {
-                                active_roster_mats_owned.value[SYNCED_LABELS.includes(label) ? 0 : 1].data[row] = val
+                                active_roster_mats_owned[SYNCED_LABELS.includes(label) ? 0 : 1].data[row] = val
                             }
                         "
                         input_color="var(--hf-graph-roster-color)"
                         :hide_tick="true"
                     />
                     <MaterialCell
-                        :input_column="active_tradable_mats_owned.value[SYNCED_LABELS.includes(label) ? 0 : 1]"
+                        :input_column="active_tradable_mats_owned[SYNCED_LABELS.includes(label) ? 0 : 1]"
                         :row="row"
                         :setter="
                             (val) => {
-                                active_tradable_mats_owned.value[SYNCED_LABELS.includes(label) ? 0 : 1].data[row] = val
+                                active_tradable_mats_owned[SYNCED_LABELS.includes(label) ? 0 : 1].data[row] = val
                             }
                         "
                         input_color="var(--hf-graph-tradable-color)"
                     />
                     <MaterialCell
-                        :input_column="active_mats_prices[SYNCED_LABELS.includes(label) ? 0 : 1]"
+                        :input_column="roster_config.mats_prices[SYNCED_LABELS.includes(label) ? 0 : 1]"
                         :row="row"
                         :setter="
                             (val) => {
-                                active_mats_prices[SYNCED_LABELS.includes(label) ? 0 : 1].data[row] = val
+                                roster_config.mats_prices[SYNCED_LABELS.includes(label) ? 0 : 1].data[row] = val
                             }
                         "
                         :suffix="

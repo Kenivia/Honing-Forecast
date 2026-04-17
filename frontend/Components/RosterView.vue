@@ -9,7 +9,7 @@ import { ref } from "vue"
 import { RouterLink } from "vue-router"
 
 const roster_store = useRosterStore()
-const { this_roster_profiles } = storeToRefs(roster_store)
+const { this_roster_profiles, roster_config } = storeToRefs(roster_store)
 
 const names = ref(this_roster_profiles.value.map((x) => x.char_name))
 
@@ -44,7 +44,7 @@ function delete_profile(index) {
             <div v-for="(profile, index) in this_roster_profiles" class="hf-char-row" :key="index">
                 <input
                     v-model="names[index]"
-                    @change="((names[index] = format_char_name(names[index], index, this_roster_profiles)), (profile.char_name = names[index]))"
+                    @change="((names[index] = format_char_name(names[index], index, roster_config.active_roster)), (profile.char_name = names[index]))"
                 />
                 <div class="hf-char-meta">
                     <label class="hf-achieved-ilevel">Achieved ilevel: {{ achieved_ilevel(profile) }}</label>

@@ -13,7 +13,7 @@ import { useRosterStore } from "@/Stores/RosterConfig"
 import { input_column_to_num, parse_input } from "@/Utils/InputColumn"
 
 const { active_profile } = storeToRefs(useRosterStore())
-const { roster_config, active_mats_prices, active_roster_mats_owned, active_tradable_mats_owned } = storeToRefs(useRosterStore())
+const { roster_config, active_roster_mats_owned, active_tradable_mats_owned } = storeToRefs(useRosterStore())
 
 const tooltip_text = computed(() => {
     return active_profile.value.tier == 0

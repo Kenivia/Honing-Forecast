@@ -4,16 +4,20 @@ import { InputColumn, InputType, Upgrade, UpgradeStatus } from "./Interfaces"
 import { storeToRefs } from "pinia"
 import { useRosterStore } from "@/Stores/RosterConfig"
 
-export function format_char_name(raw: string, index: number, profiles: CharProfile[]): string {
+export function format_char_name(raw: string, char_index: number, roster_index: number): string {
+    const { all_profiles, roster_config } = storeToRefs(useRosterStore())
     let result = raw.replace(/ /g, "") //
     // 2. Remove non-alphanumeric (keep underscores)
     result = result.replace(/[^a-zA-Z0-9_]/g, "")
     // 3. Lowercase every letter after the first
     result = result.replace(/(?<=.)[A-Z]/g, (c) => c.toLowerCase()).slice(0, 16)
     // 4. If empty, or already taken by another profile, append index
-    const otherNames = profiles.filter((_, i) => i !== index).map((x) => x.char_name)
+    const otherNames = all_profiles.value.filter((_, i) => i !== char_index).map((x) => x.char_name)
     while (!result || otherNames.includes(result)) {
-        result += String(index + 1)
+        result += String(char_index + 1)
+        if (roster_index > 0) {
+            result += roster_config.value.roster_names[roster_index]
+        }
     }
     return result
 }

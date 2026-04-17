@@ -13,7 +13,7 @@ import { input_column_to_num } from "@/Utils/InputColumn"
 import { start_all_workers } from "../CharWorkerUtils"
 
 const { active_profile } = storeToRefs(useRosterStore())
-const { roster_config, active_mats_prices, active_roster_mats_owned, active_tradable_mats_owned } = storeToRefs(useRosterStore())
+const { roster_config, active_roster_mats_owned, active_tradable_mats_owned } = storeToRefs(useRosterStore())
 const histogram_result = computed(() => active_profile.value.histogram_worker_bundle.result)
 
 // This is average mats cost (not gold)

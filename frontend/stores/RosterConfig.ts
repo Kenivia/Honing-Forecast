@@ -3,16 +3,17 @@ import { debounce, format_char_name } from "@/Utils/Helpers"
 import { create_input_column, validate_input_column, validate_input_column_array } from "@/Utils/InputColumn"
 import { InputColumn, InputType, WasmOp } from "@/Utils/Interfaces"
 import { defineStore } from "pinia"
-import { CharProfile, create_default_char_profile, load_char_profiles, recreate_char_profile } from "./CharacterProfile"
+import { CharProfile, create_default_char_profile, recreate_char_profile } from "./CharacterProfile"
 import { build_payload } from "@/WasmInterface/PayloadBuilder"
 import { get_valid_status_grid } from "@/Utils/StatusGrid"
 import { grids_to_keyed } from "@/Utils/KeyedUpgrades"
 
 export interface RosterConfig {
-    mats_prices: InputColumn[][] // mats_prices[tier].data[row] = "123"
+    mats_prices: InputColumn[] // mats_prices[tier].data[row] = "123"
     roster_mats_owned: InputColumn[][] // Same as in char profile, the tier distinction is because there's different number of mats (rows) for each tier
     tradable_mats_owned: InputColumn[][]
     active_roster: number
+    roster_names: string[]
 
     tier: number
     cumulative_graph: boolean
@@ -29,20 +30,24 @@ export const useRosterStore = defineStore("roster", {
         roster_config: DEFAULT_ROSTER_CONFIG,
     }),
     getters: {
-        active_mats_prices: (state): InputColumn[] => state.roster_config.mats_prices[state.roster_config.active_roster],
         active_roster_mats_owned: (state): InputColumn[] => state.roster_config.roster_mats_owned[state.roster_config.active_roster],
         active_tradable_mats_owned: (state): InputColumn[] => state.roster_config.tradable_mats_owned[state.roster_config.active_roster],
 
         this_roster_profiles: (state): CharProfile[] => {
-            return state.roster_config.profiles[state.roster_config.active_profile_indices[state.roster_config.active_roster]]
+            // console.log(state.roster_config.profiles)
+            return state.roster_config.profiles[state.roster_config.active_roster]
         },
         active_profile: (state): CharProfile => {
-            return state.roster_config.profiles[state.roster_config.active_profile_indices[state.roster_config.active_roster]][
+            // console.log(state.roster_config.profiles)
+            return state.roster_config.profiles[state.roster_config.active_roster][
                 state.roster_config.active_profile_indices[state.roster_config.active_roster]
             ]
         },
         active_profile_index: (state): number => {
             return state.roster_config.active_profile_indices[state.roster_config.active_roster]
+        },
+        all_profiles: (state): CharProfile[] => {
+            return state.roster_config.profiles.flatMap((x) => x)
         },
     },
     actions: {
@@ -50,10 +55,10 @@ export const useRosterStore = defineStore("roster", {
             this.roster_config = load_roster_config()
         },
         switchProfile(id: number) {
-            this.active_profile_indices[this.roster_config.active_roster] = id
+            this.roster_config.active_profile_indices[this.roster_config.active_roster] = id
         },
         addProfile(profile: CharProfile) {
-            this.this_roster_profiles.push(profile)
+            this.roster_config.profiles[this.roster_config.active_profile_indices[this.roster_config.active_roster]].push(profile)
         },
         updateActiveProfile(updates: Partial<CharProfile>) {
             Object.assign(this.profiles[this.active_profile_index], updates)
@@ -72,7 +77,7 @@ export const useRosterStore = defineStore("roster", {
 })
 
 export const DEFAULT_ROSTER_CONFIG: RosterConfig = {
-    mats_prices: [ALL_LABELS.map((this_labels) => create_input_column(InputType.Int, this_labels))], // was gonna use Float here but ig it makes more sense to do int, leaving float in place cos why not
+    mats_prices: ALL_LABELS.map((this_labels) => create_input_column(InputType.Int, this_labels)), // was gonna use Float here but ig it makes more sense to do int, leaving float in place cos why not
     roster_mats_owned: [ALL_LABELS.map((this_labels) => create_input_column(InputType.Int, this_labels))],
     tradable_mats_owned: [ALL_LABELS.map((this_labels) => create_input_column(InputType.Int, this_labels))],
     active_roster: 0,
@@ -85,6 +90,7 @@ export const DEFAULT_ROSTER_CONFIG: RosterConfig = {
 
     profiles: [[create_default_char_profile()]],
     active_profile_indices: [0],
+    roster_names: ["Roster1"],
 }
 
 export function load_roster_config(): RosterConfig {
@@ -98,8 +104,7 @@ export function load_roster_config(): RosterConfig {
         }
     })()
 
-    if (!Array.isArray(out.mats_prices[0])) {
-        out.mats_prices = [out.mats_prices]
+    if (!Array.isArray(out.roster_mats_owned[0])) {
         out.roster_mats_owned = [out.roster_mats_owned]
         out.tradable_mats_owned = [out.tradable_mats_owned]
     }
@@ -107,8 +112,8 @@ export function load_roster_config(): RosterConfig {
     if (!Array.isArray(out.profiles[0])) {
         out.profiles = [out.profiles]
     }
-    for (let i = 0; i < out.mats_prices.length; i++) {
-        validate_input_column_array(out.mats_prices[i], DEFAULT_ROSTER_CONFIG.mats_prices[0])
+    for (let i = 0; i < out.roster_mats_owned.length; i++) {
+        validate_input_column_array(out.mats_prices, DEFAULT_ROSTER_CONFIG.mats_prices)
         validate_input_column_array(out.roster_mats_owned[i], DEFAULT_ROSTER_CONFIG.roster_mats_owned[0])
         validate_input_column_array(out.tradable_mats_owned[i], DEFAULT_ROSTER_CONFIG.tradable_mats_owned[0])
 
@@ -117,7 +122,7 @@ export function load_roster_config(): RosterConfig {
             let this_profile = out.profiles[i][j]
             let this_parsed: CharProfile = { ...create_default_char_profile(), ...this_profile }
 
-            this_parsed.char_name = format_char_name(this_parsed.char_name, i, this_profile.slice(0, i))
+            this_parsed.char_name = format_char_name(this_parsed.char_name, j, i)
             validate_input_column_array(this_parsed.bound_budgets, default_profile.bound_budgets)
             validate_input_column_array(this_parsed.leftover_price, default_profile.leftover_price)
             validate_input_column(this_parsed.special_budget, default_profile.special_budget)

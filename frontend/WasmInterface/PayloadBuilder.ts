@@ -52,7 +52,7 @@ export function apply_treatement(treatment: TreatmentPlan, bound: number, roster
 
 export function build_material_info(wasm_op: WasmOp): OneMaterial[] {
     const { active_profile } = storeToRefs(useRosterStore())
-    const { roster_config, active_mats_prices, active_roster_mats_owned, active_tradable_mats_owned } = storeToRefs(useRosterStore())
+    const { roster_config, active_roster_mats_owned, active_tradable_mats_owned } = storeToRefs(useRosterStore())
 
     const tier = active_profile.value.tier
     const bound_budgets = input_column_to_num(active_profile.value.bound_budgets[tier])
@@ -60,7 +60,7 @@ export function build_material_info(wasm_op: WasmOp): OneMaterial[] {
     const tradable_mats_owned = input_column_to_num(active_tradable_mats_owned.value[tier])
 
     const leftover_price = input_column_to_num(active_profile.value.leftover_price[tier])
-    const actual_price = tier == 0 ? input_column_to_num(active_mats_prices[tier]) : roster_config.value.effective_serca_price
+    const actual_price = tier == 0 ? input_column_to_num(roster_config.value.mats_prices[tier]) : roster_config.value.effective_serca_price
 
     const tradable_mats_price = actual_price.map(
         (x: number, index: number) =>

@@ -42,7 +42,9 @@ const this_data = ref(String(!Array.isArray(props.input_column) ? (props.input_c
             class="hf-material-cell-input"
             :style="{ color: resolved_color }"
             v-model="this_data"
-            @change="((this_data = get_modified_cell(input_column, row, $event)), setter(get_modified_cell(input_column, row, $event)), callback())"
+            @change="
+                ((this_data = get_modified_cell(input_column, row, $event)), setter(get_modified_cell(input_column, row, $event)), callback ? callback() : null)
+            "
         />
         <label v-else class="hf-material-cell-result" :style="{ color: resolved_color }" type="text">{{
             is_percentage

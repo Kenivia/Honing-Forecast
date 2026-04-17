@@ -4,6 +4,7 @@ import { Upgrade } from "@/Utils/Interfaces"
 import { storeToRefs } from "pinia"
 import { computed, ref, watch } from "vue"
 import InstructionRow from "./InstructionRow.vue"
+import { useRosterStore } from "@/Stores/RosterConfig"
 
 const { active_profile } = storeToRefs(useRosterStore())
 

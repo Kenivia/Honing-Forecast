@@ -9,7 +9,7 @@ import { computed, onUnmounted, onWatcherCleanup, watch } from "vue"
 import { grid_change_callback, start_all_workers } from "../CharWorkerUtils"
 
 const { active_profile } = storeToRefs(useRosterStore())
-const { roster_config, active_mats_prices, active_roster_mats_owned, active_tradable_mats_owned } = storeToRefs(useRosterStore())
+const { roster_config, active_roster_mats_owned, active_tradable_mats_owned } = storeToRefs(useRosterStore())
 
 const props = defineProps<{
     grid_type: "normal" | "adv"
@@ -137,7 +137,7 @@ watch(
 
         // () => active_roster_mats_owned,  // shouldn't be able to change on charview
         // () => active_tradable_mats_owned,
-        // () => active_mats_prices,
+        // () =>
 
         // () => active_profile.value.keyed_upgrades,  dedicated callback
         // () => active_profile.value.special_budget.data,

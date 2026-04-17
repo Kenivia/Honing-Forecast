@@ -38,37 +38,41 @@ export interface CharProfile {
     material_re_render_trigger: boolean // This is here to trigger an update in the special cell in MaterialDist from the change in the confirmation popup in InstructionRow
 }
 
-export function load_char_profiles(parsed: CharProfile[]): { profiles: CharProfile[]; active_profile_index: number } {
-    let default_profile = create_default_char_profile()
-    for (let i = 0; i < parsed.length; i++) {
-        let this_parsed: CharProfile = { ...create_default_char_profile(), ...parsed[i] }
+// export function load_char_profiles(): { profiles: CharProfile[]; active_profile_index: number } {
+//     const raw = localStorage.getItem(STORAGE_KEY + "_char_profiles")
+//     if (!raw) return DEFAULT_PROFILES_STATE
 
-        this_parsed.char_name = format_char_name(this_parsed.char_name, i, parsed.slice(0, i))
-        validate_input_column_array(this_parsed.bound_budgets, default_profile.bound_budgets)
-        validate_input_column_array(this_parsed.leftover_price, default_profile.leftover_price)
-        validate_input_column(this_parsed.special_budget, default_profile.special_budget)
+//     const parsed = JSON.parse(raw)
+//     const default_profile = create_default_char_profile()
+//     for (let i = 0; i < parsed.profiles.length; i++) {
+//         let this_parsed: CharProfile = { ...create_default_char_profile(), ...parsed.profiles[i] }
 
-        this_parsed.normal_grid = get_valid_status_grid(this_parsed.normal_grid, default_profile.normal_grid)
-        this_parsed.adv_grid = get_valid_status_grid(this_parsed.adv_grid, default_profile.adv_grid)
+//         this_parsed.char_name = format_char_name(this_parsed.char_name, i, parsed.profiles.slice(0, i))
+//         validate_input_column_array(this_parsed.bound_budgets, default_profile.bound_budgets)
+//         validate_input_column_array(this_parsed.leftover_price, default_profile.leftover_price)
+//         validate_input_column(this_parsed.special_budget, default_profile.special_budget)
 
-        this_parsed.keyed_upgrades = grids_to_keyed(this_parsed.normal_grid, this_parsed.adv_grid, this_parsed.keyed_upgrades, this_parsed.tier)
+//         this_parsed.normal_grid = get_valid_status_grid(this_parsed.normal_grid, default_profile.normal_grid)
+//         this_parsed.adv_grid = get_valid_status_grid(this_parsed.adv_grid, default_profile.adv_grid)
 
-        this_parsed.tier = this_parsed.tier === 0 || this_parsed.tier === 1 ? this_parsed.tier : 0
-        this_parsed.material_re_render_trigger = true
-        this_parsed.min_resolution = default_profile.min_resolution
-        this_parsed.num_threads = default_profile.num_threads
-        this_parsed.metric_type = default_profile.metric_type
+//         this_parsed.keyed_upgrades = grids_to_keyed(this_parsed.normal_grid, this_parsed.adv_grid, this_parsed.keyed_upgrades, this_parsed.tier)
 
-        let this_profile = recreate_char_profile(this_parsed)
-        parsed.profiles[i] = {
-            ...parsed.profiles[i],
-            ...this_profile,
-        }
-        // console.log(parsed.profiles[i], parsed.profiles[i].tier)
-    }
+//         this_parsed.tier = this_parsed.tier === 0 || this_parsed.tier === 1 ? this_parsed.tier : 0
+//         this_parsed.material_re_render_trigger = true
+//         this_parsed.min_resolution = default_profile.min_resolution
+//         this_parsed.num_threads = default_profile.num_threads
+//         this_parsed.metric_type = default_profile.metric_type
 
-    return { ...DEFAULT_PROFILES_STATE, ...parsed }
-}
+//         let this_profile = recreate_char_profile(this_parsed)
+//         parsed.profiles[i] = {
+//             ...parsed.profiles[i],
+//             ...this_profile,
+//         }
+//         // console.log(parsed.profiles[i], parsed.profiles[i].tier)
+//     }
+
+//     return { ...DEFAULT_PROFILES_STATE, ...parsed }
+// }
 
 export const debounced_write_char_profiles = debounce(write_char_profiles, 500)
 

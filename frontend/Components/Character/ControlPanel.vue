@@ -9,7 +9,7 @@ import { WasmOp } from "@/Utils/Interfaces"
 const store = useRosterStore()
 const { active_profile } = storeToRefs(store)
 
-const { roster_config, active_mats_prices, active_roster_mats_owned, active_tradable_mats_owned } = storeToRefs(useRosterStore())
+const { roster_config, active_roster_mats_owned, active_tradable_mats_owned } = storeToRefs(useRosterStore())
 function resetActive() {
     store.resetActiveProfile()
 }

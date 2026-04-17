@@ -213,7 +213,7 @@ export function compute_used_materials(upgrade: Upgrade, taps_so_far: number, ju
 
 export function compute_remaininig_materials(used_materials: number[]) {
     const { active_profile } = storeToRefs(useRosterStore())
-    const { roster_config, active_mats_prices, active_roster_mats_owned, active_tradable_mats_owned } = storeToRefs(useRosterStore())
+    const { roster_config, active_roster_mats_owned, active_tradable_mats_owned } = storeToRefs(useRosterStore())
 
     const bound_budgets: number[] = []
     const roster_mats: number[] = []

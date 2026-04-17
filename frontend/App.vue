@@ -17,7 +17,7 @@ const { this_roster_profiles } = storeToRefs(roster_store)
 
 const { start_fetch } = useTimedFetch(fetch_callback)
 start_fetch(roster_store.roster_config.region)
-console.log(this_roster_profiles.value)
+
 roster_store.$subscribe((_mutation, state) => {
     debounced_write_roster_config(state)
 })
@@ -35,8 +35,8 @@ function onCharSelect(e: Event) {
     if (name) router.push({ name: "char", params: { characterName: name } })
 }
 watchEffect(() => {
-    let t4_price = input_column_to_num(roster_store.active_mats_prices[0])
-    let serca_price = input_column_to_num(roster_store.active_mats_prices[1])
+    let t4_price = input_column_to_num(roster_store.roster_config.mats_prices[0])
+    let serca_price = input_column_to_num(roster_store.roster_config.mats_prices[1])
     roster_store.roster_config.effective_serca_price = ALL_LABELS[1].map((_, index) => Math.min(t4_price[index] * 5, serca_price[index]))
 })
 watchEffect(() => {
@@ -44,7 +44,7 @@ watchEffect(() => {
     for (let serca_index = 0; serca_index < ALL_LABELS[1].length; serca_index++) {
         if (SYNCED_LABELS.includes(ALL_LABELS[1][serca_index])) {
             let T4_index = ALL_LABELS[0].findIndex((x) => x == ALL_LABELS[1][serca_index].replace("Serca ", ""))
-            roster_store.active_mats_prices[1].data[serca_index] = roster_store.active_mats_prices[0].data[T4_index]
+            roster_store.roster_config.mats_prices[1].data[serca_index] = roster_store.roster_config.mats_prices[0].data[T4_index]
             roster_store.active_tradable_mats_owned[1].data[serca_index] = roster_store.active_tradable_mats_owned[0].data[T4_index]
             roster_store.active_roster_mats_owned[1].data[serca_index] = roster_store.active_roster_mats_owned[0].data[T4_index]
         }
