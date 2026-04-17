@@ -34,7 +34,7 @@ export const useRosterStore = defineStore("roster", {
         },
         active_tradable_mats_owned: (state): InputColumn[] => {
             let active_profile = state.roster_config.profiles[state.roster_config.active_profile_index]
-            console.log(state.roster_config.active_profile_index, active_profile, state.roster_config.tradable_mats_owned)
+            // console.log(state.roster_config.active_profile_index, active_profile, state.roster_config.tradable_mats_owned)
             return state.roster_config.tradable_mats_owned[active_profile.roster_id]
         },
 

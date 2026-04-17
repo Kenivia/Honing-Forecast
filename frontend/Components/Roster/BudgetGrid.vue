@@ -11,7 +11,7 @@ import { fetch_callback, useTimedFetch } from "@/Utils/MarketDataFetcher"
 import { input_column_to_num, parse_input } from "@/Utils/InputColumn"
 
 const roster_store = useRosterStore()
-const { roster_config, active_roster_mats_owned, active_tradable_mats_owned, all_profiles, roster_ids } = storeToRefs(roster_store)
+const { roster_config, active_roster_mats_owned, active_tradable_mats_owned, all_profiles, roster_ids, active_profile } = storeToRefs(roster_store)
 const tier = computed(() => roster_config.value.tier)
 const { isNarrow } = useMediaIsNarrow(BUDGET_NARROW_WIDTH)
 
@@ -67,10 +67,14 @@ function find_representative(): Record<string, number> {
     return out
 }
 const representative_profile_indices = computed(find_representative)
-
+const selected_roster = computed(() => {
+    let out = Object.entries(representative_profile_indices.value).find(([, v]) => all_profiles.value[v].roster_id === active_profile.value.roster_id)[0]
+    // console.log(out)
+    return out
+})
 function change_roster(event) {
-    console.log(event.target.value)
-    roster_store.switchProfile(Number(event.target.value))
+    // console.log(representative_profile_indices.value[event.target.value])
+    roster_store.switchProfile(representative_profile_indices.value[event.target.value])
     forceRerender()
 }
 </script>
@@ -108,8 +112,8 @@ function change_roster(event) {
         <label>(Best one will be auto selected)</label>
     </div>
     <div v-if="roster_ids.length > 1">
-        <select class="hf-shard-size-select" @change="change_roster">
-            <option v-for="(profile_index, name) in representative_profile_indices" :value="profile_index">{{ name }}</option>
+        <select :value="selected_roster" class="hf-shard-size-select" @change="change_roster">
+            <option v-for="(profile_index, name) in representative_profile_indices" :value="name">{{ name }}</option>
         </select>
     </div>
     <div v-if="re_render_trigger" class="hf-outer-budget-grid" :class="{ narrow: isNarrow }">
