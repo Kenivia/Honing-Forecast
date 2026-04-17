@@ -9,50 +9,9 @@ import { create_input_column, validate_input_column, validate_input_column_array
 import { createStatusGrid, get_valid_status_grid } from "@/Utils/StatusGrid"
 import { grids_to_keyed } from "@/Utils/KeyedUpgrades"
 
-export const useProfilesStore = defineStore("profiles", {
-    state: () => DEFAULT_PROFILES_STATE,
-    getters: {
-        active_profile: (state) => {
-            return state.profiles[state.active_profile_index]
-        },
-        all_profiles: (state) => {
-            return state.profiles
-        },
-    },
-    actions: {
-        switchProfile(id: number) {
-            this.active_profile_index = id
-        },
-        addProfile(profile: CharProfile) {
-            this.profiles.push(profile)
-        },
-        init() {
-            const loaded = load_char_profiles()
-            this.profiles = loaded.profiles
-            this.active_profile_index = loaded.active_profile_index
-        },
-
-        updateActiveProfile(updates: Partial<CharProfile>) {
-            Object.assign(this.profiles[this.active_profile_index], updates)
-        },
-
-        resetActiveProfile() {
-            const { roster_config } = storeToRefs(useRosterStore())
-            this.profiles[this.active_profile_index] = create_default_char_profile()
-            this.profiles[this.active_profile_index].char_name = format_char_name(
-                this.profiles[this.active_profile_index].char_name,
-                this.active_profile_index,
-                this.profiles,
-            )
-            this.profiles[this.active_profile_index].optimizer_worker_bundle.start(
-                WasmOp.Parser,
-                build_payload(WasmOp.Parser, this.profiles[this.active_profile_index], roster_config.value),
-            )
-        },
-    },
-})
-
 export interface CharProfile {
+    roster_number: number
+
     optimizer_treatment_plan: TreatmentPlan
     histogram_treatment_plan: TreatmentPlan
     express_event: boolean
@@ -79,16 +38,12 @@ export interface CharProfile {
     material_re_render_trigger: boolean // This is here to trigger an update in the special cell in MaterialDist from the change in the confirmation popup in InstructionRow
 }
 
-export function load_char_profiles(): { profiles: CharProfile[]; active_profile_index: number } {
-    const raw = localStorage.getItem(STORAGE_KEY + "_char_profiles")
-    if (!raw) return DEFAULT_PROFILES_STATE
+export function load_char_profiles(parsed: CharProfile[]): { profiles: CharProfile[]; active_profile_index: number } {
+    let default_profile = create_default_char_profile()
+    for (let i = 0; i < parsed.length; i++) {
+        let this_parsed: CharProfile = { ...create_default_char_profile(), ...parsed[i] }
 
-    const parsed = JSON.parse(raw)
-    const default_profile = create_default_char_profile()
-    for (let i = 0; i < parsed.profiles.length; i++) {
-        let this_parsed: CharProfile = { ...create_default_char_profile(), ...parsed.profiles[i] }
-
-        this_parsed.char_name = format_char_name(this_parsed.char_name, i, parsed.profiles.slice(0, i))
+        this_parsed.char_name = format_char_name(this_parsed.char_name, i, parsed.slice(0, i))
         validate_input_column_array(this_parsed.bound_budgets, default_profile.bound_budgets)
         validate_input_column_array(this_parsed.leftover_price, default_profile.leftover_price)
         validate_input_column(this_parsed.special_budget, default_profile.special_budget)
@@ -167,6 +122,7 @@ export function create_default_char_profile(): CharProfile {
         num_threads: 1,
         metric_type: 1,
         material_re_render_trigger: true,
+        roster_number: 0,
     }
 }
 

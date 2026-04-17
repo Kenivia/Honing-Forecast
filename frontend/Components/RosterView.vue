@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { create_default_char_profile, recreate_char_profile, useProfilesStore } from "@/Stores/CharacterProfile"
+import { create_default_char_profile, recreate_char_profile } from "@/Stores/CharacterProfile"
 import { useRosterStore } from "@/Stores/RosterConfig"
 import { achieved_ilevel, format_char_name, pending_ilevel } from "@/Utils/Helpers"
 import { WasmOp } from "@/Utils/Interfaces"
@@ -8,43 +8,43 @@ import { storeToRefs } from "pinia"
 import { ref } from "vue"
 import { RouterLink } from "vue-router"
 
-const profile_store = useProfilesStore()
-const { roster_config } = storeToRefs(useRosterStore())
+const roster_store = useRosterStore()
+const { this_roster_profiles } = storeToRefs(roster_store)
 
-const names = ref(profile_store.profiles.map((x) => x.char_name))
+const names = ref(this_roster_profiles.value.map((x) => x.char_name))
 
 function add_new_char() {
     let new_char = create_default_char_profile()
-    new_char.char_name = "Newchar" + String(profile_store.profiles.length + 1)
+    new_char.char_name = "Newchar" + String(this_roster_profiles.value.length + 1)
     names.value.push(new_char.char_name)
-    profile_store.addProfile(new_char)
+    roster_store.addProfile(new_char)
 }
 
 function duplicate(index) {
-    let this_parsed = { ...create_default_char_profile(), ...profile_store.profiles[index] }
+    let this_parsed = { ...create_default_char_profile(), ...this_roster_profiles[index] }
 
     let new_char = recreate_char_profile(JSON.parse(JSON.stringify(this_parsed)))
-    new_char.char_name = "Newchar" + String(profile_store.profiles.length + 1)
+    new_char.char_name = "Newchar" + String(this_roster_profiles.value.length + 1)
     names.value.push(new_char.char_name)
-    profile_store.addProfile(new_char)
-    new_char.optimizer_worker_bundle.start(WasmOp.Parser, build_payload(WasmOp.Parser, new_char, roster_config.value))
+    roster_store.addProfile(new_char)
+    new_char.optimizer_worker_bundle.start(WasmOp.Parser, build_payload(WasmOp.Parser))
 }
 
 function delete_profile(index) {
-    // console.log(profile_store.profiles.length)
-    profile_store.profiles.splice(index, 1)
+    // console.log(this_roster_profiles.length)
+    this_roster_profiles.value.splice(index, 1)
     names.value.splice(index, 1)
-    // console.log(profile_store.profiles.length)
+    // console.log(this_roster_profiles.length)
 }
 </script>
 
 <template>
     <div class="hf-main-stage">
         <section class="hf-card">
-            <div v-for="(profile, index) in profile_store.profiles" class="hf-char-row" :key="index">
+            <div v-for="(profile, index) in this_roster_profiles" class="hf-char-row" :key="index">
                 <input
                     v-model="names[index]"
-                    @change="((names[index] = format_char_name(names[index], index, profile_store.profiles)), (profile.char_name = names[index]))"
+                    @change="((names[index] = format_char_name(names[index], index, this_roster_profiles)), (profile.char_name = names[index]))"
                 />
                 <div class="hf-char-meta">
                     <label class="hf-achieved-ilevel">Achieved ilevel: {{ achieved_ilevel(profile) }}</label>
@@ -53,7 +53,7 @@ function delete_profile(index) {
                 <RouterLink :to="{ name: 'char', params: { characterName: profile.char_name } }" class="hf-header-button"> Go to character </RouterLink>
 
                 <button class="hf-header-button" @click="() => duplicate(index)">Make a copy</button>
-                <button v-if="profile_store.profiles.length > 1" class="btn-cancel" @click="() => delete_profile(index)">Delete</button>
+                <button v-if="this_roster_profiles.length > 1" class="btn-cancel" @click="() => delete_profile(index)">Delete</button>
             </div>
             <button class="hf-new-char" @click="add_new_char">Add new character</button>
         </section>

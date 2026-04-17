@@ -1,25 +1,23 @@
 <script setup lang="ts">
 import { RouterLink, RouterView, useRoute, useRouter } from "vue-router"
 import { get_icon_path } from "./Utils/Helpers"
-import { debounced_write_char_profiles, useProfilesStore } from "./Stores/CharacterProfile"
+import { debounced_write_char_profiles } from "./Stores/CharacterProfile"
 import { debounced_write_roster_config, useRosterStore } from "./Stores/RosterConfig"
 import { useMediaIsNarrow } from "./Utils/WindowSize"
 import { fetch_callback, useTimedFetch } from "./Utils/MarketDataFetcher"
 import { computed, watchEffect } from "vue"
 import { ALL_LABELS, SYNCED_LABELS } from "./Utils/Constants"
 import { input_column_to_num } from "./Utils/InputColumn"
+import { storeToRefs } from "pinia"
 
 const roster_store = useRosterStore()
 roster_store.init()
-const profile_store = useProfilesStore()
-profile_store.init()
+
+const { this_roster_profiles } = storeToRefs(roster_store)
 
 const { start_fetch } = useTimedFetch(fetch_callback)
 start_fetch(roster_store.roster_config.region)
-
-profile_store.$subscribe((_mutation, state) => {
-    debounced_write_char_profiles(state) // TODO make this ignore worker bundle changes, idk how to do that tho
-})
+console.log(this_roster_profiles.value)
 roster_store.$subscribe((_mutation, state) => {
     debounced_write_roster_config(state)
 })
@@ -30,15 +28,15 @@ const { isNarrow: is800Narrow } = useMediaIsNarrow()
 const route = useRoute()
 const router = useRouter()
 
-const active_char_name = computed(() => profile_store.profiles.find((p) => route.path === "/" + p.char_name)?.char_name ?? "")
+const active_char_name = computed(() => this_roster_profiles.value.find((p) => route.path === "/" + p.char_name)?.char_name ?? "")
 
 function onCharSelect(e: Event) {
     const name = (e.target as HTMLSelectElement).value
     if (name) router.push({ name: "char", params: { characterName: name } })
 }
 watchEffect(() => {
-    let t4_price = input_column_to_num(roster_store.roster_config.mats_prices[0])
-    let serca_price = input_column_to_num(roster_store.roster_config.mats_prices[1])
+    let t4_price = input_column_to_num(roster_store.active_mats_prices[0])
+    let serca_price = input_column_to_num(roster_store.active_mats_prices[1])
     roster_store.roster_config.effective_serca_price = ALL_LABELS[1].map((_, index) => Math.min(t4_price[index] * 5, serca_price[index]))
 })
 watchEffect(() => {
@@ -46,9 +44,9 @@ watchEffect(() => {
     for (let serca_index = 0; serca_index < ALL_LABELS[1].length; serca_index++) {
         if (SYNCED_LABELS.includes(ALL_LABELS[1][serca_index])) {
             let T4_index = ALL_LABELS[0].findIndex((x) => x == ALL_LABELS[1][serca_index].replace("Serca ", ""))
-            roster_store.roster_config.mats_prices[1].data[serca_index] = roster_store.roster_config.mats_prices[0].data[T4_index]
-            roster_store.roster_config.tradable_mats_owned[1].data[serca_index] = roster_store.roster_config.tradable_mats_owned[0].data[T4_index]
-            roster_store.roster_config.roster_mats_owned[1].data[serca_index] = roster_store.roster_config.roster_mats_owned[0].data[T4_index]
+            roster_store.active_mats_prices[1].data[serca_index] = roster_store.active_mats_prices[0].data[T4_index]
+            roster_store.active_tradable_mats_owned[1].data[serca_index] = roster_store.active_tradable_mats_owned[0].data[T4_index]
+            roster_store.active_roster_mats_owned[1].data[serca_index] = roster_store.active_roster_mats_owned[0].data[T4_index]
         }
     }
 })
@@ -91,8 +89,8 @@ watchEffect(() => {
 
                     <div class="hf-header-spacer" />
                     <RouterLink
-                        v-if="!is600Narrow || profile_store.profiles.length <= 1"
-                        v-for="(profile, index) in profile_store.profiles"
+                        v-if="!is600Narrow || this_roster_profiles.length <= 1"
+                        v-for="(profile, index) in this_roster_profiles"
                         :key="index"
                         :to="{ name: 'char', params: { characterName: profile.char_name } }"
                         class="hf-header-button"
@@ -104,7 +102,7 @@ watchEffect(() => {
                     <!-- Mobile: dropdown -->
                     <select v-else class="hf-char-select" :value="active_char_name" @change="onCharSelect">
                         <option value="" disabled>Character</option>
-                        <option v-for="(profile, index) in profile_store.profiles" :key="index" :value="profile.char_name">
+                        <option v-for="(profile, index) in this_roster_profiles" :key="index" :value="profile.char_name">
                             {{ profile.char_name }}
                         </option>
                     </select>

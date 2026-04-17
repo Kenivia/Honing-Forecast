@@ -1,22 +1,22 @@
 <script setup lang="ts">
-import { TreatmentPlan, useProfilesStore } from "@/Stores/CharacterProfile"
+import { TreatmentPlan } from "@/Stores/CharacterProfile"
 import { build_payload } from "@/WasmInterface/PayloadBuilder"
 import { useRosterStore } from "@/Stores/RosterConfig"
 import { storeToRefs } from "pinia"
 import { ref, watchEffect } from "vue"
 import { WasmOp } from "@/Utils/Interfaces"
 
-const store = useProfilesStore()
+const store = useRosterStore()
 const { active_profile } = storeToRefs(store)
 
-const { roster_config } = storeToRefs(useRosterStore())
+const { roster_config, active_mats_prices, active_roster_mats_owned, active_tradable_mats_owned } = storeToRefs(useRosterStore())
 function resetActive() {
     store.resetActiveProfile()
 }
 
 // This is useful for producing payloads to test the rust side
 function copyPayload() {
-    const payload = JSON.stringify(build_payload(WasmOp.Parser, active_profile.value, roster_config.value), null, 2)
+    const payload = JSON.stringify(build_payload(WasmOp.Parser), null, 2)
     navigator.clipboard?.writeText(payload).catch(() => undefined)
 }
 

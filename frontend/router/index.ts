@@ -1,8 +1,9 @@
 import { createRouter, createWebHistory } from "vue-router"
 import CharView from "../Components/Character/CharView.vue"
-import { useProfilesStore } from "@/Stores/CharacterProfile"
+import {} from "@/Stores/CharacterProfile"
 import MarketView from "@/Components/Roster/MarketView.vue"
 import RosterView from "@/Components/RosterView.vue"
+import { useRosterStore } from "@/Stores/RosterConfig"
 
 const router = createRouter({
     history: createWebHistory(),
@@ -10,8 +11,8 @@ const router = createRouter({
         {
             path: "/",
             redirect: () => {
-                const profile_store = useProfilesStore()
-                const first = profile_store.profiles[0]
+                const roster_store = useRosterStore()
+                const first = roster_store.this_roster_profiles[0][0]
                 return first ? `/${first.char_name}` : "/roster-setup" // there should always be at least one tho
             },
         },

@@ -1,7 +1,8 @@
-import { CharProfile, useProfilesStore } from "@/Stores/CharacterProfile"
+import { CharProfile } from "@/Stores/CharacterProfile"
 import { ADV_COLS, IconMap, NUM_PIECES, PIECE_NAMES, PLUS_TIER_CONVERSION } from "./Constants"
 import { InputColumn, InputType, Upgrade, UpgradeStatus } from "./Interfaces"
 import { storeToRefs } from "pinia"
+import { useRosterStore } from "@/Stores/RosterConfig"
 
 export function format_char_name(raw: string, index: number, profiles: CharProfile[]): string {
     let result = raw.replace(/ /g, "") //
@@ -18,7 +19,7 @@ export function format_char_name(raw: string, index: number, profiles: CharProfi
 }
 
 export function check_adv_all_done() {
-    const { active_profile } = storeToRefs(useProfilesStore())
+    const { active_profile } = storeToRefs(useRosterStore())
     for (let row = 0; row < NUM_PIECES; row++) {
         for (let col = 0; col < ADV_COLS; col++) {
             if (active_profile.value.adv_grid[row][col] != UpgradeStatus.Done) {
@@ -29,7 +30,7 @@ export function check_adv_all_done() {
     return true
 }
 export function check_all_plus_20(): number | boolean {
-    const { active_profile } = storeToRefs(useProfilesStore())
+    const { active_profile } = storeToRefs(useRosterStore())
     for (let row = 0; row < NUM_PIECES; row++) {
         let highest_done = active_profile.value.normal_grid[row].findLastIndex((value) => value == UpgradeStatus.Done) + 1
 
@@ -40,7 +41,7 @@ export function check_all_plus_20(): number | boolean {
     return true
 }
 export function check_revert_ilevel_ok(): number | boolean {
-    const { active_profile } = storeToRefs(useProfilesStore())
+    const { active_profile } = storeToRefs(useRosterStore())
     if (active_profile.value.tier == 0) {
         return true
     }

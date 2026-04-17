@@ -1,11 +1,11 @@
 <script setup lang="ts">
-import { useProfilesStore } from "@/Stores/CharacterProfile"
+import {} from "@/Stores/CharacterProfile"
 import { Upgrade } from "@/Utils/Interfaces"
 import { storeToRefs } from "pinia"
 import { computed, ref, watch } from "vue"
 import InstructionRow from "./InstructionRow.vue"
 
-const { active_profile } = storeToRefs(useProfilesStore())
+const { active_profile } = storeToRefs(useRosterStore())
 
 // This sorts the upgrades into an order that can actually be performed in game
 // special_state is already guaranteed to be valid on the rust side, but it doesn't tell us how to do the non-special taps

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ALL_LABELS, GRAPH_COLORS, T4_MATS_LABELS, ANNOTATION_COLORS, ANNOTATION_POSITIONS, ANNOTATION_LABELS } from "@/Utils/Constants"
-import { TreatmentPlan, useProfilesStore } from "@/Stores/CharacterProfile"
+import { TreatmentPlan } from "@/Stores/CharacterProfile"
 import { metric_to_text } from "@/Utils/Helpers"
 import MaterialCell from "@/Components/Common/MaterialCell.vue"
 import { WasmOp } from "@/Utils/Interfaces"
@@ -12,8 +12,8 @@ import { build_payload } from "@/WasmInterface/PayloadBuilder"
 import { input_column_to_num } from "@/Utils/InputColumn"
 import { start_all_workers } from "../CharWorkerUtils"
 
-const { active_profile } = storeToRefs(useProfilesStore())
-const { roster_config } = storeToRefs(useRosterStore())
+const { active_profile } = storeToRefs(useRosterStore())
+const { roster_config, active_mats_prices, active_roster_mats_owned, active_tradable_mats_owned } = storeToRefs(useRosterStore())
 const histogram_result = computed(() => active_profile.value.histogram_worker_bundle.result)
 
 // This is average mats cost (not gold)
@@ -103,14 +103,14 @@ function change_histogram_treatment(event) {
               ? "var(--hf-graph-roster-color)"
               : "var(--hf-graph-tradable-color)"
     // console.log(new_val, active_profile.value.histogram_treatment_plan)
-    active_profile.value.histogram_worker_bundle.throttled_start(WasmOp.Histogram, build_payload(WasmOp.Histogram, active_profile.value, roster_config.value))
+    active_profile.value.histogram_worker_bundle.throttled_start(WasmOp.Histogram, build_payload(WasmOp.Histogram))
 }
 
 const enabled_annotations = ref([true, false, false, false])
 const annotation_values = computed(() => {
     let bound = input_column_to_num(active_profile.value.bound_budgets[active_profile.value.tier])
-    let roster = input_column_to_num(roster_config.value.roster_mats_owned[active_profile.value.tier])
-    let trade = input_column_to_num(roster_config.value.tradable_mats_owned[active_profile.value.tier])
+    let roster = input_column_to_num(active_roster_mats_owned.value[active_profile.value.tier])
+    let trade = input_column_to_num(active_tradable_mats_owned.value[active_profile.value.tier])
     return bound.map((_, i) =>
         [average_breakdown.value[i], bound[i], roster[i] + bound[i], roster[i] + bound[i] + trade[i]].filter((_, i) => enabled_annotations.value[i]),
     )
@@ -197,7 +197,7 @@ const show_special_guide = ref(false)
                                         }
                                     "
                                     :hide_tick="analysisTab == 'juice'"
-                                    :callback="() => start_all_workers(active_profile, roster_config)"
+                                    :callback="() => start_all_workers()"
                                 />
                                 <!-- {{ console.log(averages) }} -->
                                 <MaterialCell
@@ -228,7 +228,7 @@ const show_special_guide = ref(false)
                                     :setter="(val) => (active_profile.special_budget.data[0] = val)"
                                     :label="(active_profile.tier == 1 ? 'Serca ' : '') + active_profile.special_budget.keys[0]"
                                     :hide_tick="true"
-                                    :callback="() => start_all_workers(active_profile, roster_config)"
+                                    :callback="() => start_all_workers()"
                                 ></MaterialCell>
                                 <span class="special-convert-guide" @click="() => (show_special_guide = true)">Should I use in T4 or convert?</span>
                                 <MaterialGraph

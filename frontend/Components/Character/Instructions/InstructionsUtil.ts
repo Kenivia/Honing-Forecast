@@ -1,8 +1,9 @@
 import { CharProfile } from "@/Stores/CharacterProfile"
-import { RosterConfig } from "@/Stores/RosterConfig"
+import { RosterConfig, useRosterStore } from "@/Stores/RosterConfig"
 import { DEFAULT_ARTISAN_MULTIPLIER, JOINED_ADV_JUICE } from "@/Utils/Constants"
 import { input_column_to_num } from "@/Utils/InputColumn"
-import { Upgrade } from "@/Utils/Interfaces"
+import { InputColumn, Upgrade } from "@/Utils/Interfaces"
+import { storeToRefs } from "pinia"
 
 // --- Req 1: Scrollable Instructions Logic ---
 export interface NormalStreak {
@@ -210,26 +211,29 @@ export function compute_used_materials(upgrade: Upgrade, taps_so_far: number, ju
     return out
 }
 
-export function compute_remaininig_materials(used_materials: number[], active_profile: CharProfile, roster_config: RosterConfig) {
+export function compute_remaininig_materials(used_materials: number[]) {
+    const { active_profile } = storeToRefs(useRosterStore())
+    const { roster_config, active_mats_prices, active_roster_mats_owned, active_tradable_mats_owned } = storeToRefs(useRosterStore())
+
     const bound_budgets: number[] = []
     const roster_mats: number[] = []
     const tradable_mats: number[] = []
     used_materials.forEach((cost, index) => {
         if (cost <= 0) {
-            bound_budgets.push(input_column_to_num(active_profile.bound_budgets[active_profile.tier])[index])
-            roster_mats.push(input_column_to_num(roster_config.roster_mats_owned[active_profile.tier])[index])
-            tradable_mats.push(input_column_to_num(roster_config.tradable_mats_owned[active_profile.tier])[index])
+            bound_budgets.push(input_column_to_num(active_profile.value.bound_budgets[active_profile.value.tier])[index])
+            roster_mats.push(input_column_to_num(active_roster_mats_owned.value[active_profile.value.tier])[index])
+            tradable_mats.push(input_column_to_num(active_tradable_mats_owned.value[active_profile.value.tier])[index])
             return
         }
         let remaining_cost = cost
         // 1. Bound
-        let bound_owned = input_column_to_num(active_profile.bound_budgets[active_profile.tier])[index]
+        let bound_owned = input_column_to_num(active_profile.value.bound_budgets[active_profile.value.tier])[index]
         let deduct_bound = Math.min(bound_owned, remaining_cost)
         bound_budgets.push(Math.max(0, bound_owned - deduct_bound))
         remaining_cost -= deduct_bound
         // 2. Roster
-        let roster_owned = input_column_to_num(roster_config.roster_mats_owned[active_profile.tier])[index]
-        if (remaining_cost > 0 && roster_config.roster_mats_owned[index] !== undefined) {
+        let roster_owned = input_column_to_num(active_roster_mats_owned.value[active_profile.value.tier])[index]
+        if (remaining_cost > 0 && active_roster_mats_owned.value[index] !== undefined) {
             let deduct_roster = Math.min(roster_owned, remaining_cost)
             roster_mats.push(Math.max(0, roster_owned - deduct_roster))
             remaining_cost -= deduct_roster
@@ -237,8 +241,8 @@ export function compute_remaininig_materials(used_materials: number[], active_pr
             roster_mats.push(roster_owned)
         }
         // 3. Tradable
-        let tradable_owned = input_column_to_num(roster_config.tradable_mats_owned[active_profile.tier])[index]
-        if (remaining_cost > 0 && roster_config.tradable_mats_owned[index] !== undefined) {
+        let tradable_owned = input_column_to_num(active_tradable_mats_owned.value[active_profile.value.tier])[index]
+        if (remaining_cost > 0 && active_tradable_mats_owned.value[index] !== undefined) {
             let deduct_tradable = Math.min(tradable_owned, remaining_cost)
             tradable_mats.push(Math.max(0, tradable_owned - deduct_tradable))
         } else {

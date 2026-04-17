@@ -198,15 +198,15 @@ export function useTimedFetch(callback: (data: number[][], selectedShardSize: nu
     return { disabled, start_fetch }
 }
 export function fetch_callback(result: number[][], selectedShardSize: number, shard_price: number) {
-    const { roster_config } = storeToRefs(useRosterStore())
+    const { roster_config, active_mats_prices, active_roster_mats_owned, active_tradable_mats_owned } = storeToRefs(useRosterStore())
 
     roster_config.value.selected_shard_bag_size = selectedShardSize
     for (let tier = 0; tier < ALL_LABELS.length; tier++) {
         for (let index = 0; index < ALL_LABELS[tier].length; index++) {
             let actual_tier_to_modify = tier == 0 ? tier : SYNCED_LABELS.includes(ALL_LABELS[1][index]) ? 0 : 1
-            roster_config.value.mats_prices[actual_tier_to_modify].data[index] = result[tier][index].toLocaleString()
+            active_mats_prices.value[actual_tier_to_modify].data[index] = result[tier][index].toLocaleString()
             if (ALL_LABELS[tier][index] == "Shards") {
-                roster_config.value.mats_prices[actual_tier_to_modify].data[index] = shard_price.toLocaleString()
+                active_mats_prices.value[actual_tier_to_modify].data[index] = shard_price.toLocaleString()
             }
         }
     }

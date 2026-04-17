@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { useProfilesStore } from "@/Stores/CharacterProfile"
+import {} from "@/Stores/CharacterProfile"
 import { useRosterStore } from "@/Stores/RosterConfig"
 import { PIECE_NAMES, NORMAL_COLS as NORMAL_COLS, NUM_PIECES as NORMAL_ROWS, ADV_COLS } from "@/Utils/Constants"
 import { get_icon_path } from "@/Utils/Helpers"
@@ -8,8 +8,8 @@ import { storeToRefs } from "pinia"
 import { computed, onUnmounted, onWatcherCleanup, watch } from "vue"
 import { grid_change_callback, start_all_workers } from "../CharWorkerUtils"
 
-const { active_profile } = storeToRefs(useProfilesStore())
-const { roster_config } = storeToRefs(useRosterStore())
+const { active_profile } = storeToRefs(useRosterStore())
+const { roster_config, active_mats_prices, active_roster_mats_owned, active_tradable_mats_owned } = storeToRefs(useRosterStore())
 
 const props = defineProps<{
     grid_type: "normal" | "adv"
@@ -31,7 +31,7 @@ function change_col_and_update_keyed(col: number) {
     for (const [row] of relevant_grid.value.entries()) {
         change_one(row, col, current)
     }
-    grid_change_callback(active_profile.value, roster_config.value)
+    grid_change_callback()
 }
 
 // The idea is that on the box that the user ticks, the it will always cycle:
@@ -108,7 +108,7 @@ function change_one(row: number, col: number, current = relevant_grid.value[row]
 }
 function change_one_and_update_keyed(row: number, col: number, current = relevant_grid.value[row][col]) {
     change_one(row, col, current)
-    grid_change_callback(active_profile.value, roster_config.value)
+    grid_change_callback()
 }
 
 // shouldn't be needed anymore
@@ -135,9 +135,9 @@ watch(
         () => active_profile.value.express_event,
         // () => active_profile.value.min_resolution, not used rn
 
-        // () => roster_config.value.roster_mats_owned,  // shouldn't be able to change on charview
-        // () => roster_config.value.tradable_mats_owned,
-        // () => roster_config.value.mats_prices,
+        // () => active_roster_mats_owned,  // shouldn't be able to change on charview
+        // () => active_tradable_mats_owned,
+        // () => active_mats_prices,
 
         // () => active_profile.value.keyed_upgrades,  dedicated callback
         // () => active_profile.value.special_budget.data,
@@ -146,7 +146,7 @@ watch(
     ],
     () => {
         // console.log("start", active_profile.value, roster_config.value)
-        start_all_workers(active_profile.value, roster_config.value)
+        start_all_workers()
     },
     { deep: true, immediate: true },
 )

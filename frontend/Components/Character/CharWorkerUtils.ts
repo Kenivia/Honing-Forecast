@@ -1,29 +1,39 @@
 import { CharProfile } from "@/Stores/CharacterProfile"
-import { RosterConfig } from "@/Stores/RosterConfig"
-import { StateBundle, WasmOp } from "@/Utils/Interfaces"
+import { RosterConfig, useRosterStore } from "@/Stores/RosterConfig"
+import { InputColumn, StateBundle, WasmOp } from "@/Utils/Interfaces"
 import { grids_to_keyed } from "@/Utils/KeyedUpgrades"
 import { build_material_info, build_payload } from "@/WasmInterface/PayloadBuilder"
+import { storeToRefs } from "pinia"
 
-export function grid_change_callback(active_profile: CharProfile, roster_config: RosterConfig) {
-    active_profile.keyed_upgrades = grids_to_keyed(active_profile.normal_grid, active_profile.adv_grid, active_profile.keyed_upgrades, active_profile.tier)
-    start_all_workers(active_profile, roster_config)
+export function grid_change_callback() {
+    const { active_profile } = storeToRefs(useRosterStore())
+
+    active_profile.value.keyed_upgrades = grids_to_keyed(
+        active_profile.value.normal_grid,
+        active_profile.value.adv_grid,
+        active_profile.value.keyed_upgrades,
+        active_profile.value.tier,
+    )
+    start_all_workers()
 }
 
-export function start_all_workers(active_profile: CharProfile, roster_config: RosterConfig) {
+export function start_all_workers() {
+    const { active_profile } = storeToRefs(useRosterStore())
+
     // console.log("payload update")
-    let payload = build_payload(WasmOp.OptimizeAverage, active_profile, roster_config)
+    let payload = build_payload(WasmOp.OptimizeAverage)
     function start_eval_hist(result: StateBundle) {
         if (result === null) return
-        active_profile.histogram_worker_bundle.throttled_start(WasmOp.Histogram, build_payload(WasmOp.Histogram, active_profile, roster_config))
-        active_profile.evaluation_worker_bundle.throttled_start(WasmOp.EvaluateAverage, build_payload(WasmOp.EvaluateAverage, active_profile, roster_config))
+        active_profile.value.histogram_worker_bundle.throttled_start(WasmOp.Histogram, build_payload(WasmOp.Histogram))
+        active_profile.value.evaluation_worker_bundle.throttled_start(WasmOp.EvaluateAverage, build_payload(WasmOp.EvaluateAverage))
     }
-    active_profile.optimizer_worker_bundle.est_progress_percentage = 0
-    if (active_profile.auto_start_optimizer) {
-        active_profile.optimizer_worker_bundle.start(WasmOp.OptimizeAverage, payload, start_eval_hist)
+    active_profile.value.optimizer_worker_bundle.est_progress_percentage = 0
+    if (active_profile.value.auto_start_optimizer) {
+        active_profile.value.optimizer_worker_bundle.start(WasmOp.OptimizeAverage, payload, start_eval_hist)
     }
-    payload.material_info = build_material_info(WasmOp.Histogram, active_profile, roster_config)
-    active_profile.histogram_worker_bundle.throttled_start(WasmOp.Histogram, payload)
+    payload.material_info = build_material_info(WasmOp.Histogram)
+    active_profile.value.histogram_worker_bundle.throttled_start(WasmOp.Histogram, payload)
 
-    payload.material_info = build_material_info(WasmOp.EvaluateAverage, active_profile, roster_config)
-    active_profile.evaluation_worker_bundle.throttled_start(WasmOp.EvaluateAverage, payload)
+    payload.material_info = build_material_info(WasmOp.EvaluateAverage)
+    active_profile.value.evaluation_worker_bundle.throttled_start(WasmOp.EvaluateAverage, payload)
 }

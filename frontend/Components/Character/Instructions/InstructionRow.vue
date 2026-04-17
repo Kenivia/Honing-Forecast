@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { useProfilesStore } from "@/Stores/CharacterProfile"
+import {} from "@/Stores/CharacterProfile"
 import { useRosterStore } from "@/Stores/RosterConfig"
 import { ALL_LABELS, T4_JUICE_LABELS } from "@/Utils/Constants"
 import { get_piece_name, get_icon_path } from "@/Utils/Helpers"
@@ -18,8 +18,8 @@ import {
 } from "./InstructionsUtil"
 import MaterialCell from "@/Components/Common/MaterialCell.vue"
 
-const { active_profile } = storeToRefs(useProfilesStore())
-const { roster_config } = storeToRefs(useRosterStore())
+const { active_profile } = storeToRefs(useRosterStore())
+const { roster_config, active_mats_prices, active_roster_mats_owned, active_tradable_mats_owned } = storeToRefs(useRosterStore())
 
 const props = defineProps<{
     upgrade: Upgrade
@@ -77,7 +77,7 @@ function write_normal_progress() {
     active_profile.value.keyed_upgrades[
         to_upgrade_key(props.upgrade.piece_type, props.upgrade.upgrade_index, props.upgrade.is_normal_honing, active_profile.value.tier)
     ][3] = taps_so_far.value
-    start_all_workers(active_profile.value, roster_config.value)
+    start_all_workers()
 }
 
 function write_adv_progress() {
@@ -94,7 +94,7 @@ function write_adv_progress() {
         next_free.value,
         next_big.value,
     ]
-    start_all_workers(active_profile.value, roster_config.value)
+    start_all_workers()
 }
 
 function juice_icon_path(upgrade: Upgrade, juice: boolean) {
@@ -145,7 +145,7 @@ const adv_juice_used = ref(0)
 const adv_scroll_used = ref(0)
 
 const used_materials = computed(() => compute_used_materials(props.upgrade, taps_so_far.value, juice_info.value, adv_juice_used.value, adv_scroll_used.value))
-const remaining_materials = computed(() => compute_remaininig_materials(used_materials.value, active_profile.value, roster_config.value))
+const remaining_materials = computed(() => compute_remaininig_materials(used_materials.value))
 const visibleRows = computed(() => {
     const tier = active_profile.value.tier
     if (!ALL_LABELS || !ALL_LABELS[tier]) return []
@@ -161,8 +161,8 @@ async function confirmSuccess() {
         used_materials.value.forEach((cost, index) => {
             if (cost <= 0) return
             active_profile.value.bound_budgets[tier].data[index] = remaining_materials.value.bound_budgets[index].toLocaleString()
-            roster_config.value.roster_mats_owned[tier].data[index] = remaining_materials.value.roster_mats[index].toLocaleString()
-            roster_config.value.tradable_mats_owned[tier].data[index] = remaining_materials.value.tradable_mats[index].toLocaleString()
+            active_roster_mats_owned.value[tier].data[index] = remaining_materials.value.roster_mats[index].toLocaleString()
+            active_tradable_mats_owned.value[tier].data[index] = remaining_materials.value.tradable_mats[index].toLocaleString()
         })
     }
     if (props.upgrade.is_normal_honing) {
@@ -170,7 +170,7 @@ async function confirmSuccess() {
     } else {
         active_profile.value.adv_grid[props.upgrade.piece_type][props.upgrade.upgrade_index] = UpgradeStatus.Done
     }
-    grid_change_callback(active_profile.value, roster_config.value)
+    grid_change_callback()
 
     show_success_modal.value = false
     succeed_without_deduct.value = false
