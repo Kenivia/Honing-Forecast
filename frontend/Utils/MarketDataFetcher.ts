@@ -5,11 +5,15 @@ import { useRosterStore } from "@/Stores/RosterConfig"
 const OVERRIDE_DEFAULT = {
     Gold: 1,
     Silver: 0,
-    "Serca Fusion": 300,
 }
 const BODY = {
     region_slug: "nae",
     item_slugs: [
+        "superior-abidos-fusion-material",
+        "destiny-crystallized-destruction-stone",
+        "destiny-crystallized-guardian-stone",
+        "great-destiny-leapstone",
+
         "destiny-guardian-stone",
         "destiny-destruction-stone",
         "destiny-shard-pouch-s",
@@ -23,6 +27,12 @@ const BODY = {
         "artisans-tailoring-level-1",
         "artisans-metallurgy-level-2",
         "artisans-tailoring-level-2",
+
+        "artisans-metallurgy-level-3",
+        "artisans-tailoring-level-3",
+        "artisans-metallurgy-level-4",
+        "artisans-tailoring-level-4",
+
         "metallurgy-hellfire-11-14",
         "tailoring-hellfire-11-14",
         "metallurgy-hellfire-15-18",
@@ -106,6 +116,11 @@ export function parse_response(response: any): [number[][], number, number] {
 }
 
 const ITEM_SLUG_TO_LABEL = {
+    "superior-abidos-fusion-material": "Serca Fusion",
+    "destiny-crystallized-destruction-stone": "Serca Red",
+    "destiny-crystallized-guardian-stone": "Serca Blue",
+    "great-destiny-leapstone": "Serca Leaps",
+
     "destiny-guardian-stone": "Blue",
     "destiny-destruction-stone": "Red",
     "destiny-shard-pouch-s": "Shards small",
@@ -119,6 +134,12 @@ const ITEM_SLUG_TO_LABEL = {
     "artisans-tailoring-level-1": "Scroll 1 Armor",
     "artisans-metallurgy-level-2": "Scroll 2 Weapon",
     "artisans-tailoring-level-2": "Scroll 2 Armor",
+
+    "artisans-metallurgy-level-3": "Scroll 3 Weapon",
+    "artisans-tailoring-level-3": "Scroll 3 Armor",
+    "artisans-metallurgy-level-4": "Scroll 4 Weapon",
+    "artisans-tailoring-level-4": "Scroll 4 Armor",
+
     "metallurgy-hellfire-11-14": "11-14 Weapon",
     "tailoring-hellfire-11-14": "11-14 Armor",
     "metallurgy-hellfire-15-18": "15-18 Weapon",
