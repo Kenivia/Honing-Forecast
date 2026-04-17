@@ -1,9 +1,9 @@
 import { ALL_LABELS, DEFAULT_TIER, STORAGE_KEY } from "@/Utils/Constants"
 import { debounce, format_char_name } from "@/Utils/Helpers"
 import { create_input_column, validate_input_column, validate_input_column_array } from "@/Utils/InputColumn"
-import { InputColumn, InputType, WasmOp } from "@/Utils/Interfaces"
+import { InputColumn, InputType, KeyedUpgrades, StatusGrid, WasmOp } from "@/Utils/Interfaces"
 import { defineStore } from "pinia"
-import { CharProfile, create_default_char_profile, recreate_char_profile } from "./CharacterProfile"
+import { CharProfile, create_default_char_profile, recreate_char_profile, TreatmentPlan } from "./CharacterProfile"
 import { build_payload } from "@/WasmInterface/PayloadBuilder"
 import { get_valid_status_grid } from "@/Utils/StatusGrid"
 import { grids_to_keyed } from "@/Utils/KeyedUpgrades"
@@ -107,7 +107,8 @@ export function load_roster_config(): RosterConfig {
     const old_char_profiles = localStorage.getItem("HF_UI_STATE_V3_char_profiles")
     if (old_char_profiles !== null) {
         try {
-            out.profiles = JSON.parse(old_char_profiles).profiles
+            let parsed = JSON.parse(old_char_profiles)
+            out.profiles = parsed.profiles
         } catch {
             out.profiles = [create_default_char_profile()]
         }
@@ -116,8 +117,15 @@ export function load_roster_config(): RosterConfig {
     }
     const old_roster = localStorage.getItem("HF_UI_STATE_V3_roster")
     if (old_roster !== null) {
-        out.roster_mats_owned = { 0: out.roster_mats_owned }
-        out.tradable_mats_owned = { 0: out.tradable_mats_owned }
+        try {
+            let parsed = JSON.parse(old_roster)
+            out.roster_mats_owned = { 0: parsed.roster_mats_owned }
+            out.tradable_mats_owned = { 0: parsed.tradable_mats_owned }
+        } catch {
+            out.roster_mats_owned = { 0: create_default_owned_input_column() }
+            out.tradable_mats_owned = { 0: create_default_owned_input_column() }
+        }
+
         localStorage.removeItem("HF_UI_STATE_V3_roster")
     }
     // console.log(out.roster_mats_owned)
