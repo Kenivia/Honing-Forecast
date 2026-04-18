@@ -1,8 +1,8 @@
-import { CharProfile } from "@/Stores/CharacterProfile"
-import { RosterConfig, useRosterStore } from "@/Stores/RosterConfig"
+
+import {  useRosterStore } from "@/Stores/RosterConfig"
 import { DEFAULT_ARTISAN_MULTIPLIER, JOINED_ADV_JUICE } from "@/Utils/Constants"
 import { input_column_to_num } from "@/Utils/InputColumn"
-import { InputColumn, Upgrade } from "@/Utils/Interfaces"
+import {  Upgrade } from "@/Utils/Interfaces"
 import { storeToRefs } from "pinia"
 
 // --- Req 1: Scrollable Instructions Logic ---

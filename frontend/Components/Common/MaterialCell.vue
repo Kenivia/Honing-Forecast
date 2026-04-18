@@ -1,6 +1,4 @@
 <script setup lang="ts">
-import { CharProfile } from "@/Stores/CharacterProfile"
-import { RosterConfig } from "@/Stores/RosterConfig"
 import { cssVar, get_icon_path } from "@/Utils/Helpers"
 import { get_modified_cell } from "@/Utils/InputColumn"
 import { InputColumn } from "@/Utils/Interfaces"

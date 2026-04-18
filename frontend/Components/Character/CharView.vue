@@ -2,10 +2,9 @@
 import Instructions from "@/Components/Character/Instructions/Instructions.vue"
 import MaterialDist from "@/Components/Character/MaterialDist/MaterialDist.vue"
 import StatusInput from "@/Components/Character/StatusInput/StatusInput.vue"
-import {} from "@/Stores/CharacterProfile"
 import { useRosterStore } from "@/Stores/RosterConfig"
 import { storeToRefs } from "pinia"
-import { nextTick, onUnmounted, watch } from "vue"
+import { onUnmounted, watch } from "vue"
 import { useRoute, useRouter } from "vue-router"
 
 const route = useRoute()

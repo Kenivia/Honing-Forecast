@@ -2,14 +2,12 @@
 import { CharProfile, create_default_char_profile, recreate_char_profile } from "@/Stores/CharacterProfile"
 import { create_default_owned_input_column, useRosterStore } from "@/Stores/RosterConfig"
 import { achieved_ilevel, format_char_name, pending_ilevel } from "@/Utils/Helpers"
-import { WasmOp } from "@/Utils/Interfaces"
-import { build_payload } from "@/WasmInterface/PayloadBuilder"
 import { storeToRefs } from "pinia"
-import { computed, ref } from "vue"
+import { ref } from "vue"
 import { RouterLink } from "vue-router"
 
 const roster_store = useRosterStore()
-const { roster_config, roster_ids, all_profiles } = storeToRefs(roster_store)
+const { roster_config, roster_ids } = storeToRefs(roster_store)
 
 const names = ref(roster_config.value.profiles.map((y) => y.char_name))
 

@@ -1,6 +1,5 @@
-import { CharProfile } from "@/Stores/CharacterProfile"
-import { RosterConfig, useRosterStore } from "@/Stores/RosterConfig"
-import { InputColumn, StateBundle, WasmOp } from "@/Utils/Interfaces"
+import { useRosterStore } from "@/Stores/RosterConfig"
+import { StateBundle, WasmOp } from "@/Utils/Interfaces"
 import { grids_to_keyed } from "@/Utils/KeyedUpgrades"
 import { build_material_info, build_payload } from "@/WasmInterface/PayloadBuilder"
 import { storeToRefs } from "pinia"

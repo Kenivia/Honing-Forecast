@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import {} from "@/Stores/CharacterProfile"
 import TickboxGrid from "./TickboxGrid.vue"
 import { storeToRefs } from "pinia"
 import { achieved_ilevel, check_adv_all_done, check_all_plus_20, check_revert_ilevel_ok, pending_ilevel } from "@/Utils/Helpers"
@@ -13,7 +12,6 @@ import { useRosterStore } from "@/Stores/RosterConfig"
 import { input_column_to_num, parse_input } from "@/Utils/InputColumn"
 
 const { active_profile } = storeToRefs(useRosterStore())
-const { roster_config, active_roster_mats_owned, active_tradable_mats_owned } = storeToRefs(useRosterStore())
 
 const tooltip_text = computed(() => {
     return active_profile.value.tier == 0

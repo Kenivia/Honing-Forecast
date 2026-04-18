@@ -1,6 +1,6 @@
 import { CharProfile } from "@/Stores/CharacterProfile"
 import { ADV_COLS, IconMap, NUM_PIECES, PIECE_NAMES, PLUS_TIER_CONVERSION } from "./Constants"
-import { InputColumn, InputType, Upgrade, UpgradeStatus } from "./Interfaces"
+import { Upgrade, UpgradeStatus } from "./Interfaces"
 import { storeToRefs } from "pinia"
 import { useRosterStore } from "@/Stores/RosterConfig"
 

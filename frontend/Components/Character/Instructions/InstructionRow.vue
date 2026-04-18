@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import {} from "@/Stores/CharacterProfile"
 import { useRosterStore } from "@/Stores/RosterConfig"
 import { ALL_LABELS, T4_JUICE_LABELS } from "@/Utils/Constants"
 import { get_piece_name, get_icon_path } from "@/Utils/Helpers"
@@ -19,7 +18,7 @@ import {
 import MaterialCell from "@/Components/Common/MaterialCell.vue"
 
 const { active_profile } = storeToRefs(useRosterStore())
-const { roster_config, active_roster_mats_owned, active_tradable_mats_owned } = storeToRefs(useRosterStore())
+const { active_roster_mats_owned, active_tradable_mats_owned } = storeToRefs(useRosterStore())
 
 const props = defineProps<{
     upgrade: Upgrade

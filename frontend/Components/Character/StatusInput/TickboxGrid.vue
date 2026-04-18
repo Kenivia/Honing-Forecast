@@ -1,16 +1,13 @@
 <script setup lang="ts">
-import {} from "@/Stores/CharacterProfile"
 import { useRosterStore } from "@/Stores/RosterConfig"
 import { PIECE_NAMES, NORMAL_COLS as NORMAL_COLS, NUM_PIECES as NORMAL_ROWS, ADV_COLS } from "@/Utils/Constants"
 import { get_icon_path } from "@/Utils/Helpers"
 import { UpgradeStatus } from "@/Utils/Interfaces"
 import { storeToRefs } from "pinia"
-import { computed, onUnmounted, onWatcherCleanup, watch } from "vue"
+import { computed, watch } from "vue"
 import { grid_change_callback, start_all_workers } from "../CharWorkerUtils"
 
 const { active_profile } = storeToRefs(useRosterStore())
-const { roster_config, active_roster_mats_owned, active_tradable_mats_owned } = storeToRefs(useRosterStore())
-
 const props = defineProps<{
     grid_type: "normal" | "adv"
 }>()

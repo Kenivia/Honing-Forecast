@@ -1,8 +1,7 @@
 <script setup lang="ts">
-import {} from "@/Stores/CharacterProfile"
 import { Upgrade } from "@/Utils/Interfaces"
 import { storeToRefs } from "pinia"
-import { computed, ref, watch } from "vue"
+import { ref, watch } from "vue"
 import InstructionRow from "./InstructionRow.vue"
 import { useRosterStore } from "@/Stores/RosterConfig"
 

@@ -1,10 +1,9 @@
 import { ALL_LABELS, DEFAULT_TIER, STORAGE_KEY } from "@/Utils/Constants"
 import { debounce, format_char_name } from "@/Utils/Helpers"
 import { create_input_column, validate_input_column, validate_input_column_array } from "@/Utils/InputColumn"
-import { InputColumn, InputType, KeyedUpgrades, StatusGrid, WasmOp } from "@/Utils/Interfaces"
+import { InputColumn, InputType } from "@/Utils/Interfaces"
 import { defineStore } from "pinia"
-import { CharProfile, create_default_char_profile, recreate_char_profile, TreatmentPlan } from "./CharacterProfile"
-import { build_payload } from "@/WasmInterface/PayloadBuilder"
+import { CharProfile, create_default_char_profile, recreate_char_profile } from "./CharacterProfile"
 import { get_valid_status_grid } from "@/Utils/StatusGrid"
 import { grids_to_keyed } from "@/Utils/KeyedUpgrades"
 

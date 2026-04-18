@@ -1,13 +1,8 @@
-import { defineStore, storeToRefs } from "pinia"
-import { InputColumn, InputType, KeyedUpgrades, StatusGrid, WasmOp } from "@/Utils/Interfaces"
+import { InputColumn, InputType, KeyedUpgrades, StatusGrid } from "@/Utils/Interfaces"
 import { createWorkerBundle } from "@/WasmInterface/WorkerBundle"
-import { ADV_COLS, ALL_LABELS, NORMAL_COLS, NUM_PIECES, SPECIAL_LEAP_LABEL, STORAGE_KEY } from "@/Utils/Constants"
-import { debounce, format_char_name } from "@/Utils/Helpers"
-import { build_payload } from "@/WasmInterface/PayloadBuilder"
-import { useRosterStore } from "./RosterConfig"
-import { create_input_column, validate_input_column, validate_input_column_array } from "@/Utils/InputColumn"
-import { createStatusGrid, get_valid_status_grid } from "@/Utils/StatusGrid"
-import { grids_to_keyed } from "@/Utils/KeyedUpgrades"
+import { ADV_COLS, ALL_LABELS, NORMAL_COLS, NUM_PIECES, SPECIAL_LEAP_LABEL } from "@/Utils/Constants"
+import { create_input_column } from "@/Utils/InputColumn"
+import { createStatusGrid } from "@/Utils/StatusGrid"
 
 export interface CharProfile {
     roster_id: number
@@ -37,42 +32,6 @@ export interface CharProfile {
     metric_type: number // currently not used (always 1)
     material_re_render_trigger: boolean // This is here to trigger an update in the special cell in MaterialDist from the change in the confirmation popup in InstructionRow
 }
-
-// export function load_char_profiles(): { profiles: CharProfile[]; active_profile_index: number } {
-//     const raw = localStorage.getItem(STORAGE_KEY + "_char_profiles")
-//     if (!raw) return DEFAULT_PROFILES_STATE
-
-//     const parsed = JSON.parse(raw)
-//     const default_profile = create_default_char_profile()
-//     for (let i = 0; i < parsed.profiles.length; i++) {
-//         let this_parsed: CharProfile = { ...create_default_char_profile(), ...parsed.profiles[i] }
-
-//         this_parsed.char_name = format_char_name(this_parsed.char_name, i, parsed.profiles.slice(0, i))
-//         validate_input_column_array(this_parsed.bound_budgets, default_profile.bound_budgets)
-//         validate_input_column_array(this_parsed.leftover_price, default_profile.leftover_price)
-//         validate_input_column(this_parsed.special_budget, default_profile.special_budget)
-
-//         this_parsed.normal_grid = get_valid_status_grid(this_parsed.normal_grid, default_profile.normal_grid)
-//         this_parsed.adv_grid = get_valid_status_grid(this_parsed.adv_grid, default_profile.adv_grid)
-
-//         this_parsed.keyed_upgrades = grids_to_keyed(this_parsed.normal_grid, this_parsed.adv_grid, this_parsed.keyed_upgrades, this_parsed.tier)
-
-//         this_parsed.tier = this_parsed.tier === 0 || this_parsed.tier === 1 ? this_parsed.tier : 0
-//         this_parsed.material_re_render_trigger = true
-//         this_parsed.min_resolution = default_profile.min_resolution
-//         this_parsed.num_threads = default_profile.num_threads
-//         this_parsed.metric_type = default_profile.metric_type
-
-//         let this_profile = recreate_char_profile(this_parsed)
-//         parsed.profiles[i] = {
-//             ...parsed.profiles[i],
-//             ...this_profile,
-//         }
-//         // console.log(parsed.profiles[i], parsed.profiles[i].tier)
-//     }
-
-//     return { ...DEFAULT_PROFILES_STATE, ...parsed }
-// }
 
 export enum TreatmentPlan {
     TreatRosterAsTradable, // rat alt, treat roster as if we could've sold them
