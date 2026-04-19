@@ -87,6 +87,7 @@ const SERCA_SYNC_MAP: { serca_index: number; T4_index: number }[] = ALL_LABELS[1
     .filter((x) => x !== null)
 const SERCA_TO_T4: Record<number, number> = Object.fromEntries(SERCA_SYNC_MAP.map(({ serca_index, T4_index }) => [serca_index, T4_index]))
 const T4_indices_to_watch = SERCA_SYNC_MAP.map(({ T4_index }) => T4_index)
+const Serca_indices_to_watch = SERCA_SYNC_MAP.map(({ serca_index }) => serca_index)
 
 watch(
     // one way sync from T4 to Serca, the ui modifies the T4 copy
@@ -98,7 +99,7 @@ watch(
         ]),
     () => {
         for (const { serca_index, T4_index } of SERCA_SYNC_MAP) {
-            roster_store.roster_config.mats_prices[1].data[serca_index] = roster_store.roster_config.mats_prices[0].data[T4_index]
+            roster_config.value.mats_prices[1].data[serca_index] = roster_config.value.mats_prices[0].data[T4_index]
             roster_store.active_tradable_mats_owned[1].data[serca_index] = roster_store.active_tradable_mats_owned[0].data[T4_index]
             roster_store.active_roster_mats_owned[1].data[serca_index] = roster_store.active_roster_mats_owned[0].data[T4_index]
         }
@@ -210,33 +211,36 @@ watch(
                 </div>
                 <div v-for="(label, row) in ALL_LABELS[1]" :key="`roster-input-serca-${label}`" class="hf-mats-row">
                     <MaterialCell
-                        :input_column="active_roster_mats_owned[row in SERCA_TO_T4 ? 0 : 1]"
-                        :row="row in SERCA_TO_T4 ? SERCA_TO_T4[row] : row"
+                        :input_column="active_roster_mats_owned[row in Serca_indices_to_watch ? 0 : 1]"
+                        :row="row in Serca_indices_to_watch ? SERCA_TO_T4[row] : row"
                         :label="label"
                         :setter="
                             (val) => {
-                                active_roster_mats_owned[row in SERCA_TO_T4 ? 0 : 1].data[row in SERCA_TO_T4 ? SERCA_TO_T4[row] : row] = val
+                                active_roster_mats_owned[row in Serca_indices_to_watch ? 0 : 1].data[row in Serca_indices_to_watch ? SERCA_TO_T4[row] : row] =
+                                    val
                             }
                         "
                         input_color="var(--hf-graph-roster-color)"
                         :hide_tick="true"
                     />
                     <MaterialCell
-                        :input_column="active_tradable_mats_owned[row in SERCA_TO_T4 ? 0 : 1]"
-                        :row="row in SERCA_TO_T4 ? SERCA_TO_T4[row] : row"
+                        :input_column="active_tradable_mats_owned[row in Serca_indices_to_watch ? 0 : 1]"
+                        :row="row in Serca_indices_to_watch ? SERCA_TO_T4[row] : row"
                         :setter="
                             (val) => {
-                                active_tradable_mats_owned[row in SERCA_TO_T4 ? 0 : 1].data[row in SERCA_TO_T4 ? SERCA_TO_T4[row] : row] = val
+                                active_tradable_mats_owned[row in Serca_indices_to_watch ? 0 : 1].data[row in Serca_indices_to_watch ? SERCA_TO_T4[row] : row] =
+                                    val
                             }
                         "
                         input_color="var(--hf-graph-tradable-color)"
                     />
                     <MaterialCell
-                        :input_column="roster_config.mats_prices[row in SERCA_TO_T4 ? 0 : 1]"
-                        :row="row in SERCA_TO_T4 ? SERCA_TO_T4[row] : row"
+                        :input_column="roster_config.mats_prices[row in Serca_indices_to_watch ? 0 : 1]"
+                        :row="row in Serca_indices_to_watch ? SERCA_TO_T4[row] : row"
                         :setter="
                             (val) => {
-                                roster_config.mats_prices[row in SERCA_TO_T4 ? 0 : 1].data[row in SERCA_TO_T4 ? SERCA_TO_T4[row] : row] = val
+                                roster_config.mats_prices[row in Serca_indices_to_watch ? 0 : 1].data[row in Serca_indices_to_watch ? SERCA_TO_T4[row] : row] =
+                                    val
                             }
                         "
                         :suffix="
