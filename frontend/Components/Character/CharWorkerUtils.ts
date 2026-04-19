@@ -28,10 +28,10 @@ export function start_all_workers() {
     }
     active_profile.value.optimizer_worker_bundle.est_progress_percentage = 0
     if (active_profile.value.auto_start_optimizer) {
-        active_profile.value.optimizer_worker_bundle.start(WasmOp.OptimizeAverage, payload, start_eval_hist)
+        active_profile.value.optimizer_worker_bundle.start(WasmOp.OptimizeAverage, structuredClone(payload), start_eval_hist) // make sure to clone cos it'll modify the previous payload before it's consumed
     }
     payload.material_info = build_material_info(WasmOp.Histogram)
-    active_profile.value.histogram_worker_bundle.throttled_start(WasmOp.Histogram, payload)
+    active_profile.value.histogram_worker_bundle.throttled_start(WasmOp.Histogram, structuredClone(payload)) // make sure to clone cos it'll modify the previous payload before it's consumed
 
     payload.material_info = build_material_info(WasmOp.EvaluateAverage)
     active_profile.value.evaluation_worker_bundle.throttled_start(WasmOp.EvaluateAverage, payload)
