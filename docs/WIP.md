@@ -7,6 +7,8 @@ I have to focus on my exams (until like mid June) so I'm trying not to spend too
 
 - move the bound / roster / tradable allocation logic to rust, let histogram worker handle everything (average, gold, tradable gold) so ~~we're starting less workers~~ we can do everything UI related in one worker (and makes life easier later)
 
+- store 2 copies of market price , indexed by region, add region specification in roster page and read the appropriate prices from there
+
 ## Roadmap
 
 ## 1st: ~~re-write the frontend~~

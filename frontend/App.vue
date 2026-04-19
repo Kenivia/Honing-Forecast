@@ -5,15 +5,13 @@ import { CharProfile } from "./Stores/CharacterProfile"
 import { debounced_write_roster_config, useRosterStore } from "./Stores/RosterConfig"
 import { useMediaIsNarrow } from "./Utils/WindowSize"
 import { fetch_callback, useTimedFetch } from "./Utils/MarketDataFetcher"
-import { computed, watch, watchEffect } from "vue"
-import { ALL_LABELS, SYNCED_LABELS } from "./Utils/Constants"
-import { input_column_to_num } from "./Utils/InputColumn"
+import { computed } from "vue"
 import { storeToRefs } from "pinia"
 
 const roster_store = useRosterStore()
 roster_store.init()
 
-const { all_profiles, roster_ids, roster_config } = storeToRefs(roster_store)
+const { all_profiles, roster_ids } = storeToRefs(roster_store)
 
 const { start_fetch } = useTimedFetch(fetch_callback)
 start_fetch(roster_store.roster_config.region)
