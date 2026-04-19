@@ -85,7 +85,7 @@ impl StateBundle {
 
         if compute_breakdown {
             for x in gold_breakdown.iter_mut() {
-                *x = x.ceil()
+                *x = x.round()
             }
             for x in average_breakdown.iter_mut() {
                 *x = x.round() // rounding is more uh correct here 

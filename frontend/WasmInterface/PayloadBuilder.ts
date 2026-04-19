@@ -47,6 +47,8 @@ export function apply_treatement(treatment: TreatmentPlan, bound: number, roster
             return [bound + roster, tradable]
         case TreatmentPlan.TreatRosterAsTradable:
             return [bound, roster + tradable]
+        case TreatmentPlan.TreatAllAsTradable:
+            return [0, bound + roster + tradable]
     }
 }
 
@@ -77,7 +79,9 @@ export function build_material_info(wasm_op: WasmOp): OneMaterial[] {
                 ? active_profile.value.optimizer_treatment_plan
                 : wasm_op == WasmOp.Histogram
                   ? active_profile.value.histogram_treatment_plan
-                  : TreatmentPlan.TreatTradableAsBound, // EvalAverage
+                  : index == 5
+                    ? TreatmentPlan.TreatAllAsTradable // special case for gold (show all non-char bound gold cost)
+                    : TreatmentPlan.TreatTradableAsBound, // EvalAverage
             bound_budgets[index],
             roster_mats_owned[index],
             tradable_mats_owned[index],

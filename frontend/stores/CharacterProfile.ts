@@ -37,6 +37,7 @@ export enum TreatmentPlan {
     TreatRosterAsTradable, // rat alt, treat roster as if we could've sold them
     TreatRosterAsBound, // alt, treat char & roster bound as 0 if there's any leftover, taxed market price if any tradable leftover
     TreatTradableAsBound, // main, treat everything as 0 if any leftover
+    TreatAllAsTradable, //special case for gold cost
 }
 
 export function create_default_char_profile(): CharProfile {
