@@ -1,8 +1,7 @@
-
-import {  useRosterStore } from "@/Stores/RosterConfig"
+import { useRosterStore } from "@/Stores/RosterConfig"
 import { DEFAULT_ARTISAN_MULTIPLIER, JOINED_ADV_JUICE } from "@/Utils/Constants"
 import { input_column_to_num } from "@/Utils/InputColumn"
-import {  Upgrade } from "@/Utils/Interfaces"
+import { Upgrade } from "@/Utils/Interfaces"
 import { storeToRefs } from "pinia"
 
 // --- Req 1: Scrollable Instructions Logic ---
@@ -53,21 +52,26 @@ export function aggregate_streaks(upgrade: Upgrade, juice_info: any, alr_done: n
 
         let both_grace = Math.min(juice_grace, scroll_grace)
         if (both_grace > 0) streaks.push({ juice: true, scroll: true, grace: true, count: both_grace })
-
-        let one_grace = Math.max(juice_grace, scroll_grace) == 255 ? 255 : Math.max(juice_grace, scroll_grace) - both_grace
+        // console.log(streaks)
+        let one_grace = juice_grace === scroll_grace ? 0 : Math.max(juice_grace, scroll_grace) == 255 ? 255 : Math.max(juice_grace, scroll_grace) - both_grace
         if (one_grace > 0) streaks.push({ juice: juice_grace > scroll_grace, scroll: scroll_grace > juice_grace, grace: true, count: one_grace })
-
+        // console.log(streaks)
         let both_non_grace = Math.min(juice_non_grace, scroll_non_grace)
         if (both_non_grace > 0) streaks.push({ juice: true, scroll: true, grace: false, count: both_non_grace })
-
-        let one_non_grace = Math.max(juice_non_grace, scroll_non_grace) == 255 ? 255 : Math.max(juice_non_grace, scroll_non_grace) - both_non_grace
+        // console.log(streaks)
+        let one_non_grace =
+            juice_non_grace === scroll_non_grace
+                ? 0
+                : Math.max(juice_non_grace, scroll_non_grace) == 255
+                  ? 255
+                  : Math.max(juice_non_grace, scroll_non_grace) - both_non_grace
         if (one_non_grace > 0)
             streaks.push({ juice: juice_non_grace > scroll_non_grace, scroll: scroll_non_grace > juice_non_grace, grace: false, count: one_non_grace })
-
+        // console.log(streaks)
         if (streaks.length == 0) {
             streaks.push({ juice: false, scroll: false, grace: true, count: 255 })
         }
-        // console.log(juice_grace, juice_non_grace, scroll_grace, scroll_non_grace, upgrade.state)
+        // console.log(one_grace, both_grace, juice_grace, juice_non_grace, scroll_grace, scroll_non_grace, upgrade.state, streaks)
         return streaks
     }
 }
