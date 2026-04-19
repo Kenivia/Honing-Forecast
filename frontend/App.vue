@@ -5,7 +5,7 @@ import { CharProfile } from "./Stores/CharacterProfile"
 import { debounced_write_roster_config, useRosterStore } from "./Stores/RosterConfig"
 import { useMediaIsNarrow } from "./Utils/WindowSize"
 import { fetch_callback, useTimedFetch } from "./Utils/MarketDataFetcher"
-import { computed, watchEffect } from "vue"
+import { computed, watch, watchEffect } from "vue"
 import { ALL_LABELS, SYNCED_LABELS } from "./Utils/Constants"
 import { input_column_to_num } from "./Utils/InputColumn"
 import { storeToRefs } from "pinia"
@@ -38,17 +38,6 @@ watchEffect(() => {
     let t4_price = input_column_to_num(roster_store.roster_config.mats_prices[0])
     let serca_price = input_column_to_num(roster_store.roster_config.mats_prices[1])
     roster_store.roster_config.effective_serca_price = ALL_LABELS[1].map((_, index) => Math.min(t4_price[index] * 5, serca_price[index]))
-})
-watchEffect(() => {
-    // one way sync from T4 to Serca, the ui modifies the T4 copy
-    for (let serca_index = 0; serca_index < ALL_LABELS[1].length; serca_index++) {
-        if (SYNCED_LABELS.includes(ALL_LABELS[1][serca_index])) {
-            let T4_index = ALL_LABELS[0].findIndex((x) => x == ALL_LABELS[1][serca_index].replace("Serca ", ""))
-            roster_store.roster_config.mats_prices[1].data[serca_index] = roster_store.roster_config.mats_prices[0].data[T4_index]
-            roster_store.active_tradable_mats_owned[1].data[serca_index] = roster_store.active_tradable_mats_owned[0].data[T4_index]
-            roster_store.active_roster_mats_owned[1].data[serca_index] = roster_store.active_roster_mats_owned[0].data[T4_index]
-        }
-    }
 })
 </script>
 

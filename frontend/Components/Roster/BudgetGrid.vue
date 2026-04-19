@@ -3,7 +3,7 @@ import { useRosterStore as useRosterStore } from "@/Stores/RosterConfig"
 import { ALL_LABELS, BUDGET_NARROW_WIDTH, BUNDLE_SIZE, SYNCED_LABELS, TIER_OPTIONS } from "@/Utils/Constants"
 import { storeToRefs } from "pinia"
 import MaterialCell from "@/Components/Common/MaterialCell.vue"
-import { computed, nextTick, ref } from "vue"
+import { computed, nextTick, ref, watch } from "vue"
 import { SelectButton } from "primevue"
 import { useMediaIsNarrow } from "@/Utils/WindowSize"
 import TierConvertButton from "../Common/TierConvertButton.vue"
@@ -77,6 +77,35 @@ function change_roster(event) {
     roster_store.switchProfile(representative_profile_indices.value[event.target.value])
     forceRerender()
 }
+
+const SERCA_SYNC_MAP: { serca_index: number; T4_index: number }[] = ALL_LABELS[1]
+    .map((label, serca_index) => {
+        if (!SYNCED_LABELS.includes(label)) return null
+        const T4_index = ALL_LABELS[0].findIndex((x) => x === label.replace("Serca ", ""))
+        return T4_index === -1 ? null : { serca_index, T4_index }
+    })
+    .filter((x) => x !== null)
+const SERCA_TO_T4: Record<number, number> = Object.fromEntries(SERCA_SYNC_MAP.map(({ serca_index, T4_index }) => [serca_index, T4_index]))
+const T4_indices_to_watch = SERCA_SYNC_MAP.map(({ T4_index }) => T4_index)
+
+watch(
+    // one way sync from T4 to Serca, the ui modifies the T4 copy
+    () =>
+        T4_indices_to_watch.flatMap((T4_index) => [
+            roster_store.roster_config.mats_prices[0].data[T4_index],
+            roster_store.active_tradable_mats_owned[0].data[T4_index],
+            roster_store.active_roster_mats_owned[0].data[T4_index],
+        ]),
+    () => {
+        for (const { serca_index, T4_index } of SERCA_SYNC_MAP) {
+            roster_store.roster_config.mats_prices[1].data[serca_index] = roster_store.roster_config.mats_prices[0].data[T4_index]
+            roster_store.active_tradable_mats_owned[1].data[serca_index] = roster_store.active_tradable_mats_owned[0].data[T4_index]
+            roster_store.active_roster_mats_owned[1].data[serca_index] = roster_store.active_roster_mats_owned[0].data[T4_index]
+        }
+        forceRerender()
+    },
+    { deep: false, immediate: true },
+)
 </script>
 
 <template>
@@ -126,7 +155,7 @@ function change_roster(event) {
 
                     <!-- <span v-if="customLeftovers">Left</span> -->
                 </div>
-                <div v-for="(label, row) in ALL_LABELS[0]" :key="`roster-input-${label}`" class="hf-mats-row">
+                <div v-for="(label, row) in ALL_LABELS[0]" :key="`roster-input-t4-${label}`" class="hf-mats-row">
                     <MaterialCell
                         :input_column="active_roster_mats_owned[0]"
                         :row="row"
@@ -179,35 +208,35 @@ function change_roster(event) {
 
                     <!-- <span v-if="customLeftovers">Left</span> -->
                 </div>
-                <div v-for="(label, row) in ALL_LABELS[1]" :key="`roster-input-${label}`" class="hf-mats-row">
+                <div v-for="(label, row) in ALL_LABELS[1]" :key="`roster-input-serca-${label}`" class="hf-mats-row">
                     <MaterialCell
-                        :input_column="active_roster_mats_owned[SYNCED_LABELS.includes(label) ? 0 : 1]"
-                        :row="row"
+                        :input_column="active_roster_mats_owned[row in SERCA_TO_T4 ? 0 : 1]"
+                        :row="row in SERCA_TO_T4 ? SERCA_TO_T4[row] : row"
                         :label="label"
                         :setter="
                             (val) => {
-                                active_roster_mats_owned[SYNCED_LABELS.includes(label) ? 0 : 1].data[row] = val
+                                active_roster_mats_owned[row in SERCA_TO_T4 ? 0 : 1].data[row in SERCA_TO_T4 ? SERCA_TO_T4[row] : row] = val
                             }
                         "
                         input_color="var(--hf-graph-roster-color)"
                         :hide_tick="true"
                     />
                     <MaterialCell
-                        :input_column="active_tradable_mats_owned[SYNCED_LABELS.includes(label) ? 0 : 1]"
-                        :row="row"
+                        :input_column="active_tradable_mats_owned[row in SERCA_TO_T4 ? 0 : 1]"
+                        :row="row in SERCA_TO_T4 ? SERCA_TO_T4[row] : row"
                         :setter="
                             (val) => {
-                                active_tradable_mats_owned[SYNCED_LABELS.includes(label) ? 0 : 1].data[row] = val
+                                active_tradable_mats_owned[row in SERCA_TO_T4 ? 0 : 1].data[row in SERCA_TO_T4 ? SERCA_TO_T4[row] : row] = val
                             }
                         "
                         input_color="var(--hf-graph-tradable-color)"
                     />
                     <MaterialCell
-                        :input_column="roster_config.mats_prices[SYNCED_LABELS.includes(label) ? 0 : 1]"
-                        :row="row"
+                        :input_column="roster_config.mats_prices[row in SERCA_TO_T4 ? 0 : 1]"
+                        :row="row in SERCA_TO_T4 ? SERCA_TO_T4[row] : row"
                         :setter="
                             (val) => {
-                                roster_config.mats_prices[SYNCED_LABELS.includes(label) ? 0 : 1].data[row] = val
+                                roster_config.mats_prices[row in SERCA_TO_T4 ? 0 : 1].data[row in SERCA_TO_T4 ? SERCA_TO_T4[row] : row] = val
                             }
                         "
                         :suffix="
