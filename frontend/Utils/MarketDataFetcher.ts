@@ -204,10 +204,11 @@ export function fetch_callback(result: number[][], selectedShardSize: number, sh
     for (let tier = 0; tier < ALL_LABELS.length; tier++) {
         for (let index = 0; index < ALL_LABELS[tier].length; index++) {
             const syncing = index in SERCA_TO_T4 && tier == 1
-            roster_config.value.mats_prices[syncing ? 0 : tier].data[syncing ? SERCA_TO_T4[index] : index] =
-                result[tier][syncing ? SERCA_TO_T4[index] : index].toLocaleString()
-            if (ALL_LABELS[tier][index] == "Shards") {
-                roster_config.value.mats_prices[syncing ? 0 : tier].data[index] = shard_price.toLocaleString()
+            const actual_tier = syncing ? 0 : tier
+            const actual_index = syncing ? SERCA_TO_T4[index] : index
+            roster_config.value.mats_prices[actual_tier].data[actual_index] = result[actual_tier][actual_index].toLocaleString()
+            if (ALL_LABELS[actual_tier][actual_index] == "Shards") {
+                roster_config.value.mats_prices[actual_tier].data[actual_index] = shard_price.toLocaleString()
             }
         }
     }

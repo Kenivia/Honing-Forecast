@@ -62,17 +62,18 @@ export function build_material_info(wasm_op: WasmOp): OneMaterial[] {
     const tradable_mats_owned = input_column_to_num(active_tradable_mats_owned.value[tier])
 
     const leftover_price = input_column_to_num(active_profile.value.leftover_price[tier])
-    const actual_price = tier == 0 ? input_column_to_num(roster_config.value.mats_prices[tier]) : roster_config.value.effective_serca_price
+    const effective_price = tier == 0 ? input_column_to_num(roster_config.value.mats_prices[tier]) : roster_config.value.effective_serca_price
 
-    const tradable_mats_price = actual_price.map(
+    const tradable_mats_price = input_column_to_num(roster_config.value.mats_prices[tier]).map(
         (x: number, index: number) =>
             Math.max(Math.min(1, x), Math.floor(x * 0.95)) /
             (ALL_LABELS[active_profile.value.tier][index] == "Shards" ? roster_config.value.selected_shard_bag_size : BUNDLE_SIZE[index]),
     )
-    const mats_prices = actual_price.map(
+    const mats_prices = effective_price.map(
         (x: number, index: number) =>
             x / (ALL_LABELS[active_profile.value.tier][index] == "Shards" ? roster_config.value.selected_shard_bag_size : BUNDLE_SIZE[index]),
     )
+    // console.log(tradable_mats_price)
     return ALL_LABELS[tier].map((_, index) => [
         ...apply_treatement(
             wasm_op == WasmOp.OptimizeAverage
