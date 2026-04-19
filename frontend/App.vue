@@ -34,11 +34,6 @@ function onCharSelect(e: Event) {
     const name = (e.target as HTMLSelectElement).value
     if (name) router.push({ name: "char", params: { characterName: name } })
 }
-watchEffect(() => {
-    let t4_price = input_column_to_num(roster_store.roster_config.mats_prices[0])
-    let serca_price = input_column_to_num(roster_store.roster_config.mats_prices[1])
-    roster_store.roster_config.effective_serca_price = ALL_LABELS[1].map((_, index) => Math.min(t4_price[index] * 5, serca_price[index]))
-})
 </script>
 
 <template>

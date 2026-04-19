@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { useRosterStore as useRosterStore } from "@/Stores/RosterConfig"
-import { ALL_LABELS, BUDGET_NARROW_WIDTH, BUNDLE_SIZE, SYNCED_LABELS, TIER_OPTIONS } from "@/Utils/Constants"
+import { ALL_LABELS, BUDGET_NARROW_WIDTH, BUNDLE_SIZE, SERCA_SYNC_MAP, SERCA_TO_T4, SYNCED_LABELS, TIER_OPTIONS } from "@/Utils/Constants"
 import { storeToRefs } from "pinia"
 import MaterialCell from "@/Components/Common/MaterialCell.vue"
-import { computed, nextTick, ref, watch } from "vue"
+import { computed, nextTick, ref, watch, watchEffect } from "vue"
 import { SelectButton } from "primevue"
 import { useMediaIsNarrow } from "@/Utils/WindowSize"
 import TierConvertButton from "../Common/TierConvertButton.vue"
@@ -45,7 +45,11 @@ function convert_roster_mats_to_serca() {
         }
     }
 }
-
+watchEffect(() => {
+    let t4_price = input_column_to_num(roster_store.roster_config.mats_prices[0])
+    let serca_price = input_column_to_num(roster_store.roster_config.mats_prices[1])
+    roster_store.roster_config.effective_serca_price = ALL_LABELS[1].map((_, index) => Math.min(t4_price[index] * 5, serca_price[index]))
+})
 const t4_better = computed(() => {
     let t4_price = input_column_to_num(roster_config.value.mats_prices[0])
     let serca_price = input_column_to_num(roster_config.value.mats_prices[1])
@@ -78,14 +82,6 @@ function change_roster(event) {
     forceRerender()
 }
 
-const SERCA_SYNC_MAP: { serca_index: number; T4_index: number }[] = ALL_LABELS[1]
-    .map((label, serca_index) => {
-        if (!SYNCED_LABELS.includes(label)) return null
-        const T4_index = ALL_LABELS[0].findIndex((x) => x === label.replace("Serca ", ""))
-        return T4_index === -1 ? null : { serca_index, T4_index }
-    })
-    .filter((x) => x !== null)
-const SERCA_TO_T4: Record<number, number> = Object.fromEntries(SERCA_SYNC_MAP.map(({ serca_index, T4_index }) => [serca_index, T4_index]))
 const T4_indices_to_watch = SERCA_SYNC_MAP.map(({ T4_index }) => T4_index)
 
 watch(

@@ -151,3 +151,12 @@ for (const [label, path] of Object.entries(base_icon_map)) {
 export const IconMap = { ...temp, ...base_icon_map } as Record<string, string>
 
 export const PIECE_NAMES = ["Helmet", "Shoulder", "Chest", "Pants", "Glove", "Weapon"]
+
+export const SERCA_SYNC_MAP: { serca_index: number; T4_index: number }[] = ALL_LABELS[1]
+    .map((label, serca_index) => {
+        if (!SYNCED_LABELS.includes(label)) return null
+        const T4_index = ALL_LABELS[0].findIndex((x) => x === label.replace("Serca ", ""))
+        return T4_index === -1 ? null : { serca_index, T4_index }
+    })
+    .filter((x) => x !== null)
+export const SERCA_TO_T4: Record<number, number> = Object.fromEntries(SERCA_SYNC_MAP.map(({ serca_index, T4_index }) => [serca_index, T4_index]))
