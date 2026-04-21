@@ -81,9 +81,9 @@ export function build_material_info(wasm_op: WasmOp): OneMaterial[] {
                 ? active_profile.value.optimizer_treatment_plan
                 : wasm_op == WasmOp.Histogram
                   ? active_profile.value.histogram_treatment_plan
-                  : index == 5
-                    ? TreatmentPlan.TreatAllAsTradable // special case for gold (show all non-char bound gold cost)
-                    : TreatmentPlan.TreatTradableAsBound, // EvalAverage
+                  : //   : index == 5
+                    //     ? TreatmentPlan.TreatRosterAsTradable // special case for gold (show all non-char bound gold cost)
+                    TreatmentPlan.TreatTradableAsBound, // EvalAverage
             bound_budgets[index],
             roster_mats_owned[index],
             !enabled[index] ? 0 : tradable_mats_owned[index], // disabled mats shouldn't be sold either

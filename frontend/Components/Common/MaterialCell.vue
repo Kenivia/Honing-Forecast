@@ -70,6 +70,7 @@ const this_data = ref(String(!Array.isArray(props.input_column) ? (props.input_c
     min-width: 0;
     text-align: right;
     padding-right: 8px;
+    position: relative;
 }
 
 input.hf-material-cell-input {
@@ -101,7 +102,12 @@ input.hf-material-cell-input {
     font-size: 12px;
     min-width: 0;
     text-align: left;
-    padding-right: 8px;
+    justify-self: right;
+
+    margin-left: auto;
+    position: absolute;
+    transform: translateX(100%);
+    right: 28px;
 }
 .hf-row-label {
     display: inline-flex;

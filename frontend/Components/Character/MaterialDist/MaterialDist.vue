@@ -179,7 +179,10 @@ const show_special_guide = ref(false)
                                 <option>{{ tradable_chance_text }}</option>
                             </select>
                             <span class="hf-average-header">Average</span>
-                            <span class="hf-gold-header">Avg Gold Used</span>
+                            <div style="position: relative">
+                                <span class="hf-gold-header">Avg Gold Used</span> <span class="hf-gold-header-suffix">(tradable)</span>
+                            </div>
+
                             <span class="hf-hover-hint">Hover graph for details</span>
                             <!-- <span v-if="customLeftovers">Left</span> -->
                         </div>
@@ -424,7 +427,17 @@ const show_special_guide = ref(false)
     color: var(--hf-gold);
     text-align: center;
 }
-
+.hf-gold-header-suffix {
+    color: var(--text-very-muted);
+    font-size: 12px;
+    min-width: 0;
+    text-align: left;
+    justify-self: right;
+    margin-left: auto;
+    position: absolute;
+    transform: translateX(100%) translateY(4px);
+    right: 22px;
+}
 .hf-hover-hint {
     text-align: center;
     color: var(--hf-text-muted);
