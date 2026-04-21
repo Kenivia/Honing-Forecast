@@ -310,6 +310,7 @@ onBeforeUnmount(() => {
     width: 100%;
     position: relative; /* Essential for tooltip positioning */
     cursor: crosshair; /* Helps signal it's interactive */
+    height: 41px;
 }
 
 /* Tooltip container styling */

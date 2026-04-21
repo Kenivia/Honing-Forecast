@@ -58,6 +58,7 @@ export function build_material_info(wasm_op: WasmOp): OneMaterial[] {
 
     const tier = active_profile.value.tier
     const bound_budgets = input_column_to_num(active_profile.value.bound_budgets[tier])
+    const enabled = active_profile.value.bound_budgets[tier].enabled
     const roster_mats_owned = input_column_to_num(active_roster_mats_owned.value[tier])
     const tradable_mats_owned = input_column_to_num(active_tradable_mats_owned.value[tier])
 
@@ -85,7 +86,7 @@ export function build_material_info(wasm_op: WasmOp): OneMaterial[] {
                     : TreatmentPlan.TreatTradableAsBound, // EvalAverage
             bound_budgets[index],
             roster_mats_owned[index],
-            tradable_mats_owned[index],
+            !enabled[index] ? 0 : tradable_mats_owned[index], // disabled mats shouldn't be sold either
         ),
         leftover_price[index],
         tradable_mats_price[index],

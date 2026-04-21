@@ -30,7 +30,7 @@ export function createWorkerBundle() {
         throttle_timer = setTimeout(() => {
             throttle_ready = true
             _try_flush_throttle() // catch-up: new payload may have arrived during cooldown
-        }, 1000)
+        }, 500)
 
         _launch(wasm_op, payload, false, () => _try_flush_throttle())
     }
@@ -91,7 +91,7 @@ export function createWorkerBundle() {
         // if (debounce > 0) {
         clearTimeout(debounceTimer)
 
-        debounceTimer = setTimeout(() => _launch(wasm_op, payload, true, callback), 1000)
+        debounceTimer = setTimeout(() => _launch(wasm_op, payload, true, callback), 500)
         // } else {
         // _launch(wasm_op, payload, true, callback)
         // }

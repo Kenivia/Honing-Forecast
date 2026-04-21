@@ -2,6 +2,22 @@
 
 :root {
 
+    --p-tooltip-background: var(--tooltip-bg);
+    --p-tooltip-color: var(--hf-text-main);
+    --p-tooltip-padding: 6px 12px;
+
+
+
+
+
+
+    --p-tooltip-shadow: 0px 4px 12px rgba(0, 0, 0, 0.2);
+    --p-tooltip-max-width: 200px;
+    --p-tooltip-font-size: 13px;
+
+
+
+
     --hf-free-tap-faded: hsl(293, 100%, 92%);
     --hf-bg-header: #17181d;
     --hf-header-button: var(--hf-gold);
@@ -47,9 +63,12 @@
     --hf-radius: 8px;
     --hf-radius-lg: 12px;
 
-    --hf-font-display: "Space Grotesk", sans-serif;
-    --hf-font-body: "Source Sans 3", sans-serif;
-    --hf-font-mono: "JetBrains Mono", monospace;
+    --hf-font-display: "Space Grotesk",
+        sans-serif;
+    --hf-font-body: "Source Sans 3",
+        sans-serif;
+    --hf-font-mono: "JetBrains Mono",
+        monospace;
 
     /* Existing variable bridge */
     --bg-primary: var(--hf-bg-void);
@@ -111,6 +130,11 @@
     --bright-green: #9edeb5;
     --ran-out: rgba(224, 90, 90, 0.22);
     --deficit: #f39b9b;
+}
+
+[data-pc-name="tooltip"] {
+    border: 1px solid var(--text-muted);
+
 }
 
 html {
@@ -184,16 +208,6 @@ body::before {
     color: var(--checkbox-done-bg);
 }
 
-.hf-mats-row {
-    display: contents;
-    gap: 0px;
-    align-items: center;
-    min-width: 0;
-    width: 100%;
-    height: 42px;
-    min-height: 0px;
-
-}
 
 
 .hf-shell {
@@ -503,11 +517,6 @@ body::before {
     font-size: 12px;
 }
 
-.hf-dist-graphs {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-}
 
 .hf-graph-row {
     border-top: 1px solid rgba(255, 255, 255, 0.1);

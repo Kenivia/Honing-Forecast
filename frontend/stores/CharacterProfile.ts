@@ -58,7 +58,15 @@ export function create_default_char_profile(): CharProfile {
         keyed_upgrades: {},
         special_budget: create_input_column(InputType.Int, [SPECIAL_LEAP_LABEL], ["0"], [33333]),
 
-        bound_budgets: ALL_LABELS.map((this_labels) => create_input_column(InputType.Int, this_labels)),
+        bound_budgets: ALL_LABELS.map((this_labels) =>
+            create_input_column(
+                InputType.Int,
+                this_labels,
+                null,
+                null,
+                this_labels.map((_, index) => index != 3),
+            ),
+        ),
         leftover_price: ALL_LABELS.map((this_labels) => create_input_column(InputType.Int, this_labels)), // implicit 0 leftover here, currently UI does not allow changing this
 
         tier: 0,

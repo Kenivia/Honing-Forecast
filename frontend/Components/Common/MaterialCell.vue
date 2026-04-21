@@ -13,6 +13,7 @@ const props = defineProps<{
     input_color?: string
     is_percentage?: boolean
     hide_tick?: boolean
+    treat_as_two?: boolean
     callback?: () => void
 }>()
 
@@ -23,7 +24,7 @@ const this_data = ref(String(!Array.isArray(props.input_column) ? (props.input_c
 </script>
 
 <template>
-    <div class="hf-material-cell">
+    <div class="hf-material-cell" :style="{ gridColumn: treat_as_two ? 'span 2' : 'span 1' }">
         <input
             v-if="!hide_tick && label && !Array.isArray(input_column)"
             type="checkbox"

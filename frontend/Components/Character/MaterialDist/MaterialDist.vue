@@ -41,10 +41,13 @@ const visibleRows = computed(() => {
         })
 })
 
+const tickbox_tooltip = `Untick the box if you don't plan on buying that material from market.
+<span style="color:var(--hf-text-muted)">(it also disable selling this mat)</span>`
+
 const market_gold_text = "Avg gold spent buying from market"
 const tradable_gold_text = "Avg gold spent buying minus gold from selling tradables"
-const total_market_gold_text = "Average total gold used"
-const total_market_gold_suffix = "(raw + buying from market)"
+const total_market_gold_text = "Average total gold spent"
+const total_market_gold_suffix = "(raw + buying needed mats & juice)"
 const total_tradable_gold_text = "Avg sell value of leftover tradable mats"
 const total_tradable_gold_suffix = "(taxed)"
 const all_bound_text = "Treat roster bound as tradable" // i dont think i'll show this tho cos its kinda confusing
@@ -151,6 +154,16 @@ const show_special_guide = ref(false)
                 <div class="hf-dist-stack">
                     <div class="hf-dist-graphs">
                         <div class="hf-table-title-row">
+                            <div
+                                class="hf-question-mark"
+                                :style="{ textAlign: 'left', opacity: analysisTab !== 'juice' ? 1 : 0 }"
+                                v-tooltip="{
+                                    value: tickbox_tooltip,
+                                    escape: false,
+                                }"
+                            >
+                                <span style="font-size: 12px; align-self: center">?</span>
+                            </div>
                             <span class="hf-bound-header">Bound Mats</span>
 
                             <select
@@ -197,6 +210,7 @@ const show_special_guide = ref(false)
                                         }
                                     "
                                     :hide_tick="analysisTab == 'juice'"
+                                    :treat_as_two="true"
                                     :callback="() => start_all_workers()"
                                 />
                                 <!-- {{ console.log(averages) }} -->
@@ -228,6 +242,7 @@ const show_special_guide = ref(false)
                                     :setter="(val) => (active_profile.special_budget.data[0] = val)"
                                     :label="(active_profile.tier == 1 ? 'Serca ' : '') + active_profile.special_budget.keys[0]"
                                     :hide_tick="true"
+                                    :treat_as_two="true"
                                     :callback="() => start_all_workers()"
                                 ></MaterialCell>
                                 <span class="special-convert-guide" @click="() => (show_special_guide = true)">Should I use in T4 or convert?</span>
@@ -350,7 +365,7 @@ const show_special_guide = ref(false)
 }
 
 .hf-metric-label {
-    grid-column: span 3;
+    grid-column: span 4;
     width: 100%;
     gap: 30px;
     color: var(--hf-gold);
@@ -366,7 +381,7 @@ const show_special_guide = ref(false)
 }
 
 .hf-metric-status {
-    grid-column: 4 / span 2;
+    grid-column: 5 / span 2;
     width: 100%;
     gap: 30px;
     color: var(--hf-gold);
@@ -377,6 +392,23 @@ const show_special_guide = ref(false)
     text-wrap-mode: nowrap;
 }
 
+.hf-question-mark {
+    margin-left: 4px;
+    /* padding-right: 12px;
+    padding-left: 8px; */
+
+    width: 16px; /* Align with the two icon rows visually */
+    height: 16px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    font-weight: bold;
+    background-color: AccentColor;
+    color: AccentColorText;
+    font-size: 12px;
+}
 .hf-bound-header {
     color: var(--hf-graph-bound-color);
     text-align: right;
@@ -492,7 +524,7 @@ const show_special_guide = ref(false)
     color: var(--hf-text-bright);
 }
 .hf-dist-graphs {
-    --hf-dist-columns: 250px 120px 120px 120px 320px;
+    --hf-dist-columns: 160px 90px 120px 120px 120px 320px;
     display: grid;
     grid-template-columns: var(--hf-dist-columns);
     align-items: center;
@@ -517,7 +549,7 @@ const show_special_guide = ref(false)
 
 @media (max-width: 900px) {
     .hf-dist-graphs {
-        --hf-dist-columns: 170px 112px 78px 78px 150px;
+        --hf-dist-columns: 100px 70px 112px 78px 78px 150px;
         min-width: max-content;
         width: auto;
     }

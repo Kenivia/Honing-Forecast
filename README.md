@@ -65,7 +65,7 @@ For anything else, you can ask me in the [Discord server](https://discord.gg/KWD
 You'll need the following:
 
 1. [Rust](https://rust-lang.org/tools/install/) (this should be all you need if you just want to improve the [optimizer engine](/docs/Optimizer.md))
-2. [wasm-pack](https://drager.github.io/wasm-pack/installer/)
+2. [wasm-pack](https://wasm-bindgen.github.io/wasm-pack/)
 3. [Node.js](https://nodejs.org/en/download)
 
 Run `npm install` for the dependencies, then `npm run dev` for the dev server.
