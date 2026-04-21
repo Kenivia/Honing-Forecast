@@ -11,7 +11,7 @@ const router = createRouter({
             path: "/",
             redirect: () => {
                 const roster_store = useRosterStore()
-                const first = roster_store.all_profiles[0][0]
+                const first = roster_store.all_profiles[0]
                 return first ? `/${first.char_name}` : "/roster-setup" // there should always be at least one tho
             },
         },
