@@ -305,7 +305,7 @@ const show_special_guide = ref(false)
                                 </span>
                             </div>
                         </div>
-                        <div style="display: flex; flex-direction: row; grid-column: 1 / span 5; align-items: center">
+                        <div style="display: flex; flex-direction: row; grid-column: 1 / span 6; align-items: center">
                             <span class="optimizer-progress-label"
                                 >Optimizer progress: {{ active_profile.optimizer_worker_bundle.est_progress_percentage.toFixed(2) }}%
                             </span>
