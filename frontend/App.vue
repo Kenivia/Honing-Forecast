@@ -37,7 +37,7 @@ function onCharSelect(e: Event) {
 <template>
     <div class="hf-app-shell">
         <header>
-            <div v-if="!is500Narrow" class="hf-page-header-row" style="width: 100%; justify-content: space-around">
+            <!-- <div v-if="!is500Narrow" class="hf-page-header-row" style="width: 100%; justify-content: space-around">
                 <span>
                     <span style="font-weight: 600">Happy Serca porg!&nbsp;</span>
                     <a
@@ -50,7 +50,7 @@ function onCharSelect(e: Event) {
                     or
                     <a style="text-decoration: underline" href="https://discord.gg/KWDpQyvgzc">on Discord</a>!
                 </span>
-            </div>
+            </div> -->
             <nav class="hf-top-nav">
                 <div class="hf-page-header-row" style="width: 100%">
                     <div v-if="!is500Narrow" class="hf-brand">
