@@ -271,6 +271,7 @@ const show_special_guide = ref(false)
                                     :max-yoverride="1"
                                     style="grid-column: span 3"
                                     :empty_message="'No normal honing available'"
+                                    :upside_down_cumulative="true"
                                 />
                             </div>
                         </div>

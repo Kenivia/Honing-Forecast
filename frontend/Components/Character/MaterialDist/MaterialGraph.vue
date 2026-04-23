@@ -27,6 +27,7 @@ const props = withDefaults(
         // Tooltip Function
         tooltipTextFn?: (x: number, y: number, cumulativeY: number, material: string, color: string) => string
         empty_message?: string
+        upside_down_cumulative?: boolean
     }>(),
     {
         graphColor: "--hf-graph-default-color",
@@ -38,6 +39,7 @@ const props = withDefaults(
         // Default tooltip just displays values
         tooltipTextFn: (x, y, cy, material, color) => `<b>X:</b> ${x} <br/> <b>Y:</b> ${cy}`,
         empty_message: "This material is never used",
+        upside_down_cumulative: false,
     },
 )
 
@@ -66,6 +68,7 @@ const points = computed<Point[]>(() => {
         return normalized.map(([x, y]) => ({ x, y, cumulativeY: y }))
     }
     // let gap_size = (normalized[normalized.length - 1][0] - normalized[0][0]) / BUCKET_COUNT
+    const upside_down = props.upside_down_cumulative ? -1 : 1
     let prevSlope = 0
     return normalized.map(([x, y], index) => {
         if (index === 0) {
@@ -73,7 +76,7 @@ const points = computed<Point[]>(() => {
             const dx = nextX - x
             const slope = dx === 0 ? 0 : y / dx
             prevSlope = slope
-            return { x, y: slope, cumulativeY: y }
+            return { x, y: slope * upside_down, cumulativeY: y }
         }
 
         const [prevX, prevY] = normalized[index - 1]
@@ -84,12 +87,14 @@ const points = computed<Point[]>(() => {
         // we will just assume gap is constant, (non-cumulative graph looks weird otherwise), which is the current behaviour of histogram
         const dx = x - prevX
         const slope = dx === 0 ? 0 : (y - prevY) / dx
-        if (slope < FLOAT_TOL) {
-            const out = { x, y: prevSlope, cumulativeY: y }
+
+        if (slope * upside_down < FLOAT_TOL) {
+            const out = { x, y: prevSlope * upside_down, cumulativeY: y }
             return out
         }
         prevSlope = slope
-        return { x, y: slope, cumulativeY: y }
+
+        return { x, y: slope * upside_down, cumulativeY: y }
     })
 })
 
@@ -100,7 +105,7 @@ const maxX = computed(() => {
 
 const maxY = computed(() => {
     if (!points.value.length) return 1
-    if (props.maxYoverride) {
+    if (props.maxYoverride && props.cumulative) {
         return props.maxYoverride
     }
     return Math.max(1e-9, ...points.value.map((point) => point.y))
