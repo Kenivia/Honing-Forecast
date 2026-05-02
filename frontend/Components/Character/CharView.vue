@@ -9,6 +9,7 @@ import { Button } from "primevue"
 import { onUnmounted, ref, watch } from "vue"
 import { RouterLink, useRoute, useRouter } from "vue-router"
 import ControlPanel from "./ControlPanel.vue"
+import Footer from "../Common/Footer.vue"
 
 const route = useRoute()
 const router = useRouter()
@@ -71,7 +72,6 @@ const closeSidebar = () => {
             <div v-if="is1200Narrow && sidebarOpen" class="hf-backdrop" @click="closeSidebar" />
         </Transition>
 
-        <!-- Sidebar -->
         <nav
             class="hf-side-bar"
             :class="{
@@ -87,21 +87,7 @@ const closeSidebar = () => {
             <RouterLink to="calc" class="hf-side-bar-item" @click="closeSidebar"> Setup & Cost Analysis </RouterLink>
             <RouterLink to="instructions" class="hf-side-bar-item" @click="closeSidebar"> Taps Instructions </RouterLink>
             <ControlPanel v-if="route.path.endsWith('calc')" />
-            <footer class="hf-footer-bar">
-                <a href="https://ko-fi.com/kenivia" class="hf-header-links">
-                    <img src="/Icons/kofi.png" alt="Ko-fi" />
-                    <span>Donate</span>
-                </a>
-                <a href="https://discord.gg/KWDpQyvgzc" class="hf-header-links">
-                    <img src="/Icons/Discord.png" alt="Discord" />
-                    <span>Discord</span>
-                </a>
-                <a href="https://github.com/Kenivia/Honing-Forecast" class="hf-header-links">
-                    <img src="/Icons/GitHub.png" alt="GitHub" />
-                    <span>GitHub</span>
-                </a>
-                <span class="hf-footer-note">Made with love by Kenivia with help from many awesome people.</span>
-            </footer>
+            <Footer />
         </nav>
 
         <!-- Main content -->

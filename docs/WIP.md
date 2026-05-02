@@ -15,6 +15,7 @@ I have to focus on my exams (until like mid June) so I'm trying not to spend too
 - rework the css stuff to be actually sharable & usable
 
 - remove the juice tab in the thing and always show relevant juices
+  - move the avg bound roster bound stuff to the sidebar also
 
 ## Roadmap
 

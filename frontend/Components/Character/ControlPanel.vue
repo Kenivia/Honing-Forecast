@@ -45,30 +45,30 @@ watchEffect(() => {
             <!-- This is for producing payloads to feed into Rust -->
             <!-- <button class="hf-control-panel-btn" @click="copyPayload">Copy Payload</button> -->
 
-            <div class="hf-divider" />
             <label class="hf-inline-check">
                 <input v-model="roster_config.cumulative_graph" type="checkbox" />
                 <span>Cumulative graph</span>
             </label>
-            <div class="hf-divider" />
+
             <label class="hf-inline-check">
                 <input v-model="treatment_tick" type="checkbox" />
                 <span>Account for sell value of tradable mats (Recommended)</span>
             </label>
 
-            <div class="hf-divider" />
+     
             <label class="hf-inline-check">
                 <input v-model="active_profile.auto_start_optimizer" type="checkbox" />
                 <span>Auto start optimizer</span>
             </label>
-            <div class="hf-divider" />
-            <button class="hf-control-panel-btn" @click="resetActive">Reset this char</button>
+ <label class="hf-inline-check">
+            <button class="hf-control-panel-btn" @click="resetActive">Reset this char</button></label>
         </div>
     </section>
 </template>
 <style scoped>
 .hf-control-panel-btn {
     color: var(--text-muted);
+    margin-left: 20px;
 }
 .hf-control-panel {
     min-width: 0;
@@ -82,7 +82,8 @@ watchEffect(() => {
     align-items: center;
     display: flex;
     flex-direction: row;
-    padding-bottom: 6px;
+    padding: 2px 0px;
+    border-bottom: 1px solid var(--hf-border-subtle);
 }
 .hf-options-body {
     padding: 4px 0px;

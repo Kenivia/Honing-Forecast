@@ -196,29 +196,4 @@ function onCharSelect(e: Event) {
     line-height: 1;
     width: min-content;
 }
-
-.hf-footer-bar {
-    display: flex;
-    flex-direction: row-reverse;
-    align-items: center;
-    gap: 8px;
-    flex-wrap: wrap;
-    padding: 8px 10px;
-}
-
-.hf-footer-note {
-    color: var(--text-very-muted);
-    font-size: 12px;
-    text-align: center;
-}
-
-@media (max-width: 900px) {
-    .hf-footer-bar {
-        justify-content: center;
-    }
-
-    .hf-footer-note {
-        width: 100%;
-    }
-}
 </style>
