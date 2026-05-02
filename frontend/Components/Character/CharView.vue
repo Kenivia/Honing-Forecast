@@ -3,13 +3,15 @@ import Instructions from "@/Components/Character/Instructions/Instructions.vue"
 import MaterialDist from "@/Components/Character/MaterialDist/MaterialDist.vue"
 import StatusInput from "@/Components/Character/StatusInput/StatusInput.vue"
 import { useRosterStore } from "@/Stores/RosterConfig"
-import { useMediaIsNarrow } from "@/Utils/WindowSize"
+
 import { storeToRefs } from "pinia"
-import { Button } from "primevue"
+
 import { onUnmounted, ref, watch } from "vue"
 import { RouterLink, useRoute, useRouter } from "vue-router"
 import ControlPanel from "./ControlPanel.vue"
 import Footer from "../Common/Footer.vue"
+import Sidebar from "../Common/Sidebar.vue"
+import { start_all_workers } from "./CharWorkerUtils"
 
 const route = useRoute()
 const router = useRouter()
@@ -43,232 +45,54 @@ watch(
         }
     },
 )
+watch(
+    [
+        // () => active_profile.value.bound_budgets[active_profile.value.tier].data,
+        // () => active_profile.value.bound_budgets[active_profile.value.tier].enabled, now has direct callback in their materialCell
 
+        () => active_profile.value.express_event,
+        // () => active_profile.value.min_resolution, not used rn
+
+        // () => active_roster_mats_owned,  // shouldn't be able to change on charview
+        // () => active_tradable_mats_owned,
+        // () =>
+
+        // () => active_profile.value.keyed_upgrades,  dedicated callback
+        // () => active_profile.value.special_budget.data,
+        () => active_profile.value.optimizer_treatment_plan,
+        () => active_profile.value.auto_start_optimizer,
+    ],
+    () => {
+        // console.log("start", active_profile.value, roster_config.value)
+        start_all_workers()
+    },
+    { deep: true, immediate: true },
+)
 onUnmounted(() => {
     // kill workers when going to market / roster view
     active_profile.value.optimizer_worker_bundle.cancel()
     active_profile.value.histogram_worker_bundle.cancel()
     active_profile.value.evaluation_worker_bundle.cancel()
 })
-
-const { isNarrow: is1200Narrow } = useMediaIsNarrow(1200)
-
-const sidebarOpen = ref(false)
-
-const openSidebar = () => {
-    sidebarOpen.value = true
-}
-
-const closeSidebar = () => {
-    sidebarOpen.value = false
-}
 </script>
-
 <template>
-    <div class="hf-layout">
-        <button v-if="is1200Narrow" class="hf-burger" @click="openSidebar" aria-label="Open navigation"><span /><span /><span /></button>
-
-        <Transition name="hf-backdrop">
-            <div v-if="is1200Narrow && sidebarOpen" class="hf-backdrop" @click="closeSidebar" />
-        </Transition>
-
-        <nav
-            class="hf-side-bar"
-            :class="{
-                'hf-side-bar--narrow': is1200Narrow,
-                'hf-side-bar--open': is1200Narrow && sidebarOpen,
-            }"
-        >
+    <Sidebar :breakpoint="1174">
+        <template #sidebar="{ close, isNarrow }">
             <div class="hf-side-bar-header">
                 <span class="hf-side-bar-title">{{ route.params.characterName }}</span>
-                <button v-if="is1200Narrow" class="hf-close-btn" @click="closeSidebar" aria-label="Close navigation">✕</button>
+                <button v-if="isNarrow" class="hf-close-btn" @click="close" aria-label="Close navigation">✕</button>
             </div>
 
-            <RouterLink to="calc" class="hf-side-bar-item" @click="closeSidebar"> Setup & Cost Analysis </RouterLink>
-            <RouterLink to="instructions" class="hf-side-bar-item" @click="closeSidebar"> Taps Instructions </RouterLink>
+            <RouterLink to="calc" class="hf-side-bar-item" @click="close"> Setup & Cost Analysis </RouterLink>
+            <RouterLink to="instructions" class="hf-side-bar-item" @click="close"> Taps Instructions </RouterLink>
             <ControlPanel v-if="route.path.endsWith('calc')" />
             <Footer />
-        </nav>
+        </template>
 
-        <!-- Main content -->
-        <div class="hf-main-stage" :key="active_profile.char_name">
+        <template #main :key="active_profile.char_name">
             <StatusInput v-if="route.path.endsWith('calc')" />
             <MaterialDist v-if="route.path.endsWith('calc')" />
             <Instructions v-if="route.path.endsWith('instructions')" />
-        </div>
-    </div>
+        </template>
+    </Sidebar>
 </template>
-
-<style scoped>
-/* ── Layout shell ────────────────────────────────────────── */
-.hf-layout {
-    display: flex;
-    flex-direction: row;
-    min-height: 100%;
-    flex-grow: 1;
-}
-
-/* ── Sidebar ─────────────────────────────────────────────── */
-.hf-side-bar {
-    width: 200px;
-    flex-shrink: 0;
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-    padding: 12px 8px;
-    background-color: var(--hf-bg-deep);
-    border-right: 1px solid var(--hf-border);
-    overflow: hidden;
-    min-height: 100%;
-}
-
-/* Narrow: slide in from left as a fixed overlay */
-.hf-side-bar--narrow {
-    position: fixed;
-    top: 0;
-    left: 0;
-    height: 100vh;
-    z-index: 200;
-    transform: translateX(-100%);
-    transition:
-        transform 0.1s cubic-bezier(0.4, 0, 0.2, 1),
-        box-shadow 0.1s ease;
-    box-shadow: none;
-}
-
-.hf-side-bar--open {
-    transform: translateX(0);
-    box-shadow: 4px 0 24px rgba(0, 0, 0, 0.5);
-}
-
-/* ── Sidebar header (title + close button) ───────────────── */
-.hf-side-bar-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 4px 8px 12px;
-    border-bottom: 1px solid var(--hf-border);
-    margin-bottom: 6px;
-}
-
-.hf-side-bar-title {
-    color: var(--hf-text-muted);
-    user-select: none;
-    font-size: 1.1rem;
-}
-
-/* ── Nav links ───────────────────────────────────────────── */
-.hf-side-bar-item {
-    display: block;
-    padding: 8px 12px;
-    border-radius: 6px;
-    color: var(--hf-text-bright);
-    text-decoration: none;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    transition:
-        color 0.1s ease,
-        background-color 0.1s ease;
-    cursor: pointer;
-}
-
-.hf-side-bar-item:hover {
-    background-color: var(--hf-bg-card);
-}
-
-/* RouterLink active state */
-.hf-side-bar-item.router-link-active {
-    color: var(--hf-gold);
-    background-color: var(--hf-bg-card);
-}
-
-/* ── Burger button ───────────────────────────────────────── */
-.hf-burger {
-    position: fixed;
-    top: 70px;
-    left: 14px;
-    z-index: 100;
-    width: 46px;
-    height: 46px;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    gap: 5px;
-    padding: 6px;
-    background: var(--hf-bg-raised);
-    border: 2px solid var(--hf-text-bright);
-    border-radius: 12px;
-    cursor: pointer;
-    transition: background-color 0.1s ease;
-}
-
-.hf-burger:hover {
-    background-color: var(--hf-bg-hover);
-}
-
-.hf-burger span {
-    display: block;
-    width: 22px;
-    height: 2px;
-    background: var(--hf-text-bright);
-    border-radius: 2px;
-}
-
-/* ── Close button (inside sidebar on narrow) ─────────────── */
-.hf-close-btn {
-    background: none;
-    border: none;
-    color: var(--hf-text-muted);
-    cursor: pointer;
-    padding: 6px 6px;
-    border-radius: 4px;
-    transition:
-        color 0.1s ease,
-        background-color 0.1s ease;
-    line-height: 1;
-}
-
-.hf-close-btn:hover {
-    color: var(--hf-text);
-    background-color: var(--hf-bg-hover);
-}
-
-/* ── Backdrop ────────────────────────────────────────────── */
-.hf-backdrop {
-    position: fixed;
-    inset: 0;
-    z-index: 150;
-    background: rgba(0, 0, 0, 0.5);
-    backdrop-filter: blur(2px);
-}
-
-.hf-backdrop-enter-active,
-.hf-backdrop-leave-active {
-    transition: opacity 0.1s ease;
-}
-
-.hf-backdrop-enter-from,
-.hf-backdrop-leave-to {
-    opacity: 0;
-}
-
-/* ── Main stage ──────────────────────────────────────────── */
-.hf-main-stage {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    padding: 8px;
-    justify-content: flex-start;
-    align-items: center;
-    flex-grow: 1;
-    margin-left: max(0, calc(50vw - 200px - 1000px));
-}
-
-@media (max-width: 1000px) {
-    .hf-main-stage {
-        margin-left: auto;
-    }
-}
-</style>

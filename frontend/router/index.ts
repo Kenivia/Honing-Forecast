@@ -3,8 +3,7 @@ import CharView from "../Components/Character/CharView.vue"
 import MarketView from "@/Components/Market/MarketView.vue"
 import RosterView from "@/Components/RosterView.vue"
 import { useRosterStore } from "@/Stores/RosterConfig"
-import StatusInput from "@/Components/Character/StatusInput/StatusInput.vue"
-import Instructions from "@/Components/Character/Instructions/Instructions.vue"
+import ChangelogView from "@/Components/ChangelogView.vue"
 
 const router = createRouter({
     history: createWebHistory(),
@@ -44,6 +43,11 @@ const router = createRouter({
             path: "/roster-setup",
             name: "roster",
             component: RosterView,
+        },
+        {
+            path: "/change-log",
+            name: "change-log",
+            component: ChangelogView,
         },
     ],
 })

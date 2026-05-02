@@ -1,3 +1,7 @@
+<script>
+import { RouterLink } from "vue-router"
+</script>
+
 <template>
     <footer class="hf-footer-bar">
         <a href="https://discord.gg/KWDpQyvgzc" class="hf-footer-links">
@@ -12,6 +16,10 @@
             <img src="/Icons/kofi.png" alt="Ko-fi" />
             <span>Donate</span>
         </a>
+        <RouterLink to="/change-log" class="hf-footer-links">
+            <img src="/Icons/branch.png" alt="Ko-fi" />
+            <span>v{{ 123 }}</span>
+        </RouterLink>
     </footer>
 </template>
 <style>

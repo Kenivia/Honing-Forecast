@@ -9,7 +9,7 @@ import { WasmOp } from "@/Utils/Interfaces"
 const store = useRosterStore()
 const { active_profile } = storeToRefs(store)
 
-const { roster_config, active_roster_mats_owned, active_tradable_mats_owned } = storeToRefs(useRosterStore())
+const { roster_config,} = storeToRefs(useRosterStore())
 function resetActive() {
     store.resetActiveProfile()
 }
@@ -33,7 +33,7 @@ watchEffect(() => {
 </script>
 <template>
     <section class="hf-control-panel">
-        <div class="hf-card-header" style="margin-top: 100px">
+        <div class="hf-card-header" >
             <div class="hf-card-title">Controls</div>
         </div>
         <div class="hf-card-body hf-options-body" ">
@@ -60,8 +60,9 @@ watchEffect(() => {
                 <input v-model="active_profile.auto_start_optimizer" type="checkbox" />
                 <span>Auto start optimizer</span>
             </label>
- <label class="hf-inline-check">
-            <button class="hf-control-panel-btn" @click="resetActive">Reset this char</button></label>
+            <label class="hf-inline-check">
+                <button class="hf-control-panel-btn" @click="resetActive">Reset this char</button>
+            </label>
         </div>
     </section>
 </template>

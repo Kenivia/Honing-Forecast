@@ -107,46 +107,6 @@ function change_one_and_update_keyed(row: number, col: number, current = relevan
     change_one(row, col, current)
     grid_change_callback()
 }
-
-// shouldn't be needed anymore
-// watch(
-//     () => active_profile.value.tier,
-//     () => {
-//         // console.log("keyed update")
-//         active_profile.value.keyed_upgrades = grids_to_keyed(
-//             active_profile.value.normal_grid,
-//             active_profile.value.adv_grid,
-//             active_profile.value.keyed_upgrades,
-//             active_profile.value.tier,
-//         )
-//     },
-//     { deep: true, immediate: true },
-// )
-
-// Don't watch state changes betcause that's handled by start_eval_hist
-watch(
-    [
-        // () => active_profile.value.bound_budgets[active_profile.value.tier].data,
-        // () => active_profile.value.bound_budgets[active_profile.value.tier].enabled, now has direct callback in their materialCell
-
-        () => active_profile.value.express_event,
-        // () => active_profile.value.min_resolution, not used rn
-
-        // () => active_roster_mats_owned,  // shouldn't be able to change on charview
-        // () => active_tradable_mats_owned,
-        // () =>
-
-        // () => active_profile.value.keyed_upgrades,  dedicated callback
-        // () => active_profile.value.special_budget.data,
-        () => active_profile.value.optimizer_treatment_plan,
-        () => active_profile.value.auto_start_optimizer,
-    ],
-    () => {
-        // console.log("start", active_profile.value, roster_config.value)
-        start_all_workers()
-    },
-    { deep: true, immediate: true },
-)
 </script>
 <template>
     <div class="hf-grid-content">

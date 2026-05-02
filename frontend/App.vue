@@ -136,6 +136,9 @@ function onCharSelect(e: Event) {
     padding: 0;
     margin: 0;
     gap: 8px;
+    position: relative;
+    z-index: 50;
+    background: var(--hf-bg-header);
 }
 
 .hf-header-button {
@@ -178,8 +181,7 @@ function onCharSelect(e: Event) {
 .hf-brand {
     display: flex;
     align-items: center;
-    gap: 0;
-    padding-right: 8px;
+    width: 200px;
 }
 
 .hf-brand-icon {

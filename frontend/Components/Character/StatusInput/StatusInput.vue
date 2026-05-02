@@ -6,7 +6,6 @@ import { computed, watch } from "vue"
 import { ADV_COLS, ALL_LABELS, NORMAL_COLS, NUM_PIECES, PLUS_TIER_CONVERSION } from "@/Utils/Constants"
 import TierConvertButton from "@/Components/Common/TierConvertButton.vue"
 import { UpgradeStatus } from "@/Utils/Interfaces"
-import ControlPanel from "../ControlPanel.vue"
 import { grid_change_callback } from "../CharWorkerUtils"
 import { useRosterStore } from "@/Stores/RosterConfig"
 import { input_column_to_num, parse_input } from "@/Utils/InputColumn"
@@ -162,7 +161,7 @@ function change_tier() {
 }
 
 .hf-honing-row {
-    width: min(100%, 1074px);
+    width: fit-content;
     display: flex;
     gap: 10px;
     align-items: start;
@@ -193,7 +192,7 @@ function change_tier() {
     gap: 8px;
 }
 
-@media (max-width: 1000px) {
+@media (max-width: 1174px) {
     .hf-honing-row {
         width: 100%;
         align-items: stretch;

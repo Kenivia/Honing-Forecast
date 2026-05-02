@@ -96,8 +96,5 @@ watch(
 <style>
 .hf-instructions-pane {
     width: min(100%, 700px);
-    overflow-x: auto;
-    overflow-y: scroll;
-    max-height: 1500px;
 }
 </style>
