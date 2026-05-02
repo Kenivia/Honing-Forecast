@@ -1,15 +1,7 @@
 import ChangeLogsView from "@/Components/ChangeLogsView.vue"
 
-export const all_change_logs = import.meta.glob("@/Changelogs/*.vue")
+export const all_change_logs = import.meta.glob("../../public/change-logs/*.md")
 
-export const CHANGE_LOGS_ROUTES = Object.entries(all_change_logs).map(([path, component]) => {
-    const version = path.replace("/frontend/Changelogs/", "").replace(".vue", "")
-    return {
-        path: `${version}`,
-        name: `change-logs-${version}`,
-        ChangeLogsView,
-    }
-})
 function sort_versions(versions: string[]): string[] {
     return [...versions].sort((a, b) => {
         const parse = (v: string) => v.replace(/^v/, "").split(".").map(Number)
@@ -22,15 +14,16 @@ function sort_versions(versions: string[]): string[] {
 
 export const ALL_VERSIONS = sort_versions(
     Object.entries(all_change_logs).map(([path]) => {
-        return path.replace("/frontend/Changelogs/", "").replace(".vue", "")
+        return path.replace("../../public/change-logs/", "").replace(".md", "")
     }),
 )
+
 export const LATEST_VERSION = ALL_VERSIONS[0]
 
 export function minor_version_equal(a: string, b: string) {
     const a_split = a.replace("v", "").split(".")
     const b_split = b.replace("v", "").split(".")
 
-    return a_split[0] === b_split[0] && a_split[1] === b_split[1]
+    return (a_split[0] === b_split[0] && a_split[1] === b_split[1]) || a_split[0] === "0"
 }
 // const latest_change_log =

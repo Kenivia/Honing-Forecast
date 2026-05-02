@@ -54,7 +54,6 @@ watch(
     display: grid;
     grid-template-columns: 90px 90px;
     align-items: center;
-    margin-top: auto;
     padding: 0px 10px;
 }
 

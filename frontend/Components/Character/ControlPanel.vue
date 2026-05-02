@@ -78,7 +78,6 @@ watchEffect(() => {
     align-items: center;
     font-size: 0.85rem;
     width: 100%;
-    justify-self: space-between;
 }
 .hf-inline-check {
     align-items: center;

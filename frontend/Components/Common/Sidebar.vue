@@ -48,8 +48,10 @@ const close = () => (sidebarOpen.value = false)
     justify-content: space-between;
     padding: 4px 4px 12px;
     border-bottom: 1px solid var(--hf-border);
-    margin-top: 6px;
+    margin-top: -46px;
+    width: 100%;
     justify-self: flex-start;
+    position: absolute;
 }
 
 .hf-side-bar-title {
@@ -68,6 +70,7 @@ const close = () => (sidebarOpen.value = false)
     text-decoration: none;
     white-space: nowrap;
     text-overflow: ellipsis;
+    overflow: hidden;
     transition:
         color 0.1s ease,
         background-color 0.1s ease;
@@ -97,19 +100,21 @@ const close = () => (sidebarOpen.value = false)
     display: flex;
     flex-direction: column;
     gap: 2px;
-    padding: 12px 8px;
+    padding: calc(234px + 56px) 8px 12px 8px;
     background-color: var(--hf-bg-deep);
     border-right: 1px solid var(--hf-border);
     overflow: scroll;
 
     height: max(calc(100vh + 234px - 50px), 100%);
-    padding-top: 234px;
+
     top: calc(50px - 234px);
-    justify-items: flex-start;
+    justify-content: space-between;
     position: fixed;
     z-index: 1;
 }
-
+.sb-side-bar:nth-child(2) {
+    margin-top: 100px;
+}
 @media (max-width: 1174px) {
     .sb-side-bar {
         height: calc(100vh);

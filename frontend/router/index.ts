@@ -3,8 +3,7 @@ import CharView from "../Components/Character/CharView.vue"
 import MarketView from "@/Components/Market/MarketView.vue"
 import RosterView from "@/Components/RosterView.vue"
 import { useRosterStore } from "@/Stores/RosterConfig"
-import ChangelogView from "@/Components/ChangelogView.vue"
-import { ALL_VERSIONS, CHANGE_LOGS_ROUTES, LATEST_VERSION } from "@/Utils/Changelog"
+import { ALL_VERSIONS, LATEST_VERSION } from "@/Utils/Changelog"
 import ChangeLogsView from "@/Components/ChangeLogsView.vue"
 
 const router = createRouter({
