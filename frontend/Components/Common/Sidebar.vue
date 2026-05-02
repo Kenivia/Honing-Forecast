@@ -1,18 +1,17 @@
 <script setup lang="ts">
 import { useMediaIsNarrow } from "@/Utils/WindowSize"
 import { ref } from "vue"
+import Footer from "./Footer.vue"
 
-const props = withDefaults(defineProps<{ breakpoint?: number }>(), {
-    breakpoint: 1174,
+const props = withDefaults(defineProps<{ header?: string }>(), {
+    header: "",
 })
 
-const { isNarrow } = useMediaIsNarrow(props.breakpoint)
+const { isNarrow } = useMediaIsNarrow(1174)
 
 const sidebarOpen = ref(false)
 const open = () => (sidebarOpen.value = true)
 const close = () => (sidebarOpen.value = false)
-
-console.log(String(props.breakpoint) + "px")
 </script>
 
 <template>
@@ -30,7 +29,9 @@ console.log(String(props.breakpoint) + "px")
                 'sb-side-bar--open': isNarrow && sidebarOpen,
             }"
         >
+            <span class="hf-side-bar-header hf-side-bar-title">{{ header }} </span>
             <slot name="sidebar" :close="close" :is-narrow="isNarrow" />
+            <Footer />
         </nav>
 
         <div class="sb-main-stage">
@@ -45,14 +46,16 @@ console.log(String(props.breakpoint) + "px")
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 4px 8px 12px;
+    padding: 4px 4px 12px;
     border-bottom: 1px solid var(--hf-border);
-    margin-bottom: 6px;
+    margin-top: 6px;
+    justify-self: flex-start;
 }
 
 .hf-side-bar-title {
     color: var(--hf-text-muted);
     user-select: none;
+    align-items: center;
     font-size: 1.1rem;
 }
 
@@ -102,10 +105,11 @@ console.log(String(props.breakpoint) + "px")
     height: max(calc(100vh + 234px - 50px), 100%);
     padding-top: 234px;
     top: calc(50px - 234px);
-    justify-content: space-between;
+    justify-items: flex-start;
     position: fixed;
     z-index: 1;
 }
+
 @media (max-width: 1174px) {
     .sb-side-bar {
         height: calc(100vh);

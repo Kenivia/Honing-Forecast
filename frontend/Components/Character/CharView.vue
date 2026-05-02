@@ -46,22 +46,7 @@ watch(
     },
 )
 watch(
-    [
-        // () => active_profile.value.bound_budgets[active_profile.value.tier].data,
-        // () => active_profile.value.bound_budgets[active_profile.value.tier].enabled, now has direct callback in their materialCell
-
-        () => active_profile.value.express_event,
-        // () => active_profile.value.min_resolution, not used rn
-
-        // () => active_roster_mats_owned,  // shouldn't be able to change on charview
-        // () => active_tradable_mats_owned,
-        // () =>
-
-        // () => active_profile.value.keyed_upgrades,  dedicated callback
-        // () => active_profile.value.special_budget.data,
-        () => active_profile.value.optimizer_treatment_plan,
-        () => active_profile.value.auto_start_optimizer,
-    ],
+    [() => active_profile.value.express_event, () => active_profile.value.optimizer_treatment_plan, () => active_profile.value.auto_start_optimizer],
     () => {
         // console.log("start", active_profile.value, roster_config.value)
         start_all_workers()
@@ -76,17 +61,13 @@ onUnmounted(() => {
 })
 </script>
 <template>
-    <Sidebar :breakpoint="1174">
-        <template #sidebar="{ close, isNarrow }">
-            <div class="hf-side-bar-header">
-                <span class="hf-side-bar-title">{{ route.params.characterName }}</span>
-                <button v-if="isNarrow" class="hf-close-btn" @click="close" aria-label="Close navigation">✕</button>
+    <Sidebar :header="active_profile.char_name">
+        <template #sidebar="{ close }">
+            <div style="display: flex; flex-direction: column">
+                <RouterLink to="calc" class="hf-side-bar-item" @click="close"> Setup & Cost Analysis </RouterLink>
+                <RouterLink to="instructions" class="hf-side-bar-item" @click="close"> Taps Instructions </RouterLink>
             </div>
-
-            <RouterLink to="calc" class="hf-side-bar-item" @click="close"> Setup & Cost Analysis </RouterLink>
-            <RouterLink to="instructions" class="hf-side-bar-item" @click="close"> Taps Instructions </RouterLink>
             <ControlPanel v-if="route.path.endsWith('calc')" />
-            <Footer />
         </template>
 
         <template #main :key="active_profile.char_name">

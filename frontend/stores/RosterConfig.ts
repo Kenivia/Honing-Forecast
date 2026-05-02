@@ -21,6 +21,7 @@ export interface RosterConfig {
 
     profiles: CharProfile[]
     active_profile_index: number
+    last_seen_version: string
 }
 export const useRosterStore = defineStore("roster", {
     state: () => ({
@@ -88,6 +89,7 @@ export const DEFAULT_ROSTER_CONFIG: RosterConfig = {
 
     profiles: [create_default_char_profile()],
     active_profile_index: 0,
+    last_seen_version: "v0.0.0",
 }
 
 export function load_roster_config(): RosterConfig {

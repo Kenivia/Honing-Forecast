@@ -25,6 +25,7 @@
             ],
             "*":["./frontend/*"]
         },
+        "types": ["vite/client"]
     },
     "include": [
         "frontend/**/*",
