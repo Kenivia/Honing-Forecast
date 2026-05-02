@@ -89,7 +89,7 @@ function onCharSelect(e: Event) {
                             <RouterLink
                                 :to="{ name: 'char', params: { characterName: profile.char_name } }"
                                 class="hf-header-button"
-                                :class="{ selected: route.path == '/' + profile.char_name }"
+                                :class="{ selected: route.path.startsWith('/' + profile.char_name) }"
                             >
                                 {{ profile.char_name }}
                             </RouterLink>
@@ -110,21 +110,6 @@ function onCharSelect(e: Event) {
         <main class="hf-main-slot">
             <RouterView />
         </main>
-        <footer class="hf-footer-bar">
-            <a href="https://ko-fi.com/kenivia" class="hf-header-links">
-                <img src="/Icons/kofi.png" alt="Ko-fi" />
-                <span>Donate</span>
-            </a>
-            <a href="https://discord.gg/KWDpQyvgzc" class="hf-header-links">
-                <img src="/Icons/Discord.png" alt="Discord" />
-                <span>Discord</span>
-            </a>
-            <a href="https://github.com/Kenivia/Honing-Forecast" class="hf-header-links">
-                <img src="/Icons/GitHub.png" alt="GitHub" />
-                <span>GitHub</span>
-            </a>
-            <span class="hf-footer-note">Made with love by Kenivia with help from many awesome people.</span>
-        </footer>
     </div>
 </template>
 
@@ -133,6 +118,14 @@ function onCharSelect(e: Event) {
     display: flex;
     flex-direction: column;
     min-height: 100vh;
+    /* border: 1px solid blue; */
+}
+
+.hf-main-slot {
+    flex-grow: 1;
+    /* border: 1px solid red; */
+    display: flex;
+    flex-direction: column;
 }
 
 .hf-top-nav {
@@ -145,15 +138,10 @@ function onCharSelect(e: Event) {
     gap: 8px;
 }
 
-.hf-main-slot {
-    flex: 1;
-    min-width: 0;
-}
-
 .hf-header-button {
     display: inline-flex;
     align-items: center;
-    color: var(--hf-header-button);
+    color: var(--hf-text-bright);
     border-radius: 6px;
     border: 1px solid var(--separator-color);
     background-color: var(--hf-bg-header);
@@ -163,13 +151,11 @@ function onCharSelect(e: Event) {
 }
 
 .hf-header-button:hover {
-    color: var(--accent-hover);
     background-color: var(--hf-bg-hover);
 }
 
 .hf-header-button.selected {
-    color: var(--accent-hover);
-    background-color: var(--hf-bg-hover);
+    color: var(--hf-gold);
 }
 
 .hf-header-spacer {
@@ -205,12 +191,9 @@ function onCharSelect(e: Event) {
 
 .hf-title {
     margin: 0;
-    font-family: var(--hf-font-display);
     color: var(--hf-text-bright);
-    letter-spacing: 0.03em;
     font-size: 20px;
     line-height: 1;
-    font-weight: 700;
     width: min-content;
 }
 

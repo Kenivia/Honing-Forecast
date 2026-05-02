@@ -20,7 +20,6 @@
 
     --hf-free-tap-faded: hsl(293, 100%, 92%);
     --hf-bg-header: #17181d;
-    --hf-header-button: var(--hf-gold);
     --hf-cancel: #a92727;
     --hf-free-tap: #ed7bff;
     --separator-color: rgba(102, 102, 102, 0.507);
@@ -35,13 +34,12 @@
     --hf-graph-tradable-color: #adff3a;
     --hf-graph-bound-color: #c9bbe7;
     --hf-graph-roster-color: #a57dfd;
-    --hf-bg-void: #08090b;
-    --hf-bg-deep: #111216;
-    --hf-bg-panel: #212327;
-    --hf-bg-card: #292b30;
-    --hf-bg-raised: #353943;
-    --hf-bg-hover: #444a58;
-
+    --hf-bg-void: #060608;
+    --hf-bg-deep: #101011;
+    --hf-bg-panel: #202023;
+    --hf-bg-card: #242429;
+    --hf-bg-raised: #313136;
+    --hf-bg-hover: #383844;
     --hf-gold: #d4b35a;
     --hf-gold-dim: #9a8447;
     --hf-gold-glow: rgba(212, 179, 90, 0.18);
@@ -222,7 +220,7 @@ body::before {
     display: flex;
     gap: 12px;
     align-items: center;
-    color: var(--hf-header-button);
+    color: var(--hf-text-bright);
     border-radius: 9px;
     font: 500 11px/1 var(--hf-font-body);
     padding: 8px 12px;
@@ -232,7 +230,7 @@ body::before {
 }
 
 .hf-header-links:hover {
-    color: var(--hf-header-button-hovered);
+    color: var(--hf-bg-raised);
     background-color: var(--hf-bg-hover);
 }
 
@@ -337,18 +335,18 @@ body::before {
     gap: 12px;
     padding: 4px 4px;
     border-bottom: 1px solid var(--hf-border-subtle);
-    background: linear-gradient(180deg, var(--hf-bg-card), transparent);
+    /* background: linear-gradient(180deg, var(--hf-bg-card), transparent); */
 }
 
 .hf-card-title {
     display: inline-flex;
     align-items: center;
     gap: 8px;
-    font-family: var(--hf-font-display);
-    letter-spacing: 0.13em;
-    text-transform: uppercase;
+    /* font-family: var(--hf-font-display); */
+    /* letter-spacing: 0.13em; */
+    /* text-transform: uppercase; */
     color: white;
-    font-size: 10px;
+    font-size: 1rem;
 }
 
 .hf-card-title-dot {

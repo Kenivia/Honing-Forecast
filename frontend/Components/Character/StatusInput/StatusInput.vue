@@ -138,7 +138,6 @@ function change_tier() {
                     <TickboxGrid grid_type="adv" />
                 </div>
             </section>
-            <ControlPanel />
         </div>
     </div>
 </template>

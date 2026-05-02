@@ -32,11 +32,11 @@ watchEffect(() => {
 })
 </script>
 <template>
-    <section class="hf-card hf-control-panel">
-        <div class="hf-card-header">
-            <div class="hf-card-title"><span class="hf-card-title-dot" />Controls</div>
+    <section class="hf-control-panel">
+        <div class="hf-card-header" style="margin-top: 100px">
+            <div class="hf-card-title">Controls</div>
         </div>
-        <div class="hf-card-body hf-options-body">
+        <div class="hf-card-body hf-options-body" ">
             <label class="hf-inline-check">
                 <input v-model="active_profile.express_event" type="checkbox" />
                 <span>Express event (March)</span>
@@ -71,13 +71,20 @@ watchEffect(() => {
     color: var(--text-muted);
 }
 .hf-control-panel {
-    width: 200px;
     min-width: 0;
+    overflow-wrap: break-word;
+    word-break: normal;
+    align-items: center;
+    font-size: 0.85rem;
+    width: 100%;
 }
-
-@media (max-width: 1000px) {
-    .hf-control-panel {
-        width: 100%;
-    }
+.hf-inline-check {
+    align-items: center;
+    display: flex;
+    flex-direction: row;
+    padding-bottom: 6px;
+}
+.hf-options-body {
+    padding: 4px 0px;
 }
 </style>

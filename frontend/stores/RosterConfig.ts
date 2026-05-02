@@ -61,11 +61,9 @@ export const useRosterStore = defineStore("roster", {
         },
 
         resetActiveProfile() {
-            this.roster_config.profiles[this.active_profile_index] = create_default_char_profile()
-            this.roster_config.profiles[this.active_profile_index].char_name = format_char_name(
-                this.roster_config.profiles[this.active_profile_index].char_name,
-                this.roster_config.active_profile_index,
-            )
+            const name = this.roster_config.profiles[this.roster_config.active_profile_index].char_name
+            this.roster_config.profiles[this.roster_config.active_profile_index] = create_default_char_profile()
+            this.roster_config.profiles[this.roster_config.active_profile_index].char_name = name
         },
 
         get_this_roster_profile(roster_index): CharProfile[] {

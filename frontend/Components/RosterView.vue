@@ -288,7 +288,7 @@ function delete_profile(index, roster_id) {
     font-size: var(--font-small);
 }
 
-@media (max-width: 900px) {
+@media (max-width: 1500px) {
     .hf-char-row {
         flex-wrap: wrap;
         gap: 8px;

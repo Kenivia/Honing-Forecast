@@ -1,8 +1,10 @@
 import { createRouter, createWebHistory } from "vue-router"
 import CharView from "../Components/Character/CharView.vue"
-import MarketView from "@/Components/Roster/MarketView.vue"
+import MarketView from "@/Components/Market/MarketView.vue"
 import RosterView from "@/Components/RosterView.vue"
 import { useRosterStore } from "@/Stores/RosterConfig"
+import StatusInput from "@/Components/Character/StatusInput/StatusInput.vue"
+import Instructions from "@/Components/Character/Instructions/Instructions.vue"
 
 const router = createRouter({
     history: createWebHistory(),
@@ -19,6 +21,19 @@ const router = createRouter({
             path: "/:characterName",
             name: "char",
             component: CharView,
+            redirect: (c) => `/${c.params.characterName}/calc`,
+            children: [
+                {
+                    path: "calc",
+                    name: "calc",
+                    component: CharView,
+                },
+                {
+                    path: "instructions",
+                    name: "instructions",
+                    component: CharView,
+                },
+            ],
         },
         {
             path: "/market-mats",
