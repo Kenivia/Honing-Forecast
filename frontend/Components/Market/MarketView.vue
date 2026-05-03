@@ -56,7 +56,7 @@ function find_representative(): Record<string, number> {
     let seen = {}
     let roster_index = 1
     for (const [profile_index, profile] of all_profiles.value.entries()) {
-        if (!seen.hasOwnProperty(profile.roster_id)) {
+        if (!Object.hasOwn(seen, profile.roster_id)) {
             seen[profile.roster_id] = roster_index
             let name = "Roster " + String(roster_index)
             out[name] = profile_index
@@ -114,7 +114,14 @@ watch(
 
             <div style="display: flex; flex-direction: column; align-items: center">
                 <div style="display: flex; flex-direction: row; align-items: center">
-                    <select v-model="roster_config.region" @change="start_fetch(roster_config.region)">
+                    <select
+                        v-model="roster_config.region"
+                        @change="
+                            () => {
+                                start_fetch(roster_config.region, true)
+                            }
+                        "
+                    >
                         <option>NAE</option>
                         <option>EUC</option>
                     </select>
@@ -122,7 +129,7 @@ watch(
                         {{ !disabled && roster_config.latest_market_data && !roster_config.market_fetch_failed ? "✅" : disabled ? "" : "Failed" }}
                     </span>
                 </div>
-                <button :disabled="disabled" @click="() => start_fetch(roster_config.region)" style="width: 140px">
+                <button :disabled="disabled" @click="() => start_fetch(roster_config.region, true)" style="width: 140px">
                     {{ !disabled ? "Fetch Market Data" : "Fetching..." }}
                 </button>
             </div>

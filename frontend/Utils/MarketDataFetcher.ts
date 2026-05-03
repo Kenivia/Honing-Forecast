@@ -77,9 +77,10 @@ export function parse_response(response: any): [number[][], number, number] {
 
     // Track shard pouch prices: { 1000: price, 2000: price, 3000: price }
     const shard_prices: { [key: number]: number } = {}
-
+    console.log(response)
     for (let index = 0; index < response.length; index++) {
         const { item_slug, price } = response[index]
+        console.log(ITEM_SLUG_TO_LABEL, item_slug)
         if (Object.hasOwn(ITEM_SLUG_TO_LABEL, item_slug)) {
             let label: string = ITEM_SLUG_TO_LABEL[item_slug]
             for (let tier = 0; tier < ALL_LABELS.length; tier++) {
@@ -165,12 +166,12 @@ export function useTimedFetch(callback: (data: number[][], selectedShardSize: nu
         return isFetching.value
     })
 
-    async function start_fetch(region: string) {
+    async function start_fetch(region: string, force?: boolean) {
         if (isFetching.value) return
 
         // Check if we have fresh cached data
         const cached = roster_config.value.latest_market_data[region]
-        if (cached !== undefined && !isDataStale(region) && !roster_config.value.market_fetch_failed) {
+        if (cached !== undefined && !isDataStale(region) && !roster_config.value.market_fetch_failed && force !== true) {
             isFetching.value = true
             await new Promise((r) => setTimeout(r, 500))
             isFetching.value = false
@@ -183,9 +184,9 @@ export function useTimedFetch(callback: (data: number[][], selectedShardSize: nu
         isFetching.value = true
 
         // Fetch new data
-        const result = (async () => {
+        const result = await (async () => {
             try {
-                const out = await fetchMarketData(region)
+                const out = fetchMarketData(region)
 
                 roster_config.value.market_fetch_failed = false
                 return out
@@ -194,11 +195,13 @@ export function useTimedFetch(callback: (data: number[][], selectedShardSize: nu
                 return cached !== undefined ? cached : FALLBACK_PRICES
             }
         })()
-        // console.log(result)
+
         const [parsed, selectedShardSize, shard_price] = parse_response(result)
 
         // Store the raw response data with timestamp
-        roster_config.value.latest_market_data[region] = [Date.now(), result]
+        if (!roster_config.value.market_fetch_failed) {
+            roster_config.value.latest_market_data[region] = [Date.now(), result]
+        }
 
         isFetching.value = false
 

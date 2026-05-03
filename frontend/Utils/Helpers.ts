@@ -68,12 +68,12 @@ export function check_revert_ilevel_ok(): number | boolean {
     for (let row = 0; row < NUM_PIECES; row++) {
         let highest_done = active_profile.value.normal_grid[row].findLastIndex((value) => value == UpgradeStatus.Done) + 1
 
-        if (!PLUS_TIER_CONVERSION[active_profile.value.tier].hasOwnProperty(String(highest_done))) {
+        if (!Object.hasOwn(PLUS_TIER_CONVERSION[active_profile.value.tier], String(highest_done))) {
             return highest_done
         }
         let highest_want = active_profile.value.normal_grid[row].findLastIndex((value) => value == UpgradeStatus.Done || value == UpgradeStatus.Want) + 1
 
-        if (!PLUS_TIER_CONVERSION[active_profile.value.tier].hasOwnProperty(String(highest_want))) {
+        if (!Object.hasOwn(PLUS_TIER_CONVERSION[active_profile.value.tier], String(highest_want))) {
             return highest_want
         }
     }
