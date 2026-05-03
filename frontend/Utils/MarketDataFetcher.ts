@@ -1,5 +1,5 @@
 import { ref, computed } from "vue"
-import { ALL_LABELS, FETCH_MARKET_COOLDOWN_MS, SERCA_TO_T4, SYNCED_LABELS } from "./Constants"
+import { ALL_LABELS, FALLBACK_PRICES, FETCH_MARKET_COOLDOWN_MS, SERCA_TO_T4, SYNCED_LABELS } from "./Constants"
 import { storeToRefs } from "pinia"
 import { useRosterStore } from "@/Stores/RosterConfig"
 const OVERRIDE_DEFAULT = {
@@ -13,7 +13,6 @@ const BODY = {
         "destiny-crystallized-destruction-stone",
         "destiny-crystallized-guardian-stone",
         "great-destiny-leapstone",
-
         "destiny-guardian-stone",
         "destiny-destruction-stone",
         "destiny-shard-pouch-s",
@@ -183,7 +182,13 @@ export function useTimedFetch(callback: (data: number[][], selectedShardSize: nu
         isFetching.value = true
 
         // Fetch new data
-        const result = await fetchMarketData(region)
+        const result = (async () => {
+            try {
+                return await fetchMarketData(region)
+            } catch {
+                return FALLBACK_PRICES
+            }
+        })()
         // console.log(result)
         const [parsed, selectedShardSize, shard_price] = parse_response(result)
 
@@ -199,13 +204,14 @@ export function useTimedFetch(callback: (data: number[][], selectedShardSize: nu
 }
 export function fetch_callback(result: number[][], selectedShardSize: number, shard_price: number) {
     const { roster_config } = storeToRefs(useRosterStore())
-
+    console.log(result)
     roster_config.value.selected_shard_bag_size = selectedShardSize
     for (let tier = 0; tier < ALL_LABELS.length; tier++) {
         for (let index = 0; index < ALL_LABELS[tier].length; index++) {
             const syncing = index in SERCA_TO_T4 && tier == 1
             const actual_tier = syncing ? 0 : tier
             const actual_index = syncing ? SERCA_TO_T4[index] : index
+
             roster_config.value.mats_prices[actual_tier].data[actual_index] = result[actual_tier][actual_index].toLocaleString()
             if (ALL_LABELS[actual_tier][actual_index] == "Shards") {
                 roster_config.value.mats_prices[actual_tier].data[actual_index] = shard_price.toLocaleString()

@@ -176,3 +176,8 @@ export const SERCA_SYNC_MAP: { serca_index: number; T4_index: number }[] = ALL_L
     })
     .filter((x) => x !== null)
 export const SERCA_TO_T4: Record<number, number> = Object.fromEntries(SERCA_SYNC_MAP.map(({ serca_index, T4_index }) => [serca_index, T4_index]))
+
+export const FALLBACK_PRICES = [
+    [647, 10, 20, 999999999, 180, 1, 0, 430, 737, 119, 3890, 496, 50, 1933, 2369, 260, 298, 19, 2748, 150, 70, 1800, 3187],
+    [3494, 196, 156, 999999999, 226, 1, 0, 430, 260],
+]
