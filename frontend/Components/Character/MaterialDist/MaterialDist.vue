@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ALL_LABELS, GRAPH_COLORS, T4_MATS_LABELS, ANNOTATION_COLORS, ANNOTATION_POSITIONS, ANNOTATION_LABELS } from "@/Utils/Constants"
 import { TreatmentPlan } from "@/Stores/CharacterProfile"
-import { metric_to_text } from "@/Utils/Helpers"
+import { has_upgrades_in_range, metric_to_text } from "@/Utils/Helpers"
 import MaterialCell from "@/Components/Common/MaterialCell.vue"
 import { WasmOp } from "@/Utils/Interfaces"
 import MaterialGraph from "./MaterialGraph.vue"
@@ -36,6 +36,21 @@ const visibleRows = computed(() => {
                 matsIndices.includes(row) ||
                 label === "Lava's Breath" ||
                 label === "Glacier's Breath" ||
+                (active_profile.value.tier === 0 &&
+                    ((has_upgrades_in_range(11, 14, true, false) && label === "11-14 Weapon") ||
+                        (has_upgrades_in_range(15, 18, true, false) && label === "15-18 Weapon") ||
+                        (has_upgrades_in_range(19, 20, true, false) && label === "19-20 Weapon") ||
+                        (has_upgrades_in_range(11, 14, false, false) && label === "11-14 Armor") ||
+                        (has_upgrades_in_range(15, 18, false, false) && label === "15-18 Armor") ||
+                        (has_upgrades_in_range(19, 20, false, false) && label === "19-20 Armor") ||
+                        (has_upgrades_in_range(1, 1, true, true) && label === "Scroll 1 Weapon") ||
+                        (has_upgrades_in_range(2, 2, true, true) && label === "Scroll 2 Weapon") ||
+                        (has_upgrades_in_range(3, 3, true, true) && label === "Scroll 3 Weapon") ||
+                        (has_upgrades_in_range(4, 4, true, true) && label === "Scroll 4 Weapon") ||
+                        (has_upgrades_in_range(1, 1, false, true) && label === "Scroll 1 Armor") ||
+                        (has_upgrades_in_range(2, 2, false, true) && label === "Scroll 2 Armor") ||
+                        (has_upgrades_in_range(3, 3, false, true) && label === "Scroll 3 Armor") ||
+                        (has_upgrades_in_range(4, 4, false, true) && label === "Scroll 4 Armor"))) ||
                 average_breakdown.value[row] > 0.0 ||
                 roster_config.value.show_all_rows
             )

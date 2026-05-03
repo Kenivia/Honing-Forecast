@@ -4,6 +4,21 @@ import { Upgrade, UpgradeStatus } from "./Interfaces"
 import { storeToRefs } from "pinia"
 import { useRosterStore } from "@/Stores/RosterConfig"
 
+export function has_upgrades_in_range(low: number, high: number, is_weapon: boolean, is_adv: boolean) {
+    // inclusive
+
+    const { active_profile } = storeToRefs(useRosterStore())
+
+    for (let row = is_weapon ? 5 : 0; row < (is_weapon ? NUM_PIECES : NUM_PIECES - 1); row++) {
+        for (let col = low - 1; col < high; col++) {
+            if ((is_adv ? active_profile.value.adv_grid : active_profile.value.normal_grid)[row][col] === UpgradeStatus.Want) {
+                return true
+            }
+        }
+    }
+
+    return false
+}
 export function format_char_name(raw: string, char_index: number, profiles?: CharProfile[]): string {
     const all_profiles = profiles === null || profiles === undefined ? storeToRefs(useRosterStore()).all_profiles.value : profiles
 
