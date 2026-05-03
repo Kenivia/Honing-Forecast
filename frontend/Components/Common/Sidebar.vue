@@ -53,7 +53,11 @@ const close = () => (sidebarOpen.value = false)
     justify-self: flex-start;
     position: absolute;
 }
-
+/* @media (max-width: 1174px) {
+    .hf-side-bar-header {
+        margin-top: 0;
+    }
+} */
 .hf-side-bar-title {
     color: var(--hf-text-muted);
     user-select: none;
@@ -118,7 +122,7 @@ const close = () => (sidebarOpen.value = false)
 @media (max-width: 1174px) {
     .sb-side-bar {
         height: calc(100vh);
-        padding-top: 0px;
+        padding-top: 56px;
         top: 0px;
     }
 }
