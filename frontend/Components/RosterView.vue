@@ -5,6 +5,7 @@ import { achieved_ilevel, format_char_name, pending_ilevel } from "@/Utils/Helpe
 import { storeToRefs } from "pinia"
 import { ref } from "vue"
 import { RouterLink } from "vue-router"
+import Sidebar from "./Common/Sidebar.vue"
 
 const roster_store = useRosterStore()
 const { roster_config, roster_ids } = storeToRefs(roster_store)
@@ -56,50 +57,58 @@ function delete_profile(index, roster_id) {
 </script>
 
 <template>
-    <div class="hf-main-stage">
-        <div :class="roster_ids.length > 1 ? 'hf-outer-budget-grid' : 'hf-only-one-roster'">
-            <section v-for="(roster_id, roster_index) in roster_ids" class="hf-card" :key="'roster-${roster_id}'">
-                <div v-if="roster_config.profiles.length > 1" class="hf-card-header">
-                    <div class="hf-card-title">
-                        <span class="hf-card-title-dot" />
-                        <span class="hf-card-title" /> Roster {{ roster_index + 1 }}
+    <Sidebar header="Roster setup">
+        <template #sidebar> uwuowo importing coming soon... </template>
+        <template #main class="hf-main-stage">
+            <div :class="roster_ids.length > 1 ? 'hf-outer-budget-grid' : 'hf-only-one-roster'">
+                <section v-for="(roster_id, roster_index) in roster_ids" class="hf-card" :key="'roster-${roster_id}'">
+                    <div v-if="roster_config.profiles.length > 1" class="hf-card-header">
+                        <div class="hf-card-title">
+                            <span class="hf-card-title-dot" />
+                            <span class="hf-card-title" /> Roster {{ roster_index + 1 }}
+                        </div>
                     </div>
-                </div>
 
-                <div
-                    v-for="[profile, profile_index] in roster_config.profiles
-                        .map((x, index): [CharProfile, number] => [x, index])
-                        .filter((y) => y[0].roster_id === roster_id)"
-                    class="hf-char-row"
-                    :key="'profile-${profile_index}'"
+                    <div
+                        v-for="[profile, profile_index] in roster_config.profiles
+                            .map((x, index): [CharProfile, number] => [x, index])
+                            .filter((y) => y[0].roster_id === roster_id)"
+                        class="hf-char-row"
+                        :key="'profile-${profile_index}'"
+                    >
+                        <input
+                            v-model="names[profile_index]"
+                            @change="
+                                ((names[profile_index] = format_char_name(names[profile_index], profile_index)), (profile.char_name = names[profile_index]))
+                            "
+                        />
+                        <div class="hf-char-meta">
+                            <label class="hf-achieved-ilevel">Achieved ilevel: {{ achieved_ilevel(profile) }}</label>
+                            <label class="hf-pending-ilevel">Pending ilevel: {{ pending_ilevel(profile) }}</label>
+                        </div>
+                        <RouterLink :to="{ name: 'char', params: { characterName: profile.char_name } }" class="hf-header-button"> Go to character </RouterLink>
+
+                        <button class="hf-header-button" @click="() => duplicate(profile_index, roster_id)">Make a copy</button>
+                        <button v-if="roster_config.profiles.length > 1" class="btn-cancel" @click="() => delete_profile(profile_index, roster_id)">
+                            Delete
+                        </button>
+                    </div>
+                    <button class="hf-new-char" @click="() => add_new_char(roster_id)">Add new character</button>
+                </section>
+                <button
+                    class="hf-card,hf-new-char"
+                    style="align-self: center"
+                    @click="() => add_new_roster(Math.max(...roster_config.profiles.map((x) => x.roster_id)) + 1)"
                 >
-                    <input
-                        v-model="names[profile_index]"
-                        @change="((names[profile_index] = format_char_name(names[profile_index], profile_index)), (profile.char_name = names[profile_index]))"
-                    />
-                    <div class="hf-char-meta">
-                        <label class="hf-achieved-ilevel">Achieved ilevel: {{ achieved_ilevel(profile) }}</label>
-                        <label class="hf-pending-ilevel">Pending ilevel: {{ pending_ilevel(profile) }}</label>
-                    </div>
-                    <RouterLink :to="{ name: 'char', params: { characterName: profile.char_name } }" class="hf-header-button"> Go to character </RouterLink>
-
-                    <button class="hf-header-button" @click="() => duplicate(profile_index, roster_id)">Make a copy</button>
-                    <button v-if="roster_config.profiles.length > 1" class="btn-cancel" @click="() => delete_profile(profile_index, roster_id)">Delete</button>
-                </div>
-                <button class="hf-new-char" @click="() => add_new_char(roster_id)">Add new character</button>
-            </section>
-            <button
-                class="hf-card,hf-new-char"
-                style="align-self: center"
-                @click="() => add_new_roster(Math.max(...roster_config.profiles.map((x) => x.roster_id)) + 1)"
-            >
-                Add new roster
-            </button>
-        </div>
-    </div>
+                    Add new roster
+                </button>
+            </div>
+        </template>
+    </Sidebar>
 </template>
 <style scoped>
 /* Base Variables & Structural Setup */
+
 .hf-outer-budget-grid {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
