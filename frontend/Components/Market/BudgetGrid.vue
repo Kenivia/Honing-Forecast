@@ -4,10 +4,10 @@ import { ALL_LABELS, BUNDLE_SIZE, SERCA_SYNC_MAP, SERCA_TO_T4, SYNCED_LABELS } f
 import { storeToRefs } from "pinia"
 import MaterialCell from "@/Components/Common/MaterialCell.vue"
 import { computed, nextTick, ref, watch, watchEffect } from "vue"
-import { input_column_to_num,  } from "@/Utils/InputColumn"
+import { input_column_to_num } from "@/Utils/InputColumn"
 
 const roster_store = useRosterStore()
-const { roster_config, active_roster_mats_owned, active_tradable_mats_owned, } = storeToRefs(roster_store)
+const { roster_config, active_roster_mats_owned, active_tradable_mats_owned } = storeToRefs(roster_store)
 
 const re_render_trigger = ref(true)
 const forceRerender = async () => {
@@ -50,7 +50,7 @@ watch(
 </script>
 
 <template>
-    <div v-if="re_render_trigger" class="hf-outer-budget-grid" ">
+    <div v-if="re_render_trigger" class="hf-outer-budget-grid">
         <div class="hf-tier-grid-scroll">
             <div class="hf-roster-inputs-tier-4" :style="{ gridRow: `span ${String(ALL_LABELS[0].length + 1)}` }">
                 <div class="hf-table-title-row">

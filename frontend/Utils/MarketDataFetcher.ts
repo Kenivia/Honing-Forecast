@@ -61,18 +61,19 @@ export async function fetchMarketData(region: string) {
     return data
 }
 
-const default_prices: number[][] = ALL_LABELS.map((x) => new Array(x.length).fill(999999999))
+const default_prices: number[][] = FALLBACK_PRICES
 
 export function parse_response(response: any): [number[][], number, number] {
     let out = default_prices
-    for (let tier = 0; tier < ALL_LABELS.length; tier++) {
-        for (let index = 0; index < ALL_LABELS[tier].length; index++) {
-            let label = ALL_LABELS[tier][index]
-            if (OVERRIDE_DEFAULT.hasOwnProperty(label)) {
-                out[tier][index] = OVERRIDE_DEFAULT[label]
-            }
-        }
-    }
+    // for (let tier = 0; tier < ALL_LABELS.length; tier++) {
+    //     for (let index = 0; index < ALL_LABELS[tier].length; index++) {
+    //         let label = ALL_LABELS[tier][index]
+    //         // if (OVERRIDE_DEFAULT.hasOwnProperty(label)) {
+    //         //     out[tier][index] = OVERRIDE_DEFAULT[label]
+    //         // }
+    //         out[tier][index] = FALLBACK_PRICES[tier][index]
+    //     }
+    // }
 
     // Track shard pouch prices: { 1000: price, 2000: price, 3000: price }
     const shard_prices: { [key: number]: number } = {}
