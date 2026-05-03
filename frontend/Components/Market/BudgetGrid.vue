@@ -50,7 +50,7 @@ watch(
 </script>
 
 <template>
-    <div v-if="re_render_trigger" class="hf-outer-budget-grid">
+    <div v-if="re_render_trigger" class="hf-outer-budget-grid" ">
         <div class="hf-tier-grid-scroll">
             <div class="hf-roster-inputs-tier-4" :style="{ gridRow: `span ${String(ALL_LABELS[0].length + 1)}` }">
                 <div class="hf-table-title-row">

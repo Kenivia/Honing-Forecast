@@ -29,7 +29,7 @@ const close = () => (sidebarOpen.value = false)
                 'sb-side-bar--open': isNarrow && sidebarOpen,
             }"
         >
-            <span class="hf-side-bar-header hf-side-bar-title">{{ header }} </span>
+            <span class="hf-side-bar-header hf-side-bar-title">{{ props.header }} </span>
             <slot name="sidebar" :close="close" :is-narrow="isNarrow" />
             <Footer />
         </nav>

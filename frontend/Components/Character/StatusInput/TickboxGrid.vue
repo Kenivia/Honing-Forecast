@@ -4,8 +4,8 @@ import { PIECE_NAMES, NORMAL_COLS as NORMAL_COLS, NUM_PIECES as NORMAL_ROWS, ADV
 import { get_icon_path } from "@/Utils/Helpers"
 import { UpgradeStatus } from "@/Utils/Interfaces"
 import { storeToRefs } from "pinia"
-import { computed, watch } from "vue"
-import { grid_change_callback, start_all_workers } from "../CharWorkerUtils"
+import { computed } from "vue"
+import { grid_change_callback } from "../CharWorkerUtils"
 
 const { active_profile } = storeToRefs(useRosterStore())
 const props = defineProps<{
@@ -54,14 +54,14 @@ function change_one(row: number, col: number, current = relevant_grid.value[row]
             }
         }
         if (no_done) {
-            for (const [index, cell] of relevant_grid.value[row].entries()) {
+            for (const [index] of relevant_grid.value[row].entries()) {
                 if (index > col) {
                     break
                 }
                 relevant_grid.value[row][index] = UpgradeStatus.Done
             }
         } else {
-            for (const [index, cell] of relevant_grid.value[row].entries()) {
+            for (const [index] of relevant_grid.value[row].entries()) {
                 if (index > col) {
                     break
                 }

@@ -80,7 +80,7 @@ export function parse_response(response: any): [number[][], number, number] {
 
     for (let index = 0; index < response.length; index++) {
         const { item_slug, price } = response[index]
-        if (ITEM_SLUG_TO_LABEL.hasOwnProperty(item_slug)) {
+        if (Object.hasOwn(ITEM_SLUG_TO_LABEL, item_slug)) {
             let label: string = ITEM_SLUG_TO_LABEL[item_slug]
             for (let tier = 0; tier < ALL_LABELS.length; tier++) {
                 let index_in_labels = ALL_LABELS[tier].findIndex((x) => x == label)

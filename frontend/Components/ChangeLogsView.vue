@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import Sidebar from "@/Components/Common/Sidebar.vue"
+import Sidebar from "@/Components/Common/SideBar.vue"
 import { useRosterStore } from "@/Stores/RosterConfig"
 import { all_change_logs, ALL_VERSIONS, LATEST_VERSION } from "@/Utils/Changelog"
 import { storeToRefs } from "pinia"

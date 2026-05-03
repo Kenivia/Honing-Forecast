@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { TreatmentPlan } from "@/Stores/CharacterProfile"
-import { build_payload } from "@/WasmInterface/PayloadBuilder"
+// import { build_payload } from "@/WasmInterface/PayloadBuilder"
 import { useRosterStore } from "@/Stores/RosterConfig"
 import { storeToRefs } from "pinia"
 import { ref, watchEffect } from "vue"
@@ -14,10 +14,10 @@ function resetActive() {
 }
 
 // This is useful for producing payloads to test the rust side
-function copyPayload() {
-    const payload = JSON.stringify(build_payload(WasmOp.Parser), null, 2)
-    navigator.clipboard?.writeText(payload).catch(() => undefined)
-}
+// function copyPayload() {
+//     const payload = JSON.stringify(build_payload(WasmOp.Parser), null, 2)
+//     navigator.clipboard?.writeText(payload).catch(() => undefined)
+// }
 
 // Currently TreatRosterAsTradable is not selectable
 const treatment_tick = ref(active_profile.value.optimizer_treatment_plan == TreatmentPlan.TreatRosterAsBound)

@@ -160,7 +160,7 @@ export const base_icon_map: Record<string, string> = {
 }
 let temp = {}
 for (const [label, path] of Object.entries(base_icon_map)) {
-    if (!base_icon_map.hasOwnProperty("Serca " + label)) {
+    if (!Object.hasOwn(base_icon_map, "Serca " + label)) {
         temp["Serca " + label] = path
     }
 }

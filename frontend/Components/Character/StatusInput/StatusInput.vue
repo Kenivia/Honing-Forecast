@@ -2,7 +2,7 @@
 import TickboxGrid from "./TickboxGrid.vue"
 import { storeToRefs } from "pinia"
 import { achieved_ilevel, check_adv_all_done, check_all_plus_20, check_revert_ilevel_ok, pending_ilevel } from "@/Utils/Helpers"
-import { computed, watch } from "vue"
+import { computed } from "vue"
 import { ADV_COLS, ALL_LABELS, NORMAL_COLS, NUM_PIECES, PLUS_TIER_CONVERSION } from "@/Utils/Constants"
 import TierConvertButton from "@/Components/Common/TierConvertButton.vue"
 import { UpgradeStatus } from "@/Utils/Interfaces"

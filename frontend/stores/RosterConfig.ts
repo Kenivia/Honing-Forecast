@@ -165,7 +165,7 @@ export function load_roster_config(): RosterConfig {
         this_parsed.num_threads = default_profile.num_threads
         this_parsed.metric_type = default_profile.metric_type
         // console.log(this_parsed.roster_id, out.roster_mats_owned)
-        if (this_parsed.roster_id === null || this_parsed.roster_id === undefined || !out.roster_mats_owned.hasOwnProperty(this_parsed.roster_id)) {
+        if (this_parsed.roster_id === null || this_parsed.roster_id === undefined || !Object.hasOwn(out.roster_mats_owned, this_parsed.roster_id)) {
             this_parsed.roster_id = out.roster_mats_owned.keys()[0]
         }
 

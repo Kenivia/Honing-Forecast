@@ -6,11 +6,11 @@ import { useRosterStore } from "@/Stores/RosterConfig"
 
 import { storeToRefs } from "pinia"
 
-import { onUnmounted, ref, watch } from "vue"
+import { onUnmounted, watch } from "vue"
 import { RouterLink, useRoute, useRouter } from "vue-router"
 import ControlPanel from "./ControlPanel.vue"
 
-import Sidebar from "../Common/Sidebar.vue"
+import Sidebar from "../Common/SideBar.vue"
 import { start_all_workers } from "./CharWorkerUtils"
 import GraphControlPanel from "./GraphControlPanel.vue"
 import Guide from "./Guide.vue"
@@ -75,7 +75,7 @@ onUnmounted(() => {
             <ControlPanel v-if="route.path.endsWith('calc')" />
         </template>
 
-        <template #main :key="active_profile.char_name">
+        <template #main>
             <StatusInput v-if="route.path.endsWith('calc')" />
             <MaterialDist v-if="route.path.endsWith('calc')" />
             <Instructions v-if="route.path.endsWith('instructions')" />

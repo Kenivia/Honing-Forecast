@@ -9,7 +9,7 @@ import { useMediaIsNarrow } from "@/Utils/WindowSize"
 import TierConvertButton from "../Common/TierConvertButton.vue"
 import { fetch_callback, useTimedFetch } from "@/Utils/MarketDataFetcher"
 import { input_column_to_num, parse_input } from "@/Utils/InputColumn"
-import Sidebar from "../Common/Sidebar.vue"
+import Sidebar from "../Common/SideBar.vue"
 import BudgetGrid from "./BudgetGrid.vue"
 
 const roster_store = useRosterStore()

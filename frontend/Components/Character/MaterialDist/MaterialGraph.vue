@@ -37,7 +37,7 @@ const props = withDefaults(
         annotationPositions: () => [],
         annotationLabels: () => [],
         // Default tooltip just displays values
-        tooltipTextFn: (x, y, cy, material, color) => `<b>X:</b> ${x} <br/> <b>Y:</b> ${cy}`,
+        tooltipTextFn: (x, y, cy, _material, _color) => `<b>X:</b> ${x} <br/> <b>Y:</b> ${cy}`,
         empty_message: "This material is never used",
         upside_down_cumulative: false,
     },

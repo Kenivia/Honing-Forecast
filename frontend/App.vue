@@ -71,32 +71,27 @@ const char_name_from_route = computed(() => route.path.split("/")[route.path.spl
                     </router-link>
 
                     <div class="hf-header-spacer" />
-
-                    <div
-                        v-if="!is600Narrow || all_profiles.length <= 1"
-                        v-for="roster_id in roster_ids"
-                        class="hf-char-row"
-                        style="display: flex; flex-direction: row"
-                        :key="'roster-${roster_id}'"
-                    >
-                        <div
-                            v-for="[profile, profile_index] in all_profiles
-                                .map((x, index): [CharProfile, number] => [x, index])
-                                .filter((y) => y[0].roster_id === roster_id)"
-                            class="hf-char-row"
-                            :key="'profile-${profile_index}'"
-                        >
-                            <!-- {{ console.log(roster_id, profile.roster_id) }} -->
-
-                            <RouterLink
-                                :to="{ name: 'char', params: { characterName: profile.char_name } }"
-                                class="hf-header-button"
-                                :class="{ selected: char_name_from_route === profile.char_name }"
+                    <div style="display: contents" v-if="!is600Narrow || all_profiles.length <= 1">
+                        <div v-for="roster_id in roster_ids" class="hf-char-row" style="display: flex; flex-direction: row" :key="`roster-${roster_id}`">
+                            <div
+                                v-for="[profile, profile_index] in all_profiles
+                                    .map((x, index): [CharProfile, number] => [x, index])
+                                    .filter((y) => y[0].roster_id === roster_id)"
+                                class="hf-char-row"
+                                :key="`profile-${profile_index}`"
                             >
-                                {{ profile.char_name }}
-                            </RouterLink>
+                                <!-- {{ console.log(roster_id, profile.roster_id) }} -->
+
+                                <RouterLink
+                                    :to="{ name: 'char', params: { characterName: profile.char_name } }"
+                                    class="hf-header-button"
+                                    :class="{ selected: char_name_from_route === profile.char_name }"
+                                >
+                                    {{ profile.char_name }}
+                                </RouterLink>
+                            </div>
+                            <span style="width: 16px"></span>
                         </div>
-                        <span style="width: 16px"></span>
                     </div>
 
                     <!-- Mobile: dropdown -->

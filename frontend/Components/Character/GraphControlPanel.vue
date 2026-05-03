@@ -21,6 +21,7 @@ const { roster_config, enabled_annotations } = storeToRefs(store)
                 v-for="(label, index) in BUTTON_LABELS"
                 :class="[`hf-graph-tab-${CSS_NAMES[index].toLowerCase()}`, { active: enabled_annotations[index] }]"
                 @click="enabled_annotations[index] = !enabled_annotations[index]"
+                :key="index"
             >
                 {{ label }}
             </button>
