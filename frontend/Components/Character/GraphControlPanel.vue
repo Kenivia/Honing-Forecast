@@ -9,7 +9,7 @@ const { roster_config, enabled_annotations } = storeToRefs(store)
 <template>
     <section class="hf-control-panel">
         <div class="hf-card-header">
-            <div class="hf-card-title">Graph options</div>
+            <div class="hf-card-title" style="padding-left: 0px">Graph options</div>
         </div>
         <div class="hf-card-body hf-options-body">
             <label class="hf-inline-check">
@@ -28,7 +28,7 @@ const { roster_config, enabled_annotations } = storeToRefs(store)
     </section>
 </template>
 <style scoped>
-.hf- .hf-control-panel-btn {
+.hf-control-panel-btn {
     color: var(--text-muted);
     margin-left: 20px;
 }

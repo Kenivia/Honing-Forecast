@@ -11,6 +11,7 @@ import { computed, ref, watchEffect } from "vue"
 import { build_payload } from "@/WasmInterface/PayloadBuilder"
 import { input_column_to_num } from "@/Utils/InputColumn"
 import { start_all_workers } from "../CharWorkerUtils"
+import { RouterLink } from "vue-router"
 
 const { active_profile } = storeToRefs(useRosterStore())
 const { roster_config, active_roster_mats_owned, active_tradable_mats_owned, enabled_annotations, show_all_rows } = storeToRefs(useRosterStore())
@@ -301,6 +302,7 @@ const show_special_guide = ref(false)
                 </div>
             </div>
         </div>
+
         <Teleport to="body">
             <div v-if="show_special_guide" class="hf-modal-overlay" @click="show_special_guide = false">
                 <div class="hf-popup" @click.stop>
@@ -313,6 +315,16 @@ const show_special_guide = ref(false)
             </div>
         </Teleport>
     </section>
+    <span>
+        The above results assumes that you follow the optimal
+        <RouterLink
+            class="hf-metric-label"
+            style="text-decoration: underline"
+            :to="{ name: 'instructions', params: { characterName: active_profile.char_name } }"
+        >
+            Taps Instructions
+        </RouterLink>
+    </span>
 </template>
 <style scoped>
 .special-convert-guide {

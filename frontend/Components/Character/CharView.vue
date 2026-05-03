@@ -13,6 +13,7 @@ import ControlPanel from "./ControlPanel.vue"
 import Sidebar from "../Common/Sidebar.vue"
 import { start_all_workers } from "./CharWorkerUtils"
 import GraphControlPanel from "./GraphControlPanel.vue"
+import Guide from "./Guide.vue"
 
 const route = useRoute()
 const router = useRouter()
@@ -65,6 +66,7 @@ onUnmounted(() => {
     <Sidebar :header="active_profile.char_name">
         <template #sidebar="{ close }">
             <div style="display: flex; flex-direction: column">
+                <RouterLink to="guide" class="hf-side-bar-item" @click="close"> Guide </RouterLink>
                 <RouterLink to="calc" class="hf-side-bar-item" @click="close"> Setup & Cost Analysis </RouterLink>
                 <RouterLink to="instructions" class="hf-side-bar-item" @click="close"> Taps Instructions </RouterLink>
             </div>
@@ -77,6 +79,7 @@ onUnmounted(() => {
             <StatusInput v-if="route.path.endsWith('calc')" />
             <MaterialDist v-if="route.path.endsWith('calc')" />
             <Instructions v-if="route.path.endsWith('instructions')" />
+            <Guide v-if="route.path.endsWith('guide')" />
         </template>
     </Sidebar>
 </template>

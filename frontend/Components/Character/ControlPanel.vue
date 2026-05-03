@@ -33,7 +33,7 @@ watchEffect(() => {
 <template>
     <section class="hf-control-panel">
         <div class="hf-card-header">
-            <div class="hf-card-title">Controls</div>
+            <div class="hf-card-title" style="padding-left: 0px">Controls</div>
         </div>
         <div class="hf-card-body hf-options-body">
             <label class="hf-inline-check">

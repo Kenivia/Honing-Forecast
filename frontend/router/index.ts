@@ -66,6 +66,11 @@ const router = createRouter({
                     component: CharView,
                 },
                 {
+                    path: "guide",
+                    name: "char-guide",
+                    component: CharView,
+                },
+                {
                     path: ":pathMatch(.*)*",
                     redirect: (c) => `/${c.params.characterName}/calc`,
                 },
