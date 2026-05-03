@@ -86,5 +86,6 @@ function handleClick() {
     font-size: 12px;
     white-space: nowrap;
     pointer-events: none;
+    z-index: 999;
 }
 </style>

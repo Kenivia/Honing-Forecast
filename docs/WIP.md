@@ -7,6 +7,7 @@ I have to focus on my exams (until like mid June) so I'm trying not to spend too
 
 - move the bound / roster / tradable allocation logic to rust, let histogram worker handle everything (average, gold, tradable gold) so ~~we're starting less workers~~ we can do everything UI related in one worker (and makes life easier later)
   - rework tap so far system while i'm at it
+  - can probably add "no juice" "full juice" comparison buttons (where the graph stuff used to be) here
 
 - store 2 copies of market price , indexed by region, add region specification in roster page and read the appropriate prices from there
 
@@ -14,8 +15,8 @@ I have to focus on my exams (until like mid June) so I'm trying not to spend too
 
 - rework the css stuff to be actually sharable & usable
 
-- remove the juice tab in the thing and always show relevant juices
-  - move the avg bound roster bound stuff to the sidebar also
+- ~~remove the juice tab in the thing and always show relevant juices~~
+  - ~~move the avg bound roster bound stuff to the sidebar also~~
 
 ## Roadmap
 

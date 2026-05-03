@@ -5,8 +5,11 @@ export const FLOAT_TOL = 1e-9
 // export const BUCKET_COUNT = 50 // number of x values to evaluate when drawing the graphs
 export const ANNOTATION_COLORS = ["--hf-graph-average-color", "--hf-graph-bound-color", "--hf-graph-roster-color", "--hf-graph-tradable-color"]
 export const ANNOTATION_POSITIONS: ("top" | "middle" | "bottom" | "graph")[] = ["graph", "bottom", "middle", "top"]
-export const ANNOTATION_LABELS = ["Avg", "Bound", "+Roster-Bound", "+Tradable"] // these names are tied with their css class names
 export const SYNCED_LABELS = ["Shards", "Gold", "Silver", "Lava's Breath", "Glacier's Breath"]
+
+export const ANNOTATION_LABELS = ["Average", "Bound", "+Roster-Bound", "+Tradable"]
+export const BUTTON_LABELS = ["Show Average cost", "Show Bound owned", "Show Bound+Roster bound", "Show Bound+Roster+Trade"]
+export const CSS_NAMES = ["avg", "bound", "roster-bound", "tradable"]
 
 // These must be the same as the rust side (advanced_honing/utils), will need to manually update if these change
 export const GRACE_FIRST_N = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 15, 255]
@@ -63,29 +66,42 @@ export const ALL_LABELS = [
 ]
 
 export const GRAPH_COLORS = [
-    "--series-red",
-    "--series-blue",
-    "--series-leaps",
-    "--series-shards",
-    "--series-fusion",
-    "--series-gold",
-    "--series-silver",
-    "--series-red",
-    "--series-books",
-    "--series-books",
-    "--series-books",
-    "--series-red",
-    "--series-red",
-    "--series-red",
-    "--series-red",
-    "--series-blue",
-    "--series-books",
-    "--series-books",
-    "--series-books",
-    "--series-blue",
-    "--series-blue",
-    "--series-blue",
-    "--series-blue",
+    [
+        "--series-red",
+        "--series-blue",
+        "--series-leaps",
+        "--series-shards",
+        "--series-fusion",
+        "--series-gold",
+        "--series-silver",
+        "--series-red",
+        "--series-books",
+        "--series-books",
+        "--series-books",
+        "--series-red",
+        "--series-red",
+        "--series-red",
+        "--series-red",
+        "--series-blue",
+        "--series-books",
+        "--series-books",
+        "--series-books",
+        "--series-blue",
+        "--series-blue",
+        "--series-blue",
+        "--series-blue",
+    ],
+    [
+        "--series-red",
+        "--series-blue",
+        "--series-leaps",
+        "--series-shards",
+        "--series-fusion",
+        "--series-gold",
+        "--series-silver",
+        "--series-red",
+        "--series-blue",
+    ],
 ]
 export const GRAPH_FONT_SIZE = 10
 export const GRAPH_HEIGHT = 40

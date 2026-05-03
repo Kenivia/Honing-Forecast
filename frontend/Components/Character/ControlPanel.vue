@@ -7,9 +7,8 @@ import { ref, watchEffect } from "vue"
 import { WasmOp } from "@/Utils/Interfaces"
 
 const store = useRosterStore()
-const { active_profile } = storeToRefs(store)
+const { active_profile, roster_config } = storeToRefs(store)
 
-const { roster_config,} = storeToRefs(useRosterStore())
 function resetActive() {
     store.resetActiveProfile()
 }
@@ -33,10 +32,10 @@ watchEffect(() => {
 </script>
 <template>
     <section class="hf-control-panel">
-        <div class="hf-card-header" >
+        <div class="hf-card-header">
             <div class="hf-card-title">Controls</div>
         </div>
-        <div class="hf-card-body hf-options-body" ">
+        <div class="hf-card-body hf-options-body">
             <label class="hf-inline-check">
                 <input v-model="active_profile.express_event" type="checkbox" />
                 <span>Express event (March)</span>
@@ -46,16 +45,10 @@ watchEffect(() => {
             <!-- <button class="hf-control-panel-btn" @click="copyPayload">Copy Payload</button> -->
 
             <label class="hf-inline-check">
-                <input v-model="roster_config.cumulative_graph" type="checkbox" />
-                <span>Cumulative graph</span>
-            </label>
-
-            <label class="hf-inline-check">
                 <input v-model="treatment_tick" type="checkbox" />
                 <span>Account for sell value of tradable mats (Recommended)</span>
             </label>
 
-     
             <label class="hf-inline-check">
                 <input v-model="active_profile.auto_start_optimizer" type="checkbox" />
                 <span>Auto start optimizer</span>

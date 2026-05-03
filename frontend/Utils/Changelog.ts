@@ -20,10 +20,11 @@ export const ALL_VERSIONS = sort_versions(
 
 export const LATEST_VERSION = ALL_VERSIONS[0]
 
-export function minor_version_equal(a: string, b: string) {
-    const a_split = a.replace("v", "").split(".")
-    const b_split = b.replace("v", "").split(".")
+// as in the user is caught up
+export function minor_version_equal(last_seen: string, now: string) {
+    const a_split = last_seen.replace("v", "").split(".")
+    const b_split = now.replace("v", "").split(".")
 
-    return (a_split[0] === b_split[0] && a_split[1] === b_split[1]) || a_split[0] === "0"
+    return (a_split[0] === b_split[0] && a_split[1] === b_split[1]) || (a_split[0] === "0" && now !== "v1.1.0")
 }
 // const latest_change_log =

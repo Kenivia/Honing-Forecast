@@ -9,9 +9,10 @@ import { storeToRefs } from "pinia"
 import { onUnmounted, ref, watch } from "vue"
 import { RouterLink, useRoute, useRouter } from "vue-router"
 import ControlPanel from "./ControlPanel.vue"
-import Footer from "../Common/Footer.vue"
+
 import Sidebar from "../Common/Sidebar.vue"
 import { start_all_workers } from "./CharWorkerUtils"
+import GraphControlPanel from "./GraphControlPanel.vue"
 
 const route = useRoute()
 const router = useRouter()
@@ -67,6 +68,8 @@ onUnmounted(() => {
                 <RouterLink to="calc" class="hf-side-bar-item" @click="close"> Setup & Cost Analysis </RouterLink>
                 <RouterLink to="instructions" class="hf-side-bar-item" @click="close"> Taps Instructions </RouterLink>
             </div>
+
+            <GraphControlPanel v-if="route.path.endsWith('calc')" />
             <ControlPanel v-if="route.path.endsWith('calc')" />
         </template>
 

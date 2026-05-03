@@ -345,6 +345,7 @@ body::before {
     /* font-family: var(--hf-font-display); */
     /* letter-spacing: 0.13em; */
     /* text-transform: uppercase; */
+    padding-left: 8px;
     color: white;
     font-size: 1rem;
 }

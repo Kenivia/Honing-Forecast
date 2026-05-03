@@ -22,6 +22,9 @@ export interface RosterConfig {
     profiles: CharProfile[]
     active_profile_index: number
     last_seen_version: string
+
+    enabled_annotations: boolean[]
+    show_all_rows: boolean
 }
 export const useRosterStore = defineStore("roster", {
     state: () => ({
@@ -48,6 +51,13 @@ export const useRosterStore = defineStore("roster", {
         },
         roster_ids: (state): number[] => {
             return [...new Set(state.roster_config.profiles.map((x) => x.roster_id))].sort((a, b) => a - b)
+        },
+        enabled_annotations: (state): boolean[] => {
+            return state.roster_config.enabled_annotations
+        },
+
+        show_all_rows: (state): boolean => {
+            return state.roster_config.show_all_rows
         },
     },
     actions: {
@@ -90,6 +100,8 @@ export const DEFAULT_ROSTER_CONFIG: RosterConfig = {
     profiles: [create_default_char_profile()],
     active_profile_index: 0,
     last_seen_version: "v0.0.0",
+    enabled_annotations: [true, false, false, false],
+    show_all_rows: false,
 }
 
 export function load_roster_config(): RosterConfig {

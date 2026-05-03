@@ -331,6 +331,6 @@ onBeforeUnmount(() => {
     white-space: nowrap;
     border: 1px solid var(--text-very-muted);
     box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.2);
-    z-index: 100;
+    z-index: 999;
 }
 </style>

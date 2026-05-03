@@ -13,7 +13,7 @@ import { input_column_to_num } from "@/Utils/InputColumn"
 import { start_all_workers } from "../CharWorkerUtils"
 
 const { active_profile } = storeToRefs(useRosterStore())
-const { roster_config, active_roster_mats_owned, active_tradable_mats_owned } = storeToRefs(useRosterStore())
+const { roster_config, active_roster_mats_owned, active_tradable_mats_owned, enabled_annotations, show_all_rows } = storeToRefs(useRosterStore())
 const histogram_result = computed(() => active_profile.value.histogram_worker_bundle.result)
 
 // This is average mats cost (not gold)
@@ -26,23 +26,17 @@ const gold_breakdown = computed(
         active_profile.value.evaluation_worker_bundle.result?.gold_breakdown.map((x: number) => Math.round(x >= 0 ? 0 : -x)) ??
         new Array(ALL_LABELS[active_profile.value.tier].length).fill(0),
 )
-
-const analysisTab = ref<"mats" | "juice">("mats")
+const matsIndices = T4_MATS_LABELS.map((_, i) => i)
 const visibleRows = computed(() => {
-    const matsIndices = T4_MATS_LABELS.map((_, i) => i)
     return ALL_LABELS[active_profile.value.tier]
         .map((label, row) => ({ label, row })) // keep original index
-        .filter(({ row }) => {
-            if (analysisTab.value === "mats") {
-                return matsIndices.includes(row)
-            } else {
-                return !matsIndices.includes(row)
-            }
+        .filter(({ label, row }) => {
+            return matsIndices.includes(row) || average_breakdown.value[row] > 0.0 || show_all_rows.value
         })
 })
 
-const tickbox_tooltip = `Untick the box if you don't plan on buying that material from market.
-<span style="color:var(--hf-text-muted)">(it also disable selling this mat)</span>`
+const tickbox_tooltip = `Untick the box if you don't plan on buying that material from market.`
+// <span style="color:var(--hf-text-muted)">(it also disable selling this mat)</span>`
 
 const market_gold_text = "Avg gold spent buying from market"
 const tradable_gold_text = "Avg gold spent buying minus gold from selling tradables"
@@ -109,7 +103,6 @@ function change_histogram_treatment(event) {
     active_profile.value.histogram_worker_bundle.throttled_start(WasmOp.Histogram, build_payload(WasmOp.Histogram))
 }
 
-const enabled_annotations = ref([true, false, false, false])
 const annotation_values = computed(() => {
     let bound = input_column_to_num(active_profile.value.bound_budgets[active_profile.value.tier])
     let roster = input_column_to_num(active_roster_mats_owned.value[active_profile.value.tier])
@@ -134,20 +127,7 @@ const show_special_guide = ref(false)
 <template>
     <section class="hf-card hf-analysis-pane">
         <div class="hf-card-header">
-            <div class="hf-card-title"><span class="hf-card-title-dot" />Costs</div>
-            <div>
-                <button :class="['hf-analysis-tab', { active: analysisTab === 'mats' }]" @click="analysisTab = 'mats'">Materials</button>
-                <button :class="['hf-analysis-tab', { active: analysisTab === 'juice' }]" @click="analysisTab = 'juice'">Juice, Books & Scrolls</button>
-            </div>
-            <div>
-                <button
-                    v-for="(label, index) in ANNOTATION_LABELS"
-                    :class="[`hf-graph-tab-${label.replace('+', '').toLowerCase()}`, { active: enabled_annotations[index] }]"
-                    @click="enabled_annotations[index] = !enabled_annotations[index]"
-                >
-                    {{ label }}
-                </button>
-            </div>
+            <div class="hf-card-title"><span class="hf-card-title-dot" />Costs distribution</div>
         </div>
         <div class="hf-card-body">
             <div class="hf-dist-scroll">
@@ -156,7 +136,7 @@ const show_special_guide = ref(false)
                         <div class="hf-table-title-row">
                             <div
                                 class="hf-question-mark"
-                                :style="{ textAlign: 'left', opacity: analysisTab !== 'juice' ? 1 : 0 }"
+                                :style="{ textAlign: 'left', opacity: 1 }"
                                 v-tooltip="{
                                     value: tickbox_tooltip,
                                     escape: false,
@@ -212,7 +192,7 @@ const show_special_guide = ref(false)
                                             active_profile.bound_budgets[active_profile.tier].data[row] = val
                                         }
                                     "
-                                    :hide_tick="analysisTab == 'juice'"
+                                    :hide_tick="!matsIndices.includes(row)"
                                     :treat_as_two="true"
                                     :callback="() => start_all_workers()"
                                 />
@@ -228,7 +208,7 @@ const show_special_guide = ref(false)
                                 <MaterialGraph
                                     :data="histogram_result?.cum_percentiles?.[row] ?? null"
                                     :material-label="label"
-                                    :graph-color="GRAPH_COLORS[row]"
+                                    :graph-color="GRAPH_COLORS[active_profile.tier][row]"
                                     :cumulative="roster_config.cumulative_graph"
                                     :annotations="annotation_values[row]"
                                     :annotationColors="ANNOTATION_COLORS.filter((_, i) => enabled_annotations[i])"
@@ -482,44 +462,6 @@ const show_special_guide = ref(false)
     gap: 6px;
 }
 
-.hf-graph-tab-avg,
-.hf-graph-tab-bound,
-.hf-graph-tab-roster-bound,
-.hf-graph-tab-tradable {
-    border: 1px solid var(--hf-border-subtle);
-    border-radius: 999px;
-    background: rgba(10, 13, 19, 0.48);
-    color: var(--hf-text-main);
-    padding: 6px 12px;
-    font-size: 12px;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    cursor: pointer;
-}
-.hf-graph-tab-avg.active {
-    background: var(--hf-graph-average-color);
-    border-color: var(--separator-color);
-    color: var(--hf-bg-deep);
-}
-
-.hf-graph-tab-bound.active {
-    background: var(--hf-graph-bound-color);
-    border-color: var(--separator-color);
-    color: var(--hf-bg-deep);
-}
-
-.hf-graph-tab-roster-bound.active {
-    background: var(--hf-graph-roster-color);
-    border-color: var(--separator-color);
-    color: var(--hf-bg-deep);
-}
-
-.hf-graph-tab-tradable.active {
-    background: var(--hf-graph-tradable-color);
-    border-color: var(--separator-color);
-    color: var(--hf-bg-deep);
-}
-
 .hf-analysis-tab {
     border: 1px solid var(--hf-border-subtle);
     border-radius: 999px;
@@ -596,15 +538,6 @@ const show_special_guide = ref(false)
     .hf-average-header,
     .hf-gold-header {
         text-align: center;
-    }
-
-    .hf-analysis-tab,
-    .hf-graph-tab-avg,
-    .hf-graph-tab-bound,
-    .hf-graph-tab-roster-bound,
-    .hf-graph-tab-tradable {
-        padding: 5px 10px;
-        font-size: 11px;
     }
 
     .hf-table-title-row {
