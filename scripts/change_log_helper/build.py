@@ -134,7 +134,7 @@ def build_markdown(version: str, new_commits: list[dict]) -> str:
         f"# Release {version}\n",
         "## Changes",
                "## Changes",
-                      "## Nerd stuff",
+                      "## Commits since last update",
         "| Date | Commit Message |  Contributor | Commit  |",
         "|--------|--------|---------|------|",
     ]
@@ -151,7 +151,7 @@ def build_markdown(version: str, new_commits: list[dict]) -> str:
 
 def main() -> None:
     version       = read_version()
-    output_file   = Path("./public/change-logs/" + version + ".md")  # e.g. v1.2.3.md
+    output_file   = Path("./" + version + ".md")  # e.g. v1.2.3.md
 
     published_data        = load_published_data()
     excluded_hashes       = hashes_from_other_versions(published_data, version)

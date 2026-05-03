@@ -43,6 +43,10 @@ watchEffect(() => {
 
             <!-- This is for producing payloads to feed into Rust -->
             <!-- <button class="hf-control-panel-btn" @click="copyPayload">Copy Payload</button> -->
+            <label class="hf-inline-check">
+                <input v-model="roster_config.show_all_rows" type="checkbox" />
+                <span>Show all mats</span>
+            </label>
 
             <label class="hf-inline-check">
                 <input v-model="treatment_tick" type="checkbox" />

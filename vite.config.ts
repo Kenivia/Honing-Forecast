@@ -23,4 +23,5 @@ export default defineConfig({
     build: {
         sourcemap: true,
     },
+    assetsInclude: ["**/*.md"],
 })

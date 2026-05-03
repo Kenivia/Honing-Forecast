@@ -14,7 +14,7 @@ import { start_all_workers } from "../CharWorkerUtils"
 import { RouterLink } from "vue-router"
 
 const { active_profile } = storeToRefs(useRosterStore())
-const { roster_config, active_roster_mats_owned, active_tradable_mats_owned, enabled_annotations, show_all_rows } = storeToRefs(useRosterStore())
+const { roster_config, active_roster_mats_owned, active_tradable_mats_owned, enabled_annotations } = storeToRefs(useRosterStore())
 const histogram_result = computed(() => active_profile.value.histogram_worker_bundle.result)
 
 // This is average mats cost (not gold)
@@ -32,7 +32,13 @@ const visibleRows = computed(() => {
     return ALL_LABELS[active_profile.value.tier]
         .map((label, row) => ({ label, row })) // keep original index
         .filter(({ label, row }) => {
-            return matsIndices.includes(row) || average_breakdown.value[row] > 0.0 || show_all_rows.value
+            return (
+                matsIndices.includes(row) ||
+                label === "Lava's Breath" ||
+                label === "Glacier's Breath" ||
+                average_breakdown.value[row] > 0.0 ||
+                roster_config.value.show_all_rows
+            )
         })
 })
 

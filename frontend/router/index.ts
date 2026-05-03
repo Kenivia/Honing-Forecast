@@ -38,7 +38,7 @@ const router = createRouter({
                     name: "change-logs",
                     component: ChangeLogsView,
                     beforeEnter: (to) => {
-                        if (!ALL_VERSIONS.includes(to.params.version as string)) {
+                        if ((to.params.version as string) !== "WIP" && !ALL_VERSIONS.includes(to.params.version as string)) {
                             return { name: "change-logs", params: { version: LATEST_VERSION } }
                         }
                     },

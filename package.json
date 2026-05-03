@@ -7,7 +7,7 @@
         "wasm": "wasm-pack build crates/wasm --release --target web",
         "test": "cargo test -p hf-core --profile release --no-default-features --features active_version,run_tests -- --no-capture",
         "change-logs": "python ./scripts/change_log_helper/build.py",
-        "no-test-build": "npm run wasm && npm run change-logs && vite build",
+        "no-test-build": "npm run wasm && vite build",
         "build": "npm run test && npm run no-test-build && cargo +nightly udeps",
         "no-check-deploy": "git push origin main:Production --force-with-lease",
         "deploy": "pwsh -File ./scripts/pre_deploy_check.ps1 && npm run no-check-deploy",

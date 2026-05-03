@@ -1,12 +1,14 @@
 
 # Work in Progress
 
-I have to focus on my exams (until like mid June) so I'm trying not to spend too much time on this. Small issues will be fixed but big projects are on hold
+I have to focus on my exams (until like mid June) so I'm trying not to spend too much time on this. Small issues will be fixed but big projects are on hold.
+
+If you'd like to help with any of the below, feel free to submit a PR on [github](https://github.com/Kenivia/Honing-Forecast/)!
 
 ## Immediate WIP
 
 - move the bound / roster / tradable allocation logic to rust, let histogram worker handle everything (average, gold, tradable gold) so ~~we're starting less workers~~ we can do everything UI related in one worker (and makes life easier later)
-  - rework tap so far system while i'm at it
+  - can rework tap so far system while i'm at it ([#15](https://github.com/Kenivia/Honing-Forecast/issues/15))
   - can probably add "no juice" "full juice" comparison buttons (where the graph stuff used to be) here
 
 - store 2 copies of market price , indexed by region, add region specification in roster page and read the appropriate prices from there
@@ -15,79 +17,42 @@ I have to focus on my exams (until like mid June) so I'm trying not to spend too
 
 - rework the css stuff to be actually sharable & usable
 
-- ~~remove the juice tab in the thing and always show relevant juices~~
-  - ~~move the avg bound roster bound stuff to the sidebar also~~
+- uwuowo integration (add button next to textbox to pull from uwuowo, add button on sidebar of roster setup to pull all existing chars)
 
-## Roadmap
+## Roadmap (big projects)
 
-## 1st: ~~re-write the frontend~~
+### 1st: ~~re-write the frontend~~
 
-## 2nd: ~~Serca~~
+### 2nd: ~~Serca~~
 
-## 3rd: ~~Advanced honing optimization~~
+### 3rd: ~~Advanced honing optimization~~
 
-## 4th: ~~Tradable / bound mats distinction~~
+### 4th: ~~Tradable / bound mats distinction~~
 
-## 4.9th : Rework header bar
+### 4.9th : ~~Rework header bar~~
 
-There's more tabs that need to be accomodated, (OCR UI & manifest, box optimization, forecast mode etc), change everything in the header to a (collapsable) side bar with collapsable subfields
-
-## 4.99th: Changelog tracking
-
-Set up some kind of changelog (with conventional commits and whatnot), add a changelog page (accomodated by the sidebar)
+### 4.99th: ~~Changelog tracking~~
 
 ## 5th: OCR
 
-Similar to the[Ark grid OCR](<https://airplaner.github.io/lostark-arkgrid-gem-locator-v2/>). They've used template matching and I think is probably best for me too (with exception of numbers recognition, might need some OCR model for that).
+Similar to the [Ark grid OCR](<https://airplaner.github.io/lostark-arkgrid-gem-locator-v2/>). They've used template matching and I think is probably best for me too (with exception of numbers recognition, might need some OCR model for that).
 
 ### GOALS
 
-1. screenshare -> nothing hovered -> detect everything that can be detected, aka:
-    - < 9999 mats (and boxes)
-    - non-ambiguous boxes, which is pretty much just the dailies boxes
-2. Things that are missing and needs hovering:
-    - bound / roster bound / tradable
-    - boxes
-    - 9999+ mats amount
+1. Inventory (and roster storage and whatever) scanning
+2. Honing session analysis
+3. (not necessarily for users) market price scanning, including recent price, available stock, gems, accessories, mari shops and whatnot. If I set up the OCR well enough to make this easy then it'll be a huge W.
 
-### Specifics
+I've been thinking so much about how exactly to do this but I think at some point I just need to start typing and trying stuff. My current rough plan is:
 
-Just my current rough mental image of what needs to be done
+1. Anchor with like whatever UI element to establish aspect ratio & stuff
+2. Crop out UI elements as images and save them for later
+3. Same thing with hover tooltips - crop them out and save
+4. A second (slower) worker processes these crops (the other worker must run at 30 fps) - use OCR to read & parse the tooltip text, simple template matching for the rest
 
-### Initial scan (step 1)
+## 5.5th Luck tracking & leaderboard
 
-This will probably take longer than 33ms which is okay, but should still be as fast as possible
-
-- [ ] Anchoring (can also detect resolution here)
-- [ ] Grids position detection
-- [ ] Individual item ~~template matching~~ I mean it's not even template matching its just checking if the pictures match
-- ^ There's got to be an automated way of setting this up
-- [ ] Number reading (Hopefully template matching works for this otherwise we're cooked)
-
-### Hover tooltip scan (step 2)
-
-This step must happen FAST, like 33ms fast so that the user can skim through the mats
-
-- [ ] Find the tooltip bounding box somehow?
-- [ ] Will probably have to find the mouse? Need to template match the mouse? This way we know what's being hovered. (7 types of cursors, 5 sizes, hopefully outline doesn't matter)
-- [ ] Template match for keywords inside the tooltip (tradable, etc) and probably icons also
-- ^ There's got to be an automated way of setting this up
-
-^ These 2 steps will need an intermediate debug step for sure, as in saving the image & running rust standalone so I can debug it without having to use the UI.
-
-### UI
-
-- [ ] Set up passing the data to WASM
-- [ ] Somehow get a picture (maybe first successful initial scan gets sent back?) to js, along with grid information
-- [ ] Set up some kind of system to add shading to the picture (and hover tooltip)
-- [ ] Set up a manifest (list of stuff saying whether or not they've been successfully detected, need hover an whatnot)
-
-### Decisions that I'll need to make at some point
-
-- Support more resolutions / aspect ratios or not? This will probably depend on how "automated" my process of setting up the template matching is. I doubt it will be very tho
-- How many threads? I'm thinking one thread for step1 and one thread for step 2 (which needs initial grid position info from step 1).
-
-Needless to say this will be a LONG term endeavour
+A leaderboard of normalized "luck" values (prolly for characters? can do roster also ig). I will probably use cloudflare's serverless stuff to host this, need to think more about this (Discord integration? How to prevent spam / fake entries? idk)
 
 ## 6th : Box opening recommendation
 
@@ -144,35 +109,17 @@ This is VERY long term goal (before forecast mode tho)
 
 ## 8th: Forecast mode
 
-Calculate (Forecast!) what things will be like in x number of weeks.
+There's 2 parts to this: player's mats earning && market price.
 
-### Projection
+### Income tracking & projection
 
-We need to estimate income. This is probably done by a lot of spreadsheets but we need to find them and implement them. Specifically, I'm thinking of the following:
+Lowkey there's so much random (literal stochastic and just so many arbitrary things) ways we earn mats, and it all depends on how much you play / what you do in the game so it's kind of hard to project how much mats you'll have. However with OCR inventory scanning we can derive weekly earnings from actual earning data. Perhaps we can aggregate this if a lot of people upload their earnings (but it's kinda of hard to distinguish because people can buy from market? idk)
 
-- gold earning raids
-- mat earning raids, boxes etc
-- paradise (get the average from one of the reddit posts or generate my own? will need to data mine?)
-- configurable dailies
-- guild
-- unas thing
-- daily login
-- solo shop
-- chaos dungeon, guardians, cube and whatnot
+This will give us a week-on week budget.  We plot an average gold used vs week graph (and suggest a "best time to push (rat alt)", where the different per week is less than the gold income increase). This graph will need the optimizer to be able to run faster on already-good states [#8](https://github.com/Kenivia/Honing-Forecast/issues/8).
 
-This will give us a week-on week budget.  We plot an average gold used vs week graph (and suggest a "best time to push (rat alt)", where the different per week is less than the gold income increase. This graph will need the optimizer to be able to run faster on already-good states [#8](https://github.com/Kenivia/Honing-Forecast/issues/8).
+### Quant bro
 
-Also, we can compare this with the actual mats owned obtained by auto scan [#6](https://github.com/Kenivia/Honing-Forecast/issues/6), think that'd be cool
-
-There's a LOT of details I'm kinda ignoring but this thing will be ULTRA long term so we'll cross that bridge when we get there
-
-### More: Price trend viewer & stuff
-
-need to pull as much historical data as possible from loa-buddy -> store & pull from my own data base -> keep updating this. I think training some market prediction thing on this could be fun? Otherwise just showing the trend could be useful.
-
-Potentially making multi-player like price guessing game? Will need discord login and whatnot (uwuowo integration also) and an actual server
-
-Also tracking piece luck / material owned over time, potentially sharable?
+Predicting market will be SO fun but it kinda needs the better OCR scanning to get better quality data. We actually know a LOT about the underlying things driving the market (ratio of costs, lifeskill -> oreha prices, weekly earnings, ilevel distribution via uwuowo etc) so I reckon we can actually make some pretty damn good predictions. This thing will be ULTRA long term so we'll cross that bridge when we get there
 
 ##
 
@@ -201,6 +148,12 @@ Below are some rambling / brainstorming / Misc stuff
 - advanced hoinging caching / pre-calculating, maybe also special
 
 ## Done / cancelled
+
+- ~~remove the juice tab in the thing and always show relevant juices~~
+  - ~~move the avg bound roster bound stuff to the sidebar also~~
+
+~~There's more tabs that need to be accomodated, (OCR UI & manifest, box optimization, forecast mode etc), change everything in the header to a (collapsable) side bar with collapsable subfields~~
+~~Set up some kind of changelog (with conventional commits and whatnot), add a changelog page (accomodated by the sidebar)~~
 
 - ~~make it so that there's not threads kept alive for every char at the same time (no real need to reuse the same set of worker_bundles for different chars (so that results are not wiped), just )~~
 
@@ -642,7 +595,7 @@ Below are some rambling / brainstorming / Misc stuff
 
 - ~~(both: updatable clicks)~~
 
-~~ 10 at a time toggle, need to modify neighbour function & stategrid~~
+~~10 at a time toggle, need to modify neighbour function & stategrid~~
 
 - ~~figure out a way to export state_bundle to js and be able to pass it to monte carlo appropriately~~
   - ~~literally just state and special state~~

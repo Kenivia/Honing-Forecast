@@ -32,6 +32,7 @@ function onCharSelect(e: Event) {
     const name = (e.target as HTMLSelectElement).value
     if (name) router.push({ name: "char", params: { characterName: name } })
 }
+const char_name_from_route = computed(() => route.path.split("/")[route.path.split("/").length - 2])
 </script>
 
 <template>
@@ -86,10 +87,11 @@ function onCharSelect(e: Event) {
                             :key="'profile-${profile_index}'"
                         >
                             <!-- {{ console.log(roster_id, profile.roster_id) }} -->
+
                             <RouterLink
                                 :to="{ name: 'char', params: { characterName: profile.char_name } }"
                                 class="hf-header-button"
-                                :class="{ selected: route.path.startsWith('/' + profile.char_name) }"
+                                :class="{ selected: char_name_from_route === profile.char_name }"
                             >
                                 {{ profile.char_name }}
                             </RouterLink>

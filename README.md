@@ -54,7 +54,7 @@ Note: Before following the instructions, make sure you have inputted your bound 
 - [Math behind the average evaluation (How we utilize saddlepoint approximation)](/docs/Saddlepoint%20Approximation.pdf)
 - [Implementation details of the average evaluation](/docs/Average%20Evaluation.md)
 - [Optimizer (simulated annealing)](/docs/Optimizer.md)
-- [Work in progress](/docs/WIP.md)
+- [Work in progress](/public/WIP.md)
 - [Frontend](/docs/Frontend.md)
 - [All docs](/docs/)
 
@@ -70,7 +70,7 @@ You'll need the following:
 
 Run `npm install` for the dependencies, then `npm run dev` for the dev server.
 
-You can take a look at [good first issues](<https://github.com/Kenivia/Honing-Forecast/labels/good first issue>) or the [WIP doc](/docs/WIP.md), but any help will be greatly appreciated!
+You can take a look at [good first issues](<https://github.com/Kenivia/Honing-Forecast/labels/good first issue>) or the [WIP doc](/public/WIP.md), but any help will be greatly appreciated!
 
 ## Bug report / feedback
 

@@ -55,10 +55,6 @@ export const useRosterStore = defineStore("roster", {
         enabled_annotations: (state): boolean[] => {
             return state.roster_config.enabled_annotations
         },
-
-        show_all_rows: (state): boolean => {
-            return state.roster_config.show_all_rows
-        },
     },
     actions: {
         init() {

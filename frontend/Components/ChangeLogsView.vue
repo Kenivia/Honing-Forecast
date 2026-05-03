@@ -3,7 +3,7 @@ import Sidebar from "@/Components/Common/Sidebar.vue"
 import { useRosterStore } from "@/Stores/RosterConfig"
 import { all_change_logs, ALL_VERSIONS, LATEST_VERSION } from "@/Utils/Changelog"
 import { storeToRefs } from "pinia"
-import { computed, defineAsyncComponent, onMounted, ref } from "vue"
+import { computed, defineAsyncComponent, onMounted, ref, watchEffect } from "vue"
 import { RouterLink, RouterView, useRoute } from "vue-router"
 import { marked } from "marked"
 
@@ -14,24 +14,40 @@ roster_config.value.last_seen_version = LATEST_VERSION
 
 const html = ref("")
 
-onMounted(async () => {
-    const res = await fetch(`/change-logs/${route.params.version}.md`)
-    const raw = await res.text()
+const cache = new Map<string, string>()
+const loading = ref(false)
 
-    html.value = await marked.parse(raw)
-    console.log(html.value)
+watchEffect(async () => {
+    const version = route.params.version as string
+
+    if (cache.has(version)) {
+        html.value = cache.get(version)!
+        return
+    }
+
+    loading.value = true
+    const res = await fetch(version === "WIP" ? `/WIP.md` : `/change-logs/${version}.md`)
+    const raw = await res.text()
+    const parsed = await marked.parse(raw)
+    cache.set(version, parsed)
+    html.value = parsed
+    loading.value = false
 })
 </script>
 
 <template>
     <Sidebar header="Change Logs">
         <template #sidebar="{ close }">
-            <RouterLink v-for="version in ALL_VERSIONS" :to="'/change-logs/' + version" class="hf-side-bar-item" @click="close"> {{ version }} </RouterLink>
+            <div style="display: flex; flex-direction: column">
+                <RouterLink :to="{ name: 'change-logs', params: { version: 'WIP' } }" class="hf-side-bar-item" @click="close"> Work in Progress </RouterLink>
+                <RouterLink v-for="version in ALL_VERSIONS" :to="'/change-logs/' + version" class="hf-side-bar-item" @click="close"> {{ version }} </RouterLink>
+            </div>
         </template>
 
         <template #main key="changelog">
             <div class="hf-card change-log-card">
-                <div class="prose" v-html="html" /></div
+                <div style="font-size: 60px; text-align: center; margin-top: 70px" v-if="loading">Loading...</div>
+                <div v-else class="prose" v-html="html" /></div
         ></template>
     </Sidebar>
 </template>
@@ -62,7 +78,7 @@ onMounted(async () => {
 }
 
 .prose a {
-    color: var(--hf-text-muted);
+    color: var(--hf-gold);
     text-decoration: underline;
 }
 </style>
