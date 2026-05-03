@@ -119,7 +119,7 @@ watch(
                         <option>EUC</option>
                     </select>
                     <span style="width: 20px; text-wrap-mode: nowrap">
-                        {{ !disabled && roster_config.latest_market_data ? "✅" : disabled ? "" : "Failed" }}
+                        {{ !disabled && roster_config.latest_market_data && !roster_config.market_fetch_failed ? "✅" : disabled ? "" : "Failed" }}
                     </span>
                 </div>
                 <button :disabled="disabled" @click="() => start_fetch(roster_config.region)" style="width: 140px">

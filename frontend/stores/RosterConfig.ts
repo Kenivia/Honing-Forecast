@@ -25,6 +25,7 @@ export interface RosterConfig {
 
     enabled_annotations: boolean[]
     show_all_rows: boolean
+    market_fetch_failed: boolean
 }
 export const useRosterStore = defineStore("roster", {
     state: () => ({
@@ -98,6 +99,7 @@ export const DEFAULT_ROSTER_CONFIG: RosterConfig = {
     last_seen_version: "v0.0.0",
     enabled_annotations: [true, false, false, false],
     show_all_rows: false,
+    market_fetch_failed: true,
 }
 
 export function load_roster_config(): RosterConfig {

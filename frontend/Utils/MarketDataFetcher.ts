@@ -170,7 +170,7 @@ export function useTimedFetch(callback: (data: number[][], selectedShardSize: nu
 
         // Check if we have fresh cached data
         const cached = roster_config.value.latest_market_data[region]
-        if (cached !== undefined && !isDataStale(region)) {
+        if (cached !== undefined && !isDataStale(region) && !roster_config.value.market_fetch_failed) {
             isFetching.value = true
             await new Promise((r) => setTimeout(r, 500))
             isFetching.value = false
@@ -185,9 +185,13 @@ export function useTimedFetch(callback: (data: number[][], selectedShardSize: nu
         // Fetch new data
         const result = (async () => {
             try {
-                return await fetchMarketData(region)
+                const out = await fetchMarketData(region)
+
+                roster_config.value.market_fetch_failed = false
+                return out
             } catch {
-                return FALLBACK_PRICES
+                roster_config.value.market_fetch_failed = true
+                return cached !== undefined ? cached : FALLBACK_PRICES
             }
         })()
         // console.log(result)
@@ -205,7 +209,7 @@ export function useTimedFetch(callback: (data: number[][], selectedShardSize: nu
 }
 export function fetch_callback(result: number[][], selectedShardSize: number, shard_price: number) {
     const { roster_config } = storeToRefs(useRosterStore())
-    console.log(result)
+    // console.log(result)
     roster_config.value.selected_shard_bag_size = selectedShardSize
     for (let tier = 0; tier < ALL_LABELS.length; tier++) {
         for (let index = 0; index < ALL_LABELS[tier].length; index++) {
