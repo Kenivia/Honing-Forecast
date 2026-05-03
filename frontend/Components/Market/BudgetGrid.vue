@@ -4,7 +4,7 @@ import { ALL_LABELS, BUNDLE_SIZE, SERCA_SYNC_MAP, SERCA_TO_T4, SYNCED_LABELS } f
 import { storeToRefs } from "pinia"
 import MaterialCell from "@/Components/Common/MaterialCell.vue"
 import { computed, nextTick, ref, watch, watchEffect } from "vue"
-import { input_column_to_num, parse_input } from "@/Utils/InputColumn"
+import { input_column_to_num,  } from "@/Utils/InputColumn"
 
 const roster_store = useRosterStore()
 const { roster_config, active_roster_mats_owned, active_tradable_mats_owned, } = storeToRefs(roster_store)
@@ -178,7 +178,6 @@ watch(
     overflow-x: auto;
     overflow-y: hidden;
     padding-bottom: 4px;
-    -webkit-overflow-scrolling: touch;
 }
 
 .hf-roster-inputs-tier-4 {

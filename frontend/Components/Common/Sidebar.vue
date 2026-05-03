@@ -115,6 +115,8 @@ const close = () => (sidebarOpen.value = false)
     justify-content: space-between;
     position: fixed;
     z-index: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
 }
 .sb-side-bar:nth-child(2) {
     margin-top: 100px;

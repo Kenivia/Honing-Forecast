@@ -173,8 +173,20 @@ export function load_roster_config(): RosterConfig {
     out.active_profile_index = !out.active_profile_index ? 0 : Math.max(0, Math.min(out.profiles.length - 1, out.active_profile_index))
     return { ...DEFAULT_ROSTER_CONFIG, ...out }
 }
+
+function stringifyOmit(obj: RosterConfig, keys: string[]): string {
+    const omit = new Set(keys)
+    return JSON.stringify(obj, (key, value) => (omit.has(key) ? undefined : value))
+}
 export function write_roster_config(state) {
-    localStorage.setItem(STORAGE_KEY + "_roster", JSON.stringify(state.roster_config))
+    try {
+        localStorage.setItem(
+            STORAGE_KEY + "_roster",
+            stringifyOmit(state.roster_config, ["evaluation_worker_bundle", "optimizer_worker_bundle", "histogram_worker_bundle"]),
+        )
+    } catch {
+        console.log(JSON.stringify(state.roster_config))
+    }
 }
 
 export const debounced_write_roster_config = debounce(write_roster_config, 500)
