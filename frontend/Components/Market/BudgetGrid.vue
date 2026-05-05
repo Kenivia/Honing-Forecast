@@ -5,16 +5,12 @@ import { storeToRefs } from "pinia"
 import MaterialCell from "@/Components/Common/MaterialCell.vue"
 import { computed, nextTick, ref, watch, watchEffect } from "vue"
 import { input_column_to_num } from "@/Utils/InputColumn"
+import { force_rerender } from "./MarketUtil"
 
 const roster_store = useRosterStore()
 const { roster_config, active_roster_mats_owned, active_tradable_mats_owned } = storeToRefs(roster_store)
 
-const re_render_trigger = ref(true)
-const forceRerender = async () => {
-    re_render_trigger.value = false
-    await nextTick()
-    re_render_trigger.value = true
-}
+
 
 watchEffect(() => {
     let t4_price = input_column_to_num(roster_store.roster_config.mats_prices[0])
@@ -43,14 +39,14 @@ watch(
             roster_store.active_tradable_mats_owned[1].data[serca_index] = roster_store.active_tradable_mats_owned[0].data[T4_index]
             roster_store.active_roster_mats_owned[1].data[serca_index] = roster_store.active_roster_mats_owned[0].data[T4_index]
         }
-        forceRerender()
+        force_rerender()
     },
     { deep: false, immediate: true },
 )
 </script>
 
 <template>
-    <div v-if="re_render_trigger" class="hf-outer-budget-grid" ">
+    <div v-if="roster_config.market_rerender_trigger" class="hf-outer-budget-grid" ">
         <div class="hf-tier-grid-scroll">
             <div class="hf-roster-inputs-tier-4" :style="{ gridRow: `span ${String(ALL_LABELS[0].length + 1)}` }">
                 <div class="hf-table-title-row">

@@ -2,9 +2,10 @@ use serde::{Deserialize, Serialize};
 use serde_with::{DisplayFromStr, serde_as};
 use std::{
     collections::{HashMap, HashSet},
-    f64::NAN,
     ops::Deref,
 };
+
+use crate::parser::MaterialInput;
 
 // use crate::my_dbg;
 
@@ -24,9 +25,7 @@ pub struct OneUindexJuice {
 #[serde_as]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct JuiceType {
-    pub market_price: (f64, f64),
-    pub trade_price: (f64, f64),
-    pub left_price: (f64, f64),
+    pub prices: Vec<(f64, f64)>, // weapon, armor
     pub id: usize,
     #[serde_as(as = "HashMap<DisplayFromStr, _>")]
     pub data: HashMap<usize, OneUindexJuice>,
@@ -34,9 +33,7 @@ pub struct JuiceType {
 impl Default for JuiceType {
     fn default() -> Self {
         Self {
-            market_price: (NAN, NAN),
-            left_price: (NAN, NAN),
-            trade_price: (NAN, NAN),
+            prices: Vec::new(),
             id: 0,
             data: HashMap::new(),
         }
@@ -132,29 +129,23 @@ impl JuiceInfo {
 }
 pub fn get_priced_juice_info(
     base: &JuiceInfo,
-    left_price: &[f64],
-    trade_price: &[f64],
-    market_price: &[f64],
+    material_info: &MaterialInput,
     event: bool,
 ) -> JuiceInfo {
     // my_dbg!(base.total_num_avail, &market_price);
-    assert!(base.total_num_avail == market_price.len());
-    assert!(base.total_num_avail == trade_price.len());
-    assert!(base.total_num_avail == left_price.len());
+    assert!(base.total_num_avail == material_info.len());
+
     let mut out: JuiceInfo = base.clone();
     for (id, juice_type) in out.all_juices.iter_mut().enumerate() {
-        juice_type.market_price = (
-            market_price[7 + id],
-            market_price[7 + base.num_juice_avail + id],
-        );
-        juice_type.trade_price = (
-            trade_price[7 + id],
-            trade_price[7 + base.num_juice_avail + id],
-        );
-        juice_type.left_price = (
-            left_price[7 + id],
-            left_price[7 + base.num_juice_avail + id],
-        );
+        assert!(juice_type.prices.len() == 0);
+        for price_pair in material_info[7 + id].iter().map(|x| x.1).zip(
+            material_info[7 + base.num_juice_avail + id]
+                .iter()
+                .map(|x| x.1),
+        ) {
+            juice_type.prices.push(price_pair)
+        }
+
         for (_, this) in juice_type.data.iter_mut() {
             this.normal_amt_used = if event {
                 this.normal_event_amt_used

@@ -11,20 +11,15 @@ import { fetch_callback, useTimedFetch } from "@/Utils/MarketDataFetcher"
 import { input_column_to_num, parse_input } from "@/Utils/InputColumn"
 import Sidebar from "../Common/SideBar.vue"
 import BudgetGrid from "./BudgetGrid.vue"
+import { force_rerender } from "./MarketUtil"
 
 const roster_store = useRosterStore()
 const { roster_config, active_roster_mats_owned, active_tradable_mats_owned, all_profiles, roster_ids, active_profile } = storeToRefs(roster_store)
 
 const { disabled, start_fetch } = useTimedFetch((result, selected, price) => {
     fetch_callback(result, selected, price)
-    forceRerender()
+    force_rerender()
 })
-const re_render_trigger = ref(true)
-const forceRerender = async () => {
-    re_render_trigger.value = false
-    await nextTick()
-    re_render_trigger.value = true
-}
 
 function convert_roster_mats_to_serca() {
     for (let serca_index = 0; serca_index < ALL_LABELS[1].length; serca_index++) {
@@ -44,6 +39,7 @@ function convert_roster_mats_to_serca() {
             active_roster_mats_owned.value[0].data[T4_index] = "0"
         }
     }
+    force_rerender()
 }
 watchEffect(() => {
     let t4_price = input_column_to_num(roster_store.roster_config.mats_prices[0])
@@ -74,7 +70,7 @@ const selected_roster = computed(() => {
 function change_roster(event) {
     // console.log(representative_profile_indices.value[event.target.value])
     roster_store.switchProfile(representative_profile_indices.value[event.target.value])
-    forceRerender()
+    force_rerender()
 }
 
 const T4_indices_to_watch = SERCA_SYNC_MAP.map(({ T4_index }) => T4_index)
@@ -93,7 +89,7 @@ watch(
             roster_store.active_tradable_mats_owned[1].data[serca_index] = roster_store.active_tradable_mats_owned[0].data[T4_index]
             roster_store.active_roster_mats_owned[1].data[serca_index] = roster_store.active_roster_mats_owned[0].data[T4_index]
         }
-        forceRerender()
+        force_rerender()
     },
     { deep: false, immediate: true },
 )

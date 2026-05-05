@@ -117,7 +117,6 @@ export function streaks_to_text(upgrade: Upgrade, streaks: NormalStreak[] | AdvS
 export function artisan_function(upgrade: Upgrade, total_count: number, juice_info: any): string {
     let extra_arr = upgrade.state.slice(0, total_count).map(([juice, id]) => {
         let chance = 0.0
-        // console.log(juice, id, active_profile.optimizer_worker_bundle.result.prep_output.juice_info.all_juices[0].data.get(String(upgrade.upgrade_index)))
         if (juice) {
             chance += juice_info.all_juices[0].data.get(String(upgrade.upgrade_index)).normal_chance
         }
@@ -149,7 +148,6 @@ export function artisan_function(upgrade: Upgrade, total_count: number, juice_in
 export function cumulative_chance(upgrade: Upgrade, total_count: number, juice_info: any): string {
     let extra_arr = upgrade.state.slice(0, total_count).map(([juice, id]) => {
         let chance = 0.0
-        // console.log(juice, id, active_profile.optimizer_worker_bundle.result.prep_output.juice_info.all_juices[0].data.get(String(upgrade.upgrade_index)))
         if (juice) {
             chance += juice_info.all_juices[0].data.get(String(upgrade.upgrade_index)).normal_chance
         }

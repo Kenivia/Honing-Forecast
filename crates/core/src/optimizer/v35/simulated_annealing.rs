@@ -36,16 +36,16 @@ pub fn my_push(
 }
 
 fn compute_upgrade_impact(state_bundle: &mut StateBundle) -> Vec<f64> {
-    let probs = state_bundle.compute_leftover_probs();
-
     let mut weights = Vec::with_capacity(state_bundle.upgrade_arr.len());
 
     for upgrade in &state_bundle.upgrade_arr {
         let mut magnitude: f64 = 0.01;
-        for (index, p) in probs.iter().enumerate() {
-            magnitude += (state_bundle.prep_output.leftover_price[index] * p
-                + state_bundle.prep_output.market_price[index] * (1.0 - p))
-                * upgrade.cost_dist[index]
+        for (support_index, support) in upgrade.cost_dist.iter().enumerate() {
+            magnitude += state_bundle.prep_output.optimizer_material_info[support_index]
+                .last()
+                .unwrap()
+                .1
+                * support
                     .access_collapsed(false)
                     .iter()
                     .map(|(s, p)| s * p)
@@ -213,7 +213,7 @@ pub fn solve<R: Rng>(
                 let mut dummy_performance = Performance::new();
                 solver_bundle
                     .state_bundle
-                    .average_gold_metric(true, &mut dummy_performance);
+                    .optimizer_average_gold_metric(&mut dummy_performance);
                 solver_bundle.state_bundle.set_latest_special_probs();
 
                 send_progress(

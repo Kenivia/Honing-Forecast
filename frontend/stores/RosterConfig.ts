@@ -26,6 +26,7 @@ export interface RosterConfig {
     enabled_annotations: boolean[]
     show_all_rows: boolean
     market_fetch_failed: boolean
+    market_rerender_trigger: boolean
 }
 export const useRosterStore = defineStore("roster", {
     state: () => ({
@@ -100,6 +101,7 @@ export const DEFAULT_ROSTER_CONFIG: RosterConfig = {
     enabled_annotations: [true, false, false, false],
     show_all_rows: false,
     market_fetch_failed: true,
+    market_rerender_trigger: true,
 }
 
 export function load_roster_config(): RosterConfig {
@@ -160,7 +162,8 @@ export function load_roster_config(): RosterConfig {
         this_parsed.keyed_upgrades = grids_to_keyed(this_parsed.normal_grid, this_parsed.adv_grid, this_parsed.keyed_upgrades, this_parsed.tier)
 
         this_parsed.tier = this_parsed.tier === 0 || this_parsed.tier === 1 ? this_parsed.tier : 0
-        this_parsed.material_re_render_trigger = true
+        this_parsed.material_rerender_trigger = true
+
         this_parsed.min_resolution = default_profile.min_resolution
         this_parsed.num_threads = default_profile.num_threads
         this_parsed.metric_type = default_profile.metric_type
@@ -173,6 +176,7 @@ export function load_roster_config(): RosterConfig {
         // console.log(parsed.profiles[i], parsed.profiles[i].tier)
     }
     out.active_profile_index = !out.active_profile_index ? 0 : Math.max(0, Math.min(out.profiles.length - 1, out.active_profile_index))
+    out.market_rerender_trigger = true
     return { ...DEFAULT_ROSTER_CONFIG, ...out }
 }
 
@@ -182,10 +186,7 @@ function stringifyOmit(obj: RosterConfig, keys: string[]): string {
 }
 export function write_roster_config(state) {
     try {
-        localStorage.setItem(
-            STORAGE_KEY + "_roster",
-            stringifyOmit(state.roster_config, ["evaluation_worker_bundle", "optimizer_worker_bundle", "histogram_worker_bundle"]),
-        )
+        localStorage.setItem(STORAGE_KEY + "_roster", stringifyOmit(state.roster_config, ["optimizer_worker_bundle", "histogram_worker_bundle"]))
     } catch {
         console.log(JSON.stringify(state.roster_config))
     }

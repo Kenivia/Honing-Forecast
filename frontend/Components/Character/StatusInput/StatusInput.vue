@@ -42,7 +42,7 @@ function change_tier() {
 
     active_profile.value.optimizer_worker_bundle?.cancel_and_clear_prev_result()
     active_profile.value.histogram_worker_bundle?.cancel_and_clear_prev_result()
-    active_profile.value.evaluation_worker_bundle?.cancel_and_clear_prev_result()
+    // active_profile.value.evaluation_worker_bundle?.cancel_and_clear_prev_result()
 
     let num_array_old = input_column_to_num(active_profile.value.bound_budgets[old_tier], true)
 

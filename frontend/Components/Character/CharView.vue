@@ -37,7 +37,7 @@ watch(
                 // this happens one invalid names (routre param written to by the one-off code, triggering the watcher) i believe, idk how to prevent that but this works
                 active_profile.value.optimizer_worker_bundle.cancel()
                 active_profile.value.histogram_worker_bundle.cancel()
-                active_profile.value.evaluation_worker_bundle.cancel()
+                // active_profile.value.evaluation_worker_bundle.cancel()
 
                 roster_store.switchProfile(match)
             }
@@ -59,7 +59,7 @@ onUnmounted(() => {
     // kill workers when going to market / roster view
     active_profile.value.optimizer_worker_bundle.cancel()
     active_profile.value.histogram_worker_bundle.cancel()
-    active_profile.value.evaluation_worker_bundle.cancel()
+    // active_profile.value.evaluation_worker_bundle.cancel()
 })
 </script>
 <template>

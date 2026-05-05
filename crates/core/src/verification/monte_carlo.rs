@@ -252,14 +252,17 @@ pub fn monte_carlo_wrapper<R: Rng>(
     data_size: usize,
     state_bundle: &mut StateBundle,
     rng: &mut R,
-) -> (Vec<f64>, f64, f64, f64, f64) {
+) -> (Vec<Vec<f64>>, f64, f64, f64, f64) {
     let (cost_data, skip_count_data) = monte_carlo_data(data_size, state_bundle, rng);
     let mut success_count: i64 = 0;
     let mut sum: f64 = 0.0;
 
     let mut average_sq: f64 = 0.0;
-    let mut leftover_counts: Vec<i64> =
-        vec![0; state_bundle.prep_output.juice_info.total_num_avail];
+    let mut leftover_counts: Vec<Vec<i64>> =
+        vec![
+            vec![0; state_bundle.prep_output.num_breakpoints];
+            state_bundle.prep_output.juice_info.total_num_avail
+        ];
 
     let mut debug_avg_gold_by_mats: Vec<f64> =
         vec![0.0; state_bundle.prep_output.juice_info.total_num_avail];
@@ -277,19 +280,30 @@ pub fn monte_carlo_wrapper<R: Rng>(
         let float_row: Vec<f64> = row.iter().map(|x| *x as f64).collect();
 
         for (index, d) in debug_avg_gold_by_mats.iter_mut().enumerate() {
-            *d += apply_prices(float_row[index], &state_bundle.prep_output, index)
+            *d += apply_prices(
+                float_row[index],
+                &state_bundle.prep_output.optimizer_material_info[index],
+            )
         }
         for (index, d) in debug_avg_gold_by_mats_by_skip[skip_count_data[r_index]]
             .iter_mut()
             .enumerate()
         {
-            *d += apply_prices(float_row[index], &state_bundle.prep_output, index)
+            *d += apply_prices(
+                float_row[index],
+                &state_bundle.prep_output.optimizer_material_info[index],
+            )
         }
 
         let this: f64 = float_row
             .iter()
             .enumerate()
-            .map(|(index, used)| apply_prices(*used, &state_bundle.prep_output, index))
+            .map(|(index, used)| {
+                apply_prices(
+                    *used,
+                    &state_bundle.prep_output.optimizer_material_info[index],
+                )
+            })
             .sum();
         sum += this;
         average_sq += this * this;
@@ -298,12 +312,16 @@ pub fn monte_carlo_wrapper<R: Rng>(
             success_count += 1;
         }
 
-        let mut leftover_index: usize = 0;
-        for (index, mat) in row.iter().enumerate() {
-            if *mat as f64 <= state_bundle.prep_output.bound_budgets[index] {
-                leftover_counts[leftover_index] += 1;
+        for (support_index, mat) in row.iter().enumerate() {
+            for treatment_plan in 0..state_bundle.prep_output.num_breakpoints {
+                if *mat as f64
+                    <= state_bundle.prep_output.optimizer_material_info[support_index]
+                        [treatment_plan]
+                        .1
+                {
+                    leftover_counts[support_index][treatment_plan] += 1;
+                }
             }
-            leftover_index += 1;
         }
     }
     for d in debug_avg_gold_by_mats.iter_mut() {
@@ -329,9 +347,9 @@ pub fn monte_carlo_wrapper<R: Rng>(
     //     sum / data_size as f64
     // );
     // }
-    let prob_leftover: Vec<f64> = leftover_counts
+    let prob_leftover: Vec<Vec<f64>> = leftover_counts
         .into_iter()
-        .map(|x| x as f64 / data_size as f64)
+        .map(|y| y.into_iter().map(|x| x as f64 / data_size as f64).collect())
         .collect();
     let success = success_count as f64 / data_size as f64;
     let average = sum / data_size as f64;
@@ -348,7 +366,7 @@ pub struct MCResult {
     pub is_match: bool,
     pub mean: f64,
     pub samples: usize,
-    pub prob_leftover: Vec<f64>,
+    pub prob_leftover: Vec<Vec<f64>>,
 }
 
 pub fn verify_result_with_monte_carlo<R: Rng>(

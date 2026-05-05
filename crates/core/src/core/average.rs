@@ -1,7 +1,8 @@
-use crate::constants::{FLOAT_TOL, SPECIAL_TOL};
+use crate::constants::{SPECIAL_TOL, TreatmentsType};
+use crate::helpers::distribute_budgets;
 use crate::performance::Performance;
 use crate::state_bundle::StateBundle;
-use itertools::izip;
+
 use std::f64::NAN;
 
 pub const DEBUG_AVERAGE: bool = false;
@@ -21,28 +22,15 @@ impl StateBundle {
         mean
     }
 
-    /// Computes E[ f_1(X_1) + f_2(X_2) + ... ]
-    /// where f_i = gold incurred due to a mat type (described in one_dimension_average_gold)
-    /// and X_i is the amount of a particular mat type used
+    /// Special case of ui_average_gold_metric, just separating them to keep things clean
     ///
-    /// Note that X_1, X_2 are not independent (in fact for non-juice they are multiples of each other), but that doesn't matter
-    ///
-    /// We exploit the distributivity of expectation to reduce our multi-dimensional problem into many 1-D ones
-    ///
-    /// Well actually it calculates this for each outcome for special and takes the weighted average, see special.rs for more info about that  
-    pub fn average_gold_metric(
-        &mut self,
-        compute_breakdown: bool,
-        performance: &mut Performance,
-    ) -> f64 {
+    /// See Saddlepoint Approximation.pdf for more info on the math.
+    pub fn optimizer_average_gold_metric(&mut self, performance: &mut Performance) -> f64 {
         self.update_prob_dist();
         self.update_cost_dist();
         self.compute_special_probs(false);
         performance.states_evaluated += 1;
 
-        let mut gold_breakdown: Vec<f64> = vec![0.0; self.prep_output.juice_info.total_num_avail];
-        let mut average_breakdown: Vec<f64> =
-            vec![0.0; self.prep_output.juice_info.total_num_avail];
         let mut total_gold: f64 = 0.0;
         for (skip_count, &special_prob) in
             self.special_cache[&self.special_state].iter().enumerate()
@@ -50,152 +38,131 @@ impl StateBundle {
             if special_prob < SPECIAL_TOL {
                 continue;
             }
-            for (
-                support_index,
-                (bound_budget, price, leftover, tradable_budget, tradable_leftover),
-            ) in izip!(
-                self.prep_output.bound_budgets.iter(),
-                self.prep_output.market_price.iter(),
-                self.prep_output.leftover_price.iter(),
-                self.prep_output.trade_budgets.iter(),
-                self.prep_output.tradable_price.iter(),
-            )
-            .enumerate()
+            for (support_index, thresh_price_pairs) in
+                self.prep_output.optimizer_material_info.iter().enumerate()
             {
                 let this_avg: f64 = self.one_dimension_average_gold(
                     support_index as i64,
                     skip_count,
-                    *bound_budget,
-                    *bound_budget + *tradable_budget,
-                    *price,
-                    *tradable_leftover,
-                    *leftover,
+                    thresh_price_pairs,
                     performance,
                 );
-                let this = special_prob * this_avg;
+
                 total_gold += special_prob * this_avg;
-
-                if compute_breakdown {
-                    gold_breakdown[support_index] += this;
-                    average_breakdown[support_index] +=
-                        special_prob * self.simple_avg(support_index as i64, skip_count)
-                }
             }
         }
 
-        if compute_breakdown {
-            for x in gold_breakdown.iter_mut() {
-                *x = x.round()
-            }
-            for x in average_breakdown.iter_mut() {
-                *x = x.round() // rounding is more uh correct here 
-            }
-            self.gold_breakdown = Some(gold_breakdown);
-            self.average_breakdown = Some(average_breakdown);
-        }
         total_gold
     }
 
-    /// For the sake of notations we focus on mat type i (every varaible here should have a subscript i but I cbb)
-    /// let b = budget of mat type i,
-    /// then f = { (X - b) * price if (X - b) > 0, otherwise (X - b) * leftover value (leftover default 0)
-    ///
-    /// So E[f(X)] = price * E[(X - b)  * I(X > b) ] + leftover value * E[(X - b) * I(X < b)]
-    /// where I is the indicator function,
-    ///
-    /// and we define the biased distribution X' which has the probability distribution p' = p * s / mean at value s,
-    /// such that P(X' < b) = SUM (p * s / mean where s < b) = 1/mean * E[X * I(X<b)]
-    ///
-    /// which, after some algebra to avoid calling SA 4 times is the form you see below
+    /// See Saddlepoint Approximation.pdf for more info on the math.
+    pub fn ui_average_gold_metric(
+        &mut self,
+        inp_treatment_arr: Option<&[TreatmentsType]>,
+        performance: &mut Performance,
+    ) -> (Vec<f64>, Vec<f64>, Vec<Vec<f64>>) {
+        self.update_prob_dist();
+        self.update_cost_dist();
+        self.compute_special_probs(false);
+        performance.states_evaluated += 1;
+
+        let treatment_arr: &Vec<TreatmentsType> = if inp_treatment_arr.is_none() {
+            &vec![self.prep_output.optimizer_plan.clone().try_into().unwrap()]
+        } else {
+            &inp_treatment_arr.unwrap().to_vec()
+        };
+        let mut gold_breakdown: Vec<Vec<f64>> =
+            vec![vec![0.0; self.prep_output.juice_info.total_num_avail]; treatment_arr.len()];
+        let mut average_breakdown: Vec<f64> =
+            vec![0.0; self.prep_output.juice_info.total_num_avail];
+        let mut metrics_arr: Vec<f64> = vec![0.0; treatment_arr.len()];
+        for (treat_index, treatment) in treatment_arr.iter().enumerate() {
+            for (skip_count, &special_prob) in
+                self.special_cache[&self.special_state].iter().enumerate()
+            {
+                if special_prob < SPECIAL_TOL {
+                    continue;
+                }
+                for (support_index, thresh_price_pairs) in
+                    distribute_budgets(&self.prep_output.raw_material_info, treatment)
+                        .iter()
+                        .enumerate()
+                {
+                    let this_avg: f64 = self.one_dimension_average_gold(
+                        support_index as i64,
+                        skip_count,
+                        thresh_price_pairs,
+                        performance,
+                    );
+                    let this = special_prob * this_avg;
+
+                    gold_breakdown[treat_index][support_index] += this;
+                    metrics_arr[treat_index] += this;
+                    if treat_index == 0 {
+                        average_breakdown[support_index] +=
+                            special_prob * self.simple_avg(support_index as i64, skip_count)
+                    }
+                }
+            }
+        }
+        for y in gold_breakdown.iter_mut() {
+            for x in y.iter_mut() {
+                *x = x.round()
+            }
+        }
+        for x in average_breakdown.iter_mut() {
+            *x = x.round() // rounding is more uh correct here (as opposed to taking ceil)
+        }
+
+        (metrics_arr, average_breakdown, gold_breakdown)
+    }
+
+    /// See Saddlepoint Approximation.pdf for more info on the math. This is a generalized version for n price breakpoints
     pub fn one_dimension_average_gold(
         &self,
         support_index: i64,
         skip_count: usize,
-        mut budget: f64,
-        tradable_threshold: f64,
-        market_price: f64,
-        trade_price: f64,
-        leftover_price: f64,
+        thresh_price_pairs: &[(f64, f64)],
         performance: &mut Performance,
     ) -> f64 {
+        let num_thresholds = thresh_price_pairs.len();
+
         let simple_mean: f64 = self.simple_avg(support_index, skip_count);
 
-        if (market_price - leftover_price).abs() < FLOAT_TOL
-            && (market_price - trade_price).abs() < FLOAT_TOL
-        {
-            // this also includes price = 0 (unless leftover is high for some reason)
-            return market_price * (budget - simple_mean);
+        if num_thresholds == 1 {
+            return thresh_price_pairs[0].1 * (thresh_price_pairs[0].0 - simple_mean);
         }
-        let trade_same_value: bool = (trade_price - leftover_price).abs() < FLOAT_TOL; // ig this only happens for 1g cost or user specifies
-        if trade_same_value {
-            budget = tradable_threshold;
-        }
+
         let simple_mean_log = simple_mean.ln();
-        if trade_same_value
-            || (budget - tradable_threshold).abs() < FLOAT_TOL
-            || (market_price - trade_price).abs() < FLOAT_TOL
-        {
+
+        let last_thresh = thresh_price_pairs[num_thresholds - 1].0;
+        let last_price = thresh_price_pairs[num_thresholds - 1].1;
+
+        let mut out: f64 = last_price * (last_thresh - simple_mean);
+
+        for (index, &(thresh, price)) in thresh_price_pairs.iter().enumerate().skip(1) {
+            let prev_price = thresh_price_pairs[index - 1].1;
+
             let biased_prob: f64 = self.saddlepoint_approximation_wrapper(
                 support_index,
                 skip_count,
-                budget,
+                thresh,
                 true,
                 simple_mean_log,
                 performance,
             );
+
             let prob = self.saddlepoint_approximation_wrapper(
                 support_index,
                 skip_count,
-                budget,
-                false,
-                NAN,
-                performance,
-            );
-            // the signs are backwards compared to the UI / documentation
-            let out: f64 = market_price * (budget - simple_mean)
-                + (leftover_price - market_price) * (budget * prob - biased_prob * simple_mean);
-
-            return out;
-        } else {
-            let trade_biased_prob: f64 = self.saddlepoint_approximation_wrapper(
-                support_index,
-                skip_count,
-                tradable_threshold,
-                true,
-                simple_mean_log,
-                performance,
-            );
-            let trade_prob = self.saddlepoint_approximation_wrapper(
-                support_index,
-                skip_count,
-                tradable_threshold,
-                false,
-                NAN,
-                performance,
-            );
-            let biased_prob: f64 = self.saddlepoint_approximation_wrapper(
-                support_index,
-                skip_count,
-                budget,
-                true,
-                simple_mean_log,
-                performance,
-            );
-            let prob = self.saddlepoint_approximation_wrapper(
-                support_index,
-                skip_count,
-                budget,
+                thresh,
                 false,
                 NAN,
                 performance,
             );
 
-            let out: f64 = market_price * (tradable_threshold - simple_mean)
-                + (trade_price - market_price)
-                    * (tradable_threshold * trade_prob - trade_biased_prob * simple_mean)
-                + (leftover_price - trade_price) * (budget * prob - biased_prob * simple_mean);
-
-            return out;
+            out += (prev_price - price) * (thresh * prob - biased_prob * simple_mean);
         }
+        return out;
     }
 }

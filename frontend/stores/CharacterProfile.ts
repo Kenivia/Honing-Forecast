@@ -12,7 +12,7 @@ export interface CharProfile {
     express_event: boolean
     char_name: string
 
-    evaluation_worker_bundle: any
+    // evaluation_worker_bundle: any
     optimizer_worker_bundle: any
     histogram_worker_bundle: any
     normal_grid: StatusGrid
@@ -30,14 +30,15 @@ export interface CharProfile {
     min_resolution: number // currently not used (always 1)
     num_threads: number // currently not used (always 1)
     metric_type: number // currently not used (always 1)
-    material_re_render_trigger: boolean // This is here to trigger an update in the special cell in MaterialDist from the change in the confirmation popup in InstructionRow
+    material_rerender_trigger: boolean // This is here to trigger an update in the special cell in MaterialDist from the change in the confirmation popup in InstructionRow
 }
 
 export enum TreatmentPlan {
-    TreatRosterAsTradable, // rat alt, treat roster as if we could've sold them
-    TreatRosterAsBound, // alt, treat char & roster bound as 0 if there's any leftover, taxed market price if any tradable leftover
-    TreatTradableAsBound, // main, treat everything as 0 if any leftover
-    TreatAllAsTradable, //special case for gold cost
+    // this also serves as the index to chances_arr so order matters here
+    TreatRosterAsTradable,
+    TreatRosterAsBound,
+    TreatTradableAsBound,
+    TreatAllAsTradable,
 }
 
 export function create_default_char_profile(): CharProfile {
@@ -48,7 +49,7 @@ export function create_default_char_profile(): CharProfile {
         char_name: "Newchar",
 
         auto_start_optimizer: true,
-        evaluation_worker_bundle: createWorkerBundle(),
+        // evaluation_worker_bundle: createWorkerBundle(),
         optimizer_worker_bundle: createWorkerBundle(),
         histogram_worker_bundle: createWorkerBundle(),
 
@@ -73,7 +74,7 @@ export function create_default_char_profile(): CharProfile {
         min_resolution: 1,
         num_threads: 1,
         metric_type: 1,
-        material_re_render_trigger: true,
+        material_rerender_trigger: true,
         roster_id: 0,
     }
 }
@@ -82,7 +83,7 @@ export function create_default_char_profile(): CharProfile {
 export function recreate_char_profile(parsed): CharProfile {
     return {
         ...parsed,
-        evaluation_worker_bundle: createWorkerBundle(),
+        // evaluation_worker_bundle: createWorkerBundle(),
         optimizer_worker_bundle: createWorkerBundle(),
         histogram_worker_bundle: createWorkerBundle(),
     }

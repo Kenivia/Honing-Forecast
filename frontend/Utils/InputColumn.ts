@@ -23,7 +23,7 @@ export function parse_locale_int(str: string): number {
     return parseInt(normalized)
 }
 
-export function parse_locale_float(str: string, locale?: string): number {
+export function parse_locale_float(str: string): number {
     const normalized = str.replaceAll(group, "").replace(decimal, ".")
 
     return parseFloat(normalized)

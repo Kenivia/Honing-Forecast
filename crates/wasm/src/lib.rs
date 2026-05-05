@@ -18,34 +18,34 @@ use wasm_bindgen::prelude::*;
 #[allow(unused_imports)]
 use web_sys::console;
 
-#[wasm_bindgen]
-#[must_use]
-pub fn parser_wrapper(input_payload: JsValue) -> JsValue {
-    console_error_panic_hook::set_once();
+// #[wasm_bindgen]
+// #[must_use]
+// pub fn parser_wrapper(input_payload: JsValue) -> JsValue {
+//     console_error_panic_hook::set_once();
 
-    let payload: Payload = from_value(input_payload).unwrap();
-    let mut state_bundle = StateBundle::init_from_payload(payload);
-    let mut dummy_performance = Performance::new();
-    let metric = state_bundle.average_gold_metric(true, &mut dummy_performance); // doesn't allow prob evaluation right now, even if metric_type is set 
-    state_bundle.metric = metric;
-    state_bundle.set_latest_special_probs();
-    to_value(&state_bundle).unwrap()
-}
+//     let payload: Payload = from_value(input_payload).unwrap();
+//     let mut state_bundle = StateBundle::init_from_payload(payload);
+//     let mut dummy_performance = Performance::new();
+//     let metric = state_bundle.average_gold_metric(true, &mut dummy_performance); // doesn't allow prob evaluation right now, even if metric_type is set
+//     state_bundle.metric = metric;
+//     state_bundle.set_latest_special_probs();
+//     to_value(&state_bundle).unwrap()
+// }
 
-#[wasm_bindgen]
-#[must_use]
-pub fn evaluate_average_wrapper(input_payload: JsValue) -> JsValue {
-    console_error_panic_hook::set_once();
+// #[wasm_bindgen]
+// #[must_use]
+// pub fn evaluate_average_wrapper(input_payload: JsValue) -> JsValue {
+//     console_error_panic_hook::set_once();
 
-    let payload: Payload = from_value(input_payload).unwrap();
-    let mut state_bundle: StateBundle = StateBundle::init_from_payload(payload);
+//     let payload: Payload = from_value(input_payload).unwrap();
+//     let mut state_bundle: StateBundle = StateBundle::init_from_payload(payload);
 
-    let mut dummy_performance = Performance::new();
-    let metric = state_bundle.average_gold_metric(true, &mut dummy_performance); // doesn't allow prob evaluation right now, even if metric_type is set 
-    state_bundle.metric = metric;
-    state_bundle.set_latest_special_probs();
-    to_value(&state_bundle).unwrap()
-}
+//     let mut dummy_performance = Performance::new();
+//     let metric = state_bundle.average_gold_metric(true, &mut dummy_performance); // doesn't allow prob evaluation right now, even if metric_type is set
+//     state_bundle.metric = metric;
+//     state_bundle.set_latest_special_probs();
+//     to_value(&state_bundle).unwrap()
+// }
 
 #[wasm_bindgen]
 #[must_use]
@@ -62,7 +62,7 @@ pub fn optimize_average_wrapper(input_payload: JsValue) -> JsValue {
     let mut dummy_performance = Performance::new();
     let mut best_state: StateBundle = solve(&mut rng, state_bundle, &mut dummy_performance);
 
-    best_state.average_gold_metric(true, &mut dummy_performance);
+    best_state.optimizer_average_gold_metric(&mut dummy_performance);
     best_state.set_latest_special_probs();
 
     to_value(&best_state).unwrap()

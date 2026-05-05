@@ -1,6 +1,6 @@
-import { ref, onUnmounted, Ref, shallowRef } from "vue"
-import { EvalPayload } from "./PayloadBuilder"
-import { WasmOp } from "@/Utils/Interfaces"
+import { ref, onUnmounted, Ref, shallowRef, ShallowRef } from "vue"
+import { Payload } from "./PayloadBuilder"
+import { HistogramOutputs, StateBundle, WasmOp } from "@/Utils/Interfaces"
 
 const createWorker = () => new Worker(new URL("./WasmWorker.ts", import.meta.url), { type: "module" })
 
@@ -14,7 +14,7 @@ export function createWorkerBundle() {
 
     let debounceTimer = null
     let throttle_timer: ReturnType<typeof setTimeout> | null = null
-    let throttle_pending: { wasm_op: WasmOp; payload: EvalPayload } | null = null
+    let throttle_pending: { wasm_op: WasmOp; payload: Payload } | null = null
     let throttle_ready = true
 
     function _try_flush_throttle() {
@@ -35,12 +35,12 @@ export function createWorkerBundle() {
         _launch(wasm_op, payload, false, () => _try_flush_throttle())
     }
 
-    function throttled_start(wasm_op: WasmOp, payload: EvalPayload) {
+    function throttled_start(wasm_op: WasmOp, payload: Payload) {
         throttle_pending = { wasm_op, payload }
         _try_flush_throttle()
     }
 
-    function _launch(wasm_op: WasmOp, payload: EvalPayload, cancel: boolean, callback?: (result) => void) {
+    function _launch(wasm_op: WasmOp, payload: Payload, cancel: boolean, callback?: (result) => void) {
         if (cancel) {
             cancel_worker()
         }
@@ -87,7 +87,7 @@ export function createWorkerBundle() {
         worker.postMessage({ type: "message", wasm_op, payload })
     }
 
-    function start(wasm_op: WasmOp, payload: EvalPayload, callback?: (result) => void) {
+    function start(wasm_op: WasmOp, payload: Payload, callback?: (result) => void) {
         // if (debounce > 0) {
         clearTimeout(debounceTimer)
 

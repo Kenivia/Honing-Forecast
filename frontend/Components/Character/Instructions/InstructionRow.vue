@@ -32,7 +32,7 @@ const free_tap_this_upgrade = computed(() => {
 })
 
 const juice_info = computed(() => {
-    return active_profile.value.optimizer_worker_bundle.result.prep_output.juice_info
+    return active_profile.value.histogram_worker_bundle.result.juice_info
 })
 
 const streaks = computed(() => aggregate_streaks(props.upgrade, juice_info.value, taps_so_far.value))
@@ -97,7 +97,7 @@ function write_adv_progress() {
 }
 
 function juice_icon_path(upgrade: Upgrade, juice: boolean) {
-    let juice_info = active_profile.value.optimizer_worker_bundle.result.prep_output.juice_info
+    let juice_info = active_profile.value.histogram_worker_bundle.result.juice_info
     let relevant_id_map = upgrade.is_normal_honing ? juice_info.normal_uindex_to_id : juice_info.adv_uindex_to_id
 
     let relevant_upgrade = relevant_id_map[upgrade.upgrade_index]
@@ -173,9 +173,9 @@ async function confirmSuccess() {
 
     show_success_modal.value = false
     succeed_without_deduct.value = false
-    active_profile.value.material_re_render_trigger = false
+    active_profile.value.material_rerender_trigger = false
     await nextTick()
-    active_profile.value.material_re_render_trigger = true
+    active_profile.value.material_rerender_trigger = true
 }
 </script>
 

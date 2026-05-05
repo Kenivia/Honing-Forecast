@@ -20,8 +20,12 @@ If you'd like to help with any of the below, feel free to submit a PR on [github
 
 - uwuowo integration (add button next to textbox to pull from uwuowo, add button on sidebar of roster setup to pull all existing chars)
 
-- set up github stuff (pull from release tab like monkeytype) this is SO COOKED
+- ~~set up github stuff (pull from release tab like monkeytype) this is SO COOKED~~ maybe i can live with this
   - surely theres a way to not push dist to main and but push dist to production
+
+- maybe use indexdb instead of localstorage?
+
+- changed graph to be rigid histograms instead of intepolating lines
 
 ## Roadmap (big projects)
 

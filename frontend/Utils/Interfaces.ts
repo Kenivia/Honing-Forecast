@@ -1,18 +1,29 @@
 export enum WasmOp {
-    EvaluateAverage,
+    // EvaluateAverage,
     OptimizeAverage,
     Histogram,
-    Parser,
+    // Parser,
 }
 // THESE BELOW DIRECTLY CORRESPOND TO A RUST STRUCT
 
 export type HistogramPair = [number, number]
+// export interface HistogramOutputs {
+//     cum_percentiles: HistogramPair[][]
+//     average: number[]
+//     state_bundle: StateBundle
+//     bound_chance: number[]
+//     tradable_chance: number[]
+// }
 export interface HistogramOutputs {
     cum_percentiles: HistogramPair[][]
-    average: number[]
-    state_bundle: StateBundle
-    bound_chance: number[]
-    tradable_chance: number[]
+
+    chances_arr: number[][] //  [treatment plan][material type] for all 3 of these
+    gold_breakdown_arr: number[][]
+    metrics_arr: number[]
+
+    avg_breakdown: number[]
+
+    juice_info: any
 }
 
 export interface Upgrade {

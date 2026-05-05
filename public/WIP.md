@@ -7,11 +7,12 @@ If you'd like to help with any of the below, feel free to submit a PR on [github
 
 ## Immediate WIP
 
-- move the bound / roster / tradable allocation logic to rust, let histogram worker handle everything (average, gold, tradable gold) so ~~we're starting less workers~~ we can do everything UI related in one worker (and makes life easier later)
+- ~~move the bound / roster / tradable allocation logic to rust, let histogram worker handle everything (average, gold, tradable gold) so we can do everything UI related in one worker (and makes life easier later)~~
   - can rework tap so far system while i'm at it ([#15](https://github.com/Kenivia/Honing-Forecast/issues/15))
   - can probably add "no juice" "full juice" comparison buttons (where the graph stuff used to be) here
   - actually save & pass around cache so adv doesn't take 8 years every time
 
+- rearrange UI cos separating to two pages doesn't actually make any sense what so ever
 - store 2 copies of market price , indexed by region, add region specification in roster page and read the appropriate prices from there
 
 - accent color not working on chrome
@@ -20,8 +21,14 @@ If you'd like to help with any of the below, feel free to submit a PR on [github
 
 - uwuowo integration (add button next to textbox to pull from uwuowo, add button on sidebar of roster setup to pull all existing chars)
 
-- set up github stuff (pull from release tab like monkeytype) this is SO COOKED
+- ~~set up github stuff (pull from release tab like monkeytype) this is SO COOKED~~ maybe i can live with this
   - surely theres a way to not push dist to main and but push dist to production
+
+- maybe use indexdb instead of localstorage?
+
+- changed graph to be rigid histograms instead of intepolating lines
+
+- re-do test cases and stuff
 
 ## Roadmap (big projects)
 

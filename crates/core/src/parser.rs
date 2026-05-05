@@ -4,6 +4,7 @@ use crate::constants::accessor::{
 };
 use crate::constants::juice_info::{JuiceInfo, get_priced_juice_info};
 use crate::constants::*;
+use crate::helpers::distribute_budgets;
 use crate::upgrade::Upgrade;
 use ahash::AHashMap;
 use serde::{Deserialize, Serialize};
@@ -11,20 +12,17 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PreparationOutput {
     pub special_budget: i64,
+    pub raw_material_info: MaterialInput,
 
-    pub bound_budgets: Vec<f64>,
-    pub trade_budgets: Vec<f64>,
-    pub leftover_price: Vec<f64>,
-    pub tradable_price: Vec<f64>,
-    pub market_price: Vec<f64>,
+    pub optimizer_plan: Vec<usize>,
+    pub optimizer_material_info: MaterialInput,
+    pub num_breakpoints: usize,
 
     pub test_case: i64,
     pub juice_info: JuiceInfo,
-    pub already_spent: Option<(Vec<i64>, Vec<i64>, Vec<i64>, f64)>,
-    pub flat_alr_spent: Option<Vec<f64>>,
 }
 
-pub type MaterialInput = Vec<(f64, f64, f64, f64, f64)>; // bound, trade, leftover, trade price, market price
+pub type MaterialInput = Vec<Vec<(f64, f64)>>; // [material type][treatment plan].0 = owned, .1 = price
 pub type UpgradeInput = Vec<(
     usize,                              // piece type,
     usize,                              // upgrade_index
@@ -38,7 +36,8 @@ pub type UpgradeInput = Vec<(
 
 impl PreparationOutput {
     pub fn initialize(
-        material_info: MaterialInput,
+        raw_material_info: MaterialInput,
+        inp_optimizer_plan: Option<Vec<usize>>,
         upgrade_info: UpgradeInput,
         special_budget: i64,
         express_event: bool,
@@ -48,26 +47,8 @@ impl PreparationOutput {
         Vec<Upgrade>,
         AHashMap<AdvConfig, AdvDistTriplet>,
     ) {
-        let mut bound_budgets: Vec<f64> = Vec::with_capacity(material_info.len());
-        let mut trade_budgets: Vec<f64> = Vec::with_capacity(material_info.len());
-        let mut leftover_price: Vec<f64> = Vec::with_capacity(material_info.len());
-        let mut tradable_price: Vec<f64> = Vec::with_capacity(material_info.len());
-        let mut market_price: Vec<f64> = Vec::with_capacity(material_info.len());
-
-        for (bound_owned, trade_owned, leftover, trade, market) in material_info {
-            bound_budgets.push(bound_owned);
-            trade_budgets.push(trade_owned);
-            leftover_price.push(leftover);
-            tradable_price.push(trade);
-            market_price.push(market);
-        }
-        let juice_info: JuiceInfo = get_priced_juice_info(
-            &BASE_JUICE_INFOS[tier],
-            &leftover_price,
-            &tradable_price,
-            &market_price,
-            express_event,
-        );
+        let juice_info: JuiceInfo =
+            get_priced_juice_info(&BASE_JUICE_INFOS[tier], &raw_material_info, express_event);
         let mut adv_cache: AHashMap<AdvConfig, AdvDistTriplet> = AHashMap::new();
 
         let upgrade_arr: Vec<Upgrade> = parser(
@@ -77,22 +58,24 @@ impl PreparationOutput {
             tier,
             &mut adv_cache,
         );
+        let optimizer_plan = if inp_optimizer_plan.is_none() {
+            (0..raw_material_info.len()).collect::<Vec<usize>>()
+        } else {
+            inp_optimizer_plan.unwrap()
+        };
+        let optimizer_material_info = distribute_budgets(&raw_material_info, &optimizer_plan);
 
+        let num_breakpoints = raw_material_info[0].len();
+        assert!(num_breakpoints > 0);
         let out: PreparationOutput = Self {
             // upgrade_arr,
-            bound_budgets,
-            trade_budgets,
-            leftover_price,
-            tradable_price,
-            market_price,
+            raw_material_info,
+            optimizer_material_info,
+            optimizer_plan,
+            num_breakpoints,
             special_budget,
-
             test_case: -1, // arena will overwrite this
-
             juice_info,
-
-            already_spent: None,
-            flat_alr_spent: None,
         };
 
         (out, upgrade_arr, adv_cache)

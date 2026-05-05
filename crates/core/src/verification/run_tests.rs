@@ -41,7 +41,7 @@ struct Output {
     state: String,
     seed: u64,
     time_finished: String,
-    prob_leftover: Vec<f64>,
+    prob_leftover: Vec<Vec<f64>>,
 }
 
 fn current_time_string() -> String {
@@ -229,8 +229,8 @@ pub fn run_tests(payload_path_string: String, is_verify: bool) {
                     best_state_performance: dummy_performance.to_write(),
                 };
                 if !mc_result.is_match {
-                    state_bundle.average_gold_metric(true,&mut dummy_performance);
-                    dbg!(&state_bundle.gold_breakdown.unwrap(), &mc_result.prob_leftover, &output.prob_leftover, );
+                     let (metrics_arr, avg_breakdown, gold_breakdown_arr) =state_bundle.ui_average_gold_metric(None,&mut dummy_performance);
+                    dbg!(&gold_breakdown_arr,&avg_breakdown,&metrics_arr, &mc_result.prob_leftover, &output.prob_leftover, );
                     panic!(
                         "Monte Carlo and SA didn't fall within +-{}%, confidence {}%, n = {}.
                          {} Test: {} Trial: {} MC: {} +-{}% SA: {} My diff: {}%",

@@ -19,14 +19,15 @@ const histogram_result = computed(() => active_profile.value.histogram_worker_bu
 
 // This is average mats cost (not gold)
 const average_breakdown = computed(
-    () => active_profile.value.evaluation_worker_bundle.result?.average_breakdown ?? new Array(ALL_LABELS[active_profile.value.tier].length).fill(0),
+    () => active_profile.value.histogram_worker_bundle.result?.avg_breakdown ?? new Array(ALL_LABELS[active_profile.value.tier].length).fill(0),
 )
 // this is should always be treat tradable as bound (so it's actual gold spent)
 const gold_breakdown = computed(
     () =>
-        active_profile.value.evaluation_worker_bundle.result?.gold_breakdown.map((x: number) => Math.round(x >= 0 ? 0 : -x)) ??
+        active_profile.value.histogram_worker_bundle.result?.gold_breakdown_arr[0].map((x: number) => Math.round(x >= 0 ? 0 : -x)) ??
         new Array(ALL_LABELS[active_profile.value.tier].length).fill(0),
 )
+
 const matsIndices = T4_MATS_LABELS.map((_, i) => i)
 const visibleRows = computed(() => {
     return ALL_LABELS[active_profile.value.tier]
@@ -122,7 +123,7 @@ function change_histogram_treatment(event) {
               ? "var(--hf-graph-roster-color)"
               : "var(--hf-graph-tradable-color)"
     // console.log(new_val, active_profile.value.histogram_treatment_plan)
-    active_profile.value.histogram_worker_bundle.throttled_start(WasmOp.Histogram, build_payload(WasmOp.Histogram))
+    active_profile.value.histogram_worker_bundle.throttled_start(WasmOp.Histogram, build_payload())
 }
 
 const annotation_values = computed(() => {
@@ -193,8 +194,8 @@ const show_special_guide = ref(false)
                                 ALL_LABELS[active_profile.tier].length == active_profile.bound_budgets[active_profile.tier].data.length &&
                                 // active_profile.optimizer_worker_bundle.result &&
                                 active_profile.histogram_worker_bundle.result &&
-                                active_profile.evaluation_worker_bundle.result &&
-                                active_profile.material_re_render_trigger
+                                active_profile.histogram_worker_bundle.result &&
+                                active_profile.material_rerender_trigger
                             "
                             style="display: contents"
                         >
@@ -220,7 +221,7 @@ const show_special_guide = ref(false)
                                 />
                                 <!-- {{ console.log(averages) }} -->
                                 <MaterialCell
-                                    :input_column="active_profile.histogram_worker_bundle.result.bound_chance"
+                                    :input_column="active_profile.histogram_worker_bundle.result.chances_arr[active_profile.histogram_treatment_plan + 1]"
                                     :row="row"
                                     :input_color="selected_histogram_color"
                                     :is_percentage="true"
@@ -284,7 +285,7 @@ const show_special_guide = ref(false)
                                 {{ total_market_gold_text }}
                             </div>
                             <div class="hf-metric-status">
-                                {{ metric_to_text(active_profile.evaluation_worker_bundle.result?.metric) ?? "No Result yet" }}
+                                {{ metric_to_text(active_profile.histogram_worker_bundle.result?.metrics_arr[0]) ?? "No Result yet" }}
 
                                 <span style="font-size: 16px">
                                     {{ total_market_gold_suffix }}
@@ -302,7 +303,8 @@ const show_special_guide = ref(false)
                             <div class="hf-metric-status" style="color: var(--hf-text-muted)">
                                 {{
                                     metric_to_text(
-                                        active_profile.evaluation_worker_bundle.result?.metric - active_profile.optimizer_worker_bundle.result?.metric,
+                                        active_profile.histogram_worker_bundle.result?.metrics_arr[0] -
+                                            active_profile.histogram_worker_bundle.result?.metrics_arr[1],
                                     ) ?? "No Result yet"
                                 }}
 

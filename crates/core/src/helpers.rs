@@ -1,8 +1,62 @@
+use crate::constants::FLOAT_TOL;
+use crate::my_dbg;
+use crate::parser::MaterialInput;
 use crate::upgrade::Upgrade;
 use rand::Rng;
 use serde::Serialize;
 use std::fs::{File, OpenOptions};
 use std::io::{BufWriter, Error, Write};
+
+pub fn distribute_budgets(material_info: &MaterialInput, plan: &[usize]) -> MaterialInput {
+    let mut out: MaterialInput =
+        vec![vec![(0.0_f64, f64::NAN); material_info[0].len()]; material_info.len()];
+
+    for (support_index, treatments) in material_info.iter().enumerate() {
+        for (plan_index, (owned, price)) in treatments.iter().enumerate() {
+            out[support_index][plan[plan_index]].0 += owned;
+            out[support_index][plan[plan_index]].1 = *price;
+        }
+    }
+    my_dbg!(&out);
+    out.into_iter()
+        .map(|row| {
+            // my_dbg!(&row);
+            let mut merged: Vec<(f64, f64)> = Vec::new();
+
+            for (owned, price) in row {
+                if price.is_nan() {
+                    assert!(owned == 0.0);
+                    continue;
+                }
+                if let Some(entry) = merged
+                    .iter_mut()
+                    .find(|(_, p)| (*p - price).abs() < 0.5 && !p.is_nan())
+                {
+                    entry.0 += owned;
+                } else {
+                    merged.push((owned, price));
+                }
+            }
+            let last = merged.len() - 1;
+            let mut i = 0;
+
+            merged.retain(|(owned, _)| {
+                let keep = *owned > FLOAT_TOL || i == last || i == 0; // the i == 0 is needed for average formula
+                // my_dbg!(&(owned, price, i, last, keep));
+                i += 1;
+                keep
+            });
+            // my_dbg!(&merged);
+            let mut cumulative = 0.0_f64;
+            for entry in &mut merged {
+                cumulative += entry.0;
+                entry.0 = cumulative;
+            }
+
+            merged
+        })
+        .collect()
+}
 
 #[macro_export]
 macro_rules! my_dbg {

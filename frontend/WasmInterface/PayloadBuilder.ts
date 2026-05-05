@@ -9,8 +9,9 @@ import { storeToRefs } from "pinia"
 
 // I don't think it's possible to directly export this struct from rust to javascript because of all the vectors,
 // so it's copied & pasted here
-export interface EvalPayload {
-    material_info: OneMaterial[]
+export interface Payload {
+    material_info: number[][][]
+    optimizer_plan?: number[]
     upgrade_info: OneUpgrade[]
     special_budget: number
     special_state?: number[]
@@ -39,20 +40,8 @@ function keyed_to_array(keyed_upgrades: KeyedUpgrades, upgrade_arr: Upgrade[] | 
         return out
     })
 }
-export function apply_treatement(treatment: TreatmentPlan, bound: number, roster: number, tradable: number): [number, number] {
-    switch (treatment) {
-        case TreatmentPlan.TreatTradableAsBound:
-            return [bound + roster + tradable, 0]
-        case TreatmentPlan.TreatRosterAsBound:
-            return [bound + roster, tradable]
-        case TreatmentPlan.TreatRosterAsTradable:
-            return [bound, roster + tradable]
-        case TreatmentPlan.TreatAllAsTradable:
-            return [0, bound + roster + tradable]
-    }
-}
 
-export function build_material_info(wasm_op: WasmOp): OneMaterial[] {
+export function build_material_info(): number[][][] {
     const { active_profile } = storeToRefs(useRosterStore())
     const { roster_config, active_roster_mats_owned, active_tradable_mats_owned } = storeToRefs(useRosterStore())
 
@@ -74,31 +63,28 @@ export function build_material_info(wasm_op: WasmOp): OneMaterial[] {
         (x: number, index: number) =>
             x / (ALL_LABELS[active_profile.value.tier][index] == "Shards" ? roster_config.value.selected_shard_bag_size : BUNDLE_SIZE[index]),
     )
-    // console.log(tradable_mats_price)
+    console.log()
     return ALL_LABELS[tier].map((_, index) => [
-        ...apply_treatement(
-            wasm_op == WasmOp.OptimizeAverage
-                ? active_profile.value.optimizer_treatment_plan
-                : wasm_op == WasmOp.Histogram
-                  ? active_profile.value.histogram_treatment_plan
-                  : //   : index == 5
-                    //     ? TreatmentPlan.TreatRosterAsTradable // special case for gold (show all non-char bound gold cost)
-                    TreatmentPlan.TreatTradableAsBound, // EvalAverage
-            bound_budgets[index],
-            roster_mats_owned[index],
-            !enabled[index] ? 0 : tradable_mats_owned[index], // disabled mats shouldn't be sold either
-        ),
-        leftover_price[index],
-        tradable_mats_price[index],
-        mats_prices[index],
+        [0, 0],
+        [bound_budgets[index], leftover_price[index]],
+        [roster_mats_owned[index], tradable_mats_price[index]],
+        [!enabled[index] ? 0 : tradable_mats_owned[index], mats_prices[index]], // disabled mats shouldn't be sold either
     ])
 }
 
-export function build_payload(wasm_op: WasmOp): EvalPayload {
+export function build_payload(): Payload {
     const { active_profile } = storeToRefs(useRosterStore())
     const tier = active_profile.value.tier
     return {
-        material_info: build_material_info(wasm_op),
+        material_info: build_material_info(),
+        optimizer_plan:
+            // wasm_op == WasmOp.OptimizeAverage
+            active_profile.value.optimizer_treatment_plan === TreatmentPlan.TreatRosterAsBound
+                ? [0, 0, 2, 3]
+                : active_profile.value.optimizer_treatment_plan === TreatmentPlan.TreatTradableAsBound
+                  ? [0, 0, 0, 3]
+                  : [0, 1, 2, 3], //this  shouldn't happen
+        // : null,
         upgrade_info: keyed_to_array(active_profile.value.keyed_upgrades, active_profile.value.optimizer_worker_bundle.result?.upgrade_arr, tier),
         special_budget: input_column_to_num(active_profile.value.special_budget)[0],
         express_event: active_profile.value.express_event,

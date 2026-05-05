@@ -37,19 +37,28 @@ impl StateBundle {
     }
 
     // this is also one of the things i was gonna display but this is implicitly displayed in the graph
-    pub fn compute_leftover_probs(&mut self) -> Vec<f64> {
+    pub fn compute_leftover_probs(&mut self) -> Vec<Vec<f64>> {
         self.update_prob_dist();
         self.update_cost_dist();
         self.compute_special_probs(false);
-        let mut prob_leftover: Vec<f64> = Vec::with_capacity(self.prep_output.bound_budgets.len());
+        let mut prob_leftover: Vec<Vec<f64>> =
+            vec![
+                Vec::with_capacity(self.prep_output.optimizer_material_info.len());
+                self.prep_output.num_breakpoints
+            ];
 
         let mut dummy_performance = Performance::new();
-        for (support_index, effective_budget) in self.prep_output.bound_budgets.iter().enumerate() {
-            prob_leftover.push(self.one_dimension_prob(
-                support_index as i64,
-                *effective_budget,
-                &mut dummy_performance,
-            ));
+
+        for (support_index, effective_budget) in
+            self.prep_output.optimizer_material_info.iter().enumerate()
+        {
+            for treatment_plan in 0..self.prep_output.optimizer_material_info[support_index].len() {
+                prob_leftover[support_index].push(self.one_dimension_prob(
+                    support_index as i64,
+                    effective_budget[treatment_plan].0,
+                    &mut dummy_performance,
+                ));
+            }
         }
 
         prob_leftover

@@ -17,11 +17,11 @@ pub struct StateBundle {
     pub metric: f64,
     pub min_resolution: usize,
     pub prep_output: PreparationOutput,
+
+    pub num_threads: usize,
+
     #[serde(skip)]
     pub special_cache: AHashMap<Vec<usize>, Vec<f64>>,
-    pub num_threads: usize,
-    pub gold_breakdown: Option<Vec<f64>>,
-    pub average_breakdown: Option<Vec<f64>>,
     #[serde(skip)]
     pub adv_cache: AHashMap<AdvConfig, AdvDistTriplet>,
 }
@@ -51,7 +51,7 @@ impl StateBundle {
     pub fn metric_router(&mut self, performance: &mut Performance) -> f64 {
         match self.metric_type {
             0 => unreachable!(), //self.success_prob_metric(performance),
-            1 => self.average_gold_metric(false, performance),
+            1 => self.optimizer_average_gold_metric(performance),
             _ => NAN,
         }
     }
@@ -62,15 +62,14 @@ impl StateBundle {
             metric: -1.0,
             special_state: (0..upgrade_arr.len()).collect(),
             prep_output,
-            special_cache: AHashMap::new(),
             upgrade_arr,
             metric_type: -1,
             latest_special_probs: None,
             min_resolution: 1,
             num_threads: 0,
-            gold_breakdown: None,
+
+            special_cache: AHashMap::new(),
             adv_cache: AHashMap::new(),
-            average_breakdown: None,
         };
 
         state_bundle

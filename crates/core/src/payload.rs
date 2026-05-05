@@ -11,8 +11,11 @@ use std::path::Path;
 #[derive(Deserialize, Clone, Serialize)]
 pub struct Payload {
     pub material_info: MaterialInput,
+    pub optimizer_plan: Option<Vec<usize>>,
+
     pub upgrade_info: UpgradeInput,
     pub special_budget: i64,
+
     pub special_state: Option<Vec<usize>>,
     pub tier: usize,
     pub express_event: bool,
@@ -29,6 +32,7 @@ fn default_one() -> i64 {
 impl StateBundle {
     pub fn init_from_inputs(
         material_info: MaterialInput,
+        optimizer_plan: Option<Vec<usize>>,
         upgrade_info: UpgradeInput,
         special_budget: i64,
         express_event: bool,
@@ -44,6 +48,7 @@ impl StateBundle {
             AHashMap<AdvConfig, AdvDistTriplet>,
         ) = PreparationOutput::initialize(
             material_info,
+            optimizer_plan,
             upgrade_info,
             special_budget,
             express_event,
@@ -69,14 +74,14 @@ impl StateBundle {
             latest_special_probs: None,
             min_resolution,
             num_threads,
-            gold_breakdown: None,
+
             adv_cache,
-            average_breakdown: None,
         }
     }
     pub fn init_from_payload(payload: Payload) -> Self {
         StateBundle::init_from_inputs(
             payload.material_info,
+            payload.optimizer_plan,
             payload.upgrade_info,
             payload.special_budget,
             payload.express_event,
