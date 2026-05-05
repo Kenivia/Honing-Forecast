@@ -63,7 +63,7 @@ export function build_material_info(): number[][][] {
         (x: number, index: number) =>
             x / (ALL_LABELS[active_profile.value.tier][index] == "Shards" ? roster_config.value.selected_shard_bag_size : BUNDLE_SIZE[index]),
     )
-    console.log()
+    // console.log()
     return ALL_LABELS[tier].map((_, index) => [
         [0, 0],
         [bound_budgets[index], leftover_price[index]],

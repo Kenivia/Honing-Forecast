@@ -7,6 +7,9 @@ use serde::Serialize;
 use std::fs::{File, OpenOptions};
 use std::io::{BufWriter, Error, Write};
 
+/// Outputs in the form of [(threshold1, price1),(threshold2, price2) ... ]
+/// Where price(n+1) refers to the cost inccured for exceeding the owned_n
+/// This is insanely scuffed i probably could've made it more elegant but this works (i think) and i dont want to touch it
 pub fn distribute_budgets(material_info: &MaterialInput, plan: &[usize]) -> MaterialInput {
     let mut out: MaterialInput =
         vec![vec![(0.0_f64, f64::NAN); material_info[0].len()]; material_info.len()];
@@ -30,7 +33,7 @@ pub fn distribute_budgets(material_info: &MaterialInput, plan: &[usize]) -> Mate
                 }
                 if let Some(entry) = merged
                     .iter_mut()
-                    .find(|(_, p)| (*p - price).abs() < 0.5 && !p.is_nan())
+                    .find(|(_, p)| (*p - price).abs() < FLOAT_TOL && !p.is_nan())
                 {
                     entry.0 += owned;
                 } else {
@@ -39,10 +42,11 @@ pub fn distribute_budgets(material_info: &MaterialInput, plan: &[usize]) -> Mate
             }
             let last = merged.len() - 1;
             let mut i = 0;
-
-            merged.retain(|(owned, _)| {
-                let keep = *owned > FLOAT_TOL || i == last || i == 0; // the i == 0 is needed for average formula
-                // my_dbg!(&(owned, price, i, last, keep));
+            let copy = merged.clone();
+            // my_dbg!(&merged);
+            merged.retain(|(_owned, _price)| {
+                let keep = i == last || copy[i + 1].0 > FLOAT_TOL || i == 0; // the i == 0 is needed for average formula
+                // my_dbg!(&(owned, _price, i, last, keep));
                 i += 1;
                 keep
             });
