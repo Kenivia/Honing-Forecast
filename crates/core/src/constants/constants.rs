@@ -6,12 +6,12 @@ use once_cell::sync::Lazy;
 
 pub type TreatmentsType = [usize; 4];
 pub const UI_TREATMENTS: [TreatmentsType; 2] = [
-    [0, 1, 1, 1], // char-bound <bound| roster <trade| tradable <trade| market
+    [0, 1, 1, 1], // char-bound <bound| roster <bound| tradable <bound| market
     [0, 1, 2, 3], //  char-bound <bound| roster <bound| tradable <trade| market
 ];
 
 pub const TEST_PAYLOAD_PATH: &str = "/test_cases/payloads";
-pub const FLOAT_TOL: f64 = 1e-9; // -12 is known to cause problems with brute 
+pub const FLOAT_TOL: f64 = 1e-9; // -12 is known to cause problems with brute
 pub const IGNORE_PROB_TOL: f64 = 1e-14; // mostly for adv honing, 10 is known to cause problems, 12 shoudl be fine? using 14 to be giga safe
 pub const SPECIAL_TOL: f64 = 1e-7;
 pub const BUCKET_COUNT: usize = 50;

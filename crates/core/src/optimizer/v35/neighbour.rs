@@ -63,10 +63,6 @@ impl SolverStateBundle {
                 already_mutated[u_idx] = true;
                 let upgrade = &mut self.state_bundle.upgrade_arr[u_idx];
 
-                if upgrade.succeeded {
-                    continue;
-                }
-
                 upgrade.perturb(progress, &self.state_bundle.prep_output.juice_info);
                 upgrade.state.update_hash();
             }
@@ -91,7 +87,6 @@ impl Upgrade {
         let new_juice_count = self
             .state
             .iter()
-            .skip(self.alr_failed)
             .filter(|(j, _)| *j)
             .count()
             .saturating_add_signed(random_range(-max_change_len..max_change_len) as isize);
@@ -99,7 +94,6 @@ impl Upgrade {
         let new_juice_streak_len = self
             .state
             .iter()
-            .skip(self.alr_failed)
             .take_while(|(j, _)| *j)
             .count()
             .saturating_add_signed(random_range(-max_change_len..max_change_len) as isize)
@@ -107,7 +101,6 @@ impl Upgrade {
         let new_book_count = self
             .state
             .iter()
-            .skip(self.alr_failed)
             .filter(|(_, b)| *b > 0)
             .count()
             .saturating_add_signed(random_range(-max_change_len..max_change_len) as isize);
@@ -115,7 +108,6 @@ impl Upgrade {
         let new_book_streak_len = self
             .state
             .iter()
-            .skip(self.alr_failed)
             .take_while(|(_, b)| *b > 0)
             .count()
             .saturating_add_signed(random_range(-max_change_len..max_change_len) as isize)
@@ -128,7 +120,7 @@ impl Upgrade {
 
             let book_id = *book_id_result.unwrap();
 
-            for (i, (juice, book)) in self.state.iter_mut().skip(self.alr_failed).enumerate() {
+            for (i, (juice, book)) in self.state.iter_mut().enumerate() {
                 // if artisan >= 1.0 {
                 //     effective_len = i + 1;
                 //     break;
@@ -155,16 +147,7 @@ impl Upgrade {
                 // }
             }
 
-            let state_len = self.state.len();
-
-            for (i, (juice, book)) in self
-                .state
-                .iter_mut()
-                .skip(self.alr_failed)
-                .take(state_len - self.alr_failed)
-                .rev()
-                .enumerate()
-            {
+            for (i, (juice, book)) in self.state.iter_mut().rev().enumerate() {
                 if i < (new_juice_count - new_juice_streak_len) {
                     *juice = true;
                 }

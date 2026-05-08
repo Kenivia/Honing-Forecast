@@ -65,7 +65,7 @@ impl SolverStateBundle {
             let target_idx = random_range(0..u_len);
             let target = &self.state_bundle.upgrade_arr[target_idx];
 
-            if !target.is_normal_honing || target.is_weapon || target.alr_failed != 0 {
+            if !target.is_normal_honing || target.is_weapon {
                 return;
             }
 

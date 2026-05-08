@@ -1,6 +1,6 @@
 import { ALL_LABELS, BUNDLE_SIZE } from "@/Utils/Constants"
 import { TreatmentPlan } from "@/Stores/CharacterProfile"
-import { KeyedUpgrades, OneMaterial, OneUpgrade, Upgrade, WasmOp } from "@/Utils/Interfaces"
+import { KeyedUpgrades, OneMaterialInput, OneUpgradeInput, Upgrade, WasmOp } from "@/Utils/Interfaces"
 import { toRaw } from "vue"
 import { useRosterStore } from "@/Stores/RosterConfig"
 import { to_upgrade_key } from "@/Utils/KeyedUpgrades"
@@ -12,7 +12,7 @@ import { storeToRefs } from "pinia"
 export interface Payload {
     material_info: number[][][]
     optimizer_plan?: number[]
-    upgrade_info: OneUpgrade[]
+    upgrade_info: OneUpgradeInput[]
     special_budget: number
     special_state?: number[]
     tier: number
@@ -22,26 +22,26 @@ export interface Payload {
     metric_type: number
 }
 
-function keyed_to_array(keyed_upgrades: KeyedUpgrades, upgrade_arr: Upgrade[] | null, tier: number): OneUpgrade[] {
-    return Object.entries(keyed_upgrades).map(([key, arr], index) => {
-        arr[4] = null
-        const out = structuredClone(toRaw(arr)) // cloning here so we don't write the state into keyed_upgrades
-        let candidate = upgrade_arr?.[index]?.state ?? null
-        if (candidate === null) {
-            out[4] = []
-        } else {
-            let upgrade: Upgrade = upgrade_arr[index]
-            if (to_upgrade_key(upgrade.piece_type, upgrade.upgrade_index, upgrade.is_normal_honing, tier) == key) {
-                out[4] = candidate
-            } else {
-                out[4] = []
-            }
+function keyed_to_array(keyed_upgrades: KeyedUpgrades, upgrade_arr: Upgrade[] | null, tier: number): OneUpgradeInput[] {
+    const upgrade_map = new Map<string, Upgrade>()
+    if (upgrade_arr != null) {
+        for (const upgrade of upgrade_arr) {
+            const key = to_upgrade_key(upgrade.piece_type, upgrade.upgrade_index, upgrade.is_normal_honing, tier)
+            upgrade_map.set(key, upgrade)
+        }
+    }
+
+    return Object.entries(keyed_upgrades).map(([key, one_upgrade_input]) => {
+        const upgrade = upgrade_map.get(key) ?? null
+        let out = structuredClone(toRaw(one_upgrade_input))
+        if (upgrade && upgrade.state && upgrade.state.length > 0) {
+            out.state = upgrade.state
         }
         return out
     })
 }
 
-export function build_material_info(): number[][][] {
+export function build_material_info(): OneMaterialInput[] {
     const { active_profile } = storeToRefs(useRosterStore())
     const { roster_config, active_roster_mats_owned, active_tradable_mats_owned } = storeToRefs(useRosterStore())
 

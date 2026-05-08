@@ -186,7 +186,7 @@ function stringifyOmit(obj: RosterConfig, keys: string[]): string {
 }
 export function write_roster_config(state) {
     try {
-        localStorage.setItem(STORAGE_KEY + "_roster", stringifyOmit(state.roster_config, ["optimizer_worker_bundle", "histogram_worker_bundle"]))
+        // localStorage.setItem(STORAGE_KEY + "_roster", stringifyOmit(state.roster_config, ["optimizer_worker_bundle", "histogram_worker_bundle"]))
     } catch {
         console.log(JSON.stringify(state.roster_config))
     }

@@ -23,22 +23,23 @@ pub struct PreparationOutput {
 }
 
 pub type MaterialInput = Vec<Vec<(f64, f64)>>; // [material type][treatment plan].0 = owned, .1 = price
-pub type UpgradeInput = Vec<(
-    usize,                              // piece type,
-    usize,                              // upgrade_index
-    bool,                               // is_normal_honing
-    Option<usize>,                      // normal_progress
-    Vec<(bool, usize)>,                 // state
-    bool,                               // unlock
-    bool,                               // succeeeded
-    Option<(usize, usize, bool, bool)>, // adv_progress
-)>;
+
+#[derive(Deserialize, Clone, Serialize)]
+pub struct OneUpgradeInput {
+    pub piece_type: usize,
+    pub upgrade_index: usize,
+    pub is_normal_honing: bool,
+    pub starting_artisan: Option<f64>,
+    pub state: Option<Vec<(bool, usize)>>,
+    pub unlocked: bool,
+    pub adv_progress: Option<(usize, usize, bool, bool)>,
+}
 
 impl PreparationOutput {
     pub fn initialize(
         raw_material_info: MaterialInput,
         inp_optimizer_plan: Option<Vec<usize>>,
-        upgrade_info: UpgradeInput,
+        upgrade_info: Vec<OneUpgradeInput>,
         special_budget: i64,
         express_event: bool,
         tier: usize,
@@ -84,7 +85,7 @@ impl PreparationOutput {
 
 /// Constructs vector of Upgrade objects according to what upgrades were selected and the appropriate juice applied
 pub fn parser(
-    upgrade_info: UpgradeInput,
+    upgrade_info: Vec<OneUpgradeInput>,
     express_event: bool,
     juice_info: &JuiceInfo,
     tier: usize,
@@ -97,16 +98,15 @@ pub fn parser(
     let special_leap_cost = get_special_leap_cost(tier);
     let normal_hone_chances = get_normal_hone_chances(tier);
 
-    for (
+    for OneUpgradeInput {
         piece_type,
         upgrade_index,
         is_normal_honing,
-        normal_progress,
+        starting_artisan,
         state,
-        unlock,
-        success,
+        unlocked,
         adv_progress,
-    ) in upgrade_info
+    } in upgrade_info
     {
         let relevant_cost = get_data(
             express_event,
@@ -126,15 +126,14 @@ pub fn parser(
             &Vec::from_iter((0..7).map(|cost_type| relevant_cost[cost_type][upgrade_index]));
         let this_unlock =
             &Vec::from_iter((0..7).map(|cost_type| relevant_unlock[cost_type][upgrade_index]));
-        let this_unlocked: bool = unlock;
-        let this_succeeded: bool = success;
-        let this_state_given: Vec<(bool, usize)> = state;
+        let this_unlocked: bool = unlocked;
+        let this_state_given: Vec<(bool, usize)> = state.unwrap_or(Vec::new());
 
         if is_normal_honing {
             let special_cost: i64 =
                 special_leap_cost[if piece_type == 5 { 1 } else { 0 }][upgrade_index];
             let event_artisan_rate: f64 = artisan_rate_arr[upgrade_index];
-            let this_progress: usize = normal_progress.unwrap();
+            let starting_artisan: f64 = starting_artisan.unwrap();
             out.push(Upgrade::new_normal(
                 normal_hone_chances[upgrade_index],
                 this_cost,
@@ -144,11 +143,10 @@ pub fn parser(
                 event_artisan_rate,
                 upgrade_index,
                 juice_info,
-                this_progress,
+                starting_artisan,
                 this_state_given,
                 this_unlocked,
                 this_unlock,
-                this_succeeded,
                 event_extra_arr[upgrade_index],
             ));
         } else {
@@ -160,7 +158,6 @@ pub fn parser(
                 piece_type,
                 upgrade_index,
                 this_unlock,
-                this_succeeded,
                 this_unlocked,
                 this_adv_progress,
                 express_event,

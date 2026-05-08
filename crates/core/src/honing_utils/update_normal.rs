@@ -1,13 +1,10 @@
-use crate::constants::FLOAT_TOL;
 use crate::constants::juice_info::JuiceInfo;
-
 use crate::upgrade::Upgrade;
 
 pub fn new_prob_dist(
     state: &Vec<(bool, usize)>,
     juice_info: &JuiceInfo,
     upgrade: &Upgrade,
-    zero: f64,
 ) -> Vec<f64> {
     let new_extra: Vec<f64> = state
         .iter()
@@ -30,9 +27,7 @@ pub fn new_prob_dist(
         upgrade.base_chance,
         upgrade.artisan_rate,
         &new_extra,
-        zero,
-        upgrade.alr_failed,
-        upgrade.succeeded,
+        upgrade.starting_artisan,
         upgrade.extra_chance,
     )
 }
@@ -42,19 +37,12 @@ pub fn probability_distribution(
     base: f64,
     artisan_rate: f64,
     extra_arr: &[f64],
-    zero: f64,
-    alr_failed: usize,
-    succeeded: bool,
+    starting_artisan: f64,
     event_extra: f64,
 ) -> Vec<f64> {
-    if succeeded {
-        let mut v = vec![0.0; alr_failed + 1];
-        v[alr_failed] = 1.0;
-        return v;
-    }
     let mut raw_chances: Vec<f64> = Vec::new();
-    raw_chances.push(zero);
-    let mut artisan: f64 = 0.0_f64;
+    raw_chances.push(0.0); // chance to succeed w 0 tap, the probablity has been moved into special but it's still needed here for the unlock cost
+    let mut artisan: f64 = starting_artisan;
     let mut count: usize = 0;
 
     loop {
@@ -84,19 +72,19 @@ pub fn probability_distribution(
         cum_chance *= 1.0 - element;
     }
 
-    for (idx, element) in chances.iter_mut().enumerate() {
-        if idx <= alr_failed {
-            *element = 0.0;
-        }
-    }
-    let total = chances.iter().sum::<f64>();
-    if total > FLOAT_TOL {
-        for element in chances.iter_mut() {
-            *element /= total;
-        }
-    } else {
-        *chances.iter_mut().last().unwrap() = 1.0;
-    }
+    // for (idx, element) in chances.iter_mut().enumerate() {
+    //     if idx <= alr_failed {
+    //         *element = 0.0;
+    //     }
+    // }
+    // let total = chances.iter().sum::<f64>();
+    // if total > FLOAT_TOL {
+    //     for element in chances.iter_mut() {
+    //         *element /= total;
+    //     }
+    // } else {
+    //     *chances.iter_mut().last().unwrap() = 1.0;
+    // }
 
     chances
 }
@@ -109,7 +97,7 @@ impl Upgrade {
 
         for t_index in 0..7 {
             let mut this_mats_costs: Vec<f64> = Vec::with_capacity(l_len);
-            let mut cost_so_far: f64 = if self.alr_failed > 0 {
+            let mut cost_so_far: f64 = if self.unlocked {
                 0.0
             } else {
                 self.unlock_costs[t_index]
@@ -121,9 +109,8 @@ impl Upgrade {
                 if index >= l_len - 1 {
                     break;
                 }
-                if index >= self.alr_failed {
-                    cost_so_far += this_cost;
-                }
+
+                cost_so_far += this_cost;
             }
 
             self.cost_dist[t_index].update_payload(
@@ -132,7 +119,6 @@ impl Upgrade {
                 &self.normal_dist,
                 this_cost,
                 true,
-                self.alr_failed,
             );
         }
 
@@ -154,9 +140,7 @@ impl Upgrade {
                 if index >= l_len - 2 {
                     continue;
                 }
-                if index < self.alr_failed {
-                    continue;
-                }
+
                 if *juice && id == 0 {
                     if self.is_weapon {
                         weap_cost += amt;
@@ -179,7 +163,6 @@ impl Upgrade {
                 &self.normal_dist,
                 amt,
                 true,
-                self.alr_failed,
             );
 
             self.cost_dist[id + 7 + juice_info.num_juice_avail].update_payload(
@@ -188,13 +171,12 @@ impl Upgrade {
                 &self.normal_dist,
                 amt,
                 true,
-                self.alr_failed,
             );
         }
     }
 
     pub fn update_dist_normal(&mut self, juice_info: &JuiceInfo) {
-        let prob_dist: Vec<f64> = new_prob_dist(&self.state, juice_info, self, 0.0);
+        let prob_dist: Vec<f64> = new_prob_dist(&self.state, juice_info, self);
 
         self.normal_dist.update_payload(prob_dist, self.state.hash);
     }

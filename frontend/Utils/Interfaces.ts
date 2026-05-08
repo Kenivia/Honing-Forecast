@@ -42,7 +42,7 @@ export interface Upgrade {
     artisan_rate: number
     base_chance: number
     extra_chance: number
-    unlock_costs: number[]
+    unlocked_costs: number[]
     costs: number[]
 
     // added for UI purpose, not in rust
@@ -108,11 +108,23 @@ export type StatusGrid = UpgradeStatus[][]
 // These are to interface between UI and rust
 
 //                    'bound','tradable', leftover(bound), tradable sell price, market price
-export type OneMaterial = [number, number, number, number, number] // an array of this is passed into rust
 
-//                        piece type, upgrade index, is_normal, normal_progress, state, unlock, succeeded, adv_progress
-export type OneUpgrade = [number, number, boolean, number | null, OneState[] | null, boolean, boolean, AdvProgress | null]
+export type BudgetPricePair = [number, number]
+export type OneMaterialInput = BudgetPricePair[] // an array of this is passed into rust
+
+//                        piece type, upgrade index, is_normal_honing, normal_progress, state, unlocked, succeeded, adv_progress
+export type OldOneUpgrade = [number, number, boolean, number | null, OneState[] | null, boolean, boolean, AdvProgress | null]
+
+export interface OneUpgradeInput {
+    piece_type: number
+    upgrade_index: number
+    is_normal_honing: boolean
+    starting_artisan?: number
+    state?: OneState[]
+    unlocked: boolean
+    adv_progress?: AdvProgress
+}
 // an array of this is passed into rust
 
 export type OneUpgradeKey = `${number},${number},${"true" | "false"},${number}`
-export type KeyedUpgrades = Record<OneUpgradeKey, OneUpgrade> // This is modified by UI
+export type KeyedUpgrades = Record<OneUpgradeKey, OneUpgradeInput> // This is modified by UI

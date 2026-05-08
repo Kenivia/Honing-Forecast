@@ -1,8 +1,5 @@
 import { BoolGrid, StatusGrid, UpgradeStatus } from "./Interfaces"
 
-export function status_to_bool_grid(status_grid: StatusGrid): BoolGrid {
-    return status_grid.map((row: UpgradeStatus[]) => row.map((cell) => cell == UpgradeStatus.Want))
-}
 export function createStatusGrid(
     rows: number,
     cols: number,

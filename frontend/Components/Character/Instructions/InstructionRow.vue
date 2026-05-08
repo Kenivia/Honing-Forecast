@@ -71,30 +71,30 @@ watch(
     },
 )
 
-function write_normal_progress() {
-    taps_so_far.value = Math.max(0, Math.min(props.upgrade.normal_dist.length - 1, taps_so_far.value))
-    active_profile.value.keyed_upgrades[
-        to_upgrade_key(props.upgrade.piece_type, props.upgrade.upgrade_index, props.upgrade.is_normal_honing, active_profile.value.tier)
-    ][3] = taps_so_far.value
-    start_all_workers()
-}
+// function write_normal_progress() {
+//     taps_so_far.value = Math.max(0, Math.min(props.upgrade.normal_dist.length - 1, taps_so_far.value))
+//     active_profile.value.keyed_upgrades[
+//         to_upgrade_key(props.upgrade.piece_type, props.upgrade.upgrade_index, props.upgrade.is_normal_honing, active_profile.value.tier)
+//     ][3] = taps_so_far.value
+//     start_all_workers()
+// }
 
-function write_adv_progress() {
-    current_adv_upgrade.value = Math.max(props.upgrade.upgrade_index * 10, Math.min((props.upgrade.upgrade_index + 1) * 10 - 1, current_adv_upgrade.value))
-    current_adv_xp.value = Math.floor(Math.max(0, Math.min(90, current_adv_xp.value)) / 10) * 10
-    // console.log(current_grace_progress.value)
-    current_grace_progress.value = Math.min(6, Math.max(0, current_grace_progress.value))
+// function write_adv_progress() {
+//     current_adv_upgrade.value = Math.max(props.upgrade.upgrade_index * 10, Math.min((props.upgrade.upgrade_index + 1) * 10 - 1, current_adv_upgrade.value))
+//     current_adv_xp.value = Math.floor(Math.max(0, Math.min(90, current_adv_xp.value)) / 10) * 10
+//     // console.log(current_grace_progress.value)
+//     current_grace_progress.value = Math.min(6, Math.max(0, current_grace_progress.value))
 
-    active_profile.value.keyed_upgrades[
-        to_upgrade_key(props.upgrade.piece_type, props.upgrade.upgrade_index, props.upgrade.is_normal_honing, active_profile.value.tier)
-    ][7] = [
-        (current_adv_upgrade.value - props.upgrade.upgrade_index * 10) * 10 + current_adv_xp.value / 10,
-        current_grace_progress.value,
-        next_free.value,
-        next_big.value,
-    ]
-    start_all_workers()
-}
+//     active_profile.value.keyed_upgrades[
+//         to_upgrade_key(props.upgrade.piece_type, props.upgrade.upgrade_index, props.upgrade.is_normal_honing, active_profile.value.tier)
+//     ][7] = [
+//         (current_adv_upgrade.value - props.upgrade.upgrade_index * 10) * 10 + current_adv_xp.value / 10,
+//         current_grace_progress.value,
+//         next_free.value,
+//         next_big.value,
+//     ]
+//     start_all_workers()
+// }
 
 function juice_icon_path(upgrade: Upgrade, juice: boolean) {
     let juice_info = active_profile.value.histogram_worker_bundle.result.juice_info

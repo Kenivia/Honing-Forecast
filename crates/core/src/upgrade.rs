@@ -28,10 +28,12 @@ pub struct Upgrade {
 
     pub name_string: String,
     pub piece_type: usize,
-    pub alr_failed: usize,
+
+    pub starting_artisan: f64,
+
     pub unlocked: bool,
     pub unlock_costs: [f64; 7],
-    pub succeeded: bool,
+
     pub extra_chance: f64,
 
     pub adv_config: AdvConfig,
@@ -94,11 +96,11 @@ impl Upgrade {
         artisan_rate: f64,
         upgrade_index: usize,
         juice_info: &JuiceInfo,
-        alr_failed: usize,
+        starting_artisan: f64,
         state_given: Vec<(bool, usize)>,
         unlocked: bool,
         unlock_costs: &[f64],
-        succeeded: bool,
+
         extra_chance: f64,
     ) -> Self {
         let state = State::new(state_given);
@@ -124,10 +126,10 @@ impl Upgrade {
                 string += &upgrade_index.to_string();
                 string
             },
-            alr_failed,
+            starting_artisan,
             unlocked, // THIS IS IGNORED RN just assuming alr_failed > 0 <==> ulocked
             unlock_costs: unlock_costs.try_into().unwrap(),
-            succeeded,
+
             extra_chance,
             adv_config: AdvConfig::default(),
             adv_dists: Vec::new(),
@@ -155,7 +157,7 @@ impl Upgrade {
         piece_type: usize,
         upgrade_index: usize,
         unlock_costs: &[f64],
-        succeeded: bool,
+
         unlocked: bool,
         (start_xp, start_balls, next_free, next_big): (usize, usize, bool, bool),
         double_balls: bool,
@@ -189,10 +191,10 @@ impl Upgrade {
                 string += &upgrade_index.to_string();
                 string
             },
-            alr_failed: 0,
+            starting_artisan: 0.0,
             unlocked,
             unlock_costs: unlock_costs.try_into().unwrap(),
-            succeeded,
+
             extra_chance: 0.0,
             adv_config: AdvConfig::new(
                 start_xp,

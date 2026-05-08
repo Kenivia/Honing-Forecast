@@ -1,6 +1,6 @@
 //! Payload is how js and rust communicates, we also use payload as our test cases in arena
 use crate::advanced_honing::utils::{AdvConfig, AdvDistTriplet};
-use crate::parser::{MaterialInput, PreparationOutput, UpgradeInput};
+use crate::parser::{MaterialInput, OneUpgradeInput, PreparationOutput};
 use crate::state_bundle::StateBundle;
 use crate::upgrade::Upgrade;
 use ahash::AHashMap;
@@ -13,7 +13,7 @@ pub struct Payload {
     pub material_info: MaterialInput,
     pub optimizer_plan: Option<Vec<usize>>,
 
-    pub upgrade_info: UpgradeInput,
+    pub upgrade_info: Vec<OneUpgradeInput>,
     pub special_budget: i64,
 
     pub special_state: Option<Vec<usize>>,
@@ -33,7 +33,7 @@ impl StateBundle {
     pub fn init_from_inputs(
         material_info: MaterialInput,
         optimizer_plan: Option<Vec<usize>>,
-        upgrade_info: UpgradeInput,
+        upgrade_info: Vec<OneUpgradeInput>,
         special_budget: i64,
         express_event: bool,
         tier: usize,

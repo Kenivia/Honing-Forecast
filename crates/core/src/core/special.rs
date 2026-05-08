@@ -22,7 +22,7 @@ impl StateBundle {
     fn gcd_special(&self) -> i64 {
         let mut out: i64 = 1;
         for (index, upgrade) in self.upgrade_arr.iter().enumerate() {
-            if !upgrade.is_normal_honing || upgrade.succeeded {
+            if !upgrade.is_normal_honing {
                 continue;
             }
             if index == 0 {
@@ -41,7 +41,6 @@ impl StateBundle {
         for u_index in self.special_state.iter() {
             let upgrade = &self.upgrade_arr[*u_index];
             if !upgrade.is_normal_honing
-                || upgrade.succeeded
                 || highest_upgrade_index_seen[upgrade.piece_type] > upgrade.upgrade_index as i64
             {
                 invalid_uindex.push(*u_index);
@@ -107,7 +106,6 @@ impl StateBundle {
 
             // my_dbg!(upgrade.upgrade_index, upgrade.is_weapon, upgrade.piece_type);
             if !upgrade.is_normal_honing
-                || upgrade.succeeded
                 || highest_upgrade_index_seen[upgrade.piece_type] > upgrade.upgrade_index as i64
             {
                 invalid_index = attempt_index + 1;
@@ -116,19 +114,11 @@ impl StateBundle {
 
             highest_upgrade_index_seen[upgrade.piece_type] = upgrade.upgrade_index as i64;
 
-            let p = if upgrade.succeeded {
-                1.0
-            } else {
-                upgrade.base_chance
-            };
+            let p = upgrade.base_chance;
             let one_minus_p = 1.0 - p;
 
             // Scale cost
-            let cost = if upgrade.succeeded {
-                0
-            } else {
-                (upgrade.special_cost as usize) / gcd
-            };
+            let cost = upgrade.special_cost as usize / gcd;
 
             // If cost is higher than total budget, we can't possibly succeed.
             // (Probability mass stays in 'active' and doesn't move to 'result')

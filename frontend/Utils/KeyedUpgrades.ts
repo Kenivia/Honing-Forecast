@@ -1,41 +1,88 @@
-import { KeyedUpgrades, OneUpgrade, OneUpgradeKey, StatusGrid } from "./Interfaces"
-import { status_to_bool_grid } from "./StatusGrid"
+import { AdvProgress, KeyedUpgrades, OldOneUpgrade, OneUpgradeInput, OneUpgradeKey, StatusGrid, UpgradeStatus } from "./Interfaces"
 
-export function to_upgrade_key(piece_type: number, upgrade_index: number, is_normal: boolean, tier: number): OneUpgradeKey {
-    return `${piece_type},${upgrade_index},${is_normal},${tier}`
+export function to_upgrade_key(piece_type: number, upgrade_index: number, is_normal_honing: boolean, tier: number): OneUpgradeKey {
+    return `${piece_type},${upgrade_index},${is_normal_honing},${tier}`
 }
-
 export function grids_to_keyed(normal_grid: StatusGrid, adv_grid: StatusGrid, all_keyed: KeyedUpgrades, tier: number) {
     let new_keyed: KeyedUpgrades = {}
-    for (const [piece_type, row] of status_to_bool_grid(normal_grid).entries()) {
-        for (const [upgrade_index, cell] of row.entries()) {
-            let key = to_upgrade_key(piece_type, upgrade_index, true, tier)
-            if (cell) {
-                if (key in all_keyed && isOneUpgrade(all_keyed[key])) {
-                    new_keyed[key] = all_keyed[key]
-                } else {
-                    new_keyed[key] = [piece_type, upgrade_index, true, 0, null, false, false, null]
+
+    const grid_configs = [
+        { grid: normal_grid, is_normal_honing: true, default_adv_progress: null },
+        { grid: adv_grid, is_normal_honing: false, default_adv_progress: [0, 0, false, false] as AdvProgress },
+    ]
+
+    for (const { grid, is_normal_honing, default_adv_progress } of grid_configs) {
+        for (const [piece_type, row] of grid.entries()) {
+            for (const [upgrade_index, upgrade_status] of row.entries()) {
+                const key = to_upgrade_key(piece_type, upgrade_index, is_normal_honing, tier)
+                if (upgrade_status === UpgradeStatus.Want) {
+                    if (key in all_keyed && is_one_upgrade(all_keyed[key])) {
+                        new_keyed[key] = all_keyed[key]
+                    } else if (is_old_one_upgrade(all_keyed[key])) {
+                        const [piece_type, upgrade_index, is_normal_honing, _normal_progress, state, unlocked, _succeeded, adv_progress] = all_keyed[
+                            key
+                        ] as unknown as OldOneUpgrade
+                        new_keyed[key] = {
+                            piece_type: piece_type,
+                            upgrade_index: upgrade_index,
+                            is_normal_honing: is_normal_honing,
+                            starting_artisan: 0,
+                            state: state,
+                            unlocked: unlocked,
+                            adv_progress: adv_progress,
+                        }
+                    } else {
+                        new_keyed[key] = {
+                            piece_type,
+                            upgrade_index,
+                            is_normal_honing,
+                            starting_artisan: 0,
+                            state: null,
+                            unlocked: false,
+                            adv_progress: default_adv_progress,
+                        }
+                    }
                 }
             }
         }
     }
-    for (const [piece_type, row] of status_to_bool_grid(adv_grid).entries()) {
-        for (const [upgrade_index, cell] of row.entries()) {
-            let key = to_upgrade_key(piece_type, upgrade_index, false, tier)
-            if (cell) {
-                if (key in all_keyed && isOneUpgrade(all_keyed[key])) {
-                    new_keyed[key] = all_keyed[key]
-                } else {
-                    new_keyed[key] = [piece_type, upgrade_index, false, null, null, false, false, [0, 0, false, false]]
-                }
-            }
-        }
-    }
-    // console.log(new_keyed)
+    console.log(new_keyed)
     return new_keyed
 }
+function is_one_upgrade(obj: unknown): obj is OneUpgradeInput {
+    if (typeof obj !== "object" || obj === null) return false
 
-function isOneUpgrade(foo: unknown): foo is OneUpgrade {
+    const o = obj as Record<string, unknown>
+
+    if (typeof o.piece_type !== "number") return false
+    if (typeof o.upgrade_index !== "number") return false
+    if (typeof o.is_normal_honing !== "boolean") return false
+    if (typeof o.unlocked !== "boolean") return false
+
+    if (o.starting_artisan !== undefined && typeof o.starting_artisan !== "number") return false
+
+    if (o.state !== undefined) {
+        if (!Array.isArray(o.state)) return false
+        for (const entry of o.state) {
+            if (!Array.isArray(entry) || entry.length !== 2 || typeof entry[0] !== "boolean" || typeof entry[1] !== "number") return false
+        }
+    }
+
+    if (o.adv_progress !== undefined) {
+        const adv = o.adv_progress
+        if (
+            !Array.isArray(adv) ||
+            adv.length !== 4 ||
+            typeof adv[0] !== "number" ||
+            typeof adv[1] !== "number" ||
+            typeof adv[2] !== "boolean" ||
+            typeof adv[3] !== "boolean"
+        )
+            return false
+    }
+    return true
+}
+function is_old_one_upgrade(foo: unknown): foo is OneUpgradeInput {
     if (!Array.isArray(foo) || foo.length !== 8) return false
 
     const [f0, f1, f2, f3, f4, f5, f6, f7] = foo

@@ -35,7 +35,6 @@ impl Upgrade {
                 &self.adv_dists[0],
                 this_cost,
                 true,
-                self.alr_failed,
             );
         }
 
@@ -69,7 +68,6 @@ impl Upgrade {
                 this_dist,
                 amt,
                 true,
-                self.alr_failed,
             );
 
             self.cost_dist[id + 7 + juice_info.num_juice_avail].update_payload(
@@ -78,7 +76,6 @@ impl Upgrade {
                 this_dist,
                 amt,
                 true,
-                self.alr_failed,
             );
         }
     }

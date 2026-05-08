@@ -43,7 +43,7 @@ pub struct Support {
     pub state_invariant: bool, // only talking about the support, prob can always change
     pub linear: bool,          // gap between 0 and 1 = gap between n and n+1
 
-    collapsed_pair: Vec<(f64, f64)>, // (support, prob, logged_prob)
+    collapsed_pair: Vec<(f64, f64)>, // (support, prob)
     #[serde(skip)]
     pub collapsed_state_hash: u64,
     pub ignore: bool,
@@ -84,7 +84,7 @@ impl Support {
     /// we assume that the support is increasing, but p may be 0 in-between (probably exceptionally rare but possible in advanced honing?)
     ///
     /// also right now everything is linear so some logic is a bit redundant, but keeping them just in case
-    pub fn collapse_support(&mut self, prob_dist: &ProbDist, alr_failed: usize) {
+    pub fn collapse_support(&mut self, prob_dist: &ProbDist) {
         // these hash checks are mostly just for preventing me from doing stupid stuff and saving me from debugging
         // it has the added benefit that we don't update if the state didn't change but is like negligible
         assert!(prob_dist.payload.len() == self.support.len());
@@ -126,7 +126,7 @@ impl Support {
                     cur_p = 0.0;
                 }
             }
-            self.skipped_pair[0].0 = self.support[alr_failed];
+            self.skipped_pair[0].0 = self.support[0];
             self.ignore = result.len() == 1 && result[0].0.abs() < FLOAT_TOL;
             self.max_value = max_value;
             self.min_value = min_value;
@@ -143,13 +143,12 @@ impl Support {
         prob_dist: &ProbDist,
         gap_size: f64,
         linear: bool, // max: f64,
-        alr_failed: usize,
     ) {
         self.support = new_payload;
         self.support_state_hash = new_state_hash;
         self.gap_size = gap_size;
         self.linear = linear;
-        self.collapse_support(prob_dist, alr_failed);
+        self.collapse_support(prob_dist);
     }
 }
 
