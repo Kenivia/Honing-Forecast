@@ -40,7 +40,7 @@ fn compute_upgrade_impact(state_bundle: &mut StateBundle) -> Vec<f64> {
 
     for upgrade in &state_bundle.upgrade_arr {
         let mut magnitude: f64 = 0.01;
-        for (support_index, support) in upgrade.cost_dist.iter().enumerate() {
+        for (support_index, support) in upgrade.cost_dist.iter().enumerate().take(7) {
             magnitude += state_bundle.prep_output.optimizer_material_info[support_index]
                 .last()
                 .unwrap()

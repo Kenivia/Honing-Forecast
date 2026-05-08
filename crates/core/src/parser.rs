@@ -16,7 +16,7 @@ pub struct PreparationOutput {
 
     pub optimizer_plan: Vec<usize>,
     pub optimizer_material_info: MaterialInput,
-    pub num_breakpoints: usize,
+    pub raw_num_breakpoints: usize,
 
     pub test_case: i64,
     pub juice_info: JuiceInfo,
@@ -73,7 +73,7 @@ impl PreparationOutput {
             raw_material_info,
             optimizer_material_info,
             optimizer_plan,
-            num_breakpoints,
+            raw_num_breakpoints: num_breakpoints,
             special_budget,
             test_case: -1, // arena will overwrite this
             juice_info,

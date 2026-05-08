@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { TreatmentPlan } from "@/Stores/CharacterProfile"
 import { useRosterStore } from "@/Stores/RosterConfig"
+import { build_payload } from "@/WasmInterface/PayloadBuilder"
 import { storeToRefs } from "pinia"
 import { ref, watchEffect } from "vue"
 
@@ -12,10 +13,10 @@ function resetActive() {
 }
 
 // This is useful for producing payloads to test the rust side
-// function copyPayload() {
-//     const payload = JSON.stringify(build_payload(), null, 2)
-//     navigator.clipboard?.writeText(payload).catch(() => undefined)
-// }
+function copyPayload() {
+    const payload = JSON.stringify(build_payload(), null, 2)
+    navigator.clipboard?.writeText(payload).catch(() => undefined)
+}
 
 // Currently TreatRosterAsTradable is not selectable
 const treatment_tick = ref(active_profile.value.optimizer_treatment_plan == TreatmentPlan.TreatRosterAsBound)
@@ -40,7 +41,7 @@ watchEffect(() => {
             </label>
 
             <!-- This is for producing payloads to feed into Rust -->
-            <!-- <button class="hf-control-panel-btn" @click="copyPayload">Copy Payload</button> -->
+            <button class="hf-control-panel-btn" @click="copyPayload">Copy Payload</button>
             <label class="hf-inline-check">
                 <input v-model="roster_config.show_all_rows" type="checkbox" />
                 <span>Show all mats</span>

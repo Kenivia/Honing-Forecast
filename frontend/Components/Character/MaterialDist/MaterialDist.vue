@@ -89,6 +89,14 @@ watchEffect(() => {
 const bound_chance_text = "Bound Chance"
 const roster_chance_text = "Bound + Roster Chance"
 const tradable_chance_text = "Bound + Roster + Tradable"
+const chance_explainer_text = computed(() =>
+    active_profile.value.histogram_treatment_plan == TreatmentPlan.TreatTradableAsBound
+        ? "Chance to succeed all upgrades before running out of Tradable mat of this type"
+        : active_profile.value.histogram_treatment_plan == TreatmentPlan.TreatRosterAsBound
+          ? "Chance to succeed all upgrades before running out of Roster-Bound mat of this type"
+          : "Chance to succeed all upgrades before running out of Char-Bound mat of this type",
+)
+
 const selected_histogram_treatment = ref(
     active_profile.value.histogram_treatment_plan == TreatmentPlan.TreatTradableAsBound
         ? tradable_chance_text
@@ -176,6 +184,10 @@ const show_special_guide = ref(false)
                                     color: selected_histogram_color,
                                 }"
                                 @change="change_histogram_treatment"
+                                v-tooltip="{
+                                    value: chance_explainer_text,
+                                    // escape: false,
+                                }"
                             >
                                 <option>{{ bound_chance_text }}</option>
                                 <option>{{ roster_chance_text }}</option>
@@ -515,7 +527,7 @@ const show_special_guide = ref(false)
     color: var(--hf-text-bright);
 }
 .hf-dist-graphs {
-    --hf-dist-columns: 160px 90px 120px 120px 120px 320px;
+    --hf-dist-columns: 160px 90px 90px 120px 120px 350px;
     display: grid;
     grid-template-columns: var(--hf-dist-columns);
     align-items: center;
@@ -540,7 +552,7 @@ const show_special_guide = ref(false)
 
 @media (max-width: 900px) {
     .hf-dist-graphs {
-        --hf-dist-columns: 100px 70px 112px 78px 78px 150px;
+        --hf-dist-columns: 100px 70px 70px 78px 78px 192px;
         min-width: max-content;
         width: auto;
     }

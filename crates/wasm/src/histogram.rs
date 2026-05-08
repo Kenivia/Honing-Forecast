@@ -30,7 +30,7 @@ pub fn histogram(state_bundle: &mut StateBundle) -> HistogramOutputs {
 
     // let mut average: Vec<f64> = Vec::with_capacity(num_sup);
     let mut chances_arr: Vec<Vec<f64>> =
-        vec![Vec::with_capacity(num_sup); state_bundle.prep_output.num_breakpoints];
+        vec![Vec::with_capacity(num_sup); state_bundle.prep_output.raw_num_breakpoints];
 
     for (support_index, item) in cum_percentiles.iter_mut().enumerate().take(num_sup) {
         let this_pity = state_bundle.pity()[support_index] as f64;
@@ -50,7 +50,7 @@ pub fn histogram(state_bundle: &mut StateBundle) -> HistogramOutputs {
         }
 
         let mut cumulative: f64 = 0.0;
-        for treatment_plan in 0..state_bundle.prep_output.num_breakpoints {
+        for treatment_plan in 0..state_bundle.prep_output.raw_num_breakpoints {
             cumulative +=
                 state_bundle.prep_output.raw_material_info[support_index][treatment_plan].0;
             chances_arr[treatment_plan].push(state_bundle.one_dimension_prob(

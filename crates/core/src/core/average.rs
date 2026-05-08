@@ -125,7 +125,7 @@ impl StateBundle {
         thresh_price_pairs: &[(f64, f64)],
         performance: &mut Performance,
     ) -> f64 {
-        let num_thresholds = thresh_price_pairs.len();
+        let num_thresholds: usize = thresh_price_pairs.len();
 
         let simple_mean: f64 = self.simple_avg(support_index, skip_count);
 
@@ -133,10 +133,10 @@ impl StateBundle {
             return thresh_price_pairs[0].1 * (thresh_price_pairs[0].0 - simple_mean);
         }
 
-        let simple_mean_log = simple_mean.ln();
+        let simple_mean_log: f64 = simple_mean.ln();
 
-        let last_thresh = thresh_price_pairs[num_thresholds - 1].0;
-        let last_price = thresh_price_pairs[num_thresholds - 1].1;
+        let last_thresh: f64 = thresh_price_pairs[num_thresholds - 1].0;
+        let last_price: f64 = thresh_price_pairs[num_thresholds - 1].1;
 
         let mut out: f64 = last_price * (last_thresh - simple_mean);
 
@@ -152,7 +152,7 @@ impl StateBundle {
                 performance,
             );
 
-            let prob = self.saddlepoint_approximation_wrapper(
+            let prob: f64 = self.saddlepoint_approximation_wrapper(
                 support_index,
                 skip_count,
                 thresh,

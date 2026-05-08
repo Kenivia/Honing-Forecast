@@ -260,7 +260,7 @@ pub fn monte_carlo_wrapper<R: Rng>(
     let mut average_sq: f64 = 0.0;
     let mut leftover_counts: Vec<Vec<i64>> =
         vec![
-            vec![0; state_bundle.prep_output.num_breakpoints];
+            vec![0; state_bundle.prep_output.raw_num_breakpoints];
             state_bundle.prep_output.juice_info.total_num_avail
         ];
 
@@ -313,11 +313,9 @@ pub fn monte_carlo_wrapper<R: Rng>(
         }
 
         for (support_index, mat) in row.iter().enumerate() {
-            for treatment_plan in 0..state_bundle.prep_output.num_breakpoints {
+            for treatment_plan in 0..state_bundle.prep_output.raw_num_breakpoints {
                 if *mat as f64
-                    <= state_bundle.prep_output.optimizer_material_info[support_index]
-                        [treatment_plan]
-                        .1
+                    <= state_bundle.prep_output.raw_material_info[support_index][treatment_plan].1
                 {
                     leftover_counts[support_index][treatment_plan] += 1;
                 }

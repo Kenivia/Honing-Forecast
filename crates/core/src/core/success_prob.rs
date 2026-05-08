@@ -44,16 +44,16 @@ impl StateBundle {
         let mut prob_leftover: Vec<Vec<f64>> =
             vec![
                 Vec::with_capacity(self.prep_output.optimizer_material_info.len());
-                self.prep_output.num_breakpoints
+                self.prep_output.raw_num_breakpoints
             ];
 
         let mut dummy_performance = Performance::new();
 
         for (support_index, effective_budget) in
-            self.prep_output.optimizer_material_info.iter().enumerate()
+            self.prep_output.raw_material_info.iter().enumerate()
         {
-            for treatment_plan in 0..self.prep_output.optimizer_material_info[support_index].len() {
-                prob_leftover[support_index].push(self.one_dimension_prob(
+            for treatment_plan in 0..effective_budget.len() {
+                prob_leftover[treatment_plan].push(self.one_dimension_prob(
                     support_index as i64,
                     effective_budget[treatment_plan].0,
                     &mut dummy_performance,

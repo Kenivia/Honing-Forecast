@@ -1,5 +1,5 @@
 use crate::constants::FLOAT_TOL;
-use crate::my_dbg;
+// use crate::my_dbg;
 use crate::parser::MaterialInput;
 use crate::upgrade::Upgrade;
 use rand::Rng;
@@ -11,53 +11,56 @@ use std::io::{BufWriter, Error, Write};
 /// Where price(n+1) refers to the cost inccured for exceeding the owned_n
 /// This is insanely scuffed i probably could've made it more elegant but this works (i think) and i dont want to touch it
 pub fn distribute_budgets(material_info: &MaterialInput, plan: &[usize]) -> MaterialInput {
-    let mut out: MaterialInput =
+    let mut pass_1: MaterialInput =
         vec![vec![(0.0_f64, f64::NAN); material_info[0].len()]; material_info.len()];
-
     for (support_index, treatments) in material_info.iter().enumerate() {
         for (plan_index, (owned, price)) in treatments.iter().enumerate() {
-            out[support_index][plan[plan_index]].0 += owned;
-            out[support_index][plan[plan_index]].1 = *price;
+            pass_1[support_index][plan[plan_index]].0 += owned;
+            pass_1[support_index][plan[plan_index]].1 = *price;
         }
     }
-    my_dbg!(&out);
-    out.into_iter()
-        .map(|row| {
-            // my_dbg!(&row);
-            let mut merged: Vec<(f64, f64)> = Vec::new();
 
-            for (owned, price) in row {
-                if price.is_nan() {
-                    assert!(owned == 0.0);
-                    continue;
-                }
-                if let Some(entry) = merged
-                    .iter_mut()
-                    .find(|(_, p)| (*p - price).abs() < FLOAT_TOL && !p.is_nan())
-                {
-                    entry.0 += owned;
+    pass_1
+        .into_iter()
+        .map(|mut row| {
+            let mut cumulative: f64 = 0.0;
+            row.retain(|x| {
+                if x.1.is_nan() {
+                    assert!(x.0 == 0.0);
+                    false
                 } else {
-                    merged.push((owned, price));
+                    true
                 }
-            }
-            let last = merged.len() - 1;
-            let mut i = 0;
-            let copy = merged.clone();
-            // my_dbg!(&merged);
-            merged.retain(|(_owned, _price)| {
-                let keep = i == last || copy[i + 1].0 > FLOAT_TOL || i == 0; // the i == 0 is needed for average formula
-                // my_dbg!(&(owned, _price, i, last, keep));
-                i += 1;
-                keep
             });
-            // my_dbg!(&merged);
-            let mut cumulative = 0.0_f64;
-            for entry in &mut merged {
+            for entry in &mut row {
                 cumulative += entry.0;
                 entry.0 = cumulative;
             }
 
-            merged
+            let mut last_thresh: f64 = row[0].0;
+            let mut pass_2: Vec<(f64, f64)> = vec![row[0]];
+            for &(thresh, price) in row.iter().skip(1) {
+                if (thresh - last_thresh).abs() < FLOAT_TOL && pass_2.len() != 1 {
+                    pass_2.last_mut().unwrap().1 = price;
+                } else {
+                    pass_2.push((thresh, price));
+                }
+                last_thresh = thresh;
+            }
+
+            let mut last_price: f64 = pass_2[0].1;
+            let mut out: Vec<(f64, f64)> = vec![pass_2[0]];
+            for &(thresh, price) in pass_2.iter().skip(1) {
+                if (price - last_price).abs() < FLOAT_TOL && out.len() != 1 {
+                    out.last_mut().unwrap().0 += thresh;
+                } else {
+                    out.push((thresh, price));
+                }
+                last_price = price;
+            }
+
+            assert!(out[0].1 == 0.0 || out.len() == 1);
+            out
         })
         .collect()
 }
