@@ -1,5 +1,7 @@
 /* Global CSS Variables for Theming - Colors Only */
 :root {
+
+
     --text-very-muted: #888888;
     --text-success: #9ff7c7;
     --text-optimized: rgb(247, 219, 159);
@@ -12,6 +14,8 @@
     --btn-success-cancel: #2e6944;
     --btn-success-cancel-text: #ffffff;
     --success-overlay: rgba(39, 71, 39, 0.5);
+
+
 
     --btn-demo: #374151;
     --btn-demo-text: #ffffff;
@@ -45,6 +49,7 @@
 
     /* Control Checkbox Colors */
     --control-checked-bg: #2197ff;
+
 
     --ran-out: #87161650;
 
@@ -98,10 +103,12 @@
     --slider-thumb-focus: rgb(172, 255, 254);
     --slider-thumb-shadow: rgba(91, 230, 255, 0.3);
 
+
     --prob-mode: rgb(255, 172, 227);
     --average-mode: rgb(125, 255, 121);
 
     --deficit: rgb(255, 186, 186);
 
     --focus-bg: rgb(83, 83, 83);
+
 }

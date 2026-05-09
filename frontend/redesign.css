@@ -1,13 +1,22 @@
 @import url("https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Source+Sans+3:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap");
 
 :root {
+
     --p-tooltip-background: var(--tooltip-bg);
     --p-tooltip-color: var(--hf-text-main);
     --p-tooltip-padding: 6px 12px;
 
+
+
+
+
+
     --p-tooltip-shadow: 0px 4px 12px rgba(0, 0, 0, 0.2);
     --p-tooltip-max-width: 200px;
     --p-tooltip-font-size: 13px;
+
+
+
 
     --hf-free-tap-faded: hsl(293, 100%, 92%);
     --hf-bg-header: #17181d;
@@ -26,8 +35,8 @@
     --hf-graph-bound-color: #c9bbe7;
     --hf-graph-roster-color: #a57dfd;
     --hf-bg-void: #060608;
-    --hf-bg-deep: #0d0d11;
-    --hf-bg-panel: #1e1e23;
+    --hf-bg-deep: #0D0D11;
+    --hf-bg-panel: #1E1E23;
     --hf-bg-card: #242429;
     --hf-bg-raised: #313136;
     --hf-bg-hover: #383844;
@@ -52,9 +61,12 @@
     --hf-radius: 8px;
     --hf-radius-lg: 12px;
 
-    --hf-font-display: "Space Grotesk", sans-serif;
-    --hf-font-body: "Source Sans 3", sans-serif;
-    --hf-font-mono: "JetBrains Mono", monospace;
+    --hf-font-display: "Space Grotesk",
+        sans-serif;
+    --hf-font-body: "Source Sans 3",
+        sans-serif;
+    --hf-font-mono: "JetBrains Mono",
+        monospace;
 
     /* Existing variable bridge */
     --bg-primary: var(--hf-bg-void);
@@ -120,6 +132,7 @@
 
 [data-pc-name="tooltip"] {
     border: 1px solid var(--text-muted);
+
 }
 
 html {
@@ -139,9 +152,7 @@ body::before {
     inset: 0;
     pointer-events: none;
     z-index: 0;
-    background-image:
-        linear-gradient(rgba(201, 168, 76, 0.02) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(201, 168, 76, 0.02) 1px, transparent 1px);
+    background-image: linear-gradient(rgba(201, 168, 76, 0.02) 1px, transparent 1px), linear-gradient(90deg, rgba(201, 168, 76, 0.02) 1px, transparent 1px);
     background-size: 40px 40px;
 }
 
@@ -195,12 +206,15 @@ body::before {
     color: var(--checkbox-done-bg);
 }
 
+
+
 .hf-shell {
     width: 100%;
     display: flex;
     justify-content: center;
     padding: 10px 16px;
 }
+
 
 .hf-header-links {
     display: flex;
@@ -212,7 +226,7 @@ body::before {
     padding: 8px 12px;
     text-decoration: none;
     border: 1px solid var(--hf-border-subtle);
-    height: fit-content;
+    height: fit-content
 }
 
 .hf-header-links:hover {
@@ -221,8 +235,10 @@ body::before {
 }
 
 .hf-header-links img {
+
     height: 20px;
 }
+
 
 .hf-header-link-btn,
 .hf-header-links {
@@ -230,14 +246,12 @@ body::before {
     text-decoration: none;
     background: transparent;
 
+
     letter-spacing: 0.08em;
     text-transform: uppercase;
     padding: 7px 12px;
     cursor: pointer;
-    transition:
-        border-color 0.2s ease,
-        color 0.2s ease,
-        background-color 0.2s ease;
+    transition: border-color 0.2s ease, color 0.2s ease, background-color 0.2s ease;
 }
 
 .hf-header-link-btn:hover,
@@ -260,6 +274,8 @@ body::before {
     gap: 10px;
     align-items: start;
 }
+
+
 
 .hf-advanced-card .hf-card-title,
 .hf-advanced-card .hf-card-hint {
@@ -421,6 +437,7 @@ body::before {
     content: none;
 }
 
+
 .hf-optimizer-card .optimizer-card {
     flex: 1 1 auto;
 }
@@ -489,7 +506,7 @@ body::before {
     justify-content: stretch;
 }
 
-.hf-page-pane .page > * {
+.hf-page-pane .page>* {
     width: 100%;
 }
 
@@ -498,6 +515,7 @@ body::before {
     color: var(--hf-text-main);
     font-size: 12px;
 }
+
 
 .hf-graph-row {
     border-top: 1px solid rgba(255, 255, 255, 0.1);
