@@ -1,10 +1,10 @@
 import { ALL_LABELS, BUNDLE_SIZE } from "@/_utils/_constants";
-import { TreatmentPlan } from "@/_stores/character_profile";
+import { TreatmentPlan } from "@/stores/character_profile";
 import { OneMaterialInput, Upgrade, WasmOp } from "@/_utils/_interfaces";
 import { toRaw } from "vue";
-import { useRosterStore } from "@/_stores/roster_config";
-import { get_upgrade_map, KeyedUpgrades, OneUpgradeInput } from "@/_utils/keyed_upgrades";
-import { input_column_to_num } from "@/_utils/input_column";
+import { useRosterStore } from "@/stores/roster_config";
+import { get_upgrade_map, KeyedUpgrades, OneUpgradeInput } from "@/utils/keyed_upgrades";
+import { input_column_to_num } from "@/utils/input_column";
 import { storeToRefs } from "pinia";
 
 // I don't think it's possible to directly export this struct from rust to javascript because of all the vectors,
