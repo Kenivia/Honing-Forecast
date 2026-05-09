@@ -1,41 +1,43 @@
 {
-  "name": "honing-forecast",
-  "private": true,
-  "type": "module",
-  "scripts": {
-    "dev": "npm run wasm && vite",
-    "wasm": "wasm-pack build crates/wasm --release --target web",
-    "test": "cargo test -p hf-core --profile release --no-default-features --features active_version,run_tests -- --no-capture",
-    "change-logs": "python ./scripts/change_log_helper/build.py",
-    "no-test-build": "npm run wasm && vite build",
-    "build": "npm run test && npm run no-test-build && cargo +nightly udeps",
-    "no-check-deploy": "git push origin main:Production --force-with-lease",
-    "deploy": "pwsh -File ./scripts/pre_deploy_check.ps1 && npm run no-check-deploy",
-    "optimizer-test": "pwsh -File ./scripts/optimizer_test.ps1",
-    "optimizer-visualizer": "python -m pip -q install -r  ./scripts/optimizer_visualizer/requirements.txt && python ./scripts/optimizer_visualizer/app.py"
-  },
-  "dependencies": {
-    "@vueuse/core": "^14.2.1",
-    "fast-deep-equal": "^3.1.3",
-    "marked": "^18.0.3",
-    "pinia": "^3.0.4",
-    "primevue": "^4.5.4",
-    "vue": "^3.5.29",
-    "vue-router": "^4.6.4"
-  },
-  "devDependencies": {
-    "@eslint/js": "^10.0.1",
-    "@types/node": "^24.3.0",
-    "@typescript-eslint/eslint-plugin": "^8.59.2",
-    "@typescript-eslint/parser": "^8.59.2",
-    "@vitejs/plugin-vue": "^5.2.4",
-    "@vue/compiler-sfc": "^3.5.23",
-    "eslint": "^10.3.0",
-    "eslint-plugin-vue": "^10.9.1",
-    "globals": "^16.5.0",
-    "jsdom": "^27.0.0",
-    "typescript": "^6.0.3",
-    "typescript-eslint": "^8.59.2",
-    "vite": "^6.3.6"
-  }
+    "name": "honing-forecast",
+    "private": true,
+    "type": "module",
+    "scripts": {
+        "dev": "npm run wasm && vite",
+        "wasm": "wasm-pack build crates/wasm --release --target web",
+        "test": "cargo test -p hf-core --profile release --no-default-features --features active_version,run_tests -- --no-capture",
+        "change-logs": "python ./scripts/change_log_helper/build.py",
+        "no-test-build": "npm run wasm && vite build",
+        "build": "npm run test && npm run no-test-build && cargo +nightly udeps",
+        "no-check-deploy": "git push origin main:Production --force-with-lease",
+        "deploy": "pwsh -File ./scripts/pre_deploy_check.ps1 && npm run no-check-deploy",
+        "optimizer-test": "pwsh -File ./scripts/optimizer_test.ps1",
+        "optimizer-visualizer": "python -m pip -q install -r  ./scripts/optimizer_visualizer/requirements.txt && python ./scripts/optimizer_visualizer/app.py"
+    },
+    "dependencies": {
+        "@vueuse/core": "^14.2.1",
+        "fast-deep-equal": "^3.1.3",
+        "marked": "^18.0.3",
+        "pinia": "^3.0.4",
+        "primevue": "^4.5.4",
+        "vue": "^3.5.29",
+        "vue-router": "^4.6.4"
+    },
+    "devDependencies": {
+        "@eslint/js": "^9.33.0",
+        "@testing-library/jest-dom": "^6.8.0",
+        "@types/node": "^24.3.0",
+        "@typescript-eslint/eslint-plugin": "^8.42.0",
+        "@typescript-eslint/parser": "^8.42.0",
+        "@vitejs/plugin-vue": "^5.2.4",
+        "@vue/compiler-sfc": "^3.5.23",
+        "eslint": "^9.39.4",
+        "eslint-plugin-vue": "^10.9.0",
+        "gh-pages": "^6.3.0",
+        "globals": "^16.3.0",
+        "jsdom": "^27.0.0",
+        "typescript": "^5.9.2",
+        "vite": "^6.3.6",
+        "vitest": "^3.2.4"
+    }
 }
