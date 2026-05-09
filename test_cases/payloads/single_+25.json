@@ -20,9 +20,9 @@
         ],
         [
             [0, 0],
-            [900000, 0],
+            [999999999, 0],
             [123455, 0.21533333333333332],
-            [123456, 0.22666666666666666]
+            [0, 0.22666666666666666]
         ],
         [
             [0, 0],
@@ -86,13 +86,13 @@
         ],
         [
             [0, 0],
-            [5, 0],
+            [0, 0],
             [1, 2206],
             [5, 2323]
         ],
         [
             [0, 0],
-            [1213, 0],
+            [0, 0],
             [555, 398],
             [666, 419]
         ],
@@ -128,13 +128,13 @@
         ],
         [
             [0, 0],
-            [6, 0],
+            [0, 0],
             [23, 1610],
             [23, 1695]
         ],
         [
             [0, 0],
-            [1, 0],
+            [0, 0],
             [12, 3163],
             [2, 3330]
         ]
@@ -142,60 +142,8 @@
     "optimizer_plan": [0, 0, 2, 3],
     "upgrade_info": [
         {
-            "piece_type": 0,
-            "upgrade_index": 18,
-            "is_normal_honing": true,
-            "starting_artisan": 0,
-            "starting_num_taps": 0,
-            "state": [
-                [false, 0],
-                [false, 0],
-                [false, 0],
-                [false, 0],
-                [false, 0],
-                [false, 0],
-                [false, 0],
-                [false, 0],
-                [false, 0],
-                [false, 0],
-                [false, 0],
-                [false, 0],
-                [false, 0],
-                [false, 0],
-                [false, 0],
-                [false, 0],
-                [false, 0],
-                [false, 0],
-                [false, 0],
-                [false, 0],
-                [false, 0],
-                [false, 0],
-                [false, 0],
-                [false, 0],
-                [false, 0],
-                [false, 0],
-                [false, 0],
-                [false, 0],
-                [false, 0],
-                [false, 0],
-                [false, 0],
-                [false, 0],
-                [false, 0],
-                [false, 0],
-                [false, 0],
-                [false, 0],
-                [false, 0],
-                [false, 0],
-                [false, 0],
-                [false, 0],
-                [false, 0]
-            ],
-            "unlocked": false,
-            "adv_progress": null
-        },
-        {
-            "piece_type": 0,
-            "upgrade_index": 19,
+            "piece_type": 5,
+            "upgrade_index": 24,
             "is_normal_honing": true,
             "starting_artisan": 0,
             "starting_num_taps": 0,
@@ -276,18 +224,6 @@
                 [false, 0],
                 [false, 0],
                 [false, 0],
-                [false, 0]
-            ],
-            "unlocked": false,
-            "adv_progress": null
-        },
-        {
-            "piece_type": 1,
-            "upgrade_index": 19,
-            "is_normal_honing": true,
-            "starting_artisan": 0,
-            "starting_num_taps": 0,
-            "state": [
                 [false, 0],
                 [false, 0],
                 [false, 0],
@@ -355,27 +291,6 @@
                 [false, 0],
                 [false, 0],
                 [false, 0],
-                [false, 0],
-                [false, 0],
-                [false, 0],
-                [false, 0],
-                [false, 0],
-                [false, 0],
-                [false, 0],
-                [false, 0],
-                [false, 0],
-                [false, 0]
-            ],
-            "unlocked": false,
-            "adv_progress": null
-        },
-        {
-            "piece_type": 2,
-            "upgrade_index": 19,
-            "is_normal_honing": true,
-            "starting_artisan": 0,
-            "starting_num_taps": 0,
-            "state": [
                 [false, 0],
                 [false, 0],
                 [false, 0],
@@ -456,130 +371,13 @@
             ],
             "unlocked": false,
             "adv_progress": null
-        },
-        {
-            "piece_type": 0,
-            "upgrade_index": 3,
-            "is_normal_honing": false,
-            "starting_artisan": 0,
-            "starting_num_taps": 0,
-            "state": [
-                [false, 0],
-                [false, 0]
-            ],
-            "unlocked": false,
-            "adv_progress": [0, 0, false, false]
-        },
-        {
-            "piece_type": 1,
-            "upgrade_index": 2,
-            "is_normal_honing": false,
-            "starting_artisan": 0,
-            "starting_num_taps": 0,
-            "state": [
-                [false, 0],
-                [false, 0]
-            ],
-            "unlocked": false,
-            "adv_progress": [0, 0, false, false]
-        },
-        {
-            "piece_type": 1,
-            "upgrade_index": 3,
-            "is_normal_honing": false,
-            "starting_artisan": 0,
-            "starting_num_taps": 0,
-            "state": [
-                [false, 0],
-                [false, 0]
-            ],
-            "unlocked": false,
-            "adv_progress": [0, 0, false, false]
-        },
-        {
-            "piece_type": 2,
-            "upgrade_index": 2,
-            "is_normal_honing": false,
-            "starting_artisan": 0,
-            "starting_num_taps": 0,
-            "state": [
-                [false, 0],
-                [false, 0]
-            ],
-            "unlocked": false,
-            "adv_progress": [0, 0, false, false]
-        },
-        {
-            "piece_type": 2,
-            "upgrade_index": 3,
-            "is_normal_honing": false,
-            "starting_artisan": 0,
-            "starting_num_taps": 0,
-            "state": [
-                [false, 0],
-                [false, 0]
-            ],
-            "unlocked": false,
-            "adv_progress": [0, 0, false, false]
-        },
-        {
-            "piece_type": 3,
-            "upgrade_index": 2,
-            "is_normal_honing": false,
-            "starting_artisan": 0,
-            "starting_num_taps": 0,
-            "state": [
-                [false, 0],
-                [false, 0]
-            ],
-            "unlocked": false,
-            "adv_progress": [0, 0, false, false]
-        },
-        {
-            "piece_type": 3,
-            "upgrade_index": 3,
-            "is_normal_honing": false,
-            "starting_artisan": 0,
-            "starting_num_taps": 0,
-            "state": [
-                [false, 0],
-                [false, 0]
-            ],
-            "unlocked": false,
-            "adv_progress": [0, 0, false, false]
-        },
-        {
-            "piece_type": 4,
-            "upgrade_index": 2,
-            "is_normal_honing": false,
-            "starting_artisan": 0,
-            "starting_num_taps": 0,
-            "state": [
-                [false, 0],
-                [false, 0]
-            ],
-            "unlocked": false,
-            "adv_progress": [0, 0, false, false]
-        },
-        {
-            "piece_type": 4,
-            "upgrade_index": 3,
-            "is_normal_honing": false,
-            "starting_artisan": 0,
-            "starting_num_taps": 0,
-            "state": [
-                [false, 0],
-                [false, 0]
-            ],
-            "unlocked": false,
-            "adv_progress": [0, 0, false, false]
         }
     ],
-    "special_budget": 123,
+    "special_budget": 0,
     "express_event": false,
     "tier": 0,
     "min_resolution": 1,
     "num_threads": 1,
     "metric_type": 1,
-    "special_state": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
+    "special_state": [0]
 }

@@ -63,7 +63,7 @@ const tickbox_tooltip = `Untick the box if you don't plan on buying that materia
 
 const market_gold_text = "Avg gold spent buying from market"
 const tradable_gold_text = "Avg gold spent buying minus gold from selling tradables"
-const total_market_gold_text = "Average total gold spent"
+const total_market_gold_text = "Average tradable gold spent"
 const total_market_gold_suffix = "(raw + buying needed mats & juice)"
 const total_tradable_gold_text = "Avg sell value of leftover tradable mats"
 const total_tradable_gold_suffix = "(taxed)"

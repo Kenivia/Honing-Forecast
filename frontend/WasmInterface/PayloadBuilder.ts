@@ -61,7 +61,7 @@ export function build_material_info(): OneMaterialInput[] {
         [0, 0],
         [bound_budgets[index], leftover_price[index]],
         [roster_mats_owned[index], tradable_mats_price[index]],
-        [!enabled[index] ? 0 : tradable_mats_owned[index], mats_prices[index]], // disabled mats shouldn't be sold either, disregard tradable gold
+        [!enabled[index] || index == 5 ? 0 : tradable_mats_owned[index], mats_prices[index]], // disabled mats shouldn't be sold either, disregard tradable gold
     ])
 }
 

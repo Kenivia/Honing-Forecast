@@ -52,14 +52,14 @@ pub fn distribute_budgets(material_info: &MaterialInput, plan: &[usize]) -> Mate
             let mut out: Vec<(f64, f64)> = vec![pass_2[0]];
             for &(thresh, price) in pass_2.iter() {
                 if (price - last_price).abs() < FLOAT_TOL {
-                    out.last_mut().unwrap().0 += thresh;
+                    out.last_mut().unwrap().0 = thresh;
                 } else {
                     out.push((thresh, price));
                 }
                 last_price = price;
             }
 
-            if out[0].0 != 0.0 && out.len() == 1 {
+            if out[0].0 != 0.0 {
                 out.insert(0, (0.0, 0.0));
             }
             // my_dbg!(&out);

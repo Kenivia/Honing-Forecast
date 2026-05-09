@@ -30,7 +30,6 @@ const this_data = ref(String(!Array.isArray(props.input_column) ? (props.input_c
             type="checkbox"
             v-model="(input_column as InputColumn).enabled[row]"
             @change="callback"
-            style="margin-right: -22px"
         />
         <label v-if="label" class="hf-row-label">
             <span>{{ label }}</span>
