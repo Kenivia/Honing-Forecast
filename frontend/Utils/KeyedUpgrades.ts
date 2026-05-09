@@ -1,5 +1,21 @@
-import { AdvProgress, KeyedUpgrades, OldOneUpgrade, OneUpgradeInput, OneUpgradeKey, StatusGrid, Upgrade, UpgradeStatus } from "./Interfaces"
+import { AdvProgress, StatusGrid, Upgrade, UpgradeStatus, OneState } from "./Interfaces"
+//                        piece type, upgrade index, is_normal_honing, normal_progress, state, unlocked, succeeded, adv_progress
+export type OldOneUpgrade = [number, number, boolean, number | null, OneState[] | null, boolean, boolean, AdvProgress | null]
 
+export interface OneUpgradeInput {
+    piece_type: number
+    upgrade_index: number
+    is_normal_honing: boolean
+    starting_artisan?: number
+    starting_num_taps?: number
+    state?: OneState[]
+    unlocked: boolean
+    adv_progress?: AdvProgress
+}
+// an array of this is passed into rust
+
+export type OneUpgradeKey = `${number},${number},${"true" | "false"},${number}`
+export type KeyedUpgrades = Record<OneUpgradeKey, OneUpgradeInput> // This is modified by UI
 export function get_upgrade_map(upgrade_arr: Upgrade[], tier: number): Map<string, Upgrade> {
     const upgrade_map = new Map<string, Upgrade>()
     if (upgrade_arr != null) {
@@ -37,6 +53,7 @@ export function grids_to_keyed(normal_grid: StatusGrid, adv_grid: StatusGrid, al
                             upgrade_index: upgrade_index,
                             is_normal_honing: is_normal_honing,
                             starting_artisan: 0,
+                            starting_num_taps: 0, // TODO technically can reverse-engineer a artisan / num taps here, but that'll need thet actual parsed Upgrade object (unless I re-implement all the logic in typescript) so maybe its not worth the hassle
                             state: state,
                             unlocked: unlocked,
                             adv_progress: adv_progress,
@@ -47,11 +64,14 @@ export function grids_to_keyed(normal_grid: StatusGrid, adv_grid: StatusGrid, al
                             upgrade_index,
                             is_normal_honing,
                             starting_artisan: 0,
+                            starting_num_taps: 0,
                             state: null,
                             unlocked: false,
                             adv_progress: default_adv_progress,
                         }
                     }
+                } else {
+                    // note we don't delete unused ones, so when user undos 78987something it'll still be there
                 }
             }
         }

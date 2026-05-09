@@ -79,8 +79,8 @@ onUnmounted(() => {
         <template #main>
             <StatusInput v-if="route.path.endsWith('calc')" />
             <MaterialDist v-if="route.path.endsWith('calc')" />
-            <DetailedInput v-if="route.path.endsWith('instructions')"></DetailedInput>
-            <Instructions v-if="route.path.endsWith('instructions')" />
+            <DetailedInput v-if="route.path.endsWith('calc')" />
+            <Instructions v-if="route.path.endsWith('calc')" />
             <Guide v-if="route.path.endsWith('guide')" />
         </template>
     </Sidebar>

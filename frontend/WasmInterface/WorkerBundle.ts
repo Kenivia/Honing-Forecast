@@ -65,7 +65,7 @@ export function createWorkerBundle() {
                     worker = null
                 }
             } else {
-                if (performance.now() - last_intermediate_time.value > 1000) {
+                if (performance.now() - last_intermediate_time.value > 1000 || est_progress_percentage.value < 0.000001) {
                     result.value = e.data.state_bundle
                     est_progress_percentage.value = e.data.est_progress_percentage
                     last_intermediate_time.value = performance.now()

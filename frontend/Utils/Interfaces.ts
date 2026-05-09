@@ -111,20 +111,3 @@ export type StatusGrid = UpgradeStatus[][]
 
 export type BudgetPricePair = [number, number]
 export type OneMaterialInput = BudgetPricePair[] // an array of this is passed into rust
-
-//                        piece type, upgrade index, is_normal_honing, normal_progress, state, unlocked, succeeded, adv_progress
-export type OldOneUpgrade = [number, number, boolean, number | null, OneState[] | null, boolean, boolean, AdvProgress | null]
-
-export interface OneUpgradeInput {
-    piece_type: number
-    upgrade_index: number
-    is_normal_honing: boolean
-    starting_artisan?: number
-    state?: OneState[]
-    unlocked: boolean
-    adv_progress?: AdvProgress
-}
-// an array of this is passed into rust
-
-export type OneUpgradeKey = `${number},${number},${"true" | "false"},${number}`
-export type KeyedUpgrades = Record<OneUpgradeKey, OneUpgradeInput> // This is modified by UI

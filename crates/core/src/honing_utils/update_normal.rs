@@ -1,12 +1,12 @@
 use crate::constants::juice_info::JuiceInfo;
 use crate::upgrade::Upgrade;
 
-pub fn new_prob_dist(
-    state: &Vec<(bool, usize)>,
+pub fn get_extra_arr(
+    state: &[(bool, usize)],
     juice_info: &JuiceInfo,
     upgrade: &Upgrade,
 ) -> Vec<f64> {
-    let new_extra: Vec<f64> = state
+    state
         .iter()
         .map(|(juice, id)| {
             let mut chance: f64 = 0.0;
@@ -21,13 +21,20 @@ pub fn new_prob_dist(
             }
             chance
         })
-        .collect();
+        .collect()
+}
 
+pub fn new_prob_dist(
+    state: &[(bool, usize)],
+    juice_info: &JuiceInfo,
+    upgrade: &Upgrade,
+) -> Vec<f64> {
     probability_distribution(
         upgrade.base_chance,
         upgrade.artisan_rate,
-        &new_extra,
+        &get_extra_arr(state, juice_info, upgrade),
         upgrade.starting_artisan,
+        upgrade.starting_num_taps,
         upgrade.extra_chance,
     )
 }
@@ -38,6 +45,7 @@ pub fn probability_distribution(
     artisan_rate: f64,
     extra_arr: &[f64],
     starting_artisan: f64,
+    starting_num_taps: usize,
     event_extra: f64,
 ) -> Vec<f64> {
     let mut raw_chances: Vec<f64> = Vec::new();
@@ -46,7 +54,7 @@ pub fn probability_distribution(
     let mut count: usize = 0;
 
     loop {
-        let min_count: f64 = std::cmp::min(count, 10) as f64;
+        let min_count: f64 = std::cmp::min(count + starting_num_taps, 10) as f64;
 
         let mut current_chance: f64 =
             (base + event_extra + (min_count * base) * 0.1 + extra_arr.get(count).unwrap_or(&0.0))

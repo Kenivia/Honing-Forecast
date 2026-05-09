@@ -1,5 +1,5 @@
 use crate::constants::FLOAT_TOL;
-// use crate::my_dbg;
+use crate::my_dbg;
 use crate::parser::MaterialInput;
 use crate::upgrade::Upgrade;
 use rand::Rng;
@@ -19,7 +19,7 @@ pub fn distribute_budgets(material_info: &MaterialInput, plan: &[usize]) -> Mate
             pass_1[support_index][plan[plan_index]].1 = *price;
         }
     }
-
+    // my_dbg!(&pass_1);
     pass_1
         .into_iter()
         .map(|mut row| {
@@ -39,8 +39,8 @@ pub fn distribute_budgets(material_info: &MaterialInput, plan: &[usize]) -> Mate
 
             let mut last_thresh: f64 = row[0].0;
             let mut pass_2: Vec<(f64, f64)> = vec![row[0]];
-            for &(thresh, price) in row.iter().skip(1) {
-                if (thresh - last_thresh).abs() < FLOAT_TOL && pass_2.len() != 1 {
+            for &(thresh, price) in row.iter() {
+                if (thresh - last_thresh).abs() < FLOAT_TOL {
                     pass_2.last_mut().unwrap().1 = price;
                 } else {
                     pass_2.push((thresh, price));
@@ -50,8 +50,8 @@ pub fn distribute_budgets(material_info: &MaterialInput, plan: &[usize]) -> Mate
 
             let mut last_price: f64 = pass_2[0].1;
             let mut out: Vec<(f64, f64)> = vec![pass_2[0]];
-            for &(thresh, price) in pass_2.iter().skip(1) {
-                if (price - last_price).abs() < FLOAT_TOL && out.len() != 1 {
+            for &(thresh, price) in pass_2.iter() {
+                if (price - last_price).abs() < FLOAT_TOL {
                     out.last_mut().unwrap().0 += thresh;
                 } else {
                     out.push((thresh, price));
@@ -59,7 +59,11 @@ pub fn distribute_budgets(material_info: &MaterialInput, plan: &[usize]) -> Mate
                 last_price = price;
             }
 
-            assert!(out[0].1 == 0.0 || out.len() == 1);
+            if out[0].0 != 0.0 && out.len() == 1 {
+                out.insert(0, (0.0, 0.0));
+            }
+            // my_dbg!(&out);
+            // assert!(out[0].1 == 0.0 || out.len() == 1);
             out
         })
         .collect()

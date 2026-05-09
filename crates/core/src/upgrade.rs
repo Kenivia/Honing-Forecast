@@ -30,7 +30,7 @@ pub struct Upgrade {
     pub piece_type: usize,
 
     pub starting_artisan: f64,
-
+    pub starting_num_taps: usize,
     pub unlocked: bool,
     pub unlock_costs: [f64; 7],
 
@@ -97,6 +97,7 @@ impl Upgrade {
         upgrade_index: usize,
         juice_info: &JuiceInfo,
         starting_artisan: f64,
+        starting_num_taps: usize,
         state_given: Vec<(bool, usize)>,
         unlocked: bool,
         unlock_costs: &[f64],
@@ -127,6 +128,7 @@ impl Upgrade {
                 string
             },
             starting_artisan,
+            starting_num_taps,
             unlocked, // THIS IS IGNORED RN just assuming alr_failed > 0 <==> ulocked
             unlock_costs: unlock_costs.try_into().unwrap(),
 
@@ -193,6 +195,7 @@ impl Upgrade {
                 string
             },
             starting_artisan: 0.0,
+            starting_num_taps: 0,
             unlocked,
             unlock_costs: unlock_costs.try_into().unwrap(),
 

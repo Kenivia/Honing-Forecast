@@ -18,6 +18,7 @@ If you'd like to help with any of the below, feel free to submit a PR on [github
 - accent color not working on chrome
 
 - rework the css stuff to be actually sharable & usable
+  - sort out the material dist width
 
 - uwuowo integration (add button next to textbox to pull from uwuowo, add button on sidebar of roster setup to pull all existing chars)
 

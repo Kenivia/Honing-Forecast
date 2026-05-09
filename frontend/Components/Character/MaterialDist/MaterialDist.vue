@@ -91,10 +91,10 @@ const roster_chance_text = "Bound + Roster Chance"
 const tradable_chance_text = "Bound + Roster + Tradable"
 const chance_explainer_text = computed(() =>
     active_profile.value.histogram_treatment_plan == TreatmentPlan.TreatTradableAsBound
-        ? "Chance to succeed all upgrades before running out of Tradable mat of this type"
+        ? "Chance to succeed all upgrades before running out of Tradable material of this type"
         : active_profile.value.histogram_treatment_plan == TreatmentPlan.TreatRosterAsBound
-          ? "Chance to succeed all upgrades before running out of Roster-Bound mat of this type"
-          : "Chance to succeed all upgrades before running out of Char-Bound mat of this type",
+          ? "Chance to succeed all upgrades before running out of Roster-Bound material of this type"
+          : "Chance to succeed all upgrades before running out of Char-Bound material of this type",
 )
 
 const selected_histogram_treatment = ref(

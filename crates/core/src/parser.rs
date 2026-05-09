@@ -30,6 +30,7 @@ pub struct OneUpgradeInput {
     pub upgrade_index: usize,
     pub is_normal_honing: bool,
     pub starting_artisan: Option<f64>,
+    pub starting_num_taps: Option<usize>,
     pub state: Option<Vec<(bool, usize)>>,
     pub unlocked: bool,
     pub adv_progress: Option<(usize, usize, bool, bool)>,
@@ -103,6 +104,7 @@ pub fn parser(
         upgrade_index,
         is_normal_honing,
         starting_artisan,
+        starting_num_taps,
         state,
         unlocked,
         adv_progress,
@@ -134,6 +136,7 @@ pub fn parser(
                 special_leap_cost[if piece_type == 5 { 1 } else { 0 }][upgrade_index];
             let event_artisan_rate: f64 = artisan_rate_arr[upgrade_index];
             let starting_artisan: f64 = starting_artisan.unwrap();
+            let starting_num_taps: usize = starting_num_taps.unwrap_or(0);
             out.push(Upgrade::new_normal(
                 normal_hone_chances[upgrade_index],
                 this_cost,
@@ -144,6 +147,7 @@ pub fn parser(
                 upgrade_index,
                 juice_info,
                 starting_artisan,
+                starting_num_taps,
                 this_state_given,
                 this_unlocked,
                 this_unlock,

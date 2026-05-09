@@ -18,15 +18,13 @@ async function HistogramWasm(payload: Payload): Promise<HistogramOutputs> {
     await init()
     return histogram_wrapper(payload)
 }
-
 self.addEventListener("message", async (ev) => {
     const msg = ev.data
     // let start_time = Date.now()
 
     const { payload, wasm_op } = msg
 
-    console.log(WasmOp[wasm_op], "Began")
-    console.log(payload)
+    console.log(WasmOp[wasm_op], "Began", payload)
     let result
 
     // if (wasm_op == WasmOp.EvaluateAverage) {
@@ -42,7 +40,7 @@ self.addEventListener("message", async (ev) => {
     {
         return // react dev tool shenanigans
     }
-    console.log(result)
+    console.log(WasmOp[wasm_op], "done", result)
     // console.log(WasmOp[wasm_op] + " finished after " + String(((Date.now() - start_time) / 1000).toFixed(2)) + "s")
     self.postMessage({ type: "result", result })
 })
