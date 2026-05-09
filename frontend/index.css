@@ -9,7 +9,6 @@
     --text-primary: #ffffff;
     --text-secondary: #dddddd;
 
-
     --border-primary: #333333;
     --border-secondary: #666666;
     --border-accent: #2b3440;
@@ -109,7 +108,6 @@ h1 {
     line-height: 1.1;
 }
 
-
 button:focus,
 button:focus-visible {
     outline: 1px auto -webkit-focus-ring-color;
@@ -148,22 +146,14 @@ textarea {
         width: 100%;
         /* max-width: 100vw; */
         /* touch-action: pan-x pan-y; */
-
     }
 
     body {
         /* overflow-x: hidden; */
         width: 100%;
         /* max-width: 100vw; */
-
     }
-
-
-
-
 }
-
-
 
 /* Prevent horizontal scrolling on mobile */
 /* position: relative; */
@@ -301,7 +291,6 @@ button {
 }
 
 /* Component Styles */
-
 
 /* Respect user color scheme preferences */
 /* @media (prefers-color-scheme: light) {

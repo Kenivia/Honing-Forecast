@@ -1,0 +1,10 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "type": "eslint",
+            "label": "eslint: lint whole folder"
+            // errors detected by this are persistent (they dont disappear when you fix them) for some reason
+        }
+    ]
+}

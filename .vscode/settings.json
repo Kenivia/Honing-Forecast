@@ -1,103 +1,39 @@
 {
-    "autopep8.args": ["--line-length 160"],
+	"autopep8.args": ["--line-length 160"],
+	"editor.defaultFormatter": "esbenp.prettier-vscode",
+	"git.confirmSync": false,
+	"git.enableSmartCommit": true,
 
-    "files.autoSave": "onFocusChange",
+	"editor.pasteAs.preferences": ["chat.attach.text"],
+	"[python]": {
+		"editor.defaultFormatter": "ms-python.autopep8"
+	},
 
-    "terminal.integrated.scrollback": 10000,
+	"[rust]": {
+		"editor.defaultFormatter": "rust-lang.rust-analyzer"
+	},
+	"[markdown]": {
+		"editor.defaultFormatter": "DavidAnson.vscode-markdownlint"
+	},
+	"markdownlint.config": {
+		"no-duplicate-heading": {
+			"siblings_only": true
+		}
+	},
 
-    "explorer.confirmDragAndDrop": false,
-    "prettier.semi": false,
-    "prettier.tabWidth": 4,
-    "prettier.printWidth": 160,
+	"eslint.format.enable": true,
+	"js/ts.format.enabled": false,
 
-    "python.defaultInterpreterPath": "",
-    "[json]": {
-        "editor.defaultFormatter": "esbenp.prettier-vscode"
-    },
+	"eslint.validate": ["javascript", "typescript", "vue"],
 
-    "firefox.executable": "C:\\\\ProgramData\\\\Microsoft\\\\Windows\\\\Start Menu\\\\Programs\\\\Firefox.lnk",
-    "firefox.keepProfileChanges": true,
-    "firefox.profile": "default-release",
-    "firefox.port": 5173,
-    "[javascript]": {
-        "editor.defaultFormatter": "esbenp.prettier-vscode"
-    },
-    "git.autofetch": true,
-    "[jsonc]": {
-        "editor.defaultFormatter": "esbenp.prettier-vscode"
-    },
-    "[markdown]": {
-        "editor.defaultFormatter": "DavidAnson.vscode-markdownlint"
-    },
-    "[css]": {
-        "editor.defaultFormatter": "vscode.css-language-features"
-    },
-    "[html]": {
-        "editor.defaultFormatter": "vscode.html-language-features"
-    },
-    "github.copilot.nextEditSuggestions.fixes": false,
-    "github.copilot.nextEditSuggestions.enabled": false,
-    "[typescriptreact]": {
-        "editor.defaultFormatter": "esbenp.prettier-vscode"
-    },
-    "editor.formatOnSaveMode": "file",
-    "[typescript]": {
-        "editor.defaultFormatter": "esbenp.prettier-vscode"
-    },
-
-    "chat.agent.maxRequests": 999,
-    "editor.quickSuggestions": {
-        "other": true, // Keep other suggestions enabled if desired
-        "comments": "off",
-        "strings": "off" // Keep string suggestions enabled if desired
-    },
-    "python.autoComplete.extraPaths": [],
-    "editor.inlineSuggest.enabled": false,
-    "explorer.confirmDelete": false,
-    "debug.allowBreakpointsEverywhere": true,
-    "editor.semanticTokenColorCustomizations": {},
-    "workbench.colorCustomizations": {},
-    "git.confirmSync": false,
-    "git.enableSmartCommit": true,
-
-    "editor.pasteAs.preferences": ["chat.attach.text"],
-    "[python]": {
-        "editor.defaultFormatter": "ms-python.autopep8"
-    },
-    "lldb.consoleMode": "evaluate",
-
-    "terminal.integrated.enableMultiLinePasteWarning": "never",
-
-    "chat.tools.terminal.autoApprove": {
-        "cargo build": true,
-        "cargo check": true
-    },
-    "window.commandCenter": false,
-    "editor.minimap.enabled": true,
-
-    "python.analysis.typeCheckingMode": "standard",
-    "editor.formatOnSave": true,
-    "[rust]": {
-        "editor.defaultFormatter": "rust-lang.rust-analyzer"
-    },
-    "rust-analyzer.numThreads": null,
-    "rust-analyzer.restartServerOnConfigChange": true,
-    "editor.suggest.showStatusBar": true,
-    "python.createEnvironment.trigger": "off",
-
-    "json.format.enable": false,
-    "markdownlint.config": {
-        "no-duplicate-heading": {
-            "siblings_only": true
-        }
-    },
-
-    "vue.autoInsert.dotValue": true,
-
-    "editor.defaultFormatter": "esbenp.prettier-vscode",
-
-    "eslint.validate": ["javascript", "typescript", "vue"],
-    "eslint.useFlatConfig": true,
-    "js/ts.updateImportsOnFileMove.enabled": "always",
-    "markdown.updateLinksOnFileMove.enabled": "always"
+	"editor.formatOnSave": true,
+	"editor.formatOnSaveMode": "file",
+	"editor.codeActionsOnSave": {
+		"source.fixAll.eslint": "always"
+	},
+	"prettier.printWidth": 120,
+	"prettier.tabWidth": 4,
+	"prettier.useTabs": false,
+	"eslint.lintTask.enable": true,
+	"eslint.run": "onSave"
 }
