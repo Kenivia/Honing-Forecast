@@ -3,10 +3,7 @@
         "target": "es2024",
         "module": "ESNext",
         "moduleResolution": "bundler",
-        "lib": [
-            "DOM",
-            "ES2024"
-        ],
+        "lib": ["DOM", "ES2024"],
         "jsx": "preserve",
         "allowJs": true,
         "checkJs": false,
@@ -20,25 +17,11 @@
         "resolveJsonModule": true,
         "isolatedModules": true,
         "paths": {
-            "@/*": [
-                "./frontend/*"
-            ],
-            "*":["./frontend/*"]
+            "@/*": ["./frontend/*"],
+            "*": ["./frontend/*"]
         },
         "types": ["vite/client"]
     },
-    "include": [
-        "frontend/**/*",
-        "crates/wasm/pkg/**/*",
-        "vite.config.ts",
-        "vitest.setup.ts",
-    ],
-    "types": [
-        "vitest/globals",
-        "@testing-library/jest-dom"
-    ],
-    "exclude": [
-        "node_modules",
-        "dist"
-    ]
+    "include": ["frontend/**/*", "crates/wasm/pkg/**/*", "vite.config.ts"],
+    "exclude": ["node_modules", "dist"]
 }
