@@ -143,6 +143,7 @@ impl Upgrade {
         while out.state.len() < out.clean_prob_dist_len {
             out.state.payload.push((false, 0));
         }
+        out.state.truncate(out.clean_prob_dist_len);
         out.state.update_hash();
 
         out.update_dist_normal(juice_info);

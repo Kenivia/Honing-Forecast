@@ -36,7 +36,7 @@ export interface Upgrade {
     state?: OneState[]
     succeeded?: boolean
     unlocked?: boolean
-    alr_failed?: number
+    starting_artisan?: number
     adv_config: AdvConfig
     cost_dist: Support[]
     artisan_rate: number

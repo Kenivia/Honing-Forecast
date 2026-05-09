@@ -1,5 +1,15 @@
-import { AdvProgress, KeyedUpgrades, OldOneUpgrade, OneUpgradeInput, OneUpgradeKey, StatusGrid, UpgradeStatus } from "./Interfaces"
+import { AdvProgress, KeyedUpgrades, OldOneUpgrade, OneUpgradeInput, OneUpgradeKey, StatusGrid, Upgrade, UpgradeStatus } from "./Interfaces"
 
+export function get_upgrade_map(upgrade_arr: Upgrade[], tier: number): Map<string, Upgrade> {
+    const upgrade_map = new Map<string, Upgrade>()
+    if (upgrade_arr != null) {
+        for (const upgrade of upgrade_arr) {
+            const key = to_upgrade_key(upgrade.piece_type, upgrade.upgrade_index, upgrade.is_normal_honing, tier)
+            upgrade_map.set(key, upgrade)
+        }
+    }
+    return upgrade_map
+}
 export function to_upgrade_key(piece_type: number, upgrade_index: number, is_normal_honing: boolean, tier: number): OneUpgradeKey {
     return `${piece_type},${upgrade_index},${is_normal_honing},${tier}`
 }
@@ -46,7 +56,7 @@ export function grids_to_keyed(normal_grid: StatusGrid, adv_grid: StatusGrid, al
             }
         }
     }
-    console.log(new_keyed)
+
     return new_keyed
 }
 function is_one_upgrade(obj: unknown): obj is OneUpgradeInput {

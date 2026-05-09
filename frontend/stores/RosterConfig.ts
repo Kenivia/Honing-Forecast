@@ -71,8 +71,10 @@ export const useRosterStore = defineStore("roster", {
 
         resetActiveProfile() {
             const name = this.roster_config.profiles[this.roster_config.active_profile_index].char_name
+            const roster_id = this.roster_config.profiles[this.roster_config.active_profile_index].roster_id
             this.roster_config.profiles[this.roster_config.active_profile_index] = create_default_char_profile()
             this.roster_config.profiles[this.roster_config.active_profile_index].char_name = name
+            this.roster_config.profiles[this.roster_config.active_profile_index].roster_id = roster_id
         },
 
         get_this_roster_profile(roster_index): CharProfile[] {
@@ -186,7 +188,7 @@ function stringifyOmit(obj: RosterConfig, keys: string[]): string {
 }
 export function write_roster_config(state) {
     try {
-        // localStorage.setItem(STORAGE_KEY + "_roster", stringifyOmit(state.roster_config, ["optimizer_worker_bundle", "histogram_worker_bundle"]))
+        localStorage.setItem(STORAGE_KEY + "_roster", stringifyOmit(state.roster_config, ["optimizer_worker_bundle", "histogram_worker_bundle"]))
     } catch {
         console.log(JSON.stringify(state.roster_config))
     }

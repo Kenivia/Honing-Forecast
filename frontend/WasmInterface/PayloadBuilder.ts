@@ -3,7 +3,7 @@ import { TreatmentPlan } from "@/Stores/CharacterProfile"
 import { KeyedUpgrades, OneMaterialInput, OneUpgradeInput, Upgrade, WasmOp } from "@/Utils/Interfaces"
 import { toRaw } from "vue"
 import { useRosterStore } from "@/Stores/RosterConfig"
-import { to_upgrade_key } from "@/Utils/KeyedUpgrades"
+import { get_upgrade_map } from "@/Utils/KeyedUpgrades"
 import { input_column_to_num } from "@/Utils/InputColumn"
 import { storeToRefs } from "pinia"
 
@@ -23,14 +23,7 @@ export interface Payload {
 }
 
 function keyed_to_array(keyed_upgrades: KeyedUpgrades, upgrade_arr: Upgrade[] | null, tier: number): OneUpgradeInput[] {
-    const upgrade_map = new Map<string, Upgrade>()
-    if (upgrade_arr != null) {
-        for (const upgrade of upgrade_arr) {
-            const key = to_upgrade_key(upgrade.piece_type, upgrade.upgrade_index, upgrade.is_normal_honing, tier)
-            upgrade_map.set(key, upgrade)
-        }
-    }
-
+    const upgrade_map = get_upgrade_map(upgrade_arr, tier)
     return Object.entries(keyed_upgrades).map(([key, one_upgrade_input]) => {
         const upgrade = upgrade_map.get(key) ?? null
         let out = structuredClone(toRaw(one_upgrade_input))

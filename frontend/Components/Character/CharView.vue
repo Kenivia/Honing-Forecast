@@ -14,6 +14,7 @@ import Sidebar from "../Common/SideBar.vue"
 import { start_all_workers } from "./CharWorkerUtils"
 import GraphControlPanel from "./GraphControlPanel.vue"
 import Guide from "./Guide.vue"
+import DetailedInput from "./StatusInput/DetailedInput.vue"
 
 const route = useRoute()
 const router = useRouter()
@@ -78,6 +79,7 @@ onUnmounted(() => {
         <template #main>
             <StatusInput v-if="route.path.endsWith('calc')" />
             <MaterialDist v-if="route.path.endsWith('calc')" />
+            <DetailedInput v-if="route.path.endsWith('instructions')"></DetailedInput>
             <Instructions v-if="route.path.endsWith('instructions')" />
             <Guide v-if="route.path.endsWith('guide')" />
         </template>

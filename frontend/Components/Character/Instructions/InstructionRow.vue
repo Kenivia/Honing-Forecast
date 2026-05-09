@@ -112,7 +112,7 @@ const must_show = ref(false)
 
 watch(
     [
-        () => props.upgrade.alr_failed,
+        () => props.upgrade.starting_artisan,
         () => props.upgrade.is_normal_honing,
         () => props.upgrade.adv_config.start_balls,
         () => props.upgrade.adv_config.start_xp,
@@ -121,7 +121,7 @@ watch(
     ],
     () => {
         if (props.upgrade.is_normal_honing) {
-            must_show.value = props.upgrade.alr_failed > 0
+            must_show.value = props.upgrade.starting_artisan > 0
         } else {
             must_show.value =
                 props.upgrade.adv_config.start_balls > 0 ||
@@ -239,68 +239,9 @@ async function confirmSuccess() {
                     <div v-if="upgrade.is_normal_honing" style="display: contents">
                         <div class="input-row text-left">Current Artisan energy: {{ artisan_function(upgrade, taps_so_far, juice_info) }}%</div>
                         <div class="input-row text-left">Cumulative chance: {{ cumulative_chance(upgrade, taps_so_far, juice_info) }}%</div>
-
-                        <div class="input-row">
-                            <label>Taps so far</label>
-                            <input
-                                type="number"
-                                v-model.number="taps_so_far"
-                                min="0"
-                                :max="upgrade.normal_dist?.length - 1 || 100"
-                                @change="write_normal_progress"
-                            />
-                        </div>
-                        <div class="input-row">
-                            <!-- {{ console.log(upgrade.normal_dist) }} -->
-                            <input
-                                type="range"
-                                v-model.number="taps_so_far"
-                                min="0"
-                                :max="upgrade.normal_dist?.length - 1 || 100"
-                                class="hf-slider"
-                                @change="write_normal_progress"
-                            />
-                        </div>
                     </div>
 
-                    <div v-else style="display: contents">
-                        <div class="input-row">
-                            <label>Current upgrade</label>
-                            <input
-                                type="number"
-                                v-model.number="current_adv_upgrade"
-                                :min="upgrade.upgrade_index * 10"
-                                :max="(upgrade.upgrade_index + 1) * 10 - 1"
-                                @change="write_adv_progress"
-                            />
-                        </div>
-                        <div class="input-row">
-                            <label>Current xp</label>
-                            <input
-                                type="number"
-                                v-model.number="current_adv_xp"
-                                min="0"
-                                max="90"
-                                step="10"
-                                style="justify-self: flex-start"
-                                @change="write_adv_progress"
-                            />
-                        </div>
-                        <div class="input-row grid-4">
-                            <label>Grace progress</label>
-                            <input type="number" v-model.number="current_grace_progress" min="0" max="6" @change="write_adv_progress" />
-
-                            <label
-                                v-if="current_grace_progress === 0 && (current_adv_xp > 0 || current_adv_upgrade > upgrade.upgrade_index * 10)"
-                                class="check-label"
-                            >
-                                <input type="checkbox" v-model="next_free" @change="write_adv_progress" /> Next free (Chisel)
-                            </label>
-                            <label v-if="current_grace_progress === 6 && upgrade.upgrade_index >= 2" class="check-label">
-                                <input type="checkbox" v-model="next_big" @change="write_adv_progress" /> Naber's Awl
-                            </label>
-                        </div>
-                    </div>
+                    <div v-else style="display: contents"></div>
                     <button class="btn-succeed" @click="onSucceedClick">Succeed & deduct costs</button>
                 </div>
             </div>

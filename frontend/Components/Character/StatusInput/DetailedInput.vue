@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import { ALL_LABELS, GRAPH_COLORS, T4_MATS_LABELS, ANNOTATION_COLORS, ANNOTATION_POSITIONS, ANNOTATION_LABELS } from "@/Utils/Constants"
+import { ALL_LABELS, GRAPH_COLORS, T4_MATS_LABELS, ANNOTATION_COLORS, ANNOTATION_POSITIONS, ANNOTATION_LABELS, PIECE_NAMES } from "@/Utils/Constants"
 import { TreatmentPlan } from "@/Stores/CharacterProfile"
-import { has_upgrades_in_range, metric_to_text } from "@/Utils/Helpers"
+import { get_icon_path, has_upgrades_in_range, metric_to_text } from "@/Utils/Helpers"
 import MaterialCell from "@/Components/Common/MaterialCell.vue"
-import { WasmOp } from "@/Utils/Interfaces"
+import { UpgradeStatus, WasmOp } from "@/Utils/Interfaces"
 import MaterialGraph from "./MaterialGraph.vue"
 import { storeToRefs } from "pinia"
 import { useRosterStore } from "@/Stores/RosterConfig"
@@ -12,9 +12,40 @@ import { build_payload } from "@/WasmInterface/PayloadBuilder"
 import { input_column_to_num } from "@/Utils/InputColumn"
 import { start_all_workers } from "../CharWorkerUtils"
 import { RouterLink } from "vue-router"
+import { get_upgrade_map, to_upgrade_key } from "@/Utils/KeyedUpgrades"
+import DetailedInputRow from "./DetailedInputRow.vue"
 
 const { active_profile } = storeToRefs(useRosterStore())
-const { roster_config, active_roster_mats_owned, active_tradable_mats_owned, enabled_annotations } = storeToRefs(useRosterStore())
+
+const upgrade_map = computed(() => get_upgrade_map(active_profile.value.optimizer_worker_bundle.result?.upgrade_arr ?? null, active_profile.value.tier))
+const lowest_normal = computed(() =>
+    PIECE_NAMES.map(
+        (piece_name, piece_type) =>
+            upgrade_map.value.get(
+                to_upgrade_key(
+                    piece_type,
+                    (active_profile.value.normal_grid[piece_type] as UpgradeStatus[]).findIndex((value) => value == UpgradeStatus.Want),
+                    true,
+                    active_profile.value.tier,
+                ),
+            ) ?? null,
+    ),
+)
+const lowest_adv = computed(() =>
+    PIECE_NAMES.map(
+        (_, piece_type) =>
+            upgrade_map.value.get(
+                to_upgrade_key(
+                    piece_type,
+                    (active_profile.value.adv_grid[piece_type] as UpgradeStatus[]).findIndex((value) => value == UpgradeStatus.Want),
+                    false,
+                    active_profile.value.tier,
+                ),
+            ) ?? null,
+    ),
+)
+
+// console.log(upgrade_map.value, lowest_normal.value, upgrade_map.value.get("0,18,true,0"))
 </script>
 
 <template>
@@ -27,166 +58,23 @@ const { roster_config, active_roster_mats_owned, active_tradable_mats_owned, ena
                 <div class="hf-dist-stack">
                     <div class="hf-dist-graphs">
                         <div class="hf-table-title-row"></div>
-                        <div
-                            v-if="
-                                ALL_LABELS[active_profile.tier].length == active_profile.bound_budgets[active_profile.tier].data.length &&
-                                // active_profile.optimizer_worker_bundle.result &&
-                                active_profile.histogram_worker_bundle.result &&
-                                active_profile.histogram_worker_bundle.result &&
-                                active_profile.material_rerender_trigger
-                            "
-                            style="display: contents"
-                        ></div>
-                    </div>
-                    <div class="hf-dist-graphs">
-                        <div class="hf-mats-row">
-                            <div class="hf-metric-label">
-                                {{ total_market_gold_text }}
+                        <div v-for="(piece_name, index) in PIECE_NAMES" :key="piece_name" class="hf-mats-row">
+                            <div class="hf-equip-label">
+                                <span>{{ piece_name }}</span>
+                                <img :src="get_icon_path(piece_name)" :alt="piece_name" />
                             </div>
-                            <div class="hf-metric-status">
-                                {{ metric_to_text(active_profile.histogram_worker_bundle.result?.metrics_arr[0]) ?? "No Result yet" }}
+                            <DetailedInputRow v-if="lowest_normal[index]" :upgrade="lowest_normal[index]" />
 
-                                <span style="font-size: 16px">
-                                    {{ total_market_gold_suffix }}
-                                </span>
-                            </div>
-                        </div>
-
-                        <div
-                            v-if="active_profile.optimizer_treatment_plan == TreatmentPlan.TreatRosterAsBound && active_profile.auto_start_optimizer"
-                            class="hf-mats-row"
-                        >
-                            <div class="hf-metric-label" style="font-size: 16px; color: var(--hf-text-muted)">
-                                {{ total_tradable_gold_text }}
-                            </div>
-                            <div class="hf-metric-status" style="color: var(--hf-text-muted)">
-                                {{
-                                    metric_to_text(
-                                        active_profile.histogram_worker_bundle.result?.metrics_arr[0] -
-                                            active_profile.histogram_worker_bundle.result?.metrics_arr[1],
-                                    ) ?? "No Result yet"
-                                }}
-
-                                <span style="font-size: 16px">
-                                    {{ total_tradable_gold_suffix }}
-                                </span>
-                            </div>
-                        </div>
-                        <div style="display: flex; flex-direction: row; grid-column: 1 / span 6; align-items: center">
-                            <span class="optimizer-progress-label"
-                                >Optimizer progress: {{ active_profile.optimizer_worker_bundle.est_progress_percentage.toFixed(2) }}%
-                            </span>
-                            <div class="progress-bar">
-                                <div class="progress-fill" :style="{ width: `${active_profile.optimizer_worker_bundle.est_progress_percentage}%` }" />
-                            </div>
+                            <DetailedInputRow v-if="lowest_adv[index]" :upgrade="lowest_adv[index]" />
                         </div>
                     </div>
+                    <div class="hf-dist-graphs"></div>
                 </div>
             </div>
         </div>
-
-        <Teleport to="body">
-            <div v-if="show_special_guide" class="hf-modal-overlay" @click="show_special_guide = false">
-                <div class="hf-popup" @click.stop>
-                    <span style="font-size: 30px; color: var(--hf-text-bright)">
-                        Short answer: Save Special Leaps and convert to Serca, unless you are tapping +25
-                    </span>
-                    <span style="font-size: 16px; color: var(--hf-text-muted)"> If you're not +20 yet, use it in T4. </span>
-                    <img src="/Special convert chart.png" alt="Special convert chart" />
-                </div>
-            </div>
-        </Teleport>
     </section>
-    <span>
-        The above results assumes that you follow the optimal
-        <RouterLink
-            class="hf-metric-label"
-            style="text-decoration: underline"
-            :to="{ name: 'instructions', params: { characterName: active_profile.char_name } }"
-        >
-            Taps Instructions
-        </RouterLink>
-    </span>
 </template>
 <style scoped>
-.special-convert-guide {
-    color: var(--hf-free-tap);
-    font-size: 12px;
-    text-decoration-line: underline;
-}
-
-.special-convert-guide:hover {
-    color: var(--hf-free-tap-faded);
-    font-size: 12px;
-}
-.progress-bar {
-    width: 100%;
-    height: 8px;
-    background: rgba(255, 255, 255, 0.2);
-    border-radius: 4px;
-    overflow: hidden;
-    /* grid-column: 3 / span 3; */
-}
-.progress-fill {
-    height: 100%;
-    background: linear-gradient(90deg, var(--hf-gold-dim), var(--hf-gold));
-    transition: width 0.1s ease;
-}
-.optimizer-progress-label {
-    display: flex;
-    flex-direction: column;
-    font-size: 16px;
-    /* grid-column: 1 / span 2; */
-    text-align: right;
-    padding: 6px;
-    text-wrap-mode: nowrap;
-}
-
-.hf-metric-label {
-    grid-column: span 4;
-    width: 100%;
-    gap: 30px;
-    color: var(--hf-gold);
-    font-size: 20px;
-    text-align: right;
-    padding-right: 8px;
-    justify-content: center;
-}
-
-.smaller-label {
-    font-size: 12px;
-    color: var(--hf-text-muted);
-}
-
-.hf-metric-status {
-    grid-column: 5 / span 2;
-    width: 100%;
-    gap: 30px;
-    color: var(--hf-gold);
-    font-size: 30px;
-    text-align: left;
-    padding-right: 8px;
-    justify-content: center;
-    text-wrap-mode: nowrap;
-}
-
-.hf-question-mark {
-    margin-left: 4px;
-    /* padding-right: 12px;
-    padding-left: 8px; */
-
-    width: 16px; /* Align with the two icon rows visually */
-    height: 16px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-
-    font-weight: bold;
-    background-color: AccentColor;
-    color: AccentColorText;
-    font-size: 12px;
-}
 .hf-bound-header {
     color: var(--hf-graph-bound-color);
     text-align: right;
@@ -274,7 +162,7 @@ const { roster_config, active_roster_mats_owned, active_tradable_mats_owned, ena
     color: var(--hf-text-bright);
 }
 .hf-dist-graphs {
-    --hf-dist-columns: 160px 90px 120px 120px 120px 320px;
+    --hf-dist-columns: 160px 120px;
     display: grid;
     grid-template-columns: var(--hf-dist-columns);
     align-items: center;
