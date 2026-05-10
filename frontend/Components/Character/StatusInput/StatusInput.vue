@@ -13,7 +13,7 @@ import { ADV_COLS, ALL_LABELS, NORMAL_COLS, NUM_PIECES, PLUS_TIER_CONVERSION } f
 import TierConvertButton from "@/Components/Common/TierConvertButton.vue";
 import { UpgradeStatus } from "@/Utils/Interfaces";
 import { grid_change_callback } from "../CharWorkerUtils";
-import { useRosterStore } from "@/_stores/RosterConfig";
+import { useRosterStore } from "@/Stores/RosterConfig";
 import { input_column_to_num, parse_input } from "@/Utils/InputColumn";
 
 const { active_profile } = storeToRefs(useRosterStore());

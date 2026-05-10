@@ -1,4 +1,4 @@
-import { useRosterStore } from "@/_stores/RosterConfig";
+import { useRosterStore } from "@/Stores/RosterConfig";
 import { StateBundle, WasmOp } from "@/Utils/Interfaces";
 import { grids_to_keyed } from "@/Utils/KeyedUpgrades";
 import { build_payload } from "@/WasmInterface/PayloadBuilder";

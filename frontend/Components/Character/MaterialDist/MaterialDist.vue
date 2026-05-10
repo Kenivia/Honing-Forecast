@@ -7,13 +7,13 @@ import {
     ANNOTATION_POSITIONS,
     ANNOTATION_LABELS,
 } from "@/Utils/Constants";
-import { TreatmentPlan } from "@/_stores/CharacterProfile";
+import { TreatmentPlan } from "@/Stores/CharacterProfile";
 import { has_upgrades_in_range, metric_to_text } from "@/Utils/Helpers";
 import MaterialCell from "@/Components/Common/MaterialCell.vue";
 import { WasmOp } from "@/Utils/Interfaces";
 import MaterialGraph from "./MaterialGraph.vue";
 import { storeToRefs } from "pinia";
-import { useRosterStore } from "@/_stores/RosterConfig";
+import { useRosterStore } from "@/Stores/RosterConfig";
 import { computed, ref, watchEffect } from "vue";
 import { build_payload } from "@/WasmInterface/PayloadBuilder";
 import { input_column_to_num } from "@/Utils/InputColumn";
@@ -211,6 +211,11 @@ const show_special_guide = ref(false);
                                 <option>{{ bound_chance_text }}</option>
                                 <option>{{ roster_chance_text }}</option>
                                 <option>{{ tradable_chance_text }}</option>
+                                <!-- <Select :options="items" optionLabel="name">
+  <template #option="{ option }">
+    <span style="font-family: 'Your Font', sans-serif;">{{ option.name }}</span>
+  </template>
+</Select> -->
                             </select>
                             <span class="hf-average-header">Average</span>
                             <div style="position: relative">

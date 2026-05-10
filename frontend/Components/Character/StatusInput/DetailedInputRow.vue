@@ -8,13 +8,13 @@ import {
     ANNOTATION_LABELS,
     PIECE_NAMES,
 } from "@/Utils/Constants";
-import { TreatmentPlan } from "@/_stores/CharacterProfile";
+import { TreatmentPlan } from "@/Stores/CharacterProfile";
 import { get_icon_path, has_upgrades_in_range, metric_to_text } from "@/Utils/Helpers";
 import MaterialCell from "@/Components/Common/MaterialCell.vue";
 import { AdvProgress, Upgrade, UpgradeStatus, WasmOp } from "@/Utils/Interfaces";
 import MaterialGraph from "./MaterialGraph.vue";
 import { storeToRefs } from "pinia";
-import { useRosterStore } from "@/_stores/RosterConfig";
+import { useRosterStore } from "@/Stores/RosterConfig";
 import { computed, ref, watchEffect } from "vue";
 import { build_payload } from "@/WasmInterface/PayloadBuilder";
 import { input_column_to_num } from "@/Utils/InputColumn";

@@ -2,7 +2,7 @@ import { createRouter, createWebHistory } from "vue-router";
 import CharView from "../Components/Character/CharView.vue";
 import MarketView from "@/Components/Market/MarketView.vue";
 import RosterView from "@/Components/RosterView.vue";
-import { useRosterStore } from "@/_stores/RosterConfig";
+import { useRosterStore } from "@/Stores/RosterConfig";
 import { ALL_VERSIONS, LATEST_VERSION } from "@/Utils/Changelog";
 import ChangeLogsView from "@/Components/ChangeLogsView.vue";
 

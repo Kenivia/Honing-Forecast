@@ -2,7 +2,7 @@
 import Instructions from "@/Components/Character/Instructions/Instructions.vue";
 import MaterialDist from "@/Components/Character/MaterialDist/MaterialDist.vue";
 import StatusInput from "@/Components/Character/StatusInput/StatusInput.vue";
-import { useRosterStore } from "@/_stores/RosterConfig";
+import { useRosterStore } from "@/Stores/RosterConfig";
 
 import { storeToRefs } from "pinia";
 
@@ -71,9 +71,9 @@ onUnmounted(() => {
     <Sidebar :header="active_profile.char_name">
         <template #sidebar="{ close }">
             <div style="display: flex; flex-direction: column">
-                <RouterLink to="guide" class="hf-side-bar-item" @click="close"> Guide </RouterLink>
-                <RouterLink to="calc" class="hf-side-bar-item" @click="close"> Setup & Cost Analysis </RouterLink>
-                <RouterLink to="instructions" class="hf-side-bar-item" @click="close"> Taps Instructions </RouterLink>
+                <RouterLink to="guide" class="side-bar-item" @click="close"> Guide </RouterLink>
+                <RouterLink to="calc" class="side-bar-item" @click="close"> Setup & Cost Analysis </RouterLink>
+                <RouterLink to="instructions" class="side-bar-item" @click="close"> Taps Instructions </RouterLink>
             </div>
 
             <GraphControlPanel v-if="route.path.endsWith('calc')" />

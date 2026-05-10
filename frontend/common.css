@@ -25,7 +25,7 @@
     justify-content: space-around;
 }
 
-.bottom-border-muted {
+.bottom-border-subtle {
     border-bottom: 1px solid var(--border-subtle);
 }
 .overflow-x {
@@ -47,4 +47,25 @@
 .header-font {
     font-weight: 600;
     text-decoration: none;
+}
+.achieved {
+    color: var(--achieved);
+}
+.pending {
+    color: var(--pending);
+}
+.bg-very-dark {
+    background-color: var(--bg-very-dark);
+}
+.bg-dark {
+    background-color: var(--bg-dark);
+}
+.bg-medium {
+    background-color: var(--bg-medium);
+}
+.bg-bright {
+    background-color: var(--bg-bright);
+}
+.bg-very-bright {
+    background-color: var(--bg-very-bright);
 }

@@ -11,10 +11,17 @@
 button,
 input,
 select,
+option,
 textarea,
 a {
-    font: inherit;
+    font: Nunito;
+    -webkit-user-select: text;
+    -moz-user-select: text;
+    user-select: text;
+    box-sizing: border-box;
+    caret-color: auto;
 }
+
 html {
     font-family: Nunito;
     font-weight: 400;
@@ -25,6 +32,9 @@ a {
     color: inherit;
     text-decoration: none;
     font-size: inherit;
+}
+button {
+    cursor: pointer;
 }
 body {
     margin: 0;

@@ -1,6 +1,6 @@
-.card {
+.card-shell {
     background: var(--bg-dark);
-    border: 1px solid var(--border-subtle);
+    border: 1px solid var(--border-muted);
     border-radius: 8px;
 }
 
@@ -9,8 +9,7 @@
     align-items: center;
     justify-content: space-between;
     gap: 12px;
-    padding: 4px 4px;
-    border-bottom: 1px solid var(--border-subtle);
+    padding: 4px 0px;
 }
 
 .card-title {
@@ -39,5 +38,5 @@
 }
 
 .card-body {
-    padding: 10px 12px;
+    padding: 1rem;
 }

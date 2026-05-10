@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { RouterLink, RouterView, useRoute, useRouter } from "vue-router";
 import { get_icon_path } from "./Utils/Helpers";
-import { CharProfile } from "./_stores/CharacterProfile";
-import { debounced_write_roster_config, useRosterStore } from "./_stores/RosterConfig";
+import { CharProfile } from "./Stores/CharacterProfile";
+import { debounced_write_roster_config, useRosterStore } from "./Stores/RosterConfig";
 import { useMediaIsNarrow } from "./Utils/WindowSize";
 import { fetch_callback, useTimedFetch } from "./Utils/MarketDataFetcher";
 import { computed } from "vue";
@@ -54,7 +54,7 @@ const char_name_from_route = computed(() => route.path.split("/")[route.path.spl
                     <a style="text-decoration: underline" href="https://discord.gg/KWDpQyvgzc">on Discord</a>!
                 </span>
             </div> -->
-            <nav class="flex-row justify-start align-center bottom-border-muted gap-8 top-nav">
+            <nav class="flex-row justify-start align-center bottom-border-subtle gap-8 top-nav">
                 <div v-if="!is500Narrow" class="flex-row">
                     <router-link to="/">
                         <div class="brand-icon">

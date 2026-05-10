@@ -3,7 +3,7 @@ import { Upgrade } from "@/Utils/Interfaces";
 import { storeToRefs } from "pinia";
 import { ref, watch } from "vue";
 import InstructionRow from "./InstructionRow.vue";
-import { useRosterStore } from "@/_stores/RosterConfig";
+import { useRosterStore } from "@/Stores/RosterConfig";
 
 const { active_profile } = storeToRefs(useRosterStore());
 
@@ -96,7 +96,7 @@ watch(
         </div>
     </section>
 </template>
-<style>
+<style scoped>
 .hf-instructions-pane {
     width: min(100%, 700px);
 }

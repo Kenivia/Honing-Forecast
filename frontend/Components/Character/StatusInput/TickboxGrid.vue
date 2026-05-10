@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { useRosterStore } from "@/_stores/RosterConfig";
+import { useRosterStore } from "@/Stores/RosterConfig";
 import { PIECE_NAMES, NORMAL_COLS as NORMAL_COLS, NUM_PIECES as NORMAL_ROWS, ADV_COLS } from "@/Utils/Constants";
 import { get_icon_path } from "@/Utils/Helpers";
 import { UpgradeStatus } from "@/Utils/Interfaces";
@@ -169,7 +169,7 @@ function change_one_and_update_keyed(row: number, col: number, current = relevan
         </div>
     </div>
 </template>
-<style>
+<style scoped>
 .hf-label-row {
     height: 28px;
     display: flex;

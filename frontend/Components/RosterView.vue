@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { CharProfile, create_default_char_profile, recreate_char_profile } from "@/_stores/CharacterProfile";
-import { create_default_owned_input_column, useRosterStore } from "@/_stores/RosterConfig";
+import { CharProfile, create_default_char_profile, recreate_char_profile } from "@/Stores/CharacterProfile";
+import { create_default_owned_input_column, useRosterStore } from "@/Stores/RosterConfig";
 import { achieved_ilevel, format_char_name, pending_ilevel } from "@/Utils/Helpers";
 import { storeToRefs } from "pinia";
 import { ref } from "vue";
@@ -61,54 +61,61 @@ function delete_profile(index, roster_id) {
         <template #sidebar> uwuowo importing coming soon... </template>
         <template #main>
             <div :class="roster_ids.length > 1 ? 'outer-budget-grid' : 'only-one-roster'">
-                <section v-for="(roster_id, roster_index) in roster_ids" class="card" :key="roster_id">
-                    <div v-if="roster_config.profiles.length > 1" class="card-header">
+                <section v-for="(roster_id, roster_index) in roster_ids" class="card-shell" :key="roster_id">
+                    <div v-if="roster_config.profiles.length > 1" class="card-header bottom-border-subtle">
                         <div class="card-title">
                             <span class="card-title-dot" />
                             <span class="card-title" /> Roster {{ roster_index + 1 }}
                         </div>
                     </div>
+                    <div class="card-body">
+                        <div
+                            v-for="[profile, profile_index] in roster_config.profiles
+                                .map((x, index): [CharProfile, number] => [x, index])
+                                .filter((y) => y[0].roster_id === roster_id)"
+                            class="align-center justify-space-around flex-row char-row bottom-border-subtle"
+                            :key="profile_index"
+                        >
+                            <input
+                                v-model="names[profile_index]"
+                                @change="
+                                    ((names[profile_index] = format_char_name(names[profile_index], profile_index)),
+                                    (profile.char_name = names[profile_index]))
+                                "
+                            />
 
-                    <div
-                        v-for="[profile, profile_index] in roster_config.profiles
-                            .map((x, index): [CharProfile, number] => [x, index])
-                            .filter((y) => y[0].roster_id === roster_id)"
-                        class="align-center justify-space-around flex-row char-row"
-                        :key="profile_index"
-                    >
-                        <input
-                            v-model="names[profile_index]"
-                            @change="
-                                ((names[profile_index] = format_char_name(names[profile_index], profile_index)),
-                                (profile.char_name = names[profile_index]))
-                            "
-                        />
+                            <div class="flex-col char-meta">
+                                <label class="text-no-wrap achieved"
+                                    >Achieved ilevel: {{ achieved_ilevel(profile) }}</label
+                                >
+                                <label class="text-no-wrap pending"
+                                    >Pending ilevel: {{ pending_ilevel(profile) }}</label
+                                >
+                            </div>
 
-                        <div class="flex-col char-meta">
-                            <label class="text-no-wrap">Achieved ilevel: {{ achieved_ilevel(profile) }}</label>
-                            <label class="text-no-wrap">Pending ilevel: {{ pending_ilevel(profile) }}</label>
+                            <div class="flex-col">
+                                <RouterLink
+                                    :to="{ name: 'char', params: { characterName: profile.char_name } }"
+                                    class="header-button"
+                                >
+                                    Go to character
+                                </RouterLink>
+                                <button class="header-button" @click="() => duplicate(profile_index)">
+                                    Make a copy
+                                </button>
+                                <button
+                                    v-if="roster_config.profiles.length > 1"
+                                    class="header-button btn-cancel"
+                                    @click="() => delete_profile(profile_index, roster_id)"
+                                >
+                                    Delete
+                                </button>
+                            </div>
                         </div>
-
-                        <div class="flex-col">
-                            <RouterLink
-                                :to="{ name: 'char', params: { characterName: profile.char_name } }"
-                                class="header-button"
-                            >
-                                Go to character
-                            </RouterLink>
-                            <button class="header-button" @click="() => duplicate(profile_index)">Make a copy</button>
-                            <button
-                                v-if="roster_config.profiles.length > 1"
-                                class="header-button btn-cancel"
-                                @click="() => delete_profile(profile_index, roster_id)"
-                            >
-                                Delete
-                            </button>
-                        </div>
+                        <button class="header-button width-100" @click="() => add_new_char(roster_id)">
+                            Add new character
+                        </button>
                     </div>
-                    <button class="header-button width-100" @click="() => add_new_char(roster_id)">
-                        Add new character
-                    </button>
                 </section>
                 <button
                     class="header-button width-100"
@@ -144,9 +151,6 @@ function delete_profile(index, roster_id) {
 
 .char-row {
     margin-bottom: 1rem;
-    background: var(--bg-bright);
-    border-radius: 8px;
-    padding: 1rem;
     gap: 4px;
     flex-wrap: wrap;
 }

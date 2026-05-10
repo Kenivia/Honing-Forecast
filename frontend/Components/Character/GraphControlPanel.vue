@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { useRosterStore } from "@/_stores/RosterConfig";
+import { useRosterStore } from "@/Stores/RosterConfig";
 import { storeToRefs } from "pinia";
 import { ANNOTATION_LABELS, BUTTON_LABELS, CSS_NAMES } from "@/Utils/Constants";
 

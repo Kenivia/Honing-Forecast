@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { useRosterStore } from "@/_stores/RosterConfig";
+import { useRosterStore } from "@/Stores/RosterConfig";
 import { LATEST_VERSION, minor_version_equal } from "@/Utils/Changelog";
 import { storeToRefs } from "pinia";
 import { ref, watch } from "vue";
@@ -38,7 +38,7 @@ watch(
         </a>
     </footer>
 </template>
-<style>
+<style scoped>
 .hf-new-tag {
     background-color: var(--hf-text-muted);
     color: var(--hf-bg-void);

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { useRosterStore } from "@/_stores/RosterConfig";
+import { useRosterStore } from "@/Stores/RosterConfig";
 import { ALL_LABELS, T4_JUICE_LABELS } from "@/Utils/Constants";
 import { get_piece_name, get_icon_path } from "@/Utils/Helpers";
 import { Upgrade, UpgradeStatus } from "@/Utils/Interfaces";

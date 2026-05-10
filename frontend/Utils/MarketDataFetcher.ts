@@ -1,7 +1,7 @@
 import { ref, computed } from "vue";
 import { ALL_LABELS, FALLBACK_PRICES, FETCH_MARKET_COOLDOWN_MS, SERCA_TO_T4, SYNCED_LABELS } from "./Constants";
 import { storeToRefs } from "pinia";
-import { useRosterStore } from "@/_stores/RosterConfig";
+import { useRosterStore } from "@/Stores/RosterConfig";
 const OVERRIDE_DEFAULT = {
     Gold: 1,
     Silver: 0,

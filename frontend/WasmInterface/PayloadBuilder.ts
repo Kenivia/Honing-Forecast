@@ -1,8 +1,8 @@
 import { ALL_LABELS, BUNDLE_SIZE } from "@/Utils/Constants";
-import { TreatmentPlan } from "@/_stores/CharacterProfile";
+import { TreatmentPlan } from "@/Stores/CharacterProfile";
 import { OneMaterialInput, Upgrade, WasmOp } from "@/Utils/Interfaces";
 import { toRaw } from "vue";
-import { useRosterStore } from "@/_stores/RosterConfig";
+import { useRosterStore } from "@/Stores/RosterConfig";
 import { get_upgrade_map, KeyedUpgrades, OneUpgradeInput } from "@/Utils/KeyedUpgrades";
 import { input_column_to_num } from "@/Utils/InputColumn";
 import { storeToRefs } from "pinia";

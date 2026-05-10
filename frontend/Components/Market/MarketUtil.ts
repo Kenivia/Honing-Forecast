@@ -1,4 +1,4 @@
-import { useRosterStore } from "@/_stores/RosterConfig";
+import { useRosterStore } from "@/Stores/RosterConfig";
 import { storeToRefs } from "pinia";
 import { nextTick } from "vue";
 

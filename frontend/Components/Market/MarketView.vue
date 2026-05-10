@@ -1,19 +1,8 @@
 <script setup lang="ts">
-import { useRosterStore as useRosterStore } from "@/_stores/RosterConfig";
-import {
-    ALL_LABELS,
-    BUDGET_NARROW_WIDTH,
-    BUNDLE_SIZE,
-    SERCA_SYNC_MAP,
-    SERCA_TO_T4,
-    SYNCED_LABELS,
-    TIER_OPTIONS,
-} from "@/Utils/Constants";
+import { useRosterStore as useRosterStore } from "@/Stores/RosterConfig";
+import { ALL_LABELS, SERCA_SYNC_MAP, SYNCED_LABELS } from "@/Utils/Constants";
 import { storeToRefs } from "pinia";
-import MaterialCell from "@/Components/Common/MaterialCell.vue";
-import { computed, nextTick, ref, watch, watchEffect } from "vue";
-import { SelectButton } from "primevue";
-import { useMediaIsNarrow } from "@/Utils/WindowSize";
+import { computed, watch, watchEffect } from "vue";
 import TierConvertButton from "../Common/TierConvertButton.vue";
 import { fetch_callback, useTimedFetch } from "@/Utils/MarketDataFetcher";
 import { input_column_to_num, parse_input } from "@/Utils/InputColumn";
@@ -126,19 +115,19 @@ watch(
 
 <template>
     <Sidebar header="Market & mats">
-        <template #sidebar="{ close }">
+        <template #sidebar>
             <!-- <SelectButton
                 v-if="isNarrow"
                 v-model="roster_config.tier"
                 :options="TIER_OPTIONS"
                 option-label="label"
                 option-value="value"
-                class="hf-roster-tier-select"
+                class="roster-tier-select"
                 :option-disabled="(data) => data.value === roster_config.tier"
             /> -->
 
-            <div style="display: flex; flex-direction: column; align-items: center">
-                <div style="display: flex; flex-direction: row; align-items: center">
+            <div class="flex-col align-center">
+                <div class="flex-row align-center justify-space-around gap-8">
                     <select
                         v-model="roster_config.region"
                         @change="
@@ -150,7 +139,7 @@ watch(
                         <option>NAE</option>
                         <option>EUC</option>
                     </select>
-                    <span style="width: 20px; text-wrap-mode: nowrap">
+                    <span>
                         {{
                             !disabled && roster_config.latest_market_data && !roster_config.market_fetch_failed
                                 ? "✅"
@@ -169,10 +158,10 @@ watch(
                 </button>
             </div>
 
-            <div class="hf-shard-size-selector">
-                <div style="display: flex; flex-direction: row; align-items: center">
+            <div class="shard-size-selector">
+                <div class="flex-row align-center gap-8">
                     <label>Shard bag size:</label>
-                    <select v-model.number="roster_config.selected_shard_bag_size" class="hf-shard-size-select">
+                    <select v-model.number="roster_config.selected_shard_bag_size" class="shard-size-select">
                         <option value="1000">x1000</option>
                         <option value="2000">x2000</option>
                         <option value="3000">x3000</option>
@@ -182,8 +171,12 @@ watch(
             </div>
             <div v-if="roster_ids.length > 1">
                 <span> Active Roster: </span>
-                <select :value="selected_roster" class="hf-shard-size-select" @change="change_roster">
-                    <option v-for="(profile_index, name) in representative_profile_indices" :value="name">
+                <select :value="selected_roster" class="shard-size-select" @change="change_roster">
+                    <option
+                        v-for="(profile_index, name) in representative_profile_indices"
+                        :value="name"
+                        :key="profile_index"
+                    >
                         {{ name }}
                     </option>
                 </select>
@@ -195,45 +188,21 @@ watch(
             ></TierConvertButton>
         </template>
 
-        <template #main key="market"> <BudgetGrid /> </template>
+        <template #main> <BudgetGrid /> </template>
     </Sidebar>
 </template>
-<style>
-.hf-shard-size-selector {
+<style scoped>
+.shard-size-selector {
     display: flex;
     align-items: center;
     gap: 12px;
     margin-bottom: 16px;
-    font: 500 12px/1 var(--hf-font-body);
-    color: var(--hf-text-muted);
+    font: 500 12px/1 var(--font-body);
+    color: var(--text-muted);
     flex-direction: column;
 }
 
-.hf-shard-size-select {
-    padding: 6px 10px;
-    background: transparent;
-    border: 1px solid var(--hf-border-subtle);
-    color: var(--hf-text-muted);
-    font: 500 12px/1 var(--hf-font-body);
-    cursor: pointer;
-    transition:
-        border-color 0.2s ease,
-        color 0.2s ease,
-        background-color 0.2s ease;
-    outline: none;
-}
-
-.hf-shard-size-select:hover {
-    border-color: var(--hf-gold-dim);
-    color: var(--hf-gold);
-}
-
-.hf-shard-size-select:focus-visible {
-    outline: 2px solid var(--hf-gold-dim);
-    outline-offset: 2px;
-    border-color: var(--hf-gold-dim);
-} /* Container */
-.hf-roster-tier-select.hf-roster-tier-select {
+.roster-tier-select {
     display: inline-flex;
     gap: 6px;
     background: transparent;
@@ -242,12 +211,12 @@ watch(
 }
 
 /* Each button */
-.hf-roster-tier-select .p-togglebutton.p-togglebutton {
-    color: var(--hf-text-muted);
+.roster-tier-select .p-togglebutton.p-togglebutton {
+    color: var(--text-muted);
     background: transparent;
-    border: 1px solid var(--hf-border-subtle);
+    border: 1px solid var(--border-subtle);
     /* border-radius: 999px; */
-    font: 500 11px/1 var(--hf-font-body);
+    font: 500 11px/1 var(--font-body);
     letter-spacing: 0.08em;
     text-transform: uppercase;
     padding: 7px 12px;
@@ -262,43 +231,43 @@ watch(
 }
 
 /* Divider */
-.hf-roster-tier-select .p-togglebutton.p-togglebutton:not(:first-child)::before {
+.roster-tier-select .p-togglebutton.p-togglebutton:not(:first-child)::before {
     content: "";
     position: absolute;
     left: -4px;
     top: 20%;
     height: 60%;
     width: 1px;
-    background: var(--hf-border-subtle);
+    background: var(--border-subtle);
     opacity: 0.6;
     pointer-events: none;
 }
 
 /* Hover (unselected) */
-.hf-roster-tier-select .p-togglebutton.p-togglebutton:not(.p-togglebutton-checked):hover {
-    border-color: var(--hf-gold-dim);
-    color: var(--hf-gold);
+.roster-tier-select .p-togglebutton.p-togglebutton:not(.p-togglebutton-checked):hover {
+    border-color: var(--gold-dim);
+    color: var(--gold);
     background: rgba(201, 168, 76, 0.08);
 }
 
 /* Selected */
-.hf-roster-tier-select .p-togglebutton.p-togglebutton-checked.p-togglebutton-checked {
-    color: var(--hf-gold);
+.roster-tier-select .p-togglebutton.p-togglebutton-checked.p-togglebutton-checked {
+    color: var(--gold);
     background: rgba(201, 168, 76, 0.15);
-    border-color: var(--hf-gold-dim);
-    box-shadow: 0 0 0 1px var(--hf-gold-dim);
+    border-color: var(--gold-dim);
+    box-shadow: 0 0 0 1px var(--gold-dim);
     cursor: default;
 }
 
 /* Selected hover suppression */
-.hf-roster-tier-select .p-togglebutton.p-togglebutton-checked.p-togglebutton-checked:hover {
+.roster-tier-select .p-togglebutton.p-togglebutton-checked.p-togglebutton-checked:hover {
     background: rgba(201, 168, 76, 0.15);
-    border-color: var(--hf-gold-dim);
+    border-color: var(--gold-dim);
 }
 
 /* Focus ring */
-.hf-roster-tier-select .p-togglebutton.p-togglebutton:focus-visible {
-    outline: 2px solid var(--hf-gold-dim);
+.roster-tier-select .p-togglebutton.p-togglebutton:focus-visible {
+    outline: 2px solid var(--gold-dim);
     outline-offset: 2px;
 }
 </style>

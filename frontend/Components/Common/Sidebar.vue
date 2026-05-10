@@ -16,35 +16,35 @@ const close = () => (sidebarOpen.value = false);
 
 <template>
     <div class="main-slot">
-        <div class="sb-layout">
-            <button v-if="isNarrow" class="sb-burger" @click="open" aria-label="Open navigation">
+        <div class="layout">
+            <button v-if="isNarrow" class="burger" @click="open" aria-label="Open navigation">
                 <span /><span /><span />
             </button>
 
-            <Transition name="sb-backdrop">
-                <div v-if="isNarrow && sidebarOpen" class="sb-backdrop" @click="close" />
+            <Transition name="backdrop">
+                <div v-if="isNarrow && sidebarOpen" class="backdrop" @click="close" />
             </Transition>
 
             <nav
-                class="sb-side-bar"
+                class="flex-col side-bar overflow-y bg-dark"
                 :class="{
-                    'sb-side-bar--narrow': isNarrow,
-                    'sb-side-bar--open': isNarrow && sidebarOpen,
+                    'side-bar--narrow': isNarrow,
+                    'side-bar--open': isNarrow && sidebarOpen,
                 }"
             >
-                <span class="hf-side-bar-header hf-side-bar-title">{{ props.header }} </span>
+                <span class="align-center side-bar-header bottom-border-subtle">{{ props.header }} </span>
                 <slot name="sidebar" :close="close" :is-narrow="isNarrow" />
                 <Footer />
             </nav>
 
-            <div class="sb-main-stage">
+            <div class="main-stage">
                 <slot name="main" />
             </div>
         </div>
     </div>
 </template>
 
-<style>
+<style scoped>
 .main-slot {
     flex-grow: 1;
     display: flex;
@@ -52,93 +52,50 @@ const close = () => (sidebarOpen.value = false);
 }
 
 /* ── Sidebar header (title + close button) ───────────────── */
-.hf-side-bar-header {
-    display: flex;
-    align-items: center;
+.side-bar-header {
     justify-content: space-between;
-    padding: 4px 4px 12px;
-    border-bottom: 1px solid var(--hf-border);
+    padding: 0px 8px 12px;
     margin-top: -46px;
+    margin-left: -8px;
     width: 100%;
     justify-self: flex-start;
     position: absolute;
-}
-/* @media (max-width: 1174px) {
-    .hf-side-bar-header {
-        margin-top: 0;
-    }
-} */
-.hf-side-bar-title {
-    color: var(--hf-text-muted);
-    user-select: none;
-    align-items: center;
+    color: var(--text-muted);
     font-size: 1.1rem;
 }
 
 /* ── Nav links ───────────────────────────────────────────── */
-.hf-side-bar-item {
-    /* display: block; */
-    padding: 8px 12px;
-    border-radius: 6px;
-    color: var(--hf-text-bright);
-    text-decoration: none;
-    white-space: nowrap;
-    text-overflow: ellipsis;
-    overflow: hidden;
-    transition:
-        color 0.1s ease,
-        background-color 0.1s ease;
-    cursor: pointer;
-}
 
-.hf-side-bar-item:hover {
-    background-color: var(--hf-bg-card);
-}
-
-/* RouterLink active state */
-.hf-side-bar-item.router-link-active {
-    color: var(--hf-gold);
-    background-color: var(--hf-bg-card);
-}
-
-.sb-layout {
+.layout {
     display: flex;
     flex-direction: row;
     min-height: 100%;
     flex-grow: 1;
 }
 
-.sb-side-bar {
+.side-bar {
     width: 200px;
     flex-shrink: 0;
-    display: flex;
-    flex-direction: column;
     gap: 2px;
     padding: calc(234px + 56px) 8px 12px 8px;
-    background-color: var(--hf-bg-deep);
-    border-right: 1px solid var(--hf-border);
-    overflow: scroll;
-
+    border-right: 1px solid var(--border-subtle);
     height: max(calc(100vh + 234px - 50px), 100%);
-
     top: calc(50px - 234px);
     justify-content: space-between;
     position: fixed;
     z-index: 1;
-    overflow-y: auto;
-    overflow-x: hidden;
 }
-.sb-side-bar:nth-child(2) {
+.side-bar:nth-child(2) {
     margin-top: 100px;
 }
 @media (max-width: 1174px) {
-    .sb-side-bar {
+    .side-bar {
         height: calc(100vh);
         padding-top: 56px;
         top: 0px;
     }
 }
-.sb-side-bar--narrow {
+.side-bar--narrow {
     position: fixed;
     top: 0;
     left: 0;
@@ -151,12 +108,12 @@ const close = () => (sidebarOpen.value = false);
     box-shadow: none;
 }
 
-.sb-side-bar--open {
+.side-bar--open {
     transform: translateX(0);
     box-shadow: 4px 0 24px rgba(0, 0, 0, 0.5);
 }
 
-.sb-burger {
+.burger {
     position: fixed;
     top: 70px;
     left: 14px;
@@ -169,42 +126,42 @@ const close = () => (sidebarOpen.value = false);
     align-items: center;
     gap: 5px;
     padding: 6px;
-    background: var(--hf-bg-raised);
-    border: 2px solid var(--hf-text-bright);
+    background: var(--bg-bright);
+    border: 2px solid var(--text-bright);
     border-radius: 12px;
     cursor: pointer;
     transition: background-color 0.1s ease;
 }
 
-.sb-burger:hover {
-    background-color: var(--hf-bg-hover);
+.burger:hover {
+    background-color: var(--bg-very-bright);
 }
 
-.sb-burger span {
+.burger span {
     display: block;
     width: 22px;
     height: 2px;
-    background: var(--hf-text-bright);
+    background: var(--text-bright);
     border-radius: 2px;
 }
 
-.sb-backdrop {
+.backdrop {
     position: fixed;
     inset: 0;
     z-index: 150;
     background: rgba(0, 0, 0, 0.5);
 }
 
-.sb-backdrop-enter-active,
-.sb-backdrop-leave-active {
+.backdrop-enter-active,
+.backdrop-leave-active {
     transition: opacity 0.1s ease;
 }
-.sb-backdrop-enter-from,
-.sb-backdrop-leave-to {
+.backdrop-enter-from,
+.backdrop-leave-to {
     opacity: 0;
 }
 
-.sb-main-stage {
+.main-stage {
     display: flex;
     flex-direction: column;
     gap: 10px;
@@ -218,7 +175,7 @@ const close = () => (sidebarOpen.value = false);
 }
 
 @media (max-width: 1174px) {
-    .sb-main-stage {
+    .main-stage {
         margin-left: 0px;
         margin-right: auto;
     }

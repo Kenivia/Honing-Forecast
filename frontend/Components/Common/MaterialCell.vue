@@ -1,26 +1,32 @@
 <script setup lang="ts">
-import { cssVar, get_icon_path } from "@/Utils/Helpers"
-import { get_modified_cell } from "@/Utils/InputColumn"
-import { InputColumn } from "@/Utils/Interfaces"
-import { computed, ref } from "vue"
+import { cssVar, get_icon_path } from "@/Utils/Helpers";
+import { get_modified_cell } from "@/Utils/InputColumn";
+import { InputColumn } from "@/Utils/Interfaces";
+import { computed, ref } from "vue";
 
 const props = defineProps<{
-    input_column: InputColumn | number[]
-    row: number
-    label?: string
-    setter?: (val: string) => void
-    suffix?: string
-    input_color?: string
-    is_percentage?: boolean
-    hide_tick?: boolean
-    treat_as_two?: boolean
-    callback?: () => void
-}>()
+    input_column: InputColumn | number[];
+    row: number;
+    label?: string;
+    setter?: (val: string) => void;
+    suffix?: string;
+    input_color?: string;
+    is_percentage?: boolean;
+    hide_tick?: boolean;
+    treat_as_two?: boolean;
+    callback?: () => void;
+}>();
 
 const resolved_color = computed(() => {
-    return cssVar(props.input_color, props.input_color)
-})
-const this_data = ref(String(!Array.isArray(props.input_column) ? (props.input_column as InputColumn).data[props.row] : props.input_column[props.row]))
+    return cssVar(props.input_color, props.input_color);
+});
+const this_data = ref(
+    String(
+        !Array.isArray(props.input_column)
+            ? (props.input_column as InputColumn).data[props.row]
+            : props.input_column[props.row],
+    ),
+);
 </script>
 
 <template>
@@ -43,7 +49,9 @@ const this_data = ref(String(!Array.isArray(props.input_column) ? (props.input_c
             :style="{ color: resolved_color }"
             v-model="this_data"
             @change="
-                ((this_data = get_modified_cell(input_column, row, $event)), setter(get_modified_cell(input_column, row, $event)), callback ? callback() : null)
+                ((this_data = get_modified_cell(input_column, row, $event)),
+                setter(get_modified_cell(input_column, row, $event)),
+                callback ? callback() : null)
             "
         />
         <label v-else class="hf-material-cell-result" :style="{ color: resolved_color }" type="text">{{
@@ -58,7 +66,7 @@ const this_data = ref(String(!Array.isArray(props.input_column) ? (props.input_c
     </div>
     <!-- <input v-if="customLeftovers" type="text" :value="matsLeftover[label]" @input="setRecordValue(matsLeftover, label, $event)" /> -->
 </template>
-<style>
+<style scoped>
 .hf-material-cell {
     --hf-cell-input-width: 100px;
     --hf-cell-label-width: 150px;

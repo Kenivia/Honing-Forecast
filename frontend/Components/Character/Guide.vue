@@ -24,7 +24,7 @@ const route = useRoute()
     </div>
 </template>
 
-<style>
+<style scoped>
 .change-log-card {
     width: min(100%, 1000px);
     padding: 12px;

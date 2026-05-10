@@ -1,4 +1,4 @@
-import { useRosterStore } from "@/_stores/RosterConfig";
+import { useRosterStore } from "@/Stores/RosterConfig";
 import { DEFAULT_ARTISAN_MULTIPLIER, JOINED_ADV_JUICE } from "@/Utils/Constants";
 import { input_column_to_num } from "@/Utils/InputColumn";
 import { Upgrade } from "@/Utils/Interfaces";

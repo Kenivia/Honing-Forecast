@@ -7,7 +7,8 @@ import "./theme.css";
 import "./card.css";
 import "./common.css";
 import "./index.css";
-import router from "./_router";
+import "./sidebar.css";
+import router from "./Router";
 
 const pinia = createPinia();
 const app = createApp(App);

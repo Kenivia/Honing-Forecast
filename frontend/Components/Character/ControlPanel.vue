@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { TreatmentPlan } from "@/_stores/CharacterProfile";
-import { useRosterStore } from "@/_stores/RosterConfig";
+import { TreatmentPlan } from "@/Stores/CharacterProfile";
+import { useRosterStore } from "@/Stores/RosterConfig";
 import { build_payload } from "@/WasmInterface/PayloadBuilder";
 import { storeToRefs } from "pinia";
 import { ref, watchEffect } from "vue";

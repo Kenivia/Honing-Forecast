@@ -1,8 +1,8 @@
-import { CharProfile } from "@/_stores/CharacterProfile";
+import { CharProfile } from "@/Stores/CharacterProfile";
 import { ADV_COLS, IconMap, NUM_PIECES, PIECE_NAMES, PLUS_TIER_CONVERSION } from "./Constants";
 import { Upgrade, UpgradeStatus } from "./Interfaces";
 import { storeToRefs } from "pinia";
-import { useRosterStore } from "@/_stores/RosterConfig";
+import { useRosterStore } from "@/Stores/RosterConfig";
 
 export function has_upgrades_in_range(low: number, high: number, is_weapon: boolean, is_adv: boolean) {
     // inclusive

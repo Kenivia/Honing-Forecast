@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import Sidebar from "@/Components/Common/SideBar.vue";
-import { useRosterStore } from "@/_stores/RosterConfig";
-import { all_change_logs, ALL_VERSIONS, LATEST_VERSION } from "@/Utils/Changelog";
+import { useRosterStore } from "@/Stores/RosterConfig";
+import { ALL_VERSIONS, LATEST_VERSION } from "@/Utils/Changelog";
 import { storeToRefs } from "pinia";
-import { computed, defineAsyncComponent, onMounted, ref, watchEffect } from "vue";
-import { RouterLink, RouterView, useRoute } from "vue-router";
+import { ref, watchEffect } from "vue";
+import { RouterLink, useRoute } from "vue-router";
 import { marked } from "marked";
 
 const route = useRoute();
@@ -41,7 +41,7 @@ watchEffect(async () => {
             <div style="display: flex; flex-direction: column">
                 <RouterLink
                     :to="{ name: 'change-logs', params: { version: 'WIP' } }"
-                    class="hf-side-bar-item"
+                    class="side-bar-item"
                     @click="close"
                 >
                     Work in Progress
@@ -49,33 +49,36 @@ watchEffect(async () => {
                 <RouterLink
                     v-for="version in ALL_VERSIONS"
                     :to="'/change-logs/' + version"
-                    class="hf-side-bar-item"
+                    class="side-bar-item"
                     @click="close"
+                    :key="version"
                 >
                     {{ version }}
                 </RouterLink>
             </div>
         </template>
 
-        <template #main key="changelog">
+        <template #main>
             <div class="hf-card change-log-card">
                 <div style="font-size: 60px; text-align: center; margin-top: 70px" v-if="loading">Loading...</div>
                 <div v-else class="prose" v-html="html" /></div
         ></template>
     </Sidebar>
 </template>
+
+<!-- this style cannot be scoped cos it needs to go deep into the html -->
 <style>
 .change-log-card {
     width: min(100%, 1000px);
     padding: 12px;
 }
 .prose h2 {
-    border-bottom: 1px solid var(--hf-border);
+    border-bottom: 1px solid var(--border-medium);
 }
 .prose tr {
     display: grid;
-    grid-template-columns: 80px 710px 80px 50px;
-    border-bottom: 1px solid var(--hf-border-subtle);
+    grid-template-columns: 100px 710px 80px 50px;
+    border-bottom: 1px solid var(--border-subtle);
     gap: 10px;
     align-items: flex-start;
 }
@@ -91,7 +94,7 @@ watchEffect(async () => {
 }
 
 .prose a {
-    color: var(--hf-gold);
+    color: var(--gold);
     text-decoration: underline;
 }
 </style>
