@@ -1,11 +1,11 @@
-import { useRosterStore } from "@/Stores/RosterConfig"
-import { storeToRefs } from "pinia"
-import { nextTick } from "vue"
+import { useRosterStore } from "@/_stores/RosterConfig";
+import { storeToRefs } from "pinia";
+import { nextTick } from "vue";
 
 export async function force_rerender() {
-    const { roster_config } = storeToRefs(useRosterStore())
+    const { roster_config } = storeToRefs(useRosterStore());
 
-    roster_config.value.market_rerender_trigger = false
-    await nextTick()
-    roster_config.value.market_rerender_trigger = true
+    roster_config.value.market_rerender_trigger = false;
+    await nextTick();
+    roster_config.value.market_rerender_trigger = true;
 }

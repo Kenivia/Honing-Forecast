@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import { useRosterStore } from "@/Stores/RosterConfig"
-import { storeToRefs } from "pinia"
-import { ANNOTATION_LABELS, BUTTON_LABELS, CSS_NAMES } from "@/Utils/Constants"
+import { useRosterStore } from "@/_stores/RosterConfig";
+import { storeToRefs } from "pinia";
+import { ANNOTATION_LABELS, BUTTON_LABELS, CSS_NAMES } from "@/Utils/Constants";
 
-const store = useRosterStore()
-const { roster_config, enabled_annotations } = storeToRefs(store)
+const store = useRosterStore();
+const { roster_config, enabled_annotations } = storeToRefs(store);
 </script>
 <template>
     <section class="hf-control-panel">
@@ -65,25 +65,25 @@ const { roster_config, enabled_annotations } = storeToRefs(store)
 }
 .hf-graph-tab-avg.active {
     background: var(--hf-graph-average-color);
-    border-color: var(--separator-color);
+    border-color: var(--border-medium);
     color: var(--hf-bg-deep);
 }
 
 .hf-graph-tab-bound.active {
     background: var(--hf-graph-bound-color);
-    border-color: var(--separator-color);
+    border-color: var(--border-medium);
     color: var(--hf-bg-deep);
 }
 
 .hf-graph-tab-roster-bound.active {
     background: var(--hf-graph-roster-color);
-    border-color: var(--separator-color);
+    border-color: var(--border-medium);
     color: var(--hf-bg-deep);
 }
 
 .hf-graph-tab-tradable.active {
     background: var(--hf-graph-tradable-color);
-    border-color: var(--separator-color);
+    border-color: var(--border-medium);
     color: var(--hf-bg-deep);
 }
 </style>

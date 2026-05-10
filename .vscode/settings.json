@@ -1,39 +1,46 @@
 {
-	"autopep8.args": ["--line-length 160"],
-	"editor.defaultFormatter": "esbenp.prettier-vscode",
-	"git.confirmSync": false,
-	"git.enableSmartCommit": true,
+    "autopep8.args": ["--line-length 160"],
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "git.confirmSync": false,
+    "git.enableSmartCommit": true,
 
-	"editor.pasteAs.preferences": ["chat.attach.text"],
-	"[python]": {
-		"editor.defaultFormatter": "ms-python.autopep8"
-	},
+    "editor.pasteAs.preferences": ["chat.attach.text"],
+    "[python]": {
+        "editor.defaultFormatter": "ms-python.autopep8"
+    },
 
-	"[rust]": {
-		"editor.defaultFormatter": "rust-lang.rust-analyzer"
-	},
-	"[markdown]": {
-		"editor.defaultFormatter": "DavidAnson.vscode-markdownlint"
-	},
-	"markdownlint.config": {
-		"no-duplicate-heading": {
-			"siblings_only": true
-		}
-	},
+    "[rust]": {
+        "editor.defaultFormatter": "rust-lang.rust-analyzer"
+    },
+    "[markdown]": {
+        "editor.defaultFormatter": "DavidAnson.vscode-markdownlint"
+    },
+    "markdownlint.config": {
+        "no-duplicate-heading": {
+            "siblings_only": true
+        }
+    },
 
-	"eslint.format.enable": true,
-	"js/ts.format.enabled": false,
+    "eslint.format.enable": true,
+    "js/ts.format.enabled": false,
 
-	"eslint.validate": ["javascript", "typescript", "vue"],
+    "eslint.validate": ["javascript", "typescript", "vue"],
 
-	"editor.formatOnSave": true,
-	"editor.formatOnSaveMode": "file",
-	"editor.codeActionsOnSave": {
-		"source.fixAll.eslint": "always"
-	},
-	"prettier.printWidth": 120,
-	"prettier.tabWidth": 4,
-	"prettier.useTabs": false,
-	"eslint.lintTask.enable": true,
-	"eslint.run": "onSave"
+    "editor.formatOnSave": true,
+    "editor.formatOnSaveMode": "file",
+    "editor.codeActionsOnSave": {
+        "source.fixAll.eslint": "always"
+    },
+    "prettier.printWidth": 120,
+    "prettier.tabWidth": 4,
+    "prettier.useTabs": false,
+    "eslint.lintTask.enable": true,
+    "eslint.run": "onSave",
+
+    "vue.inlayHints.destructuredProps": true,
+    "vue.hover.rich": true,
+    "vue.inlayHints.missingProps": true,
+    "vue.inlayHints.inlineHandlerLeading": true,
+    "vue.inlayHints.optionsWrapper": true,
+    "vue.suggest.propNameCasing": "alwaysCamelCase"
 }

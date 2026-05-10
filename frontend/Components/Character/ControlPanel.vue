@@ -1,33 +1,33 @@
 <script setup lang="ts">
-import { TreatmentPlan } from "@/Stores/CharacterProfile"
-import { useRosterStore } from "@/Stores/RosterConfig"
-import { build_payload } from "@/WasmInterface/PayloadBuilder"
-import { storeToRefs } from "pinia"
-import { ref, watchEffect } from "vue"
+import { TreatmentPlan } from "@/_stores/CharacterProfile";
+import { useRosterStore } from "@/_stores/RosterConfig";
+import { build_payload } from "@/WasmInterface/PayloadBuilder";
+import { storeToRefs } from "pinia";
+import { ref, watchEffect } from "vue";
 
-const store = useRosterStore()
-const { active_profile, roster_config } = storeToRefs(store)
+const store = useRosterStore();
+const { active_profile, roster_config } = storeToRefs(store);
 
 function resetActive() {
-    store.resetActiveProfile()
+    store.resetActiveProfile();
 }
 
 // This is useful for producing payloads to test the rust side
 function copyPayload() {
-    const payload = JSON.stringify(build_payload(), null, 2)
-    navigator.clipboard?.writeText(payload).catch(() => undefined)
+    const payload = JSON.stringify(build_payload(), null, 2);
+    navigator.clipboard?.writeText(payload).catch(() => undefined);
 }
 
 // Currently TreatRosterAsTradable is not selectable
-const treatment_tick = ref(active_profile.value.optimizer_treatment_plan == TreatmentPlan.TreatRosterAsBound)
+const treatment_tick = ref(active_profile.value.optimizer_treatment_plan == TreatmentPlan.TreatRosterAsBound);
 watchEffect(() => {
     // console.log("changed")
     if (treatment_tick.value) {
-        active_profile.value.optimizer_treatment_plan = TreatmentPlan.TreatRosterAsBound
+        active_profile.value.optimizer_treatment_plan = TreatmentPlan.TreatRosterAsBound;
     } else {
-        active_profile.value.optimizer_treatment_plan = TreatmentPlan.TreatTradableAsBound
+        active_profile.value.optimizer_treatment_plan = TreatmentPlan.TreatTradableAsBound;
     }
-})
+});
 </script>
 <template>
     <section class="hf-control-panel">

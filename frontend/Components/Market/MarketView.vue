@@ -1,79 +1,106 @@
 <script setup lang="ts">
-import { useRosterStore as useRosterStore } from "@/Stores/RosterConfig"
-import { ALL_LABELS, BUDGET_NARROW_WIDTH, BUNDLE_SIZE, SERCA_SYNC_MAP, SERCA_TO_T4, SYNCED_LABELS, TIER_OPTIONS } from "@/Utils/Constants"
-import { storeToRefs } from "pinia"
-import MaterialCell from "@/Components/Common/MaterialCell.vue"
-import { computed, nextTick, ref, watch, watchEffect } from "vue"
-import { SelectButton } from "primevue"
-import { useMediaIsNarrow } from "@/Utils/WindowSize"
-import TierConvertButton from "../Common/TierConvertButton.vue"
-import { fetch_callback, useTimedFetch } from "@/Utils/MarketDataFetcher"
-import { input_column_to_num, parse_input } from "@/Utils/InputColumn"
-import Sidebar from "../Common/SideBar.vue"
-import BudgetGrid from "./BudgetGrid.vue"
-import { force_rerender } from "./MarketUtil"
+import { useRosterStore as useRosterStore } from "@/_stores/RosterConfig";
+import {
+    ALL_LABELS,
+    BUDGET_NARROW_WIDTH,
+    BUNDLE_SIZE,
+    SERCA_SYNC_MAP,
+    SERCA_TO_T4,
+    SYNCED_LABELS,
+    TIER_OPTIONS,
+} from "@/Utils/Constants";
+import { storeToRefs } from "pinia";
+import MaterialCell from "@/Components/Common/MaterialCell.vue";
+import { computed, nextTick, ref, watch, watchEffect } from "vue";
+import { SelectButton } from "primevue";
+import { useMediaIsNarrow } from "@/Utils/WindowSize";
+import TierConvertButton from "../Common/TierConvertButton.vue";
+import { fetch_callback, useTimedFetch } from "@/Utils/MarketDataFetcher";
+import { input_column_to_num, parse_input } from "@/Utils/InputColumn";
+import Sidebar from "../Common/SideBar.vue";
+import BudgetGrid from "./BudgetGrid.vue";
+import { force_rerender } from "./MarketUtil";
 
-const roster_store = useRosterStore()
-const { roster_config, active_roster_mats_owned, active_tradable_mats_owned, all_profiles, roster_ids, active_profile } = storeToRefs(roster_store)
+const roster_store = useRosterStore();
+const {
+    roster_config,
+    active_roster_mats_owned,
+    active_tradable_mats_owned,
+    all_profiles,
+    roster_ids,
+    active_profile,
+} = storeToRefs(roster_store);
 
 const { disabled, start_fetch } = useTimedFetch((result, selected, price) => {
-    fetch_callback(result, selected, price)
-    force_rerender()
-})
+    fetch_callback(result, selected, price);
+    force_rerender();
+});
 
 function convert_roster_mats_to_serca() {
     for (let serca_index = 0; serca_index < ALL_LABELS[1].length; serca_index++) {
         if (!SYNCED_LABELS.includes(ALL_LABELS[1][serca_index])) {
-            let T4_index = ALL_LABELS[0].findIndex((x) => x == ALL_LABELS[1][serca_index].replace("Serca ", ""))
+            let T4_index = ALL_LABELS[0].findIndex((x) => x == ALL_LABELS[1][serca_index].replace("Serca ", ""));
 
             // all become roster bound
             active_roster_mats_owned.value[1].data[serca_index] = (
                 input_column_to_num(active_roster_mats_owned.value[1])[T4_index] +
-                parse_input(active_tradable_mats_owned.value[0], T4_index, String(input_column_to_num(active_tradable_mats_owned.value[0])[T4_index] * 0.2))
-            ).toLocaleString()
-            active_tradable_mats_owned.value[0].data[T4_index] = "0"
+                parse_input(
+                    active_tradable_mats_owned.value[0],
+                    T4_index,
+                    String(input_column_to_num(active_tradable_mats_owned.value[0])[T4_index] * 0.2),
+                )
+            ).toLocaleString();
+            active_tradable_mats_owned.value[0].data[T4_index] = "0";
             active_roster_mats_owned.value[1].data[serca_index] = (
                 input_column_to_num(active_roster_mats_owned.value[1])[T4_index] +
-                parse_input(active_roster_mats_owned.value[0], T4_index, String(input_column_to_num(active_roster_mats_owned.value[0])[T4_index] * 0.2))
-            ).toLocaleString()
-            active_roster_mats_owned.value[0].data[T4_index] = "0"
+                parse_input(
+                    active_roster_mats_owned.value[0],
+                    T4_index,
+                    String(input_column_to_num(active_roster_mats_owned.value[0])[T4_index] * 0.2),
+                )
+            ).toLocaleString();
+            active_roster_mats_owned.value[0].data[T4_index] = "0";
         }
     }
-    force_rerender()
+    force_rerender();
 }
 watchEffect(() => {
-    let t4_price = input_column_to_num(roster_store.roster_config.mats_prices[0])
-    let serca_price = input_column_to_num(roster_store.roster_config.mats_prices[1])
-    roster_store.roster_config.effective_serca_price = ALL_LABELS[1].map((_, index) => Math.min(t4_price[index] * 5, serca_price[index]))
-})
+    let t4_price = input_column_to_num(roster_store.roster_config.mats_prices[0]);
+    let serca_price = input_column_to_num(roster_store.roster_config.mats_prices[1]);
+    roster_store.roster_config.effective_serca_price = ALL_LABELS[1].map((_, index) =>
+        Math.min(t4_price[index] * 5, serca_price[index]),
+    );
+});
 
 function find_representative(): Record<string, number> {
-    let out = {}
-    let seen = {}
-    let roster_index = 1
+    let out = {};
+    let seen = {};
+    let roster_index = 1;
     for (const [profile_index, profile] of all_profiles.value.entries()) {
         if (!Object.hasOwn(seen, profile.roster_id)) {
-            seen[profile.roster_id] = roster_index
-            let name = "Roster " + String(roster_index)
-            out[name] = profile_index
-            roster_index += 1
+            seen[profile.roster_id] = roster_index;
+            let name = "Roster " + String(roster_index);
+            out[name] = profile_index;
+            roster_index += 1;
         }
     }
-    return out
+    return out;
 }
-const representative_profile_indices = computed(find_representative)
+const representative_profile_indices = computed(find_representative);
 const selected_roster = computed(() => {
-    let out = Object.entries(representative_profile_indices.value).find(([, v]) => all_profiles.value[v].roster_id === active_profile.value.roster_id)[0]
+    let out = Object.entries(representative_profile_indices.value).find(
+        ([, v]) => all_profiles.value[v].roster_id === active_profile.value.roster_id,
+    )[0];
     // console.log(out)
-    return out
-})
+    return out;
+});
 function change_roster(event) {
     // console.log(representative_profile_indices.value[event.target.value])
-    roster_store.switchProfile(representative_profile_indices.value[event.target.value])
-    force_rerender()
+    roster_store.switchProfile(representative_profile_indices.value[event.target.value]);
+    force_rerender();
 }
 
-const T4_indices_to_watch = SERCA_SYNC_MAP.map(({ T4_index }) => T4_index)
+const T4_indices_to_watch = SERCA_SYNC_MAP.map(({ T4_index }) => T4_index);
 
 watch(
     // one way sync from T4 to Serca, the ui modifies the T4 copy
@@ -85,14 +112,16 @@ watch(
         ]),
     () => {
         for (const { serca_index, T4_index } of SERCA_SYNC_MAP) {
-            roster_config.value.mats_prices[1].data[serca_index] = roster_config.value.mats_prices[0].data[T4_index]
-            roster_store.active_tradable_mats_owned[1].data[serca_index] = roster_store.active_tradable_mats_owned[0].data[T4_index]
-            roster_store.active_roster_mats_owned[1].data[serca_index] = roster_store.active_roster_mats_owned[0].data[T4_index]
+            roster_config.value.mats_prices[1].data[serca_index] = roster_config.value.mats_prices[0].data[T4_index];
+            roster_store.active_tradable_mats_owned[1].data[serca_index] =
+                roster_store.active_tradable_mats_owned[0].data[T4_index];
+            roster_store.active_roster_mats_owned[1].data[serca_index] =
+                roster_store.active_roster_mats_owned[0].data[T4_index];
         }
-        force_rerender()
+        force_rerender();
     },
     { deep: false, immediate: true },
-)
+);
 </script>
 
 <template>
@@ -114,7 +143,7 @@ watch(
                         v-model="roster_config.region"
                         @change="
                             () => {
-                                start_fetch(roster_config.region, true)
+                                start_fetch(roster_config.region, true);
                             }
                         "
                     >
@@ -122,10 +151,20 @@ watch(
                         <option>EUC</option>
                     </select>
                     <span style="width: 20px; text-wrap-mode: nowrap">
-                        {{ !disabled && roster_config.latest_market_data && !roster_config.market_fetch_failed ? "✅" : disabled ? "" : "Failed" }}
+                        {{
+                            !disabled && roster_config.latest_market_data && !roster_config.market_fetch_failed
+                                ? "✅"
+                                : disabled
+                                  ? ""
+                                  : "Failed"
+                        }}
                     </span>
                 </div>
-                <button :disabled="disabled" @click="() => start_fetch(roster_config.region, true)" style="width: 140px">
+                <button
+                    :disabled="disabled"
+                    @click="() => start_fetch(roster_config.region, true)"
+                    style="width: 140px"
+                >
                     {{ !disabled ? "Fetch Market Data" : "Fetching..." }}
                 </button>
             </div>
@@ -144,7 +183,9 @@ watch(
             <div v-if="roster_ids.length > 1">
                 <span> Active Roster: </span>
                 <select :value="selected_roster" class="hf-shard-size-select" @change="change_roster">
-                    <option v-for="(profile_index, name) in representative_profile_indices" :value="name">{{ name }}</option>
+                    <option v-for="(profile_index, name) in representative_profile_indices" :value="name">
+                        {{ name }}
+                    </option>
                 </select>
             </div>
             <TierConvertButton

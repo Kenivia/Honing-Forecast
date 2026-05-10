@@ -1,44 +1,46 @@
 <script setup lang="ts">
-import { RouterLink, RouterView, useRoute, useRouter } from "vue-router"
-import { get_icon_path } from "./Utils/Helpers"
-import { CharProfile } from "./Stores/CharacterProfile"
-import { debounced_write_roster_config, useRosterStore } from "./Stores/RosterConfig"
-import { useMediaIsNarrow } from "./Utils/WindowSize"
-import { fetch_callback, useTimedFetch } from "./Utils/MarketDataFetcher"
-import { computed } from "vue"
-import { storeToRefs } from "pinia"
+import { RouterLink, RouterView, useRoute, useRouter } from "vue-router";
+import { get_icon_path } from "./Utils/Helpers";
+import { CharProfile } from "./_stores/CharacterProfile";
+import { debounced_write_roster_config, useRosterStore } from "./_stores/RosterConfig";
+import { useMediaIsNarrow } from "./Utils/WindowSize";
+import { fetch_callback, useTimedFetch } from "./Utils/MarketDataFetcher";
+import { computed } from "vue";
+import { storeToRefs } from "pinia";
 
-const roster_store = useRosterStore()
-roster_store.init()
+const roster_store = useRosterStore();
+roster_store.init();
 
-const { all_profiles, roster_ids } = storeToRefs(roster_store)
+const { all_profiles, roster_ids } = storeToRefs(roster_store);
 
-const { start_fetch } = useTimedFetch(fetch_callback)
-start_fetch(roster_store.roster_config.region)
+const { start_fetch } = useTimedFetch(fetch_callback);
+start_fetch(roster_store.roster_config.region);
 
 roster_store.$subscribe((_mutation, state) => {
-    debounced_write_roster_config(state)
-})
-const { isNarrow: is500Narrow } = useMediaIsNarrow(500)
-const { isNarrow: is600Narrow } = useMediaIsNarrow(600)
-const { isNarrow: is800Narrow } = useMediaIsNarrow()
+    debounced_write_roster_config(state);
+});
+const { isNarrow: is500Narrow } = useMediaIsNarrow(500);
+const { isNarrow: is600Narrow } = useMediaIsNarrow(600);
+const { isNarrow: is800Narrow } = useMediaIsNarrow();
 
-const route = useRoute()
-const router = useRouter()
+const route = useRoute();
+const router = useRouter();
 
-const active_char_name = computed(() => all_profiles.value.find((p) => route.path === "/" + p.char_name)?.char_name ?? "")
+const active_char_name = computed(
+    () => all_profiles.value.find((p) => route.path === "/" + p.char_name)?.char_name ?? "",
+);
 
 function onCharSelect(e: Event) {
-    const name = (e.target as HTMLSelectElement).value
-    if (name) router.push({ name: "char", params: { characterName: name } })
+    const name = (e.target as HTMLSelectElement).value;
+    if (name) router.push({ name: "char", params: { characterName: name } });
 }
-const char_name_from_route = computed(() => route.path.split("/")[route.path.split("/").length - 2])
+const char_name_from_route = computed(() => route.path.split("/")[route.path.split("/").length - 2]);
 </script>
 
 <template>
-    <div class="hf-app-shell">
+    <div class="app-shell flex-col">
         <header>
-            <!-- <div v-if="!is500Narrow" class="hf-page-header-row" style="width: 100%; justify-content: space-around">
+            <!-- <div v-if="!is500Narrow" class="page-header-row" style="width: 100%; justify-content: space-around">
                 <span>
                     <span style="font-weight: 600">Happy Serca porg!&nbsp;</span>
                     <a
@@ -52,145 +54,122 @@ const char_name_from_route = computed(() => route.path.split("/")[route.path.spl
                     <a style="text-decoration: underline" href="https://discord.gg/KWDpQyvgzc">on Discord</a>!
                 </span>
             </div> -->
-            <nav class="hf-top-nav">
-                <div class="hf-page-header-row" style="width: 100%">
-                    <div v-if="!is500Narrow" class="hf-brand">
-                        <router-link to="/">
-                            <div class="hf-brand-icon">
-                                <img :src="get_icon_path('Forecast Icon')" alt="Forecast icon" style="width: 34px; height: 34px" /></div
-                        ></router-link>
-                        <div v-if="!is800Narrow">
-                            <h1 class="hf-title">Honing Forecast</h1>
-                        </div>
+            <nav class="flex-row justify-start align-center bottom-border-muted gap-8 top-nav">
+                <div v-if="!is500Narrow" class="flex-row">
+                    <router-link to="/">
+                        <div class="brand-icon">
+                            <img
+                                :src="get_icon_path('Forecast Icon')"
+                                alt="Forecast icon"
+                                style="width: 34px; height: 34px"
+                            /></div
+                    ></router-link>
+                    <div v-if="!is800Narrow">
+                        <h1 class="title">Honing Forecast</h1>
                     </div>
-                    <router-link to="/roster-setup">
-                        <div class="hf-header-button" :class="{ selected: route.path == '/roster-setup' }">Roster setup</div>
-                    </router-link>
-                    <router-link to="/market-mats">
-                        <div class="hf-header-button" :class="{ selected: route.path == '/market-mats' }">Market & Mats</div>
-                    </router-link>
-
-                    <div class="hf-header-spacer" />
-                    <div style="display: contents" v-if="!is600Narrow || all_profiles.length <= 1">
-                        <div v-for="roster_id in roster_ids" class="hf-char-row" style="display: flex; flex-direction: row" :key="`roster-${roster_id}`">
-                            <div
-                                v-for="[profile, profile_index] in all_profiles
-                                    .map((x, index): [CharProfile, number] => [x, index])
-                                    .filter((y) => y[0].roster_id === roster_id)"
-                                class="hf-char-row"
-                                :key="`profile-${profile_index}`"
-                            >
-                                <!-- {{ console.log(roster_id, profile.roster_id) }} -->
-
-                                <RouterLink
-                                    :to="{ name: 'char', params: { characterName: profile.char_name } }"
-                                    class="hf-header-button"
-                                    :class="{ selected: char_name_from_route === profile.char_name }"
-                                >
-                                    {{ profile.char_name }}
-                                </RouterLink>
-                            </div>
-                            <span style="width: 16px"></span>
-                        </div>
-                    </div>
-
-                    <!-- Mobile: dropdown -->
-                    <select v-else class="hf-char-select" :value="active_char_name" @change="onCharSelect">
-                        <option value="" disabled>Character</option>
-                        <option v-for="(profile, index) in all_profiles" :key="index" :value="profile.char_name">
-                            {{ profile.char_name }}
-                        </option>
-                    </select>
                 </div>
+                <router-link to="/roster-setup">
+                    <div class="header-button header-font" :class="{ selected: route.path == '/roster-setup' }">
+                        Roster setup
+                    </div>
+                </router-link>
+                <router-link to="/market-mats">
+                    <div class="header-button header-font" :class="{ selected: route.path == '/market-mats' }">
+                        Market & Mats
+                    </div>
+                </router-link>
+
+                <div class="header-spacer" />
+                <div style="display: contents" v-if="!is600Narrow || all_profiles.length <= 1">
+                    <div
+                        v-for="roster_id in roster_ids"
+                        style="display: flex; flex-direction: row"
+                        :key="`roster-${roster_id}`"
+                    >
+                        <div
+                            v-for="[profile, profile_index] in all_profiles
+                                .map((x, index): [CharProfile, number] => [x, index])
+                                .filter((y) => y[0].roster_id === roster_id)"
+                            :key="`profile-${profile_index}`"
+                        >
+                            <RouterLink
+                                :to="{ name: 'char', params: { characterName: profile.char_name } }"
+                                class="header-button header-font"
+                                :class="{ selected: char_name_from_route === profile.char_name }"
+                            >
+                                {{ profile.char_name }}
+                            </RouterLink>
+                        </div>
+                        <span style="width: 16px"></span>
+                    </div>
+                </div>
+
+                <!-- Mobile: dropdown -->
+                <select v-else class="char-select" :value="active_char_name" @change="onCharSelect">
+                    <option value="" disabled>Character</option>
+                    <option v-for="(profile, index) in all_profiles" :key="index" :value="profile.char_name">
+                        {{ profile.char_name }}
+                    </option>
+                </select>
             </nav>
         </header>
-        <main class="hf-main-slot">
-            <RouterView />
-        </main>
+
+        <RouterView />
     </div>
 </template>
-
 <style>
-.hf-app-shell {
-    display: flex;
-    flex-direction: column;
-    min-height: 100vh;
-    /* border: 1px solid blue; */
-}
-
-.hf-main-slot {
-    flex-grow: 1;
-    /* border: 1px solid red; */
-    display: flex;
-    flex-direction: column;
-}
-
-.hf-top-nav {
-    display: flex;
-    justify-content: flex-start;
-    align-items: center;
-    border-bottom: 1px solid var(--separator-color);
-    padding: 0;
-    margin: 0;
-    gap: 8px;
-    position: relative;
-    z-index: 50;
-    background: var(--hf-bg-header);
-}
-
-.hf-header-button {
-    display: inline-flex;
-    align-items: center;
-    color: var(--hf-text-bright);
-    border-radius: 6px;
-    border: 1px solid var(--separator-color);
-    background-color: var(--hf-bg-header);
+.header-button {
+    color: var(--text-main);
+    border-radius: 4px;
+    border: 1px solid var(--border-subtle);
+    background-color: var(--bg-medium);
     margin: 0 2px;
     text-wrap-mode: nowrap;
     padding: 12px;
+    cursor: pointer;
+}
+</style>
+<style scoped>
+.app-shell {
+    min-height: 100vh;
 }
 
-.hf-header-button:hover {
-    background-color: var(--hf-bg-hover);
-}
-
-.hf-header-button.selected {
-    color: var(--hf-gold);
-}
-
-.hf-header-spacer {
-    width: 10px;
-    min-width: 10px;
-}
-
-.hf-page-header-row {
-    display: flex;
-    flex-direction: row;
-    width: fit-content;
-    gap: 0;
-    align-items: center;
-    overflow-x: auto;
-    overflow-y: hidden;
+.top-nav {
+    position: relative;
+    z-index: 50;
+    background: var(--bg-dark);
     white-space: nowrap;
     scrollbar-width: thin;
 }
 
-.hf-brand {
+.header-button:hover {
+    background-color: var(--bg-very-bright);
+}
+
+.header-button.selected {
+    color: var(--gold);
+}
+
+.header-spacer {
+    width: 10px;
+    min-width: 10px;
+}
+
+.brand {
     display: flex;
     align-items: center;
     width: 200px;
 }
 
-.hf-brand-icon {
+.brand-icon {
     width: 48px;
     height: 48px;
     display: grid;
     place-items: center;
 }
 
-.hf-title {
-    margin: 0;
-    color: var(--hf-text-bright);
+.title {
+    color: var(--text-main);
     font-size: 20px;
     line-height: 1;
     width: min-content;

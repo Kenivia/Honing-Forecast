@@ -1,34 +1,45 @@
 <script setup lang="ts">
-import { ALL_LABELS, GRAPH_COLORS, T4_MATS_LABELS, ANNOTATION_COLORS, ANNOTATION_POSITIONS, ANNOTATION_LABELS } from "@/Utils/Constants"
-import { TreatmentPlan } from "@/Stores/CharacterProfile"
-import { has_upgrades_in_range, metric_to_text } from "@/Utils/Helpers"
-import MaterialCell from "@/Components/Common/MaterialCell.vue"
-import { WasmOp } from "@/Utils/Interfaces"
-import MaterialGraph from "./MaterialGraph.vue"
-import { storeToRefs } from "pinia"
-import { useRosterStore } from "@/Stores/RosterConfig"
-import { computed, ref, watchEffect } from "vue"
-import { build_payload } from "@/WasmInterface/PayloadBuilder"
-import { input_column_to_num } from "@/Utils/InputColumn"
-import { start_all_workers } from "../CharWorkerUtils"
-import { RouterLink } from "vue-router"
+import {
+    ALL_LABELS,
+    GRAPH_COLORS,
+    T4_MATS_LABELS,
+    ANNOTATION_COLORS,
+    ANNOTATION_POSITIONS,
+    ANNOTATION_LABELS,
+} from "@/Utils/Constants";
+import { TreatmentPlan } from "@/_stores/CharacterProfile";
+import { has_upgrades_in_range, metric_to_text } from "@/Utils/Helpers";
+import MaterialCell from "@/Components/Common/MaterialCell.vue";
+import { WasmOp } from "@/Utils/Interfaces";
+import MaterialGraph from "./MaterialGraph.vue";
+import { storeToRefs } from "pinia";
+import { useRosterStore } from "@/_stores/RosterConfig";
+import { computed, ref, watchEffect } from "vue";
+import { build_payload } from "@/WasmInterface/PayloadBuilder";
+import { input_column_to_num } from "@/Utils/InputColumn";
+import { start_all_workers } from "../CharWorkerUtils";
+import { RouterLink } from "vue-router";
 
-const { active_profile } = storeToRefs(useRosterStore())
-const { roster_config, active_roster_mats_owned, active_tradable_mats_owned, enabled_annotations } = storeToRefs(useRosterStore())
-const histogram_result = computed(() => active_profile.value.histogram_worker_bundle.result)
+const { active_profile } = storeToRefs(useRosterStore());
+const { roster_config, active_roster_mats_owned, active_tradable_mats_owned, enabled_annotations } =
+    storeToRefs(useRosterStore());
+const histogram_result = computed(() => active_profile.value.histogram_worker_bundle.result);
 
 // This is average mats cost (not gold)
 const average_breakdown = computed(
-    () => active_profile.value.histogram_worker_bundle.result?.avg_breakdown ?? new Array(ALL_LABELS[active_profile.value.tier].length).fill(0),
-)
+    () =>
+        active_profile.value.histogram_worker_bundle.result?.avg_breakdown ??
+        new Array(ALL_LABELS[active_profile.value.tier].length).fill(0),
+);
 // this is should always be treat tradable as bound (so it's actual gold spent)
 const gold_breakdown = computed(
     () =>
-        active_profile.value.histogram_worker_bundle.result?.gold_breakdown_arr[0].map((x: number) => Math.round(x >= 0 ? 0 : -x)) ??
-        new Array(ALL_LABELS[active_profile.value.tier].length).fill(0),
-)
+        active_profile.value.histogram_worker_bundle.result?.gold_breakdown_arr[0].map((x: number) =>
+            Math.round(x >= 0 ? 0 : -x),
+        ) ?? new Array(ALL_LABELS[active_profile.value.tier].length).fill(0),
+);
 
-const matsIndices = T4_MATS_LABELS.map((_, i) => i)
+const matsIndices = T4_MATS_LABELS.map((_, i) => i);
 const visibleRows = computed(() => {
     return ALL_LABELS[active_profile.value.tier]
         .map((label, row) => ({ label, row })) // keep original index
@@ -54,48 +65,48 @@ const visibleRows = computed(() => {
                         (has_upgrades_in_range(4, 4, false, true) && label === "Scroll 4 Armor"))) ||
                 average_breakdown.value[row] > 0.0 ||
                 roster_config.value.show_all_rows
-            )
-        })
-})
+            );
+        });
+});
 
-const tickbox_tooltip = `Untick the box if you don't plan on buying that material from market.`
+const tickbox_tooltip = `Untick the box if you don't plan on buying that material from market.`;
 // <span style="color:var(--hf-text-muted)">(it also disable selling this mat)</span>`
 
-const market_gold_text = "Avg gold spent buying from market"
-const tradable_gold_text = "Avg gold spent buying minus gold from selling tradables"
-const total_market_gold_text = "Average tradable gold spent"
-const total_market_gold_suffix = "(raw + buying needed mats & juice)"
-const total_tradable_gold_text = "Avg sell value of leftover tradable mats"
-const total_tradable_gold_suffix = "(taxed)"
-const all_bound_text = "Treat roster bound as tradable" // i dont think i'll show this tho cos its kinda confusing
+const market_gold_text = "Avg gold spent buying from market";
+const tradable_gold_text = "Avg gold spent buying minus gold from selling tradables";
+const total_market_gold_text = "Average tradable gold spent";
+const total_market_gold_suffix = "(raw + buying needed mats & juice)";
+const total_tradable_gold_text = "Avg sell value of leftover tradable mats";
+const total_tradable_gold_suffix = "(taxed)";
+const all_bound_text = "Treat roster bound as tradable"; // i dont think i'll show this tho cos its kinda confusing
 const selected_optimizer_treatement = ref(
     active_profile.value.optimizer_treatment_plan == TreatmentPlan.TreatTradableAsBound
         ? market_gold_text
         : active_profile.value.optimizer_treatment_plan == TreatmentPlan.TreatRosterAsBound
           ? tradable_gold_text
           : all_bound_text,
-)
+);
 
 watchEffect(() => {
     if (selected_optimizer_treatement.value == market_gold_text) {
-        active_profile.value.optimizer_treatment_plan = TreatmentPlan.TreatTradableAsBound
+        active_profile.value.optimizer_treatment_plan = TreatmentPlan.TreatTradableAsBound;
     } else if (selected_optimizer_treatement.value == tradable_gold_text) {
-        active_profile.value.optimizer_treatment_plan = TreatmentPlan.TreatRosterAsBound
+        active_profile.value.optimizer_treatment_plan = TreatmentPlan.TreatRosterAsBound;
     } else if (selected_optimizer_treatement.value == all_bound_text) {
-        active_profile.value.optimizer_treatment_plan = TreatmentPlan.TreatRosterAsTradable
+        active_profile.value.optimizer_treatment_plan = TreatmentPlan.TreatRosterAsTradable;
     }
-})
+});
 
-const bound_chance_text = "Bound Chance"
-const roster_chance_text = "Bound + Roster Chance"
-const tradable_chance_text = "Bound + Roster + Tradable"
+const bound_chance_text = "Bound Chance";
+const roster_chance_text = "Bound + Roster Chance";
+const tradable_chance_text = "Bound + Roster + Tradable";
 const chance_explainer_text = computed(() =>
     active_profile.value.histogram_treatment_plan == TreatmentPlan.TreatTradableAsBound
         ? "Chance to succeed all upgrades before running out of Tradable material of this type"
         : active_profile.value.histogram_treatment_plan == TreatmentPlan.TreatRosterAsBound
           ? "Chance to succeed all upgrades before running out of Roster-Bound material of this type"
           : "Chance to succeed all upgrades before running out of Char-Bound material of this type",
-)
+);
 
 const selected_histogram_treatment = ref(
     active_profile.value.histogram_treatment_plan == TreatmentPlan.TreatTradableAsBound
@@ -103,7 +114,7 @@ const selected_histogram_treatment = ref(
         : active_profile.value.histogram_treatment_plan == TreatmentPlan.TreatRosterAsBound
           ? roster_chance_text
           : bound_chance_text,
-)
+);
 
 const selected_histogram_color = ref(
     active_profile.value.histogram_treatment_plan == TreatmentPlan.TreatRosterAsTradable
@@ -111,48 +122,56 @@ const selected_histogram_color = ref(
         : active_profile.value.histogram_treatment_plan == TreatmentPlan.TreatRosterAsBound
           ? "var(--hf-graph-roster-color)"
           : "var(--hf-graph-tradable-color)",
-) // initialize here otherwise it'll be null until we change it
+); // initialize here otherwise it'll be null until we change it
 function change_histogram_treatment(event) {
-    let new_val = event.target.value
+    let new_val = event.target.value;
     if (new_val === null) {
-        return
+        return;
     }
     if (new_val == bound_chance_text) {
-        active_profile.value.histogram_treatment_plan = TreatmentPlan.TreatRosterAsTradable
+        active_profile.value.histogram_treatment_plan = TreatmentPlan.TreatRosterAsTradable;
     } else if (new_val == roster_chance_text) {
-        active_profile.value.histogram_treatment_plan = TreatmentPlan.TreatRosterAsBound
+        active_profile.value.histogram_treatment_plan = TreatmentPlan.TreatRosterAsBound;
     } else if (new_val == tradable_chance_text) {
-        active_profile.value.histogram_treatment_plan = TreatmentPlan.TreatTradableAsBound
+        active_profile.value.histogram_treatment_plan = TreatmentPlan.TreatTradableAsBound;
     }
     selected_histogram_color.value =
         active_profile.value.histogram_treatment_plan == TreatmentPlan.TreatRosterAsTradable
             ? "var(--hf-graph-bound-color)"
             : active_profile.value.histogram_treatment_plan == TreatmentPlan.TreatRosterAsBound
               ? "var(--hf-graph-roster-color)"
-              : "var(--hf-graph-tradable-color)"
+              : "var(--hf-graph-tradable-color)";
     // console.log(new_val, active_profile.value.histogram_treatment_plan)
-    active_profile.value.histogram_worker_bundle.throttled_start(WasmOp.Histogram, build_payload())
+    active_profile.value.histogram_worker_bundle.throttled_start(WasmOp.Histogram, build_payload());
 }
 
 const annotation_values = computed(() => {
-    let bound = input_column_to_num(active_profile.value.bound_budgets[active_profile.value.tier])
-    let roster = input_column_to_num(active_roster_mats_owned.value[active_profile.value.tier])
-    let trade = input_column_to_num(active_tradable_mats_owned.value[active_profile.value.tier])
+    let bound = input_column_to_num(active_profile.value.bound_budgets[active_profile.value.tier]);
+    let roster = input_column_to_num(active_roster_mats_owned.value[active_profile.value.tier]);
+    let trade = input_column_to_num(active_tradable_mats_owned.value[active_profile.value.tier]);
     return bound.map((_, i) =>
-        [average_breakdown.value[i], bound[i], roster[i] + bound[i], roster[i] + bound[i] + trade[i]].filter((_, i) => enabled_annotations.value[i]),
-    )
-})
+        [average_breakdown.value[i], bound[i], roster[i] + bound[i], roster[i] + bound[i] + trade[i]].filter(
+            (_, i) => enabled_annotations.value[i],
+        ),
+    );
+});
 
 function hover_annotation(x, _y, cy, material_type, color): string {
-    let place = Math.min(10, Math.max(Math.ceil(cy < 0.5 ? Math.min(3, Math.abs(Math.log10(cy))) : Math.abs(Math.log10(1 - cy))), 3))
-    return `<b style="color: white;">${(cy * 100).toPrecision(place)}% </b> chance to use <br> &#8804;<b style="color: ${color};"> ${Math.ceil(x).toLocaleString("en-US")} </b> ${material_type} `
+    let place = Math.min(
+        10,
+        Math.max(Math.ceil(cy < 0.5 ? Math.min(3, Math.abs(Math.log10(cy))) : Math.abs(Math.log10(1 - cy))), 3),
+    );
+    return `<b style="color: white;">${(cy * 100).toPrecision(place)}% </b> chance to use <br> &#8804;<b style="color: ${color};"> ${Math.ceil(x).toLocaleString("en-US")} </b> ${material_type} `;
 }
 function special_hover_annotation(x, _y, cy, material_type, color): string {
-    let place = Math.min(10, Math.max(Math.ceil(cy < 0.5 ? Math.min(3, Math.abs(Math.log10(cy))) : Math.abs(Math.log10(1 - cy))), 3))
-    return `<b style="color: white;">${(cy * 100).toPrecision(place)}% </b> chance to free tap <br> at least <b style="color: ${color};"> ${x + 1} </b> piece`
+    let place = Math.min(
+        10,
+        Math.max(Math.ceil(cy < 0.5 ? Math.min(3, Math.abs(Math.log10(cy))) : Math.abs(Math.log10(1 - cy))), 3),
+    );
+    return `<b style="color: white;">${(cy * 100).toPrecision(place)}% </b> chance to free tap <br> at least <b style="color: ${color};"> ${x + 1} </b> piece`;
 }
 
-const show_special_guide = ref(false)
+const show_special_guide = ref(false);
 </script>
 
 <template>
@@ -195,7 +214,8 @@ const show_special_guide = ref(false)
                             </select>
                             <span class="hf-average-header">Average</span>
                             <div style="position: relative">
-                                <span class="hf-gold-header">Avg Gold Used</span> <span class="hf-gold-header-suffix">(tradable)</span>
+                                <span class="hf-gold-header">Avg Gold Used</span>
+                                <span class="hf-gold-header-suffix">(tradable)</span>
                             </div>
 
                             <span class="hf-hover-hint">Hover graph for details</span>
@@ -203,7 +223,8 @@ const show_special_guide = ref(false)
                         </div>
                         <div
                             v-if="
-                                ALL_LABELS[active_profile.tier].length == active_profile.bound_budgets[active_profile.tier].data.length &&
+                                ALL_LABELS[active_profile.tier].length ==
+                                    active_profile.bound_budgets[active_profile.tier].data.length &&
                                 // active_profile.optimizer_worker_bundle.result &&
                                 active_profile.histogram_worker_bundle.result &&
                                 active_profile.histogram_worker_bundle.result &&
@@ -224,7 +245,7 @@ const show_special_guide = ref(false)
                                     :input_color="'--hf-graph-bound-color'"
                                     :setter="
                                         (val) => {
-                                            active_profile.bound_budgets[active_profile.tier].data[row] = val
+                                            active_profile.bound_budgets[active_profile.tier].data[row] = val;
                                         }
                                     "
                                     :hide_tick="!matsIndices.includes(row)"
@@ -233,12 +254,20 @@ const show_special_guide = ref(false)
                                 />
                                 <!-- {{ console.log(averages) }} -->
                                 <MaterialCell
-                                    :input_column="active_profile.histogram_worker_bundle.result.chances_arr[active_profile.histogram_treatment_plan + 1]"
+                                    :input_column="
+                                        active_profile.histogram_worker_bundle.result.chances_arr[
+                                            active_profile.histogram_treatment_plan + 1
+                                        ]
+                                    "
                                     :row="row"
                                     :input_color="selected_histogram_color"
                                     :is_percentage="true"
                                 />
-                                <MaterialCell :input_column="average_breakdown" :row="row" :input_color="'--hf-graph-average-color'" />
+                                <MaterialCell
+                                    :input_column="average_breakdown"
+                                    :row="row"
+                                    :input_color="'--hf-graph-average-color'"
+                                />
                                 <MaterialCell :input_column="gold_breakdown" :row="row" :input_color="'--hf-gold'" />
                                 <MaterialGraph
                                     :data="histogram_result?.cum_percentiles?.[row] ?? null"
@@ -247,7 +276,9 @@ const show_special_guide = ref(false)
                                     :cumulative="roster_config.cumulative_graph"
                                     :annotations="annotation_values[row]"
                                     :annotationColors="ANNOTATION_COLORS.filter((_, i) => enabled_annotations[i])"
-                                    :annotation-positions="ANNOTATION_POSITIONS.filter((_, i) => enabled_annotations[i])"
+                                    :annotation-positions="
+                                        ANNOTATION_POSITIONS.filter((_, i) => enabled_annotations[i])
+                                    "
                                     :annotationLabels="ANNOTATION_LABELS.filter((_, i) => enabled_annotations[i])"
                                     :tooltip-text-fn="hover_annotation"
                                 />
@@ -258,12 +289,17 @@ const show_special_guide = ref(false)
                                     :input_column="active_profile.special_budget"
                                     :row="0"
                                     :setter="(val) => (active_profile.special_budget.data[0] = val)"
-                                    :label="(active_profile.tier == 1 ? 'Serca ' : '') + active_profile.special_budget.keys[0]"
+                                    :label="
+                                        (active_profile.tier == 1 ? 'Serca ' : '') +
+                                        active_profile.special_budget.keys[0]
+                                    "
                                     :hide_tick="true"
                                     :treat_as_two="true"
                                     :callback="() => start_all_workers()"
                                 ></MaterialCell>
-                                <span class="special-convert-guide" @click="() => (show_special_guide = true)">Should I use in T4 or convert?</span>
+                                <span class="special-convert-guide" @click="() => (show_special_guide = true)"
+                                    >Should I use in T4 or convert?</span
+                                >
                                 <MaterialGraph
                                     :data="
                                         active_profile.optimizer_worker_bundle.result?.latest_special_probs
@@ -271,12 +307,20 @@ const show_special_guide = ref(false)
                                                 new Array(
                                                     Math.max(
                                                         0,
-                                                        active_profile.optimizer_worker_bundle.result.upgrade_arr.filter((x) => x.is_normal_honing).length -
-                                                            active_profile.optimizer_worker_bundle.result?.latest_special_probs.length,
+                                                        active_profile.optimizer_worker_bundle.result.upgrade_arr.filter(
+                                                            (x) => x.is_normal_honing,
+                                                        ).length -
+                                                            active_profile.optimizer_worker_bundle.result
+                                                                ?.latest_special_probs.length,
                                                     ),
                                                 ).fill(0),
                                             )
-                                            .slice(0, active_profile.optimizer_worker_bundle.result.upgrade_arr.filter((x) => x.is_normal_honing).length)
+                                            .slice(
+                                                0,
+                                                active_profile.optimizer_worker_bundle.result.upgrade_arr.filter(
+                                                    (x) => x.is_normal_honing,
+                                                ).length,
+                                            )
                                             .map((x, index) => [index, x]) ?? null
                                     "
                                     :material-label="'Special'"
@@ -297,7 +341,10 @@ const show_special_guide = ref(false)
                                 {{ total_market_gold_text }}
                             </div>
                             <div class="hf-metric-status">
-                                {{ metric_to_text(active_profile.histogram_worker_bundle.result?.metrics_arr[0]) ?? "No Result yet" }}
+                                {{
+                                    metric_to_text(active_profile.histogram_worker_bundle.result?.metrics_arr[0]) ??
+                                    "No Result yet"
+                                }}
 
                                 <span style="font-size: 16px">
                                     {{ total_market_gold_suffix }}
@@ -306,7 +353,10 @@ const show_special_guide = ref(false)
                         </div>
 
                         <div
-                            v-if="active_profile.optimizer_treatment_plan == TreatmentPlan.TreatRosterAsBound && active_profile.auto_start_optimizer"
+                            v-if="
+                                active_profile.optimizer_treatment_plan == TreatmentPlan.TreatRosterAsBound &&
+                                active_profile.auto_start_optimizer
+                            "
                             class="hf-mats-row"
                         >
                             <div class="hf-metric-label" style="font-size: 16px; color: var(--hf-text-muted)">
@@ -327,10 +377,16 @@ const show_special_guide = ref(false)
                         </div>
                         <div style="display: flex; flex-direction: row; grid-column: 1 / span 6; align-items: center">
                             <span class="optimizer-progress-label"
-                                >Optimizer progress: {{ active_profile.optimizer_worker_bundle.est_progress_percentage.toFixed(2) }}%
+                                >Optimizer progress:
+                                {{ active_profile.optimizer_worker_bundle.est_progress_percentage.toFixed(2) }}%
                             </span>
                             <div class="progress-bar">
-                                <div class="progress-fill" :style="{ width: `${active_profile.optimizer_worker_bundle.est_progress_percentage}%` }" />
+                                <div
+                                    class="progress-fill"
+                                    :style="{
+                                        width: `${active_profile.optimizer_worker_bundle.est_progress_percentage}%`,
+                                    }"
+                                />
                             </div>
                         </div>
                     </div>
@@ -344,7 +400,9 @@ const show_special_guide = ref(false)
                     <span style="font-size: 30px; color: var(--hf-text-bright)">
                         Short answer: Save Special Leaps and convert to Serca, unless you are tapping +25
                     </span>
-                    <span style="font-size: 16px; color: var(--hf-text-muted)"> If you're not +20 yet, use it in T4. </span>
+                    <span style="font-size: 16px; color: var(--hf-text-muted)">
+                        If you're not +20 yet, use it in T4.
+                    </span>
                     <img src="/Special convert chart.png" alt="Special convert chart" />
                 </div>
             </div>
@@ -542,7 +600,7 @@ const show_special_guide = ref(false)
     grid-column: 1 / -1;
     grid-template-columns: var(--hf-dist-columns);
     align-items: center;
-    border-bottom: 1px solid var(--separator-color);
+    border-bottom: 1px solid var(--border-medium);
     min-height: 0;
 }
 

@@ -1,11 +1,11 @@
-import { ref, computed } from "vue"
-import { ALL_LABELS, FALLBACK_PRICES, FETCH_MARKET_COOLDOWN_MS, SERCA_TO_T4, SYNCED_LABELS } from "./Constants"
-import { storeToRefs } from "pinia"
-import { useRosterStore } from "@/Stores/RosterConfig"
+import { ref, computed } from "vue";
+import { ALL_LABELS, FALLBACK_PRICES, FETCH_MARKET_COOLDOWN_MS, SERCA_TO_T4, SYNCED_LABELS } from "./Constants";
+import { storeToRefs } from "pinia";
+import { useRosterStore } from "@/_stores/RosterConfig";
 const OVERRIDE_DEFAULT = {
     Gold: 1,
     Silver: 0,
-}
+};
 const BODY = {
     region_slug: "nae",
     item_slugs: [
@@ -39,32 +39,32 @@ const BODY = {
         "metallurgy-hellfire-19-20",
         "tailoring-hellfire-19-20",
     ],
-}
-const MY_WORKER_URL = "https://snowy-base-1817.kenivia-fan.workers.dev/"
+};
+const MY_WORKER_URL = "https://snowy-base-1817.kenivia-fan.workers.dev/";
 
 export async function fetchMarketData(region: string) {
-    let body = structuredClone(BODY)
-    body["region_slug"] = region.toLowerCase()
+    let body = structuredClone(BODY);
+    body["region_slug"] = region.toLowerCase();
     // console.log(body)
     const response = await fetch(MY_WORKER_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
-    })
+    });
 
     // Await the parsing of the stream to get the actual payload
-    const data = await response.json()
+    const data = await response.json();
 
     // Log the actual payload, not the Response object
     // console.log("Market Data Payload:", data)
 
-    return data
+    return data;
 }
 
-const default_prices: number[][] = FALLBACK_PRICES
+const default_prices: number[][] = FALLBACK_PRICES;
 
 export function parse_response(response: any): [number[][], number, number] {
-    let out = default_prices
+    let out = default_prices;
     // for (let tier = 0; tier < ALL_LABELS.length; tier++) {
     //     for (let index = 0; index < ALL_LABELS[tier].length; index++) {
     //         let label = ALL_LABELS[tier][index]
@@ -76,44 +76,44 @@ export function parse_response(response: any): [number[][], number, number] {
     // }
 
     // Track shard pouch prices: { 1000: price, 2000: price, 3000: price }
-    const shard_prices: { [key: number]: number } = {}
+    const shard_prices: { [key: number]: number } = {};
     // console.log(response)
     for (let index = 0; index < response.length; index++) {
-        const { item_slug, price } = response[index]
+        const { item_slug, price } = response[index];
         // console.log(ITEM_SLUG_TO_LABEL, item_slug)
         if (Object.hasOwn(ITEM_SLUG_TO_LABEL, item_slug)) {
-            let label: string = ITEM_SLUG_TO_LABEL[item_slug]
+            let label: string = ITEM_SLUG_TO_LABEL[item_slug];
             for (let tier = 0; tier < ALL_LABELS.length; tier++) {
-                let index_in_labels = ALL_LABELS[tier].findIndex((x) => x == label)
+                let index_in_labels = ALL_LABELS[tier].findIndex((x) => x == label);
                 if (index_in_labels >= 0) {
-                    out[tier][index_in_labels] = price
+                    out[tier][index_in_labels] = price;
                 } else if (label === "Shards small") {
-                    shard_prices[1000] = price
+                    shard_prices[1000] = price;
                 } else if (label === "Shards medium") {
-                    shard_prices[2000] = price
+                    shard_prices[2000] = price;
                 } else if (label === "Shards large") {
-                    shard_prices[3000] = price
+                    shard_prices[3000] = price;
                 }
             }
         }
     }
 
     // Calculate which shard bag size is most efficient (lowest price per shard)
-    let selected_shard = 1000
-    let shard_price = 0
+    let selected_shard = 1000;
+    let shard_price = 0;
     if (Object.keys(shard_prices).length > 0) {
-        let best_value = Infinity
+        let best_value = Infinity;
         for (const [shard_count, price] of Object.entries(shard_prices)) {
-            const value_per_shard = price / parseInt(shard_count)
+            const value_per_shard = price / parseInt(shard_count);
             if (value_per_shard < best_value) {
-                best_value = value_per_shard
-                selected_shard = parseInt(shard_count)
-                shard_price = price
+                best_value = value_per_shard;
+                selected_shard = parseInt(shard_count);
+                shard_price = price;
             }
         }
     }
 
-    return [out, selected_shard, shard_price]
+    return [out, selected_shard, shard_price];
 }
 
 const ITEM_SLUG_TO_LABEL = {
@@ -147,81 +147,86 @@ const ITEM_SLUG_TO_LABEL = {
     "tailoring-hellfire-15-18": "15-18 Armor",
     "metallurgy-hellfire-19-20": "19-20 Weapon",
     "tailoring-hellfire-19-20": "19-20 Armor",
-}
+};
 export function useTimedFetch(callback: (data: number[][], selectedShardSize: number, shard_price: number) => void) {
-    const roster_store = useRosterStore()
-    const { roster_config } = storeToRefs(roster_store)
+    const roster_store = useRosterStore();
+    const { roster_config } = storeToRefs(roster_store);
 
-    const isFetching = ref(false)
+    const isFetching = ref(false);
 
     function isDataStale(region: string, cooldown: number): boolean {
-        const cached = roster_config.value.latest_market_data[region]
-        if (cached === undefined) return true
-        const [timestamp, _] = cached
-        return Date.now() - timestamp >= cooldown
+        const cached = roster_config.value.latest_market_data[region];
+        if (cached === undefined) return true;
+        const [timestamp, _] = cached;
+        return Date.now() - timestamp >= cooldown;
     }
 
     const disabled = computed(() => {
         // Only disabled if there's an actual pending fetch
-        return isFetching.value
-    })
+        return isFetching.value;
+    });
 
     async function start_fetch(region: string, force?: boolean) {
-        if (isFetching.value) return
+        if (isFetching.value) return;
 
-        const cached = roster_config.value.latest_market_data[region]
-        if (cached !== undefined && !isDataStale(region, force === true ? 60 * 1000 : FETCH_MARKET_COOLDOWN_MS) && !roster_config.value.market_fetch_failed) {
-            isFetching.value = true
-            await new Promise((r) => setTimeout(r, 500))
-            isFetching.value = false
-            const [_, result] = cached
-            const [parsed, selectedShardSize, shard_price] = parse_response(result)
-            callback(parsed, selectedShardSize, shard_price)
-            return
+        const cached = roster_config.value.latest_market_data[region];
+        if (
+            cached !== undefined &&
+            !isDataStale(region, force === true ? 60 * 1000 : FETCH_MARKET_COOLDOWN_MS) &&
+            !roster_config.value.market_fetch_failed
+        ) {
+            isFetching.value = true;
+            await new Promise((r) => setTimeout(r, 500));
+            isFetching.value = false;
+            const [_, result] = cached;
+            const [parsed, selectedShardSize, shard_price] = parse_response(result);
+            callback(parsed, selectedShardSize, shard_price);
+            return;
         }
 
-        isFetching.value = true
+        isFetching.value = true;
 
         // Fetch new data
         const result = await (async () => {
             try {
-                const out = fetchMarketData(region)
+                const out = fetchMarketData(region);
 
-                roster_config.value.market_fetch_failed = false
-                return out
+                roster_config.value.market_fetch_failed = false;
+                return out;
             } catch {
-                roster_config.value.market_fetch_failed = true
-                return cached !== undefined ? cached : FALLBACK_PRICES
+                roster_config.value.market_fetch_failed = true;
+                return cached !== undefined ? cached : FALLBACK_PRICES;
             }
-        })()
+        })();
 
-        const [parsed, selectedShardSize, shard_price] = parse_response(result)
+        const [parsed, selectedShardSize, shard_price] = parse_response(result);
 
         // Store the raw response data with timestamp
         if (!roster_config.value.market_fetch_failed) {
-            roster_config.value.latest_market_data[region] = [Date.now(), result]
+            roster_config.value.latest_market_data[region] = [Date.now(), result];
         }
 
-        isFetching.value = false
+        isFetching.value = false;
 
-        callback(parsed, selectedShardSize, shard_price)
+        callback(parsed, selectedShardSize, shard_price);
     }
 
-    return { disabled, start_fetch }
+    return { disabled, start_fetch };
 }
 export function fetch_callback(result: number[][], selectedShardSize: number, shard_price: number) {
-    const { roster_config } = storeToRefs(useRosterStore())
+    const { roster_config } = storeToRefs(useRosterStore());
     // console.log(result)
-    roster_config.value.selected_shard_bag_size = selectedShardSize
+    roster_config.value.selected_shard_bag_size = selectedShardSize;
     for (let tier = 0; tier < ALL_LABELS.length; tier++) {
         for (let index = 0; index < ALL_LABELS[tier].length; index++) {
-            const syncing = index in SERCA_TO_T4 && tier == 1
-            const actual_tier = syncing ? 0 : tier
-            const actual_index = syncing ? SERCA_TO_T4[index] : index
+            const syncing = index in SERCA_TO_T4 && tier == 1;
+            const actual_tier = syncing ? 0 : tier;
+            const actual_index = syncing ? SERCA_TO_T4[index] : index;
 
-            roster_config.value.mats_prices[actual_tier].data[actual_index] = result[actual_tier][actual_index].toLocaleString()
+            roster_config.value.mats_prices[actual_tier].data[actual_index] =
+                result[actual_tier][actual_index].toLocaleString();
             if (ALL_LABELS[actual_tier][actual_index] == "Shards") {
-                roster_config.value.mats_prices[actual_tier].data[actual_index] = shard_price.toLocaleString()
+                roster_config.value.mats_prices[actual_tier].data[actual_index] = shard_price.toLocaleString();
             }
         }
     }

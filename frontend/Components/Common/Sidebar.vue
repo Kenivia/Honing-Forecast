@@ -1,46 +1,56 @@
 <script setup lang="ts">
-import { useMediaIsNarrow } from "@/Utils/WindowSize"
-import { ref } from "vue"
-import Footer from "./Footer.vue"
+import { useMediaIsNarrow } from "@/Utils/WindowSize";
+import { ref } from "vue";
+import Footer from "./Footer.vue";
 
 const props = withDefaults(defineProps<{ header?: string }>(), {
     header: "",
-})
+});
 
-const { isNarrow } = useMediaIsNarrow(1174)
+const { isNarrow } = useMediaIsNarrow(1174);
 
-const sidebarOpen = ref(false)
-const open = () => (sidebarOpen.value = true)
-const close = () => (sidebarOpen.value = false)
+const sidebarOpen = ref(false);
+const open = () => (sidebarOpen.value = true);
+const close = () => (sidebarOpen.value = false);
 </script>
 
 <template>
-    <div class="sb-layout">
-        <button v-if="isNarrow" class="sb-burger" @click="open" aria-label="Open navigation"><span /><span /><span /></button>
+    <div class="main-slot">
+        <div class="sb-layout">
+            <button v-if="isNarrow" class="sb-burger" @click="open" aria-label="Open navigation">
+                <span /><span /><span />
+            </button>
 
-        <Transition name="sb-backdrop">
-            <div v-if="isNarrow && sidebarOpen" class="sb-backdrop" @click="close" />
-        </Transition>
+            <Transition name="sb-backdrop">
+                <div v-if="isNarrow && sidebarOpen" class="sb-backdrop" @click="close" />
+            </Transition>
 
-        <nav
-            class="sb-side-bar"
-            :class="{
-                'sb-side-bar--narrow': isNarrow,
-                'sb-side-bar--open': isNarrow && sidebarOpen,
-            }"
-        >
-            <span class="hf-side-bar-header hf-side-bar-title">{{ props.header }} </span>
-            <slot name="sidebar" :close="close" :is-narrow="isNarrow" />
-            <Footer />
-        </nav>
+            <nav
+                class="sb-side-bar"
+                :class="{
+                    'sb-side-bar--narrow': isNarrow,
+                    'sb-side-bar--open': isNarrow && sidebarOpen,
+                }"
+            >
+                <span class="hf-side-bar-header hf-side-bar-title">{{ props.header }} </span>
+                <slot name="sidebar" :close="close" :is-narrow="isNarrow" />
+                <Footer />
+            </nav>
 
-        <div class="sb-main-stage">
-            <slot name="main" />
+            <div class="sb-main-stage">
+                <slot name="main" />
+            </div>
         </div>
     </div>
 </template>
 
 <style>
+.main-slot {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+}
+
 /* ── Sidebar header (title + close button) ───────────────── */
 .hf-side-bar-header {
     display: flex;
@@ -204,6 +214,7 @@ const close = () => (sidebarOpen.value = false)
     flex-grow: 1;
     margin-left: calc(200px);
     max-width: 100vw;
+    background-color: var(--bg-very-dark);
 }
 
 @media (max-width: 1174px) {

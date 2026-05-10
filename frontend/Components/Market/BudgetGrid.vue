@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { useRosterStore as useRosterStore } from "@/Stores/RosterConfig"
+import { useRosterStore as useRosterStore } from "@/_stores/RosterConfig"
 import { ALL_LABELS, BUNDLE_SIZE, SERCA_SYNC_MAP, SERCA_TO_T4, SYNCED_LABELS } from "@/Utils/Constants"
 import { storeToRefs } from "pinia"
 import MaterialCell from "@/Components/Common/MaterialCell.vue"
@@ -211,7 +211,7 @@ watch(
     grid-column: 1 / -1;
     grid-template-columns: 250px 120px 120px;
     align-items: center;
-    border-bottom: 1px solid var(--separator-color);
+    border-bottom: 1px solid var(--border-medium);
     min-height: 0;
 }
 
@@ -221,7 +221,7 @@ watch(
     grid-column: 1 / -1;
     grid-template-columns: 250px 120px 120px 120px;
     align-items: center;
-    border-bottom: 1px solid var(--separator-color);
+    border-bottom: 1px solid var(--border-medium);
     min-height: 0;
 }
 </style>

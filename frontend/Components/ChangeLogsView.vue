@@ -1,46 +1,59 @@
 <script setup lang="ts">
-import Sidebar from "@/Components/Common/SideBar.vue"
-import { useRosterStore } from "@/Stores/RosterConfig"
-import { all_change_logs, ALL_VERSIONS, LATEST_VERSION } from "@/Utils/Changelog"
-import { storeToRefs } from "pinia"
-import { computed, defineAsyncComponent, onMounted, ref, watchEffect } from "vue"
-import { RouterLink, RouterView, useRoute } from "vue-router"
-import { marked } from "marked"
+import Sidebar from "@/Components/Common/SideBar.vue";
+import { useRosterStore } from "@/_stores/RosterConfig";
+import { all_change_logs, ALL_VERSIONS, LATEST_VERSION } from "@/Utils/Changelog";
+import { storeToRefs } from "pinia";
+import { computed, defineAsyncComponent, onMounted, ref, watchEffect } from "vue";
+import { RouterLink, RouterView, useRoute } from "vue-router";
+import { marked } from "marked";
 
-const route = useRoute()
+const route = useRoute();
 
-const { roster_config } = storeToRefs(useRosterStore())
-roster_config.value.last_seen_version = LATEST_VERSION
+const { roster_config } = storeToRefs(useRosterStore());
+roster_config.value.last_seen_version = LATEST_VERSION;
 
-const html = ref("")
+const html = ref("");
 
-const cache = new Map<string, string>()
-const loading = ref(false)
+const cache = new Map<string, string>();
+const loading = ref(false);
 
 watchEffect(async () => {
-    const version = route.params.version as string
+    const version = route.params.version as string;
 
     if (cache.has(version)) {
-        html.value = cache.get(version)!
-        return
+        html.value = cache.get(version)!;
+        return;
     }
 
-    loading.value = true
-    const res = await fetch(version === "WIP" ? `/WIP.md` : `/change-logs/${version}.md`)
-    const raw = await res.text()
-    const parsed = await marked.parse(raw)
-    cache.set(version, parsed)
-    html.value = parsed
-    loading.value = false
-})
+    loading.value = true;
+    const res = await fetch(version === "WIP" ? `/WIP.md` : `/change-logs/${version}.md`);
+    const raw = await res.text();
+    const parsed = await marked.parse(raw);
+    cache.set(version, parsed);
+    html.value = parsed;
+    loading.value = false;
+});
 </script>
 
 <template>
     <Sidebar header="Change Logs">
         <template #sidebar="{ close }">
             <div style="display: flex; flex-direction: column">
-                <RouterLink :to="{ name: 'change-logs', params: { version: 'WIP' } }" class="hf-side-bar-item" @click="close"> Work in Progress </RouterLink>
-                <RouterLink v-for="version in ALL_VERSIONS" :to="'/change-logs/' + version" class="hf-side-bar-item" @click="close"> {{ version }} </RouterLink>
+                <RouterLink
+                    :to="{ name: 'change-logs', params: { version: 'WIP' } }"
+                    class="hf-side-bar-item"
+                    @click="close"
+                >
+                    Work in Progress
+                </RouterLink>
+                <RouterLink
+                    v-for="version in ALL_VERSIONS"
+                    :to="'/change-logs/' + version"
+                    class="hf-side-bar-item"
+                    @click="close"
+                >
+                    {{ version }}
+                </RouterLink>
             </div>
         </template>
 

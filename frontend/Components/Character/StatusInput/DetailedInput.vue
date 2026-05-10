@@ -1,49 +1,66 @@
 <script setup lang="ts">
-import { ALL_LABELS, GRAPH_COLORS, T4_MATS_LABELS, ANNOTATION_COLORS, ANNOTATION_POSITIONS, ANNOTATION_LABELS, PIECE_NAMES } from "@/Utils/Constants"
-import { TreatmentPlan } from "@/Stores/CharacterProfile"
-import { get_icon_path, has_upgrades_in_range, metric_to_text } from "@/Utils/Helpers"
-import MaterialCell from "@/Components/Common/MaterialCell.vue"
-import { UpgradeStatus, WasmOp } from "@/Utils/Interfaces"
-import MaterialGraph from "./MaterialGraph.vue"
-import { storeToRefs } from "pinia"
-import { useRosterStore } from "@/Stores/RosterConfig"
-import { computed, ref, watchEffect } from "vue"
-import { build_payload } from "@/WasmInterface/PayloadBuilder"
-import { input_column_to_num } from "@/Utils/InputColumn"
-import { start_all_workers } from "../CharWorkerUtils"
-import { RouterLink } from "vue-router"
-import { get_upgrade_map, to_upgrade_key } from "@/Utils/KeyedUpgrades"
-import DetailedInputRow from "./DetailedInputRow.vue"
+import {
+    ALL_LABELS,
+    GRAPH_COLORS,
+    T4_MATS_LABELS,
+    ANNOTATION_COLORS,
+    ANNOTATION_POSITIONS,
+    ANNOTATION_LABELS,
+    PIECE_NAMES,
+} from "@/Utils/Constants";
+import { TreatmentPlan } from "@/_stores/CharacterProfile";
+import { get_icon_path, has_upgrades_in_range, metric_to_text } from "@/Utils/Helpers";
+import MaterialCell from "@/Components/Common/MaterialCell.vue";
+import { UpgradeStatus, WasmOp } from "@/Utils/Interfaces";
+import MaterialGraph from "./MaterialGraph.vue";
+import { storeToRefs } from "pinia";
+import { useRosterStore } from "@/_stores/RosterConfig";
+import { computed, ref, watchEffect } from "vue";
+import { build_payload } from "@/WasmInterface/PayloadBuilder";
+import { input_column_to_num } from "@/Utils/InputColumn";
+import { start_all_workers } from "../CharWorkerUtils";
+import { RouterLink } from "vue-router";
+import { get_upgrade_map, to_upgrade_key } from "@/Utils/KeyedUpgrades";
+import DetailedInputRow from "./DetailedInputRow.vue";
 
-const { active_profile } = storeToRefs(useRosterStore())
+const { active_profile } = storeToRefs(useRosterStore());
 
-const upgrade_map = computed(() => get_upgrade_map(active_profile.value.optimizer_worker_bundle.result?.upgrade_arr ?? null, active_profile.value.tier))
+const upgrade_map = computed(() =>
+    get_upgrade_map(
+        active_profile.value.optimizer_worker_bundle.result?.upgrade_arr ?? null,
+        active_profile.value.tier,
+    ),
+);
 const lowest_normal = computed(() =>
     PIECE_NAMES.map(
         (piece_name, piece_type) =>
             upgrade_map.value.get(
                 to_upgrade_key(
                     piece_type,
-                    (active_profile.value.normal_grid[piece_type] as UpgradeStatus[]).findIndex((value) => value == UpgradeStatus.Want),
+                    (active_profile.value.normal_grid[piece_type] as UpgradeStatus[]).findIndex(
+                        (value) => value == UpgradeStatus.Want,
+                    ),
                     true,
                     active_profile.value.tier,
                 ),
             ) ?? null,
     ),
-)
+);
 const lowest_adv = computed(() =>
     PIECE_NAMES.map(
         (_, piece_type) =>
             upgrade_map.value.get(
                 to_upgrade_key(
                     piece_type,
-                    (active_profile.value.adv_grid[piece_type] as UpgradeStatus[]).findIndex((value) => value == UpgradeStatus.Want),
+                    (active_profile.value.adv_grid[piece_type] as UpgradeStatus[]).findIndex(
+                        (value) => value == UpgradeStatus.Want,
+                    ),
                     false,
                     active_profile.value.tier,
                 ),
             ) ?? null,
     ),
-)
+);
 
 // console.log(upgrade_map.value, lowest_normal.value, upgrade_map.value.get("0,18,true,0"))
 </script>
@@ -177,7 +194,7 @@ const lowest_adv = computed(() =>
     grid-column: 1 / -1;
     grid-template-columns: var(--hf-dist-columns);
     align-items: center;
-    border-bottom: 1px solid var(--separator-color);
+    border-bottom: 1px solid var(--border-medium);
     min-height: 0;
 }
 

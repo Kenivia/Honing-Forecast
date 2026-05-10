@@ -1,12 +1,12 @@
 <script setup lang="ts">
-import { useRosterStore } from "@/Stores/RosterConfig"
-import { ALL_LABELS, T4_JUICE_LABELS } from "@/Utils/Constants"
-import { get_piece_name, get_icon_path } from "@/Utils/Helpers"
-import { Upgrade, UpgradeStatus } from "@/Utils/Interfaces"
-import { storeToRefs } from "pinia"
-import { computed, nextTick, ref, watch } from "vue"
-import { grid_change_callback, start_all_workers } from "../CharWorkerUtils"
-import { to_upgrade_key } from "@/Utils/KeyedUpgrades"
+import { useRosterStore } from "@/_stores/RosterConfig";
+import { ALL_LABELS, T4_JUICE_LABELS } from "@/Utils/Constants";
+import { get_piece_name, get_icon_path } from "@/Utils/Helpers";
+import { Upgrade, UpgradeStatus } from "@/Utils/Interfaces";
+import { storeToRefs } from "pinia";
+import { computed, nextTick, ref, watch } from "vue";
+import { grid_change_callback, start_all_workers } from "../CharWorkerUtils";
+import { to_upgrade_key } from "@/Utils/KeyedUpgrades";
 import {
     aggregate_streaks,
     artisan_function,
@@ -14,44 +14,52 @@ import {
     compute_used_materials,
     cumulative_chance,
     streaks_to_text,
-} from "./InstructionsUtil"
-import MaterialCell from "@/Components/Common/MaterialCell.vue"
+} from "./InstructionsUtil";
+import MaterialCell from "@/Components/Common/MaterialCell.vue";
 
-const { active_profile } = storeToRefs(useRosterStore())
-const { active_roster_mats_owned, active_tradable_mats_owned } = storeToRefs(useRosterStore())
+const { active_profile } = storeToRefs(useRosterStore());
+const { active_roster_mats_owned, active_tradable_mats_owned } = storeToRefs(useRosterStore());
 
 const props = defineProps<{
-    upgrade: Upgrade
-    perform_order: number
-    index_in_special_state: number
-    special_invalid_index: number
-}>()
+    upgrade: Upgrade;
+    perform_order: number;
+    index_in_special_state: number;
+    special_invalid_index: number;
+}>();
 
 const free_tap_this_upgrade = computed(() => {
-    return props.index_in_special_state < props.special_invalid_index && props.upgrade.this_special_chance > 0
-})
+    return props.index_in_special_state < props.special_invalid_index && props.upgrade.this_special_chance > 0;
+});
 
 const juice_info = computed(() => {
-    return active_profile.value.histogram_worker_bundle.result.juice_info
-})
+    return active_profile.value.histogram_worker_bundle.result.juice_info;
+});
 
-const streaks = computed(() => aggregate_streaks(props.upgrade, juice_info.value, taps_so_far.value))
-const streak_texts = computed(() => streaks_to_text(props.upgrade, streaks.value, juice_info.value, taps_so_far.value))
+const streaks = computed(() => aggregate_streaks(props.upgrade, juice_info.value, taps_so_far.value));
+const streak_texts = computed(() => streaks_to_text(props.upgrade, streaks.value, juice_info.value, taps_so_far.value));
 
-const taps_so_far = ref(props.upgrade.alr_failed || 0)
+const taps_so_far = ref(props.upgrade.alr_failed || 0);
 watch(
     () => props.upgrade.alr_failed,
     () => {
-        taps_so_far.value = props.upgrade.alr_failed
+        taps_so_far.value = props.upgrade.alr_failed;
     }, // This watch is here to watch for when upgrade changes (optimizer shuffled order or tick /untick), in which case props.upgrade changes
-)
+);
 
 // In Rust start_xp ranges from 0 to 100 (each bar = 10 xp instead of 100 in game)
-const current_adv_upgrade = ref(props.upgrade.adv_config ? Math.floor(props.upgrade.adv_config.start_xp / 10) + props.upgrade.upgrade_index * 10 : 0)
-const current_adv_xp = ref(props.upgrade.adv_config ? (props.upgrade.adv_config.start_xp - Math.floor(props.upgrade.adv_config.start_xp / 10) * 10) * 10 : 0)
-const current_grace_progress = ref(props.upgrade.adv_config.start_balls)
-const next_free = ref(props.upgrade.adv_config?.next_free ?? false)
-const next_big = ref(props.upgrade.adv_config?.next_big ?? false)
+const current_adv_upgrade = ref(
+    props.upgrade.adv_config
+        ? Math.floor(props.upgrade.adv_config.start_xp / 10) + props.upgrade.upgrade_index * 10
+        : 0,
+);
+const current_adv_xp = ref(
+    props.upgrade.adv_config
+        ? (props.upgrade.adv_config.start_xp - Math.floor(props.upgrade.adv_config.start_xp / 10) * 10) * 10
+        : 0,
+);
+const current_grace_progress = ref(props.upgrade.adv_config.start_balls);
+const next_free = ref(props.upgrade.adv_config?.next_free ?? false);
+const next_big = ref(props.upgrade.adv_config?.next_big ?? false);
 
 watch(
     [
@@ -61,15 +69,17 @@ watch(
         () => props.upgrade.adv_config.next_free,
     ],
     () => {
-        current_adv_upgrade.value = props.upgrade.adv_config ? Math.floor(props.upgrade.adv_config.start_xp / 10) + props.upgrade.upgrade_index * 10 : 0
-        ;((current_adv_xp.value = props.upgrade.adv_config
+        current_adv_upgrade.value = props.upgrade.adv_config
+            ? Math.floor(props.upgrade.adv_config.start_xp / 10) + props.upgrade.upgrade_index * 10
+            : 0;
+        ((current_adv_xp.value = props.upgrade.adv_config
             ? (props.upgrade.adv_config.start_xp - Math.floor(props.upgrade.adv_config.start_xp / 10) * 10) * 10
             : 0),
-            (current_grace_progress.value = props.upgrade.adv_config.start_balls))
-        next_free.value = props.upgrade.adv_config?.next_free ?? false
-        next_big.value = props.upgrade.adv_config?.next_big ?? false
+            (current_grace_progress.value = props.upgrade.adv_config.start_balls));
+        next_free.value = props.upgrade.adv_config?.next_free ?? false;
+        next_big.value = props.upgrade.adv_config?.next_big ?? false;
     },
-)
+);
 
 // function write_normal_progress() {
 //     taps_so_far.value = Math.max(0, Math.min(props.upgrade.normal_dist.length - 1, taps_so_far.value))
@@ -97,18 +107,20 @@ watch(
 // }
 
 function juice_icon_path(upgrade: Upgrade, juice: boolean) {
-    let juice_info = active_profile.value.histogram_worker_bundle.result.juice_info
-    let relevant_id_map = upgrade.is_normal_honing ? juice_info.normal_uindex_to_id : juice_info.adv_uindex_to_id
+    let juice_info = active_profile.value.histogram_worker_bundle.result.juice_info;
+    let relevant_id_map = upgrade.is_normal_honing ? juice_info.normal_uindex_to_id : juice_info.adv_uindex_to_id;
 
-    let relevant_upgrade = relevant_id_map[upgrade.upgrade_index]
+    let relevant_upgrade = relevant_id_map[upgrade.upgrade_index];
     if (relevant_upgrade.length === 0) {
-        return "no juice avail"
+        return "no juice avail";
     }
-    return get_icon_path(T4_JUICE_LABELS[relevant_upgrade[juice ? 0 : relevant_upgrade.length - 1]][upgrade.is_weapon ? 0 : 1])
+    return get_icon_path(
+        T4_JUICE_LABELS[relevant_upgrade[juice ? 0 : relevant_upgrade.length - 1]][upgrade.is_weapon ? 0 : 1],
+    );
 }
 
-const progress_expanded = ref(false)
-const must_show = ref(false)
+const progress_expanded = ref(false);
+const must_show = ref(false);
 
 watch(
     [
@@ -121,61 +133,75 @@ watch(
     ],
     () => {
         if (props.upgrade.is_normal_honing) {
-            must_show.value = props.upgrade.starting_artisan > 0
+            must_show.value = props.upgrade.starting_artisan > 0;
         } else {
             must_show.value =
                 props.upgrade.adv_config.start_balls > 0 ||
                 props.upgrade.adv_config.start_xp > 0 ||
                 props.upgrade.adv_config.next_big ||
-                props.upgrade.adv_config.next_free
+                props.upgrade.adv_config.next_free;
         }
     },
     { immediate: true },
-)
-const show_success_modal = ref(false)
+);
+const show_success_modal = ref(false);
 function onSucceedClick() {
-    show_success_modal.value = true
+    show_success_modal.value = true;
 }
 
 // ============================================== Popup related stuff =============================================
 
-const succeed_without_deduct = ref(false)
-const adv_juice_used = ref(0)
-const adv_scroll_used = ref(0)
+const succeed_without_deduct = ref(false);
+const adv_juice_used = ref(0);
+const adv_scroll_used = ref(0);
 
-const used_materials = computed(() => compute_used_materials(props.upgrade, taps_so_far.value, juice_info.value, adv_juice_used.value, adv_scroll_used.value))
-const remaining_materials = computed(() => compute_remaininig_materials(used_materials.value))
+const used_materials = computed(() =>
+    compute_used_materials(
+        props.upgrade,
+        taps_so_far.value,
+        juice_info.value,
+        adv_juice_used.value,
+        adv_scroll_used.value,
+    ),
+);
+const remaining_materials = computed(() => compute_remaininig_materials(used_materials.value));
 const visibleRows = computed(() => {
-    const tier = active_profile.value.tier
-    if (!ALL_LABELS || !ALL_LABELS[tier]) return []
+    const tier = active_profile.value.tier;
+    if (!ALL_LABELS || !ALL_LABELS[tier]) return [];
     return ALL_LABELS[tier]
         .map((label, index) => ({ label, index, row: index }))
-        .filter((item) => used_materials.value[item.index] > 0 && active_profile.value.bound_budgets[tier].enabled[item.index])
-})
+        .filter(
+            (item) =>
+                used_materials.value[item.index] > 0 && active_profile.value.bound_budgets[tier].enabled[item.index],
+        );
+});
 
 async function confirmSuccess() {
     if (!succeed_without_deduct.value) {
-        const tier = active_profile.value.tier
+        const tier = active_profile.value.tier;
 
         used_materials.value.forEach((cost, index) => {
-            if (cost <= 0) return
-            active_profile.value.bound_budgets[tier].data[index] = remaining_materials.value.bound_budgets[index].toLocaleString()
-            active_roster_mats_owned.value[tier].data[index] = remaining_materials.value.roster_mats[index].toLocaleString()
-            active_tradable_mats_owned.value[tier].data[index] = remaining_materials.value.tradable_mats[index].toLocaleString()
-        })
+            if (cost <= 0) return;
+            active_profile.value.bound_budgets[tier].data[index] =
+                remaining_materials.value.bound_budgets[index].toLocaleString();
+            active_roster_mats_owned.value[tier].data[index] =
+                remaining_materials.value.roster_mats[index].toLocaleString();
+            active_tradable_mats_owned.value[tier].data[index] =
+                remaining_materials.value.tradable_mats[index].toLocaleString();
+        });
     }
     if (props.upgrade.is_normal_honing) {
-        active_profile.value.normal_grid[props.upgrade.piece_type][props.upgrade.upgrade_index] = UpgradeStatus.Done
+        active_profile.value.normal_grid[props.upgrade.piece_type][props.upgrade.upgrade_index] = UpgradeStatus.Done;
     } else {
-        active_profile.value.adv_grid[props.upgrade.piece_type][props.upgrade.upgrade_index] = UpgradeStatus.Done
+        active_profile.value.adv_grid[props.upgrade.piece_type][props.upgrade.upgrade_index] = UpgradeStatus.Done;
     }
-    grid_change_callback()
+    grid_change_callback();
 
-    show_success_modal.value = false
-    succeed_without_deduct.value = false
-    active_profile.value.material_rerender_trigger = false
-    await nextTick()
-    active_profile.value.material_rerender_trigger = true
+    show_success_modal.value = false;
+    succeed_without_deduct.value = false;
+    active_profile.value.material_rerender_trigger = false;
+    await nextTick();
+    active_profile.value.material_rerender_trigger = true;
 }
 </script>
 
@@ -206,7 +232,11 @@ async function confirmSuccess() {
             <div class="hf-scrollable-instructions" :class="{ 'is-dimmed': false }">
                 <div v-for="(streak_text, i) in streak_texts" :key="i" class="instruction-stack">
                     <div class="icon-slot" :class="{ 'should-not-use': !streak_text.topIconActive }">
-                        <img :src="juice_icon_path(upgrade, true)" alt="Top Mat" :style="{ opacity: streak_text.topIconActive ? 1 : 0.1 }" />
+                        <img
+                            :src="juice_icon_path(upgrade, true)"
+                            alt="Top Mat"
+                            :style="{ opacity: streak_text.topIconActive ? 1 : 0.1 }"
+                        />
                         <!-- <div v-if="!vStreak.topIconActive" class="empty-cross"></div> -->
                     </div>
                     <div
@@ -214,13 +244,20 @@ async function confirmSuccess() {
                         class="icon-slot"
                         :class="{ 'should-not-use': !streak_text.bottomIconActive }"
                     >
-                        <img :src="juice_icon_path(upgrade, false)" alt="Bottom Mat" :style="{ opacity: streak_text.bottomIconActive ? 1 : 0.1 }" />
+                        <img
+                            :src="juice_icon_path(upgrade, false)"
+                            alt="Bottom Mat"
+                            :style="{ opacity: streak_text.bottomIconActive ? 1 : 0.1 }"
+                        />
                         <!-- <div v-if="!vStreak.bottomIconActive" class="empty-cross"></div> -->
                     </div>
                     <div class="text-slot">
                         <div class="line-primary" v-html="streak_text.name_line"></div>
                         <div class="line-primary" v-html="streak_text.line1"></div>
-                        <div :class="upgrade.is_normal_honing ? 'line-muted' : 'line-primary'" v-html="streak_text.line2"></div>
+                        <div
+                            :class="upgrade.is_normal_honing ? 'line-muted' : 'line-primary'"
+                            v-html="streak_text.line2"
+                        ></div>
                     </div>
                 </div>
             </div>
@@ -229,16 +266,26 @@ async function confirmSuccess() {
                 <!-- <button class="btn-succeed" @click="onSucceedClick">Succeed & deduct costs</button> -->
                 <button class="btn-expand" @click="progress_expanded = true">Show more</button>
             </div>
-            <div v-if="progress_expanded && active_profile.optimizer_worker_bundle.status === 'busy'" class="hf-right-section">
+            <div
+                v-if="progress_expanded && active_profile.optimizer_worker_bundle.status === 'busy'"
+                class="hf-right-section"
+            >
                 <!-- <button class="btn-succeed" @click="onSucceedClick">Succeed & deduct costs</button> -->
                 <span> Optimizer working...</span>
             </div>
 
-            <div v-if="(progress_expanded || must_show) && active_profile.optimizer_worker_bundle.status !== 'busy'" class="hf-right-section">
+            <div
+                v-if="(progress_expanded || must_show) && active_profile.optimizer_worker_bundle.status !== 'busy'"
+                class="hf-right-section"
+            >
                 <div class="inputs-container">
                     <div v-if="upgrade.is_normal_honing" style="display: contents">
-                        <div class="input-row text-left">Current Artisan energy: {{ artisan_function(upgrade, taps_so_far, juice_info) }}%</div>
-                        <div class="input-row text-left">Cumulative chance: {{ cumulative_chance(upgrade, taps_so_far, juice_info) }}%</div>
+                        <div class="input-row text-left">
+                            Current Artisan energy: {{ artisan_function(upgrade, taps_so_far, juice_info) }}%
+                        </div>
+                        <div class="input-row text-left">
+                            Cumulative chance: {{ cumulative_chance(upgrade, taps_so_far, juice_info) }}%
+                        </div>
                     </div>
 
                     <div v-else style="display: contents"></div>
@@ -253,10 +300,17 @@ async function confirmSuccess() {
             <div class="hf-popup" @click.stop>
                 <div v-if="upgrade.is_normal_honing" class="popup-header">
                     <h3>Confirm Success</h3>
-                    <div class="input-row text-left">Final Artisan energy: {{ artisan_function(upgrade, Math.max(0, taps_so_far - 1), juice_info) }}%</div>
-                    <div class="input-row text-left">Cumulative chance: {{ cumulative_chance(upgrade, taps_so_far, juice_info) }}%</div>
+                    <div class="input-row text-left">
+                        Final Artisan energy: {{ artisan_function(upgrade, Math.max(0, taps_so_far - 1), juice_info) }}%
+                    </div>
+                    <div class="input-row text-left">
+                        Cumulative chance: {{ cumulative_chance(upgrade, taps_so_far, juice_info) }}%
+                    </div>
                 </div>
-                <div v-if="upgrade.is_normal_honing" style="display: flex; align-items: center; justify-content: flex-end; flex-direction: row">
+                <div
+                    v-if="upgrade.is_normal_honing"
+                    style="display: flex; align-items: center; justify-content: flex-end; flex-direction: row"
+                >
                     <div class="input-row">
                         <label>Taps to succeed</label>
                         <input
@@ -285,9 +339,15 @@ async function confirmSuccess() {
                 </div>
                 <div v-if="!upgrade.is_normal_honing" class="popup-header">
                     <h3>Confirm Success</h3>
-                    <label class="input-row"> Total taps used <input v-model="taps_so_far" :min="0" :max="100" /> </label>
-                    <label class="input-row"> Juiced taps used <input v-model="adv_juice_used" :min="0" :max="100" /> </label>
-                    <label class="input-row"> Scroll taps used <input v-model="adv_scroll_used" :min="0" :max="100" /> </label>
+                    <label class="input-row">
+                        Total taps used <input v-model="taps_so_far" :min="0" :max="100" />
+                    </label>
+                    <label class="input-row">
+                        Juiced taps used <input v-model="adv_juice_used" :min="0" :max="100" />
+                    </label>
+                    <label class="input-row">
+                        Scroll taps used <input v-model="adv_scroll_used" :min="0" :max="100" />
+                    </label>
                 </div>
 
                 <div class="hf-popup-grid">
@@ -299,10 +359,27 @@ async function confirmSuccess() {
                     </div>
 
                     <div v-for="{ label, row } in visibleRows" :key="`manifest-${label}`" class="hf-mats-row">
-                        <MaterialCell :input_column="used_materials" :row="row" :input_color="'--hf-graph-average-color'" :label="label" />
-                        <MaterialCell :input_column="remaining_materials.bound_budgets" :row="row" :input_color="'--hf-graph-bound-color'" />
-                        <MaterialCell :input_column="remaining_materials.roster_mats" :row="row" :input_color="'--hf-graph-roster-color'" />
-                        <MaterialCell :input_column="remaining_materials.tradable_mats" :row="row" :input_color="'--hf-graph-tradable-color'" />
+                        <MaterialCell
+                            :input_column="used_materials"
+                            :row="row"
+                            :input_color="'--hf-graph-average-color'"
+                            :label="label"
+                        />
+                        <MaterialCell
+                            :input_column="remaining_materials.bound_budgets"
+                            :row="row"
+                            :input_color="'--hf-graph-bound-color'"
+                        />
+                        <MaterialCell
+                            :input_column="remaining_materials.roster_mats"
+                            :row="row"
+                            :input_color="'--hf-graph-roster-color'"
+                        />
+                        <MaterialCell
+                            :input_column="remaining_materials.tradable_mats"
+                            :row="row"
+                            :input_color="'--hf-graph-tradable-color'"
+                        />
                     </div>
                     <div v-if="upgrade.is_normal_honing && taps_so_far == 0" class="hf-mats-row">
                         <MaterialCell
@@ -341,7 +418,7 @@ async function confirmSuccess() {
 }
 
 .hf-upgrade-topline {
-    border-bottom: 1px solid var(--separator-color, #333);
+    border-bottom: 1px solid var(--border-medium, #333);
     padding-bottom: 0.5rem;
     margin-bottom: 1rem;
     font-weight: bold;
@@ -521,7 +598,7 @@ async function confirmSuccess() {
     width: 60px;
     padding: 0.25rem;
     background: var(--hf-bg-deep, #121212);
-    border: 1px solid var(--separator-color, #333);
+    border: 1px solid var(--border-medium, #333);
     color: white;
     border-radius: 4px;
 }
@@ -566,7 +643,7 @@ async function confirmSuccess() {
     grid-column: 1 / -1;
     grid-template-columns: subgrid;
     align-items: center;
-    border-bottom: 1px solid var(--separator-color, #333);
+    border-bottom: 1px solid var(--border-medium, #333);
     min-height: 40px;
     padding: 0.5rem 0;
     justify-items: right;
@@ -578,7 +655,7 @@ async function confirmSuccess() {
     gap: 1rem;
     margin-top: 1rem;
     padding-top: 1rem;
-    border-top: 1px solid var(--separator-color, #333);
+    border-top: 1px solid var(--border-medium, #333);
 }
 
 .btn-confirm {

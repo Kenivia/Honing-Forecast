@@ -1,19 +1,19 @@
 <script setup lang="ts">
-import { useRosterStore } from "@/Stores/RosterConfig"
-import { LATEST_VERSION, minor_version_equal } from "@/Utils/Changelog"
-import { storeToRefs } from "pinia"
-import { ref, watch } from "vue"
-import { RouterLink } from "vue-router"
+import { useRosterStore } from "@/_stores/RosterConfig";
+import { LATEST_VERSION, minor_version_equal } from "@/Utils/Changelog";
+import { storeToRefs } from "pinia";
+import { ref, watch } from "vue";
+import { RouterLink } from "vue-router";
 
-const { roster_config } = storeToRefs(useRosterStore())
-const show_new_tag = ref(!minor_version_equal(roster_config.value.last_seen_version, LATEST_VERSION))
+const { roster_config } = storeToRefs(useRosterStore());
+const show_new_tag = ref(!minor_version_equal(roster_config.value.last_seen_version, LATEST_VERSION));
 
 watch(
     () => roster_config.value.last_seen_version,
     () => {
-        show_new_tag.value = false
+        show_new_tag.value = false;
     },
-)
+);
 </script>
 
 <template>
