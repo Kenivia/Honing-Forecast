@@ -62,9 +62,7 @@ watchEffect(async () => {
 
     <template #main>
       <div class="card-shell change-log-card p-3">
-        <div class="text-9xl; text-center; mt-20" v-if="loading">
-          Loading...
-        </div>
+        <div class="mt-20 text-center text-9xl" v-if="loading">Loading...</div>
         <div v-else class="prose" v-html="html" /></div
     ></template>
   </Sidebar>
@@ -74,9 +72,10 @@ watchEffect(async () => {
 <style>
 .change-log-card {
   width: min(100%, 1000px);
+  padding: 18px;
 }
 .prose h1 {
-  font-size: 3rem;
+  font-size: 2.5rem;
   font-weight: 600;
   margin-bottom: 1rem;
 }

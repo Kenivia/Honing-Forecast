@@ -36,10 +36,15 @@ function handleClick() {
     :disabled="!eligible"
     :label="labelText"
     :class="[
-      !eligible ? 'cursor-not-allowed' : 'cursor-pointer',
-      warning && eligible ? 'text-(--warning)' : '',
-      'bg-(--serca-blue)',
-      'barebone-button',
+      'generic-button',
+      !eligible ? 'cursor-not-allowed!' : 'cursor-pointer',
+      warning && eligible
+        ? 'text-(--warning)!'
+        : !eligible
+          ? 'text-(--text-very-muted)!'
+          : '',
+      'bg-(--serca-blue)!',
+      'text-wrap!',
     ]"
     @click="handleClick"
   />

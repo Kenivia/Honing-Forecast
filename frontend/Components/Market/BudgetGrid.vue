@@ -65,7 +65,7 @@ watch(
     class="flex w-max max-w-full flex-row flex-wrap gap-2"
   >
     <div
-      class="roster-inputs-serca card-shell"
+      class="roster-inputs-serca card-shell card-body"
       :style="{ gridRow: `span ${String(ALL_LABELS[1].length + 1)}` }"
     >
       <div class="table-title-row border-b border-(--border-medium)">
@@ -76,6 +76,7 @@ watch(
         <span class="text-(--text-muted)">Market price</span>
         <span class="text-(--gold)">Effective price</span>
       </div>
+
       <div
         v-for="(label, row) in ALL_LABELS[1]"
         :key="`roster-input-serca-${label}`"
@@ -136,7 +137,7 @@ watch(
         />
       </div>
     </div>
-    <div class="card-shell roster-inputs-tier-4">
+    <div class="card-shell roster-inputs-tier-4 card-body">
       <div class="table-title-row border-b border-(--border-medium)">
         <span class="pr-1 text-right text-(--graph-roster-color)"
           >Roster Bound Mats</span

@@ -153,19 +153,19 @@ function delete_profile(index, roster_id) {
                     name: 'char',
                     params: { characterName: profile.char_name },
                   }"
-                  class="header-button"
+                  class="generic-button"
                 >
                   Go to character
                 </RouterLink>
                 <button
-                  class="header-button"
+                  class="generic-button"
                   @click="() => duplicate(profile_index)"
                 >
                   Make a copy
                 </button>
                 <button
                   v-if="roster_config.profiles.length > 1"
-                  class="header-button btn-cancel"
+                  class="generic-button btn-cancel"
                   @click="() => delete_profile(profile_index, roster_id)"
                 >
                   Delete

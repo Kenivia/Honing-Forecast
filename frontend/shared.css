@@ -38,7 +38,9 @@
 }
 
 .card-body {
-  padding: 1rem;
+  padding-left: 1rem;
+  padding-right: 1rem;
+  padding-bottom: 1rem;
 }
 .header-button {
   color: var(--text-main);
@@ -105,3 +107,17 @@
   height: 100%;
 }
 
+.control-panel-title {
+  /* w-full border-b border-(--border-subtle) */
+  width: 100%;
+  border-bottom: 1px solid var(--border-subtle);
+}
+.control-panel-checkbox-row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 0.25rem;
+  border-bottom: 1px solid var(--border-muted);
+  padding-top: 0.125rem;
+  padding-bottom: 0.125rem;
+}
