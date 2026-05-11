@@ -43,6 +43,7 @@
     --border-muted: #6969693b;
 
     --cancel: #a92727;
+    --warning: #ff3b3b;
     --serca-blue: #2806b1;
     --serca-blue-hover: #4520d8;
     --hf-free-tap: #ed7bff;
@@ -50,4 +51,6 @@
     --pending: var(--gold);
     --achieved: rgba(133, 219, 116);
     --font-body: Nunito;
+
+    
 }

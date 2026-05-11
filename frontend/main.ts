@@ -4,8 +4,7 @@ import Tooltip from "primevue/tooltip";
 
 import App from "./App.vue";
 import "./theme.css";
-import "./card.css";
-import "./common.css";
+import "./shared.css";
 import "./index.css";
 import "./sidebar.css";
 import router from "./Router";

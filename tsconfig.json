@@ -22,6 +22,6 @@
         },
         "types": ["vite/client"]
     },
-    "include": ["frontend/**/*", "crates/wasm/pkg/**/*", "vite.config.ts"],
+    "include": ["frontend/**/*", "crates/wasm/pkg/**/*", "vite.config.ts", "frontend/Components/Common/TierConvertButton.vue"],
     "exclude": ["node_modules", "dist"]
 }

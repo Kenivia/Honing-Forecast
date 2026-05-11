@@ -18,83 +18,111 @@ const cache = new Map<string, string>();
 const loading = ref(false);
 
 watchEffect(async () => {
-    const version = route.params.version as string;
+  const version = route.params.version as string;
 
-    if (cache.has(version)) {
-        html.value = cache.get(version)!;
-        return;
-    }
+  if (cache.has(version)) {
+    html.value = cache.get(version)!;
+    return;
+  }
 
-    loading.value = true;
-    const res = await fetch(version === "WIP" ? `/WIP.md` : `/change-logs/${version}.md`);
-    const raw = await res.text();
-    const parsed = await marked.parse(raw);
-    cache.set(version, parsed);
-    html.value = parsed;
-    loading.value = false;
+  loading.value = true;
+  const res = await fetch(
+    version === "WIP" ? `/WIP.md` : `/change-logs/${version}.md`,
+  );
+  const raw = await res.text();
+  const parsed = await marked.parse(raw);
+  cache.set(version, parsed);
+  html.value = parsed;
+  loading.value = false;
 });
 </script>
 
 <template>
-    <Sidebar header="Change Logs">
-        <template #sidebar="{ close }">
-            <div style="display: flex; flex-direction: column">
-                <RouterLink
-                    :to="{ name: 'change-logs', params: { version: 'WIP' } }"
-                    class="side-bar-item"
-                    @click="close"
-                >
-                    Work in Progress
-                </RouterLink>
-                <RouterLink
-                    v-for="version in ALL_VERSIONS"
-                    :to="'/change-logs/' + version"
-                    class="side-bar-item"
-                    @click="close"
-                    :key="version"
-                >
-                    {{ version }}
-                </RouterLink>
-            </div>
-        </template>
+  <Sidebar header="Change Logs">
+    <template #sidebar="{ close }">
+      <div class="flex flex-col">
+        <RouterLink
+          :to="{ name: 'change-logs', params: { version: 'WIP' } }"
+          class="side-bar-link"
+          @click="close"
+        >
+          Work in Progress
+        </RouterLink>
+        <RouterLink
+          v-for="version in ALL_VERSIONS"
+          :to="'/change-logs/' + version"
+          class="side-bar-link"
+          @click="close"
+          :key="version"
+        >
+          {{ version }}
+        </RouterLink>
+      </div>
+    </template>
 
-        <template #main>
-            <div class="hf-card change-log-card">
-                <div style="font-size: 60px; text-align: center; margin-top: 70px" v-if="loading">Loading...</div>
-                <div v-else class="prose" v-html="html" /></div
-        ></template>
-    </Sidebar>
+    <template #main>
+      <div class="card-shell change-log-card p-3">
+        <div class="text-9xl; text-center; mt-20" v-if="loading">
+          Loading...
+        </div>
+        <div v-else class="prose" v-html="html" /></div
+    ></template>
+  </Sidebar>
 </template>
 
 <!-- this style cannot be scoped cos it needs to go deep into the html -->
 <style>
 .change-log-card {
-    width: min(100%, 1000px);
-    padding: 12px;
+  width: min(100%, 1000px);
+}
+.prose h1 {
+  font-size: 3rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+}
+
+.prose li {
+  list-style-type: " - ";
+  list-style-position: inside;
 }
 .prose h2 {
-    border-bottom: 1px solid var(--border-medium);
+  margin-top: 1.5rem;
+  margin-bottom: 0.5rem;
+  font-size: x-large;
+  font-weight: 500;
+  border-bottom: 1px solid var(--border-medium);
 }
 .prose tr {
-    display: grid;
-    grid-template-columns: 100px 710px 80px 50px;
+  display: grid;
+  grid-template-columns: 100px calc(100% - 100px - 80px - 50px - 30px) 80px 50px;
+  border-bottom: 1px solid var(--border-subtle);
+  align-items: flex-start;
+}
+@media (max-width: 480px) {
+  .prose tr {
+    display: flex;
+    flex-direction: column;
     border-bottom: 1px solid var(--border-subtle);
-    gap: 10px;
     align-items: flex-start;
+    justify-content: space-between;
+  }
 }
 .prose td {
-    align-items: flex-start;
+  align-items: flex-start;
 }
 .prose table {
-    display: table;
-    border-collapse: collapse;
+  display: flex;
+  flex-direction: column;
+  border-collapse: collapse;
 }
 .prose th {
-    text-align: left;
+  text-align: left;
+  font-size: small;
+  display: grid;
 }
 
 .prose a {
-    color: var(--gold);
-    text-decoration: underline;
+  color: var(--gold);
+  text-decoration: underline;
 }
 </style>

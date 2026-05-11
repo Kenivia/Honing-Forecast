@@ -35,6 +35,8 @@ If you'd like to help with any of the below, feel free to submit a PR on [github
 
 - add special icon to instruction
 
+- figure out how to style select options
+
 ## Roadmap (big projects)
 
 ### 1st: ~~re-write the frontend~~

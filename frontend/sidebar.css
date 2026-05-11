@@ -1,24 +1,33 @@
-.side-bar-item {
-    /* display: block; */
-    padding: 8px 12px;
-    border-radius: 6px;
-    color: var(--text-bright);
-    text-decoration: none;
-    white-space: nowrap;
-    text-overflow: ellipsis;
-    overflow: hidden;
-    transition:
-        color 0.1s ease,
-        background-color 0.1s ease;
-    cursor: pointer;
+.side-bar-link {
+  /* display: block; */
+  padding: 8px 12px;
+  border-radius: 6px;
+  color: var(--text-bright);
+  text-decoration: none;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  overflow: hidden;
+  transition:
+    color 0.1s ease,
+    background-color 0.1s ease;
+  cursor: pointer;
 }
 
-.side-bar-item:hover {
-    background-color: var(--bg-medium);
+.side-bar-link:hover {
+  background-color: var(--bg-medium);
 }
 
 /* RouterLink active state */
-.side-bar-item.router-link-active {
-    color: var(--gold);
-    background-color: var(--bg-medium);
+.side-bar-link.router-link-active {
+  color: var(--gold);
+  background-color: var(--bg-medium);
+}
+.side-bar-item {
+  /* display: block; */
+
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-around ;
 }
