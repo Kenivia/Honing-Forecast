@@ -8,25 +8,19 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
-  padding: 4px 0px;
+  padding: 0.2rem 1rem 0.2rem 1rem;
+  border-bottom: 1px solid var(--border-subtle);
+  height: max-content;
 }
 
 .card-title {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  padding-left: 8px;
   color: var(--text-bright);
-  font-size: 1rem;
-}
-
-.card-title-dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: white;
-  box-shadow: 0 0 8px var(--gold);
+  font-size: 1.1rem;
+  text-align: left;
+  font-weight: 600;
 }
 
 .card-hint {
@@ -38,9 +32,7 @@
 }
 
 .card-body {
-  padding-left: 1rem;
-  padding-right: 1rem;
-  padding-bottom: 1rem;
+  padding: 0.5rem 1rem 1rem 1rem;
 }
 .header-button {
   color: var(--text-main);

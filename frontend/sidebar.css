@@ -1,15 +1,12 @@
 .side-bar-link {
   /* display: block; */
-  padding: 8px 12px;
+  padding: 8px 4px;
   border-radius: 6px;
   color: var(--text-bright);
   text-decoration: none;
   white-space: nowrap;
-  text-overflow: ellipsis;
-  overflow: hidden;
-  transition:
-    color 0.1s ease,
-    background-color 0.1s ease;
+  /* text-overflow:; */
+  overflow: visible;
   cursor: pointer;
 }
 
@@ -29,5 +26,5 @@
   flex-direction: row;
   flex-wrap: wrap;
   align-items: center;
-  justify-content: space-around ;
+  justify-content: space-around;
 }

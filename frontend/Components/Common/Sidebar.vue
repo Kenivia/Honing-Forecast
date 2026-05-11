@@ -131,11 +131,10 @@ const close = () => (sidebarOpen.value = false);
   align-items: center;
   gap: 5px;
   padding: 6px;
-  background: var(--bg-bright);
+  background: var(--bg-dark);
   border: 2px solid var(--text-bright);
   border-radius: 12px;
   cursor: pointer;
-  transition: background-color 0.1s ease;
 }
 
 .burger:hover {

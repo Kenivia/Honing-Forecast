@@ -6,7 +6,7 @@ import { computed, watch, watchEffect } from "vue";
 import TierConvertButton from "../Common/TierConvertButton.vue";
 import { fetch_callback, useTimedFetch } from "@/Utils/MarketDataFetcher";
 import { input_column_to_num, parse_input } from "@/Utils/InputColumn";
-import Sidebar from "../Common/SideBar.vue";
+import Sidebar from "../Common/Sidebar.vue";
 import BudgetGrid from "./BudgetGrid.vue";
 import { force_rerender } from "./MarketUtil";
 
@@ -130,16 +130,6 @@ watch(
 <template>
   <Sidebar header="Market & mats">
     <template #sidebar>
-      <!-- <SelectButton
-                v-if="isNarrow"
-                v-model="roster_config.tier"
-                :options="TIER_OPTIONS"
-                option-label="label"
-                option-value="value"
-                class="roster-tier-select"
-                :option-disabled="(data) => data.value === roster_config.tier"
-            /> -->
-
       <div class="side-bar-item">
         <div class="flex flex-row items-center justify-around gap-3">
           <select
@@ -227,77 +217,5 @@ watch(
 
   color: var(--text-muted);
   flex-direction: column;
-}
-
-.roster-tier-select {
-  display: inline-flex;
-  gap: 6px;
-  background: transparent;
-  border: none;
-  padding: 0;
-}
-
-/* Each button */
-.roster-tier-select .p-togglebutton.p-togglebutton {
-  color: var(--text-muted);
-  background: transparent;
-  border: 1px solid var(--border-subtle);
-  /* border-radius: 999px; */
-  font: 500 11px/1 var(--font-body);
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  padding: 7px 12px;
-  cursor: pointer;
-  transition:
-    border-color 0.2s ease,
-    color 0.2s ease,
-    background-color 0.2s ease,
-    box-shadow 0.2s ease;
-  box-shadow: none;
-  outline: none;
-}
-
-/* Divider */
-.roster-tier-select .p-togglebutton.p-togglebutton:not(:first-child)::before {
-  content: "";
-  position: absolute;
-  left: -4px;
-  top: 20%;
-  height: 60%;
-  width: 1px;
-  background: var(--border-subtle);
-  opacity: 0.6;
-  pointer-events: none;
-}
-
-/* Hover (unselected) */
-.roster-tier-select
-  .p-togglebutton.p-togglebutton:not(.p-togglebutton-checked):hover {
-  border-color: var(--gold-dim);
-  color: var(--gold);
-  background: rgba(201, 168, 76, 0.08);
-}
-
-/* Selected */
-.roster-tier-select
-  .p-togglebutton.p-togglebutton-checked.p-togglebutton-checked {
-  color: var(--gold);
-  background: rgba(201, 168, 76, 0.15);
-  border-color: var(--gold-dim);
-  box-shadow: 0 0 0 1px var(--gold-dim);
-  cursor: default;
-}
-
-/* Selected hover suppression */
-.roster-tier-select
-  .p-togglebutton.p-togglebutton-checked.p-togglebutton-checked:hover {
-  background: rgba(201, 168, 76, 0.15);
-  border-color: var(--gold-dim);
-}
-
-/* Focus ring */
-.roster-tier-select .p-togglebutton.p-togglebutton:focus-visible {
-  outline: 2px solid var(--gold-dim);
-  outline-offset: 2px;
 }
 </style>

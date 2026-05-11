@@ -10,7 +10,7 @@ import { onUnmounted, watch } from "vue";
 import { RouterLink, useRoute, useRouter } from "vue-router";
 import ControlPanel from "./ControlPanel.vue";
 
-import Sidebar from "../Common/SideBar.vue";
+import Sidebar from "../Common/Sidebar.vue";
 import { start_all_workers } from "./CharWorkerUtils";
 import GraphControlPanel from "./GraphControlPanel.vue";
 import Guide from "./Guide.vue";
@@ -78,7 +78,7 @@ onUnmounted(() => {
 <template>
   <Sidebar :header="active_profile.char_name">
     <template #sidebar="{ close }">
-      <div style="display: flex; flex-direction: column">
+      <div class="flex flex-col">
         <RouterLink to="guide" class="side-bar-link" @click="close">
           Guide
         </RouterLink>

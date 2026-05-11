@@ -18,12 +18,13 @@ const props = defineProps<{
   input_width?: number;
   label_width?: number;
   icon_size?: number;
+  height?: number;
 }>();
 
 const actual_input_width = computed(() => `${props.input_width ?? 100}px`);
 const actual_label_width = computed(() => `${props.label_width ?? 150}px`);
-const actual_icon_size = computed(() => `${props.icon_size ?? 32}px`);
-
+const actual_icon_size = computed(() => `${props.icon_size ?? 34}px`);
+const actual_height = computed(() => `${props.height ?? 42}px`);
 const resolved_color = computed(() => {
   return cssVar(props.input_color, props.input_color);
 });
@@ -39,7 +40,10 @@ const this_data = ref(
 <template>
   <div
     class="material-cell"
-    :style="{ gridColumn: treat_as_two ? 'span 2' : 'span 1' }"
+    :style="{
+      gridColumn: treat_as_two ? 'span 2' : 'span 1',
+      height: actual_height,
+    }"
   >
     <input
       v-if="!hide_tick && label && !Array.isArray(input_column)"
@@ -70,7 +74,11 @@ const this_data = ref(
       v-if="!Array.isArray(input_column)"
       type="text"
       class="generic-input"
-      :style="{ color: resolved_color, width: actual_input_width }"
+      :style="{
+        color: resolved_color,
+        width: actual_input_width,
+        minWidth: actual_input_width,
+      }"
       v-model="this_data"
       @change="
         ((this_data = get_modified_cell(input_column, row, $event)),
@@ -100,14 +108,13 @@ const this_data = ref(
 .material-cell {
   display: flex;
   align-items: center;
-  justify-content: flex-start;
+  justify-content: left;
   gap: 6px;
   font-size: 16px;
   min-width: 0;
   text-align: right;
   padding-right: 8px;
-  position: relative;
-  height: 100%;
+  height: 36px; /* 100% seems to be a tiny bit off for some reason */
 }
 
 .material-cell-result {
@@ -126,12 +133,12 @@ const this_data = ref(
   font-size: 12px;
   min-width: 0;
   text-align: left;
-  justify-self: right;
+  /* justify-self: right; */
 
-  margin-left: auto;
+  /* margin-left: auto;
   position: absolute;
   transform: translateX(100%);
-  right: 50px;
+  right: 50px; */
 }
 .row-label {
   display: inline-flex;

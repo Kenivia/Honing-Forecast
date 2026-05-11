@@ -1,4 +1,4 @@
-<script setup lang="ts">
+<!-- <script setup lang="ts">
 import {
     ALL_LABELS,
     GRAPH_COLORS,
@@ -9,7 +9,7 @@ import {
     PIECE_NAMES,
 } from "@/Utils/Constants";
 import { TreatmentPlan } from "@/Stores/CharacterProfile";
-import { get_icon_path, has_upgrades_in_range, metric_to_text } from "@/Utils/Helpers";
+
 import MaterialCell from "@/Components/Common/MaterialCell.vue";
 import { AdvProgress, Upgrade, UpgradeStatus, WasmOp } from "@/Utils/Interfaces";
 import MaterialGraph from "./MaterialGraph.vue";
@@ -128,4 +128,4 @@ function write_progress() {
             </label>
         </div>
     </div>
-</template>
+</template> -->

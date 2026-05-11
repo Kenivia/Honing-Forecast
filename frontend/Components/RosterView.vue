@@ -16,7 +16,7 @@ import {
 import { storeToRefs } from "pinia";
 import { ref } from "vue";
 import { RouterLink } from "vue-router";
-import Sidebar from "./Common/SideBar.vue";
+import Sidebar from "./Common/Sidebar.vue";
 
 const roster_store = useRosterStore();
 const { roster_config, roster_ids } = storeToRefs(roster_store);
@@ -108,14 +108,8 @@ function delete_profile(index, roster_id) {
           class="card-shell flex flex-col"
           :key="roster_id"
         >
-          <div
-            v-if="roster_config.profiles.length > 1"
-            class="card-header border-b border-(--border-subtle)"
-          >
-            <div class="card-title">
-              <span class="card-title-dot" />
-              <span class="card-title" /> Roster {{ roster_index + 1 }}
-            </div>
+          <div v-if="roster_config.profiles.length > 1" class="card-header">
+            <span class="card-title"> Roster {{ roster_index + 1 }}</span>
           </div>
           <div class="card-body">
             <div

@@ -1,4 +1,4 @@
-<script setup lang="ts">
+<!-- <script setup lang="ts">
 import {
     ALL_LABELS,
     GRAPH_COLORS,
@@ -68,7 +68,7 @@ const lowest_adv = computed(() =>
 <template>
     <section class="hf-card hf-analysis-pane">
         <div class="hf-card-header">
-            <div class="hf-card-title"><span class="hf-card-title-dot" />Detailed inputs</div>
+            <div class="hf-card-title">Detailed inputs</div>
         </div>
         <div class="hf-card-body">
             <div class="hf-dist-scroll">
@@ -253,4 +253,5 @@ const lowest_adv = computed(() =>
         --hf-cell-icon-size: 20px;
     }
 }
-</style>
+</style> -->
+<template>a</template>
