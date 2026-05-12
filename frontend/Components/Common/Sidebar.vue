@@ -7,7 +7,7 @@ const props = withDefaults(defineProps<{ header?: string }>(), {
   header: "",
 });
 
-const { isNarrow } = useMediaIsNarrow(1174);
+const isNarrow = useMediaIsNarrow(1174);
 
 const sidebarOpen = ref(false);
 const open = () => (sidebarOpen.value = true);
@@ -38,7 +38,7 @@ const close = () => (sidebarOpen.value = false);
         }"
       >
         <span
-          class="side-bar-header items-center border-b border-(--border-subtle)"
+          class="side-bar-header items-center border-b border-(--border-muted)"
           >{{ props.header }}
         </span>
         <slot name="sidebar" :close="close" :is-narrow="isNarrow" />
@@ -68,7 +68,7 @@ const close = () => (sidebarOpen.value = false);
   position: absolute;
   color: var(--text-muted);
   font-size: 1.1rem;
-  border-bottom: 1px solid var(--border-subtle);
+  border-bottom: 1px solid var(--border-muted);
 }
 
 /* ── Nav links ───────────────────────────────────────────── */
@@ -78,13 +78,13 @@ const close = () => (sidebarOpen.value = false);
   flex-shrink: 0;
   gap: 2px;
   padding: calc(234px + 56px) 8px 12px 8px;
-  border-right: 1px solid var(--border-subtle);
+  border-right: 1px solid var(--border-muted);
   height: max(calc(100vh + 234px - 50px), 100%);
   top: calc(50px - 234px);
   justify-content: space-between;
   position: fixed;
   z-index: 1;
-  background-color: var(--bg-dark);
+  background-color: var(--bg-muted);
   display: flex;
   flex-direction: column;
   overflow-x: hidden;
@@ -131,7 +131,7 @@ const close = () => (sidebarOpen.value = false);
   align-items: center;
   gap: 5px;
   padding: 6px;
-  background: var(--bg-dark);
+  background: var(--bg-muted);
   border: 2px solid var(--text-bright);
   border-radius: 12px;
   cursor: pointer;
@@ -169,13 +169,14 @@ const close = () => (sidebarOpen.value = false);
   display: flex;
   flex-direction: column;
   gap: 10px;
-  padding: 8px;
+  padding: 1px;
   justify-content: flex-start;
   align-items: center;
   flex-grow: 1;
-  margin-left: calc(200px);
+  margin-left: 200px;
   max-width: 100vw;
-  background-color: var(--bg-very-dark);
+  background-color: var(--bg-very-muted);
+  padding-top: 1rem;
 }
 
 @media (max-width: 1174px) {

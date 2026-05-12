@@ -6,12 +6,7 @@ import { BUTTON_LABELS, CSS_NAMES } from "@/Utils/Constants";
 const store = useRosterStore();
 const { roster_config, enabled_annotations } = storeToRefs(store);
 
-const GRAPH_COLOR_VARS = [
-  "--graph-average-color",
-  "--graph-bound-color",
-  "--graph-roster-color",
-  "--graph-tradable-color",
-];
+const GRAPH_COLOR_VARS = ["--average", "--bound", "--roster", "--tradable"];
 </script>
 
 <template>
@@ -28,7 +23,7 @@ const GRAPH_COLOR_VARS = [
         :key="index"
         class="cursor-pointer rounded-full px-1 text-xs"
         :style="{
-          border: `1px solid var(${enabled_annotations[index] ? '--border-medium' : '--border-subtle'})`,
+          border: `1px solid var(${enabled_annotations[index] ? '--border-main' : '--border-muted'})`,
           background: enabled_annotations[index]
             ? `var(${GRAPH_COLOR_VARS[index]})`
             : '',

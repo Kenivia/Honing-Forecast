@@ -151,7 +151,7 @@ function change_tier() {
   <div
     class="flex w-full flex-row flex-wrap items-start justify-center gap-2.5"
   >
-    <section class="card-shell w-fit max-w-full">
+    <section class="card-shell">
       <div class="card-header">
         <div class="fler-row flex gap-5">
           <label class="text-(--achieved)"

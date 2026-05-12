@@ -215,7 +215,7 @@ function change_one_and_update_keyed(
 .cell {
   width: 26px;
   height: 26px;
-  border: 1px solid var(--border-medium);
+  border: 1px solid var(--border-main);
   border-radius: 2px;
   background: transparent;
   font-size: 10px;
@@ -224,7 +224,7 @@ function change_one_and_update_keyed(
   user-select: none;
   align-items: center;
   color: var(--text-muted);
-  border-color: var(--border-subtle);
+  border-color: var(--border-muted);
 }
 .cell.Done {
   background: var(--achieved);

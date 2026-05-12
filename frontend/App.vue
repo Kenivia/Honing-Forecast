@@ -22,9 +22,8 @@ start_fetch(roster_store.roster_config.region);
 roster_store.$subscribe((_mutation, state) => {
   debounced_write_roster_config(state);
 });
-const { isNarrow: is500Narrow } = useMediaIsNarrow(500);
-const { isNarrow: is600Narrow } = useMediaIsNarrow(600);
-const { isNarrow: is800Narrow } = useMediaIsNarrow();
+
+const is900Narrow = useMediaIsNarrow(900);
 
 const route = useRoute();
 const router = useRouter();
@@ -45,7 +44,7 @@ const char_name_from_route = computed(
 </script>
 
 <template>
-  <div class="flex min-h-lvh flex-col">
+  <div class="flex min-h-lvh max-w-full flex-col">
     <header>
       <!-- <div v-if="!is500Narrow" class="page-header-row" style="width: 100%; justify-content: space-around">
                 <span>
@@ -63,11 +62,11 @@ const char_name_from_route = computed(
             </div> -->
 
       <nav
-        class="thin-scroll-bar relative z-50 flex flex-row items-center justify-start border-b border-(--border-subtle) bg-(--bg-dark) whitespace-nowrap"
+        class="relative z-50 flex flex-row items-center justify-start overflow-x-auto border-b border-(--border-muted) bg-(--bg-muted) whitespace-nowrap"
       >
         <div
-          v-if="!is500Narrow"
-          class="flex w-50 flex-row items-center text-lg"
+          v-if="!is900Narrow"
+          class="flex w-50 min-w-50 flex-row items-center text-lg"
         >
           <router-link to="/">
             <div class="grid h-12 w-12 place-items-center">
@@ -77,7 +76,7 @@ const char_name_from_route = computed(
                 class="h-9 w-9"
               /></div
           ></router-link>
-          <div v-if="!is800Narrow">
+          <div v-if="!is900Narrow">
             <h1
               class="color-(--text-main) flex flex-row items-center font-semibold"
             >
@@ -103,11 +102,11 @@ const char_name_from_route = computed(
         </router-link>
 
         <div class="header-spacer" />
-        <div class="contents" v-if="!is600Narrow || all_profiles.length <= 1">
+        <div class="contents" v-if="!is900Narrow || all_profiles.length <= 1">
           <div
             v-for="roster_id in roster_ids"
-            style="display: flex; flex-direction: row"
             :key="`roster-${roster_id}`"
+            class="flex flex-row"
           >
             <div
               v-for="[profile, profile_index] in all_profiles

@@ -6,6 +6,7 @@ import {
   ANNOTATION_COLORS,
   ANNOTATION_POSITIONS,
   ANNOTATION_LABELS,
+  SERCA_TO_T4_INDICES,
 } from "@/Utils/Constants";
 import { TreatmentPlan } from "@/Stores/CharacterProfile";
 import { has_upgrades_in_range, metric_to_text } from "@/Utils/Helpers";
@@ -19,6 +20,8 @@ import { input_column_to_num } from "@/Utils/InputColumn";
 import { start_all_workers } from "../CharWorkerUtils";
 import { RouterLink } from "vue-router";
 import { WasmOp } from "@/WasmInterface/WasmWorker";
+import { GridConfig } from "@/Utils/GridStyling";
+import { useMediaIsNarrow } from "@/Utils/WindowSize";
 
 const { active_profile } = storeToRefs(useRosterStore());
 const {
@@ -90,14 +93,14 @@ const visibleRows = computed(() => {
 });
 
 const tickbox_tooltip = `Untick the box if you don't plan on buying that material from market.`;
-// <span style="color:var(--hf-text-muted)">(it also disable selling this mat)</span>`
+// <span style="color:var(--text-muted)">(it also disable selling this mat)</span>`
 
 const market_gold_text = "Avg gold spent buying from market";
 const tradable_gold_text =
   "Avg gold spent buying minus gold from selling tradables";
-const total_market_gold_text = "Average tradable gold spent";
-const total_market_gold_suffix = "(raw + buying needed mats & juice)";
-const total_tradable_gold_text = "Avg sell value of leftover tradable mats";
+const total_market_gold_text = "Average tradable gold spent:";
+const total_market_gold_suffix = "(raw  +  buying needed mats & juice)";
+const total_tradable_gold_text = "Avg sell value of leftover tradable mats:";
 const total_tradable_gold_suffix = "(taxed)";
 const all_bound_text = "Treat roster bound as tradable"; // i dont think i'll show this tho cos its kinda confusing
 const selected_optimizer_treatement = ref(
@@ -123,18 +126,21 @@ watchEffect(() => {
   }
 });
 
-const bound_chance_text = "Bound Chance";
-const roster_chance_text = "Bound + Roster Chance";
-const tradable_chance_text = "Bound + Roster + Tradable";
-const chance_explainer_text = computed(() =>
-  active_profile.value.histogram_treatment_plan ==
-  TreatmentPlan.TreatTradableAsBound
-    ? "Chance to succeed all upgrades before running out of Tradable material of this type"
-    : active_profile.value.histogram_treatment_plan ==
-        TreatmentPlan.TreatRosterAsBound
-      ? "Chance to succeed all upgrades before running out of Roster-Bound material of this type"
-      : "Chance to succeed all upgrades before running out of Char-Bound material of this type",
-);
+const bound_chance_text =
+  "Chance to succeed all upgrades before running out of Char-Bound material of this type";
+const roster_chance_text =
+  "Chance to succeed all upgrades before running out of Roster-Bound material of this type";
+const tradable_chance_text =
+  "Chance to succeed all upgrades before running out of Tradable material of this type";
+// const chance_explainer_text = computed(() =>
+//   active_profile.value.histogram_treatment_plan ==
+//   TreatmentPlan.TreatTradableAsBound
+//     ? tradable_chance_text
+//     : active_profile.value.histogram_treatment_plan ==
+//         TreatmentPlan.TreatRosterAsBound
+//       ? roster_chance_text
+//       : bound_chance_text,
+// );
 
 const selected_histogram_treatment = ref(
   active_profile.value.histogram_treatment_plan ==
@@ -149,11 +155,11 @@ const selected_histogram_treatment = ref(
 const selected_histogram_color = ref(
   active_profile.value.histogram_treatment_plan ==
     TreatmentPlan.TreatRosterAsTradable
-    ? "var(--hf-graph-bound-color)"
+    ? "var(--bound)"
     : active_profile.value.histogram_treatment_plan ==
         TreatmentPlan.TreatRosterAsBound
-      ? "var(--hf-graph-roster-color)"
-      : "var(--hf-graph-tradable-color)",
+      ? "var(--roster)"
+      : "var(--tradable)",
 ); // initialize here otherwise it'll be null until we change it
 function change_histogram_treatment(event) {
   let new_val = event.target.value;
@@ -173,11 +179,11 @@ function change_histogram_treatment(event) {
   selected_histogram_color.value =
     active_profile.value.histogram_treatment_plan ==
     TreatmentPlan.TreatRosterAsTradable
-      ? "var(--hf-graph-bound-color)"
+      ? "var(--bound)"
       : active_profile.value.histogram_treatment_plan ==
           TreatmentPlan.TreatRosterAsBound
-        ? "var(--hf-graph-roster-color)"
-        : "var(--hf-graph-tradable-color)";
+        ? "var(--roster)"
+        : "var(--tradable)";
   // console.log(new_val, active_profile.value.histogram_treatment_plan)
   active_profile.value.histogram_worker_bundle.throttled_start(
     WasmOp.Histogram,
@@ -235,299 +241,303 @@ function special_hover_annotation(x, _y, cy, material_type, color): string {
 }
 
 const show_special_guide = ref(false);
+
+const grid: GridConfig = {
+  grid_template_columns: "250px 90px 120px 120px 350px",
+  grid_row_span: `span ${ALL_LABELS[1].length + 1}`,
+};
+
+const compact_grid: GridConfig = {
+  grid_template_columns: "180px 80px 110px 110px 350px",
+  grid_row_span: `span ${ALL_LABELS[1].length + 1}`,
+};
+const is962Narrow = useMediaIsNarrow(962);
+
+const active_grid_style = computed(() =>
+  is962Narrow.value ? compact_grid : grid,
+);
 </script>
 
 <template>
-  <section class="hf-card hf-analysis-pane">
-    <div class="hf-card-header">
-      <div class="hf-card-title">Costs distribution</div>
+  <section class="card-shell">
+    <div class="card-header">
+      <div class="card-title">Costs distribution</div>
     </div>
-    <div class="hf-card-body">
-      <div class="hf-dist-scroll">
-        <div class="hf-dist-stack">
-          <div class="hf-dist-graphs">
-            <div class="hf-table-title-row">
-              <div
-                class="hf-question-mark"
-                :style="{ textAlign: 'left', opacity: 1 }"
-                v-tooltip="{
-                  value: tickbox_tooltip,
-                  escape: false,
-                }"
-              >
-                <span style="font-size: 12px; align-self: center">?</span>
-              </div>
-              <span class="hf-bound-header">Bound Mats</span>
-
-              <select
-                class="hf-bound-select"
-                v-model="selected_histogram_treatment"
-                :style="{
-                  color: selected_histogram_color,
-                }"
-                @change="change_histogram_treatment"
-                v-tooltip="{
-                  value: chance_explainer_text,
-                  // escape: false,
-                }"
-              >
-                <option>{{ bound_chance_text }}</option>
-                <option>{{ roster_chance_text }}</option>
-                <option>{{ tradable_chance_text }}</option>
-                <!-- <Select :options="items" optionLabel="name">
+    <div
+      class="card-body outer-grid pt-0! pb-2!"
+      :style="{
+        '--grid-cols': active_grid_style.grid_template_columns,
+        gridRow: active_grid_style.grid_row_span,
+      }"
+    >
+      <div class="mats-row h-fit! items-end! border-b-(--border-main)!">
+        <div class="flex flex-row justify-between">
+          <div
+            class="question-mark mb-1"
+            :style="{ textAlign: 'left', opacity: 1 }"
+            v-tooltip="{
+              value: tickbox_tooltip,
+              escape: false,
+            }"
+          >
+            <span class="self-center text-xs">?</span>
+          </div>
+          <span class="w-27 text-left text-(--bound)">Bound Mats</span>
+        </div>
+        <select
+          class="selector -mr-4! ml-4!"
+          v-model="selected_histogram_treatment"
+          :style="{
+            color: selected_histogram_color,
+          }"
+          @change="change_histogram_treatment"
+        >
+          <option>{{ bound_chance_text }}</option>
+          <option>{{ roster_chance_text }}</option>
+          <option>{{ tradable_chance_text }}</option>
+          <!-- <Select :options="items" optionLabel="name">
   <template #option="{ option }">
     <span style="font-family: 'Your Font', sans-serif;">{{ option.name }}</span>
   </template>
 </Select> -->
-              </select>
-              <span class="hf-average-header">Average</span>
-              <div style="position: relative">
-                <span class="hf-gold-header">Avg Gold Used</span>
-                <span class="hf-gold-header-suffix">(tradable)</span>
-              </div>
-
-              <span class="hf-hover-hint">Hover graph for details</span>
-              <!-- <span v-if="customLeftovers">Left</span> -->
-            </div>
-            <div
-              v-if="
-                ALL_LABELS[active_profile.tier].length ==
-                  active_profile.bound_budgets[active_profile.tier].data
-                    .length &&
-                // active_profile.optimizer_worker_bundle.result &&
-                active_profile.histogram_worker_bundle.result &&
-                active_profile.histogram_worker_bundle.result &&
-                active_profile.material_rerender_trigger
-              "
-              style="display: contents"
-            >
-              <div
-                v-for="{ label, row } in visibleRows"
-                :key="`graph-${label}`"
-                class="hf-mats-row"
-                :class="{
-                  disabled:
-                    !active_profile.bound_budgets[active_profile.tier].enabled[
-                      row
-                    ],
-                }"
-              >
-                <MaterialCell
-                  :input_column="
-                    active_profile.bound_budgets[active_profile.tier]
-                  "
-                  :row="row"
-                  :label="label"
-                  :input_color="'--hf-graph-bound-color'"
-                  :setter="
-                    (val) => {
-                      active_profile.bound_budgets[active_profile.tier].data[
-                        row
-                      ] = val;
-                    }
-                  "
-                  :hide_tick="!matsIndices.includes(row)"
-                  :treat_as_two="true"
-                  :callback="() => start_all_workers()"
-                />
-                <!-- {{ console.log(averages) }} -->
-                <MaterialCell
-                  :input_column="
-                    active_profile.histogram_worker_bundle.result.chances_arr[
-                      active_profile.histogram_treatment_plan + 1
-                    ]
-                  "
-                  :row="row"
-                  :input_color="selected_histogram_color"
-                  :is_percentage="true"
-                />
-                <MaterialCell
-                  :input_column="average_breakdown"
-                  :row="row"
-                  :input_color="'--hf-graph-average-color'"
-                />
-                <MaterialCell
-                  :input_column="gold_breakdown"
-                  :row="row"
-                  :input_color="'--hf-gold'"
-                />
-                <MaterialGraph
-                  :data="histogram_result?.cum_percentiles?.[row] ?? null"
-                  :material-label="label"
-                  :graph-color="GRAPH_COLORS[active_profile.tier][row]"
-                  :cumulative="roster_config.cumulative_graph"
-                  :annotations="annotation_values[row]"
-                  :annotationColors="
-                    ANNOTATION_COLORS.filter((_, i) => enabled_annotations[i])
-                  "
-                  :annotation-positions="
-                    ANNOTATION_POSITIONS.filter(
-                      (_, i) => enabled_annotations[i],
-                    )
-                  "
-                  :annotationLabels="
-                    ANNOTATION_LABELS.filter((_, i) => enabled_annotations[i])
-                  "
-                  :tooltip-text-fn="hover_annotation"
-                />
-              </div>
-
-              <div class="hf-mats-row">
-                <MaterialCell
-                  :input_column="active_profile.special_budget"
-                  :row="0"
-                  :setter="
-                    (val) => (active_profile.special_budget.data[0] = val)
-                  "
-                  :label="
-                    (active_profile.tier == 1 ? 'Serca ' : '') +
-                    active_profile.special_budget.keys[0]
-                  "
-                  :hide_tick="true"
-                  :treat_as_two="true"
-                  :callback="() => start_all_workers()"
-                ></MaterialCell>
-                <span
-                  class="special-convert-guide"
-                  @click="() => (show_special_guide = true)"
-                  >Should I use in T4 or convert?</span
-                >
-                <MaterialGraph
-                  :data="
-                    active_profile.optimizer_worker_bundle.result?.latest_special_probs
-                      .concat(
-                        new Array(
-                          Math.max(
-                            0,
-                            active_profile.optimizer_worker_bundle.result.upgrade_arr.filter(
-                              (x) => x.is_normal_honing,
-                            ).length -
-                              active_profile.optimizer_worker_bundle.result
-                                ?.latest_special_probs.length,
-                          ),
-                        ).fill(0),
-                      )
-                      .slice(
-                        0,
-                        active_profile.optimizer_worker_bundle.result.upgrade_arr.filter(
-                          (x) => x.is_normal_honing,
-                        ).length,
-                      )
-                      .map((x, index) => [index, x]) ?? null
-                  "
-                  :material-label="'Special'"
-                  :graph-color="'--hf-free-tap'"
-                  :cumulative="roster_config.cumulative_graph"
-                  :tooltip-text-fn="special_hover_annotation"
-                  :max-yoverride="1"
-                  style="grid-column: span 3"
-                  :empty_message="'No normal honing available'"
-                  :upside_down_cumulative="true"
-                />
-              </div>
-            </div>
-          </div>
-          <div class="hf-dist-graphs">
-            <div class="hf-mats-row">
-              <div class="hf-metric-label">
-                {{ total_market_gold_text }}
-              </div>
-              <div class="hf-metric-status">
-                {{
-                  metric_to_text(
-                    active_profile.histogram_worker_bundle.result
-                      ?.metrics_arr[0],
-                  ) ?? "No Result yet"
-                }}
-
-                <span style="font-size: 16px">
-                  {{ total_market_gold_suffix }}
-                </span>
-              </div>
-            </div>
-
-            <div
-              v-if="
-                active_profile.optimizer_treatment_plan ==
-                  TreatmentPlan.TreatRosterAsBound &&
-                active_profile.auto_start_optimizer
-              "
-              class="hf-mats-row"
-            >
-              <div
-                class="hf-metric-label"
-                style="font-size: 16px; color: var(--hf-text-muted)"
-              >
-                {{ total_tradable_gold_text }}
-              </div>
-              <div class="hf-metric-status" style="color: var(--hf-text-muted)">
-                {{
-                  metric_to_text(
-                    active_profile.histogram_worker_bundle.result
-                      ?.metrics_arr[0] -
-                      active_profile.histogram_worker_bundle.result
-                        ?.metrics_arr[1],
-                  ) ?? "No Result yet"
-                }}
-
-                <span style="font-size: 16px">
-                  {{ total_tradable_gold_suffix }}
-                </span>
-              </div>
-            </div>
-            <div
-              style="
-                display: flex;
-                flex-direction: row;
-                grid-column: 1 / span 6;
-                align-items: center;
-              "
-            >
-              <span class="optimizer-progress-label"
-                >Optimizer progress:
-                {{
-                  active_profile.optimizer_worker_bundle.est_progress_percentage.toFixed(
-                    2,
-                  )
-                }}%
-              </span>
-              <div class="progress-bar">
-                <div
-                  class="progress-fill"
-                  :style="{
-                    width: `${active_profile.optimizer_worker_bundle.est_progress_percentage}%`,
-                  }"
-                />
-              </div>
-            </div>
-          </div>
+        </select>
+        <span class="text-right text-(--average)">Average</span>
+        <div class="flex flex-row content-end">
+          <span class="w-full basis-full text-right text-nowrap text-(--gold)"
+            >Avg Gold used</span
+          >
+          <span
+            class="w-0 basis-0 origin-right transform-[translateY(4px)] text-left text-xs text-(--text-very-muted)"
+            >(tradable)</span
+          >
         </div>
+
+        <span class="text-(--text-muted)">Hover graph for details</span>
+        <!-- <span v-if="customLeftovers">Left</span> -->
+      </div>
+      <div
+        v-if="
+          ALL_LABELS[active_profile.tier].length ==
+            active_profile.bound_budgets[active_profile.tier].data.length &&
+          // active_profile.optimizer_worker_bundle.result &&
+          active_profile.histogram_worker_bundle.result &&
+          active_profile.histogram_worker_bundle.result &&
+          active_profile.material_rerender_trigger
+        "
+        class="contents"
+      >
+        <div
+          v-for="{ label, row } in visibleRows"
+          :key="`graph-${label}`"
+          class="mats-row"
+          :class="{
+            disabled:
+              !active_profile.bound_budgets[active_profile.tier].enabled[row],
+          }"
+        >
+          <MaterialCell
+            :input_column="active_profile.bound_budgets[active_profile.tier]"
+            :row="row"
+            :label="label"
+            :input_color="'--bound'"
+            :setter="
+              (val) => {
+                active_profile.bound_budgets[active_profile.tier].data[row] =
+                  val;
+              }
+            "
+            :hide_tick="!matsIndices.includes(row)"
+            :callback="() => start_all_workers()"
+            :hide_label="is962Narrow"
+          />
+          <!-- {{ console.log(averages) }} -->
+          <MaterialCell
+            :input_column="
+              active_profile.histogram_worker_bundle.result.chances_arr[
+                active_profile.histogram_treatment_plan + 1
+              ]
+            "
+            :row="row"
+            :input_color="selected_histogram_color"
+            :is_percentage="true"
+          />
+          <MaterialCell
+            :input_column="average_breakdown"
+            :row="row"
+            :input_color="'--average'"
+          />
+          <MaterialCell
+            :input_column="gold_breakdown"
+            :row="row"
+            :input_color="'--gold'"
+          />
+          <MaterialGraph
+            :data="histogram_result?.cum_percentiles?.[row] ?? null"
+            :material-label="label"
+            :graph-color="GRAPH_COLORS[active_profile.tier][row]"
+            :cumulative="roster_config.cumulative_graph"
+            :annotations="annotation_values[row]"
+            :annotationColors="
+              ANNOTATION_COLORS.filter((_, i) => enabled_annotations[i])
+            "
+            :annotation-positions="
+              ANNOTATION_POSITIONS.filter((_, i) => enabled_annotations[i])
+            "
+            :annotationLabels="
+              ANNOTATION_LABELS.filter((_, i) => enabled_annotations[i])
+            "
+            :tooltip-text-fn="hover_annotation"
+          />
+        </div>
+
+        <div class="mats-row">
+          <MaterialCell
+            :input_column="active_profile.special_budget"
+            :row="0"
+            :setter="(val) => (active_profile.special_budget.data[0] = val)"
+            :label="
+              (active_profile.tier == 1 ? 'Serca ' : '') +
+              active_profile.special_budget.keys[0]
+            "
+            :hide_tick="true"
+            :callback="() => start_all_workers()"
+            :hide_label="is962Narrow"
+          ></MaterialCell>
+          <span
+            class="text-xs text-(--free-tap) underline hover:text-(--free-tap-faded)"
+            @click="() => (show_special_guide = true)"
+            >Should I use in T4 or convert?</span
+          >
+          <MaterialGraph
+            :data="
+              active_profile.optimizer_worker_bundle.result?.latest_special_probs
+                .concat(
+                  new Array(
+                    Math.max(
+                      0,
+                      active_profile.optimizer_worker_bundle.result.upgrade_arr.filter(
+                        (x) => x.is_normal_honing,
+                      ).length -
+                        active_profile.optimizer_worker_bundle.result
+                          ?.latest_special_probs.length,
+                    ),
+                  ).fill(0),
+                )
+                .slice(
+                  0,
+                  active_profile.optimizer_worker_bundle.result.upgrade_arr.filter(
+                    (x) => x.is_normal_honing,
+                  ).length,
+                )
+                .map((x, index) => [index, x]) ?? null
+            "
+            :material-label="'Special'"
+            :graph-color="'--free-tap'"
+            :cumulative="roster_config.cumulative_graph"
+            :tooltip-text-fn="special_hover_annotation"
+            :max-yoverride="1"
+            style="grid-column: span 3"
+            :empty_message="'No normal honing available'"
+            :upside_down_cumulative="true"
+          />
+        </div>
+      </div>
+    </div>
+    <div class="metric-container">
+      <div class="metric-label text-(--gold)">
+        {{ total_market_gold_text }}
+      </div>
+      <div class="metric-result-container">
+        <span class="metric-result text-(--gold)">
+          {{
+            metric_to_text(
+              active_profile.histogram_worker_bundle.result?.metrics_arr[0],
+            ) ?? "No Result yet"
+          }}
+        </span>
+        <span class="metric-result-suffix">
+          {{ total_market_gold_suffix }}
+        </span>
+      </div>
+    </div>
+    <div
+      v-if="
+        active_profile.optimizer_treatment_plan ==
+          TreatmentPlan.TreatRosterAsBound &&
+        active_profile.auto_start_optimizer
+      "
+      class="metric-container"
+    >
+      <div class="metric-label text-(--text-muted)">
+        {{ total_tradable_gold_text }}
+      </div>
+      <div class="metric-result-container">
+        <span class="metric-result text-(--text-muted)">
+          {{
+            metric_to_text(
+              active_profile.histogram_worker_bundle.result?.metrics_arr[0] -
+                active_profile.histogram_worker_bundle.result?.metrics_arr[1],
+            ) ?? "No Result yet"
+          }}
+        </span>
+        <span class="metric-result-suffix">
+          {{ total_tradable_gold_suffix }}
+        </span>
+      </div>
+    </div>
+
+    <div class="mx-2 flex flex-row items-center gap-3">
+      <span class="text-nowrap"
+        >Optimizer progress:
+        <span
+          :style="{
+            color:
+              active_profile.optimizer_worker_bundle.est_progress_percentage ==
+              100
+                ? 'var(--gold)'
+                : 'var(--warning-dark)',
+          }"
+        >
+          {{
+            active_profile.optimizer_worker_bundle.est_progress_percentage.toFixed(
+              2,
+            )
+          }}%</span
+        >
+      </span>
+      <div class="progress-bar">
+        <div
+          class="progress-fill"
+          :style="{
+            width: `${active_profile.optimizer_worker_bundle.est_progress_percentage}%`,
+          }"
+        />
       </div>
     </div>
 
     <Teleport to="body">
       <div
         v-if="show_special_guide"
-        class="hf-modal-overlay"
+        class="modal-overlay"
         @click="show_special_guide = false"
       >
-        <div class="hf-popup" @click.stop>
-          <span style="font-size: 30px; color: var(--hf-text-bright)">
+        <div class="popup" @click.stop>
+          <span style="font-size: 30px; color: var(--text-bright)">
             Short answer: Save Special Leaps and convert to Serca, unless you
-            are tapping +25
+            are tapping + 25
           </span>
-          <span style="font-size: 16px; color: var(--hf-text-muted)">
-            If you're not +20 yet, use it in T4.
+          <span style="font-size: 16px; color: var(--text-muted)">
+            If you're not + 20 yet, use it in T4.
           </span>
           <img src="/Special convert chart.png" alt="Special convert chart" />
         </div>
       </div>
     </Teleport>
   </section>
-  <span>
+  <!-- <span>
     The above results assumes that you follow the optimal
     <RouterLink
-      class="hf-metric-label"
+      class="metric-label"
       style="text-decoration: underline"
       :to="{
         name: 'instructions',
@@ -536,47 +546,98 @@ const show_special_guide = ref(false);
     >
       Taps Instructions
     </RouterLink>
-  </span>
+  </span> -->
 </template>
 <style scoped>
-.special-convert-guide {
-  color: var(--hf-free-tap);
+.metric-container {
+  margin-left: auto;
+  margin-right: auto;
+  display: flex;
+  width: 100%;
+  min-width: 100%;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  align-content: center;
+  gap: 0.25rem;
+  margin-bottom: 0.5rem;
+}
+
+/* trying to align the gold value with the gold breadown column, kinda scuffed but works i tihnk*/
+.metric-label {
+  flex-shrink: 1;
+  flex-basis: 49.48%; /* (250+90+120+16)/962  */
+  text-align: right;
+  font-size: 1.25rem;
+  line-height: 1.75rem;
+}
+/* aligning for the non-squished cases */
+.metric-result-container {
+  display: flex;
+  min-width: calc(100% - 49.48%);
+  flex-shrink: 1;
+  flex-basis: calc(100% - 49.48%);
+  flex-wrap: wrap;
+  align-content: center;
+}
+
+.metric-result {
+  flex-shrink: 1;
+  font-size: 1.25rem;
+  line-height: 1.75rem;
+  min-width: 120px;
+  text-align: right;
+}
+
+.metric-result-suffix {
+  width: max-content;
+  max-width: 100%;
+  flex-shrink: 1;
+  align-self: flex-end;
+  font-size: 0.75rem;
+  line-height: 1rem;
+  text-wrap: wrap;
+  color: var(--text-very-muted);
+  transform: translateY(-0.25rem);
+}
+
+.progress-bar {
+  width: 100%;
+  height: 8px;
+  background: var(--bg-very-bright);
+  border-radius: 4px;
+  overflow: hidden;
+}
+.progress-fill {
+  height: 100%;
+  background: var(--gold);
+  transition: width 0.1s ease;
+}
+/* .special-convert-guide {
+  color: var(--free-tap);
   font-size: 12px;
   text-decoration-line: underline;
 }
 
 .special-convert-guide:hover {
-  color: var(--hf-free-tap-faded);
+  color: var(--free-tap-faded);
   font-size: 12px;
 }
-.progress-bar {
-  width: 100%;
-  height: 8px;
-  background: rgba(255, 255, 255, 0.2);
-  border-radius: 4px;
-  overflow: hidden;
-  /* grid-column: 3 / span 3; */
-}
-.progress-fill {
-  height: 100%;
-  background: linear-gradient(90deg, var(--hf-gold-dim), var(--hf-gold));
-  transition: width 0.1s ease;
-}
+
 .optimizer-progress-label {
   display: flex;
   flex-direction: column;
   font-size: 16px;
-  /* grid-column: 1 / span 2; */
+  /* grid-column: 1 / span 2;
   text-align: right;
   padding: 6px;
   text-wrap-mode: nowrap;
 }
 
-.hf-metric-label {
+.metric-label {
   grid-column: span 4;
   width: 100%;
   gap: 30px;
-  color: var(--hf-gold);
+  color: var(--gold);
   font-size: 20px;
   text-align: right;
   padding-right: 8px;
@@ -585,14 +646,14 @@ const show_special_guide = ref(false);
 
 .smaller-label {
   font-size: 12px;
-  color: var(--hf-text-muted);
+  color: var(--text-muted);
 }
 
-.hf-metric-status {
+.metric-status {
   grid-column: 5 / span 2;
   width: 100%;
   gap: 30px;
-  color: var(--hf-gold);
+  color: var(--gold);
   font-size: 30px;
   text-align: left;
   padding-right: 8px;
@@ -600,39 +661,22 @@ const show_special_guide = ref(false);
   text-wrap-mode: nowrap;
 }
 
-.hf-question-mark {
-  margin-left: 4px;
-  /* padding-right: 12px;
-    padding-left: 8px; */
-
-  width: 16px; /* Align with the two icon rows visually */
-  height: 16px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
-  font-weight: bold;
-  background-color: AccentColor;
-  color: AccentColorText;
-  font-size: 12px;
-}
-.hf-bound-header {
-  color: var(--hf-graph-bound-color);
+.bound-header {
+  color: var(--bound);
   text-align: right;
   padding-right: 8px;
 }
 
-.hf-average-header {
-  color: var(--hf-graph-average-color);
+.average-header {
+  color: var(--average);
   text-align: center;
 }
 
-.hf-gold-header {
-  color: var(--hf-gold);
+.gold-header {
+  color: var(--gold);
   text-align: center;
 }
-.hf-gold-header-suffix {
+.gold-header-suffix {
   color: var(--text-very-muted);
   font-size: 12px;
   min-width: 0;
@@ -643,54 +687,54 @@ const show_special_guide = ref(false);
   transform: translateX(100%) translateY(4px);
   right: 22px;
 }
-.hf-hover-hint {
+.hover-hint {
   text-align: center;
-  color: var(--hf-text-muted);
+  color: var(--text-muted);
   font-size: 11px;
 }
 
-.hf-bound-select {
+.bound-select {
   min-width: 0;
 }
 
-.hf-analysis-pane {
+.analysis-pane {
   width: min(100%, 992px);
   overflow-x: visible;
   overflow-y: visible;
 }
 
-.hf-dist-scroll {
+.dist-scroll {
   width: 100%;
   overflow-x: auto;
   overflow-y: hidden;
   -webkit-overflow-scrolling: touch;
   /* scrollbar-gutter: stable; */
-}
+/* }
 
-.hf-dist-stack {
+.dist-stack {
   display: flex;
   flex-direction: column;
   width: max-content;
   min-width: 100%;
 }
 
-.hf-analysis-pane :deep(.hf-card-header) {
+.analysis-pane :deep(.card-header) {
   flex-wrap: wrap;
   align-items: center;
   gap: 8px;
 }
 
-.hf-analysis-pane :deep(.hf-card-header > div) {
+.analysis-pane :deep(.card-header > div) {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
 }
 
-.hf-analysis-tab {
-  border: 1px solid var(--hf-border-subtle);
+.analysis-tab {
+  border: 1px solid var(--border-muted);
   border-radius: 999px;
   background: rgba(10, 13, 19, 0.48);
-  color: var(--hf-text-main);
+  color: var(--text-main);
   padding: 6px 12px;
   font-size: 12px;
   text-transform: uppercase;
@@ -698,84 +742,80 @@ const show_special_guide = ref(false);
   cursor: pointer;
 }
 
-.hf-analysis-tab.active {
+.analysis-tab.active {
   background: rgba(212, 179, 90, 0.22);
   border-color: rgba(212, 179, 90, 0.6);
-  color: var(--hf-text-bright);
+  color: var(--text-bright);
 }
-.hf-dist-graphs {
-  --hf-dist-columns: 160px 90px 90px 120px 120px 350px;
+.dist-graphs {
+  --dist-columns: 160px 90px 90px 120px 120px 350px;
   display: grid;
-  grid-template-columns: var(--hf-dist-columns);
+  grid-template-columns: var(--dist-columns);
   align-items: center;
   justify-content: start;
   row-gap: 0;
   min-width: max-content;
 }
 
-.hf-table-title-row,
-.hf-mats-row {
+.table-title-row,
+.mats-row {
   display: grid;
   grid-column: 1 / -1;
-  grid-template-columns: var(--hf-dist-columns);
+  grid-template-columns: var(--dist-columns);
   align-items: center;
-  border-bottom: 1px solid var(--border-medium);
+  border-bottom: 1px solid var(--border-main);
   min-height: 0;
-}
+} */
 
-.hf-mats-row.disabled {
-  opacity: 0.5;
-}
-
-@media (max-width: 900px) {
-  .hf-dist-graphs {
-    --hf-dist-columns: 100px 70px 70px 78px 78px 192px;
+/* @media (max-width: 900px) {
+  .dist-graphs {
+    --dist-columns: 100px 70px 70px 78px 78px 192px;
     min-width: max-content;
     width: auto;
   }
 
-  .hf-metric-label {
+  .metric-label {
     grid-column: 1 / span 3;
     font-size: 16px;
     text-align: right;
     gap: 0;
   }
 
-  .hf-metric-status {
+  .metric-status {
     grid-column: 4 / span 2;
     font-size: 22px;
     text-align: left;
     gap: 0;
   }
 
-  .hf-bound-select {
+  .bound-select {
     width: 100%;
     font-size: 11px;
   }
 
-  .hf-bound-header,
-  .hf-average-header,
-  .hf-gold-header {
+  .bound-header,
+  .average-header,
+  .gold-header {
     font-size: 11px;
   }
 
-  .hf-average-header,
-  .hf-gold-header {
+  .average-header,
+  .gold-header {
     text-align: center;
   }
 
-  .hf-table-title-row {
+  .table-title-row {
     font-size: 11px;
   }
 
-  .hf-hover-hint {
+  .hover-hint {
     font-size: 10px;
   }
 
-  .hf-mats-row :deep(.hf-material-cell) {
-    --hf-cell-input-width: 64px;
-    --hf-cell-label-width: 88px;
-    --hf-cell-icon-size: 20px;
+  .mats-row :deep(.material-cell) {
+    --cell-input-width: 64px;
+    --cell-label-width: 88px;
+    --cell-icon-size: 20px;
   }
-}
+} */
 </style>

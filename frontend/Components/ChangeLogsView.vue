@@ -62,7 +62,7 @@ watchEffect(async () => {
 
     <template #main>
       <div class="card-shell change-log-card p-3">
-        <div class="mt-20 text-center text-9xl" v-if="loading">Loading...</div>
+        <div class="my-20 text-center text-9xl" v-if="loading">Loading...</div>
         <div v-else class="prose" v-html="html" /></div
     ></template>
   </Sidebar>
@@ -73,6 +73,7 @@ watchEffect(async () => {
 .change-log-card {
   width: min(100%, 1000px);
   padding: 18px;
+  height: max-content;
 }
 .prose h1 {
   font-size: 2.5rem;
@@ -89,19 +90,19 @@ watchEffect(async () => {
   margin-bottom: 0.5rem;
   font-size: x-large;
   font-weight: 500;
-  border-bottom: 1px solid var(--border-medium);
+  border-bottom: 1px solid var(--border-main);
 }
 .prose tr {
   display: grid;
   grid-template-columns: 100px calc(100% - 100px - 80px - 50px - 30px) 80px 50px;
-  border-bottom: 1px solid var(--border-subtle);
+  border-bottom: 1px solid var(--border-muted);
   align-items: flex-start;
 }
 @media (max-width: 480px) {
   .prose tr {
     display: flex;
     flex-direction: column;
-    border-bottom: 1px solid var(--border-subtle);
+    border-bottom: 1px solid var(--border-muted);
     align-items: flex-start;
     justify-content: space-between;
   }
@@ -123,5 +124,24 @@ watchEffect(async () => {
 .prose a {
   color: var(--gold);
   text-decoration: underline;
+}
+
+.prose ul,
+.prose ol {
+  padding-left: 1.25rem;
+  margin-bottom: 0.5rem;
+}
+
+.prose li {
+  list-style-type: "- ";
+  list-style-position: outside;
+  margin-bottom: 0.25rem;
+}
+
+.prose li > ul,
+.prose li > ol {
+  padding-left: 1.25rem;
+  margin-top: 0.25rem;
+  margin-bottom: 0;
 }
 </style>

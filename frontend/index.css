@@ -25,6 +25,7 @@ html {
   font-weight: 400;
   color-scheme: light dark;
   text-rendering: optimizeLegibility;
+  color: var(--text-main);
 }
 a {
   color: inherit;

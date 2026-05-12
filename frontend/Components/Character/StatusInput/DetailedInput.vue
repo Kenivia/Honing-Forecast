@@ -93,7 +93,7 @@ const lowest_adv = computed(() =>
 </template>
 <style scoped>
 .hf-bound-header {
-    color: var(--hf-graph-bound-color);
+    color: var(--hf-bound);
     text-align: right;
     padding-right: 8px;
 }
@@ -194,7 +194,7 @@ const lowest_adv = computed(() =>
     grid-column: 1 / -1;
     grid-template-columns: var(--hf-dist-columns);
     align-items: center;
-    border-bottom: 1px solid var(--border-medium);
+    border-bottom: 1px solid var(--border-main);
     min-height: 0;
 }
 

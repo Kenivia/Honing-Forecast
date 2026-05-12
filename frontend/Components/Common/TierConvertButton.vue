@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { computed } from "vue";
-import Button from "primevue/button";
 
 const props = defineProps<{
   labelText: string;
@@ -32,20 +31,27 @@ function handleClick() {
 <template>
   <Button
     v-tooltip.top="activeTooltip"
-    :unstyled="true"
     :disabled="!eligible"
-    :label="labelText"
-    :class="[
-      'generic-button',
-      !eligible ? 'cursor-not-allowed!' : 'cursor-pointer',
-      warning && eligible
-        ? 'text-(--warning)!'
-        : !eligible
-          ? 'text-(--text-very-muted)!'
-          : '',
-      'bg-(--serca-blue)!',
-      'text-wrap!',
-    ]"
+    class="generic-button tier-button text-wrap!"
+    :style="{
+      color:
+        warning && eligible
+          ? 'var(--warning)'
+          : !eligible
+            ? 'var(--text-very-muted)'
+            : 'inherit',
+      backgroundColor: 'var(--serca-blue)',
+      cursor: !eligible ? 'not-allowed!' : 'pointer',
+    }"
     @click="handleClick"
-  />
+  >
+    {{ labelText }}</Button
+  >
 </template>
+
+<style scoped>
+.tier-button:hover {
+  background-color: var(--serca-blue-hover);
+  cursor: not-allowed;
+}
+</style>

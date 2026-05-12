@@ -79,7 +79,12 @@ watch(
 }
 
 .footer-links img {
-  height: 12px;
+  width: 12px;
   filter: brightness(0.8);
+  background-color: transparent;
+}
+
+.footer-links:hover img {
+  filter: brightness(1);
 }
 </style>

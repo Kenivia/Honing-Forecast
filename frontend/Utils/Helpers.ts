@@ -210,7 +210,7 @@ export function debounce<T extends (...args: any[]) => void>(
 export function metric_to_text(metric: number | null | undefined) {
   if (metric === null || metric === undefined || !Number.isFinite(metric))
     return "N/A";
-  return `${Math.round(metric == 0 ? metric : -metric).toLocaleString("en-US")}g`;
+  return `${Math.round(metric == 0 ? metric : -metric).toLocaleString("en-US")}`;
 }
 export function get_icon_path(name: string) {
   return IconMap[name] ?? "";

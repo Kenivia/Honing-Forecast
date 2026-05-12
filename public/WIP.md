@@ -36,6 +36,9 @@ If you'd like to help with any of the below, feel free to submit a PR on [github
 - add special icon to instruction
 
 - figure out how to style select options
+  - figure out why tf v-tooltip disappeas on every progress update
+
+- make 2nd row of headers eventually
 
 ## Roadmap (big projects)
 

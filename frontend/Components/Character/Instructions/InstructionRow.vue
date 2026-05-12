@@ -433,14 +433,13 @@ async function confirmSuccess() {
             <span style="color: var(--hf-graph-average-color)"
               >Material Costs</span
             >
-            <span style="color: var(--hf-graph-bound-color); text-align: left"
+            <span style="color: var(--hf-bound); text-align: left"
               >Char-Bound (after)</span
             >
-            <span style="color: var(--hf-graph-roster-color); text-align: left"
+            <span style="color: var(--hf-roster); text-align: left"
               >Rester-Bound (after)
             </span>
-            <span
-              style="color: var(--hf-graph-tradable-color); text-align: left"
+            <span style="color: var(--hf-tradable); text-align: left"
               >Tradable (after)</span
             >
           </div>
@@ -459,17 +458,17 @@ async function confirmSuccess() {
             <MaterialCell
               :input_column="remaining_materials.bound_budgets"
               :row="row"
-              :input_color="'--hf-graph-bound-color'"
+              :input_color="'--hf-bound'"
             />
             <MaterialCell
               :input_column="remaining_materials.roster_mats"
               :row="row"
-              :input_color="'--hf-graph-roster-color'"
+              :input_color="'--hf-roster'"
             />
             <MaterialCell
               :input_column="remaining_materials.tradable_mats"
               :row="row"
-              :input_color="'--hf-graph-tradable-color'"
+              :input_color="'--hf-tradable'"
             />
           </div>
           <div
@@ -517,7 +516,7 @@ async function confirmSuccess() {
 }
 
 .hf-upgrade-topline {
-  border-bottom: 1px solid var(--border-medium, #333);
+  border-bottom: 1px solid var(--border-main, #333);
   padding-bottom: 0.5rem;
   margin-bottom: 1rem;
   font-weight: bold;
@@ -699,7 +698,7 @@ async function confirmSuccess() {
   width: 60px;
   padding: 0.25rem;
   background: var(--hf-bg-deep, #121212);
-  border: 1px solid var(--border-medium, #333);
+  border: 1px solid var(--border-main, #333);
   color: white;
   border-radius: 4px;
 }
@@ -747,7 +746,7 @@ async function confirmSuccess() {
   grid-column: 1 / -1;
   grid-template-columns: subgrid;
   align-items: center;
-  border-bottom: 1px solid var(--border-medium, #333);
+  border-bottom: 1px solid var(--border-main, #333);
   min-height: 40px;
   padding: 0.5rem 0;
   justify-items: right;
@@ -759,7 +758,7 @@ async function confirmSuccess() {
   gap: 1rem;
   margin-top: 1rem;
   padding-top: 1rem;
-  border-top: 1px solid var(--border-medium, #333);
+  border-top: 1px solid var(--border-main, #333);
 }
 
 .btn-confirm {

@@ -63,7 +63,7 @@ watchEffect(() => {
       </label>
       <label class="">
         <button
-          class="generic-button ml-5 text-(--cancel)!"
+          class="generic-button ml-5 text-(--warning-dark)!"
           @click="resetActive"
         >
           Reset this char

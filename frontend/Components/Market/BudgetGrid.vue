@@ -4,7 +4,7 @@ import {
   ALL_LABELS,
   BUNDLE_SIZE,
   SERCA_SYNC_MAP,
-  SERCA_TO_T4,
+  SERCA_TO_T4_INDICES,
   SYNCED_LABELS,
 } from "@/Utils/Constants";
 import { storeToRefs } from "pinia";
@@ -63,25 +63,27 @@ watch(
 
 const grids = computed((): GridConfig[] => [
   {
-    tier: 1,
-    cols: "250px 120px 120px 130px",
-    grid_row_span: `span ${ALL_LABELS[1].length + 1}`,
-
-    rows: ALL_LABELS[1].map((label, row) => ({
-      label,
-      col: row in SERCA_TO_T4 ? 0 : 1,
-      row:
-        row in SERCA_TO_T4 ? (SERCA_TO_T4 as Record<number, number>)[row] : row,
-    })),
-  },
-  {
     tier: 0,
-    cols: "250px 120px 150px",
+    grid_template_columns: "250px 120px 150px", // market price a bit bigger to fit the x1mil silver suffix
     grid_row_span: undefined,
     rows: ALL_LABELS[0].map((label, row) => ({
       label,
       col: 0,
       row: row,
+    })),
+  },
+  {
+    tier: 1,
+    grid_template_columns: "250px 120px 120px 130px",
+    grid_row_span: `span ${ALL_LABELS[1].length + 1}`,
+
+    rows: ALL_LABELS[1].map((label, row) => ({
+      label,
+      col: row in SERCA_TO_T4_INDICES ? 0 : 1,
+      row:
+        row in SERCA_TO_T4_INDICES
+          ? (SERCA_TO_T4_INDICES as Record<number, number>)[row]
+          : row,
     })),
   },
 ]);
@@ -104,15 +106,16 @@ function price_suffix(label: string, row: number): string {
       v-for="grid in grids"
       :key="grid.tier"
       class="card-shell outer-grid"
-      :style="{ '--grid-cols': grid.cols, gridRow: grid.grid_row_span }"
+      :style="{
+        '--grid-cols': grid.grid_template_columns,
+        gridRow: grid.grid_row_span,
+      }"
     >
-      <div class="table-title-row border-b border-(--border-medium)">
-        <span class="text-right text-(--graph-roster-color)"
-          >Roster Bound Mats</span
+      <div class="mats-row h-fit! border-b border-(--border-main) pb-0!">
+        <span class="w-full justify-self-end text-right text-(--roster)"
+          >Roster Bound Material owned</span
         >
-        <span class="text-left text-(--graph-tradable-color)"
-          >Tradable Mats</span
-        >
+        <span class="text-left text-(--tradable)">Tradable Material owned</span>
         <span class="text-left text-(--text-muted)">Market price</span>
         <span v-if="grid.tier == 1" class="text-left text-(--gold)"
           >Effective price</span
@@ -134,7 +137,7 @@ function price_suffix(label: string, row: number): string {
                 active_roster_mats_owned[col].data[row] = val;
               }
             "
-            input_color="var(--graph-roster-color)"
+            input_color="var(--roster)"
             :hide_tick="true"
           />
           <MaterialCell
@@ -145,7 +148,8 @@ function price_suffix(label: string, row: number): string {
                 active_tradable_mats_owned[col].data[row] = val;
               }
             "
-            input_color="var(--graph-tradable-color)"
+            input_color="var(--tradable)"
+            :input_width="120"
           />
           <MaterialCell
             :input_column="roster_config.mats_prices[col]"
@@ -158,6 +162,7 @@ function price_suffix(label: string, row: number): string {
             :suffix="price_suffix(label, row)"
             :input_width="70"
             input_color="var(--text-muted)"
+            :justify_left="true"
           />
           <MaterialCell
             v-if="grid.tier == 1 && !SYNCED_LABELS.includes(label)"
@@ -171,29 +176,3 @@ function price_suffix(label: string, row: number): string {
     </div>
   </div>
 </template>
-
-<style scoped>
-.outer-grid {
-  display: grid;
-  grid-template-columns: var(--grid-cols);
-  align-items: center;
-  background: var(--bg-dark);
-  border: 1px solid var(--border-subtle);
-  border-radius: 8px;
-  width: max-content;
-  height: max-content;
-  row-gap: 0px;
-}
-
-.table-title-row,
-.mats-row {
-  display: grid;
-  grid-column: 1 / -1;
-  grid-template-columns: subgrid;
-  align-items: center;
-  border-bottom: 1px solid var(--border-muted);
-  height: 42 px;
-  min-height: 0;
-  text-align: center;
-}
-</style>

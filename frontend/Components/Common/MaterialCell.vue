@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { cssVar, get_icon_path } from "@/Utils/Helpers";
-import { get_modified_cell } from "@/Utils/InputColumn";
-import { InputColumn } from "@/Utils/Interfaces";
+import { get_modified_cell, InputColumn } from "@/Utils/InputColumn";
+
 import { computed, ref } from "vue";
 
 const props = defineProps<{
@@ -19,6 +19,8 @@ const props = defineProps<{
   label_width?: number;
   icon_size?: number;
   height?: number;
+  hide_label?: boolean;
+  justify_left?: boolean;
 }>();
 
 const actual_input_width = computed(() => `${props.input_width ?? 100}px`);
@@ -43,6 +45,7 @@ const this_data = ref(
     :style="{
       gridColumn: treat_as_two ? 'span 2' : 'span 1',
       height: actual_height,
+      justifyContent: justify_left ? 'left' : 'right',
     }"
   >
     <input
@@ -58,7 +61,7 @@ const this_data = ref(
         width: actual_label_width,
       }"
     >
-      <span>{{ label }}</span>
+      <span v-if="!hide_label">{{ label }}</span>
       <img
         :src="get_icon_path(label)"
         class="object-contain"
@@ -108,12 +111,10 @@ const this_data = ref(
 .material-cell {
   display: flex;
   align-items: center;
-  justify-content: left;
   gap: 6px;
   font-size: 16px;
   min-width: 0;
   text-align: right;
-  padding-right: 8px;
   height: 36px; /* 100% seems to be a tiny bit off for some reason */
 }
 
@@ -121,11 +122,8 @@ const this_data = ref(
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  gap: 6px;
   font-size: 16px;
   min-width: 0;
-  text-align: left;
-  padding-right: 8px;
 }
 
 .material-cell-suffix {

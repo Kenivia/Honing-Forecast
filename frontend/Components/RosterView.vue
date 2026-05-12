@@ -116,7 +116,7 @@ function delete_profile(index, roster_id) {
               v-for="[profile, profile_index] in roster_config.profiles
                 .map((x, index): [CharProfile, number] => [x, index])
                 .filter((y) => y[0].roster_id === roster_id)"
-              class="char-row flex flex-row items-start justify-around border-b border-(--border-subtle)"
+              class="char-row flex flex-row items-start justify-around border-b border-(--border-muted)"
               :key="profile_index"
             >
               <div>
@@ -129,7 +129,7 @@ function delete_profile(index, roster_id) {
                     )),
                     (profile.char_name = names[profile_index]))
                   "
-                  class="generic-input bg-(--bg-bright)"
+                  class="generic-input bg-(--bg-bright)!"
                 />
 
                 <div class="char-meta flex flex-col">
@@ -182,7 +182,7 @@ function delete_profile(index, roster_id) {
 /* Base Variables & Structural Setup */
 
 .btn-cancel {
-  background: var(--cancel);
+  background: var(--warning-dark);
   color: var(--text-bright);
 }
 

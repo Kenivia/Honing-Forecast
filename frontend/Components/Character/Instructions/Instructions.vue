@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import { Upgrade } from "@/Utils/Interfaces";
 import { storeToRefs } from "pinia";
 import { ref, watch } from "vue";
 import InstructionRow from "./InstructionRow.vue";
 import { useRosterStore } from "@/Stores/RosterConfig";
+import { Upgrade } from "@/Utils/KeyedUpgrades";
 
 const { active_profile } = storeToRefs(useRosterStore());
 

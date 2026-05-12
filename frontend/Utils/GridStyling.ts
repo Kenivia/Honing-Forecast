@@ -1,13 +1,13 @@
 // this is where the syncing & stuff happens
 export interface GridToInputColumnMap {
   label: string;
-  col: number;
+  col: number | undefined; // which input column to use, which is 0 for t4 and 1 for serca, except for the synced ones which always use 0
   row: number;
 }
 
 export interface GridConfig {
-  tier: number;
-  cols: string;
-  grid_row_span: string | undefined;
-  rows: GridToInputColumnMap[];
+  tier?: number | undefined; // only used as key
+  grid_template_columns: string;
+  grid_row_span: string;
+  rows?: GridToInputColumnMap[];
 }
