@@ -29,7 +29,7 @@ function handleClick() {
 </script>
 
 <template>
-  <Button
+  <button
     v-tooltip.top="activeTooltip"
     :disabled="!eligible"
     class="generic-button tier-button text-wrap!"
@@ -45,8 +45,8 @@ function handleClick() {
     }"
     @click="handleClick"
   >
-    {{ labelText }}</Button
-  >
+    {{ labelText }}
+  </button>
 </template>
 
 <style scoped>

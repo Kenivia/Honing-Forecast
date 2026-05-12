@@ -211,18 +211,20 @@ const annotation_values = computed(() => {
   );
 });
 
-function hover_annotation(x, _y, cy, material_type, color): string {
-  let place = Math.min(
-    10,
-    Math.max(
-      Math.ceil(
-        cy < 0.5
-          ? Math.min(3, Math.abs(Math.log10(cy)))
-          : Math.abs(Math.log10(1 - cy)),
-      ),
-      3,
-    ),
-  );
+function hover_annotation(x, _y, cy, material_type, color, is_last): string {
+  let place = is_last
+    ? 3
+    : Math.min(
+        10,
+        Math.max(
+          Math.ceil(
+            cy < 0.5
+              ? Math.min(3, Math.abs(Math.log10(cy)))
+              : Math.abs(Math.log10(1 - cy)),
+          ),
+          3,
+        ),
+      );
   return `<b style="color: white;">${(cy * 100).toPrecision(place)}% </b> chance to use <br> &#8804;<b style="color: ${color};"> ${Math.ceil(x).toLocaleString("en-US")} </b> ${material_type} `;
 }
 function special_hover_annotation(x, _y, cy, material_type, color): string {
@@ -282,7 +284,7 @@ const active_grid_style = computed(() =>
           >
             <span class="self-center text-xs">?</span>
           </div>
-          <span class="w-27 text-left text-(--bound)">Bound Mats</span>
+          <span class="w-25 text-left text-(--bound)">Bound Mats</span>
         </div>
         <select
           class="selector -mr-4! ml-4!"
@@ -312,7 +314,7 @@ const active_grid_style = computed(() =>
           >
         </div>
 
-        <span class="text-(--text-muted)">Hover graph for details</span>
+        <span class="text-(--text-muted)">Hover graph for details!</span>
         <!-- <span v-if="customLeftovers">Left</span> -->
       </div>
       <div

@@ -77,7 +77,7 @@ const close = () => (sidebarOpen.value = false);
   width: 200px;
   flex-shrink: 0;
   gap: 2px;
-  padding: calc(234px + 56px) 8px 12px 8px;
+  padding: calc(234px + 56px) 2px 12px 2px;
   border-right: 1px solid var(--border-muted);
   height: max(calc(100vh + 234px - 50px), 100%);
   top: calc(50px - 234px);

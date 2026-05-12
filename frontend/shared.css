@@ -106,15 +106,17 @@
 .control-panel-title {
   width: 100%;
   border-bottom: 1px solid var(--border-muted);
+  padding-left: 8px;
 }
 .control-panel-checkbox-row {
   display: flex;
   flex-direction: row;
   align-items: center;
-  gap: 0.25rem;
+  gap: 0.5rem;
   border-bottom: 1px solid var(--border-very-muted);
   padding-top: 0.125rem;
   padding-bottom: 0.125rem;
+  padding-left: 8px;
 }
 
 .outer-grid {

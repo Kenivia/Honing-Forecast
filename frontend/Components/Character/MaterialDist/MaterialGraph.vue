@@ -31,6 +31,7 @@ const props = withDefaults(
       cumulativeY: number,
       material: string,
       color: string,
+      is_last: boolean,
     ) => string;
     empty_message?: string;
     upside_down_cumulative?: boolean;
@@ -43,7 +44,7 @@ const props = withDefaults(
     annotationPositions: () => [],
     annotationLabels: () => [],
     // Default tooltip just displays values
-    tooltipTextFn: (x, y, cy, _material, _color) =>
+    tooltipTextFn: (x, y, cy, _material, _color, _is_last) =>
       `<b>X:</b> ${x} <br/> <b>Y:</b> ${cy}`,
     empty_message: "This material is never used",
     upside_down_cumulative: false,
@@ -397,6 +398,7 @@ onBeforeUnmount(() => {
           hoveredPoint.cumulativeY,
           materialLabel,
           resolvedColor,
+          hoveredPoint == points[points.length - 1],
         )
       "
     ></div>

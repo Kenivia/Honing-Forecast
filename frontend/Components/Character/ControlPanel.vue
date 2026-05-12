@@ -51,7 +51,7 @@ watchEffect(() => {
       </button> -->
       <label class="control-panel-checkbox-row">
         <input v-model="roster_config.show_all_rows" type="checkbox" />
-        <span>Show all mats</span>
+        <span>Show all mats (this tier)</span>
       </label>
       <label class="control-panel-checkbox-row">
         <input v-model="treatment_tick" type="checkbox" />
