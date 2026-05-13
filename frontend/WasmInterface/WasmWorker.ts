@@ -63,7 +63,7 @@ async function HistogramWasm(payload: Payload): Promise<HistogramOutputs> {
 }
 self.addEventListener("message", async (ev) => {
   const msg = ev.data;
-  // let start_time = Date.now()
+  const start_time = performance.now();
 
   const { payload, wasm_op } = msg;
 
@@ -83,7 +83,12 @@ self.addEventListener("message", async (ev) => {
   {
     return; // react dev tool shenanigans
   }
-  console.log(WasmOp[wasm_op], "done", result);
+  console.log(
+    WasmOp[wasm_op],
+    "done",
+    ((performance.now() - start_time) / 1000).toFixed(4),
+    result,
+  );
   // console.log(WasmOp[wasm_op] + " finished after " + String(((Date.now() - start_time) / 1000).toFixed(2)) + "s")
   self.postMessage({ type: "result", result });
 });

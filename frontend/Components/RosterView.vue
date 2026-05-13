@@ -85,7 +85,7 @@ function delete_profile(index, roster_id) {
 </script>
 
 <template>
-  <Sidebar header="Roster setup">
+  <Sidebar :width="969" header="Roster setup">
     <template #sidebar
       ><div class="side-bar-item">uwuowo importing coming soon...</div>
 
@@ -105,7 +105,7 @@ function delete_profile(index, roster_id) {
       <div class="flex flex-row flex-wrap justify-around gap-4">
         <section
           v-for="(roster_id, roster_index) in roster_ids"
-          class="card-shell flex flex-col"
+          class="card-shell flex h-fit flex-col"
           :key="roster_id"
         >
           <div v-if="roster_config.profiles.length > 1" class="card-header">

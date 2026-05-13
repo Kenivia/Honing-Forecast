@@ -1,16 +1,23 @@
 <script setup lang="ts">
 import { storeToRefs } from "pinia";
-import { ref, watch } from "vue";
+import { computed, ref, watch } from "vue";
 import InstructionRow from "./InstructionRow.vue";
 import { useRosterStore } from "@/Stores/RosterConfig";
-import { Upgrade } from "@/Utils/KeyedUpgrades";
-
-const { active_profile } = storeToRefs(useRosterStore());
+import {
+  get_upgrade_map,
+  to_upgrade_key,
+  Upgrade,
+  UpgradeStatus,
+} from "@/Utils/KeyedUpgrades";
+import { PIECE_NAMES } from "@/Utils/Constants";
+import { GridConfig } from "@/Utils/GridStyling";
 
 // This sorts the upgrades into an order that can actually be performed in game
 // special_state is already guaranteed to be valid on the rust side, but it doesn't tell us how to do the non-special taps
 // this gives a suggestion
-function sort_upgrades(): [Upgrade, number][] {
+function sort_upgrades(): [Upgrade, number, number][] {
+  const { active_profile } = storeToRefs(useRosterStore());
+
   if (!active_profile.value.optimizer_worker_bundle.result) {
     return [];
   }
@@ -63,41 +70,96 @@ function sort_upgrades(): [Upgrade, number][] {
     }
   }
 
-  return output.map((x) => {
-    const upgrade = upgrade_arr[x];
-    const index_in_special = special_state.findIndex((y) => y == x);
-    return [
-      { ...upgrade, this_special_chance: special_chance_map.get(x) }, // Shallow clone
-      index_in_special,
-    ];
-  });
+  return output
+    .map((x, perform_order) => {
+      const upgrade = upgrade_arr[x];
+      const index_in_special = special_state.findIndex((y) => y == x);
+      return [
+        { ...upgrade, this_special_chance: special_chance_map.get(x) }, // Shallow clone
+        index_in_special,
+        perform_order,
+      ];
+    })
+    .sort(([upgrade, _]) => (upgrade as Upgrade).piece_type);
 }
-
+const { active_profile } = storeToRefs(useRosterStore());
 const sorted_upgrade_arr = ref(sort_upgrades());
 watch(
   () => active_profile.value.optimizer_worker_bundle.result?.upgrade_arr,
   () => {
     sorted_upgrade_arr.value = sort_upgrades();
-    // console.log("resorted", sorted_upgrade_arr.value.length)
   },
   { deep: true },
 );
+
+const upgrade_map = computed(() =>
+  get_upgrade_map(
+    active_profile.value.optimizer_worker_bundle.result?.upgrade_arr ?? null,
+    active_profile.value.tier,
+  ),
+);
+const lowest_arr = computed(() =>
+  PIECE_NAMES.map(
+    (_, piece_type) =>
+      upgrade_map.value.get(
+        to_upgrade_key(
+          piece_type,
+          (
+            active_profile.value.normal_grid[piece_type] as UpgradeStatus[]
+          ).findIndex((value) => value == UpgradeStatus.Want),
+          true,
+          active_profile.value.tier,
+        ),
+      ) ?? null,
+  ),
+);
+
+const lowest_upgrade_index = computed(() =>
+  Math.min(...lowest_arr.value.map((x) => x?.upgrade_index ?? 999)),
+);
+
+const grid: GridConfig = {
+  grid_template_columns: "70px 100px 100px 350px",
+  grid_row_span: `span ${6}`,
+};
 </script>
 <template>
-  <section class="hf-card hf-instructions-pane">
-    <div class="hf-card-header">
-      <div class="hf-card-title">Tap Instructions</div>
-      <span class="hf-card-hint">Go from top to bottom</span>
+  <section class="card-shell">
+    <div class="card-header">
+      <div class="card-title">Tap Instructions</div>
+      <span class="card-hint">Go from top to bottom</span>
     </div>
-    <div class="hf-card-body">
-      <div v-if="active_profile.optimizer_worker_bundle.result">
+    <div
+      class="card-body outer-grid"
+      :style="{
+        '--grid-cols': grid.grid_template_columns,
+        // gridRow: grid.grid_row_span,
+      }"
+    >
+      <div class="mats-row">
+        <span>Upgrade</span>
+        <span>Upgrade order ?</span>
+        <span>Special usage</span>
+        <span>Juice & book Instructions</span>
+      </div>
+      <div
+        v-if="active_profile.optimizer_worker_bundle.result"
+        class="contents"
+      >
         <div
-          v-for="(
-            [upgrade, index_in_special_state], perform_order
-          ) in sorted_upgrade_arr"
+          v-for="[
+            upgrade,
+            index_in_special_state,
+            perform_order,
+          ] in sorted_upgrade_arr"
           :key="`instructions-${upgrade.upgrade_index}-${upgrade.piece_type}-${upgrade.is_normal_honing}`"
+          class="mats-row h-fit!"
         >
           <InstructionRow
+            v-if="
+              lowest_arr[upgrade.piece_type].upgrade_index ==
+              upgrade.upgrade_index
+            "
             :upgrade="upgrade"
             :perform_order="perform_order"
             :special_invalid_index="
@@ -111,8 +173,13 @@ watch(
     </div>
   </section>
 </template>
-<style scoped>
-.hf-instructions-pane {
-  width: min(100%, 700px);
-}
-</style>
+
+<!-- <InstructionRow
+            :upgrade="upgrade"
+            :perform_order="perform_order"
+            :special_invalid_index="
+              active_profile.optimizer_worker_bundle.result
+                .special_invalid_index
+            "
+            :index_in_special_state="index_in_special_state"
+          /> -->

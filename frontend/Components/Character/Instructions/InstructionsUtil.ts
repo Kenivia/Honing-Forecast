@@ -146,7 +146,7 @@ export function streaks_to_text(
     let line2: string;
 
     if (isNormal) {
-      line1 = `x${streak.count}`;
+      line1 = `x${streak.count} taps`;
       taps += streak.count;
       line2 = `until ${artisan_function(upgrade, taps, juice_info)}%<br>artisan`;
     } else {

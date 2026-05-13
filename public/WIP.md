@@ -3,7 +3,7 @@
 
 I have to focus on my exams (until like mid June) so I'm trying not to spend too much time on this. Small issues will be fixed but big projects are on hold.
 
-If you'd like to help with any of the below, feel free to submit a PR on [github](https://github.com/Kenivia/Honing-Forecast/)!
+If you'd like to help with any of the below, feel free to get in touch via [Discord](https://discord.gg/KWDpQyvgzc) or submit a PR on [Github](https://github.com/Kenivia/Honing-Forecast/)!
 
 ## Immediate WIP
 

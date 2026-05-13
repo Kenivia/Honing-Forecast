@@ -26,6 +26,7 @@ const { disabled, start_fetch } = useTimedFetch((result, selected, price) => {
 });
 
 function convert_roster_mats_to_serca() {
+  console.log("triggerd");
   for (let serca_index = 0; serca_index < ALL_LABELS[1].length; serca_index++) {
     if (!SYNCED_LABELS.includes(ALL_LABELS[1][serca_index])) {
       let T4_index = ALL_LABELS[0].findIndex(
@@ -128,7 +129,7 @@ watch(
 </script>
 
 <template>
-  <Sidebar header="Market & mats">
+  <Sidebar :width="1315" header="Market & mats">
     <template #sidebar>
       <div class="side-bar-item">
         <div class="flex flex-row items-center justify-around gap-3">

@@ -28,6 +28,7 @@ export function start_all_workers() {
       WasmOp.Histogram,
       build_payload(),
     ); // call build payload again here to include the new states
+
     // active_profile.value.evaluation_worker_bundle.throttled_start(WasmOp.EvaluateAverage, payload)
   }
   active_profile.value.optimizer_worker_bundle.est_progress_percentage = 0;

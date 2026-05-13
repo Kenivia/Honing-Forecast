@@ -14,7 +14,7 @@ import Sidebar from "../Common/Sidebar.vue";
 import { start_all_workers } from "./CharWorkerUtils";
 import GraphControlPanel from "./GraphControlPanel.vue";
 import Guide from "./Guide.vue";
-import DetailedInput from "./StatusInput/DetailedInput.vue";
+import DetailedInput from "./Instructions/DetailedInput.vue";
 
 const route = useRoute();
 const router = useRouter();
@@ -76,7 +76,10 @@ onUnmounted(() => {
 });
 </script>
 <template>
-  <Sidebar :header="active_profile.char_name">
+  <Sidebar
+    :width="route.path.endsWith('calc') ? 1255 : 1200"
+    :header="active_profile.char_name"
+  >
     <template #sidebar="{ close }">
       <div class="flex flex-col">
         <RouterLink to="guide" class="side-bar-link" @click="close">
@@ -97,8 +100,8 @@ onUnmounted(() => {
     <template #main>
       <StatusInput v-if="route.path.endsWith('calc')" />
       <MaterialDist v-if="route.path.endsWith('calc')" />
-      <DetailedInput v-if="route.path.endsWith('calc')" />
-      <!-- <Instructions v-if="route.path.endsWith('calc')" /> -->
+      <!-- <DetailedInput grid_type="normal" v-if="route.path.endsWith('calc')" /> -->
+      <Instructions v-if="route.path.endsWith('calc')" />
       <Guide v-if="route.path.endsWith('guide')" />
     </template>
   </Sidebar>

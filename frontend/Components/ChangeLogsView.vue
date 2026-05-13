@@ -38,7 +38,7 @@ watchEffect(async () => {
 </script>
 
 <template>
-  <Sidebar header="Change Logs">
+  <Sidebar :width="1200" header="Change Logs">
     <template #sidebar="{ close }">
       <div class="flex flex-col">
         <RouterLink

@@ -3,11 +3,11 @@ import { useMediaIsNarrow } from "@/Utils/WindowSize";
 import { ref } from "vue";
 import Footer from "./Footer.vue";
 
-const props = withDefaults(defineProps<{ header?: string }>(), {
+const props = withDefaults(defineProps<{ header?: string; width: number }>(), {
   header: "",
 });
 
-const isNarrow = useMediaIsNarrow(1174);
+const isNarrow = useMediaIsNarrow(props.width);
 
 const sidebarOpen = ref(false);
 const open = () => (sidebarOpen.value = true);
@@ -36,6 +36,11 @@ const close = () => (sidebarOpen.value = false);
           'side-bar--narrow': isNarrow,
           'side-bar--open': isNarrow && sidebarOpen,
         }"
+        :style="{
+          height: isNarrow ? '100vh' : '',
+          paddingTop: isNarrow ? '56px' : '',
+          top: isNarrow ? '0px' : '',
+        }"
       >
         <span
           class="side-bar-header items-center border-b border-(--border-muted)"
@@ -45,7 +50,13 @@ const close = () => (sidebarOpen.value = false);
         <Footer />
       </nav>
 
-      <div class="main-stage cap-width overflow-x-auto overflow-y-hidden">
+      <div
+        class="main-stage cap-width overflow-x-auto overflow-y-hidden"
+        :style="{
+          marginLeft: isNarrow ? '0px' : '',
+          marginRight: isNarrow ? 'auto' : '',
+        }"
+      >
         <slot name="main" />
       </div>
     </div>
@@ -93,13 +104,7 @@ const close = () => (sidebarOpen.value = false);
 .side-bar:nth-child(2) {
   margin-top: 100px;
 }
-@media (max-width: 1174px) {
-  .side-bar {
-    height: calc(100vh);
-    padding-top: 56px;
-    top: 0px;
-  }
-}
+
 .side-bar--narrow {
   position: fixed;
   top: 0;
@@ -177,12 +182,5 @@ const close = () => (sidebarOpen.value = false);
   max-width: 100vw;
   background-color: var(--bg-very-muted);
   padding-top: 1rem;
-}
-
-@media (max-width: 1174px) {
-  .main-stage {
-    margin-left: 0px;
-    margin-right: auto;
-  }
 }
 </style>

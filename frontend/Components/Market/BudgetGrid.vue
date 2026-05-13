@@ -64,7 +64,7 @@ watch(
 const grids = computed((): GridConfig[] => [
   {
     tier: 0,
-    grid_template_columns: "250px 120px 150px", // market price a bit bigger to fit the x1mil silver suffix
+    grid_template_columns: "250px 100px 150px", // market price a bit bigger to fit the x1mil silver suffix
     grid_row_span: undefined,
     rows: ALL_LABELS[0].map((label, row) => ({
       label,
@@ -74,7 +74,7 @@ const grids = computed((): GridConfig[] => [
   },
   {
     tier: 1,
-    grid_template_columns: "250px 120px 120px 130px",
+    grid_template_columns: "250px 100px 120px 130px",
     grid_row_span: `span ${ALL_LABELS[1].length + 1}`,
 
     rows: ALL_LABELS[1].map((label, row) => ({
@@ -112,10 +112,10 @@ function price_suffix(label: string, row: number): string {
       }"
     >
       <div class="mats-row h-fit! border-b border-(--border-main) pb-0!">
-        <span class="w-full justify-self-end text-right text-(--roster)"
-          >Roster Bound Material owned</span
-        >
-        <span class="text-left text-(--tradable)">Tradable Material owned</span>
+        <span class="w-25 justify-self-end text-left text-(--roster)"
+          >Roster Bound owned
+        </span>
+        <span class="text-left text-(--tradable)">Tradable owned </span>
         <span class="text-left text-(--text-muted)">Market price</span>
         <span v-if="grid.tier == 1" class="text-left text-(--gold)"
           >Effective price</span
@@ -149,7 +149,7 @@ function price_suffix(label: string, row: number): string {
               }
             "
             input_color="var(--tradable)"
-            :input_width="120"
+            :input_width="100"
           />
           <MaterialCell
             :input_column="roster_config.mats_prices[col]"

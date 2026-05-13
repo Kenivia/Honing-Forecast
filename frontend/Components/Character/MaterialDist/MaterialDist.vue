@@ -321,8 +321,6 @@ const active_grid_style = computed(() =>
         v-if="
           ALL_LABELS[active_profile.tier].length ==
             active_profile.bound_budgets[active_profile.tier].data.length &&
-          // active_profile.optimizer_worker_bundle.result &&
-          active_profile.histogram_worker_bundle.result &&
           active_profile.histogram_worker_bundle.result &&
           active_profile.material_rerender_trigger
         "

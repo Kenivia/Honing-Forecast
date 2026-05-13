@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { useRosterStore } from "@/Stores/RosterConfig";
 import { ALL_LABELS, T4_JUICE_LABELS } from "@/Utils/Constants";
-import { get_piece_name, get_icon_path } from "@/Utils/Helpers";
+import { get_piece_name, get_icon_path, toOrdinal } from "@/Utils/Helpers";
 import { storeToRefs } from "pinia";
 import { computed, nextTick, ref, watch } from "vue";
 import { grid_change_callback } from "../CharWorkerUtils";
@@ -237,130 +237,119 @@ async function confirmSuccess() {
 </script>
 
 <template>
-  <div class="hf-upgrade-row">
-    <div class="hf-upgrade-topline">
-      <span class="hf-upgrade-name">{{
-        (upgrade.is_normal_honing ? "" : "Advanced ") +
-        get_piece_name(upgrade) +
-        " +" +
-        String(
-          (upgrade.upgrade_index + 1) * (upgrade.is_normal_honing ? 1 : 10),
-        )
-      }}</span>
+  <div class="flex flex-col items-center">
+    <span>{{
+      (upgrade.is_normal_honing ? "" : "Advanced ") +
+      get_piece_name(upgrade) +
+      " +" +
+      String((upgrade.upgrade_index + 1) * (upgrade.is_normal_honing ? 1 : 10))
+    }}</span>
+    <img
+      :src="get_icon_path(get_piece_name(upgrade))"
+      :alt="get_piece_name(upgrade)"
+      class="h-8 w-8 object-contain"
+    />
+  </div>
+
+  <div>
+    <div class="text-4xl">
+      {{ toOrdinal(props.perform_order + 1) }}
     </div>
+    <span class="annotation"
+      >Do this upgrade {{ toOrdinal(props.perform_order + 1) }}
+    </span>
+  </div>
 
-    <div class="hf-upgrade-content">
-      <div class="hf-left-controls">
-        <div class="order-block">
-          <div
-            class="order-circle"
-            :class="{ 'is-free-tap': free_tap_this_upgrade }"
-          >
-            {{ props.perform_order + 1 }}
-          </div>
-          <div class="order-text">
-            {{ free_tap_this_upgrade ? "Free tap this" : "Normal tap this" }}
-          </div>
-          <div v-if="free_tap_this_upgrade" class="order-text">
-            until you run out
-          </div>
-        </div>
-      </div>
+  <div class="flex flex-col items-center">
+    <img
+      :src="
+        get_icon_path(
+          (active_profile.tier == 1 ? 'Serca ' : '') +
+            active_profile.special_budget.keys[0],
+        )
+      "
+      :alt="get_piece_name(upgrade)"
+      class="h-12 w-12 object-contain"
+    />
+    <!-- TODO ADD BIG CROSS HERE FOR NO FREE TAP -->
+    <span class="annotation">
+      {{
+        free_tap_this_upgrade
+          ? "Free tap this until you run out"
+          : "Do not use special tap on this upgrade"
+      }}
+    </span>
+  </div>
 
-      <div class="hf-scrollable-instructions" :class="{ 'is-dimmed': false }">
-        <div
-          v-for="(streak_text, i) in streak_texts"
-          :key="i"
-          class="instruction-stack"
-        >
-          <div
-            class="icon-slot"
-            :class="{ 'should-not-use': !streak_text.topIconActive }"
-          >
-            <img
-              :src="juice_icon_path(upgrade, true)"
-              alt="Top Mat"
-              :style="{ opacity: streak_text.topIconActive ? 1 : 0.1 }"
-            />
-            <!-- <div v-if="!vStreak.topIconActive" class="empty-cross"></div> -->
-          </div>
-          <div
-            v-if="
-              juice_icon_path(upgrade, false) !== juice_icon_path(upgrade, true)
-            "
-            class="icon-slot"
-            :class="{ 'should-not-use': !streak_text.bottomIconActive }"
-          >
-            <img
-              :src="juice_icon_path(upgrade, false)"
-              alt="Bottom Mat"
-              :style="{ opacity: streak_text.bottomIconActive ? 1 : 0.1 }"
-            />
-            <!-- <div v-if="!vStreak.bottomIconActive" class="empty-cross"></div> -->
-          </div>
-          <div class="text-slot">
-            <div class="line-primary" v-html="streak_text.name_line"></div>
-            <div class="line-primary" v-html="streak_text.line1"></div>
-            <div
-              :class="upgrade.is_normal_honing ? 'line-muted' : 'line-primary'"
-              v-html="streak_text.line2"
-            ></div>
-          </div>
-        </div>
-      </div>
-
-      <div v-if="!progress_expanded && !must_show" class="hf-right-section">
-        <!-- <button class="btn-succeed" @click="onSucceedClick">Succeed & deduct costs</button> -->
-        <button class="btn-expand" @click="progress_expanded = true">
-          Show more
-        </button>
-      </div>
-      <div
-        v-if="
-          progress_expanded &&
-          active_profile.optimizer_worker_bundle.status === 'busy'
-        "
-        class="hf-right-section"
-      >
-        <!-- <button class="btn-succeed" @click="onSucceedClick">Succeed & deduct costs</button> -->
-        <span> Optimizer working...</span>
-      </div>
+  <div class="flex flex-row">
+    <div
+      v-for="(streak_text, i) in streak_texts"
+      :key="i"
+      class="flex flex-col items-center"
+    >
+      <img
+        :src="juice_icon_path(upgrade, true)"
+        alt="Top Mat"
+        class="h-8 w-8 object-contain"
+      />
 
       <div
         v-if="
-          (progress_expanded || must_show) &&
-          active_profile.optimizer_worker_bundle.status !== 'busy'
+          juice_icon_path(upgrade, false) !== juice_icon_path(upgrade, true)
         "
-        class="hf-right-section"
       >
-        <div class="inputs-container">
-          <div v-if="upgrade.is_normal_honing" style="display: contents">
-            <div class="input-row text-left">
-              Current Artisan energy:
-              {{ artisan_function(upgrade, taps_so_far, juice_info) }}%
-            </div>
-            <div class="input-row text-left">
-              Cumulative chance:
-              {{ cumulative_chance(upgrade, taps_so_far, juice_info) }}%
-            </div>
-          </div>
-
-          <div v-else style="display: contents"></div>
-          <button class="btn-succeed" @click="onSucceedClick">
-            Succeed & deduct costs
-          </button>
-        </div>
+        <img
+          :src="juice_icon_path(upgrade, false)"
+          alt="Bottom Mat"
+          class="h-8 w-8 object-contain"
+        />
+      </div>
+      <div class="annotation">
+        <div v-html="streak_text.name_line"></div>
+        <div v-html="streak_text.line1"></div>
+        <div v-html="streak_text.line2"></div>
       </div>
     </div>
   </div>
 
+  <div
+    v-if="
+      progress_expanded &&
+      active_profile.optimizer_worker_bundle.status === 'busy'
+    "
+  >
+    <span> Optimizer working...</span>
+  </div>
+  <div
+    v-if="
+      (progress_expanded || must_show) &&
+      active_profile.optimizer_worker_bundle.status !== 'busy'
+    "
+  >
+    <div>
+      <div v-if="upgrade.is_normal_honing">
+        <div>
+          Current Artisan energy:
+          {{ artisan_function(upgrade, taps_so_far, juice_info) }}%
+        </div>
+        <div>
+          Cumulative chance:
+          {{ cumulative_chance(upgrade, taps_so_far, juice_info) }}%
+        </div>
+      </div>
+      <div v-else></div>
+      <button @click="onSucceedClick">Succeed & deduct costs</button>
+    </div>
+  </div>
+
+  <!--
   <Teleport to="body">
     <div
       v-if="show_success_modal"
-      class="hf-modal-overlay"
+      class="modal-overlay"
       @click="show_success_modal = false"
     >
-      <div class="hf-popup" @click.stop>
+      <div class="popup" @click.stop>
         <div v-if="upgrade.is_normal_honing" class="popup-header">
           <h3>Confirm Success</h3>
           <div class="input-row text-left">
@@ -398,13 +387,13 @@ async function confirmSuccess() {
             />
           </div>
           <div class="input-row">
-            <!-- {{ console.log(upgrade.normal_dist) }} -->
+        
             <input
               type="range"
               v-model.number="taps_so_far"
               min="0"
               :max="upgrade.normal_dist?.length - 1 || 100"
-              class="hf-slider"
+              class="slider"
               @change="write_normal_progress"
             />
           </div>
@@ -428,18 +417,18 @@ async function confirmSuccess() {
           </label>
         </div>
 
-        <div class="hf-popup-grid">
-          <div class="hf-popup-title-row">
-            <span style="color: var(--hf-graph-average-color)"
+        <div class="popup-grid">
+          <div class="popup-title-row">
+            <span style="color: var(--graph-average-color)"
               >Material Costs</span
             >
-            <span style="color: var(--hf-bound); text-align: left"
+            <span style="color: var(--bound); text-align: left"
               >Char-Bound (after)</span
             >
-            <span style="color: var(--hf-roster); text-align: left"
+            <span style="color: var(--roster); text-align: left"
               >Rester-Bound (after)
             </span>
-            <span style="color: var(--hf-tradable); text-align: left"
+            <span style="color: var(--tradable); text-align: left"
               >Tradable (after)</span
             >
           </div>
@@ -447,33 +436,33 @@ async function confirmSuccess() {
           <div
             v-for="{ label, row } in visibleRows"
             :key="`manifest-${label}`"
-            class="hf-mats-row"
+            class="mats-row"
           >
             <MaterialCell
               :input_column="used_materials"
               :row="row"
-              :input_color="'--hf-graph-average-color'"
+              :input_color="'--graph-average-color'"
               :label="label"
             />
             <MaterialCell
               :input_column="remaining_materials.bound_budgets"
               :row="row"
-              :input_color="'--hf-bound'"
+              :input_color="'--bound'"
             />
             <MaterialCell
               :input_column="remaining_materials.roster_mats"
               :row="row"
-              :input_color="'--hf-roster'"
+              :input_color="'--roster'"
             />
             <MaterialCell
               :input_column="remaining_materials.tradable_mats"
               :row="row"
-              :input_color="'--hf-tradable'"
+              :input_color="'--tradable'"
             />
           </div>
           <div
             v-if="upgrade.is_normal_honing && taps_so_far == 0"
-            class="hf-mats-row"
+            class="mats-row"
           >
             <MaterialCell
               :input_column="active_profile.special_budget"
@@ -498,11 +487,16 @@ async function confirmSuccess() {
       </div>
     </div>
   </Teleport>
+  -->
 </template>
 
 <style scoped>
-/* Base Variables & Structural Setup */
-.hf-upgrade-row {
+.annotation {
+  color: var(--text-muted);
+  font-size: x-small;
+}
+/*
+ .upgrade-row {
   --icon-size: 36px;
   --font-primary: 1rem;
   --font-small: 0.8rem;
@@ -510,12 +504,12 @@ async function confirmSuccess() {
   display: flex;
   flex-direction: column;
   margin-bottom: 1rem;
-  background: var(--hf-bg-surface, #1e1e1e);
+  background: var(--bg-surface, #1e1e1e);
   border-radius: 8px;
   padding: 1rem;
 }
 
-.hf-upgrade-topline {
+.upgrade-topline {
   border-bottom: 1px solid var(--border-main, #333);
   padding-bottom: 0.5rem;
   margin-bottom: 1rem;
@@ -523,15 +517,13 @@ async function confirmSuccess() {
   font-size: 1.1rem;
 }
 
-.hf-upgrade-content {
+.upgrade-content {
   display: flex;
   flex-wrap: wrap;
   gap: 1.5rem;
   align-items: stretch;
 }
-
-/* --- Left Controls (Order & Taps) --- */
-.hf-left-controls {
+.left-controls {
   display: flex;
   gap: 1rem;
   align-items: flex-start;
@@ -548,7 +540,7 @@ async function confirmSuccess() {
 .order-circle {
   width: calc(
     var(--icon-size) * 2 + 0.25rem
-  ); /* Align with the two icon rows visually */
+  );
   height: calc(var(--icon-size) * 2 + 0.25rem);
   border-radius: 50%;
   display: flex;
@@ -556,26 +548,26 @@ async function confirmSuccess() {
   justify-content: center;
   font-size: 1.5rem;
   font-weight: bold;
-  background-color: var(--hf-text-muted, #555);
-  color: var(--hf-bg-deep, #000);
+  background-color: var(--text-muted, #555);
+  color: var(--bg-deep, #000);
 }
 
 .order-circle.is-free-tap {
-  background-color: var(--hf-free-tap, #4caf50);
+  background-color: var(--free-tap, #4caf50);
 }
 
 .order-text,
 .action-desc {
   font-size: var(--font-small);
-  color: var(--hf-text-muted, #aaa);
+  color: var(--text-muted, #aaa);
   text-align: center;
   text-wrap-mode: wrap;
 }
 
 .btn-all-failed {
   height: calc(var(--icon-size) * 3 + 0.25rem);
-  background-color: var(--hf-free-tap);
-  color: var(--hf-bg-deep, #000);
+  background-color: var(--free-tap);
+  color: var(--bg-deep, #000);
   border: none;
   border-radius: 8px;
   padding: 0 1rem;
@@ -591,8 +583,8 @@ async function confirmSuccess() {
 
 .btn-expand {
   height: calc(var(--icon-size) * 1 + 0.25rem);
-  background-color: var(--hf-text-muted);
-  color: var(--hf-bg-deep, #000);
+  background-color: var(--text-muted);
+  color: var(--bg-deep, #000);
   border: none;
   border-radius: 8px;
   padding: 0 1rem;
@@ -604,8 +596,8 @@ async function confirmSuccess() {
 .btn-expand:hover {
   filter: brightness(1.2);
 }
-/* --- Scrollable Instructions --- */
-.hf-scrollable-instructions {
+
+.scrollable-instructions {
   display: flex;
   gap: 0.5rem;
   overflow-x: auto;
@@ -616,7 +608,7 @@ async function confirmSuccess() {
   transition: opacity 0.3s;
 }
 
-.hf-scrollable-instructions.is-dimmed {
+.scrollable-instructions.is-dimmed {
   opacity: 0.4;
 }
 
@@ -632,7 +624,7 @@ async function confirmSuccess() {
   width: var(--icon-size);
   height: var(--icon-size);
   border: 1px solid rgba(255, 255, 255, 0.1);
-  background-color: var(--hf-bg-raised);
+  background-color: var(--bg-raised);
 }
 .icon-slot.should-not-use {
   width: var(--icon-size);
@@ -657,12 +649,12 @@ async function confirmSuccess() {
 }
 
 .line-muted {
-  color: var(--hf-text-muted, #aaa);
+  color: var(--text-muted, #aaa);
   font-size: var(--font-small);
 }
 
-/* --- Right Section (Inputs & Button) --- */
-.hf-right-section {
+
+.right-section {
   display: flex;
   flex-wrap: wrap;
   gap: 1rem;
@@ -697,7 +689,7 @@ async function confirmSuccess() {
 .input-row input[type="number"] {
   width: 60px;
   padding: 0.25rem;
-  background: var(--hf-bg-deep, #121212);
+  background: var(--bg-deep, #121212);
   border: 1px solid var(--border-main, #333);
   color: white;
   border-radius: 4px;
@@ -709,7 +701,7 @@ async function confirmSuccess() {
   align-items: center;
 }
 
-.hf-slider {
+.slider {
   width: 100%;
   cursor: pointer;
 }
@@ -717,9 +709,9 @@ async function confirmSuccess() {
 .btn-succeed {
   background-color: var(--btn-success, #2e7d32);
   color: var(
-    --hf-bg-deep,
+    --bg-deep,
     #fff
-  ); /* Adjusted logic depending on your exact theme */
+  );
   border: none;
   border-radius: 8px;
   padding: 1rem;
@@ -731,7 +723,7 @@ async function confirmSuccess() {
 .btn-succeed:hover {
   filter: brightness(1.2);
 }
-.hf-popup-grid {
+.popup-grid {
   display: grid;
   grid-template-columns: 250px 140px 140px 140px;
   align-items: center;
@@ -740,8 +732,8 @@ async function confirmSuccess() {
   flex: 1;
 }
 
-.hf-popup-title-row,
-.hf-mats-row {
+.popup-title-row,
+.mats-row {
   display: grid;
   grid-column: 1 / -1;
   grid-template-columns: subgrid;
@@ -763,15 +755,15 @@ async function confirmSuccess() {
 
 .btn-confirm {
   background: var(--btn-success, #2e7d32);
-  color: var(--hf-bg-deep);
+  color: var(--bg-deep);
   border: none;
   padding: 0.5rem 1rem;
   border-radius: 4px;
   cursor: pointer;
 }
 .btn-cancel {
-  background: var(--hf-cancel, #d32f2f);
-  color: var(--hf-text-bright,);
+  background: var(--cancel, #d32f2f);
+  color: var(--text-bright,);
   border: none;
   padding: 0.5rem 1rem;
   border-radius: 4px;
@@ -785,4 +777,5 @@ async function confirmSuccess() {
   font-size: var(--font-small);
   cursor: pointer;
 }
+  */
 </style>
