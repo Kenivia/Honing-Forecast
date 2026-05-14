@@ -67,15 +67,16 @@ self.addEventListener("message", async (ev) => {
 
   const { payload, wasm_op } = msg;
 
-  console.log(WasmOp[wasm_op], "Began", payload);
   let result;
 
   // if (wasm_op == WasmOp.EvaluateAverage) {
   //     result = await EvaluateAverageWasm(payload)
   // } else
   if (wasm_op == WasmOp.OptimizeAverage) {
+    console.log(WasmOp[wasm_op], "Began", payload);
     result = await OptimizeAverageWasm(payload);
   } else if (wasm_op == WasmOp.Histogram) {
+    console.log(WasmOp[wasm_op], "Began", payload);
     result = await HistogramWasm(payload);
   } else //     if (wasm_op == WasmOp.Parser) {
   //     result = await ParserWasm(payload)

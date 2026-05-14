@@ -217,15 +217,16 @@ function hover_annotation(x, _y, cy, material_type, color, is_last): string {
     : Math.min(
         10,
         Math.max(
+          3,
           Math.ceil(
             cy < 0.5
               ? Math.min(3, Math.abs(Math.log10(cy)))
               : Math.abs(Math.log10(1 - cy)),
           ),
-          3,
         ),
       );
-  return `<b style="color: white;">${(cy * 100).toPrecision(place)}% </b> chance to use <br> &#8804;<b style="color: ${color};"> ${Math.ceil(x).toLocaleString("en-US")} </b> ${material_type} `;
+
+  return `<b style="color: white;">${(cy * 100).toPrecision(place)}% </b> chance to use <br> &#9244;<b style="color: ${color};"> ${Math.ceil(x).toLocaleString("en-US")} </b> ${material_type} `;
 }
 function special_hover_annotation(x, _y, cy, material_type, color): string {
   let place = Math.min(
@@ -245,19 +246,12 @@ function special_hover_annotation(x, _y, cy, material_type, color): string {
 const show_special_guide = ref(false);
 
 const grid: GridConfig = {
-  grid_template_columns: "250px 90px 120px 120px 350px",
+  grid_template_columns:
+    "minmax(180px, 250px) minmax(70px, 90px) minmax(110px, 120px) minmax(110px, 120px) 350px",
   grid_row_span: `span ${ALL_LABELS[1].length + 1}`,
 };
 
-const compact_grid: GridConfig = {
-  grid_template_columns: "180px 80px 110px 110px 350px",
-  grid_row_span: `span ${ALL_LABELS[1].length + 1}`,
-};
-const is962Narrow = useMediaIsNarrow(962);
-
-const active_grid_style = computed(() =>
-  is962Narrow.value ? compact_grid : grid,
-);
+const is924Narrow = useMediaIsNarrow(924); // this turns out to be the width where the checkboxes overlap the labels
 </script>
 
 <template>
@@ -268,8 +262,8 @@ const active_grid_style = computed(() =>
     <div
       class="card-body outer-grid pt-0! pb-2!"
       :style="{
-        '--grid-cols': active_grid_style.grid_template_columns,
-        gridRow: active_grid_style.grid_row_span,
+        '--grid-cols': grid.grid_template_columns,
+        gridRow: grid.grid_row_span,
       }"
     >
       <div class="mats-row h-fit! items-end! border-b-(--border-main)!">
@@ -348,7 +342,7 @@ const active_grid_style = computed(() =>
             "
             :hide_tick="!matsIndices.includes(row)"
             :callback="() => start_all_workers()"
-            :hide_label="is962Narrow"
+            :hide_label="is924Narrow && row < 7"
           />
           <!-- {{ console.log(averages) }} -->
           <MaterialCell
@@ -401,7 +395,6 @@ const active_grid_style = computed(() =>
             "
             :hide_tick="true"
             :callback="() => start_all_workers()"
-            :hide_label="is962Narrow"
           ></MaterialCell>
           <span
             class="text-xs text-(--free-tap) underline hover:text-(--free-tap-faded)"

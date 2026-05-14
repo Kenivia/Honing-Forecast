@@ -4,18 +4,17 @@ import { ALL_LABELS, T4_JUICE_LABELS } from "@/Utils/Constants";
 import { get_piece_name, get_icon_path, toOrdinal } from "@/Utils/Helpers";
 import { storeToRefs } from "pinia";
 import { computed, nextTick, ref, watch } from "vue";
-import { grid_change_callback } from "../CharWorkerUtils";
+import { grid_change_callback, start_all_workers } from "../CharWorkerUtils";
 
 import {
   aggregate_streaks,
-  artisan_function,
   compute_remaininig_materials,
   compute_used_materials,
   cumulative_chance,
   streaks_to_text,
 } from "./InstructionsUtil";
 import MaterialCell from "@/Components/Common/MaterialCell.vue";
-import { Upgrade, UpgradeStatus } from "@/Utils/KeyedUpgrades";
+import { to_upgrade_key, Upgrade, UpgradeStatus } from "@/Utils/KeyedUpgrades";
 
 const { active_profile } = storeToRefs(useRosterStore());
 const { active_roster_mats_owned, active_tradable_mats_owned } =
@@ -40,22 +39,21 @@ const juice_info = computed(() => {
 });
 
 const streaks = computed(() =>
-  aggregate_streaks(props.upgrade, juice_info.value, taps_so_far.value),
+  aggregate_streaks(props.upgrade, juice_info.value, 0),
 );
 const streak_texts = computed(() =>
-  streaks_to_text(
-    props.upgrade,
-    streaks.value,
-    juice_info.value,
-    taps_so_far.value,
-  ),
+  streaks_to_text(props.upgrade, streaks.value, juice_info.value, 0),
 );
 
-const taps_so_far = ref(props.upgrade.starting_num_taps || 0);
+const starting_artisan = ref(
+  parseFloat((props.upgrade.starting_artisan * 100).toFixed(2)) || 0,
+);
 watch(
-  () => props.upgrade.starting_num_taps,
+  () => props.upgrade.starting_artisan,
   () => {
-    taps_so_far.value = props.upgrade.starting_num_taps;
+    starting_artisan.value = parseFloat(
+      (props.upgrade.starting_artisan * 100).toFixed(2),
+    );
   }, // This watch is here to watch for when upgrade changes (optimizer shuffled order or tick /untick), in which case props.upgrade changes
 );
 
@@ -100,13 +98,18 @@ watch(
   },
 );
 
-// function write_normal_progress() {
-//     taps_so_far.value = Math.max(0, Math.min(props.upgrade.normal_dist.length - 1, taps_so_far.value))
-//     active_profile.value.keyed_upgrades[
-//         to_upgrade_key(props.upgrade.piece_type, props.upgrade.upgrade_index, props.upgrade.is_normal_honing, active_profile.value.tier)
-//     ][3] = taps_so_far.value
-//     start_all_workers()
-// }
+function write_normal_progress() {
+  starting_artisan.value = Math.max(0, Math.min(100, starting_artisan.value));
+  active_profile.value.keyed_upgrades[
+    to_upgrade_key(
+      props.upgrade.piece_type,
+      props.upgrade.upgrade_index,
+      props.upgrade.is_normal_honing,
+      active_profile.value.tier,
+    )
+  ].starting_artisan = starting_artisan.value / 100;
+  start_all_workers();
+}
 
 // function write_adv_progress() {
 //     current_adv_upgrade.value = Math.max(props.upgrade.upgrade_index * 10, Math.min((props.upgrade.upgrade_index + 1) * 10 - 1, current_adv_upgrade.value))
@@ -143,7 +146,6 @@ function juice_icon_path(upgrade: Upgrade, juice: boolean) {
   );
 }
 
-const progress_expanded = ref(false);
 const must_show = ref(false);
 
 watch(
@@ -182,7 +184,7 @@ const adv_scroll_used = ref(0);
 const used_materials = computed(() =>
   compute_used_materials(
     props.upgrade,
-    taps_so_far.value,
+    0,
     juice_info.value,
     adv_juice_used.value,
     adv_scroll_used.value,
@@ -191,17 +193,17 @@ const used_materials = computed(() =>
 const remaining_materials = computed(() =>
   compute_remaininig_materials(used_materials.value),
 );
-const visibleRows = computed(() => {
-  const tier = active_profile.value.tier;
-  if (!ALL_LABELS || !ALL_LABELS[tier]) return [];
-  return ALL_LABELS[tier]
-    .map((label, index) => ({ label, index, row: index }))
-    .filter(
-      (item) =>
-        used_materials.value[item.index] > 0 &&
-        active_profile.value.bound_budgets[tier].enabled[item.index],
-    );
-});
+// const visibleRows = computed(() => {
+//   const tier = active_profile.value.tier;
+//   if (!ALL_LABELS || !ALL_LABELS[tier]) return [];
+//   return ALL_LABELS[tier]
+//     .map((label, index) => ({ label, index, row: index }))
+//     .filter(
+//       (item) =>
+//         used_materials.value[item.index] > 0 &&
+//         active_profile.value.bound_budgets[tier].enabled[item.index],
+//     );
+// });
 
 async function confirmSuccess() {
   if (!succeed_without_deduct.value) {
@@ -255,9 +257,9 @@ async function confirmSuccess() {
     <div class="text-4xl">
       {{ toOrdinal(props.perform_order + 1) }}
     </div>
-    <span class="annotation"
+    <!-- <span class="annotation"
       >Do this upgrade {{ toOrdinal(props.perform_order + 1) }}
-    </span>
+    </span> -->
   </div>
 
   <div class="flex flex-col items-center">
@@ -275,13 +277,13 @@ async function confirmSuccess() {
     <span class="annotation">
       {{
         free_tap_this_upgrade
-          ? "Free tap this until you run out"
+          ? "Free tap this until you run out or succeed"
           : "Do not use special tap on this upgrade"
       }}
     </span>
   </div>
 
-  <div class="flex flex-row">
+  <div class="mr-auto flex w-fit flex-row pl-4">
     <div
       v-for="(streak_text, i) in streak_texts"
       :key="i"
@@ -305,40 +307,45 @@ async function confirmSuccess() {
         />
       </div>
       <div class="annotation">
-        <div v-html="streak_text.name_line"></div>
-        <div v-html="streak_text.line1"></div>
+        <!-- <div v-html="streak_text.name_line"></div> -->
+        <div
+          v-html="streak_text.line1"
+          class="text-sm text-(--text-main)"
+        ></div>
         <div v-html="streak_text.line2"></div>
       </div>
     </div>
   </div>
+  <button @click="onSucceedClick" class="generic-button text-wrap!">
+    Succeed & deduct costs
+  </button>
+  <div class="flex flex-col items-center">
+    <div v-if="upgrade.is_normal_honing" class="contents">
+      <div class="flex flex-row flex-nowrap justify-center gap-2">
+        <span class="w-fit">
+          Starting artisan energy:
+          {{
+            active_profile.optimizer_worker_bundle.status === "busy"
+              ? starting_artisan.toFixed(2) + "%"
+              : ""
+          }}
+        </span>
 
-  <div
-    v-if="
-      progress_expanded &&
-      active_profile.optimizer_worker_bundle.status === 'busy'
-    "
-  >
-    <span> Optimizer working...</span>
-  </div>
-  <div
-    v-if="
-      (progress_expanded || must_show) &&
-      active_profile.optimizer_worker_bundle.status !== 'busy'
-    "
-  >
-    <div>
-      <div v-if="upgrade.is_normal_honing">
-        <div>
-          Current Artisan energy:
-          {{ artisan_function(upgrade, taps_so_far, juice_info) }}%
-        </div>
-        <div>
-          Cumulative chance:
-          {{ cumulative_chance(upgrade, taps_so_far, juice_info) }}%
+        <div
+          v-if="active_profile.optimizer_worker_bundle.status !== 'busy'"
+          class="flex flex-row"
+        >
+          <input class="generic-input w-13" v-model="starting_artisan" />
+          <span>%</span>
         </div>
       </div>
-      <div v-else></div>
-      <button @click="onSucceedClick">Succeed & deduct costs</button>
+      <div v-if="active_profile.optimizer_worker_bundle.status !== 'busy'">
+        <button @click="write_normal_progress" class="generic-button self-end!">
+          Confirm
+        </button>
+      </div>
+
+      <div v-else>Optimizer working...</div>
     </div>
   </div>
 

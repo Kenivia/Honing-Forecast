@@ -149,14 +149,14 @@
 }
 
 .question-mark {
-  padding: 4px;
+  padding: 0px;
   width: 16px;
   height: 16px;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  align-self: flex-end;
+  align-self: center;
   font-weight: bold;
   background-color: AccentColor;
   color: AccentColorText;

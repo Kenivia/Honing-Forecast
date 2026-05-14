@@ -190,7 +190,7 @@ export function artisan_function(
     }
     return chance;
   });
-  let artisan = 0;
+  let artisan = upgrade.starting_artisan;
   // console.log(upgrade.normal_dist, extra_arr, upgrade.state)
 
   for (let count = 0; count < total_count; count++) {

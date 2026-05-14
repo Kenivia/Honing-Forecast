@@ -1,14 +1,9 @@
 <script setup lang="ts">
 import { storeToRefs } from "pinia";
-import { computed, ref, watch } from "vue";
+import { ref, watch } from "vue";
 import InstructionRow from "./InstructionRow.vue";
 import { useRosterStore } from "@/Stores/RosterConfig";
-import {
-  get_upgrade_map,
-  to_upgrade_key,
-  Upgrade,
-  UpgradeStatus,
-} from "@/Utils/KeyedUpgrades";
+import { Upgrade, UpgradeStatus } from "@/Utils/KeyedUpgrades";
 import { PIECE_NAMES } from "@/Utils/Constants";
 import { GridConfig } from "@/Utils/GridStyling";
 
@@ -70,17 +65,19 @@ function sort_upgrades(): [Upgrade, number, number][] {
     }
   }
 
-  return output
-    .map((x, perform_order) => {
-      const upgrade = upgrade_arr[x];
-      const index_in_special = special_state.findIndex((y) => y == x);
-      return [
-        { ...upgrade, this_special_chance: special_chance_map.get(x) }, // Shallow clone
-        index_in_special,
-        perform_order,
-      ];
-    })
-    .sort(([upgrade, _]) => (upgrade as Upgrade).piece_type);
+  return output.map((x, perform_order) => {
+    const upgrade = upgrade_arr[x];
+    const index_in_special = special_state.findIndex((y) => y == x);
+    return [
+      { ...upgrade, this_special_chance: special_chance_map.get(x) }, // Shallow clone
+      index_in_special,
+      perform_order,
+    ] as [Upgrade, number, number];
+  });
+  // .sort(
+  //   ([upgrade1], [upgrade2]) =>
+  //     (upgrade1 as Upgrade).piece_type - (upgrade2 as Upgrade).piece_type,
+  // );
 }
 const { active_profile } = storeToRefs(useRosterStore());
 const sorted_upgrade_arr = ref(sort_upgrades());
@@ -92,34 +89,35 @@ watch(
   { deep: true },
 );
 
-const upgrade_map = computed(() =>
-  get_upgrade_map(
-    active_profile.value.optimizer_worker_bundle.result?.upgrade_arr ?? null,
-    active_profile.value.tier,
-  ),
-);
-const lowest_arr = computed(() =>
-  PIECE_NAMES.map(
-    (_, piece_type) =>
-      upgrade_map.value.get(
-        to_upgrade_key(
-          piece_type,
-          (
-            active_profile.value.normal_grid[piece_type] as UpgradeStatus[]
-          ).findIndex((value) => value == UpgradeStatus.Want),
-          true,
-          active_profile.value.tier,
-        ),
-      ) ?? null,
-  ),
-);
+// const upgrade_map = computed(() =>
+//   get_upgrade_map(
+//     active_profile.value.optimizer_worker_bundle.result?.upgrade_arr ?? null,
+//     active_profile.value.tier,
+//   ),
+// );
+// const lowest_arr = computed(() =>
+//   PIECE_NAMES.map(
+//     (_, piece_type) =>
+//       upgrade_map.value.get(
+//         to_upgrade_key(
+//           piece_type,
+//           (
+//             active_profile.value.normal_grid[piece_type] as UpgradeStatus[]
+//           ).findIndex((value) => value == UpgradeStatus.Want),
+//           true,
+//           active_profile.value.tier,
+//         ),
+//       ) ?? null,
+//   ),
+// );
 
-const lowest_upgrade_index = computed(() =>
-  Math.min(...lowest_arr.value.map((x) => x?.upgrade_index ?? 999)),
-);
+// const lowest_upgrade_index = computed(() =>
+//   Math.min(...lowest_arr.value.map((x) => x?.upgrade_index ?? 999)),
+// );
 
 const grid: GridConfig = {
-  grid_template_columns: "70px 100px 100px 350px",
+  grid_template_columns:
+    "minmax(50px, 0.25fr) minmax(90px, 0.35fr) minmax(80px, 0.35fr) minmax(200px, 1fr) 80px 250px ",
   grid_row_span: `span ${6}`,
 };
 </script>
@@ -138,12 +136,47 @@ const grid: GridConfig = {
     >
       <div class="mats-row">
         <span>Upgrade</span>
-        <span>Upgrade order ?</span>
+        <div class="flex w-full flex-row justify-center">
+          <div class="ml-3 w-min text-wrap">Upgrade order</div>
+          <div
+            class="question-mark"
+            v-tooltip.right="
+              'Only the order that you attempt Free (Special) taps actually matter, this is one of many equivalent orderings.'
+            "
+          >
+            ?
+          </div>
+        </div>
         <span>Special usage</span>
-        <span>Juice & book Instructions</span>
+        <div class="flex w-full flex-row justify-center">
+          Juice & book Instructions
+          <div
+            class="question-mark ml-2"
+            v-tooltip.left="
+              'All juices (Lava & Glacier Breath) should be used at the max amount.'
+            "
+          >
+            ?
+          </div>
+        </div>
+        <span>Succeed</span>
+        <div class="flex w-full flex-row justify-center">
+          Artisan input
+          <div
+            class="question-mark ml-2"
+            v-tooltip.left="
+              'Only use this if you are starting from some non-zero artisan. There is no need to update your progress after every tap.'
+            "
+          >
+            ?
+          </div>
+        </div>
       </div>
       <div
-        v-if="active_profile.optimizer_worker_bundle.result"
+        v-if="
+          active_profile.optimizer_worker_bundle.result &&
+          active_profile.histogram_worker_bundle.result
+        "
         class="contents"
       >
         <div
@@ -153,13 +186,9 @@ const grid: GridConfig = {
             perform_order,
           ] in sorted_upgrade_arr"
           :key="`instructions-${upgrade.upgrade_index}-${upgrade.piece_type}-${upgrade.is_normal_honing}`"
-          class="mats-row h-fit!"
+          class="mats-row h-30!"
         >
           <InstructionRow
-            v-if="
-              lowest_arr[upgrade.piece_type].upgrade_index ==
-              upgrade.upgrade_index
-            "
             :upgrade="upgrade"
             :perform_order="perform_order"
             :special_invalid_index="
