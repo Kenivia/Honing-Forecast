@@ -8,6 +8,7 @@ import { Upgrade } from "@/Utils/KeyedUpgrades";
 import ActualInstructions from "./ActualInstructions.vue";
 import NormalHoningDetails from "./NormalHoningDetails.vue";
 import SuccessPopup from "./SuccessPopup.vue";
+import AdvancedHoningDetails from "./AdvancedHoningDetails.vue";
 
 const { active_profile } = storeToRefs(useRosterStore());
 
@@ -42,7 +43,7 @@ function onSucceedClick() {
     <img
       :src="get_icon_path(get_piece_name(upgrade))"
       :alt="get_piece_name(upgrade)"
-      class="h-8 w-8 object-contain"
+      class="generic-icon h-8 w-8"
     />
   </div>
 
@@ -53,16 +54,22 @@ function onSucceedClick() {
   </div>
 
   <div class="flex flex-col items-center">
-    <img
-      :src="
-        get_icon_path(
-          (active_profile.tier == 1 ? 'Serca ' : '') +
-            active_profile.special_budget.keys[0],
-        )
-      "
-      :alt="get_piece_name(upgrade)"
-      class="h-12 w-12 object-contain"
-    />
+    <div
+      class="can-disable-icon-wrapper"
+      :class="{ disabled: !free_tap_this_upgrade }"
+    >
+      <img
+        :src="
+          get_icon_path(
+            (active_profile.tier == 1 ? 'Serca ' : '') +
+              active_profile.special_budget.keys[0],
+          )
+        "
+        :alt="get_piece_name(upgrade)"
+        class="generic-icon h-12 w-12"
+        :class="{ disabled: !free_tap_this_upgrade }"
+      />
+    </div>
     <!-- TODO ADD BIG CROSS HERE FOR NO FREE TAP -->
     <span class="annotation">
       {{
@@ -83,11 +90,9 @@ function onSucceedClick() {
       v-if="upgrade.is_normal_honing"
       :upgrade="props.upgrade"
     />
+    <AdvancedHoningDetails v-else :upgrade="props.upgrade" />
   </div>
-  <SuccessPopup
-    :upgrade="props.upgrade"
-    v-model="show_success_modal"
-  ></SuccessPopup>
+  <SuccessPopup :upgrade="props.upgrade" v-model="show_success_modal" />
 </template>
 
 <style scoped></style>

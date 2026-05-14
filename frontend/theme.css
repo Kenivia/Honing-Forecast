@@ -56,4 +56,6 @@
   --pending: var(--gold);
   --achieved: rgba(133, 219, 116);
   --font-body: Nunito;
+
+  --text-2xs: 0.6rem;
 }

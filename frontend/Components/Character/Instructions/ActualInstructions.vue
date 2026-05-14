@@ -166,7 +166,7 @@ const streak_texts = computed(() => {
     if (isNormal) {
       line1 = `x${streak.count} taps`;
       taps += streak.count;
-      line2 = `until ${(props.upgrade, taps, juice_info.value)}%<br>artisan`;
+      line2 = `until ${artisan_function(props.upgrade, taps, juice_info.value)}% artisan`;
     } else {
       let graceText = streak.grace ? "Grace" : "non-Grace";
       if (!streak.juice && !streak.scroll) {
@@ -191,33 +191,41 @@ const streak_texts = computed(() => {
 </script>
 
 <template>
-  <div class="mr-auto flex w-fit flex-row pl-4">
+  <div class="mr-auto flex w-fit flex-row pl-3">
     <div
       v-for="(streak_text, i) in streak_texts"
       :key="i"
-      class="flex flex-col items-center"
+      class="flex w-16 flex-col items-center"
     >
-      <img
-        :src="juice_icon_path(true)"
-        alt="Top Mat"
-        class="h-8 w-8 object-contain"
-      />
+      <div
+        class="can-disable-icon-wrapper"
+        :class="{ disabled: !streaks[i].juice }"
+      >
+        <img
+          :src="juice_icon_path(true)"
+          alt="Top Mat"
+          class="generic-icon h-8 w-8"
+          :class="{ disabled: !streaks[i].juice }"
+        />
+      </div>
 
-      <div v-if="juice_icon_path(false) !== juice_icon_path(true)">
+      <div
+        v-if="juice_icon_path(false) !== juice_icon_path(true)"
+        class="can-disable-icon-wrapper"
+        :class="{ disabled: !streaks[i].book && !streaks[i].scroll }"
+      >
         <img
           :src="juice_icon_path(false)"
           alt="Bottom Mat"
-          class="h-8 w-8 object-contain"
+          class="generic-icon h-8 w-8"
+          :class="{ disabled: !streaks[i].book && !streaks[i].scroll }"
         />
       </div>
-      <div class="annotation">
-        <!-- <div v-html="streak_text.name_line"></div> -->
-        <div
-          v-html="streak_text.line1"
-          class="text-sm text-(--text-main)"
-        ></div>
-        <div v-html="streak_text.line2"></div>
-      </div>
+
+      <!-- <div v-html="streak_text.name_line"></div> -->
+      <div class="text-sm text-(--text-main)">{{ streak_text.line1 }}</div>
+
+      <div class="annotation">{{ streak_text.line2 }}</div>
     </div>
   </div>
 </template>

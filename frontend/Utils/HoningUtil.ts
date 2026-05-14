@@ -9,12 +9,12 @@ export function artisan_function(
   let extra_arr = upgrade.state.slice(0, total_count).map(([juice, id]) => {
     let chance = 0.0;
     if (juice) {
-      chance += juice_info.value.all_juices[0].data.get(
+      chance += juice_info.all_juices[0].data.get(
         String(upgrade.upgrade_index),
       ).normal_chance;
     }
     if (id > 0) {
-      chance += juice_info.value.all_juices[id].data.get(
+      chance += juice_info.all_juices[id].data.get(
         String(upgrade.upgrade_index),
       ).normal_chance;
     }
@@ -43,7 +43,6 @@ export function artisan_function(
       break; // for upgrades that have 100% passrate immediately or upgrades that have above 100% success rate (juicing last few taps of like +4 or something)
     }
   }
-
   return (Math.min(artisan, 1) * 100).toFixed(2);
 }
 export function cumulative_chance(

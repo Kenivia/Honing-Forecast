@@ -160,7 +160,7 @@ function change_one_and_update_keyed(
           <img
             :src="get_icon_path(piece)"
             :alt="piece"
-            class="h-6.75 w-6.75 object-contain"
+            class="generic-icon h-6.75 w-6.75"
           />
         </div>
       </div>

@@ -90,7 +90,7 @@ const lowest_upgrade_index = computed(() =>
           <img
             :src="get_icon_path(piece_name)"
             :alt="piece_name"
-            class="h-12 w-12 object-contain"
+            class="generic-icon h-12 w-12"
           />
           <span class="text-(--text-muted)">{{
             piece_name +

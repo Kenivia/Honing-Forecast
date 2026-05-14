@@ -64,7 +64,7 @@ const this_data = ref(
       <span v-if="!hide_label">{{ label }}</span>
       <img
         :src="get_icon_path(label)"
-        class="object-contain"
+        class="generic-icon"
         :style="{
           width: actual_icon_size,
           height: actual_icon_size,

@@ -115,7 +115,7 @@ watch(
 //   Math.min(...lowest_arr.value.map((x) => x?.upgrade_index ?? 999)),
 // );
 
-const grid: GridConfig = {
+const normal_grid: GridConfig = {
   grid_template_columns:
     "minmax(50px, 0.25fr) minmax(90px, 0.35fr) minmax(80px, 0.35fr) minmax(200px, 1fr) 80px 250px ",
   grid_row_span: `span ${6}`,
@@ -125,12 +125,11 @@ const grid: GridConfig = {
   <section class="card-shell">
     <div class="card-header">
       <div class="card-title">Tap Instructions</div>
-      <span class="card-hint">Go from top to bottom</span>
     </div>
     <div
       class="card-body outer-grid"
       :style="{
-        '--grid-cols': grid.grid_template_columns,
+        '--grid-cols': normal_grid.grid_template_columns,
         // gridRow: grid.grid_row_span,
       }"
     >
@@ -143,9 +142,7 @@ const grid: GridConfig = {
             v-tooltip.right="
               'Only the order that you attempt Free taps actually matter, this is one of many equivalent orderings.'
             "
-          >
-            ?
-          </div>
+          />
         </div>
         <span>Special usage</span>
         <div class="flex w-full flex-row justify-center">
@@ -153,11 +150,9 @@ const grid: GridConfig = {
           <div
             class="question-mark ml-2"
             v-tooltip.left="
-              'All juices (Lava & Glacier Breath) should be used at the max amount.'
+              'Juiced taps mean full-juice (use the maximum amount of Lava / Glacier Breath).'
             "
-          >
-            ?
-          </div>
+          />
         </div>
         <span>Succeed</span>
         <div class="flex w-full flex-row justify-center">
@@ -167,9 +162,7 @@ const grid: GridConfig = {
             v-tooltip.left="
               'Only use this if you are starting from some non-zero artisan. There is no need to update your progress after every tap.'
             "
-          >
-            ?
-          </div>
+          />
         </div>
       </div>
       <div
@@ -186,7 +179,7 @@ const grid: GridConfig = {
             perform_order,
           ] in sorted_upgrade_arr"
           :key="`instructions-${upgrade.upgrade_index}-${upgrade.piece_type}-${upgrade.is_normal_honing}`"
-          class="mats-row h-30!"
+          class="mats-row h-fit! py-1!"
         >
           <InstructionRow
             :upgrade="upgrade"

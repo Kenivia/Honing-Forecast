@@ -37,7 +37,7 @@ export function createWorkerBundle() {
       // if (throttle_pending) {  this check's unnecessary cos the inside checks anyway
 
       // callback should go here if i decide to add
-      
+
       _try_flush_throttle();
 
       // }
@@ -78,13 +78,27 @@ export function createWorkerBundle() {
           worker.terminate();
           worker = null;
         }
+        if (callback) {
+          callback(result.value);
+        }
       } else {
-        result.value = e.data.state_bundle;
+        // 1 sec interval from rust's side
+        if (e.data.state_bundle) {
+          result.value = e.data.state_bundle;
+          last_intermediate_time.value = performance.now();
+          // console.log("wrote");
+          if (callback) {
+            callback(result.value);
+          }
+        }
+
+        // console.log(
+        //   e.data.state_bundle,
+        //   e.data.est_progress_percentage,
+        //   !!e.data.state_bundle,
+        //   last_intermediate_time.value - performance.now(),
+        // );
         est_progress_percentage.value = e.data.est_progress_percentage;
-        last_intermediate_time.value = performance.now();
-      }
-      if (callback) {
-        callback(result.value);
       }
     };
 

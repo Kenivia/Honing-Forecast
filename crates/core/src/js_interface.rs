@@ -13,14 +13,18 @@ extern "C" {
 }
 #[derive(Serialize)]
 pub struct WasmProgress {
-    state_bundle: StateBundle,
+    state_bundle: Option<StateBundle>,
     est_progress_percentage: f64,
     r#type: String,
 }
 
-pub fn send_progress(state_bundle: &StateBundle, est_progress_percentage: f64) {
+pub fn send_progress(state_bundle: Option<&StateBundle>, est_progress_percentage: f64) {
     let msg = to_value(&WasmProgress {
-        state_bundle: state_bundle.clone(),
+        state_bundle: if state_bundle.is_none() {
+            None
+        } else {
+            Some(state_bundle.unwrap().clone())
+        },
         est_progress_percentage,
         r#type: "intermediate_result".to_owned(),
     })

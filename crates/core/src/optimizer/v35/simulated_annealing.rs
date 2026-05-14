@@ -16,7 +16,6 @@ use rand::Rng;
 
 use super::constants::*;
 use super::one_batch::SolverStateBundle;
-#[cfg(feature = "run_tests")]
 use crate::timer::Timer;
 
 pub fn my_push(
@@ -57,19 +56,73 @@ fn compute_upgrade_impact(state_bundle: &mut StateBundle) -> Vec<f64> {
     let sum: f64 = weights.iter().sum::<f64>();
     weights.iter_mut().map(|x| *x / sum).collect()
 }
+
+fn send_initial_progress(
+    #[allow(unused)] timer: &Timer,
+    #[allow(unused)] eqv_wall_time_iters: i64,
+    solver_bundle: &SolverStateBundle,
+    #[allow(unused)] overall_performance: &mut Performance,
+) {
+    #[cfg(feature = "run_tests")]
+    overall_performance.best_history.push((
+        timer.elapsed_sec(),
+        eqv_wall_time_iters,
+        f64::from(*solver_bundle.best_n_states.peek_max().unwrap().1),
+    ));
+
+    #[cfg(feature = "wasm")]
+    send_progress(Some(&solver_bundle.state_bundle), 0.01);
+}
+
+#[cfg(feature = "run_tests")]
+fn record_run_test_progress(
+    timer: &Timer,
+    eqv_wall_time_iters: i64,
+    best_metric: f64,
+    overall_performance: &mut Performance,
+) {
+    overall_performance
+        .best_history
+        .push((timer.elapsed_sec(), eqv_wall_time_iters, best_metric));
+}
+
+/// Sends a wasm progress update if at least 1 second has passed since the last one.
+/// Returns the updated `last_progress_sec` (unchanged if no update was sent).
+#[cfg(feature = "wasm")]
+fn maybe_send_wasm_progress(
+    eqv_wall_time_iters: i64,
+    solver_bundle: &mut SolverStateBundle,
+    timer: &Timer,
+    last_progress_sec: f64,
+) -> f64 {
+    let pct = (100.0 * (eqv_wall_time_iters as f64 / MAX_ITERS as f64)).clamp(0.01, 100.0);
+    let elapsed = timer.elapsed_sec();
+
+    if elapsed - last_progress_sec < 1.0 {
+        return last_progress_sec;
+    }
+
+    // Materialise the best known state before shipping it to the frontend.
+    solver_bundle.state_bundle.clone_from_essence(
+        solver_bundle.best_n_states.peek_max().unwrap().0,
+        solver_bundle.best_n_states.peek_max().unwrap().1,
+    );
+    let mut dummy_performance = Performance::new();
+    solver_bundle
+        .state_bundle
+        .optimizer_average_gold_metric(&mut dummy_performance);
+    solver_bundle.state_bundle.set_latest_special_probs();
+
+    send_progress(Some(&solver_bundle.state_bundle), pct);
+    elapsed
+}
 pub fn solve<R: Rng>(
     rng: &mut R,
-
     mut state_bundle: StateBundle,
     overall_performance: &mut Performance,
 ) -> StateBundle {
-    #[cfg(feature = "run_tests")]
     let timer = Timer::start();
 
-    // let init_temp: f64 = if DEBUG_AVERAGE { -1.0 } else { 333.0 };
-    // let mut temp: f64 = init_temp;
-
-    // Calculate max state length to establish the starting "coarse" resolution
     let max_state_len = state_bundle
         .upgrade_arr
         .iter()
@@ -79,77 +132,64 @@ pub fn solve<R: Rng>(
         .max(state_bundle.min_resolution);
 
     state_bundle.metric = state_bundle.metric_router(overall_performance);
+    state_bundle.set_latest_special_probs();
+
     if state_bundle.upgrade_arr.is_empty() {
         return state_bundle;
     }
 
     let mut eqv_wall_time_iters: i64 = 0;
-    let mut last_total_count: i64 = -9999; // immediately send a result 
     let scaler = AdaptiveScaler::new(state_bundle.metric.abs(), 50);
 
-    let mut overall_best_n_states: DoublePriorityQueue<StateEssence, OrderedFloat<f64>> =
-        DoublePriorityQueue::new();
-    overall_best_n_states.push(state_bundle.to_essence(), OrderedFloat(state_bundle.metric));
-
-    // if state_bundle.num_threads == 0 {
-    //     16
-    // } else {
-    //     state_bundle.num_threads
-    // };
     let upgrade_impacts = compute_upgrade_impact(&mut state_bundle);
-    // let mut solver_arr: Vec<SolverStateBundle> = Vec::with_capacity(actual_thread_num as usize);
 
-    // for _ in 0..actual_thread_num {
+    let init_essence = state_bundle.to_essence();
+    let init_metric = state_bundle.metric;
+
+    let mut best_n_states: DoublePriorityQueue<StateEssence, OrderedFloat<f64>> =
+        DoublePriorityQueue::new();
+    my_push(&mut best_n_states, init_essence, OrderedFloat(init_metric));
     let mut solver_bundle: SolverStateBundle = SolverStateBundle::initialize(
         &state_bundle,
         scaler.clone(),
         max_state_len,
         Performance::new(),
         rng.next_u64(),
-        &overall_best_n_states,
+        &best_n_states,
         &upgrade_impacts,
     );
-    // solver_arr.push(solver_state_bundle);
-    // }
-    #[cfg(feature = "run_tests")]
-    {
-        overall_performance.best_history.push((
-            timer.elapsed_sec(),
-            eqv_wall_time_iters,
-            f64::from(*overall_best_n_states.peek_max().unwrap().1),
-        ));
-    }
-    // vec![state_bundle.clone(); state_bundle.num_threads];
+
+    send_initial_progress(
+        &timer,
+        eqv_wall_time_iters,
+        &solver_bundle,
+        overall_performance,
+    );
+
+    #[allow(unused)]
+    let mut last_run_test_count: i64 = 0;
+    let mut last_progress_sec: f64 = 0.0;
+
     while eqv_wall_time_iters < MAX_ITERS {
-        // solver_arr.iter_mut().for_each(|x| x.one_batch(BATCH_SIZE));
-        // web_sys::console::log_1(&format!("{:?}", eqv_wall_time_iters).into());
-        let mutate_special: bool;
-        if solver_bundle.temps_without_improvement as f64
+        let mutate_special = if solver_bundle.temps_without_improvement as f64
             > (10.0 * solver_bundle.progress()).max(3.0)
         {
             solver_bundle.perform_crossover();
             solver_bundle.temps_without_improvement = 0;
-            mutate_special = false;
+            false
         } else {
-            mutate_special = solver_bundle.neighbour();
-        }
+            solver_bundle.neighbour()
+        };
 
         solver_bundle.state_bundle.metric = solver_bundle
             .state_bundle
             .metric_router(&mut solver_bundle.performance);
-        // if solver_bundle.state_bundle.metric_type == 1 {
-        //     my_dbg!(solver_bundle.state_bundle.metric, mutate_special);
-        // }
 
-        // highest_seen = highest_seen.max(state_bundle.metric);
-        // lowest_seen = lowest_seen.min(state_bundle.metric);
-
-        if OrderedFloat(solver_bundle.state_bundle.metric)
-            > *solver_bundle.best_n_states.peek_max().unwrap().1
-        {
+        let best_metric = f64::from(*solver_bundle.best_n_states.peek_max().unwrap().1);
+        if solver_bundle.state_bundle.metric > best_metric {
             if mutate_special {
-                solver_bundle.special_affinity *= SPECIAL_AFFINITY_GROWTH;
-                solver_bundle.special_affinity = solver_bundle.special_affinity.min(1.0);
+                solver_bundle.special_affinity =
+                    (solver_bundle.special_affinity * SPECIAL_AFFINITY_GROWTH).min(1.0);
             }
             my_push(
                 &mut solver_bundle.best_n_states,
@@ -157,22 +197,15 @@ pub fn solve<R: Rng>(
                 OrderedFloat(solver_bundle.state_bundle.metric),
             );
             solver_bundle.temps_without_improvement = 0;
-            // my_dbg!(
-            //     solver_bundle.state_bundle.metric,
-            //     &solver_bundle.best_n_states
-            // );
         } else if mutate_special {
             solver_bundle.special_affinity *= SPECIAL_AFFINITY_DECAY;
         }
+
         let delta = (solver_bundle.prev_state.metric - solver_bundle.state_bundle.metric)
             / solver_bundle.scaler.current_scale;
         let is_uphill = delta > 0.0;
-        let accepted = if !is_uphill {
-            true
-        } else {
-            let prob = (-delta.abs()).exp();
-            solver_bundle.rng.random_bool(prob)
-        };
+        let accepted = !is_uphill || solver_bundle.rng.random_bool((-delta.abs()).exp());
+
         if accepted {
             solver_bundle
                 .prev_state
@@ -186,49 +219,34 @@ pub fn solve<R: Rng>(
             .scaler
             .update_stats(is_uphill, accepted, solver_bundle.lam_rate());
         solver_bundle.count += 1;
-
         solver_bundle.temps_without_improvement += 1;
-
         eqv_wall_time_iters += 1;
 
-        if eqv_wall_time_iters - last_total_count >= 2000
-        // || (eqv_wall_time_iters < 1000 && eqv_wall_time_iters - last_total_count >= 67)
+        #[cfg(feature = "run_tests")]
+        if eqv_wall_time_iters - last_run_test_count >= 2000 {
+            record_run_test_progress(
+                &timer,
+                eqv_wall_time_iters,
+                best_metric,
+                overall_performance,
+            );
+            last_run_test_count = eqv_wall_time_iters;
+        }
+
+        #[cfg(feature = "wasm")]
         {
-            last_total_count = eqv_wall_time_iters;
-            #[cfg(feature = "run_tests")]
-            {
-                overall_performance.best_history.push((
-                    timer.elapsed_sec(),
-                    eqv_wall_time_iters,
-                    f64::from(*solver_bundle.best_n_states.peek_max().unwrap().1),
-                ));
-            }
-
-            #[cfg(feature = "wasm")]
-            {
-                solver_bundle.state_bundle.clone_from_essence(
-                    solver_bundle.best_n_states.peek_max().unwrap().0,
-                    solver_bundle.best_n_states.peek_max().unwrap().1,
-                );
-                let mut dummy_performance = Performance::new();
-                solver_bundle
-                    .state_bundle
-                    .optimizer_average_gold_metric(&mut dummy_performance);
-                solver_bundle.state_bundle.set_latest_special_probs();
-
-                send_progress(
-                    &solver_bundle.state_bundle.clone(),
-                    (100.0 * (eqv_wall_time_iters as f64 / MAX_ITERS as f64))
-                        .min(100.0)
-                        .max(0.01),
-                )
-            }
+            last_progress_sec = maybe_send_wasm_progress(
+                eqv_wall_time_iters,
+                &mut solver_bundle,
+                &timer,
+                last_progress_sec,
+            );
         }
     }
 
-    let best_pair = solver_bundle.best_n_states.peek_max().unwrap();
-    solver_bundle
-        .state_bundle
-        .clone_from_essence(best_pair.0, best_pair.1);
+    solver_bundle.state_bundle.clone_from_essence(
+        &solver_bundle.best_n_states.peek_max().unwrap().0,
+        solver_bundle.best_n_states.peek_max().unwrap().1,
+    );
     solver_bundle.state_bundle
 }

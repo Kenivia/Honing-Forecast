@@ -212,7 +212,7 @@ function parse_artisan() {
   </div>
   <div class="flex flex-row flex-nowrap justify-center gap-2">
     <span class="w-fit">
-      Current base chance
+      Current base chance:
       {{
         active_profile.optimizer_worker_bundle.status === "busy"
           ? current_chance_percentage.toFixed(2) + "%"
