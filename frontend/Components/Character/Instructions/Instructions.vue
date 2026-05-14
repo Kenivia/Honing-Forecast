@@ -141,7 +141,7 @@ const grid: GridConfig = {
           <div
             class="question-mark"
             v-tooltip.right="
-              'Only the order that you attempt Free (Special) taps actually matter, this is one of many equivalent orderings.'
+              'Only the order that you attempt Free taps actually matter, this is one of many equivalent orderings.'
             "
           >
             ?

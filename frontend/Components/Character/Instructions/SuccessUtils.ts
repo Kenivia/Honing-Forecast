@@ -1,0 +1,128 @@
+import { useRosterStore } from "@/Stores/RosterConfig";
+import { input_column_to_num } from "@/Utils/InputColumn";
+import { Upgrade } from "@/Utils/KeyedUpgrades";
+import { storeToRefs } from "pinia";
+
+export function compute_used_materials(
+  upgrade: Upgrade,
+  taps_so_far: number,
+  juice_info: any,
+  adv_juice_used: number,
+  adv_scroll_used: number,
+): number[] {
+  if (!upgrade.cost_dist) return [];
+  let out = new Array(upgrade.cost_dist.length).fill(0);
+
+  for (let cost_type = 0; cost_type < 7; cost_type++) {
+    out[cost_type] =
+      upgrade.unlock_costs[cost_type] + upgrade.costs[cost_type] * taps_so_far;
+  }
+
+  let relevant_id_map = upgrade.is_normal_honing
+    ? juice_info.normal_uindex_to_id
+    : juice_info.adv_uindex_to_id;
+  // console.log(relevant_id_map[upgrade.upgrade_index])
+  for (const id of relevant_id_map[upgrade.upgrade_index]) {
+    let juice_cost = 0;
+
+    let juice_type = juice_info.all_juices[id].data.get(
+      String(upgrade.upgrade_index),
+    );
+    let amt = upgrade.is_normal_honing
+      ? juice_type.normal_amt_used
+      : juice_type.adv_amt_used;
+
+    if (upgrade.is_normal_honing) {
+      for (
+        let index = 0;
+        index < Math.min(taps_so_far, upgrade.normal_dist.length - 2);
+        index++
+      ) {
+        if (
+          (upgrade.state[index][0] === true && id == 0) ||
+          (upgrade.state[index][1] === id && id !== 0)
+        ) {
+          juice_cost += amt;
+        }
+        // console.log(juice_cost)
+      }
+    } else {
+      if (id === 0) {
+        juice_cost = adv_juice_used * amt;
+      } else {
+        juice_cost = adv_scroll_used * amt;
+      }
+    }
+
+    out[7 + id + (upgrade.is_weapon ? 0 : juice_info.num_juice_avail)] =
+      juice_cost;
+  }
+  return out;
+}
+
+export function compute_remaininig_materials(used_materials: number[]) {
+  const { active_profile } = storeToRefs(useRosterStore());
+  const { active_roster_mats_owned, active_tradable_mats_owned } =
+    storeToRefs(useRosterStore());
+
+  const bound_budgets: number[] = [];
+  const roster_mats: number[] = [];
+  const tradable_mats: number[] = [];
+  used_materials.forEach((cost, index) => {
+    if (cost <= 0) {
+      bound_budgets.push(
+        input_column_to_num(
+          active_profile.value.bound_budgets[active_profile.value.tier],
+        )[index],
+      );
+      roster_mats.push(
+        input_column_to_num(
+          active_roster_mats_owned.value[active_profile.value.tier],
+        )[index],
+      );
+      tradable_mats.push(
+        input_column_to_num(
+          active_tradable_mats_owned.value[active_profile.value.tier],
+        )[index],
+      );
+      return;
+    }
+    let remaining_cost = cost;
+    // 1. Bound
+    let bound_owned = input_column_to_num(
+      active_profile.value.bound_budgets[active_profile.value.tier],
+    )[index];
+    let deduct_bound = Math.min(bound_owned, remaining_cost);
+    bound_budgets.push(Math.max(0, bound_owned - deduct_bound));
+    remaining_cost -= deduct_bound;
+    // 2. Roster
+    let roster_owned = input_column_to_num(
+      active_roster_mats_owned.value[active_profile.value.tier],
+    )[index];
+    if (
+      remaining_cost > 0 &&
+      active_roster_mats_owned.value[index] !== undefined
+    ) {
+      let deduct_roster = Math.min(roster_owned, remaining_cost);
+      roster_mats.push(Math.max(0, roster_owned - deduct_roster));
+      remaining_cost -= deduct_roster;
+    } else {
+      roster_mats.push(roster_owned);
+    }
+    // 3. Tradable
+    let tradable_owned = input_column_to_num(
+      active_tradable_mats_owned.value[active_profile.value.tier],
+    )[index];
+    if (
+      remaining_cost > 0 &&
+      active_tradable_mats_owned.value[index] !== undefined
+    ) {
+      let deduct_tradable = Math.min(tradable_owned, remaining_cost);
+      tradable_mats.push(Math.max(0, tradable_owned - deduct_tradable));
+    } else {
+      tradable_mats.push(tradable_owned);
+    }
+  });
+  // console.log("computed")
+  return { bound_budgets, roster_mats, tradable_mats };
+}

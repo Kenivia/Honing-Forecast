@@ -2,6 +2,7 @@ export const FETCH_MARKET_COOLDOWN_MS = 60 * 60 * 1000;
 export const DEFAULT_ARTISAN_MULTIPLIER = 0.4651;
 export const FLOAT_TOL = 1e-9;
 
+export const ARTISAN_RATE: number = 0.4651;
 // export const BUCKET_COUNT = 50 // number of x values to evaluate when drawing the graphs
 export const ANNOTATION_COLORS = [
   "--average",

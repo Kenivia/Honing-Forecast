@@ -103,7 +103,9 @@ const this_data = ref(
             })
       }}</label
     >
-    <label class="material-cell-suffix" v-if="suffix">{{ suffix }}</label>
+    <label class="material-cell-suffix annotation" v-if="suffix">{{
+      suffix
+    }}</label>
   </div>
   <!-- <input v-if="customLeftovers" type="text" :value="matsLeftover[label]" @input="setRecordValue(matsLeftover, label, $event)" /> -->
 </template>
@@ -127,8 +129,6 @@ const this_data = ref(
 }
 
 .material-cell-suffix {
-  color: var(--text-very-muted);
-  font-size: 12px;
   min-width: 0;
   text-align: left;
   /* justify-self: right; */

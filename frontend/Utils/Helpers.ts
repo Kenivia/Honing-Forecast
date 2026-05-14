@@ -10,6 +10,24 @@ import {
 import { storeToRefs } from "pinia";
 import { useRosterStore } from "@/Stores/RosterConfig";
 import { Upgrade, UpgradeStatus } from "./KeyedUpgrades";
+import { parse_locale_float } from "./InputColumn";
+
+// ideally i would merge this with the inputcolumn parsing stuff cos it's the same logic
+// but like the inputcolumn stuff is so intertwined with inputcolumn meta data
+// so i can't really be bothered
+export function clean_percentage_input(
+  input: number | string,
+  fallback?: number,
+): number {
+  const parsed = parse_locale_float(input.toString().replace(/[^\d,.]/g, ""));
+  return !isFinite(parsed) ? fallback : clamp_percentage(parsed);
+}
+export function clamp_percentage(input: number): number {
+  return clamp(0, input, 100);
+}
+export function clamp(min: number, input: number, max: number): number {
+  return Math.max(min, Math.min(max, input));
+}
 
 export function has_upgrades_in_range(
   low: number,

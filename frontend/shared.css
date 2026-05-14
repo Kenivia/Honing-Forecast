@@ -162,3 +162,7 @@
   color: AccentColorText;
   font-size: 12px;
 }
+.annotation {
+  color: var(--text-muted);
+  font-size: x-small;
+}
