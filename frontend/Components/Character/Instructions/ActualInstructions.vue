@@ -4,7 +4,7 @@ import { computed } from "vue";
 import { useRosterStore } from "@/Stores/RosterConfig";
 import { storeToRefs } from "pinia";
 import { JOINED_ADV_JUICE, T4_JUICE_LABELS } from "@/Utils/Constants";
-import { get_icon_path } from "@/Utils/Helpers";
+import { get_icon_path, toOrdinal } from "@/Utils/Helpers";
 import { Upgrade } from "@/Utils/KeyedUpgrades";
 import { artisan_function } from "@/Utils/HoningUtil";
 
@@ -41,6 +41,7 @@ interface NormalStreak {
   juice: boolean;
   book: boolean;
   count: number;
+  pity: boolean;
 }
 interface AdvStreak {
   juice: boolean;
@@ -74,14 +75,15 @@ const streaks = computed(() => {
       if (current && current.juice === juice && current.book === hasBook) {
         current.count++;
       } else {
-        current = { juice, book: hasBook, count: 1 };
+        current = { juice, book: hasBook, count: 1, pity: false };
         streaks.push(current);
       }
       index += 1;
     }
+    streaks.push({ pity: true, juice: false, book: false, count: 1 });
     return streaks;
   } else {
-    const streaks: AdvStreak[] = [];
+    const raw_streaks: AdvStreak[] = [];
     let [juice_grace, juice_non_grace] =
       JOINED_ADV_JUICE[props.upgrade.state[0][1]];
     let [scroll_grace, scroll_non_grace] =
@@ -91,7 +93,7 @@ const streaks = computed(() => {
 
     let both_grace = Math.min(juice_grace, scroll_grace);
     if (both_grace > 0)
-      streaks.push({
+      raw_streaks.push({
         juice: true,
         scroll: true,
         grace: true,
@@ -105,7 +107,7 @@ const streaks = computed(() => {
           ? 255
           : Math.max(juice_grace, scroll_grace) - both_grace;
     if (one_grace > 0)
-      streaks.push({
+      raw_streaks.push({
         juice: juice_grace > scroll_grace,
         scroll: scroll_grace > juice_grace,
         grace: true,
@@ -114,7 +116,7 @@ const streaks = computed(() => {
     // console.log(streaks)
     let both_non_grace = Math.min(juice_non_grace, scroll_non_grace);
     if (both_non_grace > 0)
-      streaks.push({
+      raw_streaks.push({
         juice: true,
         scroll: true,
         grace: false,
@@ -128,21 +130,26 @@ const streaks = computed(() => {
           ? 255
           : Math.max(juice_non_grace, scroll_non_grace) - both_non_grace;
     if (one_non_grace > 0)
-      streaks.push({
+      raw_streaks.push({
         juice: juice_non_grace > scroll_non_grace,
         scroll: scroll_non_grace > juice_non_grace,
         grace: false,
         count: one_non_grace,
       });
     // console.log(streaks)
-    if (streaks.length == 0) {
-      streaks.push({ juice: false, scroll: false, grace: true, count: 255 });
+    if (raw_streaks.length == 0) {
+      raw_streaks.push({
+        juice: false,
+        scroll: false,
+        grace: true,
+        count: 255,
+      });
     }
     // console.log(one_grace, both_grace, juice_grace, juice_non_grace, scroll_grace, scroll_non_grace, props.upgrade.state, streaks)
-    return streaks;
+    return raw_streaks;
   }
 });
-const streak_texts = computed(() => {
+const parsed_streaks = computed(() => {
   let out = [];
   let taps = 0;
   for (let index = 0; index < streaks.value.length; index++) {
@@ -164,9 +171,14 @@ const streak_texts = computed(() => {
     let line2: string;
 
     if (isNormal) {
-      line1 = `x${streak.count} taps`;
       taps += streak.count;
-      line2 = `until ${artisan_function(props.upgrade, taps, juice_info.value)}% artisan`;
+      if (streak.pity) {
+        line1 = `Pity`;
+        line2 = `reached at ${toOrdinal(taps)} tap`;
+      } else {
+        line1 = `x${streak.count} taps`;
+        line2 = `until ${artisan_function(props.upgrade, taps, juice_info.value)}% artisan`;
+      }
     } else {
       let graceText = streak.grace ? "Grace" : "non-Grace";
       if (!streak.juice && !streak.scroll) {
@@ -184,7 +196,16 @@ const streak_texts = computed(() => {
       }
     }
 
-    out.push({ topIconActive, bottomIconActive, line1, line2, name_line });
+    out.push({
+      topIconActive,
+      bottomIconActive,
+      line1,
+      line2,
+      name_line,
+      juice: streak.juice,
+      book_or_scroll: streak.book || streak.scroll,
+      pity: streak.pity,
+    });
   }
   return out;
 });
@@ -193,39 +214,44 @@ const streak_texts = computed(() => {
 <template>
   <div class="mr-auto flex w-fit flex-row pl-3">
     <div
-      v-for="(streak_text, i) in streak_texts"
+      v-for="(parsed_streak, i) in parsed_streaks"
       :key="i"
-      class="flex w-16 flex-col items-center"
+      class="flex w-16 flex-col items-center justify-end"
     >
       <div
         class="can-disable-icon-wrapper"
-        :class="{ disabled: !streaks[i].juice }"
+        :class="{ disabled: !parsed_streak.juice && !parsed_streak.pity }"
       >
         <img
-          :src="juice_icon_path(true)"
+          :src="
+            parsed_streak.pity ? get_icon_path('Pity') : juice_icon_path(true)
+          "
           alt="Top Mat"
           class="generic-icon h-8 w-8"
-          :class="{ disabled: !streaks[i].juice }"
+          :class="{ disabled: !parsed_streak.juice }"
         />
       </div>
 
       <div
-        v-if="juice_icon_path(false) !== juice_icon_path(true)"
+        v-if="
+          juice_icon_path(false) !== juice_icon_path(true) &&
+          !parsed_streak.pity
+        "
         class="can-disable-icon-wrapper"
-        :class="{ disabled: !streaks[i].book && !streaks[i].scroll }"
+        :class="{ disabled: !parsed_streak.book_or_scroll }"
       >
         <img
           :src="juice_icon_path(false)"
           alt="Bottom Mat"
           class="generic-icon h-8 w-8"
-          :class="{ disabled: !streaks[i].book && !streaks[i].scroll }"
+          :class="{ disabled: !parsed_streak.book_or_scroll }"
         />
       </div>
 
       <!-- <div v-html="streak_text.name_line"></div> -->
-      <div class="text-sm text-(--text-main)">{{ streak_text.line1 }}</div>
+      <div class="text-sm text-(--text-main)">{{ parsed_streak.line1 }}</div>
 
-      <div class="annotation">{{ streak_text.line2 }}</div>
+      <div class="annotation">{{ parsed_streak.line2 }}</div>
     </div>
   </div>
 </template>

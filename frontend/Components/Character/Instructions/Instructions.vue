@@ -117,12 +117,12 @@ watch(
 
 const normal_grid: GridConfig = {
   grid_template_columns:
-    "minmax(50px, 0.25fr) minmax(90px, 0.35fr) minmax(80px, 0.35fr) minmax(200px, 1fr) 80px 250px ",
+    "minmax(66px, 70px) minmax(70px,110px) minmax(80px,100px) minmax(200px, max-content) 80px 370px ",
   grid_row_span: `span ${6}`,
 };
 </script>
 <template>
-  <section class="card-shell">
+  <section class="card-shell mb-30">
     <div class="card-header">
       <div class="card-title">Tap Instructions</div>
     </div>
@@ -140,15 +140,17 @@ const normal_grid: GridConfig = {
           <div
             class="question-mark"
             v-tooltip.right="
-              'Only the order that you attempt Free taps actually matter, this is one of many equivalent orderings.'
+              'Only the order that you attempt Free taps actually matter, below is one of many equivalent orderings.'
             "
           />
         </div>
         <span>Special usage</span>
-        <div class="flex w-full flex-row justify-center">
-          Juice & book Instructions
+        <div
+          class="flex w-full flex-row flex-nowrap justify-center gap-1 px-3 text-nowrap"
+        >
+          <span> Juice & book Instructions</span>
           <div
-            class="question-mark ml-2"
+            class="question-mark"
             v-tooltip.left="
               'Juiced taps mean full-juice (use the maximum amount of Lava / Glacier Breath).'
             "
@@ -160,7 +162,7 @@ const normal_grid: GridConfig = {
           <div
             class="question-mark ml-2"
             v-tooltip.left="
-              'Only use this if you are starting from some non-zero artisan. There is no need to update your progress after every tap.'
+              'This is completely optional - updating your progress after each tap may save a small amount of gold.'
             "
           />
         </div>

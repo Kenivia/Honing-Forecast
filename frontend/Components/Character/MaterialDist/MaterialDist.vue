@@ -507,10 +507,9 @@ const is924Narrow = useMediaIsNarrow(924); // this turns out to be the width whe
       >
         <div class="popup" @click.stop>
           <span style="font-size: 30px; color: var(--text-bright)">
-            Short answer: Save Special Leaps and convert to Serca, unless you
-            are tapping + 25
+            Save Special Leaps and convert to Serca, unless you are tapping + 25
           </span>
-          <span style="font-size: 16px; color: var(--text-muted)">
+          <span style="font-size: 20px; color: var(--text-muted)">
             If you're not + 20 yet, use it in T4.
           </span>
           <img src="/Special convert chart.png" alt="Special convert chart" />

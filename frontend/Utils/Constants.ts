@@ -221,6 +221,7 @@ export const base_icon_map: Record<string, string> = {
     "/Icons/Materials/Serca unique/Serca Special Leapstone.png",
 
   "Forecast Icon": "/Icons/Forecast Icon.webp",
+  "Pity":"/Artist Caught.png"
 };
 let temp = {};
 for (const [label, path] of Object.entries(base_icon_map)) {

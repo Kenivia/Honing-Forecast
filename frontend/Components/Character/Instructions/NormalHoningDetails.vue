@@ -18,11 +18,13 @@ const { active_profile } = storeToRefs(useRosterStore());
 
 const props = defineProps<{
   upgrade: Upgrade;
+  perform_order: number;
+  free_tap_this_upgrade: boolean;
 }>();
 
-const juice_info = computed(() => {
-  return active_profile.value.histogram_worker_bundle.result.juice_info;
-});
+// const juice_info = computed(() => {
+//   return active_profile.value.histogram_worker_bundle.result.juice_info;
+// });
 
 const starting_artisan = ref(
   parse_locale_float((props.upgrade.starting_artisan * 100).toFixed(2)) || 0,
@@ -54,6 +56,7 @@ watch(
 );
 
 function write_normal_progress() {
+  taps_since_last_input.value = 0;
   starting_artisan.value = clamp_percentage(starting_artisan.value);
   active_profile.value.keyed_upgrades[
     to_upgrade_key(
@@ -77,169 +80,178 @@ function write_normal_progress() {
 }
 const current_chance_to_num_taps = computed(() => {
   return Math.round(
-    ((current_chance_percentage.value / 100 - props.upgrade.base_chance) /
+    ((clean_percentage_input(
+      current_chance_percentage.value,
+      props.upgrade.base_chance * 100,
+    ) /
+      100 -
+      props.upgrade.base_chance) /
       props.upgrade.base_chance) *
       10,
   );
 });
 
-// if i want to do this properly, i'd have to consider the natural base chance increase and stuff
-// it's just too much effort and this is just meant to be a VERY conservative estimate QOL anyway
-// it's impossible to predict exactly without knowing how many juiced taps and stuff
-const maximum_individual_chance = computed(() => {
-  let relevant_upgrade =
-    juice_info.value.normal_uindex_to_id[props.upgrade.upgrade_index];
-  if (relevant_upgrade.length === 0) {
-    console.log("zeroed");
-    return props.upgrade.base_chance;
-  }
-  const book_id = relevant_upgrade[relevant_upgrade.length - 1] || 0;
-  const out =
-    props.upgrade.base_chance * 2 +
-    juice_info.value.all_juices[0].data.get(String(props.upgrade.upgrade_index))
-      .normal_chance +
-    (relevant_upgrade.length <= 1
-      ? 0
-      : juice_info.value.all_juices[book_id].data.get(
-          String(props.upgrade.upgrade_index),
-        ).normal_chance);
-  console.log(
-    out,
-    props.upgrade.base_chance,
-    juice_info.value.all_juices[0].data.get(String(props.upgrade.upgrade_index))
-      .normal_chance,
-    relevant_upgrade.length,
-  );
-  return out;
-});
-
-const artisan_multiplier = computed(
-  () => props.upgrade.artisan_rate * ARTISAN_RATE * 100,
-);
-function parse_current_chance() {
-  current_chance_percentage.value = clean_percentage_input(
-    current_chance_percentage.value,
-    props.upgrade.base_chance,
-  );
-
-  current_chance_percentage.value = Math.min(
-    props.upgrade.base_chance * 2 * 100,
-    Math.max(props.upgrade.base_chance * 100, current_chance_percentage.value),
-  );
-
-  current_chance_percentage.value = parse_locale_float(
-    (
-      ((current_chance_to_num_taps.value / 10) * props.upgrade.base_chance +
-        props.upgrade.base_chance) *
-      100
-    ).toFixed(2),
-  );
-  // just a convenient way to round it to the nearest possible value
-
-  const min_artisan =
-    props.upgrade.base_chance *
-    artisan_multiplier.value *
-    current_chance_to_num_taps.value;
-  const max_artisan =
-    maximum_individual_chance.value *
-    artisan_multiplier.value *
-    current_chance_to_num_taps.value;
-
-  starting_artisan.value = clean_percentage_input(
-    clamp(min_artisan, starting_artisan.value, max_artisan),
-  );
+function clean_artisan() {
+  taps_since_last_input.value = 0;
+  using_slider.value = false;
+  starting_artisan.value = clean_percentage_input(starting_artisan.value, 0);
 }
 
-function parse_artisan() {
-  starting_artisan.value = clean_percentage_input(starting_artisan.value, 0);
-
-  const min_current_chance =
-    props.upgrade.base_chance +
-    Math.ceil(
-      starting_artisan.value /
-        (artisan_multiplier.value * maximum_individual_chance.value),
-    ) *
-      0.1 *
-      props.upgrade.base_chance;
-
-  const max_current_chance =
-    props.upgrade.base_chance +
-    Math.floor(
-      starting_artisan.value /
-        (artisan_multiplier.value * props.upgrade.base_chance),
-    ) *
-      0.1;
-  props.upgrade.base_chance;
+function clean_chance(event) {
+  console.log(event.target.value, event, current_chance_percentage.value);
+  taps_since_last_input.value = 0;
+  using_slider.value = false;
 
   current_chance_percentage.value = clean_percentage_input(
     clamp(
       100 * props.upgrade.base_chance,
-      clamp(
-        max_current_chance >= props.upgrade.base_chance * 2 - FLOAT_TOL
-          ? 100 * min_current_chance
-          : 0,
-        current_chance_percentage.value,
-        100 * max_current_chance,
+      parse_locale_float(
+        (
+          ((current_chance_to_num_taps.value / 10) * props.upgrade.base_chance +
+            props.upgrade.base_chance) *
+          100
+        ).toFixed(2),
       ),
+
       100 * props.upgrade.base_chance * 2,
     ),
+    props.upgrade.base_chance * 100,
   );
 }
+
+const taps_since_last_input = ref(0);
+
+const optimizer_working = computed(
+  () => active_profile.value.optimizer_worker_bundle.status === "busy",
+);
+const using_slider = ref(true);
+const expanded = ref(
+  props.upgrade.starting_num_taps > 0 || // SHOULDN"T need to check this but technically the user can put in starting num 0 and some non-zero artisan so yea why not
+    props.upgrade.starting_artisan > 0 ||
+    props.perform_order == 0,
+);
+watch(
+  () => [
+    props.upgrade.starting_num_taps,
+    props.upgrade.starting_artisan,
+    props.perform_order,
+  ],
+  () => {
+    expanded.value =
+      props.upgrade.starting_num_taps > 0 ||
+      props.upgrade.starting_artisan > 0 ||
+      props.perform_order == 0;
+  },
+);
 </script>
 <template>
-  <div class="flex flex-row flex-nowrap justify-center gap-2">
-    <span class="w-fit">
-      Starting artisan energy:
-      {{
-        active_profile.optimizer_worker_bundle.status === "busy"
-          ? starting_artisan.toFixed(2)
-          : ""
-      }}
-    </span>
+  <div class="flex w-full flex-col px-3">
+    <div v-if="!expanded" class="contents">
+      <button
+        @click="() => (expanded = true)"
+        class="generic-button"
+        :style="{
+          opacity: perform_order == 0 && !free_tap_this_upgrade ? 1 : 0.5,
+        }"
+      >
+        Expand Artisan input
+      </button>
+      <!-- <span v-if="perform_order != 0" class="annotation"
+        >You should do the upgrades from top to bottom.</span
+      > -->
+    </div>
+    <div v-if="expanded" class="contents">
+      <div
+        class="flex min-w-full flex-row flex-nowrap justify-between"
+        :style="{ opacity: using_slider ? 1 : 0.5 }"
+      >
+        <!-- min-w-32.75 is exact amount needed for fitting '219'  -->
+        <div class="flex max-w-32.75 min-w-32.75 flex-col">
+          <span class="w-full text-left text-nowrap"> Taps since last </span>
+          <span class="flex w-full flex-row text-left text-nowrap">
+            optimizer run:
+            <input
+              class="ml-1 w-full border-b border-(--border-muted)"
+              v-model="taps_since_last_input"
+            />
+          </span>
+        </div>
+        <input
+          v-if="!optimizer_working"
+          v-model="taps_since_last_input"
+          class="h w-45"
+          :min="0"
+          :max="upgrade.normal_dist.length - 1"
+          type="range"
+          @input="
+            () => {
+              using_slider = true;
+              starting_artisan = taps_since_last_input;
+            }
+          "
+        />
+        <div
+          v-if="!optimizer_working"
+          class="question-mark min-w-fit shrink-0"
+          v-tooltip.left="
+            'The slider assumes that you followed the Juice & Book Instructions. If you didn\'t follow the instructions, input your artisan and stuff directly below instead.'
+          "
+        ></div>
+      </div>
+      <div class="flex w-full flex-row content-center justify-between">
+        <div class="flex flex-col justify-center">
+          <div class="flex flex-row flex-nowrap justify-start gap-2">
+            <span class="w-fit"> Current artisan energy: </span>
 
-    <div
-      v-if="active_profile.optimizer_worker_bundle.status !== 'busy'"
-      class="flex flex-row"
-    >
-      <input
-        class="generic-input w-13"
-        v-model="starting_artisan"
-        inputmode="decimal"
-        @change="parse_artisan"
-      />
-      <span>%</span>
+            <div class="flex flex-row">
+              <input
+                class="generic-input w-13 border-transparent! border-b-(--border-very-muted)!"
+                :style="{
+                  backgroundColor: using_slider
+                    ? 'transparent'
+                    : 'var(--bg-bright)',
+                }"
+                v-model="starting_artisan"
+                inputmode="decimal"
+                :disabled="optimizer_working"
+                @change="clean_artisan"
+              />
+            </div>
+          </div>
+          <div class="flex flex-row flex-nowrap justify-start gap-2">
+            <span class="w-fit"> Current base chance: </span>
+
+            <div class="flex flex-row">
+              <input
+                class="generic-input w-10 border-transparent! border-b-(--border-very-muted)!"
+                v-model="current_chance_percentage"
+                :min="upgrade.base_chance * 100"
+                :max="upgrade.base_chance * 100 * 2"
+                @change="clean_chance"
+                :disabled="optimizer_working"
+                inputmode="decimal"
+                :style="{
+                  backgroundColor: using_slider
+                    ? 'transparent'
+                    : 'var(--bg-bright)',
+                }"
+              />
+              <span>%</span>
+            </div>
+          </div>
+        </div>
+        <div v-if="!optimizer_working">
+          <button
+            @click="write_normal_progress"
+            class="generic-button max-w-20! self-end! text-wrap! text-(--gold)!"
+          >
+            Confirm & re-run optimizer
+          </button>
+        </div>
+        <div v-if="optimizer_working" class="h-19.5 max-w-20 text-wrap">
+          Optimizer working...
+        </div>
+      </div>
     </div>
   </div>
-  <div class="flex flex-row flex-nowrap justify-center gap-2">
-    <span class="w-fit">
-      Current base chance:
-      {{
-        active_profile.optimizer_worker_bundle.status === "busy"
-          ? current_chance_percentage.toFixed(2) + "%"
-          : ""
-      }}
-    </span>
-
-    <div
-      v-if="active_profile.optimizer_worker_bundle.status !== 'busy'"
-      class="flex flex-row"
-    >
-      <input
-        class="generic-input w-13"
-        v-model="current_chance_percentage"
-        :min="upgrade.base_chance * 100"
-        :max="upgrade.base_chance * 100 * 2"
-        @change="parse_current_chance"
-        inputmode="decimal"
-      />
-      <span>%</span>
-    </div>
-  </div>
-  <div v-if="active_profile.optimizer_worker_bundle.status !== 'busy'">
-    <button @click="write_normal_progress" class="generic-button self-end!">
-      Confirm
-    </button>
-  </div>
-
-  <div v-else>Optimizer working...</div>
 </template>

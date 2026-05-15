@@ -82,16 +82,21 @@ function onSucceedClick() {
 
   <ActualInstructions :upgrade="props.upgrade" />
 
-  <button @click="onSucceedClick" class="generic-button text-wrap!">
+  <button
+    @click="onSucceedClick"
+    class="generic-button text-wrap! text-(--achieved)!"
+  >
     Succeed & deduct costs
   </button>
-  <div class="flex flex-col items-center">
-    <NormalHoningDetails
-      v-if="upgrade.is_normal_honing"
-      :upgrade="props.upgrade"
-    />
-    <AdvancedHoningDetails v-else :upgrade="props.upgrade" />
-  </div>
+
+  <NormalHoningDetails
+    v-if="upgrade.is_normal_honing"
+    :upgrade="props.upgrade"
+    :perform_order="props.perform_order"
+    :free_tap_this_upgrade="free_tap_this_upgrade"
+  />
+  <AdvancedHoningDetails v-else :upgrade="props.upgrade" />
+
   <SuccessPopup :upgrade="props.upgrade" v-model="show_success_modal" />
 </template>
 
