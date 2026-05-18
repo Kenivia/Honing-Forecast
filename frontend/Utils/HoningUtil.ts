@@ -88,6 +88,12 @@ export function cumulative_chance(
       return (100.0).toFixed(2);
     }
   }
-
+  // console.log(
+  //   upgrade.base_chance,
+  //   total_count,
+  //   upgrade.extra_chance,
+  //   upgrade.state,
+  //   cum_chance,
+  // );
   return (Math.max(1 - cum_chance, 0) * 100).toFixed(2);
 }

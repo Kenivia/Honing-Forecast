@@ -30,7 +30,7 @@ pub struct Upgrade {
     pub piece_type: usize,
 
     pub starting_artisan: f64,
-    pub starting_num_taps: usize,
+    pub starting_num_taps: usize, // this is only used to calculate the starting base chance, not cost (we don't distinguish between manual artisan input vs slider artisan input on the rust side, cost calculation happens in js)
     pub unlocked: bool,
     pub unlock_costs: [f64; 7],
 

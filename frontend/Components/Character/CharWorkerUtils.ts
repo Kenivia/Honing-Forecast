@@ -16,21 +16,21 @@ export function grid_change_callback() {
   );
   start_all_workers();
 }
+export function start_eval_hist() {
+  const { active_profile } = storeToRefs(useRosterStore());
+  active_profile.value.histogram_worker_bundle.throttled_start(
+    WasmOp.Histogram,
+    build_payload(),
+  ); // call build payload again here to include the new states
 
+  // active_profile.value.evaluation_worker_bundle.throttled_start(WasmOp.EvaluateAverage, payload)
+}
 export function start_all_workers() {
   const { active_profile } = storeToRefs(useRosterStore());
 
   // console.log("payload update")
   let payload = build_payload();
-  function start_eval_hist(result: StateBundle) {
-    if (result === null) return;
-    active_profile.value.histogram_worker_bundle.throttled_start(
-      WasmOp.Histogram,
-      build_payload(),
-    ); // call build payload again here to include the new states
 
-    // active_profile.value.evaluation_worker_bundle.throttled_start(WasmOp.EvaluateAverage, payload)
-  }
   active_profile.value.optimizer_worker_bundle.est_progress_percentage = 0;
   if (active_profile.value.auto_start_optimizer) {
     active_profile.value.optimizer_worker_bundle.start(

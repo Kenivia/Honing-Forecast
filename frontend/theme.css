@@ -47,11 +47,13 @@
 
   --warning: #ff3b3b;
   --warning-dark: #a92727;
+  --dont-click: var(--text-very-muted);
 
   --serca-blue: #2806b1;
   --serca-blue-hover: #4520d8;
+  --free-tap-bright: #f3a1ff;
   --free-tap: #ed7bff;
-  --free-tap-faded: #ed7bff;
+  --free-tap-muted: #ed7bffa4;
 
   --pending: var(--gold);
   --achieved: rgba(133, 219, 116);

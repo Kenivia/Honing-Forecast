@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useRosterStore } from "@/Stores/RosterConfig";
-import { ARTISAN_RATE, FLOAT_TOL } from "@/Utils/Constants";
+import { DEFAULT_ARTISAN_MULTIPLIER, FLOAT_TOL } from "@/Utils/Constants";
 import {
   clamp,
   clamp_percentage,
@@ -12,7 +12,8 @@ import { to_upgrade_key, Upgrade } from "@/Utils/KeyedUpgrades";
 import { storeToRefs } from "pinia";
 
 import { computed, ref, watch } from "vue";
-import { start_all_workers } from "../CharWorkerUtils";
+import { start_all_workers, start_eval_hist } from "../CharWorkerUtils";
+import { artisan_function, cumulative_chance } from "@/Utils/HoningUtil";
 
 const { active_profile } = storeToRefs(useRosterStore());
 
@@ -27,36 +28,36 @@ const props = defineProps<{
 // });
 
 const starting_artisan = ref(
-  parse_locale_float((props.upgrade.starting_artisan * 100).toFixed(2)) || 0,
+  (props.upgrade.starting_artisan * 100).toFixed(2) || "0.00",
 );
 watch(
   () => props.upgrade.starting_artisan,
   () => {
-    starting_artisan.value = parse_locale_float(
-      (props.upgrade.starting_artisan * 100).toFixed(2),
-    );
+    starting_artisan.value = (props.upgrade.starting_artisan * 100).toFixed(2);
   }, // This watch is here to watch for when upgrade changes (optimizer shuffled order or tick /untick), in which case props.upgrade changes
 );
 
 const current_chance_percentage = ref(
-  ((Math.min(10, props.upgrade.starting_num_taps) / 10) *
-    props.upgrade.base_chance +
-    props.upgrade.base_chance) *
-    100 || 0,
+  (
+    ((Math.min(10, props.upgrade.starting_num_taps) / 10) *
+      props.upgrade.base_chance +
+      props.upgrade.base_chance) *
+    100
+  ).toFixed(2) || "0.00",
 );
 watch(
   () => props.upgrade.starting_num_taps,
   () => {
-    current_chance_percentage.value =
+    current_chance_percentage.value = (
       ((Math.min(10, props.upgrade.starting_num_taps) / 10) *
         props.upgrade.base_chance +
         props.upgrade.base_chance) *
-      100;
+      100
+    ).toFixed(2);
   }, // This watch is here to watch for when upgrade changes (optimizer shuffled order or tick /untick), in which case props.upgrade changes
 );
 
 function write_normal_progress() {
-  taps_since_last_input.value = 0;
   starting_artisan.value = clamp_percentage(starting_artisan.value);
   active_profile.value.keyed_upgrades[
     to_upgrade_key(
@@ -65,7 +66,7 @@ function write_normal_progress() {
       props.upgrade.is_normal_honing,
       active_profile.value.tier,
     )
-  ].starting_artisan = starting_artisan.value / 100;
+  ].starting_artisan = parse_locale_float(starting_artisan.value) / 100;
 
   active_profile.value.keyed_upgrades[
     to_upgrade_key(
@@ -74,30 +75,33 @@ function write_normal_progress() {
       props.upgrade.is_normal_honing,
       active_profile.value.tier,
     )
-  ].starting_num_taps = current_chance_to_num_taps.value;
-
-  start_all_workers();
+  ].starting_num_taps = using_slider.value
+    ? taps_since_last_input.value
+    : current_chance_to_num_taps.value;
 }
 const current_chance_to_num_taps = computed(() => {
   return Math.round(
-    ((clean_percentage_input(
-      current_chance_percentage.value,
-      props.upgrade.base_chance * 100,
+    (parse_locale_float(
+      clean_percentage_input(
+        current_chance_percentage.value,
+        props.upgrade.base_chance * 100,
+      ),
     ) /
-      100 -
-      props.upgrade.base_chance) /
+      (100 - props.upgrade.base_chance) /
       props.upgrade.base_chance) *
       10,
   );
 });
 
-function clean_artisan() {
+function manual_artisan_change() {
   taps_since_last_input.value = 0;
   using_slider.value = false;
   starting_artisan.value = clean_percentage_input(starting_artisan.value, 0);
+  write_normal_progress();
+  start_eval_hist();
 }
 
-function clean_chance(event) {
+function manual_chance_change(event) {
   console.log(event.target.value, event, current_chance_percentage.value);
   taps_since_last_input.value = 0;
   using_slider.value = false;
@@ -114,11 +118,48 @@ function clean_chance(event) {
       ),
 
       100 * props.upgrade.base_chance * 2,
-    ),
+    ).toFixed(2),
     props.upgrade.base_chance * 100,
   );
+  write_normal_progress();
+  start_eval_hist();
 }
 
+function slider_input() {
+  using_slider.value = true;
+
+  // this kind of disallows any non-integer inputs by instantly setting invalid intermediate inputs to 0, but its like fine i think since it's not a big number or anything
+  taps_since_last_input.value = Number(taps_since_last_input.value);
+
+  starting_artisan.value = artisan_function(
+    props.upgrade,
+    Number(taps_since_last_input.value) +
+      Number(props.upgrade.starting_num_taps),
+    juice_info.value,
+  );
+  current_chance_percentage.value = (
+    100 *
+    (props.upgrade.base_chance +
+      0.1 *
+        props.upgrade.base_chance *
+        Math.min(
+          10,
+          taps_since_last_input.value + props.upgrade.starting_num_taps,
+        ))
+  ).toFixed(2);
+  write_normal_progress();
+  start_eval_hist();
+}
+
+function slider_change() {
+  write_normal_progress();
+  start_eval_hist();
+}
+
+function confirm() {
+  taps_since_last_input.value = 0;
+  start_all_workers();
+}
 const taps_since_last_input = ref(0);
 
 const optimizer_working = computed(
@@ -127,8 +168,7 @@ const optimizer_working = computed(
 const using_slider = ref(true);
 const expanded = ref(
   props.upgrade.starting_num_taps > 0 || // SHOULDN"T need to check this but technically the user can put in starting num 0 and some non-zero artisan so yea why not
-    props.upgrade.starting_artisan > 0 ||
-    props.perform_order == 0,
+    props.upgrade.starting_artisan > 0,
 );
 watch(
   () => [
@@ -138,42 +178,106 @@ watch(
   ],
   () => {
     expanded.value =
-      props.upgrade.starting_num_taps > 0 ||
-      props.upgrade.starting_artisan > 0 ||
-      props.perform_order == 0;
+      props.upgrade.starting_num_taps > 0 || props.upgrade.starting_artisan > 0;
   },
+);
+const juice_info = computed(() => {
+  return active_profile.value.histogram_worker_bundle.result.juice_info;
+});
+
+const should_click = computed(
+  () =>
+    props.perform_order == 0 &&
+    !props.free_tap_this_upgrade &&
+    !optimizer_working.value,
 );
 </script>
 <template>
   <div class="flex w-full flex-col px-3">
     <div v-if="!expanded" class="contents">
       <button
-        @click="() => (expanded = true)"
-        class="generic-button"
+        @click="
+          () => {
+            if (!optimizer_working) {
+              expanded = true;
+            }
+          }
+        "
+        class="barebone-button"
         :style="{
-          opacity: perform_order == 0 && !free_tap_this_upgrade ? 1 : 0.5,
+          '--btn-hover-bg': should_click
+            ? 'var(--bg-very-bright)'
+            : 'var(--bg-medium)',
+          color: optimizer_working
+            ? 'var(--warning-dark)'
+            : should_click
+              ? 'var(--text-main)'
+              : 'var(--dont-click)',
+          cursor: optimizer_working ? 'not-allowed' : 'pointer',
         }"
       >
         Expand Artisan input
       </button>
-      <!-- <span v-if="perform_order != 0" class="annotation"
-        >You should do the upgrades from top to bottom.</span
-      > -->
+
+      <div
+        class="flex w-fit flex-col content-start self-center text-left"
+        v-if="!optimizer_working"
+      >
+        <span
+          v-if="perform_order != 0"
+          class="annotation"
+          :style="{
+            color: should_click ? 'var(--text-main)' : 'var(--dont-click)',
+          }"
+          >You should do the upgrades above this first</span
+        >
+        <span
+          v-if="free_tap_this_upgrade"
+          class="annotation"
+          :style="{
+            color: should_click ? 'var(--text-main)' : 'var(--dont-click)',
+          }"
+          >You should attempt
+          <span class="text-(--free-tap)">free taps</span> on this first</span
+        >
+        <span
+          v-if="perform_order != 0 || free_tap_this_upgrade"
+          class="annotation"
+          :style="{
+            color: should_click ? 'var(--text-main)' : 'var(--dont-click)',
+          }"
+        >
+        </span>
+      </div>
+      <span v-else class="text-(--warning-dark)">
+        Optimizer working ({{
+          active_profile.optimizer_worker_bundle.est_progress_percentage.toFixed(
+            2,
+          )
+        }}%)</span
+      >
     </div>
+
     <div v-if="expanded" class="contents">
       <div
         class="flex min-w-full flex-row flex-nowrap justify-between"
         :style="{ opacity: using_slider ? 1 : 0.5 }"
       >
         <!-- min-w-32.75 is exact amount needed for fitting '219'  -->
-        <div class="flex max-w-32.75 min-w-32.75 flex-col">
+        <div class="flex max-w-37 min-w-37 flex-col">
           <span class="w-full text-left text-nowrap"> Taps since last </span>
           <span class="flex w-full flex-row text-left text-nowrap">
             optimizer run:
             <input
+              v-if="using_slider"
               class="ml-1 w-full border-b border-(--border-muted)"
               v-model="taps_since_last_input"
+              type="number"
+              @input="slider_input"
+              @change="slider_change"
             />
+            <span v-else class="mb-px ml-1">N/A</span>
+            <!-- margin bottom here to match the input's height -->
           </span>
         </div>
         <input
@@ -183,12 +287,8 @@ watch(
           :min="0"
           :max="upgrade.normal_dist.length - 1"
           type="range"
-          @input="
-            () => {
-              using_slider = true;
-              starting_artisan = taps_since_last_input;
-            }
-          "
+          @input="slider_input"
+          @change="slider_change"
         />
         <div
           v-if="!optimizer_working"
@@ -198,12 +298,11 @@ watch(
           "
         ></div>
       </div>
-      <div class="flex w-full flex-row content-center justify-between">
-        <div class="flex flex-col justify-center">
-          <div class="flex flex-row flex-nowrap justify-start gap-2">
-            <span class="w-fit"> Current artisan energy: </span>
-
-            <div class="flex flex-row">
+      <div class="grid grid-cols-[1fr_max-content]">
+        <div class="grid h-fit grid-cols-[1fr_90px]">
+          <div class="col-span-2 grid h-fit grid-cols-subgrid">
+            <span class="text-right"> Current artisan energy: </span>
+            <div class="pl-2">
               <input
                 class="generic-input w-13 border-transparent! border-b-(--border-very-muted)!"
                 :style="{
@@ -214,20 +313,19 @@ watch(
                 v-model="starting_artisan"
                 inputmode="decimal"
                 :disabled="optimizer_working"
-                @change="clean_artisan"
+                @change="manual_artisan_change"
               />
             </div>
           </div>
-          <div class="flex flex-row flex-nowrap justify-start gap-2">
-            <span class="w-fit"> Current base chance: </span>
-
-            <div class="flex flex-row">
+          <div class="col-span-2 grid h-fit grid-cols-subgrid">
+            <span class="text-right"> Current base chance: </span>
+            <div class="flex flex-row pl-2">
               <input
-                class="generic-input w-10 border-transparent! border-b-(--border-very-muted)!"
+                class="generic-input w-10 border-transparent! border-b-(--border-very-muted)! pr-0!"
                 v-model="current_chance_percentage"
                 :min="upgrade.base_chance * 100"
                 :max="upgrade.base_chance * 100 * 2"
-                @change="clean_chance"
+                @change="manual_chance_change"
                 :disabled="optimizer_working"
                 inputmode="decimal"
                 :style="{
@@ -239,11 +337,31 @@ watch(
               <span>%</span>
             </div>
           </div>
+          <div
+            class="col-span-2 grid h-fit grid-cols-subgrid text-(--text-muted)"
+          >
+            <span class="text-right"> Cumulative chance: </span>
+            <div class="flex flex-row content-start pl-2">
+              <span class="generic-input border-0!">
+                {{
+                  using_slider
+                    ? cumulative_chance(
+                        upgrade,
+                        Number(taps_since_last_input) +
+                          Number(upgrade.starting_num_taps),
+                        juice_info,
+                      )
+                    : "N/A"
+                }}</span
+              >
+              <span>%</span>
+            </div>
+          </div>
         </div>
         <div v-if="!optimizer_working">
           <button
-            @click="write_normal_progress"
-            class="generic-button max-w-20! self-end! text-wrap! text-(--gold)!"
+            @click="confirm"
+            class="generic-button max-w-20! self-end! py-1! text-base/tight text-wrap! text-(--gold)!"
           >
             Confirm & re-run optimizer
           </button>

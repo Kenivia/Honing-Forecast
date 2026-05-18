@@ -16,14 +16,16 @@ import { parse_locale_float } from "./InputColumn";
 // but like the inputcolumn stuff is so intertwined with inputcolumn meta data
 // so i can't really be bothered
 export function clean_percentage_input(
-  input: number | string,
+  input: string,
   fallback?: number,
-): number {
-  const parsed = parse_locale_float(input.toString().replace(/[^\d,.]/g, ""));
-  return !isFinite(parsed) ? fallback : clamp_percentage(parsed);
+): string {
+  const cleaned = input.toString().replace(/[^\d,.]/g, "");
+  return !isFinite(parse_locale_float(cleaned))
+    ? fallback.toFixed(2)
+    : clamp_percentage(cleaned);
 }
-export function clamp_percentage(input: number): number {
-  return clamp(0, input, 100);
+export function clamp_percentage(input: string): string {
+  return clamp(0, parse_locale_float(input), 100).toFixed(2);
 }
 export function clamp(min: number, input: number, max: number): number {
   return Math.max(min, Math.min(max, input));

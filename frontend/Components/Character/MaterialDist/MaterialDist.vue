@@ -226,7 +226,7 @@ function hover_annotation(x, _y, cy, material_type, color, is_last): string {
         ),
       );
 
-  return `<b style="color: white;">${(cy * 100).toPrecision(place)}% </b> chance to use <br> &#9244;<b style="color: ${color};"> ${Math.ceil(x).toLocaleString("en-US")} </b> ${material_type} `;
+  return `<b style="color: white;">${(cy * 100).toPrecision(place)}% </b> chance to use <br> ≤ <b style="color: ${color};"> ${Math.ceil(x).toLocaleString("en-US")} </b> ${material_type} `;
 }
 function special_hover_annotation(x, _y, cy, material_type, color): string {
   let place = Math.min(
@@ -388,7 +388,7 @@ const is924Narrow = useMediaIsNarrow(924); // this turns out to be the width whe
             :callback="() => start_all_workers()"
           ></MaterialCell>
           <span
-            class="text-xs text-(--free-tap) underline hover:text-(--free-tap-faded)"
+            class="text-xs text-(--free-tap) underline hover:text-(--free-tap-muted)"
             @click="() => (show_special_guide = true)"
             >Should I use in T4 or convert?</span
           >
@@ -602,7 +602,7 @@ const is924Narrow = useMediaIsNarrow(924); // this turns out to be the width whe
 }
 
 .special-convert-guide:hover {
-  color: var(--free-tap-faded);
+  color: var(--free-tap-muted);
   font-size: 12px;
 }
 

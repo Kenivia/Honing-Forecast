@@ -117,6 +117,7 @@ watch(
 
 const normal_grid: GridConfig = {
   grid_template_columns:
+    //  66 px fits Weapon, Shoulder still doesn't fit but whatever
     "minmax(66px, 70px) minmax(70px,110px) minmax(80px,100px) minmax(200px, max-content) 80px 370px ",
   grid_row_span: `span ${6}`,
 };
@@ -140,7 +141,7 @@ const normal_grid: GridConfig = {
           <div
             class="question-mark"
             v-tooltip.right="
-              'Only the order that you attempt Free taps actually matter, below is one of many equivalent orderings.'
+              'You should do the upgrades in the below order. (Only the order you attempt free taps actually matter, there are many equivalent orderings.)'
             "
           />
         </div>
@@ -162,7 +163,7 @@ const normal_grid: GridConfig = {
           <div
             class="question-mark ml-2"
             v-tooltip.left="
-              'This is completely optional - updating your progress after each tap may save a small amount of gold.'
+              'This is optional - updating your progress will produce instructions that save slightly more gold.'
             "
           />
         </div>

@@ -35,7 +35,7 @@ export interface Upgrade {
   unlock_costs: number[];
   costs: number[];
 
-  // added for UI purpose, not in rust
+  // added for UI purpose, not in rust (it's wiped after optimizer run)
   this_special_chance?: number;
 }
 export type OneState = [boolean, number]; // juice, bookid

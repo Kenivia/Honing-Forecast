@@ -113,7 +113,7 @@ export function createWorkerBundle() {
     worker.postMessage({ type: "message", wasm_op, payload });
   }
 
-  function start(
+  function debounced_start(
     wasm_op: WasmOp,
     payload: Payload,
     callback?: (result) => void,
@@ -160,7 +160,7 @@ export function createWorkerBundle() {
     result,
     error,
     est_progress_percentage,
-    start,
+    start: debounced_start,
     throttled_start,
     cancel,
     cancel_and_clear_prev_result,

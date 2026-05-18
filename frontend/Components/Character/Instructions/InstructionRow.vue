@@ -30,6 +30,15 @@ const show_success_modal = ref(false);
 function onSucceedClick() {
   show_success_modal.value = true;
 }
+const optimizer_working = computed(
+  () => active_profile.value.optimizer_worker_bundle.status === "busy",
+);
+const should_click = computed(
+  () =>
+    props.perform_order == 0 &&
+    !free_tap_this_upgrade.value &&
+    !optimizer_working.value,
+);
 </script>
 
 <template>
@@ -82,13 +91,32 @@ function onSucceedClick() {
 
   <ActualInstructions :upgrade="props.upgrade" />
 
-  <button
-    @click="onSucceedClick"
-    class="generic-button text-wrap! text-(--achieved)!"
-  >
-    Succeed & deduct costs
-  </button>
-
+  <div class="w-full">
+    <button
+      @click="onSucceedClick"
+      class="generic-button w-full! text-wrap! text-(--achieved)!"
+      :style="{
+        '--btn-hover-bg': should_click
+          ? 'var(--bg-very-bright)'
+          : 'var(--bg-medium)',
+        color: optimizer_working
+          ? 'var(--warning-dark)'
+          : should_click
+            ? 'var(--text-main)'
+            : 'var(--dont-click)',
+        cursor: optimizer_working ? 'not-allowed' : 'pointer',
+      }"
+    >
+      Succeed
+    </button>
+    <button
+      v-if="free_tap_this_upgrade"
+      @click="onSucceedClick"
+      class="generic-button text-wrap! text-(--free-tap-muted)!"
+    >
+      All free-taps failed
+    </button>
+  </div>
   <NormalHoningDetails
     v-if="upgrade.is_normal_honing"
     :upgrade="props.upgrade"

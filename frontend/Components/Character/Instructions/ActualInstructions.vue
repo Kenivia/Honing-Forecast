@@ -67,9 +67,11 @@ const streaks = computed(() => {
         // this corresponds to not showing the pity tap
         // Rust side does not enforce that the pity tap is unjuiced (it just ignores the state after that index)
         // so we need to hide it from the user
-        // however for props.upgrades that naturally has a 100% success rate (below like +5) we don't want to skip
+        // however for props.upgrades that naturally has a 100% success rate (below like +5) we don't want to skip (it won't have 100% artisan)
         // just a weird edge case
-        continue;
+        streaks.push({ pity: true, juice: false, book: false, count: 1 });
+        break;
+        // continue;
       }
       const hasBook = book > 0;
       if (current && current.juice === juice && current.book === hasBook) {
@@ -80,7 +82,7 @@ const streaks = computed(() => {
       }
       index += 1;
     }
-    streaks.push({ pity: true, juice: false, book: false, count: 1 });
+
     return streaks;
   } else {
     const raw_streaks: AdvStreak[] = [];
@@ -158,15 +160,15 @@ const parsed_streaks = computed(() => {
     let isNormal = props.upgrade.is_normal_honing;
     let topIconActive = streak.juice;
     let bottomIconActive = isNormal ? streak.book : streak.scroll;
-    let name_line =
-      (streak.juice ? "Juice" : "") +
-      ((streak.juice && streak.book) || (streak.juice && streak.scroll)
-        ? " & "
-        : "") +
-      (streak.book ? "Book" : streak.scroll ? "Scroll" : "") +
-      (!streak.juice && !streak.juice && !streak.book && !streak.scroll
-        ? "Raw tap"
-        : "");
+    // let name_line =
+    //   (streak.juice ? "Juice" : "") +
+    //   ((streak.juice && streak.book) || (streak.juice && streak.scroll)
+    //     ? " & "
+    //     : "") +
+    //   (streak.book ? "Book" : streak.scroll ? "Scroll" : "") +
+    //   (!streak.juice && !streak.juice && !streak.book && !streak.scroll
+    //     ? "Raw tap"
+    //     : "");
     let line1: string;
     let line2: string;
 
@@ -174,7 +176,7 @@ const parsed_streaks = computed(() => {
       taps += streak.count;
       if (streak.pity) {
         line1 = `Pity`;
-        line2 = `reached at ${toOrdinal(taps)} tap`;
+        line2 = `occurs on the ${toOrdinal(taps)} tap`;
       } else {
         line1 = `x${streak.count} taps`;
         line2 = `until ${artisan_function(props.upgrade, taps, juice_info.value)}% artisan`;
@@ -201,7 +203,7 @@ const parsed_streaks = computed(() => {
       bottomIconActive,
       line1,
       line2,
-      name_line,
+      // name_line,
       juice: streak.juice,
       book_or_scroll: streak.book || streak.scroll,
       pity: streak.pity,
