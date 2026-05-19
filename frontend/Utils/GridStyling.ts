@@ -8,6 +8,5 @@ export interface GridToInputColumnMap {
 export interface GridConfig {
   tier?: number | undefined; // only used as key
   grid_template_columns: string;
-  grid_row_span: string;
   rows?: GridToInputColumnMap[];
 }

@@ -5,6 +5,7 @@
 /// }
 /// (imported via import init, {evaluate_average_wrapper} from "@/../crates/wasm/pkg/honing_forecast.js"
 mod histogram;
+use crate::histogram::HistogramOutputs;
 use crate::histogram::histogram;
 use hf_core::optimizer::solve;
 use hf_core::payload::Payload;
@@ -75,6 +76,6 @@ pub fn histogram_wrapper(input_payload: JsValue) -> JsValue {
 
     let payload: Payload = from_value(input_payload).unwrap();
     let mut state_bundle: StateBundle = StateBundle::init_from_payload(payload);
-    let out = histogram(&mut state_bundle);
+    let out: HistogramOutputs = histogram(&mut state_bundle);
     to_value(&out).unwrap()
 }

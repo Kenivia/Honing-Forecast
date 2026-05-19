@@ -9,6 +9,7 @@ import ActualInstructions from "./ActualInstructions.vue";
 import NormalHoningDetails from "./NormalHoningDetails.vue";
 import SuccessPopup from "./SuccessPopup.vue";
 import AdvancedHoningDetails from "./AdvancedHoningDetails.vue";
+import { Trinary } from "@/WasmInterface/PayloadBuilder";
 
 const { active_profile } = storeToRefs(useRosterStore());
 
@@ -18,6 +19,13 @@ const props = defineProps<{
   index_in_special_state: number;
   special_invalid_index: number;
 }>();
+
+const any_overwritten = computed(
+  () =>
+    active_profile.value.optimizer_override.state.juice !== Trinary.Optimizer ||
+    active_profile.value.optimizer_override.state.book !== Trinary.Optimizer ||
+    active_profile.value.optimizer_override.special_state.optimizer !== true,
+);
 
 const free_tap_this_upgrade = computed(() => {
   return (
@@ -91,41 +99,52 @@ const should_click = computed(
 
   <ActualInstructions :upgrade="props.upgrade" />
 
-  <div class="w-full">
-    <button
-      @click="onSucceedClick"
-      class="generic-button w-full! text-wrap! text-(--achieved)!"
-      :style="{
-        '--btn-hover-bg': should_click
-          ? 'var(--bg-very-bright)'
-          : 'var(--bg-medium)',
-        color: optimizer_working
-          ? 'var(--warning-dark)'
-          : should_click
-            ? 'var(--text-main)'
-            : 'var(--dont-click)',
-        cursor: optimizer_working ? 'not-allowed' : 'pointer',
-      }"
-    >
-      Succeed
-    </button>
-    <button
-      v-if="free_tap_this_upgrade"
-      @click="onSucceedClick"
-      class="generic-button text-wrap! text-(--free-tap-muted)!"
-    >
-      All free-taps failed
-    </button>
-  </div>
-  <NormalHoningDetails
-    v-if="upgrade.is_normal_honing"
-    :upgrade="props.upgrade"
-    :perform_order="props.perform_order"
-    :free_tap_this_upgrade="free_tap_this_upgrade"
-  />
-  <AdvancedHoningDetails v-else :upgrade="props.upgrade" />
+  <div class="contents" v-if="!any_overwritten">
+    <div class="w-full">
+      <button
+        @click="onSucceedClick"
+        class="generic-button w-full! text-wrap! text-(--achieved)!"
+        :style="{
+          '--btn-hover-bg': should_click
+            ? 'var(--bg-very-bright)'
+            : 'var(--bg-medium)',
+          color: optimizer_working
+            ? 'var(--warning-dark)'
+            : should_click
+              ? 'var(--text-main)'
+              : 'var(--dont-click)',
+          cursor: optimizer_working ? 'not-allowed' : 'pointer',
+        }"
+      >
+        Succeed
+      </button>
+      <button
+        v-if="free_tap_this_upgrade"
+        @click="onSucceedClick"
+        class="generic-button text-wrap! text-(--free-tap-muted)!"
+      >
+        All free-taps failed
+      </button>
+    </div>
+    <NormalHoningDetails
+      v-if="upgrade.is_normal_honing"
+      :upgrade="props.upgrade"
+      :perform_order="props.perform_order"
+      :free_tap_this_upgrade="free_tap_this_upgrade"
+    />
+    <AdvancedHoningDetails v-else :upgrade="props.upgrade" />
 
-  <SuccessPopup :upgrade="props.upgrade" v-model="show_success_modal" />
+    <SuccessPopup :upgrade="props.upgrade" v-model="show_success_modal" />
+  </div>
+  <div
+    v-else
+    class="col-span-2 flex w-full flex-col text-left"
+    :style="{
+      backgroundColor: any_overwritten ? 'var(--warning-dark)' : 'transparent',
+    }"
+  >
+    <span> &lt;&lt;&lt; FOR COMPARISON PURPOSE ONLY, DO NOT FOLLOW!</span>
+  </div>
 </template>
 
 <style scoped></style>

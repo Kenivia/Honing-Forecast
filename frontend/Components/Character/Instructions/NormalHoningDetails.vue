@@ -13,7 +13,7 @@ import { storeToRefs } from "pinia";
 
 import { computed, ref, watch } from "vue";
 import { start_all_workers, start_eval_hist } from "../CharWorkerUtils";
-import { artisan_function, cumulative_chance } from "@/Utils/HoningUtil";
+import { artisan_function } from "@/Utils/HoningUtil";
 
 const { active_profile } = storeToRefs(useRosterStore());
 
@@ -133,8 +133,7 @@ function slider_input() {
 
   starting_artisan.value = artisan_function(
     props.upgrade,
-    Number(taps_since_last_input.value) +
-      Number(props.upgrade.starting_num_taps),
+    Number(taps_since_last_input.value),
     juice_info.value,
   );
   current_chance_percentage.value = (
@@ -152,8 +151,8 @@ function slider_input() {
 }
 
 function slider_change() {
-  write_normal_progress();
-  start_eval_hist();
+  // write_normal_progress();
+  // start_eval_hist();
 }
 
 function confirm() {
@@ -166,6 +165,9 @@ const optimizer_working = computed(
   () => active_profile.value.optimizer_worker_bundle.status === "busy",
 );
 const using_slider = ref(true);
+
+// TODO store this with keyedupgrade or something because this needs to follow the upgrade around
+// also figure out why keyedupgrades aren't saving / reading
 const expanded = ref(
   props.upgrade.starting_num_taps > 0 || // SHOULDN"T need to check this but technically the user can put in starting num 0 and some non-zero artisan so yea why not
     props.upgrade.starting_artisan > 0,
@@ -334,26 +336,6 @@ const should_click = computed(
                     : 'var(--bg-bright)',
                 }"
               />
-              <span>%</span>
-            </div>
-          </div>
-          <div
-            class="col-span-2 grid h-fit grid-cols-subgrid text-(--text-muted)"
-          >
-            <span class="text-right"> Cumulative chance: </span>
-            <div class="flex flex-row content-start pl-2">
-              <span class="generic-input border-0!">
-                {{
-                  using_slider
-                    ? cumulative_chance(
-                        upgrade,
-                        Number(taps_since_last_input) +
-                          Number(upgrade.starting_num_taps),
-                        juice_info,
-                      )
-                    : "N/A"
-                }}</span
-              >
               <span>%</span>
             </div>
           </div>

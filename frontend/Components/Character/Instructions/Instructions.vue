@@ -1,41 +1,51 @@
 <script setup lang="ts">
 import { storeToRefs } from "pinia";
-import { ref, watch } from "vue";
+import { computed, ref, watch } from "vue";
 import InstructionRow from "./InstructionRow.vue";
 import { useRosterStore } from "@/Stores/RosterConfig";
-import { Upgrade, UpgradeStatus } from "@/Utils/KeyedUpgrades";
-import { PIECE_NAMES } from "@/Utils/Constants";
+import { Upgrade } from "@/Utils/KeyedUpgrades";
 import { GridConfig } from "@/Utils/GridStyling";
+import { Trinary } from "@/WasmInterface/PayloadBuilder";
 
+const { active_profile } = storeToRefs(useRosterStore());
+const any_overwritten = computed(() => {
+  console.log("any overwritten");
+  return (
+    active_profile.value.optimizer_override.state.juice !== Trinary.Optimizer ||
+    active_profile.value.optimizer_override.state.book !== Trinary.Optimizer ||
+    active_profile.value.optimizer_override.special_state.optimizer !== true
+  );
+});
+const relevant_result = computed(() => {
+  console.log("relevant", any_overwritten.value);
+  return any_overwritten.value
+    ? active_profile.value.histogram_worker_bundle.result.state_bundle
+    : active_profile.value.optimizer_worker_bundle.result;
+});
 // This sorts the upgrades into an order that can actually be performed in game
 // special_state is already guaranteed to be valid on the rust side, but it doesn't tell us how to do the non-special taps
 // this gives a suggestion
 function sort_upgrades(): [Upgrade, number, number][] {
-  const { active_profile } = storeToRefs(useRosterStore());
-
-  if (!active_profile.value.optimizer_worker_bundle.result) {
+  if (!relevant_result.value) {
     return [];
   }
 
   let output: number[] = [];
   let indices_in_special_state: number[] = [];
-  let upgrade_arr: Upgrade[] =
-    active_profile.value.optimizer_worker_bundle.result.upgrade_arr;
+  let upgrade_arr: Upgrade[] = relevant_result.value.upgrade_arr;
   // let copy = upgrade_arr.slice()
-  let special_state: number[] =
-    active_profile.value.optimizer_worker_bundle.result.special_state;
+  let special_state: number[] = structuredClone(
+    relevant_result.value.special_state,
+  );
   const special_chance_map = new Map();
   for (let index = 0; index < special_state.length; index++) {
     special_chance_map.set(
       special_state[index],
-      active_profile.value.optimizer_worker_bundle.result.latest_special_probs[
-        index
-      ],
+      relevant_result.value.latest_special_probs[index],
     );
   }
 
-  let special_invalid_index =
-    active_profile.value.optimizer_worker_bundle.result.special_invalid_index;
+  let special_invalid_index = relevant_result.value.special_invalid_index;
   for (const [
     index_in_special_state,
     index_in_upgrade_arr,
@@ -65,7 +75,7 @@ function sort_upgrades(): [Upgrade, number, number][] {
     }
   }
 
-  return output.map((x, perform_order) => {
+  let out = output.map((x, perform_order) => {
     const upgrade = upgrade_arr[x];
     const index_in_special = special_state.findIndex((y) => y == x);
     return [
@@ -74,19 +84,42 @@ function sort_upgrades(): [Upgrade, number, number][] {
       perform_order,
     ] as [Upgrade, number, number];
   });
-  // .sort(
-  //   ([upgrade1], [upgrade2]) =>
-  //     (upgrade1 as Upgrade).piece_type - (upgrade2 as Upgrade).piece_type,
-  // );
+  // const special_override =
+  //   active_profile.value.optimizer_override.special_state;
+  // if (
+  //   active_profile.value.optimizer_override === undefined ||
+  //   special_override.optimizer
+  // ) {
+  //   return out;
+  // }
+
+  // const compare_function = (ua: Upgrade, ub: Upgrade): number => {
+  //   // Primary: preferred type goes first
+  //   const a_preferred = ua.is_weapon === special_override.weapon_first;
+  //   const b_preferred = ub.is_weapon === special_override.weapon_first;
+  //   if (a_preferred !== b_preferred) {
+  //     return a_preferred ? -1 : 1;
+  //   }
+
+  //   // Tiebreak: by upgrade_index direction
+  //   return special_override.highest_first
+  //     ? ub.upgrade_index - ua.upgrade_index
+  //     : ua.upgrade_index - ub.upgrade_index;
+  // };
+
+  // out.sort((A, B) => compare_function(A[0], B[0]));
+  return out;
 }
-const { active_profile } = storeToRefs(useRosterStore());
+
 const sorted_upgrade_arr = ref(sort_upgrades());
+
 watch(
-  () => active_profile.value.optimizer_worker_bundle.result?.upgrade_arr,
+  () => relevant_result.value,
   () => {
+    console.log("sort", any_overwritten.value);
     sorted_upgrade_arr.value = sort_upgrades();
   },
-  { deep: true },
+  { deep: true, immediate: true },
 );
 
 // const upgrade_map = computed(() =>
@@ -119,19 +152,19 @@ const normal_grid: GridConfig = {
   grid_template_columns:
     //  66 px fits Weapon, Shoulder still doesn't fit but whatever
     "minmax(66px, 70px) minmax(70px,110px) minmax(80px,100px) minmax(200px, max-content) 80px 370px ",
-  grid_row_span: `span ${6}`,
 };
 </script>
 <template>
   <section class="card-shell mb-30">
     <div class="card-header">
-      <div class="card-title">Tap Instructions</div>
+      <div class="card-title">
+        Tap Instructions {{ any_overwritten ? "(Simple, not optimized)" : "" }}
+      </div>
     </div>
     <div
       class="card-body outer-grid"
       :style="{
         '--grid-cols': normal_grid.grid_template_columns,
-        // gridRow: grid.grid_row_span,
       }"
     >
       <div class="mats-row">

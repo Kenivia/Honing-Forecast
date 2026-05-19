@@ -207,3 +207,14 @@
 .can-disable-icon-wrapper.disabled::after {
   transform: rotate(-45deg);
 }
+
+.lit-button {
+  margin-left: 0.75rem;
+  cursor: pointer;
+  border-radius: 9999px;
+  padding-left: 0.25rem;
+  padding-right: 0.25rem;
+  font-size: 0.75rem;
+  line-height: 1rem;
+  user-select: none;
+}

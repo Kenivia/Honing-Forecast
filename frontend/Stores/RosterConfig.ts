@@ -249,6 +249,7 @@ export function load_roster_config(): RosterConfig {
     }
 
     out.profiles[i] = recreate_char_profile(this_parsed);
+    console.log(out.profiles[i].optimizer_override);
     // console.log(parsed.profiles[i], parsed.profiles[i].tier)
   }
   out.active_profile_index = !out.active_profile_index
@@ -271,6 +272,7 @@ export function write_roster_config(state) {
       stringifyOmit(state.roster_config, [
         "optimizer_worker_bundle",
         "histogram_worker_bundle",
+        "optimizer_override",
       ]),
     );
   } catch {

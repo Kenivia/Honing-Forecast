@@ -65,7 +65,6 @@ const grids = computed((): GridConfig[] => [
   {
     tier: 0,
     grid_template_columns: "250px 100px 150px", // market price a bit bigger to fit the x1mil silver suffix
-    grid_row_span: undefined,
     rows: ALL_LABELS[0].map((label, row) => ({
       label,
       col: 0,
@@ -75,7 +74,6 @@ const grids = computed((): GridConfig[] => [
   {
     tier: 1,
     grid_template_columns: "250px 100px 120px 130px",
-    grid_row_span: `span ${ALL_LABELS[1].length + 1}`,
 
     rows: ALL_LABELS[1].map((label, row) => ({
       label,
@@ -108,7 +106,6 @@ function price_suffix(label: string, row: number): string {
       class="card-shell outer-grid"
       :style="{
         '--grid-cols': grid.grid_template_columns,
-        gridRow: grid.grid_row_span,
       }"
     >
       <div class="mats-row h-fit! border-b border-(--border-main) pb-0!">

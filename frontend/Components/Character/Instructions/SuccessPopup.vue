@@ -8,7 +8,7 @@ import {
   compute_used_materials,
 } from "./SuccessUtils";
 import { grid_change_callback } from "../CharWorkerUtils";
-import { artisan_function, cumulative_chance } from "@/Utils/HoningUtil";
+import { artisan_function } from "@/Utils/HoningUtil";
 import MaterialCell from "@/Components/Common/MaterialCell.vue";
 import { ALL_LABELS } from "@/Utils/Constants";
 
@@ -111,7 +111,7 @@ const taps_so_far = ref(0);
           </div>
           <div class="input-row text-left">
             Cumulative chance:
-            {{ cumulative_chance(upgrade, taps_so_far, juice_info) }}%
+            {{}}%
           </div>
         </div>
         <div

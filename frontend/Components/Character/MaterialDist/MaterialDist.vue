@@ -248,7 +248,6 @@ const show_special_guide = ref(false);
 const grid: GridConfig = {
   grid_template_columns:
     "minmax(180px, 250px) minmax(70px, 90px) minmax(110px, 120px) minmax(110px, 120px) 350px",
-  grid_row_span: `span ${ALL_LABELS[1].length + 1}`,
 };
 
 const is924Narrow = useMediaIsNarrow(924); // this turns out to be the width where the checkboxes overlap the labels
@@ -263,7 +262,6 @@ const is924Narrow = useMediaIsNarrow(924); // this turns out to be the width whe
       class="card-body outer-grid pt-0! pb-2!"
       :style="{
         '--grid-cols': grid.grid_template_columns,
-        gridRow: grid.grid_row_span,
       }"
     >
       <div class="mats-row h-fit! items-end! border-b-(--border-main)!">
@@ -394,22 +392,22 @@ const is924Narrow = useMediaIsNarrow(924); // this turns out to be the width whe
           >
           <MaterialGraph
             :data="
-              active_profile.optimizer_worker_bundle.result?.latest_special_probs
+              active_profile.histogram_worker_bundle.result.state_bundle?.latest_special_probs
                 .concat(
                   new Array(
                     Math.max(
                       0,
-                      active_profile.optimizer_worker_bundle.result.upgrade_arr.filter(
+                      active_profile.histogram_worker_bundle.result.state_bundle.upgrade_arr.filter(
                         (x) => x.is_normal_honing,
                       ).length -
-                        active_profile.optimizer_worker_bundle.result
-                          ?.latest_special_probs.length,
+                        active_profile.histogram_worker_bundle.result
+                          .state_bundle?.latest_special_probs.length,
                     ),
                   ).fill(0),
                 )
                 .slice(
                   0,
-                  active_profile.optimizer_worker_bundle.result.upgrade_arr.filter(
+                  active_profile.histogram_worker_bundle.result.state_bundle.upgrade_arr.filter(
                     (x) => x.is_normal_honing,
                   ).length,
                 )
@@ -436,7 +434,7 @@ const is924Narrow = useMediaIsNarrow(924); // this turns out to be the width whe
           {{
             metric_to_text(
               active_profile.histogram_worker_bundle.result?.metrics_arr[0],
-            ) ?? "No Result yet"
+            )
           }}
         </span>
         <span class="metric-result-suffix">
@@ -461,41 +459,12 @@ const is924Narrow = useMediaIsNarrow(924); // this turns out to be the width whe
             metric_to_text(
               active_profile.histogram_worker_bundle.result?.metrics_arr[0] -
                 active_profile.histogram_worker_bundle.result?.metrics_arr[1],
-            ) ?? "No Result yet"
+            )
           }}
         </span>
         <span class="metric-result-suffix">
           {{ total_tradable_gold_suffix }}
         </span>
-      </div>
-    </div>
-
-    <div class="mx-2 flex flex-row items-center gap-3">
-      <span class="text-nowrap"
-        >Optimizer progress:
-        <span
-          :style="{
-            color:
-              active_profile.optimizer_worker_bundle.est_progress_percentage ==
-              100
-                ? 'var(--gold)'
-                : 'var(--warning-dark)',
-          }"
-        >
-          {{
-            active_profile.optimizer_worker_bundle.est_progress_percentage.toFixed(
-              2,
-            )
-          }}%</span
-        >
-      </span>
-      <div class="progress-bar">
-        <div
-          class="progress-fill"
-          :style="{
-            width: `${active_profile.optimizer_worker_bundle.est_progress_percentage}%`,
-          }"
-        />
       </div>
     </div>
 
@@ -583,18 +552,6 @@ const is924Narrow = useMediaIsNarrow(924); // this turns out to be the width whe
   transform: translateY(-0.25rem);
 }
 
-.progress-bar {
-  width: 100%;
-  height: 8px;
-  background: var(--bg-very-bright);
-  border-radius: 4px;
-  overflow: hidden;
-}
-.progress-fill {
-  height: 100%;
-  background: var(--gold);
-  transition: width 0.1s ease;
-}
 /* .special-convert-guide {
   color: var(--free-tap);
   font-size: 12px;

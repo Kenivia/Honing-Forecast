@@ -20,7 +20,7 @@ export function start_eval_hist() {
   const { active_profile } = storeToRefs(useRosterStore());
   active_profile.value.histogram_worker_bundle.throttled_start(
     WasmOp.Histogram,
-    build_payload(),
+    build_payload(active_profile.value.optimizer_override),
   ); // call build payload again here to include the new states
 
   // active_profile.value.evaluation_worker_bundle.throttled_start(WasmOp.EvaluateAverage, payload)
@@ -29,20 +29,19 @@ export function start_all_workers() {
   const { active_profile } = storeToRefs(useRosterStore());
 
   // console.log("payload update")
-  let payload = build_payload();
 
   active_profile.value.optimizer_worker_bundle.est_progress_percentage = 0;
   if (active_profile.value.auto_start_optimizer) {
     active_profile.value.optimizer_worker_bundle.start(
       WasmOp.OptimizeAverage,
-      structuredClone(payload),
+      build_payload(),
       start_eval_hist,
     ); // make sure to clone cos it'll modify the previous payload before it's consumed
   }
 
   active_profile.value.histogram_worker_bundle.throttled_start(
     WasmOp.Histogram,
-    structuredClone(payload),
+    build_payload(active_profile.value.optimizer_override),
   ); // make sure to clone cos it'll modify the previous payload before it's consumed
   // active_profile.value.evaluation_worker_bundle.throttled_start(WasmOp.EvaluateAverage, payload)
 }

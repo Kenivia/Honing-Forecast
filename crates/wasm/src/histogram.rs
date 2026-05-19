@@ -13,8 +13,8 @@ pub struct HistogramOutputs {
     metrics_arr: Vec<f64>,
 
     avg_breakdown: Vec<f64>,
-
     juice_info: JuiceInfo,
+    state_bundle: StateBundle,
 }
 
 pub fn histogram(state_bundle: &mut StateBundle) -> HistogramOutputs {
@@ -71,5 +71,6 @@ pub fn histogram(state_bundle: &mut StateBundle) -> HistogramOutputs {
         gold_breakdown_arr,
         metrics_arr,
         juice_info: state_bundle.prep_output.juice_info.clone(),
+        state_bundle: state_bundle.clone(),
     }
 }

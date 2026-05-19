@@ -14,7 +14,7 @@ import Sidebar from "../Common/Sidebar.vue";
 import { start_all_workers } from "./CharWorkerUtils";
 import GraphControlPanel from "./GraphControlPanel.vue";
 import Guide from "./Guide.vue";
-import DetailedInput from "./Instructions/DetailedInput.vue";
+import OptimizerControlPanel from "./OptimizerControlPanel.vue";
 
 const route = useRoute();
 const router = useRouter();
@@ -100,8 +100,9 @@ onUnmounted(() => {
     <template #main>
       <StatusInput v-if="route.path.endsWith('calc')" />
       <MaterialDist v-if="route.path.endsWith('calc')" />
-      <!-- <DetailedInput grid_type="normal" v-if="route.path.endsWith('calc')" /> -->
+      <OptimizerControlPanel v-if="route.path.endsWith('calc')" />
       <Instructions v-if="route.path.endsWith('calc')" />
+
       <Guide v-if="route.path.endsWith('guide')" />
     </template>
   </Sidebar>

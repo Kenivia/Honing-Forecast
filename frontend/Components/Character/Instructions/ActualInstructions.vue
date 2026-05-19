@@ -58,7 +58,7 @@ const streaks = computed(() => {
     let index = 0;
     for (const [juice, book] of props.upgrade.state.slice(
       0,
-      props.upgrade.normal_dist.length - 1,
+      props.upgrade.normal_dist.length,
     )) {
       if (
         index == props.upgrade.normal_dist.length - 2 &&
