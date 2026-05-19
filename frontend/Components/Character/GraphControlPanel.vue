@@ -21,7 +21,7 @@ const GRAPH_COLOR_VARS = ["--average", "--bound", "--roster", "--tradable"];
       <button
         v-for="(label, index) in BUTTON_LABELS"
         :key="index"
-        class="lit-button"
+        class="lit-button ml-3"
         :style="{
           border: `1px solid var(${enabled_annotations[index] ? '--border-main' : '--border-muted'})`,
           background: enabled_annotations[index]

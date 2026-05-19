@@ -7,38 +7,28 @@ If you'd like to help with any of the below, feel free to get in touch via [Disc
 
 ## Immediate WIP
 
-- ~~move the bound / roster / tradable allocation logic to rust, let histogram worker handle everything (average, gold, tradable gold) so we can do everything UI related in one worker (and makes life easier later)~~
-  - ~~can rework tap so far system while i'm at it ([#15](https://github.com/Kenivia/Honing-Forecast/issues/15))~~
-  - can probably add "no juice" "full juice" comparison buttons (where the graph stuff used to be) here
-  - actually save & pass around cache so adv doesn't take 8 years every time
+- actually save & pass around cache so adv doesn't take 8 years every time
 
-- ~~rearrange UI cos separating to two pages doesn't actually make any sense what so ever~~ add smaller guide above tap instructions and allow detailed input above it
 - store 2 copies of market price , indexed by region, add region specification in roster page and read the appropriate prices from there
 
 - accent color not working on chrome
 
-- rework the css stuff to be actually sharable & usable
-  - sort out the material dist width
-
 - uwuowo integration (add button next to textbox to pull from uwuowo, add button on sidebar of roster setup to pull all existing chars)
 
-- ~~set up github stuff (pull from release tab like monkeytype) this is SO COOKED~~ maybe i can live with this
   - surely theres a way to not push dist to main and but push dist to production
 
 - maybe use indexdb instead of localstorage?
 
 - changed graph to be rigid histograms instead of intepolating lines
 
-- re-do test cases and stuff
-
 - copy express checkbox to roster setup also
-
-- add special icon to instruction
 
 - figure out how to style select options
   - figure out why tf v-tooltip disappeas on every progress update
 
 - make 2nd row of headers eventually
+
+- add "About" page for various stuff like credits and stuff
 
 ## Roadmap (big projects)
 
@@ -170,6 +160,18 @@ Below are some rambling / brainstorming / Misc stuff
 
 ## Done / cancelled
 
+- ~~add special icon to instruction~~
+
+- ~~re-do test cases and stuff~~
+
+- ~~set up github stuff (pull from release tab like monkeytype) this is SO COOKED~~ maybe i can live with this
+- ~~rework the css stuff to be actually sharable & usable~~
+  - ~~sort out the material dist width~~
+
+- ~~rearrange UI cos separating to two pages doesn't actually make any sense what so ever~~ ~~add smaller guide above tap instructions and allow detailed input above it~~
+- ~~move the bound / roster / tradable allocation logic to rust, let histogram worker handle everything (average, gold, tradable gold) so we can do everything UI related in one worker (and makes life easier later)~~
+  - ~~can rework tap so far system while i'm at it ([#15](https://github.com/Kenivia/Honing-Forecast/issues/15))~~
+  - ~~can probably add "no juice" "full juice" comparison buttons (where the graph stuff used to be) here~~
 - ~~remove the juice tab in the thing and always show relevant juices~~
   - ~~move the avg bound roster bound stuff to the sidebar also~~
 

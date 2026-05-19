@@ -1,4 +1,9 @@
-import { ALL_LABELS, BUNDLE_SIZE } from "@/Utils/Constants";
+import {
+  ALL_LABELS,
+  BUNDLE_SIZE,
+  GRACE_FIRST_N,
+  JOINED_ADV_JUICE,
+} from "@/Utils/Constants";
 import { TreatmentPlan } from "@/Stores/CharacterProfile";
 
 import { toRaw } from "vue";
@@ -33,6 +38,12 @@ export enum Trinary {
   Empty,
   Optimizer,
 }
+export enum Quaternary {
+  Full,
+  Grace,
+  Empty,
+  Optimizer,
+}
 export interface StateOverride {
   juice: Trinary;
   book: Trinary;
@@ -44,16 +55,23 @@ export interface SpecialOverride {
   weapon_first: boolean;
   highest_first: boolean;
 }
+
+export interface AdvOverride {
+  juice: Quaternary;
+  scroll: Quaternary;
+}
 export interface OptimizerOverride {
-  state: StateOverride;
-  special_state: SpecialOverride;
+  normal: StateOverride;
+  special: SpecialOverride;
+  advanced: AdvOverride;
 }
 
 function keyed_to_array(
   keyed_upgrades: KeyedUpgrades,
   upgrade_arr: Upgrade[] | null,
   tier: number,
-  state_override?: StateOverride,
+  normal_override?: StateOverride,
+  adv_override?: AdvOverride,
 ): OneUpgradeInput[] {
   const { active_profile } = storeToRefs(useRosterStore());
 
@@ -72,37 +90,54 @@ function keyed_to_array(
       : juice_info.adv_uindex_to_id;
 
     let relevant_upgrade = relevant_id_map[upgrade.upgrade_index];
-    if (state_override === undefined) {
-      out.state = upgrade.state;
-    } else {
-      out.state = upgrade.state.map((x) => [
-        state_override.juice == Trinary.Optimizer
-          ? x[0]
-          : state_override.juice == Trinary.Empty
-            ? false
-            : true,
-        state_override.book == Trinary.Optimizer
-          ? x[1]
-          : state_override.book == Trinary.Empty
-            ? 0
-            : relevant_upgrade[relevant_upgrade.length - 1],
-      ]);
-    }
+    console.log(adv_override);
+    out.state = upgrade.state.map((x, index) =>
+      upgrade.is_normal_honing
+        ? [
+            normal_override === undefined ||
+            normal_override.juice == Trinary.Optimizer
+              ? x[0]
+              : normal_override.juice == Trinary.Empty
+                ? false
+                : true,
+            normal_override === undefined ||
+            normal_override.book == Trinary.Optimizer
+              ? x[1]
+              : normal_override.book == Trinary.Empty
+                ? 0
+                : relevant_upgrade[relevant_upgrade.length - 1],
+          ]
+        : [
+            false,
+            adv_override === undefined ||
+            (index == 0 ? adv_override.juice : adv_override.scroll) ==
+              Quaternary.Optimizer
+              ? x[1]
+              : (index == 0 ? adv_override.juice : adv_override.scroll) ==
+                  Quaternary.Empty
+                ? 0
+                : (index == 0 ? adv_override.juice : adv_override.scroll) ==
+                    Quaternary.Grace
+                  ? GRACE_FIRST_N.length - 1
+                  : JOINED_ADV_JUICE.length - 1,
+          ],
+    );
     return out;
   });
 }
+
 export function special_sort_override(
   special_state: number[],
   upgrade_arr: Upgrade[],
   special_override?: SpecialOverride,
 ): number[] {
-  console.log(
-    special_state,
-    special_override,
-    special_override === undefined,
-    special_state === undefined,
-    special_override?.optimizer,
-  );
+  // console.log(
+  //   special_state,
+  //   special_override,
+  //   special_override === undefined,
+  //   special_state === undefined,
+  //   special_override?.optimizer,
+  // );
   if (
     special_override === undefined ||
     special_state === undefined ||
@@ -135,9 +170,12 @@ export function special_sort_override(
       const b_peak = is_peak(b);
       const ua = upgrade_arr[a];
       const ub = upgrade_arr[b];
+
       const a_preferred = ua.is_weapon === special_override.weapon_first;
       const b_preferred = ub.is_weapon === special_override.weapon_first;
-      if (a_peak !== b_peak) {
+      if (ua.is_normal_honing !== ub.is_normal_honing) {
+        return ua.is_normal_honing ? -1 : 1;
+      } else if (a_peak !== b_peak) {
         return a_peak ? -1 : 1;
       } else if (a_preferred !== b_preferred) {
         return a_preferred ? -1 : 1;
@@ -151,11 +189,16 @@ export function special_sort_override(
       const ub = upgrade_arr[b];
       const a_preferred = ua.is_weapon === special_override.weapon_first;
       const b_preferred = ub.is_weapon === special_override.weapon_first;
-      if (a_preferred !== b_preferred) return a_preferred ? -1 : 1;
-      return ua.upgrade_index - ub.upgrade_index;
+      if (ua.is_normal_honing !== ub.is_normal_honing) {
+        return ua.is_normal_honing ? -1 : 1;
+      } else if (a_preferred !== b_preferred) {
+        return a_preferred ? -1 : 1;
+      } else {
+        return ua.upgrade_index - ub.upgrade_index;
+      }
     });
   }
-  console.log("sorted", out);
+  // console.log("sorted", out);
   return out;
 }
 
@@ -235,7 +278,8 @@ export function build_payload(override?: OptimizerOverride): Payload {
       active_profile.value.keyed_upgrades,
       active_profile.value.optimizer_worker_bundle.result?.upgrade_arr,
       tier,
-      override?.state,
+      override?.normal,
+      override?.advanced,
     ),
     special_budget: input_column_to_num(active_profile.value.special_budget)[0],
     express_event: active_profile.value.express_event,
@@ -246,7 +290,7 @@ export function build_payload(override?: OptimizerOverride): Payload {
     special_state: special_sort_override(
       toRaw(active_profile.value.optimizer_worker_bundle.result?.special_state),
       active_profile.value.optimizer_worker_bundle.result?.upgrade_arr,
-      override?.special_state,
+      override?.special,
     ),
   };
 }

@@ -6,10 +6,11 @@ import { computed, ref } from "vue";
 
 import { Upgrade } from "@/Utils/KeyedUpgrades";
 import ActualInstructions from "./ActualInstructions.vue";
-import NormalHoningDetails from "./NormalHoningDetails.vue";
+import NormalDetails from "./NormalDetails.vue";
 import SuccessPopup from "./SuccessPopup.vue";
-import AdvancedHoningDetails from "./AdvancedHoningDetails.vue";
+import AdvancedDetails from "./AdvancedDetails.vue";
 import { Trinary } from "@/WasmInterface/PayloadBuilder";
+import { get_any_overwritten, get_optimizer_working } from "./InstructionUtils";
 
 const { active_profile } = storeToRefs(useRosterStore());
 
@@ -20,12 +21,7 @@ const props = defineProps<{
   special_invalid_index: number;
 }>();
 
-const any_overwritten = computed(
-  () =>
-    active_profile.value.optimizer_override.state.juice !== Trinary.Optimizer ||
-    active_profile.value.optimizer_override.state.book !== Trinary.Optimizer ||
-    active_profile.value.optimizer_override.special_state.optimizer !== true,
-);
+const any_overwritten = computed(get_any_overwritten);
 
 const free_tap_this_upgrade = computed(() => {
   return (
@@ -38,9 +34,7 @@ const show_success_modal = ref(false);
 function onSucceedClick() {
   show_success_modal.value = true;
 }
-const optimizer_working = computed(
-  () => active_profile.value.optimizer_worker_bundle.status === "busy",
-);
+const optimizer_working = computed(get_optimizer_working);
 const should_click = computed(
   () =>
     props.perform_order == 0 &&
@@ -87,7 +81,7 @@ const should_click = computed(
         :class="{ disabled: !free_tap_this_upgrade }"
       />
     </div>
-    <!-- TODO ADD BIG CROSS HERE FOR NO FREE TAP -->
+
     <span class="annotation">
       {{
         free_tap_this_upgrade
@@ -126,13 +120,11 @@ const should_click = computed(
         All free-taps failed
       </button>
     </div>
-    <NormalHoningDetails
-      v-if="upgrade.is_normal_honing"
+    <NormalDetails
       :upgrade="props.upgrade"
       :perform_order="props.perform_order"
       :free_tap_this_upgrade="free_tap_this_upgrade"
     />
-    <AdvancedHoningDetails v-else :upgrade="props.upgrade" />
 
     <SuccessPopup :upgrade="props.upgrade" v-model="show_success_modal" />
   </div>

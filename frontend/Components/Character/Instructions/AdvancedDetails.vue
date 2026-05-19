@@ -2,14 +2,17 @@
 import { useRosterStore } from "@/Stores/RosterConfig";
 import { to_upgrade_key, Upgrade } from "@/Utils/KeyedUpgrades";
 import { storeToRefs } from "pinia";
-import { ref, watch } from "vue";
-import { start_all_workers } from "../CharWorkerUtils";
+import { computed, ref, watch } from "vue";
+import { start_all_workers, start_eval_hist } from "../CharWorkerUtils";
+import "./details.css";
+import { get_optimizer_working } from "./InstructionUtils";
 
 const { active_profile } = storeToRefs(useRosterStore());
 
 const props = defineProps<{
   upgrade: Upgrade;
 }>();
+const optimizer_working = computed(get_optimizer_working);
 
 // In Rust start_xp ranges from 0 to 100 (each bar = 10 xp instead of 100 in game)
 const current_adv_upgrade = ref(
@@ -82,7 +85,7 @@ function write_adv_progress() {
     next_free.value,
     next_big.value,
   ];
-  start_all_workers();
+  start_eval_hist();
 }
 
 const must_show = ref(false);
@@ -111,54 +114,89 @@ watch(
 );
 </script>
 <template>
-  <div class="input-row">
-    <label>Current upgrade</label>
-    <input
-      type="number"
-      v-model.number="current_adv_upgrade"
-      :min="upgrade.upgrade_index * 10"
-      :max="(upgrade.upgrade_index + 1) * 10 - 1"
-      @change="write_adv_progress"
-    />
-  </div>
-  <div class="input-row">
-    <label>Current xp</label>
-    <input
-      type="number"
-      v-model.number="current_adv_xp"
-      min="0"
-      max="90"
-      step="10"
-      style="justify-self: flex-start"
-      @change="write_adv_progress"
-    />
-  </div>
-  <div class="input-row grid-4">
-    <label>Grace progress</label>
-    <input
-      type="number"
-      v-model.number="current_grace_progress"
-      min="0"
-      max="6"
-      @change="write_adv_progress"
-    />
-
-    <label
-      v-if="
-        current_grace_progress === 0 &&
-        (current_adv_xp > 0 || current_adv_upgrade > upgrade.upgrade_index * 10)
-      "
-      class="check-label"
-    >
-      <input type="checkbox" v-model="next_free" @change="write_adv_progress" />
-      Next free (Chisel)
-    </label>
-    <label
-      v-if="current_grace_progress === 6 && upgrade.upgrade_index >= 2"
-      class="check-label"
-    >
-      <input type="checkbox" v-model="next_big" @change="write_adv_progress" />
-      Naber's Awl
-    </label>
+  <div class="outer-details-grid">
+    <div class="label-number-grid">
+      <div class="label-number-row">
+        <span class="text-right">Current upgrade:</span>
+        <input
+          class="generic-input number-border ml-2 w-13"
+          type="number"
+          v-model.number="current_adv_upgrade"
+          :min="upgrade.upgrade_index * 10"
+          :max="(upgrade.upgrade_index + 1) * 10 - 1"
+          @change="write_adv_progress"
+        />
+      </div>
+      <div class="label-number-row">
+        <span class="text-right">Current xp:</span>
+        <input
+          class="generic-input number-border ml-2 w-13"
+          type="number"
+          v-model.number="current_adv_xp"
+          min="0"
+          max="90"
+          step="10"
+          style="justify-self: flex-start"
+          @change="write_adv_progress"
+        />
+      </div>
+      <div class="label-number-row">
+        <span class="text-right">Grace progress:</span>
+        <input
+          class="generic-input number-border ml-2 w-13"
+          type="number"
+          v-model.number="current_grace_progress"
+          min="0"
+          max="6"
+          @change="write_adv_progress"
+        />
+      </div>
+      <div
+        class="label-number-row"
+        v-if="
+          current_grace_progress === 0 &&
+          (current_adv_xp > 0 ||
+            current_adv_upgrade > upgrade.upgrade_index * 10)
+        "
+      >
+        <span class="text-right"> Next is free (Chisel):</span>
+        <input
+          class="ml-2 h-3.5 w-3.5 self-center"
+          type="checkbox"
+          v-model="next_free"
+          @change="write_adv_progress"
+        />
+      </div>
+      <div
+        class="label-number-row"
+        v-if="current_grace_progress === 6 && upgrade.upgrade_index >= 2"
+      >
+        <span class="text-right"> Naber's Awl </span>
+        <input
+          class="ml-2 h-3.5 w-3.5 self-center"
+          type="checkbox"
+          v-model="next_big"
+          @change="write_adv_progress"
+        />
+      </div>
+      <div
+        v-if="
+          !(
+            current_grace_progress === 0 &&
+            (current_adv_xp > 0 ||
+              current_adv_upgrade > upgrade.upgrade_index * 10)
+          ) && !(current_grace_progress === 6 && upgrade.upgrade_index >= 2)
+        "
+        class="h-6"
+      ></div>
+    </div>
+    <div v-if="!optimizer_working" class="self-center">
+      <button @click="start_all_workers" class="generic-button confirm-button">
+        Confirm & re-run optimizer
+      </button>
+    </div>
+    <div v-if="optimizer_working" class="h-19.5 max-w-20 text-wrap">
+      Optimizer working...
+    </div>
   </div>
 </template>

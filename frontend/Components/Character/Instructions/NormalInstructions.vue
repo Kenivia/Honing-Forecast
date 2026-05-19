@@ -1,23 +1,17 @@
 <script setup lang="ts">
 import { storeToRefs } from "pinia";
 import { computed, ref, watch } from "vue";
-import InstructionRow from "./InstructionRow.vue";
 import { useRosterStore } from "@/Stores/RosterConfig";
 import { Upgrade } from "@/Utils/KeyedUpgrades";
 import { GridConfig } from "@/Utils/GridStyling";
-import { Trinary } from "@/WasmInterface/PayloadBuilder";
+import { Quaternary, Trinary } from "@/WasmInterface/PayloadBuilder";
+import NormalRow from "./NormalRow.vue";
+import { get_any_overwritten } from "./InstructionUtils";
 
 const { active_profile } = storeToRefs(useRosterStore());
-const any_overwritten = computed(() => {
-  console.log("any overwritten");
-  return (
-    active_profile.value.optimizer_override.state.juice !== Trinary.Optimizer ||
-    active_profile.value.optimizer_override.state.book !== Trinary.Optimizer ||
-    active_profile.value.optimizer_override.special_state.optimizer !== true
-  );
-});
+const any_overwritten = computed(get_any_overwritten);
 const relevant_result = computed(() => {
-  console.log("relevant", any_overwritten.value);
+  // console.log("relevant", any_overwritten.value);
   return any_overwritten.value
     ? active_profile.value.histogram_worker_bundle.result.state_bundle
     : active_profile.value.optimizer_worker_bundle.result;
@@ -75,15 +69,17 @@ function sort_upgrades(): [Upgrade, number, number][] {
     }
   }
 
-  let out = output.map((x, perform_order) => {
-    const upgrade = upgrade_arr[x];
-    const index_in_special = special_state.findIndex((y) => y == x);
-    return [
-      { ...upgrade, this_special_chance: special_chance_map.get(x) }, // Shallow clone
-      index_in_special,
-      perform_order,
-    ] as [Upgrade, number, number];
-  });
+  let out = output
+    .map((x, perform_order) => {
+      const upgrade = upgrade_arr[x];
+      const index_in_special = special_state.findIndex((y) => y == x);
+      return [
+        { ...upgrade, this_special_chance: special_chance_map.get(x) }, // Shallow clone
+        index_in_special,
+        perform_order,
+      ] as [Upgrade, number, number];
+    })
+    .filter((x) => x[0].is_normal_honing);
   // const special_override =
   //   active_profile.value.optimizer_override.special_state;
   // if (
@@ -112,11 +108,11 @@ function sort_upgrades(): [Upgrade, number, number][] {
 }
 
 const sorted_upgrade_arr = ref(sort_upgrades());
-
+//  i dont really understand why using computed for this doesn't update correctly but whatever
 watch(
   () => relevant_result.value,
   () => {
-    console.log("sort", any_overwritten.value);
+    // console.log("sort", any_overwritten.value);
     sorted_upgrade_arr.value = sort_upgrades();
   },
   { deep: true, immediate: true },
@@ -148,23 +144,24 @@ watch(
 //   Math.min(...lowest_arr.value.map((x) => x?.upgrade_index ?? 999)),
 // );
 
-const normal_grid: GridConfig = {
+const grid: GridConfig = {
   grid_template_columns:
     //  66 px fits Weapon, Shoulder still doesn't fit but whatever
     "minmax(66px, 70px) minmax(70px,110px) minmax(80px,100px) minmax(200px, max-content) 80px 370px ",
 };
 </script>
 <template>
-  <section class="card-shell mb-30">
+  <section class="card-shell">
     <div class="card-header">
       <div class="card-title">
-        Tap Instructions {{ any_overwritten ? "(Simple, not optimized)" : "" }}
+        Normal Honing Instructions
+        {{ any_overwritten ? "(Not optimized)" : "" }}
       </div>
     </div>
     <div
       class="card-body outer-grid"
       :style="{
-        '--grid-cols': normal_grid.grid_template_columns,
+        '--grid-cols': grid.grid_template_columns,
       }"
     >
       <div class="mats-row">
@@ -185,7 +182,7 @@ const normal_grid: GridConfig = {
           <span> Juice & book Instructions</span>
           <div
             class="question-mark"
-            v-tooltip.left="
+            v-tooltip.right="
               'Juiced taps mean full-juice (use the maximum amount of Lava / Glacier Breath).'
             "
           />
@@ -217,7 +214,8 @@ const normal_grid: GridConfig = {
           :key="`instructions-${upgrade.upgrade_index}-${upgrade.piece_type}-${upgrade.is_normal_honing}`"
           class="mats-row h-fit! py-1!"
         >
-          <InstructionRow
+          <NormalRow
+            v-if="upgrade.is_normal_honing"
             :upgrade="upgrade"
             :perform_order="perform_order"
             :special_invalid_index="
@@ -231,13 +229,3 @@ const normal_grid: GridConfig = {
     </div>
   </section>
 </template>
-
-<!-- <InstructionRow
-            :upgrade="upgrade"
-            :perform_order="perform_order"
-            :special_invalid_index="
-              active_profile.optimizer_worker_bundle.result
-                .special_invalid_index
-            "
-            :index_in_special_state="index_in_special_state"
-          /> -->

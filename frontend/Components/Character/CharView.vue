@@ -15,6 +15,8 @@ import { start_all_workers } from "./CharWorkerUtils";
 import GraphControlPanel from "./GraphControlPanel.vue";
 import Guide from "./Guide.vue";
 import OptimizerControlPanel from "./OptimizerControlPanel.vue";
+import NormalInstructions from "./Instructions/NormalInstructions.vue";
+import AdvancedInstructions from "./Instructions/AdvancedInstructions.vue";
 
 const route = useRoute();
 const router = useRouter();
@@ -88,9 +90,6 @@ onUnmounted(() => {
         <RouterLink to="calc" class="side-bar-link" @click="close">
           Setup & Cost Analysis
         </RouterLink>
-        <RouterLink to="instructions" class="side-bar-link" @click="close">
-          Taps Instructions
-        </RouterLink>
       </div>
 
       <GraphControlPanel v-if="route.path.endsWith('calc')" />
@@ -98,12 +97,13 @@ onUnmounted(() => {
     </template>
 
     <template #main>
+      <Guide v-if="route.path.endsWith('guide')" />
       <StatusInput v-if="route.path.endsWith('calc')" />
       <MaterialDist v-if="route.path.endsWith('calc')" />
       <OptimizerControlPanel v-if="route.path.endsWith('calc')" />
-      <Instructions v-if="route.path.endsWith('calc')" />
-
-      <Guide v-if="route.path.endsWith('guide')" />
+      <NormalInstructions v-if="route.path.endsWith('calc')" />
+      <AdvancedInstructions v-if="route.path.endsWith('calc')" />
+      <div class="min-h-30"></div>
     </template>
   </Sidebar>
 </template>

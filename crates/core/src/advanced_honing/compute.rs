@@ -80,10 +80,10 @@ fn compute_adv_dist(
     let mut is_non_grace_scroll = false;
 
     let (t1, t2) = {
-        let should_juice =
-            state.non_grace_juice_count > 0 || (gracing && state.grace_juice_count > 0);
-        let should_scroll =
-            state.non_grace_scroll_count > 0 || (gracing && state.grace_scroll_count > 0);
+        let should_juice = (state.non_grace_juice_count > 0 && state.cur_xp <= 96)
+            || (gracing && state.grace_juice_count > 0 && state.cur_xp < 94);
+        let should_scroll = (state.non_grace_scroll_count > 0 && state.cur_xp <= 96)
+            || (gracing && state.grace_scroll_count > 0 && state.cur_xp < 94);
 
         if should_juice {
             juice_inc = 1;

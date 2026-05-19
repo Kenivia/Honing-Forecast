@@ -14,7 +14,8 @@ import { storeToRefs } from "pinia";
 import { computed, ref, watch } from "vue";
 import { start_all_workers, start_eval_hist } from "../CharWorkerUtils";
 import { artisan_function } from "@/Utils/HoningUtil";
-
+import "./details.css";
+import { get_optimizer_working } from "./InstructionUtils";
 const { active_profile } = storeToRefs(useRosterStore());
 
 const props = defineProps<{
@@ -101,8 +102,8 @@ function manual_artisan_change() {
   start_eval_hist();
 }
 
-function manual_chance_change(event) {
-  console.log(event.target.value, event, current_chance_percentage.value);
+function manual_chance_change() {
+  // console.log(event.target.value, event, current_chance_percentage.value);
   taps_since_last_input.value = 0;
   using_slider.value = false;
 
@@ -129,7 +130,11 @@ function slider_input() {
   using_slider.value = true;
 
   // this kind of disallows any non-integer inputs by instantly setting invalid intermediate inputs to 0, but its like fine i think since it's not a big number or anything
-  taps_since_last_input.value = Number(taps_since_last_input.value);
+  taps_since_last_input.value = clamp(
+    0,
+    Number(taps_since_last_input.value),
+    props.upgrade.normal_dist.length - 1,
+  );
 
   starting_artisan.value = artisan_function(
     props.upgrade,
@@ -161,9 +166,7 @@ function confirm() {
 }
 const taps_since_last_input = ref(0);
 
-const optimizer_working = computed(
-  () => active_profile.value.optimizer_worker_bundle.status === "busy",
-);
+const optimizer_working = computed(get_optimizer_working);
 const using_slider = ref(true);
 
 // TODO store this with keyedupgrade or something because this needs to follow the upgrade around
@@ -193,6 +196,17 @@ const should_click = computed(
     !props.free_tap_this_upgrade &&
     !optimizer_working.value,
 );
+function reset() {
+  taps_since_last_input.value = 0;
+  using_slider.value = true;
+  starting_artisan.value = "0";
+  current_chance_percentage.value = (props.upgrade.base_chance * 100).toFixed(
+    2,
+  );
+
+  write_normal_progress();
+  start_all_workers();
+}
 </script>
 <template>
   <div class="flex w-full flex-col px-3">
@@ -277,6 +291,8 @@ const should_click = computed(
               type="number"
               @input="slider_input"
               @change="slider_change"
+              :min="0"
+              :max="upgrade.normal_dist.length - 1"
             />
             <span v-else class="mb-px ml-1">N/A</span>
             <!-- margin bottom here to match the input's height -->
@@ -300,13 +316,13 @@ const should_click = computed(
           "
         ></div>
       </div>
-      <div class="grid grid-cols-[1fr_max-content]">
-        <div class="grid h-fit grid-cols-[1fr_90px]">
-          <div class="col-span-2 grid h-fit grid-cols-subgrid">
+      <div class="outer-details-grid">
+        <div class="label-number-grid">
+          <div class="label-number-row">
             <span class="text-right"> Current artisan energy: </span>
             <div class="pl-2">
               <input
-                class="generic-input w-13 border-transparent! border-b-(--border-very-muted)!"
+                class="generic-input number-border w-13"
                 :style="{
                   backgroundColor: using_slider
                     ? 'transparent'
@@ -323,7 +339,7 @@ const should_click = computed(
             <span class="text-right"> Current base chance: </span>
             <div class="flex flex-row pl-2">
               <input
-                class="generic-input w-10 border-transparent! border-b-(--border-very-muted)! pr-0!"
+                class="generic-input number-border w-10 pr-0!"
                 v-model="current_chance_percentage"
                 :min="upgrade.base_chance * 100"
                 :max="upgrade.base_chance * 100 * 2"
@@ -339,12 +355,12 @@ const should_click = computed(
               <span>%</span>
             </div>
           </div>
+          <button class="generic-button reset-button" @click="reset">
+            Reset this upgrade
+          </button>
         </div>
-        <div v-if="!optimizer_working">
-          <button
-            @click="confirm"
-            class="generic-button max-w-20! self-end! py-1! text-base/tight text-wrap! text-(--gold)!"
-          >
+        <div v-if="!optimizer_working" class="self-center">
+          <button @click="confirm" class="generic-button confirm-button">
             Confirm & re-run optimizer
           </button>
         </div>
