@@ -7,6 +7,12 @@ If you'd like to help with any of the below, feel free to get in touch via [Disc
 
 ## Immediate WIP
 
+- work out how to do the deduction stuff again
+
+- make the expanded property follow upgrade around
+
+- make normal instructions collapsible
+
 - actually save & pass around cache so adv doesn't take 8 years every time
 
 - store 2 copies of market price , indexed by region, add region specification in roster page and read the appropriate prices from there

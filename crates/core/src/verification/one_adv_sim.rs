@@ -119,10 +119,12 @@ pub fn one_sim<R: Rng>(rng: &mut R, config: &AdvConfig) -> (u8, u8, u8) {
         next_free = false;
 
         let (t1, t2) = {
-            let should_juice = non_grace_juice_count < config.non_grace_juice_target
-                || (gracing && grace_juice_count < config.grace_juice_target);
-            let should_scroll = non_grace_scroll_count < config.non_grace_scroll_target
-                || (gracing && grace_scroll_count < config.grace_scroll_target);
+            let should_juice = (non_grace_juice_count < config.non_grace_juice_target
+                && cur_xp <= 960)
+                || (gracing && grace_juice_count < config.grace_juice_target && cur_xp < 940);
+            let should_scroll = (non_grace_scroll_count < config.non_grace_scroll_target
+                && cur_xp <= 960)
+                || (gracing && grace_scroll_count < config.grace_scroll_target && cur_xp < 940);
 
             if should_juice {
                 if gracing {

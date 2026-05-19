@@ -109,10 +109,7 @@ const taps_so_far = ref(0);
               )
             }}%
           </div>
-          <div class="input-row text-left">
-            Cumulative chance:
-            {{}}%
-          </div>
+          <div class="input-row text-left">Cumulative chance: {{}}%</div>
         </div>
         <div
           v-if="upgrade.is_normal_honing"
