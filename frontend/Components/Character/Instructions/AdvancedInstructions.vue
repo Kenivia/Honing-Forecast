@@ -6,7 +6,7 @@ import { GridConfig } from "@/Utils/GridStyling";
 import { Quaternary, Trinary } from "@/WasmInterface/PayloadBuilder";
 import AdvancedRow from "./AdvancedRow.vue";
 import { Upgrade } from "@/Utils/KeyedUpgrades";
-import { get_any_overwritten } from "./InstructionUtils";
+import { get_any_overwritten, get_optimizer_working } from "./InstructionUtils";
 
 const { active_profile } = storeToRefs(useRosterStore());
 const any_overwritten = computed(get_any_overwritten);
@@ -21,6 +21,7 @@ const grid: GridConfig = {
     //  66 px fits Weapon, Shoulder still doesn't fit but whatever
     "minmax(75px, 85px) minmax(200px, max-content) 80px 370px ",
 };
+const optimizer_working = computed(get_optimizer_working);
 </script>
 <template>
   <section class="card-shell">
@@ -35,6 +36,13 @@ const grid: GridConfig = {
             'Advanced honing optimization is limited, take these instructions as a rough guide. '
           "
         />
+        <span v-if="optimizer_working" class="text-(--text-main)">
+          ({{
+            active_profile.optimizer_worker_bundle.est_progress_percentage.toFixed(
+              2,
+            )
+          }}%)</span
+        >
       </div>
     </div>
     <div

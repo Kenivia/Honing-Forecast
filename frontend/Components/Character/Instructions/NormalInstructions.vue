@@ -6,7 +6,7 @@ import { Upgrade } from "@/Utils/KeyedUpgrades";
 import { GridConfig } from "@/Utils/GridStyling";
 import { Quaternary, Trinary } from "@/WasmInterface/PayloadBuilder";
 import NormalRow from "./NormalRow.vue";
-import { get_any_overwritten } from "./InstructionUtils";
+import { get_any_overwritten, get_optimizer_working } from "./InstructionUtils";
 
 const { active_profile } = storeToRefs(useRosterStore());
 const any_overwritten = computed(get_any_overwritten);
@@ -149,6 +149,8 @@ const grid: GridConfig = {
     //  66 px fits Weapon, Shoulder still doesn't fit but whatever
     "minmax(66px, 70px) minmax(70px,110px) minmax(80px,100px) minmax(200px, max-content) 80px 370px ",
 };
+
+const optimizer_working = computed(get_optimizer_working);
 </script>
 <template>
   <section class="card-shell">
@@ -156,6 +158,13 @@ const grid: GridConfig = {
       <div class="card-title">
         Normal Honing Instructions
         {{ any_overwritten ? "(Not optimized)" : "" }}
+        <span v-if="optimizer_working" class="text-(--text-main)">
+          ({{
+            active_profile.optimizer_worker_bundle.est_progress_percentage.toFixed(
+              2,
+            )
+          }}%)</span
+        >
       </div>
     </div>
     <div

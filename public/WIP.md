@@ -9,8 +9,13 @@ If you'd like to help with any of the below, feel free to get in touch via [Disc
 
 - work out how to do the deduction stuff again
   - deduct prior to confirm. how.
+    - should probably NOT do a dummy variable cos that sounds like pure aids, probably save a snapshot of non-slider-deducted budgets for the purpose of saving only, otherwise everything just modifies the existing stuff (as in modify on every slider change)
 
-- make the expanded property follow upgrade around
+- ~~make the expanded property follow upgrade around~~
+
+- merge normal and adv cos i mean its easy this way right now but it just looks so silly + the grid config technology is there already
+
+- make any_overwritten slightly smarter
 
 - figure out why keyedstorage isn't saved / read correctly?
 

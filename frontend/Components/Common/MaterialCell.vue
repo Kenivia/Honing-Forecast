@@ -21,6 +21,7 @@ const props = defineProps<{
   height?: number;
   hide_label?: boolean;
   justify_left?: boolean;
+  disabled?: boolean;
 }>();
 
 const actual_input_width = computed(() => `${props.input_width ?? 100}px`);
@@ -88,6 +89,7 @@ const this_data = ref(
         setter(get_modified_cell(input_column, row, $event)),
         callback ? callback() : null)
       "
+      :disabled="!input_column.enabled[row]"
     />
     <label
       v-else

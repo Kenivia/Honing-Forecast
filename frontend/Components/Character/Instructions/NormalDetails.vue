@@ -250,14 +250,6 @@ const upgrade_key = computed(() =>
         v-if="!optimizer_working"
       >
         <span
-          v-if="perform_order != 0"
-          class="annotation"
-          :style="{
-            color: should_click ? 'var(--text-main)' : 'var(--dont-click)',
-          }"
-          >You should do the upgrades above this first</span
-        >
-        <span
           v-if="free_tap_this_upgrade && perform_order == 0"
           class="annotation"
           :style="{
@@ -276,13 +268,6 @@ const upgrade_key = computed(() =>
         >
         </span>
       </div>
-      <span v-else class="text-(--text-main)">
-        Optimizer working ({{
-          active_profile.optimizer_worker_bundle.est_progress_percentage.toFixed(
-            2,
-          )
-        }}%)</span
-      >
     </div>
 
     <div
