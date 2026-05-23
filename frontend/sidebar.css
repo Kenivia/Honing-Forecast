@@ -11,13 +11,13 @@
 }
 
 .side-bar-link:hover {
-  background-color: var(--bg-medium);
+  background-color: var(--bg-main);
 }
 
 /* RouterLink active state */
 .side-bar-link.router-link-active {
   color: var(--gold);
-  background-color: var(--bg-medium);
+  background-color: var(--bg-main);
 }
 .side-bar-item {
   /* display: block; */

@@ -8,8 +8,11 @@ If you'd like to help with any of the below, feel free to get in touch via [Disc
 ## Immediate WIP
 
 - work out how to do the deduction stuff again
+  - deduct prior to confirm. how.
 
 - make the expanded property follow upgrade around
+
+- figure out why keyedstorage isn't saved / read correctly?
 
 - make normal instructions collapsible
 
@@ -35,6 +38,9 @@ If you'd like to help with any of the below, feel free to get in touch via [Disc
 - make 2nd row of headers eventually
 
 - add "About" page for various stuff like credits and stuff
+
+- use less juice for the very last tap that pushes things to 100 artisan
+  - technically there are cases (infinite juice owned) where it's better to put more than enough juice in there, so ig there needs to be like a binary state there? idk currently the state there doesn't do anything anyway so might as well make use of it
 
 ## Roadmap (big projects)
 

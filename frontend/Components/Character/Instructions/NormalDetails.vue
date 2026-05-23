@@ -162,6 +162,7 @@ function slider_change() {
 
 function confirm() {
   taps_since_last_input.value = 0;
+  using_slider.value = true;
   start_all_workers();
 }
 const taps_since_last_input = ref(0);
@@ -171,21 +172,24 @@ const using_slider = ref(true);
 
 // TODO store this with keyedupgrade or something because this needs to follow the upgrade around
 // also figure out why keyedupgrades aren't saving / reading
-const expanded = ref(
-  props.upgrade.starting_num_taps > 0 || // SHOULDN"T need to check this but technically the user can put in starting num 0 and some non-zero artisan so yea why not
-    props.upgrade.starting_artisan > 0,
-);
-watch(
-  () => [
-    props.upgrade.starting_num_taps,
-    props.upgrade.starting_artisan,
-    props.perform_order,
-  ],
-  () => {
-    expanded.value =
-      props.upgrade.starting_num_taps > 0 || props.upgrade.starting_artisan > 0;
-  },
-);
+// const expanded = ref(
+//   props.upgrade.starting_num_taps > 0 || // SHOULDN"T need to check this but technically the user can put in starting num 0 and some non-zero artisan so yea why not
+//     props.upgrade.starting_artisan > 0 ||
+//     props.perform_order == 0,
+// );
+// watch(
+//   () => [
+//     props.upgrade.starting_num_taps,
+//     props.upgrade.starting_artisan,
+//     props.perform_order,
+//   ],
+//   () => {
+//     expanded.value =
+//       props.upgrade.starting_num_taps > 0 ||
+//       props.upgrade.starting_artisan > 0 ||
+//       props.perform_order == 0;
+//   },
+// );
 const juice_info = computed(() => {
   return active_profile.value.histogram_worker_bundle.result.juice_info;
 });
@@ -207,29 +211,35 @@ function reset() {
   write_normal_progress();
   start_all_workers();
 }
+
+const upgrade_key = computed(() =>
+  to_upgrade_key(
+    props.upgrade.piece_type,
+    props.upgrade.upgrade_index,
+    props.upgrade.is_normal_honing,
+    active_profile.value.tier,
+  ),
+);
 </script>
 <template>
   <div class="flex w-full flex-col px-3">
-    <div v-if="!expanded" class="contents">
+    <div
+      v-if="!active_profile.keyed_upgrades[upgrade_key].expanded"
+      class="contents"
+    >
       <button
         @click="
           () => {
-            if (!optimizer_working) {
-              expanded = true;
-            }
+            active_profile.keyed_upgrades[upgrade_key].expanded = true;
           }
         "
         class="barebone-button"
         :style="{
           '--btn-hover-bg': should_click
             ? 'var(--bg-very-bright)'
-            : 'var(--bg-medium)',
-          color: optimizer_working
-            ? 'var(--warning-dark)'
-            : should_click
-              ? 'var(--text-main)'
-              : 'var(--dont-click)',
-          cursor: optimizer_working ? 'not-allowed' : 'pointer',
+            : 'var(--bg-main)',
+          color: should_click ? 'var(--text-main)' : 'var(--dont-click)',
+          cursor: 'pointer',
         }"
       >
         Expand Artisan input
@@ -248,13 +258,14 @@ function reset() {
           >You should do the upgrades above this first</span
         >
         <span
-          v-if="free_tap_this_upgrade"
+          v-if="free_tap_this_upgrade && perform_order == 0"
           class="annotation"
           :style="{
             color: should_click ? 'var(--text-main)' : 'var(--dont-click)',
           }"
           >You should attempt
-          <span class="text-(--free-tap)">free taps</span> on this first</span
+          <span class="text-(--free-tap)">free taps</span> on this before normal
+          honing</span
         >
         <span
           v-if="perform_order != 0 || free_tap_this_upgrade"
@@ -265,7 +276,7 @@ function reset() {
         >
         </span>
       </div>
-      <span v-else class="text-(--warning-dark)">
+      <span v-else class="text-(--text-main)">
         Optimizer working ({{
           active_profile.optimizer_worker_bundle.est_progress_percentage.toFixed(
             2,
@@ -274,12 +285,14 @@ function reset() {
       >
     </div>
 
-    <div v-if="expanded" class="contents">
+    <div
+      v-if="active_profile.keyed_upgrades[upgrade_key].expanded"
+      class="contents"
+    >
       <div
         class="flex min-w-full flex-row flex-nowrap justify-between"
         :style="{ opacity: using_slider ? 1 : 0.5 }"
       >
-        <!-- min-w-32.75 is exact amount needed for fitting '219'  -->
         <div class="flex max-w-37 min-w-37 flex-col">
           <span class="w-full text-left text-nowrap"> Taps since last </span>
           <span class="flex w-full flex-row text-left text-nowrap">
@@ -293,6 +306,7 @@ function reset() {
               @change="slider_change"
               :min="0"
               :max="upgrade.normal_dist.length - 1"
+              :disabled="optimizer_working"
             />
             <span v-else class="mb-px ml-1">N/A</span>
             <!-- margin bottom here to match the input's height -->
@@ -308,19 +322,12 @@ function reset() {
           @input="slider_input"
           @change="slider_change"
         />
-        <div
-          v-if="!optimizer_working"
-          class="question-mark min-w-fit shrink-0"
-          v-tooltip.left="
-            'The slider assumes that you followed the Juice & Book Instructions. If you didn\'t follow the instructions, input your artisan and stuff directly below instead.'
-          "
-        ></div>
       </div>
       <div class="outer-details-grid">
         <div class="label-number-grid">
           <div class="label-number-row">
             <span class="text-right"> Current artisan energy: </span>
-            <div class="pl-2">
+            <div class="flex flex-row flex-nowrap pl-2">
               <input
                 class="generic-input number-border w-13"
                 :style="{
@@ -355,7 +362,23 @@ function reset() {
               <span>%</span>
             </div>
           </div>
-          <button class="generic-button reset-button" @click="reset">
+          <button
+            class="generic-button reset-button"
+            @click="reset"
+            :disabled="optimizer_working"
+            v-if="
+              parse_locale_float(starting_artisan) > 0 ||
+              parse_locale_float(current_chance_percentage) >
+                upgrade.base_chance * 100 + FLOAT_TOL
+            "
+          >
+            {{
+              console.log(
+                parse_locale_float(starting_artisan) > 0,
+                parse_locale_float(current_chance_percentage),
+                upgrade.base_chance * 100,
+              )
+            }}
             Reset this upgrade
           </button>
         </div>
@@ -365,7 +388,11 @@ function reset() {
           </button>
         </div>
         <div v-if="optimizer_working" class="h-19.5 max-w-20 text-wrap">
-          Optimizer working...
+          Optimizer working ({{
+            active_profile.optimizer_worker_bundle.est_progress_percentage.toFixed(
+              2,
+            )
+          }}%)
         </div>
       </div>
     </div>

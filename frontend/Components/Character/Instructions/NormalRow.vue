@@ -94,14 +94,14 @@ const should_click = computed(
   <ActualInstructions :upgrade="props.upgrade" />
 
   <div class="contents" v-if="!any_overwritten">
-    <div class="w-full">
+    <div class="flex w-full flex-col">
       <button
         @click="onSucceedClick"
         class="generic-button w-full! text-wrap! text-(--achieved)!"
         :style="{
           '--btn-hover-bg': should_click
             ? 'var(--bg-very-bright)'
-            : 'var(--bg-medium)',
+            : 'var(--bg-main)',
           color: optimizer_working
             ? 'var(--warning-dark)'
             : should_click
@@ -113,12 +113,20 @@ const should_click = computed(
         Succeed
       </button>
       <button
-        v-if="free_tap_this_upgrade"
+        v-if="free_tap_this_upgrade && perform_order == 0"
         @click="onSucceedClick"
         class="generic-button text-wrap! text-(--free-tap-muted)!"
       >
         All free-taps failed
       </button>
+      <span
+        v-if="free_tap_this_upgrade && perform_order != 0"
+        class="annotation"
+      >
+        You should attempt
+        <span class="text-(--free-tap)">free taps</span> on this before normal
+        honing
+      </span>
     </div>
     <NormalDetails
       :upgrade="props.upgrade"

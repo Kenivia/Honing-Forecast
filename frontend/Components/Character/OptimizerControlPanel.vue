@@ -23,23 +23,21 @@ const optimizer_working = computed(get_optimizer_working);
   <section class="card-shell max-w-[min(800px,100%)]! min-w-[min(800px,100%)]!">
     <div>
       <div class="mx-2 flex w-full flex-row items-center gap-3">
-        <span class="text-nowrap"
-          >Optimizer progress:
-          <span
-            :style="{
-              color:
-                active_profile.optimizer_worker_bundle
-                  .est_progress_percentage == 100
-                  ? 'var(--gold)'
-                  : 'var(--warning-dark)',
-            }"
-          >
-            {{
-              active_profile.optimizer_worker_bundle.est_progress_percentage.toFixed(
-                2,
-              )
-            }}%</span
-          >
+        <span class="content-center text-nowrap">Optimizer progress:</span>
+        <span
+          :style="{
+            color:
+              active_profile.optimizer_worker_bundle.est_progress_percentage ==
+              100
+                ? 'var(--gold)'
+                : 'var(--warning-dark)',
+          }"
+        >
+          {{
+            active_profile.optimizer_worker_bundle.est_progress_percentage.toFixed(
+              2,
+            )
+          }}%
         </span>
         <div class="progress-bar">
           <div

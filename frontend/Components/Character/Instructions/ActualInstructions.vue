@@ -190,7 +190,7 @@ const parsed_streaks = computed(() => {
         // console.log(props.upgrade.adv_dists)
         line1 =
           streak.count < 255
-            ? `First ${streak.count}`
+            ? `${streak.grace ? "First" : "Any"} ${streak.count}`
             : streaks.value.length == 1
               ? "All"
               : "All";

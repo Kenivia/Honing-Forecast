@@ -158,7 +158,7 @@ const close = () => (sidebarOpen.value = false);
   position: fixed;
   inset: 0;
   z-index: 150;
-  background: rgba(0, 0, 0, 0.5);
+  background: var(--backdrop);
 }
 
 .backdrop-enter-active,

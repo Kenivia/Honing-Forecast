@@ -74,6 +74,7 @@ export type OldOneUpgrade = [
   AdvProgress | null,
 ];
 
+// an array of this is passed into rust
 export interface OneUpgradeInput {
   piece_type: number;
   upgrade_index: number;
@@ -83,8 +84,10 @@ export interface OneUpgradeInput {
   state?: OneState[];
   unlocked: boolean;
   adv_progress?: AdvProgress;
+
+  // This is here because 1. it needs to persist through optimizser runs and 2. extra fields are ignored by serde so its perfect
+  expanded: boolean;
 }
-// an array of this is passed into rust
 
 export type OneUpgradeKey = `${number},${number},${"true" | "false"},${number}`;
 export type KeyedUpgrades = Record<OneUpgradeKey, OneUpgradeInput>; // This is modified by UI
@@ -163,6 +166,7 @@ export function grids_to_keyed(
               state: state,
               unlocked: unlocked,
               adv_progress: adv_progress,
+              expanded: false,
             };
           } else {
             new_keyed[key] = {
@@ -174,6 +178,7 @@ export function grids_to_keyed(
               state: null,
               unlocked: false,
               adv_progress: default_adv_progress,
+              expanded: false,
             };
           }
         } else {
@@ -194,6 +199,7 @@ function is_one_upgrade(obj: unknown): obj is OneUpgradeInput {
   if (typeof o.upgrade_index !== "number") return false;
   if (typeof o.is_normal_honing !== "boolean") return false;
   if (typeof o.unlocked !== "boolean") return false;
+  if (typeof o.expanded !== "boolean") return false;
 
   if (
     o.starting_artisan !== undefined &&

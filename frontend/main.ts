@@ -7,6 +7,7 @@ import "./theme.css";
 import "./shared.css";
 import "./index.css";
 import "./sidebar.css";
+import "./popup.css";
 import router from "./Router";
 
 const pinia = createPinia();

@@ -41,7 +41,7 @@
   color: var(--text-main);
   border-radius: 4px;
   border: 1px solid var(--border-muted);
-  background-color: var(--bg-medium);
+  background-color: var(--bg-main);
   margin: 0px 4px 0px 0px;
   text-wrap-mode: nowrap;
   padding: 12px;
@@ -52,7 +52,7 @@
   color: var(--text-main);
   border-radius: 4px;
   border: 1px solid var(--border-muted);
-  background-color: var(--bg-medium);
+  background-color: var(--bg-main);
   padding: 2px 4px;
   text-wrap-mode: nowrap;
   cursor: pointer;

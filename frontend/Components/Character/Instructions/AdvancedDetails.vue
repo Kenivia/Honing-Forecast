@@ -195,8 +195,12 @@ watch(
         Confirm & re-run optimizer
       </button>
     </div>
-    <div v-if="optimizer_working" class="h-19.5 max-w-20 text-wrap">
-      Optimizer working...
+    <div v-if="optimizer_working" class="h-fit max-w-20 self-center text-wrap">
+      Optimizer working ({{
+        active_profile.optimizer_worker_bundle.est_progress_percentage.toFixed(
+          2,
+        )
+      }}%)
     </div>
   </div>
 </template>

@@ -193,7 +193,7 @@ const grid: GridConfig = {
           <div
             class="question-mark ml-2"
             v-tooltip.left="
-              'This is optional - updating your progress will produce instructions that save slightly more gold.'
+              'This is optional - updating your progress may produce instructions that save slightly more gold.'
             "
           />
         </div>

@@ -123,7 +123,7 @@ export function createWorkerBundle() {
 
     debounceTimer = setTimeout(
       () => _launch(wasm_op, payload, true, callback),
-      500,
+      200,
     );
     // } else {
     // _launch(wasm_op, payload, true, callback)

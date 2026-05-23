@@ -32,7 +32,7 @@ const grid: GridConfig = {
           class="question-mark"
           v-if="!any_overwritten"
           v-tooltip.right="
-            'Advanced honing optimization is limited, take its advice with a grain of salt. '
+            'Advanced honing optimization is limited, take these instructions as a rough guide. '
           "
         />
       </div>
@@ -52,7 +52,7 @@ const grid: GridConfig = {
           <span> Juice & book Instructions</span>
           <div
             class="question-mark"
-            v-tooltip.left="
+            v-tooltip.right="
               '\'Juice First N Grace\' means to use juice on the first N Ancestor\'s Grace.'
             "
           />
@@ -63,7 +63,7 @@ const grid: GridConfig = {
           <div
             class="question-mark ml-2"
             v-tooltip.left="
-              'This is optional - updating your progress will produce instructions that save slightly more gold. '
+              'This is optional - updating your progress may produce instructions that save slightly more gold. '
             "
           />
         </div>

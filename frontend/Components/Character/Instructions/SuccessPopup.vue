@@ -93,7 +93,7 @@ const taps_so_far = ref(0);
   <Teleport to="body">
     <div
       v-if="show_success_modal"
-      class="modal-overlay"
+      class="popup-overlay"
       @click="show_success_modal = false"
     >
       <div class="popup" @click.stop>
@@ -109,7 +109,7 @@ const taps_so_far = ref(0);
               )
             }}%
           </div>
-          <div class="input-row text-left">Cumulative chance: {{}}%</div>
+          <!-- <div class="input-row text-left">Cumulative chance: {{}}%</div> -->
         </div>
         <div
           v-if="upgrade.is_normal_honing"

@@ -16,11 +16,11 @@
   --bg-void: #060608;
   --bg-very-muted: #0d0d11;
   --bg-muted: #1a1a1e;
-  --bg-medium: #242429;
+  --bg-main: #242429;
   --bg-bright: #313136;
   --bg-very-bright: #383844;
 
-  --bg-input: var(--bg-medium);
+  --bg-input: var(--bg-main);
 
   --series-red: #ff0000;
   --series-blue: #6666ff;
@@ -60,4 +60,6 @@
   --font-body: Nunito;
 
   --text-2xs: 0.6rem;
+
+  --backdrop: rgba(0, 0, 0, 0.5);
 }
