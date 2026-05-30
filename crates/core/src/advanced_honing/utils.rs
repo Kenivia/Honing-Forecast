@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 use crate::upgrade::Upgrade;
 
 pub const GRACE_FIRST_N: [usize; 14] = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 15, 255];
-pub const NON_GRACE_FIRST_N: [usize; 5] = [5, 10, 20, 40, 255];
+pub const NON_GRACE_FIRST_N: [usize; 5] = [5, 10, 20, 30, 255];
 // there's an overlap so (255,0) gets included in grace_first_n)
 
 pub const MAX_ADV_STATE: usize = GRACE_FIRST_N.len() + NON_GRACE_FIRST_N.len() - 1; // -1 here because this is meant to be the max index available

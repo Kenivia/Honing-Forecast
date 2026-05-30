@@ -1,5 +1,5 @@
 import { useRosterStore } from "@/Stores/RosterConfig";
-import { Quaternary, Trinary } from "@/WasmInterface/PayloadBuilder";
+import { AdvOverride, NormalOverride } from "@/WasmInterface/PayloadBuilder";
 import { StateBundle } from "@/WasmInterface/WasmWorker";
 import { storeToRefs } from "pinia";
 
@@ -7,12 +7,13 @@ export function get_any_overwritten(): boolean {
   const { active_profile } = storeToRefs(useRosterStore());
   return (
     active_profile.value.optimizer_override.normal.juice !==
-      Trinary.Optimizer ||
-    active_profile.value.optimizer_override.normal.book !== Trinary.Optimizer ||
+      NormalOverride.Optimizer ||
+    active_profile.value.optimizer_override.normal.book !==
+      NormalOverride.Optimizer ||
     active_profile.value.optimizer_override.advanced.juice !==
-      Quaternary.Optimizer ||
+      AdvOverride.Optimizer ||
     active_profile.value.optimizer_override.advanced.scroll !==
-      Quaternary.Optimizer ||
+      AdvOverride.Optimizer ||
     active_profile.value.optimizer_override.special.optimizer !== true
   );
 }

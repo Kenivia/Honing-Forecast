@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { computed } from "vue";
-
 import { useRosterStore } from "@/Stores/RosterConfig";
 import { storeToRefs } from "pinia";
 import { JOINED_ADV_JUICE, T4_JUICE_LABELS } from "@/Utils/Constants";
@@ -214,15 +213,20 @@ const parsed_streaks = computed(() => {
 </script>
 
 <template>
-  <div class="mr-auto flex w-fit flex-row pl-3">
+  <div
+    class="mr-auto flex w-fit max-w-full flex-row overflow-x-scroll overflow-y-hidden pb-2 pl-3"
+  >
     <div
       v-for="(parsed_streak, i) in parsed_streaks"
       :key="i"
-      class="flex w-16 flex-col items-center justify-end"
+      class="flex w-16 min-w-16 flex-col items-center justify-end"
     >
       <div
         class="can-disable-icon-wrapper"
-        :class="{ disabled: !parsed_streak.juice && !parsed_streak.pity }"
+        :class="{
+          disabled: !parsed_streak.juice && !parsed_streak.pity,
+          ticked: parsed_streak.juice,
+        }"
       >
         <img
           :src="
@@ -230,7 +234,10 @@ const parsed_streaks = computed(() => {
           "
           alt="Top Mat"
           class="generic-icon h-8 w-8"
-          :class="{ disabled: !parsed_streak.juice }"
+          :class="{
+            disabled: !parsed_streak.juice,
+            ticked: parsed_streak.juice,
+          }"
         />
       </div>
 
@@ -240,13 +247,19 @@ const parsed_streaks = computed(() => {
           !parsed_streak.pity
         "
         class="can-disable-icon-wrapper"
-        :class="{ disabled: !parsed_streak.book_or_scroll }"
+        :class="{
+          disabled: !parsed_streak.book_or_scroll,
+          ticked: parsed_streak.book_or_scroll,
+        }"
       >
         <img
           :src="juice_icon_path(false)"
           alt="Bottom Mat"
           class="generic-icon h-8 w-8"
-          :class="{ disabled: !parsed_streak.book_or_scroll }"
+          :class="{
+            disabled: !parsed_streak.book_or_scroll,
+            ticked: parsed_streak.book_or_scroll,
+          }"
         />
       </div>
 

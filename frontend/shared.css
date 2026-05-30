@@ -187,6 +187,19 @@
   display: inline-block;
 }
 
+.can-disable-icon-wrapper.ticked::after {
+  content: "";
+  position: absolute;
+  bottom: 7%;
+  right: 4%;
+  width: 13%;
+  height: 25%;
+  border-right: 2px solid var(--tick-green);
+  border-bottom: 2px solid var(--tick-green);
+  transform: rotate(45deg);
+  z-index: 2;
+}
+
 .can-disable-icon-wrapper.disabled::before,
 .can-disable-icon-wrapper.disabled::after {
   content: "";

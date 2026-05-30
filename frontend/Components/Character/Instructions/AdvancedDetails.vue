@@ -130,13 +130,12 @@ watch(
       <div class="label-number-row">
         <span class="text-right">Current xp:</span>
         <input
-          class="generic-input number-border ml-2 w-13"
+          class="generic-input number-border ml-2 w-13 self-start"
           type="number"
           v-model.number="current_adv_xp"
           min="0"
           max="90"
           step="10"
-          style="justify-self: flex-start"
           @change="write_adv_progress"
         />
       </div>
@@ -155,7 +154,7 @@ watch(
         class="label-number-row"
         v-if="
           current_grace_progress === 0 &&
-          (current_adv_xp > 0 ||
+          (current_adv_xp >= 60 ||
             current_adv_upgrade > upgrade.upgrade_index * 10)
         "
       >

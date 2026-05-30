@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import Instructions from "@/Components/Character/Instructions/Instructions.vue";
 import MaterialDist from "@/Components/Character/MaterialDist/MaterialDist.vue";
 import StatusInput from "@/Components/Character/StatusInput/StatusInput.vue";
 import { useRosterStore } from "@/Stores/RosterConfig";
@@ -14,9 +13,8 @@ import Sidebar from "../Common/Sidebar.vue";
 import { start_all_workers } from "./CharWorkerUtils";
 import GraphControlPanel from "./GraphControlPanel.vue";
 import Guide from "./Guide.vue";
-import OptimizerControlPanel from "./OptimizerControlPanel.vue";
-import NormalInstructions from "./Instructions/NormalInstructions.vue";
-import AdvancedInstructions from "./Instructions/AdvancedInstructions.vue";
+import OptimizerControlPanel from "./OptimizerControlPanel/OptimizerControlPanel.vue";
+import Instructions from "@/Components/Character/Instructions/Instructions.vue";
 
 const route = useRoute();
 const router = useRouter();
@@ -79,7 +77,7 @@ onUnmounted(() => {
 </script>
 <template>
   <Sidebar
-    :width="route.path.endsWith('calc') ? 1255 : 1200"
+    :width="route.path.endsWith('calc') ? 1255 : 1201"
     :header="active_profile.char_name"
   >
     <template #sidebar="{ close }">
@@ -101,8 +99,8 @@ onUnmounted(() => {
       <StatusInput v-if="route.path.endsWith('calc')" />
       <MaterialDist v-if="route.path.endsWith('calc')" />
       <OptimizerControlPanel v-if="route.path.endsWith('calc')" />
-      <NormalInstructions v-if="route.path.endsWith('calc')" />
-      <AdvancedInstructions v-if="route.path.endsWith('calc')" />
+      <Instructions v-if="route.path.endsWith('calc')" :is_normal="true" />
+      <Instructions v-if="route.path.endsWith('calc')" :is_normal="false" />
       <div class="min-h-30"></div>
     </template>
   </Sidebar>

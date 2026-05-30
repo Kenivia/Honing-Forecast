@@ -6,22 +6,23 @@
   font-style: normal;
 }
 
-button,
-input,
-select,
-option,
-textarea,
-a {
-  font-family: Nunito;
-  -webkit-user-select: text;
+* {
+  font-family:
+    "Nunito", sans-serif; /* I can't figure out how to make the dropdowns also use Nunito, this seems to make it not use times new roman so it'll hvae to do for now */
   -moz-user-select: text;
   user-select: text;
   box-sizing: border-box;
   caret-color: auto;
 }
-
+button,
+input,
+select,
+textarea,
+optgroup {
+  font: inherit;
+}
 html {
-  font-family: Nunito;
+  font-family: "Nunito";
   font-weight: 400;
   color-scheme: light dark;
   text-rendering: optimizeLegibility;

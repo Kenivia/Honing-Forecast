@@ -33,20 +33,20 @@ export interface Payload {
   metric_type: number;
 }
 
-export enum Trinary {
+export enum NormalOverride {
   Full,
   Empty,
   Optimizer,
 }
-export enum Quaternary {
+export enum AdvOverride {
   Full,
   Grace,
   Empty,
   Optimizer,
 }
 export interface StateOverride {
-  juice: Trinary;
-  book: Trinary;
+  juice: NormalOverride;
+  book: NormalOverride;
 }
 
 // this kinda of have to work differently from stateoverride because weapon and highsest aren't independent
@@ -56,14 +56,14 @@ export interface SpecialOverride {
   highest_first: boolean;
 }
 
-export interface AdvOverride {
-  juice: Quaternary;
-  scroll: Quaternary;
+export interface AdvStateOverride {
+  juice: AdvOverride;
+  scroll: AdvOverride;
 }
 export interface OptimizerOverride {
   normal: StateOverride;
   special: SpecialOverride;
-  advanced: AdvOverride;
+  advanced: AdvStateOverride;
 }
 
 function keyed_to_array(
@@ -71,7 +71,7 @@ function keyed_to_array(
   upgrade_arr: Upgrade[] | null,
   tier: number,
   normal_override?: StateOverride,
-  adv_override?: AdvOverride,
+  adv_override?: AdvStateOverride,
 ): OneUpgradeInput[] {
   const { active_profile } = storeToRefs(useRosterStore());
 
@@ -90,20 +90,20 @@ function keyed_to_array(
       : juice_info.adv_uindex_to_id;
 
     let relevant_upgrade = relevant_id_map[upgrade.upgrade_index];
-    console.log(adv_override);
+    // console.log(adv_override);
     out.state = upgrade.state.map((x, index) =>
       upgrade.is_normal_honing
         ? [
             normal_override === undefined ||
-            normal_override.juice == Trinary.Optimizer
+            normal_override.juice == NormalOverride.Optimizer
               ? x[0]
-              : normal_override.juice == Trinary.Empty
+              : normal_override.juice == NormalOverride.Empty
                 ? false
                 : true,
             normal_override === undefined ||
-            normal_override.book == Trinary.Optimizer
+            normal_override.book == NormalOverride.Optimizer
               ? x[1]
-              : normal_override.book == Trinary.Empty
+              : normal_override.book == NormalOverride.Empty
                 ? 0
                 : relevant_upgrade[relevant_upgrade.length - 1],
           ]
@@ -111,13 +111,13 @@ function keyed_to_array(
             false,
             adv_override === undefined ||
             (index == 0 ? adv_override.juice : adv_override.scroll) ==
-              Quaternary.Optimizer
+              AdvOverride.Optimizer
               ? x[1]
               : (index == 0 ? adv_override.juice : adv_override.scroll) ==
-                  Quaternary.Empty
+                  AdvOverride.Empty
                 ? 0
                 : (index == 0 ? adv_override.juice : adv_override.scroll) ==
-                    Quaternary.Grace
+                    AdvOverride.Grace
                   ? GRACE_FIRST_N.length - 1
                   : JOINED_ADV_JUICE.length - 1,
           ],

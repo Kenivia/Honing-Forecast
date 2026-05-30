@@ -131,7 +131,6 @@ const this_data = ref(
 }
 
 .material-cell-suffix {
-  min-width: 0;
   text-align: left;
   /* justify-self: right; */
 

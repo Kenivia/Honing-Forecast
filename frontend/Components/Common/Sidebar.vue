@@ -7,7 +7,7 @@ const props = withDefaults(defineProps<{ header?: string; width: number }>(), {
   header: "",
 });
 
-const isNarrow = useMediaIsNarrow(props.width);
+const isNarrow = useMediaIsNarrow(() => props.width);
 
 const sidebarOpen = ref(false);
 const open = () => (sidebarOpen.value = true);

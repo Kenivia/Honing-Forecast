@@ -7,45 +7,46 @@ If you'd like to help with any of the below, feel free to get in touch via [Disc
 
 ## Immediate WIP
 
+- ~~merge normal and adv cos i mean its easy this way right now but it just looks so silly + the grid config technology is there already~~
+
 - work out how to do the deduction stuff again
   - deduct prior to confirm. how.
-    - should probably NOT do a dummy variable cos that sounds like pure aids, probably save a snapshot of non-slider-deducted budgets for the purpose of saving only, otherwise everything just modifies the existing stuff (as in modify on every slider change)
+    - ~~should probably NOT do a dummy variable cos that sounds like pure aids, probably save a snapshot of non-slider-deducted budgets for the purpose of saving only, otherwise everything just modifies the existing stuff (as in modify on every slider change)~~ actually i tihnk a dummy variable is necessary because of the bottoming-out thing, if it hits 0 then its gg without a dummy variable
 
 - ~~make the expanded property follow upgrade around~~
 
-- merge normal and adv cos i mean its easy this way right now but it just looks so silly + the grid config technology is there already
+- make any_overwritten slightly smarter (prolly just compare metrics)
 
-- make any_overwritten slightly smarter
+- ~~figure out why keyedstorage isn't saved / read correctly?~~
 
-- figure out why keyedstorage isn't saved / read correctly?
-
-- make normal instructions collapsible
+- make normal instructions (and other panels) collapsible
 
 - actually save & pass around cache so adv doesn't take 8 years every time
 
 - store 2 copies of market price , indexed by region, add region specification in roster page and read the appropriate prices from there
-
-- accent color not working on chrome
+  - add a region selector on the roster header
 
 - uwuowo integration (add button next to textbox to pull from uwuowo, add button on sidebar of roster setup to pull all existing chars)
 
-  - surely theres a way to not push dist to main and but push dist to production
+- ~~surely theres a way to not push dist to main and but push dist to production~~ on second thought this is NOT worth the trouble, i can live with some files in the production branch (and it also tells me what exactly got deployed if that's ever a problem). Pushing dist to main is actually kind of nice because it triggers the preview branch, so there's not really a point to tidy things up
 
-- maybe use indexdb instead of localstorage?
+- ~~accent color not working on chrome (and sliders don't have accent color on firefox?)~~ it's just not supported ig, oh well
 
 - changed graph to be rigid histograms instead of intepolating lines
 
 - copy express checkbox to roster setup also
+  - also make it more obvious, on top of materialdist maybe?
 
 - figure out how to style select options
   - figure out why tf v-tooltip disappeas on every progress update
 
-- make 2nd row of headers eventually
+- re-do guide page
 
+- make 2nd row of headers eventually ( So we have top header for page selection, sidebar for sub-page things / options, 2nd header for char selection (or roster maybe in the case of market?))
+  - change main calc's sidebar things to be scroll instead (except guide which will be a separte page)
+    - can use the same technology for changelog to make it infinite scroll maybe?
+  
 - add "About" page for various stuff like credits and stuff
-
-- use less juice for the very last tap that pushes things to 100 artisan
-  - technically there are cases (infinite juice owned) where it's better to put more than enough juice in there, so ig there needs to be like a binary state there? idk currently the state there doesn't do anything anyway so might as well make use of it
 
 ## Roadmap (big projects)
 
@@ -60,6 +61,8 @@ If you'd like to help with any of the below, feel free to get in touch via [Disc
 ### 4.9th : ~~Rework header bar~~
 
 ### 4.99th: ~~Changelog tracking~~
+
+### 4.999th: Frontend cleanup & improvements
 
 ## 5th: OCR
 
@@ -133,6 +136,8 @@ Once we have a way of evaluating them, here's some things I want to implement / 
 2. The optimal move should be relatively trivial to compute (how ever maxroll does the gold stuff) for small owned juice numbers ( and for small owned special). Surely this can be considered somehow?
 3. Some kind of adaptive thing that controls the number of iterations done. This will be very important for forecast mode when we need to run the optimizer on multiple weeks.
 
+ALSO it should be possible to do like 1 by 1 step optimization (assuming that the user do the upgrades in the same order), the question is whether or not this is necessary for like a simple markov chain like normal honing? If there's just one line of possibilities (no alternative ways to end up in the same place like adv honing, which btw is the reason why this is feasible in the first place), is the initial one guaranteed to be optimal theoretically? ig I'll see empirically once I write the deductin stuff (obv doing this across pieces is not feasible because there's many ways to end up here)
+
 This is VERY long term goal (before forecast mode tho)
 
 ## 8th: Forecast mode
@@ -162,6 +167,7 @@ Below are some rambling / brainstorming / Misc stuff
 - Make shard bag size change actually change to the other price (and manual overwrite that one bag size)
 - Show gold used for naive strategies (no juice, all juice, maybe "maxroll"(need to reverse engineer their calculations, which i should do to help the optimizer anyway) etc)
 - Mari page
+- Add a return to top button on the top of the sidebar where there's currently padding and empty space (will need it to be absolutly positioned as well)
 
 ### Misc
 
@@ -169,6 +175,11 @@ Below are some rambling / brainstorming / Misc stuff
   - also make a lot more test_payload that actually cover edge cases
 - start working on visualizing this stuff
   - put all possible states on one axis (must be small support like 5? 10? ) and sort by number of juice used, then color/ 3d height?
+
+- use less juice for the very last tap that pushes things to 100 artisan
+  - technically there are cases (infinite juice owned/ 0 juice prices) where it's better to put more than enough juice in there, so ig there needs to be like a binary state there? ~~idk currently the state there doesn't do anything anyway so might as well make use of it~~ actually the pity-1 tap does do somehting currently, so maybe store that info in the pity tap instead. That might cause issues w/ changing state length? idk maybe just an extra field in the state is needed
+
+- maybe use indexdb instead of localstorage? (this will pobably be done as part of either inventory scanning or honing luck scanning)
 
 ### Optimizations
 

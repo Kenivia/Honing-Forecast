@@ -143,10 +143,13 @@ export function grids_to_keyed(
           is_normal_honing,
           tier,
         );
+
+        // non-want ones are discarded
         if (upgrade_status === UpgradeStatus.Want) {
           if (key in all_keyed && is_one_upgrade(all_keyed[key])) {
             new_keyed[key] = all_keyed[key];
-          } else if (is_old_one_upgrade(all_keyed[key])) {
+            console.log("a", all_keyed[key]);
+          } else if (key in all_keyed && is_old_one_upgrade(all_keyed[key])) {
             const [
               piece_type,
               upgrade_index,
@@ -156,18 +159,19 @@ export function grids_to_keyed(
               unlocked,
               _succeeded,
               adv_progress,
-            ] = all_keyed[key] as unknown as OldOneUpgrade;
+            ] = all_keyed[key] as OldOneUpgrade;
             new_keyed[key] = {
               piece_type: piece_type,
               upgrade_index: upgrade_index,
               is_normal_honing: is_normal_honing,
-              starting_artisan: 0,
-              starting_num_taps: 0, // TODO technically can reverse-engineer a artisan / num taps here, but that'll need thet actual parsed Upgrade object (unless I re-implement all the logic in typescript) so maybe its not worth the hassle
+              starting_artisan: 0, // TODO technically can reverse-engineer a artisan / num taps here, but that'll need thet actual parsed Upgrade object (unless I re-implement all the logic in typescript) so maybe its not worth the hassle
+              starting_num_taps: 0,
               state: state,
               unlocked: unlocked,
               adv_progress: adv_progress,
               expanded: false,
             };
+            console.log("b", all_keyed[key]);
           } else {
             new_keyed[key] = {
               piece_type,
@@ -180,9 +184,8 @@ export function grids_to_keyed(
               adv_progress: default_adv_progress,
               expanded: false,
             };
+            console.log("c", all_keyed[key]);
           }
-        } else {
-          // note we don't delete unused ones, so when user undos 78987something it'll still be there
         }
       }
     }
@@ -203,11 +206,12 @@ function is_one_upgrade(obj: unknown): obj is OneUpgradeInput {
 
   if (
     o.starting_artisan !== undefined &&
+    o.starting_artisan !== null &&
     typeof o.starting_artisan !== "number"
   )
     return false;
 
-  if (o.state !== undefined) {
+  if (o.state !== undefined && o.state !== null) {
     if (!Array.isArray(o.state)) return false;
     for (const entry of o.state) {
       if (
@@ -220,7 +224,7 @@ function is_one_upgrade(obj: unknown): obj is OneUpgradeInput {
     }
   }
 
-  if (o.adv_progress !== undefined) {
+  if (o.adv_progress !== undefined && o.adv_progress !== null) {
     const adv = o.adv_progress;
     if (
       !Array.isArray(adv) ||
@@ -234,7 +238,7 @@ function is_one_upgrade(obj: unknown): obj is OneUpgradeInput {
   }
   return true;
 }
-function is_old_one_upgrade(foo: unknown): foo is OneUpgradeInput {
+function is_old_one_upgrade(foo: unknown): foo is OldOneUpgrade {
   if (!Array.isArray(foo) || foo.length !== 8) return false;
 
   const [f0, f1, f2, f3, f4, f5, f6, f7] = foo;

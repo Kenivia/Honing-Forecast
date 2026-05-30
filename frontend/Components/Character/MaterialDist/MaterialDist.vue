@@ -14,13 +14,14 @@ import MaterialCell from "@/Components/Common/MaterialCell.vue";
 import MaterialGraph from "./MaterialGraph.vue";
 import { storeToRefs } from "pinia";
 import { useRosterStore } from "@/Stores/RosterConfig";
-import { computed, ref, watchEffect } from "vue";
+import { computed, onMounted, ref, watchEffect } from "vue";
 import { build_payload } from "@/WasmInterface/PayloadBuilder";
 import { input_column_to_num } from "@/Utils/InputColumn";
 import { start_all_workers } from "../CharWorkerUtils";
 import { WasmOp } from "@/WasmInterface/WasmWorker";
 import { GridConfig } from "@/Utils/GridStyling";
 import { useMediaIsNarrow } from "@/Utils/WindowSize";
+import { LATEST_VERSION } from "@/Utils/Changelog.js";
 
 const { active_profile } = storeToRefs(useRosterStore());
 const {
@@ -175,6 +176,7 @@ function change_histogram_treatment(event) {
     active_profile.value.histogram_treatment_plan =
       TreatmentPlan.TreatTradableAsBound;
   }
+  set_enabled();
   selected_histogram_color.value =
     active_profile.value.histogram_treatment_plan ==
     TreatmentPlan.TreatRosterAsTradable
@@ -183,12 +185,37 @@ function change_histogram_treatment(event) {
           TreatmentPlan.TreatRosterAsBound
         ? "var(--roster)"
         : "var(--tradable)";
-  // console.log(new_val, active_profile.value.histogram_treatment_plan)
   active_profile.value.histogram_worker_bundle.throttled_start(
     WasmOp.Histogram,
     build_payload(),
   );
 }
+
+function set_enabled() {
+  if (
+    active_profile.value.histogram_treatment_plan ==
+    TreatmentPlan.TreatRosterAsTradable
+  ) {
+    enabled_annotations.value[1] = true;
+    enabled_annotations.value[2] = false;
+    enabled_annotations.value[3] = false;
+  } else if (
+    active_profile.value.histogram_treatment_plan ==
+    TreatmentPlan.TreatRosterAsBound
+  ) {
+    enabled_annotations.value[1] = false;
+    enabled_annotations.value[2] = true;
+    enabled_annotations.value[3] = false;
+  } else if (
+    active_profile.value.histogram_treatment_plan ==
+    TreatmentPlan.TreatTradableAsBound
+  ) {
+    enabled_annotations.value[1] = false;
+    enabled_annotations.value[2] = false;
+    enabled_annotations.value[3] = true;
+  }
+}
+onMounted(set_enabled); // overwrite the graph control options on load, which lowkey shouldn't even be there but whatever
 
 const annotation_values = computed(() => {
   let bound = input_column_to_num(
@@ -291,7 +318,7 @@ const is924Narrow = useMediaIsNarrow(924); // this turns out to be the width whe
             >Avg Gold used</span
           >
           <span
-            class="w-0 basis-0 origin-right transform-[translateY(4px)] text-left text-xs text-(--text-very-muted)"
+            class="w-0 basis-0 origin-right transform-[translateY(4px)] pl-px text-left text-xs text-(--text-very-muted)"
             >(tradable)</span
           >
         </div>
@@ -549,6 +576,7 @@ const is924Narrow = useMediaIsNarrow(924); // this turns out to be the width whe
   text-wrap: wrap;
   color: var(--text-very-muted);
   transform: translateY(-0.25rem);
+  padding-left: 1px;
 }
 
 /* .special-convert-guide {

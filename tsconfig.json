@@ -22,13 +22,6 @@
     },
     "types": ["vite/client"]
   },
-  "include": [
-    "frontend/**/*",
-    "crates/wasm/pkg/**/*",
-    "vite.config.ts",
-    "frontend/Components/Common/TierConvertButton.vue",
-    "junkyard/DetailedInputRow.vue",
-    "junkyard/DetailedInput.vue"
-  ],
-  "exclude": ["node_modules", "dist"]
+  "include": ["frontend/**/*", "crates/wasm/pkg/**/*", "vite.config.ts"],
+  "exclude": ["node_modules", "dist", "junkyard"]
 }

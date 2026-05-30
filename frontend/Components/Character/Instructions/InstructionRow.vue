@@ -3,14 +3,12 @@ import { useRosterStore } from "@/Stores/RosterConfig";
 import { get_piece_name, get_icon_path, toOrdinal } from "@/Utils/Helpers";
 import { storeToRefs } from "pinia";
 import { computed, ref } from "vue";
-
 import { Upgrade } from "@/Utils/KeyedUpgrades";
 import ActualInstructions from "./ActualInstructions.vue";
 import NormalDetails from "./NormalDetails.vue";
 import SuccessPopup from "./SuccessPopup.vue";
-import AdvancedDetails from "./AdvancedDetails.vue";
-import { Trinary } from "@/WasmInterface/PayloadBuilder";
 import { get_any_overwritten, get_optimizer_working } from "./InstructionUtils";
+import AdvancedDetails from "./AdvancedDetails.vue";
 
 const { active_profile } = storeToRefs(useRosterStore());
 
@@ -49,7 +47,13 @@ const should_click = computed(
       (upgrade.is_normal_honing ? "" : "Advanced ") +
       get_piece_name(upgrade) +
       " +" +
-      String((upgrade.upgrade_index + 1) * (upgrade.is_normal_honing ? 1 : 10))
+      String(upgrade.upgrade_index * (upgrade.is_normal_honing ? 1 : 10) + 1) +
+      (upgrade.is_normal_honing
+        ? ""
+        : " - " +
+          String(
+            (upgrade.upgrade_index + 1) * (upgrade.is_normal_honing ? 1 : 10),
+          ))
     }}</span>
     <img
       :src="get_icon_path(get_piece_name(upgrade))"
@@ -58,16 +62,19 @@ const should_click = computed(
     />
   </div>
 
-  <div>
+  <div v-if="upgrade.is_normal_honing">
     <div class="text-4xl">
       {{ toOrdinal(props.perform_order + 1) }}
     </div>
   </div>
 
-  <div class="flex flex-col items-center">
+  <div v-if="upgrade.is_normal_honing" class="flex flex-col items-center">
     <div
       class="can-disable-icon-wrapper"
-      :class="{ disabled: !free_tap_this_upgrade }"
+      :class="{
+        disabled: !free_tap_this_upgrade,
+        ticked: free_tap_this_upgrade,
+      }"
     >
       <img
         :src="
@@ -96,7 +103,7 @@ const should_click = computed(
   <div class="contents" v-if="!any_overwritten">
     <div class="flex w-full flex-col">
       <button
-        v-if="perform_order == 0"
+        v-if="perform_order == 0 || !upgrade.is_normal_honing"
         @click="onSucceedClick"
         class="generic-button w-full! text-wrap! text-(--achieved)!"
         :style="{
@@ -106,36 +113,43 @@ const should_click = computed(
               ? 'var(--text-main)'
               : 'var(--dont-click)',
           cursor: optimizer_working ? 'not-allowed' : 'pointer',
-          opacity: props.perform_order == 0 ? 1 : 0.5,
+          opacity:
+            (props.perform_order == 0 || !upgrade.is_normal_honing) &&
+            !optimizer_working
+              ? 1
+              : 0.5,
         }"
       >
         Succeed
       </button>
       <button
-        v-if="free_tap_this_upgrade && perform_order == 0"
+        v-if="
+          free_tap_this_upgrade &&
+          perform_order == 0 &&
+          upgrade.is_normal_honing
+        "
         @click="onSucceedClick"
         class="generic-button text-wrap! text-(--free-tap-muted)!"
       >
         All free-taps failed
       </button>
       <span
-        v-if="perform_order != 0"
+        v-if="perform_order != 0 && upgrade.is_normal_honing"
         class="annotation"
         :style="{
           color: should_click ? 'var(--text-main)' : 'var(--dont-click)',
         }"
         >You should do the upgrades above this first</span
       >
-      <!-- <span
-        v-if="free_tap_this_upgrade && perform_order != 0"
-        class="annotation"
-      >
-        You should attempt
-        <span class="text-(--free-tap)">free taps</span> on this before normal
-        honing
-      </span> -->
     </div>
     <NormalDetails
+      v-if="upgrade.is_normal_honing"
+      :upgrade="props.upgrade"
+      :perform_order="props.perform_order"
+      :free_tap_this_upgrade="free_tap_this_upgrade"
+    />
+    <AdvancedDetails
+      v-if="!upgrade.is_normal_honing"
       :upgrade="props.upgrade"
       :perform_order="props.perform_order"
       :free_tap_this_upgrade="free_tap_this_upgrade"
@@ -153,5 +167,3 @@ const should_click = computed(
     <span> &lt;&lt;&lt; FOR COMPARISON PURPOSE ONLY, DO NOT FOLLOW!</span>
   </div>
 </template>
-
-<style scoped></style>

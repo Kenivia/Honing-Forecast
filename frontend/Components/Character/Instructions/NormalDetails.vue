@@ -351,19 +351,8 @@ const upgrade_key = computed(() =>
             class="generic-button reset-button"
             @click="reset"
             :disabled="optimizer_working"
-            v-if="
-              parse_locale_float(starting_artisan) > 0 ||
-              parse_locale_float(current_chance_percentage) >
-                upgrade.base_chance * 100 + FLOAT_TOL
-            "
+            v-if="upgrade.starting_artisan > 0 || upgrade.starting_num_taps > 0"
           >
-            {{
-              console.log(
-                parse_locale_float(starting_artisan) > 0,
-                parse_locale_float(current_chance_percentage),
-                upgrade.base_chance * 100,
-              )
-            }}
             Reset this upgrade
           </button>
         </div>

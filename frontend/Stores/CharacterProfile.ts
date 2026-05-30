@@ -15,8 +15,8 @@ import { createStatusGrid } from "@/Utils/StatusGrid";
 import { KeyedUpgrades, StatusGrid } from "@/Utils/KeyedUpgrades";
 import {
   OptimizerOverride,
-  Quaternary,
-  Trinary,
+  AdvOverride,
+  NormalOverride,
 } from "@/WasmInterface/PayloadBuilder";
 
 export interface CharProfile {
@@ -101,15 +101,18 @@ export function create_default_char_profile(): CharProfile {
     material_rerender_trigger: true,
     roster_id: 0,
     optimizer_override: {
-      normal: { juice: Trinary.Optimizer, book: Trinary.Optimizer },
+      normal: {
+        juice: NormalOverride.Optimizer,
+        book: NormalOverride.Optimizer,
+      },
       special: {
         optimizer: true,
         weapon_first: true,
         highest_first: true,
       },
       advanced: {
-        juice: Quaternary.Optimizer,
-        scroll: Quaternary.Optimizer,
+        juice: AdvOverride.Optimizer,
+        scroll: AdvOverride.Optimizer,
       },
     },
   };

@@ -1,16 +1,20 @@
-import { ref, onMounted, onUnmounted, Ref } from "vue";
+import { MaybeRefOrGetter, ref, Ref, toValue, watchEffect } from "vue";
 
-export function useMediaIsNarrow(width: number): Ref<boolean, boolean> {
-  const query = `(max-width: ${String(width)}px)`;
-  const isNarrow = ref(window.matchMedia(query).matches);
+export function useMediaIsNarrow(
+  width: MaybeRefOrGetter<number>,
+): Ref<boolean> {
+  const isNarrow = ref(false);
 
-  const media = window.matchMedia(query);
-
-  const listener = () => {
+  watchEffect((onCleanup) => {
+    const media = window.matchMedia(`(max-width: ${toValue(width)}px)`);
     isNarrow.value = media.matches;
-  };
 
-  onMounted(() => media.addEventListener("change", listener));
-  onUnmounted(() => media.removeEventListener("change", listener));
+    const listener = () => {
+      isNarrow.value = media.matches;
+    };
+    media.addEventListener("change", listener);
+    onCleanup(() => media.removeEventListener("change", listener));
+  });
+
   return isNarrow;
 }

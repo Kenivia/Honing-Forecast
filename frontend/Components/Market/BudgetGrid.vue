@@ -73,7 +73,7 @@ const grids = computed((): GridConfig[] => [
   },
   {
     tier: 1,
-    grid_template_columns: "250px 100px 120px 130px",
+    grid_template_columns: "250px 100px 120px 138px",
 
     rows: ALL_LABELS[1].map((label, row) => ({
       label,
@@ -98,7 +98,7 @@ function price_suffix(label: string, row: number): string {
 <template>
   <div
     v-if="roster_config.market_rerender_trigger"
-    class="flex w-max max-w-full flex-row flex-wrap gap-2"
+    class="flex w-max max-w-full flex-row flex-wrap justify-around gap-2"
   >
     <div
       v-for="grid in grids"
@@ -167,6 +167,7 @@ function price_suffix(label: string, row: number): string {
             :row="row"
             :suffix="t4_better[row] ? 'Convert T4' : 'Buy Serca '"
             input_color="var(--gold)"
+            class="pr-2"
           />
         </div>
       </div>

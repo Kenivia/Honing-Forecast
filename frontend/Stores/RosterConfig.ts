@@ -131,7 +131,7 @@ export const DEFAULT_ROSTER_CONFIG: RosterConfig = {
   profiles: [create_default_char_profile()],
   active_profile_index: 0,
   last_seen_version: "v0.0.0",
-  enabled_annotations: [true, false, false, false],
+  enabled_annotations: [true, true, false, false],
   show_all_rows: false,
   market_fetch_failed: true,
   market_rerender_trigger: true,
@@ -249,7 +249,7 @@ export function load_roster_config(): RosterConfig {
     }
 
     out.profiles[i] = recreate_char_profile(this_parsed);
-    console.log(out.profiles[i].optimizer_override);
+    // console.log(out.profiles[i].optimizer_override);
     // console.log(parsed.profiles[i], parsed.profiles[i].tier)
   }
   out.active_profile_index = !out.active_profile_index

@@ -2,7 +2,6 @@ export const FETCH_MARKET_COOLDOWN_MS = 60 * 60 * 1000;
 export const DEFAULT_ARTISAN_MULTIPLIER = 0.4651;
 export const FLOAT_TOL = 1e-9;
 
-
 // export const BUCKET_COUNT = 50 // number of x values to evaluate when drawing the graphs
 export const ANNOTATION_COLORS = [
   "--average",
@@ -40,7 +39,7 @@ export const CSS_NAMES = ["avg", "bound", "roster-bound", "tradable"];
 
 // These must be the same as the rust side (advanced_honing/utils), will need to manually update if these change
 export const GRACE_FIRST_N = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 15, 255];
-export const NON_GRACE_FIRST_N = [5, 10, 20, 40, 255];
+export const NON_GRACE_FIRST_N = [5, 10, 20, 30, 255];
 export const JOINED_ADV_JUICE = GRACE_FIRST_N.map((x) => [x, 0]).concat(
   NON_GRACE_FIRST_N.map((x) => [255, x]),
 );
@@ -221,7 +220,7 @@ export const base_icon_map: Record<string, string> = {
     "/Icons/Materials/Serca unique/Serca Special Leapstone.png",
 
   "Forecast Icon": "/Icons/Forecast Icon.webp",
-  "Pity":"/Artist Caught.png"
+  Pity: "/Artist Caught.png",
 };
 let temp = {};
 for (const [label, path] of Object.entries(base_icon_map)) {

@@ -133,7 +133,7 @@ def build_markdown(version: str, new_commits: list[dict]) -> str:
     lines = [
         f"#{version}\n",
                "## Changes",
-                      "## Commits since last update",
+                      "## Commits ",
         "| Date | Commit Message |  Contributor | Commit  |",
         "|--------|--------|---------|------|",
     ]

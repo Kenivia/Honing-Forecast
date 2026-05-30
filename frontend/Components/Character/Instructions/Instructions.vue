@@ -4,9 +4,12 @@ import { computed, ref, watch } from "vue";
 import { useRosterStore } from "@/Stores/RosterConfig";
 import { Upgrade } from "@/Utils/KeyedUpgrades";
 import { GridConfig } from "@/Utils/GridStyling";
-import { Quaternary, Trinary } from "@/WasmInterface/PayloadBuilder";
-import NormalRow from "./NormalRow.vue";
 import { get_any_overwritten, get_optimizer_working } from "./InstructionUtils";
+import InstructionRow from "./InstructionRow.vue";
+
+const props = defineProps<{
+  is_normal: boolean;
+}>();
 
 const { active_profile } = storeToRefs(useRosterStore());
 const any_overwritten = computed(get_any_overwritten);
@@ -69,17 +72,16 @@ function sort_upgrades(): [Upgrade, number, number][] {
     }
   }
 
-  let out = output
-    .map((x, perform_order) => {
-      const upgrade = upgrade_arr[x];
-      const index_in_special = special_state.findIndex((y) => y == x);
-      return [
-        { ...upgrade, this_special_chance: special_chance_map.get(x) }, // Shallow clone
-        index_in_special,
-        perform_order,
-      ] as [Upgrade, number, number];
-    })
-    .filter((x) => x[0].is_normal_honing);
+  let out = output.map((x, perform_order) => {
+    const upgrade = upgrade_arr[x];
+    const index_in_special = special_state.findIndex((y) => y == x);
+    return [
+      { ...upgrade, this_special_chance: special_chance_map.get(x) }, // Shallow clone
+      index_in_special,
+      perform_order,
+    ] as [Upgrade, number, number];
+  });
+
   // const special_override =
   //   active_profile.value.optimizer_override.special_state;
   // if (
@@ -107,48 +109,37 @@ function sort_upgrades(): [Upgrade, number, number][] {
   return out;
 }
 
-const sorted_upgrade_arr = ref(sort_upgrades());
+function get_relevant_upgrade_arr() {
+  let out = sort_upgrades().filter(
+    ([x]) => x.is_normal_honing === props.is_normal,
+  );
+  if (!props.is_normal) {
+    out.sort(([a], [b]) => a.upgrade_index - b.upgrade_index);
+  }
+  return out;
+}
+
+const relevant_upgrade_arr = ref(get_relevant_upgrade_arr());
 //  i dont really understand why using computed for this doesn't update correctly but whatever
 watch(
   () => relevant_result.value,
   () => {
     // console.log("sort", any_overwritten.value);
-    sorted_upgrade_arr.value = sort_upgrades();
+    relevant_upgrade_arr.value = get_relevant_upgrade_arr();
   },
   { deep: true, immediate: true },
 );
 
-// const upgrade_map = computed(() =>
-//   get_upgrade_map(
-//     active_profile.value.optimizer_worker_bundle.result?.upgrade_arr ?? null,
-//     active_profile.value.tier,
-//   ),
-// );
-// const lowest_arr = computed(() =>
-//   PIECE_NAMES.map(
-//     (_, piece_type) =>
-//       upgrade_map.value.get(
-//         to_upgrade_key(
-//           piece_type,
-//           (
-//             active_profile.value.normal_grid[piece_type] as UpgradeStatus[]
-//           ).findIndex((value) => value == UpgradeStatus.Want),
-//           true,
-//           active_profile.value.tier,
-//         ),
-//       ) ?? null,
-//   ),
-// );
-
-// const lowest_upgrade_index = computed(() =>
-//   Math.min(...lowest_arr.value.map((x) => x?.upgrade_index ?? 999)),
-// );
-
-const grid: GridConfig = {
-  grid_template_columns:
-    //  66 px fits Weapon, Shoulder still doesn't fit but whatever
-    "minmax(66px, 70px) minmax(70px,110px) minmax(80px,100px) minmax(200px, max-content) 80px 370px ",
-};
+const grid: GridConfig = props.is_normal
+  ? {
+      grid_template_columns:
+        //  66 px fits Weapon, Shoulder still doesn't fit but whatever
+        "minmax(66px, 70px) minmax(70px,110px) minmax(80px,100px) minmax(200px, max-content) 80px 370px ",
+    }
+  : {
+      grid_template_columns:
+        "minmax(75px, 85px) minmax(200px, max-content) 80px 370px ",
+    };
 
 const optimizer_working = computed(get_optimizer_working);
 </script>
@@ -156,8 +147,13 @@ const optimizer_working = computed(get_optimizer_working);
   <section class="card-shell">
     <div class="card-header">
       <div class="card-title">
-        Normal Honing Instructions
+        {{
+          is_normal
+            ? "Normal Honing Instructions"
+            : "Advanced Honing Instructions"
+        }}
         {{ any_overwritten ? "(Not optimized)" : "" }}
+
         <span v-if="optimizer_working" class="text-(--text-main)">
           ({{
             active_profile.optimizer_worker_bundle.est_progress_percentage.toFixed(
@@ -175,30 +171,32 @@ const optimizer_working = computed(get_optimizer_working);
     >
       <div class="mats-row">
         <span>Upgrade</span>
-        <div class="flex w-full flex-row justify-center">
+        <div v-if="is_normal" class="flex w-full flex-row justify-center">
           <div class="ml-3 w-min text-wrap">Upgrade order</div>
           <div
             class="question-mark"
             v-tooltip.right="
-              'You should do the upgrades in the below order. (Only the order you attempt free taps actually matter, there are many equivalent orderings.)'
+              'You should do the upgrades in the below order. (Only the order in you attempt free taps actually matter, there are many equivalent orderings.)'
             "
           />
         </div>
-        <span>Special usage</span>
+        <span v-if="is_normal">Special usage</span>
         <div
           class="flex w-full flex-row flex-nowrap justify-center gap-1 px-3 text-nowrap"
         >
-          <span> Juice & book Instructions</span>
+          <span> Juice & {{ is_normal ? "book" : "scroll" }} Instructions</span>
           <div
             class="question-mark"
             v-tooltip.right="
-              'Juiced taps mean full-juice (use the maximum amount of Lava / Glacier Breath).'
+              is_normal
+                ? 'Juiced taps mean full-juice (use the maximum amount of Lava / Glacier Breath).'
+                : 'Advanced honing optimization is limited, use these instructions as a rough guide.'
             "
           />
         </div>
         <span>Succeed</span>
         <div class="flex w-full flex-row justify-center">
-          Artisan input
+          {{ is_normal ? "Artisan input" : "Progress" }}
           <div
             class="question-mark ml-2"
             v-tooltip.left="
@@ -219,16 +217,15 @@ const optimizer_working = computed(get_optimizer_working);
             upgrade,
             index_in_special_state,
             perform_order,
-          ] in sorted_upgrade_arr"
+          ] in relevant_upgrade_arr"
           :key="`instructions-${upgrade.upgrade_index}-${upgrade.piece_type}-${upgrade.is_normal_honing}`"
-          class="mats-row h-fit! py-1!"
+          class="mats-row h-fit!"
         >
-          <NormalRow
-            v-if="upgrade.is_normal_honing"
+          <InstructionRow
             :upgrade="upgrade"
             :perform_order="perform_order"
             :special_invalid_index="
-              active_profile.optimizer_worker_bundle.result
+              active_profile.histogram_worker_bundle.result.state_bundle
                 .special_invalid_index
             "
             :index_in_special_state="index_in_special_state"

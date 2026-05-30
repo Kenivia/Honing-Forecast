@@ -18,7 +18,7 @@ const route = useRoute();
       <RouterLink
         style="text-decoration: underline"
         :to="{
-          name: 'instructions',
+          name: 'calc',
           params: { characterName: route.params.characterName as string },
         }"
         >Taps Instructions</RouterLink
