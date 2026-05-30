@@ -2,7 +2,7 @@
 import { cssVar, get_icon_path } from "@/Utils/Helpers";
 import { get_modified_cell, InputColumn } from "@/Utils/InputColumn";
 
-import { computed, ref } from "vue";
+import { computed, ref, watch } from "vue";
 
 const props = defineProps<{
   input_column: InputColumn | number[];
@@ -28,16 +28,22 @@ const actual_input_width = computed(() => `${props.input_width ?? 100}px`);
 const actual_label_width = computed(() => `${props.label_width ?? 150}px`);
 const actual_icon_size = computed(() => `${props.icon_size ?? 34}px`);
 const actual_height = computed(() => `${props.height ?? 42}px`);
-const resolved_color = computed(() => {
-  return cssVar(props.input_color, props.input_color);
-});
-const this_data = ref(
+const resolved_color = computed(() =>
+  cssVar(props.input_color, props.input_color),
+);
+
+const source_value = () =>
   String(
     !Array.isArray(props.input_column)
       ? (props.input_column as InputColumn).data[props.row]
       : props.input_column[props.row],
-  ),
-);
+  );
+
+const this_data = ref(source_value());
+
+watch(source_value, (val) => {
+  this_data.value = val;
+});
 </script>
 
 <template>

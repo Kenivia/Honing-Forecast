@@ -1,8 +1,19 @@
 import { useRosterStore } from "@/Stores/RosterConfig";
-import { input_column_to_num } from "@/Utils/InputColumn";
+import { input_column_to_num, InputColumn } from "@/Utils/InputColumn";
 import { Upgrade } from "@/Utils/KeyedUpgrades";
 import { storeToRefs } from "pinia";
+import { toRaw } from "vue";
 
+export interface BudgetSnapshot {
+  bound_budgets: InputColumn[];
+  roster_mats: InputColumn[];
+  tradable_mats: InputColumn[];
+}
+export interface RemainingMats {
+  bound_budgets: number[];
+  roster_mats: number[];
+  tradable_mats: number[];
+}
 export function compute_used_materials(
   upgrade: Upgrade,
   taps_so_far: number,
@@ -15,7 +26,8 @@ export function compute_used_materials(
 
   for (let cost_type = 0; cost_type < 7; cost_type++) {
     out[cost_type] =
-      upgrade.unlock_costs[cost_type] + upgrade.costs[cost_type] * taps_so_far;
+      upgrade.unlock_costs[cost_type] +
+      upgrade.costs[cost_type] * (upgrade.starting_num_taps + taps_so_far);
   }
 
   let relevant_id_map = upgrade.is_normal_honing
@@ -35,7 +47,11 @@ export function compute_used_materials(
     if (upgrade.is_normal_honing) {
       for (
         let index = 0;
-        index < Math.min(taps_so_far, upgrade.normal_dist.length - 2);
+        index <
+        Math.min(
+          upgrade.starting_num_taps + taps_so_far,
+          upgrade.normal_dist.length - 2,
+        );
         index++
       ) {
         if (
@@ -59,49 +75,59 @@ export function compute_used_materials(
   }
   return out;
 }
-
-export function compute_remaininig_materials(used_materials: number[]) {
+export function snapshot_budgets(): BudgetSnapshot {
+  const {
+    active_profile,
+    active_roster_mats_owned,
+    active_tradable_mats_owned,
+  } = storeToRefs(useRosterStore());
+  // console.log("snap");
+  return {
+    bound_budgets: structuredClone(toRaw(active_profile.value.bound_budgets)),
+    roster_mats: structuredClone(toRaw(active_roster_mats_owned.value)),
+    tradable_mats: structuredClone(toRaw(active_tradable_mats_owned.value)),
+  };
+}
+export function compute_remaininig_materials(
+  used_materials: number[],
+  inp_previous_budget?: BudgetSnapshot,
+): RemainingMats {
   const { active_profile } = storeToRefs(useRosterStore());
-  const { active_roster_mats_owned, active_tradable_mats_owned } =
-    storeToRefs(useRosterStore());
-
+  const tier = active_profile.value.tier;
+  const previous_budgets: BudgetSnapshot = inp_previous_budget
+    ? inp_previous_budget
+    : snapshot_budgets();
   const bound_budgets: number[] = [];
   const roster_mats: number[] = [];
   const tradable_mats: number[] = [];
   used_materials.forEach((cost, index) => {
     if (cost <= 0) {
       bound_budgets.push(
-        input_column_to_num(
-          active_profile.value.bound_budgets[active_profile.value.tier],
-        )[index],
+        input_column_to_num(previous_budgets.bound_budgets[tier])[index],
       );
       roster_mats.push(
-        input_column_to_num(
-          active_roster_mats_owned.value[active_profile.value.tier],
-        )[index],
+        input_column_to_num(previous_budgets.roster_mats[tier])[index],
       );
       tradable_mats.push(
-        input_column_to_num(
-          active_tradable_mats_owned.value[active_profile.value.tier],
-        )[index],
+        input_column_to_num(previous_budgets.tradable_mats[tier])[index],
       );
       return;
     }
     let remaining_cost = cost;
     // 1. Bound
-    let bound_owned = input_column_to_num(
-      active_profile.value.bound_budgets[active_profile.value.tier],
-    )[index];
+    let bound_owned = input_column_to_num(previous_budgets.bound_budgets[tier])[
+      index
+    ];
     let deduct_bound = Math.min(bound_owned, remaining_cost);
     bound_budgets.push(Math.max(0, bound_owned - deduct_bound));
     remaining_cost -= deduct_bound;
     // 2. Roster
-    let roster_owned = input_column_to_num(
-      active_roster_mats_owned.value[active_profile.value.tier],
-    )[index];
+    let roster_owned = input_column_to_num(previous_budgets.roster_mats[tier])[
+      index
+    ];
     if (
       remaining_cost > 0 &&
-      active_roster_mats_owned.value[index] !== undefined
+      previous_budgets.roster_mats[index] !== undefined
     ) {
       let deduct_roster = Math.min(roster_owned, remaining_cost);
       roster_mats.push(Math.max(0, roster_owned - deduct_roster));
@@ -111,11 +137,11 @@ export function compute_remaininig_materials(used_materials: number[]) {
     }
     // 3. Tradable
     let tradable_owned = input_column_to_num(
-      active_tradable_mats_owned.value[active_profile.value.tier],
+      previous_budgets.tradable_mats[tier],
     )[index];
     if (
       remaining_cost > 0 &&
-      active_tradable_mats_owned.value[index] !== undefined
+      previous_budgets.tradable_mats[index] !== undefined
     ) {
       let deduct_tradable = Math.min(tradable_owned, remaining_cost);
       tradable_mats.push(Math.max(0, tradable_owned - deduct_tradable));

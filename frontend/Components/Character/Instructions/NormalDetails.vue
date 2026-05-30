@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { useRosterStore } from "@/Stores/RosterConfig";
-import { DEFAULT_ARTISAN_MULTIPLIER, FLOAT_TOL } from "@/Utils/Constants";
 import {
   clamp,
   clamp_percentage,
@@ -8,25 +7,31 @@ import {
 } from "@/Utils/Helpers";
 import { parse_locale_float } from "@/Utils/InputColumn";
 import { to_upgrade_key, Upgrade } from "@/Utils/KeyedUpgrades";
-
 import { storeToRefs } from "pinia";
-
-import { computed, ref, watch } from "vue";
+import { computed, Ref, ref, watch } from "vue";
 import { start_all_workers, start_eval_hist } from "../CharWorkerUtils";
 import { artisan_function } from "@/Utils/HoningUtil";
 import "./details.css";
 import { get_optimizer_working } from "./InstructionUtils";
-const { active_profile } = storeToRefs(useRosterStore());
+import {
+  BudgetSnapshot,
+  compute_remaininig_materials,
+  compute_used_materials,
+  RemainingMats,
+  snapshot_budgets,
+} from "./SuccessUtils";
 
+const { active_profile, active_roster_mats_owned, active_tradable_mats_owned } =
+  storeToRefs(useRosterStore());
 const props = defineProps<{
   upgrade: Upgrade;
   perform_order: number;
   free_tap_this_upgrade: boolean;
 }>();
 
-// const juice_info = computed(() => {
-//   return active_profile.value.histogram_worker_bundle.result.juice_info;
-// });
+const juice_info = computed(() => {
+  return active_profile.value.histogram_worker_bundle.result.juice_info;
+});
 
 const starting_artisan = ref(
   (props.upgrade.starting_artisan * 100).toFixed(2) || "0.00",
@@ -77,7 +82,10 @@ function write_normal_progress() {
       active_profile.value.tier,
     )
   ].starting_num_taps = using_slider.value
-    ? taps_since_last_input.value
+    ? Math.min(
+        taps_since_last_input.value + props.upgrade.starting_num_taps,
+        10,
+      )
     : current_chance_to_num_taps.value;
 }
 const current_chance_to_num_taps = computed(() => {
@@ -126,6 +134,8 @@ function manual_chance_change() {
   start_eval_hist();
 }
 
+const previous_budgets: Ref<null | BudgetSnapshot> = ref(null);
+
 function slider_input() {
   using_slider.value = true;
 
@@ -151,6 +161,46 @@ function slider_input() {
           taps_since_last_input.value + props.upgrade.starting_num_taps,
         ))
   ).toFixed(2);
+
+  const used_materials: number[] = compute_used_materials(
+    props.upgrade,
+    props.upgrade.starting_num_taps + taps_since_last_input.value,
+    juice_info.value,
+    0,
+    0,
+  );
+  if (previous_budgets.value === null) {
+    previous_budgets.value = snapshot_budgets();
+    // console.log("snap", toRaw(previous_budgets.value.bound_budgets[0].data));
+  }
+  // console.log(
+  //   "calc",
+  //   props.upgrade.starting_num_taps,
+  //   taps_since_last_input.value,
+  //   toRaw(previous_budgets.value.bound_budgets[0].data),
+  // );
+  const remaining_materials: RemainingMats = compute_remaininig_materials(
+    used_materials,
+    previous_budgets.value,
+  );
+
+  // console.log(used_materials, remaining_materials.bound_budgets);
+  const tier = active_profile.value.tier;
+  used_materials.forEach((_, index) => {
+    if (active_profile.value.bound_budgets[tier].enabled[index]) {
+      active_profile.value.bound_budgets[tier].data[index] =
+        remaining_materials.bound_budgets[index].toLocaleString();
+    }
+    if (active_roster_mats_owned.value[tier].enabled[index]) {
+      active_roster_mats_owned.value[tier].data[index] =
+        remaining_materials.roster_mats[index].toLocaleString();
+    }
+    if (active_tradable_mats_owned.value[tier].enabled[index]) {
+      active_tradable_mats_owned.value[tier].data[index] =
+        remaining_materials.tradable_mats[index].toLocaleString();
+    }
+  });
+
   write_normal_progress();
   start_eval_hist();
 }
@@ -163,6 +213,7 @@ function slider_change() {
 function confirm() {
   taps_since_last_input.value = 0;
   using_slider.value = true;
+  previous_budgets.value = null;
   start_all_workers();
 }
 const taps_since_last_input = ref(0);
@@ -190,9 +241,6 @@ const using_slider = ref(true);
 //       props.perform_order == 0;
 //   },
 // );
-const juice_info = computed(() => {
-  return active_profile.value.histogram_worker_bundle.result.juice_info;
-});
 
 const should_click = computed(
   () =>
@@ -209,7 +257,7 @@ function reset() {
   );
 
   write_normal_progress();
-  start_all_workers();
+  start_all_workers(); // starting optimizer cos the instruction needs to change
 }
 
 const upgrade_key = computed(() =>
@@ -361,7 +409,7 @@ const upgrade_key = computed(() =>
             Confirm & re-run optimizer
           </button>
         </div>
-        <div v-if="optimizer_working" class="h-19.5 max-w-20 text-wrap">
+        <div v-if="optimizer_working" class="h-17.5 max-w-20 text-wrap">
           Optimizer working ({{
             active_profile.optimizer_worker_bundle.est_progress_percentage.toFixed(
               2,

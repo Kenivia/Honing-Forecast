@@ -11,7 +11,7 @@ If you'd like to help with any of the below, feel free to get in touch via [Disc
 
 - work out how to do the deduction stuff again
   - deduct prior to confirm. how.
-    - ~~should probably NOT do a dummy variable cos that sounds like pure aids, probably save a snapshot of non-slider-deducted budgets for the purpose of saving only, otherwise everything just modifies the existing stuff (as in modify on every slider change)~~ actually i tihnk a dummy variable is necessary because of the bottoming-out thing, if it hits 0 then its gg without a dummy variable
+    - ~~should probably NOT do a dummy variable cos that sounds like pure aids, probably save a snapshot of non-slider-deducted budgets for the purpose of saving only, otherwise everything just modifies the existing stuff (as in modify on every slider change)~~ ~~actually i tihnk a dummy variable is necessary because of the bottoming-out thing, if it hits 0 then its gg without a dummy variable~~ nvm!
 
 - ~~make the expanded property follow upgrade around~~
 
@@ -47,6 +47,8 @@ If you'd like to help with any of the below, feel free to get in touch via [Disc
     - can use the same technology for changelog to make it infinite scroll maybe?
   
 - add "About" page for various stuff like credits and stuff
+
+- some hoverable details on juice & whatnot
 
 ## Roadmap (big projects)
 

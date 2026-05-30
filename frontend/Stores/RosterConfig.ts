@@ -266,18 +266,18 @@ function stringifyOmit(obj: RosterConfig, keys: string[]): string {
   );
 }
 export function write_roster_config(state) {
-  try {
-    localStorage.setItem(
-      STORAGE_KEY + "_roster",
-      stringifyOmit(state.roster_config, [
-        "optimizer_worker_bundle",
-        "histogram_worker_bundle",
-        "optimizer_override",
-      ]),
-    );
-  } catch {
-    console.log(JSON.stringify(state.roster_config));
-  }
+  // try {
+  //   localStorage.setItem(
+  //     STORAGE_KEY + "_roster",
+  //     stringifyOmit(state.roster_config, [
+  //       "optimizer_worker_bundle",
+  //       "histogram_worker_bundle",
+  //       "optimizer_override",
+  //     ]),
+  //   );
+  // } catch {
+  //   console.log(JSON.stringify(state.roster_config));
+  // }
 }
 
 export const debounced_write_roster_config = debounce(write_roster_config, 500);
