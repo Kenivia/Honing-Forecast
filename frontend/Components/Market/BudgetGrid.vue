@@ -11,7 +11,7 @@ import { storeToRefs } from "pinia";
 import MaterialCell from "@/Components/Common/MaterialCell.vue";
 import { computed, watch, watchEffect } from "vue";
 import { input_column_to_num } from "@/Utils/InputColumn";
-import { force_rerender } from "./MarketUtil";
+
 import { GridConfig } from "@/Utils/GridStyling";
 
 const roster_store = useRosterStore();
@@ -56,7 +56,6 @@ watch(
       roster_store.active_roster_mats_owned[1].data[serca_index] =
         roster_store.active_roster_mats_owned[0].data[T4_index];
     }
-    force_rerender();
   },
   { deep: false, immediate: true },
 );
@@ -96,10 +95,7 @@ function price_suffix(label: string, row: number): string {
 </script>
 
 <template>
-  <div
-    v-if="roster_config.market_rerender_trigger"
-    class="flex w-max max-w-full flex-row flex-wrap justify-around gap-2"
-  >
+  <div class="flex w-max max-w-full flex-row flex-wrap justify-around gap-2">
     <div
       v-for="grid in grids"
       :key="grid.tier"

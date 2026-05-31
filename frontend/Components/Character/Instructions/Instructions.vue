@@ -134,11 +134,11 @@ const grid: GridConfig = props.is_normal
   ? {
       grid_template_columns:
         //  66 px fits Weapon, Shoulder still doesn't fit but whatever
-        "minmax(66px, 70px) minmax(70px,110px) minmax(80px,100px) minmax(200px, max-content) 80px 370px ",
+        "minmax(66px, 70px) minmax(70px,110px) minmax(80px,100px) minmax(200px, max-content) max-content",
     }
   : {
       grid_template_columns:
-        "minmax(75px, 85px) minmax(200px, max-content) 80px 370px ",
+        "minmax(75px, 85px) minmax(200px, max-content)  80px   max-content",
     };
 
 const optimizer_working = computed(get_optimizer_working);
@@ -163,8 +163,9 @@ const optimizer_working = computed(get_optimizer_working);
         >
       </div>
     </div>
+    <!-- 241 to match materialdist -->
     <div
-      class="card-body outer-grid"
+      class="card-body outer-grid min-w-241"
       :style="{
         '--grid-cols': grid.grid_template_columns,
       }"
@@ -176,7 +177,7 @@ const optimizer_working = computed(get_optimizer_working);
           <div
             class="question-mark"
             v-tooltip.right="
-              'You should do the upgrades in the below order. (Only the order in you attempt free taps actually matter, there are many equivalent orderings.)'
+              'The purpose of this is to do the Free Taps in the specified order. There are many other equivalent orderings.'
             "
           />
         </div>
@@ -191,16 +192,6 @@ const optimizer_working = computed(get_optimizer_working);
               is_normal
                 ? 'Juiced taps mean full-juice (use the maximum amount of Lava / Glacier Breath).'
                 : 'Advanced honing optimization is limited, use these instructions as a rough guide.'
-            "
-          />
-        </div>
-        <span>Succeed</span>
-        <div class="flex w-full flex-row justify-center">
-          {{ is_normal ? "Artisan input" : "Progress" }}
-          <div
-            class="question-mark ml-2"
-            v-tooltip.left="
-              'This is optional - updating your progress may produce instructions that save slightly more gold.'
             "
           />
         </div>

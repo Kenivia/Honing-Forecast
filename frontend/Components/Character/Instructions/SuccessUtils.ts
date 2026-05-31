@@ -16,7 +16,7 @@ export interface RemainingMats {
 }
 export function compute_used_materials(
   upgrade: Upgrade,
-  taps_so_far: number,
+  taps_since_last_run: number,
   juice_info: any,
   adv_juice_used: number,
   adv_scroll_used: number,
@@ -27,7 +27,7 @@ export function compute_used_materials(
   for (let cost_type = 0; cost_type < 7; cost_type++) {
     out[cost_type] =
       upgrade.unlock_costs[cost_type] +
-      upgrade.costs[cost_type] * (upgrade.starting_num_taps + taps_so_far);
+      upgrade.costs[cost_type] * taps_since_last_run;
   }
 
   let relevant_id_map = upgrade.is_normal_honing
@@ -47,11 +47,7 @@ export function compute_used_materials(
     if (upgrade.is_normal_honing) {
       for (
         let index = 0;
-        index <
-        Math.min(
-          upgrade.starting_num_taps + taps_so_far,
-          upgrade.normal_dist.length - 2,
-        );
+        index < Math.min(taps_since_last_run, upgrade.normal_dist.length - 2);
         index++
       ) {
         if (

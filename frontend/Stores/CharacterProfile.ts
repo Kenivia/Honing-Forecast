@@ -45,8 +45,6 @@ export interface CharProfile {
   min_resolution: number; // currently not used (always 1)
   num_threads: number; // currently not used (always 1)
   metric_type: number; // currently not used (always 1)
-  material_rerender_trigger: boolean; // This is here to trigger an update in the special cell in MaterialDist from the change in the confirmation popup in InstructionRow
-
   optimizer_override: OptimizerOverride;
 }
 
@@ -98,7 +96,7 @@ export function create_default_char_profile(): CharProfile {
     min_resolution: 1,
     num_threads: 1,
     metric_type: 1,
-    material_rerender_trigger: true,
+
     roster_id: 0,
     optimizer_override: {
       normal: {

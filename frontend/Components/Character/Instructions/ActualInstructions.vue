@@ -6,6 +6,7 @@ import { JOINED_ADV_JUICE, T4_JUICE_LABELS } from "@/Utils/Constants";
 import { get_icon_path, toOrdinal } from "@/Utils/Helpers";
 import { Upgrade } from "@/Utils/KeyedUpgrades";
 import { artisan_function } from "@/Utils/HoningUtil";
+import { get_optimizer_working } from "./InstructionUtils";
 
 const { active_profile } = storeToRefs(useRosterStore());
 const props = defineProps<{
@@ -210,11 +211,17 @@ const parsed_streaks = computed(() => {
   }
   return out;
 });
+
+const optimizer_working = computed(get_optimizer_working);
 </script>
 
 <template>
   <div
     class="mr-auto flex w-fit max-w-full flex-row overflow-x-scroll overflow-y-hidden pb-2 pl-3"
+    :style="{
+      cursor: optimizer_working ? 'not-allowed' : 'pointer',
+      opacity: !optimizer_working ? 1 : 0.5,
+    }"
   >
     <div
       v-for="(parsed_streak, i) in parsed_streaks"

@@ -8,7 +8,6 @@ import { fetch_callback, useTimedFetch } from "@/Utils/MarketDataFetcher";
 import { input_column_to_num, parse_input } from "@/Utils/InputColumn";
 import Sidebar from "../Common/Sidebar.vue";
 import BudgetGrid from "./BudgetGrid.vue";
-import { force_rerender } from "./MarketUtil";
 
 const roster_store = useRosterStore();
 const {
@@ -22,7 +21,6 @@ const {
 
 const { disabled, start_fetch } = useTimedFetch((result, selected, price) => {
   fetch_callback(result, selected, price);
-  force_rerender();
 });
 
 function convert_roster_mats_to_serca() {
@@ -60,7 +58,6 @@ function convert_roster_mats_to_serca() {
       active_roster_mats_owned.value[0].data[T4_index] = "0";
     }
   }
-  force_rerender();
 }
 watchEffect(() => {
   let t4_price = input_column_to_num(roster_store.roster_config.mats_prices[0]);
@@ -100,7 +97,6 @@ function change_roster(event) {
   roster_store.switchProfile(
     representative_profile_indices.value[event.target.value],
   );
-  force_rerender();
 }
 
 const T4_indices_to_watch = SERCA_SYNC_MAP.map(({ T4_index }) => T4_index);
@@ -122,7 +118,6 @@ watch(
       roster_store.active_roster_mats_owned[1].data[serca_index] =
         roster_store.active_roster_mats_owned[0].data[T4_index];
     }
-    force_rerender();
   },
   { deep: false, immediate: true },
 );

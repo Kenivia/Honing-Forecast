@@ -91,37 +91,39 @@ function keyed_to_array(
 
     let relevant_upgrade = relevant_id_map[upgrade.upgrade_index];
     // console.log(adv_override);
-    out.state = upgrade.state.map((x, index) =>
-      upgrade.is_normal_honing
-        ? [
-            normal_override === undefined ||
-            normal_override.juice == NormalOverride.Optimizer
-              ? x[0]
-              : normal_override.juice == NormalOverride.Empty
-                ? false
-                : true,
-            normal_override === undefined ||
-            normal_override.book == NormalOverride.Optimizer
-              ? x[1]
-              : normal_override.book == NormalOverride.Empty
-                ? 0
-                : relevant_upgrade[relevant_upgrade.length - 1],
-          ]
-        : [
-            false,
-            adv_override === undefined ||
-            (index == 0 ? adv_override.juice : adv_override.scroll) ==
-              AdvOverride.Optimizer
-              ? x[1]
-              : (index == 0 ? adv_override.juice : adv_override.scroll) ==
-                  AdvOverride.Empty
-                ? 0
+    out.state = upgrade.state
+      .slice(out.taps_since_last_input)
+      .map((x, index) =>
+        upgrade.is_normal_honing
+          ? [
+              normal_override === undefined ||
+              normal_override.juice == NormalOverride.Optimizer
+                ? x[0]
+                : normal_override.juice == NormalOverride.Empty
+                  ? false
+                  : true,
+              normal_override === undefined ||
+              normal_override.book == NormalOverride.Optimizer
+                ? x[1]
+                : normal_override.book == NormalOverride.Empty
+                  ? 0
+                  : relevant_upgrade[relevant_upgrade.length - 1],
+            ]
+          : [
+              false,
+              adv_override === undefined ||
+              (index == 0 ? adv_override.juice : adv_override.scroll) ==
+                AdvOverride.Optimizer
+                ? x[1]
                 : (index == 0 ? adv_override.juice : adv_override.scroll) ==
-                    AdvOverride.Grace
-                  ? GRACE_FIRST_N.length - 1
-                  : JOINED_ADV_JUICE.length - 1,
-          ],
-    );
+                    AdvOverride.Empty
+                  ? 0
+                  : (index == 0 ? adv_override.juice : adv_override.scroll) ==
+                      AdvOverride.Grace
+                    ? GRACE_FIRST_N.length - 1
+                    : JOINED_ADV_JUICE.length - 1,
+            ],
+      );
     return out;
   });
 }

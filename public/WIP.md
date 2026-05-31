@@ -7,25 +7,27 @@ If you'd like to help with any of the below, feel free to get in touch via [Disc
 
 ## Immediate WIP
 
+- ~~fix success popup~~ nvm
+- Figure out how to do the
+
 - make normal instructions (and other panels) collapsible
 
 - actually save & pass around cache so adv doesn't take 8 years every time
 
-- store 2 copies of market price , indexed by region, add region specification in roster page and read the appropriate prices from there
-  - add a region selector on the roster header
+- "Char info" or something panel, above(or below?) statusinput, which will contain:
+  - store 2 copies of market price , indexed by region, add region specification in roster page and read the appropriate prices from there
+    - add a region selector on the roster header
 
-- uwuowo integration (add button next to textbox to pull from uwuowo, add button on sidebar of roster setup to pull all existing chars)
+  - uwuowo integration (add button next to textbox to pull from uwuowo, add button on sidebar of roster setup to pull all existing chars)
+  - copy express checkbox to roster setup also
+    - also make it more obvious, on top of materialdist maybe?
 
-- ~~surely theres a way to not push dist to main and but push dist to production~~ on second thought this is NOT worth the trouble, i can live with some files in the production branch (and it also tells me what exactly got deployed if that's ever a problem). Pushing dist to main is actually kind of nice because it triggers the preview branch, so there's not really a point to tidy things up
-
-- ~~accent color not working on chrome (and sliders don't have accent color on firefox?)~~ it's just not supported ig, oh well
-
+  - prolly move achieved ilevel & stuff here also so that
+  - make a copy button here
+  
 - changed graph to be rigid histograms instead of intepolating lines
 
-- copy express checkbox to roster setup also
-  - also make it more obvious, on top of materialdist maybe?
-
-- figure out how to style select options
+- ~~figure out how to style select options~~
   - figure out why tf v-tooltip disappeas on every progress update
 
 - re-do guide page
@@ -178,6 +180,9 @@ Below are some rambling / brainstorming / Misc stuff
 
 ## Done / cancelled
 
+- ~~accent color not working on chrome (and sliders don't have accent color on firefox?)~~ it's just not supported ig, oh well
+
+- ~~surely theres a way to not push dist to main and but push dist to production~~ on second thought this is NOT worth the trouble, i can live with some files in the production branch (and it also tells me what exactly got deployed if that's ever a problem). Pushing dist to main is actually kind of nice because it triggers the preview branch, so there's not really a point to tidy things up
 - ~~merge normal and adv cos i mean its easy this way right now but it just looks so silly + the grid config technology is there already~~
 
 - ~~work out how to do the deduction stuff again~~

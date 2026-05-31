@@ -127,11 +127,11 @@ watchEffect(() => {
 });
 
 const bound_chance_text =
-  "Chance to succeed all upgrades before running out of Char-Bound material of this type";
+  "Chance to succeed all upgrades with Char-Bound material";
 const roster_chance_text =
-  "Chance to succeed all upgrades before running out of Roster-Bound material of this type";
+  "Chance to succeed all upgrades with Roster-Bound material";
 const tradable_chance_text =
-  "Chance to succeed all upgrades before running out of Tradable material of this type";
+  "Chance to succeed all upgrades with Tradable material";
 // const chance_explainer_text = computed(() =>
 //   active_profile.value.histogram_treatment_plan ==
 //   TreatmentPlan.TreatTradableAsBound
@@ -330,8 +330,7 @@ const is924Narrow = useMediaIsNarrow(924); // this turns out to be the width whe
         v-if="
           ALL_LABELS[active_profile.tier].length ==
             active_profile.bound_budgets[active_profile.tier].data.length &&
-          active_profile.histogram_worker_bundle.result &&
-          active_profile.material_rerender_trigger
+          active_profile.histogram_worker_bundle.result
         "
         class="contents"
       >

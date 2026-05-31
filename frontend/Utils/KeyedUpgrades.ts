@@ -87,6 +87,7 @@ export interface OneUpgradeInput {
 
   // This is here because 1. it needs to persist through optimizser runs and 2. extra fields are ignored by serde so its perfect
   expanded: boolean;
+  taps_since_last_input: number;
 }
 
 export type OneUpgradeKey = `${number},${number},${"true" | "false"},${number}`;
@@ -170,6 +171,7 @@ export function grids_to_keyed(
               unlocked: unlocked,
               adv_progress: adv_progress,
               expanded: false,
+              taps_since_last_input: 0,
             };
             console.log("b", all_keyed[key]);
           } else {
@@ -183,6 +185,7 @@ export function grids_to_keyed(
               unlocked: false,
               adv_progress: default_adv_progress,
               expanded: false,
+              taps_since_last_input: 0,
             };
             console.log("c", all_keyed[key]);
           }
@@ -203,6 +206,7 @@ function is_one_upgrade(obj: unknown): obj is OneUpgradeInput {
   if (typeof o.is_normal_honing !== "boolean") return false;
   if (typeof o.unlocked !== "boolean") return false;
   if (typeof o.expanded !== "boolean") return false;
+  if (typeof o.taps_since_last_input !== "number") return false;
 
   if (
     o.starting_artisan !== undefined &&

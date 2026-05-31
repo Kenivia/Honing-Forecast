@@ -31,7 +31,7 @@ export function createWorkerBundle() {
     throttle_timer = setTimeout(() => {
       throttle_ready = true;
       _try_flush_throttle();
-    }, 500);
+    }, 200);
 
     _launch(wasm_op, payload, false, () => {
       // if (throttle_pending) {  this check's unnecessary cos the inside checks anyway

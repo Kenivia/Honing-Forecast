@@ -36,7 +36,6 @@ export interface RosterConfig {
   enabled_annotations: boolean[];
   show_all_rows: boolean;
   market_fetch_failed: boolean;
-  market_rerender_trigger: boolean;
 }
 export const useRosterStore = defineStore("roster", {
   state: () => ({
@@ -74,6 +73,7 @@ export const useRosterStore = defineStore("roster", {
       return state.roster_config.enabled_annotations;
     },
   },
+
   actions: {
     init() {
       this.roster_config = load_roster_config();
@@ -134,7 +134,6 @@ export const DEFAULT_ROSTER_CONFIG: RosterConfig = {
   enabled_annotations: [true, true, false, false],
   show_all_rows: false,
   market_fetch_failed: true,
-  market_rerender_trigger: true,
 };
 
 export function load_roster_config(): RosterConfig {
@@ -234,7 +233,6 @@ export function load_roster_config(): RosterConfig {
 
     this_parsed.tier =
       this_parsed.tier === 0 || this_parsed.tier === 1 ? this_parsed.tier : 0;
-    this_parsed.material_rerender_trigger = true;
 
     this_parsed.min_resolution = default_profile.min_resolution;
     this_parsed.num_threads = default_profile.num_threads;
@@ -255,7 +253,6 @@ export function load_roster_config(): RosterConfig {
   out.active_profile_index = !out.active_profile_index
     ? 0
     : Math.max(0, Math.min(out.profiles.length - 1, out.active_profile_index));
-  out.market_rerender_trigger = true;
   return { ...DEFAULT_ROSTER_CONFIG, ...out };
 }
 

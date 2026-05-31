@@ -158,14 +158,14 @@
   justify-content: center;
   align-self: center;
   font-weight: bold;
-  background-color: AccentColor;
-  color: AccentColorText;
+  background-color: var(--text-bright);
+  color: var(--bg-void);
   font-size: 12px;
-  cursor: default;
 }
 
 .question-mark::after {
   content: "?";
+  font-weight: 700;
 }
 .annotation {
   color: var(--text-muted);
