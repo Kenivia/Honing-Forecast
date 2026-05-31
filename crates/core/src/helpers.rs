@@ -13,10 +13,10 @@ use std::io::{BufWriter, Error, Write};
 pub fn distribute_budgets(material_info: &MaterialInput, plan: &[usize]) -> MaterialInput {
     let mut pass_1: MaterialInput =
         vec![vec![(0.0_f64, f64::NAN); material_info[0].len()]; material_info.len()];
-    for (support_index, treatments) in material_info.iter().enumerate() {
-        for (plan_index, (owned, price)) in treatments.iter().enumerate() {
-            pass_1[support_index][plan[plan_index]].0 += owned;
-            pass_1[support_index][plan[plan_index]].1 = *price;
+    for (support_index, thresh_price_pairs) in material_info.iter().enumerate() {
+        for (thresh_index, (owned, _)) in thresh_price_pairs.iter().enumerate() {
+            pass_1[support_index][plan[thresh_index]].0 += owned;
+            pass_1[support_index][plan[thresh_index]].1 = thresh_price_pairs[plan[thresh_index]].1;
         }
     }
     // my_dbg!(&pass_1);

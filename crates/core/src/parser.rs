@@ -3,9 +3,9 @@ use crate::constants::accessor::{
     get_artisan, get_data, get_event_extra_chance, get_normal_hone_chances, get_special_leap_cost,
 };
 use crate::constants::juice_info::{JuiceInfo, get_priced_juice_info};
-use crate::constants::*;
 use crate::helpers::distribute_budgets;
 use crate::upgrade::Upgrade;
+use crate::{constants::*, my_dbg};
 use ahash::AHashMap;
 use serde::{Deserialize, Serialize};
 
@@ -13,11 +13,9 @@ use serde::{Deserialize, Serialize};
 pub struct PreparationOutput {
     pub special_budget: i64,
     pub raw_material_info: MaterialInput,
-
     pub optimizer_plan: Vec<usize>,
     pub optimizer_material_info: MaterialInput,
     pub raw_num_breakpoints: usize,
-
     pub test_case: i64,
     pub juice_info: JuiceInfo,
 }
@@ -66,15 +64,19 @@ impl PreparationOutput {
             inp_optimizer_plan.unwrap()
         };
         let optimizer_material_info = distribute_budgets(&raw_material_info, &optimizer_plan);
-
-        let num_breakpoints = raw_material_info[0].len();
-        assert!(num_breakpoints > 0);
+        // my_dbg!(
+        //     &raw_material_info,
+        //     &optimizer_material_info,
+        //     &optimizer_plan
+        // );
+        let raw_num_breakpoints = raw_material_info[0].len();
+        assert!(raw_num_breakpoints > 0);
         let out: PreparationOutput = Self {
             // upgrade_arr,
             raw_material_info,
             optimizer_material_info,
             optimizer_plan,
-            raw_num_breakpoints: num_breakpoints,
+            raw_num_breakpoints,
             special_budget,
             test_case: -1, // arena will overwrite this
             juice_info,

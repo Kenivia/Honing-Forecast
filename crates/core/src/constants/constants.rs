@@ -6,7 +6,7 @@ use once_cell::sync::Lazy;
 
 pub type TreatmentsType = [usize; 4];
 pub const UI_TREATMENTS: [TreatmentsType; 2] = [
-    [0, 1, 1, 1], // char-bound <bound| roster <bound| tradable <bound| market
+    [0, 1, 1, 3], // char-bound <bound| roster <bound| tradable <bound| market
     [0, 1, 2, 3], //  char-bound <bound| roster <bound| tradable <trade| market
 ];
 

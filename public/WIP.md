@@ -7,18 +7,6 @@ If you'd like to help with any of the below, feel free to get in touch via [Disc
 
 ## Immediate WIP
 
-- ~~merge normal and adv cos i mean its easy this way right now but it just looks so silly + the grid config technology is there already~~
-
-- work out how to do the deduction stuff again
-  - deduct prior to confirm. how.
-    - ~~should probably NOT do a dummy variable cos that sounds like pure aids, probably save a snapshot of non-slider-deducted budgets for the purpose of saving only, otherwise everything just modifies the existing stuff (as in modify on every slider change)~~ ~~actually i tihnk a dummy variable is necessary because of the bottoming-out thing, if it hits 0 then its gg without a dummy variable~~ nvm!
-
-- ~~make the expanded property follow upgrade around~~
-
-- make any_overwritten slightly smarter (prolly just compare metrics)
-
-- ~~figure out why keyedstorage isn't saved / read correctly?~~
-
 - make normal instructions (and other panels) collapsible
 
 - actually save & pass around cache so adv doesn't take 8 years every time
@@ -189,6 +177,18 @@ Below are some rambling / brainstorming / Misc stuff
 - advanced hoinging caching / pre-calculating, maybe also special
 
 ## Done / cancelled
+
+- ~~merge normal and adv cos i mean its easy this way right now but it just looks so silly + the grid config technology is there already~~
+
+- ~~work out how to do the deduction stuff again~~
+  - ~~deduct prior to confirm. how.~~
+    - ~~should probably NOT do a dummy variable cos that sounds like pure aids, probably save a snapshot of non-slider-deducted budgets for the purpose of saving only, otherwise everything just modifies the existing stuff (as in modify on every slider change)~~ ~~actually i tihnk a dummy variable is necessary because of the bottoming-out thing, if it hits 0 then its gg without a dummy variable~~ nvm!
+
+- ~~make the expanded property follow upgrade around~~
+
+- ~~make any_overwritten slightly smarter (prolly just compare metrics)~~
+
+- ~~figure out why keyedstorage isn't saved / read correctly?~~
 
 - ~~add special icon to instruction~~
 

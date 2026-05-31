@@ -459,7 +459,12 @@ const is924Narrow = useMediaIsNarrow(924); // this turns out to be the width whe
         <span class="metric-result text-(--gold)">
           {{
             metric_to_text(
-              active_profile.histogram_worker_bundle.result?.metrics_arr[0],
+              active_profile.histogram_worker_bundle.result?.metrics_arr[
+                active_profile.optimizer_treatment_plan ===
+                TreatmentPlan.TreatRosterAsBound
+                  ? 0
+                  : 1
+              ],
             )
           }}
         </span>

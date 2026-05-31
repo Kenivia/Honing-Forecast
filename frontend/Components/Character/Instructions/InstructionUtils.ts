@@ -1,4 +1,6 @@
+import { TreatmentPlan } from "@/Stores/CharacterProfile";
 import { useRosterStore } from "@/Stores/RosterConfig";
+import { FLOAT_TOL } from "@/Utils/Constants";
 import { AdvOverride, NormalOverride } from "@/WasmInterface/PayloadBuilder";
 import { StateBundle } from "@/WasmInterface/WasmWorker";
 import { storeToRefs } from "pinia";
@@ -6,15 +8,24 @@ import { storeToRefs } from "pinia";
 export function get_any_overwritten(): boolean {
   const { active_profile } = storeToRefs(useRosterStore());
   return (
-    active_profile.value.optimizer_override.normal.juice !==
+    (active_profile.value.optimizer_override.normal.juice !==
       NormalOverride.Optimizer ||
-    active_profile.value.optimizer_override.normal.book !==
-      NormalOverride.Optimizer ||
-    active_profile.value.optimizer_override.advanced.juice !==
-      AdvOverride.Optimizer ||
-    active_profile.value.optimizer_override.advanced.scroll !==
-      AdvOverride.Optimizer ||
-    active_profile.value.optimizer_override.special.optimizer !== true
+      active_profile.value.optimizer_override.normal.book !==
+        NormalOverride.Optimizer ||
+      active_profile.value.optimizer_override.advanced.juice !==
+        AdvOverride.Optimizer ||
+      active_profile.value.optimizer_override.advanced.scroll !==
+        AdvOverride.Optimizer ||
+      active_profile.value.optimizer_override.special.optimizer !== true) &&
+    Math.abs(
+      active_profile.value.optimizer_worker_bundle.result.metric -
+        active_profile.value.histogram_worker_bundle.result?.metrics_arr[
+          active_profile.value.optimizer_treatment_plan ===
+          TreatmentPlan.TreatRosterAsBound
+            ? 1
+            : 0 // this is the other way round from what's shown in the UI
+        ],
+    ) > FLOAT_TOL
   );
 }
 export function get_optimizer_working(): boolean {
