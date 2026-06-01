@@ -2,7 +2,7 @@
 import { useRosterStore } from "@/Stores/RosterConfig";
 import { get_piece_name, get_icon_path, toOrdinal } from "@/Utils/Helpers";
 import { storeToRefs } from "pinia";
-import { computed, ref } from "vue";
+import { computed } from "vue";
 import { to_upgrade_key, Upgrade } from "@/Utils/KeyedUpgrades";
 import ActualInstructions from "./ActualInstructions.vue";
 import NormalDetails from "./NormalDetails.vue";
@@ -31,17 +31,18 @@ const free_tap_this_upgrade = computed(() => {
 
 <template>
   <div class="flex flex-col items-center">
-    <span>{{
-      (upgrade.is_normal_honing ? "" : "Advanced ") +
-      get_piece_name(upgrade) +
+    <span v-if="upgrade.is_normal_honing">{{
+      get_piece_name(upgrade) + " +" + String(upgrade.upgrade_index + 1)
+    }}</span>
+
+    <span v-if="!upgrade.is_normal_honing"
+      >{{ get_piece_name(upgrade) + " Advanced " }}
+    </span>
+    <span v-if="!upgrade.is_normal_honing">{{
       " +" +
-      String(upgrade.upgrade_index * (upgrade.is_normal_honing ? 1 : 10) + 1) +
-      (upgrade.is_normal_honing
-        ? ""
-        : " - " +
-          String(
-            (upgrade.upgrade_index + 1) * (upgrade.is_normal_honing ? 1 : 10),
-          ))
+      String(upgrade.upgrade_index * 10 + 1) +
+      " - " +
+      String((upgrade.upgrade_index + 1) * 10)
     }}</span>
     <img
       :src="get_icon_path(get_piece_name(upgrade))"
@@ -81,7 +82,7 @@ const free_tap_this_upgrade = computed(() => {
       {{
         free_tap_this_upgrade
           ? "Free tap this until you run out or succeed"
-          : "Do not use special tap on this upgrade"
+          : "Do not use special leaps on this upgrade"
       }}
     </span>
   </div>

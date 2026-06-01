@@ -6,6 +6,8 @@ import { computed, ref, watch } from "vue";
 import { start_all_workers, start_eval_hist } from "../CharWorkerUtils";
 import "./details.css";
 import { get_optimizer_working } from "./InstructionUtils";
+import { GridConfig } from "@/Utils/GridStyling";
+import { locale_to_fixed } from "@/Utils/Helpers";
 
 const { active_profile } = storeToRefs(useRosterStore());
 
@@ -112,94 +114,124 @@ watch(
   },
   { immediate: true },
 );
+const grid: GridConfig = {
+  grid_template_columns: "125px 70px 120px",
+};
 </script>
 <template>
-  <div class="outer-details-grid">
-    <div class="label-number-grid">
-      <div class="label-number-row">
-        <span class="text-right">Current upgrade:</span>
-        <input
-          class="generic-input number-border ml-2 w-13"
-          type="number"
-          v-model.number="current_adv_upgrade"
-          :min="upgrade.upgrade_index * 10"
-          :max="(upgrade.upgrade_index + 1) * 10 - 1"
-          @change="write_adv_progress"
-        />
-      </div>
-      <div class="label-number-row">
-        <span class="text-right">Current xp:</span>
-        <input
-          class="generic-input number-border ml-2 w-13 self-start"
-          type="number"
-          v-model.number="current_adv_xp"
-          min="0"
-          max="90"
-          step="10"
-          @change="write_adv_progress"
-        />
-      </div>
-      <div class="label-number-row">
-        <span class="text-right">Grace progress:</span>
-        <input
-          class="generic-input number-border ml-2 w-13"
-          type="number"
-          v-model.number="current_grace_progress"
-          min="0"
-          max="6"
-          @change="write_adv_progress"
-        />
-      </div>
-      <div
-        class="label-number-row"
-        v-if="
-          current_grace_progress === 0 &&
-          (current_adv_xp >= 60 ||
-            current_adv_upgrade > upgrade.upgrade_index * 10)
-        "
+  <div
+    class="grid w-full pl-5"
+    :style="{
+      gridTemplateColumns: grid.grid_template_columns,
+    }"
+  >
+    <span class="stat-label">Current upgrade:</span>
+    <input
+      class="generic-input number-border ml-2 w-13"
+      type="number"
+      v-model.number="current_adv_upgrade"
+      :min="upgrade.upgrade_index * 10"
+      :max="(upgrade.upgrade_index + 1) * 10 - 1"
+      @change="write_adv_progress"
+    />
+    <div class="button-row">
+      <button
+        @click=""
+        class="generic-button w-20! text-(--achieved)!"
+        :disabled="optimizer_working"
       >
-        <span class="text-right"> Next is free (Chisel):</span>
-        <input
-          class="ml-2 h-3.5 w-3.5 self-center"
-          type="checkbox"
-          v-model="next_free"
-          @change="write_adv_progress"
-        />
-      </div>
-      <div
-        class="label-number-row"
-        v-if="current_grace_progress === 6 && upgrade.upgrade_index >= 2"
-      >
-        <span class="text-right"> Naber's Awl </span>
-        <input
-          class="ml-2 h-3.5 w-3.5 self-center"
-          type="checkbox"
-          v-model="next_big"
-          @change="write_adv_progress"
-        />
-      </div>
-      <div
-        v-if="
-          !(
-            current_grace_progress === 0 &&
-            (current_adv_xp > 0 ||
-              current_adv_upgrade > upgrade.upgrade_index * 10)
-          ) && !(current_grace_progress === 6 && upgrade.upgrade_index >= 2)
-        "
-        class="h-6"
-      ></div>
-    </div>
-    <div v-if="!optimizer_working" class="self-center">
-      <button @click="start_all_workers" class="generic-button confirm-button">
-        Confirm & re-run optimizer
+        Succeed
       </button>
+      <div
+        class="question-mark"
+        v-tooltip.left="
+          'This just removes the upgrade. Costs are not deducted.'
+        "
+      />
     </div>
-    <div v-if="optimizer_working" class="h-fit max-w-20 self-center text-wrap">
-      Optimizer working ({{
-        active_profile.optimizer_worker_bundle.est_progress_percentage.toFixed(
-          2,
-        )
-      }}%)
+
+    <span class="text-right">Current xp:</span>
+    <input
+      class="generic-input number-border ml-2 w-13 self-start"
+      type="number"
+      v-model.number="current_adv_xp"
+      min="0"
+      max="90"
+      step="10"
+      @change="write_adv_progress"
+    />
+    <div class="button-row">
+      <button
+        @click="start_all_workers"
+        class="generic-button w-20!"
+        :disabled="optimizer_working"
+      >
+        Confirm
+      </button>
+      <div
+        class="question-mark"
+        v-tooltip.left="
+          'Input your current progress, then press Confirm. Costs are not deducted.'
+        "
+      />
     </div>
+    <span class="text-right">Grace progress:</span>
+    <input
+      class="generic-input number-border ml-2 w-13"
+      type="number"
+      v-model.number="current_grace_progress"
+      min="0"
+      max="6"
+      @change="write_adv_progress"
+    />
+    <div></div>
+    <!-- placeholder for the button -->
+    <div
+      class="contents"
+      v-if="
+        current_grace_progress === 0 &&
+        (current_adv_xp >= 60 ||
+          current_adv_upgrade > upgrade.upgrade_index * 10)
+      "
+    >
+      <span class="text-right"> Next is free (Chisel):</span>
+      <input
+        class="ml-2 h-3.5 w-3.5 self-center"
+        type="checkbox"
+        v-model="next_free"
+        @change="write_adv_progress"
+      />
+    </div>
+    <div
+      class="contents"
+      v-if="current_grace_progress === 6 && upgrade.upgrade_index >= 2"
+    >
+      <span class="text-right"> Naber's Awl </span>
+      <input
+        class="ml-2 h-3.5 w-3.5 self-center"
+        type="checkbox"
+        v-model="next_big"
+        @change="write_adv_progress"
+      />
+    </div>
+    <div
+      v-if="
+        !(
+          current_grace_progress === 0 &&
+          (current_adv_xp > 0 ||
+            current_adv_upgrade > upgrade.upgrade_index * 10)
+        ) && !(current_grace_progress === 6 && upgrade.upgrade_index >= 2)
+      "
+      class="h-6"
+    ></div>
+  </div>
+
+  <div v-if="optimizer_working" class="h-fit max-w-20 self-center text-wrap">
+    Optimizer working ({{
+      locale_to_fixed(
+        active_profile.optimizer_worker_bundle.est_progress_percentage,
+        2,
+      )
+    }}%)
   </div>
 </template>

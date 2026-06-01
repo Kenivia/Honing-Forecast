@@ -1,4 +1,5 @@
 import { DEFAULT_ARTISAN_MULTIPLIER } from "./Constants";
+import { locale_to_fixed } from "./Helpers";
 import { Upgrade } from "./KeyedUpgrades";
 
 export function artisan_function(
@@ -50,7 +51,7 @@ export function artisan_function(
   //   upgrade.state,
   //   upgrade.normal_dist,
   // );
-  return (Math.min(artisan, 1) * 100).toFixed(2);
+  return locale_to_fixed(Math.min(artisan, 1) * 100, 2);
 }
 // export function cumulative_chance(
 //   upgrade: Upgrade,

@@ -2,10 +2,11 @@
 import { storeToRefs } from "pinia";
 import { computed, ref, watch } from "vue";
 import { useRosterStore } from "@/Stores/RosterConfig";
-import { Upgrade } from "@/Utils/KeyedUpgrades";
+import { to_upgrade_key, Upgrade } from "@/Utils/KeyedUpgrades";
 import { GridConfig } from "@/Utils/GridStyling";
 import { get_any_overwritten, get_optimizer_working } from "./InstructionUtils";
 import InstructionRow from "./InstructionRow.vue";
+import { locale_to_fixed } from "@/Utils/Helpers";
 
 const props = defineProps<{
   is_normal: boolean;
@@ -134,11 +135,11 @@ const grid: GridConfig = props.is_normal
   ? {
       grid_template_columns:
         //  66 px fits Weapon, Shoulder still doesn't fit but whatever
-        "minmax(66px, 70px) minmax(70px,110px) minmax(80px,100px) minmax(200px, max-content) max-content",
+        "minmax(66px, 70px) minmax(70px,100px) minmax(80px,100px) minmax(256px, max-content) max-content",
     }
   : {
       grid_template_columns:
-        "minmax(75px, 85px) minmax(200px, max-content)  80px   max-content",
+        "minmax(75px, 85px) minmax(256px, max-content)  max-content",
     };
 
 const optimizer_working = computed(get_optimizer_working);
@@ -156,18 +157,20 @@ const optimizer_working = computed(get_optimizer_working);
 
         <span v-if="optimizer_working" class="text-(--text-main)">
           ({{
-            active_profile.optimizer_worker_bundle.est_progress_percentage.toFixed(
+            locale_to_fixed(
+              active_profile.optimizer_worker_bundle.est_progress_percentage,
               2,
             )
           }}%)</span
         >
       </div>
     </div>
-    <!-- 241 to match materialdist -->
+
     <div
-      class="card-body outer-grid min-w-241"
+      class="card-body outer-grid"
       :style="{
         '--grid-cols': grid.grid_template_columns,
+        paddingRight: is_normal ? '0px ' : '',
       }"
     >
       <div class="mats-row">
@@ -182,9 +185,7 @@ const optimizer_working = computed(get_optimizer_working);
           />
         </div>
         <span v-if="is_normal">Special usage</span>
-        <div
-          class="flex w-full flex-row flex-nowrap justify-center gap-1 px-3 text-nowrap"
-        >
+        <div class="title-nowrap">
           <span> Juice & {{ is_normal ? "book" : "scroll" }} Instructions</span>
           <div
             class="question-mark"
@@ -192,6 +193,17 @@ const optimizer_working = computed(get_optimizer_working);
               is_normal
                 ? 'Juiced taps mean full-juice (use the maximum amount of Lava / Glacier Breath).'
                 : 'Advanced honing optimization is limited, use these instructions as a rough guide.'
+            "
+          />
+        </div>
+        <div class="title-nowrap">
+          <span>
+            Progress update ({{ is_normal ? "" : "VERY " }}Optional)
+          </span>
+          <div
+            class="question-mark"
+            v-tooltip.right="
+              'Auto-cost deduction is unavailable, I suggest only doing this when you\'re not starting from 0. '
             "
           />
         </div>
@@ -214,6 +226,16 @@ const optimizer_working = computed(get_optimizer_working);
           :style="{ opacity: !optimizer_working ? 1 : 0.5 }"
         >
           <InstructionRow
+            v-if="
+              active_profile.keyed_upgrades[
+                to_upgrade_key(
+                  upgrade.piece_type,
+                  upgrade.upgrade_index,
+                  upgrade.is_normal_honing,
+                  active_profile.tier,
+                )
+              ]
+            "
             :upgrade="upgrade"
             :perform_order="perform_order"
             :special_invalid_index="
@@ -227,3 +249,16 @@ const optimizer_working = computed(get_optimizer_working);
     </div>
   </section>
 </template>
+<style>
+.title-nowrap {
+  display: flex;
+  width: 100%;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  justify-content: center;
+  gap: 0.25rem;
+  padding-left: 0.75rem;
+  padding-right: 0.75rem;
+  white-space: nowrap;
+}
+</style>

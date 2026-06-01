@@ -214,8 +214,9 @@ const parsed_streaks = computed(() => {
 
 <template>
   <div
-    class="mr-auto flex w-fit max-w-full flex-row overflow-x-scroll overflow-y-hidden pb-2 pl-3"
+    class="mr-auto flex w-fit max-w-full flex-row overflow-x-scroll overflow-y-hidden pb-2"
   >
+    <!-- the pb-2 is for the scroll bar -->
     <div
       v-for="(parsed_streak, i) in parsed_streaks"
       :key="i"

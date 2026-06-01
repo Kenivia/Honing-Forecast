@@ -10,9 +10,15 @@ If you'd like to help with any of the below, feel free to get in touch via [Disc
 - ~~fix success popup~~ nvm
 - ~~ Figure out how to do the deduction stuff~~
 
+- do the adv details as well
+- fix the free tap case formatting
+- actually wire up the succeed button
+- disallow succeed & confirm smartly
 - special case the used_materials calculation so that 0 tap doesn't include unlock cost and 1st tap onwards do. Also special case the pity tap to only allow succeed button press.
 
 - fix the rounding so that it's not always like 0.01 off from in-game
+
+- maybe put cumulative chance back somehow
 
 - make normal instructions (and other panels) collapsible
 
@@ -23,8 +29,10 @@ If you'd like to help with any of the below, feel free to get in touch via [Disc
     - add a region selector on the roster header
 
   - uwuowo integration (add button next to textbox to pull from uwuowo, add button on sidebar of roster setup to pull all existing chars)
+    - need some kind of website parser, shouldn't be too difficult tho
+    - need to set up some kind of rate limit
   - copy express checkbox to roster setup also
-    - also make it more obvious, on top of materialdist maybe?
+    - ~~also make it more obvious, on top of materialdist maybe?~~
 
   - prolly move achieved ilevel & stuff here also so that
   - make a copy button here
@@ -43,6 +51,10 @@ If you'd like to help with any of the below, feel free to get in touch via [Disc
 - add "About" page for various stuff like credits and stuff
 
 - some hoverable details on juice & whatnot
+
+- add a small "bound" label on the materialcell labels
+
+- make average < 1 show 1 sig fig, including (and especially) the gold values
 
 ## Roadmap (big projects)
 

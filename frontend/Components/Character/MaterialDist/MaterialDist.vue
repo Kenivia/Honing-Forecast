@@ -127,11 +127,11 @@ watchEffect(() => {
 });
 
 const bound_chance_text =
-  "Chance to succeed all upgrades with Char-Bound material";
+  "Chance to succeed all upgrades within Char-Bound material";
 const roster_chance_text =
-  "Chance to succeed all upgrades with Roster-Bound material";
+  "Chance to succeed all upgrades within Roster-Bound material";
 const tradable_chance_text =
-  "Chance to succeed all upgrades with Tradable material";
+  "Chance to succeed all upgrades within Tradable material";
 // const chance_explainer_text = computed(() =>
 //   active_profile.value.histogram_treatment_plan ==
 //   TreatmentPlan.TreatTradableAsBound

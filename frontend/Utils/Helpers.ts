@@ -10,8 +10,11 @@ import {
 import { storeToRefs } from "pinia";
 import { useRosterStore } from "@/Stores/RosterConfig";
 import { Upgrade, UpgradeStatus } from "./KeyedUpgrades";
-import { parse_locale_float } from "./InputColumn";
+import { LOCALE_DECIMAL, parse_locale_float } from "./InputColumn";
 
+export function locale_to_fixed(inp: number, place?: number) {
+  return inp.toFixed(place).replace(".", LOCALE_DECIMAL);
+}
 // ideally i would merge this with the inputcolumn parsing stuff cos it's the same logic
 // but like the inputcolumn stuff is so intertwined with inputcolumn meta data
 // so i can't really be bothered
@@ -21,11 +24,11 @@ export function clean_percentage_input(
 ): string {
   const cleaned = input.toString().replace(/[^\d,.]/g, "");
   return !isFinite(parse_locale_float(cleaned))
-    ? fallback.toFixed(2)
+    ? locale_to_fixed(fallback, 2)
     : clamp_percentage(cleaned);
 }
 export function clamp_percentage(input: string): string {
-  return clamp(0, parse_locale_float(input), 100).toFixed(2);
+  return locale_to_fixed(clamp(0, parse_locale_float(input), 100), 2);
 }
 export function clamp(min: number, input: number, max: number): number {
   return Math.max(min, Math.min(max, input));
@@ -177,7 +180,7 @@ export function achieved_ilevel(profile: CharProfile): string {
       out += (highest_plus * 5) / 6;
     }
   }
-  return out.toFixed(2);
+  return locale_to_fixed(out, 2);
 }
 
 export function pending_ilevel(active_profile: CharProfile): string {
@@ -205,7 +208,7 @@ export function pending_ilevel(active_profile: CharProfile): string {
       out += (highest_plus * 5) / 6;
     }
   }
-  return out.toFixed(2);
+  return locale_to_fixed(out, 2);
 }
 
 export function cssVar(name: string, fallback: string) {

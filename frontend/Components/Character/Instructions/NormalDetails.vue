@@ -4,12 +4,17 @@ import {
   clamp,
   clamp_percentage,
   clean_percentage_input,
+  locale_to_fixed,
 } from "@/Utils/Helpers";
-import { parse_locale_float } from "@/Utils/InputColumn";
-import { to_upgrade_key, Upgrade } from "@/Utils/KeyedUpgrades";
+import { parse_locale_float, parse_locale_int } from "@/Utils/InputColumn";
+import { to_upgrade_key, Upgrade, UpgradeStatus } from "@/Utils/KeyedUpgrades";
 import { storeToRefs } from "pinia";
 import { computed, nextTick, Ref, ref, toRaw, watch } from "vue";
-import { start_all_workers, start_eval_hist } from "../CharWorkerUtils";
+import {
+  grid_change_callback,
+  start_all_workers,
+  start_eval_hist,
+} from "../CharWorkerUtils";
 import { artisan_function } from "@/Utils/HoningUtil";
 import "./details.css";
 import { get_optimizer_working } from "./InstructionUtils";
@@ -43,32 +48,37 @@ const juice_info = computed(() => {
 const optimizer_working = computed(get_optimizer_working);
 
 const starting_artisan = ref(
-  (props.upgrade.starting_artisan * 100).toFixed(2) || "0.00",
+  locale_to_fixed(props.upgrade.starting_artisan * 100, 2) || "0.00",
 );
 watch(
   () => props.upgrade.starting_artisan,
   () => {
-    starting_artisan.value = (props.upgrade.starting_artisan * 100).toFixed(2);
+    starting_artisan.value = locale_to_fixed(
+      props.upgrade.starting_artisan * 100,
+      2,
+    );
   }, // This watch is here to watch for when upgrade changes (optimizer shuffled order or tick /untick), in which case props.upgrade changes
 );
 
 const current_chance_percentage = ref(
-  (
+  locale_to_fixed(
     ((Math.min(10, props.upgrade.starting_num_taps) / 10) *
       props.upgrade.base_chance +
       props.upgrade.base_chance) *
-    100
-  ).toFixed(2) || "0.00",
+      100,
+    2,
+  ) || "0.00",
 );
 watch(
   () => props.upgrade.starting_num_taps,
   () => {
-    current_chance_percentage.value = (
+    current_chance_percentage.value = locale_to_fixed(
       ((Math.min(10, props.upgrade.starting_num_taps) / 10) *
         props.upgrade.base_chance +
         props.upgrade.base_chance) *
-      100
-    ).toFixed(2);
+        100,
+      2,
+    );
   }, // This watch is here to watch for when upgrade changes (optimizer shuffled order or tick /untick), in which case props.upgrade changes
 );
 
@@ -128,18 +138,23 @@ function manual_chance_change() {
   restore_budget_snapshot();
 
   current_chance_percentage.value = clean_percentage_input(
-    clamp(
-      100 * props.upgrade.base_chance,
-      parse_locale_float(
-        (
-          ((current_chance_to_num_taps.value / 10) * props.upgrade.base_chance +
-            props.upgrade.base_chance) *
-          100
-        ).toFixed(2),
-      ),
+    locale_to_fixed(
+      clamp(
+        100 * props.upgrade.base_chance,
+        parse_locale_float(
+          locale_to_fixed(
+            ((current_chance_to_num_taps.value / 10) *
+              props.upgrade.base_chance +
+              props.upgrade.base_chance) *
+              100,
+            2,
+          ),
+        ),
 
-      100 * props.upgrade.base_chance * 2,
-    ).toFixed(2),
+        100 * props.upgrade.base_chance * 2,
+      ),
+      2,
+    ),
     props.upgrade.base_chance * 100,
   );
   write_normal_progress();
@@ -208,16 +223,17 @@ function slider_input() {
     Number(taps_since_last_input.value),
     juice_info.value,
   );
-  current_chance_percentage.value = (
+  current_chance_percentage.value = locale_to_fixed(
     100 *
-    (props.upgrade.base_chance +
-      0.1 *
-        props.upgrade.base_chance *
-        Math.min(
-          10,
-          taps_since_last_input.value + props.upgrade.starting_num_taps,
-        ))
-  ).toFixed(2);
+      (props.upgrade.base_chance +
+        0.1 *
+          props.upgrade.base_chance *
+          Math.min(
+            10,
+            taps_since_last_input.value + props.upgrade.starting_num_taps,
+          )),
+    2,
+  );
   const this_keyed =
     active_profile.value.keyed_upgrades[
       to_upgrade_key(
@@ -252,14 +268,11 @@ function slider_input() {
     toRaw(roster_config.value.budget_snapshot.bound_budgets[0].data),
   );
   const remaining_materials: RemainingMats = compute_remaininig_materials(
-    Object.entries(active_profile.value.keyed_upgrades)
-      .map(([_key, one_upgrade_input]) => one_upgrade_input.used_materials)
-      .reduce((prev, cur) =>
-        !prev
-          ? !cur
-            ? Array(this_keyed.used_materials.length).fill(0)
-            : prev
-          : prev.map((x, i) => x + (!cur ? 0 : cur[i])),
+    Object.values(active_profile.value.keyed_upgrades)
+      .map((u) => u.used_materials)
+      .reduce(
+        (acc, cur) => acc.map((x, i) => x + (cur?.[i] ?? 0)),
+        Array(this_keyed.used_materials.length).fill(0),
       ),
     roster_config.value.budget_snapshot,
   );
@@ -315,7 +328,8 @@ function reset() {
   restore_budget_snapshot();
   taps_since_last_input.value = 0;
   starting_artisan.value = "0";
-  current_chance_percentage.value = (props.upgrade.base_chance * 100).toFixed(
+  current_chance_percentage.value = locale_to_fixed(
+    props.upgrade.base_chance * 100,
     2,
   );
   using_slider.value = false; // to force it to use the current_chance route
@@ -331,6 +345,40 @@ function reset() {
   }
 }
 
+function succeed_click() {
+  if (props.upgrade.is_normal_honing) {
+    active_profile.value.normal_grid[props.upgrade.piece_type][
+      props.upgrade.upgrade_index
+    ] = UpgradeStatus.Done;
+  } else {
+    active_profile.value.adv_grid[props.upgrade.piece_type][
+      props.upgrade.upgrade_index
+    ] = UpgradeStatus.Done;
+  }
+  grid_change_callback();
+}
+
+const new_special_leaps = ref(
+  parse_locale_int(active_profile.value.special_budget.data[0]),
+);
+watch(
+  () => active_profile.value.special_budget.data[0],
+  () => {
+    new_special_leaps.value = parse_locale_int(
+      active_profile.value.special_budget.data[0],
+    );
+  },
+);
+function special_success_click() {
+  active_profile.value.special_budget.data[0] =
+    new_special_leaps.value.toLocaleString();
+  succeed_click();
+}
+
+function special_fail_click() {
+  active_profile.value.special_budget.data[0] = "0";
+  start_all_workers();
+}
 const upgrade_key = computed(() =>
   to_upgrade_key(
     props.upgrade.piece_type,
@@ -378,7 +426,7 @@ const grid: GridConfig = {
             active_profile.keyed_upgrades[upgrade_key].expanded = true;
           }
         "
-        class="barebone-button w-fit"
+        class="barebone-button w-fit text-(--text-muted)"
       >
         Show input anyway
       </button>
@@ -427,7 +475,11 @@ const grid: GridConfig = {
         </div>
 
         <div class="button-row">
-          <button class="generic-button w-20! text-(--achieved)!">
+          <button
+            class="generic-button w-20! text-(--achieved)!"
+            :disabled="optimizer_working"
+            @click="succeed_click"
+          >
             Succeed
           </button>
           <div
@@ -461,13 +513,17 @@ const grid: GridConfig = {
           />
         </div>
         <div class="button-row">
-          <button @click="confirm" class="generic-button w-20! text-(--gold)!">
+          <button
+            @click="confirm"
+            class="generic-button w-20!"
+            :disabled="optimizer_working"
+          >
             Confirm
           </button>
           <div
             class="question-mark"
             v-tooltip.left="
-              'Use the slider to update artisan & deduct costs, then press Confirm to re-run the optimizer. This may produce instructions that save slightly more gold (No need to do this after every tap, just when you feel like it).'
+              'Use the slider to update artisan & deduct costs, then press Confirm to re-run the optimizer.'
             "
           />
         </div>
@@ -522,40 +578,30 @@ const grid: GridConfig = {
           </div>
         </div>
       </div>
-      <div v-else class="col-span-2">
-        <div class="flex flex-row">
+      <div v-else class="col-span-2 flex flex-col items-end">
+        <div class="flex flex-row gap-1">
           <span>Succeeded with this many special leaps remaining:</span>
-          <input class="generic-input w-25!" />
-          <button class="generic-button w-20! text-(--achieved)!">
+          <input
+            class="generic-input w-18!"
+            v-model="new_special_leaps"
+            type="number"
+            :min="0"
+            :max="parse_locale_int(active_profile.special_budget.data[0])"
+          />
+          <button
+            class="generic-button w-20! text-(--achieved)!"
+            @click="special_success_click"
+          >
             Succeed
           </button>
         </div>
-        <button class="generic-button text-(--free-tap)!">
+        <button
+          class="generic-button w-50! text-(--free-tap)!"
+          @click="special_fail_click"
+        >
           All free taps failed
         </button>
       </div>
     </div>
   </div>
 </template>
-
-<style scoped>
-.stat-label {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  text-align: right;
-}
-
-.stat-input {
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  padding-left: 0.5rem;
-}
-.button-row {
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  justify-content: space-around;
-}
-</style>

@@ -28,19 +28,22 @@ export function create_input_column(
 }
 
 const parts = new Intl.NumberFormat().formatToParts(1234567.89);
-const group = parts.find((p) => p.type === "group")?.value ?? ",";
-const decimal = parts.find((p) => p.type === "decimal")?.value ?? ".";
+export const LOCALE_GROUP = parts.find((p) => p.type === "group")?.value ?? ",";
+export const LOCALE_DECIMAL =
+  parts.find((p) => p.type === "decimal")?.value ?? ".";
 
 export function parse_locale_int(str: string): number {
   const normalized = str
-    .replaceAll(group, "") // remove thousands separators
-    .replace(decimal, "."); // normalize decimal separator to '.'
+    .replaceAll(LOCALE_GROUP, "") // remove thousands separators
+    .replace(LOCALE_DECIMAL, "."); // normalize decimal separator to '.'
 
   return parseInt(normalized);
 }
 
 export function parse_locale_float(str: string): number {
-  const normalized = str.replaceAll(group, "").replace(decimal, ".");
+  const normalized = str
+    .replaceAll(LOCALE_GROUP, "")
+    .replace(LOCALE_DECIMAL, ".");
 
   return parseFloat(normalized);
 }

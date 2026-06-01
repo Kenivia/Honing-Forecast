@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { cssVar, get_icon_path } from "@/Utils/Helpers";
+import { cssVar, get_icon_path, locale_to_fixed } from "@/Utils/Helpers";
 import { get_modified_cell, InputColumn } from "@/Utils/InputColumn";
 
 import { computed, ref, watch } from "vue";
@@ -104,7 +104,7 @@ watch(source_value, (val) => {
       type="text"
       >{{
         is_percentage
-          ? (input_column[row] * 100).toFixed(2) + "%"
+          ? locale_to_fixed(input_column[row] * 100, 2) + "%"
           : input_column[row].toLocaleString("en-US", {
               minimumFractionDigits: 0, // show decimals for small K/M/B
               maximumFractionDigits: 0,

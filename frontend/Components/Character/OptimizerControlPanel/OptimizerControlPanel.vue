@@ -7,6 +7,7 @@ import { computed, ref } from "vue";
 import { GridConfig } from "@/Utils/GridStyling";
 import { get_optimizer_working } from "../Instructions/InstructionUtils";
 import OptimizerRadioButton from "./OptimizerRadioButton.vue";
+import { locale_to_fixed } from "@/Utils/Helpers";
 
 const store = useRosterStore();
 const { active_profile } = storeToRefs(store);
@@ -82,7 +83,8 @@ const grid: GridConfig = {
           }"
         >
           {{
-            active_profile.optimizer_worker_bundle.est_progress_percentage.toFixed(
+            locale_to_fixed(
+              active_profile.optimizer_worker_bundle.est_progress_percentage,
               2,
             )
           }}%
