@@ -40,6 +40,8 @@ const juice_info = computed(() => {
   return active_profile.value.histogram_worker_bundle.result.juice_info;
 });
 
+const optimizer_working = computed(get_optimizer_working);
+
 const starting_artisan = ref(
   (props.upgrade.starting_artisan * 100).toFixed(2) || "0.00",
 );
@@ -94,6 +96,7 @@ function write_normal_progress() {
 
   this_keyed.taps_since_last_input = taps_since_last_input.value; // which is 0 when using_slice is false
 }
+
 const current_chance_to_num_taps = computed(() => {
   return Math.round(
     (parse_locale_float(
@@ -111,6 +114,8 @@ const current_chance_to_num_taps = computed(() => {
 function manual_artisan_change() {
   taps_since_last_input.value = 0;
   using_slider.value = false;
+  restore_budget_snapshot();
+
   starting_artisan.value = clean_percentage_input(starting_artisan.value, 0);
   write_normal_progress();
   start_eval_hist();
@@ -120,6 +125,7 @@ function manual_chance_change() {
   // console.log(event.target.value, event, current_chance_percentage.value);
   taps_since_last_input.value = 0;
   using_slider.value = false;
+  restore_budget_snapshot();
 
   current_chance_percentage.value = clean_percentage_input(
     clamp(
@@ -140,8 +146,6 @@ function manual_chance_change() {
   start_eval_hist();
 }
 
-const is_slider_update = ref(false);
-
 function reset_after_optimizer_run() {
   taps_since_last_input.value = 0;
   using_slider.value = true;
@@ -158,7 +162,20 @@ function reset_after_optimizer_run() {
 
   this_keyed.taps_since_last_input = 0;
 }
+watch(
+  () => optimizer_working.value,
+  () => {
+    // only do this as we start the optimizer,  shouldn't really matter but whatever
+    if (optimizer_working.value) {
+      reset_after_optimizer_run();
+    }
+  },
+);
+
 const tier = computed(() => active_profile.value.tier);
+
+// IM PRE SURE this isn't needed now because any change will start the optimizer so it'll be gucci
+// I'll leave it in place because ig autostart can be turned off, might remove that later tho lowkey
 watch(
   [
     () => active_profile.value.bound_budgets[tier.value].data,
@@ -166,7 +183,7 @@ watch(
   ],
   () => {
     console.log(roster_config.value.budget_snapshot);
-    if (!is_slider_update.value) {
+    if (!roster_config.value.is_slider_update) {
       reset_after_optimizer_run();
       console.log("non-slider change");
     }
@@ -176,7 +193,7 @@ watch(
 );
 
 function slider_input() {
-  is_slider_update.value = true;
+  roster_config.value.is_slider_update = true;
   using_slider.value = true;
 
   // this kind of disallows any non-integer inputs by instantly setting invalid intermediate inputs to 0, but its like fine i think since it's not a big number or anything
@@ -267,7 +284,7 @@ function slider_input() {
   write_normal_progress();
   start_eval_hist();
   nextTick(() => {
-    is_slider_update.value = false;
+    roster_config.value.is_slider_update = false;
   });
 }
 
@@ -278,14 +295,13 @@ function slider_change() {
 
 function confirm() {
   start_all_workers();
-  reset_after_optimizer_run();
+  // reset_after_optimizer_run();
 }
 const taps_since_last_input = ref(0);
 
-const optimizer_working = computed(get_optimizer_working);
 const using_slider = ref(true);
 
-function reset() {
+function restore_budget_snapshot() {
   if (roster_config.value.budget_snapshot !== null) {
     active_profile.value.bound_budgets =
       roster_config.value.budget_snapshot.bound_budgets;
@@ -294,7 +310,9 @@ function reset() {
     roster_config.value.tradable_mats_owned[active_profile.value.roster_id] =
       roster_config.value.budget_snapshot.tradable_mats;
   }
-
+}
+function reset() {
+  restore_budget_snapshot();
   taps_since_last_input.value = 0;
   starting_artisan.value = "0";
   current_chance_percentage.value = (props.upgrade.base_chance * 100).toFixed(
@@ -420,18 +438,26 @@ const grid: GridConfig = {
           />
         </div>
         <span class="stat-label">Current artisan energy:</span>
-        <div class="stat-input">
-          <input
-            class="generic-input number-border w-13"
-            :style="{
-              backgroundColor: using_slider
-                ? 'transparent'
-                : 'var(--bg-bright)',
-            }"
-            v-model="starting_artisan"
-            inputmode="decimal"
-            :disabled="optimizer_working"
-            @change="manual_artisan_change"
+        <div class="flex flex-row">
+          <div class="stat-input">
+            <input
+              class="generic-input number-border w-13"
+              :style="{
+                backgroundColor: using_slider
+                  ? 'transparent'
+                  : 'var(--bg-bright)',
+              }"
+              v-model="starting_artisan"
+              inputmode="decimal"
+              :disabled="optimizer_working"
+              @change="manual_artisan_change"
+            />
+          </div>
+          <div
+            class="question-mark"
+            v-tooltip.left="
+              'You can also input artisan directly here. However, costs will not be auto-deducted'
+            "
           />
         </div>
         <div class="button-row">

@@ -112,6 +112,10 @@ const grid: GridConfig = {
               active_profile.optimizer_override.normal.book =
                 NormalOverride.Optimizer;
               active_profile.optimizer_override.special.optimizer = true;
+              active_profile.optimizer_override.advanced.juice =
+                AdvOverride.Optimizer;
+              active_profile.optimizer_override.advanced.scroll =
+                AdvOverride.Optimizer;
               show_override = !show_override;
               start_eval_hist();
             }

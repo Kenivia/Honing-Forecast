@@ -39,6 +39,7 @@ export interface RosterConfig {
   market_fetch_failed: boolean;
 
   budget_snapshot: BudgetSnapshot | null;
+  is_slider_update: boolean;
 }
 export const useRosterStore = defineStore("roster", {
   state: () => ({
@@ -138,6 +139,7 @@ export const DEFAULT_ROSTER_CONFIG: RosterConfig = {
   show_all_rows: false,
   market_fetch_failed: true,
   budget_snapshot: null,
+  is_slider_update: false,
 };
 
 export function load_roster_config(): RosterConfig {
@@ -275,6 +277,7 @@ export function write_roster_config(state) {
   //       "histogram_worker_bundle",
   //       "optimizer_override",
   //       "budget_snapshot",
+  //       "is_slider_update",
   //     ]),
   //   );
   // } catch {

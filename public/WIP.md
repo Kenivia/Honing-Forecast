@@ -8,7 +8,11 @@ If you'd like to help with any of the below, feel free to get in touch via [Disc
 ## Immediate WIP
 
 - ~~fix success popup~~ nvm
-- Figure out how to do the deduction stuff
+- ~~ Figure out how to do the deduction stuff~~
+
+- special case the used_materials calculation so that 0 tap doesn't include unlock cost and 1st tap onwards do. Also special case the pity tap to only allow succeed button press.
+
+- fix the rounding so that it's not always like 0.01 off from in-game
 
 - make normal instructions (and other panels) collapsible
 
