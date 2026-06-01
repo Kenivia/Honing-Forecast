@@ -95,6 +95,7 @@ const free_tap_this_upgrade = computed(() => {
       :upgrade="props.upgrade"
       :perform_order="props.perform_order"
       :free_tap_this_upgrade="free_tap_this_upgrade"
+      :index_in_special_state="index_in_special_state"
       :key="
         to_upgrade_key(
           props.upgrade.piece_type,
@@ -107,8 +108,6 @@ const free_tap_this_upgrade = computed(() => {
     <AdvancedDetails
       v-if="!upgrade.is_normal_honing"
       :upgrade="props.upgrade"
-      :perform_order="props.perform_order"
-      :free_tap_this_upgrade="free_tap_this_upgrade"
     />
   </div>
   <div

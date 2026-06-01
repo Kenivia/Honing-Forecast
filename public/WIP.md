@@ -7,17 +7,6 @@ If you'd like to help with any of the below, feel free to get in touch via [Disc
 
 ## Immediate WIP
 
-- ~~fix success popup~~ nvm
-- ~~ Figure out how to do the deduction stuff~~
-
-- do the adv details as well
-- fix the free tap case formatting
-- actually wire up the succeed button
-- disallow succeed & confirm smartly
-- special case the used_materials calculation so that 0 tap doesn't include unlock cost and 1st tap onwards do. Also special case the pity tap to only allow succeed button press.
-
-- fix the rounding so that it's not always like 0.01 off from in-game
-
 - maybe put cumulative chance back somehow
 
 - make normal instructions (and other panels) collapsible
@@ -195,6 +184,19 @@ Below are some rambling / brainstorming / Misc stuff
 - advanced hoinging caching / pre-calculating, maybe also special
 
 ## Done / cancelled
+
+- ~~fix success popup~~ nvm
+- ~~ Figure out how to do the deduction stuff~~
+
+- ~~do the adv details as well~~
+- ~~fix the free tap case formatting~~
+- ~~actually wire up the succeed button~~
+- ~~disallow succeed & confirm smartly~~ maybe not, kinda confusing, only teh confirm (pity) one
+- ~~special case the used_materials calculation so that 0 tap doesn't include unlock cost and 1st tap onwards do. Also special case the pity tap to only allow succeed button press.~~
+
+- ~~fix the rounding so that it's not always like 0.01 off from in-game~~
+
+- ~~add check for succeed button to disallow upgrades with pre-requisits not done~~ I MEAN its like not really necessary, it'll just make the grid look funny but its fine i think
 
 - ~~accent color not working on chrome (and sliders don't have accent color on firefox?)~~ it's just not supported ig, oh well
 

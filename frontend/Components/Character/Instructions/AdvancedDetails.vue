@@ -7,7 +7,7 @@ import { start_all_workers, start_eval_hist } from "../CharWorkerUtils";
 import "./details.css";
 import { get_optimizer_working } from "./InstructionUtils";
 import { GridConfig } from "@/Utils/GridStyling";
-import { locale_to_fixed } from "@/Utils/Helpers";
+import { mark_upgrade_as_done } from "./SuccessUtils";
 
 const { active_profile } = storeToRefs(useRosterStore());
 
@@ -136,7 +136,7 @@ const grid: GridConfig = {
     />
     <div class="button-row">
       <button
-        @click=""
+        @click="() => mark_upgrade_as_done(props.upgrade)"
         class="generic-button w-20! text-(--achieved)!"
         :disabled="optimizer_working"
       >
@@ -226,12 +226,12 @@ const grid: GridConfig = {
     ></div>
   </div>
 
-  <div v-if="optimizer_working" class="h-fit max-w-20 self-center text-wrap">
+  <!-- <div v-if="optimizer_working" class="h-fit max-w-20 self-center text-wrap">
     Optimizer working ({{
       locale_to_fixed(
         active_profile.optimizer_worker_bundle.est_progress_percentage,
         2,
       )
     }}%)
-  </div>
+  </div> -->
 </template>

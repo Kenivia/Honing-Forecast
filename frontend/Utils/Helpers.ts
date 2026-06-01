@@ -12,23 +12,41 @@ import { useRosterStore } from "@/Stores/RosterConfig";
 import { Upgrade, UpgradeStatus } from "./KeyedUpgrades";
 import { LOCALE_DECIMAL, parse_locale_float } from "./InputColumn";
 
-export function locale_to_fixed(inp: number, place?: number) {
-  return inp.toFixed(place).replace(".", LOCALE_DECIMAL);
+export function locale_to_fixed(
+  inp: number,
+  place?: number,
+  round_down?: boolean,
+) {
+  // console.log(inp, Math.floor(inp * Math.pow(10, place ? place : 0)));
+  return (
+    round_down
+      ? Math.floor(inp * Math.pow(10, place ? place : 0)) /
+        Math.pow(10, place ? place : 0)
+      : inp
+  )
+    .toFixed(place)
+    .replace(".", LOCALE_DECIMAL);
 }
+
 // ideally i would merge this with the inputcolumn parsing stuff cos it's the same logic
 // but like the inputcolumn stuff is so intertwined with inputcolumn meta data
 // so i can't really be bothered
 export function clean_percentage_input(
   input: string,
   fallback?: number,
+  round_down?: boolean,
 ): string {
   const cleaned = input.toString().replace(/[^\d,.]/g, "");
   return !isFinite(parse_locale_float(cleaned))
-    ? locale_to_fixed(fallback, 2)
-    : clamp_percentage(cleaned);
+    ? locale_to_fixed(fallback, 2, round_down)
+    : clamp_percentage(cleaned, round_down);
 }
-export function clamp_percentage(input: string): string {
-  return locale_to_fixed(clamp(0, parse_locale_float(input), 100), 2);
+export function clamp_percentage(input: string, round_down?: boolean): string {
+  return locale_to_fixed(
+    clamp(0, parse_locale_float(input), 100),
+    2,
+    round_down,
+  );
 }
 export function clamp(min: number, input: number, max: number): number {
   return Math.max(min, Math.min(max, input));

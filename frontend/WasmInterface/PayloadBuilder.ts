@@ -91,6 +91,11 @@ function keyed_to_array(
 
     let relevant_upgrade = relevant_id_map[upgrade.upgrade_index];
     // console.log(adv_override);
+    out.unlocked = out.is_normal_honing
+      ? out.starting_artisan > 0 || out.starting_num_taps > 0
+      : out.adv_progress !== null &&
+        (out.adv_progress[0] > 0 || out.adv_progress[1] > 0);
+
     out.state = upgrade.state
       .slice(out.taps_since_last_input)
       .map((x, index) =>

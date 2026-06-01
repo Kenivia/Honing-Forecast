@@ -42,8 +42,6 @@ export type OneState = [boolean, number]; // juice, bookid
 export type AdvProgress = [number, number, boolean, boolean]; // current xp(0 to 100 or 99 ig), current balls ( 0 to 6), next_free, next_big
 
 // ========================================================================================
-
-// ========================================================================================
 // Status grid (TickboxGrid) stuff
 export enum UpgradeStatus {
   Done,

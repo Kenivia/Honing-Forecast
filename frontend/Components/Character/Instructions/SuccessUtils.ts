@@ -1,8 +1,9 @@
 import { useRosterStore } from "@/Stores/RosterConfig";
 import { input_column_to_num, InputColumn } from "@/Utils/InputColumn";
-import { Upgrade } from "@/Utils/KeyedUpgrades";
+import { to_upgrade_key, Upgrade, UpgradeStatus } from "@/Utils/KeyedUpgrades";
 import { storeToRefs } from "pinia";
 import { toRaw } from "vue";
+import { grid_change_callback } from "../CharWorkerUtils";
 
 export interface BudgetSnapshot {
   bound_budgets: InputColumn[];
@@ -14,19 +15,34 @@ export interface RemainingMats {
   roster_mats: number[];
   tradable_mats: number[];
 }
+
+export function mark_upgrade_as_done(upgrade: Upgrade) {
+  const { active_profile } = storeToRefs(useRosterStore());
+  if (upgrade.is_normal_honing) {
+    active_profile.value.normal_grid[upgrade.piece_type][
+      upgrade.upgrade_index
+    ] = UpgradeStatus.Done;
+  } else {
+    active_profile.value.adv_grid[upgrade.piece_type][upgrade.upgrade_index] =
+      UpgradeStatus.Done;
+  }
+  grid_change_callback();
+}
 export function compute_used_materials(
   upgrade: Upgrade,
   taps_since_last_run: number,
   juice_info: any,
   adv_juice_used: number,
   adv_scroll_used: number,
+  pretend_zero_no_unlock: boolean,
 ): number[] {
   if (!upgrade.cost_dist) return [];
   let out = new Array(upgrade.cost_dist.length).fill(0);
 
   for (let cost_type = 0; cost_type < 7; cost_type++) {
     out[cost_type] =
-      upgrade.unlock_costs[cost_type] +
+      upgrade.unlock_costs[cost_type] *
+        (pretend_zero_no_unlock && taps_since_last_run == 0 ? 0 : 1) +
       upgrade.costs[cost_type] * taps_since_last_run;
   }
 
@@ -148,4 +164,64 @@ export function compute_remaininig_materials(
   });
   // console.log("computed")
   return { bound_budgets, roster_mats, tradable_mats };
+}
+
+export function apply_remaining_mats(upgrade: Upgrade) {
+  const {
+    active_profile,
+    roster_config,
+    active_roster_mats_owned,
+    active_tradable_mats_owned,
+  } = storeToRefs(useRosterStore());
+  const tier = active_profile.value.tier;
+  const this_keyed =
+    active_profile.value.keyed_upgrades[
+      to_upgrade_key(
+        upgrade.piece_type,
+        upgrade.upgrade_index,
+        upgrade.is_normal_honing,
+        active_profile.value.tier,
+      )
+    ];
+  if (roster_config.value.budget_snapshot === null) {
+    // console.log(roster_config.value.budget_snapshot);
+    roster_config.value.budget_snapshot = make_budget_snapshot();
+    // console.log(
+    //   "snap",
+    //   toRaw(roster_config.value.budget_snapshot.bound_budgets[0].data),
+    // );
+    // console.log(roster_config.value.budget_snapshot);
+  }
+  // console.log(
+  //   "calc",
+  //   upgrade.starting_num_taps,
+  //   taps_since_last_input.value,
+  //   toRaw(roster_config.value.budget_snapshot.bound_budgets[0].data),
+  // );
+  const remaining_materials: RemainingMats = compute_remaininig_materials(
+    Object.values(active_profile.value.keyed_upgrades)
+      .map((u) => u.used_materials)
+      .reduce(
+        (acc, cur) => acc.map((x, i) => x + (cur?.[i] ?? 0)),
+        Array(this_keyed.used_materials.length).fill(0),
+      ),
+    roster_config.value.budget_snapshot,
+  );
+
+  // console.log(remaining_materials.bound_budgets);
+
+  this_keyed.used_materials.forEach((_, index) => {
+    if (active_profile.value.bound_budgets[tier].enabled[index]) {
+      active_profile.value.bound_budgets[tier].data[index] =
+        remaining_materials.bound_budgets[index].toLocaleString();
+    }
+    if (active_roster_mats_owned.value[tier].enabled[index]) {
+      active_roster_mats_owned.value[tier].data[index] =
+        remaining_materials.roster_mats[index].toLocaleString();
+    }
+    if (active_tradable_mats_owned.value[tier].enabled[index]) {
+      active_tradable_mats_owned.value[tier].data[index] =
+        remaining_materials.tradable_mats[index].toLocaleString();
+    }
+  });
 }

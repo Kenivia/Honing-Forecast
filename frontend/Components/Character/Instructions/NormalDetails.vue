@@ -7,38 +7,28 @@ import {
   locale_to_fixed,
 } from "@/Utils/Helpers";
 import { parse_locale_float, parse_locale_int } from "@/Utils/InputColumn";
-import { to_upgrade_key, Upgrade, UpgradeStatus } from "@/Utils/KeyedUpgrades";
+import { to_upgrade_key, Upgrade } from "@/Utils/KeyedUpgrades";
 import { storeToRefs } from "pinia";
-import { computed, nextTick, Ref, ref, toRaw, watch } from "vue";
-import {
-  grid_change_callback,
-  start_all_workers,
-  start_eval_hist,
-} from "../CharWorkerUtils";
+import { computed, nextTick, ref, watch } from "vue";
+import { start_all_workers, start_eval_hist } from "../CharWorkerUtils";
 import { artisan_function } from "@/Utils/HoningUtil";
 import "./details.css";
 import { get_optimizer_working } from "./InstructionUtils";
 import {
-  BudgetSnapshot,
-  compute_remaininig_materials,
   compute_used_materials,
-  RemainingMats,
-  make_budget_snapshot,
+  mark_upgrade_as_done,
+  apply_remaining_mats,
 } from "./SuccessUtils";
-import { StateBundle } from "@/WasmInterface/WasmWorker";
 import { FLOAT_TOL } from "@/Utils/Constants";
 import { GridConfig } from "@/Utils/GridStyling";
 
-const {
-  active_profile,
-  active_roster_mats_owned,
-  active_tradable_mats_owned,
-  roster_config,
-} = storeToRefs(useRosterStore());
+const { active_profile, roster_config } = storeToRefs(useRosterStore());
+
 const props = defineProps<{
   upgrade: Upgrade;
   perform_order: number;
   free_tap_this_upgrade: boolean;
+  index_in_special_state: number;
 }>();
 
 const juice_info = computed(() => {
@@ -48,7 +38,7 @@ const juice_info = computed(() => {
 const optimizer_working = computed(get_optimizer_working);
 
 const starting_artisan = ref(
-  locale_to_fixed(props.upgrade.starting_artisan * 100, 2) || "0.00",
+  locale_to_fixed(props.upgrade.starting_artisan * 100, 2, true) || "0.00",
 );
 watch(
   () => props.upgrade.starting_artisan,
@@ -56,6 +46,7 @@ watch(
     starting_artisan.value = locale_to_fixed(
       props.upgrade.starting_artisan * 100,
       2,
+      true,
     );
   }, // This watch is here to watch for when upgrade changes (optimizer shuffled order or tick /untick), in which case props.upgrade changes
 );
@@ -126,7 +117,11 @@ function manual_artisan_change() {
   using_slider.value = false;
   restore_budget_snapshot();
 
-  starting_artisan.value = clean_percentage_input(starting_artisan.value, 0);
+  starting_artisan.value = clean_percentage_input(
+    starting_artisan.value,
+    0,
+    true,
+  );
   write_normal_progress();
   start_eval_hist();
 }
@@ -250,50 +245,9 @@ function slider_input() {
     juice_info.value,
     0,
     0,
+    true,
   );
-
-  if (roster_config.value.budget_snapshot === null) {
-    console.log(roster_config.value.budget_snapshot);
-    roster_config.value.budget_snapshot = make_budget_snapshot();
-    console.log(
-      "snap",
-      toRaw(roster_config.value.budget_snapshot.bound_budgets[0].data),
-    );
-    console.log(roster_config.value.budget_snapshot);
-  }
-  console.log(
-    "calc",
-    props.upgrade.starting_num_taps,
-    taps_since_last_input.value,
-    toRaw(roster_config.value.budget_snapshot.bound_budgets[0].data),
-  );
-  const remaining_materials: RemainingMats = compute_remaininig_materials(
-    Object.values(active_profile.value.keyed_upgrades)
-      .map((u) => u.used_materials)
-      .reduce(
-        (acc, cur) => acc.map((x, i) => x + (cur?.[i] ?? 0)),
-        Array(this_keyed.used_materials.length).fill(0),
-      ),
-    roster_config.value.budget_snapshot,
-  );
-
-  console.log(remaining_materials.bound_budgets);
-
-  this_keyed.used_materials.forEach((_, index) => {
-    if (active_profile.value.bound_budgets[tier.value].enabled[index]) {
-      active_profile.value.bound_budgets[tier.value].data[index] =
-        remaining_materials.bound_budgets[index].toLocaleString();
-    }
-    if (active_roster_mats_owned.value[tier.value].enabled[index]) {
-      active_roster_mats_owned.value[tier.value].data[index] =
-        remaining_materials.roster_mats[index].toLocaleString();
-    }
-    if (active_tradable_mats_owned.value[tier.value].enabled[index]) {
-      active_tradable_mats_owned.value[tier.value].data[index] =
-        remaining_materials.tradable_mats[index].toLocaleString();
-    }
-  });
-
+  apply_remaining_mats(props.upgrade);
   write_normal_progress();
   start_eval_hist();
   nextTick(() => {
@@ -346,16 +300,26 @@ function reset() {
 }
 
 function succeed_click() {
-  if (props.upgrade.is_normal_honing) {
-    active_profile.value.normal_grid[props.upgrade.piece_type][
-      props.upgrade.upgrade_index
-    ] = UpgradeStatus.Done;
-  } else {
-    active_profile.value.adv_grid[props.upgrade.piece_type][
-      props.upgrade.upgrade_index
-    ] = UpgradeStatus.Done;
-  }
-  grid_change_callback();
+  const this_keyed =
+    active_profile.value.keyed_upgrades[
+      to_upgrade_key(
+        props.upgrade.piece_type,
+        props.upgrade.upgrade_index,
+        props.upgrade.is_normal_honing,
+        active_profile.value.tier,
+      )
+    ];
+
+  this_keyed.used_materials = compute_used_materials(
+    props.upgrade,
+    taps_since_last_input.value,
+    juice_info.value,
+    0,
+    0,
+    false, // so this is just the unlock cost
+  );
+  apply_remaining_mats(props.upgrade);
+  mark_upgrade_as_done(props.upgrade);
 }
 
 const new_special_leaps = ref(
@@ -372,7 +336,26 @@ watch(
 function special_success_click() {
   active_profile.value.special_budget.data[0] =
     new_special_leaps.value.toLocaleString();
-  succeed_click();
+  const this_keyed =
+    active_profile.value.keyed_upgrades[
+      to_upgrade_key(
+        props.upgrade.piece_type,
+        props.upgrade.upgrade_index,
+        props.upgrade.is_normal_honing,
+        active_profile.value.tier,
+      )
+    ];
+
+  this_keyed.used_materials = compute_used_materials(
+    props.upgrade,
+    0,
+    juice_info.value,
+    0,
+    0,
+    false, // so this is just the unlock cost
+  );
+  apply_remaining_mats(props.upgrade);
+  mark_upgrade_as_done(props.upgrade);
 }
 
 function special_fail_click() {
@@ -393,8 +376,28 @@ const actual_expanded = computed(
     active_profile.value.keyed_upgrades[upgrade_key.value].expanded ||
     props.perform_order == 0,
 );
-const grid: GridConfig = {
+
+const expand_free_tap_artisan = ref(
+  (props.upgrade.starting_artisan > 0 || props.upgrade.starting_num_taps > 0) &&
+    props.free_tap_this_upgrade,
+);
+watch(
+  () =>
+    (props.upgrade.starting_artisan > 0 ||
+      props.upgrade.starting_num_taps > 0) &&
+    props.free_tap_this_upgrade,
+  () => {
+    expand_free_tap_artisan.value =
+      (props.upgrade.starting_artisan > 0 ||
+        props.upgrade.starting_num_taps > 0) &&
+      props.free_tap_this_upgrade;
+  },
+);
+const non_special_grid: GridConfig = {
   grid_template_columns: "175px 100px 120px",
+};
+const special_grid: GridConfig = {
+  grid_template_columns: "1fr 80px 100px ",
 };
 </script>
 <template>
@@ -437,7 +440,7 @@ const grid: GridConfig = {
         v-if="!free_tap_this_upgrade"
         class="grid w-full pl-5"
         :style="{
-          gridTemplateColumns: grid.grid_template_columns,
+          gridTemplateColumns: non_special_grid.grid_template_columns,
         }"
       >
         <div
@@ -516,7 +519,16 @@ const grid: GridConfig = {
           <button
             @click="confirm"
             class="generic-button w-20!"
-            :disabled="optimizer_working"
+            :disabled="
+              optimizer_working ||
+              taps_since_last_input === upgrade.normal_dist.length - 1
+            "
+            :style="{
+              opacity:
+                taps_since_last_input === upgrade.normal_dist.length - 1
+                  ? 0.5
+                  : 1,
+            }"
           >
             Confirm
           </button>
@@ -578,29 +590,130 @@ const grid: GridConfig = {
           </div>
         </div>
       </div>
-      <div v-else class="col-span-2 flex flex-col items-end">
-        <div class="flex flex-row gap-1">
-          <span>Succeeded with this many special leaps remaining:</span>
-          <input
-            class="generic-input w-18!"
-            v-model="new_special_leaps"
-            type="number"
-            :min="0"
-            :max="parse_locale_int(active_profile.special_budget.data[0])"
-          />
-          <button
-            class="generic-button w-20! text-(--achieved)!"
-            @click="special_success_click"
-          >
-            Succeed
-          </button>
-        </div>
+      <div
+        v-else
+        class="col-span-2 grid"
+        :style="{
+          gridTemplateColumns: special_grid.grid_template_columns,
+        }"
+      >
+        <span class="self-center pr-1 text-right"
+          >Succeeded with this many special leaps remaining:</span
+        >
+        <input
+          class="generic-input w-18!"
+          v-model="new_special_leaps"
+          type="number"
+          :min="0"
+          :max="parse_locale_int(active_profile.special_budget.data[0])"
+        />
+
         <button
-          class="generic-button w-50! text-(--free-tap)!"
+          class="generic-button button-row w-20! text-(--achieved)!"
+          @click="special_success_click"
+        >
+          Succeed
+        </button>
+
+        <span class="self-center pr-1 text-right"
+          >({{ locale_to_fixed(upgrade.this_special_chance * 100, 2) }}% chance
+          to succeed
+          {{ index_in_special_state === 0 ? "" : "this AND everything above" }})
+        </span>
+        <button
+          class="generic-button col-span-2 mr-5 text-(--free-tap)!"
           @click="special_fail_click"
         >
           All free taps failed
         </button>
+
+        <button
+          class="reset-button min-w-full pt-2! text-right"
+          v-if="perform_order != 0"
+          @click="
+            () => (active_profile.keyed_upgrades[upgrade_key].expanded = false)
+          "
+        >
+          Hide
+        </button>
+        <button
+          class="annotation col-span-2 pt-2 underline"
+          @click="
+            () => {
+              expand_free_tap_artisan = !expand_free_tap_artisan;
+            }
+          "
+          :disabled="optimizer_working"
+          :style="{ cursor: optimizer_working ? 'not-allowed' : 'pointer' }"
+        >
+          {{
+            expand_free_tap_artisan
+              ? "Hide Artisan input"
+              : "Show artisan input"
+          }}
+        </button>
+      </div>
+      <div
+        v-if="expand_free_tap_artisan"
+        class="mt-1 grid w-max pl-5"
+        :style="{
+          gridTemplateColumns: non_special_grid.grid_template_columns,
+        }"
+      >
+        <span class="stat-label">Current artisan energy:</span>
+        <div class="flex flex-row">
+          <div class="stat-input">
+            <input
+              class="generic-input number-border w-13"
+              :style="{
+                backgroundColor: using_slider
+                  ? 'transparent'
+                  : 'var(--bg-bright)',
+              }"
+              v-model="starting_artisan"
+              inputmode="decimal"
+              :disabled="optimizer_working"
+              @change="manual_artisan_change"
+            />
+          </div>
+        </div>
+        <div class="button-row">
+          <button
+            @click="confirm"
+            class="generic-button w-20!"
+            :disabled="
+              optimizer_working ||
+              taps_since_last_input === upgrade.normal_dist.length - 1
+            "
+            :style="{
+              opacity:
+                taps_since_last_input === upgrade.normal_dist.length - 1
+                  ? 0.5
+                  : 1,
+            }"
+          >
+            Confirm
+          </button>
+        </div>
+
+        <span class="stat-label">Current base chance:</span>
+        <div class="stat-input">
+          <input
+            class="generic-input number-border w-10 pr-0!"
+            v-model="current_chance_percentage"
+            :min="upgrade.base_chance * 100"
+            :max="upgrade.base_chance * 100 * 2"
+            @change="manual_chance_change"
+            :disabled="optimizer_working"
+            inputmode="decimal"
+            :style="{
+              backgroundColor: using_slider
+                ? 'transparent'
+                : 'var(--bg-bright)',
+            }"
+          />
+          <span>%</span>
+        </div>
       </div>
     </div>
   </div>

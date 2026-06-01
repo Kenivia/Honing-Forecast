@@ -203,7 +203,9 @@ const optimizer_working = computed(get_optimizer_working);
           <div
             class="question-mark"
             v-tooltip.right="
-              'Auto-cost deduction is unavailable, I suggest only doing this when you\'re not starting from 0. '
+              is_normal
+                ? 'Inputting your progress as you go may produce instructions that save slightly more gold (~1-2% probably). No need to do this after every tap, just whenever you feel like it.'
+                : 'Auto-cost deduction is unavailable, I suggest only doing this when you\'re not starting from 0. '
             "
           />
         </div>

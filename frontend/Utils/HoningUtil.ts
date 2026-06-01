@@ -51,7 +51,7 @@ export function artisan_function(
   //   upgrade.state,
   //   upgrade.normal_dist,
   // );
-  return locale_to_fixed(Math.min(artisan, 1) * 100, 2);
+  return locale_to_fixed(Math.min(artisan, 1) * 100, 2, true);
 }
 // export function cumulative_chance(
 //   upgrade: Upgrade,
