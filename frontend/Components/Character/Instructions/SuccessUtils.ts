@@ -71,13 +71,13 @@ export function compute_used_materials(
   }
   return out;
 }
-export function snapshot_budgets(): BudgetSnapshot {
+export function make_budget_snapshot(): BudgetSnapshot {
   const {
     active_profile,
     active_roster_mats_owned,
     active_tradable_mats_owned,
   } = storeToRefs(useRosterStore());
-  // console.log("snap");
+  console.log("snap");
   return {
     bound_budgets: structuredClone(toRaw(active_profile.value.bound_budgets)),
     roster_mats: structuredClone(toRaw(active_roster_mats_owned.value)),
@@ -88,11 +88,12 @@ export function compute_remaininig_materials(
   used_materials: number[],
   inp_previous_budget?: BudgetSnapshot,
 ): RemainingMats {
+  console.log(used_materials, inp_previous_budget);
   const { active_profile } = storeToRefs(useRosterStore());
   const tier = active_profile.value.tier;
   const previous_budgets: BudgetSnapshot = inp_previous_budget
     ? inp_previous_budget
-    : snapshot_budgets();
+    : make_budget_snapshot();
   const bound_budgets: number[] = [];
   const roster_mats: number[] = [];
   const tradable_mats: number[] = [];

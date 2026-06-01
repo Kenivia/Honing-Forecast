@@ -16,6 +16,7 @@ import {
 } from "./CharacterProfile";
 import { get_valid_status_grid } from "@/Utils/StatusGrid";
 import { grids_to_keyed } from "@/Utils/KeyedUpgrades";
+import { BudgetSnapshot } from "@/Components/Character/Instructions/SuccessUtils";
 
 export interface RosterConfig {
   mats_prices: InputColumn[]; // mats_prices[tier].data[row] = "123"
@@ -36,6 +37,8 @@ export interface RosterConfig {
   enabled_annotations: boolean[];
   show_all_rows: boolean;
   market_fetch_failed: boolean;
+
+  budget_snapshot: BudgetSnapshot | null;
 }
 export const useRosterStore = defineStore("roster", {
   state: () => ({
@@ -134,6 +137,7 @@ export const DEFAULT_ROSTER_CONFIG: RosterConfig = {
   enabled_annotations: [true, true, false, false],
   show_all_rows: false,
   market_fetch_failed: true,
+  budget_snapshot: null,
 };
 
 export function load_roster_config(): RosterConfig {
@@ -270,6 +274,7 @@ export function write_roster_config(state) {
   //       "optimizer_worker_bundle",
   //       "histogram_worker_bundle",
   //       "optimizer_override",
+  //       "budget_snapshot",
   //     ]),
   //   );
   // } catch {

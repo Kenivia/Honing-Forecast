@@ -79,15 +79,16 @@ export interface OneUpgradeInput {
   piece_type: number;
   upgrade_index: number;
   is_normal_honing: boolean;
-  starting_artisan?: number;
-  starting_num_taps?: number;
-  state?: OneState[];
+  starting_artisan: number | null;
+  starting_num_taps: number | null;
+  state: OneState[] | null;
   unlocked: boolean;
-  adv_progress?: AdvProgress;
+  adv_progress: AdvProgress | null;
 
   // This is here because 1. it needs to persist through optimizser runs and 2. extra fields are ignored by serde so its perfect
   expanded: boolean;
   taps_since_last_input: number;
+  used_materials: number[] | null;
 }
 
 export type OneUpgradeKey = `${number},${number},${"true" | "false"},${number}`;
@@ -172,6 +173,7 @@ export function grids_to_keyed(
               adv_progress: adv_progress,
               expanded: false,
               taps_since_last_input: 0,
+              used_materials: null,
             };
             console.log("b", all_keyed[key]);
           } else {
@@ -186,6 +188,7 @@ export function grids_to_keyed(
               adv_progress: default_adv_progress,
               expanded: false,
               taps_since_last_input: 0,
+              used_materials: null,
             };
             console.log("c", all_keyed[key]);
           }

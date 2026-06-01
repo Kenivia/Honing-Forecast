@@ -211,6 +211,7 @@ const optimizer_working = computed(get_optimizer_working);
           ] in relevant_upgrade_arr"
           :key="`instructions-${upgrade.upgrade_index}-${upgrade.piece_type}-${upgrade.is_normal_honing}`"
           class="mats-row h-fit!"
+          :style="{ opacity: !optimizer_working ? 1 : 0.5 }"
         >
           <InstructionRow
             :upgrade="upgrade"

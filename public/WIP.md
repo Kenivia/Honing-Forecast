@@ -8,7 +8,7 @@ If you'd like to help with any of the below, feel free to get in touch via [Disc
 ## Immediate WIP
 
 - ~~fix success popup~~ nvm
-- Figure out how to do the
+- Figure out how to do the deduction stuff
 
 - make normal instructions (and other panels) collapsible
 

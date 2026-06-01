@@ -8,7 +8,7 @@ import {
 import { parse_locale_float } from "@/Utils/InputColumn";
 import { to_upgrade_key, Upgrade } from "@/Utils/KeyedUpgrades";
 import { storeToRefs } from "pinia";
-import { computed, nextTick, Ref, ref, watch } from "vue";
+import { computed, nextTick, Ref, ref, toRaw, watch } from "vue";
 import { start_all_workers, start_eval_hist } from "../CharWorkerUtils";
 import { artisan_function } from "@/Utils/HoningUtil";
 import "./details.css";
@@ -18,7 +18,7 @@ import {
   compute_remaininig_materials,
   compute_used_materials,
   RemainingMats,
-  snapshot_budgets,
+  make_budget_snapshot,
 } from "./SuccessUtils";
 import { StateBundle } from "@/WasmInterface/WasmWorker";
 import { FLOAT_TOL } from "@/Utils/Constants";
@@ -140,14 +140,12 @@ function manual_chance_change() {
   start_eval_hist();
 }
 
-const previous_budgets: Ref<null | BudgetSnapshot> = ref(null);
-
 const is_slider_update = ref(false);
 
 function reset_after_optimizer_run() {
   taps_since_last_input.value = 0;
   using_slider.value = true;
-  previous_budgets.value = null;
+  roster_config.value.budget_snapshot = null;
   const this_keyed =
     active_profile.value.keyed_upgrades[
       to_upgrade_key(
@@ -160,30 +158,23 @@ function reset_after_optimizer_run() {
 
   this_keyed.taps_since_last_input = 0;
 }
+const tier = computed(() => active_profile.value.tier);
 watch(
   [
-    () => active_profile.value.bound_budgets[active_profile.value.tier].data,
-    () => active_profile.value.bound_budgets[active_profile.value.tier].enabled,
+    () => active_profile.value.bound_budgets[tier.value].data,
+    () => active_profile.value.bound_budgets[tier.value].enabled,
   ],
   () => {
+    console.log(roster_config.value.budget_snapshot);
     if (!is_slider_update.value) {
       reset_after_optimizer_run();
-      // console.log("non-slider change");
+      console.log("non-slider change");
     }
-    // console.log("change");
+    console.log("change");
   },
   { deep: true },
 );
-const used_materials = computed(() =>
-  compute_used_materials(
-    props.upgrade,
-    taps_since_last_input.value,
-    juice_info.value,
-    0,
-    0,
-  ),
-);
-const tier = computed(() => active_profile.value.tier);
+
 function slider_input() {
   is_slider_update.value = true;
   using_slider.value = true;
@@ -210,25 +201,55 @@ function slider_input() {
           taps_since_last_input.value + props.upgrade.starting_num_taps,
         ))
   ).toFixed(2);
+  const this_keyed =
+    active_profile.value.keyed_upgrades[
+      to_upgrade_key(
+        props.upgrade.piece_type,
+        props.upgrade.upgrade_index,
+        props.upgrade.is_normal_honing,
+        active_profile.value.tier,
+      )
+    ];
 
-  if (previous_budgets.value === null) {
-    previous_budgets.value = snapshot_budgets();
-    // console.log("snap", toRaw(previous_budgets.value.bound_budgets[0].data));
-  }
-  // console.log(
-  //   "calc",
-  //   props.upgrade.starting_num_taps,
-  //   taps_since_last_input.value,
-  //   toRaw(previous_budgets.value.bound_budgets[0].data),
-  // );
-  const remaining_materials: RemainingMats = compute_remaininig_materials(
-    used_materials.value,
-    previous_budgets.value,
+  this_keyed.used_materials = compute_used_materials(
+    props.upgrade,
+    taps_since_last_input.value,
+    juice_info.value,
+    0,
+    0,
   );
 
-  // console.log(used_materials, remaining_materials.bound_budgets);
+  if (roster_config.value.budget_snapshot === null) {
+    console.log(roster_config.value.budget_snapshot);
+    roster_config.value.budget_snapshot = make_budget_snapshot();
+    console.log(
+      "snap",
+      toRaw(roster_config.value.budget_snapshot.bound_budgets[0].data),
+    );
+    console.log(roster_config.value.budget_snapshot);
+  }
+  console.log(
+    "calc",
+    props.upgrade.starting_num_taps,
+    taps_since_last_input.value,
+    toRaw(roster_config.value.budget_snapshot.bound_budgets[0].data),
+  );
+  const remaining_materials: RemainingMats = compute_remaininig_materials(
+    Object.entries(active_profile.value.keyed_upgrades)
+      .map(([_key, one_upgrade_input]) => one_upgrade_input.used_materials)
+      .reduce((prev, cur) =>
+        !prev
+          ? !cur
+            ? Array(this_keyed.used_materials.length).fill(0)
+            : prev
+          : prev.map((x, i) => x + (!cur ? 0 : cur[i])),
+      ),
+    roster_config.value.budget_snapshot,
+  );
 
-  used_materials.value.forEach((_, index) => {
+  console.log(remaining_materials.bound_budgets);
+
+  this_keyed.used_materials.forEach((_, index) => {
     if (active_profile.value.bound_budgets[tier.value].enabled[index]) {
       active_profile.value.bound_budgets[tier.value].data[index] =
         remaining_materials.bound_budgets[index].toLocaleString();
@@ -264,19 +285,14 @@ const taps_since_last_input = ref(0);
 const optimizer_working = computed(get_optimizer_working);
 const using_slider = ref(true);
 
-const should_click = computed(
-  () =>
-    props.perform_order == 0 &&
-    !props.free_tap_this_upgrade &&
-    !optimizer_working.value,
-);
 function reset() {
-  if (previous_budgets.value !== null) {
-    active_profile.value.bound_budgets = previous_budgets.value.bound_budgets;
+  if (roster_config.value.budget_snapshot !== null) {
+    active_profile.value.bound_budgets =
+      roster_config.value.budget_snapshot.bound_budgets;
     roster_config.value.roster_mats_owned[active_profile.value.roster_id] =
-      previous_budgets.value.roster_mats;
+      roster_config.value.budget_snapshot.roster_mats;
     roster_config.value.tradable_mats_owned[active_profile.value.roster_id] =
-      previous_budgets.value.tradable_mats;
+      roster_config.value.budget_snapshot.tradable_mats;
   }
 
   taps_since_last_input.value = 0;
@@ -292,6 +308,8 @@ function reset() {
     props.upgrade.starting_num_taps > 0
   ) {
     start_all_workers(); // starting optimizer cos the instruction needs to change
+  } else {
+    start_eval_hist();
   }
 }
 
@@ -343,13 +361,6 @@ const grid: GridConfig = {
           }
         "
         class="barebone-button w-fit"
-        :style="{
-          '--btn-hover-bg': should_click
-            ? 'var(--bg-very-bright)'
-            : 'var(--bg-main)',
-          color: should_click ? 'var(--text-main)' : 'var(--dont-click)',
-          cursor: 'pointer',
-        }"
       >
         Show input anyway
       </button>
@@ -360,8 +371,6 @@ const grid: GridConfig = {
         v-if="!free_tap_this_upgrade"
         class="grid w-full pl-5"
         :style="{
-          cursor: optimizer_working ? 'not-allowed' : '',
-          opacity: !optimizer_working ? 1 : 0.5,
           gridTemplateColumns: grid.grid_template_columns,
         }"
       >
@@ -400,18 +409,7 @@ const grid: GridConfig = {
         </div>
 
         <div class="button-row">
-          <button
-            class="generic-button w-20! text-(--achieved)!"
-            :style="{
-              color: optimizer_working
-                ? 'var(--warning-dark)'
-                : should_click
-                  ? 'var(--text-main)'
-                  : 'var(--dont-click)',
-              cursor: optimizer_working ? 'not-allowed' : 'pointer',
-              opacity: !optimizer_working ? 1 : 0.5,
-            }"
-          >
+          <button class="generic-button w-20! text-(--achieved)!">
             Succeed
           </button>
           <div
@@ -502,33 +500,11 @@ const grid: GridConfig = {
         <div class="flex flex-row">
           <span>Succeeded with this many special leaps remaining:</span>
           <input class="generic-input w-25!" />
-          <button
-            class="generic-button w-20! text-(--achieved)!"
-            :style="{
-              color: optimizer_working
-                ? 'var(--warning-dark)'
-                : should_click
-                  ? 'var(--text-main)'
-                  : 'var(--dont-click)',
-              cursor: optimizer_working ? 'not-allowed' : 'pointer',
-              opacity: !optimizer_working ? 1 : 0.5,
-            }"
-          >
+          <button class="generic-button w-20! text-(--achieved)!">
             Succeed
           </button>
         </div>
-        <button
-          class="generic-button text-(--free-tap)!"
-          :style="{
-            color: optimizer_working
-              ? 'var(--warning-dark)'
-              : should_click
-                ? 'var(--text-main)'
-                : 'var(--dont-click)',
-            cursor: optimizer_working ? 'not-allowed' : 'pointer',
-            opacity: props.perform_order == 0 && !optimizer_working ? 1 : 0.5,
-          }"
-        >
+        <button class="generic-button text-(--free-tap)!">
           All free taps failed
         </button>
       </div>
