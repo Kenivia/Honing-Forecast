@@ -3,11 +3,14 @@ import { useRosterStore } from "@/Stores/RosterConfig";
 import { to_upgrade_key, Upgrade } from "@/Utils/KeyedUpgrades";
 import { storeToRefs } from "pinia";
 import { computed, ref, watch } from "vue";
-import { start_all_workers, start_eval_hist } from "../CharWorkerUtils";
-import "./details.css";
-import { get_optimizer_working } from "./InstructionUtils";
+import {
+  start_all_workers,
+  start_eval_hist,
+} from "@/Components/Character/CharWorkerUtils";
+import "@/Components/Character/Instructions/Details/details.css";
+import { get_optimizer_working } from "@/Components/Character/Instructions/InstructionUtils";
 import { GridConfig } from "@/Utils/GridStyling";
-import { mark_upgrade_as_done } from "./SuccessUtils";
+import { mark_upgrade_as_done } from "@/Components/Character/Instructions/Details/NormalDetails/SuccessUtils";
 
 const { active_profile } = storeToRefs(useRosterStore());
 

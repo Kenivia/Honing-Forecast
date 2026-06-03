@@ -16,7 +16,7 @@ import {
 } from "./CharacterProfile";
 import { get_valid_status_grid } from "@/Utils/StatusGrid";
 import { grids_to_keyed } from "@/Utils/KeyedUpgrades";
-import { BudgetSnapshot } from "@/Components/Character/Instructions/SuccessUtils";
+import { BudgetSnapshot } from "@/Components/Character/Instructions/Details/NormalDetails/SuccessUtils";
 
 export interface RosterConfig {
   mats_prices: InputColumn[]; // mats_prices[tier].data[row] = "123"

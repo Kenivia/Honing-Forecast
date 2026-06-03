@@ -4,11 +4,10 @@ import { get_piece_name, get_icon_path, toOrdinal } from "@/Utils/Helpers";
 import { storeToRefs } from "pinia";
 import { computed } from "vue";
 import { to_upgrade_key, Upgrade } from "@/Utils/KeyedUpgrades";
-import ActualInstructions from "./ActualInstructions.vue";
-import NormalDetails from "./NormalDetails.vue";
-
-import { get_any_overwritten } from "./InstructionUtils";
-import AdvancedDetails from "./AdvancedDetails.vue";
+import ActualInstructions from "@/Components/Character/Instructions/ActualInstructions.vue";
+import NormalDetails from "@/Components/Character/Instructions/Details/NormalDetails/NormalDetails.vue";
+import { get_any_overwritten } from "@/Components/Character/Instructions/InstructionUtils";
+import AdvancedDetails from "@/Components/Character/Instructions/Details/AdvancedDetails.vue";
 
 const { active_profile } = storeToRefs(useRosterStore());
 

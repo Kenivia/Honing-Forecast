@@ -16,7 +16,7 @@ import {
 import { storeToRefs } from "pinia";
 import { ref } from "vue";
 import { RouterLink } from "vue-router";
-import Sidebar from "./Common/Sidebar.vue";
+import Sidebar from "@/Components/Common/Sidebar.vue";
 
 const roster_store = useRosterStore();
 const { roster_config, roster_ids } = storeToRefs(roster_store);

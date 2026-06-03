@@ -7,13 +7,13 @@ import { storeToRefs } from "pinia";
 
 import { onUnmounted, watch } from "vue";
 import { RouterLink, useRoute, useRouter } from "vue-router";
-import ControlPanel from "./ControlPanel.vue";
+import ControlPanel from "@/Components/Character/ControlPanel.vue";
 
-import Sidebar from "../Common/Sidebar.vue";
-import { start_all_workers } from "./CharWorkerUtils";
-import GraphControlPanel from "./GraphControlPanel.vue";
-import Guide from "./Guide.vue";
-import OptimizerControlPanel from "./OptimizerControlPanel/OptimizerControlPanel.vue";
+import Sidebar from "@/Components/Common/Sidebar.vue";
+import { start_all_workers } from "@/Components/Character/CharWorkerUtils";
+import GraphControlPanel from "@/Components/Character/GraphControlPanel.vue";
+import Guide from "@/Components/Character/Guide.vue";
+import OptimizerControlPanel from "@/Components/Character/OptimizerControlPanel/OptimizerControlPanel.vue";
 import Instructions from "@/Components/Character/Instructions/Instructions.vue";
 
 const route = useRoute();

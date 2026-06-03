@@ -11,17 +11,16 @@ import {
 import { TreatmentPlan } from "@/Stores/CharacterProfile";
 import { has_upgrades_in_range, metric_to_text } from "@/Utils/Helpers";
 import MaterialCell from "@/Components/Common/MaterialCell.vue";
-import MaterialGraph from "./MaterialGraph.vue";
+import MaterialGraph from "@/Components/Character/MaterialDist/MaterialGraph.vue";
 import { storeToRefs } from "pinia";
 import { useRosterStore } from "@/Stores/RosterConfig";
 import { computed, onMounted, ref, watchEffect } from "vue";
 import { build_payload } from "@/WasmInterface/PayloadBuilder";
 import { input_column_to_num } from "@/Utils/InputColumn";
-import { start_all_workers } from "../CharWorkerUtils";
+import { start_all_workers } from "@/Components/Character/CharWorkerUtils";
 import { WasmOp } from "@/WasmInterface/WasmWorker";
 import { GridConfig } from "@/Utils/GridStyling";
 import { useMediaIsNarrow } from "@/Utils/WindowSize";
-import { LATEST_VERSION } from "@/Utils/Changelog.js";
 
 const { active_profile } = storeToRefs(useRosterStore());
 const {

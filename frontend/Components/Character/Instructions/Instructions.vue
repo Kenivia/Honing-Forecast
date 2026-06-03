@@ -170,7 +170,6 @@ const optimizer_working = computed(get_optimizer_working);
       class="card-body outer-grid"
       :style="{
         '--grid-cols': grid.grid_template_columns,
-        paddingRight: is_normal ? '0px ' : '',
       }"
     >
       <div class="mats-row">
@@ -204,7 +203,7 @@ const optimizer_working = computed(get_optimizer_working);
             class="question-mark"
             v-tooltip.right="
               is_normal
-                ? 'Inputting your progress as you go may produce instructions that save slightly more gold (~1-2% probably). No need to do this after every tap, just whenever you feel like it.'
+                ? 'Inputting your progress as you go may produce instructions that save a small amount gold. No need to do this after every tap, just whenever you feel like it.'
                 : 'Auto-cost deduction is unavailable, I suggest only doing this when you\'re not starting from 0. '
             "
           />

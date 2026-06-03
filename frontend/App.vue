@@ -1,13 +1,13 @@
 <script setup lang="ts">
 import { RouterLink, RouterView, useRoute, useRouter } from "vue-router";
-import { get_icon_path } from "./Utils/Helpers";
-import { CharProfile } from "./Stores/CharacterProfile";
+import { get_icon_path } from "@/Utils/Helpers";
+import { CharProfile } from "@/Stores/CharacterProfile";
 import {
   debounced_write_roster_config,
   useRosterStore,
-} from "./Stores/RosterConfig";
-import { useMediaIsNarrow } from "./Utils/WindowSize";
-import { fetch_callback, useTimedFetch } from "./Utils/MarketDataFetcher";
+} from "@/Stores/RosterConfig";
+import { useMediaIsNarrow } from "@/Utils/WindowSize";
+import { fetch_callback, useTimedFetch } from "@/Utils/MarketDataFetcher";
 import { computed } from "vue";
 import { storeToRefs } from "pinia";
 
