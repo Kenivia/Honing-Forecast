@@ -165,7 +165,7 @@
 
 .question-mark::after {
   content: "?";
-  font-weight: 700;
+  font-weight: 800;
 }
 .annotation {
   color: var(--text-muted);

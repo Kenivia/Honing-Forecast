@@ -104,7 +104,7 @@ export function compute_remaininig_materials(
   used_materials: number[],
   inp_previous_budget?: BudgetSnapshot,
 ): RemainingMats {
-  console.log(used_materials, inp_previous_budget);
+  // console.log(used_materials, inp_previous_budget);
   const { active_profile } = storeToRefs(useRosterStore());
   const tier = active_profile.value.tier;
   const previous_budgets: BudgetSnapshot = inp_previous_budget
@@ -166,23 +166,19 @@ export function compute_remaininig_materials(
   return { bound_budgets, roster_mats, tradable_mats };
 }
 
-export function apply_remaining_mats(upgrade: Upgrade) {
+export function apply_remaining_mats() {
   const {
     active_profile,
     roster_config,
     active_roster_mats_owned,
     active_tradable_mats_owned,
   } = storeToRefs(useRosterStore());
+
+  if (!roster_config.value.auto_deduct_costs) {
+    return;
+  }
   const tier = active_profile.value.tier;
-  const this_keyed =
-    active_profile.value.keyed_upgrades[
-      to_upgrade_key(
-        upgrade.piece_type,
-        upgrade.upgrade_index,
-        upgrade.is_normal_honing,
-        active_profile.value.tier,
-      )
-    ];
+
   if (roster_config.value.budget_snapshot === null) {
     // console.log(roster_config.value.budget_snapshot);
     roster_config.value.budget_snapshot = make_budget_snapshot();
@@ -198,19 +194,20 @@ export function apply_remaining_mats(upgrade: Upgrade) {
   //   taps_since_last_input.value,
   //   toRaw(roster_config.value.budget_snapshot.bound_budgets[0].data),
   // );
+  const reference_length = active_profile.value.bound_budgets[tier].data;
   const remaining_materials: RemainingMats = compute_remaininig_materials(
     Object.values(active_profile.value.keyed_upgrades)
       .map((u) => u.used_materials)
       .reduce(
         (acc, cur) => acc.map((x, i) => x + (cur?.[i] ?? 0)),
-        Array(this_keyed.used_materials.length).fill(0),
+        Array(reference_length.length).fill(0),
       ),
     roster_config.value.budget_snapshot,
   );
 
   // console.log(remaining_materials.bound_budgets);
 
-  this_keyed.used_materials.forEach((_, index) => {
+  reference_length.forEach((_, index) => {
     if (active_profile.value.bound_budgets[tier].enabled[index]) {
       active_profile.value.bound_budgets[tier].data[index] =
         remaining_materials.bound_budgets[index].toLocaleString();

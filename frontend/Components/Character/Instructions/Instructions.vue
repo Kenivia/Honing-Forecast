@@ -197,7 +197,7 @@ const optimizer_working = computed(get_optimizer_working);
         </div>
         <div class="title-nowrap">
           <span>
-            Progress update ({{ is_normal ? "" : "VERY " }}Optional)
+            Progress update {{ is_normal ? "" : "(Not recommended)" }}
           </span>
           <div
             class="question-mark"

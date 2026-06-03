@@ -32,7 +32,7 @@ export function start_all_workers() {
 
   active_profile.value.optimizer_worker_bundle.est_progress_percentage = 0;
   if (active_profile.value.auto_start_optimizer) {
-    active_profile.value.optimizer_worker_bundle.start(
+    active_profile.value.optimizer_worker_bundle.debounced_start(
       WasmOp.OptimizeAverage,
       build_payload(),
       start_eval_hist,

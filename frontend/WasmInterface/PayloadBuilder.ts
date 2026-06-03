@@ -96,6 +96,10 @@ function keyed_to_array(
       : out.adv_progress !== null &&
         (out.adv_progress[0] > 0 || out.adv_progress[1] > 0);
 
+    if (out.state !== null && out.state.length === 0) {
+      // special cased, reset will wipe it like this, so dont copy from optimizer bundle
+      return out;
+    }
     out.state = upgrade.state
       .slice(out.taps_since_last_input)
       .map((x, index) =>

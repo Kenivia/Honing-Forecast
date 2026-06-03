@@ -61,7 +61,12 @@ watchEffect(() => {
         <input v-model="active_profile.auto_start_optimizer" type="checkbox" />
         <span>Auto start optimizer</span>
       </label>
-      <label class="">
+      <label class="control-panel-checkbox-row">
+        <input v-model="roster_config.auto_deduct_costs" type="checkbox" />
+        <span>Slider auto-deduct costs</span>
+      </label>
+
+      <label>
         <button
           class="generic-button ml-5 text-(--warning-dark)!"
           @click="resetActive"

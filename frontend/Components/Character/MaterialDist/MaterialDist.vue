@@ -474,8 +474,7 @@ const is924Narrow = useMediaIsNarrow(924); // this turns out to be the width whe
     <div
       v-if="
         active_profile.optimizer_treatment_plan ==
-          TreatmentPlan.TreatRosterAsBound &&
-        active_profile.auto_start_optimizer
+        TreatmentPlan.TreatRosterAsBound
       "
       class="metric-container"
     >

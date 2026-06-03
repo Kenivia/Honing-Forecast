@@ -64,7 +64,12 @@ watch(
   ],
   () => {
     // console.log("start", active_profile.value, roster_config.value)
-    start_all_workers();
+    if (
+      active_profile.value.auto_start_optimizer &&
+      active_profile.value.optimizer_worker_bundle.status !== "busy"
+    ) {
+      start_all_workers();
+    }
   },
   { deep: true, immediate: true },
 );
@@ -86,7 +91,7 @@ onUnmounted(() => {
           Guide
         </RouterLink>
         <RouterLink to="calc" class="side-bar-link" @click="close">
-          Setup & Cost Analysis
+          Calc
         </RouterLink>
       </div>
 

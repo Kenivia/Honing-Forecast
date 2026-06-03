@@ -39,7 +39,9 @@ export interface RosterConfig {
   market_fetch_failed: boolean;
 
   budget_snapshot: BudgetSnapshot | null;
-  is_slider_update: boolean;
+  is_details_update: boolean;
+
+  auto_deduct_costs: boolean;
 }
 export const useRosterStore = defineStore("roster", {
   state: () => ({
@@ -139,7 +141,8 @@ export const DEFAULT_ROSTER_CONFIG: RosterConfig = {
   show_all_rows: false,
   market_fetch_failed: true,
   budget_snapshot: null,
-  is_slider_update: false,
+  is_details_update: false,
+  auto_deduct_costs: true,
 };
 
 export function load_roster_config(): RosterConfig {

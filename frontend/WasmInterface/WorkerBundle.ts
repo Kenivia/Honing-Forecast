@@ -160,7 +160,7 @@ export function createWorkerBundle() {
     result,
     error,
     est_progress_percentage,
-    start: debounced_start,
+    debounced_start,
     throttled_start,
     cancel,
     cancel_and_clear_prev_result,

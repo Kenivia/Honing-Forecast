@@ -11,6 +11,7 @@ const current_chance_percentage = defineModel<string>(
 
 defineProps<{
   base_chance: number;
+  extra_chance: number;
   optimizer_working: boolean;
   taps_since_last_input: number;
   normal_dist_length: number;
@@ -36,7 +37,6 @@ const emit = defineEmits<{
         }"
         v-model="starting_artisan"
         inputmode="decimal"
-        :disabled="optimizer_working"
         @change="emit('manual_artisan_change')"
       />
     </div>
@@ -52,11 +52,13 @@ const emit = defineEmits<{
     <button
       @click="emit('confirm')"
       class="generic-button w-20!"
-      :disabled="
-        optimizer_working || taps_since_last_input === normal_dist_length - 1
-      "
+      :disabled="taps_since_last_input === normal_dist_length - 1"
       :style="{
         opacity: taps_since_last_input === normal_dist_length - 1 ? 0.5 : 1,
+        cursor:
+          taps_since_last_input === normal_dist_length - 1
+            ? 'not-allowed'
+            : 'pointer',
       }"
     >
       Confirm
@@ -74,10 +76,9 @@ const emit = defineEmits<{
     <input
       class="generic-input number-border w-10 pr-0!"
       v-model="current_chance_percentage"
-      :min="base_chance * 100"
-      :max="base_chance * 100 * 2"
+      :min="base_chance * 100 + extra_chance"
+      :max="base_chance * 100 * 2 + extra_chance"
       @change="emit('manual_chance_change')"
-      :disabled="optimizer_working"
       inputmode="decimal"
       :style="{
         backgroundColor: using_slider ? 'transparent' : 'var(--bg-bright)',

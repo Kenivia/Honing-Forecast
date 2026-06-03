@@ -24,7 +24,7 @@ import {
 import { GridConfig } from "@/Utils/GridStyling";
 import ManualArtisanInput from "@/Components/Character/Instructions/Details/ManualArtisanInput.vue";
 
-const { active_profile, roster_config } = storeToRefs(useRosterStore());
+const { active_profile } = storeToRefs(useRosterStore());
 
 const props = defineProps<{
   upgrade: Upgrade;
@@ -141,21 +141,12 @@ function write_normal_progress() {
   this_keyed.taps_since_last_input = taps_since_last_input.value; // which is 0 when using_slice is false
 }
 
-function restore_budget_snapshot() {
-  if (roster_config.value.budget_snapshot !== null) {
-    active_profile.value.bound_budgets =
-      roster_config.value.budget_snapshot.bound_budgets;
-    roster_config.value.roster_mats_owned[active_profile.value.roster_id] =
-      roster_config.value.budget_snapshot.roster_mats;
-    roster_config.value.tradable_mats_owned[active_profile.value.roster_id] =
-      roster_config.value.budget_snapshot.tradable_mats;
-  }
-}
-
 function manual_artisan_change() {
   taps_since_last_input.value = 0;
   using_slider.value = false;
-  restore_budget_snapshot();
+  const this_keyed = active_profile.value.keyed_upgrades[upgrade_key.value];
+  this_keyed.used_materials = null;
+  apply_remaining_mats();
 
   starting_artisan.value = clean_percentage_input(
     starting_artisan.value,
@@ -169,7 +160,9 @@ function manual_artisan_change() {
 function manual_chance_change() {
   taps_since_last_input.value = 0;
   using_slider.value = false;
-  restore_budget_snapshot();
+  const this_keyed = active_profile.value.keyed_upgrades[upgrade_key.value];
+  this_keyed.used_materials = null;
+  apply_remaining_mats();
 
   current_chance_percentage.value = clean_percentage_input(
     locale_to_fixed(
@@ -198,7 +191,7 @@ function confirm() {
   start_all_workers();
 }
 
-function special_success_click() {
+function special_succeed_click() {
   active_profile.value.special_budget.data[0] =
     new_special_leaps.value.toLocaleString();
   const this_keyed = active_profile.value.keyed_upgrades[upgrade_key.value];
@@ -211,7 +204,7 @@ function special_success_click() {
     0,
     false, // so this is just the unlock cost
   );
-  apply_remaining_mats(props.upgrade);
+  apply_remaining_mats();
   mark_upgrade_as_done(props.upgrade);
 }
 
@@ -243,7 +236,7 @@ const special_grid: GridConfig = {
 
     <button
       class="generic-button button-row w-20! text-(--achieved)!"
-      @click="special_success_click"
+      @click="special_succeed_click"
     >
       Succeed
     </button>
@@ -278,8 +271,6 @@ const special_grid: GridConfig = {
           expand_free_tap_artisan = !expand_free_tap_artisan;
         }
       "
-      :disabled="optimizer_working"
-      :style="{ cursor: optimizer_working ? 'not-allowed' : 'pointer' }"
     >
       {{
         expand_free_tap_artisan ? "Hide Artisan input" : "Show artisan input"
@@ -297,6 +288,7 @@ const special_grid: GridConfig = {
         v-model:starting_artisan="starting_artisan"
         v-model:current_chance_percentage="current_chance_percentage"
         :base_chance="upgrade.base_chance"
+        :extra_chance="upgrade.extra_chance"
         :optimizer_working="optimizer_working"
         :taps_since_last_input="taps_since_last_input"
         :normal_dist_length="upgrade.normal_dist.length"
