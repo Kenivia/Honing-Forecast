@@ -200,13 +200,16 @@ function reset_due_to_optimizer_run() {
 }
 
 watch(
-  () => optimizer_working.value,
+  () => active_profile.value.optimizer_worker_bundle.run_counter,
   () => {
+    console.log("optimizer working changed", optimizer_working.value);
     // only do this as we start the optimizer,  shouldn't really matter but whatever
     if (optimizer_working.value) {
+      console.log("watch reset");
       reset_due_to_optimizer_run();
     }
   },
+  { deep: true },
 );
 
 // changes in bound budgets will start the optimizer so it'll be gucci
@@ -217,7 +220,7 @@ watch(
     () => active_profile.value.bound_budgets[tier.value].enabled,
   ],
   () => {
-    if (active_profile.value.auto_start_optimizer) {
+    if (!active_profile.value.auto_start_optimizer) {
       // console.log(roster_config.value.budget_snapshot);
       if (!roster_config.value.is_details_update) {
         reset_due_to_optimizer_run();
@@ -332,8 +335,9 @@ function succeed_click() {
     false, // so 0 also applies unlock cost when pressed explicitly
   );
   apply_remaining_mats();
-  mark_upgrade_as_done(props.upgrade); // this will trigger optimizer run
+  reset_due_to_optimizer_run(); // THIS IS NEEDED BECAUSE this component is deleted when that happens and the watch statement wont catch it
 
+  mark_upgrade_as_done(props.upgrade); // this will trigger optimizer run
   nextTick(() => {
     roster_config.value.is_details_update = false;
   });

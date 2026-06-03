@@ -12,6 +12,7 @@ export function createWorkerBundle() {
   const result = shallowRef(null);
   const est_progress_percentage = ref(0);
   const last_intermediate_time = ref(0);
+  const run_counter = ref(0);
 
   let debounceTimer = null;
   let throttle_timer: ReturnType<typeof setTimeout> | null = null;
@@ -58,6 +59,7 @@ export function createWorkerBundle() {
     if (cancel) {
       cancel_worker();
     }
+    run_counter.value += 1;
 
     status.value = "busy";
     error.value = null;
@@ -164,5 +166,6 @@ export function createWorkerBundle() {
     throttled_start,
     cancel,
     cancel_and_clear_prev_result,
+    run_counter,
   };
 }

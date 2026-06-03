@@ -1,6 +1,6 @@
 import { useRosterStore } from "@/Stores/RosterConfig";
 import { input_column_to_num, InputColumn } from "@/Utils/InputColumn";
-import { to_upgrade_key, Upgrade, UpgradeStatus } from "@/Utils/KeyedUpgrades";
+import { Upgrade, UpgradeStatus } from "@/Utils/KeyedUpgrades";
 import { storeToRefs } from "pinia";
 import { toRaw } from "vue";
 import { grid_change_callback } from "@/Components/Character/CharWorkerUtils";
