@@ -45,6 +45,8 @@ If you'd like to help with any of the below, feel free to get in touch via [Disc
 
 - make average < 1 show 1 sig fig, including (and especially) the gold values
 
+- change the settings parsing stuff because changing it every update is so aids, not sure how tho
+
 ## Roadmap (big projects)
 
 ### 1st: ~~re-write the frontend~~

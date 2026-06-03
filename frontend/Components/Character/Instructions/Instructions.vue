@@ -200,11 +200,10 @@ const optimizer_working = computed(get_optimizer_working);
             Progress update {{ is_normal ? "" : "(Not recommended)" }}
           </span>
           <div
+            v-if="!is_normal"
             class="question-mark"
             v-tooltip.right="
-              is_normal
-                ? 'Inputting your progress as you go may produce instructions that save a small amount gold. No need to do this after every tap, just whenever you feel like it.'
-                : 'Auto-cost deduction is unavailable, I suggest only doing this when you\'re not starting from 0. '
+              'Auto-cost deduction is unavailable, I suggest only doing this when you\'re not starting from 0. '
             "
           />
         </div>

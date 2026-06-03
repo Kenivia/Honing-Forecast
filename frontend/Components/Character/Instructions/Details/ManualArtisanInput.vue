@@ -67,7 +67,7 @@ const emit = defineEmits<{
       v-if="show_hints"
       class="question-mark"
       v-tooltip.left="
-        'Use the slider to update artisan & deduct costs, then press Confirm to re-run the optimizer.'
+        'Use the slider to update artisan & deduct costs, then press Confirm to re-run the optimizer. Careful that the order of the upgrades can change, check the far left for what upgrade it is. '
       "
     />
   </div>

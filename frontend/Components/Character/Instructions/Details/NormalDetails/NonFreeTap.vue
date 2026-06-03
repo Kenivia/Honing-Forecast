@@ -126,71 +126,69 @@ function clear_used_budget() {
   const this_keyed = active_profile.value.keyed_upgrades[upgrade_key.value];
   this_keyed.used_materials = null;
 }
-
-function manual_artisan_change() {
+function manual_change_wrapper(func: () => void) {
   roster_config.value.is_details_update = true;
-  // console.log(using_slider.value);
   taps_since_last_input.value = 0;
   using_slider.value = false;
-  // console.log(using_slider.value);
   clear_used_budget();
+  apply_remaining_mats();
 
-  starting_artisan.value = clean_percentage_input(
-    starting_artisan.value,
-    0,
-    true,
-  );
-  if (parse_locale_float(starting_artisan.value) > FLOAT_TOL) {
-    // for the topmost upgrade, which may have expanded false still (and might get sorted down )
-    active_profile.value.keyed_upgrades[upgrade_key.value].expanded = true;
-  }
+  func();
+
   write_normal_progress();
   start_eval_hist();
   nextTick(() => {
     roster_config.value.is_details_update = false;
+  });
+}
+function manual_artisan_change() {
+  manual_change_wrapper(() => {
+    starting_artisan.value = clean_percentage_input(
+      starting_artisan.value,
+      0,
+      true,
+    );
+    if (parse_locale_float(starting_artisan.value) > FLOAT_TOL) {
+      // for the topmost upgrade, which may have expanded false still (and might get sorted down )
+      active_profile.value.keyed_upgrades[upgrade_key.value].expanded = true;
+    }
   });
 }
 
 function manual_chance_change() {
-  roster_config.value.is_details_update = true;
-  taps_since_last_input.value = 0;
-  using_slider.value = false;
-  clear_used_budget();
-
-  current_chance_percentage.value = clean_percentage_input(
-    locale_to_fixed(
-      clamp(
-        100 * props.upgrade.base_chance + props.upgrade.extra_chance * 100,
-        parse_locale_float(
-          locale_to_fixed(
-            ((current_chance_to_num_taps.value / 10) *
-              props.upgrade.base_chance +
-              props.upgrade.base_chance) *
-              100,
-            2,
+  manual_change_wrapper(() => {
+    current_chance_percentage.value = clean_percentage_input(
+      locale_to_fixed(
+        clamp(
+          100 * props.upgrade.base_chance + props.upgrade.extra_chance * 100,
+          parse_locale_float(
+            locale_to_fixed(
+              ((current_chance_to_num_taps.value / 10) *
+                props.upgrade.base_chance +
+                props.upgrade.base_chance) *
+                100,
+              2,
+            ),
           ),
+          100 * props.upgrade.base_chance * 2 +
+            props.upgrade.extra_chance * 100,
         ),
-        100 * props.upgrade.base_chance * 2 + props.upgrade.extra_chance * 100,
+        2,
       ),
-      2,
-    ),
-    props.upgrade.base_chance * 100 + props.upgrade.extra_chance * 100,
-  );
-  if (
-    parse_locale_float(current_chance_percentage.value) >
-    props.upgrade.base_chance * 100 + props.upgrade.extra_chance * 100
-  ) {
-    // for the topmost upgrade, which may have expanded false still (and might get sorted down )
-    active_profile.value.keyed_upgrades[upgrade_key.value].expanded = true;
-  }
-  write_normal_progress();
-  start_eval_hist();
-  nextTick(() => {
-    roster_config.value.is_details_update = false;
+      props.upgrade.base_chance * 100 + props.upgrade.extra_chance * 100,
+    );
+    if (
+      parse_locale_float(current_chance_percentage.value) >
+      props.upgrade.base_chance * 100 + props.upgrade.extra_chance * 100
+    ) {
+      // for the topmost upgrade, which may have expanded false still (and might get sorted down )
+      active_profile.value.keyed_upgrades[upgrade_key.value].expanded = true;
+    }
   });
 }
 
 function reset_taps() {
+  // this also runs on
   taps_since_last_input.value = 0;
   using_slider.value = true;
   const this_keyed = active_profile.value.keyed_upgrades[upgrade_key.value];
@@ -203,7 +201,6 @@ watch(
     // console.log("optimizer working changed", optimizer_working.value);
     // only do this as we start the optimizer,  shouldn't really matter but whatever
     if (optimizer_working.value) {
-      // console.log("watch reset");
       roster_config.value.budget_snapshot = null;
       reset_taps();
       clear_used_budget();
@@ -224,7 +221,7 @@ watch(
       // console.log(roster_config.value.budget_snapshot);
       if (!roster_config.value.is_details_update) {
         reset_taps();
-        console.log("non-slider change");
+        // console.log("non-slider change");
       }
       // console.log("change");
     }
@@ -264,7 +261,7 @@ function slider_input() {
           )),
     2,
   );
-  set_used_materials();
+  set_used_materials(true);
   apply_remaining_mats();
   write_normal_progress();
   start_eval_hist();
@@ -311,7 +308,7 @@ function reset() {
     roster_config.value.is_details_update = false;
   });
 }
-function set_used_materials() {
+function set_used_materials(pretend_zero_no_unlock: boolean) {
   const this_keyed = active_profile.value.keyed_upgrades[upgrade_key.value];
 
   this_keyed.used_materials = compute_used_materials(
@@ -320,14 +317,14 @@ function set_used_materials() {
     juice_info.value,
     0,
     0,
-    false, // so 0 also applies unlock cost when pressed explicitly
+    pretend_zero_no_unlock,
   );
 }
 
 function succeed_click() {
   roster_config.value.is_details_update = true;
 
-  set_used_materials();
+  set_used_materials(false); // deduct unlock costs (just like free tap)
   apply_remaining_mats();
   reset_taps(); // THIS IS NEEDED BECAUSE this component is deleted when that happens and the watch statement wont catch it
 

@@ -39,13 +39,19 @@ export function compute_used_materials(
   if (!upgrade.cost_dist) return [];
   let out = new Array(upgrade.cost_dist.length).fill(0);
 
+  // console.log(
+  //   pretend_zero_no_unlock,
+  //   upgrade.starting_num_taps,
+  //   taps_since_last_run,
+  // );
   for (let cost_type = 0; cost_type < 7; cost_type++) {
     out[cost_type] =
       upgrade.unlock_costs[cost_type] *
-        (pretend_zero_no_unlock &&
-        taps_since_last_run + upgrade.starting_num_taps == 0
+        (pretend_zero_no_unlock && taps_since_last_run === 0
           ? 0
-          : 1) +
+          : upgrade.starting_num_taps !== 0
+            ? 0
+            : 1) +
       upgrade.costs[cost_type] * taps_since_last_run;
   }
 

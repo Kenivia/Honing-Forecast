@@ -131,7 +131,7 @@ def format_commit_row(commit: dict) -> str:
 
 def build_markdown(version: str, new_commits: list[dict]) -> str:
     lines = [
-        f"#{version}\n",
+        f"# {version}\n",
                "## Changes",
                       "## Commits ",
         "| Date | Commit Message |  Contributor | Commit  |",
