@@ -42,7 +42,10 @@ export function compute_used_materials(
   for (let cost_type = 0; cost_type < 7; cost_type++) {
     out[cost_type] =
       upgrade.unlock_costs[cost_type] *
-        (pretend_zero_no_unlock && taps_since_last_run == 0 ? 0 : 1) +
+        (pretend_zero_no_unlock &&
+        taps_since_last_run + upgrade.starting_num_taps == 0
+          ? 0
+          : 1) +
       upgrade.costs[cost_type] * taps_since_last_run;
   }
 

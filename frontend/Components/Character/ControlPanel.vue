@@ -23,7 +23,7 @@ const treatment_tick = ref(
     TreatmentPlan.TreatRosterAsBound,
 );
 watchEffect(() => {
-  console.log("changed");
+  // console.log("changed");
   if (treatment_tick.value) {
     active_profile.value.optimizer_treatment_plan =
       TreatmentPlan.TreatRosterAsBound;

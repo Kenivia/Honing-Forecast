@@ -410,7 +410,7 @@ const is924Narrow = useMediaIsNarrow(924); // this turns out to be the width whe
             :callback="() => start_all_workers()"
           ></MaterialCell>
           <span
-            class="text-xs text-(--free-tap) underline hover:text-(--free-tap-bright)"
+            class="h-max text-xs leading-3 text-(--free-tap) underline hover:text-(--free-tap-bright)"
             @click="() => (show_special_guide = true)"
             >Should I use in T4 or convert?</span
           >

@@ -37,6 +37,7 @@ const actual_expanded = computed(
     class="flex w-full flex-col items-center"
     :style="{
       gridColumn: free_tap_this_upgrade ? 'span 2' : 'span 1',
+      opacity: 1,
     }"
   >
     <span

@@ -190,23 +190,23 @@ function manual_chance_change() {
   });
 }
 
-function reset_due_to_optimizer_run() {
+function reset_taps() {
   taps_since_last_input.value = 0;
   using_slider.value = true;
-  roster_config.value.budget_snapshot = null;
   const this_keyed = active_profile.value.keyed_upgrades[upgrade_key.value];
   this_keyed.taps_since_last_input = 0;
-  clear_used_budget();
 }
 
 watch(
   () => active_profile.value.optimizer_worker_bundle.run_counter,
   () => {
-    console.log("optimizer working changed", optimizer_working.value);
+    // console.log("optimizer working changed", optimizer_working.value);
     // only do this as we start the optimizer,  shouldn't really matter but whatever
     if (optimizer_working.value) {
-      console.log("watch reset");
-      reset_due_to_optimizer_run();
+      // console.log("watch reset");
+      roster_config.value.budget_snapshot = null;
+      reset_taps();
+      clear_used_budget();
     }
   },
   { deep: true },
@@ -223,7 +223,7 @@ watch(
     if (!active_profile.value.auto_start_optimizer) {
       // console.log(roster_config.value.budget_snapshot);
       if (!roster_config.value.is_details_update) {
-        reset_due_to_optimizer_run();
+        reset_taps();
         console.log("non-slider change");
       }
       // console.log("change");
@@ -264,16 +264,7 @@ function slider_input() {
           )),
     2,
   );
-  const this_keyed = active_profile.value.keyed_upgrades[upgrade_key.value];
-
-  this_keyed.used_materials = compute_used_materials(
-    props.upgrade,
-    taps_since_last_input.value,
-    juice_info.value,
-    0,
-    0,
-    true,
-  );
+  set_used_materials();
   apply_remaining_mats();
   write_normal_progress();
   start_eval_hist();
@@ -285,7 +276,7 @@ function slider_input() {
 
 function confirm() {
   start_all_workers();
-  reset_due_to_optimizer_run(); // this is explicitly here because if it's already running then we need to trigger it manunally
+  reset_taps(); // this is explicitly here because if it's already running then we need to trigger it manunally
 }
 
 function reset() {
@@ -302,9 +293,8 @@ function reset() {
 
   this_keyed.state = []; // clearing state because like the previous entries aren't here anymore, whatever state we have is kinda bogus. keyed_to_array is special cased to not overwrite this
 
-  write_normal_progress();
-
   clear_used_budget();
+  write_normal_progress();
   apply_remaining_mats();
   using_slider.value = true;
 
@@ -321,9 +311,7 @@ function reset() {
     roster_config.value.is_details_update = false;
   });
 }
-
-function succeed_click() {
-  roster_config.value.is_details_update = true;
+function set_used_materials() {
   const this_keyed = active_profile.value.keyed_upgrades[upgrade_key.value];
 
   this_keyed.used_materials = compute_used_materials(
@@ -334,8 +322,14 @@ function succeed_click() {
     0,
     false, // so 0 also applies unlock cost when pressed explicitly
   );
+}
+
+function succeed_click() {
+  roster_config.value.is_details_update = true;
+
+  set_used_materials();
   apply_remaining_mats();
-  reset_due_to_optimizer_run(); // THIS IS NEEDED BECAUSE this component is deleted when that happens and the watch statement wont catch it
+  reset_taps(); // THIS IS NEEDED BECAUSE this component is deleted when that happens and the watch statement wont catch it
 
   mark_upgrade_as_done(props.upgrade); // this will trigger optimizer run
   nextTick(() => {
@@ -430,15 +424,14 @@ const non_special_grid: GridConfig = {
         v-if="
           upgrade.starting_artisan > 0 ||
           upgrade.starting_num_taps > 0 ||
-          parse_locale_float(starting_artisan) > FLOAT_TOL ||
-          Math.abs(
-            parse_locale_float(current_chance_percentage) -
-              upgrade.base_chance * 100 -
-              upgrade.extra_chance * 100,
-          ) > FLOAT_TOL
+          !using_slider
         "
       >
-        Reset this upgrade
+        {{
+          upgrade.starting_artisan > 0 || upgrade.starting_num_taps > 0
+            ? "Reset this upgrade"
+            : "Restore default"
+        }}
       </button>
       <div v-else class="contents">
         <button

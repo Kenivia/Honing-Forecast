@@ -123,6 +123,7 @@ const grid: GridConfig = {
     class="grid w-full pl-5"
     :style="{
       gridTemplateColumns: grid.grid_template_columns,
+      opacity: 1,
     }"
   >
     <span class="stat-label">Current upgrade:</span>

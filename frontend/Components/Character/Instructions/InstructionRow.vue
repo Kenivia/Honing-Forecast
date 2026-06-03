@@ -6,7 +6,10 @@ import { computed } from "vue";
 import { to_upgrade_key, Upgrade } from "@/Utils/KeyedUpgrades";
 import ActualInstructions from "@/Components/Character/Instructions/ActualInstructions.vue";
 import NormalDetails from "@/Components/Character/Instructions/Details/NormalDetails/NormalDetails.vue";
-import { get_any_overwritten } from "@/Components/Character/Instructions/InstructionUtils";
+import {
+  get_any_overwritten,
+  get_optimizer_working,
+} from "@/Components/Character/Instructions/InstructionUtils";
 import AdvancedDetails from "@/Components/Character/Instructions/Details/AdvancedDetails.vue";
 
 const { active_profile } = storeToRefs(useRosterStore());
@@ -26,6 +29,7 @@ const free_tap_this_upgrade = computed(() => {
     props.upgrade.this_special_chance > 0
   );
 });
+const optimizer_working = computed(get_optimizer_working);
 </script>
 
 <template>
@@ -50,13 +54,20 @@ const free_tap_this_upgrade = computed(() => {
     />
   </div>
 
-  <div v-if="upgrade.is_normal_honing">
+  <div
+    v-if="upgrade.is_normal_honing"
+    :style="{ opacity: !optimizer_working ? 1 : 0.5 }"
+  >
     <div class="text-4xl">
       {{ toOrdinal(props.perform_order + 1) }}
     </div>
   </div>
 
-  <div v-if="upgrade.is_normal_honing" class="flex flex-col items-center">
+  <div
+    v-if="upgrade.is_normal_honing"
+    class="flex flex-col items-center"
+    :style="{ opacity: !optimizer_working ? 1 : 0.5 }"
+  >
     <div
       class="can-disable-icon-wrapper"
       :class="{
