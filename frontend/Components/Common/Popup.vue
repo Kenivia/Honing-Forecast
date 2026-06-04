@@ -1,3 +1,22 @@
+<script setup lang="ts">
+defineProps<{ show_popup: boolean }>();
+defineEmits<{ show_popup: [value: boolean] }>();
+</script>
+<template>
+  <Teleport to="body">
+    <div
+      v-if="show_popup"
+      class="popup-overlay"
+      @click="$emit('show_popup', false)"
+    >
+      <div class="popup" @click.stop>
+        <slot />
+      </div>
+    </div>
+  </Teleport>
+</template>
+
+<style scoped>
 .popup-overlay {
   position: fixed;
   top: 0;
@@ -32,3 +51,4 @@
   border-bottom: 1px solid var(--border-muted);
   padding-bottom: 0.5rem;
 }
+</style>

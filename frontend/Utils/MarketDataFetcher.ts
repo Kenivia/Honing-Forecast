@@ -3,15 +3,13 @@ import {
   ALL_LABELS,
   FALLBACK_PRICES,
   FETCH_MARKET_COOLDOWN_MS,
+  WORKER_URL,
   SERCA_TO_T4_INDICES,
   SYNCED_LABELS,
 } from "./Constants";
 import { storeToRefs } from "pinia";
 import { useRosterStore } from "@/Stores/RosterConfig";
-const OVERRIDE_DEFAULT = {
-  Gold: 1,
-  Silver: 0,
-};
+
 const BODY = {
   region_slug: "nae",
   item_slugs: [
@@ -46,13 +44,12 @@ const BODY = {
     "tailoring-hellfire-19-20",
   ],
 };
-const MY_WORKER_URL = "https://snowy-base-1817.kenivia-fan.workers.dev/";
 
-export async function fetchMarketData(region: string) {
+export async function fetchMarketData(region: string): Promise<string> {
   let body = structuredClone(BODY);
   body["region_slug"] = region.toLowerCase();
   // console.log(body)
-  const response = await fetch(MY_WORKER_URL, {
+  const response = await fetch(WORKER_URL, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),

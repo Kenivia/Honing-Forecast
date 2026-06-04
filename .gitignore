@@ -1,19 +1,15 @@
-# Logs
-logs
+
 *.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-pnpm-debug.log*
-lerna-debug.log*
 
 node_modules
+
+
 profile.json.gz
 profile.kernel.etl
 
 
 *__pycache__*
-dist-ssr
+
 *.local
 *.tmp
 crates/wasm/pkg/*
@@ -22,7 +18,7 @@ crates/wasm/pkg/*
 
 data_fetcher
 CONOUT$
-# Editor directories and files, pushing .vscode
+
 !.vscode/extensions.json
 .idea
 .DS_Store
@@ -34,6 +30,6 @@ CONOUT$
 target/
 junkyard/
 
-# Added by cargo
+cloudflare/.wrangler/
 
-/target
+.env.production

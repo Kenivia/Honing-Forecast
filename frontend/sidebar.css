@@ -1,3 +1,5 @@
+/* These are not in sidebar.vue because these are used by the components to be put in, maybe there's a way to automatically apply these style? idk */
+
 .side-bar-link {
   /* display: block; */
   padding: 8px 0px 8px 8px;
@@ -14,14 +16,11 @@
   background-color: var(--bg-main);
 }
 
-/* RouterLink active state */
 .side-bar-link.router-link-active {
   color: var(--gold);
   background-color: var(--bg-main);
 }
 .side-bar-item {
-  /* display: block; */
-
   display: flex;
   flex-direction: row;
   flex-wrap: wrap;

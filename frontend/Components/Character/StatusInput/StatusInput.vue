@@ -21,6 +21,7 @@ import { grid_change_callback } from "../CharWorkerUtils";
 import { useRosterStore } from "@/Stores/RosterConfig";
 import { input_column_to_num, parse_input } from "@/Utils/InputColumn";
 import { UpgradeStatus } from "@/Utils/KeyedUpgrades";
+import { get_parsed_uwuowo } from "@/Components/Common/Uwuowo/UwuowoUtils.js";
 
 const { active_profile } = storeToRefs(useRosterStore());
 
@@ -189,5 +190,8 @@ function change_tier() {
         <TickboxGrid grid_type="adv" />
       </div>
     </section>
+    <button @click="() => get_parsed_uwuowo('NA', 'Toneema')">
+      get_parsed_uwuowo
+    </button>
   </div>
 </template>

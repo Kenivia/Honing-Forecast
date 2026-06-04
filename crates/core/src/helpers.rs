@@ -85,7 +85,6 @@ macro_rules! my_dbg {
             #[cfg(feature = "wasm")]
             {
                 $(
-                    // Mimic dbg! output format: [file:line] expr = value
                     let msg = format!(
                         "[{}:{}] {} = {:?}",
                         file!(),

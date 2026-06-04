@@ -188,7 +188,6 @@ function manual_chance_change() {
 }
 
 function reset_taps() {
-  // this also runs on
   taps_since_last_input.value = 0;
   using_slider.value = true;
   const this_keyed = active_profile.value.keyed_upgrades[upgrade_key.value];
