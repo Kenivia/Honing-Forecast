@@ -88,6 +88,14 @@ watchEffect(async () => {
   font-weight: 500;
   border-bottom: 1px solid var(--border-main);
 }
+
+.guide-html h3 {
+  margin-top: 0.5rem;
+  margin-bottom: 0.125rem;
+  font-size: large;
+  font-weight: 500;
+}
+
 .change-log-html tr {
   display: grid;
   grid-template-columns: 100px calc(100% - 100px - 80px - 50px - 30px) 80px 50px;

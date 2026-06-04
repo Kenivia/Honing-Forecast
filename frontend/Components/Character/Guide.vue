@@ -114,9 +114,9 @@ const selected_color = computed(() => {
       if you buy materials when you run out (including juices).
     </p>
     <p class="mt-2 pl-10!">
-      The sum of these is what the metric Optimizer will try to minimize (well
-      actually it's the gold spent minus the sell value of tradables). Note that
-      in most cases this does
+      The sum of these is what the Optimizer will try to minimize (well actually
+      it's the gold spent minus the sell value of tradables). Note that in most
+      cases this does
       <span class="font-bold">NOT</span> equal to
       <span class="font-bold"> Market price </span> x
       <span class="text-(--average)">Average</span>! What it actually is is

@@ -31,7 +31,7 @@ If you'd like to help with any of the below, feel free to get in touch via [Disc
 - ~~figure out how to style select options~~
   - figure out why tf v-tooltip disappeas on every progress update
 
-- re-do guide page
+- ~~re-do guide page~~
 
 - make 2nd row of headers eventually ( So we have top header for page selection, sidebar for sub-page things / options, 2nd header for char selection (or roster maybe in the case of market?))
   - change main calc's sidebar things to be scroll instead (except guide which will be a separte page)
