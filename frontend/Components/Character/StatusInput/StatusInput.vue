@@ -22,10 +22,10 @@ import { useRosterStore } from "@/Stores/RosterConfig";
 import { input_column_to_num, parse_input } from "@/Utils/InputColumn";
 import { UpgradeStatus } from "@/Utils/KeyedUpgrades";
 import Uwuowo from "@/Components/Common/Uwuowo/Uwuowo.vue";
-import CharNameInput from "@/Components/Common/CharNameInput.vue";
-import RegionSelector from "@/Components/Common/RegionSelector.vue";
 
-const { active_profile, active_region } = storeToRefs(useRosterStore());
+const roster_store = useRosterStore();
+const { active_profile, all_profiles, active_region } =
+  storeToRefs(roster_store);
 
 const tooltip_text = computed(() => {
   return active_profile.value.tier == 0
@@ -152,7 +152,7 @@ function change_tier() {
 
 <template>
   <div
-    class="flex w-full flex-row flex-wrap items-start justify-center gap-2.5"
+    class="flex w-fit max-w-[calc(min(100%,1055px))] flex-row flex-wrap items-start justify-center gap-2.5"
   >
     <div class="card-shell">
       <div class="card-header">
@@ -187,13 +187,18 @@ function change_tier() {
 
       <TickboxGrid grid_type="adv" />
     </div>
-    <div class="grid grid-cols-2 items-center">
-      <CharNameInput class="col-span-2" />
-      <RegionSelector />
+    <div v-if="active_profile.tier == 0" class="card-shell w-fit max-w-full">
       <Uwuowo
-        :char_name="active_profile.char_name"
-        :region="active_region === 'nae' ? 'NA' : 'CE'"
-      ></Uwuowo>
+        :name="active_profile.char_name"
+        :profile_index="
+          all_profiles.findIndex(
+            (profile) => profile.char_name === active_profile.char_name, // a bit cursed but shoul be fine
+          )
+        "
+        :name_change="(new_name) => (active_profile.char_name = new_name)"
+        :region_change="roster_store.active_region_change"
+        :region="active_region"
+      />
     </div>
   </div>
 </template>

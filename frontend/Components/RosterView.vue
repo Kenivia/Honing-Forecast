@@ -14,14 +14,14 @@ import {
   pending_ilevel,
 } from "@/Utils/Helpers";
 import { storeToRefs } from "pinia";
-import { ref } from "vue";
 import { RouterLink } from "vue-router";
 import Sidebar from "@/Components/Common/Sidebar.vue";
+import Uwuowo from "./Common/Uwuowo/Uwuowo.vue";
+import RegionSelector from "./Common/RegionSelector.vue";
+import { MarketRegions, start_fetch } from "@/Utils/MarketDataFetcher.js";
 
 const roster_store = useRosterStore();
 const { roster_config, roster_ids } = storeToRefs(roster_store);
-
-const names = ref(roster_config.value.profiles.map((y) => y.char_name));
 
 function add_new_char(roster_id: number) {
   let new_char = create_default_char_profile();
@@ -30,7 +30,6 @@ function add_new_char(roster_id: number) {
     roster_config.value.profiles.length,
   );
   new_char.roster_id = roster_id;
-  names.value.push(new_char.char_name);
   roster_store.add_profile(new_char);
 }
 function add_new_roster(roster_id: number) {
@@ -40,7 +39,6 @@ function add_new_roster(roster_id: number) {
     roster_config.value.profiles.length,
   );
   new_char.roster_id = roster_id;
-  names.value.push(new_char.char_name);
   roster_config.value.profiles.push(new_char);
 
   roster_config.value.roster_mats_owned[roster_id] =
@@ -60,7 +58,6 @@ function duplicate(index) {
     "Newchar",
     roster_config.value.profiles.length,
   );
-  names.value.push(new_char.char_name);
   roster_store.add_profile(new_char);
 }
 
@@ -70,7 +67,6 @@ function delete_profile(index, roster_id) {
     roster_store.switch_profile(Math.max(index - 1, 0));
   }
   roster_config.value.profiles.splice(index, 1);
-  names.value.splice(index, 1);
 
   if (
     roster_config.value.profiles.filter((x) => x.roster_id == roster_id)
@@ -102,36 +98,46 @@ function delete_profile(index, roster_id) {
       </button></template
     >
     <template #main>
-      <div class="flex flex-row flex-wrap justify-around gap-4">
+      <div
+        class="flex w-full max-w-full flex-row flex-wrap justify-around gap-4"
+      >
         <div
           v-for="(roster_id, roster_index) in roster_ids"
-          class="card-shell flex h-fit flex-col"
+          class="card-shell flex h-fit flex-col px-2 pb-2"
           :key="roster_id"
         >
           <div v-if="roster_config.profiles.length > 1" class="card-header">
             <span class="card-title"> Roster {{ roster_index + 1 }}</span>
+            <RegionSelector
+              :region="roster_config.all_regions[roster_id]"
+              :region_change="
+                (event) => {
+                  const new_region = (event.target as HTMLSelectElement)
+                    .value as MarketRegions;
+                  // console.log(roster_config.all_regions);
+                  // console.log('set roster_id', roster_id);
+                  roster_config.all_regions[roster_id] = new_region;
+                  // console.log(roster_config.all_regions);
+                  start_fetch(new_region, true);
+                }
+              "
+            />
           </div>
-          <div class="card-body">
+          <div class="w-fit max-w-full">
             <div
               v-for="[profile, profile_index] in roster_config.profiles
                 .map((x, index): [CharProfile, number] => [x, index])
                 .filter((y) => y[0].roster_id === roster_id)"
-              class="char-row flex flex-row items-start justify-around border-b border-(--border-muted)"
-              :key="profile_index"
+              class="char-row flex h-max min-h-max flex-row items-start justify-around border-b border-(--border-muted)"
+              :key="`${profile.char_name}-${profile_index}`"
             >
-              <div>
-                <input
-                  v-model="names[profile_index]"
-                  @change="
-                    ((names[profile_index] = format_char_name(
-                      names[profile_index],
-                      profile_index,
-                    )),
-                    (profile.char_name = names[profile_index]))
-                  "
-                  class="generic-input bg-(--bg-bright)!"
+              <div class="max-w- flex w-min flex-row flex-wrap justify-around">
+                <Uwuowo
+                  :profile_index="profile_index"
+                  :name="profile.char_name"
+                  :name_change="(new_name) => (profile.char_name = new_name)"
+                  :hide_region="true"
                 />
-
                 <div class="char-meta flex flex-col">
                   <label class="text-no-wrap text-(--achieved)"
                     >Achieved ilevel: {{ achieved_ilevel(profile) }}</label
@@ -141,7 +147,7 @@ function delete_profile(index, roster_id) {
                   >
                 </div>
               </div>
-              <div class="flex flex-col">
+              <div class="flex h-full min-h-full flex-col justify-around">
                 <RouterLink
                   :to="{
                     name: 'char',
@@ -188,6 +194,7 @@ function delete_profile(index, roster_id) {
 
 .char-meta {
   width: 200px;
+  padding-left: 8px;
 }
 
 .char-row {

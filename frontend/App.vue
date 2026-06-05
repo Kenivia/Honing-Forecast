@@ -7,17 +7,13 @@ import {
   useRosterStore,
 } from "@/Stores/RosterConfig";
 import { useMediaIsNarrow } from "@/Utils/WindowSize";
-import { fetch_callback, useTimedFetch } from "@/Utils/MarketDataFetcher";
 import { computed } from "vue";
 import { storeToRefs } from "pinia";
 
 const roster_store = useRosterStore();
 roster_store.init();
 
-const { all_profiles, roster_ids, active_region } = storeToRefs(roster_store);
-
-const { start_fetch } = useTimedFetch(fetch_callback);
-start_fetch(active_region.value);
+const { all_profiles, roster_ids } = storeToRefs(roster_store);
 
 roster_store.$subscribe((_mutation, state) => {
   debounced_write_roster_config(state);
@@ -28,13 +24,7 @@ const is900Narrow = useMediaIsNarrow(900);
 const route = useRoute();
 const router = useRouter();
 
-const active_char_name = computed(
-  () =>
-    all_profiles.value.find((p) => route.path === "/" + p.char_name)
-      ?.char_name ?? "",
-);
-
-function onCharSelect(e: Event) {
+function on_char_select(e: Event) {
   const name = (e.target as HTMLSelectElement).value;
   if (name) router.push({ name: "char", params: { characterName: name } });
 }
@@ -62,7 +52,7 @@ const char_name_from_route = computed(
             </div> -->
 
       <nav
-        class="relative z-50 flex flex-row items-center justify-start overflow-x-auto border-b border-(--border-muted) bg-(--bg-muted) whitespace-nowrap"
+        class="relative z-50 flex scrollbar-thin flex-row items-center justify-start overflow-x-auto border-b border-(--border-muted) bg-(--bg-muted) whitespace-nowrap"
       >
         <div
           v-if="!is900Narrow"
@@ -135,13 +125,13 @@ const char_name_from_route = computed(
         <select
           v-else
           class="header-button header-font"
-          :value="active_char_name"
-          @change="onCharSelect"
+          :value="char_name_from_route"
+          @change="on_char_select"
         >
-          <option value="" disabled>Character</option>
+          <option value="" disabled key="empty selection">Character</option>
           <option
-            v-for="(profile, index) in all_profiles"
-            :key="index"
+            v-for="profile in all_profiles"
+            :key="profile.char_name"
             :value="profile.char_name"
           >
             {{ profile.char_name }}

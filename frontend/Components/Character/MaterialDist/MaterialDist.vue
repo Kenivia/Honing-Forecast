@@ -273,7 +273,7 @@ const show_special_guide = ref(false);
 
 const grid: GridConfig = {
   grid_template_columns:
-    "minmax(180px, 250px) minmax(70px, 90px) minmax(110px, 120px) minmax(110px, 120px) 350px",
+    "minmax(190px, 250px) minmax(70px, 90px) minmax(110px, 120px) minmax(110px, 120px) 350px",
 };
 
 const is924Narrow = useMediaIsNarrow(924); // this turns out to be the width where the checkboxes overlap the labels

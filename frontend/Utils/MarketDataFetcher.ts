@@ -1,4 +1,3 @@
-import { ref, computed } from "vue";
 import {
   ALL_LABELS,
   FALLBACK_PRICES,
@@ -152,81 +151,66 @@ const ITEM_SLUG_TO_LABEL = {
   "metallurgy-hellfire-19-20": "19-20 Weapon",
   "tailoring-hellfire-19-20": "19-20 Armor",
 };
-export function useTimedFetch(
-  callback: (
-    data: number[][],
-    selectedShardSize: number,
-    shard_price: number,
-  ) => void,
-) {
+
+function isDataStale(region: MarketRegions, cooldown: number): boolean {
   const roster_store = useRosterStore();
   const { roster_config } = storeToRefs(roster_store);
-
-  const isFetching = ref(false);
-
-  function isDataStale(region: MarketRegions, cooldown: number): boolean {
-    const cached = roster_config.value.latest_market_data[region];
-    if (cached === undefined) return true;
-    const [timestamp, _] = cached;
-    return Date.now() - timestamp >= cooldown;
-  }
-
-  const disabled = computed(() => {
-    // Only disabled if there's an actual pending fetch
-    return isFetching.value;
-  });
-
-  async function start_fetch(region: MarketRegions, force?: boolean) {
-    if (isFetching.value) return;
-
-    const cached = roster_config.value.latest_market_data[region];
-    if (
-      cached !== undefined &&
-      !isDataStale(
-        region,
-        force === true ? 60 * 1000 : FETCH_MARKET_COOLDOWN_MS,
-      ) &&
-      !roster_config.value.market_fetch_failed
-    ) {
-      isFetching.value = true;
-      await new Promise((r) => setTimeout(r, 500));
-      isFetching.value = false;
-      const [_, result] = cached;
-      const [parsed, selectedShardSize, shard_price] = parse_response(result);
-      callback(parsed, selectedShardSize, shard_price);
-      return;
-    }
-
-    isFetching.value = true;
-
-    // Fetch new data
-    const result = await (async () => {
-      try {
-        const out = fetchMarketData(region);
-
-        roster_config.value.market_fetch_failed = false;
-        return out;
-      } catch {
-        roster_config.value.market_fetch_failed = true;
-        return cached !== undefined ? cached : FALLBACK_PRICES;
-      }
-    })();
-
-    const [parsed, selectedShardSize, shard_price] = parse_response(result);
-
-    // Store the raw response data with timestamp
-    if (!roster_config.value.market_fetch_failed) {
-      roster_config.value.latest_market_data[region] = [Date.now(), result];
-    }
-
-    isFetching.value = false;
-
-    callback(parsed, selectedShardSize, shard_price);
-  }
-
-  return { disabled, start_fetch };
+  const cached = roster_config.value.latest_market_data[region];
+  if (cached === undefined) return true;
+  const [timestamp, _] = cached;
+  return Date.now() - timestamp >= cooldown;
 }
-export function fetch_callback(
+
+export async function start_fetch(region: MarketRegions, force?: boolean) {
+  const roster_store = useRosterStore();
+  const { roster_config } = storeToRefs(roster_store);
+  if (roster_config.value.is_fetching) return;
+
+  const cached = roster_config.value.latest_market_data[region];
+  if (
+    cached !== undefined &&
+    !isDataStale(
+      region,
+      force === true ? 60 * 1000 : FETCH_MARKET_COOLDOWN_MS,
+    ) &&
+    !roster_config.value.market_fetch_failed
+  ) {
+    roster_config.value.is_fetching = true;
+    await new Promise((r) => setTimeout(r, 500));
+    roster_config.value.is_fetching = false;
+    const [_, result] = cached;
+    const [parsed, selectedShardSize, shard_price] = parse_response(result);
+    fetch_callback(parsed, selectedShardSize, shard_price);
+    return;
+  }
+
+  roster_config.value.is_fetching = true;
+
+  // Fetch new data
+  const result = await (async () => {
+    try {
+      const out = fetchMarketData(region);
+
+      roster_config.value.market_fetch_failed = false;
+      return out;
+    } catch {
+      roster_config.value.market_fetch_failed = true;
+      return cached !== undefined ? cached : FALLBACK_PRICES;
+    }
+  })();
+
+  const [parsed, selectedShardSize, shard_price] = parse_response(result);
+
+  // Store the raw response data with timestamp
+  if (!roster_config.value.market_fetch_failed) {
+    roster_config.value.latest_market_data[region] = [Date.now(), result];
+  }
+
+  roster_config.value.is_fetching = false;
+
+  fetch_callback(parsed, selectedShardSize, shard_price);
+}
+function fetch_callback(
   result: number[][],
   selectedShardSize: number,
   shard_price: number,

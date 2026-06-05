@@ -4,11 +4,7 @@ import { ALL_LABELS, SERCA_SYNC_MAP, SYNCED_LABELS } from "@/Utils/Constants";
 import { storeToRefs } from "pinia";
 import { computed, watch, watchEffect } from "vue";
 import TierConvertButton from "../Common/TierConvertButton.vue";
-import {
-  fetch_callback,
-  MarketRegions,
-  useTimedFetch,
-} from "@/Utils/MarketDataFetcher";
+import { MarketRegions, start_fetch } from "@/Utils/MarketDataFetcher";
 import { input_column_to_num, parse_input } from "@/Utils/InputColumn";
 import Sidebar from "../Common/Sidebar.vue";
 import BudgetGrid from "./BudgetGrid.vue";
@@ -24,8 +20,6 @@ const {
   active_profile,
   active_region,
 } = storeToRefs(roster_store);
-
-const { disabled, start_fetch } = useTimedFetch(fetch_callback);
 
 function convert_roster_mats_to_serca() {
   for (let serca_index = 0; serca_index < ALL_LABELS[1].length; serca_index++) {
@@ -131,23 +125,26 @@ watch(
     <template #sidebar>
       <div class="side-bar-item">
         <div class="flex flex-row items-center justify-around gap-3">
-          <RegionSelector />
+          <RegionSelector
+            :region="active_region"
+            :region_change="roster_store.active_region_change"
+          />
           <span>
             {{
-              !disabled && !roster_config.market_fetch_failed
+              !roster_config.is_fetching && !roster_config.market_fetch_failed
                 ? "✅"
-                : disabled
+                : roster_config.is_fetching
                   ? ""
                   : "Failed"
             }}
           </span>
         </div>
         <button
-          :disabled="disabled"
+          :disabled="roster_config.is_fetching"
           @click="() => start_fetch(active_region, true)"
           class="generic-button"
         >
-          {{ !disabled ? "Fetch Market Data" : "Fetching..." }}
+          {{ !roster_config.is_fetching ? "Fetch Market Data" : "Fetching..." }}
         </button>
       </div>
 

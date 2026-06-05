@@ -216,7 +216,7 @@ const optimizer_working = computed(get_optimizer_working);
 
 <template>
   <div
-    class="mr-auto flex w-fit max-w-full flex-row overflow-x-scroll overflow-y-hidden pb-2"
+    class="mr-auto flex w-fit max-w-full scrollbar-thin flex-row overflow-x-scroll overflow-y-hidden pb-2"
     :style="{ opacity: !optimizer_working ? 1 : 0.5 }"
   >
     <!-- the pb-2 is for the scroll bar -->

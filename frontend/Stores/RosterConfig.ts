@@ -22,7 +22,7 @@ import {
 import { get_valid_status_grid } from "@/Utils/StatusGrid";
 import { grids_to_keyed } from "@/Utils/KeyedUpgrades";
 import { BudgetSnapshot } from "@/Components/Character/Instructions/Details/NormalDetails/SuccessUtils";
-import { MarketRegions } from "@/Utils/MarketDataFetcher";
+import { MarketRegions, start_fetch } from "@/Utils/MarketDataFetcher";
 
 export interface RosterConfig {
   mats_prices: Record<MarketRegions, InputColumn[]>;
@@ -50,6 +50,7 @@ export interface RosterConfig {
   is_details_update: boolean;
 
   auto_deduct_costs: boolean;
+  is_fetching: boolean;
 }
 export const useRosterStore = defineStore("roster", {
   state: () => ({
@@ -107,7 +108,13 @@ export const useRosterStore = defineStore("roster", {
 
       //   create_input_column(InputType.Float,ALL_LABELS ) ;
       // }
-      console.log(state.roster_config.mats_prices);
+      console.log(
+        state.roster_config.mats_prices,
+        active_region,
+        state.roster_config.all_regions,
+        active_profile.roster_id,
+        state.roster_config.mats_prices[active_region],
+      );
       return state.roster_config.mats_prices[active_region];
     },
   },
@@ -140,11 +147,21 @@ export const useRosterStore = defineStore("roster", {
       ].roster_id = roster_id;
     },
 
-    set_active_region(region: MarketRegions) {
+    active_region_change(event: any) {
+      const new_region = (event.target as HTMLSelectElement)
+        .value as MarketRegions;
       const active_profile: CharProfile =
         this.roster_config.profiles[this.roster_config.active_profile_index];
 
-      this.roster_config.all_regions[active_profile.roster_id] = region;
+      console.log(
+        "setting",
+        active_profile.roster_id,
+        "to",
+        new_region,
+        this.roster_config.all_regions,
+      );
+      this.roster_config.all_regions[active_profile.roster_id] = new_region;
+      start_fetch(new_region, true);
     },
   },
 });
@@ -189,6 +206,7 @@ export const DEFAULT_ROSTER_CONFIG: RosterConfig = {
   is_details_update: false,
   auto_deduct_costs: true,
   all_regions: { 0: "nae" },
+  is_fetching: false,
 };
 
 export function load_roster_config(): RosterConfig {
@@ -250,6 +268,7 @@ export function load_roster_config(): RosterConfig {
 
 // just making sure that things are correct, not really necessary i think but oh well
 function standard_validation(out: any) {
+  out.is_fetching = false;
   for (const key in out.active_mats_prices) {
     validate_input_column_array(
       out.active_mats_prices[key],
@@ -336,16 +355,16 @@ function stringifyOmit(obj: RosterConfig, keys: string[]): string {
 }
 export function write_roster_config(state) {
   try {
-    localStorage.setItem(
-      STORAGE_KEY + "_roster",
-      stringifyOmit(state.roster_config, [
-        "optimizer_worker_bundle",
-        "histogram_worker_bundle",
-        "optimizer_override",
-        "budget_snapshot",
-        "is_slider_update",
-      ]),
-    );
+    // localStorage.setItem(
+    //   STORAGE_KEY + "_roster",
+    //   stringifyOmit(state.roster_config, [
+    //     "optimizer_worker_bundle",
+    //     "histogram_worker_bundle",
+    //     "optimizer_override",
+    //     "budget_snapshot",
+    //     "is_slider_update",
+    //   ]),
+    // );
   } catch {
     console.log(JSON.stringify(state.roster_config));
   }

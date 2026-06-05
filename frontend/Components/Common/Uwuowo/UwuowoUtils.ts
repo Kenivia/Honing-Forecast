@@ -39,11 +39,14 @@ export async function get_parsed_uwuowo(
   const allDivs = [...doc.querySelectorAll("div")];
 
   if (
-    allDivs.findIndex(
-      (el) => el.textContent.trim() === "Character Not Found",
-    ) >= 0
+    allDivs.findIndex((el) => el.textContent.includes("Character Not Found")) >=
+    0
   ) {
     return `Character not found`;
+  }
+
+  if (allDivs.findIndex((el) => el.textContent.includes("Missing Data")) >= 0) {
+    return `Missing data`;
   }
   let pieces: [number, number][];
   let class_name: string;

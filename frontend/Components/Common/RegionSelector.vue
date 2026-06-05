@@ -1,36 +1,26 @@
 <script setup lang="ts">
 import { useRosterStore } from "@/Stores/RosterConfig";
-import {
-  fetch_callback,
-  MarketRegions,
-  useTimedFetch,
-} from "@/Utils/MarketDataFetcher";
+import { MarketRegions } from "@/Utils/MarketDataFetcher";
 import { storeToRefs } from "pinia";
 
+defineProps<{
+  region: MarketRegions;
+  region_change: (event) => void;
+}>();
 const roster_store = useRosterStore();
-const { active_region } = storeToRefs(roster_store);
-
-const { disabled, start_fetch } = useTimedFetch(fetch_callback);
-
-function change_region(event) {
-  roster_store.set_active_region(
-    (event.target as HTMLSelectElement).value as MarketRegions,
-  );
-  console.log(active_region.value);
-  start_fetch(active_region.value, true);
-}
+const { roster_config } = storeToRefs(roster_store);
 </script>
 <template>
-  <div class="flex flex-row gap-2 items-center">
+  <div class="flex max-w-fit flex-row items-center gap-2">
     <span> Region: </span>
     <select
-      :value="active_region"
-      @change="change_region"
+      :value="region"
+      @change="region_change"
       class="selector"
-      :disabled="disabled"
+      :disabled="roster_config.is_fetching"
     >
-      <option value="nae">NAE</option>
-      <option value="euc">EUC</option>
+      <option value="nae">NA</option>
+      <option value="euc">EU</option>
     </select>
   </div>
 </template>

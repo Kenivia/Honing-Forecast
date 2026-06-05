@@ -8,47 +8,25 @@ If you'd like to help with any of the below, feel free to get in touch via [Disc
 ## Immediate WIP
 
 - "Char info" or something panel, ~~above(or below?) ~~ probably kindof replaces/ merges with statusinput, which will contain:
-  - store 2 copies of market price , indexed by region, add region specification in roster page and read the appropriate prices from there
+  - ~~store 2 copies of market price , indexed by region, add region specification in roster page and read the appropriate prices from there~~
     - add a region selector on the roster header
 
   - uwuowo integration (add button next to textbox to pull from uwuowo, add button on sidebar of roster setup to pull all existing chars)
-    - need some kind of website parser, shouldn't be too difficult tho
+    - ~~need some kind of website parser, shouldn't be too difficult tho~~
     - need to set up some kind of rate limit
 
   - copy express checkbox to roster setup also
     - ~~also make it more obvious, on top of materialdist maybe?~~
 
-  - prolly move achieved ilevel & stuff here also so that
-  - make a copy button here
+  - ~~prolly move achieved ilevel & stuff here also so that~~
+  - ~~make a copy button here~~
+  - parse & set fetched info
+  - style the fetched info popup
+  - change the StatusInput UI when it is fetched (hide done upgrades to reduce rows needed, move achieved ilevel, get rid of serca button)
   
 - change roster button / drag & drop? order changing in roster page
 
-- maybe put cumulative chance back somehow
-
-- make normal instructions (and other panels) collapsible
-
-- actually save & pass around cache so adv doesn't take 8 years every time
-
-- changed graph to be rigid histograms instead of intepolating lines
-
-- ~~figure out how to style select options~~
-  - figure out why tf v-tooltip disappeas on every progress update
-
-- ~~re-do guide page~~
-
-- make 2nd row of headers eventually ( So we have top header for page selection, sidebar for sub-page things / options, 2nd header for char selection (or roster maybe in the case of market?))
-  - change main calc's sidebar things to be scroll instead (except guide which will be a separte page)
-    - can use the same technology for changelog to make it infinite scroll maybe?
-  
-- add "About" page for various stuff like credits and stuff
-
-- some hoverable details on juice & whatnot
-
-- add a small "bound" label on the materialcell labels
-
-- make average < 1 show 1 sig fig, including (and especially) the gold values
-
-- change the settings parsing stuff because changing it every update is so aids, not sure how tho
+- change MarketView to not rely on active_profile and stuff, makes 0 sense why did i do that
 
 ## Roadmap (big projects)
 
@@ -170,6 +148,33 @@ Below are some rambling / brainstorming / Misc stuff
 - Show gold used for naive strategies (no juice, all juice, maybe "maxroll"(need to reverse engineer their calculations, which i should do to help the optimizer anyway) etc)
 - Mari page
 - Add a return to top button on the top of the sidebar where there's currently padding and empty space (will need it to be absolutly positioned as well)
+
+- maybe put cumulative chance back somehow
+
+- make normal instructions (and other panels) collapsible
+
+- actually save & pass around cache so adv doesn't take 8 years every time
+
+- changed graph to be rigid histograms instead of intepolating lines
+
+- ~~figure out how to style select options~~
+  - figure out why tf v-tooltip disappeas on every progress update
+
+- ~~re-do guide page~~
+
+- make 2nd row of headers eventually ( So we have top header for page selection, sidebar for sub-page things / options, 2nd header for char selection (or roster maybe in the case of market?))
+  - change main calc's sidebar things to be scroll instead (except guide which will be a separte page)
+    - can use the same technology for changelog to make it infinite scroll maybe?
+  
+- add "About" page for various stuff like credits and stuff
+
+- some hoverable details on juice & whatnot
+
+- add a small "bound" label on the materialcell labels
+
+- make average < 1 show 1 sig fig, including (and especially) the gold values
+
+- change the settings parsing stuff because changing it every update is so aids, not sure how tho
 
 ### Misc
 
