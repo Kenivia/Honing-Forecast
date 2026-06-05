@@ -9,7 +9,7 @@ const store = useRosterStore();
 const { active_profile, roster_config } = storeToRefs(store);
 
 function resetActive() {
-  store.resetActiveProfile();
+  store.reset_active_profile();
 }
 
 // function copyPayload() {
@@ -34,7 +34,7 @@ watchEffect(() => {
 });
 </script>
 <template>
-  <section class="w-full items-center">
+  <div class="w-full items-center">
     <div class="control-panel-title">Controls</div>
 
     <div class="py-1 text-sm">
@@ -75,5 +75,5 @@ watchEffect(() => {
         </button>
       </label>
     </div>
-  </section>
+  </div>
 </template>

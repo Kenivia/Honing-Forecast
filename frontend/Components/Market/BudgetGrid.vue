@@ -20,10 +20,10 @@ const { roster_config, active_roster_mats_owned, active_tradable_mats_owned } =
 
 watchEffect(() => {
   const t4_price = input_column_to_num(
-    roster_store.roster_config.mats_prices[0],
+    roster_store.roster_config.active_mats_prices[0],
   );
   const serca_price = input_column_to_num(
-    roster_store.roster_config.mats_prices[1],
+    roster_store.roster_config.active_mats_prices[1],
   );
   roster_store.roster_config.effective_serca_price = ALL_LABELS[1].map(
     (_, index) => Math.min(t4_price[index] * 5, serca_price[index]),
@@ -31,8 +31,12 @@ watchEffect(() => {
 });
 
 const t4_better = computed(() => {
-  const t4_price = input_column_to_num(roster_config.value.mats_prices[0]);
-  const serca_price = input_column_to_num(roster_config.value.mats_prices[1]);
+  const t4_price = input_column_to_num(
+    roster_config.value.active_mats_prices[0],
+  );
+  const serca_price = input_column_to_num(
+    roster_config.value.active_mats_prices[1],
+  );
   return ALL_LABELS[1].map(
     (_, index) => t4_price[index] * 5 < serca_price[index],
   );
@@ -43,14 +47,14 @@ const T4_indices_to_watch = SERCA_SYNC_MAP.map(({ T4_index }) => T4_index);
 watch(
   () =>
     T4_indices_to_watch.flatMap((T4_index) => [
-      roster_store.roster_config.mats_prices[0].data[T4_index],
+      roster_store.roster_config.active_mats_prices[0].data[T4_index],
       roster_store.active_tradable_mats_owned[0].data[T4_index],
       roster_store.active_roster_mats_owned[0].data[T4_index],
     ]),
   () => {
     for (const { serca_index, T4_index } of SERCA_SYNC_MAP) {
-      roster_config.value.mats_prices[1].data[serca_index] =
-        roster_config.value.mats_prices[0].data[T4_index];
+      roster_config.value.active_mats_prices[1].data[serca_index] =
+        roster_config.value.active_mats_prices[0].data[T4_index];
       roster_store.active_tradable_mats_owned[1].data[serca_index] =
         roster_store.active_tradable_mats_owned[0].data[T4_index];
       roster_store.active_roster_mats_owned[1].data[serca_index] =
@@ -145,11 +149,11 @@ function price_suffix(label: string, row: number): string {
             :input_width="100"
           />
           <MaterialCell
-            :input_column="roster_config.mats_prices[col]"
+            :input_column="roster_config.active_mats_prices[col]"
             :row="row"
             :setter="
               (val) => {
-                roster_config.mats_prices[col].data[row] = val;
+                roster_config.active_mats_prices[col].data[row] = val;
               }
             "
             :suffix="price_suffix(label, row)"

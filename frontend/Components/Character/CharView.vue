@@ -20,19 +20,20 @@ const route = useRoute();
 const router = useRouter();
 
 const roster_store = useRosterStore();
-const { active_profile, all_profiles } = storeToRefs(roster_store);
+const { active_profile, all_profiles, active_region } =
+  storeToRefs(roster_store);
 
 const match = all_profiles.value.findIndex(
   (c) => c.char_name === (route.params.characterName as string),
 );
 if (match >= 0) {
-  roster_store.switchProfile(match);
+  roster_store.switch_profile(match);
 } else {
   router.replace({
     name: "char",
     params: { characterName: all_profiles.value[0].char_name },
   });
-  roster_store.switchProfile(0);
+  roster_store.switch_profile(0);
 }
 watch(
   () => route.params.characterName as string,
@@ -45,14 +46,14 @@ watch(
         active_profile.value.histogram_worker_bundle.cancel();
         // active_profile.value.evaluation_worker_bundle.cancel()
 
-        roster_store.switchProfile(match);
+        roster_store.switch_profile(match);
       }
     } else {
       router.replace({
         name: "char",
         params: { characterName: all_profiles.value[0].char_name },
       });
-      roster_store.switchProfile(0);
+      roster_store.switch_profile(0);
     }
   },
 );
@@ -61,6 +62,7 @@ watch(
     () => active_profile.value.express_event,
     () => active_profile.value.optimizer_treatment_plan,
     () => active_profile.value.auto_start_optimizer,
+    () => active_region.value,
   ],
   () => {
     // console.log("start", active_profile.value, roster_config.value)

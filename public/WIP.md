@@ -7,25 +7,28 @@ If you'd like to help with any of the below, feel free to get in touch via [Disc
 
 ## Immediate WIP
 
-- maybe put cumulative chance back somehow
-
-- make normal instructions (and other panels) collapsible
-
-- actually save & pass around cache so adv doesn't take 8 years every time
-
-- "Char info" or something panel, above(or below?) statusinput, which will contain:
+- "Char info" or something panel, ~~above(or below?) ~~ probably kindof replaces/ merges with statusinput, which will contain:
   - store 2 copies of market price , indexed by region, add region specification in roster page and read the appropriate prices from there
     - add a region selector on the roster header
 
   - uwuowo integration (add button next to textbox to pull from uwuowo, add button on sidebar of roster setup to pull all existing chars)
     - need some kind of website parser, shouldn't be too difficult tho
     - need to set up some kind of rate limit
+
   - copy express checkbox to roster setup also
     - ~~also make it more obvious, on top of materialdist maybe?~~
 
   - prolly move achieved ilevel & stuff here also so that
   - make a copy button here
   
+- change roster button / drag & drop? order changing in roster page
+
+- maybe put cumulative chance back somehow
+
+- make normal instructions (and other panels) collapsible
+
+- actually save & pass around cache so adv doesn't take 8 years every time
+
 - changed graph to be rigid histograms instead of intepolating lines
 
 - ~~figure out how to style select options~~

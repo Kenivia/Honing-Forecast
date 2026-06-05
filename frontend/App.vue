@@ -14,10 +14,10 @@ import { storeToRefs } from "pinia";
 const roster_store = useRosterStore();
 roster_store.init();
 
-const { all_profiles, roster_ids } = storeToRefs(roster_store);
+const { all_profiles, roster_ids, active_region } = storeToRefs(roster_store);
 
 const { start_fetch } = useTimedFetch(fetch_callback);
-start_fetch(roster_store.roster_config.region);
+start_fetch(active_region.value);
 
 roster_store.$subscribe((_mutation, state) => {
   debounced_write_roster_config(state);

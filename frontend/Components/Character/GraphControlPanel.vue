@@ -10,7 +10,7 @@ const GRAPH_COLOR_VARS = ["--average", "--bound", "--roster", "--tradable"];
 </script>
 
 <template>
-  <section class="w-full items-center">
+  <div class="w-full items-center">
     <div class="control-panel-title">Graph options</div>
 
     <div class="gap-1 px-0 text-sm">
@@ -34,5 +34,5 @@ const GRAPH_COLOR_VARS = ["--average", "--bound", "--roster", "--tradable"];
         {{ label }}
       </button>
     </div>
-  </section>
+  </div>
 </template>

@@ -143,7 +143,7 @@ function change_one_and_update_keyed(
 }
 </script>
 <template>
-  <div class="fler-row flex flex-nowrap">
+  <div class="fler-row flex flex-nowrap px-4 py-2">
     <div class="w-27.5">
       <div class="flex h-7 items-center justify-end" style="font-size: x-small">
         Toggle whole column ->

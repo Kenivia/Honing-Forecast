@@ -21,9 +21,11 @@ import { grid_change_callback } from "../CharWorkerUtils";
 import { useRosterStore } from "@/Stores/RosterConfig";
 import { input_column_to_num, parse_input } from "@/Utils/InputColumn";
 import { UpgradeStatus } from "@/Utils/KeyedUpgrades";
-import { get_parsed_uwuowo } from "@/Components/Common/Uwuowo/UwuowoUtils.js";
+import Uwuowo from "@/Components/Common/Uwuowo/Uwuowo.vue";
+import CharNameInput from "@/Components/Common/CharNameInput.vue";
+import RegionSelector from "@/Components/Common/RegionSelector.vue";
 
-const { active_profile } = storeToRefs(useRosterStore());
+const { active_profile, active_region } = storeToRefs(useRosterStore());
 
 const tooltip_text = computed(() => {
   return active_profile.value.tier == 0
@@ -152,7 +154,7 @@ function change_tier() {
   <div
     class="flex w-full flex-row flex-wrap items-start justify-center gap-2.5"
   >
-    <section class="card-shell">
+    <div class="card-shell">
       <div class="card-header">
         <div class="fler-row flex gap-5">
           <label class="text-(--achieved)"
@@ -174,24 +176,24 @@ function change_tier() {
           "
         />
       </div>
-      <div class="card-body">
-        <TickboxGrid grid_type="normal" />
-      </div>
-    </section>
 
-    <section
-      v-if="active_profile.tier == 0"
-      class="card-shell w-fit max-w-full"
-    >
+      <TickboxGrid grid_type="normal" />
+    </div>
+
+    <div v-if="active_profile.tier == 0" class="card-shell w-fit max-w-full">
       <div class="card-header h-9.75">
         <div>Advanced Honing</div>
       </div>
-      <div class="card-body">
-        <TickboxGrid grid_type="adv" />
-      </div>
-    </section>
-    <button @click="() => get_parsed_uwuowo('NA', 'Toneema')">
-      get_parsed_uwuowo
-    </button>
+
+      <TickboxGrid grid_type="adv" />
+    </div>
+    <div class="grid grid-cols-2 items-center">
+      <CharNameInput class="col-span-2" />
+      <RegionSelector />
+      <Uwuowo
+        :char_name="active_profile.char_name"
+        :region="active_region === 'nae' ? 'NA' : 'CE'"
+      ></Uwuowo>
+    </div>
   </div>
 </template>

@@ -4,10 +4,15 @@ import { ALL_LABELS, SERCA_SYNC_MAP, SYNCED_LABELS } from "@/Utils/Constants";
 import { storeToRefs } from "pinia";
 import { computed, watch, watchEffect } from "vue";
 import TierConvertButton from "../Common/TierConvertButton.vue";
-import { fetch_callback, useTimedFetch } from "@/Utils/MarketDataFetcher";
+import {
+  fetch_callback,
+  MarketRegions,
+  useTimedFetch,
+} from "@/Utils/MarketDataFetcher";
 import { input_column_to_num, parse_input } from "@/Utils/InputColumn";
 import Sidebar from "../Common/Sidebar.vue";
 import BudgetGrid from "./BudgetGrid.vue";
+import RegionSelector from "../Common/RegionSelector.vue";
 
 const roster_store = useRosterStore();
 const {
@@ -17,14 +22,12 @@ const {
   all_profiles,
   roster_ids,
   active_profile,
+  active_region,
 } = storeToRefs(roster_store);
 
-const { disabled, start_fetch } = useTimedFetch((result, selected, price) => {
-  fetch_callback(result, selected, price);
-});
+const { disabled, start_fetch } = useTimedFetch(fetch_callback);
 
 function convert_roster_mats_to_serca() {
-  console.log("triggerd");
   for (let serca_index = 0; serca_index < ALL_LABELS[1].length; serca_index++) {
     if (!SYNCED_LABELS.includes(ALL_LABELS[1][serca_index])) {
       let T4_index = ALL_LABELS[0].findIndex(
@@ -60,15 +63,15 @@ function convert_roster_mats_to_serca() {
   }
 }
 watchEffect(() => {
-  let t4_price = input_column_to_num(roster_store.roster_config.mats_prices[0]);
-  let serca_price = input_column_to_num(
-    roster_store.roster_config.mats_prices[1],
-  );
+  let t4_price = input_column_to_num(roster_store.active_mats_prices[0]);
+  let serca_price = input_column_to_num(roster_store.active_mats_prices[1]);
   roster_store.roster_config.effective_serca_price = ALL_LABELS[1].map(
     (_, index) => Math.min(t4_price[index] * 5, serca_price[index]),
   );
 });
 
+// find the first profile of each roster, give the roster a name (Roster 1)
+// returns an object of out["Roster 1"] = some_profile_in_that_roster
 function find_representative(): Record<string, number> {
   let out = {};
   let seen = {};
@@ -86,7 +89,7 @@ function find_representative(): Record<string, number> {
 const representative_profile_indices = computed(find_representative);
 const selected_roster = computed(() => {
   let out = Object.entries(representative_profile_indices.value).find(
-    ([, v]) =>
+    ([_, v]) =>
       all_profiles.value[v].roster_id === active_profile.value.roster_id,
   )[0];
   // console.log(out)
@@ -94,7 +97,7 @@ const selected_roster = computed(() => {
 });
 function change_roster(event) {
   // console.log(representative_profile_indices.value[event.target.value])
-  roster_store.switchProfile(
+  roster_store.switch_profile(
     representative_profile_indices.value[event.target.value],
   );
 }
@@ -105,14 +108,14 @@ watch(
   // one way sync from T4 to Serca, the ui modifies the T4 copy
   () =>
     T4_indices_to_watch.flatMap((T4_index) => [
-      roster_store.roster_config.mats_prices[0].data[T4_index],
+      roster_store.active_mats_prices[0].data[T4_index],
       roster_store.active_tradable_mats_owned[0].data[T4_index],
       roster_store.active_roster_mats_owned[0].data[T4_index],
     ]),
   () => {
     for (const { serca_index, T4_index } of SERCA_SYNC_MAP) {
-      roster_config.value.mats_prices[1].data[serca_index] =
-        roster_config.value.mats_prices[0].data[T4_index];
+      roster_store.active_mats_prices[1].data[serca_index] =
+        roster_store.active_mats_prices[0].data[T4_index];
       roster_store.active_tradable_mats_owned[1].data[serca_index] =
         roster_store.active_tradable_mats_owned[0].data[T4_index];
       roster_store.active_roster_mats_owned[1].data[serca_index] =
@@ -128,23 +131,10 @@ watch(
     <template #sidebar>
       <div class="side-bar-item">
         <div class="flex flex-row items-center justify-around gap-3">
-          <select
-            v-model="roster_config.region"
-            @change="
-              () => {
-                start_fetch(roster_config.region, true);
-              }
-            "
-            class="selector"
-          >
-            <option>NAE</option>
-            <option>EUC</option>
-          </select>
+          <RegionSelector />
           <span>
             {{
-              !disabled &&
-              roster_config.latest_market_data &&
-              !roster_config.market_fetch_failed
+              !disabled && !roster_config.market_fetch_failed
                 ? "✅"
                 : disabled
                   ? ""
@@ -154,7 +144,7 @@ watch(
         </div>
         <button
           :disabled="disabled"
-          @click="() => start_fetch(roster_config.region, true)"
+          @click="() => start_fetch(active_region, true)"
           class="generic-button"
         >
           {{ !disabled ? "Fetch Market Data" : "Fetching..." }}
@@ -198,7 +188,7 @@ watch(
         label-text="Convert owned T4 Roster & Tradable to T4.5 Serca mats (5 to 1 ratio)"
         tooltip-text="Red, Blue, and Leaps (not abidos)"
         @change-tier="convert_roster_mats_to_serca"
-      ></TierConvertButton>
+      />
     </template>
 
     <template #main> <BudgetGrid /> </template>

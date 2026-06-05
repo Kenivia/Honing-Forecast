@@ -280,7 +280,7 @@ const is924Narrow = useMediaIsNarrow(924); // this turns out to be the width whe
 </script>
 
 <template>
-  <section class="card-shell">
+  <div class="card-shell">
     <div class="card-header">
       <div class="card-title">Costs distribution</div>
     </div>
@@ -497,7 +497,10 @@ const is924Narrow = useMediaIsNarrow(924); // this turns out to be the width whe
       </div>
     </div>
 
-    <Popup :show_popup="show_special_guide">
+    <Popup
+      :show_popup="show_special_guide"
+      @close_popup="show_special_guide = false"
+    >
       <span style="font-size: 30px; color: var(--text-bright)">
         Save Special Leaps and convert to Serca, unless you are tapping +25
       </span>
@@ -506,7 +509,7 @@ const is924Narrow = useMediaIsNarrow(924); // this turns out to be the width whe
       </span>
       <img src="/Special convert chart.png" alt="Special convert chart" />
     </Popup>
-  </section>
+  </div>
   <!-- <span>
     The above results assumes that you follow the optimal
     <RouterLink

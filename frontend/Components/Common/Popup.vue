@@ -1,14 +1,10 @@
 <script setup lang="ts">
 defineProps<{ show_popup: boolean }>();
-defineEmits<{ show_popup: [value: boolean] }>();
+defineEmits<{ close_popup: [] }>();
 </script>
 <template>
   <Teleport to="body">
-    <div
-      v-if="show_popup"
-      class="popup-overlay"
-      @click="$emit('show_popup', false)"
-    >
+    <div v-if="show_popup" class="popup-overlay" @click="$emit('close_popup')">
       <div class="popup" @click.stop>
         <slot />
       </div>

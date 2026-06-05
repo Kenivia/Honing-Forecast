@@ -4,16 +4,21 @@ import tailwindcss from "@tailwindcss/vite";
 import path from "path";
 
 export default defineConfig({
-    base: "/",
-    plugins: [vue(), tailwindcss()],
-    resolve: {
-        alias: {
-            // eslint-disable-next-line no-undef
-            "@": path.resolve(__dirname, "frontend"),
-        },
+  base: "/",
+  plugins: [vue(), tailwindcss()],
+  resolve: {
+    alias: {
+      // eslint-disable-next-line no-undef
+      "@": path.resolve(__dirname, "frontend"),
     },
-    build: {
-        sourcemap: true,
+  },
+  build: {
+    sourcemap: true,
+  },
+  assetsInclude: ["**/*.md"],
+  server: {
+    watch: {
+      ignored: ["/cloudflare/.wrangler/**"],
     },
-    assetsInclude: ["**/*.md"],
+  },
 });

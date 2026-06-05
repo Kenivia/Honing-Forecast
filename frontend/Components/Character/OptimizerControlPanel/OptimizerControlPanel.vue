@@ -69,7 +69,7 @@ const grid: GridConfig = {
 </script>
 
 <template>
-  <section class="card-shell max-w-[min(800px,100%)]! min-w-[min(800px,100%)]!">
+  <div class="card-shell max-w-[min(800px,100%)]! min-w-[min(800px,100%)]!">
     <div>
       <div class="mx-2 flex w-full flex-row items-center gap-3">
         <span class="content-center text-nowrap">Optimizer progress:</span>
@@ -269,7 +269,7 @@ const grid: GridConfig = {
         how they calculate their gold values.</span
       >
     </div>
-  </section>
+  </div>
 </template>
 <style>
 .progress-bar {

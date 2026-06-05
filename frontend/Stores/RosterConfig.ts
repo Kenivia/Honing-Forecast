@@ -1,4 +1,9 @@
-import { ALL_LABELS, DEFAULT_TIER, STORAGE_KEY } from "@/Utils/Constants";
+import {
+  ALL_LABELS,
+  DEFAULT_TIER,
+  FALLBACK_PRICES,
+  STORAGE_KEY,
+} from "@/Utils/Constants";
 import { debounce, format_char_name } from "@/Utils/Helpers";
 import {
   create_input_column,
@@ -17,18 +22,21 @@ import {
 import { get_valid_status_grid } from "@/Utils/StatusGrid";
 import { grids_to_keyed } from "@/Utils/KeyedUpgrades";
 import { BudgetSnapshot } from "@/Components/Character/Instructions/Details/NormalDetails/SuccessUtils";
+import { MarketRegions } from "@/Utils/MarketDataFetcher";
 
 export interface RosterConfig {
-  mats_prices: InputColumn[]; // mats_prices[tier].data[row] = "123"
+  mats_prices: Record<MarketRegions, InputColumn[]>;
+  // mats_prices: InputColumn[]; // mats_prices[tier].data[row] = "123"
   roster_mats_owned: Record<number, InputColumn[]>; // Same as in char profile, the tier distinction is because there's different number of mats (rows) for each tier
   tradable_mats_owned: Record<number, InputColumn[]>;
+
+  all_regions: Record<number, MarketRegions>;
 
   tier: number;
   cumulative_graph: boolean;
   selected_shard_bag_size: number;
-  region: string;
   effective_serca_price: number[]; // This is the one that's actually used (instead of mats_prices) for serca mats in build_material_info
-  latest_market_data: Record<string, [number, any]>; // [timestamp, raw_response_data]
+  latest_market_data: Partial<Record<MarketRegions, [number, any]>>; // [timestamp, raw_response_data]
 
   profiles: CharProfile[];
   active_profile_index: number;
@@ -78,20 +86,44 @@ export const useRosterStore = defineStore("roster", {
     enabled_annotations: (state): boolean[] => {
       return state.roster_config.enabled_annotations;
     },
+    active_region: (state): MarketRegions => {
+      const active_profile =
+        state.roster_config.profiles[state.roster_config.active_profile_index];
+      console.log(
+        state.roster_config.all_regions,
+        state.roster_config.all_regions[active_profile.roster_id],
+      );
+      return state.roster_config.all_regions[active_profile.roster_id];
+    },
+
+    active_mats_prices: (state): InputColumn[] => {
+      const active_profile =
+        state.roster_config.profiles[state.roster_config.active_profile_index];
+      const active_region =
+        state.roster_config.all_regions[active_profile.roster_id];
+
+      // if (!state.roster_config.mats_prices[active_region]) {
+      //   state.roster_config.mats_prices[active_region] =
+
+      //   create_input_column(InputType.Float,ALL_LABELS ) ;
+      // }
+      console.log(state.roster_config.mats_prices);
+      return state.roster_config.mats_prices[active_region];
+    },
   },
 
   actions: {
     init() {
       this.roster_config = load_roster_config();
     },
-    switchProfile(id: number) {
+    switch_profile(id: number) {
       this.roster_config.active_profile_index = id;
     },
-    addProfile(profile: CharProfile) {
+    add_profile(profile: CharProfile) {
       this.roster_config.profiles.push(profile);
     },
 
-    resetActiveProfile() {
+    reset_active_profile() {
       const name =
         this.roster_config.profiles[this.roster_config.active_profile_index]
           .char_name;
@@ -108,10 +140,11 @@ export const useRosterStore = defineStore("roster", {
       ].roster_id = roster_id;
     },
 
-    get_this_roster_profile(roster_index): CharProfile[] {
-      return this.roster_config.profiles.filter(
-        (x) => x.roster_number == roster_index,
-      );
+    set_active_region(region: MarketRegions) {
+      const active_profile: CharProfile =
+        this.roster_config.profiles[this.roster_config.active_profile_index];
+
+      this.roster_config.all_regions[active_profile.roster_id] = region;
     },
   },
 });
@@ -122,15 +155,27 @@ export function create_default_owned_input_column(): InputColumn[] {
   );
 }
 export const DEFAULT_ROSTER_CONFIG: RosterConfig = {
-  mats_prices: ALL_LABELS.map((this_labels) =>
-    create_input_column(InputType.Int, this_labels),
-  ), // was gonna use Float here but ig it makes more sense to do int, leaving float in place cos why not
+  mats_prices: {
+    nae: ALL_LABELS.map((this_labels, index) =>
+      create_input_column(
+        InputType.Int,
+        this_labels,
+        FALLBACK_PRICES[index].map((price) => price.toLocaleString()),
+      ),
+    ),
+    euc: ALL_LABELS.map((this_labels, index) =>
+      create_input_column(
+        InputType.Int,
+        this_labels,
+        FALLBACK_PRICES[index].map((price) => price.toLocaleString()),
+      ),
+    ),
+  }, // was gonna use Float here but ig it makes more sense to do int, leaving float in place cos why not
   roster_mats_owned: { 0: create_default_owned_input_column() },
   tradable_mats_owned: { 0: create_default_owned_input_column() },
   tier: DEFAULT_TIER,
   cumulative_graph: true,
   selected_shard_bag_size: 3000,
-  region: "NAE",
   effective_serca_price: ALL_LABELS[1].map(() => 0),
   latest_market_data: {},
 
@@ -143,6 +188,7 @@ export const DEFAULT_ROSTER_CONFIG: RosterConfig = {
   budget_snapshot: null,
   is_details_update: false,
   auto_deduct_costs: true,
+  all_regions: { 0: "nae" },
 };
 
 export function load_roster_config(): RosterConfig {
@@ -179,14 +225,37 @@ export function load_roster_config(): RosterConfig {
       out.roster_mats_owned = { 0: create_default_owned_input_column() };
       out.tradable_mats_owned = { 0: create_default_owned_input_column() };
     }
-
     localStorage.removeItem("HF_UI_STATE_V3_roster");
   }
-  // console.log(out.roster_mats_owned)
-  validate_input_column_array(
-    out.mats_prices,
-    DEFAULT_ROSTER_CONFIG.mats_prices,
-  );
+
+  // not sure when active_profile_index was introduced but was definitely before 1.2.0,
+  out.active_profile_index = !out.active_profile_index
+    ? 0
+    : Math.max(0, Math.min(out.profiles.length - 1, out.active_profile_index));
+
+  // just after 1.2.0
+  if (out.region !== undefined) {
+    const region: MarketRegions = out.region.toLowerCase();
+    out.all_regions = DEFAULT_ROSTER_CONFIG.all_regions; // i mean profiles shouldn't be empty or anything but just in case ig
+    for (let index = 0; index < out.profiles.length; index++) {
+      out.all_regions[out.profiles[index].roster_id] = region;
+    }
+    // out.mats_prices = Object.fromEntries([[region, out.mats_prices]]); i don think this is needed cos like we're fetching anyway
+    out.mats_prices = DEFAULT_ROSTER_CONFIG.mats_prices;
+    delete out["region"];
+  }
+  out = standard_validation(out);
+  return { ...DEFAULT_ROSTER_CONFIG, ...out };
+}
+
+// just making sure that things are correct, not really necessary i think but oh well
+function standard_validation(out: any) {
+  for (const key in out.active_mats_prices) {
+    validate_input_column_array(
+      out.active_mats_prices[key],
+      DEFAULT_ROSTER_CONFIG.mats_prices["nae"],
+    );
+  }
   for (const key in out.roster_mats_owned) {
     validate_input_column_array(
       out.roster_mats_owned[key],
@@ -256,15 +325,9 @@ export function load_roster_config(): RosterConfig {
     }
 
     out.profiles[i] = recreate_char_profile(this_parsed);
-    // console.log(out.profiles[i].optimizer_override);
-    // console.log(parsed.profiles[i], parsed.profiles[i].tier)
   }
-  out.active_profile_index = !out.active_profile_index
-    ? 0
-    : Math.max(0, Math.min(out.profiles.length - 1, out.active_profile_index));
-  return { ...DEFAULT_ROSTER_CONFIG, ...out };
+  return out;
 }
-
 function stringifyOmit(obj: RosterConfig, keys: string[]): string {
   const omit = new Set(keys);
   return JSON.stringify(obj, (key, value) =>

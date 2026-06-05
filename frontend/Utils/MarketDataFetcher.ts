@@ -10,6 +10,7 @@ import {
 import { storeToRefs } from "pinia";
 import { useRosterStore } from "@/Stores/RosterConfig";
 
+export type MarketRegions = "nae" | "euc";
 const BODY = {
   region_slug: "nae",
   item_slugs: [
@@ -45,7 +46,7 @@ const BODY = {
   ],
 };
 
-export async function fetchMarketData(region: string): Promise<string> {
+export async function fetchMarketData(region: MarketRegions): Promise<string> {
   let body = structuredClone(BODY);
   body["region_slug"] = region.toLowerCase();
   // console.log(body)
@@ -163,7 +164,7 @@ export function useTimedFetch(
 
   const isFetching = ref(false);
 
-  function isDataStale(region: string, cooldown: number): boolean {
+  function isDataStale(region: MarketRegions, cooldown: number): boolean {
     const cached = roster_config.value.latest_market_data[region];
     if (cached === undefined) return true;
     const [timestamp, _] = cached;
@@ -175,7 +176,7 @@ export function useTimedFetch(
     return isFetching.value;
   });
 
-  async function start_fetch(region: string, force?: boolean) {
+  async function start_fetch(region: MarketRegions, force?: boolean) {
     if (isFetching.value) return;
 
     const cached = roster_config.value.latest_market_data[region];
@@ -230,8 +231,10 @@ export function fetch_callback(
   selectedShardSize: number,
   shard_price: number,
 ) {
-  const { roster_config } = storeToRefs(useRosterStore());
+  const roster_store = useRosterStore();
+  const { roster_config } = storeToRefs(roster_store);
   // console.log(result)
+  // console.log(roster_store.active_mats_prices);
   roster_config.value.selected_shard_bag_size = selectedShardSize;
   for (let tier = 0; tier < ALL_LABELS.length; tier++) {
     for (let index = 0; index < ALL_LABELS[tier].length; index++) {
@@ -239,10 +242,10 @@ export function fetch_callback(
       const actual_tier = syncing ? 0 : tier;
       const actual_index = syncing ? SERCA_TO_T4_INDICES[index] : index;
 
-      roster_config.value.mats_prices[actual_tier].data[actual_index] =
+      roster_store.active_mats_prices[actual_tier].data[actual_index] =
         result[actual_tier][actual_index].toLocaleString();
       if (ALL_LABELS[actual_tier][actual_index] == "Shards") {
-        roster_config.value.mats_prices[actual_tier].data[actual_index] =
+        roster_store.active_mats_prices[actual_tier].data[actual_index] =
           shard_price.toLocaleString();
       }
     }

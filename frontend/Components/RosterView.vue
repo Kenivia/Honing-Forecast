@@ -31,7 +31,7 @@ function add_new_char(roster_id: number) {
   );
   new_char.roster_id = roster_id;
   names.value.push(new_char.char_name);
-  roster_store.addProfile(new_char);
+  roster_store.add_profile(new_char);
 }
 function add_new_roster(roster_id: number) {
   let new_char = create_default_char_profile();
@@ -61,13 +61,13 @@ function duplicate(index) {
     roster_config.value.profiles.length,
   );
   names.value.push(new_char.char_name);
-  roster_store.addProfile(new_char);
+  roster_store.add_profile(new_char);
 }
 
 function delete_profile(index, roster_id) {
   // console.log(this_roster_profiles.length)
   if (roster_config.value.active_profile_index >= index) {
-    roster_store.switchProfile(Math.max(index - 1, 0));
+    roster_store.switch_profile(Math.max(index - 1, 0));
   }
   roster_config.value.profiles.splice(index, 1);
   names.value.splice(index, 1);
@@ -103,7 +103,7 @@ function delete_profile(index, roster_id) {
     >
     <template #main>
       <div class="flex flex-row flex-wrap justify-around gap-4">
-        <section
+        <div
           v-for="(roster_id, roster_index) in roster_ids"
           class="card-shell flex h-fit flex-col"
           :key="roster_id"
@@ -173,7 +173,7 @@ function delete_profile(index, roster_id) {
               Add new character
             </button>
           </div>
-        </section>
+        </div>
       </div>
     </template>
   </Sidebar>

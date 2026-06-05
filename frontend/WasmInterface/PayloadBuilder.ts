@@ -214,7 +214,8 @@ export function special_sort_override(
 }
 
 export function build_material_info(): OneMaterialInput[] {
-  const { active_profile } = storeToRefs(useRosterStore());
+  const roster_store = useRosterStore();
+  const { active_profile } = storeToRefs(roster_store);
   const {
     roster_config,
     active_roster_mats_owned,
@@ -238,11 +239,11 @@ export function build_material_info(): OneMaterialInput[] {
   );
   const effective_price =
     tier == 0
-      ? input_column_to_num(roster_config.value.mats_prices[tier])
+      ? input_column_to_num(roster_store.active_mats_prices[tier])
       : roster_config.value.effective_serca_price;
 
   const tradable_mats_price = input_column_to_num(
-    roster_config.value.mats_prices[tier],
+    roster_store.active_mats_prices[tier],
   ).map(
     (x: number, index: number) =>
       Math.max(Math.min(1, x), Math.floor(x * 0.95)) /

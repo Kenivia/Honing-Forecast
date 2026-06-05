@@ -145,7 +145,7 @@ const grid: GridConfig = props.is_normal
 const optimizer_working = computed(get_optimizer_working);
 </script>
 <template>
-  <section class="card-shell">
+  <div class="card-shell">
     <div class="card-header">
       <div class="card-title">
         {{
@@ -246,7 +246,7 @@ const optimizer_working = computed(get_optimizer_working);
         </div>
       </div>
     </div>
-  </section>
+  </div>
 </template>
 <style>
 .title-nowrap {
