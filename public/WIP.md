@@ -28,6 +28,8 @@ If you'd like to help with any of the below, feel free to get in touch via [Disc
 
 - change MarketView to not rely on active_profile and stuff, makes 0 sense why did i do that
 
+- make market fetcher fetch yesterday's average price instead of latest price
+
 ## Roadmap (big projects)
 
 ### 1st: ~~re-write the frontend~~

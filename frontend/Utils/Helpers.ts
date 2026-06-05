@@ -173,61 +173,6 @@ export function check_revert_ilevel_ok(): number | boolean {
 // export function check_revert_eligibility(): boolean {
 //     return check_adv_all_done() && check_revert_ilevel_ok() === true
 // }
-export function achieved_ilevel(profile: CharProfile): string {
-  let out = profile.tier == 0 ? 1590 : 1635;
-  if (profile.tier == 0) {
-    for (let row = 0; row < NUM_PIECES; row++) {
-      let highest_plus =
-        profile.adv_grid[row].findLastIndex(
-          (value) => value == UpgradeStatus.Done,
-        ) + 1;
-      out += (highest_plus * 10) / 6;
-    }
-  } else {
-    out += 40;
-  }
-  for (let row = 0; row < NUM_PIECES; row++) {
-    let highest_plus =
-      profile.normal_grid[row].findLastIndex(
-        (value) => value == UpgradeStatus.Done,
-      ) + 1;
-    // find last index = -1 if nothing is done
-    if (highest_plus == 0) {
-      return "?";
-    } else {
-      out += (highest_plus * 5) / 6;
-    }
-  }
-  return locale_to_fixed(out, 2);
-}
-
-export function pending_ilevel(active_profile: CharProfile): string {
-  let out = active_profile.tier == 0 ? 1590 : 1635;
-  if (active_profile.tier == 0) {
-    for (let row = 0; row < NUM_PIECES; row++) {
-      let highest_plus =
-        active_profile.adv_grid[row].findLastIndex(
-          (value) => value == UpgradeStatus.Done || value == UpgradeStatus.Want,
-        ) + 1;
-      out += (highest_plus * 10) / 6;
-    }
-  } else {
-    out += 40;
-  }
-  for (let row = 0; row < NUM_PIECES; row++) {
-    let highest_plus =
-      active_profile.normal_grid[row].findLastIndex(
-        (value) => value == UpgradeStatus.Done || value == UpgradeStatus.Want,
-      ) + 1;
-    // find last index = -1 if nothing is done
-    if (highest_plus == 0) {
-      return "?";
-    } else {
-      out += (highest_plus * 5) / 6;
-    }
-  }
-  return locale_to_fixed(out, 2);
-}
 
 export function cssVar(name: string, fallback: string) {
   if (typeof window === "undefined") return fallback;

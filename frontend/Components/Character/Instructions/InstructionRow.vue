@@ -43,7 +43,7 @@ const optimizer_working = computed(get_optimizer_working);
     </span>
     <span v-if="!upgrade.is_normal_honing">{{
       " +" +
-      String(upgrade.upgrade_index * 10 + 1) +
+      String(upgrade.upgrade_index * 10 + upgrade.adv_config.start_xp / 10) +
       " - " +
       String((upgrade.upgrade_index + 1) * 10)
     }}</span>

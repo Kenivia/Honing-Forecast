@@ -1,6 +1,35 @@
-import { DEFAULT_ARTISAN_MULTIPLIER } from "./Constants";
+import { CharProfile } from "@/Stores/CharacterProfile";
+import { DEFAULT_ARTISAN_MULTIPLIER, NUM_PIECES } from "./Constants";
 import { locale_to_fixed } from "./Helpers";
-import { Upgrade } from "./KeyedUpgrades";
+import { Upgrade, UpgradeStatus } from "./KeyedUpgrades";
+
+export function ilevel(
+  profile: CharProfile,
+  mode: "achieved" | "pending",
+): string {
+  const done = (value: UpgradeStatus) =>
+    value === UpgradeStatus.Done ||
+    (mode === "pending" && value === UpgradeStatus.Want);
+
+  let out = profile.tier === 0 ? 1590 : 1635;
+  if (profile.tier === 0) {
+    for (let row = 0; row < NUM_PIECES; row++) {
+      const highest_plus = profile.adv_grid[row].findLastIndex(done) + 1;
+      out += (highest_plus * 10) / 6;
+    }
+  } else {
+    out += 40;
+  }
+  for (let row = 0; row < NUM_PIECES; row++) {
+    const highest_plus = profile.normal_grid[row].findLastIndex(done) + 1;
+    if (highest_plus === 0) {
+      return "?";
+    } else {
+      out += (highest_plus * 5) / 6;
+    }
+  }
+  return locale_to_fixed(out, 2);
+}
 
 export function artisan_function(
   upgrade: Upgrade,

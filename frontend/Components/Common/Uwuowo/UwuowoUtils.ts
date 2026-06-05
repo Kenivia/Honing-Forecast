@@ -3,8 +3,14 @@ import { parse_locale_int } from "@/Utils/InputColumn";
 
 export type UwuowoRegions = "NA" | "CE";
 
+export interface UwuowoPiece {
+  plus_n: number;
+  ilevel: number;
+  tier: number;
+  adv: number;
+}
 export interface UwuowoResult {
-  pieces: [number, number][]; // [+n, ilevel ]
+  pieces: UwuowoPiece[]; // [+n, ilevel, tier , adv]
   class_name: string;
 }
 
@@ -48,12 +54,9 @@ export async function get_parsed_uwuowo(
   if (allDivs.findIndex((el) => el.textContent.includes("Missing Data")) >= 0) {
     return `Missing data`;
   }
-  let pieces: [number, number][];
+  let pieces: UwuowoPiece[];
   let class_name: string;
   try {
-    console.log(
-      allDivs.findLast((el) => el.textContent.trim() === "Equipment"),
-    );
     const container = allDivs.findLast(
       (el) => el.textContent.trim() === "Equipment",
     ).parentElement.children[1];
@@ -70,7 +73,20 @@ export async function get_parsed_uwuowo(
           top_row.children[1].textContent.replace("+", ""),
         );
         const ilevel = parse_locale_int(bottom_row.children[1].textContent);
-        return [plus_n, ilevel];
+        let tier: number;
+        let adv: number;
+        console.log(top_row.children);
+        if (top_row.children.length > 3) {
+          tier = 0;
+          adv = parse_locale_int(
+            top_row.children[3]?.textContent.replace("+", ""),
+          );
+        } else {
+          tier = 1;
+          adv = NaN;
+        }
+
+        return { plus_n, ilevel, tier, adv };
       });
   } catch (e) {
     return `Parsing equipment failed with message ${e}`;

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { format_char_name } from "@/Utils/Helpers";
 
-import { ref } from "vue";
+import { ref, watch } from "vue";
 
 const props = defineProps<{
   char_name: string;
@@ -9,6 +9,12 @@ const props = defineProps<{
 }>();
 
 const char_name = ref(props.char_name);
+watch(
+  () => props.char_name,
+  () => {
+    char_name.value = props.char_name;
+  },
+);
 
 const emit = defineEmits<{
   char_name_change: [new_name: string];
@@ -23,7 +29,6 @@ const emit = defineEmits<{
       @change="
         () => {
           const new_name = format_char_name(char_name, profile_index);
-          // active_profile.char_name = char_name;
           emit('char_name_change', new_name);
         }
       "

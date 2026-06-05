@@ -1,5 +1,10 @@
 <script setup lang="ts">
-import { UwuowoRegions, UwuowoResult, get_parsed_uwuowo } from "./UwuowoUtils";
+import {
+  UwuowoPiece,
+  UwuowoRegions,
+  UwuowoResult,
+  get_parsed_uwuowo,
+} from "./UwuowoUtils";
 import Popup from "../Popup.vue";
 import { Ref, ref } from "vue";
 import { PIECE_NAMES } from "@/Utils/Constants";
@@ -7,7 +12,7 @@ import { PIECE_NAMES } from "@/Utils/Constants";
 const props = defineProps<{
   region: UwuowoRegions;
   char_name: string;
-  apply: (UwuowoResult) => void;
+  apply?: (_: UwuowoPiece[]) => void;
 }>();
 
 const parse_msg = ref("Fetching from lostark.bible...");
@@ -28,7 +33,7 @@ async function click() {
 
 function confirm() {
   show_popup.value = false;
-  props.apply(parsed_result.value);
+  props.apply(parsed_result.value.pieces);
 }
 </script>
 

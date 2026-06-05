@@ -8,17 +8,14 @@ import {
   create_default_owned_input_column,
   useRosterStore,
 } from "@/Stores/RosterConfig";
-import {
-  achieved_ilevel,
-  format_char_name,
-  pending_ilevel,
-} from "@/Utils/Helpers";
+import { format_char_name } from "@/Utils/Helpers";
 import { storeToRefs } from "pinia";
 import { RouterLink } from "vue-router";
 import Sidebar from "@/Components/Common/Sidebar.vue";
 import Uwuowo from "./Common/Uwuowo/Uwuowo.vue";
 import RegionSelector from "./Common/RegionSelector.vue";
 import { MarketRegions, start_fetch } from "@/Utils/MarketDataFetcher.js";
+import { ilevel } from "@/Utils/HoningUtil.js";
 
 const roster_store = useRosterStore();
 const { roster_config, roster_ids } = storeToRefs(roster_store);
@@ -135,15 +132,21 @@ function delete_profile(index, roster_id) {
                 <Uwuowo
                   :profile_index="profile_index"
                   :name="profile.char_name"
-                  :name_change="(new_name) => (profile.char_name = new_name)"
+                  :name_change="
+                    (new_name) => {
+                      (console.log(new_name),
+                        (roster_config.profiles[profile_index].char_name =
+                          new_name));
+                    }
+                  "
                   :hide_region="true"
                 />
                 <div class="char-meta flex flex-col">
                   <label class="text-no-wrap text-(--achieved)"
-                    >Achieved ilevel: {{ achieved_ilevel(profile) }}</label
+                    >Achieved ilevel: {{ ilevel(profile, "achieved") }}</label
                   >
                   <label class="text-no-wrap text-(--pending)"
-                    >Pending ilevel: {{ pending_ilevel(profile) }}</label
+                    >Pending ilevel: {{ ilevel(profile, "pending") }}</label
                   >
                 </div>
               </div>
