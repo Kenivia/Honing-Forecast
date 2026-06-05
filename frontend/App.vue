@@ -9,6 +9,7 @@ import {
 import { useMediaIsNarrow } from "@/Utils/WindowSize";
 import { computed } from "vue";
 import { storeToRefs } from "pinia";
+import { start_fetch } from "./Utils/MarketDataFetcher";
 
 const roster_store = useRosterStore();
 roster_store.init();
@@ -31,6 +32,8 @@ function on_char_select(e: Event) {
 const char_name_from_route = computed(
   () => route.path.split("/")[route.path.split("/").length - 2],
 );
+start_fetch("nae", false, true);
+start_fetch("euc", false, true);
 </script>
 
 <template>

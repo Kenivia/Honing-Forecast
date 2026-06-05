@@ -144,7 +144,9 @@ watch(
           @click="() => start_fetch(active_region, true)"
           class="generic-button"
         >
-          {{ !roster_config.is_fetching ? "Fetch Market Data" : "Fetching..." }}
+          {{
+            !roster_config.is_fetching ? "Re-fetch Market Data" : "Fetching..."
+          }}
         </button>
       </div>
 

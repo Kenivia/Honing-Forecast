@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import {
   CharProfile,
-  create_default_char_profile,
+  default_char_profile,
   recreate_char_profile,
 } from "@/Stores/CharacterProfile";
 import {
@@ -24,7 +24,7 @@ const roster_store = useRosterStore();
 const { roster_config, roster_ids } = storeToRefs(roster_store);
 
 function add_new_char(roster_id: number) {
-  let new_char = create_default_char_profile();
+  let new_char = recreate_char_profile(default_char_profile);
   new_char.char_name = format_char_name(
     "Newchar",
     roster_config.value.profiles.length,
@@ -33,7 +33,7 @@ function add_new_char(roster_id: number) {
   roster_store.add_profile(new_char);
 }
 function add_new_roster(roster_id: number) {
-  let new_char = create_default_char_profile();
+  let new_char = recreate_char_profile(default_char_profile);
   new_char.char_name = format_char_name(
     "Newchar",
     roster_config.value.profiles.length,
@@ -49,7 +49,7 @@ function add_new_roster(roster_id: number) {
 
 function duplicate(index) {
   let this_parsed = {
-    ...create_default_char_profile(),
+    ...recreate_char_profile(default_char_profile),
     ...roster_config.value.profiles[index],
   };
 
@@ -118,7 +118,7 @@ function delete_profile(index, roster_id) {
                   // console.log('set roster_id', roster_id);
                   roster_config.all_regions[roster_id] = new_region;
                   // console.log(roster_config.all_regions);
-                  start_fetch(new_region, true);
+                  start_fetch(new_region);
                 }
               "
             />

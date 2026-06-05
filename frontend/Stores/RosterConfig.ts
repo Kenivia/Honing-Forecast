@@ -4,23 +4,22 @@ import {
   FALLBACK_PRICES,
   STORAGE_KEY,
 } from "@/Utils/Constants";
-import { debounce, format_char_name } from "@/Utils/Helpers";
+import { debounce } from "@/Utils/Helpers";
 import {
   create_input_column,
   InputColumn,
   InputType,
-  validate_input_column,
   validate_input_column_array,
 } from "@/Utils/InputColumn";
 
 import { defineStore } from "pinia";
 import {
   CharProfile,
-  create_default_char_profile,
+  default_char_profile,
   recreate_char_profile,
+  validate_char_profile,
 } from "./CharacterProfile";
-import { get_valid_status_grid } from "@/Utils/StatusGrid";
-import { grids_to_keyed } from "@/Utils/KeyedUpgrades";
+
 import { BudgetSnapshot } from "@/Components/Character/Instructions/Details/NormalDetails/SuccessUtils";
 import { MarketRegions, start_fetch } from "@/Utils/MarketDataFetcher";
 
@@ -138,7 +137,7 @@ export const useRosterStore = defineStore("roster", {
         this.roster_config.profiles[this.roster_config.active_profile_index]
           .roster_id;
       this.roster_config.profiles[this.roster_config.active_profile_index] =
-        create_default_char_profile();
+        recreate_char_profile(default_char_profile);
       this.roster_config.profiles[
         this.roster_config.active_profile_index
       ].char_name = name;
@@ -161,7 +160,7 @@ export const useRosterStore = defineStore("roster", {
         this.roster_config.all_regions,
       );
       this.roster_config.all_regions[active_profile.roster_id] = new_region;
-      start_fetch(new_region, true);
+      start_fetch(new_region);
     },
   },
 });
@@ -196,7 +195,7 @@ export const DEFAULT_ROSTER_CONFIG: RosterConfig = {
   effective_serca_price: ALL_LABELS[1].map(() => 0),
   latest_market_data: {},
 
-  profiles: [create_default_char_profile()],
+  profiles: [recreate_char_profile(default_char_profile)],
   active_profile_index: 0,
   last_seen_version: "v0.0.0",
   enabled_annotations: [true, true, false, false],
@@ -228,7 +227,7 @@ export function load_roster_config(): RosterConfig {
       let parsed = JSON.parse(old_char_profiles);
       out.profiles = parsed.profiles;
     } catch {
-      out.profiles = [create_default_char_profile()];
+      out.profiles = [recreate_char_profile(default_char_profile)];
     }
 
     localStorage.removeItem("HF_UI_STATE_V3_char_profiles");
@@ -285,65 +284,9 @@ function standard_validation(out: any) {
       DEFAULT_ROSTER_CONFIG.tradable_mats_owned[0],
     );
   }
-  let default_profile = create_default_char_profile();
 
   for (let i = 0; i < out.profiles.length; i++) {
-    let this_profile = out.profiles[i];
-    let this_parsed: CharProfile = {
-      ...create_default_char_profile(),
-      ...this_profile,
-    };
-
-    this_parsed.char_name = format_char_name(
-      this_parsed.char_name,
-      i,
-      out.profiles.slice(0, i),
-    );
-    validate_input_column_array(
-      this_parsed.bound_budgets,
-      default_profile.bound_budgets,
-    );
-    validate_input_column_array(
-      this_parsed.leftover_price,
-      default_profile.leftover_price,
-    );
-    validate_input_column(
-      this_parsed.special_budget,
-      default_profile.special_budget,
-    );
-
-    this_parsed.normal_grid = get_valid_status_grid(
-      this_parsed.normal_grid,
-      default_profile.normal_grid,
-    );
-    this_parsed.adv_grid = get_valid_status_grid(
-      this_parsed.adv_grid,
-      default_profile.adv_grid,
-    );
-
-    this_parsed.keyed_upgrades = grids_to_keyed(
-      this_parsed.normal_grid,
-      this_parsed.adv_grid,
-      this_parsed.keyed_upgrades,
-      this_parsed.tier,
-    );
-
-    this_parsed.tier =
-      this_parsed.tier === 0 || this_parsed.tier === 1 ? this_parsed.tier : 0;
-
-    this_parsed.min_resolution = default_profile.min_resolution;
-    this_parsed.num_threads = default_profile.num_threads;
-    this_parsed.metric_type = default_profile.metric_type;
-    // console.log(this_parsed.roster_id, out.roster_mats_owned)
-    if (
-      this_parsed.roster_id === null ||
-      this_parsed.roster_id === undefined ||
-      !Object.hasOwn(out.roster_mats_owned, this_parsed.roster_id)
-    ) {
-      this_parsed.roster_id = out.roster_mats_owned.keys()[0];
-    }
-
-    out.profiles[i] = recreate_char_profile(this_parsed);
+    out.profiles[i] = validate_char_profile(out.profiles[i], out, i);
   }
   return out;
 }

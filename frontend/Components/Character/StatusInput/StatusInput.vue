@@ -148,6 +148,8 @@ function change_tier() {
   // console.log("callbacked")
   grid_change_callback();
 }
+
+function apply_uwuowo() {}
 </script>
 
 <template>
@@ -198,6 +200,7 @@ function change_tier() {
         :name_change="(new_name) => (active_profile.char_name = new_name)"
         :region_change="roster_store.active_region_change"
         :region="active_region"
+        :apply="apply_uwuowo"
       />
     </div>
   </div>

@@ -7,10 +7,7 @@ import { PIECE_NAMES } from "@/Utils/Constants";
 const props = defineProps<{
   region: UwuowoRegions;
   char_name: string;
-}>();
-
-const emit = defineEmits<{
-  apply: [];
+  apply: (UwuowoResult) => void;
 }>();
 
 const parse_msg = ref("Fetching from lostark.bible...");
@@ -31,7 +28,7 @@ async function click() {
 
 function confirm() {
   show_popup.value = false;
-  emit("apply");
+  props.apply(parsed_result.value);
 }
 </script>
 

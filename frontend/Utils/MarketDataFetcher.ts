@@ -161,10 +161,14 @@ function isDataStale(region: MarketRegions, cooldown: number): boolean {
   return Date.now() - timestamp >= cooldown;
 }
 
-export async function start_fetch(region: MarketRegions, force?: boolean) {
+export async function start_fetch(
+  region: MarketRegions,
+  force?: boolean,
+  ignore_fetch?: boolean,
+) {
   const roster_store = useRosterStore();
   const { roster_config } = storeToRefs(roster_store);
-  if (roster_config.value.is_fetching) return;
+  if (roster_config.value.is_fetching && !ignore_fetch) return;
 
   const cached = roster_config.value.latest_market_data[region];
   if (
@@ -218,6 +222,7 @@ function fetch_callback(
   const roster_store = useRosterStore();
   const { roster_config } = storeToRefs(roster_store);
   // console.log(result)
+  console.log("fetch callback");
   // console.log(roster_store.active_mats_prices);
   roster_config.value.selected_shard_bag_size = selectedShardSize;
   for (let tier = 0; tier < ALL_LABELS.length; tier++) {

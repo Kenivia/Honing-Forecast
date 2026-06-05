@@ -66,10 +66,7 @@ watch(
   ],
   () => {
     // console.log("start", active_profile.value, roster_config.value)
-    if (
-      active_profile.value.auto_start_optimizer &&
-      active_profile.value.optimizer_worker_bundle.status !== "busy"
-    ) {
+    if (active_profile.value.auto_start_optimizer) {
       start_all_workers();
     }
   },

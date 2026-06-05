@@ -1,4 +1,4 @@
-import { createWorkerBundle } from "@/WasmInterface/WorkerBundle";
+import { createWorkerBundle as create_worker_bundle } from "@/WasmInterface/WorkerBundle";
 import {
   ADV_COLS,
   ALL_LABELS,
@@ -10,14 +10,24 @@ import {
   create_input_column,
   InputColumn,
   InputType,
+  validate_input_column,
+  validate_input_column_array,
 } from "@/Utils/InputColumn";
-import { createStatusGrid } from "@/Utils/StatusGrid";
-import { KeyedUpgrades, StatusGrid } from "@/Utils/KeyedUpgrades";
+import {
+  createStatusGrid as create_status_grid,
+  get_valid_status_grid,
+} from "@/Utils/StatusGrid";
+import {
+  grids_to_keyed,
+  KeyedUpgrades,
+  StatusGrid,
+} from "@/Utils/KeyedUpgrades";
 import {
   OptimizerOverride,
   AdvOverride,
   NormalOverride,
 } from "@/WasmInterface/PayloadBuilder";
+import { format_char_name } from "@/Utils/Helpers";
 
 export interface CharProfile {
   roster_id: number;
@@ -56,72 +66,128 @@ export enum TreatmentPlan {
   TreatAllAsTradable,
 }
 
-export function create_default_char_profile(): CharProfile {
-  return {
-    optimizer_treatment_plan: TreatmentPlan.TreatRosterAsBound,
-    histogram_treatment_plan: TreatmentPlan.TreatRosterAsTradable,
-    express_event: false,
-    char_name: "Newchar",
+export const default_char_profile: CharProfile = {
+  optimizer_treatment_plan: TreatmentPlan.TreatRosterAsBound,
+  histogram_treatment_plan: TreatmentPlan.TreatRosterAsTradable,
+  express_event: false,
+  char_name: "Newchar",
 
-    auto_start_optimizer: true,
-    // evaluation_worker_bundle: createWorkerBundle(),
-    optimizer_worker_bundle: createWorkerBundle(),
-    histogram_worker_bundle: createWorkerBundle(),
+  auto_start_optimizer: true,
 
-    normal_grid: createStatusGrid(NUM_PIECES, NORMAL_COLS),
-    adv_grid: createStatusGrid(NUM_PIECES, ADV_COLS),
+  optimizer_worker_bundle: null, // these need to be filled in with create_worker_bundle
+  histogram_worker_bundle: null,
 
-    keyed_upgrades: {},
-    special_budget: create_input_column(
+  normal_grid: create_status_grid(NUM_PIECES, NORMAL_COLS),
+  adv_grid: create_status_grid(NUM_PIECES, ADV_COLS),
+
+  keyed_upgrades: {},
+  special_budget: create_input_column(
+    InputType.Int,
+    [SPECIAL_LEAP_LABEL],
+    ["0"],
+    [33333],
+  ),
+
+  bound_budgets: ALL_LABELS.map((this_labels) =>
+    create_input_column(
       InputType.Int,
-      [SPECIAL_LEAP_LABEL],
-      ["0"],
-      [33333],
+      this_labels,
+      null,
+      null,
+      this_labels.map((_, index) => index != 3),
     ),
+  ),
+  leftover_price: ALL_LABELS.map((this_labels) =>
+    create_input_column(InputType.Int, this_labels),
+  ), // implicit 0 leftover here, currently UI does not allow changing this
 
-    bound_budgets: ALL_LABELS.map((this_labels) =>
-      create_input_column(
-        InputType.Int,
-        this_labels,
-        null,
-        null,
-        this_labels.map((_, index) => index != 3),
-      ),
-    ),
-    leftover_price: ALL_LABELS.map((this_labels) =>
-      create_input_column(InputType.Int, this_labels),
-    ), // implicit 0 leftover here, currently UI does not allow changing this
+  tier: 0,
+  min_resolution: 1,
+  num_threads: 1,
+  metric_type: 1,
 
-    tier: 0,
-    min_resolution: 1,
-    num_threads: 1,
-    metric_type: 1,
-
-    roster_id: 0,
-    optimizer_override: {
-      normal: {
-        juice: NormalOverride.Optimizer,
-        book: NormalOverride.Optimizer,
-      },
-      special: {
-        optimizer: true,
-        weapon_first: true,
-        highest_first: true,
-      },
-      advanced: {
-        juice: AdvOverride.Optimizer,
-        scroll: AdvOverride.Optimizer,
-      },
+  roster_id: 0,
+  optimizer_override: {
+    normal: {
+      juice: NormalOverride.Optimizer,
+      book: NormalOverride.Optimizer,
     },
-  };
-}
+    special: {
+      optimizer: true,
+      weapon_first: true,
+      highest_first: true,
+    },
+    advanced: {
+      juice: AdvOverride.Optimizer,
+      scroll: AdvOverride.Optimizer,
+    },
+  },
+};
 
 // Worker bundles are not writable to string(and prolly shouldnt anyway), we re-make them on load
-export function recreate_char_profile(parsed): CharProfile {
+export function recreate_char_profile(parsed: any): CharProfile {
   return {
     ...parsed,
     // evaluation_worker_bundle: createWorkerBundle(),
-    optimizer_worker_bundle: createWorkerBundle(),
-    histogram_worker_bundle: createWorkerBundle(),
+    optimizer_worker_bundle: create_worker_bundle(),
+    histogram_worker_bundle: create_worker_bundle(),
   };
+}
+
+export function validate_char_profile(
+  this_profile: any,
+  out: any,
+  index: number,
+): CharProfile {
+  let this_parsed: CharProfile = {
+    ...default_char_profile,
+    ...this_profile,
+  };
+
+  this_parsed.char_name = format_char_name(
+    this_parsed.char_name,
+    index,
+    out.profiles.slice(0, index),
+  );
+  validate_input_column_array(
+    this_parsed.bound_budgets,
+    default_char_profile.bound_budgets,
+  );
+  validate_input_column_array(
+    this_parsed.leftover_price,
+    default_char_profile.leftover_price,
+  );
+  validate_input_column(
+    this_parsed.special_budget,
+    default_char_profile.special_budget,
+  );
+
+  this_parsed.normal_grid = get_valid_status_grid(
+    this_parsed.normal_grid,
+    default_char_profile.normal_grid,
+  );
+  this_parsed.adv_grid = get_valid_status_grid(
+    this_parsed.adv_grid,
+    default_char_profile.adv_grid,
+  );
+
+  this_parsed.keyed_upgrades = grids_to_keyed(
+    this_parsed.normal_grid,
+    this_parsed.adv_grid,
+    this_parsed.keyed_upgrades,
+    this_parsed.tier,
+  );
+
+  this_parsed.tier =
+    this_parsed.tier === 0 || this_parsed.tier === 1 ? this_parsed.tier : 0;
+
+  if (
+    this_parsed.roster_id === null ||
+    this_parsed.roster_id === undefined ||
+    !Object.hasOwn(out.roster_mats_owned, this_parsed.roster_id)
+  ) {
+    this_parsed.roster_id = out.roster_mats_owned.keys()[0];
+  }
+
+  return recreate_char_profile(this_parsed);
 }
