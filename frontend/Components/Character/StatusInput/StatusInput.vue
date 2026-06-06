@@ -32,7 +32,7 @@ const tooltip_text = computed(() => {
       : "Warning! " +
         [
           !check_adv_all_done() ? "All Adv honing will be set to +40" : null,
-          !check_all_plus_20() ? "All Gear will be set to +20 (T4)" : null,
+          !check_all_plus_20() ? "All Gear will be set to +11 (Serca)" : null,
         ]
           .filter((x) => x !== null)
           .join(", \n")

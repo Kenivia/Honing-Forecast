@@ -31,13 +31,7 @@ function add_new_char(roster_id: number) {
   roster_store.add_profile(new_char);
 }
 function add_new_roster(roster_id: number) {
-  let new_char = recreate_char_profile(default_char_profile);
-  new_char.char_name = format_char_name(
-    "Newchar",
-    roster_config.value.profiles.length,
-  );
-  new_char.roster_id = roster_id;
-  roster_config.value.profiles.push(new_char);
+  add_new_char(roster_id);
 
   roster_config.value.roster_mats_owned[roster_id] =
     create_default_owned_input_column();
@@ -73,6 +67,7 @@ function delete_profile(index, roster_id) {
   ) {
     delete roster_config.value.roster_mats_owned[roster_id];
     delete roster_config.value.tradable_mats_owned[roster_id];
+    delete roster_config.value.all_regions[roster_id];
   }
 
   // console.log(this_roster_profiles.length)

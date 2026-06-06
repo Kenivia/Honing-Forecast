@@ -7,23 +7,6 @@ If you'd like to help with any of the below, feel free to get in touch via [Disc
 
 ## Immediate WIP
 
-- "Char info" or something panel, ~~above(or below?) ~~ probably kindof replaces/ merges with statusinput, which will contain:
-  - ~~store 2 copies of market price , indexed by region, add region specification in roster page and read the appropriate prices from there~~
-    - add a region selector on the roster header
-
-  - uwuowo integration (add button next to textbox to pull from uwuowo, add button on sidebar of roster setup to pull all existing chars)
-    - ~~need some kind of website parser, shouldn't be too difficult tho~~
-    - need to set up some kind of rate limit
-
-  - copy express checkbox to roster setup also
-    - ~~also make it more obvious, on top of materialdist maybe?~~
-
-  - ~~prolly move achieved ilevel & stuff here also so that~~
-  - ~~make a copy button here~~
-  - parse & set fetched info
-  - style the fetched info popup
-  - change the StatusInput UI when it is fetched (hide done upgrades to reduce rows needed, move achieved ilevel, get rid of serca button)
-  
 - change roster button / drag & drop? order changing in roster page
 
 - change MarketView to not rely on active_profile and stuff, makes 0 sense why did i do that
@@ -199,6 +182,23 @@ Below are some rambling / brainstorming / Misc stuff
 
 ## Done / cancelled
 
+- ~~"Char info" or something panel, ~~above(or below?) ~~ probably kindof replaces/ merges with statusinput, which will contain:~~
+  - ~~store 2 copies of market price , indexed by region, add region specification in roster page and read the appropriate prices from there~~
+    - ~~add a region selector on the roster header~~
+
+  - ~~uwuowo integration (add button next to textbox to pull from uwuowo, add button on sidebar of roster setup to pull all existing chars)~~
+    - ~~need some kind of website parser, shouldn't be too difficult tho~~
+    - ~~need to set up some kind of rate limit~~
+
+  - ~~copy express checkbox to roster setup also~~
+    - ~~also make it more obvious, on top of materialdist maybe?~~
+
+  - ~~prolly move achieved ilevel & stuff here also so that~~
+  - ~~make a copy button here~~
+  - ~~parse & set fetched info~~
+  - ~~style the fetched info popup~~
+  - ~~change the StatusInput UI when it is fetched (hide done upgrades to reduce rows needed, move achieved ilevel, get rid of serca button)~~
+  
 - ~~fix success popup~~ nvm
 - ~~ Figure out how to do the deduction stuff~~
 

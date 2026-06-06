@@ -180,7 +180,7 @@ export async function start_fetch(
     !roster_config.value.market_fetch_failed
   ) {
     roster_config.value.is_fetching = true;
-    await new Promise((r) => setTimeout(r, 500));
+    await new Promise((r) => setTimeout(r, 200));
     roster_config.value.is_fetching = false;
     const [_, result] = cached;
     const [parsed, selectedShardSize, shard_price] = parse_response(result);
