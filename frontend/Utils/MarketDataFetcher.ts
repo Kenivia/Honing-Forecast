@@ -55,12 +55,9 @@ export async function fetch_market_data(
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
   });
-
-  // Await the parsing of the stream to get the actual payload
   const data = await response.json();
 
-  // Log the actual payload, not the Response object
-  // console.log("Market Data Payload:", data)
+  // console.log("Market Data Payload:", data);
 
   return data;
 }
@@ -164,23 +161,19 @@ function is_data_stale(region: MarketRegions, cooldown: number): boolean {
 
 export async function start_fetch(
   region: MarketRegions,
-  _force?: boolean,
+  force?: boolean,
   ignore_fetch_cooldown?: boolean,
 ) {
   const roster_store = useRosterStore();
   const { roster_config } = storeToRefs(roster_store);
   if (roster_config.value.is_fetching && !ignore_fetch_cooldown) return;
-  if (region === "Custom") {
+  if (region === "Custom" || (!roster_config.value.auto_fetch && !force)) {
     return;
   }
   const cached = roster_config.value.latest_market_data[region];
   if (
     cached !== undefined &&
-    !is_data_stale(
-      region,
-      // force === true ? 60 * 1000 :
-      FETCH_MARKET_COOLDOWN_MS,
-    ) &&
+    !is_data_stale(region, force === true ? 1000 : FETCH_MARKET_COOLDOWN_MS) &&
     !roster_config.value.market_fetch_failed
   ) {
     roster_config.value.is_fetching = true;
@@ -188,7 +181,7 @@ export async function start_fetch(
     roster_config.value.is_fetching = false;
     const [_, result] = cached;
     const [parsed, selectedShardSize, shard_price] = parse_response(result);
-    fetch_callback(parsed, selectedShardSize, shard_price, region );
+    fetch_callback(parsed, selectedShardSize, shard_price, region);
     return;
   }
 
@@ -197,7 +190,7 @@ export async function start_fetch(
   // Fetch new data
   const result = await (async () => {
     try {
-      const out = fetch_market_data(region);
+      const out = await fetch_market_data(region);
 
       roster_config.value.market_fetch_failed = false;
       return out;
@@ -229,7 +222,7 @@ function fetch_callback(
   // console.log(result)
   // console.log("fetch callback");
   // console.log(roster_store.active_mats_prices);
-  if (region === "Custom") {
+  if (region === "Custom" || !roster_config.value.auto_fetch) {
     // shouldn't happen anyway but just in case
     return;
   }

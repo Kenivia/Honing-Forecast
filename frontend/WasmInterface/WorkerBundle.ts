@@ -1,11 +1,11 @@
-import { ref, onUnmounted, Ref, shallowRef, ShallowRef } from "vue";
+import { ref, Ref, shallowRef } from "vue";
 import { Payload } from "./PayloadBuilder";
 import { WasmOp } from "./WasmWorker";
 
 const createWorker = () =>
   new Worker(new URL("./WasmWorker.ts", import.meta.url), { type: "module" });
 
-export function createWorkerBundle() {
+export function create_worker_bundle() {
   let worker = null;
   const status: Ref<"idle" | "success" | "busy" | "error"> = ref("idle");
   const error = ref(null);
@@ -155,7 +155,8 @@ export function createWorkerBundle() {
     est_progress_percentage.value = 0;
   }
 
-  onUnmounted(cancel);
+  // this is not necessary because it's done explicitly in charview
+  // onUnmounted(cancel);
 
   return {
     status,

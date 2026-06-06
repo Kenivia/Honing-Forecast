@@ -124,12 +124,13 @@ watch(
   <Sidebar :width="1315" header="Market & mats">
     <template #sidebar>
       <div class="side-bar-item">
-        <div class="flex flex-row items-center justify-around gap-3">
-          <RegionSelector
-            :region="active_region"
-            :region_change="roster_store.active_region_change"
-          />
-          <span v-if="active_region !== 'Custom'">
+        <RegionSelector
+          :region="active_region"
+          :region_change="roster_store.active_region_change"
+        />
+
+        <div class="flex flex-row">
+          <span v-if="active_region !== 'Custom' && roster_config.auto_fetch">
             {{
               !roster_config.is_fetching && !roster_config.market_fetch_failed
                 ? "✅"
@@ -138,20 +139,28 @@ watch(
                   : "Failed"
             }}
           </span>
+          <button
+            :disabled="roster_config.is_fetching || active_region === 'Custom'"
+            @click="() => start_fetch(active_region, true)"
+            class="generic-button mx-3! w-max!"
+            :style="{
+              opacity: active_region === 'Custom' ? 0.5 : 1,
+              cursor: active_region === 'Custom' ? 'not-allowed' : 'pointer',
+            }"
+          >
+            {{
+              !roster_config.is_fetching ? "Fetch Market Data" : "Fetching..."
+            }}
+          </button>
         </div>
-        <button
-          :disabled="roster_config.is_fetching || active_region === 'Custom'"
-          @click="() => start_fetch(active_region)"
-          class="generic-button"
-          :style="{
-            opacity: active_region === 'Custom' ? 0.5 : 1,
-            cursor: active_region === 'Custom' ? 'not-allowed' : 'pointer',
-          }"
-        >
-          {{
-            !roster_config.is_fetching ? "Re-fetch Market Data" : "Fetching..."
-          }}
-        </button>
+        <div class="control-panel-checkbox-row border-0!">
+          <span>Auto fetch </span>
+          <input
+            type="checkbox"
+            v-model="roster_config.auto_fetch"
+            @change="() => start_fetch(active_region)"
+          />
+        </div>
       </div>
 
       <div class="side-bar-item">

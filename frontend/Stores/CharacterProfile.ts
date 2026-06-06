@@ -1,4 +1,4 @@
-import { createWorkerBundle as create_worker_bundle } from "@/WasmInterface/WorkerBundle";
+import { create_worker_bundle } from "@/WasmInterface/WorkerBundle";
 import {
   ADV_COLS,
   ALL_LABELS,
@@ -124,7 +124,7 @@ export const DEFAULT_CHAR_PROFILE_NO_WORKER: CharProfile = {
 // console.log(DEFAULT_CHAR_PROFILE_NO_WORKER);
 
 // Worker bundles are not writable to string(and prolly shouldnt anyway), we re-make them on load
-export function attatch_worker(parsed: any): CharProfile {
+export function init_workers(parsed: any): CharProfile {
   return {
     ...parsed,
     // evaluation_worker_bundle: createWorkerBundle(),
@@ -192,5 +192,5 @@ export function validate_char_profile(
     this_parsed.roster_id = out.roster_mats_owned.keys()[0];
   }
 
-  return attatch_worker(this_parsed);
+  return init_workers(this_parsed);
 }
