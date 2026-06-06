@@ -92,19 +92,22 @@ export function format_char_name(
 
   let original = raw.replace(/ /g, ""); //
   // 2. Remove non-alphanumeric (keep underscores)
-  original = original.replace(/[^a-zA-Z0-9_]/g, "");
+  original = original.replace(/[^\p{L}\p{N}_]/gu, "");
   // 3. Lowercase every letter after the first
   original = original
     .replace(/(?<=.)[A-Z]/g, (c) => c.toLowerCase())
     .slice(0, 16);
+
+  const new_string =
+    String(original).charAt(0).toUpperCase() + String(original).slice(1);
   // 4. If empty, or already taken by another profile, append index
   const otherNames = all_profiles
     .filter((_, i) => i !== char_index)
     .map((x) => x.char_name);
   let dup_count = 1;
-  let result = original;
+  let result = new_string;
   while (!result || otherNames.includes(result)) {
-    result = original + String(dup_count);
+    result = new_string + String(dup_count);
     dup_count += 1;
   }
   return result;
