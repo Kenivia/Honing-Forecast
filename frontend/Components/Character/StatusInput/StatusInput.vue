@@ -67,7 +67,7 @@ const tier_label_text = computed(() => {
           :labelText="tier_label_text"
           :tooltipText="tooltip_text"
           :checkEligibility="() => check_revert_ilevel_ok() === true"
-          @change-tier="change_tier"
+          @change-tier="() => change_tier(active_profile)"
           :show-tooltip-only-on-disabled="false"
           :warning="
             active_profile.tier == 0 &&
@@ -97,7 +97,9 @@ const tier_label_text = computed(() => {
         :name_change="(new_name) => (active_profile.char_name = new_name)"
         :region_change="roster_store.active_region_change"
         :region="active_region"
-        :apply="(result) => apply_results(active_profile, result)"
+        :apply="
+          (result, force_t4) => apply_results(active_profile, result, force_t4)
+        "
       />
     </div>
   </div>

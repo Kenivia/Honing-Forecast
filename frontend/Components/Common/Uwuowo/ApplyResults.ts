@@ -16,9 +16,14 @@ import { grid_change_callback } from "@/Components/Character/CharWorkerUtils";
 export function apply_results(
   target_profile: CharProfile,
   results: UwuowoPiece[],
+  force_t4: boolean,
 ) {
   const old_tier: number = target_profile.tier;
-  const new_tier: number = results.some((x) => x.tier === 1) ? 1 : 0;
+  const new_tier: number = force_t4
+    ? 0
+    : results.some((x) => x.tier === 1)
+      ? 1
+      : 0;
   console.log(results, old_tier, new_tier);
   if (old_tier !== new_tier) {
     change_tier(target_profile, true);
@@ -29,15 +34,15 @@ export function apply_results(
     const want =
       results[row].tier === old_tier
         ? target_profile.normal_grid[row].findLastIndex(
-            (value) =>
-              value == UpgradeStatus.Want || value == UpgradeStatus.Done,
+            (value) => value == UpgradeStatus.Want,
           ) + 1
         : 0;
     if (results[row].tier !== new_tier) {
+      console.log(results[row].plus_n, want, results[row].tier, new_tier);
       convert_apply_done_want(
-        new_tier === 1 ? 0 : 1, // the function expects actual changing, old_tier might not equal resuelts[row].tier
+        new_tier === 1 ? 0 : 1, // the function expects actual changing, old_tier might not equal resuelts[row].tierw
         new_tier,
-        results[row].plus_n,
+        force_t4 ? 18 : results[row].plus_n,
         want,
         target_profile.normal_grid[row],
       );

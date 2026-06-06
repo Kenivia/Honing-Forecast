@@ -12,6 +12,7 @@ export interface UwuowoPiece {
 export interface UwuowoResult {
   pieces: UwuowoPiece[]; // [+n, ilevel, tier , adv]
   class_name: string;
+  achieved_ilevel: string;
 }
 
 export async function fetch_uwuowo(
@@ -56,6 +57,7 @@ export async function get_parsed_uwuowo(
   }
   let pieces: UwuowoPiece[];
   let class_name: string;
+  let achieved_ilevel: string;
   try {
     const container = allDivs.findLast(
       (el) => el.textContent.trim() === "Equipment",
@@ -75,7 +77,7 @@ export async function get_parsed_uwuowo(
         const ilevel = parse_locale_int(bottom_row.children[1].textContent);
         let tier: number;
         let adv: number;
-        console.log(top_row.children);
+        // console.log(top_row.children);
         if (top_row.children.length > 3) {
           tier = 0;
           adv = parse_locale_int(
@@ -101,9 +103,24 @@ export async function get_parsed_uwuowo(
       );
     });
 
-    class_name = container?.querySelectorAll("p")[2]?.textContent.trim();
+    class_name = container.querySelectorAll("p")[2]?.textContent.trim();
   } catch (e) {
     return `Parsing class name failed with message ${e}`;
   }
-  return { pieces, class_name };
+
+  try {
+    const container = allDivs.find((el) => {
+      const firstP = el.querySelector("p");
+      return firstP?.textContent.trim() === "Item Level";
+    });
+    // console.log(container);
+
+    achieved_ilevel = container.parentElement
+      .querySelectorAll("p")[2]
+      .textContent.trim();
+    // console.log(container.parentElement.children, achieved_ilevel);
+  } catch (e) {
+    return `Parsing class name failed with message ${e}`;
+  }
+  return { pieces, class_name, achieved_ilevel };
 }

@@ -30,6 +30,8 @@ If you'd like to help with any of the below, feel free to get in touch via [Disc
 
 - make market fetcher fetch yesterday's average price instead of latest price
 
+- get the equipment icons somehow
+
 ## Roadmap (big projects)
 
 ### 1st: ~~re-write the frontend~~

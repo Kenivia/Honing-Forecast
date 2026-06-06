@@ -148,7 +148,7 @@ export function grids_to_keyed(
         if (upgrade_status === UpgradeStatus.Want) {
           if (key in all_keyed && is_one_upgrade(all_keyed[key])) {
             new_keyed[key] = all_keyed[key];
-            console.log("a", all_keyed[key]);
+            // console.log("a", all_keyed[key]);
           } else if (key in all_keyed && is_old_one_upgrade(all_keyed[key])) {
             const [
               piece_type,
@@ -173,7 +173,7 @@ export function grids_to_keyed(
               taps_since_last_input: 0,
               used_materials: null,
             };
-            console.log("b", all_keyed[key]);
+            // console.log("b", all_keyed[key]);
           } else {
             new_keyed[key] = {
               piece_type,
@@ -188,7 +188,7 @@ export function grids_to_keyed(
               taps_since_last_input: 0,
               used_materials: null,
             };
-            console.log("c", all_keyed[key]);
+            // console.log("c", all_keyed[key]);
           }
         }
       }

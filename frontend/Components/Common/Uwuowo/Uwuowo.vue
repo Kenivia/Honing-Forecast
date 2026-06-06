@@ -5,7 +5,7 @@ import CharNameInput from "./CharNameInput.vue";
 import RegionSelector from "../RegionSelector.vue";
 import FetchButton from "./FetchButton.vue";
 import { MarketRegions } from "@/Utils/MarketDataFetcher.js";
-import { UwuowoPiece, UwuowoResult } from "./UwuowoUtils.js";
+import { UwuowoPiece } from "./UwuowoUtils.js";
 
 defineProps<{
   name: string;
@@ -14,7 +14,7 @@ defineProps<{
   region?: MarketRegions;
   hide_region?: boolean;
   region_change?: (_event: any) => void;
-  apply?: (_: UwuowoPiece[]) => void;
+  apply?: (_: UwuowoPiece[], force_t4?: boolean) => void;
 }>();
 
 const { active_profile } = storeToRefs(useRosterStore());

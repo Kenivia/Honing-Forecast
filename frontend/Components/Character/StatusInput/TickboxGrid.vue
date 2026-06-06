@@ -6,11 +6,12 @@ import {
   NUM_PIECES as NORMAL_ROWS,
   ADV_COLS,
 } from "@/Utils/Constants";
-import { get_icon_path } from "@/Utils/Helpers";
+
 import { storeToRefs } from "pinia";
 import { computed } from "vue";
 import { grid_change_callback } from "../CharWorkerUtils";
 import { UpgradeStatus } from "@/Utils/KeyedUpgrades";
+import LabeledPieceIcon from "@/Components/Common/LabeledPieceIcon.vue";
 
 const { active_profile } = storeToRefs(useRosterStore());
 const props = defineProps<{
@@ -153,16 +154,7 @@ function change_one_and_update_keyed(
         :key="piece"
         class="flex h-7 items-center justify-end"
       >
-        <div
-          class="inline-flex w-full items-center justify-end gap-1.5 text-right text-sm text-(--text-secondary)"
-        >
-          <span class="text-(--text-muted)">{{ piece }}</span>
-          <img
-            :src="get_icon_path(piece)"
-            :alt="piece"
-            class="generic-icon h-6.75 w-6.75"
-          />
-        </div>
+        <LabeledPieceIcon :piece="piece" />
       </div>
     </div>
     <div ref="`${grid_type}_GridScrollRef`" class="items-start overflow-x-auto">

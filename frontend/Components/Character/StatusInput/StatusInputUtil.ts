@@ -12,19 +12,16 @@ import { UpgradeStatus } from "@/Utils/KeyedUpgrades";
 import { grid_change_callback } from "../CharWorkerUtils";
 import { CharProfile } from "@/Stores/CharacterProfile";
 
-export function change_tier(
-  target_profile: CharProfile,
-  dont_convert?: boolean,
-) {
+export function change_tier(target_profile: CharProfile, fetched?: boolean) {
   let old_tier = target_profile.tier;
-  if (check_revert_ilevel_ok() === true) {
+  if (check_revert_ilevel_ok() === true || fetched) {
     target_profile.tier = target_profile.tier == 0 ? 1 : 0;
   }
   let new_tier = target_profile.tier;
 
   if (
     (new_tier === null || old_tier === null || new_tier == old_tier) &&
-    !dont_convert
+    !fetched
   )
     return;
   if (ALL_LABELS.length != 2) {
@@ -78,7 +75,7 @@ export function change_tier(
     target_profile.bound_budgets[old_tier].data[old_index];
 
   // the rest have separate values between tiers
-  if (dont_convert) {
+  if (fetched) {
     return;
   }
 
@@ -115,10 +112,15 @@ export function convert_apply_done_want(
 ) {
   let highest_done = Math.max(new_tier == 1 ? 20 : 11, done_plus_n);
   let highest_want = Math.max(new_tier == 1 ? 20 : 11, want_plus_n);
-  let converted_done = PLUS_TIER_CONVERSION[old_tier][String(highest_done)];
+  let converted_done =
+    PLUS_TIER_CONVERSION[old_tier][String(highest_done)] ??
+    PLUS_TIER_CONVERSION[old_tier][String(highest_done - 1)] ??
+    18;
   let converted_want =
     highest_want > 0
-      ? PLUS_TIER_CONVERSION[old_tier][String(highest_want)]
+      ? (PLUS_TIER_CONVERSION[old_tier][String(highest_want)] ??
+        PLUS_TIER_CONVERSION[old_tier][String(highest_done - 1)] ??
+        18)
       : converted_done;
   console.log(
     converted_done,
