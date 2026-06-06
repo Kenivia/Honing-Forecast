@@ -74,6 +74,14 @@ export function change_tier(target_profile: CharProfile, fetched?: boolean) {
   target_profile.bound_budgets[new_tier].data[new_index] =
     target_profile.bound_budgets[old_tier].data[old_index];
 
+  if (new_tier == 1) {
+    for (let row = 0; row < NUM_PIECES; row++) {
+      for (let col = 0; col < ADV_COLS; col++) {
+        target_profile.adv_grid[row][col] = UpgradeStatus.Done;
+      }
+    }
+  }
+
   // the rest have separate values between tiers
   if (fetched) {
     return;
@@ -92,13 +100,7 @@ export function change_tier(target_profile: CharProfile, fetched?: boolean) {
       target_profile.normal_grid[row],
     );
   }
-  if (new_tier == 1) {
-    for (let row = 0; row < NUM_PIECES; row++) {
-      for (let col = 0; col < ADV_COLS; col++) {
-        target_profile.adv_grid[row][col] = UpgradeStatus.Done;
-      }
-    }
-  }
+
   // console.log("callbacked")
   grid_change_callback();
 }

@@ -78,63 +78,68 @@ function keyed_to_array(
   const juice_info =
     active_profile.value.histogram_worker_bundle.result?.juice_info ?? null;
   const upgrade_map = get_upgrade_map(upgrade_arr, tier);
-  return Object.entries(keyed_upgrades).map(([key, one_upgrade_input]) => {
-    const upgrade = upgrade_map.get(key) ?? null;
-    let out = structuredClone(toRaw(one_upgrade_input));
-    if (!(upgrade && upgrade.state && upgrade.state.length > 0 && juice_info)) {
-      return out;
-    }
+  return Object.entries(keyed_upgrades)
+    .filter((x) => tier === 0 || x[1].is_normal_honing) // shouldn't really be necessary but apparently it went  wrong once somehow so adding this guard here
+    .map(([key, one_upgrade_input]) => {
+      const upgrade = upgrade_map.get(key) ?? null;
+      let out = structuredClone(toRaw(one_upgrade_input));
+      if (
+        !(upgrade && upgrade.state && upgrade.state.length > 0 && juice_info)
+      ) {
+        return out;
+      }
 
-    let relevant_id_map = upgrade.is_normal_honing
-      ? juice_info.normal_uindex_to_id
-      : juice_info.adv_uindex_to_id;
+      let relevant_id_map = upgrade.is_normal_honing
+        ? juice_info.normal_uindex_to_id
+        : juice_info.adv_uindex_to_id;
 
-    let relevant_upgrade = relevant_id_map[upgrade.upgrade_index];
-    // console.log(adv_override);
-    out.unlocked = out.is_normal_honing
-      ? out.starting_artisan > 0 || out.starting_num_taps > 0
-      : out.adv_progress !== null &&
-        (out.adv_progress[0] > 0 || out.adv_progress[1] > 0);
+      let relevant_upgrade = relevant_id_map[upgrade.upgrade_index];
+      // console.log(adv_override);
+      out.unlocked = out.is_normal_honing
+        ? out.starting_artisan > 0 || out.starting_num_taps > 0
+        : out.adv_progress !== null &&
+          (out.adv_progress[0] > 0 || out.adv_progress[1] > 0);
 
-    if (out.state !== null && out.state.length === 0) {
-      // special cased, reset will wipe it like this, so dont copy from optimizer bundle
-      return out;
-    }
-    out.state = upgrade.state
-      .slice(out.taps_since_last_input)
-      .map((x, index) =>
-        upgrade.is_normal_honing
-          ? [
-              normal_override === undefined ||
-              normal_override.juice == NormalOverride.Optimizer
-                ? x[0]
-                : normal_override.juice == NormalOverride.Empty
-                  ? false
-                  : true,
-              normal_override === undefined ||
-              normal_override.book == NormalOverride.Optimizer
-                ? x[1]
-                : normal_override.book == NormalOverride.Empty
-                  ? 0
-                  : relevant_upgrade[relevant_upgrade.length - 1],
-            ]
-          : [
-              false,
-              adv_override === undefined ||
-              (index == 0 ? adv_override.juice : adv_override.scroll) ==
-                AdvOverride.Optimizer
-                ? x[1]
-                : (index == 0 ? adv_override.juice : adv_override.scroll) ==
-                    AdvOverride.Empty
-                  ? 0
+      if (out.state !== null && out.state.length === 0) {
+        // special cased, reset will wipe it like this, so dont copy from optimizer bundle
+
+        return out;
+      }
+      out.state = upgrade.state
+        .slice(out.taps_since_last_input)
+        .map((x, index) =>
+          upgrade.is_normal_honing
+            ? [
+                normal_override === undefined ||
+                normal_override.juice == NormalOverride.Optimizer
+                  ? x[0]
+                  : normal_override.juice == NormalOverride.Empty
+                    ? false
+                    : true,
+                normal_override === undefined ||
+                normal_override.book == NormalOverride.Optimizer
+                  ? x[1]
+                  : normal_override.book == NormalOverride.Empty
+                    ? 0
+                    : relevant_upgrade[relevant_upgrade.length - 1],
+              ]
+            : [
+                false,
+                adv_override === undefined ||
+                (index == 0 ? adv_override.juice : adv_override.scroll) ==
+                  AdvOverride.Optimizer
+                  ? x[1]
                   : (index == 0 ? adv_override.juice : adv_override.scroll) ==
-                      AdvOverride.Grace
-                    ? GRACE_FIRST_N.length - 1
-                    : JOINED_ADV_JUICE.length - 1,
-            ],
-      );
-    return out;
-  });
+                      AdvOverride.Empty
+                    ? 0
+                    : (index == 0 ? adv_override.juice : adv_override.scroll) ==
+                        AdvOverride.Grace
+                      ? GRACE_FIRST_N.length - 1
+                      : JOINED_ADV_JUICE.length - 1,
+              ],
+        );
+      return out;
+    });
 }
 
 export function special_sort_override(

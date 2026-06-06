@@ -115,7 +115,7 @@ watch(
   { immediate: true },
 );
 const grid: GridConfig = {
-  grid_template_columns: "125px 70px 120px",
+  grid_template_columns: "150px 70px 120px",
 };
 </script>
 <template>

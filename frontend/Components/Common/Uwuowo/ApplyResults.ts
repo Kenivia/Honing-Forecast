@@ -72,10 +72,10 @@ export function apply_results(
     if (new_tier === 0) {
       const upper =
         results[row].tier == 0 ? Math.floor(results[row].adv / 10) : 4;
-      target_profile.adv_grid[row] = Array(ADV_COLS).fill(UpgradeStatus.NotYet);
       for (let col = 0; col < upper; col++) {
         target_profile.adv_grid[row][col] = UpgradeStatus.Done;
       }
+      let non_done_start = upper;
 
       if (results[row].adv - Math.floor(results[row].adv / 10) * 10 > 0) {
         target_profile.adv_grid[row][upper] = UpgradeStatus.Want;
@@ -84,6 +84,14 @@ export function apply_results(
           upgrade_index: upper,
           diff: results[row].adv - Math.floor(results[row].adv / 10),
         });
+        non_done_start += 1;
+      }
+
+      for (let col = non_done_start; col < ADV_COLS; col++) {
+        target_profile.adv_grid[row][col] =
+          target_profile.adv_grid[row][col] === UpgradeStatus.Want
+            ? UpgradeStatus.Want
+            : UpgradeStatus.NotYet;
       }
     }
   }
