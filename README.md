@@ -50,7 +50,7 @@ I explained how things work in-depth in my [Reddit post](http://reddit.com/r/los
 - [All docs](/docs/)
 - [Work in progress](/public/WIP.md)
 
-For anything else, feel free to ask me in the [Discord server](https://discord.gg/KWDpQyvgzc)!
+For anything else, feel free to ask me on [Discord server](https://discord.gg/KWDpQyvgzc)
 
 ## Contributing
 
@@ -66,7 +66,7 @@ You can take a look at [good first issues](<https://github.com/Kenivia/Honing-Fo
 
 ## Bug report / feedback
 
-If you find a bug or spot an error, please [submit an issue](https://github.com/Kenivia/Honing-Forecast/issues) on GitHub or send a message on [Discord](https://discord.gg/KWDpQyvgzc)!
+If you find a bug, spot an error or have a suggestion, please [submit an issue](https://github.com/Kenivia/Honing-Forecast/issues) on GitHub or send a message on [Discord](https://discord.gg/KWDpQyvgzc)
 
 ## Disclaimer
 
