@@ -222,10 +222,10 @@ function fetch_callback(
   // console.log(result)
   // console.log("fetch callback");
   // console.log(roster_store.active_mats_prices);
-  if (region === "Custom" || !roster_config.value.auto_fetch) {
-    // shouldn't happen anyway but just in case
-    return;
-  }
+  // if (region === "Custom") {
+  //   // shouldn't happen anyway but just in case
+  //   return;
+  // }
   roster_config.value.selected_shard_bag_size[region] = selectedShardSize;
   for (let tier = 0; tier < ALL_LABELS.length; tier++) {
     for (let index = 0; index < ALL_LABELS[tier].length; index++) {
