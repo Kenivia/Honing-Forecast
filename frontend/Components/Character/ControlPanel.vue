@@ -63,7 +63,7 @@ watchEffect(() => {
       </label>
       <label class="control-panel-checkbox-row">
         <input v-model="roster_config.auto_deduct_costs" type="checkbox" />
-        <span>Slider auto-deduct costs</span>
+        <span>Slider auto-deducts costs</span>
       </label>
 
       <label>

@@ -1,4 +1,4 @@
-export const FETCH_MARKET_COOLDOWN_MS = 60 * 60 * 1000;
+
 export const DEFAULT_ARTISAN_MULTIPLIER = 0.4651;
 export const FLOAT_TOL = 1e-9;
 

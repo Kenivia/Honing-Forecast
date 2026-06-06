@@ -14,21 +14,31 @@ const props = defineProps<{
   region: UwuowoRegions;
   char_name: string;
   apply?: (_: UwuowoPiece[], force_t4: boolean) => void;
+  counter?: number;
 }>();
 
 watch([() => props.region, () => props.char_name], () => {
   parse_msg.value = fetch_msg;
   parsed_result.value = null;
 });
+watch(
+  () => props.counter,
+  () => {
+    click();
+  },
+);
 
 const fetch_msg = "Fetching from lostark.bible...";
 const parse_msg = ref(fetch_msg);
 const parsed_result: Ref<null | UwuowoResult> = ref(null);
+
 const show_popup = ref(false);
 
 async function click() {
+  // console.log("click triggered");
   show_popup.value = true;
   const result = await get_parsed_uwuowo(props.region, props.char_name);
+  // console.log(result, props.region, props.char_name);
   if (typeof result === "string") {
     parse_msg.value = result;
     parsed_result.value = null;
@@ -99,10 +109,10 @@ const have_both = computed(
       </span>
       <span> Pick what tier you want to calculate: </span>
     </div>
-    <div class="flex w-full flex-row justify-around">
+    <div class="flex w-full flex-row justify-around pt-2  ">
       <button
         @click="show_popup = false"
-        class="generic-button bg-(--warning-dark)! text-(--text-muted)!"
+        class="generic-button bg-(--warning-dark)! text-(--text-bright)!"
       >
         Cancel
       </button>

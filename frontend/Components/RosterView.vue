@@ -16,6 +16,7 @@ import Uwuowo from "./Common/Uwuowo/Uwuowo.vue";
 import RegionSelector from "./Common/RegionSelector.vue";
 import { MarketRegions, start_fetch } from "@/Utils/MarketDataFetcher.js";
 import { ilevel } from "@/Utils/HoningUtil.js";
+import { apply_results } from "./Common/Uwuowo/ApplyResults.js";
 
 const roster_store = useRosterStore();
 const { roster_config, roster_ids } = storeToRefs(roster_store);
@@ -42,6 +43,7 @@ function add_new_roster(roster_id: number) {
     create_default_owned_input_column();
   roster_config.value.tradable_mats_owned[roster_id] =
     create_default_owned_input_column();
+  roster_config.value.all_regions[roster_id] = "nae";
 }
 
 function duplicate(index) {
@@ -79,9 +81,7 @@ function delete_profile(index, roster_id) {
 
 <template>
   <Sidebar :width="969" header="Roster setup">
-    <template #sidebar
-      ><div class="side-bar-item">uwuowo importing coming soon...</div>
-
+    <template #sidebar>
       <button
         class="side-bar-item header-button h-max w-max self-center"
         @click="
@@ -100,7 +100,7 @@ function delete_profile(index, roster_id) {
       >
         <div
           v-for="(roster_id, roster_index) in roster_ids"
-          class="card-shell flex h-fit flex-col px-2 pb-2"
+          class="card-shell flex h-fit flex-col pb-2"
           :key="roster_id"
         >
           <div v-if="roster_config.profiles.length > 1" class="card-header">
@@ -120,13 +120,13 @@ function delete_profile(index, roster_id) {
               "
             />
           </div>
-          <div class="w-fit max-w-full">
+          <div class="w-fit max-w-full px-2">
             <div
               v-for="[profile, profile_index] in roster_config.profiles
                 .map((x, index): [CharProfile, number] => [x, index])
                 .filter((y) => y[0].roster_id === roster_id)"
               class="char-row flex h-max min-h-max flex-row items-start justify-around border-b border-(--border-muted)"
-              :key="`${profile.char_name}-${profile_index}`"
+              :key="`${profile_index}-${profile.roster_id}`"
             >
               <div class="max-w- flex w-min flex-row flex-wrap justify-around">
                 <Uwuowo
@@ -134,12 +134,21 @@ function delete_profile(index, roster_id) {
                   :name="profile.char_name"
                   :name_change="
                     (new_name) => {
-                      (console.log(new_name),
-                        (roster_config.profiles[profile_index].char_name =
-                          new_name));
+                      roster_config.profiles[profile_index].char_name =
+                        new_name;
                     }
                   "
                   :hide_region="true"
+                  :region="roster_config.all_regions[profile.roster_id]"
+                  :apply="
+                    (result, force_t4) => {
+                      // console.log(
+                      //   roster_config.profiles[profile_index].char_name,
+                      //   profile_index,
+                      // );
+                      apply_results(profile, result, force_t4, true);
+                    }
+                  "
                 />
                 <div class="char-meta flex flex-col">
                   <label class="text-no-wrap text-(--achieved)"
@@ -182,6 +191,20 @@ function delete_profile(index, roster_id) {
               Add new character
             </button>
           </div>
+        </div>
+        <div class="w-111">
+          <button
+            class="side-bar-item header-button h-max w-full"
+            @click="
+              () =>
+                add_new_roster(
+                  Math.max(...roster_config.profiles.map((x) => x.roster_id)) +
+                    1,
+                )
+            "
+          >
+            Add new roster
+          </button>
         </div>
       </div>
     </template>

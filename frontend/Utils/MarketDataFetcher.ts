@@ -1,14 +1,13 @@
 import {
   ALL_LABELS,
   FALLBACK_PRICES,
-  FETCH_MARKET_COOLDOWN_MS,
   WORKER_URL,
   SERCA_TO_T4_INDICES,
-  SYNCED_LABELS,
 } from "./Constants";
 import { storeToRefs } from "pinia";
 import { useRosterStore } from "@/Stores/RosterConfig";
 
+const FETCH_MARKET_COOLDOWN_MS = 60 * 60 * 1000;
 export type MarketRegions = "nae" | "euc";
 const BODY = {
   region_slug: "nae",
@@ -163,7 +162,7 @@ function isDataStale(region: MarketRegions, cooldown: number): boolean {
 
 export async function start_fetch(
   region: MarketRegions,
-  force?: boolean,
+  _force?: boolean,
   ignore_fetch?: boolean,
 ) {
   const roster_store = useRosterStore();
@@ -175,7 +174,8 @@ export async function start_fetch(
     cached !== undefined &&
     !isDataStale(
       region,
-      force === true ? 60 * 1000 : FETCH_MARKET_COOLDOWN_MS,
+      // force === true ? 60 * 1000 :
+      FETCH_MARKET_COOLDOWN_MS,
     ) &&
     !roster_config.value.market_fetch_failed
   ) {
@@ -222,7 +222,7 @@ function fetch_callback(
   const roster_store = useRosterStore();
   const { roster_config } = storeToRefs(roster_store);
   // console.log(result)
-  console.log("fetch callback");
+  // console.log("fetch callback");
   // console.log(roster_store.active_mats_prices);
   roster_config.value.selected_shard_bag_size = selectedShardSize;
   for (let tier = 0; tier < ALL_LABELS.length; tier++) {

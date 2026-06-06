@@ -17,6 +17,7 @@ export function apply_results(
   target_profile: CharProfile,
   results: UwuowoPiece[],
   force_t4: boolean,
+  dont_run: boolean,
 ) {
   const old_tier: number = target_profile.tier;
   const new_tier: number = force_t4
@@ -24,7 +25,7 @@ export function apply_results(
     : results.some((x) => x.tier === 1)
       ? 1
       : 0;
-  console.log(results, old_tier, new_tier);
+  // console.log(results, old_tier, new_tier);
   if (old_tier !== new_tier) {
     change_tier(target_profile, true);
   }
@@ -38,7 +39,7 @@ export function apply_results(
           ) + 1
         : 0;
     if (results[row].tier !== new_tier) {
-      console.log(results[row].plus_n, want, results[row].tier, new_tier);
+      // console.log(results[row].plus_n, want, results[row].tier, new_tier);
       convert_apply_done_want(
         new_tier === 1 ? 0 : 1, // the function expects actual changing, old_tier might not equal resuelts[row].tierw
         new_tier,
@@ -54,6 +55,13 @@ export function apply_results(
       //     target_profile.normal_grid[row],
       //   );
     } else {
+      // console.log(
+      //   results[row].plus_n,
+      //   want,
+      //   results[row].tier,
+      //   old_tier,
+      //   target_profile.normal_grid[row],
+      // );
       apply_done_want(
         results[row].plus_n,
         want,
@@ -64,9 +72,11 @@ export function apply_results(
     if (new_tier === 0) {
       const upper =
         results[row].tier == 0 ? Math.floor(results[row].adv / 10) : 4;
+      target_profile.adv_grid[row] = Array(ADV_COLS).fill(UpgradeStatus.NotYet);
       for (let col = 0; col < upper; col++) {
         target_profile.adv_grid[row][col] = UpgradeStatus.Done;
       }
+
       if (results[row].adv - Math.floor(results[row].adv / 10) * 10 > 0) {
         target_profile.adv_grid[row][upper] = UpgradeStatus.Want;
         want_adv.push({
@@ -102,5 +112,5 @@ export function apply_results(
     }
   }
 
-  grid_change_callback();
+  grid_change_callback(dont_run);
 }

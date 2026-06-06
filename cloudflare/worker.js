@@ -1,6 +1,6 @@
-const UPSTREAM_MARKET_URL =
+const MARKET_URL =
   "https://marketdata-api.yrzhao1068589.workers.dev/v1/prices/latest";
-const UPSTREAM_BIBLE_URL = "https://lostark.bible";
+const BIBLE_URL = "https://lostark.bible";
 const CACHE_TTL = 3600;
 
 const UWUOWO_HEADERS = {
@@ -48,7 +48,7 @@ export default {
 };
 
 async function handleCharacterProxy(region, charName, env, ctx) {
-  const upstreamUrl = `${UPSTREAM_BIBLE_URL}/character/${region}/${charName}`;
+  const upstreamUrl = `${BIBLE_URL}/character/${region}/${charName}`;
   const cacheKey = `character:${region}:${charName}`;
 
   const cached = await env.CACHE_KV.get(cacheKey);
@@ -98,7 +98,7 @@ async function handleMarketProxy(request, env, ctx) {
     );
   }
 
-  const upstream = await fetch(UPSTREAM_MARKET_URL, {
+  const upstream = await fetch(MARKET_URL, {
     method: "POST",
     headers: {
       Accept: "*/*",

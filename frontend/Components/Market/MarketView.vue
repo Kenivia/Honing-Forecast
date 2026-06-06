@@ -141,7 +141,7 @@ watch(
         </div>
         <button
           :disabled="roster_config.is_fetching"
-          @click="() => start_fetch(active_region, true)"
+          @click="() => start_fetch(active_region)"
           class="generic-button"
         >
           {{

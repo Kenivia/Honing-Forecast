@@ -5,7 +5,7 @@ import { build_payload } from "@/WasmInterface/PayloadBuilder";
 import { StateBundle, WasmOp } from "@/WasmInterface/WasmWorker";
 import { storeToRefs } from "pinia";
 
-export function grid_change_callback() {
+export function grid_change_callback(dont_run?: boolean) {
   const { active_profile } = storeToRefs(useRosterStore());
 
   active_profile.value.keyed_upgrades = grids_to_keyed(
@@ -14,7 +14,9 @@ export function grid_change_callback() {
     active_profile.value.keyed_upgrades,
     active_profile.value.tier,
   );
-  start_all_workers();
+  if (!dont_run) {
+    start_all_workers();
+  }
 }
 export function start_eval_hist() {
   const { active_profile } = storeToRefs(useRosterStore());

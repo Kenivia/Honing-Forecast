@@ -17,10 +17,10 @@ const { active_profile } = storeToRefs(useRosterStore());
 const props = defineProps<{
   grid_type: "normal" | "adv";
 }>();
-
-const COLS = props.grid_type == "normal" ? NORMAL_COLS : ADV_COLS;
+const is_normal = computed(() => props.grid_type === "normal");
+const COLS = is_normal.value ? NORMAL_COLS : ADV_COLS;
 const relevant_grid = computed(() =>
-  props.grid_type === "normal"
+  is_normal.value
     ? active_profile.value.normal_grid
     : active_profile.value.adv_grid,
 );
@@ -142,6 +142,13 @@ function change_one_and_update_keyed(
   change_one(row, col, current);
   grid_change_callback();
 }
+
+const offset = computed(() =>
+  !is_normal.value ? 0 : active_profile.value.tier === 0 ? 10 : 11,
+);
+const col_indices = computed(() =>
+  Array.from({ length: COLS - offset.value }, (_, k) => k + 1 + offset.value),
+);
 </script>
 <template>
   <div class="fler-row flex flex-nowrap px-4 py-2">
@@ -161,11 +168,11 @@ function change_one_and_update_keyed(
       <div
         class="cell-grid mb-1 grid"
         :style="{
-          gridTemplateColumns: `repeat(${grid_type == 'normal' ? NORMAL_COLS : ADV_COLS}, 26px)`,
+          gridTemplateColumns: `repeat(${col_indices.length}, 26px)`,
         }"
       >
         <button
-          v-for="col in COLS"
+          v-for="col in col_indices"
           :key="`${grid_type}-header-${col}`"
           class="cell"
           :class="{
@@ -182,11 +189,11 @@ function change_one_and_update_keyed(
         :key="`${grid_type}-row-${row}`"
         class="mb-0.5 grid w-fit"
         :style="{
-          gridTemplateColumns: `repeat(${grid_type == 'normal' ? NORMAL_COLS : ADV_COLS}, 26px)`,
+          gridTemplateColumns: `repeat(${col_indices.length}, 26px)`,
         }"
       >
         <button
-          v-for="col in COLS"
+          v-for="col in col_indices"
           :key="`${grid_type}-${row}-${col}`"
           class="cell"
           :class="{

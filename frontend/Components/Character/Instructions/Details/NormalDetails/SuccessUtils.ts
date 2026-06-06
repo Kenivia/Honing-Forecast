@@ -102,7 +102,7 @@ export function make_budget_snapshot(): BudgetSnapshot {
     active_roster_mats_owned,
     active_tradable_mats_owned,
   } = storeToRefs(useRosterStore());
-  console.log("snap");
+  // console.log("snap");
   return {
     bound_budgets: structuredClone(toRaw(active_profile.value.bound_budgets)),
     roster_mats: structuredClone(toRaw(active_roster_mats_owned.value)),

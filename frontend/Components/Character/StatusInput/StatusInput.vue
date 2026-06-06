@@ -55,38 +55,24 @@ const tier_label_text = computed(() => {
   >
     <div class="card-shell">
       <div class="card-header">
-        <div class="fler-row flex gap-5">
-          <label class="text-(--achieved)"
-            >Achieved ilevel: {{ ilevel(active_profile, "achieved") }}</label
-          >
-          <label class="text-(--pending)"
-            >Pending ilevel: {{ ilevel(active_profile, "pending") }}</label
-          >
-        </div>
-        <TierConvertButton
-          :labelText="tier_label_text"
-          :tooltipText="tooltip_text"
-          :checkEligibility="() => check_revert_ilevel_ok() === true"
-          @change-tier="() => change_tier(active_profile)"
-          :show-tooltip-only-on-disabled="false"
-          :warning="
-            active_profile.tier == 0 &&
-            !(check_all_plus_20() && check_adv_all_done())
-          "
-        />
+        <span class="card-title"
+          >Normal Honing ({{
+            active_profile.tier === 1 ? "Serca" : "T4"
+          }})</span
+        >
       </div>
 
       <TickboxGrid grid_type="normal" />
     </div>
 
     <div v-if="active_profile.tier == 0" class="card-shell w-fit max-w-full">
-      <div class="card-header h-9.75">
-        <div>Advanced Honing</div>
+      <div class="card-header">
+        <span class="card-title">Advanced Honing</span>
       </div>
 
       <TickboxGrid grid_type="adv" />
     </div>
-    <div class="card-shell w-fit max-w-full">
+    <div class="card-shell w-fit max-w-full p-2">
       <Uwuowo
         :name="active_profile.char_name"
         :profile_index="
@@ -98,9 +84,33 @@ const tier_label_text = computed(() => {
         :region_change="roster_store.active_region_change"
         :region="active_region"
         :apply="
-          (result, force_t4) => apply_results(active_profile, result, force_t4)
+          (result, force_t4) =>
+            apply_results(active_profile, result, force_t4, false)
         "
       />
+      <div class="flex flex-col">
+        <label class="text-no-wrap text-(--achieved)"
+          >Achieved ilevel: {{ ilevel(active_profile, "achieved") }}</label
+        >
+        <label class="text-no-wrap text-(--pending)"
+          >Pending ilevel: {{ ilevel(active_profile, "pending") }}</label
+        >
+        <TierConvertButton
+          :labelText="tier_label_text"
+          :tooltipText="tooltip_text"
+          :checkEligibility="() => check_revert_ilevel_ok() === true"
+          @change-tier="() => change_tier(active_profile)"
+          :show-tooltip-only-on-disabled="false"
+          :warning="
+            active_profile.tier == 0 &&
+            !(check_all_plus_20() && check_adv_all_done())
+          "
+        />
+        <label class="control-panel-checkbox-row border-0!">
+          <input v-model="active_profile.express_event" type="checkbox" />
+          <span>Express event (March)</span>
+        </label>
+      </div>
     </div>
   </div>
 </template>

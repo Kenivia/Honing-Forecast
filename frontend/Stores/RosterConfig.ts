@@ -89,10 +89,10 @@ export const useRosterStore = defineStore("roster", {
     active_region: (state): MarketRegions => {
       const active_profile =
         state.roster_config.profiles[state.roster_config.active_profile_index];
-      console.log(
-        state.roster_config.all_regions,
-        state.roster_config.all_regions[active_profile.roster_id],
-      );
+      // console.log(
+      //   state.roster_config.all_regions,
+      //   state.roster_config.all_regions[active_profile.roster_id],
+      // );
       return state.roster_config.all_regions[active_profile.roster_id];
     },
 
@@ -107,13 +107,13 @@ export const useRosterStore = defineStore("roster", {
 
       //   create_input_column(InputType.Float,ALL_LABELS ) ;
       // }
-      console.log(
-        state.roster_config.mats_prices,
-        active_region,
-        state.roster_config.all_regions,
-        active_profile.roster_id,
-        state.roster_config.mats_prices[active_region],
-      );
+      // console.log(
+      //   state.roster_config.mats_prices,
+      //   active_region,
+      //   state.roster_config.all_regions,
+      //   active_profile.roster_id,
+      //   state.roster_config.mats_prices[active_region],
+      // );
       return state.roster_config.mats_prices[active_region];
     },
   },
@@ -152,13 +152,13 @@ export const useRosterStore = defineStore("roster", {
       const active_profile: CharProfile =
         this.roster_config.profiles[this.roster_config.active_profile_index];
 
-      console.log(
-        "setting",
-        active_profile.roster_id,
-        "to",
-        new_region,
-        this.roster_config.all_regions,
-      );
+      // console.log(
+      //   "setting",
+      //   active_profile.roster_id,
+      //   "to",
+      //   new_region,
+      //   this.roster_config.all_regions,
+      // );
       this.roster_config.all_regions[active_profile.roster_id] = new_region;
       start_fetch(new_region);
     },
@@ -298,16 +298,16 @@ function stringifyOmit(obj: RosterConfig, keys: string[]): string {
 }
 export function write_roster_config(state) {
   try {
-    // localStorage.setItem(
-    //   STORAGE_KEY + "_roster",
-    //   stringifyOmit(state.roster_config, [
-    //     "optimizer_worker_bundle",
-    //     "histogram_worker_bundle",
-    //     "optimizer_override",
-    //     "budget_snapshot",
-    //     "is_slider_update",
-    //   ]),
-    // );
+    localStorage.setItem(
+      STORAGE_KEY + "_roster",
+      stringifyOmit(state.roster_config, [
+        "optimizer_worker_bundle",
+        "histogram_worker_bundle",
+        "optimizer_override",
+        "budget_snapshot",
+        "is_slider_update",
+      ]),
+    );
   } catch {
     console.log(JSON.stringify(state.roster_config));
   }

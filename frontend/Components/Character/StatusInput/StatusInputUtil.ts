@@ -122,14 +122,14 @@ export function convert_apply_done_want(
         PLUS_TIER_CONVERSION[old_tier][String(highest_done - 1)] ??
         18)
       : converted_done;
-  console.log(
-    converted_done,
-    converted_want,
-    highest_done,
-    highest_want,
-    old_tier,
-    new_tier,
-  );
+  // console.log(
+  //   converted_done,
+  //   converted_want,
+  //   highest_done,
+  //   highest_want,
+  //   old_tier,
+  //   new_tier,
+  // );
   for (let col = 0; col < NORMAL_COLS; col++) {
     if (col < converted_done) {
       row[col] = UpgradeStatus.Done;

@@ -15,21 +15,44 @@ export interface UwuowoResult {
   achieved_ilevel: string;
 }
 
+const RATE_LIMIT = 60;
+const WINDOW_MS = 60_000;
+const request_timestamps: number[] = [];
+
+async function acquire_rate_limit_slot(): Promise<void> {
+  while (true) {
+    const now = Date.now();
+    while (
+      request_timestamps.length > 0 &&
+      request_timestamps[0] <= now - WINDOW_MS
+    ) {
+      request_timestamps.shift();
+    }
+
+    if (request_timestamps.length < RATE_LIMIT) {
+      request_timestamps.push(now);
+      return;
+    }
+
+    const wait_ms = request_timestamps[0] + WINDOW_MS - now;
+    await new Promise((resolve) => setTimeout(resolve, wait_ms));
+  }
+}
 export async function fetch_uwuowo(
   region: UwuowoRegions,
   char_name: string,
 ): Promise<string> {
+  await acquire_rate_limit_slot();
   const response = await fetch(
     `${WORKER_URL}/character/${region}/${char_name}`,
     { method: "GET" },
   );
-
   if (!response.ok) {
     throw new Error(`Character fetch failed: ${response.status}`);
   }
-
   return await response.text();
 }
+
 export async function get_parsed_uwuowo(
   region: UwuowoRegions,
   char_name: string,
@@ -49,7 +72,7 @@ export async function get_parsed_uwuowo(
     allDivs.findIndex((el) => el.textContent.includes("Character Not Found")) >=
     0
   ) {
-    return `Character not found`;
+    return `Character: ${char_name} not found (region: ${region})`;
   }
 
   if (allDivs.findIndex((el) => el.textContent.includes("Missing Data")) >= 0) {
