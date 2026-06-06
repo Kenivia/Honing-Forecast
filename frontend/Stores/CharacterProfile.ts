@@ -121,7 +121,7 @@ export const DEFAULT_CHAR_PROFILE_NO_WORKER: CharProfile = {
     },
   },
 };
-console.log(DEFAULT_CHAR_PROFILE_NO_WORKER);
+// console.log(DEFAULT_CHAR_PROFILE_NO_WORKER);
 
 // Worker bundles are not writable to string(and prolly shouldnt anyway), we re-make them on load
 export function attatch_worker(parsed: any): CharProfile {

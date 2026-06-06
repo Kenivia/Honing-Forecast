@@ -22,6 +22,7 @@ import {
 
 import { BudgetSnapshot } from "@/Components/Character/Instructions/Details/NormalDetails/SuccessUtils";
 import { MarketRegions, start_fetch } from "@/Utils/MarketDataFetcher";
+import LZString from "lz-string";
 
 export interface RosterConfig {
   mats_prices: Record<MarketRegions, InputColumn[]>;
@@ -220,66 +221,6 @@ export const DEFAULT_ROSTER_CONFIG: RosterConfig = {
   auto_fetch: true,
 };
 
-export function load_roster_config(): RosterConfig {
-  const raw = localStorage.getItem(STORAGE_KEY + "_roster");
-
-  let out = (() => {
-    try {
-      return JSON.parse(raw) ?? DEFAULT_ROSTER_CONFIG;
-    } catch {
-      return DEFAULT_ROSTER_CONFIG;
-    }
-  })();
-
-  const old_char_profiles = localStorage.getItem(
-    "HF_UI_STATE_V3_char_profiles",
-  );
-  if (old_char_profiles !== null) {
-    try {
-      let parsed = JSON.parse(old_char_profiles);
-      out.profiles = parsed.profiles;
-    } catch {
-      out.profiles = [attatch_worker(DEFAULT_CHAR_PROFILE_NO_WORKER)];
-    }
-
-    localStorage.removeItem("HF_UI_STATE_V3_char_profiles");
-  }
-  const old_roster = localStorage.getItem("HF_UI_STATE_V3_roster");
-  if (old_roster !== null) {
-    try {
-      let parsed = JSON.parse(old_roster);
-      out.roster_mats_owned = { 0: parsed.roster_mats_owned };
-      out.tradable_mats_owned = { 0: parsed.tradable_mats_owned };
-    } catch {
-      out.roster_mats_owned = { 0: create_default_owned_input_column() };
-      out.tradable_mats_owned = { 0: create_default_owned_input_column() };
-    }
-    localStorage.removeItem("HF_UI_STATE_V3_roster");
-  }
-
-  // not sure when active_profile_index was introduced but was definitely before 1.2.0,
-  out.active_profile_index = !out.active_profile_index
-    ? 0
-    : Math.max(0, Math.min(out.profiles.length - 1, out.active_profile_index));
-
-  // just after 1.2.0
-  if (out.region !== undefined) {
-    const region: MarketRegions = out.region.toLowerCase();
-    out.all_regions = DEFAULT_ROSTER_CONFIG.all_regions; // i mean profiles shouldn't be empty or anything but just in case ig
-    for (let index = 0; index < out.profiles.length; index++) {
-      out.all_regions[out.profiles[index].roster_id] = region;
-    }
-    // out.mats_prices = Object.fromEntries([[region, out.mats_prices]]); i don think this is needed cos like we're fetching anyway
-    out.mats_prices = DEFAULT_ROSTER_CONFIG.mats_prices;
-    delete out["region"];
-
-    out.selected_shard_bag_size = DEFAULT_ROSTER_CONFIG.selected_shard_bag_size;
-  }
-
-  out = standard_validation(out);
-  return { ...DEFAULT_ROSTER_CONFIG, ...out };
-}
-
 // just making sure that things are correct, not really necessary i think but oh well
 function standard_validation(out: any) {
   out.is_fetching = false;
@@ -305,27 +246,116 @@ function standard_validation(out: any) {
   }
   return out;
 }
+
+function migrate_V3(out: any) {
+  const old_char_profiles = localStorage.getItem(
+    "HF_UI_STATE_V3_char_profiles",
+  );
+  if (old_char_profiles !== null) {
+    try {
+      let parsed = JSON.parse(old_char_profiles);
+      out.profiles = parsed.profiles;
+    } catch {
+      out.profiles = [attatch_worker(DEFAULT_CHAR_PROFILE_NO_WORKER)];
+    }
+    localStorage.removeItem("HF_UI_STATE_V3_char_profiles");
+  }
+  const old_roster = localStorage.getItem("HF_UI_STATE_V3_roster");
+  if (old_roster !== null) {
+    try {
+      let parsed = JSON.parse(old_roster);
+      out.roster_mats_owned = { 0: parsed.roster_mats_owned };
+      out.tradable_mats_owned = { 0: parsed.tradable_mats_owned };
+    } catch {
+      out.roster_mats_owned = { 0: create_default_owned_input_column() };
+      out.tradable_mats_owned = { 0: create_default_owned_input_column() };
+    }
+    localStorage.removeItem("HF_UI_STATE_V3_roster");
+  }
+  return out;
+}
+function migrate_V4(out) {
+  const v4 = localStorage.getItem("HF_UI_STATE_V4_roster");
+  if (v4 !== null) {
+    try {
+      let parsed = JSON.parse(v4);
+      console.log(parsed);
+      out = { ...out, ...parsed };
+      out.active_profile_index = !out.active_profile_index
+        ? 0
+        : Math.max(
+            0,
+            Math.min(out.profiles.length - 1, out.active_profile_index),
+          );
+      if (out.region !== undefined) {
+        const region: MarketRegions = out.region.toLowerCase();
+        out.all_regions = DEFAULT_ROSTER_CONFIG.all_regions;
+        for (let index = 0; index < out.profiles.length; index++) {
+          out.all_regions[out.profiles[index].roster_id] = region;
+        }
+        out.mats_prices = DEFAULT_ROSTER_CONFIG.mats_prices;
+        delete out["region"];
+        out.selected_shard_bag_size =
+          DEFAULT_ROSTER_CONFIG.selected_shard_bag_size;
+      }
+    } catch (e) {
+      console.log("WEEWOO SOMETHING WORNG", e);
+    }
+    localStorage.removeItem("HF_UI_STATE_V4_roster");
+  }
+
+  return out;
+}
+
+export function load_roster_config(): RosterConfig {
+  let newest_raw: string | null = null;
+
+  const newest_version = localStorage.getItem(STORAGE_KEY);
+  if (newest_version !== null) {
+    newest_raw = LZString.decompressFromUTF16(newest_version);
+  } else {
+    newest_raw = "null";
+  }
+
+  let out = (() => {
+    try {
+      return JSON.parse(newest_raw) ?? DEFAULT_ROSTER_CONFIG;
+    } catch {
+      return DEFAULT_ROSTER_CONFIG;
+    }
+  })();
+  out = migrate_V3(out);
+  out = migrate_V4(out);
+
+  out = standard_validation(out);
+  const actual_out = { ...DEFAULT_ROSTER_CONFIG, ...out };
+  write_roster_config(actual_out);
+  return actual_out;
+}
+
+function write_roster_config(roster_config: RosterConfig) {
+  const json = stringifyOmit(roster_config, [
+    "optimizer_worker_bundle",
+    "histogram_worker_bundle",
+    "optimizer_override",
+    "budget_snapshot",
+    "is_slider_update",
+  ]);
+  localStorage.setItem(STORAGE_KEY, LZString.compressToUTF16(json));
+}
+export function write_state(state) {
+  console.log("writing");
+  try {
+    write_roster_config(state.roster_config);
+  } catch {
+    console.log(JSON.stringify(state.roster_config));
+  }
+}
 function stringifyOmit(obj: RosterConfig, keys: string[]): string {
   const omit = new Set(keys);
   return JSON.stringify(obj, (key, value) =>
     omit.has(key) ? undefined : value,
   );
 }
-export function write_roster_config(state) {
-  try {
-    localStorage.setItem(
-      STORAGE_KEY + "_roster",
-      stringifyOmit(state.roster_config, [
-        "optimizer_worker_bundle",
-        "histogram_worker_bundle",
-        "optimizer_override",
-        "budget_snapshot",
-        "is_slider_update",
-      ]),
-    );
-  } catch {
-    console.log(JSON.stringify(state.roster_config));
-  }
-}
 
-export const debounced_write_roster_config = debounce(write_roster_config, 500);
+export const debounced_write_roster_config = debounce(write_state, 500);

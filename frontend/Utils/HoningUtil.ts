@@ -7,7 +7,7 @@ export function ilevel(
   profile: CharProfile,
   mode: "achieved" | "pending",
 ): string {
-  console.log(profile.normal_grid, "start");
+  // console.log(profile.normal_grid, "start");
   const done = (value: UpgradeStatus) =>
     value === UpgradeStatus.Done ||
     (mode === "pending" && value === UpgradeStatus.Want);
@@ -23,7 +23,7 @@ export function ilevel(
   }
   for (let row = 0; row < NUM_PIECES; row++) {
     const highest_plus = profile.normal_grid[row].findLastIndex(done) + 1;
-    console.log(profile.normal_grid[row], highest_plus, row);
+    // console.log(profile.normal_grid[row], highest_plus, row);
     if (highest_plus === 0) {
       return "?";
     } else {

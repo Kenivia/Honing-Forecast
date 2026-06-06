@@ -1,4 +1,3 @@
-
 export const DEFAULT_ARTISAN_MULTIPLIER = 0.4651;
 export const FLOAT_TOL = 1e-9;
 
@@ -175,7 +174,7 @@ export const OUTPUT_LABELS = [
   "Blue juice",
 ];
 
-export const STORAGE_KEY = "HF_UI_STATE_V4";
+export const STORAGE_KEY = "HF_UI_STATE_V5_COMPRESSED";
 
 export const NUM_PIECES = 6;
 export const NORMAL_COLS = 25;
