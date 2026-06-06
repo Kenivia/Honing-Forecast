@@ -13,10 +13,7 @@ import {
   validate_input_column,
   validate_input_column_array,
 } from "@/Utils/InputColumn";
-import {
-  createStatusGrid as create_status_grid,
-  get_valid_status_grid,
-} from "@/Utils/StatusGrid";
+import { create_status_grid, get_valid_status_grid } from "@/Utils/StatusGrid";
 import {
   grids_to_keyed,
   KeyedUpgrades,
@@ -67,7 +64,7 @@ export enum TreatmentPlan {
   TreatAllAsTradable,
 }
 
-export const default_char_profile: CharProfile = {
+export const DEFAULT_CHAR_PROFILE_NO_WORKER: CharProfile = {
   optimizer_treatment_plan: TreatmentPlan.TreatRosterAsBound,
   histogram_treatment_plan: TreatmentPlan.TreatRosterAsTradable,
   express_event: false,
@@ -78,8 +75,8 @@ export const default_char_profile: CharProfile = {
   optimizer_worker_bundle: null, // these need to be filled in with create_worker_bundle
   histogram_worker_bundle: null,
 
-  normal_grid: create_status_grid(NUM_PIECES, NORMAL_COLS),
-  adv_grid: create_status_grid(NUM_PIECES, ADV_COLS),
+  normal_grid: create_status_grid(NUM_PIECES, NORMAL_COLS, 0, false),
+  adv_grid: create_status_grid(NUM_PIECES, ADV_COLS, 0, true),
 
   keyed_upgrades: {},
   special_budget: create_input_column(
@@ -124,9 +121,10 @@ export const default_char_profile: CharProfile = {
     },
   },
 };
+console.log(DEFAULT_CHAR_PROFILE_NO_WORKER);
 
 // Worker bundles are not writable to string(and prolly shouldnt anyway), we re-make them on load
-export function recreate_char_profile(parsed: any): CharProfile {
+export function attatch_worker(parsed: any): CharProfile {
   return {
     ...parsed,
     // evaluation_worker_bundle: createWorkerBundle(),
@@ -141,7 +139,7 @@ export function validate_char_profile(
   index: number,
 ): CharProfile {
   let this_parsed: CharProfile = {
-    ...default_char_profile,
+    ...DEFAULT_CHAR_PROFILE_NO_WORKER,
     ...this_profile,
   };
 
@@ -152,20 +150,20 @@ export function validate_char_profile(
   );
   validate_input_column_array(
     this_parsed.bound_budgets,
-    default_char_profile.bound_budgets,
+    DEFAULT_CHAR_PROFILE_NO_WORKER.bound_budgets,
   );
   validate_input_column_array(
     this_parsed.leftover_price,
-    default_char_profile.leftover_price,
+    DEFAULT_CHAR_PROFILE_NO_WORKER.leftover_price,
   );
   validate_input_column(
     this_parsed.special_budget,
-    default_char_profile.special_budget,
+    DEFAULT_CHAR_PROFILE_NO_WORKER.special_budget,
   );
 
   this_parsed.normal_grid = get_valid_status_grid(
     this_parsed.normal_grid,
-    default_char_profile.normal_grid,
+    DEFAULT_CHAR_PROFILE_NO_WORKER.normal_grid,
   ).map((row) =>
     row.map((x, index) =>
       index < (this_parsed.tier === 0 ? 10 : 11) ? UpgradeStatus.Done : x,
@@ -173,7 +171,7 @@ export function validate_char_profile(
   );
   this_parsed.adv_grid = get_valid_status_grid(
     this_parsed.adv_grid,
-    default_char_profile.adv_grid,
+    DEFAULT_CHAR_PROFILE_NO_WORKER.adv_grid,
   );
 
   this_parsed.keyed_upgrades = grids_to_keyed(
@@ -194,5 +192,5 @@ export function validate_char_profile(
     this_parsed.roster_id = out.roster_mats_owned.keys()[0];
   }
 
-  return recreate_char_profile(this_parsed);
+  return attatch_worker(this_parsed);
 }

@@ -1,18 +1,21 @@
+import { ADV_COLS } from "./Constants";
 import { StatusGrid, UpgradeStatus } from "./KeyedUpgrades";
 
-export function createStatusGrid(
+export function create_status_grid(
   rows: number,
   cols: number,
-  data: UpgradeStatus[][] = Array.from({ length: rows }, () =>
-    Array(cols).fill(UpgradeStatus.NotYet),
-  ),
+  tier: number,
+  adv: boolean,
 ): StatusGrid {
-  if (!data) {
-    data = Array.from({ length: rows }, () =>
-      Array(cols).fill(UpgradeStatus.NotYet),
-    );
-  }
-  return data;
+  return Array.from({ length: rows }, () =>
+    Array(cols)
+      .fill(UpgradeStatus.NotYet)
+      .map((x, index) =>
+        index < (tier === 0 ? (adv ? 0 : 10) : adv ? ADV_COLS : 11)
+          ? UpgradeStatus.Done
+          : x,
+      ),
+  );
 }
 
 export function is_enum<T extends object>(

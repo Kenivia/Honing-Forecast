@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import {
   CharProfile,
-  default_char_profile,
-  recreate_char_profile,
+  DEFAULT_CHAR_PROFILE_NO_WORKER,
+  attatch_worker,
 } from "@/Stores/CharacterProfile";
 import {
   create_default_owned_input_column,
@@ -22,7 +22,7 @@ const roster_store = useRosterStore();
 const { roster_config, roster_ids } = storeToRefs(roster_store);
 
 function add_new_char(roster_id: number) {
-  let new_char = recreate_char_profile(default_char_profile);
+  let new_char = attatch_worker(DEFAULT_CHAR_PROFILE_NO_WORKER);
   new_char.char_name = format_char_name(
     "Newchar",
     roster_config.value.profiles.length,
@@ -42,11 +42,11 @@ function add_new_roster(roster_id: number) {
 
 function duplicate(index) {
   let this_parsed = {
-    ...recreate_char_profile(default_char_profile),
+    ...attatch_worker(DEFAULT_CHAR_PROFILE_NO_WORKER),
     ...roster_config.value.profiles[index],
   };
 
-  let new_char = recreate_char_profile(JSON.parse(JSON.stringify(this_parsed)));
+  let new_char = attatch_worker(JSON.parse(JSON.stringify(this_parsed)));
   new_char.char_name = format_char_name(
     "Newchar",
     roster_config.value.profiles.length,

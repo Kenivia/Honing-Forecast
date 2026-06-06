@@ -15,8 +15,8 @@ import {
 import { defineStore } from "pinia";
 import {
   CharProfile,
-  default_char_profile,
-  recreate_char_profile,
+  DEFAULT_CHAR_PROFILE_NO_WORKER,
+  attatch_worker,
   validate_char_profile,
 } from "./CharacterProfile";
 
@@ -139,7 +139,7 @@ export const useRosterStore = defineStore("roster", {
         this.roster_config.profiles[this.roster_config.active_profile_index]
           .roster_id;
       this.roster_config.profiles[this.roster_config.active_profile_index] =
-        recreate_char_profile(default_char_profile);
+        attatch_worker(DEFAULT_CHAR_PROFILE_NO_WORKER);
       this.roster_config.profiles[
         this.roster_config.active_profile_index
       ].char_name = name;
@@ -206,7 +206,7 @@ export const DEFAULT_ROSTER_CONFIG: RosterConfig = {
   effective_serca_price: ALL_LABELS[1].map(() => 0),
   latest_market_data: {},
 
-  profiles: [recreate_char_profile(default_char_profile)],
+  profiles: [attatch_worker(DEFAULT_CHAR_PROFILE_NO_WORKER)],
   active_profile_index: 0,
   last_seen_version: "v0.0.0",
   enabled_annotations: [true, true, false, false],
@@ -239,7 +239,7 @@ export function load_roster_config(): RosterConfig {
       let parsed = JSON.parse(old_char_profiles);
       out.profiles = parsed.profiles;
     } catch {
-      out.profiles = [recreate_char_profile(default_char_profile)];
+      out.profiles = [attatch_worker(DEFAULT_CHAR_PROFILE_NO_WORKER)];
     }
 
     localStorage.removeItem("HF_UI_STATE_V3_char_profiles");
