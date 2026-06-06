@@ -45,7 +45,6 @@ watch(
         active_profile.value.optimizer_worker_bundle.cancel();
         active_profile.value.histogram_worker_bundle.cancel();
         // active_profile.value.evaluation_worker_bundle.cancel()
-
         roster_store.switch_profile(match);
       }
     } else {

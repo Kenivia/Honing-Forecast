@@ -15,6 +15,9 @@ If you'd like to help with any of the below, feel free to get in touch via [Disc
 
 - get the equipment icons somehow
 
+- automatically lock the fetched done upgrades (and a tickbox to unlock them)
+  - eventually do drag to select ig
+
 ## Roadmap (big projects)
 
 ### 1st: ~~re-write the frontend~~

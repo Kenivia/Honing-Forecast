@@ -63,6 +63,19 @@ const router = createRouter({
       name: "char",
       component: CharView,
       redirect: (c) => `/${c.params.characterName}/calc`,
+      beforeEnter: (to) => {
+        const roster_store = useRosterStore();
+        const name = to.params.characterName as string;
+        const match = roster_store.all_profiles.findIndex(
+          (c) => c.char_name === name,
+        );
+        if (match < 0) {
+          return {
+            name: to.name ?? "char",
+            params: { characterName: roster_store.all_profiles[0].char_name },
+          };
+        }
+      },
       children: [
         {
           path: "calc",
@@ -78,6 +91,10 @@ const router = createRouter({
           path: "guide",
           name: "char-guide",
           component: CharView,
+        },
+        {
+          path: ":x/guide",
+          redirect: (c) => `/${c.params.characterName}/guide`,
         },
         {
           path: ":pathMatch(.*)*",

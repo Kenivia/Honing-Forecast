@@ -274,36 +274,32 @@ function migrate_V3(out: any) {
   }
   return out;
 }
+
 function migrate_V4(out) {
   const v4 = localStorage.getItem("HF_UI_STATE_V4_roster");
   if (v4 !== null) {
     try {
       let parsed = JSON.parse(v4);
-      console.log(parsed);
+      // console.log(parsed);
       out = { ...out, ...parsed };
-      out.active_profile_index = !out.active_profile_index
-        ? 0
-        : Math.max(
-            0,
-            Math.min(out.profiles.length - 1, out.active_profile_index),
-          );
-      if (out.region !== undefined) {
-        const region: MarketRegions = out.region.toLowerCase();
-        out.all_regions = DEFAULT_ROSTER_CONFIG.all_regions;
-        for (let index = 0; index < out.profiles.length; index++) {
-          out.all_regions[out.profiles[index].roster_id] = region;
-        }
-        out.mats_prices = DEFAULT_ROSTER_CONFIG.mats_prices;
-        delete out["region"];
-        out.selected_shard_bag_size =
-          DEFAULT_ROSTER_CONFIG.selected_shard_bag_size;
-      }
     } catch (e) {
       console.log("WEEWOO SOMETHING WORNG", e);
     }
     localStorage.removeItem("HF_UI_STATE_V4_roster");
   }
-
+  out.active_profile_index = !out.active_profile_index
+    ? 0
+    : Math.max(0, Math.min(out.profiles.length - 1, out.active_profile_index));
+  if (out.region !== undefined) {
+    const region: MarketRegions = out.region.toLowerCase();
+    out.all_regions = DEFAULT_ROSTER_CONFIG.all_regions;
+    for (let index = 0; index < out.profiles.length; index++) {
+      out.all_regions[out.profiles[index].roster_id] = region;
+    }
+    out.mats_prices = DEFAULT_ROSTER_CONFIG.mats_prices;
+    delete out["region"];
+    out.selected_shard_bag_size = DEFAULT_ROSTER_CONFIG.selected_shard_bag_size;
+  }
   return out;
 }
 
@@ -344,7 +340,7 @@ function write_roster_config(roster_config: RosterConfig) {
   localStorage.setItem(STORAGE_KEY, LZString.compressToUTF16(json));
 }
 export function write_state(state) {
-  console.log("writing");
+  // console.log("writing");
   try {
     write_roster_config(state.roster_config);
   } catch {
