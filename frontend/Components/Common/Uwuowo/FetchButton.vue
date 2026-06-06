@@ -11,7 +11,7 @@ import { PIECE_NAMES } from "@/Utils/Constants";
 import LabeledPieceIcon from "../LabeledPieceIcon.vue";
 
 const props = defineProps<{
-  region: UwuowoRegions;
+  region?: UwuowoRegions;
   char_name: string;
   apply?: (_: UwuowoPiece[], force_t4: boolean) => void;
   counter?: number;
@@ -63,7 +63,15 @@ const have_both = computed(
 </script>
 
 <template>
-  <button @click="click" class="generic-button w-full text-wrap!">
+  <button
+    @click="click"
+    class="generic-button w-full text-wrap!"
+    :disabled="region === null"
+    :style="{
+      opacity: region === null ? 0.5 : 1,
+      cursor: region === null ? 'not-allowed' : 'pointer',
+    }"
+  >
     Fetch from lostark.bible
   </button>
   <Popup :show_popup="show_popup" @close_popup="show_popup = false">
@@ -109,7 +117,7 @@ const have_both = computed(
       </span>
       <span> Pick what tier you want to calculate: </span>
     </div>
-    <div class="flex w-full flex-row justify-around pt-2  ">
+    <div class="flex w-full flex-row justify-around pt-2">
       <button
         @click="show_popup = false"
         class="generic-button bg-(--warning-dark)! text-(--text-bright)!"

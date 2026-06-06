@@ -8,7 +8,7 @@ import { storeToRefs } from "pinia";
 import { useRosterStore } from "@/Stores/RosterConfig";
 
 const FETCH_MARKET_COOLDOWN_MS = 60 * 60 * 1000;
-export type MarketRegions = "nae" | "euc";
+export type MarketRegions = "nae" | "euc" | "Custom";
 const BODY = {
   region_slug: "nae",
   item_slugs: [
@@ -44,7 +44,9 @@ const BODY = {
   ],
 };
 
-export async function fetchMarketData(region: MarketRegions): Promise<string> {
+export async function fetch_market_data(
+  region: MarketRegions,
+): Promise<string> {
   let body = structuredClone(BODY);
   body["region_slug"] = region.toLowerCase();
   // console.log(body)
@@ -151,7 +153,7 @@ const ITEM_SLUG_TO_LABEL = {
   "tailoring-hellfire-19-20": "19-20 Armor",
 };
 
-function isDataStale(region: MarketRegions, cooldown: number): boolean {
+function is_data_stale(region: MarketRegions, cooldown: number): boolean {
   const roster_store = useRosterStore();
   const { roster_config } = storeToRefs(roster_store);
   const cached = roster_config.value.latest_market_data[region];
@@ -163,16 +165,18 @@ function isDataStale(region: MarketRegions, cooldown: number): boolean {
 export async function start_fetch(
   region: MarketRegions,
   _force?: boolean,
-  ignore_fetch?: boolean,
+  ignore_fetch_cooldown?: boolean,
 ) {
   const roster_store = useRosterStore();
   const { roster_config } = storeToRefs(roster_store);
-  if (roster_config.value.is_fetching && !ignore_fetch) return;
-
+  if (roster_config.value.is_fetching && !ignore_fetch_cooldown) return;
+  if (region === "Custom") {
+    return;
+  }
   const cached = roster_config.value.latest_market_data[region];
   if (
     cached !== undefined &&
-    !isDataStale(
+    !is_data_stale(
       region,
       // force === true ? 60 * 1000 :
       FETCH_MARKET_COOLDOWN_MS,
@@ -184,7 +188,7 @@ export async function start_fetch(
     roster_config.value.is_fetching = false;
     const [_, result] = cached;
     const [parsed, selectedShardSize, shard_price] = parse_response(result);
-    fetch_callback(parsed, selectedShardSize, shard_price);
+    fetch_callback(parsed, selectedShardSize, shard_price, region );
     return;
   }
 
@@ -193,7 +197,7 @@ export async function start_fetch(
   // Fetch new data
   const result = await (async () => {
     try {
-      const out = fetchMarketData(region);
+      const out = fetch_market_data(region);
 
       roster_config.value.market_fetch_failed = false;
       return out;
@@ -212,30 +216,36 @@ export async function start_fetch(
 
   roster_config.value.is_fetching = false;
 
-  fetch_callback(parsed, selectedShardSize, shard_price);
+  fetch_callback(parsed, selectedShardSize, shard_price, region);
 }
 function fetch_callback(
   result: number[][],
   selectedShardSize: number,
   shard_price: number,
+  region: MarketRegions,
 ) {
   const roster_store = useRosterStore();
   const { roster_config } = storeToRefs(roster_store);
   // console.log(result)
   // console.log("fetch callback");
   // console.log(roster_store.active_mats_prices);
-  roster_config.value.selected_shard_bag_size = selectedShardSize;
+  if (region === "Custom") {
+    // shouldn't happen anyway but just in case
+    return;
+  }
+  roster_config.value.selected_shard_bag_size[region] = selectedShardSize;
   for (let tier = 0; tier < ALL_LABELS.length; tier++) {
     for (let index = 0; index < ALL_LABELS[tier].length; index++) {
       const syncing = index in SERCA_TO_T4_INDICES && tier == 1;
       const actual_tier = syncing ? 0 : tier;
       const actual_index = syncing ? SERCA_TO_T4_INDICES[index] : index;
 
-      roster_store.active_mats_prices[actual_tier].data[actual_index] =
+      roster_config.value.mats_prices[region][actual_tier].data[actual_index] =
         result[actual_tier][actual_index].toLocaleString();
       if (ALL_LABELS[actual_tier][actual_index] == "Shards") {
-        roster_store.active_mats_prices[actual_tier].data[actual_index] =
-          shard_price.toLocaleString();
+        roster_config.value.mats_prices[region][actual_tier].data[
+          actual_index
+        ] = shard_price.toLocaleString();
       }
     }
   }

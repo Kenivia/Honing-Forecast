@@ -129,7 +129,7 @@ watch(
             :region="active_region"
             :region_change="roster_store.active_region_change"
           />
-          <span>
+          <span v-if="active_region !== 'Custom'">
             {{
               !roster_config.is_fetching && !roster_config.market_fetch_failed
                 ? "✅"
@@ -140,9 +140,13 @@ watch(
           </span>
         </div>
         <button
-          :disabled="roster_config.is_fetching"
+          :disabled="roster_config.is_fetching || active_region === 'Custom'"
           @click="() => start_fetch(active_region)"
           class="generic-button"
+          :style="{
+            opacity: active_region === 'Custom' ? 0.5 : 1,
+            cursor: active_region === 'Custom' ? 'not-allowed' : 'pointer',
+          }"
         >
           {{
             !roster_config.is_fetching ? "Re-fetch Market Data" : "Fetching..."
@@ -154,7 +158,9 @@ watch(
         <div class="side-bar-item">
           <label class="text-nowrap">Shard bag size:</label>
           <select
-            v-model.number="roster_config.selected_shard_bag_size"
+            v-model.number="
+              roster_config.selected_shard_bag_size[active_region]
+            "
             class="selector"
           >
             <option value="1000">x1000</option>

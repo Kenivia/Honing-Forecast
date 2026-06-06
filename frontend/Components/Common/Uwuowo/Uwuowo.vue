@@ -40,7 +40,7 @@ const counter = ref(0);
     />
     <FetchButton
       :char_name="name"
-      :region="region === 'nae' ? 'NA' : 'CE'"
+      :region="region === 'Custom' ? null : region === 'nae' ? 'NA' : 'CE'"
       :apply="apply"
       :counter="counter"
     />

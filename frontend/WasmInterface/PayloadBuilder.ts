@@ -220,6 +220,7 @@ export function build_material_info(): OneMaterialInput[] {
     roster_config,
     active_roster_mats_owned,
     active_tradable_mats_owned,
+    active_region,
   } = storeToRefs(useRosterStore());
 
   const tier = active_profile.value.tier;
@@ -248,14 +249,14 @@ export function build_material_info(): OneMaterialInput[] {
     (x: number, index: number) =>
       Math.max(Math.min(1, x), Math.floor(x * 0.95)) /
       (ALL_LABELS[active_profile.value.tier][index] == "Shards"
-        ? roster_config.value.selected_shard_bag_size
+        ? roster_config.value.selected_shard_bag_size[active_region.value]
         : BUNDLE_SIZE[index]),
   );
   const mats_prices = effective_price.map(
     (x: number, index: number) =>
       x /
       (ALL_LABELS[active_profile.value.tier][index] == "Shards"
-        ? roster_config.value.selected_shard_bag_size
+        ? roster_config.value.selected_shard_bag_size[active_region.value]
         : BUNDLE_SIZE[index]),
   );
   // console.log()

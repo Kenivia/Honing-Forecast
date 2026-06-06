@@ -21,6 +21,7 @@ const { roster_config } = storeToRefs(roster_store);
     >
       <option value="nae">NA</option>
       <option value="euc">EU</option>
+      <option value="Custom">Custom</option>
     </select>
   </div>
 </template>

@@ -33,7 +33,7 @@ export interface RosterConfig {
 
   tier: number;
   cumulative_graph: boolean;
-  selected_shard_bag_size: number;
+  selected_shard_bag_size: Record<MarketRegions, number>;
   effective_serca_price: number[]; // This is the one that's actually used (instead of mats_prices) for serca mats in build_material_info
   latest_market_data: Partial<Record<MarketRegions, [number, any]>>; // [timestamp, raw_response_data]
 
@@ -50,6 +50,8 @@ export interface RosterConfig {
 
   auto_deduct_costs: boolean;
   is_fetching: boolean;
+
+  auto_fetch: boolean;
 }
 export const useRosterStore = defineStore("roster", {
   state: () => ({
@@ -186,12 +188,21 @@ export const DEFAULT_ROSTER_CONFIG: RosterConfig = {
         FALLBACK_PRICES[index].map((price) => price.toLocaleString()),
       ),
     ),
+    Custom: ALL_LABELS.map((this_labels, index) =>
+      create_input_column(
+        InputType.Int,
+        this_labels,
+        FALLBACK_PRICES[index].map((_, p_index) =>
+          this_labels[p_index] === "Gold" ? "1" : "0",
+        ),
+      ),
+    ),
   }, // was gonna use Float here but ig it makes more sense to do int, leaving float in place cos why not
   roster_mats_owned: { 0: create_default_owned_input_column() },
   tradable_mats_owned: { 0: create_default_owned_input_column() },
   tier: DEFAULT_TIER,
   cumulative_graph: true,
-  selected_shard_bag_size: 3000,
+  selected_shard_bag_size: { nae: 3000, euc: 3000, Custom: 3000 },
   effective_serca_price: ALL_LABELS[1].map(() => 0),
   latest_market_data: {},
 
@@ -206,6 +217,7 @@ export const DEFAULT_ROSTER_CONFIG: RosterConfig = {
   auto_deduct_costs: true,
   all_regions: { 0: "nae" },
   is_fetching: false,
+  auto_fetch: true,
 };
 
 export function load_roster_config(): RosterConfig {
@@ -260,7 +272,10 @@ export function load_roster_config(): RosterConfig {
     // out.mats_prices = Object.fromEntries([[region, out.mats_prices]]); i don think this is needed cos like we're fetching anyway
     out.mats_prices = DEFAULT_ROSTER_CONFIG.mats_prices;
     delete out["region"];
+
+    out.selected_shard_bag_size = DEFAULT_ROSTER_CONFIG.selected_shard_bag_size;
   }
+
   out = standard_validation(out);
   return { ...DEFAULT_ROSTER_CONFIG, ...out };
 }

@@ -13,10 +13,15 @@ import { computed, watch, watchEffect } from "vue";
 import { input_column_to_num } from "@/Utils/InputColumn";
 
 import { GridConfig } from "@/Utils/GridStyling";
+import { MarketRegions } from "@/Utils/MarketDataFetcher";
 
 const roster_store = useRosterStore();
-const { roster_config, active_roster_mats_owned, active_tradable_mats_owned } =
-  storeToRefs(roster_store);
+const {
+  roster_config,
+  active_roster_mats_owned,
+  active_tradable_mats_owned,
+  active_region,
+} = storeToRefs(roster_store);
 
 watchEffect(() => {
   const t4_price = input_column_to_num(roster_store.active_mats_prices[0]);
@@ -81,9 +86,13 @@ const grids = computed((): GridConfig[] => [
   },
 ]);
 
-function price_suffix(label: string, row: number): string {
+function price_suffix(
+  label: string,
+  row: number,
+  region: MarketRegions,
+): string {
   if (label === "Shards")
-    return "x" + roster_config.value.selected_shard_bag_size.toString();
+    return "x" + roster_config.value.selected_shard_bag_size[region].toString();
   if (BUNDLE_SIZE[row] > 1)
     return "x" + BUNDLE_SIZE[row].toLocaleString("en-US");
   return "";
@@ -148,7 +157,7 @@ function price_suffix(label: string, row: number): string {
                 roster_store.active_mats_prices[col].data[row] = val;
               }
             "
-            :suffix="price_suffix(label, row)"
+            :suffix="price_suffix(label, row, active_region)"
             :input_width="70"
             input_color="var(--text-muted)"
             :justify_left="true"
