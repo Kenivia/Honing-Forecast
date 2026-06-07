@@ -153,7 +153,10 @@ watch(
             }}
           </button>
         </div>
-        <div class="control-panel-checkbox-row border-0!">
+        <div
+          class="control-panel-checkbox-row border-0!"
+          v-if="active_region !== 'Custom'"
+        >
           <span>Auto fetch </span>
           <input
             type="checkbox"
