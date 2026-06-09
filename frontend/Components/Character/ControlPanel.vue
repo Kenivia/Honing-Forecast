@@ -40,7 +40,7 @@ watchEffect(() => {
     <div class="py-1 text-sm">
       <label class="control-panel-checkbox-row">
         <input v-model="active_profile.express_event" type="checkbox" />
-        <span>Express event (March)</span>
+        <span>Express event (June, from RU patch note)</span>
       </label>
       <!-- This is for producing payloads to feed into Rust -->
       <!-- <button
