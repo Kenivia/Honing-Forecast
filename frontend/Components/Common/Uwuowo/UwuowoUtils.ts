@@ -103,7 +103,7 @@ export async function get_parsed_uwuowo(
         // console.log(top_row.children);
         if (top_row.children.length > 3 || ilevel < 1730) {
           tier = 0;
-          console.log(top_row.children, top_row.children?.[3]?.textContent);
+          // console.log(top_row.children, top_row.children?.[3]?.textContent);
           adv = parse_locale_int(
             top_row.children?.[3]?.textContent.replace("+", "") ?? "0",
           );

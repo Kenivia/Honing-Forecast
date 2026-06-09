@@ -102,7 +102,8 @@ function keyed_to_array(
 
       if (out.state !== null && out.state.length === 0) {
         // special cased, reset will wipe it like this, so dont copy from optimizer bundle
-        console.log("overwritten")
+        // console.log("overwritten");
+        one_upgrade_input.state = null; // so the next time it doesn't overwrite
         return out;
       }
       out.state = upgrade.state
