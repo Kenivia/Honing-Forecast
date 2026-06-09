@@ -139,7 +139,7 @@ export function validate_char_profile(
   index: number,
 ): CharProfile {
   let this_parsed: CharProfile = {
-    ...DEFAULT_CHAR_PROFILE_NO_WORKER,
+    ...structuredClone(DEFAULT_CHAR_PROFILE_NO_WORKER),
     ...this_profile,
   };
 
