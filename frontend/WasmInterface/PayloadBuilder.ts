@@ -102,7 +102,7 @@ function keyed_to_array(
 
       if (out.state !== null && out.state.length === 0) {
         // special cased, reset will wipe it like this, so dont copy from optimizer bundle
-
+        console.log("overwritten")
         return out;
       }
       out.state = upgrade.state

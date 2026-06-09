@@ -7,6 +7,8 @@ If you'd like to help with any of the below, feel free to get in touch via [Disc
 
 ## Immediate WIP
 
+- fetch the rest of the roster popup
+
 - change roster button / drag & drop? order changing in roster page
 
 - change MarketView to not rely on active_profile and stuff, makes 0 sense why did i do that

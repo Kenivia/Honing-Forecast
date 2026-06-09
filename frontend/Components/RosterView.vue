@@ -141,6 +141,7 @@ function delete_profile(index, roster_id) {
                       //   roster_config.profiles[profile_index].char_name,
                       //   profile_index,
                       // );
+                      console.log(result, force_t4);
                       apply_results(profile, result, force_t4, true);
                     }
                   "
