@@ -20,7 +20,7 @@ export const ALL_VERSIONS = sort_versions(
 
 export const LATEST_VERSION = ALL_VERSIONS[0];
 
-// as in the user is caught up
+// as in the user is caught up (dont show on small updates)
 export function minor_version_equal(last_seen: string, now: string) {
   const a_split = last_seen.replace("v", "").split(".");
   const b_split = now.replace("v", "").split(".");
