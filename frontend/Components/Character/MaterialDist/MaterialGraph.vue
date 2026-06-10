@@ -63,13 +63,13 @@ const points = computed<Point[]>(() => {
   if (!Array.isArray(props.data) || props.data.length === 0) {
     return [];
   }
-  // console.log(props.data)
+
   const normalized = props.data
     .map(
       (pair) => [Number(pair?.[0] ?? 0), Number(pair?.[1] ?? 0)] as DataPoint,
     )
     .filter((pair) => Number.isFinite(pair[0]) && Number.isFinite(pair[1]));
-
+  // console.log(normalized);
   if (normalized.length < 2) {
     return normalized.map(([x, y]) => ({ x, y, cumulativeY: y }));
   }
@@ -172,13 +172,10 @@ const linePath = computed(() => {
   if (!points.value.length) return "";
   const pts = points.value;
   if (has_duplicate_y.value) {
-    const parts = [
-      `M ${scaleX(pts[0].x)} ${GRAPH_HEIGHT}`, // start at baseline
-      `L ${scaleX(pts[0].x)} ${scaleY(pts[0].y)}`, // rise to first point
-    ];
+    const parts = [`M ${scaleX(pts[0].x)} ${GRAPH_HEIGHT}`];
     for (let i = 1; i < pts.length; i++) {
-      parts.push(`L ${scaleX(pts[i].x)} ${scaleY(pts[i - 1].y)}`); // travel right at current height
-      parts.push(`L ${scaleX(pts[i].x)} ${scaleY(pts[i].y)}`); // step up/down to next point
+      parts.push(`L ${scaleX(pts[i - 1].x)} ${scaleY(pts[i].y)}`);
+      parts.push(`L ${scaleX(pts[i].x)} ${scaleY(pts[i].y)}`);
     }
     return parts.join(" ");
   }

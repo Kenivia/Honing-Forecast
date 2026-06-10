@@ -37,9 +37,8 @@ pub fn histogram(state_bundle: &mut StateBundle) -> HistogramOutputs {
         let this_one_tap = state_bundle.luckiest_mf()[support_index] as f64;
 
         for index in 0..(BUCKET_COUNT + 1) {
-            let this_budget = (this_one_tap
-                + index as f64 * (this_pity - this_one_tap) / (BUCKET_COUNT) as f64)
-                .round();
+            let this_budget =
+                this_one_tap + index as f64 * (this_pity - this_one_tap) / (BUCKET_COUNT) as f64;
             item.push((
                 this_budget,
                 state_bundle.one_dimension_prob(
