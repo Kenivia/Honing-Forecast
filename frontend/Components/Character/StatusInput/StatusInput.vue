@@ -108,7 +108,7 @@ const tier_label_text = computed(() => {
         />
         <label class="control-panel-checkbox-row border-0!">
           <input v-model="active_profile.express_event" type="checkbox" />
-          <span>Express event (June, from RU patch note)</span>
+          <span>Express event (June)</span>
         </label>
       </div>
     </div>
