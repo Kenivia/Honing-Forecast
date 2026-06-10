@@ -149,7 +149,11 @@ function interpolateY(targetX: number) {
     const cur = list[index];
     if (targetX <= cur.x) {
       const dx = cur.x - prev.x;
-      const t = dx === 0 ? 0 : (targetX - prev.x) / dx;
+      const t = has_duplicate_y.value
+        ? 1
+        : dx === 0
+          ? 0
+          : (targetX - prev.x) / dx;
       const y = prev.y + (cur.y - prev.y) * t;
       return scaleY(y);
     }
