@@ -141,7 +141,7 @@ function interpolateY(targetX: number) {
   const list = points.value;
   if (!list.length) return GRAPH_HEIGHT;
 
-  if (targetX <= list[0].x) return scaleY(list[0].y);
+  if (targetX <= list[0].x) return GRAPH_HEIGHT;
 
   for (let index = 1; index < list.length; index++) {
     const prev = list[index - 1];
