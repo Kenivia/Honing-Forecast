@@ -17,7 +17,7 @@ python ./scripts/optimizer_visualizer/app.py
 Alternatively, run
 
 ```bash
-npm run optimizer-visualizer
+pnpm run optimizer-visualizer
 ```
 
 The app will open on `http://127.0.0.1:8050/` by default.

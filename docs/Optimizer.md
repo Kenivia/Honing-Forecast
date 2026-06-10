@@ -25,5 +25,5 @@ I'm sure there is a better way of doing this. Right now, what you need to do is 
     - The `book_id` field for advanced honing must not exceed `MAX_ADV_STATE` (it can equal `MAX_ADV_STATE`).
     - You must call `upgrade.update_hash` after changing the state of an upgrade.
     - For non-advanced upgrades, you must not modify the state with index < upgrade.alr_done.
-5. To test your new version, run `npm run optimizer_test YOUR_VERSION` (This should be ran from the project root).
+5. To test your new version, run `pnpm run optimizer_test YOUR_VERSION` (This should be ran from the project root).
 6. You can view how it compares to other versions by running `optimizer-visualizer`.

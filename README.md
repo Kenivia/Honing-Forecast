@@ -59,8 +59,9 @@ The frontend is written in Vue3 and Typescript. The computation is in Rust which
 1. [Rust](https://rust-lang.org/tools/install/)
 2. [wasm-pack](https://wasm-bindgen.github.io/wasm-pack/)
 3. [Node.js](https://nodejs.org/en/download)
+4. [pnpm](https://pnpm.io/installation)
 
-Run `npm install` for the dependencies, then `npm run dev` for the dev server.
+Run `pnpm install` for the dependencies, then `pnpm run dev` for the dev server.
 
 You can take a look at [good first issues](<https://github.com/Kenivia/Honing-Forecast/labels/good first issue>) or the [WIP doc](/public/WIP.md), but any help will be greatly appreciated!
 
