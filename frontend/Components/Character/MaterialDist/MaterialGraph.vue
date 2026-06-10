@@ -159,10 +159,9 @@ function interpolateY(targetX: number) {
 
 const linePath = computed(() => {
   if (!points.value.length) return "";
-  return points.value
-    .map(
-      (point, index) =>
-        `${index === 0 ? "M" : "L"}${scaleX(point.x)} ${scaleY(point.y)}`,
+  return [`M ${scaleX(points.value[0].x)} ${GRAPH_HEIGHT}`]
+    .concat(
+      points.value.map((point) => `L ${scaleX(point.x)} ${scaleY(point.y)}`),
     )
     .join(" ");
 });

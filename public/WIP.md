@@ -147,7 +147,7 @@ Below are some rambling / brainstorming / Misc stuff
 
 - actually save & pass around cache so adv doesn't take 8 years every time
 
-- changed graph to be rigid histograms instead of intepolating lines
+- ~~changed graph to be rigid histograms instead of intepolating lines~~ actually that looks terrible
 
 - ~~figure out how to style select options~~
   - figure out why tf v-tooltip disappeas on every progress update

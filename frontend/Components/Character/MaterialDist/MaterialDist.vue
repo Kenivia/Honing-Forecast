@@ -323,7 +323,11 @@ const is924Narrow = useMediaIsNarrow(924); // this turns out to be the width whe
           >
         </div>
 
-        <span class="text-(--text-muted)">Hover graph for details!</span>
+        <!-- <span class="text-(--text-muted)">Hover graph for details!</span> -->
+        <label class="flex flex-row justify-end gap-1">
+          <input v-model="roster_config.cumulative_graph" type="checkbox" />
+          <span>Cumulative graph</span>
+        </label>
         <!-- <span v-if="customLeftovers">Left</span> -->
       </div>
       <div

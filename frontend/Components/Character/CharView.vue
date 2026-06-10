@@ -93,7 +93,7 @@ onUnmounted(() => {
         </RouterLink>
       </div>
 
-      <GraphControlPanel v-if="route.path.endsWith('calc')" />
+      <!-- <GraphControlPanel v-if="route.path.endsWith('calc')" /> -->
       <ControlPanel v-if="route.path.endsWith('calc')" />
     </template>
 
