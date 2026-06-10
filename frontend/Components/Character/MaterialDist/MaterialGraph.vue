@@ -162,11 +162,24 @@ function interpolateY(targetX: number) {
   return scaleY(list[list.length - 1].y);
 }
 const has_duplicate_y = computed(() => {
+  console.log(
+    points.value.filter(
+      (p) =>
+        p.cumulativeY !== points.value[0].cumulativeY && p.cumulativeY !== 1.0,
+    ),
+  );
   return (
-    points.value.filter((x) => x.cumulativeY !== 1.0).length !==
+    points.value.filter(
+      (p) =>
+        p.cumulativeY !== points.value[0].cumulativeY && p.cumulativeY !== 1.0,
+    ).length !==
     new Set(
       points.value
-        .filter((x) => x.cumulativeY !== 1.0)
+        .filter(
+          (p) =>
+            p.cumulativeY !== points.value[0].cumulativeY &&
+            p.cumulativeY !== 1.0,
+        )
         .map((x) => x.cumulativeY),
     ).size
   );
