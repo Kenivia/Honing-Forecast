@@ -100,6 +100,7 @@ const points = computed<Point[]>(() => {
 
     if (slope * upside_down < FLOAT_TOL) {
       const out = { x, y: prevSlope * upside_down, cumulativeY: y };
+      prevSlope = 0;
       return out;
     }
     prevSlope = slope;
@@ -156,13 +157,33 @@ function interpolateY(targetX: number) {
 
   return scaleY(list[list.length - 1].y);
 }
+const has_duplicate_y = computed(() => {
+  return (
+    points.value.filter((x) => x.cumulativeY !== 1.0).length !==
+    new Set(
+      points.value
+        .filter((x) => x.cumulativeY !== 1.0)
+        .map((x) => x.cumulativeY),
+    ).size
+  );
+});
 
 const linePath = computed(() => {
   if (!points.value.length) return "";
-  return [`M ${scaleX(points.value[0].x)} ${GRAPH_HEIGHT}`]
-    .concat(
-      points.value.map((point) => `L ${scaleX(point.x)} ${scaleY(point.y)}`),
-    )
+  const pts = points.value;
+  if (has_duplicate_y.value) {
+    const parts = [
+      `M ${scaleX(pts[0].x)} ${GRAPH_HEIGHT}`, // start at baseline
+      `L ${scaleX(pts[0].x)} ${scaleY(pts[0].y)}`, // rise to first point
+    ];
+    for (let i = 1; i < pts.length; i++) {
+      parts.push(`L ${scaleX(pts[i].x)} ${scaleY(pts[i - 1].y)}`); // travel right at current height
+      parts.push(`L ${scaleX(pts[i].x)} ${scaleY(pts[i].y)}`); // step up/down to next point
+    }
+    return parts.join(" ");
+  }
+  return [`M ${scaleX(pts[0].x)} ${GRAPH_HEIGHT}`]
+    .concat(pts.map((point) => `L ${scaleX(point.x)} ${scaleY(point.y)}`))
     .join(" ");
 });
 
@@ -170,7 +191,11 @@ const areaPath = computed(() => {
   if (!points.value.length) return "";
   const firstX = scaleX(points.value[0].x);
   const lastX = scaleX(points.value[points.value.length - 1].x);
-  return `${linePath.value} L ${lastX} ${GRAPH_HEIGHT} L ${firstX} ${GRAPH_HEIGHT} Z`;
+  if (has_duplicate_y.value) {
+    return `${linePath.value} L ${lastX} ${GRAPH_HEIGHT} L ${firstX} ${GRAPH_HEIGHT} Z`;
+  } else {
+    return `${linePath.value} L ${lastX} ${GRAPH_HEIGHT} Z`;
+  }
 });
 
 // Mouse and Hover Logic
