@@ -70,6 +70,7 @@ const points = computed<Point[]>(() => {
     )
     .filter((pair) => Number.isFinite(pair[0]) && Number.isFinite(pair[1]));
   // console.log(normalized);
+  const upside_down = props.upside_down_cumulative ? -1 : 1;
   if (normalized.length < 2) {
     return normalized.map(([x, y]) => ({ x, y, cumulativeY: y }));
   }
@@ -78,7 +79,7 @@ const points = computed<Point[]>(() => {
     return normalized.map(([x, y]) => ({ x, y, cumulativeY: y }));
   }
   // let gap_size = (normalized[normalized.length - 1][0] - normalized[0][0]) / BUCKET_COUNT
-  const upside_down = props.upside_down_cumulative ? -1 : 1;
+
   let prevSlope = 0;
   return normalized.map(([x, y], index) => {
     if (index === 0) {
@@ -141,8 +142,8 @@ function scaleY(y: number) {
 function interpolateY(targetX: number) {
   const list = points.value;
   if (!list.length) return GRAPH_HEIGHT;
-
-  if (targetX <= list[0].x) return GRAPH_HEIGHT;
+  console.log(targetX);
+  if (targetX < list[0].x) return GRAPH_HEIGHT;
 
   for (let index = 1; index < list.length; index++) {
     const prev = list[index - 1];
@@ -162,26 +163,21 @@ function interpolateY(targetX: number) {
   return scaleY(list[list.length - 1].y);
 }
 const has_duplicate_y = computed(() => {
-  console.log(
-    points.value.filter(
-      (p) =>
-        p.cumulativeY !== points.value[0].cumulativeY && p.cumulativeY !== 1.0,
-    ),
-  );
   return (
+    !props.upside_down_cumulative &&
     points.value.filter(
       (p) =>
         p.cumulativeY !== points.value[0].cumulativeY && p.cumulativeY !== 1.0,
     ).length !==
-    new Set(
-      points.value
-        .filter(
-          (p) =>
-            p.cumulativeY !== points.value[0].cumulativeY &&
-            p.cumulativeY !== 1.0,
-        )
-        .map((x) => x.cumulativeY),
-    ).size
+      new Set(
+        points.value
+          .filter(
+            (p) =>
+              p.cumulativeY !== points.value[0].cumulativeY &&
+              p.cumulativeY !== 1.0,
+          )
+          .map((x) => x.cumulativeY),
+      ).size
   );
 });
 
@@ -229,7 +225,7 @@ const hoveredPoint = computed(() => {
   // Snap to the closest point along the X axis
   let closest = points.value[0];
   let minDistance = Math.abs(scaleX(closest.x) - mouseX.value);
-
+  console.log("before", closest);
   for (const point of points.value) {
     const dist = Math.abs(scaleX(point.x) - mouseX.value);
     if (dist < minDistance) {
@@ -237,6 +233,7 @@ const hoveredPoint = computed(() => {
       closest = point;
     }
   }
+  console.log("aft", closest);
   return closest;
 });
 
