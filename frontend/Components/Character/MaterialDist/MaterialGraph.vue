@@ -142,7 +142,7 @@ function scaleY(y: number) {
 function interpolateY(targetX: number) {
   const list = points.value;
   if (!list.length) return GRAPH_HEIGHT;
-  console.log(targetX);
+  // console.log(targetX);
   if (targetX < list[0].x) return GRAPH_HEIGHT;
 
   for (let index = 1; index < list.length; index++) {
@@ -225,7 +225,7 @@ const hoveredPoint = computed(() => {
   // Snap to the closest point along the X axis
   let closest = points.value[0];
   let minDistance = Math.abs(scaleX(closest.x) - mouseX.value);
-  console.log("before", closest);
+  // console.log("before", closest);
   for (const point of points.value) {
     const dist = Math.abs(scaleX(point.x) - mouseX.value);
     if (dist < minDistance) {
@@ -233,7 +233,7 @@ const hoveredPoint = computed(() => {
       closest = point;
     }
   }
-  console.log("aft", closest);
+  // console.log("aft", closest);
   return closest;
 });
 
