@@ -302,7 +302,10 @@ pub fn compute_adv_dist_wrapper(config: &AdvConfig) -> AdvDistTriplet {
 }
 #[cfg(test)]
 mod tests {
-    use crate::advanced_honing::utils::{GRACE_FIRST_N, NON_GRACE_FIRST_N};
+    use crate::{
+        advanced_honing::utils::{GRACE_FIRST_N, NON_GRACE_FIRST_N},
+        helpers::write_jsonl,
+    };
     use itertools::iproduct;
 
     use super::*;
@@ -355,7 +358,7 @@ mod tests {
             };
             out.push(compute_adv_dist_wrapper(&this_adv_config));
         }
-        // let file_name: String = format!("./adv_cache_data.json",);
-        // write_jsonl(&out, &file_name).unwrap();
+        let file_name: String = format!("./adv_cache_data.json",);
+        write_jsonl(&out, &file_name).unwrap();
     }
 }

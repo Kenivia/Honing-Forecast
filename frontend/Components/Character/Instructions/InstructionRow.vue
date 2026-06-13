@@ -5,7 +5,7 @@ import { storeToRefs } from "pinia";
 import { computed } from "vue";
 import { to_upgrade_key, Upgrade } from "@/Utils/KeyedUpgrades";
 import ActualInstructions from "@/Components/Character/Instructions/ActualInstructions.vue";
-import NormalDetails from "@/Components/Character/Instructions/Details/NormalDetails/NormalDetails.vue";
+import NormalDetailsWrapper from "@/Components/Character/Instructions/Details/NormalDetails/NormalDetailsWrapper.vue";
 import {
   get_any_overwritten,
   get_optimizer_working,
@@ -100,7 +100,7 @@ const optimizer_working = computed(get_optimizer_working);
   <ActualInstructions v-if="!free_tap_this_upgrade" :upgrade="props.upgrade" />
 
   <div class="contents" v-if="!any_overwritten">
-    <NormalDetails
+    <NormalDetailsWrapper
       v-if="upgrade.is_normal_honing"
       :upgrade="props.upgrade"
       :perform_order="props.perform_order"

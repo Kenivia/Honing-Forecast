@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { storeToRefs } from "pinia";
-import { computed, ref, watch } from "vue";
+import { computed } from "vue";
 import { useRosterStore } from "@/Stores/RosterConfig";
 import { to_upgrade_key, Upgrade } from "@/Utils/KeyedUpgrades";
 import { GridConfig } from "@/Utils/GridStyling";
@@ -120,16 +120,8 @@ function get_relevant_upgrade_arr() {
   return out;
 }
 
-const relevant_upgrade_arr = ref(get_relevant_upgrade_arr());
+const relevant_upgrade_arr = computed(get_relevant_upgrade_arr);
 //  i dont really understand why using computed for this doesn't update correctly but whatever
-watch(
-  () => relevant_result.value,
-  () => {
-    // console.log("sort", any_overwritten.value);
-    relevant_upgrade_arr.value = get_relevant_upgrade_arr();
-  },
-  { deep: true, immediate: true },
-);
 
 const grid: GridConfig = props.is_normal
   ? {

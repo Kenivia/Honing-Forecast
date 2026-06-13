@@ -15,7 +15,7 @@ import { LOCALE_DECIMAL, parse_locale_float } from "./InputColumn";
 export function locale_to_fixed(
   inp: number,
   place?: number,
-  round_down?: boolean,
+  round_down?: boolean, // used for artisan (to match in-game)
 ) {
   // console.log(inp, Math.floor(inp * Math.pow(10, place ? place : 0)));
   return (

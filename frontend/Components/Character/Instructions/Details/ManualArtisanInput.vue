@@ -1,5 +1,9 @@
 <script setup lang="ts">
 import "@/Components/Character/Instructions/Details/details.css";
+import { useRosterStore } from "@/Stores/RosterConfig";
+import { to_upgrade_key, Upgrade } from "@/Utils/KeyedUpgrades";
+import { storeToRefs } from "pinia";
+import { computed } from "vue";
 
 const starting_artisan = defineModel<string>("starting_artisan", {
   required: true,
@@ -9,21 +13,34 @@ const current_chance_percentage = defineModel<string>(
   { required: true },
 );
 
-defineProps<{
-  base_chance: number;
-  extra_chance: number;
+const props = defineProps<{
+  upgrade: Upgrade;
   optimizer_working: boolean;
   taps_since_last_input: number;
   normal_dist_length: number;
   using_slider: boolean;
   show_hints: boolean;
+  perform_order: number;
+  show_hide: boolean;
 }>();
 
 const emit = defineEmits<{
   manual_artisan_change: [];
   manual_chance_change: [];
   confirm: [];
+  reset: [];
 }>();
+
+const { active_profile } = storeToRefs(useRosterStore());
+
+const upgrade_key = computed(() =>
+  to_upgrade_key(
+    props.upgrade.piece_type,
+    props.upgrade.upgrade_index,
+    props.upgrade.is_normal_honing,
+    active_profile.value.tier,
+  ),
+);
 </script>
 
 <template>
@@ -76,8 +93,8 @@ const emit = defineEmits<{
     <input
       class="generic-input number-border w-10 pr-0!"
       v-model="current_chance_percentage"
-      :min="base_chance * 100 + extra_chance"
-      :max="base_chance * 100 * 2 + extra_chance"
+      :min="upgrade.base_chance * 100 + upgrade.extra_chance"
+      :max="upgrade.base_chance * 100 * 2 + upgrade.extra_chance"
       @change="emit('manual_chance_change')"
       inputmode="decimal"
       :style="{
@@ -85,5 +102,27 @@ const emit = defineEmits<{
       }"
     />
     <span>%</span>
+  </div>
+  <div class="button-row">
+    <button
+      class="reset-button"
+      @click="emit('reset')"
+      v-if="
+        upgrade.starting_artisan > 0 ||
+        upgrade.starting_num_taps > 0 ||
+        !using_slider
+      "
+    >
+      {{ !using_slider ? "Restore default" : "Reset this upgrade" }}
+    </button>
+    <div v-else class="contents">
+      <button
+        class="reset-button w-full self-center"
+        v-if="perform_order != 0 && show_hide"
+        @click="active_profile.keyed_upgrades[upgrade_key].expanded = false"
+      >
+        Hide
+      </button>
+    </div>
   </div>
 </template>

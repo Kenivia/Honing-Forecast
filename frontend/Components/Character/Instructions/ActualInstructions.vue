@@ -152,6 +152,7 @@ const streaks = computed(() => {
   }
 });
 const parsed_streaks = computed(() => {
+  // console.log("parsed recalc");
   let out = [];
   let taps = 0;
   for (let index = 0; index < streaks.value.length; index++) {
