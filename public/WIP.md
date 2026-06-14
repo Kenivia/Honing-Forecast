@@ -1,15 +1,15 @@
 
 # Work in Progress
 
-I have to focus on my exams (until like mid June) so I'm trying not to spend too much time on this. Small issues will be fixed but big projects are on hold.
-
 If you'd like to help with any of the below, feel free to get in touch via [Discord](https://discord.gg/KWDpQyvgzc)!
 
-## Immediate WIP
+## Roadmap
 
-- fetch the rest of the roster popup
+### Now: Frontend cleanup & improvements
 
-- change roster button / drag & drop? order changing in roster page
+- ~~fetch the rest of the roster popup~~
+
+- ~~change roster button ~~ prolly not that useful ~~ / drag & drop?~~ too hard            this can do----> order changing buttons in roster page
 
 - change MarketView to not rely on active_profile and stuff, makes 0 sense why did i do that
 
@@ -22,15 +22,11 @@ If you'd like to help with any of the below, feel free to get in touch via [Disc
 
 - fix artisan rounding by storing an actual number in keyedupgrade
 
-- single piece hoverable artisan (if only 1 piece selected, show % chance and artisan on graph)
-
 - Input arithmetic parsing(e.g. allow inputs like 25*1234 for easier boxes calculation)
 
 - drag to select
 
 - Make shard bag size change actually change to the other price (and manual overwrite that one bag size)
-
-- make normal instructions (and other panels) collapsible
 
 - actually save & pass around cache so adv doesn't take 8 years every time
 
@@ -43,22 +39,6 @@ If you'd like to help with any of the below, feel free to get in touch via [Disc
 - add a small "bound" label on the materialcell labels
 
 - make average < 10 show 2 sig fig, including (and especially) the gold values
-
-## Roadmap (big projects)
-
-### 1st: ~~re-write the frontend~~
-
-### 2nd: ~~Serca~~
-
-### 3rd: ~~Advanced honing optimization~~
-
-### 4th: ~~Tradable / bound mats distinction~~
-
-### 4.9th : ~~Rework header bar~~
-
-### 4.99th: ~~Changelog tracking~~
-
-### 4.999th: Frontend cleanup & improvements
 
 ## 5th: OCR
 
@@ -174,6 +154,10 @@ Predicting market will be SO fun but it kinda needs the better OCR scanning to g
 - advanced hoinging caching / pre-calculating, maybe also special
 
 ## Done / cancelled
+
+- ~~make normal instructions (and other panels) collapsible~~ maybe not needed
+
+- ~~single piece hoverable artisan (if only 1 piece selected, show % chance and artisan on graph)~~ not worth the effort
 
 - ~~make bundle size suffix not take up horizontal space~~
 

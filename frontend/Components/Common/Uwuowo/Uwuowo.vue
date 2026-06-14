@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import CharNameInput from "./CharNameInput.vue";
 import RegionSelector from "../RegionSelector.vue";
-import FetchButton from "./FetchButton.vue";
+import FetchCharButton from "./FetchCharButton.vue";
 import { MarketRegions } from "@/Utils/MarketDataFetcher.js";
 import { UwuowoPiece } from "./UwuowoUtils.js";
 import { ref } from "vue";
@@ -38,7 +38,7 @@ const counter = ref(0);
       :region_change="region_change"
       v-if="!hide_region"
     />
-    <FetchButton
+    <FetchCharButton
       :char_name="name"
       :region="region === 'Custom' ? null : region === 'nae' ? 'NA' : 'CE'"
       :apply="apply"

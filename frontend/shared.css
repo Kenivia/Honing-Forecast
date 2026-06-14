@@ -46,6 +46,7 @@
   text-wrap-mode: nowrap;
   padding: 12px;
   cursor: pointer;
+  user-select: none;
 }
 
 .generic-button {
@@ -56,6 +57,7 @@
   padding: 2px 4px;
   text-wrap-mode: nowrap;
   cursor: pointer;
+  user-select: none;
 }
 
 .barebone-button {
@@ -63,6 +65,7 @@
   border: 1px solid var(--border-muted);
   padding: 2px 4px;
   cursor: pointer;
+  user-select: none;
 }
 .generic-button:hover {
   background-color: var(--bg-very-bright);

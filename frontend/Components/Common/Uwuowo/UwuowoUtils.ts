@@ -1,15 +1,33 @@
 import { WORKER_URL } from "@/Utils/Constants";
 import { parse_locale_int } from "@/Utils/InputColumn";
+import { Ref } from "vue";
 
 export type UwuowoRegions = "NA" | "CE";
+export const FETCH_MSG = "Fetching from lostark.bible...";
 
+export interface UwuowoResultBundle {
+  result: any;
+  status: string;
+}
+export const DEFAULT_UWUOWO_BUNDLE = {
+  result: null,
+  status: FETCH_MSG,
+};
+export function reset_uwuowo_bundle(inp: Ref<UwuowoResultBundle>) {
+  inp.value = structuredClone(DEFAULT_UWUOWO_BUNDLE);
+}
+export interface UwuowoFetchRequest {
+  region: UwuowoRegions;
+  char_name: string;
+  suffix: string;
+}
 export interface UwuowoPiece {
   plus_n: number;
   ilevel: number;
   tier: number;
   adv: number;
 }
-export interface UwuowoResult {
+export interface UwuowoCharResult {
   pieces: UwuowoPiece[]; // [+n, ilevel, tier , adv]
   class_name: string;
   achieved_ilevel: string;
@@ -38,43 +56,66 @@ async function acquire_rate_limit_slot(): Promise<void> {
     await new Promise((resolve) => setTimeout(resolve, wait_ms));
   }
 }
-export async function fetch_uwuowo(
-  region: UwuowoRegions,
-  char_name: string,
-): Promise<string> {
+
+export async function fetch_uwuowo(fetch_request): Promise<string> {
   await acquire_rate_limit_slot();
-  const response = await fetch(
-    `${WORKER_URL}/character/${region}/${char_name}`,
-    { method: "GET" },
-  );
+
+  const address = `${WORKER_URL}/character/${fetch_request.region}/${fetch_request.char_name}/${fetch_request.suffix}`;
+  const response = await fetch(address, { method: "GET" });
   if (!response.ok) {
-    throw new Error(`Character fetch failed: ${response.status}`);
+    throw new Error(`Character fetch failed: ${response.status} ${address}`);
   }
   return await response.text();
 }
 
-export async function get_parsed_uwuowo(
-  region: UwuowoRegions,
-  char_name: string,
-): Promise<UwuowoResult | string> {
+export async function fetch_and_parse(
+  fetch_request: UwuowoFetchRequest,
+  parsing_func: (_1: UwuowoFetchRequest, _2: HTMLDivElement[]) => any,
+): Promise<any> {
   let html;
   try {
-    html = await fetch_uwuowo(region, char_name);
+    html = await fetch_uwuowo(fetch_request);
   } catch (e) {
-    return `Fetching https://lostark.bible/character/${region}/${char_name} failed with message ${e}`;
+    return `Fetching failed with message ${e}`;
   }
 
   const doc = new DOMParser().parseFromString(html, "text/html");
 
-  const allDivs = [...doc.querySelectorAll("div")];
+  const allDivs: HTMLDivElement[] = [...doc.querySelectorAll("div")];
 
   if (
     allDivs.findIndex((el) => el.textContent.includes("Character Not Found")) >=
     0
   ) {
-    return `Character: ${char_name} not found (region: ${region})`;
+    return `Character: ${fetch_request.char_name} not found (region: ${fetch_request.region})`;
   }
+  return parsing_func(fetch_request, allDivs);
+}
 
+export function parse_roster(
+  fetch_request: UwuowoFetchRequest,
+  allDivs: HTMLDivElement[],
+): string | string[] {
+  // console.log(allDivs);
+  try {
+    const roster_cards = allDivs.findLast((el) =>
+      el.textContent.trim().startsWith(fetch_request.char_name),
+    ).parentElement.parentElement.parentElement.children;
+
+    return [...roster_cards].map((child) => {
+      const target = child.children[0].children[0];
+
+      return target.textContent.split(" ")[0];
+    });
+  } catch (e) {
+    return `Parsing roster failed with message ${e}`;
+  }
+}
+
+export function parse_char(
+  _fetch_request: UwuowoFetchRequest,
+  allDivs: HTMLDivElement[],
+): string | UwuowoCharResult {
   if (allDivs.findIndex((el) => el.textContent.includes("Missing Data")) >= 0) {
     return `Missing data`;
   }
@@ -88,8 +129,8 @@ export async function get_parsed_uwuowo(
 
     pieces = [...container.children]
       .filter((_, i) => i % 2 === 0)
-      .map((oddChild) => {
-        const target = oddChild.children[1];
+      .map((odd_child) => {
+        const target = odd_child.children[1];
 
         const [top_row, bottom_row] = target.children;
 

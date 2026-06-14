@@ -306,15 +306,16 @@ function migrate_V4(out) {
 }
 
 export function load_roster_config(): RosterConfig {
-  let newest_raw: string | null = null;
+  let newest_raw: string;
 
   const newest_version = localStorage.getItem(STORAGE_KEY);
   if (newest_version !== null) {
     newest_raw = LZString.decompressFromUTF16(newest_version);
+    // console.log(newest_version, newest_raw);
   } else {
     newest_raw = "null";
   }
-
+  // console.log(newest_version);
   let out = (() => {
     try {
       return JSON.parse(newest_raw) ?? DEFAULT_ROSTER_CONFIG;
@@ -322,6 +323,7 @@ export function load_roster_config(): RosterConfig {
       return DEFAULT_ROSTER_CONFIG;
     }
   })();
+  // console.log(out);
   out = migrate_V3(out);
   out = migrate_V4(out);
 

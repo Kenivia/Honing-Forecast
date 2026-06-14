@@ -17,9 +17,11 @@ import RegionSelector from "./Common/RegionSelector.vue";
 import { MarketRegions, start_fetch } from "@/Utils/MarketDataFetcher.js";
 import { ilevel } from "@/Utils/HoningUtil.js";
 import { apply_results } from "./Common/Uwuowo/ApplyResults.js";
+import FetchRosterButton from "./Common/Uwuowo/FetchRosterButton.vue";
+import { computed } from "vue";
 
 const roster_store = useRosterStore();
-const { roster_config, roster_ids } = storeToRefs(roster_store);
+const { roster_config, roster_ids, all_profiles } = storeToRefs(roster_store);
 
 function add_new_char(roster_id: number) {
   let new_char = init_workers(structuredClone(DEFAULT_CHAR_PROFILE_NO_WORKER));
@@ -72,6 +74,14 @@ function delete_profile(index, roster_id) {
 
   // console.log(this_roster_profiles.length)
 }
+
+const filtered_rosters_lists = computed(() =>
+  roster_ids.value.map((roster_id) =>
+    roster_config.value.profiles
+      .map((x, index): [CharProfile, number] => [x, index])
+      .filter((y) => y[0].roster_id === roster_id),
+  ),
+);
 </script>
 
 <template>
@@ -117,9 +127,9 @@ function delete_profile(index, roster_id) {
           </div>
           <div class="w-fit max-w-full px-2">
             <div
-              v-for="[profile, profile_index] in roster_config.profiles
-                .map((x, index): [CharProfile, number] => [x, index])
-                .filter((y) => y[0].roster_id === roster_id)"
+              v-for="[profile, profile_index] in filtered_rosters_lists[
+                roster_index
+              ]"
               class="char-row flex h-max min-h-max flex-row items-start justify-around border-b border-(--border-muted)"
               :key="`${profile_index}-${profile.roster_id}`"
             >
@@ -141,7 +151,7 @@ function delete_profile(index, roster_id) {
                       //   roster_config.profiles[profile_index].char_name,
                       //   profile_index,
                       // );
-                      console.log(result, force_t4);
+                      // console.log(result, force_t4);
                       apply_results(profile, result, force_t4, true);
                     }
                   "
@@ -180,6 +190,29 @@ function delete_profile(index, roster_id) {
                 </button>
               </div>
             </div>
+
+            <FetchRosterButton
+              v-if="roster_config.all_regions[roster_id] !== 'Custom'"
+              :region="
+                roster_config.all_regions[roster_id] === 'nae' ? 'NA' : 'CE'
+              "
+              :any_char_name="
+                filtered_rosters_lists[roster_index][0][0].char_name
+              "
+              :apply="
+                (result, force_t4, char_name) => {
+                  add_new_char(roster_id);
+                  all_profiles[all_profiles.length - 1].char_name = char_name;
+                  // console.log(char_name);
+                  apply_results(
+                    all_profiles[all_profiles.length - 1],
+                    result,
+                    force_t4,
+                    true,
+                  );
+                }
+              "
+            />
             <button
               class="generic-button w-full"
               @click="() => add_new_char(roster_id)"

@@ -38,6 +38,7 @@ defineEmits<{ close_popup: [] }>();
   flex-direction: column;
   box-shadow: 0 10px 30px var(--backdrop);
   width: fit-content;
+  overflow-y: auto;
 }
 
 .popup-header {

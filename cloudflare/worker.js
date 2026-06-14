@@ -22,24 +22,23 @@ export default {
         return corsResponse(null, 204);
       }
 
-      const characterMatch = url.pathname.match(
-        /^\/character\/([^/]+)\/([^/]+)$/,
-      );
-      if (request.method === "GET" && characterMatch) {
-        return handleCharacterProxy(
-          characterMatch[1],
-          characterMatch[2],
-          env,
-          ctx,
+      if (request.method === "GET") {
+        const [, region, char_name, suffix = ""] = url.pathname.match(
+          /^\/character\/([^/]+)\/([^/]+)(?:\/([^/]*))?$/,
         );
+        if (region && char_name) {
+          return handleCharacterProxy(region, char_name, suffix, env, ctx);
+        }
       }
 
       if (request.method === "POST" && url.pathname === "/") {
+        // console.log(request, env, ctx);
         return handleMarketProxy(request, env, ctx);
       }
 
       return corsResponse(new Response("Not Found", { status: 404 }));
     } catch (e) {
+      // console.log(`Worker error: ${e.message}`);
       return corsResponse(
         new Response(`Worker error: ${e.message}`, { status: 500 }),
       );
@@ -47,9 +46,9 @@ export default {
   },
 };
 
-async function handleCharacterProxy(region, charName, env, ctx) {
-  const upstreamUrl = `${BIBLE_URL}/character/${region}/${charName}`;
-  const cacheKey = `character:${region}:${charName}`;
+async function handleCharacterProxy(region, charName, suffix, env, ctx) {
+  const upstreamUrl = `${BIBLE_URL}/character/${region}/${charName}/${suffix}`;
+  const cacheKey = `character:${region}:${charName}:${suffix}`;
 
   const cached = await env.CACHE_KV.get(cacheKey);
   if (cached) {
