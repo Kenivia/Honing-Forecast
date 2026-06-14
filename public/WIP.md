@@ -9,7 +9,7 @@ If you'd like to help with any of the below, feel free to get in touch via [Disc
 
 - ~~fetch the rest of the roster popup~~
 
-- ~~change roster button ~~ prolly not that useful ~~ / drag & drop?~~ too hard            this can do----> order changing buttons in roster page
+- ~~change roster button ~~ prolly not that useful ~~ / drag & drop?~~ too hard            ~~this can do----> order changing buttons in roster page~~
 
 - change MarketView to not rely on active_profile and stuff, makes 0 sense why did i do that
 

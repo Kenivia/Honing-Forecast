@@ -78,10 +78,19 @@ function delete_profile(index, roster_id) {
 const filtered_rosters_lists = computed(() =>
   roster_ids.value.map((roster_id) =>
     roster_config.value.profiles
-      .map((x, index): [CharProfile, number] => [x, index])
-      .filter((y) => y[0].roster_id === roster_id),
+      .map((x, index) => {
+        return { profile: x, profile_index: index };
+      })
+      .filter((y) => y.profile.roster_id === roster_id),
   ),
 );
+
+function swap_profiles(i: number, j: number) {
+  [all_profiles.value[i], all_profiles.value[j]] = [
+    all_profiles.value[j],
+    all_profiles.value[i],
+  ];
+}
 </script>
 
 <template>
@@ -127,24 +136,27 @@ const filtered_rosters_lists = computed(() =>
           </div>
           <div class="w-fit max-w-full px-2">
             <div
-              v-for="[profile, profile_index] in filtered_rosters_lists[
-                roster_index
-              ]"
+              v-for="(
+                profile_pair, index_in_filtered
+              ) in filtered_rosters_lists[roster_index]"
               class="char-row flex h-max min-h-max flex-row items-start justify-around border-b border-(--border-muted)"
-              :key="`${profile_index}-${profile.roster_id}`"
+              :key="`${profile_pair.profile_index}-${profile_pair.profile.roster_id}`"
             >
               <div class="max-w- flex w-min flex-row flex-wrap justify-around">
                 <Uwuowo
-                  :profile_index="profile_index"
-                  :name="profile.char_name"
+                  :profile_index="profile_pair.profile_index"
+                  :name="profile_pair.profile.char_name"
                   :name_change="
                     (new_name) => {
-                      roster_config.profiles[profile_index].char_name =
-                        new_name;
+                      roster_config.profiles[
+                        profile_pair.profile_index
+                      ].char_name = new_name;
                     }
                   "
                   :hide_region="true"
-                  :region="roster_config.all_regions[profile.roster_id]"
+                  :region="
+                    roster_config.all_regions[profile_pair.profile.roster_id]
+                  "
                   :apply="
                     (result, force_t4) => {
                       // console.log(
@@ -152,16 +164,61 @@ const filtered_rosters_lists = computed(() =>
                       //   profile_index,
                       // );
                       // console.log(result, force_t4);
-                      apply_results(profile, result, force_t4, true);
+                      apply_results(
+                        profile_pair.profile,
+                        result,
+                        force_t4,
+                        true,
+                      );
                     }
                   "
                 />
-                <div class="char-meta flex flex-col">
-                  <label class="text-no-wrap text-(--achieved)"
-                    >Achieved ilevel: {{ ilevel(profile, "achieved") }}</label
+                <div class="grid w-full grid-cols-[max-content_1fr]">
+                  <button
+                    class="arrow-btn arrow-btn-up"
+                    v-if="index_in_filtered > 0"
+                    @click="
+                      () => {
+                        const above_profile_index =
+                          filtered_rosters_lists[roster_index][
+                            index_in_filtered - 1
+                          ].profile_index;
+                        swap_profiles(
+                          above_profile_index,
+                          profile_pair.profile_index,
+                        );
+                      }
+                    "
+                  />
+                  <div v-else></div>
+                  <label class="text-no-wrap text-center text-(--achieved)"
+                    >Achieved ilevel:
+                    {{ ilevel(profile_pair.profile, "achieved") }}</label
                   >
-                  <label class="text-no-wrap text-(--pending)"
-                    >Pending ilevel: {{ ilevel(profile, "pending") }}</label
+
+                  <button
+                    class="arrow-btn arrow-btn-down"
+                    v-if="
+                      index_in_filtered <
+                      filtered_rosters_lists[roster_index].length - 1
+                    "
+                    @click="
+                      () => {
+                        const above_profile_index =
+                          filtered_rosters_lists[roster_index][
+                            index_in_filtered + 1
+                          ].profile_index;
+                        swap_profiles(
+                          above_profile_index,
+                          profile_pair.profile_index,
+                        );
+                      }
+                    "
+                  />
+                  <div v-else></div>
+                  <label class="text-no-wrap text-center text-(--pending)"
+                    >Pending ilevel:
+                    {{ ilevel(profile_pair.profile, "pending") }}</label
                   >
                 </div>
               </div>
@@ -169,7 +226,7 @@ const filtered_rosters_lists = computed(() =>
                 <RouterLink
                   :to="{
                     name: 'char',
-                    params: { characterName: profile.char_name },
+                    params: { characterName: profile_pair.profile.char_name },
                   }"
                   class="generic-button"
                 >
@@ -177,14 +234,16 @@ const filtered_rosters_lists = computed(() =>
                 </RouterLink>
                 <button
                   class="generic-button"
-                  @click="() => duplicate(profile_index)"
+                  @click="() => duplicate(profile_pair.profile_index)"
                 >
                   Make a copy
                 </button>
                 <button
                   v-if="roster_config.profiles.length > 1"
                   class="generic-button btn-cancel"
-                  @click="() => delete_profile(profile_index, roster_id)"
+                  @click="
+                    () => delete_profile(profile_pair.profile_index, roster_id)
+                  "
                 >
                   Delete
                 </button>
@@ -197,7 +256,7 @@ const filtered_rosters_lists = computed(() =>
                 roster_config.all_regions[roster_id] === 'nae' ? 'NA' : 'CE'
               "
               :any_char_name="
-                filtered_rosters_lists[roster_index][0][0].char_name
+                filtered_rosters_lists[roster_index][0].profile.char_name
               "
               :apply="
                 (result, force_t4, char_name) => {
@@ -247,14 +306,40 @@ const filtered_rosters_lists = computed(() =>
   color: var(--text-bright);
 }
 
-.char-meta {
-  width: 200px;
-  padding-left: 8px;
-}
-
 .char-row {
   margin-bottom: 1rem;
   gap: 4px;
   flex-wrap: wrap;
+}
+
+.arrow-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 4px;
+  border: 1px solid var(--border-muted);
+  cursor: pointer;
+  user-select: none;
+  background: transparent;
+}
+.arrow-btn::after {
+  content: "";
+  display: block;
+  width: 6px;
+  height: 6px;
+  border-right: 1px solid currentColor;
+  border-bottom: 1px solid currentColor;
+}
+
+.arrow-btn-down::after {
+  transform: rotate(45deg);
+  margin-bottom: 2px;
+}
+
+.arrow-btn-up::after {
+  transform: rotate(-135deg);
+  margin-top: 2px;
 }
 </style>
