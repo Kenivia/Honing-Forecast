@@ -47,7 +47,7 @@ const link = computed(
 </script>
 
 <template>
-  <div class="rounded-sm border border-(--border-muted) px-3 py-2">
+  <div class="w-60 rounded-sm border border-(--border-muted) px-3 py-2">
     <div v-if="char_parsed.result" class="flex flex-col">
       <span>
         <a class="link text-2xl! font-bold" :href="link"

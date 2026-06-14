@@ -169,7 +169,7 @@ const spread_multiple = computed(
         Confirm all
       </button>
     </div>
-    <div class="grid grid-cols-3 gap-20">
+    <div class="flex flex-row flex-wrap gap-20">
       <div
         v-for="(parsed_char, char_name) in parsed_chars"
         :key="char_name"

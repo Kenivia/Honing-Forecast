@@ -32,7 +32,7 @@ defineEmits<{ close_popup: [] }>();
   border-radius: 8px;
   padding: 1.5rem;
   width: 100%;
-  max-width: 900px;
+  max-width: 930px;
   max-height: 90vh;
   display: flex;
   flex-direction: column;
