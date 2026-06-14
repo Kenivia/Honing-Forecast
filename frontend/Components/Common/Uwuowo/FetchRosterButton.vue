@@ -156,6 +156,11 @@ const spread_multiple = computed(
         >Are these your children?</span
       >
       <button
+        v-if="
+          roster_parsed.result !== null &&
+          parsed_chars !== null &&
+          Object.entries(parsed_chars).length > 0
+        "
         class="generic-button w-fit! text-(--achieved)!"
         @click="
           () => {
@@ -172,6 +177,13 @@ const spread_multiple = computed(
         "
       >
         Confirm all
+      </button>
+      <button
+        v-else
+        @click="show_popup = false"
+        class="generic-button w-full px-20"
+      >
+        Ok
       </button>
     </div>
     <div class="flex flex-row flex-wrap gap-20">

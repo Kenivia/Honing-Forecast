@@ -124,9 +124,9 @@ export const DEFAULT_CHAR_PROFILE_NO_WORKER: CharProfile = {
 // console.log(DEFAULT_CHAR_PROFILE_NO_WORKER);
 
 // Worker bundles are not writable to string(and prolly shouldnt anyway), we re-make them on load
-export function init_workers(parsed: any): CharProfile {
+export function init_workers(parsed: any, dont_clone?: boolean): CharProfile {
   return {
-    ...structuredClone(parsed),
+    ...(dont_clone ? parsed : structuredClone(parsed)),
     // evaluation_worker_bundle: createWorkerBundle(),
     optimizer_worker_bundle: create_worker_bundle(),
     histogram_worker_bundle: create_worker_bundle(),

@@ -48,7 +48,7 @@ function duplicate(index) {
     ...roster_config.value.profiles[index],
   };
 
-  let new_char = init_workers(JSON.parse(JSON.stringify(this_parsed)));
+  let new_char = init_workers(JSON.parse(JSON.stringify(this_parsed)), true);
   new_char.char_name = format_char_name(
     "Newchar",
     roster_config.value.profiles.length,
