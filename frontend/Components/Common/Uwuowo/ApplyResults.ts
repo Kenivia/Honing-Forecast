@@ -46,6 +46,7 @@ export function apply_results(
         force_t4 ? 18 : results[row].plus_n,
         want,
         target_profile.normal_grid[row],
+        true,
       );
       //   convert_apply_done_want(
       //     old_tier,
@@ -66,6 +67,7 @@ export function apply_results(
         results[row].plus_n,
         want,
         target_profile.normal_grid[row],
+        true,
       );
     }
 

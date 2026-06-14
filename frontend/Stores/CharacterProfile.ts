@@ -54,6 +54,8 @@ export interface CharProfile {
   num_threads: number; // currently not used (always 1)
   metric_type: number; // currently not used (always 1)
   optimizer_override: OptimizerOverride;
+
+  lock_fetched_done: boolean;
 }
 
 export enum TreatmentPlan {
@@ -120,6 +122,7 @@ export const DEFAULT_CHAR_PROFILE_NO_WORKER: CharProfile = {
       scroll: AdvOverride.Optimizer,
     },
   },
+  lock_fetched_done: true,
 };
 // console.log(DEFAULT_CHAR_PROFILE_NO_WORKER);
 

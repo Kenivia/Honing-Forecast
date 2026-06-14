@@ -13,11 +13,7 @@ If you'd like to help with any of the below, feel free to get in touch via [Disc
 
 - ~~change MarketView to not rely on active_profile and stuff, makes 0 sense why did i do that~~
 
-- ~~make market fetcher fetch yesterday's average price instead of latest price~~ gonna postpone this until when I do my own price scraping, cant be bothered
-
-- get the equipment icons somehow
-
-- automatically lock the fetched done upgrades (and a tickbox to unlock them)
+- ~~automatically lock the fetched done upgrades (and a tickbox to unlock them)~~
   - eventually do drag to select ig
 
 - fix artisan rounding by storing an actual number in keyedupgrade
@@ -133,6 +129,10 @@ Predicting market will be SO fun but it kinda needs the better OCR scanning to g
 ## Below are some rambling / brainstorming / Misc stuff
 
 ### Misc
+
+- ~~make market fetcher fetch yesterday's average price instead of latest price~~ gonna postpone this until when I do my own price scraping, cant be bothered
+
+- ~~get the equipment icons somehow~~ gonna postone this also, prolly gonna have to set up some kind of lostarkcodex -> template matching workflow so that'll be during that
 
 - migrate to an actual domain name
 

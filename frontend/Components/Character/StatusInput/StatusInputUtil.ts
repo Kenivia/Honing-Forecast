@@ -77,7 +77,9 @@ export function change_tier(target_profile: CharProfile, fetched?: boolean) {
   if (new_tier == 1) {
     for (let row = 0; row < NUM_PIECES; row++) {
       for (let col = 0; col < ADV_COLS; col++) {
-        target_profile.adv_grid[row][col] = UpgradeStatus.Done;
+        target_profile.adv_grid[row][col] = fetched
+          ? UpgradeStatus.FetchedDone
+          : UpgradeStatus.Done;
       }
     }
   }
@@ -92,10 +94,13 @@ export function change_tier(target_profile: CharProfile, fetched?: boolean) {
       old_tier,
       new_tier,
       target_profile.normal_grid[row].findLastIndex(
-        (value) => value == UpgradeStatus.Done,
+        (value) => value == UpgradeStatus.Done || UpgradeStatus.FetchedDone,
       ) + 1,
       target_profile.normal_grid[row].findLastIndex(
-        (value) => value == UpgradeStatus.Want || value == UpgradeStatus.Done,
+        (value) =>
+          value == UpgradeStatus.Want ||
+          value == UpgradeStatus.Done ||
+          UpgradeStatus.FetchedDone,
       ) + 1,
       target_profile.normal_grid[row],
     );
@@ -111,6 +116,7 @@ export function convert_apply_done_want(
   done_plus_n: number,
   want_plus_n: number,
   row: UpgradeStatus[],
+  fetched?: boolean,
 ) {
   let highest_done = Math.max(new_tier == 1 ? 20 : 11, done_plus_n);
   let highest_want = Math.max(new_tier == 1 ? 20 : 11, want_plus_n);
@@ -134,7 +140,7 @@ export function convert_apply_done_want(
   // );
   for (let col = 0; col < NORMAL_COLS; col++) {
     if (col < converted_done) {
-      row[col] = UpgradeStatus.Done;
+      row[col] = fetched ? UpgradeStatus.FetchedDone : UpgradeStatus.Done;
     } else if (col < converted_want) {
       row[col] = UpgradeStatus.Want;
     } else {
@@ -147,10 +153,11 @@ export function apply_done_want(
   converted_done: number,
   converted_want: number,
   row: UpgradeStatus[],
+  fetched?: boolean,
 ) {
   for (let col = 0; col < NORMAL_COLS; col++) {
     if (col < converted_done) {
-      row[col] = UpgradeStatus.Done;
+      row[col] = fetched ? UpgradeStatus.FetchedDone : UpgradeStatus.Done;
     } else if (col < converted_want) {
       row[col] = UpgradeStatus.Want;
     } else {

@@ -10,6 +10,7 @@ export function ilevel(
   // console.log(profile.normal_grid, "start");
   const done = (value: UpgradeStatus) =>
     value === UpgradeStatus.Done ||
+    value === UpgradeStatus.FetchedDone ||
     (mode === "pending" && value === UpgradeStatus.Want);
 
   let out = profile.tier === 0 ? 1590 : 1635;

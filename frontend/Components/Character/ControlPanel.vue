@@ -65,7 +65,10 @@ watchEffect(() => {
         <input v-model="roster_config.auto_deduct_costs" type="checkbox" />
         <span>Slider auto-deducts costs</span>
       </label>
-
+      <label class="control-panel-checkbox-row">
+        <input v-model="active_profile.lock_fetched_done" type="checkbox" />
+        <span>Lock upgrades fetched from lostark.bible</span>
+      </label>
       <label>
         <button
           class="generic-button ml-5 text-(--warning-dark)!"

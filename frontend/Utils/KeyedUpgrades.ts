@@ -47,6 +47,7 @@ export enum UpgradeStatus {
   Done,
   Want,
   NotYet,
+  FetchedDone,
 }
 
 export type BoolGrid = boolean[][];
