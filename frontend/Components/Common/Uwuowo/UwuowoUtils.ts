@@ -138,7 +138,7 @@ export function parse_char(
 
         const [top_row, bottom_row] = target.children;
 
-        const plus_n = parse_locale_int(
+        let plus_n = parse_locale_int(
           // shouldn't really matter what locale but whatever
           top_row.children[1].textContent.replace("+", ""),
         );
@@ -154,6 +154,9 @@ export function parse_char(
           );
         } else {
           tier = 1;
+          if (top_row.children[2].textContent === "T0") {
+            plus_n = 25;
+          }
           adv = NaN;
         }
 

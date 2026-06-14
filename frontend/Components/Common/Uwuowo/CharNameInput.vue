@@ -22,7 +22,9 @@ const emit = defineEmits<{
 </script>
 
 <template>
-  <div class="flex h-fit w-min basis-full flex-row justify-around gap-1 py-0.5">
+  <div
+    class="flex h-fit w-min basis-full flex-row justify-around gap-1 py-0.5 pl-1"
+  >
     <span class="w-fit text-nowrap"> Char name:</span
     ><input
       v-model="char_name"
