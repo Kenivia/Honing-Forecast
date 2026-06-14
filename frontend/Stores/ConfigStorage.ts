@@ -100,7 +100,7 @@ function migrate_V5(out) {
   const v5 = load_compressed("HF_UI_STATE_V5_COMPRESSED");
   if (v5 !== null) {
     out = { ...out, ...v5 };
-    // localStorage.removeItem("HF_UI_STATE_V5_COMPRESSED");
+    localStorage.removeItem("HF_UI_STATE_V5_COMPRESSED");
   }
   delete out["selected_shard_bag_size"]; // 'out' should be DEFAULT_ROSTER_CONFIG and should already have the new shard_infos field
   return out;
