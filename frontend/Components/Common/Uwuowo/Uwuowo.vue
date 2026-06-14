@@ -3,7 +3,7 @@ import CharNameInput from "./CharNameInput.vue";
 import RegionSelector from "../RegionSelector.vue";
 import FetchCharButton from "./FetchCharButton.vue";
 import { MarketRegions } from "@/Utils/MarketDataFetcher.js";
-import { UwuowoPiece } from "./UwuowoUtils.js";
+import { market_to_uwuowo_region, UwuowoPiece } from "./UwuowoUtils.js";
 import { ref } from "vue";
 
 defineProps<{
@@ -40,7 +40,7 @@ const counter = ref(0);
     />
     <FetchCharButton
       :char_name="name"
-      :region="region === 'Custom' ? null : region === 'nae' ? 'NA' : 'CE'"
+      :region="market_to_uwuowo_region(region)"
       :apply="apply"
       :counter="counter"
     />

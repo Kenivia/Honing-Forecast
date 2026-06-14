@@ -7,6 +7,7 @@ import {
 import { debounce } from "@/Utils/Helpers";
 import {
   create_input_column,
+  input_column_to_num,
   InputColumn,
   InputType,
   validate_input_column_array,
@@ -35,7 +36,6 @@ export interface RosterConfig {
   tier: number;
   cumulative_graph: boolean;
   selected_shard_bag_size: Record<MarketRegions, number>;
-  effective_serca_price: number[]; // This is the one that's actually used (instead of mats_prices) for serca mats in build_material_info
   latest_market_data: Partial<Record<MarketRegions, [number, any]>>; // [timestamp, raw_response_data]
 
   profiles: CharProfile[];
@@ -104,20 +104,21 @@ export const useRosterStore = defineStore("roster", {
         state.roster_config.profiles[state.roster_config.active_profile_index];
       const active_region =
         state.roster_config.all_regions[active_profile.roster_id];
-
-      // if (!state.roster_config.mats_prices[active_region]) {
-      //   state.roster_config.mats_prices[active_region] =
-
-      //   create_input_column(InputType.Float,ALL_LABELS ) ;
-      // }
-      // console.log(
-      //   state.roster_config.mats_prices,
-      //   active_region,
-      //   state.roster_config.all_regions,
-      //   active_profile.roster_id,
-      //   state.roster_config.mats_prices[active_region],
-      // );
       return state.roster_config.mats_prices[active_region];
+    },
+
+    effective_serca_price: (state): number[] => {
+      const active_profile =
+        state.roster_config.profiles[state.roster_config.active_profile_index];
+      const active_region =
+        state.roster_config.all_regions[active_profile.roster_id];
+
+      const active_mats_prices = state.roster_config.mats_prices[active_region];
+      const t4_price = input_column_to_num(active_mats_prices[0]);
+      const serca_price = input_column_to_num(active_mats_prices[1]);
+      return ALL_LABELS[1].map((_, index) =>
+        Math.min(t4_price[index] * 5, serca_price[index]),
+      );
     },
   },
 
@@ -204,7 +205,6 @@ export const DEFAULT_ROSTER_CONFIG: RosterConfig = {
   tier: DEFAULT_TIER,
   cumulative_graph: true,
   selected_shard_bag_size: { nae: 3000, euc: 3000, Custom: 3000 },
-  effective_serca_price: ALL_LABELS[1].map(() => 0),
   latest_market_data: {},
 
   profiles: [init_workers(structuredClone(DEFAULT_CHAR_PROFILE_NO_WORKER))],

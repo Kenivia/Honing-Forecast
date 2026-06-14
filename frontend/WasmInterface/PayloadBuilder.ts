@@ -227,6 +227,7 @@ export function build_material_info(): OneMaterialInput[] {
     active_roster_mats_owned,
     active_tradable_mats_owned,
     active_region,
+    effective_serca_price,
   } = storeToRefs(useRosterStore());
 
   const tier = active_profile.value.tier;
@@ -247,7 +248,7 @@ export function build_material_info(): OneMaterialInput[] {
   const effective_price =
     tier == 0
       ? input_column_to_num(roster_store.active_mats_prices[tier])
-      : roster_config.value.effective_serca_price;
+      : effective_serca_price.value;
 
   const tradable_mats_price = input_column_to_num(
     roster_store.active_mats_prices[tier],

@@ -7,11 +7,9 @@ import {
   useRosterStore,
 } from "@/Stores/RosterConfig";
 import { useMediaIsNarrow } from "@/Utils/WindowSize";
-import { computed, watchEffect } from "vue";
+import { computed } from "vue";
 import { storeToRefs } from "pinia";
 import { start_fetch } from "./Utils/MarketDataFetcher";
-import { input_column_to_num } from "./Utils/InputColumn";
-import { ALL_LABELS } from "./Utils/Constants";
 
 const roster_store = useRosterStore();
 roster_store.init();
@@ -36,14 +34,6 @@ const char_name_from_route = computed(
 );
 start_fetch("nae", false, true);
 start_fetch("euc", false, true);
-
-watchEffect(() => {
-  const t4_price = input_column_to_num(roster_store.active_mats_prices[0]);
-  const serca_price = input_column_to_num(roster_store.active_mats_prices[1]);
-  roster_store.roster_config.effective_serca_price = ALL_LABELS[1].map(
-    (_, index) => Math.min(t4_price[index] * 5, serca_price[index]),
-  );
-});
 </script>
 
 <template>

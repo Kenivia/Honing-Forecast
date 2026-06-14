@@ -1,10 +1,14 @@
 import { WORKER_URL } from "@/Utils/Constants";
 import { parse_locale_int } from "@/Utils/InputColumn";
+import { MarketRegions } from "@/Utils/MarketDataFetcher";
 import { Ref } from "vue";
 
-export type UwuowoRegions = "NA" | "CE";
+export type UwuowoRegions = "NA" | "CE" | null;
 export const FETCH_MSG = "Fetching from lostark.bible...";
 
+export function market_to_uwuowo_region(inp: MarketRegions): UwuowoRegions {
+  return inp === "nae" ? "NA" : inp === "euc" ? "CE" : null;
+}
 export interface UwuowoResultBundle {
   result: any;
   status: string;

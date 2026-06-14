@@ -2,7 +2,7 @@
 import { useRosterStore as useRosterStore } from "@/Stores/RosterConfig";
 import { ALL_LABELS, SERCA_SYNC_MAP, SYNCED_LABELS } from "@/Utils/Constants";
 import { storeToRefs } from "pinia";
-import { computed, watch, watchEffect } from "vue";
+import { computed, ref, watch } from "vue";
 import TierConvertButton from "../Common/TierConvertButton.vue";
 import { MarketRegions, start_fetch } from "@/Utils/MarketDataFetcher";
 import { input_column_to_num, parse_input } from "@/Utils/InputColumn";
@@ -11,16 +11,22 @@ import BudgetGrid from "./BudgetGrid.vue";
 import RegionSelector from "../Common/RegionSelector.vue";
 
 const roster_store = useRosterStore();
-const {
-  roster_config,
-  active_roster_mats_owned,
-  active_tradable_mats_owned,
-  all_profiles,
-  roster_ids,
-  active_profile,
-  active_region,
-} = storeToRefs(roster_store);
+const { roster_config, roster_ids } = storeToRefs(roster_store);
 
+const selected_roster_id = ref(roster_ids.value[0]);
+
+const selected_roster_mats_owned = computed(
+  () => roster_config.value.roster_mats_owned[selected_roster_id.value],
+);
+const selected_tradable_mats_owned = computed(
+  () => roster_config.value.tradable_mats_owned[selected_roster_id.value],
+);
+const selected_region = computed(
+  () => roster_config.value.all_regions[selected_roster_id.value],
+);
+const selected_mats_prices = computed(
+  () => roster_config.value.mats_prices[selected_region.value],
+);
 function convert_roster_mats_to_serca() {
   for (let serca_index = 0; serca_index < ALL_LABELS[1].length; serca_index++) {
     if (!SYNCED_LABELS.includes(ALL_LABELS[1][serca_index])) {
@@ -29,71 +35,33 @@ function convert_roster_mats_to_serca() {
       );
 
       // all become roster bound
-      active_roster_mats_owned.value[1].data[serca_index] = (
-        input_column_to_num(active_roster_mats_owned.value[1])[T4_index] +
+      selected_roster_mats_owned.value[1].data[serca_index] = (
+        input_column_to_num(selected_roster_mats_owned.value[1])[T4_index] +
         parse_input(
-          active_tradable_mats_owned.value[0],
+          selected_tradable_mats_owned.value[0],
           T4_index,
           String(
-            input_column_to_num(active_tradable_mats_owned.value[0])[T4_index] *
+            input_column_to_num(selected_tradable_mats_owned.value[0])[
+              T4_index
+            ] * 0.2,
+          ),
+        )
+      ).toLocaleString();
+      selected_tradable_mats_owned.value[0].data[T4_index] = "0";
+      selected_roster_mats_owned.value[1].data[serca_index] = (
+        input_column_to_num(selected_roster_mats_owned.value[1])[T4_index] +
+        parse_input(
+          selected_roster_mats_owned.value[0],
+          T4_index,
+          String(
+            input_column_to_num(selected_roster_mats_owned.value[0])[T4_index] *
               0.2,
           ),
         )
       ).toLocaleString();
-      active_tradable_mats_owned.value[0].data[T4_index] = "0";
-      active_roster_mats_owned.value[1].data[serca_index] = (
-        input_column_to_num(active_roster_mats_owned.value[1])[T4_index] +
-        parse_input(
-          active_roster_mats_owned.value[0],
-          T4_index,
-          String(
-            input_column_to_num(active_roster_mats_owned.value[0])[T4_index] *
-              0.2,
-          ),
-        )
-      ).toLocaleString();
-      active_roster_mats_owned.value[0].data[T4_index] = "0";
+      selected_roster_mats_owned.value[0].data[T4_index] = "0";
     }
   }
-}
-watchEffect(() => {
-  let t4_price = input_column_to_num(roster_store.active_mats_prices[0]);
-  let serca_price = input_column_to_num(roster_store.active_mats_prices[1]);
-  roster_store.roster_config.effective_serca_price = ALL_LABELS[1].map(
-    (_, index) => Math.min(t4_price[index] * 5, serca_price[index]),
-  );
-});
-
-// find the first profile of each roster, give the roster a name (Roster 1)
-// returns an object of out["Roster 1"] = some_profile_in_that_roster
-function find_representative(): Record<string, number> {
-  let out = {};
-  let seen = {};
-  let roster_index = 1;
-  for (const [profile_index, profile] of all_profiles.value.entries()) {
-    if (!Object.hasOwn(seen, profile.roster_id)) {
-      seen[profile.roster_id] = roster_index;
-      let name = "Roster " + String(roster_index);
-      out[name] = profile_index;
-      roster_index += 1;
-    }
-  }
-  return out;
-}
-const representative_profile_indices = computed(find_representative);
-const selected_roster = computed(() => {
-  let out = Object.entries(representative_profile_indices.value).find(
-    ([_, v]) =>
-      all_profiles.value[v].roster_id === active_profile.value.roster_id,
-  )[0];
-  // console.log(out)
-  return out;
-});
-function change_roster(event) {
-  // console.log(representative_profile_indices.value[event.target.value])
-  roster_store.switch_profile(
-    representative_profile_indices.value[event.target.value],
-  );
 }
 
 const T4_indices_to_watch = SERCA_SYNC_MAP.map(({ T4_index }) => T4_index);
@@ -102,18 +70,18 @@ watch(
   // one way sync from T4 to Serca, the ui modifies the T4 copy
   () =>
     T4_indices_to_watch.flatMap((T4_index) => [
-      roster_store.active_mats_prices[0].data[T4_index],
-      roster_store.active_tradable_mats_owned[0].data[T4_index],
-      roster_store.active_roster_mats_owned[0].data[T4_index],
+      selected_mats_prices.value[0].data[T4_index],
+      selected_tradable_mats_owned.value[0].data[T4_index],
+      selected_roster_mats_owned.value[0].data[T4_index],
     ]),
   () => {
     for (const { serca_index, T4_index } of SERCA_SYNC_MAP) {
-      roster_store.active_mats_prices[1].data[serca_index] =
-        roster_store.active_mats_prices[0].data[T4_index];
-      roster_store.active_tradable_mats_owned[1].data[serca_index] =
-        roster_store.active_tradable_mats_owned[0].data[T4_index];
-      roster_store.active_roster_mats_owned[1].data[serca_index] =
-        roster_store.active_roster_mats_owned[0].data[T4_index];
+      selected_mats_prices.value[1].data[serca_index] =
+        selected_mats_prices.value[0].data[T4_index];
+      selected_tradable_mats_owned.value[1].data[serca_index] =
+        selected_tradable_mats_owned.value[0].data[T4_index];
+      selected_roster_mats_owned.value[1].data[serca_index] =
+        selected_roster_mats_owned.value[0].data[T4_index];
     }
   },
   { deep: false, immediate: true },
@@ -125,12 +93,19 @@ watch(
     <template #sidebar>
       <div class="side-bar-item">
         <RegionSelector
-          :region="active_region"
-          :region_change="roster_store.active_region_change"
+          :region="selected_region"
+          :region_change="
+            (event) => {
+              const new_region = (event.target as HTMLSelectElement)
+                .value as MarketRegions;
+              roster_config.all_regions[selected_roster_id] = new_region;
+              start_fetch(new_region);
+            }
+          "
         />
 
         <div class="flex flex-row">
-          <span v-if="active_region !== 'Custom' && roster_config.auto_fetch">
+          <span v-if="selected_region !== 'Custom' && roster_config.auto_fetch">
             {{
               !roster_config.is_fetching && !roster_config.market_fetch_failed
                 ? "✅"
@@ -140,12 +115,14 @@ watch(
             }}
           </span>
           <button
-            :disabled="roster_config.is_fetching || active_region === 'Custom'"
-            @click="() => start_fetch(active_region, true)"
+            :disabled="
+              roster_config.is_fetching || selected_region === 'Custom'
+            "
+            @click="() => start_fetch(selected_region, true)"
             class="generic-button mx-3! w-max!"
             :style="{
-              opacity: active_region === 'Custom' ? 0.5 : 1,
-              cursor: active_region === 'Custom' ? 'not-allowed' : 'pointer',
+              opacity: selected_region === 'Custom' ? 0.5 : 1,
+              cursor: selected_region === 'Custom' ? 'not-allowed' : 'pointer',
             }"
           >
             {{
@@ -155,23 +132,23 @@ watch(
         </div>
         <div
           class="control-panel-checkbox-row border-0!"
-          v-if="active_region !== 'Custom'"
+          v-if="selected_region !== 'Custom'"
         >
           <span>Auto fetch </span>
           <input
             type="checkbox"
             v-model="roster_config.auto_fetch"
-            @change="() => start_fetch(active_region)"
+            @change="() => start_fetch(selected_region)"
           />
         </div>
       </div>
 
-      <div class="side-bar-item">
+      <!-- <div class="side-bar-item">
         <div class="side-bar-item">
           <label class="text-nowrap">Shard bag size:</label>
           <select
             v-model.number="
-              roster_config.selected_shard_bag_size[active_region]
+              roster_config.selected_shard_bag_size[selected_region]
             "
             class="selector"
           >
@@ -183,21 +160,17 @@ watch(
         <label class="text-(--text-muted)"
           >(Best one will be auto selected)</label
         >
-      </div>
+      </div> -->
 
       <div v-if="roster_ids.length > 1" class="side-bar-item">
         <span class="text-nowrap"> Active Roster: </span>
-        <select
-          :value="selected_roster"
-          class="selector"
-          @change="change_roster"
-        >
+        <select v-model="selected_roster_id" class="selector">
           <option
-            v-for="(profile_index, name) in representative_profile_indices"
-            :value="name"
-            :key="profile_index"
+            v-for="(roster_id, roster_index) in roster_ids"
+            :value="roster_id"
+            :key="roster_id"
           >
-            {{ name }}
+            Roster {{ roster_index + 1 }}
           </option>
         </select>
       </div>
@@ -208,7 +181,9 @@ watch(
       />
     </template>
 
-    <template #main> <BudgetGrid /> </template>
+    <template #main>
+      <BudgetGrid :selected_roster_id="selected_roster_id" />
+    </template>
   </Sidebar>
 </template>
 <style>

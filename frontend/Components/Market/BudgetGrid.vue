@@ -9,57 +9,36 @@ import {
 } from "@/Utils/Constants";
 import { storeToRefs } from "pinia";
 import MaterialCell from "@/Components/Common/MaterialCell.vue";
-import { computed, watch, watchEffect } from "vue";
+import { computed } from "vue";
 import { input_column_to_num } from "@/Utils/InputColumn";
-
 import { GridConfig } from "@/Utils/GridStyling";
-import { MarketRegions } from "@/Utils/MarketDataFetcher";
 
+const props = defineProps<{
+  selected_roster_id: number;
+}>();
 const roster_store = useRosterStore();
-const {
-  roster_config,
-  active_roster_mats_owned,
-  active_tradable_mats_owned,
-  active_region,
-} = storeToRefs(roster_store);
+const { roster_config } = storeToRefs(roster_store);
 
-watchEffect(() => {
-  const t4_price = input_column_to_num(roster_store.active_mats_prices[0]);
-  const serca_price = input_column_to_num(roster_store.active_mats_prices[1]);
-  roster_store.roster_config.effective_serca_price = ALL_LABELS[1].map(
-    (_, index) => Math.min(t4_price[index] * 5, serca_price[index]),
-  );
-});
+const selected_roster_mats_owned = computed(
+  () => roster_config.value.roster_mats_owned[props.selected_roster_id],
+);
+const selected_tradable_mats_owned = computed(
+  () => roster_config.value.tradable_mats_owned[props.selected_roster_id],
+);
+const selected_region = computed(
+  () => roster_config.value.all_regions[props.selected_roster_id],
+);
+const selected_mats_prices = computed(
+  () => roster_config.value.mats_prices[selected_region.value],
+);
 
 const t4_better = computed(() => {
-  const t4_price = input_column_to_num(roster_store.active_mats_prices[0]);
-  const serca_price = input_column_to_num(roster_store.active_mats_prices[1]);
+  const t4_price = input_column_to_num(selected_mats_prices.value[0]);
+  const serca_price = input_column_to_num(selected_mats_prices.value[1]);
   return ALL_LABELS[1].map(
     (_, index) => t4_price[index] * 5 < serca_price[index],
   );
 });
-
-const T4_indices_to_watch = SERCA_SYNC_MAP.map(({ T4_index }) => T4_index);
-
-watch(
-  () =>
-    T4_indices_to_watch.flatMap((T4_index) => [
-      roster_store.active_mats_prices[0].data[T4_index],
-      roster_store.active_tradable_mats_owned[0].data[T4_index],
-      roster_store.active_roster_mats_owned[0].data[T4_index],
-    ]),
-  () => {
-    for (const { serca_index, T4_index } of SERCA_SYNC_MAP) {
-      roster_store.active_mats_prices[1].data[serca_index] =
-        roster_store.active_mats_prices[0].data[T4_index];
-      roster_store.active_tradable_mats_owned[1].data[serca_index] =
-        roster_store.active_tradable_mats_owned[0].data[T4_index];
-      roster_store.active_roster_mats_owned[1].data[serca_index] =
-        roster_store.active_roster_mats_owned[0].data[T4_index];
-    }
-  },
-  { deep: false, immediate: true },
-);
 
 const grids = computed((): GridConfig[] => [
   {
@@ -89,10 +68,9 @@ const grids = computed((): GridConfig[] => [
 function price_suffix(
   label: string,
   row: number,
-  region: MarketRegions,
+  // region: MarketRegions,
 ): string {
-  if (label === "Shards")
-    return "x" + roster_config.value.selected_shard_bag_size[region].toString();
+  if (label === "Shards") return ""; //"x" + roster_config.value.selected_shard_bag_size[region].toString();
   if (BUNDLE_SIZE[row] > 1)
     return "x" + BUNDLE_SIZE[row].toLocaleString("en-US");
   return "";
@@ -127,44 +105,44 @@ function price_suffix(
           class="mats-row"
         >
           <MaterialCell
-            :input_column="active_roster_mats_owned[col]"
+            :input_column="selected_roster_mats_owned[col]"
             :row="row"
             :label="label"
             :setter="
               (val) => {
-                active_roster_mats_owned[col].data[row] = val;
+                selected_roster_mats_owned[col].data[row] = val;
               }
             "
             input_color="var(--roster)"
             :hide_tick="true"
           />
           <MaterialCell
-            :input_column="active_tradable_mats_owned[col]"
+            :input_column="selected_tradable_mats_owned[col]"
             :row="row"
             :setter="
               (val) => {
-                active_tradable_mats_owned[col].data[row] = val;
+                selected_tradable_mats_owned[col].data[row] = val;
               }
             "
             input_color="var(--tradable)"
             :input_width="100"
           />
           <MaterialCell
-            :input_column="roster_store.active_mats_prices[col]"
+            :input_column="selected_mats_prices[col]"
             :row="row"
             :setter="
               (val) => {
-                roster_store.active_mats_prices[col].data[row] = val;
+                selected_mats_prices[col].data[row] = val;
               }
             "
-            :suffix="price_suffix(label, row, active_region)"
+            :suffix="price_suffix(label, row)"
             :input_width="70"
             input_color="var(--text-muted)"
             :justify_left="true"
           />
           <MaterialCell
             v-if="grid.tier == 1 && !SYNCED_LABELS.includes(label)"
-            :input_column="roster_config.effective_serca_price"
+            :input_column="roster_store.effective_serca_price"
             :row="row"
             :suffix="t4_better[row] ? 'Convert T4' : 'Buy Serca '"
             input_color="var(--gold)"
