@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import {
   DEFAULT_UWUOWO_BUNDLE,
-  FETCH_MSG,
   UwuowoPiece,
   UwuowoRegions,
   UwuowoResultBundle,
@@ -12,8 +11,6 @@ import {
 } from "./UwuowoUtils";
 import Popup from "../Popup.vue";
 import { computed, ref, watch } from "vue";
-import { PIECE_NAMES } from "@/Utils/Constants";
-import LabeledPieceIcon from "../LabeledPieceIcon.vue";
 import { storeToRefs } from "pinia";
 import { useRosterStore } from "@/Stores/RosterConfig";
 import ConfirmPanel from "./ConfirmPanel.vue";
@@ -149,7 +146,15 @@ const spread_multiple = computed(
       class="flex w-full flex-row flex-nowrap items-center justify-center gap-2 pb-2"
       v-else
     >
-      <span class="text-center text-2xl">Are these your children?</span>
+      <span
+        v-if="
+          roster_parsed.result !== null &&
+          parsed_chars !== null &&
+          Object.entries(parsed_chars).length > 0
+        "
+        class="text-center text-2xl"
+        >Are these your children?</span
+      >
       <button
         class="generic-button w-fit! text-(--achieved)!"
         @click="

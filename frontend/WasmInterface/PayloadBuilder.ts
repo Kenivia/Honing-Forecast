@@ -15,7 +15,7 @@ import {
   OneUpgradeInput,
   Upgrade,
 } from "@/Utils/KeyedUpgrades";
-import { input_column_to_num } from "@/Utils/InputColumn";
+import { input_column_to_num, parse_locale_int } from "@/Utils/InputColumn";
 import { storeToRefs } from "pinia";
 
 // I don't think it's possible to directly export this struct from rust to javascript because of all the vectors,
@@ -218,6 +218,9 @@ export function special_sort_override(
   // console.log("sorted", out);
   return out;
 }
+function apply_tax(x: number): number {
+  return Math.max(Math.min(1, x), Math.floor(x * 0.95));
+}
 
 export function build_material_info(): OneMaterialInput[] {
   const roster_store = useRosterStore();
@@ -250,21 +253,26 @@ export function build_material_info(): OneMaterialInput[] {
       ? input_column_to_num(roster_store.active_mats_prices[tier])
       : effective_serca_price.value;
 
+  const selected_shard_size =
+    roster_config.value.shard_infos[active_region.value].selected;
+  const shard_prices =
+    roster_config.value.shard_infos[active_region.value].prices;
+
+  const selected_shard_price: number = parse_locale_int(
+    shard_prices[selected_shard_size].data[0],
+  );
+  const actual_mats_prices = effective_price.map((x: number, index: number) =>
+    ALL_LABELS[active_profile.value.tier][index] === "Shards"
+      ? selected_shard_price / selected_shard_size
+      : x / BUNDLE_SIZE[index],
+  );
+
   const tradable_mats_price = input_column_to_num(
     roster_store.active_mats_prices[tier],
-  ).map(
-    (x: number, index: number) =>
-      Math.max(Math.min(1, x), Math.floor(x * 0.95)) /
-      (ALL_LABELS[active_profile.value.tier][index] == "Shards"
-        ? roster_config.value.selected_shard_bag_size[active_region.value]
-        : BUNDLE_SIZE[index]),
-  );
-  const mats_prices = effective_price.map(
-    (x: number, index: number) =>
-      x /
-      (ALL_LABELS[active_profile.value.tier][index] == "Shards"
-        ? roster_config.value.selected_shard_bag_size[active_region.value]
-        : BUNDLE_SIZE[index]),
+  ).map((x: number, index: number) =>
+    ALL_LABELS[active_profile.value.tier][index] === "Shards"
+      ? apply_tax(selected_shard_price) / selected_shard_size
+      : apply_tax(x) / BUNDLE_SIZE[index],
   );
   // console.log()
   return ALL_LABELS[tier].map((_, index) => [
@@ -273,7 +281,7 @@ export function build_material_info(): OneMaterialInput[] {
     [roster_mats_owned[index], tradable_mats_price[index]],
     [
       !enabled[index] || index == 5 ? 0 : tradable_mats_owned[index],
-      mats_prices[index],
+      actual_mats_prices[index],
     ], // disabled mats shouldn't be sold either, disregard tradable gold
   ]);
 }

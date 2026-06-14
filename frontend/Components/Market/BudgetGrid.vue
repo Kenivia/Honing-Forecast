@@ -101,7 +101,7 @@ function price_suffix(
       <div class="card-body contents pt-0!">
         <div
           v-for="{ label, col, row } in grid.rows"
-          :key="`roster-input-${grid.tier}-${label}`"
+          :key="`roster-input-${grid.tier}-${row === 3 ? 'shard' + roster_config.shard_infos[selected_region].selected.toLocaleString() : label}`"
           class="mats-row"
         >
           <MaterialCell
@@ -127,19 +127,42 @@ function price_suffix(
             input_color="var(--tradable)"
             :input_width="100"
           />
-          <MaterialCell
-            :input_column="selected_mats_prices[col]"
-            :row="row"
-            :setter="
-              (val) => {
-                selected_mats_prices[col].data[row] = val;
-              }
-            "
-            :suffix="price_suffix(label, row)"
-            :input_width="70"
-            input_color="var(--text-muted)"
-            :justify_left="true"
-          />
+          <div class="flex flex-row items-center">
+            <MaterialCell
+              :input_column="
+                row === 3
+                  ? roster_config.shard_infos[selected_region].prices[
+                      roster_config.shard_infos[selected_region].selected
+                    ]
+                  : selected_mats_prices[col]
+              "
+              :row="row === 3 ? 0 : row"
+              :setter="
+                (val) => {
+                  row === 3
+                    ? (roster_config.shard_infos[selected_region].prices[
+                        roster_config.shard_infos[selected_region].selected
+                      ].data[0] = val)
+                    : (selected_mats_prices[col].data[row] = val);
+                }
+              "
+              :suffix="price_suffix(label, row)"
+              :input_width="70"
+              input_color="var(--text-muted)"
+              :justify_left="true"
+            />
+            <select
+              v-if="row === 3"
+              v-model.number="
+                roster_config.shard_infos[selected_region].selected
+              "
+              class="selector annotation ml-1! h-fit px-0!"
+            >
+              <option :value="1000">x1000</option>
+              <option :value="2000">x2000</option>
+              <option :value="3000">x3000</option>
+            </select>
+          </div>
           <MaterialCell
             v-if="grid.tier == 1 && !SYNCED_LABELS.includes(label)"
             :input_column="roster_store.effective_serca_price"
@@ -148,6 +171,8 @@ function price_suffix(
             input_color="var(--gold)"
             class="pr-2"
           />
+
+          <!-- <label class="text-nowrap">Shard bag size:</label> -->
         </div>
       </div>
     </div>

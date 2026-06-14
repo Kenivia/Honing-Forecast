@@ -24,7 +24,7 @@ const roster_store = useRosterStore();
 const { roster_config, roster_ids, all_profiles } = storeToRefs(roster_store);
 
 function add_new_char(roster_id: number) {
-  let new_char = init_workers(structuredClone(DEFAULT_CHAR_PROFILE_NO_WORKER));
+  let new_char = init_workers(DEFAULT_CHAR_PROFILE_NO_WORKER);
   new_char.char_name = format_char_name(
     "Newchar",
     roster_config.value.profiles.length,
@@ -44,7 +44,7 @@ function add_new_roster(roster_id: number) {
 
 function duplicate(index) {
   let this_parsed = {
-    ...init_workers(structuredClone(DEFAULT_CHAR_PROFILE_NO_WORKER)),
+    ...init_workers(DEFAULT_CHAR_PROFILE_NO_WORKER),
     ...roster_config.value.profiles[index],
   };
 

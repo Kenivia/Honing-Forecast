@@ -143,24 +143,7 @@ watch(
         </div>
       </div>
 
-      <!-- <div class="side-bar-item">
-        <div class="side-bar-item">
-          <label class="text-nowrap">Shard bag size:</label>
-          <select
-            v-model.number="
-              roster_config.selected_shard_bag_size[selected_region]
-            "
-            class="selector"
-          >
-            <option value="1000">x1000</option>
-            <option value="2000">x2000</option>
-            <option value="3000">x3000</option>
-          </select>
-        </div>
-        <label class="text-(--text-muted)"
-          >(Best one will be auto selected)</label
-        >
-      </div> -->
+
 
       <div v-if="roster_ids.length > 1" class="side-bar-item">
         <span class="text-nowrap"> Active Roster: </span>

@@ -11,9 +11,9 @@ If you'd like to help with any of the below, feel free to get in touch via [Disc
 
 - ~~change roster button ~~ prolly not that useful ~~ / drag & drop?~~ too hard            ~~this can do----> order changing buttons in roster page~~
 
-- change MarketView to not rely on active_profile and stuff, makes 0 sense why did i do that
+- ~~change MarketView to not rely on active_profile and stuff, makes 0 sense why did i do that~~
 
-- make market fetcher fetch yesterday's average price instead of latest price
+- ~~make market fetcher fetch yesterday's average price instead of latest price~~ gonna postpone this until when I do my own price scraping, cant be bothered
 
 - get the equipment icons somehow
 
@@ -26,7 +26,7 @@ If you'd like to help with any of the below, feel free to get in touch via [Disc
 
 - drag to select
 
-- Make shard bag size change actually change to the other price (and manual overwrite that one bag size)
+-~~ Make shard bag size change actually change to the other price (and manual overwrite that one bag size)~~
 
 - actually save & pass around cache so adv doesn't take 8 years every time
 

@@ -174,7 +174,6 @@ export const OUTPUT_LABELS = [
   "Blue juice",
 ];
 
-export const STORAGE_KEY = "HF_UI_STATE_V5_COMPRESSED";
 
 export const NUM_PIECES = 6;
 export const NORMAL_COLS = 25;

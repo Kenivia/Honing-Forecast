@@ -2,14 +2,12 @@
 import { RouterLink, RouterView, useRoute, useRouter } from "vue-router";
 import { get_icon_path } from "@/Utils/Helpers";
 import { CharProfile } from "@/Stores/CharacterProfile";
-import {
-  debounced_write_roster_config,
-  useRosterStore,
-} from "@/Stores/RosterConfig";
+import { useRosterStore } from "@/Stores/RosterConfig";
 import { useMediaIsNarrow } from "@/Utils/WindowSize";
 import { computed } from "vue";
 import { storeToRefs } from "pinia";
 import { start_fetch } from "./Utils/MarketDataFetcher";
+import { debounced_write_roster_config } from "./Stores/ConfigStorage";
 
 const roster_store = useRosterStore();
 roster_store.init();

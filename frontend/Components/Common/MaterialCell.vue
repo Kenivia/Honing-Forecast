@@ -111,9 +111,9 @@ watch(source_value, (val) => {
             })
       }}</label
     >
-    <label class="material-cell-suffix annotation" v-if="suffix">{{
-      suffix
-    }}</label>
+      <label class="material-cell-suffix annotation" v-if="suffix">{{
+        suffix
+      }}</label>
   </div>
   <!-- <input v-if="customLeftovers" type="text" :value="matsLeftover[label]" @input="setRecordValue(matsLeftover, label, $event)" /> -->
 </template>

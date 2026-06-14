@@ -6,7 +6,25 @@ import {
 } from "./Constants";
 import { storeToRefs } from "pinia";
 import { useRosterStore } from "@/Stores/RosterConfig";
+import {
+  create_input_column,
+  InputColumn,
+  InputType,
+  parse_locale_int,
+} from "./InputColumn";
 
+export interface ShardInfo {
+  selected: number;
+  prices: Record<number, InputColumn>; // x1000, price in a single-celled column
+}
+export const DEFAULT_SHARD_INFO: ShardInfo = {
+  prices: {
+    3000: create_input_column(InputType.Int, ["Shard"], ["0"]),
+    2000: create_input_column(InputType.Int, ["Shard"], ["0"]),
+    1000: create_input_column(InputType.Int, ["Shard"], ["0"]), // the labels kinda not needed so not gonna bother
+  },
+  selected: 3000,
+};
 const FETCH_MARKET_COOLDOWN_MS = 60 * 60 * 1000;
 export type MarketRegions = "nae" | "euc" | "Custom";
 const BODY = {
@@ -64,7 +82,9 @@ export async function fetch_market_data(
 
 const default_prices: number[][] = FALLBACK_PRICES;
 
-export function parse_response(response: any): [number[][], number, number] {
+export function parse_response(
+  response: any,
+): [number[][], number, Record<number, InputColumn>] {
   let out = default_prices;
   // for (let tier = 0; tier < ALL_LABELS.length; tier++) {
   //     for (let index = 0; index < ALL_LABELS[tier].length; index++) {
@@ -77,7 +97,7 @@ export function parse_response(response: any): [number[][], number, number] {
   // }
 
   // Track shard pouch prices: { 1000: price, 2000: price, 3000: price }
-  const shard_prices: { [key: number]: number } = {};
+  const shard_prices: Record<number, InputColumn> = {};
   // console.log(response)
   for (let index = 0; index < response.length; index++) {
     const { item_slug, price } = response[index];
@@ -86,14 +106,21 @@ export function parse_response(response: any): [number[][], number, number] {
       let label: string = ITEM_SLUG_TO_LABEL[item_slug];
       for (let tier = 0; tier < ALL_LABELS.length; tier++) {
         let index_in_labels = ALL_LABELS[tier].findIndex((x) => x == label);
+
+        const string_price = parseInt(price).toLocaleString();
+        const this_column = create_input_column(
+          InputType.Int,
+          ["Shard"],
+          [string_price],
+        );
         if (index_in_labels >= 0) {
           out[tier][index_in_labels] = price;
         } else if (label === "Shards small") {
-          shard_prices[1000] = price;
+          shard_prices[1000] = this_column;
         } else if (label === "Shards medium") {
-          shard_prices[2000] = price;
+          shard_prices[2000] = this_column;
         } else if (label === "Shards large") {
-          shard_prices[3000] = price;
+          shard_prices[3000] = this_column;
         }
       }
     }
@@ -101,20 +128,19 @@ export function parse_response(response: any): [number[][], number, number] {
 
   // Calculate which shard bag size is most efficient (lowest price per shard)
   let selected_shard = 1000;
-  let shard_price = 0;
   if (Object.keys(shard_prices).length > 0) {
     let best_value = Infinity;
-    for (const [shard_count, price] of Object.entries(shard_prices)) {
-      const value_per_shard = price / parseInt(shard_count);
+    for (const [shard_count, this_column] of Object.entries(shard_prices)) {
+      const value_per_shard =
+        parse_locale_int(this_column.data[0]) / parseInt(shard_count);
       if (value_per_shard < best_value) {
         best_value = value_per_shard;
         selected_shard = parseInt(shard_count);
-        shard_price = price;
       }
     }
   }
 
-  return [out, selected_shard, shard_price];
+  return [out, selected_shard, shard_prices];
 }
 
 const ITEM_SLUG_TO_LABEL = {
@@ -180,8 +206,8 @@ export async function start_fetch(
     await new Promise((r) => setTimeout(r, 200));
     roster_config.value.is_fetching = false;
     const [_, result] = cached;
-    const [parsed, selectedShardSize, shard_price] = parse_response(result);
-    fetch_callback(parsed, selectedShardSize, shard_price, region);
+    const [parsed, selectedShardSize, shard_prices] = parse_response(result);
+    fetch_callback(parsed, selectedShardSize, shard_prices, region);
     return;
   }
 
@@ -200,7 +226,7 @@ export async function start_fetch(
     }
   })();
 
-  const [parsed, selectedShardSize, shard_price] = parse_response(result);
+  const [parsed, selectedShardSize, shard_prices] = parse_response(result);
 
   // Store the raw response data with timestamp
   if (!roster_config.value.market_fetch_failed) {
@@ -209,12 +235,12 @@ export async function start_fetch(
 
   roster_config.value.is_fetching = false;
 
-  fetch_callback(parsed, selectedShardSize, shard_price, region);
+  fetch_callback(parsed, selectedShardSize, shard_prices, region);
 }
 function fetch_callback(
   result: number[][],
-  selectedShardSize: number,
-  shard_price: number,
+  selected_shard_size: number,
+  shard_prices: Record<number, InputColumn>,
   region: MarketRegions,
 ) {
   const roster_store = useRosterStore();
@@ -226,7 +252,8 @@ function fetch_callback(
   //   // shouldn't happen anyway but just in case
   //   return;
   // }
-  roster_config.value.selected_shard_bag_size[region] = selectedShardSize;
+  roster_config.value.shard_infos[region].selected = selected_shard_size;
+  roster_config.value.shard_infos[region].prices = shard_prices;
   for (let tier = 0; tier < ALL_LABELS.length; tier++) {
     for (let index = 0; index < ALL_LABELS[tier].length; index++) {
       const syncing = index in SERCA_TO_T4_INDICES && tier == 1;
@@ -238,7 +265,7 @@ function fetch_callback(
       if (ALL_LABELS[actual_tier][actual_index] == "Shards") {
         roster_config.value.mats_prices[region][actual_tier].data[
           actual_index
-        ] = shard_price.toLocaleString();
+        ] = "0"; // this shoulnd never actually be read
       }
     }
   }
