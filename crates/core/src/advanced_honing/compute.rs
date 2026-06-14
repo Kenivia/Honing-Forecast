@@ -359,6 +359,6 @@ mod tests {
             out.push(compute_adv_dist_wrapper(&this_adv_config));
         }
         let file_name: String = format!("./adv_cache_data.json",);
-        write_jsonl(&out, &file_name).unwrap();
+        // write_jsonl(&out, &file_name).unwrap();
     }
 }

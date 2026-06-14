@@ -1,40 +1,44 @@
 
 # Work in Progress
 
-I have to focus on my exams (until like mid June) so I'm trying not to spend too much time on this. Small issues will be fixed but big projects are on hold.
+If you'd like to help with any of the below, feel free to get in touch via [Discord](https://discord.gg/KWDpQyvgzc)!
 
-If you'd like to help with any of the below, feel free to get in touch via [Discord](https://discord.gg/KWDpQyvgzc) or submit a PR on [Github](https://github.com/Kenivia/Honing-Forecast/)!
+## Roadmap
 
-## Immediate WIP
+### Now: Frontend cleanup & improvements
 
-- fetch the rest of the roster popup
+- ~~fetch the rest of the roster popup~~
 
-- change roster button / drag & drop? order changing in roster page
+- ~~change roster button ~~ prolly not that useful ~~ / drag & drop?~~ too hard            ~~this can do----> order changing buttons in roster page~~
 
-- change MarketView to not rely on active_profile and stuff, makes 0 sense why did i do that
+- ~~change MarketView to not rely on active_profile and stuff, makes 0 sense why did i do that~~
 
-- make market fetcher fetch yesterday's average price instead of latest price
+- ~~make market fetcher fetch yesterday's average price instead of latest price~~ gonna postpone this until when I do my own price scraping, cant be bothered
 
 - get the equipment icons somehow
 
 - automatically lock the fetched done upgrades (and a tickbox to unlock them)
   - eventually do drag to select ig
 
-## Roadmap (big projects)
+- fix artisan rounding by storing an actual number in keyedupgrade
 
-### 1st: ~~re-write the frontend~~
+- Input arithmetic parsing(e.g. allow inputs like 25*1234 for easier boxes calculation)
 
-### 2nd: ~~Serca~~
+- drag to select
 
-### 3rd: ~~Advanced honing optimization~~
+-~~ Make shard bag size change actually change to the other price (and manual overwrite that one bag size)~~
 
-### 4th: ~~Tradable / bound mats distinction~~
+- actually save & pass around cache so adv doesn't take 8 years every time
 
-### 4.9th : ~~Rework header bar~~
+- figure out why tf v-tooltip disappeas on every progress update
 
-### 4.99th: ~~Changelog tracking~~
+- add "About" page for various stuff like credits and stuff
 
-### 4.999th: Frontend cleanup & improvements
+- some hoverable details on juice & whatnot
+
+- add a small "bound" label on the materialcell labels
+
+- make average < 10 show 2 sig fig, including (and especially) the gold values
 
 ## 5th: OCR
 
@@ -126,49 +130,13 @@ This will give us a week-on week budget.  We plot an average gold used vs week g
 
 Predicting market will be SO fun but it kinda needs the better OCR scanning to get better quality data. We actually know a LOT about the underlying things driving the market (ratio of costs, lifeskill -> oreha prices, weekly earnings, ilevel distribution via uwuowo etc) so I reckon we can actually make some pretty damn good predictions. This thing will be ULTRA long term so we'll cross that bridge when we get there
 
-##
-
-Below are some rambling / brainstorming / Misc stuff
-
-### Misc UI
-
-- single piece hoverable artisan (if only 1 piece selected, show % chance and artisan on graph)
-- Input arithmetic parsing(e.g. allow inputs like 25*1234 for easier boxes calculation)
-- drag to select
-- make bundle size suffix not take up horizontal space
-- Make shard bag size change actually change to the other price (and manual overwrite that one bag size)
-- Show gold used for naive strategies (no juice, all juice, maybe "maxroll"(need to reverse engineer their calculations, which i should do to help the optimizer anyway) etc)
-- Mari page
-- Add a return to top button on the top of the sidebar where there's currently padding and empty space (will need it to be absolutly positioned as well)
-
-- maybe put cumulative chance back somehow
-
-- make normal instructions (and other panels) collapsible
-
-- actually save & pass around cache so adv doesn't take 8 years every time
-
-- ~~changed graph to be rigid histograms instead of intepolating lines~~ actually that looks terrible
-
-- ~~figure out how to style select options~~
-  - figure out why tf v-tooltip disappeas on every progress update
-
-- ~~re-do guide page~~
-
-- make 2nd row of headers eventually ( So we have top header for page selection, sidebar for sub-page things / options, 2nd header for char selection (or roster maybe in the case of market?))
-  - change main calc's sidebar things to be scroll instead (except guide which will be a separte page)
-    - can use the same technology for changelog to make it infinite scroll maybe?
-  
-- add "About" page for various stuff like credits and stuff
-
-- some hoverable details on juice & whatnot
-
-- add a small "bound" label on the materialcell labels
-
-- make average < 1 show 1 sig fig, including (and especially) the gold values
-
-- change the settings parsing stuff because changing it every update is so aids, not sure how tho
+## Below are some rambling / brainstorming / Misc stuff
 
 ### Misc
+
+- migrate to an actual domain name
+
+- Mari page (this will probably come as part of box optimization, it'll just be a type of 'box' available)
 
 - add assertions to a lot of prepoutput stuff
   - also make a lot more test_payload that actually cover edge cases
@@ -187,7 +155,29 @@ Below are some rambling / brainstorming / Misc stuff
 
 ## Done / cancelled
 
-- ~~"Char info" or something panel, ~~above(or below?) ~~ probably kindof replaces/ merges with statusinput, which will contain:~~
+- ~~make normal instructions (and other panels) collapsible~~ maybe not needed
+
+- ~~single piece hoverable artisan (if only 1 piece selected, show % chance and artisan on graph)~~ not worth the effort
+
+- ~~make bundle size suffix not take up horizontal space~~
+
+- ~~change the settings parsing stuff because changing it every update is so aids, not sure how tho~~ good enough
+
+- ~~make 2nd row of headers eventually ( So we have top header for page selection, sidebar for sub-page things / options, 2nd header for char selection (or roster maybe in the case of market?))~~
+  - ~~change main calc's sidebar things to be scroll instead (except guide which will be a separte page)~~
+    - ~~can use the same technology for changelog to make it infinite scroll maybe?~~
+i think that's too much, the way it is is fine i think
+
+- ~~Add a return to top button on the top of the sidebar where there's currently padding and empty space (will need it to be absolutly positioned as well)~~ its fine i think
+
+- ~~Show gold used for naive strategies (no juice, all juice, maybe "maxroll"(need to reverse engineer their calculations, which i should do to help the optimizer anyway) etc)~~
+- ~~maybe put cumulative chance back somehow~~ not worth the effeort
+
+- ~~changed graph to be rigid histograms instead of intepolating lines~~ actually that looks terrible
+- ~~re-do guide page~~
+- ~~figure out how to style select options~~
+
+- ~~"Char info" or something panel, above(or below?)~~  ~~probably kindof replaces/ merges with statusinput, which will contain:~~
   - ~~store 2 copies of market price , indexed by region, add region specification in roster page and read the appropriate prices from there~~
     - ~~add a region selector on the roster header~~
 
