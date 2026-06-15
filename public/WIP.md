@@ -16,9 +16,9 @@ If you'd like to help with any of the below, feel free to get in touch via [Disc
 - ~~automatically lock the fetched done upgrades (and a tickbox to unlock them)~~
   - eventually do drag to select ig
 
-- fix artisan rounding by storing an actual number in keyedupgrade
+- ~~fix artisan rounding by storing an actual number in keyedupgrade~~
 
-- Input arithmetic parsing(e.g. allow inputs like 25*1234 for easier boxes calculation)
+- ~~Input arithmetic parsing(e.g. allow inputs like 25*1234 for easier boxes calculation)~~
 
 - drag to select
 

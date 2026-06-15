@@ -32,21 +32,76 @@ export const LOCALE_GROUP = parts.find((p) => p.type === "group")?.value ?? ",";
 export const LOCALE_DECIMAL =
   parts.find((p) => p.type === "decimal")?.value ?? ".";
 
-export function parse_locale_int(str: string): number {
-  const normalized = str
-    .replaceAll(LOCALE_GROUP, "") // remove thousands separators
-    .replace(LOCALE_DECIMAL, "."); // normalize decimal separator to '.'
+function normalize_locale(str: string): string {
+  return str
+    .replace(/[^\d,.]/g, "")
+    .replaceAll(LOCALE_GROUP, "")
+    .replace(LOCALE_DECIMAL, ".");
+}
 
-  return parseInt(normalized);
+function has_arithmetic(str: string): boolean {
+  return /[+\-*/()]/.test(str);
+}
+
+function parse_arithmetic(
+  expr: string,
+  parseNum: (s: string) => number,
+): number {
+  const tokens = expr.replace(/\s+/g, "").match(/[\d.,]+|[+\-*/()]/g) ?? [];
+  let pos = 0;
+
+  const consume = () => tokens[pos++];
+  const peek = () => tokens[pos];
+
+  function parseExpr(): number {
+    let left = parseTerm();
+    while (peek() === "+" || peek() === "-") {
+      const op = consume();
+      const right = parseTerm();
+      left = op === "+" ? left + right : left - right;
+    }
+    return left;
+  }
+
+  function parseTerm(): number {
+    let left = parseAtom();
+    while (peek() === "*" || peek() === "/") {
+      const op = consume();
+      const right = parseAtom();
+      left = op === "*" ? left * right : left / right;
+    }
+    return left;
+  }
+
+  function parseAtom(): number {
+    const tok = consume();
+    if (tok === "(") {
+      const val = parseExpr();
+      consume(); // ')'
+      return val;
+    }
+    return parseNum(tok);
+  }
+
+  return parseExpr();
+}
+
+export function parse_locale_int(str: string): number {
+  if (has_arithmetic(str)) {
+    return Math.trunc(
+      parse_arithmetic(str, (s) => parseFloat(normalize_locale(s))),
+    );
+  }
+  return parseInt(normalize_locale(str));
 }
 
 export function parse_locale_float(str: string): number {
-  const normalized = str
-    .replaceAll(LOCALE_GROUP, "")
-    .replace(LOCALE_DECIMAL, ".");
-
-  return parseFloat(normalized);
+  if (has_arithmetic(str)) {
+    return parse_arithmetic(str, (s) => parseFloat(normalize_locale(s)));
+  }
+  return parseFloat(normalize_locale(str));
 }
+
 export function parse_input(
   input_column: InputColumn,
   index: number,
@@ -56,12 +111,10 @@ export function parse_input(
   if (!input_column.enabled[index] && !pretend_enabled) {
     return 999999999;
   }
-
   let out =
     input_column.type === InputType.Int
       ? parse_locale_int(input)
       : parse_locale_float(input);
-  // console.log(input_column.upper_bound)
   return isFinite(out) ? Math.min(input_column.upper_bound[index], out) : 0;
 }
 export function input_column_to_num(
@@ -84,7 +137,7 @@ export function get_modified_cell(
   return parse_input(
     input_column,
     index,
-    (event.target as HTMLInputElement).value.replace(/[^\d,.]/g, ""),
+    (event.target as HTMLInputElement).value,
     true,
   ).toLocaleString();
 }
