@@ -34,11 +34,11 @@ export function ilevel(
   return locale_to_fixed(out, 2);
 }
 
-export function artisan_function(
+export function artisan_number(
   upgrade: Upgrade,
   total_count: number,
   juice_info: any,
-): string {
+): number {
   let extra_arr = upgrade.state.slice(0, total_count).map(([juice, id]) => {
     let chance = 0.0;
     if (juice) {
@@ -54,8 +54,6 @@ export function artisan_function(
     return chance;
   });
   let artisan = upgrade.starting_artisan;
-  // console.log(upgrade.normal_dist, extra_arr, upgrade.state)
-
   for (let count = 0; count < total_count; count++) {
     let min_count = Math.min(count + upgrade.starting_num_taps, 10);
 
@@ -76,14 +74,19 @@ export function artisan_function(
       break; // for upgrades that have 100% passrate immediately or upgrades that have above 100% success rate (juicing last few taps of like +4 or something)
     }
   }
-  // console.log(
-  //   upgrade.base_chance,
-  //   total_count,
-  //   upgrade.extra_chance,
-  //   upgrade.state,
-  //   upgrade.normal_dist,
-  // );
-  return locale_to_fixed(Math.min(artisan, 1) * 100, 2, true);
+
+  return artisan;
+}
+export function artisan_string(
+  upgrade: Upgrade,
+  total_count: number,
+  juice_info: any,
+): string {
+  return locale_to_fixed(
+    Math.min(artisan_number(upgrade, total_count, juice_info), 1) * 100,
+    2,
+    true,
+  );
 }
 // export function cumulative_chance(
 //   upgrade: Upgrade,

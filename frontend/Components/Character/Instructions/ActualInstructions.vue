@@ -5,7 +5,7 @@ import { storeToRefs } from "pinia";
 import { JOINED_ADV_JUICE, T4_JUICE_LABELS } from "@/Utils/Constants";
 import { get_icon_path, toOrdinal } from "@/Utils/Helpers";
 import { Upgrade } from "@/Utils/KeyedUpgrades";
-import { artisan_function } from "@/Utils/HoningUtil";
+import { artisan_string } from "@/Utils/HoningUtil";
 import { get_optimizer_working } from "./InstructionUtils";
 
 const { active_profile } = storeToRefs(useRosterStore());
@@ -62,7 +62,7 @@ const streaks = computed(() => {
     )) {
       if (
         index == props.upgrade.normal_dist.length - 2 &&
-        artisan_function(props.upgrade, index, juice_info.value) === "100.00"
+        artisan_string(props.upgrade, index, juice_info.value) === "100.00"
       ) {
         // this corresponds to not showing the pity tap
         // Rust side does not enforce that the pity tap is unjuiced (it just ignores the state after that index)
@@ -180,7 +180,7 @@ const parsed_streaks = computed(() => {
         line2 = `occurs on the ${toOrdinal(taps)} tap`;
       } else {
         line1 = `x${streak.count} taps`;
-        line2 = `until ${artisan_function(props.upgrade, taps, juice_info.value)}% artisan`;
+        line2 = `until ${artisan_string(props.upgrade, taps, juice_info.value)}% artisan`;
       }
     } else {
       let graceText = streak.grace ? "Grace" : "non-Grace";

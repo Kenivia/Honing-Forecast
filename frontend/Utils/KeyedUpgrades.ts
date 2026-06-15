@@ -165,7 +165,7 @@ export function grids_to_keyed(
               piece_type: piece_type,
               upgrade_index: upgrade_index,
               is_normal_honing: is_normal_honing,
-              starting_artisan: 0, // TODO technically can reverse-engineer a artisan / num taps here, but that'll need thet actual parsed Upgrade object (unless I re-implement all the logic in typescript) so maybe its not worth the hassle
+              starting_artisan: 0, // technically can reverse-engineer a artisan / num taps here, but that'll need thet actual parsed Upgrade object (unless I re-implement all the logic in typescript) so maybe its not worth the hassle
               starting_num_taps: 0,
               state: state,
               unlocked: unlocked,

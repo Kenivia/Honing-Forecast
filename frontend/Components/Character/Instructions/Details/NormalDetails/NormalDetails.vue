@@ -14,7 +14,7 @@ import {
   start_all_workers,
   start_eval_hist,
 } from "@/Components/Character/CharWorkerUtils";
-import { artisan_function } from "@/Utils/HoningUtil";
+import { artisan_number, artisan_string } from "@/Utils/HoningUtil";
 import "@/Components/Character/Instructions/Details/details.css";
 import { get_optimizer_working } from "@/Components/Character/Instructions/InstructionUtils";
 import {
@@ -57,11 +57,12 @@ const upgrade_key = computed(() =>
   ),
 );
 
-const starting_artisan = ref(
+const starting_artisan_string = ref(
   locale_to_fixed(props.upgrade.starting_artisan * 100, 2, true) || "0.00",
 );
 
 const starting_artisan_number = ref(props.upgrade.starting_artisan);
+
 const current_chance_percentage = ref(
   locale_to_fixed(
     ((Math.min(10, props.upgrade.starting_num_taps) / 10) *
@@ -90,11 +91,13 @@ const current_chance_to_num_taps = computed(() => {
 watch(
   () => props.upgrade.starting_artisan,
   () => {
-    starting_artisan.value = locale_to_fixed(
+    starting_artisan_string.value = locale_to_fixed(
       props.upgrade.starting_artisan * 100,
       2,
       true,
     );
+
+    starting_artisan_number.value = props.upgrade.starting_artisan;
   }, // This watch is here to watch for when upgrade changes (optimizer shuffled order or tick /untick), in which case props.upgrade changes
 );
 
@@ -161,10 +164,13 @@ watch(
 ///////////////////////////////////////////////////////////////////////////////////////////
 
 function write_normal_progress() {
-  starting_artisan.value = clamp_percentage(starting_artisan.value);
+  starting_artisan_number.value = clamp(0, starting_artisan_number.value, 1);
+  starting_artisan_string.value = clamp_percentage(
+    (starting_artisan_number.value * 100).toLocaleString(),
+    true,
+  );
 
-  this_keyed.value.starting_artisan =
-    parse_locale_float(starting_artisan.value) / 100;
+  this_keyed.value.starting_artisan = starting_artisan_number.value;
 
   this_keyed.value.starting_num_taps = using_slider.value
     ? Math.min(
@@ -221,12 +227,15 @@ function change_wrapper(
 }
 function manual_artisan_change() {
   change_wrapper(false, () => {
-    starting_artisan.value = clean_percentage_input(
-      starting_artisan.value,
+    starting_artisan_string.value = clean_percentage_input(
+      starting_artisan_string.value,
       0,
       true,
     );
-    if (parse_locale_float(starting_artisan.value) > FLOAT_TOL) {
+    starting_artisan_number.value = parse_locale_float(
+      starting_artisan_string.value,
+    );
+    if (starting_artisan_number.value > FLOAT_TOL) {
       // for the topmost upgrade, which may have expanded false still (and might get sorted down )
       active_profile.value.keyed_upgrades[upgrade_key.value].expanded = true;
     }
@@ -276,11 +285,17 @@ function slider_input() {
       // for the topmost upgrade, which may have expanded false still (and might get sorted down )
       active_profile.value.keyed_upgrades[upgrade_key.value].expanded = true;
     }
-    starting_artisan.value = artisan_function(
+    starting_artisan_string.value = artisan_string(
       props.upgrade,
       Number(taps_since_last_input.value),
       juice_info.value,
     );
+    starting_artisan_number.value = artisan_number(
+      props.upgrade,
+      Number(taps_since_last_input.value),
+      juice_info.value,
+    );
+
     current_chance_percentage.value = locale_to_fixed(
       100 *
         (props.upgrade.base_chance +
@@ -300,7 +315,8 @@ function reset() {
   change_wrapper(
     false,
     () => {
-      starting_artisan.value = "0.00";
+      starting_artisan_string.value = "0.00";
+      starting_artisan_number.value = 0;
       current_chance_percentage.value = locale_to_fixed(
         props.upgrade.base_chance * 100 + props.upgrade.extra_chance * 100,
         2,
@@ -442,7 +458,7 @@ const special_grid: GridConfig = {
       </div>
 
       <ManualArtisanInput
-        v-model:starting_artisan="starting_artisan"
+        v-model:starting_artisan="starting_artisan_string"
         v-model:current_chance_percentage="current_chance_percentage"
         :upgrade="upgrade"
         :optimizer_working="optimizer_working"
@@ -520,7 +536,7 @@ const special_grid: GridConfig = {
         }"
       >
         <ManualArtisanInput
-          v-model:starting_artisan="starting_artisan"
+          v-model:starting_artisan="starting_artisan_string"
           v-model:current_chance_percentage="current_chance_percentage"
           :upgrade="upgrade"
           :optimizer_working="optimizer_working"
