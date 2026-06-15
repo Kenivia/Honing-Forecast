@@ -9,6 +9,7 @@ import {
 } from "@/Components/Character/CharWorkerUtils";
 import "@/Components/Character/Instructions/Details/details.css";
 import { GridConfig } from "@/Utils/GridStyling";
+import QuestionMark from "@/Components/Common/QuestionMark.vue";
 import { mark_upgrade_as_done } from "@/Components/Character/Instructions/Details/NormalDetails/SuccessUtils";
 const { active_profile } = storeToRefs(useRosterStore());
 
@@ -142,11 +143,9 @@ const grid: GridConfig = {
       >
         Succeed
       </button>
-      <div
-        class="question-mark"
-        v-tooltip.left="
-          'This just removes the upgrade. Costs are not deducted.'
-        "
+      <QuestionMark
+        text="This just removes the upgrade. Costs are not deducted."
+        position="left"
       />
     </div>
 
@@ -164,11 +163,9 @@ const grid: GridConfig = {
       <button @click="start_all_workers" class="generic-button w-20!">
         Confirm
       </button>
-      <div
-        class="question-mark"
-        v-tooltip.left="
-          'Input your current progress, then press Confirm. Costs are not deducted.'
-        "
+      <QuestionMark
+        text="Input your current progress, then press Confirm. Costs are not deducted."
+        position="left"
       />
     </div>
     <span class="text-right">Grace progress:</span>

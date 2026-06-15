@@ -24,7 +24,7 @@ If you'd like to help with any of the below, feel free to get in touch via [Disc
 
 - ~~actually save & pass around cache so adv doesn't take 8 years every time~~
 
-- figure out why tf v-tooltip disappeas on every progress update
+- ~~figure out why tf v-tooltip disappeas on every progress update~~
 
 - add "About" page for various stuff like credits and stuff
 

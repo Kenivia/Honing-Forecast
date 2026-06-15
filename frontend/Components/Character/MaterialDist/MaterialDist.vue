@@ -12,6 +12,7 @@ import { TreatmentPlan } from "@/Stores/CharacterProfile";
 import { has_upgrades_in_range, metric_to_text } from "@/Utils/Helpers";
 import MaterialCell from "@/Components/Common/MaterialCell.vue";
 import MaterialGraph from "@/Components/Character/MaterialDist/MaterialGraph.vue";
+import QuestionMark from "@/Components/Common/QuestionMark.vue";
 import { storeToRefs } from "pinia";
 import { useRosterStore } from "@/Stores/RosterConfig";
 import { computed, onMounted, ref, watchEffect } from "vue";
@@ -292,7 +293,7 @@ const is924Narrow = useMediaIsNarrow(924); // this turns out to be the width whe
     >
       <div class="mats-row h-fit! items-end! border-b-(--border-main)!">
         <div class="flex flex-row justify-between">
-          <div class="question-mark mb-1" v-tooltip="tickbox_tooltip" />
+          <QuestionMark :text="tickbox_tooltip" class="mb-1" />
           <span class="w-25 text-left text-(--bound)">Bound Mats</span>
         </div>
         <select

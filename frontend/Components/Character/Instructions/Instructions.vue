@@ -6,6 +6,7 @@ import { to_upgrade_key, Upgrade } from "@/Utils/KeyedUpgrades";
 import { GridConfig } from "@/Utils/GridStyling";
 import { get_any_overwritten, get_optimizer_working } from "./InstructionUtils";
 import InstructionRow from "./InstructionRow.vue";
+import QuestionMark from "@/Components/Common/QuestionMark.vue";
 import { locale_to_fixed } from "@/Utils/Helpers";
 
 const props = defineProps<{
@@ -168,35 +169,31 @@ const optimizer_working = computed(get_optimizer_working);
         <span>Upgrade</span>
         <div v-if="is_normal" class="flex w-full flex-row justify-center">
           <div class="ml-3 w-min text-wrap">Upgrade order</div>
-          <div
-            class="question-mark"
-            v-tooltip.right="
-              'The purpose of this is to do the Free Taps in the specified order. There are many other equivalent orderings.'
-            "
+          <QuestionMark
+            text="The purpose of this is to do the Free Taps in the specified order. There are many other equivalent orderings."
+            position="right"
           />
         </div>
         <span v-if="is_normal">Special usage</span>
         <div class="title-nowrap">
           <span> Juice & {{ is_normal ? "book" : "scroll" }} Instructions</span>
-          <div
-            class="question-mark"
-            v-tooltip.right="
+          <QuestionMark
+            :text="
               is_normal
                 ? 'Juiced taps mean full-juice (use the maximum amount of Lava / Glacier Breath).'
                 : 'Advanced honing optimization is limited, use these instructions as a rough guide.'
             "
+            position="right"
           />
         </div>
         <div class="title-nowrap">
           <span>
             Progress update {{ is_normal ? "" : "(Not recommended)" }}
           </span>
-          <div
+          <QuestionMark
             v-if="!is_normal"
-            class="question-mark"
-            v-tooltip.right="
-              'Auto-cost deduction is unavailable, I suggest only doing this when you\'re not starting from 0. '
-            "
+            text="Auto-cost deduction is unavailable, I suggest only doing this when you're not starting from 0. "
+            position="right"
           />
         </div>
       </div>

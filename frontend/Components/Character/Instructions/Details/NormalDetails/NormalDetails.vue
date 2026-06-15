@@ -10,6 +10,7 @@ import { parse_locale_float, parse_locale_int } from "@/Utils/InputColumn";
 import { to_upgrade_key, Upgrade } from "@/Utils/KeyedUpgrades";
 import { storeToRefs } from "pinia";
 import { computed, nextTick, ref, watch } from "vue";
+import QuestionMark from "@/Components/Common/QuestionMark.vue";
 import {
   start_all_workers,
   start_eval_hist,
@@ -449,11 +450,9 @@ const special_grid: GridConfig = {
         >
           Succeed
         </button>
-        <div
-          class="question-mark"
-          v-tooltip.left="
-            'Use the slider to indicate how many taps it took, then press Succeed. Costs are automatically deducted.'
-          "
+        <QuestionMark
+          text="Use the slider to indicate how many taps it took, then press Succeed. Costs are automatically deducted."
+          position="left"
         />
       </div>
 

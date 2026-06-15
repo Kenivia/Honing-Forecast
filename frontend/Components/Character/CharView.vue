@@ -100,6 +100,7 @@ onUnmounted(() => {
     <template #main>
       <Guide v-if="route.path.endsWith('guide')" />
       <StatusInput v-if="route.path.endsWith('calc')" />
+
       <MaterialDist v-if="route.path.endsWith('calc')" />
       <OptimizerControlPanel v-if="route.path.endsWith('calc')" />
       <Instructions v-if="route.path.endsWith('calc')" :is_normal="true" />

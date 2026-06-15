@@ -4,6 +4,7 @@ import { useRosterStore } from "@/Stores/RosterConfig";
 import { to_upgrade_key, Upgrade } from "@/Utils/KeyedUpgrades";
 import { storeToRefs } from "pinia";
 import { computed } from "vue";
+import QuestionMark from "@/Components/Common/QuestionMark.vue";
 
 const starting_artisan = defineModel<string>("starting_artisan", {
   required: true,
@@ -57,12 +58,10 @@ const upgrade_key = computed(() =>
         @change="emit('manual_artisan_change')"
       />
     </div>
-    <div
+    <QuestionMark
       v-if="show_hints"
-      class="question-mark"
-      v-tooltip.left="
-        'You can also input artisan directly here. However, costs will not be auto-deducted'
-      "
+      text="You can also input artisan directly here. However, costs will not be auto-deducted"
+      position="left"
     />
   </div>
   <div class="button-row">
@@ -80,12 +79,10 @@ const upgrade_key = computed(() =>
     >
       Confirm
     </button>
-    <div
+    <QuestionMark
       v-if="show_hints"
-      class="question-mark"
-      v-tooltip.left="
-        'Use the slider to update artisan & deduct costs, then press Confirm to re-run the optimizer. Careful that the order of the upgrades can change, check the far left for what upgrade it is. '
-      "
+      text="Use the slider to update artisan & deduct costs, then press Confirm to re-run the optimizer. Careful that the order of the upgrades can change, check the far left for what upgrade it is. "
+      position="left"
     />
   </div>
   <span class="stat-label">Current base chance:</span>
