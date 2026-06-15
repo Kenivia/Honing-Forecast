@@ -171,7 +171,9 @@ export function validate_char_profile(
     DEFAULT_CHAR_PROFILE_NO_WORKER.normal_grid,
   ).map((row) =>
     row.map((x, index) =>
-      index < (this_parsed.tier === 0 ? 10 : 11) ? UpgradeStatus.Done : x,
+      index < (this_parsed.tier === 0 ? 10 : 11)
+        ? UpgradeStatus.FetchedDone
+        : x,
     ),
   );
   this_parsed.adv_grid = get_valid_status_grid(

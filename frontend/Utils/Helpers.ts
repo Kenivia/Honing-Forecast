@@ -117,7 +117,10 @@ export function check_adv_all_done() {
   const { active_profile } = storeToRefs(useRosterStore());
   for (let row = 0; row < NUM_PIECES; row++) {
     for (let col = 0; col < ADV_COLS; col++) {
-      if (active_profile.value.adv_grid[row][col] != UpgradeStatus.Done) {
+      if (
+        active_profile.value.adv_grid[row][col] != UpgradeStatus.Done &&
+        active_profile.value.adv_grid[row][col] != UpgradeStatus.FetchedDone
+      ) {
         return false;
       }
     }
@@ -129,7 +132,8 @@ export function check_all_plus_20(): number | boolean {
   for (let row = 0; row < NUM_PIECES; row++) {
     let highest_done =
       active_profile.value.normal_grid[row].findLastIndex(
-        (value) => value == UpgradeStatus.Done,
+        (value) =>
+          value == UpgradeStatus.Done || value == UpgradeStatus.FetchedDone,
       ) + 1;
 
     if (!(highest_done >= 20)) {
@@ -146,7 +150,8 @@ export function check_revert_ilevel_ok(): number | boolean {
   for (let row = 0; row < NUM_PIECES; row++) {
     let highest_done =
       active_profile.value.normal_grid[row].findLastIndex(
-        (value) => value == UpgradeStatus.Done,
+        (value) =>
+          value == UpgradeStatus.Done || value == UpgradeStatus.FetchedDone,
       ) + 1;
 
     if (
@@ -159,7 +164,10 @@ export function check_revert_ilevel_ok(): number | boolean {
     }
     let highest_want =
       active_profile.value.normal_grid[row].findLastIndex(
-        (value) => value == UpgradeStatus.Done || value == UpgradeStatus.Want,
+        (value) =>
+          value == UpgradeStatus.Done ||
+          value == UpgradeStatus.FetchedDone ||
+          value == UpgradeStatus.Want,
       ) + 1;
 
     if (

@@ -75,12 +75,12 @@ export function apply_results(
       const upper =
         results[row].tier == 0 ? Math.floor(results[row].adv / 10) : 4;
       for (let col = 0; col < upper; col++) {
-        target_profile.adv_grid[row][col] = UpgradeStatus.Done;
+        target_profile.adv_grid[row][col] = UpgradeStatus.FetchedDone;
       }
       let non_done_start = upper;
 
       if (results[row].adv - Math.floor(results[row].adv / 10) * 10 > 0) {
-        target_profile.adv_grid[row][upper] = UpgradeStatus.Want;
+        target_profile.adv_grid[row][upper] = UpgradeStatus.FetchedDone;
         want_adv.push({
           row,
           upgrade_index: upper,
@@ -100,7 +100,7 @@ export function apply_results(
   if (new_tier == 1) {
     for (let row = 0; row < NUM_PIECES; row++) {
       for (let col = 0; col < ADV_COLS; col++) {
-        target_profile.adv_grid[row][col] = UpgradeStatus.Done;
+        target_profile.adv_grid[row][col] = UpgradeStatus.FetchedDone;
       }
     }
   } else {

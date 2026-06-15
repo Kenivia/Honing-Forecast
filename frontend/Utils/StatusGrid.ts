@@ -12,7 +12,7 @@ export function create_status_grid(
       .fill(UpgradeStatus.NotYet)
       .map((x, index) =>
         index < (tier === 0 ? (adv ? 0 : 10) : adv ? ADV_COLS : 11)
-          ? UpgradeStatus.Done
+          ? UpgradeStatus.FetchedDone
           : x,
       ),
   );

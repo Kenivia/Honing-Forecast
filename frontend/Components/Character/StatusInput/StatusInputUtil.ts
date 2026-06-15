@@ -94,13 +94,14 @@ export function change_tier(target_profile: CharProfile, fetched?: boolean) {
       old_tier,
       new_tier,
       target_profile.normal_grid[row].findLastIndex(
-        (value) => value == UpgradeStatus.Done || UpgradeStatus.FetchedDone,
+        (value) =>
+          value == UpgradeStatus.Done || value == UpgradeStatus.FetchedDone,
       ) + 1,
       target_profile.normal_grid[row].findLastIndex(
         (value) =>
           value == UpgradeStatus.Want ||
           value == UpgradeStatus.Done ||
-          UpgradeStatus.FetchedDone,
+          value == UpgradeStatus.FetchedDone,
       ) + 1,
       target_profile.normal_grid[row],
     );
@@ -120,27 +121,33 @@ export function convert_apply_done_want(
 ) {
   let highest_done = Math.max(new_tier == 1 ? 20 : 11, done_plus_n);
   let highest_want = Math.max(new_tier == 1 ? 20 : 11, want_plus_n);
+
+  let highest_fetched_done =
+    row.findLastIndex((value) => value == UpgradeStatus.FetchedDone) + 1;
+
+  let converted_fetched =
+    PLUS_TIER_CONVERSION[old_tier][String(highest_fetched_done)] ??
+    PLUS_TIER_CONVERSION[old_tier][String(highest_fetched_done - 1)] ??
+    25;
+
+  // these ?? should like never actually need to fire if we disallow appropriately? idk i just put them there just in case
   let converted_done =
     PLUS_TIER_CONVERSION[old_tier][String(highest_done)] ??
     PLUS_TIER_CONVERSION[old_tier][String(highest_done - 1)] ??
-    18;
+    25;
   let converted_want =
     highest_want > 0
       ? (PLUS_TIER_CONVERSION[old_tier][String(highest_want)] ??
         PLUS_TIER_CONVERSION[old_tier][String(highest_done - 1)] ??
-        18)
+        25)
       : converted_done;
-  // console.log(
-  //   converted_done,
-  //   converted_want,
-  //   highest_done,
-  //   highest_want,
-  //   old_tier,
-  //   new_tier,
-  // );
+
   for (let col = 0; col < NORMAL_COLS; col++) {
     if (col < converted_done) {
-      row[col] = fetched ? UpgradeStatus.FetchedDone : UpgradeStatus.Done;
+      row[col] =
+        col < converted_fetched || fetched
+          ? UpgradeStatus.FetchedDone
+          : UpgradeStatus.Done;
     } else if (col < converted_want) {
       row[col] = UpgradeStatus.Want;
     } else {
