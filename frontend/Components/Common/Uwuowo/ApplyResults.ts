@@ -48,21 +48,7 @@ export function apply_results(
         target_profile.normal_grid[row],
         true,
       );
-      //   convert_apply_done_want(
-      //     old_tier,
-      //     new_tier,
-      //     results[row].plus_n,
-      //     0, // remove all pending if tier changed
-      //     target_profile.normal_grid[row],
-      //   );
     } else {
-      // console.log(
-      //   results[row].plus_n,
-      //   want,
-      //   results[row].tier,
-      //   old_tier,
-      //   target_profile.normal_grid[row],
-      // );
       apply_done_want(
         results[row].plus_n,
         want,

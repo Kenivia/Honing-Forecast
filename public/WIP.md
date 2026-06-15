@@ -20,8 +20,6 @@ If you'd like to help with any of the below, feel free to get in touch via [Disc
 
 - ~~Input arithmetic parsing(e.g. allow inputs like 25*1234 for easier boxes calculation)~~
 
-- drag to select
-
 -~~ Make shard bag size change actually change to the other price (and manual overwrite that one bag size)~~
 
 - actually save & pass around cache so adv doesn't take 8 years every time
@@ -130,9 +128,10 @@ Predicting market will be SO fun but it kinda needs the better OCR scanning to g
 
 ### Misc
 
-- ~~make market fetcher fetch yesterday's average price instead of latest price~~ gonna postpone this until when I do my own price scraping, cant be bothered
+- *drag to select* ts is way too hard
+- *make market fetcher fetch yesterday's average price instead of latest price* gonna postpone this until when I do my own price scraping, cant be bothered
 
-- ~~get the equipment icons somehow~~ gonna postone this also, prolly gonna have to set up some kind of lostarkcodex -> template matching workflow so that'll be during that
+-*get the equipment icons somehow* gonna postone this also, prolly gonna have to set up some kind of lostarkcodex -> template matching workflow so that'll be during that
 
 - migrate to an actual domain name
 
