@@ -55,6 +55,7 @@ export interface RosterConfig {
   is_fetching: boolean;
 
   auto_fetch: boolean;
+  adv_cache: any;
 }
 export const useRosterStore = defineStore("roster", {
   state: () => ({
@@ -225,4 +226,5 @@ export const DEFAULT_ROSTER_CONFIG: RosterConfig = {
   all_regions: { 0: "nae" },
   is_fetching: false,
   auto_fetch: true,
+  adv_cache: null,
 };

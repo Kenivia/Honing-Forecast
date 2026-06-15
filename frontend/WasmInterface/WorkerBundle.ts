@@ -73,6 +73,7 @@ export function create_worker_bundle() {
 
       if (e.data.type === "result") {
         result.value = e.data.result;
+        // console.log(result.value);
         status.value = "success";
         est_progress_percentage.value = 100;
         // console.log(mapToObject(toRaw(result.value)?.adv_cache) ?? null)
@@ -86,11 +87,11 @@ export function create_worker_bundle() {
       } else {
         // 1 sec interval from rust's side
         if (e.data.state_bundle) {
-          result.value = e.data.state_bundle;
+          // result.value = e.data.state_bundle;
           last_intermediate_time.value = performance.now();
           // console.log("wrote");
           if (callback) {
-            callback(result.value);
+            callback(e.data.state_bundle);
           }
         }
 

@@ -1,4 +1,5 @@
 use crate::state_bundle::StateBundle;
+use ahash::AHashMap;
 use serde::Serialize;
 use serde_wasm_bindgen::to_value;
 use wasm_bindgen::prelude::*;
@@ -18,12 +19,17 @@ pub struct WasmProgress {
     r#type: String,
 }
 
+pub fn remove_adv_cache(state_bundle: &StateBundle) -> StateBundle {
+    let mut out: StateBundle = state_bundle.clone();
+    out.adv_cache = AHashMap::new();
+    out
+}
 pub fn send_progress(state_bundle: Option<&StateBundle>, est_progress_percentage: f64) {
-    let msg = to_value(&WasmProgress {
+    let msg: JsValue = to_value(&WasmProgress {
         state_bundle: if state_bundle.is_none() {
             None
         } else {
-            Some(state_bundle.unwrap().clone())
+            Some(remove_adv_cache(state_bundle.unwrap())) // this is sending intermediate progress so dont sent cache
         },
         est_progress_percentage,
         r#type: "intermediate_result".to_owned(),

@@ -28,7 +28,7 @@ export function start_eval_hist() {
   // active_profile.value.evaluation_worker_bundle.throttled_start(WasmOp.EvaluateAverage, payload)
 }
 export function start_all_workers() {
-  const { active_profile } = storeToRefs(useRosterStore());
+  const { active_profile, roster_config } = storeToRefs(useRosterStore());
 
   // console.log("payload update")
 
@@ -37,7 +37,12 @@ export function start_all_workers() {
     active_profile.value.optimizer_worker_bundle.debounced_start(
       WasmOp.OptimizeAverage,
       build_payload(),
-      start_eval_hist,
+      (result) => {
+        const { adv_cache, ...rest } = result;
+        roster_config.value.adv_cache = adv_cache;
+        active_profile.value.optimizer_worker_bundle.result = rest;
+        start_eval_hist();
+      },
     ); // make sure to clone cos it'll modify the previous payload before it's consumed
   }
 

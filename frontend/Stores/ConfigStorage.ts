@@ -140,6 +140,7 @@ function write_roster_config(roster_config: RosterConfig) {
     "optimizer_override",
     "budget_snapshot",
     "is_slider_update",
+    "adv_cache",
   ]);
   localStorage.setItem(CURRENT_STORAGE_KEY, LZString.compressToUTF16(json));
 }

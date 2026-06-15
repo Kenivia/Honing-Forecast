@@ -1,5 +1,6 @@
 use hf_core::constants::juice_info::JuiceInfo;
 use hf_core::constants::*;
+use hf_core::js_interface::remove_adv_cache;
 use hf_core::performance::Performance;
 use hf_core::state_bundle::StateBundle;
 use serde::Serialize;
@@ -71,6 +72,6 @@ pub fn histogram(state_bundle: &mut StateBundle) -> HistogramOutputs {
         gold_breakdown_arr,
         metrics_arr,
         juice_info: state_bundle.prep_output.juice_info.clone(),
-        state_bundle: state_bundle.clone(),
+        state_bundle: remove_adv_cache(&state_bundle),
     }
 }

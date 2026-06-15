@@ -22,7 +22,7 @@ pub struct StateBundle {
 
     #[serde(skip)]
     pub special_cache: AHashMap<Vec<usize>, Vec<f64>>,
-    #[serde(skip)]
+
     pub adv_cache: AHashMap<AdvConfig, AdvDistTriplet>,
 }
 

@@ -25,6 +25,8 @@ pub struct Payload {
     pub num_threads: usize,
     #[serde(default = "default_one")]
     pub metric_type: i64,
+
+    pub adv_cache: Option<AHashMap<AdvConfig, AdvDistTriplet>>,
 }
 fn default_one() -> i64 {
     1
@@ -41,6 +43,7 @@ impl StateBundle {
         min_resolution: usize,
         num_threads: usize,
         metric_type: i64,
+        adv_cache: Option<AHashMap<AdvConfig, AdvDistTriplet>>,
     ) -> StateBundle {
         let (prep_output, upgrade_arr, adv_cache): (
             PreparationOutput,
@@ -53,6 +56,7 @@ impl StateBundle {
             special_budget,
             express_event,
             tier,
+            adv_cache,
         );
         let u_len = upgrade_arr.len();
         // web_sys::console::log_1(&"2".into());
@@ -90,6 +94,7 @@ impl StateBundle {
             payload.min_resolution,
             payload.num_threads,
             payload.metric_type,
+            payload.adv_cache,
         )
     }
 }

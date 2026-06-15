@@ -31,6 +31,7 @@ export interface Payload {
   min_resolution: number;
   num_threads: number;
   metric_type: number;
+  adv_cache: any;
 }
 
 export enum NormalOverride {
@@ -287,9 +288,9 @@ export function build_material_info(): OneMaterialInput[] {
 }
 
 export function build_payload(override?: OptimizerOverride): Payload {
-  const { active_profile } = storeToRefs(useRosterStore());
+  const { active_profile, roster_config } = storeToRefs(useRosterStore());
   const tier = active_profile.value.tier;
-  // console.log(override);
+  // console.log(active_profile.value.optimizer_worker_bundle.result?.adv_cache);
   return {
     material_info: build_material_info(),
     optimizer_plan:
@@ -320,5 +321,6 @@ export function build_payload(override?: OptimizerOverride): Payload {
       active_profile.value.optimizer_worker_bundle.result?.upgrade_arr,
       override?.special,
     ),
+    adv_cache: toRaw(roster_config.value.adv_cache),
   };
 }

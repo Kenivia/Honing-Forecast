@@ -3,7 +3,7 @@ import {
   CharProfile,
   DEFAULT_CHAR_PROFILE_NO_WORKER,
   init_workers,
-} from "@/Stores/CharacterProfile";
+} from "@/Stores/CharacterProfile.js";
 import {
   create_default_owned_input_column,
   useRosterStore,

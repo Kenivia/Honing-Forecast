@@ -42,6 +42,7 @@ impl PreparationOutput {
         special_budget: i64,
         express_event: bool,
         tier: usize,
+        inp_adv_cache: Option<AHashMap<AdvConfig, AdvDistTriplet>>,
     ) -> (
         PreparationOutput,
         Vec<Upgrade>,
@@ -49,7 +50,11 @@ impl PreparationOutput {
     ) {
         let juice_info: JuiceInfo =
             get_priced_juice_info(&BASE_JUICE_INFOS[tier], &raw_material_info, express_event);
-        let mut adv_cache: AHashMap<AdvConfig, AdvDistTriplet> = AHashMap::new();
+        let mut adv_cache: AHashMap<AdvConfig, AdvDistTriplet> = if inp_adv_cache.is_none() {
+            AHashMap::new()
+        } else {
+            inp_adv_cache.unwrap()
+        };
 
         let upgrade_arr: Vec<Upgrade> = parser(
             upgrade_info,

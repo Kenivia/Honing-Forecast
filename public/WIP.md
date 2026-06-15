@@ -22,7 +22,7 @@ If you'd like to help with any of the below, feel free to get in touch via [Disc
 
 -~~ Make shard bag size change actually change to the other price (and manual overwrite that one bag size)~~
 
-- actually save & pass around cache so adv doesn't take 8 years every time
+- ~~actually save & pass around cache so adv doesn't take 8 years every time~~
 
 - figure out why tf v-tooltip disappeas on every progress update
 
