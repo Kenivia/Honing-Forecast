@@ -211,7 +211,7 @@ const grid: GridConfig = {
       v-if="
         !(
           current_grace_progress === 0 &&
-          (current_adv_xp > 0 ||
+          (current_adv_xp >= 60 ||
             current_adv_upgrade > upgrade.upgrade_index * 10)
         ) && !(current_grace_progress === 6 && upgrade.upgrade_index >= 2)
       "

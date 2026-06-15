@@ -22,6 +22,7 @@ const props = defineProps<{
   hide_label?: boolean;
   justify_left?: boolean;
   disabled?: boolean;
+  bound_label?: boolean;
 }>();
 
 const actual_input_width = computed(() => `${props.input_width ?? 100}px`);
@@ -78,6 +79,11 @@ watch(source_value, (val) => {
         }"
         :alt="label"
       />
+      <span
+        v-if="bound_label"
+        class="annotation absolute transform-[translateX(-40px)_translateY(10px)]"
+        >(bound)</span
+      >
     </label>
 
     <input
@@ -107,13 +113,13 @@ watch(source_value, (val) => {
           ? locale_to_fixed(input_column[row] * 100, 2) + "%"
           : input_column[row].toLocaleString("en-US", {
               minimumFractionDigits: 0, // show decimals for small K/M/B
-              maximumFractionDigits: 0,
+              maximumFractionDigits: input_column[row] < 1 ? 2 : 0,
             })
       }}</label
     >
-      <label class="material-cell-suffix annotation" v-if="suffix">{{
-        suffix
-      }}</label>
+    <label class="material-cell-suffix annotation" v-if="suffix">{{
+      suffix
+    }}</label>
   </div>
   <!-- <input v-if="customLeftovers" type="text" :value="matsLeftover[label]" @input="setRecordValue(matsLeftover, label, $event)" /> -->
 </template>

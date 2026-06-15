@@ -45,7 +45,7 @@ const average_breakdown = computed(
 const gold_breakdown = computed(
   () =>
     active_profile.value.histogram_worker_bundle.result?.gold_breakdown_arr[0].map(
-      (x: number) => Math.round(x >= 0 ? 0 : -x),
+      (x: number) => (x >= 0 ? 0 : -x),
     ) ?? new Array(ALL_LABELS[active_profile.value.tier].length).fill(0),
 );
 
@@ -362,6 +362,7 @@ const is924Narrow = useMediaIsNarrow(924); // this turns out to be the width whe
             :hide_tick="!matsIndices.includes(row)"
             :callback="() => start_all_workers()"
             :hide_label="is924Narrow && row < 7"
+            :bound_label="true"
           />
           <!-- {{ console.log(averages) }} -->
           <MaterialCell

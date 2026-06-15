@@ -105,14 +105,13 @@ impl StateBundle {
                 }
             }
         }
-        for y in gold_breakdown.iter_mut() {
-            for x in y.iter_mut() {
-                *x = x.round()
-            }
-        }
-        for x in average_breakdown.iter_mut() {
-            *x = x.round() // rounding is more uh correct here (as opposed to taking ceil)
-        }
+        // for y in gold_breakdown.iter_mut() {
+        //     for x in y.iter_mut() {
+        //         *x = x
+        //     }
+        // }
+        // for x in average_breakdown.iter_mut() {
+        //     *x = x
 
         (metrics_arr, average_breakdown, gold_breakdown)
     }

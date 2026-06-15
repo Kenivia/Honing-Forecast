@@ -6,7 +6,7 @@
     "dev": "pnpm run wasm && concurrently \"vite\" \"pnpm run cloudflare-dev\"",
     "wasm": "wasm-pack build crates/wasm --release --target web",
     "test": "cargo test -p hf-core --profile release --no-default-features --features active_version,run_tests -- --no-capture",
-    "change-logs": "python ./scripts/change_log_helper/build.py",
+    "change-log": "python ./scripts/change_log_helper/build.py",
     "no-test-build": "pnpm run wasm && vite build",
     "build": "pnpm run test && pnpm run no-test-build && cargo +nightly udeps",
     "no-check-deploy": "git push origin main:Production --force-with-lease",

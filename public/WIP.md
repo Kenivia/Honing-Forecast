@@ -3,53 +3,13 @@
 
 If you'd like to help with any of the below, feel free to get in touch via [Discord](https://discord.gg/KWDpQyvgzc)!
 
+## NOW: OCR
+
+- figure out how all this screen capture stuff works
+
 ## Roadmap
 
-### Now: Frontend cleanup & improvements
-
-- ~~fetch the rest of the roster popup~~
-
-- ~~change roster button ~~ prolly not that useful ~~ / drag & drop?~~ too hard            ~~this can do----> order changing buttons in roster page~~
-
-- ~~change MarketView to not rely on active_profile and stuff, makes 0 sense why did i do that~~
-
-- ~~automatically lock the fetched done upgrades (and a tickbox to unlock them)~~
-  - eventually do drag to select ig
-
-- ~~fix artisan rounding by storing an actual number in keyedupgrade~~
-
-- ~~Input arithmetic parsing(e.g. allow inputs like 25*1234 for easier boxes calculation)~~
-
--~~ Make shard bag size change actually change to the other price (and manual overwrite that one bag size)~~
-
-- ~~actually save & pass around cache so adv doesn't take 8 years every time~~
-
-- ~~figure out why tf v-tooltip disappeas on every progress update~~
-
-- add "About" page for various stuff like credits and stuff
-
-- some hoverable details on juice & whatnot
-
-- add a small "bound" label on the materialcell labels
-
-- make average < 10 show 2 sig fig, including (and especially) the gold values
-
-## 5th: OCR
-
-Similar to the [Ark grid OCR](<https://airplaner.github.io/lostark-arkgrid-gem-locator-v2/>). They've used template matching and I think is probably best for me too (with exception of numbers recognition, might need some OCR model for that).
-
-### GOALS
-
-1. Inventory (and roster storage and whatever) scanning
-2. Honing session analysis
-3. (not necessarily for users) market price scanning, including recent price, available stock, gems, accessories, mari shops and whatnot. If I set up the OCR well enough to make this easy then it'll be a huge W.
-
-I've been thinking so much about how exactly to do this but I think at some point I just need to start typing and trying stuff. My current rough plan is:
-
-1. Anchor with like whatever UI element to establish aspect ratio & stuff
-2. Crop out UI elements as images and save them for later
-3. Same thing with hover tooltips - crop them out and save
-4. A second (slower) worker processes these crops (the other worker must run at 30 fps) - use OCR to read & parse the tooltip text, simple template matching for the rest
+some kind of discord loging & persistent like cloud storage here  
 
 ## 5.5th Luck tracking & leaderboard
 
@@ -128,6 +88,9 @@ Predicting market will be SO fun but it kinda needs the better OCR scanning to g
 
 ### Misc
 
+- *add "About" page for various stuff like credits and stuff* this will need like an overhaul of the header layout (which is definitely needed at some point but not now)
+
+- *some hoverable details on juice & whatnot* should probably generalize the tooltip thing instead of relying on v-tooltip (so i can render html in there and look butter), gonna do that at some point that's not now
 - *drag to select* ts is way too hard
 - *make market fetcher fetch yesterday's average price instead of latest price* gonna postpone this until when I do my own price scraping, cant be bothered
 
@@ -150,9 +113,34 @@ Predicting market will be SO fun but it kinda needs the better OCR scanning to g
 ### Optimizations
 
 - find_min_max can probably do with some kind of caching but i can't figure it out rn
-- advanced hoinging caching / pre-calculating, maybe also special
 
 ## Done / cancelled
+
+### ~~Now: Frontend cleanup & improvements~~
+
+- ~~advanced hoinging caching / pre-calculating, maybe also special~~
+- ~~fetch the rest of the roster popup~~
+
+- ~~change roster button ~~ prolly not that useful ~~ / drag & drop?~~ too hard            ~~this can do----> order changing buttons in roster page~~
+
+- ~~change MarketView to not rely on active_profile and stuff, makes 0 sense why did i do that~~
+
+- ~~automatically lock the fetched done upgrades (and a tickbox to unlock them)~~
+  - eventually do drag to select ig
+
+- ~~fix artisan rounding by storing an actual number in keyedupgrade~~
+
+- ~~Input arithmetic parsing(e.g. allow inputs like 25*1234 for easier boxes calculation)~~
+
+-~~ Make shard bag size change actually change to the other price (and manual overwrite that one bag size)~~
+
+- ~~actually save & pass around cache so adv doesn't take 8 years every time~~
+
+- ~~figure out why tf v-tooltip disappeas on every progress update~~
+
+- ~~add a small "bound" label on the materialcell labels~~
+
+- ~~make average < 10 show 2 sig fig, including (and especially) the gold values~~
 
 - ~~make normal instructions (and other panels) collapsible~~ maybe not needed
 

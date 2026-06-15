@@ -53,7 +53,25 @@ impl PreparationOutput {
         let mut adv_cache: AHashMap<AdvConfig, AdvDistTriplet> = if inp_adv_cache.is_none() {
             AHashMap::new()
         } else {
-            inp_adv_cache.unwrap()
+            let mut inp: AHashMap<AdvConfig, AdvDistTriplet> = inp_adv_cache.unwrap();
+
+            inp.retain(|key: &AdvConfig, _| {
+                upgrade_info.iter().any(|upgrade| {
+                    if !upgrade.is_normal_honing && upgrade.adv_progress.is_some() {
+                        let (start_xp, start_balls, next_free, next_big) =
+                            upgrade.adv_progress.unwrap();
+
+                        return start_xp == key.start_xp
+                            && start_balls == key.start_balls
+                            && next_free == key.next_free
+                            && next_big == key.next_big
+                            && (express_event && upgrade.upgrade_index < 2) == key.double_balls
+                            && ((upgrade.upgrade_index >= 2) == key.is_30_40);
+                    }
+                    false
+                })
+            });
+            inp
         };
 
         let upgrade_arr: Vec<Upgrade> = parser(

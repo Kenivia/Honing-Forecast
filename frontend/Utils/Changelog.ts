@@ -26,9 +26,10 @@ export function version_equal(last_seen: string, now: string) {
   const b_split = now.replace("v", "").split(".");
 
   return (
-    a_split[0] === b_split[0] &&
-    a_split[1] === b_split[1] &&
-    a_split[2] === b_split[2]
+    (a_split[0] === b_split[0] &&
+      a_split[1] === b_split[1] &&
+      a_split[2] === b_split[2]) ||
+    now === "v1.2.5"
   );
 }
 // const latest_change_log =
