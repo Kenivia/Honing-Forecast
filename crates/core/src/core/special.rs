@@ -131,7 +131,7 @@ impl StateBundle {
             // fail_probs[k] = (1-p)^k
             fail_probs[0] = 1.0;
             for t in 1..=budget {
-                fail_probs[t] = fail_probs[t - 1] * one_minus_p; //TODO cache this 
+                fail_probs[t] = fail_probs[t - 1] * one_minus_p; 
             }
 
             // 3. Calculate "Success" (passing this stage)

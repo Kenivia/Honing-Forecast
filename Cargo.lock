@@ -187,6 +187,9 @@ name = "either"
 version = "1.16.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "91622ff5e7162018101f2fea40d6ebf4a78bbe5a49736a2020649edf9693679e"
+dependencies = [
+ "serde",
+]
 
 [[package]]
 name = "equivalent"
@@ -291,12 +294,25 @@ dependencies = [
 ]
 
 [[package]]
+name = "hf-scanner"
+version = "0.1.0"
+dependencies = [
+ "ahash",
+ "console_error_panic_hook",
+ "either",
+ "js-sys",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "hf-wasm"
 version = "0.1.0"
 dependencies = [
  "console_error_panic_hook",
  "getrandom",
  "hf-core",
+ "hf-scanner",
  "js-sys",
  "rand",
  "serde",

@@ -1,16 +1,10 @@
-/// Wrappers for functions to be called via something like
-/// async function EvaluateAverageWasm(payload: any) {
-///     await init()
-///     return (evaluate_average_wrapper as any)(payload)
-/// }
-/// (imported via import init, {evaluate_average_wrapper} from "@/../crates/wasm/pkg/honing_forecast.js"
-mod histogram;
-use crate::histogram::HistogramOutputs;
-use crate::histogram::histogram;
+use hf_core::histogram::HistogramOutputs;
+use hf_core::histogram::histogram;
 use hf_core::optimizer::solve;
 use hf_core::payload::Payload;
 use hf_core::performance::Performance;
 use hf_core::state_bundle::StateBundle;
+use hf_scanner::scanner_state::ScannerState;
 use rand::rngs::ThreadRng;
 use serde_wasm_bindgen::{from_value, to_value};
 use wasm_bindgen::JsValue;
@@ -19,43 +13,10 @@ use wasm_bindgen::prelude::*;
 #[allow(unused_imports)]
 use web_sys::console;
 
-// #[wasm_bindgen]
-// #[must_use]
-// pub fn parser_wrapper(input_payload: JsValue) -> JsValue {
-//     console_error_panic_hook::set_once();
-
-//     let payload: Payload = from_value(input_payload).unwrap();
-//     let mut state_bundle = StateBundle::init_from_payload(payload);
-//     let mut dummy_performance = Performance::new();
-//     let metric = state_bundle.average_gold_metric(true, &mut dummy_performance); // doesn't allow prob evaluation right now, even if metric_type is set
-//     state_bundle.metric = metric;
-//     state_bundle.set_latest_special_probs();
-//     to_value(&state_bundle).unwrap()
-// }
-
-// #[wasm_bindgen]
-// #[must_use]
-// pub fn evaluate_average_wrapper(input_payload: JsValue) -> JsValue {
-//     console_error_panic_hook::set_once();
-
-//     let payload: Payload = from_value(input_payload).unwrap();
-//     let mut state_bundle: StateBundle = StateBundle::init_from_payload(payload);
-
-//     let mut dummy_performance = Performance::new();
-//     let metric = state_bundle.average_gold_metric(true, &mut dummy_performance); // doesn't allow prob evaluation right now, even if metric_type is set
-//     state_bundle.metric = metric;
-//     state_bundle.set_latest_special_probs();
-//     to_value(&state_bundle).unwrap()
-// }
-
 #[wasm_bindgen]
 #[must_use]
 pub fn optimize_average_wrapper(input_payload: JsValue) -> JsValue {
     console_error_panic_hook::set_once();
-    // let json_string = js_sys::JSON::stringify(&input_state_bundle).unwrap();
-    // let json_str: String = json_string.into();
-    // let result: Result<StateBundle, _> = serde_json::from_str(&json_str);
-    // let state_bundle: StateBundle = result.unwrap();
     let payload: Payload = from_value(input_payload).unwrap();
     let state_bundle: StateBundle = StateBundle::init_from_payload(payload);
 
@@ -78,4 +39,35 @@ pub fn histogram_wrapper(input_payload: JsValue) -> JsValue {
     let mut state_bundle: StateBundle = StateBundle::init_from_payload(payload);
     let out: HistogramOutputs = histogram(&mut state_bundle);
     to_value(&out).unwrap()
+}
+
+#[wasm_bindgen]
+#[must_use]
+pub fn cropper_wrapper(inp_scanner_state: JsValue) -> JsValue {
+    console_error_panic_hook::set_once();
+
+    let mut scanner_state: ScannerState = from_value(inp_scanner_state).unwrap();
+
+    scanner_state.cropper();
+    to_value(&scanner_state).unwrap()
+}
+
+#[wasm_bindgen]
+#[must_use]
+pub fn reserve_buffer_wrapper(inp_scanner_state: JsValue) -> JsValue {
+    console_error_panic_hook::set_once();
+
+    let mut scanner_state: ScannerState = from_value(inp_scanner_state).unwrap();
+    scanner_state.buffer.reserve();
+    to_value(&scanner_state).unwrap()
+}
+
+#[wasm_bindgen]
+#[must_use]
+pub fn dealloc_buffer_wrapper(inp_scanner_state: JsValue) -> JsValue {
+    console_error_panic_hook::set_once();
+
+    let mut scanner_state: ScannerState = from_value(inp_scanner_state).unwrap();
+    scanner_state.buffer.dealloc();
+    to_value(&scanner_state).unwrap()
 }

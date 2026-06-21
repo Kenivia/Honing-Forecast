@@ -15,6 +15,7 @@ import GraphControlPanel from "@/Components/Character/GraphControlPanel.vue";
 import Guide from "@/Components/Character/Guide.vue";
 import OptimizerControlPanel from "@/Components/Character/OptimizerControlPanel/OptimizerControlPanel.vue";
 import Instructions from "@/Components/Character/Instructions/Instructions.vue";
+import InventoryScanner from "./InventoryScanner/InventoryScanner.vue";
 
 const route = useRoute();
 const router = useRouter();
@@ -91,6 +92,9 @@ onUnmounted(() => {
         <RouterLink to="calc" class="side-bar-link" @click="close">
           Calc
         </RouterLink>
+        <RouterLink to="scanner" class="side-bar-link" @click="close">
+          Inventory Scanner
+        </RouterLink>
       </div>
 
       <!-- <GraphControlPanel v-if="route.path.endsWith('calc')" /> -->
@@ -105,6 +109,10 @@ onUnmounted(() => {
       <OptimizerControlPanel v-if="route.path.endsWith('calc')" />
       <Instructions v-if="route.path.endsWith('calc')" :is_normal="true" />
       <Instructions v-if="route.path.endsWith('calc')" :is_normal="false" />
+      <InventoryScanner
+        v-if="route.path.endsWith('scanner')"
+        :is_normal="false"
+      />
       <div class="min-h-30"></div>
     </template>
   </Sidebar>

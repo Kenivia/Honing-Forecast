@@ -2,6 +2,7 @@ pub mod advanced_honing;
 pub mod constants;
 pub mod core;
 pub mod helpers;
+pub mod histogram;
 pub mod honing_utils;
 pub mod optimizer;
 pub mod parser;

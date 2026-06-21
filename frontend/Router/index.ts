@@ -93,8 +93,17 @@ const router = createRouter({
           component: CharView,
         },
         {
+          path: "scanner",
+          name: "char-scanner",
+          component: CharView,
+        },
+        {
           path: ":x/guide",
           redirect: (c) => `/${c.params.characterName}/guide`,
+        },
+        {
+          path: ":x/scanner",
+          redirect: (c) => `/${c.params.characterName}/scanner`,
         },
         {
           path: ":pathMatch(.*)*",

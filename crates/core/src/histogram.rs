@@ -1,8 +1,8 @@
-use hf_core::constants::juice_info::JuiceInfo;
-use hf_core::constants::*;
-use hf_core::js_interface::remove_adv_cache;
-use hf_core::performance::Performance;
-use hf_core::state_bundle::StateBundle;
+use crate::constants::juice_info::JuiceInfo;
+use crate::constants::*;
+use crate::js_interface::remove_adv_cache;
+use crate::performance::Performance;
+use crate::state_bundle::StateBundle;
 use serde::Serialize;
 
 #[derive(Debug, Serialize)]
