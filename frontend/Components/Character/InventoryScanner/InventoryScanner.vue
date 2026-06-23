@@ -1,46 +1,109 @@
 <script setup lang="ts">
+import { ScannerState, WasmOp } from "@/WasmInterface/WasmWorker";
+import { create_worker_bundle } from "@/WasmInterface/WorkerBundle";
 import { ref, onMounted, onUnmounted } from "vue";
 
-const videoRef = ref<HTMLVideoElement | null>(null);
+const video_ref = ref<HTMLVideoElement | null>(null);
 const stream = ref<MediaStream | null>(null);
 const error = ref<string | null>(null);
 const status = ref<"idle" | "capturing" | "stopped">("idle");
 
-async function startCapture() {
+const cropper_worker_bundle = ref(null);
+
+async function start_capture() {
   try {
     error.value = null;
     const s = await navigator.mediaDevices.getDisplayMedia({
-      video: true,
+      video: { frameRate: 30 },
       audio: false,
     });
     stream.value = s;
     status.value = "capturing";
 
-    if (videoRef.value) {
-      videoRef.value.srcObject = s;
+    if (video_ref.value) {
+      video_ref.value.srcObject = s;
     }
 
-    // Handle the user stopping via the browser's built-in "Stop sharing" button
-    s.getVideoTracks()[0].addEventListener("ended", stopCapture);
+    const [track] = s.getVideoTracks();
+    track.addEventListener("ended", stop_capture);
+
+    const width = track.getSettings().width;
+    const height = track.getSettings().height;
+
+    if (cropper_worker_bundle.value === null) {
+      cropper_worker_bundle.value = create_worker_bundle();
+    }
+
+    // console.log("buffer size", width * height * 4);
+
+    const processor = new MediaStreamTrackProcessor({ track });
+    console.log(
+      cropper_worker_bundle.value,
+      cropper_worker_bundle.value.result,
+    );
+    const new_scanner_state = cropper_worker_bundle.value.result ?? {};
+    new_scanner_state.buffer = { size: width * height * 4 };
+    cropper_worker_bundle.value.debounced_start(
+      WasmOp.Reserve,
+      {
+        readable: processor.readable,
+        scanner_state: new_scanner_state,
+      },
+      (scanner_state) => cropper_loop(scanner_state),
+      0,
+      false,
+    );
   } catch (e: unknown) {
     if (e instanceof Error && e.name !== "NotAllowedError") {
-      error.value = e.message;
+      throw e;
     }
     status.value = "stopped";
   }
 }
 
-function stopCapture() {
+async function cropper_loop(scanner_state: ScannerState) {
+  if (
+    cropper_worker_bundle.value === null ||
+    cropper_worker_bundle.value.worker === null ||
+    cropper_worker_bundle.value.result === null
+  ) {
+    console.log("no more cropper");
+    return;
+  }
+
+  cropper_worker_bundle.value.debounced_start(
+    WasmOp.Cropper,
+    scanner_state,
+    (scanner_state) => cropper_loop(scanner_state),
+    0,
+    false,
+  );
+}
+
+function stop_capture() {
+  console.log(
+    "stop",
+    cropper_worker_bundle.value,
+    cropper_worker_bundle.value.result,
+  );
+  cropper_worker_bundle.value.debounced_start(
+    WasmOp.Dealloc,
+    cropper_worker_bundle.value.result,
+    cropper_worker_bundle.value.cancel,
+    0,
+    false,
+  );
+
   stream.value?.getTracks().forEach((t) => t.stop());
   stream.value = null;
-  if (videoRef.value) {
-    videoRef.value.srcObject = null;
+  if (video_ref.value) {
+    video_ref.value.srcObject = null;
   }
   status.value = "stopped";
 }
 
-onMounted(startCapture);
-onUnmounted(stopCapture);
+onMounted(start_capture);
+onUnmounted(stop_capture);
 </script>
 
 <template>
@@ -70,7 +133,7 @@ onUnmounted(stopCapture);
       class="relative aspect-video w-full overflow-hidden rounded-lg bg-black"
     >
       <video
-        ref="videoRef"
+        ref="video_ref"
         autoplay
         muted
         playsinline
@@ -108,14 +171,14 @@ onUnmounted(stopCapture);
       <button
         class="rounded-md bg-blue-600 px-3 py-1.5 text-sm transition-colors hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-40"
         :disabled="status === 'capturing'"
-        @click="startCapture"
+        @click="start_capture"
       >
         {{ status === "stopped" ? "Capture Again" : "Start Capture" }}
       </button>
       <button
         class="rounded-md bg-zinc-700 px-3 py-1.5 text-sm transition-colors hover:bg-zinc-600 disabled:cursor-not-allowed disabled:opacity-40"
         :disabled="status !== 'capturing'"
-        @click="stopCapture"
+        @click="stop_capture"
       >
         Stop
       </button>

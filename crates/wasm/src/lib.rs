@@ -1,5 +1,6 @@
 use hf_core::histogram::HistogramOutputs;
 use hf_core::histogram::histogram;
+use hf_core::my_dbg;
 use hf_core::optimizer::solve;
 use hf_core::payload::Payload;
 use hf_core::performance::Performance;
@@ -47,7 +48,6 @@ pub fn cropper_wrapper(inp_scanner_state: JsValue) -> JsValue {
     console_error_panic_hook::set_once();
 
     let mut scanner_state: ScannerState = from_value(inp_scanner_state).unwrap();
-
     scanner_state.cropper();
     to_value(&scanner_state).unwrap()
 }

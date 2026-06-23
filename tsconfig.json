@@ -20,7 +20,7 @@
       "@/*": ["./frontend/*"],
       "*": ["./frontend/*"]
     },
-    "types": ["vite/client"]
+    "types": ["vite/client", "@types/dom-mediacapture-transform"]
   },
   "include": ["frontend/**/*", "crates/wasm/pkg/**/*", "vite.config.ts"],
   "exclude": ["node_modules", "dist", "junkyard"]

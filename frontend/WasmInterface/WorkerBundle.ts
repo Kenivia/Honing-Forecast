@@ -1,13 +1,13 @@
 import { ref, Ref, shallowRef } from "vue";
 import { Payload } from "./PayloadBuilder";
-import { WasmOp } from "./WasmWorker";
+import { ScannerState, WasmOp } from "./WasmWorker";
 
 const createWorker = () =>
   new Worker(new URL("./WasmWorker.ts", import.meta.url), { type: "module" });
 
 export function create_worker_bundle() {
   let worker = null;
-  const status: Ref<"idle" | "success" | "busy" | "error"> = ref("idle");
+  const status: Ref<"idle" | "busy"> = ref("idle");
   const error = ref(null);
   const result = shallowRef(null);
   const est_progress_percentage = ref(0);
@@ -16,7 +16,10 @@ export function create_worker_bundle() {
 
   let debounceTimer = null;
   let throttle_timer: ReturnType<typeof setTimeout> | null = null;
-  let throttle_pending: { wasm_op: WasmOp; payload: Payload } | null = null;
+  let throttle_pending: {
+    wasm_op: WasmOp;
+    payload: any;
+  } | null = null;
   let throttle_ready = true;
 
   function _try_flush_throttle() {
@@ -45,14 +48,14 @@ export function create_worker_bundle() {
     });
   }
 
-  function throttled_start(wasm_op: WasmOp, payload: Payload) {
+  function throttled_start(wasm_op: WasmOp, payload: any) {
     throttle_pending = { wasm_op, payload };
     _try_flush_throttle();
   }
 
   function _launch(
     wasm_op: WasmOp,
-    payload: Payload,
+    payload: any,
     cancel: boolean,
     callback?: (result) => void,
   ) {
@@ -74,7 +77,7 @@ export function create_worker_bundle() {
       if (e.data.type === "result") {
         result.value = e.data.result;
         // console.log(result.value);
-        status.value = "success";
+        status.value = "busy";
         est_progress_percentage.value = 100;
         // console.log(mapToObject(toRaw(result.value)?.adv_cache) ?? null)
         if (cancel) {
@@ -107,30 +110,35 @@ export function create_worker_bundle() {
 
     worker.onerror = (e) => {
       error.value = e.message;
-      status.value = "error";
+      status.value = "idle";
       worker = null;
     };
 
-    // console.log(WasmOp[wasm_op], payload)
+    console.log(WasmOp[wasm_op], payload);
     // console.log(JSON.parse(JSON.stringify(toRaw(buildPayload(wasm_op)))))
-    worker.postMessage({ type: "message", wasm_op, payload });
+    worker.postMessage(
+      { type: "message", wasm_op, payload },
+      { transfer: payload.readable ? [payload.readable] : [] },
+    );
   }
 
   function debounced_start(
     wasm_op: WasmOp,
-    payload: Payload,
+    payload: any,
     callback?: (result) => void,
+    debounce = 200,
+    cancel = true,
   ) {
-    // if (debounce > 0) {
-    clearTimeout(debounceTimer);
+    if (debounce > 0) {
+      clearTimeout(debounceTimer);
 
-    debounceTimer = setTimeout(
-      () => _launch(wasm_op, payload, true, callback),
-      200,
-    );
-    // } else {
-    // _launch(wasm_op, payload, true, callback)
-    // }
+      debounceTimer = setTimeout(
+        () => _launch(wasm_op, payload, cancel, callback),
+        debounce,
+      );
+    } else {
+      _launch(wasm_op, payload, cancel, callback);
+    }
   }
 
   function cancel_worker() {

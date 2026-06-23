@@ -1,26 +1,23 @@
 import init, {
   optimize_average_wrapper,
   histogram_wrapper,
+  cropper_wrapper,
+  reserve_buffer_wrapper,
+  dealloc_buffer_wrapper,
 } from "@/../crates/wasm/pkg/hf_wasm.js";
 import { Payload } from "./PayloadBuilder";
 import { Upgrade } from "@/Utils/KeyedUpgrades";
 
 export enum WasmOp {
-  // EvaluateAverage,
   OptimizeAverage,
   Histogram,
-  // Parser,
+  Cropper,
+  Reserve,
+  Dealloc,
 }
-// THESE BELOW DIRECTLY CORRESPOND TO A RUST STRUCT
 
+// THESE BELOW DIRECTLY CORRESPOND TO A RUST STRUCT
 export type HistogramPair = [number, number];
-// export interface HistogramOutputs {
-//     cum_percentiles: HistogramPair[][]
-//     average: number[]
-//     state_bundle: StateBundle
-//     bound_chance: number[]
-//     tradable_chance: number[]
-// }
 export interface HistogramOutputs {
   cum_percentiles: HistogramPair[][];
 
@@ -45,22 +42,21 @@ export interface StateBundle {
   metric?: number;
 }
 
-// async function ParserWasm(payload: Payload): Promise<StateBundle> {
-//     await init()
-//     return parser_wrapper(payload)
-// }
-async function OptimizeAverageWasm(payload: Payload): Promise<StateBundle> {
-  await init();
-  return optimize_average_wrapper(payload);
+export interface Buffer {
+  pointer: number;
+  size: number;
 }
-// async function EvaluateAverageWasm(payload: Payload): Promise<StateBundle> {
-//     await init()
-//     return evaluate_average_wrapper(payload)
-// }
-async function HistogramWasm(payload: Payload): Promise<HistogramOutputs> {
-  await init();
-  return histogram_wrapper(payload);
+export interface ScannerState {
+  slot_infos: any;
+  anchors: any;
+  screen_info: any;
+  pending_jobs: any;
+
+  buffer: Buffer;
 }
+
+let reader;
+
 self.addEventListener("message", async (ev) => {
   const msg = ev.data;
   const start_time = performance.now();
@@ -69,27 +65,54 @@ self.addEventListener("message", async (ev) => {
 
   let result;
 
-  // if (wasm_op == WasmOp.EvaluateAverage) {
-  //     result = await EvaluateAverageWasm(payload)
-  // } else
+  const wasm = await init();
+  console.log(WasmOp[wasm_op], "Began", payload);
+
   if (wasm_op == WasmOp.OptimizeAverage) {
-    console.log(WasmOp[wasm_op], "Began", payload);
-    result = await OptimizeAverageWasm(payload);
+    result = await optimize_average_wrapper(payload);
   } else if (wasm_op == WasmOp.Histogram) {
-    console.log(WasmOp[wasm_op], "Began", payload);
-    result = await HistogramWasm(payload);
-  } else //     if (wasm_op == WasmOp.Parser) {
-  //     result = await ParserWasm(payload)
-  // } else
-  {
+    result = await histogram_wrapper(payload);
+  } else if (wasm_op == WasmOp.Cropper) {
+    const { value: frame, done } = await reader.read();
+    console.log("frame arrived ", (performance.now() - start_time).toFixed(0));
+    // console.log("read", frame, done);
+    if (done) {
+      console.log("done");
+      result = payload;
+    } else {
+      // console.log(wasm.memory.buffer);
+      const dest = new Uint8Array(
+        wasm.memory.buffer,
+        payload.buffer.pointer,
+        payload.buffer.size,
+      );
+
+      await frame.copyTo(dest, { format: "RGBA" });
+      frame.close();
+      console.log(
+        "transfer ",
+        "done",
+        (performance.now() - start_time).toFixed(0),
+      );
+      result = await cropper_wrapper(payload);
+    }
+
+    //
+  } else if (wasm_op == WasmOp.Reserve) {
+    reader = payload.readable.getReader();
+    result = await reserve_buffer_wrapper(payload.scanner_state);
+    console.log("post reserve", wasm.memory.buffer);
+  } else if (wasm_op == WasmOp.Dealloc) {
+    result = await dealloc_buffer_wrapper(payload);
+  } else {
     return; // react dev tool shenanigans
   }
   console.log(
     WasmOp[wasm_op],
     "done",
-    ((performance.now() - start_time) / 1000).toFixed(4),
+    (performance.now() - start_time).toFixed(0),
     result,
   );
-  // console.log(WasmOp[wasm_op] + " finished after " + String(((Date.now() - start_time) / 1000).toFixed(2)) + "s")
+
   self.postMessage({ type: "result", result });
 });
