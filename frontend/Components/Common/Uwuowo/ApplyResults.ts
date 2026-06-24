@@ -12,6 +12,7 @@ import {
   UpgradeStatus,
 } from "@/Utils/KeyedUpgrades";
 import { grid_change_callback } from "@/Components/Character/CharWorkerUtils";
+import { toRaw } from "vue";
 
 export function apply_results(
   target_profile: CharProfile,
@@ -66,7 +67,8 @@ export function apply_results(
       let non_done_start = upper;
 
       if (results[row].adv - Math.floor(results[row].adv / 10) * 10 > 0) {
-        target_profile.adv_grid[row][upper] = UpgradeStatus.FetchedDone;
+        // console.log("upper", upper, non_done_start);
+        target_profile.adv_grid[row][upper] = UpgradeStatus.Want;
         want_adv.push({
           row,
           upgrade_index: upper,
@@ -74,8 +76,9 @@ export function apply_results(
         });
         non_done_start += 1;
       }
-
+      // console.log("non", non_done_start, want_adv);
       for (let col = non_done_start; col < ADV_COLS; col++) {
+        // console.log("col", col);
         target_profile.adv_grid[row][col] =
           target_profile.adv_grid[row][col] === UpgradeStatus.Want
             ? UpgradeStatus.Want
@@ -96,7 +99,7 @@ export function apply_results(
       target_profile.keyed_upgrades,
       target_profile.tier,
     );
-    // console.log(target_profile.keyed_upgrades);
+
     for (let index = 0; index < want_adv.length; index++) {
       const key = to_upgrade_key(
         want_adv[index].row,
