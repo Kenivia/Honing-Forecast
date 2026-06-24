@@ -23,11 +23,17 @@ export function create_worker_bundle() {
   let throttle_ready = true;
 
   function _try_flush_throttle() {
-    // console.log("try", throttle_pending, throttle_ready, status.value)
     if (throttle_pending === null) return;
     if (status.value === "busy") return;
     if (!throttle_ready) return;
 
+    // console.log(
+    //   "try",
+    //   WasmOp[throttle_pending.wasm_op],
+    //   throttle_pending,
+    //   throttle_ready,
+    //   status.value,
+    // );
     const { wasm_op, payload } = throttle_pending;
     throttle_pending = null;
     throttle_ready = false;
@@ -77,7 +83,7 @@ export function create_worker_bundle() {
       if (e.data.type === "result") {
         result.value = e.data.result;
         // console.log(result.value);
-        status.value = "busy";
+        status.value = "idle";
         est_progress_percentage.value = 100;
         // console.log(mapToObject(toRaw(result.value)?.adv_cache) ?? null)
         if (cancel) {
