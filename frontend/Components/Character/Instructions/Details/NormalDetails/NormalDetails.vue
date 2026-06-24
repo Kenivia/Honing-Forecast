@@ -233,9 +233,8 @@ function manual_artisan_change() {
       0,
       true,
     );
-    starting_artisan_number.value = parse_locale_float(
-      starting_artisan_string.value,
-    );
+    starting_artisan_number.value =
+      parse_locale_float(starting_artisan_string.value) / 100;
     if (starting_artisan_number.value > FLOAT_TOL) {
       // for the topmost upgrade, which may have expanded false still (and might get sorted down )
       active_profile.value.keyed_upgrades[upgrade_key.value].expanded = true;

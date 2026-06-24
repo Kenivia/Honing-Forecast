@@ -69,7 +69,11 @@ watch(source_value, (val) => {
         width: actual_label_width,
       }"
     >
-      <span v-if="!hide_label">{{ label }}</span>
+      <span v-if="!hide_label" class="flex flex-row flex-wrap justify-end"
+        >{{ label }}
+
+        <span v-if="bound_label" class="annotation basis-full">(bound)</span>
+      </span>
       <img
         :src="get_icon_path(label)"
         class="generic-icon"
@@ -79,11 +83,6 @@ watch(source_value, (val) => {
         }"
         :alt="label"
       />
-      <span
-        v-if="bound_label"
-        class="annotation absolute transform-[translateX(-40px)_translateY(10px)]"
-        >(bound)</span
-      >
     </label>
 
     <input
@@ -161,5 +160,6 @@ watch(source_value, (val) => {
   min-width: 0;
   text-align: right;
   padding-right: 8px;
+  line-height: 10px;
 }
 </style>
