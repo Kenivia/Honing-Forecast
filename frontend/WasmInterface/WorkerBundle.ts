@@ -92,8 +92,9 @@ export function create_worker_bundle() {
         if (e.data.state_bundle) {
           // result.value = e.data.state_bundle;
           last_intermediate_time.value = performance.now();
-          // console.log("wrote");
+
           if (callback) {
+            // console.log("callback");
             callback(e.data.state_bundle);
           }
         }

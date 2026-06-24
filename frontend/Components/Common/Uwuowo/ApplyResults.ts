@@ -12,7 +12,6 @@ import {
   UpgradeStatus,
 } from "@/Utils/KeyedUpgrades";
 import { grid_change_callback } from "@/Components/Character/CharWorkerUtils";
-import { toRaw } from "vue";
 
 export function apply_results(
   target_profile: CharProfile,
