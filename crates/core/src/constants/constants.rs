@@ -19,7 +19,7 @@ pub const BUCKET_COUNT: usize = 50;
 // testing thresholds
 pub const MONTE_CARLO_CONFIDENCE: f64 = 0.999;
 pub const MONTE_CARLO_PRECISION: f64 = 0.001; // percentage error
-pub const SIMULATED_ANNEALING_DIFF_TOL: f64 = 1e-2; // run to run variance, this may need to change if optimizer is changed to be more varied
+pub const SIMULATED_ANNEALING_DIFF_TOL: f64 = 1e-3; // run to run variance, this may need to change if optimizer is changed to be more varied
 pub const MONTE_CARLO_COUNT: usize = 1_000_000; // per batch size, this is automatically increased until confidence is reached
 
 pub const DATA: Lazy<Vec<Data>> = Lazy::new(|| {

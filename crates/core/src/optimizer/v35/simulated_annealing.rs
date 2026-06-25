@@ -168,6 +168,7 @@ pub fn solve<R: Rng>(
 
     #[allow(unused)]
     let mut last_run_test_count: i64 = 0;
+    #[allow(unused)]
     let mut last_progress_sec: f64 = 0.0;
 
     while eqv_wall_time_iters < MAX_ITERS {
