@@ -34,7 +34,7 @@ const props = withDefaults(
       is_last: boolean,
     ) => string;
     empty_message?: string;
-    upside_down_cumulative?: boolean;
+    upside_down?: boolean;
   }>(),
   {
     graphColor: "--text-main",
@@ -47,7 +47,7 @@ const props = withDefaults(
     tooltipTextFn: (x, y, cy, _material, _color, _is_last) =>
       `<b>X:</b> ${x} <br/> <b>Y:</b> ${cy}`,
     empty_message: "This material is never used",
-    upside_down_cumulative: false,
+    upside_down: false,
   },
 );
 
@@ -64,13 +64,13 @@ const points = computed<Point[]>(() => {
     return [];
   }
 
-  const normalized = props.data
+  let normalized = props.data
     .map(
       (pair) => [Number(pair?.[0] ?? 0), Number(pair?.[1] ?? 0)] as DataPoint,
     )
     .filter((pair) => Number.isFinite(pair[0]) && Number.isFinite(pair[1]));
+
   // console.log(normalized);
-  const upside_down = props.upside_down_cumulative ? -1 : 1;
   if (normalized.length < 2) {
     return normalized.map(([x, y]) => ({ x, y, cumulativeY: y }));
   }
@@ -78,16 +78,17 @@ const points = computed<Point[]>(() => {
   if (props.cumulative) {
     return normalized.map(([x, y]) => ({ x, y, cumulativeY: y }));
   }
-  // let gap_size = (normalized[normalized.length - 1][0] - normalized[0][0]) / BUCKET_COUNT
 
   let prevSlope = 0;
   return normalized.map(([x, y], index) => {
     if (index === 0) {
       const nextX = normalized[1][0];
       const dx = nextX - x;
-      const slope = dx === 0 ? 0 : y / dx;
+      const slope = dx === 0 ? 0 : props.upside_down ? (1 - y) / dx : y / dx;
       prevSlope = slope;
-      return { x, y: slope * upside_down, cumulativeY: y };
+
+      return { x, y: slope, cumulativeY: y };
+      // no upside down multiplier cos its always positive
     }
 
     const [prevX, prevY] = normalized[index - 1];
@@ -97,16 +98,17 @@ const points = computed<Point[]>(() => {
     // }
     // we will just assume gap is constant, (non-cumulative graph looks weird otherwise), which is the current behaviour of histogram
     const dx = x - prevX;
-    const slope = dx === 0 ? 0 : (y - prevY) / dx;
+    const slope =
+      dx === 0 ? 0 : ((y - prevY) * (props.upside_down ? -1 : 1)) / dx;
 
-    if (slope * upside_down < FLOAT_TOL) {
-      const out = { x, y: prevSlope * upside_down, cumulativeY: y };
+    if (Math.abs(slope) < FLOAT_TOL) {
+      const out = { x, y: prevSlope, cumulativeY: y };
       prevSlope = 0;
       return out;
     }
     prevSlope = slope;
 
-    return { x, y: slope * upside_down, cumulativeY: y };
+    return { x, y: slope, cumulativeY: y };
   });
 });
 
@@ -164,7 +166,7 @@ function interpolateY(targetX: number) {
 }
 const has_duplicate_y = computed(() => {
   return (
-    !props.upside_down_cumulative &&
+    !props.upside_down &&
     points.value.filter(
       (p) =>
         p.cumulativeY !== points.value[0].cumulativeY && p.cumulativeY !== 1.0,

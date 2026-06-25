@@ -451,7 +451,7 @@ const is924Narrow = useMediaIsNarrow(924); // this turns out to be the width whe
             :max-yoverride="1"
             style="grid-column: span 3"
             :empty_message="'No normal honing available'"
-            :upside_down_cumulative="true"
+            :upside_down="true"
           />
         </div>
       </div>

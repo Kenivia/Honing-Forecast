@@ -158,7 +158,7 @@ pub fn run_tests(payload_path_string: String, is_verify: bool) {
     // for current_trial in{
     zipped_test_cases.par_iter().for_each(
         |(test_case_name, state_bundle, metric_type_string, metric_type_num, trial_num)| {
-            let mut instant: Instant = Instant::now();
+            let  instant: Instant = Instant::now();
             let key = (
                 test_case_name.clone(),
                 metric_type_string.clone(),
@@ -182,10 +182,12 @@ pub fn run_tests(payload_path_string: String, is_verify: bool) {
             let mut best_state_performance: Performance = Performance::new();
             let _ = state_bundle.metric_router(&mut best_state_performance);
 
+
+            let optimizer_wall_time = instant.elapsed().as_secs_f64();
             let output: Output = Output {
                 test_case: test_case_name.clone(),
                 trial_num: *trial_num,
-                wall_time: instant.elapsed().as_secs_f64(),
+                wall_time:optimizer_wall_time,
                 best: state_bundle.metric,
                 state: state_bundle.encode_all(),
                 seed,
@@ -196,7 +198,6 @@ pub fn run_tests(payload_path_string: String, is_verify: bool) {
                 best_state_performance: best_state_performance.to_write(),
             };
 
-            instant = Instant::now();
             if *trial_num == 1 {
                 let mc_result = verify_result_with_monte_carlo(
                     state_bundle.metric,
@@ -273,11 +274,13 @@ pub fn run_tests(payload_path_string: String, is_verify: bool) {
                     write_jsonl(&verification_output, &file_name)
                         .expect("Failed to write to result file");
                 }
+              
                 println!(
-                    "Done {} Test: {} Trial: {} MC: {} +-{}%  n={} SA: {} diff w/ MC: {}% \
+                    "Done {} Test: {} in {:.3}s Trial: {} MC: {} +-{}%  n={} SA: {} diff w/ MC: {}% \
                           prev: {} diff w/ prev: {}%",
                     ACTIVE_FEATURE,
                     test_case_name,
+                    optimizer_wall_time,
                     trial_num,
                     monte_carlo_mean,
                     MONTE_CARLO_PRECISION * 100.0,
@@ -285,12 +288,14 @@ pub fn run_tests(payload_path_string: String, is_verify: bool) {
                     state_bundle.metric,
                     my_pct_diff(monte_carlo_mean, state_bundle.metric) * 100.0,
                     seen,
-                    my_pct_diff(seen, state_bundle.metric) * 100.0
+                    my_pct_diff(seen, state_bundle.metric) * 100.0,
+                    
                 );
             } else {
+            
                 println!(
-                    "Done {} Test: {:?} Metric: {} Trial: {} ",
-                    ACTIVE_FEATURE, test_case_name, metric_type_string, trial_num
+                    "Done {} Test: {:?} in {:.3}s Metric: {} Trial: {} ",
+                    ACTIVE_FEATURE, test_case_name, optimizer_wall_time, metric_type_string, trial_num, 
                 );
             }
             if !(is_verify && seen_tests.contains_key(&key)) {
