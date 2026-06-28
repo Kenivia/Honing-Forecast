@@ -1,6 +1,6 @@
 name = "snowy-base-1817"       
 main = "worker.js"
-compatibility_date = "2026-06-04"
+compatibility_date = "2026-06-28"
 
 [[kv_namespaces]]
 binding = "CACHE_KV"
