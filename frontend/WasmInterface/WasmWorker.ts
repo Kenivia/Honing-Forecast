@@ -74,7 +74,7 @@ self.addEventListener("message", async (ev) => {
     result = await histogram_wrapper(payload);
   } else if (wasm_op == WasmOp.Cropper) {
     const { value: frame, done } = await reader.read();
-    console.log("frame arrived ", (performance.now() - start_time).toFixed(0));
+    // console.log("frame arrived ", (performance.now() - start_time).toFixed(0));
     // console.log("read", frame, done);
     if (done) {
       console.log("done");
@@ -89,11 +89,11 @@ self.addEventListener("message", async (ev) => {
 
       await frame.copyTo(dest, { format: "RGBA" });
       frame.close();
-      console.log(
-        "transfer ",
-        "done",
-        (performance.now() - start_time).toFixed(0),
-      );
+      // console.log(
+      //   "transfer ",
+      //   "done",
+      //   (performance.now() - start_time).toFixed(0),
+      // );
       result = await cropper_wrapper(payload);
     }
 
@@ -101,7 +101,7 @@ self.addEventListener("message", async (ev) => {
   } else if (wasm_op == WasmOp.Reserve) {
     reader = payload.readable.getReader();
     result = await reserve_buffer_wrapper(payload.scanner_state);
-    console.log("post reserve", wasm.memory.buffer);
+    // console.log("post reserve", wasm.memory.buffer);
   } else if (wasm_op == WasmOp.Dealloc) {
     result = await dealloc_buffer_wrapper(payload);
   } else {

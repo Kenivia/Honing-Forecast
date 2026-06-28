@@ -57,6 +57,7 @@ async function click() {
     for (const char of roster_parsed.value.result.filter((x) =>
       all_names.value.every((y) => y !== x),
     )) {
+      setTimeout(() => {}, 500);
       parsed_chars.value[char] = {
         result: await fetch_and_parse(
           {
