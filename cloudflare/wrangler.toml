@@ -2,6 +2,11 @@ name = "snowy-base-1817"
 main = "worker.js"
 compatibility_date = "2026-06-28"
 
+[observability.logs]
+enabled = true
+invocation_logs = true
+
 [[kv_namespaces]]
 binding = "CACHE_KV"
 id = "457b0a565e1e44d99d1ed0d2c5ff610b"      
+

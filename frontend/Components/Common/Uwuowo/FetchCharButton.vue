@@ -62,15 +62,15 @@ async function click() {
     @click="click"
     class="generic-button w-full text-wrap!"
     :disabled="
-      true
-      // region === null
+      // true
+      region === null
     "
     :style="{
-      opacity: 0.5, //region === null ? 0.5 : 1,
-      cursor: 'not-allowed', //  region === null ? 'not-allowed' : 'pointer',
+      opacity: region === null ? 0.5 : 1,
+      cursor: region === null ? 'not-allowed' : 'pointer',
     }"
   >
-    Fetching not working rn...
+    Fetch from lostark.bible
   </button>
   <Popup :show_popup="show_popup" @close_popup="show_popup = false">
     <span> {{ char_parsed.status }}</span>

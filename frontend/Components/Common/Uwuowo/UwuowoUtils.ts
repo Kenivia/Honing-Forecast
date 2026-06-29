@@ -67,7 +67,7 @@ export async function fetch_uwuowo(fetch_request): Promise<string> {
   const address = `${WORKER_URL}/character/${fetch_request.region}/${fetch_request.char_name}/${fetch_request.suffix}`;
   const response = await fetch(address, { method: "GET" });
   if (!response.ok) {
-    throw new Error(`Character fetch failed, "${await response.text()}"`);
+    throw new Error(`Fetch failed, "${await response.text()}"`);
   }
   return await response.text();
 }

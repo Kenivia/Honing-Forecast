@@ -47,7 +47,8 @@ export default {
 };
 
 async function handleCharacterProxy(region, charName, suffix, env, ctx) {
-  const upstreamUrl = `${BIBLE_URL}/character/${region}/${charName}/${suffix}`;
+  const upstreamUrl =
+    `${BIBLE_URL}/character/${region}/${charName}` + suffix ? `/${suffix}` : "";
   const cacheKey = `character:${region}:${charName}:${suffix}`;
 
   const cached = await env.CACHE_KV.get(cacheKey);
@@ -67,7 +68,10 @@ async function handleCharacterProxy(region, charName, suffix, env, ctx) {
 
   if (!upstream.ok) {
     return corsResponse(
-      new Response(`Upstream error: ${upstream.status}`, { status: 502 }),
+      new Response(
+        `Upstream error: ${upstream.status}, ${await upstream.text()}`,
+        { status: 502 },
+      ),
     );
   }
 
