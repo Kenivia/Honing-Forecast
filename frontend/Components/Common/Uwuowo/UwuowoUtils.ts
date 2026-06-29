@@ -165,7 +165,7 @@ export function parse_char(
         return { plus_n, ilevel, tier, adv };
       });
   } catch (e) {
-    return `Parsing equipment failed with message ${e}, response ${original}`;
+    return `Parsing equipment failed with message ${e}, response: ${original}`;
   }
 
   try {
@@ -194,7 +194,7 @@ export function parse_char(
       .textContent.trim();
     // console.log(container.parentElement.children, achieved_ilevel);
   } catch (e) {
-    return `Parsing class name failed with message ${e}, response ${original}`;
+    return `Parsing class name failed with message ${e}, response: ${original}`;
   }
   return { pieces, class_name, achieved_ilevel };
 }

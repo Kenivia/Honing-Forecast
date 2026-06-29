@@ -48,7 +48,8 @@ export default {
 
 async function handleCharacterProxy(region, charName, suffix, env, ctx) {
   const upstreamUrl =
-    `${BIBLE_URL}/character/${region}/${charName}` + suffix ? `/${suffix}` : "";
+    `${BIBLE_URL}/character/${region}/${charName}` +
+    (suffix ? `/${suffix}` : "");
   const cacheKey = `character:${region}:${charName}:${suffix}`;
 
   const cached = await env.CACHE_KV.get(cacheKey);
