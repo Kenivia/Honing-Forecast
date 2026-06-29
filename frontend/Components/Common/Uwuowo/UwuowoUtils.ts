@@ -17,7 +17,7 @@ export const DEFAULT_UWUOWO_BUNDLE = {
   result: null,
   status: FETCH_MSG,
 };
-export function reset_uwuowo_bundle(inp: Ref<UwuowoResultBundle>) {
+export function reset_uwuowo_bundle(inp: Ref<any>) {
   inp.value = structuredClone(DEFAULT_UWUOWO_BUNDLE);
 }
 export interface UwuowoFetchRequest {
@@ -74,7 +74,7 @@ export async function fetch_uwuowo(fetch_request): Promise<string> {
 
 export async function fetch_and_parse(
   fetch_request: UwuowoFetchRequest,
-  parsing_func: (_1: UwuowoFetchRequest, _2: HTMLDivElement[]) => any,
+  parsing_func: (_1: UwuowoFetchRequest, _2: HTMLDivElement[], _3: any) => any,
 ): Promise<any> {
   let html;
   try {
@@ -93,12 +93,13 @@ export async function fetch_and_parse(
   ) {
     return `Character: ${fetch_request.char_name} not found (region: ${fetch_request.region})`;
   }
-  return parsing_func(fetch_request, allDivs);
+  return parsing_func(fetch_request, allDivs, html);
 }
 
 export function parse_roster(
   fetch_request: UwuowoFetchRequest,
   allDivs: HTMLDivElement[],
+  original: any,
 ): string | string[] {
   // console.log(allDivs);
   try {
@@ -112,13 +113,14 @@ export function parse_roster(
       return target.textContent.split(" ")[0];
     });
   } catch (e) {
-    return `Parsing roster failed with message ${e}`;
+    return `Parsing roster failed with message ${e}, response: ${original}`;
   }
 }
 
 export function parse_char(
   _fetch_request: UwuowoFetchRequest,
   allDivs: HTMLDivElement[],
+  original: any,
 ): string | UwuowoCharResult {
   if (allDivs.findIndex((el) => el.textContent.includes("Missing Data")) >= 0) {
     return `Missing data`;
@@ -163,7 +165,7 @@ export function parse_char(
         return { plus_n, ilevel, tier, adv };
       });
   } catch (e) {
-    return `Parsing equipment failed with message ${e}`;
+    return `Parsing equipment failed with message ${e}, response ${original}`;
   }
 
   try {
@@ -192,7 +194,7 @@ export function parse_char(
       .textContent.trim();
     // console.log(container.parentElement.children, achieved_ilevel);
   } catch (e) {
-    return `Parsing class name failed with message ${e}`;
+    return `Parsing class name failed with message ${e}, response ${original}`;
   }
   return { pieces, class_name, achieved_ilevel };
 }

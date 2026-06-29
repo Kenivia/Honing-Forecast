@@ -69,7 +69,7 @@ async function handleCharacterProxy(region, charName, suffix, env, ctx) {
   if (!upstream.ok) {
     return corsResponse(
       new Response(
-        `Upstream error: ${upstream.status}, ${await upstream.text()}`,
+        `Upstream error: ${upstream.status}, response: ${await upstream.text()}`,
         { status: 502 },
       ),
     );
