@@ -77,6 +77,14 @@ async function handleCharacterProxy(region, charName, suffix, env, ctx) {
   }
 
   const data = await upstream.text();
+  if (data == "") {
+    return corsResponse(
+      new Response(
+        `Empty response: ${upstream.status}, response: ${await upstream.text()}`,
+        { status: 502 },
+      ),
+    );
+  }
 
   ctx.waitUntil(env.CACHE_KV.put(cacheKey, data, { expirationTtl: CACHE_TTL }));
 
