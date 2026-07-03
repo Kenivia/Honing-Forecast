@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { get_readable } from "@/WasmInterface/FramePassing";
 import { ScannerState, WasmOp } from "@/WasmInterface/WasmWorker";
 import { create_worker_bundle } from "@/WasmInterface/WorkerBundle";
 import { ref, onMounted, onUnmounted } from "vue";
@@ -6,7 +7,7 @@ import { ref, onMounted, onUnmounted } from "vue";
 const video_ref = ref<HTMLVideoElement | null>(null);
 const stream = ref<MediaStream | null>(null);
 const error = ref<string | null>(null);
-const status = ref<"idle" | "capturing" | "stopped">("idle");
+const status = ref<"idle" | "capturing">("idle");
 
 const cropper_worker_bundle = ref(null);
 
@@ -36,17 +37,14 @@ async function start_capture() {
 
     // console.log("buffer size", width * height * 4);
 
-    const processor = new MediaStreamTrackProcessor({ track });
-    console.log(
-      cropper_worker_bundle.value,
-      cropper_worker_bundle.value.result,
-    );
+    // const processor = new MediaStreamTrackProcessor({ track });
+
     const new_scanner_state = cropper_worker_bundle.value.result ?? {};
     new_scanner_state.buffer = { size: width * height * 4 };
     cropper_worker_bundle.value.debounced_start(
       WasmOp.Reserve,
       {
-        readable: processor.readable,
+        readable: get_readable(track),
         scanner_state: new_scanner_state,
       },
       (scanner_state) => cropper_loop(scanner_state),
@@ -54,10 +52,14 @@ async function start_capture() {
       false,
     );
   } catch (e: unknown) {
-    if (e instanceof Error && e.name !== "NotAllowedError") {
+    if (
+      e instanceof Error &&
+      e.name !== "NotAllowedError" &&
+      e.name !== "InvalidStateError"
+    ) {
       throw e;
     }
-    status.value = "stopped";
+    status.value = "idle";
   }
 }
 
@@ -81,25 +83,21 @@ async function cropper_loop(scanner_state: ScannerState) {
 }
 
 function stop_capture() {
-  console.log(
-    "stop",
-    cropper_worker_bundle.value,
-    cropper_worker_bundle.value.result,
-  );
-  cropper_worker_bundle.value.debounced_start(
-    WasmOp.Dealloc,
-    cropper_worker_bundle.value.result,
-    cropper_worker_bundle.value.cancel,
-    0,
-    false,
-  );
-
+  if (cropper_worker_bundle.value !== null) {
+    cropper_worker_bundle.value.debounced_start(
+      WasmOp.Dealloc,
+      cropper_worker_bundle.value.result,
+      cropper_worker_bundle.value.cancel,
+      0,
+      false,
+    );
+  }
   stream.value?.getTracks().forEach((t) => t.stop());
   stream.value = null;
   if (video_ref.value) {
     video_ref.value.srcObject = null;
   }
-  status.value = "stopped";
+  status.value = "idle";
 }
 
 onMounted(start_capture);
@@ -114,8 +112,7 @@ onUnmounted(stop_capture);
         class="rounded-full px-2 py-0.5 text-xs"
         :class="{
           'bg-green-500/20 text-green-400': status === 'capturing',
-          'bg-zinc-500/20 text-zinc-400':
-            status === 'idle' || status === 'stopped',
+          'bg-zinc-500/20 text-zinc-400': status === 'idle',
         }"
       >
         {{
@@ -123,7 +120,7 @@ onUnmounted(stop_capture);
             ? "● Live"
             : status === "idle"
               ? "Initialising…"
-              : "Stopped"
+              : "idle"
         }}
       </span>
     </div>
@@ -173,7 +170,7 @@ onUnmounted(stop_capture);
         :disabled="status === 'capturing'"
         @click="start_capture"
       >
-        {{ status === "stopped" ? "Capture Again" : "Start Capture" }}
+        {{ status === "idle" ? "Capture Again" : "Start Capture" }}
       </button>
       <button
         class="rounded-md bg-zinc-700 px-3 py-1.5 text-sm transition-colors hover:bg-zinc-600 disabled:cursor-not-allowed disabled:opacity-40"

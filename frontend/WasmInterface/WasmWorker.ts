@@ -74,13 +74,11 @@ self.addEventListener("message", async (ev) => {
     result = await histogram_wrapper(payload);
   } else if (wasm_op == WasmOp.Cropper) {
     const { value: frame, done } = await reader.read();
-    // console.log("frame arrived ", (performance.now() - start_time).toFixed(0));
-    // console.log("read", frame, done);
+    console.log("frame arrived ", (performance.now() - start_time).toFixed(0));
     if (done) {
       console.log("done");
       result = payload;
     } else {
-      // console.log(wasm.memory.buffer);
       const dest = new Uint8Array(
         wasm.memory.buffer,
         payload.buffer.pointer,
@@ -89,11 +87,11 @@ self.addEventListener("message", async (ev) => {
 
       await frame.copyTo(dest, { format: "RGBA" });
       frame.close();
-      // console.log(
-      //   "transfer ",
-      //   "done",
-      //   (performance.now() - start_time).toFixed(0),
-      // );
+      console.log(
+        "transfer ",
+        "done",
+        (performance.now() - start_time).toFixed(0),
+      );
       result = await cropper_wrapper(payload);
     }
 
