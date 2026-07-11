@@ -368,14 +368,14 @@ watch(
   },
 );
 
-const new_special_leaps = computed(() =>
+const new_special_leaps = ref(
   parse_locale_int(active_profile.value.special_budget.data[0]),
 );
 
 function special_succeed_click() {
   active_profile.value.special_budget.data[0] =
     new_special_leaps.value.toLocaleString();
-
+  console.log(active_profile.value.special_budget.data[0]);
   this_keyed.value.used_materials = compute_used_materials(
     props.upgrade,
     0,
