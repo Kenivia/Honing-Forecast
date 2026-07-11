@@ -5,6 +5,7 @@ If you'd like to help with any of the below, feel free to get in touch via [Disc
 
 ## NOW: OCR
 
+- make special graph always hist
 - figure out how all this screen capture stuff works
 
 ## Roadmap
