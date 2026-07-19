@@ -1,3 +1,5 @@
+/* eslint-disable no-undef */
+
 export function get_readable(
   track: MediaStreamVideoTrack,
 ): ReadableStream<VideoFrame> {

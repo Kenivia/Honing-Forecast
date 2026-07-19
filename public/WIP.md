@@ -8,6 +8,9 @@ If you'd like to help with any of the below, feel free to get in touch via [Disc
 - make special graph always hist
 - figure out how all this screen capture stuff works
 
+
+
+screenshot upload instead of stream at some point
 ## Roadmap
 
 some kind of discord loging & persistent like cloud storage here  

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { get_readable } from "@/WasmInterface/FramePassing";
+import { get_readable } from "@/Components/Character/InventoryScanner/FramePassing";
 import { ScannerState, WasmOp } from "@/WasmInterface/WasmWorker";
 import { create_worker_bundle } from "@/WasmInterface/WorkerBundle";
 import { ref, onMounted, onUnmounted } from "vue";
@@ -35,12 +35,17 @@ async function start_capture() {
       cropper_worker_bundle.value = create_worker_bundle();
     }
 
-    // console.log("buffer size", width * height * 4);
-
-    // const processor = new MediaStreamTrackProcessor({ track });
-
-    const new_scanner_state = cropper_worker_bundle.value.result ?? {};
-    new_scanner_state.buffer = { size: width * height * 4 };
+    const new_scanner_state = cropper_worker_bundle.value.result ?? {
+      screen_info: {
+        total_width: width,
+        total_height: height,
+      },
+    };
+    new_scanner_state.buffer = {
+      width,
+      height,
+      size: width * height * 4,
+    };
     cropper_worker_bundle.value.debounced_start(
       WasmOp.Reserve,
       {

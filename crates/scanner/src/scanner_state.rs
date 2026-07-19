@@ -3,9 +3,7 @@ use ahash::AHashMap;
 use either::Either;
 use serde::{Deserialize, Serialize};
 
-pub type ImageHash = u64;
-
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Default)]
 pub struct ScreenInfo {
     pub total_width: i64,
     pub start_width: i64,
@@ -28,25 +26,22 @@ pub enum InventoryType {
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Hash, Clone, Copy)]
 pub struct SlotAddress {
     pub inventory_type: InventoryType,
-    pub page_num: i64,
-    pub pos_in_inv: (i64, i64),
+    pub page_num: usize,
+    pub pos_in_inv: (usize, usize),
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, Copy)]
 pub struct ScaledPosition {
-    pub top_left: i64,
-    pub top_right: i64,
-    pub bot_left: i64,
-    pub bot_right: i64,
+    pub top_left: (usize, usize),
+    pub bot_right: (usize, usize),
 }
 #[derive(Debug, Serialize, Deserialize)]
 pub struct OneSlotInfo {
-    pub hash: u64,
     pub currently_seen: bool,
     pub icon_name: String,
-    pub icon_index: usize,
+    pub icon_id: usize,
     pub position: ScaledPosition,
-    pub amount: Either<i64, OneSlotProgress>,
+    pub amount: Either<usize, OneSlotProgress>,
     pub tradability: Either<InventoryType, OneSlotProgress>,
 }
 #[derive(Debug, Serialize, Deserialize)]
@@ -66,7 +61,7 @@ pub const ALL_ANCHOR_TYPES: [InventoryType; 3] = [
 pub struct OneAnchorInfo {
     pub variant: usize,
     pub position: ScaledPosition,
-    pub hash: ImageHash,
+    pub id: usize,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -83,7 +78,7 @@ pub struct ScannerState {
     #[serde(default)]
     pub anchors: AHashMap<InventoryType, OneAnchorInfo>,
     #[serde(default)]
-    pub screen_info: Option<ScreenInfo>,
+    pub screen_info: ScreenInfo,
     #[serde(default)]
     pub pending_jobs: Vec<OCRJob>,
 

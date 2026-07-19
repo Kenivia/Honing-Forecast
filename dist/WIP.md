@@ -5,7 +5,15 @@ If you'd like to help with any of the below, feel free to get in touch via [Disc
 
 ## NOW: OCR
 
-- figure out how all this screen capture stuff works
+- ~~figure out how all this screen capture stuff works~~
+
+Need the following:
+
+1. Figure out what template matching / checking algorithm actually works best
+2. Decide what format this will be (probably not plain json? or maybe that's fine if using some kind of hash?)
+3. setup page that produces calibrated settings via some kind of UI
+
+probably going to do these backwards
 
 ## Roadmap
 
