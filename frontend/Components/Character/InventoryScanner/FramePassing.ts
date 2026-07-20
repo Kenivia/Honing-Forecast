@@ -7,7 +7,6 @@ export function get_readable(
     return new MediaStreamTrackProcessor({ track }).readable;
   }
 
-  // no clue what's going on here on the firefox path but seems to work (and performance is really not bad)
   return createCanvasFrameReadable(track);
 }
 
@@ -52,18 +51,31 @@ function createCanvasFrameReadable(
   track: MediaStreamVideoTrack,
 ): ReadableStream<VideoFrame> {
   let video: HTMLVideoElement;
-  let stopDriving: () => void;
+  let stopDriving: (() => void) | undefined;
+  let capturing = false; // prevents overlapping createImageBitmap calls
 
   return new ReadableStream<VideoFrame>({
     async start(controller) {
       video = await makeSourceVideo(track);
+
       stopDriving = driveVideoFrames(video, async (_now, mediaTimeSec) => {
-        const bitmap = await createImageBitmap(video); // cheap, GPU-backed on most browsers
-        controller.enqueue(
-          new VideoFrame(bitmap, { timestamp: mediaTimeSec * 1e6 }),
-        );
-        // Note: VideoFrame(bitmap,...) does NOT close the bitmap for you.
-        bitmap.close();
+        // Backpressure: don't produce frames the consumer hasn't asked for
+        if (controller.desiredSize !== null && controller.desiredSize <= 0) {
+          return;
+        }
+        // Don't start a new capture while one is still in flight
+        if (capturing) return;
+        capturing = true;
+        try {
+          const bitmap = await createImageBitmap(video);
+          const frame = new VideoFrame(bitmap, {
+            timestamp: mediaTimeSec * 1e6,
+          });
+          bitmap.close();
+          controller.enqueue(frame);
+        } finally {
+          capturing = false;
+        }
       });
     },
     cancel() {

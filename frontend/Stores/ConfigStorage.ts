@@ -130,6 +130,7 @@ export function load_roster_config(): RosterConfig {
   out = standard_validation(out);
   const actual_out = { ...DEFAULT_ROSTER_CONFIG, ...out };
   write_roster_config(actual_out);
+
   return actual_out;
 }
 
@@ -142,6 +143,7 @@ function write_roster_config(roster_config: RosterConfig) {
     "is_slider_update",
     "adv_cache",
   ]);
+  console.log(roster_config);
   localStorage.setItem(CURRENT_STORAGE_KEY, LZString.compressToUTF16(json));
 }
 export function write_state(state) {

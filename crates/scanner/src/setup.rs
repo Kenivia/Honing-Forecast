@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 use crate::scanner_state::{ScaledPosition, ScannerState};
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct OneIconSetup {
+pub struct OneIconConfig {
     data: Vec<u8>,
     name: String,
     width: usize,
@@ -21,7 +21,6 @@ impl ScannerState {
 
     //     //
     // }
-
     pub fn setup(&mut self) {
         if self.incoming_new_icon.is_some() {
             let incoming: IncomingNewIcon = self.incoming_new_icon.clone().unwrap();
@@ -31,12 +30,13 @@ impl ScannerState {
                 .into_iter()
                 .flat_map(Image::into_vec)
                 .collect();
-            self.config.push(OneIconSetup {
+            self.config.push(OneIconConfig {
                 data,
                 name: incoming.name,
                 width: incoming.position.width(),
                 height: incoming.position.height(),
-            })
+            });
+            self.incoming_new_icon = None;
         }
     }
 }

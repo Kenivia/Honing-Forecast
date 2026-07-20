@@ -1,6 +1,6 @@
 use crate::{
     buffer::Buffer,
-    setup::{IncomingNewIcon, OneIconSetup},
+    setup::{IncomingNewIcon, OneIconConfig},
 };
 use ahash::AHashMap;
 use either::Either;
@@ -105,7 +105,7 @@ pub struct ScannerState {
     pub buffer: Buffer,
 
     #[serde(default)]
-    pub config: Vec<OneIconSetup>,
+    pub config: Vec<OneIconConfig>,
 
     #[serde(default)]
     pub incoming_new_icon: Option<IncomingNewIcon>,
