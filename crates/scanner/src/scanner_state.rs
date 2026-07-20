@@ -105,7 +105,7 @@ pub struct ScannerState {
     pub buffer: Buffer,
 
     #[serde(default)]
-    pub config: Vec<OneIconConfig>,
+    pub config: Vec<OneIconConfig>, // this should be empty for cropper calls
 
     #[serde(default)]
     pub incoming_new_icon: Option<IncomingNewIcon>,

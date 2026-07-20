@@ -8,6 +8,9 @@ import "@/shared.css";
 import "@/index.css";
 import "@/sidebar.css";
 import router from "@/Router";
+import { getScannerConfig } from "./Components/Character/InventoryScanner/ScannerConfigStorage";
+
+getScannerConfig();
 
 const pinia = createPinia();
 const app = createApp(App);

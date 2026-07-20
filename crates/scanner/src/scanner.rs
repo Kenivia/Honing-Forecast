@@ -40,7 +40,9 @@ impl ScannerState {
     }
     pub fn cropper(&mut self) {
         // assert!(self.buffer.pointer.is_some());
+        // assert!(self.config.len() == 0);
 
+        
         // self.find_active_game_area();
 
         // // TODO some kind of detection & recovery when the screne size changes?

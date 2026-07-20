@@ -57,8 +57,6 @@ export interface RosterConfig {
 
   auto_fetch: boolean;
   adv_cache: any;
-
-  scanner_config: OneIconConfig[];
 }
 export const useRosterStore = defineStore("roster", {
   state: () => ({
@@ -230,5 +228,4 @@ export const DEFAULT_ROSTER_CONFIG: RosterConfig = {
   is_fetching: false,
   auto_fetch: true,
   adv_cache: null,
-  scanner_config: [],
 };

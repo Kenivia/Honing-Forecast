@@ -1,9 +1,13 @@
+use std::sync::OnceLock;
+
 use fast_image_resize::images::Image;
 use serde::{Deserialize, Serialize};
 
 use crate::scanner_state::{ScaledPosition, ScannerState};
 
-#[derive(Debug, Serialize, Deserialize)]
+pub static CONFIG: OnceLock<Vec<OneIconConfig>> = OnceLock::new();
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct OneIconConfig {
     data: Vec<u8>,
     name: String,
@@ -30,6 +34,7 @@ impl ScannerState {
                 .into_iter()
                 .flat_map(Image::into_vec)
                 .collect();
+
             self.config.push(OneIconConfig {
                 data,
                 name: incoming.name,
@@ -38,5 +43,10 @@ impl ScannerState {
             });
             self.incoming_new_icon = None;
         }
+    }
+
+    pub fn set_config(&mut self) {
+        assert!(self.config.len() > 0);
+        CONFIG.set(self.config.clone()).expect("alr set config")
     }
 }

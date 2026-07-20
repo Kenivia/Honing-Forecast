@@ -1,13 +1,13 @@
 <script setup lang="ts">
 import { get_readable } from "@/Components/Character/InventoryScanner/FramePassing";
-import { useRosterStore } from "@/Stores/RosterConfig";
-import { ScannerState, WasmOp } from "@/WasmInterface/WasmWorker";
+import { WasmOp } from "@/WasmInterface/WasmWorker";
 import { create_worker_bundle } from "@/WasmInterface/WorkerBundle";
-import { storeToRefs } from "pinia";
 import { ref, computed, onMounted, onUnmounted, toRaw } from "vue";
+import { download_as_msg_pack, getScannerConfig } from "./ScannerConfigStorage";
 
-const { roster_config } = storeToRefs(useRosterStore());
-const config = ref(roster_config.value.scanner_config);
+const config = ref<OneIconConfig[] | null>(null);
+
+getScannerConfig().then((data) => (config.value = data));
 
 export interface OneIconConfig {
   name: string;
@@ -111,7 +111,6 @@ function confirm_setup() {
     modified_state,
     (scanner_state) => {
       config.value = scanner_state.config;
-      save_config();
     },
     0,
     false,
@@ -212,19 +211,14 @@ function stop_capture() {
 const editing_index = ref<number | null>(null);
 const edit_name = ref("");
 
-function get_config_array() {
-  return cropper_worker_bundle.value?.result?.config;
-}
-
-function save_config() {
-  roster_config.value.scanner_config = structuredClone(get_config_array());
+function download_config() {
+  download_as_msg_pack(config.value, "ScannerConfig.msgpack");
 }
 function delete_icon(index: number) {
   // console.log(config, index, cropper_worker_bundle.value?.result);
   if (!config.value) return;
   config.value.splice(index, 1);
   if (editing_index.value === index) editing_index.value = null;
-  save_config();
 }
 
 function move_icon_up(index: number) {
@@ -233,7 +227,6 @@ function move_icon_up(index: number) {
     config.value[index],
     config.value[index - 1],
   ];
-  save_config();
 }
 
 function move_icon_down(index: number) {
@@ -242,7 +235,6 @@ function move_icon_down(index: number) {
     config.value[index + 1],
     config.value[index],
   ];
-  save_config();
 }
 
 function start_rename(index: number, current_name: string) {
@@ -257,7 +249,6 @@ function confirm_rename(index: number) {
     config.value[index].name = trimmed;
   }
   editing_index.value = null;
-  save_config();
 }
 
 function cancel_rename() {
@@ -269,7 +260,7 @@ onUnmounted(stop_capture);
 </script>
 
 <template>
-  <div class="card-shell card-body flex flex-col gap-4">
+  <div v-if="config" class="card-shell card-body flex flex-col gap-4">
     <div class="flex items-center gap-3">
       <span class="text-sm font-semibold">Screen Capture</span>
       <span
@@ -406,6 +397,14 @@ onUnmounted(stop_capture);
         @click="confirm_setup"
       >
         Confirm Icon
+      </button>
+
+      <button
+        class="rounded-md bg-blue-600 px-3 py-1.5 text-sm transition-colors hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-40"
+        :disabled="status !== 'capturing'"
+        @click="download_config"
+      >
+        Download icon
       </button>
     </div>
   </div>
