@@ -1,6 +1,7 @@
 import init, {
   optimize_average_wrapper,
   histogram_wrapper,
+  setup_wrapper,
   cropper_wrapper,
   reserve_buffer_wrapper,
   dealloc_buffer_wrapper,
@@ -11,6 +12,7 @@ import { Upgrade } from "@/Utils/KeyedUpgrades";
 export enum WasmOp {
   OptimizeAverage,
   Histogram,
+  Setup,
   Cropper,
   Reserve,
   Dealloc,
@@ -72,7 +74,7 @@ self.addEventListener("message", async (ev) => {
     result = await optimize_average_wrapper(payload);
   } else if (wasm_op == WasmOp.Histogram) {
     result = await histogram_wrapper(payload);
-  } else if (wasm_op == WasmOp.Cropper) {
+  } else if (wasm_op == WasmOp.Cropper || wasm_op == WasmOp.Setup) {
     const { value: frame, done } = await reader.read();
     console.log("frame arrived ", (performance.now() - start_time).toFixed(0));
     if (done) {
@@ -92,7 +94,11 @@ self.addEventListener("message", async (ev) => {
         "done",
         (performance.now() - start_time).toFixed(0),
       );
-      result = await cropper_wrapper(payload);
+      if (wasm_op == WasmOp.Cropper) {
+        result = await cropper_wrapper(payload);
+      } else {
+        result = await setup_wrapper(payload);
+      }
     }
 
     //

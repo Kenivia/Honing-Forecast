@@ -24,8 +24,8 @@ impl ScannerState {
 
         let mut out: Vec<Image<'_>> = Vec::with_capacity(positions.len());
         for pos in positions {
-            let dst_w: u32 = (pos.bot_right.0 - pos.top_left.0) as u32;
-            let dst_h: u32 = (pos.bot_right.1 - pos.top_left.1) as u32;
+            let dst_w: u32 = pos.width() as u32;
+            let dst_h: u32 = pos.height() as u32;
 
             let src_left: f64 = pos.top_left.0 as f64 * scale_x;
             let src_top: f64 = pos.top_left.1 as f64 * scale_y;

@@ -1,4 +1,7 @@
-use crate::buffer::Buffer;
+use crate::{
+    buffer::Buffer,
+    setup::{IncomingNewIcon, OneIconSetup},
+};
 use ahash::AHashMap;
 use either::Either;
 use serde::{Deserialize, Serialize};
@@ -6,15 +9,22 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Serialize, Deserialize, Default)]
 pub struct ScreenInfo {
     pub total_width: i64,
+    #[serde(default)]
     pub start_width: i64,
+    #[serde(default)]
     pub end_width: i64,
+    #[serde(default)]
     pub effective_width: i64,
 
     pub total_height: i64,
+    #[serde(default)]
     pub start_height: i64,
+    #[serde(default)]
     pub end_height: i64,
+    #[serde(default)]
     pub effective_height: i64,
 
+    #[serde(default)]
     pub is_21_9: bool,
 }
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Hash, Copy, Clone)]
@@ -35,6 +45,16 @@ pub struct ScaledPosition {
     pub top_left: (usize, usize),
     pub bot_right: (usize, usize),
 }
+
+impl ScaledPosition {
+    pub fn width(&self) -> usize {
+        self.bot_right.0 - self.top_left.0
+    }
+    pub fn height(&self) -> usize {
+        self.bot_right.1 - self.top_left.1
+    }
+}
+
 #[derive(Debug, Serialize, Deserialize)]
 pub struct OneSlotInfo {
     pub currently_seen: bool,
@@ -83,4 +103,10 @@ pub struct ScannerState {
     pub pending_jobs: Vec<OCRJob>,
 
     pub buffer: Buffer,
+
+    #[serde(default)]
+    pub config: Vec<OneIconSetup>,
+
+    #[serde(default)]
+    pub incoming_new_icon: Option<IncomingNewIcon>,
 }

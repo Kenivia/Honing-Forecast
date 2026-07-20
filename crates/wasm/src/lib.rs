@@ -42,6 +42,19 @@ pub fn histogram_wrapper(input_payload: JsValue) -> JsValue {
     to_value(&out).unwrap()
 }
 
+
+#[wasm_bindgen]
+#[must_use]
+pub fn setup_wrapper(inp_scanner_state: JsValue) -> JsValue {
+    console_error_panic_hook::set_once();
+
+    let mut scanner_state: ScannerState = from_value(inp_scanner_state).unwrap();
+    scanner_state.setup();
+    to_value(&scanner_state).unwrap()
+}
+
+
+
 #[wasm_bindgen]
 #[must_use]
 pub fn cropper_wrapper(inp_scanner_state: JsValue) -> JsValue {

@@ -10,7 +10,7 @@ const error = ref<string | null>(null);
 const status = ref<"idle" | "capturing">("idle");
 
 const cropper_worker_bundle = ref(null);
-
+const cropper_running = ref(false);
 async function start_capture() {
   try {
     error.value = null;
@@ -52,7 +52,7 @@ async function start_capture() {
         readable: get_readable(track),
         scanner_state: new_scanner_state,
       },
-      (scanner_state) => cropper_loop(scanner_state),
+      null, //(scanner_state) => cropper_loop(scanner_state)
       0,
       false,
     );
@@ -68,6 +68,9 @@ async function start_capture() {
   }
 }
 
+function start_cropper() {
+  cropper_loop(cropper_worker_bundle.value.result);
+}
 async function cropper_loop(scanner_state: ScannerState) {
   if (
     cropper_worker_bundle.value === null ||
@@ -75,9 +78,10 @@ async function cropper_loop(scanner_state: ScannerState) {
     cropper_worker_bundle.value.result === null
   ) {
     console.log("no more cropper");
+    cropper_running.value = false;
     return;
   }
-
+  cropper_running.value = true;
   cropper_worker_bundle.value.debounced_start(
     WasmOp.Cropper,
     scanner_state,
@@ -132,7 +136,8 @@ onUnmounted(stop_capture);
 
     <!-- Preview -->
     <div
-      class="relative aspect-video w-full overflow-hidden rounded-lg bg-black"
+      class="relative overflow-hidden rounded-lg bg-black"
+      style="width: 1280px; height: 720px"
     >
       <video
         ref="video_ref"
@@ -186,4 +191,7 @@ onUnmounted(stop_capture);
       </button>
     </div>
   </div>
+  <button @click="start_cropper" :disabled="cropper_running === true">
+    {{ cropper_running ? "Cropper running" : "Start cropper" }}
+  </button>
 </template>

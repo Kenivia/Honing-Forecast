@@ -1,4 +1,4 @@
-//! A Simulated annealing implementation based a heuristic from http://dx.doi.org/10.1609/socs.v8i1.18424
+//! A Simulated annealing implementation based a heuristic from <http://dx.doi.org/10.1609/socs.v8i1.18424>
 //! I'm SURE there's a lot of things we can do better like i'm in no way an authority
 //!
 //! Some specific things off the top of my head:

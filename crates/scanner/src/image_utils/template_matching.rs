@@ -8,7 +8,7 @@ impl ScannerState {
     pub fn template_match(
         &self,
         template: &[u8],
-        bound: Option<ScaledPosition>,
+        bound:  Option<ScaledPosition>,
     ) -> Option<ScaledPosition> {
         None
         //
