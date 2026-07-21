@@ -1,31 +1,28 @@
 use std::sync::OnceLock;
 
+use ahash::AHashMap;
 use fast_image_resize::images::Image;
 use serde::{Deserialize, Serialize};
 
 use crate::scanner_state::{ScaledPosition, ScannerState};
 
-pub static CONFIG: OnceLock<Vec<OneIconConfig>> = OnceLock::new();
+pub static CONFIG: OnceLock<AHashMap<String, OneIconConfig>> = OnceLock::new();
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct OneIconConfig {
-    data: Vec<u8>,
-    name: String,
-    position: ScaledPosition,
-    tag: String,
+    pub data: Vec<u8>,
+    pub name: String,
+    pub position: ScaledPosition,
+    pub tag: String,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct IncomingNewIcon {
-    position: ScaledPosition,
-    name: String,
-    tag: String,
+    pub position: ScaledPosition,
+    pub name: String,
+    pub tag: String,
 }
 impl ScannerState {
-    // pub fn access_icon_id(&self, id: usize) -> &[u8] {
-
-    //     //
-    // }
     pub fn setup(&mut self) {
         if self.incoming_new_icon.is_some() {
             let incoming: IncomingNewIcon = self.incoming_new_icon.clone().unwrap();
@@ -51,6 +48,10 @@ impl ScannerState {
 
     pub fn set_config(&mut self) {
         // assert!(self.config.len() > 0);
-        CONFIG.set(self.config.clone()).expect("alr set config")
+        let mut new = AHashMap::with_capacity(self.config.len());
+        for i in self.config.iter() {
+            new.insert(i.name.clone(), i.clone());
+        }
+        CONFIG.set(new).expect("alr set config")
     }
 }
