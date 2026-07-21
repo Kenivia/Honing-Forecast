@@ -6,7 +6,7 @@ import { RouterLink, useRoute, useRouter } from "vue-router";
 import ControlPanel from "@/Components/Character/ControlPanel.vue";
 import Sidebar from "@/Components/Common/Sidebar.vue";
 import Guide from "@/Components/Character/Guide.vue";
-import Setup from "./InventoryScanner/Setup.vue";
+import Setup from "./InventoryScanner/Setup/Setup.vue";
 import Calc from "./Calc.vue";
 
 const route = useRoute();
@@ -74,7 +74,7 @@ watch(
       <Guide v-if="route.path.endsWith('guide')" />
       <Calc v-if="route.path.endsWith('calc')" />
       <Setup v-if="route.path.endsWith('scanner')" />
-      <div class="min-h-30"></div>
+      <div class="min-h-300"></div>
     </template>
   </Sidebar>
 </template>

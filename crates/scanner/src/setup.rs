@@ -11,14 +11,15 @@ pub static CONFIG: OnceLock<Vec<OneIconConfig>> = OnceLock::new();
 pub struct OneIconConfig {
     data: Vec<u8>,
     name: String,
-    width: usize,
-    height: usize,
+    position: ScaledPosition,
+    tag: String,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct IncomingNewIcon {
     position: ScaledPosition,
     name: String,
+    tag: String,
 }
 impl ScannerState {
     // pub fn access_icon_id(&self, id: usize) -> &[u8] {
@@ -35,18 +36,21 @@ impl ScannerState {
                 .flat_map(Image::into_vec)
                 .collect();
 
-            self.config.push(OneIconConfig {
-                data,
-                name: incoming.name,
-                width: incoming.position.width(),
-                height: incoming.position.height(),
-            });
+            self.config.insert(
+                0,
+                OneIconConfig {
+                    data,
+                    name: incoming.name,
+                    position: incoming.position,
+                    tag: incoming.tag,
+                },
+            );
             self.incoming_new_icon = None;
         }
     }
 
     pub fn set_config(&mut self) {
-        assert!(self.config.len() > 0);
+        // assert!(self.config.len() > 0);
         CONFIG.set(self.config.clone()).expect("alr set config")
     }
 }

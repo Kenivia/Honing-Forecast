@@ -42,17 +42,9 @@ pub struct SlotAddress {
 
 #[derive(Debug, Serialize, Deserialize, Clone, Copy)]
 pub struct ScaledPosition {
-    pub top_left: (usize, usize),
-    pub bot_right: (usize, usize),
-}
-
-impl ScaledPosition {
-    pub fn width(&self) -> usize {
-        self.bot_right.0 - self.top_left.0
-    }
-    pub fn height(&self) -> usize {
-        self.bot_right.1 - self.top_left.1
-    }
+    pub top_left: (f64, f64),
+    pub width: usize,
+    pub height: usize,
 }
 
 #[derive(Debug, Serialize, Deserialize)]

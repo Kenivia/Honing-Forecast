@@ -1,8 +1,19 @@
 import { encode, decode } from "@msgpack/msgpack";
-import { OneIconConfig } from "./Setup.vue";
 
 let configPromise: Promise<OneIconConfig[]> | null = null;
 
+export interface ScaledPosition {
+  top_left: [number, number];
+  width: number;
+  height: number;
+}
+
+export interface OneIconConfig {
+  name: string;
+  position: ScaledPosition;
+  data: unknown;
+  tag: string;
+}
 export function getScannerConfig() {
   if (!configPromise) {
     configPromise = load_from_msg_pack("/ScannerConfig.msgpack") as Promise<

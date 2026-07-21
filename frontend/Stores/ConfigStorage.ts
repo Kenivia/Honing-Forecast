@@ -142,6 +142,7 @@ function write_roster_config(roster_config: RosterConfig) {
     "budget_snapshot",
     "is_slider_update",
     "adv_cache",
+    "cropper_worker_bundle",
   ]);
   console.log(roster_config);
   localStorage.setItem(CURRENT_STORAGE_KEY, LZString.compressToUTF16(json));

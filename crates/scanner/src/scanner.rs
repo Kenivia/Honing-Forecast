@@ -33,8 +33,9 @@ impl ScannerState {
     fn anchored_position(&self, slot_address: SlotAddress) -> ScaledPosition {
         assert!(self.anchors.contains_key(&slot_address.inventory_type));
         ScaledPosition {
-            top_left: (0, 0),
-            bot_right: (0, 0),
+            top_left: (0.0, 0.0),
+            width: 0,
+            height: 0,
         }
         //
     }
@@ -42,7 +43,6 @@ impl ScannerState {
         // assert!(self.buffer.pointer.is_some());
         // assert!(self.config.len() == 0);
 
-        
         // self.find_active_game_area();
 
         // // TODO some kind of detection & recovery when the screne size changes?

@@ -22,8 +22,6 @@ import {
 } from "@/Utils/MarketDataFetcher";
 
 import { load_roster_config } from "./ConfigStorage";
-import { OneIconConfig } from "@/Components/Character/InventoryScanner/Setup.vue";
-
 export const CURRENT_STORAGE_KEY = "HF_CONFIG_V6_COMPRESSED";
 
 export interface RosterConfig {
@@ -57,6 +55,8 @@ export interface RosterConfig {
 
   auto_fetch: boolean;
   adv_cache: any;
+
+  cropper_worker_bundle: any;
 }
 export const useRosterStore = defineStore("roster", {
   state: () => ({
@@ -228,4 +228,6 @@ export const DEFAULT_ROSTER_CONFIG: RosterConfig = {
   is_fetching: false,
   auto_fetch: true,
   adv_cache: null,
+
+  cropper_worker_bundle: null,
 };
