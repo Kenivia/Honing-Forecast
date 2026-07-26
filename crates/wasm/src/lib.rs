@@ -69,6 +69,7 @@ pub fn reserve_buffer_wrapper(inp_scanner_state: JsValue) -> JsValue {
 
     let mut scanner_state: ScannerState = from_value(inp_scanner_state).unwrap();
     scanner_state.buffer.reserve();
+    scanner_state.downscaled_buffer.buffer.reserve();
     scanner_state.set_config();
     to_value(&scanner_state).unwrap()
 }

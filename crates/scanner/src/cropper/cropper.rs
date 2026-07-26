@@ -1,88 +1,25 @@
 use crate::{
     constants::{ALL_ANCHOR_TEMPLATES, ALL_ICONS, ALL_SLOT_ADDRESSS, ANCHOR_BOUNDS},
     scanner_state::{
-        ALL_ANCHOR_TYPES, InventoryType, OCRJob, OneAnchorInfo, OneSlotInfo,
-        OneSlotProgress::OCRing, ScaledPosition, ScannerState, SlotAddress,
+        ALL_ANCHOR_TYPES, OCRJob, OneAnchorInfo, OneSlotInfo, OneSlotProgress::OCRing,
+        ScaledPosition, ScannerState,
     },
+    setup::CONFIG,
 };
 use either::Either::Right;
 
 impl ScannerState {
-    fn find_active_game_area(&mut self) {
-        // TODO
-        self.screen_info.start_height = 0;
-        self.screen_info.start_width = 0;
-        self.screen_info.end_height = 1280;
-        self.screen_info.end_width = 1280;
-
-        self.screen_info.effective_width =
-            self.screen_info.end_width - self.screen_info.start_width;
-        self.screen_info.effective_height =
-            self.screen_info.end_height - self.screen_info.start_height;
-    }
-
-    fn active_page_num(&self, inv_type: InventoryType) -> Option<usize> {
-        if self.anchors.contains_key(&inv_type) {
-            Some(self.anchors[&inv_type].variant)
-        } else {
-            None
-        }
-    }
-
-    // given the anchor found, find where this icon should be
-    fn anchored_position(&self, slot_address: SlotAddress) -> ScaledPosition {
-        assert!(self.anchors.contains_key(&slot_address.inventory_type));
-        ScaledPosition {
-            top_left: (0.0, 0.0),
-            width: 0,
-            height: 0,
-        }
-        //
-    }
     pub fn cropper(&mut self) {
         assert!(self.buffer.pointer.is_some());
-        assert!(self.config.len() != 0);
+        assert!(CONFIG.get().unwrap().len() != 0);
 
-        self.find_active_game_area();
-
-        // TODO some kind of detection & recovery when the screne size changes?
-
-        for inv_type in ALL_ANCHOR_TYPES {
-            if self.anchors.contains_key(&inv_type)
-                && !self.images_close_enough(
-                    self.access_pixels(self.anchors[&inv_type].position),
-                    self.access_icon_id(self.anchors[&inv_type].id),
-                )
-            {
-                self.anchors.remove(&inv_type);
-            }
-
-            // TODO how reliable is using inv_type as an index? maybe just use usize
-            if !self.anchors.contains_key(&inv_type) {
-                if let Some((variant, (position, icon_id))) = ALL_ANCHOR_TEMPLATES
-                    [inv_type as usize]
-                    .iter()
-                    .enumerate()
-                    .find_map(|(variant, &icon_id)| {
-                        self.template_match(
-                            self.access_icon_id(icon_id),
-                            Some(ANCHOR_BOUNDS[inv_type as usize]),
-                        )
-                        .map(|position| (variant, (position, icon_id)))
-                    })
-                {
-                    self.anchors.insert(
-                        inv_type,
-                        OneAnchorInfo {
-                            variant,
-                            position,
-                            id: icon_id,
-                        },
-                    );
-                }
-            }
+        if !self.screen_info.initialized {
+            self.check_21_9();
         }
 
+        for inv_type in ALL_ANCHOR_TYPES {
+            self.validate_anchors();
+        }
         // TODO hover tooltip detection, also filter out slot_address that's being covered
 
         for slot_address in ALL_SLOT_ADDRESSS {
@@ -139,5 +76,7 @@ impl ScannerState {
                 }
             }
         }
+
+        self.downscaled_cache.written_this_cycle = true;
     }
 }

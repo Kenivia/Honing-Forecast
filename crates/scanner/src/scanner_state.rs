@@ -1,5 +1,6 @@
 use crate::{
     buffer::Buffer,
+    image_utils::downscale::DownscaledCache,
     setup::{IncomingNewIcon, OneIconConfig},
 };
 use ahash::AHashMap;
@@ -26,6 +27,9 @@ pub struct ScreenInfo {
 
     #[serde(default)]
     pub is_21_9: bool,
+
+    #[serde(default)]
+    pub initialized: bool,
 }
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Hash, Copy, Clone)]
 pub enum InventoryType {
@@ -73,7 +77,7 @@ pub const ALL_ANCHOR_TYPES: [InventoryType; 3] = [
 pub struct OneAnchorInfo {
     pub variant: usize,
     pub position: ScaledPosition,
-    pub id: usize,
+    pub name: String,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -101,4 +105,6 @@ pub struct ScannerState {
 
     #[serde(default)]
     pub incoming_new_icon: Option<IncomingNewIcon>,
+    
+    pub downscaled_cache: DownscaledCache,
 }

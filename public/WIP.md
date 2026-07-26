@@ -5,12 +5,13 @@ If you'd like to help with any of the below, feel free to get in touch via [Disc
 
 ## NOW: OCR
 
-- make special graph always hist
-- figure out how all this screen capture stuff works
+- ~~figure out how all this screen capture stuff works~~
 
+- get a minimally working cropper so that i can write the ui
 
+- normalize brightness at some point
+- screenshot upload instead of stream at some point
 
-screenshot upload instead of stream at some point
 ## Roadmap
 
 some kind of discord loging & persistent like cloud storage here  
@@ -92,6 +93,7 @@ Predicting market will be SO fun but it kinda needs the better OCR scanning to g
 
 ### Misc
 
+- make special graph always hist
 - *add "About" page for various stuff like credits and stuff* this will need like an overhaul of the header layout (which is definitely needed at some point but not now)
 
 - *some hoverable details on juice & whatnot* should probably generalize the tooltip thing instead of relying on v-tooltip (so i can render html in there and look butter), gonna do that at some point that's not now
