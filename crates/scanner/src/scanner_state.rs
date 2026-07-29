@@ -1,11 +1,13 @@
 use crate::{
     buffer::Buffer,
+    cropper::anchors::AnchorInfo,
     image_utils::downscale::DownscaledCache,
     setup::{IncomingNewIcon, OneIconConfig},
 };
 use ahash::AHashMap;
 use either::Either;
 use serde::{Deserialize, Serialize};
+use std::ops::{Add, Sub};
 
 #[derive(Debug, Serialize, Deserialize, Default)]
 pub struct ScreenInfo {
@@ -51,14 +53,40 @@ pub struct ScaledPosition {
     pub height: usize,
 }
 
+impl Sub for ScaledPosition {
+    type Output = Self;
+    fn sub(self, other: Self) -> ScaledPosition {
+        Self {
+            top_left: (
+                self.top_left.0 - other.top_left.0,
+                self.top_left.1 - other.top_left.1,
+            ),
+            width: self.width,
+            height: self.height,
+        }
+    }
+}
+impl Add for ScaledPosition {
+    type Output = Self;
+    fn add(self, other: Self) -> ScaledPosition {
+        Self {
+            top_left: (
+                self.top_left.0 + other.top_left.0,
+                self.top_left.1 + other.top_left.1,
+            ),
+            width: self.width,
+            height: self.height,
+        }
+    }
+}
+
 #[derive(Debug, Serialize, Deserialize)]
 pub struct OneSlotInfo {
-    pub currently_seen: bool,
-    pub icon_name: String,
-    pub icon_id: usize,
-    pub position: ScaledPosition,
-    pub amount: Either<usize, OneSlotProgress>,
-    pub tradability: Either<InventoryType, OneSlotProgress>,
+    pub currently_seen: Option<bool>,
+    pub icon_name: Option<String>,
+    pub position: Option<ScaledPosition>,
+    pub amount: Option<Either<usize, OneSlotProgress>>,
+    pub tradability: Option<Either<InventoryType, OneSlotProgress>>,
 }
 #[derive(Debug, Serialize, Deserialize)]
 pub enum OneSlotProgress {
@@ -74,13 +102,6 @@ pub const ALL_ANCHOR_TYPES: [InventoryType; 3] = [
 ];
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct OneAnchorInfo {
-    pub variant: usize,
-    pub position: ScaledPosition,
-    pub name: String,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
 pub struct OCRJob {
     pub cropped: Vec<u8>,
     pub slot_address: SlotAddress,
@@ -92,7 +113,11 @@ pub struct ScannerState {
     #[serde(default)]
     pub slot_infos: AHashMap<SlotAddress, OneSlotInfo>,
     #[serde(default)]
-    pub anchors: AHashMap<InventoryType, OneAnchorInfo>,
+    pub anchors: AHashMap<InventoryType, AnchorInfo>,
+
+    #[serde(default)]
+    pub page_num_infos: AHashMap<InventoryType, Vec<Option<bool>>>,
+
     #[serde(default)]
     pub screen_info: ScreenInfo,
     #[serde(default)]
@@ -105,6 +130,6 @@ pub struct ScannerState {
 
     #[serde(default)]
     pub incoming_new_icon: Option<IncomingNewIcon>,
-    
+
     pub downscaled_cache: DownscaledCache,
 }

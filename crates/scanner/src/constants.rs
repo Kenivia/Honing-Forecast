@@ -1,9 +1,53 @@
-use crate::scanner_state::{ScaledPosition, SlotAddress};
+use std::sync::LazyLock;
 
-pub const ALL_ANCHOR_TEMPLATES: [[usize; 0]; 0] = []; // ALL_ANCHOR_TEMPLATES[InventoryType][variant] = id
-pub const ANCHOR_BOUNDS: [ScaledPosition; 0] = [];
+use ahash::AHashMap;
 
-pub const ALL_SLOT_ADDRESSS: [SlotAddress; 0] = [];
+use crate::scanner_state::{
+    InventoryType::{self, CharInventory},
+    ScaledPosition, SlotAddress,
+};
+
+pub static ANCHORS_LOOKUP: LazyLock<
+    AHashMap<InventoryType, Vec<(String, Option<ScaledPosition>)>>,
+> = LazyLock::new(|| {
+    AHashMap::from([(
+        InventoryType::CharInventory,
+        vec![
+            ("Sort button".to_string(), None),
+            ("Dismantle button".to_string(), None),
+        ],
+    )])
+});
+
+//TODO generate this properly
+pub static ALL_SLOT_ADDRESSS: LazyLock<AHashMap<SlotAddress, ScaledPosition>> =
+    LazyLock::new(|| {
+        AHashMap::from([(
+            SlotAddress {
+                inventory_type: CharInventory,
+                page_num: 0,
+                pos_in_inv: (0, 0),
+            },
+            ScaledPosition {
+                top_left: (0.0, 0.0),
+                width: 0,
+                height: 0,
+            },
+        )])
+    });
+    
+//                                                             true   , false
+pub static ALL_PAGE_NUM: LazyLock<AHashMap<InventoryType, Vec<(String, String)>>> =
+    LazyLock::new(|| {
+        AHashMap::from([(
+            InventoryType::CharInventory,
+            vec![(
+                "Char inventory page 1 active".to_string(),
+                "Char inventory page 1 inactive".to_string(),
+            )],
+        )])
+    });
+
 pub const ALL_ICONS: [String; 0] = []; // pre sure string doesnt actually work? idk
 
 pub const TARGET_RESOLUTION: (usize, usize) = (1280, 720);

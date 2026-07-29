@@ -8,17 +8,25 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Serialize, Deserialize)]
 pub struct DownscaledCache {
     pub buffer: Buffer,
-    pub position: ScaledPosition,
+    pub position: Option<ScaledPosition>,
     pub occupied_size: Option<usize>,
     pub written_this_cycle: bool,
 }
+impl DownscaledCache {
+    pub fn reset(&mut self) {
+        self.position = None;
+        self.occupied_size = None;
+        self.written_this_cycle = false;
+    }
+}
 
 impl ScannerState {
-    fn contains(&self, pos: &ScaledPosition) -> bool {
-        let outer_left: i64 = self.downscaled_cache.position.top_left.0 as i64;
-        let outer_top: i64 = self.downscaled_cache.position.top_left.1 as i64;
-        let outer_right: i64 = outer_left + self.downscaled_cache.position.width as i64;
-        let outer_bottom: i64 = outer_top + self.downscaled_cache.position.height as i64;
+    fn covered_by_cache(&self, pos: &ScaledPosition) -> bool {
+        let downscaled_pos: ScaledPosition = self.downscaled_cache.position.unwrap();
+        let outer_left: i64 = downscaled_pos.top_left.0 as i64;
+        let outer_top: i64 = downscaled_pos.top_left.1 as i64;
+        let outer_right: i64 = outer_left + downscaled_pos.width as i64;
+        let outer_bottom: i64 = outer_top + downscaled_pos.height as i64;
 
         let inner_left: i64 = pos.top_left.0 as i64;
         let inner_top: i64 = pos.top_left.1 as i64;
@@ -57,14 +65,13 @@ impl ScannerState {
     }
 
     fn crop_only(&self, pos: &ScaledPosition, dst: &mut Image<'_>) {
-        let left: u32 =
-            (pos.top_left.0 as i64 - self.downscaled_cache.position.top_left.0 as i64) as u32;
-        let top: u32 =
-            (pos.top_left.1 as i64 - self.downscaled_cache.position.top_left.1 as i64) as u32;
+        let downscaled_pos: ScaledPosition = self.downscaled_cache.position.unwrap();
+        let left: u32 = (pos.top_left.0 as i64 - downscaled_pos.top_left.0 as i64) as u32;
+        let top: u32 = (pos.top_left.1 as i64 - downscaled_pos.top_left.1 as i64) as u32;
 
         let dst_w: usize = dst.width() as usize;
         let dst_h: usize = dst.height() as usize;
-        let src_stride: usize = self.downscaled_cache.position.width as usize * 4;
+        let src_stride: usize = downscaled_pos.width as usize * 4;
         let dst_stride: usize = dst_w * 4;
 
         let src_buffer: &mut [u8] = unsafe {
@@ -106,29 +113,27 @@ impl ScannerState {
             );
             dest_slice[..dst_image.buffer().len()].copy_from_slice(dst_image.buffer());
         };
-        self.downscaled_cache.position = position;
+
+        self.downscaled_cache.position = Some(position);
         self.downscaled_cache.written_this_cycle = true;
         self.downscaled_cache.occupied_size = Some(position.width * position.height * 4);
     }
 
-    pub fn downscale(&self, positions: &[ScaledPosition]) -> Vec<Image<'_>> {
+    pub fn downscale(&self, position: ScaledPosition) -> Image<'_> {
         let src_image: ImageRef<'_> = self.src_image(); // pre sure initiailizing this is cheap enough so i won't bother skipping it potentially
-        let mut out: Vec<Image<'_>> = Vec::with_capacity(positions.len());
 
-        for pos in positions {
-            let mut dst_image: Image<'_> =
-                Image::new(pos.width as u32, pos.height as u32, PixelType::U8x4);
+        let mut dst_image: Image<'_> = Image::new(
+            position.width as u32,
+            position.height as u32,
+            PixelType::U8x4,
+        );
 
-            if self.downscaled_cache.written_this_cycle && self.contains(pos) {
-                self.crop_only(pos, &mut dst_image);
-                out.push(dst_image);
-                continue;
-            }
-
-            self.actual_downscale(&src_image, &mut dst_image, pos);
-            out.push(dst_image);
+        if self.downscaled_cache.written_this_cycle && self.covered_by_cache(&position) {
+            self.crop_only(&position, &mut dst_image);
+            return dst_image;
         }
 
-        out
+        self.actual_downscale(&src_image, &mut dst_image, &position);
+        return dst_image;
     }
 }

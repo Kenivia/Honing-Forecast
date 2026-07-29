@@ -37,8 +37,8 @@ impl ScannerState {
 
         Some(ScaledPosition {
             top_left: (x as f64, y as f64),
-            width: template.position.width,
-            height: template.position.height,
+            width: template.offset.width,
+            height: template.offset.height,
         })
     }
 }

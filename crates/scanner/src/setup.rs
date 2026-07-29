@@ -1,10 +1,7 @@
-use std::sync::OnceLock;
-
-use ahash::AHashMap;
-use fast_image_resize::images::Image;
-use serde::{Deserialize, Serialize};
-
 use crate::scanner_state::{ScaledPosition, ScannerState};
+use ahash::AHashMap;
+use serde::{Deserialize, Serialize};
+use std::sync::OnceLock;
 
 pub static CONFIG: OnceLock<AHashMap<String, OneIconConfig>> = OnceLock::new();
 
@@ -12,7 +9,7 @@ pub static CONFIG: OnceLock<AHashMap<String, OneIconConfig>> = OnceLock::new();
 pub struct OneIconConfig {
     pub data: Vec<u8>,
     pub name: String,
-    pub position: ScaledPosition,
+    pub offset: ScaledPosition, // naming it like this to distinguish from like actual absolute positions
     pub tag: String,
 }
 
@@ -22,23 +19,22 @@ pub struct IncomingNewIcon {
     pub name: String,
     pub tag: String,
 }
+
+pub fn icon_lookup(name: &String) -> &OneIconConfig {
+    CONFIG.get().unwrap().get(name).unwrap()
+}
 impl ScannerState {
     pub fn setup(&mut self) {
         if self.incoming_new_icon.is_some() {
             let incoming: IncomingNewIcon = self.incoming_new_icon.clone().unwrap();
-            let input: Vec<ScaledPosition> = vec![incoming.position];
-            let data: Vec<u8> = self
-                .downscale(&input)
-                .into_iter()
-                .flat_map(Image::into_vec)
-                .collect();
+            let data: Vec<u8> = self.downscale(incoming.position).into_vec();
 
             self.config.insert(
                 0,
                 OneIconConfig {
                     data,
                     name: incoming.name,
-                    position: incoming.position,
+                    offset: incoming.position,
                     tag: incoming.tag,
                 },
             );

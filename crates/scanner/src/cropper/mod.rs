@@ -1,4 +1,5 @@
+pub mod anchors;
+pub mod aspect_ratio;
 pub mod cropper;
-mod find_anchors;
-mod find_screen;
-mod utils;
+pub mod page_num;
+pub mod slots;
