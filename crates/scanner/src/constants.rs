@@ -35,7 +35,7 @@ pub static ALL_SLOT_ADDRESSS: LazyLock<AHashMap<SlotAddress, ScaledPosition>> =
             },
         )])
     });
-    
+
 //                                                             true   , false
 pub static ALL_PAGE_NUM: LazyLock<AHashMap<InventoryType, Vec<(String, String)>>> =
     LazyLock::new(|| {
@@ -50,4 +50,9 @@ pub static ALL_PAGE_NUM: LazyLock<AHashMap<InventoryType, Vec<(String, String)>>
 
 pub const ALL_ICONS: [String; 0] = []; // pre sure string doesnt actually work? idk
 
+pub const NUMBER_OFFSET: ScaledPosition = ScaledPosition {
+    top_left: (0.0, -6.7),
+    width: 6,
+    height: 7,
+};
 pub const TARGET_RESOLUTION: (usize, usize) = (1280, 720);

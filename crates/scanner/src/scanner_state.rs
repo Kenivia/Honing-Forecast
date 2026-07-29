@@ -5,7 +5,6 @@ use crate::{
     setup::{IncomingNewIcon, OneIconConfig},
 };
 use ahash::AHashMap;
-use either::Either;
 use serde::{Deserialize, Serialize};
 use std::ops::{Add, Sub};
 
@@ -81,18 +80,29 @@ impl Add for ScaledPosition {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct OneSlotInfo {
-    pub currently_seen: Option<bool>,
-    pub icon_name: Option<String>,
-    pub position: Option<ScaledPosition>,
-    pub amount: Option<Either<usize, OneSlotProgress>>,
-    pub tradability: Option<Either<InventoryType, OneSlotProgress>>,
+pub enum Tradability {
+    Tradable,
+    RosterBound,
+    CharBound,
 }
+
 #[derive(Debug, Serialize, Deserialize)]
+pub struct OneSlotInfo {
+    // pub currently_seen: bool,
+    pub icon_name: Option<String>,
+    pub observed_number: OneIconConfig,
+    pub observed_icon: OneIconConfig,
+    pub progress: OneSlotProgress,
+    pub amount: Option<usize>,
+    pub tradability: Option<Tradability>,
+}
+
+#[derive(Debug, Serialize, Deserialize, PartialEq)]
 pub enum OneSlotProgress {
     OCRing,
     NeedHover,
     HoverOCRing,
+    NA,
 }
 
 pub const ALL_ANCHOR_TYPES: [InventoryType; 3] = [
@@ -100,13 +110,6 @@ pub const ALL_ANCHOR_TYPES: [InventoryType; 3] = [
     InventoryType::CharStorage,
     InventoryType::CharInventory,
 ];
-
-#[derive(Debug, Serialize, Deserialize)]
-pub struct OCRJob {
-    pub cropped: Vec<u8>,
-    pub slot_address: SlotAddress,
-    // TODO there should be something here to say which part of the tooltip this is OCring
-}
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ScannerState {
@@ -120,8 +123,6 @@ pub struct ScannerState {
 
     #[serde(default)]
     pub screen_info: ScreenInfo,
-    #[serde(default)]
-    pub pending_jobs: Vec<OCRJob>,
 
     pub buffer: Buffer,
 

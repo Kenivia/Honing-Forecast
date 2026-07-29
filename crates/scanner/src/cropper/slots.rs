@@ -1,31 +1,10 @@
-use ahash::AHashMap;
-use either::Either::Right;
-
 use crate::{
-    constants::{ALL_ICONS, ALL_SLOT_ADDRESSS},
-    scanner_state::{
-        OCRJob, OneSlotInfo, OneSlotProgress::OCRing, ScaledPosition, ScannerState, SlotAddress,
-    },
-    setup::icon_lookup,
+    constants::{ALL_ICONS, ALL_SLOT_ADDRESSS, NUMBER_OFFSET},
+    scanner_state::{OneSlotInfo, OneSlotProgress, ScaledPosition, ScannerState, SlotAddress},
+    setup::{OneIconConfig, icon_lookup},
 };
 
 impl ScannerState {
-    pub fn initialize_slots(&mut self) {
-        self.slot_infos = AHashMap::new();
-        for &slot_address in ALL_SLOT_ADDRESSS.keys() {
-            self.slot_infos.insert(
-                slot_address,
-                OneSlotInfo {
-                    currently_seen: None,
-                    icon_name: None,
-                    position: None,
-                    amount: None,
-                    tradability: None,
-                },
-            );
-        }
-    }
-
     // given the anchor found, find where this icon should be
     pub fn anchored_slot_address_position(
         &self,
@@ -41,7 +20,37 @@ impl ScannerState {
                     .position_root
                     .unwrap(),
         );
-        //
+
+    }
+    pub fn check_through_all_icons(
+        &self,
+        position: ScaledPosition,
+        position_root: ScaledPosition,
+    ) -> (Option<String>, OneIconConfig, OneIconConfig) {
+        let observed_number = OneIconConfig {
+            data: self.downscale(NUMBER_OFFSET + position).into_vec(),
+            name: "".to_string(),
+            offset: (NUMBER_OFFSET + position) - position_root,
+            tag: "".to_string(),
+        };
+        let observed_icon = OneIconConfig {
+            data: self.downscale(position).into_vec(),
+            name: "".to_string(),
+            offset: position - position_root,
+            tag: "".to_string(),
+        };
+
+        (
+            ALL_ICONS.iter().find_map(|icon_name| {
+                self.images_close_enough(
+                    icon_lookup(icon_name),
+                    self.downscale(position), // cloning doesn't seem to exist for Image
+                )
+                .then(|| icon_name.clone())
+            }),
+            observed_number,
+            observed_icon,
+        )
     }
 
     pub fn update_slots(&mut self) {
@@ -50,71 +59,99 @@ impl ScannerState {
             if active_page_nums[&slot_address.inventory_type] != Some(slot_address.page_num) {
                 continue;
             }
+            // active_page_nums being present means anchor is  ready
+            let position: ScaledPosition =
+                self.anchored_slot_address_position(slot_address).unwrap();
 
-            let position: Option<ScaledPosition> =
-                self.anchored_slot_address_position(slot_address);
-            if position.is_none() {
-                continue;
-            }
-            let this_slot: &OneSlotInfo = self.slot_infos.get(slot_address).unwrap();
+            if !self.slot_infos.contains_key(slot_address) {
+                let (icon_name, observed_number, observed_icon) = self.check_through_all_icons(
+                    position,
+                    self.anchors[&slot_address.inventory_type]
+                        .position_root
+                        .unwrap(),
+                );
 
-            if this_slot.currently_seen == Some(true)
-                && !self.images_close_enough(
-                    icon_lookup(
-                        &self.slot_infos
-                            .get(slot_address)
-                            .unwrap()
-                            .icon_name
+                self.slot_infos.insert(
+                    *slot_address,
+                    OneSlotInfo {
+                        // currently_seen: true,
+                        icon_name: icon_name.clone(),
+                        observed_number,
+                        observed_icon,
+                        progress: if icon_name.is_some() {
+                            OneSlotProgress::OCRing
+                        } else {
+                            OneSlotProgress::NA
+                        },
+                        amount: None,
+                        tradability: None,
+                    },
+                );
+            } else {
+                if self.slot_infos[slot_address].progress == OneSlotProgress::NA
+                    && !self.images_close_enough(
+                        &self.slot_infos[slot_address].observed_icon,
+                        self.downscale(position), // cloning doesn't seem to exist for Image
+                    )
+                {
+                    // only run the check if it changed
+                    let (icon_name, observed_number, observed_icon) = self.check_through_all_icons(
+                        position,
+                        self.anchors[&slot_address.inventory_type]
+                            .position_root
                             .unwrap(),
-                    ),
-                    self.downscale(position.unwrap()),
-                )
-            {
-                this_slot.currently_seen = Some(false); // doing it this way because we dont' want to delete previous info just because it got obscured for a bit
+                    );
+                    if icon_name.is_some() {
+                        // only overwrite if it matches another
+                        *self.slot_infos.get_mut(slot_address).unwrap() = OneSlotInfo {
+                            // currently_seen: true,
+                            icon_name: icon_name,
+                            observed_number,
+                            observed_icon,
+                            progress: OneSlotProgress::OCRing,
+                            amount: None,
+                            tradability: None,
+                        }
+                    } else {
+                        self.slot_infos
+                            .get_mut(slot_address)
+                            .unwrap()
+                            .observed_number = observed_number;
+                        self.slot_infos.get_mut(slot_address).unwrap().observed_icon =
+                            observed_icon;
+                        self.slot_infos.get_mut(slot_address).unwrap().progress =
+                            OneSlotProgress::NA;
+                    }
+                }
             }
 
-            if self.slot_infos[slot_address]
-                .currently_seen
-                .is_none_or(|x| x == false)
-            {}
+            // if position.is_none() {
+            //     continue;
+            // }
+            // let this_slot: &OneSlotInfo = self.slot_infos.get(slot_address).unwrap();
+
+            // if this_slot.currently_seen == Some(true)
+            //     && !self.images_close_enough(
+            //         icon_lookup(
+            //             &self.slot_infos
+            //                 .get(slot_address)
+            //                 .unwrap()
+            //                 .icon_name
+            //                 .unwrap(),
+            //         ),
+            //         self.downscale(position.unwrap()),
+            //     )
+            // {
+            //     this_slot.currently_seen = Some(false); // doing it this way because we dont' want to delete previous info just because it got obscured for a bit
+            // }
+
+            // if self.slot_infos[slot_address]
+            //     .currently_seen
+            //     .is_none_or(|x| x == false)
+            // {}
 
             //     // TODO filter all icons here to limit to actual icons
-            //     if let Some((icon_id, icon_name)) =
-            //         ALL_ICONS
-            //             .iter()
-            //             .enumerate()
-            //             .find_map(|(icon_id, icon_name)| {
-            //                 if self
-            //                     .slot_infos
-            //                     .get(&slot_address)
-            //                     .unwrap()
-            //                     s.icon_name.unwrap() == *icon_name)
-            //                 {
-            //                     return None;
-            //                 }
-            //                 self.images_close_enough(
-            //                     icon_lookup(icon_name),
-            //                     self.downscale(position.unwrap()),
-            //                 )
-            //                 .then(|| (icon_id, icon_name.clone()))
-            //             })
-            //     {
-            //         this_slot(
-            //             *slot_address,
-            //             OneSlotInfo {
-            //                 currently_seen: true,
-            //                 icon_id,
-            //                 icon_name,
-            //                 position: position.unwrap(),
-            //                 amount: Right(OCRing),
-            //                 tradability: Right(OCRing),
-            //             },
-            //         );
-            //         self.pending_jobs.push(OCRJob {
-            //             cropped: self.downscale(position.unwrap()).into_vec(),
-            //             slot_address: *slot_address,
-            //         })
-            //     }
+
             // }
         }
     }

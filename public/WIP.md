@@ -7,9 +7,10 @@ If you'd like to help with any of the below, feel free to get in touch via [Disc
 
 - ~~figure out how all this screen capture stuff works~~
 
+- add empty icon
 - get a minimally working cropper so that i can write the ui
 
-- normalize brightness at some point
+- normalize brightness at some point somehow
 - screenshot upload instead of stream at some point
 
 ## Roadmap
