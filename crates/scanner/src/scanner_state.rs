@@ -7,6 +7,7 @@ use crate::{
 use ahash::AHashMap;
 use serde::{Deserialize, Serialize};
 use std::ops::{Add, Sub};
+use uuid::Uuid;
 
 #[derive(Debug, Serialize, Deserialize, Default)]
 pub struct ScreenInfo {
@@ -89,9 +90,10 @@ pub enum Tradability {
 #[derive(Debug, Serialize, Deserialize)]
 pub struct OneSlotInfo {
     // pub currently_seen: bool,
-    pub icon_name: Option<String>,
+    pub icon_name_score: Option<(String, f64)>,
     pub observed_number: OneIconConfig,
     pub observed_icon: OneIconConfig,
+    pub observed_id: Uuid,
     pub progress: OneSlotProgress,
     pub amount: Option<usize>,
     pub tradability: Option<Tradability>,

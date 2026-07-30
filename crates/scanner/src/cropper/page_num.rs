@@ -30,6 +30,7 @@ impl ScannerState {
                         icon,
                         self.downscale(icon.offset + self.anchors[inv_type].position_root.unwrap()),
                     )
+                    .is_some()
                 };
 
                 let matched = check(&active_name) || check(&inactive_name);

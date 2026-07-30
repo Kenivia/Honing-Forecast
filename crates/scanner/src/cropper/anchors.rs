@@ -10,7 +10,7 @@ use crate::{
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct AnchorInfo {
-    pub positions: Vec<Option<ScaledPosition>>,
+    pub positions: Vec<Option<(ScaledPosition, f64)>>, // absolute positions here
     pub position_root: Option<ScaledPosition>,
 }
 
@@ -47,10 +47,13 @@ impl ScannerState {
                 .enumerate()
                 .filter(|(_, x)| x.is_some())
             {
-                if self.images_close_enough(
-                    icon_lookup(&ANCHORS_LOOKUP[inv_type][variant_index].0),
-                    self.downscale(found.unwrap()),
-                ) {
+                if self
+                    .images_close_enough(
+                        icon_lookup(&ANCHORS_LOOKUP[inv_type][variant_index].0),
+                        self.downscale(found.unwrap().0),
+                    )
+                    .is_none()
+                {
                     to_clear.push((*inv_type, variant_index));
                 }
             }
@@ -94,7 +97,7 @@ impl ScannerState {
                 ) {
                     self.anchors.get_mut(&inv_type).unwrap().positions[variant_index] = Some(found);
                     self.anchors.get_mut(&inv_type).unwrap().position_root =
-                        Some(found - icon_lookup(variant_name).offset);
+                        Some(found.0 - icon_lookup(variant_name).offset);
                 }
             }
         }

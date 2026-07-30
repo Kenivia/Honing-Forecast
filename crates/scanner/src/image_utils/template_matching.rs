@@ -13,7 +13,7 @@ impl ScannerState {
         &self,
         template: &OneIconConfig,
         observed: Image,
-    ) -> Option<ScaledPosition> {
+    ) -> Option<(ScaledPosition, f64)> {
         let template_img = config_to_rgba(template);
         let observed_img = image_to_rgba(observed);
 
@@ -35,10 +35,13 @@ impl ScannerState {
 
         let (x, y) = extremes.max_value_location;
 
-        Some(ScaledPosition {
-            top_left: (x as f64, y as f64),
-            width: template.offset.width,
-            height: template.offset.height,
-        })
+        Some((
+            ScaledPosition {
+                top_left: (x as f64, y as f64),
+                width: template.offset.width,
+                height: template.offset.height,
+            },
+            extremes.max_value as f64,
+        ))
     }
 }

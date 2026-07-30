@@ -1,3 +1,5 @@
+use uuid::Uuid;
+
 use crate::{
     constants::{ALL_ICONS, ALL_SLOT_ADDRESSS, NUMBER_OFFSET},
     scanner_state::{OneSlotInfo, OneSlotProgress, ScaledPosition, ScannerState, SlotAddress},
@@ -20,13 +22,12 @@ impl ScannerState {
                     .position_root
                     .unwrap(),
         );
-
     }
     pub fn check_through_all_icons(
         &self,
         position: ScaledPosition,
         position_root: ScaledPosition,
-    ) -> (Option<String>, OneIconConfig, OneIconConfig) {
+    ) -> (Option<(String, f64)>, OneIconConfig, OneIconConfig) {
         let observed_number = OneIconConfig {
             data: self.downscale(NUMBER_OFFSET + position).into_vec(),
             name: "".to_string(),
@@ -42,11 +43,14 @@ impl ScannerState {
 
         (
             ALL_ICONS.iter().find_map(|icon_name| {
-                self.images_close_enough(
+                let x = self.images_close_enough(
                     icon_lookup(icon_name),
                     self.downscale(position), // cloning doesn't seem to exist for Image
-                )
-                .then(|| icon_name.clone())
+                );
+                if x.is_some() {
+                    return Some((icon_name.clone(), x.unwrap()));
+                }
+                None
             }),
             observed_number,
             observed_icon,
@@ -64,21 +68,23 @@ impl ScannerState {
                 self.anchored_slot_address_position(slot_address).unwrap();
 
             if !self.slot_infos.contains_key(slot_address) {
-                let (icon_name, observed_number, observed_icon) = self.check_through_all_icons(
-                    position,
-                    self.anchors[&slot_address.inventory_type]
-                        .position_root
-                        .unwrap(),
-                );
+                let (icon_name_score, observed_number, observed_icon) = self
+                    .check_through_all_icons(
+                        position,
+                        self.anchors[&slot_address.inventory_type]
+                            .position_root
+                            .unwrap(),
+                    );
 
                 self.slot_infos.insert(
                     *slot_address,
                     OneSlotInfo {
                         // currently_seen: true,
-                        icon_name: icon_name.clone(),
+                        icon_name_score: icon_name_score.clone(),
                         observed_number,
                         observed_icon,
-                        progress: if icon_name.is_some() {
+                        observed_id: Uuid::new_v4(),
+                        progress: if icon_name_score.is_some() {
                             OneSlotProgress::OCRing
                         } else {
                             OneSlotProgress::NA
@@ -89,10 +95,12 @@ impl ScannerState {
                 );
             } else {
                 if self.slot_infos[slot_address].progress == OneSlotProgress::NA
-                    && !self.images_close_enough(
-                        &self.slot_infos[slot_address].observed_icon,
-                        self.downscale(position), // cloning doesn't seem to exist for Image
-                    )
+                    && self
+                        .images_close_enough(
+                            &self.slot_infos[slot_address].observed_icon,
+                            self.downscale(position), // cloning doesn't seem to exist for Image
+                        )
+                        .is_none()
                 {
                     // only run the check if it changed
                     let (icon_name, observed_number, observed_icon) = self.check_through_all_icons(
@@ -105,9 +113,10 @@ impl ScannerState {
                         // only overwrite if it matches another
                         *self.slot_infos.get_mut(slot_address).unwrap() = OneSlotInfo {
                             // currently_seen: true,
-                            icon_name: icon_name,
+                            icon_name_score: icon_name,
                             observed_number,
                             observed_icon,
+                            observed_id: Uuid::new_v4(),
                             progress: OneSlotProgress::OCRing,
                             amount: None,
                             tradability: None,
@@ -124,35 +133,6 @@ impl ScannerState {
                     }
                 }
             }
-
-            // if position.is_none() {
-            //     continue;
-            // }
-            // let this_slot: &OneSlotInfo = self.slot_infos.get(slot_address).unwrap();
-
-            // if this_slot.currently_seen == Some(true)
-            //     && !self.images_close_enough(
-            //         icon_lookup(
-            //             &self.slot_infos
-            //                 .get(slot_address)
-            //                 .unwrap()
-            //                 .icon_name
-            //                 .unwrap(),
-            //         ),
-            //         self.downscale(position.unwrap()),
-            //     )
-            // {
-            //     this_slot.currently_seen = Some(false); // doing it this way because we dont' want to delete previous info just because it got obscured for a bit
-            // }
-
-            // if self.slot_infos[slot_address]
-            //     .currently_seen
-            //     .is_none_or(|x| x == false)
-            // {}
-
-            //     // TODO filter all icons here to limit to actual icons
-
-            // }
         }
     }
 }
