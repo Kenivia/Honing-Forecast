@@ -1,4 +1,5 @@
 use ahash::AHashMap;
+use hf_core::my_dbg;
 
 use crate::{
     constants::ALL_PAGE_NUM,
@@ -35,6 +36,7 @@ impl ScannerState {
 
                 let matched = check(&active_name) || check(&inactive_name);
                 self.page_num_infos.get_mut(&inv_type).unwrap()[index] = matched.then_some(true);
+                my_dbg!("Inventory type", inv_type, "page", index, matched);
             }
         }
     }

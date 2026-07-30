@@ -8,8 +8,12 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Serialize, Deserialize)]
 pub struct DownscaledCache {
     pub buffer: Buffer,
+    
+    #[serde(default)]
     pub position: Option<ScaledPosition>,
+    #[serde(default)]
     pub occupied_size: Option<usize>,
+    #[serde(default)]
     pub written_this_cycle: bool,
 }
 impl DownscaledCache {

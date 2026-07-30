@@ -392,6 +392,7 @@ dependencies = [
  "console_error_panic_hook",
  "either",
  "fast_image_resize",
+ "hf-core",
  "image",
  "image-compare",
  "imageproc",
@@ -399,6 +400,7 @@ dependencies = [
  "serde",
  "serde_json",
  "uuid",
+ "web-sys",
 ]
 
 [[package]]

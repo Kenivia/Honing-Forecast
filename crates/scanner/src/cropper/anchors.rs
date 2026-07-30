@@ -1,4 +1,5 @@
 use ahash::AHashMap;
+use hf_core::my_dbg;
 use serde::{Deserialize, Serialize};
 
 use crate::{
@@ -58,7 +59,12 @@ impl ScannerState {
                 }
             }
         }
-
+        my_dbg!(
+            "Cleared",
+            to_clear.len(),
+            "Total",
+            self.anchors.keys().len()
+        );
         // hashmap borriwng shinanigans
         for (inv_type, variant_index) in to_clear {
             self.anchors.get_mut(&inv_type).unwrap().positions[variant_index] = None;
@@ -86,6 +92,7 @@ impl ScannerState {
                     .collect(),
             ));
         }
+        my_dbg!("Missing anchors:", missing_anchors.len(),);
 
         for inv_type in missing_anchors {
             for (variant_index, (variant_name, bound)) in
@@ -95,6 +102,14 @@ impl ScannerState {
                     icon_lookup(variant_name),
                     self.downscale(bound.unwrap_or(FULL_RECT_16_9)),
                 ) {
+                    my_dbg!(
+                        "Inv type",
+                        inv_type,
+                        "Anchor",
+                        variant_index,
+                        "has been found"
+                    );
+
                     self.anchors.get_mut(&inv_type).unwrap().positions[variant_index] = Some(found);
                     self.anchors.get_mut(&inv_type).unwrap().position_root =
                         Some(found.0 - icon_lookup(variant_name).offset);

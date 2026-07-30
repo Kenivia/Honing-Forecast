@@ -20,4 +20,12 @@ fast_image_resize = "6.0.0"
 image = {version = "0.25.10", default-features = false }
 image-compare = "0.5.0"
 imageproc = {version = "0.27.0", default-features = false }
-uuid = {version="1.24.0", features=["serde", "v4"] }
+uuid = {version="1.24.0", features=["serde", "v4","js"] }
+web-sys = { version = "0.3", features = ["console"]}
+hf-core = { path = "../core", default-features = false, features=["wasm"]}  
+
+[features]
+# features here to make my_dbg macro happy  
+wasm=[]  
+run_tests=[]
+default=["wasm"]

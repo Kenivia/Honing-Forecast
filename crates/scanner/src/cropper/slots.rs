@@ -1,9 +1,10 @@
+use hf_core::my_dbg;
 use uuid::Uuid;
 
 use crate::{
-    constants::{ALL_ICONS, ALL_SLOT_ADDRESSS, NUMBER_OFFSET},
+    constants::{ALL_SLOT_ADDRESSS, NUMBER_OFFSET},
     scanner_state::{OneSlotInfo, OneSlotProgress, ScaledPosition, ScannerState, SlotAddress},
-    setup::{OneIconConfig, icon_lookup},
+    setup::{CONFIG, OneIconConfig, icon_lookup},
 };
 
 impl ScannerState {
@@ -15,7 +16,6 @@ impl ScannerState {
         if !self.anchors[&slot_address.inventory_type].is_found() {
             return None;
         }
-
         return Some(
             ALL_SLOT_ADDRESSS[slot_address]
                 + self.anchors[&slot_address.inventory_type]
@@ -42,7 +42,7 @@ impl ScannerState {
         };
 
         (
-            ALL_ICONS.iter().find_map(|icon_name| {
+            CONFIG.get().unwrap().keys().find_map(|icon_name| {
                 let x = self.images_close_enough(
                     icon_lookup(icon_name),
                     self.downscale(position), // cloning doesn't seem to exist for Image
@@ -75,6 +75,7 @@ impl ScannerState {
                             .position_root
                             .unwrap(),
                     );
+                my_dbg!("New", slot_address, "icon:", icon_name_score);
 
                 self.slot_infos.insert(
                     *slot_address,
@@ -103,17 +104,18 @@ impl ScannerState {
                         .is_none()
                 {
                     // only run the check if it changed
-                    let (icon_name, observed_number, observed_icon) = self.check_through_all_icons(
+                    let (icon_name_score, observed_number, observed_icon) = self.check_through_all_icons(
                         position,
                         self.anchors[&slot_address.inventory_type]
                             .position_root
                             .unwrap(),
                     );
-                    if icon_name.is_some() {
+                    my_dbg!("Old", slot_address, "icon:", icon_name_score.clone());
+                    if icon_name_score.is_some() {
                         // only overwrite if it matches another
                         *self.slot_infos.get_mut(slot_address).unwrap() = OneSlotInfo {
                             // currently_seen: true,
-                            icon_name_score: icon_name,
+                            icon_name_score,
                             observed_number,
                             observed_icon,
                             observed_id: Uuid::new_v4(),
@@ -122,14 +124,11 @@ impl ScannerState {
                             tradability: None,
                         }
                     } else {
-                        self.slot_infos
-                            .get_mut(slot_address)
-                            .unwrap()
-                            .observed_number = observed_number;
-                        self.slot_infos.get_mut(slot_address).unwrap().observed_icon =
-                            observed_icon;
-                        self.slot_infos.get_mut(slot_address).unwrap().progress =
-                            OneSlotProgress::NA;
+                        let this_slot = self.slot_infos.get_mut(slot_address).unwrap();
+                        this_slot.observed_number = observed_number;
+                        this_slot.observed_icon = observed_icon;
+                        this_slot.progress = OneSlotProgress::NA;
+                        this_slot.observed_id = Uuid::new_v4();
                     }
                 }
             }

@@ -116,14 +116,30 @@ async function start_capture() {
         total_width: width,
         total_height: height,
       },
+      downscaled_cache: {
+        buffer: {
+          width: 1280,
+          height: 720,
+          size: 1280 * 720 * 4,
+        },
+      },
     };
     new_scanner_state.buffer = {
       width,
       height,
       size: width * height * 4,
     };
-    new_scanner_state.config = toRaw(config.value);
-    console.log(bundle, bundle.value);
+    new_scanner_state.config = (toRaw(config.value) ?? []).map((entry) => {
+      if ("position" in entry) {
+        const { position, ...rest } = entry as OneIconConfig & {
+          position: unknown;
+        };
+        return { ...rest, offset: position };
+      }
+      return entry;
+    });
+
+    console.log(new_scanner_state.config);
     bundle.debounced_start(
       WasmOp.Reserve,
       {

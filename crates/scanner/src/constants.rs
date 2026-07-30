@@ -48,7 +48,6 @@ pub static ALL_PAGE_NUM: LazyLock<AHashMap<InventoryType, Vec<(String, String)>>
         )])
     });
 
-pub const ALL_ICONS: [String; 0] = []; // pre sure string doesnt actually work? idk
 
 pub const NUMBER_OFFSET: ScaledPosition = ScaledPosition {
     top_left: (0.0, -6.7),

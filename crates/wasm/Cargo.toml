@@ -25,6 +25,7 @@ serde_json = "1.0"
 
 
 [features]
-# wasm feature here to make my_dbg macro happy  
+# features here to make my_dbg macro happy  
 wasm=[]  
+run_tests=[]
 default=["wasm"]
