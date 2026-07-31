@@ -36,7 +36,7 @@ const { active_profile } = storeToRefs(useRosterStore());
 
 const upgrade_key = computed(() =>
   to_upgrade_key(
-    props.upgrade.piece_type,
+    props.upgrade.piece_index,
     props.upgrade.upgrade_index,
     props.upgrade.is_normal_honing,
     active_profile.value.tier,

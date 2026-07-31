@@ -114,7 +114,8 @@ impl Upgrade {
             .min(new_book_count);
 
         // ASSUME THAT ONLY ONE TYPE OF BOOK IS AVAILIABLE FOR NOW
-        let book_id_result = juice_info.normal_uindex_to_id[self.upgrade_index].last();
+        let book_id_result =
+            juice_info.normal_uindex_to_id[self.piece_type_usize][self.upgrade_index].last();
         if !book_id_result.is_none() {
             // this check is for below +3 where there's no juice and no books
 

@@ -22,26 +22,28 @@ pub struct OneUindexJuice {
     adv_base_amt_used: i64,
     adv_event_amt_used: i64,
 }
+
 #[serde_as]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct JuiceType {
     pub prices: Vec<(f64, f64)>, // weapon, armor
     pub id: usize,
-    #[serde_as(as = "HashMap<DisplayFromStr, _>")]
-    pub data: HashMap<usize, OneUindexJuice>,
+    // data[piece_type][upgrade_index] = OneUindexJuice
+    #[serde_as(as = "Vec<HashMap<DisplayFromStr, _>>")]
+    pub data: Vec<HashMap<usize, OneUindexJuice>>,
 }
 impl Default for JuiceType {
     fn default() -> Self {
         Self {
             prices: Vec::new(),
             id: 0,
-            data: HashMap::new(),
+            data: Vec::new(),
         }
     }
 }
 
 impl Deref for JuiceType {
-    type Target = HashMap<usize, OneUindexJuice>;
+    type Target = Vec<HashMap<usize, OneUindexJuice>>;
     fn deref(&self) -> &Self::Target {
         &self.data
     }
@@ -49,58 +51,81 @@ impl Deref for JuiceType {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct JuiceInfo {
-    pub all_juices: Vec<JuiceType>, // all_juices[id][upgrade_index]
-    pub normal_uindex_to_id: Vec<Vec<usize>>, // normal_id_to_uindex[upgrade_index] = all id availiable at this u_index for normal honing
-    pub adv_uindex_to_id: Vec<Vec<usize>>, // adv_id_to_uindex[upgrade_index] = all id availiable at this u_index for adv honing
-    pub total_num_avail: usize,
+    pub all_juices: Vec<JuiceType>, // all_juices[id][piece_type][upgrade_index]
+    pub normal_uindex_to_id: Vec<Vec<Vec<usize>>>, // normal_uindex_to_id[piece_type][upgrade_index] = all id availiable at this u_index for normal honing
+    pub adv_uindex_to_id: Vec<Vec<Vec<usize>>>, // adv_uindex_to_id[piece_type][upgrade_index] = all id availiable at this u_index for adv honing
+    // pub total_num_avail: usize,
     pub num_juice_avail: usize,
 }
 impl JuiceInfo {
-    pub fn access(&self, id: usize, upgrade_index: usize) -> OneUindexJuice {
-        self.all_juices[id][&upgrade_index]
+    pub fn access(&self, id: usize, piece_type: usize, upgrade_index: usize) -> OneUindexJuice {
+        self.all_juices[id][piece_type][&upgrade_index]
     }
     pub fn new(
-        juice_books_avail: &[(usize, usize, usize, f64, i64, f64, f64)],
+        juice_books_avail: &[(usize, usize, usize, usize, f64, i64, f64, f64)],
         event_multiplier: &[(usize, usize, usize, f64)],
     ) -> JuiceInfo {
-        let mut normal_uindex_to_id: Vec<Vec<usize>> = vec![vec![]; 25];
-        let mut adv_uindex_to_id: Vec<Vec<usize>> = vec![vec![]; 4];
+        const NUM_NORMAL_UPGRADES: usize = 25;
+        const NUM_ADV_UPGRADES: usize = 4;
+
+        let mut normal_uindex_to_id: Vec<Vec<Vec<usize>>> = Vec::new();
+        let mut adv_uindex_to_id: Vec<Vec<Vec<usize>>> = Vec::new();
 
         let mut all_juices: Vec<JuiceType> = Vec::new();
-        let mut all_data: Vec<HashMap<usize, OneUindexJuice>> = Vec::new();
+        let mut all_data: Vec<Vec<HashMap<usize, OneUindexJuice>>> = Vec::new();
         let mut seen_ids: HashSet<usize> = HashSet::new();
 
         let mut event_multipliers: HashMap<(usize, usize, usize), f64> = HashMap::new();
         for (id, is_adv, upgrade_plus, mult) in event_multiplier {
             event_multipliers.insert((*id, *is_adv, *upgrade_plus - 1), *mult);
         }
-        for &(id, is_adv, upgrade_plus, normal_chance, amt_used, gs_chance, gsx2_chance) in
-            juice_books_avail.iter()
+        for &(
+            id,
+            is_adv,
+            piece_type,
+            upgrade_plus,
+            normal_chance,
+            amt_used,
+            gs_chance,
+            gsx2_chance,
+        ) in juice_books_avail.iter()
         {
             let upgrade_index = upgrade_plus - 1;
             if !seen_ids.contains(&id) {
                 assert!(id == all_juices.len());
-                all_data.push(HashMap::new());
+                all_data.push(Vec::new());
                 all_juices.push(JuiceType::default());
                 seen_ids.insert(id);
             }
 
-            let relevant = if is_adv == 0 {
-                &mut normal_uindex_to_id
+            if is_adv == 0 {
+                if normal_uindex_to_id.len() <= piece_type {
+                    normal_uindex_to_id
+                        .resize_with(piece_type + 1, || vec![Vec::new(); NUM_NORMAL_UPGRADES]);
+                }
+                normal_uindex_to_id[piece_type][upgrade_index].push(id);
             } else {
-                &mut adv_uindex_to_id
-            };
-            relevant[upgrade_index].push(id);
+                if adv_uindex_to_id.len() <= piece_type {
+                    adv_uindex_to_id
+                        .resize_with(piece_type + 1, || vec![Vec::new(); NUM_ADV_UPGRADES]);
+                }
+                adv_uindex_to_id[piece_type][upgrade_index].push(id);
+            }
+
             let this_event_mult = event_multipliers.get(&(id, is_adv, upgrade_index));
             let this_event_amt = if this_event_mult.is_none() {
                 amt_used
             } else {
                 (amt_used as f64 * this_event_mult.unwrap()).ceil() as i64
             };
-            if !all_data[id].contains_key(&upgrade_index) {
-                all_data[id].insert(upgrade_index, OneUindexJuice::default());
+
+            let this_juice_data = &mut all_data[id];
+            if this_juice_data.len() <= piece_type {
+                this_juice_data.resize_with(piece_type + 1, HashMap::new);
             }
-            let this = all_data[id].get_mut(&upgrade_index).unwrap();
+            let this = this_juice_data[piece_type]
+                .entry(upgrade_index)
+                .or_insert_with(OneUindexJuice::default);
             if is_adv == 1 {
                 this.adv_amt_used = amt_used;
                 this.adv_base_amt_used = amt_used;
@@ -116,13 +141,13 @@ impl JuiceInfo {
         for (id, this_data) in all_data.into_iter().enumerate() {
             all_juices[id].data = this_data;
         }
-        let total_num_avail = all_juices.len() * 2 + 7;
+        // let total_num_avail = all_juices.len() * 2 + 7;
         let num_juice_avail = all_juices.len();
         JuiceInfo {
             all_juices,
             normal_uindex_to_id,
             adv_uindex_to_id,
-            total_num_avail,
+            // total_num_avail,
             num_juice_avail,
         }
     }
@@ -133,7 +158,7 @@ pub fn get_priced_juice_info(
     event: bool,
 ) -> JuiceInfo {
     // my_dbg!(base.total_num_avail, &market_price);
-    assert!(base.total_num_avail == material_info.len());
+    // assert!(base.total_num_avail == material_info.len());
 
     let mut out: JuiceInfo = base.clone();
     for (id, juice_type) in out.all_juices.iter_mut().enumerate() {
@@ -146,18 +171,20 @@ pub fn get_priced_juice_info(
             juice_type.prices.push(price_pair)
         }
 
-        for (_, this) in juice_type.data.iter_mut() {
-            this.normal_amt_used = if event {
-                this.normal_event_amt_used
-            } else {
-                this.normal_base_amt_used
-            };
+        for piece_map in juice_type.data.iter_mut() {
+            for (_, this) in piece_map.iter_mut() {
+                this.normal_amt_used = if event {
+                    this.normal_event_amt_used
+                } else {
+                    this.normal_base_amt_used
+                };
 
-            this.adv_amt_used = if event {
-                this.adv_event_amt_used
-            } else {
-                this.adv_base_amt_used
-            };
+                this.adv_amt_used = if event {
+                    this.adv_event_amt_used
+                } else {
+                    this.adv_base_amt_used
+                };
+            }
         }
     }
     out

@@ -16,7 +16,7 @@ export interface AdvConfig {
 }
 
 export interface Upgrade {
-  piece_type: number;
+  piece_index: number;
   upgrade_index: number;
   is_normal_honing?: boolean;
   is_weapon?: boolean;
@@ -75,7 +75,7 @@ export type OldOneUpgrade = [
 
 // an array of this is passed into rust
 export interface OneUpgradeInput {
-  piece_type: number;
+  piece_index: number;
   upgrade_index: number;
   is_normal_honing: boolean;
   starting_artisan: number | null;
@@ -100,7 +100,7 @@ export function get_upgrade_map(
   if (upgrade_arr != null) {
     for (const upgrade of upgrade_arr) {
       const key = to_upgrade_key(
-        upgrade.piece_type,
+        upgrade.piece_index,
         upgrade.upgrade_index,
         upgrade.is_normal_honing,
         tier,
@@ -111,12 +111,12 @@ export function get_upgrade_map(
   return upgrade_map;
 }
 export function to_upgrade_key(
-  piece_type: number,
+  piece_index: number,
   upgrade_index: number,
   is_normal_honing: boolean,
   tier: number,
 ): OneUpgradeKey {
-  return `${piece_type},${upgrade_index},${is_normal_honing},${tier}`;
+  return `${piece_index},${upgrade_index},${is_normal_honing},${tier}`;
 }
 export function grids_to_keyed(
   normal_grid: StatusGrid,
@@ -136,10 +136,10 @@ export function grids_to_keyed(
   ];
 
   for (const { grid, is_normal_honing, default_adv_progress } of grid_configs) {
-    for (const [piece_type, row] of grid.entries()) {
+    for (const [piece_index, row] of grid.entries()) {
       for (const [upgrade_index, upgrade_status] of row.entries()) {
         const key = to_upgrade_key(
-          piece_type,
+          piece_index,
           upgrade_index,
           is_normal_honing,
           tier,
@@ -152,7 +152,7 @@ export function grids_to_keyed(
             // console.log("a", all_keyed[key]);
           } else if (key in all_keyed && is_old_one_upgrade(all_keyed[key])) {
             const [
-              piece_type,
+              piece_index,
               upgrade_index,
               is_normal_honing,
               _normal_progress,
@@ -162,7 +162,7 @@ export function grids_to_keyed(
               adv_progress,
             ] = all_keyed[key] as OldOneUpgrade;
             new_keyed[key] = {
-              piece_type: piece_type,
+              piece_index: piece_index,
               upgrade_index: upgrade_index,
               is_normal_honing: is_normal_honing,
               starting_artisan: 0, // technically can reverse-engineer a artisan / num taps here, but that'll need thet actual parsed Upgrade object (unless I re-implement all the logic in typescript) so maybe its not worth the hassle
@@ -177,7 +177,7 @@ export function grids_to_keyed(
             // console.log("b", all_keyed[key]);
           } else {
             new_keyed[key] = {
-              piece_type,
+              piece_index,
               upgrade_index,
               is_normal_honing,
               starting_artisan: 0,
@@ -203,7 +203,7 @@ function is_one_upgrade(obj: unknown): obj is OneUpgradeInput {
 
   const o = obj as Record<string, unknown>;
 
-  if (typeof o.piece_type !== "number") return false;
+  if (typeof o.piece_index !== "number") return false;
   if (typeof o.upgrade_index !== "number") return false;
   if (typeof o.is_normal_honing !== "boolean") return false;
   if (typeof o.unlocked !== "boolean") return false;

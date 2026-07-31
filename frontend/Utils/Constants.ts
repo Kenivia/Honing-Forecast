@@ -174,8 +174,7 @@ export const OUTPUT_LABELS = [
   "Blue juice",
 ];
 
-
-export const NUM_PIECES = 6;
+export const NUM_PIECES = 7;
 export const NORMAL_COLS = 25;
 export const ADV_COLS = 4;
 
@@ -186,6 +185,8 @@ export const base_icon_map: Record<string, string> = {
   Pants: "/Icons/Equipments/Pants.webp",
   Glove: "/Icons/Equipments/Gloves.webp",
   Weapon: "/Icons/Equipments/Weapon.webp",
+  Vambrace: "Icons/Equipments/Vambrace.png",
+  
   Red: "/Icons/Materials/Red.webp",
   Blue: "/Icons/Materials/Blue.webp",
   Leaps: "/Icons/Materials/Leapstone.webp",
@@ -237,6 +238,7 @@ export const PIECE_NAMES = [
   "Pants",
   "Glove",
   "Weapon",
+  "Vambrace",
 ];
 
 export const SERCA_SYNC_MAP: { serca_index: number; T4_index: number }[] =

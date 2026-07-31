@@ -126,21 +126,21 @@ pub fn my_pct_diff(a: f64, b: f64) -> f64 {
     (a - b).abs() / a.abs().max(b.abs()).max(1.0)
 }
 
-pub fn naive_count_to_ticks(counts: &[Vec<i64>]) -> Vec<Vec<bool>> {
-    let mut ticks: Vec<Vec<bool>> = vec![vec![false; counts[0].len()]; 6];
-    for (index, count) in counts[0].iter().enumerate() {
-        for i in 0..*count {
-            ticks[i as usize][index] = true;
-        }
-    }
+// pub fn naive_count_to_ticks(counts: &[Vec<i64>]) -> Vec<Vec<bool>> {
+//     let mut ticks: Vec<Vec<bool>> = vec![vec![false; counts[0].len()]; 6];
+//     for (index, count) in counts[0].iter().enumerate() {
+//         for i in 0..*count {
+//             ticks[i as usize][index] = true;
+//         }
+//     }
 
-    for (index, count) in counts[1].iter().enumerate() {
-        if *count == 1 {
-            ticks[5][index] = true;
-        }
-    }
-    ticks
-}
+//     for (index, count) in counts[1].iter().enumerate() {
+//         if *count == 1 {
+//             ticks[5][index] = true;
+//         }
+//     }
+//     ticks
+// }
 pub trait PairIterator<'a>: Iterator<Item = &'a Vec<(f64, f64)>> {}
 impl<'a, T> PairIterator<'a> for T where T: Iterator<Item = &'a Vec<(f64, f64)>> {}
 

@@ -1,6 +1,10 @@
 use crate::{
-    advanced_honing::compute::compute_adv_dist_wrapper, constants::juice_info::JuiceInfo,
-    upgrade::Upgrade,
+    advanced_honing::compute::compute_adv_dist_wrapper,
+    constants::juice_info::JuiceInfo,
+    upgrade::{
+        PieceType::{Armor, Weapon},
+        Upgrade,
+    },
 };
 use ahash::AHashMap;
 
@@ -38,7 +42,7 @@ impl Upgrade {
             );
         }
 
-        for &id in juice_info.adv_uindex_to_id[self.upgrade_index].iter() {
+        for &id in juice_info.adv_uindex_to_id[self.piece_type_usize][self.upgrade_index].iter() {
             let mut weap_cost: f64 = 0.0;
             let mut armor_cost: f64 = 0.0;
             let mut weap_support: Vec<f64> =
@@ -46,7 +50,9 @@ impl Upgrade {
             let mut armor_support: Vec<f64> =
                 Vec::with_capacity(if id == 0 { j_len } else { s_len });
 
-            let amt = juice_info.access(id, self.upgrade_index).adv_amt_used as f64;
+            let amt = juice_info
+                .access(id, self.piece_type_usize, self.upgrade_index)
+                .adv_amt_used as f64;
             let this_dist = if id == 0 {
                 &self.adv_dists[1]
             } else {
@@ -55,10 +61,12 @@ impl Upgrade {
             for _ in this_dist.iter() {
                 weap_support.push(weap_cost);
                 armor_support.push(armor_cost);
-                if self.is_weapon {
+                if self.piece_type == Weapon {
                     weap_cost += amt;
-                } else {
+                } else if self.piece_type == Armor {
                     armor_cost += amt;
+                } else {
+                    panic!("vambrance adv honing (juicing it as well)")
                 }
             }
 

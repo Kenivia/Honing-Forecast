@@ -4,6 +4,8 @@ use crate::constants::FLOAT_TOL;
 use crate::core::average::DEBUG_AVERAGE;
 use crate::my_dbg;
 use crate::state_bundle::StateBundle;
+use crate::upgrade::PieceType::Armor;
+use crate::upgrade::PieceType::Weapon;
 use crate::upgrade::Upgrade;
 use crate::verification::one_adv_sim::one_sim;
 use crate::verification::utils::apply_prices;
@@ -61,23 +63,27 @@ fn sample_truncated_geometric<R: Rng + ?Sized>(p: f64, max_taps: i64, rng: &mut 
 fn juice_costs(upgrade: &Upgrade, state_bundle: &StateBundle) -> Vec<Vec<(i64, i64)>> {
     let prep_output = &state_bundle.prep_output;
 
-    let mut juice_used: Vec<Vec<(i64, i64)>> =
-        vec![vec![(0, 0); prep_output.juice_info.num_juice_avail]; upgrade.normal_dist.len()];
+    let mut juice_used: Vec<Vec<Vec<i64>>> =
+        vec![vec![vec![0; 3]; prep_output.juice_info.num_juice_avail]; upgrade.normal_dist.len()];
 
     let mut juice_so_far: Vec<i64> = vec![0; prep_output.juice_info.num_juice_avail];
     if upgrade.is_normal_honing {
         // adv hone does not use this juice_data
-        for &id in
-            state_bundle.prep_output.juice_info.normal_uindex_to_id[upgrade.upgrade_index].iter()
+        for &id in state_bundle.prep_output.juice_info.normal_uindex_to_id[upgrade.piece_type_usize]
+            [upgrade.upgrade_index]
+            .iter()
         {
             let dist = &upgrade.normal_dist;
             for (p_index, _) in dist.iter().enumerate() {
                 let (weap_used, armor_used) = &mut juice_used[p_index][id];
                 let (juice, book_id) = *upgrade.state.get(p_index).unwrap_or(&(false, 0));
-                if upgrade.is_weapon {
+
+                if upgrade.piece_type == Weapon {
                     *weap_used = juice_so_far[id];
-                } else {
+                } else if upgrade.piece_type == Armor {
                     *armor_used = juice_so_far[id];
+                } else {
+                    panic!("vambrance juicing TODO")
                 }
                 if p_index >= dist.len() - 2 {
                     continue;
@@ -129,10 +135,10 @@ pub fn monte_carlo_data<R: Rng>(
             let tap_map: Vec<usize> = tap_map_generator(data_size, &upgrade.normal_dist, rng);
 
             let juice_costs = juice_costs(upgrade, &state_bundle);
-            if highest_upgrade_index_seen[upgrade.piece_type] > upgrade.upgrade_index as i64 {
+            if highest_upgrade_index_seen[upgrade.piece_index] > upgrade.upgrade_index as i64 {
                 special_valid = false;
             } else {
-                highest_upgrade_index_seen[upgrade.piece_type] = upgrade.upgrade_index as i64;
+                highest_upgrade_index_seen[upgrade.piece_index] = upgrade.upgrade_index as i64;
                 special_valid = true;
             }
 
@@ -178,10 +184,12 @@ pub fn monte_carlo_data<R: Rng>(
                     [upgrade.upgrade_index]
                     .iter()
                 {
-                    if upgrade.is_weapon {
+                    if upgrade.piece_type == Weapon {
                         this_cost[7 + id] += juice_costs[rolled_tap][*id].0;
-                    } else {
+                    } else if upgrade.piece_type == Armor {
                         this_cost[7 + num_juice_avail + id] += juice_costs[rolled_tap][*id].1; // i mean .0 and .1 should be  the same but whatever
+                    } else {
+                        panic!("vambrance juicing TODO")
                     }
                 }
             }
@@ -197,20 +205,22 @@ pub fn monte_carlo_data<R: Rng>(
                 }
 
                 for &id in state_bundle.prep_output.juice_info.adv_uindex_to_id
-                    [upgrade.upgrade_index]
+                    [upgrade.piece_type_usize][upgrade.upgrade_index]
                     .iter()
                 {
                     let used = if id == 0 { juice } else { scroll } as i64;
                     let amt_per_use = state_bundle
                         .prep_output
                         .juice_info
-                        .access(id, upgrade.upgrade_index)
+                        .access(id, upgrade.piece_type_usize, upgrade.upgrade_index)
                         .adv_amt_used;
 
-                    this_cost[if upgrade.is_weapon {
+                    this_cost[if upgrade.piece_type == Weapon {
                         7 + id
-                    } else {
+                    } else if upgrade.piece_type == Armor {
                         7 + num_juice_avail + id
+                    } else {
+                        panic!("vambrance adv honing ")
                     }] += amt_per_use * used;
                 }
             }

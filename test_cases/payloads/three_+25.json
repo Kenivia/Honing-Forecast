@@ -142,7 +142,7 @@
   "optimizer_plan": [0, 0, 2, 3],
   "upgrade_info": [
     {
-      "piece_type": 5,
+      "piece_index": 5,
       "upgrade_index": 24,
       "is_normal_honing": true,
       "starting_artisan": 0,
@@ -373,7 +373,7 @@
       "adv_progress": null
     },
     {
-      "piece_type": 4,
+      "piece_index": 4,
       "upgrade_index": 24,
       "is_normal_honing": true,
       "starting_artisan": 0,
@@ -604,7 +604,7 @@
       "adv_progress": null
     },
     {
-      "piece_type": 3,
+      "piece_index": 3,
       "upgrade_index": 23,
       "is_normal_honing": true,
       "starting_artisan": 0,

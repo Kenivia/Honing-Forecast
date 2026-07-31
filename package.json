@@ -3,7 +3,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "pnpm run wasm && concurrently \"vite\" \"pnpm run cloudflare-dev\"",
+    "dev": "pnpm run wasm && vite",
     "wasm": "wasm-pack build crates/wasm --release --target web",
     "test": "cargo test -p hf-core --profile release --no-default-features --features active_version,run_tests -- --no-capture",
     "change-log": "python ./scripts/change_log_helper/build.py",

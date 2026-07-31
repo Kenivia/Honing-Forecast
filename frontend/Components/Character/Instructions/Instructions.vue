@@ -61,7 +61,7 @@ function sort_upgrades(): [Upgrade, number, number][] {
         if (
           upgrade.upgrade_index <= this_upgrade.upgrade_index &&
           upgrade.is_normal_honing &&
-          upgrade.piece_type == this_upgrade.piece_type &&
+          upgrade.piece_index == this_upgrade.piece_index &&
           !upgrade.succeeded &&
           !output.includes(index)
         ) {
@@ -210,14 +210,14 @@ const optimizer_working = computed(get_optimizer_working);
             index_in_special_state,
             perform_order,
           ] in relevant_upgrade_arr"
-          :key="`instructions-${upgrade.upgrade_index}-${upgrade.piece_type}-${upgrade.is_normal_honing}`"
+          :key="`instructions-${upgrade.upgrade_index}-${upgrade.piece_index}-${upgrade.is_normal_honing}`"
           class="mats-row h-fit!"
         >
           <InstructionRow
             v-if="
               active_profile.keyed_upgrades[
                 to_upgrade_key(
-                  upgrade.piece_type,
+                  upgrade.piece_index,
                   upgrade.upgrade_index,
                   upgrade.is_normal_honing,
                   active_profile.tier,

@@ -213,7 +213,7 @@ export function get_icon_path(name: string) {
   return IconMap[name] ?? "";
 }
 export function get_piece_name(upgrade: Upgrade) {
-  return PIECE_NAMES[upgrade.piece_type];
+  return PIECE_NAMES[upgrade.piece_index];
 }
 
 const ordinalRules = new Intl.PluralRules("en", { type: "ordinal" });

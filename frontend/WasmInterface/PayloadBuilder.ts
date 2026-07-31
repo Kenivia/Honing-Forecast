@@ -166,21 +166,21 @@ export function special_sort_override(
 
   let out = structuredClone(special_state);
   if (special_override.highest_first) {
-    // For each piece_type, find the max upgrade_index among the indices present
-    // in special_state. Upgrades that are the peak of their piece_type float
+    // For each piece_index, find the max upgrade_index among the indices present
+    // in special_state. Upgrades that are the peak of their piece_index float
     // to the front; all others sink to the back. weapon_first does not apply.
     const peak_per_piece = new Map<number, number>();
     for (const idx of special_state) {
       const u = upgrade_arr[idx];
-      const current = peak_per_piece.get(u.piece_type);
+      const current = peak_per_piece.get(u.piece_index);
       if (current === undefined || u.upgrade_index > current) {
-        peak_per_piece.set(u.piece_type, u.upgrade_index);
+        peak_per_piece.set(u.piece_index, u.upgrade_index);
       }
     }
 
     const is_peak = (idx: number): boolean => {
       const u = upgrade_arr[idx];
-      return peak_per_piece.get(u.piece_type) === u.upgrade_index;
+      return peak_per_piece.get(u.piece_index) === u.upgrade_index;
     };
 
     out.sort((a, b) => {

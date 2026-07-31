@@ -1,4 +1,5 @@
 use crate::constants::juice_info::JuiceInfo;
+use crate::upgrade::PieceType::{Armor, Weapon};
 use crate::upgrade::Upgrade;
 
 pub fn get_extra_arr(
@@ -14,10 +15,14 @@ pub fn get_extra_arr(
                 return chance;
             }
             if *juice {
-                chance += juice_info.access(0, upgrade.upgrade_index).normal_chance;
+                chance += juice_info
+                    .access(0, upgrade.piece_type_usize, upgrade.upgrade_index)
+                    .normal_chance;
             }
             if *id > 0 {
-                chance += juice_info.access(*id, upgrade.upgrade_index).normal_chance;
+                chance += juice_info
+                    .access(*id, upgrade.piece_type_usize, upgrade.upgrade_index)
+                    .normal_chance;
             }
             chance
         })
@@ -130,7 +135,8 @@ impl Upgrade {
             );
         }
 
-        for &id in juice_info.normal_uindex_to_id[self.upgrade_index].iter() {
+        for &id in juice_info.normal_uindex_to_id[self.piece_type_usize][self.upgrade_index].iter()
+        {
             let mut weap_cost: f64 = 0.0;
             let mut armor_cost: f64 = 0.0;
             let mut weap_support: Vec<f64> = Vec::with_capacity(l_len);
@@ -139,7 +145,9 @@ impl Upgrade {
             let amt = if self.upgrade_index < 3 {
                 0.0
             } else {
-                juice_info.access(id, self.upgrade_index).normal_amt_used as f64
+                juice_info
+                    .access(id, self.piece_type_usize, self.upgrade_index)
+                    .normal_amt_used as f64
             };
             for (index, _) in self.normal_dist.iter().enumerate() {
                 let (juice, book) = self.state.get(index).unwrap_or(&(false, 0));
@@ -150,17 +158,21 @@ impl Upgrade {
                 }
 
                 if *juice && id == 0 {
-                    if self.is_weapon {
+                    if self.piece_type == Weapon {
                         weap_cost += amt;
-                    } else {
+                    } else if self.piece_type == Armor {
                         armor_cost += amt;
+                    } else {
+                        panic!("vambrance juicing TODO")
                     }
                 }
                 if *book == id && id > 0 {
-                    if self.is_weapon {
+                    if self.piece_type == Weapon {
                         weap_cost += amt;
-                    } else {
+                    } else if self.piece_type == Armor {
                         armor_cost += amt;
+                    } else {
+                        panic!("vambrance juicing TODO")
                     }
                 }
             }

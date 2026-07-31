@@ -35,19 +35,19 @@ impl StateBundle {
     }
 
     pub fn clean_special_state(&mut self) {
-        let mut highest_upgrade_index_seen: Vec<i64> = vec![-1; 6];
+        let mut highest_upgrade_index_seen: Vec<i64> = vec![-1; 7];
         let mut valid_uindex: Vec<usize> = Vec::with_capacity(self.upgrade_arr.len());
         let mut invalid_uindex: Vec<usize> = Vec::with_capacity(self.upgrade_arr.len());
         for u_index in self.special_state.iter() {
             let upgrade = &self.upgrade_arr[*u_index];
             if !upgrade.is_normal_honing
-                || highest_upgrade_index_seen[upgrade.piece_type] > upgrade.upgrade_index as i64
+                || highest_upgrade_index_seen[upgrade.piece_index] > upgrade.upgrade_index as i64
             {
                 invalid_uindex.push(*u_index);
                 continue;
             }
             valid_uindex.push(*u_index);
-            highest_upgrade_index_seen[upgrade.piece_type] = upgrade.upgrade_index as i64;
+            highest_upgrade_index_seen[upgrade.piece_index] = upgrade.upgrade_index as i64;
         }
         invalid_uindex.sort();
         self.special_invalid_index = Some(valid_uindex.len());
@@ -99,20 +99,20 @@ impl StateBundle {
         // Cache for powers of (1-p). Size is budget + 1 to cover max possible attempts.
         let mut fail_probs = vec![0.0; budget + 1];
 
-        let mut highest_upgrade_index_seen: Vec<i64> = vec![-1; 6];
+        let mut highest_upgrade_index_seen: Vec<i64> = vec![-1; 7];
         let mut invalid_index: usize = m + 1;
         for (attempt_index, u_index) in self.special_state.iter().enumerate() {
             let upgrade = &self.upgrade_arr[*u_index];
 
             // my_dbg!(upgrade.upgrade_index, upgrade.is_weapon, upgrade.piece_type);
             if !upgrade.is_normal_honing
-                || highest_upgrade_index_seen[upgrade.piece_type] > upgrade.upgrade_index as i64
+                || highest_upgrade_index_seen[upgrade.piece_index] > upgrade.upgrade_index as i64
             {
                 invalid_index = attempt_index + 1;
                 break;
             }
 
-            highest_upgrade_index_seen[upgrade.piece_type] = upgrade.upgrade_index as i64;
+            highest_upgrade_index_seen[upgrade.piece_index] = upgrade.upgrade_index as i64;
 
             let p = upgrade.base_chance;
             let one_minus_p = 1.0 - p;

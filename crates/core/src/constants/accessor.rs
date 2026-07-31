@@ -1,14 +1,16 @@
+use crate::upgrade::PieceType::{self, Armor, Vambrace, Weapon};
+
 use super::constants::DATA;
 
-pub fn get_event_extra_chance(express_event: bool, tier: usize) -> Vec<f64> {
+pub fn get_event_extra_chance(express_event: bool, tier: usize) -> Vec<Vec<f64>> {
     if !express_event {
-        return vec![0.0; 25];
+        return vec![vec![0.0; 25]; 3];
     }
     DATA[tier].EVENT_NORMAL_EXTRA_CHANCE.clone()
 }
-pub fn get_artisan(express_event: bool, tier: usize) -> Vec<f64> {
+pub fn get_artisan(express_event: bool, tier: usize) -> Vec<Vec<f64>> {
     if !express_event {
-        return vec![1.0; 25];
+        return vec![vec![1.0; 25]];
     }
 
     DATA[tier].EVENT_ARTISAN_MULTIPLIER.clone()
@@ -18,25 +20,28 @@ pub fn get_special_leap_cost(tier: usize) -> Vec<Vec<i64>> {
     DATA[tier].SPECIAL_LEAPS_COST.clone()
 }
 
-pub fn get_normal_hone_chances(tier: usize) -> Vec<f64> {
+pub fn get_normal_hone_chances(tier: usize) -> Vec<Vec<f64>> {
     DATA[tier].NORMAL_CHANCES.clone()
 }
 pub fn get_data(
     express_event: bool,
     tier: usize,
     is_adv: bool,
-    is_weapon: bool,
+    piece_type: PieceType,
     is_unlock: bool,
 ) -> Vec<Vec<f64>> {
-    let base = match (is_adv, is_weapon, is_unlock) {
-        (false, false, false) => &DATA[tier].NORMAL_ARMOR_COST,
-        (false, false, true) => &DATA[tier].NORMAL_ARMOR_UNLOCK,
-        (false, true, false) => &DATA[tier].NORMAL_WEAPON_COST,
-        (false, true, true) => &DATA[tier].NORMAL_WEAPON_UNLOCK,
-        (true, false, false) => &DATA[tier].ADV_ARMOR_COST,
-        (true, false, true) => &DATA[tier].ADV_ARMOR_UNLOCK,
-        (true, true, false) => &DATA[tier].ADV_WEAPON_COST,
-        (true, true, true) => &DATA[tier].ADV_WEAPON_UNLOCK,
+    let base = match (is_adv, piece_type, is_unlock) {
+        (false, Armor, false) => &DATA[tier].NORMAL_ARMOR_COST,
+        (false, Armor, true) => &DATA[tier].NORMAL_ARMOR_UNLOCK,
+        (false, Weapon, false) => &DATA[tier].NORMAL_WEAPON_COST,
+        (false, Weapon, true) => &DATA[tier].NORMAL_WEAPON_UNLOCK,
+        (false, Vambrace, false) => &DATA[tier].NORMAL_VAMBRACE_COST,
+        (false, Vambrace, true) => &DATA[tier].NORMAL_VAMBRACE_UNLOCK,
+        (true, Armor, false) => &DATA[tier].ADV_ARMOR_COST,
+        (true, Armor, true) => &DATA[tier].ADV_ARMOR_UNLOCK,
+        (true, Weapon, false) => &DATA[tier].ADV_WEAPON_COST,
+        (true, Weapon, true) => &DATA[tier].ADV_WEAPON_UNLOCK,
+        _ => &vec![],
     };
 
     let multiplier_arr = match (is_adv, express_event, is_unlock) {

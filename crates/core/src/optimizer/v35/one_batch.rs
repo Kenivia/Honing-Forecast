@@ -5,6 +5,7 @@ use super::scaler::AdaptiveScaler;
 use crate::performance::Performance;
 use crate::state_bundle::StateBundle;
 use crate::state_bundle::StateEssence;
+use crate::upgrade::PieceType::Armor;
 use ordered_float::OrderedFloat;
 use priority_queue::DoublePriorityQueue;
 use rand::SeedableRng;
@@ -65,7 +66,7 @@ impl SolverStateBundle {
             let target_idx = random_range(0..u_len);
             let target = &self.state_bundle.upgrade_arr[target_idx];
 
-            if !target.is_normal_honing || target.is_weapon {
+            if !target.is_normal_honing || target.piece_type != Armor {
                 return;
             }
 

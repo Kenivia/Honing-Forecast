@@ -76,7 +76,7 @@ function write_adv_progress() {
 
   active_profile.value.keyed_upgrades[
     to_upgrade_key(
-      props.upgrade.piece_type,
+      props.upgrade.piece_index,
       props.upgrade.upgrade_index,
       props.upgrade.is_normal_honing,
       active_profile.value.tier,

@@ -108,7 +108,7 @@ const optimizer_working = computed(get_optimizer_working);
       :index_in_special_state="index_in_special_state"
       :key="
         to_upgrade_key(
-          props.upgrade.piece_type,
+          props.upgrade.piece_index,
           props.upgrade.upgrade_index,
           props.upgrade.is_normal_honing,
           active_profile.tier,

@@ -26,11 +26,12 @@ pub const DATA: Lazy<Vec<Data>> = Lazy::new(|| {
     let mut out = Vec::new();
 
     out.push(Data::from(
-        serde_json::from_str::<RawData>(include_str!("./T4 June 2026.json")).unwrap(),
+        serde_json::from_str::<RawData>(include_str!("./T4 July 2026 (Vambrace padded).json"))
+            .unwrap(),
     ));
 
     out.push(Data::from(
-        serde_json::from_str::<RawData>(include_str!("./Serca March 2026.json")).unwrap(),
+        serde_json::from_str::<RawData>(include_str!("./Serca July 2026 (Vambrace).json")).unwrap(),
     ));
 
     out

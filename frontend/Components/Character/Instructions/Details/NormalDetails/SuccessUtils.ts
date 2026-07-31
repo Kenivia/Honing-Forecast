@@ -19,11 +19,11 @@ export interface RemainingMats {
 export function mark_upgrade_as_done(upgrade: Upgrade) {
   const { active_profile } = storeToRefs(useRosterStore());
   if (upgrade.is_normal_honing) {
-    active_profile.value.normal_grid[upgrade.piece_type][
+    active_profile.value.normal_grid[upgrade.piece_index][
       upgrade.upgrade_index
     ] = UpgradeStatus.Done;
   } else {
-    active_profile.value.adv_grid[upgrade.piece_type][upgrade.upgrade_index] =
+    active_profile.value.adv_grid[upgrade.piece_index][upgrade.upgrade_index] =
       UpgradeStatus.Done;
   }
   grid_change_callback();
