@@ -2,9 +2,10 @@ use crate::advanced_honing::utils::{AdvConfig, AdvDistTriplet};
 use crate::constants::accessor::{
     get_artisan, get_data, get_event_extra_chance, get_normal_hone_chances, get_special_leap_cost,
 };
-use crate::constants::juice_info::{JuiceInfo, get_priced_juice_info};
+use crate::constants::juice_info::{JuiceInfo, get_event_adjusted_juice_info};
 use crate::constants::*;
 use crate::helpers::distribute_budgets;
+use crate::state::OneState;
 use crate::upgrade::{PieceType, Upgrade, piece_index_to_type, piece_type_to_usize};
 use ahash::AHashMap;
 use serde::{Deserialize, Serialize};
@@ -29,7 +30,7 @@ pub struct OneUpgradeInput {
     pub is_normal_honing: bool,
     pub starting_artisan: Option<f64>,
     pub starting_num_taps: Option<usize>,
-    pub state: Option<Vec<(bool, usize)>>,
+    pub state: Option<Vec<OneState>>,
     pub unlocked: bool,
     pub adv_progress: Option<(usize, usize, bool, bool)>,
 }
@@ -48,8 +49,11 @@ impl PreparationOutput {
         Vec<Upgrade>,
         AHashMap<AdvConfig, AdvDistTriplet>,
     ) {
-        let juice_info: JuiceInfo =
-            get_priced_juice_info(&BASE_JUICE_INFOS[tier], &raw_material_info, express_event);
+        let juice_info: JuiceInfo = get_event_adjusted_juice_info(
+            &BASE_JUICE_INFOS[tier],
+            &raw_material_info,
+            express_event,
+        );
         let mut adv_cache: AHashMap<AdvConfig, AdvDistTriplet> = if inp_adv_cache.is_none() {
             AHashMap::new()
         } else {
@@ -144,7 +148,7 @@ pub fn parser(
         let this_unlock =
             &Vec::from_iter((0..7).map(|cost_type| relevant_unlock[cost_type][upgrade_index]));
         let this_unlocked: bool = unlocked;
-        let this_state_given: Vec<(bool, usize)> = state.unwrap_or(Vec::new());
+        let this_state_given: Vec<OneState> = state.unwrap_or(Vec::new());
 
         if is_normal_honing {
             let special_cost: i64 = special_leap_cost[piece_type_usize][upgrade_index];

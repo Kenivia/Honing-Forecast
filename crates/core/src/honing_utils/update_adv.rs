@@ -1,10 +1,6 @@
 use crate::{
-    advanced_honing::compute::compute_adv_dist_wrapper,
-    constants::juice_info::JuiceInfo,
-    upgrade::{
-        PieceType::{Armor, Weapon},
-        Upgrade,
-    },
+    advanced_honing::compute::compute_adv_dist_wrapper, constants::juice_info::JuiceInfo,
+    upgrade::Upgrade,
 };
 use ahash::AHashMap;
 
@@ -44,42 +40,23 @@ impl Upgrade {
 
         for &id in juice_info.adv_uindex_to_id[self.piece_type_usize][self.upgrade_index].iter() {
             let mut weap_cost: f64 = 0.0;
-            let mut armor_cost: f64 = 0.0;
             let mut weap_support: Vec<f64> =
-                Vec::with_capacity(if id == 0 { j_len } else { s_len });
-            let mut armor_support: Vec<f64> =
-                Vec::with_capacity(if id == 0 { j_len } else { s_len });
+                Vec::with_capacity(if id <= 1 { j_len } else { s_len });
 
             let amt = juice_info
                 .access(id, self.piece_type_usize, self.upgrade_index)
                 .adv_amt_used as f64;
-            let this_dist = if id == 0 {
+            let this_dist = if id <= 1 {
                 &self.adv_dists[1]
             } else {
                 &self.adv_dists[2]
             };
             for _ in this_dist.iter() {
                 weap_support.push(weap_cost);
-                armor_support.push(armor_cost);
-                if self.piece_type == Weapon {
-                    weap_cost += amt;
-                } else if self.piece_type == Armor {
-                    armor_cost += amt;
-                } else {
-                    panic!("vambrance adv honing (juicing it as well)")
-                }
+                weap_cost += amt;
             }
-
             self.cost_dist[id + 7].update_payload(
                 weap_support,
-                self.state.hash,
-                this_dist,
-                amt,
-                true,
-            );
-
-            self.cost_dist[id + 7 + juice_info.num_juice_avail].update_payload(
-                armor_support,
                 self.state.hash,
                 this_dist,
                 amt,

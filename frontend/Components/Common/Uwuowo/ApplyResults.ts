@@ -12,7 +12,6 @@ import {
   UpgradeStatus,
 } from "@/Utils/KeyedUpgrades";
 import { grid_change_callback } from "@/Components/Character/CharWorkerUtils";
-import { toRaw } from "vue";
 
 export function apply_results(
   target_profile: CharProfile,
@@ -32,7 +31,7 @@ export function apply_results(
   }
 
   const want_adv: { row: number; upgrade_index: number; diff: number }[] = [];
-  for (let row = 0; row < NUM_PIECES; row++) {
+  for (let row = 0; row < results.length; row++) {
     const want =
       results[row].tier === old_tier
         ? target_profile.normal_grid[row].findLastIndex(

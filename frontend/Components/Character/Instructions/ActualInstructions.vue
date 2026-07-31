@@ -24,7 +24,10 @@ function juice_icon_path(juice: boolean) {
     ? juice_info.normal_uindex_to_id
     : juice_info.adv_uindex_to_id;
 
-  let relevant_upgrade = relevant_id_map[props.upgrade.upgrade_index];
+  let relevant_upgrade =
+    relevant_id_map[props.upgrade.piece_type_usize][
+      props.upgrade.upgrade_index
+    ];
 
   if (relevant_upgrade.length === 0) {
     return get_icon_path(T4_JUICE_LABELS[0][props.upgrade.is_weapon ? 0 : 1]);

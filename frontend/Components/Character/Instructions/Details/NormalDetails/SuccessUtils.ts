@@ -62,9 +62,9 @@ export function compute_used_materials(
   for (const id of relevant_id_map[upgrade.upgrade_index]) {
     let juice_cost = 0;
 
-    let juice_type = juice_info.all_juices[id].data.get(
-      String(upgrade.upgrade_index),
-    );
+    let juice_type = juice_info.all_juices[id][
+      upgrade.piece_type_usize
+    ].data.get(String(upgrade.upgrade_index));
     let amt = upgrade.is_normal_honing
       ? juice_type.normal_amt_used
       : juice_type.adv_amt_used;
@@ -76,23 +76,22 @@ export function compute_used_materials(
         index++
       ) {
         if (
-          (upgrade.state[index][0] === true && id == 0) ||
-          (upgrade.state[index][1] === id && id !== 0)
+          (upgrade.state[index][0] === true && id <= 1) ||
+          (upgrade.state[index][1] === id && id > 1)
         ) {
           juice_cost += amt;
         }
         // console.log(juice_cost)
       }
     } else {
-      if (id === 0) {
+      if (id <= 1) {
         juice_cost = adv_juice_used * amt;
       } else {
         juice_cost = adv_scroll_used * amt;
       }
     }
 
-    out[7 + id + (upgrade.is_weapon ? 0 : juice_info.num_juice_avail)] =
-      juice_cost;
+    out[7 + id] = juice_cost;
   }
   return out;
 }

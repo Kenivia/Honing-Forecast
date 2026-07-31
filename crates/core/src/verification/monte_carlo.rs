@@ -4,14 +4,13 @@ use crate::constants::FLOAT_TOL;
 use crate::core::average::DEBUG_AVERAGE;
 use crate::my_dbg;
 use crate::state_bundle::StateBundle;
-use crate::upgrade::PieceType::Armor;
-use crate::upgrade::PieceType::Weapon;
 use crate::upgrade::Upgrade;
 use crate::verification::one_adv_sim::one_sim;
 use crate::verification::utils::apply_prices;
 use itertools::izip;
 use rand::Rng;
 use rand::prelude::*;
+use smallvec::smallvec;
 use statrs::distribution::{ContinuousCDF, Normal};
 
 /// Instead of actually sampling the distribution, we guarantee that every value has exactly the expected number of occurances
@@ -60,49 +59,44 @@ fn sample_truncated_geometric<R: Rng + ?Sized>(p: f64, max_taps: i64, rng: &mut 
     if k > max_taps { max_taps + 1 } else { k }
 }
 
-fn juice_costs(upgrade: &Upgrade, state_bundle: &StateBundle) -> Vec<Vec<(i64, i64)>> {
+fn juice_costs(upgrade: &Upgrade, state_bundle: &StateBundle) -> Vec<Vec<i64>> {
     let prep_output = &state_bundle.prep_output;
 
-    let mut juice_used: Vec<Vec<Vec<i64>>> =
-        vec![vec![vec![0; 3]; prep_output.juice_info.num_juice_avail]; upgrade.normal_dist.len()];
+    let mut juice_used: Vec<Vec<i64>> =
+        vec![vec![0; prep_output.juice_info.num_juice_avail]; upgrade.normal_dist.len()];
+    // [p_index][id] = used at this point
 
     let mut juice_so_far: Vec<i64> = vec![0; prep_output.juice_info.num_juice_avail];
     if upgrade.is_normal_honing {
         // adv hone does not use this juice_data
-        for &id in state_bundle.prep_output.juice_info.normal_uindex_to_id[upgrade.piece_type_usize]
-            [upgrade.upgrade_index]
-            .iter()
-        {
-            let dist = &upgrade.normal_dist;
-            for (p_index, _) in dist.iter().enumerate() {
-                let (weap_used, armor_used) = &mut juice_used[p_index][id];
-                let (juice, book_id) = *upgrade.state.get(p_index).unwrap_or(&(false, 0));
 
-                if upgrade.piece_type == Weapon {
-                    *weap_used = juice_so_far[id];
-                } else if upgrade.piece_type == Armor {
-                    *armor_used = juice_so_far[id];
-                } else {
-                    panic!("vambrance juicing TODO")
-                }
-                if p_index >= dist.len() - 2 {
-                    continue;
-                }
-
-                let juice_amt = if upgrade.upgrade_index < 3 {
-                    0
-                } else {
-                    prep_output
-                        .juice_info
-                        .access(id, upgrade.upgrade_index)
-                        .normal_amt_used
-                };
-                if id == 0 && juice {
-                    juice_so_far[id] += juice_amt;
-                } else if id > 0 && book_id == id {
-                    juice_so_far[id] += juice_amt;
-                }
+        let dist = &upgrade.normal_dist;
+        for (p_index, _) in dist.iter().enumerate() {
+            if p_index >= dist.len() - 2 {
+                continue;
             }
+            for &id in upgrade.state.get(p_index).unwrap_or(&smallvec![]) {
+                let used: &mut i64 = &mut juice_used[p_index][id];
+                *used = juice_so_far[id];
+                juice_so_far[id] += state_bundle
+                    .prep_output
+                    .juice_info
+                    .access(id, upgrade.piece_type_usize, upgrade.upgrade_index)
+                    .normal_amt_used;
+            }
+            // let juice_amt = if upgrade.upgrade_index < 3 {
+            //     0
+            // } else {
+            //     prep_output
+            //         .juice_info
+            //         .access(id, upgrade.piece_type_usize, upgrade.upgrade_index)
+            //         .normal_amt_used
+            // };
+            // if id <= 1 && juice {
+            //     juice_so_far[id] += juice_amt;
+            // } else if id > 1 && book_id == id {
+            //     juice_so_far[id] += juice_amt;
+            // }
         }
     }
 
@@ -120,7 +114,7 @@ pub fn monte_carlo_data<R: Rng>(
     state_bundle.compute_special_probs(false);
 
     let total_num_avail = state_bundle.prep_output.juice_info.total_num_avail;
-    let num_juice_avail = state_bundle.prep_output.juice_info.num_juice_avail;
+    // let num_juice_avail = state_bundle.prep_output.juice_info.num_juice_avail;
     let mut cost_data: Vec<Vec<i64>> = vec![vec![0; total_num_avail]; data_size];
 
     let mut actually_paid: Vec<i64> = vec![0; state_bundle.upgrade_arr.len() + 1];
@@ -181,16 +175,10 @@ pub fn monte_carlo_data<R: Rng>(
                 }
 
                 for id in state_bundle.prep_output.juice_info.normal_uindex_to_id
-                    [upgrade.upgrade_index]
+                    [upgrade.piece_type_usize][upgrade.upgrade_index]
                     .iter()
                 {
-                    if upgrade.piece_type == Weapon {
-                        this_cost[7 + id] += juice_costs[rolled_tap][*id].0;
-                    } else if upgrade.piece_type == Armor {
-                        this_cost[7 + num_juice_avail + id] += juice_costs[rolled_tap][*id].1; // i mean .0 and .1 should be  the same but whatever
-                    } else {
-                        panic!("vambrance juicing TODO")
-                    }
+                    this_cost[7 + id] += juice_costs[rolled_tap][*id];
                 }
             }
         } else {
@@ -215,13 +203,7 @@ pub fn monte_carlo_data<R: Rng>(
                         .access(id, upgrade.piece_type_usize, upgrade.upgrade_index)
                         .adv_amt_used;
 
-                    this_cost[if upgrade.piece_type == Weapon {
-                        7 + id
-                    } else if upgrade.piece_type == Armor {
-                        7 + num_juice_avail + id
-                    } else {
-                        panic!("vambrance adv honing ")
-                    }] += amt_per_use * used;
+                    this_cost[7 + id] += amt_per_use * used;
                 }
             }
         }

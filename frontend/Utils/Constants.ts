@@ -106,12 +106,8 @@ export const T4_JUICE_LABELS = [
 
 export const Serca_JUICE_LABELS = [["Lava's Breath", "Glacier's Breath"]];
 export const ALL_LABELS = [
-  T4_MATS_LABELS.concat(T4_JUICE_LABELS.map((x) => x[0])).concat(
-    T4_JUICE_LABELS.map((x) => x[1]),
-  ),
-  SERCA_MATS_LABELS.concat(Serca_JUICE_LABELS.map((x) => x[0])).concat(
-    Serca_JUICE_LABELS.map((x) => x[1]),
-  ),
+  T4_MATS_LABELS.concat(T4_JUICE_LABELS.flatMap((x) => [x[0], x[1]])),
+  SERCA_MATS_LABELS.concat(Serca_JUICE_LABELS.flatMap((x) => [x[0], x[1]])),
 ];
 
 export const GRAPH_COLORS = [
@@ -124,14 +120,14 @@ export const GRAPH_COLORS = [
     "--series-gold",
     "--series-silver",
     "--series-red",
-    "--series-books",
-    "--series-books",
-    "--series-books",
-    "--series-red",
-    "--series-red",
-    "--series-red",
-    "--series-red",
     "--series-blue",
+    "--series-books",
+    "--series-books",
+    "--series-books",
+    "--series-red",
+    "--series-red",
+    "--series-red",
+    "--series-red",
     "--series-books",
     "--series-books",
     "--series-books",
@@ -186,7 +182,7 @@ export const base_icon_map: Record<string, string> = {
   Glove: "/Icons/Equipments/Gloves.webp",
   Weapon: "/Icons/Equipments/Weapon.webp",
   Vambrace: "Icons/Equipments/Vambrace.png",
-  
+
   Red: "/Icons/Materials/Red.webp",
   Blue: "/Icons/Materials/Blue.webp",
   Leaps: "/Icons/Materials/Leapstone.webp",

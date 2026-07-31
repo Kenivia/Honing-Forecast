@@ -1,13 +1,14 @@
 use crate::advanced_honing::utils::{AdvConfig, AdvDistTriplet};
+
 use crate::constants::juice_info::JuiceInfo;
+use crate::state::{OneState, State};
 use crate::support::{ProbDist, Support};
 use crate::upgrade::PieceType::{Armor, Vambrace, Weapon};
 use ahash::AHashMap;
 use serde::{Deserialize, Serialize};
-use std::collections::hash_map::DefaultHasher;
-use std::ops::{Deref, DerefMut};
+use smallvec::smallvec;
 
-use std::hash::{Hash, Hasher};
+use std::hash::Hash;
 
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Copy, Eq, Hash)]
 pub enum PieceType {
@@ -29,7 +30,7 @@ pub struct Upgrade {
 
     pub clean_prob_dist_len: usize,
     // pub juice_arr: Vec<f64>,
-    pub state: State, // state for this upgrade - (juice_used? , id) per tap
+    pub state: State,
     pub cost_dist: Vec<Support>,
 
     pub name_string: String,
@@ -46,13 +47,6 @@ pub struct Upgrade {
 
     pub adv_config: AdvConfig,
     pub adv_dists: Vec<ProbDist>,
-}
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(transparent)]
-pub struct State {
-    pub payload: Vec<(bool, usize)>,
-    #[serde(skip)]
-    pub hash: u64,
 }
 
 pub fn piece_type_to_prefix(piece_type: PieceType) -> String {
@@ -78,44 +72,6 @@ pub fn piece_type_to_usize(piece_type: PieceType) -> usize {
         Vambrace => 2,
     }
 }
-impl State {
-    pub fn new_empty(length: usize) -> State {
-        let mut out = State {
-            payload: vec![(false, 0); length],
-            hash: 0,
-        };
-        out.update_hash();
-        out
-    }
-    pub fn new(payload: Vec<(bool, usize)>) -> State {
-        let mut out = State { payload, hash: 0 };
-        out.update_hash();
-        out
-    }
-
-    pub fn update_hash(&mut self) {
-        let mut hasher: DefaultHasher = DefaultHasher::new();
-        self.payload.hash(&mut hasher);
-        self.hash = hasher.finish();
-    }
-
-    pub fn update_payload(&mut self, new_payload: Vec<(bool, usize)>) {
-        self.payload = new_payload;
-        self.update_hash();
-    }
-}
-impl Deref for State {
-    type Target = Vec<(bool, usize)>;
-    fn deref(&self) -> &Self::Target {
-        &self.payload
-    }
-}
-
-impl DerefMut for State {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.payload
-    }
-}
 
 impl Upgrade {
     pub fn new_normal(
@@ -128,7 +84,7 @@ impl Upgrade {
         juice_info: &JuiceInfo,
         starting_artisan: f64,
         starting_num_taps: usize,
-        state_given: Vec<(bool, usize)>,
+        state_given: Vec<OneState>,
         unlocked: bool,
         unlock_costs: &[f64],
 
@@ -174,7 +130,7 @@ impl Upgrade {
 
         out.clean_prob_dist_len = clean_upgrade.normal_dist.len();
         while out.state.len() < out.clean_prob_dist_len {
-            out.state.payload.push((false, 0));
+            out.state.payload.push(smallvec![]);
         }
         out.state.truncate(out.clean_prob_dist_len);
         out.state.update_hash();
@@ -196,7 +152,7 @@ impl Upgrade {
         double_balls: bool,
         juice_info: &JuiceInfo,
         adv_cache: &mut AHashMap<AdvConfig, AdvDistTriplet>,
-        state_given: Vec<(bool, usize)>,
+        state_given: Vec<OneState>,
     ) -> Self {
         let state = if state_given.len() == juice_info.adv_uindex_to_id[upgrade_index].len() {
             State::new(state_given)

@@ -17,6 +17,7 @@ export interface AdvConfig {
 
 export interface Upgrade {
   piece_index: number;
+  piece_type_usize: number;
   upgrade_index: number;
   is_normal_honing?: boolean;
   is_weapon?: boolean;
@@ -38,7 +39,7 @@ export interface Upgrade {
   // added for UI purpose, not in rust (it's wiped after optimizer run)
   this_special_chance?: number;
 }
-export type OneState = [boolean, number]; // juice, bookid
+export type OneState = number[];
 export type AdvProgress = [number, number, boolean, boolean]; // current xp(0 to 100 or 99 ig), current balls ( 0 to 6), next_free, next_big
 
 // ========================================================================================

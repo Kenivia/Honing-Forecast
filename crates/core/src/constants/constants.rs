@@ -4,6 +4,16 @@ use crate::constants::{
 };
 use once_cell::sync::Lazy;
 
+pub const ALLOWED_JUICE_POOLS: Lazy<Vec<Vec<Vec<usize>>>> = Lazy::new(|| {
+    vec![
+        vec![vec![0, 1], vec![]],
+        vec![vec![0, 1], vec![]],
+        vec![vec![0], vec![1], vec![]],
+    ]
+});
+
+pub const NUM_PIECE_TYPES: usize = 3;
+
 pub type TreatmentsType = [usize; 4];
 pub const UI_TREATMENTS: [TreatmentsType; 2] = [
     [0, 1, 1, 3], // char-bound <bound| roster <bound| tradable <bound| market

@@ -15,14 +15,14 @@ export function ilevel(
 
   let out = profile.tier === 0 ? 1590 : 1635;
   if (profile.tier === 0) {
-    for (let row = 0; row < NUM_PIECES; row++) {
+    for (let row = 0; row < NUM_PIECES - 1; row++) {
       const highest_plus = profile.adv_grid[row].findLastIndex(done) + 1;
       out += (highest_plus * 10) / 6;
     }
   } else {
     out += 40;
   }
-  for (let row = 0; row < NUM_PIECES; row++) {
+  for (let row = 0; row < NUM_PIECES - 1; row++) {
     const highest_plus = profile.normal_grid[row].findLastIndex(done) + 1;
     // console.log(profile.normal_grid[row], highest_plus, row);
     if (highest_plus === 0) {
@@ -42,12 +42,12 @@ export function artisan_number(
   let extra_arr = upgrade.state.slice(0, total_count).map(([juice, id]) => {
     let chance = 0.0;
     if (juice) {
-      chance += juice_info.all_juices[0].data.get(
+      chance += juice_info.all_juices[0][upgrade.piece_type_usize].data.get(
         String(upgrade.upgrade_index),
       ).normal_chance;
     }
-    if (id > 0) {
-      chance += juice_info.all_juices[id].data.get(
+    if (id > 1) {
+      chance += juice_info.all_juices[id][upgrade.piece_type_usize].data.get(
         String(upgrade.upgrade_index),
       ).normal_chance;
     }
@@ -100,7 +100,7 @@ export function artisan_string(
 //         String(upgrade.upgrade_index),
 //       ).normal_chance;
 //     }
-//     if (id > 0) {
+//     if (id > 1) {
 //       chance += juice_info.all_juices[id].data.get(
 //         String(upgrade.upgrade_index),
 //       ).normal_chance;

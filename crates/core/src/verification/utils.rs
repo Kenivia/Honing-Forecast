@@ -1,4 +1,4 @@
-use crate::state_bundle::StateBundle;
+use crate::{state::OneState, state_bundle::StateBundle};
 
 pub fn apply_prices(used: f64, thresh_price_pairs: &[(f64, f64)]) -> f64 {
     let mut out = 0.0;
@@ -20,21 +20,9 @@ pub fn apply_prices(used: f64, thresh_price_pairs: &[(f64, f64)]) -> f64 {
 
     out
 }
-pub fn encode_one_positions(v1: &[(bool, usize)]) -> String {
+pub fn encode_one_positions(v1: &[OneState]) -> String {
     v1.iter()
-        .map(|(uppercase, num)| {
-            let letter: char = if *num == 0 {
-                'x'
-            } else {
-                (b'a' + (*num as u8 - 1)) as char
-            };
-
-            if *uppercase {
-                letter.to_ascii_uppercase()
-            } else {
-                letter
-            }
-        })
+        .map(|one_state| one_state.iter().map(|n| n.to_string()).collect::<String>())
         .collect()
 }
 

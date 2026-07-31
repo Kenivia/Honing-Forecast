@@ -12,7 +12,7 @@ pub struct RawData {
     pub EVENT_ADV_UNLOCK_MULTIPLIER: [[f64; 4]; 7],
     pub EVENT_ADV_COST_MULTIPLIER: [[f64; 4]; 7],
 
-    pub EVENT_ADV_JUICE_MULTIPLIER: Vec<(usize, usize, usize, f64)>,
+    pub EVENT_ADV_JUICE_MULTIPLIER: Vec<(usize, usize, usize, usize, f64)>,
 
     pub NORMAL_CHANCES: [[f64; 25]; 3],
     pub JUICE_BOOKS_AVAIL: Vec<(usize, usize, usize, usize, f64, i64, f64, f64)>,
@@ -37,7 +37,7 @@ pub struct Data {
     pub EVENT_NORMAL_UNLOCK_MULTIPLIER: Vec<Vec<f64>>,
     pub EVENT_ADV_UNLOCK_MULTIPLIER: Vec<Vec<f64>>,
     pub EVENT_ADV_COST_MULTIPLIER: Vec<Vec<f64>>,
-    pub EVENT_ADV_JUICE_MULTIPLIER: Vec<(usize, usize, usize, f64)>,
+    pub EVENT_ADV_JUICE_MULTIPLIER: Vec<(usize, usize, usize, usize, f64)>,
     pub NORMAL_CHANCES: Vec<Vec<f64>>,
     pub JUICE_BOOKS_AVAIL: Vec<(usize, usize, usize, usize, f64, i64, f64, f64)>,
     pub NORMAL_WEAPON_COST: Vec<Vec<f64>>,

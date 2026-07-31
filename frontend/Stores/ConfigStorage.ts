@@ -142,7 +142,7 @@ function write_roster_config(roster_config: RosterConfig) {
     "is_slider_update",
     "adv_cache",
   ]);
-  localStorage.setItem(CURRENT_STORAGE_KEY, LZString.compressToUTF16(json));
+  // localStorage.setItem(CURRENT_STORAGE_KEY, LZString.compressToUTF16(json));
 }
 export function write_state(state) {
   // console.log("writing");

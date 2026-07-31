@@ -1,7 +1,8 @@
 use crate::advanced_honing::utils::{AdvConfig, AdvDistTriplet};
 use crate::parser::PreparationOutput;
 use crate::performance::Performance;
-use crate::upgrade::{State, Upgrade};
+use crate::state::{OneState, State};
+use crate::upgrade::Upgrade;
 use ahash::AHashMap;
 use ordered_float::OrderedFloat;
 use serde::{Deserialize, Serialize};
@@ -26,8 +27,8 @@ pub struct StateBundle {
     pub adv_cache: AHashMap<AdvConfig, AdvDistTriplet>,
 }
 
-pub fn default_state_arr(upgrade_arr: &Vec<Upgrade>) -> Vec<Vec<(bool, usize)>> {
-    let mut out: Vec<Vec<(bool, usize)>> = Vec::with_capacity(upgrade_arr.len());
+pub fn default_state_arr(upgrade_arr: &Vec<Upgrade>) -> Vec<Vec<OneState>> {
+    let mut out: Vec<Vec<OneState>> = Vec::with_capacity(upgrade_arr.len());
     for upgrade in upgrade_arr {
         out.push(State::new_empty(upgrade.normal_dist.len()).payload.clone());
     }
@@ -106,6 +107,6 @@ impl StateBundle {
 
 #[derive(Debug, Hash, Eq, PartialEq, Clone)]
 pub struct StateEssence {
-    pub state_arr: Vec<Vec<(bool, usize)>>,
+    pub state_arr: Vec<Vec<OneState>>,
     pub special_state: Vec<usize>,
 }

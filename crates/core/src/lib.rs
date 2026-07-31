@@ -7,6 +7,7 @@ pub mod optimizer;
 pub mod parser;
 pub mod payload;
 pub mod performance;
+pub mod state;
 pub mod state_bundle;
 pub mod support;
 pub mod timer;

@@ -67,17 +67,22 @@ const link = computed(
           class="contents"
         >
           <LabeledPieceIcon :piece="piece" />
-          <span class="px-1">
-            {{
-              char_parsed.result.pieces[index].tier === 0 ? "T4" : "Serca"
-            }}</span
-          >
-          <span class="px-1">
-            +{{ char_parsed.result.pieces[index].plus_n }}</span
-          >
-          <span class="px-1">{{
-            char_parsed.result.pieces[index].ilevel
-          }}</span>
+          <div v-if="index < char_parsed.result.pieces.length" class="contents">
+            <span class="px-1">
+              {{
+                char_parsed.result.pieces[index].tier === 0 ? "T4" : "Serca"
+              }}</span
+            >
+            <span class="px-1">
+              +{{ char_parsed.result.pieces[index].plus_n }}</span
+            >
+            <span class="px-1">{{
+              char_parsed.result.pieces[index].ilevel
+            }}</span>
+          </div>
+          <div v-else>
+            <span class="px-1"> N/A</span>
+          </div>
         </div>
       </div>
     </div>

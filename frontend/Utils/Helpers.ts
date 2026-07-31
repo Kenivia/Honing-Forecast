@@ -64,7 +64,7 @@ export function has_upgrades_in_range(
 
   for (
     let row = is_weapon ? 5 : 0;
-    row < (is_weapon ? NUM_PIECES : NUM_PIECES - 1);
+    row < (is_weapon ? NUM_PIECES - 1 : NUM_PIECES - 2);
     row++
   ) {
     for (let col = low - 1; col < high; col++) {

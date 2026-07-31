@@ -3,7 +3,7 @@ import { useRosterStore } from "@/Stores/RosterConfig";
 import {
   PIECE_NAMES,
   NORMAL_COLS,
-  NUM_PIECES as NORMAL_ROWS,
+  NUM_PIECES,
   ADV_COLS,
 } from "@/Utils/Constants";
 import { storeToRefs } from "pinia";
@@ -16,6 +16,10 @@ const { active_profile } = storeToRefs(useRosterStore());
 const props = defineProps<{
   grid_type: "normal" | "adv";
 }>();
+
+const NUM_ROWS = computed(() =>
+  active_profile.value.tier == 0 || props.grid_type == "adv" ? 6 : 7,
+);
 
 const is_normal = props.grid_type === "normal";
 const COLS = is_normal ? NORMAL_COLS : ADV_COLS; // these two are not reactive because like they aint changing
@@ -168,11 +172,11 @@ function cell_cursor(status: UpgradeStatus): string {
         Toggle whole column ->
       </div>
       <div
-        v-for="piece in PIECE_NAMES"
-        :key="piece"
+        v-for="index in NUM_ROWS"
+        :key="index"
         class="flex h-7 items-center justify-end"
       >
-        <LabeledPieceIcon :piece="piece" />
+        <LabeledPieceIcon :piece="PIECE_NAMES[index - 1]" />
       </div>
     </div>
     <div ref="`${grid_type}_GridScrollRef`" class="items-start overflow-x-auto">
@@ -192,7 +196,7 @@ function cell_cursor(status: UpgradeStatus): string {
         </button>
       </div>
       <div
-        v-for="row in NORMAL_ROWS"
+        v-for="row in NUM_ROWS"
         :key="`${grid_type}-row-${row}`"
         class="mb-0.5 grid w-fit"
         :style="{ gridTemplateColumns: `repeat(${col_indices.length}, 26px)` }"

@@ -259,7 +259,7 @@ function fetch_callback(
       const syncing = index in SERCA_TO_T4_INDICES && tier == 1;
       const actual_tier = syncing ? 0 : tier;
       const actual_index = syncing ? SERCA_TO_T4_INDICES[index] : index;
-
+      console.log(actual_tier, actual_index);
       roster_config.value.mats_prices[region][actual_tier].data[actual_index] =
         result[actual_tier][actual_index].toLocaleString();
       if (ALL_LABELS[actual_tier][actual_index] == "Shards") {

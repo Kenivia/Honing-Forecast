@@ -94,7 +94,7 @@ function keyed_to_array(
         ? juice_info.normal_uindex_to_id
         : juice_info.adv_uindex_to_id;
 
-      let relevant_upgrade = relevant_id_map[upgrade.upgrade_index];
+      let relevant_upgrade = relevant_id_map[upgrade.piece_type_usize][upgrade.upgrade_index];
       // console.log(adv_override);
       out.unlocked = out.is_normal_honing
         ? out.starting_artisan > 0 || out.starting_num_taps > 0
@@ -123,7 +123,9 @@ function keyed_to_array(
                   ? x[1]
                   : normal_override.book == NormalOverride.Empty
                     ? 0
-                    : relevant_upgrade[relevant_upgrade.length - 1],
+                    : relevant_upgrade[upgrade.piece_type_usize][
+                        relevant_upgrade[upgrade.piece_type_usize].length - 1
+                      ],
               ]
             : [
                 false,
@@ -275,7 +277,7 @@ export function build_material_info(): OneMaterialInput[] {
       ? apply_tax(selected_shard_price) / selected_shard_size
       : apply_tax(x) / BUNDLE_SIZE[index],
   );
-  // console.log()
+  console.log(ALL_LABELS, tier);
   return ALL_LABELS[tier].map((_, index) => [
     [0, 0],
     [bound_budgets[index], leftover_price[index]],
