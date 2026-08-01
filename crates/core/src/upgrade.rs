@@ -7,15 +7,8 @@ use crate::upgrade::PieceType::{Armor, Vambrace, Weapon};
 use ahash::AHashMap;
 use serde::{Deserialize, Serialize};
 use smallvec::smallvec;
-
 use std::hash::Hash;
 
-#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Copy, Eq, Hash)]
-pub enum PieceType {
-    Armor,
-    Weapon,
-    Vambrace,
-}
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Upgrade {
     pub is_normal_honing: bool,
@@ -49,6 +42,12 @@ pub struct Upgrade {
     pub adv_dists: Vec<ProbDist>,
 }
 
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Copy, Eq, Hash)]
+pub enum PieceType {
+    Armor,
+    Weapon,
+    Vambrace,
+}
 pub fn piece_type_to_prefix(piece_type: PieceType) -> String {
     match piece_type {
         Armor => "armor_".to_string(),
@@ -154,12 +153,20 @@ impl Upgrade {
         adv_cache: &mut AHashMap<AdvConfig, AdvDistTriplet>,
         state_given: Vec<OneState>,
     ) -> Self {
-        let state = if state_given.len() == juice_info.adv_uindex_to_id[upgrade_index].len() {
+        let piece_type: PieceType = piece_index_to_type(piece_index);
+        let piece_type_usize = piece_type_to_usize(piece_type);
+        let state = if state_given.len()
+            == juice_info.adv_uindex_to_id[piece_type_usize][upgrade_index].len()
+        {
             State::new(state_given)
         } else {
-            State::new_empty(juice_info.adv_uindex_to_id[upgrade_index].len())
+            State::new(vec![
+                smallvec![0];
+                juice_info.adv_uindex_to_id[piece_type_usize]
+                    [upgrade_index]
+                    .len()
+            ])
         };
-        let piece_type: PieceType = piece_index_to_type(piece_index);
         let mut out = Self {
             is_normal_honing: false,
             normal_dist: ProbDist::new(Vec::new()),
@@ -168,7 +175,7 @@ impl Upgrade {
             special_cost: 0,
             piece_index,
             piece_type,
-            piece_type_usize: piece_type_to_usize(piece_type),
+            piece_type_usize,
             artisan_rate: 0.0,
             upgrade_index,
             clean_prob_dist_len: 0,

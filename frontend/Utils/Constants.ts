@@ -1,4 +1,4 @@
-export const DEFAULT_ARTISAN_MULTIPLIER = 0.4651;
+export const DEFAULT_ARTISAN_MULTIPLIER = 10000.0 / 21500.0;
 export const FLOAT_TOL = 1e-9;
 
 export const WORKER_URL = import.meta.env.VITE_WORKER_URL;
@@ -94,17 +94,17 @@ export const SERCA_MATS_LABELS = [
 ];
 export const SPECIAL_LEAP_LABEL = "Special Leap";
 export const T4_JUICE_LABELS = [
-  ["Lava's Breath", "Glacier's Breath"],
-  ["11-14 Weapon", "11-14 Armor"],
-  ["15-18 Weapon", "15-18 Armor"],
-  ["19-20 Weapon", "19-20 Armor"],
-  ["Scroll 1 Weapon", "Scroll 1 Armor"],
-  ["Scroll 2 Weapon", "Scroll 2 Armor"],
-  ["Scroll 3 Weapon", "Scroll 3 Armor"],
-  ["Scroll 4 Weapon", "Scroll 4 Armor"],
+  ["Glacier's Breath", "Lava's Breath"],
+  ["11-14 Armor", "11-14 Weapon"],
+  ["15-18 Armor", "15-18 Weapon"],
+  ["19-20 Armor", "19-20 Weapon"],
+  ["Scroll 1 Armor", "Scroll 1 Weapon"],
+  ["Scroll 2 Armor", "Scroll 2 Weapon"],
+  ["Scroll 3 Armor", "Scroll 3 Weapon"],
+  ["Scroll 4 Armor", "Scroll 4 Weapon"],
 ];
 
-export const Serca_JUICE_LABELS = [["Lava's Breath", "Glacier's Breath"]];
+export const Serca_JUICE_LABELS = [["Glacier's Breath", "Lava's Breath"]];
 export const ALL_LABELS = [
   T4_MATS_LABELS.concat(T4_JUICE_LABELS.flatMap((x) => [x[0], x[1]])),
   SERCA_MATS_LABELS.concat(Serca_JUICE_LABELS.flatMap((x) => [x[0], x[1]])),
@@ -171,6 +171,7 @@ export const OUTPUT_LABELS = [
 ];
 
 export const NUM_PIECES = 7;
+export const NUM_ADV_PIECES = 6;
 export const NORMAL_COLS = 25;
 export const ADV_COLS = 4;
 

@@ -130,6 +130,7 @@ export function load_roster_config(): RosterConfig {
   out = standard_validation(out);
   const actual_out = { ...DEFAULT_ROSTER_CONFIG, ...out };
   write_roster_config(actual_out);
+  console.log(actual_out);
   return actual_out;
 }
 

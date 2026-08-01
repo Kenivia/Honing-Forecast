@@ -2,6 +2,7 @@ import {
   ADV_COLS,
   ALL_LABELS,
   NORMAL_COLS,
+  NUM_ADV_PIECES,
   NUM_PIECES,
   PLUS_TIER_CONVERSION,
 } from "@/Utils/Constants";
@@ -75,7 +76,7 @@ export function change_tier(target_profile: CharProfile, fetched?: boolean) {
   //   target_profile.bound_budgets[old_tier].data[old_index];
 
   if (new_tier == 1) {
-    for (let row = 0; row < NUM_PIECES; row++) {
+    for (let row = 0; row < NUM_ADV_PIECES; row++) {
       for (let col = 0; col < ADV_COLS; col++) {
         target_profile.adv_grid[row][col] = fetched
           ? UpgradeStatus.FetchedDone
@@ -89,7 +90,7 @@ export function change_tier(target_profile: CharProfile, fetched?: boolean) {
     return;
   }
 
-  for (let row = 0; row < NUM_PIECES; row++) {
+  for (let row = 0; row < NUM_ADV_PIECES; row++) {
     convert_apply_done_want(
       old_tier,
       new_tier,

@@ -20,7 +20,7 @@ export interface Upgrade {
   piece_type_usize: number;
   upgrade_index: number;
   is_normal_honing?: boolean;
-  is_weapon?: boolean;
+  // is_weapon?: boolean;
   normal_dist?: number[];
   adv_dists?: number[][];
   state?: OneState[];
@@ -220,14 +220,14 @@ function is_one_upgrade(obj: unknown): obj is OneUpgradeInput {
 
   if (o.state !== undefined && o.state !== null) {
     if (!Array.isArray(o.state)) return false;
-    for (const entry of o.state) {
-      if (
-        !Array.isArray(entry) ||
-        entry.length !== 2 ||
-        typeof entry[0] !== "boolean" ||
-        typeof entry[1] !== "number"
+    if (
+      !o.state.every(
+        (one_state) =>
+          Array.isArray(one_state) &&
+          one_state.every((x) => typeof x === "number"),
       )
-        return false;
+    ) {
+      return false;
     }
   }
 

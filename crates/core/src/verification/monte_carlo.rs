@@ -196,7 +196,7 @@ pub fn monte_carlo_data<R: Rng>(
                     [upgrade.piece_type_usize][upgrade.upgrade_index]
                     .iter()
                 {
-                    let used = if id == 0 { juice } else { scroll } as i64;
+                    let used = if id <= 1 { juice } else { scroll } as i64;
                     let amt_per_use = state_bundle
                         .prep_output
                         .juice_info

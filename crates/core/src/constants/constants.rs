@@ -4,6 +4,10 @@ use crate::constants::{
 };
 use once_cell::sync::Lazy;
 
+pub const NUM_NORMAL_UPGRADES: usize = 25;
+pub const NUM_ADV_UPGRADES: usize = 4;
+
+pub const ARTISAN_MULTIPLIER: f64 = 10000.0 / 21500.0;
 pub const ALLOWED_JUICE_POOLS: Lazy<Vec<Vec<Vec<usize>>>> = Lazy::new(|| {
     vec![
         vec![vec![0, 1], vec![]],
@@ -41,7 +45,8 @@ pub const DATA: Lazy<Vec<Data>> = Lazy::new(|| {
     ));
 
     out.push(Data::from(
-        serde_json::from_str::<RawData>(include_str!("./Serca July 2026 (Vambrace).json")).unwrap(),
+        serde_json::from_str::<RawData>(include_str!("./Serca July 2026 (Fake Vambrace).json"))
+            .unwrap(),
     ));
 
     out

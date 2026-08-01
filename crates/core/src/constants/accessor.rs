@@ -10,7 +10,7 @@ pub fn get_event_extra_chance(express_event: bool, tier: usize) -> Vec<Vec<f64>>
 }
 pub fn get_artisan(express_event: bool, tier: usize) -> Vec<Vec<f64>> {
     if !express_event {
-        return vec![vec![1.0; 25]];
+        return vec![vec![1.0; 25]; 3];
     }
 
     DATA[tier].EVENT_ARTISAN_MULTIPLIER.clone()

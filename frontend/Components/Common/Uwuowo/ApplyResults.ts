@@ -5,7 +5,7 @@ import {
   change_tier,
   convert_apply_done_want,
 } from "@/Components/Character/StatusInput/StatusInputUtil";
-import { ADV_COLS, NUM_PIECES } from "@/Utils/Constants";
+import { ADV_COLS, NUM_ADV_PIECES, NUM_PIECES } from "@/Utils/Constants";
 import {
   grids_to_keyed,
   to_upgrade_key,
@@ -86,7 +86,7 @@ export function apply_results(
     }
   }
   if (new_tier == 1) {
-    for (let row = 0; row < NUM_PIECES; row++) {
+    for (let row = 0; row < NUM_ADV_PIECES; row++) {
       for (let col = 0; col < ADV_COLS; col++) {
         target_profile.adv_grid[row][col] = UpgradeStatus.FetchedDone;
       }

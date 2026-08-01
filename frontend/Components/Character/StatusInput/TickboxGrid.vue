@@ -5,6 +5,7 @@ import {
   NORMAL_COLS,
   NUM_PIECES,
   ADV_COLS,
+  NUM_ADV_PIECES,
 } from "@/Utils/Constants";
 import { storeToRefs } from "pinia";
 import { computed } from "vue";
@@ -48,7 +49,9 @@ function set_cell(row: number, col: number, status: UpgradeStatus) {
 }
 
 function check_all_same(col: number): UpgradeStatus {
-  const grid = relevant_grid.value;
+  const grid = relevant_grid.value.filter(
+    (_, row) => !(row === NUM_ADV_PIECES), // just ignore vambrace always
+  );
   if (
     grid.every((row: UpgradeStatus[]) => row[col] === UpgradeStatus.FetchedDone)
   )
@@ -138,6 +141,9 @@ function change_one(
 function change_col_and_update_keyed(col: number) {
   const current = check_all_same(col);
   for (const [row] of relevant_grid.value.entries()) {
+    if (row === NUM_ADV_PIECES) {
+      continue;
+    }
     change_one(row, col, current);
   }
   grid_change_callback();

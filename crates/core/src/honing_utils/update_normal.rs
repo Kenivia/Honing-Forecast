@@ -1,7 +1,9 @@
 use ahash::AHashMap;
 use smallvec::smallvec;
 
+use crate::constants::ARTISAN_MULTIPLIER;
 use crate::constants::juice_info::JuiceInfo;
+use crate::my_dbg;
 use crate::state::State;
 use crate::upgrade::Upgrade;
 
@@ -12,6 +14,11 @@ pub fn get_extra_arr(state: &State, juice_info: &JuiceInfo, upgrade: &Upgrade) -
             let mut chance: f64 = 0.0;
 
             for id in ids {
+                if !juice_info.normal_uindex_to_id[upgrade.piece_type_usize][upgrade.upgrade_index]
+                    .contains(id)
+                {
+                    my_dbg!(state, upgrade,)
+                }
                 chance += juice_info
                     .access(*id, upgrade.piece_type_usize, upgrade.upgrade_index)
                     .normal_chance;
@@ -59,7 +66,7 @@ pub fn probability_distribution(
         }
         raw_chances.push(current_chance);
         count += 1;
-        artisan += 0.4651_f64 * current_chance * artisan_rate;
+        artisan += ARTISAN_MULTIPLIER * current_chance * artisan_rate;
         if current_chance == 1.0 {
             break; // for upgrades that have 100% passrate immediately or upgrades that have above 100% success rate (juicing last few taps of like +4 or something)
         }
@@ -149,9 +156,7 @@ impl Upgrade {
             }
 
             for actual_id in self.state.get(index).unwrap_or(&smallvec![]) {
-                out.get_mut(&actual_id).unwrap().0 += juice_info
-                    .access(*actual_id, self.piece_type_usize, self.upgrade_index)
-                    .normal_amt_used as f64;
+                out.get_mut(&actual_id).unwrap().0 += out[actual_id].2;
             }
             // if *juice && id <= 1 {
             //     weap_cost += amt;

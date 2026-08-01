@@ -75,10 +75,7 @@ export function compute_used_materials(
         index < Math.min(taps_since_last_run, upgrade.normal_dist.length - 2);
         index++
       ) {
-        if (
-          (upgrade.state[index][0] === true && id <= 1) ||
-          (upgrade.state[index][1] === id && id > 1)
-        ) {
+        if (id in upgrade.state[index]) {
           juice_cost += amt;
         }
         // console.log(juice_cost)

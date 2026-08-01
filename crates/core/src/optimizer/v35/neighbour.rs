@@ -2,6 +2,7 @@ use std::cmp::Ordering::{Equal, Greater, Less};
 
 use crate::advanced_honing::utils::MAX_ADV_STATE;
 use crate::constants::juice_info::JuiceInfo;
+use crate::my_dbg;
 use crate::state::get_pool_ids;
 use crate::upgrade::Upgrade;
 
@@ -88,7 +89,7 @@ impl Upgrade {
         let upgrade_index = self.upgrade_index;
         let len = self.state.len();
 
-        let max_change_len = ((1.0 - progress).powi(2) * len as f64).ceil().max(4.0) as i64;
+        let max_change_len = ((1.0 - progress).powi(2) * len as f64).ceil().max(3.0) as i64;
 
         let mut streak_info = self.state.streak_cache.take().unwrap_or_else(|| {
             self.state
@@ -112,12 +113,11 @@ impl Upgrade {
             let (back_id, back_len) = streak_info.back[p];
             let total = (front_len + back_len) as i64;
 
-            // 1. Perturb the total.
             let new_total =
                 (total + random_range(-max_change_len..max_change_len)).clamp(0, len as i64);
             let delta = new_total - total;
 
-            // 2. Split the required change randomly between the two streaks.
+            // split the required change randomly between the two streaks.
             let delta_front = match delta.cmp(&0) {
                 Greater => random_range(0..=delta),
                 Less => random_range(delta..=0),
@@ -128,7 +128,6 @@ impl Upgrade {
             let mut new_front_len = (front_len as i64 + delta_front).max(0) as usize;
             let mut new_back_len = (back_len as i64 + delta_back).max(0) as usize;
 
-            // 3. Clip excess (streaks aren't allowed to overlap).
             if new_front_len + new_back_len > len {
                 let excess = new_front_len + new_back_len - len;
                 let back_clip = excess.min(new_back_len);
@@ -137,9 +136,8 @@ impl Upgrade {
                 new_front_len = new_front_len.saturating_sub(remaining);
             }
 
-            // A streak going from empty -> non-empty needs an id assigned;
-            // an existing streak keeps its id (mirrors the old fixed book_id
-            // behaviour, generalized to whichever id it happened to have).
+            // a streak going from empty -> non-empty gets a random id
+            // this might be enough as the order change mechanism? Idk it's not important rn
             let new_front_id = if new_front_len == 0 {
                 None
             } else if front_len == 0 {
@@ -163,6 +161,10 @@ impl Upgrade {
         self.state
             .apply_new_streak_info(&streak_info, piece_type, upgrade_index, juice_info);
         self.state.streak_cache = Some(streak_info);
+        assert!(self.state.iter().all(|x| x.iter().all(|y| {
+            juice_info.normal_uindex_to_id[self.piece_type_usize][self.upgrade_index].contains(y)
+        })));
+        my_dbg!(&self.state);
     }
 
     fn perturb_adv(&mut self, progress: f64, juice_info: &JuiceInfo) {
@@ -170,7 +172,10 @@ impl Upgrade {
             .ceil()
             .max(2.0) as i64;
 
-        assert!(self.state.len() == juice_info.adv_uindex_to_id[self.upgrade_index].len());
+        assert!(
+            self.state.len()
+                == juice_info.adv_uindex_to_id[self.piece_type_usize][self.upgrade_index].len()
+        );
         for val in self.state.iter_mut() {
             val[0] = val[0]
                 .saturating_add_signed(random_range(-max_change_len..max_change_len) as isize)

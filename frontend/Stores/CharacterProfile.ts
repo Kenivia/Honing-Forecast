@@ -3,6 +3,7 @@ import {
   ADV_COLS,
   ALL_LABELS,
   NORMAL_COLS,
+  NUM_ADV_PIECES,
   NUM_PIECES,
   SPECIAL_LEAP_LABEL,
 } from "@/Utils/Constants";
@@ -78,7 +79,7 @@ export const DEFAULT_CHAR_PROFILE_NO_WORKER: CharProfile = {
   histogram_worker_bundle: null,
 
   normal_grid: create_status_grid(NUM_PIECES, NORMAL_COLS, 0, false),
-  adv_grid: create_status_grid(NUM_PIECES - 1, ADV_COLS, 0, true),
+  adv_grid: create_status_grid(NUM_ADV_PIECES, ADV_COLS, 0, true),
 
   keyed_upgrades: {},
   special_budget: create_input_column(

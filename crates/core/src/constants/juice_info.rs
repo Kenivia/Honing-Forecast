@@ -4,7 +4,11 @@ use std::{
     f64,
 };
 
-use crate::{constants::NUM_PIECE_TYPES, my_dbg, parser::MaterialInput};
+use crate::{
+    constants::{NUM_ADV_UPGRADES, NUM_NORMAL_UPGRADES, NUM_PIECE_TYPES},
+    my_dbg,
+    parser::MaterialInput,
+};
 
 // use crate::my_dbg;
 
@@ -37,17 +41,23 @@ impl JuiceInfo {
         piece_type_usize: usize,
         upgrade_index: usize,
     ) -> OneUindexJuice {
-        my_dbg!(&self.all_juices[id], piece_type_usize, upgrade_index);
-        my_dbg!(&self.normal_uindex_to_id[piece_type_usize][upgrade_index],);
+        if self
+            .all_juices
+            .get(id)
+            .and_then(|v| v.get(piece_type_usize))
+            .and_then(|v| v.get(&upgrade_index))
+            .is_none()
+        {
+            my_dbg!(&self.all_juices[id], id, piece_type_usize, upgrade_index);
+            my_dbg!(&self.normal_uindex_to_id[piece_type_usize][upgrade_index],);
+        }
+
         self.all_juices[id][piece_type_usize][&upgrade_index]
     }
     pub fn new(
         juice_books_avail: &[(usize, usize, usize, usize, f64, i64, f64, f64)],
         event_multiplier: &[(usize, usize, usize, usize, f64)],
     ) -> JuiceInfo {
-        const NUM_NORMAL_UPGRADES: usize = 25;
-        const NUM_ADV_UPGRADES: usize = 4;
-
         let mut normal_uindex_to_id: Vec<Vec<Vec<usize>>> =
             vec![vec![Vec::new(); NUM_NORMAL_UPGRADES]; NUM_PIECE_TYPES];
         let mut adv_uindex_to_id: Vec<Vec<Vec<usize>>> =
