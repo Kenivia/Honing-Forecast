@@ -170,12 +170,14 @@ export function validate_char_profile(
   this_parsed.normal_grid = get_valid_status_grid(
     this_parsed.normal_grid,
     DEFAULT_CHAR_PROFILE_NO_WORKER.normal_grid,
-  ).map((row) =>
-    row.map((x, index) =>
-      index < (this_parsed.tier === 0 ? 10 : 11)
-        ? UpgradeStatus.FetchedDone
-        : x,
-    ),
+  ).map((row, row_index) =>
+    row_index == NUM_ADV_PIECES
+      ? row
+      : row.map((x, index) =>
+          index < (this_parsed.tier === 0 ? 10 : 11)
+            ? UpgradeStatus.FetchedDone
+            : x,
+        ),
   );
   this_parsed.adv_grid = get_valid_status_grid(
     this_parsed.adv_grid,

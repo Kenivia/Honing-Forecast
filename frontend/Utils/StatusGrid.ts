@@ -1,4 +1,4 @@
-import { ADV_COLS } from "./Constants";
+import { ADV_COLS, NUM_ADV_PIECES } from "./Constants";
 import { StatusGrid, UpgradeStatus } from "./KeyedUpgrades";
 
 export function create_status_grid(
@@ -7,13 +7,29 @@ export function create_status_grid(
   tier: number,
   adv: boolean,
 ): StatusGrid {
-  return Array.from({ length: rows }, () =>
+  // console.log(
+  //   "create",
+  //   Array.from({ length: rows }).map((_, row) =>
+  //     Array(cols)
+  //       .fill(UpgradeStatus.NotYet)
+  //       .map((_, col) =>
+  //         row === NUM_ADV_PIECES
+  //           ? UpgradeStatus.NotYet
+  //           : col < (tier === 0 ? (adv ? 0 : 10) : adv ? ADV_COLS : 11)
+  //             ? UpgradeStatus.FetchedDone
+  //             : UpgradeStatus.NotYet,
+  //       ),
+  //   ),
+  // );
+  return Array.from({ length: rows }).map((_, row) =>
     Array(cols)
       .fill(UpgradeStatus.NotYet)
-      .map((x, index) =>
-        index < (tier === 0 ? (adv ? 0 : 10) : adv ? ADV_COLS : 11)
-          ? UpgradeStatus.FetchedDone
-          : x,
+      .map((_, col) =>
+        row === NUM_ADV_PIECES
+          ? UpgradeStatus.NotYet
+          : col < (tier === 0 ? (adv ? 0 : 10) : adv ? ADV_COLS : 11)
+            ? UpgradeStatus.FetchedDone
+            : UpgradeStatus.NotYet,
       ),
   );
 }

@@ -35,7 +35,7 @@ const relevant_ids = computed(() => {
 });
 
 function icon_path_for_id(id: number) {
-  console.log(id);
+  // console.log(id);
   return get_icon_path(ALL_LABELS[active_profile.value.tier][id + 7]);
 }
 
@@ -87,14 +87,16 @@ const streaks = computed(() => {
       }
       index += 1;
     }
-    console.log(streaks);
+    // console.log(streaks);
     return streaks;
   } else {
     const raw_streaks: NormalStreak[] = [];
-    const juice_id = props.upgrade.state[0][0];
-    const scroll_id = props.upgrade.state[1][0];
-    let [juice_grace, juice_non_grace] = JOINED_ADV_JUICE[juice_id];
-    let [scroll_grace, scroll_non_grace] = JOINED_ADV_JUICE[scroll_id];
+    const juice_id = relevant_ids.value[0];
+    const scroll_id = relevant_ids.value[1];
+    let [juice_grace, juice_non_grace] =
+      JOINED_ADV_JUICE[props.upgrade.state[0][0]];
+    let [scroll_grace, scroll_non_grace] =
+      JOINED_ADV_JUICE[props.upgrade.state[1][0]];
     // These 4 numbers correspond to how many taps to perform on the respective conditions
     // They range from 0 to 255, with 255 considered infinite, see rust advanced_honing/utils for what numbers they can actually take
 
@@ -152,7 +154,16 @@ const streaks = computed(() => {
         pity: false,
       });
     }
-    // console.log(one_grace, both_grace, juice_grace, juice_non_grace, scroll_grace, scroll_non_grace, props.upgrade.state, streaks)
+    // console.log(
+    //   one_grace,
+    //   both_grace,
+    //   juice_grace,
+    //   juice_non_grace,
+    //   scroll_grace,
+    //   scroll_non_grace,
+    //   props.upgrade.state,
+    //   raw_streaks,
+    // );
     return raw_streaks;
   }
 });
@@ -170,7 +181,7 @@ const parsed_streaks = computed(() => {
   for (let index = 0; index < streaks.value.length; index++) {
     let streak: NormalStreak = streaks.value[index];
 
-    let isNormal = props.upgrade.is_normal_honing;
+    let is_normal = props.upgrade.is_normal_honing;
 
     let icons: ParsedIcon[] = streak.pity
       ? []
@@ -183,7 +194,7 @@ const parsed_streaks = computed(() => {
     let line1: string;
     let line2: string;
 
-    if (isNormal) {
+    if (is_normal) {
       taps += streak.count;
       if (streak.pity) {
         line1 = `Pity`;
@@ -213,7 +224,7 @@ const parsed_streaks = computed(() => {
       pity: streak.pity,
     });
   }
-  console.log("parsed", out);
+  // console.log("parsed", out);
   return out;
 });
 const optimizer_working = computed(get_optimizer_working);
@@ -231,7 +242,7 @@ const optimizer_working = computed(get_optimizer_working);
       class="flex w-16 min-w-16 flex-col items-center justify-end"
     >
       <template v-if="parsed_streak.pity">
-        <div class="can-disable-icon-wrapper opacity-50">
+        <div class="opacity-50">
           <img
             :src="get_icon_path('Pity')"
             class="generic-icon ticked h-8 w-8"
@@ -253,9 +264,27 @@ const optimizer_working = computed(get_optimizer_working);
         </div>
       </template>
 
-      <div class="text-sm text-(--text-main)">{{ parsed_streak.line1 }}</div>
+      <div
+        class="text-(--text-main)"
+        :style="{
+          fontSize: upgrade.is_normal_honing ? 'var(--text-sm)' : 'var(--text-xs)',
+        }"
+      >
+        {{ parsed_streak.line1 }}
+      </div>
 
-      <div class="annotation">{{ parsed_streak.line2 }}</div>
+      <div
+        class="annotation"
+        :style="{
+          color: upgrade.is_normal_honing
+            ? 'var(--text-muted)'
+            : 'var(--text-main)',
+          fontSize: upgrade.is_normal_honing ? 'var(--text-2xs)' : 'var(--text-xs)',
+          textWrap: upgrade.is_normal_honing ? 'wrap' : 'nowrap',
+        }"
+      >
+        {{ parsed_streak.line2 }}
+      </div>
     </div>
   </div>
 </template>

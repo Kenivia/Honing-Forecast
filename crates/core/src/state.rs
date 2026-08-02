@@ -1,3 +1,4 @@
+use crate::constants::FLOAT_TOL;
 use crate::constants::{ALLOWED_JUICE_POOLS, NUM_PIECE_TYPES, juice_info::JuiceInfo};
 use serde::{Deserialize, Serialize};
 use smallvec::{SmallVec, smallvec};
@@ -151,13 +152,13 @@ impl State {
     pub fn apply_new_streak_info(
         &mut self,
         streak_info: &StreakInfo,
-        piece_type: usize,
+        piece_type_usize: usize,
         upgrade_index: usize,
         juice_info: &JuiceInfo,
     ) {
         let pool_ids_list = self
             .pool_ids_list
-            .get_or_insert_with(|| get_pool_ids(piece_type, upgrade_index, juice_info));
+            .get_or_insert_with(|| get_pool_ids(piece_type_usize, upgrade_index, juice_info));
 
         let len = self.payload.len();
 
@@ -172,13 +173,26 @@ impl State {
             if let (Some(id), front_len) = streak_info.front[p] {
                 let end = front_len.min(len);
                 for slot in &mut self.payload[..end] {
-                    slot.push(id);
+                    // vambrace is temporarily disabled like this
+                    if juice_info
+                        .access(id, piece_type_usize, upgrade_index)
+                        .normal_chance
+                        > FLOAT_TOL
+                    {
+                        slot.push(id);
+                    }
                 }
             }
             if let (Some(id), back_len) = streak_info.back[p] {
                 let end = back_len.min(len);
                 for slot in self.payload[len - end..].iter_mut() {
-                    slot.push(id);
+                    if juice_info
+                        .access(id, piece_type_usize, upgrade_index)
+                        .normal_chance
+                        > FLOAT_TOL
+                    {
+                        slot.push(id);
+                    }
                 }
             }
         }

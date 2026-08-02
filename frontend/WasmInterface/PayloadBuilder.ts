@@ -291,7 +291,7 @@ export function build_material_info(): OneMaterialInput[] {
       ? apply_tax(selected_shard_price) / selected_shard_size
       : apply_tax(x) / BUNDLE_SIZE[index],
   );
-  console.log(ALL_LABELS, tier);
+  // console.log(ALL_LABELS, tier);
   return ALL_LABELS[tier].map((_, index) => [
     [0, 0],
     [bound_budgets[index], leftover_price[index]],

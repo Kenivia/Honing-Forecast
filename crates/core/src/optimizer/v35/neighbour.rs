@@ -161,10 +161,10 @@ impl Upgrade {
         self.state
             .apply_new_streak_info(&streak_info, piece_type, upgrade_index, juice_info);
         self.state.streak_cache = Some(streak_info);
-        assert!(self.state.iter().all(|x| x.iter().all(|y| {
-            juice_info.normal_uindex_to_id[self.piece_type_usize][self.upgrade_index].contains(y)
-        })));
-        my_dbg!(&self.state);
+        // assert!(self.state.iter().all(|x| x.iter().all(|y| {
+        //     juice_info.normal_uindex_to_id[self.piece_type_usize][self.upgrade_index].contains(y)
+        // })));
+        // my_dbg!(&self.state);
     }
 
     fn perturb_adv(&mut self, progress: f64, juice_info: &JuiceInfo) {

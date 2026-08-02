@@ -89,43 +89,39 @@ function change_one(
 
   if (current === UpgradeStatus.NotYet) {
     let seen_want = false;
-    let all_not_yet = true;
+    // let all_not_yet = true;
 
     for (let index = 0; index <= col; index++) {
       const cell = relevant_grid.value[row][index];
       if (cell === UpgradeStatus.Want) {
         seen_want = true;
-        all_not_yet = false;
+        // all_not_yet = false;
       } else if (
         cell === UpgradeStatus.Done ||
         cell === UpgradeStatus.FetchedDone
       ) {
-        all_not_yet = false;
+        // all_not_yet = false;
       }
       if (seen_want) set_cell(row, index, UpgradeStatus.Want);
     }
 
-    if (all_not_yet) {
-      for (let index = 0; index <= col; index++) {
-        set_cell(row, index, UpgradeStatus.Done);
-      }
-    } else {
-      for (let index = 0; index <= col; index++) {
-        if (relevant_grid.value[row][index] === UpgradeStatus.NotYet)
-          set_cell(row, index, UpgradeStatus.Want);
-      }
-      for (
-        let index = col + 1;
-        index < relevant_grid.value[0].length;
-        index++
-      ) {
-        if (
-          relevant_grid.value[row][index] === UpgradeStatus.Done ||
-          relevant_grid.value[row][index] === UpgradeStatus.FetchedDone
-        )
-          set_cell(row, index, UpgradeStatus.Want);
-      }
+    // if (all_not_yet) {
+    //   for (let index = 0; index <= col; index++) {
+    //     set_cell(row, index, UpgradeStatus.Done);
+    //   }
+    // } else {
+    for (let index = 0; index <= col; index++) {
+      if (relevant_grid.value[row][index] === UpgradeStatus.NotYet)
+        set_cell(row, index, UpgradeStatus.Want);
     }
+    for (let index = col + 1; index < relevant_grid.value[0].length; index++) {
+      if (
+        relevant_grid.value[row][index] === UpgradeStatus.Done ||
+        relevant_grid.value[row][index] === UpgradeStatus.FetchedDone
+      )
+        set_cell(row, index, UpgradeStatus.Want);
+    }
+    // }
     set_cell(row, col, UpgradeStatus.Want);
   } else if (current === UpgradeStatus.Want) {
     for (let index = 0; index <= col; index++) {
@@ -178,11 +174,17 @@ function cell_cursor(status: UpgradeStatus): string {
         Toggle whole column ->
       </div>
       <div
-        v-for="index in NUM_ROWS"
+        v-for="index in NUM_ADV_PIECES"
         :key="index"
         class="flex h-7 items-center justify-end"
       >
         <LabeledPieceIcon :piece="PIECE_NAMES[index - 1]" />
+      </div>
+      <div
+        v-if="active_profile.tier == 1"
+        class="mt-1 flex h-14 items-center justify-end border-t border-(--border-main) pt-1"
+      >
+        <LabeledPieceIcon :piece="PIECE_NAMES[NUM_PIECES - 1]" />
       </div>
     </div>
     <div ref="`${grid_type}_GridScrollRef`" class="items-start overflow-x-auto">
@@ -202,7 +204,7 @@ function cell_cursor(status: UpgradeStatus): string {
         </button>
       </div>
       <div
-        v-for="row in NUM_ROWS"
+        v-for="row in NUM_ADV_PIECES"
         :key="`${grid_type}-row-${row}`"
         class="mb-0.5 grid w-fit"
         :style="{ gridTemplateColumns: `repeat(${col_indices.length}, 26px)` }"
@@ -219,8 +221,30 @@ function cell_cursor(status: UpgradeStatus): string {
             relevant_grid[row - 1][col - 1] === UpgradeStatus.Done ||
             relevant_grid[row - 1][col - 1] === UpgradeStatus.FetchedDone
               ? "✓"
-              : ""
+              : relevant_grid[row - 1][col - 1] === UpgradeStatus.Want &&
+                  col < COLS &&
+                  relevant_grid[row - 1][col] === UpgradeStatus.NotYet
+                ? `+ ${col}`
+                : ""
           }}
+        </button>
+      </div>
+      <div
+        v-if="active_profile.tier == 1"
+        class="mt-1 mb-0.5 grid w-fit border-t border-(--border-main) pt-1"
+        :style="{ gridTemplateColumns: `repeat(${col_indices.length}, 26px)` }"
+      >
+        <button
+          v-for="col in COLS"
+          :key="`${grid_type}-${NUM_PIECES}-${col}`"
+          class="cell"
+          :class="cell_class(relevant_grid[NUM_PIECES - 1][col - 1])"
+          :style="{
+            cursor: cell_cursor(relevant_grid[NUM_PIECES - 1][col - 1]),
+          }"
+          @click="change_one_and_update_keyed(NUM_PIECES - 1, col - 1)"
+        >
+          +{{ col }}
         </button>
       </div>
     </div>
