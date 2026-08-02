@@ -59,12 +59,16 @@ export function compute_used_materials(
     ? juice_info.normal_uindex_to_id
     : juice_info.adv_uindex_to_id;
   // console.log(relevant_id_map[upgrade.upgrade_index])
-  for (const id of relevant_id_map[upgrade.upgrade_index]) {
+  for (const id of relevant_id_map[upgrade.piece_type_usize][
+    upgrade.upgrade_index
+  ]) {
     let juice_cost = 0;
 
-    let juice_type = juice_info.all_juices[id][
-      upgrade.piece_type_usize
-    ].data.get(String(upgrade.upgrade_index));
+    let juice_type =
+      juice_info.all_juices[id][upgrade.piece_type_usize].get(
+        upgrade.upgrade_index
+      );
+    console.log(juice_info.all_juices);
     let amt = upgrade.is_normal_honing
       ? juice_type.normal_amt_used
       : juice_type.adv_amt_used;

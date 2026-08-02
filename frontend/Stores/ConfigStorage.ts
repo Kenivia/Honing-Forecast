@@ -1,4 +1,4 @@
-import { validate_input_column_array } from "@/Utils/InputColumn";
+import { InputColumn, validate_input_column_array } from "@/Utils/InputColumn";
 import {
   create_default_owned_input_column,
   DEFAULT_ROSTER_CONFIG,
@@ -129,9 +129,34 @@ function migrate_V6(out, version: number): [any, number] {
   if (v6 !== null) {
     version = 6;
     out = { ...out, ...v6 };
-    localStorage.removeItem("HF_CONFIG_V6_COMPRESSED");
+    // localStorage.removeItem("HF_CONFIG_V6_COMPRESSED");
   }
   if (version == 6) {
+    // let swap_key_map = [
+    //   [0, 1, 2, 3, 4, 5, 6,
+    //   ]
+    //   [0, 1, 2, 3, 4, 5, 6, 8, 7],
+    // ];
+    // function swap_keys(input_column_array: InputColumn[]) {
+    //   for (const input_column of input_column_array) {
+    //   }
+    // }
+    // for (const key in out.mats_prices) {
+    //   out.mats_prices[key] = swap_keys(
+    //     out.mats_prices[key],
+    //     DEFAULT_ROSTER_CONFIG.mats_prices["nae"],
+    //   );
+    // }
+    for (const key in out.roster_mats_owned) {
+      out.roster_mats_owned[key] = validate_input_column_array(
+        out.roster_mats_owned[key],
+        DEFAULT_ROSTER_CONFIG.roster_mats_owned[0],
+      );
+      out.tradable_mats_owned[key] = validate_input_column_array(
+        out.tradable_mats_owned[key],
+        DEFAULT_ROSTER_CONFIG.tradable_mats_owned[0],
+      );
+    }
     for (const profile of out.profiles) {
       // console.log(profile.normal_grid.length);
       if (profile.normal_grid.length < NUM_PIECES) {
@@ -180,10 +205,10 @@ function write_roster_config(roster_config: RosterConfig) {
     "is_slider_update",
     "adv_cache",
   ]);
-  localStorage.setItem(CURRENT_STORAGE_KEY, LZString.compressToUTF16(json));
+  // localStorage.setItem(CURRENT_STORAGE_KEY, LZString.compressToUTF16(json));
 }
 export function write_state(state) {
-  console.log("writing");
+  // console.log("writing");
   try {
     write_roster_config(state.roster_config);
   } catch {

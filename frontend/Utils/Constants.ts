@@ -110,7 +110,7 @@ export const ALL_LABELS = [
   T4_MATS_LABELS.concat(T4_JUICE_LABELS.flatMap((x) => [x[0], x[1]])),
   SERCA_MATS_LABELS.concat(Serca_JUICE_LABELS.flatMap((x) => [x[0], x[1]])),
 ];
-
+console.log(ALL_LABELS);
 export const GRAPH_COLORS = [
   [
     "--series-red",
