@@ -183,9 +183,9 @@ function cell_cursor(status: UpgradeStatus): string {
       </div>
       <div
         v-if="active_profile.tier == 1"
-        class="mt-1 flex h-14 items-center justify-end border-t border-(--border-main) pt-1"
+        class="mt-1 flex h-14 items-center justify-end gap-7 border-t border-(--border-main) pt-1"
       >
-        <VambraceWarning class="pr-1" />
+        <VambraceWarning />
         <LabeledPieceIcon :piece="PIECE_NAMES[NUM_PIECES - 1]" />
       </div>
     </div>

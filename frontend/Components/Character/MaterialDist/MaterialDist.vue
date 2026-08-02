@@ -64,13 +64,14 @@ const visibleRows = computed(() => {
             (has_upgrades_in_range(15, 18, true, false) &&
               label === "15-18 Weapon") ||
             (has_upgrades_in_range(19, 20, true, false) &&
-              label === "19-20 Weapon") ||
+              (label === "19-20 Weapon" ||
+                label === "Enhanced 19-20 Weapon")) ||
             (has_upgrades_in_range(11, 14, false, false) &&
               label === "11-14 Armor") ||
             (has_upgrades_in_range(15, 18, false, false) &&
               label === "15-18 Armor") ||
             (has_upgrades_in_range(19, 20, false, false) &&
-              label === "19-20 Armor") ||
+              (label === "19-20 Armor" || label === "Enhanced 19-20 Armor")) ||
             (has_upgrades_in_range(1, 1, true, true) &&
               label === "Scroll 1 Weapon") ||
             (has_upgrades_in_range(2, 2, true, true) &&

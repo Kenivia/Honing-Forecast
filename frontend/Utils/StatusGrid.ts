@@ -55,6 +55,6 @@ export function get_valid_status_grid(
         row.length === status_grid[i].length &&
         status_grid[i].every((cell) => is_enum(UpgradeStatus, cell)),
     );
-  // console.log(isValid, status_grid, example)
+  // console.log(isValid, status_grid, example);
   return isValid ? status_grid : example.slice();
 }

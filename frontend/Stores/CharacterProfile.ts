@@ -154,15 +154,15 @@ export function validate_char_profile(
     index,
     out.profiles.slice(0, index),
   );
-  validate_input_column_array(
+  this_parsed.bound_budgets = validate_input_column_array(
     this_parsed.bound_budgets,
     DEFAULT_CHAR_PROFILE_NO_WORKER.bound_budgets,
   );
-  validate_input_column_array(
+  this_parsed.leftover_price = validate_input_column_array(
     this_parsed.leftover_price,
     DEFAULT_CHAR_PROFILE_NO_WORKER.leftover_price,
   );
-  validate_input_column(
+  this_parsed.special_budget = validate_input_column(
     this_parsed.special_budget,
     DEFAULT_CHAR_PROFILE_NO_WORKER.special_budget,
   );

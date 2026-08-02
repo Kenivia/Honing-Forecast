@@ -145,34 +145,40 @@ export function get_modified_cell(
 export function validate_input_column(
   old: InputColumn,
   default_example: InputColumn,
-) {
-  for (let row = 0; row < old.data.length; row++) {
-    let correct_len = default_example.data.length;
-    if (
-      old.data.length !== correct_len ||
-      old.keys.length !== correct_len ||
-      old.upper_bound.length !== correct_len ||
-      old.enabled.length !== correct_len
-    ) {
-      old = structuredClone(default_example);
-    } else {
-      old.data[row] = parse_input(
-        old,
-        row,
-        old.data[row],
-        true,
-      ).toLocaleString();
+): InputColumn {
+  const correct_len = default_example.data.length;
+
+  const pad_array = <T>(arr: T[], defaults: T[]): T[] => {
+    if (arr.length < correct_len) {
+      return arr.concat(defaults.slice(arr.length, correct_len));
     }
+    if (arr.length > correct_len) {
+      return arr.slice(0, correct_len);
+    }
+    return arr;
+  };
+
+  old.data = pad_array(old.data, default_example.data);
+  old.keys = pad_array(old.keys, default_example.keys);
+  old.upper_bound = pad_array(old.upper_bound, default_example.upper_bound);
+  old.enabled = pad_array(old.enabled, default_example.enabled);
+
+  for (let row = 0; row < old.data.length; row++) {
+    old.data[row] = parse_input(old, row, old.data[row], true).toLocaleString();
   }
+
+  return old;
 }
+
 export function validate_input_column_array(
   old: InputColumn[],
   example: InputColumn[],
-) {
+): InputColumn[] {
   for (let index = 0; index < old.length; index++) {
-    validate_input_column(old[index], example[index]);
+    old[index] = validate_input_column(old[index], example[index]);
   }
   while (old.length < TIER_LABELS.length) {
     old.push(create_input_column(InputType.Int, ALL_LABELS[old.length]));
   }
+  return old;
 }

@@ -2,7 +2,7 @@ use std::cmp::Ordering::{Equal, Greater, Less};
 
 use crate::advanced_honing::utils::MAX_ADV_STATE;
 use crate::constants::juice_info::JuiceInfo;
-use crate::my_dbg;
+// use crate::my_dbg;
 use crate::state::get_pool_ids;
 use crate::upgrade::Upgrade;
 
@@ -112,7 +112,7 @@ impl Upgrade {
             let (front_id, front_len) = streak_info.front[p];
             let (back_id, back_len) = streak_info.back[p];
             let total = (front_len + back_len) as i64;
-
+            
             let new_total =
                 (total + random_range(-max_change_len..max_change_len)).clamp(0, len as i64);
             let delta = new_total - total;

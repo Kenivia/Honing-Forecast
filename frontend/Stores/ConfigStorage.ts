@@ -14,33 +14,34 @@ import {
 import { MarketRegions } from "@/Utils/MarketDataFetcher";
 import { debounce } from "@/Utils/Helpers";
 import { UpgradeStatus } from "@/Utils/KeyedUpgrades";
+import { NUM_PIECES } from "@/Utils/Constants";
 
 export const CURRENT_STORAGE_KEY = "HF_CONFIG_V7_COMPRESSED";
 export const CURRENT_VERSION_NUMBER = 7;
 
-// just making sure that things are correct, not really necessary i think but oh well
 function standard_validation(out: any) {
   out.is_fetching = false;
-  for (const key in out.active_mats_prices) {
-    validate_input_column_array(
-      out.active_mats_prices[key],
+  for (const key in out.mats_prices) {
+    out.mats_prices[key] = validate_input_column_array(
+      out.mats_prices[key],
       DEFAULT_ROSTER_CONFIG.mats_prices["nae"],
     );
   }
   for (const key in out.roster_mats_owned) {
-    validate_input_column_array(
+    out.roster_mats_owned[key] = validate_input_column_array(
       out.roster_mats_owned[key],
       DEFAULT_ROSTER_CONFIG.roster_mats_owned[0],
     );
-    validate_input_column_array(
+    out.tradable_mats_owned[key] = validate_input_column_array(
       out.tradable_mats_owned[key],
       DEFAULT_ROSTER_CONFIG.tradable_mats_owned[0],
     );
   }
-
+  // console.log(structuredClone(out.mats_prices));
   for (let i = 0; i < out.profiles.length; i++) {
     out.profiles[i] = validate_char_profile(out.profiles[i], out, i);
   }
+
   return out;
 }
 
@@ -128,14 +129,17 @@ function migrate_V6(out, version: number): [any, number] {
   if (v6 !== null) {
     version = 6;
     out = { ...out, ...v6 };
-    // localStorage.removeItem("HF_CONFIG_V6_COMPRESSED");
+    localStorage.removeItem("HF_CONFIG_V6_COMPRESSED");
   }
   if (version == 6) {
     for (const profile of out.profiles) {
       // console.log(profile.normal_grid.length);
-      profile.normal_grid.push(
-        Array.from({ length: 25 }).fill(UpgradeStatus.NotYet),
-      );
+      if (profile.normal_grid.length < NUM_PIECES) {
+        profile.normal_grid.push(
+          Array.from({ length: 25 }).fill(UpgradeStatus.NotYet),
+        );
+      }
+
       // console.log(structuredClone(profile.normal_grid));
     }
     // console.log(structuredClone(out.profiles));
@@ -152,9 +156,9 @@ function load_compressed(key: string): any {
 export function load_roster_config(): RosterConfig {
   // console.log(newest_version);
   const newest = load_compressed(CURRENT_STORAGE_KEY);
-  let version = CURRENT_VERSION_NUMBER;
   let out = newest ? newest : DEFAULT_ROSTER_CONFIG;
 
+  let version = CURRENT_VERSION_NUMBER;
   [out, version] = migrate_V3(out, version);
   [out, version] = migrate_V4(out, version);
   [out, version] = migrate_V5(out, version);
@@ -176,10 +180,10 @@ function write_roster_config(roster_config: RosterConfig) {
     "is_slider_update",
     "adv_cache",
   ]);
-  // localStorage.setItem(CURRENT_STORAGE_KEY, LZString.compressToUTF16(json));
+  localStorage.setItem(CURRENT_STORAGE_KEY, LZString.compressToUTF16(json));
 }
 export function write_state(state) {
-  // console.log("writing");
+  console.log("writing");
   try {
     write_roster_config(state.roster_config);
   } catch {

@@ -102,6 +102,7 @@ export const T4_JUICE_LABELS = [
   ["Scroll 2 Armor", "Scroll 2 Weapon"],
   ["Scroll 3 Armor", "Scroll 3 Weapon"],
   ["Scroll 4 Armor", "Scroll 4 Weapon"],
+  ["Enhanced 19-20 Armor", "Enhanced 19-20 Weapon"],
 ];
 
 export const Serca_JUICE_LABELS = [["Glacier's Breath", "Lava's Breath"]];
@@ -119,22 +120,24 @@ export const GRAPH_COLORS = [
     "--series-fusion",
     "--series-gold",
     "--series-silver",
-    "--series-red",
     "--series-blue",
-    "--series-books",
-    "--series-books",
-    "--series-books",
-    "--series-red",
-    "--series-red",
-    "--series-red",
     "--series-red",
     "--series-books",
     "--series-books",
     "--series-books",
+    "--series-books",
+    "--series-books",
+    "--series-books",
     "--series-blue",
+    "--series-red",
     "--series-blue",
+    "--series-red",
     "--series-blue",
+    "--series-red",
     "--series-blue",
+    "--series-red",
+    "--series-books",
+    "--series-books",
   ],
   [
     "--series-red",
@@ -144,8 +147,8 @@ export const GRAPH_COLORS = [
     "--series-fusion",
     "--series-gold",
     "--series-silver",
-    "--series-red",
     "--series-blue",
+    "--series-red",
   ],
 ];
 export const GRAPH_FONT_SIZE = 10;
@@ -200,6 +203,8 @@ export const base_icon_map: Record<string, string> = {
   "15-18 Weapon": "/Icons/Materials/Weapon Book.webp",
   "19-20 Armor": "/Icons/Materials/Armor Book.webp",
   "19-20 Weapon": "/Icons/Materials/Weapon Book.webp",
+  "Enhanced 19-20 Armor": "/Icons/Materials/Enhanced Armor Book.png",
+  "Enhanced 19-20 Weapon": "/Icons/Materials/Enhanced Weapon Book.png",
 
   "Scroll 1 Weapon": "/Icons/Materials/Scroll 1 Weapon.png",
   "Scroll 1 Armor": "/Icons/Materials/Scroll 1 Armor.png",
@@ -256,8 +261,8 @@ export const SERCA_TO_T4_INDICES: Record<number, number> = Object.fromEntries(
 
 export const FALLBACK_PRICES = [
   [
-    647, 10, 20, 999999999, 180, 1, 0, 430, 737, 119, 3890, 496, 50, 1933, 2369,
-    260, 298, 19, 2748, 150, 70, 1800, 3187,
+    647, 10, 20, 999999999, 180, 1, 0, 260, 430, 298, 737, 19, 119, 2748, 3890,
+    150, 496, 70, 50, 1800, 1933, 3187, 2369, 15000, 15000,
   ],
-  [3494, 196, 156, 999999999, 226, 1, 0, 430, 260],
+  [3494, 196, 156, 999999999, 226, 1, 0, 260, 430],
 ];

@@ -21,7 +21,7 @@ I'm sure there is a better way of doing this. Right now, what you need to do is 
 4. Make your adjustment to the optimizer. There are some assumptions made about what is changed, which is mostly done by the `Neighbour` function. You must abide by the following:
     - `special_state` should be a permutation of the indices of upgrade_arr (upgrade_arr should never be re-ordered)
     - You must not change the length of State, it should always have the same length as clean_prob_dist_len (or 2 in the case of Advanced honing). This is a more of a front-end problem.
-    - `book_id` must be an element in `juice_info.normal_uindex_to_id[upgrade.upgrade_index]`. A `book_id` of 0 indicates no book (juice usage is controlled by the boolean)
+    - `book_id` must be an element in `juice_info.normal_uindex_to_id[upgrade.piece_type_usize][upgrade.upgrade_index]`. A `book_id` of 0 indicates no book (juice usage is controlled by the boolean)
     - The `book_id` field for advanced honing must not exceed `MAX_ADV_STATE` (it can equal `MAX_ADV_STATE`).
     - You must call `upgrade.update_hash` after changing the state of an upgrade.
     - For non-advanced upgrades, you must not modify the state with index < upgrade.alr_done.

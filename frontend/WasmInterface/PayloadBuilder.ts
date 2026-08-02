@@ -270,6 +270,7 @@ export function build_material_info(): OneMaterialInput[] {
       ? input_column_to_num(roster_store.active_mats_prices[tier])
       : effective_serca_price.value;
 
+  // console.log(input_column_to_num(roster_store.active_mats_prices[tier]));
   const selected_shard_size =
     roster_config.value.shard_infos[active_region.value].selected;
   const shard_prices =
