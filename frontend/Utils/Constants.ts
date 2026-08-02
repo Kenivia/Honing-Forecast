@@ -110,7 +110,40 @@ export const ALL_LABELS = [
   T4_MATS_LABELS.concat(T4_JUICE_LABELS.flatMap((x) => [x[0], x[1]])),
   SERCA_MATS_LABELS.concat(Serca_JUICE_LABELS.flatMap((x) => [x[0], x[1]])),
 ];
-console.log(ALL_LABELS);
+
+// const old = [
+//   "Red",
+//   "Blue",
+//   "Leaps",
+//   "Shards",
+//   "Fusion",
+//   "Gold",
+//   "Silver",
+//   "Lava's Breath",
+//   "11-14 Weapon",
+//   "15-18 Weapon",
+//   "19-20 Weapon",
+//   "Scroll 1 Weapon",
+//   "Scroll 2 Weapon",
+//   "Scroll 3 Weapon",
+//   "Scroll 4 Weapon",
+//   "Glacier's Breath",
+//   "11-14 Armor",
+//   "15-18 Armor",
+//   "19-20 Armor",
+//   "Scroll 1 Armor",
+//   "Scroll 2 Armor",
+//   "Scroll 3 Armor",
+//   "Scroll 4 Armor",
+// ];
+// function getIndices(arr_1: string[], arr_2: string[]): number[] {
+//   const indexMap = new Map<string, number>();
+//   for (let i = 0; i < arr_1.length; i++) {
+//     indexMap.set(arr_1[i], i);
+//   }
+//   return arr_2.map((val) => indexMap.get(val)!);
+// }
+// console.log(getIndices(old, ALL_LABELS[0]));
 export const GRAPH_COLORS = [
   [
     "--series-red",
@@ -161,17 +194,6 @@ export const BUNDLE_SIZE = [100, 100, 1, 1000, 1, 1, 1000000].concat(
   ).fill(1),
 ); // this is like really hacked together rn, but i doubt it'll need to be fixed
 
-export const OUTPUT_LABELS = [
-  "Red",
-  "Blue",
-  "Leaps",
-  "Shards",
-  "Fusion",
-  "Gold",
-  "Silver",
-  "Red juice",
-  "Blue juice",
-];
 
 export const NUM_PIECES = 7;
 export const NUM_ADV_PIECES = 6;

@@ -132,40 +132,49 @@ function migrate_V6(out, version: number): [any, number] {
     // localStorage.removeItem("HF_CONFIG_V6_COMPRESSED");
   }
   if (version == 6) {
-    // let swap_key_map = [
-    //   [0, 1, 2, 3, 4, 5, 6,
-    //   ]
-    //   [0, 1, 2, 3, 4, 5, 6, 8, 7],
-    // ];
-    // function swap_keys(input_column_array: InputColumn[]) {
-    //   for (const input_column of input_column_array) {
-    //   }
-    // }
-    // for (const key in out.mats_prices) {
-    //   out.mats_prices[key] = swap_keys(
-    //     out.mats_prices[key],
-    //     DEFAULT_ROSTER_CONFIG.mats_prices["nae"],
-    //   );
-    // }
+    let swap_key_map = [
+      [
+        0, 1, 2, 3, 4, 5, 6, 15, 7, 16, 8, 17, 9, 18, 10, 19, 11, 20, 12, 21,
+        13, 22, 14,
+      ],
+      [0, 1, 2, 3, 4, 5, 6, 8, 7],
+    ];
+    function swap_keys(input_column_array: InputColumn[]): InputColumn[] {
+      for (const [tier, input_column] of input_column_array.entries()) {
+        const copy = structuredClone(input_column);
+        for (const [row, dest] of swap_key_map[tier].entries()) {
+          input_column.data[row] = copy.data[dest];
+          input_column.keys[row] = copy.keys[dest];
+          input_column.upper_bound[row] = copy.upper_bound[dest];
+          input_column.enabled[row] = copy.enabled[dest];
+        }
+      }
+      return input_column_array;
+    }
+
+    for (const key in out.mats_prices) {
+      out.mats_prices[key] = swap_keys(out.mats_prices[key]);
+    }
+
     for (const key in out.roster_mats_owned) {
-      out.roster_mats_owned[key] = validate_input_column_array(
-        out.roster_mats_owned[key],
-        DEFAULT_ROSTER_CONFIG.roster_mats_owned[0],
-      );
-      out.tradable_mats_owned[key] = validate_input_column_array(
-        out.tradable_mats_owned[key],
-        DEFAULT_ROSTER_CONFIG.tradable_mats_owned[0],
-      );
+      out.roster_mats_owned[key] = swap_keys(out.roster_mats_owned[key]);
+      out.tradable_mats_owned[key] = swap_keys(out.tradable_mats_owned[key]);
     }
     for (const profile of out.profiles) {
-      // console.log(profile.normal_grid.length);
       if (profile.normal_grid.length < NUM_PIECES) {
         profile.normal_grid.push(
           Array.from({ length: 25 }).fill(UpgradeStatus.NotYet),
         );
       }
+      if (profile.char_name == "Toneema") {
+        console.log(structuredClone(profile.bound_budgets));
+      }
 
-      // console.log(structuredClone(profile.normal_grid));
+      profile.bound_budgets = swap_keys(profile.bound_budgets);
+      if (profile.char_name == "Toneema") {
+        console.log(structuredClone(profile.bound_budgets));
+      }
+      profile.leftover_price = swap_keys(profile.leftover_price);
     }
     // console.log(structuredClone(out.profiles));
   }
