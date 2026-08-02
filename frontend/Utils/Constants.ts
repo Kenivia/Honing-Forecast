@@ -182,7 +182,7 @@ export const base_icon_map: Record<string, string> = {
   Pants: "/Icons/Equipments/Pants.webp",
   Glove: "/Icons/Equipments/Gloves.webp",
   Weapon: "/Icons/Equipments/Weapon.webp",
-  Vambrace: "Icons/Equipments/Vambrace.png",
+  Vambrace: "/Icons/Equipments/Vambrace.png",
 
   Red: "/Icons/Materials/Red.webp",
   Blue: "/Icons/Materials/Blue.webp",
@@ -219,6 +219,8 @@ export const base_icon_map: Record<string, string> = {
 
   "Forecast Icon": "/Icons/Forecast Icon.webp",
   Pity: "/Artist Caught.png",
+
+  Warning: "/Icons/Warning.png",
 };
 let temp = {};
 for (const [label, path] of Object.entries(base_icon_map)) {

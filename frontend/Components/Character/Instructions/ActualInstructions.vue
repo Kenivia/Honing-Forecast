@@ -11,6 +11,7 @@ import { get_icon_path, toOrdinal } from "@/Utils/Helpers";
 import { OneState, Upgrade } from "@/Utils/KeyedUpgrades";
 import { artisan_string } from "@/Utils/HoningUtil";
 import { get_optimizer_working } from "./InstructionUtils";
+import VambraceWarning from "@/Components/Common/VambraceWarning.vue";
 
 const { active_profile } = storeToRefs(useRosterStore());
 const props = defineProps<{
@@ -267,7 +268,9 @@ const optimizer_working = computed(get_optimizer_working);
       <div
         class="text-(--text-main)"
         :style="{
-          fontSize: upgrade.is_normal_honing ? 'var(--text-sm)' : 'var(--text-xs)',
+          fontSize: upgrade.is_normal_honing
+            ? 'var(--text-sm)'
+            : 'var(--text-xs)',
         }"
       >
         {{ parsed_streak.line1 }}
@@ -279,12 +282,15 @@ const optimizer_working = computed(get_optimizer_working);
           color: upgrade.is_normal_honing
             ? 'var(--text-muted)'
             : 'var(--text-main)',
-          fontSize: upgrade.is_normal_honing ? 'var(--text-2xs)' : 'var(--text-xs)',
+          fontSize: upgrade.is_normal_honing
+            ? 'var(--text-2xs)'
+            : 'var(--text-xs)',
           textWrap: upgrade.is_normal_honing ? 'wrap' : 'nowrap',
         }"
       >
         {{ parsed_streak.line2 }}
       </div>
     </div>
+    <VambraceWarning v-if="upgrade.piece_type_usize == 2" class="my-auto w" />
   </div>
 </template>
