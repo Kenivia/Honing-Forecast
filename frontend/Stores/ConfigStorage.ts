@@ -129,7 +129,7 @@ function migrate_V6(out, version: number): [any, number] {
   if (v6 !== null) {
     version = 6;
     out = { ...out, ...v6 };
-    // localStorage.removeItem("HF_CONFIG_V6_COMPRESSED");
+    localStorage.removeItem("HF_CONFIG_V6_COMPRESSED");
   }
   if (version == 6) {
     let swap_key_map = [
@@ -166,14 +166,14 @@ function migrate_V6(out, version: number): [any, number] {
           Array.from({ length: 25 }).fill(UpgradeStatus.NotYet),
         );
       }
-      if (profile.char_name == "Toneema") {
-        console.log(structuredClone(profile.bound_budgets));
-      }
+      // if (profile.char_name == "Toneema") {
+      //   console.log(structuredClone(profile.bound_budgets));
+      // }
 
       profile.bound_budgets = swap_keys(profile.bound_budgets);
-      if (profile.char_name == "Toneema") {
-        console.log(structuredClone(profile.bound_budgets));
-      }
+      // if (profile.char_name == "Toneema") {
+      //   // console.log(structuredClone(profile.bound_budgets));
+      // }
       profile.leftover_price = swap_keys(profile.leftover_price);
     }
     // console.log(structuredClone(out.profiles));
@@ -214,7 +214,7 @@ function write_roster_config(roster_config: RosterConfig) {
     "is_slider_update",
     "adv_cache",
   ]);
-  // localStorage.setItem(CURRENT_STORAGE_KEY, LZString.compressToUTF16(json));
+  localStorage.setItem(CURRENT_STORAGE_KEY, LZString.compressToUTF16(json));
 }
 export function write_state(state) {
   // console.log("writing");
