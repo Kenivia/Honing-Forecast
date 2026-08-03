@@ -48,6 +48,7 @@ impl ScannerState {
         for i in self.config.iter() {
             new.insert(i.name.clone(), i.clone());
         }
-        CONFIG.set(new).expect("alr set config")
+        CONFIG.set(new).expect("alr set config");
+        self.config = vec![]; // no need to pass in and out after setting 
     }
 }

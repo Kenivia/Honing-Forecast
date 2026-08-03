@@ -59,11 +59,16 @@ impl ScannerState {
 
     pub fn update_slots(&mut self) {
         let active_page_nums = self.active_page_num();
+        my_dbg!(active_page_nums, self.anchors);
         for slot_address in ALL_SLOT_ADDRESSS.keys() {
-            if active_page_nums[&slot_address.inventory_type] != Some(slot_address.page_num) {
+            if active_page_nums[&slot_address.inventory_type] != Some(slot_address.page_num)
+                || !self.anchors[&slot_address.inventory_type].is_found()
+            // this extra check is for when there's only 1 pagenum (active_page will return a result but we don't have anchor)
+            {
                 continue;
             }
-            // active_page_nums being present means anchor is  ready
+
+            my_dbg!(active_page_nums[&slot_address.inventory_type]);
             let position: ScaledPosition =
                 self.anchored_slot_address_position(slot_address).unwrap();
 
@@ -104,12 +109,13 @@ impl ScannerState {
                         .is_none()
                 {
                     // only run the check if it changed
-                    let (icon_name_score, observed_number, observed_icon) = self.check_through_all_icons(
-                        position,
-                        self.anchors[&slot_address.inventory_type]
-                            .position_root
-                            .unwrap(),
-                    );
+                    let (icon_name_score, observed_number, observed_icon) = self
+                        .check_through_all_icons(
+                            position,
+                            self.anchors[&slot_address.inventory_type]
+                                .position_root
+                                .unwrap(),
+                        );
                     my_dbg!("Old", slot_address, "icon:", icon_name_score.clone());
                     if icon_name_score.is_some() {
                         // only overwrite if it matches another

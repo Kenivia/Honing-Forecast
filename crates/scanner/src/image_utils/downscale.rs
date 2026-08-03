@@ -3,12 +3,13 @@ use crate::buffer::Buffer;
 use crate::scanner_state::{ScaledPosition, ScannerState};
 use fast_image_resize::images::{Image, ImageRef};
 use fast_image_resize::{FilterType, PixelType, ResizeAlg, ResizeOptions, Resizer};
+use hf_core::my_dbg;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct DownscaledCache {
     pub buffer: Buffer,
-    
+
     #[serde(default)]
     pub position: Option<ScaledPosition>,
     #[serde(default)]
@@ -93,7 +94,12 @@ impl ScannerState {
             dst_buffer[dst_row_start..dst_row_start + dst_stride]
                 .copy_from_slice(&src_buffer[src_row_start..src_row_start + dst_stride]);
             if row == dst_h - 1 {
-                assert!(src_row_start + dst_stride < self.downscaled_cache.occupied_size.unwrap())
+                // my_dbg!(
+                //     src_row_start,
+                //     dst_stride,
+                //     self.downscaled_cache.occupied_size.unwrap()
+                // );
+                assert!(src_row_start + dst_stride <= self.downscaled_cache.occupied_size.unwrap())
             }
         }
     }

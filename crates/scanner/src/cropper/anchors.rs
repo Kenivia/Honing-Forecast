@@ -98,21 +98,23 @@ impl ScannerState {
             for (variant_index, (variant_name, bound)) in
                 ANCHORS_LOOKUP[&inv_type].iter().enumerate()
             {
-                if let Some(found) = self.template_match(
+                if let Some((found_position, confidence, brightness)) = self.template_match(
                     icon_lookup(variant_name),
                     self.downscale(bound.unwrap_or(FULL_RECT_16_9)),
                 ) {
                     my_dbg!(
-                        "Inv type",
                         inv_type,
-                        "Anchor",
                         variant_index,
-                        "has been found"
+                        "has been found",
+                        confidence,
+                        brightness
                     );
 
-                    self.anchors.get_mut(&inv_type).unwrap().positions[variant_index] = Some(found);
+                    self.anchors.get_mut(&inv_type).unwrap().positions[variant_index] =
+                        Some((found_position, confidence));
                     self.anchors.get_mut(&inv_type).unwrap().position_root =
-                        Some(found.0 - icon_lookup(variant_name).offset);
+                        Some(found_position - icon_lookup(variant_name).offset);
+                    self.screen_info.brightness = Some(brightness);
                 }
             }
         }

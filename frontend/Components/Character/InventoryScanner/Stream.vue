@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { get_readable } from "@/Components/Character/InventoryScanner/FramePassing";
 import { useRosterStore } from "@/Stores/RosterConfig";
-import { WasmOp } from "@/WasmInterface/WasmWorker";
+import { ScannerState, WasmOp } from "@/WasmInterface/WasmWorker";
 import { create_worker_bundle } from "@/WasmInterface/WorkerBundle";
 import { storeToRefs } from "pinia";
 import { ref, computed, onMounted, onUnmounted, toRaw } from "vue";
@@ -16,6 +16,8 @@ const status = defineModel<"idle" | "capturing">("status", { default: "idle" });
 
 const roster_store = useRosterStore();
 const { roster_config } = storeToRefs(roster_store);
+
+const bundle = ref(roster_config.value.cropper_worker_bundle);
 
 const config = ref<OneIconConfig[] | null>(null);
 getScannerConfig().then((data) => (config.value = data));
@@ -109,9 +111,9 @@ async function start_capture() {
       roster_config.value.cropper_worker_bundle = create_worker_bundle();
     }
 
-    const bundle = roster_config.value.cropper_worker_bundle;
+    bundle.value = roster_config.value.cropper_worker_bundle;
 
-    const new_scanner_state = bundle.result ?? {
+    const new_scanner_state = bundle.value.result ?? {
       screen_info: {
         total_width: width,
         total_height: height,
@@ -139,8 +141,8 @@ async function start_capture() {
       return entry;
     });
 
-    console.log(new_scanner_state.config);
-    bundle.debounced_start(
+    // console.log(new_scanner_state.config);
+    bundle.value.debounced_start(
       WasmOp.Reserve,
       {
         readable: get_readable(track),
@@ -163,12 +165,11 @@ async function start_capture() {
 }
 
 function stop_capture() {
-  const bundle = roster_config.value.cropper_worker_bundle;
-  if (bundle !== null) {
-    bundle.debounced_start(
+  if (bundle.value !== null) {
+    bundle.value.debounced_start(
       WasmOp.Dealloc,
-      bundle.result,
-      bundle.cancel,
+      bundle.value.result,
+      bundle.value.cancel,
       0,
       false,
     );
@@ -179,6 +180,30 @@ function stop_capture() {
     video_ref.value.srcObject = null;
   }
   status.value = "idle";
+}
+
+const cropper_running = ref(false);
+function start_cropper() {
+  cropper_loop(bundle.value.result);
+}
+async function cropper_loop(scanner_state: ScannerState) {
+  if (
+    bundle.value === null ||
+    bundle.value.worker === null ||
+    bundle.value.result === null
+  ) {
+    console.log("no more cropper");
+    cropper_running.value = false;
+    return;
+  }
+  cropper_running.value = true;
+  bundle.value.debounced_start(
+    WasmOp.Cropper,
+    scanner_state,
+    (scanner_state) => cropper_loop(scanner_state),
+    0,
+    false,
+  );
 }
 
 // Let a parent trigger capture imperatively if it needs to (e.g. reuse
@@ -271,5 +296,12 @@ onUnmounted(stop_capture);
         Stop
       </button>
     </div>
+    <button
+      @click="start_cropper"
+      class="generic-button w-20"
+      :disabled="cropper_running"
+    >
+      cropper
+    </button>
   </div>
 </template>

@@ -83,5 +83,6 @@ pub fn dealloc_buffer_wrapper(inp_scanner_state: JsValue) -> JsValue {
 
     let mut scanner_state: ScannerState = from_value(inp_scanner_state).unwrap();
     scanner_state.buffer.dealloc();
+    scanner_state.downscaled_cache.buffer.dealloc();
     to_value(&scanner_state).unwrap()
 }

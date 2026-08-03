@@ -32,6 +32,9 @@ pub struct ScreenInfo {
 
     #[serde(default)]
     pub initialized: bool,
+
+    #[serde(default)]
+    pub brightness: Option<f64>,
 }
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Hash, Copy, Clone)]
 pub enum InventoryType {

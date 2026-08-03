@@ -2,10 +2,7 @@ use std::sync::LazyLock;
 
 use ahash::AHashMap;
 
-use crate::scanner_state::{
-    InventoryType::{self, CharInventory},
-    ScaledPosition, SlotAddress,
-};
+use crate::scanner_state::{InventoryType::{self, CharInventory}, ScaledPosition, SlotAddress};
 
 pub static ANCHORS_LOOKUP: LazyLock<
     AHashMap<InventoryType, Vec<(String, Option<ScaledPosition>)>>,
@@ -13,8 +10,8 @@ pub static ANCHORS_LOOKUP: LazyLock<
     AHashMap::from([(
         InventoryType::CharInventory,
         vec![
-            ("Sort button".to_string(), None),
-            ("Dismantle button".to_string(), None),
+            ("Char Inventory anchor 1 ".to_string(), None),
+            ("Char Inventory anchor 2".to_string(), None),
         ],
     )])
 });
@@ -42,12 +39,11 @@ pub static ALL_PAGE_NUM: LazyLock<AHashMap<InventoryType, Vec<(String, String)>>
         AHashMap::from([(
             InventoryType::CharInventory,
             vec![(
-                "Char inventory page 1 active".to_string(),
-                "Char inventory page 1 inactive".to_string(),
+                "Char page 1 active".to_string(),
+                "Char page 1 inactive".to_string(),
             )],
         )])
     });
-
 
 pub const NUMBER_OFFSET: ScaledPosition = ScaledPosition {
     top_left: (0.0, -6.7),

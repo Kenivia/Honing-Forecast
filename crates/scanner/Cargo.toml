@@ -23,6 +23,8 @@ imageproc = {version = "0.27.0", default-features = false }
 uuid = {version="1.24.0", features=["serde", "v4","js"] }
 web-sys = { version = "0.3", features = ["console"]}
 hf-core = { path = "../core", default-features = false, features=["wasm"]}  
+realfft = {version="3.5.0", features=["wasm_simd"]}
+rustfft = {version="6.4.1", features=["wasm_simd"]}
 
 [features]
 # features here to make my_dbg macro happy  
