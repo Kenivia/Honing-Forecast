@@ -11,7 +11,7 @@ If you'd like to help with any of the below, feel free to get in touch via [Disc
 - get a minimally working cropper so that i can write the ui
 
 - normalize brightness at some point somehow
-  - normalize the observed when matching, then normalize all icons
+  - ~~normalize the observed when matching, ~~then normalize all icons
 
 - screenshot upload instead of stream at some point
 
