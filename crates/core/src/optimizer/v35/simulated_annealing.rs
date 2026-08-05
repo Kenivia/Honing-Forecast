@@ -171,8 +171,6 @@ pub fn solve<R: Rng>(
     #[allow(unused)]
     let mut last_progress_sec: f64 = 0.0;
 
-    let mut prev_essence: Option<StateEssence> = None;
-    let mut prev_metric: Option<f64> = None;
     while eqv_wall_time_iters < MAX_ITERS {
         let mutate_special = if solver_bundle.temps_without_improvement as f64
             > (10.0 * solver_bundle.progress()).max(3.0)
@@ -183,18 +181,10 @@ pub fn solve<R: Rng>(
         } else {
             solver_bundle.neighbour()
         };
-        let this_essence = solver_bundle.state_bundle.to_essence();
-        solver_bundle.state_bundle.metric = if prev_essence.is_some_and(|ess| ess.eq(&this_essence))
-        {
-            prev_metric.unwrap()
-        } else {
-            solver_bundle
-                .state_bundle
-                .metric_router(&mut solver_bundle.performance)
-        };
 
-        prev_essence = Some(this_essence.clone());
-        prev_metric = Some(solver_bundle.state_bundle.metric);
+        solver_bundle.state_bundle.metric = solver_bundle
+            .state_bundle
+            .metric_router(&mut solver_bundle.performance);
 
         let best_metric = f64::from(*solver_bundle.best_n_states.peek_max().unwrap().1);
         if solver_bundle.state_bundle.metric > best_metric {
@@ -204,7 +194,7 @@ pub fn solve<R: Rng>(
             }
             my_push(
                 &mut solver_bundle.best_n_states,
-                this_essence,
+                solver_bundle.state_bundle.to_essence(),
                 OrderedFloat(solver_bundle.state_bundle.metric),
             );
             solver_bundle.temps_without_improvement = 0;

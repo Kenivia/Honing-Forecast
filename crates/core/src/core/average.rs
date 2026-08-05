@@ -32,9 +32,7 @@ impl StateBundle {
         performance.states_evaluated += 1;
 
         let mut total_gold: f64 = 0.0;
-        for (skip_count, &special_prob) in
-            self.special_cache[&self.special_state].iter().enumerate()
-        {
+        for (skip_count, &special_prob) in self.special_probs().iter().enumerate() {
             if special_prob < SPECIAL_TOL {
                 continue;
             }
@@ -77,9 +75,7 @@ impl StateBundle {
             vec![0.0; self.prep_output.juice_info.total_num_avail];
         let mut metrics_arr: Vec<f64> = vec![0.0; treatment_arr.len()];
         for (treat_index, treatment) in treatment_arr.iter().enumerate() {
-            for (skip_count, &special_prob) in
-                self.special_cache[&self.special_state].iter().enumerate()
-            {
+            for (skip_count, &special_prob) in self.special_probs().iter().enumerate() {
                 if special_prob < SPECIAL_TOL {
                     continue;
                 }

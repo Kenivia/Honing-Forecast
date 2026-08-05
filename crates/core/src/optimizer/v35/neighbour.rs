@@ -21,7 +21,7 @@ use super::constants::*;
 impl SolverStateBundle {
     pub fn neighbour(&mut self) -> bool {
         let mutate_special = random_bool(
-            (1.0 - self.state_bundle.special_cache[&self.state_bundle.special_state][0])
+            (1.0 - self.state_bundle.special_probs()[0])
                 * self.special_affinity,
         );
         if mutate_special {

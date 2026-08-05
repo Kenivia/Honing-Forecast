@@ -16,7 +16,7 @@ impl StateBundle {
         performance: &mut Performance,
     ) -> f64 {
         let mut out: f64 = 0.0;
-        let special_probs = self.special_cache[&self.special_state].clone();
+        let special_probs = self.special_probs().clone();
         for (skip_count, &special_prob) in special_probs.iter().enumerate() {
             if special_prob == 0.0 {
                 continue;
