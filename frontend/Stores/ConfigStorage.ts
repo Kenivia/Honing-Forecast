@@ -45,7 +45,7 @@ function standard_validation(out: any) {
   return out;
 }
 
-function migrate_V3(out: any, _: number): [any, number] {
+function migrate_V3(out: any, version: number): [any, number] {
   const old_char_profiles = localStorage.getItem(
     "HF_UI_STATE_V3_char_profiles",
   );
@@ -72,7 +72,7 @@ function migrate_V3(out: any, _: number): [any, number] {
     localStorage.removeItem("HF_UI_STATE_V3_roster");
   }
 
-  return [out, 4];
+  return [out, old_roster !== null || old_char_profiles !== null ? 4 : version];
 }
 
 function migrate_V4(out, version: number): [any, number] {
@@ -108,7 +108,7 @@ function migrate_V4(out, version: number): [any, number] {
     }
   }
 
-  return [out, version + 1];
+  return [out, v4 !== null ? version + 1 : version];
 }
 
 function migrate_V5(out, version: number): [any, number] {
@@ -121,7 +121,7 @@ function migrate_V5(out, version: number): [any, number] {
   if (version == 5) {
     delete out["selected_shard_bag_size"]; // 'out' should be DEFAULT_ROSTER_CONFIG and should already have the new shard_infos field
   }
-  return [out, version + 1];
+  return [out, v5 !== null ? version + 1 : version];
 }
 function migrate_V6(out, version: number): [any, number] {
   const v6 = load_compressed("HF_CONFIG_V6_COMPRESSED");
@@ -178,7 +178,7 @@ function migrate_V6(out, version: number): [any, number] {
     }
     // console.log(structuredClone(out.profiles));
   }
-  return [out, version + 1];
+  return [out, v6 !== null ? version + 1 : version];
 }
 
 function load_compressed(key: string): any {
