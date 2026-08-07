@@ -12,7 +12,7 @@ import { computed } from "vue";
 import { grid_change_callback } from "../CharWorkerUtils";
 import { UpgradeStatus } from "@/Utils/KeyedUpgrades";
 import LabeledPieceIcon from "@/Components/Common/LabeledPieceIcon.vue";
-import VambraceWarning from "@/Components/Common/VambraceWarning.vue";
+
 
 const { active_profile } = storeToRefs(useRosterStore());
 const props = defineProps<{
@@ -185,7 +185,6 @@ function cell_cursor(status: UpgradeStatus): string {
         v-if="active_profile.tier == 1"
         class="mt-1 flex h-14 items-center justify-end gap-7 border-t border-(--border-main) pt-1"
       >
-        <VambraceWarning />
         <LabeledPieceIcon :piece="PIECE_NAMES[NUM_PIECES - 1]" />
       </div>
     </div>

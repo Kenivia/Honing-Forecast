@@ -11,7 +11,7 @@ import { get_icon_path, toOrdinal } from "@/Utils/Helpers";
 import { OneState, Upgrade } from "@/Utils/KeyedUpgrades";
 import { artisan_string } from "@/Utils/HoningUtil";
 import { get_optimizer_working } from "./InstructionUtils";
-import VambraceWarning from "@/Components/Common/VambraceWarning.vue";
+
 
 const { active_profile } = storeToRefs(useRosterStore());
 const props = defineProps<{
@@ -291,6 +291,5 @@ const optimizer_working = computed(get_optimizer_working);
         {{ parsed_streak.line2 }}
       </div>
     </div>
-    <VambraceWarning v-if="upgrade.piece_type_usize == 2" class="my-auto w" />
   </div>
 </template>
