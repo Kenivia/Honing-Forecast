@@ -13,7 +13,6 @@ import { grid_change_callback } from "../CharWorkerUtils";
 import { UpgradeStatus } from "@/Utils/KeyedUpgrades";
 import LabeledPieceIcon from "@/Components/Common/LabeledPieceIcon.vue";
 
-
 const { active_profile } = storeToRefs(useRosterStore());
 const props = defineProps<{
   grid_type: "normal" | "adv";
@@ -222,9 +221,10 @@ function cell_cursor(status: UpgradeStatus): string {
             relevant_grid[row - 1][col - 1] === UpgradeStatus.Done ||
             relevant_grid[row - 1][col - 1] === UpgradeStatus.FetchedDone
               ? "✓"
-              : relevant_grid[row - 1][col - 1] === UpgradeStatus.Want &&
-                  col < COLS &&
-                  relevant_grid[row - 1][col] === UpgradeStatus.NotYet
+              : (relevant_grid[row - 1][col - 1] === UpgradeStatus.Want &&
+                    col < COLS &&
+                    relevant_grid[row - 1][col] === UpgradeStatus.NotYet) ||
+                  col == COLS
                 ? `+ ${col}`
                 : ""
           }}
