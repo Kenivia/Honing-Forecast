@@ -25,7 +25,7 @@ interface DebugRow {
 
 const debug_table = ref<DebugRow[]>([]);
 
-const debugging = ref(false);
+const debugging = ref(true);
 
 interface FoundIconRow {
   key: string;
@@ -41,10 +41,9 @@ function process_result(scanner_state: ScannerState) {
     const new_boxes: ScaledPosition[] = [];
     const new_debug_table: DebugRow[] = [];
 
-    for (const [
-      icon_name,
-      [position, confidence, brightness],
-    ] of scanner_state.debug_info) {
+    for (const [icon_name, [position, confidence, brightness]] of [
+      ...scanner_state.debug_info,
+    ].sort(([a], [b]) => a.localeCompare(b))) {
       new_boxes.push(position);
       new_debug_table.push({
         icon_name,
@@ -57,18 +56,15 @@ function process_result(scanner_state: ScannerState) {
 
     boxes.value = new_boxes;
     debug_table.value = new_debug_table;
-    console.log(
-      "new_debug_table",
-      Object.entries(scanner_state.debug_info),
-      new_debug_table,
-    );
   } else {
     boxes.value = [];
     debug_table.value = [];
   }
 
   const new_found_icons: FoundIconRow[] = [];
-  for (const [key, slot_info] of scanner_state.slot_infos) {
+  for (const [key, slot_info] of [...scanner_state.slot_infos].sort(
+    ([a], [b]) => a.localeCompare(b),
+  )) {
     const icon = slot_info.observed_icon;
     new_found_icons.push({
       key,
@@ -84,9 +80,10 @@ function process_result(scanner_state: ScannerState) {
 <template>
   <div v-if="config">
     <Stream
+      :should_start_cropper="true"
       v-model:status="status"
       :boxes="boxes"
-      :show_stream="debugging"
+      :debugging="debugging"
       :process_result="process_result"
     />
     <button class="generic-button" @click="debugging = !debugging">

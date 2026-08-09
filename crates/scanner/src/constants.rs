@@ -26,9 +26,9 @@ pub static ALL_SLOT_ADDRESSS: LazyLock<AHashMap<SlotAddress, ScaledPosition>> =
                 pos_in_inv: (0, 0),
             },
             ScaledPosition {
-                top_left: (0.0, 0.0),
-                width: 0,
-                height: 0,
+                top_left: (11.0, 64.0),
+                width: 29,
+                height: 19,
             },
         )])
     });

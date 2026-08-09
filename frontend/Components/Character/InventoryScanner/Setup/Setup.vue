@@ -17,7 +17,12 @@ const boxes = ref<ScaledPosition[]>([]);
 
 <template>
   <div v-if="config">
-    <Stream :show_stream="true" v-model:status="status" :boxes="boxes" />
+    <Stream
+      :should_start_cropper="false"
+      :show_stream="true"
+      v-model:status="status"
+      :boxes="boxes"
+    />
     <SetupInterface :status="status" v-model:boxes="boxes" />
   </div>
 

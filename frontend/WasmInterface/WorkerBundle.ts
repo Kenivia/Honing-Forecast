@@ -1,6 +1,5 @@
 import { ref, Ref, shallowRef } from "vue";
-import { Payload } from "./PayloadBuilder";
-import { ScannerState, WasmOp } from "./WasmWorker";
+import { WasmOp } from "./WasmWorker";
 
 const createWorker = () =>
   new Worker(new URL("./WasmWorker.ts", import.meta.url), { type: "module" });
@@ -125,7 +124,7 @@ export function create_worker_bundle() {
     // console.log(JSON.parse(JSON.stringify(toRaw(buildPayload(wasm_op)))))
     worker.postMessage(
       { type: "message", wasm_op, payload },
-      { transfer: payload.readable ? [payload.readable] : [] },
+      { transfer: payload?.readable ? [payload.readable] : [] },
     );
   }
 

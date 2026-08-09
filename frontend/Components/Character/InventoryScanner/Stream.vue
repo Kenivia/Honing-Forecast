@@ -14,8 +14,9 @@ import {
 
 const props = defineProps<{
   boxes?: ScaledPosition[];
-  show_stream: boolean;
+  debugging: boolean;
   process_result?: (scanner_state: ScannerState) => void;
+  should_start_cropper: boolean;
 }>();
 const status = defineModel<"idle" | "capturing">("status", { default: "idle" });
 
@@ -130,6 +131,7 @@ async function start_capture() {
           size: 1280 * 720 * 4,
         },
       },
+      debugging: props.debugging,
     };
     new_scanner_state.buffer = {
       width,
@@ -153,7 +155,7 @@ async function start_capture() {
         readable: get_readable(track),
         scanner_state: new_scanner_state,
       },
-      start_cropper,
+      props.should_start_cropper ? toggle_cropper : null,
       // null,
       0,
       false,
@@ -190,8 +192,13 @@ function stop_capture() {
 
 const cropper_running = ref(false);
 
-function start_cropper() {
-  cropper_loop(bundle.value.result);
+function toggle_cropper() {
+  if (!cropper_running.value) {
+    cropper_running.value = true;
+    cropper_loop(bundle.value.result);
+  } else {
+    cropper_running.value = false;
+  }
 }
 async function cropper_loop(scanner_state: ScannerState) {
   if (
@@ -203,13 +210,17 @@ async function cropper_loop(scanner_state: ScannerState) {
     cropper_running.value = false;
     return;
   }
-  cropper_running.value = true;
+
   bundle.value.debounced_start(
     WasmOp.Cropper,
     scanner_state,
     (scanner_state) => {
-      props.process_result(scanner_state);
-      cropper_loop(scanner_state);
+      if (props.process_result) {
+        props.process_result(scanner_state);
+      }
+      if (cropper_running.value) {
+        cropper_loop(scanner_state);
+      }
     },
     0,
     false,
@@ -248,7 +259,7 @@ onUnmounted(stop_capture);
     <div
       class="relative overflow-hidden rounded-none"
       :style="
-        show_stream && status === 'capturing'
+        debugging && status === 'capturing'
           ? 'width: 1280px; height: 720px'
           : 'width: 0; height: 0'
       "
@@ -259,7 +270,7 @@ onUnmounted(stop_capture);
         muted
         playsinline
         class="h-full w-full border object-contain"
-        :class="{ hidden: !show_stream || status !== 'capturing' }"
+        :class="{ hidden: !debugging || status !== 'capturing' }"
         @loadedmetadata="on_loaded_metadata"
       />
 
@@ -312,7 +323,7 @@ onUnmounted(stop_capture);
       </button>
     </div>
     <button
-      @click="start_cropper"
+      @click="toggle_cropper"
       class="generic-button"
       :disabled="cropper_running"
     >
