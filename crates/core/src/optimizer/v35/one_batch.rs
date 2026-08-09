@@ -5,6 +5,7 @@ use super::scaler::AdaptiveScaler;
 use crate::performance::Performance;
 use crate::state_bundle::StateBundle;
 use crate::state_bundle::StateEssence;
+use crate::upgrade::PieceType::Armor;
 use ordered_float::OrderedFloat;
 use priority_queue::DoublePriorityQueue;
 use rand::SeedableRng;
@@ -62,10 +63,10 @@ impl SolverStateBundle {
         self.state_bundle.clone_from_essence(best.0, best.1);
         if random_bool(self.progress()) {
             let u_len = self.state_bundle.upgrade_arr.len();
-            let target_idx = random_range(0..u_len);
-            let target = &self.state_bundle.upgrade_arr[target_idx];
+            let source_index = random_range(0..u_len);
+            let source = &self.state_bundle.upgrade_arr[source_index];
 
-            if !target.is_normal_honing || target.is_weapon {
+            if !source.is_normal_honing || source.piece_type != Armor {
                 return;
             }
 
@@ -74,10 +75,10 @@ impl SolverStateBundle {
                 .upgrade_arr
                 .iter()
                 .enumerate()
-                .filter(|(i, upgrade)| {
-                    *i != target_idx
-                        && upgrade.upgrade_index == target.upgrade_index
-                        && upgrade.piece_type != target.piece_type
+                .filter(|(i, target)| {
+                    *i != source_index
+                        && target.upgrade_index == source.upgrade_index
+                        && target.piece_type == source.piece_type
                 })
                 .map(|(i, _)| i)
                 .collect();
@@ -90,7 +91,7 @@ impl SolverStateBundle {
                     .payload
                     .clone();
 
-                self.state_bundle.upgrade_arr[target_idx]
+                self.state_bundle.upgrade_arr[source_index]
                     .state
                     .update_payload(payload);
             }

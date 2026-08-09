@@ -144,7 +144,7 @@ pub fn neighbour(
                         } else {
                             0.0
                         }
-                        + if *id > 0 {
+                        + if *id > 1 {
                             juice_chances[*id][upgrade.upgrade_index]
                         } else {
                             0.0

@@ -22,7 +22,7 @@ import {
 } from "@/Utils/MarketDataFetcher";
 
 import { load_roster_config } from "./ConfigStorage";
-export const CURRENT_STORAGE_KEY = "HF_CONFIG_V6_COMPRESSED";
+
 
 export interface RosterConfig {
   mats_prices: Record<MarketRegions, InputColumn[]>;

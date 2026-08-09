@@ -51,7 +51,7 @@ const using_slider = ref(true);
 
 const upgrade_key = computed(() =>
   to_upgrade_key(
-    props.upgrade.piece_type,
+    props.upgrade.piece_index,
     props.upgrade.upgrade_index,
     props.upgrade.is_normal_honing,
     active_profile.value.tier,
@@ -368,14 +368,14 @@ watch(
   },
 );
 
-const new_special_leaps = computed(() =>
+const new_special_leaps = ref(
   parse_locale_int(active_profile.value.special_budget.data[0]),
 );
 
 function special_succeed_click() {
   active_profile.value.special_budget.data[0] =
     new_special_leaps.value.toLocaleString();
-
+  console.log(active_profile.value.special_budget.data[0]);
   this_keyed.value.used_materials = compute_used_materials(
     props.upgrade,
     0,
@@ -460,7 +460,7 @@ const special_grid: GridConfig = {
         v-model:current_chance_percentage="current_chance_percentage"
         :upgrade="upgrade"
         :optimizer_working="optimizer_working"
-        :taps_since_last_input="taps_since_last_input"
+        :taps_since_last_input="Number(taps_since_last_input)"
         :normal_dist_length="upgrade.normal_dist.length"
         :using_slider="using_slider"
         :show_hints="true"

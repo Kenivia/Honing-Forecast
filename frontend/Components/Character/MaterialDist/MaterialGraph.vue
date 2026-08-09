@@ -80,11 +80,13 @@ const points = computed<Point[]>(() => {
   }
 
   let prevSlope = 0;
+
   return normalized.map(([x, y], index) => {
     if (index === 0) {
       const nextX = normalized[1][0];
       const dx = nextX - x;
-      const slope = dx === 0 ? 0 : props.upside_down ? (1 - y) / dx : y / dx;
+      const slope =
+        dx === 0 ? 0 : props.upside_down ? (y == 0 ? 0 : (1 - y) / dx) : y / dx;
       prevSlope = slope;
 
       return { x, y: slope, cumulativeY: y };

@@ -2,10 +2,11 @@ use crate::advanced_honing::utils::{AdvConfig, AdvDistTriplet};
 use crate::constants::accessor::{
     get_artisan, get_data, get_event_extra_chance, get_normal_hone_chances, get_special_leap_cost,
 };
-use crate::constants::juice_info::{JuiceInfo, get_priced_juice_info};
+use crate::constants::juice_info::{JuiceInfo, get_event_adjusted_juice_info};
 use crate::constants::*;
 use crate::helpers::distribute_budgets;
-use crate::upgrade::Upgrade;
+use crate::state::OneState;
+use crate::upgrade::{PieceType, Upgrade, piece_index_to_type, piece_type_to_usize};
 use ahash::AHashMap;
 use serde::{Deserialize, Serialize};
 
@@ -24,12 +25,12 @@ pub type MaterialInput = Vec<Vec<(f64, f64)>>; // [material type][treatment plan
 
 #[derive(Deserialize, Clone, Serialize)]
 pub struct OneUpgradeInput {
-    pub piece_type: usize,
+    pub piece_index: usize,
     pub upgrade_index: usize,
     pub is_normal_honing: bool,
     pub starting_artisan: Option<f64>,
     pub starting_num_taps: Option<usize>,
-    pub state: Option<Vec<(bool, usize)>>,
+    pub state: Option<Vec<OneState>>,
     pub unlocked: bool,
     pub adv_progress: Option<(usize, usize, bool, bool)>,
 }
@@ -48,8 +49,11 @@ impl PreparationOutput {
         Vec<Upgrade>,
         AHashMap<AdvConfig, AdvDistTriplet>,
     ) {
-        let juice_info: JuiceInfo =
-            get_priced_juice_info(&BASE_JUICE_INFOS[tier], &raw_material_info, express_event);
+        let juice_info: JuiceInfo = get_event_adjusted_juice_info(
+            &BASE_JUICE_INFOS[tier],
+            &raw_material_info,
+            express_event,
+        );
         let mut adv_cache: AHashMap<AdvConfig, AdvDistTriplet> = if inp_adv_cache.is_none() {
             AHashMap::new()
         } else {
@@ -125,7 +129,7 @@ pub fn parser(
     let normal_hone_chances = get_normal_hone_chances(tier);
 
     for OneUpgradeInput {
-        piece_type,
+        piece_index,
         upgrade_index,
         is_normal_honing,
         starting_artisan,
@@ -135,39 +139,27 @@ pub fn parser(
         adv_progress,
     } in upgrade_info
     {
-        let relevant_cost = get_data(
-            express_event,
-            tier,
-            !is_normal_honing,
-            piece_type == 5,
-            false,
-        );
-        let relevant_unlock = get_data(
-            express_event,
-            tier,
-            !is_normal_honing,
-            piece_type == 5,
-            true,
-        );
+        let piece_type: PieceType = piece_index_to_type(piece_index);
+        let piece_type_usize: usize = piece_type_to_usize(piece_type);
+        let relevant_cost = get_data(express_event, tier, !is_normal_honing, piece_type, false);
+        let relevant_unlock = get_data(express_event, tier, !is_normal_honing, piece_type, true);
         let this_cost =
             &Vec::from_iter((0..7).map(|cost_type| relevant_cost[cost_type][upgrade_index]));
         let this_unlock =
             &Vec::from_iter((0..7).map(|cost_type| relevant_unlock[cost_type][upgrade_index]));
         let this_unlocked: bool = unlocked;
-        let this_state_given: Vec<(bool, usize)> = state.unwrap_or(Vec::new());
+        let this_state_given: Vec<OneState> = state.unwrap_or(Vec::new());
 
         if is_normal_honing {
-            let special_cost: i64 =
-                special_leap_cost[if piece_type == 5 { 1 } else { 0 }][upgrade_index];
-            let event_artisan_rate: f64 = artisan_rate_arr[upgrade_index];
+            let special_cost: i64 = special_leap_cost[piece_type_usize][upgrade_index];
+            let event_artisan_rate: f64 = artisan_rate_arr[piece_type_usize][upgrade_index];
             let starting_artisan: f64 = starting_artisan.unwrap();
             let starting_num_taps: usize = starting_num_taps.unwrap_or(0);
             out.push(Upgrade::new_normal(
-                normal_hone_chances[upgrade_index],
+                normal_hone_chances[piece_type_usize][upgrade_index],
                 this_cost,
                 special_cost,
-                piece_type == 5,
-                piece_type,
+                piece_index,
                 event_artisan_rate,
                 upgrade_index,
                 juice_info,
@@ -176,15 +168,14 @@ pub fn parser(
                 this_state_given,
                 this_unlocked,
                 this_unlock,
-                event_extra_arr[upgrade_index],
+                event_extra_arr[piece_type_usize][upgrade_index],
             ));
         } else {
             let this_adv_progress: (usize, usize, bool, bool) = adv_progress.unwrap();
 
             out.push(Upgrade::new_adv(
                 this_cost,
-                piece_type == 5,
-                piece_type,
+                piece_index,
                 upgrade_index,
                 this_unlock,
                 this_unlocked,

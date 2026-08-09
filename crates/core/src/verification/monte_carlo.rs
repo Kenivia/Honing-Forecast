@@ -10,6 +10,7 @@ use crate::verification::utils::apply_prices;
 use itertools::izip;
 use rand::Rng;
 use rand::prelude::*;
+use smallvec::smallvec;
 use statrs::distribution::{ContinuousCDF, Normal};
 
 /// Instead of actually sampling the distribution, we guarantee that every value has exactly the expected number of occurances
@@ -58,45 +59,44 @@ fn sample_truncated_geometric<R: Rng + ?Sized>(p: f64, max_taps: i64, rng: &mut 
     if k > max_taps { max_taps + 1 } else { k }
 }
 
-fn juice_costs(upgrade: &Upgrade, state_bundle: &StateBundle) -> Vec<Vec<(i64, i64)>> {
+fn juice_costs(upgrade: &Upgrade, state_bundle: &StateBundle) -> Vec<Vec<i64>> {
     let prep_output = &state_bundle.prep_output;
 
-    let mut juice_used: Vec<Vec<(i64, i64)>> =
-        vec![vec![(0, 0); prep_output.juice_info.num_juice_avail]; upgrade.normal_dist.len()];
+    let mut juice_used: Vec<Vec<i64>> =
+        vec![vec![0; prep_output.juice_info.num_juice_avail]; upgrade.normal_dist.len()];
+    // [p_index][id] = used at this point
 
     let mut juice_so_far: Vec<i64> = vec![0; prep_output.juice_info.num_juice_avail];
     if upgrade.is_normal_honing {
         // adv hone does not use this juice_data
-        for &id in
-            state_bundle.prep_output.juice_info.normal_uindex_to_id[upgrade.upgrade_index].iter()
-        {
-            let dist = &upgrade.normal_dist;
-            for (p_index, _) in dist.iter().enumerate() {
-                let (weap_used, armor_used) = &mut juice_used[p_index][id];
-                let (juice, book_id) = *upgrade.state.get(p_index).unwrap_or(&(false, 0));
-                if upgrade.is_weapon {
-                    *weap_used = juice_so_far[id];
-                } else {
-                    *armor_used = juice_so_far[id];
-                }
-                if p_index >= dist.len() - 2 {
-                    continue;
-                }
 
-                let juice_amt = if upgrade.upgrade_index < 3 {
-                    0
-                } else {
-                    prep_output
-                        .juice_info
-                        .access(id, upgrade.upgrade_index)
-                        .normal_amt_used
-                };
-                if id == 0 && juice {
-                    juice_so_far[id] += juice_amt;
-                } else if id > 0 && book_id == id {
-                    juice_so_far[id] += juice_amt;
-                }
+        let dist = &upgrade.normal_dist;
+        for (p_index, _) in dist.iter().enumerate() {
+            if p_index >= dist.len() - 2 {
+                continue;
             }
+            for &id in upgrade.state.get(p_index).unwrap_or(&smallvec![]) {
+                let used: &mut i64 = &mut juice_used[p_index][id];
+                *used = juice_so_far[id];
+                juice_so_far[id] += state_bundle
+                    .prep_output
+                    .juice_info
+                    .access(id, upgrade.piece_type_usize, upgrade.upgrade_index)
+                    .normal_amt_used;
+            }
+            // let juice_amt = if upgrade.upgrade_index < 3 {
+            //     0
+            // } else {
+            //     prep_output
+            //         .juice_info
+            //         .access(id, upgrade.piece_type_usize, upgrade.upgrade_index)
+            //         .normal_amt_used
+            // };
+            // if id <= 1 && juice {
+            //     juice_so_far[id] += juice_amt;
+            // } else if id > 1 && book_id == id {
+            //     juice_so_far[id] += juice_amt;
+            // }
         }
     }
 
@@ -114,7 +114,7 @@ pub fn monte_carlo_data<R: Rng>(
     state_bundle.compute_special_probs(false);
 
     let total_num_avail = state_bundle.prep_output.juice_info.total_num_avail;
-    let num_juice_avail = state_bundle.prep_output.juice_info.num_juice_avail;
+    // let num_juice_avail = state_bundle.prep_output.juice_info.num_juice_avail;
     let mut cost_data: Vec<Vec<i64>> = vec![vec![0; total_num_avail]; data_size];
 
     let mut actually_paid: Vec<i64> = vec![0; state_bundle.upgrade_arr.len() + 1];
@@ -129,10 +129,10 @@ pub fn monte_carlo_data<R: Rng>(
             let tap_map: Vec<usize> = tap_map_generator(data_size, &upgrade.normal_dist, rng);
 
             let juice_costs = juice_costs(upgrade, &state_bundle);
-            if highest_upgrade_index_seen[upgrade.piece_type] > upgrade.upgrade_index as i64 {
+            if highest_upgrade_index_seen[upgrade.piece_index] > upgrade.upgrade_index as i64 {
                 special_valid = false;
             } else {
-                highest_upgrade_index_seen[upgrade.piece_type] = upgrade.upgrade_index as i64;
+                highest_upgrade_index_seen[upgrade.piece_index] = upgrade.upgrade_index as i64;
                 special_valid = true;
             }
 
@@ -175,14 +175,10 @@ pub fn monte_carlo_data<R: Rng>(
                 }
 
                 for id in state_bundle.prep_output.juice_info.normal_uindex_to_id
-                    [upgrade.upgrade_index]
+                    [upgrade.piece_type_usize][upgrade.upgrade_index]
                     .iter()
                 {
-                    if upgrade.is_weapon {
-                        this_cost[7 + id] += juice_costs[rolled_tap][*id].0;
-                    } else {
-                        this_cost[7 + num_juice_avail + id] += juice_costs[rolled_tap][*id].1; // i mean .0 and .1 should be  the same but whatever
-                    }
+                    this_cost[7 + id] += juice_costs[rolled_tap][*id];
                 }
             }
         } else {
@@ -197,21 +193,17 @@ pub fn monte_carlo_data<R: Rng>(
                 }
 
                 for &id in state_bundle.prep_output.juice_info.adv_uindex_to_id
-                    [upgrade.upgrade_index]
+                    [upgrade.piece_type_usize][upgrade.upgrade_index]
                     .iter()
                 {
-                    let used = if id == 0 { juice } else { scroll } as i64;
+                    let used = if id <= 1 { juice } else { scroll } as i64;
                     let amt_per_use = state_bundle
                         .prep_output
                         .juice_info
-                        .access(id, upgrade.upgrade_index)
+                        .access(id, upgrade.piece_type_usize, upgrade.upgrade_index)
                         .adv_amt_used;
 
-                    this_cost[if upgrade.is_weapon {
-                        7 + id
-                    } else {
-                        7 + num_juice_avail + id
-                    }] += amt_per_use * used;
+                    this_cost[7 + id] += amt_per_use * used;
                 }
             }
         }

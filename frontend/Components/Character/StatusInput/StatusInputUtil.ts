@@ -2,6 +2,7 @@ import {
   ADV_COLS,
   ALL_LABELS,
   NORMAL_COLS,
+  NUM_ADV_PIECES,
   NUM_PIECES,
   PLUS_TIER_CONVERSION,
 } from "@/Utils/Constants";
@@ -59,7 +60,7 @@ export function change_tier(target_profile: CharProfile, fetched?: boolean) {
     true,
   ).toLocaleString();
 
-  let stay_same_indices = [3, 5, 6, 7]; // shards, gold, silver, red juice
+  let stay_same_indices = [3, 5, 6, 7, 8]; // shards, gold, silver, red juice
   stay_same_indices.forEach(
     (index) =>
       (target_profile.bound_budgets[new_tier].data[index] =
@@ -67,15 +68,15 @@ export function change_tier(target_profile: CharProfile, fetched?: boolean) {
   );
 
   // special case for blue juice
-  let new_num_juice_avail = (ALL_LABELS[new_tier].length - 7) / 2;
-  let new_index = 7 + new_num_juice_avail;
-  let old_num_juice_avail = (ALL_LABELS[old_tier].length - 7) / 2;
-  let old_index = 7 + old_num_juice_avail;
-  target_profile.bound_budgets[new_tier].data[new_index] =
-    target_profile.bound_budgets[old_tier].data[old_index];
+  // let new_num_juice_avail = (ALL_LABELS[new_tier].length - 7) / 2;
+  // let new_index = 7 + new_num_juice_avail;
+  // let old_num_juice_avail = (ALL_LABELS[old_tier].length - 7) / 2;
+  // let old_index = 7 + old_num_juice_avail;
+  // target_profile.bound_budgets[new_tier].data[new_index] =
+  //   target_profile.bound_budgets[old_tier].data[old_index];
 
   if (new_tier == 1) {
-    for (let row = 0; row < NUM_PIECES; row++) {
+    for (let row = 0; row < NUM_ADV_PIECES; row++) {
       for (let col = 0; col < ADV_COLS; col++) {
         target_profile.adv_grid[row][col] = fetched
           ? UpgradeStatus.FetchedDone
@@ -89,7 +90,7 @@ export function change_tier(target_profile: CharProfile, fetched?: boolean) {
     return;
   }
 
-  for (let row = 0; row < NUM_PIECES; row++) {
+  for (let row = 0; row < NUM_ADV_PIECES; row++) {
     convert_apply_done_want(
       old_tier,
       new_tier,

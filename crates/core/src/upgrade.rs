@@ -1,12 +1,13 @@
 use crate::advanced_honing::utils::{AdvConfig, AdvDistTriplet};
+
 use crate::constants::juice_info::JuiceInfo;
+use crate::state::{OneState, State};
 use crate::support::{ProbDist, Support};
+use crate::upgrade::PieceType::{Armor, Vambrace, Weapon};
 use ahash::AHashMap;
 use serde::{Deserialize, Serialize};
-use std::collections::hash_map::DefaultHasher;
-use std::ops::{Deref, DerefMut};
-
-use std::hash::{Hash, Hasher};
+use smallvec::smallvec;
+use std::hash::Hash;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Upgrade {
@@ -16,18 +17,19 @@ pub struct Upgrade {
     pub costs: Vec<f64>,
 
     pub special_cost: i64,
-    pub is_weapon: bool,
     pub artisan_rate: f64,
 
     pub upgrade_index: usize,
 
     pub clean_prob_dist_len: usize,
     // pub juice_arr: Vec<f64>,
-    pub state: State, // state for this upgrade - (juice_used? , id) per tap
+    pub state: State,
     pub cost_dist: Vec<Support>,
 
     pub name_string: String,
-    pub piece_type: usize,
+    pub piece_index: usize,
+    pub piece_type: PieceType,
+    pub piece_type_usize: usize,
 
     pub starting_artisan: f64,
     pub starting_num_taps: usize, // this is only used to calculate the starting base chance, not cost (we don't distinguish between manual artisan input vs slider artisan input on the rust side, cost calculation happens in js)
@@ -39,50 +41,34 @@ pub struct Upgrade {
     pub adv_config: AdvConfig,
     pub adv_dists: Vec<ProbDist>,
 }
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(transparent)]
-pub struct State {
-    pub payload: Vec<(bool, usize)>,
-    #[serde(skip)]
-    pub hash: u64,
+
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Copy, Eq, Hash)]
+pub enum PieceType {
+    Armor,
+    Weapon,
+    Vambrace,
 }
-
-impl State {
-    pub fn new_empty(length: usize) -> State {
-        let mut out = State {
-            payload: vec![(false, 0); length],
-            hash: 0,
-        };
-        out.update_hash();
-        out
-    }
-    pub fn new(payload: Vec<(bool, usize)>) -> State {
-        let mut out = State { payload, hash: 0 };
-        out.update_hash();
-        out
-    }
-
-    pub fn update_hash(&mut self) {
-        let mut hasher: DefaultHasher = DefaultHasher::new();
-        self.payload.hash(&mut hasher);
-        self.hash = hasher.finish();
-    }
-
-    pub fn update_payload(&mut self, new_payload: Vec<(bool, usize)>) {
-        self.payload = new_payload;
-        self.update_hash();
+pub fn piece_type_to_prefix(piece_type: PieceType) -> String {
+    match piece_type {
+        Armor => "armor_".to_string(),
+        Weapon => "weap_".to_string(),
+        Vambrace => "vamb_".to_string(),
     }
 }
-impl Deref for State {
-    type Target = Vec<(bool, usize)>;
-    fn deref(&self) -> &Self::Target {
-        &self.payload
-    }
+pub fn piece_index_to_type(piece_index: usize) -> PieceType {
+    return match piece_index {
+        0..=4 => Armor,
+        5 => Weapon,
+        6 => Vambrace,
+        _ => panic!("invalid piece type"),
+    };
 }
 
-impl DerefMut for State {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.payload
+pub fn piece_type_to_usize(piece_type: PieceType) -> usize {
+    match piece_type {
+        Armor => 0,
+        Weapon => 1,
+        Vambrace => 2,
     }
 }
 
@@ -91,21 +77,20 @@ impl Upgrade {
         base_chance: f64,
         costs: &[f64],
         special_cost: i64,
-        is_weapon: bool,
-        piece_type: usize,
+        piece_index: usize,
         artisan_rate: f64,
         upgrade_index: usize,
         juice_info: &JuiceInfo,
         starting_artisan: f64,
         starting_num_taps: usize,
-        state_given: Vec<(bool, usize)>,
+        state_given: Vec<OneState>,
         unlocked: bool,
         unlock_costs: &[f64],
 
         extra_chance: f64,
     ) -> Self {
-        let state = State::new(state_given);
-
+        let state: State = State::new(state_given);
+        let piece_type: PieceType = piece_index_to_type(piece_index);
         let mut out = Self {
             is_normal_honing: true,
             normal_dist: ProbDist::default(),
@@ -113,8 +98,9 @@ impl Upgrade {
             costs: costs.try_into().unwrap(),
             special_cost,
             clean_prob_dist_len: 0,
-            is_weapon,
+            piece_index,
             piece_type,
+            piece_type_usize: piece_type_to_usize(piece_type),
             artisan_rate,
             upgrade_index,
             state, // initialize state with default values
@@ -123,7 +109,7 @@ impl Upgrade {
             // armor_juice_costs: vec![Support::default(); juice_info.num_juice_avail],
             name_string: {
                 let mut string: String = "".to_owned();
-                string += if is_weapon { "weap_" } else { "armor_" };
+                string += &piece_type_to_prefix(piece_type);
                 string += &upgrade_index.to_string();
                 string
             },
@@ -143,7 +129,7 @@ impl Upgrade {
 
         out.clean_prob_dist_len = clean_upgrade.normal_dist.len();
         while out.state.len() < out.clean_prob_dist_len {
-            out.state.payload.push((false, 0));
+            out.state.payload.push(smallvec![]);
         }
         out.state.truncate(out.clean_prob_dist_len);
         out.state.update_hash();
@@ -156,8 +142,7 @@ impl Upgrade {
     /// we initialize the support of adv here, and don't update it further (because we aren't doing optimizaiton for adv rn), but that will change in the future
     pub fn new_adv(
         costs: &[f64],
-        is_weapon: bool,
-        piece_type: usize,
+        piece_index: usize,
         upgrade_index: usize,
         unlock_costs: &[f64],
 
@@ -166,22 +151,31 @@ impl Upgrade {
         double_balls: bool,
         juice_info: &JuiceInfo,
         adv_cache: &mut AHashMap<AdvConfig, AdvDistTriplet>,
-        state_given: Vec<(bool, usize)>,
+        state_given: Vec<OneState>,
     ) -> Self {
-        let state = if state_given.len() == juice_info.adv_uindex_to_id[upgrade_index].len() {
+        let piece_type: PieceType = piece_index_to_type(piece_index);
+        let piece_type_usize = piece_type_to_usize(piece_type);
+        let state = if state_given.len()
+            == juice_info.adv_uindex_to_id[piece_type_usize][upgrade_index].len()
+        {
             State::new(state_given)
         } else {
-            State::new_empty(juice_info.adv_uindex_to_id[upgrade_index].len())
+            State::new(vec![
+                smallvec![0];
+                juice_info.adv_uindex_to_id[piece_type_usize]
+                    [upgrade_index]
+                    .len()
+            ])
         };
-
         let mut out = Self {
             is_normal_honing: false,
             normal_dist: ProbDist::new(Vec::new()),
             base_chance: 0.0,
             costs: costs.try_into().unwrap(),
             special_cost: 0,
-            is_weapon,
+            piece_index,
             piece_type,
+            piece_type_usize,
             artisan_rate: 0.0,
             upgrade_index,
             clean_prob_dist_len: 0,
@@ -190,7 +184,7 @@ impl Upgrade {
 
             name_string: {
                 let mut string: String = "adv_".to_owned();
-                string += if is_weapon { "weap_" } else { "armor_" };
+                string += &piece_type_to_prefix(piece_type);
                 string += &upgrade_index.to_string();
                 string
             },

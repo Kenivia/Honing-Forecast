@@ -19,11 +19,11 @@ export interface RemainingMats {
 export function mark_upgrade_as_done(upgrade: Upgrade) {
   const { active_profile } = storeToRefs(useRosterStore());
   if (upgrade.is_normal_honing) {
-    active_profile.value.normal_grid[upgrade.piece_type][
+    active_profile.value.normal_grid[upgrade.piece_index][
       upgrade.upgrade_index
     ] = UpgradeStatus.Done;
   } else {
-    active_profile.value.adv_grid[upgrade.piece_type][upgrade.upgrade_index] =
+    active_profile.value.adv_grid[upgrade.piece_index][upgrade.upgrade_index] =
       UpgradeStatus.Done;
   }
   grid_change_callback();
@@ -59,12 +59,16 @@ export function compute_used_materials(
     ? juice_info.normal_uindex_to_id
     : juice_info.adv_uindex_to_id;
   // console.log(relevant_id_map[upgrade.upgrade_index])
-  for (const id of relevant_id_map[upgrade.upgrade_index]) {
+  for (const id of relevant_id_map[upgrade.piece_type_usize][
+    upgrade.upgrade_index
+  ]) {
     let juice_cost = 0;
 
-    let juice_type = juice_info.all_juices[id].data.get(
-      String(upgrade.upgrade_index),
-    );
+    let juice_type =
+      juice_info.all_juices[id][upgrade.piece_type_usize].get(
+        upgrade.upgrade_index
+      );
+    console.log(juice_info.all_juices);
     let amt = upgrade.is_normal_honing
       ? juice_type.normal_amt_used
       : juice_type.adv_amt_used;
@@ -75,24 +79,20 @@ export function compute_used_materials(
         index < Math.min(taps_since_last_run, upgrade.normal_dist.length - 2);
         index++
       ) {
-        if (
-          (upgrade.state[index][0] === true && id == 0) ||
-          (upgrade.state[index][1] === id && id !== 0)
-        ) {
+        if (id in upgrade.state[index]) {
           juice_cost += amt;
         }
         // console.log(juice_cost)
       }
     } else {
-      if (id === 0) {
+      if (id <= 1) {
         juice_cost = adv_juice_used * amt;
       } else {
         juice_cost = adv_scroll_used * amt;
       }
     }
 
-    out[7 + id + (upgrade.is_weapon ? 0 : juice_info.num_juice_avail)] =
-      juice_cost;
+    out[7 + id] = juice_cost;
   }
   return out;
 }

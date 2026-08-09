@@ -1,5 +1,9 @@
 import { CharProfile } from "@/Stores/CharacterProfile";
-import { DEFAULT_ARTISAN_MULTIPLIER, NUM_PIECES } from "./Constants";
+import {
+  DEFAULT_ARTISAN_MULTIPLIER,
+  NUM_ADV_PIECES,
+  NUM_PIECES,
+} from "./Constants";
 import { locale_to_fixed } from "./Helpers";
 import { Upgrade, UpgradeStatus } from "./KeyedUpgrades";
 
@@ -15,14 +19,14 @@ export function ilevel(
 
   let out = profile.tier === 0 ? 1590 : 1635;
   if (profile.tier === 0) {
-    for (let row = 0; row < NUM_PIECES; row++) {
+    for (let row = 0; row < NUM_ADV_PIECES; row++) {
       const highest_plus = profile.adv_grid[row].findLastIndex(done) + 1;
       out += (highest_plus * 10) / 6;
     }
   } else {
     out += 40;
   }
-  for (let row = 0; row < NUM_PIECES; row++) {
+  for (let row = 0; row < NUM_ADV_PIECES; row++) {
     const highest_plus = profile.normal_grid[row].findLastIndex(done) + 1;
     // console.log(profile.normal_grid[row], highest_plus, row);
     if (highest_plus === 0) {
@@ -39,18 +43,14 @@ export function artisan_number(
   total_count: number,
   juice_info: any,
 ): number {
-  let extra_arr = upgrade.state.slice(0, total_count).map(([juice, id]) => {
+  let extra_arr = upgrade.state.slice(0, total_count).map((ids) => {
     let chance = 0.0;
-    if (juice) {
-      chance += juice_info.all_juices[0].data.get(
-        String(upgrade.upgrade_index),
+    for (const id of ids) {
+      chance += juice_info.all_juices[id][upgrade.piece_type_usize].get(
+        upgrade.upgrade_index,
       ).normal_chance;
     }
-    if (id > 0) {
-      chance += juice_info.all_juices[id].data.get(
-        String(upgrade.upgrade_index),
-      ).normal_chance;
-    }
+
     return chance;
   });
   let artisan = upgrade.starting_artisan;
@@ -100,7 +100,7 @@ export function artisan_string(
 //         String(upgrade.upgrade_index),
 //       ).normal_chance;
 //     }
-//     if (id > 0) {
+//     if (id > 1) {
 //       chance += juice_info.all_juices[id].data.get(
 //         String(upgrade.upgrade_index),
 //       ).normal_chance;

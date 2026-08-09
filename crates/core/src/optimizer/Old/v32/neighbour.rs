@@ -134,7 +134,7 @@ impl SolverStateBundle {
                                 *juice = false;
                                 0.0
                             }
-                            + if book_id != 0 && i < new_book_count {
+                            + if book_id >1&& i < new_book_count {
                                 if i < new_book_streak_len {
                                     *book = book_id;
                                 } else {

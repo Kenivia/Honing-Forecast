@@ -2,7 +2,7 @@ import { CharProfile } from "@/Stores/CharacterProfile";
 import {
   ADV_COLS,
   IconMap,
-  NUM_PIECES,
+  NUM_ADV_PIECES,
   PIECE_NAMES,
   PLUS_TIER_CONVERSION,
 } from "./Constants";
@@ -63,8 +63,8 @@ export function has_upgrades_in_range(
   const { active_profile } = storeToRefs(useRosterStore());
 
   for (
-    let row = is_weapon ? 5 : 0;
-    row < (is_weapon ? NUM_PIECES : NUM_PIECES - 1);
+    let row = is_weapon ? NUM_ADV_PIECES - 1 : 0;
+    row < (is_weapon ? NUM_ADV_PIECES : NUM_ADV_PIECES - 1);
     row++
   ) {
     for (let col = low - 1; col < high; col++) {
@@ -115,7 +115,7 @@ export function format_char_name(
 
 export function check_adv_all_done() {
   const { active_profile } = storeToRefs(useRosterStore());
-  for (let row = 0; row < NUM_PIECES; row++) {
+  for (let row = 0; row < NUM_ADV_PIECES; row++) {
     for (let col = 0; col < ADV_COLS; col++) {
       if (
         active_profile.value.adv_grid[row][col] != UpgradeStatus.Done &&
@@ -129,7 +129,7 @@ export function check_adv_all_done() {
 }
 export function check_all_plus_20(): number | boolean {
   const { active_profile } = storeToRefs(useRosterStore());
-  for (let row = 0; row < NUM_PIECES; row++) {
+  for (let row = 0; row < NUM_ADV_PIECES; row++) {
     let highest_done =
       active_profile.value.normal_grid[row].findLastIndex(
         (value) =>
@@ -147,7 +147,7 @@ export function check_revert_ilevel_ok(): number | boolean {
   if (active_profile.value.tier == 0) {
     return true;
   }
-  for (let row = 0; row < NUM_PIECES; row++) {
+  for (let row = 0; row < NUM_ADV_PIECES; row++) {
     let highest_done =
       active_profile.value.normal_grid[row].findLastIndex(
         (value) =>
@@ -213,7 +213,7 @@ export function get_icon_path(name: string) {
   return IconMap[name] ?? "";
 }
 export function get_piece_name(upgrade: Upgrade) {
-  return PIECE_NAMES[upgrade.piece_type];
+  return PIECE_NAMES[upgrade.piece_index];
 }
 
 const ordinalRules = new Intl.PluralRules("en", { type: "ordinal" });

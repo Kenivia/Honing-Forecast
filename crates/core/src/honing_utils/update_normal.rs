@@ -1,34 +1,34 @@
+use ahash::AHashMap;
+use smallvec::smallvec;
+
+use crate::constants::ARTISAN_MULTIPLIER;
 use crate::constants::juice_info::JuiceInfo;
+use crate::my_dbg;
+use crate::state::State;
 use crate::upgrade::Upgrade;
 
-pub fn get_extra_arr(
-    state: &[(bool, usize)],
-    juice_info: &JuiceInfo,
-    upgrade: &Upgrade,
-) -> Vec<f64> {
+pub fn get_extra_arr(state: &State, juice_info: &JuiceInfo, upgrade: &Upgrade) -> Vec<f64> {
     state
         .iter()
-        .map(|(juice, id)| {
+        .map(|ids| {
             let mut chance: f64 = 0.0;
-            if upgrade.upgrade_index < 3 {
-                return chance;
-            }
-            if *juice {
-                chance += juice_info.access(0, upgrade.upgrade_index).normal_chance;
-            }
-            if *id > 0 {
-                chance += juice_info.access(*id, upgrade.upgrade_index).normal_chance;
+
+            for id in ids {
+                if !juice_info.normal_uindex_to_id[upgrade.piece_type_usize][upgrade.upgrade_index]
+                    .contains(id)
+                {
+                    my_dbg!(state, upgrade,)
+                }
+                chance += juice_info
+                    .access(*id, upgrade.piece_type_usize, upgrade.upgrade_index)
+                    .normal_chance;
             }
             chance
         })
         .collect()
 }
 
-pub fn new_prob_dist(
-    state: &[(bool, usize)],
-    juice_info: &JuiceInfo,
-    upgrade: &Upgrade,
-) -> Vec<f64> {
+pub fn new_prob_dist(state: &State, juice_info: &JuiceInfo, upgrade: &Upgrade) -> Vec<f64> {
     probability_distribution(
         upgrade.base_chance,
         upgrade.artisan_rate,
@@ -66,7 +66,7 @@ pub fn probability_distribution(
         }
         raw_chances.push(current_chance);
         count += 1;
-        artisan += 0.4651_f64 * current_chance * artisan_rate;
+        artisan += ARTISAN_MULTIPLIER * current_chance * artisan_rate;
         if current_chance == 1.0 {
             break; // for upgrades that have 100% passrate immediately or upgrades that have above 100% success rate (juicing last few taps of like +4 or something)
         }
@@ -129,55 +129,48 @@ impl Upgrade {
                 true,
             );
         }
+        let possible_ids =
+            &juice_info.normal_uindex_to_id[self.piece_type_usize][self.upgrade_index];
 
-        for &id in juice_info.normal_uindex_to_id[self.upgrade_index].iter() {
-            let mut weap_cost: f64 = 0.0;
-            let mut armor_cost: f64 = 0.0;
-            let mut weap_support: Vec<f64> = Vec::with_capacity(l_len);
-            let mut armor_support: Vec<f64> = Vec::with_capacity(l_len);
-
-            let amt = if self.upgrade_index < 3 {
-                0.0
-            } else {
-                juice_info.access(id, self.upgrade_index).normal_amt_used as f64
-            };
-            for (index, _) in self.normal_dist.iter().enumerate() {
-                let (juice, book) = self.state.get(index).unwrap_or(&(false, 0));
-                weap_support.push(weap_cost);
-                armor_support.push(armor_cost);
-                if index >= l_len - 2 {
-                    continue;
-                }
-
-                if *juice && id == 0 {
-                    if self.is_weapon {
-                        weap_cost += amt;
-                    } else {
-                        armor_cost += amt;
-                    }
-                }
-                if *book == id && id > 0 {
-                    if self.is_weapon {
-                        weap_cost += amt;
-                    } else {
-                        armor_cost += amt;
-                    }
-                }
+        let mut out: AHashMap<usize, (f64, Vec<f64>, f64)> =
+            AHashMap::from_iter(possible_ids.iter().map(|id| {
+                (
+                    *id,
+                    (
+                        0.0,
+                        Vec::new(),
+                        juice_info
+                            .access(*id, self.piece_type_usize, self.upgrade_index)
+                            .normal_amt_used as f64,
+                    ),
+                )
+            }));
+        for (index, _) in self.normal_dist.iter().enumerate() {
+            for id in possible_ids.iter() {
+                let current = out[id].0;
+                out.get_mut(&id).unwrap().1.push(current);
             }
 
-            self.cost_dist[id + 7].update_payload(
-                weap_support,
-                self.state.hash,
-                &self.normal_dist,
-                amt,
-                true,
-            );
+            if index >= l_len - 2 {
+                continue;
+            }
 
-            self.cost_dist[id + 7 + juice_info.num_juice_avail].update_payload(
-                armor_support,
+            for actual_id in self.state.get(index).unwrap_or(&smallvec![]) {
+                out.get_mut(&actual_id).unwrap().0 += out[actual_id].2;
+            }
+            // if *juice && id <= 1 {
+            //     weap_cost += amt;
+            // }
+            // if *book == id && id > 1 {
+            //     weap_cost += amt;
+            // }
+        }
+        for (id, (_, support, gap_size)) in out {
+            self.cost_dist[id + 7].update_payload(
+                support,
                 self.state.hash,
                 &self.normal_dist,
-                amt,
+                gap_size,
                 true,
             );
         }

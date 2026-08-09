@@ -62,12 +62,12 @@ async function click() {
     @click="click"
     class="generic-button w-full text-wrap!"
     :disabled="
-      true
-      // region === null
+      // true
+      region === null
     "
     :style="{
-      opacity: 0.5, //region === null ? 0.5 : 1,
-      cursor: 'not-allowed', //  region === null ? 'not-allowed' : 'pointer',
+      opacity: region === null ? 0.5 : 1,
+      cursor: region === null ? 'not-allowed' : 'pointer',
     }"
   >
     Fetching not working rn...

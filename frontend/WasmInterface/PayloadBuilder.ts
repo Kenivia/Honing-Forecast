@@ -3,6 +3,7 @@ import {
   BUNDLE_SIZE,
   GRACE_FIRST_N,
   JOINED_ADV_JUICE,
+  NUM_ADV_PIECES,
 } from "@/Utils/Constants";
 import { TreatmentPlan } from "@/Stores/CharacterProfile";
 
@@ -81,6 +82,7 @@ function keyed_to_array(
   const upgrade_map = get_upgrade_map(upgrade_arr, tier);
   return Object.entries(keyed_upgrades)
     .filter((x) => tier === 0 || x[1].is_normal_honing) // shouldn't really be necessary but apparently it went  wrong once somehow so adding this guard here
+    .filter((x) => tier === 1 || x[1].piece_index < NUM_ADV_PIECES)
     .map(([key, one_upgrade_input]) => {
       const upgrade = upgrade_map.get(key) ?? null;
       let out = structuredClone(toRaw(one_upgrade_input));
@@ -94,7 +96,8 @@ function keyed_to_array(
         ? juice_info.normal_uindex_to_id
         : juice_info.adv_uindex_to_id;
 
-      let relevant_upgrade = relevant_id_map[upgrade.upgrade_index];
+      let relevant_upgrade =
+        relevant_id_map[upgrade.piece_type_usize][upgrade.upgrade_index];
       // console.log(adv_override);
       out.unlocked = out.is_normal_honing
         ? out.starting_artisan > 0 || out.starting_num_taps > 0
@@ -107,39 +110,48 @@ function keyed_to_array(
         one_upgrade_input.state = null; // so the next time it doesn't overwrite
         return out;
       }
-      out.state = upgrade.state
-        .slice(out.taps_since_last_input)
-        .map((x, index) =>
-          upgrade.is_normal_honing
-            ? [
-                normal_override === undefined ||
-                normal_override.juice == NormalOverride.Optimizer
-                  ? x[0]
-                  : normal_override.juice == NormalOverride.Empty
-                    ? false
-                    : true,
-                normal_override === undefined ||
-                normal_override.book == NormalOverride.Optimizer
-                  ? x[1]
-                  : normal_override.book == NormalOverride.Empty
-                    ? 0
-                    : relevant_upgrade[relevant_upgrade.length - 1],
-              ]
-            : [
-                false,
-                adv_override === undefined ||
-                (index == 0 ? adv_override.juice : adv_override.scroll) ==
-                  AdvOverride.Optimizer
-                  ? x[1]
-                  : (index == 0 ? adv_override.juice : adv_override.scroll) ==
-                      AdvOverride.Empty
-                    ? 0
-                    : (index == 0 ? adv_override.juice : adv_override.scroll) ==
-                        AdvOverride.Grace
-                      ? GRACE_FIRST_N.length - 1
-                      : JOINED_ADV_JUICE.length - 1,
-              ],
-        );
+      out.state = upgrade.is_normal_honing
+        ? upgrade.state.slice(out.taps_since_last_input).map((one_state) =>
+            normal_override === undefined
+              ? one_state
+              : one_state
+                  .filter((id) =>
+                    normal_override.juice == NormalOverride.Empty && id <= 1
+                      ? false
+                      : true,
+                  )
+                  .concat(
+                    relevant_upgrade.filter(
+                      (id) =>
+                        normal_override.juice == NormalOverride.Full && id <= 1,
+                    ),
+                  )
+                  .filter((id) =>
+                    normal_override.book == NormalOverride.Empty && id > 1
+                      ? false
+                      : true,
+                  )
+                  .concat(
+                    relevant_upgrade.filter(
+                      (id) =>
+                        normal_override.book == NormalOverride.Full && id > 1,
+                    ),
+                  ),
+          )
+        : upgrade.state.map((one_state, index) => [
+            adv_override === undefined ||
+            (index == 0 ? adv_override.juice : adv_override.scroll) ==
+              AdvOverride.Optimizer
+              ? one_state[0]
+              : (index == 0 ? adv_override.juice : adv_override.scroll) ==
+                  AdvOverride.Empty
+                ? 0
+                : (index == 0 ? adv_override.juice : adv_override.scroll) ==
+                    AdvOverride.Grace
+                  ? GRACE_FIRST_N.length - 1
+                  : JOINED_ADV_JUICE.length - 1,
+          ]);
+
       return out;
     });
 }
@@ -166,21 +178,21 @@ export function special_sort_override(
 
   let out = structuredClone(special_state);
   if (special_override.highest_first) {
-    // For each piece_type, find the max upgrade_index among the indices present
-    // in special_state. Upgrades that are the peak of their piece_type float
+    // For each piece_index, find the max upgrade_index among the indices present
+    // in special_state. Upgrades that are the peak of their piece_index float
     // to the front; all others sink to the back. weapon_first does not apply.
     const peak_per_piece = new Map<number, number>();
     for (const idx of special_state) {
       const u = upgrade_arr[idx];
-      const current = peak_per_piece.get(u.piece_type);
+      const current = peak_per_piece.get(u.piece_index);
       if (current === undefined || u.upgrade_index > current) {
-        peak_per_piece.set(u.piece_type, u.upgrade_index);
+        peak_per_piece.set(u.piece_index, u.upgrade_index);
       }
     }
 
     const is_peak = (idx: number): boolean => {
       const u = upgrade_arr[idx];
-      return peak_per_piece.get(u.piece_type) === u.upgrade_index;
+      return peak_per_piece.get(u.piece_index) === u.upgrade_index;
     };
 
     out.sort((a, b) => {
@@ -189,8 +201,10 @@ export function special_sort_override(
       const ua = upgrade_arr[a];
       const ub = upgrade_arr[b];
 
-      const a_preferred = ua.is_weapon === special_override.weapon_first;
-      const b_preferred = ub.is_weapon === special_override.weapon_first;
+      const a_preferred =
+        (ua.piece_type_usize === 1) === special_override.weapon_first;
+      const b_preferred =
+        (ub.piece_type_usize === 1) === special_override.weapon_first;
       if (ua.is_normal_honing !== ub.is_normal_honing) {
         return ua.is_normal_honing ? -1 : 1;
       } else if (a_peak !== b_peak) {
@@ -205,8 +219,10 @@ export function special_sort_override(
     out.sort((a, b) => {
       const ua = upgrade_arr[a];
       const ub = upgrade_arr[b];
-      const a_preferred = ua.is_weapon === special_override.weapon_first;
-      const b_preferred = ub.is_weapon === special_override.weapon_first;
+      const a_preferred =
+        (ua.piece_type_usize === 1) === special_override.weapon_first;
+      const b_preferred =
+        (ub.piece_type_usize === 1) === special_override.weapon_first;
       if (ua.is_normal_honing !== ub.is_normal_honing) {
         return ua.is_normal_honing ? -1 : 1;
       } else if (a_preferred !== b_preferred) {
@@ -254,6 +270,7 @@ export function build_material_info(): OneMaterialInput[] {
       ? input_column_to_num(roster_store.active_mats_prices[tier])
       : effective_serca_price.value;
 
+  // console.log(input_column_to_num(roster_store.active_mats_prices[tier]));
   const selected_shard_size =
     roster_config.value.shard_infos[active_region.value].selected;
   const shard_prices =
@@ -275,7 +292,7 @@ export function build_material_info(): OneMaterialInput[] {
       ? apply_tax(selected_shard_price) / selected_shard_size
       : apply_tax(x) / BUNDLE_SIZE[index],
   );
-  // console.log()
+  // console.log(ALL_LABELS, tier);
   return ALL_LABELS[tier].map((_, index) => [
     [0, 0],
     [bound_budgets[index], leftover_price[index]],

@@ -4,6 +4,20 @@ use crate::constants::{
 };
 use once_cell::sync::Lazy;
 
+pub const NUM_NORMAL_UPGRADES: usize = 25;
+pub const NUM_ADV_UPGRADES: usize = 4;
+
+pub const ARTISAN_MULTIPLIER: f64 = 10000.0 / 21500.0;
+pub const ALLOWED_JUICE_POOLS: Lazy<Vec<Vec<Vec<usize>>>> = Lazy::new(|| {
+    vec![
+        vec![vec![0, 1], vec![]],
+        vec![vec![0, 1], vec![]],
+        vec![vec![0], vec![1], vec![]],
+    ]
+});
+
+pub const NUM_PIECE_TYPES: usize = 3;
+
 pub type TreatmentsType = [usize; 4];
 pub const UI_TREATMENTS: [TreatmentsType; 2] = [
     [0, 1, 1, 3], // char-bound <bound| roster <bound| tradable <bound| market
@@ -26,11 +40,12 @@ pub const DATA: Lazy<Vec<Data>> = Lazy::new(|| {
     let mut out = Vec::new();
 
     out.push(Data::from(
-        serde_json::from_str::<RawData>(include_str!("./T4 June 2026.json")).unwrap(),
+        serde_json::from_str::<RawData>(include_str!("./T4 July 2026 (Vambrace padded).json"))
+            .unwrap(),
     ));
 
     out.push(Data::from(
-        serde_json::from_str::<RawData>(include_str!("./Serca March 2026.json")).unwrap(),
+        serde_json::from_str::<RawData>(include_str!("./Serca Aug 2026 (Vambrace).json")).unwrap(),
     ));
 
     out

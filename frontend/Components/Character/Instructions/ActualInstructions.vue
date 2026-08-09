@@ -2,11 +2,16 @@
 import { computed } from "vue";
 import { useRosterStore } from "@/Stores/RosterConfig";
 import { storeToRefs } from "pinia";
-import { JOINED_ADV_JUICE, T4_JUICE_LABELS } from "@/Utils/Constants";
+import {
+  ALL_LABELS,
+  JOINED_ADV_JUICE,
+  T4_JUICE_LABELS,
+} from "@/Utils/Constants";
 import { get_icon_path, toOrdinal } from "@/Utils/Helpers";
-import { Upgrade } from "@/Utils/KeyedUpgrades";
+import { OneState, Upgrade } from "@/Utils/KeyedUpgrades";
 import { artisan_string } from "@/Utils/HoningUtil";
 import { get_optimizer_working } from "./InstructionUtils";
+
 
 const { active_profile } = storeToRefs(useRosterStore());
 const props = defineProps<{
@@ -17,38 +22,38 @@ const juice_info = computed(() => {
   return active_profile.value.histogram_worker_bundle.result.juice_info;
 });
 
-function juice_icon_path(juice: boolean) {
-  let juice_info =
-    active_profile.value.histogram_worker_bundle.result.juice_info;
+const relevant_ids = computed(() => {
   let relevant_id_map = props.upgrade.is_normal_honing
-    ? juice_info.normal_uindex_to_id
-    : juice_info.adv_uindex_to_id;
+    ? juice_info.value.normal_uindex_to_id
+    : juice_info.value.adv_uindex_to_id;
 
-  let relevant_upgrade = relevant_id_map[props.upgrade.upgrade_index];
+  let ids: number[] =
+    relevant_id_map[props.upgrade.piece_type_usize][
+      props.upgrade.upgrade_index
+    ];
 
-  if (relevant_upgrade.length === 0) {
-    return get_icon_path(T4_JUICE_LABELS[0][props.upgrade.is_weapon ? 0 : 1]);
-  }
+  return ids;
+});
 
-  return get_icon_path(
-    T4_JUICE_LABELS[relevant_upgrade[juice ? 0 : relevant_upgrade.length - 1]][
-      props.upgrade.is_weapon ? 0 : 1
-    ],
-  );
+function icon_path_for_id(id: number) {
+  // console.log(id);
+  return get_icon_path(ALL_LABELS[active_profile.value.tier][id + 7]);
 }
 
 interface NormalStreak {
-  juice: boolean;
-  book: boolean;
+  ids: number[];
   count: number;
+  grace: boolean | null;
   pity: boolean;
 }
-interface AdvStreak {
-  juice: boolean;
-  scroll: boolean;
-  grace: boolean;
-  count: number;
+
+function same_one_state(a: OneState, b: OneState) {
+  const setA = new Set(a);
+  const setB = new Set(b);
+  if (setA.size !== setB.size) return false;
+  return [...setA].every((val) => setB.has(val));
 }
+
 const streaks = computed(() => {
   if (props.upgrade.state.length === 0) return [];
 
@@ -56,7 +61,7 @@ const streaks = computed(() => {
     const streaks: NormalStreak[] = [];
     let current: NormalStreak | null = null;
     let index = 0;
-    for (const [juice, book] of props.upgrade.state.slice(
+    for (const one_state of props.upgrade.state.slice(
       0,
       props.upgrade.normal_dist.length,
     )) {
@@ -69,37 +74,40 @@ const streaks = computed(() => {
         // so we need to hide it from the user
         // however for props.upgrades that naturally has a 100% success rate (below like +5) we don't want to skip (it won't have 100% artisan)
         // just a weird edge case
-        streaks.push({ pity: true, juice: false, book: false, count: 1 });
+        streaks.push({ pity: true, ids: [], count: 1, grace: null });
         break;
         // continue;
       }
-      const hasBook = book > 0;
-      if (current && current.juice === juice && current.book === hasBook) {
+
+      if (current && same_one_state(one_state, current.ids)) {
         current.count++;
       } else {
-        current = { juice, book: hasBook, count: 1, pity: false };
+        // console.log(one_state);
+        current = { ids: one_state, count: 1, pity: false, grace: null };
         streaks.push(current);
       }
       index += 1;
     }
-
+    // console.log(streaks);
     return streaks;
   } else {
-    const raw_streaks: AdvStreak[] = [];
+    const raw_streaks: NormalStreak[] = [];
+    const juice_id = relevant_ids.value[0];
+    const scroll_id = relevant_ids.value[1];
     let [juice_grace, juice_non_grace] =
-      JOINED_ADV_JUICE[props.upgrade.state[0][1]];
+      JOINED_ADV_JUICE[props.upgrade.state[0][0]];
     let [scroll_grace, scroll_non_grace] =
-      JOINED_ADV_JUICE[props.upgrade.state[1][1]];
+      JOINED_ADV_JUICE[props.upgrade.state[1][0]];
     // These 4 numbers correspond to how many taps to perform on the respective conditions
     // They range from 0 to 255, with 255 considered infinite, see rust advanced_honing/utils for what numbers they can actually take
 
     let both_grace = Math.min(juice_grace, scroll_grace);
     if (both_grace > 0)
       raw_streaks.push({
-        juice: true,
-        scroll: true,
-        grace: true,
+        ids: [juice_id, scroll_id],
         count: both_grace,
+        grace: true,
+        pity: false,
       });
     // console.log(streaks)
     let one_grace =
@@ -110,19 +118,19 @@ const streaks = computed(() => {
           : Math.max(juice_grace, scroll_grace) - both_grace;
     if (one_grace > 0)
       raw_streaks.push({
-        juice: juice_grace > scroll_grace,
-        scroll: scroll_grace > juice_grace,
-        grace: true,
+        ids: juice_grace > scroll_grace ? [juice_id] : [scroll_id],
         count: one_grace,
+        grace: true,
+        pity: false,
       });
     // console.log(streaks)
     let both_non_grace = Math.min(juice_non_grace, scroll_non_grace);
     if (both_non_grace > 0)
       raw_streaks.push({
-        juice: true,
-        scroll: true,
-        grace: false,
+        ids: [juice_id, scroll_id],
         count: both_non_grace,
+        grace: false,
+        pity: false,
       });
     // console.log(streaks)
     let one_non_grace =
@@ -133,47 +141,61 @@ const streaks = computed(() => {
           : Math.max(juice_non_grace, scroll_non_grace) - both_non_grace;
     if (one_non_grace > 0)
       raw_streaks.push({
-        juice: juice_non_grace > scroll_non_grace,
-        scroll: scroll_non_grace > juice_non_grace,
-        grace: false,
+        ids: juice_non_grace > scroll_non_grace ? [juice_id] : [scroll_id],
         count: one_non_grace,
+        grace: false,
+        pity: false,
       });
     // console.log(streaks)
     if (raw_streaks.length == 0) {
       raw_streaks.push({
-        juice: false,
-        scroll: false,
-        grace: true,
+        ids: [],
         count: 255,
+        grace: true,
+        pity: false,
       });
     }
-    // console.log(one_grace, both_grace, juice_grace, juice_non_grace, scroll_grace, scroll_non_grace, props.upgrade.state, streaks)
+    // console.log(
+    //   one_grace,
+    //   both_grace,
+    //   juice_grace,
+    //   juice_non_grace,
+    //   scroll_grace,
+    //   scroll_non_grace,
+    //   props.upgrade.state,
+    //   raw_streaks,
+    // );
     return raw_streaks;
   }
 });
+
+interface ParsedIcon {
+  id: number;
+  active: boolean;
+  path: string;
+}
+
 const parsed_streaks = computed(() => {
   // console.log("parsed recalc");
   let out = [];
   let taps = 0;
   for (let index = 0; index < streaks.value.length; index++) {
-    let streak: any = streaks.value[index];
+    let streak: NormalStreak = streaks.value[index];
 
-    let isNormal = props.upgrade.is_normal_honing;
-    let topIconActive = streak.juice;
-    let bottomIconActive = isNormal ? streak.book : streak.scroll;
-    // let name_line =
-    //   (streak.juice ? "Juice" : "") +
-    //   ((streak.juice && streak.book) || (streak.juice && streak.scroll)
-    //     ? " & "
-    //     : "") +
-    //   (streak.book ? "Book" : streak.scroll ? "Scroll" : "") +
-    //   (!streak.juice && !streak.juice && !streak.book && !streak.scroll
-    //     ? "Raw tap"
-    //     : "");
+    let is_normal = props.upgrade.is_normal_honing;
+
+    let icons: ParsedIcon[] = streak.pity
+      ? []
+      : relevant_ids.value.map((id) => ({
+          id,
+          active: streak.ids.includes(id),
+          path: icon_path_for_id(id),
+        }));
+
     let line1: string;
     let line2: string;
 
-    if (isNormal) {
+    if (is_normal) {
       taps += streak.count;
       if (streak.pity) {
         line1 = `Pity`;
@@ -184,32 +206,26 @@ const parsed_streaks = computed(() => {
       }
     } else {
       let graceText = streak.grace ? "Grace" : "non-Grace";
-      if (!streak.juice && !streak.scroll) {
+      if (streak.ids.length === 0) {
         line1 = "Nothing";
         line2 = `on ${graceText}`;
       } else {
-        // console.log(props.upgrade.adv_dists)
         line1 =
           streak.count < 255
             ? `${streak.grace ? "First" : "Any"} ${streak.count}`
-            : streaks.value.length == 1
-              ? "All"
-              : "All";
+            : "All";
         line2 = graceText;
       }
     }
 
     out.push({
-      topIconActive,
-      bottomIconActive,
+      icons,
       line1,
       line2,
-      // name_line,
-      juice: streak.juice,
-      book_or_scroll: streak.book || streak.scroll,
       pity: streak.pity,
     });
   }
+  // console.log("parsed", out);
   return out;
 });
 const optimizer_working = computed(get_optimizer_working);
@@ -226,52 +242,54 @@ const optimizer_working = computed(get_optimizer_working);
       :key="i"
       class="flex w-16 min-w-16 flex-col items-center justify-end"
     >
+      <template v-if="parsed_streak.pity">
+        <div class="opacity-50">
+          <img
+            :src="get_icon_path('Pity')"
+            class="generic-icon ticked h-8 w-8"
+          />
+        </div>
+      </template>
+      <template v-else>
+        <div
+          v-for="(icon, icon_index) in parsed_streak.icons"
+          :key="icon_index"
+          class="can-disable-icon-wrapper"
+          :class="{ disabled: !icon.active, ticked: icon.active }"
+        >
+          <img
+            :src="icon.path"
+            class="generic-icon h-8 w-8"
+            :class="{ disabled: !icon.active, ticked: icon.active }"
+          />
+        </div>
+      </template>
+
       <div
-        class="can-disable-icon-wrapper"
-        :class="{
-          disabled: !parsed_streak.juice && !parsed_streak.pity,
-          ticked: parsed_streak.juice,
+        class="text-(--text-main)"
+        :style="{
+          fontSize: upgrade.is_normal_honing
+            ? 'var(--text-sm)'
+            : 'var(--text-xs)',
         }"
       >
-        <img
-          :src="
-            parsed_streak.pity ? get_icon_path('Pity') : juice_icon_path(true)
-          "
-          alt="Top Mat"
-          class="generic-icon h-8 w-8"
-          :class="{
-            disabled: !parsed_streak.juice,
-            ticked: parsed_streak.juice,
-          }"
-        />
+        {{ parsed_streak.line1 }}
       </div>
 
       <div
-        v-if="
-          juice_icon_path(false) !== juice_icon_path(true) &&
-          !parsed_streak.pity
-        "
-        class="can-disable-icon-wrapper"
-        :class="{
-          disabled: !parsed_streak.book_or_scroll,
-          ticked: parsed_streak.book_or_scroll,
+        class="annotation"
+        :style="{
+          color: upgrade.is_normal_honing
+            ? 'var(--text-muted)'
+            : 'var(--text-main)',
+          fontSize: upgrade.is_normal_honing
+            ? 'var(--text-2xs)'
+            : 'var(--text-xs)',
+          textWrap: upgrade.is_normal_honing ? 'wrap' : 'nowrap',
         }"
       >
-        <img
-          :src="juice_icon_path(false)"
-          alt="Bottom Mat"
-          class="generic-icon h-8 w-8"
-          :class="{
-            disabled: !parsed_streak.book_or_scroll,
-            ticked: parsed_streak.book_or_scroll,
-          }"
-        />
+        {{ parsed_streak.line2 }}
       </div>
-
-      <!-- <div v-html="streak_text.name_line"></div> -->
-      <div class="text-sm text-(--text-main)">{{ parsed_streak.line1 }}</div>
-
-      <div class="annotation">{{ parsed_streak.line2 }}</div>
     </div>
   </div>
 </template>

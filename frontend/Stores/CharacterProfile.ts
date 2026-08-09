@@ -3,6 +3,7 @@ import {
   ADV_COLS,
   ALL_LABELS,
   NORMAL_COLS,
+  NUM_ADV_PIECES,
   NUM_PIECES,
   SPECIAL_LEAP_LABEL,
 } from "@/Utils/Constants";
@@ -78,7 +79,7 @@ export const DEFAULT_CHAR_PROFILE_NO_WORKER: CharProfile = {
   histogram_worker_bundle: null,
 
   normal_grid: create_status_grid(NUM_PIECES, NORMAL_COLS, 0, false),
-  adv_grid: create_status_grid(NUM_PIECES, ADV_COLS, 0, true),
+  adv_grid: create_status_grid(NUM_ADV_PIECES, ADV_COLS, 0, true),
 
   keyed_upgrades: {},
   special_budget: create_input_column(
@@ -153,15 +154,15 @@ export function validate_char_profile(
     index,
     out.profiles.slice(0, index),
   );
-  validate_input_column_array(
+  this_parsed.bound_budgets = validate_input_column_array(
     this_parsed.bound_budgets,
     DEFAULT_CHAR_PROFILE_NO_WORKER.bound_budgets,
   );
-  validate_input_column_array(
+  this_parsed.leftover_price = validate_input_column_array(
     this_parsed.leftover_price,
     DEFAULT_CHAR_PROFILE_NO_WORKER.leftover_price,
   );
-  validate_input_column(
+  this_parsed.special_budget = validate_input_column(
     this_parsed.special_budget,
     DEFAULT_CHAR_PROFILE_NO_WORKER.special_budget,
   );
@@ -169,12 +170,14 @@ export function validate_char_profile(
   this_parsed.normal_grid = get_valid_status_grid(
     this_parsed.normal_grid,
     DEFAULT_CHAR_PROFILE_NO_WORKER.normal_grid,
-  ).map((row) =>
-    row.map((x, index) =>
-      index < (this_parsed.tier === 0 ? 10 : 11)
-        ? UpgradeStatus.FetchedDone
-        : x,
-    ),
+  ).map((row, row_index) =>
+    row_index == NUM_ADV_PIECES
+      ? row
+      : row.map((x, index) =>
+          index < (this_parsed.tier === 0 ? 10 : 11)
+            ? UpgradeStatus.FetchedDone
+            : x,
+        ),
   );
   this_parsed.adv_grid = get_valid_status_grid(
     this_parsed.adv_grid,

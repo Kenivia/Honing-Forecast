@@ -1,4 +1,4 @@
-export const DEFAULT_ARTISAN_MULTIPLIER = 0.4651;
+export const DEFAULT_ARTISAN_MULTIPLIER = 10000.0 / 21500.0;
 export const FLOAT_TOL = 1e-9;
 
 export const WORKER_URL = import.meta.env.VITE_WORKER_URL;
@@ -94,26 +94,56 @@ export const SERCA_MATS_LABELS = [
 ];
 export const SPECIAL_LEAP_LABEL = "Special Leap";
 export const T4_JUICE_LABELS = [
-  ["Lava's Breath", "Glacier's Breath"],
-  ["11-14 Weapon", "11-14 Armor"],
-  ["15-18 Weapon", "15-18 Armor"],
-  ["19-20 Weapon", "19-20 Armor"],
-  ["Scroll 1 Weapon", "Scroll 1 Armor"],
-  ["Scroll 2 Weapon", "Scroll 2 Armor"],
-  ["Scroll 3 Weapon", "Scroll 3 Armor"],
-  ["Scroll 4 Weapon", "Scroll 4 Armor"],
+  ["Glacier's Breath", "Lava's Breath"],
+  ["11-14 Armor", "11-14 Weapon"],
+  ["15-18 Armor", "15-18 Weapon"],
+  ["19-20 Armor", "19-20 Weapon"],
+  ["Scroll 1 Armor", "Scroll 1 Weapon"],
+  ["Scroll 2 Armor", "Scroll 2 Weapon"],
+  ["Scroll 3 Armor", "Scroll 3 Weapon"],
+  ["Scroll 4 Armor", "Scroll 4 Weapon"],
+  ["Enhanced 19-20 Armor", "Enhanced 19-20 Weapon"],
 ];
 
-export const Serca_JUICE_LABELS = [["Lava's Breath", "Glacier's Breath"]];
+export const Serca_JUICE_LABELS = [["Glacier's Breath", "Lava's Breath"]];
 export const ALL_LABELS = [
-  T4_MATS_LABELS.concat(T4_JUICE_LABELS.map((x) => x[0])).concat(
-    T4_JUICE_LABELS.map((x) => x[1]),
-  ),
-  SERCA_MATS_LABELS.concat(Serca_JUICE_LABELS.map((x) => x[0])).concat(
-    Serca_JUICE_LABELS.map((x) => x[1]),
-  ),
+  T4_MATS_LABELS.concat(T4_JUICE_LABELS.flatMap((x) => [x[0], x[1]])),
+  SERCA_MATS_LABELS.concat(Serca_JUICE_LABELS.flatMap((x) => [x[0], x[1]])),
 ];
 
+// const old = [
+//   "Red",
+//   "Blue",
+//   "Leaps",
+//   "Shards",
+//   "Fusion",
+//   "Gold",
+//   "Silver",
+//   "Lava's Breath",
+//   "11-14 Weapon",
+//   "15-18 Weapon",
+//   "19-20 Weapon",
+//   "Scroll 1 Weapon",
+//   "Scroll 2 Weapon",
+//   "Scroll 3 Weapon",
+//   "Scroll 4 Weapon",
+//   "Glacier's Breath",
+//   "11-14 Armor",
+//   "15-18 Armor",
+//   "19-20 Armor",
+//   "Scroll 1 Armor",
+//   "Scroll 2 Armor",
+//   "Scroll 3 Armor",
+//   "Scroll 4 Armor",
+// ];
+// function getIndices(arr_1: string[], arr_2: string[]): number[] {
+//   const indexMap = new Map<string, number>();
+//   for (let i = 0; i < arr_1.length; i++) {
+//     indexMap.set(arr_1[i], i);
+//   }
+//   return arr_2.map((val) => indexMap.get(val)!);
+// }
+// console.log(getIndices(old, ALL_LABELS[0]));
 export const GRAPH_COLORS = [
   [
     "--series-red",
@@ -123,22 +153,24 @@ export const GRAPH_COLORS = [
     "--series-fusion",
     "--series-gold",
     "--series-silver",
+    "--series-blue",
     "--series-red",
     "--series-books",
     "--series-books",
     "--series-books",
-    "--series-red",
-    "--series-red",
-    "--series-red",
-    "--series-red",
-    "--series-blue",
     "--series-books",
     "--series-books",
     "--series-books",
     "--series-blue",
+    "--series-red",
     "--series-blue",
+    "--series-red",
     "--series-blue",
+    "--series-red",
     "--series-blue",
+    "--series-red",
+    "--series-books",
+    "--series-books",
   ],
   [
     "--series-red",
@@ -148,8 +180,8 @@ export const GRAPH_COLORS = [
     "--series-fusion",
     "--series-gold",
     "--series-silver",
-    "--series-red",
     "--series-blue",
+    "--series-red",
   ],
 ];
 export const GRAPH_FONT_SIZE = 10;
@@ -162,20 +194,9 @@ export const BUNDLE_SIZE = [100, 100, 1, 1000, 1, 1, 1000000].concat(
   ).fill(1),
 ); // this is like really hacked together rn, but i doubt it'll need to be fixed
 
-export const OUTPUT_LABELS = [
-  "Red",
-  "Blue",
-  "Leaps",
-  "Shards",
-  "Fusion",
-  "Gold",
-  "Silver",
-  "Red juice",
-  "Blue juice",
-];
 
-
-export const NUM_PIECES = 6;
+export const NUM_PIECES = 7;
+export const NUM_ADV_PIECES = 6;
 export const NORMAL_COLS = 25;
 export const ADV_COLS = 4;
 
@@ -186,6 +207,8 @@ export const base_icon_map: Record<string, string> = {
   Pants: "/Icons/Equipments/Pants.webp",
   Glove: "/Icons/Equipments/Gloves.webp",
   Weapon: "/Icons/Equipments/Weapon.webp",
+  Vambrace: "/Icons/Equipments/Vambrace.png",
+
   Red: "/Icons/Materials/Red.webp",
   Blue: "/Icons/Materials/Blue.webp",
   Leaps: "/Icons/Materials/Leapstone.webp",
@@ -202,6 +225,8 @@ export const base_icon_map: Record<string, string> = {
   "15-18 Weapon": "/Icons/Materials/Weapon Book.webp",
   "19-20 Armor": "/Icons/Materials/Armor Book.webp",
   "19-20 Weapon": "/Icons/Materials/Weapon Book.webp",
+  "Enhanced 19-20 Armor": "/Icons/Materials/Enhanced Armor Book.png",
+  "Enhanced 19-20 Weapon": "/Icons/Materials/Enhanced Weapon Book.png",
 
   "Scroll 1 Weapon": "/Icons/Materials/Scroll 1 Weapon.png",
   "Scroll 1 Armor": "/Icons/Materials/Scroll 1 Armor.png",
@@ -221,6 +246,8 @@ export const base_icon_map: Record<string, string> = {
 
   "Forecast Icon": "/Icons/Forecast Icon.webp",
   Pity: "/Artist Caught.png",
+
+  Warning: "/Icons/Warning.png",
 };
 let temp = {};
 for (const [label, path] of Object.entries(base_icon_map)) {
@@ -237,6 +264,7 @@ export const PIECE_NAMES = [
   "Pants",
   "Glove",
   "Weapon",
+  "Vambrace",
 ];
 
 export const SERCA_SYNC_MAP: { serca_index: number; T4_index: number }[] =
@@ -255,8 +283,8 @@ export const SERCA_TO_T4_INDICES: Record<number, number> = Object.fromEntries(
 
 export const FALLBACK_PRICES = [
   [
-    647, 10, 20, 999999999, 180, 1, 0, 430, 737, 119, 3890, 496, 50, 1933, 2369,
-    260, 298, 19, 2748, 150, 70, 1800, 3187,
+    647, 10, 20, 999999999, 180, 1, 0, 260, 430, 298, 737, 19, 119, 2748, 3890,
+    150, 496, 70, 50, 1800, 1933, 3187, 2369, 15000, 15000,
   ],
-  [3494, 196, 156, 999999999, 226, 1, 0, 430, 260],
+  [3494, 196, 156, 999999999, 226, 1, 0, 260, 430],
 ];

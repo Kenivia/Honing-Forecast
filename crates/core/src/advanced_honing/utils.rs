@@ -80,8 +80,8 @@ pub struct SmallAdvState {
 
 impl Upgrade {
     pub fn update_adv_config(&mut self) {
-        let juice = index_to_tuple(self.state[0].1);
-        let scroll = index_to_tuple(self.state[1].1);
+        let juice = index_to_tuple(self.state[0][0]);
+        let scroll = index_to_tuple(self.state[1][0]);
         self.adv_config.grace_juice_target = juice.0 as u8;
         self.adv_config.non_grace_juice_target = juice.1 as u8;
         self.adv_config.grace_scroll_target = scroll.0 as u8;
