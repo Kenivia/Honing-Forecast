@@ -59,7 +59,7 @@ impl ScannerState {
 
     pub fn update_slots(&mut self) {
         let active_page_nums = self.active_page_num();
-        my_dbg!(active_page_nums, self.anchors);
+        // my_dbg!(active_page_nums, self.anchors);
         for slot_address in ALL_SLOT_ADDRESSS.keys() {
             if active_page_nums[&slot_address.inventory_type] != Some(slot_address.page_num)
                 || !self.anchors[&slot_address.inventory_type].is_found()
@@ -68,7 +68,7 @@ impl ScannerState {
                 continue;
             }
 
-            my_dbg!(active_page_nums[&slot_address.inventory_type]);
+            // my_dbg!(active_page_nums[&slot_address.inventory_type]);
             let position: ScaledPosition =
                 self.anchored_slot_address_position(slot_address).unwrap();
 
@@ -80,7 +80,7 @@ impl ScannerState {
                             .position_root
                             .unwrap(),
                     );
-                my_dbg!("New", slot_address, "icon:", icon_name_score);
+                // my_dbg!("New", slot_address, "icon:", icon_name_score);
 
                 self.slot_infos.insert(
                     *slot_address,
@@ -116,7 +116,7 @@ impl ScannerState {
                                 .position_root
                                 .unwrap(),
                         );
-                    my_dbg!("Old", slot_address, "icon:", icon_name_score.clone());
+                    // my_dbg!("Old", slot_address, "icon:", icon_name_score.clone());
                     if icon_name_score.is_some() {
                         // only overwrite if it matches another
                         *self.slot_infos.get_mut(slot_address).unwrap() = OneSlotInfo {

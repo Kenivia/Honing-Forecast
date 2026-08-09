@@ -8,6 +8,7 @@ import init, {
 } from "@/../crates/wasm/pkg/hf_wasm.js";
 import { Payload } from "./PayloadBuilder";
 import { Upgrade } from "@/Utils/KeyedUpgrades";
+import { OneIconConfig } from "@/Components/Character/InventoryScanner/ScannerConfigStorage";
 
 export enum WasmOp {
   OptimizeAverage,
@@ -44,18 +45,6 @@ export interface StateBundle {
   metric?: number;
 }
 
-export interface Buffer {
-  pointer: number;
-  size: number;
-}
-export interface ScannerState {
-  slot_infos: any;
-  anchors: any;
-  screen_info: any;
-  pending_jobs: any;
-
-  buffer: Buffer;
-}
 
 let reader;
 

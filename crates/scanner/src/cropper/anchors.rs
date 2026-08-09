@@ -4,7 +4,10 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     constants::ANCHORS_LOOKUP,
-    image_utils::common::{FULL_RECT_16_9, bounding_rect},
+    image_utils::{
+        common::{FULL_RECT_16_9, bounding_rect},
+        template_matching::template_match,
+    },
     scanner_state::{InventoryType, ScaledPosition, ScannerState},
     setup::icon_lookup,
 };
@@ -59,12 +62,12 @@ impl ScannerState {
                 }
             }
         }
-        my_dbg!(
-            "Cleared",
-            to_clear.len(),
-            "Total",
-            self.anchors.keys().len()
-        );
+        // my_dbg!(
+        //     "Cleared",
+        //     to_clear.len(),
+        //     "Total",
+        //     self.anchors.keys().len()
+        // );
         // hashmap borriwng shinanigans
         for (inv_type, variant_index) in to_clear {
             self.anchors.get_mut(&inv_type).unwrap().positions[variant_index] = None;
@@ -92,29 +95,32 @@ impl ScannerState {
                     .collect(),
             ));
         }
-        my_dbg!("Missing anchors:", missing_anchors.len(),);
+        // my_dbg!("Missing anchors:", missing_anchors.len(),);
 
         for inv_type in missing_anchors {
             for (variant_index, (variant_name, bound)) in
                 ANCHORS_LOOKUP[&inv_type].iter().enumerate()
             {
-                if let Some((found_position, confidence, brightness)) = self.template_match(
+                if let Some((found_position, confidence, brightness)) = template_match(
                     icon_lookup(variant_name),
                     self.downscale(bound.unwrap_or(FULL_RECT_16_9)),
                 ) {
-                    my_dbg!(
-                        inv_type,
-                        variant_index,
-                        "has been found",
-                        confidence,
-                        brightness
-                    );
-
-                    self.anchors.get_mut(&inv_type).unwrap().positions[variant_index] =
-                        Some((found_position, confidence));
-                    self.anchors.get_mut(&inv_type).unwrap().position_root =
-                        Some(found_position - icon_lookup(variant_name).offset);
-                    self.screen_info.brightness = Some(brightness);
+                    if self.debugging {
+                        self.debug_info.insert(
+                            variant_name.clone(),
+                            (found_position, confidence, brightness),
+                        );
+                    }
+                    if confidence > 0.9 {
+                        self.anchors.get_mut(&inv_type).unwrap().positions[variant_index] =
+                            Some((found_position, confidence));
+                        self.anchors.get_mut(&inv_type).unwrap().position_root =
+                            Some(found_position - icon_lookup(variant_name).offset);
+                        self.screen_info.brightness = Some(brightness);
+                    }
+                }
+                if !self.debugging {
+                    self.debug_info = AHashMap::new();
                 }
             }
         }

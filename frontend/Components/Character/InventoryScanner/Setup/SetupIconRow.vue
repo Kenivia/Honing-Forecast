@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { OneIconConfig, ScaledPosition } from "../ScannerConfigStorage";
+import { draw_icon } from "../ScannerUIutils";
 
 const props = defineProps<{
   icon: OneIconConfig;
@@ -17,22 +18,6 @@ const emit = defineEmits<{
   delete: [];
 }>();
 
-function draw_icon(canvas: HTMLCanvasElement | null) {
-  if (!canvas) return;
-  const ctx = canvas.getContext("2d");
-  if (!ctx) return;
-
-  // `icon.data` may arrive as a plain number array or a typed array
-  // depending on serde-wasm-bindgen's serialization; both work here.
-  const clamped = new Uint8ClampedArray(props.icon.data as ArrayLike<number>);
-  const image_data = new ImageData(
-    clamped,
-    props.icon.position.width,
-    props.icon.position.height,
-  );
-  ctx.putImageData(image_data, 0, 0);
-}
-
 function on_name_change(event: Event) {
   const value = (event.target as HTMLInputElement).value.trim();
   if (value) emit("update:name", value);
@@ -46,36 +31,44 @@ function on_tag_change(event: Event) {
 function on_top_left_x_change(event: Event) {
   const value = Number((event.target as HTMLInputElement).value) || 0;
   emit("update:position", {
-    ...props.icon.position,
-    top_left: [value, props.icon.position.top_left[1]],
+    ...props.icon.offset,
+    top_left: [value, props.icon.offset.top_left[1]],
   });
 }
 
 function on_top_left_y_change(event: Event) {
   const value = Number((event.target as HTMLInputElement).value) || 0;
   emit("update:position", {
-    ...props.icon.position,
-    top_left: [props.icon.position.top_left[0], value],
+    ...props.icon.offset,
+    top_left: [props.icon.offset.top_left[0], value],
   });
 }
 
 function on_width_change(event: Event) {
   const value = Number((event.target as HTMLInputElement).value) || 0;
-  emit("update:position", { ...props.icon.position, width: value });
+  emit("update:position", { ...props.icon.offset, width: value });
 }
 
 function on_height_change(event: Event) {
   const value = Number((event.target as HTMLInputElement).value) || 0;
-  emit("update:position", { ...props.icon.position, height: value });
+  emit("update:position", { ...props.icon.offset, height: value });
 }
 </script>
 
 <template>
   <div class="flex items-center gap-3 rounded-md bg-zinc-800/50 p-2">
     <canvas
-      :ref="(el) => draw_icon(el as HTMLCanvasElement)"
-      :width="icon.position.width"
-      :height="icon.position.height"
+      :ref="
+        (el) =>
+          draw_icon(
+            el as HTMLCanvasElement,
+            icon.data as ArrayLike<number>,
+            icon.offset.width,
+            icon.offset.height,
+          )
+      "
+      :width="icon.offset.width"
+      :height="icon.offset.height"
       class="rounded-none border border-zinc-600"
       style="image-rendering: pixelated"
     />
@@ -106,7 +99,7 @@ function on_height_change(event: Event) {
         <label class="flex flex-col gap-1 text-xs">
           Top left X
           <input
-            :value="icon.position.top_left[0]"
+            :value="icon.offset.top_left[0]"
             type="number"
             class="w-24 rounded bg-zinc-800 px-2 py-1 text-sm"
             @change="on_top_left_x_change"
@@ -115,7 +108,7 @@ function on_height_change(event: Event) {
         <label class="flex flex-col gap-1 text-xs">
           Top left Y
           <input
-            :value="icon.position.top_left[1]"
+            :value="icon.offset.top_left[1]"
             type="number"
             class="w-24 rounded bg-zinc-800 px-2 py-1 text-sm"
             @change="on_top_left_y_change"
@@ -124,7 +117,7 @@ function on_height_change(event: Event) {
         <label class="flex flex-col gap-1 text-xs">
           Width
           <input
-            :value="icon.position.width"
+            :value="icon.offset.width"
             type="number"
             min="0"
             class="w-24 rounded bg-zinc-800 px-2 py-1 text-sm"
@@ -134,7 +127,7 @@ function on_height_change(event: Event) {
         <label class="flex flex-col gap-1 text-xs">
           Height
           <input
-            :value="icon.position.height"
+            :value="icon.offset.height"
             type="number"
             min="0"
             class="w-24 rounded bg-zinc-800 px-2 py-1 text-sm"

@@ -13,6 +13,7 @@ If you'd like to help with any of the below, feel free to get in touch via [Disc
 - normalize brightness at some point somehow
   - ~~normalize the observed when matching, ~~then normalize all icons
 
+- check if things actually work if the worker is down
 - screenshot upload instead of stream at some point
 
 ## Roadmap

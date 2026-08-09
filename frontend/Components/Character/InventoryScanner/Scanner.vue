@@ -1,0 +1,155 @@
+<script setup lang="ts">
+import { ref } from "vue";
+import {
+  getScannerConfig,
+  OneIconConfig,
+  ScaledPosition,
+  ScannerState,
+} from "./ScannerConfigStorage.js";
+import Stream from "./Stream.vue";
+import { draw_icon } from "./ScannerUIutils.js";
+
+const config = ref<OneIconConfig[] | null>(null);
+getScannerConfig().then((data) => (config.value = data));
+
+const status = ref<"idle" | "capturing">("idle");
+const boxes = ref<ScaledPosition[]>([]);
+
+interface DebugRow {
+  icon_name: string;
+  x: number;
+  y: number;
+  confidence: number;
+  brightness: number;
+}
+
+const debug_table = ref<DebugRow[]>([]);
+
+const debugging = ref(false);
+
+interface FoundIconRow {
+  key: string;
+  icon: OneIconConfig;
+}
+
+const found_icons = ref<FoundIconRow[]>([]);
+
+function process_result(scanner_state: ScannerState) {
+  scanner_state.debugging = debugging.value;
+
+  if (debugging.value) {
+    const new_boxes: ScaledPosition[] = [];
+    const new_debug_table: DebugRow[] = [];
+
+    for (const [
+      icon_name,
+      [position, confidence, brightness],
+    ] of scanner_state.debug_info) {
+      new_boxes.push(position);
+      new_debug_table.push({
+        icon_name,
+        x: position.top_left[0],
+        y: position.top_left[1],
+        confidence,
+        brightness,
+      });
+    }
+
+    boxes.value = new_boxes;
+    debug_table.value = new_debug_table;
+    console.log(
+      "new_debug_table",
+      Object.entries(scanner_state.debug_info),
+      new_debug_table,
+    );
+  } else {
+    boxes.value = [];
+    debug_table.value = [];
+  }
+
+  const new_found_icons: FoundIconRow[] = [];
+  for (const [key, slot_info] of scanner_state.slot_infos) {
+    const icon = slot_info.observed_icon;
+    new_found_icons.push({
+      key,
+      icon: icon,
+    });
+  }
+  found_icons.value = new_found_icons;
+
+  console.log(" new_found_icons", scanner_state.slot_infos, new_found_icons);
+}
+</script>
+
+<template>
+  <div v-if="config">
+    <Stream
+      v-model:status="status"
+      :boxes="boxes"
+      :show_stream="debugging"
+      :process_result="process_result"
+    />
+    <button class="generic-button" @click="debugging = !debugging">
+      {{ debugging ? "Hide" : "Show" }} debug info
+    </button>
+    <div v-if="debugging">
+      <table>
+        <thead>
+          <tr>
+            <th>Icon name</th>
+            <th>X</th>
+            <th>Y</th>
+            <th>Confidence</th>
+            <th>Brightness</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="row in debug_table" :key="row.icon_name">
+            <td>{{ row.icon_name }}</td>
+            <td>{{ row.x.toFixed(1) }}</td>
+            <td>{{ row.y.toFixed(1) }}</td>
+            <td>{{ row.confidence.toFixed(3) }}</td>
+            <td>{{ row.brightness.toFixed(3) }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Icon</th>
+          <th>Name</th>
+          <th>Tag</th>
+          <th>X</th>
+          <th>Y</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr v-for="row in found_icons" :key="row.key">
+          <td>
+            <canvas
+              :ref="
+                (el) =>
+                  draw_icon(
+                    el as HTMLCanvasElement,
+                    row.icon.data as ArrayLike<number>,
+                    row.icon.offset.width,
+                    row.icon.offset.height,
+                  )
+              "
+              :width="row.icon.offset.width"
+              :height="row.icon.offset.height"
+              class="rounded-none border border-zinc-600"
+              style="image-rendering: pixelated"
+            />
+          </td>
+          <td>{{ row.icon.name }}</td>
+          <td>{{ row.icon.tag }}</td>
+          <td>{{ row.icon.offset.top_left[0].toFixed(1) }}</td>
+          <td>{{ row.icon.offset.top_left[1].toFixed(1) }}</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</template>

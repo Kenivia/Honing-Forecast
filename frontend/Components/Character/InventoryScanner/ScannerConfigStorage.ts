@@ -10,10 +10,36 @@ export interface ScaledPosition {
 
 export interface OneIconConfig {
   name: string;
-  position: ScaledPosition;
-  data: unknown;
+  offset: ScaledPosition;
+  data: number[];
   tag: string;
 }
+
+export interface Buffer {
+  pointer: number;
+  size: number;
+}
+export interface OneSlotInfo {
+  icon_name_score: [string, number] | null;
+  observed_number: OneIconConfig;
+  observed_icon: OneIconConfig;
+  observed_id: String;
+  progress: any;
+  amount: number | null;
+  tradability: any;
+}
+
+export interface ScannerState {
+  slot_infos: Map<any, OneSlotInfo>;
+  anchors: any;
+  screen_info: any;
+  pending_jobs: any;
+
+  buffer: Buffer;
+  debugging: boolean;
+  debug_info: Map<string, [ScaledPosition, number, number]>;
+}
+
 export function getScannerConfig() {
   if (!configPromise) {
     configPromise = load_from_msg_pack("/ScannerConfig.msgpack") as Promise<
@@ -23,7 +49,10 @@ export function getScannerConfig() {
   return configPromise;
 }
 
-export function download_as_msg_pack(data: unknown, filename: string): void {
+export function download_as_msg_pack(
+  data: OneIconConfig[],
+  filename: string,
+): void {
   const encoded = encode(data);
   // Blob wants a BufferSource; encode() returns a Uint8Array, which works directly
   const blob = new Blob([encoded], { type: "application/x-msgpack" });
@@ -42,6 +71,21 @@ export function download_as_msg_pack(data: unknown, filename: string): void {
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
+// function renameKeyDeep(obj, oldKey, newKey) {
+//   if (Array.isArray(obj)) {
+//     return obj.map((item) => renameKeyDeep(item, oldKey, newKey));
+//   }
+//   if (obj !== null && typeof obj === "object") {
+//     return Object.fromEntries(
+//       Object.entries(obj).map(([key, value]) => [
+//         key === oldKey ? newKey : key,
+//         renameKeyDeep(value, oldKey, newKey),
+//       ]),
+//     );
+//   }
+//   return obj;
+// }
+
 export async function load_from_msg_pack(url: string) {
   try {
     const response = await fetch(url);
@@ -53,7 +97,7 @@ export async function load_from_msg_pack(url: string) {
     }
     const buffer = await response.arrayBuffer();
     console.log(buffer, url);
-    return decode(new Uint8Array(buffer));
+    return decode(new Uint8Array(buffer)); // renameKeyDeep(
   } catch (e) {
     console.log("loading msgpack failed with error ", e);
 

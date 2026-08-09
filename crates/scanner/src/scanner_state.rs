@@ -119,6 +119,11 @@ pub const ALL_ANCHOR_TYPES: [InventoryType; 3] = [
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ScannerState {
     #[serde(default)]
+    pub debugging: bool,
+    #[serde(default)]
+    pub debug_info: AHashMap<String, (ScaledPosition, f64, f64)>,
+
+    #[serde(default)]
     pub slot_infos: AHashMap<SlotAddress, OneSlotInfo>,
     #[serde(default)]
     pub anchors: AHashMap<InventoryType, AnchorInfo>,

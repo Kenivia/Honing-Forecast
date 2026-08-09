@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { get_readable } from "@/Components/Character/InventoryScanner/FramePassing";
 import { useRosterStore } from "@/Stores/RosterConfig";
-import { ScannerState, WasmOp } from "@/WasmInterface/WasmWorker";
+import { WasmOp } from "@/WasmInterface/WasmWorker";
 import { create_worker_bundle } from "@/WasmInterface/WorkerBundle";
 import { storeToRefs } from "pinia";
 import { ref, computed, onMounted, onUnmounted, toRaw } from "vue";
@@ -9,9 +9,14 @@ import {
   getScannerConfig,
   OneIconConfig,
   ScaledPosition,
+  ScannerState,
 } from "./ScannerConfigStorage";
 
-const props = defineProps<{ boxes?: ScaledPosition[] }>();
+const props = defineProps<{
+  boxes?: ScaledPosition[];
+  show_stream: boolean;
+  process_result?: (scanner_state: ScannerState) => void;
+}>();
 const status = defineModel<"idle" | "capturing">("status", { default: "idle" });
 
 const roster_store = useRosterStore();
@@ -148,7 +153,8 @@ async function start_capture() {
         readable: get_readable(track),
         scanner_state: new_scanner_state,
       },
-      null,
+      start_cropper,
+      // null,
       0,
       false,
     );
@@ -183,6 +189,7 @@ function stop_capture() {
 }
 
 const cropper_running = ref(false);
+
 function start_cropper() {
   cropper_loop(bundle.value.result);
 }
@@ -200,7 +207,10 @@ async function cropper_loop(scanner_state: ScannerState) {
   bundle.value.debounced_start(
     WasmOp.Cropper,
     scanner_state,
-    (scanner_state) => cropper_loop(scanner_state),
+    (scanner_state) => {
+      props.process_result(scanner_state);
+      cropper_loop(scanner_state);
+    },
     0,
     false,
   );
@@ -237,7 +247,11 @@ onUnmounted(stop_capture);
 
     <div
       class="relative overflow-hidden rounded-none"
-      style="width: 1280px; height: 720px"
+      :style="
+        show_stream && status === 'capturing'
+          ? 'width: 1280px; height: 720px'
+          : 'width: 0; height: 0'
+      "
     >
       <video
         ref="video_ref"
@@ -245,9 +259,10 @@ onUnmounted(stop_capture);
         muted
         playsinline
         class="h-full w-full border object-contain"
-        :class="{ hidden: status !== 'capturing' }"
+        :class="{ hidden: !show_stream || status !== 'capturing' }"
         @loadedmetadata="on_loaded_metadata"
       />
+
       <div
         v-if="status !== 'capturing'"
         class="absolute inset-0 flex flex-col items-center justify-center gap-2 text-zinc-500"
@@ -298,10 +313,10 @@ onUnmounted(stop_capture);
     </div>
     <button
       @click="start_cropper"
-      class="generic-button w-20"
+      class="generic-button"
       :disabled="cropper_running"
     >
-      cropper
+      {{ cropper_running ? "stop cropper" : "start scropper" }}
     </button>
   </div>
 </template>

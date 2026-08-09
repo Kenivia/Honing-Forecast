@@ -108,16 +108,16 @@ function update_icon_tag(index: number, tag: string) {
 
 function update_icon_position(index: number, position: ScaledPosition) {
   if (!config.value) return;
-  config.value[index].position = position;
+  config.value[index].offset = position;
 }
 
 function import_position(icon: OneIconConfig) {
   setup_name.value = icon.name;
   setup_tag.value = icon.tag;
-  top_left_x.value = icon.position.top_left[0];
-  top_left_y.value = icon.position.top_left[1];
-  width.value = icon.position.width;
-  height.value = icon.position.height;
+  top_left_x.value = icon.offset.top_left[0];
+  top_left_y.value = icon.offset.top_left[1];
+  width.value = icon.offset.width;
+  height.value = icon.offset.height;
 }
 </script>
 

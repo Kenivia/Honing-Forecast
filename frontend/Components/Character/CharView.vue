@@ -8,6 +8,7 @@ import Sidebar from "@/Components/Common/Sidebar.vue";
 import Guide from "@/Components/Character/Guide.vue";
 import Setup from "./InventoryScanner/Setup/Setup.vue";
 import Calc from "./Calc.vue";
+import Scanner from "./InventoryScanner/Scanner.vue";
 
 const route = useRoute();
 const router = useRouter();
@@ -62,8 +63,11 @@ watch(
         <RouterLink to="calc" class="side-bar-link" @click="close">
           Calc
         </RouterLink>
-        <RouterLink to="scanner" class="side-bar-link" @click="close">
+        <RouterLink to="setup" class="side-bar-link" @click="close">
           Scanner setup
+        </RouterLink>
+        <RouterLink to="scanner" class="side-bar-link" @click="close">
+          Scanner 
         </RouterLink>
       </div>
 
@@ -73,7 +77,8 @@ watch(
     <template #main>
       <Guide v-if="route.path.endsWith('guide')" />
       <Calc v-if="route.path.endsWith('calc')" />
-      <Setup v-if="route.path.endsWith('scanner')" />
+      <Setup v-if="route.path.endsWith('setup')" />
+      <Scanner v-if="route.path.endsWith('scanner')" />
       <div class="min-h-300"></div>
     </template>
   </Sidebar>

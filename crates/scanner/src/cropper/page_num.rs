@@ -36,7 +36,7 @@ impl ScannerState {
 
                 let matched = check(&active_name) || check(&inactive_name);
                 self.page_num_infos.get_mut(&inv_type).unwrap()[index] = matched.then_some(true);
-                my_dbg!( inv_type, index, matched);
+                // my_dbg!( inv_type, index, matched);
             }
         }
     }

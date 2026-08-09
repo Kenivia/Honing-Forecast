@@ -93,6 +93,11 @@ const router = createRouter({
           component: CharView,
         },
         {
+          path: "setup",
+          name: "char-scanner-setup",
+          component: CharView,
+        },
+        {
           path: "scanner",
           name: "char-scanner",
           component: CharView,

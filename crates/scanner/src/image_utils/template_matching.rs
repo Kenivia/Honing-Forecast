@@ -1,8 +1,5 @@
 use super::common::{config_to_rgba, image_to_rgba};
-use crate::{
-    scanner_state::{ScaledPosition, ScannerState},
-    setup::OneIconConfig,
-};
+use crate::{scanner_state::ScaledPosition, setup::OneIconConfig};
 use fast_image_resize::images::Image;
 use hf_core::my_dbg;
 use image::{GrayImage, imageops::grayscale};
@@ -153,116 +150,108 @@ fn box_sum(table: &[f64], w1: usize, x0: usize, y0: usize, x1: usize, y1: usize)
     table[y1 * w1 + x1] - table[y0 * w1 + x1] - table[y1 * w1 + x0] + table[y0 * w1 + x0]
 }
 
-impl ScannerState {
-    pub fn template_match(
-        &self,
-        template: &OneIconConfig,
-        observed: Image,
-    ) -> Option<(ScaledPosition, f64, f64)> {
-        let template_img = config_to_rgba(template);
-        let observed_img = image_to_rgba(observed);
+pub fn template_match(
+    template: &OneIconConfig,
+    observed: Image,
+) -> Option<(ScaledPosition, f64, f64)> {
+    let template_img = config_to_rgba(template);
+    let observed_img = image_to_rgba(observed);
 
-        let template_gray: GrayImage = grayscale(&template_img);
-        let observed_gray: GrayImage = grayscale(&observed_img);
+    let template_gray: GrayImage = grayscale(&template_img);
+    let observed_gray: GrayImage = grayscale(&observed_img);
 
-        let tw = template_gray.width() as usize;
-        let th = template_gray.height() as usize;
-        let ow = observed_gray.width() as usize;
-        let oh = observed_gray.height() as usize;
+    let tw = template_gray.width() as usize;
+    let th = template_gray.height() as usize;
+    let ow = observed_gray.width() as usize;
+    let oh = observed_gray.height() as usize;
 
-        if tw == 0 || th == 0 || ow < tw || oh < th {
-            return None;
-        }
-
-        let t_pixels: Vec<f32> = template_gray.as_raw().iter().map(|&p| p as f32).collect();
-        let f_pixels: Vec<f32> = observed_gray.as_raw().iter().map(|&p| p as f32).collect();
-
-        let t_n = (tw * th) as f64;
-        let t_mean = t_pixels.iter().map(|&v| v as f64).sum::<f64>() / t_n;
-        let t_ss: f64 = t_pixels
-            .iter()
-            .map(|&v| {
-                let d = v as f64 - t_mean;
-                d * d
-            })
-            .sum();
-
-        if t_ss <= 1e-6 {
-            return None;
-        }
-
-        let rows = next_fast_len(oh + th - 1);
-        let cols = next_fast_len(ow + tw - 1);
-        let fft2d = Fft2D::new(rows, cols);
-
-        let mut f_padded = vec![0f32; rows * cols];
-        for y in 0..oh {
-            let src = &f_pixels[y * ow..(y + 1) * ow];
-            let dst = y * cols;
-            f_padded[dst..dst + ow].copy_from_slice(src);
-        }
-
-        let mut g_padded = vec![0f32; rows * cols];
-        for y in 0..th {
-            for x in 0..tw {
-                g_padded[y * cols + x] = (t_pixels[y * tw + x] as f64 - t_mean) as f32;
-            }
-        }
-
-        let f_spectrum = fft2d.forward(&mut f_padded);
-        let mut g_spectrum = fft2d.forward(&mut g_padded);
-
-        for (f_val, g_val) in f_spectrum.iter().zip(g_spectrum.iter_mut()) {
-            *g_val = f_val * g_val.conj();
-        }
-
-        let correlation = fft2d.inverse(&mut g_spectrum);
-
-        let (sum_table, sum_sq_table) = integral_images(&f_pixels, ow, oh);
-        let w1 = ow + 1;
-
-        let valid_h = oh - th + 1;
-        let valid_w = ow - tw + 1;
-
-        let mut best_score = f64::MIN;
-        let mut best_x = 0usize;
-        let mut best_y = 0usize;
-        let mut best_mean_f = 0f64;
-
-        for y in 0..valid_h {
-            for x in 0..valid_w {
-                let numerator = correlation[y * cols + x] as f64;
-
-                let s1 = box_sum(&sum_table, w1, x, y, x + tw, y + th);
-                let s2 = box_sum(&sum_sq_table, w1, x, y, x + tw, y + th);
-                let mean_f = s1 / t_n;
-                let var_f_sum = (s2 - s1 * s1 / t_n).max(0.0);
-
-                let denom = (var_f_sum * t_ss).sqrt();
-                let score = if denom > 1e-6 { numerator / denom } else { 0.0 };
-
-                if score > best_score {
-                    best_score = score;
-                    best_x = x;
-                    best_y = y;
-                    best_mean_f = mean_f;
-                }
-            }
-        }
-
-        if best_score < 0.9 {
-            my_dbg!("best found", best_score, best_x, best_y);
-            return None;
-        }
-
-        Some((
-            ScaledPosition {
-                top_left: (best_x as f64, best_y as f64),
-                width: template.offset.width,
-                height: template.offset.height,
-            },
-            best_score.clamp(-1.0, 1.0),
-            best_mean_f,
-        ))
+    if tw == 0 || th == 0 || ow < tw || oh < th {
+        return None;
     }
+
+    let t_pixels: Vec<f32> = template_gray.as_raw().iter().map(|&p| p as f32).collect();
+    let f_pixels: Vec<f32> = observed_gray.as_raw().iter().map(|&p| p as f32).collect();
+
+    let t_n = (tw * th) as f64;
+    let t_mean = t_pixels.iter().map(|&v| v as f64).sum::<f64>() / t_n;
+    let t_ss: f64 = t_pixels
+        .iter()
+        .map(|&v| {
+            let d = v as f64 - t_mean;
+            d * d
+        })
+        .sum();
+
+    if t_ss <= 1e-6 {
+        return None;
+    }
+
+    let rows = next_fast_len(oh + th - 1);
+    let cols = next_fast_len(ow + tw - 1);
+    let fft2d = Fft2D::new(rows, cols);
+
+    let mut f_padded = vec![0f32; rows * cols];
+    for y in 0..oh {
+        let src = &f_pixels[y * ow..(y + 1) * ow];
+        let dst = y * cols;
+        f_padded[dst..dst + ow].copy_from_slice(src);
+    }
+
+    let mut g_padded = vec![0f32; rows * cols];
+    for y in 0..th {
+        for x in 0..tw {
+            g_padded[y * cols + x] = (t_pixels[y * tw + x] as f64 - t_mean) as f32;
+        }
+    }
+
+    let f_spectrum = fft2d.forward(&mut f_padded);
+    let mut g_spectrum = fft2d.forward(&mut g_padded);
+
+    for (f_val, g_val) in f_spectrum.iter().zip(g_spectrum.iter_mut()) {
+        *g_val = f_val * g_val.conj();
+    }
+
+    let correlation = fft2d.inverse(&mut g_spectrum);
+
+    let (sum_table, sum_sq_table) = integral_images(&f_pixels, ow, oh);
+    let w1 = ow + 1;
+
+    let valid_h = oh - th + 1;
+    let valid_w = ow - tw + 1;
+
+    let mut best_score = f64::MIN;
+    let mut best_x = 0usize;
+    let mut best_y = 0usize;
+    let mut best_mean_f = 0f64;
+
+    for y in 0..valid_h {
+        for x in 0..valid_w {
+            let numerator = correlation[y * cols + x] as f64;
+
+            let s1 = box_sum(&sum_table, w1, x, y, x + tw, y + th);
+            let s2 = box_sum(&sum_sq_table, w1, x, y, x + tw, y + th);
+            let mean_f = s1 / t_n;
+            let var_f_sum = (s2 - s1 * s1 / t_n).max(0.0);
+
+            let denom = (var_f_sum * t_ss).sqrt();
+            let score = if denom > 1e-6 { numerator / denom } else { 0.0 };
+
+            if score > best_score {
+                best_score = score;
+                best_x = x;
+                best_y = y;
+                best_mean_f = mean_f;
+            }
+        }
+    }
+
+    Some((
+        ScaledPosition {
+            top_left: (best_x as f64, best_y as f64),
+            width: template.offset.width,
+            height: template.offset.height,
+        },
+        best_score.clamp(-1.0, 1.0),
+        best_mean_f,
+    ))
 }

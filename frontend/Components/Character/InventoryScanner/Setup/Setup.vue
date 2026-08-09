@@ -17,7 +17,9 @@ const boxes = ref<ScaledPosition[]>([]);
 
 <template>
   <div v-if="config">
-    <Stream v-model:status="status" :boxes="boxes" />
-    <SetupInterface v-model:boxes="boxes" :status="status" />
+    <Stream :show_stream="true" v-model:status="status" :boxes="boxes" />
+    <SetupInterface :status="status" v-model:boxes="boxes" />
   </div>
+
+  <!-- table of observed icons -->
 </template>
