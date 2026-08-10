@@ -97,7 +97,11 @@ async function start_capture() {
   try {
     error.value = null;
     const s = await navigator.mediaDevices.getDisplayMedia({
-      video: { frameRate: 30 },
+      video: {
+        frameRate: { max:6 },
+        width: { max: 1280 },
+        height: { max: 720 },
+      },
       audio: false,
     });
     stream.value = s;
@@ -322,11 +326,7 @@ onUnmounted(stop_capture);
         Stop
       </button>
     </div>
-    <button
-      @click="toggle_cropper"
-      class="generic-button"
-      :disabled="cropper_running"
-    >
+    <button @click="toggle_cropper" class="generic-button">
       {{ cropper_running ? "stop cropper" : "start scropper" }}
     </button>
   </div>

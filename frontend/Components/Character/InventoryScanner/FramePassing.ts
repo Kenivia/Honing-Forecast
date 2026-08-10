@@ -17,6 +17,7 @@ function driveVideoFrames(
   let stopped = false;
   const supportsRVFC =
     "requestVideoFrameCallback" in HTMLVideoElement.prototype;
+
   const tick = supportsRVFC
     ? (now: number, meta: VideoFrameCallbackMetadata) => {
         if (stopped) return;
@@ -28,9 +29,11 @@ function driveVideoFrames(
         onFrame(now, video.currentTime);
         requestAnimationFrame(tick as any);
       };
+
   supportsRVFC
     ? video.requestVideoFrameCallback(tick as any)
     : requestAnimationFrame(tick as any);
+
   return () => {
     stopped = true;
   };
@@ -50,29 +53,32 @@ async function makeSourceVideo(
 function createCanvasFrameReadable(
   track: MediaStreamVideoTrack,
 ): ReadableStream<VideoFrame> {
-  let video: HTMLVideoElement;
+  let video: HTMLVideoElement | null = null;
   let stopDriving: (() => void) | undefined;
-  let capturing = false; // prevents overlapping createImageBitmap calls
+  let capturing = false;
 
   return new ReadableStream<VideoFrame>({
     async start(controller) {
       video = await makeSourceVideo(track);
 
-      stopDriving = driveVideoFrames(video, async (_now, mediaTimeSec) => {
+      stopDriving = driveVideoFrames(video, (_now, mediaTimeSec) => {
         // Backpressure: don't produce frames the consumer hasn't asked for
         if (controller.desiredSize !== null && controller.desiredSize <= 0) {
           return;
         }
-        // Don't start a new capture while one is still in flight
-        if (capturing) return;
+
+        if (capturing || !video) return;
         capturing = true;
+
         try {
-          const bitmap = await createImageBitmap(video);
-          const frame = new VideoFrame(bitmap, {
+          // Optimization: VideoFrame can consume an HTMLVideoElement directly.
+          // This entirely bypasses the need for createImageBitmap.
+          const frame = new VideoFrame(video, {
             timestamp: mediaTimeSec * 1e6,
           });
-          bitmap.close();
           controller.enqueue(frame);
+        } catch (err) {
+          console.warn("Failed to capture VideoFrame:", err);
         } finally {
           capturing = false;
         }
@@ -80,7 +86,14 @@ function createCanvasFrameReadable(
     },
     cancel() {
       stopDriving?.();
-      video?.pause();
+      if (video) {
+        video.pause();
+        // Crucial for GC: Detach the stream from the video element
+        video.srcObject = null;
+        video.removeAttribute("src");
+        video.load();
+        video = null;
+      }
       track.stop();
     },
   });

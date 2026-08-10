@@ -19,7 +19,7 @@ const boxes = ref<ScaledPosition[]>([]);
   <div v-if="config">
     <Stream
       :should_start_cropper="false"
-      :show_stream="true"
+      :debugging="true"
       v-model:status="status"
       :boxes="boxes"
     />

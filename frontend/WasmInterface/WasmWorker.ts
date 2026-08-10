@@ -45,7 +45,6 @@ export interface StateBundle {
   metric?: number;
 }
 
-
 let reader;
 
 self.addEventListener("message", async (ev) => {
@@ -66,10 +65,21 @@ self.addEventListener("message", async (ev) => {
   } else if (wasm_op == WasmOp.Cropper || wasm_op == WasmOp.Setup) {
     const { value: frame, done } = await reader.read();
     console.log("frame arrived ", (performance.now() - start_time).toFixed(0));
+
     if (done) {
       console.log("done");
       result = payload;
-    } else {
+      return result;
+    }
+
+    try {
+      const requiredSize = frame.allocationSize({ format: "RGBA" });
+      if (payload.buffer.size < requiredSize) {
+        throw new Error(
+          `buffer too small, need ${requiredSize}, got ${payload.buffer.size}`,
+        );
+      }
+
       const dest = new Uint8Array(
         wasm.memory.buffer,
         payload.buffer.pointer,
@@ -78,19 +88,20 @@ self.addEventListener("message", async (ev) => {
 
       await frame.copyTo(dest, { format: "RGBA" });
       frame.close();
-      console.log(
-        "transfer ",
-        "done",
-        (performance.now() - start_time).toFixed(0),
-      );
+      console.log("transfer done", (performance.now() - start_time).toFixed(0));
+
       if (wasm_op == WasmOp.Cropper) {
         result = await cropper_wrapper(payload);
       } else {
         result = await setup_wrapper(payload);
       }
+    } catch (err) {
+      console.error("Error processing frame:", err);
+    } finally {
+      if (frame) {
+        frame.close();
+      }
     }
-
-    //
   } else if (wasm_op == WasmOp.Reserve) {
     reader = payload.readable.getReader();
     result = await reserve_buffer_wrapper(payload.scanner_state);
