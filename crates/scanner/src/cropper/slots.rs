@@ -1,8 +1,10 @@
+use fast_image_resize::Resizer;
 use hf_core::my_dbg;
 use uuid::Uuid;
 
 use crate::{
     constants::{ALL_SLOT_ADDRESSS, NUMBER_OFFSET},
+    image_utils::{close_enough::close_enough, common::get_resizer, downscale::crop_buffer},
     scanner_state::{OneSlotInfo, OneSlotProgress, ScaledPosition, ScannerState, SlotAddress},
     setup::{CONFIG, OneIconConfig, icon_lookup},
 };
@@ -24,18 +26,23 @@ impl ScannerState {
         );
     }
     pub fn check_through_all_icons(
-        &self,
+        &mut self,
         position: ScaledPosition,
         position_root: ScaledPosition,
     ) -> (Option<(String, f64)>, OneIconConfig, OneIconConfig) {
         let observed_number = OneIconConfig {
-            data: self.crop_buffer(NUMBER_OFFSET + position).into_vec(),
+            data: crop_buffer(
+                NUMBER_OFFSET + position,
+                get_resizer(&mut self.resizer),
+                self.buffer,
+            )
+            .into_vec(),
             name: "".to_string(),
             offset: (NUMBER_OFFSET + position) - position_root,
             tag: "".to_string(),
         };
         let observed_icon = OneIconConfig {
-            data: self.crop_buffer(position).into_vec(),
+            data: crop_buffer(position, get_resizer(&mut self.resizer), self.buffer).into_vec(),
             name: "".to_string(),
             offset: position - position_root,
             tag: "".to_string(),
@@ -43,9 +50,9 @@ impl ScannerState {
 
         (
             CONFIG.get().unwrap().keys().find_map(|icon_name| {
-                let x = self.close_enough(
+                let x = close_enough(
                     icon_lookup(icon_name),
-                    self.crop_buffer(position), // cloning doesn't seem to exist for Image
+                    crop_buffer(position, get_resizer(&mut self.resizer), self.buffer), // cloning doesn't seem to exist for Image
                 );
                 if x.is_some() {
                     return Some((icon_name.clone(), x.unwrap()));
@@ -101,12 +108,11 @@ impl ScannerState {
                 );
             } else {
                 if self.slot_infos[slot_address].progress == OneSlotProgress::NA
-                    && self
-                        .close_enough(
-                            &self.slot_infos[slot_address].observed_icon,
-                            self.crop_buffer(position), // cloning doesn't seem to exist for Image
-                        )
-                        .is_none()
+                    && close_enough(
+                        &self.slot_infos[slot_address].observed_icon,
+                        crop_buffer(position, get_resizer(&mut self.resizer), self.buffer), // cloning doesn't seem to exist for Image
+                    )
+                    .is_none()
                 {
                     // only run the check if it changed
                     let (icon_name_score, observed_number, observed_icon) = self

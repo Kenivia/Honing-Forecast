@@ -1,5 +1,9 @@
-use crate::scanner_state::{ScaledPosition, ScannerState};
+use crate::{
+    image_utils::downscale::crop_buffer,
+    scanner_state::{ScaledPosition, ScannerState},
+};
 use ahash::AHashMap;
+use fast_image_resize::Resizer;
 use serde::{Deserialize, Serialize};
 use std::sync::OnceLock;
 
@@ -21,7 +25,6 @@ pub struct IncomingNewIcon {
 }
 
 pub fn icon_lookup(name: &String) -> &OneIconConfig {
-
     // TODO DOWNSCALE HERE ?
     CONFIG.get().unwrap().get(name).unwrap()
 }
@@ -29,7 +32,12 @@ impl ScannerState {
     pub fn setup(&mut self) {
         if self.incoming_new_icon.is_some() {
             let incoming: IncomingNewIcon = self.incoming_new_icon.clone().unwrap();
-            let data: Vec<u8> = self.crop_buffer(incoming.position).into_vec();
+            let data: Vec<u8> = crop_buffer(
+                incoming.position,
+                get_resizer(&mut self.resizer),
+                self.buffer,
+            )
+            .into_vec();
 
             self.config.insert(
                 0,

@@ -150,6 +150,36 @@ fn box_sum(table: &[f64], w1: usize, x0: usize, y0: usize, x1: usize, y1: usize)
     table[y1 * w1 + x1] - table[y0 * w1 + x1] - table[y1 * w1 + x0] + table[y0 * w1 + x0]
 }
 
+fn ncc_score(
+    correlation: &[f32],
+    cols: usize,
+    sum_table: &[f64],
+    sum_sq_table: &[f64],
+    w1: usize,
+    t_n: f64,
+    t_ss: f64,
+    tw: usize,
+    th: usize,
+    x: usize,
+    y: usize,
+) -> f64 {
+    let numerator = correlation[y * cols + x] as f64;
+    let s1 = box_sum(sum_table, w1, x, y, x + tw, y + th);
+    let s2 = box_sum(sum_sq_table, w1, x, y, x + tw, y + th);
+    let var_f_sum = (s2 - s1 * s1 / t_n).max(0.0);
+    let denom = (var_f_sum * t_ss).sqrt();
+    if denom > 1e-6 { numerator / denom } else { 0.0 }
+}
+
+fn parabolic_offset(left: f64, center: f64, right: f64) -> f64 {
+    let denom = left - 2.0 * center + right;
+    if denom.abs() < 1e-9 {
+        0.0
+    } else {
+        (0.5 * (left - right) / denom).clamp(-0.5, 0.5)
+    }
+}
+
 pub fn template_match(
     template: &OneIconConfig,
     observed: Image,
@@ -222,32 +252,98 @@ pub fn template_match(
     let mut best_score = f64::MIN;
     let mut best_x = 0usize;
     let mut best_y = 0usize;
-    let mut best_mean_f = 0f64;
 
     for y in 0..valid_h {
         for x in 0..valid_w {
-            let numerator = correlation[y * cols + x] as f64;
-
-            let s1 = box_sum(&sum_table, w1, x, y, x + tw, y + th);
-            let s2 = box_sum(&sum_sq_table, w1, x, y, x + tw, y + th);
-            let mean_f = s1 / t_n;
-            let var_f_sum = (s2 - s1 * s1 / t_n).max(0.0);
-
-            let denom = (var_f_sum * t_ss).sqrt();
-            let score = if denom > 1e-6 { numerator / denom } else { 0.0 };
-
+            let score = ncc_score(
+                &correlation,
+                cols,
+                &sum_table,
+                &sum_sq_table,
+                w1,
+                t_n,
+                t_ss,
+                tw,
+                th,
+                x,
+                y,
+            );
             if score > best_score {
                 best_score = score;
                 best_x = x;
                 best_y = y;
-                best_mean_f = mean_f;
             }
         }
     }
 
+    let s1 = box_sum(&sum_table, w1, best_x, best_y, best_x + tw, best_y + th);
+    let best_mean_f = s1 / t_n;
+
+    let mut dx = 0.0;
+    if best_x > 0 && best_x + 1 < valid_w {
+        let left = ncc_score(
+            &correlation,
+            cols,
+            &sum_table,
+            &sum_sq_table,
+            w1,
+            t_n,
+            t_ss,
+            tw,
+            th,
+            best_x - 1,
+            best_y,
+        );
+        let right = ncc_score(
+            &correlation,
+            cols,
+            &sum_table,
+            &sum_sq_table,
+            w1,
+            t_n,
+            t_ss,
+            tw,
+            th,
+            best_x + 1,
+            best_y,
+        );
+        dx = parabolic_offset(left, best_score, right);
+    }
+
+    let mut dy = 0.0;
+    if best_y > 0 && best_y + 1 < valid_h {
+        let up = ncc_score(
+            &correlation,
+            cols,
+            &sum_table,
+            &sum_sq_table,
+            w1,
+            t_n,
+            t_ss,
+            tw,
+            th,
+            best_x,
+            best_y - 1,
+        );
+        let down = ncc_score(
+            &correlation,
+            cols,
+            &sum_table,
+            &sum_sq_table,
+            w1,
+            t_n,
+            t_ss,
+            tw,
+            th,
+            best_x,
+            best_y + 1,
+        );
+        dy = parabolic_offset(up, best_score, down);
+    }
+
     Some((
         ScaledPosition {
-            top_left: (best_x as f64, best_y as f64),
+            top_left: (best_x as f64 + dx, best_y as f64 + dy),
             width: template.offset.width,
             height: template.offset.height,
         },

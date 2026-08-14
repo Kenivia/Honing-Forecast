@@ -4,6 +4,7 @@ use crate::{
     setup::{IncomingNewIcon, OneIconConfig},
 };
 use ahash::AHashMap;
+use fast_image_resize::Resizer;
 use serde::{Deserialize, Serialize};
 use std::ops::{Add, Sub};
 use uuid::Uuid;
@@ -141,5 +142,7 @@ pub struct ScannerState {
     #[serde(default)]
     pub incoming_new_icon: Option<IncomingNewIcon>,
 
+    #[serde(skip)]
+    pub resizer: Option<Resizer>,
     // pub downscaled_cache: DownscaledCache,
 }

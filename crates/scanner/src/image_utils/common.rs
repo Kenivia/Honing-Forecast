@@ -6,7 +6,7 @@ use crate::{
     setup::OneIconConfig,
 };
 use fast_image_resize::{
-    PixelType,
+    PixelType, Resizer,
     images::{Image, ImageRef},
 };
 use image::RgbaImage;
@@ -76,4 +76,8 @@ impl ScannerState {
             src_h as f64 / TARGET_RESOLUTION.1 as f64,
         )
     }
+}
+
+pub fn get_resizer(resizer: &mut Option<Resizer>) -> &mut Resizer {
+    resizer.get_or_insert(Resizer::new())
 }

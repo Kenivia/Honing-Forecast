@@ -1,11 +1,14 @@
 use ahash::AHashMap;
+use fast_image_resize::Resizer;
 use hf_core::my_dbg;
 use serde::{Deserialize, Serialize};
 
 use crate::{
     constants::ANCHORS_LOOKUP,
     image_utils::{
-        common::{FULL_RECT_16_9, bounding_rect},
+        close_enough::close_enough,
+        common::{FULL_RECT_16_9, bounding_rect, get_resizer},
+        downscale::crop_buffer,
         template_matching::template_match,
     },
     scanner_state::{InventoryType, ScaledPosition, ScannerState},
@@ -51,12 +54,15 @@ impl ScannerState {
                 .enumerate()
                 .filter(|(_, x)| x.is_some())
             {
-                if self
-                    .close_enough(
-                        icon_lookup(&ANCHORS_LOOKUP[inv_type][variant_index].0),
-                        self.crop_buffer(found.unwrap().0),
-                    )
-                    .is_none()
+                if close_enough(
+                    icon_lookup(&ANCHORS_LOOKUP[inv_type][variant_index].0),
+                    crop_buffer(
+                        found.unwrap().0,
+                        get_resizer(&mut self.resizer),
+                        self.buffer,
+                    ),
+                )
+                .is_none()
                 {
                     to_clear.push((*inv_type, variant_index));
                 }
@@ -103,7 +109,11 @@ impl ScannerState {
             {
                 if let Some((found_position, confidence, brightness)) = template_match(
                     icon_lookup(variant_name),
-                    self.crop_buffer(bound.unwrap_or(FULL_RECT_16_9)),
+                    crop_buffer(
+                        bound.unwrap_or(FULL_RECT_16_9),
+                        get_resizer(&mut self.resizer),
+                        self.buffer,
+                    ),
                 ) {
                     if self.debugging {
                         self.debug_info.insert(
