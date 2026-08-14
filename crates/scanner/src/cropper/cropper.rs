@@ -16,6 +16,6 @@ impl ScannerState {
         my_dbg!("starting slot");
         self.update_slots();
         // TODO hover tooltip detection
-        self.downscaled_cache.reset();
+        // self.downscaled_cache.reset();
     }
 }

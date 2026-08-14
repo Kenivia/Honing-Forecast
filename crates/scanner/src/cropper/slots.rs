@@ -29,13 +29,13 @@ impl ScannerState {
         position_root: ScaledPosition,
     ) -> (Option<(String, f64)>, OneIconConfig, OneIconConfig) {
         let observed_number = OneIconConfig {
-            data: self.downscale(NUMBER_OFFSET + position).into_vec(),
+            data: self.crop_buffer(NUMBER_OFFSET + position).into_vec(),
             name: "".to_string(),
             offset: (NUMBER_OFFSET + position) - position_root,
             tag: "".to_string(),
         };
         let observed_icon = OneIconConfig {
-            data: self.downscale(position).into_vec(),
+            data: self.crop_buffer(position).into_vec(),
             name: "".to_string(),
             offset: position - position_root,
             tag: "".to_string(),
@@ -43,9 +43,9 @@ impl ScannerState {
 
         (
             CONFIG.get().unwrap().keys().find_map(|icon_name| {
-                let x = self.images_close_enough(
+                let x = self.close_enough(
                     icon_lookup(icon_name),
-                    self.downscale(position), // cloning doesn't seem to exist for Image
+                    self.crop_buffer(position), // cloning doesn't seem to exist for Image
                 );
                 if x.is_some() {
                     return Some((icon_name.clone(), x.unwrap()));
@@ -102,9 +102,9 @@ impl ScannerState {
             } else {
                 if self.slot_infos[slot_address].progress == OneSlotProgress::NA
                     && self
-                        .images_close_enough(
+                        .close_enough(
                             &self.slot_infos[slot_address].observed_icon,
-                            self.downscale(position), // cloning doesn't seem to exist for Image
+                            self.crop_buffer(position), // cloning doesn't seem to exist for Image
                         )
                         .is_none()
                 {

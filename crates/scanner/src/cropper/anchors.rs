@@ -52,9 +52,9 @@ impl ScannerState {
                 .filter(|(_, x)| x.is_some())
             {
                 if self
-                    .images_close_enough(
+                    .close_enough(
                         icon_lookup(&ANCHORS_LOOKUP[inv_type][variant_index].0),
-                        self.downscale(found.unwrap().0),
+                        self.crop_buffer(found.unwrap().0),
                     )
                     .is_none()
                 {
@@ -83,18 +83,18 @@ impl ScannerState {
             .filter(|k| !self.anchors[k].is_found())
             .copied()
             .collect();
-        if missing_anchors.len() != 0 {
-            self.write_downscaled_cache(bounding_rect(
-                missing_anchors
-                    .iter()
-                    .flat_map(|inv_type| {
-                        ANCHORS_LOOKUP[inv_type]
-                            .iter()
-                            .map(|x| x.1.unwrap_or(FULL_RECT_16_9))
-                    })
-                    .collect(),
-            ));
-        }
+        // if missing_anchors.len() != 0 {
+        //     self.write_downscaled_cache(bounding_rect(
+        //         missing_anchors
+        //             .iter()
+        //             .flat_map(|inv_type| {
+        //                 ANCHORS_LOOKUP[inv_type]
+        //                     .iter()
+        //                     .map(|x| x.1.unwrap_or(FULL_RECT_16_9))
+        //             })
+        //             .collect(),
+        //     ));
+        // }
         // my_dbg!("Missing anchors:", missing_anchors.len(),);
 
         for inv_type in missing_anchors {
@@ -103,7 +103,7 @@ impl ScannerState {
             {
                 if let Some((found_position, confidence, brightness)) = template_match(
                     icon_lookup(variant_name),
-                    self.downscale(bound.unwrap_or(FULL_RECT_16_9)),
+                    self.crop_buffer(bound.unwrap_or(FULL_RECT_16_9)),
                 ) {
                     if self.debugging {
                         self.debug_info.insert(

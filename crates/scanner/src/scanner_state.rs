@@ -1,7 +1,6 @@
 use crate::{
     buffer::Buffer,
     cropper::anchors::AnchorInfo,
-    image_utils::downscale::DownscaledCache,
     setup::{IncomingNewIcon, OneIconConfig},
 };
 use ahash::AHashMap;
@@ -142,5 +141,5 @@ pub struct ScannerState {
     #[serde(default)]
     pub incoming_new_icon: Option<IncomingNewIcon>,
 
-    pub downscaled_cache: DownscaledCache,
+    // pub downscaled_cache: DownscaledCache,
 }

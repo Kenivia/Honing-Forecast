@@ -27,9 +27,11 @@ impl ScannerState {
             for (index, (active_name, inactive_name)) in ALL_PAGE_NUM[inv_type].iter().enumerate() {
                 let check = |name: &String| {
                     let icon = icon_lookup(name);
-                    self.images_close_enough(
+                    self.close_enough(
                         icon,
-                        self.downscale(icon.offset + self.anchors[inv_type].position_root.unwrap()),
+                        self.crop_buffer(
+                            icon.offset + self.anchors[inv_type].position_root.unwrap(),
+                        ),
                     )
                     .is_some()
                 };

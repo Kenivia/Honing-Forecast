@@ -5,7 +5,7 @@ use image_compare::{Similarity, rgba_hybrid_compare};
 use super::common::{config_to_rgba, image_to_rgba};
 
 impl ScannerState {
-    pub fn images_close_enough(&self, template: &OneIconConfig, observed: Image) -> Option<f64> {
+    pub fn close_enough(&self, template: &OneIconConfig, observed: Image) -> Option<f64> {
         if template.offset.width != observed.width() as usize
             || template.offset.height != observed.height() as usize
         {

@@ -7,8 +7,15 @@ If you'd like to help with any of the below, feel free to get in touch via [Disc
 
 - ~~figure out how all this screen capture stuff works~~
 
+- ~~REWORK THE DOWNSCALING SYSTEM COS TURNS OUT THE BROWSER CAN DO IT~~
+  - if we disallow the case where the user has BOTH (forced 21:9) AND (less than 1680 window width at 16:9), we can always get at least 720 height
+    - but that sounds scuffed af
+      - we just pretend forced 21:9 to be a really short monitor (because those might actually exist) and generalize handling, The browser will do the downscaling for 720+ monitors, so we only need to handle downscaling the template
+        - this way we can downscale like pngs so i don't need to go manually take screenshots
+  
+- add blackbars / small anchor detection then downscale CONFIG
 - add empty icon
-- get a minimally working cropper so that i can write the ui
+- ~~get a minimally working cropper so that i can write the ui~~
 
 - normalize brightness at some point somehow
   - ~~normalize the observed when matching, ~~then normalize all icons
