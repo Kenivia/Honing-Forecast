@@ -64,11 +64,10 @@ export function compute_used_materials(
   ]) {
     let juice_cost = 0;
 
-    let juice_type =
-      juice_info.all_juices[id][upgrade.piece_type_usize].get(
-        upgrade.upgrade_index
-      );
-    console.log(juice_info.all_juices);
+    let juice_type = juice_info.all_juices[id][upgrade.piece_type_usize].get(
+      upgrade.upgrade_index,
+    );
+    // console.log(juice_info.all_juices);
     let amt = upgrade.is_normal_honing
       ? juice_type.normal_amt_used
       : juice_type.adv_amt_used;
@@ -79,10 +78,15 @@ export function compute_used_materials(
         index < Math.min(taps_since_last_run, upgrade.normal_dist.length - 2);
         index++
       ) {
-        if (id in upgrade.state[index]) {
+        if (upgrade.state[index].includes(id)) {
           juice_cost += amt;
         }
-        // console.log(juice_cost)
+        // console.log(
+        //   // juice_cost,
+        //   upgrade.state[index],
+        //   id,
+        //   upgrade.state[index],
+        // );
       }
     } else {
       if (id <= 1) {
@@ -91,9 +95,17 @@ export function compute_used_materials(
         juice_cost = adv_scroll_used * amt;
       }
     }
-
+    console.log(
+      juice_cost,
+      upgrade.state,
+      relevant_id_map[upgrade.piece_type_usize][upgrade.upgrade_index],
+      id,
+      taps_since_last_run,
+      upgrade.normal_dist.length,
+    );
     out[7 + id] = juice_cost;
   }
+  console.log(out);
   return out;
 }
 export function make_budget_snapshot(): BudgetSnapshot {
