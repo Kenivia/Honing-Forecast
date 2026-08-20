@@ -70,6 +70,15 @@ const grid: GridConfig = {
 
 <template>
   <div class="card-shell max-w-[min(800px,100%)]! min-w-[min(800px,100%)]!">
+    <label class="control-panel-checkbox-row">
+      <input v-model="active_profile.auto_start_optimizer" type="checkbox" />
+      <span>Auto start optimizer </span>
+      <span
+        class="pl-3 text-(--warning)"
+        v-if="!active_profile.auto_start_optimizer"
+        >Optimizer will not re-run on updates, results may not be optimal
+      </span>
+    </label>
     <div>
       <div class="mx-2 flex w-full flex-row items-center gap-3">
         <span class="content-center text-nowrap">Optimizer progress:</span>
@@ -226,7 +235,7 @@ const grid: GridConfig = {
                     }
                   "
                 />
-                <span>Use on Highest</span>
+                <span>Highest first</span>
               </label>
               <label
                 class="control-panel-checkbox-row"
@@ -246,7 +255,7 @@ const grid: GridConfig = {
                     }
                   "
                 />
-                <span>Use on Lowest</span>
+                <span>Lowest first</span>
               </label>
             </div>
 

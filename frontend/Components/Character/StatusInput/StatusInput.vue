@@ -110,6 +110,16 @@ const tier_label_text = computed(() => {
           <input v-model="active_profile.express_event" type="checkbox" />
           <span>Express event (June)</span>
         </label>
+        <label
+          v-if="active_profile.tier == 0"
+          class="control-panel-checkbox-row border-0!"
+        >
+          <input
+            v-model="active_profile.pretend_30_40_x2_grace"
+            type="checkbox"
+          />
+          <span>Pretend adv +30, +40 have x2 grace</span>
+        </label>
       </div>
     </div>
   </div>

@@ -43,12 +43,9 @@ export function start_all_workers() {
         active_profile.value.optimizer_worker_bundle.result = rest;
         start_eval_hist();
       },
-    ); // make sure to clone cos it'll modify the previous payload before it's consumed
+    );
   }
 
-  active_profile.value.histogram_worker_bundle.throttled_start(
-    WasmOp.Histogram,
-    build_payload(active_profile.value.optimizer_override),
-  ); // make sure to clone cos it'll modify the previous payload before it's consumed
+  start_eval_hist();
   // active_profile.value.evaluation_worker_bundle.throttled_start(WasmOp.EvaluateAverage, payload)
 }

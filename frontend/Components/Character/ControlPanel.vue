@@ -57,10 +57,7 @@ watchEffect(() => {
         <input v-model="treatment_tick" type="checkbox" />
         <span>Account for sell value of tradable mats (Recommended)</span>
       </label>
-      <label class="control-panel-checkbox-row">
-        <input v-model="active_profile.auto_start_optimizer" type="checkbox" />
-        <span>Auto start optimizer</span>
-      </label>
+
       <label class="control-panel-checkbox-row">
         <input v-model="roster_config.auto_deduct_costs" type="checkbox" />
         <span>Slider auto-deducts costs</span>

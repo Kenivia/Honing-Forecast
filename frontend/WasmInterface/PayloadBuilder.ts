@@ -72,6 +72,8 @@ function keyed_to_array(
   keyed_upgrades: KeyedUpgrades,
   upgrade_arr: Upgrade[] | null,
   tier: number,
+  express: boolean,
+  pretend_30_40: boolean,
   normal_override?: StateOverride,
   adv_override?: AdvStateOverride,
 ): OneUpgradeInput[] {
@@ -85,6 +87,13 @@ function keyed_to_array(
     .filter((x) => tier === 1 || x[1].piece_index < NUM_ADV_PIECES)
     .map(([key, one_upgrade_input]) => {
       const upgrade = upgrade_map.get(key) ?? null;
+
+      one_upgrade_input.double_balls =
+        upgrade !== null &&
+        !upgrade.is_normal_honing &&
+        ((upgrade.upgrade_index < 2 && express) ||
+          (upgrade.upgrade_index >= 2 && pretend_30_40));
+      // console.log(one_upgrade_input.double_balls);
       let out = structuredClone(toRaw(one_upgrade_input));
       if (
         !(upgrade && upgrade.state && upgrade.state.length > 0 && juice_info)
@@ -324,6 +333,8 @@ export function build_payload(override?: OptimizerOverride): Payload {
       active_profile.value.keyed_upgrades,
       active_profile.value.optimizer_worker_bundle.result?.upgrade_arr,
       tier,
+      active_profile.value.express_event,
+      active_profile.value.pretend_30_40_x2_grace,
       override?.normal,
       override?.advanced,
     ),

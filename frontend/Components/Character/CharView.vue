@@ -10,7 +10,10 @@ import { RouterLink, useRoute, useRouter } from "vue-router";
 import ControlPanel from "@/Components/Character/ControlPanel.vue";
 
 import Sidebar from "@/Components/Common/Sidebar.vue";
-import { start_all_workers } from "@/Components/Character/CharWorkerUtils";
+import {
+  start_all_workers,
+  start_eval_hist,
+} from "@/Components/Character/CharWorkerUtils";
 import GraphControlPanel from "@/Components/Character/GraphControlPanel.vue";
 import Guide from "@/Components/Character/Guide.vue";
 import OptimizerControlPanel from "@/Components/Character/OptimizerControlPanel/OptimizerControlPanel.vue";
@@ -59,6 +62,7 @@ watch(
 watch(
   [
     () => active_profile.value.express_event,
+    () => active_profile.value.pretend_30_40_x2_grace,
     () => active_profile.value.optimizer_treatment_plan,
     () => active_profile.value.auto_start_optimizer,
     () => active_region.value,
@@ -67,6 +71,8 @@ watch(
     // console.log("start", active_profile.value, roster_config.value)
     if (active_profile.value.auto_start_optimizer) {
       start_all_workers();
+    } else {
+      start_eval_hist();
     }
   },
   { deep: true, immediate: true },
