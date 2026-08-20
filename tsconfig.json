@@ -28,4 +28,5 @@
   },
   "include": ["frontend/**/*", "vite.config.ts"],
   "exclude": ["node_modules", "dist", "junkyard", "crates"]
+
 }

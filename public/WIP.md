@@ -17,7 +17,14 @@ If you'd like to help with any of the below, feel free to get in touch via [Disc
 - ~~distinguish between 'icons' and 'anchors'~~ not really needed
 
 - ~~generate the coordinate for slots~~
-  - Redo the coordinates cos it was kinda too big by 1 pixel
+  - ~~Redo the coordinates cos it was kinda too big by 1 pixel~~
+
+- re-do the icon stuff to start with pngs
+  - figure out the dimensions (28x28 for 720p) for other resolutions
+  - get pre-gnenerated (downscaled) bitmaps from like a python script and load via msgpack
+  - sort out the alignments & make it resolution agnostic somehow 
+
+
 
 - figure out how to anchor char storage & roster storage
 

@@ -9,6 +9,7 @@ import {
 import Stream from "./Stream.vue";
 // import { draw_icon } from "./ScannerUIutils.js";
 import IconDisplay from "./IconDisplay.vue";
+import DemoOCR from "./DemoOCR.vue";
 
 const config = ref<OneIconConfig[] | null>(null);
 getScannerConfig().then((data) => (config.value = data));
@@ -70,7 +71,7 @@ function process_result(scanner_state: ScannerState) {
     .sort(([__, a], [_, b]) =>
       a.icon_name_score[0].localeCompare(b.icon_name_score[0]),
     )) {
-      // const id = slot_info.observed_id
+    // const id = slot_info.observed_id
     new_found_icons.push({
       key: slot_info.icon_name_score[0],
       icon: slot_info.observed_icon,
@@ -133,7 +134,7 @@ function process_result(scanner_state: ScannerState) {
       <tbody>
         <tr v-for="row in found_icons" :key="row.key">
           <td>
-            <IconDisplay :icon="row.icon"  />
+            <IconDisplay :icon="row.icon" />
           </td>
           <td>
             <IconDisplay :icon="row.amount" />
@@ -147,6 +148,7 @@ function process_result(scanner_state: ScannerState) {
       </tbody>
     </table>
   </div>
+  <DemoOCR />
 </template>
 
 <style>

@@ -245,7 +245,7 @@ export const base_icon_map: Record<string, string> = {
     "/Icons/Materials/Serca unique/Serca Special Leapstone.png",
 
   "Forecast Icon": "/Icons/Forecast Icon.webp",
-  Pity: "/Artist Caught.png",
+  Pity: "/Icons/Artist Caught.png",
 
   Warning: "/Icons/Warning.png",
 };
