@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { useRosterStore } from "@/Stores/RosterConfig";
 import { storeToRefs } from "pinia";
-import { watch } from "vue";
+import { onUnmounted, watch } from "vue";
 import { RouterLink, useRoute, useRouter } from "vue-router";
 import ControlPanel from "@/Components/Character/ControlPanel.vue";
 import Sidebar from "@/Components/Common/Sidebar.vue";
@@ -16,7 +16,8 @@ const route = useRoute();
 const router = useRouter();
 
 const roster_store = useRosterStore();
-const { active_profile, all_profiles } = storeToRefs(roster_store);
+const { active_profile, all_profiles, active_region } =
+  storeToRefs(roster_store);
 
 const match = all_profiles.value.findIndex(
   (c) => c.char_name === (route.params.characterName as string),
@@ -90,7 +91,7 @@ onUnmounted(() => {
           Scanner setup
         </RouterLink>
         <RouterLink to="scanner" class="side-bar-link" @click="close">
-          Scanner 
+          Scanner
         </RouterLink>
       </div>
 
