@@ -1,9 +1,8 @@
 use crate::{
-    image_utils::downscale::crop_buffer,
+    image_utils::{common::get_resizer, downscale::crop_buffer},
     scanner_state::{ScaledPosition, ScannerState},
 };
 use ahash::AHashMap;
-use fast_image_resize::Resizer;
 use serde::{Deserialize, Serialize};
 use std::sync::OnceLock;
 

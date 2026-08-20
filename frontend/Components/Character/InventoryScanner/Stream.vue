@@ -80,15 +80,12 @@ const box_styles = computed(() => {
 
   return (props.boxes ?? []).map((pos) => {
     const [x1, y1] = pos.top_left;
-    const [x2, y2] = [
-      pos.top_left[0] + pos.width,
-      pos.top_left[1] + pos.height,
-    ];
+
     return {
       left: `${offset_x + x1 * scale_x}px`,
       top: `${offset_y + y1 * scale_y}px`,
-      width: `${Math.max((x2 - x1) * scale_x, 0)}px`,
-      height: `${Math.max((y2 - y1) * scale_y, 0)}px`,
+      width: `${Math.ceil(Math.max(offset_x + pos.width * scale_x , 0))}px`,
+      height: `${Math.ceil(Math.max(offset_y + pos.height * scale_y , 0))}px`,
     };
   });
 });
@@ -98,7 +95,7 @@ async function start_capture() {
     error.value = null;
     const s = await navigator.mediaDevices.getDisplayMedia({
       video: {
-        frameRate: { max:6 },
+        frameRate: { max: 6 },
         width: { max: 1280 },
         height: { max: 720 },
       },

@@ -7,7 +7,8 @@ import {
   ScannerState,
 } from "./ScannerConfigStorage.js";
 import Stream from "./Stream.vue";
-import { draw_icon } from "./ScannerUIutils.js";
+// import { draw_icon } from "./ScannerUIutils.js";
+import IconDisplay from "./IconDisplay.vue";
 
 const config = ref<OneIconConfig[] | null>(null);
 getScannerConfig().then((data) => (config.value = data));
@@ -30,6 +31,8 @@ const debugging = ref(true);
 interface FoundIconRow {
   key: string;
   icon: OneIconConfig;
+  confidence: number;
+  amount: OneIconConfig;
 }
 
 const found_icons = ref<FoundIconRow[]>([]);
@@ -62,18 +65,22 @@ function process_result(scanner_state: ScannerState) {
   }
 
   const new_found_icons: FoundIconRow[] = [];
-  for (const [key, slot_info] of [...scanner_state.slot_infos].sort(
-    ([a], [b]) => a.localeCompare(b),
-  )) {
-    const icon = slot_info.observed_icon;
+  for (const [_, slot_info] of [...scanner_state.slot_infos]
+    .filter(([_, x]) => x.icon_name_score !== undefined)
+    .sort(([__, a], [_, b]) =>
+      a.icon_name_score[0].localeCompare(b.icon_name_score[0]),
+    )) {
+      // const id = slot_info.observed_id
     new_found_icons.push({
-      key,
-      icon: icon,
+      key: slot_info.icon_name_score[0],
+      icon: slot_info.observed_icon,
+      confidence: slot_info.icon_name_score[1],
+      amount: slot_info.observed_number,
     });
   }
   found_icons.value = new_found_icons;
 
-  console.log(" new_found_icons", scanner_state.slot_infos, new_found_icons);
+  console.log("slot infos", scanner_state.slot_infos, found_icons.value);
 }
 </script>
 
@@ -120,33 +127,31 @@ function process_result(scanner_state: ScannerState) {
           <th>Tag</th>
           <th>X</th>
           <th>Y</th>
+          <th>Confidience</th>
         </tr>
       </thead>
       <tbody>
         <tr v-for="row in found_icons" :key="row.key">
           <td>
-            <canvas
-              :ref="
-                (el) =>
-                  draw_icon(
-                    el as HTMLCanvasElement,
-                    row.icon.data as ArrayLike<number>,
-                    row.icon.offset.width,
-                    row.icon.offset.height,
-                  )
-              "
-              :width="row.icon.offset.width"
-              :height="row.icon.offset.height"
-              class="rounded-none border border-zinc-600"
-              style="image-rendering: pixelated"
-            />
+            <IconDisplay :icon="row.icon"  />
+          </td>
+          <td>
+            <IconDisplay :icon="row.amount" />
           </td>
           <td>{{ row.icon.name }}</td>
           <td>{{ row.icon.tag }}</td>
           <td>{{ row.icon.offset.top_left[0].toFixed(1) }}</td>
           <td>{{ row.icon.offset.top_left[1].toFixed(1) }}</td>
+          <td>{{ row.confidence.toFixed(3) }}</td>
         </tr>
       </tbody>
     </table>
   </div>
 </template>
+
+<style>
+table {
+  border-collapse: separate;
+  border-spacing: 32px 0;
+}
+</style>

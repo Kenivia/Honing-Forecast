@@ -1,7 +1,6 @@
 <script setup lang="ts">
+import IconDisplay from "../IconDisplay.vue";
 import { OneIconConfig, ScaledPosition } from "../ScannerConfigStorage";
-import { draw_icon } from "../ScannerUIutils";
-
 const props = defineProps<{
   icon: OneIconConfig;
   canMoveUp: boolean;
@@ -57,21 +56,7 @@ function on_height_change(event: Event) {
 
 <template>
   <div class="flex items-center gap-3 rounded-md bg-zinc-800/50 p-2">
-    <canvas
-      :ref="
-        (el) =>
-          draw_icon(
-            el as HTMLCanvasElement,
-            icon.data as ArrayLike<number>,
-            icon.offset.width,
-            icon.offset.height,
-          )
-      "
-      :width="icon.offset.width"
-      :height="icon.offset.height"
-      class="rounded-none border border-zinc-600"
-      style="image-rendering: pixelated"
-    />
+    <IconDisplay :icon="icon" />
 
     <div class="flex flex-wrap items-end gap-3">
       <div class="flex flex-col items-start">

@@ -8,14 +8,25 @@ If you'd like to help with any of the below, feel free to get in touch via [Disc
 - ~~figure out how all this screen capture stuff works~~
 
 - ~~REWORK THE DOWNSCALING SYSTEM COS TURNS OUT THE BROWSER CAN DO IT~~
-  - if we disallow the case where the user has BOTH (forced 21:9) AND (less than 1680 window width at 16:9), we can always get at least 720 height
-    - but that sounds scuffed af
-      - we just pretend forced 21:9 to be a really short monitor (because those might actually exist) and generalize handling, The browser will do the downscaling for 720+ monitors, so we only need to handle downscaling the template
-        - this way we can downscale like pngs so i don't need to go manually take screenshots
-  
-- make pipeline to turn pngs into icons
-  - distinguish between 'icons' and 'anchors'
-- generate the coordinate for slots
+  - ~~if we disallow the case where the user has BOTH (forced 21:9) AND (less than 1680 window width at 16:9), we can always get at least 720 height~~
+    - ~~but that sounds scuffed af~~
+      - ~~we just pretend forced 21:9 to be a really short monitor (because those might actually exist) and generalize handling, The browser will do the downscaling for 720+ monitors, so we only need to handle downscaling the template~~
+        - ~~this way we can downscale like pngs so i don't need to go manually take screenshots~~
+  - ~~make pipeline to turn pngs into icons~~ on second thought everything has a different background color and it's a gradient so it's kinda cooked for blended, it's probably possible and probably better but for now I'm just gonna stick with straight captures
+
+- ~~distinguish between 'icons' and 'anchors'~~ not really needed
+
+- ~~generate the coordinate for slots~~
+  - Redo the coordinates cos it was kinda too big by 1 pixel
+
+- figure out how to anchor char storage & roster storage
+
+- FIGURE OUT HOW TO ANCHOR TOOLTIPS AAAAA
+  - ideas:
+    - "amount owned" text , problem: can get obstructed by cursor sometimes (bad game) and is language specific
+    - "ctrl + click" icons, problem: different height for different materials and potentially different updates
+    - "[X" in the top title, problem: doesn't work for x1 stack i think? and different height again, but not that bad? Can corroborate with ctrl click to figure out the whole height to pass into OCR if we go down that route?
+    - the actual icon / "tier 4" text, problem: again different height to reach the number, can serve the same purpose as "[X" but better ig
 
 - ~~get a minimally working cropper so that i can write the ui~~
 

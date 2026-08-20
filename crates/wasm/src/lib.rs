@@ -15,7 +15,6 @@ use wasm_bindgen::prelude::*;
 use web_sys::console;
 
 #[wasm_bindgen]
-#[must_use]
 pub fn optimize_average_wrapper(input_payload: JsValue) -> JsValue {
     console_error_panic_hook::set_once();
     let payload: Payload = from_value(input_payload).unwrap();
@@ -32,7 +31,6 @@ pub fn optimize_average_wrapper(input_payload: JsValue) -> JsValue {
 }
 
 #[wasm_bindgen]
-#[must_use]
 pub fn histogram_wrapper(input_payload: JsValue) -> JsValue {
     console_error_panic_hook::set_once();
 
@@ -43,7 +41,6 @@ pub fn histogram_wrapper(input_payload: JsValue) -> JsValue {
 }
 
 #[wasm_bindgen]
-#[must_use]
 pub fn setup_wrapper(inp_scanner_state: JsValue) -> JsValue {
     console_error_panic_hook::set_once();
 
@@ -53,7 +50,6 @@ pub fn setup_wrapper(inp_scanner_state: JsValue) -> JsValue {
 }
 
 #[wasm_bindgen]
-#[must_use]
 pub fn cropper_wrapper(inp_scanner_state: JsValue) -> JsValue {
     console_error_panic_hook::set_once();
 
@@ -63,7 +59,6 @@ pub fn cropper_wrapper(inp_scanner_state: JsValue) -> JsValue {
 }
 
 #[wasm_bindgen]
-#[must_use]
 pub fn reserve_buffer_wrapper(inp_scanner_state: JsValue) -> JsValue {
     console_error_panic_hook::set_once();
 
@@ -77,7 +72,6 @@ pub fn reserve_buffer_wrapper(inp_scanner_state: JsValue) -> JsValue {
 }
 
 #[wasm_bindgen]
-#[must_use]
 pub fn dealloc_buffer_wrapper(inp_scanner_state: JsValue) -> JsValue {
     console_error_panic_hook::set_once();
 

@@ -180,6 +180,15 @@ fn parabolic_offset(left: f64, center: f64, right: f64) -> f64 {
     }
 }
 
+fn parabolic_peak_value(left: f64, center: f64, right: f64) -> f64 {
+    let denom = left - 2.0 * center + right;
+    if denom.abs() < 1e-9 {
+        center
+    } else {
+        center - (right - left).powi(2) / (8.0 * denom)
+    }
+}
+
 pub fn template_match(
     template: &OneIconConfig,
     observed: Image,
@@ -280,6 +289,7 @@ pub fn template_match(
     let best_mean_f = s1 / t_n;
 
     let mut dx = 0.0;
+    let mut x_peak_value = best_score;
     if best_x > 0 && best_x + 1 < valid_w {
         let left = ncc_score(
             &correlation,
@@ -308,9 +318,11 @@ pub fn template_match(
             best_y,
         );
         dx = parabolic_offset(left, best_score, right);
+        x_peak_value = parabolic_peak_value(left, best_score, right);
     }
 
     let mut dy = 0.0;
+    let mut y_peak_value = best_score;
     if best_y > 0 && best_y + 1 < valid_h {
         let up = ncc_score(
             &correlation,
@@ -339,7 +351,9 @@ pub fn template_match(
             best_y + 1,
         );
         dy = parabolic_offset(up, best_score, down);
+        y_peak_value = parabolic_peak_value(up, best_score, down);
     }
+    let corrected_score = x_peak_value + y_peak_value - best_score;
 
     Some((
         ScaledPosition {
@@ -347,7 +361,7 @@ pub fn template_match(
             width: template.offset.width,
             height: template.offset.height,
         },
-        best_score.clamp(-1.0, 1.0),
+        corrected_score.clamp(-1.0, 1.0),
         best_mean_f,
     ))
 }

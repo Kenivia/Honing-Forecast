@@ -1,7 +1,6 @@
-use crate::{scanner_state::ScannerState, setup::OneIconConfig};
+use crate::setup::OneIconConfig;
 use fast_image_resize::images::Image;
-use image::Rgb;
-use image_compare::{BlendInput, Similarity, rgba_hybrid_compare};
+use image_compare::Similarity;
 
 use super::common::{config_to_rgba, image_to_rgba};
 
@@ -12,14 +11,10 @@ pub fn close_enough(template: &OneIconConfig, observed: Image) -> Option<f64> {
         return None;
     }
 
-    let bg: Rgb<u8> = Rgb([3, 3, 3]);
-    let similarity: Similarity = image_compare::rgba_blended_hybrid_compare(
-        BlendInput::RGBA(&config_to_rgba(template)),
-        BlendInput::RGBA(&image_to_rgba(observed)),
-        bg,
-    )
-    .expect("template & observed dimension mismatch");
-    if similarity.score > 0.9 {
+    let similarity: Similarity =
+        image_compare::rgba_hybrid_compare(&config_to_rgba(template), &image_to_rgba(observed))
+            .expect("compare failed");
+    if similarity.score > 0.7 {
         return Some(similarity.score as f64);
     } else {
         return None;
