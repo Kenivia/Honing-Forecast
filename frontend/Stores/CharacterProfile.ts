@@ -57,6 +57,7 @@ export interface CharProfile {
   optimizer_override: OptimizerOverride;
 
   lock_fetched_done: boolean;
+  pretend_30_40_x2_grace: boolean;
 }
 
 export enum TreatmentPlan {
@@ -124,6 +125,8 @@ export const DEFAULT_CHAR_PROFILE_NO_WORKER: CharProfile = {
     },
   },
   lock_fetched_done: true,
+
+  pretend_30_40_x2_grace: false,
 };
 // console.log(DEFAULT_CHAR_PROFILE_NO_WORKER);
 

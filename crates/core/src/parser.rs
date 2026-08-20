@@ -33,6 +33,7 @@ pub struct OneUpgradeInput {
     pub state: Option<Vec<OneState>>,
     pub unlocked: bool,
     pub adv_progress: Option<(usize, usize, bool, bool)>,
+    pub double_balls: bool,
 }
 
 impl PreparationOutput {
@@ -137,6 +138,7 @@ pub fn parser(
         state,
         unlocked,
         adv_progress,
+        double_balls,
     } in upgrade_info
     {
         let piece_type: PieceType = piece_index_to_type(piece_index);
@@ -180,7 +182,7 @@ pub fn parser(
                 this_unlock,
                 this_unlocked,
                 this_adv_progress,
-                express_event,
+                double_balls,
                 juice_info,
                 adv_cache,
                 this_state_given,

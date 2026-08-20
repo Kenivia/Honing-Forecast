@@ -1,7 +1,7 @@
 .card-shell {
   background: var(--bg-muted);
   border: 1px solid var(--border-very-muted);
-  border-radius: 8px;
+  border-radius: 4px;
   width: fit-content;
   max-width: 100%;
 }
@@ -171,7 +171,6 @@
   content: "?";
   font-weight: 800;
 }
-
 
 .annotation {
   color: var(--text-muted);

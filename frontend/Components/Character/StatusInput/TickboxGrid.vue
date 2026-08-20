@@ -226,7 +226,7 @@ function cell_cursor(status: UpgradeStatus): string {
                     relevant_grid[row - 1][col] === UpgradeStatus.NotYet) ||
                   (relevant_grid[row - 1][col - 1] === UpgradeStatus.Want &&
                     col == COLS)
-                ? `+ ${col * (grid_type == "normal" ? 1 : 10)}`
+                ? `+ ${col * (grid_type === "normal" ? 1 : 10)}`
                 : ""
           }}
         </button>

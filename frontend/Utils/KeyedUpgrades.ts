@@ -84,6 +84,7 @@ export interface OneUpgradeInput {
   state: OneState[] | null;
   unlocked: boolean;
   adv_progress: AdvProgress | null;
+  double_balls: boolean;
 
   // This is here because 1. it needs to persist through optimizser runs and 2. extra fields are ignored by serde so its perfect
   expanded: boolean;
@@ -174,6 +175,7 @@ export function grids_to_keyed(
               expanded: false,
               taps_since_last_input: 0,
               used_materials: null,
+              double_balls: false,
             };
             // console.log("b", all_keyed[key]);
           } else {
@@ -189,6 +191,7 @@ export function grids_to_keyed(
               expanded: false,
               taps_since_last_input: 0,
               used_materials: null,
+              double_balls: false,
             };
             // console.log("c", all_keyed[key]);
           }
@@ -242,6 +245,10 @@ function is_one_upgrade(obj: unknown): obj is OneUpgradeInput {
       typeof adv[3] !== "boolean"
     )
       return false;
+  }
+
+  if (o.double_balls !== undefined && typeof o.unlocked !== "boolean") {
+    return false;
   }
   return true;
 }
