@@ -23,14 +23,15 @@ DATA = {"Armor Book" : "relic",
 "Serca Red" : "common",
 "Serca Blue" : "common", 
 "Serca Leapstone" : "rare", 
-"Serca Special Leapstone" : "Relic", 
-"Serca Fusion": "Epic",
+"Serca Special Leapstone" : "relic", 
+"Serca Fusion": "epic",
 }
 
+BASE_HEIGHT = 1080
+RESOLUTION = 1080
 
-
-WIDTH = 28
-HEIGHT = 18
+WIDTH = 45 / BASE_HEIGHT * RESOLUTION
+HEIGHT = 29/ BASE_HEIGHT * RESOLUTION
 
 
 # ---------------------------------------------------------------------------
