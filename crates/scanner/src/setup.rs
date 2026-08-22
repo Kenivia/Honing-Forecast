@@ -29,25 +29,26 @@ pub fn icon_lookup(name: &String) -> &OneIconConfig {
 }
 impl ScannerState {
     pub fn setup(&mut self) {
-        if self.incoming_new_icon.is_some() {
-            let incoming: IncomingNewIcon = self.incoming_new_icon.clone().unwrap();
-            let data: Vec<u8> = crop_buffer(
-                incoming.position,
-                get_resizer(&mut self.resizer),
-                self.buffer,
-            )
-            .into_vec();
+        if self.incoming_new_icons.is_some() {
+            for incoming in self.incoming_new_icons.clone().unwrap() {
+                let data: Vec<u8> = crop_buffer(
+                    incoming.position,
+                    get_resizer(&mut self.resizer),
+                    self.buffer,
+                )
+                .into_vec();
 
-            self.config.insert(
-                0,
-                OneIconConfig {
-                    data,
-                    name: incoming.name,
-                    offset: incoming.position,
-                    tag: incoming.tag,
-                },
-            );
-            self.incoming_new_icon = None;
+                self.config.insert(
+                    0,
+                    OneIconConfig {
+                        data,
+                        name: incoming.name,
+                        offset: incoming.position,
+                        tag: incoming.tag,
+                    },
+                );
+            }
+            self.incoming_new_icons = None;
         }
     }
 

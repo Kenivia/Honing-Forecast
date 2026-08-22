@@ -50,6 +50,7 @@ const display_rect = computed(() => {
   const container_w = 1280;
   const container_h = 720;
   const { width: nw, height: nh } = video_natural.value;
+  console.log("natural", video_natural.value);
   const container_ratio = container_w / container_h;
   const natural_ratio = nw / nh || container_ratio;
 
@@ -75,8 +76,8 @@ const display_rect = computed(() => {
 // 1280x720 reference space into the actual displayed video rect.
 const box_styles = computed(() => {
   const { disp_w, disp_h, offset_x, offset_y } = display_rect.value;
-  const scale_x = disp_w / 1280;
-  const scale_y = disp_h / 720;
+  const scale_x = 1280 / 1920;
+  const scale_y = 720 / 1080;
 
   return (props.boxes ?? []).map((pos) => {
     const [x1, y1] = pos.top_left;
@@ -84,8 +85,8 @@ const box_styles = computed(() => {
     return {
       left: `${offset_x + x1 * scale_x}px`,
       top: `${offset_y + y1 * scale_y}px`,
-      width: `${Math.ceil(Math.max(offset_x + pos.width * scale_x , 0))}px`,
-      height: `${Math.ceil(Math.max(offset_y + pos.height * scale_y , 0))}px`,
+      width: `${Math.ceil(Math.max(offset_x + pos.width * scale_x, 0))}px`,
+      height: `${Math.ceil(Math.max(offset_y + pos.height * scale_y, 0))}px`,
     };
   });
 });
@@ -96,8 +97,8 @@ async function start_capture() {
     const s = await navigator.mediaDevices.getDisplayMedia({
       video: {
         frameRate: { max: 6 },
-        width: { max: 1280 },
-        height: { max: 720 },
+        // width: { max: 1280 },
+        // height: { max: 720 },
       },
       audio: false,
     });
