@@ -7,18 +7,18 @@ use crate::{
     constants::ANCHORS_LOOKUP,
     image_utils::{
         close_enough::close_enough,
-        common::{FULL_RECT_16_9, bounding_rect, get_resizer},
+        common::{FULL_RECT_16_9,  get_resizer},
         downscale::crop_buffer,
         template_matching::template_match,
     },
-    scanner_state::{InventoryType, ScaledPosition, ScannerState},
+    scanner_state::{InventoryType, Rectangle, ScannerState},
     setup::icon_lookup,
 };
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct AnchorInfo {
-    pub positions: Vec<Option<(ScaledPosition, f64)>>, // absolute positions here
-    pub position_root: Option<ScaledPosition>,
+    pub positions: Vec<Option<(Rectangle, f64)>>, // absolute positions here
+    pub position_root: Option<Rectangle>,
 }
 
 impl AnchorInfo {

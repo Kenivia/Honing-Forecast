@@ -1,5 +1,5 @@
 use super::common::{config_to_rgba, image_to_rgba};
-use crate::{scanner_state::ScaledPosition, setup::OneIconConfig};
+use crate::{scanner_state::Rectangle, setup::OneIconConfig};
 use fast_image_resize::images::Image;
 use hf_core::my_dbg;
 use image::{GrayImage, imageops::grayscale};
@@ -192,7 +192,7 @@ fn parabolic_peak_value(left: f64, center: f64, right: f64) -> f64 {
 pub fn template_match(
     template: &OneIconConfig,
     observed: Image,
-) -> Option<(ScaledPosition, f64, f64)> {
+) -> Option<(Rectangle, f64, f64)> {
     let template_img = config_to_rgba(template);
     let observed_img = image_to_rgba(observed);
 
@@ -356,7 +356,7 @@ pub fn template_match(
     let corrected_score = x_peak_value + y_peak_value - best_score;
 
     Some((
-        ScaledPosition {
+        Rectangle {
             top_left: (best_x as f64 + dx, best_y as f64 + dy),
             width: template.offset.width,
             height: template.offset.height,

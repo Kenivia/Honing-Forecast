@@ -5,7 +5,7 @@ use uuid::Uuid;
 use crate::{
     constants::{ALL_SLOT_ADDRESSS, NUMBER_OFFSET},
     image_utils::{close_enough::close_enough, common::get_resizer, downscale::crop_buffer},
-    scanner_state::{OneSlotInfo, OneSlotProgress, ScaledPosition, ScannerState, SlotAddress},
+    scanner_state::{OneSlotInfo, OneSlotProgress, Rectangle, ScannerState, SlotAddress},
     setup::{CONFIG, OneIconConfig, icon_lookup},
 };
 
@@ -14,7 +14,7 @@ impl ScannerState {
     pub fn anchored_slot_address_position(
         &self,
         slot_address: &SlotAddress,
-    ) -> Option<ScaledPosition> {
+    ) -> Option<Rectangle> {
         if !self.anchors[&slot_address.inventory_type].is_found() {
             return None;
         }
@@ -27,8 +27,8 @@ impl ScannerState {
     }
     pub fn check_through_all_icons(
         &mut self,
-        position: ScaledPosition,
-        position_root: ScaledPosition,
+        position: Rectangle,
+        position_root: Rectangle,
     ) -> (Option<(String, f64)>, OneIconConfig, OneIconConfig) {
         let observed_number = OneIconConfig {
             data: crop_buffer(
@@ -76,7 +76,7 @@ impl ScannerState {
             }
 
             // my_dbg!(active_page_nums[&slot_address.inventory_type]);
-            let position: ScaledPosition =
+            let position: Rectangle =
                 self.anchored_slot_address_position(slot_address).unwrap();
 
             if !self.slot_infos.contains_key(slot_address) {

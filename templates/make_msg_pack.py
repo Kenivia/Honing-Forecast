@@ -4,35 +4,33 @@ from PIL import Image
 import msgpack
 
 DATA = {
-    # "Armor Book" : "relic",
-# "Blue" : "common",
+    "Armor Book" : "relic",
+"Blue" : "common",
 "Fusion" : "rare",
-# "Glacier's Breath" : "epic",
-# "Lava's Breath" : "epic",
-# "Leapstone" : "rare",
-# "Red" : "common",
-# "Scroll 1 Armor" : "epic",
-# "Scroll 1 Weapon" : "epic",
-# "Scroll 2 Armor" : "legendary",
-# "Scroll 2 Weapon" : "legendary",
-# "Scroll 3 Armor" : "relic",
-# "Scroll 3 Weapon" : "relic",
-# "Scroll 4 Armor" : "ancient",
-# "Scroll 4 Weapon" : "ancient",
-# "Special Leapstone" : "relic",
-# "Weapon Book" : "relic",
-# "Serca Red" : "common",
-# "Serca Blue" : "common", 
-# "Serca Leapstone" : "rare", 
-# "Serca Special Leapstone" : "relic", 
-# "Serca Fusion": "epic",
+"Glacier's Breath" : "epic",
+"Lava's Breath" : "epic",
+"Leapstone" : "rare",
+"Red" : "common",
+"Scroll 1 Armor" : "epic",
+"Scroll 1 Weapon" : "epic",
+"Scroll 2 Armor" : "legendary",
+"Scroll 2 Weapon" : "legendary",
+"Scroll 3 Armor" : "relic",
+"Scroll 3 Weapon" : "relic",
+"Scroll 4 Armor" : "ancient",
+"Scroll 4 Weapon" : "ancient",
+"Special Leapstone" : "relic",
+"Weapon Book" : "relic",
+"Serca Red" : "common",
+"Serca Blue" : "common", 
+"Serca Leapstone" : "rare", 
+"Serca Special Leapstone" : "relic", 
+"Serca Fusion": "epic",
 }
 
-BASE_HEIGHT = 1080
-RESOLUTION = 1080
 
-WIDTH = 44
-HEIGHT = 44
+WIDTH = 64
+HEIGHT = 64
 
 
 # ---------------------------------------------------------------------------
@@ -110,6 +108,7 @@ def build_icon_config(name: str, rarity: str) -> dict:
         },
         "data": list(pixel_bytes),
         "tag": 'Icon',
+        # "resolution": 1440,
     }
 
 

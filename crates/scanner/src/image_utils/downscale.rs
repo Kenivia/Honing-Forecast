@@ -1,50 +1,13 @@
 // use crate::buffer::Buffer;
 
 use crate::buffer::Buffer;
-use crate::scanner_state::ScaledPosition;
+use crate::scanner_state::Rectangle;
 use fast_image_resize::images::{Image, ImageRef};
 use fast_image_resize::{FilterType, PixelType, ResizeAlg, ResizeOptions, Resizer};
 use hf_core::my_dbg;
 
-// use serde::{Deserialize, Serialize};
-
-// #[derive(Debug, Serialize, Deserialize)]
-// pub struct DownscaledCache {
-//     pub buffer: Buffer,
-
-//     #[serde(default)]
-//     pub position: Option<ScaledPosition>,
-//     #[serde(default)]
-//     pub occupied_size: Option<usize>,
-//     #[serde(default)]
-//     pub written_this_cycle: bool,
-// }
-// impl DownscaledCache {
-//     pub fn reset(&mut self) {
-//         self.position = None;
-//         self.occupied_size = None;
-//         self.written_this_cycle = false;
-//     }
-// }
-
 // impl ScannerState {
-// fn covered_by_cache(&self, pos: &ScaledPosition) -> bool {
-//     let downscaled_pos: ScaledPosition = self.downscaled_cache.position.unwrap();
-//     let outer_left: i64 = downscaled_pos.top_left.0 as i64;
-//     let outer_top: i64 = downscaled_pos.top_left.1 as i64;
-//     let outer_right: i64 = outer_left + downscaled_pos.width as i64;
-//     let outer_bottom: i64 = outer_top + downscaled_pos.height as i64;
 
-//     let inner_left: i64 = pos.top_left.0 as i64;
-//     let inner_top: i64 = pos.top_left.1 as i64;
-//     let inner_right: i64 = inner_left + pos.width as i64;
-//     let inner_bottom: i64 = inner_top + pos.height as i64;
-
-//     inner_left >= outer_left
-//         && inner_top >= outer_top
-//         && inner_right <= outer_right
-//         && inner_bottom <= outer_bottom
-// }
 // fn actual_downscale(
 //     &self,
 //     src_image: &ImageRef<'_>,
@@ -73,34 +36,7 @@ use hf_core::my_dbg;
 //         .unwrap();
 // }
 
-// fn crop_only(&pos: &ScaledPosition, dst: &mut Image<'_>, resizer: &mut Resizer) {}
-
-// pub fn write_downscaled_cache(&mut self, position: ScaledPosition) {
-//     assert!(!self.downscaled_cache.written_this_cycle);
-
-//     let src_image: ImageRef<'_> = self.src_image();
-//     let mut dst_image: Image<'_> = Image::new(
-//         position.width as u32,
-//         position.height as u32,
-//         PixelType::U8x4,
-//     );
-
-//     self.actual_downscale(&src_image, &mut dst_image, &position);
-
-//     unsafe {
-//         let dest_slice: &mut [u8] = std::slice::from_raw_parts_mut(
-//             self.downscaled_cache.buffer.pointer.unwrap() as *mut u8,
-//             self.downscaled_cache.buffer.size,
-//         );
-//         dest_slice[..dst_image.buffer().len()].copy_from_slice(dst_image.buffer());
-//     };
-
-//     self.downscaled_cache.position = Some(position);
-//     self.downscaled_cache.written_this_cycle = true;
-//     self.downscaled_cache.occupied_size = Some(position.width * position.height * 4);
-// }
-
-pub fn crop_buffer(position: ScaledPosition, resizer: &mut Resizer, buffer: Buffer) -> Image<'_> {
+pub fn crop_buffer(position: Rectangle, resizer: &mut Resizer, buffer: Buffer) -> Image<'_> {
     // let src_image: ImageRef<'_> = self.src_image(); // pre sure initiailizing this is cheap enough so i won't bother skipping it potentially
 
     let mut dst_image: Image<'_> = Image::new(

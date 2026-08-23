@@ -2,7 +2,7 @@ use std::slice::Iter;
 
 use crate::{
     constants::TARGET_RESOLUTION,
-    scanner_state::{ScaledPosition, ScannerState},
+    scanner_state::{Rectangle, ScannerState},
     setup::OneIconConfig,
 };
 use fast_image_resize::{
@@ -11,7 +11,7 @@ use fast_image_resize::{
 };
 use image::RgbaImage;
 
-pub const FULL_RECT_16_9: ScaledPosition = ScaledPosition {
+pub const FULL_RECT_16_9: Rectangle = Rectangle {
     top_left: (0.0, 0.0),
     width: 1280,
     height: 720,
@@ -29,9 +29,9 @@ pub fn image_to_rgba(observed: Image) -> RgbaImage {
     RgbaImage::from_raw(observed_w, observed_h, observed.into_vec()).unwrap()
 }
 
-pub fn bounding_rect(positions: Vec<ScaledPosition>) -> ScaledPosition {
-    let mut iter: Iter<'_, ScaledPosition> = positions.iter();
-    let first: &ScaledPosition = iter.next().unwrap();
+pub fn bounding_rect(positions: Vec<Rectangle>) -> Rectangle {
+    let mut iter: Iter<'_, Rectangle> = positions.iter();
+    let first: &Rectangle = iter.next().unwrap();
 
     let mut min_x: f64 = first.top_left.0;
     let mut min_y: f64 = first.top_left.1;
@@ -45,7 +45,7 @@ pub fn bounding_rect(positions: Vec<ScaledPosition>) -> ScaledPosition {
         max_y = max_y.max(pos.top_left.1 + pos.height as f64);
     }
 
-    ScaledPosition {
+    Rectangle {
         top_left: (min_x, min_y),
         width: (max_x - min_x).ceil() as usize,
         height: (max_y - min_y).ceil() as usize,

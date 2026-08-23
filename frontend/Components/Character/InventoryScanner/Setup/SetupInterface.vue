@@ -1,4 +1,4 @@
-<script setup lang="ts">
+<!-- <script setup lang="ts">
 import { WasmOp } from "@/WasmInterface/WasmWorker";
 import { storeToRefs } from "pinia";
 import { ref, watchEffect, toRaw } from "vue";
@@ -255,9 +255,9 @@ function delete_icon(index: number) {
       />
     </div>
   </div>
-</template>
+</template> -->
 
-<!-- <script setup lang="ts">
+<script setup lang="ts">
 import { WasmOp } from "@/WasmInterface/WasmWorker";
 import { storeToRefs } from "pinia";
 import { ref, watchEffect, toRaw } from "vue";
@@ -435,6 +435,14 @@ function import_position(icon: OneIconConfig) {
           class="rounded bg-zinc-800 px-2 py-1 text-sm"
         />
       </label>
+      <label class="flex flex-col gap-1 text-xs">
+        Resolution
+        <input
+          v-model="setup_tag"
+          type="text"
+          class="rounded bg-zinc-800 px-2 py-1 text-sm"
+        />
+      </label>
       <button
         class="rounded-md bg-blue-600 px-3 py-1.5 text-sm transition-colors hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-40"
         :disabled="!setup_name || status !== 'capturing'"
@@ -469,4 +477,4 @@ function import_position(icon: OneIconConfig) {
       @delete="delete_icon(index)"
     />
   </div>
-</template> -->
+</template>

@@ -50,15 +50,15 @@ pub struct SlotAddress {
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, Copy)]
-pub struct ScaledPosition {
+pub struct Rectangle {
     pub top_left: (f64, f64),
     pub width: usize,
     pub height: usize,
 }
 
-impl Sub for ScaledPosition {
+impl Sub for Rectangle {
     type Output = Self;
-    fn sub(self, other: Self) -> ScaledPosition {
+    fn sub(self, other: Self) -> Rectangle {
         Self {
             top_left: (
                 self.top_left.0 - other.top_left.0,
@@ -69,9 +69,9 @@ impl Sub for ScaledPosition {
         }
     }
 }
-impl Add for ScaledPosition {
+impl Add for Rectangle {
     type Output = Self;
-    fn add(self, other: Self) -> ScaledPosition {
+    fn add(self, other: Self) -> Rectangle {
         Self {
             top_left: (
                 self.top_left.0 + other.top_left.0,
@@ -121,7 +121,7 @@ pub struct ScannerState {
     #[serde(default)]
     pub debugging: bool,
     #[serde(default)]
-    pub debug_info: AHashMap<String, (ScaledPosition, f64, f64)>,
+    pub debug_info: AHashMap<String, (Rectangle, f64, f64)>,
 
     #[serde(default)]
     pub slot_infos: AHashMap<SlotAddress, OneSlotInfo>,
