@@ -1,50 +1,76 @@
 use crate::{
-    image_utils::{common::get_resizer, downscale::crop_buffer},
-    scanner_state::{Rectangle, ScannerState},
+    buffer::Buffer,
+    constants::{ICON_HEIGHT, ICON_MARGIN, ICON_WIDTH},
+    image_utils::{
+        common::{FloatRectangle, IntegerRectangle, Rectangle, get_resizer},
+        downscale::crop_buffer,
+    },
+    scanner_state::ScannerState,
 };
 use ahash::AHashMap;
+use fast_image_resize::Resizer;
 use parking_lot::{MappedRwLockReadGuard, RwLock, RwLockReadGuard, RwLockWriteGuard};
 use serde::{Deserialize, Serialize};
 use std::sync::LazyLock;
 
-pub static CONFIG: LazyLock<RwLock<AHashMap<(String, usize), OneIconConfig>>> =
+pub static BASE_ICONS: LazyLock<RwLock<AHashMap<String, OneIconConfig>>> =
+    LazyLock::new(|| RwLock::new(AHashMap::new()));
+
+pub static COMPUTED_ICONS: LazyLock<RwLock<AHashMap<(String, u32), OneIconConfig>>> =
     LazyLock::new(|| RwLock::new(AHashMap::new()));
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct OneIconConfig {
     pub data: Vec<u8>,
     pub name: String,
-    pub offset: Rectangle, // naming it like this to distinguish from like actual absolute positions
+    pub offset: IntegerRectangle, // naming it like this to distinguish from like actual absolute positions
     pub tag: String,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct IncomingNewIcon {
-    pub position: Rectangle,
+    pub position: FloatRectangle,
     pub name: String,
     pub tag: String,
 }
 
-pub fn icon_lookup(name: &str, resolution: usize) -> MappedRwLockReadGuard<'static, OneIconConfig> {
+pub fn icon_lookup(
+    name: &str,
+    resolution: u32,
+    resizer: &mut Resizer,
+) -> MappedRwLockReadGuard<'static, OneIconConfig> {
     let key = (name.to_string(), resolution);
 
-    if let Some(guard) = CONFIG.try_read() {
-        if guard.contains_key(&key) {
-            return RwLockReadGuard::map(guard, |map| &map[&key]);
-        }
+    let guard = COMPUTED_ICONS.read();
+    if guard.contains_key(&key) {
+        return RwLockReadGuard::map(guard, |map| &map[&key]);
     }
 
-    let mut write_guard = CONFIG.write();
+    let base_icon_guard = BASE_ICONS.read();
+    let base_icon = base_icon_guard.get(&key.0).unwrap();
+    let position = FloatRectangle {
+        top_left: (ICON_MARGIN.left, ICON_MARGIN.top),
+        width: ICON_WIDTH,
+        height: ICON_HEIGHT,
+    }
+    .scaled(resolution as f64 / 1440.0);
+    let mut write_guard = COMPUTED_ICONS.write();
     write_guard
         .entry(key.clone())
         .or_insert_with(|| OneIconConfig {
-            data: vec![],
-            name: String::new(),
-            offset: Rectangle {
-                top_left: (0.0, 0.0),
-                width: 0,
-                height: 0,
-            },
+            data: crop_buffer(
+                position,
+                resizer,
+                Buffer {
+                    pointer: Some(base_icon.data.as_ptr() as usize),
+                    width: base_icon.offset.width,
+                    height: base_icon.offset.height,
+                    size: base_icon.data.len(),
+                },
+            )
+            .into_vec(),
+            name: key.0.clone(),
+            offset: position.to_rounded(),
             tag: String::new(),
         });
 
@@ -68,7 +94,7 @@ impl ScannerState {
                     OneIconConfig {
                         data,
                         name: incoming.name,
-                        offset: incoming.position,
+                        offset: incoming.position.to_rounded(),
                         tag: incoming.tag,
                     },
                 );
@@ -81,9 +107,9 @@ impl ScannerState {
         // assert!(self.config.len() > 0);
         let mut new = AHashMap::with_capacity(self.config.len());
         for i in self.config.iter() {
-            new.insert((i.name.clone(), 1440), i.clone());
+            new.insert(i.name.clone(), i.clone());
         }
-        *CONFIG.write() = new;
+        *BASE_ICONS.write() = new;
         self.config = vec![]; // no need to pass in and out after setting
     }
 }

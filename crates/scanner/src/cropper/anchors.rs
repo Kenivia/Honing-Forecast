@@ -1,24 +1,22 @@
 use ahash::AHashMap;
-use fast_image_resize::Resizer;
-use hf_core::my_dbg;
 use serde::{Deserialize, Serialize};
 
 use crate::{
     constants::ANCHORS_LOOKUP,
     image_utils::{
         close_enough::close_enough,
-        common::{FULL_RECT_16_9,  get_resizer},
+        common::{FULL_RECT_16_9, IntegerRectangle, Rectangle, get_resizer},
         downscale::crop_buffer,
         template_matching::template_match,
     },
-    scanner_state::{InventoryType, Rectangle, ScannerState},
+    scanner_state::{InventoryType, ScannerState},
     setup::icon_lookup,
 };
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct AnchorInfo {
-    pub positions: Vec<Option<(Rectangle, f64)>>, // absolute positions here
-    pub position_root: Option<Rectangle>,
+    pub positions: Vec<Option<(IntegerRectangle, f64)>>, // absolute positions here
+    pub position_root: Option<IntegerRectangle>,
 }
 
 impl AnchorInfo {
@@ -55,9 +53,13 @@ impl ScannerState {
                 .filter(|(_, x)| x.is_some())
             {
                 if close_enough(
-                    icon_lookup(&ANCHORS_LOOKUP[inv_type][variant_index].0),
+                    &icon_lookup(
+                        &ANCHORS_LOOKUP[inv_type][variant_index].0,
+                        self.screen_info.effective_height,
+                        get_resizer(&mut self.resizer),
+                    ),
                     crop_buffer(
-                        found.unwrap().0,
+                        found.unwrap().0.to_float(),
                         get_resizer(&mut self.resizer),
                         self.buffer,
                     ),
@@ -89,26 +91,17 @@ impl ScannerState {
             .filter(|k| !self.anchors[k].is_found())
             .copied()
             .collect();
-        // if missing_anchors.len() != 0 {
-        //     self.write_downscaled_cache(bounding_rect(
-        //         missing_anchors
-        //             .iter()
-        //             .flat_map(|inv_type| {
-        //                 ANCHORS_LOOKUP[inv_type]
-        //                     .iter()
-        //                     .map(|x| x.1.unwrap_or(FULL_RECT_16_9))
-        //             })
-        //             .collect(),
-        //     ));
-        // }
-        // my_dbg!("Missing anchors:", missing_anchors.len(),);
 
         for inv_type in missing_anchors {
             for (variant_index, (variant_name, bound)) in
                 ANCHORS_LOOKUP[&inv_type].iter().enumerate()
             {
                 if let Some((found_position, confidence, brightness)) = template_match(
-                    icon_lookup(variant_name),
+                    &icon_lookup(
+                        variant_name,
+                        self.screen_info.effective_height,
+                        get_resizer(&mut self.resizer),
+                    ),
                     crop_buffer(
                         bound.unwrap_or(FULL_RECT_16_9),
                         get_resizer(&mut self.resizer),
@@ -124,8 +117,16 @@ impl ScannerState {
                     if confidence > 0.9 {
                         self.anchors.get_mut(&inv_type).unwrap().positions[variant_index] =
                             Some((found_position, confidence));
-                        self.anchors.get_mut(&inv_type).unwrap().position_root =
-                            Some(found_position - icon_lookup(variant_name).offset);
+                        self.anchors.get_mut(&inv_type).unwrap().position_root = Some(
+                            found_position.offset_from(
+                                &icon_lookup(
+                                    variant_name,
+                                    self.screen_info.effective_height,
+                                    get_resizer(&mut self.resizer),
+                                )
+                                .offset,
+                            ),
+                        );
                         self.screen_info.brightness = Some(brightness);
                     }
                 }

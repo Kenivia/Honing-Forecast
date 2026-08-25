@@ -1,56 +1,180 @@
-use std::slice::Iter;
-
-use crate::{
-    constants::TARGET_RESOLUTION,
-    scanner_state::{Rectangle, ScannerState},
-    setup::OneIconConfig,
-};
+use crate::{scanner_state::ScannerState, setup::OneIconConfig};
 use fast_image_resize::{
     PixelType, Resizer,
     images::{Image, ImageRef},
 };
 use image::RgbaImage;
 
-pub const FULL_RECT_16_9: Rectangle = Rectangle {
+use serde::{Deserialize, Serialize};
+
+pub trait Rectangle: Sized + Copy {
+    type Unit: Copy + ToF64 + ToUsize;
+
+    fn top_left(&self) -> (f64, f64);
+    fn width(&self) -> Self::Unit;
+    fn height(&self) -> Self::Unit;
+    fn width_f64(&self) -> f64 {
+        self.width().to_f64()
+    }
+    fn height_f64(&self) -> f64 {
+        self.height().to_f64()
+    }
+    fn width_usize(&self) -> usize {
+        self.width().to_usize()
+    }
+    fn height_usize(&self) -> usize {
+        self.height().to_usize()
+    }
+    fn unit_to_f64(unit: Self::Unit) -> f64;
+    fn unit_to_usize(unit: Self::Unit) -> usize;
+
+    fn with_top_left(&self, top_left: (f64, f64)) -> Self;
+    fn offset_from<R: Rectangle>(&self, other: &R) -> Self {
+        let (ox, oy) = other.top_left();
+        let (sx, sy) = self.top_left();
+        self.with_top_left((sx - ox, sy - oy))
+    }
+    fn use_root<R: Rectangle>(&self, root: &R) -> Self {
+        let (rx, ry) = root.top_left();
+        let (sx, sy) = self.top_left();
+        self.with_top_left((sx + rx, sy + ry))
+    }
+
+    fn to_rounded(&self) -> IntegerRectangle {
+        IntegerRectangle {
+            top_left: self.top_left(),
+            width: Self::unit_to_usize(self.width()),
+            height: Self::unit_to_usize(self.height()),
+        }
+    }
+
+    fn to_float(&self) -> FloatRectangle {
+        FloatRectangle {
+            top_left: self.top_left(),
+            width: Self::unit_to_f64(self.width()),
+            height: Self::unit_to_f64(self.height()),
+        }
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, Copy)]
+pub struct FloatRectangle {
+    pub top_left: (f64, f64),
+    pub width: f64,
+    pub height: f64,
+}
+
+impl Rectangle for FloatRectangle {
+    type Unit = f64;
+
+    fn top_left(&self) -> (f64, f64) {
+        self.top_left
+    }
+    fn width(&self) -> f64 {
+        self.width
+    }
+    fn height(&self) -> f64 {
+        self.height
+    }
+    fn with_top_left(&self, top_left: (f64, f64)) -> Self {
+        Self { top_left, ..*self }
+    }
+    fn unit_to_f64(unit: f64) -> f64 {
+        unit
+    }
+    fn unit_to_usize(unit: f64) -> usize {
+        unit.round() as usize
+    }
+}
+
+impl FloatRectangle {
+    pub fn scaled(&self, scale: f64) -> FloatRectangle {
+        Self {
+            top_left: (self.top_left.0 * scale, self.top_left.1 * scale),
+            width: self.width * scale,
+            height: self.height * scale,
+        }
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, Copy)]
+pub struct IntegerRectangle {
+    pub top_left: (f64, f64),
+    pub width: usize,
+    pub height: usize,
+}
+
+impl Rectangle for IntegerRectangle {
+    type Unit = usize;
+
+    fn top_left(&self) -> (f64, f64) {
+        self.top_left
+    }
+    fn width(&self) -> usize {
+        self.width
+    }
+    fn height(&self) -> usize {
+        self.height
+    }
+    fn with_top_left(&self, top_left: (f64, f64)) -> Self {
+        Self { top_left, ..*self }
+    }
+    fn unit_to_f64(unit: usize) -> f64 {
+        unit as f64
+    }
+    fn unit_to_usize(unit: usize) -> usize {
+        unit
+    }
+}
+
+pub trait ToF64: Copy {
+    fn to_f64(self) -> f64;
+}
+
+impl ToF64 for f64 {
+    fn to_f64(self) -> f64 {
+        self
+    }
+}
+
+impl ToF64 for usize {
+    fn to_f64(self) -> f64 {
+        self as f64
+    }
+}
+
+pub trait ToUsize: Copy {
+    fn to_usize(self) -> usize;
+}
+
+impl ToUsize for f64 {
+    fn to_usize(self) -> usize {
+        self.round() as usize
+    }
+}
+
+impl ToUsize for usize {
+    fn to_usize(self) -> usize {
+        self
+    }
+}
+
+pub const FULL_RECT_16_9: FloatRectangle = FloatRectangle {
     top_left: (0.0, 0.0),
-    width: 1280,
-    height: 720,
+    width: 1920.0,
+    height: 1080.0,
 };
 
 pub fn config_to_rgba(template: &OneIconConfig) -> RgbaImage {
-    let template_w: u32 = template.offset.width as u32;
-    let template_h: u32 = template.offset.height as u32;
+    let (template_w, template_h) = (template.offset.width as u32, template.offset.height as u32);
     RgbaImage::from_raw(template_w, template_h, template.data.clone()).unwrap()
 }
 
 pub fn image_to_rgba(observed: Image) -> RgbaImage {
-    let observed_w: u32 = observed.width();
-    let observed_h: u32 = observed.height();
+    let (observed_w, observed_h) = (observed.width(), observed.height());
     RgbaImage::from_raw(observed_w, observed_h, observed.into_vec()).unwrap()
 }
 
-pub fn bounding_rect(positions: Vec<Rectangle>) -> Rectangle {
-    let mut iter: Iter<'_, Rectangle> = positions.iter();
-    let first: &Rectangle = iter.next().unwrap();
-
-    let mut min_x: f64 = first.top_left.0;
-    let mut min_y: f64 = first.top_left.1;
-    let mut max_x: f64 = first.top_left.0 + first.width as f64;
-    let mut max_y: f64 = first.top_left.1 + first.height as f64;
-
-    for pos in iter {
-        min_x = min_x.min(pos.top_left.0);
-        min_y = min_y.min(pos.top_left.1);
-        max_x = max_x.max(pos.top_left.0 + pos.width as f64);
-        max_y = max_y.max(pos.top_left.1 + pos.height as f64);
-    }
-
-    Rectangle {
-        top_left: (min_x, min_y),
-        width: (max_x - min_x).ceil() as usize,
-        height: (max_y - min_y).ceil() as usize,
-    }
-}
 impl ScannerState {
     pub fn src_image(&self) -> ImageRef<'_> {
         let src_w: u32 = self.screen_info.total_width as u32;
@@ -65,16 +189,6 @@ impl ScannerState {
 
         ImageRef::new(src_w, src_h, src_bytes, PixelType::U8x4)
             .expect("source buffer size must equal src_w * src_h * 4")
-    }
-
-    pub fn scale_factors(&self) -> (f64, f64) {
-        let src_w: u32 = self.screen_info.total_width as u32;
-        let src_h: u32 = self.screen_info.total_height as u32;
-
-        (
-            src_w as f64 / TARGET_RESOLUTION.0 as f64,
-            src_h as f64 / TARGET_RESOLUTION.1 as f64,
-        )
     }
 }
 

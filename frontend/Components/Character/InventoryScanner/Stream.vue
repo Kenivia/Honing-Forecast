@@ -126,13 +126,6 @@ async function start_capture() {
         total_width: width,
         total_height: height,
       },
-      downscaled_cache: {
-        buffer: {
-          width: 1280,
-          height: 720,
-          size: 1280 * 720 * 4,
-        },
-      },
       debugging: props.debugging,
     };
     new_scanner_state.buffer = {

@@ -6,8 +6,8 @@ impl ScannerState {
         // check for black bars either on top or on the bottom
         self.screen_info.start_height = 0;
         self.screen_info.start_width = 0;
-        self.screen_info.end_height = 1280;
-        self.screen_info.end_width = 1280;
+        self.screen_info.end_height = 1920;
+        self.screen_info.end_width = 1080;
 
         self.screen_info.effective_width =
             self.screen_info.end_width - self.screen_info.start_width;

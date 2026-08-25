@@ -1,9 +1,8 @@
 use ahash::AHashMap;
-use fast_image_resize::Resizer;
-use hf_core::my_dbg;
 
 use crate::{
     constants::ALL_PAGE_NUM,
+    image_utils::common::Rectangle,
     image_utils::{close_enough::close_enough, common::get_resizer, downscale::crop_buffer},
     scanner_state::{InventoryType, ScannerState},
     setup::icon_lookup,
@@ -28,11 +27,16 @@ impl ScannerState {
 
             for (index, (active_name, inactive_name)) in ALL_PAGE_NUM[inv_type].iter().enumerate() {
                 let mut check = |name: &String| {
-                    let icon = icon_lookup(name);
+                    let icon = icon_lookup(
+                        name,
+                        self.screen_info.effective_height,
+                        get_resizer(&mut self.resizer),
+                    );
                     close_enough(
-                        icon,
+                        &icon,
                         crop_buffer(
-                            icon.offset + self.anchors[inv_type].position_root.unwrap(),
+                            icon.offset
+                                .use_root(&self.anchors[inv_type].position_root.unwrap()),
                             get_resizer(&mut self.resizer),
                             self.buffer,
                         ),

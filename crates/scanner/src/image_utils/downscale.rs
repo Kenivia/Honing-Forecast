@@ -1,47 +1,16 @@
 // use crate::buffer::Buffer;
 
 use crate::buffer::Buffer;
-use crate::scanner_state::Rectangle;
+use crate::image_utils::common::Rectangle;
 use fast_image_resize::images::{Image, ImageRef};
 use fast_image_resize::{FilterType, PixelType, ResizeAlg, ResizeOptions, Resizer};
-use hf_core::my_dbg;
 
-// impl ScannerState {
-
-// fn actual_downscale(
-//     &self,
-//     src_image: &ImageRef<'_>,
-//     dst_image: &mut Image<'_>,
-//     pos: &ScaledPosition,
-// ) {
-//     let (scale_x, scale_y) = self.scale_factors();
-//     let dst_w: u32 = pos.width as u32;
-//     let dst_h: u32 = pos.height as u32;
-
-//     let src_left: f64 = pos.top_left.0 as f64 * scale_x;
-//     let src_top: f64 = pos.top_left.1 as f64 * scale_y;
-//     let src_width: f64 = dst_w as f64 * scale_x;
-//     let src_height: f64 = dst_h as f64 * scale_y;
-
-//     let mut resizer: Resizer = Resizer::new();
-
-//     let options: ResizeOptions = ResizeOptions::new()
-//         .resize_alg(ResizeAlg::Convolution(FilterType::Box))
-//         .crop(src_left, src_top, src_width, src_height);
-
-//     self.resizer
-//         .as_mut()
-//         .unwrap_or(&mut Resizer::new())
-//         .resize(src_image, dst_image, Some(&options))
-//         .unwrap();
-// }
-
-pub fn crop_buffer(position: Rectangle, resizer: &mut Resizer, buffer: Buffer) -> Image<'_> {
+pub fn crop_buffer<R: Rectangle>(position: R, resizer: &mut Resizer, buffer: Buffer) -> Image<'_> {
     // let src_image: ImageRef<'_> = self.src_image(); // pre sure initiailizing this is cheap enough so i won't bother skipping it potentially
 
     let mut dst_image: Image<'_> = Image::new(
-        position.width as u32,
-        position.height as u32,
+        position.width_usize() as u32,
+        position.width_usize() as u32,
         PixelType::U8x4,
     );
 
@@ -56,18 +25,20 @@ pub fn crop_buffer(position: Rectangle, resizer: &mut Resizer, buffer: Buffer) -
     let src_image = ImageRef::new(src_w, src_h, src_buffer, PixelType::U8x4)
         .expect("invalid source image buffer");
 
-    let options = ResizeOptions::new()
-        .resize_alg(ResizeAlg::Interpolation(FilterType::Bilinear))
-        .use_alpha(false) // doesn't really matter cos we should only ever be cropping observed screeen capture
-        .crop(
-            position.top_left.0,
-            position.top_left.1,
-            dst_image.width() as f64,
-            dst_image.height() as f64,
-        );
-
     resizer
-        .resize(&src_image, &mut dst_image, &options)
+        .resize(
+            &src_image,
+            &mut dst_image,
+            &ResizeOptions::new()
+                .resize_alg(ResizeAlg::Interpolation(FilterType::Bilinear))
+                .use_alpha(false) // doesn't really matter cos we should only ever be cropping observed screeen capture
+                .crop(
+                    position.top_left().0,
+                    position.top_left().1,
+                    position.width_f64(),
+                    position.height_f64(),
+                ),
+        )
         .expect("crop failed");
     // }
 

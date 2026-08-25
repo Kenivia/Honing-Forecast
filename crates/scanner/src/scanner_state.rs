@@ -1,31 +1,31 @@
 use crate::{
     buffer::Buffer,
     cropper::anchors::AnchorInfo,
+    image_utils::common::IntegerRectangle,
     setup::{IncomingNewIcon, OneIconConfig},
 };
 use ahash::AHashMap;
 use fast_image_resize::Resizer;
 use serde::{Deserialize, Serialize};
-use std::ops::{Add, Sub};
 use uuid::Uuid;
 
 #[derive(Debug, Serialize, Deserialize, Default)]
 pub struct ScreenInfo {
-    pub total_width: i64,
+    pub total_width: u32,
     #[serde(default)]
-    pub start_width: i64,
+    pub start_width: u32,
     #[serde(default)]
-    pub end_width: i64,
+    pub end_width: u32,
     #[serde(default)]
-    pub effective_width: i64,
+    pub effective_width: u32,
 
-    pub total_height: i64,
+    pub total_height: u32,
     #[serde(default)]
-    pub start_height: i64,
+    pub start_height: u32,
     #[serde(default)]
-    pub end_height: i64,
+    pub end_height: u32,
     #[serde(default)]
-    pub effective_height: i64,
+    pub effective_height: u32,
 
     #[serde(default)]
     pub is_21_9: bool,
@@ -47,40 +47,6 @@ pub struct SlotAddress {
     pub inventory_type: InventoryType,
     pub page_num: usize,
     pub pos_in_inv: (usize, usize),
-}
-
-#[derive(Debug, Serialize, Deserialize, Clone, Copy)]
-pub struct Rectangle {
-    pub top_left: (f64, f64),
-    pub width: usize,
-    pub height: usize,
-}
-
-impl Sub for Rectangle {
-    type Output = Self;
-    fn sub(self, other: Self) -> Rectangle {
-        Self {
-            top_left: (
-                self.top_left.0 - other.top_left.0,
-                self.top_left.1 - other.top_left.1,
-            ),
-            width: self.width,
-            height: self.height,
-        }
-    }
-}
-impl Add for Rectangle {
-    type Output = Self;
-    fn add(self, other: Self) -> Rectangle {
-        Self {
-            top_left: (
-                self.top_left.0 + other.top_left.0,
-                self.top_left.1 + other.top_left.1,
-            ),
-            width: self.width,
-            height: self.height,
-        }
-    }
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -121,7 +87,7 @@ pub struct ScannerState {
     #[serde(default)]
     pub debugging: bool,
     #[serde(default)]
-    pub debug_info: AHashMap<String, (Rectangle, f64, f64)>,
+    pub debug_info: AHashMap<String, (IntegerRectangle, f64, f64)>,
 
     #[serde(default)]
     pub slot_infos: AHashMap<SlotAddress, OneSlotInfo>,

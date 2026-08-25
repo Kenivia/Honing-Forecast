@@ -1,10 +1,10 @@
-use crate::{scanner_state::ScannerState, setup::CONFIG};
+use crate::{scanner_state::ScannerState, setup::COMPUTED_ICONS};
 use hf_core::my_dbg;
 
 impl ScannerState {
     pub fn cropper(&mut self) {
         assert!(self.buffer.pointer.is_some());
-        assert!(CONFIG.get().unwrap().len() != 0);
+        assert!(COMPUTED_ICONS.read().len() != 0);
 
         if !self.screen_info.initialized {
             self.check_21_9();

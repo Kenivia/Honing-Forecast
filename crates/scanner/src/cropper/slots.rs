@@ -1,64 +1,75 @@
-use fast_image_resize::Resizer;
-use hf_core::my_dbg;
-use uuid::Uuid;
-
 use crate::{
     constants::{ALL_SLOT_ADDRESSS, NUMBER_OFFSET},
-    image_utils::{close_enough::close_enough, common::get_resizer, downscale::crop_buffer},
-    scanner_state::{OneSlotInfo, OneSlotProgress, Rectangle, ScannerState, SlotAddress},
-    setup::{CONFIG, OneIconConfig, icon_lookup},
+    image_utils::{
+        close_enough::close_enough,
+        common::{FloatRectangle, IntegerRectangle, Rectangle, get_resizer},
+        downscale::crop_buffer,
+    },
+    scanner_state::{OneSlotInfo, OneSlotProgress, ScannerState, SlotAddress},
+    setup::{COMPUTED_ICONS, OneIconConfig, icon_lookup},
 };
+use hf_core::my_dbg;
+use uuid::Uuid;
 
 impl ScannerState {
     // given the anchor found, find where this icon should be
     pub fn anchored_slot_address_position(
         &self,
         slot_address: &SlotAddress,
-    ) -> Option<Rectangle> {
+    ) -> Option<FloatRectangle> {
         if !self.anchors[&slot_address.inventory_type].is_found() {
             return None;
         }
         return Some(
-            ALL_SLOT_ADDRESSS[slot_address]
-                + self.anchors[&slot_address.inventory_type]
+            ALL_SLOT_ADDRESSS[slot_address].use_root(
+                &self.anchors[&slot_address.inventory_type]
                     .position_root
-                    .unwrap(),
+                    .unwrap()
+                    .to_float(),
+            ),
         );
     }
     pub fn check_through_all_icons(
         &mut self,
-        position: Rectangle,
-        position_root: Rectangle,
+        position: FloatRectangle,
+        position_root: IntegerRectangle,
     ) -> (Option<(String, f64)>, OneIconConfig, OneIconConfig) {
+        let number_position = NUMBER_OFFSET
+            .scaled(self.screen_info.effective_width as f64 / 1440.0)
+            .use_root(&position);
         let observed_number = OneIconConfig {
-            data: crop_buffer(
-                NUMBER_OFFSET + position,
-                get_resizer(&mut self.resizer),
-                self.buffer,
-            )
-            .into_vec(),
+            data: crop_buffer(number_position, get_resizer(&mut self.resizer), self.buffer)
+                .into_vec(),
             name: "".to_string(),
-            offset: (NUMBER_OFFSET + position) - position_root,
+            offset: (number_position.offset_from(&position_root)).to_rounded(),
             tag: "".to_string(),
         };
         let observed_icon = OneIconConfig {
             data: crop_buffer(position, get_resizer(&mut self.resizer), self.buffer).into_vec(),
             name: "".to_string(),
-            offset: position - position_root,
+            offset: (position.offset_from(&position_root)).to_rounded(),
             tag: "".to_string(),
         };
 
         (
-            CONFIG.get().unwrap().keys().find_map(|icon_name| {
-                let x = close_enough(
-                    icon_lookup(icon_name),
-                    crop_buffer(position, get_resizer(&mut self.resizer), self.buffer), // cloning doesn't seem to exist for Image
-                );
-                if x.is_some() {
-                    return Some((icon_name.clone(), x.unwrap()));
-                }
-                None
-            }),
+            COMPUTED_ICONS
+                .read()
+                .iter()
+                .filter(|(_, one_icon)| one_icon.tag == "Icon")
+                .find_map(|((icon_name, _), _)| {
+                    let x = close_enough(
+                        &icon_lookup(
+                            icon_name,
+                            self.screen_info.effective_height,
+                            get_resizer(&mut self.resizer),
+                        ),
+                        crop_buffer(position, get_resizer(&mut self.resizer), self.buffer), // cloning doesn't seem to exist for Image
+                    );
+                    if x.is_some() {
+                        return Some((icon_name.clone(), x.unwrap()));
+                    }
+                    None
+                }),
             observed_number,
             observed_icon,
         )
@@ -76,7 +87,7 @@ impl ScannerState {
             }
 
             // my_dbg!(active_page_nums[&slot_address.inventory_type]);
-            let position: Rectangle =
+            let position: FloatRectangle =
                 self.anchored_slot_address_position(slot_address).unwrap();
 
             if !self.slot_infos.contains_key(slot_address) {
