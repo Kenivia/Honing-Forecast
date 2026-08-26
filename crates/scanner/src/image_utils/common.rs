@@ -29,7 +29,7 @@ pub trait Rectangle: Sized + Copy {
     fn unit_to_usize(unit: Self::Unit) -> usize;
 
     fn with_top_left(&self, top_left: (f64, f64)) -> Self;
-    fn offset_from<R: Rectangle>(&self, other: &R) -> Self {
+    fn get_offset<R: Rectangle>(&self, other: &R) -> Self {
         let (ox, oy) = other.top_left();
         let (sx, sy) = self.top_left();
         self.with_top_left((sx - ox, sy - oy))
@@ -161,8 +161,8 @@ impl ToUsize for usize {
 
 pub const FULL_RECT_16_9: FloatRectangle = FloatRectangle {
     top_left: (0.0, 0.0),
-    width: 1920.0,
-    height: 1080.0,
+    width: 2560.0,
+    height: 1440.0,
 };
 
 pub fn config_to_rgba(template: &OneIconConfig) -> RgbaImage {

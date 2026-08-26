@@ -1,14 +1,14 @@
 use crate::{
-    buffer::Buffer,
-    constants::{ICON_HEIGHT, ICON_MARGIN, ICON_WIDTH},
+    constants::NUMBER_HEIGHT,
     image_utils::{
         common::{FloatRectangle, IntegerRectangle, Rectangle, get_resizer},
-        downscale::crop_buffer,
+        downscale::{crop_buffer, resize_one_config},
     },
     scanner_state::ScannerState,
 };
 use ahash::AHashMap;
 use fast_image_resize::Resizer;
+use hf_core::my_dbg;
 use parking_lot::{MappedRwLockReadGuard, RwLock, RwLockReadGuard, RwLockWriteGuard};
 use serde::{Deserialize, Serialize};
 use std::sync::LazyLock;
@@ -45,37 +45,46 @@ pub fn icon_lookup(
     if guard.contains_key(&key) {
         return RwLockReadGuard::map(guard, |map| &map[&key]);
     }
+    drop(guard);
 
     let base_icon_guard = BASE_ICONS.read();
-    let base_icon = base_icon_guard.get(&key.0).unwrap();
-    let position = FloatRectangle {
-        top_left: (ICON_MARGIN.left, ICON_MARGIN.top),
-        width: ICON_WIDTH,
-        height: ICON_HEIGHT,
-    }
-    .scaled(resolution as f64 / 1440.0);
+    // my_dbg!(&resolution);
+    let base_icon = base_icon_guard.get(&key.0).expect(&key.0);
+    let scale_factor = resolution as f64 / 1440.0;
+    let (image, scaled_offset) = resize_one_config(
+        if base_icon.tag == "Icon" {
+            Some(FloatRectangle {
+                top_left: (0.0, NUMBER_HEIGHT * 64.0 / 61.0),
+                width: 64.0,
+                height: 64.0 - 22.0 * 64.0 / 61.0,
+            })
+        } else {
+            None
+        },
+        scale_factor
+            * if base_icon.tag == "Icon" {
+                61.0 / 64.0
+            } else {
+                1.0
+            },
+        resizer,
+        base_icon,
+        base_icon.offset,
+    );
+
     let mut write_guard = COMPUTED_ICONS.write();
     write_guard
         .entry(key.clone())
         .or_insert_with(|| OneIconConfig {
-            data: crop_buffer(
-                position,
-                resizer,
-                Buffer {
-                    pointer: Some(base_icon.data.as_ptr() as usize),
-                    width: base_icon.offset.width,
-                    height: base_icon.offset.height,
-                    size: base_icon.data.len(),
-                },
-            )
-            .into_vec(),
+            data: image.into_vec(),
             name: key.0.clone(),
-            offset: position.to_rounded(),
-            tag: String::new(),
+            offset: scaled_offset,
+            tag: base_icon.tag.clone(),
         });
 
-    let read_guard = RwLockWriteGuard::downgrade(write_guard);
-    RwLockReadGuard::map(read_guard, move |map| &map[&key])
+    RwLockReadGuard::map(RwLockWriteGuard::downgrade(write_guard), move |map| {
+        &map[&key]
+    })
 }
 
 impl ScannerState {

@@ -32,7 +32,8 @@ impl ScannerState {
                         self.screen_info.effective_height,
                         get_resizer(&mut self.resizer),
                     );
-                    close_enough(
+
+                    let confidence = close_enough(
                         &icon,
                         crop_buffer(
                             icon.offset
@@ -40,8 +41,19 @@ impl ScannerState {
                             get_resizer(&mut self.resizer),
                             self.buffer,
                         ),
-                    )
-                    .is_some()
+                    );
+                    if self.debugging {
+                        self.debug_info.insert(
+                            name.clone(),
+                            (
+                                icon.offset
+                                    .use_root(&self.anchors[inv_type].position_root.unwrap()),
+                                confidence.unwrap_or(-6.9),
+                                6.9,
+                            ),
+                        );
+                    };
+                    confidence.is_some()
                 };
 
                 let matched = check(&active_name) || check(&inactive_name);

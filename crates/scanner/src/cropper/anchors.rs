@@ -1,4 +1,5 @@
 use ahash::AHashMap;
+use hf_core::my_dbg;
 use serde::{Deserialize, Serialize};
 
 use crate::{
@@ -103,7 +104,9 @@ impl ScannerState {
                         get_resizer(&mut self.resizer),
                     ),
                     crop_buffer(
-                        bound.unwrap_or(FULL_RECT_16_9),
+                        bound
+                            .unwrap_or(FULL_RECT_16_9)
+                            .scaled(self.screen_info.scale_factor),
                         get_resizer(&mut self.resizer),
                         self.buffer,
                     ),
@@ -117,8 +120,25 @@ impl ScannerState {
                     if confidence > 0.9 {
                         self.anchors.get_mut(&inv_type).unwrap().positions[variant_index] =
                             Some((found_position, confidence));
+                        my_dbg!(
+                            found_position,
+                            &icon_lookup(
+                                variant_name,
+                                self.screen_info.effective_height,
+                                get_resizer(&mut self.resizer),
+                            )
+                            .offset,
+                            found_position.get_offset(
+                                &icon_lookup(
+                                    variant_name,
+                                    self.screen_info.effective_height,
+                                    get_resizer(&mut self.resizer),
+                                )
+                                .offset
+                            ),
+                        );
                         self.anchors.get_mut(&inv_type).unwrap().position_root = Some(
-                            found_position.offset_from(
+                            found_position.get_offset(
                                 &icon_lookup(
                                     variant_name,
                                     self.screen_info.effective_height,

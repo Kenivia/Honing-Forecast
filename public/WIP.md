@@ -5,6 +5,8 @@ If you'd like to help with any of the below, feel free to get in touch via [Disc
 
 ## NOW: OCR
 
+
+- add some kind of sanity check / assertion that rectangles are scaled correctly
 - re-do the icon stuff to start with pngs
   - figure out the dimensions (28x28 for 720p) for other resolutions
   - get pre-gnenerated (downscaled) bitmaps from like a python script and load via msgpack

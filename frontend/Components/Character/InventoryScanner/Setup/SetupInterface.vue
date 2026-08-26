@@ -303,15 +303,17 @@ function confirm_setup() {
   const bundle = roster_config.value.cropper_worker_bundle;
   if (!bundle?.result) return;
 
-  const incoming_new_icons = {
-    position: {
-      top_left: [Number(top_left_x.value), Number(top_left_y.value)],
-      width: Number(width.value) || 0,
-      height: Number(height.value) || 0,
+  const incoming_new_icons = [
+    {
+      position: {
+        top_left: [Number(top_left_x.value), Number(top_left_y.value)],
+        width: Number(width.value) || 0,
+        height: Number(height.value) || 0,
+      },
+      name: setup_name.value,
+      tag: setup_tag.value,
     },
-    name: setup_name.value,
-    tag: setup_tag.value,
-  };
+  ];
 
   const modified_state = {
     ...bundle.result,
@@ -453,7 +455,6 @@ function import_position(icon: OneIconConfig) {
 
       <button
         class="rounded-md bg-blue-600 px-3 py-1.5 text-sm transition-colors hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-40"
-        :disabled="status !== 'capturing'"
         @click="download_config"
       >
         Download file

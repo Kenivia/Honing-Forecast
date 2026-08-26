@@ -5,8 +5,6 @@ import { onUnmounted, watch } from "vue";
 import { RouterLink, useRoute, useRouter } from "vue-router";
 import ControlPanel from "@/Components/Character/ControlPanel.vue";
 import Sidebar from "@/Components/Common/Sidebar.vue";
-import { start_all_workers } from "@/Components/Character/CharWorkerUtils";
-import GraphControlPanel from "@/Components/Character/GraphControlPanel.vue";
 import Guide from "@/Components/Character/Guide.vue";
 import Setup from "./InventoryScanner/Setup/Setup.vue";
 import Calc from "./Calc.vue";
@@ -16,8 +14,7 @@ const route = useRoute();
 const router = useRouter();
 
 const roster_store = useRosterStore();
-const { active_profile, all_profiles, active_region } =
-  storeToRefs(roster_store);
+const { active_profile, all_profiles } = storeToRefs(roster_store);
 
 const match = all_profiles.value.findIndex(
   (c) => c.char_name === (route.params.characterName as string),
@@ -52,21 +49,7 @@ watch(
     }
   },
 );
-watch(
-  [
-    () => active_profile.value.express_event,
-    () => active_profile.value.optimizer_treatment_plan,
-    () => active_profile.value.auto_start_optimizer,
-    () => active_region.value,
-  ],
-  () => {
-    // console.log("start", active_profile.value, roster_config.value)
-    if (active_profile.value.auto_start_optimizer) {
-      start_all_workers();
-    }
-  },
-  { deep: true, immediate: true },
-);
+
 onUnmounted(() => {
   // kill workers when going to market / roster view
   active_profile.value.optimizer_worker_bundle.cancel();

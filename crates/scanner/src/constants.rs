@@ -48,6 +48,11 @@ fn generate_slot_grid(
     map
 }
 
+pub const MARGIN: f64 = 3.0;
+pub const NUMBER_HEIGHT: f64 = 22.0;
+pub const ICON_WIDTH: f64 = 61.0;
+pub const ICON_HEIGHT: f64 = 61.0 - NUMBER_HEIGHT;
+
 pub static ALL_SLOT_ADDRESSS: LazyLock<AHashMap<SlotAddress, FloatRectangle>> =
     LazyLock::new(|| {
         let mut map = AHashMap::new();
@@ -55,23 +60,23 @@ pub static ALL_SLOT_ADDRESSS: LazyLock<AHashMap<SlotAddress, FloatRectangle>> =
         map.extend(generate_slot_grid(
             CharInventory,
             0,
-            (11.0, 64.0),
-            28.0,
-            19.0,
-            6.8888888,     // h_gap
-            10.0 + 5.8889, // v_gap
-            10,            // num_rows
-            10,            // num_cols
+            (16.0 + MARGIN, 105.33333 + MARGIN + NUMBER_HEIGHT),
+            ICON_WIDTH,
+            ICON_HEIGHT,
+            2.7777777 + MARGIN * 2.0,
+            2.7777777 + MARGIN * 2.0 + NUMBER_HEIGHT,
+            10,
+            10,
         ));
 
         map.extend(generate_slot_grid(
             CharInventory,
             1,
-            (11.0, 64.0),
-            28.0,
-            19.0,
-            6.8888888,     // h_gap
-            10.0 + 5.8889, // v_gap
+            (16.0 + MARGIN, 105.33333 + MARGIN + NUMBER_HEIGHT),
+            ICON_WIDTH,
+            ICON_HEIGHT,
+            2.7777777 + MARGIN * 2.0,
+            2.7777777 + MARGIN * 2.0 + NUMBER_HEIGHT,
             5,
             10,
         ));
@@ -79,11 +84,11 @@ pub static ALL_SLOT_ADDRESSS: LazyLock<AHashMap<SlotAddress, FloatRectangle>> =
         map.extend(generate_slot_grid(
             InventoryType::CharStorage,
             1,
-            (11.0, 64.0),
-            28.0,
-            19.0,
-            6.8888888,     // h_gap
-            10.0 + 5.8889, // v_gap
+            (16.0 + MARGIN, 105.33333 + MARGIN + NUMBER_HEIGHT),
+            ICON_WIDTH,
+            ICON_HEIGHT,
+            2.7777777 + MARGIN * 2.0,
+            2.7777777 + MARGIN * 2.0 + NUMBER_HEIGHT,
             10,
             10,
         ));
@@ -91,11 +96,11 @@ pub static ALL_SLOT_ADDRESSS: LazyLock<AHashMap<SlotAddress, FloatRectangle>> =
         map.extend(generate_slot_grid(
             InventoryType::CharStorage,
             2,
-            (11.0, 64.0),
-            28.0,
-            19.0,
-            6.8888888,     // h_gap
-            10.0 + 5.8889, // v_gap
+            (16.0 + MARGIN, 105.33333 + MARGIN + NUMBER_HEIGHT),
+            ICON_WIDTH,
+            ICON_HEIGHT,
+            2.7777777 + MARGIN * 2.0,
+            2.7777777 + MARGIN * 2.0 + NUMBER_HEIGHT,
             10,
             10,
         ));
@@ -103,11 +108,11 @@ pub static ALL_SLOT_ADDRESSS: LazyLock<AHashMap<SlotAddress, FloatRectangle>> =
         map.extend(generate_slot_grid(
             InventoryType::CharStorage,
             3,
-            (11.0, 64.0),
-            28.0,
-            19.0,
-            6.8888888,     // h_gap
-            10.0 + 5.8889, // v_gap
+            (16.0 + MARGIN, 105.33333 + MARGIN + NUMBER_HEIGHT),
+            ICON_WIDTH,
+            ICON_HEIGHT,
+            2.7777777 + MARGIN * 2.0,
+            2.7777777 + MARGIN * 2.0 + NUMBER_HEIGHT,
             10,
             10,
         ));
@@ -115,11 +120,11 @@ pub static ALL_SLOT_ADDRESSS: LazyLock<AHashMap<SlotAddress, FloatRectangle>> =
         map.extend(generate_slot_grid(
             InventoryType::CharStorage,
             4,
-            (11.0, 64.0),
-            28.0,
-            19.0,
-            6.8888888,     // h_gap
-            10.0 + 5.8889, // v_gap
+            (16.0 + MARGIN, 105.33333 + MARGIN + NUMBER_HEIGHT),
+            ICON_WIDTH,
+            ICON_HEIGHT,
+            2.7777777 + MARGIN * 2.0,
+            2.7777777 + MARGIN * 2.0 + NUMBER_HEIGHT,
             10,
             10,
         ));
@@ -127,22 +132,22 @@ pub static ALL_SLOT_ADDRESSS: LazyLock<AHashMap<SlotAddress, FloatRectangle>> =
         map.extend(generate_slot_grid(
             InventoryType::Roster,
             1,
-            (11.0, 64.0),
-            28.0,
-            19.0,
-            6.8888888,     // h_gap
-            10.0 + 5.8889, // v_gap
+            (16.0 + MARGIN, 105.33333 + MARGIN + NUMBER_HEIGHT),
+            ICON_WIDTH,
+            ICON_HEIGHT,
+            2.7777777 + MARGIN * 2.0,
+            2.7777777 + MARGIN * 2.0 + NUMBER_HEIGHT,
             6,
             10,
         ));
         map.extend(generate_slot_grid(
             InventoryType::Roster,
             2,
-            (11.0, 64.0),
-            28.0,
-            19.0,
-            6.8888888,     // h_gap
-            10.0 + 5.8889, // v_gap
+            (16.0 + MARGIN, 105.33333 + MARGIN + NUMBER_HEIGHT),
+            ICON_WIDTH,
+            ICON_HEIGHT,
+            2.7777777 + MARGIN * 2.0,
+            2.7777777 + MARGIN * 2.0 + NUMBER_HEIGHT,
             6,
             10,
         ));
@@ -209,45 +214,28 @@ pub static ANCHORS_LOOKUP: LazyLock<
     let mut map = AHashMap::from([(
         InventoryType::CharInventory,
         vec![
-            ("Char Inventory anchor 1 ".to_string(), None),
-            ("Char Inventory anchor 2".to_string(), None),
+            ("Char Inventory Anchor 1".to_string(), None),
+            ("Char Inventory Anchor 2".to_string(), None),
         ],
     )]);
     map.extend(AHashMap::from([(
         InventoryType::CharStorage,
         vec![
-            ("Char Inventory anchor 1 ".to_string(), None),
-            ("Char Inventory anchor 2".to_string(), None),
+            ("Char Inventory Anchor 1".to_string(), None),
+            ("Char Inventory Anchor 2".to_string(), None),
         ],
     )]));
     map.extend(AHashMap::from([(
         InventoryType::Roster,
         vec![
-            ("Char Inventory anchor 1 ".to_string(), None),
-            ("Char Inventory anchor 2".to_string(), None),
+            ("Char Inventory Anchor 1".to_string(), None),
+            ("Char Inventory Anchor 2".to_string(), None),
         ],
     )]));
     map
 });
 pub const NUMBER_OFFSET: FloatRectangle = FloatRectangle {
-    top_left: (3.0, -22.0),
+    top_left: (0.0, -NUMBER_HEIGHT),
     width: 61.0,
-    height: 22.0,
+    height: NUMBER_HEIGHT,
 };
-
-pub struct Margin {
-    pub top: f64,
-    pub bot: f64,
-    pub left: f64,
-    pub right: f64,
-}
-
-pub const ICON_MARGIN: Margin = Margin {
-    top: 3.0,
-    bot: 3.0 + 22.0,
-    left: 3.0,
-    right: 3.0,
-};
-pub const ICON_WIDTH: f64 = 61.0;
-
-pub const ICON_HEIGHT: f64 = 61.0 - 22.0;

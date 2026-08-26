@@ -75,7 +75,7 @@ const display_rect = computed(() => {
 // One style object per box in `props.boxes`, converted from the
 // 1280x720 reference space into the actual displayed video rect.
 const box_styles = computed(() => {
-  const { disp_w, disp_h, offset_x, offset_y } = display_rect.value;
+  const { offset_x, offset_y } = display_rect.value;
   const scale_x = 1280 / 1920;
   const scale_y = 720 / 1080;
 
@@ -205,7 +205,7 @@ async function cropper_loop(scanner_state: ScannerState) {
     cropper_running.value = false;
     return;
   }
-
+  
   bundle.value.debounced_start(
     WasmOp.Cropper,
     scanner_state,
