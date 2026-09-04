@@ -2,10 +2,13 @@ use ahash::AHashMap;
 
 use crate::{
     constants::ALL_PAGE_NUM,
-    image_utils::common::Rectangle,
-    image_utils::{close_enough::close_enough, common::get_resizer, downscale::crop_buffer},
+    image_utils::{
+        close_enough::close_enough,
+        common::{Rectangle, get_resizer},
+        downscale::crop_buffer,
+    },
     scanner_state::{InventoryType, ScannerState},
-    setup::icon_lookup,
+    setup::{OneIconConfig, icon_lookup},
 };
 
 impl ScannerState {
@@ -50,6 +53,21 @@ impl ScannerState {
                                     .use_root(&self.anchors[inv_type].position_root.unwrap()),
                                 confidence.unwrap_or(-6.9),
                                 6.9,
+                                Some(OneIconConfig {
+                                    data: crop_buffer(
+                                        icon.offset.use_root(
+                                            &self.anchors[inv_type].position_root.unwrap(),
+                                        ),
+                                        get_resizer(&mut self.resizer),
+                                        self.buffer,
+                                    )
+                                    .into_vec(),
+                                    name: name.clone(),
+                                    offset: icon
+                                        .offset
+                                        .use_root(&self.anchors[inv_type].position_root.unwrap()),
+                                    tag: "".to_string(),
+                                }),
                             ),
                         );
                     };

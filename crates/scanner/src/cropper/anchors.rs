@@ -114,7 +114,19 @@ impl ScannerState {
                     if self.debugging {
                         self.debug_info.insert(
                             variant_name.clone(),
-                            (found_position, confidence, brightness),
+                            (
+                                found_position,
+                                confidence,
+                                brightness,
+                                Some(
+                                    icon_lookup(
+                                        variant_name,
+                                        self.screen_info.effective_height,
+                                        get_resizer(&mut self.resizer),
+                                    )
+                                    .clone(),
+                                ),
+                            ),
                         );
                     }
                     if confidence > 0.9 {

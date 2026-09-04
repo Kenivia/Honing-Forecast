@@ -37,7 +37,7 @@ export interface ScannerState {
 
   buffer: Buffer;
   debugging: boolean;
-  debug_info: Map<string, [ScaledPosition, number, number]>;
+  debug_info: Map<string, [ScaledPosition, number, number, OneIconConfig]>;
 }
 
 export function getScannerConfig() {

@@ -101,7 +101,22 @@ impl ScannerState {
                 if self.debugging {
                     self.debug_info.insert(
                         "slot".to_string() + &format!("{:?}", slot_address.pos_in_inv),
-                        (position.to_rounded(), -6.9, 6.9),
+                        (
+                            position.to_rounded(),
+                            -6.9,
+                            6.9,
+                            Some(OneIconConfig {
+                                data: crop_buffer(
+                                    position,
+                                    get_resizer(&mut self.resizer),
+                                    self.buffer,
+                                )
+                                .into_vec(),
+                                name: "".to_string(),
+                                offset: position.to_rounded(),
+                                tag: "".to_string(),
+                            }),
+                        ),
                     );
                 };
                 // my_dbg!("New", slot_address, "icon:", icon_name_score);

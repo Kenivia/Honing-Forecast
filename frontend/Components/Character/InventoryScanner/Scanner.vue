@@ -23,6 +23,7 @@ interface DebugRow {
   y: number;
   confidence: number;
   brightness: number;
+  debug_icon: OneIconConfig;
 }
 
 const debug_table = ref<DebugRow[]>([]);
@@ -45,7 +46,7 @@ function process_result(scanner_state: ScannerState) {
     const new_boxes: ScaledPosition[] = [];
     const new_debug_table: DebugRow[] = [];
 
-    for (const [icon_name, [position, confidence, brightness]] of [
+    for (const [icon_name, [position, confidence, brightness, debug_icon]] of [
       ...scanner_state.debug_info,
     ].sort(([a], [b]) => a.localeCompare(b))) {
       new_boxes.push(position);
@@ -55,6 +56,7 @@ function process_result(scanner_state: ScannerState) {
         y: position.top_left[1],
         confidence,
         brightness,
+        debug_icon,
       });
     }
 
@@ -106,6 +108,7 @@ function process_result(scanner_state: ScannerState) {
             <th>Y</th>
             <th>Confidence</th>
             <th>Brightness</th>
+            <th>icon</th>
           </tr>
         </thead>
         <tbody>
@@ -115,6 +118,7 @@ function process_result(scanner_state: ScannerState) {
             <td>{{ row.y.toFixed(1) }}</td>
             <td>{{ row.confidence.toFixed(3) }}</td>
             <td>{{ row.brightness.toFixed(3) }}</td>
+            <IconDisplay :icon="row.debug_icon" />
           </tr>
         </tbody>
       </table>

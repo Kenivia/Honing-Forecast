@@ -89,7 +89,7 @@ pub struct ScannerState {
     #[serde(default)]
     pub debugging: bool,
     #[serde(default)]
-    pub debug_info: AHashMap<String, (IntegerRectangle, f64, f64)>,
+    pub debug_info: AHashMap<String, (IntegerRectangle, f64, f64, Option<OneIconConfig>)>,
 
     #[serde(default)]
     pub slot_infos: AHashMap<SlotAddress, OneSlotInfo>,
