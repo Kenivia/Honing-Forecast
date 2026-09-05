@@ -28,6 +28,9 @@ const bundle = ref(roster_config.value.cropper_worker_bundle);
 const config = ref<OneIconConfig[] | null>(null);
 getScannerConfig().then((data) => (config.value = data));
 
+const model = ref< | null>(null);
+getScannerConfig().then((data) => (config.value = data));
+
 const video_ref = ref<HTMLVideoElement | null>(null);
 const stream = ref<MediaStream | null>(null);
 const error = ref<string | null>(null);

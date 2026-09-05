@@ -5,7 +5,7 @@ If you'd like to help with any of the below, feel free to get in touch via [Disc
 
 ## NOW: OCR
 
-- add pictures into debug infos ( and other stuff? like log?)
+- ~~add pictures into debug infos~~ ( and other stuff? like log?)
 - put the pre-processing of numbers into rust
 
 - add some kind of sanity assertion that rectangles are scaled correctly

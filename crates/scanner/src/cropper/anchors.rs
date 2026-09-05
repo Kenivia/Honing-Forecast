@@ -118,14 +118,14 @@ impl ScannerState {
                                 found_position,
                                 confidence,
                                 brightness,
-                                Some(
+                                vec![
                                     icon_lookup(
                                         variant_name,
                                         self.screen_info.effective_height,
                                         get_resizer(&mut self.resizer),
                                     )
                                     .clone(),
-                                ),
+                                ],
                             ),
                         );
                     }

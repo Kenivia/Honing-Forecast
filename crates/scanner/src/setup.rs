@@ -9,9 +9,13 @@ use crate::{
 use ahash::AHashMap;
 use fast_image_resize::Resizer;
 use hf_core::my_dbg;
+use ocrs::{OcrEngine, OcrEngineParams};
 use parking_lot::{MappedRwLockReadGuard, RwLock, RwLockReadGuard, RwLockWriteGuard};
+use rten::Model;
 use serde::{Deserialize, Serialize};
 use std::sync::LazyLock;
+
+pub static OCR_ENGINE: LazyLock<RwLock<Option<OcrEngine>>> = LazyLock::new(|| RwLock::new(None));
 
 pub static BASE_ICONS: LazyLock<RwLock<AHashMap<String, OneIconConfig>>> =
     LazyLock::new(|| RwLock::new(AHashMap::new()));
@@ -120,5 +124,15 @@ impl ScannerState {
         }
         *BASE_ICONS.write() = new;
         self.config = vec![]; // no need to pass in and out after setting
+    }
+
+    pub fn set_ocr_engine(&mut self) {
+        let model = Model::load(self.model.take().unwrap()).expect("model load failed");
+        let engine = OcrEngine::new(OcrEngineParams {
+            recognition_model: Some(model),
+            ..Default::default()
+        })
+        .expect("model load failed");
+        *OCR_ENGINE.write() = Some(engine);
     }
 }

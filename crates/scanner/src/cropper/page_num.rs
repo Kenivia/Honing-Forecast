@@ -53,7 +53,7 @@ impl ScannerState {
                                     .use_root(&self.anchors[inv_type].position_root.unwrap()),
                                 confidence.unwrap_or(-6.9),
                                 6.9,
-                                Some(OneIconConfig {
+                                vec![OneIconConfig {
                                     data: crop_buffer(
                                         icon.offset.use_root(
                                             &self.anchors[inv_type].position_root.unwrap(),
@@ -67,7 +67,7 @@ impl ScannerState {
                                         .offset
                                         .use_root(&self.anchors[inv_type].position_root.unwrap()),
                                     tag: "".to_string(),
-                                }),
+                                }],
                             ),
                         );
                     };

@@ -6,7 +6,7 @@ use crate::{
         downscale::crop_buffer,
     },
     scanner_state::{OneSlotInfo, OneSlotProgress, ScannerState, SlotAddress},
-    setup::{BASE_ICONS, COMPUTED_ICONS, OneIconConfig, icon_lookup},
+    setup::{BASE_ICONS, OneIconConfig, icon_lookup},
 };
 use hf_core::my_dbg;
 use uuid::Uuid;
@@ -105,7 +105,7 @@ impl ScannerState {
                             position.to_rounded(),
                             -6.9,
                             6.9,
-                            Some(OneIconConfig {
+                            vec![OneIconConfig {
                                 data: crop_buffer(
                                     position,
                                     get_resizer(&mut self.resizer),
@@ -115,7 +115,7 @@ impl ScannerState {
                                 name: "".to_string(),
                                 offset: position.to_rounded(),
                                 tag: "".to_string(),
-                            }),
+                            }],
                         ),
                     );
                 };

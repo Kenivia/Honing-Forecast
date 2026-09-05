@@ -89,7 +89,7 @@ pub struct ScannerState {
     #[serde(default)]
     pub debugging: bool,
     #[serde(default)]
-    pub debug_info: AHashMap<String, (IntegerRectangle, f64, f64, Option<OneIconConfig>)>,
+    pub debug_info: AHashMap<String, (IntegerRectangle, f64, f64, Vec<OneIconConfig>)>,
 
     #[serde(default)]
     pub slot_infos: AHashMap<SlotAddress, OneSlotInfo>,
@@ -107,6 +107,9 @@ pub struct ScannerState {
     #[serde(default)]
     pub config: Vec<OneIconConfig>, // this should be empty for cropper calls
 
+    #[serde(default)]
+    pub model: Option<Vec<u8>>,
+    
     #[serde(default)]
     pub incoming_new_icons: Option<Vec<IncomingNewIcon>>,
 

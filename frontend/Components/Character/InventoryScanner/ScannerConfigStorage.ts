@@ -1,7 +1,5 @@
 import { encode, decode } from "@msgpack/msgpack";
 
-let configPromise: Promise<OneIconConfig[]> | null = null;
-
 export interface ScaledPosition {
   top_left: [number, number];
   width: number;
@@ -40,13 +38,25 @@ export interface ScannerState {
   debug_info: Map<string, [ScaledPosition, number, number, OneIconConfig]>;
 }
 
+let configPromise: Promise<OneIconConfig[]> | null = null;
 export function getScannerConfig() {
   if (!configPromise) {
-    configPromise = load_from_msg_pack("/ScannerConfig.msgpack") as Promise<
+    configPromise = load_file("/ScannerConfig.msgpack", true) as Promise<
       OneIconConfig[]
     >;
   }
   return configPromise;
+}
+
+let modelPromise: Promise<Uint8Array> | null = null;
+export function getModel() {
+  if (!modelPromise) {
+    modelPromise = load_file(
+      "/text-recognition.rten",
+      false,
+    ) as Promise<Uint8Array>;
+  }
+  return modelPromise;
 }
 
 export function download_as_msg_pack(
@@ -86,7 +96,7 @@ export function download_as_msg_pack(
 //   return obj;
 // }
 
-export async function load_from_msg_pack(url: string) {
+export async function load_file(url: string, msg_pack: boolean) {
   try {
     const response = await fetch(url);
 
@@ -96,8 +106,8 @@ export async function load_from_msg_pack(url: string) {
       );
     }
     const buffer = await response.arrayBuffer();
-    console.log(buffer, url);
-    return decode(new Uint8Array(buffer)); // renameKeyDeep(
+    // console.log(buffer, url);
+    return msg_pack ? decode(new Uint8Array(buffer)) : new Uint8Array(buffer); // renameKeyDeep(
   } catch (e) {
     console.log("loading msgpack failed with error ", e);
 
