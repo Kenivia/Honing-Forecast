@@ -52,7 +52,6 @@ pub fn resize_one_config<'a>(
     scale_factor: f64,
     resizer: &mut Resizer,
     one_config: &'a OneIconConfig,
-    original_offset: IntegerRectangle,
 ) -> (Image<'a>, IntegerRectangle) {
     // let src_image: ImageRef<'_> = self.src_image(); // pre sure initiailizing this is cheap enough so i won't bother skipping it potentially
     let src_w = one_config.offset.width as u32;
@@ -98,7 +97,7 @@ pub fn resize_one_config<'a>(
         dst_image,
         dst_position
             .to_rounded()
-            .with_top_left(original_offset.to_float().scaled(scale_factor).top_left),
+            .with_top_left(one_config.offset.to_float().scaled(scale_factor).top_left),
     )
 }
 // }

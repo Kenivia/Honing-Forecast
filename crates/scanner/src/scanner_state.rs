@@ -64,18 +64,10 @@ pub struct OneSlotInfo {
     pub icon_name_score: Option<(String, f64)>,
     pub observed_number: OneIconConfig,
     pub observed_icon: OneIconConfig,
-    pub observed_id: Uuid,
-    pub progress: OneSlotProgress,
-    pub amount: Option<usize>,
+    // pub observed_id: Uuid,
+    pub currently_seen: bool,
+    pub amount: Option<String>,
     pub tradability: Option<Tradability>,
-}
-
-#[derive(Debug, Serialize, Deserialize, PartialEq)]
-pub enum OneSlotProgress {
-    OCRing,
-    NeedHover,
-    HoverOCRing,
-    NA,
 }
 
 pub const ALL_ANCHOR_TYPES: [InventoryType; 3] = [
@@ -109,7 +101,7 @@ pub struct ScannerState {
 
     #[serde(default)]
     pub model: Option<Vec<u8>>,
-    
+
     #[serde(default)]
     pub incoming_new_icons: Option<Vec<IncomingNewIcon>>,
 

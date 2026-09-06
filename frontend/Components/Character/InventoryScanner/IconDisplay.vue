@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ComponentPublicInstance } from "vue";
-import { OneIconConfig } from "./ScannerConfigStorage";
+import { OneIconConfig } from "./LoadStorage";
 import { draw_icon } from "./ScannerUIutils";
 
 const props = defineProps<{

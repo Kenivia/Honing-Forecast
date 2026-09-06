@@ -23,7 +23,7 @@ export interface OneSlotInfo {
   observed_icon: OneIconConfig;
   observed_id: String;
   progress: any;
-  amount: number | null;
+  amount: string | null;
   tradability: any;
 }
 
@@ -35,7 +35,7 @@ export interface ScannerState {
 
   buffer: Buffer;
   debugging: boolean;
-  debug_info: Map<string, [ScaledPosition, number, number, OneIconConfig]>;
+  debug_info: Map<string, [ScaledPosition, number, number, OneIconConfig[]]>;
 }
 
 let configPromise: Promise<OneIconConfig[]> | null = null;

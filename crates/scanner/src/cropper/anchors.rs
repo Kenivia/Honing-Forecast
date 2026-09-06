@@ -7,7 +7,7 @@ use crate::{
     image_utils::{
         close_enough::close_enough,
         common::{FULL_RECT_16_9, IntegerRectangle, Rectangle, get_resizer},
-        downscale::crop_buffer,
+        resize::crop_buffer,
         template_matching::template_match,
     },
     scanner_state::{InventoryType, ScannerState},

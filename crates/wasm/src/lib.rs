@@ -66,6 +66,7 @@ pub fn reserve_buffer_wrapper(inp_scanner_state: JsValue) -> JsValue {
     scanner_state.buffer.reserve();
     // scanner_state.downscaled_cache.buffer.reserve();
     scanner_state.set_config();
+    scanner_state.set_ocr_engine();
     scanner_state.initialize_anchors();
     scanner_state.initialize_page_num_infos();
     to_value(&scanner_state).unwrap()

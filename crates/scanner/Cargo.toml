@@ -28,6 +28,7 @@ rustfft = {version="6.4.1", features=["wasm_simd"]}
 parking_lot = {version="0.12.5"}
 ocrs = "0.13.0"
 rten = "0.26.0"
+rten-imageproc = "0.26.0"
 
 [features]
 # features here to make my_dbg macro happy  

@@ -5,7 +5,7 @@ use crate::{
     image_utils::{
         close_enough::close_enough,
         common::{Rectangle, get_resizer},
-        downscale::crop_buffer,
+        resize::crop_buffer,
     },
     scanner_state::{InventoryType, ScannerState},
     setup::{OneIconConfig, icon_lookup},

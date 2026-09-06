@@ -5,7 +5,7 @@ import {
   getScannerConfig,
   OneIconConfig,
   ScaledPosition,
-} from "../ScannerConfigStorage.js";
+} from "../LoadStorage.js";
 import Stream from "../Stream.vue";
 
 const config = ref<OneIconConfig[] | null>(null);

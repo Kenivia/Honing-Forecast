@@ -21,7 +21,7 @@ pub fn close_enough(template: &OneIconConfig, observed: Image) -> Option<f64> {
     let similarity: Similarity =
         image_compare::rgba_hybrid_compare(&config_to_rgba(template), &image_to_rgba(observed))
             .expect("compare failed");
-    my_dbg!(similarity.score);
+    // my_dbg!(similarity.score);
     if similarity.score > 0.7 {
         return Some(similarity.score);
     } else {

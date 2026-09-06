@@ -5,7 +5,7 @@ import {
   OneIconConfig,
   ScaledPosition,
   ScannerState,
-} from "./ScannerConfigStorage.js";
+} from "./LoadStorage.js";
 import Stream from "./Stream.vue";
 // import { draw_icon } from "./ScannerUIutils.js";
 import IconDisplay from "./IconDisplay.vue";
@@ -23,7 +23,7 @@ interface DebugRow {
   y: number;
   confidence: number;
   brightness: number;
-  debug_icon: OneIconConfig;
+  debug_icons: OneIconConfig[];
 }
 
 const debug_table = ref<DebugRow[]>([]);
@@ -34,7 +34,8 @@ interface FoundIconRow {
   key: string;
   icon: OneIconConfig;
   confidence: number;
-  amount: OneIconConfig;
+  observed_number: OneIconConfig;
+  amount: string;
 }
 
 const found_icons = ref<FoundIconRow[]>([]);
@@ -56,12 +57,13 @@ function process_result(scanner_state: ScannerState) {
         y: position.top_left[1],
         confidence,
         brightness,
-        debug_icon,
+        debug_icons: debug_icon,
       });
     }
 
     boxes.value = new_boxes;
     debug_table.value = new_debug_table;
+    console.log(debug_table.value);
   } else {
     boxes.value = [];
     debug_table.value = [];
@@ -78,7 +80,8 @@ function process_result(scanner_state: ScannerState) {
       key: slot_info.icon_name_score[0],
       icon: slot_info.observed_icon,
       confidence: slot_info.icon_name_score[1],
-      amount: slot_info.observed_number,
+      observed_number: slot_info.observed_number,
+      amount: slot_info.amount,
     });
   }
   found_icons.value = new_found_icons;
@@ -118,7 +121,13 @@ function process_result(scanner_state: ScannerState) {
             <td>{{ row.y.toFixed(1) }}</td>
             <td>{{ row.confidence.toFixed(3) }}</td>
             <td>{{ row.brightness.toFixed(3) }}</td>
-            <IconDisplay :icon="row.debug_icon" />
+            <td class="flex flex-row">
+              <IconDisplay
+                :key="index"
+                v-for="(icon, index) in row.debug_icons"
+                :icon="icon"
+              />
+            </td>
           </tr>
         </tbody>
       </table>
@@ -140,14 +149,15 @@ function process_result(scanner_state: ScannerState) {
           <td>
             <IconDisplay :icon="row.icon" />
           </td>
-          <td>
-            <IconDisplay :icon="row.amount" />
-          </td>
           <td>{{ row.icon.name }}</td>
           <td>{{ row.icon.tag }}</td>
           <td>{{ row.icon.offset.top_left[0].toFixed(1) }}</td>
           <td>{{ row.icon.offset.top_left[1].toFixed(1) }}</td>
           <td>{{ row.confidence.toFixed(3) }}</td>
+          <td>
+            <IconDisplay :icon="row.observed_number" />
+          </td>
+          <td>{{ row.amount }}</td>
         </tr>
       </tbody>
     </table>

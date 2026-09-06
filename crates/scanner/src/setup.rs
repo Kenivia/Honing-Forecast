@@ -2,7 +2,7 @@ use crate::{
     constants::NUMBER_HEIGHT,
     image_utils::{
         common::{FloatRectangle, IntegerRectangle, Rectangle, get_resizer},
-        downscale::{crop_buffer, resize_one_config},
+        resize::{crop_buffer, resize_one_config},
     },
     scanner_state::ScannerState,
 };
@@ -73,7 +73,6 @@ pub fn icon_lookup(
             },
         resizer,
         base_icon,
-        base_icon.offset,
     );
 
     let mut write_guard = COMPUTED_ICONS.write();
@@ -127,9 +126,10 @@ impl ScannerState {
     }
 
     pub fn set_ocr_engine(&mut self) {
-        let model = Model::load(self.model.take().unwrap()).expect("model load failed");
         let engine = OcrEngine::new(OcrEngineParams {
-            recognition_model: Some(model),
+            recognition_model: Some(
+                Model::load(self.model.take().unwrap()).expect("model load failed"),
+            ),
             ..Default::default()
         })
         .expect("model load failed");

@@ -3,13 +3,14 @@ use crate::{
     image_utils::{
         close_enough::close_enough,
         common::{FloatRectangle, IntegerRectangle, Rectangle, get_resizer},
-        downscale::crop_buffer,
+        ocr::get_number,
+        resize::crop_buffer,
     },
-    scanner_state::{OneSlotInfo, OneSlotProgress, ScannerState, SlotAddress},
+    scanner_state::{OneSlotInfo, ScannerState, SlotAddress},
     setup::{BASE_ICONS, OneIconConfig, icon_lookup},
 };
 use hf_core::my_dbg;
-use uuid::Uuid;
+// use uuid::Uuid;
 
 impl ScannerState {
     // given the anchor found, find where this icon should be
@@ -90,7 +91,14 @@ impl ScannerState {
             let position: FloatRectangle =
                 self.anchored_slot_address_position(slot_address).unwrap();
 
-            if !self.slot_infos.contains_key(slot_address) {
+            if !self.slot_infos.contains_key(slot_address)
+                || (self.slot_infos.contains_key(slot_address)
+                    && close_enough(
+                        &self.slot_infos[slot_address].observed_icon,
+                        crop_buffer(position, get_resizer(&mut self.resizer), self.buffer), // cloning doesn't seem to exist for Image
+                    )
+                    .is_none())
+            {
                 let (icon_name_score, observed_number, observed_icon) = self
                     .check_through_all_icons(
                         position,
@@ -105,75 +113,37 @@ impl ScannerState {
                             position.to_rounded(),
                             -6.9,
                             6.9,
-                            vec![OneIconConfig {
-                                data: crop_buffer(
-                                    position,
-                                    get_resizer(&mut self.resizer),
-                                    self.buffer,
-                                )
-                                .into_vec(),
-                                name: "".to_string(),
-                                offset: position.to_rounded(),
-                                tag: "".to_string(),
-                            }],
+                            vec![observed_icon.clone(), observed_number.clone()],
                         ),
                     );
                 };
                 // my_dbg!("New", slot_address, "icon:", icon_name_score);
+                if icon_name_score.is_some() {
+                    // only overwrite if it matches another
 
-                self.slot_infos.insert(
-                    *slot_address,
-                    OneSlotInfo {
-                        // currently_seen: true,
-                        icon_name_score: icon_name_score.clone(),
-                        observed_number,
-                        observed_icon,
-                        observed_id: Uuid::new_v4(),
-                        progress: if icon_name_score.is_some() {
-                            OneSlotProgress::OCRing
-                        } else {
-                            OneSlotProgress::NA
-                        },
-                        amount: None,
-                        tradability: None,
-                    },
-                );
-            } else {
-                if self.slot_infos[slot_address].progress == OneSlotProgress::NA
-                    && close_enough(
-                        &self.slot_infos[slot_address].observed_icon,
-                        crop_buffer(position, get_resizer(&mut self.resizer), self.buffer), // cloning doesn't seem to exist for Image
-                    )
-                    .is_none()
-                {
-                    // only run the check if it changed
-                    let (icon_name_score, observed_number, observed_icon) = self
-                        .check_through_all_icons(
-                            position,
-                            self.anchors[&slot_address.inventory_type]
-                                .position_root
-                                .unwrap(),
-                        );
-                    // my_dbg!("Old", slot_address, "icon:", icon_name_score.clone());
-                    if icon_name_score.is_some() {
-                        // only overwrite if it matches another
-                        *self.slot_infos.get_mut(slot_address).unwrap() = OneSlotInfo {
-                            // currently_seen: true,
+                    self.slot_infos.insert(
+                        *slot_address,
+                        OneSlotInfo {
                             icon_name_score,
-                            observed_number,
+                            observed_number: observed_number.clone(),
                             observed_icon,
-                            observed_id: Uuid::new_v4(),
-                            progress: OneSlotProgress::OCRing,
-                            amount: None,
+                            amount: Some(get_number(
+                                &observed_number,
+                                get_resizer(&mut self.resizer),
+                            )),
                             tradability: None,
-                        }
-                    } else {
-                        let this_slot = self.slot_infos.get_mut(slot_address).unwrap();
-                        this_slot.observed_number = observed_number;
-                        this_slot.observed_icon = observed_icon;
-                        this_slot.progress = OneSlotProgress::NA;
-                        this_slot.observed_id = Uuid::new_v4();
-                    }
+                            currently_seen: true,
+                        },
+                    );
+                } else {
+                    // it matches nothing aka it's probably temporarily unavailable, don't delete
+                    self.slot_infos
+                        .entry(*slot_address)
+                        .and_modify(|this_slot| {
+                            this_slot.observed_number = observed_number;
+                            this_slot.observed_icon = observed_icon;
+                            this_slot.currently_seen = false
+                        });
                 }
             }
         }

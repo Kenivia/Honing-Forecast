@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import IconDisplay from "../IconDisplay.vue";
-import { OneIconConfig, ScaledPosition } from "../ScannerConfigStorage";
+import { OneIconConfig, ScaledPosition } from "../LoadStorage.js";
 const props = defineProps<{
   icon: OneIconConfig;
   canMoveUp: boolean;

@@ -8,7 +8,7 @@ import init, {
 } from "@/../crates/wasm/pkg/hf_wasm.js";
 import { Payload } from "./PayloadBuilder";
 import { Upgrade } from "@/Utils/KeyedUpgrades";
-import { OneIconConfig } from "@/Components/Character/InventoryScanner/ScannerConfigStorage";
+import { OneIconConfig } from "@/Components/Character/InventoryScanner/LoadStorage";
 
 export enum WasmOp {
   OptimizeAverage,
@@ -57,6 +57,7 @@ self.addEventListener("message", async (ev) => {
 
   const wasm = await init();
   console.log(WasmOp[wasm_op], "Began", payload);
+  console.log(structuredClone(payload?.scanner_state))
 
   if (wasm_op == WasmOp.OptimizeAverage) {
     result = await optimize_average_wrapper(payload);

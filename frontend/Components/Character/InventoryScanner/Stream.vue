@@ -6,11 +6,12 @@ import { create_worker_bundle } from "@/WasmInterface/WorkerBundle";
 import { storeToRefs } from "pinia";
 import { ref, computed, onMounted, onUnmounted, toRaw } from "vue";
 import {
+  getModel,
   getScannerConfig,
   OneIconConfig,
   ScaledPosition,
   ScannerState,
-} from "./ScannerConfigStorage";
+} from "./LoadStorage";
 
 const props = defineProps<{
   boxes?: ScaledPosition[];
@@ -24,12 +25,6 @@ const roster_store = useRosterStore();
 const { roster_config } = storeToRefs(roster_store);
 
 const bundle = ref(roster_config.value.cropper_worker_bundle);
-
-const config = ref<OneIconConfig[] | null>(null);
-getScannerConfig().then((data) => (config.value = data));
-
-const model = ref< | null>(null);
-getScannerConfig().then((data) => (config.value = data));
 
 const video_ref = ref<HTMLVideoElement | null>(null);
 const stream = ref<MediaStream | null>(null);
@@ -136,17 +131,10 @@ async function start_capture() {
       height,
       size: width * height * 4,
     };
-    new_scanner_state.config = (toRaw(config.value) ?? []).map((entry) => {
-      if ("position" in entry) {
-        const { position, ...rest } = entry as OneIconConfig & {
-          position: unknown;
-        };
-        return { ...rest, offset: position };
-      }
-      return entry;
-    });
-
-    // console.log(new_scanner_state.config);
+    const [config, model] = await Promise.all([getScannerConfig(), getModel()]);
+    new_scanner_state.config = toRaw(config);
+    new_scanner_state.model = toRaw(model);
+    // console.log(structuredClone(new_scanner_state));
     bundle.value.debounced_start(
       WasmOp.Reserve,
       {
@@ -208,7 +196,7 @@ async function cropper_loop(scanner_state: ScannerState) {
     cropper_running.value = false;
     return;
   }
-  
+
   bundle.value.debounced_start(
     WasmOp.Cropper,
     scanner_state,

@@ -266,7 +266,7 @@ import {
   getScannerConfig,
   OneIconConfig,
   ScaledPosition,
-} from "../ScannerConfigStorage";
+} from "../LoadStorage";
 import SetupIconRow from "./SetupIconRow.vue";
 
 import { useRosterStore } from "@/Stores/RosterConfig";
