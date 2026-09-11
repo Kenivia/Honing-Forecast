@@ -21,6 +21,7 @@ export interface OneSlotInfo {
   icon_name_score: [string, number] | null;
   observed_number: OneIconConfig;
   observed_icon: OneIconConfig;
+  processed_number: OneIconConfig;
   observed_id: String;
   progress: any;
   amount: string | null;

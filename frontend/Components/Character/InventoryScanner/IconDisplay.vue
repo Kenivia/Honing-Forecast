@@ -21,10 +21,12 @@ function onCanvasRef(el: Element | ComponentPublicInstance | null) {
 
 <template>
   <canvas
+    v-if="icon"
     :ref="onCanvasRef"
     :width="icon.offset.width"
     :height="icon.offset.height"
     class="rounded-none border-(--boredr-muted)"
     style="image-rendering: pixelated"
   />
+  <div v-else>No Icon</div>
 </template>

@@ -3,7 +3,7 @@ use crate::{
     image_utils::{
         close_enough::close_enough,
         common::{FloatRectangle, IntegerRectangle, Rectangle, get_resizer},
-        ocr::get_number,
+        ocr::{get_number, pre_process},
         resize::crop_buffer,
     },
     scanner_state::{OneSlotInfo, ScannerState, SlotAddress},
@@ -120,17 +120,17 @@ impl ScannerState {
                 // my_dbg!("New", slot_address, "icon:", icon_name_score);
                 if icon_name_score.is_some() {
                     // only overwrite if it matches another
+                    let pre_processed =
+                        pre_process(observed_number.clone(), get_resizer(&mut self.resizer));
 
                     self.slot_infos.insert(
                         *slot_address,
                         OneSlotInfo {
                             icon_name_score,
-                            observed_number: observed_number.clone(),
+                            observed_number,
                             observed_icon,
-                            amount: Some(get_number(
-                                &observed_number,
-                                get_resizer(&mut self.resizer),
-                            )),
+                            processed_number: pre_processed.clone(),
+                            amount: Some(get_number(pre_processed)),
                             tradability: None,
                             currently_seen: true,
                         },

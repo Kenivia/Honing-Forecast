@@ -63,6 +63,7 @@ pub struct OneSlotInfo {
     // pub currently_seen: bool,
     pub icon_name_score: Option<(String, f64)>,
     pub observed_number: OneIconConfig,
+    pub processed_number: OneIconConfig,
     pub observed_icon: OneIconConfig,
     // pub observed_id: Uuid,
     pub currently_seen: bool,

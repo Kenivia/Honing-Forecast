@@ -35,6 +35,7 @@ interface FoundIconRow {
   icon: OneIconConfig;
   confidence: number;
   observed_number: OneIconConfig;
+  processed_number: OneIconConfig;
   amount: string;
 }
 
@@ -81,6 +82,7 @@ function process_result(scanner_state: ScannerState) {
       icon: slot_info.observed_icon,
       confidence: slot_info.icon_name_score[1],
       observed_number: slot_info.observed_number,
+      processed_number: slot_info.processed_number,
       amount: slot_info.amount,
     });
   }
@@ -142,6 +144,9 @@ function process_result(scanner_state: ScannerState) {
           <th>X</th>
           <th>Y</th>
           <th>Confidience</th>
+          <th>Raw number</th>
+          <th>Processed</th>
+          <th>OCR result</th>
         </tr>
       </thead>
       <tbody>
@@ -156,6 +161,9 @@ function process_result(scanner_state: ScannerState) {
           <td>{{ row.confidence.toFixed(3) }}</td>
           <td>
             <IconDisplay :icon="row.observed_number" />
+          </td>
+          <td>
+            <IconDisplay :icon="row.processed_number" />
           </td>
           <td>{{ row.amount }}</td>
         </tr>

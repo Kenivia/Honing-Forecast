@@ -348,7 +348,7 @@ const speckRemovalFilter: FilterDef = {
 
 const cropTolerance = ref(0);
 
-const autoCropBlackFilter: FilterDef = {
+const _autoCropBlackFilter: FilterDef = {
   id: "auto-crop-black",
   name: "Auto Crop (Black)",
   description: "Crops the image to the first non-black pixel from each edge.",
@@ -434,7 +434,6 @@ const filters: FilterDef[] = [
   thresholdFilter,
   backgroundFloodFillFilter,
   speckRemovalFilter,
-  autoCropBlackFilter,
 ];
 
 const upscaleFactor = ref(2);
