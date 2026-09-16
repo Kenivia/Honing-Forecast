@@ -195,3 +195,5 @@ impl ScannerState {
 pub fn get_resizer(resizer: &mut Option<Resizer>) -> &mut Resizer {
     resizer.get_or_insert(Resizer::new())
 }
+
+

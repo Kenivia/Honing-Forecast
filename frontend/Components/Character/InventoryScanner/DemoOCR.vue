@@ -849,7 +849,7 @@ onBeforeUnmount(() => {
                 v-if="item.processedPreviewUrl"
                 :src="item.processedPreviewUrl"
                 :alt="`${item.fileName} preprocessed`"
-                class="max-h-32 w-fit max-w-[10rem] rounded-none border border-neutral-200 object-contain"
+                class="max-h-32 w-fit max-w-40 rounded-none border border-neutral-200 object-contain"
               />
               <span v-else class="text-xs text-neutral-400">—</span>
             </td>

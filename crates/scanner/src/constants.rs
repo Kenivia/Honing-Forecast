@@ -215,7 +215,19 @@ pub static ANCHORS_LOOKUP: LazyLock<
         InventoryType::CharInventory,
         vec![
             ("Char Inventory Anchor 1".to_string(), None),
-            ("Char Inventory Anchor 2".to_string(), None),
+            // ("Char Inventory Anchor 2".to_string(), None),
+            // ("Char Inventory Anchor 3".to_string(), None),
+            // ("Char Inventory Anchor 5".to_string(), None),
+            // ("Char Inventory Anchor 7".to_string(), None),
+            // ("Char Inventory Anchor 8".to_string(), None),
+            // ("Char Inventory Anchor 9".to_string(), None),
+            // ("Char Inventory Anchor 10".to_string(), None),
+            ("Char Inventory Anchor 11".to_string(), None),
+             ("Char Inventory Anchor 12".to_string(), None),
+              ("Char Inventory Anchor 13".to_string(), None),
+               ("Char Inventory Anchor 14".to_string(), None),
+
+
         ],
     )]);
     map.extend(AHashMap::from([(
