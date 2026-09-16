@@ -181,6 +181,21 @@ function migrate_V6(out, version: number): [any, number] {
   return [out, v6 !== null ? 7 : version];
 }
 
+// function migrate_V7(out, version: number): [any, number] {
+//   const v7 = load_compressed("HF_CONFIG_V7_COMPRESSED");
+//   if (v7 !== null) {
+//     version = 7;
+//     out = { ...out, ...v7 };
+//     localStorage.removeItem("HF_CONFIG_V7_COMPRESSED");
+//   }
+//   if (version == 7) {
+//     for (const profile of out.profiles as CharProfile[]) {
+//       profile.express_event = false;
+//     }
+//   }
+//   return [out, v7 !== null ? 8 : version];
+// }
+
 function load_compressed(key: string): any {
   const compressed = localStorage.getItem(key);
   return compressed !== null
@@ -197,6 +212,7 @@ export function load_roster_config(): RosterConfig {
   [out, version] = migrate_V4(out, version);
   [out, version] = migrate_V5(out, version);
   [out] = migrate_V6(out, version);
+  // [out] = migrate_V7(out, version);
 
   out = standard_validation(out);
   const actual_out = { ...DEFAULT_ROSTER_CONFIG, ...out };

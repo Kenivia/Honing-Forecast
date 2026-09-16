@@ -88,11 +88,12 @@ function keyed_to_array(
     .map(([key, one_upgrade_input]) => {
       const upgrade = upgrade_map.get(key) ?? null;
 
-      one_upgrade_input.double_balls =
-        upgrade !== null &&
-        !upgrade.is_normal_honing &&
-        ((upgrade.upgrade_index < 2 && express) ||
-          (upgrade.upgrade_index >= 2 && pretend_30_40));
+      one_upgrade_input.double_balls = true;
+
+      // upgrade !== null &&
+      // !upgrade.is_normal_honing &&
+      // ((upgrade.upgrade_index < 2 && express) ||
+      //   (upgrade.upgrade_index >= 2 && pretend_30_40));
       // console.log(one_upgrade_input.double_balls);
       let out = structuredClone(toRaw(one_upgrade_input));
       if (
@@ -339,7 +340,7 @@ export function build_payload(override?: OptimizerOverride): Payload {
       override?.advanced,
     ),
     special_budget: input_column_to_num(active_profile.value.special_budget)[0],
-    express_event: active_profile.value.express_event,
+    express_event: false, //active_profile.value.express_event, temporary overwrite while event doesn't do anything
     tier,
     min_resolution: active_profile.value.min_resolution,
     num_threads: 1,

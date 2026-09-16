@@ -175,7 +175,7 @@ export function grids_to_keyed(
               expanded: false,
               taps_since_last_input: 0,
               used_materials: null,
-              double_balls: false,
+              double_balls: true,
             };
             // console.log("b", all_keyed[key]);
           } else {
@@ -191,7 +191,7 @@ export function grids_to_keyed(
               expanded: false,
               taps_since_last_input: 0,
               used_materials: null,
-              double_balls: false,
+              double_balls: true,
             };
             // console.log("c", all_keyed[key]);
           }

@@ -62,7 +62,7 @@ watch(
 watch(
   [
     () => active_profile.value.express_event,
-    () => active_profile.value.pretend_30_40_x2_grace,
+    // () => active_profile.value.pretend_30_40_x2_grace,
     () => active_profile.value.optimizer_treatment_plan,
     () => active_profile.value.auto_start_optimizer,
     () => active_region.value,

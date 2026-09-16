@@ -6,7 +6,7 @@ import {
   check_all_plus_20,
   check_revert_ilevel_ok,
 } from "@/Utils/Helpers";
-import { computed } from "vue";
+import { computed, ref } from "vue";
 import {
   ADV_COLS,
   ALL_LABELS,
@@ -47,6 +47,7 @@ const tier_label_text = computed(() => {
     ? "Convert to T4.5 Serca"
     : "Revert back to T4";
 });
+const dummy = ref(true);
 </script>
 
 <template>
@@ -107,18 +108,32 @@ const tier_label_text = computed(() => {
           "
         />
         <label class="control-panel-checkbox-row border-0!">
-          <input v-model="active_profile.express_event" type="checkbox" />
-          <span>Express event (June)</span>
+          <input disabled type="checkbox" class="cursor-not-allowed" />
+          <span class="text-(--text-muted)"
+            >September expresses have no honing discount</span
+          >
         </label>
         <label
           v-if="active_profile.tier == 0"
           class="control-panel-checkbox-row border-0!"
         >
-          <input
+          <!-- <input
             v-model="active_profile.pretend_30_40_x2_grace"
             type="checkbox"
+          /> -->
+          <input
+            v-model="dummy"
+            @click="
+              ($event) => {
+                $event.preventDefault();
+              }
+            "
+            type="checkbox"
+            class="cursor-not-allowed"
           />
-          <span>Pretend adv +30, +40 have x2 grace</span>
+          <span class="text-(--text-muted)"
+            >All adv honing now have x2 grace</span
+          >
         </label>
       </div>
     </div>

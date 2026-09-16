@@ -349,7 +349,7 @@ mod tests {
                 start_xp: 0,
                 next_free: false,
                 next_big: false,
-                double_balls: false,
+                double_balls: true,
                 is_30_40: false,
                 grace_juice_target,
                 non_grace_juice_target,
