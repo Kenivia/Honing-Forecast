@@ -36,7 +36,7 @@ const have_both = computed(() => {
     props.char_parsed.result &&
     props.char_parsed.result.pieces.some((x) => x.tier === 1) &&
     props.char_parsed.result.pieces.some(
-      (x) => x.tier === 0 && (x.plus_n < 20 || x.adv < 40),
+      (x) => x.tier === 0 //  && (x.plus_n < 20 || x.adv < 40),
     )
   );
 });
@@ -96,8 +96,7 @@ const link = computed(
 
     <div v-if="have_both" class="flex w-full flex-col flex-wrap">
       <span>
-        You seem to have some Serca gear AND some T4 gear that's not ready to
-        transfer. We cannot calculate the cost of upgrades from different tiers
+        You seem to have both Serca gear and T4 gear. We cannot calculate the cost of upgrades from different tiers
         at the same time.
       </span>
       <span> Pick what tier you want to calculate: </span>

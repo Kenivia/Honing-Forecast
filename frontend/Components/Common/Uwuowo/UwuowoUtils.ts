@@ -147,7 +147,8 @@ export function parse_char(
         const ilevel = parse_locale_int(bottom_row.children[1].textContent);
         let tier: number;
         let adv: number;
-        // console.log(top_row.children);
+        console.log(top_row.children);
+
         if (top_row.children.length > 3 || ilevel < 1730) {
           tier = 0;
           // console.log(top_row.children, top_row.children?.[3]?.textContent);
@@ -156,10 +157,10 @@ export function parse_char(
           );
         } else {
           tier = 1;
-          if (top_row.children[2].textContent === "T0") {
-            plus_n = 25;
-          }
           adv = NaN;
+        }
+        if (top_row.children[2].textContent === "T0") {
+          plus_n = 25;
         }
 
         return { plus_n, ilevel, tier, adv };
