@@ -168,11 +168,13 @@ const spread_multiple = computed(
         @click="
           () => {
             for (const char_name in parsed_chars) {
-              apply(
-                parsed_chars[char_name].result.pieces,
-                false, // assume no forcing t4
-                char_name,
-              );
+              if (typeof parsed_chars[char_name].result !== 'string') {
+                apply(
+                  parsed_chars[char_name].result.pieces,
+                  false, // assume no forcing t4
+                  char_name,
+                );
+              }
               delete parsed_chars[char_name];
             }
             show_popup = false;
