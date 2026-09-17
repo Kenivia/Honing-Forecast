@@ -99,7 +99,7 @@ export async function fetch_and_parse(
 export function parse_roster(
   fetch_request: UwuowoFetchRequest,
   allDivs: HTMLDivElement[],
-  original: any,
+  _original: any,
 ): string | string[] {
   // console.log(allDivs);
   try {
@@ -113,14 +113,14 @@ export function parse_roster(
       return target.textContent.split(" ")[0];
     });
   } catch (e) {
-    return `Parsing roster failed with message ${e}, response: ${original}`;
+    return `Parsing roster failed with message ${e}`;
   }
 }
 
 export function parse_char(
   _fetch_request: UwuowoFetchRequest,
   allDivs: HTMLDivElement[],
-  original: any,
+  _original: any,
 ): string | UwuowoCharResult {
   if (allDivs.findIndex((el) => el.textContent.includes("Missing Data")) >= 0) {
     return `Missing data`;
@@ -147,7 +147,7 @@ export function parse_char(
         const ilevel = parse_locale_int(bottom_row.children[1].textContent);
         let tier: number;
         let adv: number;
-        console.log(top_row.children);
+        // console.log(top_row.children);
 
         if (top_row.children.length > 3 || ilevel < 1730) {
           tier = 0;
@@ -166,7 +166,7 @@ export function parse_char(
         return { plus_n, ilevel, tier, adv };
       });
   } catch (e) {
-    return `Parsing equipment failed with message ${e}, response: ${original}`;
+    return `Parsing equipment failed with message ${e}`;
   }
 
   try {
@@ -195,7 +195,7 @@ export function parse_char(
       .textContent.trim();
     // console.log(container.parentElement.children, achieved_ilevel);
   } catch (e) {
-    return `Parsing class name failed with message ${e}, response: ${original}`;
+    return `Parsing class name failed with message ${e}`;
   }
   return { pieces, class_name, achieved_ilevel };
 }

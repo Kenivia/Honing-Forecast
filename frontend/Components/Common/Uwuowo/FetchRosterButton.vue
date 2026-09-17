@@ -69,8 +69,10 @@ async function click() {
         ),
         status: "",
       };
+
       // doing these one by one to avoid like spamming uwuowo too fast
     }
+    // console.log(parsed_chars.value)
     fetching_chars.value = false;
   }
   // console.log(parsed_chars.value);
@@ -194,7 +196,9 @@ const spread_multiple = computed(
         class=""
       >
         <ConfirmPanel
-          v-if="parsed_char !== undefined"
+          v-if="
+            parsed_char !== undefined && typeof parsed_char.result !== 'string'
+          "
           :region="region"
           :char_name="char_name"
           :apply="
@@ -211,6 +215,7 @@ const spread_multiple = computed(
             }
           "
         />
+        <div v-else>{{ parsed_char.result }}</div>
       </div>
       <span v-if="fetching_chars"> Fetching...</span>
     </div>
