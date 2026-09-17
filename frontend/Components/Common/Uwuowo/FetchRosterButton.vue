@@ -69,7 +69,7 @@ async function click() {
         ),
         status: "",
       };
-
+      // console.log(typeof parsed_chars.value[char].result);
       // doing these one by one to avoid like spamming uwuowo too fast
     }
     // console.log(parsed_chars.value)
@@ -168,6 +168,7 @@ const spread_multiple = computed(
         @click="
           () => {
             for (const char_name in parsed_chars) {
+              // console.log(typeof parsed_chars[char_name].result);
               if (typeof parsed_chars[char_name].result !== 'string') {
                 apply(
                   parsed_chars[char_name].result.pieces,
@@ -217,7 +218,12 @@ const spread_multiple = computed(
             }
           "
         />
-        <div v-else>{{ parsed_char.result }}</div>
+        <div
+          v-else
+          class="w-60 rounded-sm border border-(--border-muted) px-3 py-2"
+        >
+          {{ char_name }} failed: {{ parsed_char.result }}
+        </div>
       </div>
       <span v-if="fetching_chars"> Fetching...</span>
     </div>
