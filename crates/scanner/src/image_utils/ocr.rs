@@ -1,21 +1,16 @@
 use crate::{
-    image_utils::resize::resize_one_config,
+    image_utils::{brightness::normalize_brightness, resize::resize_one_config},
     setup::{OCR_ENGINE, OneIconConfig},
 };
-use fast_image_resize::{Resizer, images::Image};
-use image::{GrayImage, Luma, RgbaImage, imageops::grayscale};
+use fast_image_resize::Resizer;
+use image::{GrayImage, Luma, imageops::grayscale};
 use imageproc::region_labelling::{Connectivity, connected_components};
 use ocrs::ImageSource;
 use rten_imageproc::{PointF, RotatedRect, Vec2};
 use std::collections::{HashMap, HashSet};
 
 fn colorfulness_mask(icon: &mut OneIconConfig, threshold: u8) {
-    let mut img = RgbaImage::from_raw(
-        icon.offset.width as u32,
-        icon.offset.height as u32,
-        std::mem::take(&mut icon.data),
-    )
-    .expect("data does not match declared dimensions");
+    let img = &mut icon.data;
 
     for px in img.pixels_mut() {
         let max = px.0[0].max(px.0[1]).max(px.0[2]);
@@ -31,18 +26,11 @@ fn colorfulness_mask(icon: &mut OneIconConfig, threshold: u8) {
             px.0[2] = 0;
         }
     }
-
-    icon.data = img.into_raw();
 }
 
 fn luminosity_threshold(icon: &mut OneIconConfig, threshold: u8) {
-    let mut img = RgbaImage::from_raw(
-        icon.offset.width as u32,
-        icon.offset.height as u32,
-        std::mem::take(&mut icon.data),
-    )
-    .expect("data does not match declared dimensions");
-    let gray = grayscale(&img);
+    let img = &mut icon.data;
+    let gray = grayscale(img);
 
     for (px, &Luma([luma])) in img.pixels_mut().zip(gray.pixels()) {
         let value = if luma >= threshold { luma } else { 0 };
@@ -50,16 +38,13 @@ fn luminosity_threshold(icon: &mut OneIconConfig, threshold: u8) {
         px.0[1] = value;
         px.0[2] = value;
     }
-
-    icon.data = img.into_raw();
 }
 
 /// Zeroes out the white region reachable from the image border (4-connectivity),
 /// leaving enclosed white holes untouched.
 fn background_flood_fill(icon: &mut OneIconConfig, tolerance: u8) {
     let (w, h) = (icon.offset.width as u32, icon.offset.height as u32);
-    let mut img = RgbaImage::from_raw(w, h, std::mem::take(&mut icon.data))
-        .expect("data does not match declared dimensions");
+    let img = &mut icon.data;
 
     let mask: GrayImage = GrayImage::from_fn(w, h, |x, y| {
         let p = img.get_pixel(x, y);
@@ -87,17 +72,14 @@ fn background_flood_fill(icon: &mut OneIconConfig, tolerance: u8) {
             px.0[2] = 0;
         }
     }
-
-    icon.data = img.into_raw();
 }
 
 /// Blackens connected clusters of pixels above `brightness_threshold` luma
 /// whose size is at or below `size_threshold`.
 fn speck_removal(icon: &mut OneIconConfig, brightness_threshold: u8, size_threshold: usize) {
     let (w, h) = (icon.offset.width as u32, icon.offset.height as u32);
-    let mut img = RgbaImage::from_raw(w, h, std::mem::take(&mut icon.data))
-        .expect("data does not match declared dimensions");
-    let gray = grayscale(&img);
+    let img = &mut icon.data;
+    let gray = grayscale(img);
 
     let mask: GrayImage = GrayImage::from_fn(w, h, |x, y| {
         Luma([if gray.get_pixel(x, y)[0] > brightness_threshold {
@@ -123,11 +105,14 @@ fn speck_removal(icon: &mut OneIconConfig, brightness_threshold: u8, size_thresh
             px.0[2] = 0;
         }
     }
-
-    icon.data = img.into_raw();
 }
 
-pub fn pre_process(mut icon: OneIconConfig, resizer: &mut Resizer) -> OneIconConfig {
+pub fn pre_process(
+    mut icon: OneIconConfig,
+    resizer: &mut Resizer,
+    brightness: f64,
+) -> OneIconConfig {
+    normalize_brightness(&mut icon, brightness);
     colorfulness_mask(&mut icon, 40);
     luminosity_threshold(&mut icon, 100);
     background_flood_fill(&mut icon, 100);
@@ -135,10 +120,11 @@ pub fn pre_process(mut icon: OneIconConfig, resizer: &mut Resizer) -> OneIconCon
     let (scaled_image, scaled_offset) =
         resize_one_config(None, 64.0 / icon.offset.height as f64, resizer, &icon);
     OneIconConfig {
-        data: scaled_image.into_vec(),
+        data: scaled_image,
         name: icon.name,
         offset: scaled_offset,
         tag: icon.tag,
+        normalized: true,
     }
 }
 

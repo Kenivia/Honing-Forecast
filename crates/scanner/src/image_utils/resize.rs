@@ -5,8 +5,14 @@ use crate::image_utils::common::{FloatRectangle, IntegerRectangle, Rectangle};
 use crate::setup::OneIconConfig;
 use fast_image_resize::images::{Image, ImageRef};
 use fast_image_resize::{FilterType, PixelType, ResizeAlg, ResizeOptions, Resizer};
+use image::{ImageBuffer, Rgba, RgbaImage};
 
-pub fn crop_buffer<R: Rectangle>(position: R, resizer: &mut Resizer, buffer: Buffer) -> Image<'_> {
+pub fn crop_buffer<R: Rectangle>(
+    position: R,
+    resizer: &mut Resizer,
+    buffer: Buffer,
+    root: Option<IntegerRectangle>,
+) -> OneIconConfig {
     // let src_image: ImageRef<'_> = self.src_image(); // pre sure initiailizing this is cheap enough so i won't bother skipping it potentially
 
     let mut dst_image: Image<'_> = Image::new(
@@ -44,7 +50,23 @@ pub fn crop_buffer<R: Rectangle>(position: R, resizer: &mut Resizer, buffer: Buf
     // }
 
     // self.actual_downscale(&src_image, &mut dst_image, &position);
-    dst_image
+    OneIconConfig {
+        data: RgbaImage::from_raw(
+            position.to_rounded().width as u32,
+            position.to_rounded().height as u32,
+            dst_image.into_vec(),
+        )
+        .unwrap(),
+        name: "".to_string(),
+        offset: (if root.is_some() {
+            position.get_offset(&root.unwrap())
+        } else {
+            position
+        })
+        .to_rounded(),
+        tag: "".to_string(),
+        normalized: false,
+    }
 }
 
 pub fn resize_one_config<'a>(
@@ -52,7 +74,7 @@ pub fn resize_one_config<'a>(
     scale_factor: f64,
     resizer: &mut Resizer,
     one_config: &'a OneIconConfig,
-) -> (Image<'a>, IntegerRectangle) {
+) -> (ImageBuffer<Rgba<u8>, Vec<u8>>, IntegerRectangle) {
     // let src_image: ImageRef<'_> = self.src_image(); // pre sure initiailizing this is cheap enough so i won't bother skipping it potentially
     let src_w = one_config.offset.width as u32;
     let src_h = one_config.offset.height as u32;
@@ -93,11 +115,17 @@ pub fn resize_one_config<'a>(
     // }
 
     // self.actual_downscale(&src_image, &mut dst_image, &position);
+    let out_pos = dst_position
+        .to_rounded()
+        .with_top_left(one_config.offset.to_float().scaled(scale_factor).top_left);
     (
-        dst_image,
-        dst_position
-            .to_rounded()
-            .with_top_left(one_config.offset.to_float().scaled(scale_factor).top_left),
+        RgbaImage::from_raw(
+            out_pos.width as u32,
+            out_pos.height as u32,
+            dst_image.into_vec(),
+        )
+        .unwrap(),
+        out_pos,
     )
 }
 // }

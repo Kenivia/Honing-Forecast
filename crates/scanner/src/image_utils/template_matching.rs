@@ -1,7 +1,4 @@
-use super::common::{config_to_rgba, image_to_rgba};
 use crate::{image_utils::common::IntegerRectangle, setup::OneIconConfig};
-use fast_image_resize::images::Image;
-use hf_core::my_dbg;
 use image::{GrayImage, imageops::grayscale};
 use realfft::{ComplexToReal, RealFftPlanner, RealToComplex};
 use rustfft::{Fft, FftPlanner, num_complex::Complex32};
@@ -191,13 +188,13 @@ fn parabolic_peak_value(left: f64, center: f64, right: f64) -> f64 {
 
 pub fn template_match(
     template: &OneIconConfig,
-    observed: Image,
+    observed: &OneIconConfig,
 ) -> Option<(IntegerRectangle, f64, f64)> {
-    let template_img = config_to_rgba(template);
-    let observed_img = image_to_rgba(observed);
+    let template_img = &template.data;
+    let observed_img = &observed.data;
 
-    let template_gray: GrayImage = grayscale(&template_img);
-    let observed_gray: GrayImage = grayscale(&observed_img);
+    let template_gray: GrayImage = grayscale(template_img);
+    let observed_gray: GrayImage = grayscale(observed_img);
 
     let tw = template_gray.width() as usize;
     let th = template_gray.height() as usize;

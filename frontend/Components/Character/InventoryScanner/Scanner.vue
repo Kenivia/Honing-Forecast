@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref } from "vue";
+// import { zipSync } from "fflate";
 import {
   getScannerConfig,
   OneIconConfig,
@@ -40,6 +41,74 @@ interface FoundIconRow {
 }
 
 const found_icons = ref<FoundIconRow[]>([]);
+
+// function canvas_to_blob(canvas: HTMLCanvasElement): Promise<Blob> {
+//   return new Promise((resolve, reject) => {
+//     canvas.toBlob((blob) => {
+//       if (blob) {
+//         resolve(blob);
+//       } else {
+//         reject(new Error("Could not convert icon canvas to PNG"));
+//       }
+//     }, "image/png");
+//   });
+// }
+
+// async function download_debug_icons() {
+//   downloading_debug_icons.value = true;
+
+//   try {
+//     const files: Record<string, Uint8Array> = {};
+//     const used_names = new Set<string>();
+
+//     for (const row of debug_table.value) {
+//       for (const [index, icon] of row.debug_icons.entries()) {
+//         const canvas = document.createElement("canvas");
+//         canvas.width = icon.offset.width;
+//         canvas.height = icon.offset.height;
+//         draw_icon(canvas, icon.data, icon.offset.width, icon.offset.height);
+
+//         const blob = await canvas_to_blob(canvas);
+//         const safe_name = `${row.icon_name}-${index + 1}`.replace(
+//           /[^a-zA-Z0-9._-]/g,
+//           "_",
+//         );
+//         let filename = `${safe_name}.png`;
+//         let suffix = 2;
+//         while (used_names.has(filename)) {
+//           filename = `${safe_name}-${suffix}.png`;
+//           suffix += 1;
+//         }
+//         used_names.add(filename);
+//         files[filename] = new Uint8Array(await blob.arrayBuffer());
+//       }
+//     }
+
+//     const archive = zipSync(files);
+//     const url = URL.createObjectURL(
+//       new Blob([archive], { type: "application/zip" }),
+//     );
+//     const link = document.createElement("a");
+//     link.href = url;
+//     link.download = "debug-icons.zip";
+//     document.body.appendChild(link);
+//     link.click();
+//     document.body.removeChild(link);
+//     URL.revokeObjectURL(url);
+//   } finally {
+//     downloading_debug_icons.value = false;
+//   }
+// }
+
+// <button
+//   class="generic-button"
+//   :disabled="downloading_debug_icons"
+//   @click="download_debug_icons"
+// >
+//   {{
+//     downloading_debug_icons ? "Creating ZIP..." : "Download debug icons"
+//   }}
+// </button>
 
 function process_result(scanner_state: ScannerState) {
   scanner_state.debugging = debugging.value;

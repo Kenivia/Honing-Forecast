@@ -49,9 +49,12 @@ fn generate_slot_grid(
 }
 
 pub const MARGIN: f64 = 3.0;
-pub const NUMBER_HEIGHT: f64 = 22.0;
+pub const NUMBER_TOP_MARGIN: f64 = 4.0;
+pub const NUMBER_HEIGHT: f64 = 18.0;
+pub const NUMBER_BOTTOM_MARGIN: f64 = 0.0;
+pub const COMBINED_NUMBER_HEIGHT: f64 = NUMBER_TOP_MARGIN + NUMBER_HEIGHT + NUMBER_BOTTOM_MARGIN;
 pub const ICON_WIDTH: f64 = 61.0;
-pub const ICON_HEIGHT: f64 = 61.0 - NUMBER_HEIGHT;
+pub const ICON_HEIGHT: f64 = 61.0 - COMBINED_NUMBER_HEIGHT;
 
 pub static ALL_SLOT_ADDRESSS: LazyLock<AHashMap<SlotAddress, FloatRectangle>> =
     LazyLock::new(|| {
@@ -60,11 +63,11 @@ pub static ALL_SLOT_ADDRESSS: LazyLock<AHashMap<SlotAddress, FloatRectangle>> =
         map.extend(generate_slot_grid(
             CharInventory,
             0,
-            (16.0 + MARGIN, 105.33333 + MARGIN + NUMBER_HEIGHT),
+            (16.0 + MARGIN, 105.33333 + MARGIN + COMBINED_NUMBER_HEIGHT),
             ICON_WIDTH,
             ICON_HEIGHT,
             2.7777777 + MARGIN * 2.0,
-            2.7777777 + MARGIN * 2.0 + NUMBER_HEIGHT,
+            2.7777777 + MARGIN * 2.0 + COMBINED_NUMBER_HEIGHT,
             10,
             10,
         ));
@@ -72,11 +75,11 @@ pub static ALL_SLOT_ADDRESSS: LazyLock<AHashMap<SlotAddress, FloatRectangle>> =
         map.extend(generate_slot_grid(
             CharInventory,
             1,
-            (16.0 + MARGIN, 105.33333 + MARGIN + NUMBER_HEIGHT),
+            (16.0 + MARGIN, 105.33333 + MARGIN + COMBINED_NUMBER_HEIGHT),
             ICON_WIDTH,
             ICON_HEIGHT,
             2.7777777 + MARGIN * 2.0,
-            2.7777777 + MARGIN * 2.0 + NUMBER_HEIGHT,
+            2.7777777 + MARGIN * 2.0 + COMBINED_NUMBER_HEIGHT,
             5,
             10,
         ));
@@ -84,11 +87,11 @@ pub static ALL_SLOT_ADDRESSS: LazyLock<AHashMap<SlotAddress, FloatRectangle>> =
         map.extend(generate_slot_grid(
             InventoryType::CharStorage,
             1,
-            (16.0 + MARGIN, 105.33333 + MARGIN + NUMBER_HEIGHT),
+            (16.0 + MARGIN, 105.33333 + MARGIN + COMBINED_NUMBER_HEIGHT),
             ICON_WIDTH,
             ICON_HEIGHT,
             2.7777777 + MARGIN * 2.0,
-            2.7777777 + MARGIN * 2.0 + NUMBER_HEIGHT,
+            2.7777777 + MARGIN * 2.0 + COMBINED_NUMBER_HEIGHT,
             10,
             10,
         ));
@@ -96,11 +99,11 @@ pub static ALL_SLOT_ADDRESSS: LazyLock<AHashMap<SlotAddress, FloatRectangle>> =
         map.extend(generate_slot_grid(
             InventoryType::CharStorage,
             2,
-            (16.0 + MARGIN, 105.33333 + MARGIN + NUMBER_HEIGHT),
+            (16.0 + MARGIN, 105.33333 + MARGIN + COMBINED_NUMBER_HEIGHT),
             ICON_WIDTH,
             ICON_HEIGHT,
             2.7777777 + MARGIN * 2.0,
-            2.7777777 + MARGIN * 2.0 + NUMBER_HEIGHT,
+            2.7777777 + MARGIN * 2.0 + COMBINED_NUMBER_HEIGHT,
             10,
             10,
         ));
@@ -108,11 +111,11 @@ pub static ALL_SLOT_ADDRESSS: LazyLock<AHashMap<SlotAddress, FloatRectangle>> =
         map.extend(generate_slot_grid(
             InventoryType::CharStorage,
             3,
-            (16.0 + MARGIN, 105.33333 + MARGIN + NUMBER_HEIGHT),
+            (16.0 + MARGIN, 105.33333 + MARGIN + COMBINED_NUMBER_HEIGHT),
             ICON_WIDTH,
             ICON_HEIGHT,
             2.7777777 + MARGIN * 2.0,
-            2.7777777 + MARGIN * 2.0 + NUMBER_HEIGHT,
+            2.7777777 + MARGIN * 2.0 + COMBINED_NUMBER_HEIGHT,
             10,
             10,
         ));
@@ -120,11 +123,11 @@ pub static ALL_SLOT_ADDRESSS: LazyLock<AHashMap<SlotAddress, FloatRectangle>> =
         map.extend(generate_slot_grid(
             InventoryType::CharStorage,
             4,
-            (16.0 + MARGIN, 105.33333 + MARGIN + NUMBER_HEIGHT),
+            (16.0 + MARGIN, 105.33333 + MARGIN + COMBINED_NUMBER_HEIGHT),
             ICON_WIDTH,
             ICON_HEIGHT,
             2.7777777 + MARGIN * 2.0,
-            2.7777777 + MARGIN * 2.0 + NUMBER_HEIGHT,
+            2.7777777 + MARGIN * 2.0 + COMBINED_NUMBER_HEIGHT,
             10,
             10,
         ));
@@ -132,22 +135,22 @@ pub static ALL_SLOT_ADDRESSS: LazyLock<AHashMap<SlotAddress, FloatRectangle>> =
         map.extend(generate_slot_grid(
             InventoryType::Roster,
             1,
-            (16.0 + MARGIN, 105.33333 + MARGIN + NUMBER_HEIGHT),
+            (16.0 + MARGIN, 105.33333 + MARGIN + COMBINED_NUMBER_HEIGHT),
             ICON_WIDTH,
             ICON_HEIGHT,
             2.7777777 + MARGIN * 2.0,
-            2.7777777 + MARGIN * 2.0 + NUMBER_HEIGHT,
+            2.7777777 + MARGIN * 2.0 + COMBINED_NUMBER_HEIGHT,
             6,
             10,
         ));
         map.extend(generate_slot_grid(
             InventoryType::Roster,
             2,
-            (16.0 + MARGIN, 105.33333 + MARGIN + NUMBER_HEIGHT),
+            (16.0 + MARGIN, 105.33333 + MARGIN + COMBINED_NUMBER_HEIGHT),
             ICON_WIDTH,
             ICON_HEIGHT,
             2.7777777 + MARGIN * 2.0,
-            2.7777777 + MARGIN * 2.0 + NUMBER_HEIGHT,
+            2.7777777 + MARGIN * 2.0 + COMBINED_NUMBER_HEIGHT,
             6,
             10,
         ));
@@ -209,45 +212,31 @@ pub static ALL_PAGE_NUM: LazyLock<AHashMap<InventoryType, Vec<(String, String)>>
     });
 
 pub static ANCHORS_LOOKUP: LazyLock<
-    AHashMap<InventoryType, Vec<(String, Option<FloatRectangle>)>>,
+    AHashMap<InventoryType, Vec<(String, Option<FloatRectangle>, [f64; 3])>>,
 > = LazyLock::new(|| {
-    let mut map = AHashMap::from([(
-        InventoryType::CharInventory,
-        vec![
-            ("Char Inventory Anchor 1".to_string(), None),
-            // ("Char Inventory Anchor 2".to_string(), None),
-            // ("Char Inventory Anchor 3".to_string(), None),
-            // ("Char Inventory Anchor 5".to_string(), None),
-            // ("Char Inventory Anchor 7".to_string(), None),
-            // ("Char Inventory Anchor 8".to_string(), None),
-            // ("Char Inventory Anchor 9".to_string(), None),
-            // ("Char Inventory Anchor 10".to_string(), None),
-            ("Char Inventory Anchor 11".to_string(), None),
-             ("Char Inventory Anchor 12".to_string(), None),
-              ("Char Inventory Anchor 13".to_string(), None),
-               ("Char Inventory Anchor 14".to_string(), None),
-
-
-        ],
-    )]);
-    map.extend(AHashMap::from([(
-        InventoryType::CharStorage,
-        vec![
-            ("Char Inventory Anchor 1".to_string(), None),
-            ("Char Inventory Anchor 2".to_string(), None),
-        ],
-    )]));
-    map.extend(AHashMap::from([(
-        InventoryType::Roster,
-        vec![
-            ("Char Inventory Anchor 1".to_string(), None),
-            ("Char Inventory Anchor 2".to_string(), None),
-        ],
-    )]));
-    map
+    AHashMap::from([
+        (
+            InventoryType::CharInventory,
+            vec![
+                (
+                    "Char Inventory Anchor 1".to_string(),
+                    None,
+                    [3.0494059385e-3, 1.4534001368, -39.6039608],
+                ),
+                (
+                    "Char Inventory Anchor 2".to_string(),
+                    None,
+                    [3.0077361580e-3, 1.2947180137, -25.2848178],
+                ),
+            ],
+        ),
+        (InventoryType::CharStorage, vec![]),
+        (InventoryType::Roster, vec![]),
+    ])
 });
+
 pub const NUMBER_OFFSET: FloatRectangle = FloatRectangle {
-    top_left: (0.0, -NUMBER_HEIGHT),
+    top_left: (0.0, -NUMBER_HEIGHT - NUMBER_BOTTOM_MARGIN),
     width: 61.0,
     height: NUMBER_HEIGHT,
 };

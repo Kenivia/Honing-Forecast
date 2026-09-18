@@ -165,15 +165,15 @@ pub const FULL_RECT_16_9: FloatRectangle = FloatRectangle {
     height: 1440.0,
 };
 
-pub fn config_to_rgba(template: &OneIconConfig) -> RgbaImage {
-    let (template_w, template_h) = (template.offset.width as u32, template.offset.height as u32);
-    RgbaImage::from_raw(template_w, template_h, template.data.clone()).unwrap()
-}
+// pub fn config_to_rgba(template: &OneIconConfig) -> ImageBuffer<Rgba<u8>, &[u8]> {
+//     let (template_w, template_h) = (template.offset.width as u32, template.offset.height as u32);
+//     ImageBuffer::from_raw(template_w, template_h, template.data.as_slice()).unwrap()
+// }
 
-pub fn image_to_rgba(observed: Image) -> RgbaImage {
-    let (observed_w, observed_h) = (observed.width(), observed.height());
-    RgbaImage::from_raw(observed_w, observed_h, observed.into_vec()).unwrap()
-}
+// pub fn image_to_rgba(observed: Image) -> RgbaImage {
+//     let (observed_w, observed_h) = (observed.width(), observed.height());
+//     RgbaImage::from_raw(observed_w, observed_h, observed.into_vec()).unwrap()
+// }
 
 impl ScannerState {
     pub fn src_image(&self) -> ImageRef<'_> {
@@ -195,5 +195,3 @@ impl ScannerState {
 pub fn get_resizer(resizer: &mut Option<Resizer>) -> &mut Resizer {
     resizer.get_or_insert(Resizer::new())
 }
-
-

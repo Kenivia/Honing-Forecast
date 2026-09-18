@@ -1,26 +1,28 @@
-use crate::setup::OneIconConfig;
-use fast_image_resize::images::Image;
+use crate::{image_utils::brightness::normalize_brightness, setup::OneIconConfig};
 use hf_core::my_dbg;
 use image_compare::Similarity;
 
-use super::common::{config_to_rgba, image_to_rgba};
-
-pub fn close_enough(template: &OneIconConfig, observed: Image) -> Option<f64> {
-    if template.offset.width != observed.width() as usize
-        || template.offset.height != observed.height() as usize
+pub fn close_enough(
+    template: &OneIconConfig,
+    observed: &mut OneIconConfig,
+    brightness: f64,
+) -> Option<f64> {
+    if template.offset.width != observed.offset.width
+        || template.offset.height != observed.offset.height
     {
         my_dbg!(
             template.offset.width,
-            observed.width() as usize,
+            observed.offset.width,
             template.offset.height,
-            observed.height() as usize
+            observed.offset.height,
         );
         return None;
     }
 
+    normalize_brightness(observed, brightness);
+
     let similarity: Similarity =
-        image_compare::rgba_hybrid_compare(&config_to_rgba(template), &image_to_rgba(observed))
-            .expect("compare failed");
+        image_compare::rgba_hybrid_compare(&template.data, &observed.data).expect("compare failed");
     // my_dbg!(similarity.score);
     if similarity.score > 0.7 {
         return Some(similarity.score);

@@ -11,6 +11,7 @@ export interface OneIconConfig {
   offset: ScaledPosition;
   data: number[];
   tag: string;
+  normalized: boolean;
 }
 
 export interface Buffer {
@@ -42,9 +43,9 @@ export interface ScannerState {
 let configPromise: Promise<OneIconConfig[]> | null = null;
 export function getScannerConfig() {
   if (!configPromise) {
-    configPromise = load_file("/ScannerConfig.msgpack", true) as Promise<
-      OneIconConfig[]
-    >;
+    configPromise = (
+      load_file("/ScannerConfig.msgpack", true) as Promise<OneIconConfig[]>
+    ).then((configs) => configs.map((item) => ({ ...item, normalized: true })));
   }
   return configPromise;
 }

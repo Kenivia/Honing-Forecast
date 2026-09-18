@@ -7,7 +7,6 @@ use crate::{
 use ahash::AHashMap;
 use fast_image_resize::Resizer;
 use serde::{Deserialize, Serialize};
-use uuid::Uuid;
 
 #[derive(Debug, Serialize, Deserialize, Default)]
 pub struct ScreenInfo {

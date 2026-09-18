@@ -5,6 +5,7 @@ use serde::{Deserialize, Serialize};
 use crate::{
     constants::ANCHORS_LOOKUP,
     image_utils::{
+        brightness::est_ingame_brightness,
         close_enough::close_enough,
         common::{FULL_RECT_16_9, IntegerRectangle, Rectangle, get_resizer},
         resize::crop_buffer,
@@ -53,17 +54,20 @@ impl ScannerState {
                 .enumerate()
                 .filter(|(_, x)| x.is_some())
             {
+                assert!(anchor_info.position_root.is_some());
                 if close_enough(
                     &icon_lookup(
                         &ANCHORS_LOOKUP[inv_type][variant_index].0,
                         self.screen_info.effective_height,
                         get_resizer(&mut self.resizer),
                     ),
-                    crop_buffer(
+                    &mut crop_buffer(
                         found.unwrap().0.to_float(),
                         get_resizer(&mut self.resizer),
                         self.buffer,
+                        anchor_info.position_root,
                     ),
+                    self.screen_info.brightness.unwrap(),
                 )
                 .is_none()
                 {
@@ -94,21 +98,22 @@ impl ScannerState {
             .collect();
 
         for inv_type in missing_anchors {
-            for (variant_index, (variant_name, bound)) in
+            for (variant_index, (variant_name, bound, _)) in
                 ANCHORS_LOOKUP[&inv_type].iter().enumerate()
             {
-                if let Some((found_position, confidence, brightness)) = template_match(
+                if let Some((found_position, confidence, best_mean_f)) = template_match(
                     &icon_lookup(
                         variant_name,
                         self.screen_info.effective_height,
                         get_resizer(&mut self.resizer),
                     ),
-                    crop_buffer(
+                    &crop_buffer(
                         bound
                             .unwrap_or(FULL_RECT_16_9)
                             .scaled(self.screen_info.scale_factor),
                         get_resizer(&mut self.resizer),
                         self.buffer,
+                        None,
                     ),
                 ) {
                     if self.debugging {
@@ -117,15 +122,13 @@ impl ScannerState {
                             (
                                 found_position,
                                 confidence,
-                                brightness,
-                                vec![
-                                    icon_lookup(
-                                        variant_name,
-                                        self.screen_info.effective_height,
-                                        get_resizer(&mut self.resizer),
-                                    )
-                                    .clone(),
-                                ],
+                                best_mean_f,
+                                vec![crop_buffer(
+                                    found_position,
+                                    get_resizer(&mut self.resizer),
+                                    self.buffer,
+                                    None,
+                                )],
                             ),
                         );
                     }
@@ -159,7 +162,8 @@ impl ScannerState {
                                 .offset,
                             ),
                         );
-                        self.screen_info.brightness = Some(brightness);
+                        self.screen_info.brightness =
+                            Some(est_ingame_brightness(best_mean_f, inv_type, variant_name));
                     }
                 }
                 if !self.debugging {

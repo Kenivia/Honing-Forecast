@@ -8,7 +8,7 @@ use crate::{
         resize::crop_buffer,
     },
     scanner_state::{InventoryType, ScannerState},
-    setup::{OneIconConfig, icon_lookup},
+    setup::icon_lookup,
 };
 
 impl ScannerState {
@@ -38,39 +38,33 @@ impl ScannerState {
 
                     let confidence = close_enough(
                         &icon,
-                        crop_buffer(
+                        &mut crop_buffer(
                             icon.offset
                                 .use_root(&self.anchors[inv_type].position_root.unwrap()),
                             get_resizer(&mut self.resizer),
                             self.buffer,
+                            None,
                         ),
+                        self.screen_info.brightness.unwrap(),
                     );
-                    if self.debugging {
-                        self.debug_info.insert(
-                            name.clone(),
-                            (
-                                icon.offset
-                                    .use_root(&self.anchors[inv_type].position_root.unwrap()),
-                                confidence.unwrap_or(-6.9),
-                                6.9,
-                                vec![OneIconConfig {
-                                    data: crop_buffer(
-                                        icon.offset.use_root(
-                                            &self.anchors[inv_type].position_root.unwrap(),
-                                        ),
-                                        get_resizer(&mut self.resizer),
-                                        self.buffer,
-                                    )
-                                    .into_vec(),
-                                    name: name.clone(),
-                                    offset: icon
-                                        .offset
-                                        .use_root(&self.anchors[inv_type].position_root.unwrap()),
-                                    tag: "".to_string(),
-                                }],
-                            ),
-                        );
-                    };
+                    // if self.debugging {
+                    //     self.debug_info.insert(
+                    //         name.clone(),
+                    //         (
+                    //             icon.offset
+                    //                 .use_root(&self.anchors[inv_type].position_root.unwrap()),
+                    //             confidence.unwrap_or(-6.9),
+                    //             6.9,
+                    //             vec![crop_buffer(
+                    //                 icon.offset
+                    //                     .use_root(&self.anchors[inv_type].position_root.unwrap()),
+                    //                 get_resizer(&mut self.resizer),
+                    //                 self.buffer,
+                    //                 None,
+                    //             )],
+                    //         ),
+                    //     );
+                    // };
                     confidence.is_some()
                 };
 

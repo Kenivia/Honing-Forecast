@@ -1,6 +1,7 @@
 use crate::{
     constants::{ALL_SLOT_ADDRESSS, NUMBER_OFFSET},
     image_utils::{
+        brightness::mean_intensity,
         close_enough::close_enough,
         common::{FloatRectangle, IntegerRectangle, Rectangle, get_resizer},
         ocr::{get_number, pre_process},
@@ -39,6 +40,12 @@ impl ScannerState {
         let number_position = NUMBER_OFFSET
             .scaled(self.screen_info.scale_factor)
             .use_root(&position);
+        let mut observed: OneIconConfig = crop_buffer(
+            position,
+            get_resizer(&mut self.resizer),
+            self.buffer,
+            Some(position_root),
+        );
 
         (
             BASE_ICONS
@@ -52,7 +59,8 @@ impl ScannerState {
                             self.screen_info.effective_height,
                             get_resizer(&mut self.resizer),
                         ),
-                        crop_buffer(position, get_resizer(&mut self.resizer), self.buffer), // cloning doesn't seem to exist for Image
+                        &mut observed,
+                        self.screen_info.brightness.unwrap(),
                     );
                     // my_dbg!(icon_name, x);
                     if x.is_some() {
@@ -60,19 +68,13 @@ impl ScannerState {
                     }
                     None
                 }),
-            OneIconConfig {
-                data: crop_buffer(number_position, get_resizer(&mut self.resizer), self.buffer)
-                    .into_vec(),
-                name: "".to_string(),
-                offset: (number_position.get_offset(&position_root)).to_rounded(),
-                tag: "".to_string(),
-            },
-            OneIconConfig {
-                data: crop_buffer(position, get_resizer(&mut self.resizer), self.buffer).into_vec(),
-                name: "".to_string(),
-                offset: (position.get_offset(&position_root)).to_rounded(),
-                tag: "".to_string(),
-            },
+            crop_buffer(
+                number_position,
+                get_resizer(&mut self.resizer),
+                self.buffer,
+                Some(position_root),
+            ),
+            observed,
         )
     }
 
@@ -95,7 +97,13 @@ impl ScannerState {
                 || (self.slot_infos.contains_key(slot_address)
                     && close_enough(
                         &self.slot_infos[slot_address].observed_icon,
-                        crop_buffer(position, get_resizer(&mut self.resizer), self.buffer), // cloning doesn't seem to exist for Image
+                        &mut crop_buffer(
+                            position,
+                            get_resizer(&mut self.resizer),
+                            self.buffer,
+                            None,
+                        ),
+                        self.screen_info.brightness.unwrap(),
                     )
                     .is_none())
             {
@@ -107,21 +115,34 @@ impl ScannerState {
                             .unwrap(),
                     );
                 if self.debugging {
+                    let icon =
+                        crop_buffer(position, get_resizer(&mut self.resizer), self.buffer, None);
+                    let number = crop_buffer(
+                        NUMBER_OFFSET
+                            .scaled(self.screen_info.scale_factor)
+                            .use_root(&position),
+                        get_resizer(&mut self.resizer),
+                        self.buffer,
+                        None,
+                    );
                     self.debug_info.insert(
                         "slot".to_string() + &format!("{:?}", slot_address.pos_in_inv),
                         (
                             position.to_rounded(),
-                            -6.9,
-                            6.9,
-                            vec![observed_icon.clone(), observed_number.clone()],
+                            mean_intensity(&icon),
+                            mean_intensity(&number),
+                            vec![icon, number, observed_icon.clone()],
                         ),
                     );
                 };
                 // my_dbg!("New", slot_address, "icon:", icon_name_score);
                 if icon_name_score.is_some() {
                     // only overwrite if it matches another
-                    let pre_processed =
-                        pre_process(observed_number.clone(), get_resizer(&mut self.resizer));
+                    let pre_processed = pre_process(
+                        observed_number.clone(),
+                        get_resizer(&mut self.resizer),
+                        self.screen_info.brightness.unwrap(),
+                    );
 
                     self.slot_infos.insert(
                         *slot_address,

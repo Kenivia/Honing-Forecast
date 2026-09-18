@@ -1,5 +1,5 @@
 use crate::{
-    constants::NUMBER_HEIGHT,
+    constants::COMBINED_NUMBER_HEIGHT,
     image_utils::{
         common::{FloatRectangle, IntegerRectangle, Rectangle, get_resizer},
         resize::{crop_buffer, resize_one_config},
@@ -23,12 +23,56 @@ pub static BASE_ICONS: LazyLock<RwLock<AHashMap<String, OneIconConfig>>> =
 pub static COMPUTED_ICONS: LazyLock<RwLock<AHashMap<(String, u32), OneIconConfig>>> =
     LazyLock::new(|| RwLock::new(AHashMap::new()));
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+use image::RgbaImage;
+use serde::Serializer;
+
+#[derive(Debug, Clone, Deserialize)]
+#[serde(try_from = "OneIconConfigJs")]
 pub struct OneIconConfig {
-    pub data: Vec<u8>,
+    pub data: RgbaImage,
     pub name: String,
-    pub offset: IntegerRectangle, // naming it like this to distinguish from like actual absolute positions
+    pub offset: IntegerRectangle,
     pub tag: String,
+    pub normalized: bool,
+}
+
+#[derive(Deserialize)]
+struct OneIconConfigJs {
+    data: Vec<u8>,
+    name: String,
+    offset: IntegerRectangle,
+    tag: String,
+    normalized: bool,
+}
+
+impl TryFrom<OneIconConfigJs> for OneIconConfig {
+    type Error = String;
+
+    fn try_from(w: OneIconConfigJs) -> Result<Self, Self::Error> {
+        let (width, height) = (w.offset.width as u32, w.offset.height as u32);
+        let data = RgbaImage::from_raw(width, height, w.data)
+            .ok_or_else(|| format!("'{}': data len doesn't match {width}x{height}", w.name))?;
+        Ok(Self {
+            data,
+            name: w.name,
+            offset: w.offset,
+            tag: w.tag,
+            normalized: w.normalized,
+        })
+    }
+}
+
+impl Serialize for OneIconConfig {
+    fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        use serde::ser::SerializeStruct;
+        let mut s = serializer.serialize_struct("OneIconConfig", 4)?;
+        s.serialize_field("data", self.data.as_raw())?;
+        s.serialize_field("name", &self.name)?;
+        s.serialize_field("offset", &self.offset)?;
+        s.serialize_field("tag", &self.tag)?;
+        s.serialize_field("normalized", &self.normalized)?;
+        s.end()
+    }
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -58,7 +102,7 @@ pub fn icon_lookup(
     let (image, scaled_offset) = resize_one_config(
         if base_icon.tag == "Icon" {
             Some(FloatRectangle {
-                top_left: (0.0, NUMBER_HEIGHT * 64.0 / 61.0),
+                top_left: (0.0, COMBINED_NUMBER_HEIGHT * 64.0 / 61.0),
                 width: 64.0,
                 height: 64.0 - 22.0 * 64.0 / 61.0,
             })
@@ -79,10 +123,16 @@ pub fn icon_lookup(
     write_guard
         .entry(key.clone())
         .or_insert_with(|| OneIconConfig {
-            data: image.into_vec(),
+            data: RgbaImage::from_raw(
+                scaled_offset.width as u32,
+                scaled_offset.height as u32,
+                image.into_vec(),
+            )
+            .unwrap(),
             name: key.0.clone(),
             offset: scaled_offset,
             tag: base_icon.tag.clone(),
+            normalized: true,
         });
 
     RwLockReadGuard::map(RwLockWriteGuard::downgrade(write_guard), move |map| {
@@ -94,20 +144,20 @@ impl ScannerState {
     pub fn setup(&mut self) {
         if self.incoming_new_icons.is_some() {
             for incoming in self.incoming_new_icons.clone().unwrap() {
-                let data: Vec<u8> = crop_buffer(
-                    incoming.position,
-                    get_resizer(&mut self.resizer),
-                    self.buffer,
-                )
-                .into_vec();
-
                 self.config.insert(
                     0,
                     OneIconConfig {
-                        data,
+                        data: crop_buffer(
+                            incoming.position,
+                            get_resizer(&mut self.resizer),
+                            self.buffer,
+                            None,
+                        )
+                        .data,
                         name: incoming.name,
                         offset: incoming.position.to_rounded(),
                         tag: incoming.tag,
+                        normalized: true,
                     },
                 );
             }
