@@ -115,7 +115,7 @@ impl ScannerState {
                             .unwrap(),
                     );
                 if self.debugging {
-                    let icon =
+                    let raw_icon =
                         crop_buffer(position, get_resizer(&mut self.resizer), self.buffer, None);
                     let number = crop_buffer(
                         NUMBER_OFFSET
@@ -125,13 +125,25 @@ impl ScannerState {
                         self.buffer,
                         None,
                     );
+                    let mut out = vec![raw_icon.clone(), observed_icon.clone()];
+                    if let Some((name, _)) = &icon_name_score {
+                        out.push(
+                            icon_lookup(
+                                name,
+                                self.screen_info.effective_height,
+                                get_resizer(&mut self.resizer),
+                            )
+                            .clone(),
+                        );
+                    }
+
                     self.debug_info.insert(
                         "slot".to_string() + &format!("{:?}", slot_address.pos_in_inv),
                         (
                             position.to_rounded(),
-                            mean_intensity(&icon),
+                            mean_intensity(&raw_icon),
                             mean_intensity(&number),
-                            vec![icon, number, observed_icon.clone()],
+                            out,
                         ),
                     );
                 };
