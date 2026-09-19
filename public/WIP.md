@@ -5,34 +5,13 @@ If you'd like to help with any of the below, feel free to get in touch via [Disc
 
 ## NOW: OCR
 
-- ~~add pictures into debug infos~~ ( and other stuff? like log?)
-- put the pre-processing of numbers into rust
-
+- FIGURE OUT WHY THERES A MEMORY LEAK IN READER
+- tooltip yellow testing
 - add some kind of sanity assertion that rectangles are scaled correctly
-
-- ~~re-do the icon stuff to start with pngs~~
-  - ~~figure out the dimensions (28x28 for 720p) for other resolutions~~
-  - ~~get pre-gnenerated (downscaled) bitmaps from like a python script and load via msgpack~~
-  - ~~sort out the alignments & make it resolution agnostic~~
-
-- ~~figure out how to anchor char storage & roster storage~~
-
-- ~~FIGURE OUT HOW TO ANCHOR TOOLTIPS AAAAA~~
-  - ~~ideas:~~
-    - ~~"amount owned" text , problem: can get obstructed by cursor sometimes (bad game) and is language specific~~
-    - ~~"ctrl + click" icons, problem: different height for different materials and potentially different updates~~
-    - ~~"[X" in the top title, problem: doesn't work for x1 stack i think? and different height again, but not that bad? Can corroborate with ctrl click to figure out the whole height to pass into OCR if we go down that route?~~
-    - ~~the actual icon / "tier 4" text, problem: again different height to reach the number, can serve the same purpose as "[X" but better ig~~
-  - JUST LOOK FOR THE COLOR OMG FIVEHEAD
-  
-- normalize brightness at some point somehow
-  - ~~normalize the observed when matching, ~~then normalize all icons
-  - might need to normalize the orbserved prior to pre-processing for OCR
-    - or shift the thresholds? need to try ig
 
 - add blackbars / small anchor detection then downscale CONFIG
   - brightness adjustment here also
-    - maybe look for different sized anchors to detect resolution so that it works with like full screen captures 
+    - maybe look for different sized anchors to detect resolution so that it works with like full screen captures
 - ~~add empty icon ~~ actually all unrecognized icons are functionally empty so there's no point
 - check if things actually work if the worker is down
 - screenshot upload instead of stream at some point
@@ -147,6 +126,29 @@ Predicting market will be SO fun but it kinda needs the better OCR scanning to g
 - find_min_max can probably do with some kind of caching but i can't figure it out rn
 
 ## Done / cancelled
+
+- ~~add pictures into debug infos~~ ( and other stuff? like log?)
+- ~~put the pre-processing of numbers into rust~~
+
+- ~~re-do the icon stuff to start with pngs~~
+  - ~~figure out the dimensions (28x28 for 720p) for other resolutions~~
+  - ~~get pre-gnenerated (downscaled) bitmaps from like a python script and load via msgpack~~
+  - ~~sort out the alignments & make it resolution agnostic~~
+
+- ~~figure out how to anchor char storage & roster storage~~
+
+- ~~FIGURE OUT HOW TO ANCHOR TOOLTIPS AAAAA~~
+  - ~~ideas:~~
+    - ~~"amount owned" text , problem: can get obstructed by cursor sometimes (bad game) and is language specific~~
+    - ~~"ctrl + click" icons, problem: different height for different materials and potentially different updates~~
+    - ~~"[X" in the top title, problem: doesn't work for x1 stack i think? and different height again, but not that bad? Can corroborate with ctrl click to figure out the whole height to pass into OCR if we go down that route?~~
+    - ~~the actual icon / "tier 4" text, problem: again different height to reach the number, can serve the same purpose as "[X" but better ig~~
+  - JUST LOOK FOR THE COLOR OMG FIVEHEAD
+  
+- ~~normalize brightness at some point somehow~~
+  - ~~normalize the observed when matching, ~~then normalize all icons
+  - ~~might need to normalize the orbserved prior to pre-processing for OCR~~
+    - ~~or shift the thresholds? need to try ig~~
 
 ### ~~Now: Frontend cleanup & improvements~~
 

@@ -76,7 +76,7 @@ pub const ALL_ANCHOR_TYPES: [InventoryType; 3] = [
     InventoryType::CharInventory,
 ];
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Default)]
 pub struct ScannerState {
     #[serde(default)]
     pub debugging: bool,

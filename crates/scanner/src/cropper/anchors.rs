@@ -135,23 +135,23 @@ impl ScannerState {
                     if confidence > 0.9 {
                         self.anchors.get_mut(&inv_type).unwrap().positions[variant_index] =
                             Some((found_position, confidence));
-                        my_dbg!(
-                            found_position,
-                            &icon_lookup(
-                                variant_name,
-                                self.screen_info.effective_height,
-                                get_resizer(&mut self.resizer),
-                            )
-                            .offset,
-                            found_position.get_offset(
-                                &icon_lookup(
-                                    variant_name,
-                                    self.screen_info.effective_height,
-                                    get_resizer(&mut self.resizer),
-                                )
-                                .offset
-                            ),
-                        );
+                        // my_dbg!(
+                        //     found_position,
+                        //     &icon_lookup(
+                        //         variant_name,
+                        //         self.screen_info.effective_height,
+                        //         get_resizer(&mut self.resizer),
+                        //     )
+                        //     .offset,
+                        //     found_position.get_offset(
+                        //         &icon_lookup(
+                        //             variant_name,
+                        //             self.screen_info.effective_height,
+                        //             get_resizer(&mut self.resizer),
+                        //         )
+                        //         .offset
+                        //     ),
+                        // );
                         self.anchors.get_mut(&inv_type).unwrap().position_root = Some(
                             found_position.get_offset(
                                 &icon_lookup(

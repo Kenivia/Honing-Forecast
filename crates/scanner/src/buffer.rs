@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 
 //  Box<dyn DoubleEndedIterator<Item = &Support> + '_>
 
-#[derive(Debug, Serialize, Deserialize, Clone, Copy)]
+#[derive(Debug, Serialize, Deserialize, Clone, Copy, Default)]
 pub struct Buffer {
     #[serde(default)]
     pub pointer: Option<usize>,

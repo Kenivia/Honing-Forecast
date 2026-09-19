@@ -33,3 +33,6 @@ junkyard/
 cloudflare/.wrangler/
 
 .env.production
+
+
+scripts/brightness/all icons/*

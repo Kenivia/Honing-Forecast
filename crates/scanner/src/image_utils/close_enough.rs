@@ -10,12 +10,12 @@ pub fn close_enough(
     if template.offset.width != observed.offset.width
         || template.offset.height != observed.offset.height
     {
-        my_dbg!(
-            template.offset.width,
-            observed.offset.width,
-            template.offset.height,
-            observed.offset.height,
-        );
+        // my_dbg!(
+        //     template.offset.width,
+        //     observed.offset.width,
+        //     template.offset.height,
+        //     observed.offset.height,
+        // );
         return None;
     }
 

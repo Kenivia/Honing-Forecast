@@ -11,6 +11,7 @@ import Stream from "./Stream.vue";
 // import { draw_icon } from "./ScannerUIutils.js";
 import IconDisplay from "./IconDisplay.vue";
 import DemoOCR from "./DemoOCR.vue";
+import DemoColorfilter from "./DemoColorfilter.vue";
 
 const config = ref<OneIconConfig[] | null>(null);
 getScannerConfig().then((data) => (config.value = data));
@@ -239,6 +240,7 @@ function process_result(scanner_state: ScannerState) {
       </tbody>
     </table>
   </div>
+  <DemoColorfilter />
   <DemoOCR />
 </template>
 
