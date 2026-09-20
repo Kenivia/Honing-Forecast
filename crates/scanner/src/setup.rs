@@ -1,6 +1,7 @@
 use crate::{
     constants::COMBINED_NUMBER_HEIGHT,
     image_utils::{
+        brightness::normalize_brightness,
         common::{FloatRectangle, IntegerRectangle, Rectangle, get_resizer},
         resize::{crop_buffer, resize_one_config},
     },
@@ -80,6 +81,7 @@ pub struct IncomingNewIcon {
     pub position: FloatRectangle,
     pub name: String,
     pub tag: String,
+    pub brightness: f64,
 }
 
 pub fn icon_lookup(
@@ -144,16 +146,17 @@ impl ScannerState {
     pub fn setup(&mut self) {
         if self.incoming_new_icons.is_some() {
             for incoming in self.incoming_new_icons.clone().unwrap() {
+                let mut observed = crop_buffer(
+                    incoming.position,
+                    get_resizer(&mut self.resizer),
+                    self.buffer,
+                    None,
+                );
+                normalize_brightness(&mut observed, 70.0);
                 self.config.insert(
                     0,
                     OneIconConfig {
-                        data: crop_buffer(
-                            incoming.position,
-                            get_resizer(&mut self.resizer),
-                            self.buffer,
-                            None,
-                        )
-                        .data,
+                        data: observed.data,
                         name: incoming.name,
                         offset: incoming.position.to_rounded(),
                         tag: incoming.tag,

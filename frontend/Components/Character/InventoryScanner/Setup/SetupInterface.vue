@@ -282,6 +282,7 @@ getScannerConfig().then((data) => (config.value = data));
 
 const setup_name = ref("");
 const setup_tag = ref("");
+const setup_brightness = ref(50);
 const top_left_x = ref(0);
 const top_left_y = ref(0);
 const width = ref(100);
@@ -312,6 +313,7 @@ function confirm_setup() {
       },
       name: setup_name.value,
       tag: setup_tag.value,
+      brightness: setup_brightness.value,
     },
   ];
 
@@ -375,6 +377,7 @@ function update_icon_position(index: number, position: ScaledPosition) {
 function import_position(icon: OneIconConfig) {
   setup_name.value = icon.name;
   setup_tag.value = icon.tag;
+  setup_brightness.value = 50;
   top_left_x.value = icon.offset.top_left[0];
   top_left_y.value = icon.offset.top_left[1];
   width.value = icon.offset.width;
@@ -438,10 +441,10 @@ function import_position(icon: OneIconConfig) {
         />
       </label>
       <label class="flex flex-col gap-1 text-xs">
-        Resolution
+        brightness
         <input
-          v-model="setup_tag"
-          type="text"
+          v-model="setup_brightness"
+          type="number"
           class="rounded bg-zinc-800 px-2 py-1 text-sm"
         />
       </label>

@@ -24,7 +24,7 @@ pub fn close_enough(
     let similarity: Similarity =
         image_compare::rgba_hybrid_compare(&template.data, &observed.data).expect("compare failed");
     // my_dbg!(similarity.score);
-    if similarity.score > 0.7 {
+    if similarity.score > 0.8 {
         return Some(similarity.score);
     } else {
         return None;
