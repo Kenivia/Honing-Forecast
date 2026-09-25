@@ -142,7 +142,7 @@ impl ScannerState {
                         (
                             position.to_rounded(),
                             mean_intensity(&raw_icon),
-                            mean_intensity(&number),
+                            icon_name_score.clone().unwrap_or_default().1,
                             out,
                         ),
                     );

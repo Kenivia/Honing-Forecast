@@ -122,7 +122,7 @@ impl ScannerState {
                             (
                                 found_position,
                                 confidence,
-                                best_mean_f,
+                                est_ingame_brightness(best_mean_f, inv_type, variant_name),
                                 vec![crop_buffer(
                                     found_position,
                                     get_resizer(&mut self.resizer),

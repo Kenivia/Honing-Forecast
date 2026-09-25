@@ -102,7 +102,7 @@ pub fn resize_one_config<'a>(
             &src_image,
             &mut dst_image,
             &ResizeOptions::new()
-                .resize_alg(ResizeAlg::Interpolation(FilterType::Lanczos3))
+                .resize_alg(ResizeAlg::Interpolation(FilterType::Bilinear))
                 .use_alpha(false) // doesn't really matter cos we should only ever be cropping observed screeen capture
                 .crop(
                     src_position.top_left().0,
