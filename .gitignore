@@ -36,3 +36,7 @@ cloudflare/.wrangler/
 
 
 scripts/brightness/all icons/*
+
+test-results/
+playwright-report/
+.playwright-mcp/

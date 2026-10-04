@@ -159,6 +159,13 @@ function cell_class(status: UpgradeStatus): string {
   return "";
 }
 
+// accessible name, e.g. "Helmet +15: Want"
+function cell_label(row: number, col: number): string {
+  const level = (col + 1) * (is_normal ? 1 : 10);
+  const status = cell_class(relevant_grid.value[row][col]) || "NotYet";
+  return `${PIECE_NAMES[row]} +${level}: ${status}`;
+}
+
 function cell_cursor(status: UpgradeStatus): string {
   return status === UpgradeStatus.FetchedDone &&
     active_profile.value.lock_fetched_done
@@ -168,7 +175,11 @@ function cell_cursor(status: UpgradeStatus): string {
 </script>
 
 <template>
-  <div class="fler-row flex flex-nowrap px-4 py-2">
+  <div
+    class="fler-row flex flex-nowrap px-4 py-2"
+    role="group"
+    :aria-label="is_normal ? 'Normal honing' : 'Advanced honing'"
+  >
     <div class="w-27.5">
       <div class="flex h-7 items-center justify-end" style="font-size: x-small">
         Toggle whole column ->
@@ -214,6 +225,7 @@ function cell_cursor(status: UpgradeStatus): string {
           :key="`${grid_type}-${row}-${col}`"
           class="cell"
           :class="cell_class(relevant_grid[row - 1][col - 1])"
+          :aria-label="cell_label(row - 1, col - 1)"
           :style="{ cursor: cell_cursor(relevant_grid[row - 1][col - 1]) }"
           @click="change_one_and_update_keyed(row - 1, col - 1)"
         >
@@ -241,6 +253,7 @@ function cell_cursor(status: UpgradeStatus): string {
           :key="`${grid_type}-${NUM_PIECES}-${col}`"
           class="cell"
           :class="cell_class(relevant_grid[NUM_PIECES - 1][col - 1])"
+          :aria-label="cell_label(NUM_PIECES - 1, col - 1)"
           :style="{
             cursor: cell_cursor(relevant_grid[NUM_PIECES - 1][col - 1]),
           }"

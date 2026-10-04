@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "pw-chrome": {
+      "command": "node",
+      "args": ["node_modules/@playwright/mcp/cli.js", "--browser", "chrome"]
+    },
+    "pw-firefox": {
+      "command": "node",
+      "args": ["node_modules/@playwright/mcp/cli.js", "--browser", "firefox"]
+    }
+  }
+}

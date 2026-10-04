@@ -23,6 +23,7 @@ const props = defineProps<{
   justify_left?: boolean;
   disabled?: boolean;
   bound_label?: boolean;
+  aria_name?: string;
 }>();
 
 const actual_input_width = computed(() => `${props.input_width ?? 100}px`);
@@ -60,6 +61,7 @@ watch(source_value, (val) => {
       v-if="!hide_tick && label && !Array.isArray(input_column)"
       type="checkbox"
       v-model="(input_column as InputColumn).enabled[row]"
+      :aria-label="`${aria_name} enabled`"
       @change="callback"
     />
     <label
@@ -89,6 +91,7 @@ watch(source_value, (val) => {
       v-if="!Array.isArray(input_column)"
       type="text"
       class="generic-input"
+      :aria-label="aria_name"
       :style="{
         color: resolved_color,
         width: actual_input_width,

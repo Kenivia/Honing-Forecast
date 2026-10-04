@@ -5,6 +5,10 @@
   "scripts": {
     "dev": "pnpm run wasm && vite",
     "wasm": "wasm-pack build crates/wasm --release --target web",
+    "e2e": "playwright test",
+    "e2e:ui": "playwright test --ui",
+    "browse": "node scripts/browser/browse.mjs",
+    "browsers": "playwright install chromium firefox && playwright-mcp install-browser firefox",
     "test": "cargo test -p hf-core --profile release --no-default-features --features active_version,run_tests -- --no-capture",
     "change-log": "python ./scripts/change_log_helper/build.py",
     "no-test-build": "pnpm run wasm && vite build",
@@ -33,6 +37,8 @@
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
+    "@playwright/mcp": "^0.0.83",
+    "@playwright/test": "^1.63.0",
     "@types/dom-mediacapture-transform": "^0.1.11",
     "@types/node": "^24.13.2",
     "@typescript-eslint/eslint-plugin": "^8.62.0",

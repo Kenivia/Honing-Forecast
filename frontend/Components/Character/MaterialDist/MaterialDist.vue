@@ -298,6 +298,7 @@ const is924Narrow = useMediaIsNarrow(924); // this turns out to be the width whe
           <span class="w-25 text-left text-(--bound)">Bound Mats</span>
         </div>
         <select
+          aria-label="Chance column"
           class="selector -mr-4! ml-4!"
           v-model="selected_histogram_treatment"
           :style="{
@@ -344,6 +345,8 @@ const is924Narrow = useMediaIsNarrow(924); // this turns out to be the width whe
           v-for="{ label, row } in visibleRows"
           :key="`graph-${label}`"
           class="mats-row"
+          role="group"
+          :aria-label="label"
           :class="{
             disabled:
               !active_profile.bound_budgets[active_profile.tier].enabled[row],
@@ -353,6 +356,7 @@ const is924Narrow = useMediaIsNarrow(924); // this turns out to be the width whe
             :input_column="active_profile.bound_budgets[active_profile.tier]"
             :row="row"
             :label="label"
+            aria_name="Bound owned"
             :input_color="'--bound'"
             :setter="
               (val) => {
@@ -415,6 +419,7 @@ const is924Narrow = useMediaIsNarrow(924); // this turns out to be the width whe
               active_profile.special_budget.keys[0]
             "
             :hide_tick="true"
+            aria_name="Special leaps owned"
             :callback="() => start_all_workers()"
           ></MaterialCell>
           <span

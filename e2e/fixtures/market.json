@@ -1,0 +1,276 @@
+{
+ "nae": [
+  {
+   "item_slug": "superior-abidos-fusion-material",
+   "price": 138,
+   "timestamp": 1791042901
+  },
+  {
+   "item_slug": "destiny-crystallized-destruction-stone",
+   "price": 3100,
+   "timestamp": 1791042901
+  },
+  {
+   "item_slug": "destiny-crystallized-guardian-stone",
+   "price": 393,
+   "timestamp": 1791042901
+  },
+  {
+   "item_slug": "great-destiny-leapstone",
+   "price": 56,
+   "timestamp": 1791042901
+  },
+  {
+   "item_slug": "destiny-guardian-stone",
+   "price": 68,
+   "timestamp": 1791042901
+  },
+  {
+   "item_slug": "destiny-destruction-stone",
+   "price": 650,
+   "timestamp": 1791042901
+  },
+  {
+   "item_slug": "destiny-shard-pouch-s",
+   "price": 197,
+   "timestamp": 1791042901
+  },
+  {
+   "item_slug": "destiny-shard-pouch-m",
+   "price": 549,
+   "timestamp": 1791042901
+  },
+  {
+   "item_slug": "destiny-shard-pouch-l",
+   "price": 540,
+   "timestamp": 1791042901
+  },
+  {
+   "item_slug": "destiny-leapstone",
+   "price": 16,
+   "timestamp": 1791042901
+  },
+  {
+   "item_slug": "abidos-fusion-material",
+   "price": 100,
+   "timestamp": 1791042901
+  },
+  {
+   "item_slug": "glaciers-breath",
+   "price": 456,
+   "timestamp": 1791042901
+  },
+  {
+   "item_slug": "lavas-breath",
+   "price": 444,
+   "timestamp": 1791042901
+  },
+  {
+   "item_slug": "artisans-metallurgy-level-1",
+   "price": 150,
+   "timestamp": 1791042901
+  },
+  {
+   "item_slug": "artisans-tailoring-level-1",
+   "price": 98,
+   "timestamp": 1791042901
+  },
+  {
+   "item_slug": "artisans-metallurgy-level-2",
+   "price": 30,
+   "timestamp": 1791042901
+  },
+  {
+   "item_slug": "artisans-tailoring-level-2",
+   "price": 8,
+   "timestamp": 1791042901
+  },
+  {
+   "item_slug": "artisans-metallurgy-level-3",
+   "price": 480,
+   "timestamp": 1791042901
+  },
+  {
+   "item_slug": "artisans-tailoring-level-3",
+   "price": 510,
+   "timestamp": 1791042901
+  },
+  {
+   "item_slug": "artisans-metallurgy-level-4",
+   "price": 333,
+   "timestamp": 1791042901
+  },
+  {
+   "item_slug": "artisans-tailoring-level-4",
+   "price": 479,
+   "timestamp": 1791042901
+  },
+  {
+   "item_slug": "metallurgy-hellfire-11-14",
+   "price": 700,
+   "timestamp": 1791042901
+  },
+  {
+   "item_slug": "tailoring-hellfire-11-14",
+   "price": 595,
+   "timestamp": 1791042901
+  },
+  {
+   "item_slug": "metallurgy-hellfire-15-18",
+   "price": 12,
+   "timestamp": 1791042901
+  },
+  {
+   "item_slug": "tailoring-hellfire-15-18",
+   "price": 8,
+   "timestamp": 1791042901
+  },
+  {
+   "item_slug": "metallurgy-hellfire-19-20",
+   "price": 2298,
+   "timestamp": 1791042901
+  },
+  {
+   "item_slug": "tailoring-hellfire-19-20",
+   "price": 1110,
+   "timestamp": 1791042901
+  }
+ ],
+ "euc": [
+  {
+   "item_slug": "superior-abidos-fusion-material",
+   "price": 141,
+   "timestamp": 1791042369
+  },
+  {
+   "item_slug": "destiny-crystallized-destruction-stone",
+   "price": 2494,
+   "timestamp": 1791042369
+  },
+  {
+   "item_slug": "destiny-crystallized-guardian-stone",
+   "price": 298,
+   "timestamp": 1791042369
+  },
+  {
+   "item_slug": "great-destiny-leapstone",
+   "price": 21,
+   "timestamp": 1791042369
+  },
+  {
+   "item_slug": "destiny-guardian-stone",
+   "price": 60,
+   "timestamp": 1791042369
+  },
+  {
+   "item_slug": "destiny-destruction-stone",
+   "price": 505,
+   "timestamp": 1791042369
+  },
+  {
+   "item_slug": "destiny-shard-pouch-s",
+   "price": 166,
+   "timestamp": 1791042369
+  },
+  {
+   "item_slug": "destiny-shard-pouch-m",
+   "price": 404,
+   "timestamp": 1791042369
+  },
+  {
+   "item_slug": "destiny-shard-pouch-l",
+   "price": 348,
+   "timestamp": 1791042369
+  },
+  {
+   "item_slug": "destiny-leapstone",
+   "price": 12,
+   "timestamp": 1791042369
+  },
+  {
+   "item_slug": "abidos-fusion-material",
+   "price": 104,
+   "timestamp": 1791042369
+  },
+  {
+   "item_slug": "glaciers-breath",
+   "price": 391,
+   "timestamp": 1791042369
+  },
+  {
+   "item_slug": "lavas-breath",
+   "price": 395,
+   "timestamp": 1791042369
+  },
+  {
+   "item_slug": "artisans-metallurgy-level-1",
+   "price": 77,
+   "timestamp": 1791042369
+  },
+  {
+   "item_slug": "artisans-tailoring-level-1",
+   "price": 55,
+   "timestamp": 1791042369
+  },
+  {
+   "item_slug": "artisans-metallurgy-level-2",
+   "price": 40,
+   "timestamp": 1791042369
+  },
+  {
+   "item_slug": "artisans-tailoring-level-2",
+   "price": 16,
+   "timestamp": 1791042369
+  },
+  {
+   "item_slug": "artisans-metallurgy-level-3",
+   "price": 708,
+   "timestamp": 1791042369
+  },
+  {
+   "item_slug": "artisans-tailoring-level-3",
+   "price": 569,
+   "timestamp": 1791042369
+  },
+  {
+   "item_slug": "artisans-metallurgy-level-4",
+   "price": 379,
+   "timestamp": 1791042369
+  },
+  {
+   "item_slug": "artisans-tailoring-level-4",
+   "price": 600,
+   "timestamp": 1791042369
+  },
+  {
+   "item_slug": "metallurgy-hellfire-11-14",
+   "price": 475,
+   "timestamp": 1791042369
+  },
+  {
+   "item_slug": "tailoring-hellfire-11-14",
+   "price": 789,
+   "timestamp": 1791042369
+  },
+  {
+   "item_slug": "metallurgy-hellfire-15-18",
+   "price": 18,
+   "timestamp": 1791042369
+  },
+  {
+   "item_slug": "tailoring-hellfire-15-18",
+   "price": 1,
+   "timestamp": 1791042369
+  },
+  {
+   "item_slug": "metallurgy-hellfire-19-20",
+   "price": 2180,
+   "timestamp": 1791042369
+  },
+  {
+   "item_slug": "tailoring-hellfire-19-20",
+   "price": 1000,
+   "timestamp": 1791042369
+  }
+ ]
+}

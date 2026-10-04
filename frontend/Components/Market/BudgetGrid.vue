@@ -83,6 +83,8 @@ function price_suffix(
       v-for="grid in grids"
       :key="grid.tier"
       class="card-shell outer-grid"
+      role="group"
+      :aria-label="grid.tier == 0 ? 'T4 materials' : 'Serca materials'"
       :style="{
         '--grid-cols': grid.grid_template_columns,
       }"
@@ -103,11 +105,14 @@ function price_suffix(
           v-for="{ label, col, row } in grid.rows"
           :key="`roster-input-${grid.tier}-${row === 3 ? 'shard' + roster_config.shard_infos[selected_region].selected.toLocaleString() : label}`"
           class="mats-row"
+          role="group"
+          :aria-label="label"
         >
           <MaterialCell
             :input_column="selected_roster_mats_owned[col]"
             :row="row"
             :label="label"
+            aria_name="Roster bound owned"
             :setter="
               (val) => {
                 selected_roster_mats_owned[col].data[row] = val;
@@ -125,6 +130,7 @@ function price_suffix(
               }
             "
             input_color="var(--tradable)"
+            aria_name="Tradable owned"
             :input_width="100"
           />
           <div class="flex flex-row items-center">
@@ -147,6 +153,7 @@ function price_suffix(
                 }
               "
               :suffix="price_suffix(label, row)"
+              aria_name="Market price"
               :input_width="70"
               input_color="var(--text-muted)"
               :justify_left="true"
