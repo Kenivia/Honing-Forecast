@@ -10,7 +10,7 @@ Code: `crates/scanner` (image processing), `frontend/Components/Character/Invent
 2. **Frame transfer**. For each operation the main thread reads one frame and transfers it to the worker along with the operation. The worker copies its pixels directly into a buffer inside wasm memory, closes the frame, then calls Rust.
 3. **Locate the window** (Rust). Anchor templates are searched across the whole frame, wherever the game sits in it. A hit fixes the inventory window's origin and gives a brightness estimate. On later frames anchors are only re-checked at their known position.
 4. **Detect the page** (Rust). Page-tab templates at fixed offsets from the origin say which inventory page is showing.
-5. **Read slots** (Rust). Each slot of the active page sits at a fixed offset. A slot whose pixels have not changed is skipped; otherwise its crop is compared against the icon templates, and on a match the number strip is OCR'd.
+5. **Read slots** (Rust). Each slot of the active page sits at a fixed offset. A slot whose pixels have not changed is skipped; otherwise its crop is compared against every icon template, the closest one that passes wins, and the number strip is OCR'd.
 6. **Loop**. Each result immediately triggers the next frame.
 
 Full-frame search is the expensive step and uses FFT cross-correlation. Everything after the anchor is a cheap fixed-position comparison.
@@ -37,6 +37,8 @@ Full-frame search is the expensive step and uses FFT cross-correlation. Everythi
 - **UI height** is the height of the 16:9 (or 21:9) area the game renders into: the smaller of the game height and width x 9/16 (or 9/21). The scale factor is that height, rounded, over 1440. Rust derives both on every scan call from the three values the frontend sends.
 - **Changing the resolution restarts the scanner** like a character change does (worker terminated, state cleared, reserve again), because cached templates and remembered slots are scale-specific. The results table keeps its old rows until the first new result.
 - **Pixels are RGBA** throughout, on both sides of the boundary.
+- **Fixed-position comparison is a colour distance, not a structural score.** It is the mean absolute RGB difference, taken as the best of the nine one-pixel shifts, with one pass limit shared by anchors, page tabs and slots. Structural similarity was dropped: a half-pixel grid error was enough to fail it, and it scored colour variants of one icon (Blue and Serca Blue) almost alike. Because variants can both pass, slots take the best icon, never the first.
+- **Slot pitch was measured on a 1440p capture** (69.75 px). A pitch error accumulates across the grid, so re-measure against a native capture rather than nudging it by eye.
 - **Fixed-position comparison needs identical dimensions.** The template path and the crop path must round scaled sizes the same way, or comparisons quietly return no match.
 - **The frame buffer is sized once**, at capture start, and freed when the worker is terminated. The explicit dealloc operation still exists but the frontend no longer calls it. JS must rebuild its view of wasm memory every frame, since memory growth invalidates old views.
 - **Brightness is normalised.** The in-game brightness setting changes pixel values, so observed crops are mapped to a fixed reference brightness before comparison. Stored templates are already normalised. See `Config and calibration.md`.
@@ -50,7 +52,8 @@ Working: capture, frame transfer, character-inventory anchor detection, brightne
 Not done yet:
 
 - Results are not written into the calculator's material inputs. Output stops at the debug tables.
-- Scales other than 1080p are lightly tested. 1440p and downscaled copies of it locate the window and line up the slot grid, but recognise fewer icons than 1080p does; matching thresholds have not been tuned per scale.
+- Only 1080p and 1440p have been tested on native captures. Other scales were tested on resampled 1440p images: icons are recognised, but the quantity OCR degrades as the scale drops.
+- Quantity OCR still misreads or returns nothing for some slots at every scale.
 - A crop that falls outside the frame (inventory window partly off the capture) still panics.
 - Only the character inventory has anchors. Storage and roster storage are placeholders.
 - Tooltip detection and bound-versus-tradable detection are not implemented.

@@ -63,11 +63,11 @@ pub static ALL_SLOT_ADDRESSS: LazyLock<AHashMap<SlotAddress, FloatRectangle>> =
         map.extend(generate_slot_grid(
             CharInventory,
             0,
-            (16.0 + MARGIN, 105.33333 + MARGIN + COMBINED_NUMBER_HEIGHT),
+            (16.0 + MARGIN, 105.25 + MARGIN + COMBINED_NUMBER_HEIGHT),
             ICON_WIDTH,
             ICON_HEIGHT,
-            2.7777777 + MARGIN * 2.0,
-            2.7777777 + MARGIN * 2.0 + COMBINED_NUMBER_HEIGHT,
+            2.75 + MARGIN * 2.0,
+            2.75 + MARGIN * 2.0 + COMBINED_NUMBER_HEIGHT,
             10,
             10,
         ));
@@ -75,11 +75,11 @@ pub static ALL_SLOT_ADDRESSS: LazyLock<AHashMap<SlotAddress, FloatRectangle>> =
         map.extend(generate_slot_grid(
             CharInventory,
             1,
-            (16.0 + MARGIN, 105.33333 + MARGIN + COMBINED_NUMBER_HEIGHT),
+            (16.0 + MARGIN, 105.25 + MARGIN + COMBINED_NUMBER_HEIGHT),
             ICON_WIDTH,
             ICON_HEIGHT,
-            2.7777777 + MARGIN * 2.0,
-            2.7777777 + MARGIN * 2.0 + COMBINED_NUMBER_HEIGHT,
+            2.75 + MARGIN * 2.0,
+            2.75 + MARGIN * 2.0 + COMBINED_NUMBER_HEIGHT,
             5,
             10,
         ));
@@ -87,11 +87,11 @@ pub static ALL_SLOT_ADDRESSS: LazyLock<AHashMap<SlotAddress, FloatRectangle>> =
         map.extend(generate_slot_grid(
             InventoryType::CharStorage,
             1,
-            (16.0 + MARGIN, 105.33333 + MARGIN + COMBINED_NUMBER_HEIGHT),
+            (16.0 + MARGIN, 105.25 + MARGIN + COMBINED_NUMBER_HEIGHT),
             ICON_WIDTH,
             ICON_HEIGHT,
-            2.7777777 + MARGIN * 2.0,
-            2.7777777 + MARGIN * 2.0 + COMBINED_NUMBER_HEIGHT,
+            2.75 + MARGIN * 2.0,
+            2.75 + MARGIN * 2.0 + COMBINED_NUMBER_HEIGHT,
             10,
             10,
         ));
@@ -99,11 +99,11 @@ pub static ALL_SLOT_ADDRESSS: LazyLock<AHashMap<SlotAddress, FloatRectangle>> =
         map.extend(generate_slot_grid(
             InventoryType::CharStorage,
             2,
-            (16.0 + MARGIN, 105.33333 + MARGIN + COMBINED_NUMBER_HEIGHT),
+            (16.0 + MARGIN, 105.25 + MARGIN + COMBINED_NUMBER_HEIGHT),
             ICON_WIDTH,
             ICON_HEIGHT,
-            2.7777777 + MARGIN * 2.0,
-            2.7777777 + MARGIN * 2.0 + COMBINED_NUMBER_HEIGHT,
+            2.75 + MARGIN * 2.0,
+            2.75 + MARGIN * 2.0 + COMBINED_NUMBER_HEIGHT,
             10,
             10,
         ));
@@ -111,11 +111,11 @@ pub static ALL_SLOT_ADDRESSS: LazyLock<AHashMap<SlotAddress, FloatRectangle>> =
         map.extend(generate_slot_grid(
             InventoryType::CharStorage,
             3,
-            (16.0 + MARGIN, 105.33333 + MARGIN + COMBINED_NUMBER_HEIGHT),
+            (16.0 + MARGIN, 105.25 + MARGIN + COMBINED_NUMBER_HEIGHT),
             ICON_WIDTH,
             ICON_HEIGHT,
-            2.7777777 + MARGIN * 2.0,
-            2.7777777 + MARGIN * 2.0 + COMBINED_NUMBER_HEIGHT,
+            2.75 + MARGIN * 2.0,
+            2.75 + MARGIN * 2.0 + COMBINED_NUMBER_HEIGHT,
             10,
             10,
         ));
@@ -123,11 +123,11 @@ pub static ALL_SLOT_ADDRESSS: LazyLock<AHashMap<SlotAddress, FloatRectangle>> =
         map.extend(generate_slot_grid(
             InventoryType::CharStorage,
             4,
-            (16.0 + MARGIN, 105.33333 + MARGIN + COMBINED_NUMBER_HEIGHT),
+            (16.0 + MARGIN, 105.25 + MARGIN + COMBINED_NUMBER_HEIGHT),
             ICON_WIDTH,
             ICON_HEIGHT,
-            2.7777777 + MARGIN * 2.0,
-            2.7777777 + MARGIN * 2.0 + COMBINED_NUMBER_HEIGHT,
+            2.75 + MARGIN * 2.0,
+            2.75 + MARGIN * 2.0 + COMBINED_NUMBER_HEIGHT,
             10,
             10,
         ));
@@ -135,22 +135,22 @@ pub static ALL_SLOT_ADDRESSS: LazyLock<AHashMap<SlotAddress, FloatRectangle>> =
         map.extend(generate_slot_grid(
             InventoryType::Roster,
             1,
-            (16.0 + MARGIN, 105.33333 + MARGIN + COMBINED_NUMBER_HEIGHT),
+            (16.0 + MARGIN, 105.25 + MARGIN + COMBINED_NUMBER_HEIGHT),
             ICON_WIDTH,
             ICON_HEIGHT,
-            2.7777777 + MARGIN * 2.0,
-            2.7777777 + MARGIN * 2.0 + COMBINED_NUMBER_HEIGHT,
+            2.75 + MARGIN * 2.0,
+            2.75 + MARGIN * 2.0 + COMBINED_NUMBER_HEIGHT,
             6,
             10,
         ));
         map.extend(generate_slot_grid(
             InventoryType::Roster,
             2,
-            (16.0 + MARGIN, 105.33333 + MARGIN + COMBINED_NUMBER_HEIGHT),
+            (16.0 + MARGIN, 105.25 + MARGIN + COMBINED_NUMBER_HEIGHT),
             ICON_WIDTH,
             ICON_HEIGHT,
-            2.7777777 + MARGIN * 2.0,
-            2.7777777 + MARGIN * 2.0 + COMBINED_NUMBER_HEIGHT,
+            2.75 + MARGIN * 2.0,
+            2.75 + MARGIN * 2.0 + COMBINED_NUMBER_HEIGHT,
             6,
             10,
         ));

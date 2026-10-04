@@ -52,8 +52,9 @@ impl ScannerState {
                 .read()
                 .iter()
                 .filter(|(_, one_icon)| one_icon.tag == "Icon")
-                .find_map(|(icon_name, _)| {
-                    let x = close_enough(
+                // color variants of one icon can both pass, so take the best
+                .filter_map(|(icon_name, _)| {
+                    close_enough(
                         &icon_lookup(
                             icon_name,
                             self.screen_info.effective_height,
@@ -61,13 +62,10 @@ impl ScannerState {
                         ),
                         &mut observed,
                         self.screen_info.brightness.unwrap(),
-                    );
-                    // my_dbg!(icon_name, x);
-                    if x.is_some() {
-                        return Some((icon_name.clone(), x.unwrap()));
-                    }
-                    None
-                }),
+                    )
+                    .map(|score| (icon_name.clone(), score))
+                })
+                .max_by(|a, b| a.1.total_cmp(&b.1)),
             crop_buffer(
                 number_position,
                 get_resizer(&mut self.resizer),

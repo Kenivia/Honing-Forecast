@@ -493,7 +493,6 @@ dependencies = [
  "fast_image_resize",
  "hf-core",
  "image",
- "image-compare",
  "imageproc",
  "js-sys",
  "ocrs",
@@ -567,18 +566,6 @@ dependencies = [
  "moxcms",
  "num-traits",
  "png",
-]
-
-[[package]]
-name = "image-compare"
-version = "0.5.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "176623a137baf75908084aff53578d6336cbd932bffaf12fabe26b343eb13338"
-dependencies = [
- "image",
- "itertools",
- "rayon",
- "thiserror",
 ]
 
 [[package]]

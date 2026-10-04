@@ -1,6 +1,31 @@
 use crate::{image_utils::brightness::normalize_brightness, setup::OneIconConfig};
-use hf_core::my_dbg;
-use image_compare::Similarity;
+use image::RgbaImage;
+
+const MAX_DISTANCE: f64 = 16.0;
+
+// mean absolute RGB difference, best of the 9 one-pixel shifts so a slightly misplaced crop still matches
+fn shifted_distance(template: &RgbaImage, observed: &RgbaImage) -> f64 {
+    let (w, h) = (template.width() as usize, template.height() as usize);
+    let (a, b) = (template.as_raw(), observed.as_raw());
+    let mut best = u32::MAX;
+    for sy in 0..3 {
+        for sx in 0..3 {
+            let mut total = 0u32;
+            for y in 1..h - 1 {
+                let row_a = &a[(y * w + 1) * 4..(y * w + w - 1) * 4];
+                let start_b = ((y + sy - 1) * w + sx) * 4;
+                let row_b = &b[start_b..start_b + (w - 2) * 4];
+                for (p, q) in row_a.chunks_exact(4).zip(row_b.chunks_exact(4)) {
+                    total += p[0].abs_diff(q[0]) as u32
+                        + p[1].abs_diff(q[1]) as u32
+                        + p[2].abs_diff(q[2]) as u32;
+                }
+            }
+            best = best.min(total);
+        }
+    }
+    best as f64 / (3 * (w - 2) * (h - 2)) as f64
+}
 
 pub fn close_enough(
     template: &OneIconConfig,
@@ -10,23 +35,11 @@ pub fn close_enough(
     if template.offset.width != observed.offset.width
         || template.offset.height != observed.offset.height
     {
-        // my_dbg!(
-        //     template.offset.width,
-        //     observed.offset.width,
-        //     template.offset.height,
-        //     observed.offset.height,
-        // );
         return None;
     }
 
     normalize_brightness(observed, brightness);
 
-    let similarity: Similarity =
-        image_compare::rgba_hybrid_compare(&template.data, &observed.data).expect("compare failed");
-    // my_dbg!(similarity.score);
-    if similarity.score > 0.8 {
-        return Some(similarity.score);
-    } else {
-        return None;
-    }
+    let distance = shifted_distance(&template.data, &observed.data);
+    (distance < MAX_DISTANCE).then_some(1.0 - distance / 255.0)
 }
