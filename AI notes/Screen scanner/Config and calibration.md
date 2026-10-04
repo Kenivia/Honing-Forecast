@@ -4,7 +4,7 @@ The scanner recognises things by comparing screen crops with stored templates. T
 
 ## ScannerConfig.msgpack
 
-`public/ScannerConfig.msgpack` is a list of templates. Each has raw RGBA pixels, a name, a tag, and an offset rectangle. The frontend fetches it at startup and hands it to Rust when the scanner starts. The OCR model is loaded the same way.
+`public/ScannerConfig.msgpack` is a list of templates. Each has raw RGBA pixels, a name, a tag, an offset rectangle, and an optional required confidence. The required confidence overrides the 0.9 pass limit of whichever comparison the template goes through (fixed-position or template matching); it is 0.8 on every page tab and null on everything else, and is edited per row on the Setup page (new captures start as null). The frontend fetches it at startup and hands it to Rust when the scanner starts. The OCR model is loaded the same way.
 
 Two tags exist:
 

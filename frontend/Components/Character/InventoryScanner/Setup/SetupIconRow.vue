@@ -11,6 +11,7 @@ const emit = defineEmits<{
   "update:name": [value: string];
   "update:tag": [value: string];
   "update:position": [value: ScaledPosition];
+  "update:required-confidence": [value: number | null];
   "import-position": [value: OneIconConfig];
   "move-up": [];
   "move-down": [];
@@ -25,6 +26,11 @@ function on_name_change(event: Event) {
 function on_tag_change(event: Event) {
   const value = (event.target as HTMLInputElement).value.trim();
   emit("update:tag", value);
+}
+
+function on_required_confidence_change(event: Event) {
+  const value = (event.target as HTMLInputElement).value;
+  emit("update:required-confidence", value === "" ? null : Number(value));
 }
 
 function on_top_left_x_change(event: Event) {
@@ -117,6 +123,19 @@ function on_height_change(event: Event) {
             min="0"
             class="w-24 rounded bg-zinc-800 px-2 py-1 text-sm"
             @change="on_height_change"
+          />
+        </label>
+        <label class="flex flex-col gap-1 text-xs">
+          Required confidence
+          <input
+            :value="icon.required_confidence"
+            type="number"
+            min="0"
+            max="1"
+            step="0.05"
+            placeholder="default"
+            class="w-24 rounded bg-zinc-800 px-2 py-1 text-sm"
+            @change="on_required_confidence_change"
           />
         </label>
       </div>

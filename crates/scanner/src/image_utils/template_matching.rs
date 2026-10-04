@@ -4,6 +4,7 @@ use realfft::{ComplexToReal, RealFftPlanner, RealToComplex};
 use rustfft::{Fft, FftPlanner, num_complex::Complex32};
 use std::sync::Arc;
 
+pub const DEFAULT_TEMPLATE_MATCHING_CONFIDENCE: f64 = 0.9;
 struct Fft2D {
     rows: usize,
     cols: usize,

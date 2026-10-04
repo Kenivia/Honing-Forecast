@@ -6,10 +6,10 @@ use crate::{
     constants::{ANCHORS, AnchorSpec, Bound, anchor_spec},
     image_utils::{
         brightness::est_ingame_brightness,
-        close_enough::close_enough,
+        close_enough::{DEFAULT_CONFIDENCE, close_enough},
         common::{FloatRectangle, IntegerRectangle, Rectangle, get_resizer},
         resize::crop_buffer,
-        template_matching::template_match,
+        template_matching::{DEFAULT_TEMPLATE_MATCHING_CONFIDENCE, template_match},
     },
     scanner_state::{AnchorType, InventoryType, ScannerState},
     setup::icon_lookup,
@@ -107,12 +107,16 @@ impl ScannerState {
     fn search_anchor(&mut self, spec: &AnchorSpec) {
         let scale = self.screen_info.scale_factor;
         for (variant_index, variant) in spec.variants.iter().enumerate() {
-            let template_offset = icon_lookup(
+            let template = icon_lookup(
                 variant.name,
                 self.screen_info.effective_height,
                 get_resizer(&mut self.resizer),
-            )
-            .offset;
+            );
+            let template_offset = template.offset;
+            let required_confidence = template
+                .required_confidence
+                .unwrap_or(DEFAULT_TEMPLATE_MATCHING_CONFIDENCE);
+            drop(template);
             let search_area = match variant.bound {
                 Bound::Frame => FloatRectangle {
                     top_left: (0.0, 0.0),
@@ -158,7 +162,7 @@ impl ScannerState {
                     ),
                 );
             }
-            if confidence > 0.9 {
+            if confidence > required_confidence {
                 let anchor_info = self.anchors.get_mut(&spec.anchor_type).unwrap();
                 anchor_info.positions[variant_index] = Some((found_position, confidence));
                 anchor_info.position_root = Some(

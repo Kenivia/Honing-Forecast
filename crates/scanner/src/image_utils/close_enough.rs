@@ -1,7 +1,7 @@
 use crate::{image_utils::brightness::normalize_brightness, setup::OneIconConfig};
 use image::RgbaImage;
 
-const MAX_DISTANCE: f64 = 16.0;
+pub const DEFAULT_CONFIDENCE: f64 = 0.9;
 
 // mean absolute RGB difference, best of the 9 one-pixel shifts so a slightly misplaced crop still matches
 fn shifted_distance(template: &RgbaImage, observed: &RgbaImage) -> f64 {
@@ -41,5 +41,6 @@ pub fn close_enough(
     normalize_brightness(observed, brightness);
 
     let distance = shifted_distance(&template.data, &observed.data);
-    (distance < MAX_DISTANCE).then_some(1.0 - distance / 255.0)
+    let confidence = 1.0 - distance / 255.0;
+    (confidence > template.required_confidence.unwrap_or(DEFAULT_CONFIDENCE)).then_some(confidence)
 }

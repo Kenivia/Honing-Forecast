@@ -35,6 +35,8 @@ pub struct OneIconConfig {
     pub offset: IntegerRectangle,
     pub tag: String,
     pub normalized: bool,
+    // overrides the close_enough pass limit, only set for page tabs
+    pub required_confidence: Option<f64>,
 }
 
 #[derive(Deserialize)]
@@ -44,6 +46,8 @@ struct OneIconConfigJs {
     offset: IntegerRectangle,
     tag: String,
     normalized: bool,
+    #[serde(default)]
+    required_confidence: Option<f64>,
 }
 
 impl TryFrom<OneIconConfigJs> for OneIconConfig {
@@ -59,6 +63,7 @@ impl TryFrom<OneIconConfigJs> for OneIconConfig {
             offset: w.offset,
             tag: w.tag,
             normalized: w.normalized,
+            required_confidence: w.required_confidence,
         })
     }
 }
@@ -66,12 +71,13 @@ impl TryFrom<OneIconConfigJs> for OneIconConfig {
 impl Serialize for OneIconConfig {
     fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
         use serde::ser::SerializeStruct;
-        let mut s = serializer.serialize_struct("OneIconConfig", 4)?;
+        let mut s = serializer.serialize_struct("OneIconConfig", 6)?;
         s.serialize_field("data", self.data.as_raw())?;
         s.serialize_field("name", &self.name)?;
         s.serialize_field("offset", &self.offset)?;
         s.serialize_field("tag", &self.tag)?;
         s.serialize_field("normalized", &self.normalized)?;
+        s.serialize_field("required_confidence", &self.required_confidence)?;
         s.end()
     }
 }
@@ -135,6 +141,7 @@ pub fn icon_lookup(
             offset: scaled_offset,
             tag: base_icon.tag.clone(),
             normalized: true,
+            required_confidence: base_icon.required_confidence,
         });
 
     RwLockReadGuard::map(RwLockWriteGuard::downgrade(write_guard), move |map| {
@@ -161,6 +168,7 @@ impl ScannerState {
                         offset: incoming.position.to_rounded(),
                         tag: incoming.tag,
                         normalized: true,
+                        required_confidence: None,
                     },
                 );
             }

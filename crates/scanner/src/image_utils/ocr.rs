@@ -125,6 +125,7 @@ pub fn pre_process(
         offset: scaled_offset,
         tag: icon.tag,
         normalized: true,
+        required_confidence: None,
     }
 }
 

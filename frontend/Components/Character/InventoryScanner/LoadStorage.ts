@@ -12,6 +12,7 @@ export interface OneIconConfig {
   data: number[];
   tag: string;
   normalized: boolean;
+  required_confidence: number | null;
 }
 
 export interface Buffer {

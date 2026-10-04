@@ -66,6 +66,7 @@ pub fn crop_buffer<R: Rectangle>(
         .to_rounded(),
         tag: "".to_string(),
         normalized: false,
+        required_confidence: None,
     }
 }
 

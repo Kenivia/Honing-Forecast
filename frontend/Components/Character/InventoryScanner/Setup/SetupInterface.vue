@@ -376,6 +376,11 @@ function update_icon_position(index: number, position: ScaledPosition) {
   config.value[index].offset = position;
 }
 
+function update_icon_required_confidence(index: number, value: number | null) {
+  if (!config.value) return;
+  config.value[index].required_confidence = value;
+}
+
 function import_position(icon: OneIconConfig) {
   setup_name.value = icon.name;
   setup_tag.value = icon.tag;
@@ -477,6 +482,9 @@ function import_position(icon: OneIconConfig) {
       @update:name="(value) => update_icon_name(index, value)"
       @update:tag="(value) => update_icon_tag(index, value)"
       @update:position="(value) => update_icon_position(index, value)"
+      @update:required-confidence="
+        (value) => update_icon_required_confidence(index, value)
+      "
       @import-position="(value) => import_position(value)"
       @move-up="move_icon_up(index)"
       @move-down="move_icon_down(index)"
