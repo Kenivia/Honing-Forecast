@@ -15,12 +15,14 @@ import { MarketRegions } from "@/Utils/MarketDataFetcher";
 import { debounce } from "@/Utils/Helpers";
 import { UpgradeStatus } from "@/Utils/KeyedUpgrades";
 import { NUM_PIECES } from "@/Utils/Constants";
+import { create_frame_source } from "@/Components/Character/InventoryScanner/FramePassing";
 
 export const CURRENT_STORAGE_KEY = "HF_CONFIG_V7_COMPRESSED";
 export const CURRENT_VERSION_NUMBER = 7;
 
 function standard_validation(out: any) {
   out.is_fetching = false;
+  out.frame_source = create_frame_source();
   for (const key in out.mats_prices) {
     out.mats_prices[key] = validate_input_column_array(
       out.mats_prices[key],
@@ -214,6 +216,7 @@ function write_roster_config(roster_config: RosterConfig) {
     "is_slider_update",
     "adv_cache",
     "cropper_worker_bundle",
+    "frame_source",
   ]);
   console.log(roster_config);
   localStorage.setItem(CURRENT_STORAGE_KEY, LZString.compressToUTF16(json));

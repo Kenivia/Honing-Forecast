@@ -32,6 +32,7 @@ The active character is set from the route, and most components read through `ac
 - **Keyed upgrades** are the canonical list of upgrades for a character, keyed by piece, level, kind and tier. They are derived from the tickbox grids and carry per-upgrade progress and the last optimizer state.
 - **Tier handling assumes exactly two tiers.** The Rust side would accept more; the frontend's tier-switching logic would not.
 - Worker handles live inside the store but must never be persisted or deep-cloned. Take raw copies before posting store data to a worker.
+- The scanner's frame source (the capture stream) is stored the same way at global scope. It is marked raw, created by the load-time validation, and stripped before saving.
 
 ## Persistence
 

@@ -300,9 +300,11 @@ watchEffect(() => {
   ];
 });
 
-function confirm_setup() {
+async function confirm_setup() {
   const bundle = roster_config.value.cropper_worker_bundle;
   if (!bundle?.result) return;
+  const frame = await roster_config.value.frame_source.read();
+  if (!frame) return;
 
   const incoming_new_icons = [
     {
@@ -325,7 +327,7 @@ function confirm_setup() {
 
   bundle.debounced_start(
     WasmOp.Setup,
-    modified_state,
+    { scanner_state: modified_state, frame },
     (scanner_state) => {
       config.value = scanner_state.config;
     },

@@ -5,7 +5,7 @@ How an agent drives the site in a real browser. Playwright is the only tool; it 
 Per-section instructions:
 
 - `Calculator.md`: the calculator, market and roster pages.
-- `Screen scanner.md`: not written yet.
+- `Screen scanner.md`: the scanner and scanner setup pages, fed by an uploaded image or video.
 
 ## Setup
 
@@ -71,6 +71,6 @@ Every test should start with `hf.watch_errors` and `hf.stub_market`, as `smoke.s
 - **Saving is debounced.** Wait about a second after the last change before reloading, or the change is lost.
 - **Gold is not reproducible.** The optimizer is randomised, so the same inputs give slightly different gold between runs and browsers, even with stubbed prices.
 - **Live prices hit the author's Worker** on every fresh load. Use the stub for anything run repeatedly.
-- **Screen capture does not work headless.** The scanner pages throw `Not supported` on mount in headless Chromium. That is the harness, not a site bug.
+- **Screen capture does not work headless.** The scanner pages no longer ask for it on mount; upload an image or video instead, see `Screen scanner.md`.
 - **Elements are found by accessible name.** The frontend has few labels; the ones the helpers rely on are listed in the section notes. If something has no name, add an `aria-label` in the component instead of selecting by position or CSS class.
 - **Helpers import with the `.ts` extension** and use only erasable TypeScript, because `pnpm browse` loads them through Node directly.

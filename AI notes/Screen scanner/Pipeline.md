@@ -6,8 +6,8 @@ Code: `crates/scanner` (image processing), `frontend/Components/Character/Invent
 
 ## Stages
 
-1. **Capture** (TypeScript, main thread). The browser's screen-share API gives a video track, read as a stream of frames at a low frame rate. The stream is transferred to the worker.
-2. **Frame transfer** (worker). For each operation the worker pulls one frame and copies its pixels directly into a buffer inside wasm memory, then calls Rust.
+1. **Capture** (TypeScript, main thread). A video track is read as a stream of frames at a low frame rate. The track comes from the browser's screen-share API, or from an uploaded image or video file drawn onto a canvas (a fake stream: an image repeats, a video plays once and then holds its last frame). Both go through the same frame reader.
+2. **Frame transfer**. For each operation the main thread reads one frame and transfers it to the worker along with the operation. The worker copies its pixels directly into a buffer inside wasm memory, closes the frame, then calls Rust.
 3. **Locate the window** (Rust). Anchor templates are searched across the whole frame. A hit fixes the inventory window's origin and gives a brightness estimate. On later frames anchors are only re-checked at their known position.
 4. **Detect the page** (Rust). Page-tab templates at fixed offsets from the origin say which inventory page is showing.
 5. **Read slots** (Rust). Each slot of the active page sits at a fixed offset. A slot whose pixels have not changed is skipped; otherwise its crop is compared against the icon templates, and on a match the number strip is OCR'd.
@@ -21,12 +21,21 @@ Full-frame search is the expensive step and uses FFT cross-correlation. Everythi
 - Heavier data stays in Rust statics for the life of the worker's wasm instance: the base templates, a cache of templates scaled to the current resolution, and the OCR engine. These are loaded once by the reserve operation and deliberately do not round-trip.
 - Consequently the scanner worker must not be restarted between frames, unlike the optimizer worker. The buffer pointer and the statics are only valid in the instance that created them.
 
+## Who owns the stream
+
+- The capture stream and its frame reader live in one "frame source" object on the main thread, stored in the roster config next to the scanner worker bundle. It is shared by all characters and never persisted. Because it carries the user's screen-share permission, it outlives the capture component: leaving the scanner page only pauses the loop, and coming back resumes it without asking again.
+- Each frame is transferred to the worker with its operation, so exactly one side owns it and the worker closes it. The older design transferred the whole stream to the worker instead; it was changed for stream ownership, not because it leaked.
+- **Never `console.log` the scanner state, or anything holding it, per frame.** Once an inventory is recognised the state is tens of MB (every slot carries raw icon images). Firefox keeps recently logged objects alive even with DevTools closed, so logging the state leaked several GB per minute on screen share. Chrome only does this with DevTools or an automation client attached. The worker and worker bundle log only the operation name for scanner operations.
+- Stopping capture terminates the worker, which frees the frame buffer and the Rust statics together. The next capture reserves again.
+- Changing character clears the scanner state and terminates the worker but keeps the stream; the capture component then reserves a fresh state.
+- A worker reply is delivered to whichever callback was registered last, so the scan loop ignores replies it has already handled or that belong to a stopped loop.
+
 ## Conventions
 
 - **Reference resolution is 1440p.** Slot positions, anchor offsets and window rectangles are constants in 1440p pixels, scaled by the capture height. Positions are kept as floats relative to the window origin; nothing is normalised to 0..1.
 - **Pixels are RGBA** throughout, on both sides of the boundary.
 - **Fixed-position comparison needs identical dimensions.** The template path and the crop path must round scaled sizes the same way, or comparisons quietly return no match.
-- **The frame buffer is sized once**, at capture start, and freed by an explicit dealloc operation. JS must rebuild its view of wasm memory every frame, since memory growth invalidates old views.
+- **The frame buffer is sized once**, at capture start, and freed when the worker is terminated. The explicit dealloc operation still exists but the frontend no longer calls it. JS must rebuild its view of wasm memory every frame, since memory growth invalidates old views.
 - **Brightness is normalised.** The in-game brightness setting changes pixel values, so observed crops are mapped to a fixed reference brightness before comparison. Stored templates are already normalised. See `Config and calibration.md`.
 - **Capture stays at native resolution.** Downscaling was tried and removed because the quantity digits need full resolution.
 - **OCR** uses the `ocrs` / `rten` crates with only the recognition model, on a preprocessed single line. Text detection is skipped because the number's position is known.
@@ -38,8 +47,7 @@ Working: capture, frame transfer, character-inventory anchor detection, brightne
 Not done yet:
 
 - Results are not written into the calculator's material inputs. Output stops at the debug tables.
-- Resolution and aspect-ratio detection is a stub with one hardcoded resolution.
-- Only the character inventory has anchors. Storage and roster storage are placeholders.
+- Resolution and aspect-ratio detection is a stub with one hardcoded resolution. Frames must be exactly 1920x1080 or Rust panics on a crop; pad smaller captures with black rather than scaling them.- Only the character inventory has anchors. Storage and roster storage are placeholders.
 - Tooltip detection and bound-versus-tradable detection are not implemented.
 
 Demo-only: `DemoOCR.vue` and `DemoColorfilter.vue` are earlier proofs of concept, still mounted on the scanner page. `tesseract-wasm` and `eng.traineddata` are used only by the OCR demo.

@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import { get_readable } from "@/Components/Character/InventoryScanner/FramePassing";
+import { file_to_stream } from "@/Components/Character/InventoryScanner/FramePassing";
 import { useRosterStore } from "@/Stores/RosterConfig";
 import { WasmOp } from "@/WasmInterface/WasmWorker";
 import { create_worker_bundle } from "@/WasmInterface/WorkerBundle";
 import { storeToRefs } from "pinia";
-import { ref, computed, onMounted, onUnmounted, toRaw } from "vue";
+import { ref, computed, onMounted, onUnmounted, toRaw, watch } from "vue";
 import {
   getModel,
   getScannerConfig,
@@ -25,9 +25,10 @@ const roster_store = useRosterStore();
 const { roster_config } = storeToRefs(roster_store);
 
 const bundle = ref(roster_config.value.cropper_worker_bundle);
+// the stream outlives this component so permission is only asked once
+const source = roster_config.value.frame_source;
 
 const video_ref = ref<HTMLVideoElement | null>(null);
-const stream = ref<MediaStream | null>(null);
 const error = ref<string | null>(null);
 
 // Track the real capture resolution so we can correctly place overlay
@@ -100,113 +101,140 @@ async function start_capture() {
       },
       audio: false,
     });
-    stream.value = s;
-    status.value = "capturing";
-
-    if (video_ref.value) {
-      video_ref.value.srcObject = s;
-    }
-
-    const [track] = s.getVideoTracks();
-    track.addEventListener("ended", stop_capture);
-
-    const width = track.getSettings().width;
-    const height = track.getSettings().height;
-
-    if (roster_config.value.cropper_worker_bundle === null) {
-      roster_config.value.cropper_worker_bundle = create_worker_bundle();
-    }
-
-    bundle.value = roster_config.value.cropper_worker_bundle;
-
-    const new_scanner_state = bundle.value.result ?? {
-      screen_info: {
-        total_width: width,
-        total_height: height,
-      },
-      debugging: props.debugging,
-    };
-    new_scanner_state.buffer = {
-      width,
-      height,
-      size: width * height * 4,
-    };
-    const [config, model] = await Promise.all([getScannerConfig(), getModel()]);
-    new_scanner_state.config = toRaw(config);
-    new_scanner_state.model = toRaw(model);
-    // console.log(structuredClone(new_scanner_state));
-    bundle.value.debounced_start(
-      WasmOp.Reserve,
-      {
-        readable: get_readable(track),
-        scanner_state: new_scanner_state,
-      },
-      props.should_start_cropper ? toggle_cropper : null,
-      // null,
-      0,
-      false,
-    );
+    const settings = s.getVideoTracks()[0].getSettings();
+    begin(s, settings.width, settings.height);
   } catch (e: unknown) {
     if (
       e instanceof Error &&
       e.name !== "NotAllowedError" &&
       e.name !== "InvalidStateError"
     ) {
-      throw e;
+      error.value = e.message;
     }
-    status.value = "idle";
   }
+}
+
+async function start_upload(event: Event) {
+  const input = event.target as HTMLInputElement;
+  const file = input.files[0];
+  input.value = "";
+  if (!file) return;
+
+  error.value = null;
+  const fake = await file_to_stream(file);
+  begin(fake.stream, fake.width, fake.height, fake.cleanup);
+}
+
+function begin(
+  s: MediaStream,
+  width: number,
+  height: number,
+  cleanup: (() => void) | null = null,
+) {
+  stop_capture();
+  source.start(s, width, height, cleanup);
+  attach();
+  start_scanner();
+}
+
+// show the store's stream in this component
+function attach() {
+  status.value = "capturing";
+  if (video_ref.value) {
+    video_ref.value.srcObject = source.stream;
+  }
+  source.stream
+    .getVideoTracks()[0]
+    .addEventListener("ended", stop_capture, { once: true });
+}
+
+async function start_scanner() {
+  pause_cropper();
+  if (roster_config.value.cropper_worker_bundle === null) {
+    roster_config.value.cropper_worker_bundle = create_worker_bundle();
+  }
+  bundle.value = roster_config.value.cropper_worker_bundle;
+
+  const { width, height } = source.size;
+  const new_scanner_state = bundle.value.result ?? {
+    screen_info: {
+      total_width: width,
+      total_height: height,
+    },
+    debugging: props.debugging,
+  };
+  new_scanner_state.buffer = {
+    width,
+    height,
+    size: width * height * 4,
+  };
+  const [config, model] = await Promise.all([getScannerConfig(), getModel()]);
+  new_scanner_state.config = toRaw(config);
+  new_scanner_state.model = toRaw(model);
+  // console.log(structuredClone(new_scanner_state));
+  bundle.value.debounced_start(
+    WasmOp.Reserve,
+    new_scanner_state,
+    props.should_start_cropper ? toggle_cropper : null,
+    // null,
+    0,
+    false,
+  );
 }
 
 function stop_capture() {
-  if (bundle.value !== null) {
-    bundle.value.debounced_start(
-      WasmOp.Dealloc,
-      bundle.value.result,
-      bundle.value.cancel,
-      0,
-      false,
-    );
-  }
-  stream.value?.getTracks().forEach((t) => t.stop());
-  stream.value = null;
+  pause_cropper();
+  status.value = "idle";
   if (video_ref.value) {
     video_ref.value.srcObject = null;
   }
-  status.value = "idle";
+  if (!source.stream) return;
+  // terminating the worker frees the frame buffer and the Rust statics with it
+  bundle.value?.cancel();
+  source.stop();
 }
 
 const cropper_running = ref(false);
+// bumped whenever the loop is stopped, so a loop waiting on a frame knows to quit
+let loop_id = 0;
+
+function pause_cropper() {
+  loop_id++;
+  cropper_running.value = false;
+}
 
 function toggle_cropper() {
-  if (!cropper_running.value) {
-    cropper_running.value = true;
-    cropper_loop(bundle.value.result);
+  if (cropper_running.value) {
+    pause_cropper();
   } else {
-    cropper_running.value = false;
+    cropper_running.value = true;
+    cropper_loop(bundle.value.result, ++loop_id);
   }
 }
-async function cropper_loop(scanner_state: ScannerState) {
-  if (
-    bundle.value === null ||
-    bundle.value.worker === null ||
-    bundle.value.result === null
-  ) {
+async function cropper_loop(scanner_state: ScannerState, id: number) {
+  const frame = await source.read();
+  if (id !== loop_id) {
+    frame?.close();
+    return;
+  }
+  if (!frame) {
     console.log("no more cropper");
     cropper_running.value = false;
     return;
   }
 
+  // one result per op, a late reply from an earlier op must not fork the loop
+  let done = false;
   bundle.value.debounced_start(
     WasmOp.Cropper,
-    scanner_state,
+    { scanner_state, frame },
     (scanner_state) => {
+      if (done || id !== loop_id) return;
+      done = true;
       if (props.process_result) {
         props.process_result(scanner_state);
       }
-      if (cropper_running.value) {
-        cropper_loop(scanner_state);
-      }
+      cropper_loop(scanner_state, id);
     },
     0,
     false,
@@ -217,8 +245,23 @@ async function cropper_loop(scanner_state: ScannerState) {
 // elsewhere without the buttons below).
 defineExpose({ start_capture, stop_capture });
 
-onMounted(start_capture);
-onUnmounted(stop_capture);
+onMounted(() => {
+  if (!source.stream) return;
+  attach();
+  if (bundle.value?.result?.buffer?.pointer == null) {
+    start_scanner();
+  } else if (props.should_start_cropper) {
+    toggle_cropper();
+  }
+});
+// the stream and worker stay alive in the store
+onUnmounted(pause_cropper);
+
+// CharView clears the scanner state on character change
+watch(
+  () => roster_config.value.active_profile_index,
+  () => source.stream && start_scanner(),
+);
 </script>
 
 <template>
@@ -232,13 +275,7 @@ onUnmounted(stop_capture);
           'bg-zinc-500/20 text-zinc-400': status === 'idle',
         }"
       >
-        {{
-          status === "capturing"
-            ? "● Live"
-            : status === "idle"
-              ? "Initialising…"
-              : "idle"
-        }}
+        {{ status === "capturing" ? "● Live" : "Idle" }}
       </span>
     </div>
 
@@ -298,8 +335,20 @@ onUnmounted(stop_capture);
         :disabled="status === 'capturing'"
         @click="start_capture"
       >
-        {{ status === "idle" ? "Capture Again" : "Start Capture" }}
+        Share screen
       </button>
+      <label
+        class="cursor-pointer rounded-md bg-blue-600 px-3 py-1.5 text-sm transition-colors hover:bg-blue-500"
+      >
+        Upload image / video
+        <input
+          type="file"
+          accept="image/*,video/*"
+          aria-label="Upload image or video"
+          class="hidden"
+          @change="start_upload"
+        />
+      </label>
       <button
         class="rounded-md bg-zinc-700 px-3 py-1.5 text-sm transition-colors hover:bg-zinc-600 disabled:cursor-not-allowed disabled:opacity-40"
         :disabled="status !== 'capturing'"

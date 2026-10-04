@@ -38,6 +38,8 @@ watch(
         active_profile.value.optimizer_worker_bundle.cancel();
         active_profile.value.histogram_worker_bundle.cancel();
         // active_profile.value.evaluation_worker_bundle.cancel()
+        // reset the scanner, the capture stream itself is kept
+        roster_store.roster_config.cropper_worker_bundle?.cancel_and_clear_prev_result();
         roster_store.switch_profile(match);
       }
     } else {

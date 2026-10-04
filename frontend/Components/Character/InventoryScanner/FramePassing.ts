@@ -1,6 +1,50 @@
 /* eslint-disable no-undef */
+import { markRaw } from "vue";
 
-export function get_readable(
+// Owns the capture stream, and so the user's permission. Lives in roster_config, never persisted.
+export function create_frame_source() {
+  let stream: MediaStream | null = null;
+  let reader: ReadableStreamDefaultReader<VideoFrame> | null = null;
+  let cleanup: (() => void) | null = null;
+  let size = { width: 0, height: 0 };
+
+  function stop() {
+    reader?.cancel();
+    stream?.getTracks().forEach((t) => t.stop());
+    cleanup?.();
+    reader = null;
+    stream = null;
+    cleanup = null;
+  }
+
+  return markRaw({
+    start(
+      new_stream: MediaStream,
+      width: number,
+      height: number,
+      new_cleanup: (() => void) | null = null,
+    ) {
+      stop();
+      stream = new_stream;
+      size = { width, height };
+      cleanup = new_cleanup;
+      reader = get_readable(
+        stream.getVideoTracks()[0] as MediaStreamVideoTrack,
+      ).getReader();
+    },
+    stop,
+    // undefined once the stream has ended; the caller closes or transfers the frame
+    read: async () => (await reader?.read())?.value,
+    get stream() {
+      return stream;
+    },
+    get size() {
+      return size;
+    },
+  });
+}
+
+function get_readable(
   track: MediaStreamVideoTrack,
 ): ReadableStream<VideoFrame> {
   if (typeof MediaStreamTrackProcessor !== "undefined") {
@@ -8,6 +52,53 @@ export function get_readable(
   }
 
   return createCanvasFrameReadable(track);
+}
+
+const FAKE_STREAM_FPS = 6;
+
+// Image / video file as a canvas track. Videos hold their last frame once finished.
+export async function file_to_stream(file: File) {
+  const canvas = document.createElement("canvas");
+  let source: HTMLVideoElement | ImageBitmap;
+  let url: string | null = null;
+
+  if (file.type.startsWith("video")) {
+    url = URL.createObjectURL(file);
+    const video = document.createElement("video");
+    video.src = url;
+    video.muted = true;
+    video.playsInline = true;
+    await video.play();
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    source = video;
+  } else {
+    source = await createImageBitmap(file);
+    canvas.width = source.width;
+    canvas.height = source.height;
+  }
+
+  const ctx = canvas.getContext("2d");
+  const draw = () => ctx.drawImage(source, 0, 0);
+  draw();
+  const timer = setInterval(draw, 1000 / FAKE_STREAM_FPS);
+
+  return {
+    stream: canvas.captureStream(),
+    width: canvas.width,
+    height: canvas.height,
+    cleanup: () => {
+      clearInterval(timer);
+      if (source instanceof HTMLVideoElement) {
+        source.pause();
+        source.removeAttribute("src");
+        source.load();
+        URL.revokeObjectURL(url);
+      } else {
+        source.close();
+      }
+    },
+  };
 }
 
 function driveVideoFrames(

@@ -57,6 +57,7 @@ export interface RosterConfig {
   adv_cache: any;
 
   cropper_worker_bundle: any;
+  frame_source: any; // filled in by standard_validation, shared by all characters
 }
 export const useRosterStore = defineStore("roster", {
   state: () => ({
@@ -230,4 +231,5 @@ export const DEFAULT_ROSTER_CONFIG: RosterConfig = {
   adv_cache: null,
 
   cropper_worker_bundle: null,
+  frame_source: null,
 };

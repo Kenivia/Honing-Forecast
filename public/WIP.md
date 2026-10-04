@@ -5,7 +5,7 @@ If you'd like to help with any of the below, feel free to get in touch via [Disc
 
 ## NOW: OCR
 
-- FIGURE OUT WHY THERES A MEMORY LEAK IN READER
+- ~~FIGURE OUT WHY THERES A MEMORY LEAK IN READER~~
 
 - shoudl probably sort out roster / char storage fisrt
 

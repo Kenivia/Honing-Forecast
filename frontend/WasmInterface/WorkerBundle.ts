@@ -120,11 +120,13 @@ export function create_worker_bundle() {
       worker = null;
     };
 
-    console.log(WasmOp[wasm_op], payload);
+    // scanner state is not logged, see WasmWorker
+    console.log(WasmOp[wasm_op], wasm_op <= WasmOp.Histogram ? payload : "");
     // console.log(JSON.parse(JSON.stringify(toRaw(buildPayload(wasm_op)))))
     worker.postMessage(
       { type: "message", wasm_op, payload },
-      { transfer: payload?.readable ? [payload.readable] : [] },
+      // a transferred frame leaves no copy behind on this thread
+      { transfer: payload?.frame ? [payload.frame] : [] },
     );
   }
 

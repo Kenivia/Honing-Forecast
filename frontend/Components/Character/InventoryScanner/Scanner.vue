@@ -134,7 +134,6 @@ function process_result(scanner_state: ScannerState) {
 
     boxes.value = new_boxes;
     debug_table.value = new_debug_table;
-    console.log(debug_table.value);
   } else {
     boxes.value = [];
     debug_table.value = [];
@@ -157,8 +156,6 @@ function process_result(scanner_state: ScannerState) {
     });
   }
   found_icons.value = new_found_icons;
-
-  console.log("slot infos", scanner_state.slot_infos, found_icons.value);
 }
 </script>
 

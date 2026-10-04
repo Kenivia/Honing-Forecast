@@ -24,9 +24,9 @@
       "vite/client",
       "@types/dom-mediacapture-transform",
       "@types/dom-webcodecs",
+      "@types/node"
     ]
   },
   "include": ["frontend/**/*", "vite.config.ts"],
   "exclude": ["node_modules", "dist", "junkyard", "crates"]
-
 }
