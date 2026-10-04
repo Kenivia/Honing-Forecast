@@ -22,11 +22,11 @@ impl ScannerState {
 
     pub fn update_page_status(&mut self) {
         for inv_type in ALL_PAGE_NUM.keys() {
-            if !self.anchors[inv_type].is_found() {
+            let Some(root) = self.inventory_root(*inv_type) else {
                 *self.page_num_infos.get_mut(&inv_type).unwrap() =
-                    vec![None; self.page_num_infos[inv_type].len()];
+                    vec![None; ALL_PAGE_NUM[inv_type].len()];
                 continue;
-            }
+            };
 
             for (index, (active_name, inactive_name)) in ALL_PAGE_NUM[inv_type].iter().enumerate() {
                 let mut check = |name: &String| {
@@ -39,8 +39,7 @@ impl ScannerState {
                     let confidence = close_enough(
                         &icon,
                         &mut crop_buffer(
-                            icon.offset
-                                .use_root(&self.anchors[inv_type].position_root.unwrap()),
+                            icon.offset.use_root(&root),
                             get_resizer(&mut self.resizer),
                             self.buffer,
                             None,
@@ -68,8 +67,14 @@ impl ScannerState {
                     confidence.is_some()
                 };
 
-                let matched = check(&active_name) || check(&inactive_name);
-                self.page_num_infos.get_mut(&inv_type).unwrap()[index] = matched.then_some(true);
+                let state = if check(&active_name) {
+                    Some(true)
+                } else if check(&inactive_name) {
+                    Some(false)
+                } else {
+                    None
+                };
+                self.page_num_infos.get_mut(&inv_type).unwrap()[index] = state;
                 // my_dbg!( inv_type, index, matched);
             }
         }

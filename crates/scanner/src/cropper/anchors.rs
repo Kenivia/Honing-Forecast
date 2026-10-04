@@ -3,7 +3,7 @@ use hf_core::my_dbg;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    constants::ANCHORS_LOOKUP,
+    constants::{ANCHORS, AnchorSpec, Bound, anchor_spec},
     image_utils::{
         brightness::est_ingame_brightness,
         close_enough::close_enough,
@@ -11,7 +11,7 @@ use crate::{
         resize::crop_buffer,
         template_matching::template_match,
     },
-    scanner_state::{InventoryType, ScannerState},
+    scanner_state::{AnchorType, InventoryType, ScannerState},
     setup::icon_lookup,
 };
 
@@ -34,20 +34,43 @@ impl AnchorInfo {
 impl ScannerState {
     pub fn initialize_anchors(&mut self) {
         self.anchors = AHashMap::new();
-        for inv_type in ANCHORS_LOOKUP.keys() {
+        for spec in ANCHORS.iter() {
             self.anchors.insert(
-                *inv_type,
+                spec.anchor_type,
                 AnchorInfo {
-                    positions: ANCHORS_LOOKUP[inv_type].iter().map(|_| None).collect(),
+                    positions: vec![None; spec.variants.len()],
                     position_root: None,
                 },
             );
         }
     }
-    pub fn check_existing_anchors(&mut self) {
-        let mut to_clear: Vec<(InventoryType, usize)> = Vec::new();
 
-        for (inv_type, anchor_info) in self.anchors.iter() {
+    // window origin of this inventory, from the first found anchor that locates it
+    pub fn inventory_root(&self, inventory_type: InventoryType) -> Option<IntegerRectangle> {
+        ANCHORS
+            .iter()
+            .filter(|spec| self.anchors[&spec.anchor_type].is_found())
+            .find_map(|spec| {
+                let (_, origin) = spec
+                    .inventories
+                    .iter()
+                    .find(|(this_type, _)| *this_type == inventory_type)?;
+                Some(
+                    self.anchors[&spec.anchor_type]
+                        .position_root
+                        .unwrap()
+                        .shifted((
+                            origin.0 * self.screen_info.scale_factor,
+                            origin.1 * self.screen_info.scale_factor,
+                        )),
+                )
+            })
+    }
+
+    pub fn check_existing_anchors(&mut self) {
+        let mut to_clear: Vec<(AnchorType, usize)> = Vec::new();
+
+        for (anchor_type, anchor_info) in self.anchors.iter() {
             for (variant_index, found) in anchor_info
                 .positions
                 .iter()
@@ -57,7 +80,7 @@ impl ScannerState {
                 assert!(anchor_info.position_root.is_some());
                 if close_enough(
                     &icon_lookup(
-                        &ANCHORS_LOOKUP[inv_type][variant_index].0,
+                        anchor_spec(*anchor_type).variants[variant_index].name,
                         self.screen_info.effective_height,
                         get_resizer(&mut self.resizer),
                     ),
@@ -71,110 +94,106 @@ impl ScannerState {
                 )
                 .is_none()
                 {
-                    to_clear.push((*inv_type, variant_index));
+                    to_clear.push((*anchor_type, variant_index));
                 }
             }
         }
-        // my_dbg!(
-        //     "Cleared",
-        //     to_clear.len(),
-        //     "Total",
-        //     self.anchors.keys().len()
-        // );
         // hashmap borriwng shinanigans
-        for (inv_type, variant_index) in to_clear {
-            self.anchors.get_mut(&inv_type).unwrap().positions[variant_index] = None;
+        for (anchor_type, variant_index) in to_clear {
+            self.anchors.get_mut(&anchor_type).unwrap().positions[variant_index] = None;
+        }
+    }
+
+    fn search_anchor(&mut self, spec: &AnchorSpec) {
+        let scale = self.screen_info.scale_factor;
+        for (variant_index, variant) in spec.variants.iter().enumerate() {
+            let template_offset = icon_lookup(
+                variant.name,
+                self.screen_info.effective_height,
+                get_resizer(&mut self.resizer),
+            )
+            .offset;
+            let search_area = match variant.bound {
+                Bound::Frame => FloatRectangle {
+                    top_left: (0.0, 0.0),
+                    width: self.buffer.width as f64,
+                    height: self.buffer.height as f64,
+                },
+                Bound::Ui(bound) => bound.scaled(scale).shifted(self.screen_info.ui_origin),
+                Bound::Relative(parent, bound) => bound
+                    .scaled(scale)
+                    .use_root(&self.anchors[&parent].position_root.unwrap()),
+            };
+            let Some((found_in_area, confidence, best_mean_f)) = template_match(
+                &icon_lookup(
+                    variant.name,
+                    self.screen_info.effective_height,
+                    get_resizer(&mut self.resizer),
+                ),
+                &crop_buffer(
+                    search_area,
+                    get_resizer(&mut self.resizer),
+                    self.buffer,
+                    None,
+                ),
+            ) else {
+                continue;
+            };
+            let found_position = found_in_area.shifted(search_area.top_left);
+            let brightness = est_ingame_brightness(best_mean_f, &variant.brightness);
+
+            if self.debugging {
+                self.debug_info.insert(
+                    format!("{:?} {}", spec.anchor_type, variant.name),
+                    (
+                        found_position,
+                        confidence,
+                        brightness,
+                        vec![crop_buffer(
+                            found_position,
+                            get_resizer(&mut self.resizer),
+                            self.buffer,
+                            None,
+                        )],
+                    ),
+                );
+            }
+            if confidence > 0.9 {
+                let anchor_info = self.anchors.get_mut(&spec.anchor_type).unwrap();
+                anchor_info.positions[variant_index] = Some((found_position, confidence));
+                anchor_info.position_root = Some(
+                    found_position
+                        .get_offset(&template_offset)
+                        .shifted((variant.root_shift.0 * scale, variant.root_shift.1 * scale)),
+                );
+                self.screen_info.brightness = Some(brightness);
+            }
         }
     }
 
     pub fn update_anchors(&mut self) {
         self.check_existing_anchors();
 
-        let missing_anchors: Vec<InventoryType> = ANCHORS_LOOKUP
-            .keys()
-            .into_iter()
-            .filter(|k| !self.anchors[k].is_found())
-            .copied()
-            .collect();
-
-        for inv_type in missing_anchors {
-            for (variant_index, (variant_name, bound, _)) in
-                ANCHORS_LOOKUP[&inv_type].iter().enumerate()
-            {
-                if let Some((found_position, confidence, best_mean_f)) = template_match(
-                    &icon_lookup(
-                        variant_name,
-                        self.screen_info.effective_height,
-                        get_resizer(&mut self.resizer),
-                    ),
-                    &crop_buffer(
-                        // the game can sit anywhere in the capture, so search all of it
-                        bound
-                            .map(|x| x.scaled(self.screen_info.scale_factor))
-                            .unwrap_or(FloatRectangle {
-                                top_left: (0.0, 0.0),
-                                width: self.buffer.width as f64,
-                                height: self.buffer.height as f64,
-                            }),
-                        get_resizer(&mut self.resizer),
-                        self.buffer,
-                        None,
-                    ),
-                ) {
-                    if self.debugging {
-                        self.debug_info.insert(
-                            variant_name.clone(),
-                            (
-                                found_position,
-                                confidence,
-                                est_ingame_brightness(best_mean_f, inv_type, variant_name),
-                                vec![crop_buffer(
-                                    found_position,
-                                    get_resizer(&mut self.resizer),
-                                    self.buffer,
-                                    None,
-                                )],
-                            ),
-                        );
-                    }
-                    if confidence > 0.9 {
-                        self.anchors.get_mut(&inv_type).unwrap().positions[variant_index] =
-                            Some((found_position, confidence));
-                        // my_dbg!(
-                        //     found_position,
-                        //     &icon_lookup(
-                        //         variant_name,
-                        //         self.screen_info.effective_height,
-                        //         get_resizer(&mut self.resizer),
-                        //     )
-                        //     .offset,
-                        //     found_position.get_offset(
-                        //         &icon_lookup(
-                        //             variant_name,
-                        //             self.screen_info.effective_height,
-                        //             get_resizer(&mut self.resizer),
-                        //         )
-                        //         .offset
-                        //     ),
-                        // );
-                        self.anchors.get_mut(&inv_type).unwrap().position_root = Some(
-                            found_position.get_offset(
-                                &icon_lookup(
-                                    variant_name,
-                                    self.screen_info.effective_height,
-                                    get_resizer(&mut self.resizer),
-                                )
-                                .offset,
-                            ),
-                        );
-                        self.screen_info.brightness =
-                            Some(est_ingame_brightness(best_mean_f, inv_type, variant_name));
-                    }
-                }
-                if !self.debugging {
-                    self.debug_info = AHashMap::new();
-                }
+        let mut forbidden: Vec<AnchorType> = Vec::new();
+        for spec in ANCHORS.iter() {
+            let parent_missing = spec.variants.iter().any(|variant| {
+                matches!(variant.bound, Bound::Relative(parent, _) if !self.anchors[&parent].is_found())
+            });
+            if forbidden.contains(&spec.anchor_type) || parent_missing {
+                let anchor_info = self.anchors.get_mut(&spec.anchor_type).unwrap();
+                anchor_info.positions.fill(None);
+                anchor_info.position_root = None;
+                continue;
             }
+            if !self.anchors[&spec.anchor_type].is_found() {
+                self.search_anchor(spec);
+            }
+            if self.anchors[&spec.anchor_type].is_found() {
+                forbidden.extend(&spec.forbids);
+            }
+        }
+        if !self.debugging {
+            self.debug_info = AHashMap::new();
         }
     }
 }

@@ -9,7 +9,7 @@ The scanner recognises things by comparing screen crops with stored templates. T
 Two tags exist:
 
 - **Icon**: one per material, a fixed-size square. Matched against inventory slots.
-- **Anchor**: fixed pieces of the inventory window's chrome and its page tabs. Their offsets are relative to the window origin at the reference resolution, which is how finding an anchor locates the window.
+- **Anchor**: fixed pieces of UI used to locate things, and page tabs. Offsets are at the reference resolution. A page tab's offset is relative to its inventory window's origin. An anchor's offset is relative to the root it produces: the window origin for anything that locates a window, the UI block's top-left (so plain screen coordinates on a 16:9 capture) for the Storage button. The character inventory page tabs are 74x48; the storage ones are narrower and were cropped at 60x44. Template sizes divisible by 4 scale cleanly to 1080p; a text template that is not loses several points of match score.
 
 Template **names are a contract** with the Rust constants: anchor and page-tab names are looked up by string, and a missing name panics. The tag strings are matched literally too.
 
@@ -19,7 +19,8 @@ The file is built from two sources, in this order:
 
 1. **Icons, from Python.** `templates/make_msg_pack.py` composites each icon in `templates/Icons` over its rarity background from `templates/Backgrounds` and writes `templates/ScannerConfig.msgpack`. The script appends to whatever is already in that file.
 2. **Anchors, appended in the app.** The Setup sub-page of a character adds to that config. With a live screen share running, the developer marks a rectangle, names and tags it, and Rust crops and normalises it from the current frame. The page lists the entries for editing and reordering, and downloads the combined result as msgpack.
-3. **Manual placement.** The downloaded file is copied into `public/` by hand. Nothing automates this, so `templates/` and `public/` hold different files.
+3. **Storage page tabs and window anchors, one-off.** The storage page tabs, the two "move all duplicates" templates and the storage inventory's bottom anchor were cropped from the 1440p storage screenshots by a throwaway script that applied the same brightness normalisation, rather than captured in the app. Capturing them in the app works too, but the app stores screen positions, so the offsets must then be edited to be window-relative.
+4. **Manual placement.** The downloaded file is copied into `public/` by hand. Nothing automates this, so `templates/` and `public/` hold different files.
 
 ## Brightness calibration
 
@@ -28,16 +29,17 @@ The game's brightness slider changes every pixel, so a template captured at one 
 1. Estimate the player's brightness setting from the mean brightness of a matched anchor, using a fitted curve per anchor.
 2. Remap each observed crop to a fixed reference brightness before comparing.
 
-The fitted curves are constants in the scanner crate, produced offline:
+The fitted curves are per-variant constants in the scanner crate, produced by `scripts/brightness/calibrate_anchor.py`, which prints a line to paste into the anchor's entry. It has two modes:
 
-- `scripts/brightness/inputs` holds screenshots of the same scene at each brightness setting.
-- `crates/scanner/src/main.rs` is a native harness, not part of the app. It runs the scanner over those screenshots and dumps the crops it found. It uses hardcoded local paths.
-- `scripts/brightness/calibrate_anchor.py` fits the curves from those crops and prints a Rust snippet to paste into the scanner constants.
+- **From the model (default, no screenshots).** A stored template is already normalised, so the script runs the brightness model backwards on it to get the anchor's mean at every setting, then fits the curve. Run it with anchor names, or with none for every anchor in `public/ScannerConfig.msgpack`. This is how every storage-layout template was calibrated, and is the way to calibrate a new anchor.
+- **From a sweep (`--sweep`).** Fits real crops instead. `scripts/brightness/inputs` holds screenshots of the same scene at each setting, and `crates/scanner/src/main.rs` (a native harness with hardcoded local paths, not part of the app) runs the scanner over them and dumps the crops. This is how the character inventory anchors and the model itself were calibrated.
 
-The script's greyscale weights and anchor list must match the Rust side for the fit to be valid.
+For the character inventory anchors the two modes agree to within about 5 settings at the dark end and 1 at the bright end.
+
+The script's greyscale weights and model constants must match the Rust side for the fit to be valid.
 
 ## Keeping things in sync
 
 - Adding a material means adding its icon and rarity to the script, regenerating, and making sure the name matches what the rest of the app expects.
-- Adding or renaming an anchor means updating the Rust constants that reference it and rerunning brightness calibration for it.
+- Adding or renaming an anchor means updating its entry in the Rust anchor list and rerunning brightness calibration for it. A bound must be at least the size of its template; slack beyond that is free, because the match position sets the root. The same template may be used by several anchors, but a piece of UI that is greyed out or recoloured in another context needs its own template.
 - The TypeScript interfaces describing scanner structs are hand-written copies of the Rust ones and are not checked against them.

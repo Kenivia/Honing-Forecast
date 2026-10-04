@@ -20,6 +20,8 @@ pub struct ScreenInfo {
     pub effective_height: u32,
     #[serde(default)]
     pub scale_factor: f64,
+    #[serde(default)]
+    pub ui_origin: (f64, f64),
 
     #[serde(default)]
     pub brightness: Option<f64>,
@@ -29,11 +31,21 @@ impl ScannerState {
     // the UI scales with the height of the 16:9 (or 21:9) area the game renders into
     pub fn update_scale(&mut self) {
         let info = &mut self.screen_info;
-        let ratio = if info.forced_21_9 { 21.0 } else { 16.0 };
-        info.effective_height = (info.game_width as f64 * 9.0 / ratio)
+        // the game's 21:9 is really 64:27 (2560x1080)
+        let ratio = if info.forced_21_9 {
+            27.0 / 64.0
+        } else {
+            9.0 / 16.0
+        };
+        info.effective_height = (info.game_width as f64 * ratio)
             .min(info.game_height as f64)
             .round() as u32;
         info.scale_factor = info.effective_height as f64 / 1440.0;
+        // the UI is laid out in a 16:9 block, assumed centered in the capture
+        info.ui_origin = (
+            (self.buffer.width as f64 - info.effective_height as f64 * 16.0 / 9.0) / 2.0,
+            (self.buffer.height as f64 - info.effective_height as f64) / 2.0,
+        );
     }
 }
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Hash, Copy, Clone)]
@@ -69,11 +81,15 @@ pub struct OneSlotInfo {
     pub tradability: Option<Tradability>,
 }
 
-pub const ALL_ANCHOR_TYPES: [InventoryType; 3] = [
-    InventoryType::Roster,
-    InventoryType::CharStorage,
-    InventoryType::CharInventory,
-];
+// a piece of fixed UI that locates inventories, or other anchors
+#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Hash, Copy, Clone)]
+pub enum AnchorType {
+    Storage,
+    StorageRoster,
+    StorageCharStorage,
+    StorageInventory,
+    CharInventory,
+}
 
 #[derive(Debug, Serialize, Deserialize, Default)]
 pub struct ScannerState {
@@ -85,7 +101,7 @@ pub struct ScannerState {
     #[serde(default)]
     pub slot_infos: AHashMap<SlotAddress, OneSlotInfo>,
     #[serde(default)]
-    pub anchors: AHashMap<InventoryType, AnchorInfo>,
+    pub anchors: AHashMap<AnchorType, AnchorInfo>,
 
     #[serde(default)]
     pub page_num_infos: AHashMap<InventoryType, Vec<Option<bool>>>,

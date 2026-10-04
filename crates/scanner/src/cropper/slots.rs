@@ -19,17 +19,11 @@ impl ScannerState {
         &self,
         slot_address: &SlotAddress,
     ) -> Option<FloatRectangle> {
-        if !self.anchors[&slot_address.inventory_type].is_found() {
-            return None;
-        }
+        let root = self.inventory_root(slot_address.inventory_type)?;
         return Some(
             ALL_SLOT_ADDRESSS[slot_address]
                 .scaled(self.screen_info.scale_factor)
-                .use_root(
-                    &self.anchors[&slot_address.inventory_type]
-                        .position_root
-                        .unwrap(),
-                ),
+                .use_root(&root),
         );
     }
     pub fn check_through_all_icons(
@@ -80,12 +74,13 @@ impl ScannerState {
         let active_page_nums = self.active_page_num();
         // my_dbg!(active_page_nums, self.anchors);
         for slot_address in ALL_SLOT_ADDRESSS.keys() {
-            if active_page_nums[&slot_address.inventory_type] != Some(slot_address.page_num)
-                || !self.anchors[&slot_address.inventory_type].is_found()
-            // this extra check is for when there's only 1 pagenum (active_page will return a result but we don't have anchor)
-            {
+            if active_page_nums[&slot_address.inventory_type] != Some(slot_address.page_num) {
                 continue;
             }
+            // this extra check is for when there's only 1 pagenum (active_page will return a result but we don't have anchor)
+            let Some(root) = self.inventory_root(slot_address.inventory_type) else {
+                continue;
+            };
 
             // my_dbg!(active_page_nums[&slot_address.inventory_type]);
             let position: FloatRectangle =
@@ -105,13 +100,8 @@ impl ScannerState {
                     )
                     .is_none())
             {
-                let (icon_name_score, observed_number, observed_icon) = self
-                    .check_through_all_icons(
-                        position,
-                        self.anchors[&slot_address.inventory_type]
-                            .position_root
-                            .unwrap(),
-                    );
+                let (icon_name_score, observed_number, observed_icon) =
+                    self.check_through_all_icons(position, root);
                 if self.debugging {
                     let raw_icon =
                         crop_buffer(position, get_resizer(&mut self.resizer), self.buffer, None);
@@ -136,7 +126,10 @@ impl ScannerState {
                     }
 
                     self.debug_info.insert(
-                        "slot".to_string() + &format!("{:?}", slot_address.pos_in_inv),
+                        format!(
+                            "{:?} slot{:?}",
+                            slot_address.inventory_type, slot_address.pos_in_inv
+                        ),
                         (
                             position.to_rounded(),
                             mean_intensity(&raw_icon),

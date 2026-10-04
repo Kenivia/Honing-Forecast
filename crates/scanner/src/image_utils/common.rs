@@ -29,6 +29,10 @@ pub trait Rectangle: Sized + Copy {
         let (sx, sy) = self.top_left();
         self.with_top_left((sx - ox, sy - oy))
     }
+    fn shifted(&self, by: (f64, f64)) -> Self {
+        let (sx, sy) = self.top_left();
+        self.with_top_left((sx + by.0, sy + by.1))
+    }
     fn use_root<R: Rectangle>(&self, root: &R) -> Self {
         let (rx, ry) = root.top_left();
         let (sx, sy) = self.top_left();

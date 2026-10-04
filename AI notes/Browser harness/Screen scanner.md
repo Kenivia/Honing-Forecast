@@ -18,7 +18,7 @@ export default async ({ page, hf }) => {
 - An image becomes a stream repeating that frame. A video plays once, then repeats its last frame.
 - Works headless and headed, in Chromium and Firefox, for PNG and H.264 MP4.
 - Any file size works. After upload a `Game resolution` select and a `Forced 21:9` checkbox appear, preselected from the file size; if the game in the file is smaller than the file (windowed, padded), pick its real resolution or nothing is recognised.
-- Ready-made inputs: `scripts/brightness/Recording 1080p.mp4` and `scripts/brightness/inputs/*.png` at 1080p; in `scripts/brightness/1440p raw` only `inventory top left.png` and `hover tooltip.png` show a character inventory with items.
+- Ready-made inputs: `scripts/brightness/Recording 1080p.mp4` and `scripts/brightness/inputs/*.png` at 1080p; in `scripts/brightness/1440p raw`, `inventory top left.png` and `hover tooltip.png` show a character inventory with items, the `storage ...` files show the storage layout, and `21 by 9 storage.png` is storage at forced 21:9 (tick the checkbox, keep 2560x1440).
 - The results table is not cleared by `Stop` or a new upload. Reload the page between files, or stale rows will be counted.
 - The first frame is slow (full-frame anchor search). Slot rows appear in the second table once the inventory is found; a full inventory page gives a little over 100 rows.
 - `Stop` ends capture. `Share screen` is the real screen-share path.
