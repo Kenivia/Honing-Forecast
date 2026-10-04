@@ -7,6 +7,7 @@ If you'd like to help with any of the below, feel free to get in touch via [Disc
 
 - ~~FIGURE OUT WHY THERES A MEMORY LEAK IN READER~~
 
+- make things work with non-1920x1080 resolution
 - shoudl probably sort out roster / char storage fisrt
 
 - tooltip yellow testing

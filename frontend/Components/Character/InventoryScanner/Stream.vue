@@ -12,6 +12,12 @@ import {
   ScaledPosition,
   ScannerState,
 } from "./LoadStorage";
+import {
+  auto_select_resolution,
+  game_resolution,
+  RESOLUTIONS_16_9,
+  RESOLUTIONS_21_9,
+} from "./Resolution";
 
 const props = defineProps<{
   boxes?: ScaledPosition[];
@@ -71,24 +77,42 @@ const display_rect = computed(() => {
   };
 });
 
-// One style object per box in `props.boxes`, converted from the
-// 1280x720 reference space into the actual displayed video rect.
+// One style object per box in `props.boxes`, converted from capture
+// pixels into the actual displayed video rect.
 const box_styles = computed(() => {
-  const { offset_x, offset_y } = display_rect.value;
-  const scale_x = 1280 / 1920;
-  const scale_y = 720 / 1080;
+  const { offset_x, offset_y, disp_w } = display_rect.value;
+  const scale = disp_w / video_natural.value.width;
 
   return (props.boxes ?? []).map((pos) => {
     const [x1, y1] = pos.top_left;
 
     return {
-      left: `${offset_x + x1 * scale_x}px`,
-      top: `${offset_y + y1 * scale_y}px`,
-      width: `${Math.ceil(Math.max(offset_x + pos.width * scale_x, 0))}px`,
-      height: `${Math.ceil(Math.max(offset_y + pos.height * scale_y, 0))}px`,
+      left: `${offset_x + x1 * scale}px`,
+      top: `${offset_y + y1 * scale}px`,
+      width: `${Math.ceil(Math.max(pos.width * scale, 0))}px`,
+      height: `${Math.ceil(Math.max(pos.height * scale, 0))}px`,
     };
   });
 });
+
+const resolutions = computed(() =>
+  game_resolution.ultrawide ? RESOLUTIONS_21_9 : RESOLUTIONS_16_9,
+);
+const selected_resolution = computed({
+  get: () => `${game_resolution.width}x${game_resolution.height}`,
+  set: (value) => {
+    [game_resolution.width, game_resolution.height] = value
+      .split("x")
+      .map(Number);
+  },
+});
+
+// templates and remembered slots are scale-specific, so start over
+function restart_scanner() {
+  pause_cropper();
+  bundle.value?.cancel_and_clear_prev_result();
+  start_scanner();
+}
 
 async function start_capture() {
   try {
@@ -133,6 +157,7 @@ function begin(
 ) {
   stop_capture();
   source.start(s, width, height, cleanup);
+  auto_select_resolution(width, height);
   attach();
   start_scanner();
 }
@@ -157,11 +182,13 @@ async function start_scanner() {
 
   const { width, height } = source.size;
   const new_scanner_state = bundle.value.result ?? {
-    screen_info: {
-      total_width: width,
-      total_height: height,
-    },
     debugging: props.debugging,
+  };
+  new_scanner_state.screen_info = {
+    ...new_scanner_state.screen_info,
+    game_width: game_resolution.width,
+    game_height: game_resolution.height,
+    forced_21_9: game_resolution.forced_21_9,
   };
   new_scanner_state.buffer = {
     width,
@@ -328,6 +355,29 @@ watch(
     >
       {{ error }}
     </p>
+
+    <div v-if="status === 'capturing'" class="flex items-center gap-2">
+      <span> Game resolution: </span>
+      <select
+        v-model="selected_resolution"
+        class="selector"
+        aria-label="Game resolution"
+        @change="restart_scanner"
+      >
+        <option v-for="[w, h] in resolutions" :key="`${w}x${h}`">
+          {{ w }}x{{ h }}
+        </option>
+      </select>
+      <label class="flex items-center gap-1">
+        <input
+          type="checkbox"
+          v-model="game_resolution.forced_21_9"
+          :disabled="game_resolution.ultrawide"
+          @change="restart_scanner"
+        />
+        Forced 21:9
+      </label>
+    </div>
 
     <div class="flex gap-2">
       <button

@@ -26,8 +26,8 @@ fn main() -> Result<()> {
         let data = image::open(bright_path).unwrap().to_rgba8();
 
         let mut scanner_state = ScannerState::default();
-        scanner_state.screen_info.total_width = 1920;
-        scanner_state.screen_info.total_height = 1080;
+        scanner_state.screen_info.game_width = 1920;
+        scanner_state.screen_info.game_height = 1080;
         scanner_state.debugging = true;
         scanner_state.buffer.width = 1920;
         scanner_state.buffer.height = 1080;

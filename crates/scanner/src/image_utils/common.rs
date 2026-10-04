@@ -1,9 +1,4 @@
-use crate::{scanner_state::ScannerState, setup::OneIconConfig};
-use fast_image_resize::{
-    PixelType, Resizer,
-    images::{Image, ImageRef},
-};
-use image::RgbaImage;
+use fast_image_resize::Resizer;
 
 use serde::{Deserialize, Serialize};
 
@@ -159,12 +154,6 @@ impl ToUsize for usize {
     }
 }
 
-pub const FULL_RECT_16_9: FloatRectangle = FloatRectangle {
-    top_left: (0.0, 0.0),
-    width: 2560.0,
-    height: 1440.0,
-};
-
 // pub fn config_to_rgba(template: &OneIconConfig) -> ImageBuffer<Rgba<u8>, &[u8]> {
 //     let (template_w, template_h) = (template.offset.width as u32, template.offset.height as u32);
 //     ImageBuffer::from_raw(template_w, template_h, template.data.as_slice()).unwrap()
@@ -174,23 +163,6 @@ pub const FULL_RECT_16_9: FloatRectangle = FloatRectangle {
 //     let (observed_w, observed_h) = (observed.width(), observed.height());
 //     RgbaImage::from_raw(observed_w, observed_h, observed.into_vec()).unwrap()
 // }
-
-impl ScannerState {
-    pub fn src_image(&self) -> ImageRef<'_> {
-        let src_w: u32 = self.screen_info.total_width as u32;
-        let src_h: u32 = self.screen_info.total_height as u32;
-
-        let src_bytes: &[u8] = unsafe {
-            std::slice::from_raw_parts(
-                self.buffer.pointer.expect("uninitialized buffer") as *const u8,
-                self.buffer.size,
-            )
-        };
-
-        ImageRef::new(src_w, src_h, src_bytes, PixelType::U8x4)
-            .expect("source buffer size must equal src_w * src_h * 4")
-    }
-}
 
 pub fn get_resizer(resizer: &mut Option<Resizer>) -> &mut Resizer {
     resizer.get_or_insert(Resizer::new())

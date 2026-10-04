@@ -8,7 +8,7 @@ Code: `crates/scanner` (image processing), `frontend/Components/Character/Invent
 
 1. **Capture** (TypeScript, main thread). A video track is read as a stream of frames at a low frame rate. The track comes from the browser's screen-share API, or from an uploaded image or video file drawn onto a canvas (a fake stream: an image repeats, a video plays once and then holds its last frame). Both go through the same frame reader.
 2. **Frame transfer**. For each operation the main thread reads one frame and transfers it to the worker along with the operation. The worker copies its pixels directly into a buffer inside wasm memory, closes the frame, then calls Rust.
-3. **Locate the window** (Rust). Anchor templates are searched across the whole frame. A hit fixes the inventory window's origin and gives a brightness estimate. On later frames anchors are only re-checked at their known position.
+3. **Locate the window** (Rust). Anchor templates are searched across the whole frame, wherever the game sits in it. A hit fixes the inventory window's origin and gives a brightness estimate. On later frames anchors are only re-checked at their known position.
 4. **Detect the page** (Rust). Page-tab templates at fixed offsets from the origin say which inventory page is showing.
 5. **Read slots** (Rust). Each slot of the active page sits at a fixed offset. A slot whose pixels have not changed is skipped; otherwise its crop is compared against the icon templates, and on a match the number strip is OCR'd.
 6. **Loop**. Each result immediately triggers the next frame.
@@ -32,7 +32,10 @@ Full-frame search is the expensive step and uses FFT cross-correlation. Everythi
 
 ## Conventions
 
-- **Reference resolution is 1440p.** Slot positions, anchor offsets and window rectangles are constants in 1440p pixels, scaled by the capture height. Positions are kept as floats relative to the window origin; nothing is normalised to 0..1.
+- **Reference resolution is 1440p.** Slot positions, anchor offsets and window rectangles are constants in 1440p pixels, scaled by the game's UI height. Positions are kept as floats relative to the window origin; nothing is normalised to 0..1.
+- **The game resolution is chosen by the user, never detected.** The capture can be a whole screen with the game windowed inside it, so its size only seeds a guess: once a capture starts, the capture card shows a resolution list with the closest entry preselected, and a "Forced 21:9" checkbox. An ultrawide capture gets the 21:9 list and the checkbox locked on. The choice is shared module state, not persisted, and is re-guessed on every new capture.
+- **UI height** is the height of the 16:9 (or 21:9) area the game renders into: the smaller of the game height and width x 9/16 (or 9/21). The scale factor is that height, rounded, over 1440. Rust derives both on every scan call from the three values the frontend sends.
+- **Changing the resolution restarts the scanner** like a character change does (worker terminated, state cleared, reserve again), because cached templates and remembered slots are scale-specific. The results table keeps its old rows until the first new result.
 - **Pixels are RGBA** throughout, on both sides of the boundary.
 - **Fixed-position comparison needs identical dimensions.** The template path and the crop path must round scaled sizes the same way, or comparisons quietly return no match.
 - **The frame buffer is sized once**, at capture start, and freed when the worker is terminated. The explicit dealloc operation still exists but the frontend no longer calls it. JS must rebuild its view of wasm memory every frame, since memory growth invalidates old views.
@@ -47,7 +50,9 @@ Working: capture, frame transfer, character-inventory anchor detection, brightne
 Not done yet:
 
 - Results are not written into the calculator's material inputs. Output stops at the debug tables.
-- Resolution and aspect-ratio detection is a stub with one hardcoded resolution. Frames must be exactly 1920x1080 or Rust panics on a crop; pad smaller captures with black rather than scaling them.- Only the character inventory has anchors. Storage and roster storage are placeholders.
+- Scales other than 1080p are lightly tested. 1440p and downscaled copies of it locate the window and line up the slot grid, but recognise fewer icons than 1080p does; matching thresholds have not been tuned per scale.
+- A crop that falls outside the frame (inventory window partly off the capture) still panics.
+- Only the character inventory has anchors. Storage and roster storage are placeholders.
 - Tooltip detection and bound-versus-tradable detection are not implemented.
 
 Demo-only: `DemoOCR.vue` and `DemoColorfilter.vue` are earlier proofs of concept, still mounted on the scanner page. `tesseract-wasm` and `eng.traineddata` are used only by the OCR demo.

@@ -6,9 +6,7 @@ impl ScannerState {
         assert!(self.buffer.pointer.is_some());
         assert!(BASE_ICONS.read().len() != 0);
 
-        if !self.screen_info.initialized {
-            self.check_21_9();
-        }
+        self.update_scale();
         // my_dbg!("starting anchor");
         self.update_anchors();
         // my_dbg!("starting page");

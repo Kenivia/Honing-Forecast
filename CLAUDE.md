@@ -11,4 +11,6 @@ Do not introduce complexity for the sake of completeness. In particular use unwr
 
 Never commit or merge using git.
 
+Always prefer existing libraries rather than hand-rolling if possible. Search on relevant sites instead of relying on trained memory.
+
 Use tailwind for UI styling. Keep UI styling consistent with the rest of the website. In particular prefer using existing colors in one of the .css files and keep things simple.

@@ -8,34 +8,33 @@ use ahash::AHashMap;
 use fast_image_resize::Resizer;
 use serde::{Deserialize, Serialize};
 
+// game resolution and forced 21:9 are picked by the user, the capture size says nothing about them
 #[derive(Debug, Serialize, Deserialize, Default)]
 pub struct ScreenInfo {
-    pub total_width: u32,
+    pub game_width: u32,
+    pub game_height: u32,
     #[serde(default)]
-    pub start_width: u32,
-    #[serde(default)]
-    pub end_width: u32,
-    #[serde(default)]
-    pub effective_width: u32,
+    pub forced_21_9: bool,
 
-    pub total_height: u32,
-    #[serde(default)]
-    pub start_height: u32,
-    #[serde(default)]
-    pub end_height: u32,
     #[serde(default)]
     pub effective_height: u32,
-
     #[serde(default)]
-    pub is_21_9: bool,
-
-    #[serde(default)]
-    pub initialized: bool,
+    pub scale_factor: f64,
 
     #[serde(default)]
     pub brightness: Option<f64>,
-    #[serde(default)]
-    pub scale_factor: f64,
+}
+
+impl ScannerState {
+    // the UI scales with the height of the 16:9 (or 21:9) area the game renders into
+    pub fn update_scale(&mut self) {
+        let info = &mut self.screen_info;
+        let ratio = if info.forced_21_9 { 21.0 } else { 16.0 };
+        info.effective_height = (info.game_width as f64 * 9.0 / ratio)
+            .min(info.game_height as f64)
+            .round() as u32;
+        info.scale_factor = info.effective_height as f64 / 1440.0;
+    }
 }
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Hash, Copy, Clone)]
 pub enum InventoryType {

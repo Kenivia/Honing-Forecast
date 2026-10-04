@@ -7,7 +7,7 @@ use crate::{
     image_utils::{
         brightness::est_ingame_brightness,
         close_enough::close_enough,
-        common::{FULL_RECT_16_9, IntegerRectangle, Rectangle, get_resizer},
+        common::{FloatRectangle, IntegerRectangle, Rectangle, get_resizer},
         resize::crop_buffer,
         template_matching::template_match,
     },
@@ -108,9 +108,14 @@ impl ScannerState {
                         get_resizer(&mut self.resizer),
                     ),
                     &crop_buffer(
+                        // the game can sit anywhere in the capture, so search all of it
                         bound
-                            .unwrap_or(FULL_RECT_16_9)
-                            .scaled(self.screen_info.scale_factor),
+                            .map(|x| x.scaled(self.screen_info.scale_factor))
+                            .unwrap_or(FloatRectangle {
+                                top_left: (0.0, 0.0),
+                                width: self.buffer.width as f64,
+                                height: self.buffer.height as f64,
+                            }),
                         get_resizer(&mut self.resizer),
                         self.buffer,
                         None,
