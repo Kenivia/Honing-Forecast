@@ -74,13 +74,14 @@ pub fn find_title(buffer: &Buffer, s: f64) -> Option<TitleBar> {
         }
         let x = right + 1 - width;
 
-        let mut strip = vec![];
+        let (mut strip, mut raw_strip) = (vec![], vec![]);
         for y in top..top + need {
             for x in right - window..right - 4 {
                 strip.push(buffer.rgb(x, y));
+                raw_strip.push(buffer.raw(x, y));
             }
         }
-        let title_colour = median(strip);
+        let (title_colour, raw_title) = (median(strip), median(raw_strip));
         // Blue-grey; rules out the neutral greys of the other windows, which come out at -1 to 1.
         // A tooltip is about 8, but one that was only up for a few frames of a compressed recording
         // can be as low as 3.
@@ -88,10 +89,14 @@ pub fn find_title(buffer: &Buffer, s: f64) -> Option<TitleBar> {
             continue;
         }
 
-        // below the title the right margin drops to the darker body colour and stays there
+        // Below the title the right margin changes to the body colour and stays there. This is
+        // looked for in the captured colours: at a low brightness setting the two are a couple of
+        // levels apart, which normalising blows up along with the noise.
         let column = |y: usize| buffer.rgb(right - 2, y);
+        let step = (raw_title.into_iter().max().unwrap() / 4).max(2);
+        let changed = |y: usize| distance(buffer.raw(right - 2, y), raw_title) >= step;
         let Some(height) =
-            (top..buffer.height).position(|y| distance(column(y), title_colour) > TOLERANCE + 3)
+            (top..buffer.height - 3).position(|y| (y..y + 3).all(changed))
         else {
             continue;
         };
@@ -105,15 +110,19 @@ pub fn find_title(buffer: &Buffer, s: f64) -> Option<TitleBar> {
         }
         let body: Vec<[i32; 3]> = (body_top..body_top + body_rows).map(column).collect();
         let body_colour = median(body.clone());
+        let raw_body = median((body_top..body_top + body_rows).map(|y| buffer.raw(right - 2, y)).collect());
         let steady = body
             .iter()
             .filter(|p| distance(**p, body_colour) <= 14)
             .count() as f64
             > 0.7 * body_rows as f64;
-        // ~97% opaque over anything from black to white, so at most ~8 levels above its own colour
+        // ~97% opaque over anything from black to white, so what is captured is up to ~9 levels
+        // above its own colour, whatever the brightness setting
         let lifted = (0..3).all(|c| {
-            let lift = body_colour[c] as f64 - title_colour[c] as f64 * BODY_TO_TITLE[c];
-            lift >= -2.0 - TOLERANCE as f64 && lift <= 9.0 + TOLERANCE as f64
+            (0..=9).any(|lift| {
+                let own = lut[(raw_body[c] - lift).max(0) as usize] as f64;
+                (own - title_colour[c] as f64 * BODY_TO_TITLE[c]).abs() <= 2.0 + TOLERANCE as f64
+            })
         });
         if steady && lifted {
             return Some(TitleBar {

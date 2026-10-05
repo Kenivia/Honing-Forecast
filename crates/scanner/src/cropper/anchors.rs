@@ -3,7 +3,7 @@ use hf_core::my_dbg;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    constants::{ANCHORS, AnchorSpec, Bound, anchor_spec},
+    constants::{ANCHORS, AnchorSpec, Bound, STORAGE_MIN, STORAGE_SHIFTS, anchor_spec},
     image_utils::{
         brightness::est_ingame_brightness,
         close_enough::{DEFAULT_CONFIDENCE, close_enough},
@@ -18,8 +18,8 @@ use crate::{
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct AnchorInfo {
-    // per variant: absolute position, confidence, and the brightness it was found at
-    pub positions: Vec<Option<(IntegerRectangle, f64, f64)>>,
+    // per variant: absolute position, confidence, and the brightness it was found at if it tells
+    pub positions: Vec<Option<(IntegerRectangle, f64, Option<f64>)>>,
     pub position_root: Option<IntegerRectangle>,
 }
 
@@ -47,29 +47,25 @@ impl ScannerState {
         }
     }
 
-    // window origin of this inventory, from the first found anchor that locates it
+    // Window origin of this inventory, from the first anchor with a root that locates it. A
+    // storage window keeps its root while both of its anchors are covered.
     pub fn inventory_root(&self, inventory_type: InventoryType) -> Option<IntegerRectangle> {
-        ANCHORS
-            .iter()
-            .filter(|spec| self.anchors[&spec.anchor_type].is_found())
-            .find_map(|spec| {
-                let (_, origin) = spec
-                    .inventories
-                    .iter()
-                    .find(|(this_type, _)| *this_type == inventory_type)?;
-                Some(
-                    self.anchors[&spec.anchor_type]
-                        .position_root
-                        .unwrap()
-                        .shifted((
-                            origin.0 * self.screen_info.scale_factor,
-                            origin.1 * self.screen_info.scale_factor,
-                        )),
-                )
-            })
+        ANCHORS.iter().find_map(|spec| {
+            let (_, origin) = spec
+                .inventories
+                .iter()
+                .find(|(this_type, _)| *this_type == inventory_type)?;
+            Some(self.anchors[&spec.anchor_type].position_root?.shifted((
+                origin.0 * self.screen_info.scale_factor,
+                origin.1 * self.screen_info.scale_factor,
+            )))
+        })
     }
 
     pub fn check_existing_anchors(&mut self) {
+        let Some(brightness) = self.screen_info.brightness else {
+            return;
+        };
         let mut to_clear: Vec<(AnchorType, usize)> = Vec::new();
 
         for (anchor_type, anchor_info) in self.anchors.iter() {
@@ -92,7 +88,7 @@ impl ScannerState {
                         self.buffer,
                         anchor_info.position_root,
                     ),
-                    self.screen_info.brightness.unwrap(),
+                    brightness,
                 )
                 .is_none()
                 {
@@ -109,6 +105,9 @@ impl ScannerState {
     fn search_anchor(&mut self, spec: &AnchorSpec) {
         let scale = self.screen_info.scale_factor;
         for (variant_index, variant) in spec.variants.iter().enumerate() {
+            if self.anchors[&spec.anchor_type].positions[variant_index].is_some() {
+                continue;
+            }
             let template = icon_lookup(
                 variant.name,
                 self.screen_info.effective_height,
@@ -126,9 +125,17 @@ impl ScannerState {
                     height: self.buffer.height as f64,
                 },
                 Bound::Ui(bound) => bound.scaled(scale).shifted(self.screen_info.ui_origin),
-                Bound::Relative(parent, bound) => bound
+                Bound::Storage(bound) => bound
+                    .shifted(self.storage_shift)
                     .scaled(scale)
-                    .use_root(&self.anchors[&parent].position_root.unwrap()),
+                    .shifted(self.screen_info.ui_origin),
+            };
+            // on whole pixels, or the crop is resampled and the brightness comes out a setting or two off
+            let (left, top) = (search_area.top_left.0.floor(), search_area.top_left.1.floor());
+            let search_area = FloatRectangle {
+                top_left: (left, top),
+                width: (search_area.top_left.0 + search_area.width).ceil() - left,
+                height: (search_area.top_left.1 + search_area.height).ceil() - top,
             };
             let Some((found_in_area, confidence, best_mean_f)) = template_match(
                 &icon_lookup(
@@ -146,7 +153,7 @@ impl ScannerState {
                 continue;
             };
             let found_position = found_in_area.shifted(search_area.top_left);
-            let brightness = est_ingame_brightness(best_mean_f, &variant.brightness);
+            let brightness = variant.brightness.map(|curve| est_ingame_brightness(best_mean_f, &curve));
 
             if self.debugging {
                 let name = format!("{:?} {}", spec.anchor_type, variant.name);
@@ -156,7 +163,7 @@ impl ScannerState {
                     (
                         found_position,
                         confidence,
-                        brightness,
+                        brightness.unwrap_or_default(),
                         vec![crop_buffer(
                             found_position,
                             get_resizer(&mut self.resizer),
@@ -169,14 +176,13 @@ impl ScannerState {
             if confidence > required_confidence {
                 let anchor_info = self.anchors.get_mut(&spec.anchor_type).unwrap();
                 anchor_info.positions[variant_index] = Some((found_position, confidence, brightness));
-                anchor_info.position_root = Some(
-                    found_position
-                        .get_offset(&template_offset)
-                        .shifted((variant.root_shift.0 * scale, variant.root_shift.1 * scale)),
-                );
+                // variants place the root a pixel apart, so the first one found keeps it
+                if !anchor_info.positions[..variant_index].iter().any(|x| x.is_some()) {
+                    anchor_info.position_root = Some(found_position.get_offset(&template_offset));
+                }
                 // only to start with: until an anchor has held up, there is nothing better
-                if self.screen_info.brightness_anchors == 0 {
-                    self.screen_info.brightness = Some(brightness);
+                if self.screen_info.brightness_anchors == 0 && brightness.is_some() {
+                    self.screen_info.brightness = brightness;
                 }
             }
         }
@@ -190,7 +196,7 @@ impl ScannerState {
         let found: Vec<f64> = self
             .anchors
             .values()
-            .flat_map(|anchor| anchor.positions.iter().flatten().map(|x| x.2))
+            .flat_map(|anchor| anchor.positions.iter().flatten().filter_map(|x| x.2))
             .collect();
         if found.len() > self.screen_info.brightness_anchors {
             self.screen_info.brightness = Some(found.iter().sum::<f64>() / found.len() as f64);
@@ -198,27 +204,56 @@ impl ScannerState {
         }
     }
 
+    fn storage_found(&self) -> usize {
+        self.anchors
+            .iter()
+            .filter(|(anchor_type, _)| **anchor_type != AnchorType::CharInventory)
+            .map(|(_, anchor)| anchor.positions.iter().flatten().count())
+            .sum()
+    }
+
+    fn clear_anchor(&mut self, anchor_type: AnchorType) {
+        let anchor_info = self.anchors.get_mut(&anchor_type).unwrap();
+        anchor_info.positions.fill(None);
+        anchor_info.position_root = None;
+    }
+
+    fn search_storage(&mut self) {
+        for spec in ANCHORS.iter().filter(|spec| spec.anchor_type != AnchorType::CharInventory) {
+            timed("anchors/storage", || self.search_anchor(spec));
+        }
+    }
+
     pub fn update_anchors(&mut self) {
         self.check_existing_anchors();
         self.update_brightness();
 
-        let mut forbidden: Vec<AnchorType> = Vec::new();
-        for spec in ANCHORS.iter() {
-            let parent_missing = spec.variants.iter().any(|variant| {
-                matches!(variant.bound, Bound::Relative(parent, _) if !self.anchors[&parent].is_found())
-            });
-            if forbidden.contains(&spec.anchor_type) || parent_missing {
-                let anchor_info = self.anchors.get_mut(&spec.anchor_type).unwrap();
-                anchor_info.positions.fill(None);
-                anchor_info.position_root = None;
-                continue;
+        if self.storage_found() >= STORAGE_MIN {
+            self.search_storage();
+        } else {
+            // closed, or only just opened: look where the pet and then the NPC would put it
+            for shift in STORAGE_SHIFTS {
+                for spec in ANCHORS.iter() {
+                    if spec.anchor_type != AnchorType::CharInventory {
+                        self.clear_anchor(spec.anchor_type);
+                    }
+                }
+                self.storage_shift = shift;
+                self.search_storage();
+                if self.storage_found() >= STORAGE_MIN {
+                    break;
+                }
             }
-            if !self.anchors[&spec.anchor_type].is_found() {
-                timed("anchors/search", || self.search_anchor(spec));
-            }
-            if self.anchors[&spec.anchor_type].is_found() {
-                forbidden.extend(&spec.forbids);
-            }
+        }
+
+        // the lone inventory's templates are in every storage window, and finding it takes a
+        // search of the whole frame
+        let lone = anchor_spec(AnchorType::CharInventory);
+        if self.storage_found() >= STORAGE_MIN {
+            self.clear_anchor(lone.anchor_type);
+        } else if !self.anchors[&lone.anchor_type].is_found() {
+            self.clear_anchor(lone.anchor_type);
+            timed("anchors/search", || self.search_anchor(lone));
         }
         if !self.debugging {
             self.debug_info = AHashMap::new();

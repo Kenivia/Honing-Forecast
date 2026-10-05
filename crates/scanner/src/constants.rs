@@ -136,24 +136,22 @@ pub enum Bound {
     Frame,
     // 1440p UI space
     Ui(FloatRectangle),
-    // relative to another anchor's root, which must be found first
-    Relative(AnchorType, FloatRectangle),
+    // 1440p UI space, moved along with the storage layout
+    Storage(FloatRectangle),
 }
 
 pub struct AnchorVariant {
     pub name: &'static str,
     pub bound: Bound,
-    // moves the root when a variant shows the same layout somewhere else
-    pub root_shift: (f64, f64),
-    // from scripts/brightness/calibrate_anchor.py
-    pub brightness: [f64; 3],
+    // Setting from the matched patch's mean, fitted to the captures in scripts/brightness/inputs*
+    // (1080p). None for thin icons: the game draws them anew at each resolution, and their mean
+    // comes out 9 settings apart between 1080p and 1440p.
+    pub brightness: Option<[f64; 3]>,
 }
 
 pub struct AnchorSpec {
     pub anchor_type: AnchorType,
     pub variants: Vec<AnchorVariant>,
-    // while this anchor is found, these are cleared and not searched
-    pub forbids: Vec<AnchorType>,
     // window origin of each inventory this anchor locates, relative to the anchor root
     pub inventories: Vec<(InventoryType, (f64, f64))>,
 }
@@ -168,33 +166,34 @@ fn around(top_left: (f64, f64), width: f64, height: f64, slack: f64) -> FloatRec
 }
 
 const SORT_BUTTON: &str = "Char Inventory Anchor 1";
-const SORT_BUTTON_CURVE: [f64; 3] = [5.1915080096e-03, 0.7677018683, -40.0652762];
-const INVENTORY_BOTTOM: &str = "Char Inventory Anchor 2";
-const INVENTORY_BOTTOM_CURVE: [f64; 3] = [3.3969098428e-03, 1.0041463049, -24.1746495];
+const SORT_BUTTON_CURVE: [f64; 3] = [5.0512534143e-03, 0.7490040658, -36.4018862];
+// the inventory's other icons up there are its filters, and the chosen one lights up
+const SEARCH_BUTTON: &str = "Inventory search button";
+const SEARCH_BUTTON_CURVE: [f64; 3] = [3.6937751239e-03, 1.2577411327, -24.5035260];
 const STORAGE_SLACK: f64 = 2.0;
-const WINDOW_SLACK: f64 = 4.0;
-const MOVE_ALL_CURVE: [f64; 3] = [4.1848223556e-03, 1.0029699644, -35.7747665];
+const WINDOW_SLACK: f64 = 6.0;
+// The storage layout is three windows and the Storage button, always in the same place: one for
+// the pet menu, and shifted by this for the storage NPC. It is open while this many of its seven
+// anchors are found, so the cursor or a tooltip covering a few of them changes nothing.
+pub const STORAGE_SHIFTS: [(f64, f64); 2] = [(0.0, 0.0), (-6.4, -142.45)];
+pub const STORAGE_MIN: usize = 3;
 
-// one window of the storage layout: the sort button plus one other piece of its chrome,
-// both looked for around where the storage anchor says the window is
+// one window of the storage layout: the sort button at its top left and the icons at its top right
 fn storage_window(
     anchor_type: AnchorType,
     inventory_type: InventoryType,
     origin: (f64, f64),
     other_name: &'static str,
     other_offset: FloatRectangle,
-    other_brightness: [f64; 3],
+    other_brightness: Option<[f64; 3]>,
 ) -> AnchorSpec {
     let relative = |offset: (f64, f64), width: f64, height: f64| {
-        Bound::Relative(
-            AnchorType::Storage,
-            around(
-                (origin.0 + offset.0, origin.1 + offset.1),
-                width,
-                height,
-                WINDOW_SLACK,
-            ),
-        )
+        Bound::Storage(around(
+            (origin.0 + offset.0, origin.1 + offset.1),
+            width,
+            height,
+            WINDOW_SLACK,
+        ))
     };
     AnchorSpec {
         anchor_type,
@@ -202,8 +201,7 @@ fn storage_window(
             AnchorVariant {
                 name: SORT_BUTTON,
                 bound: relative((20.0, 60.0), 38.0, 38.0),
-                root_shift: (0.0, 0.0),
-                brightness: SORT_BUTTON_CURVE,
+                brightness: Some(SORT_BUTTON_CURVE),
             },
             AnchorVariant {
                 name: other_name,
@@ -212,74 +210,69 @@ fn storage_window(
                     other_offset.width,
                     other_offset.height,
                 ),
-                root_shift: (0.0, 0.0),
                 brightness: other_brightness,
             },
         ],
-        forbids: vec![],
         inventories: vec![(inventory_type, (0.0, 0.0))],
     }
 }
 
-// checked in this order
+// every one but the last belongs to the storage layout
 pub static ANCHORS: LazyLock<Vec<AnchorSpec>> = LazyLock::new(|| {
     vec![
-        // only says the storage layout is open and roughly where, the windows have their own anchors
+        // the highlighted Storage button, which sits elsewhere for the NPC but does not move with the windows
         AnchorSpec {
             anchor_type: AnchorType::Storage,
             variants: vec![
                 AnchorVariant {
                     name: "Storage anchor pet",
                     bound: Bound::Ui(around((655.0, 1280.0), 120.0, 50.0, STORAGE_SLACK)),
-                    root_shift: (0.0, 0.0),
-                    brightness: [5.7877893407e-03, 0.5554276781, -36.8317787],
+                    // no captures of the pet menu across settings, so this one is from the model
+                    brightness: Some([5.7877893407e-03, 0.5554276781, -36.8317787]),
                 },
                 AnchorVariant {
                     name: "Storage anchor npc",
                     bound: Bound::Ui(around((1215.0, 1100.0), 120.0, 50.0, STORAGE_SLACK)),
-                    root_shift: (-6.4, -142.45),
-                    brightness: [5.8147377428e-03, 0.5543038280, -36.7024555],
+                    brightness: Some([5.4345973311e-03, 0.5303418622, -30.5668870]),
                 },
             ],
-            forbids: vec![AnchorType::CharInventory],
             inventories: vec![],
         },
         storage_window(
             AnchorType::StorageRoster,
             InventoryType::Roster,
             (332.6, 290.7),
-            "Roster move all duplicates",
+            "Roster top right icons",
             FloatRectangle {
-                top_left: (91.4, 809.3),
-                width: 264.0,
+                top_left: (359.4, 63.3),
+                width: 76.0,
                 height: 36.0,
             },
-            MOVE_ALL_CURVE,
+            None,
         ),
         storage_window(
             AnchorType::StorageCharStorage,
             InventoryType::CharStorage,
             (778.7, 290.7),
-            "Char storage move all duplicates",
+            "Char storage top right icons",
             FloatRectangle {
-                top_left: (233.3, 809.3),
-                width: 264.0,
+                top_left: (509.3, 63.3),
+                width: 208.0,
                 height: 36.0,
             },
-            MOVE_ALL_CURVE,
+            None,
         ),
         storage_window(
             AnchorType::StorageInventory,
             InventoryType::CharInventory,
             (1504.6, 290.7),
-            // greyed out here, so not the same template as the char inventory one
-            "Storage inventory anchor 2",
+            SEARCH_BUTTON,
             FloatRectangle {
-                top_left: (22.4, 806.3),
-                width: 80.0,
-                height: 42.0,
+                top_left: (662.0, 56.0),
+                width: 48.0,
+                height: 48.0,
             },
-            [-5.3541878546e-04, 1.8218981042, -18.4227396],
+            Some(SEARCH_BUTTON_CURVE),
         ),
         AnchorSpec {
             anchor_type: AnchorType::CharInventory,
@@ -287,17 +280,14 @@ pub static ANCHORS: LazyLock<Vec<AnchorSpec>> = LazyLock::new(|| {
                 AnchorVariant {
                     name: SORT_BUTTON,
                     bound: Bound::Frame,
-                    root_shift: (0.0, 0.0),
-                    brightness: SORT_BUTTON_CURVE,
+                    brightness: Some(SORT_BUTTON_CURVE),
                 },
                 AnchorVariant {
-                    name: INVENTORY_BOTTOM,
+                    name: SEARCH_BUTTON,
                     bound: Bound::Frame,
-                    root_shift: (0.0, 0.0),
-                    brightness: INVENTORY_BOTTOM_CURVE,
+                    brightness: Some(SEARCH_BUTTON_CURVE),
                 },
             ],
-            forbids: vec![],
             inventories: vec![(InventoryType::CharInventory, (0.0, 0.0))],
         },
     ]

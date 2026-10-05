@@ -47,6 +47,13 @@ impl Buffer {
         std::array::from_fn(|c| lut[data[index + c] as usize] as i32)
     }
 
+    // colour of one pixel as captured
+    #[inline(always)]
+    pub fn raw(&self, x: usize, y: usize) -> [i32; 3] {
+        let index = (y * self.width + x) * 4;
+        std::array::from_fn(|c| self.data()[index + c] as i32)
+    }
+
     // of the raw pixels of a rectangle, to tell cheaply that nothing in it changed
     pub fn hash(&self, x0: usize, y0: usize, x1: usize, y1: usize) -> u64 {
         let data = self.data();

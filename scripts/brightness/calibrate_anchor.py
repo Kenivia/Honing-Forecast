@@ -27,9 +27,7 @@ from PIL import Image
 CONFIG_PATH = Path("./public/ScannerConfig.msgpack")
 ROOT_DIR = Path("./scripts/brightness/all icons")
 
-GAMMA_RATE = 0.01502885
-GAIN_LINEAR = 0.045408
-GAIN_QUADRATIC = -0.047688
+GAMMA_RATIO = 62.6
 TARGET_BRIGHTNESS = 50.0
 
 # Rec.709 luma weights, matching image::imageops::grayscale() in the `image` crate.
@@ -42,9 +40,8 @@ def mean_f(rgb: np.ndarray) -> float:
 
 # inverse of normalize_brightness(): what a normalized template looked like at this setting
 def denormalize(rgb: np.ndarray, setting: float) -> np.ndarray:
-    exponent = (1 + GAMMA_RATE * setting) / (1 + GAMMA_RATE * TARGET_BRIGHTNESS)
-    gain = np.exp(GAIN_LINEAR * (exponent - 1) + GAIN_QUADRATIC * (exponent - 1) ** 2)
-    return np.clip(255 * (rgb / (255 * gain)) ** (1 / exponent), 0, 255).round()
+    exponent = (GAMMA_RATIO + setting) / (GAMMA_RATIO + TARGET_BRIGHTNESS)
+    return (255 * (rgb / 255) ** (1 / exponent)).round()
 
 
 def model_means(name: str, templates: dict) -> tuple[list[int], list[float]]:

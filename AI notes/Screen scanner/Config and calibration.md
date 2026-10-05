@@ -19,7 +19,7 @@ The file is built from two sources, in this order:
 
 1. **Icons, from Python.** `templates/items.json` is the item table: one row per in-game item with its tooltip `title`, its `icon` (a file in `templates/Icons`) and the `rarity` background. `templates/make_msg_pack.py` composites each distinct icon over its background and replaces the Icon templates in `public/ScannerConfig.msgpack` in place, leaving every other template alone. Rows may share an icon (chest tiers that look the same), and a row without an icon is only a title the tooltip reader accepts. The same file is compiled into the scanner crate for title matching.
 2. **Anchors, appended in the app.** The Setup sub-page of a character adds to that config. With a live screen share running, the developer marks a rectangle, names and tags it, and Rust crops and normalises it from the current frame. The page lists the entries for editing and reordering, and downloads the combined result as msgpack.
-3. **Storage page tabs and window anchors, one-off.** The storage page tabs, the two "move all duplicates" templates and the storage inventory's bottom anchor were cropped from the 1440p storage screenshots by a throwaway script that applied the same brightness normalisation, rather than captured in the app. Capturing them in the app works too, but the app stores screen positions, so the offsets must then be edited to be window-relative.
+3. **Storage page tabs and window anchors, one-off.** The storage page tabs, the two storage windows' top-right icon groups and the inventory's search button were cropped from the 1440p screenshots by throwaway scripts that applied the same brightness normalisation (for setting 70), rather than captured in the app. Capturing them in the app works too, but the app stores screen positions, so the offsets must then be edited to be window-relative.
 4. **Manual placement.** A config downloaded from the Setup page is copied into `public/` by hand. `templates/ScannerConfig.msgpack` is a leftover from the older flow and is no longer written.
 
 ## Brightness calibration
@@ -29,14 +29,20 @@ The game's brightness slider changes every pixel, so a template captured at one 
 1. Estimate the player's brightness setting from the mean brightness of a matched anchor, using a fitted curve per anchor.
 2. Remap each observed crop to a fixed reference brightness before comparing.
 
-The fitted curves are per-variant constants in the scanner crate, produced by `scripts/brightness/calibrate_anchor.py`, which prints a line to paste into the anchor's entry. It has two modes:
+The fitted curves are per-variant constants in the scanner crate. A variant can also have none, and then says nothing about the brightness; the icon groups have none (see `Pipeline.md`).
 
-- **From the model (default, no screenshots).** A stored template is already normalised, so the script runs the brightness model backwards on it to get the anchor's mean at every setting, then fits the curve. Run it with anchor names, or with none for every anchor in `public/ScannerConfig.msgpack`. This is how every storage-layout template was calibrated, and is the way to calibrate a new anchor.
-- **From a sweep (`--sweep`).** Fits real crops instead. `scripts/brightness/inputs` holds screenshots of the same scene at each setting, and `crates/scanner/src/main.rs` (a native harness with hardcoded local paths, not part of the app) runs the scanner over them and dumps the crops. This is how the character inventory anchors and the model itself were calibrated.
+The current curves of the sort button, the search button and the NPC Storage button were fitted to the mean of the matched patch at all 21 settings, over both sets of captures (`scripts/brightness/inputs`, the lone inventory, and `scripts/brightness/inputs storage`, the storage layout at the NPC; both 1080p). The means came from a temporary print in the anchor search, so there is no script that reproduces them as is. The pet menu's Storage button has no such captures and keeps its model-derived curve.
+
+`scripts/brightness/calibrate_anchor.py` prints a line to paste into an anchor's entry. It has two modes:
+
+- **From the model (default, no screenshots).** A stored template is already normalised, so the script runs the brightness model backwards on it to get the anchor's mean at every setting, then fits the curve. Run it with anchor names, or with none for every anchor in `public/ScannerConfig.msgpack`. Only the pet Storage button still uses this. It was off by up to 4 settings for the NPC button and by 9 for the icon groups at 1080p.
+- **From a sweep (`--sweep`).** Fits real crops instead. `scripts/brightness/inputs` holds screenshots of the same scene at each setting, and `crates/scanner/src/main.rs` (a native harness with hardcoded local paths, not part of the app) runs the scanner over them and dumps the crops. This is how the model itself was calibrated. The dump reads `scripts/brightness/inputs` only.
 
 For the character inventory anchors the two modes agree to within about 5 settings at the dark end and 1 at the bright end.
 
-The script's greyscale weights and model constants must match the Rust side for the fit to be valid.
+Calibrate on the resolution that matters most: a curve fitted at 1080p reads a button 2 to 3 settings high at 1440p.
+
+The script's greyscale weights and the gamma ratio must match the Rust side for the fit to be valid. The model is described in `Pipeline.md`.
 
 ## Keeping things in sync
 

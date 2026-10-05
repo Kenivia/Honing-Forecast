@@ -2,9 +2,10 @@ use image::{GrayImage, imageops::grayscale};
 
 use crate::setup::OneIconConfig;
 
-const GAMMA_RATE: f64 = 0.01502885;
-const GAIN_LINEAR: f64 = 0.045408;
-const GAIN_QUADRATIC: f64 = -0.047688;
+// The setting is a display gamma that grows in a straight line with it, so two settings differ
+// by a power law and nothing else. Only this ratio of the line's offset to its slope can be told
+// from captures; 62.6 fits those in scripts/brightness/inputs storage to 0.15 levels on average.
+const GAMMA_RATIO: f64 = 62.6;
 const TARGET_BRIGHTNESS: f64 = 50.0;
 
 pub fn mean_intensity(icon: &OneIconConfig) -> f64 {
@@ -20,17 +21,10 @@ pub fn est_ingame_brightness(best_mean_f: f64, c: &[f64; 3]) -> f64 {
 }
 
 pub fn brightness_lut(in_game_brightness: f64) -> [u8; 256] {
-    let exponent = (1.0 + GAMMA_RATE * in_game_brightness.clamp(0.0, 100.0))
-        / (1.0 + GAMMA_RATE * TARGET_BRIGHTNESS);
-    let gain = (GAIN_LINEAR * (exponent - 1.0)
-        + GAIN_QUADRATIC * (exponent - 1.0) * (exponent - 1.0))
-        .exp();
+    let exponent = (GAMMA_RATIO + in_game_brightness.clamp(0.0, 100.0))
+        / (GAMMA_RATIO + TARGET_BRIGHTNESS);
 
-    std::array::from_fn(|v| {
-        (255.0 * gain * (v as f64 / 255.0).powf(exponent))
-            .round()
-            .clamp(0.0, 255.0) as u8
-    })
+    std::array::from_fn(|v| (255.0 * (v as f64 / 255.0).powf(exponent)).round() as u8)
 }
 
 pub fn normalize_brightness(input: &mut OneIconConfig, in_game_brightness: f64) {

@@ -86,6 +86,7 @@ impl ScannerState {
         }
         let active_page_nums = self.active_page_num();
         let (start, mut spent) = (crate::timing::now(), 0.0);
+        self.slots_left = false;
         // my_dbg!(active_page_nums, self.anchors);
         for slot_address in ALL_SLOT_ADDRESSS.keys() {
             if active_page_nums[&slot_address.inventory_type] != Some(slot_address.page_num) {
@@ -127,6 +128,7 @@ impl ScannerState {
                 self.slot_infos.get_mut(slot_address).unwrap().raw_hash = raw_hash;
             } else {
                 if spent > SLOT_BUDGET {
+                    self.slots_left = true;
                     continue;
                 }
                 let (icon_name_score, observed_number, observed_icon) =

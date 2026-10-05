@@ -91,7 +91,14 @@ fn main() {
                 state.run_ocr_inline();
             }
             println!("{path}");
-            println!("  brightness {:?}", state.screen_info.brightness);
+            let scores: Vec<f64> =
+                state.slot_infos.values().filter_map(|slot| Some(slot.icon_name_score.as_ref()?.1)).collect();
+            println!(
+                "  brightness {:?}, {} slots recognised, mean confidence {:.4}",
+                state.screen_info.brightness,
+                scores.len(),
+                scores.iter().sum::<f64>() / scores.len() as f64
+            );
             match &state.hover {
                 Some(hover) => println!("  {}", describe(&state, hover)),
                 None => println!("  no tooltip"),
@@ -107,6 +114,7 @@ fn main() {
     let mut previous: Option<Hover> = None;
     let mut spent = 0.0;
     let mut brightness = None;
+    let mut skipped = 0;
     // OCR_PER_FRAME=n reads at most n lines a frame, as if OCR were as slow as in the browser
     let per_frame: Option<usize> = env::var("OCR_PER_FRAME").ok().map(|x| x.parse().unwrap());
     let (mut backlog, mut longest, mut read): (Vec<OcrJob>, usize, usize) = (vec![], 0, 0);
@@ -117,8 +125,12 @@ fn main() {
         let more = stdin.read_exact(&mut pixels).is_ok();
         if more {
             // cropper(), with the tooltip step and all OCR timed on their own
+            let scan = state.worth_scanning();
+            skipped += !scan as usize;
             state.update_scale();
-            state.update_anchors();
+            if scan {
+                state.update_anchors();
+            }
             if state.screen_info.brightness != brightness {
                 brightness = state.screen_info.brightness;
                 // each found anchor's own estimate
@@ -127,7 +139,7 @@ fn main() {
                     .flat_map(|spec| {
                         let found = &state.anchors[&spec.anchor_type].positions;
                         spec.variants.iter().zip(found).filter_map(|(variant, found)| {
-                            found.map(|x| format!("{:?} {} {:.1}", spec.anchor_type, variant.name, x.2))
+                            found.map(|x| format!("{:?} {} {:.1?}", spec.anchor_type, variant.name, x.2))
                         })
                     })
                     .collect();
@@ -137,10 +149,14 @@ fn main() {
                     state.screen_info.brightness_anchors
                 );
             }
-            state.update_page_status();
-            state.update_slots();
+            if scan {
+                state.update_page_status();
+                state.update_slots();
+            }
             let clock = Instant::now();
-            state.update_tooltip();
+            if scan {
+                state.update_tooltip();
+            }
             match per_frame {
                 None => state.run_ocr_inline(),
                 // like the browser: only so many lines are read per frame, the rest wait
@@ -189,6 +205,8 @@ fn main() {
         previous = state.hover.clone();
         index += 1;
     }
+    println!("{skipped} frames not scanned");
+    eprintln!("stage timings (name, ms, calls): {:?}", hf_scanner::timing::take());
     println!(
         "{index} frames, tooltip on {seen}, {hovers} hovers, {:.1} ms per frame in the tooltip step and OCR, brightness {:?}",
         spent / index as f64,

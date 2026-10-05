@@ -160,6 +160,16 @@ pub struct ScannerState {
 
     #[serde(skip)]
     pub scans: u64,
+    // where the storage layout is, as one of STORAGE_SHIFTS
+    #[serde(skip)]
+    pub storage_shift: (f64, f64),
+    // the last scanned frame, thinned out, and how many scans in a row had nothing to do
+    #[serde(skip)]
+    pub last_samples: Vec<[u8; 3]>,
+    #[serde(skip)]
+    pub quiet_scans: usize,
+    #[serde(skip)]
+    pub slots_left: bool,
 
     // written since the last result went to JS
     #[serde(skip)]
