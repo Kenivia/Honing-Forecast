@@ -47,6 +47,16 @@ impl Buffer {
         std::array::from_fn(|c| lut[data[index + c] as usize] as i32)
     }
 
+    // of the raw pixels of a rectangle, to tell cheaply that nothing in it changed
+    pub fn hash(&self, x0: usize, y0: usize, x1: usize, y1: usize) -> u64 {
+        let data = self.data();
+        let (x0, x1) = (x0.min(self.width), x1.min(self.width));
+        let rows: Vec<&[u8]> = (y0..y1.min(self.height))
+            .map(|y| &data[(y * self.width + x0) * 4..(y * self.width + x1) * 4])
+            .collect();
+        ahash::RandomState::with_seeds(1, 2, 3, 4).hash_one(rows)
+    }
+
     // brightness-normalised copy of a rectangle
     pub fn crop(&self, x0: usize, y0: usize, x1: usize, y1: usize) -> RgbaImage {
         RgbaImage::from_fn((x1 - x0) as u32, (y1 - y0) as u32, |x, y| {

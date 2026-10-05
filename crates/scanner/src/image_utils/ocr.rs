@@ -78,8 +78,16 @@ pub fn get_number(scaled_image: OneIconConfig) -> String {
     recognize_line(&scaled_image.data)
 }
 
+pub fn recognize_raw(width: u32, height: u32, data: Vec<u8>) -> String {
+    recognize_line(&RgbaImage::from_raw(width, height, data).unwrap())
+}
+
 // the whole image is one line of text
 pub fn recognize_line(image: &RgbaImage) -> String {
+    crate::timing::timed("ocr", || recognize_line_untimed(image))
+}
+
+fn recognize_line_untimed(image: &RgbaImage) -> String {
     let read = OCR_ENGINE.read(); // need to have this line for some reason
     let engine = read.as_ref().unwrap();
     let (width, height) = image.dimensions();

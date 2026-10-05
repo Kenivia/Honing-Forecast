@@ -62,11 +62,13 @@ export function create_worker_bundle() {
     wasm_op: WasmOp,
     payload: any,
     cancel: boolean,
-    callback?: (result) => void,
+    callback?: (result, timings?) => void,
   ) {
     if (cancel) {
       cancel_worker();
     }
+    const abs_now = () => performance.timeOrigin + performance.now();
+    let post_ms = 0;
     run_counter.value += 1;
 
     status.value = "busy";
@@ -80,6 +82,9 @@ export function create_worker_bundle() {
       // console.log(e)
 
       if (e.data.type === "result") {
+        const timings = e.data.timings;
+        timings.to_main = abs_now() - timings.posted_at;
+        timings.post = post_ms;
         result.value = e.data.result;
         // console.log(result.value);
         status.value = "idle";
@@ -90,7 +95,7 @@ export function create_worker_bundle() {
           worker = null;
         }
         if (callback) {
-          callback(result.value);
+          callback(result.value, timings);
         }
       } else {
         // 1 sec interval from rust's side
@@ -120,14 +125,16 @@ export function create_worker_bundle() {
       worker = null;
     };
 
-    // scanner state is not logged, see WasmWorker
-    console.log(WasmOp[wasm_op], wasm_op <= WasmOp.Histogram ? payload : "");
+    // scanner ops run many times a second and are not logged, see WasmWorker
+    if (wasm_op <= WasmOp.Histogram) console.log(WasmOp[wasm_op], payload);
     // console.log(JSON.parse(JSON.stringify(toRaw(buildPayload(wasm_op)))))
+    const post_start = performance.now();
     worker.postMessage(
-      { type: "message", wasm_op, payload },
+      { type: "message", wasm_op, payload, posted_at: abs_now() },
       // a transferred frame leaves no copy behind on this thread
       { transfer: payload?.frame ? [payload.frame] : [] },
     );
+    post_ms = performance.now() - post_start;
   }
 
   function debounced_start(

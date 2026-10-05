@@ -9,28 +9,16 @@ export interface ScaledPosition {
 export interface OneIconConfig {
   name: string;
   offset: ScaledPosition;
-  data: number[];
+  data: number[] | Uint8Array;
   tag: string;
-  normalized: boolean;
-  required_confidence: number | null;
+  normalized?: boolean;
+  required_confidence?: number | null;
 }
 
 export interface Buffer {
   pointer: number;
   size: number;
 }
-export interface OneSlotInfo {
-  icon_name_score: [string, number] | null;
-  observed_number: OneIconConfig;
-  observed_icon: OneIconConfig;
-  processed_number: OneIconConfig;
-  observed_id: String;
-  progress: any;
-  amount: string | null;
-  tooltip_amount: string | null;
-  tradability: string | null;
-}
-
 export interface Hover {
   last_read_title: string;
   title: string | null;
@@ -71,17 +59,35 @@ export interface Chest {
   rows: ChestRow[];
 }
 
-export interface ScannerState {
-  slot_infos: Map<any, OneSlotInfo>;
-  hover: Hover | null;
-  chests: Chest[];
-  anchors: any;
-  screen_info: any;
-  pending_jobs: any;
+export interface SlotResult {
+  address: SlotAddress;
+  icon_name_score: [string, number];
+  amount: string | null;
+  tooltip_amount: string | null;
+  tradability: string | null;
+  // icon, number as seen, number as processed; only when it changed
+  images?: OneIconConfig[];
+}
 
+// What a scan returns. The scanner state stays in the worker; images, debug entries and
+// chests only come when they changed, or all of them when `full`.
+export interface ScanResult {
+  full: boolean;
   buffer: Buffer;
-  debugging: boolean;
-  debug_info: Map<string, [ScaledPosition, number, number, OneIconConfig[]]>;
+  slots: SlotResult[];
+  hover: Hover | null;
+  chests?: Chest[];
+  debug: [string, ScaledPosition, number, number, OneIconConfig[]][];
+  ocr_jobs: OcrJob[];
+}
+
+// one line of text for the OCR worker, a strip 64px tall
+export interface OcrJob {
+  id: number;
+  priority: number;
+  width: number;
+  height: number;
+  data: Uint8Array;
 }
 
 let configPromise: Promise<OneIconConfig[]> | null = null;

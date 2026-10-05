@@ -187,13 +187,15 @@ impl ScannerState {
     }
 
     pub fn set_ocr_engine(&mut self) {
-        let engine = OcrEngine::new(OcrEngineParams {
-            recognition_model: Some(
-                Model::load(self.model.take().unwrap()).expect("model load failed"),
-            ),
-            ..Default::default()
-        })
-        .expect("model load failed");
-        *OCR_ENGINE.write() = Some(engine);
+        load_ocr_engine(self.model.take().unwrap());
     }
+}
+
+pub fn load_ocr_engine(model: Vec<u8>) {
+    let engine = OcrEngine::new(OcrEngineParams {
+        recognition_model: Some(Model::load(model).expect("model load failed")),
+        ..Default::default()
+    })
+    .expect("model load failed");
+    *OCR_ENGINE.write() = Some(engine);
 }

@@ -1,4 +1,4 @@
-use crate::{scanner_state::ScannerState, setup::BASE_ICONS};
+use crate::{scanner_state::ScannerState, setup::BASE_ICONS, timing::timed};
 use hf_core::my_dbg;
 
 impl ScannerState {
@@ -8,12 +8,12 @@ impl ScannerState {
 
         self.update_scale();
         // my_dbg!("starting anchor");
-        self.update_anchors();
+        timed("anchors", || self.update_anchors());
         // my_dbg!("starting page");
-        self.update_page_status();
+        timed("pages", || self.update_page_status());
         // my_dbg!("starting slot");
-        self.update_slots();
-        self.update_tooltip();
+        timed("slots", || self.update_slots());
+        timed("tooltip", || self.update_tooltip());
         // self.downscaled_cache.reset();
     }
 }

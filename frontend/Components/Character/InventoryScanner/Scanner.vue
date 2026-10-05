@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { ref } from "vue";
+import { nextTick, ref, shallowRef } from "vue";
+import { useThrottleFn } from "@vueuse/core";
 // import { zipSync } from "fflate";
 import {
   Chest,
@@ -7,7 +8,8 @@ import {
   Hover,
   OneIconConfig,
   ScaledPosition,
-  ScannerState,
+  ScanResult,
+  SlotAddress,
 } from "./LoadStorage.js";
 import Stream from "./Stream.vue";
 // import { draw_icon } from "./ScannerUIutils.js";
@@ -23,31 +25,31 @@ const boxes = ref<ScaledPosition[]>([]);
 
 interface DebugRow {
   icon_name: string;
-  x: number;
-  y: number;
+  position: ScaledPosition;
   confidence: number;
   brightness: number;
   debug_icons: OneIconConfig[];
 }
 
-const debug_table = ref<DebugRow[]>([]);
+const debug_table = shallowRef<DebugRow[]>([]);
 
 const debugging = ref(true);
 const hover = ref<Hover | null>(null);
 
 interface FoundIconRow {
   key: string;
+  name: string;
   icon: OneIconConfig;
   confidence: number;
   observed_number: OneIconConfig;
   processed_number: OneIconConfig;
-  amount: string;
+  amount: string | null;
   tooltip_amount: string | null;
   tradability: string | null;
 }
 
-const found_icons = ref<FoundIconRow[]>([]);
-const chests = ref<Chest[]>([]);
+const found_icons = shallowRef<FoundIconRow[]>([]);
+const chests = shallowRef<Chest[]>([]);
 
 function chest_location(chest: Chest) {
   if (chest.slot) {
@@ -129,56 +131,85 @@ function chest_location(chest: Chest) {
 //   }}
 // </button>
 
-function process_result(scanner_state: ScannerState) {
-  scanner_state.debugging = debugging.value;
+// Images only arrive when they change, so they are kept here. Reusing the same objects
+// also lets Vue skip the canvases that did not change.
+const slot_images = new Map<string, OneIconConfig[]>();
+const debug_rows = new Map<string, DebugRow>();
+let latest: ScanResult | null = null;
+let latest_chests: Chest[] = [];
+const render_timings: number[] = ((globalThis as any).__scan_renders ??= []);
 
-  if (debugging.value) {
-    const new_boxes: ScaledPosition[] = [];
-    const new_debug_table: DebugRow[] = [];
+const slot_key = (address: SlotAddress) =>
+  `${address.inventory_type} ${address.page_num} ${address.pos_in_inv}`;
 
-    for (const [icon_name, [position, confidence, brightness, debug_icon]] of [
-      ...scanner_state.debug_info,
-    ].sort(([a], [b]) => a.localeCompare(b))) {
-      new_boxes.push(position);
-      new_debug_table.push({
-        icon_name,
-        x: position.top_left[0],
-        y: position.top_left[1],
-        confidence,
-        brightness,
-        debug_icons: debug_icon,
-      });
-    }
-
-    boxes.value = new_boxes;
-    debug_table.value = new_debug_table;
-  } else {
-    boxes.value = [];
-    debug_table.value = [];
+// called for every scan, so it only merges; the tables are updated a few times a second
+function process_result(result: ScanResult) {
+  if (result.full) {
+    slot_images.clear();
+    debug_rows.clear();
   }
-
-  const new_found_icons: FoundIconRow[] = [];
-  for (const [_, slot_info] of [...scanner_state.slot_infos]
-    .filter(([_, x]) => x.icon_name_score !== undefined)
-    .sort(([__, a], [_, b]) =>
-      a.icon_name_score[0].localeCompare(b.icon_name_score[0]),
-    )) {
-    // const id = slot_info.observed_id
-    new_found_icons.push({
-      key: slot_info.icon_name_score[0],
-      icon: slot_info.observed_icon,
-      confidence: slot_info.icon_name_score[1],
-      observed_number: slot_info.observed_number,
-      processed_number: slot_info.processed_number,
-      amount: slot_info.amount,
-      tooltip_amount: slot_info.tooltip_amount,
-      tradability: slot_info.tradability,
+  for (const slot of result.slots) {
+    if (slot.images) slot_images.set(slot_key(slot.address), slot.images);
+  }
+  for (const [
+    icon_name,
+    position,
+    confidence,
+    brightness,
+    icons,
+  ] of result.debug) {
+    debug_rows.set(icon_name, {
+      icon_name,
+      position,
+      confidence,
+      brightness,
+      debug_icons: icons,
     });
   }
-  found_icons.value = new_found_icons;
-  chests.value = scanner_state.chests ?? [];
-  hover.value = scanner_state.hover;
+  latest_chests = result.chests ?? latest_chests;
+  latest = result;
+  render();
 }
+
+const render = useThrottleFn(
+  () => {
+    const start = performance.now();
+    if (!debugging.value) debug_rows.clear();
+    debug_table.value = [...debug_rows.values()].sort((a, b) =>
+      a.icon_name.localeCompare(b.icon_name),
+    );
+    boxes.value = debug_table.value.map((row) => row.position);
+
+    found_icons.value = latest.slots
+      .map((slot) => {
+        const key = slot_key(slot.address);
+        const [icon, observed_number, processed_number] =
+          slot_images.get(key) ?? [];
+        return {
+          key,
+          name: slot.icon_name_score[0],
+          icon,
+          confidence: slot.icon_name_score[1],
+          observed_number,
+          processed_number,
+          amount: slot.amount,
+          tooltip_amount: slot.tooltip_amount,
+          tradability: slot.tradability,
+        };
+      })
+      .sort(
+        (a, b) => a.name.localeCompare(b.name) || a.key.localeCompare(b.key),
+      );
+    chests.value = latest_chests;
+    hover.value = latest.hover;
+    nextTick(() => {
+      render_timings.push(performance.now() - start);
+      if (render_timings.length > 5000) render_timings.shift();
+    });
+  },
+  250,
+  true,
+);
 </script>
 
 <template>
@@ -208,8 +239,8 @@ function process_result(scanner_state: ScannerState) {
         <tbody>
           <tr v-for="row in debug_table" :key="row.icon_name">
             <td>{{ row.icon_name }}</td>
-            <td>{{ row.x.toFixed(1) }}</td>
-            <td>{{ row.y.toFixed(1) }}</td>
+            <td>{{ row.position.top_left[0].toFixed(1) }}</td>
+            <td>{{ row.position.top_left[1].toFixed(1) }}</td>
             <td>{{ row.confidence.toFixed(3) }}</td>
             <td>{{ row.brightness.toFixed(3) }}</td>
             <td class="flex flex-row">
@@ -249,10 +280,10 @@ function process_result(scanner_state: ScannerState) {
           <td>
             <IconDisplay :icon="row.icon" />
           </td>
-          <td>{{ row.icon.name }}</td>
-          <td>{{ row.icon.tag }}</td>
-          <td>{{ row.icon.offset.top_left[0].toFixed(1) }}</td>
-          <td>{{ row.icon.offset.top_left[1].toFixed(1) }}</td>
+          <td>{{ row.name }}</td>
+          <td>{{ row.icon?.tag }}</td>
+          <td>{{ row.icon?.offset.top_left[0].toFixed(1) }}</td>
+          <td>{{ row.icon?.offset.top_left[1].toFixed(1) }}</td>
           <td>{{ row.confidence.toFixed(3) }}</td>
           <td>
             <IconDisplay :icon="row.observed_number" />

@@ -5,6 +5,9 @@ import init, {
   cropper_wrapper,
   reserve_buffer_wrapper,
   dealloc_buffer_wrapper,
+  take_timings,
+  ocr_init_wrapper,
+  ocr_wrapper,
 } from "@/../crates/wasm/pkg/hf_wasm.js";
 import { Payload } from "./PayloadBuilder";
 import { Upgrade } from "@/Utils/KeyedUpgrades";
@@ -17,6 +20,8 @@ export enum WasmOp {
   Cropper,
   Reserve,
   Dealloc,
+  OcrInit,
+  Ocr,
 }
 
 // THESE BELOW DIRECTLY CORRESPOND TO A RUST STRUCT
@@ -45,18 +50,24 @@ export interface StateBundle {
   metric?: number;
 }
 
+// where frames are copied to; the scanner state itself stays inside wasm
+let scanner_buffer: { pointer: number; size: number } | null = null;
+
 self.addEventListener("message", async (ev) => {
   const msg = ev.data;
   const start_time = performance.now();
+  // scan timings in ms, see Stream.vue
+  const timings: Record<string, any> = { to_worker: abs_now() - msg.posted_at };
 
   const { payload, wasm_op } = msg;
 
   let result;
 
   const wasm = await init();
+  timings.init = performance.now() - start_time;
   // never log scanner state, Firefox keeps logged objects alive even with devtools closed
   const loggable = wasm_op <= WasmOp.Histogram;
-  console.log(WasmOp[wasm_op], "Began", loggable ? payload : "");
+  if (loggable) console.log(WasmOp[wasm_op], "Began", payload);
 
   if (wasm_op == WasmOp.OptimizeAverage) {
     result = await optimize_average_wrapper(payload);
@@ -64,30 +75,34 @@ self.addEventListener("message", async (ev) => {
     result = await histogram_wrapper(payload);
   } else if (wasm_op == WasmOp.Cropper || wasm_op == WasmOp.Setup) {
     // the main thread reads the frame and transfers it with the op
-    const { scanner_state, frame } = payload;
+    const { frame, ...options } = payload;
 
     try {
       const requiredSize = frame.allocationSize({ format: "RGBA" });
-      if (scanner_state.buffer.size < requiredSize) {
+      if (scanner_buffer.size < requiredSize) {
         throw new Error(
-          `buffer too small, need ${requiredSize}, got ${scanner_state.buffer.size}`,
+          `buffer too small, need ${requiredSize}, got ${scanner_buffer.size}`,
         );
       }
 
       const dest = new Uint8Array(
         wasm.memory.buffer,
-        scanner_state.buffer.pointer,
-        scanner_state.buffer.size,
+        scanner_buffer.pointer,
+        scanner_buffer.size,
       );
 
+      const copy_start = performance.now();
       await frame.copyTo(dest, { format: "RGBA" });
       frame.close();
-      console.log("transfer done", (performance.now() - start_time).toFixed(0));
+      timings.copy = performance.now() - copy_start;
 
       if (wasm_op == WasmOp.Cropper) {
-        result = await cropper_wrapper(scanner_state);
+        const call_start = performance.now();
+        result = await cropper_wrapper(options);
+        timings.wasm_call = performance.now() - call_start;
+        timings.rust = take_timings();
       } else {
-        result = await setup_wrapper(scanner_state);
+        result = await setup_wrapper(options);
       }
     } catch (err) {
       console.error("Error processing frame:", err);
@@ -96,18 +111,37 @@ self.addEventListener("message", async (ev) => {
     }
   } else if (wasm_op == WasmOp.Reserve) {
     result = await reserve_buffer_wrapper(payload);
+    scanner_buffer = result.buffer;
     // console.log("post reserve", wasm.memory.buffer);
   } else if (wasm_op == WasmOp.Dealloc) {
-    result = await dealloc_buffer_wrapper(payload);
+    result = await dealloc_buffer_wrapper();
+  } else if (wasm_op == WasmOp.OcrInit) {
+    ocr_init_wrapper(payload);
+  } else if (wasm_op == WasmOp.Ocr) {
+    // a batch of text lines from the scanner worker, relayed by the main thread
+    result = payload.map((job) => [
+      job.id,
+      ocr_wrapper(job.width, job.height, job.data),
+    ]);
+    take_timings();
   } else {
     return; // react dev tool shenanigans
   }
-  console.log(
-    WasmOp[wasm_op],
-    "done",
-    (performance.now() - start_time).toFixed(0),
-    loggable ? result : "",
-  );
+  if (loggable) {
+    console.log(
+      WasmOp[wasm_op],
+      "done",
+      (performance.now() - start_time).toFixed(0),
+      result,
+    );
+  }
 
-  self.postMessage({ type: "result", result });
+  timings.worker = performance.now() - start_time;
+  timings.posted_at = abs_now();
+  self.postMessage({ type: "result", result, timings });
 });
+
+// comparable between the main thread and the worker
+function abs_now() {
+  return performance.timeOrigin + performance.now();
+}

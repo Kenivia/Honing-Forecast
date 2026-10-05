@@ -49,6 +49,7 @@ fn main() -> Result<()> {
         scanner_state.initialize_page_num_infos();
 
         scanner_state.cropper();
+        scanner_state.run_ocr_inline();
 
         let _ = fs::create_dir_all(format!("{}/{}", OUTPUT_PATH, brightness.to_string()));
         for (name, (_, _, _, icons)) in scanner_state.debug_info {

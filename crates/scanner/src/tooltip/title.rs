@@ -1,5 +1,5 @@
 use crate::buffer::Buffer;
-use crate::image_utils::ocr::{OCR_LINE_HEIGHT, recognize_line};
+use crate::image_utils::ocr::OCR_LINE_HEIGHT;
 use crate::tooltip::common::text_lines;
 use crate::tooltip::detect::TitleBar;
 use image::{
@@ -37,10 +37,10 @@ fn ink_image(
     resize(&image, width, OCR_LINE_HEIGHT, FilterType::CatmullRom)
 }
 
-// The title, one OCR call per line, and whether every line is centred in the bar.
+// The title's lines as strips for the recogniser, and whether every line is centred in the bar.
 // A line whose side gaps differ has the cursor over it: "Great Destiny Leapstone" with its
 // start covered reads as a different, valid item.
-pub fn read_title(buffer: &Buffer, bar: &TitleBar, s: f64) -> (String, bool) {
+pub fn title_lines(buffer: &Buffer, bar: &TitleBar, s: f64) -> (Vec<RgbaImage>, bool) {
     let is_text =
         |x: usize, y: usize| buffer.rgb(bar.x + x, bar.y + y).into_iter().max().unwrap() > 120;
     let is_coloured = |x: usize, y: usize| {
@@ -87,17 +87,22 @@ pub fn read_title(buffer: &Buffer, bar: &TitleBar, s: f64) -> (String, bool) {
         }
         // the lines are too close together for any margin above or below
         let margin = (5.0 * s).round() as usize;
-        words.push(recognize_line(&text_image(
+        words.push(text_image(
             buffer,
             bar.x + first.saturating_sub(margin),
             bar.y + top.saturating_sub(1),
             bar.x + (last + margin + 1).min(bar.width),
             bar.y + (bottom + 1).min(bar.height),
-        )));
+        ));
         if name_is_over {
             break;
         }
     }
+    (words, centred)
+}
+
+// the title from what its lines read as
+pub fn join_title(words: &[String]) -> String {
     let name = words.join(" ");
     // drop the "[X n]" stack count, whose bracket can come back as an unknown character, and the "(Bound)" marker
     let end = name
@@ -106,8 +111,5 @@ pub fn read_title(buffer: &Buffer, bar: &TitleBar, s: f64) -> (String, bool) {
         .or(name.find("?X"))
         .or(name.find("?x"));
     let name = &name[..end.unwrap_or(name.len())];
-    (
-        name.split_whitespace().collect::<Vec<_>>().join(" "),
-        centred,
-    )
+    name.split_whitespace().collect::<Vec<_>>().join(" ")
 }

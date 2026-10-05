@@ -13,11 +13,13 @@ use crate::{
     },
     scanner_state::{AnchorType, InventoryType, ScannerState},
     setup::icon_lookup,
+    timing::timed,
 };
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct AnchorInfo {
-    pub positions: Vec<Option<(IntegerRectangle, f64)>>, // absolute positions here
+    // per variant: absolute position, confidence, and the brightness it was found at
+    pub positions: Vec<Option<(IntegerRectangle, f64, f64)>>,
     pub position_root: Option<IntegerRectangle>,
 }
 
@@ -147,8 +149,10 @@ impl ScannerState {
             let brightness = est_ingame_brightness(best_mean_f, &variant.brightness);
 
             if self.debugging {
+                let name = format!("{:?} {}", spec.anchor_type, variant.name);
+                self.changed_debug.insert(name.clone());
                 self.debug_info.insert(
-                    format!("{:?} {}", spec.anchor_type, variant.name),
+                    name,
                     (
                         found_position,
                         confidence,
@@ -164,19 +168,39 @@ impl ScannerState {
             }
             if confidence > required_confidence {
                 let anchor_info = self.anchors.get_mut(&spec.anchor_type).unwrap();
-                anchor_info.positions[variant_index] = Some((found_position, confidence));
+                anchor_info.positions[variant_index] = Some((found_position, confidence, brightness));
                 anchor_info.position_root = Some(
                     found_position
                         .get_offset(&template_offset)
                         .shifted((variant.root_shift.0 * scale, variant.root_shift.1 * scale)),
                 );
-                self.screen_info.brightness = Some(brightness);
+                // only to start with: until an anchor has held up, there is nothing better
+                if self.screen_info.brightness_anchors == 0 {
+                    self.screen_info.brightness = Some(brightness);
+                }
             }
+        }
+    }
+
+    // The in-game setting does not change during a session, but each anchor's estimate of it is
+    // a few settings off, and one that matched the wrong thing is far off. So the estimate is the
+    // average over the most anchors ever found together, and stays once some of them are lost.
+    // Anchors only count after their re-check, which a wrong match does not survive.
+    fn update_brightness(&mut self) {
+        let found: Vec<f64> = self
+            .anchors
+            .values()
+            .flat_map(|anchor| anchor.positions.iter().flatten().map(|x| x.2))
+            .collect();
+        if found.len() > self.screen_info.brightness_anchors {
+            self.screen_info.brightness = Some(found.iter().sum::<f64>() / found.len() as f64);
+            self.screen_info.brightness_anchors = found.len();
         }
     }
 
     pub fn update_anchors(&mut self) {
         self.check_existing_anchors();
+        self.update_brightness();
 
         let mut forbidden: Vec<AnchorType> = Vec::new();
         for spec in ANCHORS.iter() {
@@ -190,7 +214,7 @@ impl ScannerState {
                 continue;
             }
             if !self.anchors[&spec.anchor_type].is_found() {
-                self.search_anchor(spec);
+                timed("anchors/search", || self.search_anchor(spec));
             }
             if self.anchors[&spec.anchor_type].is_found() {
                 forbidden.extend(&spec.forbids);

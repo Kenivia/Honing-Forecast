@@ -1,6 +1,6 @@
 use crate::{
     buffer::Buffer,
-    image_utils::{common::IntegerRectangle, ocr::recognize_line},
+    image_utils::common::IntegerRectangle,
     scanner_state::{InventoryType, ScannerState, SlotAddress, Tradability},
     setup::OneIconConfig,
     tooltip::{
@@ -8,6 +8,7 @@ use crate::{
         title::text_image,
     },
 };
+use image::RgbaImage;
 use serde::{Deserialize, Serialize};
 
 type Rect = (usize, usize, usize, usize); // frame rectangle (x0, y0, x1, y1)
@@ -33,6 +34,7 @@ pub struct ChestRow {
     pub name_read: String,
     pub count_read: String,
     pub item: Option<String>,
+    #[serde(serialize_with = "crate::scan_result::optional_icon_bytes")]
     pub crop: Option<OneIconConfig>,
 }
 
@@ -63,24 +65,56 @@ pub struct ChestLayout {
     pub rows: Vec<ChestRowLayout>,
 }
 
-// The known items of a chest and what every row read as. None when a row might be a known item that did not read.
-pub fn read_chest(
-    buffer: &Buffer,
-    layout: &ChestLayout,
-    debugging: bool,
+// one row of a chest as strips for the recogniser, with the crop shown when debugging
+#[derive(Debug, Clone)]
+pub struct ChestRowStrips {
+    pub names: Vec<RgbaImage>,
+    pub count: RgbaImage,
+    pub crop: Option<OneIconConfig>,
+}
+
+pub fn chest_strips(buffer: &Buffer, layout: &ChestLayout, debugging: bool) -> Vec<ChestRowStrips> {
+    let strip = |(x0, y0, x1, y1): Rect| text_image(buffer, x0, y0, x1, y1);
+    layout
+        .rows
+        .iter()
+        .map(|row| {
+            let (x0, y0, x1, y1) = row.whole;
+            ChestRowStrips {
+                names: row.names.iter().map(|x| strip(*x)).collect(),
+                count: strip(row.count),
+                crop: debugging.then(|| OneIconConfig {
+                    data: buffer.crop(x0, y0, x1, y1.min(buffer.height)),
+                    name: String::new(),
+                    offset: IntegerRectangle {
+                        top_left: (x0 as f64, y0 as f64),
+                        width: x1 - x0,
+                        height: y1.min(buffer.height) - y0,
+                    },
+                    tag: String::new(),
+                    normalized: true,
+                    required_confidence: None,
+                }),
+            }
+        })
+        .collect()
+}
+
+// The known items of a chest and what every row read as, from each row's name, count and crop.
+// None when a row might be a known item that did not read.
+pub fn chest_from_texts(
+    texts: Vec<(String, String, Option<OneIconConfig>)>,
 ) -> (Option<Vec<ChestContent>>, Vec<ChestRow>) {
-    let read = |(x0, y0, x1, y1): Rect| recognize_line(&text_image(buffer, x0, y0, x1, y1));
     let mut contents = Some(vec![]);
     let mut rows = vec![];
-    for row in &layout.rows {
-        let name_read = row.names.iter().map(|x| read(*x)).collect::<Vec<_>>().join(" ");
+    for (name_read, count_read, crop) in texts {
         let bound = name_read.contains("(Bound");
         let name = name_read.split("(Bound").next().unwrap().trim();
         let item = match_title(name)
             .or_else(|| match_rough_title(name))
             .and_then(|item| item.title.clone());
         // rows of things we do not know are ignored, so their count is not worth reading
-        let count_read = item.as_ref().map(|_| read(row.count)).unwrap_or_default();
+        let count_read = item.as_ref().map(|_| count_read).unwrap_or_default();
         // almost a known title is more likely a misread than something else, so this frame says nothing
         if item.is_none() && near_title(name) {
             contents = None;
@@ -96,23 +130,11 @@ pub fn read_chest(
                 _ => contents = None,
             }
         }
-        let (x0, y0, x1, y1) = row.whole;
         rows.push(ChestRow {
             name_read,
             count_read,
             item,
-            crop: debugging.then(|| OneIconConfig {
-                data: buffer.crop(x0, y0, x1, y1.min(buffer.height)),
-                name: String::new(),
-                offset: IntegerRectangle {
-                    top_left: (x0 as f64, y0 as f64),
-                    width: x1 - x0,
-                    height: y1.min(buffer.height) - y0,
-                },
-                tag: String::new(),
-                normalized: true,
-                required_confidence: None,
-            }),
+            crop,
         });
     }
     (contents, rows)
@@ -136,6 +158,7 @@ impl ScannerState {
     // Where this chest goes in the list: over the one last seen in its slot, else over one in the
     // same column that reads the same, else at the end.
     pub fn store_chest(&mut self, mut chest: Chest, index: Option<usize>) -> usize {
+        self.chests_changed = true;
         let index = index.or_else(|| {
             self.chests.iter().position(|old| {
                 (chest.slot.is_some() && old.slot == chest.slot) || old.same_contents(&chest)

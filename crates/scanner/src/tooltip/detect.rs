@@ -10,7 +10,7 @@ const BODY_TO_TITLE: [f64; 3] = [0.44, 0.53, 0.49]; // body colour (11, 16, 17) 
 const BODY_ROWS: f64 = 133.0;
 const SLACK: usize = 3;
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, Default)]
 pub struct TitleBar {
     pub x: usize,
     pub y: usize,
@@ -81,8 +81,10 @@ pub fn find_title(buffer: &Buffer, s: f64) -> Option<TitleBar> {
             }
         }
         let title_colour = median(strip);
-        // blue-grey; rules out the neutral greys of the other windows
-        if title_colour[2] - title_colour[0] < 4 {
+        // Blue-grey; rules out the neutral greys of the other windows, which come out at -1 to 1.
+        // A tooltip is about 8, but one that was only up for a few frames of a compressed recording
+        // can be as low as 3.
+        if title_colour[2] - title_colour[0] < 2 {
             continue;
         }
 

@@ -48,13 +48,18 @@ function get_readable(
   track: MediaStreamVideoTrack,
 ): ReadableStream<VideoFrame> {
   if (typeof MediaStreamTrackProcessor !== "undefined") {
-    return new MediaStreamTrackProcessor({ track }).readable;
+    return new MediaStreamTrackProcessor({ track, maxBufferSize: FRAME_BUFFER })
+      .readable;
   }
 
   return createCanvasFrameReadable(track);
 }
 
-const FAKE_STREAM_FPS = 6;
+// Frames a second asked of the screen share. A tooltip can be readable for only a frame or two
+// of a short hover, so every frame of the capture is scanned and this is not lowered lightly.
+export const CAPTURE_FPS = 30;
+// frames kept while a scan runs long (an anchor search takes several frames' worth)
+const FRAME_BUFFER = 8;
 
 // Image / video file as a canvas track. Videos hold their last frame once finished.
 export async function file_to_stream(file: File) {
@@ -81,7 +86,10 @@ export async function file_to_stream(file: File) {
   const ctx = canvas.getContext("2d");
   const draw = () => ctx.drawImage(source, 0, 0);
   draw();
-  const timer = setInterval(draw, 1000 / FAKE_STREAM_FPS);
+  // a video is drawn frame by frame as it plays; the timer keeps frames coming once it has ended
+  const is_video = source instanceof HTMLVideoElement;
+  const stop_driving = is_video ? driveVideoFrames(source, draw) : null;
+  const timer = setInterval(draw, is_video ? 500 : 1000 / CAPTURE_FPS);
 
   return {
     stream: canvas.captureStream(),
@@ -89,6 +97,7 @@ export async function file_to_stream(file: File) {
     height: canvas.height,
     cleanup: () => {
       clearInterval(timer);
+      stop_driving?.();
       if (source instanceof HTMLVideoElement) {
         source.pause();
         source.removeAttribute("src");
@@ -148,44 +157,47 @@ function createCanvasFrameReadable(
   let stopDriving: (() => void) | undefined;
   let capturing = false;
 
-  return new ReadableStream<VideoFrame>({
-    async start(controller) {
-      video = await makeSourceVideo(track);
+  return new ReadableStream<VideoFrame>(
+    {
+      async start(controller) {
+        video = await makeSourceVideo(track);
 
-      stopDriving = driveVideoFrames(video, (_now, mediaTimeSec) => {
-        // Backpressure: don't produce frames the consumer hasn't asked for
-        if (controller.desiredSize !== null && controller.desiredSize <= 0) {
-          return;
+        stopDriving = driveVideoFrames(video, (_now, mediaTimeSec) => {
+          // Backpressure: don't produce frames the consumer hasn't asked for
+          if (controller.desiredSize !== null && controller.desiredSize <= 0) {
+            return;
+          }
+
+          if (capturing || !video) return;
+          capturing = true;
+
+          try {
+            // Optimization: VideoFrame can consume an HTMLVideoElement directly.
+            // This entirely bypasses the need for createImageBitmap.
+            const frame = new VideoFrame(video, {
+              timestamp: mediaTimeSec * 1e6,
+            });
+            controller.enqueue(frame);
+          } catch (err) {
+            console.warn("Failed to capture VideoFrame:", err);
+          } finally {
+            capturing = false;
+          }
+        });
+      },
+      cancel() {
+        stopDriving?.();
+        if (video) {
+          video.pause();
+          // Crucial for GC: Detach the stream from the video element
+          video.srcObject = null;
+          video.removeAttribute("src");
+          video.load();
+          video = null;
         }
-
-        if (capturing || !video) return;
-        capturing = true;
-
-        try {
-          // Optimization: VideoFrame can consume an HTMLVideoElement directly.
-          // This entirely bypasses the need for createImageBitmap.
-          const frame = new VideoFrame(video, {
-            timestamp: mediaTimeSec * 1e6,
-          });
-          controller.enqueue(frame);
-        } catch (err) {
-          console.warn("Failed to capture VideoFrame:", err);
-        } finally {
-          capturing = false;
-        }
-      });
+        track.stop();
+      },
     },
-    cancel() {
-      stopDriving?.();
-      if (video) {
-        video.pause();
-        // Crucial for GC: Detach the stream from the video element
-        video.srcObject = null;
-        video.removeAttribute("src");
-        video.load();
-        video = null;
-      }
-      track.stop();
-    },
-  });
+    { highWaterMark: FRAME_BUFFER },
+  );
 }

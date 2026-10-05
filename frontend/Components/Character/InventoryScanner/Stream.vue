@@ -1,5 +1,9 @@
 <script setup lang="ts">
-import { file_to_stream } from "@/Components/Character/InventoryScanner/FramePassing";
+import {
+  CAPTURE_FPS,
+  file_to_stream,
+} from "@/Components/Character/InventoryScanner/FramePassing";
+import { queue_ocr, start_ocr, stop_ocr, take_ocr_results } from "./OcrRelay";
 import { useRosterStore } from "@/Stores/RosterConfig";
 import { WasmOp } from "@/WasmInterface/WasmWorker";
 import { create_worker_bundle } from "@/WasmInterface/WorkerBundle";
@@ -10,7 +14,7 @@ import {
   getScannerConfig,
   OneIconConfig,
   ScaledPosition,
-  ScannerState,
+  ScanResult,
 } from "./LoadStorage";
 import {
   auto_select_resolution,
@@ -22,7 +26,7 @@ import {
 const props = defineProps<{
   boxes?: ScaledPosition[];
   debugging: boolean;
-  process_result?: (scanner_state: ScannerState) => void;
+  process_result?: (result: ScanResult) => void;
   should_start_cropper: boolean;
 }>();
 const status = defineModel<"idle" | "capturing">("status", { default: "idle" });
@@ -119,7 +123,7 @@ async function start_capture() {
     error.value = null;
     const s = await navigator.mediaDevices.getDisplayMedia({
       video: {
-        frameRate: { max: 6 },
+        frameRate: { max: CAPTURE_FPS },
         // width: { max: 1280 },
         // height: { max: 720 },
       },
@@ -181,24 +185,20 @@ async function start_scanner() {
   bundle.value = roster_config.value.cropper_worker_bundle;
 
   const { width, height } = source.size;
-  const new_scanner_state = bundle.value.result ?? {
-    debugging: props.debugging,
-  };
-  new_scanner_state.screen_info = {
-    ...new_scanner_state.screen_info,
-    game_width: game_resolution.width,
-    game_height: game_resolution.height,
-    forced_21_9: game_resolution.forced_21_9,
-  };
-  new_scanner_state.buffer = {
-    width,
-    height,
-    size: width * height * 4,
-  };
   const [config, model] = await Promise.all([getScannerConfig(), getModel()]);
-  new_scanner_state.config = toRaw(config);
-  new_scanner_state.model = toRaw(model);
-  // console.log(structuredClone(new_scanner_state));
+  // the state is built once here and then stays inside the worker's wasm
+  const new_scanner_state = {
+    debugging: props.debugging,
+    screen_info: {
+      game_width: game_resolution.width,
+      game_height: game_resolution.height,
+      forced_21_9: game_resolution.forced_21_9,
+    },
+    buffer: { width, height, size: width * height * 4 },
+    config: toRaw(config),
+  };
+  // the model only goes to the OCR worker
+  start_ocr(toRaw(model));
   bundle.value.debounced_start(
     WasmOp.Reserve,
     new_scanner_state,
@@ -218,6 +218,7 @@ function stop_capture() {
   if (!source.stream) return;
   // terminating the worker frees the frame buffer and the Rust statics with it
   bundle.value?.cancel();
+  stop_ocr();
   source.stop();
 }
 
@@ -235,11 +236,18 @@ function toggle_cropper() {
     pause_cropper();
   } else {
     cropper_running.value = true;
-    cropper_loop(bundle.value.result, ++loop_id);
+    cropper_loop(++loop_id, true);
   }
 }
-async function cropper_loop(scanner_state: ScannerState, id: number) {
+// per-scan timings in ms, kept on window for profiling
+const scan_timings: any[] = ((globalThis as any).__scan_timings ??= []);
+
+// `full` asks for every image again, since whoever shows the results may have missed some
+async function cropper_loop(id: number, full = false) {
+  const loop_start = performance.now();
   const frame = await source.read();
+  const read = performance.now() - loop_start;
+  const frame_time = frame?.timestamp;
   if (id !== loop_id) {
     frame?.close();
     return;
@@ -254,14 +262,31 @@ async function cropper_loop(scanner_state: ScannerState, id: number) {
   let done = false;
   bundle.value.debounced_start(
     WasmOp.Cropper,
-    { scanner_state, frame },
-    (scanner_state) => {
-      if (done || id !== loop_id) return;
+    {
+      frame,
+      debugging: props.debugging,
+      full,
+      ocr_results: take_ocr_results(),
+    },
+    (result: ScanResult, timings) => {
+      // the scanner waits for these texts whether or not this reply is used
+      queue_ocr(result.ocr_jobs);
+      if (done || id !== loop_id || result.full !== full) return;
       done = true;
+      const result_start = performance.now();
+      // the next frame goes out before any UI work
+      cropper_loop(id);
       if (props.process_result) {
-        props.process_result(scanner_state);
+        props.process_result(result);
       }
-      cropper_loop(scanner_state, id);
+      scan_timings.push({
+        ...timings,
+        read,
+        frame_time,
+        process_result: performance.now() - result_start,
+        total: result_start - loop_start,
+      });
+      if (scan_timings.length > 5000) scan_timings.shift();
     },
     0,
     false,

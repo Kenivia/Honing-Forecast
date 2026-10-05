@@ -319,17 +319,11 @@ async function confirm_setup() {
     },
   ];
 
-  const modified_state = {
-    ...bundle.result,
-    config: toRaw(config.value),
-    incoming_new_icons,
-  };
-
   bundle.debounced_start(
     WasmOp.Setup,
-    { scanner_state: modified_state, frame },
-    (scanner_state) => {
-      config.value = scanner_state.config;
+    { config: toRaw(config.value), incoming_new_icons, frame },
+    (result) => {
+      config.value = result.config;
     },
     0,
     false,

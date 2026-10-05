@@ -3,9 +3,13 @@ use crate::{
     cropper::anchors::AnchorInfo,
     image_utils::common::IntegerRectangle,
     setup::{IncomingNewIcon, OneIconConfig},
-    tooltip::{chest::Chest, hover::Hover},
+    ocr_jobs::OcrJob,
+    tooltip::{
+        chest::Chest,
+        hover::{Hover, PendingRead},
+    },
 };
-use ahash::AHashMap;
+use ahash::{AHashMap, AHashSet};
 use fast_image_resize::Resizer;
 use serde::{Deserialize, Serialize};
 
@@ -26,6 +30,9 @@ pub struct ScreenInfo {
 
     #[serde(default)]
     pub brightness: Option<f64>,
+    // how many anchors that estimate is the average of
+    #[serde(default)]
+    pub brightness_anchors: usize,
 }
 
 impl ScannerState {
@@ -83,6 +90,12 @@ pub struct OneSlotInfo {
     #[serde(default)]
     pub tooltip_amount: Option<String>,
     pub tradability: Option<Tradability>,
+    // the OCR job whose text becomes the amount
+    #[serde(skip)]
+    pub amount_job: Option<u32>,
+    // of the slot's raw pixels when it was last looked at
+    #[serde(skip)]
+    pub raw_hash: u64,
 }
 
 // a piece of fixed UI that locates inventories, or other anchors
@@ -129,6 +142,32 @@ pub struct ScannerState {
 
     #[serde(default)]
     pub incoming_new_icons: Option<Vec<IncomingNewIcon>>,
+
+    // OCR jobs not handed out yet, the id each strip got, and the texts that came back
+    #[serde(skip)]
+    pub ocr_queue: Vec<OcrJob>,
+    #[serde(skip)]
+    pub ocr_ids: AHashMap<u64, u32>,
+    #[serde(skip)]
+    pub ocr_texts: AHashMap<u32, String>,
+    // tooltip frames waiting for their texts, and hovers that ended while some were still waiting
+    #[serde(skip)]
+    pub pending_reads: Vec<PendingRead>,
+    #[serde(skip)]
+    pub past_hovers: Vec<Hover>,
+    #[serde(skip)]
+    pub hover_count: u32,
+
+    #[serde(skip)]
+    pub scans: u64,
+
+    // written since the last result went to JS
+    #[serde(skip)]
+    pub changed_slots: AHashSet<SlotAddress>,
+    #[serde(skip)]
+    pub changed_debug: AHashSet<String>,
+    #[serde(skip)]
+    pub chests_changed: bool,
 
     #[serde(skip)]
     pub resizer: Option<Resizer>,
