@@ -21,6 +21,7 @@
   { "title": "Artisan's Metallurgy: Level 4", "icon": "Scroll 4 Weapon", "rarity": "ancient" },
   { "icon": "Armor Book", "rarity": "relic" },
   { "icon": "Weapon Book", "rarity": "relic" },
+  { "title": "Destiny Shard" },
 
   { "title": "Destiny Destruction Stone Pouch" },
   { "title": "Destiny Destruction Stone Pouch II", "icon": "Destruction Stone Pouch", "rarity": "rare" },

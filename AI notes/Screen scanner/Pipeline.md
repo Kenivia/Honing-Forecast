@@ -11,7 +11,7 @@ Code: `crates/scanner` (image processing), `frontend/Components/Character/Invent
 3. **Locate the windows** (Rust). Anchors are tried in a fixed order. Each one is template-matched inside its bound, and a hit gives a root, the origin of any inventory window it locates, and a brightness estimate. On later frames anchors are only re-checked at their known position. See "Anchors and layouts" below.
 4. **Detect the page** (Rust). Page-tab templates at fixed offsets from each window origin say which page of that inventory is showing: the tab matching its active template, or the only tab that matched neither state.
 5. **Read slots** (Rust). Each slot of the active page sits at a fixed offset. A slot whose pixels have not changed is skipped; otherwise its crop is compared against every icon template, the closest one that passes wins, and the number strip is OCR'd.
-6. **Read the tooltip** (Rust). If an item tooltip is on screen, its title, stacked amount and tradability are read and written onto the slot being hovered. See `Tooltips.md`.
+6. **Read the tooltip** (Rust). If an item tooltip is on screen, its title, stacked amount and tradability are read and written onto the slot being hovered. A chest's kind and contents are read from the same tooltip into a separate list of chests. See `Tooltips.md`.
 7. **Loop**. Each result immediately triggers the next frame.
 
 Full-frame search is the expensive step and uses FFT cross-correlation. Everything after the anchor is a cheap fixed-position comparison.
@@ -73,7 +73,7 @@ Why the storage windows are not placed from the Storage button: the button and t
 
 ## Status
 
-Working: capture, frame transfer, anchor detection for the character inventory and the storage layout (pet and NPC, 16:9 and forced 21:9), page detection, brightness estimation, slot icon identification, quantity OCR, tooltip reading, and a debug UI that shows what was recognised.
+Working: capture, frame transfer, anchor detection for the character inventory and the storage layout (pet and NPC, 16:9 and forced 21:9), page detection, brightness estimation, slot icon identification, quantity OCR, tooltip reading including chest contents, and a debug UI that shows what was recognised (slots, then chests).
 
 Not done yet:
 
@@ -86,6 +86,7 @@ Not done yet:
 - Each anchor match overwrites the brightness estimate, and anchors disagree by a few settings (model-derived against sweep-derived coefficients). This is within what matching tolerates, but a template that looks different in context gives a wildly wrong estimate: the inventory's bottom-left button is greyed out in the storage view, so it has its own template there.
 - "Move All Duplicate Materials" only just passes at native 1080p (0.905 against 0.9), because the game renders its text rather than scaling it. The sort button carries those windows there.
 - The roster page tabs for "page 1 inactive" and "page 2 active" were built from character-storage tab pixels, which look the same.
-- Tooltip reading works in the native harness on the example stills and recordings but has not been tried in the browser. Its limits are listed in `Tooltips.md`.
+- Tooltip reading works in the native harness and in headless Chromium on an uploaded recording, where a scan takes 0.35 to 1.3 s, so a hover is seen for a frame or two. Its limits are listed in `Tooltips.md`.
+- The slot pass limit was raised from 0.9 to 0.95 because unknown icons were being identified on a live screen share. On the two recordings that leaves far fewer slots recognised, and so fewer hovers resolved to a slot (4 and 11 slots with tooltip data, against 19 and 27 at 0.9). Chests do not depend on it.
 
 Demo-only: `DemoOCR.vue` and `DemoColorfilter.vue` are earlier proofs of concept, still mounted on the scanner page. `tesseract-wasm` and `eng.traineddata` are used only by the OCR demo.

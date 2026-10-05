@@ -38,9 +38,43 @@ export interface Hover {
   tradability: string | null;
 }
 
+export interface SlotAddress {
+  inventory_type: string;
+  page_num: number;
+  pos_in_inv: [number, number];
+}
+
+export type ChestKind = "SelectOne" | "Random" | "ObtainAll";
+
+export interface ChestContent {
+  item: string;
+  amount: number;
+  bound: boolean;
+}
+
+export interface ChestRow {
+  name_read: string;
+  count_read: string;
+  item: string | null;
+  crop: OneIconConfig | null;
+}
+
+// read off the tooltip alone, scanner only (not part of the calculator's types)
+export interface Chest {
+  kind: ChestKind;
+  contents: ChestContent[];
+  amount: string | null;
+  tradability: string | null;
+  last_read_title: string;
+  column: [string, number, number] | null;
+  slot: SlotAddress | null;
+  rows: ChestRow[];
+}
+
 export interface ScannerState {
   slot_infos: Map<any, OneSlotInfo>;
   hover: Hover | null;
+  chests: Chest[];
   anchors: any;
   screen_info: any;
   pending_jobs: any;

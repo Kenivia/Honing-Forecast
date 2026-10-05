@@ -2,6 +2,7 @@
 import { ref } from "vue";
 // import { zipSync } from "fflate";
 import {
+  Chest,
   getScannerConfig,
   Hover,
   OneIconConfig,
@@ -46,6 +47,19 @@ interface FoundIconRow {
 }
 
 const found_icons = ref<FoundIconRow[]>([]);
+const chests = ref<Chest[]>([]);
+
+function chest_location(chest: Chest) {
+  if (chest.slot) {
+    const [row, column] = chest.slot.pos_in_inv;
+    return `${chest.slot.inventory_type} page ${chest.slot.page_num + 1}, row ${row + 1}, column ${column + 1}`;
+  }
+  if (chest.column) {
+    const [inventory, page, column] = chest.column;
+    return `${inventory} page ${page + 1}, column ${column + 1}`;
+  }
+  return "";
+}
 
 // function canvas_to_blob(canvas: HTMLCanvasElement): Promise<Blob> {
 //   return new Promise((resolve, reject) => {
@@ -162,6 +176,7 @@ function process_result(scanner_state: ScannerState) {
     });
   }
   found_icons.value = new_found_icons;
+  chests.value = scanner_state.chests ?? [];
   hover.value = scanner_state.hover;
 }
 </script>
@@ -248,6 +263,50 @@ function process_result(scanner_state: ScannerState) {
           <td>{{ row.amount }}</td>
           <td>{{ row.tooltip_amount }}</td>
           <td>{{ row.tradability }}</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div>Chests</div>
+    <table>
+      <thead>
+        <tr>
+          <th>Title read</th>
+          <th>Kind</th>
+          <th>Contents</th>
+          <th>Tooltip amount</th>
+          <th>Tradability</th>
+          <th>Location</th>
+          <th v-if="debugging">Rows read</th>
+          <th v-if="debugging">Row crops</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr v-for="(chest, index) in chests" :key="index">
+          <td>{{ chest.last_read_title }}</td>
+          <td>{{ chest.kind }}</td>
+          <td>
+            <div v-for="(content, i) in chest.contents" :key="i">
+              {{ content.item }} x{{ content.amount }}
+              {{ content.bound ? "(Bound)" : "" }}
+            </div>
+          </td>
+          <td>{{ chest.amount }}</td>
+          <td>{{ chest.tradability }}</td>
+          <td>{{ chest_location(chest) }}</td>
+          <td v-if="debugging">
+            <div v-for="(row, i) in chest.rows" :key="i">
+              {{ row.name_read }} | {{ row.count_read }} →
+              {{ row.item ?? "ignored" }}
+            </div>
+          </td>
+          <td v-if="debugging">
+            <IconDisplay
+              v-for="(row, i) in chest.rows"
+              :key="i"
+              :icon="row.crop"
+            />
+          </td>
         </tr>
       </tbody>
     </table>

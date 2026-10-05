@@ -1,7 +1,10 @@
 // Native harness for the tooltip reader: runs the whole scanner over stills or a recording and prints each hover.
 //   cargo run --release --bin tooltip_test -- <image>...
 //   python scripts/tooltips/dump_frames.py <mp4> | cargo run --release --bin tooltip_test -- --stdin <width> <height>
-use hf_scanner::{scanner_state::ScannerState, tooltip::hover::Hover};
+use hf_scanner::{
+    scanner_state::ScannerState,
+    tooltip::{chest::Chest, hover::Hover},
+};
 use std::{env, fs, io::Read, time::Instant};
 
 const ROOT: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/../..");
@@ -39,9 +42,36 @@ fn describe(state: &ScannerState, hover: &Hover) -> String {
             info.amount.clone().unwrap_or_default()
         )
     });
+    let chest = hover.chest_index.map(|index| describe_chest(&state.chests[index]));
+    let rows: Vec<String> = hover
+        .chest_rows
+        .iter()
+        .map(|row| format!("{} | {}", row.name_read, row.count_read))
+        .collect();
     format!(
-        "at {:?}  title {:?}  amount {:?}  {:?}  slot {:?}  (last read '{}')",
-        hover.position, hover.title, hover.amount, hover.tradability, slot, hover.last_read_title
+        "at {:?}  title {:?}  amount {:?}  {:?}  slot {:?}  (last read '{}')\n      chest {:?}\n      rows {:?}",
+        hover.position, hover.title, hover.amount, hover.tradability, slot, hover.last_read_title, chest, rows
+    )
+}
+
+fn describe_chest(chest: &Chest) -> String {
+    let contents: Vec<String> = chest
+        .contents
+        .iter()
+        .map(|x| format!("{} x{}{}", x.item, x.amount, if x.bound { " (Bound)" } else { "" }))
+        .collect();
+    let place = match (chest.slot, chest.column) {
+        (Some(slot), _) => format!("{:?} p{} {:?}", slot.inventory_type, slot.page_num, slot.pos_in_inv),
+        (None, Some((inventory, page, column))) => format!("{inventory:?} p{page} column {column}"),
+        _ => "nowhere".to_string(),
+    };
+    format!(
+        "{:?} [{}]  x{}  {:?}  {place}  '{}'",
+        chest.kind,
+        contents.join(", "),
+        chest.amount.clone().unwrap_or_default(),
+        chest.tradability,
+        chest.last_read_title
     )
 }
 
@@ -111,6 +141,10 @@ fn main() {
         spent / index as f64,
         state.screen_info.brightness
     );
+    println!("{} chests", state.chests.len());
+    for chest in &state.chests {
+        println!("  {}", describe_chest(chest));
+    }
     for (address, info) in &state.slot_infos {
         if info.tradability.is_some() || info.tooltip_amount.is_some() {
             println!(

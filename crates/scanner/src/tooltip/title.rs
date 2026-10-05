@@ -9,16 +9,28 @@ use image::{
 
 // light text on a dark bar to dark text on white, which is what the recogniser reads best
 pub fn text_image(buffer: &Buffer, x0: usize, y0: usize, x1: usize, y1: usize) -> RgbaImage {
+    ink_image(buffer, x0, y0, x1, y1, |[r, g, b]| r.max(g).max(b))
+}
+
+// only what is in the amount yellow (255, 213, 0), so white text and the background drop out
+pub fn yellow_image(buffer: &Buffer, x0: usize, y0: usize, x1: usize, y1: usize) -> RgbaImage {
+    ink_image(buffer, x0, y0, x1, y1, |[r, g, b]| (r.min(g) - b).max(0))
+}
+
+fn ink_image(
+    buffer: &Buffer,
+    x0: usize,
+    y0: usize,
+    x1: usize,
+    y1: usize,
+    ink: impl Fn([i32; 3]) -> i32,
+) -> RgbaImage {
     let mut image = buffer.crop(x0, y0, x1, y1);
-    let brightest = image
-        .pixels()
-        .map(|p| p.0[0].max(p.0[1]).max(p.0[2]))
-        .max()
-        .unwrap();
+    let ink = |pixel: &image::Rgba<u8>| ink([pixel.0[0] as i32, pixel.0[1] as i32, pixel.0[2] as i32]);
+    let most = image.pixels().map(ink).max().unwrap().max(1);
     for pixel in image.pixels_mut() {
-        let value =
-            pixel.0[0].max(pixel.0[1]).max(pixel.0[2]) as u32 * 255 / brightest.max(1) as u32;
-        pixel.0 = [255 - value as u8, 255 - value as u8, 255 - value as u8, 255];
+        let value = 255 - (ink(pixel) * 255 / most) as u8;
+        pixel.0 = [value, value, value, 255];
     }
     // the recogniser works on lines 64px tall
     let width = image.width() * OCR_LINE_HEIGHT / image.height();

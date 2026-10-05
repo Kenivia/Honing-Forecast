@@ -3,7 +3,7 @@ use crate::{
     cropper::anchors::AnchorInfo,
     image_utils::common::IntegerRectangle,
     setup::{IncomingNewIcon, OneIconConfig},
-    tooltip::hover::Hover,
+    tooltip::{chest::Chest, hover::Hover},
 };
 use ahash::AHashMap;
 use fast_image_resize::Resizer;
@@ -112,6 +112,9 @@ pub struct ScannerState {
 
     #[serde(default)]
     pub hover: Option<Hover>,
+    // chests are read off their tooltip alone, so they live apart from the slots
+    #[serde(default)]
+    pub chests: Vec<Chest>,
 
     #[serde(default)]
     pub screen_info: ScreenInfo,

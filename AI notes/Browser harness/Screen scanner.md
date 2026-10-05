@@ -21,6 +21,7 @@ export default async ({ page, hf }) => {
 - Ready-made inputs: `scripts/brightness/Recording 1080p.mp4` and `scripts/brightness/inputs/*.png` at 1080p; in `scripts/brightness/1440p raw`, `inventory top left.png` and `hover tooltip.png` show a character inventory with items, the `storage ...` files show the storage layout, and `21 by 9 storage.png` is storage at forced 21:9 (tick the checkbox, keep 2560x1440).
 - The results table is not cleared by `Stop` or a new upload. Reload the page between files, or stale rows will be counted.
 - The first frame is slow (full-frame anchor search). Slot rows appear in the second table once the inventory is found; a full inventory page gives a little over 100 rows.
+- Chests read from tooltips are listed in a third table (header `Title read`), one row per chest. An uploaded recording is scanned about 0.7 times a second headless, so only hovers that last about a second are seen.
 - `Stop` ends capture. `Share screen` is the real screen-share path.
 
 ## State you can read
