@@ -10,9 +10,9 @@ If you'd like to help with any of the below, feel free to get in touch via [Disc
 - ~~make things work with non-1920x1080 resolution~~
 - ~~shoudl probably sort out roster / char storage fisrt~~
 
-- tooltip yellow testing
-  - genralize the "bound" specification a bit (absolute bound or anchored bound, which anchor etc)
-  - need to think about how to specify required anchor for another anchor
+- ~~tooltip yellow testing~~
+  - ~~genralize the "bound" specification a bit (absolute bound or anchored bound, which anchor etc)~~
+  - ~~need to think about how to specify required anchor for another anchor~~
 
 - add some kind of sanity assertion that rectangles are scaled correctly
 

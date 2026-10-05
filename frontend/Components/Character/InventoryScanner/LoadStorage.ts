@@ -27,11 +27,20 @@ export interface OneSlotInfo {
   observed_id: String;
   progress: any;
   amount: string | null;
-  tradability: any;
+  tooltip_amount: string | null;
+  tradability: string | null;
+}
+
+export interface Hover {
+  last_read_title: string;
+  title: string | null;
+  amount: string | null;
+  tradability: string | null;
 }
 
 export interface ScannerState {
   slot_infos: Map<any, OneSlotInfo>;
+  hover: Hover | null;
   anchors: any;
   screen_info: any;
   pending_jobs: any;

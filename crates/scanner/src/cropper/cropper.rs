@@ -13,7 +13,7 @@ impl ScannerState {
         self.update_page_status();
         // my_dbg!("starting slot");
         self.update_slots();
-        // TODO hover tooltip detection
+        self.update_tooltip();
         // self.downscaled_cache.reset();
     }
 }

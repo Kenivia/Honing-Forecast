@@ -1,5 +1,6 @@
 use std::mem::forget;
 
+use image::RgbaImage;
 use serde::{Deserialize, Serialize};
 
 //  Box<dyn DoubleEndedIterator<Item = &Support> + '_>
@@ -11,6 +12,9 @@ pub struct Buffer {
     pub width: usize,
     pub height: usize,
     pub size: usize,
+    // raw channel value to its brightness-normalised value, rebuilt from the brightness estimate each scan
+    #[serde(skip)]
+    pub lut: Option<[u8; 256]>,
 }
 impl Buffer {
     pub fn reserve(&mut self) {
@@ -31,14 +35,23 @@ impl Buffer {
         }
     }
 
+    pub fn data(&self) -> &'static [u8] {
+        unsafe { std::slice::from_raw_parts(self.pointer.unwrap() as *const u8, self.size) }
+    }
+
+    // brightness-normalised colour of one pixel
     #[inline(always)]
-    pub fn pixel(&self, x: usize, y: usize) -> [u8; 4] {
-        let ptr: *const u8 = self.pointer.expect("buffer not allocated") as *const u8;
-        let idx: usize = y * self.width + x * 4;
-        assert!(idx + 4 <= self.size, "pixel index out of buffer range");
-        unsafe {
-            let slice: &[u8] = std::slice::from_raw_parts(ptr, self.size);
-            [slice[idx], slice[idx + 1], slice[idx + 2], slice[idx + 3]]
-        }
+    pub fn rgb(&self, x: usize, y: usize) -> [i32; 3] {
+        let (data, lut) = (self.data(), self.lut.as_ref().unwrap());
+        let index = (y * self.width + x) * 4;
+        std::array::from_fn(|c| lut[data[index + c] as usize] as i32)
+    }
+
+    // brightness-normalised copy of a rectangle
+    pub fn crop(&self, x0: usize, y0: usize, x1: usize, y1: usize) -> RgbaImage {
+        RgbaImage::from_fn((x1 - x0) as u32, (y1 - y0) as u32, |x, y| {
+            let [r, g, b] = self.rgb(x0 + x as usize, y0 + y as usize);
+            image::Rgba([r as u8, g as u8, b as u8, 255])
+        })
     }
 }

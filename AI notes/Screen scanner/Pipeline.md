@@ -11,7 +11,8 @@ Code: `crates/scanner` (image processing), `frontend/Components/Character/Invent
 3. **Locate the windows** (Rust). Anchors are tried in a fixed order. Each one is template-matched inside its bound, and a hit gives a root, the origin of any inventory window it locates, and a brightness estimate. On later frames anchors are only re-checked at their known position. See "Anchors and layouts" below.
 4. **Detect the page** (Rust). Page-tab templates at fixed offsets from each window origin say which page of that inventory is showing: the tab matching its active template, or the only tab that matched neither state.
 5. **Read slots** (Rust). Each slot of the active page sits at a fixed offset. A slot whose pixels have not changed is skipped; otherwise its crop is compared against every icon template, the closest one that passes wins, and the number strip is OCR'd.
-6. **Loop**. Each result immediately triggers the next frame.
+6. **Read the tooltip** (Rust). If an item tooltip is on screen, its title, stacked amount and tradability are read and written onto the slot being hovered. See `Tooltips.md`.
+7. **Loop**. Each result immediately triggers the next frame.
 
 Full-frame search is the expensive step and uses FFT cross-correlation. Everything after the anchor is a cheap fixed-position comparison.
 
@@ -66,22 +67,25 @@ Why the storage windows are not placed from the Storage button: the button and t
 - **The frame buffer is sized once**, at capture start, and freed when the worker is terminated. The explicit dealloc operation still exists but the frontend no longer calls it. JS must rebuild its view of wasm memory every frame, since memory growth invalidates old views.
 - **Brightness is normalised.** The in-game brightness setting changes pixel values, so observed crops are mapped to a fixed reference brightness before comparison. Stored templates are already normalised. See `Config and calibration.md`.
 - **Capture stays at native resolution.** Downscaling was tried and removed because the quantity digits need full resolution.
-- **OCR** uses the `ocrs` / `rten` crates with only the recognition model, on a preprocessed single line. Text detection is skipped because the number's position is known.
+- **Slot numbers are separated from the icon with a compositing model** (`image_utils/number.rs`). The game's brightness setting changes the icon but not the number drawn over it (measured: digit pixels are identical across all 21 settings). So the number crop is used as captured, never normalised, and the expected background is the matched icon's template moved to the on-screen brightness. The template is lined up to a quarter pixel on the icon area below the number, which nothing covers; lining it up on the number strip itself fails because the number hides most of it. Each pixel is then explained as white digit over shadowed background, which gives how much white the template cannot account for and how much the template had to be darkened. A white pixel is a digit if the template cannot explain it, or if it has the number's dark shadow within reach on both sides (digits over a white part of the icon). Nothing else survives, so icon highlights are gone. After that: blobs of a few pixels are removed, the empty black left of the number is cut off with a small margin (the recogniser is touchy about it: 2 to 4 px at 1080p works, 6 to 8 px is much worse than no crop), and the strip is resized to 64 px, white on black. Inverting made the recogniser worse on numbers, although tooltip text is inverted and reads better that way.
+- `cargo run --release --bin number_dump` and `number_test` dump number and icon crops from stills and score pre-processing with the real recogniser against hand labels (`scripts/tooltips/number_labels`). On recognised icons the current version reads 182 of 182 on the stills and 294 of 294 on the brightness sweep; the parameters were tuned on those two sets. On three static frames of the lossy recording it reads 34 of 34 roster numbers.
+- **OCR** uses the `ocrs` / `rten` crates with only the recognition model, on a preprocessed single line, 64 px tall. Text detection is skipped because the number's position is known.
 
 ## Status
 
-Working: capture, frame transfer, anchor detection for the character inventory and the storage layout (pet and NPC, 16:9 and forced 21:9), page detection, brightness estimation, slot icon identification, quantity OCR, and a debug UI that shows what was recognised.
+Working: capture, frame transfer, anchor detection for the character inventory and the storage layout (pet and NPC, 16:9 and forced 21:9), page detection, brightness estimation, slot icon identification, quantity OCR, tooltip reading, and a debug UI that shows what was recognised.
 
 Not done yet:
 
 - Results are not written into the calculator's material inputs. Output stops at the debug tables.
 - Only 1080p and 1440p have been tested on native captures. Other scales were tested on resampled 1440p images: icons are recognised, but the quantity OCR degrades as the scale drops.
-- Quantity OCR still misreads or returns nothing for some slots at every scale.
+- A slot number read while the cursor, the hover highlight or a fading tooltip is over the slot can be wrong, and the last read is what is kept. On the recording 20 of 28 slots end with the right number although static frames read perfectly.
+- The icon matcher lets other items through as "Fusion" (gems and accessories on the same dark blue background).
 - A crop that falls outside the frame (inventory window partly off the capture) still panics.
 - If the Storage button itself is covered, the whole storage layout is dropped and the whole-frame char inventory search runs, which can latch onto one of the storage windows. Storage has two variants but they are alternatives, not redundancy.
 - Each anchor match overwrites the brightness estimate, and anchors disagree by a few settings (model-derived against sweep-derived coefficients). This is within what matching tolerates, but a template that looks different in context gives a wildly wrong estimate: the inventory's bottom-left button is greyed out in the storage view, so it has its own template there.
 - "Move All Duplicate Materials" only just passes at native 1080p (0.905 against 0.9), because the game renders its text rather than scaling it. The sort button carries those windows there.
 - The roster page tabs for "page 1 inactive" and "page 2 active" were built from character-storage tab pixels, which look the same.
-- Tooltip detection and bound-versus-tradable detection are not implemented.
+- Tooltip reading works in the native harness on the example stills and recordings but has not been tried in the browser. Its limits are listed in `Tooltips.md`.
 
 Demo-only: `DemoOCR.vue` and `DemoColorfilter.vue` are earlier proofs of concept, still mounted on the scanner page. `tesseract-wasm` and `eng.traineddata` are used only by the OCR demo.

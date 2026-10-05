@@ -17,10 +17,10 @@ Template **names are a contract** with the Rust constants: anchor and page-tab n
 
 The file is built from two sources, in this order:
 
-1. **Icons, from Python.** `templates/make_msg_pack.py` composites each icon in `templates/Icons` over its rarity background from `templates/Backgrounds` and writes `templates/ScannerConfig.msgpack`. The script appends to whatever is already in that file.
+1. **Icons, from Python.** `templates/items.json` is the item table: one row per in-game item with its tooltip `title`, its `icon` (a file in `templates/Icons`) and the `rarity` background. `templates/make_msg_pack.py` composites each distinct icon over its background and replaces the Icon templates in `public/ScannerConfig.msgpack` in place, leaving every other template alone. Rows may share an icon (chest tiers that look the same), and a row without an icon is only a title the tooltip reader accepts. The same file is compiled into the scanner crate for title matching.
 2. **Anchors, appended in the app.** The Setup sub-page of a character adds to that config. With a live screen share running, the developer marks a rectangle, names and tags it, and Rust crops and normalises it from the current frame. The page lists the entries for editing and reordering, and downloads the combined result as msgpack.
 3. **Storage page tabs and window anchors, one-off.** The storage page tabs, the two "move all duplicates" templates and the storage inventory's bottom anchor were cropped from the 1440p storage screenshots by a throwaway script that applied the same brightness normalisation, rather than captured in the app. Capturing them in the app works too, but the app stores screen positions, so the offsets must then be edited to be window-relative.
-4. **Manual placement.** The downloaded file is copied into `public/` by hand. Nothing automates this, so `templates/` and `public/` hold different files.
+4. **Manual placement.** A config downloaded from the Setup page is copied into `public/` by hand. `templates/ScannerConfig.msgpack` is a leftover from the older flow and is no longer written.
 
 ## Brightness calibration
 
@@ -40,6 +40,6 @@ The script's greyscale weights and model constants must match the Rust side for 
 
 ## Keeping things in sync
 
-- Adding a material means adding its icon and rarity to the script, regenerating, and making sure the name matches what the rest of the app expects.
+- Adding an item means putting its art in `templates/Icons`, adding a row to `templates/items.json` and running `make_msg_pack.py`. The icon's file name is the template name the rest of the app sees. Rebuild the wasm afterwards, since the table is compiled in.
 - Adding or renaming an anchor means updating its entry in the Rust anchor list and rerunning brightness calibration for it. A bound must be at least the size of its template; slack beyond that is free, because the match position sets the root. The same template may be used by several anchors, but a piece of UI that is greyed out or recoloured in another context needs its own template.
 - The TypeScript interfaces describing scanner structs are hand-written copies of the Rust ones and are not checked against them.

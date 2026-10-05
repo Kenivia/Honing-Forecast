@@ -504,6 +504,7 @@ dependencies = [
  "rustfft",
  "serde",
  "serde_json",
+ "strsim",
  "uuid",
  "web-sys",
 ]

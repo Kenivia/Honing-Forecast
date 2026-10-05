@@ -3,6 +3,7 @@ import { ref } from "vue";
 // import { zipSync } from "fflate";
 import {
   getScannerConfig,
+  Hover,
   OneIconConfig,
   ScaledPosition,
   ScannerState,
@@ -31,6 +32,7 @@ interface DebugRow {
 const debug_table = ref<DebugRow[]>([]);
 
 const debugging = ref(true);
+const hover = ref<Hover | null>(null);
 
 interface FoundIconRow {
   key: string;
@@ -39,6 +41,8 @@ interface FoundIconRow {
   observed_number: OneIconConfig;
   processed_number: OneIconConfig;
   amount: string;
+  tooltip_amount: string | null;
+  tradability: string | null;
 }
 
 const found_icons = ref<FoundIconRow[]>([]);
@@ -153,9 +157,12 @@ function process_result(scanner_state: ScannerState) {
       observed_number: slot_info.observed_number,
       processed_number: slot_info.processed_number,
       amount: slot_info.amount,
+      tooltip_amount: slot_info.tooltip_amount,
+      tradability: slot_info.tradability,
     });
   }
   found_icons.value = new_found_icons;
+  hover.value = scanner_state.hover;
 }
 </script>
 
@@ -202,6 +209,10 @@ function process_result(scanner_state: ScannerState) {
       </table>
     </div>
 
+    <div v-if="hover">
+      Tooltip: {{ hover.title ?? hover.last_read_title }}, x{{ hover.amount }},
+      {{ hover.tradability }}
+    </div>
     <table>
       <thead>
         <tr>
@@ -214,6 +225,8 @@ function process_result(scanner_state: ScannerState) {
           <th>Raw number</th>
           <th>Processed</th>
           <th>OCR result</th>
+          <th>Tooltip amount</th>
+          <th>Tradability</th>
         </tr>
       </thead>
       <tbody>
@@ -233,6 +246,8 @@ function process_result(scanner_state: ScannerState) {
             <IconDisplay :icon="row.processed_number" />
           </td>
           <td>{{ row.amount }}</td>
+          <td>{{ row.tooltip_amount }}</td>
+          <td>{{ row.tradability }}</td>
         </tr>
       </tbody>
     </table>

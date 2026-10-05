@@ -4,7 +4,7 @@ use crate::{
         brightness::mean_intensity,
         close_enough::close_enough,
         common::{FloatRectangle, IntegerRectangle, Rectangle, get_resizer},
-        ocr::{get_number, pre_process},
+        ocr::{get_number, pre_process_icon_number},
         resize::crop_buffer,
     },
     scanner_state::{OneSlotInfo, ScannerState, SlotAddress},
@@ -141,12 +141,23 @@ impl ScannerState {
                 // my_dbg!("New", slot_address, "icon:", icon_name_score);
                 if icon_name_score.is_some() {
                     // only overwrite if it matches another
-                    let pre_processed = pre_process(
+                    let pre_processed = pre_process_icon_number(
                         observed_number.clone(),
-                        get_resizer(&mut self.resizer),
+                        &observed_icon.data,
+                        &BASE_ICONS.read()[&icon_name_score.as_ref().unwrap().0].data,
                         self.screen_info.brightness.unwrap(),
                     );
 
+                    // what the tooltip said stays while the slot holds the same item
+                    let (tooltip_amount, tradability) = self
+                        .slot_infos
+                        .get(slot_address)
+                        .filter(|old| {
+                            old.icon_name_score.as_ref().map(|x| &x.0)
+                                == icon_name_score.as_ref().map(|x| &x.0)
+                        })
+                        .map(|old| (old.tooltip_amount.clone(), old.tradability))
+                        .unwrap_or_default();
                     self.slot_infos.insert(
                         *slot_address,
                         OneSlotInfo {
@@ -155,7 +166,8 @@ impl ScannerState {
                             observed_icon,
                             processed_number: pre_processed.clone(),
                             amount: Some(get_number(pre_processed)),
-                            tradability: None,
+                            tooltip_amount,
+                            tradability,
                             currently_seen: true,
                         },
                     );

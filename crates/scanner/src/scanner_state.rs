@@ -3,6 +3,7 @@ use crate::{
     cropper::anchors::AnchorInfo,
     image_utils::common::IntegerRectangle,
     setup::{IncomingNewIcon, OneIconConfig},
+    tooltip::hover::Hover,
 };
 use ahash::AHashMap;
 use fast_image_resize::Resizer;
@@ -61,7 +62,7 @@ pub struct SlotAddress {
     pub pos_in_inv: (usize, usize),
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Hash, Clone, Copy)]
 pub enum Tradability {
     Tradable,
     RosterBound,
@@ -78,6 +79,9 @@ pub struct OneSlotInfo {
     // pub observed_id: Uuid,
     pub currently_seen: bool,
     pub amount: Option<String>,
+    // these two come from the hover tooltip
+    #[serde(default)]
+    pub tooltip_amount: Option<String>,
     pub tradability: Option<Tradability>,
 }
 
@@ -105,6 +109,9 @@ pub struct ScannerState {
 
     #[serde(default)]
     pub page_num_infos: AHashMap<InventoryType, Vec<Option<bool>>>,
+
+    #[serde(default)]
+    pub hover: Option<Hover>,
 
     #[serde(default)]
     pub screen_info: ScreenInfo,

@@ -1,141 +1,69 @@
+"""
+Rebuilds the Icon templates in public/ScannerConfig.msgpack from items.json. Anchors are left alone.
 
+To add an item: put its icon art in Icons/, add a row to items.json, run this.
+A row is {"title": in-game tooltip title, "icon": file name in Icons/, "rarity": background}.
+Rows sharing an icon share one template; a row without an icon is only a title the tooltip reader accepts.
+"""
+
+import json
 from pathlib import Path
-from PIL import Image
+
 import msgpack
-
-DATA = {
-    "Armor Book" : "relic",
-"Blue" : "common",
-"Fusion" : "rare",
-"Glacier's Breath" : "epic",
-"Lava's Breath" : "epic",
-"Leapstone" : "rare",
-"Red" : "common",
-"Scroll 1 Armor" : "epic",
-"Scroll 1 Weapon" : "epic",
-"Scroll 2 Armor" : "legendary",
-"Scroll 2 Weapon" : "legendary",
-"Scroll 3 Armor" : "relic",
-"Scroll 3 Weapon" : "relic",
-"Scroll 4 Armor" : "ancient",
-"Scroll 4 Weapon" : "ancient",
-"Special Leapstone" : "relic",
-"Weapon Book" : "relic",
-"Serca Red" : "common",
-"Serca Blue" : "common", 
-"Serca Leapstone" : "rare", 
-"Serca Special Leapstone" : "relic", 
-"Serca Fusion": "epic",
-}
-
+from PIL import Image
 
 WIDTH = 64
 HEIGHT = 64
 
-
-# ---------------------------------------------------------------------------
-# Paths
-# ---------------------------------------------------------------------------
-
 SCRIPT_DIR = Path(__file__).resolve().parent
 BACKGROUNDS_DIR = SCRIPT_DIR / "Backgrounds"
 ICONS_DIR = SCRIPT_DIR / "Icons"
-OUTPUT_PATH = SCRIPT_DIR / "ScannerConfig.msgpack"
+ITEMS_PATH = SCRIPT_DIR / "items.json"
+OUTPUT_PATH = SCRIPT_DIR.parent / "public" / "ScannerConfig.msgpack"
 
 
 def find_icon_path(name: str) -> Path:
-    """Locate an icon file for `name`, trying .webp then .png. Errors if missing."""
     for ext in (".webp", ".png"):
         candidate = ICONS_DIR / f"{name}{ext}"
         if candidate.exists():
             return candidate
-    raise FileNotFoundError(
-        f"No icon found for '{name}' in {ICONS_DIR} (tried .webp and .png)"
-    )
-
-
-def find_background_path(rarity: str) -> Path:
-    candidate = BACKGROUNDS_DIR / f"{rarity}.webp"
-    if not candidate.exists():
-        raise FileNotFoundError(f"No background found for rarity '{rarity}' at {candidate}")
-    return candidate
+    raise FileNotFoundError(f"No icon found for '{name}' in {ICONS_DIR} (tried .webp and .png)")
 
 
 def resize_and_crop_bottom(img: Image.Image, width: int, height: int) -> Image.Image:
-    """Resize to width x width, then crop to the bottom `height` pixels."""
     img = img.convert("RGBA")
     img = img.resize((width, width), Image.Resampling.LANCZOS)
-    top = width - height
-    return img.crop((0, top, width, width))
-
-
-def flatten_opaque(img: Image.Image, backdrop=(0, 0, 0, 255)) -> Image.Image:
-    """Composite `img` over an opaque backdrop so the result has alpha=255 everywhere."""
-    if img.mode != "RGBA":
-        img = img.convert("RGBA")
-    canvas = Image.new("RGBA", img.size, backdrop)
-    return Image.alpha_composite(canvas, img)
+    return img.crop((0, width - height, width, width))
 
 
 def build_icon_config(name: str, rarity: str) -> dict:
-    icon_path = find_icon_path(name)
-    background_path = find_background_path(rarity)
-
-    icon = Image.open(icon_path)
-    background = Image.open(background_path)
-
-    icon = resize_and_crop_bottom(icon, WIDTH, HEIGHT)
-    background = resize_and_crop_bottom(background, WIDTH, HEIGHT)
-
-    # Ensure the background itself is fully opaque before compositing the icon on top.
-    background = flatten_opaque(background)
-
-    # Composite icon (with its own transparency) over the now-opaque background.
-    # Because the background is fully opaque, the result is guaranteed opaque too.
+    icon = resize_and_crop_bottom(Image.open(find_icon_path(name)), WIDTH, HEIGHT)
+    background = resize_and_crop_bottom(Image.open(BACKGROUNDS_DIR / f"{rarity}.webp"), WIDTH, HEIGHT)
+    # the background goes over black first so the result is opaque
+    background = Image.alpha_composite(Image.new("RGBA", background.size, (0, 0, 0, 255)), background)
     final = Image.alpha_composite(background, icon)
-
-    if final.mode != "RGBA":
-        final = final.convert("RGBA")
-
-    pixel_bytes = final.tobytes()  # RGBA, row-major
 
     return {
         "name": name,
-        "offset": {
-            "top_left": [0.0, 0.0],
-            "width": WIDTH,
-            "height": HEIGHT,
-        },
-        "data": list(pixel_bytes),
-        "tag": 'Icon',
-        # "resolution": 1440,
+        "offset": {"top_left": [0, 0], "width": WIDTH, "height": HEIGHT},
+        "data": list(final.tobytes()),
+        "tag": "Icon",
+        "normalized": True,
+        "required_confidence": None,
     }
 
 
-def load_existing_configs() -> list:
-    if not OUTPUT_PATH.exists():
-        return []
-    with open(OUTPUT_PATH, "rb") as f:
-        raw = f.read()
-    if not raw:
-        return []
-    existing = msgpack.unpackb(raw, raw=False)
-    if not isinstance(existing, list):
-        raise ValueError(f"{OUTPUT_PATH} does not contain a msgpack list; refusing to append")
-    return existing
-
-
 def main():
-    configs = load_existing_configs()
+    rarities = {}
+    for item in json.loads(ITEMS_PATH.read_text(encoding="utf-8")):
+        if "icon" in item:
+            assert rarities.setdefault(item["icon"], item["rarity"]) == item["rarity"], f"'{item['icon']}' has two rarities"
 
-    for name, rarity in DATA.items():
-        print(f"Processing '{name}' -> background '{rarity}'...")
-        configs.append(build_icon_config(name, rarity))
-
-    with open(OUTPUT_PATH, "wb") as f:
-        f.write(msgpack.packb(configs, use_bin_type=True))
-
-    print(f"Wrote {len(configs)} total icon configs to {OUTPUT_PATH}")
+    configs = msgpack.unpackb(OUTPUT_PATH.read_bytes(), raw=False)
+    configs = [config for config in configs if config["tag"] != "Icon"]
+    configs += [build_icon_config(name, rarity) for name, rarity in rarities.items()]
+    OUTPUT_PATH.write_bytes(msgpack.packb(configs, use_bin_type=True))
+    print(f"Wrote {len(rarities)} icons ({len(configs)} templates in total) to {OUTPUT_PATH}")
 
 
 if __name__ == "__main__":

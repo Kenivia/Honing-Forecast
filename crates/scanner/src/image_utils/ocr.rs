@@ -1,145 +1,92 @@
 use crate::{
-    image_utils::{brightness::normalize_brightness, resize::resize_one_config},
+    image_utils::{
+        common::IntegerRectangle,
+        number::{NumberParams, number_background, number_mask},
+    },
     setup::{OCR_ENGINE, OneIconConfig},
 };
-use fast_image_resize::Resizer;
-use image::{GrayImage, Luma, imageops::grayscale};
+use image::{
+    GrayImage, Luma, Rgba, RgbaImage,
+    imageops::{FilterType, crop_imm, resize},
+};
 use imageproc::region_labelling::{Connectivity, connected_components};
 use ocrs::ImageSource;
 use rten_imageproc::{PointF, RotatedRect, Vec2};
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 
-fn colorfulness_mask(icon: &mut OneIconConfig, threshold: u8) {
-    let img = &mut icon.data;
+pub const OCR_LINE_HEIGHT: u32 = 64; // what the recogniser works at
 
-    for px in img.pixels_mut() {
-        let max = px.0[0].max(px.0[1]).max(px.0[2]);
-        let min = px.0[0].min(px.0[1]).min(px.0[2]);
-        let saturation = if max == 0 {
-            0.0
-        } else {
-            (max - min) as f32 / max as f32
-        };
-        if saturation * 255.0 > threshold as f32 {
-            px.0[0] = 0;
-            px.0[1] = 0;
-            px.0[2] = 0;
+const SPECK_AREA: u32 = 32; // blobs up to the strip's height squared over this are specks
+const LEFT_MARGIN: u32 = 5; // black kept left of the number, as the strip's height over this
+
+// white blobs too small to be part of a digit, 
+fn remove_specks(white: &mut GrayImage) {
+    let (w, h) = white.dimensions();
+    let binary = GrayImage::from_fn(w, h, |x, y| Luma([(white.get_pixel(x, y)[0] > 0) as u8]));
+    let labels = connected_components(&binary, Connectivity::Eight, Luma([0u8]));
+    let mut sizes: HashMap<u32, u32> = HashMap::new();
+    for label in labels.pixels() {
+        *sizes.entry(label[0]).or_default() += 1;
+    }
+    let largest = h * h / SPECK_AREA;
+    for (x, y, label) in labels.enumerate_pixels() {
+        if label[0] != 0 && sizes[&label[0]] <= largest {
+            white.put_pixel(x, y, Luma([0]));
         }
     }
 }
 
-fn luminosity_threshold(icon: &mut OneIconConfig, threshold: u8) {
-    let img = &mut icon.data;
-    let gray = grayscale(img);
-
-    for (px, &Luma([luma])) in img.pixels_mut().zip(gray.pixels()) {
-        let value = if luma >= threshold { luma } else { 0 };
-        px.0[0] = value;
-        px.0[1] = value;
-        px.0[2] = value;
-    }
-}
-
-/// Zeroes out the white region reachable from the image border (4-connectivity),
-/// leaving enclosed white holes untouched.
-fn background_flood_fill(icon: &mut OneIconConfig, tolerance: u8) {
-    let (w, h) = (icon.offset.width as u32, icon.offset.height as u32);
-    let img = &mut icon.data;
-
-    let mask: GrayImage = GrayImage::from_fn(w, h, |x, y| {
-        let p = img.get_pixel(x, y);
-        let is_white =
-            255 - p[0] <= tolerance && 255 - p[1] <= tolerance && 255 - p[2] <= tolerance;
-        Luma([if is_white { 255 } else { 0 }])
-    });
-    let labels = connected_components(&mask, Connectivity::Four, Luma([0u8]));
-
-    let mut border_labels: HashSet<u32> = HashSet::new();
-    for x in 0..w {
-        border_labels.insert(labels.get_pixel(x, 0)[0]);
-        border_labels.insert(labels.get_pixel(x, h - 1)[0]);
-    }
-    for y in 0..h {
-        border_labels.insert(labels.get_pixel(0, y)[0]);
-        border_labels.insert(labels.get_pixel(w - 1, y)[0]);
-    }
-    border_labels.remove(&0);
-
-    for (x, y, px) in img.enumerate_pixels_mut() {
-        if border_labels.contains(&labels.get_pixel(x, y)[0]) {
-            px.0[0] = 0;
-            px.0[1] = 0;
-            px.0[2] = 0;
-        }
-    }
-}
-
-/// Blackens connected clusters of pixels above `brightness_threshold` luma
-/// whose size is at or below `size_threshold`.
-fn speck_removal(icon: &mut OneIconConfig, brightness_threshold: u8, size_threshold: usize) {
-    let (w, h) = (icon.offset.width as u32, icon.offset.height as u32);
-    let img = &mut icon.data;
-    let gray = grayscale(img);
-
-    let mask: GrayImage = GrayImage::from_fn(w, h, |x, y| {
-        Luma([if gray.get_pixel(x, y)[0] > brightness_threshold {
-            255
-        } else {
-            0
-        }])
-    });
-    let labels = connected_components(&mask, Connectivity::Four, Luma([0u8]));
-
-    let mut sizes: HashMap<u32, usize> = HashMap::new();
-    for &Luma([label]) in labels.pixels() {
-        if label != 0 {
-            *sizes.entry(label).or_insert(0) += 1;
-        }
-    }
-
-    for (x, y, px) in img.enumerate_pixels_mut() {
-        let label = labels.get_pixel(x, y)[0];
-        if label != 0 && sizes[&label] <= size_threshold {
-            px.0[0] = 0;
-            px.0[1] = 0;
-            px.0[2] = 0;
-        }
-    }
-}
-
-pub fn pre_process(
-    mut icon: OneIconConfig,
-    resizer: &mut Resizer,
+// `icon` is the slot's icon crop, already normalised, and `template` the matched icon's base template;
+// together they say what is behind the number. The number crop itself is used as captured, because
+// the game's brightness setting does not touch the number.
+pub fn pre_process_icon_number(
+    number: OneIconConfig,
+    icon: &RgbaImage,
+    template: &RgbaImage,
     brightness: f64,
 ) -> OneIconConfig {
-    normalize_brightness(&mut icon, brightness);
-    colorfulness_mask(&mut icon, 40);
-    luminosity_threshold(&mut icon, 100);
-    background_flood_fill(&mut icon, 100);
-    speck_removal(&mut icon, 75, 2);
-    let (scaled_image, scaled_offset) =
-        resize_one_config(None, 64.0 / icon.offset.height as f64, resizer, &icon);
+    let (w, h) = number.data.dimensions();
+    let background = number_background(template, icon, w, h, brightness);
+    let mut white = number_mask(&number.data, &background, &NumberParams::default());
+    remove_specks(&mut white);
+    // white on black; inverting it made the recogniser worse on numbers
+    let image = RgbaImage::from_fn(w, h, |x, y| {
+        let value = white.get_pixel(x, y)[0];
+        Rgba([value, value, value, 255])
+    });
+    // the empty part left of the number is cut off; the recogniser drops leading digits less often
+    let first = (0..w).find(|x| (0..h).any(|y| white.get_pixel(*x, y)[0] > 0));
+    let left = first.map_or(0, |x| x.saturating_sub(h / LEFT_MARGIN));
+    let image = crop_imm(&image, left, 0, w - left, h).to_image();
+    let width = image.width() * OCR_LINE_HEIGHT / h;
+    let data = resize(&image, width, OCR_LINE_HEIGHT, FilterType::CatmullRom);
     OneIconConfig {
-        data: scaled_image,
-        name: icon.name,
-        offset: scaled_offset,
-        tag: icon.tag,
+        offset: IntegerRectangle {
+            top_left: number.offset.top_left,
+            width: data.width() as usize,
+            height: data.height() as usize,
+        },
+        data,
+        name: number.name,
+        tag: number.tag,
         normalized: true,
         required_confidence: None,
     }
 }
 
 pub fn get_number(scaled_image: OneIconConfig) -> String {
+    recognize_line(&scaled_image.data)
+}
+
+// the whole image is one line of text
+pub fn recognize_line(image: &RgbaImage) -> String {
     let read = OCR_ENGINE.read(); // need to have this line for some reason
     let engine = read.as_ref().unwrap();
-    let width = scaled_image.offset.width as u32;
-    let height = scaled_image.offset.height as u32;
+    let (width, height) = image.dimensions();
     return engine
         .recognize_text(
             &engine
-                .prepare_input(
-                    ImageSource::from_bytes(&scaled_image.data, (width, height)).unwrap(),
-                )
+                .prepare_input(ImageSource::from_bytes(image, (width, height)).unwrap())
                 .unwrap(),
             &vec![vec![RotatedRect::new(
                 PointF::from_yx(height as f32 / 2.0, width as f32 / 2.0),

@@ -19,22 +19,26 @@ pub fn est_ingame_brightness(best_mean_f: f64, c: &[f64; 3]) -> f64 {
     (c[0] * best_mean_f * best_mean_f + c[1] * best_mean_f + c[2]).clamp(0.0, 100.0)
 }
 
-pub fn normalize_brightness(input: &mut OneIconConfig, in_game_brightness: f64) {
-    if input.normalized {
-        return;
-    }
-
+pub fn brightness_lut(in_game_brightness: f64) -> [u8; 256] {
     let exponent = (1.0 + GAMMA_RATE * in_game_brightness.clamp(0.0, 100.0))
         / (1.0 + GAMMA_RATE * TARGET_BRIGHTNESS);
     let gain = (GAIN_LINEAR * (exponent - 1.0)
         + GAIN_QUADRATIC * (exponent - 1.0) * (exponent - 1.0))
         .exp();
 
-    let lut: [u8; 256] = std::array::from_fn(|v| {
+    std::array::from_fn(|v| {
         (255.0 * gain * (v as f64 / 255.0).powf(exponent))
             .round()
             .clamp(0.0, 255.0) as u8
-    });
+    })
+}
+
+pub fn normalize_brightness(input: &mut OneIconConfig, in_game_brightness: f64) {
+    if input.normalized {
+        return;
+    }
+
+    let lut = brightness_lut(in_game_brightness);
 
     for pixel in input.data.pixels_mut() {
         for channel in pixel.0.iter_mut().take(3) {
