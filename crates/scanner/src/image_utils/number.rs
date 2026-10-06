@@ -105,7 +105,7 @@ fn sample_template(
 }
 
 // where the template sits in this slot, found on the icon below the number, which nothing covers
-fn align(template: &RgbaImage, icon: &RgbaImage) -> (f64, f64) {
+pub fn align(template: &RgbaImage, icon: &RgbaImage) -> (f64, f64) {
     let (w, h) = icon.dimensions();
     let score = |shift: (f64, f64)| {
         sample_template(template, w, h, COMBINED_NUMBER_HEIGHT, ICON_HEIGHT, shift)

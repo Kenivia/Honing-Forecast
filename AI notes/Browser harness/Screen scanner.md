@@ -20,10 +20,29 @@ export default async ({ page, hf }) => {
 - Works headless and headed, in Chromium and Firefox, for PNG and H.264 MP4.
 - Any file size works. After upload a `Game resolution` select and a `Forced 21:9` checkbox appear, preselected from the file size; if the game in the file is smaller than the file (windowed, padded), pick its real resolution or nothing is recognised.
 - Ready-made inputs: `scripts/brightness/Recording 1080p.mp4` and `scripts/brightness/inputs/*.png` (lone inventory) and `scripts/brightness/inputs storage/*.png` (storage layout with a chest tooltip), both 1080p at every brightness setting; in `scripts/brightness/1080p raw`, recordings at settings 60, 0 and 100; in `scripts/brightness/1440p raw`, `inventory top left.png` and `hover tooltip.png` show a character inventory with items, the `storage ...` files show the storage layout, and `21 by 9 storage.png` is storage at forced 21:9 (tick the checkbox, keep 2560x1440).
+- The three files named `2026-10-06 ...` are the near-lossless recordings (see below), all at brightness 60: one 2560x1440 in `1440p raw`, and two 3840x2160, one in `2160p raw` with a slower hover and one **misfiled in `1080p raw`** although it is 4K. The older `Recording ...` files in `1080p raw` are the lossy hardware-encoded ones.
 - The results tables keep their rows after `Stop` and are replaced by the first result of the next capture.
 - The first frame is slow (full-frame anchor search). Slot rows appear in the second table once the inventory is found; a full inventory page gives a little over 100 rows.
 - Chests read from tooltips are listed in a third table (header `Title read`), one row per chest. Every frame of an uploaded recording is scanned. Texts arrive later than the frame they were cut from, so wait for the OCR queue to empty (`window.__ocr_timings` stops growing) before reading the tables.
 - `Stop` ends capture. `Share screen` is the real screen-share path.
+
+## Recording test inputs
+
+A recording stands in for a live screen share, so it should carry the same losses and no others. The share is **not** lossless: Chromium's desktop capturer hands over ARGB and the capture client runs it through libyuv `ConvertToI420`, so the frames reaching `copyTo(dest, { format: "RGBA" })` are 4:2:0 chroma-subsampled but otherwise uncompressed. Firefox has no `MediaStreamTrackProcessor`, so there the frames come off a `<video>` instead, the same way an upload does.
+
+OBS settings that match, used for the `2026-10-06 ...` recordings:
+
+| Where | Setting |
+| --- | --- |
+| Video | Base = Output, no scaling; 30 fps (matches `CAPTURE_FPS`) |
+| Advanced | Color Format NV12, Color Space 709, Color Range **Limited** |
+| Output (advanced) | x264, rate control CRF, **CRF 1**, preset veryfast, profile high, mp4 |
+| Source | Window or Display Capture, method Windows 10 (WGC), cursor on, transform reset |
+
+- **CRF 1, not 0.** Lossless H.264 needs `qpprime_y_zero_transform_bypass_flag`, which exists only in the High 4:4:4 Predictive profile, so x264 stamps profile 244 on the file even when the pixels are 4:2:0. Firefox then refuses it outright (`media error 3`, "Decoder may not have the capability to handle the requested video format with YUV444 chroma subsampling") and VLC's hardware path mangles the colours. CRF 1 stays in High profile, decodes in both browsers, and its quantisation is far under the 4:2:0 loss that is being reproduced anyway. The profile is in the SPS, so a bad file has to be re-recorded, not remuxed.
+- **Limited range, not full.** OBS's mp4 does tag `colr nclx` 709/limited, and the browser agrees with it; full range with a lost tag would crush blacks and skew the brightness reading.
+- The older `Recording ...` files came from a hardware encoder at Main profile with no colour tags at all (the browser falls back to 709 limited, which happens to match). Their extra lossy compression is what eats the yellow out of a thin last digit in `Tooltips.md`.
+- `python scripts/brightness/probe_capture.py "<file.mp4>"` prints resolution, fps, profile, chroma, range, colour tags and the x264 options read out of the SEI, and flags profile 244, non-4:2:0, full range and a frame rate away from 30. A good file reads `profile 100 (High)`, `chroma 4:2:0`, `lossless=0`, `range=limited`, `crf=1.0`.
 
 ## State you can read
 

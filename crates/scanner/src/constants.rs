@@ -59,6 +59,8 @@ pub const ICON_HEIGHT: f64 = 61.0 - COMBINED_NUMBER_HEIGHT;
 
 const GRID_LEFT: f64 = 16.0;
 const ROSTER_GRID_LEFT: f64 = 15.1; // the roster window is narrower, so its grid sits closer to its left edge
+const CHAR_STORAGE_GRID_LEFT: f64 = 15.27;
+const ROSTER_ONLY_GRID_LEFT: f64 = 14.70;
 
 // every window shares the same grid relative to its own origin, apart from where it starts
 fn standard_grid(
@@ -91,7 +93,7 @@ pub static ALL_SLOT_ADDRESSS: LazyLock<AHashMap<SlotAddress, FloatRectangle>> =
             map.extend(standard_grid(
                 InventoryType::CharStorage,
                 page_num,
-                ROSTER_GRID_LEFT,
+                CHAR_STORAGE_GRID_LEFT,
                 10,
                 10,
             ));
@@ -100,7 +102,7 @@ pub static ALL_SLOT_ADDRESSS: LazyLock<AHashMap<SlotAddress, FloatRectangle>> =
             map.extend(standard_grid(
                 InventoryType::Roster,
                 page_num,
-                ROSTER_GRID_LEFT,
+                ROSTER_ONLY_GRID_LEFT,
                 10,
                 6,
             ));
