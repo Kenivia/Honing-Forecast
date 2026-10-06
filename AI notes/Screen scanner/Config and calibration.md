@@ -22,6 +22,18 @@ The file is built from two sources, in this order:
 3. **Storage page tabs and window anchors, one-off.** The storage page tabs, the two storage windows' top-right icon groups and the inventory's search button were cropped from the 1440p screenshots by throwaway scripts that applied the same brightness normalisation (for setting 70), rather than captured in the app. Capturing them in the app works too, but the app stores screen positions, so the offsets must then be edited to be window-relative.
 4. **Manual placement.** A config downloaded from the Setup page is copied into `public/` by hand. `templates/ScannerConfig.msgpack` is a leftover from the older flow and is no longer written.
 
+## Where each anchor template was cut from
+
+All 22 anchor-tagged templates are cut from the stills in `scripts/brightness/1440p raw`, at whole pixels, and normalised from setting 70 with the gamma law. The stills carry no record of their setting; 70 is read off the sort button's flat face, which is level 62 in every one of them and 62.4 at setting 70 on the 1080p captures (one level is about 1.5 settings).
+
+- `storage page 1.png` to `storage page 4.png` (pet menu): the storage page tabs, the pet Storage button, and the two storages' top-right icon groups. Each tab's active template is from the still with that page open, its inactive one from another.
+- `storage npc.png`: the NPC Storage button.
+- `inventory top left.png`: the sort button, the search button, character page 1 active and page 2 inactive.
+- `pet icon.png`: character page 2 active and page 1 inactive.
+- There is no 1440p still with roster page 2 open, so "Roster page 1 inactive" and "Roster page 2 active" are character-storage tab pixels, which look the same.
+
+The sort button and the four character page tabs used to be captures made in the app from some other frame; the stills differ from those by 0.3 to 1.8 levels on average.
+
 ## Brightness calibration
 
 The game's brightness slider changes every pixel, so a template captured at one setting will not match at another. The approach:

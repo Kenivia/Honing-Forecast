@@ -29,10 +29,14 @@ fn classify([r, g, b]: [i32; 3]) -> u8 {
     if max > 150 {
         class |= BRIGHT;
     }
-    if max <= 10 {
+    // the chest panel is 0; the body around it comes out at 12 to 20
+    if max <= 6 {
         class |= BLACK;
     }
-    if r > 190 && b < 110 && g * 4 > r * 3 && g < r {
+    // By hue, which normalising keeps the same at every brightness setting and for soft edges
+    // alike: the amount yellow has green at 0.82 of red and no blue. The tan of descriptions has
+    // blue at 0.54 of red; compression washes thin yellow out towards that.
+    if max > 110 && b * 2 < r && g * 4 > r * 3 && g < r {
         class |= YELLOW;
     }
     if r > 130 && g * 5 < r * 3 && b * 5 < r * 3 {
