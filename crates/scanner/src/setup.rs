@@ -90,6 +90,22 @@ pub struct IncomingNewIcon {
     pub brightness: f64,
 }
 
+// The largest centred part of a template whose scaled size is a whole number of pixels. A template
+// scaled to a rounded size is stretched by up to half a pixel against what it has to match, which
+// costs match score and moves the position it reports; cut this way it is pixel for pixel.
+fn whole_pixel_crop(offset: &IntegerRectangle, scale: f64) -> FloatRectangle {
+    let fit = |side: usize| (side as f64 * scale).floor() / scale;
+    let (width, height) = (fit(offset.width), fit(offset.height));
+    FloatRectangle {
+        top_left: (
+            (offset.width as f64 - width) / 2.0,
+            (offset.height as f64 - height) / 2.0,
+        ),
+        width,
+        height,
+    }
+}
+
 pub fn icon_lookup(
     name: &str,
     resolution: u32,
@@ -107,25 +123,29 @@ pub fn icon_lookup(
     // my_dbg!(&resolution);
     let base_icon = base_icon_guard.get(&key.0).expect(&key.0);
     let scale_factor = resolution as f64 / 1440.0;
-    let (image, scaled_offset) = resize_one_config(
-        if base_icon.tag == "Icon" {
-            Some(FloatRectangle {
-                top_left: (0.0, COMBINED_NUMBER_HEIGHT * 64.0 / 61.0),
-                width: 64.0,
-                height: 64.0 - 22.0 * 64.0 / 61.0,
-            })
-        } else {
-            None
-        },
-        scale_factor
-            * if base_icon.tag == "Icon" {
-                61.0 / 64.0
-            } else {
-                1.0
-            },
+    let is_icon = base_icon.tag == "Icon";
+    let crop = if is_icon {
+        FloatRectangle {
+            top_left: (0.0, COMBINED_NUMBER_HEIGHT * 64.0 / 61.0),
+            width: 64.0,
+            height: 64.0 - 22.0 * 64.0 / 61.0,
+        }
+    } else {
+        whole_pixel_crop(&base_icon.offset, scale_factor)
+    };
+    let (image, mut scaled_offset) = resize_one_config(
+        Some(crop),
+        scale_factor * if is_icon { 61.0 / 64.0 } else { 1.0 },
         resizer,
         base_icon,
     );
+    // the offset says where the template sits, so it moves with the cut
+    if !is_icon {
+        scaled_offset.top_left = (
+            scaled_offset.top_left.0 + crop.top_left.0 * scale_factor,
+            scaled_offset.top_left.1 + crop.top_left.1 * scale_factor,
+        );
+    }
 
     let mut write_guard = COMPUTED_ICONS.write();
     write_guard

@@ -115,17 +115,15 @@ pub fn align(template: &RgbaImage, icon: &RgbaImage) -> (f64, f64) {
             .sum::<f64>()
     };
     let mut best = (f64::MAX, (0.0, 0.0));
-    // coarse, then fine around the best
-    for (step, span) in [(1.0, 2.0), (0.25, 0.75)] {
-        let centre = best.1;
-        let steps = (span / step) as i32;
-        for dy in -steps..=steps {
-            for dx in -steps..=steps {
-                let shift = (centre.0 + dx as f64 * step, centre.1 + dy as f64 * step);
-                let s = score(shift);
-                if s < best.0 {
-                    best = (s, shift);
-                }
+    // The grid is good to about a twentieth of a pixel since anchor templates are cut to whole
+    // pixels, so a quarter pixel either way is enough: every slot over the native stills wants no
+    // more, and reads match the old two-pass search over four times this span.
+    for dy in -1..=1 {
+        for dx in -1..=1 {
+            let shift = (dx as f64 * 0.25, dy as f64 * 0.25);
+            let s = score(shift);
+            if s < best.0 {
+                best = (s, shift);
             }
         }
     }

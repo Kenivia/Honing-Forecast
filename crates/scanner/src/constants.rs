@@ -58,7 +58,8 @@ pub const ICON_WIDTH: f64 = 61.0;
 pub const ICON_HEIGHT: f64 = 61.0 - COMBINED_NUMBER_HEIGHT;
 
 const GRID_LEFT: f64 = 16.0;
-const ROSTER_GRID_LEFT: f64 = 15.1; // the roster window is narrower, so its grid sits closer to its left edge
+// the two storage windows are narrower than the inventory, and they differ from each other; both
+// measured on 1440p stills, where nothing is rounded
 const CHAR_STORAGE_GRID_LEFT: f64 = 15.27;
 const ROSTER_ONLY_GRID_LEFT: f64 = 14.70;
 

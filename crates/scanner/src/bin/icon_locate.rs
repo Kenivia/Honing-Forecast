@@ -16,17 +16,18 @@ use std::{env, fs};
 const ROOT: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/../..");
 
 fn main() {
-    println!("file\tscale\tinventory\tpage\trow\tcol\ticon\tgrid_x\tgrid_y\tdx\tdy\tscore_grid\tscore_int\tscore_best");
+    println!(
+        "file\tscale\teff\tinventory\troot_x\troot_y\tpage\trow\tcol\ticon\tgrid_x\tgrid_y\tdx\tdy\tscore_grid\tscore_int\tscore_best"
+    );
     for path in env::args().skip(1) {
         let image = image::open(&path).unwrap().to_rgba8();
         let (width, height) = (image.width() as usize, image.height() as usize);
         let mut pixels = image.into_raw();
         let mut state = ScannerState::default();
-        let ui_height = (height as f64 / 360.0).round() as u32 * 360;
-        let forced = path.contains("21 by 9");
-        state.screen_info.game_width = if forced { width as u32 } else { ui_height * 16 / 9 };
-        state.screen_info.game_height = ui_height;
-        state.screen_info.forced_21_9 = forced;
+        // a still is the whole game window, so the capture size is the game resolution
+        state.screen_info.game_width = width as u32;
+        state.screen_info.game_height = height as u32;
+        state.screen_info.forced_21_9 = path.contains("21 by 9");
         state.buffer.width = width;
         state.buffer.height = height;
         state.buffer.size = pixels.len();
@@ -57,10 +58,12 @@ fn main() {
             (format!("{:?}", a.inventory_type), a.page_num, a.pos_in_inv)
         });
 
+        let eff = state.screen_info.effective_height;
         for (address, icon) in addresses {
             let Some(grid) = state.anchored_slot_address_position(&address) else {
                 continue;
             };
+            let root = state.inventory_root(address.inventory_type).unwrap().top_left;
             // mean absolute RGB difference of the crop at this offset against the template
             let score = |state: &mut ScannerState, dx: f64, dy: f64| {
                 let at = FloatRectangle {
@@ -120,8 +123,10 @@ fn main() {
                 }
             }
             println!(
-                "{name}\t{scale}\t{:?}\t{}\t{}\t{}\t{icon}\t{}\t{}\t{}\t{}\t{:.3}\t{:.3}\t{:.3}",
+                "{name}\t{scale}\t{eff}\t{:?}\t{}\t{}\t{}\t{}\t{}\t{icon}\t{}\t{}\t{}\t{}\t{:.3}\t{:.3}\t{:.3}",
                 address.inventory_type,
+                root.0,
+                root.1,
                 address.page_num,
                 address.pos_in_inv.1,
                 address.pos_in_inv.0,

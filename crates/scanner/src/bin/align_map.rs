@@ -20,12 +20,10 @@ fn main() {
         let (width, height) = (image.width() as usize, image.height() as usize);
         let mut pixels = image.into_raw();
         let mut state = ScannerState::default();
-        let ui_height = (height as f64 / 360.0).round() as u32 * 360;
-        let forced = path.contains("21 by 9");
-        state.screen_info.game_width =
-            if forced { width as u32 } else { ui_height * 16 / 9 };
-        state.screen_info.game_height = ui_height;
-        state.screen_info.forced_21_9 = forced;
+        // a still is the whole game window, so the capture size is the game resolution
+        state.screen_info.game_width = width as u32;
+        state.screen_info.game_height = height as u32;
+        state.screen_info.forced_21_9 = path.contains("21 by 9");
         state.buffer.width = width;
         state.buffer.height = height;
         state.buffer.size = pixels.len();
