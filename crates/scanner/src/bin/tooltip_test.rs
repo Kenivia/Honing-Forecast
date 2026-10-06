@@ -45,7 +45,9 @@ fn describe(state: &ScannerState, hover: &Hover) -> String {
             info.amount.clone().unwrap_or_default()
         )
     });
-    let chest = hover.chest_index.map(|index| describe_chest(&state.chests[index]));
+    let chest = hover
+        .chest_index
+        .map(|index| describe_chest(&state.chests[index]));
     let rows: Vec<String> = hover
         .chest_rows
         .iter()
@@ -53,7 +55,14 @@ fn describe(state: &ScannerState, hover: &Hover) -> String {
         .collect();
     format!(
         "at {:?}  title {:?}  amount {:?}  {:?}  slot {:?}  (last read '{}')\n      chest {:?}\n      rows {:?}",
-        hover.position, hover.title, hover.amount, hover.tradability, slot, hover.last_read_title, chest, rows
+        hover.position,
+        hover.title,
+        hover.amount,
+        hover.tradability,
+        slot,
+        hover.last_read_title,
+        chest,
+        rows
     )
 }
 
@@ -61,10 +70,20 @@ fn describe_chest(chest: &Chest) -> String {
     let contents: Vec<String> = chest
         .contents
         .iter()
-        .map(|x| format!("{} x{}{}", x.item, x.amount, if x.bound { " (Bound)" } else { "" }))
+        .map(|x| {
+            format!(
+                "{} x{}{}",
+                x.item,
+                x.amount,
+                if x.bound { " (Bound)" } else { "" }
+            )
+        })
         .collect();
     let place = match (chest.slot, chest.column) {
-        (Some(slot), _) => format!("{:?} p{} {:?}", slot.inventory_type, slot.page_num, slot.pos_in_inv),
+        (Some(slot), _) => format!(
+            "{:?} p{} {:?}",
+            slot.inventory_type, slot.page_num, slot.pos_in_inv
+        ),
         (None, Some((inventory, page, column))) => format!("{inventory:?} p{page} column {column}"),
         _ => "nowhere".to_string(),
     };
@@ -83,7 +102,8 @@ fn main() {
     if args[0] != "--stdin" {
         for path in &args {
             let image = image::open(path).unwrap().to_rgba8();
-            let (mut state, mut pixels) = new_state(image.width() as usize, image.height() as usize);
+            let (mut state, mut pixels) =
+                new_state(image.width() as usize, image.height() as usize);
             pixels.copy_from_slice(image.as_raw());
             // enough scans for every slot to be read, they are looked at a few at a time
             for _ in 0..30 {
@@ -91,8 +111,11 @@ fn main() {
                 state.run_ocr_inline();
             }
             println!("{path}");
-            let scores: Vec<f64> =
-                state.slot_infos.values().filter_map(|slot| Some(slot.icon_name_score.as_ref()?.1)).collect();
+            let scores: Vec<f64> = state
+                .slot_infos
+                .values()
+                .filter_map(|slot| Some(slot.icon_name_score.as_ref()?.1))
+                .collect();
             println!(
                 "  brightness {:?}, {} slots recognised, mean confidence {:.4}",
                 state.screen_info.brightness,
@@ -138,9 +161,14 @@ fn main() {
                     .iter()
                     .flat_map(|spec| {
                         let found = &state.anchors[&spec.anchor_type].positions;
-                        spec.variants.iter().zip(found).filter_map(|(variant, found)| {
-                            found.map(|x| format!("{:?} {} {:.1?}", spec.anchor_type, variant.name, x.2))
-                        })
+                        spec.variants
+                            .iter()
+                            .zip(found)
+                            .filter_map(|(variant, found)| {
+                                found.map(|x| {
+                                    format!("{:?} {} {:.1?}", spec.anchor_type, variant.name, x.2)
+                                })
+                            })
                     })
                     .collect();
                 eprintln!(
@@ -173,7 +201,12 @@ fn main() {
                         let class = (job.priority > 0) as usize;
                         waits[class].push(index - queued[&job.id]);
                     }
-                    state.apply_ocr(batch.iter().map(|job| (job.id, recognize_line(&job.image))).collect());
+                    state.apply_ocr(
+                        batch
+                            .iter()
+                            .map(|job| (job.id, recognize_line(&job.image)))
+                            .collect(),
+                    );
                 }
             }
             spent += clock.elapsed().as_secs_f64() * 1000.0;
@@ -186,14 +219,19 @@ fn main() {
         }
         let moved = match (&previous, &state.hover) {
             (Some(old), Some(new)) => {
-                old.position.0.abs_diff(new.position.0) > 4 || old.position.1.abs_diff(new.position.1) > 4
+                old.position.0.abs_diff(new.position.0) > 4
+                    || old.position.1.abs_diff(new.position.1) > 4
             }
             (Some(_), None) => true,
             _ => false,
         };
         if moved {
             hovers += 1;
-            println!("{start:4}-{:4}  {}", index - 1, describe(&state, previous.as_ref().unwrap()));
+            println!(
+                "{start:4}-{:4}  {}",
+                index - 1,
+                describe(&state, previous.as_ref().unwrap())
+            );
         }
         if moved || previous.is_none() {
             start = index;
@@ -206,7 +244,10 @@ fn main() {
         index += 1;
     }
     println!("{skipped} frames not scanned");
-    eprintln!("stage timings (name, ms, calls): {:?}", hf_scanner::timing::take());
+    eprintln!(
+        "stage timings (name, ms, calls): {:?}",
+        hf_scanner::timing::take()
+    );
     println!(
         "{index} frames, tooltip on {seen}, {hovers} hovers, {:.1} ms per frame in the tooltip step and OCR, brightness {:?}",
         spent / index as f64,

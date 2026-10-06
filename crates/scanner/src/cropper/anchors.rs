@@ -34,6 +34,35 @@ impl AnchorInfo {
 }
 
 impl ScannerState {
+    fn compute_search_area(
+        &self,
+        bound: &Bound,
+        scale: f64,
+        buffer_width: usize,
+        buffer_height: usize,
+    ) -> FloatRectangle {
+        let mut search_area = match bound {
+            Bound::Frame => FloatRectangle {
+                top_left: (0.0, 0.0),
+                width: buffer_width as f64,
+                height: buffer_height as f64,
+            },
+            Bound::Ui(b) => b.scaled(scale).shifted(self.screen_info.ui_origin),
+            Bound::Storage(b) => b
+                .shifted(self.storage_shift)
+                .scaled(scale)
+                .shifted(self.screen_info.ui_origin),
+        };
+        let (left, top) = (
+            search_area.top_left.0.floor(),
+            search_area.top_left.1.floor(),
+        );
+        search_area.top_left = (left, top);
+        search_area.width = (search_area.top_left.0 + search_area.width).ceil() - left;
+        search_area.height = (search_area.top_left.1 + search_area.height).ceil() - top;
+        search_area
+    }
+
     pub fn initialize_anchors(&mut self) {
         self.anchors = AHashMap::new();
         for spec in ANCHORS.iter() {
@@ -118,25 +147,12 @@ impl ScannerState {
                 .required_confidence
                 .unwrap_or(DEFAULT_TEMPLATE_MATCHING_CONFIDENCE);
             drop(template);
-            let search_area = match variant.bound {
-                Bound::Frame => FloatRectangle {
-                    top_left: (0.0, 0.0),
-                    width: self.buffer.width as f64,
-                    height: self.buffer.height as f64,
-                },
-                Bound::Ui(bound) => bound.scaled(scale).shifted(self.screen_info.ui_origin),
-                Bound::Storage(bound) => bound
-                    .shifted(self.storage_shift)
-                    .scaled(scale)
-                    .shifted(self.screen_info.ui_origin),
-            };
-            // on whole pixels, or the crop is resampled and the brightness comes out a setting or two off
-            let (left, top) = (search_area.top_left.0.floor(), search_area.top_left.1.floor());
-            let search_area = FloatRectangle {
-                top_left: (left, top),
-                width: (search_area.top_left.0 + search_area.width).ceil() - left,
-                height: (search_area.top_left.1 + search_area.height).ceil() - top,
-            };
+            let search_area = self.compute_search_area(
+                &variant.bound,
+                scale,
+                self.buffer.width,
+                self.buffer.height,
+            );
             let Some((found_in_area, confidence, best_mean_f)) = template_match(
                 &icon_lookup(
                     variant.name,
@@ -153,7 +169,9 @@ impl ScannerState {
                 continue;
             };
             let found_position = found_in_area.shifted(search_area.top_left);
-            let brightness = variant.brightness.map(|curve| est_ingame_brightness(best_mean_f, &curve));
+            let brightness = variant
+                .brightness
+                .map(|curve| est_ingame_brightness(best_mean_f, &curve));
 
             if self.debugging {
                 let name = format!("{:?} {}", spec.anchor_type, variant.name);
@@ -175,9 +193,13 @@ impl ScannerState {
             }
             if confidence > required_confidence {
                 let anchor_info = self.anchors.get_mut(&spec.anchor_type).unwrap();
-                anchor_info.positions[variant_index] = Some((found_position, confidence, brightness));
+                anchor_info.positions[variant_index] =
+                    Some((found_position, confidence, brightness));
                 // variants place the root a pixel apart, so the first one found keeps it
-                if !anchor_info.positions[..variant_index].iter().any(|x| x.is_some()) {
+                if !anchor_info.positions[..variant_index]
+                    .iter()
+                    .any(|x| x.is_some())
+                {
                     anchor_info.position_root = Some(found_position.get_offset(&template_offset));
                 }
                 // only to start with: until an anchor has held up, there is nothing better
@@ -219,7 +241,10 @@ impl ScannerState {
     }
 
     fn search_storage(&mut self) {
-        for spec in ANCHORS.iter().filter(|spec| spec.anchor_type != AnchorType::CharInventory) {
+        for spec in ANCHORS
+            .iter()
+            .filter(|spec| spec.anchor_type != AnchorType::CharInventory)
+        {
             timed("anchors/storage", || self.search_anchor(spec));
         }
     }
@@ -246,8 +271,7 @@ impl ScannerState {
             }
         }
 
-        // the lone inventory's templates are in every storage window, and finding it takes a
-        // search of the whole frame
+        // only template match for the char inventory anchor if we're not in storage
         let lone = anchor_spec(AnchorType::CharInventory);
         if self.storage_found() >= STORAGE_MIN {
             self.clear_anchor(lone.anchor_type);

@@ -3,8 +3,8 @@
 use hf_scanner::{
     image_utils::{
         brightness::normalize_brightness,
-        number::{NumberParams, number_background, number_mask},
         common::IntegerRectangle,
+        number::{NumberParams, number_background, number_mask},
         ocr::{pre_process_icon_number, recognize_line},
     },
     scanner_state::ScannerState,
@@ -23,7 +23,10 @@ fn luma(p: &Rgba<u8>) -> i32 {
     (p[0] as i32 * 299 + p[1] as i32 * 587 + p[2] as i32 * 114) / 1000
 }
 fn saturation(p: &Rgba<u8>) -> i32 {
-    let (max, min) = (p[0].max(p[1]).max(p[2]) as i32, p[0].min(p[1]).min(p[2]) as i32);
+    let (max, min) = (
+        p[0].max(p[1]).max(p[2]) as i32,
+        p[0].min(p[1]).min(p[2]) as i32,
+    );
     if max == 0 { 0 } else { (max - min) * 255 / max }
 }
 
@@ -60,7 +63,9 @@ fn finish(mask: &GrayImage, invert: bool) -> RgbaImage {
         Rgba([v, v, v, 255])
     });
     let image = if param("CROP", 0) > 0 {
-        let cols: Vec<u32> = (0..mask.width()).filter(|x| (0..mask.height()).any(|y| mask.get_pixel(*x, y)[0] > 0)).collect();
+        let cols: Vec<u32> = (0..mask.width())
+            .filter(|x| (0..mask.height()).any(|y| mask.get_pixel(*x, y)[0] > 0))
+            .collect();
         match (cols.first(), cols.last()) {
             (Some(a), Some(b)) => {
                 let pad = param("CROP", 0) as u32;
@@ -84,7 +89,9 @@ fn finish(mask: &GrayImage, invert: bool) -> RgbaImage {
 }
 
 fn param(name: &str, default: i32) -> i32 {
-    env::var(name).map(|x| x.parse().unwrap()).unwrap_or(default)
+    env::var(name)
+        .map(|x| x.parse().unwrap())
+        .unwrap_or(default)
 }
 
 // white-ish pixels, the same test the current pipeline's first two steps make
@@ -106,7 +113,11 @@ fn white_mask(observed: &RgbaImage) -> GrayImage {
 fn white_mask_with(image: &RgbaImage, sat: i32, min_luma: i32) -> GrayImage {
     GrayImage::from_fn(image.width(), image.height(), |x, y| {
         let p = image.get_pixel(x, y);
-        Luma([if saturation(p) <= sat && luma(p) >= min_luma { 255 } else { 0 }])
+        Luma([if saturation(p) <= sat && luma(p) >= min_luma {
+            255
+        } else {
+            0
+        }])
     })
 }
 
@@ -125,7 +136,12 @@ fn brighter_darker(observed: &RgbaImage, bg: &RgbaImage, x: u32, y: u32) -> (i32
     ((l - max).max(0), (min - l).max(0))
 }
 
-fn components(mask: &GrayImage) -> (image::ImageBuffer<Luma<u32>, Vec<u32>>, HashMap<u32, Vec<(u32, u32)>>) {
+fn components(
+    mask: &GrayImage,
+) -> (
+    image::ImageBuffer<Luma<u32>, Vec<u32>>,
+    HashMap<u32, Vec<(u32, u32)>>,
+) {
     let binary = GrayImage::from_fn(mask.width(), mask.height(), |x, y| {
         Luma([if mask.get_pixel(x, y)[0] > 0 { 255 } else { 0 }])
     });
@@ -140,7 +156,9 @@ fn components(mask: &GrayImage) -> (image::ImageBuffer<Luma<u32>, Vec<u32>>, Has
 }
 
 fn fparam(name: &str, default: f64) -> f64 {
-    env::var(name).map(|x| x.parse().unwrap()).unwrap_or(default)
+    env::var(name)
+        .map(|x| x.parse().unwrap())
+        .unwrap_or(default)
 }
 
 // the compositing model, then the same specks / left crop / resize as the current pipeline
@@ -183,18 +201,35 @@ fn model(raw: &RgbaImage, icon: &RgbaImage, icon_name: &str, brightness: f64) ->
     });
     let first = (0..w).find(|x| (0..h).any(|y| mask.get_pixel(*x, y)[0] > 0));
     let margin = fparam("LEFT", (h / 5) as f64) as u32;
-    let left = if margin >= 100 { 0 } else { first.map_or(0, |x| x.saturating_sub(margin)) };
+    let left = if margin >= 100 {
+        0
+    } else {
+        first.map_or(0, |x| x.saturating_sub(margin))
+    };
     let image = crop_imm(&image, left, 0, w - left, h).to_image();
     resize(&image, image.width() * 64 / h, 64, FilterType::CatmullRom)
 }
 
-fn variant(name: &str, raw: &OneIconConfig, icon: &RgbaImage, icon_name: &str, brightness: f64, state: &mut ScannerState) -> RgbaImage {
+fn variant(
+    name: &str,
+    raw: &OneIconConfig,
+    icon: &RgbaImage,
+    icon_name: &str,
+    brightness: f64,
+    state: &mut ScannerState,
+) -> RgbaImage {
     if name == "model" {
         return model(&raw.data, icon, icon_name, brightness);
     }
     if name == "current" {
         let _ = state;
-        return pre_process_icon_number(raw.clone(), icon, &BASE_ICONS.read()[icon_name].data.clone(), brightness).data;
+        return pre_process_icon_number(
+            raw.clone(),
+            icon,
+            &BASE_ICONS.read()[icon_name].data.clone(),
+            brightness,
+        )
+        .data;
     }
     let mut normalised = raw.clone();
     normalize_brightness(&mut normalised, brightness);
@@ -224,7 +259,9 @@ fn variant(name: &str, raw: &OneIconConfig, icon: &RgbaImage, icon_name: &str, b
             for pixels in members.values() {
                 let brighter = pixels
                     .iter()
-                    .filter(|(x, y)| brighter_darker(&observed, &bg, *x, *y).0 >= param("BRIGHTER", 30))
+                    .filter(|(x, y)| {
+                        brighter_darker(&observed, &bg, *x, *y).0 >= param("BRIGHTER", 30)
+                    })
                     .count();
                 let (mut ring, mut dark) = (0, 0);
                 for (x, y) in pixels {
@@ -238,7 +275,8 @@ fn variant(name: &str, raw: &OneIconConfig, icon: &RgbaImage, icon_name: &str, b
                             continue;
                         }
                         ring += 1;
-                        dark += (brighter_darker(&observed, &bg, nx, ny).1 >= param("DARKER", 25)) as usize;
+                        dark += (brighter_darker(&observed, &bg, nx, ny).1 >= param("DARKER", 25))
+                            as usize;
                     }
                 }
                 let keep = brighter * 100 >= pixels.len() * param("BRIGHT_SHARE", 50) as usize
@@ -254,15 +292,21 @@ fn variant(name: &str, raw: &OneIconConfig, icon: &RgbaImage, icon_name: &str, b
         // white blobs are dropped when the template is white there too and no dark outline rings them
         "clean" => {
             let white = white_mask(&observed);
-            let bg_white = white_mask_with(&bg, param("SAT", 40) + param("BG_SLACK", 20), param("LUMA", 100) - param("BG_SLACK", 20));
+            let bg_white = white_mask_with(
+                &bg,
+                param("SAT", 40) + param("BG_SLACK", 20),
+                param("LUMA", 100) - param("BG_SLACK", 20),
+            );
             let (labels, members) = components(&white);
             let mut mask = white.clone();
             for pixels in members.values() {
                 let explained = pixels
                     .iter()
                     .filter(|(x, y)| {
-                        (y.saturating_sub(1)..(y + 2).min(h))
-                            .any(|ny| (x.saturating_sub(1)..(x + 2).min(w)).any(|nx| bg_white.get_pixel(nx, ny)[0] > 0))
+                        (y.saturating_sub(1)..(y + 2).min(h)).any(|ny| {
+                            (x.saturating_sub(1)..(x + 2).min(w))
+                                .any(|nx| bg_white.get_pixel(nx, ny)[0] > 0)
+                        })
                     })
                     .count();
                 let (mut ring, mut dark) = (0, 0);
@@ -277,7 +321,8 @@ fn variant(name: &str, raw: &OneIconConfig, icon: &RgbaImage, icon_name: &str, b
                             continue;
                         }
                         ring += 1;
-                        dark += (brighter_darker(&observed, &bg, nx, ny).1 >= param("DARKER", 25)) as usize;
+                        dark += (brighter_darker(&observed, &bg, nx, ny).1 >= param("DARKER", 25))
+                            as usize;
                     }
                 }
                 let outlined = ring > 0 && dark * 100 >= ring * param("RING_SHARE", 50) as usize;
@@ -287,7 +332,10 @@ fn variant(name: &str, raw: &OneIconConfig, icon: &RgbaImage, icon_name: &str, b
                     .map(|(x, y)| luma(observed.get_pixel(*x, *y)) - luma(bg.get_pixel(*x, *y)))
                     .sum::<i32>()
                     >= param("WHITER", 20) * pixels.len() as i32;
-                if explained * 100 >= pixels.len() * param("EXPLAINED", 60) as usize && !outlined && !whiter {
+                if explained * 100 >= pixels.len() * param("EXPLAINED", 60) as usize
+                    && !outlined
+                    && !whiter
+                {
                     for (x, y) in pixels {
                         mask.put_pixel(*x, *y, Luma([0]));
                     }
@@ -312,29 +360,41 @@ fn main() {
     let dir = &args[0];
     let mut state = ScannerState::default();
     state.config =
-        rmp_serde::from_slice(&fs::read(format!("{ROOT}/public/ScannerConfig.msgpack")).unwrap()).unwrap();
+        rmp_serde::from_slice(&fs::read(format!("{ROOT}/public/ScannerConfig.msgpack")).unwrap())
+            .unwrap();
     state.model = Some(fs::read(format!("{ROOT}/public/text-recognition.rten")).unwrap());
     state.set_config();
     state.set_ocr_engine();
 
     let labels = fs::read_to_string(format!("{dir}/labels.tsv")).unwrap();
-    let samples: Vec<Vec<&str>> = labels.lines().map(|l| l.split('\t').collect()).filter(|s: &Vec<&str>| s[3] != "Lv").collect();
+    let samples: Vec<Vec<&str>> = labels
+        .lines()
+        .map(|l| l.split('\t').collect())
+        .filter(|s: &Vec<&str>| s[3] != "Lv")
+        .collect();
     let save = env::var("SAVE").ok();
     for name in &args[1..] {
         let (mut right, mut right_real, mut real, mut right_strict) = (0, 0, 0, 0);
         let mut wrong = vec![];
         for sample in &samples {
-            let (id, icon_name, brightness, label) = (sample[0], sample[1], sample[2].parse().unwrap(), sample[3]);
+            let (id, icon_name, brightness, label) =
+                (sample[0], sample[1], sample[2].parse().unwrap(), sample[3]);
             let data = image::open(format!("{dir}/{id}.png")).unwrap().to_rgba8();
             let raw = OneIconConfig {
-                offset: IntegerRectangle { top_left: (0.0, 0.0), width: data.width() as usize, height: data.height() as usize },
+                offset: IntegerRectangle {
+                    top_left: (0.0, 0.0),
+                    width: data.width() as usize,
+                    height: data.height() as usize,
+                },
                 data,
                 name: String::new(),
                 tag: String::new(),
                 normalized: false,
                 required_confidence: None,
             };
-            let icon = image::open(format!("{dir}/{id}_icon.png")).unwrap().to_rgba8();
+            let icon = image::open(format!("{dir}/{id}_icon.png"))
+                .unwrap()
+                .to_rgba8();
             let processed = variant(name, &raw, &icon, icon_name, brightness, &mut state);
             let read = recognize_line(&processed);
             let digits: String = read.chars().filter(char::is_ascii_digit).collect();

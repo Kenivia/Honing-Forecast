@@ -2,8 +2,8 @@ use crate::{
     buffer::Buffer,
     cropper::anchors::AnchorInfo,
     image_utils::common::IntegerRectangle,
-    setup::{IncomingNewIcon, OneIconConfig},
     ocr_jobs::OcrJob,
+    setup::{IncomingNewIcon, OneIconConfig},
     tooltip::{
         chest::Chest,
         hover::{Hover, PendingRead},

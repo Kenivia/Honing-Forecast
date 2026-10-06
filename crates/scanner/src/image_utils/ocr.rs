@@ -19,7 +19,7 @@ pub const OCR_LINE_HEIGHT: u32 = 64; // what the recogniser works at
 const SPECK_AREA: u32 = 32; // blobs up to the strip's height squared over this are specks
 const LEFT_MARGIN: u32 = 5; // black kept left of the number, as the strip's height over this
 
-// white blobs too small to be part of a digit, 
+// white blobs too small to be part of a digit,
 fn remove_specks(white: &mut GrayImage) {
     let (w, h) = white.dimensions();
     let binary = GrayImage::from_fn(w, h, |x, y| Luma([(white.get_pixel(x, y)[0] > 0) as u8]));

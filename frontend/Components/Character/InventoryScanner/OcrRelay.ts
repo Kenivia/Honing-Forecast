@@ -84,6 +84,7 @@ function pump() {
         done.push(...texts);
         const now = performance.now();
         ocr_timings.push({
+          at: now,
           jobs: batch.length,
           width: batch.reduce((sum, job) => sum + job.width, 0),
           took: now - start,

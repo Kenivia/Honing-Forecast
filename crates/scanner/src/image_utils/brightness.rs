@@ -21,8 +21,8 @@ pub fn est_ingame_brightness(best_mean_f: f64, c: &[f64; 3]) -> f64 {
 }
 
 pub fn brightness_lut(in_game_brightness: f64) -> [u8; 256] {
-    let exponent = (GAMMA_RATIO + in_game_brightness.clamp(0.0, 100.0))
-        / (GAMMA_RATIO + TARGET_BRIGHTNESS);
+    let exponent =
+        (GAMMA_RATIO + in_game_brightness.clamp(0.0, 100.0)) / (GAMMA_RATIO + TARGET_BRIGHTNESS);
 
     std::array::from_fn(|v| (255.0 * (v as f64 / 255.0).powf(exponent)).round() as u8)
 }

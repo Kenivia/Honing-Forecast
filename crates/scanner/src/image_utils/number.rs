@@ -1,5 +1,7 @@
 use crate::{
-    constants::{COMBINED_NUMBER_HEIGHT, ICON_HEIGHT, ICON_WIDTH, NUMBER_HEIGHT, NUMBER_TOP_MARGIN},
+    constants::{
+        COMBINED_NUMBER_HEIGHT, ICON_HEIGHT, ICON_WIDTH, NUMBER_HEIGHT, NUMBER_TOP_MARGIN,
+    },
     image_utils::brightness::brightness_lut,
 };
 use image::{GrayImage, Luma, Rgba, RgbaImage};
@@ -12,8 +14,8 @@ pub struct NumberParams {
     pub soft: f64,           // both limits are ramps this wide either side
     pub tolerance: f64,      // how far the template may be off, per channel
     pub min_alpha: f64,      // white the template cannot explain by at least this much is a digit
-    pub max_shade: f64,      // a pixel at most this fraction of the template's brightness is the number's shadow
-    pub reach: f64,          // the shadow has to be within the strip's height over this, on both sides
+    pub max_shade: f64, // a pixel at most this fraction of the template's brightness is the number's shadow
+    pub reach: f64,     // the shadow has to be within the strip's height over this, on both sides
 }
 
 impl Default for NumberParams {
@@ -41,25 +43,47 @@ fn luma(p: Rgb) -> f64 {
 // 0 for anything that is not white, the luma for white, a ramp between
 fn whiteness(p: Rgb, params: &NumberParams) -> f64 {
     let (max, min) = (p[0].max(p[1]).max(p[2]), p[0].min(p[1]).min(p[2]));
-    let saturation = if max == 0.0 { 0.0 } else { (max - min) * 255.0 / max };
+    let saturation = if max == 0.0 {
+        0.0
+    } else {
+        (max - min) * 255.0 / max
+    };
     let ramp = |over: f64| ((over + params.soft) / (2.0 * params.soft)).clamp(0.0, 1.0);
     luma(p) * ramp(params.max_saturation - saturation) * ramp(luma(p) - params.min_luma)
 }
 
 // The template resampled as the game would draw it into a crop of w x h pixels that covers the slot's
 // full width and `rows` 1440p rows from `top`, moved by `shift` 1440p pixels.
-fn sample_template(template: &RgbaImage, w: u32, h: u32, top: f64, rows: f64, shift: (f64, f64)) -> Vec<Rgb> {
+fn sample_template(
+    template: &RgbaImage,
+    w: u32,
+    h: u32,
+    top: f64,
+    rows: f64,
+    shift: (f64, f64),
+) -> Vec<Rgb> {
     let to_template = template.width() as f64 / ICON_WIDTH;
     let at = |x: f64, y: f64| {
         let clamp = |v: f64, size: u32| v.clamp(0.0, size as f64 - 1.0);
         let (x, y) = (clamp(x, template.width()), clamp(y, template.height()));
         let (x0, y0) = (x.floor() as u32, y.floor() as u32);
-        let (x1, y1) = ((x0 + 1).min(template.width() - 1), (y0 + 1).min(template.height() - 1));
+        let (x1, y1) = (
+            (x0 + 1).min(template.width() - 1),
+            (y0 + 1).min(template.height() - 1),
+        );
         let (fx, fy) = (x - x0 as f64, y - y0 as f64);
         let mix = |a: Rgb, b: Rgb, f: f64| [0, 1, 2].map(|c| a[c] * (1.0 - f) + b[c] * f);
         mix(
-            mix(rgb(template.get_pixel(x0, y0)), rgb(template.get_pixel(x1, y0)), fx),
-            mix(rgb(template.get_pixel(x0, y1)), rgb(template.get_pixel(x1, y1)), fx),
+            mix(
+                rgb(template.get_pixel(x0, y0)),
+                rgb(template.get_pixel(x1, y0)),
+                fx,
+            ),
+            mix(
+                rgb(template.get_pixel(x0, y1)),
+                rgb(template.get_pixel(x1, y1)),
+                fx,
+            ),
             fy,
         )
     };
@@ -109,16 +133,31 @@ fn align(template: &RgbaImage, icon: &RgbaImage) -> (f64, f64) {
 }
 
 // what the slot looks like behind the number, at the brightness the game is showing it
-pub fn number_background(template: &RgbaImage, icon: &RgbaImage, w: u32, h: u32, brightness: f64) -> Vec<Rgb> {
+pub fn number_background(
+    template: &RgbaImage,
+    icon: &RgbaImage,
+    w: u32,
+    h: u32,
+    brightness: f64,
+) -> Vec<Rgb> {
     let lut = brightness_lut(brightness);
     // the template is at the reference brightness; undo the normalisation to get what is on screen
     let inverse: [f64; 256] = std::array::from_fn(|reference| {
-        (0..256).min_by_key(|v| (lut[*v] as i32 - reference as i32).abs()).unwrap() as f64
+        (0..256)
+            .min_by_key(|v| (lut[*v] as i32 - reference as i32).abs())
+            .unwrap() as f64
     });
-    sample_template(template, w, h, NUMBER_TOP_MARGIN, NUMBER_HEIGHT, align(template, icon))
-        .into_iter()
-        .map(|p| p.map(|v| inverse[v.round().clamp(0.0, 255.0) as usize]))
-        .collect()
+    sample_template(
+        template,
+        w,
+        h,
+        NUMBER_TOP_MARGIN,
+        NUMBER_HEIGHT,
+        align(template, icon),
+    )
+    .into_iter()
+    .map(|p| p.map(|v| inverse[v.round().clamp(0.0, 255.0) as usize]))
+    .collect()
 }
 
 // The game draws the number over the icon as opaque white digits with a soft black shadow around them,
@@ -129,7 +168,9 @@ pub fn number_background(template: &RgbaImage, icon: &RgbaImage, w: u32, h: u32,
 // white the template does not have, or white inside the shadow.
 pub fn number_mask(number: &RgbaImage, background: &[Rgb], params: &NumberParams) -> GrayImage {
     let (w, h) = number.dimensions();
-    let bg = |x: i32, y: i32| background[(y.clamp(0, h as i32 - 1) * w as i32 + x.clamp(0, w as i32 - 1)) as usize];
+    let bg = |x: i32, y: i32| {
+        background[(y.clamp(0, h as i32 - 1) * w as i32 + x.clamp(0, w as i32 - 1)) as usize]
+    };
     let mut alpha = vec![1.0; (w * h) as usize];
     let mut shadow = vec![false; (w * h) as usize];
     for y in 0..h as i32 {
@@ -143,8 +184,11 @@ pub fn number_mask(number: &RgbaImage, background: &[Rgb], params: &NumberParams
                 for (dx, dy) in (0..9).map(|n| (n % 3 - 1, n / 3 - 1)) {
                     let candidate = bg(x + dx, y + dy);
                     let norm: f64 = candidate.iter().map(|v| v * v).sum::<f64>().max(1.0);
-                    let s = ((0..3).map(|c| target[c] * candidate[c]).sum::<f64>() / norm).clamp(0.0, 1.0);
-                    let error = (0..3).map(|c| (target[c] - s * candidate[c]).abs()).fold(0.0, f64::max);
+                    let s = ((0..3).map(|c| target[c] * candidate[c]).sum::<f64>() / norm)
+                        .clamp(0.0, 1.0);
+                    let error = (0..3)
+                        .map(|c| (target[c] - s * candidate[c]).abs())
+                        .fold(0.0, f64::max);
                     if error * (1.0 - a) <= params.tolerance {
                         least_shade = Some(least_shade.map_or(s, |old| old.max(s)));
                     }
@@ -169,11 +213,16 @@ pub fn number_mask(number: &RgbaImage, background: &[Rgb], params: &NumberParams
             return Luma([0]);
         }
         let (x, y) = (x as i32, y as i32);
-        let within = |dx: i32, dy: i32| (1..=reach).any(|step| is_shadow(x + dx * step, y + dy * step));
+        let within =
+            |dx: i32, dy: i32| (1..=reach).any(|step| is_shadow(x + dx * step, y + dy * step));
         let in_shadow = [(1, 0), (0, 1), (1, 1), (1, -1)]
             .iter()
             .any(|(dx, dy)| within(*dx, *dy) && within(-dx, -dy));
         let unexplained = alpha[(y * w as i32 + x) as usize] >= params.min_alpha;
-        Luma([if unexplained || in_shadow { white as u8 } else { 0 }])
+        Luma([if unexplained || in_shadow {
+            white as u8
+        } else {
+            0
+        }])
     })
 }

@@ -281,6 +281,8 @@ async function cropper_loop(id: number, full = false) {
       }
       scan_timings.push({
         ...timings,
+        // same clock as the OCR records, so the two can be lined up
+        at: result_start,
         read,
         frame_time,
         process_result: performance.now() - result_start,

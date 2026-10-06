@@ -132,7 +132,9 @@ impl ScannerState {
                     continue;
                 }
                 let (icon_name_score, observed_number, observed_icon) =
-                    timed("slots/all_icons", || self.check_through_all_icons(position, root));
+                    timed("slots/all_icons", || {
+                        self.check_through_all_icons(position, root)
+                    });
                 let debug_start = crate::timing::now();
                 if self.debugging {
                     let raw_icon =
@@ -196,7 +198,13 @@ impl ScannerState {
                             old.icon_name_score.as_ref().map(|x| &x.0)
                                 == icon_name_score.as_ref().map(|x| &x.0)
                         })
-                        .map(|old| (old.tooltip_amount.clone(), old.tradability, old.amount.clone()))
+                        .map(|old| {
+                            (
+                                old.tooltip_amount.clone(),
+                                old.tradability,
+                                old.amount.clone(),
+                            )
+                        })
                         .unwrap_or_default();
                     self.slot_infos.insert(
                         *slot_address,

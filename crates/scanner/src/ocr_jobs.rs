@@ -28,12 +28,16 @@ impl Serialize for OcrJob {
 impl ScannerState {
     // the id its text will be stored under; a strip seen before is not read again
     pub fn request_ocr(&mut self, image: RgbaImage, priority: u8) -> u32 {
-        let hash = ahash::RandomState::with_seeds(1, 2, 3, 4)
-            .hash_one((image.width(), image.as_raw()));
+        let hash =
+            ahash::RandomState::with_seeds(1, 2, 3, 4).hash_one((image.width(), image.as_raw()));
         let next = self.ocr_ids.len() as u32;
         let id = *self.ocr_ids.entry(hash).or_insert(next);
         if id == next {
-            self.ocr_queue.push(OcrJob { id, priority, image });
+            self.ocr_queue.push(OcrJob {
+                id,
+                priority,
+                image,
+            });
         }
         id
     }

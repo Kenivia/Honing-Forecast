@@ -44,8 +44,15 @@ impl ScannerState {
         let changed = samples.len() != self.last_samples.len()
             || differing as f64 > CHANGED * samples.len() as f64;
         let unfinished = self.slots_left
-            || self.hover.as_ref().is_some_and(|hover| hover.missed > 0 || hover.waiting != [0; 3]);
-        self.quiet_scans = if changed || unfinished { 0 } else { self.quiet_scans + 1 };
+            || self
+                .hover
+                .as_ref()
+                .is_some_and(|hover| hover.missed > 0 || hover.waiting != [0; 3]);
+        self.quiet_scans = if changed || unfinished {
+            0
+        } else {
+            self.quiet_scans + 1
+        };
         if self.quiet_scans > QUIET_SCANS {
             return false;
         }
