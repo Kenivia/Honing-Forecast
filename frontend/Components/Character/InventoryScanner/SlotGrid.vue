@@ -72,7 +72,7 @@ const locked = ref<SlotAddress | null>(null);
 // the dashboard follows the cursor until a slot is clicked, then stays on that one
 const shown = computed(() => locked.value ?? hovered.value);
 const is_active = (address: SlotAddress) =>
-  shown.value && slot_key(shown.value) === slot_key(address);
+  !!shown.value && slot_key(shown.value) === slot_key(address);
 
 function toggle_lock(address: SlotAddress) {
   const same = locked.value && slot_key(locked.value) === slot_key(address);

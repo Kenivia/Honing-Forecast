@@ -58,9 +58,8 @@ async function load_backup(event: Event) {
 
 // What a material the character owns but does not end up spending is worth. Calc.vue
 // watches band_values and restarts the workers.
-const leftover_tooltip = `What a material you own but don't end up spending, is worth.
-A band can't be worth less than the one above it, so those options are greyed out;
-change the band below it first.`;
+const leftover_tooltip = `How much a material you don't end up spending is worth.
+`;
 
 // shown tradable first: it is the band people actually change, and the one below it can
 // never be worth more, so the list reads downwards as "and nothing cheaper than this"
@@ -70,7 +69,6 @@ function set_band(band: number, event: Event) {
   const value = (event.target as HTMLSelectElement).value as BandValue;
   active_profile.value.band_values[band] = value;
 }
-
 </script>
 <template>
   <div class="w-full items-center">

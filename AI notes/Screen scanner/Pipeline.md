@@ -195,7 +195,7 @@ Working: capture, frame transfer, anchor detection for the character inventory a
 
 Not done yet:
 
-- Results are not written into the calculator's material inputs. Output stops at the slot grid.
+- Results are not written into the calculator's material inputs. Output stops at the manifest under the slot grid (`Manifest.md`).
 - Icon placement is now checked on native stills at 720p, 768p, 900p, 1080p, 1440p and 2160p and forced 21:9 at 1080p, 1440p and 2160p (UI heights 810, 1080 and 1620), all in `scripts/brightness/<height> raw`. The quantity OCR still degrades as the scale drops and has only been judged at 1080p and 1440p.
 - A slot number read while the cursor, the hover highlight or a fading tooltip is over the slot can be wrong, and the last read is what is kept. On the recording 20 of 28 slots end with the right number although static frames read perfectly.
 - The icon matcher lets other items through as "Fusion" (gems and accessories on the same dark blue background).

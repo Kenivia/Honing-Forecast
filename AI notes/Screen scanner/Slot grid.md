@@ -38,7 +38,8 @@ Each slot in a scan result carries a status, a reason and a value (the tooltip's
 
 ## Edits
 
-- **Save edit** sets item, amount and tradability by hand. **Okay** (errors only) keeps what was read as an edit. **Retry** forgets the slot, edit included, so it goes white and is read again.
+- The dashboard reads left to right: the slot with its status and reason, what was read (or what was set by hand), a chest's contents, then "Correct it".
+- **Save edit** sets item, amount and tradability by hand. An item needs both its amount and its tradability: while one is missing its field is outlined red and the button is disabled. "Irrelevant" needs neither, and hides those fields. **Okay** (errors only) keeps what was read as an edit. **Retry** forgets the slot, edit included, so it goes white and is read again.
 - The page owns the edits (`edits` in `ScanStore.ts`). They also go to Rust with the next scan, in the scan options beside the OCR texts (`SlotEdit`, `apply_edits`). Rust keeps them in their own map, leaves those slots alone (no matching, no tooltip writes, not counted among a column's chests) and leaves them out of the result. A retry removes the slot from Rust's state and forces scanning to go on until it is read again.
 - Addresses come out of reactive state and are copied to plain objects before they are queued; a proxy cannot be posted to the worker.
 - **After Stop** the worker is gone but the store is not, so the grid stays up and edits still work; a retry then only blanks the slot. Starting a capture (or changing resolution or character with a stream open) calls `reset_scan`, and the capture card warns about that while idle.

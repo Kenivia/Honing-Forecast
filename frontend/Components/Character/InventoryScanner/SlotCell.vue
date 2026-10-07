@@ -48,7 +48,7 @@ watchPostEffect(() => {
 <template>
   <div
     class="relative aspect-square cursor-pointer border"
-    :class="{ 'border-dotted': edit, 'z-10': active }"
+    :class="{ 'border-dashed': edit, 'z-10': active }"
     :style="{
       borderColor: border,
       borderWidth: border_width,

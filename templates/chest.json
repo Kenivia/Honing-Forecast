@@ -6,9 +6,9 @@
   { "title": "Destiny Guardian Stone Pouch II", "icon": "Guardian Stone Pouch", "rarity": "rare", "contents": ["Destiny Guardian Stone", "Destiny Crystallized Guardian Stone"] },
   { "title": "Destiny Guardian Stone Pouch III", "icon": "Guardian Stone Pouch", "rarity": "rare", "contents": ["Destiny Guardian Stone", "Destiny Crystallized Guardian Stone"] },
   { "title": "Destiny Leapstone Chest", "contents": ["Destiny Leapstone", "Great Destiny Leapstone"] },
-  { "title": "Destiny Shard Pouch (S)", "contents": ["Destiny Shard"] },
-  { "title": "Destiny Shard Pouch (M)", "contents": ["Destiny Shard"] },
-  { "title": "Destiny Shard Pouch (L)", "contents": ["Destiny Shard"] },
+  { "title": "Destiny Shard Pouch (S)", "contents": ["Destiny Shard"], "opens": { "kind": "ObtainAll", "items": { "Destiny Shard": 1000 } } },
+  { "title": "Destiny Shard Pouch (M)", "contents": ["Destiny Shard"], "opens": { "kind": "ObtainAll", "items": { "Destiny Shard": 2000 } } },
+  { "title": "Destiny Shard Pouch (L)", "contents": ["Destiny Shard"], "opens": { "kind": "ObtainAll", "items": { "Destiny Shard": 3000 } } },
   { "title": "Tier 4 Breath Chest", "contents": ["Lava's Breath", "Glacier's Breath"] },
   { "title": "Fusion Material: Superior Abidos Fusion Material Chest", "contents": ["Superior Abidos Fusion Material"] },
   { "title": "Honing Leapstone Selection Chest VIII", "icon": "Leapstone Selection Chest", "rarity": "epic", "contents": ["Destiny Leapstone", "Great Destiny Leapstone", "Destiny Leapstone Chest"] },
@@ -17,5 +17,7 @@
   { "title": "Honing Shard Selection Chest II", "icon": "Shard Selection Chest", "rarity": "epic", "contents": ["Destiny Shard", "Destiny Shard Pouch (S)", "Destiny Shard Pouch (M)", "Destiny Shard Pouch (L)"] },
   { "title": "Honing Shard Selection Chest III", "icon": "Shard Selection Chest", "rarity": "epic", "contents": ["Destiny Shard", "Destiny Shard Pouch (S)", "Destiny Shard Pouch (M)", "Destiny Shard Pouch (L)"] },
   { "title": "Honing Support Selection Chest II", "icon": "Support Selection Chest", "rarity": "epic", "contents": ["Lava's Breath", "Glacier's Breath", "Tier 4 Breath Chest"] },
-  { "title": "Honing Support Selection Chest III", "icon": "Support Selection Chest", "rarity": "epic", "contents": ["Lava's Breath", "Glacier's Breath", "Tier 4 Breath Chest"] }
+  { "title": "Honing Support Selection Chest III", "icon": "Support Selection Chest", "rarity": "epic", "contents": ["Lava's Breath", "Glacier's Breath", "Tier 4 Breath Chest"] },
+  { "title": "Dummy Bundle Chest", "contents": ["Dummy Selection Chest"] },
+  { "title": "Dummy Selection Chest", "contents": ["Destiny Leapstone", "Great Destiny Leapstone"], "opens": { "kind": "SelectOne", "items": { "Destiny Leapstone": 50, "Great Destiny Leapstone": 10 } } }
 ]

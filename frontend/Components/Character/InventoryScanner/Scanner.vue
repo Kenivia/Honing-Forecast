@@ -2,6 +2,7 @@
 import { computed, ref } from "vue";
 import { getScannerConfig, OneIconConfig } from "./LoadStorage.js";
 import { process_result } from "./ScanStore";
+import Manifest from "./Manifest.vue";
 import SlotGrid from "./SlotGrid.vue";
 import Stream from "./Stream.vue";
 
@@ -241,6 +242,7 @@ const items = computed(() =>
       :process_result="process_result"
     />
     <SlotGrid :items="items" />
+    <Manifest />
   </div>
   <!--
   <div v-if="config">

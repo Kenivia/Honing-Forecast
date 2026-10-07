@@ -37,18 +37,42 @@ export const assume_roster_tradable = ref(false);
 // character storage and the inventory
 export const assume_char_bound = ref(false);
 
+export const assumed_tradability = (address: SlotAddress) =>
+  address.inventory_type === "Roster" && assume_roster_tradable.value
+    ? "Tradable"
+    : address.inventory_type !== "Roster" && assume_char_bound.value
+      ? "CharBound"
+      : null;
+
 // a slot as the page shows it: an unknown tradability filled in by what is assumed for its window
 export function shown_slot(slot: SlotResult | undefined) {
   if (slot?.status !== "NeedTradability") return slot;
-  const assumed =
-    slot.address.inventory_type === "Roster" && assume_roster_tradable.value
-      ? "Tradable"
-      : slot.address.inventory_type !== "Roster" && assume_char_bound.value
-        ? "CharBound"
-        : null;
+  const assumed = assumed_tradability(slot.address);
   if (!assumed) return slot;
   return { ...slot, status: "Good" as const, reason: "", tradability: assumed };
 }
+
+// The chest read in this very slot, else every chest with this icon read in its column: a
+// pushed-up tooltip only tells the column.
+export function chests_for(address: SlotAddress, icon: string | null) {
+  if (!icon) return [];
+  const key = slot_key(address);
+  const exact = chests.value.filter(
+    (chest) => chest.slot && slot_key(chest.slot) === key,
+  );
+  if (exact.length) return exact;
+  return chests.value.filter(
+    (chest) =>
+      chest.icon === icon &&
+      chest.column?.[0] === address.inventory_type &&
+      chest.column[1] === address.page_num &&
+      chest.column[2] === address.pos_in_inv[1],
+  );
+}
+
+// what the user typed into the manifest, over what was scanned
+export const material_overrides = ref<Record<string, string>>({});
+export const chest_overrides = ref<Record<string, number>>({});
 
 export const has_progress = computed(
   () => slots.value.size > 0 || Object.keys(edits.value).length > 0,
@@ -72,6 +96,8 @@ export function reset_scan() {
   chests.value = [];
   game_pages.value = {};
   edits.value = {};
+  material_overrides.value = {};
+  chest_overrides.value = {};
 }
 
 // addresses come out of reactive state, and a proxy cannot be posted to the worker

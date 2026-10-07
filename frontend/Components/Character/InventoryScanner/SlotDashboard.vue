@@ -2,7 +2,7 @@
 import { computed, reactive, watch } from "vue";
 import { SlotAddress } from "./LoadStorage";
 import {
-  chests,
+  chests_for,
   edits,
   retry_slot,
   set_edit,
@@ -33,6 +33,7 @@ const TRADABILITY = [
   ["RosterBound", "Roster bound"],
   ["CharBound", "Character bound"],
 ];
+const TRADABILITY_NAMES = Object.fromEntries(TRADABILITY);
 
 const key = computed(() => (props.address ? slot_key(props.address) : ""));
 const read = computed(() => slots.value.get(key.value));
@@ -52,7 +53,7 @@ const status = computed(() => {
 
 const status_color = computed(() =>
   edit.value
-    ? "var(--series-blue)"
+    ? "var(--average)"
     : {
         Good: "var(--achieved)",
         NeedHover: "var(--series-fusion)",
@@ -61,23 +62,13 @@ const status_color = computed(() =>
       }[slot.value?.status],
 );
 
-// The chest read in this very slot, else every chest with this icon read in its column: a
-// pushed-up tooltip only tells the column.
-const slot_chests = computed(() => {
-  if (!props.address || !item.value) return [];
-  const [, column] = props.address.pos_in_inv;
-  const exact = chests.value.filter(
-    (chest) => chest.slot && slot_key(chest.slot) === key.value,
-  );
-  if (exact.length) return exact;
-  return chests.value.filter(
-    (chest) =>
-      chest.icon === item.value &&
-      chest.column?.[0] === props.address.inventory_type &&
-      chest.column[1] === props.address.page_num &&
-      chest.column[2] === column,
-  );
-});
+const tradability = computed(
+  () => (edit.value ? edit.value.tradability : slot.value?.tradability) ?? null,
+);
+
+const slot_chests = computed(() =>
+  props.address ? chests_for(props.address, item.value) : [],
+);
 
 // what is being typed, started from what the slot shows whenever another slot is picked
 const draft = reactive({
@@ -91,22 +82,26 @@ watch(
   () => {
     draft.item = item.value ?? "";
     draft.amount = edit.value ? edit.value.amount : (slot.value?.value ?? null);
-    draft.tradability =
-      (edit.value ? edit.value.tradability : slot.value?.tradability) ?? "";
+    draft.tradability = tradability.value ?? "";
   },
   { immediate: true },
 );
 
+// an item needs its amount and tradability; an irrelevant slot needs neither
+const no_amount = computed(
+  () => !!draft.item && (draft.amount === null || (draft.amount as any) === ""),
+);
+const no_tradability = computed(() => !!draft.item && !draft.tradability);
+const incomplete = computed(() => no_amount.value || no_tradability.value);
+const missing_style = (missing: boolean) =>
+  missing ? { borderColor: "var(--warning)" } : {};
+
 function save() {
-  const amount = Number(draft.amount);
   set_edit({
     address: props.address,
     item: draft.item || null,
-    amount:
-      draft.amount === null || (draft.amount as any) === ""
-        ? null
-        : Math.max(0, Math.round(amount)),
-    tradability: draft.tradability || null,
+    amount: draft.item ? Math.max(0, Math.round(Number(draft.amount))) : null,
+    tradability: draft.item ? draft.tradability : null,
   });
 }
 
@@ -122,68 +117,77 @@ function accept() {
 </script>
 
 <template>
-  <div class="card-shell card-body flex min-h-32 flex-wrap gap-6 text-sm">
+  <div
+    class="card-shell card-body flex min-h-32 flex-wrap gap-x-8 gap-y-4 text-sm"
+  >
     <span v-if="!address" class="text-(--text-muted)">
-      Hover a slot to see what was read. Click one to keep it selected, and again to release it.
+      Hover a slot to see what was read. Click one to keep it selected, and
+      again to release it.
     </span>
     <template v-else>
-      <div class="flex gap-3">
-        <SlotCell
-          class="h-16 w-16 cursor-default!"
-          :info="slot"
-          :edit="edit"
-          :image="slot_images.get(key)"
-          :active="false"
-        />
-        <div class="flex flex-col">
-          <span class="text-(--text-muted)">
-            {{ WINDOW_NAMES[address.inventory_type] }} page
-            {{ address.page_num + 1 }}, row {{ address.pos_in_inv[0] + 1 }},
-            column {{ address.pos_in_inv[1] + 1 }}
-          </span>
-          <span class="text-base text-(--text-bright)">
-            {{ item ?? (slot || edit ? "No known item" : "Not seen yet") }}
-          </span>
-          <span :style="{ color: status_color }">{{ status }}</span>
+      <div class="flex max-w-80 flex-col gap-2">
+        <div class="flex gap-3">
+          <SlotCell
+            class="h-16 w-16 shrink-0 cursor-default!"
+            :info="slot"
+            :edit="edit"
+            :image="slot_images.get(key)"
+            :active="false"
+          />
+          <div class="flex flex-col">
+            <span class="text-base text-(--text-bright)">
+              {{ item ?? (slot || edit ? "No known item" : "Not seen yet") }}
+            </span>
+            <span :style="{ color: status_color }">{{ status }}</span>
+            <span class="text-(--text-muted)">
+              {{ WINDOW_NAMES[address.inventory_type] }} page
+              {{ address.page_num + 1 }}, row {{ address.pos_in_inv[0] + 1 }},
+              column {{ address.pos_in_inv[1] + 1 }}
+            </span>
+          </div>
+        </div>
+        <div
+          v-if="!edit && slot?.reason"
+          class="border-l pl-2"
+          :style="{ borderColor: status_color }"
+        >
+          {{ slot.reason }}
         </div>
       </div>
 
-      <div
-        v-if="!edit && slot?.reason"
-        class="max-w-80 border-l pl-2"
-        :style="{ borderColor: status_color }"
-      >
-        <div class="text-(--text-muted)">Reason</div>
-        {{ slot.reason }}
-      </div>
-
-      <div
-        class="grid grid-cols-[auto_auto] content-start gap-x-3 text-(--text-muted)"
-      >
-        <span>Amount</span>
-        <span class="text-(--text-main)">
-          {{ (edit ? edit.amount : slot?.value) ?? "-" }}
+      <div class="flex flex-col gap-1">
+        <span class="text-(--text-bright)">
+          {{ edit ? "Set by hand" : "What was read" }}
         </span>
-        <span>Number on icon</span>
-        <span class="text-(--text-main)">{{ slot?.amount ?? "-" }}</span>
-        <span>Tooltip amount</span>
-        <span class="text-(--text-main)">
-          {{ slot?.tooltip_amount ?? "-" }}
-        </span>
-        <span>Tradability</span>
-        <span class="text-(--text-main)">
-          {{ (edit ? edit.tradability : slot?.tradability) ?? "-" }}
-          {{ !edit && assumed ? "(assumed)" : "" }}
-        </span>
+        <div class="grid grid-cols-[auto_auto] gap-x-3 text-(--text-muted)">
+          <span>Amount</span>
+          <span class="text-(--text-main)">
+            {{ (edit ? edit.amount : slot?.value) ?? "-" }}
+          </span>
+          <span>Tradability</span>
+          <span class="text-(--text-main)">
+            {{ TRADABILITY_NAMES[tradability] ?? "-" }}
+            {{ !edit && assumed ? "(assumed)" : "" }}
+          </span>
+          <template v-if="!edit">
+            <span>Number on icon</span>
+            <span class="text-(--text-main)">{{ slot?.amount ?? "-" }}</span>
+            <span>Tooltip amount</span>
+            <span class="text-(--text-main)">
+              {{ slot?.tooltip_amount ?? "-" }}
+            </span>
+          </template>
+        </div>
       </div>
 
       <div v-if="slot_chests.length" class="flex flex-col gap-1">
+        <span class="text-(--text-bright)">Chest contents</span>
         <div v-for="(chest, index) in slot_chests" :key="index">
-          <span class="text-(--text-bright)">
-            {{ chest.title ?? chest.last_read_title }}
+          {{ chest.title ?? chest.last_read_title }}
+          <span class="text-(--text-muted)">
+            x{{ chest.amount ?? "?" }}, {{ chest.kind }},
+            {{ TRADABILITY_NAMES[chest.tradability] ?? "tradability unknown" }}
           </span>
-          x{{ chest.amount ?? "?" }}, {{ chest.kind }},
-          {{ chest.tradability ?? "tradability unknown" }}
           <div
             v-for="(content, i) in chest.contents"
             :key="i"
@@ -196,32 +200,57 @@ function accept() {
       </div>
 
       <div class="flex flex-col gap-1">
-        <div class="flex flex-wrap items-center gap-2">
+        <span class="text-(--text-bright)">Correct it</span>
+        <div
+          class="grid grid-cols-[auto_auto] items-center gap-x-3 gap-y-1 text-(--text-muted)"
+        >
+          <span>Item</span>
           <select v-model="draft.item" class="selector" aria-label="Item">
             <option value="">Irrelevant</option>
             <option v-for="name in items" :key="name">{{ name }}</option>
           </select>
-          <input
-            v-model="draft.amount"
-            type="number"
-            min="0"
-            class="generic-input w-24 pl-1"
-            aria-label="Amount"
-            placeholder="Amount"
-          />
-          <select
-            v-model="draft.tradability"
-            class="selector"
-            aria-label="Tradability"
-          >
-            <option value="">Unknown</option>
-            <option v-for="[value, label] in TRADABILITY" :value="value">
-              {{ label }}
-            </option>
-          </select>
+          <template v-if="draft.item">
+            <span>Amount</span>
+            <input
+              v-model="draft.amount"
+              type="number"
+              min="0"
+              class="generic-input h-7! w-24 pl-1"
+              :style="missing_style(no_amount)"
+              aria-label="Amount"
+            />
+            <span>Tradability</span>
+            <select
+              v-model="draft.tradability"
+              class="selector"
+              :style="missing_style(no_tradability)"
+              aria-label="Tradability"
+            >
+              <option value="" disabled>Choose</option>
+              <option v-for="[value, label] in TRADABILITY" :value="value">
+                {{ label }}
+              </option>
+            </select>
+          </template>
         </div>
+        <span v-if="incomplete" class="text-(--warning)">
+          {{
+            no_amount && no_tradability
+              ? "Amount and tradability are needed."
+              : no_amount
+                ? "The amount is needed."
+                : "The tradability is needed."
+          }}
+        </span>
         <div class="flex gap-2">
-          <button class="generic-button" @click="save">Save edit</button>
+          <button
+            class="generic-button"
+            :class="{ 'cursor-not-allowed! opacity-50': incomplete }"
+            :disabled="incomplete"
+            @click="save"
+          >
+            Save edit
+          </button>
           <button
             v-if="!edit && slot?.status === 'Error'"
             class="generic-button"
