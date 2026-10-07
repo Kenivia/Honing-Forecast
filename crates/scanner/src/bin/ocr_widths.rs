@@ -52,12 +52,14 @@ fn main() {
                 println!("number {} {frame}", job.image.width());
                 numbers.push(job.id);
             }
-            let mut save = |kind: &str, id: u32, state: &ScannerState| {
+            let save = |kind: &str, id: u32, state: &ScannerState| {
                 if let Some(dir) = &strip_dir
                     && let Some(job) = state.ocr_queue.iter().find(|j| j.id == id)
                 {
                     let w = job.image.width();
-                    job.image.save(format!("{dir}/{kind}_{w:04}_{id}.png")).unwrap();
+                    job.image
+                        .save(format!("{dir}/{kind}_{w:04}_{id}.png"))
+                        .unwrap();
                 }
             };
             for id in numbers.clone() {

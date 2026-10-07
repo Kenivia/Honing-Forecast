@@ -11,7 +11,7 @@ use crate::{
     setup::{BASE_ICONS, OneIconConfig, icon_lookup},
     timing::timed,
 };
-use hf_core::my_dbg;
+// use hf_core::my_dbg;
 // use uuid::Uuid;
 
 const UNMATCHED_UNCHANGED: f64 = 0.995;
@@ -139,14 +139,14 @@ impl ScannerState {
                 if self.debugging {
                     let raw_icon =
                         crop_buffer(position, get_resizer(&mut self.resizer), self.buffer, None);
-                    let number = crop_buffer(
-                        NUMBER_OFFSET
-                            .scaled(self.screen_info.scale_factor)
-                            .use_root(&position),
-                        get_resizer(&mut self.resizer),
-                        self.buffer,
-                        None,
-                    );
+                    // let number = crop_buffer(
+                    //     NUMBER_OFFSET
+                    //         .scaled(self.screen_info.scale_factor)
+                    //         .use_root(&position),
+                    //     get_resizer(&mut self.resizer),
+                    //     self.buffer,
+                    //     None,
+                    // );
                     let mut out = vec![raw_icon.clone(), observed_icon.clone()];
                     if let Some((name, _)) = &icon_name_score {
                         out.push(

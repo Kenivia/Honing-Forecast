@@ -1,12 +1,12 @@
 use ahash::AHashMap;
-use hf_core::my_dbg;
+// use hf_core::my_dbg;
 use serde::{Deserialize, Serialize};
 
 use crate::{
     constants::{ANCHORS, AnchorSpec, Bound, STORAGE_MIN, STORAGE_SHIFTS, anchor_spec},
     image_utils::{
         brightness::est_ingame_brightness,
-        close_enough::{DEFAULT_CONFIDENCE, close_enough},
+        close_enough::close_enough,
         common::{FloatRectangle, IntegerRectangle, Rectangle, get_resizer},
         resize::crop_buffer,
         template_matching::{DEFAULT_TEMPLATE_MATCHING_CONFIDENCE, template_match},

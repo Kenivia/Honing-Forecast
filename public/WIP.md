@@ -5,25 +5,7 @@ If you'd like to help with any of the below, feel free to get in touch via [Disc
 
 ## NOW: OCR
 
-- ~~FIGURE OUT WHY THERES A MEMORY LEAK IN READER~~
-
-- ~~make things work with non-1920x1080 resolution~~
-- ~~shoudl probably sort out roster / char storage fisrt~~
-
-- ~~tooltip yellow testing~~
-  - ~~genralize the "bound" specification a bit (absolute bound or anchored bound, which anchor etc)~~
-  - ~~need to think about how to specify required anchor for another anchor~~
-
 - add some kind of sanity assertion that rectangles are scaled correctly
-
-- add blackbars / small anchor detection then downscale CONFIG
-  - brightness adjustment here also
-    - maybe look for different sized anchors to detect resolution so that it works with like full screen captures
-    - need to rework template matching to do multiple at the same time
-
-- check if things actually work if the worker is down
-- screenshot upload instead of stream at some point
-- make sure that re-starting stream actually works
 
 ## Roadmap
 
@@ -134,6 +116,23 @@ Predicting market will be SO fun but it kinda needs the better OCR scanning to g
 - find_min_max can probably do with some kind of caching but i can't figure it out rn
 
 ## Done / cancelled
+
+- ~~FIGURE OUT WHY THERES A MEMORY LEAK IN READER~~
+
+- ~~make things work with non-1920x1080 resolution~~
+- ~~shoudl probably sort out roster / char storage fisrt~~
+
+- ~~tooltip yellow testing~~
+  - ~~genralize the "bound" specification a bit (absolute bound or anchored bound, which anchor etc)~~
+  - ~~need to think about how to specify required anchor for another anchor~~
+
+- ~~ add blackbars / small anchor detection then downscale CONFIG~~
+  - ~~brightness adjustment here also~~
+    - ~~maybe look for different sized anchors to detect resolution so that it works with like full screen captures~~
+    - ~~need to rework template matching to do multiple at the same time~~
+- ~~check if things actually work if the worker is down~~
+- ~~screenshot upload instead of stream at some point~~
+- ~~make sure that re-starting stream actually works~~
 
 - ~~add empty icon ~~ actually all unrecognized icons are functionally empty so there's no point
 - ~~add pictures into debug infos~~ ( and other stuff? like log?)

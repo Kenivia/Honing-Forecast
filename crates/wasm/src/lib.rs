@@ -1,13 +1,12 @@
 use hf_core::histogram::HistogramOutputs;
 use hf_core::histogram::histogram;
-use hf_core::my_dbg;
 use hf_core::optimizer::solve;
 use hf_core::payload::Payload;
 use hf_core::performance::Performance;
 use hf_core::state_bundle::StateBundle;
 use hf_scanner::buffer::Buffer;
-use hf_scanner::scanner_state::ScannerState;
 use hf_scanner::image_utils::ocr::recognize_raw;
+use hf_scanner::scanner_state::ScannerState;
 use hf_scanner::setup::{IncomingNewIcon, OneIconConfig, load_ocr_engine};
 use hf_scanner::timing::timed;
 use rand::rngs::ThreadRng;
@@ -101,7 +100,9 @@ pub fn cropper_wrapper(options: JsValue) -> JsValue {
         state.debugging = options.debugging;
         timed("apply_ocr", || state.apply_ocr(options.ocr_results));
         state.cropper();
-        let out = timed("to_value", || to_value(&state.result(options.full)).unwrap());
+        let out = timed("to_value", || {
+            to_value(&state.result(options.full)).unwrap()
+        });
         state.clear_changed();
         out
     })

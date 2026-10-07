@@ -16,7 +16,7 @@ import MaterialGraph from "@/Components/Character/MaterialDist/MaterialGraph.vue
 import QuestionMark from "@/Components/Common/QuestionMark.vue";
 import { storeToRefs } from "pinia";
 import { useRosterStore } from "@/Stores/RosterConfig";
-import { computed, onMounted, ref, watchEffect } from "vue";
+import { computed, onMounted, ref } from "vue";
 import { build_payload } from "@/WasmInterface/PayloadBuilder";
 import { input_column_to_num } from "@/Utils/InputColumn";
 import { start_all_workers } from "@/Components/Character/CharWorkerUtils";
@@ -38,6 +38,11 @@ const histogram_result = computed(() => runtime.histogram.result);
 
 // Rust keys every material result by label, so these are read straight through.
 const tier = computed(() => active_profile.value.tier);
+const set_special_budget = (val: string) => {
+  active_profile.value.special_budget.values[
+    SPECIAL_LEAP_LABELS[active_profile.value.tier]
+  ] = val;
+};
 const zeroes = (): Record<string, number> =>
   Object.fromEntries(ALL_LABELS[tier.value].map((label) => [label, 0]));
 
@@ -265,8 +270,7 @@ const is924Narrow = useMediaIsNarrow(924); // this turns out to be the width whe
           role="group"
           :aria-label="label"
           :class="{
-            disabled:
-              !active_profile.bound_budgets.enabled[label],
+            disabled: !active_profile.bound_budgets.enabled[label],
           }"
         >
           <MaterialCell
@@ -326,12 +330,7 @@ const is924Narrow = useMediaIsNarrow(924); // this turns out to be the width whe
             :input_column="active_profile.special_budget"
             :label="SPECIAL_LEAP_LABELS[active_profile.tier]"
             :show_label="true"
-            :setter="
-              (val) =>
-                (active_profile.special_budget.values[
-                  SPECIAL_LEAP_LABELS[active_profile.tier]
-                ] = val)
-            "
+            :setter="set_special_budget"
             :hide_tick="true"
             aria_name="Special leaps owned"
             :callback="() => start_all_workers()"

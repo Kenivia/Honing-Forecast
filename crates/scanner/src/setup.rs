@@ -9,7 +9,6 @@ use crate::{
 };
 use ahash::AHashMap;
 use fast_image_resize::Resizer;
-use hf_core::my_dbg;
 use ocrs::{OcrEngine, OcrEngineParams};
 use parking_lot::{MappedRwLockReadGuard, RwLock, RwLockReadGuard, RwLockWriteGuard};
 use rten::Model;

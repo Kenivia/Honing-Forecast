@@ -54,16 +54,18 @@ fn main() {
             .iter()
             .filter_map(|(a, info)| info.icon_name_score.as_ref().map(|x| (*a, x.0.clone())))
             .collect();
-        addresses.sort_by_key(|(a, _)| {
-            (format!("{:?}", a.inventory_type), a.page_num, a.pos_in_inv)
-        });
+        addresses
+            .sort_by_key(|(a, _)| (format!("{:?}", a.inventory_type), a.page_num, a.pos_in_inv));
 
         let eff = state.screen_info.effective_height;
         for (address, icon) in addresses {
             let Some(grid) = state.anchored_slot_address_position(&address) else {
                 continue;
             };
-            let root = state.inventory_root(address.inventory_type).unwrap().top_left;
+            let root = state
+                .inventory_root(address.inventory_type)
+                .unwrap()
+                .top_left;
             // mean absolute RGB difference of the crop at this offset against the template
             let score = |state: &mut ScannerState, dx: f64, dy: f64| {
                 let at = FloatRectangle {
@@ -71,12 +73,8 @@ fn main() {
                     width: grid.width,
                     height: grid.height,
                 };
-                let mut observed = crop_buffer(
-                    at,
-                    get_resizer(&mut state.resizer),
-                    state.buffer,
-                    None,
-                );
+                let mut observed =
+                    crop_buffer(at, get_resizer(&mut state.resizer), state.buffer, None);
                 normalize_brightness(&mut observed, brightness);
                 let template = icon_lookup(
                     &icon,
@@ -91,9 +89,9 @@ fn main() {
                     .chunks_exact(4)
                     .zip(b.chunks_exact(4))
                     .map(|(p, q)| {
-                        (p[0].abs_diff(q[0]) as u64
+                        p[0].abs_diff(q[0]) as u64
                             + p[1].abs_diff(q[1]) as u64
-                            + p[2].abs_diff(q[2]) as u64)
+                            + p[2].abs_diff(q[2]) as u64
                     })
                     .sum();
                 total as f64 / (a.len() / 4 * 3) as f64
