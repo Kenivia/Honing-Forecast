@@ -77,52 +77,69 @@ export const DEFAULT_TIER = 0;
 // material row order, which Rust indexes its cost arrays by, so entries are interleaved
 // such that each tier's projection matches its constants JSON on the Rust side.
 //
-// `tiers` is which tiers the material exists in. A label listed under several tiers is
-// ONE material with ONE stored value, so nothing is ever synced between tiers.
+// Two cross-tier relations, and nothing else:
+//  - `tiers` is which tiers the material exists in. A label listed under several tiers is
+//    ONE material with ONE stored value, so nothing is ever synced between tiers.
+//  - CONVERTS_FROM says a material can be made from a lower tier's material at a rate.
+//
+// A material is bought in bundles. Most have one bundle size; shards come in three bag
+// sizes, so `bundle_sizes` is a list and the market price is stored per bundle size.
 // ============================================================================
 
-// [tiers, graph colour, market bundle size, fallback price per bundle, icon file]
+// [tiers, graph colour, bundle sizes, fallback price per bundle, icon file]
 const MATERIAL_TABLE: Record<
   string,
-  [number[], string, number, number, string]
+  [number[], string, number[], number[], string]
 > = {
-  Red: [[0], "red", 100, 647, "Red.webp"],
-  "Serca Red": [[1], "red", 100, 3494, "Serca unique/Serca Red.png"],
-  Blue: [[0], "blue", 100, 10, "Blue.webp"],
-  "Serca Blue": [[1], "blue", 100, 196, "Serca unique/Serca Blue.png"],
-  Leaps: [[0], "leaps", 1, 20, "Leapstone.webp"],
-  "Serca Leaps": [[1], "leaps", 1, 156, "Serca unique/Serca Leapstone.png"],
-  Shards: [[0, 1], "shards", 1000, 999999999, "Shard.webp"],
-  Fusion: [[0], "fusion", 1, 180, "Fusion.webp"],
-  "Serca Fusion": [[1], "fusion", 1, 226, "Serca unique/Serca Fusion.png"],
-  Gold: [[0, 1], "gold", 1, 1, "Gold.webp"],
-  Silver: [[0, 1], "silver", 1000000, 0, "Silver.webp"],
-  "Glacier's Breath": [[0, 1], "blue", 1, 260, "Glacier's Breath.webp"],
-  "Lava's Breath": [[0, 1], "red", 1, 430, "Lava's Breath.webp"],
-  "11-14 Armor": [[0], "books", 1, 298, "Armor Book.webp"],
-  "11-14 Weapon": [[0], "books", 1, 737, "Weapon Book.webp"],
-  "15-18 Armor": [[0], "books", 1, 19, "Armor Book.webp"],
-  "15-18 Weapon": [[0], "books", 1, 119, "Weapon Book.webp"],
-  "19-20 Armor": [[0], "books", 1, 2748, "Armor Book.webp"],
-  "19-20 Weapon": [[0], "books", 1, 3890, "Weapon Book.webp"],
-  "Scroll 1 Armor": [[0], "blue", 1, 150, "Scroll 1 Armor.png"],
-  "Scroll 1 Weapon": [[0], "red", 1, 496, "Scroll 1 Weapon.png"],
-  "Scroll 2 Armor": [[0], "blue", 1, 70, "Scroll 2 Armor.png"],
-  "Scroll 2 Weapon": [[0], "red", 1, 50, "Scroll 2 Weapon.png"],
-  "Scroll 3 Armor": [[0], "blue", 1, 1800, "Scroll 3 Armor.png"],
-  "Scroll 3 Weapon": [[0], "red", 1, 1933, "Scroll 3 Weapon.png"],
-  "Scroll 4 Armor": [[0], "blue", 1, 3187, "Scroll 4 Armor.png"],
-  "Scroll 4 Weapon": [[0], "red", 1, 2369, "Scroll 4 Weapon.png"],
-  "Enhanced 19-20 Armor": [[0], "books", 1, 15000, "Enhanced Armor Book.png"],
-  "Enhanced 19-20 Weapon": [[0], "books", 1, 15000, "Enhanced Weapon Book.png"],
+  Red: [[0], "red", [100], [647], "Red.webp"],
+  "Serca Red": [[1], "red", [100], [3494], "Serca unique/Serca Red.png"],
+  Blue: [[0], "blue", [100], [10], "Blue.webp"],
+  "Serca Blue": [[1], "blue", [100], [196], "Serca unique/Serca Blue.png"],
+  Leaps: [[0], "leaps", [1], [20], "Leapstone.webp"],
+  "Serca Leaps": [[1], "leaps", [1], [156], "Serca unique/Serca Leapstone.png"],
+  // the only multi-bundle material so far: shard pouches S / M / L
+  Shards: [[0, 1], "shards", [1000, 2000, 3000], [0, 0, 0], "Shard.webp"],
+  Fusion: [[0], "fusion", [1], [180], "Fusion.webp"],
+  "Serca Fusion": [[1], "fusion", [1], [226], "Serca unique/Serca Fusion.png"],
+  Gold: [[0, 1], "gold", [1], [1], "Gold.webp"],
+  Silver: [[0, 1], "silver", [1000000], [0], "Silver.webp"],
+  "Glacier's Breath": [[0, 1], "blue", [1], [260], "Glacier's Breath.webp"],
+  "Lava's Breath": [[0, 1], "red", [1], [430], "Lava's Breath.webp"],
+  "11-14 Armor": [[0], "books", [1], [298], "Armor Book.webp"],
+  "11-14 Weapon": [[0], "books", [1], [737], "Weapon Book.webp"],
+  "15-18 Armor": [[0], "books", [1], [19], "Armor Book.webp"],
+  "15-18 Weapon": [[0], "books", [1], [119], "Weapon Book.webp"],
+  "19-20 Armor": [[0], "books", [1], [2748], "Armor Book.webp"],
+  "19-20 Weapon": [[0], "books", [1], [3890], "Weapon Book.webp"],
+  "Scroll 1 Armor": [[0], "blue", [1], [150], "Scroll 1 Armor.png"],
+  "Scroll 1 Weapon": [[0], "red", [1], [496], "Scroll 1 Weapon.png"],
+  "Scroll 2 Armor": [[0], "blue", [1], [70], "Scroll 2 Armor.png"],
+  "Scroll 2 Weapon": [[0], "red", [1], [50], "Scroll 2 Weapon.png"],
+  "Scroll 3 Armor": [[0], "blue", [1], [1800], "Scroll 3 Armor.png"],
+  "Scroll 3 Weapon": [[0], "red", [1], [1933], "Scroll 3 Weapon.png"],
+  "Scroll 4 Armor": [[0], "blue", [1], [3187], "Scroll 4 Armor.png"],
+  "Scroll 4 Weapon": [[0], "red", [1], [2369], "Scroll 4 Weapon.png"],
+  "Enhanced 19-20 Armor": [
+    [0],
+    "books",
+    [1],
+    [15000],
+    "Enhanced Armor Book.png",
+  ],
+  "Enhanced 19-20 Weapon": [
+    [0],
+    "books",
+    [1],
+    [15000],
+    "Enhanced Weapon Book.png",
+  ],
 };
 
 // Special leaps are budgeted through their own input rather than as a row in the cost
 // array, so they are kept out of MATERIAL_TABLE. Indexed by tier.
 export const SPECIAL_LEAP_LABELS = ["Special Leap", "Serca Special Leap"];
 
-// [source label, source units per unit of this]. The only cross-tier relation besides a
-// shared label: a material can be made from a lower tier's material at a fixed rate.
+// [source label, source units per unit of this].
 const CONVERTS_FROM: Record<string, [string, number]> = {
   "Serca Red": ["Red", 5],
   "Serca Blue": ["Blue", 5],
@@ -135,8 +152,8 @@ export interface Material {
   label: string;
   tiers: number[];
   color: string;
-  bundle_size: number;
-  fallback_price: number;
+  bundle_sizes: number[];
+  fallback_prices: number[]; // per bundle, parallel to bundle_sizes
   icon: string;
   // set when the material can be made from a lower tier's material
   from?: { label: string; ratio: number };
@@ -146,14 +163,17 @@ export interface Material {
 export const NUM_BASE_MATS = 7;
 export const NUM_TIERS = TIER_LABELS.length;
 
+// Market prices are stored per bundle, so a multi-bundle material has several entries.
+export const bundle_key = (label: string, size: number) => `${label} x${size}`;
+
 function build_materials(): Record<string, Material> {
   const out: Record<string, Material> = {};
   const add = (
     label: string,
     tiers: number[],
     color: string,
-    bundle_size: number,
-    fallback_price: number,
+    bundle_sizes: number[],
+    fallback_prices: number[],
     icon: string,
   ) => {
     const from = CONVERTS_FROM[label];
@@ -161,8 +181,8 @@ function build_materials(): Record<string, Material> {
       label,
       tiers,
       color: `--series-${color}`,
-      bundle_size,
-      fallback_price,
+      bundle_sizes,
+      fallback_prices,
       icon: `/Icons/Materials/${icon}`,
       ...(from ? { from: { label: from[0], ratio: from[1] } } : {}),
     };
@@ -176,8 +196,8 @@ function build_materials(): Record<string, Material> {
       label,
       [tier],
       "leaps",
-      1,
-      0,
+      [1],
+      [0],
       tier === 0
         ? "Special Leapstone.webp"
         : "Serca unique/Serca Special Leapstone.png",
@@ -215,9 +235,29 @@ export const CONVERTIBLE_MATERIALS: Material[] = ALL_MATERIAL_LABELS.map(
   (label) => MATERIALS[label],
 ).filter((mat) => mat.from !== undefined);
 
-export const FALLBACK_PRICES: Record<string, number> = Object.fromEntries(
-  ALL_MATERIAL_LABELS.map((label) => [label, MATERIALS[label].fallback_price]),
+// Every (material, bundle size) pair a market price is stored against.
+export const ALL_BUNDLE_KEYS: string[] = ALL_MATERIAL_LABELS.flatMap((label) =>
+  MATERIALS[label].bundle_sizes.map((size) => bundle_key(label, size)),
 );
+
+export const FALLBACK_PRICES: Record<string, number> = Object.fromEntries(
+  ALL_MATERIAL_LABELS.flatMap((label) =>
+    MATERIALS[label].bundle_sizes.map((size, i) => [
+      bundle_key(label, size),
+      MATERIALS[label].fallback_prices[i],
+    ]),
+  ),
+);
+
+// Which bundle the user buys, per material. The largest is the usual best value, and it
+// is what a market fetch would pick for shards.
+export const default_selected_bundles = (): Record<string, number> =>
+  Object.fromEntries(
+    ALL_MATERIAL_LABELS.map((label) => [
+      label,
+      MATERIALS[label].bundle_sizes[MATERIALS[label].bundle_sizes.length - 1],
+    ]),
+  );
 
 // Rust returns material arrays indexed by row. This is the only place a row becomes a
 // label; everything downstream of it is keyed.
@@ -229,16 +269,45 @@ export function by_label<T>(values: T[], tier: number): Record<string, T> {
   return out;
 }
 
-// A convertible material can be bought outright or made from its source, whichever is
-// cheaper. Prices are per bundle, and one source bundle makes `ratio` of this material.
-export function effective_prices(
-  prices: Record<string, number>,
+// Price of one unit of each material, from its selected bundle's price.
+export function unit_prices(
+  bundle_prices: Record<string, number>,
+  selected: Record<string, number>,
 ): Record<string, number> {
-  const out = { ...prices };
+  const out: Record<string, number> = {};
+  for (const label of ALL_MATERIAL_LABELS) {
+    const size = selected[label] ?? MATERIALS[label].bundle_sizes[0];
+    out[label] = bundle_prices[bundle_key(label, size)] / size;
+  }
+  return out;
+}
+
+// Cheapest bundle per unit, which is what a fetch selects.
+export function cheapest_bundles(
+  bundle_prices: Record<string, number>,
+): Record<string, number> {
+  const out: Record<string, number> = {};
+  for (const label of ALL_MATERIAL_LABELS) {
+    const sizes = MATERIALS[label].bundle_sizes;
+    out[label] = sizes.reduce((best, size) =>
+      bundle_prices[bundle_key(label, size)] / size <
+      bundle_prices[bundle_key(label, best)] / best
+        ? size
+        : best,
+    );
+  }
+  return out;
+}
+
+// What a unit actually costs to obtain: bought outright, or made from a lower tier.
+export function effective_unit_prices(
+  unit: Record<string, number>,
+): Record<string, number> {
+  const out = { ...unit };
   for (const mat of CONVERTIBLE_MATERIALS) {
-    const source = prices[mat.from.label];
+    const source = unit[mat.from.label];
     if (source !== undefined) {
-      out[mat.label] = Math.min(source * mat.from.ratio, prices[mat.label]);
+      out[mat.label] = Math.min(source * mat.from.ratio, unit[mat.label]);
     }
   }
   return out;
@@ -247,11 +316,11 @@ export function effective_prices(
 // True when making the material from its source costs less than buying it outright.
 export function convert_is_cheaper(
   mat: Material,
-  prices: Record<string, number>,
+  unit: Record<string, number>,
 ): boolean {
   return (
     mat.from !== undefined &&
-    prices[mat.from.label] * mat.from.ratio < prices[mat.label]
+    unit[mat.from.label] * mat.from.ratio < unit[mat.label]
   );
 }
 

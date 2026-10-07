@@ -24,7 +24,7 @@ Data in `roster_config` lives at four scopes:
 | --- | --- |
 | Per character | Upgrade grids, keyed upgrades, bound material budgets, free-tap budget, tier, optimizer settings. |
 | Per roster | Roster-owned materials, tradable materials, region. |
-| Per region | Market prices, shard bag data, the last fetched market response. |
+| Per region | Market prices per bundle, the chosen bundle per material, the last fetched market response. |
 | Global | UI flags, the active character index, last seen version. |
 
 The active character is set from the route, and most components read through `active_*` getters.
@@ -33,8 +33,12 @@ Runtime worker bundles are keyed by `char_name`. `App.vue` watches the list of n
 
 ## Conventions
 
-- **Materials** are described once, by label, in `MATERIAL_TABLE` in `Constants.ts`: graph colour, market bundle size, fallback price and icon. `MATERIALS` resolves it, `TIER_MATERIALS` pairs it with the row order, and `FALLBACK_PRICES` and `IconMap` are derived from it. Never add a parallel array indexed by material row; a material's attributes are looked up by its label.
-- **`InputColumn`** is the runtime model behind every numeric input column: values are formatted strings, alongside keys, bounds and enable flags. Read numbers through its conversion helper. Inputs accept simple arithmetic. Only the values and the disabled labels are saved; everything else is rebuilt from `Constants.ts`.
+- **Materials** are described once, by label, in `MATERIAL_TABLE` in `Constants.ts`: which tiers it exists in, graph colour, bundle sizes, fallback prices and icon. Everything else is derived from it, including `ALL_LABELS`, `TIER_MATERIALS`, `SHARED_LABELS`, `ALL_BUNDLE_KEYS`, `FALLBACK_PRICES` and `IconMap`. Never add a parallel array indexed by material row; look an attribute up by label.
+- **The order of `MATERIAL_TABLE` is a contract.** Filtering it by tier produces that tier's cost-array row order, which Rust indexes by, so entries are interleaved (`Red`, `Serca Red`, `Blue`, `Serca Blue`, ...) such that each tier's projection matches its Rust constants. Inserting a material in the wrong place silently misaligns the payload.
+- **Two cross-tier relations, and no others.** A label listed under several `tiers` is one material with one stored value, so nothing is ever synced between tiers and `SHARED_LABELS` is derived rather than hand-written. `CONVERTS_FROM` says a material can be made from a lower tier's at a fixed rate, which drives the effective price, the convert button and `change_tier`. Adding a tier means adding table rows, not new branches.
+- **Prices are per bundle; everything else is per unit.** A material has a list of `bundle_sizes` (shards sell in 1000 / 2000 / 3000 bags, everything else has one size). `mats_prices` is keyed by `bundle_key(label, size)`, `selected_bundles` records which bundle the user buys, and `unit_prices` / `effective_unit_prices` produce the per-unit numbers the payload and UI use. A market fetch prices every bundle and selects the cheapest per unit.
+- **`InputColumn`** is the runtime model behind every numeric input column: `values`, `upper_bound` and `enabled`, all keyed by label (or by bundle key, for prices). A column carries no row order; callers iterate the labels they want to show. `input_column_to_num` returns a label-keyed record. Inputs accept simple arithmetic. Only the values and the disabled labels are saved; everything else is rebuilt from `Constants.ts`.
+- **Rust indexes materials by row; nothing else does.** `by_label` and `column_to_array` are the only conversions between the two, and they belong at the wasm boundary. Everything upstream of them is keyed.
 - **Keyed upgrades** are the canonical list of upgrades for a character, keyed by piece, level, kind and tier. They are derived from the tickbox grids and carry per-upgrade progress and the last optimizer state.
 - **Tier handling assumes exactly two tiers.** The Rust side would accept more; the frontend's tier-switching logic would not.
 - Worker bundles use `shallowReactive`, not refs, so their fields read as plain values whether or not they sit in a store, and large wasm results are never deep-wrapped.
@@ -43,7 +47,8 @@ Runtime worker bundles are keyed by `char_name`. `App.vue` watches the list of n
 
 `SavedConfig.ts` defines the saved shape and converts to and from it; `ConfigStorage.ts` owns localStorage and the migrations.
 
-- One key, `HF_CONFIG_V8_COMPRESSED`, lz-string-compressed JSON, with the version **also inside** the payload. The key carries the version so a save is never read by code that predates it; the payload version is what drives the migration chain.
+- One key, `HF_CONFIG_V8_COMPRESSED`, lz-string-compressed JSON, with the version **also inside** the payload. The key carries the version so a save is never read by code that predates it; the payload version drives the migration chain.
+- One column per scope, not one per tier, so a material shared between tiers is stored once.
 - Two rules govern the shape: nothing derivable from `Constants.ts` is stored, and material values are keyed by **label**, never by row index. Reordering, inserting or removing a material row is therefore not a save-shape change.
 - `to_saved` / `from_saved` are explicit. A field that is not listed is not saved, so transient state cannot leak in by being added to the store.
 - Numbers are saved as numbers. Saving locale-formatted strings corrupted values when the browser locale changed between sessions.
@@ -54,7 +59,15 @@ Runtime worker bundles are keyed by `char_name`. `App.vue` watches the list of n
 
 **Do not trust a pre-V8 column's own `keys` array.** Nothing before V8 read it, so it drifted out of order in real saves while `data` stayed positional against `ALL_LABELS`. `migrate_7_to_8` maps by position for that reason.
 
+`migrate_7_to_8` also collapses V7's per-tier columns into one. Where both tiers held a value for the same material, the character's **active tier wins** for its own budgets, and tier 0 wins for the roster-wide columns V7 kept in sync by a watcher. V7's separate `shard_infos` structure folds into Shards' three bundle prices plus `selected_bundles`.
+
 V3 and V4 saves are no longer migrated; their keys are deleted on load.
+
+## Cross-tier behaviour
+
+`change_tier` walks `CONVERTIBLE_MATERIALS` and scales each by its ratio in whichever direction the tier moved; shared materials need no action because they are one value. The upgrade-grid remap either side of it is still hard-wired to exactly two tiers.
+
+The market page's convert button pools a roster's bound and tradable stock of a source material and converts it at the ratio, with the result roster-bound.
 
 ## Export / import
 

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { useRosterStore } from "@/Stores/RosterConfig";
 import { get_piece_name, get_icon_path, toOrdinal } from "@/Utils/Helpers";
+import { SPECIAL_LEAP_LABELS } from "@/Utils/Constants";
 import { storeToRefs } from "pinia";
 import { computed } from "vue";
 import { to_upgrade_key, Upgrade } from "@/Utils/KeyedUpgrades";
@@ -76,12 +77,7 @@ const optimizer_working = computed(get_optimizer_working);
       }"
     >
       <img
-        :src="
-          get_icon_path(
-            (active_profile.tier == 1 ? 'Serca ' : '') +
-              active_profile.special_budget.keys[0],
-          )
-        "
+        :src="get_icon_path(SPECIAL_LEAP_LABELS[active_profile.tier])"
         :alt="get_piece_name(upgrade)"
         class="generic-icon h-12 w-12"
         :class="{ disabled: !free_tap_this_upgrade }"

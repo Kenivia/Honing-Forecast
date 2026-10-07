@@ -14,13 +14,13 @@ How the frontend talks to Rust for the calculator. Scanner operations share the 
 `build_payload` assembles, from the store:
 
 - the upgrade list, from keyed upgrades, including each upgrade's state from the previous optimizer result so the next run starts from it;
-- the material table: for each material row, the four `(owned, price)` breakpoints (see `Calculator core/Domain model.md`), with prices converted to per-unit;
+- the material table: for each material row, the four `(owned, price)` breakpoints (see `Calculator core/Domain model.md`). Prices arrive already per-unit: the store resolves which bundle the user buys and whether converting up from a lower tier is cheaper;
 - the treatment plan, tier, event flags and free-tap budget;
 - the previous free-tap order and the advanced-honing cache, fed back in to avoid recomputation.
 
 ## What must stay aligned with Rust
 
-- **Material row order.** `ALL_LABELS` in `Constants.ts` defines row order per tier: seven base materials (`NUM_BASE_MATS`), then juices. It must match the tier's constants JSON on the Rust side. Per-material attributes are not positional: see `MATERIAL_TABLE`.
+- **Material row order.** `ALL_LABELS` in `Constants.ts` defines row order per tier: seven base materials (`NUM_BASE_MATS`), then juices. It must match the tier's constants JSON on the Rust side. It is **derived** by filtering `MATERIAL_TABLE` by tier, so that table's order is the thing to get right. Nothing else on the frontend is positional: `by_label` turns Rust's arrays into label-keyed records at the boundary, and `build_material_info` is the only place that walks rows in order.
 - **Piece order and counts**, including which index is the weapon and which the vambrace.
 - **The advanced-honing strategy tables**, duplicated in `Constants.ts` and in Rust.
 - **Treatment plan order**, which indexes arrays in the histogram result.

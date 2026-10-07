@@ -4,10 +4,12 @@ import { get_modified_cell, InputColumn } from "@/Utils/InputColumn";
 
 import { computed, ref, watch } from "vue";
 
+// `label` is the key into the column, so it is always required; `show_label` decides
+// whether the name and icon are drawn next to the input.
 const props = defineProps<{
-  input_column: InputColumn | number[];
-  row: number;
-  label?: string;
+  input_column: InputColumn | Record<string, number>;
+  label: string;
+  show_label?: boolean;
   setter?: (val: string) => void;
   suffix?: string;
   input_color?: string;
@@ -34,11 +36,13 @@ const resolved_color = computed(() =>
   cssVar(props.input_color, props.input_color),
 );
 
+const is_column = () => "values" in props.input_column;
+const as_column = () => props.input_column as InputColumn;
+const as_result = () => props.input_column as Record<string, number>;
+
 const source_value = () =>
   String(
-    !Array.isArray(props.input_column)
-      ? (props.input_column as InputColumn).data[props.row]
-      : props.input_column[props.row],
+    is_column() ? as_column().values[props.label] : as_result()[props.label],
   );
 
 const this_data = ref(source_value());
@@ -58,14 +62,14 @@ watch(source_value, (val) => {
     }"
   >
     <input
-      v-if="!hide_tick && label && !Array.isArray(input_column)"
+      v-if="!hide_tick && show_label && 'values' in input_column"
       type="checkbox"
-      v-model="(input_column as InputColumn).enabled[row]"
+      v-model="(input_column as InputColumn).enabled[label]"
       :aria-label="`${aria_name} enabled`"
       @change="callback"
     />
     <label
-      v-if="label"
+      v-if="show_label"
       class="row-label"
       :style="{
         width: actual_label_width,
@@ -88,7 +92,7 @@ watch(source_value, (val) => {
     </label>
 
     <input
-      v-if="!Array.isArray(input_column)"
+      v-if="'values' in input_column"
       type="text"
       class="generic-input"
       :aria-label="aria_name"
@@ -99,11 +103,15 @@ watch(source_value, (val) => {
       }"
       v-model="this_data"
       @change="
-        ((this_data = get_modified_cell(input_column, row, $event)),
-        setter(get_modified_cell(input_column, row, $event)),
+        ((this_data = get_modified_cell(
+          input_column as InputColumn,
+          label,
+          $event,
+        )),
+        setter(get_modified_cell(input_column as InputColumn, label, $event)),
         callback ? callback() : null)
       "
-      :disabled="!input_column.enabled[row]"
+      :disabled="!(input_column as InputColumn).enabled[label]"
     />
     <label
       v-else
@@ -112,10 +120,10 @@ watch(source_value, (val) => {
       type="text"
       >{{
         is_percentage
-          ? locale_to_fixed(input_column[row] * 100, 2) + "%"
-          : input_column[row].toLocaleString("en-US", {
+          ? locale_to_fixed(as_result()[label] * 100, 2) + "%"
+          : as_result()[label].toLocaleString("en-US", {
               minimumFractionDigits: 0, // show decimals for small K/M/B
-              maximumFractionDigits: input_column[row] < 1 ? 2 : 0,
+              maximumFractionDigits: as_result()[label] < 1 ? 2 : 0,
             })
       }}</label
     >

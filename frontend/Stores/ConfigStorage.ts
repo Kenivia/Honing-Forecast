@@ -1,5 +1,10 @@
 import LZString from "lz-string";
-import { ALL_LABELS, SPECIAL_LEAP_LABELS } from "@/Utils/Constants";
+import {
+  ALL_LABELS,
+  bundle_key,
+  MATERIALS,
+  SPECIAL_LEAP_LABELS,
+} from "@/Utils/Constants";
 import { parse_locale_int } from "@/Utils/InputColumn";
 import { debounce } from "@/Utils/Helpers";
 import { RosterConfig } from "./RosterConfig";
@@ -199,7 +204,11 @@ function migrate_6_to_7(data: any): any {
 // Deliberately ignores the old column's own `keys` array. Nothing before V8 ever read it,
 // so it drifted out of order in real saves, while `data` was always interpreted
 // positionally against ALL_LABELS. Position is the only trustworthy mapping here.
-function v7_merge_columns(columns: any, winner: number): SavedColumn {
+function v7_merge_columns(
+  columns: any,
+  winner: number,
+  key_of: (label: string) => string = (label) => label,
+): SavedColumn {
   const values: Record<string, number> = {};
   const disabled = new Set<string>();
   const tiers = ALL_LABELS.map((_, tier) => tier).filter((t) => t !== winner);
@@ -208,11 +217,11 @@ function v7_merge_columns(columns: any, winner: number): SavedColumn {
     const old = columns?.[tier];
     ALL_LABELS[tier].forEach((label, row) => {
       const parsed = parse_locale_int(String(old?.data?.[row] ?? "0"));
-      values[label] = Number.isFinite(parsed) ? parsed : 0;
+      values[key_of(label)] = Number.isFinite(parsed) ? parsed : 0;
       if (old?.enabled?.[row] === false) {
-        disabled.add(label);
+        disabled.add(key_of(label));
       } else {
-        disabled.delete(label);
+        disabled.delete(key_of(label));
       }
     });
   }
@@ -220,21 +229,24 @@ function v7_merge_columns(columns: any, winner: number): SavedColumn {
 }
 
 function migrate_7_to_8(data: any): Partial<SavedConfig> {
-  const mats_prices: SavedConfig["mats_prices"] = {};
-  for (const region in data.mats_prices ?? {}) {
-    mats_prices[region] = v7_merge_columns(data.mats_prices[region], 0);
-  }
+  // V7 stored one price per material; prices are now per bundle, so each material's
+  // single bundle size supplies the key.
+  const price_key = (label: string) =>
+    bundle_key(label, MATERIALS[label].bundle_sizes[0]);
 
-  const shard_infos: SavedConfig["shard_infos"] = {};
-  for (const region in data.shard_infos ?? {}) {
-    const old = data.shard_infos[region];
-    const prices: Record<string, number> = {};
-    for (const size in old?.prices ?? {}) {
-      prices[size] = parse_locale_int(
-        String(old.prices[size]?.data?.[0] ?? "0"),
+  const mats_prices: SavedConfig["mats_prices"] = {};
+  const selected_bundles: SavedConfig["selected_bundles"] = {};
+  for (const region in data.mats_prices ?? {}) {
+    const column = v7_merge_columns(data.mats_prices[region], 0, price_key);
+    // shard bags were a separate structure with their own prices and chosen size
+    const old_shards = data.shard_infos?.[region];
+    for (const size in old_shards?.prices ?? {}) {
+      column.values[bundle_key("Shards", Number(size))] = parse_locale_int(
+        String(old_shards.prices[size]?.data?.[0] ?? "0"),
       );
     }
-    shard_infos[region] = { selected: old?.selected ?? 3000, prices };
+    mats_prices[region] = column;
+    selected_bundles[region] = { Shards: Number(old_shards?.selected) || 3000 };
   }
 
   const roster_mats_owned: SavedConfig["roster_mats_owned"] = {};
@@ -297,7 +309,7 @@ function migrate_7_to_8(data: any): Partial<SavedConfig> {
     roster_mats_owned,
     tradable_mats_owned,
     all_regions: data.all_regions,
-    shard_infos,
+    selected_bundles,
     latest_market_data: data.latest_market_data,
     cumulative_graph: data.cumulative_graph,
     show_all_rows: data.show_all_rows,

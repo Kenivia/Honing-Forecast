@@ -1,11 +1,11 @@
 <script setup lang="ts">
 import { useRosterStore as useRosterStore } from "@/Stores/RosterConfig";
-import { ALL_LABELS, SERCA_SYNC_MAP, SYNCED_LABELS } from "@/Utils/Constants";
+import { CONVERTIBLE_MATERIALS } from "@/Utils/Constants";
 import { storeToRefs } from "pinia";
-import { computed, ref, watch } from "vue";
+import { computed, ref } from "vue";
 import TierConvertButton from "../Common/TierConvertButton.vue";
 import { MarketRegions, start_fetch } from "@/Utils/MarketDataFetcher";
-import { input_column_to_num, parse_input } from "@/Utils/InputColumn";
+import { input_column_to_num, set_cell } from "@/Utils/InputColumn";
 import Sidebar from "../Common/Sidebar.vue";
 import BudgetGrid from "./BudgetGrid.vue";
 import RegionSelector from "../Common/RegionSelector.vue";
@@ -26,68 +26,29 @@ const selected_tradable_mats_owned = computed(
 const selected_region = computed(
   () => roster_config.value.all_regions[selected_roster_id.value],
 );
-const selected_mats_prices = computed(
-  () => roster_config.value.mats_prices[selected_region.value],
-);
+// Converting up a tier: each unit of the new material eats `ratio` of the source, and
+// what comes out is roster-bound regardless of which pool it came from.
 function convert_roster_mats_to_serca() {
-  for (let serca_index = 0; serca_index < ALL_LABELS[1].length; serca_index++) {
-    if (!SYNCED_LABELS.includes(ALL_LABELS[1][serca_index])) {
-      let T4_index = ALL_LABELS[0].findIndex(
-        (x) => x == ALL_LABELS[1][serca_index].replace("Serca ", ""),
-      );
-
-      // all become roster bound
-      selected_roster_mats_owned.value[1].data[serca_index] = (
-        input_column_to_num(selected_roster_mats_owned.value[1])[T4_index] +
-        parse_input(
-          selected_tradable_mats_owned.value[0],
-          T4_index,
-          String(
-            input_column_to_num(selected_tradable_mats_owned.value[0])[
-              T4_index
-            ] * 0.2,
-          ),
-        )
-      ).toLocaleString();
-      selected_tradable_mats_owned.value[0].data[T4_index] = "0";
-      selected_roster_mats_owned.value[1].data[serca_index] = (
-        input_column_to_num(selected_roster_mats_owned.value[1])[T4_index] +
-        parse_input(
-          selected_roster_mats_owned.value[0],
-          T4_index,
-          String(
-            input_column_to_num(selected_roster_mats_owned.value[0])[T4_index] *
-              0.2,
-          ),
-        )
-      ).toLocaleString();
-      selected_roster_mats_owned.value[0].data[T4_index] = "0";
+  const roster = selected_roster_mats_owned.value;
+  const tradable = selected_tradable_mats_owned.value;
+  for (const mat of CONVERTIBLE_MATERIALS) {
+    const source = mat.from.label;
+    if (roster.values[source] === undefined) {
+      continue;
     }
+    const pooled =
+      input_column_to_num(roster)[source] +
+      input_column_to_num(tradable)[source];
+    const gained = Math.floor(pooled / mat.from.ratio);
+    set_cell(
+      roster,
+      mat.label,
+      String(input_column_to_num(roster)[mat.label] + gained),
+    );
+    set_cell(roster, source, "0");
+    set_cell(tradable, source, "0");
   }
 }
-
-const T4_indices_to_watch = SERCA_SYNC_MAP.map(({ T4_index }) => T4_index);
-
-watch(
-  // one way sync from T4 to Serca, the ui modifies the T4 copy
-  () =>
-    T4_indices_to_watch.flatMap((T4_index) => [
-      selected_mats_prices.value[0].data[T4_index],
-      selected_tradable_mats_owned.value[0].data[T4_index],
-      selected_roster_mats_owned.value[0].data[T4_index],
-    ]),
-  () => {
-    for (const { serca_index, T4_index } of SERCA_SYNC_MAP) {
-      selected_mats_prices.value[1].data[serca_index] =
-        selected_mats_prices.value[0].data[T4_index];
-      selected_tradable_mats_owned.value[1].data[serca_index] =
-        selected_tradable_mats_owned.value[0].data[T4_index];
-      selected_roster_mats_owned.value[1].data[serca_index] =
-        selected_roster_mats_owned.value[0].data[T4_index];
-    }
-  },
-  { deep: false, immediate: true },
-);
 </script>
 
 <template>
@@ -117,9 +78,7 @@ watch(
             }}
           </span>
           <button
-            :disabled="
-              runtime.is_fetching || selected_region === 'Custom'
-            "
+            :disabled="runtime.is_fetching || selected_region === 'Custom'"
             @click="() => start_fetch(selected_region, true)"
             class="generic-button mx-3! w-max!"
             :style="{
@@ -127,9 +86,7 @@ watch(
               cursor: selected_region === 'Custom' ? 'not-allowed' : 'pointer',
             }"
           >
-            {{
-              !runtime.is_fetching ? "Fetch Market Data" : "Fetching..."
-            }}
+            {{ !runtime.is_fetching ? "Fetch Market Data" : "Fetching..." }}
           </button>
         </div>
         <div
@@ -144,8 +101,6 @@ watch(
           />
         </div>
       </div>
-
-
 
       <div v-if="roster_ids.length > 1" class="side-bar-item">
         <span class="text-nowrap"> Active Roster: </span>

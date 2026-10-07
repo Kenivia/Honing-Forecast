@@ -27,6 +27,6 @@
       "@types/node"
     ]
   },
-  "include": ["frontend/**/*", "vite.config.ts"],
+  "include": ["frontend/**/*", "tests/**/*", "vite.config.ts"],
   "exclude": ["node_modules", "dist", "junkyard", "crates"]
 }

@@ -1,6 +1,7 @@
 import {
   ADV_COLS,
   ALL_LABELS,
+  CONVERTIBLE_MATERIALS,
   NORMAL_COLS,
   NUM_ADV_PIECES,
   NUM_PIECES,
@@ -27,8 +28,10 @@ export function change_tier(target_profile: CharProfile, fetched?: boolean) {
   )
     return;
   if (ALL_LABELS.length != 2) {
-    // This doesn't work for more tiers and should be updated when more tiers comes eventually
-    throw new Error("conversion between more than 2 tiers not implemented yet");
+    // material conversion below is general, but the upgrade-grid remap is not
+    throw new Error(
+      "grid conversion between more than 2 tiers not implemented",
+    );
   }
 
   // may be a non-active character during a roster import, hence the lookup by name
@@ -36,46 +39,31 @@ export function change_tier(target_profile: CharProfile, fetched?: boolean) {
   target_runtime?.optimizer.cancel_and_clear_prev_result();
   target_runtime?.histogram.cancel_and_clear_prev_result();
 
-  let num_array_old = input_column_to_num(
-    target_profile.bound_budgets[old_tier],
-    true,
-  );
-
-  let multiplied_indices = [0, 1, 2, 4]; // red, blue, leaps, fusion
-  let multiplier = new_tier == 1 ? 0.2 : 5;
-  multiplied_indices.forEach(
-    (index) =>
-      (target_profile.bound_budgets[new_tier].data[index] = parse_input(
-        target_profile.bound_budgets[old_tier],
-        index,
-        String(num_array_old[index] * multiplier),
+  // Convert the character's bound materials into the new tier's currency.
+  //  - a material shared between tiers has one stored value, so there is nothing to do
+  //  - a material that converts from a lower tier scales by its ratio, in whichever
+  //    direction we are moving
+  //  - anything tier-exclusive keeps its own value
+  const columns = [target_profile.bound_budgets, target_profile.special_budget];
+  for (const mat of CONVERTIBLE_MATERIALS) {
+    const [from, to] =
+      new_tier > old_tier
+        ? [mat.from.label, mat.label]
+        : [mat.label, mat.from.label];
+    const scale = new_tier > old_tier ? 1 / mat.from.ratio : mat.from.ratio;
+    for (const column of columns) {
+      if (column.values[from] === undefined) {
+        continue;
+      }
+      const old_value = input_column_to_num(column, true)[from];
+      column.values[to] = parse_input(
+        column,
+        to,
+        String(old_value * scale),
         true,
-      ).toLocaleString()),
-  );
-  // Special leaps also multiplied
-  target_profile.special_budget.data[0] = parse_input(
-    target_profile.special_budget,
-    0,
-    String(
-      input_column_to_num(target_profile.special_budget, true)[0] * multiplier,
-    ),
-    true,
-  ).toLocaleString();
-
-  let stay_same_indices = [3, 5, 6, 7, 8]; // shards, gold, silver, red juice
-  stay_same_indices.forEach(
-    (index) =>
-      (target_profile.bound_budgets[new_tier].data[index] =
-        target_profile.bound_budgets[old_tier].data[index]),
-  );
-
-  // special case for blue juice
-  // let new_num_juice_avail = (ALL_LABELS[new_tier].length - 7) / 2;
-  // let new_index = 7 + new_num_juice_avail;
-  // let old_num_juice_avail = (ALL_LABELS[old_tier].length - 7) / 2;
-  // let old_index = 7 + old_num_juice_avail;
-  // target_profile.bound_budgets[new_tier].data[new_index] =
-  //   target_profile.bound_budgets[old_tier].data[old_index];
+      ).toLocaleString();
+    }
+  }
 
   if (new_tier == 1) {
     for (let row = 0; row < NUM_ADV_PIECES; row++) {

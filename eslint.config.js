@@ -31,6 +31,12 @@ export default [
         },
     },
 
+    // Node-side test runner and shim
+    {
+        files: ["tests/**/*.{mjs,ts}"],
+        languageOptions: { globals: { ...globals.node } },
+    },
+
     // TypeScript files
     {
         files: ["**/*.{ts,mts,cts}"],

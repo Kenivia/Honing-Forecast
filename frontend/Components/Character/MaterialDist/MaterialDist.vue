@@ -7,7 +7,8 @@ import {
   ANNOTATION_COLORS,
   ANNOTATION_POSITIONS,
   ANNOTATION_LABELS,
-  SERCA_TO_T4_INDICES,
+  by_label,
+  SPECIAL_LEAP_LABELS,
 } from "@/Utils/Constants";
 import { TreatmentPlan } from "@/Stores/CharacterProfile";
 import { has_upgrades_in_range, metric_to_text } from "@/Utils/Helpers";
@@ -36,18 +37,33 @@ const {
 } = storeToRefs(useRosterStore());
 const histogram_result = computed(() => runtime.histogram.result);
 
+// Rust returns these indexed by material row, so they are keyed on the way in.
+const tier = computed(() => active_profile.value.tier);
+const zeroes = (): number[] => ALL_LABELS[tier.value].map(() => 0);
+
 // This is average mats cost (not gold)
-const average_breakdown = computed(
-  () =>
-    runtime.histogram.result?.avg_breakdown ??
-    new Array(ALL_LABELS[active_profile.value.tier].length).fill(0),
+const average_breakdown = computed(() =>
+  by_label<number>(
+    runtime.histogram.result?.avg_breakdown ?? zeroes(),
+    tier.value,
+  ),
 );
 // this is should always be treat tradable as bound (so it's actual gold spent)
-const gold_breakdown = computed(
-  () =>
+const gold_breakdown = computed(() =>
+  by_label<number>(
     runtime.histogram.result?.gold_breakdown_arr[0].map((x: number) =>
       x >= 0 ? 0 : -x,
-    ) ?? new Array(ALL_LABELS[active_profile.value.tier].length).fill(0),
+    ) ?? zeroes(),
+    tier.value,
+  ),
+);
+const histogram_chances = computed(() =>
+  by_label<number>(
+    runtime.histogram.result?.chances_arr?.[
+      active_profile.value.histogram_treatment_plan + 1
+    ] ?? zeroes(),
+    tier.value,
+  ),
 );
 
 const visibleRows = computed(() =>
@@ -58,7 +74,7 @@ const visibleRows = computed(() =>
       if (label === "Lava's Breath" || label === "Glacier's Breath")
         return true;
       if (roster_config.value.show_all_rows) return true;
-      if (average_breakdown.value[row] > 0.0) return true;
+      if (average_breakdown.value[label] > 0.0) return true;
       // a juice row only shows when an upgrade in its range is wanted
       const range = JUICE_RANGES[label];
       return (
@@ -192,23 +208,19 @@ function set_enabled() {
 onMounted(set_enabled); // overwrite the graph control options on load, which lowkey shouldn't even be there but whatever
 
 const annotation_values = computed(() => {
-  let bound = input_column_to_num(
-    active_profile.value.bound_budgets[active_profile.value.tier],
-  );
-  let roster = input_column_to_num(
-    active_roster_mats_owned.value[active_profile.value.tier],
-  );
-  let trade = input_column_to_num(
-    active_tradable_mats_owned.value[active_profile.value.tier],
-  );
-  return bound.map((_, i) =>
-    [
-      average_breakdown.value[i],
-      bound[i],
-      roster[i] + bound[i],
-      roster[i] + bound[i] + trade[i],
-    ].filter((_, i) => enabled_annotations.value[i]),
-  );
+  const bound = input_column_to_num(active_profile.value.bound_budgets);
+  const roster = input_column_to_num(active_roster_mats_owned.value);
+  const trade = input_column_to_num(active_tradable_mats_owned.value);
+  const out: Record<string, number[]> = {};
+  for (const label of ALL_LABELS[tier.value]) {
+    out[label] = [
+      average_breakdown.value[label],
+      bound[label],
+      roster[label] + bound[label],
+      roster[label] + bound[label] + trade[label],
+    ].filter((_, i) => enabled_annotations.value[i]);
+  }
+  return out;
 });
 
 function hover_annotation(x, _y, cy, material_type, color, is_last): string {
@@ -305,14 +317,7 @@ const is924Narrow = useMediaIsNarrow(924); // this turns out to be the width whe
         </label>
         <!-- <span v-if="customLeftovers">Left</span> -->
       </div>
-      <div
-        v-if="
-          ALL_LABELS[active_profile.tier].length ==
-            active_profile.bound_budgets[active_profile.tier].data.length &&
-          runtime.histogram.result
-        "
-        class="contents"
-      >
+      <div v-if="runtime.histogram.result" class="contents">
         <div
           v-for="{ label, row, color } in visibleRows"
           :key="`graph-${label}`"
@@ -321,19 +326,18 @@ const is924Narrow = useMediaIsNarrow(924); // this turns out to be the width whe
           :aria-label="label"
           :class="{
             disabled:
-              !active_profile.bound_budgets[active_profile.tier].enabled[row],
+              !active_profile.bound_budgets.enabled[label],
           }"
         >
           <MaterialCell
-            :input_column="active_profile.bound_budgets[active_profile.tier]"
-            :row="row"
+            :input_column="active_profile.bound_budgets"
             :label="label"
+            :show_label="true"
             aria_name="Bound owned"
             :input_color="'--bound'"
             :setter="
               (val) => {
-                active_profile.bound_budgets[active_profile.tier].data[row] =
-                  val;
+                active_profile.bound_budgets.values[label] = val;
               }
             "
             :hide_tick="row >= NUM_BASE_MATS"
@@ -343,23 +347,19 @@ const is924Narrow = useMediaIsNarrow(924); // this turns out to be the width whe
           />
           <!-- {{ console.log(averages) }} -->
           <MaterialCell
-            :input_column="
-              runtime.histogram.result.chances_arr[
-                active_profile.histogram_treatment_plan + 1
-              ]
-            "
-            :row="row"
+            :input_column="histogram_chances"
+            :label="label"
             :input_color="selected_histogram_color"
             :is_percentage="true"
           />
           <MaterialCell
             :input_column="average_breakdown"
-            :row="row"
+            :label="label"
             :input_color="'--average'"
           />
           <MaterialCell
             :input_column="gold_breakdown"
-            :row="row"
+            :label="label"
             :input_color="'--gold'"
           />
           <MaterialGraph
@@ -367,7 +367,7 @@ const is924Narrow = useMediaIsNarrow(924); // this turns out to be the width whe
             :material-label="label"
             :graph-color="color"
             :cumulative="roster_config.cumulative_graph"
-            :annotations="annotation_values[row]"
+            :annotations="annotation_values[label]"
             :annotationColors="
               ANNOTATION_COLORS.filter((_, i) => enabled_annotations[i])
             "
@@ -384,11 +384,13 @@ const is924Narrow = useMediaIsNarrow(924); // this turns out to be the width whe
         <div class="mats-row">
           <MaterialCell
             :input_column="active_profile.special_budget"
-            :row="0"
-            :setter="(val) => (active_profile.special_budget.data[0] = val)"
-            :label="
-              (active_profile.tier == 1 ? 'Serca ' : '') +
-              active_profile.special_budget.keys[0]
+            :label="SPECIAL_LEAP_LABELS[active_profile.tier]"
+            :show_label="true"
+            :setter="
+              (val) =>
+                (active_profile.special_budget.values[
+                  SPECIAL_LEAP_LABELS[active_profile.tier]
+                ] = val)
             "
             :hide_tick="true"
             aria_name="Special leaps owned"

@@ -1,28 +1,16 @@
-import { ALL_MATERIAL_LABELS, FALLBACK_PRICES, WORKER_URL } from "./Constants";
+import {
+  ALL_BUNDLE_KEYS,
+  bundle_key,
+  cheapest_bundles,
+  FALLBACK_PRICES,
+  MATERIALS,
+  WORKER_URL,
+} from "./Constants";
 import { storeToRefs } from "pinia";
 import { useRosterStore } from "@/Stores/RosterConfig";
-import {
-  create_input_column,
-  InputColumn,
-  InputType,
-  parse_locale_int,
-} from "./InputColumn";
+import { InputColumn } from "./InputColumn";
 import { useRuntimeStore } from "@/Stores/RuntimeState";
 
-export interface ShardInfo {
-  selected: number;
-  prices: Record<number, InputColumn>; // x1000, price in a single-celled column
-}
-// Shard bags are priced per bag, in their own single-cell columns.
-export const SHARD_LABEL = "Shard";
-export const DEFAULT_SHARD_INFO: ShardInfo = {
-  prices: {
-    3000: create_input_column(InputType.Int, [SHARD_LABEL]),
-    2000: create_input_column(InputType.Int, [SHARD_LABEL]),
-    1000: create_input_column(InputType.Int, [SHARD_LABEL]),
-  },
-  selected: 3000,
-};
 const FETCH_MARKET_COOLDOWN_MS = 60 * 60 * 1000;
 export type MarketRegions = "nae" | "euc" | "Custom";
 // Custom is user-entered and is never fetched.
@@ -80,49 +68,33 @@ export async function fetch_market_data(
   return data;
 }
 
-const SHARD_BAG_LABELS: Record<string, number> = {
-  "Shards small": 1000,
-  "Shards medium": 2000,
-  "Shards large": 3000,
-};
+// A material with several bundle sizes has one market slug per bundle, so the entry
+// carries the size. Single-bundle materials just name the material.
+function slug_bundle_key(entry: string | [string, number]): string {
+  if (Array.isArray(entry)) {
+    return bundle_key(entry[0], entry[1]);
+  }
+  const mat = MATERIALS[entry];
+  return mat === undefined ? "" : bundle_key(entry, mat.bundle_sizes[0]);
+}
 
+// Returns the price of every bundle, and which bundle is cheapest per unit.
 export function parse_response(
   response: any,
-): [Record<string, number>, number, Record<number, InputColumn>] {
+): [Record<string, number>, Record<string, number>] {
   // a fresh copy: a fetch must not mutate FALLBACK_PRICES
-  const out: Record<string, number> = { ...FALLBACK_PRICES };
-  const shard_prices: Record<number, InputColumn> = {};
-
+  const prices: Record<string, number> = { ...FALLBACK_PRICES };
   for (const { item_slug, price } of response) {
-    const label: string = ITEM_SLUG_TO_LABEL[item_slug];
-    if (label === undefined) {
+    const entry = ITEM_SLUG_TO_LABEL[item_slug];
+    if (entry === undefined) {
       continue;
     }
-    const bag_size = SHARD_BAG_LABELS[label];
-    if (bag_size !== undefined) {
-      shard_prices[bag_size] = create_input_column(
-        InputType.Int,
-        [SHARD_LABEL],
-        { value: () => parseInt(price).toLocaleString() },
-      );
-    } else if (Object.hasOwn(out, label)) {
-      out[label] = price;
+    const key = slug_bundle_key(entry);
+    if (Object.hasOwn(prices, key)) {
+      prices[key] = parseInt(price);
     }
   }
-
-  // Calculate which shard bag size is most efficient (lowest price per shard)
-  let selected_shard = 1000;
-  let best_value = Infinity;
-  for (const [shard_count, column] of Object.entries(shard_prices)) {
-    const value_per_shard =
-      parse_locale_int(column.values[SHARD_LABEL]) / parseInt(shard_count);
-    if (value_per_shard < best_value) {
-      best_value = value_per_shard;
-      selected_shard = parseInt(shard_count);
-    }
-  }
-
-  return [out, selected_shard, shard_prices];
+  return [prices, cheapest_bundles(prices)];
 }
 
 const ITEM_SLUG_TO_LABEL = {
@@ -133,9 +105,9 @@ const ITEM_SLUG_TO_LABEL = {
 
   "destiny-guardian-stone": "Blue",
   "destiny-destruction-stone": "Red",
-  "destiny-shard-pouch-s": "Shards small",
-  "destiny-shard-pouch-m": "Shards medium",
-  "destiny-shard-pouch-l": "Shards large",
+  "destiny-shard-pouch-s": ["Shards", 1000],
+  "destiny-shard-pouch-m": ["Shards", 2000],
+  "destiny-shard-pouch-l": ["Shards", 3000],
   "destiny-leapstone": "Leaps",
   "abidos-fusion-material": "Fusion",
   "glaciers-breath": "Glacier's Breath",
@@ -189,8 +161,7 @@ export async function start_fetch(
     await new Promise((r) => setTimeout(r, 200));
     runtime.is_fetching = false;
     const [_, result] = cached;
-    const [parsed, selectedShardSize, shard_prices] = parse_response(result);
-    fetch_callback(parsed, selectedShardSize, shard_prices, region);
+    fetch_callback(...parse_response(result), region);
     return;
   }
 
@@ -209,7 +180,7 @@ export async function start_fetch(
     }
   })();
 
-  const [parsed, selectedShardSize, shard_prices] = parse_response(result);
+  const parsed = parse_response(result);
 
   // Store the raw response data with timestamp
   if (!runtime.market_fetch_failed) {
@@ -218,25 +189,20 @@ export async function start_fetch(
 
   runtime.is_fetching = false;
 
-  fetch_callback(parsed, selectedShardSize, shard_prices, region);
+  fetch_callback(...parsed, region);
 }
 function fetch_callback(
   prices: Record<string, number>,
-  selected_shard_size: number,
-  shard_prices: Record<number, InputColumn>,
+  cheapest: Record<string, number>,
   region: MarketRegions,
 ) {
-  const roster_store = useRosterStore();
-  const { roster_config } = storeToRefs(roster_store);
-  roster_config.value.shard_infos[region].selected = selected_shard_size;
-  roster_config.value.shard_infos[region].prices = shard_prices;
+  const { roster_config } = storeToRefs(useRosterStore());
   const column = roster_config.value.mats_prices[region];
-  for (const label of ALL_MATERIAL_LABELS) {
-    if (prices[label] === undefined) {
-      continue;
+  for (const key of ALL_BUNDLE_KEYS) {
+    if (prices[key] !== undefined) {
+      column.values[key] = prices[key].toLocaleString();
     }
-    // shards are priced per bag in shard_infos, so this row is never read
-    column.values[label] =
-      label === "Shards" ? "0" : prices[label].toLocaleString();
   }
+  // a fetch also picks the best-value bundle for anything sold in several sizes
+  roster_config.value.selected_bundles[region] = cheapest;
 }

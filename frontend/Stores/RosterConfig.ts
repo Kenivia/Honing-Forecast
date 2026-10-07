@@ -1,7 +1,11 @@
 import {
+  ALL_BUNDLE_KEYS,
   ALL_MATERIAL_LABELS,
-  effective_prices,
+  bundle_key,
+  default_selected_bundles,
+  effective_unit_prices,
   FALLBACK_PRICES,
+  unit_prices,
 } from "@/Utils/Constants";
 import {
   create_input_column,
@@ -13,27 +17,23 @@ import {
 import { defineStore } from "pinia";
 import { CharProfile, new_char_profile } from "./CharacterProfile";
 
-import {
-  DEFAULT_SHARD_INFO,
-  MarketRegions,
-  ShardInfo,
-  start_fetch,
-} from "@/Utils/MarketDataFetcher";
+import { MarketRegions, start_fetch } from "@/Utils/MarketDataFetcher";
 
 import { load_roster_config } from "./ConfigStorage";
 
 // Everything in here is persisted. Session-only state lives in RuntimeState.
 export interface RosterConfig {
-  // One column each, keyed by material label and covering every tier.
+  // Prices are per bundle, so this column is keyed by (material, bundle size); the rest
+  // are keyed by material label. All of them cover every tier.
   mats_prices: Record<MarketRegions, InputColumn>;
+  // which bundle the user buys, per material, for anything sold in several sizes
+  selected_bundles: Record<MarketRegions, Record<string, number>>;
   roster_mats_owned: Record<number, InputColumn>;
   tradable_mats_owned: Record<number, InputColumn>;
 
   all_regions: Record<number, MarketRegions>;
 
   cumulative_graph: boolean;
-
-  shard_infos: Record<MarketRegions, ShardInfo>;
 
   latest_market_data: Partial<Record<MarketRegions, [number, any]>>; // [timestamp, raw_response_data]
 
@@ -53,13 +53,13 @@ export function create_default_owned_input_column(): InputColumn {
 }
 
 function default_prices(region: MarketRegions): InputColumn {
-  return create_input_column(InputType.Int, ALL_MATERIAL_LABELS, {
-    value: (label) =>
+  return create_input_column(InputType.Int, ALL_BUNDLE_KEYS, {
+    value: (key) =>
       region === "Custom"
-        ? label === "Gold"
+        ? key === bundle_key("Gold", 1)
           ? "1"
           : "0"
-        : FALLBACK_PRICES[label].toLocaleString(),
+        : FALLBACK_PRICES[key].toLocaleString(),
   });
 }
 
@@ -76,10 +76,10 @@ export function default_roster_config(): RosterConfig {
     tradable_mats_owned: { 0: create_default_owned_input_column() },
     all_regions: { 0: "nae" },
     cumulative_graph: true,
-    shard_infos: {
-      nae: structuredClone(DEFAULT_SHARD_INFO),
-      euc: structuredClone(DEFAULT_SHARD_INFO),
-      Custom: structuredClone(DEFAULT_SHARD_INFO),
+    selected_bundles: {
+      nae: default_selected_bundles(),
+      euc: default_selected_bundles(),
+      Custom: default_selected_bundles(),
     },
     latest_market_data: {},
     profiles: [new_char_profile()],
@@ -125,9 +125,19 @@ export const useRosterStore = defineStore("roster", {
     enabled_annotations: (state): boolean[] =>
       state.roster_config.enabled_annotations,
 
-    // cheapest way to obtain each material: buy it, or make it from a lower tier
+    active_selected_bundles(state): Record<string, number> {
+      return state.roster_config.selected_bundles[this.active_region];
+    },
+    // price of one unit, from each material's selected bundle
+    active_unit_prices(): Record<string, number> {
+      return unit_prices(
+        input_column_to_num(this.active_mats_prices),
+        this.active_selected_bundles,
+      );
+    },
+    // cheapest way to obtain a unit: buy it, or make it from a lower tier
     active_effective_prices(): Record<string, number> {
-      return effective_prices(input_column_to_num(this.active_mats_prices));
+      return effective_unit_prices(this.active_unit_prices);
     },
   },
 

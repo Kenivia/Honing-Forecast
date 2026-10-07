@@ -1,11 +1,13 @@
 <script setup lang="ts">
 import { useRosterStore } from "@/Stores/RosterConfig";
 import {
-  ALL_LABELS,
-  MATERIALS,
-  SERCA_SYNC_MAP,
-  SERCA_TO_T4_INDICES,
-  SYNCED_LABELS,
+  bundle_key,
+  convert_is_cheaper,
+  effective_unit_prices,
+  Material,
+  SHARED_LABELS,
+  TIER_MATERIALS,
+  unit_prices,
 } from "@/Utils/Constants";
 import { storeToRefs } from "pinia";
 import MaterialCell from "@/Components/Common/MaterialCell.vue";
@@ -31,45 +33,45 @@ const selected_region = computed(
 const selected_mats_prices = computed(
   () => roster_config.value.mats_prices[selected_region.value],
 );
+const selected_bundles = computed(
+  () => roster_config.value.selected_bundles[selected_region.value],
+);
 
-const t4_better = computed(() => {
-  const t4_price = input_column_to_num(selected_mats_prices.value[0]);
-  const serca_price = input_column_to_num(selected_mats_prices.value[1]);
-  return ALL_LABELS[1].map(
-    (_, index) => t4_price[index] * 5 < serca_price[index],
-  );
-});
+// per-unit prices, which is what the convert-or-buy comparison needs
+const selected_unit_prices = computed(() =>
+  unit_prices(
+    input_column_to_num(selected_mats_prices.value),
+    selected_bundles.value,
+  ),
+);
+const effective_prices = computed(() =>
+  effective_unit_prices(selected_unit_prices.value),
+);
+
+// the price cell edits the bundle the user has chosen for that material
+const price_key = (mat: Material) =>
+  bundle_key(mat.label, selected_bundles.value[mat.label]);
+
+// a material sold in one bundle shows its size as a suffix; several get a dropdown
+function price_suffix(mat: Material): string {
+  const size = selected_bundles.value[mat.label];
+  return mat.bundle_sizes.length > 1 || size <= 1
+    ? ""
+    : "x" + size.toLocaleString("en-US");
+}
 
 const grids = computed((): GridConfig[] => [
   {
     tier: 0,
     grid_template_columns: "250px 100px 150px", // market price a bit bigger to fit the x1mil silver suffix
-    rows: ALL_LABELS[0].map((label, row) => ({
-      label,
-      col: 0,
-      row: row,
-    })),
+    materials: TIER_MATERIALS[0],
   },
   {
     tier: 1,
     grid_template_columns: "250px 100px 120px 138px",
-
-    rows: ALL_LABELS[1].map((label, row) => ({
-      label,
-      col: row in SERCA_TO_T4_INDICES ? 0 : 1,
-      row:
-        row in SERCA_TO_T4_INDICES
-          ? (SERCA_TO_T4_INDICES as Record<number, number>)[row]
-          : row,
-    })),
+    materials: TIER_MATERIALS[1],
   },
 ]);
-
-function price_suffix(label: string): string {
-  const bundle = MATERIALS[label].bundle_size;
-  if (label === "Shards" || bundle <= 1) return "";
-  return "x" + bundle.toLocaleString("en-US");
-}
 </script>
 
 <template>
@@ -97,31 +99,31 @@ function price_suffix(label: string): string {
 
       <div class="card-body contents pt-0!">
         <div
-          v-for="{ label, col, row } in grid.rows"
-          :key="`roster-input-${grid.tier}-${label === 'Shards' ? 'shard' + roster_config.shard_infos[selected_region].selected.toLocaleString() : label}`"
+          v-for="mat in grid.materials"
+          :key="`roster-input-${grid.tier}-${mat.label}`"
           class="mats-row"
           role="group"
-          :aria-label="label"
+          :aria-label="mat.label"
         >
           <MaterialCell
-            :input_column="selected_roster_mats_owned[col]"
-            :row="row"
-            :label="label"
+            :input_column="selected_roster_mats_owned"
+            :label="mat.label"
+            :show_label="true"
             aria_name="Roster bound owned"
             :setter="
               (val) => {
-                selected_roster_mats_owned[col].data[row] = val;
+                selected_roster_mats_owned.values[mat.label] = val;
               }
             "
             input_color="var(--roster)"
             :hide_tick="true"
           />
           <MaterialCell
-            :input_column="selected_tradable_mats_owned[col]"
-            :row="row"
+            :input_column="selected_tradable_mats_owned"
+            :label="mat.label"
             :setter="
               (val) => {
-                selected_tradable_mats_owned[col].data[row] = val;
+                selected_tradable_mats_owned.values[mat.label] = val;
               }
             "
             input_color="var(--tradable)"
@@ -130,51 +132,46 @@ function price_suffix(label: string): string {
           />
           <div class="flex flex-row items-center">
             <MaterialCell
-              :input_column="
-                label === 'Shards'
-                  ? roster_config.shard_infos[selected_region].prices[
-                      roster_config.shard_infos[selected_region].selected
-                    ]
-                  : selected_mats_prices[col]
-              "
-              :row="label === 'Shards' ? 0 : row"
+              :input_column="selected_mats_prices"
+              :label="price_key(mat)"
               :setter="
                 (val) => {
-                  label === 'Shards'
-                    ? (roster_config.shard_infos[selected_region].prices[
-                        roster_config.shard_infos[selected_region].selected
-                      ].data[0] = val)
-                    : (selected_mats_prices[col].data[row] = val);
+                  selected_mats_prices.values[price_key(mat)] = val;
                 }
               "
-              :suffix="price_suffix(label)"
+              :suffix="price_suffix(mat)"
               aria_name="Market price"
               :input_width="70"
               input_color="var(--text-muted)"
               :justify_left="true"
             />
             <select
-              v-if="label === 'Shards'"
-              v-model.number="
-                roster_config.shard_infos[selected_region].selected
-              "
+              v-if="mat.bundle_sizes.length > 1"
+              v-model.number="selected_bundles[mat.label]"
               class="selector annotation ml-1! h-fit px-0!"
+              :aria-label="`${mat.label} bundle size`"
             >
-              <option :value="1000">x1000</option>
-              <option :value="2000">x2000</option>
-              <option :value="3000">x3000</option>
+              <option
+                v-for="size in mat.bundle_sizes"
+                :key="size"
+                :value="size"
+              >
+                x{{ size.toLocaleString("en-US") }}
+              </option>
             </select>
           </div>
           <MaterialCell
-            v-if="grid.tier == 1 && !SYNCED_LABELS.includes(label)"
-            :input_column="roster_store.effective_serca_price"
-            :row="row"
-            :suffix="t4_better[row] ? 'Convert T4' : 'Buy Serca '"
+            v-if="grid.tier == 1 && !SHARED_LABELS.includes(mat.label)"
+            :input_column="effective_prices"
+            :label="mat.label"
+            :suffix="
+              convert_is_cheaper(mat, selected_unit_prices)
+                ? 'Convert T4'
+                : 'Buy Serca '
+            "
             input_color="var(--gold)"
             class="pr-2"
           />
-
-          <!-- <label class="text-nowrap">Shard bag size:</label> -->
         </div>
       </div>
     </div>

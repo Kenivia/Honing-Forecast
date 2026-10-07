@@ -3,6 +3,7 @@ import {
   Material,
   JOINED_ADV_JUICE,
   NUM_ADV_PIECES,
+  SPECIAL_LEAP_LABELS,
   TIER_MATERIALS,
 } from "@/Utils/Constants";
 import { TreatmentPlan } from "@/Stores/CharacterProfile";
@@ -16,7 +17,7 @@ import {
   OneUpgradeInput,
   Upgrade,
 } from "@/Utils/KeyedUpgrades";
-import { input_column_to_num, parse_locale_int } from "@/Utils/InputColumn";
+import { input_column_to_num } from "@/Utils/InputColumn";
 import { storeToRefs } from "pinia";
 import { useRuntimeStore } from "@/Stores/RuntimeState";
 
@@ -248,72 +249,34 @@ function apply_tax(x: number): number {
 
 export function build_material_info(): OneMaterialInput[] {
   const roster_store = useRosterStore();
-  const { active_profile } = storeToRefs(roster_store);
   const {
-    roster_config,
+    active_profile,
     active_roster_mats_owned,
     active_tradable_mats_owned,
-    active_region,
-    effective_serca_price,
-  } = storeToRefs(useRosterStore());
+  } = storeToRefs(roster_store);
 
   const tier = active_profile.value.tier;
-  const bound_budgets = input_column_to_num(
-    active_profile.value.bound_budgets[tier],
-  );
-  const enabled = active_profile.value.bound_budgets[tier].enabled;
-  const roster_mats_owned = input_column_to_num(
-    active_roster_mats_owned.value[tier],
-  );
-  const tradable_mats_owned = input_column_to_num(
-    active_tradable_mats_owned.value[tier],
-  );
+  const bound = input_column_to_num(active_profile.value.bound_budgets);
+  const enabled = active_profile.value.bound_budgets.enabled;
+  const roster_owned = input_column_to_num(active_roster_mats_owned.value);
+  const tradable_owned = input_column_to_num(active_tradable_mats_owned.value);
+  const leftover = input_column_to_num(active_profile.value.leftover_price);
 
-  const leftover_price = input_column_to_num(
-    active_profile.value.leftover_price[tier],
-  );
-  const effective_price =
-    tier == 0
-      ? input_column_to_num(roster_store.active_mats_prices[tier])
-      : effective_serca_price.value;
+  // Prices here are per unit: which bundle a material is sold in, and whether it is
+  // cheaper to convert one up from a lower tier, are both resolved by the store.
+  const listed = roster_store.active_unit_prices;
+  const effective = roster_store.active_effective_prices;
 
-  // console.log(input_column_to_num(roster_store.active_mats_prices[tier]));
-  const selected_shard_size =
-    roster_config.value.shard_infos[active_region.value].selected;
-  const shard_prices =
-    roster_config.value.shard_infos[active_region.value].prices;
-
-  const selected_shard_price: number = parse_locale_int(
-    shard_prices[selected_shard_size].data[0],
-  );
-  const materials = TIER_MATERIALS[tier];
-  // shards are priced per bag from their own input, everything else per bundle
-  const per_unit = (
-    mat: Material,
-    price: number,
-    tax: (n: number) => number,
-  ) =>
-    mat.label === "Shards"
-      ? tax(selected_shard_price) / selected_shard_size
-      : tax(price) / mat.bundle_size;
-
-  const listed_price = input_column_to_num(
-    roster_store.active_mats_prices[tier],
-  );
-  const actual_mats_prices = materials.map((mat, index) =>
-    per_unit(mat, effective_price[index], (n) => n),
-  );
-  const tradable_mats_price = materials.map((mat, index) =>
-    per_unit(mat, listed_price[index], apply_tax),
-  );
-  return materials.map((mat, index) => [
+  return TIER_MATERIALS[tier].map((mat) => [
     [0, 0],
-    [bound_budgets[index], leftover_price[index]],
-    [roster_mats_owned[index], tradable_mats_price[index]],
+    [bound[mat.label], leftover[mat.label]],
+    [roster_owned[mat.label], apply_tax(listed[mat.label])],
     [
       // disabled mats shouldn't be sold either, and gold is never sold
-      !enabled[index] || mat.label === "Gold" ? 0 : tradable_mats_owned[index],
-      actual_mats_prices[index],
+      !enabled[mat.label] || mat.label === "Gold"
+        ? 0
+        : tradable_owned[mat.label],
+      effective[mat.label],
     ],
   ]);
 }
@@ -344,7 +307,9 @@ export function build_payload(override?: OptimizerOverride): Payload {
       override?.normal,
       override?.advanced,
     ),
-    special_budget: input_column_to_num(active_profile.value.special_budget)[0],
+    special_budget: input_column_to_num(active_profile.value.special_budget)[
+      SPECIAL_LEAP_LABELS[active_profile.value.tier]
+    ],
     express_event: active_profile.value.express_event,
     tier,
     min_resolution: active_profile.value.min_resolution,

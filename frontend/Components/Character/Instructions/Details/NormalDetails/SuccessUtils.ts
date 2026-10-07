@@ -1,4 +1,5 @@
 import { useRosterStore } from "@/Stores/RosterConfig";
+import { ALL_LABELS, by_label } from "@/Utils/Constants";
 import { input_column_to_num, InputColumn } from "@/Utils/InputColumn";
 import { Upgrade, UpgradeStatus } from "@/Utils/KeyedUpgrades";
 import { storeToRefs } from "pinia";
@@ -7,14 +8,15 @@ import { grid_change_callback } from "@/Components/Character/CharWorkerUtils";
 import { useRuntimeStore } from "@/Stores/RuntimeState";
 
 export interface BudgetSnapshot {
-  bound_budgets: InputColumn[];
-  roster_mats: InputColumn[];
-  tradable_mats: InputColumn[];
+  bound_budgets: InputColumn;
+  roster_mats: InputColumn;
+  tradable_mats: InputColumn;
 }
+// keyed by material label, like everything on this side of the wasm boundary
 export interface RemainingMats {
-  bound_budgets: number[];
-  roster_mats: number[];
-  tradable_mats: number[];
+  bound_budgets: Record<string, number>;
+  roster_mats: Record<string, number>;
+  tradable_mats: Record<string, number>;
 }
 
 export function mark_upgrade_as_done(upgrade: Upgrade) {
@@ -126,33 +128,32 @@ export function compute_remaininig_materials(
   used_materials: number[],
   inp_previous_budget?: BudgetSnapshot,
 ): RemainingMats {
-  // console.log(used_materials, inp_previous_budget);
   const { active_profile } = storeToRefs(useRosterStore());
   const tier = active_profile.value.tier;
-  const previous_budgets: BudgetSnapshot = inp_previous_budget
-    ? inp_previous_budget
-    : make_budget_snapshot();
-  const bound_owned = input_column_to_num(previous_budgets.bound_budgets[tier]);
-  const roster_owned = input_column_to_num(previous_budgets.roster_mats[tier]);
-  const tradable_owned = input_column_to_num(
-    previous_budgets.tradable_mats[tier],
-  );
-  const bound_budgets: number[] = [];
-  const roster_mats: number[] = [];
-  const tradable_mats: number[] = [];
-  used_materials.forEach((cost, index) => {
+  const previous_budgets: BudgetSnapshot =
+    inp_previous_budget ?? make_budget_snapshot();
+
+  const bound_owned = input_column_to_num(previous_budgets.bound_budgets);
+  const roster_owned = input_column_to_num(previous_budgets.roster_mats);
+  const tradable_owned = input_column_to_num(previous_budgets.tradable_mats);
+  // Rust reports costs by material row; this is where they become labels
+  const cost = by_label(used_materials, tier);
+
+  const bound_budgets: Record<string, number> = {};
+  const roster_mats: Record<string, number> = {};
+  const tradable_mats: Record<string, number> = {};
+  for (const label of ALL_LABELS[tier]) {
     // spend bound first, then roster-bound, then tradable
-    let remaining_cost = Math.max(0, cost);
+    let remaining_cost = Math.max(0, cost[label] ?? 0);
     const spend = (owned: number) => {
       const deduct = Math.min(owned, remaining_cost);
       remaining_cost -= deduct;
       return Math.max(0, owned - deduct);
     };
-    bound_budgets.push(spend(bound_owned[index]));
-    roster_mats.push(spend(roster_owned[index]));
-    tradable_mats.push(spend(tradable_owned[index]));
-  });
-  // console.log("computed")
+    bound_budgets[label] = spend(bound_owned[label]);
+    roster_mats[label] = spend(roster_owned[label]);
+    tradable_mats[label] = spend(tradable_owned[label]);
+  }
   return { bound_budgets, roster_mats, tradable_mats };
 }
 
@@ -169,47 +170,30 @@ export function apply_remaining_mats() {
     return;
   }
   const tier = active_profile.value.tier;
-
   if (runtime.budget_snapshot === null) {
-    // console.log(runtime.budget_snapshot);
     runtime.budget_snapshot = make_budget_snapshot();
-    // console.log(
-    //   "snap",
-    //   toRaw(runtime.budget_snapshot.bound_budgets[0].data),
-    // );
-    // console.log(runtime.budget_snapshot);
   }
-  // console.log(
-  //   "calc",
-  //   upgrade.starting_num_taps,
-  //   taps_since_last_input.value,
-  //   toRaw(runtime.budget_snapshot.bound_budgets[0].data),
-  // );
-  const reference_length = active_profile.value.bound_budgets[tier].data;
-  const remaining_materials: RemainingMats = compute_remaininig_materials(
-    Object.values(active_profile.value.keyed_upgrades)
-      .map((u) => u.used_materials)
-      .reduce(
-        (acc, cur) => acc.map((x, i) => x + (cur?.[i] ?? 0)),
-        Array(reference_length.length).fill(0),
-      ),
+
+  // used_materials comes back from Rust indexed by material row, so it is summed as rows
+  const total_used = Object.values(active_profile.value.keyed_upgrades)
+    .map((u) => u.used_materials)
+    .reduce(
+      (acc, cur) => acc.map((x, i) => x + (cur?.[i] ?? 0)),
+      Array(ALL_LABELS[tier].length).fill(0),
+    );
+  const remaining: RemainingMats = compute_remaininig_materials(
+    total_used,
     runtime.budget_snapshot,
   );
 
-  // console.log(remaining_materials.bound_budgets);
-
-  reference_length.forEach((_, index) => {
-    if (active_profile.value.bound_budgets[tier].enabled[index]) {
-      active_profile.value.bound_budgets[tier].data[index] =
-        remaining_materials.bound_budgets[index].toLocaleString();
+  const write = (column: InputColumn, values: Record<string, number>) => {
+    for (const label of ALL_LABELS[tier]) {
+      if (column.enabled[label]) {
+        column.values[label] = values[label].toLocaleString();
+      }
     }
-    if (active_roster_mats_owned.value[tier].enabled[index]) {
-      active_roster_mats_owned.value[tier].data[index] =
-        remaining_materials.roster_mats[index].toLocaleString();
-    }
-    if (active_tradable_mats_owned.value[tier].enabled[index]) {
-      active_tradable_mats_owned.value[tier].data[index] =
-        remaining_materials.tradable_mats[index].toLocaleString();
-    }
-  });
+  };
+  write(active_profile.value.bound_budgets, remaining.bound_budgets);
+  write(active_roster_mats_owned.value, remaining.roster_mats);
+  write(active_tradable_mats_owned.value, remaining.tradable_mats);
 }

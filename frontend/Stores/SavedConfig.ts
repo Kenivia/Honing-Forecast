@@ -1,4 +1,9 @@
-import { NUM_ADV_PIECES } from "@/Utils/Constants";
+import {
+  ALL_MATERIAL_LABELS,
+  default_selected_bundles,
+  MATERIALS,
+  NUM_ADV_PIECES,
+} from "@/Utils/Constants";
 import {
   column_labels,
   create_input_column,
@@ -11,12 +16,7 @@ import {
   TreatmentPlan,
 } from "./CharacterProfile";
 import { default_roster_config, RosterConfig } from "./RosterConfig";
-import {
-  DEFAULT_SHARD_INFO,
-  MarketRegions,
-  SHARD_LABEL,
-  ShardInfo,
-} from "@/Utils/MarketDataFetcher";
+import { MarketRegions } from "@/Utils/MarketDataFetcher";
 import {
   grids_to_keyed,
   KeyedUpgrades,
@@ -65,11 +65,6 @@ export interface SavedProfile {
   leftover_price: SavedColumn;
 }
 
-export interface SavedShardInfo {
-  selected: number;
-  prices: Record<string, number>; // bag size -> price
-}
-
 export interface SavedConfig {
   version: number;
   profiles: SavedProfile[];
@@ -79,7 +74,8 @@ export interface SavedConfig {
   roster_mats_owned: Record<string, SavedColumn>;
   tradable_mats_owned: Record<string, SavedColumn>;
   all_regions: Record<string, MarketRegions>;
-  shard_infos: Partial<Record<MarketRegions, SavedShardInfo>>;
+  // material label -> chosen bundle size, only for materials sold in several sizes
+  selected_bundles: Partial<Record<MarketRegions, Record<string, number>>>;
   latest_market_data: Partial<Record<MarketRegions, [number, any]>>;
   cumulative_graph: boolean;
   show_all_rows: boolean;
@@ -120,7 +116,8 @@ export function column_from_saved(
         : parse_input(template, label, String(value), true).toLocaleString();
     },
     upper_bound: (label) => template.upper_bound[label],
-    enabled: (label) => (saved ? !disabled.has(label) : template.enabled[label]),
+    enabled: (label) =>
+      saved ? !disabled.has(label) : template.enabled[label],
   });
 }
 
@@ -228,29 +225,32 @@ function profile_from_saved(
 }
 
 // ============================================================================
-// Shards
+// Bundle selection
 // ============================================================================
 
-function shard_info_to_saved(info: ShardInfo): SavedShardInfo {
-  const prices: Record<string, number> = {};
-  for (const [size, column] of Object.entries(info.prices)) {
-    prices[size] = parse_input(column, SHARD_LABEL, column.values[SHARD_LABEL], true);
+// Only sizes the material actually has are kept, so changing MATERIAL_TABLE's bundle
+// sizes silently falls back to the default rather than storing a size that no longer
+// exists. Single-bundle materials are left out: there is nothing to choose.
+function selected_bundles_to_saved(
+  selected: Record<string, number>,
+): Record<string, number> {
+  const out: Record<string, number> = {};
+  for (const label of ALL_MATERIAL_LABELS) {
+    if (MATERIALS[label].bundle_sizes.length > 1) {
+      out[label] = selected[label];
+    }
   }
-  return { selected: info.selected, prices };
+  return out;
 }
 
-function shard_info_from_saved(saved: SavedShardInfo | undefined): ShardInfo {
-  const out = structuredClone(DEFAULT_SHARD_INFO);
-  if (!saved) {
-    return out;
-  }
-  if (Object.hasOwn(out.prices, saved.selected)) {
-    out.selected = saved.selected;
-  }
-  for (const size of Object.keys(out.prices)) {
-    const value = saved.prices?.[size];
-    if (value !== undefined) {
-      out.prices[size].values[SHARD_LABEL] = Number(value).toLocaleString();
+function selected_bundles_from_saved(
+  saved: Record<string, number> | undefined,
+): Record<string, number> {
+  const out = default_selected_bundles();
+  for (const label of Object.keys(out)) {
+    const size = Number(saved?.[label]);
+    if (MATERIALS[label].bundle_sizes.includes(size)) {
+      out[label] = size;
     }
   }
   return out;
@@ -266,9 +266,10 @@ export function to_saved(config: RosterConfig): Omit<SavedConfig, "version"> {
     mats_prices[region as MarketRegions] = column_to_saved(column);
   }
 
-  const shard_infos: SavedConfig["shard_infos"] = {};
-  for (const [region, info] of Object.entries(config.shard_infos)) {
-    shard_infos[region as MarketRegions] = shard_info_to_saved(info);
+  const selected_bundles: SavedConfig["selected_bundles"] = {};
+  for (const [region, selected] of Object.entries(config.selected_bundles)) {
+    selected_bundles[region as MarketRegions] =
+      selected_bundles_to_saved(selected);
   }
 
   const roster_mats_owned: SavedConfig["roster_mats_owned"] = {};
@@ -290,7 +291,7 @@ export function to_saved(config: RosterConfig): Omit<SavedConfig, "version"> {
     roster_mats_owned,
     tradable_mats_owned,
     all_regions: { ...config.all_regions },
-    shard_infos,
+    selected_bundles,
     latest_market_data: config.latest_market_data,
     cumulative_graph: config.cumulative_graph,
     show_all_rows: config.show_all_rows,
@@ -308,8 +309,8 @@ export function from_saved(saved: Partial<SavedConfig>): RosterConfig {
       saved.mats_prices?.[region],
       out.mats_prices[region],
     );
-    out.shard_infos[region] = shard_info_from_saved(
-      saved.shard_infos?.[region],
+    out.selected_bundles[region] = selected_bundles_from_saved(
+      saved.selected_bundles?.[region],
     );
   }
 

@@ -23,7 +23,7 @@ import {
   mark_upgrade_as_done,
   apply_remaining_mats,
 } from "./SuccessUtils";
-import { FLOAT_TOL } from "@/Utils/Constants";
+import { FLOAT_TOL, SPECIAL_LEAP_LABELS } from "@/Utils/Constants";
 import { GridConfig } from "@/Utils/GridStyling";
 import ManualArtisanInput from "@/Components/Character/Instructions/Details/ManualArtisanInput.vue";
 import { useRuntimeStore } from "@/Stores/RuntimeState";
@@ -43,7 +43,6 @@ const juice_info = computed(() => {
 });
 
 const optimizer_working = computed(get_optimizer_working);
-const tier = computed(() => active_profile.value.tier);
 const this_keyed = computed(
   () => active_profile.value.keyed_upgrades[upgrade_key.value],
 );
@@ -149,8 +148,8 @@ watch(
 // this is for when autostart is turned off only
 watch(
   [
-    () => active_profile.value.bound_budgets[tier.value].data,
-    () => active_profile.value.bound_budgets[tier.value].enabled,
+    () => active_profile.value.bound_budgets.values,
+    () => active_profile.value.bound_budgets.enabled,
   ],
   () => {
     if (!active_profile.value.auto_start_optimizer) {
@@ -370,14 +369,18 @@ watch(
   },
 );
 
+const special_leap_label = computed(
+  () => SPECIAL_LEAP_LABELS[active_profile.value.tier],
+);
 const new_special_leaps = ref(
-  parse_locale_int(active_profile.value.special_budget.data[0]),
+  parse_locale_int(
+    active_profile.value.special_budget.values[special_leap_label.value],
+  ),
 );
 
 function special_succeed_click() {
-  active_profile.value.special_budget.data[0] =
+  active_profile.value.special_budget.values[special_leap_label.value] =
     new_special_leaps.value.toLocaleString();
-  console.log(active_profile.value.special_budget.data[0]);
   this_keyed.value.used_materials = compute_used_materials(
     props.upgrade,
     0,
@@ -391,7 +394,7 @@ function special_succeed_click() {
 }
 
 function special_fail_click() {
-  active_profile.value.special_budget.data[0] = "0";
+  active_profile.value.special_budget.values[special_leap_label.value] = "0";
   start_all_workers();
 }
 
@@ -482,7 +485,11 @@ const special_grid: GridConfig = {
         v-model="new_special_leaps"
         type="number"
         :min="0"
-        :max="parse_locale_int(active_profile.special_budget.data[0])"
+        :max="
+          parse_locale_int(
+            active_profile.special_budget.values[special_leap_label],
+          )
+        "
       />
 
       <button

@@ -20,6 +20,7 @@ These notes are high-level. They cover what is hard to work out from reading one
 | `templates/` | Source icons and the script that builds the icon half of the scanner config. |
 | `scripts/` | Changelog helper, constants export, scanner brightness calibration, optimizer test tooling. |
 | `e2e/` | Playwright tests, shared browser helpers and the market price fixture. |
+| `tests/` | Node-side frontend tests: migrations, the real-save fixture, cross-tier relations. `pnpm test:frontend`. |
 | `test_cases/` | Payloads and cached results for the test harness. |
 | `docs/` | Author-written docs: the saddlepoint paper, evaluation flow, optimizer, frontend flow, constants. |
 
@@ -29,6 +30,7 @@ Not source of truth: `dist/` (committed build output), `crates/wasm/pkg/` (wasm-
 
 - `pnpm dev` builds the wasm package with wasm-pack, then starts Vite. Vite does not watch `crates/`, so **Rust changes need `pnpm run wasm` again**.
 - `pnpm e2e` runs the browser tests; `pnpm browse` runs a one-off browser script. See `Browser harness/Overview.md`.
+- `pnpm check` runs `vue-tsc --noEmit` over the `.ts` layer and `.vue` templates. `pnpm test:frontend` runs the node-side suites in `tests/`. Both are fast; run them after a frontend change.
 - `pnpm test` is currently defunct. Do not rely on it to validate a change.
 - `pnpm build` chains `pnpm test` before the wasm and Vite builds and an unused-dependency check that needs nightly. `pnpm no-test-build` skips the test.
 - `pnpm deploy` only checks you are on a clean `main`, then force-pushes `main` to the `Production` branch (assumed to be what the hosted site builds from). It does not run tests.
@@ -60,6 +62,7 @@ Not source of truth: `dist/` (committed build output), `crates/wasm/pkg/` (wasm-
 - `Calculator core/Domain model.md`: the structs and index conventions.
 - `Calculator core/Evaluation pipeline.md`: payload to result, method selection, invariants.
 - `Calculator core/Optimizer.md`: what the annealer may and may not change; test harness status.
+- `Working in this repo.md`: line endings, scratch space, what the type checker cannot see, and the test suites. Read before a large edit.
 - `Frontend/State and persistence.md`: the store, data scopes, localStorage and migrations.
 - `Frontend/Wasm contract.md`: payload building, worker protocol, what must match Rust.
 - `Frontend/External services.md`: market prices, character import, changelogs.
