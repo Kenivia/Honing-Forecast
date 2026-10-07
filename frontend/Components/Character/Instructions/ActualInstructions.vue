@@ -11,6 +11,8 @@ import { get_icon_path, toOrdinal } from "@/Utils/Helpers";
 import { OneState, Upgrade } from "@/Utils/KeyedUpgrades";
 import { artisan_string } from "@/Utils/HoningUtil";
 import { get_optimizer_working } from "./InstructionUtils";
+import { useRuntimeStore } from "@/Stores/RuntimeState";
+const runtime = useRuntimeStore();
 
 
 const { active_profile } = storeToRefs(useRosterStore());
@@ -19,7 +21,7 @@ const props = defineProps<{
 }>();
 
 const juice_info = computed(() => {
-  return active_profile.value.histogram_worker_bundle.result.juice_info;
+  return runtime.histogram.result.juice_info;
 });
 
 const relevant_ids = computed(() => {

@@ -9,6 +9,8 @@ import Guide from "@/Components/Character/Guide.vue";
 import Setup from "./InventoryScanner/Setup/Setup.vue";
 import Calc from "./Calc.vue";
 import Scanner from "./InventoryScanner/Scanner.vue";
+import { useRuntimeStore } from "@/Stores/RuntimeState";
+const runtime = useRuntimeStore();
 
 const route = useRoute();
 const router = useRouter();
@@ -35,11 +37,9 @@ watch(
     if (match >= 0) {
       if (roster_store.roster_config.active_profile_index !== match) {
         // this happens one invalid names (routre param written to by the one-off code, triggering the watcher) i believe, idk how to prevent that but this works
-        active_profile.value.optimizer_worker_bundle.cancel();
-        active_profile.value.histogram_worker_bundle.cancel();
-        // active_profile.value.evaluation_worker_bundle.cancel()
+        runtime.cancel_active();
         // reset the scanner, the capture stream itself is kept
-        roster_store.roster_config.cropper_worker_bundle?.cancel_and_clear_prev_result();
+        runtime.cropper?.cancel_and_clear_prev_result();
         roster_store.switch_profile(match);
       }
     } else {
@@ -54,9 +54,7 @@ watch(
 
 onUnmounted(() => {
   // kill workers when going to market / roster view
-  active_profile.value.optimizer_worker_bundle.cancel();
-  active_profile.value.histogram_worker_bundle.cancel();
-  // active_profile.value.evaluation_worker_bundle.cancel()
+  runtime.cancel_active();
 });
 </script>
 <template>

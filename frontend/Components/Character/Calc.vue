@@ -7,6 +7,8 @@ import StatusInput from "./StatusInput/StatusInput.vue";
 import { storeToRefs } from "pinia";
 import { start_all_workers, start_eval_hist } from "./CharWorkerUtils.js";
 import { useRosterStore } from "@/Stores/RosterConfig.js";
+import { useRuntimeStore } from "@/Stores/RuntimeState";
+const runtime = useRuntimeStore();
 const { active_profile, active_region } = storeToRefs(useRosterStore());
 
 watch(
@@ -28,9 +30,7 @@ watch(
 );
 onUnmounted(() => {
   // kill workers when going to market / roster view
-  active_profile.value.optimizer_worker_bundle.cancel();
-  active_profile.value.histogram_worker_bundle.cancel();
-  // active_profile.value.evaluation_worker_bundle.cancel()
+  runtime.cancel_active();
 });
 </script>
 <template>

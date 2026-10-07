@@ -23,6 +23,8 @@ import { WasmOp } from "@/WasmInterface/WasmWorker";
 import { GridConfig } from "@/Utils/GridStyling";
 import { useMediaIsNarrow } from "@/Utils/WindowSize";
 import Popup from "@/Components/Common/Popup.vue";
+import { useRuntimeStore } from "@/Stores/RuntimeState";
+const runtime = useRuntimeStore();
 
 const { active_profile } = storeToRefs(useRosterStore());
 const {
@@ -32,19 +34,19 @@ const {
   enabled_annotations,
 } = storeToRefs(useRosterStore());
 const histogram_result = computed(
-  () => active_profile.value.histogram_worker_bundle.result,
+  () => runtime.histogram.result,
 );
 
 // This is average mats cost (not gold)
 const average_breakdown = computed(
   () =>
-    active_profile.value.histogram_worker_bundle.result?.avg_breakdown ??
+    runtime.histogram.result?.avg_breakdown ??
     new Array(ALL_LABELS[active_profile.value.tier].length).fill(0),
 );
 // this is should always be treat tradable as bound (so it's actual gold spent)
 const gold_breakdown = computed(
   () =>
-    active_profile.value.histogram_worker_bundle.result?.gold_breakdown_arr[0].map(
+    runtime.histogram.result?.gold_breakdown_arr[0].map(
       (x: number) => (x >= 0 ? 0 : -x),
     ) ?? new Array(ALL_LABELS[active_profile.value.tier].length).fill(0),
 );
@@ -187,7 +189,7 @@ function change_histogram_treatment(event) {
           TreatmentPlan.TreatRosterAsBound
         ? "var(--roster)"
         : "var(--tradable)";
-  active_profile.value.histogram_worker_bundle.throttled_start(
+  runtime.histogram.throttled_start(
     WasmOp.Histogram,
     build_payload(),
   );
@@ -337,7 +339,7 @@ const is924Narrow = useMediaIsNarrow(924); // this turns out to be the width whe
         v-if="
           ALL_LABELS[active_profile.tier].length ==
             active_profile.bound_budgets[active_profile.tier].data.length &&
-          active_profile.histogram_worker_bundle.result
+          runtime.histogram.result
         "
         class="contents"
       >
@@ -372,7 +374,7 @@ const is924Narrow = useMediaIsNarrow(924); // this turns out to be the width whe
           <!-- {{ console.log(averages) }} -->
           <MaterialCell
             :input_column="
-              active_profile.histogram_worker_bundle.result.chances_arr[
+              runtime.histogram.result.chances_arr[
                 active_profile.histogram_treatment_plan + 1
               ]
             "
@@ -429,22 +431,22 @@ const is924Narrow = useMediaIsNarrow(924); // this turns out to be the width whe
           >
           <MaterialGraph
             :data="
-              active_profile.histogram_worker_bundle.result.state_bundle?.latest_special_probs
+              runtime.histogram.result.state_bundle?.latest_special_probs
                 .concat(
                   new Array(
                     Math.max(
                       0,
-                      active_profile.histogram_worker_bundle.result.state_bundle.upgrade_arr.filter(
+                      runtime.histogram.result.state_bundle.upgrade_arr.filter(
                         (x) => x.is_normal_honing,
                       ).length -
-                        active_profile.histogram_worker_bundle.result
+                        runtime.histogram.result
                           .state_bundle?.latest_special_probs.length,
                     ),
                   ).fill(0),
                 )
                 .slice(
                   0,
-                  active_profile.histogram_worker_bundle.result.state_bundle.upgrade_arr.filter(
+                  runtime.histogram.result.state_bundle.upgrade_arr.filter(
                     (x) => x.is_normal_honing,
                   ).length,
                 )
@@ -470,7 +472,7 @@ const is924Narrow = useMediaIsNarrow(924); // this turns out to be the width whe
         <span class="metric-result text-(--gold)">
           {{
             metric_to_text(
-              active_profile.histogram_worker_bundle.result?.metrics_arr[
+              runtime.histogram.result?.metrics_arr[
                 active_profile.optimizer_treatment_plan ===
                 TreatmentPlan.TreatRosterAsBound
                   ? 0
@@ -498,8 +500,8 @@ const is924Narrow = useMediaIsNarrow(924); // this turns out to be the width whe
         <span class="metric-result text-(--text-muted)">
           {{
             metric_to_text(
-              active_profile.histogram_worker_bundle.result?.metrics_arr[0] -
-                active_profile.histogram_worker_bundle.result?.metrics_arr[1],
+              runtime.histogram.result?.metrics_arr[0] -
+                runtime.histogram.result?.metrics_arr[1],
             )
           }}
         </span>

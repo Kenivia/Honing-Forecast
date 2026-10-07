@@ -1,51 +1,51 @@
 import { useRosterStore } from "@/Stores/RosterConfig";
+import { useRuntimeStore } from "@/Stores/RuntimeState";
 
 import { grids_to_keyed } from "@/Utils/KeyedUpgrades";
 import { build_payload } from "@/WasmInterface/PayloadBuilder";
-import { StateBundle, WasmOp } from "@/WasmInterface/WasmWorker";
-import { storeToRefs } from "pinia";
+import { WasmOp } from "@/WasmInterface/WasmWorker";
 
 export function grid_change_callback(dont_run?: boolean) {
-  const { active_profile } = storeToRefs(useRosterStore());
+  const profile = useRosterStore().active_profile;
 
-  active_profile.value.keyed_upgrades = grids_to_keyed(
-    active_profile.value.normal_grid,
-    active_profile.value.adv_grid,
-    active_profile.value.keyed_upgrades,
-    active_profile.value.tier,
+  profile.keyed_upgrades = grids_to_keyed(
+    profile.normal_grid,
+    profile.adv_grid,
+    profile.keyed_upgrades,
+    profile.tier,
   );
   if (!dont_run) {
     start_all_workers();
   }
 }
+
 export function start_eval_hist() {
-  const { active_profile } = storeToRefs(useRosterStore());
-  active_profile.value.histogram_worker_bundle.throttled_start(
+  const runtime = useRuntimeStore();
+  const profile = useRosterStore().active_profile;
+  // call build payload again here to include the new states
+  runtime.histogram.throttled_start(
     WasmOp.Histogram,
-    build_payload(active_profile.value.optimizer_override),
-  ); // call build payload again here to include the new states
-
-  // active_profile.value.evaluation_worker_bundle.throttled_start(WasmOp.EvaluateAverage, payload)
+    build_payload(profile.optimizer_override),
+  );
 }
+
 export function start_all_workers() {
-  const { active_profile, roster_config } = storeToRefs(useRosterStore());
+  const runtime = useRuntimeStore();
+  const profile = useRosterStore().active_profile;
 
-  // console.log("payload update")
-
-  active_profile.value.optimizer_worker_bundle.est_progress_percentage = 0;
-  if (active_profile.value.auto_start_optimizer) {
-    active_profile.value.optimizer_worker_bundle.debounced_start(
+  runtime.optimizer.est_progress_percentage = 0;
+  if (profile.auto_start_optimizer) {
+    runtime.optimizer.debounced_start(
       WasmOp.OptimizeAverage,
       build_payload(),
       (result) => {
         const { adv_cache, ...rest } = result;
-        roster_config.value.adv_cache = adv_cache;
-        active_profile.value.optimizer_worker_bundle.result = rest;
+        runtime.adv_cache = adv_cache;
+        runtime.optimizer.result = rest;
         start_eval_hist();
       },
     );
   }
 
   start_eval_hist();
-  // active_profile.value.evaluation_worker_bundle.throttled_start(WasmOp.EvaluateAverage, payload)
 }

@@ -18,6 +18,7 @@ import {
 } from "@/Utils/KeyedUpgrades";
 import { input_column_to_num, parse_locale_int } from "@/Utils/InputColumn";
 import { storeToRefs } from "pinia";
+import { useRuntimeStore } from "@/Stores/RuntimeState";
 
 // I don't think it's possible to directly export this struct from rust to javascript because of all the vectors,
 // so it's copied & pasted here
@@ -77,10 +78,7 @@ function keyed_to_array(
   normal_override?: StateOverride,
   adv_override?: AdvStateOverride,
 ): OneUpgradeInput[] {
-  const { active_profile } = storeToRefs(useRosterStore());
-
-  const juice_info =
-    active_profile.value.histogram_worker_bundle.result?.juice_info ?? null;
+  const juice_info = useRuntimeStore().histogram.result?.juice_info ?? null;
   const upgrade_map = get_upgrade_map(upgrade_arr, tier);
   return Object.entries(keyed_upgrades)
     .filter((x) => tier === 0 || x[1].is_normal_honing) // shouldn't really be necessary but apparently it went  wrong once somehow so adding this guard here
@@ -314,9 +312,10 @@ export function build_material_info(): OneMaterialInput[] {
 }
 
 export function build_payload(override?: OptimizerOverride): Payload {
-  const { active_profile, roster_config } = storeToRefs(useRosterStore());
+  const runtime = useRuntimeStore();
+  const { active_profile } = storeToRefs(useRosterStore());
   const tier = active_profile.value.tier;
-  // console.log(active_profile.value.optimizer_worker_bundle.result?.adv_cache);
+  // console.log(runtime.optimizer.result?.adv_cache);
   return {
     material_info: build_material_info(),
     optimizer_plan:
@@ -331,7 +330,7 @@ export function build_payload(override?: OptimizerOverride): Payload {
     // : null,
     upgrade_info: keyed_to_array(
       active_profile.value.keyed_upgrades,
-      active_profile.value.optimizer_worker_bundle.result?.upgrade_arr,
+      runtime.optimizer.result?.upgrade_arr,
       tier,
       active_profile.value.express_event,
       active_profile.value.pretend_30_40_x2_grace,
@@ -345,10 +344,10 @@ export function build_payload(override?: OptimizerOverride): Payload {
     num_threads: 1,
     metric_type: 1,
     special_state: special_sort_override(
-      toRaw(active_profile.value.optimizer_worker_bundle.result?.special_state),
-      active_profile.value.optimizer_worker_bundle.result?.upgrade_arr,
+      toRaw(runtime.optimizer.result?.special_state),
+      runtime.optimizer.result?.upgrade_arr,
       override?.special,
     ),
-    adv_cache: toRaw(roster_config.value.adv_cache),
+    adv_cache: toRaw(runtime.adv_cache),
   };
 }

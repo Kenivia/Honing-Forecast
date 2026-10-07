@@ -12,6 +12,7 @@ import { UpgradeStatus } from "@/Utils/KeyedUpgrades";
 
 import { grid_change_callback } from "../CharWorkerUtils";
 import { CharProfile } from "@/Stores/CharacterProfile";
+import { useRuntimeStore } from "@/Stores/RuntimeState";
 
 export function change_tier(target_profile: CharProfile, fetched?: boolean) {
   let old_tier = target_profile.tier;
@@ -30,9 +31,10 @@ export function change_tier(target_profile: CharProfile, fetched?: boolean) {
     throw new Error("conversion between more than 2 tiers not implemented yet");
   }
 
-  target_profile.optimizer_worker_bundle?.cancel_and_clear_prev_result();
-  target_profile.histogram_worker_bundle?.cancel_and_clear_prev_result();
-  // profile.value.evaluation_worker_bundle?.cancel_and_clear_prev_result()
+  // may be a non-active character during a roster import, hence the lookup by name
+  const target_runtime = useRuntimeStore().for_char(target_profile.char_name);
+  target_runtime?.optimizer.cancel_and_clear_prev_result();
+  target_runtime?.histogram.cancel_and_clear_prev_result();
 
   let num_array_old = input_column_to_num(
     target_profile.bound_budgets[old_tier],

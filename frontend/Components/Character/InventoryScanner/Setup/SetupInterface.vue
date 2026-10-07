@@ -11,12 +11,12 @@ import {
 
 import { useRosterStore } from "@/Stores/RosterConfig";
 import IconDisplay from "../IconDisplay.vue";
+import { useRuntimeStore } from "@/Stores/RuntimeState";
+const runtime = useRuntimeStore();
 
 defineProps<{ status: "idle" | "capturing" }>();
 const boxes = defineModel<ScaledPosition[]>("boxes", { default: () => [] });
 
-const roster_store = useRosterStore();
-const { roster_config } = storeToRefs(roster_store);
 
 const config = ref<OneIconConfig[] | null>(null);
 getScannerConfig().then((data) => (config.value = data));
@@ -92,7 +92,7 @@ function build_pending_icons() {
 }
 
 function confirm_setup() {
-  const bundle = roster_config.value.cropper_worker_bundle;
+  const bundle = runtime.cropper;
   if (!bundle?.result) return;
 
   const modified_state = {
@@ -259,7 +259,6 @@ function delete_icon(index: number) {
 
 <script setup lang="ts">
 import { WasmOp } from "@/WasmInterface/WasmWorker";
-import { storeToRefs } from "pinia";
 import { ref, watchEffect, toRaw } from "vue";
 import {
   download_as_msg_pack,
@@ -269,13 +268,12 @@ import {
 } from "../LoadStorage";
 import SetupIconRow from "./SetupIconRow.vue";
 
-import { useRosterStore } from "@/Stores/RosterConfig";
+import { useRuntimeStore } from "@/Stores/RuntimeState";
 
 defineProps<{ status: "idle" | "capturing" }>();
 const boxes = defineModel<ScaledPosition[]>("boxes", { default: () => [] });
 
-const roster_store = useRosterStore();
-const { roster_config } = storeToRefs(roster_store);
+const runtime = useRuntimeStore();
 
 const config = ref<OneIconConfig[] | null>(null);
 getScannerConfig().then((data) => (config.value = data));
@@ -301,9 +299,9 @@ watchEffect(() => {
 });
 
 async function confirm_setup() {
-  const bundle = roster_config.value.cropper_worker_bundle;
+  const bundle = runtime.cropper;
   if (!bundle?.result) return;
-  const frame = await roster_config.value.frame_source.read();
+  const frame = await runtime.frame_source.read();
   if (!frame) return;
 
   const incoming_new_icons = [

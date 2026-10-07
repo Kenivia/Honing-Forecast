@@ -12,6 +12,7 @@ import {
   InputType,
   parse_locale_int,
 } from "./InputColumn";
+import { useRuntimeStore } from "@/Stores/RuntimeState";
 
 export interface ShardInfo {
   selected: number;
@@ -27,6 +28,8 @@ export const DEFAULT_SHARD_INFO: ShardInfo = {
 };
 const FETCH_MARKET_COOLDOWN_MS = 60 * 60 * 1000;
 export type MarketRegions = "nae" | "euc" | "Custom";
+// Custom is user-entered and is never fetched.
+export const FETCHABLE_REGIONS: MarketRegions[] = ["nae", "euc"];
 const BODY = {
   region_slug: "nae",
   item_slugs: [
@@ -190,9 +193,10 @@ export async function start_fetch(
   force?: boolean,
   ignore_fetch_cooldown?: boolean,
 ) {
+  const runtime = useRuntimeStore();
   const roster_store = useRosterStore();
   const { roster_config } = storeToRefs(roster_store);
-  if (roster_config.value.is_fetching && !ignore_fetch_cooldown) return;
+  if (runtime.is_fetching && !ignore_fetch_cooldown) return;
   if (region === "Custom" || (!roster_config.value.auto_fetch && !force)) {
     return;
   }
@@ -200,28 +204,28 @@ export async function start_fetch(
   if (
     cached !== undefined &&
     !is_data_stale(region, force === true ? 1000 : FETCH_MARKET_COOLDOWN_MS) &&
-    !roster_config.value.market_fetch_failed
+    !runtime.market_fetch_failed
   ) {
-    roster_config.value.is_fetching = true;
+    runtime.is_fetching = true;
     await new Promise((r) => setTimeout(r, 200));
-    roster_config.value.is_fetching = false;
+    runtime.is_fetching = false;
     const [_, result] = cached;
     const [parsed, selectedShardSize, shard_prices] = parse_response(result);
     fetch_callback(parsed, selectedShardSize, shard_prices, region);
     return;
   }
 
-  roster_config.value.is_fetching = true;
+  runtime.is_fetching = true;
 
   // Fetch new data
   const result = await (async () => {
     try {
       const out = await fetch_market_data(region);
 
-      roster_config.value.market_fetch_failed = false;
+      runtime.market_fetch_failed = false;
       return out;
     } catch {
-      roster_config.value.market_fetch_failed = true;
+      runtime.market_fetch_failed = true;
       return cached !== undefined ? cached : FALLBACK_PRICES;
     }
   })();
@@ -229,11 +233,11 @@ export async function start_fetch(
   const [parsed, selectedShardSize, shard_prices] = parse_response(result);
 
   // Store the raw response data with timestamp
-  if (!roster_config.value.market_fetch_failed) {
+  if (!runtime.market_fetch_failed) {
     roster_config.value.latest_market_data[region] = [Date.now(), result];
   }
 
-  roster_config.value.is_fetching = false;
+  runtime.is_fetching = false;
 
   fetch_callback(parsed, selectedShardSize, shard_prices, region);
 }

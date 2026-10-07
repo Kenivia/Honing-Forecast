@@ -4,6 +4,7 @@ import { Upgrade, UpgradeStatus } from "@/Utils/KeyedUpgrades";
 import { storeToRefs } from "pinia";
 import { toRaw } from "vue";
 import { grid_change_callback } from "@/Components/Character/CharWorkerUtils";
+import { useRuntimeStore } from "@/Stores/RuntimeState";
 
 export interface BudgetSnapshot {
   bound_budgets: InputColumn[];
@@ -188,6 +189,7 @@ export function compute_remaininig_materials(
 }
 
 export function apply_remaining_mats() {
+  const runtime = useRuntimeStore();
   const {
     active_profile,
     roster_config,
@@ -200,20 +202,20 @@ export function apply_remaining_mats() {
   }
   const tier = active_profile.value.tier;
 
-  if (roster_config.value.budget_snapshot === null) {
-    // console.log(roster_config.value.budget_snapshot);
-    roster_config.value.budget_snapshot = make_budget_snapshot();
+  if (runtime.budget_snapshot === null) {
+    // console.log(runtime.budget_snapshot);
+    runtime.budget_snapshot = make_budget_snapshot();
     // console.log(
     //   "snap",
-    //   toRaw(roster_config.value.budget_snapshot.bound_budgets[0].data),
+    //   toRaw(runtime.budget_snapshot.bound_budgets[0].data),
     // );
-    // console.log(roster_config.value.budget_snapshot);
+    // console.log(runtime.budget_snapshot);
   }
   // console.log(
   //   "calc",
   //   upgrade.starting_num_taps,
   //   taps_since_last_input.value,
-  //   toRaw(roster_config.value.budget_snapshot.bound_budgets[0].data),
+  //   toRaw(runtime.budget_snapshot.bound_budgets[0].data),
   // );
   const reference_length = active_profile.value.bound_budgets[tier].data;
   const remaining_materials: RemainingMats = compute_remaininig_materials(
@@ -223,7 +225,7 @@ export function apply_remaining_mats() {
         (acc, cur) => acc.map((x, i) => x + (cur?.[i] ?? 0)),
         Array(reference_length.length).fill(0),
       ),
-    roster_config.value.budget_snapshot,
+    runtime.budget_snapshot,
   );
 
   // console.log(remaining_materials.bound_budgets);

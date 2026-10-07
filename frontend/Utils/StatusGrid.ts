@@ -45,16 +45,18 @@ export function is_enum<T extends object>(
 
 // returning instead of mutating in place because javascript
 export function get_valid_status_grid(
-  status_grid: StatusGrid,
+  status_grid: StatusGrid | undefined,
   example: StatusGrid,
-) {
+): StatusGrid {
   const isValid =
+    Array.isArray(status_grid) &&
     status_grid.length === example.length &&
     example.every(
       (row, i) =>
+        Array.isArray(status_grid[i]) &&
         row.length === status_grid[i].length &&
         status_grid[i].every((cell) => is_enum(UpgradeStatus, cell)),
     );
-  // console.log(isValid, status_grid, example);
-  return isValid ? status_grid : example.slice();
+  // cloned, not sliced: a shallow copy would share row arrays with the default
+  return isValid ? status_grid : structuredClone(example);
 }

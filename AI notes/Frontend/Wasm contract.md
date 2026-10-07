@@ -28,7 +28,7 @@ How the frontend talks to Rust for the calculator. Scanner operations share the 
 
 ## Workers
 
-Each character owns two worker bundles (`WorkerBundle.ts`), one per operation:
+Each character owns two worker bundles (`WorkerBundle.ts`), held in `useRuntimeStore` and keyed by character name, one per operation:
 
 - **Optimizer**: debounced. Starting a run terminates any run in progress, and the worker is terminated again when the result arrives, so every run uses a fresh worker.
 - **Histogram**: throttled. The latest payload wins, runs are never cancelled midway, and the worker is reused.

@@ -1,239 +1,288 @@
-import { InputColumn, validate_input_column_array } from "@/Utils/InputColumn";
-import {
-  create_default_owned_input_column,
-  DEFAULT_ROSTER_CONFIG,
-  RosterConfig,
-} from "./RosterConfig";
 import LZString from "lz-string";
-import {
-  CharProfile,
-  DEFAULT_CHAR_PROFILE_NO_WORKER,
-  init_workers,
-  validate_char_profile,
-} from "./CharacterProfile";
-import { MarketRegions } from "@/Utils/MarketDataFetcher";
+import { ALL_LABELS } from "@/Utils/Constants";
+import { parse_locale_int } from "@/Utils/InputColumn";
 import { debounce } from "@/Utils/Helpers";
-import { UpgradeStatus } from "@/Utils/KeyedUpgrades";
-import { NUM_PIECES } from "@/Utils/Constants";
-import { create_frame_source } from "@/Components/Character/InventoryScanner/FramePassing";
+import { RosterConfig } from "./RosterConfig";
+import { from_saved, SavedColumn, SavedConfig, to_saved } from "./SavedConfig";
 
-export const CURRENT_STORAGE_KEY = "HF_CONFIG_V7_COMPRESSED";
-export const CURRENT_VERSION_NUMBER = 7;
+export const STORAGE_KEY = "HF_CONFIG";
+export const STORAGE_VERSION = 8;
 
-function standard_validation(out: any) {
-  out.is_fetching = false;
-  out.frame_source = create_frame_source();
-  for (const key in out.mats_prices) {
-    out.mats_prices[key] = validate_input_column_array(
-      out.mats_prices[key],
-      DEFAULT_ROSTER_CONFIG.mats_prices["nae"],
-    );
-  }
-  for (const key in out.roster_mats_owned) {
-    out.roster_mats_owned[key] = validate_input_column_array(
-      out.roster_mats_owned[key],
-      DEFAULT_ROSTER_CONFIG.roster_mats_owned[0],
-    );
-    out.tradable_mats_owned[key] = validate_input_column_array(
-      out.tradable_mats_owned[key],
-      DEFAULT_ROSTER_CONFIG.tradable_mats_owned[0],
-    );
-  }
-  // console.log(structuredClone(out.mats_prices));
-  for (let i = 0; i < out.profiles.length; i++) {
-    out.profiles[i] = validate_char_profile(out.profiles[i], out, i);
-  }
+// Saves written before the version number moved inside the payload, newest first.
+const LEGACY_KEYS: { key: string; version: number }[] = [
+  { key: "HF_CONFIG_V7_COMPRESSED", version: 7 },
+  { key: "HF_CONFIG_V6_COMPRESSED", version: 6 },
+  { key: "HF_UI_STATE_V5_COMPRESSED", version: 5 },
+];
 
-  return out;
-}
+// V3 and V4 saves are no longer migrated. Removed so they stop taking up quota.
+const ABANDONED_KEYS = [
+  "HF_UI_STATE_V3_char_profiles",
+  "HF_UI_STATE_V3_roster",
+  "HF_UI_STATE_V4_roster",
+];
 
-function migrate_V3(out: any, version: number): [any, number] {
-  const old_char_profiles = localStorage.getItem(
-    "HF_UI_STATE_V3_char_profiles",
-  );
-  if (old_char_profiles !== null) {
-    try {
-      let parsed = JSON.parse(old_char_profiles);
-      out.profiles = parsed.profiles;
-    } catch {
-      out.profiles = [init_workers(DEFAULT_CHAR_PROFILE_NO_WORKER)];
-    }
-    localStorage.removeItem("HF_UI_STATE_V3_char_profiles");
-  }
+const MIGRATIONS: Record<number, (data: any) => any> = {
+  5: migrate_5_to_6,
+  6: migrate_6_to_7,
+  7: migrate_7_to_8,
+};
 
-  const old_roster = localStorage.getItem("HF_UI_STATE_V3_roster");
-  if (old_roster !== null) {
-    try {
-      let parsed = JSON.parse(old_roster);
-      out.roster_mats_owned = { 0: parsed.roster_mats_owned };
-      out.tradable_mats_owned = { 0: parsed.tradable_mats_owned };
-    } catch {
-      out.roster_mats_owned = { 0: create_default_owned_input_column() };
-      out.tradable_mats_owned = { 0: create_default_owned_input_column() };
-    }
-    localStorage.removeItem("HF_UI_STATE_V3_roster");
-  }
-
-  return [out, old_roster !== null || old_char_profiles !== null ? 4 : version];
-}
-
-function migrate_V4(out, version: number): [any, number] {
-  const v4 = localStorage.getItem("HF_UI_STATE_V4_roster");
-  if (v4 !== null) {
-    version = 4;
-    try {
-      let parsed = JSON.parse(v4);
-      // console.log(parsed);
-      out = { ...out, ...parsed };
-    } catch (e) {
-      console.log("WEEWOO SOMETHING WORNG", e);
-    }
-    localStorage.removeItem("HF_UI_STATE_V4_roster");
-  }
-  if (version == 4) {
-    out.active_profile_index = !out.active_profile_index
-      ? 0
-      : Math.max(
-          0,
-          Math.min(out.profiles.length - 1, out.active_profile_index),
-        ); // just a sanity check, not really necessary
-
-    if (out.region !== undefined) {
-      const region: MarketRegions = out.region.toLowerCase();
-      out.all_regions = DEFAULT_ROSTER_CONFIG.all_regions;
-      for (let index = 0; index < out.profiles.length; index++) {
-        out.all_regions[out.profiles[index].roster_id] = region;
-      }
-      out.mats_prices = DEFAULT_ROSTER_CONFIG.mats_prices;
-      delete out["region"];
-      // out.selected_shard_bag_size = DEFAULT_ROSTER_CONFIG.selected_shard_bag_size;
-    }
-  }
-
-  return [out, v4 !== null ? 5 : version];
-}
-
-function migrate_V5(out, version: number): [any, number] {
-  const v5 = load_compressed("HF_UI_STATE_V5_COMPRESSED");
-  if (v5 !== null) {
-    version = 5;
-    out = { ...out, ...v5 };
-    localStorage.removeItem("HF_UI_STATE_V5_COMPRESSED");
-  }
-  if (version == 5) {
-    delete out["selected_shard_bag_size"]; // 'out' should be DEFAULT_ROSTER_CONFIG and should already have the new shard_infos field
-  }
-  return [out, v5 !== null ? 6 : version];
-}
-function migrate_V6(out, version: number): [any, number] {
-  const v6 = load_compressed("HF_CONFIG_V6_COMPRESSED");
-  // console.log(v6);
-  if (v6 !== null) {
-    version = 6;
-    out = { ...out, ...v6 };
-    localStorage.removeItem("HF_CONFIG_V6_COMPRESSED");
-  }
-  if (version == 6) {
-    let swap_key_map = [
-      [
-        0, 1, 2, 3, 4, 5, 6, 15, 7, 16, 8, 17, 9, 18, 10, 19, 11, 20, 12, 21,
-        13, 22, 14,
-      ],
-      [0, 1, 2, 3, 4, 5, 6, 8, 7],
-    ];
-    function swap_keys(input_column_array: InputColumn[]): InputColumn[] {
-      for (const [tier, input_column] of input_column_array.entries()) {
-        const copy = structuredClone(input_column);
-        for (const [row, dest] of swap_key_map[tier].entries()) {
-          input_column.data[row] = copy.data[dest];
-          input_column.keys[row] = copy.keys[dest];
-          input_column.upper_bound[row] = copy.upper_bound[dest];
-          input_column.enabled[row] = copy.enabled[dest];
-        }
-      }
-      return input_column_array;
-    }
-
-    for (const key in out.mats_prices) {
-      out.mats_prices[key] = swap_keys(out.mats_prices[key]);
-    }
-
-    for (const key in out.roster_mats_owned) {
-      out.roster_mats_owned[key] = swap_keys(out.roster_mats_owned[key]);
-      out.tradable_mats_owned[key] = swap_keys(out.tradable_mats_owned[key]);
-    }
-    for (const profile of out.profiles) {
-      if (profile.normal_grid.length < NUM_PIECES) {
-        profile.normal_grid.push(
-          Array.from({ length: 25 }).fill(UpgradeStatus.NotYet),
-        );
-      }
-      // if (profile.char_name == "Toneema") {
-      //   console.log(structuredClone(profile.bound_budgets));
-      // }
-
-      profile.bound_budgets = swap_keys(profile.bound_budgets);
-      // if (profile.char_name == "Toneema") {
-      //   // console.log(structuredClone(profile.bound_budgets));
-      // }
-      profile.leftover_price = swap_keys(profile.leftover_price);
-    }
-    // console.log(structuredClone(out.profiles));
-  }
-  return [out, v6 !== null ? 7 : version];
-}
+// ============================================================================
+// Load
+// ============================================================================
 
 function load_compressed(key: string): any {
   const compressed = localStorage.getItem(key);
-  return compressed !== null
-    ? JSON.parse(LZString.decompressFromUTF16(compressed))
-    : null;
-}
-export function load_roster_config(): RosterConfig {
-  // console.log(newest_version);
-  const newest = load_compressed(CURRENT_STORAGE_KEY);
-  let out = newest ? newest : DEFAULT_ROSTER_CONFIG;
-
-  let version = CURRENT_VERSION_NUMBER;
-  [out, version] = migrate_V3(out, version);
-  [out, version] = migrate_V4(out, version);
-  [out, version] = migrate_V5(out, version);
-  [out] = migrate_V6(out, version);
-
-  out = standard_validation(out);
-  const actual_out = { ...DEFAULT_ROSTER_CONFIG, ...out };
-  write_roster_config(actual_out);
-  // console.log(actual_out);
-  return actual_out;
-}
-
-function write_roster_config(roster_config: RosterConfig) {
-  const json = stringifyOmit(roster_config, [
-    "optimizer_worker_bundle",
-    "histogram_worker_bundle",
-    "optimizer_override",
-    "budget_snapshot",
-    "is_slider_update",
-    "adv_cache",
-    "cropper_worker_bundle",
-    "frame_source",
-  ]);
-  console.log(roster_config);
-  localStorage.setItem(CURRENT_STORAGE_KEY, LZString.compressToUTF16(json));
-}
-export function write_state(state) {
-  // console.log("writing");
+  if (compressed === null) {
+    return null;
+  }
   try {
-    write_roster_config(state.roster_config);
+    return JSON.parse(LZString.decompressFromUTF16(compressed));
   } catch {
-    console.log(JSON.stringify(state.roster_config));
+    return null;
   }
 }
-function stringifyOmit(obj: RosterConfig, keys: string[]): string {
-  const omit = new Set(keys);
-  return JSON.stringify(obj, (key, value) =>
-    omit.has(key) ? undefined : value,
-  );
+
+function read_newest_save(): [any, number] | null {
+  const current = load_compressed(STORAGE_KEY);
+  if (current !== null) {
+    return [current, Number(current.version) || STORAGE_VERSION];
+  }
+  for (const { key, version } of LEGACY_KEYS) {
+    const data = load_compressed(key);
+    if (data !== null) {
+      localStorage.removeItem(key);
+      return [data, version];
+    }
+  }
+  return null;
+}
+
+function migrate_to_current(data: any, version: number): any {
+  let out = data;
+  let v = version;
+  while (v < STORAGE_VERSION) {
+    out = MIGRATIONS[v](out);
+    v += 1;
+  }
+  return out;
+}
+
+export function load_roster_config(): RosterConfig {
+  for (const key of ABANDONED_KEYS) {
+    localStorage.removeItem(key);
+  }
+  const found = read_newest_save();
+  if (found === null) {
+    return from_saved({});
+  }
+  const [data, version] = found;
+  try {
+    return from_saved(migrate_to_current(data, version));
+  } catch (e) {
+    console.error("could not load saved config, starting fresh", e);
+    return from_saved({});
+  }
+}
+
+// ============================================================================
+// Save
+// ============================================================================
+
+function serialize(config: RosterConfig): string {
+  return JSON.stringify({ version: STORAGE_VERSION, ...to_saved(config) });
+}
+
+export function write_state(state: { roster_config: RosterConfig }) {
+  try {
+    localStorage.setItem(
+      STORAGE_KEY,
+      LZString.compressToUTF16(serialize(state.roster_config)),
+    );
+  } catch (e) {
+    console.error("could not save config", e);
+  }
 }
 
 export const debounced_write_roster_config = debounce(write_state, 500);
+
+// ============================================================================
+// Export / import
+// ============================================================================
+
+export function export_config(config: RosterConfig): string {
+  return JSON.stringify(
+    { version: STORAGE_VERSION, ...to_saved(config) },
+    null,
+    2,
+  );
+}
+
+// Runs the same migration chain as a load, so older backups still import.
+export function import_config(text: string): RosterConfig {
+  const data = JSON.parse(text);
+  const version = Number(data.version) || STORAGE_VERSION;
+  if (version > STORAGE_VERSION) {
+    throw new Error(
+      `backup is from a newer version (${version}) than this site understands (${STORAGE_VERSION})`,
+    );
+  }
+  return from_saved(migrate_to_current(data, version));
+}
+
+// ============================================================================
+// Migrations
+//
+// 5 -> 6 and 6 -> 7 operate on the old shape, where the whole store was serialised
+// as-is and material values were positional. 7 -> 8 converts to the label-keyed DTO,
+// after which reordering material rows stops being a migration at all.
+// ============================================================================
+
+function migrate_5_to_6(data: any): any {
+  delete data.selected_shard_bag_size; // replaced by shard_infos
+  return data;
+}
+
+function migrate_6_to_7(data: any): any {
+  // Material rows were reordered: juices went from grouped-by-slot to interleaved.
+  const swap_key_map = [
+    [
+      0, 1, 2, 3, 4, 5, 6, 15, 7, 16, 8, 17, 9, 18, 10, 19, 11, 20, 12, 21, 13,
+      22, 14,
+    ],
+    [0, 1, 2, 3, 4, 5, 6, 8, 7],
+  ];
+
+  function swap(columns: any[]): any[] {
+    if (!Array.isArray(columns)) {
+      return columns;
+    }
+    for (const [tier, column] of columns.entries()) {
+      const map = swap_key_map[tier];
+      if (!map || !column) {
+        continue;
+      }
+      const copy = structuredClone(column);
+      for (const [row, source] of map.entries()) {
+        for (const field of ["data", "keys", "upper_bound", "enabled"]) {
+          if (Array.isArray(column[field])) {
+            column[field][row] = copy[field][source];
+          }
+        }
+      }
+    }
+    return columns;
+  }
+
+  for (const key in data.mats_prices ?? {}) {
+    data.mats_prices[key] = swap(data.mats_prices[key]);
+  }
+  for (const key in data.roster_mats_owned ?? {}) {
+    data.roster_mats_owned[key] = swap(data.roster_mats_owned[key]);
+    data.tradable_mats_owned[key] = swap(data.tradable_mats_owned[key]);
+  }
+  for (const profile of data.profiles ?? []) {
+    // the vambrace row did not exist before V7
+    if (Array.isArray(profile.normal_grid) && profile.normal_grid.length < 7) {
+      profile.normal_grid.push(Array(25).fill(2 /* NotYet */));
+    }
+    profile.bound_budgets = swap(profile.bound_budgets);
+    profile.leftover_price = swap(profile.leftover_price);
+  }
+  return data;
+}
+
+// Deliberately ignores the old column's own `keys` array. Nothing before V8 ever read
+// it, so it drifted out of order in real saves, while `data` was always interpreted
+// positionally against ALL_LABELS. Position is the only trustworthy mapping here.
+function v7_column(old: any, keys: string[]): SavedColumn {
+  const values: Record<string, number> = {};
+  const disabled: string[] = [];
+  keys.forEach((key, row) => {
+    const parsed = parse_locale_int(String(old?.data?.[row] ?? "0"));
+    values[key] = Number.isFinite(parsed) ? parsed : 0;
+    if (old?.enabled?.[row] === false) {
+      disabled.push(key);
+    }
+  });
+  return disabled.length > 0 ? { values, disabled } : { values };
+}
+
+const v7_columns = (old: any): SavedColumn[] =>
+  ALL_LABELS.map((labels, tier) => v7_column(old?.[tier], labels));
+
+function migrate_7_to_8(data: any): Partial<SavedConfig> {
+  const mats_prices: SavedConfig["mats_prices"] = {};
+  for (const region in data.mats_prices ?? {}) {
+    mats_prices[region] = v7_columns(data.mats_prices[region]);
+  }
+
+  const shard_infos: SavedConfig["shard_infos"] = {};
+  for (const region in data.shard_infos ?? {}) {
+    const old = data.shard_infos[region];
+    const prices: Record<string, number> = {};
+    for (const size in old?.prices ?? {}) {
+      prices[size] = parse_locale_int(
+        String(old.prices[size]?.data?.[0] ?? "0"),
+      );
+    }
+    shard_infos[region] = { selected: old?.selected ?? 3000, prices };
+  }
+
+  const roster_mats_owned: SavedConfig["roster_mats_owned"] = {};
+  const tradable_mats_owned: SavedConfig["tradable_mats_owned"] = {};
+  for (const roster_id in data.roster_mats_owned ?? {}) {
+    roster_mats_owned[roster_id] = v7_columns(
+      data.roster_mats_owned[roster_id],
+    );
+    tradable_mats_owned[roster_id] = v7_columns(
+      data.tradable_mats_owned?.[roster_id],
+    );
+  }
+
+  const profiles = (data.profiles ?? []).map((profile: any) => {
+    const keyed_upgrades: Record<string, any> = {};
+    for (const [key, upgrade] of Object.entries(profile.keyed_upgrades ?? {})) {
+      if (upgrade !== null && typeof upgrade === "object") {
+        const { used_materials: _drop, ...rest } = upgrade as any;
+        keyed_upgrades[key] = rest;
+      }
+    }
+    return {
+      char_name: profile.char_name,
+      roster_id: profile.roster_id,
+      tier: profile.tier,
+      express_event: profile.express_event,
+      auto_start_optimizer: profile.auto_start_optimizer,
+      lock_fetched_done: profile.lock_fetched_done,
+      pretend_30_40_x2_grace: profile.pretend_30_40_x2_grace,
+      optimizer_treatment_plan: profile.optimizer_treatment_plan,
+      histogram_treatment_plan: profile.histogram_treatment_plan,
+      normal_grid: profile.normal_grid,
+      adv_grid: profile.adv_grid,
+      keyed_upgrades,
+      special_budget: v7_column(profile.special_budget, ["Special Leap"]),
+      bound_budgets: v7_columns(profile.bound_budgets),
+      leftover_price: v7_columns(profile.leftover_price),
+    };
+  });
+
+  return {
+    version: STORAGE_VERSION,
+    profiles,
+    active_profile_index: data.active_profile_index,
+    last_seen_version: data.last_seen_version,
+    mats_prices,
+    roster_mats_owned,
+    tradable_mats_owned,
+    all_regions: data.all_regions,
+    shard_infos,
+    latest_market_data: data.latest_market_data,
+    cumulative_graph: data.cumulative_graph,
+    show_all_rows: data.show_all_rows,
+    auto_deduct_costs: data.auto_deduct_costs,
+    auto_fetch: data.auto_fetch,
+    enabled_annotations: data.enabled_annotations,
+  };
+}

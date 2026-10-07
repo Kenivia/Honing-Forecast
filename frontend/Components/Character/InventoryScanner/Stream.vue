@@ -6,7 +6,6 @@ import {
 import { queue_ocr, start_ocr, stop_ocr, take_ocr_results } from "./OcrRelay";
 import { useRosterStore } from "@/Stores/RosterConfig";
 import { WasmOp } from "@/WasmInterface/WasmWorker";
-import { create_worker_bundle } from "@/WasmInterface/WorkerBundle";
 import { storeToRefs } from "pinia";
 import { ref, computed, onMounted, onUnmounted, toRaw, watch } from "vue";
 import {
@@ -22,6 +21,8 @@ import {
   RESOLUTIONS_16_9,
   RESOLUTIONS_21_9,
 } from "./Resolution";
+import { useRuntimeStore } from "@/Stores/RuntimeState";
+const runtime = useRuntimeStore();
 
 const props = defineProps<{
   boxes?: ScaledPosition[];
@@ -34,9 +35,9 @@ const status = defineModel<"idle" | "capturing">("status", { default: "idle" });
 const roster_store = useRosterStore();
 const { roster_config } = storeToRefs(roster_store);
 
-const bundle = ref(roster_config.value.cropper_worker_bundle);
+const bundle = ref(runtime.cropper);
 // the stream outlives this component so permission is only asked once
-const source = roster_config.value.frame_source;
+const source = runtime.frame_source;
 
 const video_ref = ref<HTMLVideoElement | null>(null);
 const error = ref<string | null>(null);
@@ -179,10 +180,8 @@ function attach() {
 
 async function start_scanner() {
   pause_cropper();
-  if (roster_config.value.cropper_worker_bundle === null) {
-    roster_config.value.cropper_worker_bundle = create_worker_bundle();
-  }
-  bundle.value = roster_config.value.cropper_worker_bundle;
+  runtime.ensure_cropper();
+  bundle.value = runtime.cropper;
 
   const { width, height } = source.size;
   const [config, model] = await Promise.all([getScannerConfig(), getModel()]);

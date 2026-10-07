@@ -8,6 +8,8 @@ import { GridConfig } from "@/Utils/GridStyling";
 import { get_optimizer_working } from "../Instructions/InstructionUtils";
 import OptimizerRadioButton from "./OptimizerRadioButton.vue";
 import { locale_to_fixed } from "@/Utils/Helpers";
+import { useRuntimeStore } from "@/Stores/RuntimeState";
+const runtime = useRuntimeStore();
 
 const store = useRosterStore();
 const { active_profile } = storeToRefs(store);
@@ -85,7 +87,7 @@ const grid: GridConfig = {
         <span
           :style="{
             color:
-              active_profile.optimizer_worker_bundle.est_progress_percentage ==
+              runtime.optimizer.est_progress_percentage ==
               100
                 ? 'var(--gold)'
                 : 'var(--warning-dark)',
@@ -93,7 +95,7 @@ const grid: GridConfig = {
         >
           {{
             locale_to_fixed(
-              active_profile.optimizer_worker_bundle.est_progress_percentage,
+              runtime.optimizer.est_progress_percentage,
               2,
             )
           }}%
@@ -102,7 +104,7 @@ const grid: GridConfig = {
           <div
             class="progress-fill"
             :style="{
-              width: `${active_profile.optimizer_worker_bundle.est_progress_percentage}%`,
+              width: `${runtime.optimizer.est_progress_percentage}%`,
             }"
           />
         </div>

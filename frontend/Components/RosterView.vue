@@ -1,9 +1,5 @@
 <script setup lang="ts">
-import {
-  CharProfile,
-  DEFAULT_CHAR_PROFILE_NO_WORKER,
-  init_workers,
-} from "@/Stores/CharacterProfile.js";
+import { CharProfile, new_char_profile } from "@/Stores/CharacterProfile.js";
 import {
   create_default_owned_input_column,
   useRosterStore,
@@ -18,13 +14,13 @@ import { MarketRegions, start_fetch } from "@/Utils/MarketDataFetcher.js";
 import { ilevel } from "@/Utils/HoningUtil.js";
 import { apply_results } from "./Common/Uwuowo/ApplyResults.js";
 import FetchRosterButton from "./Common/Uwuowo/FetchRosterButton.vue";
-import { computed } from "vue";
+import { computed, toRaw } from "vue";
 
 const roster_store = useRosterStore();
 const { roster_config, roster_ids, all_profiles } = storeToRefs(roster_store);
 
 function add_new_char(roster_id: number) {
-  let new_char = init_workers(DEFAULT_CHAR_PROFILE_NO_WORKER);
+  let new_char = new_char_profile();
   new_char.char_name = format_char_name(
     "Newchar",
     roster_config.value.profiles.length,
@@ -43,12 +39,10 @@ function add_new_roster(roster_id: number) {
 }
 
 function duplicate(index) {
-  let this_parsed = {
-    ...init_workers(DEFAULT_CHAR_PROFILE_NO_WORKER),
-    ...roster_config.value.profiles[index],
+  let new_char = {
+    ...new_char_profile(),
+    ...structuredClone(toRaw(roster_config.value.profiles[index])),
   };
-
-  let new_char = init_workers(JSON.parse(JSON.stringify(this_parsed)));
   new_char.char_name = format_char_name(
     "Newchar",
     roster_config.value.profiles.length,

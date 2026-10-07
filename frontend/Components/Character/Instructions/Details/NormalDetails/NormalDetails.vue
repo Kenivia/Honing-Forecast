@@ -26,8 +26,10 @@ import {
 import { FLOAT_TOL } from "@/Utils/Constants";
 import { GridConfig } from "@/Utils/GridStyling";
 import ManualArtisanInput from "@/Components/Character/Instructions/Details/ManualArtisanInput.vue";
+import { useRuntimeStore } from "@/Stores/RuntimeState";
+const runtime = useRuntimeStore();
 
-const { active_profile, roster_config } = storeToRefs(useRosterStore());
+const { active_profile } = storeToRefs(useRosterStore());
 
 const props = defineProps<{
   upgrade: Upgrade;
@@ -37,7 +39,7 @@ const props = defineProps<{
 }>();
 
 const juice_info = computed(() => {
-  return active_profile.value.histogram_worker_bundle.result.juice_info;
+  return runtime.histogram.result.juice_info;
 });
 
 const optimizer_working = computed(get_optimizer_working);
@@ -128,12 +130,12 @@ function post_opt_run_reset() {
   taps_since_last_input.value = 0;
   using_slider.value = true;
   this_keyed.value.taps_since_last_input = 0;
-  roster_config.value.budget_snapshot = null;
+  runtime.budget_snapshot = null;
   clear_used_budget();
 }
 
 watch(
-  () => active_profile.value.optimizer_worker_bundle.run_counter,
+  () => runtime.optimizer.run_counter,
   () => {
     // only do this as we start the optimizer,  shouldn't really matter but whatever
     if (optimizer_working.value) {
@@ -152,7 +154,7 @@ watch(
   ],
   () => {
     if (!active_profile.value.auto_start_optimizer) {
-      if (!roster_config.value.is_details_update) {
+      if (!runtime.is_details_update) {
         post_opt_run_reset();
       }
     }
@@ -199,7 +201,7 @@ function change_wrapper(
   func: () => void,
   worker_func = start_eval_hist,
 ) {
-  roster_config.value.is_details_update = true;
+  runtime.is_details_update = true;
 
   taps_since_last_input.value = slider
     ? clamp(
@@ -223,7 +225,7 @@ function change_wrapper(
   write_normal_progress();
   worker_func();
   nextTick(() => {
-    roster_config.value.is_details_update = false;
+    runtime.is_details_update = false;
   });
 }
 function manual_artisan_change() {
@@ -340,7 +342,7 @@ function reset() {
 
 // not gonna use change_wrapper cos its so different
 function succeed_click() {
-  roster_config.value.is_details_update = true;
+  runtime.is_details_update = true;
   set_used_materials(false); // deduct unlock costs (just like free tap)
   apply_remaining_mats();
 
@@ -348,7 +350,7 @@ function succeed_click() {
 
   mark_upgrade_as_done(props.upgrade); // this will call optimizer
   nextTick(() => {
-    roster_config.value.is_details_update = false;
+    runtime.is_details_update = false;
   });
 }
 

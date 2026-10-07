@@ -4,10 +4,11 @@ import { get_icon_path } from "@/Utils/Helpers";
 import { CharProfile } from "@/Stores/CharacterProfile";
 import { useRosterStore } from "@/Stores/RosterConfig";
 import { useMediaIsNarrow } from "@/Utils/WindowSize";
-import { computed } from "vue";
+import { computed, watch } from "vue";
 import { storeToRefs } from "pinia";
-import { start_fetch } from "./Utils/MarketDataFetcher";
+import { FETCHABLE_REGIONS, start_fetch } from "./Utils/MarketDataFetcher";
 import { debounced_write_roster_config } from "./Stores/ConfigStorage";
+import { useRuntimeStore } from "./Stores/RuntimeState";
 
 const roster_store = useRosterStore();
 roster_store.init();
@@ -17,6 +18,15 @@ const { all_profiles, roster_ids } = storeToRefs(roster_store);
 roster_store.$subscribe((_mutation, state) => {
   debounced_write_roster_config(state);
 });
+
+// The only place runtime state is kept in step with the character list, so adds,
+// renames and deletes all land here.
+const runtime = useRuntimeStore();
+watch(
+  () => all_profiles.value.map((p) => p.char_name),
+  (names) => runtime.sync_profiles(names),
+  { immediate: true },
+);
 
 const is900Narrow = useMediaIsNarrow(900);
 
@@ -30,8 +40,7 @@ function on_char_select(e: Event) {
 const char_name_from_route = computed(
   () => route.path.split("/")[route.path.split("/").length - 2],
 );
-start_fetch("nae", false, true);
-start_fetch("euc", false, true);
+FETCHABLE_REGIONS.forEach((region) => start_fetch(region, false, true));
 </script>
 
 <template>

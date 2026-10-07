@@ -9,6 +9,8 @@ import { input_column_to_num, parse_input } from "@/Utils/InputColumn";
 import Sidebar from "../Common/Sidebar.vue";
 import BudgetGrid from "./BudgetGrid.vue";
 import RegionSelector from "../Common/RegionSelector.vue";
+import { useRuntimeStore } from "@/Stores/RuntimeState";
+const runtime = useRuntimeStore();
 
 const roster_store = useRosterStore();
 const { roster_config, roster_ids } = storeToRefs(roster_store);
@@ -107,16 +109,16 @@ watch(
         <div class="flex flex-row">
           <span v-if="selected_region !== 'Custom' && roster_config.auto_fetch">
             {{
-              !roster_config.is_fetching && !roster_config.market_fetch_failed
+              !runtime.is_fetching && !runtime.market_fetch_failed
                 ? "✅"
-                : roster_config.is_fetching
+                : runtime.is_fetching
                   ? ""
                   : "Failed"
             }}
           </span>
           <button
             :disabled="
-              roster_config.is_fetching || selected_region === 'Custom'
+              runtime.is_fetching || selected_region === 'Custom'
             "
             @click="() => start_fetch(selected_region, true)"
             class="generic-button mx-3! w-max!"
@@ -126,7 +128,7 @@ watch(
             }"
           >
             {{
-              !roster_config.is_fetching ? "Fetch Market Data" : "Fetching..."
+              !runtime.is_fetching ? "Fetch Market Data" : "Fetching..."
             }}
           </button>
         </div>
