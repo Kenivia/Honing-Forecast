@@ -303,7 +303,7 @@ const is924Narrow = useMediaIsNarrow(924); // this turns out to be the width whe
             :input_color="'--gold'"
           />
           <MaterialGraph
-            :data="histogram_result?.cum_percentiles?.[row] ?? null"
+            :data="histogram_result?.cum_percentiles?.[label] ?? null"
             :material-label="label"
             :graph-color="color"
             :cumulative="roster_config.cumulative_graph"

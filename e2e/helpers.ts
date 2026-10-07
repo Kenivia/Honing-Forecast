@@ -79,6 +79,18 @@ export const read_gold = (page: Page) =>
 export const read_pending_ilevel = (page: Page) =>
   read_number(page, /Pending ilevel:\s*([\d.]+)/);
 
+// Every material row in the costs card, and whether its graph drew anything. A row that
+// is used but shows the empty message means its data did not reach the graph, which is
+// what a row-versus-label mix-up looks like from the outside.
+export async function material_graphs(page: Page) {
+  return page.locator(".mats-row[role=group]").evaluateAll((groups) =>
+    groups.map((g) => ({
+      label: g.getAttribute("aria-label"),
+      drawn: !g.textContent.includes("never used"),
+    })),
+  );
+}
+
 // a row of a material table, on the calc or market page
 export function material_row(scope: Page | Locator, label: string) {
   return scope.getByRole("group", { name: label, exact: true });

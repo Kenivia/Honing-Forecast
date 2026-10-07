@@ -22,6 +22,12 @@ test("selecting upgrades runs the optimizer", async ({ page }) => {
   const gold = await hf.read_gold(page);
   expect(gold).toBeGreaterThan(0);
 
+  // Rust keys every per-material result by label. Indexing one of those by row still
+  // type-checks and yields undefined, which surfaces only as an empty graph.
+  const graphs = await hf.material_graphs(page);
+  expect(graphs.length).toBeGreaterThan(5);
+  expect(graphs.filter((g) => !g.drawn).map((g) => g.label)).toEqual([]);
+
   // owning mats makes it cheaper
   await hf.set_material(page, "Red", "Bound owned", 1_000_000);
   await hf.wait_for_optimizer(page);
