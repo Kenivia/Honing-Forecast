@@ -12,8 +12,7 @@ profile.kernel.etl
 
 *.local
 *.tmp
-# scratch space for throwaway scripts, bundles and fixtures.
-# anything in here is safe to delete at any time; never put real work in it.
+
 .tmp/
 crates/wasm/pkg/*
 !crates/wasm/pkg/LICENSE
@@ -43,3 +42,6 @@ scripts/brightness/all icons/*
 test-results/
 playwright-report/
 .playwright-mcp/
+
+
+**/*.mp4
