@@ -1,8 +1,13 @@
 import {
   ALL_MATERIAL_LABELS,
+  BAND_VALUES,
+  BandPlan,
+  band_rank,
   default_selected_bundles,
   MATERIALS,
   NUM_ADV_PIECES,
+  NUM_BANDS,
+  set_band_value,
 } from "@/Utils/Constants";
 import {
   column_labels,
@@ -10,11 +15,7 @@ import {
   InputColumn,
   parse_input,
 } from "@/Utils/InputColumn";
-import {
-  CharProfile,
-  DEFAULT_CHAR_PROFILE,
-  TreatmentPlan,
-} from "./CharacterProfile";
+import { CharProfile, DEFAULT_CHAR_PROFILE } from "./CharacterProfile";
 import { default_roster_config, RosterConfig } from "./RosterConfig";
 import { MarketRegions } from "@/Utils/MarketDataFetcher";
 import {
@@ -55,14 +56,13 @@ export interface SavedProfile {
   auto_start_optimizer: boolean;
   lock_fetched_done: boolean;
   pretend_30_40_x2_grace: boolean;
-  optimizer_treatment_plan: TreatmentPlan;
-  histogram_treatment_plan: TreatmentPlan;
+  band_values: BandPlan;
+  chance_band: number;
   normal_grid: StatusGrid;
   adv_grid: StatusGrid;
   keyed_upgrades: Record<string, SavedUpgrade>;
   special_budget: SavedColumn;
   bound_budgets: SavedColumn;
-  leftover_price: SavedColumn;
 }
 
 export interface SavedConfig {
@@ -140,14 +140,13 @@ function profile_to_saved(profile: CharProfile): SavedProfile {
     auto_start_optimizer: profile.auto_start_optimizer,
     lock_fetched_done: profile.lock_fetched_done,
     pretend_30_40_x2_grace: profile.pretend_30_40_x2_grace,
-    optimizer_treatment_plan: profile.optimizer_treatment_plan,
-    histogram_treatment_plan: profile.histogram_treatment_plan,
+    band_values: profile.band_values,
+    chance_band: profile.chance_band,
     normal_grid: profile.normal_grid,
     adv_grid: profile.adv_grid,
     keyed_upgrades,
     special_budget: column_to_saved(profile.special_budget),
     bound_budgets: column_to_saved(profile.bound_budgets),
-    leftover_price: column_to_saved(profile.leftover_price),
   };
 }
 
@@ -201,10 +200,11 @@ function profile_from_saved(
     lock_fetched_done: saved.lock_fetched_done ?? defaults.lock_fetched_done,
     pretend_30_40_x2_grace:
       saved.pretend_30_40_x2_grace ?? defaults.pretend_30_40_x2_grace,
-    optimizer_treatment_plan:
-      saved.optimizer_treatment_plan ?? defaults.optimizer_treatment_plan,
-    histogram_treatment_plan:
-      saved.histogram_treatment_plan ?? defaults.histogram_treatment_plan,
+    band_values: valid_band_values(saved.band_values, defaults.band_values),
+    chance_band: Math.min(
+      Math.max(saved.chance_band ?? defaults.chance_band, 0),
+      NUM_BANDS - 1,
+    ),
     normal_grid,
     adv_grid,
     // rebuilt from the grids so the two can never disagree
@@ -217,11 +217,25 @@ function profile_from_saved(
       saved.bound_budgets,
       defaults.bound_budgets,
     ),
-    leftover_price: column_from_saved(
-      saved.leftover_price,
-      defaults.leftover_price,
-    ),
   };
+}
+
+// Rust asserts the plan does not decrease, so a hand edited save cannot panic it.
+function valid_band_values(
+  saved: BandPlan | undefined,
+  fallback: BandPlan,
+): BandPlan {
+  if (
+    saved?.length !== NUM_BANDS ||
+    saved.some((v) => !BAND_VALUES.includes(v))
+  ) {
+    return fallback;
+  }
+  let out = [...saved] as BandPlan;
+  for (let i = 1; i < NUM_BANDS; i++) {
+    if (band_rank(out[i]) < band_rank(out[i - 1])) out = set_band_value(out, i, out[i]);
+  }
+  return out;
 }
 
 // ============================================================================

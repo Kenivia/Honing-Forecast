@@ -13,7 +13,7 @@ These notes are high-level. They cover what is hard to work out from reading one
 | `crates/core` (`hf-core`) | All honing maths: domain model, average-gold evaluation, optimizer. |
 | `crates/scanner` (`hf-scanner`) | Screen scanner image processing. In development. |
 | `crates/wasm` (`hf-wasm`) | Thin `wasm_bindgen` wrappers over core and scanner. The only crate the frontend loads. |
-| `crates/arena` (`hf-arena`) | Native binary for optimizer benchmarking. Defunct, see `Calculator core/Optimizer.md`. |
+| `crates/arena` (`hf-arena`) | Native binary for optimizer benchmarking. Defunct and commented out of the workspace, along with the `verification` module it drives. |
 | `frontend/` | Vue 3 + Pinia + Tailwind app. `@` aliases to this folder. |
 | `cloudflare/` | A Worker that proxies and caches market prices and character lookups. |
 | `public/` | Static assets, changelogs, `WIP.md` (the author's roadmap), scanner config and OCR model. |
@@ -31,7 +31,7 @@ Not source of truth: `dist/` (committed build output), `crates/wasm/pkg/` (wasm-
 - `pnpm dev` builds the wasm package with wasm-pack, then starts Vite. Vite does not watch `crates/`, so **Rust changes need `pnpm run wasm` again**.
 - `pnpm e2e` runs the browser tests; `pnpm browse` runs a one-off browser script. See `Browser harness/Overview.md`.
 - `pnpm check` runs `vue-tsc --noEmit` over the `.ts` layer and `.vue` templates. `pnpm test:frontend` runs the node-side suites in `tests/`. Both are fast; run them after a frontend change.
-- `pnpm test` is currently defunct. Do not rely on it to validate a change.
+- `pnpm test` runs `cargo test -p hf-core`. It works again now that `verification` is commented out; `materials.rs` holds the valuation unit tests.
 - `pnpm build` chains `pnpm test` before the wasm and Vite builds and an unused-dependency check that needs nightly. `pnpm no-test-build` skips the test.
 - `pnpm deploy` only checks you are on a clean `main`, then force-pushes `main` to the `Production` branch (assumed to be what the hosted site builds from). It does not run tests.
 - `pnpm cloudflare-deploy` deploys the Worker separately.
@@ -53,7 +53,7 @@ Not source of truth: `dist/` (committed build output), `crates/wasm/pkg/` (wasm-
 - **Advanced honing**: a separate XP-based system in blocks of ten levels, with "grace" taps and its own consumables.
 - **Juice, books, scrolls**: optional consumables that raise the success chance of a tap. Juices and books apply to normal honing, juices and scrolls to advanced. In code they share one id space ("juice ids").
 - **Special honing / free tap**: an attempt paid for with special leapstones. Success skips the upgrade entirely.
-- **Bound / roster-bound / tradable**: ownership classes of a material, each with a different value if left unused.
+- **Bound / roster-bound / tradable**: the three ownership bands of a material. What a leftover unit of each is worth is the user's choice, out of nothing / taxed sell price / buy price, and must not decrease across the bands.
 - **Tier**: 0 is T4, 1 is Serca. Each has its own material set and cost tables.
 - **Express / event**: temporary modifiers to costs and chances.
 

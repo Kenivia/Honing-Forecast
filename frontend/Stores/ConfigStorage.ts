@@ -1,8 +1,11 @@
 import LZString from "lz-string";
 import {
   ALL_LABELS,
+  ALL_WORTHLESS,
+  BandPlan,
   bundle_key,
   MATERIALS,
+  NUM_BANDS,
   SPECIAL_LEAP_LABELS,
 } from "@/Utils/Constants";
 import { parse_locale_int } from "@/Utils/InputColumn";
@@ -283,8 +286,18 @@ function migrate_7_to_8(data: any): Partial<SavedConfig> {
       auto_start_optimizer: profile.auto_start_optimizer,
       lock_fetched_done: profile.lock_fetched_done,
       pretend_30_40_x2_grace: profile.pretend_30_40_x2_grace,
-      optimizer_treatment_plan: profile.optimizer_treatment_plan,
-      histogram_treatment_plan: profile.histogram_treatment_plan,
+      // V7 encoded the leftover value of each ownership band as a pair of enums that
+      // indexed the old breakpoint-merging plan. Two of its four values behaved
+      // identically and one was unreachable, so only the two live cases need mapping.
+      // 2 was TreatTradableAsBound, the one that credited nothing.
+      band_values:
+        profile.optimizer_treatment_plan === 2
+          ? ALL_WORTHLESS
+          : (["Worthless", "Worthless", "TaxedSell"] as BandPlan),
+      chance_band: Math.min(
+        Math.max(Number(profile.histogram_treatment_plan) || 0, 0),
+        NUM_BANDS - 1,
+      ),
       normal_grid: profile.normal_grid,
       adv_grid: profile.adv_grid,
       keyed_upgrades,
@@ -296,7 +309,6 @@ function migrate_7_to_8(data: any): Partial<SavedConfig> {
         },
       },
       bound_budgets: v7_merge_columns(profile.bound_budgets, tier),
-      leftover_price: v7_merge_columns(profile.leftover_price, tier),
     };
   });
 

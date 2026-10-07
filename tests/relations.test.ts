@@ -117,10 +117,9 @@ const snapshot = {
   roster_mats: col(10),
   tradable_mats: col(10),
 } as any;
-const out = compute_remaininig_materials(
-  labels.map(() => 25),
-  snapshot,
-);
+const used = (v: number): Record<string, number> =>
+  Object.fromEntries(labels.map((l) => [l, v]));
+const out = compute_remaininig_materials(used(25), snapshot);
 const wrong = labels.filter(
   (l) =>
     out.bound_budgets[l] !== 0 ||
@@ -132,10 +131,7 @@ check(
   wrong.length === 0,
   wrong.slice(0, 4).join(","),
 );
-const zero = compute_remaininig_materials(
-  labels.map(() => 0),
-  snapshot,
-);
+const zero = compute_remaininig_materials(used(0), snapshot);
 check(
   "zero cost leaves every pool untouched",
   labels.every(

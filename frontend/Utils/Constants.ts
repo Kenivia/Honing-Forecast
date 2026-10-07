@@ -30,6 +30,60 @@ export const BUTTON_LABELS = [
 ];
 export const CSS_NAMES = ["avg", "bound", "roster-bound", "tradable"];
 
+// ============================================================================
+// Ownership bands
+//
+// A material is owned in three bands: character-bound, roster-bound and tradable. What a
+// leftover unit of each band is worth is the user's choice, out of three levels, and must
+// not decrease across the bands. Rust takes this as `plans` and reports one metric per
+// plan; see `ValuationPlan` in crates/core/src/materials.rs.
+// ============================================================================
+
+export const BAND_LABELS = ["Bound", "+Roster", "+Tradable"];
+export const BAND_COLORS = ["--bound", "--roster", "--tradable"];
+export const NUM_BANDS = 3;
+
+// String valued so a payload and a save are both readable, ordered so the index is rank.
+export type BandValue = "Worthless" | "TaxedSell" | "Market";
+export const BAND_VALUES: BandValue[] = ["Worthless", "TaxedSell", "Market"];
+export const BAND_VALUE_LABELS: Record<BandValue, string> = {
+  Worthless: "worth 0",
+  TaxedSell: "taxed sell",
+  Market: "market",
+};
+export type BandPlan = [BandValue, BandValue, BandValue];
+
+// Nothing is credited: what the user actually spends buying from market.
+export const ALL_WORTHLESS: BandPlan = ["Worthless", "Worthless", "Worthless"];
+
+export const band_rank = (value: BandValue): number =>
+  BAND_VALUES.indexOf(value);
+
+// Raising a band raises the ones above it, lowering lowers the ones below, so every band
+// can reach every level without the plan ever decreasing.
+export function set_band_value(
+  plan: BandPlan,
+  band: number,
+  value: BandValue,
+): BandPlan {
+  const out = [...plan] as BandPlan;
+  out[band] = value;
+  for (let i = band + 1; i < NUM_BANDS; i++) {
+    if (band_rank(out[i]) < band_rank(value)) out[i] = value;
+  }
+  for (let i = band - 1; i >= 0; i--) {
+    if (band_rank(out[i]) > band_rank(value)) out[i] = value;
+  }
+  return out;
+}
+
+export const cycle_band_value = (plan: BandPlan, band: number): BandPlan =>
+  set_band_value(
+    plan,
+    band,
+    BAND_VALUES[(band_rank(plan[band]) + 1) % BAND_VALUES.length],
+  );
+
 // These must be the same as the rust side (advanced_honing/utils), will need to manually update if these change
 export const GRACE_FIRST_N = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 15, 255];
 export const NON_GRACE_FIRST_N = [5, 10, 20, 30, 255];
@@ -208,7 +262,9 @@ function build_materials(): Record<string, Material> {
 
 export const MATERIALS: Record<string, Material> = build_materials();
 
-// Row order per tier, which Rust shares. Special leaps are excluded on purpose.
+// Row order per tier, sent to Rust as `material_labels`. Rust addresses materials by
+// label and only derives a row from this list, so it is the single declaration of the
+// order its cost tables assume. Special leaps are excluded on purpose.
 export const ALL_LABELS: string[][] = Array.from(
   { length: NUM_TIERS },
   (_, tier) =>
@@ -258,16 +314,6 @@ export const default_selected_bundles = (): Record<string, number> =>
       MATERIALS[label].bundle_sizes[MATERIALS[label].bundle_sizes.length - 1],
     ]),
   );
-
-// Rust returns material arrays indexed by row. This is the only place a row becomes a
-// label; everything downstream of it is keyed.
-export function by_label<T>(values: T[], tier: number): Record<string, T> {
-  const out: Record<string, T> = {};
-  ALL_LABELS[tier].forEach((label, row) => {
-    out[label] = values[row];
-  });
-  return out;
-}
 
 // Price of one unit of each material, from its selected bundle's price.
 export function unit_prices(

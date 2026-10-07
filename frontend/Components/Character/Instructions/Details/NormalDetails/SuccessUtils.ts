@@ -1,5 +1,5 @@
 import { useRosterStore } from "@/Stores/RosterConfig";
-import { ALL_LABELS, by_label } from "@/Utils/Constants";
+import { ALL_LABELS, NUM_BASE_MATS } from "@/Utils/Constants";
 import { input_column_to_num, InputColumn } from "@/Utils/InputColumn";
 import { Upgrade, UpgradeStatus } from "@/Utils/KeyedUpgrades";
 import { storeToRefs } from "pinia";
@@ -38,17 +38,16 @@ export function compute_used_materials(
   adv_juice_used: number,
   adv_scroll_used: number,
   pretend_zero_no_unlock: boolean,
-): number[] {
-  if (!upgrade.cost_dist) return [];
-  let out = new Array(upgrade.cost_dist.length).fill(0);
+  tier: number,
+): Record<string, number> {
+  if (!upgrade.cost_dist) return {};
+  const labels = ALL_LABELS[tier];
+  const out: Record<string, number> = Object.fromEntries(
+    labels.map((label) => [label, 0]),
+  );
 
-  // console.log(
-  //   pretend_zero_no_unlock,
-  //   upgrade.starting_num_taps,
-  //   taps_since_last_run,
-  // );
-  for (let cost_type = 0; cost_type < 7; cost_type++) {
-    out[cost_type] =
+  for (let cost_type = 0; cost_type < NUM_BASE_MATS; cost_type++) {
+    out[labels[cost_type]] =
       upgrade.unlock_costs[cost_type] *
         (pretend_zero_no_unlock && taps_since_last_run === 0
           ? 0
@@ -98,17 +97,8 @@ export function compute_used_materials(
         juice_cost = adv_scroll_used * amt;
       }
     }
-    console.log(
-      juice_cost,
-      upgrade.state,
-      relevant_id_map[upgrade.piece_type_usize][upgrade.upgrade_index],
-      id,
-      taps_since_last_run,
-      upgrade.normal_dist.length,
-    );
-    out[7 + id] = juice_cost;
+    out[labels[NUM_BASE_MATS + id]] = juice_cost;
   }
-  console.log(out);
   return out;
 }
 export function make_budget_snapshot(): BudgetSnapshot {
@@ -125,7 +115,7 @@ export function make_budget_snapshot(): BudgetSnapshot {
   };
 }
 export function compute_remaininig_materials(
-  used_materials: number[],
+  used_materials: Record<string, number>,
   inp_previous_budget?: BudgetSnapshot,
 ): RemainingMats {
   const { active_profile } = storeToRefs(useRosterStore());
@@ -136,8 +126,7 @@ export function compute_remaininig_materials(
   const bound_owned = input_column_to_num(previous_budgets.bound_budgets);
   const roster_owned = input_column_to_num(previous_budgets.roster_mats);
   const tradable_owned = input_column_to_num(previous_budgets.tradable_mats);
-  // Rust reports costs by material row; this is where they become labels
-  const cost = by_label(used_materials, tier);
+  const cost = used_materials;
 
   const bound_budgets: Record<string, number> = {};
   const roster_mats: Record<string, number> = {};
@@ -174,13 +163,12 @@ export function apply_remaining_mats() {
     runtime.budget_snapshot = make_budget_snapshot();
   }
 
-  // used_materials comes back from Rust indexed by material row, so it is summed as rows
-  const total_used = Object.values(active_profile.value.keyed_upgrades)
-    .map((u) => u.used_materials)
-    .reduce(
-      (acc, cur) => acc.map((x, i) => x + (cur?.[i] ?? 0)),
-      Array(ALL_LABELS[tier].length).fill(0),
-    );
+  const total_used: Record<string, number> = {};
+  for (const label of ALL_LABELS[tier]) {
+    total_used[label] = Object.values(active_profile.value.keyed_upgrades)
+      .map((u) => u.used_materials?.[label] ?? 0)
+      .reduce((acc, cur) => acc + cur, 0);
+  }
   const remaining: RemainingMats = compute_remaininig_materials(
     total_used,
     runtime.budget_snapshot,

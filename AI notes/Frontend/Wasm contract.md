@@ -14,16 +14,17 @@ How the frontend talks to Rust for the calculator. Scanner operations share the 
 `build_payload` assembles, from the store:
 
 - the upgrade list, from keyed upgrades, including each upgrade's state from the previous optimizer result so the next run starts from it;
-- the material table: for each material row, the four `(owned, price)` breakpoints (see `Calculator core/Domain model.md`). Prices arrive already per-unit: the store resolves which bundle the user buys and whether converting up from a lower tier is cheaper;
-- the treatment plan, tier, event flags and free-tap budget;
+- `material_labels`, the row order, and `materials`, a label-keyed map of the three owned amounts plus the taxed sell price and the buy price. Prices arrive already per-unit: the store resolves which bundle the user buys and whether converting up from a lower tier is cheaper. A material the user disabled is sent with zero prices, because it is not traded at all and its (effectively infinite) bound stock must not be valued;
+- `plans`, every valuation plan to evaluate, and `optimizer_plan`, an index into it. Index 0 is always the all-worthless plan, so the histogram always reports the gross spend alongside the user's plan;
+- tier, event flags and free-tap budget;
 - the previous free-tap order and the advanced-honing cache, fed back in to avoid recomputation.
 
 ## What must stay aligned with Rust
 
-- **Material row order.** `ALL_LABELS` in `Constants.ts` defines row order per tier: seven base materials (`NUM_BASE_MATS`), then juices. It must match the tier's constants JSON on the Rust side. It is **derived** by filtering `MATERIAL_TABLE` by tier, so that table's order is the thing to get right. Nothing else on the frontend is positional: `by_label` turns Rust's arrays into label-keyed records at the boundary, and `build_material_info` is the only place that walks rows in order.
+- **Material row order.** `ALL_LABELS` in `Constants.ts` defines row order per tier: seven base materials (`NUM_BASE_MATS`), then juices. It must match the tier's constants JSON on the Rust side, because the JSON carries no labels of its own. It is **derived** by filtering `MATERIAL_TABLE` by tier, so that table's order is the thing to get right. It is sent as `material_labels` and is the **only** place the order is declared: Rust builds a label to row map from it and keys every result by label, so a reorder cannot silently put a value on the wrong material, only mismatch the cost tables.
 - **Piece order and counts**, including which index is the weapon and which the vambrace.
 - **The advanced-honing strategy tables**, duplicated in `Constants.ts` and in Rust.
-- **Treatment plan order**, which indexes arrays in the histogram result.
+- **Band order**: char-bound, roster-bound, tradable, shared by `ValuationPlan`, `chance_within` and the graph annotations.
 - **Juice ids**: the frontend also assumes the first two ids are juices and the rest books or scrolls.
 
 ## Workers

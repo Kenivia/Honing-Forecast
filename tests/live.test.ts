@@ -115,12 +115,6 @@ loaded.profiles.forEach((p, i) => {
     p.bound_budgets,
     p.tier,
   );
-  compare_merged(
-    `  ${p.char_name} leftover_price`,
-    o.leftover_price,
-    p.leftover_price,
-    p.tier,
-  );
   // the single V7 special-leap number belongs to the character's current tier
   const want = parse_locale_int(String(o.special_budget?.data?.[0] ?? "0"));
   const got = input_column_to_num(p.special_budget, true);

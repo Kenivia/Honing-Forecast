@@ -1,6 +1,7 @@
 import {
   ADV_COLS,
   ALL_MATERIAL_LABELS,
+  BandPlan,
   NORMAL_COLS,
   NUM_ADV_PIECES,
   NUM_PIECES,
@@ -22,8 +23,10 @@ import {
 export interface CharProfile {
   roster_id: number;
 
-  optimizer_treatment_plan: TreatmentPlan;
-  histogram_treatment_plan: TreatmentPlan;
+  // what a leftover unit of each ownership band is worth
+  band_values: BandPlan;
+  // which cumulative ownership band the chance column and graph annotation show, 0 to 2
+  chance_band: number;
   express_event: boolean;
   char_name: string;
 
@@ -36,7 +39,6 @@ export interface CharProfile {
   // between tiers therefore has one value, not one per tier.
   special_budget: InputColumn;
   bound_budgets: InputColumn;
-  leftover_price: InputColumn;
 
   auto_start_optimizer: boolean;
   tier: number;
@@ -49,17 +51,9 @@ export interface CharProfile {
   pretend_30_40_x2_grace: boolean;
 }
 
-export enum TreatmentPlan {
-  // this also serves as the index to chances_arr so order matters here
-  TreatRosterAsTradable,
-  TreatRosterAsBound,
-  TreatTradableAsBound,
-  TreatAllAsTradable,
-}
-
 export const DEFAULT_CHAR_PROFILE: CharProfile = {
-  optimizer_treatment_plan: TreatmentPlan.TreatRosterAsBound,
-  histogram_treatment_plan: TreatmentPlan.TreatRosterAsTradable,
+  band_values: ["Worthless", "Worthless", "TaxedSell"],
+  chance_band: 0,
   express_event: false,
   char_name: "Newchar",
 
@@ -76,9 +70,6 @@ export const DEFAULT_CHAR_PROFILE: CharProfile = {
   bound_budgets: create_input_column(InputType.Int, ALL_MATERIAL_LABELS, {
     enabled: (label) => label !== "Shards",
   }),
-  // implicit 0 leftover here, currently UI does not allow changing this
-  leftover_price: create_input_column(InputType.Int, ALL_MATERIAL_LABELS),
-
   tier: 0,
   min_resolution: 1,
   num_threads: 1,

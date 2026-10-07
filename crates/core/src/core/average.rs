@@ -1,5 +1,4 @@
-use crate::constants::{SPECIAL_TOL, TreatmentsType};
-use crate::helpers::distribute_budgets;
+use crate::constants::{FLOAT_TOL, SPECIAL_TOL};
 use crate::performance::Performance;
 use crate::state_bundle::StateBundle;
 
@@ -36,9 +35,8 @@ impl StateBundle {
             if special_prob < SPECIAL_TOL {
                 continue;
             }
-            for (support_index, thresh_price_pairs) in
-                self.prep_output.optimizer_material_info.iter().enumerate()
-            {
+            let plan_bands = &self.prep_output.bands[self.prep_output.optimizer_plan];
+            for (support_index, thresh_price_pairs) in plan_bands.iter().enumerate() {
                 let this_avg: f64 = self.one_dimension_average_gold(
                     support_index as i64,
                     skip_count,
@@ -54,9 +52,10 @@ impl StateBundle {
     }
 
     /// See Saddlepoint Approximation.pdf for more info on the math.
+    /// One metric and one per material breakdown for every plan in the payload, plus the
+    /// average amount of each material used (which does not depend on the plan).
     pub fn ui_average_gold_metric(
         &mut self,
-        inp_treatment_arr: Option<&[TreatmentsType]>,
         performance: &mut Performance,
     ) -> (Vec<f64>, Vec<f64>, Vec<Vec<f64>>) {
         self.update_prob_dist();
@@ -64,52 +63,36 @@ impl StateBundle {
         self.compute_special_probs(false);
         performance.states_evaluated += 1;
 
-        let treatment_arr: &Vec<TreatmentsType> = if inp_treatment_arr.is_none() {
-            &vec![self.prep_output.optimizer_plan.clone().try_into().unwrap()]
-        } else {
-            &inp_treatment_arr.unwrap().to_vec()
-        };
-        let mut gold_breakdown: Vec<Vec<f64>> =
-            vec![vec![0.0; self.prep_output.juice_info.total_num_avail]; treatment_arr.len()];
-        let mut average_breakdown: Vec<f64> =
-            vec![0.0; self.prep_output.juice_info.total_num_avail];
-        let mut metrics_arr: Vec<f64> = vec![0.0; treatment_arr.len()];
-        for (treat_index, treatment) in treatment_arr.iter().enumerate() {
+        let num_mats = self.prep_output.table.len();
+        let num_plans = self.prep_output.plans.len();
+        let mut gold_breakdown: Vec<Vec<f64>> = vec![vec![0.0; num_mats]; num_plans];
+        let mut avg_used: Vec<f64> = vec![0.0; num_mats];
+        let mut metric_per_plan: Vec<f64> = vec![0.0; num_plans];
+        for plan_index in 0..num_plans {
             for (skip_count, &special_prob) in self.special_probs().iter().enumerate() {
                 if special_prob < SPECIAL_TOL {
                     continue;
                 }
-                for (support_index, thresh_price_pairs) in
-                    distribute_budgets(&self.prep_output.raw_material_info, treatment)
-                        .iter()
-                        .enumerate()
-                {
-                    let this_avg: f64 = self.one_dimension_average_gold(
-                        support_index as i64,
-                        skip_count,
-                        thresh_price_pairs,
-                        performance,
-                    );
-                    let this = special_prob * this_avg;
+                for support_index in 0..num_mats {
+                    let this = special_prob
+                        * self.one_dimension_average_gold(
+                            support_index as i64,
+                            skip_count,
+                            &self.prep_output.bands[plan_index][support_index],
+                            performance,
+                        );
 
-                    gold_breakdown[treat_index][support_index] += this;
-                    metrics_arr[treat_index] += this;
-                    if treat_index == 0 {
-                        average_breakdown[support_index] +=
+                    gold_breakdown[plan_index][support_index] += this;
+                    metric_per_plan[plan_index] += this;
+                    if plan_index == 0 {
+                        avg_used[support_index] +=
                             special_prob * self.simple_avg(support_index as i64, skip_count)
                     }
                 }
             }
         }
-        // for y in gold_breakdown.iter_mut() {
-        //     for x in y.iter_mut() {
-        //         *x = x
-        //     }
-        // }
-        // for x in average_breakdown.iter_mut() {
-        //     *x = x
 
-        (metrics_arr, average_breakdown, gold_breakdown)
+        (metric_per_plan, avg_used, gold_breakdown)
     }
 
     /// See Saddlepoint Approximation.pdf for more info on the math. This is a generalized version for n price breakpoints
@@ -137,6 +120,13 @@ impl StateBundle {
 
         for (index, &(thresh, price)) in thresh_price_pairs.iter().enumerate().skip(1) {
             let prev_price = thresh_price_pairs[index - 1].1;
+            // Both probabilities below are multiplied by this gap, so a threshold the price
+            // does not change at costs nothing. The top entry is the one that needs this:
+            // it has to stay for the term above, because it carries a constant rather than
+            // a kink, but it is free whenever the band under it is credited at the buy price.
+            if (prev_price - price).abs() < FLOAT_TOL {
+                continue;
+            }
 
             let biased_prob: f64 = self.saddlepoint_approximation_wrapper(
                 support_index,

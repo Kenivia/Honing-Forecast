@@ -141,17 +141,6 @@ export function input_column_to_num(
   return out;
 }
 
-// Rust indexes material arrays by row, so ordered arrays are built only at that boundary.
-export function column_to_array(
-  column: InputColumn,
-  labels: string[],
-  pretend_enabled?: boolean,
-): number[] {
-  return labels.map((label) =>
-    parse_input(column, label, column.values[label], pretend_enabled),
-  );
-}
-
 export function set_cell(column: InputColumn, label: string, value: string) {
   column.values[label] = parse_input(column, label, value, true).toLocaleString();
 }

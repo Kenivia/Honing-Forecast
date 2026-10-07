@@ -249,10 +249,11 @@ check(
   "auto_start_optimizer kept",
   loaded.profiles[0].auto_start_optimizer === false,
 );
+// V7 plan 2 was the one that credited nothing; the chance band carries straight over
 check(
-  "treatment plans kept",
-  loaded.profiles[0].optimizer_treatment_plan === 2 &&
-    loaded.profiles[0].histogram_treatment_plan === 1,
+  "treatment plan became band values",
+  loaded.profiles[0].band_values.join() === "Worthless,Worthless,Worthless" &&
+    loaded.profiles[0].chance_band === 1,
 );
 check(
   "roster flags kept",

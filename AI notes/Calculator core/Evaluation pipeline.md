@@ -7,7 +7,7 @@ How a payload becomes a number. For the maths itself read `docs/Saddlepoint Appr
 Both are in `crates/wasm/src/lib.rs` and both start by turning the `Payload` into a `StateBundle`.
 
 - **Optimize**: runs the optimizer, re-evaluates the best state, and returns the whole `StateBundle`. While running it posts intermediate best states straight to the page from Rust, so it must run inside a Web Worker.
-- **Histogram**: evaluates one fixed state (no search) and returns, per material, a cumulative distribution of consumption, the chance that each ownership level is enough, and the average gold under the UI's treatment plans.
+- **Histogram**: evaluates one fixed state (no search) and returns, keyed by material label, a cumulative distribution of consumption, the chance that each ownership band is enough, and the average gold under every plan in the payload.
 
 The optimizer and the histogram share the same evaluation code, so a change to the evaluator affects both the plan chosen and the numbers shown.
 
@@ -42,8 +42,11 @@ These fail silently or panic at a distance, and none is obvious from a single fi
 - **Compute before read.** The free-tap probabilities are read from a cache keyed by the current free-tap order and must have been computed for it first. Every metric does this at its start; a new caller must too.
 - **Collapsed supports have no zero-probability entries.** Collapsing merges equal values and drops negligible probabilities; the cumulant code relies on that.
 - **Supports are evenly spaced.** All current distributions have a constant gap between values, which the cumulant fast path and the lattice correction both assume.
-- **Four breakpoints.** Parts of the UI metric assume the four-entry material layout the frontend sends.
+- **Plans are precomputed.** `PreparationOutput::bands` holds one band list per plan per material, built once. The evaluator never recomputes them, so a payload with many plans costs extra evaluations, not extra parsing.
+- **A threshold the price does not change at is free.** `one_dimension_average_gold` skips its two saddlepoint evaluations, because they are multiplied by the price gap. `ValuationPlan::bands` already merges such entries wherever merging is sound, so in practice this fires only on the top entry, which has to stay for the base term. See `Domain model.md`.
 
 ## Leftovers
 
-`metric_type` exists but only the average-gold metric is live. `success_prob.rs` is a shelved metric, kept because the histogram reuses part of it. `bound.rs` is an abandoned bounding attempt that now only supplies an initial guess. `helpers.rs` contains helpers from an earlier design.
+`metric_type` exists but only the average-gold metric is live. `success_prob.rs` is a shelved metric, kept because the histogram reuses `one_dimension_prob`. `bound.rs` is an abandoned bounding attempt that now only supplies an initial guess. `helpers.rs` contains helpers from an earlier design.
+
+`verification/` (monte carlo) is **commented out** of `lib.rs` while the material interface settles, and `crates/arena`, its only consumer, is commented out of the workspace with it. The files are still there. A side effect is that `cargo test -p hf-core` works again; the unit tests in `materials.rs` cover the valuation.

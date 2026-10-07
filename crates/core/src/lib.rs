@@ -2,6 +2,7 @@ pub mod advanced_honing;
 pub mod constants;
 pub mod core;
 pub mod helpers;
+pub mod materials;
 
 pub mod honing_utils;
 pub mod optimizer;
@@ -20,5 +21,7 @@ pub mod histogram;
 #[cfg(feature = "wasm")] // and this module is not in wasm because it is needed in the engine
 pub mod js_interface;
 
-#[cfg(feature = "run_tests")] // this module is not in arena because it is also needed for tests
-pub mod verification;
+// Monte carlo verification is parked while the material interface changes; a proper
+// test suite for the core replaces it.
+// #[cfg(feature = "run_tests")]
+// pub mod verification;

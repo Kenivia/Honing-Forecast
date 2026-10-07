@@ -1,19 +1,18 @@
 import {
+  ALL_LABELS,
+  ALL_WORTHLESS,
+  BandPlan,
   GRACE_FIRST_N,
-  Material,
   JOINED_ADV_JUICE,
   NUM_ADV_PIECES,
   SPECIAL_LEAP_LABELS,
-  TIER_MATERIALS,
 } from "@/Utils/Constants";
-import { TreatmentPlan } from "@/Stores/CharacterProfile";
 
 import { toRaw } from "vue";
 import { useRosterStore } from "@/Stores/RosterConfig";
 import {
   get_upgrade_map,
   KeyedUpgrades,
-  OneMaterialInput,
   OneUpgradeInput,
   Upgrade,
 } from "@/Utils/KeyedUpgrades";
@@ -23,9 +22,23 @@ import { useRuntimeStore } from "@/Stores/RuntimeState";
 
 // I don't think it's possible to directly export this struct from rust to javascript because of all the vectors,
 // so it's copied & pasted here
+// Owned amounts and per-unit prices for one material. Mirrors Rust's OneMaterial.
+export interface OneMaterial {
+  bound: number;
+  roster: number;
+  tradable: number;
+  taxed_price: number;
+  market_price: number;
+}
+
 export interface Payload {
-  material_info: number[][][];
-  optimizer_plan?: number[];
+  // row order; the one place the order Rust's cost tables assume is declared
+  material_labels: string[];
+  materials: Record<string, OneMaterial>;
+  // every plan to evaluate. Index 0 is always ALL_WORTHLESS, so the histogram always
+  // reports plain gold spent alongside whatever the user picked.
+  plans: BandPlan[];
+  optimizer_plan: number;
   upgrade_info: OneUpgradeInput[];
   special_budget: number;
   special_state?: number[];
@@ -247,7 +260,7 @@ function apply_tax(x: number): number {
   return Math.max(Math.min(1, x), Math.floor(x * 0.95));
 }
 
-export function build_material_info(): OneMaterialInput[] {
+export function build_materials(): Record<string, OneMaterial> {
   const roster_store = useRosterStore();
   const {
     active_profile,
@@ -260,25 +273,28 @@ export function build_material_info(): OneMaterialInput[] {
   const enabled = active_profile.value.bound_budgets.enabled;
   const roster_owned = input_column_to_num(active_roster_mats_owned.value);
   const tradable_owned = input_column_to_num(active_tradable_mats_owned.value);
-  const leftover = input_column_to_num(active_profile.value.leftover_price);
 
   // Prices here are per unit: which bundle a material is sold in, and whether it is
   // cheaper to convert one up from a lower tier, are both resolved by the store.
   const listed = roster_store.active_unit_prices;
   const effective = roster_store.active_effective_prices;
 
-  return TIER_MATERIALS[tier].map((mat) => [
-    [0, 0],
-    [bound[mat.label], leftover[mat.label]],
-    [roster_owned[mat.label], apply_tax(listed[mat.label])],
-    [
-      // disabled mats shouldn't be sold either, and gold is never sold
-      !enabled[mat.label] || mat.label === "Gold"
-        ? 0
-        : tradable_owned[mat.label],
-      effective[mat.label],
-    ],
-  ]);
+  const out: Record<string, OneMaterial> = {};
+  for (const label of ALL_LABELS[tier]) {
+    // A disabled material is one the user will not trade, which `bound` already models
+    // as an effectively infinite stock. Zero prices keep it out of the gold entirely, so
+    // what its leftovers are "worth" cannot depend on the plan.
+    const traded = enabled[label];
+    out[label] = {
+      bound: bound[label],
+      roster: roster_owned[label],
+      // gold is never sold
+      tradable: !traded || label === "Gold" ? 0 : tradable_owned[label],
+      taxed_price: traded ? apply_tax(listed[label]) : 0,
+      market_price: traded ? effective[label] : 0,
+    };
+  }
+  return out;
 }
 
 export function build_payload(override?: OptimizerOverride): Payload {
@@ -287,17 +303,11 @@ export function build_payload(override?: OptimizerOverride): Payload {
   const tier = active_profile.value.tier;
   // console.log(runtime.optimizer.result?.adv_cache);
   return {
-    material_info: build_material_info(),
-    optimizer_plan:
-      // wasm_op == WasmOp.OptimizeAverage
-      active_profile.value.optimizer_treatment_plan ===
-      TreatmentPlan.TreatRosterAsBound
-        ? [0, 0, 2, 3]
-        : active_profile.value.optimizer_treatment_plan ===
-            TreatmentPlan.TreatTradableAsBound
-          ? [0, 0, 0, 3]
-          : [0, 1, 2, 3], //this  shouldn't happen
-    // : null,
+    material_labels: ALL_LABELS[tier],
+    materials: build_materials(),
+    // spread out of the reactive proxy, which postMessage cannot clone
+    plans: [ALL_WORTHLESS, [...active_profile.value.band_values] as BandPlan],
+    optimizer_plan: 1,
     upgrade_info: keyed_to_array(
       active_profile.value.keyed_upgrades,
       runtime.optimizer.result?.upgrade_arr,

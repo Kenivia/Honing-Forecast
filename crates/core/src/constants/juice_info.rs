@@ -6,8 +6,8 @@ use std::{
 
 use crate::{
     constants::{NUM_ADV_UPGRADES, NUM_NORMAL_UPGRADES, NUM_PIECE_TYPES},
+    materials::NUM_BASE_MATS,
     my_dbg,
-    parser::MaterialInput,
 };
 
 // use crate::my_dbg;
@@ -126,7 +126,7 @@ impl JuiceInfo {
         for (id, this_data) in all_data.into_iter().enumerate() {
             all_juices[id] = this_data;
         }
-        let total_num_avail = all_juices.len() + 7;
+        let total_num_avail = all_juices.len() + NUM_BASE_MATS;
         let num_juice_avail = all_juices.len();
         JuiceInfo {
             all_juices,
@@ -137,14 +137,7 @@ impl JuiceInfo {
         }
     }
 }
-pub fn get_event_adjusted_juice_info(
-    base: &JuiceInfo,
-    material_info: &MaterialInput,
-    event: bool,
-) -> JuiceInfo {
-    // my_dbg!(&base.all_juices);
-    assert!(base.total_num_avail == material_info.len());
-
+pub fn get_event_adjusted_juice_info(base: &JuiceInfo, event: bool) -> JuiceInfo {
     let mut out: JuiceInfo = base.clone();
     for (_, juice_type) in out.all_juices.iter_mut().enumerate() {
         for piece_map in juice_type.iter_mut() {

@@ -1,19 +1,20 @@
 <script setup lang="ts">
 import {
   ALL_LABELS,
+  BandPlan,
   JUICE_RANGES,
   MATERIALS,
+  NUM_BANDS,
   NUM_BASE_MATS,
   ANNOTATION_COLORS,
   ANNOTATION_POSITIONS,
   ANNOTATION_LABELS,
-  by_label,
   SPECIAL_LEAP_LABELS,
 } from "@/Utils/Constants";
-import { TreatmentPlan } from "@/Stores/CharacterProfile";
 import { has_upgrades_in_range, metric_to_text } from "@/Utils/Helpers";
 import MaterialCell from "@/Components/Common/MaterialCell.vue";
 import MaterialGraph from "@/Components/Character/MaterialDist/MaterialGraph.vue";
+import BandValueBar from "@/Components/Character/MaterialDist/BandValueBar.vue";
 import QuestionMark from "@/Components/Common/QuestionMark.vue";
 import { storeToRefs } from "pinia";
 import { useRosterStore } from "@/Stores/RosterConfig";
@@ -37,34 +38,35 @@ const {
 } = storeToRefs(useRosterStore());
 const histogram_result = computed(() => runtime.histogram.result);
 
-// Rust returns these indexed by material row, so they are keyed on the way in.
+// Rust keys every material result by label, so these are read straight through.
 const tier = computed(() => active_profile.value.tier);
-const zeroes = (): number[] => ALL_LABELS[tier.value].map(() => 0);
+const zeroes = (): Record<string, number> =>
+  Object.fromEntries(ALL_LABELS[tier.value].map((label) => [label, 0]));
 
 // This is average mats cost (not gold)
-const average_breakdown = computed(() =>
-  by_label<number>(
-    runtime.histogram.result?.avg_breakdown ?? zeroes(),
-    tier.value,
-  ),
+const average_breakdown = computed(
+  () => runtime.histogram.result?.avg_used ?? zeroes(),
 );
-// this is should always be treat tradable as bound (so it's actual gold spent)
-const gold_breakdown = computed(() =>
-  by_label<number>(
-    runtime.histogram.result?.gold_breakdown_arr[0].map((x: number) =>
-      x >= 0 ? 0 : -x,
-    ) ?? zeroes(),
-    tier.value,
-  ),
-);
-const histogram_chances = computed(() =>
-  by_label<number>(
-    runtime.histogram.result?.chances_arr?.[
-      active_profile.value.histogram_treatment_plan + 1
-    ] ?? zeroes(),
-    tier.value,
-  ),
-);
+// plan 0 is always ALL_WORTHLESS, so this is gold actually handed to the market
+const gold_breakdown = computed(() => {
+  const per_mat: Record<string, number> | undefined =
+    runtime.histogram.result?.gold_per_plan[0];
+  if (per_mat === undefined) return zeroes();
+  return Object.fromEntries(
+    Object.entries(per_mat).map(([label, x]) => [label, x >= 0 ? 0 : -x]),
+  );
+});
+const histogram_chances = computed(() => {
+  const per_mat: Record<string, number[]> | undefined =
+    runtime.histogram.result?.chance_within;
+  if (per_mat === undefined) return zeroes();
+  return Object.fromEntries(
+    Object.entries(per_mat).map(([label, bands]) => [
+      label,
+      bands[active_profile.value.chance_band],
+    ]),
+  );
+});
 
 const visibleRows = computed(() =>
   ALL_LABELS[active_profile.value.tier]
@@ -88,36 +90,27 @@ const visibleRows = computed(() =>
 const tickbox_tooltip = `Untick the box if you don't plan on buying that material from market.`;
 // <span style="color:var(--text-muted)">(it also disable selling this mat)</span>`
 
-const market_gold_text = "Avg gold spent buying from market";
-const tradable_gold_text =
-  "Avg gold spent buying minus gold from selling tradables";
 const total_market_gold_text = "Average tradable gold spent:";
 const total_market_gold_suffix = "(raw  +  buying needed mats & juice)";
-const total_tradable_gold_text = "Avg sell value of leftover tradable mats:";
-const total_tradable_gold_suffix = "(taxed)";
-const all_bound_text = "Treat roster bound as tradable"; // i dont think i'll show this tho cos its kinda confusing
-const selected_optimizer_treatement = ref(
-  active_profile.value.optimizer_treatment_plan ==
-    TreatmentPlan.TreatTradableAsBound
-    ? market_gold_text
-    : active_profile.value.optimizer_treatment_plan ==
-        TreatmentPlan.TreatRosterAsBound
-      ? tradable_gold_text
-      : all_bound_text,
+const total_tradable_gold_text = "Avg value of leftover mats:";
+const total_tradable_gold_suffix = "(credited against the above)";
+
+// Plan 0 credits nothing, so it is the gross spend; plan 1 is the user's, which is what
+// the optimizer minimises. The gap between them is what the leftovers are worth.
+const total_gold = computed(() => runtime.histogram.result?.metric_per_plan[0]);
+const leftover_credit = computed(
+  () =>
+    runtime.histogram.result?.metric_per_plan[0] -
+    runtime.histogram.result?.metric_per_plan[1],
+);
+const any_credited = computed(() =>
+  active_profile.value.band_values.some((v) => v !== "Worthless"),
 );
 
-watchEffect(() => {
-  if (selected_optimizer_treatement.value == market_gold_text) {
-    active_profile.value.optimizer_treatment_plan =
-      TreatmentPlan.TreatTradableAsBound;
-  } else if (selected_optimizer_treatement.value == tradable_gold_text) {
-    active_profile.value.optimizer_treatment_plan =
-      TreatmentPlan.TreatRosterAsBound;
-  } else if (selected_optimizer_treatement.value == all_bound_text) {
-    active_profile.value.optimizer_treatment_plan =
-      TreatmentPlan.TreatRosterAsTradable;
-  }
-});
+// Calc.vue watches band_values and restarts the workers
+function set_band_values(plan: BandPlan) {
+  active_profile.value.band_values = plan;
+}
 
 const bound_chance_text =
   "Chance to succeed all upgrades within Char-Bound material";
@@ -125,84 +118,38 @@ const roster_chance_text =
   "Chance to succeed all upgrades within Roster-Bound material";
 const tradable_chance_text =
   "Chance to succeed all upgrades within Tradable material";
-// const chance_explainer_text = computed(() =>
-//   active_profile.value.histogram_treatment_plan ==
-//   TreatmentPlan.TreatTradableAsBound
-//     ? tradable_chance_text
-//     : active_profile.value.histogram_treatment_plan ==
-//         TreatmentPlan.TreatRosterAsBound
-//       ? roster_chance_text
-//       : bound_chance_text,
-// );
+// parallel to chance_band
+const CHANCE_TEXTS = [
+  bound_chance_text,
+  roster_chance_text,
+  tradable_chance_text,
+];
+const CHANCE_COLORS = ["var(--bound)", "var(--roster)", "var(--tradable)"];
 
-const selected_histogram_treatment = ref(
-  active_profile.value.histogram_treatment_plan ==
-    TreatmentPlan.TreatTradableAsBound
-    ? tradable_chance_text
-    : active_profile.value.histogram_treatment_plan ==
-        TreatmentPlan.TreatRosterAsBound
-      ? roster_chance_text
-      : bound_chance_text,
+const selected_chance_band = ref(
+  CHANCE_TEXTS[active_profile.value.chance_band],
+);
+// initialize here otherwise it'll be null until we change it
+const selected_chance_color = ref(
+  CHANCE_COLORS[active_profile.value.chance_band],
 );
 
-const selected_histogram_color = ref(
-  active_profile.value.histogram_treatment_plan ==
-    TreatmentPlan.TreatRosterAsTradable
-    ? "var(--bound)"
-    : active_profile.value.histogram_treatment_plan ==
-        TreatmentPlan.TreatRosterAsBound
-      ? "var(--roster)"
-      : "var(--tradable)",
-); // initialize here otherwise it'll be null until we change it
-function change_histogram_treatment(event) {
-  let new_val = event.target.value;
-  if (new_val === null) {
+function change_chance_band(event) {
+  const band = CHANCE_TEXTS.indexOf(event.target.value);
+  if (band < 0) {
     return;
   }
-  if (new_val == bound_chance_text) {
-    active_profile.value.histogram_treatment_plan =
-      TreatmentPlan.TreatRosterAsTradable;
-  } else if (new_val == roster_chance_text) {
-    active_profile.value.histogram_treatment_plan =
-      TreatmentPlan.TreatRosterAsBound;
-  } else if (new_val == tradable_chance_text) {
-    active_profile.value.histogram_treatment_plan =
-      TreatmentPlan.TreatTradableAsBound;
-  }
+  active_profile.value.chance_band = band;
   set_enabled();
-  selected_histogram_color.value =
-    active_profile.value.histogram_treatment_plan ==
-    TreatmentPlan.TreatRosterAsTradable
-      ? "var(--bound)"
-      : active_profile.value.histogram_treatment_plan ==
-          TreatmentPlan.TreatRosterAsBound
-        ? "var(--roster)"
-        : "var(--tradable)";
+  selected_chance_color.value = CHANCE_COLORS[band];
   runtime.histogram.throttled_start(WasmOp.Histogram, build_payload());
 }
 
+// annotation 0 is the average line, the rest are the ownership bands
 function set_enabled() {
-  if (
-    active_profile.value.histogram_treatment_plan ==
-    TreatmentPlan.TreatRosterAsTradable
-  ) {
-    enabled_annotations.value[1] = true;
-    enabled_annotations.value[2] = false;
-    enabled_annotations.value[3] = false;
-  } else if (
-    active_profile.value.histogram_treatment_plan ==
-    TreatmentPlan.TreatRosterAsBound
-  ) {
-    enabled_annotations.value[1] = false;
-    enabled_annotations.value[2] = true;
-    enabled_annotations.value[3] = false;
-  } else if (
-    active_profile.value.histogram_treatment_plan ==
-    TreatmentPlan.TreatTradableAsBound
-  ) {
-    enabled_annotations.value[1] = false;
-    enabled_annotations.value[2] = false;
-    enabled_annotations.value[3] = true;
+  for (let band = 0; band < NUM_BANDS; band++) {
+    enabled_annotations.value[band + 1] =
+      band === active_profile.value.chance_band;
   }
 }
 onMounted(set_enabled); // overwrite the graph control options on load, which lowkey shouldn't even be there but whatever
@@ -276,6 +223,12 @@ const is924Narrow = useMediaIsNarrow(924); // this turns out to be the width whe
         '--grid-cols': grid.grid_template_columns,
       }"
     >
+      <BandValueBar
+        class="pb-1"
+        style="grid-column: 1 / -1"
+        :plan="active_profile.band_values"
+        @update="set_band_values"
+      />
       <div class="mats-row h-fit! items-end! border-b-(--border-main)!">
         <div class="flex flex-row justify-between">
           <QuestionMark :text="tickbox_tooltip" class="mb-1" />
@@ -284,11 +237,11 @@ const is924Narrow = useMediaIsNarrow(924); // this turns out to be the width whe
         <select
           aria-label="Chance column"
           class="selector -mr-4! ml-4!"
-          v-model="selected_histogram_treatment"
+          v-model="selected_chance_band"
           :style="{
-            color: selected_histogram_color,
+            color: selected_chance_color,
           }"
-          @change="change_histogram_treatment"
+          @change="change_chance_band"
         >
           <option>{{ bound_chance_text }}</option>
           <option>{{ roster_chance_text }}</option>
@@ -349,7 +302,7 @@ const is924Narrow = useMediaIsNarrow(924); // this turns out to be the width whe
           <MaterialCell
             :input_column="histogram_chances"
             :label="label"
-            :input_color="selected_histogram_color"
+            :input_color="selected_chance_color"
             :is_percentage="true"
           />
           <MaterialCell
@@ -442,40 +395,20 @@ const is924Narrow = useMediaIsNarrow(924); // this turns out to be the width whe
       </div>
       <div class="metric-result-container">
         <span class="metric-result text-(--gold)">
-          {{
-            metric_to_text(
-              runtime.histogram.result?.metrics_arr[
-                active_profile.optimizer_treatment_plan ===
-                TreatmentPlan.TreatRosterAsBound
-                  ? 0
-                  : 1
-              ],
-            )
-          }}
+          {{ metric_to_text(total_gold) }}
         </span>
         <span class="metric-result-suffix">
           {{ total_market_gold_suffix }}
         </span>
       </div>
     </div>
-    <div
-      v-if="
-        active_profile.optimizer_treatment_plan ==
-        TreatmentPlan.TreatRosterAsBound
-      "
-      class="metric-container"
-    >
+    <div v-if="any_credited" class="metric-container">
       <div class="metric-label text-(--text-muted)">
         {{ total_tradable_gold_text }}
       </div>
       <div class="metric-result-container">
         <span class="metric-result text-(--text-muted)">
-          {{
-            metric_to_text(
-              runtime.histogram.result?.metrics_arr[0] -
-                runtime.histogram.result?.metrics_arr[1],
-            )
-          }}
+          {{ metric_to_text(leftover_credit) }}
         </span>
         <span class="metric-result-suffix">
           {{ total_tradable_gold_suffix }}

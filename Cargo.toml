@@ -2,7 +2,8 @@
 members = [
     "crates/core",
     "crates/wasm",
-    "crates/arena",
+    # arena only drives verification, which is parked
+    # "crates/arena",
 ]
 resolver="3"
 

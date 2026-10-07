@@ -22,7 +22,7 @@ Data in `roster_config` lives at four scopes:
 
 | Scope | Examples |
 | --- | --- |
-| Per character | Upgrade grids, keyed upgrades, bound material budgets, free-tap budget, tier, optimizer settings. |
+| Per character | Upgrade grids, keyed upgrades, bound material budgets, free-tap budget, tier, band values, optimizer settings. |
 | Per roster | Roster-owned materials, tradable materials, region. |
 | Per region | Market prices per bundle, the chosen bundle per material, the last fetched market response. |
 | Global | UI flags, the active character index, last seen version. |
@@ -38,7 +38,7 @@ Runtime worker bundles are keyed by `char_name`. `App.vue` watches the list of n
 - **Two cross-tier relations, and no others.** A label listed under several `tiers` is one material with one stored value, so nothing is ever synced between tiers and `SHARED_LABELS` is derived rather than hand-written. `CONVERTS_FROM` says a material can be made from a lower tier's at a fixed rate, which drives the effective price, the convert button and `change_tier`. Adding a tier means adding table rows, not new branches.
 - **Prices are per bundle; everything else is per unit.** A material has a list of `bundle_sizes` (shards sell in 1000 / 2000 / 3000 bags, everything else has one size). `mats_prices` is keyed by `bundle_key(label, size)`, `selected_bundles` records which bundle the user buys, and `unit_prices` / `effective_unit_prices` produce the per-unit numbers the payload and UI use. A market fetch prices every bundle and selects the cheapest per unit.
 - **`InputColumn`** is the runtime model behind every numeric input column: `values`, `upper_bound` and `enabled`, all keyed by label (or by bundle key, for prices). A column carries no row order; callers iterate the labels they want to show. `input_column_to_num` returns a label-keyed record. Inputs accept simple arithmetic. Only the values and the disabled labels are saved; everything else is rebuilt from `Constants.ts`.
-- **Rust indexes materials by row; nothing else does.** `by_label` and `column_to_array` are the only conversions between the two, and they belong at the wasm boundary. Everything upstream of them is keyed.
+- **Nothing is indexed by material row.** The payload carries `material_labels` and a label-keyed `materials` map, and every per-material result comes back label-keyed, so `ALL_LABELS[tier]` is used for display order and to declare the row order to Rust, and for nothing else.
 - **Keyed upgrades** are the canonical list of upgrades for a character, keyed by piece, level, kind and tier. They are derived from the tickbox grids and carry per-upgrade progress and the last optimizer state.
 - **Tier handling assumes exactly two tiers.** The Rust side would accept more; the frontend's tier-switching logic would not.
 - Worker bundles use `shallowReactive`, not refs, so their fields read as plain values whether or not they sit in a store, and large wasm results are never deep-wrapped.
@@ -58,6 +58,8 @@ Runtime worker bundles are keyed by `char_name`. `App.vue` watches the list of n
 **Changing the saved shape** means bumping `STORAGE_VERSION`, setting `STORAGE_KEY` to the new version's key, moving the old key to the top of `LEGACY_KEYS`, and adding one entry to `MIGRATIONS`. Adding a material no longer needs a migration at all: an unknown label in the save is dropped, a missing one falls back to the template value from `Constants.ts`.
 
 **Do not trust a pre-V8 column's own `keys` array.** Nothing before V8 read it, so it drifted out of order in real saves while `data` stayed positional against `ALL_LABELS`. `migrate_7_to_8` maps by position for that reason.
+
+`migrate_7_to_8` also turns V7's two treatment-plan enums into `band_values` and `chance_band`, and drops `leftover_price`. Two of the old enum's four values behaved identically and one was unreachable, so only the case that credited nothing needs distinguishing.
 
 `migrate_7_to_8` also collapses V7's per-tier columns into one. Where both tiers held a value for the same material, the character's **active tier wins** for its own budgets, and tier 0 wins for the roster-wide columns V7 kept in sync by a watcher. V7's separate `shard_infos` structure folds into Shards' three bundle prices plus `selected_bundles`.
 

@@ -3,17 +3,23 @@ use crate::constants::*;
 use crate::js_interface::remove_adv_cache;
 use crate::performance::Performance;
 use crate::state_bundle::StateBundle;
+use ahash::AHashMap;
 use serde::Serialize;
 
+/// Everything keyed by material label is a map on the JS side.
 #[derive(Debug, Serialize)]
 pub struct HistogramOutputs {
-    cum_percentiles: Vec<Vec<(f64, f64)>>,
+    cum_percentiles: AHashMap<String, Vec<(f64, f64)>>,
 
-    chances_arr: Vec<Vec<f64>>, //  [treatment plan][material type] for all 3 of these
-    gold_breakdown_arr: Vec<Vec<f64>>,
-    metrics_arr: Vec<f64>,
+    /// chance the first k ownership bands cover every upgrade, as [bound, +roster, +tradable]
+    chance_within: AHashMap<String, [f64; 3]>,
+    /// average amount of the material used, regardless of plan
+    avg_used: AHashMap<String, f64>,
 
-    avg_breakdown: Vec<f64>,
+    /// one entry per plan in the payload
+    gold_per_plan: Vec<AHashMap<String, f64>>,
+    metric_per_plan: Vec<f64>,
+
     juice_info: JuiceInfo,
     state_bundle: StateBundle,
 }
@@ -25,15 +31,12 @@ pub fn histogram(state_bundle: &mut StateBundle) -> HistogramOutputs {
     state_bundle.set_latest_special_probs(); // needed by luckiest_mf in addition to the usual 3 above
 
     let mut dummy_performance = Performance::new();
-    let num_sup = state_bundle.prep_output.raw_material_info.len();
+    let num_sup = state_bundle.prep_output.table.len();
 
     let mut cum_percentiles: Vec<Vec<(f64, f64)>> = vec![Vec::with_capacity(BUCKET_COUNT); num_sup];
+    let mut chance_within: Vec<[f64; 3]> = vec![[0.0; 3]; num_sup];
 
-    // let mut average: Vec<f64> = Vec::with_capacity(num_sup);
-    let mut chances_arr: Vec<Vec<f64>> =
-        vec![Vec::with_capacity(num_sup); state_bundle.prep_output.raw_num_breakpoints];
-
-    for (support_index, item) in cum_percentiles.iter_mut().enumerate().take(num_sup) {
+    for (support_index, item) in cum_percentiles.iter_mut().enumerate() {
         let this_pity = state_bundle.pity()[support_index] as f64;
         let this_one_tap = state_bundle.luckiest_mf()[support_index] as f64;
 
@@ -50,28 +53,29 @@ pub fn histogram(state_bundle: &mut StateBundle) -> HistogramOutputs {
             ));
         }
 
+        let mat = state_bundle.prep_output.materials[support_index];
         let mut cumulative: f64 = 0.0;
-        for treatment_plan in 0..state_bundle.prep_output.raw_num_breakpoints {
-            cumulative +=
-                state_bundle.prep_output.raw_material_info[support_index][treatment_plan].0;
-            chances_arr[treatment_plan].push(state_bundle.one_dimension_prob(
+        for (band, owned) in [mat.bound, mat.roster, mat.tradable].iter().enumerate() {
+            cumulative += owned;
+            chance_within[support_index][band] = state_bundle.one_dimension_prob(
                 support_index as i64,
                 cumulative,
                 &mut dummy_performance,
-            ));
+            );
         }
     }
 
-    let (metrics_arr, avg_breakdown, gold_breakdown_arr) =
-        state_bundle.ui_average_gold_metric(Some(&UI_TREATMENTS.to_vec()), &mut dummy_performance);
-    // state_bundle.average_gold_metric(true, &mut Performance::new());
+    let (metric_per_plan, avg_used, gold_breakdown) =
+        state_bundle.ui_average_gold_metric(&mut dummy_performance);
+
+    let table = &state_bundle.prep_output.table;
     HistogramOutputs {
-        cum_percentiles,
-        chances_arr,
-        avg_breakdown,
-        gold_breakdown_arr,
-        metrics_arr,
+        cum_percentiles: table.keyed(&cum_percentiles),
+        chance_within: table.keyed(&chance_within),
+        avg_used: table.keyed(&avg_used),
+        gold_per_plan: gold_breakdown.iter().map(|x| table.keyed(x)).collect(),
+        metric_per_plan,
         juice_info: state_bundle.prep_output.juice_info.clone(),
-        state_bundle: remove_adv_cache(&state_bundle),
+        state_bundle: remove_adv_cache(state_bundle),
     }
 }

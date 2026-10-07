@@ -3,6 +3,7 @@ use smallvec::smallvec;
 
 use crate::constants::ARTISAN_MULTIPLIER;
 use crate::constants::juice_info::JuiceInfo;
+use crate::materials::NUM_BASE_MATS;
 use crate::my_dbg;
 use crate::state::State;
 use crate::upgrade::Upgrade;
@@ -103,7 +104,7 @@ impl Upgrade {
 
         let l_len: usize = self.normal_dist.len();
 
-        for t_index in 0..7 {
+        for t_index in 0..NUM_BASE_MATS {
             let mut this_mats_costs: Vec<f64> = Vec::with_capacity(l_len);
             let mut cost_so_far: f64 = if self.unlocked {
                 0.0
@@ -166,7 +167,7 @@ impl Upgrade {
             // }
         }
         for (id, (_, support, gap_size)) in out {
-            self.cost_dist[id + 7].update_payload(
+            self.cost_dist[NUM_BASE_MATS + id].update_payload(
                 support,
                 self.state.hash,
                 &self.normal_dist,

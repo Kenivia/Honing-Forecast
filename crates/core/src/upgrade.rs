@@ -1,6 +1,7 @@
 use crate::advanced_honing::utils::{AdvConfig, AdvDistTriplet};
 
 use crate::constants::juice_info::JuiceInfo;
+use crate::materials::NUM_BASE_MATS;
 use crate::state::{OneState, State};
 use crate::support::{ProbDist, Support};
 use crate::upgrade::PieceType::{Armor, Vambrace, Weapon};
@@ -34,7 +35,7 @@ pub struct Upgrade {
     pub starting_artisan: f64,
     pub starting_num_taps: usize, // this is only used to calculate the starting base chance, not cost (we don't distinguish between manual artisan input vs slider artisan input on the rust side, cost calculation happens in js)
     pub unlocked: bool,
-    pub unlock_costs: [f64; 7],
+    pub unlock_costs: [f64; NUM_BASE_MATS],
 
     pub extra_chance: f64,
 

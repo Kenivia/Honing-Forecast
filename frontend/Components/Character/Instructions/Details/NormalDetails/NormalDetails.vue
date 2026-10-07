@@ -192,6 +192,7 @@ function set_used_materials(pretend_zero_no_unlock: boolean) {
     0,
     0,
     pretend_zero_no_unlock,
+    active_profile.value.tier,
   );
 }
 
@@ -388,6 +389,7 @@ function special_succeed_click() {
     0,
     0,
     false, // so this is just the unlock cost
+    active_profile.value.tier,
   );
   apply_remaining_mats();
   mark_upgrade_as_done(props.upgrade);

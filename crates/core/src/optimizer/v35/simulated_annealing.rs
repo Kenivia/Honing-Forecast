@@ -39,11 +39,15 @@ fn compute_upgrade_impact(state_bundle: &mut StateBundle) -> Vec<f64> {
 
     for upgrade in &state_bundle.upgrade_arr {
         let mut magnitude: f64 = 0.01;
-        for (support_index, support) in upgrade.cost_dist.iter().enumerate().take(7) {
-            magnitude += state_bundle.prep_output.optimizer_material_info[support_index]
-                .last()
-                .unwrap()
-                .1
+        let prep = &state_bundle.prep_output;
+        let plan_bands = &prep.bands[prep.optimizer_plan];
+        for (support_index, support) in upgrade
+            .cost_dist
+            .iter()
+            .enumerate()
+            .filter(|(row, _)| prep.table.is_base(*row))
+        {
+            magnitude += plan_bands[support_index].last().unwrap().1
                 * support
                     .access_collapsed(false)
                     .iter()

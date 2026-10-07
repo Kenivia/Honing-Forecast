@@ -35,7 +35,7 @@ Evaluation assumes these; breaking them corrupts results without an error.
 Each optimizer version is a full copy in its own folder behind a cargo feature, originally so versions could be benchmarked against each other. That tooling is largely defunct and is expected to be replaced or reworked soon. Do not build on it without asking.
 
 - `optimizer/Old/` is a dead archive. It does not compile into anything.
-- `crates/arena`, `scripts/optimizer_test.ps1`, `scripts/autorun.ps1`, `scripts/optimizer_visualizer` and `test_cases/optimizer_results` belong to the benchmarking workflow.
-- `crates/core/src/verification` compares the analytical evaluation with Monte Carlo simulation and with cached results in `test_cases/verification_results`. It is what `pnpm test` runs, and `pnpm test` is currently defunct.
+- `crates/arena`, `scripts/optimizer_test.ps1`, `scripts/autorun.ps1`, `scripts/optimizer_visualizer` and `test_cases/optimizer_results` belong to the benchmarking workflow. `crates/arena` is commented out of the workspace.
+- `crates/core/src/verification` compares the analytical evaluation with Monte Carlo simulation and with cached results in `test_cases/verification_results`. It is **commented out** of `lib.rs` pending a proper test suite for the core; the files are untouched, and `crates/arena` was commented out with it because it is the only thing that calls it.
 
-What remains load-bearing: the `v35` / `active_version` feature must be enabled for `solve` to exist. There is currently no working automated check on the evaluator or optimizer, so verify changes there by other means and say so.
+What remains load-bearing: the `v35` / `active_version` feature must be enabled for `solve` to exist. There is still no automated check on the optimizer's *search*, so verify changes there by other means and say so. The evaluator's material valuation does have unit tests, in `materials.rs`.

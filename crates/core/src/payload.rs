@@ -1,6 +1,7 @@
 //! Payload is how js and rust communicates, we also use payload as our test cases in arena
 use crate::advanced_honing::utils::{AdvConfig, AdvDistTriplet};
-use crate::parser::{MaterialInput, OneUpgradeInput, PreparationOutput};
+use crate::materials::{OneMaterial, ValuationPlan};
+use crate::parser::{OneUpgradeInput, PreparationOutput};
 use crate::state_bundle::StateBundle;
 use crate::upgrade::Upgrade;
 use ahash::AHashMap;
@@ -10,8 +11,12 @@ use std::path::Path;
 
 #[derive(Deserialize, Clone, Serialize)]
 pub struct Payload {
-    pub material_info: MaterialInput,
-    pub optimizer_plan: Option<Vec<usize>>,
+    /// row order, length NUM_BASE_MATS + number of juices for the tier
+    pub material_labels: Vec<String>,
+    pub materials: AHashMap<String, OneMaterial>,
+    /// every plan to evaluate; the histogram reports one metric per plan
+    pub plans: Vec<ValuationPlan>,
+    pub optimizer_plan: usize,
 
     pub upgrade_info: Vec<OneUpgradeInput>,
     pub special_budget: i64,
@@ -33,8 +38,10 @@ fn default_one() -> i64 {
 }
 impl StateBundle {
     pub fn init_from_inputs(
-        material_info: MaterialInput,
-        optimizer_plan: Option<Vec<usize>>,
+        material_labels: Vec<String>,
+        materials: AHashMap<String, OneMaterial>,
+        plans: Vec<ValuationPlan>,
+        optimizer_plan: usize,
         upgrade_info: Vec<OneUpgradeInput>,
         special_budget: i64,
         express_event: bool,
@@ -50,7 +57,9 @@ impl StateBundle {
             Vec<Upgrade>,
             AHashMap<AdvConfig, AdvDistTriplet>,
         ) = PreparationOutput::initialize(
-            material_info,
+            material_labels,
+            materials,
+            plans,
             optimizer_plan,
             upgrade_info,
             special_budget,
@@ -84,7 +93,9 @@ impl StateBundle {
     }
     pub fn init_from_payload(payload: Payload) -> Self {
         StateBundle::init_from_inputs(
-            payload.material_info,
+            payload.material_labels,
+            payload.materials,
+            payload.plans,
             payload.optimizer_plan,
             payload.upgrade_info,
             payload.special_budget,

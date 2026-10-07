@@ -26,16 +26,37 @@ export enum WasmOp {
 
 // THESE BELOW DIRECTLY CORRESPOND TO A RUST STRUCT
 export type HistogramPair = [number, number];
+// Rust's label keyed maps, flattened to records by to_records below.
+export type ByLabel<T> = Record<string, T>;
 export interface HistogramOutputs {
-  cum_percentiles: HistogramPair[][];
+  cum_percentiles: ByLabel<HistogramPair[]>;
 
-  chances_arr: number[][]; //  [treatment plan][material type] for all 3 of these
-  gold_breakdown_arr: number[][];
-  metrics_arr: number[];
+  // chance the first k ownership bands cover every upgrade, as [bound, +roster, +tradable]
+  chance_within: ByLabel<[number, number, number]>;
+  avg_used: ByLabel<number>;
 
-  avg_breakdown: number[];
+  // one entry per plan in the payload, in payload order
+  gold_per_plan: ByLabel<number>[];
+  metric_per_plan: number[];
 
   juice_info: any;
+}
+
+// Rust hash maps arrive as JS Maps. Every label keyed field becomes a plain record here,
+// so nothing downstream has to know which is which.
+const KEYED_FIELDS = ["cum_percentiles", "chance_within", "avg_used"];
+function to_records(result: any): any {
+  for (const field of KEYED_FIELDS) {
+    if (result[field] instanceof Map) {
+      result[field] = Object.fromEntries(result[field]);
+    }
+  }
+  if (Array.isArray(result.gold_per_plan)) {
+    result.gold_per_plan = result.gold_per_plan.map((x) =>
+      x instanceof Map ? Object.fromEntries(x) : x,
+    );
+  }
+  return result;
 }
 export interface StateBundle {
   upgrade_arr: Upgrade[];
@@ -72,7 +93,7 @@ self.addEventListener("message", async (ev) => {
   if (wasm_op == WasmOp.OptimizeAverage) {
     result = await optimize_average_wrapper(payload);
   } else if (wasm_op == WasmOp.Histogram) {
-    result = await histogram_wrapper(payload);
+    result = to_records(await histogram_wrapper(payload));
   } else if (wasm_op == WasmOp.Cropper || wasm_op == WasmOp.Setup) {
     // the main thread reads the frame and transfers it with the op
     const { frame, ...options } = payload;

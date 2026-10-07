@@ -14,7 +14,7 @@ const { active_profile, active_region } = storeToRefs(useRosterStore());
 watch(
   [
     () => active_profile.value.express_event,
-    () => active_profile.value.optimizer_treatment_plan,
+    () => active_profile.value.band_values,
     () => active_profile.value.auto_start_optimizer,
     () => active_region.value,
   ],

@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { TreatmentPlan } from "@/Stores/CharacterProfile";
 import { useRosterStore } from "@/Stores/RosterConfig";
 import { export_config, import_config } from "@/Stores/ConfigStorage";
 import { storeToRefs } from "pinia";
@@ -48,21 +47,6 @@ async function load_backup(event: Event) {
 //   navigator.clipboard?.writeText(payload).catch(() => undefined);
 // }
 
-// Currently TreatRosterAsTradable is not selectable
-const treatment_tick = ref(
-  active_profile.value.optimizer_treatment_plan ==
-    TreatmentPlan.TreatRosterAsBound,
-);
-watchEffect(() => {
-  // console.log("changed");
-  if (treatment_tick.value) {
-    active_profile.value.optimizer_treatment_plan =
-      TreatmentPlan.TreatRosterAsBound;
-  } else {
-    active_profile.value.optimizer_treatment_plan =
-      TreatmentPlan.TreatTradableAsBound;
-  }
-});
 </script>
 <template>
   <div class="w-full items-center">
@@ -84,11 +68,6 @@ watchEffect(() => {
         <input v-model="roster_config.show_all_rows" type="checkbox" />
         <span>Show all mats (this tier)</span>
       </label>
-      <label class="control-panel-checkbox-row">
-        <input v-model="treatment_tick" type="checkbox" />
-        <span>Account for sell value of tradable mats (Recommended)</span>
-      </label>
-
       <label class="control-panel-checkbox-row">
         <input v-model="roster_config.auto_deduct_costs" type="checkbox" />
         <span>Slider auto-deducts costs</span>

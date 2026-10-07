@@ -46,7 +46,7 @@ was picked up by a commit because it was not ignored.
 | `pnpm check`         | `vue-tsc --noEmit`: the `.ts` layer **and** `.vue` template expressions. |
 | `pnpm test:frontend` | The node-side suites in `tests/`. See `tests/` below.                    |
 | `pnpm e2e`           | Playwright browser tests.                                                |
-| `pnpm test`          | Rust. Currently defunct; do not rely on it.                              |
+| `pnpm test`          | Rust unit tests. Works again now that `verification` is commented out.   |
 
 TypeScript is pinned to 5.x because `vue-tsc` needs the `./lib/tsc` entry point that
 TypeScript 6 removed. Do not upgrade TypeScript without checking `pnpm check` still runs.

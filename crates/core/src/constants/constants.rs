@@ -18,12 +18,6 @@ pub const ALLOWED_JUICE_POOLS: Lazy<Vec<Vec<Vec<usize>>>> = Lazy::new(|| {
 
 pub const NUM_PIECE_TYPES: usize = 3;
 
-pub type TreatmentsType = [usize; 4];
-pub const UI_TREATMENTS: [TreatmentsType; 2] = [
-    [0, 1, 1, 3], // char-bound <bound| roster <bound| tradable <bound| market
-    [0, 1, 2, 3], //  char-bound <bound| roster <bound| tradable <trade| market
-];
-
 pub const TEST_PAYLOAD_PATH: &str = "/test_cases/payloads";
 pub const FLOAT_TOL: f64 = 1e-9; // -12 is known to cause problems with brute
 pub const IGNORE_PROB_TOL: f64 = 1e-14; // mostly for adv honing, 10 is known to cause problems, 12 shoudl be fine? using 14 to be giga safe
