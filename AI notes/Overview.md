@@ -68,6 +68,7 @@ Not source of truth: `dist/` (committed build output), `crates/wasm/pkg/` (wasm-
 - `Frontend/External services.md`: market prices, character import, changelogs.
 - `Screen scanner/Pipeline.md`: capture to recognised slots, and what is still stubbed.
 - `Screen scanner/Config and calibration.md`: the template config and brightness calibration.
+- `Screen scanner/Slot grid.md`: the scanner page's slot grid, slot statuses and manual edits.
 - `Browser harness/Overview.md`: driving the site in Chromium and Firefox, for debugging and e2e tests. One note per site section alongside it.
 
 Read alongside `docs/`: `Saddlepoint Approximation.pdf` for the maths, `Average Evaluation.md` and `Frontend.md` for flow diagrams, `Constants.md` for updating game data.

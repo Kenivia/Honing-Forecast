@@ -23,9 +23,9 @@ export default async ({ page, hf }) => {
   });
 
   await hf.open(page, "/Newchar/scanner");
-  if (!DEBUG_ON) {
-    await page.getByRole("button", { name: "Hide debug info" }).click();
-  }
+  // the debug UI is switched off for now, so there is nothing to hide
+  const hide = page.getByRole("button", { name: "Hide debug info" });
+  if (!DEBUG_ON && (await hide.count())) await hide.click();
   await page.getByLabel("Upload image or video").setInputFiles(FILE);
   await page.getByText("● Live").waitFor({ timeout: 60_000 });
 

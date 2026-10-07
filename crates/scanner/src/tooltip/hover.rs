@@ -1,6 +1,7 @@
 use super::{
     chest::{Chest, ChestContent, ChestKind, ChestRow, ChestRowStrips, chest_from_texts, chest_strips},
     detect::{TitleBar, find_title},
+    icon::tooltip_icon,
     items::match_title,
     layout::parse_layout,
     title::{join_title, text_image, title_lines, yellow_image},
@@ -49,6 +50,9 @@ pub struct Hover {
     pub title_votes: AHashMap<String, usize>,
     pub amount_votes: AHashMap<String, usize>,
     pub tradability_votes: AHashMap<Tradability, usize>,
+    // the slot icon its large icon is
+    #[serde(default)]
+    pub icon_votes: AHashMap<String, usize>,
     #[serde(default)]
     pub chest_kind_votes: AHashMap<ChestKind, usize>,
     #[serde(default)]
@@ -81,6 +85,9 @@ pub struct Hover {
 
     pub last_read_title: String,
     pub title: Option<String>,
+    // from the large icon, else the one the title is drawn with
+    #[serde(default)]
+    pub icon: Option<String>,
     pub amount: Option<String>,
     pub tradability: Option<Tradability>,
     pub slot: Option<SlotAddress>,
@@ -136,6 +143,8 @@ impl ScannerState {
         self.send_read(&mut hover, held);
         if hover.waiting != [0; 3] {
             self.past_hovers.push(hover);
+        } else {
+            self.write_hover(&mut hover, true);
         }
     }
 
@@ -232,6 +241,12 @@ impl ScannerState {
             && (hover.sent[0] < SETTLED || look_changed)
         {
             strips.title = Some(timed("tooltip/title", || title_lines(&buffer, &bar, s)));
+        }
+
+        if most(&hover.icon_votes) < SETTLED
+            && let Some(icon) = timed("tooltip/icon", || tooltip_icon(&buffer, &bar, s))
+        {
+            *hover.icon_votes.entry(icon).or_default() += 1;
         }
 
         let layout = timed("tooltip/layout", || parse_layout(&buffer, &bar, s));
@@ -357,7 +372,7 @@ impl ScannerState {
 
         for (index, mut hover) in hovers.into_iter().enumerate() {
             if touched[index] {
-                self.write_hover(&mut hover);
+                self.write_hover(&mut hover, Some(index) != current);
             }
             if Some(index) == current {
                 self.hover = Some(hover);
@@ -367,17 +382,28 @@ impl ScannerState {
         }
     }
 
-    fn write_hover(&mut self, hover: &mut Hover) {
+    // `over`: the hover has ended and nothing more of it will be read
+    fn write_hover(&mut self, hover: &mut Hover, over: bool) {
         let s = self.screen_info.scale_factor;
         hover.title = winner(&hover.title_votes).map(|x| x.0);
         hover.amount = winner(&hover.amount_votes).map(|x| x.0);
         hover.tradability = winner(&hover.tradability_votes).map(|x| x.0);
-        hover.slot = hover.title.as_ref().and_then(|title| {
-            self.hovered_slot(&hover.candidates, hover.bar.y as f64, s, title, hover.amount.as_ref())
+        hover.icon = winner(&hover.icon_votes).map(|x| x.0).or_else(|| {
+            hover.title.as_ref().and_then(|title| match_title(title)?.icon.clone())
         });
-        if let Some(slot) = hover.slot.and_then(|slot| self.slot_infos.get_mut(&slot)) {
+        hover.slot = hover.icon.as_ref().and_then(|icon| {
+            self.hovered_slot(&hover.candidates, hover.bar.y as f64, s, icon, hover.amount.as_ref())
+        });
+        // a slot the user edited is left alone
+        let slot = hover.slot.filter(|slot| !self.edits.contains_key(slot));
+        if let Some(slot) = slot.and_then(|slot| self.slot_infos.get_mut(&slot)) {
+            slot.hovered = true;
             slot.tradability = hover.tradability;
             slot.tooltip_amount = hover.amount.clone();
+            // no amount line was found, or no two crops of it ever agreed
+            slot.tooltip_failed = hover.amount.is_none()
+                && hover.waiting[1] == 0
+                && (over || hover.sent[1] >= MAX_READS);
         }
         // a hover is often only seen for a frame or two, so one read is enough to store the chest
         if let Some((contents, _)) = hover.chest_votes.iter().max_by_key(|(_, count)| *count) {
@@ -387,6 +413,8 @@ impl ScannerState {
                 amount: hover.amount.clone(),
                 tradability: hover.tradability,
                 last_read_title: hover.last_read_title.clone(),
+                icon: hover.icon.clone(),
+                title: hover.title.clone(),
                 column: hover.chest_place.0,
                 slot: hover.chest_place.1,
                 rows: hover.chest_rows.clone(),
@@ -441,16 +469,15 @@ impl ScannerState {
 
     // The tooltip hugs the hovered slot's column on either side and shares its top, unless the screen
     // bottom pushed it up. The cursor hides the slot itself, so this goes by what the slots were last
-    // seen to hold: the one in that column, level with or below the tooltip, with this title's icon.
+    // seen to hold: the one in that column, level with or below the tooltip, with this icon.
     fn hovered_slot(
         &self,
         beside: &[(SlotAddress, f64)],
         bar_top: f64,
         s: f64,
-        title: &str,
+        icon: &str,
         amount: Option<&String>,
     ) -> Option<SlotAddress> {
-        let icon = match_title(title)?.icon.as_ref()?;
         let tolerance = SLOT_TOLERANCE * s;
 
         let candidates: Vec<(SlotAddress, bool)> = beside
@@ -459,7 +486,7 @@ impl ScannerState {
             .filter(|(address, top)| {
                 *top >= bar_top - SLOT_ABOVE_TOOLTIP * s
                     && self.slot_infos.get(address).is_some_and(|info| {
-                        info.icon_name_score.as_ref().is_some_and(|x| &x.0 == icon)
+                        info.icon_name_score.as_ref().is_some_and(|x| x.0 == icon)
                     })
             })
             .map(|(address, top)| (address, (top - bar_top).abs() <= tolerance))

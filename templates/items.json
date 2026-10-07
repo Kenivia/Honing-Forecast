@@ -21,25 +21,5 @@
   { "title": "Artisan's Metallurgy: Level 4", "icon": "Scroll 4 Weapon", "rarity": "ancient" },
   { "icon": "Armor Book", "rarity": "relic" },
   { "icon": "Weapon Book", "rarity": "relic" },
-  { "title": "Destiny Shard" },
-
-  { "title": "Destiny Destruction Stone Pouch" },
-  { "title": "Destiny Destruction Stone Pouch II", "icon": "Destruction Stone Pouch", "rarity": "rare" },
-  { "title": "Destiny Destruction Stone Pouch III", "icon": "Destruction Stone Pouch", "rarity": "rare" },
-  { "title": "Destiny Guardian Stone Pouch" },
-  { "title": "Destiny Guardian Stone Pouch II", "icon": "Guardian Stone Pouch", "rarity": "rare" },
-  { "title": "Destiny Guardian Stone Pouch III", "icon": "Guardian Stone Pouch", "rarity": "rare" },
-  { "title": "Destiny Leapstone Chest" },
-  { "title": "Destiny Shard Pouch (S)" },
-  { "title": "Destiny Shard Pouch (M)" },
-  { "title": "Destiny Shard Pouch (L)" },
-  { "title": "Tier 4 Breath Chest" },
-  { "title": "Fusion Material: Superior Abidos Fusion Material Chest" },
-  { "title": "Honing Leapstone Selection Chest VIII", "icon": "Leapstone Selection Chest", "rarity": "epic" },
-  { "title": "Honing Leapstone Selection Chest IX", "icon": "Leapstone Selection Chest", "rarity": "epic" },
-  { "title": "Honing Fusion Material Selection Chest III", "icon": "Fusion Selection Chest", "rarity": "epic" },
-  { "title": "Honing Shard Selection Chest II", "icon": "Shard Selection Chest", "rarity": "epic" },
-  { "title": "Honing Shard Selection Chest III", "icon": "Shard Selection Chest", "rarity": "epic" },
-  { "title": "Honing Support Selection Chest II", "icon": "Support Selection Chest", "rarity": "epic" },
-  { "title": "Honing Support Selection Chest III", "icon": "Support Selection Chest", "rarity": "epic" }
+  { "title": "Destiny Shard" }
 ]

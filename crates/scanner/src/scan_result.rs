@@ -2,9 +2,12 @@ use crate::{
     buffer::Buffer,
     ocr_jobs::OcrJob,
     image_utils::common::IntegerRectangle,
-    scanner_state::{ScannerState, SlotAddress, Tradability},
+    scanner_state::{InventoryType, OneSlotInfo, ScannerState, SlotAddress, Tradability},
     setup::OneIconConfig,
-    tooltip::chest::Chest,
+    tooltip::{
+        chest::Chest,
+        items::{expected_contents, is_chest_icon},
+    },
 };
 use serde::{Serialize, Serializer, ser::SerializeStruct};
 
@@ -37,15 +40,114 @@ pub fn optional_icon_bytes<S: Serializer>(
     icon.as_ref().map(IconBytes).serialize(serializer)
 }
 
+// what the page colours a slot by
+#[derive(Debug, Serialize, Clone, Copy)]
+pub enum SlotStatus {
+    Pending,
+    Good,
+    NeedHover,
+    Error,
+    Irrelevant,
+}
+
 #[derive(Serialize)]
 pub struct SlotResult<'a> {
     pub address: SlotAddress,
-    pub icon_name_score: &'a (String, f64),
+    // nothing when the slot matches no icon
+    pub icon_name_score: &'a Option<(String, f64)>,
     pub amount: &'a Option<String>,
     pub tooltip_amount: &'a Option<String>,
     pub tradability: Option<Tradability>,
-    // icon, number as seen, number as processed
-    pub images: Option<[IconBytes<'a>; 3]>,
+    pub status: SlotStatus,
+    // why it needs a hover or is an error, for the user
+    pub reason: String,
+    // the tooltip's amount, else the number on the icon
+    pub value: Option<u32>,
+    pub image: Option<IconBytes<'a>>,
+}
+
+// the number drawn on an icon: stray characters are dropped, and a single item shows none
+fn icon_number(text: &str) -> u32 {
+    let digits: String = text.chars().filter(char::is_ascii_digit).collect();
+    digits.parse().unwrap_or(1)
+}
+
+impl ScannerState {
+    fn slot_status(&self, address: &SlotAddress, info: &OneSlotInfo) -> (SlotStatus, String) {
+        let Some((icon, _)) = &info.icon_name_score else {
+            return (SlotStatus::Irrelevant, String::new());
+        };
+        if info.hovered && info.tooltip_failed {
+            return (
+                SlotStatus::Error,
+                "A tooltip was seen for this slot, but its amount could not be read. Hover it again, or set the amount by hand.".into(),
+            );
+        }
+        if is_chest_icon(icon) {
+            // A pushed-up tooltip only tells the column. A chest read there with this icon stands
+            // for every slot showing its amount, whose tooltips would be the same; failing that
+            // (a number misread), the slots are done once as many chests were read as there are slots.
+            let column = (address.inventory_type, address.page_num, address.pos_in_inv.1);
+            let chests: Vec<&Chest> = self
+                .chests
+                .iter()
+                .filter(|chest| chest.icon.as_ref() == Some(icon) && chest.column == Some(column))
+                .collect();
+            let expected = expected_contents(icon);
+            let unexpected = chests
+                .iter()
+                .filter(|chest| chest.slot.is_none_or(|slot| slot == *address))
+                .find(|chest| !chest.contents.iter().any(|x| expected.contains(&&x.item)));
+            if let Some(chest) = unexpected {
+                let read: Vec<&str> = chest.contents.iter().map(|x| x.item.as_str()).collect();
+                return (
+                    SlotStatus::Error,
+                    format!(
+                        "A {icon} was read as holding {}, none of which it is expected to hold. Retry it, or set it by hand.",
+                        read.join(", ")
+                    ),
+                );
+            }
+            let number = info.amount.as_ref().map(|text| icon_number(text));
+            let alike = self
+                .slot_infos
+                .iter()
+                .filter(|(other, other_info)| {
+                    (other.inventory_type, other.page_num, other.pos_in_inv.1) == column
+                        && other_info.icon_name_score.as_ref().map(|x| &x.0) == Some(icon)
+                        && !self.edits.contains_key(*other)
+                })
+                .count();
+            return if info.hovered
+                || chests.iter().any(|chest| {
+                    chest.slot == Some(*address)
+                        || chest.amount.as_ref().is_some_and(|x| Some(icon_number(x)) == number)
+                })
+                || chests.len() >= alike
+            {
+                (SlotStatus::Good, String::new())
+            } else {
+                (
+                    SlotStatus::NeedHover,
+                    format!(
+                        "A chest's contents are only on its tooltip, so hover it. None read in this column has this stack's amount; chests with this icon read there so far: {} of {alike}.",
+                        chests.len()
+                    ),
+                )
+            };
+        }
+        if info.hovered {
+            return (SlotStatus::Good, String::new());
+        }
+        match &info.amount {
+            None => (SlotStatus::Pending, "The number on the icon is still being read.".into()),
+            Some(text) if icon_number(text) >= 9999 => (
+                SlotStatus::NeedHover,
+                "The icon only shows up to 9999, so the real amount is on the tooltip. Hover this stack.".into(),
+            ),
+            Some(_) => (SlotStatus::Good, String::new()),
+        }
+    }
 }
 
 #[derive(Serialize)]
@@ -64,6 +166,8 @@ pub struct ScanResult<'a> {
     pub buffer: Buffer,
     pub slots: Vec<SlotResult<'a>>,
     pub hover: Option<HoverResult<'a>>,
+    // the page each located window shows in game
+    pub pages: Vec<(InventoryType, usize)>,
     pub chests: Option<&'a Vec<Chest>>,
     pub debug: Vec<(&'a String, IntegerRectangle, f64, f64, Vec<IconBytes<'a>>)>,
     // lines to recognise, whose text is to come back with a later scan
@@ -75,18 +179,28 @@ impl ScannerState {
         let slots = self
             .slot_infos
             .iter()
-            .filter_map(|(address, info)| {
-                Some(SlotResult {
+            // an edited slot is the page's to show
+            .filter(|(address, _)| !self.edits.contains_key(*address))
+            .map(|(address, info)| {
+                let (status, reason) = self.slot_status(address, info);
+                let read = info.tooltip_amount.as_ref().or(info.amount.as_ref());
+                SlotResult {
                     address: *address,
-                    icon_name_score: info.icon_name_score.as_ref()?,
+                    icon_name_score: &info.icon_name_score,
                     amount: &info.amount,
                     tooltip_amount: &info.tooltip_amount,
                     tradability: info.tradability,
-                    images: (full || self.changed_slots.contains(address)).then(|| {
-                        [&info.observed_icon, &info.observed_number, &info.processed_number]
-                            .map(IconBytes)
-                    }),
-                })
+                    status,
+                    reason,
+                    value: read
+                        .filter(|_| info.icon_name_score.is_some())
+                        .map(|text| icon_number(text)),
+                    image: info
+                        .display_icon
+                        .as_ref()
+                        .filter(|_| full || self.changed_slots.contains(address))
+                        .map(IconBytes),
+                }
             })
             .collect();
         let debug = self
@@ -101,6 +215,12 @@ impl ScannerState {
             full,
             buffer: self.buffer,
             slots,
+            pages: self
+                .active_page_num()
+                .into_iter()
+                .filter(|(inventory, _)| self.inventory_root(*inventory).is_some())
+                .filter_map(|(inventory, page)| Some((inventory, page?)))
+                .collect(),
             hover: self.hover.as_ref().map(|hover| HoverResult {
                 last_read_title: &hover.last_read_title,
                 title: &hover.title,

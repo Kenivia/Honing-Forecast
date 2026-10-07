@@ -61,7 +61,8 @@ CHARACTER_BIND_WIDTH = 120  # "Bound to Character" ends 130px in, "Bound to Rost
 # in-game title -> icon template (or the title itself when it has none), from the shared item table
 ITEM_TITLES = {
     item["title"]: item.get("icon", item["title"])
-    for item in json.loads((ROOT / "templates/items.json").read_text(encoding="utf-8"))
+    for name in ("items.json", "chest.json")
+    for item in json.loads((ROOT / "templates" / name).read_text(encoding="utf-8"))
     if "title" in item
 }
 TITLE_PASS = 0.92  # similarity to a known title; "... Stone Pouch" is 0.86 similar to "... Stone"

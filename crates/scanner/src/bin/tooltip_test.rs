@@ -97,6 +97,19 @@ fn describe_chest(chest: &Chest) -> String {
     )
 }
 
+// what the page would colour each known slot
+fn print_statuses(state: &ScannerState) {
+    for slot in state.result(true).slots {
+        if let Some((icon, _)) = slot.icon_name_score {
+            let a = slot.address;
+            println!(
+                "  {:?} p{} {:?}  {icon}  {:?}  value {:?}  {}",
+                a.inventory_type, a.page_num, a.pos_in_inv, slot.status, slot.value, slot.reason
+            );
+        }
+    }
+}
+
 fn main() {
     let args: Vec<String> = env::args().skip(1).collect();
     if args[0] != "--stdin" {
@@ -126,6 +139,7 @@ fn main() {
                 Some(hover) => println!("  {}", describe(&state, hover)),
                 None => println!("  no tooltip"),
             }
+            print_statuses(&state);
         }
         return;
     }
@@ -283,4 +297,5 @@ fn main() {
             );
         }
     }
+    print_statuses(&state);
 }

@@ -1,0 +1,120 @@
+import { computed, ref, shallowRef } from "vue";
+import { useThrottleFn } from "@vueuse/core";
+import {
+  Chest,
+  OneIconConfig,
+  ScanResult,
+  SlotAddress,
+  SlotResult,
+} from "./LoadStorage";
+
+// What the slot grid shows. Module state: it outlives the page and the scanner worker, so the
+// grid stays up and editable after capture stops. Only a new capture wipes it.
+
+export interface SlotEdit {
+  address: SlotAddress;
+  item: string | null;
+  amount: number | null;
+  tradability: string | null;
+  retry?: boolean;
+}
+
+export const slot_key = (address: SlotAddress) =>
+  `${address.inventory_type} ${address.page_num} ${address.pos_in_inv}`;
+
+export const slots = shallowRef(new Map<string, SlotResult>());
+export const chests = shallowRef<Chest[]>([]);
+// the page each located window shows in game
+export const game_pages = ref<Record<string, number>>({});
+// what the user typed in; the scanner leaves these slots alone
+export const edits = ref<Record<string, SlotEdit>>({});
+// images only arrive when they change, and the same objects are reused so canvases are not redrawn
+export const slot_images = new Map<string, OneIconConfig>();
+
+export const has_progress = computed(
+  () => slots.value.size > 0 || Object.keys(edits.value).length > 0,
+);
+
+let latest: ScanResult | null = null;
+// edits the scanner has not been told about yet
+let unsent: SlotEdit[] = [];
+
+export function take_edits() {
+  const out = unsent;
+  unsent = [];
+  return out;
+}
+
+export function reset_scan() {
+  latest = null;
+  unsent = [];
+  slot_images.clear();
+  slots.value = new Map();
+  chests.value = [];
+  game_pages.value = {};
+  edits.value = {};
+}
+
+// addresses come out of reactive state, and a proxy cannot be posted to the worker
+const plain = (address: SlotAddress): SlotAddress => ({
+  ...address,
+  pos_in_inv: [...address.pos_in_inv],
+});
+
+export function set_edit(edit: SlotEdit) {
+  edit = { ...edit, address: plain(edit.address) };
+  edits.value[slot_key(edit.address)] = edit;
+  unsent.push(edit);
+}
+
+// forget the slot, edit and all, so the scanner reads it again
+export function retry_slot(address: SlotAddress) {
+  const key = slot_key(address);
+  delete edits.value[key];
+  slot_images.delete(key);
+  const rest = new Map(slots.value);
+  rest.delete(key);
+  slots.value = rest;
+  unsent.push({
+    address: plain(address),
+    item: null,
+    amount: null,
+    tradability: null,
+    retry: true,
+  });
+}
+
+const render_timings: number[] = ((globalThis as any).__scan_renders ??= []);
+
+// called for every scan, so it only merges; the grid is updated a few times a second
+export function process_result(result: ScanResult) {
+  if (result.full) {
+    // edited slots are not in the result, so their images would not come back
+    for (const key of [...slot_images.keys()]) {
+      if (!edits.value[key]) slot_images.delete(key);
+    }
+  }
+  for (const slot of result.slots) {
+    if (slot.image) slot_images.set(slot_key(slot.address), slot.image);
+  }
+  if (result.chests) chests.value = result.chests;
+  for (const [inventory, page] of result.pages) {
+    if (game_pages.value[inventory] !== page) game_pages.value[inventory] = page;
+  }
+  latest = result;
+  render();
+}
+
+const render = useThrottleFn(
+  () => {
+    if (!latest) return;
+    const start = performance.now();
+    slots.value = new Map(
+      latest.slots.map((slot) => [slot_key(slot.address), slot]),
+    );
+    render_timings.push(performance.now() - start);
+    if (render_timings.length > 5000) render_timings.shift();
+  },
+  250,
+  true,
+);

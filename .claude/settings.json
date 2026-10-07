@@ -1,5 +1,47 @@
 {
   "permissions": {
-    "deny": ["Read(./docs)", "Write(./docs)", "Write(./CLAUDE.md"]
+    "deny": [
+      "Read(./docs/**)",
+      "Edit(./docs/**)",
+      "Edit(./CLAUDE.md)",
+
+      "Bash(git add *)",
+      "Bash(git commit *)",
+      "Bash(git merge *)",
+      "Bash(git push *)",
+      "Bash(git pull *)",
+      "Bash(git rebase *)",
+      "Bash(git reset *)",
+      "Bash(git revert *)",
+      "Bash(git cherry-pick *)",
+      "Bash(git stash *)",
+      "Bash(git checkout *)",
+      "Bash(git switch *)",
+      "Bash(git restore *)",
+      "Bash(git clean *)",
+      "Bash(git tag *)",
+      "Bash(git branch *)",
+      "Bash(git apply *)",
+      "Bash(git am *)",
+
+      "PowerShell(git add *)",
+      "PowerShell(git commit *)",
+      "PowerShell(git merge *)",
+      "PowerShell(git push *)",
+      "PowerShell(git pull *)",
+      "PowerShell(git rebase *)",
+      "PowerShell(git reset *)",
+      "PowerShell(git revert *)",
+      "PowerShell(git cherry-pick *)",
+      "PowerShell(git stash *)",
+      "PowerShell(git checkout *)",
+      "PowerShell(git switch *)",
+      "PowerShell(git restore *)",
+      "PowerShell(git clean *)",
+      "PowerShell(git tag *)",
+      "PowerShell(git branch *)",
+      "PowerShell(git apply *)",
+      "PowerShell(git am *)"
+    ]
   }
 }

@@ -1,7 +1,7 @@
 """
-Rebuilds the Icon templates in public/ScannerConfig.msgpack from items.json. Anchors are left alone.
+Rebuilds the Icon templates in public/ScannerConfig.msgpack from items.json and chest.json. Anchors are left alone.
 
-To add an item: put its icon art in Icons/, add a row to items.json, run this.
+To add an item: put its icon art in Icons/, add a row to items.json (chest.json for a chest), run this.
 A row is {"title": in-game tooltip title, "icon": file name in Icons/, "rarity": background}.
 Rows sharing an icon share one template; a row without an icon is only a title the tooltip reader accepts.
 """
@@ -19,6 +19,7 @@ SCRIPT_DIR = Path(__file__).resolve().parent
 BACKGROUNDS_DIR = SCRIPT_DIR / "Backgrounds"
 ICONS_DIR = SCRIPT_DIR / "Icons"
 ITEMS_PATH = SCRIPT_DIR / "items.json"
+CHESTS_PATH = SCRIPT_DIR / "chest.json"  # same rows, plus "contents": the titles a chest is expected to hold
 OUTPUT_PATH = SCRIPT_DIR.parent / "public" / "ScannerConfig.msgpack"
 
 
@@ -55,7 +56,8 @@ def build_icon_config(name: str, rarity: str) -> dict:
 
 def main():
     rarities = {}
-    for item in json.loads(ITEMS_PATH.read_text(encoding="utf-8")):
+    items = [item for path in (ITEMS_PATH, CHESTS_PATH) for item in json.loads(path.read_text(encoding="utf-8"))]
+    for item in items:
         if "icon" in item:
             assert rarities.setdefault(item["icon"], item["rarity"]) == item["rarity"], f"'{item['icon']}' has two rarities"
 

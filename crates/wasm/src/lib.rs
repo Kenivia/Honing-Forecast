@@ -6,7 +6,7 @@ use hf_core::performance::Performance;
 use hf_core::state_bundle::StateBundle;
 use hf_scanner::buffer::Buffer;
 use hf_scanner::image_utils::ocr::recognize_raw;
-use hf_scanner::scanner_state::ScannerState;
+use hf_scanner::scanner_state::{ScannerState, SlotEdit};
 use hf_scanner::setup::{IncomingNewIcon, OneIconConfig, load_ocr_engine};
 use hf_scanner::timing::timed;
 use rand::rngs::ThreadRng;
@@ -58,6 +58,9 @@ struct CropperOptions {
     full: bool,
     // texts of earlier results' ocr_jobs, as (id, text)
     ocr_results: Vec<(u32, String)>,
+    // what the user changed by hand since the last scan
+    #[serde(default)]
+    edits: Vec<SlotEdit>,
 }
 
 #[derive(Deserialize)]
@@ -98,6 +101,7 @@ pub fn cropper_wrapper(options: JsValue) -> JsValue {
     SCANNER.with_borrow_mut(|state| {
         let state = state.as_mut().unwrap();
         state.debugging = options.debugging;
+        state.apply_edits(options.edits);
         timed("apply_ocr", || state.apply_ocr(options.ocr_results));
         state.cropper();
         let out = timed("to_value", || {

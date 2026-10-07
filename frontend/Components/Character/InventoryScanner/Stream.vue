@@ -4,10 +4,12 @@ import {
   file_to_stream,
 } from "@/Components/Character/InventoryScanner/FramePassing";
 import { queue_ocr, start_ocr, stop_ocr, take_ocr_results } from "./OcrRelay";
+import { has_progress, reset_scan, take_edits } from "./ScanStore";
 import { useRosterStore } from "@/Stores/RosterConfig";
 import { WasmOp } from "@/WasmInterface/WasmWorker";
 import { storeToRefs } from "pinia";
 import { ref, computed, onMounted, onUnmounted, toRaw, watch } from "vue";
+import { useIntervalFn } from "@vueuse/core";
 import {
   getModel,
   getScannerConfig,
@@ -180,6 +182,8 @@ function attach() {
 
 async function start_scanner() {
   pause_cropper();
+  // the new worker knows nothing of what the grid still shows
+  reset_scan();
   runtime.ensure_cropper();
   bundle.value = runtime.cropper;
 
@@ -238,6 +242,15 @@ function toggle_cropper() {
     cropper_loop(++loop_id, true);
   }
 }
+// frames handed to the scanner within the last second
+let sent_at: number[] = [];
+const sent_fps = ref(0);
+useIntervalFn(() => {
+  const now = performance.now();
+  sent_at = sent_at.filter((at) => now - at < 1000);
+  sent_fps.value = sent_at.length;
+}, 250);
+
 // per-scan timings in ms, kept on window for profiling
 const scan_timings: any[] = ((globalThis as any).__scan_timings ??= []);
 
@@ -257,6 +270,7 @@ async function cropper_loop(id: number, full = false) {
     return;
   }
 
+  sent_at.push(performance.now());
   // one result per op, a late reply from an earlier op must not fork the loop
   let done = false;
   bundle.value.debounced_start(
@@ -266,6 +280,7 @@ async function cropper_loop(id: number, full = false) {
       debugging: props.debugging,
       full,
       ocr_results: take_ocr_results(),
+      edits: take_edits(),
     },
     (result: ScanResult, timings) => {
       // the scanner waits for these texts whether or not this reply is used
@@ -432,6 +447,19 @@ watch(
       >
         Stop
       </button>
+      <span
+        v-if="status === 'capturing'"
+        class="self-center text-sm text-(--text-muted)"
+        aria-label="Frames scanned per second"
+      >
+        {{ sent_fps }} fps scanned
+      </span>
+      <span
+        v-if="status === 'idle' && has_progress"
+        class="self-center text-sm text-(--warning)"
+      >
+        Starting a capture wipes the current scan.
+      </span>
     </div>
     <button @click="toggle_cropper" class="generic-button">
       {{ cropper_running ? "stop cropper" : "start scropper" }}

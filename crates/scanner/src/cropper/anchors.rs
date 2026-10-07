@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 use crate::{
     constants::{ANCHORS, AnchorSpec, Bound, STORAGE_MIN, STORAGE_SHIFTS, anchor_spec},
     image_utils::{
-        brightness::est_ingame_brightness,
+        brightness::{est_ingame_brightness, mean_intensity},
         close_enough::close_enough,
         common::{FloatRectangle, IntegerRectangle, Rectangle, get_resizer},
         resize::crop_buffer,
@@ -96,6 +96,7 @@ impl ScannerState {
             return;
         };
         let mut to_clear: Vec<(AnchorType, usize)> = Vec::new();
+        let mut estimates: Vec<(AnchorType, usize, f64)> = Vec::new();
 
         for (anchor_type, anchor_info) in self.anchors.iter() {
             for (variant_index, found) in anchor_info
@@ -105,9 +106,10 @@ impl ScannerState {
                 .filter(|(_, x)| x.is_some())
             {
                 assert!(anchor_info.position_root.is_some());
+                let variant = &anchor_spec(*anchor_type).variants[variant_index];
                 if close_enough(
                     &icon_lookup(
-                        anchor_spec(*anchor_type).variants[variant_index].name,
+                        variant.name,
                         self.screen_info.effective_height,
                         get_resizer(&mut self.resizer),
                     ),
@@ -122,8 +124,25 @@ impl ScannerState {
                 .is_none()
                 {
                     to_clear.push((*anchor_type, variant_index));
+                } else if let Some(curve) = variant.brightness {
+                    // its estimate is of this frame, not of the one it was found on, which a
+                    // window still fading in makes far too dark
+                    let position = found.unwrap().0;
+                    let (x, y) = position.top_left;
+                    let patch = crop_buffer(
+                        position.with_top_left((x.round(), y.round())),
+                        get_resizer(&mut self.resizer),
+                        self.buffer,
+                        None,
+                    );
+                    let estimate = est_ingame_brightness(mean_intensity(&patch), &curve);
+                    estimates.push((*anchor_type, variant_index, estimate));
                 }
             }
+        }
+        for (anchor_type, variant_index, estimate) in estimates {
+            let found = &mut self.anchors.get_mut(&anchor_type).unwrap().positions[variant_index];
+            found.as_mut().unwrap().2 = Some(estimate);
         }
         // hashmap borriwng shinanigans
         for (anchor_type, variant_index) in to_clear {
@@ -220,7 +239,10 @@ impl ScannerState {
             .values()
             .flat_map(|anchor| anchor.positions.iter().flatten().filter_map(|x| x.2))
             .collect();
-        if found.len() > self.screen_info.brightness_anchors {
+        // nothing held up at this estimate, so it is not one to keep: the next anchor found replaces it
+        if found.is_empty() {
+            self.screen_info.brightness_anchors = 0;
+        } else if found.len() >= self.screen_info.brightness_anchors {
             self.screen_info.brightness = Some(found.iter().sum::<f64>() / found.len() as f64);
             self.screen_info.brightness_anchors = found.len();
         }

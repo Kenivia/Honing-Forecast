@@ -1,6 +1,6 @@
 # Driving the screen scanner
 
-Pages: `/<character>/scanner` (scan loop and debug tables) and `/<character>/setup` (icon setup, no scan loop). Both mount the same capture card.
+Pages: `/<character>/scanner` (scan loop and slot grid) and `/<character>/setup` (icon setup, no scan loop). Both mount the same capture card.
 
 ## Feeding it frames
 
@@ -11,7 +11,7 @@ export default async ({ page, hf }) => {
   await hf.open(page, "/Newchar/scanner");
   await page.getByLabel("Upload image or video").setInputFiles(file);
   await page.getByText("● Live").waitFor();
-  await page.locator("tbody tr").nth(20).waitFor({ timeout: 30_000 });
+  await page.locator(".grid canvas").nth(20).waitFor({ timeout: 30_000 });
 };
 ```
 
@@ -21,9 +21,9 @@ export default async ({ page, hf }) => {
 - Any file size works. After upload a `Game resolution` select and a `Forced 21:9` checkbox appear, preselected from the file size; if the game in the file is smaller than the file (windowed, padded), pick its real resolution or nothing is recognised.
 - Ready-made inputs: `scripts/brightness/Recording 1080p.mp4` and `scripts/brightness/inputs/*.png` (lone inventory) and `scripts/brightness/inputs storage/*.png` (storage layout with a chest tooltip), both 1080p at every brightness setting; in `scripts/brightness/1080p raw`, recordings at settings 60, 0 and 100; in `scripts/brightness/1440p raw`, `inventory top left.png` and `hover tooltip.png` show a character inventory with items, the `storage ...` files show the storage layout, and `21 by 9 storage.png` is storage at forced 21:9 (tick the checkbox, keep 2560x1440).
 - The three files named `2026-10-06 ...` are the near-lossless recordings (see below), all at brightness 60: one 2560x1440 in `1440p raw`, and two 3840x2160, one in `2160p raw` with a slower hover and one **misfiled in `1080p raw`** although it is 4K. The older `Recording ...` files in `1080p raw` are the lossy hardware-encoded ones.
-- The results tables keep their rows after `Stop` and are replaced by the first result of the next capture.
-- The first frame is slow (full-frame anchor search). Slot rows appear in the second table once the inventory is found; a full inventory page gives a little over 100 rows.
-- Chests read from tooltips are listed in a third table (header `Title read`), one row per chest. Every frame of an uploaded recording is scanned. Texts arrive later than the frame they were cut from, so wait for the OCR queue to empty (`window.__ocr_timings` stops growing) before reading the tables.
+- The grid keeps its slots after `Stop` and stays editable; starting the next capture wipes it, and the capture card says so while idle.
+- The first frame is slow (full-frame anchor search). Slots get a canvas once their page has been looked at, about a second and a half for a full page; until then they show `?`. A slot's status is its border colour (`style.borderColor` holds the CSS variable, see `Slot grid.md`).
+- Chests read from tooltips show in the dashboard under the grid when a slot with that chest's icon is hovered or clicked. The dashboard's inputs are labelled `Item`, `Amount` and `Tradability`, with buttons `Save edit`, `Retry` and `Okay`. Every frame of an uploaded recording is scanned. Texts arrive later than the frame they were cut from, so wait for the OCR queue to empty (`window.__ocr_timings` stops growing) before reading the grid.
 - `Stop` ends capture. `Share screen` is the real screen-share path.
 
 ## Recording test inputs
@@ -47,12 +47,13 @@ OBS settings that match, used for the `2026-10-06 ...` recordings:
 ## State you can read
 
 - The badge next to "Screen Capture" reads `● Live` or `Idle`.
+- While capturing, the element labelled `Frames scanned per second` reads the frames handed to the scanner in the last second, as `22 fps scanned`.
 - The button under the card reads `stop cropper` while the scan loop runs.
 - Leaving the scanner page pauses the loop but keeps the stream; returning shows `● Live` again without a new upload.
 
 ## Measuring scan time
 
-`pnpm scanner-profile [--debug] [--firefox] [--keep] [recording...]` does the whole thing: it builds the wasm and starts vite if nothing answers on :5173, plays each recording through the scanner page, writes a dump per recording to `target/scan-profiles/`, and prints the stage breakdown. With no recording it does the two 1080p ones in `scripts/brightness/1080p raw`. `--debug` leaves the debug tables on; `--keep` leaves the dev server running. `scripts/browser/scan_summary.mjs <dump>...` re-prints a dump, so a run can be re-read without replaying anything.
+`pnpm scanner-profile [--debug] [--firefox] [--keep] [recording...]` does the whole thing: it builds the wasm and starts vite if nothing answers on :5173, plays each recording through the scanner page, writes a dump per recording to `target/scan-profiles/`, and prints the stage breakdown. With no recording it does the two 1080p ones in `scripts/brightness/1080p raw`. `--debug` does nothing while the debug tables are commented out; `--keep` leaves the dev server running. `scripts/browser/scan_summary.mjs <dump>...` re-prints a dump, so a run can be re-read without replaying anything.
 
 - One recording takes about two and a half minutes: it plays at half speed (headless Chromium skips frames at full speed) and then waits for the OCR queue to drain.
 - **Do not edit any project file while a run is in flight.** Vite reloads the page, which empties the timing arrays; a dump with 0 scans is that.
@@ -60,7 +61,7 @@ OBS settings that match, used for the `2026-10-06 ...` recordings:
 
 The dumps are the three arrays the page keeps, all in ms:
 
-`window.__scan_timings` holds one record per scan (last 5000): `read` (waiting for a frame), `to_worker`, `copy`, `wasm_call`, `to_main`, `process_result` (merging the result, not rendering), `total`, and `rust`, a list of `[name, total, calls]` for the stages inside the wasm call. `frame_time` is the frame's timestamp in microseconds. A scan saw a tooltip if `rust` has `tooltip/layout`, a chest if it has `tooltip/chest`. A frame that was not scanned because too little changed has no `anchors` (it still has `changed`, `apply_ocr` and `to_value`). Skip the first record, which is the whole-frame anchor search, and the records after the video ended, which are its last frame repeating twice a second and show up as a `frame_time` gap of half a second. Click `Hide debug info` before uploading to measure without the debug payload. `window.__scan_renders` has the duration of each table update. `window.__ocr_timings` has one record per OCR batch: `jobs`, `width` (px of strip), `took`, `waited` (how long its first reads took from being queued) and `left` (lines still queued); a batch with no first read in it records `waited: 0`, so those have to be dropped before taking a median. The scanner's own `rust` list no longer has any OCR in it.
+`window.__scan_timings` holds one record per scan (last 5000): `read` (waiting for a frame), `to_worker`, `copy`, `wasm_call`, `to_main`, `process_result` (merging the result, not rendering), `total`, and `rust`, a list of `[name, total, calls]` for the stages inside the wasm call. `frame_time` is the frame's timestamp in microseconds. A scan saw a tooltip if `rust` has `tooltip/layout`, a chest if it has `tooltip/chest`. A frame that was not scanned because too little changed has no `anchors` (it still has `changed`, `apply_ocr` and `to_value`). Skip the first record, which is the whole-frame anchor search, and the records after the video ended, which are its last frame repeating twice a second and show up as a `frame_time` gap of half a second. The page now always scans without the debug payload. `window.__scan_renders` has the duration of each grid update. `window.__ocr_timings` has one record per OCR batch: `jobs`, `width` (px of strip), `took`, `waited` (how long its first reads took from being queued) and `left` (lines still queued); a batch with no first read in it records `waited: 0`, so those have to be dropped before taking a median. The scanner's own `rust` list no longer has any OCR in it.
 
 ## Real screen share, headed only
 

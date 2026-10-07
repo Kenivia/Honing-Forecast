@@ -83,6 +83,14 @@ pub struct OneSlotInfo {
     pub observed_number: OneIconConfig,
     pub processed_number: OneIconConfig,
     pub observed_icon: OneIconConfig,
+    // the whole slot, number included, as last recognised, or as last seen while nothing ever was
+    #[serde(skip)]
+    pub display_icon: Option<OneIconConfig>,
+    // a tooltip was resolved to this slot, and whether its amount failed to read
+    #[serde(default)]
+    pub hovered: bool,
+    #[serde(default)]
+    pub tooltip_failed: bool,
     // pub observed_id: Uuid,
     pub currently_seen: bool,
     pub amount: Option<String>,
@@ -96,6 +104,33 @@ pub struct OneSlotInfo {
     // of the slot's raw pixels when it was last looked at
     #[serde(skip)]
     pub raw_hash: u64,
+}
+
+// What the user typed in for a slot, which the scanner then leaves alone. A retry instead forgets
+// the slot, edit and all, so it is read again.
+#[derive(Debug, Deserialize)]
+pub struct SlotEdit {
+    pub address: SlotAddress,
+    #[serde(default)]
+    pub retry: bool,
+    pub item: Option<String>,
+    pub amount: Option<u32>,
+    pub tradability: Option<Tradability>,
+}
+
+impl ScannerState {
+    pub fn apply_edits(&mut self, edits: Vec<SlotEdit>) {
+        for edit in edits {
+            if edit.retry {
+                self.edits.remove(&edit.address);
+                self.slot_infos.remove(&edit.address);
+                // a still screen is not scanned otherwise
+                self.slots_left = true;
+            } else {
+                self.edits.insert(edit.address, edit);
+            }
+        }
+    }
 }
 
 // a piece of fixed UI that locates inventories, or other anchors
@@ -117,6 +152,8 @@ pub struct ScannerState {
 
     #[serde(default)]
     pub slot_infos: AHashMap<SlotAddress, OneSlotInfo>,
+    #[serde(skip)]
+    pub edits: AHashMap<SlotAddress, SlotEdit>,
     #[serde(default)]
     pub anchors: AHashMap<AnchorType, AnchorInfo>,
 

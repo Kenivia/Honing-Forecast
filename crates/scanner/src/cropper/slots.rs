@@ -1,5 +1,5 @@
 use crate::{
-    constants::{ALL_SLOT_ADDRESSS, NUMBER_OFFSET},
+    constants::{ALL_SLOT_ADDRESSS, COMBINED_NUMBER_HEIGHT, NUMBER_OFFSET},
     image_utils::{
         brightness::mean_intensity,
         close_enough::close_enough,
@@ -89,7 +89,9 @@ impl ScannerState {
         self.slots_left = false;
         // my_dbg!(active_page_nums, self.anchors);
         for slot_address in ALL_SLOT_ADDRESSS.keys() {
-            if active_page_nums[&slot_address.inventory_type] != Some(slot_address.page_num) {
+            if active_page_nums[&slot_address.inventory_type] != Some(slot_address.page_num)
+                || self.edits.contains_key(slot_address)
+            {
                 continue;
             }
             // this extra check is for when there's only 1 pagenum (active_page will return a result but we don't have anchor)
@@ -135,6 +137,24 @@ impl ScannerState {
                     timed("slots/all_icons", || {
                         self.check_through_all_icons(position, root)
                     });
+                // what the page shows for this slot: the number strip and the icon below it
+                let never_recognised = self
+                    .slot_infos
+                    .get(slot_address)
+                    .is_none_or(|info| info.icon_name_score.is_none());
+                let display_icon = (icon_name_score.is_some() || never_recognised).then(|| {
+                    let number_height = COMBINED_NUMBER_HEIGHT * self.screen_info.scale_factor;
+                    crop_buffer(
+                        FloatRectangle {
+                            top_left: (left, top - number_height),
+                            width: position.width,
+                            height: position.height + number_height,
+                        },
+                        get_resizer(&mut self.resizer),
+                        self.buffer,
+                        None,
+                    )
+                });
                 let debug_start = crate::timing::now();
                 if self.debugging {
                     let raw_icon =
@@ -191,7 +211,7 @@ impl ScannerState {
 
                     // what the tooltip said stays while the slot holds the same item, and so does
                     // the last number until the new one is read
-                    let (tooltip_amount, tradability, amount) = self
+                    let (tooltip_amount, tradability, amount, hovered, tooltip_failed) = self
                         .slot_infos
                         .get(slot_address)
                         .filter(|old| {
@@ -203,6 +223,8 @@ impl ScannerState {
                                 old.tooltip_amount.clone(),
                                 old.tradability,
                                 old.amount.clone(),
+                                old.hovered,
+                                old.tooltip_failed,
                             )
                         })
                         .unwrap_or_default();
@@ -212,6 +234,9 @@ impl ScannerState {
                             icon_name_score,
                             observed_number,
                             observed_icon,
+                            display_icon,
+                            hovered,
+                            tooltip_failed,
                             processed_number: pre_processed,
                             amount,
                             tooltip_amount,
@@ -232,6 +257,9 @@ impl ScannerState {
                         Some(this_slot) => {
                             this_slot.observed_number = observed_number;
                             this_slot.observed_icon = observed_icon;
+                            if display_icon.is_some() {
+                                this_slot.display_icon = display_icon;
+                            }
                             this_slot.currently_seen = false;
                             this_slot.raw_hash = raw_hash;
                         }
@@ -243,6 +271,9 @@ impl ScannerState {
                                     processed_number: observed_number.clone(),
                                     observed_number,
                                     observed_icon,
+                                    display_icon,
+                                    hovered: false,
+                                    tooltip_failed: false,
                                     currently_seen: false,
                                     amount: None,
                                     tooltip_amount: None,

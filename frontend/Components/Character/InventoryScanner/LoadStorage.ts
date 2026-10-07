@@ -54,19 +54,33 @@ export interface Chest {
   amount: string | null;
   tradability: string | null;
   last_read_title: string;
+  title: string | null;
+  icon: string | null;
   column: [string, number, number] | null;
   slot: SlotAddress | null;
   rows: ChestRow[];
 }
 
+export type SlotStatus =
+  | "Pending"
+  | "Good"
+  | "NeedHover"
+  | "Error"
+  | "Irrelevant";
+
 export interface SlotResult {
   address: SlotAddress;
-  icon_name_score: [string, number];
+  // null when the slot matches no icon
+  icon_name_score: [string, number] | null;
   amount: string | null;
   tooltip_amount: string | null;
   tradability: string | null;
-  // icon, number as seen, number as processed; only when it changed
-  images?: OneIconConfig[];
+  status: SlotStatus;
+  reason: string;
+  // the tooltip's amount, else the number on the icon
+  value: number | null;
+  // the whole slot; only when it changed
+  image?: OneIconConfig;
 }
 
 // What a scan returns. The scanner state stays in the worker; images, debug entries and
@@ -76,6 +90,8 @@ export interface ScanResult {
   buffer: Buffer;
   slots: SlotResult[];
   hover: Hover | null;
+  // the page each located window shows in game
+  pages: [string, number][];
   chests?: Chest[];
   debug: [string, ScaledPosition, number, number, OneIconConfig[]][];
   ocr_jobs: OcrJob[];

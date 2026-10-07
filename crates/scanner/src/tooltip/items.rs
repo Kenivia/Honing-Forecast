@@ -11,11 +11,35 @@ const TITLE_NEAR: f64 = 0.85;
 pub struct Item {
     pub title: Option<String>,
     pub icon: Option<String>,
+    // chest.json only: the titles it is expected to hold
+    pub contents: Option<Vec<String>>,
 }
 
+// chests come from their own file, templates/chest.json
 pub static ITEMS: LazyLock<Vec<Item>> = LazyLock::new(|| {
-    serde_json::from_str(include_str!("../../../../templates/items.json")).unwrap()
+    let mut items: Vec<Item> =
+        serde_json::from_str(include_str!("../../../../templates/items.json")).unwrap();
+    items.extend(
+        serde_json::from_str::<Vec<Item>>(include_str!("../../../../templates/chest.json"))
+            .unwrap(),
+    );
+    items
 });
+
+pub fn is_chest_icon(icon: &str) -> bool {
+    ITEMS
+        .iter()
+        .any(|item| item.contents.is_some() && item.icon.as_deref() == Some(icon))
+}
+
+// what the chests drawn with this icon are expected to hold
+pub fn expected_contents(icon: &str) -> Vec<&'static String> {
+    ITEMS
+        .iter()
+        .filter(|item| item.icon.as_deref() == Some(icon))
+        .flat_map(|item| item.contents.iter().flatten())
+        .collect()
+}
 
 // Digits and roman numerals, which is all that tells some titles apart. A numeral with a character
 // the recogniser did not know in it is kept as it is, so it matches nothing.

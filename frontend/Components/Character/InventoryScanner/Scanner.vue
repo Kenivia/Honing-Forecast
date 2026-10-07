@@ -1,67 +1,87 @@
 <script setup lang="ts">
-import { nextTick, ref, shallowRef } from "vue";
-import { useThrottleFn } from "@vueuse/core";
-// import { zipSync } from "fflate";
-import {
-  Chest,
-  getScannerConfig,
-  Hover,
-  OneIconConfig,
-  ScaledPosition,
-  ScanResult,
-  SlotAddress,
-} from "./LoadStorage.js";
+import { computed, ref } from "vue";
+import { getScannerConfig, OneIconConfig } from "./LoadStorage.js";
+import { process_result } from "./ScanStore";
+import SlotGrid from "./SlotGrid.vue";
 import Stream from "./Stream.vue";
-// import { draw_icon } from "./ScannerUIutils.js";
-import IconDisplay from "./IconDisplay.vue";
-import DemoOCR from "./DemoOCR.vue";
-import DemoColorfilter from "./DemoColorfilter.vue";
 
 const config = ref<OneIconConfig[] | null>(null);
 getScannerConfig().then((data) => (config.value = data));
 
 const status = ref<"idle" | "capturing">("idle");
-const boxes = ref<ScaledPosition[]>([]);
+// what a slot can be set to by hand
+const items = computed(() =>
+  (config.value ?? [])
+    .filter((icon) => icon.tag === "Icon")
+    .map((icon) => icon.name)
+    .sort(),
+);
 
-interface DebugRow {
-  icon_name: string;
-  position: ScaledPosition;
-  confidence: number;
-  brightness: number;
-  debug_icons: OneIconConfig[];
-}
+// The debug UI below is switched off for now, script and template both.
 
-const debug_table = shallowRef<DebugRow[]>([]);
+// import { nextTick, ref, shallowRef } from "vue";
+// import { useThrottleFn } from "@vueuse/core";
+// import { zipSync } from "fflate";
+// import {
+//   Chest,
+//   getScannerConfig,
+//   Hover,
+//   OneIconConfig,
+//   ScaledPosition,
+//   ScanResult,
+//   SlotAddress,
+// } from "./LoadStorage.js";
+// import Stream from "./Stream.vue";
+// import { draw_icon } from "./ScannerUIutils.js";
+// import IconDisplay from "./IconDisplay.vue";
+// import DemoOCR from "./DemoOCR.vue";
+// import DemoColorfilter from "./DemoColorfilter.vue";
 
-const debugging = ref(true);
-const hover = ref<Hover | null>(null);
+// const config = ref<OneIconConfig[] | null>(null);
+// getScannerConfig().then((data) => (config.value = data));
 
-interface FoundIconRow {
-  key: string;
-  name: string;
-  icon: OneIconConfig;
-  confidence: number;
-  observed_number: OneIconConfig;
-  processed_number: OneIconConfig;
-  amount: string | null;
-  tooltip_amount: string | null;
-  tradability: string | null;
-}
+// const status = ref<"idle" | "capturing">("idle");
+// const boxes = ref<ScaledPosition[]>([]);
 
-const found_icons = shallowRef<FoundIconRow[]>([]);
-const chests = shallowRef<Chest[]>([]);
+// interface DebugRow {
+//   icon_name: string;
+//   position: ScaledPosition;
+//   confidence: number;
+//   brightness: number;
+//   debug_icons: OneIconConfig[];
+// }
 
-function chest_location(chest: Chest) {
-  if (chest.slot) {
-    const [row, column] = chest.slot.pos_in_inv;
-    return `${chest.slot.inventory_type} page ${chest.slot.page_num + 1}, row ${row + 1}, column ${column + 1}`;
-  }
-  if (chest.column) {
-    const [inventory, page, column] = chest.column;
-    return `${inventory} page ${page + 1}, column ${column + 1}`;
-  }
-  return "";
-}
+// const debug_table = shallowRef<DebugRow[]>([]);
+
+// const debugging = ref(true);
+// const hover = ref<Hover | null>(null);
+
+// interface FoundIconRow {
+//   key: string;
+//   name: string;
+//   icon: OneIconConfig;
+//   confidence: number;
+//   observed_number: OneIconConfig;
+//   processed_number: OneIconConfig;
+//   amount: string | null;
+//   tooltip_amount: string | null;
+//   tradability: string | null;
+// }
+
+// const found_icons = shallowRef<FoundIconRow[]>([]);
+// const chests = shallowRef<Chest[]>([]);
+
+// function chest_location(chest: Chest) {
+//   if (chest.slot) {
+//     const [row, column] = chest.slot.pos_in_inv;
+//     return `${chest.slot.inventory_type} page ${chest.slot.page_num + 1}, row ${row + 1}, column ${column + 1}`;
+//   }
+//   if (chest.column) {
+//     const [inventory, page, column] = chest.column;
+//     return `${inventory} page ${page + 1}, column ${column + 1}`;
+//   }
+//   return "";
+// }
 
 // function canvas_to_blob(canvas: HTMLCanvasElement): Promise<Blob> {
 //   return new Promise((resolve, reject) => {
@@ -133,86 +153,96 @@ function chest_location(chest: Chest) {
 
 // Images only arrive when they change, so they are kept here. Reusing the same objects
 // also lets Vue skip the canvases that did not change.
-const slot_images = new Map<string, OneIconConfig[]>();
-const debug_rows = new Map<string, DebugRow>();
-let latest: ScanResult | null = null;
-let latest_chests: Chest[] = [];
-const render_timings: number[] = ((globalThis as any).__scan_renders ??= []);
+// const slot_images = new Map<string, OneIconConfig[]>();
+// const debug_rows = new Map<string, DebugRow>();
+// let latest: ScanResult | null = null;
+// let latest_chests: Chest[] = [];
+// const render_timings: number[] = ((globalThis as any).__scan_renders ??= []);
 
-const slot_key = (address: SlotAddress) =>
-  `${address.inventory_type} ${address.page_num} ${address.pos_in_inv}`;
+// const slot_key = (address: SlotAddress) =>
+//   `${address.inventory_type} ${address.page_num} ${address.pos_in_inv}`;
 
 // called for every scan, so it only merges; the tables are updated a few times a second
-function process_result(result: ScanResult) {
-  if (result.full) {
-    slot_images.clear();
-    debug_rows.clear();
-  }
-  for (const slot of result.slots) {
-    if (slot.images) slot_images.set(slot_key(slot.address), slot.images);
-  }
-  for (const [
-    icon_name,
-    position,
-    confidence,
-    brightness,
-    icons,
-  ] of result.debug) {
-    debug_rows.set(icon_name, {
-      icon_name,
-      position,
-      confidence,
-      brightness,
-      debug_icons: icons,
-    });
-  }
-  latest_chests = result.chests ?? latest_chests;
-  latest = result;
-  render();
-}
+// function process_result(result: ScanResult) {
+//   if (result.full) {
+//     slot_images.clear();
+//     debug_rows.clear();
+//   }
+//   for (const slot of result.slots) {
+//     if (slot.images) slot_images.set(slot_key(slot.address), slot.images);
+//   }
+//   for (const [
+//     icon_name,
+//     position,
+//     confidence,
+//     brightness,
+//     icons,
+//   ] of result.debug) {
+//     debug_rows.set(icon_name, {
+//       icon_name,
+//       position,
+//       confidence,
+//       brightness,
+//       debug_icons: icons,
+//     });
+//   }
+//   latest_chests = result.chests ?? latest_chests;
+//   latest = result;
+//   render();
+// }
 
-const render = useThrottleFn(
-  () => {
-    const start = performance.now();
-    if (!debugging.value) debug_rows.clear();
-    debug_table.value = [...debug_rows.values()].sort((a, b) =>
-      a.icon_name.localeCompare(b.icon_name),
-    );
-    boxes.value = debug_table.value.map((row) => row.position);
+// const render = useThrottleFn(
+//   () => {
+//     const start = performance.now();
+//     if (!debugging.value) debug_rows.clear();
+//     debug_table.value = [...debug_rows.values()].sort((a, b) =>
+//       a.icon_name.localeCompare(b.icon_name),
+//     );
+//     boxes.value = debug_table.value.map((row) => row.position);
 
-    found_icons.value = latest.slots
-      .map((slot) => {
-        const key = slot_key(slot.address);
-        const [icon, observed_number, processed_number] =
-          slot_images.get(key) ?? [];
-        return {
-          key,
-          name: slot.icon_name_score[0],
-          icon,
-          confidence: slot.icon_name_score[1],
-          observed_number,
-          processed_number,
-          amount: slot.amount,
-          tooltip_amount: slot.tooltip_amount,
-          tradability: slot.tradability,
-        };
-      })
-      .sort(
-        (a, b) => a.name.localeCompare(b.name) || a.key.localeCompare(b.key),
-      );
-    chests.value = latest_chests;
-    hover.value = latest.hover;
-    nextTick(() => {
-      render_timings.push(performance.now() - start);
-      if (render_timings.length > 5000) render_timings.shift();
-    });
-  },
-  250,
-  true,
-);
+//     found_icons.value = latest.slots
+//       .map((slot) => {
+//         const key = slot_key(slot.address);
+//         const [icon, observed_number, processed_number] =
+//           slot_images.get(key) ?? [];
+//         return {
+//           key,
+//           name: slot.icon_name_score[0],
+//           icon,
+//           confidence: slot.icon_name_score[1],
+//           observed_number,
+//           processed_number,
+//           amount: slot.amount,
+//           tooltip_amount: slot.tooltip_amount,
+//           tradability: slot.tradability,
+//         };
+//       })
+//       .sort(
+//         (a, b) => a.name.localeCompare(b.name) || a.key.localeCompare(b.key),
+//       );
+//     chests.value = latest_chests;
+//     hover.value = latest.hover;
+//     nextTick(() => {
+//       render_timings.push(performance.now() - start);
+//       if (render_timings.length > 5000) render_timings.shift();
+//     });
+//   },
+//   250,
+//   true,
+// );
 </script>
 
 <template>
+  <div v-if="config" class="flex w-full flex-col gap-3">
+    <Stream
+      :should_start_cropper="true"
+      v-model:status="status"
+      :debugging="false"
+      :process_result="process_result"
+    />
+    <SlotGrid :items="items" />
+  </div>
+  <!--
   <div v-if="config">
     <Stream
       :should_start_cropper="true"
@@ -342,13 +372,14 @@ const render = useThrottleFn(
       </tbody>
     </table>
   </div>
-  <DemoColorfilter />
-  <DemoOCR />
+   <DemoColorfilter />
+  <DemoOCR /> 
+  -->
 </template>
 
-<style>
+<!--
 table {
   border-collapse: separate;
   border-spacing: 32px 0;
 }
-</style>
+-->

@@ -47,6 +47,10 @@ pub struct Chest {
     pub amount: Option<String>,
     pub tradability: Option<Tradability>,
     pub last_read_title: String,
+    // the known title that read is, for display
+    pub title: Option<String>,
+    // the slot icon its tooltip showed; a chest counts for the slots showing it
+    pub icon: Option<String>,
     // inventory, page and column the tooltip sat against
     pub column: Option<(InventoryType, usize, usize)>,
     // only known when the tooltip was level with its slot
@@ -149,6 +153,7 @@ impl Chest {
         self.column == other.column
             && self.kind == other.kind
             && self.contents == other.contents
+            && agree(&self.icon, &other.icon)
             && agree(&self.tradability, &other.tradability)
             && agree(&self.amount, &other.amount)
     }
@@ -170,6 +175,8 @@ impl ScannerState {
                 let old = &self.chests[index];
                 if old.same_contents(&chest) {
                     chest.slot = old.slot.or(chest.slot);
+                    chest.title = chest.title.or(old.title.clone());
+                    chest.icon = chest.icon.or(old.icon.clone());
                     chest.amount = chest.amount.or(old.amount.clone());
                     chest.tradability = chest.tradability.or(old.tradability);
                 }
