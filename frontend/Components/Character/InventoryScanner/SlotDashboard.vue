@@ -105,6 +105,13 @@ function save() {
   });
 }
 
+// what was read is itself short of an amount or a tradability, so it cannot be kept as it is
+const read_incomplete = computed(
+  () =>
+    !!item.value &&
+    (slot.value?.value == null || slot.value?.tradability == null),
+);
+
 // keeps what was read and stops the scanner changing it
 function accept() {
   set_edit({
@@ -227,7 +234,11 @@ function accept() {
               aria-label="Tradability"
             >
               <option value="" disabled>Choose</option>
-              <option v-for="[value, label] in TRADABILITY" :value="value">
+              <option
+                v-for="[value, label] in TRADABILITY"
+                :value="value"
+                :key="label"
+              >
                 {{ label }}
               </option>
             </select>
@@ -254,6 +265,8 @@ function accept() {
           <button
             v-if="!edit && slot?.status === 'Error'"
             class="generic-button"
+            :class="{ 'cursor-not-allowed! opacity-50': read_incomplete }"
+            :disabled="read_incomplete"
             @click="accept"
           >
             Okay
