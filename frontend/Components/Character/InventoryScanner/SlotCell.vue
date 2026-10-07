@@ -15,6 +15,7 @@ const BORDERS = {
   Pending: "var(--text-muted)",
   Good: "var(--achieved)",
   NeedHover: "var(--series-fusion)",
+  NeedTradability: "var(--series-fusion)",
   Error: "var(--warning)",
   Irrelevant: "var(--border-very-muted)",
 };
@@ -22,6 +23,7 @@ const BORDER_WIDTHS = {
   Pending: "1px",
   Good: "1px",
   NeedHover: "3px",
+  NeedTradability: "3px",
   Error: "3px",
   Irrelevant: "1px",
 };

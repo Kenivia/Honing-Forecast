@@ -4,6 +4,7 @@ import { storeToRefs } from "pinia";
 import { computed, onUnmounted, watch } from "vue";
 import { RouterLink, RouterView, useRoute, useRouter } from "vue-router";
 import ControlPanel from "@/Components/Character/ControlPanel.vue";
+import ScannerControlPanel from "@/Components/Character/InventoryScanner/ScannerControlPanel.vue";
 import Sidebar from "@/Components/Common/Sidebar.vue";
 import { useRuntimeStore } from "@/Stores/RuntimeState";
 const runtime = useRuntimeStore();
@@ -74,6 +75,7 @@ onUnmounted(() => {
       </div>
 
       <ControlPanel v-if="is_calc" />
+      <ScannerControlPanel v-if="route.name === 'char-scanner'" />
     </template>
 
     <template #main>

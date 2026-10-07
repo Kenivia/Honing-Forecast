@@ -14,10 +14,13 @@ Each slot in a scan result carries a status, a reason and a value (the tooltip's
 | Pending | white | recognised, number not read yet |
 | Good | green | a material whose icon number is under 9999; or a tooltip was resolved to the slot; or a chest that is accounted for |
 | NeedHover | orange | a material showing 9999 or more with no tooltip; a chest not accounted for |
+| NeedTradability | orange | would be good, but no tooltip gave its tradability. Shown as needing a hover, unless assumed (below) |
 | Error | red | a tooltip was resolved to the slot but gave no amount; a chest whose contents hold none of the titles `chest.json` expects of its icon |
 | Irrelevant | greyed out | matches no icon |
 | edited | dotted blue | the user set it by hand |
 
+- **Every slot needs its tradability**, which only a tooltip gives, so every material needs a hover even when its number reads. A chest slot takes the tradability of the chest that stands for it.
+- **Assumed tradability.** The sidebar on the scanner page (`ScannerControlPanel.vue`) has "Assume roster storage is tradable" and "Assume char storage and inventory are char-bound", both off by default and not persisted. With one on, `shown_slot` in `ScanStore.ts` turns those windows' `NeedTradability` slots into good ones with the assumed value, and the dashboard marks it "(assumed)". Rust is never told: it keeps reporting `NeedTradability`, and a tooltip it reads replaces the assumption.
 - **The icon number** has everything but digits dropped, and nothing left means 1 (a single item shows no number). `9999+` therefore reads 9999.
 - **The tooltip is trusted over the icon.** A disagreement between the two is not an error; the value is simply the tooltip's.
 - **A chest is a slot whose icon is listed in `templates/chest.json`.** Chests without an icon there show as irrelevant.

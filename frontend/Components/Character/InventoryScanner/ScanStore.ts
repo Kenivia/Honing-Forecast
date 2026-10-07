@@ -31,6 +31,25 @@ export const edits = ref<Record<string, SlotEdit>>({});
 // images only arrive when they change, and the same objects are reused so canvases are not redrawn
 export const slot_images = new Map<string, OneIconConfig>();
 
+// Taken on trust for a whole window where no tooltip said otherwise. The scanner is not told, so
+// a tooltip it does see still wins.
+export const assume_roster_tradable = ref(false);
+// character storage and the inventory
+export const assume_char_bound = ref(false);
+
+// a slot as the page shows it: an unknown tradability filled in by what is assumed for its window
+export function shown_slot(slot: SlotResult | undefined) {
+  if (slot?.status !== "NeedTradability") return slot;
+  const assumed =
+    slot.address.inventory_type === "Roster" && assume_roster_tradable.value
+      ? "Tradable"
+      : slot.address.inventory_type !== "Roster" && assume_char_bound.value
+        ? "CharBound"
+        : null;
+  if (!assumed) return slot;
+  return { ...slot, status: "Good" as const, reason: "", tradability: assumed };
+}
+
 export const has_progress = computed(
   () => slots.value.size > 0 || Object.keys(edits.value).length > 0,
 );

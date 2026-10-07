@@ -1,7 +1,14 @@
 <script setup lang="ts">
 import { computed, reactive, ref, watch } from "vue";
 import { SlotAddress } from "./LoadStorage";
-import { edits, game_pages, slot_images, slot_key, slots } from "./ScanStore";
+import {
+  edits,
+  game_pages,
+  shown_slot,
+  slot_images,
+  slot_key,
+  slots,
+} from "./ScanStore";
 import SlotCell from "./SlotCell.vue";
 import SlotDashboard from "./SlotDashboard.vue";
 
@@ -106,7 +113,7 @@ function toggle_lock(address: SlotAddress) {
           <SlotCell
             v-for="address in addresses(win)"
             :key="slot_key(address)"
-            :info="slots.get(slot_key(address))"
+            :info="shown_slot(slots.get(slot_key(address)))"
             :edit="edits[slot_key(address)]"
             :image="slot_images.get(slot_key(address))"
             :active="is_active(address)"

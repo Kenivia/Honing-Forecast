@@ -46,6 +46,8 @@ pub enum SlotStatus {
     Pending,
     Good,
     NeedHover,
+    // in order but for its tradability, which the page may assume for a whole window
+    NeedTradability,
     Error,
     Irrelevant,
 }
@@ -72,8 +74,57 @@ fn icon_number(text: &str) -> u32 {
     digits.parse().unwrap_or(1)
 }
 
+impl Chest {
+    // read in this very slot, or with the amount the slot shows
+    fn stands_for(&self, address: &SlotAddress, number: Option<u32>) -> bool {
+        self.slot == Some(*address)
+            || self.amount.as_ref().is_some_and(|x| Some(icon_number(x)) == number)
+    }
+}
+
 impl ScannerState {
-    fn slot_status(&self, address: &SlotAddress, info: &OneSlotInfo) -> (SlotStatus, String) {
+    // status, reason, and the slot's tradability: its own tooltip's, else its chest's
+    fn slot_status(
+        &self,
+        address: &SlotAddress,
+        info: &OneSlotInfo,
+    ) -> (SlotStatus, String, Option<Tradability>) {
+        let (status, reason, tradability) = self.read_status(address, info);
+        if matches!(status, SlotStatus::Good) && tradability.is_none() {
+            return (
+                SlotStatus::NeedTradability,
+                "Whether this stack can be traded is only on its tooltip. Hover it.".into(),
+                None,
+            );
+        }
+        (status, reason, tradability)
+    }
+
+    fn read_status(
+        &self,
+        address: &SlotAddress,
+        info: &OneSlotInfo,
+    ) -> (SlotStatus, String, Option<Tradability>) {
+        let (status, reason) = self.amount_status(address, info);
+        let chest_tradability = || {
+            let (icon, _) = info.icon_name_score.as_ref()?;
+            let number = info.amount.as_ref().map(|text| icon_number(text));
+            let column = (address.inventory_type, address.page_num, address.pos_in_inv.1);
+            let mut chests: Vec<&Chest> = self
+                .chests
+                .iter()
+                .filter(|chest| chest.icon.as_ref() == Some(icon) && chest.column == Some(column))
+                .collect();
+            // the ones that stand for this slot, if any does
+            if chests.iter().any(|chest| chest.stands_for(address, number)) {
+                chests.retain(|chest| chest.stands_for(address, number));
+            }
+            chests.iter().find_map(|chest| chest.tradability)
+        };
+        (status, reason, info.tradability.or_else(chest_tradability))
+    }
+
+    fn amount_status(&self, address: &SlotAddress, info: &OneSlotInfo) -> (SlotStatus, String) {
         let Some((icon, _)) = &info.icon_name_score else {
             return (SlotStatus::Irrelevant, String::new());
         };
@@ -119,10 +170,7 @@ impl ScannerState {
                 })
                 .count();
             return if info.hovered
-                || chests.iter().any(|chest| {
-                    chest.slot == Some(*address)
-                        || chest.amount.as_ref().is_some_and(|x| Some(icon_number(x)) == number)
-                })
+                || chests.iter().any(|chest| chest.stands_for(address, number))
                 || chests.len() >= alike
             {
                 (SlotStatus::Good, String::new())
@@ -182,14 +230,14 @@ impl ScannerState {
             // an edited slot is the page's to show
             .filter(|(address, _)| !self.edits.contains_key(*address))
             .map(|(address, info)| {
-                let (status, reason) = self.slot_status(address, info);
+                let (status, reason, tradability) = self.slot_status(address, info);
                 let read = info.tooltip_amount.as_ref().or(info.amount.as_ref());
                 SlotResult {
                     address: *address,
                     icon_name_score: &info.icon_name_score,
                     amount: &info.amount,
                     tooltip_amount: &info.tooltip_amount,
-                    tradability: info.tradability,
+                    tradability,
                     status,
                     reason,
                     value: read

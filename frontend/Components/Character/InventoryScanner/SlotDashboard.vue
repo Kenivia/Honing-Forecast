@@ -6,6 +6,7 @@ import {
   edits,
   retry_slot,
   set_edit,
+  shown_slot,
   slot_images,
   slot_key,
   slots,
@@ -23,6 +24,7 @@ const STATUS_NAMES = {
   Pending: "Reading",
   Good: "Good",
   NeedHover: "Needs hover",
+  NeedTradability: "Needs hover",
   Error: "Error",
   Irrelevant: "Irrelevant",
 };
@@ -33,7 +35,10 @@ const TRADABILITY = [
 ];
 
 const key = computed(() => (props.address ? slot_key(props.address) : ""));
-const slot = computed(() => slots.value.get(key.value));
+const read = computed(() => slots.value.get(key.value));
+const slot = computed(() => shown_slot(read.value));
+// no tooltip said so; it is what was assumed for the window
+const assumed = computed(() => slot.value !== read.value);
 const edit = computed(() => edits.value[key.value]);
 
 const item = computed(() =>
@@ -51,6 +56,7 @@ const status_color = computed(() =>
     : {
         Good: "var(--achieved)",
         NeedHover: "var(--series-fusion)",
+        NeedTradability: "var(--series-fusion)",
         Error: "var(--warning)",
       }[slot.value?.status],
 );
@@ -81,7 +87,7 @@ const draft = reactive({
 });
 watch(
   // also when the slot is saved, retried or first read
-  [key, edit, () => !slot.value],
+  [key, edit, () => !slot.value, assumed],
   () => {
     draft.item = item.value ?? "";
     draft.amount = edit.value ? edit.value.amount : (slot.value?.value ?? null);
@@ -167,6 +173,7 @@ function accept() {
         <span>Tradability</span>
         <span class="text-(--text-main)">
           {{ (edit ? edit.tradability : slot?.tradability) ?? "-" }}
+          {{ !edit && assumed ? "(assumed)" : "" }}
         </span>
       </div>
 

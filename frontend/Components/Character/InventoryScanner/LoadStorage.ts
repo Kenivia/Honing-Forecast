@@ -65,6 +65,7 @@ export type SlotStatus =
   | "Pending"
   | "Good"
   | "NeedHover"
+  | "NeedTradability"
   | "Error"
   | "Irrelevant";
 
