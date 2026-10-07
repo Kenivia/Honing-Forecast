@@ -2,6 +2,7 @@ import {
   ALL_LABELS,
   ALL_WORTHLESS,
   BandPlan,
+  clamp_band_plan,
   GRACE_FIRST_N,
   JOINED_ADV_JUICE,
   NUM_ADV_PIECES,
@@ -305,8 +306,10 @@ export function build_payload(override?: OptimizerOverride): Payload {
   return {
     material_labels: ALL_LABELS[tier],
     materials: build_materials(),
-    // spread out of the reactive proxy, which postMessage cannot clone
-    plans: [ALL_WORTHLESS, [...active_profile.value.band_values] as BandPlan],
+    // Rust asserts the plan does not decrease, and the dropdowns only disable the values
+    // that would break that rather than preventing them. Clamping here also copies the
+    // plan out of the reactive proxy, which postMessage cannot clone.
+    plans: [ALL_WORTHLESS, clamp_band_plan(active_profile.value.band_values)],
     optimizer_plan: 1,
     upgrade_info: keyed_to_array(
       active_profile.value.keyed_upgrades,

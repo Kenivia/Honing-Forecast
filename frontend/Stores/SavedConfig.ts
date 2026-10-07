@@ -2,12 +2,11 @@ import {
   ALL_MATERIAL_LABELS,
   BAND_VALUES,
   BandPlan,
-  band_rank,
+  clamp_band_plan,
   default_selected_bundles,
   MATERIALS,
   NUM_ADV_PIECES,
   NUM_BANDS,
-  set_band_value,
 } from "@/Utils/Constants";
 import {
   column_labels,
@@ -231,11 +230,7 @@ function valid_band_values(
   ) {
     return fallback;
   }
-  let out = [...saved] as BandPlan;
-  for (let i = 1; i < NUM_BANDS; i++) {
-    if (band_rank(out[i]) < band_rank(out[i - 1])) out = set_band_value(out, i, out[i]);
-  }
-  return out;
+  return clamp_band_plan(saved);
 }
 
 // ============================================================================

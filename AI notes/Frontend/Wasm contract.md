@@ -15,7 +15,7 @@ How the frontend talks to Rust for the calculator. Scanner operations share the 
 
 - the upgrade list, from keyed upgrades, including each upgrade's state from the previous optimizer result so the next run starts from it;
 - `material_labels`, the row order, and `materials`, a label-keyed map of the three owned amounts plus the taxed sell price and the buy price. Prices arrive already per-unit: the store resolves which bundle the user buys and whether converting up from a lower tier is cheaper. A material the user disabled is sent with zero prices, because it is not traded at all and its (effectively infinite) bound stock must not be valued;
-- `plans`, every valuation plan to evaluate, and `optimizer_plan`, an index into it. Index 0 is always the all-worthless plan, so the histogram always reports the gross spend alongside the user's plan;
+- `plans`, every valuation plan to evaluate, and `optimizer_plan`, an index into it. Index 0 is always the all-worthless plan, so the histogram always reports the gross spend alongside the user's plan. The user's plan is clamped here, because the control panel's dropdowns only *disable* the values that would make it decrease, and Rust asserts it does not;
 - tier, event flags and free-tap budget;
 - the previous free-tap order and the advanced-honing cache, fed back in to avoid recomputation.
 

@@ -39,15 +39,19 @@ export const CSS_NAMES = ["avg", "bound", "roster-bound", "tradable"];
 // plan; see `ValuationPlan` in crates/core/src/materials.rs.
 // ============================================================================
 
-export const BAND_LABELS = ["Bound", "+Roster", "+Tradable"];
+// Indexed by band, like everything else here. The control panel shows them in reverse;
+// the "+" prefixes ANNOTATION_LABELS carries are not used, because each dropdown is about
+// one band on its own rather than a cumulative threshold.
+export const BAND_LABELS = ["Bound", "Roster", "Tradable"];
 export const BAND_COLORS = ["--bound", "--roster", "--tradable"];
 export const NUM_BANDS = 3;
 
 // String valued so a payload and a save are both readable, ordered so the index is rank.
 export type BandValue = "Worthless" | "TaxedSell" | "Market";
 export const BAND_VALUES: BandValue[] = ["Worthless", "TaxedSell", "Market"];
+// short enough to fit the control panel's dropdowns without truncating
 export const BAND_VALUE_LABELS: Record<BandValue, string> = {
-  Worthless: "worth 0",
+  Worthless: "nothing",
   TaxedSell: "taxed sell",
   Market: "market",
 };
@@ -59,30 +63,28 @@ export const ALL_WORTHLESS: BandPlan = ["Worthless", "Worthless", "Worthless"];
 export const band_rank = (value: BandValue): number =>
   BAND_VALUES.indexOf(value);
 
-// Raising a band raises the ones above it, lowering lowers the ones below, so every band
-// can reach every level without the plan ever decreasing.
-export function set_band_value(
+// A band may not be worth less than the one before it or more than the one after, so the
+// values that would break that are offered disabled rather than hidden.
+export function band_value_allowed(
   plan: BandPlan,
   band: number,
   value: BandValue,
-): BandPlan {
+): boolean {
+  const rank = band_rank(value);
+  return (
+    (band === 0 || rank >= band_rank(plan[band - 1])) &&
+    (band === NUM_BANDS - 1 || rank <= band_rank(plan[band + 1]))
+  );
+}
+
+// For a loaded plan, which the UI did not build.
+export function clamp_band_plan(plan: BandPlan): BandPlan {
   const out = [...plan] as BandPlan;
-  out[band] = value;
-  for (let i = band + 1; i < NUM_BANDS; i++) {
-    if (band_rank(out[i]) < band_rank(value)) out[i] = value;
-  }
-  for (let i = band - 1; i >= 0; i--) {
-    if (band_rank(out[i]) > band_rank(value)) out[i] = value;
+  for (let i = 1; i < NUM_BANDS; i++) {
+    if (band_rank(out[i]) < band_rank(out[i - 1])) out[i] = out[i - 1];
   }
   return out;
 }
-
-export const cycle_band_value = (plan: BandPlan, band: number): BandPlan =>
-  set_band_value(
-    plan,
-    band,
-    BAND_VALUES[(band_rank(plan[band]) + 1) % BAND_VALUES.length],
-  );
 
 // These must be the same as the rust side (advanced_honing/utils), will need to manually update if these change
 export const GRACE_FIRST_N = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 15, 255];

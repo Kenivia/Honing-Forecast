@@ -249,10 +249,11 @@ check(
   "auto_start_optimizer kept",
   loaded.profiles[0].auto_start_optimizer === false,
 );
-// V7 plan 2 was the one that credited nothing; the chance band carries straight over
+// V7's optimizer_treatment_plan is dropped, so band values land on the default; the
+// chance band is a separate setting and carries straight over
 check(
-  "treatment plan became band values",
-  loaded.profiles[0].band_values.join() === "Worthless,Worthless,Worthless" &&
+  "treatment plan dropped, chance band kept",
+  loaded.profiles[0].band_values.join() === "Worthless,Worthless,TaxedSell" &&
     loaded.profiles[0].chance_band === 1,
 );
 check(

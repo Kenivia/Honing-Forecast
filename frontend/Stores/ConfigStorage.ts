@@ -1,8 +1,6 @@
 import LZString from "lz-string";
 import {
   ALL_LABELS,
-  ALL_WORTHLESS,
-  BandPlan,
   bundle_key,
   MATERIALS,
   NUM_BANDS,
@@ -286,14 +284,9 @@ function migrate_7_to_8(data: any): Partial<SavedConfig> {
       auto_start_optimizer: profile.auto_start_optimizer,
       lock_fetched_done: profile.lock_fetched_done,
       pretend_30_40_x2_grace: profile.pretend_30_40_x2_grace,
-      // V7 encoded the leftover value of each ownership band as a pair of enums that
-      // indexed the old breakpoint-merging plan. Two of its four values behaved
-      // identically and one was unreachable, so only the two live cases need mapping.
-      // 2 was TreatTradableAsBound, the one that credited nothing.
-      band_values:
-        profile.optimizer_treatment_plan === 2
-          ? ALL_WORTHLESS
-          : (["Worthless", "Worthless", "TaxedSell"] as BandPlan),
+      // V7's optimizer_treatment_plan is dropped rather than mapped: band_values is left
+      // out here so profile_from_saved supplies the default. chance_band is a different
+      // setting (which ownership line the chance column reads) and does carry over.
       chance_band: Math.min(
         Math.max(Number(profile.histogram_treatment_plan) || 0, 0),
         NUM_BANDS - 1,

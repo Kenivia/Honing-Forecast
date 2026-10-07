@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import {
   ALL_LABELS,
-  BandPlan,
   JUICE_RANGES,
   MATERIALS,
   NUM_BANDS,
@@ -14,7 +13,6 @@ import {
 import { has_upgrades_in_range, metric_to_text } from "@/Utils/Helpers";
 import MaterialCell from "@/Components/Common/MaterialCell.vue";
 import MaterialGraph from "@/Components/Character/MaterialDist/MaterialGraph.vue";
-import BandValueBar from "@/Components/Character/MaterialDist/BandValueBar.vue";
 import QuestionMark from "@/Components/Common/QuestionMark.vue";
 import { storeToRefs } from "pinia";
 import { useRosterStore } from "@/Stores/RosterConfig";
@@ -106,11 +104,6 @@ const leftover_credit = computed(
 const any_credited = computed(() =>
   active_profile.value.band_values.some((v) => v !== "Worthless"),
 );
-
-// Calc.vue watches band_values and restarts the workers
-function set_band_values(plan: BandPlan) {
-  active_profile.value.band_values = plan;
-}
 
 const bound_chance_text =
   "Chance to succeed all upgrades within Char-Bound material";
@@ -223,12 +216,6 @@ const is924Narrow = useMediaIsNarrow(924); // this turns out to be the width whe
         '--grid-cols': grid.grid_template_columns,
       }"
     >
-      <BandValueBar
-        class="pb-1"
-        style="grid-column: 1 / -1"
-        :plan="active_profile.band_values"
-        @update="set_band_values"
-      />
       <div class="mats-row h-fit! items-end! border-b-(--border-main)!">
         <div class="flex flex-row justify-between">
           <QuestionMark :text="tickbox_tooltip" class="mb-1" />
