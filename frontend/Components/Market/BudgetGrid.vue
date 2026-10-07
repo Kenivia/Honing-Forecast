@@ -2,7 +2,7 @@
 import { useRosterStore } from "@/Stores/RosterConfig";
 import {
   ALL_LABELS,
-  BUNDLE_SIZE,
+  MATERIALS,
   SERCA_SYNC_MAP,
   SERCA_TO_T4_INDICES,
   SYNCED_LABELS,
@@ -65,15 +65,10 @@ const grids = computed((): GridConfig[] => [
   },
 ]);
 
-function price_suffix(
-  label: string,
-  row: number,
-  // region: MarketRegions,
-): string {
-  if (label === "Shards") return ""; //"x" + roster_config.value.selected_shard_bag_size[region].toString();
-  if (BUNDLE_SIZE[row] > 1)
-    return "x" + BUNDLE_SIZE[row].toLocaleString("en-US");
-  return "";
+function price_suffix(label: string): string {
+  const bundle = MATERIALS[label].bundle_size;
+  if (label === "Shards" || bundle <= 1) return "";
+  return "x" + bundle.toLocaleString("en-US");
 }
 </script>
 
@@ -103,7 +98,7 @@ function price_suffix(
       <div class="card-body contents pt-0!">
         <div
           v-for="{ label, col, row } in grid.rows"
-          :key="`roster-input-${grid.tier}-${row === 3 ? 'shard' + roster_config.shard_infos[selected_region].selected.toLocaleString() : label}`"
+          :key="`roster-input-${grid.tier}-${label === 'Shards' ? 'shard' + roster_config.shard_infos[selected_region].selected.toLocaleString() : label}`"
           class="mats-row"
           role="group"
           :aria-label="label"
@@ -136,30 +131,30 @@ function price_suffix(
           <div class="flex flex-row items-center">
             <MaterialCell
               :input_column="
-                row === 3
+                label === 'Shards'
                   ? roster_config.shard_infos[selected_region].prices[
                       roster_config.shard_infos[selected_region].selected
                     ]
                   : selected_mats_prices[col]
               "
-              :row="row === 3 ? 0 : row"
+              :row="label === 'Shards' ? 0 : row"
               :setter="
                 (val) => {
-                  row === 3
+                  label === 'Shards'
                     ? (roster_config.shard_infos[selected_region].prices[
                         roster_config.shard_infos[selected_region].selected
                       ].data[0] = val)
                     : (selected_mats_prices[col].data[row] = val);
                 }
               "
-              :suffix="price_suffix(label, row)"
+              :suffix="price_suffix(label)"
               aria_name="Market price"
               :input_width="70"
               input_color="var(--text-muted)"
               :justify_left="true"
             />
             <select
-              v-if="row === 3"
+              v-if="label === 'Shards'"
               v-model.number="
                 roster_config.shard_infos[selected_region].selected
               "

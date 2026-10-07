@@ -1,14 +1,10 @@
 <script setup lang="ts">
 import { useRosterStore } from "@/Stores/RosterConfig";
 import { storeToRefs } from "pinia";
-import { onUnmounted, watch } from "vue";
-import { RouterLink, useRoute, useRouter } from "vue-router";
+import { computed, onUnmounted, watch } from "vue";
+import { RouterLink, RouterView, useRoute, useRouter } from "vue-router";
 import ControlPanel from "@/Components/Character/ControlPanel.vue";
 import Sidebar from "@/Components/Common/Sidebar.vue";
-import Guide from "@/Components/Character/Guide.vue";
-import Setup from "./InventoryScanner/Setup/Setup.vue";
-import Calc from "./Calc.vue";
-import Scanner from "./InventoryScanner/Scanner.vue";
 import { useRuntimeStore } from "@/Stores/RuntimeState";
 const runtime = useRuntimeStore();
 
@@ -52,16 +48,15 @@ watch(
   },
 );
 
+const is_calc = computed(() => route.name === "calc");
+
 onUnmounted(() => {
   // kill workers when going to market / roster view
   runtime.cancel_active();
 });
 </script>
 <template>
-  <Sidebar
-    :width="route.path.endsWith('calc') ? 1255 : 1201"
-    :header="active_profile.char_name"
-  >
+  <Sidebar :width="is_calc ? 1255 : 1201" :header="active_profile.char_name">
     <template #sidebar="{ close }">
       <div class="flex flex-col">
         <RouterLink to="guide" class="side-bar-link" @click="close">
@@ -78,14 +73,11 @@ onUnmounted(() => {
         </RouterLink>
       </div>
 
-      <ControlPanel v-if="route.path.endsWith('calc')" />
+      <ControlPanel v-if="is_calc" />
     </template>
 
     <template #main>
-      <Guide v-if="route.path.endsWith('guide')" />
-      <Calc v-if="route.path.endsWith('calc')" />
-      <Setup v-if="route.path.endsWith('setup')" />
-      <Scanner v-if="route.path.endsWith('scanner')" />
+      <RouterView />
       <div class="min-h-300"></div>
     </template>
   </Sidebar>

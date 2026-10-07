@@ -6,10 +6,10 @@
 
 - **Roster setup**: manage characters and rosters, set each roster's region, import characters.
 - **Market & mats**: roster-owned and tradable materials, market prices.
-- **Character page**: one per character, with sub-pages chosen by the last path segment. The calculator sub-page is the main one: upgrade tickbox grids, material budgets and distribution graphs, optimizer controls, then the generated instructions.
+- **Character page**: one per character, with sub-pages as child routes. The calculator sub-page is the main one: upgrade tickbox grids, material budgets and distribution graphs, optimizer controls, then the generated instructions.
 - **Change logs**.
 
-The character page does not use nested routes; one component switches on the path suffix.
+The character page uses nested routes: `CharView` owns the sidebar and renders the sub-page through `<RouterView/>`.
 
 ## Two stores
 
@@ -33,6 +33,7 @@ Runtime worker bundles are keyed by `char_name`. `App.vue` watches the list of n
 
 ## Conventions
 
+- **Materials** are described once, by label, in `MATERIAL_TABLE` in `Constants.ts`: graph colour, market bundle size, fallback price and icon. `MATERIALS` resolves it, `TIER_MATERIALS` pairs it with the row order, and `FALLBACK_PRICES` and `IconMap` are derived from it. Never add a parallel array indexed by material row; a material's attributes are looked up by its label.
 - **`InputColumn`** is the runtime model behind every numeric input column: values are formatted strings, alongside keys, bounds and enable flags. Read numbers through its conversion helper. Inputs accept simple arithmetic. Only the values and the disabled labels are saved; everything else is rebuilt from `Constants.ts`.
 - **Keyed upgrades** are the canonical list of upgrades for a character, keyed by piece, level, kind and tier. They are derived from the tickbox grids and carry per-upgrade progress and the last optimizer state.
 - **Tier handling assumes exactly two tiers.** The Rust side would accept more; the frontend's tier-switching logic would not.
@@ -42,14 +43,14 @@ Runtime worker bundles are keyed by `char_name`. `App.vue` watches the list of n
 
 `SavedConfig.ts` defines the saved shape and converts to and from it; `ConfigStorage.ts` owns localStorage and the migrations.
 
-- One key, `HF_CONFIG`, lz-string-compressed JSON, with the version **inside** the payload.
+- One key, `HF_CONFIG_V8_COMPRESSED`, lz-string-compressed JSON, with the version **also inside** the payload. The key carries the version so a save is never read by code that predates it; the payload version is what drives the migration chain.
 - Two rules govern the shape: nothing derivable from `Constants.ts` is stored, and material values are keyed by **label**, never by row index. Reordering, inserting or removing a material row is therefore not a save-shape change.
 - `to_saved` / `from_saved` are explicit. A field that is not listed is not saved, so transient state cannot leak in by being added to the store.
 - Numbers are saved as numbers. Saving locale-formatted strings corrupted values when the browser locale changed between sessions.
 - Any store mutation triggers a debounced write.
-- On load, the newest save wins; failing that, the pre-V8 keys are tried newest-first, then `MIGRATIONS[v]` runs in sequence up to `STORAGE_VERSION`.
+- On load, keys are tried newest-first; the first one that decompresses wins, older keys are deleted, then `MIGRATIONS[v]` runs in sequence up to `STORAGE_VERSION`.
 
-**Changing the saved shape** means bumping `STORAGE_VERSION` and adding one entry to `MIGRATIONS`. Adding a material no longer needs a migration at all: an unknown label in the save is dropped, a missing one falls back to the template value from `Constants.ts`.
+**Changing the saved shape** means bumping `STORAGE_VERSION`, setting `STORAGE_KEY` to the new version's key, moving the old key to the top of `LEGACY_KEYS`, and adding one entry to `MIGRATIONS`. Adding a material no longer needs a migration at all: an unknown label in the save is dropped, a missing one falls back to the template value from `Constants.ts`.
 
 **Do not trust a pre-V8 column's own `keys` array.** Nothing before V8 read it, so it drifted out of order in real saves while `data` stayed positional against `ALL_LABELS`. `migrate_7_to_8` maps by position for that reason.
 

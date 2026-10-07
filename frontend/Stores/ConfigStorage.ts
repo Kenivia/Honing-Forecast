@@ -5,10 +5,12 @@ import { debounce } from "@/Utils/Helpers";
 import { RosterConfig } from "./RosterConfig";
 import { from_saved, SavedColumn, SavedConfig, to_saved } from "./SavedConfig";
 
-export const STORAGE_KEY = "HF_CONFIG";
 export const STORAGE_VERSION = 8;
+export const STORAGE_KEY = "HF_CONFIG_V8_COMPRESSED";
 
-// Saves written before the version number moved inside the payload, newest first.
+// Older keys, newest first. On a version bump, move the current key to the top of
+// this list. `version` is only a fallback for pre-V8 saves, which carry no version
+// inside the payload.
 const LEGACY_KEYS: { key: string; version: number }[] = [
   { key: "HF_CONFIG_V7_COMPRESSED", version: 7 },
   { key: "HF_CONFIG_V6_COMPRESSED", version: 6 },
@@ -45,16 +47,12 @@ function load_compressed(key: string): any {
 }
 
 function read_newest_save(): [any, number] | null {
-  const current = load_compressed(STORAGE_KEY);
-  if (current !== null) {
-    return [current, Number(current.version) || STORAGE_VERSION];
-  }
-  for (const { key, version } of LEGACY_KEYS) {
+  const keys = [{ key: STORAGE_KEY, version: STORAGE_VERSION }, ...LEGACY_KEYS];
+  for (const { key, version } of keys) {
     const data = load_compressed(key);
-    if (data !== null) {
-      localStorage.removeItem(key);
-      return [data, version];
-    }
+    if (data === null) continue;
+    if (key !== STORAGE_KEY) localStorage.removeItem(key);
+    return [data, Number(data.version) || version];
   }
   return null;
 }

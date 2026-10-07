@@ -74,26 +74,77 @@ export const TIER_OPTIONS = TIER_LABELS.map((label, index) => ({
   value: index,
 }));
 export const DEFAULT_TIER = 0;
-export const T4_MATS_LABELS = [
-  "Red",
-  "Blue",
-  "Leaps",
-  "Shards",
-  "Fusion",
-  "Gold",
-  "Silver",
-];
-export const SERCA_MATS_LABELS = [
-  "Serca Red",
-  "Serca Blue",
-  "Serca Leaps",
-  "Shards",
-  "Serca Fusion",
-  "Gold",
-  "Silver",
-];
+
+// ============================================================================
+// Materials
+//
+// MATERIAL_TABLE is the single source of truth for everything about a material
+// except its row order. Keyed by label so a row can never be paired with the
+// wrong colour, bundle size, price or icon.
+// ============================================================================
+
+// [graph colour, market bundle size, fallback price per bundle, icon file]
+const MATERIAL_TABLE: Record<string, [string, number, number, string]> = {
+  Red: ["red", 100, 647, "Red.webp"],
+  Blue: ["blue", 100, 10, "Blue.webp"],
+  Leaps: ["leaps", 1, 20, "Leapstone.webp"],
+  Shards: ["shards", 1000, 999999999, "Shard.webp"],
+  Fusion: ["fusion", 1, 180, "Fusion.webp"],
+  Gold: ["gold", 1, 1, "Gold.webp"],
+  Silver: ["silver", 1000000, 0, "Silver.webp"],
+  "Serca Red": ["red", 100, 3494, "Serca unique/Serca Red.png"],
+  "Serca Blue": ["blue", 100, 196, "Serca unique/Serca Blue.png"],
+  "Serca Leaps": ["leaps", 1, 156, "Serca unique/Serca Leapstone.png"],
+  "Serca Fusion": ["fusion", 1, 226, "Serca unique/Serca Fusion.png"],
+  "Glacier's Breath": ["blue", 1, 260, "Glacier's Breath.webp"],
+  "Lava's Breath": ["red", 1, 430, "Lava's Breath.webp"],
+  "11-14 Armor": ["books", 1, 298, "Armor Book.webp"],
+  "11-14 Weapon": ["books", 1, 737, "Weapon Book.webp"],
+  "15-18 Armor": ["books", 1, 19, "Armor Book.webp"],
+  "15-18 Weapon": ["books", 1, 119, "Weapon Book.webp"],
+  "19-20 Armor": ["books", 1, 2748, "Armor Book.webp"],
+  "19-20 Weapon": ["books", 1, 3890, "Weapon Book.webp"],
+  "Enhanced 19-20 Armor": ["books", 1, 15000, "Enhanced Armor Book.png"],
+  "Enhanced 19-20 Weapon": ["books", 1, 15000, "Enhanced Weapon Book.png"],
+  "Scroll 1 Armor": ["blue", 1, 150, "Scroll 1 Armor.png"],
+  "Scroll 1 Weapon": ["red", 1, 496, "Scroll 1 Weapon.png"],
+  "Scroll 2 Armor": ["blue", 1, 70, "Scroll 2 Armor.png"],
+  "Scroll 2 Weapon": ["red", 1, 50, "Scroll 2 Weapon.png"],
+  "Scroll 3 Armor": ["blue", 1, 1800, "Scroll 3 Armor.png"],
+  "Scroll 3 Weapon": ["red", 1, 1933, "Scroll 3 Weapon.png"],
+  "Scroll 4 Armor": ["blue", 1, 3187, "Scroll 4 Armor.png"],
+  "Scroll 4 Weapon": ["red", 1, 2369, "Scroll 4 Weapon.png"],
+};
+
+export interface Material {
+  label: string;
+  color: string;
+  bundle_size: number;
+  fallback_price: number;
+  icon: string;
+}
+
+export const MATERIALS: Record<string, Material> = Object.fromEntries(
+  Object.entries(MATERIAL_TABLE).map(
+    ([label, [color, bundle_size, fallback_price, icon]]) => [
+      label,
+      {
+        label,
+        color: `--series-${color}`,
+        bundle_size,
+        fallback_price,
+        icon: `/Icons/Materials/${icon}`,
+      },
+    ],
+  ),
+);
+
+// Row order per tier. Rust indexes material arrays by this, so it must match the
+// tier's constants JSON on the Rust side. Base materials first, then juices.
+export const NUM_BASE_MATS = 7;
 export const SPECIAL_LEAP_LABEL = "Special Leap";
-export const T4_JUICE_LABELS = [
+
+const T4_JUICE_LABELS = [
   ["Glacier's Breath", "Lava's Breath"],
   ["11-14 Armor", "11-14 Weapon"],
   ["15-18 Armor", "15-18 Weapon"],
@@ -104,158 +155,75 @@ export const T4_JUICE_LABELS = [
   ["Scroll 4 Armor", "Scroll 4 Weapon"],
   ["Enhanced 19-20 Armor", "Enhanced 19-20 Weapon"],
 ];
+const SERCA_JUICE_LABELS = [["Glacier's Breath", "Lava's Breath"]];
 
-export const Serca_JUICE_LABELS = [["Glacier's Breath", "Lava's Breath"]];
 export const ALL_LABELS = [
-  T4_MATS_LABELS.concat(T4_JUICE_LABELS.flatMap((x) => [x[0], x[1]])),
-  SERCA_MATS_LABELS.concat(Serca_JUICE_LABELS.flatMap((x) => [x[0], x[1]])),
+  ["Red", "Blue", "Leaps", "Shards", "Fusion", "Gold", "Silver"].concat(
+    T4_JUICE_LABELS.flat(),
+  ),
+  [
+    "Serca Red",
+    "Serca Blue",
+    "Serca Leaps",
+    "Shards",
+    "Serca Fusion",
+    "Gold",
+    "Silver",
+  ].concat(SERCA_JUICE_LABELS.flat()),
 ];
 
-// const old = [
-//   "Red",
-//   "Blue",
-//   "Leaps",
-//   "Shards",
-//   "Fusion",
-//   "Gold",
-//   "Silver",
-//   "Lava's Breath",
-//   "11-14 Weapon",
-//   "15-18 Weapon",
-//   "19-20 Weapon",
-//   "Scroll 1 Weapon",
-//   "Scroll 2 Weapon",
-//   "Scroll 3 Weapon",
-//   "Scroll 4 Weapon",
-//   "Glacier's Breath",
-//   "11-14 Armor",
-//   "15-18 Armor",
-//   "19-20 Armor",
-//   "Scroll 1 Armor",
-//   "Scroll 2 Armor",
-//   "Scroll 3 Armor",
-//   "Scroll 4 Armor",
-// ];
-// function getIndices(arr_1: string[], arr_2: string[]): number[] {
-//   const indexMap = new Map<string, number>();
-//   for (let i = 0; i < arr_1.length; i++) {
-//     indexMap.set(arr_1[i], i);
-//   }
-//   return arr_2.map((val) => indexMap.get(val)!);
-// }
-// console.log(getIndices(old, ALL_LABELS[0]));
-export const GRAPH_COLORS = [
-  [
-    "--series-red",
-    "--series-blue",
-    "--series-leaps",
-    "--series-shards",
-    "--series-fusion",
-    "--series-gold",
-    "--series-silver",
-    "--series-blue",
-    "--series-red",
-    "--series-books",
-    "--series-books",
-    "--series-books",
-    "--series-books",
-    "--series-books",
-    "--series-books",
-    "--series-blue",
-    "--series-red",
-    "--series-blue",
-    "--series-red",
-    "--series-blue",
-    "--series-red",
-    "--series-blue",
-    "--series-red",
-    "--series-books",
-    "--series-books",
-  ],
-  [
-    "--series-red",
-    "--series-blue",
-    "--series-leaps",
-    "--series-shards",
-    "--series-fusion",
-    "--series-gold",
-    "--series-silver",
-    "--series-blue",
-    "--series-red",
-  ],
-];
+// The same rows, carrying their attributes, for anything that iterates a tier.
+export const TIER_MATERIALS: Material[][] = ALL_LABELS.map((labels) =>
+  labels.map((label) => MATERIALS[label]),
+);
+
+export const FALLBACK_PRICES: number[][] = TIER_MATERIALS.map((mats) =>
+  mats.map((mat) => mat.fallback_price),
+);
+
+// A juice row only shows when the character wants an upgrade in its range:
+// [low, high, is_weapon, is_adv], inclusive.
+export const JUICE_RANGES: Record<string, [number, number, boolean, boolean]> =
+  {
+    "11-14 Armor": [11, 14, false, false],
+    "11-14 Weapon": [11, 14, true, false],
+    "15-18 Armor": [15, 18, false, false],
+    "15-18 Weapon": [15, 18, true, false],
+    "19-20 Armor": [19, 20, false, false],
+    "19-20 Weapon": [19, 20, true, false],
+    "Enhanced 19-20 Armor": [19, 20, false, false],
+    "Enhanced 19-20 Weapon": [19, 20, true, false],
+    "Scroll 1 Armor": [1, 1, false, true],
+    "Scroll 1 Weapon": [1, 1, true, true],
+    "Scroll 2 Armor": [2, 2, false, true],
+    "Scroll 2 Weapon": [2, 2, true, true],
+    "Scroll 3 Armor": [3, 3, false, true],
+    "Scroll 3 Weapon": [3, 3, true, true],
+    "Scroll 4 Armor": [4, 4, false, true],
+    "Scroll 4 Weapon": [4, 4, true, true],
+  };
+
+// Serca rows that share their value with a T4 row, so the two stay in sync.
+export const SERCA_SYNC_MAP: { serca_index: number; T4_index: number }[] =
+  ALL_LABELS[1]
+    .map((label, serca_index) => {
+      const T4_index = ALL_LABELS[0].indexOf(label);
+      return SYNCED_LABELS.includes(label) && T4_index !== -1
+        ? { serca_index, T4_index }
+        : null;
+    })
+    .filter((x) => x !== null);
+export const SERCA_TO_T4_INDICES: Record<number, number> = Object.fromEntries(
+  SERCA_SYNC_MAP.map(({ serca_index, T4_index }) => [serca_index, T4_index]),
+);
+
 export const GRAPH_FONT_SIZE = 10;
 export const GRAPH_HEIGHT = 40;
-export const BUNDLE_SIZE = [100, 100, 1, 1000, 1, 1, 1000000].concat(
-  new Array(
-    ALL_LABELS.map((labels) => labels.length).reduce((prev, next) =>
-      Math.max(prev, next),
-    ) - 7,
-  ).fill(1),
-); // this is like really hacked together rn, but i doubt it'll need to be fixed
-
 
 export const NUM_PIECES = 7;
 export const NUM_ADV_PIECES = 6;
 export const NORMAL_COLS = 25;
 export const ADV_COLS = 4;
-
-export const base_icon_map: Record<string, string> = {
-  Helmet: "/Icons/Equipments/Helmet.webp",
-  Shoulder: "/Icons/Equipments/Shoulder.webp",
-  Chest: "/Icons/Equipments/Chest.webp",
-  Pants: "/Icons/Equipments/Pants.webp",
-  Glove: "/Icons/Equipments/Gloves.webp",
-  Weapon: "/Icons/Equipments/Weapon.webp",
-  Vambrace: "/Icons/Equipments/Vambrace.png",
-
-  Red: "/Icons/Materials/Red.webp",
-  Blue: "/Icons/Materials/Blue.webp",
-  Leaps: "/Icons/Materials/Leapstone.webp",
-  Shards: "/Icons/Materials/Shard.webp",
-  Fusion: "/Icons/Materials/Fusion.webp",
-  Gold: "/Icons/Materials/Gold.webp",
-  Silver: "/Icons/Materials/Silver.webp",
-  "Lava's Breath": "/Icons/Materials/Lava's Breath.webp",
-  "Glacier's Breath": "/Icons/Materials/Glacier's Breath.webp",
-  "Special Leap": "/Icons/Materials/Special Leapstone.webp",
-  "11-14 Armor": "/Icons/Materials/Armor Book.webp",
-  "11-14 Weapon": "/Icons/Materials/Weapon Book.webp",
-  "15-18 Armor": "/Icons/Materials/Armor Book.webp",
-  "15-18 Weapon": "/Icons/Materials/Weapon Book.webp",
-  "19-20 Armor": "/Icons/Materials/Armor Book.webp",
-  "19-20 Weapon": "/Icons/Materials/Weapon Book.webp",
-  "Enhanced 19-20 Armor": "/Icons/Materials/Enhanced Armor Book.png",
-  "Enhanced 19-20 Weapon": "/Icons/Materials/Enhanced Weapon Book.png",
-
-  "Scroll 1 Weapon": "/Icons/Materials/Scroll 1 Weapon.png",
-  "Scroll 1 Armor": "/Icons/Materials/Scroll 1 Armor.png",
-  "Scroll 2 Weapon": "/Icons/Materials/Scroll 2 Weapon.png",
-  "Scroll 2 Armor": "/Icons/Materials/Scroll 2 Armor.png",
-  "Scroll 3 Weapon": "/Icons/Materials/Scroll 3 Weapon.png",
-  "Scroll 3 Armor": "/Icons/Materials/Scroll 3 Armor.png",
-  "Scroll 4 Weapon": "/Icons/Materials/Scroll 4 Weapon.png",
-  "Scroll 4 Armor": "/Icons/Materials/Scroll 4 Armor.png",
-
-  "Serca Red": "/Icons/Materials/Serca unique/Serca Red.png",
-  "Serca Blue": "/Icons/Materials/Serca unique/Serca Blue.png",
-  "Serca Leaps": "/Icons/Materials/Serca unique/Serca Leapstone.png",
-  "Serca Fusion": "/Icons/Materials/Serca unique/Serca Fusion.png",
-  "Serca Special Leap":
-    "/Icons/Materials/Serca unique/Serca Special Leapstone.png",
-
-  "Forecast Icon": "/Icons/Forecast Icon.webp",
-  Pity: "/Icons/Artist Caught.png",
-
-  Warning: "/Icons/Warning.png",
-};
-let temp = {};
-for (const [label, path] of Object.entries(base_icon_map)) {
-  if (!Object.hasOwn(base_icon_map, "Serca " + label)) {
-    temp["Serca " + label] = path;
-  }
-}
-export const IconMap = { ...temp, ...base_icon_map } as Record<string, string>;
 
 export const PIECE_NAMES = [
   "Helmet",
@@ -267,24 +235,26 @@ export const PIECE_NAMES = [
   "Vambrace",
 ];
 
-export const SERCA_SYNC_MAP: { serca_index: number; T4_index: number }[] =
-  ALL_LABELS[1]
-    .map((label, serca_index) => {
-      if (!SYNCED_LABELS.includes(label)) return null;
-      const T4_index = ALL_LABELS[0].findIndex(
-        (x) => x === label.replace("Serca ", ""),
-      );
-      return T4_index === -1 ? null : { serca_index, T4_index };
-    })
-    .filter((x) => x !== null);
-export const SERCA_TO_T4_INDICES: Record<number, number> = Object.fromEntries(
-  SERCA_SYNC_MAP.map(({ serca_index, T4_index }) => [serca_index, T4_index]),
-);
+// Icons for everything that is not a material row.
+const OTHER_ICONS: Record<string, string> = {
+  Helmet: "/Icons/Equipments/Helmet.webp",
+  Shoulder: "/Icons/Equipments/Shoulder.webp",
+  Chest: "/Icons/Equipments/Chest.webp",
+  Pants: "/Icons/Equipments/Pants.webp",
+  Glove: "/Icons/Equipments/Gloves.webp",
+  Weapon: "/Icons/Equipments/Weapon.webp",
+  Vambrace: "/Icons/Equipments/Vambrace.png",
+  "Special Leap": "/Icons/Materials/Special Leapstone.webp",
+  "Serca Special Leap":
+    "/Icons/Materials/Serca unique/Serca Special Leapstone.png",
+  "Forecast Icon": "/Icons/Forecast Icon.webp",
+  Pity: "/Icons/Artist Caught.png",
+  Warning: "/Icons/Warning.png",
+};
 
-export const FALLBACK_PRICES = [
-  [
-    647, 10, 20, 999999999, 180, 1, 0, 260, 430, 298, 737, 19, 119, 2748, 3890,
-    150, 496, 70, 50, 1800, 1933, 3187, 2369, 15000, 15000,
-  ],
-  [3494, 196, 156, 999999999, 226, 1, 0, 260, 430],
-];
+export const IconMap: Record<string, string> = {
+  ...OTHER_ICONS,
+  ...Object.fromEntries(
+    Object.values(MATERIALS).map((mat) => [mat.label, mat.icon]),
+  ),
+};

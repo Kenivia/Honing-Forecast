@@ -1,9 +1,9 @@
 import {
-  ALL_LABELS,
-  BUNDLE_SIZE,
   GRACE_FIRST_N,
+  Material,
   JOINED_ADV_JUICE,
   NUM_ADV_PIECES,
+  TIER_MATERIALS,
 } from "@/Utils/Constants";
 import { TreatmentPlan } from "@/Stores/CharacterProfile";
 
@@ -286,28 +286,35 @@ export function build_material_info(): OneMaterialInput[] {
   const selected_shard_price: number = parse_locale_int(
     shard_prices[selected_shard_size].data[0],
   );
-  const actual_mats_prices = effective_price.map((x: number, index: number) =>
-    ALL_LABELS[active_profile.value.tier][index] === "Shards"
-      ? selected_shard_price / selected_shard_size
-      : x / BUNDLE_SIZE[index],
-  );
+  const materials = TIER_MATERIALS[tier];
+  // shards are priced per bag from their own input, everything else per bundle
+  const per_unit = (
+    mat: Material,
+    price: number,
+    tax: (n: number) => number,
+  ) =>
+    mat.label === "Shards"
+      ? tax(selected_shard_price) / selected_shard_size
+      : tax(price) / mat.bundle_size;
 
-  const tradable_mats_price = input_column_to_num(
+  const listed_price = input_column_to_num(
     roster_store.active_mats_prices[tier],
-  ).map((x: number, index: number) =>
-    ALL_LABELS[active_profile.value.tier][index] === "Shards"
-      ? apply_tax(selected_shard_price) / selected_shard_size
-      : apply_tax(x) / BUNDLE_SIZE[index],
   );
-  // console.log(ALL_LABELS, tier);
-  return ALL_LABELS[tier].map((_, index) => [
+  const actual_mats_prices = materials.map((mat, index) =>
+    per_unit(mat, effective_price[index], (n) => n),
+  );
+  const tradable_mats_price = materials.map((mat, index) =>
+    per_unit(mat, listed_price[index], apply_tax),
+  );
+  return materials.map((mat, index) => [
     [0, 0],
     [bound_budgets[index], leftover_price[index]],
     [roster_mats_owned[index], tradable_mats_price[index]],
     [
-      !enabled[index] || index == 5 ? 0 : tradable_mats_owned[index],
+      // disabled mats shouldn't be sold either, and gold is never sold
+      !enabled[index] || mat.label === "Gold" ? 0 : tradable_mats_owned[index],
       actual_mats_prices[index],
-    ], // disabled mats shouldn't be sold either, disregard tradable gold
+    ],
   ]);
 }
 

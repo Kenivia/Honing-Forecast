@@ -2,18 +2,13 @@
 import { computed } from "vue";
 import { useRosterStore } from "@/Stores/RosterConfig";
 import { storeToRefs } from "pinia";
-import {
-  ALL_LABELS,
-  JOINED_ADV_JUICE,
-  T4_JUICE_LABELS,
-} from "@/Utils/Constants";
+import { ALL_LABELS, JOINED_ADV_JUICE, NUM_BASE_MATS } from "@/Utils/Constants";
 import { get_icon_path, toOrdinal } from "@/Utils/Helpers";
 import { OneState, Upgrade } from "@/Utils/KeyedUpgrades";
 import { artisan_string } from "@/Utils/HoningUtil";
 import { get_optimizer_working } from "./InstructionUtils";
 import { useRuntimeStore } from "@/Stores/RuntimeState";
 const runtime = useRuntimeStore();
-
 
 const { active_profile } = storeToRefs(useRosterStore());
 const props = defineProps<{
@@ -39,7 +34,9 @@ const relevant_ids = computed(() => {
 
 function icon_path_for_id(id: number) {
   // console.log(id);
-  return get_icon_path(ALL_LABELS[active_profile.value.tier][id + 7]);
+  return get_icon_path(
+    ALL_LABELS[active_profile.value.tier][id + NUM_BASE_MATS],
+  );
 }
 
 interface NormalStreak {

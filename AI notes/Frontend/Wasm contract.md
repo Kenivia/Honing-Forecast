@@ -20,7 +20,7 @@ How the frontend talks to Rust for the calculator. Scanner operations share the 
 
 ## What must stay aligned with Rust
 
-- **Material row order.** The label list per tier in `Constants.ts` defines row order: seven base materials, then juices. Colours, fallback prices, bundle sizes and the saved-data layout are all indexed by the same order, and it must match the tier's constants JSON on the Rust side.
+- **Material row order.** `ALL_LABELS` in `Constants.ts` defines row order per tier: seven base materials (`NUM_BASE_MATS`), then juices. It must match the tier's constants JSON on the Rust side. Per-material attributes are not positional: see `MATERIAL_TABLE`.
 - **Piece order and counts**, including which index is the weapon and which the vambrace.
 - **The advanced-honing strategy tables**, duplicated in `Constants.ts` and in Rust.
 - **Treatment plan order**, which indexes arrays in the histogram result.

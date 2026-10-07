@@ -1,5 +1,9 @@
 import { createRouter, createWebHistory } from "vue-router";
 import CharView from "../Components/Character/CharView.vue";
+import Calc from "@/Components/Character/Calc.vue";
+import Guide from "@/Components/Character/Guide.vue";
+import Setup from "@/Components/Character/InventoryScanner/Setup/Setup.vue";
+import Scanner from "@/Components/Character/InventoryScanner/Scanner.vue";
 import MarketView from "@/Components/Market/MarketView.vue";
 import RosterView from "@/Components/RosterView.vue";
 import { useRosterStore } from "@/Stores/RosterConfig";
@@ -77,31 +81,10 @@ const router = createRouter({
         }
       },
       children: [
-        {
-          path: "calc",
-          name: "calc",
-          component: CharView,
-        },
-        // {
-        //     path: "instructions",
-        //     name: "instructions",
-        //     component: CharView,
-        // },
-        {
-          path: "guide",
-          name: "char-guide",
-          component: CharView,
-        },
-        {
-          path: "setup",
-          name: "char-scanner-setup",
-          component: CharView,
-        },
-        {
-          path: "scanner",
-          name: "char-scanner",
-          component: CharView,
-        },
+        { path: "calc", name: "calc", component: Calc },
+        { path: "guide", name: "char-guide", component: Guide },
+        { path: "setup", name: "char-scanner-setup", component: Setup },
+        { path: "scanner", name: "char-scanner", component: Scanner },
         {
           path: ":x/guide",
           redirect: (c) => `/${c.params.characterName}/guide`,

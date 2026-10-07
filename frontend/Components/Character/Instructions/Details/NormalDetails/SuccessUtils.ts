@@ -132,57 +132,25 @@ export function compute_remaininig_materials(
   const previous_budgets: BudgetSnapshot = inp_previous_budget
     ? inp_previous_budget
     : make_budget_snapshot();
+  const bound_owned = input_column_to_num(previous_budgets.bound_budgets[tier]);
+  const roster_owned = input_column_to_num(previous_budgets.roster_mats[tier]);
+  const tradable_owned = input_column_to_num(
+    previous_budgets.tradable_mats[tier],
+  );
   const bound_budgets: number[] = [];
   const roster_mats: number[] = [];
   const tradable_mats: number[] = [];
   used_materials.forEach((cost, index) => {
-    if (cost <= 0) {
-      bound_budgets.push(
-        input_column_to_num(previous_budgets.bound_budgets[tier])[index],
-      );
-      roster_mats.push(
-        input_column_to_num(previous_budgets.roster_mats[tier])[index],
-      );
-      tradable_mats.push(
-        input_column_to_num(previous_budgets.tradable_mats[tier])[index],
-      );
-      return;
-    }
-    let remaining_cost = cost;
-    // 1. Bound
-    let bound_owned = input_column_to_num(previous_budgets.bound_budgets[tier])[
-      index
-    ];
-    let deduct_bound = Math.min(bound_owned, remaining_cost);
-    bound_budgets.push(Math.max(0, bound_owned - deduct_bound));
-    remaining_cost -= deduct_bound;
-    // 2. Roster
-    let roster_owned = input_column_to_num(previous_budgets.roster_mats[tier])[
-      index
-    ];
-    if (
-      remaining_cost > 0 &&
-      previous_budgets.roster_mats[index] !== undefined
-    ) {
-      let deduct_roster = Math.min(roster_owned, remaining_cost);
-      roster_mats.push(Math.max(0, roster_owned - deduct_roster));
-      remaining_cost -= deduct_roster;
-    } else {
-      roster_mats.push(roster_owned);
-    }
-    // 3. Tradable
-    let tradable_owned = input_column_to_num(
-      previous_budgets.tradable_mats[tier],
-    )[index];
-    if (
-      remaining_cost > 0 &&
-      previous_budgets.tradable_mats[index] !== undefined
-    ) {
-      let deduct_tradable = Math.min(tradable_owned, remaining_cost);
-      tradable_mats.push(Math.max(0, tradable_owned - deduct_tradable));
-    } else {
-      tradable_mats.push(tradable_owned);
-    }
+    // spend bound first, then roster-bound, then tradable
+    let remaining_cost = Math.max(0, cost);
+    const spend = (owned: number) => {
+      const deduct = Math.min(owned, remaining_cost);
+      remaining_cost -= deduct;
+      return Math.max(0, owned - deduct);
+    };
+    bound_budgets.push(spend(bound_owned[index]));
+    roster_mats.push(spend(roster_owned[index]));
+    tradable_mats.push(spend(tradable_owned[index]));
   });
   // console.log("computed")
   return { bound_budgets, roster_mats, tradable_mats };
