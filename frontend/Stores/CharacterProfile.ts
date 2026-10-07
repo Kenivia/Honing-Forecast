@@ -1,10 +1,10 @@
 import {
   ADV_COLS,
-  ALL_LABELS,
+  ALL_MATERIAL_LABELS,
   NORMAL_COLS,
   NUM_ADV_PIECES,
   NUM_PIECES,
-  SPECIAL_LEAP_LABEL,
+  SPECIAL_LEAP_LABELS,
 } from "@/Utils/Constants";
 import {
   create_input_column,
@@ -32,10 +32,11 @@ export interface CharProfile {
 
   keyed_upgrades: KeyedUpgrades; // see Interface for the definition of these
 
-  special_budget: InputColumn; // just a 1 cell column
-
-  bound_budgets: InputColumn[]; // bound_budgets[tier].data[row] = "123"
-  leftover_price: InputColumn[]; // The tier distinction is because there's different number of mats (rows) for each tier
+  // One column each, keyed by material label and covering every tier. A material shared
+  // between tiers therefore has one value, not one per tier.
+  special_budget: InputColumn;
+  bound_budgets: InputColumn;
+  leftover_price: InputColumn;
 
   auto_start_optimizer: boolean;
   tier: number;
@@ -68,25 +69,15 @@ export const DEFAULT_CHAR_PROFILE: CharProfile = {
   adv_grid: create_status_grid(NUM_ADV_PIECES, ADV_COLS, 0, true),
 
   keyed_upgrades: {},
-  special_budget: create_input_column(
-    InputType.Int,
-    [SPECIAL_LEAP_LABEL],
-    ["0"],
-    [33333],
-  ),
+  special_budget: create_input_column(InputType.Int, SPECIAL_LEAP_LABELS, {
+    upper_bound: () => 33333,
+  }),
 
-  bound_budgets: ALL_LABELS.map((this_labels) =>
-    create_input_column(
-      InputType.Int,
-      this_labels,
-      null,
-      null,
-      this_labels.map((label) => label !== "Shards"),
-    ),
-  ),
-  leftover_price: ALL_LABELS.map((this_labels) =>
-    create_input_column(InputType.Int, this_labels),
-  ), // implicit 0 leftover here, currently UI does not allow changing this
+  bound_budgets: create_input_column(InputType.Int, ALL_MATERIAL_LABELS, {
+    enabled: (label) => label !== "Shards",
+  }),
+  // implicit 0 leftover here, currently UI does not allow changing this
+  leftover_price: create_input_column(InputType.Int, ALL_MATERIAL_LABELS),
 
   tier: 0,
   min_resolution: 1,

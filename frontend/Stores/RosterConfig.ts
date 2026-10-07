@@ -1,4 +1,8 @@
-import { ALL_LABELS, FALLBACK_PRICES } from "@/Utils/Constants";
+import {
+  ALL_MATERIAL_LABELS,
+  effective_prices,
+  FALLBACK_PRICES,
+} from "@/Utils/Constants";
 import {
   create_input_column,
   input_column_to_num,
@@ -20,9 +24,10 @@ import { load_roster_config } from "./ConfigStorage";
 
 // Everything in here is persisted. Session-only state lives in RuntimeState.
 export interface RosterConfig {
-  mats_prices: Record<MarketRegions, InputColumn[]>; // mats_prices[region][tier]
-  roster_mats_owned: Record<number, InputColumn[]>; // the tier distinction is because there's a different number of mats (rows) per tier
-  tradable_mats_owned: Record<number, InputColumn[]>;
+  // One column each, keyed by material label and covering every tier.
+  mats_prices: Record<MarketRegions, InputColumn>;
+  roster_mats_owned: Record<number, InputColumn>;
+  tradable_mats_owned: Record<number, InputColumn>;
 
   all_regions: Record<number, MarketRegions>;
 
@@ -43,22 +48,19 @@ export interface RosterConfig {
   auto_fetch: boolean;
 }
 
-export function create_default_owned_input_column(): InputColumn[] {
-  return ALL_LABELS.map((this_labels) =>
-    create_input_column(InputType.Int, this_labels),
-  );
+export function create_default_owned_input_column(): InputColumn {
+  return create_input_column(InputType.Int, ALL_MATERIAL_LABELS);
 }
 
-function default_prices(region: MarketRegions): InputColumn[] {
-  return ALL_LABELS.map((this_labels, tier) =>
-    create_input_column(
-      InputType.Int,
-      this_labels,
+function default_prices(region: MarketRegions): InputColumn {
+  return create_input_column(InputType.Int, ALL_MATERIAL_LABELS, {
+    value: (label) =>
       region === "Custom"
-        ? this_labels.map((label) => (label === "Gold" ? "1" : "0"))
-        : FALLBACK_PRICES[tier].map((price) => price.toLocaleString()),
-    ),
-  );
+        ? label === "Gold"
+          ? "1"
+          : "0"
+        : FALLBACK_PRICES[label].toLocaleString(),
+  });
 }
 
 // A function rather than a const so callers always get a fresh tree, and so this module
@@ -98,12 +100,12 @@ export const useRosterStore = defineStore("roster", {
     active_profile: (state): CharProfile =>
       state.roster_config.profiles[state.roster_config.active_profile_index],
 
-    active_roster_mats_owned(state): InputColumn[] {
+    active_roster_mats_owned(state): InputColumn {
       return state.roster_config.roster_mats_owned[
         this.active_profile.roster_id
       ];
     },
-    active_tradable_mats_owned(state): InputColumn[] {
+    active_tradable_mats_owned(state): InputColumn {
       return state.roster_config.tradable_mats_owned[
         this.active_profile.roster_id
       ];
@@ -111,7 +113,7 @@ export const useRosterStore = defineStore("roster", {
     active_region(state): MarketRegions {
       return state.roster_config.all_regions[this.active_profile.roster_id];
     },
-    active_mats_prices(state): InputColumn[] {
+    active_mats_prices(state): InputColumn {
       return state.roster_config.mats_prices[this.active_region];
     },
 
@@ -123,12 +125,9 @@ export const useRosterStore = defineStore("roster", {
     enabled_annotations: (state): boolean[] =>
       state.roster_config.enabled_annotations,
 
-    effective_serca_price(): number[] {
-      const t4_price = input_column_to_num(this.active_mats_prices[0]);
-      const serca_price = input_column_to_num(this.active_mats_prices[1]);
-      return ALL_LABELS[1].map((_, index) =>
-        Math.min(t4_price[index] * 5, serca_price[index]),
-      );
+    // cheapest way to obtain each material: buy it, or make it from a lower tier
+    active_effective_prices(): Record<string, number> {
+      return effective_prices(input_column_to_num(this.active_mats_prices));
     },
   },
 

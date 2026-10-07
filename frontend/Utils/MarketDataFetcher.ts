@@ -1,9 +1,4 @@
-import {
-  ALL_LABELS,
-  FALLBACK_PRICES,
-  WORKER_URL,
-  SERCA_TO_T4_INDICES,
-} from "./Constants";
+import { ALL_MATERIAL_LABELS, FALLBACK_PRICES, WORKER_URL } from "./Constants";
 import { storeToRefs } from "pinia";
 import { useRosterStore } from "@/Stores/RosterConfig";
 import {
@@ -18,11 +13,13 @@ export interface ShardInfo {
   selected: number;
   prices: Record<number, InputColumn>; // x1000, price in a single-celled column
 }
+// Shard bags are priced per bag, in their own single-cell columns.
+export const SHARD_LABEL = "Shard";
 export const DEFAULT_SHARD_INFO: ShardInfo = {
   prices: {
-    3000: create_input_column(InputType.Int, ["Shard"], ["0"]),
-    2000: create_input_column(InputType.Int, ["Shard"], ["0"]),
-    1000: create_input_column(InputType.Int, ["Shard"], ["0"]), // the labels kinda not needed so not gonna bother
+    3000: create_input_column(InputType.Int, [SHARD_LABEL]),
+    2000: create_input_column(InputType.Int, [SHARD_LABEL]),
+    1000: create_input_column(InputType.Int, [SHARD_LABEL]),
   },
   selected: 3000,
 };
@@ -83,63 +80,45 @@ export async function fetch_market_data(
   return data;
 }
 
-const default_prices: number[][] = FALLBACK_PRICES;
+const SHARD_BAG_LABELS: Record<string, number> = {
+  "Shards small": 1000,
+  "Shards medium": 2000,
+  "Shards large": 3000,
+};
 
 export function parse_response(
   response: any,
-): [number[][], number, Record<number, InputColumn>] {
-  let out = default_prices;
-  // for (let tier = 0; tier < ALL_LABELS.length; tier++) {
-  //     for (let index = 0; index < ALL_LABELS[tier].length; index++) {
-  //         let label = ALL_LABELS[tier][index]
-  //         // if (OVERRIDE_DEFAULT.hasOwnProperty(label)) {
-  //         //     out[tier][index] = OVERRIDE_DEFAULT[label]
-  //         // }
-  //         out[tier][index] = FALLBACK_PRICES[tier][index]
-  //     }
-  // }
-
-  // Track shard pouch prices: { 1000: price, 2000: price, 3000: price }
+): [Record<string, number>, number, Record<number, InputColumn>] {
+  // a fresh copy: a fetch must not mutate FALLBACK_PRICES
+  const out: Record<string, number> = { ...FALLBACK_PRICES };
   const shard_prices: Record<number, InputColumn> = {};
-  // console.log(response)
-  for (let index = 0; index < response.length; index++) {
-    const { item_slug, price } = response[index];
-    // console.log(ITEM_SLUG_TO_LABEL, item_slug)
-    if (Object.hasOwn(ITEM_SLUG_TO_LABEL, item_slug)) {
-      let label: string = ITEM_SLUG_TO_LABEL[item_slug];
-      for (let tier = 0; tier < ALL_LABELS.length; tier++) {
-        let index_in_labels = ALL_LABELS[tier].findIndex((x) => x == label);
 
-        const string_price = parseInt(price).toLocaleString();
-        const this_column = create_input_column(
-          InputType.Int,
-          ["Shard"],
-          [string_price],
-        );
-        if (index_in_labels >= 0) {
-          out[tier][index_in_labels] = price;
-        } else if (label === "Shards small") {
-          shard_prices[1000] = this_column;
-        } else if (label === "Shards medium") {
-          shard_prices[2000] = this_column;
-        } else if (label === "Shards large") {
-          shard_prices[3000] = this_column;
-        }
-      }
+  for (const { item_slug, price } of response) {
+    const label: string = ITEM_SLUG_TO_LABEL[item_slug];
+    if (label === undefined) {
+      continue;
+    }
+    const bag_size = SHARD_BAG_LABELS[label];
+    if (bag_size !== undefined) {
+      shard_prices[bag_size] = create_input_column(
+        InputType.Int,
+        [SHARD_LABEL],
+        { value: () => parseInt(price).toLocaleString() },
+      );
+    } else if (Object.hasOwn(out, label)) {
+      out[label] = price;
     }
   }
 
   // Calculate which shard bag size is most efficient (lowest price per shard)
   let selected_shard = 1000;
-  if (Object.keys(shard_prices).length > 0) {
-    let best_value = Infinity;
-    for (const [shard_count, this_column] of Object.entries(shard_prices)) {
-      const value_per_shard =
-        parse_locale_int(this_column.data[0]) / parseInt(shard_count);
-      if (value_per_shard < best_value) {
-        best_value = value_per_shard;
-        selected_shard = parseInt(shard_count);
-      }
+  let best_value = Infinity;
+  for (const [shard_count, column] of Object.entries(shard_prices)) {
+    const value_per_shard =
+      parse_locale_int(column.values[SHARD_LABEL]) / parseInt(shard_count);
+    if (value_per_shard < best_value) {
+      best_value = value_per_shard;
+      selected_shard = parseInt(shard_count);
     }
   }
 
@@ -226,7 +205,7 @@ export async function start_fetch(
       return out;
     } catch {
       runtime.market_fetch_failed = true;
-      return cached !== undefined ? cached : FALLBACK_PRICES;
+      return cached !== undefined ? cached : [];
     }
   })();
 
@@ -242,39 +221,22 @@ export async function start_fetch(
   fetch_callback(parsed, selectedShardSize, shard_prices, region);
 }
 function fetch_callback(
-  result: number[][],
+  prices: Record<string, number>,
   selected_shard_size: number,
   shard_prices: Record<number, InputColumn>,
   region: MarketRegions,
 ) {
   const roster_store = useRosterStore();
   const { roster_config } = storeToRefs(roster_store);
-  // console.log(result)
-  // console.log("fetch callback");
-  // console.log(roster_store.active_mats_prices);
-  // if (region === "Custom") {
-  //   // shouldn't happen anyway but just in case
-  //   return;
-  // }
   roster_config.value.shard_infos[region].selected = selected_shard_size;
   roster_config.value.shard_infos[region].prices = shard_prices;
-  for (let tier = 0; tier < ALL_LABELS.length; tier++) {
-    for (let index = 0; index < ALL_LABELS[tier].length; index++) {
-      const syncing = index in SERCA_TO_T4_INDICES && tier == 1;
-      const actual_tier = syncing ? 0 : tier;
-      const actual_index = syncing ? SERCA_TO_T4_INDICES[index] : index;
-      // console.log(
-      //   actual_tier,
-      //   actual_index,
-      //   result[actual_tier][actual_index].toLocaleString(),
-      // );
-      roster_config.value.mats_prices[region][actual_tier].data[actual_index] =
-        result[actual_tier][actual_index].toLocaleString();
-      if (ALL_LABELS[actual_tier][actual_index] == "Shards") {
-        roster_config.value.mats_prices[region][actual_tier].data[
-          actual_index
-        ] = "0"; // this shoulnd never actually be read
-      }
+  const column = roster_config.value.mats_prices[region];
+  for (const label of ALL_MATERIAL_LABELS) {
+    if (prices[label] === undefined) {
+      continue;
     }
+    // shards are priced per bag in shard_infos, so this row is never read
+    column.values[label] =
+      label === "Shards" ? "0" : prices[label].toLocaleString();
   }
 }

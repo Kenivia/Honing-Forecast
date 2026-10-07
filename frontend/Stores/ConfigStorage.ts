@@ -1,5 +1,5 @@
 import LZString from "lz-string";
-import { ALL_LABELS } from "@/Utils/Constants";
+import { ALL_LABELS, SPECIAL_LEAP_LABELS } from "@/Utils/Constants";
 import { parse_locale_int } from "@/Utils/InputColumn";
 import { debounce } from "@/Utils/Helpers";
 import { RosterConfig } from "./RosterConfig";
@@ -191,29 +191,38 @@ function migrate_6_to_7(data: any): any {
   return data;
 }
 
-// Deliberately ignores the old column's own `keys` array. Nothing before V8 ever read
-// it, so it drifted out of order in real saves, while `data` was always interpreted
+// V7 stored one column per tier, with values positional against that tier's label list,
+// so a material shared between tiers appeared twice. Prices and owned materials were kept
+// in sync by a watcher; a character's bound budget was not, so `winner` says which tier's
+// copy survives where the two disagree.
+//
+// Deliberately ignores the old column's own `keys` array. Nothing before V8 ever read it,
+// so it drifted out of order in real saves, while `data` was always interpreted
 // positionally against ALL_LABELS. Position is the only trustworthy mapping here.
-function v7_column(old: any, keys: string[]): SavedColumn {
+function v7_merge_columns(columns: any, winner: number): SavedColumn {
   const values: Record<string, number> = {};
-  const disabled: string[] = [];
-  keys.forEach((key, row) => {
-    const parsed = parse_locale_int(String(old?.data?.[row] ?? "0"));
-    values[key] = Number.isFinite(parsed) ? parsed : 0;
-    if (old?.enabled?.[row] === false) {
-      disabled.push(key);
-    }
-  });
-  return disabled.length > 0 ? { values, disabled } : { values };
+  const disabled = new Set<string>();
+  const tiers = ALL_LABELS.map((_, tier) => tier).filter((t) => t !== winner);
+  tiers.push(winner); // the winning tier is applied last, so it overwrites
+  for (const tier of tiers) {
+    const old = columns?.[tier];
+    ALL_LABELS[tier].forEach((label, row) => {
+      const parsed = parse_locale_int(String(old?.data?.[row] ?? "0"));
+      values[label] = Number.isFinite(parsed) ? parsed : 0;
+      if (old?.enabled?.[row] === false) {
+        disabled.add(label);
+      } else {
+        disabled.delete(label);
+      }
+    });
+  }
+  return disabled.size > 0 ? { values, disabled: [...disabled] } : { values };
 }
-
-const v7_columns = (old: any): SavedColumn[] =>
-  ALL_LABELS.map((labels, tier) => v7_column(old?.[tier], labels));
 
 function migrate_7_to_8(data: any): Partial<SavedConfig> {
   const mats_prices: SavedConfig["mats_prices"] = {};
   for (const region in data.mats_prices ?? {}) {
-    mats_prices[region] = v7_columns(data.mats_prices[region]);
+    mats_prices[region] = v7_merge_columns(data.mats_prices[region], 0);
   }
 
   const shard_infos: SavedConfig["shard_infos"] = {};
@@ -231,11 +240,13 @@ function migrate_7_to_8(data: any): Partial<SavedConfig> {
   const roster_mats_owned: SavedConfig["roster_mats_owned"] = {};
   const tradable_mats_owned: SavedConfig["tradable_mats_owned"] = {};
   for (const roster_id in data.roster_mats_owned ?? {}) {
-    roster_mats_owned[roster_id] = v7_columns(
+    roster_mats_owned[roster_id] = v7_merge_columns(
       data.roster_mats_owned[roster_id],
+      0,
     );
-    tradable_mats_owned[roster_id] = v7_columns(
+    tradable_mats_owned[roster_id] = v7_merge_columns(
       data.tradable_mats_owned?.[roster_id],
+      0,
     );
   }
 
@@ -247,10 +258,15 @@ function migrate_7_to_8(data: any): Partial<SavedConfig> {
         keyed_upgrades[key] = rest;
       }
     }
+    const tier = profile.tier === 1 ? 1 : 0;
+    // the single V7 special-leap value is in the character's current tier's units
+    const special_leaps = parse_locale_int(
+      String(profile.special_budget?.data?.[0] ?? "0"),
+    );
     return {
       char_name: profile.char_name,
       roster_id: profile.roster_id,
-      tier: profile.tier,
+      tier,
       express_event: profile.express_event,
       auto_start_optimizer: profile.auto_start_optimizer,
       lock_fetched_done: profile.lock_fetched_done,
@@ -260,9 +276,15 @@ function migrate_7_to_8(data: any): Partial<SavedConfig> {
       normal_grid: profile.normal_grid,
       adv_grid: profile.adv_grid,
       keyed_upgrades,
-      special_budget: v7_column(profile.special_budget, ["Special Leap"]),
-      bound_budgets: v7_columns(profile.bound_budgets),
-      leftover_price: v7_columns(profile.leftover_price),
+      special_budget: {
+        values: {
+          [SPECIAL_LEAP_LABELS[tier]]: Number.isFinite(special_leaps)
+            ? special_leaps
+            : 0,
+        },
+      },
+      bound_budgets: v7_merge_columns(profile.bound_budgets, tier),
+      leftover_price: v7_merge_columns(profile.leftover_price, tier),
     };
   });
 

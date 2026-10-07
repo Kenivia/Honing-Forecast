@@ -12,6 +12,7 @@
     "browsers": "playwright install chromium firefox && playwright-mcp install-browser firefox",
     "test": "cargo test -p hf-core --profile release --no-default-features --features active_version,run_tests -- --no-capture",
     "change-log": "python ./scripts/change_log_helper/build.py",
+    "check": "vue-tsc --noEmit",
     "no-test-build": "pnpm run wasm && vite build",
     "build": "pnpm run test && pnpm run no-test-build && cargo +nightly udeps",
     "no-check-deploy": "git push origin main:Production --force-with-lease",
@@ -53,9 +54,10 @@
     "jsdom": "^27.4.0",
     "prettier": "^3.8.4",
     "prettier-plugin-tailwindcss": "^0.8.0",
-    "typescript": "^6.0.3",
+    "typescript": "^5.9.3",
     "typescript-eslint": "^8.62.0",
     "vite": "^6.4.3",
+    "vue-tsc": "^2.2.12",
     "wrangler": "^4.104.0"
   }
 }

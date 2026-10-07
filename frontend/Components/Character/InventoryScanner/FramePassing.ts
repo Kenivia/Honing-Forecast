@@ -87,9 +87,9 @@ export async function file_to_stream(file: File) {
   const draw = () => ctx.drawImage(source, 0, 0);
   draw();
   // a video is drawn frame by frame as it plays; the timer keeps frames coming once it has ended
-  const is_video = source instanceof HTMLVideoElement;
-  const stop_driving = is_video ? driveVideoFrames(source, draw) : null;
-  const timer = setInterval(draw, is_video ? 500 : 1000 / CAPTURE_FPS);
+  const video = source instanceof HTMLVideoElement ? source : null;
+  const stop_driving = video ? driveVideoFrames(video, draw) : null;
+  const timer = setInterval(draw, video ? 500 : 1000 / CAPTURE_FPS);
 
   return {
     stream: canvas.captureStream(),

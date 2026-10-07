@@ -1,5 +1,6 @@
 import { NUM_ADV_PIECES } from "@/Utils/Constants";
 import {
+  column_labels,
   create_input_column,
   InputColumn,
   parse_input,
@@ -13,6 +14,7 @@ import { default_roster_config, RosterConfig } from "./RosterConfig";
 import {
   DEFAULT_SHARD_INFO,
   MarketRegions,
+  SHARD_LABEL,
   ShardInfo,
 } from "@/Utils/MarketDataFetcher";
 import {
@@ -32,7 +34,8 @@ import { format_char_name } from "@/Utils/Helpers";
 //  1. Nothing derivable from Constants.ts is stored. Keys, bounds, column type and
 //     row order all come from the constants at load time.
 //  2. Material values are keyed by label, never by row index. Reordering, inserting
-//     or removing a row in Constants.ts is therefore not a save-shape change.
+//     or removing a row in Constants.ts is therefore not a save-shape change, and a
+//     material shared between tiers is stored once rather than once per tier.
 // ============================================================================
 
 export interface SavedColumn {
@@ -58,8 +61,8 @@ export interface SavedProfile {
   adv_grid: StatusGrid;
   keyed_upgrades: Record<string, SavedUpgrade>;
   special_budget: SavedColumn;
-  bound_budgets: SavedColumn[]; // by tier
-  leftover_price: SavedColumn[]; // by tier
+  bound_budgets: SavedColumn;
+  leftover_price: SavedColumn;
 }
 
 export interface SavedShardInfo {
@@ -72,9 +75,9 @@ export interface SavedConfig {
   profiles: SavedProfile[];
   active_profile_index: number;
   last_seen_version: string;
-  mats_prices: Partial<Record<MarketRegions, SavedColumn[]>>;
-  roster_mats_owned: Record<string, SavedColumn[]>;
-  tradable_mats_owned: Record<string, SavedColumn[]>;
+  mats_prices: Partial<Record<MarketRegions, SavedColumn>>;
+  roster_mats_owned: Record<string, SavedColumn>;
+  tradable_mats_owned: Record<string, SavedColumn>;
   all_regions: Record<string, MarketRegions>;
   shard_infos: Partial<Record<MarketRegions, SavedShardInfo>>;
   latest_market_data: Partial<Record<MarketRegions, [number, any]>>;
@@ -91,10 +94,13 @@ export interface SavedConfig {
 
 export function column_to_saved(column: InputColumn): SavedColumn {
   const values: Record<string, number> = {};
-  column.keys.forEach((key, row) => {
-    values[key] = parse_input(column, row, column.data[row], true);
-  });
-  const disabled = column.keys.filter((_, row) => !column.enabled[row]);
+  const disabled: string[] = [];
+  for (const label of column_labels(column)) {
+    values[label] = parse_input(column, label, column.values[label], true);
+    if (!column.enabled[label]) {
+      disabled.push(label);
+    }
+  }
   return disabled.length > 0 ? { values, disabled } : { values };
 }
 
@@ -105,34 +111,18 @@ export function column_from_saved(
   saved: SavedColumn | undefined,
   template: InputColumn,
 ): InputColumn {
-  const out = create_input_column(
-    template.type,
-    template.keys.slice(),
-    template.data.slice(),
-    template.upper_bound.slice(),
-    template.enabled.slice(),
-  );
-  if (!saved) {
-    return out;
-  }
-  const disabled = new Set(saved.disabled ?? []);
-  out.enabled = template.keys.map((key) => !disabled.has(key));
-  out.data = template.keys.map((key, row) =>
-    saved.values?.[key] === undefined
-      ? template.data[row]
-      : parse_input(out, row, String(saved.values[key]), true).toLocaleString(),
-  );
-  return out;
+  const disabled = new Set(saved?.disabled ?? []);
+  return create_input_column(template.type, column_labels(template), {
+    value: (label) => {
+      const value = saved?.values?.[label];
+      return value === undefined
+        ? template.values[label]
+        : parse_input(template, label, String(value), true).toLocaleString();
+    },
+    upper_bound: (label) => template.upper_bound[label],
+    enabled: (label) => (saved ? !disabled.has(label) : template.enabled[label]),
+  });
 }
-
-const columns_to_saved = (columns: InputColumn[]): SavedColumn[] =>
-  columns.map(column_to_saved);
-
-const columns_from_saved = (
-  saved: SavedColumn[] | undefined,
-  templates: InputColumn[],
-): InputColumn[] =>
-  templates.map((template, tier) => column_from_saved(saved?.[tier], template));
 
 // ============================================================================
 // Profiles
@@ -159,8 +149,8 @@ function profile_to_saved(profile: CharProfile): SavedProfile {
     adv_grid: profile.adv_grid,
     keyed_upgrades,
     special_budget: column_to_saved(profile.special_budget),
-    bound_budgets: columns_to_saved(profile.bound_budgets),
-    leftover_price: columns_to_saved(profile.leftover_price),
+    bound_budgets: column_to_saved(profile.bound_budgets),
+    leftover_price: column_to_saved(profile.leftover_price),
   };
 }
 
@@ -226,11 +216,11 @@ function profile_from_saved(
       saved.special_budget,
       defaults.special_budget,
     ),
-    bound_budgets: columns_from_saved(
+    bound_budgets: column_from_saved(
       saved.bound_budgets,
       defaults.bound_budgets,
     ),
-    leftover_price: columns_from_saved(
+    leftover_price: column_from_saved(
       saved.leftover_price,
       defaults.leftover_price,
     ),
@@ -244,7 +234,7 @@ function profile_from_saved(
 function shard_info_to_saved(info: ShardInfo): SavedShardInfo {
   const prices: Record<string, number> = {};
   for (const [size, column] of Object.entries(info.prices)) {
-    prices[size] = parse_input(column, 0, column.data[0], true);
+    prices[size] = parse_input(column, SHARD_LABEL, column.values[SHARD_LABEL], true);
   }
   return { selected: info.selected, prices };
 }
@@ -260,7 +250,7 @@ function shard_info_from_saved(saved: SavedShardInfo | undefined): ShardInfo {
   for (const size of Object.keys(out.prices)) {
     const value = saved.prices?.[size];
     if (value !== undefined) {
-      out.prices[size].data[0] = Number(value).toLocaleString();
+      out.prices[size].values[SHARD_LABEL] = Number(value).toLocaleString();
     }
   }
   return out;
@@ -272,8 +262,8 @@ function shard_info_from_saved(saved: SavedShardInfo | undefined): ShardInfo {
 
 export function to_saved(config: RosterConfig): Omit<SavedConfig, "version"> {
   const mats_prices: SavedConfig["mats_prices"] = {};
-  for (const [region, columns] of Object.entries(config.mats_prices)) {
-    mats_prices[region as MarketRegions] = columns_to_saved(columns);
+  for (const [region, column] of Object.entries(config.mats_prices)) {
+    mats_prices[region as MarketRegions] = column_to_saved(column);
   }
 
   const shard_infos: SavedConfig["shard_infos"] = {};
@@ -284,10 +274,10 @@ export function to_saved(config: RosterConfig): Omit<SavedConfig, "version"> {
   const roster_mats_owned: SavedConfig["roster_mats_owned"] = {};
   const tradable_mats_owned: SavedConfig["tradable_mats_owned"] = {};
   for (const roster_id of Object.keys(config.roster_mats_owned)) {
-    roster_mats_owned[roster_id] = columns_to_saved(
+    roster_mats_owned[roster_id] = column_to_saved(
       config.roster_mats_owned[roster_id],
     );
-    tradable_mats_owned[roster_id] = columns_to_saved(
+    tradable_mats_owned[roster_id] = column_to_saved(
       config.tradable_mats_owned[roster_id],
     );
   }
@@ -314,7 +304,7 @@ export function from_saved(saved: Partial<SavedConfig>): RosterConfig {
   const out = default_roster_config();
 
   for (const region of Object.keys(out.mats_prices) as MarketRegions[]) {
-    out.mats_prices[region] = columns_from_saved(
+    out.mats_prices[region] = column_from_saved(
       saved.mats_prices?.[region],
       out.mats_prices[region],
     );
@@ -325,18 +315,18 @@ export function from_saved(saved: Partial<SavedConfig>): RosterConfig {
 
   const roster_ids = Object.keys(saved.roster_mats_owned ?? {}).map(Number);
   if (roster_ids.length > 0) {
-    const templates = out.roster_mats_owned[0];
+    const template = out.roster_mats_owned[0];
     out.roster_mats_owned = {};
     out.tradable_mats_owned = {};
     out.all_regions = {};
     for (const roster_id of roster_ids) {
-      out.roster_mats_owned[roster_id] = columns_from_saved(
+      out.roster_mats_owned[roster_id] = column_from_saved(
         saved.roster_mats_owned?.[roster_id],
-        templates,
+        template,
       );
-      out.tradable_mats_owned[roster_id] = columns_from_saved(
+      out.tradable_mats_owned[roster_id] = column_from_saved(
         saved.tradable_mats_owned?.[roster_id],
-        templates,
+        template,
       );
       out.all_regions[roster_id] = saved.all_regions?.[roster_id] ?? "nae";
     }
