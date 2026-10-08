@@ -38,6 +38,9 @@ cloudflare/.wrangler/
 
 
 scripts/brightness/all icons/*
+scripts/codex/icons/
+scripts/codex/*.npz
+scripts/codex/*.json
 
 test-results/
 playwright-report/

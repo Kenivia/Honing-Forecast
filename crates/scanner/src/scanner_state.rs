@@ -98,6 +98,9 @@ pub struct OneSlotInfo {
     #[serde(default)]
     pub tooltip_amount: Option<String>,
     pub tradability: Option<Tradability>,
+    // the material the tooltip said it is, for an icon several are drawn with
+    #[serde(default)]
+    pub label: Option<String>,
     // the OCR job whose text becomes the amount
     #[serde(skip)]
     pub amount_job: Option<u32>,

@@ -20,7 +20,7 @@ Per-section instructions:
 | Way | Use it for | Command |
 | --- | --- | --- |
 | Playwright MCP | One-off debugging when the `pw-chrome` / `pw-firefox` tools are loaded. | tools named `browser_*` |
-| `pnpm browse` | One-off debugging without MCP tools (subagents, non-interactive runs), or anything needing a loop or timing. | `pnpm browse <script.mjs> [--firefox] [--headed] [--stub]` |
+| `pnpm browse` | One-off debugging without MCP tools (subagents, non-interactive runs), or anything needing a loop or timing. | `pnpm browse <script.mjs> [--firefox] [--headed] [--stub]`; `BASE_URL` in the environment points it at a dev server on another port |
 | `pnpm e2e` | Rigorous, repeatable checks in both browsers. | `pnpm e2e`, `pnpm e2e --project=firefox`, `pnpm e2e -g "name"` |
 
 ### Playwright MCP

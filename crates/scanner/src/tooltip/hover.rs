@@ -2,7 +2,7 @@ use super::{
     chest::{Chest, ChestContent, ChestKind, ChestRow, ChestRowStrips, chest_from_texts, chest_strips},
     detect::{TitleBar, find_title},
     icon::tooltip_icon,
-    items::match_title,
+    items::{ITEMS, item_from_body, match_title, shares_icon},
     layout::parse_layout,
     title::{join_title, text_image, title_lines, yellow_image},
 };
@@ -53,6 +53,12 @@ pub struct Hover {
     // the slot icon its large icon is
     #[serde(default)]
     pub icon_votes: AHashMap<String, usize>,
+    // its large icon is one several materials are drawn with, so its description is read too
+    #[serde(skip)]
+    pub shared_icon: bool,
+    // the material its description says it is
+    #[serde(skip)]
+    pub body_votes: AHashMap<String, usize>,
     #[serde(default)]
     pub chest_kind_votes: AHashMap<ChestKind, usize>,
     #[serde(default)]
@@ -71,11 +77,11 @@ pub struct Hover {
     pub candidates: Vec<(SlotAddress, f64)>,
     #[serde(skip)]
     pub chest_place: (Option<(InventoryType, usize, usize)>, Option<SlotAddress>),
-    // title, amount and chest reads sent off and not answered yet, and sent in all
+    // title, amount, chest and description reads sent off and not answered yet, and sent in all
     #[serde(skip)]
-    pub waiting: [usize; 3],
+    pub waiting: [usize; 4],
     #[serde(skip)]
-    pub sent: [usize; 3],
+    pub sent: [usize; 4],
     // the title's columns when it was last sent off
     #[serde(skip)]
     pub read_columns: Vec<bool>,
@@ -90,6 +96,9 @@ pub struct Hover {
     pub icon: Option<String>,
     pub amount: Option<String>,
     pub tradability: Option<Tradability>,
+    // the material, from the description, else the title
+    #[serde(default)]
+    pub label: Option<String>,
     pub slot: Option<SlotAddress>,
 }
 
@@ -100,6 +109,8 @@ pub struct Strips {
     pub title: Option<(Vec<RgbaImage>, bool)>,
     pub amount: Option<[RgbaImage; 3]>,
     pub chest: Option<Vec<ChestRowStrips>>,
+    // one per description line
+    pub body: Option<Vec<RgbaImage>>,
 }
 
 // The OCR jobs of one frame of a hover. Its votes are cast once every text is back.
@@ -111,6 +122,7 @@ pub struct PendingRead {
     pub amount: Option<[u32; 3]>,
     // per row: the name's lines, the count, the debug crop
     pub chest: Option<Vec<(Vec<u32>, u32, Option<OneIconConfig>)>>,
+    pub body: Option<Vec<u32>>,
 }
 
 impl PendingRead {
@@ -119,7 +131,7 @@ impl PendingRead {
         let amount = self.amount.iter().flatten().copied();
         let chest = self.chest.iter().flatten();
         let chest = chest.flat_map(|row| row.0.iter().copied().chain([row.1]));
-        title.chain(amount).chain(chest)
+        title.chain(amount).chain(chest).chain(self.body.iter().flatten().copied())
     }
 }
 
@@ -141,7 +153,7 @@ impl ScannerState {
     fn retire_hover(&mut self, mut hover: Hover) {
         let held = take(&mut hover.held);
         self.send_read(&mut hover, held);
-        if hover.waiting != [0; 3] {
+        if hover.waiting != [0; 4] {
             self.past_hovers.push(hover);
         } else {
             self.write_hover(&mut hover, true);
@@ -168,7 +180,11 @@ impl ScannerState {
             }
             read.chest = Some(jobs);
         }
-        let kinds = [read.title.is_some(), read.amount.is_some(), read.chest.is_some()];
+        if let Some(lines) = strips.body {
+            read.body = Some(lines.into_iter().map(|line| self.request_ocr(line, priority)).collect());
+        }
+        let kinds =
+            [read.title.is_some(), read.amount.is_some(), read.chest.is_some(), read.body.is_some()];
         for (kind, sent) in kinds.into_iter().enumerate() {
             hover.waiting[kind] += sent as usize;
             hover.sent[kind] += sent as usize;
@@ -244,9 +260,12 @@ impl ScannerState {
         }
 
         if most(&hover.icon_votes) < SETTLED
-            && let Some(icon) = timed("tooltip/icon", || tooltip_icon(&buffer, &bar, s))
+            && let Some((icon, clear)) = timed("tooltip/icon", || tooltip_icon(&buffer, &bar, s))
         {
-            *hover.icon_votes.entry(icon).or_default() += 1;
+            hover.shared_icon |= shares_icon(&icon);
+            if clear {
+                *hover.icon_votes.entry(icon).or_default() += 1;
+            }
         }
 
         let layout = timed("tooltip/layout", || parse_layout(&buffer, &bar, s));
@@ -280,6 +299,16 @@ impl ScannerState {
                     Some(timed("tooltip/chest", || chest_strips(&buffer, chest, self.debugging)));
             }
         }
+        // which book a book is: its description says so more often than its title, whose start
+        // the cursor covers when the tooltip is level with the slot
+        if hover.shared_icon
+            && !layout.description.is_empty()
+            && most(&hover.body_votes) + hover.waiting[3] < SETTLED
+            && hover.sent[3] < MAX_READS
+        {
+            let lines = layout.description.iter();
+            strips.body = Some(lines.map(|x| text_image(&buffer, x.0, x.1, x.2, x.3)).collect());
+        }
         let mut now = Strips::default();
         if hover.waiting[0] < IN_FLIGHT && strips.title.is_some() {
             now.title = strips.title.take();
@@ -290,6 +319,9 @@ impl ScannerState {
         }
         if hover.waiting[2] < IN_FLIGHT {
             now.chest = strips.chest.take();
+        }
+        if hover.waiting[3] < IN_FLIGHT {
+            now.body = strips.body.take();
         }
         hover.held = strips;
         self.send_read(&mut hover, now);
@@ -368,6 +400,13 @@ impl ScannerState {
                 }
                 hover.waiting[2] -= 1;
             }
+            if let Some(lines) = &read.body {
+                let lines: Vec<String> = lines.iter().map(text).collect();
+                if let Some(label) = item_from_body(&lines).and_then(|item| item.label.clone()) {
+                    *hover.body_votes.entry(label).or_default() += 1;
+                }
+                hover.waiting[3] -= 1;
+            }
         }
 
         for (index, mut hover) in hovers.into_iter().enumerate() {
@@ -388,12 +427,16 @@ impl ScannerState {
         hover.title = winner(&hover.title_votes).map(|x| x.0);
         hover.amount = winner(&hover.amount_votes).map(|x| x.0);
         hover.tradability = winner(&hover.tradability_votes).map(|x| x.0);
-        // The title says more than the picture: books of one kind share a picture, and the two
+        // The text says more than the picture: books of one kind share a picture, and the two
         // kinds look too alike for the picture match to pick one.
-        hover.icon = hover
-            .title
-            .as_ref()
-            .and_then(|title| match_title(title)?.icon.clone())
+        let titled = hover.title.as_ref().and_then(|title| match_title(title));
+        hover.label = winner(&hover.body_votes)
+            .map(|x| x.0)
+            .or_else(|| titled?.label.clone());
+        let labelled = || ITEMS.iter().find(|item| item.label.is_some() && item.label == hover.label);
+        hover.icon = titled
+            .and_then(|item| item.icon.clone())
+            .or_else(|| labelled()?.icon.clone())
             .or_else(|| winner(&hover.icon_votes).map(|x| x.0));
         hover.slot = hover.icon.as_ref().and_then(|icon| {
             self.hovered_slot(&hover.candidates, hover.bar.y as f64, s, icon, hover.amount.as_ref())
@@ -409,6 +452,9 @@ impl ScannerState {
             }
             if hover.amount.is_some() {
                 slot.tooltip_amount = hover.amount.clone();
+            }
+            if hover.label.is_some() {
+                slot.label = hover.label.clone();
             }
             // no amount line was found, or no two crops of it ever agreed
             slot.tooltip_failed = slot.tooltip_amount.is_none()

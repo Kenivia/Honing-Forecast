@@ -11,19 +11,21 @@ Code: `Manifest.ts` (build logic, `scanned` and `manifest` computeds), `Manifest
 - **A chest slot** is resolved with `chests_for` (the same lookup the dashboard uses), preferring the chest whose stacked amount is the slot's.
 - **Everything inside a chest takes the chest's band**, whatever the row's "(Bound)" says: the user picks the character it is opened on.
 - **Obtain-all** chests are their contents. They go into `extra`, the k of the "n+k" a cell shows. A chest inside one is opened in turn, so an obtain-all of select-one chests shows as those select-one chests.
-- **Select-one** chests are the only ones passed on. Each option is a bag of `label -> amount`. A chest listed as an option is flattened: an obtain-all into its contents, a select-one into its own options. Identical chests in one band are grouped and their counts summed.
+- **Select-one** chests are the only ones passed on. Each option is a bag of `label -> amount`. A chest listed as an option is flattened: an obtain-all into its contents, a select-one into its own options. An option that is a chest of unknown contents cannot be offered, so it is listed under "Not included" while the chest's other options go through. Identical chests in one band are grouped and their counts summed.
 - **Random** chests, and chests whose contents are not known, are listed under "Not included" and go no further.
 
 ## Names and inner chests
 
-- `templates/items.json` rows carry `label`, the material label in `Constants.ts`. Slots map by `icon`, chest rows by `title`. Books have no title there, so book slots are not counted yet. Gold and Silver are never scanned and stay `?`.
-- A tooltip only names a chest inside a chest, so what it holds comes from `opens` (`kind` and `items`, title to amount) on its row in `templates/chest.json`. A row without `opens` is "contents unknown" when it turns up inside another chest. The two `Dummy ...` rows are placeholders for an obtain-all of select-ones.
-- Rust reads the same two files and ignores the extra fields. A new title there needs `pnpm run wasm` before the scanner reads it.
+- `templates/items.json` rows carry `label`, the material label in `Constants.ts`. Slots map by `icon`, chest rows by `title`. An icon that rows with different labels share (the books) maps to nothing: such a slot counts under its own `label`, or, set by hand, under the material it was set to (`SHARED_ICONS`). Gold and Silver are never scanned and stay `?`.
+- A tooltip only names a chest inside a chest, so what it holds is hard-coded in `templates/inner_chests.json`: one row per title with `kind` and `items` (title to amount). A row with only a title is a chest whose contents nobody has settled, and is "contents unknown" when it turns up. `scripts/codex/chest.py` writes these rows from the codex (`Codex.md`); they are meant to be read before they are trusted. The two `Dummy ...` rows are placeholders for an obtain-all of select-ones.
+- A chest can be in both tables: `chest.json` when it sits in a slot, `inner_chests.json` when it is also found inside others.
+- Rust reads the same three files and ignores the extra fields. A new title there needs `pnpm run wasm` before the scanner reads it.
 
 ## The page
 
 - Hidden behind a warning while any slot is missing; the user can open it anyway, and those slots are simply not in it.
 - Two tabs, one per tier. A material shared between tiers shows on both with one value. A chest shows on a tab when one of its options holds a material of that tier.
+- **Adding a chest by hand.** The "Add a selection chest" card under the chest list takes a count, an optional name, a band and options of one material each (those of the tier shown). It goes into `added_chests` in `ScanStore.ts`, joins the scanned chests in `manifest` (so it converts and takes a count override like them), has a Remove button, and is wiped by a new capture like the overrides.
 - **Cells are inputs.** A cell shows the override, else `n+k`, else nothing with a `?` placeholder. Typing sets an override (arithmetic works); emptying it goes back to the scan. Chest counts can be overridden the same way.
 - **Conversion toggles**, one per band, kept in `convert`. The char-bound one is locked off for a T4 character and defaults on for a Serca one; they reset when the character or its tier changes. Conversion runs after overrides, at the `CONVERTS_FROM` ratio: the T4 remainder stays, the gain lands on the Serca label, and tradable comes out roster-bound. The gain shows as a read-only "+c from T4" beside the Serca input, so the way to change it is to override the T4 cell.
 - Chest options convert too, without rounding, since a count multiplies them later. The chest keeps its own band, which is not settled for a converted tradable chest.

@@ -7,6 +7,7 @@ import {
 import { parse_locale_int } from "@/Utils/InputColumn";
 import { ChestKind } from "./LoadStorage";
 import {
+  added_chests,
   assumed_tradability,
   chest_overrides,
   chests_for,
@@ -17,6 +18,7 @@ import {
 } from "./ScanStore";
 import ITEMS from "../../../../templates/items.json";
 import CHESTS from "../../../../templates/chest.json";
+import INNER_CHESTS from "../../../../templates/inner_chests.json";
 
 // The manifest: what the scan amounts to, as materials per ownership band plus the select-one
 // chests still to be opened. It sits between the scanner and the rest of the site.
@@ -39,23 +41,27 @@ export interface LooseChest {
   count: number;
 }
 
-// an icon several items are drawn with (the books) says nothing on its own
 const ICON_LABEL: Record<string, string> = {};
 const TITLE_LABEL: Record<string, string> = {};
+// An icon several materials are drawn with (the books) says nothing on its own: the tooltip
+// says which, or the user does, picking one of these.
+export const SHARED_ICONS: Record<string, string[]> = {};
 for (const item of ITEMS as any[]) {
   if (item.label && item.title) TITLE_LABEL[item.title] = item.label;
   if (!item.label || !item.icon) continue;
-  const shared = (ITEMS as any[]).some(
-    (other) => other.icon === item.icon && other.label !== item.label,
-  );
-  if (!shared) ICON_LABEL[item.icon] = item.label;
+  const labels = (ITEMS as any[])
+    .filter((other) => other.icon === item.icon && other.label)
+    .map((other) => other.label);
+  if (new Set(labels).size === 1) ICON_LABEL[item.icon] = item.label;
+  else SHARED_ICONS[item.icon] = [...new Set(labels)];
 }
+const SHARED_LABELS = new Set(Object.values(SHARED_ICONS).flat());
 const CHEST_ICONS = new Set((CHESTS as any[]).map((chest) => chest.icon));
 // what a chest listed inside another chest holds, which no tooltip says
 const OPENS: Record<string, Opens> = Object.fromEntries(
-  (CHESTS as any[])
-    .filter((chest) => chest.opens)
-    .map((chest) => [chest.title, chest.opens]),
+  (INNER_CHESTS as any[])
+    .filter((chest) => chest.items)
+    .map((chest) => [chest.title, chest]),
 );
 
 const digits = (text: string | null) =>
@@ -115,10 +121,13 @@ export const scanned = computed(() => {
   ) {
     if (kind === "Random") return add_loose(random, title, count);
     if (kind === "SelectOne") {
-      const options = items.flatMap(([inner, each]) =>
-        alternatives(inner, each),
-      );
-      if (!options.length) return add_loose(unknown, title, count);
+      const options = items.flatMap(([inner, each]) => {
+        const found = alternatives(inner, each);
+        // an option nobody knows the contents of is not offered, so it is listed
+        if (!found.length) add_loose(unknown, inner, each * count);
+        return found;
+      });
+      if (!options.length) return;
       const key = `${title}|${band}|${JSON.stringify(options)}`;
       const old = grouped.get(key);
       if (old) old.count += count;
@@ -130,7 +139,13 @@ export const scanned = computed(() => {
       const opens = OPENS[inner];
       if (label) extra[label][band] += each * count;
       else if (opens) {
-        open(opens.kind, Object.entries(opens.items), each * count, band, inner);
+        open(
+          opens.kind,
+          Object.entries(opens.items),
+          each * count,
+          band,
+          inner,
+        );
       } else add_loose(unknown, inner, each * count);
     }
   }
@@ -161,7 +176,11 @@ export const scanned = computed(() => {
       if (!edit) missing++;
       continue;
     }
-    const label = ICON_LABEL[item];
+    // a shared icon set by hand is set to the material itself
+    const label =
+      (edit ? null : slot.label) ??
+      ICON_LABEL[item] ??
+      (SHARED_LABELS.has(item) ? item : undefined);
     if (label) {
       owned[label][band] = (owned[label][band] ?? 0) + amount;
       continue;
@@ -183,7 +202,14 @@ export const scanned = computed(() => {
       chest.title ?? chest.last_read_title,
     );
   }
-  return { owned, extra, chests: [...grouped.values()], random, unknown, missing };
+  return {
+    owned,
+    extra,
+    chests: [...grouped.values()],
+    random,
+    unknown,
+    missing,
+  };
 });
 
 // indexed by band; a converted band's T4 materials become Serca ones
@@ -242,19 +268,21 @@ export const manifest = computed(() => {
   for (const label of ALL_MATERIAL_LABELS) {
     for (const band of bands) materials[label][band] += incoming[label][band];
   }
-  const chests = scanned.value.chests.map((chest) => ({
-    ...chest,
-    count: chest_overrides.value[chest.key] ?? chest.count,
-    options: chest.options.map((option) =>
-      merge(
-        Object.entries(option).map(([label, amount]) => {
-          const mat = convert.value[chest.band] && SERCA_OF[label];
-          return mat
-            ? { [mat.label]: amount / mat.from.ratio }
-            : { [label]: amount };
-        }),
+  const chests = [...scanned.value.chests, ...added_chests.value].map(
+    (chest) => ({
+      ...chest,
+      count: chest_overrides.value[chest.key] ?? chest.count,
+      options: chest.options.map((option) =>
+        merge(
+          Object.entries(option).map(([label, amount]) => {
+            const mat = convert.value[chest.band] && SERCA_OF[label];
+            return mat
+              ? { [mat.label]: amount / mat.from.ratio }
+              : { [label]: amount };
+          }),
+        ),
       ),
-    ),
-  }));
+    }),
+  );
   return { ...scanned.value, materials, incoming, chests };
 });

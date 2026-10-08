@@ -1,0 +1,12 @@
+[
+  { "title": "Destiny Shard Pouch (S)", "kind": "ObtainAll", "items": {"Destiny Shard": 1000} },
+  { "title": "Destiny Shard Pouch (M)", "kind": "ObtainAll", "items": {"Destiny Shard": 2000} },
+  { "title": "Destiny Shard Pouch (L)", "kind": "ObtainAll", "items": {"Destiny Shard": 3000} },
+  { "title": "Dummy Selection Chest", "kind": "SelectOne", "items": {"Destiny Leapstone": 50, "Great Destiny Leapstone": 10} },
+  { "title": "Dummy Bundle Chest", "kind": "ObtainAll", "items": {"Dummy Selection Chest": 1} },
+  { "title": "Tier 4 Breath Chest", "kind": "ObtainAll", "items": {"Lava's Breath": 1, "Glacier's Breath": 1} },
+  { "title": "Fusion Material: Superior Abidos Fusion Material Chest", "kind": "ObtainAll", "items": {"Superior Abidos Fusion Material": 10} },
+  { "title": "Destiny Destruction Stone Pouch" },
+  { "title": "Destiny Guardian Stone Pouch" },
+  { "title": "Destiny Leapstone Chest" }
+]

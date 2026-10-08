@@ -47,7 +47,7 @@ impl ScannerState {
             || self
                 .hover
                 .as_ref()
-                .is_some_and(|hover| hover.missed > 0 || hover.waiting != [0; 3]);
+                .is_some_and(|hover| hover.missed > 0 || hover.waiting != [0; 4]);
         self.quiet_scans = if changed || unfinished {
             0
         } else {

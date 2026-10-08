@@ -11,6 +11,7 @@ import {
   slot_key,
   slots,
 } from "./ScanStore";
+import { SHARED_ICONS } from "./Manifest";
 import SlotCell from "./SlotCell.vue";
 
 const props = defineProps<{ address: SlotAddress | null; items: string[] }>();
@@ -42,9 +43,12 @@ const slot = computed(() => shown_slot(read.value));
 const assumed = computed(() => slot.value !== read.value);
 const edit = computed(() => edits.value[key.value]);
 
-const item = computed(() =>
-  edit.value ? edit.value.item : (slot.value?.icon_name_score?.[0] ?? null),
-);
+// for an icon several materials share, the one its tooltip said it is
+const item = computed(() => {
+  if (edit.value) return edit.value.item;
+  const icon = slot.value?.icon_name_score?.[0] ?? null;
+  return (SHARED_ICONS[icon] && slot.value.label) || icon;
+});
 const status = computed(() => {
   if (edit.value) return "Edited by hand";
   if (!slot.value) return "Not seen yet";

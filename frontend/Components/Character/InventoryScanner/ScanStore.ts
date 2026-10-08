@@ -7,6 +7,7 @@ import {
   SlotAddress,
   SlotResult,
 } from "./LoadStorage";
+import type { ManifestChest } from "./Manifest";
 
 // What the slot grid shows. Module state: it outlives the page and the scanner worker, so the
 // grid stays up and editable after capture stops. Only a new capture wipes it.
@@ -73,6 +74,8 @@ export function chests_for(address: SlotAddress, icon: string | null) {
 // what the user typed into the manifest, over what was scanned
 export const material_overrides = ref<Record<string, string>>({});
 export const chest_overrides = ref<Record<string, number>>({});
+// select-one chests the user added to the manifest by hand
+export const added_chests = ref<ManifestChest[]>([]);
 
 export const has_progress = computed(
   () => slots.value.size > 0 || Object.keys(edits.value).length > 0,
@@ -98,6 +101,7 @@ export function reset_scan() {
   edits.value = {};
   material_overrides.value = {};
   chest_overrides.value = {};
+  added_chests.value = [];
 }
 
 // addresses come out of reactive state, and a proxy cannot be posted to the worker
@@ -144,7 +148,8 @@ export function process_result(result: ScanResult) {
   }
   if (result.chests) chests.value = result.chests;
   for (const [inventory, page] of result.pages) {
-    if (game_pages.value[inventory] !== page) game_pages.value[inventory] = page;
+    if (game_pages.value[inventory] !== page)
+      game_pages.value[inventory] = page;
   }
   latest = result;
   render();

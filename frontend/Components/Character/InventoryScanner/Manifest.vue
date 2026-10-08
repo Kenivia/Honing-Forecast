@@ -10,7 +10,7 @@ import {
   TIER_MATERIALS,
 } from "@/Utils/Constants";
 import { get_icon_path } from "@/Utils/Helpers";
-import { chest_overrides } from "./ScanStore";
+import { added_chests, chest_overrides } from "./ScanStore";
 import {
   cell_text,
   convert,
@@ -65,6 +65,38 @@ const loose = computed(() => [
 
 const amount_text = (amount: number) =>
   amount.toLocaleString("en-US", { maximumFractionDigits: 1 });
+
+// a select-one chest typed in by hand; an option is one material
+const fresh_chest = () => ({
+  title: "",
+  count: 1,
+  band: 1,
+  options: [{ label: "", amount: "" }],
+});
+const draft = ref(fresh_chest());
+const draft_options = computed(() =>
+  draft.value.options.filter(
+    (option) => option.label && Number(option.amount) > 0,
+  ),
+);
+
+function add_chest() {
+  added_chests.value.push({
+    key: `added|${Date.now()}`,
+    title: draft.value.title.trim() || "Added chest",
+    band: draft.value.band,
+    count: Math.max(1, Math.floor(Number(draft.value.count)) || 1),
+    options: draft_options.value.map((option) => ({
+      [option.label]: Number(option.amount),
+    })),
+  });
+  draft.value = fresh_chest();
+}
+
+function remove_chest(key: string) {
+  added_chests.value = added_chests.value.filter((chest) => chest.key !== key);
+  delete chest_overrides.value[key];
+}
 
 function set_chest_count(key: string, event: Event) {
   const value = parseInt((event.target as HTMLInputElement).value);
@@ -230,6 +262,92 @@ function set_chest_count(key: string, event: Event) {
                 x{{ amount_text(amount) }}
               </span>
             </template>
+            <button
+              v-if="chest.key.startsWith('added|')"
+              class="generic-button"
+              @click="remove_chest(chest.key)"
+            >
+              Remove
+            </button>
+          </div>
+        </div>
+
+        <div class="card-shell card-body flex flex-col gap-2 text-sm">
+          <div class="card-title">Add a selection chest</div>
+          <div class="flex flex-wrap items-center gap-2">
+            <input
+              v-model="draft.count"
+              type="number"
+              min="1"
+              class="generic-input h-7! w-16 pl-1"
+              aria-label="New chest count"
+            />
+            <input
+              v-model="draft.title"
+              type="text"
+              class="generic-input h-7! w-48 pl-1"
+              placeholder="Name (optional)"
+              aria-label="New chest name"
+            />
+            <select
+              v-model="draft.band"
+              class="selector"
+              aria-label="New chest ownership"
+            >
+              <option v-for="(name, band) in BANDS" :key="band" :value="band">
+                {{ name }}
+              </option>
+            </select>
+          </div>
+          <div
+            v-for="(option, index) in draft.options"
+            :key="index"
+            class="flex items-center gap-2"
+          >
+            <span class="w-4 text-(--text-very-muted)">
+              {{ index ? "or" : "" }}
+            </span>
+            <select
+              v-model="option.label"
+              class="selector"
+              :aria-label="`Option ${index + 1} material`"
+            >
+              <option value="" disabled>Material</option>
+              <option v-for="label in labels" :key="label">{{ label }}</option>
+            </select>
+            <input
+              v-model="option.amount"
+              type="number"
+              min="1"
+              class="generic-input h-7! w-24 pl-1"
+              placeholder="Amount"
+              :aria-label="`Option ${index + 1} amount`"
+            />
+            <button
+              v-if="draft.options.length > 1"
+              class="generic-button"
+              @click="draft.options.splice(index, 1)"
+            >
+              Remove
+            </button>
+          </div>
+          <div class="flex gap-2">
+            <button
+              class="generic-button"
+              @click="draft.options.push({ label: '', amount: '' })"
+            >
+              Add option
+            </button>
+            <button
+              class="generic-button"
+              :class="{
+                'cursor-not-allowed! opacity-50': !draft_options.length,
+              }"
+              :disabled="!draft_options.length"
+              @click="add_chest"
+            >
+              Add chest
+            </button>
           </div>
         </div>
 

@@ -13,20 +13,21 @@ Each slot in a scan result carries a status, a reason and a value (the tooltip's
 | not in the result | white, with a `?` | the slot's page has not been looked at yet |
 | Pending | white | recognised, number not read yet |
 | Good | green | a material whose icon number is under 9999; or a tooltip was resolved to the slot; or a chest that is accounted for |
-| NeedHover | orange | a material showing 9999 or more with no tooltip; a chest not accounted for |
+| NeedHover | orange | a material showing 9999 or more with no tooltip; a chest not accounted for; an icon several materials share (the books) with no tooltip saying which |
 | NeedTradability | orange | would be good, but no tooltip gave its tradability. Shown as needing a hover, unless assumed (below) |
-| Error | red | a tooltip was resolved to the slot but gave no amount; a chest whose contents hold none of the titles `chest.json` expects of its icon |
+| Error | red | a tooltip was resolved to the slot but gave no amount |
 | Irrelevant | greyed out | matches no icon |
 | edited | dotted blue | the user set it by hand |
 
 - **Every slot needs its tradability**, which only a tooltip gives, so every material needs a hover even when its number reads. A chest slot takes the tradability of the chest that stands for it.
 - **Assumed tradability.** The sidebar on the scanner page (`ScannerControlPanel.vue`) has "Assume roster storage is tradable" and "Assume char storage and inventory are char-bound", both off by default and not persisted. With one on, `shown_slot` in `ScanStore.ts` turns those windows' `NeedTradability` slots into good ones with the assumed value, and the dashboard marks it "(assumed)". Rust is never told: it keeps reporting `NeedTradability`, and a tooltip it reads replaces the assumption.
+- **A shared icon needs its label.** A book slot carries `label`, the material its tooltip named (`Tooltips.md`), and is not good without one. The dashboard shows the label in place of the icon name, and the edit list offers the materials in place of the shared icon, so a book set by hand is set to its material.
 - **The icon number** has everything but digits dropped, and nothing left means 1 (a single item shows no number). `9999+` therefore reads 9999.
 - **The tooltip is trusted over the icon.** A disagreement between the two is not an error; the value is simply the tooltip's.
 - **A chest is a slot whose icon is listed in `templates/chest.json`.** Chests without an icon there show as irrelevant.
 - **Chests are matched per column**, because a pushed-up tooltip only tells the column. A chest read there counts for a slot when it carries the slot's icon (matched from the tooltip's large icon, `Tooltips.md`). The slot is then good when the chest's stacked amount is the number on the slot, when the chest was read in that very slot, when a tooltip was resolved to it, or, for a slot whose number was misread, when as many chests with its icon were read in the column as there are slots showing it.
 - **Stacks with the same icon and amount in a column** all go green from one hover: their tooltips would be identical.
-- **The chest's title plays no part.** Expected contents are looked up by icon: everything any `chest.json` row with that icon lists.
+- **The chest's title plays no part,** and what a chest was read as holding is not checked against anything: the table of expected contents that used to turn a misread chest red is gone.
 - **Green for a hovered material comes when the title read is back**, since only the title says which slot the tooltip belongs to.
 
 ## The page

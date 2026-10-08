@@ -76,6 +76,8 @@ export interface SlotResult {
   amount: string | null;
   tooltip_amount: string | null;
   tradability: string | null;
+  // the material the tooltip said it is, where the icon alone does not say
+  label: string | null;
   status: SlotStatus;
   reason: string;
   // the tooltip's amount, else the number on the icon

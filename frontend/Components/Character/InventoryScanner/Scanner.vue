@@ -2,6 +2,7 @@
 import { computed, ref } from "vue";
 import { getScannerConfig, OneIconConfig } from "./LoadStorage.js";
 import { process_result } from "./ScanStore";
+import { SHARED_ICONS } from "./Manifest";
 import Manifest from "./Manifest.vue";
 import SlotGrid from "./SlotGrid.vue";
 import Stream from "./Stream.vue";
@@ -14,7 +15,7 @@ const status = ref<"idle" | "capturing">("idle");
 const items = computed(() =>
   (config.value ?? [])
     .filter((icon) => icon.tag === "Icon")
-    .map((icon) => icon.name)
+    .flatMap((icon) => SHARED_ICONS[icon.name] ?? [icon.name])
     .sort(),
 );
 

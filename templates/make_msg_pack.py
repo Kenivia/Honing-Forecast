@@ -3,6 +3,7 @@ Rebuilds the Icon templates in public/ScannerConfig.msgpack from items.json and 
 
 To add an item: put its icon art in Icons/, add a row to items.json (chest.json for a chest), run this.
 A row is {"title": in-game tooltip title, "icon": file name in Icons/, "rarity": background}.
+An optional "confidence" replaces the 0.95 a slot has to score against the icon.
 Rows sharing an icon share one template; a row without an icon is only a title the tooltip reader accepts.
 """
 
@@ -19,7 +20,7 @@ SCRIPT_DIR = Path(__file__).resolve().parent
 BACKGROUNDS_DIR = SCRIPT_DIR / "Backgrounds"
 ICONS_DIR = SCRIPT_DIR / "Icons"
 ITEMS_PATH = SCRIPT_DIR / "items.json"
-CHESTS_PATH = SCRIPT_DIR / "chest.json"  # same rows, plus "contents": the titles a chest is expected to hold
+CHESTS_PATH = SCRIPT_DIR / "chest.json"  # same rows, for the chests that sit in slots
 OUTPUT_PATH = SCRIPT_DIR.parent / "public" / "ScannerConfig.msgpack"
 
 
@@ -37,7 +38,7 @@ def resize_and_crop_bottom(img: Image.Image, width: int, height: int) -> Image.I
     return img.crop((0, width - height, width, width))
 
 
-def build_icon_config(name: str, rarity: str) -> dict:
+def build_icon_config(name: str, rarity: str, confidence) -> dict:
     icon = resize_and_crop_bottom(Image.open(find_icon_path(name)), WIDTH, HEIGHT)
     background = resize_and_crop_bottom(Image.open(BACKGROUNDS_DIR / f"{rarity}.webp"), WIDTH, HEIGHT)
     # the background goes over black first so the result is opaque
@@ -50,20 +51,23 @@ def build_icon_config(name: str, rarity: str) -> dict:
         "data": list(final.tobytes()),
         "tag": "Icon",
         "normalized": True,
-        "required_confidence": None,
+        "required_confidence": confidence,
     }
 
 
 def main():
     rarities = {}
+    confidences = {}
     items = [item for path in (ITEMS_PATH, CHESTS_PATH) for item in json.loads(path.read_text(encoding="utf-8"))]
     for item in items:
         if "icon" in item:
             assert rarities.setdefault(item["icon"], item["rarity"]) == item["rarity"], f"'{item['icon']}' has two rarities"
+            confidence = item.get("confidence")
+            assert confidences.setdefault(item["icon"], confidence) == confidence, f"'{item['icon']}' has two confidences"
 
     configs = msgpack.unpackb(OUTPUT_PATH.read_bytes(), raw=False)
     configs = [config for config in configs if config["tag"] != "Icon"]
-    configs += [build_icon_config(name, rarity) for name, rarity in rarities.items()]
+    configs += [build_icon_config(name, rarity, confidences[name]) for name, rarity in rarities.items()]
     OUTPUT_PATH.write_bytes(msgpack.packb(configs, use_bin_type=True))
     print(f"Wrote {len(rarities)} icons ({len(configs)} templates in total) to {OUTPUT_PATH}")
 

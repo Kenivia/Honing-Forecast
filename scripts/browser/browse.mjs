@@ -5,7 +5,7 @@ import path from "node:path";
 import { pathToFileURL } from "node:url";
 import * as hf from "../../e2e/helpers.ts";
 
-const BASE_URL = "http://localhost:5173";
+const BASE_URL = process.env.BASE_URL ?? "http://localhost:5173";
 const args = process.argv.slice(2);
 const flags = new Set(args.filter((a) => a.startsWith("--")));
 const script = args.find((a) => !a.startsWith("--"));

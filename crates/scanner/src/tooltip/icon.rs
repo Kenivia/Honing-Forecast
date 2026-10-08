@@ -11,9 +11,10 @@ const KEPT: f64 = 0.75; // share of the pixels scored, so a cursor over the rest
 const ICON_PASS: f64 = 54.0;
 const ICON_MARGIN: f64 = 12.0; // over the next best
 
-// The slot icon the tooltip's large icon is, if it is clearly one of them. It is drawn over
-// another background than a slot's, which the pixels left out absorb.
-pub fn tooltip_icon(buffer: &Buffer, bar: &TitleBar, s: f64) -> Option<String> {
+// The slot icon the tooltip's large icon is closest to, and whether it is clearly that one: the
+// two kinds of book differ by an emblem and never are. It is drawn over another background than
+// a slot's, which the pixels left out absorb.
+pub fn tooltip_icon(buffer: &Buffer, bar: &TitleBar, s: f64) -> Option<(String, bool)> {
     // one template pixel of room on every side, for the nine shifts
     let pad = ICON_SIZE * s / TEMPLATE_SIZE as f64;
     let left = (bar.x as f64 + ICON_LEFT * s - pad).round() as usize;
@@ -65,5 +66,5 @@ pub fn tooltip_icon(buffer: &Buffer, bar: &TitleBar, s: f64) -> Option<String> {
     scores.sort_by(|a, b| a.0.total_cmp(&b.0));
     let (best, name) = scores.first()?;
     let second = scores.get(1).map_or(f64::MAX, |x| x.0);
-    (*best <= ICON_PASS && second - best >= ICON_MARGIN).then(|| name.clone())
+    (*best <= ICON_PASS).then(|| (name.clone(), second - best >= ICON_MARGIN))
 }

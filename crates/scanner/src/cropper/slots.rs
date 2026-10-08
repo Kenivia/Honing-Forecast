@@ -211,7 +211,7 @@ impl ScannerState {
 
                     // what the tooltip said stays while the slot holds the same item, and so does
                     // the last number until the new one is read
-                    let (tooltip_amount, tradability, amount, hovered, tooltip_failed) = self
+                    let (tooltip_amount, tradability, label, amount, hovered, tooltip_failed) = self
                         .slot_infos
                         .get(slot_address)
                         .filter(|old| {
@@ -222,6 +222,7 @@ impl ScannerState {
                             (
                                 old.tooltip_amount.clone(),
                                 old.tradability,
+                                old.label.clone(),
                                 old.amount.clone(),
                                 old.hovered,
                                 old.tooltip_failed,
@@ -241,6 +242,7 @@ impl ScannerState {
                             amount,
                             tooltip_amount,
                             tradability,
+                            label,
                             currently_seen: true,
                             amount_job: Some(amount_job),
                             raw_hash,
@@ -278,6 +280,7 @@ impl ScannerState {
                                     amount: None,
                                     tooltip_amount: None,
                                     tradability: None,
+                                    label: None,
                                     amount_job: None,
                                     raw_hash,
                                 },

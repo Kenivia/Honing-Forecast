@@ -11,6 +11,7 @@ const PANEL_ICON_LEFT: f64 = 20.0;
 const PANEL_ICON_SIZE: f64 = 43.0;
 const PANEL_ROW_GAP: f64 = 13.3; // lines of one chest row are at most 9px apart, rows at least 17
 const PANEL_END_GAP: f64 = 30.0; // rows are 17 to 19px apart, the panel ends 50px before anything else
+const MAX_DESCRIPTION: usize = 10; // a book has 6 to 8 description lines
 const SHORT_PHRASE: f64 = 53.0; // "all" is 13px of yellow, the other two phrases 157 and more
 
 const TEXT: u8 = 1;
@@ -19,6 +20,7 @@ const RED: u8 = 4;
 const WHITE: u8 = 8;
 const BRIGHT: u8 = 16;
 const BLACK: u8 = 32;
+const TAN: u8 = 64;
 
 fn classify([r, g, b]: [i32; 3]) -> u8 {
     let (max, min) = (r.max(g).max(b), r.min(g).min(b));
@@ -45,6 +47,10 @@ fn classify([r, g, b]: [i32; 3]) -> u8 {
     if min > 150 && max - min < 30 {
         class |= WHITE;
     }
+    // descriptions: green at 0.89 of red and blue at 0.54
+    if max > 110 && b * 2 >= r && b * 4 < r * 3 && g < r && g * 5 > r * 4 {
+        class |= TAN;
+    }
     class
 }
 
@@ -63,6 +69,8 @@ pub struct Layout {
     // frame rectangle (x0, y0, x1, y1) of the "Amount Stacked" number, no margin
     pub amount: Option<(usize, usize, usize, usize)>,
     pub chest: Option<ChestLayout>,
+    // frame rectangles of the description lines, which say which book a book is
+    pub description: Vec<(usize, usize, usize, usize)>,
     // last row the shortcut hints under the body were seen on
     pub bottom: usize,
 }
@@ -165,6 +173,32 @@ pub fn parse_layout(buffer: &Buffer, bar: &TitleBar, s: f64) -> Layout {
         })
         .unwrap_or(0);
     let stacked = amounts.get(first);
+
+    // The description is taken over the whole width. It sits well below the icon, where the cursor
+    // only gets when the tooltip was pushed up.
+    let described: Vec<bool> = (0..rows)
+        .map(|y| {
+            ICON_BOTTOM * s <= y as f64
+                && stacked.is_none_or(|amount| y < amount.top)
+                && !panel.is_some_and(|p| p.0 <= y && y <= p.1)
+                && count(y, y + 1, 0, columns, TAN) >= 3
+        })
+        .collect();
+    let description = text_lines(&described, 8.0 * s)
+        .into_iter()
+        .filter(|(top, bottom)| (bottom - top) as f64 <= 27.0 * s)
+        .take(MAX_DESCRIPTION)
+        .map(|(top, bottom)| {
+            let (first, last) = extent(top, bottom, 0, TEXT).unwrap();
+            let (across, down) = ((4.0 * s).round() as usize, (2.67 * s).round() as usize);
+            (
+                left + first.saturating_sub(across),
+                title_bottom + top - down,
+                left + (last + across + 1).min(columns),
+                title_bottom + bottom + down,
+            )
+        })
+        .collect();
 
     let header = || {
         lines
@@ -295,6 +329,7 @@ pub fn parse_layout(buffer: &Buffer, bar: &TitleBar, s: f64) -> Layout {
 
     Layout {
         chest,
+        description,
         bottom,
         tradability,
         amount: stacked.map(|line| {

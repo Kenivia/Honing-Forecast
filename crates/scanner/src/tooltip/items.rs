@@ -11,34 +11,66 @@ const TITLE_NEAR: f64 = 0.85;
 pub struct Item {
     pub title: Option<String>,
     pub icon: Option<String>,
-    // chest.json only: the titles it is expected to hold
-    pub contents: Option<Vec<String>>,
+    // the material it counts as
+    pub label: Option<String>,
+    // books only: its gear and honing levels, as its description lines give them
+    pub body: Option<String>,
 }
 
-// chests come from their own file, templates/chest.json
+const CHESTS: &str = include_str!("../../../../templates/chest.json");
+
+// Materials, then the chests that sit in slots, then the chests only ever listed inside another
+// chest (templates/inner_chests.json), which are here for their titles alone.
 pub static ITEMS: LazyLock<Vec<Item>> = LazyLock::new(|| {
     let mut items: Vec<Item> =
         serde_json::from_str(include_str!("../../../../templates/items.json")).unwrap();
-    items.extend(
-        serde_json::from_str::<Vec<Item>>(include_str!("../../../../templates/chest.json"))
-            .unwrap(),
-    );
+    items.extend(serde_json::from_str::<Vec<Item>>(CHESTS).unwrap());
+    let inner: Vec<Item> =
+        serde_json::from_str(include_str!("../../../../templates/inner_chests.json")).unwrap();
+    // a title in both tables would never be clear of itself
+    for item in inner {
+        if !items.iter().any(|old| old.title == item.title) {
+            items.push(item);
+        }
+    }
     items
 });
 
+static CHEST_ICONS: LazyLock<Vec<String>> = LazyLock::new(|| {
+    let chests: Vec<Item> = serde_json::from_str(CHESTS).unwrap();
+    chests.into_iter().filter_map(|chest| chest.icon).collect()
+});
+
 pub fn is_chest_icon(icon: &str) -> bool {
-    ITEMS
-        .iter()
-        .any(|item| item.contents.is_some() && item.icon.as_deref() == Some(icon))
+    CHEST_ICONS.iter().any(|x| x == icon)
 }
 
-// what the chests drawn with this icon are expected to hold
-pub fn expected_contents(icon: &str) -> Vec<&'static String> {
-    ITEMS
+// an icon several materials are drawn with, which only the tooltip tells apart
+pub fn shares_icon(icon: &str) -> bool {
+    let mut labels = ITEMS
         .iter()
         .filter(|item| item.icon.as_deref() == Some(icon))
-        .flat_map(|item| item.contents.iter().flatten())
-        .collect()
+        .filter_map(|item| item.label.as_ref());
+    labels.next().is_some_and(|first| labels.any(|label| label != first))
+}
+
+// The book a tooltip's description lines are of: "Honing Lv. 11 (1,645): +10%" for each level,
+// and its gear in "Determination of Destiny Weapon". A frame that lost a line gives levels no
+// book has, and so nothing.
+pub fn item_from_body(lines: &[String]) -> Option<&'static Item> {
+    let levels: Vec<u32> = lines
+        .iter()
+        .filter_map(|line| {
+            let digits = line.split_once("Honing Lv")?.1.chars().skip_while(|c| !c.is_ascii_digit());
+            digits.take_while(char::is_ascii_digit).collect::<String>().parse().ok()
+        })
+        .collect();
+    let mut gear = ["Weapon", "Armor"]
+        .into_iter()
+        .filter(|gear| lines.iter().any(|line| line.contains(gear)));
+    let gear = gear.next().filter(|_| gear.next().is_none())?;
+    let body = format!("{gear} {}-{}", levels.first()?, levels.last()?);
+    ITEMS.iter().find(|item| item.body.as_ref() == Some(&body))
 }
 
 // Digits and roman numerals, which is all that tells some titles apart. A numeral with a character

@@ -6,7 +6,7 @@ use crate::{
     setup::OneIconConfig,
     tooltip::{
         chest::Chest,
-        items::{expected_contents, is_chest_icon},
+        items::{is_chest_icon, shares_icon},
     },
 };
 use serde::{Serialize, Serializer, ser::SerializeStruct};
@@ -60,6 +60,8 @@ pub struct SlotResult<'a> {
     pub amount: &'a Option<String>,
     pub tooltip_amount: &'a Option<String>,
     pub tradability: Option<Tradability>,
+    // the material the tooltip said it is, where the icon alone does not say
+    pub label: &'a Option<String>,
     pub status: SlotStatus,
     // why it needs a hover or is an error, for the user
     pub reason: String,
@@ -90,6 +92,14 @@ impl ScannerState {
         info: &OneSlotInfo,
     ) -> (SlotStatus, String, Option<Tradability>) {
         let (status, reason, tradability) = self.read_status(address, info);
+        let shared = info.icon_name_score.as_ref().is_some_and(|x| shares_icon(&x.0));
+        if matches!(status, SlotStatus::Good) && shared && info.label.is_none() {
+            return (
+                SlotStatus::NeedHover,
+                "Several items share this icon, and only the tooltip says which this is. Hover it.".into(),
+                tradability,
+            );
+        }
         if matches!(status, SlotStatus::Good) && tradability.is_none() {
             return (
                 SlotStatus::NeedTradability,
@@ -144,21 +154,6 @@ impl ScannerState {
                 .iter()
                 .filter(|chest| chest.icon.as_ref() == Some(icon) && chest.column == Some(column))
                 .collect();
-            let expected = expected_contents(icon);
-            let unexpected = chests
-                .iter()
-                .filter(|chest| chest.slot.is_none_or(|slot| slot == *address))
-                .find(|chest| !chest.contents.iter().any(|x| expected.contains(&&x.item)));
-            if let Some(chest) = unexpected {
-                let read: Vec<&str> = chest.contents.iter().map(|x| x.item.as_str()).collect();
-                return (
-                    SlotStatus::Error,
-                    format!(
-                        "A {icon} was read as holding {}, none of which it is expected to hold. Retry it, or set it by hand.",
-                        read.join(", ")
-                    ),
-                );
-            }
             let number = info.amount.as_ref().map(|text| icon_number(text));
             let alike = self
                 .slot_infos
@@ -238,6 +233,7 @@ impl ScannerState {
                     amount: &info.amount,
                     tooltip_amount: &info.tooltip_amount,
                     tradability,
+                    label: &info.label,
                     status,
                     reason,
                     value: read

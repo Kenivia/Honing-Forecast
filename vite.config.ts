@@ -18,10 +18,14 @@ export default defineConfig({
   assetsInclude: ["**/*.md"],
   server: {
     watch: {
-      ignored: ["/cloudflare/.wrangler/**", "/crates/**"],
+      ignored: [
+        "/cloudflare/.wrangler/**",
+        "/crates/**",
+        "**/scripts/codex/icons/**",
+      ],
     },
   },
   optimizeDeps: {
-    exclude: ["tesseract-wasm","tesseract-worker"],
+    exclude: ["tesseract-wasm", "tesseract-worker"],
   },
 });

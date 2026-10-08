@@ -10,7 +10,7 @@ Code: `crates/scanner` (image processing), `frontend/Components/Character/Invent
 2. **Frame transfer**. For each operation the main thread reads one frame and transfers it to the worker along with the operation. The worker copies its pixels directly into a buffer inside wasm memory, closes the frame, then calls Rust. Nothing else goes in but two flags, the OCR texts that have come back and the slots the user edited by hand.
 3. **Is it worth a scan** (Rust). A frame that hardly differs from the last scanned one is dropped here, before anything else. See "Skipping still frames" below.
 4. **Locate the windows** (Rust). Each anchor is template-matched inside its bound, and a hit gives a root, the origin of any inventory window it locates, and a brightness estimate. On later frames anchors are re-checked at their known position. See "Anchors and layouts" below.
-5. **Detect the page** (Rust). Page-tab templates at fixed offsets from each window origin say which page of that inventory is showing: the tab matching its active template, or the only tab that matched neither state.
+5. **Detect the page** (Rust). Page-tab templates at fixed offsets from each window origin say which page of that inventory is showing: the one tab that is lit. See "Page tabs" below.
 6. **Read slots** (Rust), on every third scan. Each slot of the active page sits at a fixed offset. A slot whose pixels have not changed is skipped; otherwise its crop is compared against every icon template, the closest one that passes wins, and the number strip is sent off to be read. See "Slots" below.
 7. **Find the tooltip** (Rust). If an item tooltip is on screen, its text lines are cut out and sent off to be read. When the texts are back, its title, stacked amount and tradability are written onto the slot that was hovered, and a chest's kind and contents go into a separate list of chests. See `Tooltips.md`.
 8. **Result and loop**. Rust returns a small result, not its state (see "State between frames"). On each result the main thread first reads and posts the next frame, then passes the result's text lines to the OCR workers and the rest to the page.
@@ -52,6 +52,14 @@ This replaced a design where the Storage button was the parent of the window anc
 Why the storage windows are not placed from the Storage button: measured against the windows' sort buttons across every native still, its position wanders by 1.7 UI units, ten times any other anchor. Its template is a large soft highlight and matches at the worst score of the set, so this is probably its own localisation rather than the game moving it, but either way it is the wrong thing to hang a grid on.
 
 **UI space** is 1440p coordinates inside the 16:9 block the game lays its UI out in. The block is assumed to be centred in the capture, which gives the left/right padding of forced 21:9 and the letterbox of a 21:9 game on a 16:9 screen. A game windowed off-centre in a larger capture breaks UI-space bounds; whole-frame anchors are unaffected.
+
+## Page tabs
+
+- **A tab is lit when its active template passes and beats its inactive one by 0.1** (`TAB_LEAD`), and dark the other way round. Anything else says nothing. A lit tab leads by 0.2 (0.98 against 0.77), also with the cursor on it (0.96 against 0.74).
+- **A tab under the cursor lights up a little** and scores 0.82 to 0.84 as active, 0.78 to 0.93 as inactive. At the tabs' 0.8 limit that used to pass as active.
+- **The page is the one lit tab, else unknown**, and then no slot is read and no tooltip is tied to a slot. The older rule took the only tab that matched neither state as the active one. Hovering tab 1 with page 2 open brings up a label that hides tab 2, so the hovered tab was that one tab: 13 page-2 slots were written onto page 1 (2026-10-07 22-55-45 recording, frame 1862), and they stayed, because a slot that later matches nothing keeps what it knew.
+- **Character storage has a fifth tab, Gear Space** (crossed swords, left of 1), with no template. While it is open no tab is lit, so nothing is read. The older rule read it as page 1 whenever the cursor was on tab 1.
+- The stills at 720p, 1080p, 1440p and 2160p recognise the same slots on the same pages as before the change.
 
 ## Skipping still frames
 
@@ -202,6 +210,7 @@ Not done yet:
 - A crop that falls outside the frame (inventory window partly off the capture) still panics.
 - A session that only ever finds one brightness-telling anchor keeps its error (up to 1.5 settings at 1080p).
 - A brightness setting changed in game during a session is not picked up until the scanner restarts.
+- The two book icons pass at 0.93 instead of 0.95 (`Config and calibration.md`); nothing else has its own slot limit.
 - The roster page tabs for "page 1 inactive" and "page 2 active" were built from character-storage tab pixels, which look the same.
 - Tooltip reading works in the native harness and in the browser on an uploaded recording, where every frame is scanned. Its limits are listed in `Tooltips.md`.
 - While no anchor is found the whole-frame search runs on every scanned frame, 200 to 330 ms each. A still screen is not scanned, but with no inventory open over a moving game world the scanner uses a full core.

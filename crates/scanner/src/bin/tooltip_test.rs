@@ -54,9 +54,10 @@ fn describe(state: &ScannerState, hover: &Hover) -> String {
         .map(|row| format!("{} | {}", row.name_read, row.count_read))
         .collect();
     format!(
-        "at {:?}  title {:?}  amount {:?}  {:?}  slot {:?}  (last read '{}')\n      chest {:?}\n      rows {:?}",
+        "at {:?}  title {:?}  label {:?}  amount {:?}  {:?}  slot {:?}  (last read '{}')\n      chest {:?}\n      rows {:?}",
         hover.position,
         hover.title,
+        hover.label,
         hover.amount,
         hover.tradability,
         slot,
@@ -100,10 +101,10 @@ fn describe_chest(chest: &Chest) -> String {
 // what the page would colour each known slot
 fn print_statuses(state: &ScannerState) {
     for slot in state.result(true).slots {
-        if let Some((icon, _)) = slot.icon_name_score {
+        if let Some((icon, score)) = slot.icon_name_score {
             let a = slot.address;
             println!(
-                "  {:?} p{} {:?}  {icon}  {:?}  value {:?}  {}",
+                "  {:?} p{} {:?}  {icon} {score:.3}  {:?}  value {:?}  {}",
                 a.inventory_type, a.page_num, a.pos_in_inv, slot.status, slot.value, slot.reason
             );
         }
@@ -286,14 +287,15 @@ fn main() {
     for (address, info) in &state.slot_infos {
         if info.tradability.is_some() || info.tooltip_amount.is_some() {
             println!(
-                "{:?} p{} {:?}  {}  slot amount {:?}  tooltip amount {:?}  {:?}",
+                "{:?} p{} {:?}  {}  slot amount {:?}  tooltip amount {:?}  {:?}  {:?}",
                 address.inventory_type,
                 address.page_num,
                 address.pos_in_inv,
                 info.icon_name_score.as_ref().unwrap().0,
                 info.amount,
                 info.tooltip_amount,
-                info.tradability
+                info.tradability,
+                info.label
             );
         }
     }
