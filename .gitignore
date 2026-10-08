@@ -38,9 +38,11 @@ cloudflare/.wrangler/
 
 
 scripts/brightness/all icons/*
-scripts/codex/icons/
-scripts/codex/*.npz
-scripts/codex/*.json
+scripts/game_files/tables/
+scripts/game_files/atlas/
+scripts/game_files/*.npz
+scripts/game_files/extract/bin/
+scripts/game_files/extract/obj/
 
 test-results/
 playwright-report/
@@ -48,3 +50,7 @@ playwright-report/
 
 
 **/*.mp4
+
+game_file_reader
+# leftovers of the old codex scripts
+scripts/codex/

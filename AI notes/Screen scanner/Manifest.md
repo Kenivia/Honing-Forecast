@@ -17,7 +17,7 @@ Code: `Manifest.ts` (build logic, `scanned` and `manifest` computeds), `Manifest
 ## Names and inner chests
 
 - `templates/items.json` rows carry `label`, the material label in `Constants.ts`. Slots map by `icon`, chest rows by `title`. An icon that rows with different labels share (the books) maps to nothing: such a slot counts under its own `label`, or, set by hand, under the material it was set to (`SHARED_ICONS`). Gold and Silver are never scanned and stay `?`.
-- A tooltip only names a chest inside a chest, so what it holds is hard-coded in `templates/inner_chests.json`: one row per title with `kind` and `items` (title to amount). A row with only a title is a chest whose contents nobody has settled, and is "contents unknown" when it turns up. `scripts/codex/chest.py` writes these rows from the codex (`Codex.md`); they are meant to be read before they are trusted. The two `Dummy ...` rows are placeholders for an obtain-all of select-ones.
+- A tooltip only names a chest inside a chest, so what it holds is hard-coded in `templates/inner_chests.json`: one row per title with `kind` and `items` (title to amount). A row with only a title is a chest whose contents nobody has settled, and is "contents unknown" when it turns up. `scripts/game_files/chest.py` writes these rows from the game's own tables (`Game files.md`). The two `Dummy ...` rows are placeholders for an obtain-all of select-ones.
 - A chest can be in both tables: `chest.json` when it sits in a slot, `inner_chests.json` when it is also found inside others.
 - Rust reads the same three files and ignores the extra fields. A new title there needs `pnpm run wasm` before the scanner reads it.
 

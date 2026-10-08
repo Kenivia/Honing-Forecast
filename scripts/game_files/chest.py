@@ -1,8 +1,8 @@
 """
-Adds a chest to the scanner's tables from what lostarkcodex.com says about it.
+Adds a chest to the scanner's tables from the game's own files. Run extract.py first.
 
-    python scripts/codex/chest.py "<title>"
-    python scripts/codex/chest.py <capture.png or .mp4> --rect x,y,size [--frame n] [--brightness b] [--title part]
+    python scripts/game_files/chest.py "<title>"
+    python scripts/game_files/chest.py <capture.png or .mp4> --rect x,y,size [--frame n] [--brightness b] [--title part]
 
 A title, or an icon cut from a capture, can be several chests with different contents. They are
 all listed, and nothing is written until --id picks one. Plain chest art is shared by a hundred
@@ -11,19 +11,20 @@ chests, so with a capture give --title, a part of the name, to look up only thos
 Writes templates/chest.json (title, icon, rarity; the art goes to templates/Icons) and, for every
 chest inside it, templates/inner_chests.json (what it holds, which no tooltip says). --inner
 writes the chest itself there and leaves chest.json alone. Rows already there are kept: delete one
-to have it written again. The codex has wrong amounts here and there, so read the diff.
+to have it written again.
 Afterwards: python templates/make_msg_pack.py, then pnpm run wasm.
 """
 
 import argparse
-import html
 import json
 import re
-import shutil
 from pathlib import Path
 
-from codex import ICONS, ROOT, get, load_index, plain
+import numpy as np
+from PIL import Image
+
 from find_icon import add_crop_arguments, load_crop, search
+from game import ROOT, box, field, icon_art, load_index
 
 TEMPLATES = ROOT / "templates"
 CHESTS = TEMPLATES / "chest.json"
@@ -43,67 +44,42 @@ def write_rows(path, rows):
     path.write_text("[\n" + ",\n".join(lines) + "\n]\n", encoding="utf-8", newline="\n")
 
 
-# what the codex lists inside an item, as (id, title, amount)
-def box(item_id):
-    text = get(f"/query.php?a=drop&t=box&id={item_id}&l=us").content.decode("utf-8-sig")
-    rows = json.loads(text)["aaData"]
-    return [(row[0], bare(plain(row[2])), int(re.sub(r"\D", "", str(row[4])) or 1)) for row in rows]
-
-
-# the item page's own words, without its title: only they say how the chest opens
-def description(item_id, title):
-    page = get(f"/us/item/{item_id}/").text
-    block = page[page.find("item_title") : page.find("addon_info")]
-    block = block[: block.rfind("<")]
-    lines = [line.strip() for line in html.unescape(re.sub(r"<[^>]+>", "\n", block)).split("\n")]
-    return " ".join(line for line in lines[1:] if line and bare(line) != title)
-
-
-def kind_of(text):
-    text = text.lower()
-    if any(word in text for word in ("choice", "choose", "select")):
-        return "SelectOne"
-    if any(word in text for word in ("chance", "random")):
-        return "Random"
-    return "ObtainAll"
-
-
 def describe(item):
     item_id, title, rarity, icon = item
-    contents = box(item_id)
-    chest = {"id": item_id, "title": bare(title), "rarity": rarity, "icon": icon, "contents": contents}
-    if contents:
-        chest["description"] = description(item_id, chest["title"])
-        chest["kind"] = kind_of(chest["description"])
-    return chest
+    kind, contents = box(item_id)
+    contents = [(content_id, bare(content), amount) for content_id, content, amount in contents]
+    description = field(item_id, "Desc").replace("\n", " ")
+    return {"id": item_id, "title": bare(title), "rarity": rarity, "icon": icon, "contents": contents, "kind": kind, "description": description}
 
 
 def show(chest):
     contents = ", ".join(f"{title} x{amount}" for _, title, amount in chest["contents"])
     print(f"  --id {chest['id']}  {chest['title']}  ({chest['rarity']}, {chest['icon']})  {chest['kind']}: {contents}")
     print(f"      {chest['description']}")
-    # the codex's amounts are not always the game's
-    said = {int(number.replace(",", "")) for number in re.findall(r"obtain ([\d,]+)", chest["description"])}
-    if said and not said & {amount for _, _, amount in chest["contents"]}:
-        print("      ! its description gives another amount than its contents")
 
 
 # the template in templates/Icons that is this art, else a new one named after the chest
 def icon_name(chest, wanted):
-    art = ICONS / f"{chest['icon']}.webp"
+    art = icon_art(chest["icon"]).resize((64, 64), Image.Resampling.LANCZOS)
+
+    def pixels(image):
+        rgba = np.asarray(image.convert("RGBA").resize((64, 64), Image.Resampling.LANCZOS)).astype(float)
+        return rgba[..., :3] * rgba[..., 3:] / 255
+
     if not wanted:
-        same = [path.stem for path in ART.iterdir() if path.read_bytes() == art.read_bytes()]
+        # the templates already there came lossy from elsewhere, so close is the same (about 5 against 30)
+        same = [path.stem for path in ART.iterdir() if np.abs(pixels(Image.open(path)) - pixels(art)).mean() < 15]
         wanted = same[0] if same else re.sub(r'[\\/:*?"<>|]', "", chest["title"])
     if not any((ART / f"{wanted}{ext}").exists() for ext in (".webp", ".png")):
-        shutil.copy(art, ART / f"{wanted}.webp")
-        print(f"new art: templates/Icons/{wanted}.webp")
+        art.save(ART / f"{wanted}.png")
+        print(f"new art: templates/Icons/{wanted}.png")
     return wanted
 
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("source", help="a title, or a capture to cut the icon from")
-    parser.add_argument("--id", type=int, help="the codex item to write")
+    parser.add_argument("--id", type=int, help="the item to write")
     parser.add_argument("--icon", help="name of its template in templates/Icons")
     parser.add_argument("--inner", action="store_true", help="only a chest inside other chests")
     parser.add_argument("--title", default="", help="with a capture: part of the chest's name")
@@ -143,7 +119,7 @@ def main():
             return True
         items = {}
         for content_id, title, amount in chest["contents"]:
-            if title in known or add_inner(describe(by_id[content_id])):
+            if title in known or (content_id and add_inner(describe(by_id[content_id]))):
                 items[title] = amount
             else:
                 print(f"left out of {chest['title']}: {title} x{amount}")
@@ -159,7 +135,7 @@ def main():
         add_inner(chest)
     else:
         for content_id, title, _ in chest["contents"]:
-            if title not in known:
+            if title not in known and content_id:
                 add_inner(describe(by_id[content_id]))
         rows = read_rows(CHESTS)
         if any(row["title"] == chest["title"] for row in rows):

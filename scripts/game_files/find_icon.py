@@ -1,13 +1,13 @@
 """
-Finds the icon art a slot on screen is drawn with, among the codex icons in scripts/codex/icons.
+Finds the icon art a slot on screen is drawn with, among the game's item icons. Run extract.py first.
 
-    python scripts/codex/find_icon.py <crop.png>
-    python scripts/codex/find_icon.py <capture.png or .mp4> --rect x,y,size [--frame n]
+    python scripts/game_files/find_icon.py <crop.png>
+    python scripts/game_files/find_icon.py <capture.png or .mp4> --rect x,y,size [--frame n]
 
 The crop is one whole slot, number and all, cut roughly: a few pixels off is searched for.
 --brightness is the in-game setting the capture was taken at (default 50).
 Prints the best matches with the items drawn with them, and writes .tmp/find_icon.png: the crop,
-then the matches in order. The icons are read once and kept in scripts/codex/icons.npz.
+then the matches in order. The icons are read once and kept in scripts/game_files/icons.npz.
 """
 
 import argparse
@@ -15,7 +15,7 @@ import argparse
 import numpy as np
 from PIL import Image, ImageDraw
 
-from codex import HERE, ICONS, INDEX, ROOT, by_icon
+from game import HERE, ROOT, by_icon, icon_art, icon_info
 
 CACHE = HERE / "icons.npz"
 SHEET = ROOT / ".tmp" / "find_icon.png"
@@ -28,17 +28,18 @@ GAMMA_RATIO = 62.6  # as in crates/scanner/src/image_utils/brightness.rs
 
 
 def load_icons():
-    paths = [path for path in sorted(ICONS.glob("*.webp")) if path.stat().st_size]
+    # sheet by sheet, so each is opened once
+    info = icon_info()
+    names = sorted((name for name in by_icon() if name in info), key=lambda name: (info[name][0], name))
     if CACHE.exists():
         cache = np.load(CACHE)
-        # icons fetched since are not in it
-        if len(cache["names"]) == len(paths):
+        # icons added by a patch since are not in it
+        if len(cache["names"]) == len(names):
             return list(cache["names"]), cache["icons"]
-    print(f"reading {len(paths)} icons, once")
-    icons = np.zeros((len(paths), SIZE, SIZE, 4), np.uint8)
-    for index, path in enumerate(paths):
-        icons[index] = np.asarray(Image.open(path).convert("RGBA").resize((SIZE, SIZE), Image.Resampling.LANCZOS))
-    names = [path.stem for path in paths]
+    print(f"reading {len(names)} icons, once")
+    icons = np.zeros((len(names), SIZE, SIZE, 4), np.uint8)
+    for index, name in enumerate(names):
+        icons[index] = np.asarray(icon_art(name).resize((SIZE, SIZE), Image.Resampling.LANCZOS))
     np.savez_compressed(CACHE, names=np.array(names), icons=icons)
     return names, icons
 
@@ -107,7 +108,7 @@ def main():
 
     crop = load_crop(args.source, args)
     found = search(crop, args.brightness, args.top)
-    items = by_icon() if INDEX.exists() else {}
+    items = by_icon()
 
     scale = 3
     cell = SIZE * scale

@@ -1,5 +1,8 @@
 {
   "permissions": {
+    "allow": [
+      "Bash(umodel_lostark_v7.exe)"
+    ],
     "deny": [
       "Read(./docs/**)",
       "Edit(./docs/**)",

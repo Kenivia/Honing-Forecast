@@ -21,7 +21,8 @@ export default defineConfig({
       ignored: [
         "/cloudflare/.wrangler/**",
         "/crates/**",
-        "**/scripts/codex/icons/**",
+        "**/scripts/game_files/**",
+        "**/game_file_reader/**",
       ],
     },
   },

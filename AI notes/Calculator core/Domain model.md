@@ -51,3 +51,24 @@ A payload carries several plans. The optimizer uses `plans[optimizer_plan]`; the
 ## Game data
 
 Costs and chances come from JSON embedded in the binary, under `constants/`, generated from a Google Sheet (see `docs/Constants.md`). Only two of the JSON files are wired in, one per tier. Vambrace support is partial: it exists for normal honing and is absent from the advanced tables.
+
+### Honing data in the game files (open problem)
+
+The same numbers are in the installed game, in the SQLite tables of `EFGame/data2.lpk` (`Screen scanner/Game files.md` has how they are read). The JSON is not generated from them yet. What was checked by hand against the JSON, on the NA client of October 2026:
+
+- **Normal honing, all there.** `ItemEnhanceCommon`, one group per gear set and piece type (411100 Serca weapon, 411101 Serca armour, 410500 and 410501 for T4), `SecondaryKey` 100 plus the level:
+  - `LevelUpSuccessRate`, `LevelUpFailureBonusRate` and the juice (`LevelUpAdditiveId00`, rate, max), all out of 10,000;
+  - shards, silver and gold in `LevelUpCostType/Amount` (type 18 shards, 1 silver, 2 gold);
+  - unlock shards as the difference of `AccExp` between levels, unlock silver as that times `FeedSubCost`;
+  - free-tap leapstones in `SpecialEnhanceMaterialAmount`.
+  - Stones, leapstones and fusion are in `ItemQualityOption`, the rows whose `EnhanceCommonId` is the group. Books are in `ItemEnhanceMaterial` under the level's `SpecialMaterialGroupId`.
+- Serca came out equal to `Serca March 2026.json` in every row. The client has no Serca books and no vambrace: it only holds what the installed version has.
+- **Advanced honing** is in `ItemAmplificationBase` (the unlocks per ten levels) and `ItemAmplificationMaterial` (costs, success and great-success rates, juice, scrolls). Only armour was looked at.
+
+**The open part is the discount layer.** The base tables are the undiscounted costs, and the JSON has the discounted ones:
+
+- T4 normal honing gold is 780 in the base table against 624 in the JSON for +1 to +18, and equal from +19. The 624 is in `WelcomeBoostEnhance`, which `ItemQualityOption.WelcomeBoostId` points at, and which repeats every cost of the level.
+- T4 advanced honing stages 1 and 2 are undiscounted in the base table (500 Guardian Stones against 250, 3,000 shards against 2,400). `ItemAmplificationBoost` has discount rates per material and `ItemAmplificationBase` names boost ids, but which row gives the JSON's numbers was not traced.
+- Rows are gated by `ClassifyType`/`ClassifyIndex`, and the client tables alone do not say which gates are open. With no event running there is nothing live to compare an event discount against, so the `EVENT_*` rows cannot be checked now.
+
+Until that is understood, generating the JSON from the game would get the permanent discounts wrong.

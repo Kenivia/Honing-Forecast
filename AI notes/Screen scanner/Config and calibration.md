@@ -58,7 +58,7 @@ The script's greyscale weights and the gamma ratio must match the Rust side for 
 
 ## Keeping things in sync
 
-- **Where the art comes from.** lostarkcodex.com, through the scripts in `scripts/codex` (`Codex.md`). The pink books are `use_12_218` (weapon) and `use_12_219` (armor), the purple ones `use_7_69` and `use_7_70`; there is one copy of each and none is lossless. Both book templates are those files unchanged.
+- **Where the art comes from.** The templates there now came from lostarkcodex.com; new ones are cut lossless from the game's icon sheets by the scripts in `scripts/game_files` (`Game files.md`). The pink books are `use_12_218` (weapon) and `use_12_219` (armor), the purple ones `use_7_69` and `use_7_70`; the site had one lossy copy of each. Both book templates are those files unchanged.
 - Adding an item means putting its art in `templates/Icons`, adding a row to `templates/items.json` and running `make_msg_pack.py`. The icon's file name is the template name the rest of the app sees. Rebuild the wasm afterwards, since the table is compiled in.
 - Adding or renaming an anchor means updating its entry in the Rust anchor list and rerunning brightness calibration for it. A bound must be at least the size of its template; slack beyond that is free, because the match position sets the root. The same template may be used by several anchors, but a piece of UI that is greyed out or recoloured in another context needs its own template.
 - The TypeScript interfaces describing scanner structs are hand-written copies of the Rust ones and are not checked against them.
