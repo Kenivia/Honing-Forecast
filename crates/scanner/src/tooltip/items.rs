@@ -42,10 +42,17 @@ pub fn expected_contents(icon: &str) -> Vec<&'static String> {
 }
 
 // Digits and roman numerals, which is all that tells some titles apart. A numeral with a character
-// the recogniser did not know in it is kept as it is, so it matches nothing.
-fn numerals(text: &str) -> Vec<&str> {
+// the recogniser did not know in it is kept as it is, so it matches nothing. Of a word with digits
+// in it only the digits count: the brackets of "[15-18]" come back as any of "[(I".
+fn numerals(text: &str) -> Vec<String> {
     text.split_whitespace()
-        .filter(|word| word.chars().all(|c| c.is_ascii_digit() || "ivx?".contains(c)))
+        .filter_map(|word| {
+            if word.chars().any(|c| c.is_ascii_digit()) {
+                Some(word.chars().filter(char::is_ascii_digit).collect())
+            } else {
+                word.chars().all(|c| "ivx?".contains(c)).then(|| word.to_string())
+            }
+        })
         .collect()
 }
 

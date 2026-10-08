@@ -3,13 +3,15 @@ use ahash::AHashMap;
 use crate::{
     constants::ALL_PAGE_NUM,
     image_utils::{
-        close_enough::close_enough,
+        close_enough::{DEFAULT_CONFIDENCE, confidence},
         common::{Rectangle, get_resizer},
         resize::crop_buffer,
     },
     scanner_state::{InventoryType, ScannerState},
     setup::icon_lookup,
 };
+
+const TAB_LEAD: f64 = 0.1; // an active tab leads by 0.2, one under the cursor by 0.05
 
 impl ScannerState {
     pub fn initialize_page_num_infos(&mut self) {
@@ -29,14 +31,13 @@ impl ScannerState {
             };
 
             for (index, (active_name, inactive_name)) in ALL_PAGE_NUM[inv_type].iter().enumerate() {
-                let mut check = |name: &String| {
+                let mut score = |name: &String| {
                     let icon = icon_lookup(
                         name,
                         self.screen_info.effective_height,
                         get_resizer(&mut self.resizer),
                     );
-
-                    let confidence = close_enough(
+                    let seen = confidence(
                         &icon,
                         &mut crop_buffer(
                             icon.offset.use_root(&root),
@@ -46,67 +47,38 @@ impl ScannerState {
                         ),
                         self.screen_info.brightness.unwrap(),
                     );
-                    // if self.debugging {
-                    //     self.debug_info.insert(
-                    //         name.clone(),
-                    //         (
-                    //             icon.offset
-                    //                 .use_root(&self.anchors[inv_type].position_root.unwrap()),
-                    //             confidence.unwrap_or(-6.9),
-                    //             6.9,
-                    //             vec![crop_buffer(
-                    //                 icon.offset
-                    //                     .use_root(&self.anchors[inv_type].position_root.unwrap()),
-                    //                 get_resizer(&mut self.resizer),
-                    //                 self.buffer,
-                    //                 None,
-                    //             )],
-                    //         ),
-                    //     );
-                    // };
-                    confidence.is_some()
+                    (seen.unwrap_or(0.0), icon.required_confidence.unwrap_or(DEFAULT_CONFIDENCE))
                 };
-
-                let state = if check(&active_name) {
+                // A tab under the cursor lights up and looks a little like both states (0.83 active,
+                // 0.78 inactive), so a state has to pass and be clearly the better of the two.
+                let ((active, active_limit), (inactive, inactive_limit)) =
+                    (score(active_name), score(inactive_name));
+                let state = if active > active_limit && active - inactive > TAB_LEAD {
                     Some(true)
-                } else if check(&inactive_name) {
+                } else if inactive > inactive_limit && inactive - active > TAB_LEAD {
                     Some(false)
                 } else {
                     None
                 };
                 self.page_num_infos.get_mut(&inv_type).unwrap()[index] = state;
-                // my_dbg!( inv_type, index, matched);
             }
         }
     }
+
+    // The page whose tab is lit, when exactly one is. A tab that is neither lit nor dark says
+    // nothing: guessing it is the active one put a page's slots on the page whose tab the cursor
+    // was over, while the label it brings up hid the lit one.
     pub fn active_page_num(&self) -> AHashMap<InventoryType, Option<usize>> {
-        let mut out: AHashMap<InventoryType, Option<usize>> = AHashMap::new();
-        for inv_type in ALL_PAGE_NUM.keys() {
-            let infos: Option<&Vec<Option<bool>>> = self.page_num_infos.get(inv_type);
-            if infos.is_none() {
-                out.insert(*inv_type, None);
-                continue;
-            }
-            if let Some(idx) = infos.unwrap().iter().position(|state| *state == Some(true)) {
-                out.insert(*inv_type, Some(idx));
-                continue;
-            }
-
-            let mut unsure_iter = infos
-                .unwrap()
-                .iter()
-                .enumerate()
-                .filter(|(_, state)| state.is_none());
-
-            let first_unsure: Option<(usize, &Option<bool>)> = unsure_iter.next();
-            if first_unsure.is_none() || unsure_iter.next().is_some() {
-                // More than one unsure
-                out.insert(*inv_type, None);
-                continue;
-            }
-
-            out.insert(*inv_type, Some(first_unsure.unwrap().0));
-        }
-        out
+        ALL_PAGE_NUM
+            .keys()
+            .map(|inv_type| {
+                let mut lit = self.page_num_infos[inv_type]
+                    .iter()
+                    .enumerate()
+                    .filter(|(_, state)| **state == Some(true));
+                let page = lit.next().filter(|_| lit.next().is_none()).map(|x| x.0);
+                (*inv_type, page)
+            })
+            .collect()
     }
 }

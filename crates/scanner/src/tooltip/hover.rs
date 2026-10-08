@@ -388,9 +388,13 @@ impl ScannerState {
         hover.title = winner(&hover.title_votes).map(|x| x.0);
         hover.amount = winner(&hover.amount_votes).map(|x| x.0);
         hover.tradability = winner(&hover.tradability_votes).map(|x| x.0);
-        hover.icon = winner(&hover.icon_votes).map(|x| x.0).or_else(|| {
-            hover.title.as_ref().and_then(|title| match_title(title)?.icon.clone())
-        });
+        // The title says more than the picture: books of one kind share a picture, and the two
+        // kinds look too alike for the picture match to pick one.
+        hover.icon = hover
+            .title
+            .as_ref()
+            .and_then(|title| match_title(title)?.icon.clone())
+            .or_else(|| winner(&hover.icon_votes).map(|x| x.0));
         hover.slot = hover.icon.as_ref().and_then(|icon| {
             self.hovered_slot(&hover.candidates, hover.bar.y as f64, s, icon, hover.amount.as_ref())
         });
@@ -398,10 +402,16 @@ impl ScannerState {
         let slot = hover.slot.filter(|slot| !self.edits.contains_key(slot));
         if let Some(slot) = slot.and_then(|slot| self.slot_infos.get_mut(&slot)) {
             slot.hovered = true;
-            slot.tradability = hover.tradability;
-            slot.tooltip_amount = hover.amount.clone();
+            // A hover that read nothing leaves what an earlier one read: a tooltip seen for a
+            // frame or two while fading in has neither.
+            if hover.tradability.is_some() {
+                slot.tradability = hover.tradability;
+            }
+            if hover.amount.is_some() {
+                slot.tooltip_amount = hover.amount.clone();
+            }
             // no amount line was found, or no two crops of it ever agreed
-            slot.tooltip_failed = hover.amount.is_none()
+            slot.tooltip_failed = slot.tooltip_amount.is_none()
                 && hover.waiting[1] == 0
                 && (over || hover.sent[1] >= MAX_READS);
         }

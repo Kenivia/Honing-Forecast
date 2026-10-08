@@ -27,11 +27,8 @@ fn shifted_distance(template: &RgbaImage, observed: &RgbaImage) -> f64 {
     best as f64 / (3 * (w - 2) * (h - 2)) as f64
 }
 
-pub fn close_enough(
-    template: &OneIconConfig,
-    observed: &mut OneIconConfig,
-    brightness: f64,
-) -> Option<f64> {
+// how alike the two are, whatever the pass limit
+pub fn confidence(template: &OneIconConfig, observed: &mut OneIconConfig, brightness: f64) -> Option<f64> {
     if template.offset.width != observed.offset.width
         || template.offset.height != observed.offset.height
     {
@@ -41,6 +38,14 @@ pub fn close_enough(
     normalize_brightness(observed, brightness);
 
     let distance = shifted_distance(&template.data, &observed.data);
-    let confidence = 1.0 - distance / 255.0;
-    (confidence > template.required_confidence.unwrap_or(DEFAULT_CONFIDENCE)).then_some(confidence)
+    Some(1.0 - distance / 255.0)
+}
+
+pub fn close_enough(
+    template: &OneIconConfig,
+    observed: &mut OneIconConfig,
+    brightness: f64,
+) -> Option<f64> {
+    confidence(template, observed, brightness)
+        .filter(|x| *x > template.required_confidence.unwrap_or(DEFAULT_CONFIDENCE))
 }

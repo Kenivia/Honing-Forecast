@@ -76,10 +76,16 @@ pub fn title_lines(buffer: &Buffer, bar: &TitleBar, s: f64) -> (Vec<RgbaImage>, 
         {
             name_is_coloured = true;
             let word_gap = (13.5 * s) as usize;
-            let end = coloured
-                .windows(2)
-                .find(|pair| pair[1] - pair[0] > word_gap);
-            let name_end = end.map_or(coloured[coloured.len() - 1], |pair| pair[0]);
+            // a hyphen is too thin to count as a coloured column, but it is not a gap either
+            let mut name_end = coloured[0];
+            for x in coloured[0]..=last {
+                if x - name_end > word_gap {
+                    break;
+                }
+                if (top..bottom).any(|y| is_coloured(x, y)) {
+                    name_end = x;
+                }
+            }
             name_is_over = name_end + word_gap < last;
             last = name_end;
         } else if name_is_coloured {
@@ -105,11 +111,10 @@ pub fn title_lines(buffer: &Buffer, bar: &TitleBar, s: f64) -> (Vec<RgbaImage>, 
 pub fn join_title(words: &[String]) -> String {
     let name = words.join(" ");
     // drop the "[X n]" stack count, whose bracket can come back as an unknown character, and the "(Bound)" marker
+    // a name can have brackets of its own ("[Event] Metallurgy: Hellfire [11-14]")
     let end = name
         .find("(Bound")
-        .or(name.find('['))
-        .or(name.find("?X"))
-        .or(name.find("?x"));
+        .or(["[X", "[x", "?X", "?x"].into_iter().find_map(|count| name.rfind(count)));
     let name = &name[..end.unwrap_or(name.len())];
     name.split_whitespace().collect::<Vec<_>>().join(" ")
 }

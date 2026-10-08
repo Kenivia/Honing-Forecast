@@ -39,11 +39,16 @@ export interface LooseChest {
   count: number;
 }
 
+// an icon several items are drawn with (the books) says nothing on its own
 const ICON_LABEL: Record<string, string> = {};
 const TITLE_LABEL: Record<string, string> = {};
 for (const item of ITEMS as any[]) {
-  if (item.label && item.icon) ICON_LABEL[item.icon] = item.label;
   if (item.label && item.title) TITLE_LABEL[item.title] = item.label;
+  if (!item.label || !item.icon) continue;
+  const shared = (ITEMS as any[]).some(
+    (other) => other.icon === item.icon && other.label !== item.label,
+  );
+  if (!shared) ICON_LABEL[item.icon] = item.label;
 }
 const CHEST_ICONS = new Set((CHESTS as any[]).map((chest) => chest.icon));
 // what a chest listed inside another chest holds, which no tooltip says
