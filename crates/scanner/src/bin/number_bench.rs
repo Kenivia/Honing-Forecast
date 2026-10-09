@@ -10,12 +10,12 @@ use hf_scanner::{
         number::NumberParams,
         ocr::{number_strip, recognize_line},
     },
+    native,
     scanner_state::{ScannerState, SlotAddress},
     setup::BASE_ICONS,
 };
-use std::{env, fs, io::Read};
+use std::{env, io::Read};
 
-const ROOT: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/../..");
 
 // the first is what the scanner does; add what is being tried
 fn variants() -> Vec<(&'static str, NumberParams)> {
@@ -67,22 +67,7 @@ fn main() {
             Some(image) => (image.width() as usize, image.height() as usize),
             None => (args[1].parse().unwrap(), args[2].parse().unwrap()),
         };
-        let mut pixels = vec![0u8; width * height * 4];
-        let mut state = ScannerState::default();
-        let ui_height = (height as f64 / 360.0).round() as u32 * 360;
-        state.screen_info.game_width = (ui_height * 16 / 9).max(width as u32 / 100 * 100);
-        state.screen_info.game_height = ui_height;
-        state.buffer.width = width;
-        state.buffer.height = height;
-        state.buffer.size = pixels.len();
-        state.buffer.pointer = Some(pixels.as_mut_ptr() as usize);
-        state.config =
-            rmp_serde::from_slice(&fs::read(format!("{ROOT}/public/ScannerConfig.msgpack")).unwrap()).unwrap();
-        state.model = Some(fs::read(format!("{ROOT}/public/text-recognition.rten")).unwrap());
-        state.set_config();
-        state.set_ocr_engine();
-        state.initialize_anchors();
-        state.initialize_page_num_infos();
+        let (mut state, mut pixels) = native::new_state(width, height, native::guess_game(width, height), false);
 
         let mut stdin = std::io::stdin().lock();
         for frame in 0.. {

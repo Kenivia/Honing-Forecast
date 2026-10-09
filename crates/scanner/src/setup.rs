@@ -85,7 +85,7 @@ impl Serialize for OneIconConfig {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Deserialize)]
 pub struct IncomingNewIcon {
     pub position: FloatRectangle,
     pub name: String,
@@ -172,45 +172,40 @@ pub fn icon_lookup(
 }
 
 impl ScannerState {
-    pub fn setup(&mut self) {
-        if self.incoming_new_icons.is_some() {
-            for incoming in self.incoming_new_icons.clone().unwrap() {
-                let mut observed = crop_buffer(
-                    incoming.position,
-                    get_resizer(&mut self.resizer),
-                    self.buffer,
-                    None,
-                );
-                normalize_brightness(&mut observed, 70.0);
-                self.config.insert(
-                    0,
-                    OneIconConfig {
-                        data: observed.data,
-                        name: incoming.name,
-                        offset: incoming.position.to_rounded(),
-                        tag: incoming.tag,
-                        normalized: true,
-                        required_confidence: None,
-                    },
-                );
-            }
-            self.incoming_new_icons = None;
+    // the config with the new icons cut out of the current frame put in front
+    pub fn setup(
+        &mut self,
+        mut config: Vec<OneIconConfig>,
+        incoming_new_icons: Vec<IncomingNewIcon>,
+    ) -> Vec<OneIconConfig> {
+        for incoming in incoming_new_icons {
+            let mut observed = crop_buffer(
+                incoming.position,
+                get_resizer(&mut self.resizer),
+                self.buffer,
+                None,
+            );
+            normalize_brightness(&mut observed, 70.0);
+            config.insert(
+                0,
+                OneIconConfig {
+                    data: observed.data,
+                    name: incoming.name,
+                    offset: incoming.position.to_rounded(),
+                    tag: incoming.tag,
+                    normalized: true,
+                    required_confidence: None,
+                },
+            );
         }
+        config
     }
+}
 
-    pub fn set_config(&mut self) {
-        let mut new = AHashMap::with_capacity(self.config.len());
-        for i in self.config.iter() {
-            new.insert(i.name.clone(), i.clone());
-        }
-        *BASE_ICONS.write() = new;
-        crate::cropper::slots::FROM_AFAR.write().clear();
-        self.config = vec![]; // no need to pass in and out after setting
-    }
-
-    pub fn set_ocr_engine(&mut self) {
-        load_ocr_engine(self.model.take().unwrap());
-    }
+// the base templates everything is matched against
+pub fn set_config(config: Vec<OneIconConfig>) {
+    *BASE_ICONS.write() = config.into_iter().map(|icon| (icon.name.clone(), icon)).collect();
+    crate::cropper::slots::FROM_AFAR.write().clear();
 }
 
 pub fn load_ocr_engine(model: Vec<u8>) {

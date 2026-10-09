@@ -1,9 +1,8 @@
 // Dumps every recognised slot's number strip from stills, for the number OCR experiments.
 //   cargo run --release --bin number_dump -- <out dir> <image>...
-use hf_scanner::scanner_state::ScannerState;
+use hf_scanner::native;
 use std::{env, fs};
 
-const ROOT: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/../..");
 
 fn main() {
     let args: Vec<String> = env::args().skip(1).collect();
@@ -13,30 +12,11 @@ fn main() {
     for (index, path) in args[1..].iter().enumerate() {
         let image = image::open(path).unwrap().to_rgba8();
         let (width, height) = (image.width() as usize, image.height() as usize);
-        let mut pixels = image.into_raw();
-        let mut state = ScannerState::default();
         let ui_height = (height as f64 / 360.0).round() as u32 * 360;
         let forced = path.contains("21 by 9");
-        state.screen_info.game_width = if forced {
-            width as u32
-        } else {
-            ui_height * 16 / 9
-        };
-        state.screen_info.game_height = ui_height;
-        state.screen_info.forced_21_9 = forced;
-        state.buffer.width = width;
-        state.buffer.height = height;
-        state.buffer.size = pixels.len();
-        state.buffer.pointer = Some(pixels.as_mut_ptr() as usize);
-        state.config = rmp_serde::from_slice(
-            &fs::read(format!("{ROOT}/public/ScannerConfig.msgpack")).unwrap(),
-        )
-        .unwrap();
-        state.model = Some(fs::read(format!("{ROOT}/public/text-recognition.rten")).unwrap());
-        state.set_config();
-        state.set_ocr_engine();
-        state.initialize_anchors();
-        state.initialize_page_num_infos();
+        let game_width = if forced { width as u32 } else { ui_height * 16 / 9 };
+        let (mut state, mut pixels) = native::new_state(width, height, (game_width, ui_height), forced);
+        pixels.copy_from_slice(image.as_raw());
         state.cropper();
         state.cropper();
         let mut slots: Vec<_> = state.slot_infos.iter().collect();

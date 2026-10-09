@@ -14,7 +14,6 @@ use crate::{
 };
 use ahash::AHashMap;
 use image::RgbaImage;
-use serde::{Deserialize, Serialize};
 use std::{hash::Hash, mem::take};
 
 const SAME_HOVER: f64 = 6.0; // the tooltip is the same one while it stays within this many px
@@ -45,67 +44,49 @@ const WINDOW_WIDTHS: [(InventoryType, f64); 3] = [
 const HEADER_ROWS: (f64, f64) = (10.0, 60.0);
 
 // one tooltip staying in place over consecutive frames; what it says is voted on across them
-#[derive(Debug, Serialize, Deserialize, Default, Clone)]
+#[derive(Debug, Default, Clone)]
 pub struct Hover {
-    #[serde(skip)]
     pub id: u32,
     pub position: (usize, usize),
     // which columns of the title bar have text
-    #[serde(default)]
     pub title_columns: Vec<bool>,
     pub missed: usize,
     pub title_votes: AHashMap<String, usize>,
     pub amount_votes: AHashMap<String, usize>,
     pub tradability_votes: AHashMap<Tradability, usize>,
     // the slot icon its large icon is
-    #[serde(default)]
     pub icon_votes: AHashMap<String, usize>,
     // its large icon is one several materials are drawn with, so its description is read too
-    #[serde(skip)]
     pub shared_icon: bool,
     // the material its description says it is
-    #[serde(skip)]
     pub body_votes: AHashMap<String, usize>,
-    #[serde(default)]
     pub chest_kind_votes: AHashMap<ChestKind, usize>,
     // by id, for the chests of templates/chests.json its rows read as
-    #[serde(default)]
     pub chest_votes: AHashMap<u32, usize>,
-    #[serde(default)]
     pub chest_rows: Vec<ChestRow>,
     // its entry in the scanner state's chests
-    #[serde(default)]
     pub chest_index: Option<usize>,
 
     // Taken off the frame the tooltip was last seen on, because its texts are read later, when
     // the page or the tooltip may be gone: the bar, the slots beside it, and where a chest goes.
-    #[serde(skip)]
     pub bar: TitleBar,
-    #[serde(skip)]
     pub candidates: Vec<(SlotAddress, f64)>,
-    #[serde(skip)]
     pub chest_place: (Option<(InventoryType, usize, usize)>, Option<SlotAddress>),
     // title, amount, chest and description reads sent off and not answered yet, and sent in all
-    #[serde(skip)]
     pub waiting: [usize; 4],
-    #[serde(skip)]
     pub sent: [usize; 4],
     // the title's columns when it was last sent off
-    #[serde(skip)]
     pub read_columns: Vec<bool>,
     // strips of the last frame it was seen on that could not go yet
-    #[serde(skip)]
     pub held: Strips,
 
     pub last_read_title: String,
     pub title: Option<String>,
     // from the large icon, else the one the title is drawn with
-    #[serde(default)]
     pub icon: Option<String>,
     pub amount: Option<String>,
     pub tradability: Option<Tradability>,
     // the material, from the description, else the title
-    #[serde(default)]
     pub label: Option<String>,
     pub slot: Option<SlotAddress>,
 }

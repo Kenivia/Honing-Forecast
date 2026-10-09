@@ -7,6 +7,7 @@ use hf_scanner::{
         number::{NumberParams, number_background, number_mask},
         ocr::{number_strip, recognize_line},
     },
+    native,
     scanner_state::ScannerState,
     setup::{BASE_ICONS, OneIconConfig},
 };
@@ -17,7 +18,6 @@ use image::{
 use imageproc::region_labelling::{Connectivity, connected_components};
 use std::{collections::HashMap, env, fs};
 
-const ROOT: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/../..");
 
 fn luma(p: &Rgba<u8>) -> i32 {
     (p[0] as i32 * 299 + p[1] as i32 * 587 + p[2] as i32 * 114) / 1000
@@ -360,13 +360,8 @@ fn variant(
 fn main() {
     let args: Vec<String> = env::args().skip(1).collect();
     let dir = &args[0];
+    native::load();
     let mut state = ScannerState::default();
-    state.config =
-        rmp_serde::from_slice(&fs::read(format!("{ROOT}/public/ScannerConfig.msgpack")).unwrap())
-            .unwrap();
-    state.model = Some(fs::read(format!("{ROOT}/public/text-recognition.rten")).unwrap());
-    state.set_config();
-    state.set_ocr_engine();
 
     let labels = fs::read_to_string(format!("{dir}/labels.tsv")).unwrap();
     let samples: Vec<Vec<&str>> = labels

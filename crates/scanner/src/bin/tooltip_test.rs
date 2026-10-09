@@ -4,35 +4,17 @@
 use hf_scanner::{
     constants::ANCHORS,
     image_utils::ocr::recognize_line,
+    native,
     ocr_jobs::OcrJob,
     scanner_state::ScannerState,
     tooltip::{chest::Chest, hover::Hover},
 };
-use std::{env, fs, io::Read, time::Instant};
-
-const ROOT: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/../..");
+use std::{env, io::Read, time::Instant};
 
 fn new_state(width: usize, height: usize) -> (ScannerState, Vec<u8>) {
-    let mut state = ScannerState::default();
-    let mut pixels = vec![0u8; width * height * 4];
-    // 1078-tall recordings are still 1080p
-    let ui_height = (height as f64 / 360.0).round() as u32 * 360;
-    // a native ultrawide capture is as wide as the game
-    state.screen_info.game_width = (ui_height * 16 / 9).max(width as u32 / 100 * 100);
-    state.screen_info.game_height = ui_height;
+    let (mut state, pixels) = native::new_state(width, height, native::guess_game(width, height), false);
     // SLOT_BUDGET=1 keeps the time budget, as in the browser; runs then differ with the machine's load
     state.no_slot_budget = env::var("SLOT_BUDGET").is_err();
-    state.buffer.width = width;
-    state.buffer.height = height;
-    state.buffer.size = pixels.len();
-    state.buffer.pointer = Some(pixels.as_mut_ptr() as usize);
-    let config = fs::read(format!("{ROOT}/public/ScannerConfig.msgpack")).unwrap();
-    state.config = rmp_serde::from_slice(&config).unwrap();
-    state.model = Some(fs::read(format!("{ROOT}/public/text-recognition.rten")).unwrap());
-    state.set_config();
-    state.set_ocr_engine();
-    state.initialize_anchors();
-    state.initialize_page_num_infos();
     (state, pixels)
 }
 
@@ -196,7 +178,7 @@ fn main() {
                             .zip(found)
                             .filter_map(|(variant, found)| {
                                 found.map(|x| {
-                                    format!("{:?} {} {:.1?}", spec.anchor_type, variant.name, x.2)
+                                    format!("{:?} {} {:.1?}", spec.anchor_type, variant.name, x.brightness)
                                 })
                             })
                     })

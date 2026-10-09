@@ -11,37 +11,22 @@ use hf_scanner::{
         common::{FloatRectangle, Rectangle, get_resizer},
         resize::crop_buffer,
     },
+    native,
     scanner_state::ScannerState,
     setup::icon_lookup,
 };
-use std::{env, fs};
+use std::env;
 
-const ROOT: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/../..");
 
 fn main() {
     println!("file\tscale\tanchor\tvariant\treported_x\treported_y\tdx\tdy\tscore_reported\tscore_best");
     for path in env::args().skip(1) {
         let image = image::open(&path).unwrap().to_rgba8();
         let (width, height) = (image.width() as usize, image.height() as usize);
-        let mut pixels = image.into_raw();
-        let mut state = ScannerState::default();
         // a still is the whole game window, so the capture size is the game resolution
-        state.screen_info.game_width = width as u32;
-        state.screen_info.game_height = height as u32;
-        state.screen_info.forced_21_9 = path.contains("21 by 9");
-        state.buffer.width = width;
-        state.buffer.height = height;
-        state.buffer.size = pixels.len();
-        state.buffer.pointer = Some(pixels.as_mut_ptr() as usize);
-        state.config = rmp_serde::from_slice(
-            &fs::read(format!("{ROOT}/public/ScannerConfig.msgpack")).unwrap(),
-        )
-        .unwrap();
-        state.model = Some(fs::read(format!("{ROOT}/public/text-recognition.rten")).unwrap());
-        state.set_config();
-        state.set_ocr_engine();
-        state.initialize_anchors();
-        state.initialize_page_num_infos();
+        let game = (width as u32, height as u32);
+        let (mut state, mut pixels) = native::new_state(width, height, game, path.contains("21 by 9"));
+        pixels.copy_from_slice(image.as_raw());
         state.cropper();
 
         let name = path.split(['/', '\\']).last().unwrap().replace(' ', "_");
@@ -55,7 +40,7 @@ fn main() {
                     .iter()
                     .zip(positions)
                     .filter_map(|(variant, position)| {
-                        let (rect, _, _) = position?;
+                        let rect = position?.position;
                         Some((
                             format!("{:?}", spec.anchor_type),
                             variant.name,

@@ -23,7 +23,7 @@ pub enum ChestKind {
     ObtainAll,
 }
 
-#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Clone)]
+#[derive(Debug, Serialize, PartialEq, Eq, Clone)]
 pub struct ChestContent {
     pub item: String,
     pub amount: u32,
@@ -32,7 +32,7 @@ pub struct ChestContent {
 }
 
 // what one row read as
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Clone)]
 pub struct ChestRow {
     pub name_read: String,
     pub count_read: String,
@@ -40,7 +40,7 @@ pub struct ChestRow {
 
 // A chest is one of templates/chests.json, found by what its tooltip lists: its title is not read,
 // and its icon only says which few it can be.
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Clone)]
 pub struct Chest {
     // The chests its rows read as, by id. More than one when they list the same things, which
     // matters where a chest inside them is not the same one.

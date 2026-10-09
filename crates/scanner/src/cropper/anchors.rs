@@ -1,5 +1,4 @@
 use ahash::AHashMap;
-use serde::{Deserialize, Serialize};
 
 use crate::{
     constants::{ANCHORS, AnchorSpec, Bound, STORAGE_MIN, STORAGE_SHIFTS, anchor_spec},
@@ -15,10 +14,19 @@ use crate::{
     timing::timed,
 };
 
-#[derive(Debug, Serialize, Deserialize)]
+// one variant of an anchor, where it was matched
+#[derive(Debug, Clone, Copy)]
+pub struct FoundVariant {
+    // absolute, in the frame
+    pub position: IntegerRectangle,
+    pub confidence: f64,
+    // the setting its patch reads as, if this variant tells
+    pub brightness: Option<f64>,
+}
+
+#[derive(Debug)]
 pub struct AnchorInfo {
-    // per variant: absolute position, confidence, and the brightness it was found at if it tells
-    pub positions: Vec<Option<(IntegerRectangle, f64, Option<f64>)>>,
+    pub positions: Vec<Option<FoundVariant>>,
     pub position_root: Option<IntegerRectangle>,
 }
 
@@ -113,7 +121,7 @@ impl ScannerState {
                         get_resizer(&mut self.resizer),
                     ),
                     &mut crop_buffer(
-                        found.unwrap().0.to_float(),
+                        found.unwrap().position.to_float(),
                         get_resizer(&mut self.resizer),
                         self.buffer,
                         anchor_info.position_root,
@@ -126,7 +134,7 @@ impl ScannerState {
                 } else if let Some(curve) = variant.brightness {
                     // its estimate is of this frame, not of the one it was found on, which a
                     // window still fading in makes far too dark
-                    let position = found.unwrap().0;
+                    let position = found.unwrap().position;
                     let (x, y) = position.top_left;
                     let patch = crop_buffer(
                         position.with_top_left((x.round(), y.round())),
@@ -141,7 +149,7 @@ impl ScannerState {
         }
         for (anchor_type, variant_index, estimate) in estimates {
             let found = &mut self.anchors.get_mut(&anchor_type).unwrap().positions[variant_index];
-            found.as_mut().unwrap().2 = Some(estimate);
+            found.as_mut().unwrap().brightness = Some(estimate);
         }
         // hashmap borriwng shinanigans
         for (anchor_type, variant_index) in to_clear {
@@ -194,7 +202,7 @@ impl ScannerState {
             if confidence > required_confidence {
                 let anchor_info = self.anchors.get_mut(&spec.anchor_type).unwrap();
                 anchor_info.positions[variant_index] =
-                    Some((found_position, confidence, brightness));
+                    Some(FoundVariant { position: found_position, confidence, brightness });
                 // variants place the root a pixel apart, so the first one found keeps it
                 if !anchor_info.positions[..variant_index]
                     .iter()
@@ -218,7 +226,7 @@ impl ScannerState {
         // in list order, so the sum does not depend on map order
         let found: Vec<f64> = ANCHORS
             .iter()
-            .flat_map(|spec| self.anchors[&spec.anchor_type].positions.iter().flatten().filter_map(|x| x.2))
+            .flat_map(|spec| self.anchors[&spec.anchor_type].positions.iter().flatten().filter_map(|x| x.brightness))
             .collect();
         // nothing held up at this estimate, so it is not one to keep: the next anchor found replaces it
         if found.is_empty() {

@@ -13,7 +13,7 @@ crate-type = ["cdylib", "rlib"]
 serde = { version = "1.0", features = ["derive"] }
 js-sys = "0.3"
 serde_json = "1.0"
-ahash = {version = "0.8", features=["serde"]}
+ahash = "0.8"
 fast_image_resize = "6.1.0"
 image = {version = "0.25.10", default-features = false, features = ["png"] }
 imageproc = {version = "0.27.0", default-features = false }

@@ -8,13 +8,13 @@ use hf_scanner::{
         number::{NumberParams, number_background, number_layers, number_mask},
         ocr::{number_strip, recognize_line},
     },
+    native,
     scanner_state::{InventoryType, ScannerState, SlotAddress},
     setup::BASE_ICONS,
 };
 use image::{GrayImage, Luma, Rgba, RgbaImage};
 use std::{env, fs, io::Read};
 
-const ROOT: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/../..");
 
 fn grey(w: u32, h: u32, value: impl Fn(usize) -> f64) -> GrayImage {
     GrayImage::from_fn(w, h, |x, y| Luma([(value((y * w + x) as usize) * 255.0).clamp(0.0, 255.0) as u8]))
@@ -66,22 +66,7 @@ fn main() {
         Some(image) => (image.width() as usize, image.height() as usize),
         None => (args[6].parse().unwrap(), args[7].parse().unwrap()),
     };
-    let mut pixels = vec![0u8; width * height * 4];
-    let mut state = ScannerState::default();
-    let ui_height = (height as f64 / 360.0).round() as u32 * 360;
-    state.screen_info.game_width = (ui_height * 16 / 9).max(width as u32 / 100 * 100);
-    state.screen_info.game_height = ui_height;
-    state.buffer.width = width;
-    state.buffer.height = height;
-    state.buffer.size = pixels.len();
-    state.buffer.pointer = Some(pixels.as_mut_ptr() as usize);
-    state.config =
-        rmp_serde::from_slice(&fs::read(format!("{ROOT}/public/ScannerConfig.msgpack")).unwrap()).unwrap();
-    state.model = Some(fs::read(format!("{ROOT}/public/text-recognition.rten")).unwrap());
-    state.set_config();
-    state.set_ocr_engine();
-    state.initialize_anchors();
-    state.initialize_page_num_infos();
+    let (mut state, mut pixels) = native::new_state(width, height, native::guess_game(width, height), false);
 
     let mut stdin = std::io::stdin().lock();
     for frame in 0.. {

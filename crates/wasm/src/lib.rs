@@ -7,13 +7,12 @@ use hf_core::state_bundle::StateBundle;
 use hf_scanner::buffer::Buffer;
 use hf_scanner::image_utils::ocr::recognize_raw;
 use hf_scanner::scanner_state::{ScannerState, SlotEdit};
-use hf_scanner::setup::{IncomingNewIcon, OneIconConfig, load_ocr_engine};
+use hf_scanner::setup::{IncomingNewIcon, OneIconConfig, load_ocr_engine, set_config};
 use hf_scanner::timing::timed;
 use rand::rngs::ThreadRng;
 use serde::{Deserialize, Serialize};
 use serde_wasm_bindgen::{from_value, to_value};
 use std::cell::RefCell;
-use std::mem::take;
 use wasm_bindgen::JsValue;
 use wasm_bindgen::prelude::*;
 
@@ -81,12 +80,9 @@ pub fn setup_wrapper(input: JsValue) -> JsValue {
     let input: SetupInput = from_value(input).unwrap();
     SCANNER.with_borrow_mut(|state| {
         let state = state.as_mut().unwrap();
-        state.config = input.config;
-        state.incoming_new_icons = Some(input.incoming_new_icons);
-        state.setup();
         to_value(&SetupOutput {
             buffer: state.buffer,
-            config: take(&mut state.config),
+            config: state.setup(input.config, input.incoming_new_icons),
         })
         .unwrap()
     })
@@ -116,15 +112,30 @@ pub fn take_timings() -> JsValue {
     to_value(&hf_scanner::timing::take()).unwrap()
 }
 
+// what a new scanner state is built from
+#[derive(Deserialize)]
+struct ReserveInput {
+    screen_info: GameResolution,
+    buffer: Buffer,
+    config: Vec<OneIconConfig>,
+}
+
+#[derive(Deserialize)]
+struct GameResolution {
+    game_width: u32,
+    game_height: u32,
+    forced_21_9: bool,
+}
+
 #[wasm_bindgen]
-pub fn reserve_buffer_wrapper(inp_scanner_state: JsValue) -> JsValue {
+pub fn reserve_buffer_wrapper(input: JsValue) -> JsValue {
     console_error_panic_hook::set_once();
 
-    let mut scanner_state: ScannerState = from_value(inp_scanner_state).unwrap();
-    scanner_state.buffer.reserve();
-    scanner_state.set_config();
-    scanner_state.initialize_anchors();
-    scanner_state.initialize_page_num_infos();
+    let ReserveInput { screen_info: game, mut buffer, config } = from_value(input).unwrap();
+    buffer.reserve();
+    set_config(config);
+    let scanner_state =
+        ScannerState::new(buffer, game.game_width, game.game_height, game.forced_21_9);
     let out = to_value(&scanner_state.result(true)).unwrap();
     if let Some(mut old) = SCANNER.replace(Some(scanner_state)) {
         old.buffer.dealloc();
