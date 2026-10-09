@@ -181,7 +181,7 @@ const SORT_BUTTON_CURVE: [f64; 3] = [5.0512534143e-03, 0.7490040658, -36.4018862
 const SEARCH_BUTTON: &str = "Inventory search button";
 const SEARCH_BUTTON_CURVE: [f64; 3] = [3.6937751239e-03, 1.2577411327, -24.5035260];
 const STORAGE_SLACK: f64 = 2.0;
-const WINDOW_SLACK: f64 = 6.0;
+pub const WINDOW_SLACK: f64 = 6.0;
 // The storage layout is three windows and the Storage button, always in the same place: one for
 // the pet menu, and shifted by this for the storage NPC. It is open while this many of its seven
 // anchors are found, so the cursor or a tooltip covering a few of them changes nothing.

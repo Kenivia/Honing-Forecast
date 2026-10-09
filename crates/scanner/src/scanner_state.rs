@@ -196,6 +196,10 @@ pub struct ScannerState {
     // the last scanned frame, thinned out, and how many scans in a row had nothing to do
     pub last_samples: Vec<[u8; 3]>,
     pub quiet_scans: usize,
+    // the frame the lone inventory was last searched for in as a whole, thinned out, and the
+    // scans since that had no such search
+    pub search_samples: Vec<[u8; 3]>,
+    pub search_ticks: u64,
     pub slots_left: bool,
     // the native harness reads every slot at once, so that its runs repeat
     pub no_slot_budget: bool,

@@ -7,6 +7,16 @@ const SAMPLE_DIFFERS: u8 = 16; // above what a still screen does in a compressed
 const CHANGED: f64 = 0.005;
 const QUIET_SCANS: usize = 6; // scans after the last change, for the slots' turn and a lost tooltip
 
+// share of the thinned frame's samples that differ between two frames
+pub fn differing(new: &[[u8; 3]], old: &[[u8; 3]]) -> f64 {
+    let count = new
+        .iter()
+        .zip(old)
+        .filter(|(new, old)| (0..3).any(|c| new[c].abs_diff(old[c]) > SAMPLE_DIFFERS))
+        .count();
+    count as f64 / new.len() as f64
+}
+
 impl ScannerState {
     pub fn cropper(&mut self) {
         assert!(self.buffer.pointer.is_some());
@@ -36,13 +46,8 @@ impl ScannerState {
                 })
             })
             .collect();
-        let differing = samples
-            .iter()
-            .zip(&self.last_samples)
-            .filter(|(new, old)| (0..3).any(|c| new[c].abs_diff(old[c]) > SAMPLE_DIFFERS))
-            .count();
         let changed = samples.len() != self.last_samples.len()
-            || differing as f64 > CHANGED * samples.len() as f64;
+            || differing(&samples, &self.last_samples) > CHANGED;
         let unfinished = self.slots_left
             || self
                 .hover
