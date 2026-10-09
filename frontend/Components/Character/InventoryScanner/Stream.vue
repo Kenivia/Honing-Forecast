@@ -190,7 +190,6 @@ async function start_scanner() {
   const [config, model] = await Promise.all([getScannerConfig(), getModel()]);
   // the state is built once here and then stays inside the worker's wasm
   const new_scanner_state = {
-    debugging: props.debugging,
     screen_info: {
       game_width: game_resolution.width,
       game_height: game_resolution.height,
@@ -276,7 +275,6 @@ async function cropper_loop(id: number, full = false) {
     WasmOp.Cropper,
     {
       frame,
-      debugging: props.debugging,
       full,
       ocr_results: take_ocr_results(),
       edits: take_edits(),

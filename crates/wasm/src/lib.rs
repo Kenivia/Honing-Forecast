@@ -54,7 +54,6 @@ thread_local! {
 
 #[derive(Deserialize)]
 struct CropperOptions {
-    debugging: bool,
     full: bool,
     // texts of earlier results' ocr_jobs, as (id, text)
     ocr_results: Vec<(u32, String)>,
@@ -100,7 +99,6 @@ pub fn cropper_wrapper(options: JsValue) -> JsValue {
     let options: CropperOptions = from_value(options).unwrap();
     SCANNER.with_borrow_mut(|state| {
         let state = state.as_mut().unwrap();
-        state.debugging = options.debugging;
         state.apply_edits(options.edits);
         timed("apply_ocr", || state.apply_ocr(options.ocr_results));
         state.cropper();

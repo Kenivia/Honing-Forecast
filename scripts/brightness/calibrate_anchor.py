@@ -1,4 +1,7 @@
 """
+DEFUNCT: kept for reference. The crops --sweep reads were dumped by the crop_icons bin, which
+is gone with the scanner's debug info, and the default mode has not been run since.
+
 Derive the `brightness` coefficients of an AnchorVariant (crates/scanner/src/constants.rs),
 used by est_ingame_brightness() to turn an anchor's mean intensity into the in-game setting.
 

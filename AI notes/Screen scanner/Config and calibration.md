@@ -55,7 +55,7 @@ The fitted curves are per-variant constants in the scanner crate. A variant can 
 
 The current curves of the sort button, the search button and the NPC Storage button were fitted to the mean of the matched patch at all 21 settings, over both sets of captures (`scripts/brightness/inputs`, the lone inventory, and `scripts/brightness/inputs storage`, the storage layout at the NPC; both 1080p). The means came from a temporary print in the anchor search, so there is no script that reproduces them as is. The pet menu's Storage button has no such captures and keeps its model-derived curve.
 
-`scripts/brightness/calibrate_anchor.py` prints a line to paste into an anchor's entry. It has two modes:
+`scripts/brightness/calibrate_anchor.py` is defunct and kept for reference: the crops its sweep mode reads were dumped by the `crop_icons` bin, which was removed with the scanner's debug info. It printed a line to paste into an anchor's entry, in two modes:
 
 - **From the model (default, no screenshots).** A stored template is already normalised, so the script runs the brightness model backwards on it to get the anchor's mean at every setting, then fits the curve. Run it with anchor names, or with none for every anchor in `public/ScannerConfig.msgpack`. Only the pet Storage button still uses this. It was off by up to 4 settings for the NPC button and by 9 for the icon groups at 1080p.
 - **From a sweep (`--sweep`).** Fits real crops instead. `scripts/brightness/inputs` holds screenshots of the same scene at each setting, and `crates/scanner/src/main.rs` (a native harness with hardcoded local paths, not part of the app) runs the scanner over them and dumps the crops. This is how the model itself was calibrated. The dump reads `scripts/brightness/inputs` only.

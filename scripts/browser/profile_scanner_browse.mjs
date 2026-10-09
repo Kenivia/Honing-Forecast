@@ -3,7 +3,6 @@
 import fs from "node:fs";
 
 const FILE = process.env.REC;
-const DEBUG_ON = process.env.DEBUG_ON === "1";
 const OUT = process.env.OUT;
 
 export default async ({ page, hf }) => {
@@ -23,9 +22,6 @@ export default async ({ page, hf }) => {
   });
 
   await hf.open(page, "/Newchar/scanner");
-  // the debug UI is switched off for now, so there is nothing to hide
-  const hide = page.getByRole("button", { name: "Hide debug info" });
-  if (!DEBUG_ON && (await hide.count())) await hide.click();
   await page.getByLabel("Upload image or video").setInputFiles(FILE);
   await page.getByText("● Live").waitFor({ timeout: 180_000 });
 
@@ -64,7 +60,6 @@ export default async ({ page, hf }) => {
   }));
   Object.assign(data, kept);
   data.recording = FILE;
-  data.debugging = DEBUG_ON;
   fs.writeFileSync(OUT, JSON.stringify(data));
   console.log(`  wrote ${OUT}`);
 };

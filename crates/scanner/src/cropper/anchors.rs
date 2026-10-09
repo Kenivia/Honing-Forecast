@@ -191,24 +191,6 @@ impl ScannerState {
                 .brightness
                 .map(|curve| est_ingame_brightness(best_mean_f, &curve));
 
-            if self.debugging {
-                let name = format!("{:?} {}", spec.anchor_type, variant.name);
-                self.changed_debug.insert(name.clone());
-                self.debug_info.insert(
-                    name,
-                    (
-                        found_position,
-                        confidence,
-                        brightness.unwrap_or_default(),
-                        vec![crop_buffer(
-                            found_position,
-                            get_resizer(&mut self.resizer),
-                            self.buffer,
-                            None,
-                        )],
-                    ),
-                );
-            }
             if confidence > required_confidence {
                 let anchor_info = self.anchors.get_mut(&spec.anchor_type).unwrap();
                 anchor_info.positions[variant_index] =
@@ -233,10 +215,10 @@ impl ScannerState {
     // average over the most anchors ever found together, and stays once some of them are lost.
     // Anchors only count after their re-check, which a wrong match does not survive.
     fn update_brightness(&mut self) {
-        let found: Vec<f64> = self
-            .anchors
-            .values()
-            .flat_map(|anchor| anchor.positions.iter().flatten().filter_map(|x| x.2))
+        // in list order, so the sum does not depend on map order
+        let found: Vec<f64> = ANCHORS
+            .iter()
+            .flat_map(|spec| self.anchors[&spec.anchor_type].positions.iter().flatten().filter_map(|x| x.2))
             .collect();
         // nothing held up at this estimate, so it is not one to keep: the next anchor found replaces it
         if found.is_empty() {
@@ -299,9 +281,6 @@ impl ScannerState {
         } else if !self.anchors[&lone.anchor_type].is_found() {
             self.clear_anchor(lone.anchor_type);
             timed("anchors/search", || self.search_anchor(lone));
-        }
-        if !self.debugging {
-            self.debug_info = AHashMap::new();
         }
     }
 }

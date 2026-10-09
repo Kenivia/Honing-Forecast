@@ -1,8 +1,6 @@
 use crate::{
     buffer::Buffer,
-    image_utils::common::IntegerRectangle,
     scanner_state::{InventoryType, ScannerState, SlotAddress, Tradability},
-    setup::OneIconConfig,
     tooltip::{
         items::{VARIANTS, Variant, variant},
         title::text_image,
@@ -18,7 +16,7 @@ type Rect = (usize, usize, usize, usize); // frame rectangle (x0, y0, x1, y1)
 
 const ROW_PASS: f64 = 0.8; // how alike a row's name and a content's title have to be
 
-#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Hash, Clone, Copy)]
+#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord, Hash, Clone, Copy)]
 pub enum ChestKind {
     SelectOne,
     Random,
@@ -33,13 +31,11 @@ pub struct ChestContent {
     pub chest: Option<u32>,
 }
 
-// everything read off one row. Debug only
+// what one row read as
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct ChestRow {
     pub name_read: String,
     pub count_read: String,
-    #[serde(serialize_with = "crate::scan_result::optional_icon_bytes")]
-    pub crop: Option<OneIconConfig>,
 }
 
 // A chest is one of templates/chests.json, found by what its tooltip lists: its title is not read,
@@ -76,37 +72,21 @@ pub struct ChestLayout {
     pub rows: Vec<ChestRowLayout>,
 }
 
-// one row of a chest as strips for the recogniser, with the crop shown when debugging
+// one row of a chest as strips for the recogniser
 #[derive(Debug, Clone)]
 pub struct ChestRowStrips {
     pub names: Vec<RgbaImage>,
     pub count: RgbaImage,
-    pub crop: Option<OneIconConfig>,
 }
 
-pub fn chest_strips(buffer: &Buffer, layout: &ChestLayout, debugging: bool) -> Vec<ChestRowStrips> {
+pub fn chest_strips(buffer: &Buffer, layout: &ChestLayout) -> Vec<ChestRowStrips> {
     let strip = |(x0, y0, x1, y1): Rect| text_image(buffer, x0, y0, x1, y1);
     layout
         .rows
         .iter()
-        .map(|row| {
-            let (x0, y0, x1, y1) = row.whole;
-            ChestRowStrips {
-                names: row.names.iter().map(|x| strip(*x)).collect(),
-                count: strip(row.count),
-                crop: debugging.then(|| OneIconConfig {
-                    data: buffer.crop(x0, y0, x1, y1.min(buffer.height)),
-                    name: String::new(),
-                    offset: IntegerRectangle {
-                        top_left: (x0 as f64, y0 as f64),
-                        width: x1 - x0,
-                        height: y1.min(buffer.height) - y0,
-                    },
-                    tag: String::new(),
-                    normalized: true,
-                    required_confidence: None,
-                }),
-            }
+        .map(|row| ChestRowStrips {
+            names: row.names.iter().map(|x| strip(*x)).collect(),
+            count: strip(row.count),
         })
         .collect()
 }

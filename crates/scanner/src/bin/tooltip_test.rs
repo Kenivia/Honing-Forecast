@@ -20,6 +20,8 @@ fn new_state(width: usize, height: usize) -> (ScannerState, Vec<u8>) {
     // a native ultrawide capture is as wide as the game
     state.screen_info.game_width = (ui_height * 16 / 9).max(width as u32 / 100 * 100);
     state.screen_info.game_height = ui_height;
+    // SLOT_BUDGET=1 keeps the time budget, as in the browser; runs then differ with the machine's load
+    state.no_slot_budget = env::var("SLOT_BUDGET").is_err();
     state.buffer.width = width;
     state.buffer.height = height;
     state.buffer.size = pixels.len();
@@ -98,7 +100,9 @@ format!("{} x{}", x.item, x.amount)
 
 // what the page would colour each known slot
 fn print_statuses(state: &ScannerState) {
-    for slot in state.result(true).slots {
+    let mut slots = state.result(true).slots;
+    slots.sort_by_key(|slot| (slot.address.inventory_type as u8, slot.address.page_num, slot.address.pos_in_inv));
+    for slot in slots {
         if let Some((icon, score)) = slot.icon_name_score {
             let a = slot.address;
             println!(
@@ -295,7 +299,9 @@ fn main() {
     for chest in &state.chests {
         println!("  {}", describe_chest(chest));
     }
-    for (address, info) in &state.slot_infos {
+    let mut infos: Vec<_> = state.slot_infos.iter().collect();
+    infos.sort_by_key(|(address, _)| (address.inventory_type as u8, address.page_num, address.pos_in_inv));
+    for (address, info) in infos {
         if info.tradability.is_some() || info.tooltip_amount.is_some() {
             println!(
                 "{:?} p{} {:?}  {}  slot amount {:?}  tooltip amount {:?}  {:?}  {:?}",

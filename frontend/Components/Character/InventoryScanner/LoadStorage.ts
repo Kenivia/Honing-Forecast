@@ -44,7 +44,6 @@ export interface ChestContent {
 export interface ChestRow {
   name_read: string;
   count_read: string;
-  crop: OneIconConfig | null;
 }
 
 // One of templates/chests.json, found by what its tooltip lists. Scanner only (not part of the
@@ -93,8 +92,8 @@ export interface SlotResult {
   image?: OneIconConfig;
 }
 
-// What a scan returns. The scanner state stays in the worker; images, debug entries and
-// chests only come when they changed, or all of them when `full`.
+// What a scan returns. The scanner state stays in the worker; images and chests only come
+// when they changed, or all of them when `full`.
 export interface ScanResult {
   full: boolean;
   buffer: Buffer;
@@ -103,7 +102,6 @@ export interface ScanResult {
   // the page each located window shows in game
   pages: [string, number][];
   chests?: Chest[];
-  debug: [string, ScaledPosition, number, number, OneIconConfig[]][];
   ocr_jobs: OcrJob[];
 }
 

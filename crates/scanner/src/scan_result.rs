@@ -1,7 +1,6 @@
 use crate::{
     buffer::Buffer,
     ocr_jobs::OcrJob,
-    image_utils::common::IntegerRectangle,
     scanner_state::{InventoryType, OneSlotInfo, ScannerState, SlotAddress, Tradability},
     setup::OneIconConfig,
     tooltip::{
@@ -31,13 +30,6 @@ impl Serialize for IconBytes<'_> {
         s.serialize_field("tag", &self.0.tag)?;
         s.end()
     }
-}
-
-pub fn optional_icon_bytes<S: Serializer>(
-    icon: &Option<OneIconConfig>,
-    serializer: S,
-) -> Result<S::Ok, S::Error> {
-    icon.as_ref().map(IconBytes).serialize(serializer)
 }
 
 // what the page colours a slot by
@@ -229,8 +221,8 @@ pub struct HoverResult<'a> {
     pub tradability: Option<Tradability>,
 }
 
-// What JS gets after a scan; the state itself never leaves Rust. Images, debug entries and chests
-// are only included when written since the last result, unless everything is asked for.
+// What JS gets after a scan; the state itself never leaves Rust. Images and chests are only
+// included when written since the last result, unless everything is asked for.
 #[derive(Serialize)]
 pub struct ScanResult<'a> {
     pub full: bool,
@@ -240,7 +232,6 @@ pub struct ScanResult<'a> {
     // the page each located window shows in game
     pub pages: Vec<(InventoryType, usize)>,
     pub chests: Option<&'a Vec<Chest>>,
-    pub debug: Vec<(&'a String, IntegerRectangle, f64, f64, Vec<IconBytes<'a>>)>,
     // lines to recognise, whose text is to come back with a later scan
     pub ocr_jobs: &'a [OcrJob],
 }
@@ -277,14 +268,6 @@ impl ScannerState {
                 }
             })
             .collect();
-        let debug = self
-            .debug_info
-            .iter()
-            .filter(|(name, _)| full || self.changed_debug.contains(*name))
-            .map(|(name, (position, confidence, brightness, icons))| {
-                (name, *position, *confidence, *brightness, icons.iter().map(IconBytes).collect())
-            })
-            .collect();
         ScanResult {
             full,
             buffer: self.buffer,
@@ -302,7 +285,6 @@ impl ScannerState {
                 tradability: hover.tradability,
             }),
             chests: (full || self.chests_changed).then_some(&self.chests),
-            debug,
             ocr_jobs: &self.ocr_queue,
         }
     }
@@ -311,7 +293,6 @@ impl ScannerState {
     pub fn clear_changed(&mut self) {
         self.ocr_queue.clear();
         self.changed_slots.clear();
-        self.changed_debug.clear();
         self.chests_changed = false;
     }
 }

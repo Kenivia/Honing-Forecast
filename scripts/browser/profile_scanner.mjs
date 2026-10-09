@@ -1,6 +1,6 @@
 // Profiles the screen scanner end to end: builds and serves if needed, plays each
 // recording through the scanner, then prints the stage breakdown.
-// pnpm scanner-profile [--debug] [--firefox] [--keep] [recording...]
+// pnpm scanner-profile [--firefox] [--keep] [recording...]
 import { spawn } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
@@ -16,7 +16,6 @@ const args = process.argv.slice(2);
 const flags = new Set(args.filter((a) => a.startsWith("--")));
 const recordings = args.filter((a) => !a.startsWith("--"));
 const files = recordings.length ? recordings : DEFAULT_RECORDINGS;
-const debug_on = flags.has("--debug");
 
 const run = (cmd, cmd_args, env = {}) =>
   new Promise((resolve, reject) => {
@@ -50,7 +49,7 @@ const dumps = [];
 try {
   for (const file of files) {
     const name = path.basename(file).replace(/\.[^.]+$/, "").replace(/\s+/g, "-");
-    const out = path.join(OUT_DIR, `${name}${debug_on ? "-debug" : ""}.json`);
+    const out = path.join(OUT_DIR, `${name}.json`);
     console.log(`\nprofiling ${file}`);
     await run(
       "node",
@@ -59,7 +58,7 @@ try {
         "scripts/browser/profile_scanner_browse.mjs",
         ...(flags.has("--firefox") ? ["--firefox"] : []),
       ],
-      { REC: file, OUT: out, DEBUG_ON: debug_on ? "1" : "0" },
+      { REC: file, OUT: out },
     );
     dumps.push(out);
   }

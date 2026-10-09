@@ -10,7 +10,6 @@ use crate::{
     constants::{COMBINED_NUMBER_HEIGHT, SLOT_ORDER},
     image_utils::brightness::brightness_lut,
     scanner_state::{InventoryType, ScannerState, SlotAddress, Tradability},
-    setup::OneIconConfig,
     timing::timed,
 };
 use ahash::AHashMap;
@@ -129,8 +128,8 @@ pub struct PendingRead {
     // one job per line, and whether every line was centred
     pub title: Option<(Vec<u32>, bool)>,
     pub amount: Option<[u32; 3]>,
-    // per row: the name's lines, the count, the debug crop
-    pub chest: Option<Vec<(Vec<u32>, u32, Option<OneIconConfig>)>>,
+    // per row: the name's lines, the count
+    pub chest: Option<Vec<(Vec<u32>, u32)>>,
     pub body: Option<Vec<u32>>,
 }
 
@@ -144,14 +143,15 @@ impl PendingRead {
     }
 }
 
-fn winner<T: Clone + Eq + Hash>(votes: &AHashMap<T, usize>) -> Option<(T, usize)> {
+// a tie goes to the smaller value, not by map order, so that runs repeat
+fn winner<T: Clone + Ord + Hash>(votes: &AHashMap<T, usize>) -> Option<(T, usize)> {
     votes
         .iter()
-        .max_by_key(|(_, count)| **count)
+        .max_by(|a, b| a.1.cmp(b.1).then_with(|| b.0.cmp(a.0)))
         .map(|(value, count)| (value.clone(), *count))
 }
 
-fn most<T: Clone + Eq + Hash>(votes: &AHashMap<T, usize>) -> usize {
+fn most<T: Clone + Ord + Hash>(votes: &AHashMap<T, usize>) -> usize {
     winner(votes).map_or(0, |x| x.1)
 }
 
@@ -185,7 +185,7 @@ impl ScannerState {
             let mut jobs = vec![];
             for row in rows {
                 let names = row.names.into_iter().map(|x| self.request_ocr(x, priority, false)).collect();
-                jobs.push((names, self.request_ocr(row.count, priority, false), row.crop));
+                jobs.push((names, self.request_ocr(row.count, priority, false)));
             }
             read.chest = Some(jobs);
         }
@@ -312,7 +312,7 @@ impl ScannerState {
             *hover.chest_kind_votes.entry(chest.kind).or_default() += 1;
             if most(&hover.chest_votes) + hover.waiting[2] < SETTLED && hover.sent[2] < MAX_READS {
                 strips.chest =
-                    Some(timed("tooltip/chest", || chest_strips(&buffer, chest, self.debugging)));
+                    Some(timed("tooltip/chest", || chest_strips(&buffer, chest)));
             }
         }
         // which book a book is: its description says so more often than its title, whose start
@@ -402,10 +402,10 @@ impl ScannerState {
                 let mut texts = vec![];
                 hover.chest_rows = rows
                     .into_iter()
-                    .map(|(names, count, crop)| {
+                    .map(|(names, count)| {
                         let name_read = names.iter().map(text).collect::<Vec<_>>().join(" ");
                         texts.push((name_read.clone(), text(&count)));
-                        ChestRow { name_read, count_read: text(&count), crop }
+                        ChestRow { name_read, count_read: text(&count) }
                     })
                     .collect();
                 // The chests that list these rows best get the vote. Several do when they list the

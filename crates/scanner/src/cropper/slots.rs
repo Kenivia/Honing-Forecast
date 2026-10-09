@@ -1,7 +1,7 @@
 use crate::{
     constants::{ALL_SLOT_ADDRESSS, COMBINED_NUMBER_HEIGHT, NUMBER_OFFSET, SLOT_ORDER},
     image_utils::{
-        brightness::{mean_intensity, normalize_brightness},
+        brightness::normalize_brightness,
         close_enough::{DEFAULT_CONFIDENCE, close_enough, confidence_without},
         common::{FloatRectangle, IntegerRectangle, Rectangle, get_resizer},
         number::NumberParams,
@@ -99,6 +99,8 @@ impl ScannerState {
                 .filter(|(_, one_icon)| one_icon.tag == "Icon")
                 .map(|(name, _)| name.clone())
                 .collect();
+            let mut names = names;
+            names.sort();
             let all = names
                 .into_iter()
                 .map(|name| {
@@ -206,7 +208,7 @@ impl ScannerState {
             if unchanged {
                 self.slot_infos.get_mut(slot_address).unwrap().raw_hash = raw_hash;
             } else {
-                if spent > SLOT_BUDGET {
+                if spent > SLOT_BUDGET && !self.no_slot_budget {
                     self.slots_left = true;
                     continue;
                 }
@@ -235,38 +237,6 @@ impl ScannerState {
                         None,
                     )
                 });
-                let debug_start = crate::timing::now();
-                if self.debugging {
-                    let raw_icon =
-                        crop_buffer(position, get_resizer(&mut self.resizer), self.buffer, None);
-                    let mut out = vec![raw_icon.clone(), observed_icon.clone()];
-                    if let Some((name, _)) = &icon_name_score {
-                        out.push(
-                            icon_lookup(
-                                name,
-                                self.screen_info.effective_height,
-                                get_resizer(&mut self.resizer),
-                            )
-                            .clone(),
-                        );
-                    }
-
-                    let name = format!(
-                        "{:?} slot{:?}",
-                        slot_address.inventory_type, slot_address.pos_in_inv
-                    );
-                    self.changed_debug.insert(name.clone());
-                    self.debug_info.insert(
-                        name,
-                        (
-                            position.to_rounded(),
-                            mean_intensity(&raw_icon),
-                            icon_name_score.clone().unwrap_or_default().1,
-                            out,
-                        ),
-                    );
-                };
-                crate::timing::record("slots/debug_crops", crate::timing::now() - debug_start);
                 self.changed_slots.insert(*slot_address);
                 if icon_name_score.is_some() {
                     // only overwrite if it matches another

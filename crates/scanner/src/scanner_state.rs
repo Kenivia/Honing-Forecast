@@ -1,7 +1,6 @@
 use crate::{
     buffer::Buffer,
     cropper::anchors::AnchorInfo,
-    image_utils::common::IntegerRectangle,
     ocr_jobs::OcrJob,
     setup::{IncomingNewIcon, OneIconConfig},
     tooltip::{
@@ -69,7 +68,7 @@ pub struct SlotAddress {
     pub pos_in_inv: (usize, usize),
 }
 
-#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Hash, Clone, Copy)]
+#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord, Hash, Clone, Copy)]
 pub enum Tradability {
     Tradable,
     RosterBound,
@@ -173,11 +172,6 @@ pub enum AnchorType {
 #[derive(Debug, Serialize, Deserialize, Default)]
 pub struct ScannerState {
     #[serde(default)]
-    pub debugging: bool,
-    #[serde(default)]
-    pub debug_info: AHashMap<String, (IntegerRectangle, f64, f64, Vec<OneIconConfig>)>,
-
-    #[serde(default)]
     pub slot_infos: AHashMap<SlotAddress, OneSlotInfo>,
     #[serde(skip)]
     pub edits: AHashMap<SlotAddress, SlotEdit>,
@@ -237,12 +231,13 @@ pub struct ScannerState {
     pub quiet_scans: usize,
     #[serde(skip)]
     pub slots_left: bool,
+    // the native harness reads every slot at once, so that its runs repeat
+    #[serde(skip)]
+    pub no_slot_budget: bool,
 
     // written since the last result went to JS
     #[serde(skip)]
     pub changed_slots: AHashSet<SlotAddress>,
-    #[serde(skip)]
-    pub changed_debug: AHashSet<String>,
     #[serde(skip)]
     pub chests_changed: bool,
 

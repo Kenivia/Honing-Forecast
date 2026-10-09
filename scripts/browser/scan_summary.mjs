@@ -31,7 +31,7 @@ function summarize(file) {
 
   console.log(`\n=== ${file.split(/[\\/]/).pop()} ===`);
   console.log(
-    `${d.recording?.split(/[\\/]/).pop() ?? "?"}, debug info ${d.debugging ? "on" : "off"}, ${d.threads} threads`,
+    `${d.recording?.split(/[\\/]/).pop() ?? "?"}, ${d.threads} threads`,
   );
   console.log(
     `${d.draws} frames drawn, ${rows.length} scanned frames of the recording, ${(
