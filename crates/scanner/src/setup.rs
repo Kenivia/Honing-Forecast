@@ -1,18 +1,16 @@
 use crate::{
     constants::COMBINED_NUMBER_HEIGHT,
     image_utils::{
-        brightness::normalize_brightness,
-        common::{FloatRectangle, IntegerRectangle, Rectangle, get_resizer},
-        resize::{crop_buffer, resize_one_config},
+        common::{FloatRectangle, IntegerRectangle},
+        resize::resize_one_config,
     },
-    scanner_state::ScannerState,
 };
 use ahash::AHashMap;
 use fast_image_resize::Resizer;
 use ocrs::{OcrEngine, OcrEngineParams};
 use parking_lot::{MappedRwLockReadGuard, RwLock, RwLockReadGuard, RwLockWriteGuard};
 use rten::Model;
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
 use std::sync::LazyLock;
 
 pub static OCR_ENGINE: LazyLock<RwLock<Option<OcrEngine>>> = LazyLock::new(|| RwLock::new(None));
@@ -28,7 +26,6 @@ pub static COMPUTED_ICONS: LazyLock<RwLock<AHashMap<(String, u32), OneIconConfig
     LazyLock::new(|| RwLock::new(AHashMap::new()));
 
 use image::RgbaImage;
-use serde::Serializer;
 
 #[derive(Debug, Clone, Deserialize)]
 #[serde(try_from = "OneIconConfigJs")]
@@ -69,28 +66,6 @@ impl TryFrom<OneIconConfigJs> for OneIconConfig {
             required_confidence: w.required_confidence,
         })
     }
-}
-
-impl Serialize for OneIconConfig {
-    fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
-        use serde::ser::SerializeStruct;
-        let mut s = serializer.serialize_struct("OneIconConfig", 6)?;
-        s.serialize_field("data", self.data.as_raw())?;
-        s.serialize_field("name", &self.name)?;
-        s.serialize_field("offset", &self.offset)?;
-        s.serialize_field("tag", &self.tag)?;
-        s.serialize_field("normalized", &self.normalized)?;
-        s.serialize_field("required_confidence", &self.required_confidence)?;
-        s.end()
-    }
-}
-
-#[derive(Debug, Deserialize)]
-pub struct IncomingNewIcon {
-    pub position: FloatRectangle,
-    pub name: String,
-    pub tag: String,
-    pub brightness: f64,
 }
 
 // The largest centred part of a template whose scaled size is a whole number of pixels. A template
@@ -171,38 +146,8 @@ pub fn icon_lookup(
     })
 }
 
-impl ScannerState {
-    // the config with the new icons cut out of the current frame put in front
-    pub fn setup(
-        &mut self,
-        mut config: Vec<OneIconConfig>,
-        incoming_new_icons: Vec<IncomingNewIcon>,
-    ) -> Vec<OneIconConfig> {
-        for incoming in incoming_new_icons {
-            let mut observed = crop_buffer(
-                incoming.position,
-                get_resizer(&mut self.resizer),
-                self.buffer,
-                None,
-            );
-            normalize_brightness(&mut observed, 70.0);
-            config.insert(
-                0,
-                OneIconConfig {
-                    data: observed.data,
-                    name: incoming.name,
-                    offset: incoming.position.to_rounded(),
-                    tag: incoming.tag,
-                    normalized: true,
-                    required_confidence: None,
-                },
-            );
-        }
-        config
-    }
-}
-
-// the base templates everything is matched against
+// The base templates everything is matched against. The file is written by
+// templates/make_msg_pack.py (icons) and scripts/anchor setup/anchors.py (anchors).
 pub fn set_config(config: Vec<OneIconConfig>) {
     *BASE_ICONS.write() = config.into_iter().map(|icon| (icon.name.clone(), icon)).collect();
     crate::cropper::slots::FROM_AFAR.write().clear();

@@ -7,10 +7,10 @@ use hf_core::state_bundle::StateBundle;
 use hf_scanner::buffer::Buffer;
 use hf_scanner::image_utils::ocr::recognize_raw;
 use hf_scanner::scanner_state::{ScannerState, SlotEdit};
-use hf_scanner::setup::{IncomingNewIcon, OneIconConfig, load_ocr_engine, set_config};
+use hf_scanner::setup::{OneIconConfig, load_ocr_engine, set_config};
 use hf_scanner::timing::timed;
 use rand::rngs::ThreadRng;
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
 use serde_wasm_bindgen::{from_value, to_value};
 use std::cell::RefCell;
 use wasm_bindgen::JsValue;
@@ -59,33 +59,6 @@ struct CropperOptions {
     // what the user changed by hand since the last scan
     #[serde(default)]
     edits: Vec<SlotEdit>,
-}
-
-#[derive(Deserialize)]
-struct SetupInput {
-    config: Vec<OneIconConfig>,
-    incoming_new_icons: Vec<IncomingNewIcon>,
-}
-
-#[derive(Serialize)]
-struct SetupOutput {
-    buffer: Buffer,
-    config: Vec<OneIconConfig>,
-}
-
-#[wasm_bindgen]
-pub fn setup_wrapper(input: JsValue) -> JsValue {
-    console_error_panic_hook::set_once();
-
-    let input: SetupInput = from_value(input).unwrap();
-    SCANNER.with_borrow_mut(|state| {
-        let state = state.as_mut().unwrap();
-        to_value(&SetupOutput {
-            buffer: state.buffer,
-            config: state.setup(input.config, input.incoming_new_icons),
-        })
-        .unwrap()
-    })
 }
 
 #[wasm_bindgen]

@@ -1,4 +1,4 @@
-import { encode, decode } from "@msgpack/msgpack";
+import { decode } from "@msgpack/msgpack";
 
 export interface ScaledPosition {
   top_left: [number, number];
@@ -134,28 +134,6 @@ export function getModel() {
     ) as Promise<Uint8Array>;
   }
   return modelPromise;
-}
-
-export function download_as_msg_pack(
-  data: OneIconConfig[],
-  filename: string,
-): void {
-  const encoded = encode(data);
-  // Blob wants a BufferSource; encode() returns a Uint8Array, which works directly
-  const blob = new Blob([encoded], { type: "application/x-msgpack" });
-  const url = URL.createObjectURL(blob);
-
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = filename.endsWith(".msgpack")
-    ? filename
-    : `${filename}.msgpack`;
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-
-  // Defer revoke slightly so the download actually starts in all browsers
-  setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
 // function renameKeyDeep(obj, oldKey, newKey) {

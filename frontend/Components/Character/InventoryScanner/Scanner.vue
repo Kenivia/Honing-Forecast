@@ -22,12 +22,7 @@ const items = computed(() =>
 
 <template>
   <div v-if="config" class="flex w-full flex-col gap-3">
-    <Stream
-      :should_start_cropper="true"
-      v-model:status="status"
-      :debugging="false"
-      :process_result="process_result"
-    />
+    <Stream v-model:status="status" :process_result="process_result" />
     <SlotGrid :items="items" />
     <Manifest />
   </div>

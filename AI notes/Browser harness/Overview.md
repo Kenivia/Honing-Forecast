@@ -5,7 +5,7 @@ How an agent drives the site in a real browser. Playwright is the only tool; it 
 Per-section instructions:
 
 - `Calculator.md`: the calculator, market and roster pages.
-- `Screen scanner.md`: the scanner and scanner setup pages, fed by an uploaded image or video.
+- `Screen scanner.md`: the scanner page, fed by an uploaded image or video.
 
 ## Setup
 

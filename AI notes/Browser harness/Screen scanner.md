@@ -1,6 +1,6 @@
 # Driving the screen scanner
 
-Pages: `/<character>/scanner` (scan loop and slot grid) and `/<character>/setup` (icon setup, no scan loop). Both mount the same capture card.
+Page: `/<character>/scanner` (capture card, scan loop and slot grid). The capture card shows no preview of the stream.
 
 ## Feeding it frames
 

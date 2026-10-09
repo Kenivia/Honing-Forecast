@@ -4,7 +4,7 @@ The scanner recognises things by comparing screen crops with stored templates. T
 
 ## ScannerConfig.msgpack
 
-`public/ScannerConfig.msgpack` is a list of templates. Each has raw RGBA pixels, a name, a tag, an offset rectangle, and an optional required confidence. The required confidence overrides the 0.9 pass limit of whichever comparison the template goes through (fixed-position or template matching); it is 0.8 on every page tab and null on everything else, and is edited per row on the Setup page (new captures start as null). The frontend fetches it at startup and hands it to Rust when the scanner starts. The OCR model is loaded the same way.
+`public/ScannerConfig.msgpack` is a list of templates. Each has raw RGBA pixels, a name, a tag, an offset rectangle, and an optional required confidence. The required confidence overrides the 0.9 pass limit of whichever comparison the template goes through (fixed-position or template matching); it is 0.8 on every page tab and null on everything else, and is set with the anchor script (below). The frontend fetches it at startup and hands it to Rust when the scanner starts. The OCR model is loaded the same way.
 
 Two tags exist:
 
@@ -18,9 +18,15 @@ Template **names are a contract** with the Rust constants: anchor and page-tab n
 The file is built from two sources, in this order:
 
 1. **Icons, from Python.** `templates/items.json` is the item table: one row per in-game item with its tooltip `title`, its `icon` (a file in `templates/Icons`) and the `rarity` background. `templates/chests.json` is the chest table, written from the game's files together with the art in `templates/ChestIcons` (`Game files.md`); each of its "top" rows makes a template named `<icon>@<rarity>`, and a slot with such an icon is a chest. `templates/make_msg_pack.py` composites each distinct icon over its background and replaces the Icon templates in `public/ScannerConfig.msgpack` in place, leaving every other template alone. Rows may share an icon (books of one kind, a material and its event or roster-bound namesakes), and a row without an icon is only a title the tooltip reader accepts. A row's optional `confidence` becomes the template's required confidence in place of 0.95, and has to be the same on every row of an icon. The book rows have 0.93: at 1080p their slots score 0.944 to 0.953, each closest to the right kind of book, while the purple books stay under 0.85. A book row's `body` is its gear and honing levels as the tooltip's description gives them. Both tables are compiled into the scanner crate.
-2. **Anchors, appended in the app.** The Setup sub-page of a character adds to that config. With a live screen share running, the developer marks a rectangle, names and tags it, and Rust crops and normalises it from the current frame. The page lists the entries for editing and reordering, and downloads the combined result as msgpack.
-3. **Storage page tabs and window anchors, one-off.** The storage page tabs, the two storage windows' top-right icon groups and the inventory's search button were cropped from the 1440p screenshots by throwaway scripts that applied the same brightness normalisation (for setting 70), rather than captured in the app. Capturing them in the app works too, but the app stores screen positions, so the offsets must then be edited to be window-relative.
-4. **Manual placement.** A config downloaded from the Setup page is copied into `public/` by hand. `templates/ScannerConfig.msgpack` is a leftover from the older flow and is no longer written.
+2. **Anchors, from Python.** `scripts/anchor setup/anchors.py` edits the Anchor templates of `public/ScannerConfig.msgpack` in place and leaves the icons alone:
+   - `add <still> <name> <x> <y> <width> <height> --offset <x> <y> [--brightness 70] [--confidence 0.8]` cuts a whole-pixel rectangle out of a 1440p still, normalises it from the setting the still was taken at with the gamma law, and adds it, or replaces the anchor of that name where it stands. `--offset` is what the config stores: where the template sits relative to the root it gives.
+   - `locate <still> <name>` finds a stored anchor in a still and says how far apart the pixels are, which gives the rectangle to cut again and checks the still's setting.
+   - `list`, `confidence <name> <value|none>`, `remove <name>`.
+   - Every anchor is also kept as `scripts/anchor setup/anchors/<name>.png` for review (`export` writes them all).
+   - Checked against what was there: `locate` finds all seven anchors tried at 0.00 levels apart at setting 70, and cutting them again with `add` leaves the file byte for byte the same.
+3. `templates/ScannerConfig.msgpack` is a leftover from an older flow and is no longer written.
+
+The app used to have a Setup sub-page that captured anchors from a live screen share (a `setup` step in Rust). It is gone: it stored screen positions, so offsets had to be edited by hand afterwards, and none of the current anchors came from it.
 
 ## Where each anchor template was cut from
 

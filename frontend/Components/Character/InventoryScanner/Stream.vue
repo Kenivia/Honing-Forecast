@@ -10,13 +10,7 @@ import { WasmOp } from "@/WasmInterface/WasmWorker";
 import { storeToRefs } from "pinia";
 import { ref, computed, onMounted, onUnmounted, toRaw, watch } from "vue";
 import { useIntervalFn } from "@vueuse/core";
-import {
-  getModel,
-  getScannerConfig,
-  OneIconConfig,
-  ScaledPosition,
-  ScanResult,
-} from "./LoadStorage";
+import { getModel, getScannerConfig, ScanResult } from "./LoadStorage";
 import {
   auto_select_resolution,
   game_resolution,
@@ -27,10 +21,7 @@ import { useRuntimeStore } from "@/Stores/RuntimeState";
 const runtime = useRuntimeStore();
 
 const props = defineProps<{
-  boxes?: ScaledPosition[];
-  debugging: boolean;
-  process_result?: (result: ScanResult) => void;
-  should_start_cropper: boolean;
+  process_result: (result: ScanResult) => void;
 }>();
 const status = defineModel<"idle" | "capturing">("status", { default: "idle" });
 
@@ -41,65 +32,7 @@ const bundle = ref(runtime.cropper);
 // the stream outlives this component so permission is only asked once
 const source = runtime.frame_source;
 
-const video_ref = ref<HTMLVideoElement | null>(null);
 const error = ref<string | null>(null);
-
-// Track the real capture resolution so we can correctly place overlay
-// boxes even if the stream isn't exactly 1280x720.
-const video_natural = ref({ width: 1280, height: 720 });
-function on_loaded_metadata() {
-  if (video_ref.value) {
-    video_natural.value = {
-      width: video_ref.value.videoWidth || 1280,
-      height: video_ref.value.videoHeight || 720,
-    };
-  }
-}
-
-// Where the video actually renders inside the fixed 1280x720 container,
-// given `object-contain` letterboxing.
-const display_rect = computed(() => {
-  const container_w = 1280;
-  const container_h = 720;
-  const { width: nw, height: nh } = video_natural.value;
-  const container_ratio = container_w / container_h;
-  const natural_ratio = nw / nh || container_ratio;
-
-  let disp_w: number;
-  let disp_h: number;
-  if (natural_ratio > container_ratio) {
-    disp_w = container_w;
-    disp_h = container_w / natural_ratio;
-  } else {
-    disp_h = container_h;
-    disp_w = container_h * natural_ratio;
-  }
-
-  return {
-    disp_w,
-    disp_h,
-    offset_x: (container_w - disp_w) / 2,
-    offset_y: (container_h - disp_h) / 2,
-  };
-});
-
-// One style object per box in `props.boxes`, converted from capture
-// pixels into the actual displayed video rect.
-const box_styles = computed(() => {
-  const { offset_x, offset_y, disp_w } = display_rect.value;
-  const scale = disp_w / video_natural.value.width;
-
-  return (props.boxes ?? []).map((pos) => {
-    const [x1, y1] = pos.top_left;
-
-    return {
-      left: `${offset_x + x1 * scale}px`,
-      top: `${offset_y + y1 * scale}px`,
-      width: `${Math.ceil(Math.max(pos.width * scale, 0))}px`,
-      height: `${Math.ceil(Math.max(pos.height * scale, 0))}px`,
-    };
-  });
-});
 
 const resolutions = computed(() =>
   game_resolution.ultrawide ? RESOLUTIONS_21_9 : RESOLUTIONS_16_9,
@@ -168,12 +101,9 @@ function begin(
   start_scanner();
 }
 
-// show the store's stream in this component
+// follow the store's stream in this component
 function attach() {
   status.value = "capturing";
-  if (video_ref.value) {
-    video_ref.value.srcObject = source.stream;
-  }
   source.stream
     .getVideoTracks()[0]
     .addEventListener("ended", stop_capture, { once: true });
@@ -203,8 +133,7 @@ async function start_scanner() {
   bundle.value.debounced_start(
     WasmOp.Reserve,
     new_scanner_state,
-    props.should_start_cropper ? toggle_cropper : null,
-    // null,
+    toggle_cropper,
     0,
     false,
   );
@@ -213,9 +142,6 @@ async function start_scanner() {
 function stop_capture() {
   pause_cropper();
   status.value = "idle";
-  if (video_ref.value) {
-    video_ref.value.srcObject = null;
-  }
   if (!source.stream) return;
   // terminating the worker frees the frame buffer and the Rust statics with it
   bundle.value?.cancel();
@@ -287,9 +213,7 @@ async function cropper_loop(id: number, full = false) {
       const result_start = performance.now();
       // the next frame goes out before any UI work
       cropper_loop(id);
-      if (props.process_result) {
-        props.process_result(result);
-      }
+      props.process_result(result);
       scan_timings.push({
         ...timings,
         // same clock as the OCR records, so the two can be lined up
@@ -315,7 +239,7 @@ onMounted(() => {
   attach();
   if (bundle.value?.result?.buffer?.pointer == null) {
     start_scanner();
-  } else if (props.should_start_cropper) {
+  } else {
     toggle_cropper();
   }
 });
@@ -342,49 +266,6 @@ watch(
       >
         {{ status === "capturing" ? "● Live" : "Idle" }}
       </span>
-    </div>
-
-    <div
-      class="relative overflow-hidden rounded-none"
-      :style="
-        debugging && status === 'capturing'
-          ? 'width: 1280px; height: 720px'
-          : 'width: 0; height: 0'
-      "
-    >
-      <video
-        ref="video_ref"
-        autoplay
-        muted
-        playsinline
-        class="h-full w-full border object-contain"
-        :class="{ hidden: !debugging || status !== 'capturing' }"
-        @loadedmetadata="on_loaded_metadata"
-      />
-
-      <div
-        v-if="status !== 'capturing'"
-        class="absolute inset-0 flex flex-col items-center justify-center gap-2 text-zinc-500"
-      >
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          class="size-10 opacity-40"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-        >
-          <rect x="2" y="3" width="20" height="14" rx="2" stroke-width="1.5" />
-          <path stroke-width="1.5" d="M8 21h8M12 17v4" />
-        </svg>
-        <span class="text-xs">No capture active</span>
-      </div>
-
-      <div
-        v-for="(style, i) in box_styles"
-        :key="i"
-        class="pointer-events-none absolute rounded-none border border-red-500"
-        :style="style"
-      />
     </div>
 
     <p

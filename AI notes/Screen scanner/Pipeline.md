@@ -99,13 +99,12 @@ A scan never waits for OCR. A line of text takes 30 to 100 ms to read and cannot
 
 ## State between frames
 
-- Everything stays in Rust for the life of the worker's wasm instance: the `ScannerState` (a thread-local in the wasm crate), the base templates and a cache of templates scaled to the current resolution. The reserve operation builds all of it: the wasm crate reads a `ReserveInput` (game resolution, buffer size, config), sets the config (`set_config`) and makes the state with `ScannerState::new`. The state is never serialised or deserialised, so its structs carry no serde; only what crosses the boundary does (addresses, tradability, edits, chests, the buffer info, the config's icons). Setup takes the config and the new icons as arguments and returns the config.
+- Everything stays in Rust for the life of the worker's wasm instance: the `ScannerState` (a thread-local in the wasm crate), the base templates and a cache of templates scaled to the current resolution. The reserve operation builds all of it: the wasm crate reads a `ReserveInput` (game resolution, buffer size, config), sets the config (`set_config`) and makes the state with `ScannerState::new`. The state is never serialised or deserialised, so its structs carry no serde; only what crosses the boundary does (addresses, tradability, edits, chests, the buffer info, the config's icons).
 - Consequently the scanner worker must not be restarted between frames, unlike the optimizer worker. A new capture, resolution or character terminates it, so each starts with empty scan state.
 - A scan returns a `ScanResult` (`scan_result.rs`): the text and status of every slot looked at so far (matched or not, but not the ones edited by hand), the hover summary, the buffer info and the new OCR jobs, every time; slot images and the chest list only when they were written since the last result. A slot's image is the whole slot with its number, as last recognised, or as last seen while it never was. Images cross as `Uint8Array`. The state marks what was written (`changed_slots`, `chests_changed`) and the wrapper clears the marks after serialising.
 - The first scan of a loop asks for `full`, which sends everything, because the page may have been remounted or a reply dropped. A reply whose `full` does not match the request is ignored.
 - Every scanner result carries the buffer info, which is how the capture card knows a state exists. The worker keeps its own copy of the pointer from the reserve result.
 - The page (`ScanStore.ts`) merges every result into plain maps and reuses the image objects, so slots that did not change do not redraw their canvases. The grid itself is updated at most four times a second.
-- Setup sends the config and the new icon positions with a frame and gets the config back, in the config file's own format (pixels as number arrays).
 
 ## Who owns the stream
 

@@ -1,7 +1,6 @@
 import init, {
   optimize_average_wrapper,
   histogram_wrapper,
-  setup_wrapper,
   cropper_wrapper,
   reserve_buffer_wrapper,
   take_timings,
@@ -15,7 +14,6 @@ import { OneIconConfig } from "@/Components/Character/InventoryScanner/LoadStora
 export enum WasmOp {
   OptimizeAverage,
   Histogram,
-  Setup,
   Cropper,
   Reserve,
   OcrInit,
@@ -92,7 +90,7 @@ self.addEventListener("message", async (ev) => {
     result = await optimize_average_wrapper(payload);
   } else if (wasm_op == WasmOp.Histogram) {
     result = to_records(await histogram_wrapper(payload));
-  } else if (wasm_op == WasmOp.Cropper || wasm_op == WasmOp.Setup) {
+  } else if (wasm_op == WasmOp.Cropper) {
     // the main thread reads the frame and transfers it with the op
     const { frame, ...options } = payload;
 
@@ -115,14 +113,10 @@ self.addEventListener("message", async (ev) => {
       frame.close();
       timings.copy = performance.now() - copy_start;
 
-      if (wasm_op == WasmOp.Cropper) {
-        const call_start = performance.now();
-        result = await cropper_wrapper(options);
-        timings.wasm_call = performance.now() - call_start;
-        timings.rust = take_timings();
-      } else {
-        result = await setup_wrapper(options);
-      }
+      const call_start = performance.now();
+      result = await cropper_wrapper(options);
+      timings.wasm_call = performance.now() - call_start;
+      timings.rust = take_timings();
     } catch (err) {
       console.error("Error processing frame:", err);
     } finally {

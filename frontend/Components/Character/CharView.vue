@@ -66,9 +66,6 @@ onUnmounted(() => {
         <RouterLink to="calc" class="side-bar-link" @click="close">
           Calc
         </RouterLink>
-        <RouterLink to="setup" class="side-bar-link" @click="close">
-          Scanner setup
-        </RouterLink>
         <RouterLink to="scanner" class="side-bar-link" @click="close">
           Scanner
         </RouterLink>
