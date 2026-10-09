@@ -16,6 +16,10 @@ use serde::{Deserialize, Serialize};
 use std::sync::LazyLock;
 
 pub static OCR_ENGINE: LazyLock<RwLock<Option<OcrEngine>>> = LazyLock::new(|| RwLock::new(None));
+// the same model, kept to what a slot's count can be
+pub static OCR_NUMBER_ENGINE: LazyLock<RwLock<Option<OcrEngine>>> =
+    LazyLock::new(|| RwLock::new(None));
+const NUMBER_CHARS: &str = "0123456789.+-";
 
 pub static BASE_ICONS: LazyLock<RwLock<AHashMap<String, OneIconConfig>>> =
     LazyLock::new(|| RwLock::new(AHashMap::new()));
@@ -119,7 +123,6 @@ pub fn icon_lookup(
     drop(guard);
 
     let base_icon_guard = BASE_ICONS.read();
-    // my_dbg!(&resolution);
     let base_icon = base_icon_guard.get(&key.0).expect(&key.0);
     let scale_factor = resolution as f64 / 1440.0;
     let is_icon = base_icon.tag == "Icon";
@@ -196,7 +199,6 @@ impl ScannerState {
     }
 
     pub fn set_config(&mut self) {
-        // assert!(self.config.len() > 0);
         let mut new = AHashMap::with_capacity(self.config.len());
         for i in self.config.iter() {
             new.insert(i.name.clone(), i.clone());
@@ -212,10 +214,15 @@ impl ScannerState {
 }
 
 pub fn load_ocr_engine(model: Vec<u8>) {
-    let engine = OcrEngine::new(OcrEngineParams {
-        recognition_model: Some(Model::load(model).expect("model load failed")),
-        ..Default::default()
-    })
-    .expect("model load failed");
-    *OCR_ENGINE.write() = Some(engine);
+    // the alphabet is fixed per engine, so the model is loaded once for each
+    let engine = |allowed_chars: Option<String>| {
+        OcrEngine::new(OcrEngineParams {
+            recognition_model: Some(Model::load(model.clone()).expect("model load failed")),
+            allowed_chars,
+            ..Default::default()
+        })
+        .expect("model load failed")
+    };
+    *OCR_ENGINE.write() = Some(engine(None));
+    *OCR_NUMBER_ENGINE.write() = Some(engine(Some(NUMBER_CHARS.to_string())));
 }

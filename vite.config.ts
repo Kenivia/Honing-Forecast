@@ -26,7 +26,4 @@ export default defineConfig({
       ],
     },
   },
-  optimizeDeps: {
-    exclude: ["tesseract-wasm", "tesseract-worker"],
-  },
 });

@@ -12,16 +12,11 @@ crate-type = ["cdylib", "rlib"]
 [dependencies]
 serde = { version = "1.0", features = ["derive"] }
 js-sys = "0.3"
-console_error_panic_hook = "0.1"
 serde_json = "1.0"
-either ={version = "1.17", features=["serde"]}
 ahash = {version = "0.8", features=["serde"]}
 fast_image_resize = "6.1.0"
 image = {version = "0.25.10", default-features = false, features = ["png"] }
 imageproc = {version = "0.27.0", default-features = false }
-uuid = {version="1.24.0", features=["serde", "v4","js"] }
-web-sys = { version = "0.3", features = ["console"]}
-hf-core = { path = "../core", default-features = false, features=[]}  
 realfft = {version="3.5.0", features=["wasm_simd"]}
 rustfft = {version="6.4.1", features=["wasm_simd"]}
 parking_lot = {version="0.12.5"}
@@ -30,9 +25,3 @@ rten = "0.26.0"
 rten-imageproc = "0.26.0"
 rmp-serde = "1.3.1"
 strsim = "0.11.1"
-
-[features]
-# features here to make my_dbg macro happy  
-wasm=[]  
-run_tests=[]
-default=["wasm"]

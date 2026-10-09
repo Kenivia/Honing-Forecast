@@ -10,14 +10,17 @@ pub struct OcrJob {
     pub id: u32,
     // lower is read first
     pub priority: u8,
+    // a slot's count, read with digits only
+    pub numbers: bool,
     pub image: RgbaImage,
 }
 
 impl Serialize for OcrJob {
     fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
-        let mut s = serializer.serialize_struct("OcrJob", 5)?;
+        let mut s = serializer.serialize_struct("OcrJob", 6)?;
         s.serialize_field("id", &self.id)?;
         s.serialize_field("priority", &self.priority)?;
+        s.serialize_field("numbers", &self.numbers)?;
         s.serialize_field("width", &self.image.width())?;
         s.serialize_field("height", &self.image.height())?;
         s.serialize_field("data", &Bytes(self.image.as_raw()))?;
@@ -27,15 +30,16 @@ impl Serialize for OcrJob {
 
 impl ScannerState {
     // the id its text will be stored under; a strip seen before is not read again
-    pub fn request_ocr(&mut self, image: RgbaImage, priority: u8) -> u32 {
+    pub fn request_ocr(&mut self, image: RgbaImage, priority: u8, numbers: bool) -> u32 {
         let hash =
-            ahash::RandomState::with_seeds(1, 2, 3, 4).hash_one((image.width(), image.as_raw()));
+            ahash::RandomState::with_seeds(1, 2, 3, 4).hash_one((image.width(), numbers, image.as_raw()));
         let next = self.ocr_ids.len() as u32;
         let id = *self.ocr_ids.entry(hash).or_insert(next);
         if id == next {
             self.ocr_queue.push(OcrJob {
                 id,
                 priority,
+                numbers,
                 image,
             });
         }
@@ -47,7 +51,7 @@ impl ScannerState {
         self.ocr_texts.extend(results);
         for slot in self.slot_infos.values_mut() {
             if let Some(text) = slot.amount_job.and_then(|id| self.ocr_texts.get(&id)) {
-                slot.amount = Some(text.clone());
+                slot.vote_amount(text.clone());
                 slot.amount_job = None;
             }
         }
@@ -58,7 +62,7 @@ impl ScannerState {
     pub fn run_ocr_inline(&mut self) {
         let results = take(&mut self.ocr_queue)
             .iter()
-            .map(|job| (job.id, recognize_line(&job.image)))
+            .map(|job| (job.id, recognize_line(&job.image, job.numbers)))
             .collect();
         self.apply_ocr(results);
     }

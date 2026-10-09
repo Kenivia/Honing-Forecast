@@ -3,8 +3,6 @@ use std::mem::forget;
 use image::RgbaImage;
 use serde::{Deserialize, Serialize};
 
-//  Box<dyn DoubleEndedIterator<Item = &Support> + '_>
-
 #[derive(Debug, Serialize, Deserialize, Clone, Copy, Default)]
 pub struct Buffer {
     #[serde(default)]

@@ -7,7 +7,7 @@ use super::{
     title::{join_title, text_image, title_lines, yellow_image},
 };
 use crate::{
-    constants::{ALL_SLOT_ADDRESSS, COMBINED_NUMBER_HEIGHT},
+    constants::{COMBINED_NUMBER_HEIGHT, SLOT_ORDER},
     image_utils::brightness::brightness_lut,
     scanner_state::{InventoryType, ScannerState, SlotAddress, Tradability},
     setup::OneIconConfig,
@@ -175,22 +175,22 @@ impl ScannerState {
         let priority = hover.sent.into_iter().max().unwrap().min(255) as u8;
         let mut read = PendingRead { hover: hover.id, ..Default::default() };
         if let Some((lines, centred)) = strips.title {
-            let jobs = lines.into_iter().map(|line| self.request_ocr(line, priority)).collect();
+            let jobs = lines.into_iter().map(|line| self.request_ocr(line, priority, false)).collect();
             read.title = Some((jobs, centred));
         }
         if let Some(images) = strips.amount {
-            read.amount = Some(images.map(|image| self.request_ocr(image, priority)));
+            read.amount = Some(images.map(|image| self.request_ocr(image, priority, false)));
         }
         if let Some(rows) = strips.chest {
             let mut jobs = vec![];
             for row in rows {
-                let names = row.names.into_iter().map(|x| self.request_ocr(x, priority)).collect();
-                jobs.push((names, self.request_ocr(row.count, priority), row.crop));
+                let names = row.names.into_iter().map(|x| self.request_ocr(x, priority, false)).collect();
+                jobs.push((names, self.request_ocr(row.count, priority, false), row.crop));
             }
             read.chest = Some(jobs);
         }
         if let Some(lines) = strips.body {
-            read.body = Some(lines.into_iter().map(|line| self.request_ocr(line, priority)).collect());
+            read.body = Some(lines.into_iter().map(|line| self.request_ocr(line, priority, false)).collect());
         }
         let kinds =
             [read.title.is_some(), read.amount.is_some(), read.chest.is_some(), read.body.is_some()];
@@ -534,8 +534,8 @@ impl ScannerState {
         let active_pages = self.tooltip_page_num();
         let tolerance = SLOT_TOLERANCE * s;
         let (bar_left, bar_right) = (bar.x as f64, (bar.x + bar.width) as f64);
-        ALL_SLOT_ADDRESSS
-            .keys()
+        SLOT_ORDER
+            .iter()
             .filter(|address| active_pages[&address.inventory_type] == Some(address.page_num))
             .filter_map(|address| {
                 let position = self.anchored_slot_address_position(address)?;

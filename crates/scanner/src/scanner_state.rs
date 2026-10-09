@@ -78,7 +78,6 @@ pub enum Tradability {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct OneSlotInfo {
-    // pub currently_seen: bool,
     pub icon_name_score: Option<(String, f64)>,
     // it matched with the rows an item level is written over left out
     #[serde(default)]
@@ -88,7 +87,6 @@ pub struct OneSlotInfo {
     #[serde(default)]
     pub alternatives: Vec<String>,
     pub observed_number: OneIconConfig,
-    pub processed_number: OneIconConfig,
     pub observed_icon: OneIconConfig,
     // the whole slot, number included, as last recognised, or as last seen while nothing ever was
     #[serde(skip)]
@@ -98,9 +96,10 @@ pub struct OneSlotInfo {
     pub hovered: bool,
     #[serde(default)]
     pub tooltip_failed: bool,
-    // pub observed_id: Uuid,
-    pub currently_seen: bool,
     pub amount: Option<String>,
+    // the last few reads of the number; the amount is the one most of them agree on
+    #[serde(skip)]
+    pub amount_reads: Vec<String>,
     // these two come from the hover tooltip
     #[serde(default)]
     pub tooltip_amount: Option<String>,
@@ -114,6 +113,24 @@ pub struct OneSlotInfo {
     // of the slot's raw pixels when it was last looked at
     #[serde(skip)]
     pub raw_hash: u64,
+}
+
+const AMOUNT_READS: usize = 5;
+
+impl OneSlotInfo {
+    // One read under the cursor or a highlight does not undo several that agreed. The newest wins
+    // a tie.
+    pub fn vote_amount(&mut self, text: String) {
+        let digits = |text: &String| text.chars().filter(char::is_ascii_digit).collect::<String>();
+        self.amount_reads.push(text);
+        if self.amount_reads.len() > AMOUNT_READS {
+            self.amount_reads.remove(0);
+        }
+        let reads = &self.amount_reads;
+        let votes = |read: &String| reads.iter().filter(|x| digits(x) == digits(read)).count();
+        let most = reads.iter().map(votes).max().unwrap();
+        self.amount = reads.iter().rev().find(|x| votes(x) == most).cloned();
+    }
 }
 
 // What the user typed in for a slot, which the scanner then leaves alone. A retry instead forgets
@@ -231,5 +248,4 @@ pub struct ScannerState {
 
     #[serde(skip)]
     pub resizer: Option<Resizer>,
-    // pub downscaled_cache: DownscaledCache,
 }

@@ -1,10 +1,11 @@
 use crate::{
-    constants::{ALL_SLOT_ADDRESSS, COMBINED_NUMBER_HEIGHT, NUMBER_OFFSET},
+    constants::{ALL_SLOT_ADDRESSS, COMBINED_NUMBER_HEIGHT, NUMBER_OFFSET, SLOT_ORDER},
     image_utils::{
         brightness::{mean_intensity, normalize_brightness},
         close_enough::{DEFAULT_CONFIDENCE, close_enough, confidence_without},
         common::{FloatRectangle, IntegerRectangle, Rectangle, get_resizer},
-        ocr::pre_process_icon_number,
+        number::NumberParams,
+        ocr::number_strip,
         resize::crop_buffer,
     },
     scanner_state::{OneSlotInfo, ScannerState, SlotAddress},
@@ -16,8 +17,6 @@ use ahash::AHashMap;
 use image::RgbaImage;
 use parking_lot::RwLock;
 use std::sync::LazyLock;
-// use hf_core::my_dbg;
-// use uuid::Uuid;
 
 const UNMATCHED_UNCHANGED: f64 = 0.995;
 // Slots change slowly and a tooltip can be gone in a few frames, so the slots are only looked
@@ -168,8 +167,7 @@ impl ScannerState {
         let active_page_nums = self.active_page_num();
         let (start, mut spent) = (crate::timing::now(), 0.0);
         self.slots_left = false;
-        // my_dbg!(active_page_nums, self.anchors);
-        for slot_address in ALL_SLOT_ADDRESSS.keys() {
+        for slot_address in SLOT_ORDER.iter() {
             if active_page_nums[&slot_address.inventory_type] != Some(slot_address.page_num)
                 || self.edits.contains_key(slot_address)
             {
@@ -179,8 +177,6 @@ impl ScannerState {
             let Some(root) = self.inventory_root(slot_address.inventory_type) else {
                 continue;
             };
-
-            // my_dbg!(active_page_nums[&slot_address.inventory_type]);
             let position: FloatRectangle =
                 self.anchored_slot_address_position(slot_address).unwrap();
 
@@ -243,14 +239,6 @@ impl ScannerState {
                 if self.debugging {
                     let raw_icon =
                         crop_buffer(position, get_resizer(&mut self.resizer), self.buffer, None);
-                    // let number = crop_buffer(
-                    //     NUMBER_OFFSET
-                    //         .scaled(self.screen_info.scale_factor)
-                    //         .use_root(&position),
-                    //     get_resizer(&mut self.resizer),
-                    //     self.buffer,
-                    //     None,
-                    // );
                     let mut out = vec![raw_icon.clone(), observed_icon.clone()];
                     if let Some((name, _)) = &icon_name_score {
                         out.push(
@@ -279,23 +267,23 @@ impl ScannerState {
                     );
                 };
                 crate::timing::record("slots/debug_crops", crate::timing::now() - debug_start);
-                // my_dbg!("New", slot_address, "icon:", icon_name_score);
                 self.changed_slots.insert(*slot_address);
                 if icon_name_score.is_some() {
                     // only overwrite if it matches another
                     let pre_processed = timed("slots/number_preprocess", || {
-                        pre_process_icon_number(
-                            observed_number.clone(),
+                        number_strip(
+                            &observed_number.data,
                             &observed_icon.data,
                             &BASE_ICONS.read()[&icon_name_score.as_ref().unwrap().0].data,
                             self.screen_info.brightness.unwrap(),
+                            &NumberParams::default(),
                         )
                     });
-                    let amount_job = self.request_ocr(pre_processed.data.clone(), 0);
+                    let amount_job = self.request_ocr(pre_processed, 0, true);
 
                     // what the tooltip said stays while the slot holds the same item, and so does
                     // the last number until the new one is read
-                    let (tooltip_amount, tradability, label, amount, hovered, tooltip_failed) = self
+                    let (tooltip_amount, tradability, label, amount, amount_reads, hovered, tooltip_failed) = self
                         .slot_infos
                         .get(slot_address)
                         .filter(|old| {
@@ -308,6 +296,7 @@ impl ScannerState {
                                 old.tradability,
                                 old.label.clone(),
                                 old.amount.clone(),
+                                old.amount_reads.clone(),
                                 old.hovered,
                                 old.tooltip_failed,
                             )
@@ -324,12 +313,11 @@ impl ScannerState {
                             display_icon,
                             hovered,
                             tooltip_failed,
-                            processed_number: pre_processed,
                             amount,
+                            amount_reads,
                             tooltip_amount,
                             tradability,
                             label,
-                            currently_seen: true,
                             amount_job: Some(amount_job),
                             raw_hash,
                         },
@@ -348,7 +336,6 @@ impl ScannerState {
                             if display_icon.is_some() {
                                 this_slot.display_icon = display_icon;
                             }
-                            this_slot.currently_seen = false;
                             this_slot.raw_hash = raw_hash;
                         }
                         None => {
@@ -358,14 +345,13 @@ impl ScannerState {
                                     icon_name_score: None,
                                     levelled: false,
                                     alternatives: vec![],
-                                    processed_number: observed_number.clone(),
                                     observed_number,
                                     observed_icon,
                                     display_icon,
                                     hovered: false,
                                     tooltip_failed: false,
-                                    currently_seen: false,
                                     amount: None,
+                                    amount_reads: vec![],
                                     tooltip_amount: None,
                                     tradability: None,
                                     label: None,

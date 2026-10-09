@@ -57,9 +57,10 @@ OBS settings that match, used for the `2026-10-06 ...` recordings:
 
 ## Measuring scan time
 
-`pnpm scanner-profile [--debug] [--firefox] [--keep] [recording...]` does the whole thing: it builds the wasm and starts vite if nothing answers on :5173, plays each recording through the scanner page, writes a dump per recording to `target/scan-profiles/`, and prints the stage breakdown. With no recording it does the two 1080p ones in `scripts/brightness/1080p raw`. `--debug` does nothing while the debug tables are commented out; `--keep` leaves the dev server running. `scripts/browser/scan_summary.mjs <dump>...` re-prints a dump, so a run can be re-read without replaying anything.
+`pnpm scanner-profile [--debug] [--firefox] [--keep] [recording...]` does the whole thing: it builds the wasm and starts vite if nothing answers on :5173, plays each recording through the scanner page, writes a dump per recording to `target/scan-profiles/`, and prints the stage breakdown. With no recording it does the two `2026-10-07` ones in `scripts/brightness/1080p raw`; the 3440x1440 ones have to be named. `--debug` does nothing while the debug tables are commented out; `--keep` leaves the dev server running. `scripts/browser/scan_summary.mjs <dump>...` re-prints a dump, so a run can be re-read without replaying anything.
 
-- One recording takes about two and a half minutes: it plays at half speed (headless Chromium skips frames at full speed) and then waits for the OCR queue to drain.
+- The browse script empties the page's three arrays every two seconds and keeps the records itself, since the page only holds the last 5000 and the longer 1440p recording makes 7,600.
+- One recording takes twice its length and a little more: it plays at half speed (headless Chromium skips frames at full speed) and then waits for the OCR queue to drain.
 - **Do not edit any project file while a run is in flight.** Vite reloads the page, which empties the timing arrays; a dump with 0 scans is that. A `cargo build` alongside does the same another way: the upload is still loading when the script starts counting frames, and it sees none.
 - The scripts are `profile_scanner.mjs` (the wrapper), `profile_scanner_browse.mjs` (the browse script) and `scan_summary.mjs`.
 

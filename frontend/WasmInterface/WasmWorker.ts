@@ -4,7 +4,6 @@ import init, {
   setup_wrapper,
   cropper_wrapper,
   reserve_buffer_wrapper,
-  dealloc_buffer_wrapper,
   take_timings,
   ocr_init_wrapper,
   ocr_wrapper,
@@ -19,7 +18,6 @@ export enum WasmOp {
   Setup,
   Cropper,
   Reserve,
-  Dealloc,
   OcrInit,
   Ocr,
 }
@@ -133,16 +131,13 @@ self.addEventListener("message", async (ev) => {
   } else if (wasm_op == WasmOp.Reserve) {
     result = await reserve_buffer_wrapper(payload);
     scanner_buffer = result.buffer;
-    // console.log("post reserve", wasm.memory.buffer);
-  } else if (wasm_op == WasmOp.Dealloc) {
-    result = await dealloc_buffer_wrapper();
   } else if (wasm_op == WasmOp.OcrInit) {
     ocr_init_wrapper(payload);
   } else if (wasm_op == WasmOp.Ocr) {
     // a batch of text lines from the scanner worker, relayed by the main thread
     result = payload.map((job) => [
       job.id,
-      ocr_wrapper(job.width, job.height, job.data),
+      ocr_wrapper(job.width, job.height, job.data, job.numbers),
     ]);
     take_timings();
   } else {

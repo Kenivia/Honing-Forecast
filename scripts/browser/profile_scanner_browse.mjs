@@ -27,12 +27,23 @@ export default async ({ page, hf }) => {
   const hide = page.getByRole("button", { name: "Hide debug info" });
   if (!DEBUG_ON && (await hide.count())) await hide.click();
   await page.getByLabel("Upload image or video").setInputFiles(FILE);
-  await page.getByText("● Live").waitFor({ timeout: 60_000 });
+  await page.getByText("● Live").waitFor({ timeout: 180_000 });
 
   // once the video ends the upload only repeats its last frame twice a second
+  // the page keeps the last 5000 of each, a long recording has more
+  const kept = { scans: [], ocr: [], renders: [] };
+  const drain = async () => {
+    const part = await page.evaluate(() => ({
+      scans: window.__scan_timings.splice(0),
+      ocr: window.__ocr_timings.splice(0),
+      renders: window.__scan_renders.splice(0),
+    }));
+    for (const key in kept) kept[key].push(...part[key]);
+  };
   let draws = 0;
   for (let i = 0; i < 1200; i++) {
     await page.waitForTimeout(2000);
+    await drain();
     const now = await page.evaluate(() => window.__draws);
     const rate = (now - draws) / 2;
     draws = now;
@@ -42,21 +53,16 @@ export default async ({ page, hf }) => {
   console.log(`  video done, ${draws} frames drawn; waiting for OCR`);
 
   for (let i = 0; i < 180; i++) {
-    const left = await page.evaluate(() => {
-      const t = window.__ocr_timings;
-      return t.length ? t[t.length - 1].left : 0;
-    });
-    if (!left) break;
+    await drain();
+    if (!kept.ocr.length || !kept.ocr[kept.ocr.length - 1].left) break;
     await page.waitForTimeout(1000);
   }
 
   const data = await page.evaluate(() => ({
-    scans: window.__scan_timings,
-    ocr: window.__ocr_timings,
-    renders: window.__scan_renders,
     draws: window.__draws,
     threads: navigator.hardwareConcurrency,
   }));
+  Object.assign(data, kept);
   data.recording = FILE;
   data.debugging = DEBUG_ON;
   fs.writeFileSync(OUT, JSON.stringify(data));

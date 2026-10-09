@@ -1,9 +1,8 @@
 use crate::{
     image_utils::{
-        common::IntegerRectangle,
         number::{NumberParams, number_background, number_mask},
     },
-    setup::{OCR_ENGINE, OneIconConfig},
+    setup::{OCR_ENGINE, OCR_NUMBER_ENGINE},
 };
 use image::{
     GrayImage, Luma, Rgba, RgbaImage,
@@ -36,18 +35,20 @@ fn remove_specks(white: &mut GrayImage) {
     }
 }
 
-// `icon` is the slot's icon crop, already normalised, and `template` the matched icon's base template;
-// together they say what is behind the number. The number crop itself is used as captured, because
-// the game's brightness setting does not touch the number.
-pub fn pre_process_icon_number(
-    number: OneIconConfig,
+// The strip the recogniser gets for a slot's number. `icon` is the slot's icon crop, already
+// normalised, and `template` the matched icon's base template; together they say what is behind the
+// number. The number crop itself is used as captured, because the game's brightness setting does not
+// touch the number.
+pub fn number_strip(
+    number: &RgbaImage,
     icon: &RgbaImage,
     template: &RgbaImage,
     brightness: f64,
-) -> OneIconConfig {
-    let (w, h) = number.data.dimensions();
+    params: &NumberParams,
+) -> RgbaImage {
+    let (w, h) = number.dimensions();
     let background = number_background(template, icon, w, h, brightness);
-    let mut white = number_mask(&number.data, &background, &NumberParams::default());
+    let mut white = number_mask(number, &background, params);
     remove_specks(&mut white);
     // white on black; inverting it made the recogniser worse on numbers
     let image = RgbaImage::from_fn(w, h, |x, y| {
@@ -59,36 +60,20 @@ pub fn pre_process_icon_number(
     let left = first.map_or(0, |x| x.saturating_sub(h / LEFT_MARGIN));
     let image = crop_imm(&image, left, 0, w - left, h).to_image();
     let width = image.width() * OCR_LINE_HEIGHT / h;
-    let data = resize(&image, width, OCR_LINE_HEIGHT, FilterType::CatmullRom);
-    OneIconConfig {
-        offset: IntegerRectangle {
-            top_left: number.offset.top_left,
-            width: data.width() as usize,
-            height: data.height() as usize,
-        },
-        data,
-        name: number.name,
-        tag: number.tag,
-        normalized: true,
-        required_confidence: None,
-    }
+    resize(&image, width, OCR_LINE_HEIGHT, FilterType::CatmullRom)
 }
 
-pub fn get_number(scaled_image: OneIconConfig) -> String {
-    recognize_line(&scaled_image.data)
+pub fn recognize_raw(width: u32, height: u32, data: Vec<u8>, numbers: bool) -> String {
+    recognize_line(&RgbaImage::from_raw(width, height, data).unwrap(), numbers)
 }
 
-pub fn recognize_raw(width: u32, height: u32, data: Vec<u8>) -> String {
-    recognize_line(&RgbaImage::from_raw(width, height, data).unwrap())
+// the whole image is one line of text; `numbers` keeps it to what a slot's count can be
+pub fn recognize_line(image: &RgbaImage, numbers: bool) -> String {
+    crate::timing::timed("ocr", || recognize_line_untimed(image, numbers))
 }
 
-// the whole image is one line of text
-pub fn recognize_line(image: &RgbaImage) -> String {
-    crate::timing::timed("ocr", || recognize_line_untimed(image))
-}
-
-fn recognize_line_untimed(image: &RgbaImage) -> String {
-    let read = OCR_ENGINE.read(); // need to have this line for some reason
+fn recognize_line_untimed(image: &RgbaImage, numbers: bool) -> String {
+    let read = if numbers { OCR_NUMBER_ENGINE.read() } else { OCR_ENGINE.read() };
     let engine = read.as_ref().unwrap();
     let (width, height) = image.dimensions();
     return engine

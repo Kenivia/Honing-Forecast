@@ -124,7 +124,6 @@ pub fn reserve_buffer_wrapper(inp_scanner_state: JsValue) -> JsValue {
 
     let mut scanner_state: ScannerState = from_value(inp_scanner_state).unwrap();
     scanner_state.buffer.reserve();
-    // scanner_state.downscaled_cache.buffer.reserve();
     scanner_state.set_config();
     scanner_state.initialize_anchors();
     scanner_state.initialize_page_num_infos();
@@ -144,15 +143,6 @@ pub fn ocr_init_wrapper(model: Vec<u8>) {
 }
 
 #[wasm_bindgen]
-pub fn ocr_wrapper(width: u32, height: u32, data: Vec<u8>) -> String {
-    recognize_raw(width, height, data)
-}
-
-#[wasm_bindgen]
-pub fn dealloc_buffer_wrapper() {
-    console_error_panic_hook::set_once();
-
-    if let Some(mut old) = SCANNER.take() {
-        old.buffer.dealloc();
-    }
+pub fn ocr_wrapper(width: u32, height: u32, data: Vec<u8>, numbers: bool) -> String {
+    recognize_raw(width, height, data, numbers)
 }

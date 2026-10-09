@@ -62,7 +62,6 @@ const display_rect = computed(() => {
   const container_w = 1280;
   const container_h = 720;
   const { width: nw, height: nh } = video_natural.value;
-  console.log("natural", video_natural.value);
   const container_ratio = container_w / container_h;
   const natural_ratio = nw / nh || container_ratio;
 

@@ -112,6 +112,13 @@ pub static ALL_SLOT_ADDRESSS: LazyLock<AHashMap<SlotAddress, FloatRectangle>> =
         map
     });
 
+// window, page, row, column: the order slots are looked at
+pub static SLOT_ORDER: LazyLock<Vec<SlotAddress>> = LazyLock::new(|| {
+    let mut all: Vec<SlotAddress> = ALL_SLOT_ADDRESSS.keys().copied().collect();
+    all.sort_by_key(|x| (x.inventory_type as u8, x.page_num, x.pos_in_inv));
+    all
+});
+
 fn page_names(prefix: &str, num_pages: usize) -> Vec<(String, String)> {
     (1..=num_pages)
         .map(|page| {

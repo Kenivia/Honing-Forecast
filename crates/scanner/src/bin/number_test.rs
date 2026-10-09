@@ -5,7 +5,7 @@ use hf_scanner::{
         brightness::normalize_brightness,
         common::IntegerRectangle,
         number::{NumberParams, number_background, number_mask},
-        ocr::{pre_process_icon_number, recognize_line},
+        ocr::{number_strip, recognize_line},
     },
     scanner_state::ScannerState,
     setup::{BASE_ICONS, OneIconConfig},
@@ -172,6 +172,8 @@ fn model(raw: &RgbaImage, icon: &RgbaImage, icon_name: &str, brightness: f64) ->
         min_luma: fparam("LUMA", defaults.min_luma),
         max_saturation: fparam("SAT", defaults.max_saturation),
         soft: fparam("SOFT", defaults.soft),
+        min_chroma: fparam("CHROMA", defaults.min_chroma),
+        low_alpha: fparam("LOW", defaults.low_alpha),
     };
     let template = BASE_ICONS.read()[icon_name].data.clone();
     let (w, h) = raw.dimensions();
@@ -223,13 +225,13 @@ fn variant(
     }
     if name == "current" {
         let _ = state;
-        return pre_process_icon_number(
-            raw.clone(),
+        return number_strip(
+            &raw.data,
             icon,
             &BASE_ICONS.read()[icon_name].data.clone(),
             brightness,
-        )
-        .data;
+            &NumberParams::default(),
+        );
     }
     let mut normalised = raw.clone();
     normalize_brightness(&mut normalised, brightness);
@@ -396,7 +398,7 @@ fn main() {
                 .unwrap()
                 .to_rgba8();
             let processed = variant(name, &raw, &icon, icon_name, brightness, &mut state);
-            let read = recognize_line(&processed);
+            let read = recognize_line(&processed, true);
             let digits: String = read.chars().filter(char::is_ascii_digit).collect();
             let ok = digits == label;
             right += ok as usize;

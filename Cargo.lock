@@ -291,9 +291,6 @@ name = "either"
 version = "1.17.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9e5e8f6c15a24b9a3ee5efec809ccd006d3b30e8b3bb63c39af737c7f87daa1d"
-dependencies = [
- "serde",
-]
 
 [[package]]
 name = "equivalent"
@@ -479,10 +476,7 @@ name = "hf-scanner"
 version = "0.1.0"
 dependencies = [
  "ahash",
- "console_error_panic_hook",
- "either",
  "fast_image_resize",
- "hf-core",
  "image",
  "imageproc",
  "js-sys",
@@ -496,8 +490,6 @@ dependencies = [
  "serde",
  "serde_json",
  "strsim",
- "uuid",
- "web-sys",
 ]
 
 [[package]]
@@ -1611,18 +1603,6 @@ name = "unicode-ident"
 version = "1.0.24"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e6e4313cd5fcd3dad5cafa179702e2b244f760991f45397d14d4ebf38247da75"
-
-[[package]]
-name = "uuid"
-version = "1.24.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bf3923a6f5c4c6382e0b653c4117f48d631ea17f38ed86e2a828e6f7412f5239"
-dependencies = [
- "getrandom 0.4.3",
- "js-sys",
- "serde_core",
- "wasm-bindgen",
-]
 
 [[package]]
 name = "version_check"

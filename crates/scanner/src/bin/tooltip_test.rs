@@ -230,7 +230,7 @@ fn main() {
                     state.apply_ocr(
                         batch
                             .iter()
-                            .map(|job| (job.id, recognize_line(&job.image)))
+                            .map(|job| (job.id, recognize_line(&job.image, job.numbers)))
                             .collect(),
                     );
                 }

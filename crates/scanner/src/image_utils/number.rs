@@ -16,6 +16,8 @@ pub struct NumberParams {
     pub min_alpha: f64,      // white the template cannot explain by at least this much is a digit
     pub max_shade: f64, // a pixel at most this fraction of the template's brightness is the number's shadow
     pub reach: f64,     // the shadow has to be within the strip's height over this, on both sides
+    pub min_chroma: f64, // a background has to be at least this coloured for its colour to tell
+    pub low_alpha: f64,  // enough for a pixel that touches a digit pixel
 }
 
 impl Default for NumberParams {
@@ -28,6 +30,8 @@ impl Default for NumberParams {
             min_alpha: 0.55,
             max_shade: 0.6,
             reach: 4.0,
+            min_chroma: 40.0,
+            low_alpha: 0.3,
         }
     }
 }
@@ -158,22 +162,40 @@ pub fn number_background(
     .collect()
 }
 
-// The game draws the number over the icon as opaque white digits with a soft black shadow around them,
-// and its brightness setting changes the icon but not the number. So a pixel is
-//     white * alpha + background * shade * (1 - alpha)
-// Per pixel this gives the least white (alpha) the template cannot account for, and how much the
-// template had to be darkened (shade). Either tells a digit from a white part of the icon: the digit is
-// white the template does not have, or white inside the shadow.
-pub fn number_mask(number: &RgbaImage, background: &[Rgb], params: &NumberParams) -> GrayImage {
+// How much white a pixel needs over this background going by colour alone. Shading keeps a colour's
+// hue and white washes it out, so a grey pixel over a coloured part of the icon is nearly all digit,
+// however bright that part is. Says nothing over a background that is grey itself.
+fn alpha_by_colour(observed: Rgb, background: Rgb, params: &NumberParams) -> f64 {
+    let spread = |p: Rgb| (p[0].min(p[1]).min(p[2]), p[0].max(p[1]).max(p[2]));
+    let ((low, high), (bg_low, bg_high)) = (spread(observed), spread(background));
+    if bg_high - bg_low < params.min_chroma {
+        return 0.0;
+    }
+    let kept = ((high - low) / (bg_high - bg_low)).min(1.0);
+    (low - kept * bg_low) / 255.0
+}
+
+// per pixel: the least white the template leaves unexplained, the same going by colour, and
+// whether it is the number's shadow
+pub fn number_layers(
+    number: &RgbaImage,
+    background: &[Rgb],
+    params: &NumberParams,
+) -> (Vec<f64>, Vec<f64>, Vec<bool>) {
     let (w, h) = number.dimensions();
     let bg = |x: i32, y: i32| {
         background[(y.clamp(0, h as i32 - 1) * w as i32 + x.clamp(0, w as i32 - 1)) as usize]
     };
     let mut alpha = vec![1.0; (w * h) as usize];
+    let mut by_colour = vec![0.0; (w * h) as usize];
     let mut shadow = vec![false; (w * h) as usize];
     for y in 0..h as i32 {
         for x in 0..w as i32 {
             let observed = rgb(number.get_pixel(x as u32, y as u32));
+            let index = (y * w as i32 + x) as usize;
+            by_colour[index] = (0..9)
+                .map(|n| alpha_by_colour(observed, bg(x + n % 3 - 1, y + n / 3 - 1), params))
+                .fold(1.0, f64::min);
             'alpha: for step in 0..16 {
                 let a = step as f64 / 16.0;
                 let target = observed.map(|v| (v - a * 255.0) / (1.0 - a));
@@ -192,7 +214,6 @@ pub fn number_mask(number: &RgbaImage, background: &[Rgb], params: &NumberParams
                     }
                 }
                 if let Some(s) = least_shade {
-                    let index = (y * w as i32 + x) as usize;
                     alpha[index] = a;
                     shadow[index] = a == 0.0 && s <= params.max_shade;
                     break 'alpha;
@@ -200,27 +221,63 @@ pub fn number_mask(number: &RgbaImage, background: &[Rgb], params: &NumberParams
             }
         }
     }
+    (alpha, by_colour, shadow)
+}
 
+// The game draws the number over the icon as opaque white digits with a soft black shadow around them,
+// and its brightness setting changes the icon but not the number. So a pixel is
+//     white * alpha + background * shade * (1 - alpha)
+// Per pixel this gives the least white (alpha) the template cannot account for, and how much the
+// template had to be darkened (shade). Either tells a digit from a white part of the icon: the digit is
+// white the template does not have, or white inside the shadow.
+pub fn number_mask(number: &RgbaImage, background: &[Rgb], params: &NumberParams) -> GrayImage {
+    let (w, h) = number.dimensions();
+    let (alpha, by_colour, shadow) = number_layers(number, background, params);
     let reach = (h as f64 / params.reach).round() as i32;
     let is_shadow = |x: i32, y: i32| {
         x >= 0 && y >= 0 && x < w as i32 && y < h as i32 && shadow[(y * w as i32 + x) as usize]
     };
-    GrayImage::from_fn(w, h, |x, y| {
-        let white = whiteness(rgb(number.get_pixel(x, y)), params);
-        if white == 0.0 {
-            return Luma([0]);
+    let white: Vec<f64> = number.pixels().map(|p| whiteness(rgb(p), params)).collect();
+    let at = |x: i32, y: i32| (y * w as i32 + x) as usize;
+    let mut digit = vec![false; (w * h) as usize];
+    for y in 0..h as i32 {
+        for x in 0..w as i32 {
+            let within =
+                |dx: i32, dy: i32| (1..=reach).any(|step| is_shadow(x + dx * step, y + dy * step));
+            let in_shadow = [(1, 0), (0, 1), (1, 1), (1, -1)]
+                .iter()
+                .any(|(dx, dy)| within(*dx, *dy) && within(-dx, -dy));
+            let index = at(x, y);
+            let unexplained = alpha[index].max(by_colour[index]) >= params.min_alpha;
+            digit[index] = white[index] > 0.0 && (unexplained || in_shadow);
         }
-        let (x, y) = (x as i32, y as i32);
-        let within =
-            |dx: i32, dy: i32| (1..=reach).any(|step| is_shadow(x + dx * step, y + dy * step));
-        let in_shadow = [(1, 0), (0, 1), (1, 1), (1, -1)]
-            .iter()
-            .any(|(dx, dy)| within(*dx, *dy) && within(-dx, -dy));
-        let unexplained = alpha[(y * w as i32 + x) as usize] >= params.min_alpha;
-        Luma([if unexplained || in_shadow {
-            white as u8
-        } else {
-            0
-        }])
+    }
+    // a pixel short of the limit still counts where it touches a digit pixel
+    let mut grew = true;
+    while grew {
+        grew = false;
+        for y in 0..h as i32 {
+            for x in 0..w as i32 {
+                let index = at(x, y);
+                if digit[index]
+                    || white[index] == 0.0
+                    || alpha[index].max(by_colour[index]) < params.low_alpha
+                {
+                    continue;
+                }
+                let touches = (0..9).any(|n| {
+                    let (nx, ny) = (x + n % 3 - 1, y + n / 3 - 1);
+                    nx >= 0 && ny >= 0 && nx < w as i32 && ny < h as i32 && digit[at(nx, ny)]
+                });
+                if touches {
+                    digit[index] = true;
+                    grew = true;
+                }
+            }
+        }
+    }
+    GrayImage::from_fn(w, h, |x, y| {
+        let index = (y * w + x) as usize;
+        Luma([if digit[index] { white[index] as u8 } else { 0 }])
     })
 }

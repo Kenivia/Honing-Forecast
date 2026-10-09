@@ -8,8 +8,8 @@ import path from "node:path";
 const BASE_URL = "http://localhost:5173";
 const OUT_DIR = "target/scan-profiles";
 const DEFAULT_RECORDINGS = [
-  "scripts/brightness/1080p raw/Recording 2026-10-04 115305 largest mouse.mp4",
-  "scripts/brightness/1080p raw/Recording 2026-10-05 105138 smaller mouse.mp4",
+  "scripts/brightness/1080p raw/2026-10-07 17-28-55.mp4",
+  "scripts/brightness/1080p raw/2026-10-07 22-55-45.mp4",
 ];
 
 const args = process.argv.slice(2);

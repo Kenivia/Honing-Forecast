@@ -111,6 +111,7 @@ export interface ScanResult {
 export interface OcrJob {
   id: number;
   priority: number;
+  numbers: boolean;
   width: number;
   height: number;
   data: Uint8Array;

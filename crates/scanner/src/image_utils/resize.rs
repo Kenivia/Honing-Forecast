@@ -1,5 +1,3 @@
-// use crate::buffer::Buffer;
-
 use crate::buffer::Buffer;
 use crate::image_utils::common::{FloatRectangle, IntegerRectangle, Rectangle};
 use crate::setup::OneIconConfig;
@@ -13,15 +11,12 @@ pub fn crop_buffer<R: Rectangle>(
     buffer: Buffer,
     root: Option<IntegerRectangle>,
 ) -> OneIconConfig {
-    // let src_image: ImageRef<'_> = self.src_image(); // pre sure initiailizing this is cheap enough so i won't bother skipping it potentially
-
     let mut dst_image: Image<'_> = Image::new(
         position.width_usize() as u32,
         position.height_usize() as u32,
         PixelType::U8x4,
     );
 
-    // if self.downscaled_cache.written_this_cycle && self.covered_by_cache(&position) {
     let src_w = buffer.width as u32;
     let src_h = buffer.height as u32;
 
@@ -47,9 +42,6 @@ pub fn crop_buffer<R: Rectangle>(
                 ),
         )
         .expect("crop failed");
-    // }
-
-    // self.actual_downscale(&src_image, &mut dst_image, &position);
     OneIconConfig {
         data: RgbaImage::from_raw(
             position.to_rounded().width as u32,
@@ -76,7 +68,6 @@ pub fn resize_one_config<'a>(
     resizer: &mut Resizer,
     one_config: &'a OneIconConfig,
 ) -> (ImageBuffer<Rgba<u8>, Vec<u8>>, IntegerRectangle) {
-    // let src_image: ImageRef<'_> = self.src_image(); // pre sure initiailizing this is cheap enough so i won't bother skipping it potentially
     let src_w = one_config.offset.width as u32;
     let src_h = one_config.offset.height as u32;
     let default = FloatRectangle {
@@ -92,8 +83,6 @@ pub fn resize_one_config<'a>(
         dst_position.height_usize() as u32,
         PixelType::U8x4,
     );
-
-    // if self.downscaled_cache.written_this_cycle && self.covered_by_cache(&position) {
 
     let src_image = ImageRef::new(src_w, src_h, &one_config.data, PixelType::U8x4)
         .expect("invalid source image buffer");
@@ -113,9 +102,6 @@ pub fn resize_one_config<'a>(
                 ),
         )
         .expect("resize failed");
-    // }
-
-    // self.actual_downscale(&src_image, &mut dst_image, &position);
     let out_pos = dst_position
         .to_rounded()
         .with_top_left(one_config.offset.to_float().scaled(scale_factor).top_left);
@@ -129,4 +115,3 @@ pub fn resize_one_config<'a>(
         out_pos,
     )
 }
-// }
