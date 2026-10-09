@@ -16,7 +16,7 @@ fn main() {
         }
         println!("{path}  brightness {:?}", state.screen_info.brightness);
         for inventory in [hf_scanner::scanner_state::InventoryType::Roster, hf_scanner::scanner_state::InventoryType::CharStorage, hf_scanner::scanner_state::InventoryType::CharInventory] {
-            println!("  root of {inventory:?}: {:?}", state.inventory_root(inventory).map(|x| x.top_left));
+            println!("  root of {inventory:?}: {:?}", state.inventory_root(inventory));
         }
         let pages = state.active_page_num();
         let mut addresses: Vec<_> = ALL_SLOT_ADDRESSS

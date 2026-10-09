@@ -8,8 +8,7 @@ use hf_scanner::{
     constants::ANCHORS,
     image_utils::{
         brightness::normalize_brightness,
-        common::{FloatRectangle, Rectangle, get_resizer},
-        resize::crop_buffer,
+        common::{Rect, get_resizer},
     },
     native,
     scanner_state::ScannerState,
@@ -32,7 +31,7 @@ fn main() {
         let name = path.split(['/', '\\']).last().unwrap().replace(' ', "_");
         let brightness = state.screen_info.brightness.unwrap();
         let scale = state.screen_info.scale_factor;
-        let found: Vec<(String, &'static str, FloatRectangle)> = ANCHORS
+        let found: Vec<(String, &'static str, Rect)> = ANCHORS
             .iter()
             .flat_map(|spec| {
                 let positions = state.anchors[&spec.anchor_type].positions.clone();
@@ -40,16 +39,7 @@ fn main() {
                     .iter()
                     .zip(positions)
                     .filter_map(|(variant, position)| {
-                        let rect = position?.position;
-                        Some((
-                            format!("{:?}", spec.anchor_type),
-                            variant.name,
-                            FloatRectangle {
-                                top_left: rect.top_left,
-                                width: rect.width as f64,
-                                height: rect.height as f64,
-                            },
-                        ))
+                        Some((format!("{:?}", spec.anchor_type), variant.name, position?.position))
                     })
                     .collect::<Vec<_>>()
             })
@@ -57,13 +47,7 @@ fn main() {
 
         for (anchor, variant, reported) in found {
             let score = |state: &mut ScannerState, dx: f64, dy: f64| {
-                let at = FloatRectangle {
-                    top_left: (reported.top_left.0 + dx, reported.top_left.1 + dy),
-                    width: reported.width,
-                    height: reported.height,
-                };
-                let mut observed =
-                    crop_buffer(at, get_resizer(&mut state.resizer), state.buffer, None);
+                let mut observed = state.crop_buffer(reported.shifted((dx, dy)));
                 normalize_brightness(&mut observed, brightness);
                 let template = icon_lookup(
                     variant,
@@ -105,8 +89,8 @@ fn main() {
             }
             println!(
                 "{name}\t{scale}\t{anchor}\t{variant}\t{}\t{}\t{}\t{}\t{:.3}\t{:.3}",
-                reported.top_left().0,
-                reported.top_left().1,
+                reported.top_left.0,
+                reported.top_left.1,
                 best.1,
                 best.2,
                 at_reported,

@@ -1,4 +1,4 @@
-use crate::{image_utils::brightness::normalize_brightness, setup::OneIconConfig};
+use crate::setup::OneIconConfig;
 use image::RgbaImage;
 
 pub const DEFAULT_CONFIDENCE: f64 = 0.95;
@@ -29,35 +29,25 @@ fn shifted_distance(template: &RgbaImage, observed: &RgbaImage, skip: (usize, us
     best as f64 / (3 * (w - 2) * rows) as f64
 }
 
-// how alike the two are, whatever the pass limit
-pub fn confidence(template: &OneIconConfig, observed: &mut OneIconConfig, brightness: f64) -> Option<f64> {
-    confidence_without(template, observed, brightness, (0, 0))
+// How alike the two are, whatever the pass limit. Both are at the reference brightness already.
+pub fn confidence(template: &OneIconConfig, observed: &OneIconConfig) -> f64 {
+    confidence_without(template, observed, (0, 0))
 }
 
 // the same with some rows of the template left out, for a slot with text over them
 pub fn confidence_without(
     template: &OneIconConfig,
-    observed: &mut OneIconConfig,
-    brightness: f64,
+    observed: &OneIconConfig,
     skip: (usize, usize),
-) -> Option<f64> {
-    if template.offset.width != observed.offset.width
-        || template.offset.height != observed.offset.height
-    {
-        return None;
-    }
-
-    normalize_brightness(observed, brightness);
+) -> f64 {
+    assert_eq!(template.offset.space, observed.offset.space);
+    assert_eq!(template.offset.pixel_size(), observed.offset.pixel_size());
 
     let distance = shifted_distance(&template.data, &observed.data, skip);
-    Some(1.0 - distance / 255.0)
+    1.0 - distance / 255.0
 }
 
-pub fn close_enough(
-    template: &OneIconConfig,
-    observed: &mut OneIconConfig,
-    brightness: f64,
-) -> Option<f64> {
-    confidence(template, observed, brightness)
+pub fn close_enough(template: &OneIconConfig, observed: &OneIconConfig) -> Option<f64> {
+    Some(confidence(template, observed))
         .filter(|x| *x > template.required_confidence.unwrap_or(DEFAULT_CONFIDENCE))
 }

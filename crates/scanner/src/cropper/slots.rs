@@ -2,11 +2,10 @@ use crate::{
     constants::{ALL_SLOT_ADDRESSS, COMBINED_NUMBER_HEIGHT, NUMBER_OFFSET, SLOT_ORDER},
     image_utils::{
         brightness::normalize_brightness,
-        close_enough::{DEFAULT_CONFIDENCE, close_enough, confidence_without},
-        common::{FloatRectangle, IntegerRectangle, Rectangle, get_resizer},
+        close_enough::{DEFAULT_CONFIDENCE, close_enough, confidence, confidence_without},
+        common::{Rect, get_resizer},
         number::NumberParams,
         ocr::number_strip,
-        resize::crop_buffer,
     },
     scanner_state::{OneSlotInfo, ScannerState, SlotAddress},
     setup::{BASE_ICONS, OneIconConfig, icon_lookup},
@@ -66,28 +65,23 @@ impl ScannerState {
     pub fn anchored_slot_address_position(
         &self,
         slot_address: &SlotAddress,
-    ) -> Option<FloatRectangle> {
+    ) -> Option<Rect> {
         let root = self.inventory_root(slot_address.inventory_type)?;
         return Some(
             ALL_SLOT_ADDRESSS[slot_address]
-                .scaled(self.screen_info.scale_factor)
-                .use_root(&root),
+                .scaled(self.screen_info.effective_height)
+                .shifted(root),
         );
     }
+    // the icons the slot passes as, best first, then its number as captured and its icon normalised
     pub fn check_through_all_icons(
         &mut self,
-        position: FloatRectangle,
-        position_root: IntegerRectangle,
+        position: Rect,
     ) -> (Vec<(String, f64, bool)>, OneIconConfig, OneIconConfig) {
         let number_position = NUMBER_OFFSET
-            .scaled(self.screen_info.scale_factor)
-            .use_root(&position);
-        let mut observed: OneIconConfig = crop_buffer(
-            position,
-            get_resizer(&mut self.resizer),
-            self.buffer,
-            Some(position_root),
-        );
+            .scaled(self.screen_info.effective_height)
+            .shifted(position.top_left);
+        let mut observed: OneIconConfig = self.crop_buffer(position);
 
         let (height, s) = (self.screen_info.effective_height, self.screen_info.scale_factor);
         let brightness = self.screen_info.brightness.unwrap();
@@ -135,12 +129,12 @@ impl ScannerState {
                 .into_iter()
                 .filter_map(|(_, icon_name)| {
                     let template = icon_lookup(&icon_name, height, get_resizer(&mut self.resizer));
-                    if let Some(score) = close_enough(&template, &mut observed, brightness) {
+                    if let Some(score) = close_enough(&template, &observed) {
                         return Some((icon_name, score, false));
                     }
                     // a chest that asks for an item level has it written across the slot
                     let limit = template.required_confidence.unwrap_or(DEFAULT_CONFIDENCE);
-                    confidence_without(&template, &mut observed, brightness, level_rows)
+                    Some(confidence_without(&template, &observed, level_rows))
                         .filter(|score| has_level(&icon_name) && *score > limit)
                         .map(|score| (icon_name, score, true))
                 })
@@ -149,16 +143,7 @@ impl ScannerState {
         let best = passed.first().map_or(0.0, |x| x.1);
         passed.retain(|x| x.1 >= best - ALTERNATIVE);
 
-        (
-            passed,
-            crop_buffer(
-                number_position,
-                get_resizer(&mut self.resizer),
-                self.buffer,
-                Some(position_root),
-            ),
-            observed,
-        )
+        (passed, self.crop_buffer(number_position), observed)
     }
 
     pub fn update_slots(&mut self) {
@@ -176,11 +161,9 @@ impl ScannerState {
                 continue;
             }
             // this extra check is for when there's only 1 pagenum (active_page will return a result but we don't have anchor)
-            let Some(root) = self.inventory_root(slot_address.inventory_type) else {
+            let Some(position) = self.anchored_slot_address_position(slot_address) else {
                 continue;
             };
-            let position: FloatRectangle =
-                self.anchored_slot_address_position(slot_address).unwrap();
 
             // Identical pixels are the usual case and need no comparison at all. Otherwise the slot
             // is unchanged while it is still close to what was seen.
@@ -191,20 +174,16 @@ impl ScannerState {
                 (left + position.width).ceil() as usize,
                 (top + position.height).ceil() as usize,
             );
-            let unchanged = self.slot_infos.get(slot_address).is_some_and(|info| {
-                info.raw_hash == raw_hash
-                    || close_enough(
-                        &info.observed_icon,
-                        &mut crop_buffer(
-                            position,
-                            get_resizer(&mut self.resizer),
-                            self.buffer,
-                            None,
-                        ),
-                        self.screen_info.brightness.unwrap(),
-                    )
-                    .is_some()
-            });
+            let same_pixels = self.slot_infos.get(slot_address).map(|info| info.raw_hash == raw_hash);
+            let unchanged = match same_pixels {
+                None => false,
+                Some(true) => true,
+                Some(false) => {
+                    let mut seen = self.crop_buffer(position);
+                    normalize_brightness(&mut seen, self.screen_info.brightness.unwrap());
+                    close_enough(&self.slot_infos[slot_address].observed_icon, &seen).is_some()
+                }
+            };
             if unchanged {
                 self.slot_infos.get_mut(slot_address).unwrap().raw_hash = raw_hash;
             } else {
@@ -214,7 +193,7 @@ impl ScannerState {
                 }
                 let (matched, observed_number, observed_icon) =
                     timed("slots/all_icons", || {
-                        self.check_through_all_icons(position, root)
+                        self.check_through_all_icons(position)
                     });
                 let levelled = matched.first().is_some_and(|x| x.2);
                 let alternatives: Vec<String> = matched.iter().skip(1).map(|x| x.0.clone()).collect();
@@ -226,16 +205,11 @@ impl ScannerState {
                     .is_none_or(|info| info.icon_name_score.is_none());
                 let display_icon = (icon_name_score.is_some() || never_recognised).then(|| {
                     let number_height = COMBINED_NUMBER_HEIGHT * self.screen_info.scale_factor;
-                    crop_buffer(
-                        FloatRectangle {
-                            top_left: (left, top - number_height),
-                            width: position.width,
-                            height: position.height + number_height,
-                        },
-                        get_resizer(&mut self.resizer),
-                        self.buffer,
-                        None,
-                    )
+                    self.crop_buffer(Rect {
+                        top_left: (left, top - number_height),
+                        height: position.height + number_height,
+                        ..position
+                    })
                 });
                 self.changed_slots.insert(*slot_address);
                 if icon_name_score.is_some() {
@@ -346,7 +320,7 @@ impl ScannerState {
         let brightness = self.screen_info.brightness.unwrap();
         let level_rows = ((LEVEL_ROWS.0 * s).round() as usize, (LEVEL_ROWS.1 * s).round() as usize);
         let position = self.anchored_slot_address_position(slot_address).unwrap();
-        let mut observed = crop_buffer(position, get_resizer(&mut self.resizer), self.buffer, None);
+        let mut observed = self.crop_buffer(position);
         normalize_brightness(&mut observed, brightness);
         let seen = from_afar(&observed.data, level_rows.0);
         let names: Vec<String> = BASE_ICONS
@@ -364,8 +338,8 @@ impl ScannerState {
                     .zip(&seen)
                     .map(|(a, b)| (0..3).map(|c| (a[c] - b[c]).abs()).sum::<f32>())
                     .sum();
-                let full = crate::image_utils::close_enough::confidence(&icon, &mut observed, brightness).unwrap();
-                let masked = confidence_without(&icon, &mut observed, brightness, level_rows).unwrap();
+                let full = confidence(&icon, &observed);
+                let masked = confidence_without(&icon, &observed, level_rows);
                 (name, full, masked, apart)
             })
             .collect();
@@ -375,16 +349,11 @@ impl ScannerState {
             let name = format!("{folder}/{:?}_{}_{}_{}", slot_address.inventory_type, slot_address.page_num, slot_address.pos_in_inv.0, slot_address.pos_in_inv.1);
             observed.data.save(format!("{name}_seen.png")).unwrap();
             let number = COMBINED_NUMBER_HEIGHT * s;
-            let mut whole = crop_buffer(
-                FloatRectangle {
-                    top_left: (position.top_left.0, position.top_left.1 - number),
-                    width: position.width,
-                    height: position.height + number,
-                },
-                get_resizer(&mut self.resizer),
-                self.buffer,
-                None,
-            );
+            let mut whole = self.crop_buffer(Rect {
+                top_left: (position.top_left.0, position.top_left.1 - number),
+                height: position.height + number,
+                ..position
+            });
             normalize_brightness(&mut whole, brightness);
             whole.data.save(format!("{name}_whole.png")).unwrap();
             let icon = icon_lookup(&best.0, height, get_resizer(&mut self.resizer));

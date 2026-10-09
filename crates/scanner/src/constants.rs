@@ -3,7 +3,7 @@ use std::sync::LazyLock;
 use ahash::AHashMap;
 
 use crate::{
-    image_utils::common::FloatRectangle,
+    image_utils::common::Rect,
     scanner_state::{
         AnchorType,
         InventoryType::{self, CharInventory},
@@ -21,7 +21,7 @@ fn generate_slot_grid(
     v_gap: f64,
     num_rows: usize,
     num_cols: usize,
-) -> AHashMap<SlotAddress, FloatRectangle> {
+) -> AHashMap<SlotAddress, Rect> {
     let mut map = AHashMap::with_capacity(num_rows * num_cols);
 
     let (start_x, start_y) = top_left;
@@ -36,11 +36,11 @@ fn generate_slot_grid(
                 pos_in_inv: (row, col),
             };
 
-            let pos = FloatRectangle {
-                top_left: (start_x + col as f64 * x_step, start_y + row as f64 * y_step),
+            let pos = Rect::ui(
+                (start_x + col as f64 * x_step, start_y + row as f64 * y_step),
                 width,
                 height,
-            };
+            );
 
             map.insert(slot, pos);
         }
@@ -70,7 +70,7 @@ fn standard_grid(
     left: f64,
     num_rows: usize,
     num_cols: usize,
-) -> AHashMap<SlotAddress, FloatRectangle> {
+) -> AHashMap<SlotAddress, Rect> {
     generate_slot_grid(
         inventory_type,
         page_num,
@@ -84,7 +84,7 @@ fn standard_grid(
     )
 }
 
-pub static ALL_SLOT_ADDRESSS: LazyLock<AHashMap<SlotAddress, FloatRectangle>> =
+pub static ALL_SLOT_ADDRESSS: LazyLock<AHashMap<SlotAddress, Rect>> =
     LazyLock::new(|| {
         let mut map = AHashMap::new();
 
@@ -145,9 +145,9 @@ pub enum Bound {
     // the game can sit anywhere in the capture, so search all of it
     Frame,
     // 1440p UI space
-    Ui(FloatRectangle),
+    Ui(Rect),
     // 1440p UI space, moved along with the storage layout
-    Storage(FloatRectangle),
+    Storage(Rect),
 }
 
 pub struct AnchorVariant {
@@ -167,12 +167,12 @@ pub struct AnchorSpec {
 }
 
 // where a template is expected, with some slack on every side
-fn around(top_left: (f64, f64), width: f64, height: f64, slack: f64) -> FloatRectangle {
-    FloatRectangle {
-        top_left: (top_left.0 - slack, top_left.1 - slack),
-        width: width + slack * 2.0,
-        height: height + slack * 2.0,
-    }
+fn around(top_left: (f64, f64), width: f64, height: f64, slack: f64) -> Rect {
+    Rect::ui(
+        (top_left.0 - slack, top_left.1 - slack),
+        width + slack * 2.0,
+        height + slack * 2.0,
+    )
 }
 
 const SORT_BUTTON: &str = "Char Inventory Anchor 1";
@@ -194,7 +194,7 @@ fn storage_window(
     inventory_type: InventoryType,
     origin: (f64, f64),
     other_name: &'static str,
-    other_offset: FloatRectangle,
+    other_offset: Rect,
     other_brightness: Option<[f64; 3]>,
 ) -> AnchorSpec {
     let relative = |offset: (f64, f64), width: f64, height: f64| {
@@ -253,11 +253,7 @@ pub static ANCHORS: LazyLock<Vec<AnchorSpec>> = LazyLock::new(|| {
             InventoryType::Roster,
             (332.6, 290.7),
             "Roster top right icons",
-            FloatRectangle {
-                top_left: (359.4, 63.3),
-                width: 76.0,
-                height: 36.0,
-            },
+            Rect::ui((359.4, 63.3), 76.0, 36.0),
             None,
         ),
         storage_window(
@@ -265,11 +261,7 @@ pub static ANCHORS: LazyLock<Vec<AnchorSpec>> = LazyLock::new(|| {
             InventoryType::CharStorage,
             (778.7, 290.7),
             "Char storage top right icons",
-            FloatRectangle {
-                top_left: (509.3, 63.3),
-                width: 208.0,
-                height: 36.0,
-            },
+            Rect::ui((509.3, 63.3), 208.0, 36.0),
             None,
         ),
         storage_window(
@@ -277,11 +269,7 @@ pub static ANCHORS: LazyLock<Vec<AnchorSpec>> = LazyLock::new(|| {
             InventoryType::CharInventory,
             (1504.6, 290.7),
             SEARCH_BUTTON,
-            FloatRectangle {
-                top_left: (662.0, 56.0),
-                width: 48.0,
-                height: 48.0,
-            },
+            Rect::ui((662.0, 56.0), 48.0, 48.0),
             Some(SEARCH_BUTTON_CURVE),
         ),
         AnchorSpec {
@@ -310,8 +298,5 @@ pub fn anchor_spec(anchor_type: AnchorType) -> &'static AnchorSpec {
         .unwrap()
 }
 
-pub const NUMBER_OFFSET: FloatRectangle = FloatRectangle {
-    top_left: (0.0, -NUMBER_HEIGHT - NUMBER_BOTTOM_MARGIN),
-    width: 61.0,
-    height: NUMBER_HEIGHT,
-};
+pub const NUMBER_OFFSET: Rect =
+    Rect::ui((0.0, -NUMBER_HEIGHT - NUMBER_BOTTOM_MARGIN), 61.0, NUMBER_HEIGHT);

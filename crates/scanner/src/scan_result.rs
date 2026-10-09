@@ -2,7 +2,7 @@ use crate::{
     buffer::Buffer,
     ocr_jobs::OcrJob,
     scanner_state::{InventoryType, OneSlotInfo, ScannerState, SlotAddress, Tradability},
-    setup::OneIconConfig,
+    setup::{OneIconConfig, WireRect},
     tooltip::{
         chest::Chest,
         items::{Variant, is_chest_icon, open_alike, shares_icon, variants_of},
@@ -26,7 +26,7 @@ impl Serialize for IconBytes<'_> {
         let mut s = serializer.serialize_struct("OneIconConfig", 4)?;
         s.serialize_field("data", &Bytes(self.0.data.as_raw()))?;
         s.serialize_field("name", &self.0.name)?;
-        s.serialize_field("offset", &self.0.offset)?;
+        s.serialize_field("offset", &WireRect::from(&self.0.offset))?;
         s.serialize_field("tag", &self.0.tag)?;
         s.end()
     }

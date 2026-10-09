@@ -5,7 +5,7 @@ If you'd like to help with any of the below, feel free to get in touch via [Disc
 
 ## NOW: OCR
 
-- add some kind of sanity assertion that rectangles are scaled correctly
+- ~~add some kind of sanity assertion that rectangles are scaled correctly~~
 
 ## Roadmap
 

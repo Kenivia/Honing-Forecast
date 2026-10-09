@@ -197,7 +197,7 @@ impl ScannerState {
         let headers: Vec<(f64, f64, f64)> = WINDOW_WIDTHS
             .iter()
             .filter_map(|(inventory, width)| {
-                let (x, y) = self.inventory_root(*inventory)?.top_left;
+                let (x, y) = self.inventory_root(*inventory)?;
                 Some((x + width * s, y - HEADER_ROWS.0 * s, y + HEADER_ROWS.1 * s))
             })
             .collect();

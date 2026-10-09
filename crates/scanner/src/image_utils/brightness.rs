@@ -27,11 +27,8 @@ pub fn brightness_lut(in_game_brightness: f64) -> [u8; 256] {
     std::array::from_fn(|v| (255.0 * (v as f64 / 255.0).powf(exponent)).round() as u8)
 }
 
+// once per crop: a second pass would move it again
 pub fn normalize_brightness(input: &mut OneIconConfig, in_game_brightness: f64) {
-    if input.normalized {
-        return;
-    }
-
     let lut = brightness_lut(in_game_brightness);
 
     for pixel in input.data.pixels_mut() {
@@ -39,6 +36,4 @@ pub fn normalize_brightness(input: &mut OneIconConfig, in_game_brightness: f64) 
             *channel = lut[*channel as usize];
         }
     }
-
-    input.normalized = true;
 }

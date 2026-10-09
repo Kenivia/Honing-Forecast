@@ -3,9 +3,9 @@ use ahash::AHashMap;
 use crate::{
     constants::ALL_PAGE_NUM,
     image_utils::{
+        brightness::normalize_brightness,
         close_enough::{DEFAULT_CONFIDENCE, confidence},
-        common::{Rectangle, get_resizer},
-        resize::crop_buffer,
+        common::get_resizer,
     },
     scanner_state::{InventoryType, ScannerState},
     setup::icon_lookup,
@@ -39,17 +39,9 @@ impl ScannerState {
                         self.screen_info.effective_height,
                         get_resizer(&mut self.resizer),
                     );
-                    let seen = confidence(
-                        &icon,
-                        &mut crop_buffer(
-                            icon.offset.use_root(&root),
-                            get_resizer(&mut self.resizer),
-                            self.buffer,
-                            None,
-                        ),
-                        self.screen_info.brightness.unwrap(),
-                    );
-                    (seen.unwrap_or(0.0), icon.required_confidence.unwrap_or(DEFAULT_CONFIDENCE))
+                    let mut seen = self.crop_buffer(icon.offset.shifted(root));
+                    normalize_brightness(&mut seen, self.screen_info.brightness.unwrap());
+                    (confidence(&icon, &seen), icon.required_confidence.unwrap_or(DEFAULT_CONFIDENCE))
                 };
                 // A tab under the cursor lights up and looks a little like both states (0.83 active,
                 // 0.78 inactive), so a state has to pass and be clearly the better of the two.
@@ -79,12 +71,12 @@ impl ScannerState {
                     let (active, _) = &ALL_PAGE_NUM[inv_type][page];
                     let tab = icon_lookup(active, self.screen_info.effective_height, get_resizer(&mut self.resizer))
                         .offset
-                        .use_root(&root);
+                        .shifted(root);
                     let covered = tooltip.is_some_and(|bar| {
                         let (left, top) = tab.top_left;
                         left < (bar.x + bar.width) as f64
-                            && left + tab.width as f64 > bar.x as f64
-                            && top + tab.height as f64 > bar.y as f64
+                            && left + tab.width > bar.x as f64
+                            && top + tab.height > bar.y as f64
                     });
                     let dark = if states[page] == Some(false) && !covered { dark + 1 } else { 0 };
                     if dark >= DARK_SCANS {

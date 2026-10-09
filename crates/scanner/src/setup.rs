@@ -1,16 +1,13 @@
 use crate::{
     constants::COMBINED_NUMBER_HEIGHT,
-    image_utils::{
-        common::{FloatRectangle, IntegerRectangle},
-        resize::resize_one_config,
-    },
+    image_utils::{common::Rect, resize::resize_one_config},
 };
 use ahash::AHashMap;
 use fast_image_resize::Resizer;
 use ocrs::{OcrEngine, OcrEngineParams};
 use parking_lot::{MappedRwLockReadGuard, RwLock, RwLockReadGuard, RwLockWriteGuard};
 use rten::Model;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use std::sync::LazyLock;
 
 pub static OCR_ENGINE: LazyLock<RwLock<Option<OcrEngine>>> = LazyLock::new(|| RwLock::new(None));
@@ -32,20 +29,35 @@ use image::RgbaImage;
 pub struct OneIconConfig {
     pub data: RgbaImage,
     pub name: String,
-    pub offset: IntegerRectangle,
+    // a base template's is in UI units, a scaled template's and a crop's in screen pixels
+    pub offset: Rect,
     pub tag: String,
-    pub normalized: bool,
     // overrides the close_enough pass limit, only set for page tabs
     pub required_confidence: Option<f64>,
 }
 
+// a rectangle as the config file and the page have it
+#[derive(Serialize, Deserialize)]
+pub struct WireRect {
+    top_left: (f64, f64),
+    width: usize,
+    height: usize,
+}
+
+impl From<&Rect> for WireRect {
+    fn from(rect: &Rect) -> Self {
+        let (width, height) = rect.pixel_size();
+        Self { top_left: rect.top_left, width: width as usize, height: height as usize }
+    }
+}
+
+// the file's `normalized` is not read: every stored template is
 #[derive(Deserialize)]
 struct OneIconConfigJs {
     data: Vec<u8>,
     name: String,
-    offset: IntegerRectangle,
+    offset: WireRect,
     tag: String,
-    normalized: bool,
     #[serde(default)]
     required_confidence: Option<f64>,
 }
@@ -60,9 +72,8 @@ impl TryFrom<OneIconConfigJs> for OneIconConfig {
         Ok(Self {
             data,
             name: w.name,
-            offset: w.offset,
+            offset: Rect::ui(w.offset.top_left, width as f64, height as f64),
             tag: w.tag,
-            normalized: w.normalized,
             required_confidence: w.required_confidence,
         })
     }
@@ -71,17 +82,14 @@ impl TryFrom<OneIconConfigJs> for OneIconConfig {
 // The largest centred part of a template whose scaled size is a whole number of pixels. A template
 // scaled to a rounded size is stretched by up to half a pixel against what it has to match, which
 // costs match score and moves the position it reports; cut this way it is pixel for pixel.
-fn whole_pixel_crop(offset: &IntegerRectangle, scale: f64) -> FloatRectangle {
-    let fit = |side: usize| (side as f64 * scale).floor() / scale;
+fn whole_pixel_crop(offset: &Rect, scale: f64) -> Rect {
+    let fit = |side: f64| (side * scale).floor() / scale;
     let (width, height) = (fit(offset.width), fit(offset.height));
-    FloatRectangle {
-        top_left: (
-            (offset.width as f64 - width) / 2.0,
-            (offset.height as f64 - height) / 2.0,
-        ),
+    Rect::ui(
+        ((offset.width - width) / 2.0, (offset.height - height) / 2.0),
         width,
         height,
-    }
+    )
 }
 
 pub fn icon_lookup(
@@ -101,43 +109,46 @@ pub fn icon_lookup(
     let base_icon = base_icon_guard.get(&key.0).expect(&key.0);
     let scale_factor = resolution as f64 / 1440.0;
     let is_icon = base_icon.tag == "Icon";
-    let crop = if is_icon {
-        FloatRectangle {
-            top_left: (0.0, COMBINED_NUMBER_HEIGHT * 64.0 / 61.0),
-            width: 64.0,
-            height: 64.0 - 22.0 * 64.0 / 61.0,
-        }
+    let base_at = base_icon.offset.top_left;
+    // the part of the base template that is used, in its own pixels, and where that sits on screen
+    let (crop_top_left, crop_size, scaled_offset) = if is_icon {
+        // 64 px art that a slot draws 61 wide, without the rows the number is on
+        let art_scale = scale_factor * (61.0 / 64.0);
+        let top_left = (0.0, COMBINED_NUMBER_HEIGHT * 64.0 / 61.0);
+        let size = (64.0, 64.0 - 22.0 * 64.0 / 61.0);
+        let on_screen = Rect::screen(
+            (base_at.0 * art_scale, base_at.1 * art_scale),
+            size.0 * art_scale,
+            size.1 * art_scale,
+            resolution,
+        );
+        (top_left, size, on_screen)
     } else {
-        whole_pixel_crop(&base_icon.offset, scale_factor)
+        let crop = whole_pixel_crop(&base_icon.offset, scale_factor);
+        // the offset says where the template sits, so it moves with the cut
+        let on_screen = Rect::ui(base_at, crop.width, crop.height)
+            .scaled(resolution)
+            .shifted((crop.top_left.0 * scale_factor, crop.top_left.1 * scale_factor));
+        (crop.top_left, (crop.width, crop.height), on_screen)
     };
-    let (image, mut scaled_offset) = resize_one_config(
-        Some(crop),
-        scale_factor * if is_icon { 61.0 / 64.0 } else { 1.0 },
+    // a template is whole pixels, and so is anything placed by its offset
+    let scaled_offset = scaled_offset.whole_pixels();
+    let image = resize_one_config(
+        crop_top_left,
+        crop_size,
+        scaled_offset.pixel_size(),
         resizer,
         base_icon,
     );
-    // the offset says where the template sits, so it moves with the cut
-    if !is_icon {
-        scaled_offset.top_left = (
-            scaled_offset.top_left.0 + crop.top_left.0 * scale_factor,
-            scaled_offset.top_left.1 + crop.top_left.1 * scale_factor,
-        );
-    }
 
     let mut write_guard = COMPUTED_ICONS.write();
     write_guard
         .entry(key.clone())
         .or_insert_with(|| OneIconConfig {
-            data: RgbaImage::from_raw(
-                scaled_offset.width as u32,
-                scaled_offset.height as u32,
-                image.into_vec(),
-            )
-            .unwrap(),
+            data: image,
             name: key.0.clone(),
             offset: scaled_offset,
             tag: base_icon.tag.clone(),
-            normalized: true,
             required_confidence: base_icon.required_confidence,
         });
 

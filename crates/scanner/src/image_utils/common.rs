@@ -1,160 +1,65 @@
 use fast_image_resize::Resizer;
 
-use serde::{Deserialize, Serialize};
-
-pub trait Rectangle: Sized + Copy {
-    type Unit: Copy + ToF64 + ToUsize;
-
-    fn top_left(&self) -> (f64, f64);
-    fn width(&self) -> Self::Unit;
-    fn height(&self) -> Self::Unit;
-    fn width_f64(&self) -> f64 {
-        self.width().to_f64()
-    }
-    fn height_f64(&self) -> f64 {
-        self.height().to_f64()
-    }
-    fn width_usize(&self) -> usize {
-        self.width().to_usize()
-    }
-    fn height_usize(&self) -> usize {
-        self.height().to_usize()
-    }
-    fn unit_to_f64(unit: Self::Unit) -> f64;
-    fn unit_to_usize(unit: Self::Unit) -> usize;
-
-    fn with_top_left(&self, top_left: (f64, f64)) -> Self;
-    fn get_offset<R: Rectangle>(&self, other: &R) -> Self {
-        let (ox, oy) = other.top_left();
-        let (sx, sy) = self.top_left();
-        self.with_top_left((sx - ox, sy - oy))
-    }
-    fn shifted(&self, by: (f64, f64)) -> Self {
-        let (sx, sy) = self.top_left();
-        self.with_top_left((sx + by.0, sy + by.1))
-    }
-    fn use_root<R: Rectangle>(&self, root: &R) -> Self {
-        let (rx, ry) = root.top_left();
-        let (sx, sy) = self.top_left();
-        self.with_top_left((sx + rx, sy + ry))
-    }
-
-    fn to_rounded(&self) -> IntegerRectangle {
-        IntegerRectangle {
-            top_left: self.top_left(),
-            width: Self::unit_to_usize(self.width()),
-            height: Self::unit_to_usize(self.height()),
-        }
-    }
-
-    fn to_float(&self) -> FloatRectangle {
-        FloatRectangle {
-            top_left: self.top_left(),
-            width: Self::unit_to_f64(self.width()),
-            height: Self::unit_to_f64(self.height()),
-        }
-    }
+// what a rectangle's numbers are in
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Space {
+    // 1440p UI units
+    Ui,
+    // screen pixels at this UI height
+    Screen(u32),
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone, Copy)]
-pub struct FloatRectangle {
+#[derive(Debug, Clone, Copy)]
+pub struct Rect {
     pub top_left: (f64, f64),
     pub width: f64,
     pub height: f64,
+    pub space: Space,
 }
 
-impl Rectangle for FloatRectangle {
-    type Unit = f64;
+impl Rect {
+    pub const fn ui(top_left: (f64, f64), width: f64, height: f64) -> Rect {
+        Rect { top_left, width, height, space: Space::Ui }
+    }
 
-    fn top_left(&self) -> (f64, f64) {
-        self.top_left
+    pub const fn screen(top_left: (f64, f64), width: f64, height: f64, ui_height: u32) -> Rect {
+        Rect { top_left, width, height, space: Space::Screen(ui_height) }
     }
-    fn width(&self) -> f64 {
-        self.width
-    }
-    fn height(&self) -> f64 {
-        self.height
-    }
-    fn with_top_left(&self, top_left: (f64, f64)) -> Self {
-        Self { top_left, ..*self }
-    }
-    fn unit_to_f64(unit: f64) -> f64 {
-        unit
-    }
-    fn unit_to_usize(unit: f64) -> usize {
-        unit.round() as usize
-    }
-}
 
-impl FloatRectangle {
-    pub fn scaled(&self, scale: f64) -> FloatRectangle {
-        Self {
+    pub fn scaled(&self, ui_height: u32) -> Rect {
+        assert_eq!(self.space, Space::Ui);
+        let scale = ui_height as f64 / 1440.0;
+        Rect {
             top_left: (self.top_left.0 * scale, self.top_left.1 * scale),
             width: self.width * scale,
             height: self.height * scale,
+            space: Space::Screen(ui_height),
         }
     }
-}
 
-#[derive(Debug, Serialize, Deserialize, Clone, Copy)]
-pub struct IntegerRectangle {
-    pub top_left: (f64, f64),
-    pub width: usize,
-    pub height: usize,
-}
+    pub fn with_top_left(&self, top_left: (f64, f64)) -> Rect {
+        Rect { top_left, ..*self }
+    }
 
-impl Rectangle for IntegerRectangle {
-    type Unit = usize;
+    // by a point of the same space, which a point cannot be asked
+    pub fn shifted(&self, by: (f64, f64)) -> Rect {
+        self.with_top_left((self.top_left.0 + by.0, self.top_left.1 + by.1))
+    }
 
-    fn top_left(&self) -> (f64, f64) {
-        self.top_left
+    pub fn get_offset(&self, other: &Rect) -> (f64, f64) {
+        assert_eq!(self.space, other.space);
+        (self.top_left.0 - other.top_left.0, self.top_left.1 - other.top_left.1)
     }
-    fn width(&self) -> usize {
-        self.width
-    }
-    fn height(&self) -> usize {
-        self.height
-    }
-    fn with_top_left(&self, top_left: (f64, f64)) -> Self {
-        Self { top_left, ..*self }
-    }
-    fn unit_to_f64(unit: usize) -> f64 {
-        unit as f64
-    }
-    fn unit_to_usize(unit: usize) -> usize {
-        unit
-    }
-}
 
-pub trait ToF64: Copy {
-    fn to_f64(self) -> f64;
-}
-
-impl ToF64 for f64 {
-    fn to_f64(self) -> f64 {
-        self
+    // the only place a size is rounded
+    pub fn pixel_size(&self) -> (u32, u32) {
+        (self.width.round() as u32, self.height.round() as u32)
     }
-}
 
-impl ToF64 for usize {
-    fn to_f64(self) -> f64 {
-        self as f64
-    }
-}
-
-pub trait ToUsize: Copy {
-    fn to_usize(self) -> usize;
-}
-
-impl ToUsize for f64 {
-    fn to_usize(self) -> usize {
-        self.round() as usize
-    }
-}
-
-impl ToUsize for usize {
-    fn to_usize(self) -> usize {
-        self
+    // the same place, at exactly its pixel size
+    pub fn whole_pixels(&self) -> Rect {
+        let (width, height) = self.pixel_size();
+        Rect { width: width as f64, height: height as f64, ..*self }
     }
 }
 

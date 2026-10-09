@@ -11,7 +11,6 @@ export interface OneIconConfig {
   offset: ScaledPosition;
   data: number[] | Uint8Array;
   tag: string;
-  normalized?: boolean;
   required_confidence?: number | null;
 }
 
@@ -118,9 +117,9 @@ export interface OcrJob {
 let configPromise: Promise<OneIconConfig[]> | null = null;
 export function getScannerConfig() {
   if (!configPromise) {
-    configPromise = (
-      load_file("/ScannerConfig.msgpack", true) as Promise<OneIconConfig[]>
-    ).then((configs) => configs.map((item) => ({ ...item, normalized: true })));
+    configPromise = load_file("/ScannerConfig.msgpack", true) as Promise<
+      OneIconConfig[]
+    >;
   }
   return configPromise;
 }

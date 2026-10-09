@@ -1,4 +1,4 @@
-use crate::{image_utils::common::IntegerRectangle, setup::OneIconConfig};
+use crate::{image_utils::common::Rect, setup::OneIconConfig};
 use image::{GrayImage, imageops::grayscale};
 use realfft::{ComplexToReal, RealFftPlanner, RealToComplex};
 use rustfft::{Fft, FftPlanner, num_complex::Complex32};
@@ -190,7 +190,7 @@ fn parabolic_peak_value(left: f64, center: f64, right: f64) -> f64 {
 pub fn template_match(
     template: &OneIconConfig,
     observed: &OneIconConfig,
-) -> Option<(IntegerRectangle, f64, f64)> {
+) -> Option<(Rect, f64, f64)> {
     let template_img = &template.data;
     let observed_img = &observed.data;
 
@@ -354,11 +354,9 @@ pub fn template_match(
     let corrected_score = x_peak_value + y_peak_value - best_score;
 
     Some((
-        IntegerRectangle {
-            top_left: (best_x as f64 + dx, best_y as f64 + dy),
-            width: template.offset.width,
-            height: template.offset.height,
-        },
+        template
+            .offset
+            .with_top_left((best_x as f64 + dx, best_y as f64 + dy)),
         corrected_score.clamp(-1.0, 1.0),
         best_mean_f,
     ))

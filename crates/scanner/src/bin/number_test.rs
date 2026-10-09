@@ -3,7 +3,7 @@
 use hf_scanner::{
     image_utils::{
         brightness::normalize_brightness,
-        common::IntegerRectangle,
+        common::Rect,
         number::{NumberParams, number_background, number_mask},
         ocr::{number_strip, recognize_line},
     },
@@ -378,15 +378,10 @@ fn main() {
                 (sample[0], sample[1], sample[2].parse().unwrap(), sample[3]);
             let data = image::open(format!("{dir}/{id}.png")).unwrap().to_rgba8();
             let raw = OneIconConfig {
-                offset: IntegerRectangle {
-                    top_left: (0.0, 0.0),
-                    width: data.width() as usize,
-                    height: data.height() as usize,
-                },
+                offset: Rect::ui((0.0, 0.0), data.width() as f64, data.height() as f64),
                 data,
                 name: String::new(),
                 tag: String::new(),
-                normalized: false,
                 required_confidence: None,
             };
             let icon = image::open(format!("{dir}/{id}_icon.png"))

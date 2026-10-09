@@ -5,8 +5,7 @@
 use hf_scanner::{
     image_utils::{
         brightness::normalize_brightness,
-        common::{FloatRectangle, get_resizer},
-        resize::crop_buffer,
+        common::get_resizer,
     },
     native,
     scanner_state::ScannerState,
@@ -49,17 +48,10 @@ fn main() {
             };
             let root = state
                 .inventory_root(address.inventory_type)
-                .unwrap()
-                .top_left;
+                .unwrap();
             // mean absolute RGB difference of the crop at this offset against the template
             let score = |state: &mut ScannerState, dx: f64, dy: f64| {
-                let at = FloatRectangle {
-                    top_left: (grid.top_left.0 + dx, grid.top_left.1 + dy),
-                    width: grid.width,
-                    height: grid.height,
-                };
-                let mut observed =
-                    crop_buffer(at, get_resizer(&mut state.resizer), state.buffer, None);
+                let mut observed = state.crop_buffer(grid.shifted((dx, dy)));
                 normalize_brightness(&mut observed, brightness);
                 let template = icon_lookup(
                     &icon,

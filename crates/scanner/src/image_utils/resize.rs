@@ -1,88 +1,63 @@
-use crate::buffer::Buffer;
-use crate::image_utils::common::{FloatRectangle, IntegerRectangle, Rectangle};
+use crate::image_utils::common::{Rect, Space, get_resizer};
+use crate::scanner_state::ScannerState;
 use crate::setup::OneIconConfig;
 use fast_image_resize::images::{Image, ImageRef};
 use fast_image_resize::{FilterType, PixelType, ResizeAlg, ResizeOptions, Resizer};
-use image::{ImageBuffer, Rgba, RgbaImage};
+use image::RgbaImage;
 
-pub fn crop_buffer<R: Rectangle>(
-    position: R,
-    resizer: &mut Resizer,
-    buffer: Buffer,
-    root: Option<IntegerRectangle>,
-) -> OneIconConfig {
-    let mut dst_image: Image<'_> = Image::new(
-        position.width_usize() as u32,
-        position.height_usize() as u32,
-        PixelType::U8x4,
-    );
+impl ScannerState {
+    // a piece of the frame as captured, resampled to whole pixels
+    pub fn crop_buffer(&mut self, position: Rect) -> OneIconConfig {
+        assert_eq!(position.space, Space::Screen(self.screen_info.effective_height));
+        let (width, height) = position.pixel_size();
+        let mut dst_image: Image<'_> = Image::new(width, height, PixelType::U8x4);
 
-    let src_w = buffer.width as u32;
-    let src_h = buffer.height as u32;
+        let buffer = self.buffer;
+        let src_w = buffer.width as u32;
+        let src_h = buffer.height as u32;
 
-    let src_buffer: &[u8] =
-        unsafe { std::slice::from_raw_parts(buffer.pointer.unwrap() as *const u8, buffer.size) };
-    assert!(src_buffer.len() >= src_w as usize * src_h as usize * 4);
+        let src_buffer: &[u8] =
+            unsafe { std::slice::from_raw_parts(buffer.pointer.unwrap() as *const u8, buffer.size) };
+        assert!(src_buffer.len() >= src_w as usize * src_h as usize * 4);
 
-    let src_image = ImageRef::new(src_w, src_h, src_buffer, PixelType::U8x4)
-        .expect("invalid source image buffer");
+        let src_image = ImageRef::new(src_w, src_h, src_buffer, PixelType::U8x4)
+            .expect("invalid source image buffer");
 
-    resizer
-        .resize(
-            &src_image,
-            &mut dst_image,
-            &ResizeOptions::new()
-                .resize_alg(ResizeAlg::Interpolation(FilterType::Lanczos3))
-                .use_alpha(false) // doesn't really matter cos we should only ever be cropping observed screeen capture
-                .crop(
-                    position.top_left().0,
-                    position.top_left().1,
-                    position.width_f64(),
-                    position.height_f64(),
-                ),
-        )
-        .expect("crop failed");
-    OneIconConfig {
-        data: RgbaImage::from_raw(
-            position.to_rounded().width as u32,
-            position.to_rounded().height as u32,
-            dst_image.into_vec(),
-        )
-        .unwrap(),
-        name: "".to_string(),
-        offset: (if root.is_some() {
-            position.get_offset(&root.unwrap())
-        } else {
-            position
-        })
-        .to_rounded(),
-        tag: "".to_string(),
-        normalized: false,
-        required_confidence: None,
+        get_resizer(&mut self.resizer)
+            .resize(
+                &src_image,
+                &mut dst_image,
+                &ResizeOptions::new()
+                    .resize_alg(ResizeAlg::Interpolation(FilterType::Lanczos3))
+                    .use_alpha(false) // doesn't really matter cos we should only ever be cropping observed screeen capture
+                    .crop(
+                        position.top_left.0,
+                        position.top_left.1,
+                        position.width,
+                        position.height,
+                    ),
+            )
+            .expect("crop failed");
+        OneIconConfig {
+            data: RgbaImage::from_raw(width, height, dst_image.into_vec()).unwrap(),
+            name: "".to_string(),
+            offset: position,
+            tag: "".to_string(),
+            required_confidence: None,
+        }
     }
 }
 
-pub fn resize_one_config<'a>(
-    crop_within_icon: Option<FloatRectangle>,
-    scale_factor: f64,
+// part of a base template, given in its own pixels, resized to a pixel size
+pub fn resize_one_config(
+    crop_top_left: (f64, f64),
+    crop_size: (f64, f64),
+    pixel_size: (u32, u32),
     resizer: &mut Resizer,
-    one_config: &'a OneIconConfig,
-) -> (ImageBuffer<Rgba<u8>, Vec<u8>>, IntegerRectangle) {
-    let src_w = one_config.offset.width as u32;
-    let src_h = one_config.offset.height as u32;
-    let default = FloatRectangle {
-        top_left: (0.0, 0.0),
-        width: src_w as f64,
-        height: src_h as f64,
-    };
-    let src_position = crop_within_icon.unwrap_or(default);
-    let dst_position = src_position.scaled(scale_factor); // the top_left of dst_position has no effect 
-
-    let mut dst_image: Image<'_> = Image::new(
-        dst_position.width_usize() as u32,
-        dst_position.height_usize() as u32,
-        PixelType::U8x4,
-    );
+    one_config: &OneIconConfig,
+) -> RgbaImage {
+    let (src_w, src_h) = one_config.data.dimensions();
+    let mut dst_image: Image<'_> = Image::new(pixel_size.0, pixel_size.1, PixelType::U8x4);
 
     let src_image = ImageRef::new(src_w, src_h, &one_config.data, PixelType::U8x4)
         .expect("invalid source image buffer");
@@ -94,24 +69,8 @@ pub fn resize_one_config<'a>(
             &ResizeOptions::new()
                 .resize_alg(ResizeAlg::Interpolation(FilterType::Bilinear))
                 .use_alpha(false) // doesn't really matter cos we should only ever be cropping observed screeen capture
-                .crop(
-                    src_position.top_left().0,
-                    src_position.top_left().1,
-                    src_position.width_f64(),
-                    src_position.height_f64(),
-                ),
+                .crop(crop_top_left.0, crop_top_left.1, crop_size.0, crop_size.1),
         )
         .expect("resize failed");
-    let out_pos = dst_position
-        .to_rounded()
-        .with_top_left(one_config.offset.to_float().scaled(scale_factor).top_left);
-    (
-        RgbaImage::from_raw(
-            out_pos.width as u32,
-            out_pos.height as u32,
-            dst_image.into_vec(),
-        )
-        .unwrap(),
-        out_pos,
-    )
+    RgbaImage::from_raw(pixel_size.0, pixel_size.1, dst_image.into_vec()).unwrap()
 }

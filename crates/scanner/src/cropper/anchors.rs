@@ -3,10 +3,9 @@ use ahash::AHashMap;
 use crate::{
     constants::{ANCHORS, AnchorSpec, Bound, STORAGE_MIN, STORAGE_SHIFTS, anchor_spec},
     image_utils::{
-        brightness::{est_ingame_brightness, mean_intensity},
+        brightness::{est_ingame_brightness, mean_intensity, normalize_brightness},
         close_enough::close_enough,
-        common::{FloatRectangle, IntegerRectangle, Rectangle, get_resizer},
-        resize::crop_buffer,
+        common::{Rect, get_resizer},
         template_matching::{DEFAULT_TEMPLATE_MATCHING_CONFIDENCE, template_match},
     },
     scanner_state::{AnchorType, InventoryType, ScannerState},
@@ -18,7 +17,7 @@ use crate::{
 #[derive(Debug, Clone, Copy)]
 pub struct FoundVariant {
     // absolute, in the frame
-    pub position: IntegerRectangle,
+    pub position: Rect,
     pub confidence: f64,
     // the setting its patch reads as, if this variant tells
     pub brightness: Option<f64>,
@@ -27,7 +26,8 @@ pub struct FoundVariant {
 #[derive(Debug)]
 pub struct AnchorInfo {
     pub positions: Vec<Option<FoundVariant>>,
-    pub position_root: Option<IntegerRectangle>,
+    // the point its inventories are placed from, in the frame
+    pub position_root: Option<(f64, f64)>,
 }
 
 impl AnchorInfo {
@@ -41,23 +41,19 @@ impl AnchorInfo {
 }
 
 impl ScannerState {
-    fn compute_search_area(
-        &self,
-        bound: &Bound,
-        scale: f64,
-        buffer_width: usize,
-        buffer_height: usize,
-    ) -> FloatRectangle {
+    fn compute_search_area(&self, bound: &Bound) -> Rect {
+        let ui_height = self.screen_info.effective_height;
         let mut search_area = match bound {
-            Bound::Frame => FloatRectangle {
-                top_left: (0.0, 0.0),
-                width: buffer_width as f64,
-                height: buffer_height as f64,
-            },
-            Bound::Ui(b) => b.scaled(scale).shifted(self.screen_info.ui_origin),
+            Bound::Frame => Rect::screen(
+                (0.0, 0.0),
+                self.buffer.width as f64,
+                self.buffer.height as f64,
+                ui_height,
+            ),
+            Bound::Ui(b) => b.scaled(ui_height).shifted(self.screen_info.ui_origin),
             Bound::Storage(b) => b
                 .shifted(self.storage_shift)
-                .scaled(scale)
+                .scaled(ui_height)
                 .shifted(self.screen_info.ui_origin),
         };
         let (left, top) = (
@@ -85,16 +81,17 @@ impl ScannerState {
 
     // Window origin of this inventory, from the first anchor with a root that locates it. A
     // storage window keeps its root while both of its anchors are covered.
-    pub fn inventory_root(&self, inventory_type: InventoryType) -> Option<IntegerRectangle> {
+    pub fn inventory_root(&self, inventory_type: InventoryType) -> Option<(f64, f64)> {
         ANCHORS.iter().find_map(|spec| {
             let (_, origin) = spec
                 .inventories
                 .iter()
                 .find(|(this_type, _)| *this_type == inventory_type)?;
-            Some(self.anchors[&spec.anchor_type].position_root?.shifted((
-                origin.0 * self.screen_info.scale_factor,
-                origin.1 * self.screen_info.scale_factor,
-            )))
+            let root = self.anchors[&spec.anchor_type].position_root?;
+            Some((
+                root.0 + origin.0 * self.screen_info.scale_factor,
+                root.1 + origin.1 * self.screen_info.scale_factor,
+            ))
         })
     }
 
@@ -105,46 +102,32 @@ impl ScannerState {
         let mut to_clear: Vec<(AnchorType, usize)> = Vec::new();
         let mut estimates: Vec<(AnchorType, usize, f64)> = Vec::new();
 
-        for (anchor_type, anchor_info) in self.anchors.iter() {
-            for (variant_index, found) in anchor_info
-                .positions
-                .iter()
-                .enumerate()
-                .filter(|(_, x)| x.is_some())
-            {
-                assert!(anchor_info.position_root.is_some());
-                let variant = &anchor_spec(*anchor_type).variants[variant_index];
-                if close_enough(
-                    &icon_lookup(
-                        variant.name,
-                        self.screen_info.effective_height,
-                        get_resizer(&mut self.resizer),
-                    ),
-                    &mut crop_buffer(
-                        found.unwrap().position.to_float(),
-                        get_resizer(&mut self.resizer),
-                        self.buffer,
-                        anchor_info.position_root,
-                    ),
-                    brightness,
-                )
-                .is_none()
-                {
-                    to_clear.push((*anchor_type, variant_index));
-                } else if let Some(curve) = variant.brightness {
-                    // its estimate is of this frame, not of the one it was found on, which a
-                    // window still fading in makes far too dark
-                    let position = found.unwrap().position;
-                    let (x, y) = position.top_left;
-                    let patch = crop_buffer(
-                        position.with_top_left((x.round(), y.round())),
-                        get_resizer(&mut self.resizer),
-                        self.buffer,
-                        None,
-                    );
-                    let estimate = est_ingame_brightness(mean_intensity(&patch), &curve);
-                    estimates.push((*anchor_type, variant_index, estimate));
-                }
+        let found: Vec<(AnchorType, usize, Rect)> = self
+            .anchors
+            .iter()
+            .flat_map(|(anchor_type, anchor_info)| {
+                let positions = anchor_info.positions.iter().enumerate();
+                positions.filter_map(|(index, x)| Some((*anchor_type, index, x.as_ref()?.position)))
+            })
+            .collect();
+        for (anchor_type, variant_index, position) in found {
+            let variant = &anchor_spec(anchor_type).variants[variant_index];
+            let mut seen = self.crop_buffer(position);
+            normalize_brightness(&mut seen, brightness);
+            let template = icon_lookup(
+                variant.name,
+                self.screen_info.effective_height,
+                get_resizer(&mut self.resizer),
+            );
+            if close_enough(&template, &seen).is_none() {
+                to_clear.push((anchor_type, variant_index));
+            } else if let Some(curve) = variant.brightness {
+                // Its estimate is of this frame, not of the one it was found on, which a
+                // window still fading in makes far too dark. The patch is as captured.
+                let (x, y) = position.top_left;
+                let patch = self.crop_buffer(position.with_top_left((x.round(), y.round())));
+                let estimate = est_ingame_brightness(mean_intensity(&patch), &curve);
+                estimates.push((anchor_type, variant_index, estimate));
             }
         }
         for (anchor_type, variant_index, estimate) in estimates {
@@ -158,7 +141,6 @@ impl ScannerState {
     }
 
     fn search_anchor(&mut self, spec: &AnchorSpec) {
-        let scale = self.screen_info.scale_factor;
         for (variant_index, variant) in spec.variants.iter().enumerate() {
             if self.anchors[&spec.anchor_type].positions[variant_index].is_some() {
                 continue;
@@ -173,24 +155,16 @@ impl ScannerState {
                 .required_confidence
                 .unwrap_or(DEFAULT_TEMPLATE_MATCHING_CONFIDENCE);
             drop(template);
-            let search_area = self.compute_search_area(
-                &variant.bound,
-                scale,
-                self.buffer.width,
-                self.buffer.height,
-            );
+            let search_area = self.compute_search_area(&variant.bound);
+            // matched as captured: the score does not go by brightness
+            let searched = self.crop_buffer(search_area);
             let Some((found_in_area, confidence, best_mean_f)) = template_match(
                 &icon_lookup(
                     variant.name,
                     self.screen_info.effective_height,
                     get_resizer(&mut self.resizer),
                 ),
-                &crop_buffer(
-                    search_area,
-                    get_resizer(&mut self.resizer),
-                    self.buffer,
-                    None,
-                ),
+                &searched,
             ) else {
                 continue;
             };
