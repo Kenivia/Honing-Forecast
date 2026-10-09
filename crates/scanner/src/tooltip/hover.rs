@@ -21,7 +21,7 @@ const MAX_MISSED: usize = 4;
 const TITLE_CHANGED: f64 = 0.1; // share of the title bar's columns that gained or lost text
 const CENTRED_VOTE: usize = 100; // a title read with nothing over it outvotes any number of covered ones
 const SETTLED: usize = 3; // agreeing reads after which the OCR stops for this hover
-const MAX_READS: usize = 6; // amount and chest reads one hover gets, agreeing or not
+const MAX_READS: usize = 6; // amount, chest and icon reads one hover gets, agreeing or not
 const LOOK_CHANGED: f64 = 4.0; // title columns that differ once the cursor has moved over it
 // Reads of one kind a hover may have out at once. With one, a hover asks for its next read only
 // when the last came back, so what it asks for follows what the OCR workers can do. Three were
@@ -60,8 +60,9 @@ pub struct Hover {
     pub title_votes: AHashMap<String, usize>,
     pub amount_votes: AHashMap<String, usize>,
     pub tradability_votes: AHashMap<Tradability, usize>,
-    // the slot icon its large icon is
+    // the slot icon its large icon is, and how often that was looked at
     pub icon_votes: AHashMap<String, usize>,
+    pub icon_tries: usize,
     // its large icon is one several materials are drawn with, so its description is read too
     pub shared_icon: bool,
     // the material its description says it is
@@ -295,16 +296,18 @@ impl ScannerState {
             strips.title = Some(timed("tooltip/title", || title_lines(&buffer, &bar, s)));
         }
 
-        if most(&hover.icon_votes) < SETTLED
-            && let Some((icon, clear)) = timed("tooltip/icon", || tooltip_icon(&buffer, &bar, s))
-        {
-            hover.shared_icon |= shares_icon(&icon);
-            if clear {
-                *hover.icon_votes.entry(icon).or_default() += 1;
+        let layout = timed("tooltip/layout", || parse_layout(&buffer, &bar, s));
+        // A chest's icon is no material's, and a book's never leads the other book's, so both
+        // would be compared on every frame for nothing.
+        if layout.chest.is_none() && most(&hover.icon_votes) < SETTLED && hover.icon_tries < MAX_READS {
+            hover.icon_tries += 1;
+            if let Some((icon, clear)) = timed("tooltip/icon", || tooltip_icon(&buffer, &bar, s)) {
+                hover.shared_icon |= shares_icon(&icon);
+                if clear {
+                    *hover.icon_votes.entry(icon).or_default() += 1;
+                }
             }
         }
-
-        let layout = timed("tooltip/layout", || parse_layout(&buffer, &bar, s));
         if let Some(tradability) = layout.tradability {
             *hover.tradability_votes.entry(tradability).or_default() += 1;
         }
