@@ -9,6 +9,9 @@ const TITLE_HEIGHTS: (f64, f64) = (33.0, 107.0); // 45 with a one-line title, 69
 const BODY_TO_TITLE: [f64; 3] = [0.44, 0.53, 0.49]; // body colour (11, 16, 17) over the title colour
 const BODY_ROWS: f64 = 133.0;
 const SLACK: usize = 3;
+// How much shorter than the title a run may be and still count as all of it. A window's header
+// cut off by the tooltip of its fifth column is 40 shorter, the nearest thing there is.
+const SHORT: f64 = 16.0;
 const HEADER_SLACK: f64 = 6.0;
 
 #[derive(Debug, Clone, Copy, Default)]
@@ -20,11 +23,22 @@ pub struct TitleBar {
 }
 
 // The title bar is opaque and one colour, so the strip above its text is a flat run that ends at
-// the tooltip's right edge. Only half of it has to be visible, the cursor can cover the left.
+// the tooltip's right edge. It is told by a few rows that run its whole width: half a width also
+// fits a window's header cut off by a tooltip over it. Rows above those only need half, since
+// the cursor can cover their left, and say where the bar starts.
 // `headers` are where the inventory windows' own headers end, as (right edge, top, bottom): a
 // header is the same flat colour over a dark body, and with its name in the middle the part right
 // of the name passes for a title bar.
-pub fn find_title(buffer: &Buffer, s: f64, headers: &[(f64, f64, f64)]) -> Option<TitleBar> {
+// Only bars whose right end and first rows are inside `region` (x0, y0, x1, y1) are found. A run
+// is still measured past the region's sides, or one cut off by them would pass for a bar.
+pub fn find_title(
+    buffer: &Buffer,
+    s: f64,
+    headers: &[(f64, f64, f64)],
+    region: (usize, usize, usize, usize),
+) -> Option<TitleBar> {
+    let (x0, y0) = (region.0.min(buffer.width), region.1.min(buffer.height));
+    let (x1, y1) = (region.2.min(buffer.width), region.3.min(buffer.height));
     let width = (TITLE_WIDTH * s).round() as usize;
     let window = width / 2;
     let (data, lut) = (buffer.data(), buffer.lut.as_ref().unwrap());
@@ -33,21 +47,29 @@ pub fn find_title(buffer: &Buffer, s: f64, headers: &[(f64, f64, f64)]) -> Optio
         std::array::from_fn(|v| (lut[v] as i32 - TITLE_COLOUR[c]).abs() <= TOLERANCE)
     });
 
-    let mut ends: AHashMap<usize, Vec<usize>> = AHashMap::new();
-    for y in 0..buffer.height {
+    let short = (SHORT * s).round() as usize;
+    // per column runs end on: the rows, and whether the run is the whole width
+    let mut ends: AHashMap<usize, Vec<(usize, bool)>> = AHashMap::new();
+    for y in y0..y1 {
         let row = &data[y * buffer.width * 4..(y + 1) * buffer.width * 4];
-        let mut run = 0;
-        for x in 0..=buffer.width {
-            if x < buffer.width
-                && near[0][row[x * 4] as usize]
+        let is_near = |x: usize| {
+            near[0][row[x * 4] as usize]
                 && near[1][row[x * 4 + 1] as usize]
                 && near[2][row[x * 4 + 2] as usize]
-            {
+        };
+        // what of a run lies left of the region, as far as it matters
+        let mut run = (0..x0).rev().take(width + SLACK + 2).take_while(|x| is_near(*x)).count();
+        for x in x0..=x1 {
+            if x < x1 && is_near(x) {
                 run += 1;
                 continue;
             }
+            // it goes on past the region, so it does not end in it
+            if x == x1 && x < buffer.width && is_near(x) {
+                break;
+            }
             if run > window && run <= width + SLACK + 1 {
-                ends.entry(x - 1).or_default().push(y);
+                ends.entry(x - 1).or_default().push((y, run + short >= width));
             }
             run = 0;
         }
@@ -59,21 +81,24 @@ pub fn find_title(buffer: &Buffer, s: f64, headers: &[(f64, f64, f64)]) -> Optio
     let need = (TITLE_MIN_ROWS * s).round() as usize;
     for (_, right) in candidates {
         // compression smears the run's end over a few columns
-        let mut rows: Vec<usize> = (right.saturating_sub(SLACK)..=right + SLACK)
-            .filter_map(|r| ends.get(&r))
-            .flatten()
-            .copied()
-            .collect();
-        rows.sort();
-        rows.dedup();
-        let Some(top) = rows
+        let near_right = || {
+            (right.saturating_sub(SLACK)..=right + SLACK).filter_map(|r| ends.get(&r)).flatten()
+        };
+        let mut whole: Vec<usize> = near_right().filter(|x| x.1).map(|x| x.0).collect();
+        whole.sort();
+        whole.dedup();
+        let Some(mut top) = whole
             .windows(need)
             .find(|w| w[need - 1] - w[0] == need - 1)
             .map(|w| w[0])
         else {
             continue;
         };
-        if right + 1 < width {
+        while top > 0 && near_right().any(|x| x.0 == top - 1) {
+            top -= 1;
+        }
+        // rows above the region may be part of it, and then this is not its top
+        if right + 1 < width || (top == y0 && y0 > 0) {
             continue;
         }
         let slack = HEADER_SLACK * s;

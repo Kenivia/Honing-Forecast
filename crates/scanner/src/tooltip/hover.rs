@@ -42,6 +42,12 @@ const WINDOW_WIDTHS: [(InventoryType, f64); 3] = [
     (InventoryType::CharInventory, 722.4),
 ];
 const HEADER_ROWS: (f64, f64) = (10.0, 60.0);
+// Where a title bar is looked for. A tooltip sits against a slot's column, level with the slot or
+// pushed up, so its bar is within a title's width of a window and not below the last row of slots.
+const WINDOW_REACH: f64 = 440.0;
+const WINDOW_ROWS: f64 = 800.0;
+// the last hover's place is tried first, with this much around it
+const NEAR: f64 = 8.0;
 
 // one tooltip staying in place over consecutive frames; what it says is voted on across them
 #[derive(Debug, Default, Clone)]
@@ -193,15 +199,47 @@ impl ScannerState {
         let s = self.screen_info.scale_factor;
         self.buffer.lut = Some(brightness_lut(brightness));
         let buffer = self.buffer;
-        // each located window's header: its right edge, and the rows a bar found in it starts on
-        let headers: Vec<(f64, f64, f64)> = WINDOW_WIDTHS
+        // each located window: its origin and its header's right edge
+        let located: Vec<((f64, f64), f64)> = WINDOW_WIDTHS
             .iter()
             .filter_map(|(inventory, width)| {
-                let (x, y) = self.inventory_root(*inventory)?;
-                Some((x + width * s, y - HEADER_ROWS.0 * s, y + HEADER_ROWS.1 * s))
+                let root = self.inventory_root(*inventory)?;
+                Some((root, root.0 + width * s))
             })
             .collect();
-        let Some(bar) = timed("tooltip/find_title", || find_title(&buffer, s, &headers)) else {
+        // each header's right edge, and the rows a bar found in it starts on
+        let headers: Vec<(f64, f64, f64)> = located
+            .iter()
+            .map(|((_, y), edge)| (*edge, y - HEADER_ROWS.0 * s, y + HEADER_ROWS.1 * s))
+            .collect();
+        let last = self.hover.as_ref().map(|hover| hover.bar);
+        let Some(bar) = timed("tooltip/find_title", || {
+            // no window, no slot to hover
+            if headers.is_empty() {
+                return None;
+            }
+            let (left, right, bottom) = located.iter().fold(
+                (f64::MAX, 0f64, 0f64),
+                |(left, right, bottom), ((x, y), edge)| {
+                    (left.min(*x), right.max(*edge), bottom.max(y + WINDOW_ROWS * s))
+                },
+            );
+            let reach = WINDOW_REACH * s;
+            let windows = ((left - reach).max(0.0) as usize, 0, (right + reach) as usize, bottom as usize);
+            let near = (NEAR * s).ceil() as usize;
+            let mut regions = vec![];
+            if let Some(bar) = last {
+                // all of the bar's rows: which column most of them end on is where it is put
+                regions.push((
+                    bar.x.saturating_sub(near),
+                    bar.y.saturating_sub(near),
+                    bar.x + bar.width + near,
+                    bar.y + bar.height + near,
+                ));
+            }
+            regions.push(windows);
+            regions.into_iter().find_map(|region| find_title(&buffer, s, &headers, region))
+        }) else {
             // tooltips fade in and single frames get lost, so a hover survives a few misses
             if let Some(mut hover) = self.hover.take() {
                 hover.missed += 1;
