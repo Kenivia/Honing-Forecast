@@ -37,25 +37,28 @@ export type ChestKind = "SelectOne" | "Random" | "ObtainAll";
 export interface ChestContent {
   item: string;
   amount: number;
-  bound: boolean;
+  // the chest of templates/chests.json it is, when it is one
+  chest: number | null;
 }
 
 export interface ChestRow {
   name_read: string;
   count_read: string;
-  item: string | null;
   crop: OneIconConfig | null;
 }
 
-// read off the tooltip alone, scanner only (not part of the calculator's types)
+// One of templates/chests.json, found by what its tooltip lists. Scanner only (not part of the
+// calculator's types).
 export interface Chest {
+  // the chests its rows read as, by id; kind and contents are the first one's
+  variants: number[];
+  title: string;
   kind: ChestKind;
   contents: ChestContent[];
+  // the slot icons those chests are drawn with
+  icons: string[];
   amount: string | null;
   tradability: string | null;
-  last_read_title: string;
-  title: string | null;
-  icon: string | null;
   column: [string, number, number] | null;
   slot: SlotAddress | null;
   rows: ChestRow[];
@@ -73,6 +76,8 @@ export interface SlotResult {
   address: SlotAddress;
   // null when the slot matches no icon
   icon_name_score: [string, number] | null;
+  // other icons it may be drawn with: plain chests look alike
+  alternatives: string[];
   amount: string | null;
   tooltip_amount: string | null;
   tradability: string | null;
@@ -82,6 +87,8 @@ export interface SlotResult {
   reason: string;
   // the tooltip's amount, else the number on the icon
   value: number | null;
+  // for a chest: the chests of templates/chests.json its icon can be, by id
+  variants: number[];
   // the whole slot; only when it changed
   image?: OneIconConfig;
 }

@@ -9,18 +9,14 @@ import {
   shown_slot,
   slot_images,
   slot_key,
+  slot_place,
   slots,
 } from "./ScanStore";
-import { SHARED_ICONS } from "./Manifest";
+import { item_name, SHARED_ICONS } from "./Manifest";
 import SlotCell from "./SlotCell.vue";
 
 const props = defineProps<{ address: SlotAddress | null; items: string[] }>();
 
-const WINDOW_NAMES = {
-  Roster: "Roster storage",
-  CharStorage: "Character storage",
-  CharInventory: "Inventory",
-};
 const STATUS_NAMES = {
   Pending: "Reading",
   Good: "Good",
@@ -147,13 +143,14 @@ function accept() {
           />
           <div class="flex flex-col">
             <span class="text-base text-(--text-bright)">
-              {{ item ?? (slot || edit ? "No known item" : "Not seen yet") }}
+              {{
+                item_name(item) ??
+                (slot || edit ? "No known item" : "Not seen yet")
+              }}
             </span>
             <span :style="{ color: status_color }">{{ status }}</span>
             <span class="text-(--text-muted)">
-              {{ WINDOW_NAMES[address.inventory_type] }} page
-              {{ address.page_num + 1 }}, row {{ address.pos_in_inv[0] + 1 }},
-              column {{ address.pos_in_inv[1] + 1 }}
+              {{ slot_place(address) }}
             </span>
           </div>
         </div>
@@ -194,7 +191,7 @@ function accept() {
       <div v-if="slot_chests.length" class="flex flex-col gap-1">
         <span class="text-(--text-bright)">Chest contents</span>
         <div v-for="(chest, index) in slot_chests" :key="index">
-          {{ chest.title ?? chest.last_read_title }}
+          {{ chest.title }}
           <span class="text-(--text-muted)">
             x{{ chest.amount ?? "?" }}, {{ chest.kind }},
             {{ TRADABILITY_NAMES[chest.tradability] ?? "tradability unknown" }}
@@ -205,7 +202,6 @@ function accept() {
             class="pl-3 text-(--text-muted)"
           >
             {{ content.item }} x{{ content.amount }}
-            {{ content.bound ? "(Bound)" : "" }}
           </div>
         </div>
       </div>
@@ -218,7 +214,9 @@ function accept() {
           <span>Item</span>
           <select v-model="draft.item" class="selector" aria-label="Item">
             <option value="">Irrelevant</option>
-            <option v-for="name in items" :key="name">{{ name }}</option>
+            <option v-for="name in items" :key="name" :value="name">
+              {{ item_name(name) }}
+            </option>
           </select>
           <template v-if="draft.item">
             <span>Amount</span>

@@ -14,11 +14,11 @@ import {
   edits,
   material_overrides,
   shown_slot,
+  slot_place,
   slots,
 } from "./ScanStore";
 import ITEMS from "../../../../templates/items.json";
-import CHESTS from "../../../../templates/chest.json";
-import INNER_CHESTS from "../../../../templates/inner_chests.json";
+import CHESTS from "../../../../templates/chests.json";
 
 // The manifest: what the scan amounts to, as materials per ownership band plus the select-one
 // chests still to be opened. It sits between the scanner and the rest of the site.
@@ -26,7 +26,13 @@ import INNER_CHESTS from "../../../../templates/inner_chests.json";
 const BAND_OF = { CharBound: 0, RosterBound: 1, Tradable: 2 };
 
 type Bag = Record<string, number>; // label -> amount
-type Opens = { kind: ChestKind; items: Record<string, number> };
+// one row of templates/chests.json; contents are title, amount, and the chest it is
+type Opens = {
+  id: number;
+  title: string;
+  kind: ChestKind;
+  contents: [string, number, number | null][];
+};
 
 export interface ManifestChest {
   key: string;
@@ -35,6 +41,12 @@ export interface ManifestChest {
   count: number;
   options: Bag[];
 }
+// a slot the manifest is short of, and why
+export interface MissingSlot {
+  place: string;
+  item: string;
+  why: string;
+}
 // a chest that is listed but not passed on
 export interface LooseChest {
   title: string;
@@ -42,10 +54,11 @@ export interface LooseChest {
 }
 
 const ICON_LABEL: Record<string, string> = {};
-const TITLE_LABEL: Record<string, string> = {};
 // An icon several materials are drawn with (the books) says nothing on its own: the tooltip
 // says which, or the user does, picking one of these.
 export const SHARED_ICONS: Record<string, string[]> = {};
+// what a chest gives as currency, which no slot holds
+const TITLE_LABEL: Record<string, string> = { Gold: "Gold", Silver: "Silver" };
 for (const item of ITEMS as any[]) {
   if (item.label && item.title) TITLE_LABEL[item.title] = item.label;
   if (!item.label || !item.icon) continue;
@@ -56,13 +69,45 @@ for (const item of ITEMS as any[]) {
   else SHARED_ICONS[item.icon] = [...new Set(labels)];
 }
 const SHARED_LABELS = new Set(Object.values(SHARED_ICONS).flat());
-const CHEST_ICONS = new Set((CHESTS as any[]).map((chest) => chest.icon));
-// what a chest listed inside another chest holds, which no tooltip says
-const OPENS: Record<string, Opens> = Object.fromEntries(
-  (INNER_CHESTS as any[])
-    .filter((chest) => chest.items)
-    .map((chest) => [chest.title, chest]),
+// every chest the game has that opens to a material, by id
+const OPENS: Record<number, Opens> = Object.fromEntries(
+  (CHESTS as any[]).map((chest) => [chest.id, chest]),
 );
+// slot icon -> the titles of the chests drawn with it
+const CHEST_ICONS: Record<string, string[]> = {};
+for (const chest of CHESTS as any[]) {
+  if (!chest.top) continue;
+  const titles = (CHEST_ICONS[`${chest.icon}@${chest.rarity}`] ??= []);
+  if (!titles.includes(chest.title)) titles.push(chest.title);
+}
+
+// what to call a slot's icon: a chest's is named after its art, which says nothing
+export function item_name(icon: string | null) {
+  const titles = icon ? CHEST_ICONS[icon] : undefined;
+  if (!titles) return icon;
+  const more = titles.length > 2 ? ` and ${titles.length - 2} more` : "";
+  return titles.slice(0, 2).join(" / ") + more;
+}
+
+// What a chest opens to, all the way down, as text: two chests are the same to the manifest when
+// this is.
+function opens_to(id: number): string {
+  const chest = OPENS[id];
+  const contents = chest.contents.map(([title, amount, inner]) =>
+    inner ? [opens_to(inner), amount] : [title, amount],
+  );
+  // the order they are listed in says nothing
+  return JSON.stringify([chest.kind, contents.map((x) => JSON.stringify(x)).sort()]);
+}
+
+// The one chest these are, as far as what they open to goes. Chests that list the same things
+// can hold different chests inside, and then there is no telling.
+function settle(variants: number[]): Opens | undefined {
+  const [first, ...rest] = variants;
+  if (first === undefined) return undefined;
+  const same = rest.every((other) => opens_to(other) === opens_to(first));
+  return same ? OPENS[first] : undefined;
+}
 
 const digits = (text: string | null) =>
   text ? Number(text.replace(/\D/g, "")) : null;
@@ -79,12 +124,16 @@ function merge(bags: Bag[]): Bag {
 
 // The alternatives one row of a select-one chest stands for. A chest inside it is flattened: an
 // obtain-all is its contents, a select-one is its own options.
-function alternatives(title: string, amount: number): Bag[] {
+function alternatives(
+  title: string,
+  amount: number,
+  chest: number | null,
+): Bag[] {
   if (TITLE_LABEL[title]) return [{ [TITLE_LABEL[title]]: amount }];
-  const opens = OPENS[title];
+  const opens = chest ? OPENS[chest] : undefined;
   if (!opens || opens.kind === "Random") return [];
-  const parts = Object.entries(opens.items).map(([inner, each]) =>
-    alternatives(inner, each * amount),
+  const parts = opens.contents.map(([inner, each, id]) =>
+    alternatives(inner, each * amount, id),
   );
   if (opens.kind === "SelectOne") return parts.flat();
   return [merge(parts.flatMap((part) => (part.length === 1 ? part : [])))];
@@ -109,24 +158,22 @@ export const scanned = computed(() => {
   const grouped = new Map<string, ManifestChest>();
   const random: LooseChest[] = [];
   const unknown: LooseChest[] = [];
-  let missing = 0;
+  const missing: MissingSlot[] = [];
 
   // everything inside a chest takes the chest's band
   function open(
     kind: ChestKind,
-    items: [string, number][],
+    items: [string, number, number | null][],
     count: number,
     band: number,
     title: string,
   ) {
     if (kind === "Random") return add_loose(random, title, count);
     if (kind === "SelectOne") {
-      const options = items.flatMap(([inner, each]) => {
-        const found = alternatives(inner, each);
-        // an option nobody knows the contents of is not offered, so it is listed
-        if (!found.length) add_loose(unknown, inner, each * count);
-        return found;
-      });
+      // an option that is no material, or a chest of chance, is not offered
+      const options = items.flatMap(([inner, each, id]) =>
+        alternatives(inner, each, id),
+      );
       if (!options.length) return;
       const key = `${title}|${band}|${JSON.stringify(options)}`;
       const old = grouped.get(key);
@@ -134,19 +181,12 @@ export const scanned = computed(() => {
       else grouped.set(key, { key, title, band, count, options });
       return;
     }
-    for (const [inner, each] of items) {
+    for (const [inner, each, id] of items) {
       const label = TITLE_LABEL[inner];
-      const opens = OPENS[inner];
+      const opens = id ? OPENS[id] : undefined;
       if (label) extra[label][band] += each * count;
-      else if (opens) {
-        open(
-          opens.kind,
-          Object.entries(opens.items),
-          each * count,
-          band,
-          inner,
-        );
-      } else add_loose(unknown, inner, each * count);
+      else if (opens)
+        open(opens.kind, opens.contents, each * count, band, inner);
     }
   }
 
@@ -165,6 +205,12 @@ export const scanned = computed(() => {
         ? slot.value
         : null;
     const address = edit?.address ?? slot.address;
+    const miss = () =>
+      missing.push({
+        place: slot_place(address),
+        item: item_name(item),
+        why: slot.reason || "Its number is still being read.",
+      });
     const band =
       BAND_OF[
         (edit
@@ -173,7 +219,7 @@ export const scanned = computed(() => {
       ];
     if (amount == null || band === undefined) {
       // an edit never holds the manifest back; without a band it is only left out
-      if (!edit) missing++;
+      if (!edit) miss();
       continue;
     }
     // a shared icon set by hand is set to the material itself
@@ -185,22 +231,19 @@ export const scanned = computed(() => {
       owned[label][band] = (owned[label][band] ?? 0) + amount;
       continue;
     }
-    if (!CHEST_ICONS.has(item)) continue;
+    if (!CHEST_ICONS[item]) continue;
+    // the chest read off a tooltip, else whatever its icon can only be
     const found = chests_for(address, item);
-    const chest =
+    const read =
       found.find((chest) => digits(chest.amount) === amount) ?? found[0];
+    const chest = settle(read?.variants ?? slot?.variants ?? []);
     if (!chest) {
-      if (edit) add_loose(unknown, item, amount);
-      else missing++;
+      // read, but as chests that hold different chests inside
+      if (edit || read) add_loose(unknown, read?.title ?? item, amount);
+      else miss();
       continue;
     }
-    open(
-      chest.kind,
-      chest.contents.map((content) => [content.item, content.amount]),
-      amount,
-      band,
-      chest.title ?? chest.last_read_title,
-    );
+    open(chest.kind, chest.contents, amount, band, chest.title);
   }
   return {
     owned,

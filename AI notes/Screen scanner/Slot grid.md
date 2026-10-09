@@ -24,10 +24,11 @@ Each slot in a scan result carries a status, a reason and a value (the tooltip's
 - **A shared icon needs its label.** A book slot carries `label`, the material its tooltip named (`Tooltips.md`), and is not good without one. The dashboard shows the label in place of the icon name, and the edit list offers the materials in place of the shared icon, so a book set by hand is set to its material.
 - **The icon number** has everything but digits dropped, and nothing left means 1 (a single item shows no number). `9999+` therefore reads 9999.
 - **The tooltip is trusted over the icon.** A disagreement between the two is not an error; the value is simply the tooltip's.
-- **A chest is a slot whose icon is listed in `templates/chest.json`.** Chests without an icon there show as irrelevant.
-- **Chests are matched per column**, because a pushed-up tooltip only tells the column. A chest read there counts for a slot when it carries the slot's icon (matched from the tooltip's large icon, `Tooltips.md`). The slot is then good when the chest's stacked amount is the number on the slot, when the chest was read in that very slot, when a tooltip was resolved to it, or, for a slot whose number was misread, when as many chests with its icon were read in the column as there are slots showing it.
+- **A chest is a slot whose icon is a chest's template**, `<icon>@<rarity>` for a top row of `templates/chests.json` (`Game files.md`). Any other chest shows as irrelevant. The result lists the chests the slot can be (`variants`): those of every icon it may be drawn with (`Pipeline.md`), and of those the ones that ask for an item level when one is written across the slot, or the ones that do not when none is.
+- **A chest that can only open one way needs no hover for its contents.** When every chest the slot can be has the same kind and contents (129 of the 295 templates are a single chest, bars of gold among them), it is good as it stands, short of its tradability.
+- **Chests are matched per column**, because a pushed-up tooltip only tells the column. A chest read there counts for a slot when one of the icons it is drawn with is one the slot may be (`Tooltips.md`). The slot is then good when the chest's stacked amount is the number on the slot, when the chest was read in that very slot, when a tooltip was resolved to it, or, for a slot whose number was misread, when as many chests with its icon were read in the column as there are slots showing it.
 - **Stacks with the same icon and amount in a column** all go green from one hover: their tooltips would be identical.
-- **The chest's title plays no part,** and what a chest was read as holding is not checked against anything: the table of expected contents that used to turn a misread chest red is gone.
+- **The chest's title plays no part.** What a chest holds is a row of the game's table, picked by what its tooltip lists.
 - **Green for a hovered material comes when the title read is back**, since only the title says which slot the tooltip belongs to.
 
 ## The page
@@ -35,7 +36,7 @@ Each slot in a scan result carries a status, a reason and a value (the tooltip's
 - The windows sit side by side as in game (roster storage, character storage, inventory) and grow with the page; slots shrink to 28 px before the windows wrap.
 - Each window has page tabs. The shown page follows the game: every result lists the page each located window shows (`pages`), and a window turns to it whenever that changes. A tab clicked by hand holds until the page in game next changes.
 - Hovering a slot shows it in the dashboard. Clicking one locks it: the dashboard then stays on it whatever is hovered, until it is clicked again (clicking another slot moves the lock there). The slot being shown gets a dotted white outline outside the status border.
-- For a chest slot the dashboard lists the chest read in that slot, else every chest with that icon read in its column.
+- For a chest slot the dashboard lists the chest read in that slot, else every chest with one of its icons read in its column. A chest's icon is named after its art (`use_12_177@epic`), so the dashboard and the edit list show the titles of the chests drawn with it instead (`item_name` in `Manifest.ts`).
 
 ## Edits
 

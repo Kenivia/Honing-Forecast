@@ -17,7 +17,8 @@ fn new_state(width: usize, height: usize) -> (ScannerState, Vec<u8>) {
     let mut pixels = vec![0u8; width * height * 4];
     // 1078-tall recordings are still 1080p
     let ui_height = (height as f64 / 360.0).round() as u32 * 360;
-    state.screen_info.game_width = ui_height * 16 / 9;
+    // a native ultrawide capture is as wide as the game
+    state.screen_info.game_width = (ui_height * 16 / 9).max(width as u32 / 100 * 100);
     state.screen_info.game_height = ui_height;
     state.buffer.width = width;
     state.buffer.height = height;
@@ -72,12 +73,7 @@ fn describe_chest(chest: &Chest) -> String {
         .contents
         .iter()
         .map(|x| {
-            format!(
-                "{} x{}{}",
-                x.item,
-                x.amount,
-                if x.bound { " (Bound)" } else { "" }
-            )
+format!("{} x{}", x.item, x.amount)
         })
         .collect();
     let place = match (chest.slot, chest.column) {
@@ -89,12 +85,14 @@ fn describe_chest(chest: &Chest) -> String {
         _ => "nowhere".to_string(),
     };
     format!(
-        "{:?} [{}]  x{}  {:?}  {place}  '{}'",
+        "{:?} [{}]  x{}  {:?}  {place}  '{}' {:?} {:?}",
         chest.kind,
         contents.join(", "),
         chest.amount.clone().unwrap_or_default(),
         chest.tradability,
-        chest.last_read_title
+        chest.title,
+        chest.variants,
+        chest.icons
     )
 }
 
@@ -104,8 +102,21 @@ fn print_statuses(state: &ScannerState) {
         if let Some((icon, score)) = slot.icon_name_score {
             let a = slot.address;
             println!(
-                "  {:?} p{} {:?}  {icon} {score:.3}  {:?}  value {:?}  {}",
-                a.inventory_type, a.page_num, a.pos_in_inv, slot.status, slot.value, slot.reason
+                "  {:?} p{} {:?}  {icon} {score:.3}  {:?}  value {:?}  {}{}",
+                a.inventory_type,
+                a.page_num,
+                a.pos_in_inv,
+                slot.status,
+                slot.value,
+                slot.reason,
+                if slot.variants.is_empty() {
+                    String::new()
+                } else {
+                    format!(
+                        "  levelled {} also {:?} variants {:?}",
+                        state.slot_infos[&a].levelled, slot.alternatives, slot.variants
+                    )
+                }
             );
         }
     }

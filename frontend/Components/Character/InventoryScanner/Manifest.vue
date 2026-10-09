@@ -107,16 +107,22 @@ function set_chest_count(key: string, event: Event) {
 
 <template>
   <div
-    v-if="manifest.missing && !forced"
+    v-if="manifest.missing.length && !forced"
     class="card-shell card-body flex flex-col gap-2 text-sm"
   >
     <span class="text-(--warning)">
-      {{ manifest.missing }} slot(s) are not read yet or still need a hover, so
-      the manifest is hidden.
+      {{ manifest.missing.length }} slot(s) are not read yet or still need a
+      hover, so the manifest is hidden.
     </span>
     <button class="generic-button w-fit" @click="forced = true">
       Show the manifest without them
     </button>
+    <ul aria-label="Missing slots" class="flex flex-col gap-1">
+      <li v-for="slot in manifest.missing" :key="slot.place">
+        {{ slot.place }}: {{ slot.item }}
+        <span class="text-(--text-muted)">{{ slot.why }}</span>
+      </li>
+    </ul>
   </div>
   <div v-else class="flex w-full flex-col gap-3">
     <div class="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
@@ -134,8 +140,8 @@ function set_chest_count(key: string, event: Event) {
         Convert {{ BANDS[band].toLowerCase() }} T4 to Serca
       </label>
     </div>
-    <span v-if="manifest.missing" class="text-sm text-(--warning)">
-      {{ manifest.missing }} slot(s) are missing from this manifest.
+    <span v-if="manifest.missing.length" class="text-sm text-(--warning)">
+      {{ manifest.missing.length }} slot(s) are missing from this manifest.
     </span>
 
     <div class="flex gap-1 text-sm">

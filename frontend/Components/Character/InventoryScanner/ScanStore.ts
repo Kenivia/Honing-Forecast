@@ -20,6 +20,15 @@ export interface SlotEdit {
   retry?: boolean;
 }
 
+const WINDOW_NAMES = {
+  Roster: "Roster storage",
+  CharStorage: "Character storage",
+  CharInventory: "Inventory",
+};
+// where a slot is, in words
+export const slot_place = (address: SlotAddress) =>
+  `${WINDOW_NAMES[address.inventory_type]} page ${address.page_num + 1}, row ${address.pos_in_inv[0] + 1}, column ${address.pos_in_inv[1] + 1}`;
+
 export const slot_key = (address: SlotAddress) =>
   `${address.inventory_type} ${address.page_num} ${address.pos_in_inv}`;
 
@@ -53,10 +62,11 @@ export function shown_slot(slot: SlotResult | undefined) {
   return { ...slot, status: "Good" as const, reason: "", tradability: assumed };
 }
 
-// The chest read in this very slot, else every chest with this icon read in its column: a
-// pushed-up tooltip only tells the column.
+// The chest read in this very slot, else every chest with one of the slot's icons read in its
+// column: a pushed-up tooltip only tells the column.
 export function chests_for(address: SlotAddress, icon: string | null) {
   if (!icon) return [];
+  const icons = [icon, ...(slots.value.get(slot_key(address))?.alternatives ?? [])];
   const key = slot_key(address);
   const exact = chests.value.filter(
     (chest) => chest.slot && slot_key(chest.slot) === key,
@@ -64,7 +74,7 @@ export function chests_for(address: SlotAddress, icon: string | null) {
   if (exact.length) return exact;
   return chests.value.filter(
     (chest) =>
-      chest.icon === icon &&
+      chest.icons.some((drawn) => icons.includes(drawn)) &&
       chest.column?.[0] === address.inventory_type &&
       chest.column[1] === address.page_num &&
       chest.column[2] === address.pos_in_inv[1],

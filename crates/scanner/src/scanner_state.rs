@@ -80,6 +80,13 @@ pub enum Tradability {
 pub struct OneSlotInfo {
     // pub currently_seen: bool,
     pub icon_name_score: Option<(String, f64)>,
+    // it matched with the rows an item level is written over left out
+    #[serde(default)]
+    pub levelled: bool,
+    // Other icons that passed nearly as well. Plain chests in other trims and rarities do, so a
+    // chest slot is any of these.
+    #[serde(default)]
+    pub alternatives: Vec<String>,
     pub observed_number: OneIconConfig,
     pub processed_number: OneIconConfig,
     pub observed_icon: OneIconConfig,
@@ -162,6 +169,9 @@ pub struct ScannerState {
 
     #[serde(default)]
     pub page_num_infos: AHashMap<InventoryType, Vec<Option<bool>>>,
+    // the page each window was last seen on, and for how many scans its tab has looked dark
+    #[serde(skip)]
+    pub last_pages: AHashMap<InventoryType, (usize, usize)>,
 
     #[serde(default)]
     pub hover: Option<Hover>,

@@ -1,8 +1,8 @@
 use super::{
-    chest::{Chest, ChestContent, ChestKind, ChestRow, ChestRowStrips, chest_from_texts, chest_strips},
+    chest::{Chest, ChestKind, ChestRow, ChestRowStrips, chest_strips, chests_listing},
     detect::{TitleBar, find_title},
     icon::tooltip_icon,
-    items::{ITEMS, item_from_body, match_title, shares_icon},
+    items::{ITEMS, item_from_body, match_title, shares_icon, variant},
     layout::parse_layout,
     title::{join_title, text_image, title_lines, yellow_image},
 };
@@ -36,6 +36,14 @@ const SLOT_ABOVE_TOOLTIP: f64 = 35.0; // a pushed-up tooltip can start a little 
 const LEVEL_TOLERANCE: f64 = 2.0;
 const PUSHED_UP_MARGIN: f64 = 40.0;
 const TITLE_BAR_HEIGHTS: [f64; 2] = [45.33, 69.33]; // one and two lines
+// From a window's origin to the right end of its header, measured on a 1440p recording, and the
+// rows above and below the origin its header is on.
+const WINDOW_WIDTHS: [(InventoryType, f64); 3] = [
+    (InventoryType::Roster, 442.4),
+    (InventoryType::CharStorage, 723.3),
+    (InventoryType::CharInventory, 722.4),
+];
+const HEADER_ROWS: (f64, f64) = (10.0, 60.0);
 
 // one tooltip staying in place over consecutive frames; what it says is voted on across them
 #[derive(Debug, Serialize, Deserialize, Default, Clone)]
@@ -61,8 +69,9 @@ pub struct Hover {
     pub body_votes: AHashMap<String, usize>,
     #[serde(default)]
     pub chest_kind_votes: AHashMap<ChestKind, usize>,
+    // by id, for the chests of templates/chests.json its rows read as
     #[serde(default)]
-    pub chest_votes: Vec<(Vec<ChestContent>, usize)>,
+    pub chest_votes: AHashMap<u32, usize>,
     #[serde(default)]
     pub chest_rows: Vec<ChestRow>,
     // its entry in the scanner state's chests
@@ -203,7 +212,15 @@ impl ScannerState {
         let s = self.screen_info.scale_factor;
         self.buffer.lut = Some(brightness_lut(brightness));
         let buffer = self.buffer;
-        let Some(bar) = timed("tooltip/find_title", || find_title(&buffer, s)) else {
+        // each located window's header: its right edge, and the rows a bar found in it starts on
+        let headers: Vec<(f64, f64, f64)> = WINDOW_WIDTHS
+            .iter()
+            .filter_map(|(inventory, width)| {
+                let (x, y) = self.inventory_root(*inventory)?.top_left;
+                Some((x + width * s, y - HEADER_ROWS.0 * s, y + HEADER_ROWS.1 * s))
+            })
+            .collect();
+        let Some(bar) = timed("tooltip/find_title", || find_title(&buffer, s, &headers)) else {
             // tooltips fade in and single frames get lost, so a hover survives a few misses
             if let Some(mut hover) = self.hover.take() {
                 hover.missed += 1;
@@ -293,8 +310,7 @@ impl ScannerState {
 
         if let Some(chest) = &layout.chest {
             *hover.chest_kind_votes.entry(chest.kind).or_default() += 1;
-            let agreed = hover.chest_votes.iter().map(|x| x.1).max().unwrap_or(0);
-            if agreed + hover.waiting[2] < SETTLED && hover.sent[2] < MAX_READS {
+            if most(&hover.chest_votes) + hover.waiting[2] < SETTLED && hover.sent[2] < MAX_READS {
                 strips.chest =
                     Some(timed("tooltip/chest", || chest_strips(&buffer, chest, self.debugging)));
             }
@@ -383,20 +399,27 @@ impl ScannerState {
                 hover.waiting[1] -= 1;
             }
             if let Some(rows) = read.chest {
-                let texts = rows
+                let mut texts = vec![];
+                hover.chest_rows = rows
                     .into_iter()
                     .map(|(names, count, crop)| {
-                        (names.iter().map(text).collect::<Vec<_>>().join(" "), text(&count), crop)
+                        let name_read = names.iter().map(text).collect::<Vec<_>>().join(" ");
+                        texts.push((name_read.clone(), text(&count)));
+                        ChestRow { name_read, count_read: text(&count), crop }
                     })
                     .collect();
-                let (contents, rows) = chest_from_texts(texts);
-                hover.chest_rows = rows;
-                // a tooltip that is still fading in reads as nothing, which is not a vote for an empty chest
-                if let Some(contents) = contents.filter(|x| !x.is_empty()) {
-                    match hover.chest_votes.iter_mut().find(|(old, _)| *old == contents) {
-                        Some((_, count)) => *count += 1,
-                        None => hover.chest_votes.push((contents, 1)),
-                    }
+                // The chests that list these rows best get the vote. Several do when they list the
+                // same things, or when a numeral that tells them apart did not read. Those that
+                // open the way the header says go first: the header's wording varies ("Obtain one
+                // of the following items at random" reads as obtain all), so it only breaks ties.
+                let mut listing = chests_listing(&texts);
+                let kind = winner(&hover.chest_kind_votes).map(|x| x.0);
+                if listing.iter().any(|x| Some(x.0.kind) == kind) {
+                    listing.retain(|x| Some(x.0.kind) == kind);
+                }
+                let best = listing.iter().map(|x| x.1).fold(0.0, f64::max);
+                for (variant, _) in listing.iter().filter(|x| x.1 >= best - 1e-6) {
+                    *hover.chest_votes.entry(variant.id).or_default() += 1;
                 }
                 hover.waiting[2] -= 1;
             }
@@ -438,9 +461,14 @@ impl ScannerState {
             .and_then(|item| item.icon.clone())
             .or_else(|| labelled()?.icon.clone())
             .or_else(|| winner(&hover.icon_votes).map(|x| x.0));
-        hover.slot = hover.icon.as_ref().and_then(|icon| {
-            self.hovered_slot(&hover.candidates, hover.bar.y as f64, s, icon, hover.amount.as_ref())
-        });
+        let chest = self.hovered_chest(hover);
+        // a chest is drawn with the icon of any of the chests it can be
+        let icons: Vec<String> = match &chest {
+            Some(chest) => chest.icons.clone(),
+            None => hover.icon.clone().into_iter().collect(),
+        };
+        hover.slot =
+            self.hovered_slot(&hover.candidates, hover.bar.y as f64, s, &icons, hover.amount.as_ref());
         // a slot the user edited is left alone
         let slot = hover.slot.filter(|slot| !self.edits.contains_key(slot));
         if let Some(slot) = slot.and_then(|slot| self.slot_infos.get_mut(&slot)) {
@@ -462,26 +490,48 @@ impl ScannerState {
                 && (over || hover.sent[1] >= MAX_READS);
         }
         // a hover is often only seen for a frame or two, so one read is enough to store the chest
-        if let Some((contents, _)) = hover.chest_votes.iter().max_by_key(|(_, count)| *count) {
-            let chest = Chest {
-                kind: winner(&hover.chest_kind_votes).unwrap().0,
-                contents: contents.clone(),
-                amount: hover.amount.clone(),
-                tradability: hover.tradability,
-                last_read_title: hover.last_read_title.clone(),
-                icon: hover.icon.clone(),
-                title: hover.title.clone(),
-                column: hover.chest_place.0,
-                slot: hover.chest_place.1,
-                rows: hover.chest_rows.clone(),
+        if let Some(mut chest) = chest {
+            chest.amount = hover.amount.clone();
+            chest.tradability = hover.tradability;
+            chest.column = hover.chest_place.0;
+            // The slot the tooltip was level with can be a row it only happened to line up with,
+            // pushed up. Then that slot holds something else.
+            let other = |address: &SlotAddress| {
+                let info = self.slot_infos.get(address).filter(|info| info.icon_name_score.is_some());
+                info.is_some_and(|info| !info.shows(&chest.icons))
             };
+            chest.slot = hover.slot.or(hover.chest_place.1.filter(|address| !other(address)));
+            chest.rows = hover.chest_rows.clone();
             hover.chest_index = Some(self.store_chest(chest, hover.chest_index));
         }
     }
 
+    // The chest a hover's rows read as: the chests with the most votes, and of those the ones
+    // drawn like the slot the tooltip is level with, else like any slot beside it, if some are.
+    fn hovered_chest(&self, hover: &Hover) -> Option<Chest> {
+        let top = most(&hover.chest_votes);
+        let mut variants: Vec<u32> =
+            hover.chest_votes.iter().filter(|x| *x.1 == top).map(|x| *x.0).collect();
+        variants.sort();
+        let icons_of = |address: &SlotAddress| self.slot_infos.get(address).into_iter().flat_map(|info| info.icons());
+        let level: Vec<&String> = hover.chest_place.1.iter().flat_map(icons_of).collect();
+        let beside: Vec<&String> = hover.candidates.iter().flat_map(|(address, _)| icons_of(address)).collect();
+        let drawn_like = |icons: &[&String]| {
+            let icons: Vec<String> = icons.iter().map(|x| x.to_string()).collect();
+            move |id: &u32| variant(*id).template().is_some_and(|x| icons.contains(&x))
+        };
+        for icons in [level, beside] {
+            if variants.iter().any(drawn_like(&icons)) {
+                variants.retain(drawn_like(&icons));
+                break;
+            }
+        }
+        (!variants.is_empty()).then(|| Chest::new(variants))
+    }
+
     // slots on the active pages in the column the tooltip sits against, with their top
     fn slots_beside(&self, bar: &TitleBar, s: f64) -> Vec<(SlotAddress, f64)> {
-        let active_pages = self.active_page_num();
+        let active_pages = self.tooltip_page_num();
         let tolerance = SLOT_TOLERANCE * s;
         let (bar_left, bar_right) = (bar.x as f64, (bar.x + bar.width) as f64);
         ALL_SLOT_ADDRESSS
@@ -531,7 +581,7 @@ impl ScannerState {
         beside: &[(SlotAddress, f64)],
         bar_top: f64,
         s: f64,
-        icon: &str,
+        icons: &[String],
         amount: Option<&String>,
     ) -> Option<SlotAddress> {
         let tolerance = SLOT_TOLERANCE * s;
@@ -542,7 +592,7 @@ impl ScannerState {
             .filter(|(address, top)| {
                 *top >= bar_top - SLOT_ABOVE_TOOLTIP * s
                     && self.slot_infos.get(address).is_some_and(|info| {
-                        info.icon_name_score.as_ref().is_some_and(|x| x.0 == icon)
+                        info.shows(icons)
                     })
             })
             .map(|(address, top)| (address, (top - bar_top).abs() <= tolerance))
@@ -559,6 +609,15 @@ impl ScannerState {
                 })
             });
             matching.next().filter(|_| matching.next().is_none()).map(|x| x.0)
+        })
+        .or_else(|| {
+            // Else the only one no other tooltip was already tied to. A slot's own count misreads
+            // under the cursor; a tooltip's amount does not, and a stack has one amount.
+            let mut free = candidates.iter().filter(|(address, _)| {
+                let other = self.slot_infos[address].tooltip_amount.as_ref();
+                amount.is_some() && other.is_none_or(|other| Some(other) == amount)
+            });
+            free.next().filter(|_| free.next().is_none()).map(|x| x.0)
         })
     }
 }

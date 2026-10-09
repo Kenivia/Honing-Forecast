@@ -9,6 +9,7 @@ const TITLE_HEIGHTS: (f64, f64) = (33.0, 107.0); // 45 with a one-line title, 69
 const BODY_TO_TITLE: [f64; 3] = [0.44, 0.53, 0.49]; // body colour (11, 16, 17) over the title colour
 const BODY_ROWS: f64 = 133.0;
 const SLACK: usize = 3;
+const HEADER_SLACK: f64 = 6.0;
 
 #[derive(Debug, Clone, Copy, Default)]
 pub struct TitleBar {
@@ -20,7 +21,10 @@ pub struct TitleBar {
 
 // The title bar is opaque and one colour, so the strip above its text is a flat run that ends at
 // the tooltip's right edge. Only half of it has to be visible, the cursor can cover the left.
-pub fn find_title(buffer: &Buffer, s: f64) -> Option<TitleBar> {
+// `headers` are where the inventory windows' own headers end, as (right edge, top, bottom): a
+// header is the same flat colour over a dark body, and with its name in the middle the part right
+// of the name passes for a title bar.
+pub fn find_title(buffer: &Buffer, s: f64, headers: &[(f64, f64, f64)]) -> Option<TitleBar> {
     let width = (TITLE_WIDTH * s).round() as usize;
     let window = width / 2;
     let (data, lut) = (buffer.data(), buffer.lut.as_ref().unwrap());
@@ -70,6 +74,12 @@ pub fn find_title(buffer: &Buffer, s: f64) -> Option<TitleBar> {
             continue;
         };
         if right + 1 < width {
+            continue;
+        }
+        let slack = HEADER_SLACK * s;
+        if headers.iter().any(|(edge, above, below)| {
+            (right as f64 - edge).abs() <= slack && top as f64 >= *above && top as f64 <= *below
+        }) {
             continue;
         }
         let x = right + 1 - width;

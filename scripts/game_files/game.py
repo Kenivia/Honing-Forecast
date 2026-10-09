@@ -57,12 +57,12 @@ def field(item_id, column):
     return text(row[0]) if row else ""
 
 
-# How a chest opens and what it holds, as (id, title, amount). A currency has no id.
-# What differs by class is left out.
+# How a chest opens, what it holds as (id, title, amount), and how many more of its rows differ by
+# class and are left out. A currency has no id.
 def box(item_id):
     base = table("RandomBoxBase").execute("select * from RandomBoxBase where PrimaryKey = ?", (item_id,)).fetchone()
     if not base:
-        return None, []
+        return None, [], 0
     rows = []
     if int(base["RandomBoxEntityId"]):
         query = "select * from RandomBoxEntity where PrimaryKey = ?"
@@ -72,7 +72,7 @@ def box(item_id):
             query = "select * from DropEntity where PrimaryKey = ?"
             # a drop is given Repetition times over
             rows += [(row, int(drop["Repetition"]) or 1) for row in table("DropEntity").execute(query, (drop["EntityIndex"],))]
-    contents = []
+    contents, by_class = [], 0
     for row, times in rows:
         amount = int(row["NormalMinCount"]) * times
         if int(row["NormalId"]):
@@ -80,7 +80,9 @@ def box(item_id):
         elif int(row["NormalMoneyType"]):
             name = table("Money").execute("select Name from Money where PrimaryKey = ?", (row["NormalMoneyType"],)).fetchone()
             contents.append((None, text(name[0]), amount))
-    return KINDS.get(int(base["Type"]), "ObtainAll"), contents
+        else:
+            by_class += 1
+    return KINDS.get(int(base["Type"]), "ObtainAll"), contents, by_class
 
 
 # icon name -> (sheet, x, y, width, height), from the game's own list

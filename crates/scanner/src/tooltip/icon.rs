@@ -1,4 +1,8 @@
-use crate::{buffer::Buffer, setup::BASE_ICONS, tooltip::detect::TitleBar};
+use crate::{
+    buffer::Buffer,
+    setup::BASE_ICONS,
+    tooltip::{detect::TitleBar, items::is_chest_icon},
+};
 use image::imageops::{FilterType, resize};
 
 const ICON_LEFT: f64 = 9.33; // from the title's left edge; 7 at 1080p
@@ -11,7 +15,7 @@ const KEPT: f64 = 0.75; // share of the pixels scored, so a cursor over the rest
 const ICON_PASS: f64 = 54.0;
 const ICON_MARGIN: f64 = 12.0; // over the next best
 
-// The slot icon the tooltip's large icon is closest to, and whether it is clearly that one: the
+// The material the tooltip's large icon is closest to, and whether it is clearly that one: the
 // two kinds of book differ by an emblem and never are. It is drawn over another background than
 // a slot's, which the pixels left out absorb.
 pub fn tooltip_icon(buffer: &Buffer, bar: &TitleBar, s: f64) -> Option<(String, bool)> {
@@ -36,7 +40,8 @@ pub fn tooltip_icon(buffer: &Buffer, bar: &TitleBar, s: f64) -> Option<(String, 
     let mut scores: Vec<(f64, String)> = BASE_ICONS
         .read()
         .iter()
-        .filter(|(_, icon)| icon.tag == "Icon")
+        // a chest is told by what it lists, and there are too many of them to compare on every frame
+        .filter(|(name, icon)| icon.tag == "Icon" && !is_chest_icon(name))
         .map(|(name, icon)| {
             let template = icon.data.as_raw();
             let mut best = f64::MAX;

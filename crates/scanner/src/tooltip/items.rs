@@ -1,10 +1,11 @@
+use crate::tooltip::chest::ChestKind;
+use ahash::AHashMap;
 use serde::Deserialize;
 use std::sync::LazyLock;
 use strsim::normalized_levenshtein;
 
 const TITLE_PASS: f64 = 0.9;
 const TITLE_MARGIN: f64 = 0.05; // over the next best
-const TITLE_NEAR: f64 = 0.85;
 
 // one row of templates/items.json: an in-game title and the slot icon template it is drawn with
 #[derive(Debug, Deserialize)]
@@ -17,32 +18,76 @@ pub struct Item {
     pub body: Option<String>,
 }
 
-const CHESTS: &str = include_str!("../../../../templates/chest.json");
+// the materials: templates/items.json
+pub static ITEMS: LazyLock<Vec<Item>> =
+    LazyLock::new(|| serde_json::from_str(include_str!("../../../../templates/items.json")).unwrap());
 
-// Materials, then the chests that sit in slots, then the chests only ever listed inside another
-// chest (templates/inner_chests.json), which are here for their titles alone.
-pub static ITEMS: LazyLock<Vec<Item>> = LazyLock::new(|| {
-    let mut items: Vec<Item> =
-        serde_json::from_str(include_str!("../../../../templates/items.json")).unwrap();
-    items.extend(serde_json::from_str::<Vec<Item>>(CHESTS).unwrap());
-    let inner: Vec<Item> =
-        serde_json::from_str(include_str!("../../../../templates/inner_chests.json")).unwrap();
-    // a title in both tables would never be clear of itself
-    for item in inner {
-        if !items.iter().any(|old| old.title == item.title) {
-            items.push(item);
+// One chest of templates/chests.json, which scripts/game_files/chests.py writes from the game's
+// own tables: everything that opens to a material, to gold or to silver.
+#[derive(Debug, Deserialize)]
+pub struct Variant {
+    pub id: u32,
+    pub title: String,
+    // the art it is drawn with and its rarity; only those that can sit in a slot have them
+    pub icon: Option<String>,
+    pub rarity: Option<String>,
+    pub kind: ChestKind,
+    // the item level it asks for, which is then written across its slot
+    pub level: Option<u32>,
+    // rows its tooltip has besides the contents, for things that differ by class
+    #[serde(default)]
+    pub extra: usize,
+    // title, amount, and the chest of this table it is
+    pub contents: Vec<(String, u32, Option<u32>)>,
+}
+
+impl Variant {
+    // the name of its slot icon template
+    pub fn template(&self) -> Option<String> {
+        Some(format!("{}@{}", self.icon.as_ref()?, self.rarity.as_ref()?))
+    }
+}
+
+pub static VARIANTS: LazyLock<Vec<Variant>> =
+    LazyLock::new(|| serde_json::from_str(include_str!("../../../../templates/chests.json")).unwrap());
+
+static BY_TEMPLATE: LazyLock<AHashMap<String, Vec<&'static Variant>>> = LazyLock::new(|| {
+    let mut map: AHashMap<String, Vec<&Variant>> = AHashMap::new();
+    for variant in VARIANTS.iter() {
+        if let Some(template) = variant.template() {
+            map.entry(template).or_default().push(variant);
         }
     }
-    items
+    map
 });
 
-static CHEST_ICONS: LazyLock<Vec<String>> = LazyLock::new(|| {
-    let chests: Vec<Item> = serde_json::from_str(CHESTS).unwrap();
-    chests.into_iter().filter_map(|chest| chest.icon).collect()
-});
+pub fn variant(id: u32) -> &'static Variant {
+    VARIANTS.iter().find(|x| x.id == id).unwrap()
+}
+
+// the chests drawn with this slot icon
+pub fn variants_of(icon: &str) -> &'static [&'static Variant] {
+    BY_TEMPLATE.get(icon).map_or(&[], |x| x.as_slice())
+}
 
 pub fn is_chest_icon(icon: &str) -> bool {
-    CHEST_ICONS.iter().any(|x| x == icon)
+    BY_TEMPLATE.contains_key(icon)
+}
+
+// some chest with this icon has its item level written across the slot
+pub fn has_level(icon: &str) -> bool {
+    variants_of(icon).iter().any(|x| x.level.is_some())
+}
+
+// Whether every one of these chests opens to the same things, so that it does not matter which
+// of them a slot holds.
+pub fn open_alike(variants: &[&Variant]) -> bool {
+    let sorted = |variant: &Variant| {
+        let mut contents = variant.contents.clone();
+        contents.sort();
+        contents
+    };
+    variants.windows(2).all(|pair| pair[0].kind == pair[1].kind && sorted(pair[0]) == sorted(pair[1]))
 }
 
 // an icon several materials are drawn with, which only the tooltip tells apart
@@ -103,39 +148,4 @@ pub fn match_title(read: &str) -> Option<&'static Item> {
     let second = scores.get(1).map_or(0.0, |x| x.0);
     // "... Pouch II" and "... Pouch III" are closer than the margin, so an exact read always counts
     (best == 1.0 || (best >= TITLE_PASS && best - second >= TITLE_MARGIN)).then_some(item)
-}
-
-// close to a known title without being accepted as one
-pub fn near_title(read: &str) -> bool {
-    let read = read.to_lowercase();
-    match_title(&read).is_none()
-        && ITEMS
-            .iter()
-            .filter_map(|item| item.title.as_ref())
-            .any(|title| normalized_levenshtein(&read, &title.to_lowercase()) >= TITLE_NEAR)
-}
-
-// A read without the roman numeral it ends in. The tooltip's body font draws them as bare strokes,
-// which come back as any of these characters.
-fn without_tier(text: &str) -> &str {
-    match text.rsplit_once(' ') {
-        Some((rest, last)) if last.chars().all(|c| "ivxl!|?1".contains(c)) => rest,
-        _ => text,
-    }
-}
-
-// For a chest listed inside another chest: the numbered title this read is closest to, whatever
-// the number. Which tier it is can come out wrong.
-pub fn match_rough_title(read: &str) -> Option<&'static Item> {
-    let read = read.to_lowercase();
-    ITEMS
-        .iter()
-        .filter_map(|item| Some((item.title.as_ref()?.to_lowercase(), item)))
-        .filter(|(title, _)| {
-            without_tier(title) != title
-                && normalized_levenshtein(without_tier(&read), without_tier(title)) >= TITLE_PASS
-        })
-        .map(|(title, item)| (normalized_levenshtein(&read, &title), item))
-        .max_by(|a, b| a.0.total_cmp(&b.0))
-        .map(|x| x.1)
 }

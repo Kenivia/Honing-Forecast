@@ -6,7 +6,7 @@ use crate::{
     setup::OneIconConfig,
     tooltip::{
         chest::Chest,
-        items::{is_chest_icon, shares_icon},
+        items::{Variant, is_chest_icon, open_alike, shares_icon, variants_of},
     },
 };
 use serde::{Serialize, Serializer, ser::SerializeStruct};
@@ -57,6 +57,8 @@ pub struct SlotResult<'a> {
     pub address: SlotAddress,
     // nothing when the slot matches no icon
     pub icon_name_score: &'a Option<(String, f64)>,
+    // other icons it may be drawn with
+    pub alternatives: &'a Vec<String>,
     pub amount: &'a Option<String>,
     pub tooltip_amount: &'a Option<String>,
     pub tradability: Option<Tradability>,
@@ -67,6 +69,8 @@ pub struct SlotResult<'a> {
     pub reason: String,
     // the tooltip's amount, else the number on the icon
     pub value: Option<u32>,
+    // for a chest: the chests of templates/chests.json its icon can be, by id
+    pub variants: Vec<u32>,
     pub image: Option<IconBytes<'a>>,
 }
 
@@ -74,6 +78,26 @@ pub struct SlotResult<'a> {
 fn icon_number(text: &str) -> u32 {
     let digits: String = text.chars().filter(char::is_ascii_digit).collect();
     digits.parse().unwrap_or(1)
+}
+
+// The chests a slot's icon can be: those that ask for an item level when one is written across
+// the slot, and those that do not when none is.
+fn slot_variants(info: &OneSlotInfo) -> Vec<&'static Variant> {
+    let all: Vec<&Variant> = info.icons().flat_map(|icon| variants_of(icon).iter().copied()).collect();
+    let by_level: Vec<&Variant> =
+        all.iter().copied().filter(|x| x.level.is_some() == info.levelled).collect();
+    if by_level.is_empty() { all } else { by_level }
+}
+
+impl OneSlotInfo {
+    // every icon the slot may be drawn with, the closest first
+    pub fn icons(&self) -> impl Iterator<Item = &String> {
+        self.icon_name_score.iter().map(|x| &x.0).chain(&self.alternatives)
+    }
+
+    pub fn shows(&self, icons: &[String]) -> bool {
+        self.icons().any(|icon| icons.contains(icon))
+    }
 }
 
 impl Chest {
@@ -117,13 +141,13 @@ impl ScannerState {
     ) -> (SlotStatus, String, Option<Tradability>) {
         let (status, reason) = self.amount_status(address, info);
         let chest_tradability = || {
-            let (icon, _) = info.icon_name_score.as_ref()?;
+            info.icon_name_score.as_ref()?;
             let number = info.amount.as_ref().map(|text| icon_number(text));
             let column = (address.inventory_type, address.page_num, address.pos_in_inv.1);
             let mut chests: Vec<&Chest> = self
                 .chests
                 .iter()
-                .filter(|chest| chest.icon.as_ref() == Some(icon) && chest.column == Some(column))
+                .filter(|chest| info.shows(&chest.icons) && chest.column == Some(column))
                 .collect();
             // the ones that stand for this slot, if any does
             if chests.iter().any(|chest| chest.stands_for(address, number)) {
@@ -145,6 +169,10 @@ impl ScannerState {
             );
         }
         if is_chest_icon(icon) {
+            // nothing to find out when every chest it can be opens to the same things
+            if open_alike(&slot_variants(info)) {
+                return (SlotStatus::Good, String::new());
+            }
             // A pushed-up tooltip only tells the column. A chest read there with this icon stands
             // for every slot showing its amount, whose tooltips would be the same; failing that
             // (a number misread), the slots are done once as many chests were read as there are slots.
@@ -152,7 +180,7 @@ impl ScannerState {
             let chests: Vec<&Chest> = self
                 .chests
                 .iter()
-                .filter(|chest| chest.icon.as_ref() == Some(icon) && chest.column == Some(column))
+                .filter(|chest| info.shows(&chest.icons) && chest.column == Some(column))
                 .collect();
             let number = info.amount.as_ref().map(|text| icon_number(text));
             let alike = self
@@ -160,7 +188,7 @@ impl ScannerState {
                 .iter()
                 .filter(|(other, other_info)| {
                     (other.inventory_type, other.page_num, other.pos_in_inv.1) == column
-                        && other_info.icon_name_score.as_ref().map(|x| &x.0) == Some(icon)
+                        && other_info.icons().any(|other| info.icons().any(|own| own == other))
                         && !self.edits.contains_key(*other)
                 })
                 .count();
@@ -230,6 +258,7 @@ impl ScannerState {
                 SlotResult {
                     address: *address,
                     icon_name_score: &info.icon_name_score,
+                    alternatives: &info.alternatives,
                     amount: &info.amount,
                     tooltip_amount: &info.tooltip_amount,
                     tradability,
@@ -239,6 +268,7 @@ impl ScannerState {
                     value: read
                         .filter(|_| info.icon_name_score.is_some())
                         .map(|text| icon_number(text)),
+                    variants: slot_variants(info).iter().map(|x| x.id).collect(),
                     image: info
                         .display_icon
                         .as_ref()

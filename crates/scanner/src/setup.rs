@@ -202,6 +202,7 @@ impl ScannerState {
             new.insert(i.name.clone(), i.clone());
         }
         *BASE_ICONS.write() = new;
+        crate::cropper::slots::FROM_AFAR.write().clear();
         self.config = vec![]; // no need to pass in and out after setting
     }
 
