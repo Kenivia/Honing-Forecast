@@ -66,7 +66,10 @@ export function shown_slot(slot: SlotResult | undefined) {
 // column: a pushed-up tooltip only tells the column.
 export function chests_for(address: SlotAddress, icon: string | null) {
   if (!icon) return [];
-  const icons = [icon, ...(slots.value.get(slot_key(address))?.alternatives ?? [])];
+  const icons = [
+    icon,
+    ...(slots.value.get(slot_key(address))?.alternatives ?? []),
+  ];
   const key = slot_key(address);
   const exact = chests.value.filter(
     (chest) => chest.slot && slot_key(chest.slot) === key,
@@ -86,6 +89,8 @@ export const material_overrides = ref<Record<string, string>>({});
 export const chest_overrides = ref<Record<string, number>>({});
 // select-one chests the user added to the manifest by hand
 export const added_chests = ref<ManifestChest[]>([]);
+// keys of the chests the user took out of the manifest
+export const deleted_chests = ref<string[]>([]);
 
 export const has_progress = computed(
   () => slots.value.size > 0 || Object.keys(edits.value).length > 0,
@@ -112,6 +117,7 @@ export function reset_scan() {
   material_overrides.value = {};
   chest_overrides.value = {};
   added_chests.value = [];
+  deleted_chests.value = [];
 }
 
 // addresses come out of reactive state, and a proxy cannot be posted to the worker

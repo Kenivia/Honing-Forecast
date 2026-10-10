@@ -26,13 +26,13 @@ TEMPLATES = ROOT / "templates"
 ART = TEMPLATES / "ChestIcons"
 MONEY = {1: "Silver", 2: "Gold"}  # Item.GainMoneyType
 UNWANTED = ("Cube", "Engraving")  # in a chest's title: it is left out, and so is what only it leads to
+UNWANTED_ICONS = ("all_quest_02_184", "all_quest_02_196", "all_quest_02_198", "all_quest_02_199", "all_quest_02_226")  # likewise, by its art
 
 bare = lambda title: title.replace(" (Bound)", "")
 
 
 def main():
     materials = {row["title"] for row in json.loads((TEMPLATES / "items.json").read_text(encoding="utf-8"))}
-    materials |= set(MONEY.values())
     index = {item[0]: item for item in load_index()}
     items = {int(row["PrimaryKey"]): row for row in table("Item").execute("select * from Item")}
 
@@ -44,22 +44,30 @@ def main():
             continue
         if any(word in index.get(int(item_id), (0, ""))[1] for word in UNWANTED):
             continue
+        if index.get(int(item_id), (0, "", "", ""))[3] in UNWANTED_ICONS:
+            continue
         kind, contents, extra = box(int(item_id))
         opens[int(item_id)] = (kind, [(content_id, bare(title), amount) for content_id, title, amount in contents], extra)
     for item_id, row in items.items():
         if item_id not in opens and int(row["GainMoneyType"]) in MONEY and int(row["UseGainCount"]):
             opens[item_id] = ("ObtainAll", [(None, MONEY[int(row["GainMoneyType"])], int(row["UseGainCount"]))], 0)
 
-    wanted = set()
-    while True:
-        found = {
-            item_id
-            for item_id, (_, contents, _) in opens.items()
-            if any(title in materials or content_id in wanted for content_id, title, _ in contents)
-        }
-        if found == wanted:
-            break
-        wanted = found
+    # every title a chest opens to, all the way down
+    leaves = {}
+
+    def reach(item_id):
+        if item_id not in leaves:
+            leaves[item_id] = set()
+            for content_id, title, _ in opens[item_id][1]:
+                leaves[item_id] |= reach(content_id) if content_id in opens else {title}
+        return leaves[item_id]
+
+    # a chest with no material is only wanted when it is gold alone or silver alone
+    wanted = {
+        item_id
+        for item_id, (_, _, extra) in opens.items()
+        if reach(item_id) & materials or (not extra and reach(item_id) in ({"Gold"}, {"Silver"}))
+    }
 
     today = date.today().isoformat()
     info = icon_info()

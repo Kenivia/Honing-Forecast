@@ -53,8 +53,9 @@ An icon is named `<Icon>_<IconIndex>` in lower case (`use_12_91`), the name the 
 
 ## chests.py
 
-`python scripts/game_files/chests.py` writes the whole table; nothing is picked by hand. A chest is in it when it opens, through any number of chests inside it, to a title of `templates/items.json`, or to gold or silver. So adding a material there (or an alias of one) and running this again brings in the chests that hold it.
+`python scripts/game_files/chests.py` writes the whole table; nothing is picked by hand. A chest is in it when it opens, through any number of chests inside it, to a title of `templates/items.json`. So adding a material there (or an alias of one) and running this again brings in the chests that hold it.
 
+- **Gold and silver.** A chest that reaches no material is in only when everything it opens to, all the way down, is gold alone or silver alone (and nothing of it differs by class). Silver with a potion, or gold with silver, is out. A chest that is in for a material still lists the gold and silver it holds.
 - **What opens.** Everything in `RandomBoxBase`, and bars of gold: an item with `GainMoneyType` 1 (silver) or 2 (gold) and a `UseGainCount` is written as a chest that obtains all of that much. A bar has no chest panel on its tooltip; its slot is known by its icon alone.
 - **A row** is `id`, `title`, `icon` (the art's name), `rarity`, `kind`, `level`, `extra`, `top` and `contents`, each content being title, amount and the id of the chest it is, when it is one of this table. "(Bound)" is cut off titles.
 - **`level`** is `Item.ReUseBalanceLevel`, the item level the chest asks for. The game writes it across the slot (`Pipeline.md`), and 223 of the chests have one.
@@ -62,7 +63,8 @@ An icon is named `<Icon>_<IconIndex>` in lower case (`use_12_91`), the name the 
 - **Items that read the same are one row** under the smallest id: same title, icon, rarity, kind, level and contents. Mostly these differ in how they are bound. Chests are compared after the chests inside them were merged, so it goes round until nothing merges.
 - **`top`** rows can sit in a slot and get an icon template: they have an English name, are not past `ExpireDeadline` on the day the script runs, and their `Tier` is 0 or 4 (1 to 3 are older tiers; most chests have 0). The other rows are only there for being inside a top one, and carry no icon.
 - **Left out by name**: a chest with "Cube" or "Engraving" in its title (`UNWANTED`) is dropped before anything else, so a chest that only matters through one is dropped too. That is two chests today.
-- **Numbers** (October 2026): 1,253 rows, 1,245 of them top; 180 pieces of art making 294 templates with their rarity. About 800 obtain all, 370 select one, 80 random; 129 templates are one chest, and the most crowded one is 101.
+- **Left out by art**: a chest drawn with one of `UNWANTED_ICONS` is dropped the same way. Five icons, ten chests: Splendid Pouch, Mariner's Treasure Chest, the two Act 4 Denouement Clear Event Chests and the six Honing Support Material pouches.
+- **Numbers** (October 2026): 932 rows, 925 of them top; 141 pieces of art making 221 templates with their rarity. 138 rows are gold alone and 102 silver alone.
 - **The art** goes to `templates/ChestIcons/<icon>.png`, 64 px, cut lossless from the sheets. `make_msg_pack.py` names each template `<icon>@<rarity>`.
 
 Seven groups of chests list exactly the same rows and still open differently, because a chest inside them is another one under the same title (the two "Trailblazer Supplies Chest: Crucible Level 3", say). Those cannot be told apart by their tooltip, and where their icon is the same too they end up "Not included" in the manifest.

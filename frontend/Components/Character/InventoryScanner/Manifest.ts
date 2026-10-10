@@ -11,6 +11,7 @@ import {
   assumed_tradability,
   chest_overrides,
   chests_for,
+  deleted_chests,
   edits,
   material_overrides,
   shown_slot,
@@ -97,7 +98,10 @@ function opens_to(id: number): string {
     inner ? [opens_to(inner), amount] : [title, amount],
   );
   // the order they are listed in says nothing
-  return JSON.stringify([chest.kind, contents.map((x) => JSON.stringify(x)).sort()]);
+  return JSON.stringify([
+    chest.kind,
+    contents.map((x) => JSON.stringify(x)).sort(),
+  ]);
 }
 
 // The one chest these are, as far as what they open to goes. Chests that list the same things
@@ -149,16 +153,21 @@ const add_loose = (list: LooseChest[], title: string, count: number) => {
 // set by hand count; the rest are `missing`.
 export const scanned = computed(() => {
   const owned: Record<string, (number | null)[]> = {};
-  // from obtain-all chests
-  const extra: Record<string, number[]> = {};
-  for (const label of ALL_MATERIAL_LABELS) {
-    owned[label] = [null, null, null];
-    extra[label] = [0, 0, 0];
-  }
+  for (const label of ALL_MATERIAL_LABELS) owned[label] = [null, null, null];
+  // chests with a choice to make, and chests with none: obtain-all, or one option left
   const grouped = new Map<string, ManifestChest>();
+  const sure = new Map<string, ManifestChest>();
   const random: LooseChest[] = [];
   const unknown: LooseChest[] = [];
   const missing: MissingSlot[] = [];
+
+  function group(title: string, band: number, count: number, options: Bag[]) {
+    const into = options.length === 1 ? sure : grouped;
+    const key = `${title}|${band}|${JSON.stringify(options)}`;
+    const old = into.get(key);
+    if (old) old.count += count;
+    else into.set(key, { key, title, band, count, options });
+  }
 
   // everything inside a chest takes the chest's band
   function open(
@@ -174,20 +183,24 @@ export const scanned = computed(() => {
       const options = items.flatMap(([inner, each, id]) =>
         alternatives(inner, each, id),
       );
-      if (!options.length) return;
-      const key = `${title}|${band}|${JSON.stringify(options)}`;
-      const old = grouped.get(key);
-      if (old) old.count += count;
-      else grouped.set(key, { key, title, band, count, options });
+      if (options.length) group(title, band, count, options);
       return;
     }
-    for (const [inner, each, id] of items) {
-      const label = TITLE_LABEL[inner];
-      const opens = id ? OPENS[id] : undefined;
-      if (label) extra[label][band] += each * count;
-      else if (opens)
-        open(opens.kind, opens.contents, each * count, band, inner);
-    }
+    // an obtain-all inside is part of this chest; any other chest inside is opened in turn
+    const bag: Bag = {};
+    const gather = (items: Opens["contents"], times: number) => {
+      for (const [inner, each, id] of items) {
+        const label = TITLE_LABEL[inner];
+        const opens = id ? OPENS[id] : undefined;
+        if (label) bag[label] = (bag[label] ?? 0) + each * times;
+        else if (opens?.kind === "ObtainAll")
+          gather(opens.contents, each * times);
+        else if (opens)
+          open(opens.kind, opens.contents, each * times * count, band, inner);
+      }
+    };
+    gather(items, 1);
+    if (Object.keys(bag).length) group(title, band, count, [bag]);
   }
 
   const keys = new Set([...slots.value.keys(), ...Object.keys(edits.value)]);
@@ -247,8 +260,8 @@ export const scanned = computed(() => {
   }
   return {
     owned,
-    extra,
     chests: [...grouped.values()],
+    opened: [...sure.values()],
     random,
     unknown,
     missing,
@@ -262,15 +275,21 @@ export const convert_owner = ref("");
 
 const cell_key = (label: string, band: number) => `${label}|${band}`;
 
-// what the input shows: the override, else "n+k", else nothing (a question mark)
+// what the input shows: the override, else what the slots hold, else nothing (a question mark)
 export function cell_text(label: string, band: number): string {
   const override = material_overrides.value[cell_key(label, band)];
   if (override !== undefined) return override;
-  const n = scanned.value.owned[label][band];
-  const k = scanned.value.extra[label][band];
-  if (n === null && !k) return "";
-  return (n ?? 0).toLocaleString() + (k ? "+" + k.toLocaleString() : "");
+  return scanned.value.owned[label][band]?.toLocaleString() ?? "";
 }
+
+// without the deleted ones, and with the counts the user set
+const kept = (chests: ManifestChest[]) =>
+  chests
+    .filter((chest) => !deleted_chests.value.includes(chest.key))
+    .map((chest) => ({
+      ...chest,
+      count: chest_overrides.value[chest.key] ?? chest.count,
+    }));
 
 // an emptied cell goes back to what was scanned
 export function set_cell_text(label: string, band: number, text: string) {
@@ -294,9 +313,22 @@ export const manifest = computed(() => {
   const materials: Record<string, number[]> = {};
   // gained from T4, shown beside the input
   const incoming: Record<string, number[]> = {};
+  // from the chests with no choice to make, shown beside the input
+  const extra: Record<string, number[]> = {};
   for (const label of ALL_MATERIAL_LABELS) {
-    materials[label] = bands.map((band) => cell_value(label, band));
     incoming[label] = [0, 0, 0];
+    extra[label] = [0, 0, 0];
+  }
+  const opened = kept(scanned.value.opened);
+  for (const chest of opened) {
+    for (const [label, amount] of Object.entries(chest.options[0])) {
+      extra[label][chest.band] += amount * chest.count;
+    }
+  }
+  for (const label of ALL_MATERIAL_LABELS) {
+    materials[label] = bands.map(
+      (band) => cell_value(label, band) + extra[label][band],
+    );
   }
   for (const mat of CONVERTIBLE_MATERIALS) {
     for (const band of bands) {
@@ -311,10 +343,9 @@ export const manifest = computed(() => {
   for (const label of ALL_MATERIAL_LABELS) {
     for (const band of bands) materials[label][band] += incoming[label][band];
   }
-  const chests = [...scanned.value.chests, ...added_chests.value].map(
+  const chests = kept([...scanned.value.chests, ...added_chests.value]).map(
     (chest) => ({
       ...chest,
-      count: chest_overrides.value[chest.key] ?? chest.count,
       options: chest.options.map((option) =>
         merge(
           Object.entries(option).map(([label, amount]) => {
@@ -327,5 +358,5 @@ export const manifest = computed(() => {
       ),
     }),
   );
-  return { ...scanned.value, materials, incoming, chests };
+  return { ...scanned.value, materials, incoming, extra, chests, opened };
 });
