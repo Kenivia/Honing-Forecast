@@ -1,4 +1,5 @@
 use image::{GrayImage, imageops::grayscale};
+use parking_lot::Mutex;
 
 use crate::setup::OneIconConfig;
 
@@ -21,10 +22,16 @@ pub fn est_ingame_brightness(best_mean_f: f64, c: &[f64; 3]) -> f64 {
 }
 
 pub fn brightness_lut(in_game_brightness: f64) -> [u8; 256] {
-    let exponent =
-        (GAMMA_RATIO + in_game_brightness.clamp(0.0, 100.0)) / (GAMMA_RATIO + TARGET_BRIGHTNESS);
-
-    std::array::from_fn(|v| (255.0 * (v as f64 / 255.0).powf(exponent)).round() as u8)
+    // the last one made is kept: it is asked for with every crop, and the estimate seldom moves
+    static LAST: Mutex<(f64, [u8; 256])> = Mutex::new((f64::NAN, [0; 256]));
+    let mut last = LAST.lock();
+    if last.0 != in_game_brightness {
+        let exponent = (GAMMA_RATIO + in_game_brightness.clamp(0.0, 100.0))
+            / (GAMMA_RATIO + TARGET_BRIGHTNESS);
+        let lut = std::array::from_fn(|v| (255.0 * (v as f64 / 255.0).powf(exponent)).round() as u8);
+        *last = (in_game_brightness, lut);
+    }
+    last.1
 }
 
 // once per crop: a second pass would move it again

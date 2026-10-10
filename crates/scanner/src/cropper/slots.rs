@@ -72,18 +72,23 @@ impl ScannerState {
                 .shifted(root),
         );
     }
-    // the icons the slot passes as, best first, then its number as captured and its icon normalised
+    // The icons the slot passes as, best first, then its number as captured and its icon
+    // normalised. `seen` is that icon crop where the caller has it already.
     pub fn check_through_all_icons(
         &mut self,
         position: Rect,
+        seen: Option<OneIconConfig>,
     ) -> (Vec<(String, f64, bool)>, OneIconConfig, OneIconConfig) {
         let number_position = NUMBER_OFFSET
             .scaled(self.screen_info.effective_height)
             .shifted(position.top_left);
-        let mut observed: OneIconConfig = self.crop_buffer(position);
-
         let (height, s) = (self.screen_info.effective_height, self.screen_info.scale_factor);
         let brightness = self.screen_info.brightness.unwrap();
+        let observed = seen.unwrap_or_else(|| {
+            let mut crop = self.crop_buffer(position);
+            normalize_brightness(&mut crop, brightness);
+            crop
+        });
         let level_rows = ((LEVEL_ROWS.0 * s).round() as usize, (LEVEL_ROWS.1 * s).round() as usize);
         if !FROM_AFAR.read().contains_key(&height) {
             let names: Vec<String> = BASE_ICONS
@@ -104,7 +109,6 @@ impl ScannerState {
                 .collect();
             FROM_AFAR.write().insert(height, all);
         }
-        normalize_brightness(&mut observed, brightness);
         let seen = from_afar(&observed.data, level_rows.0);
         let mut shortlist: Vec<(f32, String)> = FROM_AFAR.read()[&height]
             .iter()
@@ -174,13 +178,17 @@ impl ScannerState {
                 (top + position.height).ceil() as usize,
             );
             let same_pixels = self.slot_infos.get(slot_address).map(|info| info.raw_hash == raw_hash);
+            // the crop that was compared, which the matching below takes as it is
+            let mut seen = None;
             let unchanged = match same_pixels {
                 None => false,
                 Some(true) => true,
                 Some(false) => {
-                    let mut seen = self.crop_buffer(position);
-                    normalize_brightness(&mut seen, self.screen_info.brightness.unwrap());
-                    close_enough(&self.slot_infos[slot_address].observed_icon, &seen).is_some()
+                    let mut crop = self.crop_buffer(position);
+                    normalize_brightness(&mut crop, self.screen_info.brightness.unwrap());
+                    let same = close_enough(&self.slot_infos[slot_address].observed_icon, &crop).is_some();
+                    seen = Some(crop);
+                    same
                 }
             };
             if unchanged {
@@ -192,7 +200,7 @@ impl ScannerState {
                 }
                 let (matched, observed_number, observed_icon) =
                     timed("slots/all_icons", || {
-                        self.check_through_all_icons(position)
+                        self.check_through_all_icons(position, seen)
                     });
                 let levelled = matched.first().is_some_and(|x| x.2);
                 let alternatives: Vec<String> = matched.iter().skip(1).map(|x| x.0.clone()).collect();

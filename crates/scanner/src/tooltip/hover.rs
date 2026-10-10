@@ -370,7 +370,7 @@ impl ScannerState {
         // a tooltip that would run off the screen is pushed up until its hints end at the bottom
         let ui_bottom = self.screen_info.ui_origin.1 + self.screen_info.effective_height as f64;
         let pushed_up = layout.bottom as f64 >= ui_bottom - PUSHED_UP_MARGIN * s;
-        hover.chest_place = self.tooltip_slot(&bar, s, pushed_up);
+        hover.chest_place = self.tooltip_slot(&bar, s, pushed_up, &hover.candidates);
 
         self.hover = Some(hover);
     }
@@ -582,13 +582,13 @@ impl ScannerState {
         bar: &TitleBar,
         s: f64,
         pushed_up: bool,
+        slots: &[(SlotAddress, f64)],
     ) -> (Option<(InventoryType, usize, usize)>, Option<SlotAddress>) {
         let height = TITLE_BAR_HEIGHTS
             .into_iter()
             .min_by(|a, b| (a * s - bar.height as f64).abs().total_cmp(&(b * s - bar.height as f64).abs()))
             .unwrap();
         let bar_top = (bar.y + bar.height) as f64 - height * s;
-        let slots = self.slots_beside(bar, s);
         let column = slots
             .first()
             .map(|(x, _)| (x.inventory_type, x.page_num, x.pos_in_inv.1));
