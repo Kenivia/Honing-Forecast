@@ -3,9 +3,8 @@
 //   python scripts/tooltips/dump_frames.py <mp4> | cargo run --release --bin tooltip_test -- --stdin <width> <height>
 use hf_scanner::{
     constants::ANCHORS,
-    image_utils::ocr::recognize_line,
     native,
-    ocr_jobs::OcrJob,
+    ocr::jobs::OcrJob,
     scanner_state::ScannerState,
     tooltip::{chest::Chest, hover::Hover},
 };
@@ -216,7 +215,7 @@ fn main() {
                     state.apply_ocr(
                         batch
                             .iter()
-                            .map(|job| (job.id, recognize_line(&job.image, job.numbers)))
+                            .map(|job| (job.id, job.line.read()))
                             .collect(),
                     );
                 }

@@ -1,57 +1,12 @@
 use crate::buffer::Buffer;
-use crate::image_utils::ocr::OCR_LINE_HEIGHT;
+use crate::ocr::{jobs::Line, text::text_line};
 use crate::tooltip::common::text_lines;
 use crate::tooltip::detect::TitleBar;
-use image::{
-    GrayImage, Luma,
-    imageops::{FilterType, resize},
-};
-
-// A line of text cut out of a frame, as how much each pixel is text. It is cut on every frame of
-// a hover and only made into a strip for the few that are read.
-#[derive(Debug, Clone)]
-pub struct Ink(GrayImage);
-
-impl Ink {
-    // light text on a dark bar to dark text on white, which is what the recogniser reads best
-    pub fn strip(&self) -> GrayImage {
-        let most = (*self.0.as_raw().iter().max().unwrap()).max(1) as u32;
-        let image = GrayImage::from_fn(self.0.width(), self.0.height(), |x, y| {
-            Luma([255 - (self.0.get_pixel(x, y)[0] as u32 * 255 / most) as u8])
-        });
-        // the recogniser works on lines 64px tall
-        let width = image.width() * OCR_LINE_HEIGHT / image.height();
-        resize(&image, width, OCR_LINE_HEIGHT, FilterType::CatmullRom)
-    }
-}
-
-// whatever is bright
-pub fn text_image(buffer: &Buffer, x0: usize, y0: usize, x1: usize, y1: usize) -> Ink {
-    ink_image(buffer, x0, y0, x1, y1, |[r, g, b]| r.max(g).max(b))
-}
-
-// only what is in the amount yellow (255, 213, 0), so white text and the background drop out
-pub fn yellow_image(buffer: &Buffer, x0: usize, y0: usize, x1: usize, y1: usize) -> Ink {
-    ink_image(buffer, x0, y0, x1, y1, |[r, g, b]| (r.min(g) - b).max(0))
-}
-
-fn ink_image(
-    buffer: &Buffer,
-    x0: usize,
-    y0: usize,
-    x1: usize,
-    y1: usize,
-    ink: impl Fn([i32; 3]) -> i32,
-) -> Ink {
-    Ink(GrayImage::from_fn((x1 - x0) as u32, (y1 - y0) as u32, |x, y| {
-        Luma([ink(buffer.rgb(x0 + x as usize, y0 + y as usize)) as u8])
-    }))
-}
 
 // The title's lines, and whether every line is centred in the bar.
 // A line whose side gaps differ has the cursor over it: "Great Destiny Leapstone" with its
 // start covered reads as a different, valid item.
-pub fn title_lines(buffer: &Buffer, bar: &TitleBar, s: f64) -> (Vec<Ink>, bool) {
+pub fn title_lines(buffer: &Buffer, bar: &TitleBar, s: f64) -> (Vec<Line>, bool) {
     let is_text =
         |x: usize, y: usize| buffer.rgb(bar.x + x, bar.y + y).into_iter().max().unwrap() > 120;
     let is_coloured = |x: usize, y: usize| {
@@ -104,7 +59,7 @@ pub fn title_lines(buffer: &Buffer, bar: &TitleBar, s: f64) -> (Vec<Ink>, bool) 
         }
         // the lines are too close together for any margin above or below
         let margin = (5.0 * s).round() as usize;
-        words.push(text_image(
+        words.push(text_line(
             buffer,
             bar.x + first.saturating_sub(margin),
             bar.y + top.saturating_sub(1),

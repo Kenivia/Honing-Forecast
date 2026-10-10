@@ -1,13 +1,13 @@
 import { WasmOp } from "@/WasmInterface/WasmWorker";
 import { create_worker_bundle } from "@/WasmInterface/WorkerBundle";
-import { OcrJob } from "./LoadStorage";
+import { OcrJob, OneIconConfig } from "./LoadStorage";
 
 // The scanner worker never runs OCR itself. Each scan result lists text lines to read, which
 // are passed to the OCR workers here, and their texts go back in with a later scan.
 // Module state, like the scanner worker it lives and dies with.
 
 const BATCH = 4; // lines per op, so the first texts are not held back by a long batch
-// each worker loads the model again, so only a few
+// each worker loads the model and the templates again, so only a few
 const WORKERS = Math.min(
   3,
   Math.max(1, Math.floor((navigator.hardwareConcurrency ?? 4) / 4)),
@@ -26,7 +26,7 @@ let done: [number, string][] = [];
 // per-batch timings in ms, kept on window for profiling
 const ocr_timings: any[] = ((globalThis as any).__ocr_timings ??= []);
 
-export function start_ocr(model: Uint8Array) {
+export function start_ocr(model: Uint8Array, config: OneIconConfig[]) {
   stop_ocr();
   workers = Array.from({ length: WORKERS }, () => ({
     bundle: create_worker_bundle(),
@@ -36,7 +36,7 @@ export function start_ocr(model: Uint8Array) {
   for (const worker of workers) {
     worker.bundle.debounced_start(
       WasmOp.OcrInit,
-      model,
+      { model, config },
       () => {
         worker.ready = true;
         pump();
@@ -86,7 +86,7 @@ function pump() {
         ocr_timings.push({
           at: now,
           jobs: batch.length,
-          width: batch.reduce((sum, job) => sum + job.width, 0),
+          width: batch.reduce((sum, job) => sum + job.line.crop.width, 0),
           took: now - start,
           // how long its first reads waited, queue and all
           waited: Math.max(

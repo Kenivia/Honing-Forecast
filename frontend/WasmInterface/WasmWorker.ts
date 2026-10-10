@@ -9,7 +9,10 @@ import init, {
 } from "@/../crates/wasm/pkg/hf_wasm.js";
 import { Payload } from "./PayloadBuilder";
 import { Upgrade } from "@/Utils/KeyedUpgrades";
-import { OneIconConfig } from "@/Components/Character/InventoryScanner/LoadStorage";
+import {
+  OcrJob,
+  OneIconConfig,
+} from "@/Components/Character/InventoryScanner/LoadStorage";
 
 export enum WasmOp {
   OptimizeAverage,
@@ -65,6 +68,15 @@ export interface StateBundle {
   special_cache: any;
   adv_cache: any;
   metric?: number;
+}
+
+// what an OCR job can hand over instead of copying
+export function ocr_job_buffers(job: OcrJob) {
+  const kind = job.line.kind;
+  return [
+    job.line.crop.data.buffer,
+    ...(typeof kind === "object" ? [kind.Number.icon.data.buffer] : []),
+  ];
 }
 
 // where frames are copied to; the scanner state itself stays inside wasm
@@ -126,13 +138,10 @@ self.addEventListener("message", async (ev) => {
     result = await reserve_buffer_wrapper(payload);
     scanner_buffer = result.buffer;
   } else if (wasm_op == WasmOp.OcrInit) {
-    ocr_init_wrapper(payload);
+    ocr_init_wrapper(payload.model, payload.config);
   } else if (wasm_op == WasmOp.Ocr) {
     // a batch of text lines from the scanner worker, relayed by the main thread
-    result = payload.map((job) => [
-      job.id,
-      ocr_wrapper(job.width, job.height, job.data, job.numbers),
-    ]);
+    result = payload.map((job) => [job.id, ocr_wrapper(job)]);
     take_timings();
   } else {
     return; // react dev tool shenanigans
@@ -148,11 +157,11 @@ self.addEventListener("message", async (ev) => {
 
   timings.worker = performance.now() - start_time;
   timings.posted_at = abs_now();
-  // a scan's strips and slot images are moved, not copied
+  // a scan's text crops and slot images are moved, not copied
   const transfer: ArrayBuffer[] =
     wasm_op == WasmOp.Cropper && result
       ? [
-          ...result.ocr_jobs.map((job) => job.data.buffer),
+          ...result.ocr_jobs.flatMap(ocr_job_buffers),
           ...result.slots.flatMap((slot) =>
             slot.image ? [slot.image.data.buffer] : [],
           ),

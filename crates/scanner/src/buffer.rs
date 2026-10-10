@@ -13,6 +13,9 @@ pub struct Buffer {
     // raw channel value to its brightness-normalised value, rebuilt from the brightness estimate each scan
     #[serde(skip)]
     pub lut: Option<[u8; 256]>,
+    // the estimate that table is of
+    #[serde(skip)]
+    pub brightness: f64,
 }
 impl Buffer {
     pub fn reserve(&mut self) {
@@ -60,6 +63,13 @@ impl Buffer {
             .map(|y| &data[(y * self.width + x0) * 4..(y * self.width + x1) * 4])
             .collect();
         ahash::RandomState::with_seeds(1, 2, 3, 4).hash_one(rows)
+    }
+
+    // copy of a rectangle as captured
+    pub fn raw_crop(&self, x0: usize, y0: usize, x1: usize, y1: usize) -> RgbaImage {
+        let data = self.data();
+        let rows = (y0..y1).flat_map(|y| &data[(y * self.width + x0) * 4..(y * self.width + x1) * 4]);
+        RgbaImage::from_raw((x1 - x0) as u32, (y1 - y0) as u32, rows.copied().collect()).unwrap()
     }
 
     // brightness-normalised copy of a rectangle

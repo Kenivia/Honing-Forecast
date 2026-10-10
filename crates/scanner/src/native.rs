@@ -3,7 +3,8 @@
 use crate::{
     buffer::Buffer,
     scanner_state::ScannerState,
-    setup::{load_ocr_engine, set_config},
+    ocr::recognize::load_ocr_engine,
+    setup::set_config,
 };
 use std::{fs, sync::Once};
 
@@ -40,6 +41,7 @@ pub fn new_state(
         height,
         size: pixels.len(),
         lut: None,
+        brightness: 0.0,
     };
     (ScannerState::new(buffer, game.0, game.1, forced_21_9), pixels)
 }

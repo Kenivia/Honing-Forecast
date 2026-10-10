@@ -1,6 +1,6 @@
 use crate::{
     buffer::Buffer,
-    ocr_jobs::OcrJob,
+    ocr::jobs::OcrJob,
     scanner_state::{InventoryType, OneSlotInfo, ScannerState, SlotAddress, Tradability},
     setup::{OneIconConfig, WireRect},
     tooltip::{

@@ -4,9 +4,8 @@ use crate::{
         brightness::normalize_brightness,
         close_enough::{DEFAULT_CONFIDENCE, close_enough, confidence, confidence_without},
         common::{Rect, get_resizer},
-        number::NumberParams,
-        ocr::number_strip,
     },
+    ocr::jobs::{Kind, Line},
     scanner_state::{OneSlotInfo, ScannerState, SlotAddress},
     setup::{BASE_ICONS, OneIconConfig, icon_lookup},
     timing::timed,
@@ -214,16 +213,16 @@ impl ScannerState {
                 self.changed_slots.insert(*slot_address);
                 if icon_name_score.is_some() {
                     // only overwrite if it matches another
-                    let pre_processed = timed("slots/number_preprocess", || {
-                        number_strip(
-                            &observed_number.data,
-                            &observed_icon.data,
-                            &BASE_ICONS.read()[&icon_name_score.as_ref().unwrap().0].data,
-                            self.screen_info.brightness.unwrap(),
-                            &NumberParams::default(),
-                        )
-                    });
-                    let amount_job = self.request_ocr(pre_processed, 0, true);
+                    // the number as captured: the game's brightness setting does not touch it
+                    let number = Line {
+                        crop: observed_number.data.clone(),
+                        kind: Kind::Number {
+                            icon: observed_icon.data.clone(),
+                            template: icon_name_score.as_ref().unwrap().0.clone(),
+                        },
+                        brightness: self.screen_info.brightness.unwrap(),
+                    };
+                    let amount_job = self.request_ocr(number, 0);
 
                     // what the tooltip said stays while the slot holds the same item, and so does
                     // the last number until the new one is read

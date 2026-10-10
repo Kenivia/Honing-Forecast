@@ -4,7 +4,7 @@ pub mod cropper;
 pub mod image_utils;
 #[cfg(not(target_arch = "wasm32"))]
 pub mod native;
-pub mod ocr_jobs;
+pub mod ocr;
 pub mod scan_result;
 pub mod scanner_state;
 pub mod setup;

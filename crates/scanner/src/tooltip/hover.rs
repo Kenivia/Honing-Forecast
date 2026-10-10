@@ -4,11 +4,15 @@ use super::{
     icon::tooltip_icon,
     items::{ITEMS, item_from_body, match_title, shares_icon, variant},
     layout::parse_layout,
-    title::{Ink, join_title, text_image, title_lines, yellow_image},
+    title::{join_title, title_lines},
 };
 use crate::{
     constants::{COMBINED_NUMBER_HEIGHT, SLOT_ORDER},
     image_utils::brightness::brightness_lut,
+    ocr::{
+        jobs::Line,
+        text::{text_line, yellow_line},
+    },
     scanner_state::{InventoryType, ScannerState, SlotAddress, Tradability},
     timing::timed,
 };
@@ -101,11 +105,11 @@ pub struct Hover {
 #[derive(Debug, Default, Clone)]
 pub struct Strips {
     // one per line, and whether every line was centred
-    pub title: Option<(Vec<Ink>, bool)>,
-    pub amount: Option<[Ink; 3]>,
+    pub title: Option<(Vec<Line>, bool)>,
+    pub amount: Option<[Line; 3]>,
     pub chest: Option<Vec<ChestRowStrips>>,
     // one per description line
-    pub body: Option<Vec<Ink>>,
+    pub body: Option<Vec<Line>>,
 }
 
 // The OCR jobs of one frame of a hover. Its votes are cast once every text is back.
@@ -158,27 +162,26 @@ impl ScannerState {
 
     // sends lines off to be read, as one read of this hover
     fn send_read(&mut self, hover: &mut Hover, strips: Strips) {
-        let start = crate::timing::now();
         // a hover's first read goes ahead of other hovers' later ones
         let priority = hover.sent.into_iter().max().unwrap().min(255) as u8;
         let mut read = PendingRead { hover: hover.id, ..Default::default() };
         if let Some((lines, centred)) = strips.title {
-            let jobs = lines.into_iter().map(|line| self.request_ocr(line.strip(), priority, false)).collect();
+            let jobs = lines.into_iter().map(|line| self.request_ocr(line, priority)).collect();
             read.title = Some((jobs, centred));
         }
         if let Some(images) = strips.amount {
-            read.amount = Some(images.map(|image| self.request_ocr(image.strip(), priority, false)));
+            read.amount = Some(images.map(|image| self.request_ocr(image, priority)));
         }
         if let Some(rows) = strips.chest {
             let mut jobs = vec![];
             for row in rows {
-                let names = row.names.into_iter().map(|x| self.request_ocr(x.strip(), priority, false)).collect();
-                jobs.push((names, self.request_ocr(row.count.strip(), priority, false)));
+                let names = row.names.into_iter().map(|x| self.request_ocr(x, priority)).collect();
+                jobs.push((names, self.request_ocr(row.count, priority)));
             }
             read.chest = Some(jobs);
         }
         if let Some(lines) = strips.body {
-            read.body = Some(lines.into_iter().map(|line| self.request_ocr(line.strip(), priority, false)).collect());
+            read.body = Some(lines.into_iter().map(|line| self.request_ocr(line, priority)).collect());
         }
         let kinds =
             [read.title.is_some(), read.amount.is_some(), read.chest.is_some(), read.body.is_some()];
@@ -188,7 +191,6 @@ impl ScannerState {
         }
         if kinds.contains(&true) {
             self.pending_reads.push(read);
-            crate::timing::record("tooltip/strips", crate::timing::now() - start);
         }
     }
 
@@ -200,6 +202,7 @@ impl ScannerState {
         };
         let s = self.screen_info.scale_factor;
         self.buffer.lut = Some(brightness_lut(brightness));
+        self.buffer.brightness = brightness;
         let buffer = self.buffer;
         // each located window: its origin and its header's right edge
         let located: Vec<((f64, f64), f64)> = WINDOW_WIDTHS
@@ -325,9 +328,9 @@ impl ScannerState {
             };
             let (a, b, c) = (margin(4.0, 5.33), margin(4.0, 4.0), margin(2.67, 2.67));
             strips.amount = Some([
-                text_image(&buffer, a.0, a.1, a.2, a.3),
-                text_image(&buffer, b.0, b.1, b.2, b.3),
-                yellow_image(&buffer, c.0, c.1, c.2, c.3),
+                text_line(&buffer, a.0, a.1, a.2, a.3),
+                text_line(&buffer, b.0, b.1, b.2, b.3),
+                yellow_line(&buffer, c.0, c.1, c.2, c.3),
             ]);
         }
 
@@ -346,7 +349,7 @@ impl ScannerState {
             && hover.sent[3] < MAX_READS
         {
             let lines = layout.description.iter();
-            strips.body = Some(lines.map(|x| text_image(&buffer, x.0, x.1, x.2, x.3)).collect());
+            strips.body = Some(lines.map(|x| text_line(&buffer, x.0, x.1, x.2, x.3)).collect());
         }
         let mut now = Strips::default();
         if hover.waiting[0] < IN_FLIGHT && strips.title.is_some() {

@@ -1,9 +1,9 @@
+use crate::ocr::{jobs::Line, text::text_line};
 use crate::{
     buffer::Buffer,
     scanner_state::{InventoryType, ScannerState, SlotAddress, Tradability},
     tooltip::{
         items::{VARIANTS, Variant, variant},
-        title::{Ink, text_image},
     },
 };
 use ahash::AHashMap;
@@ -74,12 +74,12 @@ pub struct ChestLayout {
 // the text lines of one row of a chest
 #[derive(Debug, Clone)]
 pub struct ChestRowStrips {
-    pub names: Vec<Ink>,
-    pub count: Ink,
+    pub names: Vec<Line>,
+    pub count: Line,
 }
 
 pub fn chest_strips(buffer: &Buffer, layout: &ChestLayout) -> Vec<ChestRowStrips> {
-    let strip = |(x0, y0, x1, y1): Rect| text_image(buffer, x0, y0, x1, y1);
+    let strip = |(x0, y0, x1, y1): Rect| text_line(buffer, x0, y0, x1, y1);
     layout
         .rows
         .iter()

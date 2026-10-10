@@ -104,14 +104,23 @@ export interface ScanResult {
   ocr_jobs: OcrJob[];
 }
 
-// one line of text for the OCR worker, a grey strip 64px tall, one byte a pixel
-export interface OcrJob {
-  id: number;
-  priority: number;
-  numbers: boolean;
+export interface Pixels {
   width: number;
   height: number;
   data: Uint8Array;
+}
+
+// One line of text for an OCR worker, as captured. The page only passes it on: the worker
+// makes it into what the recogniser takes.
+export interface OcrJob {
+  id: number;
+  priority: number;
+  line: {
+    crop: Pixels;
+    // a slot's count comes with its icon crop and the name of the template it matched
+    kind: "Text" | "Yellow" | { Number: { icon: Pixels; template: string } };
+    brightness: number;
+  };
 }
 
 let configPromise: Promise<OneIconConfig[]> | null = null;

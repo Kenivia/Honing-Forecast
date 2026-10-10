@@ -1,7 +1,7 @@
 use crate::{
     buffer::Buffer,
     cropper::anchors::AnchorInfo,
-    ocr_jobs::OcrJob,
+    ocr::jobs::OcrJob,
     setup::OneIconConfig,
     tooltip::{
         chest::Chest,

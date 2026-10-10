@@ -5,9 +5,9 @@ use hf_core::payload::Payload;
 use hf_core::performance::Performance;
 use hf_core::state_bundle::StateBundle;
 use hf_scanner::buffer::Buffer;
-use hf_scanner::image_utils::ocr::recognize_raw;
+use hf_scanner::ocr::{jobs::OcrJob, recognize::load_ocr_engine};
 use hf_scanner::scanner_state::{ScannerState, SlotEdit};
-use hf_scanner::setup::{OneIconConfig, load_ocr_engine, set_config};
+use hf_scanner::setup::{OneIconConfig, set_config};
 use hf_scanner::timing::timed;
 use rand::rngs::ThreadRng;
 use serde::Deserialize;
@@ -116,15 +116,18 @@ pub fn reserve_buffer_wrapper(input: JsValue) -> JsValue {
     out
 }
 
-// The two below run in the OCR worker, which holds the recogniser and nothing else.
+// The two below run in the OCR worker, which holds the recogniser and the templates a slot's
+// number is cleaned up with, and no scanner state.
 #[wasm_bindgen]
-pub fn ocr_init_wrapper(model: Vec<u8>) {
+pub fn ocr_init_wrapper(model: Vec<u8>, config: JsValue) {
     console_error_panic_hook::set_once();
 
     load_ocr_engine(model);
+    set_config(from_value(config).unwrap());
 }
 
+// one of a scan result's ocr_jobs, as it came
 #[wasm_bindgen]
-pub fn ocr_wrapper(width: u32, height: u32, data: Vec<u8>, numbers: bool) -> String {
-    recognize_raw(width, height, data, numbers)
+pub fn ocr_wrapper(job: JsValue) -> String {
+    from_value::<OcrJob>(job).unwrap().line.read()
 }

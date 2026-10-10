@@ -128,8 +128,8 @@ async function start_scanner() {
     buffer: { width, height, size: width * height * 4 },
     config: toRaw(config),
   };
-  // the model only goes to the OCR worker
-  start_ocr(toRaw(model));
+  // the model only goes to the OCR workers, the templates to them too
+  start_ocr(toRaw(model), toRaw(config));
   bundle.value.debounced_start(
     WasmOp.Reserve,
     new_scanner_state,

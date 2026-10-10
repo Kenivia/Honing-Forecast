@@ -1,5 +1,5 @@
 import { shallowReactive } from "vue";
-import { WasmOp } from "./WasmWorker";
+import { ocr_job_buffers, WasmOp } from "./WasmWorker";
 
 const createWorker = () =>
   new Worker(new URL("./WasmWorker.ts", import.meta.url), { type: "module" });
@@ -129,12 +129,12 @@ export function create_worker_bundle(): WorkerBundle {
     const post_start = performance.now();
     worker.postMessage(
       { type: "message", wasm_op, payload, posted_at: abs_now() },
-      // a transferred frame leaves no copy behind on this thread, nor do a batch's strips
+      // a transferred frame leaves no copy behind on this thread, nor do a batch's crops
       {
         transfer: payload?.frame
           ? [payload.frame]
           : wasm_op == WasmOp.Ocr
-            ? payload.map((job) => job.data.buffer)
+            ? payload.flatMap(ocr_job_buffers)
             : [],
       },
     );

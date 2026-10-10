@@ -6,11 +6,11 @@
 // Lines: READ source frame slot icon, then per variant the full-alphabet read and the digits one;
 // TRUTH source slot icon amount, for slots a tooltip was tied to.
 use hf_scanner::{
-    image_utils::{
-        number::NumberParams,
-        ocr::{number_strip, recognize_line},
-    },
     native,
+    ocr::{
+        number::{NumberParams, number_strip},
+        recognize::recognize_line,
+    },
     scanner_state::{ScannerState, SlotAddress},
     setup::BASE_ICONS,
 };

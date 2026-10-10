@@ -4,17 +4,9 @@ use crate::{
 };
 use ahash::AHashMap;
 use fast_image_resize::Resizer;
-use ocrs::{OcrEngine, OcrEngineParams};
 use parking_lot::{MappedRwLockReadGuard, RwLock, RwLockReadGuard, RwLockWriteGuard};
-use rten::Model;
 use serde::{Deserialize, Serialize};
 use std::sync::LazyLock;
-
-pub static OCR_ENGINE: LazyLock<RwLock<Option<OcrEngine>>> = LazyLock::new(|| RwLock::new(None));
-// the same model, kept to what a slot's count can be
-pub static OCR_NUMBER_ENGINE: LazyLock<RwLock<Option<OcrEngine>>> =
-    LazyLock::new(|| RwLock::new(None));
-const NUMBER_CHARS: &str = "0123456789.+-";
 
 pub static BASE_ICONS: LazyLock<RwLock<AHashMap<String, OneIconConfig>>> =
     LazyLock::new(|| RwLock::new(AHashMap::new()));
@@ -162,18 +154,4 @@ pub fn icon_lookup(
 pub fn set_config(config: Vec<OneIconConfig>) {
     *BASE_ICONS.write() = config.into_iter().map(|icon| (icon.name.clone(), icon)).collect();
     crate::cropper::slots::FROM_AFAR.write().clear();
-}
-
-pub fn load_ocr_engine(model: Vec<u8>) {
-    // the alphabet is fixed per engine, so the model is loaded once for each
-    let engine = |allowed_chars: Option<String>| {
-        OcrEngine::new(OcrEngineParams {
-            recognition_model: Some(Model::load(model.clone()).expect("model load failed")),
-            allowed_chars,
-            ..Default::default()
-        })
-        .expect("model load failed")
-    };
-    *OCR_ENGINE.write() = Some(engine(None));
-    *OCR_NUMBER_ENGINE.write() = Some(engine(Some(NUMBER_CHARS.to_string())));
 }

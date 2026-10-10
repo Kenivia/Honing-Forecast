@@ -4,10 +4,12 @@ use hf_scanner::{
     image_utils::{
         brightness::normalize_brightness,
         common::Rect,
-        number::{NumberParams, number_background, number_mask},
-        ocr::{number_strip, recognize_line},
     },
     native,
+    ocr::{
+        number::{NumberParams, number_background, number_mask, number_strip},
+        recognize::recognize_line,
+    },
     scanner_state::ScannerState,
     setup::{BASE_ICONS, OneIconConfig},
 };
