@@ -33,6 +33,8 @@ type Opens = {
   title: string;
   kind: ChestKind;
   contents: [string, number, number | null][];
+  // how each content is bound, where one is bound more loosely than to a character
+  content_binds?: (string | null)[];
   // only there to tell a slot from the chest it is drawn like
   irrelevant?: boolean;
 };
@@ -171,38 +173,39 @@ export const scanned = computed(() => {
     else into.set(key, { key, title, band, count, options });
   }
 
-  // everything inside a chest takes the chest's band
-  function open(
-    kind: ChestKind,
-    items: [string, number, number | null][],
-    count: number,
-    band: number,
-    title: string,
-  ) {
+  // What is inside a chest takes the chest's band, or its own where it is bound more loosely. No
+  // select-one of the table holds such a thing, so its options all take the chest's.
+  function open(chest: Opens, count: number, band: number) {
+    const { kind, title } = chest;
     if (kind === "Random") return add_loose(random, title, count);
     if (kind === "SelectOne") {
       // an option that is no material, or a chest of chance, is not offered
-      const options = items.flatMap(([inner, each, id]) =>
+      const options = chest.contents.flatMap(([inner, each, id]) =>
         alternatives(inner, each, id),
       );
       if (options.length) group(title, band, count, options);
       return;
     }
     // an obtain-all inside is part of this chest; any other chest inside is opened in turn
-    const bag: Bag = {};
-    const gather = (items: Opens["contents"], times: number) => {
-      for (const [inner, each, id] of items) {
+    const bags: Bag[] = [{}, {}, {}];
+    const gather = (chest: Opens, times: number, band: number) => {
+      chest.contents.forEach(([inner, each, id], at) => {
+        const own = Math.max(
+          band,
+          BAND_OF[chest.content_binds?.[at] ?? ""] ?? 0,
+        );
         const label = TITLE_LABEL[inner];
         const opens = id ? OPENS[id] : undefined;
-        if (label) bag[label] = (bag[label] ?? 0) + each * times;
-        else if (opens?.kind === "ObtainAll")
-          gather(opens.contents, each * times);
-        else if (opens)
-          open(opens.kind, opens.contents, each * times * count, band, inner);
-      }
+        if (label) bags[own][label] = (bags[own][label] ?? 0) + each * times;
+        else if (opens?.kind === "ObtainAll") gather(opens, each * times, own);
+        else if (opens) open(opens, each * times * count, own);
+      });
     };
-    gather(items, 1);
-    if (Object.keys(bag).length) group(title, band, count, [bag]);
+    gather(chest, 1, band);
+    // listed once for each band it gives into
+    bags.forEach((bag, own) => {
+      if (Object.keys(bag).length) group(title, own, count, [bag]);
+    });
   }
 
   const keys = new Set([...slots.value.keys(), ...Object.keys(edits.value)]);
@@ -261,7 +264,7 @@ export const scanned = computed(() => {
       else miss();
       continue;
     }
-    open(chest.kind, chest.contents, amount, band, chest.title);
+    open(chest, amount, band);
   }
   return {
     owned,

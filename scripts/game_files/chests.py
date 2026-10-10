@@ -9,7 +9,8 @@ Run extract.py first, and this again after a game patch or a change to items.jso
 A row is one chest as the game has it: id, title, icon (the art's name), rarity, kind, the item
 level it asks for, contents as [title, amount, id if it is a chest of this table], and "extra", how
 many more rows its tooltip has for things that differ by class. Items that only differ in how they
-are bound are one row, and "binds" has the ways. "top" rows can sit in a slot: they have an English name, are
+are bound are one row, and "binds" has the ways; "content_binds" is there when something inside is
+not bound to a character, with how each content is bound instead. "top" rows can sit in a slot: they have an English name, are
 not past their expiry date and are not of tiers 1 to 3. The others are only there for being inside
 one. Chests with "Cube" or "Engraving" in their title never count as opening to a material.
 An irrelevant row is there so that a slot holding it can be told from the chest it looks like. Its
@@ -30,6 +31,7 @@ TEMPLATES = ROOT / "templates"
 ART = TEMPLATES / "ChestIcons"
 MONEY = {1: "Silver", 2: "Gold"}  # Item.GainMoneyType
 BOUND = {1: "CharBound", 2: "RosterBound"}  # Item.BindTarget, of an item whose BindType is not 0
+LOOSER = ["RosterBound", "Tradable"]  # than bound to a character, the least so first
 UNWANTED = ("Cube", "Engraving")  # in a chest's title: it is irrelevant, and so is what only it leads to
 UNWANTED_ICONS = ("all_quest_02_184", "all_quest_02_196", "all_quest_02_198", "all_quest_02_199", "all_quest_02_226")  # likewise, by its art
 
@@ -109,7 +111,8 @@ def main():
                 row["extra"] = extra
             row["top"] = row.get("top", False) or top(item_id)
             row["contents"] = inside
-            row.setdefault("binds", []).append((top(item_id), bind(item_id)))
+            inside_binds = [bind(content_id) if content_id in items else None for content_id, _, _ in contents]
+            row.setdefault("binds", []).append((top(item_id), bind(item_id), inside_binds))
             now[item_id] = row["id"]
         if now == merged:
             break
@@ -126,7 +129,12 @@ def main():
     out = [by_id[item_id] for item_id in sorted(kept)]
     for row in out:
         # how the items that can sit in a slot are bound, or all of them when none can
-        row["binds"] = sorted({kind for is_top, kind in row["binds"] if is_top or not row["top"]})
+        bound = [(kind, inside) for is_top, kind, inside in row["binds"] if is_top or not row["top"]]
+        row["binds"] = sorted({kind for kind, _ in bound})
+        # the tightest any of them has it; bound to a character is no looser than the chest
+        loosest = [min((LOOSER.index(kind) if kind in LOOSER else -1 for kind in column)) for column in zip(*(inside for _, inside in bound))]
+        if max(loosest, default=-1) >= 0:
+            row["content_binds"] = [LOOSER[at] if at >= 0 else None for at in loosest]
         if not row["top"]:
             del row["top"]
             # no template is made for it
