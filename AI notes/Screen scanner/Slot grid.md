@@ -16,7 +16,7 @@ Each slot in a scan result carries a status, a reason and a value (the tooltip's
 | NeedHover | orange | a material showing 9999 or more with no tooltip; a chest not accounted for; an icon several materials share (the books) with no tooltip saying which |
 | NeedTradability | orange | would be good, but no tooltip gave its tradability. Shown as needing a hover, unless assumed (below) |
 | Error | red | a tooltip was resolved to the slot but gave no amount |
-| Irrelevant | greyed out | matches no icon |
+| Irrelevant | greyed out | matches no icon; or a chest that opens to nothing counted |
 | edited | dotted blue | the user set it by hand |
 
 - **Every slot needs its tradability**, which only a tooltip gives, so every material needs a hover even when its number reads. A chest slot takes the tradability of the chest that stands for it.
@@ -25,7 +25,11 @@ Each slot in a scan result carries a status, a reason and a value (the tooltip's
 - **The icon number** has everything but digits dropped, and nothing left means 1 (a single item shows no number). `9999+` therefore reads 9999.
 - **The tooltip is trusted over the icon.** A disagreement between the two is not an error; the value is simply the tooltip's.
 - **A chest is a slot whose icon is a chest's template**, `<icon>@<rarity>` for a top row of `templates/chests.json` (`Game files.md`). Any other chest shows as irrelevant. The result lists the chests the slot can be (`variants`): those of every icon it may be drawn with (`Pipeline.md`), and of those the ones that ask for an item level when one is written across the slot, or the ones that do not when none is.
-- **A chest that can only open one way needs no hover for its contents.** When every chest the slot can be has the same kind and contents (129 of the 295 templates are a single chest, bars of gold among them), it is good as it stands, short of its tradability.
+- **A chest that can only open one way needs no hover for its contents.** When every chest the slot can be has the same kind and contents (70 of the 221 templates, bars of gold among them), it is good as it stands, short of its tradability. An irrelevant chest of the table (`Game files.md`) opens unlike any that counts, so a template shared with one needs a hover: 29 templates that were good without one before those rows were added.
+- **An irrelevant chest makes its slot irrelevant**, by the same rules that make a chest slot good: the chests that stand for the slot are all irrelevant, or, by the count of chests read in the column, all of those are. Its amount not reading is then no error. The reason says "It opens to nothing that is counted."
+- **Never without a hover.** A slot that can only be irrelevant chests (after the item-level filter) still needs one. It was irrelevant outright at first, and a "Fusion Material: Superior Abidos Fusion Material Chest" that scored 0.950 as a look-alike art on one recording was dropped unseen.
+- **On the suite** (2026-10-10): 9 chest slots of the four recordings go from needing a hover to irrelevant, with 14 irrelevant chests read; every chest that counts is read as before and no slot's icon changes. 27 slots go from needing only their tradability to needing a hover, all on three templates: the two daily chests ("Daily Stone Chest III", "Daily Shard/Leapstone Chest III", each drawn like a "Romantic Tent Set") and the fusion material chest (drawn like the same chest of older tiers).
+- **A chest the client has no contents for is not in the table** (`Game files.md`). On a template that opens one way its slot is good and counts as the chest it looks like; elsewhere it stays orange. Either way it is set to Irrelevant by hand.
 - **Chests are matched per column**, because a pushed-up tooltip only tells the column. A chest read there counts for a slot when one of the icons it is drawn with is one the slot may be (`Tooltips.md`). The slot is then good when the chest's stacked amount is the number on the slot, when the chest was read in that very slot, when a tooltip was resolved to it, or, for a slot whose number was misread, when as many chests with its icon were read in the column as there are slots showing it.
 - **Stacks with the same icon and amount in a column** all go green from one hover: their tooltips would be identical.
 - **The chest's title plays no part.** What a chest holds is a row of the game's table, picked by what its tooltip lists.
@@ -36,7 +40,7 @@ Each slot in a scan result carries a status, a reason and a value (the tooltip's
 - The windows sit side by side as in game (roster storage, character storage, inventory) and grow with the page; slots shrink to 28 px before the windows wrap.
 - Each window has page tabs. The shown page follows the game: every result lists the page each located window shows (`pages`), and a window turns to it whenever that changes. A tab clicked by hand holds until the page in game next changes.
 - Hovering a slot shows it in the dashboard. Clicking one locks it: the dashboard then stays on it whatever is hovered, until it is clicked again (clicking another slot moves the lock there). The slot being shown gets a dotted white outline outside the status border.
-- For a chest slot the dashboard lists the chest read in that slot, else every chest with one of its icons read in its column. A chest's icon is named after its art (`use_12_177@epic`), so the dashboard and the edit list show the titles of the chests drawn with it instead (`item_name` in `Manifest.ts`).
+- For a chest slot the dashboard lists the chest read in that slot, else every chest with one of its icons read in its column. A chest's icon is named after its art (`use_12_177@epic`), so the dashboard and the edit list show the titles of the chests drawn with it that count instead (`item_name` in `Manifest.ts`). A chest read as irrelevant says so, and at most ten of its contents are listed.
 
 ## Edits
 

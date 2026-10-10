@@ -161,17 +161,21 @@ impl ScannerState {
         let Some((icon, _)) = &info.icon_name_score else {
             return (SlotStatus::Irrelevant, String::new());
         };
-        if info.hovered && info.tooltip_failed {
-            return (
+        let failed = || {
+            (
                 SlotStatus::Error,
-                "A tooltip was seen for this slot, but its amount could not be read. Hover it again, or set the amount by hand.".into(),
-            );
-        }
+                "A tooltip was seen for this slot, but its amount could not be read. Hover it again, or set the amount by hand.".to_string(),
+            )
+        };
         if is_chest_icon(icon) {
-            // nothing to find out when every chest it can be opens to the same things
-            if open_alike(variants) {
-                return (SlotStatus::Good, String::new());
-            }
+            let good = |irrelevant: bool| match irrelevant {
+                true => (SlotStatus::Irrelevant, "It opens to nothing that is counted.".to_string()),
+                false => (SlotStatus::Good, String::new()),
+            };
+            // Nothing to find out when every chest it can be opens to the same things. One that
+            // can only be chests that count for nothing is still hovered: which of several
+            // look-alike icons a slot shows is not sure enough to drop it unseen.
+            let sure = open_alike(variants) && !variants[0].irrelevant;
             // A pushed-up tooltip only tells the column. A chest read there with this icon stands
             // for every slot showing its amount, whose tooltips would be the same; failing that
             // (a number misread), the slots are done once as many chests were read as there are slots.
@@ -182,8 +186,17 @@ impl ScannerState {
                 .filter(|chest| info.shows(&chest.icons) && chest.column == Some(column))
                 .collect();
             let number = info.amount.as_ref().map(|text| icon_number(text));
-            if info.hovered || chests.iter().any(|chest| chest.stands_for(address, number)) {
-                return (SlotStatus::Good, String::new());
+            let standing: Vec<&&Chest> =
+                chests.iter().filter(|chest| chest.stands_for(address, number)).collect();
+            // the amount of a chest that counts for nothing does not matter
+            if !sure && !standing.is_empty() && standing.iter().all(|chest| chest.irrelevant) {
+                return good(true);
+            }
+            if info.hovered && info.tooltip_failed {
+                return failed();
+            }
+            if sure || !standing.is_empty() || info.hovered {
+                return good(false);
             }
             let alike = self
                 .slot_infos
@@ -195,7 +208,7 @@ impl ScannerState {
                 })
                 .count();
             return if chests.len() >= alike {
-                (SlotStatus::Good, String::new())
+                good(chests.iter().all(|chest| chest.irrelevant))
             } else {
                 (
                     SlotStatus::NeedHover,
@@ -205,6 +218,9 @@ impl ScannerState {
                     ),
                 )
             };
+        }
+        if info.hovered && info.tooltip_failed {
+            return failed();
         }
         if info.hovered {
             return (SlotStatus::Good, String::new());

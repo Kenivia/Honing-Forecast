@@ -14,6 +14,7 @@ use strsim::normalized_levenshtein;
 type Rect = (usize, usize, usize, usize); // frame rectangle (x0, y0, x1, y1)
 
 const ROW_PASS: f64 = 0.8; // how alike a row's name and a content's title have to be
+const ROW_CAP: usize = 10; // a tooltip lists no more rows than this, whatever the chest holds
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord, Hash, Clone, Copy)]
 pub enum ChestKind {
@@ -51,6 +52,8 @@ pub struct Chest {
     pub contents: Vec<ChestContent>,
     // the slot icons those chests are drawn with; a chest counts for the slots showing one
     pub icons: Vec<String>,
+    // every one of those chests opens to nothing that is counted
+    pub irrelevant: bool,
     pub amount: Option<String>,
     pub tradability: Option<Tradability>,
     // inventory, page and column the tooltip sat against
@@ -150,7 +153,9 @@ fn row_is(read: &str, title: &str) -> Option<f64> {
 
 // The chests whose contents are these rows, each with how well the names agree. Every content has
 // to be a row of its own with the right count; rows left over are allowed where a chest has some
-// that differ by class.
+// that differ by class. A chest whose tooltip cannot list all it holds (more than the tooltip has
+// rows for, or contents that depend on the class) goes the other way round: every row has to be a
+// content of its own. Those only count when no chest fits the first way.
 pub fn chests_listing(rows: &[(String, String)]) -> Vec<(&'static Variant, f64)> {
     let (titles, contents) = &*TITLES;
     let rows: Vec<(String, Option<u32>)> = rows
@@ -163,9 +168,33 @@ pub fn chests_listing(rows: &[(String, String)]) -> Vec<(&'static Variant, f64)>
         .collect();
     // each row against each title, once
     let mut alike: AHashMap<(usize, usize), Option<f64>> = AHashMap::new();
-    let mut out = vec![];
+    let (mut out, mut partly) = (vec![], vec![]);
     for (variant, contents) in VARIANTS.iter().zip(contents) {
         let count = variant.contents.len();
+        if (variant.by_class && rows.len() <= count) || (count > ROW_CAP && rows.len() == ROW_CAP) {
+            let mut used = vec![false; count];
+            let mut total = 0.0;
+            let fits = rows.iter().enumerate().all(|(row, (name, amount))| {
+                let best = (0..count)
+                    .filter(|x| !used[*x] && Some(variant.contents[*x].1) == *amount)
+                    .filter_map(|x| {
+                        let score = *alike
+                            .entry((row, contents[x]))
+                            .or_insert_with(|| row_is(name, &titles[contents[x]]));
+                        Some((score?, x))
+                    })
+                    .max_by(|a, b| a.0.total_cmp(&b.0));
+                best.is_some_and(|(score, x)| {
+                    used[x] = true;
+                    total += score;
+                    true
+                })
+            });
+            if fits && !rows.is_empty() {
+                partly.push((variant, total / rows.len() as f64));
+            }
+            continue;
+        }
         if rows.len() < count || rows.len() > count + variant.extra {
             continue;
         }
@@ -191,7 +220,7 @@ pub fn chests_listing(rows: &[(String, String)]) -> Vec<(&'static Variant, f64)>
             out.push((variant, total / count as f64));
         }
     }
-    out
+    if out.is_empty() { partly } else { out }
 }
 
 impl Chest {
@@ -223,6 +252,7 @@ impl Chest {
                 .map(|(item, amount, chest)| ChestContent { item: item.clone(), amount: *amount, chest: *chest })
                 .collect(),
             icons,
+            irrelevant: variants.iter().all(|id| variant(*id).irrelevant),
             variants,
             amount: None,
             tradability: None,

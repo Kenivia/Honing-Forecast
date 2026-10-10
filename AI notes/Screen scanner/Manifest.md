@@ -15,6 +15,7 @@ Code: `Manifest.ts` (build logic, `scanned` and `manifest` computeds), `Manifest
 - **Select-one** chests are the only ones passed on. Each option is a bag of `label -> amount`. A chest listed as an option is flattened: an obtain-all into its contents, a select-one into its own options. An option that is no material and no chest of the table (Solar Grace, an astrogem chest) or a chest of chance is not offered, and the chest's other options go through. Identical chests in one band are grouped and their counts summed.
 - **A select-one with one option left** is no choice: it goes into `opened` with the obtain-all chests and counts as that option. The user deletes it if they would take the option that was not offered.
 - **Random** chests are listed apart, and chests that could not be settled under "Not included"; neither goes further.
+- **Irrelevant chests are nothing.** A slot the scanner marked irrelevant is skipped like any other, and a chest slot set by hand whose chests are all `irrelevant` rows of the table opens to nothing.
 
 ## Names and inner chests
 

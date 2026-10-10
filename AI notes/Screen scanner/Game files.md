@@ -3,7 +3,7 @@
 `scripts/game_files` builds the scanner's chest table and icon art from the installed game's own files. Nothing comes from lostarkcodex.com any more; `scripts/codex` held the scripts that asked it, and what is left there is old downloads, ignored and safe to delete.
 
 1. `extract.py` pulls the tables and the icon sheets out of the game, once per game patch.
-2. `chests.py` writes `templates/chests.json` and `templates/ChestIcons`: every chest that opens to something the scanner counts.
+2. `chests.py` writes `templates/chests.json` and `templates/ChestIcons`: every chest that opens to something the scanner counts, and every other chest drawn like one of those.
 3. `python templates/make_msg_pack.py` and `pnpm run wasm`, as for any change to the tables.
 
 `find_icon.py` is for looking: it says which icon a slot in a capture is drawn with.
@@ -38,7 +38,7 @@ Every table has `PrimaryKey` and `SecondaryKey`; text columns hold keys into `Ga
 - **`DropBase`, `DropEntity`**: `DropBase` by `DropIndex`, then `DropEntity` by its `EntityIndex`. **The amount is `NormalMinCount` times `DropBase.Repetition`**: Destiny Shard Pouch (S) is 200 shards five times over.
 - **`Money`**: a content with no `NormalId` is a currency, `NormalMoneyType` into here (18 is Destiny Shard, 14 Honor Shard, 2 gold, 1 silver).
 
-Contents that differ by class sit in one column per class with `NormalId` 0; `game.box` leaves them out and counts them. Rows carry `ClassifyType`/`ClassifyIndex`, which gate them on an event or a piece of content; nothing here reads them.
+Contents that differ by class sit in one column per class (64 of them, each ending in `Id`) with `NormalId` 0: a filled column is a class that gets the row, and its id is what that class gets. `game.box` returns them apart, each with every title it has. Rows carry `ClassifyType`/`ClassifyIndex`, which gate them on an event or a piece of content; nothing here reads them.
 
 The honing tables are in the same archive and are not extracted yet: see "Honing data in the game files" in `Calculator core/Domain model.md`.
 
@@ -62,9 +62,14 @@ An icon is named `<Icon>_<IconIndex>` in lower case (`use_12_91`), the name the 
 - **`extra`** counts the contents that differ by class, which are left out; the tooltip still has a row for the player's class, so the reader allows that many rows it cannot place. 8 chests.
 - **Items that read the same are one row** under the smallest id: same title, icon, rarity, kind, level and contents. Mostly these differ in how they are bound. Chests are compared after the chests inside them were merged, so it goes round until nothing merges.
 - **`top`** rows can sit in a slot and get an icon template: they have an English name, are not past `ExpireDeadline` on the day the script runs, and their `Tier` is 0 or 4 (1 to 3 are older tiers; most chests have 0). The other rows are only there for being inside a top one, and carry no icon.
-- **Left out by name**: a chest with "Cube" or "Engraving" in its title (`UNWANTED`) is dropped before anything else, so a chest that only matters through one is dropped too. That is two chests today.
+- **Irrelevant by name**: a chest with "Cube" or "Engraving" in its title (`UNWANTED`) never counts as opening to a material, and neither does a chest that only matters through one.
+- **Irrelevant rows** (`irrelevant: true`, 1,047 of them): every other box that is drawn with the art and rarity of a top row, so that a slot holding one can be told from the chest it looks like (`Slot grid.md`). It has to have an English name and not be expired; its tier does not matter. Its contents are what its tooltip lists, with no chest ids. Rows that read the same are one. 76 of the 221 templates have at least one.
+- **`by_class`** (45 irrelevant rows): the chest has contents that differ by class. Its contents then hold every title any class has, one entry each, and the reader only asks that each row of the tooltip be one of them (`Tooltips.md`). Relevant rows keep `extra`.
+- **A card is listed without "Card"**: the tooltip says "Lumencaligo" for the item "Lumencaligo Card" (`Item.Category` 32000).
+- **Not in the table: chests the client has no contents for.** 128 live items on 29 of the templates are chests by category and are not in `RandomBoxBase`: old gear chests, "Raid: Ur'nil", the "Illusion Gift Chest" and "Cryptic Treasure Chest" that give gold, "Weekly Purification Mission Reward Chest III". Every one of the 789 tables was searched for their ids (2026-10-10): 125 are in none, so the server decides what they give, and the gold ones only say so in their description. Left out on purpose: such a slot reads as the chest it is drawn like, and is set by hand.
+- **Not in the table either**: an irrelevant box with nothing listed, and the relevant boxes of tiers 1 to 3.
 - **Left out by art**: a chest drawn with one of `UNWANTED_ICONS` is dropped the same way. Five icons, ten chests: Splendid Pouch, Mariner's Treasure Chest, the two Act 4 Denouement Clear Event Chests and the six Honing Support Material pouches.
-- **Numbers** (October 2026): 932 rows, 925 of them top; 141 pieces of art making 221 templates with their rarity. 138 rows are gold alone and 102 silver alone.
+- **Numbers** (October 2026): 1,979 rows: 932 that count, 925 of them top, and 1,047 irrelevant; 141 pieces of art making 221 templates with their rarity. 138 rows are gold alone and 102 silver alone. The file is 714 KB, from 258.
 - **The art** goes to `templates/ChestIcons/<icon>.png`, 64 px, cut lossless from the sheets. `make_msg_pack.py` names each template `<icon>@<rarity>`.
 
 Seven groups of chests list exactly the same rows and still open differently, because a chest inside them is another one under the same title (the two "Trailblazer Supplies Chest: Crucible Level 3", say). Those cannot be told apart by their tooltip, and where their icon is the same too they end up "Not included" in the manifest.

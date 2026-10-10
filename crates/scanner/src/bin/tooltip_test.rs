@@ -70,7 +70,7 @@ format!("{} x{}", x.item, x.amount)
     format!(
         "{:?} [{}]  x{}  {:?}  {place}  '{}' {:?} {:?}",
         chest.kind,
-        contents.join(", "),
+        if chest.irrelevant { "irrelevant".to_string() } else { contents.join(", ") },
         chest.amount.clone().unwrap_or_default(),
         chest.tradability,
         chest.title,

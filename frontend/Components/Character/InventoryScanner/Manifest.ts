@@ -33,6 +33,8 @@ type Opens = {
   title: string;
   kind: ChestKind;
   contents: [string, number, number | null][];
+  // only there to tell a slot from the chest it is drawn like
+  irrelevant?: boolean;
 };
 
 export interface ManifestChest {
@@ -70,14 +72,14 @@ for (const item of ITEMS as any[]) {
   else SHARED_ICONS[item.icon] = [...new Set(labels)];
 }
 const SHARED_LABELS = new Set(Object.values(SHARED_ICONS).flat());
-// every chest the game has that opens to a material, by id
+// every chest of the table, by id
 const OPENS: Record<number, Opens> = Object.fromEntries(
   (CHESTS as any[]).map((chest) => [chest.id, chest]),
 );
-// slot icon -> the titles of the chests drawn with it
+// slot icon -> the titles of the chests drawn with it that open to something counted
 const CHEST_ICONS: Record<string, string[]> = {};
 for (const chest of CHESTS as any[]) {
-  if (!chest.top) continue;
+  if (!chest.top || chest.irrelevant) continue;
   const titles = (CHEST_ICONS[`${chest.icon}@${chest.rarity}`] ??= []);
   if (!titles.includes(chest.title)) titles.push(chest.title);
 }
@@ -249,7 +251,10 @@ export const scanned = computed(() => {
     const found = chests_for(address, item);
     const read =
       found.find((chest) => digits(chest.amount) === amount) ?? found[0];
-    const chest = settle(read?.variants ?? slot?.variants ?? []);
+    const variants = read?.variants ?? slot?.variants ?? [];
+    if (variants.length && variants.every((id) => OPENS[id].irrelevant))
+      continue;
+    const chest = settle(variants);
     if (!chest) {
       // read, but as chests that hold different chests inside
       if (edit || read) add_loose(unknown, read?.title ?? item, amount);

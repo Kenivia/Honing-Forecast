@@ -1,6 +1,7 @@
 """
 Writes templates/chests.json and the art in templates/ChestIcons: every chest in the game that opens,
-through any number of chests inside it, to something in templates/items.json or to gold or silver.
+through any number of chests inside it, to something in templates/items.json or to gold or silver,
+and every other chest that is drawn like one of those, marked "irrelevant".
 Run extract.py first, and this again after a game patch or a change to items.json.
 
     python scripts/game_files/chests.py
@@ -10,7 +11,10 @@ level it asks for, contents as [title, amount, id if it is a chest of this table
 many more rows its tooltip has for things that differ by class. Items that only differ in how they
 are bound are one row. "top" rows can sit in a slot: they have an English name, are
 not past their expiry date and are not of tiers 1 to 3. The others are only there for being inside
-one. Chests with "Cube" or "Engraving" in their title are left out altogether.
+one. Chests with "Cube" or "Engraving" in their title never count as opening to a material.
+An irrelevant row is there so that a slot holding it can be told from the chest it looks like. Its
+contents are what its tooltip lists; "by_class" says they differ by class, and then they are every
+title any class has.
 Afterwards: python templates/make_msg_pack.py, then pnpm run wasm.
 """
 
@@ -25,7 +29,7 @@ from game import ROOT, box, icon_art, icon_info, load_index, table
 TEMPLATES = ROOT / "templates"
 ART = TEMPLATES / "ChestIcons"
 MONEY = {1: "Silver", 2: "Gold"}  # Item.GainMoneyType
-UNWANTED = ("Cube", "Engraving")  # in a chest's title: it is left out, and so is what only it leads to
+UNWANTED = ("Cube", "Engraving")  # in a chest's title: it is irrelevant, and so is what only it leads to
 UNWANTED_ICONS = ("all_quest_02_184", "all_quest_02_196", "all_quest_02_198", "all_quest_02_199", "all_quest_02_226")  # likewise, by its art
 
 bare = lambda title: title.replace(" (Bound)", "")
@@ -37,20 +41,20 @@ def main():
     items = {int(row["PrimaryKey"]): row for row in table("Item").execute("select * from Item")}
 
     # kind and contents of everything that opens; a bar of gold opens to its gold
-    opens = {}
+    opens, unwanted = {}, {}
     for (item_id,) in table("RandomBoxBase").execute("select PrimaryKey from RandomBoxBase"):
         # some boxes are of no item
         if int(item_id) not in items:
             continue
-        if any(word in index.get(int(item_id), (0, ""))[1] for word in UNWANTED):
-            continue
         if index.get(int(item_id), (0, "", "", ""))[3] in UNWANTED_ICONS:
             continue
-        kind, contents, extra = box(int(item_id))
-        opens[int(item_id)] = (kind, [(content_id, bare(title), amount) for content_id, title, amount in contents], extra)
+        kind, contents, by_class = box(int(item_id))
+        chest = (kind, [(content_id, bare(title), amount) for content_id, title, amount in contents], by_class)
+        named = any(word in index.get(int(item_id), (0, ""))[1] for word in UNWANTED)
+        (unwanted if named else opens)[int(item_id)] = chest
     for item_id, row in items.items():
         if item_id not in opens and int(row["GainMoneyType"]) in MONEY and int(row["UseGainCount"]):
-            opens[item_id] = ("ObtainAll", [(None, MONEY[int(row["GainMoneyType"])], int(row["UseGainCount"]))], 0)
+            opens[item_id] = ("ObtainAll", [(None, MONEY[int(row["GainMoneyType"])], int(row["UseGainCount"]))], [])
 
     # every title a chest opens to, all the way down
     leaves = {}
@@ -65,18 +69,21 @@ def main():
     # a chest with no material is only wanted when it is gold alone or silver alone
     wanted = {
         item_id
-        for item_id, (_, _, extra) in opens.items()
-        if reach(item_id) & materials or (not extra and reach(item_id) in ({"Gold"}, {"Silver"}))
+        for item_id, (_, _, by_class) in opens.items()
+        if reach(item_id) & materials or (not by_class and reach(item_id) in ({"Gold"}, {"Silver"}))
     }
 
     today = date.today().isoformat()
     info = icon_info()
 
-    def top(item_id):
+    def live(item_id):
         row = items[item_id]
         named = item_id in index and index[item_id][1] and not index[item_id][1].startswith("ZZZ")
         expired = row["ExpireDeadline"] and row["ExpireDeadline"][:10] < today
-        return bool(named and not expired and int(row["Tier"]) in (0, 4) and index[item_id][3] in info)
+        return bool(named and not expired and index[item_id][3] in info)
+
+    def top(item_id):
+        return live(item_id) and int(items[item_id]["Tier"]) in (0, 4)
 
     # Items that read the same are one row, under the smallest id. What a chest holds is compared
     # after the chests inside it were merged, so this goes round until nothing merges.
@@ -84,7 +91,8 @@ def main():
     while True:
         rows, now = {}, {}
         for item_id in sorted(wanted):
-            kind, contents, extra = opens[item_id]
+            kind, contents, by_class = opens[item_id]
+            extra = len(by_class)
             _, title, rarity, icon = index.get(item_id, (item_id, "", "common", ""))
             level = int(items[item_id]["ReUseBalanceLevel"])
             inside = [[name, amount, merged[content_id] if content_id in wanted else None] for content_id, name, amount in contents]
@@ -116,16 +124,41 @@ def main():
             # no template is made for it
             del row["icon"], row["rarity"]
 
+    # Whatever else is drawn like one of them, with what its tooltip lists. A row that differs by
+    # class is there once for each title it has.
+    templates = {(row["icon"], row["rarity"]) for row in out if row.get("top")}
+    others = {}
+    for item_id, (kind, contents, by_class) in sorted({**opens, **unwanted}.items()):
+        if item_id in wanted or not live(item_id):
+            continue
+        _, title, rarity, icon = index[item_id]
+        if (icon, rarity) not in templates:
+            continue
+        listed = [[name, amount, None] for _, name, amount in contents if name]
+        listed += [[name, amount, None] for names, amount in by_class for name in names]
+        # with nothing listed there is nothing to tell it by
+        if not listed:
+            continue
+        row = {"id": item_id, "title": bare(title), "icon": icon, "rarity": rarity, "kind": kind}
+        if int(items[item_id]["ReUseBalanceLevel"]):
+            row["level"] = int(items[item_id]["ReUseBalanceLevel"])
+        row["top"] = row["irrelevant"] = True
+        if by_class:
+            row["by_class"] = True
+        row["contents"] = listed
+        others.setdefault(json.dumps({**row, "id": 0}), row)
+    out = sorted(out + list(others.values()), key=lambda row: row["id"])
+
     lines = ["  " + json.dumps(row, ensure_ascii=False) for row in out]
     (TEMPLATES / "chests.json").write_text("[\n" + ",\n".join(lines) + "\n]\n", encoding="utf-8", newline="\n")
 
     shutil.rmtree(ART, ignore_errors=True)
     ART.mkdir()
-    icons = {row["icon"] for row in out if row.get("top")}
+    icons = {icon for icon, _ in templates}
     for icon in icons:
         icon_art(icon).resize((64, 64), Image.Resampling.LANCZOS).save(ART / f"{icon}.png")
-    tops = [row for row in out if row.get("top")]
-    print(f"{len(out)} chests, {len(tops)} of them for slots, {len(icons)} icons, {len({(row['icon'], row['rarity']) for row in tops})} templates")
+    tops = [row for row in out if row.get("top") and not row.get("irrelevant")]
+    print(f"{len(out)} chests, {len(tops)} of them for slots and {len(others)} irrelevant, {len(icons)} icons, {len(templates)} templates")
 
 
 if __name__ == "__main__":

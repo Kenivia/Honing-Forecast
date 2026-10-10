@@ -194,10 +194,11 @@ function accept() {
           {{ chest.title }}
           <span class="text-(--text-muted)">
             x{{ chest.amount ?? "?" }}, {{ chest.kind }},
-            {{ TRADABILITY_NAMES[chest.tradability] ?? "tradability unknown" }}
+            {{ TRADABILITY_NAMES[chest.tradability] ?? "tradability unknown"
+            }}{{ chest.irrelevant ? ", irrelevant" : "" }}
           </span>
           <div
-            v-for="(content, i) in chest.contents"
+            v-for="(content, i) in chest.contents.slice(0, 10)"
             :key="i"
             class="pl-3 text-(--text-muted)"
           >

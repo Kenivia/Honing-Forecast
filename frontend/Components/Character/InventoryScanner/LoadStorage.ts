@@ -55,6 +55,8 @@ export interface Chest {
   contents: ChestContent[];
   // the slot icons those chests are drawn with
   icons: string[];
+  // every chest it can be opens to nothing that is counted
+  irrelevant: boolean;
   amount: string | null;
   tradability: string | null;
   column: [string, number, number] | null;

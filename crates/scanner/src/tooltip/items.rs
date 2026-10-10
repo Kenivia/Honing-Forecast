@@ -23,7 +23,8 @@ pub static ITEMS: LazyLock<Vec<Item>> =
     LazyLock::new(|| serde_json::from_str(include_str!("../../../../templates/items.json")).unwrap());
 
 // One chest of templates/chests.json, which scripts/game_files/chests.py writes from the game's
-// own tables: everything that opens to a material, to gold or to silver.
+// own tables: everything that opens to a material, to gold or to silver, and whatever else is
+// drawn like one of those.
 #[derive(Debug, Deserialize)]
 pub struct Variant {
     pub id: u32,
@@ -37,6 +38,12 @@ pub struct Variant {
     // rows its tooltip has besides the contents, for things that differ by class
     #[serde(default)]
     pub extra: usize,
+    // it opens to nothing that is counted, and is only there to be told from one that does
+    #[serde(default)]
+    pub irrelevant: bool,
+    // its tooltip lists some of its contents only, depending on the class
+    #[serde(default)]
+    pub by_class: bool,
     // title, amount, and the chest of this table it is
     pub contents: Vec<(String, u32, Option<u32>)>,
     // the same in a fixed order, to compare two chests by
@@ -84,15 +91,19 @@ pub fn is_chest_icon(icon: &str) -> bool {
     BY_TEMPLATE.contains_key(icon)
 }
 
-// some chest with this icon has its item level written across the slot
+// Some chest with this icon has its item level written across the slot. Only those that count:
+// with the others in, plain chests of another art passed as this one with the level's rows left out.
 pub fn has_level(icon: &str) -> bool {
-    variants_of(icon).iter().any(|x| x.level.is_some())
+    variants_of(icon).iter().any(|x| x.level.is_some() && !x.irrelevant)
 }
 
 // Whether every one of these chests opens to the same things, so that it does not matter which
-// of them a slot holds.
+// of them a slot holds. Those that open to nothing counted are all the same.
 pub fn open_alike(variants: &[&Variant]) -> bool {
-    variants.windows(2).all(|pair| pair[0].kind == pair[1].kind && pair[0].sorted == pair[1].sorted)
+    variants.windows(2).all(|pair| {
+        pair[0].irrelevant == pair[1].irrelevant
+            && (pair[0].irrelevant || (pair[0].kind == pair[1].kind && pair[0].sorted == pair[1].sorted))
+    })
 }
 
 // an icon several materials are drawn with, which only the tooltip tells apart

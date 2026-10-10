@@ -51,37 +51,51 @@ def by_icon():
     return out
 
 
-def field(item_id, column):
-    row = table("Item").execute(f"select {column} from Item where PrimaryKey = ?", (item_id,)).fetchone()
+CARDS = 32000  # Item.Category; a tooltip lists a card without the "Card" its title ends in
+
+
+# an item's title as a chest's tooltip lists it
+def listed(item_id):
+    row = table("Item").execute("select Name, Category from Item where PrimaryKey = ?", (item_id,)).fetchone()
     # some contents name an item the client does not have
-    return text(row[0]) if row else ""
+    if not row:
+        return ""
+    return text(row[0]).removesuffix(" Card") if int(row[1]) == CARDS else text(row[0])
 
 
-# How a chest opens, what it holds as (id, title, amount), and how many more of its rows differ by
-# class and are left out. A currency has no id.
+# the columns of a contents row that hold one item id per class
+@cache
+def class_columns(name):
+    columns = [row[1] for row in table(name).execute(f"pragma table_info({name})")]
+    return [column for column in columns if column.endswith("Id") and column != "NormalId"]
+
+
+# How a chest opens, what it holds as (id, title, amount), and its rows that differ by class, each
+# as (the titles it has for one class or another, amount). A currency has no id.
 def box(item_id):
     base = table("RandomBoxBase").execute("select * from RandomBoxBase where PrimaryKey = ?", (item_id,)).fetchone()
     if not base:
-        return None, [], 0
+        return None, [], []
     rows = []
     if int(base["RandomBoxEntityId"]):
         query = "select * from RandomBoxEntity where PrimaryKey = ?"
-        rows += [(row, 1) for row in table("RandomBoxEntity").execute(query, (base["RandomBoxEntityId"],))]
+        rows += [(row, 1, "RandomBoxEntity") for row in table("RandomBoxEntity").execute(query, (base["RandomBoxEntityId"],))]
     if int(base["DropIndex"]):
         for drop in table("DropBase").execute("select * from DropBase where PrimaryKey = ?", (base["DropIndex"],)):
             query = "select * from DropEntity where PrimaryKey = ?"
             # a drop is given Repetition times over
-            rows += [(row, int(drop["Repetition"]) or 1) for row in table("DropEntity").execute(query, (drop["EntityIndex"],))]
-    contents, by_class = [], 0
-    for row, times in rows:
+            rows += [(row, int(drop["Repetition"]) or 1, "DropEntity") for row in table("DropEntity").execute(query, (drop["EntityIndex"],))]
+    contents, by_class = [], []
+    for row, times, source in rows:
         amount = int(row["NormalMinCount"]) * times
         if int(row["NormalId"]):
-            contents.append((int(row["NormalId"]), field(row["NormalId"], "Name"), amount))
+            contents.append((int(row["NormalId"]), listed(row["NormalId"]), amount))
         elif int(row["NormalMoneyType"]):
             name = table("Money").execute("select Name from Money where PrimaryKey = ?", (row["NormalMoneyType"],)).fetchone()
             contents.append((None, text(name[0]), amount))
         else:
-            by_class += 1
+            titles = {listed(row[column]) for column in class_columns(source) if int(row[column] or 0)}
+            by_class.append((sorted(titles - {""}), amount))
     return KINDS.get(int(base["Type"]), "ObtainAll"), contents, by_class
 
 
