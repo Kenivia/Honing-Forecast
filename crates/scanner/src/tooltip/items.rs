@@ -39,6 +39,9 @@ pub struct Variant {
     pub extra: usize,
     // title, amount, and the chest of this table it is
     pub contents: Vec<(String, u32, Option<u32>)>,
+    // the same in a fixed order, to compare two chests by
+    #[serde(skip)]
+    pub sorted: Vec<(String, u32, Option<u32>)>,
 }
 
 impl Variant {
@@ -48,8 +51,15 @@ impl Variant {
     }
 }
 
-pub static VARIANTS: LazyLock<Vec<Variant>> =
-    LazyLock::new(|| serde_json::from_str(include_str!("../../../../templates/chests.json")).unwrap());
+pub static VARIANTS: LazyLock<Vec<Variant>> = LazyLock::new(|| {
+    let mut variants: Vec<Variant> =
+        serde_json::from_str(include_str!("../../../../templates/chests.json")).unwrap();
+    for variant in &mut variants {
+        variant.sorted = variant.contents.clone();
+        variant.sorted.sort();
+    }
+    variants
+});
 
 static BY_TEMPLATE: LazyLock<AHashMap<String, Vec<&'static Variant>>> = LazyLock::new(|| {
     let mut map: AHashMap<String, Vec<&Variant>> = AHashMap::new();
@@ -82,12 +92,7 @@ pub fn has_level(icon: &str) -> bool {
 // Whether every one of these chests opens to the same things, so that it does not matter which
 // of them a slot holds.
 pub fn open_alike(variants: &[&Variant]) -> bool {
-    let sorted = |variant: &Variant| {
-        let mut contents = variant.contents.clone();
-        contents.sort();
-        contents
-    };
-    variants.windows(2).all(|pair| pair[0].kind == pair[1].kind && sorted(pair[0]) == sorted(pair[1]))
+    variants.windows(2).all(|pair| pair[0].kind == pair[1].kind && pair[0].sorted == pair[1].sorted)
 }
 
 // an icon several materials are drawn with, which only the tooltip tells apart

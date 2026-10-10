@@ -106,8 +106,9 @@ impl ScannerState {
         &self,
         address: &SlotAddress,
         info: &OneSlotInfo,
+        variants: &[&Variant],
     ) -> (SlotStatus, String, Option<Tradability>) {
-        let (status, reason, tradability) = self.read_status(address, info);
+        let (status, reason, tradability) = self.read_status(address, info, variants);
         let shared = info.icon_name_score.as_ref().is_some_and(|x| shares_icon(&x.0));
         if matches!(status, SlotStatus::Good) && shared && info.label.is_none() {
             return (
@@ -130,8 +131,9 @@ impl ScannerState {
         &self,
         address: &SlotAddress,
         info: &OneSlotInfo,
+        variants: &[&Variant],
     ) -> (SlotStatus, String, Option<Tradability>) {
-        let (status, reason) = self.amount_status(address, info);
+        let (status, reason) = self.amount_status(address, info, variants);
         let chest_tradability = || {
             info.icon_name_score.as_ref()?;
             let number = info.amount.as_ref().map(|text| icon_number(text));
@@ -150,7 +152,12 @@ impl ScannerState {
         (status, reason, info.tradability.or_else(chest_tradability))
     }
 
-    fn amount_status(&self, address: &SlotAddress, info: &OneSlotInfo) -> (SlotStatus, String) {
+    fn amount_status(
+        &self,
+        address: &SlotAddress,
+        info: &OneSlotInfo,
+        variants: &[&Variant],
+    ) -> (SlotStatus, String) {
         let Some((icon, _)) = &info.icon_name_score else {
             return (SlotStatus::Irrelevant, String::new());
         };
@@ -162,7 +169,7 @@ impl ScannerState {
         }
         if is_chest_icon(icon) {
             // nothing to find out when every chest it can be opens to the same things
-            if open_alike(&slot_variants(info)) {
+            if open_alike(variants) {
                 return (SlotStatus::Good, String::new());
             }
             // A pushed-up tooltip only tells the column. A chest read there with this icon stands
@@ -175,6 +182,9 @@ impl ScannerState {
                 .filter(|chest| info.shows(&chest.icons) && chest.column == Some(column))
                 .collect();
             let number = info.amount.as_ref().map(|text| icon_number(text));
+            if info.hovered || chests.iter().any(|chest| chest.stands_for(address, number)) {
+                return (SlotStatus::Good, String::new());
+            }
             let alike = self
                 .slot_infos
                 .iter()
@@ -184,10 +194,7 @@ impl ScannerState {
                         && !self.edits.contains_key(*other)
                 })
                 .count();
-            return if info.hovered
-                || chests.iter().any(|chest| chest.stands_for(address, number))
-                || chests.len() >= alike
-            {
+            return if chests.len() >= alike {
                 (SlotStatus::Good, String::new())
             } else {
                 (
@@ -244,7 +251,8 @@ impl ScannerState {
             // an edited slot is the page's to show
             .filter(|(address, _)| !self.edits.contains_key(*address))
             .map(|(address, info)| {
-                let (status, reason, tradability) = self.slot_status(address, info);
+                let variants = slot_variants(info);
+                let (status, reason, tradability) = self.slot_status(address, info, &variants);
                 let read = info.tooltip_amount.as_ref().or(info.amount.as_ref());
                 SlotResult {
                     address: *address,
@@ -259,7 +267,7 @@ impl ScannerState {
                     value: read
                         .filter(|_| info.icon_name_score.is_some())
                         .map(|text| icon_number(text)),
-                    variants: slot_variants(info).iter().map(|x| x.id).collect(),
+                    variants: variants.iter().map(|x| x.id).collect(),
                     image: info
                         .display_icon
                         .as_ref()
