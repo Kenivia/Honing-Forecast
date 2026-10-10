@@ -104,7 +104,7 @@ export interface ScanResult {
   ocr_jobs: OcrJob[];
 }
 
-// one line of text for the OCR worker, a strip 64px tall
+// one line of text for the OCR worker, a grey strip 64px tall, one byte a pixel
 export interface OcrJob {
   id: number;
   priority: number;

@@ -13,7 +13,7 @@ use crate::{
     timing::timed,
 };
 use ahash::AHashMap;
-use image::RgbaImage;
+use image::GrayImage;
 use std::{hash::Hash, mem::take};
 
 const SAME_HOVER: f64 = 6.0; // the tooltip is the same one while it stays within this many px
@@ -102,11 +102,11 @@ pub struct Hover {
 #[derive(Debug, Default, Clone)]
 pub struct Strips {
     // one per line, and whether every line was centred
-    pub title: Option<(Vec<RgbaImage>, bool)>,
-    pub amount: Option<[RgbaImage; 3]>,
+    pub title: Option<(Vec<GrayImage>, bool)>,
+    pub amount: Option<[GrayImage; 3]>,
     pub chest: Option<Vec<ChestRowStrips>>,
     // one per description line
-    pub body: Option<Vec<RgbaImage>>,
+    pub body: Option<Vec<GrayImage>>,
 }
 
 // The OCR jobs of one frame of a hover. Its votes are cast once every text is back.

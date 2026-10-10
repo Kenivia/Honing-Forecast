@@ -7,7 +7,7 @@ use crate::{
     },
 };
 use ahash::AHashMap;
-use image::RgbaImage;
+use image::GrayImage;
 use serde::{Deserialize, Serialize};
 use std::sync::LazyLock;
 use strsim::normalized_levenshtein;
@@ -75,8 +75,8 @@ pub struct ChestLayout {
 // one row of a chest as strips for the recogniser
 #[derive(Debug, Clone)]
 pub struct ChestRowStrips {
-    pub names: Vec<RgbaImage>,
-    pub count: RgbaImage,
+    pub names: Vec<GrayImage>,
+    pub count: GrayImage,
 }
 
 pub fn chest_strips(buffer: &Buffer, layout: &ChestLayout) -> Vec<ChestRowStrips> {

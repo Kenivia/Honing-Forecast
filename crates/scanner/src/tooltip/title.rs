@@ -3,17 +3,17 @@ use crate::image_utils::ocr::OCR_LINE_HEIGHT;
 use crate::tooltip::common::text_lines;
 use crate::tooltip::detect::TitleBar;
 use image::{
-    RgbaImage,
+    GrayImage, Luma,
     imageops::{FilterType, resize},
 };
 
 // light text on a dark bar to dark text on white, which is what the recogniser reads best
-pub fn text_image(buffer: &Buffer, x0: usize, y0: usize, x1: usize, y1: usize) -> RgbaImage {
+pub fn text_image(buffer: &Buffer, x0: usize, y0: usize, x1: usize, y1: usize) -> GrayImage {
     ink_image(buffer, x0, y0, x1, y1, |[r, g, b]| r.max(g).max(b))
 }
 
 // only what is in the amount yellow (255, 213, 0), so white text and the background drop out
-pub fn yellow_image(buffer: &Buffer, x0: usize, y0: usize, x1: usize, y1: usize) -> RgbaImage {
+pub fn yellow_image(buffer: &Buffer, x0: usize, y0: usize, x1: usize, y1: usize) -> GrayImage {
     ink_image(buffer, x0, y0, x1, y1, |[r, g, b]| (r.min(g) - b).max(0))
 }
 
@@ -24,14 +24,13 @@ fn ink_image(
     x1: usize,
     y1: usize,
     ink: impl Fn([i32; 3]) -> i32,
-) -> RgbaImage {
-    let mut image = buffer.crop(x0, y0, x1, y1);
-    let ink = |pixel: &image::Rgba<u8>| ink([pixel.0[0] as i32, pixel.0[1] as i32, pixel.0[2] as i32]);
-    let most = image.pixels().map(ink).max().unwrap().max(1);
-    for pixel in image.pixels_mut() {
-        let value = 255 - (ink(pixel) * 255 / most) as u8;
-        pixel.0 = [value, value, value, 255];
-    }
+) -> GrayImage {
+    let (width, height) = ((x1 - x0) as u32, (y1 - y0) as u32);
+    let inks: Vec<i32> = (y0..y1).flat_map(|y| (x0..x1).map(move |x| (x, y))).map(|(x, y)| ink(buffer.rgb(x, y))).collect();
+    let most = inks.iter().copied().max().unwrap().max(1);
+    let image = GrayImage::from_fn(width, height, |x, y| {
+        Luma([255 - (inks[(y * width + x) as usize] * 255 / most) as u8])
+    });
     // the recogniser works on lines 64px tall
     let width = image.width() * OCR_LINE_HEIGHT / image.height();
     resize(&image, width, OCR_LINE_HEIGHT, FilterType::CatmullRom)
@@ -40,7 +39,7 @@ fn ink_image(
 // The title's lines as strips for the recogniser, and whether every line is centred in the bar.
 // A line whose side gaps differ has the cursor over it: "Great Destiny Leapstone" with its
 // start covered reads as a different, valid item.
-pub fn title_lines(buffer: &Buffer, bar: &TitleBar, s: f64) -> (Vec<RgbaImage>, bool) {
+pub fn title_lines(buffer: &Buffer, bar: &TitleBar, s: f64) -> (Vec<GrayImage>, bool) {
     let is_text =
         |x: usize, y: usize| buffer.rgb(bar.x + x, bar.y + y).into_iter().max().unwrap() > 120;
     let is_coloured = |x: usize, y: usize| {

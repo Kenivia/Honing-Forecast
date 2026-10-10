@@ -5,7 +5,7 @@ use crate::{
     setup::{OCR_ENGINE, OCR_NUMBER_ENGINE},
 };
 use image::{
-    GrayImage, Luma, Rgba, RgbaImage,
+    GrayImage, Luma, RgbaImage,
     imageops::{FilterType, crop_imm, resize},
 };
 use imageproc::region_labelling::{Connectivity, connected_components};
@@ -45,34 +45,30 @@ pub fn number_strip(
     template: &RgbaImage,
     brightness: f64,
     params: &NumberParams,
-) -> RgbaImage {
+) -> GrayImage {
     let (w, h) = number.dimensions();
     let background = number_background(template, icon, w, h, brightness);
+    // white on black; inverting it made the recogniser worse on numbers
     let mut white = number_mask(number, &background, params);
     remove_specks(&mut white);
-    // white on black; inverting it made the recogniser worse on numbers
-    let image = RgbaImage::from_fn(w, h, |x, y| {
-        let value = white.get_pixel(x, y)[0];
-        Rgba([value, value, value, 255])
-    });
     // the empty part left of the number is cut off; the recogniser drops leading digits less often
     let first = (0..w).find(|x| (0..h).any(|y| white.get_pixel(*x, y)[0] > 0));
     let left = first.map_or(0, |x| x.saturating_sub(h / LEFT_MARGIN));
-    let image = crop_imm(&image, left, 0, w - left, h).to_image();
+    let image = crop_imm(&white, left, 0, w - left, h).to_image();
     let width = image.width() * OCR_LINE_HEIGHT / h;
     resize(&image, width, OCR_LINE_HEIGHT, FilterType::CatmullRom)
 }
 
 pub fn recognize_raw(width: u32, height: u32, data: Vec<u8>, numbers: bool) -> String {
-    recognize_line(&RgbaImage::from_raw(width, height, data).unwrap(), numbers)
+    recognize_line(&GrayImage::from_raw(width, height, data).unwrap(), numbers)
 }
 
 // the whole image is one line of text; `numbers` keeps it to what a slot's count can be
-pub fn recognize_line(image: &RgbaImage, numbers: bool) -> String {
+pub fn recognize_line(image: &GrayImage, numbers: bool) -> String {
     crate::timing::timed("ocr", || recognize_line_untimed(image, numbers))
 }
 
-fn recognize_line_untimed(image: &RgbaImage, numbers: bool) -> String {
+fn recognize_line_untimed(image: &GrayImage, numbers: bool) -> String {
     let read = if numbers { OCR_NUMBER_ENGINE.read() } else { OCR_ENGINE.read() };
     let engine = read.as_ref().unwrap();
     let (width, height) = image.dimensions();

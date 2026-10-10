@@ -225,13 +225,14 @@ fn variant(
     }
     if name == "current" {
         let _ = state;
-        return number_strip(
+        let strip = number_strip(
             &raw.data,
             icon,
             &BASE_ICONS.read()[icon_name].data.clone(),
             brightness,
             &NumberParams::default(),
         );
+        return image::DynamicImage::ImageLuma8(strip).to_rgba8();
     }
     let mut normalised = raw.clone();
     normalize_brightness(&mut normalised, brightness);
@@ -388,7 +389,8 @@ fn main() {
                 .unwrap()
                 .to_rgba8();
             let processed = variant(name, &raw, &icon, icon_name, brightness, &mut state);
-            let read = recognize_line(&processed, true);
+            // every variant is grey
+            let read = recognize_line(&image::imageops::grayscale(&processed), true);
             let digits: String = read.chars().filter(char::is_ascii_digit).collect();
             let ok = digits == label;
             right += ok as usize;

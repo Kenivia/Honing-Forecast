@@ -129,8 +129,14 @@ export function create_worker_bundle(): WorkerBundle {
     const post_start = performance.now();
     worker.postMessage(
       { type: "message", wasm_op, payload, posted_at: abs_now() },
-      // a transferred frame leaves no copy behind on this thread
-      { transfer: payload?.frame ? [payload.frame] : [] },
+      // a transferred frame leaves no copy behind on this thread, nor do a batch's strips
+      {
+        transfer: payload?.frame
+          ? [payload.frame]
+          : wasm_op == WasmOp.Ocr
+            ? payload.map((job) => job.data.buffer)
+            : [],
+      },
     );
     post_ms = performance.now() - post_start;
   }

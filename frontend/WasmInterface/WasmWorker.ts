@@ -148,7 +148,17 @@ self.addEventListener("message", async (ev) => {
 
   timings.worker = performance.now() - start_time;
   timings.posted_at = abs_now();
-  self.postMessage({ type: "result", result, timings });
+  // a scan's strips and slot images are moved, not copied
+  const transfer: ArrayBuffer[] =
+    wasm_op == WasmOp.Cropper && result
+      ? [
+          ...result.ocr_jobs.map((job) => job.data.buffer),
+          ...result.slots.flatMap((slot) =>
+            slot.image ? [slot.image.data.buffer] : [],
+          ),
+        ]
+      : [];
+  self.postMessage({ type: "result", result, timings }, { transfer });
 });
 
 // comparable between the main thread and the worker

@@ -1,9 +1,9 @@
 use crate::{image_utils::ocr::recognize_line, scan_result::Bytes, scanner_state::ScannerState};
-use image::RgbaImage;
+use image::GrayImage;
 use serde::{Serialize, Serializer, ser::SerializeStruct};
 use std::mem::take;
 
-// One line of text to recognise, already the 64px strip the recogniser takes. Scanning never waits
+// One line of text to recognise, already the 64px grey strip the recogniser takes. Scanning never waits
 // for the answer: it comes back through apply_ocr, from another worker in the browser.
 #[derive(Debug)]
 pub struct OcrJob {
@@ -12,7 +12,7 @@ pub struct OcrJob {
     pub priority: u8,
     // a slot's count, read with digits only
     pub numbers: bool,
-    pub image: RgbaImage,
+    pub image: GrayImage,
 }
 
 impl Serialize for OcrJob {
@@ -30,7 +30,7 @@ impl Serialize for OcrJob {
 
 impl ScannerState {
     // the id its text will be stored under; a strip seen before is not read again
-    pub fn request_ocr(&mut self, image: RgbaImage, priority: u8, numbers: bool) -> u32 {
+    pub fn request_ocr(&mut self, image: GrayImage, priority: u8, numbers: bool) -> u32 {
         let hash =
             ahash::RandomState::with_seeds(1, 2, 3, 4).hash_one((image.width(), numbers, image.as_raw()));
         let next = self.ocr_ids.len() as u32;
