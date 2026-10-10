@@ -33,7 +33,7 @@ What this means in practice:
 ## `.tmp/`
 
 `.tmp/` is gitignored scratch space for throwaway scripts, bundles and dumps. Put
-temporary work there and nowhere else, and clear it when done — `rm -rf .tmp/*`. The test
+temporary work there and nowhere else, and clear it when done using `pnpm run remove-tmp` instead of a direct command (it may be blocked). The test
 runner also builds into `.tmp/tests/` and wipes it on each run.
 
 Do **not** invent another scratch directory in the repo root. A previous `.wip/` folder

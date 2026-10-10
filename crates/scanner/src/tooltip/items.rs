@@ -150,19 +150,48 @@ fn numerals(text: &str) -> Vec<String> {
         .collect()
 }
 
-// an OCR'd title to the known title it is, if it is clearly one of them
-pub fn match_title(read: &str) -> Option<&'static Item> {
+// an OCR'd title to the one of these it clearly is
+fn closest<T: Copy>(read: &str, titles: impl Iterator<Item = (&'static str, T)>) -> Option<T> {
     let read = read.to_lowercase();
     // one wrong numeral barely changes the similarity ("Level 3" / "Level 4", "Pouch II" / "Pouch III"), so they have to match exactly
-    let mut scores: Vec<(f64, &Item)> = ITEMS
-        .iter()
-        .filter_map(|item| Some((item.title.as_ref()?.to_lowercase(), item)))
+    let mut scores: Vec<(f64, T)> = titles
+        .map(|(title, value)| (title.to_lowercase(), value))
         .filter(|(title, _)| numerals(title) == numerals(&read))
-        .map(|(title, item)| (normalized_levenshtein(&read, &title), item))
+        .map(|(title, value)| (normalized_levenshtein(&read, &title), value))
         .collect();
     scores.sort_by(|a, b| b.0.total_cmp(&a.0));
-    let (best, item) = *scores.first()?;
+    let (best, value) = *scores.first()?;
     let second = scores.get(1).map_or(0.0, |x| x.0);
     // "... Pouch II" and "... Pouch III" are closer than the margin, so an exact read always counts
-    (best == 1.0 || (best >= TITLE_PASS && best - second >= TITLE_MARGIN)).then_some(item)
+    (best == 1.0 || (best >= TITLE_PASS && best - second >= TITLE_MARGIN)).then_some(value)
+}
+
+// an OCR'd title to the known title it is, if it is clearly one of them
+pub fn match_title(read: &str) -> Option<&'static Item> {
+    closest(read, ITEMS.iter().filter_map(|item| Some((item.title.as_deref()?, item))))
+}
+
+// Bars of gold and silver by title, each with the chests of that title. A bar's tooltip has no
+// chest panel, so its title is all that says which it is.
+static BAR_TITLES: LazyLock<Vec<(&'static str, Vec<u32>)>> = LazyLock::new(|| {
+    let mut titles: Vec<(&str, Vec<u32>)> = vec![];
+    let bars = VARIANTS.iter().filter(|x| {
+        let money = matches!(x.contents.as_slice(), [(item, _, None)] if item == "Gold" || item == "Silver");
+        money && x.kind == ChestKind::ObtainAll && x.template().is_some()
+    });
+    for bar in bars {
+        match titles.iter_mut().find(|x| x.0 == bar.title) {
+            Some(title) => title.1.push(bar.id),
+            None => titles.push((&bar.title, vec![bar.id])),
+        }
+    }
+    titles
+});
+
+pub fn match_bar_title(read: &str) -> Option<&'static str> {
+    closest(read, BAR_TITLES.iter().map(|x| (x.0, x.0)))
+}
+
+pub fn bars_titled(title: &str) -> Vec<u32> {
+    BAR_TITLES.iter().find(|x| x.0 == title).map_or(vec![], |x| x.1.clone())
 }

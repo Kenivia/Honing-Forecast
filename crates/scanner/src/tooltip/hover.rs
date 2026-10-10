@@ -2,7 +2,7 @@ use super::{
     chest::{Chest, ChestKind, ChestRow, ChestRowStrips, chest_strips, chests_listing},
     detect::{TitleBar, find_title},
     icon::tooltip_icon,
-    items::{ITEMS, item_from_body, match_title, shares_icon, variant},
+    items::{ITEMS, bars_titled, item_from_body, match_bar_title, match_title, shares_icon, variant},
     layout::parse_layout,
     title::{join_title, title_lines},
 };
@@ -25,6 +25,10 @@ const TITLE_CHANGED: f64 = 0.1; // share of the title bar's columns that gained 
 const CENTRED_VOTE: usize = 100; // a title read with nothing over it outvotes any number of covered ones
 const SETTLED: usize = 3; // agreeing reads after which the OCR stops for this hover
 const MAX_READS: usize = 6; // amount, chest and icon reads one hover gets, agreeing or not
+// Around a title line, one for each read in turn. The recogniser doubles a first digit at one
+// margin and not at the next ("3300,000 Gold Bar Pile"), and on a lossless capture the same crop
+// is the same read however often it is sent.
+const TITLE_MARGINS: [f64; 3] = [5.0, 4.0, 6.0];
 const LOOK_CHANGED: f64 = 4.0; // title columns that differ once the cursor has moved over it
 // Reads of one kind a hover may have out at once. With one, a hover asks for its next read only
 // when the last came back, so what it asks for follows what the OCR workers can do. Three were
@@ -300,7 +304,8 @@ impl ScannerState {
         if most(&hover.title_votes) + hover.waiting[0] * CENTRED_VOTE < SETTLED * CENTRED_VOTE
             && (hover.sent[0] < SETTLED || look_changed)
         {
-            strips.title = Some(timed("tooltip/title", || title_lines(&buffer, &bar, s)));
+            let margin = TITLE_MARGINS[hover.sent[0] % TITLE_MARGINS.len()];
+            strips.title = Some(timed("tooltip/title", || title_lines(&buffer, &bar, s, margin)));
         }
 
         let layout = timed("tooltip/layout", || parse_layout(&buffer, &bar, s));
@@ -405,7 +410,13 @@ impl ScannerState {
 
             if let Some((lines, centred)) = &read.title {
                 let read = join_title(&lines.iter().map(text).collect::<Vec<_>>());
-                if let Some(title) = match_title(&read).and_then(|item| item.title.clone()) {
+                // a chest with a panel is told by its rows, a bar of gold only by its title
+                let bar = || {
+                    let bare = hover.chest_kind_votes.is_empty();
+                    bare.then(|| match_bar_title(&read)).flatten().map(str::to_string)
+                };
+                let title = match_title(&read).and_then(|item| item.title.clone()).or_else(bar);
+                if let Some(title) = title {
                     *hover.title_votes.entry(title).or_default() +=
                         if *centred { CENTRED_VOTE } else { 1 };
                 }
@@ -537,11 +548,15 @@ impl ScannerState {
 
     // The chest a hover's rows read as: the chests with the most votes, and of those the ones
     // drawn like the slot the tooltip is level with, else like any slot beside it, if some are.
+    // With no rows read it is the bars of its title.
     fn hovered_chest(&self, hover: &Hover) -> Option<Chest> {
         let top = most(&hover.chest_votes);
         let mut variants: Vec<u32> =
             hover.chest_votes.iter().filter(|x| *x.1 == top).map(|x| *x.0).collect();
         variants.sort();
+        if let (true, Some(title)) = (variants.is_empty(), &hover.title) {
+            variants = bars_titled(title);
+        }
         let icons_of = |address: &SlotAddress| self.slot_infos.get(address).into_iter().flat_map(|info| info.icons());
         let level: Vec<&String> = hover.chest_place.1.iter().flat_map(icons_of).collect();
         let beside: Vec<&String> = hover.candidates.iter().flat_map(|(address, _)| icons_of(address)).collect();

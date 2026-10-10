@@ -22,7 +22,7 @@ import { game_resolution } from "./Resolution";
 const MAGIC = "HFCAP001";
 export const CAPTURE_EXTENSION = ".hfcap";
 // recording stops by itself here
-const LIMIT = 1e9;
+const LIMIT = 5e9;
 
 let chunks: Uint8Array[] = [];
 export const recording = ref(false);

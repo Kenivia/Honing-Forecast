@@ -6,7 +6,7 @@ use crate::tooltip::detect::TitleBar;
 // The title's lines, and whether every line is centred in the bar.
 // A line whose side gaps differ has the cursor over it: "Great Destiny Leapstone" with its
 // start covered reads as a different, valid item.
-pub fn title_lines(buffer: &Buffer, bar: &TitleBar, s: f64) -> (Vec<Line>, bool) {
+pub fn title_lines(buffer: &Buffer, bar: &TitleBar, s: f64, margin: f64) -> (Vec<Line>, bool) {
     let is_text =
         |x: usize, y: usize| buffer.rgb(bar.x + x, bar.y + y).into_iter().max().unwrap() > 120;
     let is_coloured = |x: usize, y: usize| {
@@ -15,7 +15,7 @@ pub fn title_lines(buffer: &Buffer, bar: &TitleBar, s: f64) -> (Vec<Line>, bool)
             pixel.into_iter().max().unwrap(),
             pixel.into_iter().min().unwrap(),
         );
-        max > 120 && (max - min) * 4 > max
+        max > 120 && (max - min) * 6 > max
     };
     let rows: Vec<bool> = (0..bar.height)
         .map(|y| (0..bar.width).any(|x| is_text(x, y)))
@@ -58,7 +58,7 @@ pub fn title_lines(buffer: &Buffer, bar: &TitleBar, s: f64) -> (Vec<Line>, bool)
             break;
         }
         // the lines are too close together for any margin above or below
-        let margin = (5.0 * s).round() as usize;
+        let margin = (margin * s).round() as usize;
         words.push(text_line(
             buffer,
             bar.x + first.saturating_sub(margin),

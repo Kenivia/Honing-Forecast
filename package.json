@@ -23,7 +23,8 @@
     "optimizer-test": "pwsh -File ./scripts/optimizer_test.ps1",
     "optimizer-visualizer": "python -m pip -q install -r  ./scripts/optimizer_visualizer/requirements.txt && python ./scripts/optimizer_visualizer/app.py",
     "cloudflare-deploy": "wrangler deploy --config cloudflare/wrangler.toml",
-    "cloudflare-dev": "wrangler dev --remote --config cloudflare/wrangler.toml"
+    "cloudflare-dev": "wrangler dev --remote --config cloudflare/wrangler.toml",
+    "remove-tmp": "Get-ChildItem -Path .tmp -File -Recurse | Remove-Item"
   },
   "dependencies": {
     "@msgpack/msgpack": "^3.1.3",
