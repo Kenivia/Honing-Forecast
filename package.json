@@ -9,6 +9,8 @@
     "e2e:ui": "playwright test --ui",
     "browse": "node scripts/browser/browse.mjs",
     "scanner-profile": "node scripts/browser/profile_scanner.mjs",
+    "scanner-compare": "node scripts/browser/scan_compare.mjs",
+    "scanner-suite": "python scripts/scanner/suite.py",
     "browsers": "playwright install chromium firefox && playwright-mcp install-browser firefox",
     "test": "cargo test -p hf-core --no-default-features --features active_version",
     "change-log": "python ./scripts/change_log_helper/build.py",

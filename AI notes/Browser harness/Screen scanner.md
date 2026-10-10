@@ -19,9 +19,9 @@ export default async ({ page, hf }) => {
 - **Headless Chromium does not draw every frame of a video playing at full speed**: under load frames get drawn twice and others skipped (a third of them in one run). To feed the scanner every frame, play the upload at half speed: before opening the page, wrap `HTMLMediaElement.prototype.play` in an init script so it sets `playbackRate = 0.5` on blob sources. Count what was drawn by wrapping `CanvasRenderingContext2D.prototype.drawImage`.
 - Works headless and headed, in Chromium and Firefox, for PNG and H.264 MP4.
 - Any file size works. After upload a `Game resolution` select and a `Forced 21:9` checkbox appear, preselected from the file size; if the game in the file is smaller than the file (windowed, padded), pick its real resolution or nothing is recognised.
-- Ready-made inputs: `scripts/brightness/Recording 1080p.mp4` and `scripts/brightness/inputs/*.png` (lone inventory) and `scripts/brightness/inputs storage/*.png` (storage layout with a chest tooltip), both 1080p at every brightness setting; in `scripts/brightness/1080p raw`, recordings at settings 60, 0 and 100; in `scripts/brightness/1440p raw`, `inventory top left.png` and `hover tooltip.png` show a character inventory with items, the `storage ...` files show the storage layout, and `21 by 9 storage.png` is storage at forced 21:9 (tick the checkbox, keep 2560x1440).
-- `scripts/brightness/1440p raw/2026-10-08 21-31-53.mp4` and `21-42-32.mp4` are a native 3440x1440 game at 60 frames a second, the pet-menu storage with many chests hovered. The upload preselects 3440x1440 with the checkbox on, which is right. Headless Chromium plays them at half speed without trouble (the shorter one took two and a half minutes).
-- The three files named `2026-10-06 ...` are the near-lossless recordings (see below), all at brightness 60: one 2560x1440 in `1440p raw`, and two 3840x2160, one in `2160p raw` with a slower hover and one **misfiled in `1080p raw`** although it is 4K. The older `Recording ...` files in `1080p raw` are the lossy hardware-encoded ones.
+- **Recordings are whatever is in `scripts/recordings`** (any video; `.mp4` is git-ignored, so they are local). The suite and the profile take every file there, so a new one only has to be dropped in. `python scripts/brightness/probe_capture.py "<file>"` says what one is. A recording stands for itself in a measurement by its file name.
+- Stills: `scripts/brightness/inputs/*.png` (lone inventory) and `scripts/brightness/inputs storage/*.png` (storage layout with a chest tooltip), both 1080p at every brightness setting; in `scripts/brightness/1440p raw`, `inventory top left.png` and `hover tooltip.png` show a character inventory with items, the `storage ...` files show the storage layout, and `21 by 9 storage.png` is storage at forced 21:9 (tick the checkbox, keep 2560x1440).
+- A native 3440x1440 recording preselects 3440x1440 with the checkbox on, which is right. Headless Chromium plays 60 fps ones at half speed without trouble.
 - The grid keeps its slots after `Stop` and stays editable; starting the next capture wipes it, and the capture card says so while idle.
 - The first frame is slow (full-frame anchor search). Slots get a canvas once their page has been looked at, about a second and a half for a full page; until then they show `?`. A slot's status is its border colour (`style.borderColor` holds the CSS variable, see `Slot grid.md`).
 - Chests read from tooltips show in the dashboard under the grid when a slot with that chest's icon is hovered or clicked. The dashboard's inputs are labelled `Item`, `Amount` and `Tradability` (the last two only while an item is chosen; match `Tradability` exactly, the manifest has inputs ending in it), with buttons `Save edit` (disabled until amount and tradability are filled), `Retry` and `Okay`. Every frame of an uploaded recording is scanned. Texts arrive later than the frame they were cut from, so wait for the OCR queue to empty (`window.__ocr_timings` stops growing) before reading the grid.
@@ -34,7 +34,7 @@ export default async ({ page, hf }) => {
 
 A recording stands in for a live screen share, so it should carry the same losses and no others. The share is **not** lossless: Chromium's desktop capturer hands over ARGB and the capture client runs it through libyuv `ConvertToI420`, so the frames reaching `copyTo(dest, { format: "RGBA" })` are 4:2:0 chroma-subsampled but otherwise uncompressed. Firefox has no `MediaStreamTrackProcessor`, so there the frames come off a `<video>` instead, the same way an upload does.
 
-OBS settings that match, used for the `2026-10-06 ...` recordings:
+OBS settings that match:
 
 | Where | Setting |
 | --- | --- |
@@ -57,12 +57,30 @@ OBS settings that match, used for the `2026-10-06 ...` recordings:
 
 ## Measuring scan time
 
-`pnpm scanner-profile [--firefox] [--keep] [recording...]` does the whole thing: it builds the wasm and starts vite if nothing answers on :5173, plays each recording through the scanner page, writes a dump per recording to `target/scan-profiles/`, and prints the stage breakdown. With no recording it does the two `2026-10-07` ones in `scripts/brightness/1080p raw`; the 3440x1440 ones have to be named. `--keep` leaves the dev server running. `scripts/browser/scan_summary.mjs <dump>...` re-prints a dump, so a run can be re-read without replaying anything.
+`pnpm scanner-profile [--name=<run>] [--no-build] [--firefox] [--keep] [recording...]` does the whole thing: it builds the wasm, starts vite if nothing answers on :5173, plays each recording through the scanner page, writes a dump per recording to `target/scan-profiles/<run>/` (`last` without a name) and prints the stage breakdown. With no recording it does every one in `scripts/recordings`, about 15 minutes for the four there now. `--keep` leaves the dev server running. `scripts/browser/scan_summary.mjs <dump>...` re-prints a dump, so a run can be re-read without replaying anything.
+
+- **It builds the wasm every time**, dev server or not: with one already up it used to skip the build and measure whatever `crates/wasm/pkg` held. `--no-build` is for a second run of the same tree.
+- `pnpm scanner-compare <run a> <run b>` prints two runs side by side, mean ms per scanned frame of every stage with the change, per recording.
 
 - The browse script empties the page's three arrays every two seconds and keeps the records itself, since the page only holds the last 5000 and the longer 1440p recording makes 7,600.
 - One recording takes twice its length and a little more: it plays at half speed (headless Chromium skips frames at full speed) and then waits for the OCR queue to drain.
 - **Do not edit any project file while a run is in flight.** Vite reloads the page, which empties the timing arrays; a dump with 0 scans is that. A `cargo build` alongside does the same another way: the upload is still loading when the script starts counting frames, and it sees none.
-- The scripts are `profile_scanner.mjs` (the wrapper), `profile_scanner_browse.mjs` (the browse script) and `scan_summary.mjs`.
+- The scripts are `profile_scanner.mjs` (the wrapper), `profile_scanner_browse.mjs` (the browse script), `scan_summary.mjs` and `scan_compare.mjs`, all in `scripts/browser`.
+
+## Checking and timing a scanner change
+
+The native suite says whether a change alters what is read; the browser profile says what it costs. Both keep runs by name, so the order is the same each time:
+
+1. `pnpm scanner-suite run before` on the tree as it is (`scripts/scanner/suite.py`: `tooltip_test` over every recording and the stills folders into `target/scanner-suite/before/`, about 5 minutes). A run named `reference` is kept there from the last change; if it is of the current tree it will do.
+2. Make the change. `pnpm scanner-suite run after`, then `pnpm scanner-suite cmp before after`: `.txt` byte for byte, `.err` without timing values and thread ids, so a stage called more or less often still shows as a difference. The harness repeats exactly (`Pipeline.md`), so no difference means nothing read changed.
+3. `pnpm check`.
+4. For timing, back to back: `git stash`, `pnpm scanner-profile --name=before`, `git stash pop`, `pnpm scanner-profile --name=after`, `pnpm scanner-compare before after`. Name one or two recordings to keep it short.
+
+- **Only compare browser runs made back to back.** The same build gave 13.1 and 16.4 ms wasm calls an hour apart on this machine. Have the game closed.
+- `pnpm scanner-suite timings <a> [<b>]` prints the native stage timers as ms per scanned frame. They only mean something from `run <name> --seq`, which plays the recordings one at a time; a normal run plays all of them at once.
+- A stage with no timer is measured with a temporary `timing::timed("m/...", ...)` around it, which then shows in `timings` with its call count. A timed call costs about 60 ns natively, which matters past a million calls.
+- The 768p and 900p stills say little, and the 900p folder ends in an out-of-bounds crop; both are in the run so that it stays that way.
+- The suite needs python with opencv, which reads each recording's frame size; the harness guesses the game resolution from it (`native::guess_game`).
 
 The dumps are the three arrays the page keeps, all in ms:
 

@@ -77,8 +77,8 @@ Why the storage windows are not placed from the Storage button: measured against
 - After the last change the next six frames are still scanned, so the slots get their turn.
 - A frame is also scanned while something is unfinished: the current hover is waiting for texts (its next read is cut when they are back) or has just gone missing, or slots were left over by the time budget.
 - A change too small to count is not picked up until something bigger happens. A slot's number changing on its own is one.
-- A skipped frame costs the frame copy and half a millisecond. OCR texts that come back are still applied.
-- On the recordings, where the cursor hardly rests, 23% and 38% of frames are skipped natively and 6% and 18% in the browser (there a hover waits longer for its texts). A still image stops being scanned after about 30 frames. Up to 1% loses nothing on the recordings; 2% loses one chest.
+- A skipped frame costs the frame copy and its wasm call, 0.8 to 1.0 ms at 1080p and 1.7 to 2.0 at 3440x1440. OCR texts that come back are still applied.
+- On the four recordings, where the cursor hardly rests, 47 to 80% of frames are skipped natively and 17 to 50% in the browser (there a hover waits longer for its texts). A still image stops being scanned after about 30 frames. Up to 1% loses nothing on the recordings; 2% loses one chest.
 
 ## OCR runs elsewhere
 
@@ -137,88 +137,45 @@ A scan never waits for OCR. A line of text takes 30 to 100 ms to read and cannot
 
 Every scan is timed. Rust stages accumulate in `timing.rs` (`timed("name", ...)`) and are drained by the worker after each call; the worker and main thread add their own parts, and one record per scan is pushed to `window.__scan_timings`. `Browser harness/Screen scanner.md` says how to read it.
 
-Measured again on 2026-10-09 with the chest table in (338 slot templates), on the recordings the chest tests use: `1080p raw/2026-10-07 17-28-55` and `22-55-45` (30 fps files, so 15 frames a second at half speed) and `1440p raw/2026-10-08 21-42-32` and `21-31-53` (3440x1440 at 60 fps, so 30 a second). Headless Chromium, 16 threads, three OCR workers. Mean ms per scanned frame:
+Measured on 2026-10-10 after the scanner clean-up, all four recordings in one batch with the game closed: `2026-10-07 17-28-55` and `22-55-45` (1080p, 30 fps files, so 15 frames a second at half speed) and `2026-10-08 21-42-32` and `21-31-53` (3440x1440 at 60 fps, so 30 a second). Headless Chromium, 16 threads, three OCR workers, 338 slot templates. Mean ms per scanned frame:
 
 | | 1080p (17-28-55 / 22-55-45) | 3440x1440 (21-42-32 / 21-31-53) |
 | --- | --- | --- |
-| Whole wasm call | 16.8 without the anchor searches / 17.3 (median 14.5 / 15.2, 99th 74 / 60) | 30.8 / 28.5 (median 27.6 / 24.1, 99th 90 / 87) |
-| No tooltip / item tooltip / chest tooltip | 12 to 13 / 17.5 / 20 to 21 | 23 to 26 / 26 / 32 to 35 |
-| Tooltip step | 8.0 / 10.1 | 20.4 / 17.7 |
-| of it: finding the title bar | 4.0 | 10.7 / 9.6 |
-| of it: layout, title, icon, chest (each when it runs) | 1.4, 1.4, 2.7, 2.9 | 3.0, 1.8, 3.1, 3.3 |
-| Slots, over every scanned frame | 3.4 / 4.1 | 4.9 / 4.4 |
-| Anchors and pages, without the searches | 2.4 / 1.9 | 3.2 / 3.5 |
-| Change check | 0.3 | 0.9 |
-| Serialising the result | 0.6 / 0.8 | 1.2 / 0.8 |
-| Frame copy | 3.2 | 10.1 / 9.3 |
-| Result back to the main thread | 1.5 / 1.2 | 6.4 / 5.3 |
-| Whole loop, without waiting for a frame | 65 / 22 | 47 / 43 |
-| Frames taken, of those the upload drew | 85% (the searches) / all | 70 / 84% |
-| OCR, ms a line | 58 / 73 | 82 / 79 |
-| A hover's first read back: median, 90th, worst | 0.23, 0.44, 0.76 s / 0.26, 1.26, 3.4 s | 0.31, 0.65, 1.4 s / 0.24, 0.69, 1.8 s |
+| Whole wasm call | 7.9 without the anchor searches / 9.0 (median 5.8 / 6.5, 99th 195 with the searches / 40) | 13.0 / 14.6 (median 10.5 / 12.0, 99th 61 / 63) |
+| No tooltip / item tooltip / chest tooltip | 30 with the searches, 9.9 / 9.3, 8.7 / 7.7, 8.9 | 19.9, 23.6 / 12.0, 13.3 / 13.1, 14.0 |
+| Tooltip step | 2.1 / 3.0 | 4.9 / 5.1 |
+| of it: finding the title bar | 0.9 / 1.0 (median 0.1) | 1.0 / 1.3 (median 0.2) |
+| of it: layout, title, icon, chest (median, each when it runs) | 1.4, 0.1, 2.6, 0.1 | 3.0, 0.2, 3.1, 0.2 |
+| Slots, over every scanned frame | 2.4 / 3.1 | 3.1 / 3.3 |
+| Anchors, without the searches | 2.0 / 1.1 | 1.8 / 2.4 |
+| Pages | 0.5 / 0.7 | 1.2 |
+| Change check | 0.3 | 0.9 / 1.0 |
+| Serialising the result | 0.5 / 0.7 | 1.1 / 0.9 |
+| A skipped frame's wasm call | 0.8 / 1.0 | 2.0 / 1.7 |
+| Frame copy | 3.2 / 3.3 | 11.0 / 11.7 |
+| Result back to the main thread | 1.0 / 1.3 | 5.6 / 6.2 |
+| Whole loop, without waiting for a frame | 24 (the searches) / 14 | 30 / 33 |
+| Frames taken, of those the upload drew | 99% / all | 97 / 94% |
+| Of those, skipped as still | 37 / 50% | 17 / 33% |
+| OCR, ms a line | 61 / 78 | 82 / 97 |
+| A hover's first read back: median, 90th, worst | 0.24, 0.46, 0.71 s / 0.31, 1.28, 3.3 s | 0.33, 0.69, 1.2 s / 0.35, 1.06, 2.7 s |
 
-- **Against 2026-10-06 at 1080p nothing got slower but the tooltip step**, 7 to 8-10 ms (the chest rows are matched against the whole table, about 3 ms a frame with a chest tooltip). The slot step is cheaper than it was, 3.4 to 4.1 ms against 5.7 to 8.7, with six times the templates: the shortlist does that.
-- **At 3440x1440 the loop is the limit, not the frames.** It never waits for a frame (`read` 0.1 ms median) and takes 43 to 47 ms a turn, so 21 to 27 frames a second of the 30 offered. Finding the title bar is the largest single part, 10 ms on every frame; it scans the whole frame, 2.4 times the pixels of 1080p (no longer: see "Where the bar is looked for" in `Tooltips.md`). Frame copy and the result's way back grow the same way.
-- **The slow tail is still the slot step at its 60 ms budget**: the scans over 60 ms have 51 to 62 ms of slots in them (icons 25 to 37, numbers 10 to 15). about 1% of scans at 1080p, 4 to 5% at 1440p.
-- **17-28-55 loses its anchors for eight stretches** (about half its length in all) and runs the whole-frame search 183 times at 183 ms; with those its mean wasm call is 60 ms. Why they are lost was not looked at. 21-31-53 searches 8 times in its first 4 s, at 590 ms each.
-- **OCR is not short of workers.** 11 to 19 lines a second are asked for, three workers are busy 21 to 51% of the time, and the queue is empty after 54 to 78% of batches. The long waits are bursts: 22-55-45 has backlogs of 115 and 126 lines that take 3 to 6 s to clear, and 73 of its 577 first reads waited over a second. A line is 300 to 380 px of strip, about 200 ms per 1000 px at 1080p and 240 at 1440p (the scan worker is busier there).
+- **Against 2026-10-09, before the clean-up, the wasm call is half**: 16.8 and 17.3 ms at 1080p, 30.8 and 28.5 at 3440x1440 then. Most of it is the tooltip step (8.0 and 10.1 ms then, 20.4 and 17.7 at 3440x1440): the title bar is looked for near the windows and at the hover's last place instead of over the whole frame (4 and 10 ms on every scan then), a hover's lines are only cut, not made into strips, and the icon is matched six times a hover at most. The slot step lost its number clean-up to the OCR workers (the step was 3.4 to 4.9 ms then). What each step bought is with its description, here and in `Tooltips.md`; those figures are each a before and after measured back to back, so they do not add up to this table.
+- **At 3440x1440 the frame copy is now as large as the scan**, 11 ms against 13 to 15, and the result's way back another 6. The loop takes 30 to 33 ms a turn against 43 to 47, so it keeps up with 30 frames a second most of the time (97 and 94% of drawn frames taken, 70 and 84% before).
+- **A frame with no tooltip is the slow kind at 3440x1440** (20 to 24 ms against 12 to 14): probably the frames where a page has just opened and its slots are matched; not checked.
+- **The slow tail is the slot step, now under its 60 ms budget at the 99th percentile**: 30 to 34 ms at 1080p and 45 to 46 at 3440x1440 on the looks where it runs, icon matching being nearly all of it.
+- **The whole-frame search runs on 6% of 17-28-55's scans** (51 of 802, 186 ms a variant) and on 6 scans of 21-31-53 (575 ms). It is what is left of that recording's 19 ms mean; see "The whole-frame search is rationed".
+- **OCR is not short of workers.** 11 to 21 lines a second are asked for against the 31 to 49 three workers can read, and the queue is empty after 51 to 66% of batches. The long waits are bursts: 22-55-45 has backlogs of 110 and 154 lines that take 4 to 6 s to clear, 21-31-53 of 78 and 98.
+- **Not in these figures: what the OCR workers spend preparing a line.** Their stage timings (`ocr/preprocess`) are drained and dropped by the worker, so preprocessing only shows inside a batch's `took`. Natively it is 0.7 to 0.8 ms a line, of 9 to 11 in all.
+- Firefox was last measured on 2026-10-06: 26 ms a scan (frame copy 7 ms), 96% of drawn frames scanned.
 
-Measured with `pnpm scanner-profile` (2026-10-06, the two 1080p recordings in `scripts/brightness/1080p raw`, played at half speed so the scanner sees every frame, which feeds it 15 a second; storage layout open, headless Chromium, 16 threads so three OCR workers). Mean per scanned frame, the two recordings being the busier one with the large cursor and the quieter one:
+How it got here, each measured on the 1080p recordings of its day (so not comparable line by line):
 
-| | Debug info off | Debug info on (busier only) |
-| --- | --- | --- |
-| Whole wasm call | 16 / 18 ms (median 11, 99th percentile 72 to 78) | 17 ms (median 11, 99th 77) |
-| No tooltip / item tooltip / chest tooltip | 13 to 17 / 15 / 19 to 22 ms | 14 / 16 / 21 ms |
-| Tooltip step (finding the title bar 4 ms of it) | 6.8 / 7.2 ms | 7.8 ms |
-| Slots, averaged over the two scans in three that skip them | 5.7 / 8.7 ms | 6.9 ms (debug crops 0.5) |
-| Anchors and page detection | 1.5 / 2.0 ms | 1.8 ms |
-| Serialising the result (`to_value`) | 0.2 ms | 0.4 ms |
-| Frame copy | 4 ms | 4 ms |
-| Result back to the main thread, then merging it | 0.6 / 0.5, then 0.1 ms | 1.1, then 0.1 ms |
-| Table update, at most 4 a second | 1.5 / 1.0 ms each | 6 ms each (99th 16) |
-| Frames scanned, of those the upload drew | 91 / 71% | 92% |
-
-- The wasm call is about a third of a 15 fps frame, so the loop spends most of its wall clock waiting for the next frame (`read`, 36 ms mean).
-- **The slow tail is all the slot step.** Of the 62 scans over 60 ms in the busier recording, the slot step is 59.5 ms of the mean: icon matching 32 ms and number clean-up 14 ms, stopped by the 60 ms budget. Everything else stays within a millisecond or two of its usual cost.
-- **The slot step is budget-bound, so making it cheaper buys slots, not milliseconds.** Cutting the alignment search from 74 samples to 9 took number clean-up from 16.3 to 3.1 ms a frame it ran (median; 99th 49.7 to 16.0) and from 6.20 to 0.99 ms a call in the native bench, but the whole wasm call stayed at 16 ms mean and 70 ms at the 99th. The step just works through more slots in its 60 ms: 2.1 to 2.8 number clean-ups a look. It shows up as slots being recognised sooner after a page opens, not as a shorter scan.
-- Matching only runs on the 30% of scanned frames where a slot changed; `slots` costs nothing on the rest.
-- A skipped frame costs the frame copy plus 0.5 ms in wasm.
-- OCR: 62 to 66 ms a line, 2590 lines over the busier recording's 118 s of playback. A hover's first read came back in 0.27 s at the median and 1.0 s at the 90th percentile (worst 2.2 s); the quieter recording 0.24 s and 0.46 s.
-- With one OCR worker on that recording the median was 5 s and the worst 14 s; with two, 0.3 s and 5 s (measured at 6 fps capture).
-- A whole-frame anchor search takes 200 to 330 ms. It used to run about six times in the busier recording, when the Storage button got covered; it no longer runs while the storage layout is open, and the longest scan there went from 357 to 139 ms.
-- Firefox: 26 ms a scan (frame copy 7 ms), 96% of drawn frames scanned.
-- Reading results against the native harness run over every frame: `Tooltips.md`.
-
-Before that, with the state staying in Rust but OCR still inside the scan (same recordings, 6 fps capture), mean per scan:
-
-| | Debug info on | Debug info off |
-| --- | --- | --- |
-| Whole scan | 330 to 360 ms (2.7 to 3.0 scans/s) | 295 to 315 ms (3.1 to 3.4 scans/s) |
-| No tooltip / item tooltip / chest tooltip | 165 to 205 / 290 to 400 / 625 to 730 ms | 155 to 165 / 245 to 360 / 585 to 660 ms |
-| OCR, all calls | 185 to 215 ms | 175 to 185 ms |
-| Re-matching unrecognised slots | 70 ms | 70 ms |
-| Waiting for a frame | 30 to 35 ms | 25 to 40 ms |
-| Returning the result (serialise and clone) | 7 to 8 ms | under 1 ms |
-| Frame copy | 4 to 5 ms | 4 ms |
-| Table update, at most 4 a second | 14 ms each | 1.5 ms each |
-
-OCR and the unrecognised slots were what was left: a scan without a tooltip was about 160 ms, of which 70 ms was the re-matching and 15 to 50 ms slot OCR. About half of the 6 fps frames were scanned.
-
-Before that, with the whole state serialised out and back on every scan (9% of the 6 fps frames scanned with debug info on):
-
-| | Debug info on (default) | Debug info off |
-| --- | --- | --- |
-| Whole scan | 1920 ms (0.5 scans/s) | 620 to 690 ms (1.5 scans/s) |
-| Moving the state (clone to worker, deserialise, serialise, clone back) | 1085 ms | 185 to 215 ms |
-| Vue re-rendering the tables | 400 ms | 70 to 80 ms |
-| OCR, all calls | 300 ms | 265 to 280 ms |
-| Re-matching unrecognised slots against every icon | 70 ms | 70 ms |
-| Everything else (frame copy 3 ms, tooltip detection 4 ms, anchors, pages, unchanged-slot checks) | under 30 ms | under 30 ms |
-
-- The state holds only 1 to 4 MB of image bytes, but each byte crossed as a JS number in an array, four times per scan.
-- OCR costs about 30 ms for a slot number and 60 to 100 ms for a tooltip line. A scan with no tooltip has 1 to 3 calls (slots under the cursor being re-read), a chest tooltip 8 to 9, about 600 ms.
-- About 230 slots (empty or unknown) are never remembered, so each is compared with every icon on every scan.
-- The first scan takes 0.8 to 1.3 s, mostly matching and reading every slot once.
+- **The whole state serialised out and back on every scan**: 620 to 690 ms a scan with debug info off and 1920 on, of which moving the state was 185 to 215 and 1085 ms. It held only 1 to 4 MB of image bytes, but each byte crossed as a JS number, four times a scan. About 230 empty or unknown slots were compared with every icon on every scan (70 ms).
+- **The state kept in Rust, OCR still inside the scan**: 295 to 360 ms a scan, 175 to 215 ms of it OCR (30 ms for a slot number, 60 to 100 for a tooltip line; a chest tooltip is 8 or 9 lines).
+- **OCR in its own workers, unmatched slots remembered** (2026-10-06, 22 templates): 16 to 18 ms. With one OCR worker a hover's first read came back in 5 s at the median and 14 at worst; with two, 0.3 and 5 s.
+- **The chest table in, 338 templates** (2026-10-09): 16.8 to 17.3 ms at 1080p, 28.5 to 30.8 at 3440x1440. The shortlist kept the slot step cheaper than it had been with 22.
+- **The slot step is budget-bound, so making it cheaper buys slots, not milliseconds.** Cutting number clean-up from 6.2 to 1.0 ms a call left the scan as long as it was: the step just worked through more slots in its 60 ms. It shows as slots being recognised sooner after a page opens.
 
 ## Conventions
 

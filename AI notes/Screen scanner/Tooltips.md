@@ -39,9 +39,9 @@ Each frame: find the title bar, read the title, find the "Amount Stacked" number
 
 Colours are compared after brightness normalisation, so the constants in the Rust code are a few levels below the on-screen values quoted below. Pixel constants there are 1440p and scaled by the scanner's scale factor like everything else; the sizes in this note are the 1080p measurements, which are 3/4 of them.
 
-`cargo run --release --bin tooltip_test` is the native harness: it runs the whole scanner over stills, or over a recording piped in as raw frames by `scripts/tooltips/dump_frames.py`, and prints each hover and every slot that got tooltip data.
+`cargo run --release --bin tooltip_test` is the native harness: it runs the whole scanner over stills, or over a recording piped in as raw frames by `scripts/tooltips/dump_frames.py`, and prints each hover and every slot that got tooltip data. `pnpm scanner-suite` runs it over every recording and the stills folders and compares two runs (`Browser harness/Screen scanner.md`).
 
-Results: all nine tooltip stills read correctly (title, amount, bind kind; slot wherever the item has an icon). On the largest-cursor recording (1777 frames, H.264) a tooltip is found on 1160 frames in 134 hovers; 40 hovers get an accepted title, 27 of them a slot; 26 slots end up with tooltip data, and all 15 in roster storage match the annotated amounts and the known tradable list. The tooltip step takes about 13 ms a frame natively. It has not been run in the browser yet.
+Results: all nine tooltip stills read correctly (title, amount, bind kind; slot wherever the item has an icon). On the largest-cursor recording (1777 frames, H.264) a tooltip is found on 1160 frames in 134 hovers; 40 hovers get an accepted title, 27 of them a slot; 26 slots end up with tooltip data, and all 15 in roster storage match the annotated amounts and the known tradable list. In the browser the tooltip step now takes 2 to 3 ms a scanned frame at 1080p and 5 at 3440x1440 (`Pipeline.md`, "Where the time goes").
 
 All sizes below are 1080p pixels and scale with the UI height. Colours are at the brightness of the 1080p examples; the 1440p example was taken at another setting and every colour is shifted a little, so production code should normalise brightness first.
 
@@ -67,7 +67,7 @@ A chest is one of `templates/chests.json`, the game's own list of everything tha
 
 ### Results
 
-Natively, every frame, on the four recordings in `scripts/brightness`:
+Natively, every frame, on the four recordings (now in `scripts/recordings`):
 
 | Recording | Before | Now |
 | --- | --- | --- |
@@ -154,4 +154,4 @@ The OCR used inserts stray letters now and then ("Destiny D Destruction Stone"),
 - **Row names are English only**, like the titles.
 - **A pushed-up chest tooltip over a dark background can get the wrong row** if its top happens to line up with a slot row (about 1 in 15), and would then replace the chest stored for that slot.
 - **Two stacks of the same chest in one column** with the same amount, or one read before its amount was, are stored as one.
-- **Tooltip reading costs OCR calls**: a chest frame is several times slower than a frame without a tooltip in the browser (about 0.16 s against 0.6 to 0.7 s in headless Chromium).
+- **Tooltip reading costs OCR lines, not scan time**: a scan with a chest tooltip takes as long as one with an item tooltip (8 to 9 ms at 1080p, 13 to 14 at 3440x1440), but a chest's rows are 8 or 9 more lines to read, and a burst of them is what makes a hover's first read late.
