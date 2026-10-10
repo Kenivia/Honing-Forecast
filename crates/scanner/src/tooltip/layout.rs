@@ -12,6 +12,7 @@ const PANEL_ICON_SIZE: f64 = 43.0;
 const PANEL_ROW_GAP: f64 = 13.3; // lines of one chest row are at most 9px apart, rows at least 17
 const PANEL_END_GAP: f64 = 30.0; // rows are 17 to 19px apart, the panel ends 50px before anything else
 const MAX_DESCRIPTION: usize = 10; // a book has 6 to 8 description lines
+const STACKED_NUMBER_LEFT: f64 = 169.0; // the number after "Amount Stacked: " starts 165 to 173px in, after "Total Amount Owned: " 205 to 213. English only
 const SHORT_PHRASE: f64 = 53.0; // "all" is 13px of yellow, the other two phrases 157 and more
 
 const TEXT: u8 = 1;
@@ -164,15 +165,21 @@ pub fn parse_layout(buffer: &Buffer, bar: &TitleBar, s: f64) -> Layout {
             })
         })
         .collect();
+    // the number starts where the label ends, which tells stacked from total when the cursor has
+    // merged one of the two into the lines around it
+    let at_stacked = |line: &Line| {
+        ((line.yellow.unwrap().0 + pad) as f64 - STACKED_NUMBER_LEFT * s).abs() <= 10.0 * s
+    };
     // stacked and total are one line apart, which rules out a description line that happens to qualify
-    let first = amounts
+    let stacked = amounts
         .windows(2)
-        .position(|pair| {
+        .find(|pair| {
             let gap = (pair[1].top - pair[0].top) as f64;
-            22.5 * s <= gap && gap <= 31.0 * s
+            22.5 * s <= gap && gap <= 31.0 * s && at_stacked(pair[0])
         })
-        .unwrap_or(0);
-    let stacked = amounts.get(first);
+        .map(|pair| pair[0])
+        .or(amounts.iter().copied().find(|line| at_stacked(line)));
+    let stacked = stacked.as_ref();
 
     // The description is taken over the whole width. It sits well below the icon, where the cursor
     // only gets when the tooltip was pushed up.
