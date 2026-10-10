@@ -1,5 +1,6 @@
 use crate::{
     buffer::Buffer,
+    capture::Recorder,
     cropper::anchors::AnchorInfo,
     ocr::jobs::OcrJob,
     setup::OneIconConfig,
@@ -127,7 +128,7 @@ impl OneSlotInfo {
 
 // What the user typed in for a slot, which the scanner then leaves alone. A retry instead forgets
 // the slot, edit and all, so it is read again.
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SlotEdit {
     pub address: SlotAddress,
     #[serde(default)]
@@ -209,4 +210,17 @@ pub struct ScannerState {
     pub chests_changed: bool,
 
     pub resizer: Option<Resizer>,
+
+    // See capture.rs. While a session is recorded: the recorder, whether the last frame was
+    // scanned, and after how many slots the budget cut its look.
+    pub recorder: Option<Recorder>,
+    pub scanned: bool,
+    pub slot_cut: Option<usize>,
+    // While one is replayed: the recorded cut, followed in place of the clock, the scans so far
+    // and the first whose digest differed.
+    pub replay_cut: Option<Option<usize>>,
+    pub replayed: u64,
+    pub replay_mismatch: Option<u64>,
+    // debug only: every hover as it ended, once its last texts were in
+    pub hover_log: Option<Vec<Hover>>,
 }

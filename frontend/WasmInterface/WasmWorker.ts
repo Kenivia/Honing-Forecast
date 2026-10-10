@@ -4,6 +4,9 @@ import init, {
   cropper_wrapper,
   reserve_buffer_wrapper,
   take_timings,
+  take_capture,
+  replay_wrapper,
+  replay_mismatch,
   ocr_init_wrapper,
   ocr_wrapper,
 } from "@/../crates/wasm/pkg/hf_wasm.js";
@@ -104,36 +107,46 @@ self.addEventListener("message", async (ev) => {
     result = to_records(await histogram_wrapper(payload));
   } else if (wasm_op == WasmOp.Cropper) {
     // the main thread reads the frame and transfers it with the op
-    const { frame, ...options } = payload;
+    const { frame, replay, ...options } = payload;
 
-    try {
-      const requiredSize = frame.allocationSize({ format: "RGBA" });
-      if (scanner_buffer.size < requiredSize) {
-        throw new Error(
-          `buffer too small, need ${requiredSize}, got ${scanner_buffer.size}`,
-        );
-      }
-
-      const dest = new Uint8Array(
-        wasm.memory.buffer,
-        scanner_buffer.pointer,
-        scanner_buffer.size,
-      );
-
-      const copy_start = performance.now();
-      await frame.copyTo(dest, { format: "RGBA" });
-      frame.close();
-      timings.copy = performance.now() - copy_start;
-
+    if (replay) {
+      // a capture's scan record stands in for the frame and the options
       const call_start = performance.now();
-      result = await cropper_wrapper(options);
+      result = replay_wrapper(replay, options.full);
       timings.wasm_call = performance.now() - call_start;
       timings.rust = take_timings();
-    } catch (err) {
-      console.error("Error processing frame:", err);
-    } finally {
-      frame.close();
-    }
+      timings.replay_mismatch = replay_mismatch();
+    } else
+      try {
+        const requiredSize = frame.allocationSize({ format: "RGBA" });
+        if (scanner_buffer.size < requiredSize) {
+          throw new Error(
+            `buffer too small, need ${requiredSize}, got ${scanner_buffer.size}`,
+          );
+        }
+
+        const dest = new Uint8Array(
+          wasm.memory.buffer,
+          scanner_buffer.pointer,
+          scanner_buffer.size,
+        );
+
+        const copy_start = performance.now();
+        await frame.copyTo(dest, { format: "RGBA" });
+        frame.close();
+        timings.copy = performance.now() - copy_start;
+
+        const call_start = performance.now();
+        result = await cropper_wrapper(options);
+        timings.wasm_call = performance.now() - call_start;
+        timings.rust = take_timings();
+        const capture = take_capture();
+        if (capture.length) result.capture = capture;
+      } catch (err) {
+        console.error("Error processing frame:", err);
+      } finally {
+        frame.close();
+      }
   } else if (wasm_op == WasmOp.Reserve) {
     result = await reserve_buffer_wrapper(payload);
     scanner_buffer = result.buffer;
@@ -162,6 +175,7 @@ self.addEventListener("message", async (ev) => {
     wasm_op == WasmOp.Cropper && result
       ? [
           ...result.ocr_jobs.flatMap(ocr_job_buffers),
+          ...(result.capture ? [result.capture.buffer] : []),
           ...result.slots.flatMap((slot) =>
             slot.image ? [slot.image.data.buffer] : [],
           ),

@@ -117,13 +117,14 @@ pub fn shares_icon(icon: &str) -> bool {
 
 // The book a tooltip's description lines are of: "Honing Lv. 11 (1,645): +10%" for each level,
 // and its gear in "Determination of Destiny Weapon". A frame that lost a line gives levels no
-// book has, and so nothing.
+// book has, and so nothing. The level is every digit before the bracket: "11" is drawn wide and
+// comes back as "1 1".
 pub fn item_from_body(lines: &[String]) -> Option<&'static Item> {
     let levels: Vec<u32> = lines
         .iter()
         .filter_map(|line| {
-            let digits = line.split_once("Honing Lv")?.1.chars().skip_while(|c| !c.is_ascii_digit());
-            digits.take_while(char::is_ascii_digit).collect::<String>().parse().ok()
+            let level = line.split_once("Honing Lv")?.1.split('(').next()?;
+            level.chars().filter(char::is_ascii_digit).collect::<String>().parse().ok()
         })
         .collect();
     let mut gear = ["Weapon", "Armor"]

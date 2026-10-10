@@ -1,6 +1,7 @@
 """
 The scanner's native suite: tooltip_test over every recording in scripts/recordings and over the
-stills folders. Needs opencv. Runs are kept by name in target/scanner-suite/.
+stills folders, and capture_replay over every debug capture (.hfcap) there, its lines read again
+and the user's edits left out. Needs opencv. Runs are kept by name in target/scanner-suite/.
 
     python scripts/scanner/suite.py run <name> [--seq]   about 5 minutes
     python scripts/scanner/suite.py cmp <a> <b>          what differs between two runs
@@ -27,6 +28,7 @@ STILL_FOLDERS = [
 ]
 RUNS = ROOT / "target/scanner-suite"
 BIN = ROOT / "target/release/tooltip_test.exe"
+REPLAY = ROOT / "target/release/capture_replay.exe"
 VIDEO = {".mp4", ".mkv", ".webm", ".mov"}
 SPENT = rb", [0-9.]+ ms per frame in the tooltip step and OCR"
 STAGE = re.compile(r'\("([a-z_/]+)", ([0-9.e-]+), ([0-9]+)\)')
@@ -45,7 +47,8 @@ def run(name, seq):
 
     out = RUNS / name
     out.mkdir(parents=True, exist_ok=True)
-    subprocess.run(["cargo", "build", "--release", "-p", "hf-scanner", "--bin", "tooltip_test"], cwd=ROOT, check=True)
+    bins = ["--bin", "tooltip_test", "--bin", "capture_replay"]
+    subprocess.run(["cargo", "build", "--release", "-p", "hf-scanner", *bins], cwd=ROOT, check=True)
 
     def start(command, target, feed=None):
         files = (open(out / f"{target}.txt", "wb"), open(out / f"{target}.err", "wb"))
@@ -64,6 +67,9 @@ def run(name, seq):
         jobs.append(job)
         if seq:
             job.wait()
+    for path in sorted(RECORDINGS.glob("*.hfcap")):
+        capture = path.relative_to(ROOT).as_posix()
+        jobs.append(start([str(REPLAY), capture, "--reread", "--no-edits"], f"cap-{slug(path.stem)}"))
     for folder in STILL_FOLDERS:
         # relative, as the harness prints each still's path
         images = sorted(x.relative_to(ROOT).as_posix() for x in (STILLS / folder).glob("*.png"))

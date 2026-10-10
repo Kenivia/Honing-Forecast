@@ -52,7 +52,9 @@ OBS settings that match:
 
 - The badge next to "Screen Capture" reads `● Live` or `Idle`.
 - While capturing, the element labelled `Frames scanned per second` reads the frames handed to the scanner in the last second, as `22 fps scanned`.
+- Next to it, the element labelled `Lines waiting for OCR` reads the lines not read yet, waiting or with a worker, as `27 in OCR queue` (`ocr_pending` in `OcrRelay.ts`). It is hidden during a replay, which has its texts.
 - The button under the card reads `stop cropper` while the scan loop runs.
+- Debug captures (`Pipeline.md`, "Debug captures"): the buttons `Record debug capture` / `Stop recording` (enabled while capturing) and `Download capture` (enabled once recording has stopped with something recorded; it raises a download event), and the element labelled `Capture size`, as `122 MB ready`. Setting a `.hfcap` on the upload input replays it; when it is through the card shows a line starting `Replay finished` or `Replay differs`.
 - Leaving the scanner page pauses the loop but keeps the stream; returning shows `● Live` again without a new upload.
 
 ## Measuring scan time
@@ -71,7 +73,7 @@ OBS settings that match:
 
 The native suite says whether a change alters what is read; the browser profile says what it costs. Both keep runs by name, so the order is the same each time:
 
-1. `pnpm scanner-suite run before` on the tree as it is (`scripts/scanner/suite.py`: `tooltip_test` over every recording and the stills folders into `target/scanner-suite/before/`, about 5 minutes). A run named `reference` is kept there from the last change; if it is of the current tree it will do.
+1. `pnpm scanner-suite run before` on the tree as it is (`scripts/scanner/suite.py`: `tooltip_test` over every recording and the stills folders, and `capture_replay --reread --no-edits` over every debug capture in `scripts/recordings`, into `target/scanner-suite/before/`, about 5 minutes). A run named `reference` is kept there from the last change; if it is of the current tree it will do.
 2. Make the change. `pnpm scanner-suite run after`, then `pnpm scanner-suite cmp before after`: `.txt` byte for byte, `.err` without timing values and thread ids, so a stage called more or less often still shows as a difference. The harness repeats exactly (`Pipeline.md`), so no difference means nothing read changed.
 3. `pnpm check`.
 4. For timing, back to back: `git stash`, `pnpm scanner-profile --name=before`, `git stash pop`, `pnpm scanner-profile --name=after`, `pnpm scanner-compare before after`. Name one or two recordings to keep it short.

@@ -1,4 +1,5 @@
 pub mod buffer;
+pub mod capture;
 pub mod constants;
 pub mod cropper;
 pub mod image_utils;

@@ -3,7 +3,13 @@ import {
   CAPTURE_FPS,
   file_to_stream,
 } from "@/Components/Character/InventoryScanner/FramePassing";
-import { queue_ocr, start_ocr, stop_ocr, take_ocr_results } from "./OcrRelay";
+import {
+  ocr_pending,
+  queue_ocr,
+  start_ocr,
+  stop_ocr,
+  take_ocr_results,
+} from "./OcrRelay";
 import { has_progress, reset_scan, take_edits } from "./ScanStore";
 import { useRosterStore } from "@/Stores/RosterConfig";
 import { WasmOp } from "@/WasmInterface/WasmWorker";
@@ -11,6 +17,16 @@ import { storeToRefs } from "pinia";
 import { ref, computed, onMounted, onUnmounted, toRaw, watch } from "vue";
 import { useIntervalFn } from "@vueuse/core";
 import { getModel, getScannerConfig, ScanResult } from "./LoadStorage";
+import {
+  add_capture,
+  CAPTURE_EXTENSION,
+  captured_bytes,
+  clear_capture,
+  download_capture,
+  open_capture,
+  read_record,
+  recording,
+} from "./Capture";
 import {
   auto_select_resolution,
   game_resolution,
@@ -33,6 +49,17 @@ const bundle = ref(runtime.cropper);
 const source = runtime.frame_source;
 
 const error = ref<string | null>(null);
+
+// a capture file being run again in place of a stream, see Capture.ts
+let replay: {
+  file: File;
+  first: number;
+  offset: number;
+  width: number;
+  height: number;
+} | null = null;
+const replaying = ref(false);
+const replay_note = ref("");
 
 const resolutions = computed(() =>
   game_resolution.ultrawide ? RESOLUTIONS_21_9 : RESOLUTIONS_16_9,
@@ -84,8 +111,30 @@ async function start_upload(event: Event) {
   if (!file) return;
 
   error.value = null;
+  if (file.name.endsWith(CAPTURE_EXTENSION)) return start_replay(file);
   const fake = await file_to_stream(file);
   begin(fake.stream, fake.width, fake.height, fake.cleanup);
+}
+
+async function start_replay(file: File) {
+  stop_capture();
+  const { start, first } = await open_capture(file);
+  replay = { file, first, offset: first, ...start };
+  Object.assign(game_resolution, {
+    width: start.game_width,
+    height: start.game_height,
+    forced_21_9: start.forced_21_9,
+    ultrawide: start.width / start.height > 2.1,
+  });
+  replaying.value = true;
+  status.value = "capturing";
+  start_scanner();
+}
+
+// the scan starts over, since a capture can only be run again from an empty state
+function toggle_recording() {
+  recording.value = !recording.value;
+  if (recording.value) restart_scanner();
 }
 
 function begin(
@@ -115,8 +164,12 @@ async function start_scanner() {
   reset_scan();
   runtime.ensure_cropper();
   bundle.value = runtime.cropper;
+  // what was recorded belongs to the state that is gone
+  clear_capture();
+  replay_note.value = "";
+  if (replay) replay.offset = replay.first;
 
-  const { width, height } = source.size;
+  const { width, height } = replay ?? source.size;
   const [config, model] = await Promise.all([getScannerConfig(), getModel()]);
   // the state is built once here and then stays inside the worker's wasm
   const new_scanner_state = {
@@ -127,9 +180,10 @@ async function start_scanner() {
     },
     buffer: { width, height, size: width * height * 4 },
     config: toRaw(config),
+    record: recording.value && !replay,
   };
-  // the model only goes to the OCR workers, the templates to them too
-  start_ocr(toRaw(model), toRaw(config));
+  // The model only goes to the OCR workers, the templates to them too. A replay has its texts.
+  if (!replay) start_ocr(toRaw(model), toRaw(config));
   bundle.value.debounced_start(
     WasmOp.Reserve,
     new_scanner_state,
@@ -142,7 +196,10 @@ async function start_scanner() {
 function stop_capture() {
   pause_cropper();
   status.value = "idle";
-  if (!source.stream) return;
+  recording.value = false;
+  if (!source.stream && !replay) return;
+  replay = null;
+  replaying.value = false;
   // terminating the worker frees the frame buffer and the Rust statics with it
   bundle.value?.cancel();
   stop_ocr();
@@ -181,6 +238,7 @@ const scan_timings: any[] = ((globalThis as any).__scan_timings ??= []);
 // `full` asks for every image again, since whoever shows the results may have missed some
 async function cropper_loop(id: number, full = false) {
   const loop_start = performance.now();
+  if (replay) return replay_loop(id, full);
   const frame = await source.read();
   const read = performance.now() - loop_start;
   const frame_time = frame?.timestamp;
@@ -204,10 +262,12 @@ async function cropper_loop(id: number, full = false) {
       full,
       ocr_results: take_ocr_results(),
       edits: take_edits(),
+      record: recording.value,
     },
     (result: ScanResult, timings) => {
       // the scanner waits for these texts whether or not this reply is used
       queue_ocr(result.ocr_jobs);
+      if (result.capture) add_capture(result.capture);
       if (done || id !== loop_id || result.full !== full) return;
       done = true;
       const result_start = performance.now();
@@ -224,6 +284,40 @@ async function cropper_loop(id: number, full = false) {
         total: result_start - loop_start,
       });
       if (scan_timings.length > 5000) scan_timings.shift();
+    },
+    0,
+    false,
+  );
+}
+
+// The scan loop over a capture file: each scan record goes in as it was, as fast as it is scanned.
+async function replay_loop(id: number, full: boolean) {
+  const record = await read_record(replay.file, replay.offset);
+  if (id !== loop_id) return;
+  if (record?.tag !== "F") {
+    cropper_running.value = false;
+    replay_note.value ||= "Replay finished, every scan ended as recorded.";
+    // the page's account of how the recorded session ended
+    if (record) {
+      (globalThis as any).__capture_reference = JSON.parse(
+        new TextDecoder().decode(record.payload),
+      );
+    }
+    return;
+  }
+  replay.offset = record.next;
+  let done = false;
+  bundle.value.debounced_start(
+    WasmOp.Cropper,
+    { replay: record.payload, full },
+    (result: ScanResult, timings) => {
+      if (done || id !== loop_id || result.full !== full) return;
+      done = true;
+      if (timings.replay_mismatch != null) {
+        replay_note.value = `Replay differs from the recording, first at scan ${timings.replay_mismatch}.`;
+      }
+      cropper_loop(id);
+      props.process_result(result);
     },
     0,
     false,
@@ -275,7 +369,10 @@ watch(
       {{ error }}
     </p>
 
-    <div v-if="status === 'capturing'" class="flex items-center gap-2">
+    <div
+      v-if="status === 'capturing' && !replaying"
+      class="flex items-center gap-2"
+    >
       <span> Game resolution: </span>
       <select
         v-model="selected_resolution"
@@ -309,10 +406,10 @@ watch(
       <label
         class="cursor-pointer rounded-md bg-blue-600 px-3 py-1.5 text-sm transition-colors hover:bg-blue-500"
       >
-        Upload image / video
+        Upload image / video / capture
         <input
           type="file"
-          accept="image/*,video/*"
+          accept="image/*,video/*,.hfcap"
           aria-label="Upload image or video"
           class="hidden"
           @change="start_upload"
@@ -333,12 +430,51 @@ watch(
         {{ sent_fps }} fps scanned
       </span>
       <span
+        v-if="status === 'capturing' && !replaying"
+        class="self-center text-sm text-(--text-muted)"
+        aria-label="Lines waiting for OCR"
+      >
+        {{ ocr_pending }} in OCR queue
+      </span>
+      <span
         v-if="status === 'idle' && has_progress"
         class="self-center text-sm text-(--warning)"
       >
         Starting a capture wipes the current scan.
       </span>
     </div>
+    <p v-if="replay_note" class="text-sm text-(--text-muted)">
+      {{ replay_note }}
+    </p>
+    <div class="flex flex-wrap items-center gap-2">
+      <button
+        class="rounded-md bg-zinc-700 px-3 py-1.5 text-sm transition-colors hover:bg-zinc-600 disabled:cursor-not-allowed disabled:opacity-40"
+        :disabled="status !== 'capturing' || replaying"
+        @click="toggle_recording"
+      >
+        {{ recording ? "Stop recording" : "Record debug capture" }}
+      </button>
+      <button
+        class="rounded-md bg-zinc-700 px-3 py-1.5 text-sm transition-colors hover:bg-zinc-600 disabled:cursor-not-allowed disabled:opacity-40"
+        :disabled="recording || !captured_bytes"
+        @click="download_capture"
+      >
+        Download capture
+      </button>
+      <span
+        v-if="captured_bytes"
+        class="text-sm text-(--text-muted)"
+        aria-label="Capture size"
+      >
+        {{ (captured_bytes / 1e6).toFixed(0) }} MB
+        {{ recording ? "recorded" : "ready" }}
+      </span>
+    </div>
+    <p class="text-xs text-(--text-muted)">
+      A debug capture restarts the scan and records everything on the shared
+      screen, for sending in when something is read wrong. Stop recording,
+      correct the slots by hand, then download.
+    </p>
     <button @click="toggle_cropper" class="generic-button">
       {{ cropper_running ? "stop cropper" : "start scropper" }}
     </button>

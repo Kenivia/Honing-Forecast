@@ -49,6 +49,7 @@ pub fn histogram_wrapper(input_payload: JsValue) -> JsValue {
 // It lives and dies with the worker's wasm instance.
 thread_local! {
     static SCANNER: RefCell<Option<ScannerState>> = const { RefCell::new(None) };
+    static CAPTURED: RefCell<Vec<u8>> = const { RefCell::new(Vec::new()) };
 }
 
 #[derive(Deserialize)]
@@ -59,6 +60,9 @@ struct CropperOptions {
     // what the user changed by hand since the last scan
     #[serde(default)]
     edits: Vec<SlotEdit>,
+    // keep recording, if the state was reserved to; see capture.rs
+    #[serde(default)]
+    record: bool,
 }
 
 #[wasm_bindgen]
@@ -68,15 +72,49 @@ pub fn cropper_wrapper(options: JsValue) -> JsValue {
     let options: CropperOptions = from_value(options).unwrap();
     SCANNER.with_borrow_mut(|state| {
         let state = state.as_mut().unwrap();
+        if !options.record {
+            state.recorder = None;
+        }
+        let inputs = state.recorder.is_some().then(|| (options.ocr_results.clone(), options.edits.clone()));
         state.apply_edits(options.edits);
         timed("apply_ocr", || state.apply_ocr(options.ocr_results));
         state.cropper();
         let out = timed("to_value", || {
             to_value(&state.result(options.full)).unwrap()
         });
+        if let Some((ocr_results, edits)) = inputs {
+            let record = timed("capture", || state.record_scan(ocr_results, edits));
+            CAPTURED.set(record);
+        }
         state.clear_changed();
         out
     })
+}
+
+// the record of the last scan, empty when it was not recorded
+#[wasm_bindgen]
+pub fn take_capture() -> Vec<u8> {
+    CAPTURED.take()
+}
+
+// One scan of a capture run again, in place of a frame: the payload of a scan record.
+#[wasm_bindgen]
+pub fn replay_wrapper(record: &[u8], full: bool) -> JsValue {
+    console_error_panic_hook::set_once();
+
+    SCANNER.with_borrow_mut(|state| {
+        let state = state.as_mut().unwrap();
+        state.replay_scan(hf_scanner::capture::parse_scan(record));
+        let out = to_value(&state.result(full)).unwrap();
+        state.clear_changed();
+        out
+    })
+}
+
+// the first replayed scan that did not end as recorded
+#[wasm_bindgen]
+pub fn replay_mismatch() -> Option<f64> {
+    SCANNER.with_borrow(|state| state.as_ref().unwrap().replay_mismatch.map(|x| x as f64))
 }
 
 // stage timings of the calls since the last take, as [name, total, calls]
@@ -91,6 +129,9 @@ struct ReserveInput {
     screen_info: GameResolution,
     buffer: Buffer,
     config: Vec<OneIconConfig>,
+    // record the session from its first scan
+    #[serde(default)]
+    record: bool,
 }
 
 #[derive(Deserialize)]
@@ -104,11 +145,12 @@ struct GameResolution {
 pub fn reserve_buffer_wrapper(input: JsValue) -> JsValue {
     console_error_panic_hook::set_once();
 
-    let ReserveInput { screen_info: game, mut buffer, config } = from_value(input).unwrap();
+    let ReserveInput { screen_info: game, mut buffer, config, record } = from_value(input).unwrap();
     buffer.reserve();
     set_config(config);
-    let scanner_state =
+    let mut scanner_state =
         ScannerState::new(buffer, game.game_width, game.game_height, game.forced_21_9);
+    scanner_state.recorder = record.then(Default::default);
     let out = to_value(&scanner_state.result(true)).unwrap();
     if let Some(mut old) = SCANNER.replace(Some(scanner_state)) {
         old.buffer.dealloc();

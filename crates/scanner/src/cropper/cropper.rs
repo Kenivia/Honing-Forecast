@@ -22,7 +22,9 @@ impl ScannerState {
         assert!(self.buffer.pointer.is_some());
         assert!(BASE_ICONS.read().len() != 0);
 
-        if !timed("changed", || self.worth_scanning()) {
+        self.slot_cut = None;
+        self.scanned = timed("changed", || self.worth_scanning());
+        if !self.scanned {
             return;
         }
         self.update_scale();

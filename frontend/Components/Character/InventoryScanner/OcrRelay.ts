@@ -1,3 +1,4 @@
+import { ref } from "vue";
 import { WasmOp } from "@/WasmInterface/WasmWorker";
 import { create_worker_bundle } from "@/WasmInterface/WorkerBundle";
 import { OcrJob, OneIconConfig } from "./LoadStorage";
@@ -7,10 +8,11 @@ import { OcrJob, OneIconConfig } from "./LoadStorage";
 // Module state, like the scanner worker it lives and dies with.
 
 const BATCH = 4; // lines per op, so the first texts are not held back by a long batch
-// each worker loads the model and the templates again, so only a few
+// Half the hardware threads less one, which leaves room for the scanner worker and the page.
+// Each worker loads the model and the templates again, so no more than eight.
 const WORKERS = Math.min(
-  3,
-  Math.max(1, Math.floor((navigator.hardwareConcurrency ?? 4) / 4)),
+  8,
+  Math.max(1, Math.floor((navigator.hardwareConcurrency ?? 4) / 2) - 1),
 );
 
 interface OcrWorker {
@@ -22,6 +24,8 @@ interface OcrWorker {
 let workers: OcrWorker[] = [];
 let waiting: (OcrJob & { queued_at: number })[] = [];
 let done: [number, string][] = [];
+// lines not read yet, waiting or with a worker
+export const ocr_pending = ref(0);
 
 // per-batch timings in ms, kept on window for profiling
 const ocr_timings: any[] = ((globalThis as any).__ocr_timings ??= []);
@@ -52,11 +56,13 @@ export function stop_ocr() {
   workers = [];
   waiting = [];
   done = [];
+  ocr_pending.value = 0;
 }
 
 export function queue_ocr(jobs: OcrJob[]) {
   const queued_at = performance.now();
   for (const job of jobs) waiting.push({ ...job, queued_at });
+  ocr_pending.value += jobs.length;
   pump();
 }
 
@@ -82,6 +88,7 @@ function pump() {
         // a stopped worker never answers, so this one is still current
         worker.busy = false;
         done.push(...texts);
+        ocr_pending.value -= texts.length;
         const now = performance.now();
         ocr_timings.push({
           at: now,

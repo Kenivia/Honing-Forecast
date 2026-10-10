@@ -133,9 +133,11 @@ export function create_worker_bundle(): WorkerBundle {
       {
         transfer: payload?.frame
           ? [payload.frame]
-          : wasm_op == WasmOp.Ocr
-            ? payload.flatMap(ocr_job_buffers)
-            : [],
+          : payload?.replay
+            ? [payload.replay.buffer]
+            : wasm_op == WasmOp.Ocr
+              ? payload.flatMap(ocr_job_buffers)
+              : [],
       },
     );
     post_ms = performance.now() - post_start;

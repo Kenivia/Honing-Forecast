@@ -157,6 +157,9 @@ impl ScannerState {
             self.past_hovers.push(hover);
         } else {
             self.write_hover(&mut hover, true);
+            if let Some(log) = &mut self.hover_log {
+                log.push(hover);
+            }
         }
     }
 

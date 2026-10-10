@@ -50,6 +50,7 @@ playwright-report/
 
 
 **/*.mp4
+**/*.hfcap
 
 game_file_reader
 # leftovers of the old codex scripts

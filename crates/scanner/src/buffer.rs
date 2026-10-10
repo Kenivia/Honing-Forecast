@@ -20,7 +20,8 @@ pub struct Buffer {
 impl Buffer {
     pub fn reserve(&mut self) {
         assert!(self.pointer.is_none());
-        let mut buf: Vec<u8> = Vec::with_capacity(self.size);
+        // zeros, which a replayed capture starts from
+        let mut buf: Vec<u8> = vec![0; self.size];
         let ptr: *mut u8 = buf.as_mut_ptr();
         forget(buf);
         self.pointer = Some(ptr as usize);
@@ -38,6 +39,10 @@ impl Buffer {
 
     pub fn data(&self) -> &'static [u8] {
         unsafe { std::slice::from_raw_parts(self.pointer.unwrap() as *const u8, self.size) }
+    }
+
+    pub fn data_mut(&self) -> &'static mut [u8] {
+        unsafe { std::slice::from_raw_parts_mut(self.pointer.unwrap() as *mut u8, self.size) }
     }
 
     // brightness-normalised colour of one pixel
