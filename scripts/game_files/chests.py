@@ -10,7 +10,8 @@ A row is one chest as the game has it: id, title, icon (the art's name), rarity,
 level it asks for, contents as [title, amount, id if it is a chest of this table], and "extra", how
 many more rows its tooltip has for things that differ by class. Items that only differ in how they
 are bound are one row, and "binds" has the ways; "content_binds" is there when something inside is
-not bound to a character, with how each content is bound instead. "top" rows can sit in a slot: they have an English name, are
+not bound to a character, with how each content is bound instead. Gold always has its own there,
+by the chest's art: a chest's band says nothing about its gold. "top" rows can sit in a slot: they have an English name, are
 not past their expiry date and are not of tiers 1 to 3. The others are only there for being inside
 one. Chests with "Cube" or "Engraving" in their title never count as opening to a material.
 An irrelevant row is there so that a slot holding it can be told from the chest it looks like. Its
@@ -32,6 +33,8 @@ ART = TEMPLATES / "ChestIcons"
 MONEY = {1: "Silver", 2: "Gold"}  # Item.GainMoneyType
 BOUND = {1: "CharBound", 2: "RosterBound"}  # Item.BindTarget, of an item whose BindType is not 0
 LOOSER = ["RosterBound", "Tradable"]  # than bound to a character, the least so first
+# The bars of gold: their gold is bound to the character. Any other chest's can be traded.
+BOUND_GOLD_ICONS = ("use_13_34", "use_13_35", "use_13_36", "use_13_37", "use_13_38")
 UNWANTED = ("Cube", "Engraving")  # in a chest's title: it is irrelevant, and so is what only it leads to
 UNWANTED_ICONS = ("all_quest_02_184", "all_quest_02_196", "all_quest_02_198", "all_quest_02_199", "all_quest_02_226")  # likewise, by its art
 
@@ -112,6 +115,8 @@ def main():
             row["top"] = row.get("top", False) or top(item_id)
             row["contents"] = inside
             inside_binds = [bind(content_id) if content_id in items else None for content_id, _, _ in contents]
+            gold = "CharBound" if icon in BOUND_GOLD_ICONS else "Tradable"
+            inside_binds = [gold if name == "Gold" else kind for kind, (_, name, _) in zip(inside_binds, contents)]
             row.setdefault("binds", []).append((top(item_id), bind(item_id), inside_binds))
             now[item_id] = row["id"]
         if now == merged:
@@ -133,8 +138,9 @@ def main():
         row["binds"] = sorted({kind for kind, _ in bound})
         # the tightest any of them has it; bound to a character is no looser than the chest
         loosest = [min((LOOSER.index(kind) if kind in LOOSER else -1 for kind in column)) for column in zip(*(inside for _, inside in bound))]
-        if max(loosest, default=-1) >= 0:
-            row["content_binds"] = [LOOSER[at] if at >= 0 else None for at in loosest]
+        golds = [name == "Gold" for name, _, _ in row["contents"]]
+        if max(loosest, default=-1) >= 0 or any(golds):
+            row["content_binds"] = [LOOSER[at] if at >= 0 else "CharBound" if gold else None for at, gold in zip(loosest, golds)]
         if not row["top"]:
             del row["top"]
             # no template is made for it

@@ -33,7 +33,7 @@ type Opens = {
   title: string;
   kind: ChestKind;
   contents: [string, number, number | null][];
-  // how each content is bound, where one is bound more loosely than to a character
+  // how each content is bound, where one is gold or bound more loosely than to a character
   content_binds?: (string | null)[];
   // only there to tell a slot from the chest it is drawn like
   irrelevant?: boolean;
@@ -174,7 +174,7 @@ export const scanned = computed(() => {
   }
 
   // What is inside a chest takes the chest's band, or its own where it is bound more loosely. No
-  // select-one of the table holds such a thing, so its options all take the chest's.
+  // select-one of the table holds such a thing, or gold, so its options all take the chest's.
   function open(chest: Opens, count: number, band: number) {
     const { kind, title } = chest;
     if (kind === "Random") return add_loose(random, title, count);
@@ -190,10 +190,9 @@ export const scanned = computed(() => {
     const bags: Bag[] = [{}, {}, {}];
     const gather = (chest: Opens, times: number, band: number) => {
       chest.contents.forEach(([inner, each, id], at) => {
-        const own = Math.max(
-          band,
-          BAND_OF[chest.content_binds?.[at] ?? ""] ?? 0,
-        );
+        const bind = BAND_OF[chest.content_binds?.[at] ?? ""];
+        // gold is bound as the table says, whatever the chest
+        const own = inner === "Gold" ? bind : Math.max(band, bind ?? 0);
         const label = TITLE_LABEL[inner];
         const opens = id ? OPENS[id] : undefined;
         if (label) bags[own][label] = (bags[own][label] ?? 0) + each * times;
