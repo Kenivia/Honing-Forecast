@@ -7,13 +7,31 @@ use image::{
     imageops::{FilterType, resize},
 };
 
-// light text on a dark bar to dark text on white, which is what the recogniser reads best
-pub fn text_image(buffer: &Buffer, x0: usize, y0: usize, x1: usize, y1: usize) -> GrayImage {
+// A line of text cut out of a frame, as how much each pixel is text. It is cut on every frame of
+// a hover and only made into a strip for the few that are read.
+#[derive(Debug, Clone)]
+pub struct Ink(GrayImage);
+
+impl Ink {
+    // light text on a dark bar to dark text on white, which is what the recogniser reads best
+    pub fn strip(&self) -> GrayImage {
+        let most = (*self.0.as_raw().iter().max().unwrap()).max(1) as u32;
+        let image = GrayImage::from_fn(self.0.width(), self.0.height(), |x, y| {
+            Luma([255 - (self.0.get_pixel(x, y)[0] as u32 * 255 / most) as u8])
+        });
+        // the recogniser works on lines 64px tall
+        let width = image.width() * OCR_LINE_HEIGHT / image.height();
+        resize(&image, width, OCR_LINE_HEIGHT, FilterType::CatmullRom)
+    }
+}
+
+// whatever is bright
+pub fn text_image(buffer: &Buffer, x0: usize, y0: usize, x1: usize, y1: usize) -> Ink {
     ink_image(buffer, x0, y0, x1, y1, |[r, g, b]| r.max(g).max(b))
 }
 
 // only what is in the amount yellow (255, 213, 0), so white text and the background drop out
-pub fn yellow_image(buffer: &Buffer, x0: usize, y0: usize, x1: usize, y1: usize) -> GrayImage {
+pub fn yellow_image(buffer: &Buffer, x0: usize, y0: usize, x1: usize, y1: usize) -> Ink {
     ink_image(buffer, x0, y0, x1, y1, |[r, g, b]| (r.min(g) - b).max(0))
 }
 
@@ -24,22 +42,16 @@ fn ink_image(
     x1: usize,
     y1: usize,
     ink: impl Fn([i32; 3]) -> i32,
-) -> GrayImage {
-    let (width, height) = ((x1 - x0) as u32, (y1 - y0) as u32);
-    let inks: Vec<i32> = (y0..y1).flat_map(|y| (x0..x1).map(move |x| (x, y))).map(|(x, y)| ink(buffer.rgb(x, y))).collect();
-    let most = inks.iter().copied().max().unwrap().max(1);
-    let image = GrayImage::from_fn(width, height, |x, y| {
-        Luma([255 - (inks[(y * width + x) as usize] * 255 / most) as u8])
-    });
-    // the recogniser works on lines 64px tall
-    let width = image.width() * OCR_LINE_HEIGHT / image.height();
-    resize(&image, width, OCR_LINE_HEIGHT, FilterType::CatmullRom)
+) -> Ink {
+    Ink(GrayImage::from_fn((x1 - x0) as u32, (y1 - y0) as u32, |x, y| {
+        Luma([ink(buffer.rgb(x0 + x as usize, y0 + y as usize)) as u8])
+    }))
 }
 
-// The title's lines as strips for the recogniser, and whether every line is centred in the bar.
+// The title's lines, and whether every line is centred in the bar.
 // A line whose side gaps differ has the cursor over it: "Great Destiny Leapstone" with its
 // start covered reads as a different, valid item.
-pub fn title_lines(buffer: &Buffer, bar: &TitleBar, s: f64) -> (Vec<GrayImage>, bool) {
+pub fn title_lines(buffer: &Buffer, bar: &TitleBar, s: f64) -> (Vec<Ink>, bool) {
     let is_text =
         |x: usize, y: usize| buffer.rgb(bar.x + x, bar.y + y).into_iter().max().unwrap() > 120;
     let is_coloured = |x: usize, y: usize| {

@@ -3,11 +3,10 @@ use crate::{
     scanner_state::{InventoryType, ScannerState, SlotAddress, Tradability},
     tooltip::{
         items::{VARIANTS, Variant, variant},
-        title::text_image,
+        title::{Ink, text_image},
     },
 };
 use ahash::AHashMap;
-use image::GrayImage;
 use serde::{Deserialize, Serialize};
 use std::sync::LazyLock;
 use strsim::normalized_levenshtein;
@@ -72,11 +71,11 @@ pub struct ChestLayout {
     pub rows: Vec<ChestRowLayout>,
 }
 
-// one row of a chest as strips for the recogniser
+// the text lines of one row of a chest
 #[derive(Debug, Clone)]
 pub struct ChestRowStrips {
-    pub names: Vec<GrayImage>,
-    pub count: GrayImage,
+    pub names: Vec<Ink>,
+    pub count: Ink,
 }
 
 pub fn chest_strips(buffer: &Buffer, layout: &ChestLayout) -> Vec<ChestRowStrips> {

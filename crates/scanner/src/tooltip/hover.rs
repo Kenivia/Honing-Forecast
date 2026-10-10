@@ -4,7 +4,7 @@ use super::{
     icon::tooltip_icon,
     items::{ITEMS, item_from_body, match_title, shares_icon, variant},
     layout::parse_layout,
-    title::{join_title, text_image, title_lines, yellow_image},
+    title::{Ink, join_title, text_image, title_lines, yellow_image},
 };
 use crate::{
     constants::{COMBINED_NUMBER_HEIGHT, SLOT_ORDER},
@@ -13,7 +13,6 @@ use crate::{
     timing::timed,
 };
 use ahash::AHashMap;
-use image::GrayImage;
 use std::{hash::Hash, mem::take};
 
 const SAME_HOVER: f64 = 6.0; // the tooltip is the same one while it stays within this many px
@@ -98,15 +97,15 @@ pub struct Hover {
     pub slot: Option<SlotAddress>,
 }
 
-// the text strips of one frame of a hover, not sent off yet
+// the text lines of one frame of a hover, not sent off yet
 #[derive(Debug, Default, Clone)]
 pub struct Strips {
     // one per line, and whether every line was centred
-    pub title: Option<(Vec<GrayImage>, bool)>,
-    pub amount: Option<[GrayImage; 3]>,
+    pub title: Option<(Vec<Ink>, bool)>,
+    pub amount: Option<[Ink; 3]>,
     pub chest: Option<Vec<ChestRowStrips>>,
     // one per description line
-    pub body: Option<Vec<GrayImage>>,
+    pub body: Option<Vec<Ink>>,
 }
 
 // The OCR jobs of one frame of a hover. Its votes are cast once every text is back.
@@ -157,28 +156,29 @@ impl ScannerState {
         }
     }
 
-    // sends strips off to be read, as one read of this hover
+    // sends lines off to be read, as one read of this hover
     fn send_read(&mut self, hover: &mut Hover, strips: Strips) {
+        let start = crate::timing::now();
         // a hover's first read goes ahead of other hovers' later ones
         let priority = hover.sent.into_iter().max().unwrap().min(255) as u8;
         let mut read = PendingRead { hover: hover.id, ..Default::default() };
         if let Some((lines, centred)) = strips.title {
-            let jobs = lines.into_iter().map(|line| self.request_ocr(line, priority, false)).collect();
+            let jobs = lines.into_iter().map(|line| self.request_ocr(line.strip(), priority, false)).collect();
             read.title = Some((jobs, centred));
         }
         if let Some(images) = strips.amount {
-            read.amount = Some(images.map(|image| self.request_ocr(image, priority, false)));
+            read.amount = Some(images.map(|image| self.request_ocr(image.strip(), priority, false)));
         }
         if let Some(rows) = strips.chest {
             let mut jobs = vec![];
             for row in rows {
-                let names = row.names.into_iter().map(|x| self.request_ocr(x, priority, false)).collect();
-                jobs.push((names, self.request_ocr(row.count, priority, false)));
+                let names = row.names.into_iter().map(|x| self.request_ocr(x.strip(), priority, false)).collect();
+                jobs.push((names, self.request_ocr(row.count.strip(), priority, false)));
             }
             read.chest = Some(jobs);
         }
         if let Some(lines) = strips.body {
-            read.body = Some(lines.into_iter().map(|line| self.request_ocr(line, priority, false)).collect());
+            read.body = Some(lines.into_iter().map(|line| self.request_ocr(line.strip(), priority, false)).collect());
         }
         let kinds =
             [read.title.is_some(), read.amount.is_some(), read.chest.is_some(), read.body.is_some()];
@@ -188,6 +188,7 @@ impl ScannerState {
         }
         if kinds.contains(&true) {
             self.pending_reads.push(read);
+            crate::timing::record("tooltip/strips", crate::timing::now() - start);
         }
     }
 
