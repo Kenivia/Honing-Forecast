@@ -14,7 +14,7 @@ Each slot in a scan result carries a status, a reason and a value (the tooltip's
 | Pending | white | recognised, number not read yet |
 | Good | green | a material whose icon number is under 9999; or a tooltip was resolved to the slot; or a chest that is accounted for |
 | NeedHover | orange | a material showing 9999 or more with no tooltip; a chest not accounted for; an icon several materials share (the books) with no tooltip saying which |
-| NeedTradability | orange | would be good, but no tooltip gave its tradability. Shown as needing a hover, unless assumed (below) |
+| NeedTradability | orange | would be good, but no tooltip gave its tradability and the game's table does not settle it (materials, and chests bound more than one way: `Tooltips.md`). Shown as needing a hover, unless assumed (below) |
 | Error | red | a tooltip was resolved to the slot but gave no amount |
 | Irrelevant | greyed out | matches no icon; or a chest that opens to nothing counted |
 | edited | dotted blue | the user set it by hand |

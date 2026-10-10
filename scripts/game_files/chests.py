@@ -9,7 +9,7 @@ Run extract.py first, and this again after a game patch or a change to items.jso
 A row is one chest as the game has it: id, title, icon (the art's name), rarity, kind, the item
 level it asks for, contents as [title, amount, id if it is a chest of this table], and "extra", how
 many more rows its tooltip has for things that differ by class. Items that only differ in how they
-are bound are one row. "top" rows can sit in a slot: they have an English name, are
+are bound are one row, and "binds" has the ways. "top" rows can sit in a slot: they have an English name, are
 not past their expiry date and are not of tiers 1 to 3. The others are only there for being inside
 one. Chests with "Cube" or "Engraving" in their title never count as opening to a material.
 An irrelevant row is there so that a slot holding it can be told from the chest it looks like. Its
@@ -29,6 +29,7 @@ from game import ROOT, box, icon_art, icon_info, load_index, table
 TEMPLATES = ROOT / "templates"
 ART = TEMPLATES / "ChestIcons"
 MONEY = {1: "Silver", 2: "Gold"}  # Item.GainMoneyType
+BOUND = {1: "CharBound", 2: "RosterBound"}  # Item.BindTarget, of an item whose BindType is not 0
 UNWANTED = ("Cube", "Engraving")  # in a chest's title: it is irrelevant, and so is what only it leads to
 UNWANTED_ICONS = ("all_quest_02_184", "all_quest_02_196", "all_quest_02_198", "all_quest_02_199", "all_quest_02_226")  # likewise, by its art
 
@@ -85,6 +86,10 @@ def main():
     def top(item_id):
         return live(item_id) and int(items[item_id]["Tier"]) in (0, 4)
 
+    def bind(item_id):
+        row = items[item_id]
+        return BOUND[int(row["BindTarget"])] if int(row["BindType"]) else "Tradable"
+
     # Items that read the same are one row, under the smallest id. What a chest holds is compared
     # after the chests inside it were merged, so this goes round until nothing merges.
     merged = {item_id: item_id for item_id in wanted}
@@ -104,6 +109,7 @@ def main():
                 row["extra"] = extra
             row["top"] = row.get("top", False) or top(item_id)
             row["contents"] = inside
+            row.setdefault("binds", []).append((top(item_id), bind(item_id)))
             now[item_id] = row["id"]
         if now == merged:
             break
@@ -119,6 +125,8 @@ def main():
             queue += [content[2] for content in by_id[item_id]["contents"] if content[2]]
     out = [by_id[item_id] for item_id in sorted(kept)]
     for row in out:
+        # how the items that can sit in a slot are bound, or all of them when none can
+        row["binds"] = sorted({kind for is_top, kind in row["binds"] if is_top or not row["top"]})
         if not row["top"]:
             del row["top"]
             # no template is made for it

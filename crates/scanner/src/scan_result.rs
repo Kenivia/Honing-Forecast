@@ -5,7 +5,7 @@ use crate::{
     setup::{OneIconConfig, WireRect},
     tooltip::{
         chest::Chest,
-        items::{Variant, is_chest_icon, open_alike, shares_icon, variants_of},
+        items::{Variant, bound_alike, is_chest_icon, open_alike, shares_icon, variant, variants_of},
     },
 };
 use serde::{Serialize, Serializer, ser::SerializeStruct};
@@ -101,7 +101,8 @@ impl Chest {
 }
 
 impl ScannerState {
-    // status, reason, and the slot's tradability: its own tooltip's, else its chest's
+    // status, reason, and the slot's tradability: its own tooltip's, else its chest's, else the
+    // one way every chest it can be is bound
     fn slot_status(
         &self,
         address: &SlotAddress,
@@ -147,7 +148,12 @@ impl ScannerState {
             if chests.iter().any(|chest| chest.stands_for(address, number)) {
                 chests.retain(|chest| chest.stands_for(address, number));
             }
-            chests.iter().find_map(|chest| chest.tradability)
+            let inventory = address.inventory_type;
+            let read = chests.iter().find_map(|chest| {
+                let bound = || bound_alike(chest.variants.iter().map(|id| variant(*id)), inventory);
+                chest.tradability.or_else(bound)
+            });
+            read.or_else(|| bound_alike(variants.iter().copied(), inventory))
         };
         (status, reason, info.tradability.or_else(chest_tradability))
     }

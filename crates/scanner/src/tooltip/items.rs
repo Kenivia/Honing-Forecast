@@ -1,4 +1,7 @@
-use crate::tooltip::chest::ChestKind;
+use crate::{
+    scanner_state::{InventoryType, Tradability},
+    tooltip::chest::ChestKind,
+};
 use ahash::AHashMap;
 use serde::Deserialize;
 use std::sync::LazyLock;
@@ -44,6 +47,9 @@ pub struct Variant {
     // its tooltip lists some of its contents only, depending on the class
     #[serde(default)]
     pub by_class: bool,
+    // the ways the items it stands for are bound; none for one that counts for nothing
+    #[serde(default)]
+    pub binds: Vec<Tradability>,
     // title, amount, and the chest of this table it is
     pub contents: Vec<(String, u32, Option<u32>)>,
     // the same in a fixed order, to compare two chests by
@@ -104,6 +110,20 @@ pub fn open_alike(variants: &[&Variant]) -> bool {
         pair[0].irrelevant == pair[1].irrelevant
             && (pair[0].irrelevant || (pair[0].kind == pair[1].kind && pair[0].sorted == pair[1].sorted))
     })
+}
+
+// How these chests are bound, when all of them are bound one way. The game keeps what is bound to
+// a character out of roster storage.
+pub fn bound_alike<'a>(
+    variants: impl IntoIterator<Item = &'a Variant>,
+    inventory: InventoryType,
+) -> Option<Tradability> {
+    let mut binds = variants
+        .into_iter()
+        .flat_map(|x| &x.binds)
+        .filter(|x| inventory != InventoryType::Roster || **x != Tradability::CharBound);
+    let first = *binds.next()?;
+    binds.all(|x| *x == first).then_some(first)
 }
 
 // an icon several materials are drawn with, which only the tooltip tells apart
