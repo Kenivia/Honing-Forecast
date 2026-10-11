@@ -17,6 +17,10 @@ use parking_lot::RwLock;
 use std::sync::LazyLock;
 
 const UNMATCHED_UNCHANGED: f64 = 0.995;
+// What a slot has to score as an icon. With the decoys in, true matches start at 0.946 and the
+// closest other slot is 0.924. An icon that can have an item level across it keeps the old limit,
+// which is what tells it has one, and so does what a slot may also be.
+const SLOT_CONFIDENCE: f64 = 0.935;
 // Slots change slowly and a tooltip can be gone in a few frames, so the slots are only looked
 // at on every third scan. That keeps the average scan well under a frame at 30 frames a second.
 const SLOT_EVERY: u64 = 3;
@@ -26,16 +30,17 @@ const SLOT_BUDGET: f64 = 60.0;
 // Rows of the icon a chest's item level is written over, from the top of what is compared (1440p).
 // Above them is the strip under the number, below them the last few rows.
 const LEVEL_ROWS: (f64, f64) = (18.0, 33.0);
-// Only the icons that look most like the slot from afar are compared in full: comparing all 340
-// takes 13 ms a slot against 0.7, and on the recordings recognises nothing more.
+// Only the icons that look most like the slot from afar are compared in full, and as many of the
+// decoys: comparing all 340 icons takes 13 ms a slot against 0.7, and on the recordings recognises
+// nothing more.
 const SHORTLIST: usize = 16;
 // Icons this close to the best one are kept as what the slot may also be: one plain chest scored
 // 0.967, 0.963 and 0.957 against three different chests.
 const ALTERNATIVE: f64 = 0.02;
 const CELLS: usize = 6;
 
-// each icon as the mean colour of a few cells of its top rows, per resolution
-pub static FROM_AFAR: LazyLock<RwLock<AHashMap<u32, Vec<(String, Vec<[f32; 3]>)>>>> =
+// each icon, and whether it is a decoy, as the mean colour of a few cells of its top rows, per resolution
+pub static FROM_AFAR: LazyLock<RwLock<AHashMap<u32, Vec<(String, bool, Vec<[f32; 3]>)>>>> =
     LazyLock::new(|| RwLock::new(AHashMap::new()));
 
 // the rows above the item level, which every slot shows
@@ -91,60 +96,77 @@ impl ScannerState {
         });
         let level_rows = ((LEVEL_ROWS.0 * s).round() as usize, (LEVEL_ROWS.1 * s).round() as usize);
         if !FROM_AFAR.read().contains_key(&height) {
-            let names: Vec<String> = BASE_ICONS
+            let mut names: Vec<(String, bool)> = BASE_ICONS
                 .read()
                 .iter()
-                .filter(|(_, one_icon)| one_icon.tag == "Icon")
-                .map(|(name, _)| name.clone())
+                .filter(|(_, one_icon)| one_icon.is_slot_icon())
+                .map(|(name, one_icon)| (name.clone(), one_icon.is_decoy()))
                 .collect();
-            let mut names = names;
             names.sort();
             let all = names
                 .into_iter()
-                .map(|name| {
+                .map(|(name, decoy)| {
                     let icon = icon_lookup(&name, height, get_resizer(&mut self.resizer));
                     let cells = from_afar(&icon.data, level_rows.0);
-                    (name, cells)
+                    (name, decoy, cells)
                 })
                 .collect();
             FROM_AFAR.write().insert(height, all);
         }
         let seen = from_afar(&observed.data, level_rows.0);
-        let mut shortlist: Vec<(f32, String)> = FROM_AFAR.read()[&height]
-            .iter()
-            .map(|(name, cells)| {
-                let apart: f32 = cells
-                    .iter()
-                    .zip(&seen)
-                    .map(|(a, b)| (0..3).map(|c| (a[c] - b[c]).abs()).sum::<f32>())
-                    .sum();
-                (apart, name.clone())
-            })
-            .collect();
-        if shortlist.len() > SHORTLIST {
-            shortlist.select_nth_unstable_by(SHORTLIST, |a, b| a.0.total_cmp(&b.0));
-            shortlist.truncate(SHORTLIST);
+        // The icons and the decoys are shortlisted apart, so that the decoys, which are many more,
+        // do not crowd an icon out.
+        let mut shortlist: Vec<String> = vec![];
+        for decoys in [false, true] {
+            let mut nearest: Vec<(f32, String)> = FROM_AFAR.read()[&height]
+                .iter()
+                .filter(|(_, decoy, _)| *decoy == decoys)
+                .map(|(name, _, cells)| {
+                    let apart: f32 = cells
+                        .iter()
+                        .zip(&seen)
+                        .map(|(a, b)| (0..3).map(|c| (a[c] - b[c]).abs()).sum::<f32>())
+                        .sum();
+                    (apart, name.clone())
+                })
+                .collect();
+            if nearest.len() > SHORTLIST {
+                nearest.select_nth_unstable_by(SHORTLIST, |a, b| a.0.total_cmp(&b.0));
+                nearest.truncate(SHORTLIST);
+            }
+            shortlist.extend(nearest.into_iter().map(|x| x.1));
         }
 
         // color variants of one icon can both pass, so the best comes first
+        let mut closest_decoy = 0f64;
         let mut passed: Vec<(String, f64, bool)> =
             shortlist
                 .into_iter()
-                .filter_map(|(_, icon_name)| {
+                .filter_map(|icon_name| {
                     let template = icon_lookup(&icon_name, height, get_resizer(&mut self.resizer));
-                    if let Some(score) = close_enough(&template, &observed) {
+                    if template.is_decoy() {
+                        closest_decoy = closest_decoy.max(confidence(&template, &observed));
+                        return None;
+                    }
+                    let plain = if has_level(&icon_name) { DEFAULT_CONFIDENCE } else { SLOT_CONFIDENCE };
+                    let limit = template.required_confidence.unwrap_or(plain);
+                    let score = confidence(&template, &observed);
+                    if score > limit {
                         return Some((icon_name, score, false));
                     }
                     // a chest that asks for an item level has it written across the slot
-                    let limit = template.required_confidence.unwrap_or(DEFAULT_CONFIDENCE);
                     Some(confidence_without(&template, &observed, level_rows))
                         .filter(|score| has_level(&icon_name) && *score > limit)
                         .map(|score| (icon_name, score, true))
                 })
                 .collect();
+        // a slot closer to a decoy than to an icon holds that other thing
+        passed.retain(|x| x.1 >= closest_decoy);
         passed.sort_by(|a, b| b.1.total_cmp(&a.1));
         let best = passed.first().map_or(0.0, |x| x.1);
-        passed.retain(|x| x.1 >= best - ALTERNATIVE);
+        let old_limit = |name: &String| BASE_ICONS.read()[name].required_confidence.unwrap_or(DEFAULT_CONFIDENCE);
+        let mut first = true;
+        passed.retain(|x| std::mem::take(&mut first) || (x.1 >= best - ALTERNATIVE && x.1 > old_limit(&x.0)));
 
         (passed, self.crop_buffer(number_position), observed)
     }

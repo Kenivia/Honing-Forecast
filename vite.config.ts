@@ -23,6 +23,7 @@ export default defineConfig({
         "/crates/**",
         "**/scripts/game_files/**",
         "**/game_file_reader/**",
+        "/target/**",
       ],
     },
   },

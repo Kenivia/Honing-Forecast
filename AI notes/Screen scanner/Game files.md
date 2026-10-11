@@ -4,7 +4,8 @@
 
 1. `extract.py` pulls the tables and the icon sheets out of the game, once per game patch.
 2. `chests.py` writes `templates/chests.json` and `templates/ChestIcons`: every chest that opens to something the scanner counts, and every other chest drawn like one of those.
-3. `python templates/make_msg_pack.py` and `pnpm run wasm`, as for any change to the tables.
+3. `decoys.py` writes `templates/decoys.json` and `templates/DecoyIcons`: what we do not count that looks like one of our templates.
+4. `python templates/make_msg_pack.py` and `pnpm run wasm`, as for any change to the tables.
 
 `find_icon.py` is for looking: it says which icon a slot in a capture is drawn with.
 
@@ -88,6 +89,18 @@ The amounts are the game's: the cases the codex had wrong or empty (the shard po
 ### Aliases in items.json
 
 A material goes by other titles that are drawn alike: "[Event] Artisan's Metallurgy: Level 1", "Destiny Leapstone (Roster)", "[Event] Metallurgy: Hellfire [11-14] - Bound". Each has its own row in `templates/items.json` with the material's icon, rarity and label. They were found by listing the items that share an icon and a rarity with a known material and have another title. "Enhanced Metallurgy: Hellfire [19-20]" shares the book's art too and was left out, not knowing what it is.
+
+## decoys.py
+
+`python scripts/game_files/decoys.py`, after `chests.py` and after any change to `items.json`: a decoy is whatever is not ours, so the list follows the tables. What the scanner does with it is in `Pipeline.md`, "Slots".
+
+- **The pool** is every icon of a named item on every rarity some item has it on: 22,498 pairs. The art and rarity of any item titled like a material of `items.json` are left out, since our material art is a lossy copy of the game's and would be its own decoy.
+- **A decoy** is a pair that renders within 0.93 of one of our templates and under 0.99 (the same picture, which a duplicate of our art under another name is). Rendered as a template is at 1080p, 46x29 without its outermost pixels, and scored as the scanner scores a slot. 757 pairs on 707 pieces of art.
+- **Why 0.93.** The slot limit was 0.95 when this was set (0.935 now) and a slot scores about 0.02 off what its template would. On the captures 129 decoys (0.94 and over) already tell every slot apart; 0.90 would be 6,530.
+- **A row** of `decoys.json` is `icon`, `rarity`, the template it is `like` and how `alike`. The art goes to `templates/DecoyIcons/<icon>.png`.
+- **A decoy is not known to be irrelevant, only not in our tables.** A chest that should count and is missing from `chests.json` becomes a decoy, and is then refused where before it was only unrecognised.
+- Most of the pool can never sit in these inventories (mounts, sail glyphs); they do no harm.
+- It reads the icons from `icons.npz`, which `find_icon.py` makes on its first run.
 
 ## find_icon.py
 

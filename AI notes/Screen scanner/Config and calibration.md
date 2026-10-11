@@ -6,9 +6,10 @@ The scanner recognises things by comparing screen crops with stored templates. T
 
 `public/ScannerConfig.msgpack` is a list of templates. Each has raw RGBA pixels, a name, a tag, an offset rectangle, and an optional required confidence. The scripts also write a `normalized` flag, which nothing reads. The required confidence overrides the 0.9 pass limit of whichever comparison the template goes through (fixed-position or template matching); it is 0.8 on every page tab and null on everything else, and is set with the anchor script (below). The frontend fetches it at startup and hands it to Rust when the scanner starts. The OCR model is loaded the same way.
 
-Two tags exist:
+Three tags exist:
 
 - **Icon**: one per material, a fixed-size square. Matched against inventory slots.
+- **Decoy**: a look-alike of an icon that we do not count, made like an icon from `templates/decoys.json` and `templates/DecoyIcons` and named `~<icon>@<rarity>`. Matched against slots beside the icons (`Pipeline.md`, "Slots"); nothing else reads them.
 - **Anchor**: fixed pieces of UI used to locate things, and page tabs. Offsets are at the reference resolution. A page tab's offset is relative to its inventory window's origin. An anchor's offset is relative to the root it produces: the window origin for anything that locates a window, the UI block's top-left (so plain screen coordinates on a 16:9 capture) for the Storage button. The character inventory page tabs are 74x48; the storage ones are narrower and were cropped at 60x44. Template sizes divisible by 4 scale cleanly to 1080p; a text template that is not loses several points of match score. A size that does not is cut down to whole pixels before matching, so it costs a fraction of its border rather than its accuracy (see `Pipeline.md`); the sort button, at 38x38, is the worst case of the set at 1080p, where 28.5 becomes 28.
 
 Template **names are a contract** with the Rust constants: anchor and page-tab names are looked up by string, and a missing name panics. The tag strings are matched literally too.

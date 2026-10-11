@@ -28,6 +28,19 @@ pub struct OneIconConfig {
     pub required_confidence: Option<f64>,
 }
 
+impl OneIconConfig {
+    // A decoy is something we do not count that looks like an icon of ours: a slot that is closer
+    // to one than to any icon holds nothing.
+    pub fn is_decoy(&self) -> bool {
+        self.tag == "Decoy"
+    }
+
+    // what a slot is compared with
+    pub fn is_slot_icon(&self) -> bool {
+        self.tag == "Icon" || self.is_decoy()
+    }
+}
+
 // a rectangle as the config file and the page have it
 #[derive(Serialize, Deserialize)]
 pub struct WireRect {
@@ -100,7 +113,7 @@ pub fn icon_lookup(
     let base_icon_guard = BASE_ICONS.read();
     let base_icon = base_icon_guard.get(&key.0).expect(&key.0);
     let scale_factor = resolution as f64 / 1440.0;
-    let is_icon = base_icon.tag == "Icon";
+    let is_icon = base_icon.is_slot_icon();
     let base_at = base_icon.offset.top_left;
     // the part of the base template that is used, in its own pixels, and where that sits on screen
     let (crop_top_left, crop_size, scaled_offset) = if is_icon {

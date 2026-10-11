@@ -43,8 +43,11 @@ fn sorted<K: Ord, V>(votes: impl IntoIterator<Item = (K, V)>) -> BTreeMap<K, V> 
 // everything a hover voted on, which describe leaves out
 fn votes(hover: &Hover) -> String {
     let beside: Vec<String> = hover.candidates.iter().map(|x| key(&x.0)).collect();
+    let lit: Vec<String> = hover.lit.iter().map(key).collect();
+    let level = hover.chest_place.1.as_ref().map(key);
     format!(
-        "      bar {:?}  sent (title, amount, chest, description) {:?}  icon tries {} shared {}\n      votes: title {:?}  description {:?}  icon {:?}  amount {:?}  tradability {:?}\n      beside {beside:?}",
+        "      bar {:?}  sent (title, amount, chest, description) {:?}  icon tries {} shared {}\n      votes: title {:?}  description {:?}  icon {:?}  amount {:?}  tradability {:?}\n      beside {beside:?}
+      lit {lit:?}  level with {level:?}",
         hover.bar,
         hover.sent,
         hover.icon_tries,

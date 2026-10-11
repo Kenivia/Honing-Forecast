@@ -8,6 +8,9 @@ Rows sharing an icon share one template; a row without an icon is only a title t
 
 chests.json and the art in ChestIcons/ are written by scripts/game_files/chests.py. Each of its "top" rows
 gets a template named "<icon>@<rarity>", one per art and background.
+
+decoys.json and the art in DecoyIcons/ are written by scripts/game_files/decoys.py: things we do not
+count that look like one of the above. Each gets a template named "~<icon>@<rarity>", tagged "Decoy".
 """
 
 import json
@@ -25,6 +28,8 @@ ICONS_DIR = SCRIPT_DIR / "Icons"
 ITEMS_PATH = SCRIPT_DIR / "items.json"
 CHEST_ICONS_DIR = SCRIPT_DIR / "ChestIcons"
 CHESTS_PATH = SCRIPT_DIR / "chests.json"
+DECOY_ICONS_DIR = SCRIPT_DIR / "DecoyIcons"
+DECOYS_PATH = SCRIPT_DIR / "decoys.json"
 OUTPUT_PATH = SCRIPT_DIR.parent / "public" / "ScannerConfig.msgpack"
 
 
@@ -42,7 +47,7 @@ def resize_and_crop_bottom(img: Image.Image, width: int, height: int) -> Image.I
     return img.crop((0, width - height, width, width))
 
 
-def build_icon_config(name: str, rarity: str, confidence, path=None) -> dict:
+def build_icon_config(name: str, rarity: str, confidence, path=None, tag="Icon") -> dict:
     icon = resize_and_crop_bottom(Image.open(path or find_icon_path(name)), WIDTH, HEIGHT)
     background = resize_and_crop_bottom(Image.open(BACKGROUNDS_DIR / f"{rarity}.webp"), WIDTH, HEIGHT)
     # the background goes over black first so the result is opaque
@@ -53,7 +58,7 @@ def build_icon_config(name: str, rarity: str, confidence, path=None) -> dict:
         "name": name,
         "offset": {"top_left": [0, 0], "width": WIDTH, "height": HEIGHT},
         "data": list(final.tobytes()),
-        "tag": "Icon",
+        "tag": tag,
         "normalized": True,
         "required_confidence": confidence,
     }
@@ -69,12 +74,14 @@ def main():
             assert confidences.setdefault(item["icon"], confidence) == confidence, f"'{item['icon']}' has two confidences"
 
     configs = msgpack.unpackb(OUTPUT_PATH.read_bytes(), raw=False)
-    configs = [config for config in configs if config["tag"] != "Icon"]
+    configs = [config for config in configs if config["tag"] not in ("Icon", "Decoy")]
     configs += [build_icon_config(name, rarity, confidences[name]) for name, rarity in rarities.items()]
     chests = {(row["icon"], row["rarity"]) for row in json.loads(CHESTS_PATH.read_text(encoding="utf-8")) if row.get("top")}
     configs += [build_icon_config(f"{icon}@{rarity}", rarity, None, CHEST_ICONS_DIR / f"{icon}.png") for icon, rarity in sorted(chests)]
+    decoys = json.loads(DECOYS_PATH.read_text(encoding="utf-8"))
+    configs += [build_icon_config(f"~{row['icon']}@{row['rarity']}", row["rarity"], None, DECOY_ICONS_DIR / f"{row['icon']}.png", "Decoy") for row in decoys]
     OUTPUT_PATH.write_bytes(msgpack.packb(configs, use_bin_type=True))
-    print(f"Wrote {len(rarities)} item and {len(chests)} chest icons ({len(configs)} templates in total) to {OUTPUT_PATH}")
+    print(f"Wrote {len(rarities)} item and {len(chests)} chest icons and {len(decoys)} decoys ({len(configs)} templates in total) to {OUTPUT_PATH}")
 
 
 if __name__ == "__main__":

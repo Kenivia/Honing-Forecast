@@ -61,6 +61,7 @@ OBS settings that match:
 
 `pnpm scanner-profile [--name=<run>] [--no-build] [--firefox] [--keep] [recording...]` does the whole thing: it builds the wasm, starts vite if nothing answers on :5173, plays each recording through the scanner page, writes a dump per recording to `target/scan-profiles/<run>/` (`last` without a name) and prints the stage breakdown. With no recording it does every one in `scripts/recordings`, about 15 minutes for the four there now. `--keep` leaves the dev server running. `scripts/browser/scan_summary.mjs <dump>...` re-prints a dump, so a run can be re-read without replaying anything.
 
+- **`target/` is not watched by vite** (`server.watch.ignored`). With the 230,000 files of `target/slot-bench` in it the dev server took over two minutes to answer anything, and every run timed out.
 - **With no dev server up, the first run usually dies on `page.goto` timing out** while vite compiles the page for the first time. Run it again with `--keep`, which leaves the server up.
 - **It builds the wasm every time**, dev server or not: with one already up it used to skip the build and measure whatever `crates/wasm/pkg` held. `--no-build` is for a second run of the same tree.
 - `pnpm scanner-compare <run a> <run b>` prints two runs side by side, mean ms per scanned frame of every stage with the change, per recording.
