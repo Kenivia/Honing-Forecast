@@ -279,7 +279,8 @@ impl Chest {
 impl ScannerState {
     // Where this chest goes in the list: over the one last seen in its slot, else over one in the
     // same column that reads the same, else at the end.
-    pub fn store_chest(&mut self, mut chest: Chest, index: Option<usize>) -> usize {
+    // `resolved`: its slot is the one its hover was tied to, not only the one it is level with
+    pub fn store_chest(&mut self, mut chest: Chest, index: Option<usize>, resolved: bool) -> usize {
         self.chests_changed = true;
         let index = index.or_else(|| {
             self.chests.iter().position(|old| {
@@ -295,7 +296,9 @@ impl ScannerState {
                     let both = chest.variants.iter().copied().filter(|x| old.variants.contains(x));
                     chest = Chest { rows: chest.rows, column: chest.column, ..Chest::new(both.collect()) }
                         .with(chest.slot, chest.amount, chest.tradability);
-                    chest.slot = old.slot.or(chest.slot);
+                    if !resolved {
+                        chest.slot = old.slot.or(chest.slot);
+                    }
                     chest.amount = chest.amount.or(old.amount.clone());
                     chest.tradability = chest.tradability.or(old.tradability);
                 }

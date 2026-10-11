@@ -104,6 +104,8 @@ pub struct OneSlotInfo {
     pub label: Option<String>,
     // the OCR job whose text becomes the amount
     pub amount_job: Option<u32>,
+    // the best it ever scored as its icon
+    pub best_score: f64,
     // of the slot's raw pixels when it was last looked at
     pub raw_hash: u64,
 }
@@ -185,6 +187,8 @@ pub struct ScannerState {
     // OCR jobs not handed out yet, the id each strip got, and the texts that came back
     pub ocr_queue: Vec<OcrJob>,
     pub ocr_ids: AHashMap<u64, u32>,
+    pub ocr_priority: AHashMap<u32, u8>,
+    pub read_count: u32,
     pub ocr_texts: AHashMap<u32, String>,
     // tooltip frames waiting for their texts, and hovers that ended while some were still waiting
     pub pending_reads: Vec<PendingRead>,

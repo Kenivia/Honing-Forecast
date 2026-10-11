@@ -94,13 +94,15 @@ pub struct OcrJob {
     pub id: u32,
     // lower is read first
     pub priority: u8,
+    // the read it is a line of, 0 for a slot's count; a read is of no use until all its lines are back
+    pub group: u32,
     pub line: Line,
 }
 
 impl ScannerState {
     // The id its text will be stored under; a line seen before is not read again. The brightness
     // estimate is not part of what is compared: it moves a little on every scan.
-    pub fn request_ocr(&mut self, line: Line, priority: u8) -> u32 {
+    pub fn request_ocr(&mut self, line: Line, priority: u8, group: u32) -> u32 {
         let (icon, template) = match &line.kind {
             Kind::Number { icon, template } => (icon.as_raw().as_slice(), template.as_str()),
             _ => (&[][..], ""),
@@ -114,8 +116,11 @@ impl ScannerState {
         ));
         let next = self.ocr_ids.len() as u32;
         let id = *self.ocr_ids.entry(hash).or_insert(next);
-        if id == next {
-            self.ocr_queue.push(OcrJob { id, priority, line });
+        // a line that is waiting behind others goes again when something more urgent wants it
+        let urgent = self.ocr_priority.get(&id).is_some_and(|old| priority < *old) && !self.ocr_texts.contains_key(&id);
+        if id == next || urgent {
+            self.ocr_priority.insert(id, priority);
+            self.ocr_queue.push(OcrJob { id, priority, group, line });
         }
         id
     }

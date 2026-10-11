@@ -119,6 +119,8 @@ export interface Pixels {
 export interface OcrJob {
   id: number;
   priority: number;
+  // the read it is a line of, 0 for a slot's count
+  group: number;
   line: {
     crop: Pixels;
     // a slot's count comes with its icon crop and the name of the template it matched

@@ -8,7 +8,13 @@ use super::{
 };
 use crate::{
     constants::{COMBINED_NUMBER_HEIGHT, SLOT_ORDER},
-    image_utils::brightness::brightness_lut,
+    cropper::cropper::QUIET_SCANS,
+    image_utils::{
+        brightness::{brightness_lut, normalize_brightness},
+        close_enough::confidence,
+        common::get_resizer,
+    },
+    setup::icon_lookup,
     ocr::{
         jobs::Line,
         text::{text_line, yellow_line},
@@ -34,6 +40,14 @@ const LOOK_CHANGED: f64 = 4.0; // title columns that differ once the cursor has 
 // when the last came back, so what it asks for follows what the OCR workers can do. Three were
 // tried: twice the OCR work on the recordings and nothing more read.
 const IN_FLIGHT: usize = 1;
+// A slot counts as lit up by the hover highlight when it scores this much under its best as its icon.
+const LIT: f64 = 0.005;
+// A tooltip beside no slot we know that is lit up is held for this many scans, the highlight
+// fading in, and what is then read of it goes behind everything else by this much.
+const HOLD_SCANS: usize = 8;
+const LOW_PRIORITY: usize = 100;
+// rows this much like a chest's names settle it in one read
+const EXACT_ROWS: f64 = 0.995;
 const SLOT_RIGHT_OF_TITLE: f64 = 10.67; // tooltip on the slot's right: gap from the slot's right edge to the title
 const SLOT_LEFT_OF_TITLE: f64 = 16.0; // tooltip on the slot's left: gap from the title's right edge to the slot
 const SLOT_TOLERANCE: f64 = 5.5;
@@ -103,6 +117,10 @@ pub struct Hover {
     // the material, from the description, else the title
     pub label: Option<String>,
     pub slot: Option<SlotAddress>,
+    // a slot beside it that is one we know, or may be, looks hovered
+    pub interest: bool,
+    // scans it was on screen
+    pub scans: usize,
 }
 
 // the text lines of one frame of a hover, not sent off yet
@@ -120,6 +138,7 @@ pub struct Strips {
 #[derive(Debug, Default)]
 pub struct PendingRead {
     pub hover: u32,
+    pub group: u32,
     // one job per line, and whether every line was centred
     pub title: Option<(Vec<u32>, bool)>,
     pub amount: Option<[u32; 3]>,
@@ -155,8 +174,25 @@ impl ScannerState {
     // a short hover is over before its first read is back, and its last frame reads better than
     // its first, which is often still fading in.
     fn retire_hover(&mut self, mut hover: Hover) {
-        let held = take(&mut hover.held);
-        self.send_read(&mut hover, held);
+        // Of a kind with a read still out, what was held waits for it, and only goes if that read
+        // did not settle the matter.
+        let mut held = take(&mut hover.held);
+        let mut now = Strips::default();
+        let waits = |kind: usize| hover.waiting[kind] > 0;
+        if !waits(0) {
+            now.title = held.title.take().filter(|_| most(&hover.title_votes) < SETTLED * CENTRED_VOTE);
+        }
+        if !waits(1) {
+            now.amount = held.amount.take().filter(|_| most(&hover.amount_votes) < SETTLED);
+        }
+        if !waits(2) {
+            now.chest = held.chest.take().filter(|_| most(&hover.chest_votes) < SETTLED);
+        }
+        if !waits(3) {
+            now.body = held.body.take().filter(|_| most(&hover.body_votes) < SETTLED);
+        }
+        hover.held = held;
+        self.send_read(&mut hover, now);
         if hover.waiting != [0; 4] {
             self.past_hovers.push(hover);
         } else {
@@ -169,34 +205,46 @@ impl ScannerState {
 
     // sends lines off to be read, as one read of this hover
     fn send_read(&mut self, hover: &mut Hover, strips: Strips) {
-        // a hover's first read goes ahead of other hovers' later ones
-        let priority = hover.sent.into_iter().max().unwrap().min(255) as u8;
-        let mut read = PendingRead { hover: hover.id, ..Default::default() };
+        // a hover's first read goes ahead of other hovers' later ones, and one beside nothing we
+        // know behind everything else
+        let low = if hover.interest { 0 } else { LOW_PRIORITY };
+        let priority = (hover.sent.into_iter().max().unwrap() + low).min(255) as u8;
+        // each kind is a read of its own, so the short ones are not kept back by a chest's rows
+        let id = hover.id;
+        let mut reads = vec![];
+        let next = |state: &mut ScannerState| {
+            state.read_count += 1;
+            PendingRead { hover: id, group: state.read_count, ..Default::default() }
+        };
         if let Some((lines, centred)) = strips.title {
-            let jobs = lines.into_iter().map(|line| self.request_ocr(line, priority)).collect();
+            let mut read = next(self);
+            let jobs = lines.into_iter().map(|line| self.request_ocr(line, priority, read.group)).collect();
             read.title = Some((jobs, centred));
+            reads.push((0, read));
         }
         if let Some(images) = strips.amount {
-            read.amount = Some(images.map(|image| self.request_ocr(image, priority)));
+            let mut read = next(self);
+            read.amount = Some(images.map(|image| self.request_ocr(image, priority, read.group)));
+            reads.push((1, read));
         }
         if let Some(rows) = strips.chest {
+            let mut read = next(self);
             let mut jobs = vec![];
             for row in rows {
-                let names = row.names.into_iter().map(|x| self.request_ocr(x, priority)).collect();
-                jobs.push((names, self.request_ocr(row.count, priority)));
+                let names = row.names.into_iter().map(|x| self.request_ocr(x, priority, read.group)).collect();
+                jobs.push((names, self.request_ocr(row.count, priority, read.group)));
             }
             read.chest = Some(jobs);
+            reads.push((2, read));
         }
         if let Some(lines) = strips.body {
-            read.body = Some(lines.into_iter().map(|line| self.request_ocr(line, priority)).collect());
+            let mut read = next(self);
+            read.body = Some(lines.into_iter().map(|line| self.request_ocr(line, priority, read.group)).collect());
+            reads.push((3, read));
         }
-        let kinds =
-            [read.title.is_some(), read.amount.is_some(), read.chest.is_some(), read.body.is_some()];
-        for (kind, sent) in kinds.into_iter().enumerate() {
-            hover.waiting[kind] += sent as usize;
-            hover.sent[kind] += sent as usize;
-        }
-        if kinds.contains(&true) {
+        for (kind, read) in reads {
+            hover.waiting[kind] += 1;
+            hover.sent[kind] += 1;
             self.pending_reads.push(read);
         }
     }
@@ -297,18 +345,22 @@ impl ScannerState {
         hover.missed = 0;
         hover.bar = bar;
         hover.candidates = self.slots_beside(&bar, s);
+        hover.scans += 1;
+        hover.interest |= self.looks_hovered(&hover.candidates, bar.y as f64, s);
 
+        let layout = timed("tooltip/layout", || parse_layout(&buffer, &bar, s));
         // Each of the three is read until enough reads agree, counting those still on their way.
         // What cannot go yet, because a read of its kind is still out, is held instead.
         let mut strips = Strips::default();
-        if most(&hover.title_votes) + hover.waiting[0] * CENTRED_VOTE < SETTLED * CENTRED_VOTE
+        // a chest with a panel is told by its rows
+        if layout.chest.is_none()
+            && most(&hover.title_votes) + hover.waiting[0] * CENTRED_VOTE < SETTLED * CENTRED_VOTE
             && (hover.sent[0] < SETTLED || look_changed)
         {
             let margin = TITLE_MARGINS[hover.sent[0] % TITLE_MARGINS.len()];
             strips.title = Some(timed("tooltip/title", || title_lines(&buffer, &bar, s, margin)));
         }
 
-        let layout = timed("tooltip/layout", || parse_layout(&buffer, &bar, s));
         // A chest's icon is no material's, and a book's never leads the other book's, so both
         // would be compared on every frame for nothing.
         if layout.chest.is_none() && most(&hover.icon_votes) < SETTLED && hover.icon_tries < MAX_READS {
@@ -373,6 +425,15 @@ impl ScannerState {
         if hover.waiting[3] < IN_FLIGHT {
             now.body = strips.body.take();
         }
+        // One beside nothing we know that looks hovered waits: the highlight fades in, and what is
+        // read of it then goes behind everything else.
+        // Not past the last scan of a screen gone still, though: nothing would send them then.
+        if !hover.interest && hover.scans < HOLD_SCANS && self.quiet_scans < QUIET_SCANS {
+            strips.title = now.title.take().or(strips.title.take());
+            strips.amount = now.amount.take().or(strips.amount.take());
+            strips.chest = now.chest.take().or(strips.chest.take());
+            strips.body = now.body.take().or(strips.body.take());
+        }
         hover.held = strips;
         self.send_read(&mut hover, now);
         // a tooltip that would run off the screen is pushed up until its hints end at the bottom
@@ -381,6 +442,33 @@ impl ScannerState {
         hover.chest_place = self.tooltip_slot(&bar, s, pushed_up, &hover.candidates);
 
         self.hover = Some(hover);
+    }
+
+    // Whether a slot the tooltip can belong to looks hovered and is one we know or have not looked
+    // at: the game lights the hovered slot up, so one that still looks like its icon is not it.
+    fn looks_hovered(&mut self, beside: &[(SlotAddress, f64)], bar_top: f64, s: f64) -> bool {
+        let brightness = self.screen_info.brightness.unwrap();
+        let height = self.screen_info.effective_height;
+        for (address, top) in beside {
+            if *top < bar_top - SLOT_ABOVE_TOOLTIP * s {
+                continue;
+            }
+            let Some(info) = self.slot_infos.get(address) else {
+                return true;
+            };
+            let Some((icon, _)) = info.icon_name_score.clone() else {
+                continue;
+            };
+            let best = info.best_score;
+            let position = self.anchored_slot_address_position(address).unwrap();
+            let mut crop = self.crop_buffer(position);
+            normalize_brightness(&mut crop, brightness);
+            let template = icon_lookup(&icon, height, get_resizer(&mut self.resizer));
+            if confidence(&template, &crop) < best - LIT {
+                return true;
+            }
+        }
+        false
     }
 
     // Casts the votes of every read whose texts are all back, then writes what its hover now says
@@ -417,8 +505,10 @@ impl ScannerState {
                 };
                 let title = match_title(&read).and_then(|item| item.title.clone()).or_else(bar);
                 if let Some(title) = title {
+                    // a read with nothing over it that is a title to the letter settles it
+                    let exact = *centred && read.eq_ignore_ascii_case(&title);
                     *hover.title_votes.entry(title).or_default() +=
-                        if *centred { CENTRED_VOTE } else { 1 };
+                        if exact { SETTLED * CENTRED_VOTE } else if *centred { CENTRED_VOTE } else { 1 };
                 }
                 hover.last_read_title = read;
                 hover.waiting[0] -= 1;
@@ -458,15 +548,18 @@ impl ScannerState {
                     listing.retain(|x| Some(x.0.kind) == kind);
                 }
                 let best = listing.iter().map(|x| x.1).fold(0.0, f64::max);
+                // rows that read as a chest's to the letter settle it
+                let weight = if best >= EXACT_ROWS { SETTLED } else { 1 };
                 for (variant, _) in listing.iter().filter(|x| x.1 >= best - 1e-6) {
-                    *hover.chest_votes.entry(variant.id).or_default() += 1;
+                    *hover.chest_votes.entry(variant.id).or_default() += weight;
                 }
                 hover.waiting[2] -= 1;
             }
             if let Some(lines) = &read.body {
                 let lines: Vec<String> = lines.iter().map(text).collect();
                 if let Some(label) = item_from_body(&lines).and_then(|item| item.label.clone()) {
-                    *hover.body_votes.entry(label).or_default() += 1;
+                    // every level's line and the gear's read, or it would name no book
+                    *hover.body_votes.entry(label).or_default() += SETTLED;
                 }
                 hover.waiting[3] -= 1;
             }
@@ -542,7 +635,7 @@ impl ScannerState {
             };
             chest.slot = hover.slot.or(hover.chest_place.1.filter(|address| !other(address)));
             chest.rows = hover.chest_rows.clone();
-            hover.chest_index = Some(self.store_chest(chest, hover.chest_index));
+            hover.chest_index = Some(self.store_chest(chest, hover.chest_index, hover.slot.is_some()));
         }
     }
 

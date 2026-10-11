@@ -5,7 +5,7 @@ const SAMPLE_DIFFERS: u8 = 16; // above what a still screen does in a compressed
 // share of the samples that has to differ from the last scanned frame: a tooltip showing up or
 // moving on, not the cursor alone
 const CHANGED: f64 = 0.005;
-const QUIET_SCANS: usize = 6; // scans after the last change, for the slots' turn and a lost tooltip
+pub const QUIET_SCANS: usize = 6; // scans after the last change, for the slots' turn and a lost tooltip
 
 // share of the thinned frame's samples that differ between two frames
 pub fn differing(new: &[[u8; 3]], old: &[[u8; 3]]) -> f64 {

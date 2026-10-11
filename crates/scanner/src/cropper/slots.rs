@@ -237,11 +237,11 @@ impl ScannerState {
                         },
                         brightness: self.screen_info.brightness.unwrap(),
                     };
-                    let amount_job = self.request_ocr(number, 0);
+                    let amount_job = self.request_ocr(number, 0, 0);
 
                     // what the tooltip said stays while the slot holds the same item, and so does
                     // the last number until the new one is read
-                    let (tooltip_amount, tradability, label, amount, amount_reads, hovered, tooltip_failed) = self
+                    let (tooltip_amount, tradability, label, amount, amount_reads, hovered, tooltip_failed, best) = self
                         .slot_infos
                         .get(slot_address)
                         .filter(|old| {
@@ -257,12 +257,14 @@ impl ScannerState {
                                 old.amount_reads.clone(),
                                 old.hovered,
                                 old.tooltip_failed,
+                                old.best_score,
                             )
                         })
                         .unwrap_or_default();
                     self.slot_infos.insert(
                         *slot_address,
                         OneSlotInfo {
+                            best_score: best.max(icon_name_score.as_ref().unwrap().1),
                             icon_name_score,
                             levelled,
                             alternatives,
@@ -314,6 +316,7 @@ impl ScannerState {
                                     tradability: None,
                                     label: None,
                                     amount_job: None,
+                                    best_score: 0.0,
                                     raw_hash,
                                 },
                             );

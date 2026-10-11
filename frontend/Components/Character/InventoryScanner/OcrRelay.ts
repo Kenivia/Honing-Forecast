@@ -7,12 +7,14 @@ import { OcrJob, OneIconConfig } from "./LoadStorage";
 // are passed to the OCR workers here, and their texts go back in with a later scan.
 // Module state, like the scanner worker it lives and dies with.
 
-const BATCH = 4; // lines per op, so the first texts are not held back by a long batch
-// Half the hardware threads less one, which leaves room for the scanner worker and the page.
-// Each worker loads the model and the templates again, so no more than eight.
+// Lines per op. More reads a line a few percent faster, but a short queue then goes to one
+// worker while the others idle, and a hover waits longer.
+const BATCH = 1;
+// One per four hardware threads, which leaves room for the scanner worker and the page.
+// Each worker loads the model and the templates again, so no more than three.
 const WORKERS = Math.min(
-  8,
-  Math.max(1, Math.floor((navigator.hardwareConcurrency ?? 4) / 2) - 1),
+  3,
+  Math.max(1, Math.floor((navigator.hardwareConcurrency ?? 4) / 4)),
 );
 
 interface OcrWorker {
@@ -24,6 +26,8 @@ interface OcrWorker {
 let workers: OcrWorker[] = [];
 let waiting: (OcrJob & { queued_at: number })[] = [];
 let done: [number, string][] = [];
+// reads some line of which has gone to a worker
+let begun = new Set<number>();
 // lines not read yet, waiting or with a worker
 export const ocr_pending = ref(0);
 
@@ -56,13 +60,23 @@ export function stop_ocr() {
   workers = [];
   waiting = [];
   done = [];
+  begun = new Set();
   ocr_pending.value = 0;
 }
 
 export function queue_ocr(jobs: OcrJob[]) {
   const queued_at = performance.now();
-  for (const job of jobs) waiting.push({ ...job, queued_at });
-  ocr_pending.value += jobs.length;
+  for (const job of jobs) {
+    // a line that comes again is wanted sooner than it was
+    const old = waiting.find((x) => x.id === job.id);
+    if (old) {
+      old.priority = job.priority;
+      old.group = job.group;
+      continue;
+    }
+    waiting.push({ ...job, queued_at });
+    ocr_pending.value += 1;
+  }
   pump();
 }
 
@@ -74,11 +88,19 @@ export function take_ocr_results() {
 }
 
 function pump() {
-  // a hover's first read goes ahead of other hovers' second and third
-  waiting.sort((a, b) => a.priority - b.priority || a.id - b.id);
+  // By priority; then a read that was begun, since it is of no use until all its lines are
+  // back; then the newest read, which is what the user is hovering now.
+  waiting.sort(
+    (a, b) =>
+      a.priority - b.priority ||
+      Number(begun.has(b.group)) - Number(begun.has(a.group)) ||
+      b.group - a.group ||
+      a.id - b.id,
+  );
   for (const worker of workers) {
     if (!worker.ready || worker.busy || waiting.length === 0) continue;
     const batch = waiting.splice(0, BATCH);
+    for (const job of batch) if (job.group) begun.add(job.group);
     worker.busy = true;
     const start = performance.now();
     worker.bundle.debounced_start(

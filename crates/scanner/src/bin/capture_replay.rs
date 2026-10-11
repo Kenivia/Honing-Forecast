@@ -84,8 +84,7 @@ fn main() {
     let reference_path = option(&args, "--reference");
     let reread = args.iter().any(|x| x == "--reread");
     let no_edits = args.iter().any(|x| x == "--no-edits");
-    // texts read here, for the next scan
-    let mut read: Vec<(u32, String)> = vec![];
+    let mut sim = native::Sim::new();
     let from: u64 = option(&args, "--from").map_or(0, |x| x.parse().unwrap());
     let to: u64 = option(&args, "--to").map_or(u64::MAX, |x| x.parse().unwrap());
     if let Some(folder) = &dump {
@@ -122,7 +121,7 @@ fn main() {
         let covered = (from..=to).contains(&index);
         let scanned = scan.frame.is_some();
         if reread {
-            scan.ocr_results = std::mem::take(&mut read);
+            scan.ocr_results = sim.take_ready();
         }
         if no_edits {
             scan.edits.clear();
@@ -161,9 +160,6 @@ fn main() {
         }
         reads = state.pending_reads.len();
         for job in &state.ocr_queue {
-            if reread {
-                read.push((job.id, job.line.read()));
-            }
             let what = lines.entry(job.id).or_insert("a slot's number".to_string());
             if ocr && covered {
                 println!("scan {index}: line {} sent, {what}, {}x{}", job.id, job.line.crop.width(), job.line.crop.height());
@@ -176,7 +172,11 @@ fn main() {
             let frame = state.buffer.raw_crop(0, 0, start.width, start.height);
             frame.save(format!("{folder}/scan-{index:05}.png")).unwrap();
         }
-        for hover in std::mem::take(state.hover_log.as_mut().unwrap()) {
+        if reread {
+            sim.step(&mut state, index);
+        }
+        let ended: Vec<Hover> = sim.ended.drain(..).chain(std::mem::take(state.hover_log.as_mut().unwrap())).collect();
+        for hover in ended {
             let (first, last) = seen[&hover.id];
             println!("hover {} on scans {first}-{last}, done at {index}\n      {}\n{}", hover.id, describe(&state, &hover), votes(&hover));
         }
@@ -190,6 +190,11 @@ fn main() {
         state.clear_changed();
     }
 
+    if reread {
+        let end = state.replayed;
+        sim.finish(&mut state, end);
+        eprintln!("{}", sim.summary());
+    }
     println!("{} scans, {skipped} of them skipped as still", state.replayed);
     match state.replay_mismatch {
         Some(scan) => println!("DIFFERS from the recording, first at scan {scan}"),

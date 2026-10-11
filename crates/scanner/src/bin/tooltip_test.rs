@@ -4,7 +4,6 @@
 use hf_scanner::{
     constants::ANCHORS,
     native::{self, describe, describe_chest, print_statuses},
-    ocr::jobs::OcrJob,
     scanner_state::ScannerState,
     tooltip::hover::Hover,
 };
@@ -59,16 +58,14 @@ fn main() {
     let mut spent = 0.0;
     let mut brightness = None;
     let mut skipped = 0;
-    // OCR_PER_FRAME=n reads at most n lines a frame, as if OCR were as slow as in the browser
-    let per_frame: Option<usize> = env::var("OCR_PER_FRAME").ok().map(|x| x.parse().unwrap());
-    let (mut backlog, mut longest, mut read): (Vec<OcrJob>, usize, usize) = (vec![], 0, 0);
-    // frames each line waited, first reads and later ones
-    let mut queued: std::collections::HashMap<u32, usize> = Default::default();
-    let mut waits: [Vec<usize>; 2] = Default::default();
+    // OCR_PX=n reads only so many px of strip a frame, as slow as the browser
+    let mut sim = native::Sim::new();
     loop {
         let more = stdin.read_exact(&mut pixels).is_ok();
         if more {
             // cropper(), with the tooltip step and all OCR timed on their own
+            let ready = sim.take_ready();
+            state.apply_ocr(ready);
             let scan = state.worth_scanning();
             skipped += !scan as usize;
             state.update_scale();
@@ -106,36 +103,11 @@ fn main() {
             if scan {
                 state.update_tooltip();
             }
-            match per_frame {
-                None => state.run_ocr_inline(),
-                // like the browser: only so many lines are read per frame, the rest wait
-                Some(lines) => {
-                    for job in &state.ocr_queue {
-                        queued.insert(job.id, index);
-                    }
-                    backlog.append(&mut state.ocr_queue);
-                    backlog.sort_by_key(|job| (job.priority, job.id));
-                    longest = longest.max(backlog.len());
-                    let batch: Vec<_> = backlog.drain(..lines.min(backlog.len())).collect();
-                    read += batch.len();
-                    for job in &batch {
-                        let class = (job.priority > 0) as usize;
-                        waits[class].push(index - queued[&job.id]);
-                    }
-                    state.apply_ocr(
-                        batch
-                            .iter()
-                            .map(|job| (job.id, job.line.read()))
-                            .collect(),
-                    );
-                }
-            }
+            sim.step(&mut state, index as u64);
             spent += clock.elapsed().as_secs_f64() * 1000.0;
         } else {
             // what is still waiting is read before the last hover is printed
-            state.ocr_queue.append(&mut backlog);
-            read += state.ocr_queue.len();
-            state.run_ocr_inline();
+            sim.finish(&mut state, index as u64);
             state.hover = None;
         }
         let moved = match (&previous, &state.hover) {
@@ -174,18 +146,7 @@ fn main() {
         spent / index as f64,
         state.screen_info.brightness
     );
-    println!("{read} lines read, longest OCR queue {longest}");
-    for (name, waits) in ["first", "later"].iter().zip(&mut waits) {
-        waits.sort();
-        if let Some(most) = waits.last() {
-            println!(
-                "{name} reads: {} lines, waited {} frames at the median, {} at the 90th percentile, {most} at most",
-                waits.len(),
-                waits[waits.len() / 2],
-                waits[waits.len() * 9 / 10]
-            );
-        }
-    }
+    eprintln!("{}", sim.summary());
     println!("{} chests", state.chests.len());
     for chest in &state.chests {
         println!("  {}", describe_chest(chest));
