@@ -119,6 +119,8 @@ pub struct Hover {
     pub slot: Option<SlotAddress>,
     // a slot beside it that is one we know, or may be, looks hovered
     pub interest: bool,
+    // the slots beside it we know that looked lit up at some point
+    pub lit: Vec<SlotAddress>,
     // scans it was on screen
     pub scans: usize,
 }
@@ -346,7 +348,13 @@ impl ScannerState {
         hover.bar = bar;
         hover.candidates = self.slots_beside(&bar, s);
         hover.scans += 1;
-        hover.interest |= self.looks_hovered(&hover.candidates, bar.y as f64, s);
+        let (unknown, lit) = self.looks_hovered(&hover.candidates, bar.y as f64, s);
+        hover.interest |= unknown || !lit.is_empty();
+        for address in lit {
+            if !hover.lit.contains(&address) {
+                hover.lit.push(address);
+            }
+        }
 
         let layout = timed("tooltip/layout", || parse_layout(&buffer, &bar, s));
         // Each of the three is read until enough reads agree, counting those still on their way.
@@ -444,17 +452,20 @@ impl ScannerState {
         self.hover = Some(hover);
     }
 
-    // Whether a slot the tooltip can belong to looks hovered and is one we know or have not looked
-    // at: the game lights the hovered slot up, so one that still looks like its icon is not it.
-    fn looks_hovered(&mut self, beside: &[(SlotAddress, f64)], bar_top: f64, s: f64) -> bool {
+    // Of the slots the tooltip can belong to: whether one was never looked at, and the ones we
+    // know that look hovered. The game lights the hovered slot up, so one that still looks like
+    // its icon is not it.
+    fn looks_hovered(&mut self, beside: &[(SlotAddress, f64)], bar_top: f64, s: f64) -> (bool, Vec<SlotAddress>) {
         let brightness = self.screen_info.brightness.unwrap();
         let height = self.screen_info.effective_height;
+        let (mut unknown, mut lit) = (false, vec![]);
         for (address, top) in beside {
             if *top < bar_top - SLOT_ABOVE_TOOLTIP * s {
                 continue;
             }
             let Some(info) = self.slot_infos.get(address) else {
-                return true;
+                unknown = true;
+                continue;
             };
             let Some((icon, _)) = info.icon_name_score.clone() else {
                 continue;
@@ -465,10 +476,10 @@ impl ScannerState {
             normalize_brightness(&mut crop, brightness);
             let template = icon_lookup(&icon, height, get_resizer(&mut self.resizer));
             if confidence(&template, &crop) < best - LIT {
-                return true;
+                lit.push(*address);
             }
         }
-        false
+        (unknown, lit)
     }
 
     // Casts the votes of every read whose texts are all back, then writes what its hover now says
@@ -601,7 +612,7 @@ impl ScannerState {
             None => hover.icon.clone().into_iter().collect(),
         };
         hover.slot =
-            self.hovered_slot(&hover.candidates, hover.bar.y as f64, s, &icons, hover.amount.as_ref());
+            self.hovered_slot(&hover.candidates, hover.bar.y as f64, s, &icons, hover.amount.as_ref(), &hover.lit);
         // a slot the user edited is left alone
         let slot = hover.slot.filter(|slot| !self.edits.contains_key(slot));
         if let Some(slot) = slot.and_then(|slot| self.slot_infos.get_mut(&slot)) {
@@ -720,6 +731,7 @@ impl ScannerState {
         s: f64,
         icons: &[String],
         amount: Option<&String>,
+        lit: &[SlotAddress],
     ) -> Option<SlotAddress> {
         let tolerance = SLOT_TOLERANCE * s;
 
@@ -734,6 +746,18 @@ impl ScannerState {
             })
             .map(|(address, top)| (address, (top - bar_top).abs() <= tolerance))
             .collect();
+        // The hovered slot may be one that matches nothing, with another stack that reads as the
+        // same thing in its column. That one never lit up and shows another number.
+        if let ([(address, _)], Some(amount)) = (&candidates[..], amount) {
+            let own = self.slot_infos[address].amount.as_ref().map(|x| {
+                let digits: String = x.chars().filter(char::is_ascii_digit).collect();
+                if digits.is_empty() { "1".to_string() } else { digits }
+            });
+            // 9999+ stands for any more
+            if !lit.contains(address) && own.is_some_and(|own| own != *amount && own != "9999") {
+                return None;
+            }
+        }
         match candidates.len() {
             1 => Some(candidates[0].0),
             _ => candidates.iter().find(|x| x.1).map(|x| x.0),
