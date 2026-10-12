@@ -1,0 +1,12 @@
+# 32 upgrades and up, where runs do not converge
+# define large --note 32 upgrades and up, where runs do not converge --kind single --where n=32..41 --limit 10
+single_0015_t4_n33
+single_0031_serca_n36
+single_0044_t4_n40
+single_0063_t4_n35
+single_0067_t4_n37
+single_0081_serca_n33
+single_0097_t4_n35
+single_0141_t4_n34
+single_0159_t4_n38
+single_0161_t4_n39

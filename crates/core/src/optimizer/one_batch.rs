@@ -70,6 +70,7 @@ impl SolverStateBundle {
                 .enumerate()
                 .filter(|(i, target)| {
                     *i != source_index
+                        && target.is_normal_honing
                         && target.upgrade_index == source.upgrade_index
                         && target.piece_type == source.piece_type
                 })

@@ -16,7 +16,7 @@ Things worth knowing about its shape:
 
 - The metric has no natural scale, so there is no fixed temperature schedule. An adaptive scaler adjusts acceptance to track a target acceptance rate over the run.
 - It restarts from the best known state very often.
-- On restart it may copy one upgrade's state onto an identical upgrade, since identical upgrades often want identical plans.
+- On restart it may copy one upgrade's state onto an identical upgrade, since identical upgrades often want identical plans. Identical means normal honing too: an advanced block shares its index with a low normal level, and its state is not a normal state.
 - In the browser it periodically posts the best state so far as progress.
 
 ## Rules a neighbour move must respect

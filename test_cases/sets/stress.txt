@@ -1,0 +1,6 @@
+# every upgrade a character has
+# define stress --note every upgrade a character has --kind stress
+stress_serca_mid_n175
+stress_serca_none_n175
+stress_t4_mid_n174
+stress_t4_none_n174

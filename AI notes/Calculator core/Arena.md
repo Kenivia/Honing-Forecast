@@ -25,7 +25,7 @@ The binary is both driver and worker. The driver (always the current build) load
 
 - A snapshot never needs to know the current schema. It does need to understand the job, so **fields added to `Job` or `StepResult` need a serde default** or old snapshots stop working.
 - A panic in a variant kills one job. It is recorded with its stderr and shown as `died`; the rest of the session carries on.
-- Jobs are ordered so that variants take turns. With `--jobs 1` that removes drift between variants.
+- Jobs are ordered so that variants take turns, seeds outermost. With `--jobs 1` that removes drift between variants.
 
 ## Scenarios
 
@@ -33,10 +33,45 @@ The binary is both driver and worker. The driver (always the current build) load
 
 Every scenario runs **cold** (each step alone) and **chained** (each step is handed a `Previous`: the last payload, the last best `StateBundle`, and the optimizer's own blob, capped at `Tuning::max_blob_bytes`). A step is seeded the same way in both, so until the optimizer reads `Previous` the two give identical results. That is the current state: the plumbing exists, `solve` ignores it.
 
+## Generated scenarios
+
+`pnpm arena gen <set> --singles N --chains N --steps N --sweeps --stress` (`generate.rs`) writes a set into `test_cases/scenarios/<set>/`. Loading a folder does not descend, so a set is run with `--scenarios test_cases/scenarios/<set>` and the default folder stays the dummy.
+
+- **A case is a point on 16 axes** (`AXES`: tier, size, level band, piece mix, jitter between pieces, advanced share, progress, wealth, imbalance, band split, juice owned, juice price, free taps, plan, chests, price noise), each in [0, 1), and `build` turns the point into a payload. Drawing payload fields independently makes every case look alike; drawing these does not. The point is kept in the scenario's `meta.axes`.
+- **Owned amounts are quantiles**: the wealth axis is how often the owned amount is enough under the default state, and imbalance spreads that between materials. So the same wealth means the same thing at any size. Juices, which the default state does not use, are a share of one juice per tap instead.
+- **Singles and chains are points of a Sobol sequence** (seeds 1 and 2), so `--offset` gives a set that shares nothing with another, and a longer set starts with the shorter one.
+- **A chain replays a player**: most steps solve the payload, do the upgrade the plan puts first and apply one outcome of it (done, free tapped, or some failed taps in), by the rules `monte_carlo::simulate` uses. The rest are income, a price move, a goal added or removed. `meta.kinds` names what happened before each step. Unopened chests are not drawn on when a material runs out.
+- **Sweeps** move one axis at a time around three anchors; **stress** is every upgrade a character has.
+- **Chests are off** unless `--chests`: the axis is pinned to none and a chain's chest step becomes income, until the optimizer has chest moves.
+- A case whose generation panics is left out and the panic is on stderr. A chain step the optimizer panics on is kept, with the player following the default state.
+
+## Sets
+
+A set is a named list of scenarios for one purpose, in `test_cases/sets/<name>.txt`: one scenario name a line, `name:4` for only its first 4 steps, `#` for a comment, the first of which is what the set is for. Names are looked up under the scenarios folder and the folders in it, so a set can mix generated folders.
+
+- `pnpm arena sets` lists them. `--set <name>` on `run`, `verify` and `carry` uses one in place of the folder: `pnpm arena run baseline current --set pilot`.
+- `pnpm arena define <name> --note "..." --kind single --where n=32..41 --where juice_owned=0.4..0.7 --steps 4 --limit 12` writes one from filters: `--kind` is a prefix of the name (single, chain, sweep, stress), a `--where` key is an axis of `meta.axes`, `n` (upgrades of the first step) or `steps`. The command is kept in the file. Or write the file by hand.
+- A truncated chain's steps are the same payloads, so they share their best known with the full chain.
+- `pilot` is the quick first run for a new variant. It was picked from the exploratory run as cases the optimizer of the time hit a quarter to three quarters of the time, which is where a variant can move the result either way.
+
+## The exploratory run
+
+`test_cases/scenarios/explore` (600 singles, 200 chains of 8, 150 sweeps) and `explore_stress` were run cold over 8 seeds in October 2026, sessions 4 and 5 of the database. `python scripts/arena/explore_report.py [session] [folder]` prints what was read off it: hit rate, time and when the best was found by size, by axis, by sweep level and by what happened before a chain step. Run it again after a full run of a new variant. Session 3 is a stopped run whose error rows are not real.
+
+## Carrying a plan over
+
+`pnpm arena carry [--set chains] [--rows]` takes, for every chain step after the first, the best known state of the step before, puts it on the step's upgrades (`carry::carried`: a state less the taps done since, the free tap order with gone upgrades dropped and new ones last) and scores it against the default state and the step's best known. No optimizer runs: it reads the database, so the steps need runs in it. `recovered` is the share of the way from the default to the best that the carried plan already covers.
+
+## Stopping and resuming
+
+`run --resume` reuses the latest session started with exactly the same arguments and skips the jobs that already have a row. Ctrl-C stops cleanly: nothing a killed worker was doing is recorded. Jobs go seed by seed, so a session stopped early has covered every scenario about equally.
+
 ## The three measurements
 
 - **Correctness** (`verify`): for every step, the given state and some scrambled ones (`optimizer::scramble`, random valid moves) are simulated and compared per material and in total. A row passes when the difference is within `z` standard errors plus `rel_tol` of the value. Failures are rows, not panics. The same command times one evaluation. `run --mc` does the check on the first seed's result instead.
 - **Accuracy** (`run`): the gap to the best metric any run in the database has reached on the same payload. The driver re-scores every result with its own evaluator at default tuning (`metric_ref`), because a variant's own `metric` is not comparable once the evaluator differs. `hit %` is the share of seeds within `--eps` of the best known.
+  - Next to `metric_ref` a run has `gross`, the same with every leftover worthless (the gold spent), and `flow`, the market value of what the state uses on average. `pnpm arena rescore` fills them in for older runs.
+  - **What the gap is divided by is undecided.** The report divides by the best metric, which is near zero wherever credit cancels cost or everything is owned. Spent plus credit (`metric_ref - 2 * gross`) vanishes in the same cases. `flow` does not.
 - **Speed**: thread CPU time around `solve` only, plus counters. The counters are exact and repeatable; CPU time is not, see below.
 
 ## Looking inside a run
@@ -56,5 +91,6 @@ Every scenario runs **cold** (each step alone) and **chained** (each step is han
 - **The Monte Carlo samples normal honing from the upgrade's own tap distribution.** It checks everything built on that distribution, and free taps and advanced honing from the game rules, but not the tap distribution itself.
 - **The Monte Carlo reads the bands and the free-tap budget of the state it is given**, so it checks the evaluator under a chest state, not `resolve_chests` itself; that has a unit test in `chest.rs`. `scramble` goes through `start_solver`, so scrambled states have random chest states.
 - **The chest state is random per seed for now**, so gaps between seeds on a scenario with chests are large and say nothing about the annealer.
-- **Best known is per payload.** Editing a scenario's payload makes it a new case with no history.
+- **Where everything is owned the true metric is zero and the optimizer chases approximation error**: best states with a few thousand gold of negative cost were found on jobs moving millions. Gaps there are noise, whatever they are divided by.
+- **Best known is per payload.** Editing a scenario's payload makes it a new case with no history. The payload is hashed with its keys sorted; hashed as serialised, its hash maps gave a new row on every driver run.
 - The database (`test_cases/arena.sqlite`) is gitignored and can be deleted; snapshots in `target/arena/bin` then lose their rows and must be taken again.

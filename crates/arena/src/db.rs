@@ -1,8 +1,9 @@
 //! The results database. Counters and tuning are JSON columns, so adding one needs no
 //! schema change; use json_extract to query them.
 
-use crate::worker::StepResult;
+use crate::worker::{Essence, StepResult};
 use rusqlite::{Connection, params};
+use std::collections::HashSet;
 use std::hash::{DefaultHasher, Hash, Hasher};
 use std::path::Path;
 
@@ -36,6 +37,10 @@ pub fn open(path: &Path) -> Connection {
     std::fs::create_dir_all(path.parent().unwrap()).unwrap();
     let conn = Connection::open(path).unwrap();
     conn.execute_batch(SCHEMA).unwrap();
+    // added later: metric_ref with every leftover worthless. Fails where it is already there.
+    conn.execute("ALTER TABLE run ADD COLUMN gross REAL", []).ok();
+    // and what the state uses on average, at market price
+    conn.execute("ALTER TABLE run ADD COLUMN flow REAL", []).ok();
     conn
 }
 
@@ -78,6 +83,34 @@ pub fn add_session(conn: &Connection, git_sha: &str, args: &str) -> i64 {
     conn.last_insert_rowid()
 }
 
+/// the latest session started by exactly these arguments
+pub fn session_with_args(conn: &Connection, args: &str) -> Option<i64> {
+    conn.query_row("SELECT MAX(id) FROM session WHERE args = ?1", [args], |row| row.get(0)).unwrap()
+}
+
+/// (variant, step, seed, chained) of every row of a session. A job with a row for its first
+/// step is over: its rows are written together, and one that died leaves an error row.
+pub fn finished_jobs(conn: &Connection, session_id: i64) -> HashSet<(String, i64, u64, bool)> {
+    conn.prepare("SELECT DISTINCT variant, step_id, seed, chained FROM run WHERE session_id = ?1")
+        .unwrap()
+        .query_map([session_id], |row| Ok((row.get(0)?, row.get(1)?, row.get::<_, i64>(2)? as u64, row.get(3)?)))
+        .unwrap()
+        .map(|row| row.unwrap())
+        .collect()
+}
+
+/// (metric_ref, gross, state) of the best optimizer run there has been on a step
+pub fn best_run(conn: &Connection, step_id: i64) -> Option<(f64, Option<f64>, Essence)> {
+    conn.query_row(
+        "SELECT metric_ref, gross, state FROM run
+         WHERE step_id = ?1 AND kind = 'optimize' AND error IS NULL ORDER BY metric_ref DESC LIMIT 1",
+        [step_id],
+        |row| Ok((row.get(0)?, row.get(1)?, row.get::<_, String>(2)?)),
+    )
+    .ok()
+    .map(|(metric, gross, state)| (metric, gross, serde_json::from_str(&state).unwrap()))
+}
+
 /// the same payload under the same scenario and step is the same row across sessions
 pub fn step_id(conn: &Connection, scenario: &str, step: usize, payload: &str) -> i64 {
     let mut hasher = DefaultHasher::new();
@@ -106,11 +139,11 @@ pub struct RunKey<'a> {
     pub chained: bool,
 }
 
-pub fn add_run(conn: &Connection, key: &RunKey, out: &StepResult, metric_ref: f64, samples: usize) {
+pub fn add_run(conn: &Connection, key: &RunKey, out: &StepResult, (metric_ref, gross, flow): (f64, f64, f64), samples: usize) {
     conn.execute(
         "INSERT INTO run(session_id, snapshot_id, variant, step_id, kind, source, seed, chained,
-            tuning, cpu_s, wall_s, metric, metric_ref, state, blob_bytes, counters)
-         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16)",
+            tuning, cpu_s, wall_s, metric, metric_ref, state, blob_bytes, counters, gross, flow)
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18)",
         params![
             key.session_id,
             key.snapshot_id,
@@ -128,6 +161,8 @@ pub fn add_run(conn: &Connection, key: &RunKey, out: &StepResult, metric_ref: f6
             serde_json::to_string(&out.essence).unwrap(),
             out.blob_bytes as i64,
             serde_json::to_string(&out.counters).unwrap(),
+            gross,
+            flow,
         ],
     )
     .unwrap();

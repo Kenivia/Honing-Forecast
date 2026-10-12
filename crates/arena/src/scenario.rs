@@ -7,6 +7,7 @@ use hf_core::materials::{BandValue, NUM_BASE_MATS, OneMaterial, ValuationPlan};
 use hf_core::parser::OneUpgradeInput;
 use hf_core::payload::Payload;
 use serde::{Deserialize, Serialize};
+use std::collections::BTreeMap;
 use std::fs;
 use std::path::Path;
 
@@ -15,6 +16,9 @@ pub struct Scenario {
     #[serde(default)]
     pub name: String,
     pub steps: Vec<Payload>,
+    /// what a generated scenario was made from
+    #[serde(default)]
+    pub meta: serde_json::Map<String, serde_json::Value>,
 }
 
 /// every .json in the folder whose name contains the filter
@@ -37,7 +41,39 @@ pub fn load(dir: &Path, filter: &str) -> Vec<Scenario> {
         .collect()
 }
 
-fn upgrade(piece_index: usize, upgrade_index: usize, adv: bool) -> OneUpgradeInput {
+/// every scenario of the folder and of the folders in it, by name
+pub fn all(dir: &Path) -> BTreeMap<String, Scenario> {
+    let mut out: BTreeMap<String, Scenario> = BTreeMap::new();
+    for entry in fs::read_dir(dir).unwrap() {
+        let path = entry.unwrap().path();
+        if path.is_dir() {
+            out.extend(all(&path));
+        }
+    }
+    out.extend(load(dir, "").into_iter().map(|scenario| (scenario.name.clone(), scenario)));
+    out
+}
+
+/// A set is a list of scenario names, one a line; `name:3` is only its first 3 steps.
+pub fn load_set(dir: &Path, sets: &Path, set: &str) -> Vec<Scenario> {
+    let known = all(dir);
+    fs::read_to_string(sets.join(format!("{set}.txt")))
+        .unwrap_or_else(|_| panic!("no set {set}"))
+        .lines()
+        .map(|line| line.trim())
+        .filter(|line| !line.is_empty() && !line.starts_with('#'))
+        .map(|line| {
+            let (name, steps) = line.split_once(':').unwrap_or((line, ""));
+            let mut scenario = known.get(name).unwrap_or_else(|| panic!("no scenario {name}")).clone();
+            if let Ok(steps) = steps.parse() {
+                scenario.steps.truncate(steps);
+            }
+            scenario
+        })
+        .collect()
+}
+
+pub fn upgrade(piece_index: usize, upgrade_index: usize, adv: bool) -> OneUpgradeInput {
     OneUpgradeInput {
         piece_index,
         upgrade_index,
@@ -155,5 +191,6 @@ pub fn dummy() -> Scenario {
     Scenario {
         name: "dummy".to_string(),
         steps: vec![first, second, third],
+        meta: Default::default(),
     }
 }

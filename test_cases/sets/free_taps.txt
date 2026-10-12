@@ -1,0 +1,14 @@
+# a large free tap budget, which is slow to evaluate
+# define free_taps --note a large free tap budget, which is slow to evaluate --kind single --where free_taps=0.75..1 --where n=6..24 --limit 12
+single_0009_t4_n9
+single_0012_t4_n11
+single_0027_t4_n20
+single_0041_serca_n19
+single_0057_serca_n9
+single_0060_t4_n10
+single_0071_serca_n19
+single_0083_t4_n10
+single_0087_t4_n9
+single_0099_serca_n10
+single_0102_t4_n9
+single_0117_t4_n18

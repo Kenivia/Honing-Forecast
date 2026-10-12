@@ -256,7 +256,8 @@ fn eliminate_tail(range: Range<usize>, actual_out: &mut Vec<f64>) {
     let mut cur_weighted_index: f64 = 0.0;
     let mut cur_sum: f64 = 0.0;
     for index in range {
-        let this = actual_out[index];
+        // rounding leaves entries a hair under zero, which would put the mean index out of range
+        let this = actual_out[index].max(0.0);
         if this > SPECIAL_TOL {
             if cur_sum > 0.0 {
                 let actual_index = (cur_weighted_index / cur_sum as f64).round() as usize;
