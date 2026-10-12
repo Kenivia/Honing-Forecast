@@ -63,6 +63,7 @@ function to_records(result: any): any {
 export interface StateBundle {
   upgrade_arr: Upgrade[];
   special_state: number[];
+  chest_state_arr: number[][];
   special_invalid_index?: number;
   latest_special_probs?: number[];
   min_resolution: number;

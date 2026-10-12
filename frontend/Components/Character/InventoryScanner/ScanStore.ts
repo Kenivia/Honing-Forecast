@@ -7,7 +7,7 @@ import {
   SlotAddress,
   SlotResult,
 } from "./LoadStorage";
-import type { ManifestChest } from "./Manifest";
+import type { ManifestChest } from "@/Utils/Chest";
 
 // What the slot grid shows. Module state: it outlives the page and the scanner worker, so the
 // grid stays up and editable after capture stops. Only a new capture wipes it.
@@ -87,7 +87,7 @@ export function chests_for(address: SlotAddress, icon: string | null) {
 // what the user typed into the manifest, over what was scanned
 export const material_overrides = ref<Record<string, string>>({});
 export const chest_overrides = ref<Record<string, number>>({});
-// select-one chests the user added to the manifest by hand
+// chests the user added to the manifest by hand
 export const added_chests = ref<ManifestChest[]>([]);
 // keys of the chests the user took out of the manifest
 export const deleted_chests = ref<string[]>([]);

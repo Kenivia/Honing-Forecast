@@ -1,5 +1,6 @@
 //! Payload is how js and rust communicates, we also use payload as our test cases in arena
 use crate::advanced_honing::utils::{AdvConfig, AdvDistTriplet};
+use crate::chest::{Chest, ChestState};
 use crate::materials::{OneMaterial, ValuationPlan};
 use crate::parser::{OneUpgradeInput, PreparationOutput};
 use crate::state_bundle::StateBundle;
@@ -22,6 +23,13 @@ pub struct Payload {
     pub special_budget: i64,
 
     pub special_state: Option<Vec<usize>>,
+    /// every chest stack as is, obtain-all and one-option ones included
+    #[serde(default)]
+    pub chests: Vec<Chest>,
+    #[serde(default)]
+    pub chest_state_arr: Option<Vec<ChestState>>,
+    #[serde(default)]
+    pub special_label: String,
     pub tier: usize,
     pub express_event: bool,
 
@@ -47,6 +55,9 @@ impl StateBundle {
         express_event: bool,
         tier: usize,
         special_state: Option<Vec<usize>>,
+        chests: Vec<Chest>,
+        chest_state_arr: Option<Vec<ChestState>>,
+        special_label: String,
         min_resolution: usize,
         num_threads: usize,
         metric_type: i64,
@@ -63,14 +74,29 @@ impl StateBundle {
             optimizer_plan,
             upgrade_info,
             special_budget,
+            chests,
+            special_label,
             express_event,
             tier,
             adv_cache,
         );
         let u_len = upgrade_arr.len();
         // web_sys::console::log_1(&"2".into());
+        let given = chest_state_arr.unwrap_or_default();
+        let chest_state_arr: Vec<ChestState> = prep_output
+            .chests
+            .iter()
+            .enumerate()
+            .map(|(index, chest)| {
+                given
+                    .get(index)
+                    .filter(|state| chest.is_valid(state))
+                    .cloned()
+                    .unwrap_or_else(|| chest.default_state())
+            })
+            .collect();
 
-        StateBundle {
+        let mut out = StateBundle {
             upgrade_arr,
             special_state: if special_state.is_none()
                 || special_state.as_ref().unwrap().len() != u_len
@@ -79,6 +105,7 @@ impl StateBundle {
             } else {
                 special_state.unwrap()
             },
+            chest_state_arr,
             special_invalid_index: None,
             metric_type,
             metric: -1.0,
@@ -90,7 +117,9 @@ impl StateBundle {
 
             adv_cache,
             tuning: Default::default(),
-        }
+        };
+        out.apply_chest_state(false);
+        out
     }
     pub fn init_from_payload(payload: Payload) -> Self {
         StateBundle::init_from_inputs(
@@ -103,6 +132,9 @@ impl StateBundle {
             payload.express_event,
             payload.tier,
             payload.special_state,
+            payload.chests,
+            payload.chest_state_arr,
+            payload.special_label,
             payload.min_resolution,
             payload.num_threads,
             payload.metric_type,

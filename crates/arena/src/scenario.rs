@@ -1,6 +1,7 @@
 //! A scenario is a chain of fully specified payloads, one per optimizer run.
 
 use ahash::AHashMap;
+use hf_core::chest::Chest;
 use hf_core::constants::BASE_JUICE_INFOS;
 use hf_core::materials::{BandValue, NUM_BASE_MATS, OneMaterial, ValuationPlan};
 use hf_core::parser::OneUpgradeInput;
@@ -47,6 +48,17 @@ fn upgrade(piece_index: usize, upgrade_index: usize, adv: bool) -> OneUpgradeInp
         unlocked: false,
         adv_progress: adv.then_some((0, 0, false, false)),
         double_balls: false,
+    }
+}
+
+fn chest(count: i64, band: usize, options: &[&[(&str, f64)]]) -> Chest {
+    Chest {
+        count,
+        band,
+        options: options
+            .iter()
+            .map(|option| option.iter().map(|(label, amount)| (label.to_string(), *amount)).collect())
+            .collect(),
     }
 }
 
@@ -105,6 +117,15 @@ pub fn dummy() -> Scenario {
         upgrade_info,
         special_budget: 600,
         special_state: None,
+        // a choice, an obtain-all, fractional amounts as a conversion leaves them, and free taps
+        chests: vec![
+            chest(120, 1, &[&[("Red", 500.0)], &[("Blue", 1500.0)], &[("Leapstones", 20.0), ("Shards", 3000.0)]]),
+            chest(7, 0, &[&[("Fusion", 30.0), ("Gold", 5000.0), ("Not of this tier", 9.0)]]),
+            chest(33, 2, &[&[("Juice 0", 2.5)], &[("Juice 1", 2.5)], &[("Gold", 1000.0)]]),
+            chest(40, 0, &[&[("Special Leap", 12.0)], &[("Leapstones", 6.4)]]),
+        ],
+        chest_state_arr: None,
+        special_label: "Special Leap".to_string(),
         tier: 0,
         express_event: false,
         min_resolution: 1,

@@ -25,6 +25,7 @@ pub struct HistogramOutputs {
 }
 
 pub fn histogram(state_bundle: &mut StateBundle) -> HistogramOutputs {
+    state_bundle.apply_chest_state(true);
     state_bundle.update_prob_dist();
     state_bundle.update_cost_dist();
     state_bundle.compute_special_probs(false);

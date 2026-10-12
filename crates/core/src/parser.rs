@@ -1,4 +1,5 @@
 use crate::advanced_honing::utils::{AdvConfig, AdvDistTriplet};
+use crate::chest::Chest;
 use crate::constants::accessor::{
     get_artisan, get_data, get_event_extra_chance, get_normal_hone_chances, get_special_leap_cost,
 };
@@ -12,9 +13,16 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PreparationOutput {
+    /// with what the chests give, see apply_chest_state
     pub special_budget: i64,
+    pub base_special_budget: i64,
     pub table: MaterialTable,
     pub materials: Vec<OneMaterial>, // row order
+    /// before any chest is opened
+    pub base_materials: Vec<OneMaterial>,
+    pub chests: Vec<Chest>,
+    /// what a chest's special leaps are called
+    pub special_label: String,
     pub plans: Vec<ValuationPlan>,
     pub optimizer_plan: usize, // index into plans
     /// bands[plan][row], derived from materials and plans
@@ -45,6 +53,8 @@ impl PreparationOutput {
         optimizer_plan: usize,
         upgrade_info: Vec<OneUpgradeInput>,
         special_budget: i64,
+        chests: Vec<Chest>,
+        special_label: String,
         express_event: bool,
         tier: usize,
         inp_adv_cache: Option<AHashMap<AdvConfig, AdvDistTriplet>>,
@@ -95,11 +105,15 @@ impl PreparationOutput {
             .collect();
         let out: PreparationOutput = Self {
             table,
+            base_materials: materials.clone(),
             materials,
+            chests,
+            special_label,
             plans,
             optimizer_plan,
             bands,
             special_budget,
+            base_special_budget: special_budget,
             test_case: -1,
             juice_info,
         };

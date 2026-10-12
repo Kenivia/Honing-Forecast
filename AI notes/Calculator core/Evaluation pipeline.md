@@ -44,7 +44,7 @@ These fail silently or panic at a distance, and none is obvious from a single fi
 - **Compute before read.** The free-tap probabilities are read from a cache keyed by the current free-tap order and must have been computed for it first. Every metric does this at its start; a new caller must too.
 - **Collapsed supports have no zero-probability entries.** Collapsing merges equal values and drops negligible probabilities; the cumulant code relies on that.
 - **Supports are evenly spaced.** All current distributions have a constant gap between values, which the cumulant fast path and the lattice correction both assume.
-- **Plans are precomputed.** `PreparationOutput::bands` holds one band list per plan per material, built once. The evaluator never recomputes them, so a payload with many plans costs extra evaluations, not extra parsing.
+- **Plans are precomputed.** `PreparationOutput::bands` holds one band list per plan per material, built once per chest state (`Domain model.md`, "Chests"). The evaluator never recomputes them, so a payload with many plans costs extra evaluations, not extra parsing.
 - **A threshold the price does not change at is free.** `one_dimension_average_gold` skips its two saddlepoint evaluations, because they are multiplied by the price gap. `ValuationPlan::bands` already merges such entries wherever merging is sound, so in practice this fires only on the top entry, which has to stay for the base term. See `Domain model.md`.
 
 ## Leftovers

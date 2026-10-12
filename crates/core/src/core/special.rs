@@ -17,7 +17,7 @@ use std::ops::Range;
 impl StateBundle {
     pub fn special_probs(&self) -> &Vec<f64> {
         // we don't automatically call compute_special here cos that'd need &mut self
-        &self.special_cache[&self.special_state]
+        &self.special_cache[&self.prep_output.special_budget][&self.special_state]
     }
     fn gcd_special(&self) -> i64 {
         let mut out: i64 = 1;
@@ -58,7 +58,11 @@ impl StateBundle {
     /// The preserve tail option is exclusively for UI purpose and does not write to special_cache
     pub fn compute_special_probs(&mut self, preserve_tail: bool) -> Option<Vec<f64>> {
         self.clean_special_state();
-        if self.special_cache.contains_key(&self.special_state) && !preserve_tail {
+        let cached = self
+            .special_cache
+            .get(&self.prep_output.special_budget)
+            .is_some_and(|by_order| by_order.contains_key(&self.special_state));
+        if cached && !preserve_tail {
             return None;
         }
 
@@ -78,7 +82,10 @@ impl StateBundle {
             if preserve_tail {
                 return Some(out);
             } else {
-                self.special_cache.insert(self.special_state.clone(), out);
+                self.special_cache
+                    .entry(self.prep_output.special_budget)
+                    .or_default()
+                    .insert(self.special_state.clone(), out);
                 return None;
             }
         }
@@ -228,6 +235,8 @@ impl StateBundle {
             );
         } else {
             self.special_cache
+                .entry(self.prep_output.special_budget)
+                .or_default()
                 .insert(self.special_state.clone(), actual_out);
             return None;
         }

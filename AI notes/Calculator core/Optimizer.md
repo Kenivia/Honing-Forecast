@@ -9,7 +9,8 @@ A single-chain simulated annealer over a `StateBundle`, maximising the average-g
 Decision variables:
 
 - each upgrade's `State` (which juices and books on which taps; or the advanced-honing strategy indices);
-- the free-tap order, `special_state`.
+- the free-tap order, `special_state`;
+- how each chest stack is opened, `chest_state_arr`. **Placeholder**: `start_solver` assigns a random valid state once (`randomize_chest_state`, from the solver's rng, drawing nothing for a chest with no choice) and no move changes it afterwards. It travels with the state everywhere `special_state` does.
 
 Things worth knowing about its shape:
 
@@ -24,6 +25,7 @@ Evaluation assumes these; breaking them corrupts results without an error.
 
 - `special_state` stays a permutation of upgrade indices. Never reorder the upgrade array.
 - A state's length never changes.
+- A chest state has one entry per option, none negative, summing to the chest's count. Change it through `set_chest_state`, or call `apply_chest_state` after, or the bands are stale.
 - A book id used on an upgrade must be one that exists for that piece type and level. Id 0 means none.
 - Advanced-honing strategy indices stay within their maximum.
 - Update the state's hash after changing it.

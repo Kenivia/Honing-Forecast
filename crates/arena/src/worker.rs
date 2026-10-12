@@ -6,6 +6,7 @@
 use crate::monte_carlo::{McRow, McSpec, check};
 use crate::scenario::Scenario;
 use cpu_time::ThreadTime;
+use hf_core::chest::ChestState;
 use hf_core::optimizer::{Previous, scramble, solve};
 use hf_core::probe::{COUNTER_NAMES, Probe};
 use hf_core::state::OneState;
@@ -42,6 +43,8 @@ pub struct Job {
 pub struct Essence {
     pub state_arr: Vec<Vec<OneState>>,
     pub special_state: Vec<usize>,
+    #[serde(default)]
+    pub chest_state_arr: Vec<ChestState>,
 }
 
 impl Essence {
@@ -53,6 +56,7 @@ impl Essence {
                 .map(|upgrade| upgrade.state.payload.clone())
                 .collect(),
             special_state: state_bundle.special_state.clone(),
+            chest_state_arr: state_bundle.chest_state_arr.clone(),
         }
     }
 
@@ -61,6 +65,10 @@ impl Essence {
             upgrade.state.update_payload(state.clone());
         }
         state_bundle.special_state = self.special_state.clone();
+        // a snapshot from before chests sends none
+        if self.chest_state_arr.len() == state_bundle.chest_state_arr.len() {
+            state_bundle.set_chest_state(&self.chest_state_arr);
+        }
     }
 }
 

@@ -302,6 +302,8 @@ function migrate_7_to_8(data: any): Partial<SavedConfig> {
         },
       },
       bound_budgets: v7_merge_columns(profile.bound_budgets, tier),
+      // V7 had no chests
+      chests: [],
     };
   });
 

@@ -26,6 +26,7 @@ import {
 } from "@/Utils/KeyedUpgrades";
 import { get_valid_status_grid } from "@/Utils/StatusGrid";
 import { format_char_name } from "@/Utils/Helpers";
+import type { ManifestChest } from "@/Utils/Chest";
 
 // ============================================================================
 // The persisted shape.
@@ -62,6 +63,7 @@ export interface SavedProfile {
   keyed_upgrades: Record<string, SavedUpgrade>;
   special_budget: SavedColumn;
   bound_budgets: SavedColumn;
+  chests: ManifestChest[];
 }
 
 export interface SavedConfig {
@@ -146,6 +148,7 @@ function profile_to_saved(profile: CharProfile): SavedProfile {
     keyed_upgrades,
     special_budget: column_to_saved(profile.special_budget),
     bound_budgets: column_to_saved(profile.bound_budgets),
+    chests: profile.chests,
   };
 }
 
@@ -216,6 +219,7 @@ function profile_from_saved(
       saved.bound_budgets,
       defaults.bound_budgets,
     ),
+    chests: Array.isArray(saved.chests) ? saved.chests : [],
   };
 }
 

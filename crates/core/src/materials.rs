@@ -118,6 +118,10 @@ impl MaterialTable {
         self.row_of[label]
     }
 
+    pub fn get_row(&self, label: &str) -> Option<usize> {
+        self.row_of.get(label).copied()
+    }
+
     pub fn juice_row(&self, id: usize) -> usize {
         NUM_BASE_MATS + id
     }

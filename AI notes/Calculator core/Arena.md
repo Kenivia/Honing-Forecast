@@ -29,7 +29,7 @@ The binary is both driver and worker. The driver (always the current build) load
 
 ## Scenarios
 
-`test_cases/scenarios/*.json`, each `{ "steps": [payload, ...] }` with every step a full `Payload`. `pnpm arena dummy` writes the placeholder one; real cases are still to come.
+`test_cases/scenarios/*.json`, each `{ "steps": [payload, ...] }` with every step a full `Payload`. `pnpm arena dummy` writes the placeholder one; real cases are still to come. Its payloads carry four chest stacks: a three-way choice, an obtain-all with gold and a label of no tier, fractional amounts, and one that gives special leaps. A worker's `Essence` carries `chest_state_arr` next to `special_state`; one from a snapshot older than chests has none and the reference's default is kept.
 
 Every scenario runs **cold** (each step alone) and **chained** (each step is handed a `Previous`: the last payload, the last best `StateBundle`, and the optimizer's own blob, capped at `Tuning::max_blob_bytes`). A step is seeded the same way in both, so until the optimizer reads `Previous` the two give identical results. That is the current state: the plumbing exists, `solve` ignores it.
 
@@ -54,5 +54,7 @@ Every scenario runs **cold** (each step alone) and **chained** (each step is han
 - **A seed must repeat exactly.** Two things broke that before and would again: the global `rand::random_*` functions (use the solver's `rng`), and summing floats in hash map iteration order (`brute.rs` uses fixed hasher seeds for this reason; `ahash` maps are seeded per instance otherwise). The `a_seed_repeats_exactly` test guards it.
 - **CPU time needs `--jobs 1`.** Running many workers at once inflated it about threefold here. Windows also accounts thread time in ticks of about 15 ms, so short measurements are repeated (`time_evaluation`).
 - **The Monte Carlo samples normal honing from the upgrade's own tap distribution.** It checks everything built on that distribution, and free taps and advanced honing from the game rules, but not the tap distribution itself.
+- **The Monte Carlo reads the bands and the free-tap budget of the state it is given**, so it checks the evaluator under a chest state, not `resolve_chests` itself; that has a unit test in `chest.rs`. `scramble` goes through `start_solver`, so scrambled states have random chest states.
+- **The chest state is random per seed for now**, so gaps between seeds on a scenario with chests are large and say nothing about the annealer.
 - **Best known is per payload.** Editing a scenario's payload makes it a new case with no history.
 - The database (`test_cases/arena.sqlite`) is gitignored and can be deleted; snapshots in `target/arena/bin` then lose their rows and must be taken again.

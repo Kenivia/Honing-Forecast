@@ -5,6 +5,7 @@ import {
   NUM_BANDS,
 } from "@/Utils/Constants";
 import { parse_locale_int } from "@/Utils/InputColumn";
+import { type Bag, type ManifestChest, merge, to_serca } from "@/Utils/Chest";
 import { ChestKind } from "./LoadStorage";
 import {
   added_chests,
@@ -21,12 +22,11 @@ import {
 import ITEMS from "../../../../templates/items.json";
 import CHESTS from "../../../../templates/chests.json";
 
-// The manifest: what the scan amounts to, as materials per ownership band plus the select-one
-// chests still to be opened. It sits between the scanner and the rest of the site.
+// The manifest: what the scan amounts to, as materials per ownership band plus the chests still
+// to be opened. It sits between the scanner and the rest of the site.
 
 const BAND_OF = { CharBound: 0, RosterBound: 1, Tradable: 2 };
 
-type Bag = Record<string, number>; // label -> amount
 // one row of templates/chests.json; contents are title, amount, and the chest it is
 type Opens = {
   id: number;
@@ -39,13 +39,6 @@ type Opens = {
   irrelevant?: boolean;
 };
 
-export interface ManifestChest {
-  key: string;
-  title: string;
-  band: number;
-  count: number;
-  options: Bag[];
-}
 // a slot the manifest is short of, and why
 export interface MissingSlot {
   place: string;
@@ -120,16 +113,6 @@ function settle(variants: number[]): Opens | undefined {
 const digits = (text: string | null) =>
   text ? Number(text.replace(/\D/g, "")) : null;
 
-function merge(bags: Bag[]): Bag {
-  const out: Bag = {};
-  for (const bag of bags) {
-    for (const [label, amount] of Object.entries(bag)) {
-      out[label] = (out[label] ?? 0) + amount;
-    }
-  }
-  return out;
-}
-
 // The alternatives one row of a select-one chest stands for. A chest inside it is flattened: an
 // obtain-all is its contents, a select-one is its own options.
 function alternatives(
@@ -158,19 +141,17 @@ const add_loose = (list: LooseChest[], title: string, count: number) => {
 export const scanned = computed(() => {
   const owned: Record<string, (number | null)[]> = {};
   for (const label of ALL_MATERIAL_LABELS) owned[label] = [null, null, null];
-  // chests with a choice to make, and chests with none: obtain-all, or one option left
+  // an obtain-all chest is one with a single option
   const grouped = new Map<string, ManifestChest>();
-  const sure = new Map<string, ManifestChest>();
   const random: LooseChest[] = [];
   const unknown: LooseChest[] = [];
   const missing: MissingSlot[] = [];
 
   function group(title: string, band: number, count: number, options: Bag[]) {
-    const into = options.length === 1 ? sure : grouped;
     const key = `${title}|${band}|${JSON.stringify(options)}`;
-    const old = into.get(key);
+    const old = grouped.get(key);
     if (old) old.count += count;
-    else into.set(key, { key, title, band, count, options });
+    else grouped.set(key, { key, title, band, count, options });
   }
 
   // What is inside a chest takes the chest's band, or its own where it is bound more loosely. No
@@ -268,7 +249,6 @@ export const scanned = computed(() => {
   return {
     owned,
     chests: [...grouped.values()],
-    opened: [...sure.values()],
     random,
     unknown,
     missing,
@@ -309,33 +289,16 @@ export function set_cell_text(label: string, band: number, text: string) {
 const cell_value = (label: string, band: number) =>
   parse_locale_int(cell_text(label, band)) || 0;
 
-const SERCA_OF = Object.fromEntries(
-  CONVERTIBLE_MATERIALS.map((mat) => [mat.from.label, mat]),
-);
-
 // What the rest of the site takes: overrides applied, then conversion. Converted tradables come
-// out roster-bound. Chest options convert without rounding, since a count multiplies them later.
+// out roster-bound. Chests are not opened here: they are passed on whole.
 export const manifest = computed(() => {
   const bands = [...Array(NUM_BANDS).keys()];
   const materials: Record<string, number[]> = {};
   // gained from T4, shown beside the input
   const incoming: Record<string, number[]> = {};
-  // from the chests with no choice to make, shown beside the input
-  const extra: Record<string, number[]> = {};
   for (const label of ALL_MATERIAL_LABELS) {
     incoming[label] = [0, 0, 0];
-    extra[label] = [0, 0, 0];
-  }
-  const opened = kept(scanned.value.opened);
-  for (const chest of opened) {
-    for (const [label, amount] of Object.entries(chest.options[0])) {
-      extra[label][chest.band] += amount * chest.count;
-    }
-  }
-  for (const label of ALL_MATERIAL_LABELS) {
-    materials[label] = bands.map(
-      (band) => cell_value(label, band) + extra[label][band],
-    );
+    materials[label] = bands.map((band) => cell_value(label, band));
   }
   for (const mat of CONVERTIBLE_MATERIALS) {
     for (const band of bands) {
@@ -354,16 +317,9 @@ export const manifest = computed(() => {
     (chest) => ({
       ...chest,
       options: chest.options.map((option) =>
-        merge(
-          Object.entries(option).map(([label, amount]) => {
-            const mat = convert.value[chest.band] && SERCA_OF[label];
-            return mat
-              ? { [mat.label]: amount / mat.from.ratio }
-              : { [label]: amount };
-          }),
-        ),
+        convert.value[chest.band] ? to_serca(option) : option,
       ),
     }),
   );
-  return { ...scanned.value, materials, incoming, extra, chests, opened };
+  return { ...scanned.value, materials, incoming, chests };
 });

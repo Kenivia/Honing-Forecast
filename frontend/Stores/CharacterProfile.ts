@@ -14,6 +14,7 @@ import {
 } from "@/Utils/InputColumn";
 import { create_status_grid } from "@/Utils/StatusGrid";
 import { KeyedUpgrades, StatusGrid } from "@/Utils/KeyedUpgrades";
+import type { ManifestChest } from "@/Utils/Chest";
 import {
   OptimizerOverride,
   AdvOverride,
@@ -39,6 +40,8 @@ export interface CharProfile {
   // between tiers therefore has one value, not one per tier.
   special_budget: InputColumn;
   bound_budgets: InputColumn;
+  // chests still to be opened, as the scanner's manifest exported them
+  chests: ManifestChest[];
 
   auto_start_optimizer: boolean;
   tier: number;
@@ -70,6 +73,7 @@ export const DEFAULT_CHAR_PROFILE: CharProfile = {
   bound_budgets: create_input_column(InputType.Int, ALL_MATERIAL_LABELS, {
     enabled: (label) => label !== "Shards",
   }),
+  chests: [],
   tier: 0,
   min_resolution: 1,
   num_threads: 1,

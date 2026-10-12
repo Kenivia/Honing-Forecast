@@ -4,6 +4,8 @@ import Instructions from "./Instructions/Instructions.vue";
 import MaterialDist from "./MaterialDist/MaterialDist.vue";
 import OptimizerControlPanel from "./OptimizerControlPanel/OptimizerControlPanel.vue";
 import StatusInput from "./StatusInput/StatusInput.vue";
+import ChestPanels from "@/Components/Common/ChestPanels.vue";
+import ChestState from "./ChestState.vue";
 import { storeToRefs } from "pinia";
 import { start_all_workers, start_eval_hist } from "./CharWorkerUtils.js";
 import { useRosterStore } from "@/Stores/RosterConfig.js";
@@ -36,6 +38,8 @@ onUnmounted(() => {
 <template>
   <StatusInput />
   <MaterialDist />
+  <ChestPanels :chests="active_profile.chests" :tier="active_profile.tier" />
+  <ChestState />
   <OptimizerControlPanel />
   <Instructions :is_normal="true" />
   <Instructions :is_normal="false" />

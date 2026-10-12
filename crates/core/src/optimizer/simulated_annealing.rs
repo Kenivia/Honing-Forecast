@@ -97,6 +97,8 @@ fn start_solver<R: Rng>(
     state_bundle: &mut StateBundle,
     probe: &mut Probe,
 ) -> SolverStateBundle {
+    // placeholder: the chests are opened at random, once
+    state_bundle.randomize_chest_state(rng);
     state_bundle.metric = state_bundle.metric_router(probe);
     state_bundle.set_latest_special_probs();
 

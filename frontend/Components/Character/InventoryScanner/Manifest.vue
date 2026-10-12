@@ -4,15 +4,15 @@ import { storeToRefs } from "pinia";
 import { useRosterStore } from "@/Stores/RosterConfig";
 import {
   BAND_COLORS,
-  MATERIALS,
   SPECIAL_LEAP_LABELS,
   TIER_LABELS,
   TIER_MATERIALS,
 } from "@/Utils/Constants";
 import { get_icon_path } from "@/Utils/Helpers";
+import { column_labels, set_cell } from "@/Utils/InputColumn";
+import ChestPanels from "@/Components/Common/ChestPanels.vue";
 import { added_chests, chest_overrides, deleted_chests } from "./ScanStore";
 import {
-  type ManifestChest,
   cell_text,
   convert,
   convert_owner,
@@ -20,7 +20,8 @@ import {
   set_cell_text,
 } from "./Manifest";
 
-const { active_profile } = storeToRefs(useRosterStore());
+const { active_profile, active_roster_mats_owned, active_tradable_mats_owned } =
+  storeToRefs(useRosterStore());
 
 const BANDS = ["Char bound", "Roster bound", "Tradable"];
 // band of each toggle, in the order they are shown
@@ -50,18 +51,6 @@ const labels = computed(() => [
 // cells and chests can only be changed while this is on
 const editing = ref(false);
 
-const on_tier = (chests: ManifestChest[]) =>
-  chests.filter((chest) =>
-    chest.options.some((option) =>
-      Object.keys(option).some((label) =>
-        MATERIALS[label].tiers.includes(tier.value),
-      ),
-    ),
-  );
-const panels = computed(() => [
-  { title: "Selection chests", chests: on_tier(manifest.value.chests) },
-  { title: "Obtain-all chests", chests: on_tier(manifest.value.opened) },
-]);
 const loose = computed(() => [
   ...manifest.value.random.map((chest) => ({ ...chest, why: "random" })),
   ...manifest.value.unknown.map((chest) => ({
@@ -70,10 +59,7 @@ const loose = computed(() => [
   })),
 ]);
 
-const amount_text = (amount: number) =>
-  amount.toLocaleString("en-US", { maximumFractionDigits: 1 });
-
-// a select-one chest typed in by hand; an option is one material
+// a chest typed in by hand; an option is one material
 const fresh_chest = () => ({
   title: "",
   count: 1,
@@ -110,6 +96,31 @@ function set_chest_count(key: string, event: Event) {
   const value = parseInt((event.target as HTMLInputElement).value);
   if (isFinite(value)) chest_overrides.value[key] = Math.max(0, value);
   else delete chest_overrides.value[key];
+}
+
+const exported = ref(false);
+// Placeholder: the manifest replaces what the calculator holds for this character and its
+// roster. A cell nothing was read for counts as 0.
+function export_to_calc() {
+  const { materials, chests } = manifest.value;
+  const profile = active_profile.value;
+  [
+    profile.bound_budgets,
+    active_roster_mats_owned.value,
+    active_tradable_mats_owned.value,
+  ].forEach((column, band) => {
+    for (const label of column_labels(column)) {
+      if (materials[label])
+        set_cell(column, label, String(materials[label][band]));
+    }
+  });
+  // free taps are one number, whatever the band
+  for (const label of SPECIAL_LEAP_LABELS) {
+    const total = materials[label].reduce((sum, amount) => sum + amount, 0);
+    set_cell(profile.special_budget, label, String(total));
+  }
+  profile.chests = JSON.parse(JSON.stringify(chests));
+  exported.value = true;
 }
 </script>
 
@@ -151,6 +162,12 @@ function set_chest_count(key: string, event: Event) {
         <input v-model="editing" type="checkbox" />
         Edit manifest
       </label>
+      <button class="generic-button" @click="export_to_calc">
+        Export to calculator
+      </button>
+      <span v-if="exported" class="text-(--text-muted)">
+        Exported. Materials and chests of this character were overwritten.
+      </span>
     </div>
     <span v-if="manifest.missing.length" class="text-sm text-(--warning)">
       {{ manifest.missing.length }} slot(s) are missing from this manifest.
@@ -228,89 +245,30 @@ function set_chest_count(key: string, event: Event) {
                 );
               "
             />
-            <span class="annotation flex flex-col whitespace-nowrap">
-              <span v-if="manifest.extra[label][band]">
-                +{{ manifest.extra[label][band].toLocaleString() }} from chests
-              </span>
-              <span v-if="manifest.incoming[label][band]">
-                +{{ manifest.incoming[label][band].toLocaleString() }} from T4
-              </span>
+            <span
+              v-if="manifest.incoming[label][band]"
+              class="annotation whitespace-nowrap"
+            >
+              +{{ manifest.incoming[label][band].toLocaleString() }} from T4
             </span>
           </div>
         </div>
       </div>
 
       <div class="flex flex-col gap-3">
-        <div class="flex flex-wrap items-start gap-3">
-          <div
-            v-for="panel in panels"
-            :key="panel.title"
-            class="card-shell card-body text-sm"
-            role="group"
-            :aria-label="panel.title"
-          >
-            <div class="card-title">{{ panel.title }}</div>
-            <span v-if="!panel.chests.length" class="text-(--text-muted)">
-              None read for this tier.
-            </span>
-            <div
-              v-for="chest in panel.chests"
-              :key="chest.key"
-              class="flex flex-wrap items-center gap-2 border-b border-(--border-very-muted) py-1"
-            >
-              <input
-                type="number"
-                min="0"
-                class="generic-input h-7! w-16 pl-1"
-                :disabled="!editing"
-                :aria-label="`${chest.title} count`"
-                :value="chest.count"
-                @change="set_chest_count(chest.key, $event)"
-              />
-              <span class="flex flex-col">
-                {{ chest.title }}
-                <span
-                  class="annotation"
-                  :style="{ color: `var(${BAND_COLORS[chest.band]})` }"
-                >
-                  {{ BANDS[chest.band] }}
-                </span>
-              </span>
-              <template v-for="(option, index) in chest.options" :key="index">
-                <span class="text-(--text-very-muted)">
-                  {{ index ? "or" : ":" }}
-                </span>
-                <span
-                  v-for="(amount, label) in option"
-                  :key="label"
-                  class="flex items-center gap-1"
-                >
-                  <img
-                    :src="get_icon_path(label)"
-                    class="generic-icon h-6 w-6"
-                    :alt="label"
-                    :title="label"
-                  />
-                  x{{ amount_text(amount) }}
-                </span>
-              </template>
-              <button
-                v-if="editing"
-                class="generic-button"
-                :aria-label="`Delete ${chest.title}`"
-                @click="remove_chest(chest.key)"
-              >
-                x
-              </button>
-            </div>
-          </div>
-        </div>
+        <ChestPanels
+          :chests="manifest.chests"
+          :tier="tier"
+          :editing="editing"
+          @count="set_chest_count"
+          @remove="remove_chest"
+        />
 
         <div
           v-if="editing"
           class="card-shell card-body flex flex-col gap-2 text-sm"
         >
-          <div class="card-title">Add a selection chest</div>
+          <div class="card-title">Add a chest</div>
           <div class="flex flex-wrap items-center gap-2">
             <input
               v-model="draft.count"
