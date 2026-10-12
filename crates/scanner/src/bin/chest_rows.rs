@@ -10,7 +10,9 @@ fn main() {
             (name.to_string(), count.to_string())
         })
         .collect();
-    for (variant, score) in chests_listing(&rows) {
+    let (listing, whole) = chests_listing(&rows);
+    println!("{}", if whole { "all of" } else { "part of" });
+    for (variant, score) in listing {
         println!("{:?}  {score:.3}  {} {}", variant.kind, variant.id, variant.title);
     }
 }

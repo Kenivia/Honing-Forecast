@@ -14,6 +14,7 @@ const PANEL_END_GAP: f64 = 30.0; // rows are 17 to 19px apart, the panel ends 50
 const MAX_DESCRIPTION: usize = 10; // a book has 6 to 8 description lines
 const STACKED_NUMBER_LEFT: f64 = 169.0; // the number after "Amount Stacked: " starts 165 to 173px in, after "Total Amount Owned: " 205 to 213. English only
 const SHORT_PHRASE: f64 = 53.0; // "all" is 13px of yellow, the other two phrases 157 and more
+const PHRASE: f64 = 8.0; // yellow narrower than this is no phrase: an item's gold border showing through is 2px
 
 const TEXT: u8 = 1;
 const YELLOW: u8 = 2;
@@ -254,7 +255,7 @@ pub fn parse_layout(buffer: &Buffer, bar: &TitleBar, s: f64) -> Layout {
         // short word, "There is a [chance that you can obtain one]" runs to the end of the line,
         // "You can [select and obtain 1] of the" has white after it. Only "all" fits on one line.
         let (top, bottom) = *lines.first()?;
-        let (first, last) = extent(top, bottom, text_left, YELLOW)?;
+        let (first, last) = extent(top, bottom, text_left, YELLOW).filter(|x| (x.1 - x.0) as f64 >= PHRASE * s)?;
         let kind = if ((last - first) as f64) < SHORT_PHRASE * s {
             ChestKind::ObtainAll
         } else if last as f64 + 8.0 * s >= extent(top, bottom, text_left, TEXT)?.1 as f64 {

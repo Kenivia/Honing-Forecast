@@ -39,7 +39,6 @@ On the seven lossless 1080p captures: 532 distinct slots with a template, about 
 
 ## Not done
 
-- Icons that can have an item level across them are still held to 0.95 (`Pipeline.md`).
 - The bench scores the 60 nearest templates of all, not the scanner's two shortlists of 16, and only clean looks: nothing under the hover highlight.
-- No lossless capture at another resolution than 1080p. The suite's stills at 720p to 2160p only lose look-alikes with the decoys in.
-- An item level across a decoy chest is not handled.
+- One inventory was captured lossless at 1080p, 1440p and 2160p (`scripts/recordings/new captures`, 2026-10-11; dumped as `c-1080`, `c-1440`, `c-2160`). Their labels are the scanner's own, not checked by hand, so they say whether something changes, not whether it was right. The overlay measurements in `Pipeline.md` use them.
+- An item level across a decoy chest: the decoy is now compared with the same parts left out as the icon (`Pipeline.md`, "Overlays"). No capture has such a slot next to an icon of ours that it looks like, so this is untested.

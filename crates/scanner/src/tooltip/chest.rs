@@ -3,13 +3,13 @@ use crate::{
     buffer::Buffer,
     scanner_state::{InventoryType, ScannerState, SlotAddress, Tradability},
     tooltip::{
-        items::{VARIANTS, Variant, variant},
+        items::{VARIANTS, Variant, numerals, numerals_are, variant, without_numerals},
     },
 };
 use ahash::AHashMap;
 use serde::{Deserialize, Serialize};
 use std::sync::LazyLock;
-use strsim::normalized_levenshtein;
+use strsim::{levenshtein, normalized_levenshtein};
 
 type Rect = (usize, usize, usize, usize); // frame rectangle (x0, y0, x1, y1)
 
@@ -93,71 +93,104 @@ pub fn chest_strips(buffer: &Buffer, layout: &ChestLayout) -> Vec<ChestRowStrips
         .collect()
 }
 
-// every title a chest can list, lower case, and for each chest which of them its contents are
-static TITLES: LazyLock<(Vec<String>, Vec<Vec<usize>>)> = LazyLock::new(|| {
-    let mut titles: Vec<String> = vec![];
+// a title a chest can list, lower case
+struct Title {
+    text: String,
+    // without the roman numeral it ends in, if it ends in one
+    stem: Option<String>,
+    // the digits of the text, or of the stem, and those of the titles that differ by digits alone
+    numerals: String,
+    rivals: Vec<String>,
+}
+
+struct Titles {
+    titles: Vec<Title>,
+    // for each chest, which of them its contents are
+    contents: Vec<Vec<usize>>,
+    // the longest roman numeral one ends in
+    longest_tier: usize,
+}
+
+static TITLES: LazyLock<Titles> = LazyLock::new(|| {
+    let mut titles: Vec<Title> = vec![];
     let contents = VARIANTS
         .iter()
         .map(|variant| {
             let mut index = |title: &String| {
-                let title = title.to_lowercase();
-                titles.iter().position(|x| *x == title).unwrap_or_else(|| {
-                    titles.push(title);
+                let text = title.to_lowercase();
+                titles.iter().position(|x| x.text == text).unwrap_or_else(|| {
+                    let tier = text.rsplit_once(' ').filter(|x| x.1.chars().all(|c| "ivx".contains(c)));
+                    let stem = tier.map(|x| x.0.trim_end().to_string());
+                    let numerals = numerals(stem.as_ref().unwrap_or(&text), false);
+                    titles.push(Title { text, stem, numerals, rivals: vec![] });
                     titles.len() - 1
                 })
             };
             variant.contents.iter().map(|x| index(&x.0)).collect()
         })
         .collect();
-    (titles, contents)
+    let bare = |x: &Title| without_numerals(x.stem.as_ref().unwrap_or(&x.text), false);
+    let mut alike: AHashMap<String, Vec<String>> = AHashMap::new();
+    for title in &titles {
+        alike.entry(bare(title)).or_default().push(title.numerals.clone());
+    }
+    for title in &mut titles {
+        title.rivals = alike[&bare(title)].clone();
+    }
+    let tier = |x: &Title| x.stem.as_ref().map_or(0, |stem| x.text.len() - stem.len() - 1);
+    Titles {
+        longest_tier: titles.iter().map(tier).max().unwrap(),
+        titles,
+        contents,
+    }
 });
 
-// A name without the roman numeral it ends in, and whether it ends in one. The tooltip's body font
-// draws them as bare strokes, which come back as any of these characters and in any number, glued
-// to a bracket before them or not: "II" was read as "?I", "Il", "I" and "?".
-fn without_tier(text: &str) -> (String, bool) {
-    let text = text.replace(')', ") ");
-    let text = text.trim_end();
-    match text.rsplit_once(' ') {
-        // a number is a number: "Level 1" is not "Level 2"
-        Some((rest, last))
-            if last.chars().all(|c| "ivxl!|?1".contains(c)) && !last.chars().all(|c| c.is_ascii_digit()) =>
-        {
-            (rest.trim_end().to_string(), true)
-        }
-        _ => (text.to_string(), false),
-    }
+// How far a row's name is from a title that ends in a roman numeral, in edits, and the name without
+// what stands for the numeral. The tooltip's body font draws numerals as bare strokes, which do not
+// read: "II" came back as "?I", "Il", "I", "?" and "!", glued to the word before it or not. So the
+// numeral is taken to be whatever the name ends in, up to the longest numeral's length, and the
+// rest is compared with the title's stem. A name that ends in nothing is the numeral short.
+fn tiered(read: &str, stem: &str, longest: usize) -> (usize, String) {
+    let chars: Vec<char> = read.chars().collect();
+    (0..=(longest + 1).min(chars.len()))
+        .map(|tail| {
+            let (head, tail) = chars.split_at(chars.len() - tail);
+            let head = head.iter().collect::<String>().trim_end().to_string();
+            let numeral = tail.iter().filter(|c| !c.is_whitespace()).count();
+            let missing = if numeral == 0 { 2 } else { numeral.saturating_sub(longest) };
+            (levenshtein(&head, stem) + missing, head)
+        })
+        .min()
+        .unwrap()
 }
 
-// Whether two names have the same digits, which are all that tells some titles apart. Spaces come
-// and go inside "[11-14]", and a bracket that reads as a 1 is one digit too many.
-fn same_digits(read: &str, title: &str) -> bool {
-    let digits = |text: &str| text.chars().filter(char::is_ascii_digit).collect::<String>();
-    let (read_digits, title_digits) = (digits(read), digits(title));
-    let fewer = |bracket: char| read.matches(bracket).count() < title.matches(bracket).count();
-    read_digits == title_digits
-        || (fewer(']') && read_digits.strip_suffix('1') == Some(&title_digits))
-        || (fewer('[') && read_digits.strip_prefix('1') == Some(&title_digits))
-}
-
-// How alike a row's name and a title are, if the row can be that title. A numeral at the end only
-// has to be there: which one it is does not read, so every tier of a chest scores the same.
-fn row_is(read: &str, title: &str) -> Option<f64> {
-    if read.len().abs_diff(title.len()) * 3 > title.len() {
+// How alike a row's name and a title are, if the row can be that title. Which numeral a title
+// ends in does not read, so every tier of a chest scores the same. Digits do, and the name's have
+// to be the title's.
+fn row_is(read: &str, title: &Title, all: &Titles) -> Option<f64> {
+    if read.len().abs_diff(title.text.len()) * 3 > title.text.len() {
         return None;
     }
-    let ((read, read_tier), (title, title_tier)) = (without_tier(read), without_tier(title));
-    let alike = normalized_levenshtein(&read, &title);
-    (read_tier == title_tier && alike >= ROW_PASS && same_digits(&read, &title)).then_some(alike)
+    let (alike, numbered) = match &title.stem {
+        None => (normalized_levenshtein(read, &title.text), read.to_string()),
+        Some(stem) => {
+            let (apart, head) = tiered(read, stem, all.longest_tier);
+            (1.0 - apart as f64 / (stem.chars().count() + 2).max(read.chars().count()) as f64, head)
+        }
+    };
+    let digits = || numerals_are(&numerals(&numbered, false), &title.numerals, &title.rivals);
+    (alike >= ROW_PASS && digits()).then_some(alike)
 }
 
-// The chests whose contents are these rows, each with how well the names agree. Every content has
-// to be a row of its own with the right count; rows left over are allowed where a chest has some
-// that differ by class. A chest whose tooltip cannot list all it holds (more than the tooltip has
-// rows for, or contents that depend on the class) goes the other way round: every row has to be a
-// content of its own. Those only count when no chest fits the first way.
-pub fn chests_listing(rows: &[(String, String)]) -> Vec<(&'static Variant, f64)> {
-    let (titles, contents) = &*TITLES;
+// The chests these rows are of, each with how well the names agree, and whether the rows are all
+// such a chest holds. Every row has to be a content of its own with the right count, but for as
+// many rows as a chest has for things that differ by class. A tooltip cannot list all of a chest
+// that holds more than it has rows for, or whose rows depend on the class, and its last rows can
+// be off the screen: such a chest also fits rows that are only part of it, half a tooltip's worth
+// at least where it is its size that keeps it from being whole. Those count when no chest is all
+// of the rows. A chest that could be listed whole never fits in part: one row is in many chests.
+pub fn chests_listing(rows: &[(String, String)]) -> (Vec<(&'static Variant, f64)>, bool) {
+    let all = &*TITLES;
     let rows: Vec<(String, Option<u32>)> = rows
         .iter()
         .map(|(name, count)| {
@@ -168,59 +201,38 @@ pub fn chests_listing(rows: &[(String, String)]) -> Vec<(&'static Variant, f64)>
         .collect();
     // each row against each title, once
     let mut alike: AHashMap<(usize, usize), Option<f64>> = AHashMap::new();
-    let (mut out, mut partly) = (vec![], vec![]);
-    for (variant, contents) in VARIANTS.iter().zip(contents) {
+    let (mut whole, mut partly) = (vec![], vec![]);
+    for (variant, contents) in VARIANTS.iter().zip(&all.contents) {
         let count = variant.contents.len();
-        if (variant.by_class && rows.len() <= count) || (count > ROW_CAP && rows.len() == ROW_CAP) {
-            let mut used = vec![false; count];
-            let mut total = 0.0;
-            let fits = rows.iter().enumerate().all(|(row, (name, amount))| {
-                let best = (0..count)
-                    .filter(|x| !used[*x] && Some(variant.contents[*x].1) == *amount)
-                    .filter_map(|x| {
-                        let score = *alike
-                            .entry((row, contents[x]))
-                            .or_insert_with(|| row_is(name, &titles[contents[x]]));
-                        Some((score?, x))
-                    })
-                    .max_by(|a, b| a.0.total_cmp(&b.0));
-                best.is_some_and(|(score, x)| {
-                    used[x] = true;
-                    total += score;
-                    true
-                })
-            });
-            if fits && !rows.is_empty() {
-                partly.push((variant, total / rows.len() as f64));
-            }
-            continue;
-        }
-        if rows.len() < count || rows.len() > count + variant.extra {
-            continue;
-        }
-        let mut used = vec![false; rows.len()];
-        let mut total = 0.0;
-        let fits = variant.contents.iter().zip(contents).all(|((_, amount, _), title)| {
-            let best = (0..rows.len())
-                .filter(|row| !used[*row] && rows[*row].1 == Some(*amount))
-                .filter_map(|row| {
+        let mut used = vec![false; count];
+        let (mut total, mut matched) = (0.0, 0);
+        for (row, (name, amount)) in rows.iter().enumerate() {
+            let best = (0..count)
+                .filter(|x| !used[*x] && Some(variant.contents[*x].1) == *amount)
+                .filter_map(|x| {
                     let score = *alike
-                        .entry((row, *title))
-                        .or_insert_with(|| row_is(&rows[row].0, &titles[*title]));
-                    Some((score?, row))
+                        .entry((row, contents[x]))
+                        .or_insert_with(|| row_is(name, &all.titles[contents[x]], all));
+                    Some((score?, x))
                 })
                 .max_by(|a, b| a.0.total_cmp(&b.0));
-            best.is_some_and(|(score, row)| {
-                used[row] = true;
+            if let Some((score, x)) = best {
+                used[x] = true;
                 total += score;
-                true
-            })
-        });
-        if fits && count > 0 {
-            out.push((variant, total / count as f64));
+                matched += 1;
+            }
+        }
+        if matched == 0 || rows.len() - matched > variant.extra {
+            continue;
+        }
+        let fit = (variant, total / matched as f64);
+        if matched == count {
+            whole.push(fit);
+        } else if variant.by_class || (count > ROW_CAP && rows.len() * 2 >= ROW_CAP) {
+            partly.push(fit);
         }
     }
-    if out.is_empty() { partly } else { out }
+    if whole.is_empty() { (partly, false) } else { (whole, true) }
 }
 
 impl Chest {

@@ -8,10 +8,10 @@ use super::{
 };
 use crate::{
     constants::{COMBINED_NUMBER_HEIGHT, SLOT_ORDER},
-    cropper::cropper::QUIET_SCANS,
+    cropper::{cropper::QUIET_SCANS, slots::overlay_areas},
     image_utils::{
         brightness::{brightness_lut, normalize_brightness},
-        close_enough::confidence,
+        close_enough::confidence_without,
         common::get_resizer,
     },
     setup::icon_lookup,
@@ -470,12 +470,12 @@ impl ScannerState {
             let Some((icon, _)) = info.icon_name_score.clone() else {
                 continue;
             };
-            let best = info.best_score;
+            let (best, skip) = (info.best_score, overlay_areas(info.overlays, s));
             let position = self.anchored_slot_address_position(address).unwrap();
             let mut crop = self.crop_buffer(position);
             normalize_brightness(&mut crop, brightness);
             let template = icon_lookup(&icon, height, get_resizer(&mut self.resizer));
-            if confidence(&template, &crop) < best - LIT {
+            if confidence_without(&template, &crop, &skip) < best - LIT {
                 lit.push(*address);
             }
         }
@@ -553,14 +553,14 @@ impl ScannerState {
                 // same things, or when a numeral that tells them apart did not read. Those that
                 // open the way the header says go first: the header's wording varies ("Obtain one
                 // of the following items at random" reads as obtain all), so it only breaks ties.
-                let mut listing = chests_listing(&texts);
+                let (mut listing, whole) = chests_listing(&texts);
                 let kind = winner(&hover.chest_kind_votes).map(|x| x.0);
                 if listing.iter().any(|x| Some(x.0.kind) == kind) {
                     listing.retain(|x| Some(x.0.kind) == kind);
                 }
                 let best = listing.iter().map(|x| x.1).fold(0.0, f64::max);
-                // rows that read as a chest's to the letter settle it
-                let weight = if best >= EXACT_ROWS { SETTLED } else { 1 };
+                // rows that read as a chest's to the letter, and are all of them, settle it
+                let weight = if whole && best >= EXACT_ROWS { SETTLED } else { 1 };
                 for (variant, _) in listing.iter().filter(|x| x.1 >= best - 1e-6) {
                     *hover.chest_votes.entry(variant.id).or_default() += weight;
                 }
@@ -615,8 +615,14 @@ impl ScannerState {
             self.hovered_slot(&hover.candidates, hover.bar.y as f64, s, &icons, hover.amount.as_ref(), &hover.lit);
         // a slot the user edited is left alone
         let slot = hover.slot.filter(|slot| !self.edits.contains_key(slot));
+        // the slots it could have sat against as well, had they been known to show this
+        let top = hover.bar.y as f64 - SLOT_ABOVE_TOOLTIP * s;
+        let unknown = |address: &SlotAddress| !self.slot_infos.get(address).is_some_and(|info| info.shows(&icons));
+        let passed_over: Vec<SlotAddress> =
+            hover.candidates.iter().filter(|x| x.1 >= top && unknown(&x.0)).map(|x| x.0).collect();
         if let Some(slot) = slot.and_then(|slot| self.slot_infos.get_mut(&slot)) {
             slot.hovered = true;
+            slot.passed_over = (icons, passed_over);
             // A hover that read nothing leaves what an earlier one read: a tooltip seen for a
             // frame or two while fading in has neither.
             if hover.tradability.is_some() {
@@ -735,6 +741,13 @@ impl ScannerState {
     ) -> Option<SlotAddress> {
         let tolerance = SLOT_TOLERANCE * s;
 
+        // the number a slot shows; a single item shows none
+        let own = |address: &SlotAddress| {
+            self.slot_infos[address].amount.as_ref().map(|x| {
+                let digits: String = x.chars().filter(char::is_ascii_digit).collect();
+                if digits.is_empty() { "1".to_string() } else { digits }
+            })
+        };
         let candidates: Vec<(SlotAddress, bool)> = beside
             .iter()
             .copied()
@@ -749,27 +762,33 @@ impl ScannerState {
         // The hovered slot may be one that matches nothing, with another stack that reads as the
         // same thing in its column. That one never lit up and shows another number.
         if let ([(address, _)], Some(amount)) = (&candidates[..], amount) {
-            let own = self.slot_infos[address].amount.as_ref().map(|x| {
-                let digits: String = x.chars().filter(char::is_ascii_digit).collect();
-                if digits.is_empty() { "1".to_string() } else { digits }
-            });
             // 9999+ stands for any more
-            if !lit.contains(address) && own.is_some_and(|own| own != *amount && own != "9999") {
+            if !lit.contains(address) && own(address).is_some_and(|own| own != *amount && own != "9999") {
                 return None;
             }
         }
+        // The game lights the hovered slot up. A tooltip that was pushed up lines up with a row
+        // that is not its own now and then, so the level one is not taken when others were seen
+        // lit and it was not. A highlight also takes a few scans to fade, on the slot the cursor
+        // came from, so being lit alone picks nothing.
+        let is_lit = |x: &&(SlotAddress, bool)| lit.contains(&x.0);
+        let any_lit = candidates.iter().any(|x| is_lit(&x));
         match candidates.len() {
             1 => Some(candidates[0].0),
-            _ => candidates.iter().find(|x| x.1).map(|x| x.0),
+            _ => candidates.iter().find(|x| x.1 && (!any_lit || is_lit(x))).map(|x| x.0),
         }
         .or_else(|| {
-            // several stacks of it in the column: the one whose own count matches the tooltip's
-            let mut matching = candidates.iter().filter(|(address, _)| {
-                amount.is_some_and(|amount| {
-                    self.slot_infos[address].amount.as_ref().is_some_and(|x| x.trim() == amount)
-                })
-            });
-            matching.next().filter(|_| matching.next().is_none()).map(|x| x.0)
+            // several stacks of it in the column: the one whose own count matches the tooltip's,
+            // and of several that do the one that was lit
+            let matching: Vec<&(SlotAddress, bool)> = candidates
+                .iter()
+                .filter(|(address, _)| amount.is_some_and(|amount| own(address).as_ref() == Some(amount)))
+                .collect();
+            let mut lit = matching.iter().copied().filter(is_lit);
+            match matching.len() {
+                1 => Some(matching[0].0),
+                _ => lit.next().filter(|_| lit.next().is_none()).map(|x| x.0),
+            }
         })
         .or_else(|| {
             // Else the only one no other tooltip was already tied to. A slot's own count misreads

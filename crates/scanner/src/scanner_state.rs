@@ -82,8 +82,8 @@ pub enum Tradability {
 #[derive(Debug)]
 pub struct OneSlotInfo {
     pub icon_name_score: Option<(String, f64)>,
-    // it matched with the rows an item level is written over left out
-    pub levelled: bool,
+    // what is drawn over it, as bits of slots::OVERLAYS
+    pub overlays: u8,
     // Other icons that passed nearly as well. Plain chests in other trims and rarities do, so a
     // chest slot is any of these.
     pub alternatives: Vec<String>,
@@ -93,6 +93,9 @@ pub struct OneSlotInfo {
     pub display_icon: Option<OneIconConfig>,
     // a tooltip was resolved to this slot, and whether its amount failed to read
     pub hovered: bool,
+    // the icons that tooltip's item is drawn with, and the slots it could have sat against as
+    // well, which showed none of them then
+    pub passed_over: (Vec<String>, Vec<SlotAddress>),
     pub tooltip_failed: bool,
     pub amount: Option<String>,
     // the last few reads of the number; the amount is the one most of them agree on

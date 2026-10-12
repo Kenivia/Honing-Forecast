@@ -19,11 +19,13 @@ export default defineConfig({
   server: {
     watch: {
       ignored: [
-        "/cloudflare/.wrangler/**",
-        "/crates/**",
-        "**/scripts/game_files/**",
+        "**/cloudflare/.wrangler/**",
+        "**/crates/**",
         "**/game_file_reader/**",
-        "/target/**",
+        "**/target/**",
+        "**/scripts/**",
+        "**/junkyard/**",
+        "**/.tmp/**",
       ],
     },
   },

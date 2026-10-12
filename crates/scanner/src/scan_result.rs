@@ -1,5 +1,6 @@
 use crate::{
     buffer::Buffer,
+    cropper::slots::LEVEL,
     ocr::jobs::OcrJob,
     scanner_state::{InventoryType, OneSlotInfo, ScannerState, SlotAddress, Tradability},
     setup::{OneIconConfig, WireRect},
@@ -77,11 +78,16 @@ fn icon_number(text: &str) -> u32 {
 fn slot_variants(info: &OneSlotInfo) -> Vec<&'static Variant> {
     let all: Vec<&Variant> = info.icons().flat_map(|icon| variants_of(icon).iter().copied()).collect();
     let by_level: Vec<&Variant> =
-        all.iter().copied().filter(|x| x.level.is_some() == info.levelled).collect();
+        all.iter().copied().filter(|x| x.level.is_some() == info.levelled()).collect();
     if by_level.is_empty() { all } else { by_level }
 }
 
 impl OneSlotInfo {
+    // an item level is written across it
+    pub fn levelled(&self) -> bool {
+        self.overlays >> LEVEL & 1 == 1
+    }
+
     // every icon the slot may be drawn with, the closest first
     pub fn icons(&self) -> impl Iterator<Item = &String> {
         self.icon_name_score.iter().map(|x| &x.0).chain(&self.alternatives)

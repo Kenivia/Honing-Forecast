@@ -5,7 +5,7 @@ use crate::{
 use ahash::AHashMap;
 use serde::Deserialize;
 use std::sync::LazyLock;
-use strsim::normalized_levenshtein;
+use strsim::{levenshtein, normalized_levenshtein};
 
 const TITLE_PASS: f64 = 0.9;
 const TITLE_MARGIN: f64 = 0.05; // over the next best
@@ -155,29 +155,57 @@ pub fn item_from_body(lines: &[String]) -> Option<&'static Item> {
     ITEMS.iter().find(|item| item.body.as_ref() == Some(&body))
 }
 
-// Digits and roman numerals, which is all that tells some titles apart. A numeral with a character
-// the recogniser did not know in it is kept as it is, so it matches nothing. Of a word with digits
-// in it only the digits count: the brackets of "[15-18]" come back as any of "[(I".
-fn numerals(text: &str) -> Vec<String> {
-    text.split_whitespace()
-        .filter_map(|word| {
-            if word.chars().any(|c| c.is_ascii_digit()) {
-                Some(word.chars().filter(char::is_ascii_digit).collect())
-            } else {
-                word.chars().all(|c| "ivx?".contains(c)).then(|| word.to_string())
-            }
+// A word of a name that is a numeral: one with a digit in it, or for `roman` one of numeral
+// letters only.
+fn is_numeral(word: &str, roman: bool) -> bool {
+    word.chars().any(|c| c.is_ascii_digit()) || (roman && word.chars().all(|c| "ivx?".contains(c)))
+}
+
+// The numerals of a name, run together. Of a word with digits only the digits count: the brackets
+// of "[15-18]" come back as any of "[(I", and a space before a digit gets lost. A roman numeral
+// with a character the recogniser did not know in it is kept as it is.
+pub fn numerals(text: &str, roman: bool) -> String {
+    let words = text.split_whitespace().filter(|word| is_numeral(word, roman));
+    words
+        .flat_map(|word| {
+            let digits = word.chars().any(|c| c.is_ascii_digit());
+            word.chars().filter(move |c| !digits || c.is_ascii_digit())
         })
         .collect()
+}
+
+// a name without its numerals: names with the same one differ by numerals alone
+pub fn without_numerals(text: &str, roman: bool) -> String {
+    text.split_whitespace().filter(|word| !is_numeral(word, roman)).collect::<Vec<_>>().join(" ")
+}
+
+// Whether a read's numerals are a name's, where `rivals` are the numerals of the names that
+// differ from it by numerals alone. They have to be closer to its own than to any rival's, with
+// no more than a third of them wrong: "[11-14]" read as "(1l-14]" is still nowhere near "[15-18]",
+// while a lone digit or a short roman numeral has to read right, a wrong one being another name.
+pub fn numerals_are(read: &str, own: &str, rivals: &[String]) -> bool {
+    let apart = levenshtein(read, own);
+    apart * 3 <= own.chars().count() && rivals.iter().all(|x| x == own || levenshtein(read, x) > apart)
 }
 
 // an OCR'd title to the one of these it clearly is
 fn closest<T: Copy>(read: &str, titles: impl Iterator<Item = (&'static str, T)>) -> Option<T> {
     let read = read.to_lowercase();
-    // one wrong numeral barely changes the similarity ("Level 3" / "Level 4", "Pouch II" / "Pouch III"), so they have to match exactly
-    let mut scores: Vec<(f64, T)> = titles
+    let seen = numerals(&read, true);
+    // each title with what it is without its numerals, and its numerals
+    let titles: Vec<(String, String, String, T)> = titles
         .map(|(title, value)| (title.to_lowercase(), value))
-        .filter(|(title, _)| numerals(title) == numerals(&read))
-        .map(|(title, value)| (normalized_levenshtein(&read, &title), value))
+        .map(|(title, value)| (without_numerals(&title, true), numerals(&title, true), title, value))
+        .collect();
+    // one wrong numeral barely changes the similarity ("Level 3" / "Level 4", "Pouch II" / "Pouch
+    // III"), so the read's numerals have to be the title's
+    let mut scores: Vec<(f64, T)> = titles
+        .iter()
+        .filter(|(bare, own, _, _)| {
+            let rivals: Vec<String> = titles.iter().filter(|x| x.0 == *bare).map(|x| x.1.clone()).collect();
+            numerals_are(&seen, own, &rivals)
+        })
+        .map(|(_, _, title, value)| (normalized_levenshtein(&read, title), *value))
         .collect();
     scores.sort_by(|a, b| b.0.total_cmp(&a.0));
     let (best, value) = *scores.first()?;

@@ -130,7 +130,7 @@ pub fn print_statuses(state: &ScannerState) {
                 } else {
                     format!(
                         "  levelled {} also {:?} variants {:?}",
-                        state.slot_infos[&a].levelled, slot.alternatives, slot.variants
+                        state.slot_infos[&a].levelled(), slot.alternatives, slot.variants
                     )
                 }
             );
