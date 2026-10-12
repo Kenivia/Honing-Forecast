@@ -37,48 +37,6 @@
           "taxed_price": 285.0,
           "market_price": 300.0
         },
-        "Juice 12": {
-          "bound": 0.0,
-          "roster": 0.0,
-          "tradable": 0.0,
-          "taxed_price": 285.0,
-          "market_price": 300.0
-        },
-        "Fusion": {
-          "bound": 300.0,
-          "roster": 75.0,
-          "tradable": 37.0,
-          "taxed_price": 163.4,
-          "market_price": 172.0
-        },
-        "Juice 3": {
-          "bound": 0.0,
-          "roster": 0.0,
-          "tradable": 0.0,
-          "taxed_price": 285.0,
-          "market_price": 300.0
-        },
-        "Juice 0": {
-          "bound": 200.0,
-          "roster": 50.0,
-          "tradable": 25.0,
-          "taxed_price": 285.0,
-          "market_price": 300.0
-        },
-        "Juice 15": {
-          "bound": 0.0,
-          "roster": 0.0,
-          "tradable": 0.0,
-          "taxed_price": 285.0,
-          "market_price": 300.0
-        },
-        "Juice 5": {
-          "bound": 0.0,
-          "roster": 0.0,
-          "tradable": 0.0,
-          "taxed_price": 285.0,
-          "market_price": 300.0
-        },
         "Leapstones": {
           "bound": 900.0,
           "roster": 225.0,
@@ -86,28 +44,28 @@
           "taxed_price": 20.9,
           "market_price": 22.0
         },
-        "Juice 9": {
+        "Juice 14": {
           "bound": 0.0,
           "roster": 0.0,
           "tradable": 0.0,
           "taxed_price": 285.0,
           "market_price": 300.0
         },
-        "Juice 17": {
+        "Juice 11": {
           "bound": 0.0,
           "roster": 0.0,
           "tradable": 0.0,
           "taxed_price": 285.0,
           "market_price": 300.0
         },
-        "Juice 2": {
+        "Juice 13": {
           "bound": 0.0,
           "roster": 0.0,
           "tradable": 0.0,
           "taxed_price": 285.0,
           "market_price": 300.0
         },
-        "Juice 6": {
+        "Juice 16": {
           "bound": 0.0,
           "roster": 0.0,
           "tradable": 0.0,
@@ -121,7 +79,14 @@
           "taxed_price": 5.31,
           "market_price": 5.6
         },
-        "Juice 11": {
+        "Juice 12": {
+          "bound": 0.0,
+          "roster": 0.0,
+          "tradable": 0.0,
+          "taxed_price": 285.0,
+          "market_price": 300.0
+        },
+        "Juice 5": {
           "bound": 0.0,
           "roster": 0.0,
           "tradable": 0.0,
@@ -142,12 +107,19 @@
           "taxed_price": 285.0,
           "market_price": 300.0
         },
-        "Juice 13": {
+        "Gold": {
           "bound": 0.0,
           "roster": 0.0,
           "tradable": 0.0,
-          "taxed_price": 285.0,
-          "market_price": 300.0
+          "taxed_price": 0.95,
+          "market_price": 1.0
+        },
+        "Fusion": {
+          "bound": 300.0,
+          "roster": 75.0,
+          "tradable": 37.0,
+          "taxed_price": 163.4,
+          "market_price": 172.0
         },
         "Blue": {
           "bound": 60000.0,
@@ -156,6 +128,13 @@
           "taxed_price": 0.11,
           "market_price": 0.12
         },
+        "Juice 6": {
+          "bound": 0.0,
+          "roster": 0.0,
+          "tradable": 0.0,
+          "taxed_price": 285.0,
+          "market_price": 300.0
+        },
         "Juice 8": {
           "bound": 0.0,
           "roster": 0.0,
@@ -163,7 +142,14 @@
           "taxed_price": 285.0,
           "market_price": 300.0
         },
-        "Juice 14": {
+        "Juice 15": {
+          "bound": 0.0,
+          "roster": 0.0,
+          "tradable": 0.0,
+          "taxed_price": 285.0,
+          "market_price": 300.0
+        },
+        "Juice 17": {
           "bound": 0.0,
           "roster": 0.0,
           "tradable": 0.0,
@@ -177,13 +163,6 @@
           "taxed_price": 0.2,
           "market_price": 0.22
         },
-        "Juice 7": {
-          "bound": 0.0,
-          "roster": 0.0,
-          "tradable": 0.0,
-          "taxed_price": 285.0,
-          "market_price": 300.0
-        },
         "Silver": {
           "bound": 0.0,
           "roster": 0.0,
@@ -191,14 +170,35 @@
           "taxed_price": 0.0,
           "market_price": 0.0
         },
-        "Gold": {
+        "Juice 0": {
+          "bound": 200.0,
+          "roster": 50.0,
+          "tradable": 25.0,
+          "taxed_price": 285.0,
+          "market_price": 300.0
+        },
+        "Juice 3": {
           "bound": 0.0,
           "roster": 0.0,
           "tradable": 0.0,
-          "taxed_price": 0.95,
-          "market_price": 1.0
+          "taxed_price": 285.0,
+          "market_price": 300.0
         },
-        "Juice 16": {
+        "Juice 2": {
+          "bound": 0.0,
+          "roster": 0.0,
+          "tradable": 0.0,
+          "taxed_price": 285.0,
+          "market_price": 300.0
+        },
+        "Juice 7": {
+          "bound": 0.0,
+          "roster": 0.0,
+          "tradable": 0.0,
+          "taxed_price": 285.0,
+          "market_price": 300.0
+        },
+        "Juice 9": {
           "bound": 0.0,
           "roster": 0.0,
           "tradable": 0.0,
@@ -360,8 +360,8 @@
       ],
       "special_budget": 600,
       "special_state": null,
-      "chests": [
-        {
+      "chests": {
+        "0": {
           "count": 120,
           "band": 1,
           "options": [
@@ -377,18 +377,17 @@
             }
           ]
         },
-        {
+        "1": {
           "count": 7,
           "band": 0,
           "options": [
             {
               "Fusion": 30.0,
-              "Gold": 5000.0,
-              "Not of this tier": 9.0
+              "Gold": 5000.0
             }
           ]
         },
-        {
+        "2": {
           "count": 33,
           "band": 2,
           "options": [
@@ -397,13 +396,10 @@
             },
             {
               "Juice 1": 2.5
-            },
-            {
-              "Gold": 1000.0
             }
           ]
         },
-        {
+        "3": {
           "count": 40,
           "band": 0,
           "options": [
@@ -415,8 +411,8 @@
             }
           ]
         }
-      ],
-      "chest_state_arr": null,
+      },
+      "chest_states": null,
       "special_label": "Special Leap",
       "tier": 0,
       "express_event": false,
@@ -455,48 +451,6 @@
       ],
       "materials": {
         "Juice 10": {
-          "bound": 0.0,
-          "roster": 0.0,
-          "tradable": 0.0,
-          "taxed_price": 285.0,
-          "market_price": 300.0
-        },
-        "Juice 12": {
-          "bound": 0.0,
-          "roster": 0.0,
-          "tradable": 0.0,
-          "taxed_price": 285.0,
-          "market_price": 300.0
-        },
-        "Fusion": {
-          "bound": 210.0,
-          "roster": 75.0,
-          "tradable": 37.0,
-          "taxed_price": 163.4,
-          "market_price": 172.0
-        },
-        "Juice 3": {
-          "bound": 0.0,
-          "roster": 0.0,
-          "tradable": 0.0,
-          "taxed_price": 285.0,
-          "market_price": 300.0
-        },
-        "Juice 0": {
-          "bound": 140.0,
-          "roster": 50.0,
-          "tradable": 25.0,
-          "taxed_price": 285.0,
-          "market_price": 300.0
-        },
-        "Juice 15": {
-          "bound": 0.0,
-          "roster": 0.0,
-          "tradable": 0.0,
-          "taxed_price": 285.0,
-          "market_price": 300.0
-        },
-        "Juice 5": {
           "bound": 0.0,
           "roster": 0.0,
           "tradable": 0.0,
@@ -510,28 +464,28 @@
           "taxed_price": 20.9,
           "market_price": 22.0
         },
-        "Juice 9": {
+        "Juice 14": {
           "bound": 0.0,
           "roster": 0.0,
           "tradable": 0.0,
           "taxed_price": 285.0,
           "market_price": 300.0
         },
-        "Juice 17": {
+        "Juice 11": {
           "bound": 0.0,
           "roster": 0.0,
           "tradable": 0.0,
           "taxed_price": 285.0,
           "market_price": 300.0
         },
-        "Juice 2": {
+        "Juice 13": {
           "bound": 0.0,
           "roster": 0.0,
           "tradable": 0.0,
           "taxed_price": 285.0,
           "market_price": 300.0
         },
-        "Juice 6": {
+        "Juice 16": {
           "bound": 0.0,
           "roster": 0.0,
           "tradable": 0.0,
@@ -545,7 +499,14 @@
           "taxed_price": 5.31,
           "market_price": 5.6
         },
-        "Juice 11": {
+        "Juice 12": {
+          "bound": 0.0,
+          "roster": 0.0,
+          "tradable": 0.0,
+          "taxed_price": 285.0,
+          "market_price": 300.0
+        },
+        "Juice 5": {
           "bound": 0.0,
           "roster": 0.0,
           "tradable": 0.0,
@@ -566,12 +527,19 @@
           "taxed_price": 285.0,
           "market_price": 300.0
         },
-        "Juice 13": {
+        "Gold": {
           "bound": 0.0,
           "roster": 0.0,
           "tradable": 0.0,
-          "taxed_price": 285.0,
-          "market_price": 300.0
+          "taxed_price": 0.95,
+          "market_price": 1.0
+        },
+        "Fusion": {
+          "bound": 210.0,
+          "roster": 75.0,
+          "tradable": 37.0,
+          "taxed_price": 163.4,
+          "market_price": 172.0
         },
         "Blue": {
           "bound": 42000.0,
@@ -580,6 +548,13 @@
           "taxed_price": 0.11,
           "market_price": 0.12
         },
+        "Juice 6": {
+          "bound": 0.0,
+          "roster": 0.0,
+          "tradable": 0.0,
+          "taxed_price": 285.0,
+          "market_price": 300.0
+        },
         "Juice 8": {
           "bound": 0.0,
           "roster": 0.0,
@@ -587,7 +562,14 @@
           "taxed_price": 285.0,
           "market_price": 300.0
         },
-        "Juice 14": {
+        "Juice 15": {
+          "bound": 0.0,
+          "roster": 0.0,
+          "tradable": 0.0,
+          "taxed_price": 285.0,
+          "market_price": 300.0
+        },
+        "Juice 17": {
           "bound": 0.0,
           "roster": 0.0,
           "tradable": 0.0,
@@ -601,13 +583,6 @@
           "taxed_price": 0.2,
           "market_price": 0.22
         },
-        "Juice 7": {
-          "bound": 0.0,
-          "roster": 0.0,
-          "tradable": 0.0,
-          "taxed_price": 285.0,
-          "market_price": 300.0
-        },
         "Silver": {
           "bound": 0.0,
           "roster": 0.0,
@@ -615,14 +590,35 @@
           "taxed_price": 0.0,
           "market_price": 0.0
         },
-        "Gold": {
+        "Juice 0": {
+          "bound": 140.0,
+          "roster": 50.0,
+          "tradable": 25.0,
+          "taxed_price": 285.0,
+          "market_price": 300.0
+        },
+        "Juice 3": {
           "bound": 0.0,
           "roster": 0.0,
           "tradable": 0.0,
-          "taxed_price": 0.95,
-          "market_price": 1.0
+          "taxed_price": 285.0,
+          "market_price": 300.0
         },
-        "Juice 16": {
+        "Juice 2": {
+          "bound": 0.0,
+          "roster": 0.0,
+          "tradable": 0.0,
+          "taxed_price": 285.0,
+          "market_price": 300.0
+        },
+        "Juice 7": {
+          "bound": 0.0,
+          "roster": 0.0,
+          "tradable": 0.0,
+          "taxed_price": 285.0,
+          "market_price": 300.0
+        },
+        "Juice 9": {
           "bound": 0.0,
           "roster": 0.0,
           "tradable": 0.0,
@@ -762,8 +758,8 @@
       ],
       "special_budget": 250,
       "special_state": null,
-      "chests": [
-        {
+      "chests": {
+        "0": {
           "count": 120,
           "band": 1,
           "options": [
@@ -779,18 +775,17 @@
             }
           ]
         },
-        {
+        "1": {
           "count": 7,
           "band": 0,
           "options": [
             {
               "Fusion": 30.0,
-              "Gold": 5000.0,
-              "Not of this tier": 9.0
+              "Gold": 5000.0
             }
           ]
         },
-        {
+        "2": {
           "count": 33,
           "band": 2,
           "options": [
@@ -799,13 +794,10 @@
             },
             {
               "Juice 1": 2.5
-            },
-            {
-              "Gold": 1000.0
             }
           ]
         },
-        {
+        "3": {
           "count": 40,
           "band": 0,
           "options": [
@@ -817,8 +809,8 @@
             }
           ]
         }
-      ],
-      "chest_state_arr": null,
+      },
+      "chest_states": null,
       "special_label": "Special Leap",
       "tier": 0,
       "express_event": false,
@@ -863,48 +855,6 @@
           "taxed_price": 285.0,
           "market_price": 300.0
         },
-        "Juice 12": {
-          "bound": 0.0,
-          "roster": 0.0,
-          "tradable": 0.0,
-          "taxed_price": 285.0,
-          "market_price": 300.0
-        },
-        "Fusion": {
-          "bound": 210.0,
-          "roster": 75.0,
-          "tradable": 37.0,
-          "taxed_price": 204.25,
-          "market_price": 215.0
-        },
-        "Juice 3": {
-          "bound": 0.0,
-          "roster": 0.0,
-          "tradable": 0.0,
-          "taxed_price": 285.0,
-          "market_price": 300.0
-        },
-        "Juice 0": {
-          "bound": 140.0,
-          "roster": 50.0,
-          "tradable": 25.0,
-          "taxed_price": 285.0,
-          "market_price": 300.0
-        },
-        "Juice 15": {
-          "bound": 0.0,
-          "roster": 0.0,
-          "tradable": 0.0,
-          "taxed_price": 285.0,
-          "market_price": 300.0
-        },
-        "Juice 5": {
-          "bound": 0.0,
-          "roster": 0.0,
-          "tradable": 0.0,
-          "taxed_price": 285.0,
-          "market_price": 300.0
-        },
         "Leapstones": {
           "bound": 630.0,
           "roster": 225.0,
@@ -912,28 +862,28 @@
           "taxed_price": 26.125,
           "market_price": 27.5
         },
-        "Juice 9": {
+        "Juice 14": {
           "bound": 0.0,
           "roster": 0.0,
           "tradable": 0.0,
           "taxed_price": 285.0,
           "market_price": 300.0
         },
-        "Juice 17": {
+        "Juice 11": {
           "bound": 0.0,
           "roster": 0.0,
           "tradable": 0.0,
           "taxed_price": 285.0,
           "market_price": 300.0
         },
-        "Juice 2": {
+        "Juice 13": {
           "bound": 0.0,
           "roster": 0.0,
           "tradable": 0.0,
           "taxed_price": 285.0,
           "market_price": 300.0
         },
-        "Juice 6": {
+        "Juice 16": {
           "bound": 0.0,
           "roster": 0.0,
           "tradable": 0.0,
@@ -947,7 +897,14 @@
           "taxed_price": 6.637499999999999,
           "market_price": 7.0
         },
-        "Juice 11": {
+        "Juice 12": {
+          "bound": 0.0,
+          "roster": 0.0,
+          "tradable": 0.0,
+          "taxed_price": 285.0,
+          "market_price": 300.0
+        },
+        "Juice 5": {
           "bound": 0.0,
           "roster": 0.0,
           "tradable": 0.0,
@@ -968,12 +925,19 @@
           "taxed_price": 285.0,
           "market_price": 300.0
         },
-        "Juice 13": {
+        "Gold": {
           "bound": 0.0,
           "roster": 0.0,
           "tradable": 0.0,
-          "taxed_price": 285.0,
-          "market_price": 300.0
+          "taxed_price": 0.95,
+          "market_price": 1.0
+        },
+        "Fusion": {
+          "bound": 210.0,
+          "roster": 75.0,
+          "tradable": 37.0,
+          "taxed_price": 204.25,
+          "market_price": 215.0
         },
         "Blue": {
           "bound": 42000.0,
@@ -982,6 +946,13 @@
           "taxed_price": 0.11,
           "market_price": 0.12
         },
+        "Juice 6": {
+          "bound": 0.0,
+          "roster": 0.0,
+          "tradable": 0.0,
+          "taxed_price": 285.0,
+          "market_price": 300.0
+        },
         "Juice 8": {
           "bound": 0.0,
           "roster": 0.0,
@@ -989,7 +960,14 @@
           "taxed_price": 285.0,
           "market_price": 300.0
         },
-        "Juice 14": {
+        "Juice 15": {
+          "bound": 0.0,
+          "roster": 0.0,
+          "tradable": 0.0,
+          "taxed_price": 285.0,
+          "market_price": 300.0
+        },
+        "Juice 17": {
           "bound": 0.0,
           "roster": 0.0,
           "tradable": 0.0,
@@ -1003,13 +981,6 @@
           "taxed_price": 0.2,
           "market_price": 0.22
         },
-        "Juice 7": {
-          "bound": 0.0,
-          "roster": 0.0,
-          "tradable": 0.0,
-          "taxed_price": 285.0,
-          "market_price": 300.0
-        },
         "Silver": {
           "bound": 0.0,
           "roster": 0.0,
@@ -1017,14 +988,35 @@
           "taxed_price": 0.0,
           "market_price": 0.0
         },
-        "Gold": {
+        "Juice 0": {
+          "bound": 140.0,
+          "roster": 50.0,
+          "tradable": 25.0,
+          "taxed_price": 285.0,
+          "market_price": 300.0
+        },
+        "Juice 3": {
           "bound": 0.0,
           "roster": 0.0,
           "tradable": 0.0,
-          "taxed_price": 0.95,
-          "market_price": 1.0
+          "taxed_price": 285.0,
+          "market_price": 300.0
         },
-        "Juice 16": {
+        "Juice 2": {
+          "bound": 0.0,
+          "roster": 0.0,
+          "tradable": 0.0,
+          "taxed_price": 285.0,
+          "market_price": 300.0
+        },
+        "Juice 7": {
+          "bound": 0.0,
+          "roster": 0.0,
+          "tradable": 0.0,
+          "taxed_price": 285.0,
+          "market_price": 300.0
+        },
+        "Juice 9": {
           "bound": 0.0,
           "roster": 0.0,
           "tradable": 0.0,
@@ -1164,8 +1156,8 @@
       ],
       "special_budget": 250,
       "special_state": null,
-      "chests": [
-        {
+      "chests": {
+        "0": {
           "count": 120,
           "band": 1,
           "options": [
@@ -1181,18 +1173,17 @@
             }
           ]
         },
-        {
+        "1": {
           "count": 7,
           "band": 0,
           "options": [
             {
               "Fusion": 30.0,
-              "Gold": 5000.0,
-              "Not of this tier": 9.0
+              "Gold": 5000.0
             }
           ]
         },
-        {
+        "2": {
           "count": 33,
           "band": 2,
           "options": [
@@ -1201,13 +1192,10 @@
             },
             {
               "Juice 1": 2.5
-            },
-            {
-              "Gold": 1000.0
             }
           ]
         },
-        {
+        "3": {
           "count": 40,
           "band": 0,
           "options": [
@@ -1219,8 +1207,8 @@
             }
           ]
         }
-      ],
-      "chest_state_arr": null,
+      },
+      "chest_states": null,
       "special_label": "Special Leap",
       "tier": 0,
       "express_event": false,

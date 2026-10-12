@@ -1,22 +1,21 @@
 <script setup lang="ts">
 import { computed } from "vue";
-import { storeToRefs } from "pinia";
-import { useRosterStore } from "@/Stores/RosterConfig";
 import { useRuntimeStore } from "@/Stores/RuntimeState";
 import { get_icon_path } from "@/Utils/Helpers";
+import type { Chest } from "@/Utils/Chest";
 
-// Provisional: how the last optimizer run opened each chest stack.
+// Provisional: how each chest stack is opened in what the histogram last evaluated, which is
+// the optimizer's latest state, the ones it reports while running included.
+const props = defineProps<{ chests: Chest[] }>();
 const runtime = useRuntimeStore();
-const { active_profile } = storeToRefs(useRosterStore());
 
-// the payload sends the profile's chests in order, so the states line up by index
+// a state is found by its chest's key, so one from before the chests changed still fits
 const rows = computed(() => {
-  const chests = active_profile.value.chests;
-  const states: number[][] = runtime.optimizer.result?.chest_state_arr ?? [];
-  if (states.length !== chests.length) return [];
-  return chests
-    .map((chest, index) => ({ chest, state: states[index] }))
-    .filter((row) => row.state.length === row.chest.options.length);
+  const states: Map<string, number[]> | undefined =
+    runtime.histogram.result?.state_bundle.chest_states;
+  return props.chests
+    .map((chest) => ({ chest, state: states?.get(chest.key) }))
+    .filter((row) => row.state?.length === row.chest.options.length);
 });
 </script>
 
@@ -28,7 +27,7 @@ const rows = computed(() => {
   >
     <div class="card-title">Chest opening (provisional)</div>
     <span v-if="!rows.length" class="text-(--text-muted)">
-      No chests, or the optimizer has not run on them yet.
+      No chests with a choice to make.
     </span>
     <div
       v-for="row in rows"

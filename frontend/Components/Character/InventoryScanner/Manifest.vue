@@ -82,6 +82,7 @@ function add_chest() {
     options: draft_options.value.map((option) => ({
       [option.label]: Number(option.amount),
     })),
+    obtain_all: false,
   });
   draft.value = fresh_chest();
 }
@@ -257,94 +258,93 @@ function export_to_calc() {
 
       <div class="flex flex-col gap-3">
         <ChestPanels
-          :chests="manifest.chests"
-          :tier="tier"
+          :selection="manifest.chests.filter((chest) => !chest.obtain_all)"
+          :obtain_all="manifest.chests.filter((chest) => chest.obtain_all)"
           :editing="editing"
           @count="set_chest_count"
           @remove="remove_chest"
-        />
-
-        <div
-          v-if="editing"
-          class="card-shell card-body flex flex-col gap-2 text-sm"
         >
-          <div class="card-title">Add a chest</div>
-          <div class="flex flex-wrap items-center gap-2">
-            <input
-              v-model="draft.count"
-              type="number"
-              min="1"
-              class="generic-input h-7! w-16 pl-1"
-              aria-label="New chest count"
-            />
-            <input
-              v-model="draft.title"
-              type="text"
-              class="generic-input h-7! w-48 pl-1"
-              placeholder="Name (optional)"
-              aria-label="New chest name"
-            />
-            <select
-              v-model="draft.band"
-              class="selector"
-              aria-label="New chest ownership"
+          <div v-if="editing" class="flex flex-col gap-2 pt-2">
+            <div class="card-title">Add a chest</div>
+            <div class="flex flex-wrap items-center gap-2">
+              <input
+                v-model="draft.count"
+                type="number"
+                min="1"
+                class="generic-input h-7! w-16 pl-1"
+                aria-label="New chest count"
+              />
+              <input
+                v-model="draft.title"
+                type="text"
+                class="generic-input h-7! w-48 pl-1"
+                placeholder="Name (optional)"
+                aria-label="New chest name"
+              />
+              <select
+                v-model="draft.band"
+                class="selector"
+                aria-label="New chest ownership"
+              >
+                <option v-for="(name, band) in BANDS" :key="band" :value="band">
+                  {{ name }}
+                </option>
+              </select>
+            </div>
+            <div
+              v-for="(option, index) in draft.options"
+              :key="index"
+              class="flex items-center gap-2"
             >
-              <option v-for="(name, band) in BANDS" :key="band" :value="band">
-                {{ name }}
-              </option>
-            </select>
+              <span class="w-4 text-(--text-very-muted)">
+                {{ index ? "or" : "" }}
+              </span>
+              <select
+                v-model="option.label"
+                class="selector"
+                :aria-label="`Option ${index + 1} material`"
+              >
+                <option value="" disabled>Material</option>
+                <option v-for="label in labels" :key="label">
+                  {{ label }}
+                </option>
+              </select>
+              <input
+                v-model="option.amount"
+                type="number"
+                min="1"
+                class="generic-input h-7! w-24 pl-1"
+                placeholder="Amount"
+                :aria-label="`Option ${index + 1} amount`"
+              />
+              <button
+                v-if="draft.options.length > 1"
+                class="generic-button"
+                @click="draft.options.splice(index, 1)"
+              >
+                Remove
+              </button>
+            </div>
+            <div class="flex gap-2">
+              <button
+                class="generic-button"
+                @click="draft.options.push({ label: '', amount: '' })"
+              >
+                Add option
+              </button>
+              <button
+                class="generic-button"
+                :class="{
+                  'cursor-not-allowed! opacity-50': !draft_options.length,
+                }"
+                :disabled="!draft_options.length"
+                @click="add_chest"
+              >
+                Add chest
+              </button>
+            </div>
           </div>
-          <div
-            v-for="(option, index) in draft.options"
-            :key="index"
-            class="flex items-center gap-2"
-          >
-            <span class="w-4 text-(--text-very-muted)">
-              {{ index ? "or" : "" }}
-            </span>
-            <select
-              v-model="option.label"
-              class="selector"
-              :aria-label="`Option ${index + 1} material`"
-            >
-              <option value="" disabled>Material</option>
-              <option v-for="label in labels" :key="label">{{ label }}</option>
-            </select>
-            <input
-              v-model="option.amount"
-              type="number"
-              min="1"
-              class="generic-input h-7! w-24 pl-1"
-              placeholder="Amount"
-              :aria-label="`Option ${index + 1} amount`"
-            />
-            <button
-              v-if="draft.options.length > 1"
-              class="generic-button"
-              @click="draft.options.splice(index, 1)"
-            >
-              Remove
-            </button>
-          </div>
-          <div class="flex gap-2">
-            <button
-              class="generic-button"
-              @click="draft.options.push({ label: '', amount: '' })"
-            >
-              Add option
-            </button>
-            <button
-              class="generic-button"
-              :class="{
-                'cursor-not-allowed! opacity-50': !draft_options.length,
-              }"
-              :disabled="!draft_options.length"
-              @click="add_chest"
-            >
-              Add chest
-            </button>
-          </div>
-        </div>
+        </ChestPanels>
 
         <div v-if="loose.length" class="card-shell card-body text-sm">
           <div class="card-title">Not included</div>

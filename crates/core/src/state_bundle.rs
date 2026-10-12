@@ -1,5 +1,5 @@
 use crate::advanced_honing::utils::{AdvConfig, AdvDistTriplet};
-use crate::chest::ChestState;
+use crate::chest::ChestStates;
 use crate::parser::PreparationOutput;
 use crate::probe::Probe;
 use crate::tuning::Tuning;
@@ -14,8 +14,8 @@ use std::f64::NAN;
 pub struct StateBundle {
     pub upgrade_arr: Vec<Upgrade>,
     pub special_state: Vec<usize>,
-    /// one per chest of prep_output.chests
-    pub chest_state_arr: Vec<ChestState>,
+    /// one per chest of prep_output.chests, under its key
+    pub chest_states: ChestStates,
     pub special_invalid_index: Option<usize>,
     pub latest_special_probs: Option<Vec<f64>>,
     pub metric_type: i64,
@@ -70,10 +70,10 @@ impl StateBundle {
             special_invalid_index: None,
             metric: -1.0,
             special_state: (0..upgrade_arr.len()).collect(),
-            chest_state_arr: prep_output
+            chest_states: prep_output
                 .chests
                 .iter()
-                .map(|chest| chest.default_state())
+                .map(|(key, chest)| (key.clone(), chest.default_state()))
                 .collect(),
             prep_output,
             upgrade_arr,
@@ -95,7 +95,7 @@ impl StateBundle {
             upgrade.state.clone_from(&s.state);
         }
         self.special_state.clone_from(&source.special_state);
-        self.set_chest_state(&source.chest_state_arr);
+        self.set_chest_state(&source.chest_states);
         self.metric = source.metric;
     }
 
@@ -107,13 +107,13 @@ impl StateBundle {
                 .map(|x| x.state.payload.clone())
                 .collect(),
             special_state: self.special_state.clone(),
-            chest_state_arr: self.chest_state_arr.clone(),
+            chest_states: self.chest_states.clone(),
         }
     }
 
-    pub fn set_chest_state(&mut self, source: &Vec<ChestState>) {
-        if self.chest_state_arr != *source {
-            self.chest_state_arr.clone_from(source);
+    pub fn set_chest_state(&mut self, source: &ChestStates) {
+        if self.chest_states != *source {
+            self.chest_states.clone_from(source);
             self.apply_chest_state(false);
         }
     }
@@ -124,7 +124,7 @@ impl StateBundle {
             upgrade.state.update_hash();
         }
         self.special_state.clone_from(&source.special_state);
-        self.set_chest_state(&source.chest_state_arr);
+        self.set_chest_state(&source.chest_states);
         self.metric = f64::from(*input_metric);
     }
 }
@@ -133,5 +133,5 @@ impl StateBundle {
 pub struct StateEssence {
     pub state_arr: Vec<Vec<OneState>>,
     pub special_state: Vec<usize>,
-    pub chest_state_arr: Vec<ChestState>,
+    pub chest_states: ChestStates,
 }

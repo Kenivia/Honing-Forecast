@@ -29,7 +29,7 @@ The binary is both driver and worker. The driver (always the current build) load
 
 ## Scenarios
 
-`test_cases/scenarios/*.json`, each `{ "steps": [payload, ...] }` with every step a full `Payload`. `pnpm arena dummy` writes the placeholder one; real cases are still to come. Its payloads carry four chest stacks: a three-way choice, an obtain-all with gold and a label of no tier, fractional amounts, and one that gives special leaps. A worker's `Essence` carries `chest_state_arr` next to `special_state`; one from a snapshot older than chests has none and the reference's default is kept.
+`test_cases/scenarios/*.json`, each `{ "steps": [payload, ...] }` with every step a full `Payload`. `pnpm arena dummy` writes the placeholder one; real cases are still to come. Its payloads carry four chest stacks, keyed "0" to "3": a three-way choice, an obtain-all with gold, fractional amounts, and one that gives special leaps. A worker's `Essence` carries `chest_states` next to `special_state`; one whose keys are not the reference's (a snapshot older than the keys has none) is left out and the reference's default is kept. A variant built before chests were keyed cannot read these payloads.
 
 Every scenario runs **cold** (each step alone) and **chained** (each step is handed a `Previous`: the last payload, the last best `StateBundle`, and the optimizer's own blob, capped at `Tuning::max_blob_bytes`). A step is seeded the same way in both, so until the optimizer reads `Previous` the two give identical results. That is the current state: the plumbing exists, `solve` ignores it.
 

@@ -17,8 +17,8 @@ How the frontend talks to Rust for the calculator. Scanner operations share the 
 - `material_labels`, the row order, and `materials`, a label-keyed map of the three owned amounts plus the taxed sell price and the buy price. Prices arrive already per-unit: the store resolves which bundle the user buys and whether converting up from a lower tier is cheaper. A material the user disabled is sent with zero prices, because it is not traded at all and its (effectively infinite) bound stock must not be valued;
 - `plans`, every valuation plan to evaluate, and `optimizer_plan`, an index into it. Index 0 is always the all-worthless plan, so the histogram always reports the gross spend alongside the user's plan. The user's plan is clamped here, because the control panel's dropdowns only *disable* the values that would make it decrease, and Rust asserts it does not;
 - tier, event flags and free-tap budget;
-- `chests`, the profile's chest stacks as count, band and options, every one of them (Rust takes an obtain-all as a chest of one option), and `special_label`, the tier's special leap label. For a Serca character every T4 material in an option is sent as the Serca one at the `CONVERTS_FROM` ratio, unrounded; Rust floors the total. Labels of another tier are sent and dropped there;
-- `chest_state_arr`, the last optimizer result's, fed back like the free-tap order so the histogram evaluates what the optimizer chose;
+- `chests`, the profile's chest stacks after `process_chests` (`Screen scanner/Manifest.md`, "On the calculator page"), as a record of count, band and options by the stack's key, and `special_label`, the tier's special leap label. Amounts are unrounded and Rust floors the total. Every label is of the tier: Rust panics on any other;
+- `chest_states`, the last optimizer result's, by the same keys, fed back like the free-tap order so the histogram evaluates what the optimizer chose. It arrives from Rust as a JS Map and goes back as one;
 - the previous free-tap order and the advanced-honing cache, fed back in to avoid recomputation.
 
 ## What must stay aligned with Rust

@@ -1,5 +1,5 @@
 use crate::advanced_honing::utils::{AdvConfig, AdvDistTriplet};
-use crate::chest::Chest;
+use crate::chest::Chests;
 use crate::constants::accessor::{
     get_artisan, get_data, get_event_extra_chance, get_normal_hone_chances, get_special_leap_cost,
 };
@@ -20,7 +20,7 @@ pub struct PreparationOutput {
     pub materials: Vec<OneMaterial>, // row order
     /// before any chest is opened
     pub base_materials: Vec<OneMaterial>,
-    pub chests: Vec<Chest>,
+    pub chests: Chests,
     /// what a chest's special leaps are called
     pub special_label: String,
     pub plans: Vec<ValuationPlan>,
@@ -53,7 +53,7 @@ impl PreparationOutput {
         optimizer_plan: usize,
         upgrade_info: Vec<OneUpgradeInput>,
         special_budget: i64,
-        chests: Vec<Chest>,
+        chests: Chests,
         special_label: String,
         express_event: bool,
         tier: usize,

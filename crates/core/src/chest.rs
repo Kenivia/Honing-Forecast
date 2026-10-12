@@ -17,6 +17,10 @@ pub struct Chest {
 
 /// how many chests of a stack go to each option
 pub type ChestState = Vec<i64>;
+/// Both keyed by the stack's content, as the frontend builds the key, so a state survives other
+/// stacks coming and going.
+pub type Chests = BTreeMap<String, Chest>;
+pub type ChestStates = BTreeMap<String, ChestState>;
 
 impl Chest {
     pub fn default_state(&self) -> ChestState {
@@ -55,26 +59,24 @@ impl Chest {
 }
 
 /// What the chests give when opened as the states say: per row and band, and special leaps.
-/// Amounts are not rounded. A label that is no row is not of this tier, and tradable gold is
-/// never counted.
+/// Amounts are not rounded. Every label is a row or the special leap: the frontend sends nothing
+/// else.
 pub fn resolve_chests(
-    chests: &[Chest],
-    chest_state_arr: &[ChestState],
+    chests: &Chests,
+    chest_states: &ChestStates,
     table: &MaterialTable,
     special_label: &str,
 ) -> (Vec<[f64; 3]>, f64) {
     let mut gained: Vec<[f64; 3]> = vec![[0.0; 3]; table.len()];
     let mut special: f64 = 0.0;
-    for (chest, state) in chests.iter().zip(chest_state_arr) {
-        for (option, &picked) in chest.options.iter().zip(state) {
+    for (key, chest) in chests {
+        for (option, &picked) in chest.options.iter().zip(&chest_states[key]) {
             for (label, amount) in option {
                 let total = amount * picked as f64;
                 if label == special_label {
                     special += total;
-                } else if label == "Gold" && chest.band == 2 {
-                    continue;
-                } else if let Some(row) = table.get_row(label) {
-                    gained[row][chest.band] += total;
+                } else {
+                    gained[table.get_row(label).unwrap()][chest.band] += total;
                 }
             }
         }
@@ -94,7 +96,7 @@ impl StateBundle {
         let prep = &mut self.prep_output;
         let (gained, special) = resolve_chests(
             &prep.chests,
-            &self.chest_state_arr,
+            &self.chest_states,
             &prep.table,
             &prep.special_label,
         );
@@ -122,11 +124,11 @@ impl StateBundle {
 
     /// placeholder for an optimizer move
     pub fn randomize_chest_state<R: Rng>(&mut self, rng: &mut R) {
-        self.chest_state_arr = self
+        self.chest_states = self
             .prep_output
             .chests
             .iter()
-            .map(|chest| chest.random_state(rng))
+            .map(|(key, chest)| (key.clone(), chest.random_state(rng)))
             .collect();
         self.apply_chest_state(false);
     }
@@ -147,28 +149,28 @@ mod tests {
             .map(|x| x.to_string())
             .collect();
         let table = MaterialTable::new(labels, 0);
-        let chests = vec![
-            Chest {
-                count: 10,
-                band: 1,
-                options: vec![bag(&[("Red", 0.5), ("Blue", 3.0)]), bag(&[("Leaps", 2.0)])],
-            },
-            Chest {
-                count: 4,
-                band: 2,
-                options: vec![bag(&[("Gold", 100.0), ("Special", 5.0), ("Other tier", 1.0)])],
-            },
-        ];
-        let states = vec![vec![3, 7], chests[1].default_state()];
+        let choice = Chest {
+            count: 10,
+            band: 1,
+            options: vec![bag(&[("Red", 0.5), ("Blue", 3.0)]), bag(&[("Leaps", 2.0)])],
+        };
+        let all = Chest {
+            count: 4,
+            band: 0,
+            options: vec![bag(&[("Gold", 100.0), ("Special", 5.0)])],
+        };
+        let states: ChestStates =
+            [("choice".to_string(), vec![3, 7]), ("all".to_string(), all.default_state())].into();
+        let chests: Chests = [("choice".to_string(), choice), ("all".to_string(), all)].into();
         let (gained, special) = resolve_chests(&chests, &states, &table, "Special");
         assert_eq!(gained[0], [0.0, 1.5, 0.0]);
         assert_eq!(gained[1], [0.0, 9.0, 0.0]);
         assert_eq!(gained[2], [0.0, 14.0, 0.0]);
-        assert_eq!(gained[5], [0.0; 3]);
+        assert_eq!(gained[5], [400.0, 0.0, 0.0]);
         assert_eq!(special, 20.0);
 
         let mut rng = rand::rng();
-        for chest in &chests {
+        for chest in chests.values() {
             assert!(chest.is_valid(&chest.random_state(&mut rng)));
         }
     }

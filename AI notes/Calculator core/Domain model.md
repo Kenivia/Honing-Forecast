@@ -12,7 +12,7 @@ How `crates/core` represents the problem. Field names on these structs are effec
   - Normal honing: for each tap, the set of juice/book ids used on that tap.
   - Advanced honing: two strategy indices (juice, scroll), each meaning "use it on the first N grace or non-grace taps".
 - **`Support`** (`support.rs`): for one upgrade and one material, the amount consumed at each outcome, paired with the outcome probabilities.
-- **`StateBundle`** (`state_bundle.rs`): one complete candidate solution: all upgrades, the free-tap order (`special_state`), how the chests are opened (`chest_state_arr`), the prepared inputs, caches and the last metric. `StateEssence` is the hashable subset (states, free-tap order, chest states).
+- **`StateBundle`** (`state_bundle.rs`): one complete candidate solution: all upgrades, the free-tap order (`special_state`), how the chests are opened (`chest_states`), the prepared inputs, caches and the last metric. `StateEssence` is the hashable subset (states, free-tap order, chest states).
 - **`Chest`** (`chest.rs`): one stack of identical chests still to be opened. See "Chests" below.
 
 ## Index conventions
@@ -45,11 +45,11 @@ A payload carries several plans. The optimizer uses `plans[optimizer_plan]`; the
 
 ## Chests
 
-A `Chest` is a count, the band it is owned in and its options, each a `label -> amount` map of what **one** chest gives. An obtain-all chest is a chest with one option; nothing tells the two apart, and no chest holds a chest (the frontend flattens them, `Screen scanner/Manifest.md`).
+A `Chest` is a count, the band it is owned in and its options, each a `label -> amount` map of what **one** chest gives. An obtain-all chest is a chest with one option; nothing tells the two apart, and no chest holds a chest (the frontend flattens them, `Screen scanner/Manifest.md`). `Chests` is a map of them by key. The key is the frontend's, built from the stack's band and options, and Rust never reads into it.
 
-- A **`ChestState`** is how one stack is opened: one number per option, summing to the count. `chest_state_arr` has one per chest, in the payload's order. A given state that does not fit its chest falls back to everything on the first option.
-- **`resolve_chests`** turns the states into amounts gained per row and band, plus special leaps. Amounts are fractional (a T4 material converted to Serca is a fifth of a unit) and are summed unrounded. A label that is no row of the tier is dropped, tradable gold is dropped as the payload builder drops it, and `special_label` names the label that is the free-tap budget.
-- **`apply_chest_state(update_materials)`** floors what was gained, adds it to `base_materials` and `base_special_budget`, and rebuilds `bands` and `special_budget`. **`prep_output.bands` and `special_budget` are therefore always those of the current chest states; `prep_output.materials` is not**: only the histogram reads it, so only the histogram passes `true`. Anything that changes `chest_state_arr` must call it; `set_chest_state` does, and skips the work when nothing changed.
+- A **`ChestState`** is how one stack is opened: one number per option, summing to the count. `ChestStates` (`chest_states`) has one per chest under the chest's key, so a state from an earlier run still finds its chest when others were added or removed. A given state that does not fit its chest (its count changed), or a chest with none given, falls back to everything on the first option.
+- **`resolve_chests`** turns the states into amounts gained per row and band, plus special leaps. Amounts are fractional (a T4 material converted to Serca is a fifth of a unit) and are summed unrounded. Every label must be a row of the tier or `special_label`, the label that is the free-tap budget: the frontend converts tiers and drops the rest (`process_chests`), and anything else panics.
+- **`apply_chest_state(update_materials)`** floors what was gained, adds it to `base_materials` and `base_special_budget`, and rebuilds `bands` and `special_budget`. **`prep_output.bands` and `special_budget` are therefore always those of the current chest states; `prep_output.materials` is not**: only the histogram reads it, so only the histogram passes `true`. Anything that changes `chest_states` must call it; `set_chest_state` does, and skips the work when nothing changed.
 - `special_cache` is keyed by the free-tap budget and then the order, so a chest state that moves the budget does not read another budget's probabilities.
 
 ## Probability model

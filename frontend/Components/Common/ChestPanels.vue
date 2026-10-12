@@ -1,14 +1,15 @@
 <script setup lang="ts">
 import { computed } from "vue";
-import { BAND_COLORS, MATERIALS } from "@/Utils/Constants";
+import { BAND_COLORS } from "@/Utils/Constants";
 import { get_icon_path } from "@/Utils/Helpers";
-import type { ManifestChest } from "@/Utils/Chest";
+import type { Chest } from "@/Utils/Chest";
 
-// The chests still to be opened, as two lists: those with a choice to make, and those with
-// none (obtain-all, or one option).
+// The chests still to be opened, as two lists. Which chest goes where is the page's to say. The
+// slot is the foot of the selection panel.
 const props = defineProps<{
-  chests: ManifestChest[];
-  tier: number;
+  selection: Chest[];
+  obtain_all: Chest[];
+  obtain_all_title?: string;
   editing?: boolean;
 }>();
 const emit = defineEmits<{
@@ -18,23 +19,11 @@ const emit = defineEmits<{
 
 const BANDS = ["Char bound", "Roster bound", "Tradable"];
 
-const on_tier = computed(() =>
-  props.chests.filter((chest) =>
-    chest.options.some((option) =>
-      Object.keys(option).some((label) =>
-        MATERIALS[label]?.tiers.includes(props.tier),
-      ),
-    ),
-  ),
-);
 const panels = computed(() => [
+  { title: "Selection chests", chests: props.selection },
   {
-    title: "Selection chests",
-    chests: on_tier.value.filter((chest) => chest.options.length > 1),
-  },
-  {
-    title: "Obtain-all chests",
-    chests: on_tier.value.filter((chest) => chest.options.length === 1),
+    title: props.obtain_all_title ?? "Obtain-all chests",
+    chests: props.obtain_all,
   },
 ]);
 
@@ -45,7 +34,7 @@ const amount_text = (amount: number) =>
 <template>
   <div class="flex flex-wrap items-start gap-3">
     <div
-      v-for="panel in panels"
+      v-for="(panel, at) in panels"
       :key="panel.title"
       class="card-shell card-body text-sm"
       role="group"
@@ -53,7 +42,7 @@ const amount_text = (amount: number) =>
     >
       <div class="card-title">{{ panel.title }}</div>
       <span v-if="!panel.chests.length" class="text-(--text-muted)">
-        None for this tier.
+        None.
       </span>
       <div
         v-for="chest in panel.chests"
@@ -105,6 +94,7 @@ const amount_text = (amount: number) =>
           x
         </button>
       </div>
+      <slot v-if="at === 0" />
     </div>
   </div>
 </template>

@@ -10,7 +10,7 @@ Decision variables:
 
 - each upgrade's `State` (which juices and books on which taps; or the advanced-honing strategy indices);
 - the free-tap order, `special_state`;
-- how each chest stack is opened, `chest_state_arr`. **Placeholder**: `start_solver` assigns a random valid state once (`randomize_chest_state`, from the solver's rng, drawing nothing for a chest with no choice) and no move changes it afterwards. It travels with the state everywhere `special_state` does.
+- how each chest stack is opened, `chest_states`. **Placeholder**: `start_solver` assigns a random valid state once (`randomize_chest_state`, from the solver's rng, drawing nothing for a chest with no choice) and no move changes it afterwards. It travels with the state everywhere `special_state` does.
 
 Things worth knowing about its shape:
 

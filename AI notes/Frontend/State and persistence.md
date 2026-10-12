@@ -6,7 +6,7 @@
 
 - **Roster setup**: manage characters and rosters, set each roster's region, import characters.
 - **Market & mats**: roster-owned and tradable materials, market prices.
-- **Character page**: one per character, with sub-pages as child routes. The calculator sub-page is the main one: upgrade tickbox grids, material budgets and distribution graphs, the chest panels (read-only, empty until a scanner export) and a provisional panel of how the optimizer opened them (`ChestState.vue`), optimizer controls, then the generated instructions.
+- **Character page**: one per character, with sub-pages as child routes. The calculator sub-page is the main one: upgrade tickbox grids, material budgets and distribution graphs, the chest panels (read-only, empty until a scanner export, showing the chests as `process_chests` leaves them for the character's tier) and a provisional panel of how those with a choice are opened (`ChestState.vue`, read off the histogram's `state_bundle.chest_states`, so it follows the optimizer's interim states like the graphs do), optimizer controls, then the generated instructions.
 - **Change logs**.
 
 The character page uses nested routes: `CharView` owns the sidebar and renders the sub-page through `<RouterView/>`.
@@ -57,7 +57,7 @@ Runtime worker bundles are keyed by `char_name`. `App.vue` watches the list of n
 
 **Changing the saved shape** means bumping `STORAGE_VERSION`, setting `STORAGE_KEY` to the new version's key, moving the old key to the top of `LEGACY_KEYS`, and adding one entry to `MIGRATIONS`. Adding a material no longer needs a migration at all: an unknown label in the save is dropped, a missing one falls back to the template value from `Constants.ts`.
 
-A profile's `chests` are saved as they are (title, band, count, options by label). They arrived during V8, which is not released: V7 had none, so the migration writes an empty list and a save without the field loads as empty.
+A profile's `chests` are saved as the scanner exported them (title, band, count, options by label, `obtain_all`), with both tiers in them; what the calculator uses is derived on the page. They arrived during V8, which is not released: V7 had none, so the migration writes an empty list and a save without the field loads as empty.
 
 **Do not trust a pre-V8 column's own `keys` array.** Nothing before V8 read it, so it drifted out of order in real saves while `data` stayed positional against `ALL_LABELS`. `migrate_7_to_8` maps by position for that reason.
 

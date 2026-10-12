@@ -1,6 +1,6 @@
 //! Payload is how js and rust communicates, we also use payload as our test cases in arena
 use crate::advanced_honing::utils::{AdvConfig, AdvDistTriplet};
-use crate::chest::{Chest, ChestState};
+use crate::chest::{ChestStates, Chests};
 use crate::materials::{OneMaterial, ValuationPlan};
 use crate::parser::{OneUpgradeInput, PreparationOutput};
 use crate::state_bundle::StateBundle;
@@ -23,11 +23,11 @@ pub struct Payload {
     pub special_budget: i64,
 
     pub special_state: Option<Vec<usize>>,
-    /// every chest stack as is, obtain-all and one-option ones included
+    /// every chest stack, one-option ones included, already of this tier
     #[serde(default)]
-    pub chests: Vec<Chest>,
+    pub chests: Chests,
     #[serde(default)]
-    pub chest_state_arr: Option<Vec<ChestState>>,
+    pub chest_states: Option<ChestStates>,
     #[serde(default)]
     pub special_label: String,
     pub tier: usize,
@@ -55,8 +55,8 @@ impl StateBundle {
         express_event: bool,
         tier: usize,
         special_state: Option<Vec<usize>>,
-        chests: Vec<Chest>,
-        chest_state_arr: Option<Vec<ChestState>>,
+        chests: Chests,
+        chest_states: Option<ChestStates>,
         special_label: String,
         min_resolution: usize,
         num_threads: usize,
@@ -82,17 +82,17 @@ impl StateBundle {
         );
         let u_len = upgrade_arr.len();
         // web_sys::console::log_1(&"2".into());
-        let given = chest_state_arr.unwrap_or_default();
-        let chest_state_arr: Vec<ChestState> = prep_output
+        let given = chest_states.unwrap_or_default();
+        let chest_states: ChestStates = prep_output
             .chests
             .iter()
-            .enumerate()
-            .map(|(index, chest)| {
-                given
-                    .get(index)
+            .map(|(key, chest)| {
+                let state = given
+                    .get(key)
                     .filter(|state| chest.is_valid(state))
                     .cloned()
-                    .unwrap_or_else(|| chest.default_state())
+                    .unwrap_or_else(|| chest.default_state());
+                (key.clone(), state)
             })
             .collect();
 
@@ -105,7 +105,7 @@ impl StateBundle {
             } else {
                 special_state.unwrap()
             },
-            chest_state_arr,
+            chest_states,
             special_invalid_index: None,
             metric_type,
             metric: -1.0,
@@ -133,7 +133,7 @@ impl StateBundle {
             payload.tier,
             payload.special_state,
             payload.chests,
-            payload.chest_state_arr,
+            payload.chest_states,
             payload.special_label,
             payload.min_resolution,
             payload.num_threads,

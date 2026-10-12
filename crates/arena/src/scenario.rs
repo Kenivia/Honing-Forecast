@@ -118,13 +118,17 @@ pub fn dummy() -> Scenario {
         special_budget: 600,
         special_state: None,
         // a choice, an obtain-all, fractional amounts as a conversion leaves them, and free taps
-        chests: vec![
+        chests: [
             chest(120, 1, &[&[("Red", 500.0)], &[("Blue", 1500.0)], &[("Leapstones", 20.0), ("Shards", 3000.0)]]),
-            chest(7, 0, &[&[("Fusion", 30.0), ("Gold", 5000.0), ("Not of this tier", 9.0)]]),
-            chest(33, 2, &[&[("Juice 0", 2.5)], &[("Juice 1", 2.5)], &[("Gold", 1000.0)]]),
+            chest(7, 0, &[&[("Fusion", 30.0), ("Gold", 5000.0)]]),
+            chest(33, 2, &[&[("Juice 0", 2.5)], &[("Juice 1", 2.5)]]),
             chest(40, 0, &[&[("Special Leap", 12.0)], &[("Leapstones", 6.4)]]),
-        ],
-        chest_state_arr: None,
+        ]
+        .into_iter()
+        .enumerate()
+        .map(|(index, chest)| (index.to_string(), chest))
+        .collect(),
+        chest_states: None,
         special_label: "Special Leap".to_string(),
         tier: 0,
         express_event: false,

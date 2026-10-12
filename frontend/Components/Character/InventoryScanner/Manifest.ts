@@ -5,7 +5,7 @@ import {
   NUM_BANDS,
 } from "@/Utils/Constants";
 import { parse_locale_int } from "@/Utils/InputColumn";
-import { type Bag, type ManifestChest, merge, to_serca } from "@/Utils/Chest";
+import { add_stack, type Bag, type ManifestChest, merge } from "@/Utils/Chest";
 import { ChestKind } from "./LoadStorage";
 import {
   added_chests,
@@ -141,17 +141,24 @@ const add_loose = (list: LooseChest[], title: string, count: number) => {
 export const scanned = computed(() => {
   const owned: Record<string, (number | null)[]> = {};
   for (const label of ALL_MATERIAL_LABELS) owned[label] = [null, null, null];
-  // an obtain-all chest is one with a single option
   const grouped = new Map<string, ManifestChest>();
   const random: LooseChest[] = [];
   const unknown: LooseChest[] = [];
   const missing: MissingSlot[] = [];
 
-  function group(title: string, band: number, count: number, options: Bag[]) {
-    const key = `${title}|${band}|${JSON.stringify(options)}`;
-    const old = grouped.get(key);
-    if (old) old.count += count;
-    else grouped.set(key, { key, title, band, count, options });
+  function group(
+    title: string,
+    band: number,
+    count: number,
+    options: Bag[],
+    obtain_all: boolean,
+  ) {
+    // an obtain-all and a select-one are never one stack
+    add_stack(
+      grouped,
+      { title, band, count, options, obtain_all },
+      `${obtain_all}|`,
+    );
   }
 
   // What is inside a chest takes the chest's band, or its own where it is bound more loosely. No
@@ -164,7 +171,7 @@ export const scanned = computed(() => {
       const options = chest.contents.flatMap(([inner, each, id]) =>
         alternatives(inner, each, id),
       );
-      if (options.length) group(title, band, count, options);
+      if (options.length) group(title, band, count, options, false);
       return;
     }
     // an obtain-all inside is part of this chest; any other chest inside is opened in turn
@@ -184,7 +191,7 @@ export const scanned = computed(() => {
     gather(chest, 1, band);
     // listed once for each band it gives into
     bags.forEach((bag, own) => {
-      if (Object.keys(bag).length) group(title, own, count, [bag]);
+      if (Object.keys(bag).length) group(title, own, count, [bag], true);
     });
   }
 
@@ -290,7 +297,8 @@ const cell_value = (label: string, band: number) =>
   parse_locale_int(cell_text(label, band)) || 0;
 
 // What the rest of the site takes: overrides applied, then conversion. Converted tradables come
-// out roster-bound. Chests are not opened here: they are passed on whole.
+// out roster-bound. Chests are not opened or converted here: they are passed on whole, with
+// both tiers in them.
 export const manifest = computed(() => {
   const bands = [...Array(NUM_BANDS).keys()];
   const materials: Record<string, number[]> = {};
@@ -313,13 +321,6 @@ export const manifest = computed(() => {
   for (const label of ALL_MATERIAL_LABELS) {
     for (const band of bands) materials[label][band] += incoming[label][band];
   }
-  const chests = kept([...scanned.value.chests, ...added_chests.value]).map(
-    (chest) => ({
-      ...chest,
-      options: chest.options.map((option) =>
-        convert.value[chest.band] ? to_serca(option) : option,
-      ),
-    }),
-  );
+  const chests = kept([...scanned.value.chests, ...added_chests.value]);
   return { ...scanned.value, materials, incoming, chests };
 });

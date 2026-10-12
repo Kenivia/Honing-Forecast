@@ -96,7 +96,7 @@ const tickbox_tooltip = `Untick the box if you don't plan on buying that materia
 const total_market_gold_text = "Average tradable gold spent:";
 const total_market_gold_suffix = "(raw  +  buying needed mats & juice)";
 const total_tradable_gold_text = "Avg value of leftover mats:";
-const total_tradable_gold_suffix = "(credited against the above)";
+const total_tradable_gold_suffix = "";
 
 // Plan 0 credits nothing, so it is the gross spend; plan 1 is the user's, which is what
 // the optimizer minimises. The gap between them is what the leftovers are worth.

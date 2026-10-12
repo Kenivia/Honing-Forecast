@@ -20,7 +20,7 @@ import {
 import { input_column_to_num } from "@/Utils/InputColumn";
 import { storeToRefs } from "pinia";
 import { useRuntimeStore } from "@/Stores/RuntimeState";
-import { Bag, to_serca } from "@/Utils/Chest";
+import { Bag, process_chests } from "@/Utils/Chest";
 
 // I don't think it's possible to directly export this struct from rust to javascript because of all the vectors,
 // so it's copied & pasted here
@@ -44,10 +44,10 @@ export interface Payload {
   upgrade_info: OneUpgradeInput[];
   special_budget: number;
   special_state?: number[];
-  // every chest stack as is; Rust treats an obtain-all as a chest with one option
-  chests: { count: number; band: number; options: Bag[] }[];
-  // how many of each stack go to each option, from the last optimizer run
-  chest_state_arr?: number[][];
+  // every chest stack of process_chests, by its key
+  chests: Record<string, { count: number; band: number; options: Bag[] }>;
+  // how many of each stack go to each option, from the last optimizer run, by the same key
+  chest_states?: Map<string, number[]>;
   // what a chest's special leaps are called
   special_label: string;
   tier: number;
@@ -340,16 +340,14 @@ export function build_payload(override?: OptimizerOverride): Payload {
       runtime.optimizer.result?.upgrade_arr,
       override?.special,
     ),
-    // A Serca character uses T4 materials as Serca ones. Amounts stay fractional and Rust
-    // floors the total. A label that is not of this tier is dropped there.
-    chests: active_profile.value.chests.map((chest) => ({
-      count: chest.count,
-      band: chest.band,
-      options: chest.options.map((option) =>
-        tier === 1 ? to_serca(option) : { ...option },
-      ),
-    })),
-    chest_state_arr: toRaw(runtime.optimizer.result?.chest_state_arr),
+    // Amounts stay fractional and Rust floors the total.
+    chests: Object.fromEntries(
+      process_chests(active_profile.value.chests, tier).map((chest) => [
+        chest.key,
+        { count: chest.count, band: chest.band, options: chest.options },
+      ]),
+    ),
+    chest_states: toRaw(runtime.optimizer.result?.chest_states),
     special_label: SPECIAL_LEAP_LABELS[tier],
     adv_cache: toRaw(runtime.adv_cache),
   };
