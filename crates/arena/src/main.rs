@@ -9,6 +9,7 @@ mod db;
 mod generate;
 mod monte_carlo;
 mod one_adv_sim;
+mod replan;
 mod report;
 mod scenario;
 mod worker;
@@ -188,6 +189,11 @@ enum Cmd {
         rows: bool,
         #[arg(long, default_value_t = 1e-4)]
         eps: f64,
+    },
+    /// what running the optimizer again after every upgrade is worth, on each scenario's first step
+    Replan {
+        #[command(flatten)]
+        args: replan::Args,
     },
     /// fill in `gross` and `flow` for the runs recorded before there were any
     Rescore,
@@ -556,6 +562,18 @@ fn main() {
             println!("{} scenarios in {path:?}", lines.len() - 2);
         }
         Cmd::Carry { rows, eps } => carry::report(&db::open(&cli.db), &scenarios(&cli, ""), *rows, *eps),
+        Cmd::Replan { args } => {
+            let conn = db::open(&cli.db);
+            let session = args.session.unwrap_or_else(|| {
+                let line: Vec<String> = std::env::args().skip(1).collect();
+                let line = line.join(" ");
+                let old = args.resume.then(|| db::session_with_args(&conn, &line)).flatten();
+                let session = old.unwrap_or_else(|| db::add_session(&conn, git(&["rev-parse", "HEAD"]).trim(), &line));
+                replan::run(db::open(&cli.db), session, &scenarios(&cli, &args.filter), args);
+                session
+            });
+            replan::report(&conn, session);
+        }
         Cmd::Rescore => {
             let conn = db::open(&cli.db);
             let todo: Vec<(i64, i64, String)> = conn

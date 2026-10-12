@@ -431,8 +431,120 @@ fn spend(mat: &mut OneMaterial, mut amount: f64) {
     }
 }
 
-/// The player does the upgrade the plan puts first, and reports how it went: done, or some
-/// failed taps in. Follows the rules `monte_carlo::simulate` checks the evaluator against.
+/// The upgrade to do next for the free taps to go where the plan wants them: the lowest level
+/// still to do on the piece its free tap order starts with.
+pub fn next_up(best: &StateBundle) -> usize {
+    let top = &best.upgrade_arr[best.special_state[0]];
+    (0..best.upgrade_arr.len())
+        .filter(|&index| {
+            let this = &best.upgrade_arr[index];
+            this.piece_index == top.piece_index && this.is_normal_honing == top.is_normal_honing
+        })
+        .min_by_key(|&index| best.upgrade_arr[index].upgrade_index)
+        .unwrap()
+}
+
+/// what a normal upgrade uses over this many paid taps on its state, the unlock included
+pub fn normal_used(best: &StateBundle, index: usize, taps: usize) -> Vec<f64> {
+    let this = &best.upgrade_arr[index];
+    let prep = &best.prep_output;
+    let mut used: Vec<f64> = vec![0.0; prep.table.len()];
+    if !this.unlocked {
+        used[..NUM_BASE_MATS].copy_from_slice(&this.unlock_costs);
+    }
+    for row in 0..NUM_BASE_MATS {
+        used[row] += this.costs[row] * taps as f64;
+    }
+    // the pity tap takes no juice
+    for count in (0..taps).filter(|count| count + 2 < this.normal_dist.len()) {
+        for &id in this.state.get(count).into_iter().flatten() {
+            used[prep.table.juice_row(id)] +=
+                prep.juice_info.access(id, this.piece_type_usize, this.upgrade_index).normal_amt_used as f64;
+        }
+    }
+    used
+}
+
+/// what one run of an advanced upgrade uses
+fn adv_used<R: Rng>(best: &StateBundle, index: usize, rng: &mut R) -> Vec<f64> {
+    let this = &best.upgrade_arr[index];
+    let prep = &best.prep_output;
+    let juice_info = &prep.juice_info;
+    let mut used: Vec<f64> = vec![0.0; prep.table.len()];
+    if this.adv_config.start_xp == 0 {
+        used[..NUM_BASE_MATS].copy_from_slice(&this.unlock_costs);
+    }
+    let (taps, juice, scroll) = one_sim(rng, &this.adv_config);
+    for row in 0..NUM_BASE_MATS {
+        used[row] += this.costs[row] * taps as f64;
+    }
+    for &id in &juice_info.adv_uindex_to_id[this.piece_type_usize][this.upgrade_index] {
+        let amount = juice_info.access(id, this.piece_type_usize, this.upgrade_index).adv_amt_used;
+        let times = if id <= 1 { juice } else { scroll };
+        used[prep.table.juice_row(id)] += (amount * times as i64) as f64;
+    }
+    used
+}
+
+pub fn pay(payload: &mut Payload, best: &StateBundle, used: &[f64]) {
+    for (label, amount) in best.prep_output.table.labels.iter().zip(used) {
+        spend(payload.materials.get_mut(label).unwrap(), *amount);
+    }
+}
+
+/// The player does this upgrade, and reports how it went: done, free tapped, or with
+/// `partials` sometimes only some failed taps in. Follows the rules `monte_carlo::simulate`
+/// checks the evaluator against.
+pub fn play<R: Rng>(
+    payload: &mut Payload,
+    best: &StateBundle,
+    index: usize,
+    partials: bool,
+    rng: &mut R,
+) -> &'static str {
+    let this = &best.upgrade_arr[index];
+    let mut kind = "done";
+
+    let used = if !this.is_normal_honing {
+        adv_used(best, index, rng)
+    } else {
+        let affordable = payload.special_budget / this.special_cost;
+        let mut free_tapped = false;
+        if index == best.special_state[0] && affordable > 0 {
+            let tries = (rng.random::<f64>().log(1.0 - this.base_chance).ceil() as i64).max(1);
+            free_tapped = tries <= affordable;
+            payload.special_budget -= tries.min(affordable) * this.special_cost;
+        }
+        if free_tapped {
+            kind = "free";
+            normal_used(best, index, 0)
+        } else {
+            let succeeds_on = WeightedIndex::new(this.normal_dist.iter()).unwrap().sample(rng);
+            let taps = if partials && succeeds_on > 1 && rng.random_bool(0.25) {
+                kind = "partial";
+                rng.random_range(1..succeeds_on)
+            } else {
+                succeeds_on
+            };
+            if kind == "partial" {
+                let (artisan, num_taps) = after_failed(this, best, taps);
+                let info = &mut payload.upgrade_info[index];
+                info.starting_artisan = Some(artisan);
+                info.starting_num_taps = Some(num_taps);
+                info.unlocked = true;
+            }
+            normal_used(best, index, taps)
+        }
+    };
+
+    pay(payload, best, &used);
+    if kind != "partial" {
+        payload.upgrade_info.remove(index);
+    }
+    kind
+}
+
+/// the player solves the payload and plays the result
 fn tap<R: Rng>(payload: &mut Payload, rng: &mut R) -> &'static str {
     let mut state_bundle = StateBundle::init_from_payload(payload.clone());
     state_bundle.tuning.max_iters = 6000;
@@ -442,88 +554,7 @@ fn tap<R: Rng>(payload: &mut Payload, rng: &mut R) -> &'static str {
     }));
     let mut best = solved.unwrap_or_else(|_| StateBundle::init_from_payload(payload.clone()));
     best.metric = best.metric_router(&mut Probe::default());
-
-    let index = best
-        .special_state
-        .iter()
-        .copied()
-        .find(|&index| {
-            let this = &best.upgrade_arr[index];
-            !best.upgrade_arr.iter().any(|other| {
-                other.piece_index == this.piece_index
-                    && other.is_normal_honing == this.is_normal_honing
-                    && other.upgrade_index < this.upgrade_index
-            })
-        })
-        .unwrap();
-    let this = &best.upgrade_arr[index];
-    let prep = &best.prep_output;
-    let juice_info = &prep.juice_info;
-    let mut used: Vec<f64> = vec![0.0; prep.table.len()];
-    let mut kind = "done";
-
-    if this.is_normal_honing {
-        if !this.unlocked {
-            used[..NUM_BASE_MATS].copy_from_slice(&this.unlock_costs);
-        }
-        let affordable = payload.special_budget / this.special_cost;
-        let mut free_tapped = false;
-        if index == best.special_state[0] && affordable > 0 {
-            let tries = (rng.random::<f64>().log(1.0 - this.base_chance).ceil() as i64).max(1);
-            free_tapped = tries <= affordable;
-            payload.special_budget -= tries.min(affordable) * this.special_cost;
-            kind = "free";
-        }
-        if !free_tapped {
-            let len = this.normal_dist.len();
-            let succeeds_on = WeightedIndex::new(this.normal_dist.iter()).unwrap().sample(rng);
-            let taps = if succeeds_on > 1 && rng.random_bool(0.25) {
-                kind = "partial";
-                rng.random_range(1..succeeds_on)
-            } else {
-                kind = "done";
-                succeeds_on
-            };
-            for row in 0..NUM_BASE_MATS {
-                used[row] += this.costs[row] * taps as f64;
-            }
-            // the pity tap takes no juice
-            for count in (0..taps).filter(|count| count + 2 < len) {
-                for &id in this.state.get(count).into_iter().flatten() {
-                    used[prep.table.juice_row(id)] +=
-                        juice_info.access(id, this.piece_type_usize, this.upgrade_index).normal_amt_used as f64;
-                }
-            }
-            if kind == "partial" {
-                let (artisan, num_taps) = after_failed(this, &best, taps);
-                let info = &mut payload.upgrade_info[index];
-                info.starting_artisan = Some(artisan);
-                info.starting_num_taps = Some(num_taps);
-                info.unlocked = true;
-            }
-        }
-    } else {
-        if this.adv_config.start_xp == 0 {
-            used[..NUM_BASE_MATS].copy_from_slice(&this.unlock_costs);
-        }
-        let (taps, juice, scroll) = one_sim(rng, &this.adv_config);
-        for row in 0..NUM_BASE_MATS {
-            used[row] += this.costs[row] * taps as f64;
-        }
-        for &id in &juice_info.adv_uindex_to_id[this.piece_type_usize][this.upgrade_index] {
-            let amount = juice_info.access(id, this.piece_type_usize, this.upgrade_index).adv_amt_used;
-            let times = if id <= 1 { juice } else { scroll };
-            used[prep.table.juice_row(id)] += (amount * times as i64) as f64;
-        }
-    }
-
-    for (label, amount) in prep.table.labels.iter().zip(used) {
-        spend(payload.materials.get_mut(label).unwrap(), amount);
-    }
-    if kind != "partial" {
-        payload.upgrade_info.remove(index);
-    }
-    kind
+    play(payload, &best, next_up(&best), true, rng)
 }
 
 fn other_change<R: Rng>(payload: &mut Payload, refs: &Refs, kind: &str, rng: &mut R) {

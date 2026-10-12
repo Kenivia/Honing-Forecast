@@ -166,7 +166,7 @@ fn simulate<R: Rng>(data_size: usize, state_bundle: &StateBundle, rng: &mut R) -
 }
 
 /// gold value of having used this much, the function the evaluator takes the mean of
-fn gold(used: f64, bands: &[(f64, f64)]) -> f64 {
+pub fn gold(used: f64, bands: &[(f64, f64)]) -> f64 {
     let (last_thresh, last_price) = *bands.last().unwrap();
     let mut out = last_price * (last_thresh - used);
     for pair in bands.windows(2) {

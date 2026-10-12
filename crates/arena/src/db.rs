@@ -27,6 +27,9 @@ CREATE TABLE IF NOT EXISTS trace_text(run_id INTEGER, iter INTEGER, key TEXT, va
 CREATE TABLE IF NOT EXISTS mc(
     run_id INTEGER, material TEXT, analytic REAL, mean REAL, se REAL, z REAL,
     pass INTEGER, samples INTEGER);
+CREATE TABLE IF NOT EXISTS replan(
+    session_id INTEGER, scenario TEXT, path INTEGER, step INTEGER, upgrades_left INTEGER,
+    kind TEXT, carried REAL, resolved REAL, flow REAL, carried_exact REAL, resolved_exact REAL);
 CREATE INDEX IF NOT EXISTS run_session ON run(session_id);
 CREATE INDEX IF NOT EXISTS run_step ON run(step_id);
 CREATE INDEX IF NOT EXISTS trace_run ON trace(run_id, key);
@@ -199,6 +202,71 @@ pub fn add_run(conn: &Connection, key: &RunKey, out: &StepResult, (metric_ref, g
         ])
         .unwrap();
     }
+}
+
+/// One re-plan of a path: what the plan carried over was worth and what the new one is.
+/// Path -1 is the scenario's starting plan.
+pub struct ReplanRow {
+    pub path: i64,
+    pub step: usize,
+    pub upgrades_left: usize,
+    pub kind: String,
+    pub carried: f64,
+    pub resolved: f64,
+    pub flow: Option<f64>,
+    /// the two again without the saddlepoint approximation, where that was affordable
+    pub exact: Option<(f64, f64)>,
+}
+
+pub fn add_replan(conn: &mut Connection, session_id: i64, scenario: &str, rows: &[ReplanRow]) {
+    let transaction = conn.transaction().unwrap();
+    for row in rows {
+        transaction
+            .execute(
+                "INSERT INTO replan VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11)",
+                params![
+                    session_id,
+                    scenario,
+                    row.path,
+                    row.step as i64,
+                    row.upgrades_left as i64,
+                    row.kind,
+                    row.carried,
+                    row.resolved,
+                    row.flow,
+                    row.exact.map(|x| x.0),
+                    row.exact.map(|x| x.1)
+                ],
+            )
+            .unwrap();
+    }
+    transaction.commit().unwrap();
+}
+
+pub fn replan_rows(conn: &Connection, session_id: i64) -> Vec<(String, ReplanRow)> {
+    conn.prepare(
+        "SELECT scenario, path, step, upgrades_left, kind, carried, resolved, flow, carried_exact, resolved_exact FROM replan
+         WHERE session_id = ?1 ORDER BY scenario, path, step",
+    )
+    .unwrap()
+    .query_map([session_id], |row| {
+        Ok((
+            row.get(0)?,
+            ReplanRow {
+                path: row.get(1)?,
+                step: row.get::<_, i64>(2)? as usize,
+                upgrades_left: row.get::<_, i64>(3)? as usize,
+                kind: row.get(4)?,
+                carried: row.get(5)?,
+                resolved: row.get(6)?,
+                flow: row.get(7)?,
+                exact: row.get::<_, Option<f64>>(8)?.zip(row.get(9)?),
+            },
+        ))
+    })
+    .unwrap()
+    .map(|row| row.unwrap())
+    .collect()
 }
 
 /// a job that died; whatever steps it finished are already in
