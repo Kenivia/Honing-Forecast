@@ -2,7 +2,7 @@
 //! Computes K(s), the cumulant generating function, and its derivatives(up to the 4th)
 //!
 //! There was an attempt at parallelism here, but it's way too fine-grained for rayon. I'm not sure if this kstuple & fold business is any good for serial code but it cant be that bad so i cbb changing it back
-use crate::performance::Performance;
+use crate::probe::{Counter, Probe};
 use crate::state_bundle::StateBundle;
 use crate::support::Support;
 use std::f64::NAN;
@@ -36,9 +36,9 @@ impl StateBundle {
         simple_mean_log: f64,
         support_index: i64,
         skip_count: usize,
-        performance: &mut Performance,
+        probe: &mut Probe,
     ) -> KsTuple {
-        performance.ks_count += 1;
+        probe.count(Counter::Ks);
         if compute_biased {
             // This is for E(X'). See one_dimension_average_gold
             let ksx = self.cumulant_01234(support_index, skip_count, theta);

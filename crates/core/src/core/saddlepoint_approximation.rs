@@ -1,10 +1,10 @@
-use super::brute::MAX_BRUTE_SIZE;
 use crate::constants::FLOAT_TOL;
 use crate::core::cumulants::KsTuple;
 use crate::my_dbg;
-use crate::performance::Performance;
+use crate::probe::{Counter, Probe};
 use crate::state_bundle::StateBundle;
 use crate::support::Support;
+use crate::tuning::RootFinder;
 use statrs::distribution::{Continuous, ContinuousCDF, Normal};
 use std::f64::INFINITY;
 
@@ -56,7 +56,7 @@ impl StateBundle {
                 out = a.len();
             } else {
                 out *= a.len();
-                if out >= MAX_BRUTE_SIZE {
+                if out >= self.tuning.max_brute_size {
                     return true;
                 }
             }
@@ -71,16 +71,16 @@ impl StateBundle {
         inp_budget: f64,
         compute_biased: bool,
         simple_mean_log: f64,
-        performance: &mut Performance,
+        probe: &mut Probe,
     ) -> f64 {
         let (min_value, max_value) = self.find_min_max(support_index, skip_count);
         if inp_budget > max_value - FLOAT_TOL {
-            performance.trivial_count += 1;
+            probe.count(Counter::Trivial);
             return 1.0;
         }
 
         if inp_budget < min_value - FLOAT_TOL {
-            performance.trivial_count += 1;
+            probe.count(Counter::Trivial);
             return 0.0;
         };
         if self.support_size_too_big(support_index, skip_count) {
@@ -122,7 +122,7 @@ impl StateBundle {
                     simple_mean_log,
                     support_index,
                     skip_count,
-                    performance,
+                    probe,
                 );
                 let mean_var_skew: (f64, f64, f64) = (res.1, res.2, res.3);
                 let (soft_low_limit, guess, soft_high_limit) =
@@ -137,13 +137,13 @@ impl StateBundle {
                     compute_biased,
                     simple_mean_log,
                     mean_var_skew,
-                    performance,
+                    probe,
                     (soft_low_limit, guess, soft_high_limit),
                     min_delta,
                 );
             }
         }
-        performance.brute_count += 1;
+        probe.count(Counter::Brute);
 
         self.brute_success_prob(
             support_index,
@@ -166,15 +166,16 @@ impl StateBundle {
         compute_biased: bool,
         simple_mean_log: f64,
         mean_var: (f64, f64, f64),
-        performance: &mut Performance,
+        probe: &mut Probe,
         guess_triplet: (f64, f64, f64),
         min_delta: f64,
     ) -> f64 {
-        performance.sa_count += 1;
+        probe.count(Counter::Saddlepoint);
         let k1_zero = mean_var.0;
         let (_, guess, _) = guess_triplet;
 
-        let result_opt = self.householder(
+        let result_opt = match self.tuning.root_finder {
+            RootFinder::Householder => self.householder(
             compute_biased,
             simple_mean_log,
             support_index,
@@ -184,8 +185,9 @@ impl StateBundle {
             min_value,
             max_value,
             min_delta,
-            performance,
-        );
+            probe,
+        ),
+        };
 
         let result: (f64, f64, usize, KsTuple) = result_opt.unwrap();
         let theta_hat = result.0;
@@ -209,7 +211,7 @@ impl StateBundle {
             || !(-FLOAT_TOL..=1.0 + FLOAT_TOL).contains(&actual_out)
             || !actual_out.is_finite()
         {
-            performance.edgeworth_count += 1;
+            probe.count(Counter::Edgeworth);
             let std = ks_tuple.2.sqrt();
             let z = (budget - ks_tuple.1) / std;
 
@@ -229,7 +231,7 @@ impl StateBundle {
             approx = cdf - cdf_correction;
             actual_out = approx;
         } else {
-            performance.lugganani_count += 1;
+            probe.count(Counter::Lugannani);
         }
 
         // most of the time if something's wrong it's probably because the proabability distribution didn't add up to 1 for some reason
@@ -277,7 +279,7 @@ impl StateBundle {
                     simple_mean_log,
                     support_index,
                     skip_count,
-                    performance,
+                    probe,
                 )
             );
 
@@ -289,7 +291,7 @@ impl StateBundle {
                     simple_mean_log,
                     support_index,
                     skip_count,
-                    performance,
+                    probe,
                 )
             );
 

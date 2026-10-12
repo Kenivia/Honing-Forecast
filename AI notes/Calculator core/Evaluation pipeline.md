@@ -28,10 +28,12 @@ Step 4 needs, at each price threshold, the probability that total consumption st
 
 - **Trivial**: the threshold is outside the possible range.
 - **Brute force** (`core/brute.rs`): exact convolution with pruning. Used when the outcome space is small, or when the threshold is very close to the minimum or maximum, where pruning is effective and the approximation is weak.
-- **Saddlepoint** (`core/saddlepoint_approximation.rs`): the Lugannani-Rice formula with a lattice continuity correction. Needs the root of the cumulant function's first derivative, found by `core/root_finder.rs`.
+- **Saddlepoint** (`core/saddlepoint_approximation.rs`): the Lugannani-Rice formula with a lattice continuity correction. Needs the root of the cumulant function's first derivative, found by `core/root_finder.rs`. `Tuning::root_finder` picks the finder, so a second one is a new enum variant and a match arm.
 - **Edgeworth fallback**: used near the mean, where the main formula is singular, and when the main formula returns something out of range.
 
-A failure to converge or a result outside [0, 1] after the fallback is a panic, not a soft error. The root finder's safeguards are empirical; treat changes there with care.
+A failure to converge or a result outside [0, 1] after the fallback is a panic, not a soft error. The root finder's safeguards are empirical; treat changes there with care, and check them with `pnpm arena verify` (`Arena.md`).
+
+Every function on this path takes a `&mut Probe` and counts which method it used. See `Arena.md`.
 
 ## Invariants
 
@@ -48,5 +50,3 @@ These fail silently or panic at a distance, and none is obvious from a single fi
 ## Leftovers
 
 `metric_type` exists but only the average-gold metric is live. `success_prob.rs` is a shelved metric, kept because the histogram reuses `one_dimension_prob`. `bound.rs` is an abandoned bounding attempt that now only supplies an initial guess. `helpers.rs` contains helpers from an earlier design.
-
-`verification/` (monte carlo) is **commented out** of `lib.rs` while the material interface settles, and `crates/arena`, its only consumer, is commented out of the workspace with it. The files are still there. A side effect is that `cargo test -p hf-core` works again; the unit tests in `materials.rs` cover the valuation.

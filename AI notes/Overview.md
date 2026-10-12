@@ -13,25 +13,26 @@ These notes are high-level. They cover what is hard to work out from reading one
 | `crates/core` (`hf-core`) | All honing maths: domain model, average-gold evaluation, optimizer. |
 | `crates/scanner` (`hf-scanner`) | Screen scanner image processing. In development. |
 | `crates/wasm` (`hf-wasm`) | Thin `wasm_bindgen` wrappers over core and scanner. The only crate the frontend loads. |
-| `crates/arena` (`hf-arena`) | Native binary for optimizer benchmarking. Defunct and commented out of the workspace, along with the `verification` module it drives. |
+| `crates/arena` (`hf-arena`) | Native test harness for the core: Monte Carlo correctness, optimizer accuracy and speed, results in SQLite. |
 | `frontend/` | Vue 3 + Pinia + Tailwind app. `@` aliases to this folder. |
 | `cloudflare/` | A Worker that proxies and caches market prices and character lookups. |
 | `public/` | Static assets, changelogs, `WIP.md` (the author's roadmap), scanner config and OCR model. |
 | `templates/` | Source icons and the script that builds the icon half of the scanner config. |
-| `scripts/` | Changelog helper, constants export, scanner brightness calibration, optimizer test tooling. |
+| `scripts/` | Changelog helper, constants export, scanner brightness calibration. |
 | `e2e/` | Playwright tests, shared browser helpers and the market price fixture. |
 | `tests/` | Node-side frontend tests: migrations, the real-save fixture, cross-tier relations. `pnpm test:frontend`. |
-| `test_cases/` | Payloads and cached results for the test harness. |
+| `test_cases/` | Arena scenarios, and its gitignored results database. |
 | `docs/` | Author-written docs: the saddlepoint paper, evaluation flow, optimizer, frontend flow, constants. |
 
-Not source of truth: `dist/` (committed build output), `crates/wasm/pkg/` (wasm-pack output), `crates/core/src/optimizer/Old/` (dead archive), and the untracked `junkyard/` and `data_fetcher/`.
+Not source of truth: `dist/` (committed build output), `crates/wasm/pkg/` (wasm-pack output), and the untracked `junkyard/` and `data_fetcher/`.
 
 ## Build and run
 
 - `pnpm dev` builds the wasm package with wasm-pack, then starts Vite. Vite does not watch `crates/`, so **Rust changes need `pnpm run wasm` again**.
 - `pnpm e2e` runs the browser tests; `pnpm browse` runs a one-off browser script. See `Browser harness/Overview.md`.
 - `pnpm check` runs `vue-tsc --noEmit` over the `.ts` layer and `.vue` templates. `pnpm test:frontend` runs the node-side suites in `tests/`. Both are fast; run them after a frontend change.
-- `pnpm test` runs `cargo test -p hf-core`. It works again now that `verification` is commented out; `materials.rs` holds the valuation unit tests.
+- `pnpm test` runs `cargo test -p hf-core -p hf-arena`: the valuation unit tests in `materials.rs`, plus a short Monte Carlo check and a seed-repeats check from the arena.
+- `pnpm arena <command>` runs the core's test harness. See `Calculator core/Arena.md`.
 - `pnpm build` chains `pnpm test` before the wasm and Vite builds and an unused-dependency check that needs nightly. `pnpm no-test-build` skips the test.
 - `pnpm deploy` only checks you are on a clean `main`, then force-pushes `main` to the `Production` branch (assumed to be what the hosted site builds from). It does not run tests.
 - `pnpm cloudflare-deploy` deploys the Worker separately.
@@ -39,9 +40,10 @@ Not source of truth: `dist/` (committed build output), `crates/wasm/pkg/` (wasm-
 
 ## Cargo features
 
-- `hf-core` has no default features. An optimizer version feature (`v35`, aliased as `active_version`) must be enabled or `optimizer::solve` does not exist.
+- `hf-core` has no default features.
 - `wasm` gates the histogram, the progress-message bridge and browser logging and timing.
-- `run_tests` gates the verification module and pulls in native-only dependencies.
+- `run_tests` only makes `my_dbg!` print natively.
+- `trace` fills in `Probe`, the instrumentation struct. Off in wasm, where it is empty; on in the arena.
 - `my_dbg!` is an exported macro whose feature checks resolve in the *calling* crate. That is why `hf-wasm` and `hf-scanner` declare dummy `wasm` / `run_tests` features.
 - The wasm target is built with SIMD enabled (`.cargo/config.toml`).
 
@@ -61,7 +63,8 @@ Not source of truth: `dist/` (committed build output), `crates/wasm/pkg/` (wasm-
 
 - `Calculator core/Domain model.md`: the structs and index conventions.
 - `Calculator core/Evaluation pipeline.md`: payload to result, method selection, invariants.
-- `Calculator core/Optimizer.md`: what the annealer may and may not change; test harness status.
+- `Calculator core/Optimizer.md`: what the annealer may and may not change.
+- `Calculator core/Arena.md`: the native test harness: variants, snapshots, scenarios, what it measures.
 - `Working in this repo.md`: line endings, scratch space, what the type checker cannot see, and the test suites. Read before a large edit.
 - `Frontend/State and persistence.md`: the store, data scopes, localStorage and migrations.
 - `Frontend/Wasm contract.md`: payload building, worker protocol, what must match Rust.

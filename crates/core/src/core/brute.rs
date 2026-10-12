@@ -2,10 +2,9 @@
 
 use crate::constants::FLOAT_TOL;
 use crate::state_bundle::StateBundle;
-use ahash::AHashMap;
+use ahash::{AHashMap, RandomState};
 use either::Either;
 use std::hash::{Hash, Hasher};
-pub const MAX_BRUTE_SIZE: usize = 50000;
 
 #[derive(Clone, Copy, Debug)]
 pub struct FloatKey(f64, u64);
@@ -68,8 +67,13 @@ impl StateBundle {
         }
 
         // Stores currently active uncertain states
-        let mut current_states: AHashMap<FloatKey, f64> = AHashMap::with_capacity(1);
-        let mut next_states: AHashMap<FloatKey, f64> = AHashMap::with_capacity(256);
+        // fixed seeds: the order these are drained in decides the order of the float sums,
+        // and a run has to repeat exactly from its seed
+        let hasher = RandomState::with_seeds(1, 2, 3, 4);
+        let mut current_states: AHashMap<FloatKey, f64> =
+            AHashMap::with_capacity_and_hasher(1, hasher.clone());
+        let mut next_states: AHashMap<FloatKey, f64> =
+            AHashMap::with_capacity_and_hasher(256, hasher);
         current_states.insert(FloatKey::from(0.0), 1.0);
 
         let mut total_guaranteed_prob = 0.0;
@@ -82,7 +86,7 @@ impl StateBundle {
             let cur_cap = next_states.capacity();
             next_states.reserve(
                 (current_states.len() * pairs.len())
-                    .min(MAX_BRUTE_SIZE)
+                    .min(self.tuning.max_brute_size)
                     .saturating_sub(cur_cap),
             );
 

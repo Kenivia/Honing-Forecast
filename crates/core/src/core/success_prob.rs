@@ -4,7 +4,7 @@
 //!
 //! Luckily this also doubles as the graph generator(histogram.rs)
 
-use crate::performance::Performance;
+use crate::probe::Probe;
 use crate::state_bundle::StateBundle;
 use std::f64::NAN;
 
@@ -13,7 +13,7 @@ impl StateBundle {
         &self,
         support_index: i64,
         budget: f64,
-        performance: &mut Performance,
+        probe: &mut Probe,
     ) -> f64 {
         let mut out: f64 = 0.0;
         let special_probs = self.special_probs().clone();
@@ -27,7 +27,7 @@ impl StateBundle {
                 budget,
                 false,
                 NAN,
-                performance,
+                probe,
             );
 
             out += special_prob * this_prob;

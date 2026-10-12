@@ -55,3 +55,8 @@ playwright-report/
 game_file_reader
 # leftovers of the old codex scripts
 scripts/codex/
+
+cambridge-core_saddlepoint-approximations-with-applications_12Oct2026
+
+# arena results, recreated by running it
+test_cases/arena.sqlite*

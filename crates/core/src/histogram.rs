@@ -1,7 +1,7 @@
 use crate::constants::juice_info::JuiceInfo;
 use crate::constants::*;
 use crate::js_interface::remove_adv_cache;
-use crate::performance::Performance;
+use crate::probe::Probe;
 use crate::state_bundle::StateBundle;
 use ahash::AHashMap;
 use serde::Serialize;
@@ -30,7 +30,7 @@ pub fn histogram(state_bundle: &mut StateBundle) -> HistogramOutputs {
     state_bundle.compute_special_probs(false);
     state_bundle.set_latest_special_probs(); // needed by luckiest_mf in addition to the usual 3 above
 
-    let mut dummy_performance = Performance::new();
+    let mut dummy_probe = Probe::default();
     let num_sup = state_bundle.prep_output.table.len();
 
     let mut cum_percentiles: Vec<Vec<(f64, f64)>> = vec![Vec::with_capacity(BUCKET_COUNT); num_sup];
@@ -48,7 +48,7 @@ pub fn histogram(state_bundle: &mut StateBundle) -> HistogramOutputs {
                 state_bundle.one_dimension_prob(
                     support_index as i64,
                     this_budget,
-                    &mut dummy_performance,
+                    &mut dummy_probe,
                 ),
             ));
         }
@@ -60,13 +60,13 @@ pub fn histogram(state_bundle: &mut StateBundle) -> HistogramOutputs {
             chance_within[support_index][band] = state_bundle.one_dimension_prob(
                 support_index as i64,
                 cumulative,
-                &mut dummy_performance,
+                &mut dummy_probe,
             );
         }
     }
 
     let (metric_per_plan, avg_used, gold_breakdown) =
-        state_bundle.ui_average_gold_metric(&mut dummy_performance);
+        state_bundle.ui_average_gold_metric(&mut dummy_probe);
 
     let table = &state_bundle.prep_output.table;
     HistogramOutputs {

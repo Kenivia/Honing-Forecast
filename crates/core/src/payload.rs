@@ -89,6 +89,7 @@ impl StateBundle {
             num_threads,
 
             adv_cache,
+            tuning: Default::default(),
         }
     }
     pub fn init_from_payload(payload: Payload) -> Self {

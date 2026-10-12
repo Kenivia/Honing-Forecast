@@ -1,5 +1,5 @@
 use crate::constants::{FLOAT_TOL, SPECIAL_TOL};
-use crate::performance::Performance;
+use crate::probe::{Counter, Probe};
 use crate::state_bundle::StateBundle;
 
 use std::f64::NAN;
@@ -24,11 +24,11 @@ impl StateBundle {
     /// Special case of ui_average_gold_metric, just separating them to keep things clean
     ///
     /// See Saddlepoint Approximation.pdf for more info on the math.
-    pub fn optimizer_average_gold_metric(&mut self, performance: &mut Performance) -> f64 {
+    pub fn optimizer_average_gold_metric(&mut self, probe: &mut Probe) -> f64 {
         self.update_prob_dist();
         self.update_cost_dist();
         self.compute_special_probs(false);
-        performance.states_evaluated += 1;
+        probe.count(Counter::StatesEvaluated);
 
         let mut total_gold: f64 = 0.0;
         for (skip_count, &special_prob) in self.special_probs().iter().enumerate() {
@@ -41,7 +41,7 @@ impl StateBundle {
                     support_index as i64,
                     skip_count,
                     thresh_price_pairs,
-                    performance,
+                    probe,
                 );
 
                 total_gold += special_prob * this_avg;
@@ -56,12 +56,12 @@ impl StateBundle {
     /// average amount of each material used (which does not depend on the plan).
     pub fn ui_average_gold_metric(
         &mut self,
-        performance: &mut Performance,
+        probe: &mut Probe,
     ) -> (Vec<f64>, Vec<f64>, Vec<Vec<f64>>) {
         self.update_prob_dist();
         self.update_cost_dist();
         self.compute_special_probs(false);
-        performance.states_evaluated += 1;
+        probe.count(Counter::StatesEvaluated);
 
         let num_mats = self.prep_output.table.len();
         let num_plans = self.prep_output.plans.len();
@@ -79,7 +79,7 @@ impl StateBundle {
                             support_index as i64,
                             skip_count,
                             &self.prep_output.bands[plan_index][support_index],
-                            performance,
+                            probe,
                         );
 
                     gold_breakdown[plan_index][support_index] += this;
@@ -101,7 +101,7 @@ impl StateBundle {
         support_index: i64,
         skip_count: usize,
         thresh_price_pairs: &[(f64, f64)],
-        performance: &mut Performance,
+        probe: &mut Probe,
     ) -> f64 {
         let num_thresholds: usize = thresh_price_pairs.len();
 
@@ -134,7 +134,7 @@ impl StateBundle {
                 thresh,
                 true,
                 simple_mean_log,
-                performance,
+                probe,
             );
 
             let prob: f64 = self.saddlepoint_approximation_wrapper(
@@ -143,7 +143,7 @@ impl StateBundle {
                 thresh,
                 false,
                 NAN,
-                performance,
+                probe,
             );
 
             out += (prev_price - price) * (thresh * prob - biased_prob * simple_mean);

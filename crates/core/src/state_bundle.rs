@@ -1,6 +1,7 @@
 use crate::advanced_honing::utils::{AdvConfig, AdvDistTriplet};
 use crate::parser::PreparationOutput;
-use crate::performance::Performance;
+use crate::probe::Probe;
+use crate::tuning::Tuning;
 use crate::state::{OneState, State};
 use crate::upgrade::Upgrade;
 use ahash::AHashMap;
@@ -25,6 +26,9 @@ pub struct StateBundle {
     pub special_cache: AHashMap<Vec<usize>, Vec<f64>>,
 
     pub adv_cache: AHashMap<AdvConfig, AdvDistTriplet>,
+
+    #[serde(skip)]
+    pub tuning: Tuning,
 }
 
 pub fn default_state_arr(upgrade_arr: &Vec<Upgrade>) -> Vec<Vec<OneState>> {
@@ -49,10 +53,10 @@ impl StateBundle {
         self.latest_special_probs = Some(out);
     }
 
-    pub fn metric_router(&mut self, performance: &mut Performance) -> f64 {
+    pub fn metric_router(&mut self, probe: &mut Probe) -> f64 {
         match self.metric_type {
             0 => unreachable!(), //self.success_prob_metric(performance),
-            1 => self.optimizer_average_gold_metric(performance),
+            1 => self.optimizer_average_gold_metric(probe),
             _ => NAN,
         }
     }
@@ -71,6 +75,7 @@ impl StateBundle {
 
             special_cache: AHashMap::new(),
             adv_cache: AHashMap::new(),
+            tuning: Tuning::default(),
         };
 
         state_bundle

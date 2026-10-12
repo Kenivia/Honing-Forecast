@@ -26,9 +26,6 @@ once_cell = "1.21.4"
 serde_with = "3.22.0"
 smallvec = {version="1.15.2", features=["serde"]}
 
-chrono = { version =  "0.4.45", optional = true}
-rayon = { version = "1.12.0", optional = true}
-
 
 web-sys = { version = "0.3", features = ["console"], optional = true}
 serde-wasm-bindgen = {version="0.6"  , optional = true}
@@ -37,8 +34,9 @@ wasm-bindgen = { version = "0.2", features = ["serde-serialize"] , optional = tr
 
 
 [features]
-v35=[]
-run_tests=["rayon", "chrono"]
+# native debug printing for my_dbg
+run_tests=[]
+# fills in probe.rs, off in production
+trace=[]
 wasm=["web-sys","serde-wasm-bindgen", "wasm-bindgen", "getrandom/wasm_js" ]
-active_version=["v35"]
 default=[]  

@@ -12,7 +12,8 @@
     "scanner-compare": "node scripts/browser/scan_compare.mjs",
     "scanner-suite": "python scripts/scanner/suite.py",
     "browsers": "playwright install chromium firefox && playwright-mcp install-browser firefox",
-    "test": "cargo test -p hf-core --no-default-features --features active_version",
+    "test": "cargo test -p hf-core -p hf-arena",
+    "arena": "cargo run --release -q -p hf-arena --",
     "change-log": "python ./scripts/change_log_helper/build.py",
     "check": "vue-tsc --noEmit",
     "test:frontend": "node tests/run.mjs",
@@ -20,8 +21,6 @@
     "build": "pnpm run test && pnpm run no-test-build && cargo +nightly udeps",
     "no-check-deploy": "git push origin main:Production --force-with-lease",
     "deploy": "pwsh -File ./scripts/pre_deploy_check.ps1 && pnpm run no-check-deploy",
-    "optimizer-test": "pwsh -File ./scripts/optimizer_test.ps1",
-    "optimizer-visualizer": "python -m pip -q install -r  ./scripts/optimizer_visualizer/requirements.txt && python ./scripts/optimizer_visualizer/app.py",
     "cloudflare-deploy": "wrangler deploy --config cloudflare/wrangler.toml",
     "cloudflare-dev": "wrangler dev --remote --config cloudflare/wrangler.toml",
     "remove-tmp": "Get-ChildItem -Path .tmp -File -Recurse | Remove-Item"

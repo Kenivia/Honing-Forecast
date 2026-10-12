@@ -2,14 +2,11 @@
 //! This is necessary as part of saddlepoint approximation
 
 use super::cumulants::KsTuple;
-use crate::performance::Performance;
+use crate::probe::{Counter, Probe};
 use crate::state_bundle::StateBundle;
 use crate::{constants::FLOAT_TOL, my_dbg};
 use std::f64::{INFINITY, NAN, NEG_INFINITY};
-pub const MAX_ROOT_FIND_ITER: usize = 30; // was 20 before, but crashed 1 time so just gonna bite the bullet for now
 // there's definitely some fishy business going on with advanced honing
-
-static Y_VALUE_TOL: f64 = 1e-6;
 
 impl StateBundle {
     /// Generalized newton's method, because we have access to higher derivatives for free.
@@ -28,7 +25,7 @@ impl StateBundle {
         min_value: f64,
         max_value: f64,
         min_delta: f64,
-        performance: &mut Performance,
+        probe: &mut Probe,
     ) -> Option<(f64, f64, usize, KsTuple)> {
         let mut lower = NEG_INFINITY;
         let mut upper = INFINITY;
@@ -38,14 +35,14 @@ impl StateBundle {
         let mut init_y: f64 = NAN;
         let mut debug_record: Vec<(f64, f64, f64, f64, f64, f64)> = Vec::new();
 
-        for iter in 0..MAX_ROOT_FIND_ITER {
+        for iter in 0..self.tuning.max_root_find_iter {
             let this = self.ks(
                 theta,
                 compute_biased,
                 simple_mean_log,
                 support_index,
                 skip_count,
-                performance,
+                probe,
             );
             let (_, mut y, dy, dy2, dy3) = this.access();
             if iter == 0 {
@@ -62,7 +59,7 @@ impl StateBundle {
                 y_upper = y_upper.min(y);
             }
 
-            if y.abs() < Y_VALUE_TOL {
+            if y.abs() < self.tuning.y_value_tol {
                 return Some((theta, init_y, iter, this));
             }
 
@@ -84,14 +81,14 @@ impl StateBundle {
             proposed_theta =
                 proposed_theta.clamp(-3.0 * theta.abs().max(1e-8), 3.0 * theta.abs().max(1e-8));
 
-            performance.newton_iterations += 1;
+            probe.count(Counter::RootIter);
 
             if lower < proposed_theta && proposed_theta < upper && y_lower <= y && y <= y_upper {
                 theta = proposed_theta;
-                performance.householder_count += 1;
+                probe.count(Counter::Householder);
             } else {
                 // fall back to bisection, but shouldn't really happen anymore
-                performance.bisection_count += 1;
+                probe.count(Counter::Bisection);
                 if upper.is_finite() && lower.is_finite() {
                     theta = 0.5 * (upper + lower)
                 } else if upper.is_finite() {

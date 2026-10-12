@@ -2,7 +2,7 @@ use hf_core::histogram::HistogramOutputs;
 use hf_core::histogram::histogram;
 use hf_core::optimizer::solve;
 use hf_core::payload::Payload;
-use hf_core::performance::Performance;
+use hf_core::probe::Probe;
 use hf_core::state_bundle::StateBundle;
 use hf_scanner::buffer::Buffer;
 use hf_scanner::ocr::{jobs::OcrJob, recognize::load_ocr_engine};
@@ -26,10 +26,10 @@ pub fn optimize_average_wrapper(input_payload: JsValue) -> JsValue {
     let state_bundle: StateBundle = StateBundle::init_from_payload(payload);
 
     let mut rng: ThreadRng = rand::rng();
-    let mut dummy_performance = Performance::new();
-    let mut best_state: StateBundle = solve(&mut rng, state_bundle, &mut dummy_performance);
+    let mut dummy_probe = Probe::default();
+    let mut best_state: StateBundle = solve(&mut rng, state_bundle, None, &mut dummy_probe).best;
 
-    best_state.optimizer_average_gold_metric(&mut dummy_performance);
+    best_state.optimizer_average_gold_metric(&mut dummy_probe);
     best_state.set_latest_special_probs();
 
     to_value(&best_state).unwrap()
