@@ -10,6 +10,7 @@ use hf_core::chest::Chest;
 use hf_core::constants::ARTISAN_MULTIPLIER;
 use hf_core::materials::{BandValue, NUM_BASE_MATS, OneMaterial, ValuationPlan};
 use hf_core::optimizer::solve;
+use hf_core::parser::OneUpgradeInput;
 use hf_core::payload::Payload;
 use hf_core::probe::Probe;
 use hf_core::state::{StreakInfo, get_pool_ids};
@@ -273,6 +274,11 @@ pub struct Built {
 
 /// `full` is every upgrade a character has, whatever the size axis says
 pub fn build(a: &[f64], seed: u64, full: bool) -> Built {
+    build_with(a, seed, full, None)
+}
+
+/// `given` is the upgrades of the case, in place of the ones the axes would pick
+pub fn build_with(a: &[f64], seed: u64, full: bool, given: Option<Vec<OneUpgradeInput>>) -> Built {
     let mut rng = StdRng::seed_from_u64(seed);
     let (tier, express) = pick(a[axis("tier")], &[(0.45, (0, false)), (0.2, (0, true)), (0.35, (1, false))]);
     let labels: Vec<String> =
@@ -325,6 +331,10 @@ pub fn build(a: &[f64], seed: u64, full: bool) -> Built {
             out.double_balls = express && block < 2;
             out
         }));
+    }
+    if let Some(given) = given {
+        upgrade_info = given;
+        firsts.clear();
     }
 
     let mut payload = Payload {
@@ -713,11 +723,11 @@ pub fn chain(built: Built, steps: usize, seed: u64, chests: bool) -> (Vec<Payloa
     (out, kinds)
 }
 
-fn sobol(index: u32, seed: u32) -> Vec<f64> {
+pub fn sobol(index: u32, seed: u32) -> Vec<f64> {
     (0..AXES.len() as u32).map(|dimension| sobol_burley::sample(index, dimension, seed) as f64).collect()
 }
 
-fn meta(a: &[f64], kinds: &[String]) -> Map<String, Value> {
+pub fn meta(a: &[f64], kinds: &[String]) -> Map<String, Value> {
     let axes: Map<String, Value> = AXES.iter().zip(a).map(|(name, value)| (name.to_string(), json!(value))).collect();
     let mut out = Map::new();
     out.insert("axes".to_string(), Value::Object(axes));
@@ -725,7 +735,7 @@ fn meta(a: &[f64], kinds: &[String]) -> Map<String, Value> {
     out
 }
 
-fn tag(payload: &Payload) -> String {
+pub fn tag(payload: &Payload) -> String {
     format!(
         "{}_n{}",
         ["t4", "serca"][payload.tier],

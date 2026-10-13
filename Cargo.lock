@@ -715,6 +715,7 @@ dependencies = [
  "rusqlite",
  "serde",
  "serde_json",
+ "smallvec",
  "sobol_burley",
 ]
 

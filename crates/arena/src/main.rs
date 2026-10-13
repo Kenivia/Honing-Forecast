@@ -14,6 +14,7 @@ mod one_adv_sim;
 mod replan;
 mod report;
 mod scenario;
+mod space;
 mod stress;
 mod worker;
 
@@ -216,6 +217,34 @@ enum Cmd {
     Bench {
         #[command(flatten)]
         args: bench::Args,
+    },
+    /// write small cases, every plan of which can be tried, into the `tiny` folder
+    Tiny {
+        #[arg(long, default_value_t = 60)]
+        count: u32,
+        /// lone upgrades with `lone_taps` taps left
+        #[arg(long, default_value_t = 30)]
+        lone: u32,
+        #[arg(long, default_value_t = 20)]
+        lone_taps: usize,
+        /// states a case may have
+        #[arg(long, default_value_t = 3e6)]
+        cap: f64,
+    },
+    /// every plan of each small case against the plans the optimizer's streaks can make
+    Exhaust {
+        #[command(flatten)]
+        args: space::ExhaustArgs,
+    },
+    /// what each upgrade taking its best plan in turn reaches, from each step's best known state
+    Ascend {
+        #[command(flatten)]
+        args: space::AscendArgs,
+    },
+    /// the metric over two streak lengths of an upgrade, the rest as best known
+    Landscape {
+        #[command(flatten)]
+        args: space::LandscapeArgs,
     },
     /// write the placeholder scenario
     Dummy,
@@ -454,6 +483,17 @@ fn run_jobs(
     session_id
 }
 
+/// `key=value,key=value` over the default tuning
+fn overrides(text: &str) -> Map<String, Value> {
+    text.split(',')
+        .filter(|pair| !pair.is_empty())
+        .map(|pair| {
+            let (key, value) = pair.split_once('=').unwrap();
+            (key.to_string(), serde_json::from_str(value).unwrap_or(Value::String(value.to_string())))
+        })
+        .collect()
+}
+
 fn main() {
     let mut cli = Cli::parse();
     // relative paths are from the repo root, wherever this is run from
@@ -620,6 +660,24 @@ fn main() {
                 .collect();
             let scenarios = scenarios(&cli, &args.filter);
             bench::run(&scenarios, args, &worker::tuning_with(&overrides));
+        }
+        Cmd::Tiny { count, lone, lone_taps, cap } => {
+            let dir = cli.scenarios.join("tiny");
+            std::fs::create_dir_all(&dir).unwrap();
+            let scenarios = space::tiny(*count, *lone, *lone_taps, *cap);
+            for scenario in &scenarios {
+                std::fs::write(dir.join(format!("{}.json", scenario.name)), serde_json::to_string(scenario).unwrap()).unwrap();
+            }
+            println!("wrote {} scenarios to {dir:?}", scenarios.len());
+        }
+        Cmd::Exhaust { args } => space::exhaust(&scenarios(&cli, ""), args),
+        Cmd::Ascend { args } => {
+            let tuning = worker::tuning_with(&overrides(&args.tuning));
+            space::ascend_all(&db::open(&cli.db), &scenarios(&cli, ""), args, &tuning);
+        }
+        Cmd::Landscape { args } => {
+            let tuning = worker::tuning_with(&overrides(&args.tuning));
+            space::landscape(&db::open(&cli.db), &scenarios(&cli, ""), args, &tuning);
         }
         Cmd::Rescore => {
             let conn = db::open(&cli.db);

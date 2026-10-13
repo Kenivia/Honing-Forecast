@@ -30,7 +30,7 @@ Evaluation assumes these; breaking them corrupts results without an error.
 - Advanced-honing strategy indices stay within their maximum.
 - Update the state's hash after changing it.
 - For normal honing, taps the player has already done are fixed and must not be modified.
-- Normal-honing states are kept in a restricted form: for each juice pool, one streak from the first tap and one streak from the last. This is an empirical simplification, not a proven one, and the perturbation code depends on it.
+- Normal-honing states are kept in a restricted form: for each juice pool, one streak from the first tap and one streak from the last. This is an empirical simplification, not a proven one, and the perturbation code depends on it. Measured in October 2026 (`State space.md`): the best plan is a streak plan on 82 of 90 small cases, and the rest lose 0.24% of flow at most.
 
 ## Chests
 
