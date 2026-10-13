@@ -26,6 +26,7 @@ counters!(
     RootIter,
     Householder,
     Bisection,
+    TaylorSkip,
 );
 
 #[cfg(feature = "trace")]

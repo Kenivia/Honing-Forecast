@@ -7,6 +7,9 @@ use ahash::AHashMap;
 use crate::advanced_honing::utils::{AdvConfig, AdvDistTriplet};
 impl Upgrade {
     pub fn update_support_adv(&mut self, juice_info: &JuiceInfo) {
+        if self.cost_dist[0].support_state_hash == self.state.hash {
+            return;
+        }
         let c_len: usize = self.adv_dists[0].len();
         let j_len: usize = self.adv_dists[1].len();
         let s_len: usize = self.adv_dists[2].len();
@@ -67,6 +70,9 @@ impl Upgrade {
 
     pub fn update_dist_adv(&mut self, adv_cache: &mut AHashMap<AdvConfig, AdvDistTriplet>) {
         self.update_adv_config();
+        if self.adv_dists[0].prob_state_hash == self.state.hash {
+            return;
+        }
         if !adv_cache.contains_key(&self.adv_config) {
             let out = compute_adv_dist_wrapper(&self.adv_config);
             adv_cache.insert(self.adv_config, out);

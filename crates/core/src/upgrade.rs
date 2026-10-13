@@ -41,6 +41,17 @@ pub struct Upgrade {
 
     pub adv_config: AdvConfig,
     pub adv_dists: Vec<ProbDist>,
+
+    /// the distributions of the state before this one, which a rejected move comes back to
+    #[serde(skip)]
+    pub spare: Option<Box<Spare>>,
+}
+
+#[derive(Debug, Clone)]
+pub struct Spare {
+    pub normal_dist: ProbDist,
+    pub adv_dists: Vec<ProbDist>,
+    pub cost_dist: Vec<Support>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Copy, Eq, Hash)]
@@ -122,6 +133,7 @@ impl Upgrade {
             extra_chance,
             adv_config: AdvConfig::default(),
             adv_dists: Vec::new(),
+            spare: None,
         };
 
         let mut clean_upgrade = out.clone();
@@ -204,6 +216,7 @@ impl Upgrade {
                 upgrade_index >= 2,
             ),
             adv_dists: vec![ProbDist::default(); 3],
+            spare: None,
         };
         out.update_dist_adv(adv_cache);
         out.update_support_adv(juice_info);

@@ -4,6 +4,7 @@
 //! needs a field here and a read where the constant used to be.
 
 use serde::{Deserialize, Serialize};
+use std::hash::{Hash, Hasher};
 
 #[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
 pub enum RootFinder {
@@ -19,6 +20,13 @@ pub struct Tuning {
     pub max_root_find_iter: usize, // was 20 before, but crashed 1 time
     pub max_brute_size: usize,
     pub max_lattice_work: usize, // lattice points times outcomes
+    /// a last step of the root finder shorter than this, in standard deviations, is taken
+    /// on the taylor series instead of another evaluation; 0 for never
+    pub taylor_skip: f64,
+    /// start the biased root from the plain one
+    pub seed_biased: bool,
+    /// entries the memo of per material results may hold; 0 for no memo
+    pub max_memo_size: usize,
 
     // optimizer
     pub max_iters: i64,
@@ -43,6 +51,9 @@ impl Default for Tuning {
             max_root_find_iter: 30,
             max_brute_size: 50000,
             max_lattice_work: 200000,
+            taylor_skip: 1e-3,
+            seed_biased: true,
+            max_memo_size: 1 << 16,
 
             max_iters: 24000,
             max_best_size: 10,
@@ -55,5 +66,16 @@ impl Default for Tuning {
 
             max_blob_bytes: 5 * 1024 * 1024,
         }
+    }
+}
+
+impl Tuning {
+    /// every knob a probability depends on, for keys of kept results
+    pub fn evaluator_key(&self) -> u64 {
+        let mut hasher = std::hash::DefaultHasher::new();
+        (self.root_finder as u8, self.max_root_find_iter, self.max_brute_size, self.max_lattice_work, self.seed_biased)
+            .hash(&mut hasher);
+        (self.y_value_tol.to_bits(), self.taylor_skip.to_bits()).hash(&mut hasher);
+        hasher.finish()
     }
 }

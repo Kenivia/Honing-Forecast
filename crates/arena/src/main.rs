@@ -4,6 +4,7 @@
 //! worker, which runs one job. A snapshot is a copy of the binary, so a variant's worker
 //! is the code as it was when the snapshot was taken.
 
+mod bench;
 mod carry;
 mod db;
 mod generate;
@@ -210,6 +211,11 @@ enum Cmd {
     },
     /// fill in `gross` and `flow` for the runs recorded before there were any
     Rescore,
+    /// time the evaluator alone
+    Bench {
+        #[command(flatten)]
+        args: bench::Args,
+    },
     /// write the placeholder scenario
     Dummy,
     #[command(hide = true)]
@@ -600,6 +606,19 @@ fn main() {
                 session
             });
             replan::report(&conn, session);
+        }
+        Cmd::Bench { args } => {
+            let overrides = args
+                .tuning
+                .split(',')
+                .filter(|pair| !pair.is_empty())
+                .map(|pair| {
+                    let (key, value) = pair.split_once('=').unwrap();
+                    (key.to_string(), serde_json::from_str(value).unwrap_or(Value::String(value.to_string())))
+                })
+                .collect();
+            let scenarios = scenarios(&cli, &args.filter);
+            bench::run(&scenarios, args, &worker::tuning_with(&overrides));
         }
         Cmd::Rescore => {
             let conn = db::open(&cli.db);

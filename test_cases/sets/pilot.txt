@@ -1,6 +1,6 @@
 # small and quick, on cases the optimizer of October 2026 hit a quarter to three quarters of the time
 chain_0011_t4_n7:4
-chain_0048_serca_n10:4
+chain_0057_serca_n8:4
 single_0466_t4_n10
 single_0085_t4_n17
-single_0041_serca_n19
+single_0552_serca_n16

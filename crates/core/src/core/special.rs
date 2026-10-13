@@ -57,7 +57,15 @@ impl StateBundle {
 
     /// The preserve tail option is exclusively for UI purpose and does not write to special_cache
     pub fn compute_special_probs(&mut self, preserve_tail: bool) -> Option<Vec<f64>> {
+        // the order last computed for is clean and in the cache
+        let budget = self.prep_output.special_budget;
+        if !preserve_tail && self.special_done.as_ref().is_some_and(|done| done.0 == budget && done.1 == self.special_state) {
+            return None;
+        }
         self.clean_special_state();
+        if !preserve_tail {
+            self.special_done = Some((budget, self.special_state.clone()));
+        }
         let cached = self
             .special_cache
             .get(&self.prep_output.special_budget)
@@ -108,10 +116,12 @@ impl StateBundle {
 
         let mut highest_upgrade_index_seen: Vec<i64> = vec![-1; 7];
         let mut invalid_index: usize = m + 1;
+        // nothing is left above this much budget, and it only goes down
+        let mut top: usize = budget;
+        let mut dead = false;
         for (attempt_index, u_index) in self.special_state.iter().enumerate() {
             let upgrade = &self.upgrade_arr[*u_index];
 
-            // my_dbg!(upgrade.upgrade_index, upgrade.is_weapon, upgrade.piece_type);
             if !upgrade.is_normal_honing
                 || highest_upgrade_index_seen[upgrade.piece_index] > upgrade.upgrade_index as i64
             {
@@ -128,76 +138,50 @@ impl StateBundle {
             let cost = upgrade.special_cost as usize / gcd;
 
             // If cost is higher than total budget, we can't possibly succeed.
-            // (Probability mass stays in 'active' and doesn't move to 'result')
             if cost > budget {
-                active.fill(0.0); // No more moves possible
                 break;
             }
+            // Nor once nothing left can afford an attempt, but a later upgrade may still be
+            // one that cannot be free tapped
+            if dead || cost > top {
+                dead = true;
+                continue;
+            }
 
-            // 2. Precompute Failure Probabilities
-            // fail_probs[k] = (1-p)^k
+            // fail_probs[k] = (1-p)^k, as far as the attempts go
+            let most_attempts = if cost > 0 { top / cost } else { 0 };
             fail_probs[0] = 1.0;
-            for t in 1..=budget {
-                fail_probs[t] = fail_probs[t - 1] * one_minus_p; 
+            for t in 1..=most_attempts {
+                fail_probs[t] = fail_probs[t - 1] * one_minus_p;
             }
 
-            // 3. Calculate "Success" (passing this stage)
-            // We iterate to calculate how much mass moves to the next STAGE (result),
-            // but we don't move the mass in the 'active' vector yet.
-            for b in 0..=budget {
-                let mass = active[b];
-                if mass == 0.0 {
-                    continue;
+            // The mass that passes this stage: everything but failing every attempt, of
+            // which a budget of b affords b / cost
+            if cost > 0 {
+                for attempts in 1..=most_attempts {
+                    let pass = 1.0 - fail_probs[attempts];
+                    let mut mass = 0.0;
+                    for b in attempts * cost..((attempts + 1) * cost).min(top + 1) {
+                        mass += active[b];
+                    }
+                    result[attempt_index + 1] += mass * pass;
                 }
-
-                if b < cost {
-                    // Cannot afford even one attempt.
-                    // Mass stays here (implicit failure to proceed).
-                    continue;
-                }
-
-                // fail_all = (1-p) ^ max_attempts
-                // We read from our cache instead of calling powi
-                let fail_all = if cost > 0 {
-                    let max_attempts = b / cost;
-                    fail_probs[max_attempts]
-                } else {
-                    0.0
-                };
-
-                // Add the mass that successfully moved to the next stage
-                result[attempt_index + 1] += mass * (1.0 - fail_all);
+            } else {
+                result[attempt_index + 1] += active[..=top].iter().sum::<f64>();
             }
 
-            // 4. Linear Recurrence for Next Budget State
-            // We calculate where the mass lands for the NEXT upgrade iteration.
-            // Recurrence: Next[b] = p*Active[b+C] + (1-p)*Next[b+C]
-            // We must iterate downwards from (budget - cost) to avoid reading dirty data,
-            // or simply strictly follow the dependency chain.
-            // Since Next[b] depends on Next[b+C], we go High -> Low.
-
-            // Clear next_active (or just overwrite if we are careful, but fill(0) is safer)
-            next_active.fill(0.0);
-
-            let start_idx = budget - cost;
-
-            // We use a 'sliding window' logic based on modulo classes implicitly.
-            // By iterating backwards, next_active[b+cost] is already computed.
+            // Where the mass lands for the next upgrade:
+            // next[b] = p * active[b + cost] + (1 - p) * next[b + cost]
+            // which reads next[b + cost], so high to low. Above top - cost it is zero.
+            let start_idx = top - cost;
             for b in (0..=start_idx).rev() {
                 let source_idx = b + cost;
-
-                // The probability flowing into 'b' comes from 'source_idx' trying once (p)
-                // OR flowing through 'source_idx' from even higher budgets (1-p)
-                let flow_from_above = next_active[source_idx];
-                let source_mass = active[source_idx];
-
-                // Note: The recurrence formula is technically:
-                // next[b] = p * active[b+cost] + (1-p) * next[b+cost]
-                next_active[b] = (p * source_mass) + (one_minus_p * flow_from_above);
+                let flow_from_above = if cost == 0 || source_idx > start_idx { 0.0 } else { next_active[source_idx] };
+                next_active[b] = (p * active[source_idx]) + (one_minus_p * flow_from_above);
             }
 
-            // Swap vectors to prepare for next upgrade
             swap(&mut active, &mut next_active);
+            top = start_idx;
         }
 
         // cdf to pdf here

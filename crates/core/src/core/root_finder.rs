@@ -25,25 +25,21 @@ impl StateBundle {
         min_value: f64,
         max_value: f64,
         min_delta: f64,
+        mut seed: Option<KsTuple>,
         probe: &mut Probe,
-    ) -> Option<(f64, f64, usize, KsTuple)> {
+    ) -> Option<(f64, f64, usize, KsTuple, KsTuple)> {
         let mut lower = NEG_INFINITY;
         let mut upper = INFINITY;
         let mut y_lower = NEG_INFINITY;
         let mut y_upper = INFINITY;
         let mut theta = guess;
         let mut init_y: f64 = NAN;
-        let mut debug_record: Vec<(f64, f64, f64, f64, f64, f64)> = Vec::new();
 
         for iter in 0..self.tuning.max_root_find_iter {
-            let this = self.ks(
-                theta,
-                compute_biased,
-                simple_mean_log,
-                support_index,
-                skip_count,
-                probe,
-            );
+            // the cumulants at the guess may be known already
+            let evaluated = seed.is_none();
+            let raw = seed.take().unwrap_or_else(|| self.raw_ks(theta, support_index, skip_count, probe));
+            let this = if compute_biased { raw.biased(simple_mean_log) } else { raw };
             let (_, mut y, dy, dy2, dy3) = this.access();
             if iter == 0 {
                 init_y = y;
@@ -60,12 +56,12 @@ impl StateBundle {
             }
 
             if y.abs() < self.tuning.y_value_tol {
-                return Some((theta, init_y, iter, this));
+                return Some((theta, init_y, iter, this, raw));
             }
 
-            let delta = if (min_value - budget - y).abs() < min_delta
-                || (max_value - budget - y).abs() < min_delta
-            {
+            let near_edge = (min_value - budget - y).abs() < min_delta
+                || (max_value - budget - y).abs() < min_delta;
+            let delta = if near_edge {
                 theta * 0.1 - theta
             } else if compute_biased {
                 (-2.0 * y * dy) / (-y * dy2 + 2.0 * dy.powi(2))
@@ -77,13 +73,33 @@ impl StateBundle {
             };
 
             let mut proposed_theta = theta + delta;
-            debug_record.push((theta, proposed_theta, y, dy, dy2, dy3));
             proposed_theta =
                 proposed_theta.clamp(-3.0 * theta.abs().max(1e-8), 3.0 * theta.abs().max(1e-8));
 
             probe.count(Counter::RootIter);
 
             if lower < proposed_theta && proposed_theta < upper && y_lower <= y && y <= y_upper {
+                // A last step this short lands where the taylor series about here is as good
+                // as another evaluation. Newton on the series, which costs nothing, for as
+                // long as it stays that short: a short step is not a small residual, and the
+                // series is worthless further out. Not from cumulants that are themselves off
+                // a series.
+                let sd = dy.sqrt();
+                if evaluated && !near_edge {
+                    let mut step = proposed_theta - theta;
+                    for _ in 0..4 {
+                        if !(step.abs() * sd < self.tuning.taylor_skip) {
+                            break;
+                        }
+                        let moved = raw.moved(step);
+                        let there = if compute_biased { moved.biased(simple_mean_log) } else { moved };
+                        if (there.1 - budget).abs() < self.tuning.y_value_tol {
+                            probe.count(Counter::TaylorSkip);
+                            return Some((theta + step, init_y, iter + 1, there, moved));
+                        }
+                        step -= (there.1 - budget) / there.2;
+                    }
+                }
                 theta = proposed_theta;
                 probe.count(Counter::Householder);
             } else {
@@ -122,7 +138,6 @@ impl StateBundle {
         }
 
         my_dbg!(theta, lower, upper, guess, compute_biased, budget,);
-        my_dbg!(debug_record);
         None
     }
 }

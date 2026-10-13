@@ -1,23 +1,26 @@
 use crate::constants::{FLOAT_TOL, SPECIAL_TOL};
-use crate::core::lattice::Lattice;
+use ahash::AHashMap;
+use smallvec::SmallVec;
 use crate::probe::{Counter, Probe};
 use crate::state_bundle::StateBundle;
 
-use std::f64::NAN;
-
 pub const DEBUG_AVERAGE: bool = false;
 pub const DEBUG_AVG_INDEX: i64 = 7;
+
+fn mix(a: u64, b: u64) -> u64 {
+    let mut x = a.wrapping_mul(0x9E37_79B9_7F4A_7C15) ^ b;
+    x ^= x >> 32;
+    x = x.wrapping_mul(0xD6E8_FEB8_6659_FD93);
+    x ^ (x >> 32)
+}
 
 impl StateBundle {
     /// notably this is the average of the unbiased distribution(it's not the mean of the biased one)
     pub fn simple_avg(&self, support_index: i64, skip_count: usize) -> f64 {
         let mut mean: f64 = 0.0;
-        for pair_arr in self.extract_collapsed_pair(support_index, skip_count) {
-            let mut this_mean: f64 = 0.0;
-            for (s, p) in pair_arr.iter() {
-                this_mean += s * p;
-            }
-            mean += this_mean;
+        for (index, &u_index) in self.special_state.iter().enumerate() {
+            let support = self.support_from_index(u_index, support_index);
+            mean += if index < skip_count { support.access_min(true) } else { support.mean };
         }
         mean
     }
@@ -31,23 +34,24 @@ impl StateBundle {
         self.compute_special_probs(false);
         probe.count(Counter::StatesEvaluated);
 
+        let skips = self.live_skips();
+        let mut memo = std::mem::take(&mut self.gold_memo);
+        let sums = if self.tuning.max_memo_size > 0 && !skips.is_empty() { self.memo_sums(&skips) } else { Vec::new() };
+        let tuning_key = self.tuning.evaluator_key();
         let mut total_gold: f64 = 0.0;
-        for (skip_count, &special_prob) in self.special_probs().iter().enumerate() {
-            if special_prob < SPECIAL_TOL {
-                continue;
-            }
-            let plan_bands = &self.prep_output.bands[self.prep_output.optimizer_plan];
-            for (support_index, thresh_price_pairs) in plan_bands.iter().enumerate() {
-                let this_avg: f64 = self.one_dimension_average_gold(
-                    support_index as i64,
-                    skip_count,
-                    thresh_price_pairs,
-                    probe,
-                );
-
-                total_gold += special_prob * this_avg;
-            }
+        let plan_bands = &self.prep_output.bands[self.prep_output.optimizer_plan];
+        for (support_index, thresh_price_pairs) in plan_bands.iter().enumerate() {
+            total_gold += self.material_average_gold(
+                &mut memo,
+                support_index as i64,
+                &skips,
+                thresh_price_pairs,
+                sums.get(support_index).map(|sums| &sums[..]),
+                tuning_key,
+                probe,
+            );
         }
+        self.gold_memo = memo;
 
         total_gold
     }
@@ -69,31 +73,149 @@ impl StateBundle {
         let mut gold_breakdown: Vec<Vec<f64>> = vec![vec![0.0; num_mats]; num_plans];
         let mut avg_used: Vec<f64> = vec![0.0; num_mats];
         let mut metric_per_plan: Vec<f64> = vec![0.0; num_plans];
+        let skips = self.live_skips();
+        let mut memo = std::mem::take(&mut self.gold_memo);
+        let sums = if self.tuning.max_memo_size > 0 && !skips.is_empty() { self.memo_sums(&skips) } else { Vec::new() };
+        let tuning_key = self.tuning.evaluator_key();
         for plan_index in 0..num_plans {
-            for (skip_count, &special_prob) in self.special_probs().iter().enumerate() {
-                if special_prob < SPECIAL_TOL {
-                    continue;
-                }
-                for support_index in 0..num_mats {
-                    let this = special_prob
-                        * self.one_dimension_average_gold(
-                            support_index as i64,
-                            skip_count,
-                            &self.prep_output.bands[plan_index][support_index],
-                            probe,
-                        );
-
-                    gold_breakdown[plan_index][support_index] += this;
-                    metric_per_plan[plan_index] += this;
-                    if plan_index == 0 {
-                        avg_used[support_index] +=
-                            special_prob * self.simple_avg(support_index as i64, skip_count)
+            for support_index in 0..num_mats {
+                let bands = &self.prep_output.bands[plan_index][support_index];
+                let this = self.material_average_gold(
+                    &mut memo,
+                    support_index as i64,
+                    &skips,
+                    bands,
+                    sums.get(support_index).map(|sums| &sums[..]),
+                    tuning_key,
+                    probe,
+                );
+                gold_breakdown[plan_index][support_index] += this;
+                metric_per_plan[plan_index] += this;
+                if plan_index == 0 {
+                    for &(skip_count, special_prob) in &skips {
+                        avg_used[support_index] += special_prob * self.simple_avg(support_index as i64, skip_count)
                     }
                 }
             }
         }
+        self.gold_memo = memo;
 
         (metric_per_plan, avg_used, gold_breakdown)
+    }
+
+    /// the free tap outcomes worth evaluating, with their probabilities
+    fn live_skips(&self) -> Vec<(usize, f64)> {
+        self.special_probs()
+            .iter()
+            .copied()
+            .enumerate()
+            .filter(|&(_, special_prob)| special_prob >= SPECIAL_TOL)
+            .collect()
+    }
+
+    /// One material's average gold over the free tap outcomes.
+    ///
+    /// A move changes one upgrade, so most materials are as they were some evaluations ago:
+    /// each outcome's result is kept under a key made of what it depends on. Per upgrade
+    /// that is its state where it is honed, and only what a free tap leaves where it is
+    /// skipped. The order of the rest does not matter, so the key is a sum.
+    fn material_average_gold(
+        &self,
+        memo: &mut AHashMap<u64, f64>,
+        support_index: i64,
+        skips: &[(usize, f64)],
+        thresh_price_pairs: &[(f64, f64)],
+        sums: Option<&[u64]>,
+        tuning_key: u64,
+        probe: &mut Probe,
+    ) -> f64 {
+        // what the key says about everything but the upgrades
+        let mut base = mix(support_index as u64, tuning_key);
+        for &(thresh, price) in thresh_price_pairs {
+            base = mix(mix(base, thresh.to_bits()), price.to_bits());
+        }
+        let mut total: f64 = 0.0;
+        let mut missing: SmallVec<[usize; 8]> = SmallVec::new();
+        for (slot, &(skip_count, weight)) in skips.iter().enumerate() {
+            match sums.and_then(|sums| memo.get(&mix(base, sums[slot]))) {
+                Some(&known) => total += weight * known,
+                None => missing.push(skip_count),
+            }
+        }
+        if missing.is_empty() {
+            return total;
+        }
+        let needs_probability = thresh_price_pairs.windows(2).any(|pair| (pair[0].1 - pair[1].1).abs() >= FLOAT_TOL);
+        let table = if needs_probability {
+            let thresholds: SmallVec<[f64; 4]> = thresh_price_pairs.iter().map(|pair| pair.0).collect();
+            self.lattice_table(support_index, &missing, &thresholds)
+        } else {
+            vec![None; missing.len()]
+        };
+        if memo.len() + missing.len() > self.tuning.max_memo_size {
+            memo.clear();
+        }
+        let mut lattices = table.iter();
+        for (slot, &(skip_count, weight)) in skips.iter().enumerate() {
+            if !missing.contains(&skip_count) {
+                continue;
+            }
+            let lattice = lattices.next().unwrap().as_deref();
+            let this_avg =
+                self.one_dimension_average_gold(support_index, skip_count, thresh_price_pairs, lattice, probe);
+            total += weight * this_avg;
+            if let Some(sums) = sums {
+                memo.insert(mix(base, sums[slot]), this_avg);
+            }
+        }
+        total
+    }
+
+    /// What each material's key says about the upgrades, for every free tap outcome:
+    /// `[material][outcome]`. One pass over the upgrades, which are stored by upgrade.
+    fn memo_sums(&self, skips: &[(usize, f64)]) -> Vec<Vec<u64>> {
+        let num_mats = self.upgrade_arr[0].cost_dist.len();
+        let n = self.special_state.len();
+        let mut out = vec![vec![0u64; skips.len()]; num_mats];
+        let (first, last) = (skips[0].0, skips[skips.len() - 1].0);
+        let mut run = vec![0u64; num_mats];
+        // what a free tap leaves of the upgrades before each outcome
+        let mut slot = 0;
+        for index in 0..=last.min(n) {
+            while slot < skips.len() && skips[slot].0 == index {
+                for (sums, skipped) in out.iter_mut().zip(&run) {
+                    sums[slot] = mix(*skipped, 1);
+                }
+                slot += 1;
+            }
+            if index == n {
+                break;
+            }
+            let u_index = self.special_state[index];
+            for (sum, support) in run.iter_mut().zip(&self.upgrade_arr[u_index].cost_dist) {
+                *sum = sum.wrapping_add(mix(u_index as u64, support.access_min(true).to_bits()));
+            }
+        }
+        // and the states of the ones from it on
+        run.fill(0);
+        let mut slot = skips.len();
+        for index in (first..=n).rev() {
+            if index < n {
+                let u_index = self.special_state[index];
+                let upgrade = &self.upgrade_arr[u_index];
+                for (sum, support) in run.iter_mut().zip(&upgrade.cost_dist) {
+                    let made_of = if support.ignore { 0f64.to_bits() } else { upgrade.state.hash };
+                    *sum = sum.wrapping_add(mix(u_index as u64, made_of));
+                }
+            }
+            while slot > 0 && skips[slot - 1].0 >= index {
+                slot -= 1;
+                for (sums, sum) in out.iter_mut().zip(&run) {
+                    sums[slot] = sums[slot].wrapping_add(*sum);
+                }
+            }
+        }
+        out
     }
 
     /// See Saddlepoint Approximation.pdf for more info on the math. This is a generalized version for n price breakpoints
@@ -102,15 +224,32 @@ impl StateBundle {
         support_index: i64,
         skip_count: usize,
         thresh_price_pairs: &[(f64, f64)],
+        lattice: Option<&[(f64, f64)]>,
         probe: &mut Probe,
     ) -> f64 {
         let num_thresholds: usize = thresh_price_pairs.len();
 
-        let simple_mean: f64 = self.simple_avg(support_index, skip_count);
-
         if num_thresholds == 1 {
+            let simple_mean: f64 = self.simple_avg(support_index, skip_count);
             return thresh_price_pairs[0].1 * (thresh_price_pairs[0].0 - simple_mean);
         }
+        // exact and shared by every threshold, where it is cheap enough
+        if let Some(lattice) = lattice {
+            let simple_mean: f64 = self.simple_avg(support_index, skip_count);
+            let (last_thresh, last_price) = thresh_price_pairs[num_thresholds - 1];
+            let mut out: f64 = last_price * (last_thresh - simple_mean);
+            for (index, &(thresh, price)) in thresh_price_pairs.iter().enumerate().skip(1) {
+                let prev_price = thresh_price_pairs[index - 1].1;
+                if (prev_price - price).abs() < FLOAT_TOL {
+                    continue;
+                }
+                probe.count(Counter::Lattice);
+                out += (prev_price - price) * (thresh * lattice[index].0 - lattice[index].1 * simple_mean);
+            }
+            return out;
+        }
+        let shape = self.shape(support_index, skip_count);
+        let simple_mean: f64 = shape.mean;
 
         let simple_mean_log: f64 = simple_mean.ln();
 
@@ -118,8 +257,6 @@ impl StateBundle {
         let last_price: f64 = thresh_price_pairs[num_thresholds - 1].1;
 
         let mut out: f64 = last_price * (last_thresh - simple_mean);
-        // exact and shared by every threshold, where it is cheap enough
-        let mut lattice: Option<Option<Lattice>> = None;
 
         for (index, &(thresh, price)) in thresh_price_pairs.iter().enumerate().skip(1) {
             let prev_price = thresh_price_pairs[index - 1].1;
@@ -131,31 +268,8 @@ impl StateBundle {
                 continue;
             }
 
-            if let Some(lattice) = lattice.get_or_insert_with(|| self.lattice(support_index, skip_count)) {
-                probe.count(Counter::Lattice);
-                out += (prev_price - price)
-                    * (thresh * lattice.within(thresh, false)
-                        - lattice.within(thresh, true) * simple_mean);
-                continue;
-            }
-
-            let biased_prob: f64 = self.saddlepoint_approximation_wrapper(
-                support_index,
-                skip_count,
-                thresh,
-                true,
-                simple_mean_log,
-                probe,
-            );
-
-            let prob: f64 = self.saddlepoint_approximation_wrapper(
-                support_index,
-                skip_count,
-                thresh,
-                false,
-                NAN,
-                probe,
-            );
+            let (prob, biased_prob) =
+                self.probability_pair(support_index, skip_count, &shape, thresh, simple_mean_log, probe);
 
             out += (prev_price - price) * (thresh * prob - biased_prob * simple_mean);
         }

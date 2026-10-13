@@ -31,6 +31,14 @@ pub struct StateBundle {
 
     pub adv_cache: AHashMap<AdvConfig, AdvDistTriplet>,
 
+    /// the free tap budget and order the cache was last filled for
+    #[serde(skip)]
+    pub special_done: Option<(i64, Vec<usize>)>,
+
+    /// one material's average gold under one free tap outcome, by what it was made from
+    #[serde(skip)]
+    pub gold_memo: AHashMap<u64, f64>,
+
     #[serde(skip)]
     pub tuning: Tuning,
 }
@@ -84,6 +92,8 @@ impl StateBundle {
 
             special_cache: AHashMap::new(),
             adv_cache: AHashMap::new(),
+            gold_memo: AHashMap::new(),
+            special_done: None,
             tuning: Tuning::default(),
         };
 

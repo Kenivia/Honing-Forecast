@@ -116,6 +116,8 @@ impl StateBundle {
             num_threads,
 
             adv_cache,
+            gold_memo: AHashMap::new(),
+            special_done: None,
             tuning: Default::default(),
         };
         out.apply_chest_state(false);

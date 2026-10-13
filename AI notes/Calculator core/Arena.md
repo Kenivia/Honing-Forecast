@@ -52,13 +52,32 @@ A set is a named list of scenarios for one purpose, in `test_cases/sets/<name>.t
 - `pnpm arena sets` lists them. `--set <name>` on `run`, `verify` and `carry` uses one in place of the folder: `pnpm arena run baseline current --set pilot`.
 - `pnpm arena define <name> --note "..." --kind single --where n=32..41 --where juice_owned=0.4..0.7 --steps 4 --limit 12` writes one from filters: `--kind` is a prefix of the name (single, chain, sweep, stress), a `--where` key is an axis of `meta.axes`, `n` (upgrades of the first step) or `steps`. The command is kept in the file. Or write the file by hand.
 - A truncated chain's steps are the same payloads, so they share their best known with the full chain.
-- `pilot` is the quick first run for a new variant. It was picked from the exploratory run as cases the optimizer of the time hit a quarter to three quarters of the time, which is where a variant can move the result either way.
+- `pilot` is the quick first run for a new variant: two chains cut to four steps and three singles, 11 payloads, 20 CPU seconds a seed. It was picked from the exploratory run (session 14) as cases the optimizer of the time hit a quarter to three quarters of the time, which is where a variant can move the result either way, and to cover both tiers, juice, free taps, advanced honing and every kind of chain step but a goal or price change.
 
 ## The exploratory run
 
-`test_cases/scenarios/explore` (600 singles, 200 chains of 8, 150 sweeps) and `explore_stress` were run cold over 8 seeds in October 2026, sessions 4 and 5 of the database. `python scripts/arena/explore_report.py [session] [folder]` prints what was read off it: hit rate, time and when the best was found by size, by axis, by sweep level and by what happened before a chain step. Run it again after a full run of a new variant. Session 3 is a stopped run whose error rows are not real.
+`test_cases/scenarios/explore` (600 singles, 200 chains of 8, 150 sweeps: 2316 payloads) and `explore_stress` were run cold in October 2026. `python scripts/arena/explore_report.py [session] [folder]` prints what was read off a run: hit rate, time and when the best was found by size, by axis, by sweep level and by what happened before a chain step. Run it again after a full run of a new variant.
 
-**The chains of that run are gone.** Their player skipped an upgrade whose piece was not ready instead of doing the level under it, so it did not free tap where the plan said. The 200 chain files and every row of their steps after the first were deleted; the first steps are unchanged by the fix and keep their runs. `pnpm arena gen explore --singles 600 --chains 200 --steps 8 --sweeps` writes them again under the same names, and until then the `chains` and `pilot` sets name scenarios that are not there, and `carry` has nothing to read.
+| session | what |
+| --- | --- |
+| 14 | `explore`, 8 seeds, the code at `69fef473` (the `baseline` snapshot) |
+| 20 | `explore`, 8 seeds, the evaluator sped up (`Evaluation pipeline.md`) |
+| 18 | `pilot`, 3 seeds, `--jobs 1`: `baseline`, `current`, and `current` with the memo off and with the old root finding too |
+| 16, 19 | `stress`, 1 seed, `--jobs 2`: `baseline` and `current` |
+
+Sessions 3 to 5 are of the payloads before the folder was generated again and match nothing in it now. Session 17 is session 20 with a root finder bug that killed 3 of its jobs; 15 is 18 before that fix.
+
+**Generating a set again gives other payloads once the evaluator has changed.** The owned amounts are quantiles read off the evaluator, so generating `explore` again after the fix of October 2026 moved the amounts of two thirds of the singles and sweeps by a unit or so. A payload that moved is a new case with no history, which is why the whole folder was run again and not only its chains.
+
+## The evaluator before and after its speed-up
+
+`baseline` is a snapshot of the code at `69fef473`. What was measured against it, to be repeated after any change to the evaluator:
+
+- **CPU time with one job at a time.** `pilot`: 58.0 seconds to 21.0 (29.6 with `max_memo_size=0`, 33.8 with `taylor_skip=0,seed_biased=false` as well). `stress`: 1517 to 274. Payloads that are mostly advanced honing gain least (`single_0085_t4_n17`: 5.8 to 4.6), because half of what is left of a solve is `compute_adv_dist_wrapper` on a cache miss.
+- **The same search.** With the memo off, most `pilot` payloads find their best at the same iteration with the same gap as `baseline`, seed for seed: the metric is the same to the digits the annealer's decisions hang on. The memo changes the 9th digit and the search with it.
+- **The metric state by state** (`bench --out` and `scripts/arena/bench_diff.py`), over the given state, two scrambles and the best and worst found of every `explore` payload, 11465 states: 99.6% within 1e-6 of the baseline's metric, 10 further than 1e-5, none further than 1e-4. The 3 furthest move as far with the old root finding, on rounding alone: they are thresholds deep in a tail, where the root finder's tolerance on the derivative leaves the root loose. On all of them the saddlepoint's own error against `max_lattice_work` at 2e9 is 10 to 1000 times the movement.
+- **`stress`** on 100 singles: the table of calls by error bucket is the same but for a handful of calls on two rows. **`verify --set juice`**: the same 13 failing rows, largest 66 standard errors, no row changing side.
+- **A full pass.** Over all of `explore`, 8 seeds at 16 jobs (sessions 14 and 20): hit rate 77.5% and 77.5% (the difference by payload is +0.04 points, within 0.5 either way), the new best better by more than 1e-4 on 86 payloads and worse on 75, no job died in either, and 39147 CPU seconds became 13468.
 
 ## Carrying a plan over
 
@@ -77,7 +96,7 @@ The metric assumes the plan made now is followed to the end. `pnpm arena replan 
 
 `test_cases/scenarios/regressions` holds payloads that broke the evaluator. `pnpm arena run --scenarios test_cases/scenarios/regressions --mode cold --seeds 3` is the check: seed 2 of the first one used to panic.
 
-**`verify` on the `juice` set fails 13 rows, and did before the lattice route (17).** The largest are juice rows (`Glacier's Breath`, up to 66 standard errors) whose value is the same to every digit with the lattice route on or off, so they come from an exact method and the difference is between the supports and the simulation, not the approximation. Not looked into.
+**`verify` on the `juice` set fails 13 rows, and they are the saddlepoint formula, not the simulation.** The worst are juice rows (`Glacier's Breath`, up to 66 standard errors). On those states the simulation agrees with an exact sum over the evaluator's own supports, and the evaluator does not: the material has 3 or 4 upgrades with more than one outcome, just over both `max_brute_size` (65,400 against 50,000) and `max_lattice_work` (234,000 against 200,000), so it gets the saddlepoint formula, which is 0.01 to 0.06 off there. That is multiplied by the threshold and the price. A failing juice row means look at which method the material got before suspecting the supports.
 
 **`metric_ref` cannot see an evaluator that is wrong.** It is the driver's evaluator, so a state that exploits its error scores well under every variant. Compare against `max_brute_size` at its maximum (`replan` does) when that is the question.
 
@@ -93,6 +112,7 @@ The metric assumes the plan made now is followed to the end. `pnpm arena replan 
   - **What the gap is divided by is undecided.** The report divides by the best metric, which is near zero wherever credit cancels cost or everything is owned. Spent plus credit (`metric_ref - 2 * gross`) vanishes in the same cases. `flow` does not.
 - **Probabilities** (`stress`, `stress.rs`): `pnpm arena stress [--scenarios dir | --set name] [--scrambles 3] [--tuning key=value]`. For the given state and scrambles 20, 200 and 2000 moves away, every material's probability is asked for at some 70 thresholds (packed around the mean, at quantiles, at the ends of the range, at random), plain and biased, and compared with an exact convolution done here. It reads nothing from the database and writes nothing. The table is by method, region and kind; lattice, brute and trivial must be exact, and a panic is counted by where it was. `verify` cannot see what this sees: it compares the metric at the payload's own thresholds, and within Monte Carlo noise. Materials whose convolution would be too big are left out and counted.
 - **Speed**: thread CPU time around `solve` only, plus counters. The counters are exact and repeatable; CPU time is not, see below.
+- **The evaluator alone** (`bench`, `bench.rs`): `pnpm arena bench [--scenarios dir | --set name] [--filter text] [--tuning key=value] [--states file] [--out file] [--jobs 1]` evaluates each step's given state, two scrambles of it and any states handed in (`--states`, a json of `"scenario:step"` to a list of essences) once for the counters, then repeatedly for the time. `--out` writes one line a state with its metric, which is how two builds of the evaluator are compared state by state. It reads and writes no database. The repeats are of one state, so pass `max_memo_size=0` or they time the memo. `--solve <seed>` times one solve a step instead. `python scripts/arena/bench_diff.py before.tsv after.tsv` puts two `--out` files side by side.
 
 ## Looking inside a run
 

@@ -5,12 +5,13 @@
 use crate::probe::{Counter, Probe};
 use crate::state_bundle::StateBundle;
 use crate::support::Support;
+use serde::{Deserialize, Serialize};
 use std::f64::NAN;
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub struct KsTuple(pub f64, pub f64, pub f64, pub f64, pub f64);
 impl KsTuple {
-    fn add(&self, new: KsTuple) -> KsTuple {
+    pub fn add(&self, new: KsTuple) -> KsTuple {
         KsTuple(
             self.0 + new.0,
             self.1 + new.1,
@@ -21,6 +22,31 @@ impl KsTuple {
     }
     pub fn access(&self) -> (f64, f64, f64, f64, f64) {
         (self.0, self.1, self.2, self.3, self.4)
+    }
+
+    /// The cumulants of the size-biased sum, for E(X'). See one_dimension_average_gold
+    pub fn biased(&self, simple_mean_log: f64) -> KsTuple {
+        let ksx = self;
+        KsTuple(
+            ksx.0 + ksx.1.ln() - simple_mean_log,
+            ksx.1 + ksx.2 / ksx.1,
+            ksx.2 + (ksx.3 * ksx.1 - ksx.2.powi(2)) / (ksx.1.powi(2)),
+            ksx.3
+                + (2.0 * ksx.2.powi(3) + ksx.4 * ksx.1.powi(2) - 3.0 * ksx.3 * ksx.1 * ksx.2)
+                    / ksx.1.powi(3),
+            NAN,
+        )
+    }
+
+    /// The taylor series about here, a short way off
+    pub fn moved(&self, d: f64) -> KsTuple {
+        KsTuple(
+            self.0 + d * (self.1 + d * (self.2 / 2.0 + d * (self.3 / 6.0 + d * self.4 / 24.0))),
+            self.1 + d * (self.2 + d * (self.3 / 2.0 + d * self.4 / 6.0)),
+            self.2 + d * (self.3 + d * self.4 / 2.0),
+            self.3 + d * self.4,
+            self.4,
+        )
     }
 }
 impl Default for KsTuple {
@@ -38,22 +64,14 @@ impl StateBundle {
         skip_count: usize,
         probe: &mut Probe,
     ) -> KsTuple {
+        let raw = self.raw_ks(theta, support_index, skip_count, probe);
+        if compute_biased { raw.biased(simple_mean_log) } else { raw }
+    }
+
+    /// The cumulants of the sum itself, which the biased ones are made from
+    pub fn raw_ks(&self, theta: f64, support_index: i64, skip_count: usize, probe: &mut Probe) -> KsTuple {
         probe.count(Counter::Ks);
-        if compute_biased {
-            // This is for E(X'). See one_dimension_average_gold
-            let ksx = self.cumulant_01234(support_index, skip_count, theta);
-            KsTuple(
-                ksx.0 + ksx.1.ln() - simple_mean_log,
-                ksx.1 + ksx.2 / ksx.1,
-                ksx.2 + (ksx.3 * ksx.1 - ksx.2.powi(2)) / (ksx.1.powi(2)),
-                ksx.3
-                    + (2.0 * ksx.2.powi(3) + ksx.4 * ksx.1.powi(2) - 3.0 * ksx.3 * ksx.1 * ksx.2)
-                        / ksx.1.powi(3),
-                NAN,
-            )
-        } else {
-            self.cumulant_01234(support_index, skip_count, theta)
-        }
+        self.cumulant_01234(support_index, skip_count, theta)
     }
 
     fn cumulant_01234(&self, support_index: i64, skip_count: usize, theta: f64) -> KsTuple {
@@ -82,7 +100,7 @@ impl Support {
     ///
     /// It also shifts everything such that the biggest power we're raising to is 1, which corresponds to dividing all the support by the biggest value
     /// Otherwise if our thing costs 1 mil and theta = 1 we'll be computing e^(1 mil) and that won't end well
-    fn one_cumulant(&self, theta: f64, skipped: bool) -> KsTuple {
+    pub fn one_cumulant(&self, theta: f64, skipped: bool) -> KsTuple {
         let mut sum: f64 = 0.0;
         let mut mean: f64 = 0.0;
         let mut second: f64 = 0.0;
@@ -99,42 +117,44 @@ impl Support {
                 self.access_min(skipped)
             };
 
-        if self.linear {
-            let step = self.gap_size;
+        if self.arithmetic {
+            // The outcomes are evenly spaced, so the moments are taken of q, the count of
+            // outcomes from the light end, and scaled after. Running sums of running sums
+            // give its factorial moments with one multiplication an outcome.
+            let pairs = self.access_collapsed(skipped);
+            let decay_factor = (-self.gap_size * theta.abs()).exp();
+            let mut current_exp_val = 1.0;
+            let (mut r0, mut r1, mut r2, mut r3, mut r4) = (0.0, 0.0, 0.0, 0.0, 0.0);
+            let mut add = |p: f64| {
+                r4 += r3;
+                r3 += r2;
+                r2 += r1;
+                r1 += r0;
+                r0 += p * current_exp_val;
+                current_exp_val *= decay_factor;
+            };
             if theta >= 0.0 {
-                let decay_factor = (-step * theta).exp();
-                let mut current_exp_val = 1.0;
-
-                for (s, p) in self.access_collapsed(skipped).iter().rev() {
-                    let u = p * current_exp_val;
-
-                    mean += s * u;
-                    let x2: f64 = s * s;
-                    second += x2 * u;
-                    let x3: f64 = x2 * s;
-                    third += x3 * u;
-                    fourth += x3 * s * u;
-                    sum += u;
-
-                    current_exp_val *= decay_factor;
-                }
+                pairs.iter().rev().for_each(|pair| add(pair.1));
             } else {
-                let decay_factor = (step * theta).exp();
-                let mut current_exp_val = 1.0;
-
-                for (s, p) in self.access_collapsed(skipped).iter() {
-                    let u = p * current_exp_val;
-                    mean += s * u;
-                    let x2: f64 = s * s;
-                    second += x2 * u;
-                    let x3: f64 = x2 * s;
-                    third += x3 * u;
-                    fourth += x3 * s * u;
-                    sum += u;
-
-                    current_exp_val *= decay_factor;
-                }
+                pairs.iter().for_each(|pair| add(pair.1));
             }
+            let inv_sum = r0.recip();
+            let (f1, f2, f3, f4) = (r1 * inv_sum, 2.0 * r2 * inv_sum, 6.0 * r3 * inv_sum, 24.0 * r4 * inv_sum);
+            let (m1, m2, m3, m4) = (f1, f2 + f1, f3 + 3.0 * f2 + f1, f4 + 6.0 * f3 + 7.0 * f2 + f1);
+            let mu2 = (m2 - m1 * m1).max(0.0);
+            let mu3 = m3 - 3.0 * m2 * m1 + 2.0 * m1 * m1 * m1;
+            let mu4 = m4 - 4.0 * m3 * m1 + 6.0 * m2 * m1 * m1 - 3.0 * m1 * m1 * m1 * m1;
+            // the value is light + scale * q
+            let (light, scale) =
+                if theta >= 0.0 { (pairs[0].0, self.gap_size) } else { (pairs[pairs.len() - 1].0, -self.gap_size) };
+            let scale2 = scale * scale;
+            return KsTuple(
+                biggest_shift + r0.ln(),
+                light + scale * m1,
+                scale2 * mu2,
+                scale2 * scale * mu3,
+                scale2 * scale2 * (mu4 - 3.0 * mu2 * mu2),
+            );
         } else {
             for (s, p) in self.access_collapsed(skipped).iter() {
                 let u: f64 = p * (s * theta - biggest_shift).exp();

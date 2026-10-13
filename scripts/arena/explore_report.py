@@ -1,10 +1,10 @@
 """What the exploratory arena run shows: hit rate, time and when the best was found, by
 size, axis, sweep level and chain step kind. See `AI notes/Calculator core/Arena.md`.
 
-    python scripts/arena/explore_report.py [session=4] [folder=test_cases/scenarios/explore]
+    python scripts/arena/explore_report.py [session=20] [folder=test_cases/scenarios/explore]
 """
 import sqlite3,collections,json,math,glob,os,sys
-SESSION=int(sys.argv[1]) if len(sys.argv)>1 else 4
+SESSION=int(sys.argv[1]) if len(sys.argv)>1 else 20
 FOLDER=sys.argv[2] if len(sys.argv)>2 else 'test_cases/scenarios/explore'
 c=sqlite3.connect('file:test_cases/arena.sqlite?mode=ro',uri=True)
 meta={}

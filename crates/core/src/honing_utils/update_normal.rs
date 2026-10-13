@@ -1,11 +1,9 @@
-use ahash::AHashMap;
-use smallvec::smallvec;
-
 use crate::constants::ARTISAN_MULTIPLIER;
 use crate::constants::juice_info::JuiceInfo;
 use crate::materials::NUM_BASE_MATS;
 use crate::my_dbg;
 use crate::state::State;
+use crate::support::Outline;
 use crate::upgrade::Upgrade;
 
 pub fn get_extra_arr(state: &State, juice_info: &JuiceInfo, upgrade: &Upgrade) -> Vec<f64> {
@@ -101,83 +99,43 @@ pub fn probability_distribution(
 impl Upgrade {
     pub fn update_support_normal(&mut self, juice_info: &JuiceInfo) {
         assert!(self.is_normal_honing);
+        if self.cost_dist[0].support_state_hash == self.state.hash {
+            return;
+        }
 
         let l_len: usize = self.normal_dist.len();
 
+        let outline = Outline::of(&self.normal_dist);
         for t_index in 0..NUM_BASE_MATS {
-            let mut this_mats_costs: Vec<f64> = Vec::with_capacity(l_len);
-            let mut cost_so_far: f64 = if self.unlocked {
-                0.0
-            } else {
-                self.unlock_costs[t_index]
-            };
-            let this_cost: f64 = self.costs[t_index];
-            for (index, _p) in self.normal_dist.iter().enumerate() {
-                this_mats_costs.push(cost_so_far);
+            let start = if self.unlocked { 0.0 } else { self.unlock_costs[t_index] };
+            self.cost_dist[t_index].update_even(start, self.costs[t_index], self.state.hash, &self.normal_dist, &outline);
+        }
 
-                if index >= l_len - 1 {
-                    break;
+        // a juice is only counted on the taps the state uses it on
+        for &id in juice_info.normal_uindex_to_id[self.piece_type_usize][self.upgrade_index].iter() {
+            let amount = juice_info.access(id, self.piece_type_usize, self.upgrade_index).normal_amt_used as f64;
+            let mut so_far: f64 = 0.0;
+            let mut support: Vec<f64> = Vec::with_capacity(l_len);
+            for index in 0..l_len {
+                support.push(so_far);
+                if index + 2 < l_len && self.state.get(index).is_some_and(|ids| ids.contains(&id)) {
+                    so_far += amount;
                 }
-
-                cost_so_far += this_cost;
             }
-
-            self.cost_dist[t_index].update_payload(
-                this_mats_costs,
-                self.state.hash,
-                &self.normal_dist,
-                this_cost,
-                true,
-            );
-        }
-        let possible_ids =
-            &juice_info.normal_uindex_to_id[self.piece_type_usize][self.upgrade_index];
-
-        let mut out: AHashMap<usize, (f64, Vec<f64>, f64)> =
-            AHashMap::from_iter(possible_ids.iter().map(|id| {
-                (
-                    *id,
-                    (
-                        0.0,
-                        Vec::new(),
-                        juice_info
-                            .access(*id, self.piece_type_usize, self.upgrade_index)
-                            .normal_amt_used as f64,
-                    ),
-                )
-            }));
-        for (index, _) in self.normal_dist.iter().enumerate() {
-            for id in possible_ids.iter() {
-                let current = out[id].0;
-                out.get_mut(&id).unwrap().1.push(current);
-            }
-
-            if index >= l_len - 2 {
-                continue;
-            }
-
-            for actual_id in self.state.get(index).unwrap_or(&smallvec![]) {
-                out.get_mut(&actual_id).unwrap().0 += out[actual_id].2;
-            }
-            // if *juice && id <= 1 {
-            //     weap_cost += amt;
-            // }
-            // if *book == id && id > 1 {
-            //     weap_cost += amt;
-            // }
-        }
-        for (id, (_, support, gap_size)) in out {
             self.cost_dist[NUM_BASE_MATS + id].update_payload(
                 support,
                 self.state.hash,
                 &self.normal_dist,
-                gap_size,
+                amount,
                 true,
             );
         }
     }
 
     pub fn update_dist_normal(&mut self, juice_info: &JuiceInfo) {
+        if self.normal_dist.prob_state_hash == self.state.hash {
+            return;
+        }
         let prob_dist: Vec<f64> = new_prob_dist(&self.state, juice_info, self);
 
         self.normal_dist.update_payload(prob_dist, self.state.hash);

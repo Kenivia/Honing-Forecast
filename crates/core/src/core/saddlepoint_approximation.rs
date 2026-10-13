@@ -60,6 +60,18 @@ fn edgeworth(at_zero: KsTuple, budget: f64, compute_biased: bool, normal_dist: &
     normal_dist.cdf(z) - cdf_correction
 }
 
+/// What every threshold of one material shares, under one free tap outcome
+pub struct Shape {
+    pub min_value: f64,
+    pub max_value: f64,
+    pub span: f64,
+    pub min_delta: f64,
+    pub too_big: bool,
+    pub mean: f64,
+    /// the cumulants at zero
+    pub zero: KsTuple,
+}
+
 impl StateBundle {
     pub fn lattice_span(&self, support_index: i64, skip_count: usize) -> (f64, f64) {
         span_of(
@@ -68,12 +80,48 @@ impl StateBundle {
         )
     }
 
-    pub fn support_size_too_big(&self, support_index: i64, skip_count: usize) -> bool {
+    pub fn shape(&self, support_index: i64, skip_count: usize) -> Shape {
+        let (mut min_value, mut max_value, mut mean) = (0.0, 0.0, 0.0);
         let mut product: usize = 1;
-        for a in self.extract_collapsed_pair(support_index, skip_count) {
-            product = product.saturating_mul(a.len());
+        let mut span: i64 = 0;
+        let mut min_delta: f64 = INFINITY;
+        let mut zero = KsTuple::default();
+        for (index, &u_index) in self.special_state.iter().enumerate() {
+            let support = self.support_from_index(u_index, support_index);
+            let skipped = index < skip_count;
+            min_value += support.access_min(skipped);
+            max_value += support.access_max(skipped);
+            if skipped {
+                mean += support.access_min(true);
+                if !support.ignore {
+                    zero.1 += support.access_min(true);
+                }
+                continue;
+            }
+            mean += support.mean;
+            if !support.ignore {
+                zero = zero.add(support.zero);
+            }
+            let outcomes = support.access_collapsed(false).len();
+            product = product.saturating_mul(outcomes);
+            if outcomes >= 2 {
+                if !support.gap_size.is_finite() {
+                    panic!("non finite gap size")
+                }
+                min_delta = min_delta.min(support.gap_size);
+                span = span.gcd(&(support.gap_size.round() as i64));
+            }
         }
-        product > self.tuning.max_brute_size
+        Shape {
+            min_value,
+            max_value,
+            // always do a little bit of cont correction ig cos why not
+            span: if min_delta < MIN_LATTICE_SPAN { MIN_LATTICE_SPAN } else { (span as f64).max(MIN_LATTICE_SPAN) },
+            min_delta,
+            too_big: product > self.tuning.max_brute_size,
+            mean,
+            zero,
+        }
     }
 
     pub fn saddlepoint_approximation_wrapper(
@@ -85,28 +133,67 @@ impl StateBundle {
         simple_mean_log: f64,
         probe: &mut Probe,
     ) -> f64 {
+        let shape = self.shape(support_index, skip_count);
         self.probability_within(
             support_index,
             skip_count,
+            &shape,
             inp_budget,
             compute_biased,
             simple_mean_log,
             probe,
             0,
+            &mut None,
+            true,
         )
+    }
+
+    /// The plain probability and the biased one, of a sum the lattice is too big for. The
+    /// biased root starts from the plain one.
+    pub fn probability_pair(
+        &self,
+        support_index: i64,
+        skip_count: usize,
+        shape: &Shape,
+        inp_budget: f64,
+        simple_mean_log: f64,
+        probe: &mut Probe,
+    ) -> (f64, f64) {
+        let mut root: Option<(f64, KsTuple)> = None;
+        let plain =
+            self.probability_within(support_index, skip_count, shape, inp_budget, false, NAN, probe, 0, &mut root, false);
+        if !self.tuning.seed_biased {
+            root = None;
+        }
+        let biased = self.probability_within(
+            support_index,
+            skip_count,
+            shape,
+            inp_budget,
+            true,
+            simple_mean_log,
+            probe,
+            0,
+            &mut root,
+            false,
+        );
+        (plain, biased)
     }
 
     fn probability_within(
         &self,
         support_index: i64,
         skip_count: usize,
+        shape: &Shape,
         inp_budget: f64,
         compute_biased: bool,
         simple_mean_log: f64,
         probe: &mut Probe,
         depth: usize,
+        root: &mut Option<(f64, KsTuple)>,
+        try_lattice: bool,
     ) -> f64 {
-        let (min_value, max_value) = self.find_min_max(support_index, skip_count);
+        let &Shape { min_value, max_value, span, min_delta, .. } = shape;
         if inp_budget > max_value - float_tol(max_value) {
             probe.count(Counter::Trivial);
             return 1.0;
@@ -116,12 +203,11 @@ impl StateBundle {
             probe.count(Counter::Trivial);
             return 0.0;
         };
-        if let Some(lattice) = self.lattice(support_index, skip_count) {
+        if try_lattice && let Some(lattice) = self.lattice(support_index, skip_count) {
             probe.count(Counter::Lattice);
             return lattice.within(inp_budget, compute_biased);
         }
-        let (span, min_delta) = self.lattice_span(support_index, skip_count);
-        if self.support_size_too_big(support_index, skip_count) {
+        if shape.too_big {
             // the lattice starts at the minimum, not at zero
             let budget = (min_value + ((inp_budget - min_value) / span + FLOAT_TOL).floor() * span)
                 .min(max_value - span)
@@ -135,28 +221,20 @@ impl StateBundle {
                 return self.saddlepoint_approximation(
                     support_index,
                     skip_count,
-                    min_value,
-                    max_value,
-                    span,
+                    shape,
                     inp_budget,
                     budget,
                     compute_biased,
                     simple_mean_log,
                     probe,
-                    min_delta,
                     depth,
+                    root,
                 );
             }
         }
         probe.count(Counter::Brute);
 
-        self.brute_success_prob(
-            support_index,
-            skip_count,
-            inp_budget,
-            self.simple_avg(support_index, skip_count),
-            compute_biased,
-        )
+        self.brute_success_prob(support_index, skip_count, inp_budget, shape.mean, compute_biased)
     }
 
     /// Lugganani-Rice formula
@@ -164,26 +242,18 @@ impl StateBundle {
         &self,
         support_index: i64,
         skip_count: usize,
-        min_value: f64,
-        max_value: f64,
-        span: f64,
+        shape: &Shape,
         inp_budget: f64,
         budget: f64,
         compute_biased: bool,
         simple_mean_log: f64,
         probe: &mut Probe,
-        min_delta: f64,
         depth: usize,
+        root: &mut Option<(f64, KsTuple)>,
     ) -> f64 {
         probe.count(Counter::Saddlepoint);
-        let at_zero: KsTuple = self.ks(
-            0.0,
-            compute_biased,
-            simple_mean_log,
-            support_index,
-            skip_count,
-            probe,
-        );
+        let &Shape { min_value, max_value, span, min_delta, .. } = shape;
+        let at_zero: KsTuple = if compute_biased { shape.zero.biased(simple_mean_log) } else { shape.zero };
         let k1_zero = at_zero.1;
         let normal_dist: Normal = Normal::new(0.0, 1.0).unwrap();
 
@@ -193,13 +263,7 @@ impl StateBundle {
             (edgeworth(at_zero, budget, compute_biased, &normal_dist), true)
         } else {
             probe.count(Counter::Lugannani);
-            let (_, guess, _) = self.min_guess_max_triplet(
-                budget,
-                min_value,
-                max_value,
-                (at_zero.1, at_zero.2, at_zero.3),
-            );
-            let result_opt = match self.tuning.root_finder {
+            let mut find = |guess: f64, seed: Option<KsTuple>| match self.tuning.root_finder {
                 RootFinder::Householder => self.householder(
                     compute_biased,
                     simple_mean_log,
@@ -210,13 +274,26 @@ impl StateBundle {
                     min_value,
                     max_value,
                     min_delta,
+                    seed,
                     probe,
                 ),
             };
+            let own_guess =
+                || self.min_guess_max_triplet(budget, min_value, max_value, (at_zero.1, at_zero.2, at_zero.3)).1;
+            // The biased search starts from the plain root of the same threshold and the
+            // cumulants there. Where those are a hair off it can be bracketed away from its
+            // root, and starts again on its own.
+            let result_opt = match root.take().filter(|_| compute_biased) {
+                Some((theta, raw)) => find(theta, Some(raw)).or_else(|| find(own_guess(), None)),
+                None => find(own_guess(), None),
+            };
 
-            let result: (f64, f64, usize, KsTuple) = result_opt.unwrap();
+            let result: (f64, f64, usize, KsTuple, KsTuple) = result_opt.unwrap();
             let theta_hat = result.0;
             let ks_tuple: KsTuple = result.3;
+            if !compute_biased {
+                *root = Some((theta_hat, result.4));
+            }
 
             let w_hat = theta_hat.signum() * (2.0 * (theta_hat * budget - ks_tuple.0)).sqrt();
             let u_hat = 2.0 / span * (span * theta_hat / 2.0).sinh() * ks_tuple.2.sqrt(); // second continuity correction
@@ -284,13 +361,16 @@ impl StateBundle {
             num_threads: self.num_threads,
             special_cache: AHashMap::new(),
             adv_cache: AHashMap::new(),
+            gold_memo: AHashMap::new(),
+            special_done: None,
             tuning: self.tuning.clone(),
         };
 
         let mut out: f64 = 0.0;
         for (value, p) in pairs {
             pinned.upgrade_arr[u_index].cost_dist[support_index as usize].pin(value);
-            let this_mean = pinned.simple_avg(support_index, skip_count);
+            let shape = pinned.shape(support_index, skip_count);
+            let this_mean = shape.mean;
             if compute_biased && this_mean < FLOAT_TOL {
                 continue;
             }
@@ -303,11 +383,14 @@ impl StateBundle {
                 * pinned.probability_within(
                     support_index,
                     skip_count,
+                    &shape,
                     inp_budget,
                     compute_biased,
                     if compute_biased { this_mean.ln() } else { NAN },
                     probe,
                     depth + 1,
+                    &mut None,
+                    true,
                 );
         }
         out
