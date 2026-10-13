@@ -4,6 +4,7 @@
 //! worker, which runs one job. A snapshot is a copy of the binary, so a variant's worker
 //! is the code as it was when the snapshot was taken.
 
+mod adv_table;
 mod bench;
 mod carry;
 mod db;

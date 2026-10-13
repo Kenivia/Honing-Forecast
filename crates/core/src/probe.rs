@@ -35,9 +35,16 @@ pub struct ProbeData {
     pub detail: bool,
     pub iter: i64,
     pub counts: [i64; COUNTER_NAMES.len()],
+    /// wall seconds a solve spent evaluating; the rest of it is the optimizer deciding
+    pub eval_s: f64,
     pub rows: Vec<(i64, &'static str, f64)>,
     pub texts: Vec<(i64, &'static str, String)>,
 }
+
+#[cfg(feature = "trace")]
+pub type Clock = std::time::Instant;
+#[cfg(not(feature = "trace"))]
+pub type Clock = ();
 
 #[derive(Debug, Clone, Default)]
 pub struct Probe {
@@ -66,6 +73,21 @@ impl Probe {
         #[cfg(feature = "trace")]
         {
             self.data.counts[_counter as usize] += 1;
+        }
+    }
+
+    #[inline(always)]
+    pub fn clock(&self) -> Clock {
+        #[cfg(feature = "trace")]
+        return std::time::Instant::now();
+    }
+
+    /// what ran since the clock was taken was an evaluation
+    #[inline(always)]
+    pub fn evaluated(&mut self, _since: Clock) {
+        #[cfg(feature = "trace")]
+        {
+            self.data.eval_s += _since.elapsed().as_secs_f64();
         }
     }
 

@@ -1,43 +1,28 @@
 use ahash::AHashMap;
+use smallvec::SmallVec;
 
 use crate::{
     advanced_honing::utils::{AdvConfig, AdvDistTriplet, SmallAdvState},
     constants::IGNORE_PROB_TOL,
 };
 
-#[derive(Clone, Default, Debug)]
-pub struct PMF {
-    pub data: Vec<f64>,
+/// The cost, juice and scroll distributions of every state visited, end to end in `data`.
+/// A state is its index in `spans`: where its three start and how long each is.
+struct Dists {
+    memo: AHashMap<u64, usize>,
+    spans: Vec<(usize, [usize; 3])>,
+    data: Vec<f64>,
 }
 
-impl PMF {
+/// the state that is done: nothing more of anything
+const DONE: usize = 0;
+
+impl Dists {
     fn new() -> Self {
-        Self { data: Vec::new() }
-    }
-
-    fn single(val: usize) -> Self {
-        let mut data = vec![0.0; val + 1];
-        data[val] = 1.0;
-        Self { data }
-    }
-
-    fn shift_and_scale(&self, shift: usize, scale: f64) -> Self {
-        if self.data.is_empty() || scale <= 0.0 {
-            return Self::new();
-        }
-        let mut res = vec![0.0; self.data.len() + shift];
-        for (i, &v) in self.data.iter().enumerate() {
-            res[i + shift] = v * scale;
-        }
-        Self { data: res }
-    }
-
-    fn add_in_place(&mut self, other: &Self) {
-        if self.data.len() < other.data.len() {
-            self.data.resize(other.data.len(), 0.0);
-        }
-        for (i, &v) in other.data.iter().enumerate() {
-            self.data[i] += v;
+        Self {
+            memo: AHashMap::with_capacity(4096),
+            spans: vec![(0, [1, 1, 1])],
+            data: vec![1.0; 3],
         }
     }
 }
@@ -49,75 +34,51 @@ const ROLL_THRESH: [(f64, f64); 4] = [
     (0.0, 0.6),  // (juice=True, scroll=True)
 ];
 
-fn compute_adv_dist(
-    state: SmallAdvState,
-    config: &AdvConfig,
-    memo: &mut AHashMap<SmallAdvState, (PMF, PMF, PMF)>,
-) -> (PMF, PMF, PMF) {
+// 255 is forever
+fn use_one(count: &mut u8) {
+    if *count != 255 {
+        *count = count.saturating_sub(1);
+    }
+}
+
+fn compute_adv_dist(state: SmallAdvState, config: &AdvConfig, dists: &mut Dists) -> usize {
     // Terminal condition: if we've reached or exceeded 1000 XP.
     if state.cur_xp >= 100 {
-        return (PMF::single(0), PMF::single(0), PMF::single(0));
+        return DONE;
     }
 
     // Return memoized distributions if we've visited this state before
-    if let Some(dists) = memo.get(&state) {
-        return dists.clone();
+    let key = state.packed();
+    if let Some(&index) = dists.memo.get(&key) {
+        return index;
     }
 
-    let mut expected_cost = PMF::new();
-    let mut expected_juice = PMF::new();
-    let mut expected_scroll = PMF::new();
-
-    let cost_inc = (!state.next_free) as usize;
     let gracing = state.cur_balls >= 6;
     let double_balls_inc = if config.double_balls { 2 } else { 1 };
 
-    let mut juice_inc = 0;
-    let mut scroll_inc = 0;
-    let mut is_grace_juice = false;
-    let mut is_grace_scroll = false;
-    let mut is_non_grace_juice = false;
-    let mut is_non_grace_scroll = false;
+    let should_juice = (state.non_grace_juice_count > 0 && state.cur_xp <= 96)
+        || (gracing && state.grace_juice_count > 0 && state.cur_xp < 94);
+    let should_scroll = (state.non_grace_scroll_count > 0 && state.cur_xp <= 96)
+        || (gracing && state.grace_scroll_count > 0 && state.cur_xp < 94);
+    let (t1, t2) = ROLL_THRESH[(should_juice as usize) | ((should_scroll as usize) << 1)];
 
-    let (t1, t2) = {
-        let should_juice = (state.non_grace_juice_count > 0 && state.cur_xp <= 96)
-            || (gracing && state.grace_juice_count > 0 && state.cur_xp < 94);
-        let should_scroll = (state.non_grace_scroll_count > 0 && state.cur_xp <= 96)
-            || (gracing && state.grace_scroll_count > 0 && state.cur_xp < 94);
-
-        if should_juice {
-            juice_inc = 1;
-            if gracing {
-                is_grace_juice = true;
-            } else {
-                is_non_grace_juice = true;
-            }
-        }
-        if should_scroll {
-            scroll_inc = 1;
-            if gracing {
-                is_grace_scroll = true;
-            } else {
-                is_non_grace_scroll = true;
-            }
-        }
-
-        ROLL_THRESH[(should_juice as usize) | ((should_scroll as usize) << 1)]
-    };
+    // what this tap adds to the cost, the juice and the scroll
+    let incs = [(!state.next_free) as usize, should_juice as usize, should_scroll as usize];
 
     let base_rolls = [(t1, 1), (t2 - t1, 2), (1.0 - t2, 4)];
+    let mut children: SmallVec<[(f64, usize); 18]> = SmallVec::new();
 
     for (prob_base, base_xp) in base_rolls {
         if prob_base <= 0.0 {
             continue;
         }
 
-        let mut sub_branches = Vec::new();
+        let mut sub_branches: SmallVec<[(f64, SmallAdvState); 6]> = SmallVec::new();
 
         if gracing {
-            sub_branches = get_grace_sub_branches(config, &state, base_xp);
+            get_grace_sub_branches(config, &state, base_xp, &mut sub_branches);
         } else {
-            let mut next_state = state.clone();
+            let mut next_state = state;
             next_state.cur_balls += double_balls_inc;
             next_state.cur_xp += base_xp;
             next_state.next_free = false; // Next iteration won't be free
@@ -126,52 +87,56 @@ fn compute_adv_dist(
 
         for (prob_sub, mut next_state) in sub_branches {
             // Apply the predefined targets we determined before rolling
-            if is_grace_juice {
-                next_state.grace_juice_count = if next_state.grace_juice_count == 255 {
-                    255
+            if should_juice {
+                use_one(if gracing {
+                    &mut next_state.grace_juice_count
                 } else {
-                    next_state.grace_juice_count.saturating_sub(1)
-                };
+                    &mut next_state.non_grace_juice_count
+                });
             }
-            if is_grace_scroll {
-                next_state.grace_scroll_count = if next_state.grace_scroll_count == 255 {
-                    255
+            if should_scroll {
+                use_one(if gracing {
+                    &mut next_state.grace_scroll_count
                 } else {
-                    next_state.grace_scroll_count.saturating_sub(1)
-                };
-            }
-            if is_non_grace_juice {
-                next_state.non_grace_juice_count = if next_state.non_grace_juice_count == 255 {
-                    255
-                } else {
-                    next_state.non_grace_juice_count.saturating_sub(1)
-                };
-            }
-            if is_non_grace_scroll {
-                next_state.non_grace_scroll_count = if next_state.non_grace_scroll_count == 255 {
-                    255
-                } else {
-                    next_state.non_grace_scroll_count.saturating_sub(1)
-                };
+                    &mut next_state.non_grace_scroll_count
+                });
             }
 
             let combined_prob = prob_base * prob_sub;
             if combined_prob > IGNORE_PROB_TOL {
                 // Recurse down the tree
-                let (cost_dist, juice_dist, scroll_dist) =
-                    compute_adv_dist(next_state, config, memo);
-
-                expected_cost.add_in_place(&cost_dist.shift_and_scale(cost_inc, combined_prob));
-                expected_juice.add_in_place(&juice_dist.shift_and_scale(juice_inc, combined_prob));
-                expected_scroll
-                    .add_in_place(&scroll_dist.shift_and_scale(scroll_inc, combined_prob));
+                children.push((combined_prob, compute_adv_dist(next_state, config, dists)));
             }
         }
     }
 
-    let result = (expected_cost, expected_juice, expected_scroll);
-    memo.insert(state, result.clone());
-    result
+    let mut lens = [0; 3];
+    for &(_, child) in &children {
+        for which in 0..3 {
+            lens[which] = lens[which].max(dists.spans[child].1[which] + incs[which]);
+        }
+    }
+
+    // every child's distributions, shifted by this tap and scaled, straight onto the end
+    let start = dists.data.len();
+    dists.data.resize(start + lens.iter().sum::<usize>(), 0.0);
+    let (known, this) = dists.data.split_at_mut(start);
+    for &(prob, child) in &children {
+        let (mut from, child_lens) = dists.spans[child];
+        let mut to = 0;
+        for which in 0..3 {
+            let source = &known[from..from + child_lens[which]];
+            for (out, &v) in this[to + incs[which]..].iter_mut().zip(source) {
+                *out += v * prob;
+            }
+            from += child_lens[which];
+            to += lens[which];
+        }
+    }
+
+    dists.spans.push((start, lens));
+    dists.memo.insert(key, dists.spans.len() - 1);
+    dists.spans.len() - 1
 }
 
 // Helper function to resolve the deterministic branches of "grace" mechanics
@@ -179,14 +144,14 @@ fn get_grace_sub_branches(
     config: &AdvConfig,
     state: &SmallAdvState,
     base_xp: u8,
-) -> Vec<(f64, SmallAdvState)> {
-    let mut branches = Vec::new();
+    branches: &mut SmallVec<[(f64, SmallAdvState); 6]>,
+) {
     let is_30_40 = config.is_30_40;
 
     if state.next_big {
         let probs = [0.2, 0.2, 0.2, 0.2, 0.2];
         for (i, &prob) in probs.iter().enumerate() {
-            let mut ns = state.clone();
+            let mut ns = *state;
             ns.cur_balls = 0;
             ns.next_big = false;
             ns.next_free = false;
@@ -216,7 +181,7 @@ fn get_grace_sub_branches(
     } else if is_30_40 {
         let probs = [0.125, 0.25, 0.125, 0.25, 0.125, 0.125];
         for (i, &prob) in probs.iter().enumerate() {
-            let mut ns = state.clone();
+            let mut ns = *state;
             ns.cur_balls = 0;
             ns.next_free = false;
             let mut rolled_xp = base_xp;
@@ -249,7 +214,7 @@ fn get_grace_sub_branches(
     } else {
         let probs = [0.15, 0.35, 0.15, 0.35];
         for (i, &prob) in probs.iter().enumerate() {
-            let mut ns = state.clone();
+            let mut ns = *state;
             ns.cur_balls = 0;
             ns.next_free = false;
             let mut rolled_xp = base_xp;
@@ -272,7 +237,6 @@ fn get_grace_sub_branches(
             branches.push((prob, ns));
         }
     }
-    branches
 }
 
 /// Call this function to get your absolute distributions for a given configuration.
@@ -288,22 +252,22 @@ pub fn compute_adv_dist_wrapper(config: &AdvConfig) -> AdvDistTriplet {
         grace_scroll_count: config.grace_scroll_target,
     };
 
-    let result = compute_adv_dist(
-        initial_state,
-        config,
-        &mut AHashMap::with_capacity(256), //adv_memo_cache.get_mut(&invariant_key).unwrap(),
-    );
+    let mut dists = Dists::new();
+    let index = compute_adv_dist(initial_state, config, &mut dists);
+    let (start, lens) = dists.spans[index];
+    let juice_start = start + lens[0];
+    let scroll_start = juice_start + lens[1];
 
     AdvDistTriplet {
-        cost: result.0.data,
-        juice: result.1.data,
-        scroll: result.2.data,
+        cost: dists.data[start..juice_start].to_vec(),
+        juice: dists.data[juice_start..scroll_start].to_vec(),
+        scroll: dists.data[scroll_start..scroll_start + lens[2]].to_vec(),
     }
 }
 #[cfg(test)]
 mod tests {
     use crate::{
-        advanced_honing::utils::{GRACE_FIRST_N, NON_GRACE_FIRST_N},
+        advanced_honing::utils::{GRACE_FIRST_N, NON_GRACE_FIRST_N, index_to_tuple},
         // helpers::write_jsonl,
     };
     use itertools::iproduct;
@@ -360,5 +324,37 @@ mod tests {
         }
         // let file_name: String = format!("./adv_cache_data.json",);
         // write_jsonl(&out, &file_name).unwrap();
+    }
+
+    /// the distributions are what they were before the copies were taken out, to the bit
+    #[test]
+    fn dists_are_unchanged() {
+        let starts = [
+            (0, 0, false, false, false, false),
+            (0, 0, false, false, true, false),
+            (0, 0, false, false, false, true),
+            (37, 3, false, false, false, false),
+            (62, 6, false, true, false, true),
+            (85, 2, true, false, false, true),
+        ];
+        let mut acc: u64 = 0;
+        for (xp, balls, free, big, double, is_30_40) in starts {
+            for (juice, scroll) in iproduct!((0..19).step_by(3), (0..19).step_by(3)) {
+                let (juice, scroll) = (index_to_tuple(juice), index_to_tuple(scroll));
+                let mut config = AdvConfig::new(xp, balls, free, big, double, is_30_40);
+                config.grace_juice_target = juice.0 as u8;
+                config.non_grace_juice_target = juice.1 as u8;
+                config.grace_scroll_target = scroll.0 as u8;
+                config.non_grace_scroll_target = scroll.1 as u8;
+                let out = compute_adv_dist_wrapper(&config);
+                for dist in [out.cost, out.juice, out.scroll] {
+                    acc = acc.wrapping_mul(1099511628211) ^ dist.len() as u64;
+                    for p in dist {
+                        acc = acc.wrapping_mul(1099511628211) ^ p.to_bits();
+                    }
+                }
+            }
+        }
+        assert_eq!(acc, 1849612893681050906);
     }
 }

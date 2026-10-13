@@ -7,6 +7,7 @@ import {
   JOINED_ADV_JUICE,
   NUM_ADV_PIECES,
   SPECIAL_LEAP_LABELS,
+  ADV_ALWAYS_DOUBLE_BALLS,
 } from "@/Utils/Constants";
 
 import { toRaw } from "vue";
@@ -109,10 +110,10 @@ function keyed_to_array(
       const upgrade = upgrade_map.get(key) ?? null;
 
       one_upgrade_input.double_balls =
-        upgrade !== null &&
-        !upgrade.is_normal_honing &&
-        ((upgrade.upgrade_index < 2 && express) ||
-          (upgrade.upgrade_index >= 2 && pretend_30_40));
+        !one_upgrade_input.is_normal_honing &&
+        (ADV_ALWAYS_DOUBLE_BALLS ||
+          (one_upgrade_input.upgrade_index < 2 && express) ||
+          (one_upgrade_input.upgrade_index >= 2 && pretend_30_40));
       // console.log(one_upgrade_input.double_balls);
       let out = structuredClone(toRaw(one_upgrade_input));
       if (

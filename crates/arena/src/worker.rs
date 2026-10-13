@@ -3,6 +3,7 @@
 //! The driver may be a newer build than the worker, so fields added here later need a
 //! serde default.
 
+use crate::adv_table;
 use crate::monte_carlo::{McRow, McSpec, check};
 use crate::scenario::Scenario;
 use cpu_time::ThreadTime;
@@ -81,6 +82,9 @@ pub struct StepResult {
     /// for Optimize the whole solve, for Verify one evaluation
     pub cpu_s: f64,
     pub wall_s: f64,
+    /// of an Optimize's wall_s, what went on evaluating; the rest is the optimizer deciding
+    #[serde(default)]
+    pub eval_s: Option<f64>,
     pub metric: f64,
     pub essence: Essence,
     pub blob_bytes: usize,
@@ -106,6 +110,7 @@ fn result(step: usize, source: String, tuning: &Tuning, state_bundle: &StateBund
         tuning: serde_json::to_value(tuning).unwrap(),
         cpu_s: 0.0,
         wall_s: 0.0,
+        eval_s: None,
         metric: state_bundle.metric,
         essence: Essence::of(state_bundle),
         blob_bytes: 0,
@@ -149,8 +154,11 @@ pub fn run_job(job: &Job) {
     for (step, payload) in job.scenario.steps.iter().enumerate() {
         // a step gets the same seed whether or not it is run as part of a chain
         let mut rng = StdRng::seed_from_u64(job.seed.wrapping_mul(1_000_003).wrapping_add(step as u64));
-        let mut state_bundle = StateBundle::init_from_payload(payload.clone());
+        let mut filled = payload.clone();
+        adv_table::fill(&mut filled);
+        let mut state_bundle = StateBundle::init_from_payload(filled);
         state_bundle.tuning = tuning.clone();
+        let adv_known = state_bundle.adv_cache.len();
 
         match job.kind {
             Kind::Optimize => {
@@ -167,9 +175,13 @@ pub fn run_job(job: &Job) {
                 let wall_s = wall.elapsed().as_secs_f64();
 
                 let mut best = solved.best;
+                let eval_s = probe.data.eval_s;
                 let mut out = result(step, "best".to_string(), &tuning, &best, probe);
                 out.cpu_s = cpu_s;
                 out.wall_s = wall_s;
+                out.eval_s = Some(eval_s);
+                // distributions the table did not have, which should be none
+                out.counters.insert("AdvMiss".to_string(), (best.adv_cache.len() - adv_known) as i64);
                 out.blob_bytes = solved.blob.len();
                 if let Some(spec) = &job.mc {
                     out.mc = check(&mut best, spec, &mut rng);

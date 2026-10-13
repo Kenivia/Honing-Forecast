@@ -1,3 +1,4 @@
+use hf_core::advanced_honing::utils::{AdvConfig, AdvDistTriplet};
 use hf_core::histogram::HistogramOutputs;
 use hf_core::histogram::histogram;
 use hf_core::optimizer::solve;
@@ -19,10 +20,22 @@ use wasm_bindgen::prelude::*;
 #[allow(unused_imports)]
 use web_sys::console;
 
+// every strategy of an advanced upgrade not yet started, from build.rs
+static ADV_FRESH: &[u8] = include_bytes!(concat!(env!("OUT_DIR"), "/adv_fresh.bin"));
+
+fn add_fresh_adv(payload: &mut Payload) {
+    let fresh = Some((0, 0, false, false));
+    if payload.upgrade_info.iter().any(|upgrade| !upgrade.is_normal_honing && upgrade.adv_progress == fresh) {
+        let table: Vec<(AdvConfig, AdvDistTriplet)> = postcard::from_bytes(ADV_FRESH).unwrap();
+        payload.adv_cache.get_or_insert_default().extend(table);
+    }
+}
+
 #[wasm_bindgen]
 pub fn optimize_average_wrapper(input_payload: JsValue) -> JsValue {
     console_error_panic_hook::set_once();
-    let payload: Payload = from_value(input_payload).unwrap();
+    let mut payload: Payload = from_value(input_payload).unwrap();
+    add_fresh_adv(&mut payload);
     let state_bundle: StateBundle = StateBundle::init_from_payload(payload);
 
     let mut rng: ThreadRng = rand::rng();

@@ -21,3 +21,4 @@ rayon = "1.12"
 sobol_burley = "0.5"
 rand_distr = "0.5"
 ctrlc = { version = "3", features = ["termination"] }
+postcard = { version = "1.1", default-features = false, features = ["alloc"] }

@@ -21,6 +21,10 @@ How the frontend talks to Rust for the calculator. Scanner operations share the 
 - `chest_states`, the last optimizer result's, by the same keys, fed back like the free-tap order so the histogram evaluates what the optimizer chose. It arrives from Rust as a JS Map and goes back as one;
 - the previous free-tap order and the advanced-honing cache, fed back in to avoid recomputation.
 
+**The wasm carries the advanced-honing distributions of an upgrade not yet started.** `crates/wasm/build.rs` works out every strategy of the two fresh starts with double balls (+10/+20 and +30/+40) with the core's own code at build time, so the table cannot go stale, and `add_fresh_adv` puts it into the optimizer's payload when an upgrade is at its start. It is 0.6 MB of the wasm. An upgrade in progress, or one without double balls, is still worked out in the browser.
+
+**Every advanced upgrade is sent with `double_balls`**, as the game now has it (`ADV_ALWAYS_DOUBLE_BALLS` in `Constants.ts`). Set to false, the rule of before is back: double only with the express event, or for +30/+40 with the "pretend" checkbox, which is hidden while the constant is true. Rust still takes either. The arena's generated scenarios are of before: double only under the express event. The whole table then comes back in the result's `adv_cache` like anything else in it.
+
 ## What must stay aligned with Rust
 
 - **Material row order.** `ALL_LABELS` in `Constants.ts` defines row order per tier: seven base materials (`NUM_BASE_MATS`), then juices. It must match the tier's constants JSON on the Rust side, because the JSON carries no labels of its own. It is **derived** by filtering `MATERIAL_TABLE` by tier, so that table's order is the thing to get right. It is sent as `material_labels` and is the **only** place the order is declared: Rust builds a label to row map from it and keys every result by label, so a reorder cannot silently put a value on the wrong material, only mismatch the cost tables.

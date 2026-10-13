@@ -399,6 +399,9 @@ export const GRAPH_HEIGHT = 40;
 
 export const NUM_PIECES = 7;
 export const NUM_ADV_PIECES = 6;
+// The game gives every advanced honing double balls now. False brings back the rule of
+// before: only with the express event, or pretended for +30 and +40.
+export const ADV_ALWAYS_DOUBLE_BALLS = true;
 export const NORMAL_COLS = 25;
 export const ADV_COLS = 4;
 

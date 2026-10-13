@@ -44,6 +44,9 @@ pub fn open(path: &Path) -> Connection {
     conn.execute("ALTER TABLE run ADD COLUMN gross REAL", []).ok();
     // and what the state uses on average, at market price
     conn.execute("ALTER TABLE run ADD COLUMN flow REAL", []).ok();
+    // and a solve's wall_s split into evaluating and the optimizer deciding
+    conn.execute("ALTER TABLE run ADD COLUMN eval_s REAL", []).ok();
+    conn.execute("ALTER TABLE run ADD COLUMN decide_s REAL", []).ok();
     conn
 }
 
@@ -145,8 +148,10 @@ pub struct RunKey<'a> {
 pub fn add_run(conn: &Connection, key: &RunKey, out: &StepResult, (metric_ref, gross, flow): (f64, f64, f64), samples: usize) {
     conn.execute(
         "INSERT INTO run(session_id, snapshot_id, variant, step_id, kind, source, seed, chained,
-            tuning, cpu_s, wall_s, metric, metric_ref, state, blob_bytes, counters, gross, flow)
-         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18)",
+            tuning, cpu_s, wall_s, metric, metric_ref, state, blob_bytes, counters, gross, flow,
+            eval_s, decide_s)
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18,
+            ?19, ?20)",
         params![
             key.session_id,
             key.snapshot_id,
@@ -166,6 +171,8 @@ pub fn add_run(conn: &Connection, key: &RunKey, out: &StepResult, (metric_ref, g
             serde_json::to_string(&out.counters).unwrap(),
             gross,
             flow,
+            out.eval_s,
+            out.eval_s.map(|eval_s| out.wall_s - eval_s),
         ],
     )
     .unwrap();

@@ -60,3 +60,6 @@ cambridge-core_saddlepoint-approximations-with-applications_12Oct2026
 
 # arena results, recreated by running it
 test_cases/arena.sqlite*
+
+# advanced honing distributions the arena keeps between runs
+test_cases/adv_cache.sqlite*

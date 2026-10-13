@@ -53,7 +53,9 @@ pub fn run(scenarios: &[Scenario], args: &Args, tuning: &Tuning) {
         steps
             .par_iter()
             .flat_map(|(name, payload)| {
-                let mut base = StateBundle::init_from_payload((*payload).clone());
+                let mut filled = (*payload).clone();
+                crate::adv_table::fill(&mut filled);
+                let mut base = StateBundle::init_from_payload(filled);
                 base.tuning = tuning.clone();
                 if base.upgrade_arr.is_empty() {
                     return Vec::new();

@@ -73,7 +73,6 @@ impl SolverStateBundle {
                     &self.state_bundle.prep_output.juice_info,
                     &mut self.rng,
                 );
-                upgrade.state.update_hash();
             }
         }
         mutate_special
@@ -83,11 +82,12 @@ impl SolverStateBundle {
 impl Upgrade {
     fn perturb(&mut self, progress: f64, juice_info: &JuiceInfo, rng: &mut SmallRng) {
         if self.is_normal_honing {
+            // hashed by apply_new_streak_info
             self.perturb_normal(progress, juice_info, rng);
         } else {
             self.perturb_adv(progress, juice_info, rng);
+            self.state.update_hash();
         }
-        self.state.update_hash();
     }
     fn perturb_normal(&mut self, progress: f64, juice_info: &JuiceInfo, rng: &mut SmallRng) {
         let piece_type = self.piece_type_usize;

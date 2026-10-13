@@ -32,6 +32,19 @@ Evaluation assumes these; breaking them corrupts results without an error.
 - For normal honing, taps the player has already done are fixed and must not be modified.
 - Normal-honing states are kept in a restricted form: for each juice pool, one streak from the first tap and one streak from the last. This is an empirical simplification, not a proven one, and the perturbation code depends on it.
 
+## What a move costs
+
+Outside the evaluator an iteration is some 5 microseconds, a third of what it was. What was taken out, none of which changes a result (the `pilot` runs of session 25 have the metrics of session 21):
+
+- **Accepting or rejecting copies every upgrade's state**, changed or not. `State::copy_from` does it without allocating and leaves a payload with the same hash alone.
+- **A perturbed state was hashed three times**, and `apply_new_streak_info` built a hash set of a few ids on every call.
+- **A restart rehashed every upgrade**; `clone_from_essence` now skips a payload that is already the one wanted.
+- **The state hash is `ahash` with fixed seeds**, in place of SipHash. The seeds are fixed because a seed has to repeat.
+
+Of what is left, two thirds is `neighbour` (two `WeightedIndex` built per move, and the streaks written back over the whole payload) and a quarter the copy on accepting. Changing the first without changing what the rng is asked for takes care.
+
+**A restart does not bring the streaks back.** `clone_from_essence` restores a payload and leaves its `streak_cache`, and `perturb_normal` builds the next payload from that cache. So the first move of a normal upgrade after a restart goes on from where the chain was, not from the best state. Left as it is: clearing the cache there changes every search, and needs a run of the arena to say whether for the better.
+
 ## Chained runs
 
 `solve` takes an optional `Previous`: the payload of the last run, its best `StateBundle`, and a blob the optimizer left for itself (returned in `Solved`, capped at `Tuning::max_blob_bytes`). Nothing reads it yet. The frontend does not pass one either; it still seeds a run through the payload's `state` and `special_state`.

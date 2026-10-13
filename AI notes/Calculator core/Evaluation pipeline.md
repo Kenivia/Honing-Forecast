@@ -65,8 +65,11 @@ Evaluating the cumulants is the unit of cost: one pass over every outcome of eve
 
 A solve is 2.8 times faster on the `pilot` set and 5.5 times on `stress`. Of what is left, on the explore singles:
 
-- **About half is the advanced honing distributions**, built on a cache miss by `compute_adv_dist_wrapper` (some 140 misses a solve, a few milliseconds each). Not touched; it is the first thing to look at.
-- Of the rest: two fifths cumulant evaluations, an eighth the lattice, and the remainder spread thin over rebuilding supports, the memo's keys, `shape`, brute force and the free-tap probabilities. A tenth of a solve is the annealer itself, outside the evaluator.
+- **The advanced honing distributions were 59% of it**, and 75 to 96% of a solve with advanced upgrades: 300 to 1500 cache misses in `compute_adv_dist_wrapper`, 5 to 11 ms each. A miss is now 1 to 2 ms. The cost was copying: every memo hit cloned three vectors and every branch allocated three more. The states' distributions are now written end to end into one buffer, in the same order of additions, so the output is the same to the bit (`dists_are_unchanged`). In the arena no solve has a miss at all (`Arena.md`, "The advanced honing table"). The browser has none for an upgrade not yet started (`Frontend/Wasm contract.md`) and still has them for one in progress, once per start position while the page lives.
+  - Sharing one memo between the strategies of a start is another 2 to 3 times, at 60 to 160 MB while it runs.
+  - Every start position there is (some 8,400 of them, 361 strategies each) is too much to ship. The two fresh ones with double balls, 722 distributions, are 0.6 MB.
+- Of the rest: two fifths cumulant evaluations, an eighth the lattice, and the remainder spread thin over rebuilding supports, the memo's keys, `shape`, brute force and the free-tap probabilities.
+- **The annealer itself, outside the evaluator, was 29% of the `pilot` set** and 19% of `explore` (`decide_s`, `Arena.md`), and is 12% of `pilot` now. See `Optimizer.md`, "What a move costs".
 - The cumulant loop is bound by its chain of running sums, which a compiler cannot vectorise. Plain sums against a table of powers could be, at more work an outcome in scalar code.
 - A pair of probabilities needs two roots because the biased one has its own. A partial expectation read off the plain saddlepoint would need one, and would be a different approximation.
 

@@ -99,7 +99,9 @@ fn start_solver<R: Rng>(
 ) -> SolverStateBundle {
     // placeholder: the chests are opened at random, once
     state_bundle.randomize_chest_state(rng);
+    let clock = probe.clock();
     state_bundle.metric = state_bundle.metric_router(probe);
+    probe.evaluated(clock);
     state_bundle.set_latest_special_probs();
 
     let scaler = AdaptiveScaler::new(state_bundle.metric.abs(), 50);
@@ -180,7 +182,9 @@ pub fn solve<R: Rng>(
             solver_bundle.neighbour()
         };
 
+        let clock = probe.clock();
         solver_bundle.state_bundle.metric = solver_bundle.state_bundle.metric_router(probe);
+        probe.evaluated(clock);
 
         let best_metric = f64::from(*solver_bundle.best_n_states.peek_max().unwrap().1);
         if solver_bundle.state_bundle.metric > best_metric {

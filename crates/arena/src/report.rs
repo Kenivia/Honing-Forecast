@@ -45,6 +45,7 @@ pub fn table(header: &[&str]) -> Table {
 struct Run {
     gap: f64,
     cpu_s: f64,
+    decide_s: f64,
     states: f64,
     ks: f64,
     found_at: f64,
@@ -70,7 +71,8 @@ pub fn optimize(conn: &Connection, selection: &Selection, eps: f64) {
             "SELECT s.scenario, s.step, r.chained, r.variant, r.step_id, r.cpu_s, r.metric_ref,
                 r.counters, r.error,
                 (SELECT MAX(iter) FROM trace t WHERE t.run_id = r.id AND t.key = 'best'),
-                (SELECT COUNT(*) FROM mc WHERE mc.run_id = r.id AND mc.pass = 0)
+                (SELECT COUNT(*) FROM mc WHERE mc.run_id = r.id AND mc.pass = 0),
+                r.decide_s
              FROM run r JOIN scenario_step s ON s.id = r.step_id
              WHERE r.kind = 'optimize'{clause}"
         ))
@@ -86,6 +88,7 @@ pub fn optimize(conn: &Connection, selection: &Selection, eps: f64) {
             let run = Run {
                 gap: (best - metric_ref.unwrap_or(f64::NAN)) / best.abs().max(1.0),
                 cpu_s: row.get::<_, Option<f64>>(5)?.unwrap_or(f64::NAN),
+                decide_s: row.get::<_, Option<f64>>(11)?.unwrap_or(f64::NAN),
                 states: counters["StatesEvaluated"].as_f64().unwrap_or(f64::NAN),
                 ks: counters["Ks"].as_f64().unwrap_or(f64::NAN),
                 found_at: row.get::<_, Option<f64>>(9)?.unwrap_or(f64::NAN),
@@ -105,7 +108,7 @@ pub fn optimize(conn: &Connection, selection: &Selection, eps: f64) {
 
     let mut out = table(&[
         "scenario", "step", "mode", "variant", "runs", "died", "median gap %", "worst gap %",
-        "hit %", "cpu s", "states", "ks", "found at", "mc fails",
+        "hit %", "cpu s", "decide s", "states", "ks", "found at", "mc fails",
     ]);
     // per variant: median gaps, hit rates, cpu
     let mut overall: BTreeMap<String, (Vec<f64>, Vec<f64>, f64, usize, i64)> = BTreeMap::new();
@@ -130,6 +133,7 @@ pub fn optimize(conn: &Connection, selection: &Selection, eps: f64) {
                 format!("{:.4}", worst * 100.0),
                 format!("{:.0}", hit * 100.0),
                 format!("{:.3}", cpu),
+                format!("{:.3}", median(&pick(|run| run.decide_s))),
                 format!("{:.0}", median(&pick(|run| run.states))),
                 format!("{:.0}", median(&pick(|run| run.ks))),
                 format!("{:.0}", median(&pick(|run| run.found_at))),

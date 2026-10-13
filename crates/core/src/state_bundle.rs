@@ -102,7 +102,7 @@ impl StateBundle {
 
     pub fn my_clone_from(&mut self, source: &StateBundle) {
         for (s, upgrade) in source.upgrade_arr.iter().zip(self.upgrade_arr.iter_mut()) {
-            upgrade.state.clone_from(&s.state);
+            upgrade.state.copy_from(&s.state);
         }
         self.special_state.clone_from(&source.special_state);
         self.set_chest_state(&source.chest_states);
@@ -130,8 +130,10 @@ impl StateBundle {
 
     pub fn clone_from_essence(&mut self, source: &StateEssence, input_metric: &OrderedFloat<f64>) {
         for (s, upgrade) in source.state_arr.iter().zip(self.upgrade_arr.iter_mut()) {
-            upgrade.state.payload.clone_from(s);
-            upgrade.state.update_hash();
+            if upgrade.state.payload != *s {
+                upgrade.state.payload.clone_from(s);
+                upgrade.state.update_hash();
+            }
         }
         self.special_state.clone_from(&source.special_state);
         self.set_chest_state(&source.chest_states);

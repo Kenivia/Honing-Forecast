@@ -13,6 +13,7 @@ import {
   NORMAL_COLS,
   NUM_PIECES,
   PLUS_TIER_CONVERSION,
+  ADV_ALWAYS_DOUBLE_BALLS,
 } from "@/Utils/Constants";
 import TierConvertButton from "@/Components/Common/TierConvertButton.vue";
 import { useRosterStore } from "@/Stores/RosterConfig";
@@ -111,7 +112,7 @@ const tier_label_text = computed(() => {
           <span>Express event (June)</span>
         </label>
         <label
-          v-if="active_profile.tier == 0"
+          v-if="active_profile.tier == 0 && !ADV_ALWAYS_DOUBLE_BALLS"
           class="control-panel-checkbox-row border-0!"
         >
           <input

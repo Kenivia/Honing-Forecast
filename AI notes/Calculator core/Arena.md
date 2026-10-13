@@ -27,6 +27,17 @@ The binary is both driver and worker. The driver (always the current build) load
 - A panic in a variant kills one job. It is recorded with its stderr and shown as `died`; the rest of the session carries on.
 - Jobs are ordered so that variants take turns, seeds outermost. With `--jobs 1` that removes drift between variants.
 
+## The advanced honing table
+
+`test_cases/adv_cache.sqlite` (`adv_table.rs`, gitignored) keeps the advanced honing distributions between runs, so that no solve works one out. Before a step is solved the worker puts every distribution its upgrades can ask for into `payload.adv_cache`; the core is not involved.
+
+- **A row is one start position** (xp, balls, next free, next big, double balls, +30/+40) and holds all 361 strategies from it, about 230 kB. A start not in the file is worked out once, about half a second, and kept. `explore` has 121 starts, 3 of them fresh.
+- **What it holds is what the core would compute, to the bit**, so a seed gives the same run with or without it: the `pilot` runs of session 21 have the metrics of session 18, all 33.
+- **The `AdvMiss` counter is how many distributions a solve still had to work out.** It should be 0. If it is not, the table's key and the core's `AdvConfig` have come apart.
+- **A snapshot from before the table does not use it**, so its time has the distributions in it and a new build's does not: on payloads that are mostly advanced honing that was three quarters of a solve or more.
+- `bench` fills it too. `replan` does not: every upgrade played is a new start, and the file would grow by a row for each.
+- Delete the file after any change to `compute_adv_dist`. Nothing notices a stale one.
+
 ## Scenarios
 
 `test_cases/scenarios/*.json`, each `{ "steps": [payload, ...] }` with every step a full `Payload`. `pnpm arena dummy` writes the placeholder one; real cases are still to come. Its payloads carry four chest stacks, keyed "0" to "3": a three-way choice, an obtain-all with gold, fractional amounts, and one that gives special leaps. A worker's `Essence` carries `chest_states` next to `special_state`; one whose keys are not the reference's (a snapshot older than the keys has none) is left out and the reference's default is kept. A variant built before chests were keyed cannot read these payloads.
@@ -64,6 +75,9 @@ A set is a named list of scenarios for one purpose, in `test_cases/sets/<name>.t
 | 20 | `explore`, 8 seeds, the evaluator sped up (`Evaluation pipeline.md`) |
 | 18 | `pilot`, 3 seeds, `--jobs 1`: `baseline`, `current`, and `current` with the memo off and with the old root finding too |
 | 16, 19 | `stress`, 1 seed, `--jobs 2`: `baseline` and `current` |
+| 21 | `pilot`, 3 seeds, `--jobs 1`, with the advanced honing table: 13.0 CPU seconds a seed against 21.0 |
+| 23 | `explore`, 8 seeds, the `adv_table` snapshot: the faster distributions and the table. Every run has the state and metric of session 20; 13468 CPU seconds became 5867, in 59 minutes |
+| 25 | `pilot`, 3 seeds, `--jobs 1`, after the optimizer's own work was cut (`Optimizer.md`): 11.0 CPU seconds a seed |
 
 Sessions 3 to 5 are of the payloads before the folder was generated again and match nothing in it now. Session 17 is session 20 with a root finder bug that killed 3 of its jobs; 15 is 18 before that fix.
 
@@ -112,7 +126,8 @@ The metric assumes the plan made now is followed to the end. `pnpm arena replan 
   - **What the gap is divided by is undecided.** The report divides by the best metric, which is near zero wherever credit cancels cost or everything is owned. Spent plus credit (`metric_ref - 2 * gross`) vanishes in the same cases. `flow` does not.
 - **Probabilities** (`stress`, `stress.rs`): `pnpm arena stress [--scenarios dir | --set name] [--scrambles 3] [--tuning key=value]`. For the given state and scrambles 20, 200 and 2000 moves away, every material's probability is asked for at some 70 thresholds (packed around the mean, at quantiles, at the ends of the range, at random), plain and biased, and compared with an exact convolution done here. It reads nothing from the database and writes nothing. The table is by method, region and kind; lattice, brute and trivial must be exact, and a panic is counted by where it was. `verify` cannot see what this sees: it compares the metric at the payload's own thresholds, and within Monte Carlo noise. Materials whose convolution would be too big are left out and counted.
 - **Speed**: thread CPU time around `solve` only, plus counters. The counters are exact and repeatable; CPU time is not, see below.
-- **The evaluator alone** (`bench`, `bench.rs`): `pnpm arena bench [--scenarios dir | --set name] [--filter text] [--tuning key=value] [--states file] [--out file] [--jobs 1]` evaluates each step's given state, two scrambles of it and any states handed in (`--states`, a json of `"scenario:step"` to a list of essences) once for the counters, then repeatedly for the time. `--out` writes one line a state with its metric, which is how two builds of the evaluator are compared state by state. It reads and writes no database. The repeats are of one state, so pass `max_memo_size=0` or they time the memo. `--solve <seed>` times one solve a step instead. `python scripts/arena/bench_diff.py before.tsv after.tsv` puts two `--out` files side by side.
+  - **`eval_s` and `decide_s` split a solve's `wall_s`** into the evaluations (`Probe::clock` and `Probe::evaluated` around `metric_router`) and everything else the optimizer does: choosing a move, copying states, the best list. They are wall time, because thread CPU time comes in 15 ms ticks, and are empty for runs from before October 2026 and for a snapshot that does not send them. It was 29% of `pilot` at one job and 19% of `explore` in session 23, and is 12% of `pilot` since (`Optimizer.md`, "What a move costs").
+- **The evaluator alone** (`bench`, `bench.rs`): `pnpm arena bench [--scenarios dir | --set name] [--filter text] [--tuning key=value] [--states file] [--out file] [--jobs 1]` evaluates each step's given state, two scrambles of it and any states handed in (`--states`, a json of `"scenario:step"` to a list of essences) once for the counters, then repeatedly for the time. `--out` writes one line a state with its metric, which is how two builds of the evaluator are compared state by state. It reads and writes no results database. The repeats are of one state, so pass `max_memo_size=0` or they time the memo. `--solve <seed>` times one solve a step instead. `python scripts/arena/bench_diff.py before.tsv after.tsv` puts two `--out` files side by side.
 
 ## Looking inside a run
 

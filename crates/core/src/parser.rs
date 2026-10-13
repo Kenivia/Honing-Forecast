@@ -82,7 +82,7 @@ impl PreparationOutput {
                             && start_balls == key.start_balls
                             && next_free == key.next_free
                             && next_big == key.next_big
-                            && (express_event && upgrade.upgrade_index < 2) == key.double_balls
+                            && upgrade.double_balls == key.double_balls
                             && ((upgrade.upgrade_index >= 2) == key.is_30_40);
                     }
                     false
